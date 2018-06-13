@@ -1,6 +1,13 @@
 \section{Lexical conventions}
 \pdfsection{Lexical conventions}
 %HEVEA\cutname{lex.html}
+\subsubsection*{Character set}
+
+The character set of OCaml source code files is Unicode, encoded as
+UTF-8. However, codepoints outside of the ASCII character set are
+only permitted inside comments and string literals. (Non-ASCII
+characters are not legal in character literals.)
+
 \subsubsection*{Blanks}
 
 The following characters are considered as blanks: space,
@@ -30,12 +37,8 @@ letter: "A" \ldots "Z" || "a" \ldots "z"
 Identifiers are sequences of letters, digits, "_" (the underscore
 character), and "'" (the single quote), starting with a
 letter or an underscore.
-Letters contain at least the 52 lowercase and uppercase
-letters from the ASCII set. The current implementation
-also recognizes as letters some characters from the ISO
-8859-1 set (characters 192--214 and 216--222 as uppercase letters;
-characters 223--246 and 248--255 as lowercase letters). This
-feature is deprecated and should be avoided for future compatibility.
+Letters consist of the 52 lowercase and uppercase
+letters from the ASCII character set.
 
 All characters in an identifier are
 meaningful. The current implementation accepts identifiers up to

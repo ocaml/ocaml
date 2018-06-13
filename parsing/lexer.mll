@@ -223,11 +223,6 @@ let preprocessor = ref None
 
 let escaped_newlines = ref false
 
-(* Warn about Latin-1 characters used in idents *)
-
-let warn_latin1 lexbuf =
-  Location.deprecated (Location.curr lexbuf)"ISO-Latin1 characters in identifiers"
-
 let handle_docstrings = ref true
 let comment_list = ref []
 
@@ -286,10 +281,6 @@ let blank = [' ' '\009' '\012']
 let lowercase = ['a'-'z' '_']
 let uppercase = ['A'-'Z']
 let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
-let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar_latin1 =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let dotsymbolchar =
@@ -317,6 +308,20 @@ let hex_float_literal =
   (['p' 'P'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']* )?
 let literal_modifier = ['G'-'Z' 'g'-'z']
 
+(* A recognition regular expression for valid UTF-8 characters.
+   This is meant to duplicate the grammar of RFC3629, section 4. *)
+let utf8_tail = ['\x80'-'\xbf']
+let utf8_1    = ['\x00'-'\x7f']
+let utf8_2    = ['\xc2'-'\xdf'] utf8_tail
+let utf8_3    = '\xe0' ['\xa0'-'\xbf'] utf8_tail |
+                ['\xe1'-'\xec'] utf8_tail utf8_tail |
+                '\xed' ['\x80'-'\x9f'] utf8_tail |
+                ['\xee'-'\xef'] utf8_tail utf8_tail
+let utf8_4    = '\xf0' ['\x90'-'\xbf'] utf8_tail utf8_tail |
+                ['\xf1'-'\xf3'] utf8_tail utf8_tail utf8_tail |
+                '\xf4' ['\x80'-'\x8f'] utf8_tail utf8_tail
+let utf8      = utf8_1 | utf8_2 | utf8_3 | utf8_4
+
 rule token = parse
   | "\\" newline {
       if not !escaped_newlines then
@@ -335,24 +340,16 @@ rule token = parse
       { TILDE }
   | "~" lowercase identchar * ':'
       { LABEL (get_label_name lexbuf) }
-  | "~" lowercase_latin1 identchar_latin1 * ':'
-      { warn_latin1 lexbuf; LABEL (get_label_name lexbuf) }
   | "?"
       { QUESTION }
   | "?" lowercase identchar * ':'
       { OPTLABEL (get_label_name lexbuf) }
-  | "?" lowercase_latin1 identchar_latin1 * ':'
-      { warn_latin1 lexbuf; OPTLABEL (get_label_name lexbuf) }
   | lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
         try Hashtbl.find keyword_table s
         with Not_found -> LIDENT s }
-  | lowercase_latin1 identchar_latin1 *
-      { warn_latin1 lexbuf; LIDENT (Lexing.lexeme lexbuf) }
   | uppercase identchar *
       { UIDENT(Lexing.lexeme lexbuf) }       (* No capitalized keywords *)
-  | uppercase_latin1 identchar_latin1 *
-      { warn_latin1 lexbuf; UIDENT(Lexing.lexeme lexbuf) }
   | int_literal { INT (Lexing.lexeme lexbuf, None) }
   | (int_literal as lit) (literal_modifier as modif)
       { INT (lit, Some modif) }
@@ -386,11 +383,15 @@ rule token = parse
   | "\'" newline "\'"
       { update_loc lexbuf None 1 false 1;
         CHAR (Lexing.lexeme_char lexbuf 1) }
-  | "\'" [^ '\\' '\'' '\010' '\013'] "\'"
+  | "\'" [^ '\\' '\'' '\010' '\013' '\x80'-'\xff'] "\'"
       { CHAR(Lexing.lexeme_char lexbuf 1) }
+  | "\'" ['\x80'-'\xff'] "\'"
+      { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 1),
+                     Location.curr lexbuf))
+      }
   | "\'\\" ['\\' '\'' '\"' 'n' 't' 'b' 'r' ' '] "\'"
       { CHAR(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
-  | "\'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "\'"
+  | "\'\\" ['0'-'2'] ['0'-'9'] ['0'-'9'] "\'"
       { CHAR(char_for_decimal_code lexbuf 2) }
   | "\'\\" 'o' ['0'-'3'] ['0'-'7'] ['0'-'7'] "\'"
       { CHAR(char_for_octal_code lexbuf 3) }
@@ -618,8 +619,13 @@ and comment = parse
         store_lexeme lexbuf;
         comment lexbuf
       }
-  | _
+  | utf8
       { store_lexeme lexbuf; comment lexbuf }
+  | _
+      { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),
+                     Location.curr lexbuf))
+      }
+
 
 and string = parse
     '\"'
@@ -667,9 +673,14 @@ and string = parse
   | eof
       { is_in_string := false;
         raise (Error (Unterminated_string, !string_start_loc)) }
-  | _
-      { store_string_char(Lexing.lexeme_char lexbuf 0);
+  | utf8
+      { store_lexeme lexbuf;
         string lexbuf }
+  | _
+      { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),
+                     Location.curr lexbuf))
+      }
+
 
 and quoted_string delim = parse
   | newline
@@ -687,9 +698,14 @@ and quoted_string delim = parse
         if delim = edelim then ()
         else (store_lexeme lexbuf; quoted_string delim lexbuf)
       }
-  | _
-      { store_string_char(Lexing.lexeme_char lexbuf 0);
+  | utf8
+      { store_lexeme lexbuf;
         quoted_string delim lexbuf }
+  | _
+      { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),
+                     Location.curr lexbuf))
+      }
+
 
 and skip_hash_bang = parse
   | "#!" [^ '\n']* '\n' [^ '\n']* "\n!#\n"
