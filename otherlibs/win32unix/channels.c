@@ -38,7 +38,7 @@ static DWORD win_check_stream_semantics(value handle)
       return 0;
     default: {
       DWORD err = GetLastError();
-      return err == 0 ? ERROR_INVALID_ACCESS : err;
+      return err == NO_ERROR ? ERROR_INVALID_ACCESS : err;
     }
     }
   case KIND_SOCKET: {
