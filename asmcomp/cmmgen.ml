@@ -169,12 +169,6 @@ let rec expr_size env = function
       expr_size env exp'
   | _ -> RHS_nonrec
 
-(* Comparisons *)
-
-let transl_int_comparison cmp = cmp
-
-let transl_float_comparison cmp = cmp
-
 (* Translate structured constants to Cmm data items *)
 
 let transl_constant dbg = function
@@ -1811,7 +1805,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
       Cop(Cor, [asr_int (transl env arg1) (untag_int(transl env arg2) dbg) dbg;
                 Cconst_int (1, dbg)], dbg)
   | Pintcomp cmp ->
-      tag_int(Cop(Ccmpi(transl_int_comparison cmp),
+      tag_int(Cop(Ccmpi cmp,
                   [transl env arg1; transl env arg2], dbg)) dbg
   | Pisout ->
       transl_isout (transl env arg1) (transl env arg2) dbg
@@ -1837,7 +1831,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                      transl_unbox_float dbg env arg2],
                     dbg))
   | Pfloatcomp cmp ->
-      tag_int(Cop(Ccmpf(transl_float_comparison cmp),
+      tag_int(Cop(Ccmpf cmp,
                   [transl_unbox_float dbg env arg1;
                    transl_unbox_float dbg env arg2],
                   dbg)) dbg
@@ -1991,7 +1985,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                      [transl_unbox_int dbg env bi arg1;
                       untag_int(transl env arg2) dbg], dbg))
   | Pbintcomp(bi, cmp) ->
-      tag_int (Cop(Ccmpi(transl_int_comparison cmp),
+      tag_int (Cop(Ccmpi cmp,
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
   | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
