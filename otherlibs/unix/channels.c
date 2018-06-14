@@ -87,4 +87,3 @@ CAMLprim value unix_outchannel_of_filedescr(value fd)
   if (err != 0) unix_error(err, "out_channel_of_descr", Nothing);
   return caml_ml_open_descriptor_out(fd);
 }
-
