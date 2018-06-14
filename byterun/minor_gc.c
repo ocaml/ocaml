@@ -17,8 +17,13 @@
 
 #include <string.h>
 #include <stdio.h>
+
+#include "caml/addrmap.h"
 #include "caml/config.h"
+#include "caml/domain.h"
+#include "caml/eventlog.h"
 #include "caml/fail.h"
+#include "caml/fiber.h"
 #include "caml/finalise.h"
 #include "caml/gc.h"
 #include "caml/gc_ctrl.h"
@@ -28,13 +33,9 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
+#include "caml/shared_heap.h"
 #include "caml/signals.h"
 #include "caml/weak.h"
-#include "caml/domain.h"
-#include "caml/shared_heap.h"
-#include "caml/addrmap.h"
-#include "caml/fiber.h"
-#include "caml/eventlog.h"
 
 extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
@@ -480,11 +481,8 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     // ???
     caml_empty_minor_heap_domain (domain);
   } else {
-    /* Scan local roots */
-    caml_do_local_roots (forward_pointer, st.promote_domain, domain);
-
-    /* Scan current stack */
-    caml_scan_stack (forward_pointer, st.promote_domain, domain_state->current_stack);
+    caml_do_local_roots (&forward_pointer, st.promote_domain, domain, 1);
+    caml_scan_stack (&forward_pointer, st.promote_domain, domain_state->current_stack);
 
     /* Scan major to young pointers. */
     for (r = remembered_set->major_ref.base;
@@ -601,7 +599,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
     caml_ev_begin("minor_gc");
     caml_ev_begin("minor_gc/roots");
-    caml_do_local_roots(&oldify_one, &st, domain);
+    caml_do_local_roots(&oldify_one, &st, domain, 0);
 
     for (r = remembered_set->fiber_ref.base; r < remembered_set->fiber_ref.ptr; r++) {
       caml_scan_dirty_stack_domain (&oldify_one, &st, (value)*r, domain);
@@ -661,6 +659,11 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     CAMLassert (!caml_domain_alone() || rewrite_failures == 0);
     caml_ev_end("minor_gc/update_remembered_set");
 
+    caml_ev_begin("minor_gc/finalisers");
+    caml_final_update_last_minor(domain);
+    caml_final_empty_young(domain);
+    caml_ev_end("minor_gc/finalisers");
+
     clear_table ((struct generic_table *)&remembered_set->major_ref);
     clear_table ((struct generic_table *)&remembered_set->minor_ref);
     clear_table ((struct generic_table *)&remembered_set->ephe_ref);
@@ -676,6 +679,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
                  (unsigned)(minor_allocated_bytes + 512)/1024, rewrite_successes, rewrite_failures);
   }
   else {
+    caml_final_empty_young(domain);
     caml_gc_log ("Minor collection of domain %d: skipping", domain->state->id);
   }
 
@@ -718,11 +722,7 @@ CAMLexport void caml_minor_collection (void)
   caml_empty_minor_heap ();
   caml_handle_incoming_interrupts ();
   caml_major_collection_slice (0, 0);
-
-  /* FIXME: run finalisers.
-     If finalisers run, need to rerun caml_empty_minor_heap.
-   */
-
+  caml_final_do_calls();
   CAMLassert (Caml_state->young_end == Caml_state->young_ptr);
 
   caml_ev_resume();

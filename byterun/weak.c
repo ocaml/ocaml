@@ -413,7 +413,7 @@ static value ephe_set_field (value e, mlsize_t offset, value el)
     if (source == target) {
       CAMLreturn(ephe_set_field_domain(e, Val_long(offset), el, source, NULL));
     } else if (target == 0) {
-      caml_steal_ephe_work();
+      caml_adopt_orphaned_work();
     } else {
       el = caml_promote(source, el);
       CAMLlocalN(argv,3);
@@ -482,7 +482,7 @@ static value ephe_get_field (value e, mlsize_t offset)
     if (source == target) {
       CAMLreturn(ephe_get_field_domain(e, Val_long(offset), source, NULL));
     } else if (target == 0) {
-      caml_steal_ephe_work();
+      caml_adopt_orphaned_work();
     } else {
       CAMLlocalN(argv,2);
       argv[0] = e;
@@ -524,7 +524,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
     if (source == target) {
       CAMLreturn(ephe_get_field_copy_domain(e, Val_long(offset), source, NULL));
     } else if (target == 0) {
-      caml_steal_ephe_work();
+      caml_adopt_orphaned_work();
     } else {
       CAMLlocalN(argv,2);
       argv[0] = e;
@@ -575,7 +575,7 @@ static value ephe_check_field (value e, mlsize_t offset)
     if (source == target) {
       CAMLreturn(ephe_check_field_domain(e, Val_long(offset), source, NULL));
     } else if (target == 0) {
-      caml_steal_ephe_work();
+      caml_adopt_orphaned_work();
     } else {
       CAMLlocalN(argv,2);
       argv[0] = e;
@@ -625,7 +625,7 @@ static value ephe_blit_field_produce (value es, mlsize_t offset_s,
       CAMLreturn(ephe_blit_field_produce_domain(es, Val_long(offset_s), Val_long(length), source, 0));
     }
     if (target == 0) {
-      caml_steal_ephe_work();
+      caml_adopt_orphaned_work();
     } else {
       CAMLlocalN(argv, 3);
       argv[0] = es;
@@ -655,7 +655,7 @@ static value ephe_blit_field_consume (value ed, mlsize_t offset_d, value ar)
       CAMLreturn(ephe_blit_field_consume_domain(ed, Val_long(offset_d), ar, source, 0));
     }
     if (target == 0) {
-      caml_steal_ephe_work();
+      caml_adopt_orphaned_work();
     } else {
       CAMLlocalN(argv, 3);
       argv[0] = ed;
@@ -701,7 +701,7 @@ static value ephe_blit_field (value es, mlsize_t offset_s,
       }
       CAMLreturn(Val_unit);
     } else if (d1 == 0 || d2 == 0) {
-      caml_steal_ephe_work();
+      caml_adopt_orphaned_work();
     } else {
       ar = ephe_blit_field_produce (es, offset_s, length);
       ephe_blit_field_consume (ed, offset_d, ar);
