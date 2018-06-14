@@ -747,6 +747,4 @@ Line _, characters 4-15:
     | B x............
 Error: The variable x on the left-hand side of this or-pattern has type
        $A_'a but on the right-hand side it has type $B_'a
-$A_'a is abstract because no corresponding cmi file was found in path.
-$B_'a is abstract because no corresponding cmi file was found in path.
 |}]
