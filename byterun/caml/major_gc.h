@@ -29,16 +29,19 @@ intnat caml_major_collection_slice (intnat, intnat* left /* out */);
 void caml_finish_sweeping(void);
 void caml_finish_marking (void);
 uintnat caml_get_num_domains_to_mark(void);
-void caml_init_major_gc(void);
+void caml_init_major_gc(caml_domain_state*);
 void caml_teardown_major_gc(void);
 void caml_darken(void*, value, value* ignored);
 void caml_mark_root(value, value*);
 void caml_empty_mark_stack(void);
 void caml_finish_major_cycle(void);
+
+/* Ephemerons */
 void caml_ephe_todo_list_emptied(void);
 void caml_add_orphaned_ephe(value todo_head, value todo_tail,
                             value live_head, value live_tail);
-void caml_steal_ephe_work (void);
+void caml_add_orphaned_finalisers (struct caml_final_info*);
+void caml_adopt_orphaned_work (void);
 
 struct heap_stats {
   intnat pool_words;

@@ -429,6 +429,7 @@ void caml_scan_dirty_stack_domain(scanning_action f, void* fdata, value stack,
   }
 }
 
+/* Used only by major GC marking */
 void caml_darken_stack(value stack)
 {
   Assert(Tag_val(stack) == Stack_tag);

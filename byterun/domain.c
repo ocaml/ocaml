@@ -24,6 +24,8 @@
 #include "caml/gc_ctrl.h"
 #include "caml/osdeps.h"
 #include "caml/weak.h"
+#include "caml/finalise.h"
+#include "caml/gc_ctrl.h"
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
@@ -219,11 +221,9 @@ static void create_domain(uintnat initial_minor_heap_size) {
     domain_state->remembered_set = caml_alloc_remembered_set();
 
     d->state.state->shared_heap = caml_init_shared_heap();
-    caml_init_major_gc();
+    caml_init_major_gc(domain_state);
     caml_reallocate_minor_heap(initial_minor_heap_size);
-
     caml_init_main_stack();
-
 
     domain_state->backtrace_buffer = NULL;
 #ifndef NATIVE_CODE
@@ -802,7 +802,30 @@ static void handover_ephemerons(caml_domain_state* domain_state)
   }
   domain_state->ephe_list_live = 0;
   domain_state->ephe_list_todo = 0;
+}
 
+static void handover_finalisers(caml_domain_state* domain_state)
+{
+  struct caml_final_info* f = domain_state->final_info;
+
+  if (f->todo_head == NULL && f->first.size == 0 && f->last.size == 0) {
+    /* No finalisers */
+    return;
+  }
+
+  if (caml_gc_phase != Phase_sweep_and_mark_main) {
+    /* Force a major GC to simplify constraints for
+    * handing over ephemerons. */
+    caml_gc_major(Val_unit);
+  }
+  caml_add_orphaned_finalisers (f);
+  domain_state->final_info = caml_alloc_final_info();
+}
+
+int caml_domain_is_terminating ()
+{
+  struct interruptor* s = &domain_self->interruptor;
+  return s->terminating;
 }
 
 static void domain_terminate()
@@ -819,6 +842,7 @@ static void domain_terminate()
     caml_empty_minor_heap();
     caml_finish_marking();
     handover_ephemerons(domain_state);
+    handover_finalisers(domain_state);
 
     caml_plat_lock(&s->lock);
 
