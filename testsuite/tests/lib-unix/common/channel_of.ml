@@ -61,8 +61,3 @@ let _ =
   end;
   (* End of test *)
   Sys.remove "file.tmp"
-    
-  
-
-        
-
