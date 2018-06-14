@@ -22,9 +22,9 @@ EXTRACAMLFLAGS=-nolabels
 # dllunix.so particularly requires libm for modf symbols
 LDOPTS=$(NATIVECCLIBS)
 
-COBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
-  chown.o chroot.o close.o closedir.o connect.o cst2constr.o cstringv.o \
-  dup.o dup2.o envir.o errmsg.o execv.o execve.o execvp.o exit.o \
+COBJS=accept.o access.o addrofstr.o alarm.o bind.o channels.o chdir.o \
+  chmod.o chown.o chroot.o close.o closedir.o connect.o cst2constr.o \
+  cstringv.o dup.o dup2.o envir.o errmsg.o execv.o execve.o execvp.o exit.o \
   fchmod.o fchown.o fcntl.o fork.o ftruncate.o \
   getaddrinfo.o getcwd.o getegid.o geteuid.o getgid.o \
   getgr.o getgroups.o gethost.o gethostname.o getlogin.o \
