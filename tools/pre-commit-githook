@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
@@ -24,6 +24,15 @@ fi
 
 # Redirect output to stderr.
 exec 1>&2
+
+# Check to see if the script's been updated
+if git ls-files --error-unmatch tools/pre-commit-githook >/dev/null 2>&1 ; then
+  if ! diff -q <(git cat-file --textconv HEAD:tools/pre-commit-githook) "$0" \
+       >/dev/null 2>&1 ; then
+    echo "Note: tools/pre-commit-githook differs from .git/hooks/pre-commit"
+    echo "You may wish to upgrade your local githook"
+  fi
+fi
 
 # Git's built-in mechanism for whitespace is neater than ours, so do it first.
 # The strange construction below creates a list of files which have either
