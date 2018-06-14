@@ -322,3 +322,26 @@ val apply_function : int -> string
     [n] arguments, and ensure its presence in the set of defined symbols.
     Otherwise, do the same for the generic tuplification with [-n] arguments. *)
 val curry_function : int -> string
+
+(** Bigarrays *)
+
+(** [bigarray_get unsafe kind layout b args dbg]
+    - unsafe : if true, do not insert bound checks
+    - kind : see [Lambda.bigarray_kind]
+    - layout : see [Lambda.bigarray_layout]
+    - b : the bigarray to load from
+    - args : a list of tagged integer expressions, corresponding to the
+    indices in the respective dimensions
+    - dbg : debugging information *)
+val bigarray_get :
+  bool -> Lambda.bigarray_kind -> Lambda.bigarray_layout ->
+  expression -> expression list -> Debuginfo.t ->
+  expression
+
+(** [bigarray_set unsafe kind layout b args newval dbg]
+    Same as [bigarray_get], with [newval] the value being assigned *)
+val bigarray_set :
+  bool -> Lambda.bigarray_kind -> Lambda.bigarray_layout ->
+  expression -> expression list -> expression -> Debuginfo.t ->
+  expression
+
