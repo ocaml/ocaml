@@ -68,8 +68,9 @@ CAMLprim value caml_ephe_create (value len)
   mlsize_t size, i;
   value res;
 
-  size = Long_val (len) + 1 /* weak_list */ + 1 /* the value */;
-  if (size <= 0 || size > Max_wosize) caml_invalid_argument ("Weak.create");
+  size = Long_val (len) + CAML_EPHE_FIRST_KEY;
+  if (size < CAML_EPHE_FIRST_KEY || size > Max_wosize)
+    caml_invalid_argument ("Weak.create");
   res = caml_alloc_shr (size, Abstract_tag);
   for (i = 1; i < size; i++) Field (res, i) = caml_ephe_none;
   Field (res, CAML_EPHE_LINK_OFFSET) = caml_ephe_list_head;
@@ -119,7 +120,7 @@ CAMLprim value caml_weak_create (value len)
    that is going to disappear is dead and so should trigger a cleaning
  */
 static void do_check_key_clean(value ar, mlsize_t offset){
-  CAMLassert ( offset >= 2);
+  CAMLassert (offset >= CAML_EPHE_FIRST_KEY);
   if (caml_gc_phase == Phase_clean){
     value elt = Field (ar, offset);
     if (elt != caml_ephe_none && Is_Dead_during_clean(elt)){
@@ -161,9 +162,9 @@ static void do_set (value ar, mlsize_t offset, value v)
 
 CAMLprim value caml_ephe_set_key (value ar, value n, value el)
 {
-  mlsize_t offset = Long_val (n) + 2;
+  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
   CAMLassert (Is_in_heap (ar));
-  if (offset < 2 || offset >= Wosize_val (ar)){
+  if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.set");
   }
   do_check_key_clean(ar,offset);
@@ -173,9 +174,9 @@ CAMLprim value caml_ephe_set_key (value ar, value n, value el)
 
 CAMLprim value caml_ephe_unset_key (value ar, value n)
 {
-  mlsize_t offset = Long_val (n) + 2;
+  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
   CAMLassert (Is_in_heap (ar));
-  if (offset < 2 || offset >= Wosize_val (ar)){
+  if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.set");
   }
   do_check_key_clean(ar,offset);
@@ -185,9 +186,9 @@ CAMLprim value caml_ephe_unset_key (value ar, value n)
 
 value caml_ephe_set_key_option (value ar, value n, value el)
 {
-  mlsize_t offset = Long_val (n) + 2;
+  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
   CAMLassert (Is_in_heap (ar));
-  if (offset < 2 || offset >= Wosize_val (ar)){
+  if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.set");
   }
   do_check_key_clean(ar,offset);
@@ -212,7 +213,7 @@ CAMLprim value caml_ephe_set_data (value ar, value el)
        cleaned we always need to check it. */
     caml_ephe_clean(ar);
   };
-  do_set (ar, 1, el);
+  do_set (ar, CAML_EPHE_DATA_OFFSET, el);
   return Val_unit;
 }
 
@@ -226,10 +227,10 @@ CAMLprim value caml_ephe_unset_data (value ar)
 CAMLprim value caml_ephe_get_key (value ar, value n)
 {
   CAMLparam2 (ar, n);
-  mlsize_t offset = Long_val (n) + 2;
+  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
   CAMLlocal2 (res, elt);
   CAMLassert (Is_in_heap (ar));
-  if (offset < 2 || offset >= Wosize_val (ar)){
+  if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.get_key");
   }
   if (is_ephe_key_none(ar, offset)){
@@ -252,10 +253,9 @@ CAMLprim value caml_weak_get (value ar, value n){
 CAMLprim value caml_ephe_get_data (value ar)
 {
   CAMLparam1 (ar);
-  mlsize_t offset = 1;
   CAMLlocal2 (res, elt);
   CAMLassert (Is_in_heap (ar));
-  elt = Field (ar, offset);
+  elt = Field (ar, CAML_EPHE_DATA_OFFSET);
   if(caml_gc_phase == Phase_clean) caml_ephe_clean(ar);
   if (elt == caml_ephe_none){
     res = None_val;
@@ -272,11 +272,11 @@ CAMLprim value caml_ephe_get_data (value ar)
 CAMLprim value caml_ephe_get_key_copy (value ar, value n)
 {
   CAMLparam2 (ar, n);
-  mlsize_t offset = Long_val (n) + 2;
+  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
   CAMLlocal2 (res, elt);
   value v;  /* Caution: this is NOT a local root. */
   CAMLassert (Is_in_heap (ar));
-  if (offset < 1 || offset >= Wosize_val (ar)){
+  if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.get_copy");
   }
 
@@ -319,7 +319,7 @@ CAMLprim value caml_weak_get_copy (value ar, value n){
 CAMLprim value caml_ephe_get_data_copy (value ar)
 {
   CAMLparam1 (ar);
-  mlsize_t offset = 1;
+  mlsize_t offset = CAML_EPHE_DATA_OFFSET;
   CAMLlocal2 (res, elt);
   value v;  /* Caution: this is NOT a local root. */
   CAMLassert (Is_in_heap (ar));
@@ -360,9 +360,9 @@ CAMLprim value caml_ephe_get_data_copy (value ar)
 
 CAMLprim value caml_ephe_check_key (value ar, value n)
 {
-  mlsize_t offset = Long_val (n) + 2;
+  mlsize_t offset = Long_val (n) + CAML_EPHE_FIRST_KEY;
   CAMLassert (Is_in_heap (ar));
-  if (offset < 2 || offset >= Wosize_val (ar)){
+  if (offset < CAML_EPHE_FIRST_KEY || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.check");
   }
   return Val_bool (!is_ephe_key_none(ar, offset));
@@ -382,16 +382,16 @@ CAMLprim value caml_ephe_check_data (value ar)
 CAMLprim value caml_ephe_blit_key (value ars, value ofs,
                                value ard, value ofd, value len)
 {
-  mlsize_t offset_s = Long_val (ofs) + 2;
-  mlsize_t offset_d = Long_val (ofd) + 2;
+  mlsize_t offset_s = Long_val (ofs) + CAML_EPHE_FIRST_KEY;
+  mlsize_t offset_d = Long_val (ofd) + CAML_EPHE_FIRST_KEY;
   mlsize_t length = Long_val (len);
   long i;
   CAMLassert (Is_in_heap (ars));
   CAMLassert (Is_in_heap (ard));
-  if (offset_s < 1 || offset_s + length > Wosize_val (ars)){
+  if (offset_s < CAML_EPHE_FIRST_KEY || offset_s + length > Wosize_val (ars)){
     caml_invalid_argument ("Weak.blit");
   }
-  if (offset_d < 1 || offset_d + length > Wosize_val (ard)){
+  if (offset_d < CAML_EPHE_FIRST_KEY || offset_d + length > Wosize_val (ard)){
     caml_invalid_argument ("Weak.blit");
   }
   if (caml_gc_phase == Phase_clean){
