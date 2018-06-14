@@ -1619,7 +1619,7 @@ let explain mis ppf =
 let warn_on_missing_def env ppf t =
   match t.desc with
   | Tconstr (p,_,_) ->
-    begin
+    if Ident.persistent (Path.head p) then begin
       try
         ignore(Env.find_type p env : Types.type_declaration)
       with Not_found ->
