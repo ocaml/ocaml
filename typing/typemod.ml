@@ -1384,13 +1384,26 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                               mty_res
             | None ->
                 if generative then mty_res else
-                try
-                  Mtype.nondep_supertype
-                    (Env.add_module ~arg:true param arg.mod_type env)
-                    param mty_res
-                with Not_found ->
-                  raise(Error(smod.pmod_loc, env,
-                              Cannot_eliminate_dependency mty_functor))
+                let env = Env.add_module ~arg:true param arg.mod_type env in
+                let nondep_mty =
+                  try Mtype.nondep_supertype env param mty_res
+                  with Not_found ->
+                    raise(Error(smod.pmod_loc, env,
+                                Cannot_eliminate_dependency mty_functor))
+                in
+                begin match
+                  Includemod.modtypes ~loc:smod.pmod_loc env mty_res nondep_mty
+                with
+                | Tcoerce_none -> ()
+                | _ ->
+                  fatal_error
+                    "unexpected coercion from original module type to \
+                     nondep_supertype one"
+                | exception Includemod.Error _ ->
+                  fatal_error
+                    "nondep_supertype not included in original module type"
+                end;
+                nondep_mty
           in
           rm { mod_desc = Tmod_apply(funct, arg, coercion);
                mod_type = mty_appl;

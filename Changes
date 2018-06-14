@@ -10,6 +10,10 @@ Working version
 
 ### Type system:
 
+- GPR#1826: allow expanding a type to a private abbreviation instead of
+  abstracting when removing references to an identifier
+  (Thomas Refis and Leo White, review by Jacques Garrigue)
+
 ### Standard library:
 
 - MPR#6701, GPR#1185, GPR#1803: make float_of_string and string_of_float
