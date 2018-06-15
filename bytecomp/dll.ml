@@ -133,16 +133,11 @@ let ld_conf_contents () =
 (* Split the CAML_LD_LIBRARY_PATH environment variable and return
    the corresponding list of directories.  *)
 let ld_library_path_contents () =
-  let path_separator =
-    match Sys.os_type with
-    | "Unix" | "Cygwin" -> ':'
-    | "Win32" -> ';'
-    | _ -> assert false in
   match Sys.getenv "CAML_LD_LIBRARY_PATH" with
   | exception Not_found ->
       []
   | s ->
-      String.split_on_char path_separator s
+      Misc.split_path_contents s
 
 let split_dll_path path =
   String.split_on_char '\000' path

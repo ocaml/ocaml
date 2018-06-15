@@ -272,6 +272,17 @@ let expand_directory alt s =
                        (String.sub s 1 (String.length s - 1))
   else s
 
+(* Split contents of "PATH"-like variable and return
+   the corresponding list of directories.  *)
+let split_path_contents s =
+  let path_separator =
+    match Sys.os_type with
+    | "Unix" | "Cygwin" -> ':'
+    | "Win32" -> ';'
+    | _ -> assert false
+  in
+  String.split_on_char path_separator s
+
 (* Hashtable functions *)
 
 let create_hashtable size init =
