@@ -26,6 +26,11 @@ CAMLprim value unix_fsync(value fd)
     unix_error(EBADF, "fsync", Nothing);
   }
 
+  /* Fail in the case of a named pipe, as in Unix. */
+  if (GetFileType(h) == FILE_TYPE_PIPE) {
+    unix_error(EINVAL, "fsync", Nothing);
+  }
+
   caml_enter_blocking_section();
   ret = FlushFileBuffers(h);
   caml_leave_blocking_section();
