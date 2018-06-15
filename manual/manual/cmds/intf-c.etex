@@ -1,5 +1,4 @@
 \chapter{Interfacing\label{c:intf-c} C with OCaml}
-\pdfchapterfold{-9}{Interfacing C with OCaml}
 %HEVEA\cutname{intfc.html}
 
 This chapter describes how user-defined primitives, written in C, can
@@ -7,7 +6,6 @@ be linked with OCaml code and called from OCaml functions, and how
 these C functions can call back to OCaml code.
 
 \section{Overview and compilation information}
-\pdfsection{Overview and compilation information}
 
 \subsection{Declaring primitives}
 
@@ -436,7 +434,6 @@ bytecode executable (so that the bytecode from "unix.cma" and
 "threads.cma" is actually linked in).
 
 \section{The \texttt{value} type}
-\pdfsection{The value type}
 
 All OCaml objects are represented by the C type "value",
 defined in the include file "caml/mlvalues.h", along with macros to
@@ -503,7 +500,6 @@ these problems, it is preferable to wrap the pointer in a OCaml block
 with tag "Abstract_tag" or "Custom_tag".
 
 \section{Representation of OCaml data types}
-\pdfsection{Representation of OCaml data types}
 
 This section describes how OCaml data types are encoded in the
 "value" type.
@@ -657,7 +653,6 @@ pair "("\var{v}", "\var{w}")", rather than a block of size 3
 containing \var{v} and \var{w} in fields 1 and 2.
 
 \section{Operations on values}
-\pdfsection{Operations on values}
 
 \subsection{Kind tests}
 
@@ -871,7 +866,6 @@ the C string \var{s} as argument.
 \end{itemize}
 
 \section{Living in harmony with the garbage collector}
-\pdfsection{Living in harmony with the garbage collector}
 
 Unused blocks in the heap are automatically reclaimed by the garbage
 collector. This requires some cooperation from C code that
@@ -1174,7 +1168,6 @@ has taken place since "r" was allocated.
 
 
 \section{A complete example}
-\pdfsection{A complete example}
 
 This section outlines how the functions from the Unix "curses" library
 can be made available to OCaml programs. First of all, here is
@@ -1336,7 +1329,6 @@ instead of "-cclib -lcurses".)
 %% and not "world". Why?
 
 \section{Advanced topic: callbacks from C to OCaml} \label{s:callback}
-\pdfsection{Advanced topic: callbacks from C to OCaml}
 
 So far, we have described how to call C functions from OCaml. In this
 section, we show how C functions can call OCaml functions, either as
@@ -1659,7 +1651,6 @@ facility is only useful for building reloadable shared libraries.
 
 
 \section{Advanced example with callbacks}
-\pdfsection{Advanced example with callbacks}
 
 This section illustrates the callback facilities described in
 section~\ref{s:callback}. We are going to package some OCaml functions
@@ -1754,7 +1745,6 @@ To build the whole program, just invoke the C compiler as follows:
 "-lcurses -ltermcap" instead of "-lcurses".)
 
 \section{Advanced topic: custom blocks} \label{s:custom}
-\pdfsection{Advanced topic: custom blocks}
 
 Blocks with tag "Custom_tag" contain both arbitrary user data and a
 pointer to a C struct, with type "struct custom_operations", that
