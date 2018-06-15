@@ -345,3 +345,17 @@ val bigarray_set :
   expression -> expression list -> expression -> Debuginfo.t ->
   expression
 
+(** Boxed integers *)
+
+(** Global symbols for the ops field of boxed integers *)
+val caml_nativeint_ops : string
+val caml_int32_ops : string
+val caml_int64_ops : string
+
+(** Box a given integer into a block, without sharing of constants *)
+val box_int_gen :
+  Debuginfo.t -> Primitive.boxed_integer -> expression -> expression
+
+(** Unbox a given boxed integer *)
+val unbox_int :
+  Primitive.boxed_integer -> expression -> Debuginfo.t -> expression

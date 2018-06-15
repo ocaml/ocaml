@@ -65,10 +65,6 @@ let add_unboxed_id id unboxed_id bn env =
     unboxed_ids = V.add id (unboxed_id, bn) env.unboxed_ids;
   }
 
-let caml_nativeint_ops = "caml_nativeint_ops"
-let caml_int32_ops = "caml_int32_ops"
-let caml_int64_ops = "caml_int64_ops"
-
 (* Description of the "then" and "else" continuations in [transl_if]. If
    the "then" continuation is true and the "else" continuation is false then
    we can use the condition directly as the result. Similarly, if the "then"
@@ -271,18 +267,6 @@ let box_int_constant sym bi n =
       emit_block sym Local boxedint64_header
         (emit_boxed_int64_constant n [])
 
-let operations_boxed_int bi =
-  match bi with
-    Pnativeint -> caml_nativeint_ops
-  | Pint32 -> caml_int32_ops
-  | Pint64 -> caml_int64_ops
-
-let alloc_header_boxed_int bi =
-  match bi with
-    Pnativeint -> alloc_boxedintnat_header
-  | Pint32 -> alloc_boxedint32_header
-  | Pint64 -> alloc_boxedint64_header
-
 let box_int dbg bi arg =
   match arg with
   | Cconst_int (n, _) ->
@@ -296,77 +280,7 @@ let box_int dbg bi arg =
       Cmmgen_state.add_data_items data_items;
       Cconst_symbol (sym, dbg)
   | _ ->
-      let arg' =
-        if bi = Pint32 && size_int = 8 && big_endian
-        then Cop(Clsl, [arg; Cconst_int (32, dbg)], dbg)
-        else arg in
-      Cop(Calloc, [alloc_header_boxed_int bi dbg;
-                   Cconst_symbol(operations_boxed_int bi, dbg);
-                   arg'], dbg)
-
-let split_int64_for_32bit_target arg dbg =
-  bind "split_int64" arg (fun arg ->
-    let first = Cop (Cadda, [Cconst_int (size_int, dbg); arg], dbg) in
-    let second = Cop (Cadda, [Cconst_int (2 * size_int, dbg); arg], dbg) in
-    Ctuple [Cop (Cload (Thirtytwo_unsigned, Mutable), [first], dbg);
-            Cop (Cload (Thirtytwo_unsigned, Mutable), [second], dbg)])
-
-let alloc_matches_boxed_int bi ~hdr ~ops =
-  match bi, hdr, ops with
-  | Pnativeint, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
-      Nativeint.equal hdr boxedintnat_header
-        && String.equal sym caml_nativeint_ops
-  | Pint32, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
-      Nativeint.equal hdr boxedint32_header
-        && String.equal sym caml_int32_ops
-  | Pint64, Cblockheader (hdr, _dbg), Cconst_symbol (sym, _) ->
-      Nativeint.equal hdr boxedint64_header
-        && String.equal sym caml_int64_ops
-  | (Pnativeint | Pint32 | Pint64), _, _ -> false
-
-let rec unbox_int bi arg dbg =
-  match arg with
-    Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int (32, _)], dbg')],
-      _dbg)
-    when bi = Pint32 && size_int = 8 && big_endian
-      && alloc_matches_boxed_int bi ~hdr ~ops ->
-      (* Force sign-extension of low 32 bits *)
-      Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg');
-        Cconst_int (32, dbg)],
-        dbg)
-  | Cop(Calloc, [hdr; ops; contents], _dbg)
-    when bi = Pint32 && size_int = 8 && not big_endian
-      && alloc_matches_boxed_int bi ~hdr ~ops ->
-      (* Force sign-extension of low 32 bits *)
-      Cop(Casr, [Cop(Clsl, [contents; Cconst_int (32, dbg)], dbg);
-        Cconst_int (32, dbg)],
-        dbg)
-  | Cop(Calloc, [hdr; ops; contents], _dbg)
-    when alloc_matches_boxed_int bi ~hdr ~ops ->
-      contents
-  | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body dbg)
-  | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
-      Cifthenelse(cond,
-        ifso_dbg, unbox_int bi e1 ifso_dbg,
-        ifnot_dbg, unbox_int bi e2 ifnot_dbg,
-        dbg)
-  | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2 dbg)
-  | Cswitch(e, tbl, el, dbg') ->
-      Cswitch(e, tbl,
-        Array.map (fun (e, dbg) -> unbox_int bi e dbg, dbg) el,
-        dbg')
-  | Ccatch(rec_flag, handlers, body) ->
-      map_ccatch (fun e -> unbox_int bi e dbg) rec_flag handlers body
-  | Ctrywith(e1, id, e2, handler_dbg) ->
-      Ctrywith(unbox_int bi e1 dbg, id,
-        unbox_int bi e2 handler_dbg, handler_dbg)
-  | _ ->
-      if size_int = 4 && bi = Pint64 then
-        split_int64_for_32bit_target arg dbg
-      else
-        Cop(
-          Cload((if bi = Pint32 then Thirtytwo_signed else Word_int), Mutable),
-          [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
+      box_int_gen dbg bi arg
 
 let make_unsigned_int bi arg dbg =
   if bi = Pint32 && size_int = 8
