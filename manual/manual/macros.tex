@@ -10,12 +10,6 @@
 \def\event{$\bowtie$}
 \def\fromoneto#1#2{$#1 = 1, \ldots, #2$}
 
-% Pour avoir les exposants sur la ligne au-dessus (???)
-
-\ifplaintext
-\fontdimen14\tensy=12pt
-\fi
-
 % Numerotation
 \setcounter{secnumdepth}{2}     % Pour numeroter les \subsection
 \setcounter{tocdepth}{1}        % Pour ne pas mettre les \subsection
@@ -27,14 +21,10 @@
 \def\_{\hbox{\tt\char95}}
 \def_{\ifmmode\else\_\fi}
 
-\ifplaintext
-\def\ttstretch{\tt}
-\else
 \def\ttstretch{\tt\spaceskip=5.77pt plus 1.83pt minus 1.22pt}
 % La fonte cmr10 a normalement des espaces de 5.25pt non extensibles.
 % En 11 pt ca fait 5.77 pt. On lui ajoute la meme flexibilite que
 % cmr10 agrandie a 11 pt.
-\fi
 
 % Pour la traduction "xxxx" -> {\machine{xxxx}} faite par texquote2
 \def\machine#1{\mbox{\ttstretch{#1}}}
@@ -178,9 +168,7 @@
 %%% Augmenter l'espace entre numero de section
 %   et nom de section dans la table des matieres.
 
-\ifplaintext\else
 \def\l@section{\@dottedtocline{1}{1.5em}{2.8em}}  % D'origine: 2.3
-\fi
 
 % Pour alltt
 
