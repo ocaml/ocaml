@@ -156,6 +156,13 @@ module Options = Main_args.Make_bytetop_options (struct
   let anonymous s = file_argument s
 end);;
 
+let () =
+  let extra_paths =
+    match Sys.getenv "OCAMLTOP_INCLUDE_PATH" with
+    | exception Not_found -> []
+    | s -> Misc.split_path_contents s
+  in
+  Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
 
 let main () =
   let ppf = Format.err_formatter in

@@ -248,6 +248,14 @@ module Options = Main_args.Make_opttop_options (struct
   let anonymous = file_argument
 end);;
 
+let () =
+  let extra_paths =
+    match Sys.getenv "OCAMLTOP_INCLUDE_PATH" with
+    | exception Not_found -> []
+    | s -> Misc.split_path_contents s
+  in
+  Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
+
 let main () =
   native_code := true;
   let list = ref Options.list in
