@@ -30,27 +30,36 @@ CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
                                    mlsize_t max)
 {
   mlsize_t wosize;
-  value result;
+  CAMLparam0();
+  CAMLlocal1(result);
 
   wosize = 1 + (size + sizeof(value) - 1) / sizeof(value);
-  /* FIXME: what about custom finalizers on the minor heap? */
-  if (ops->finalize == NULL && wosize <= Max_young_wosize) {
+  if (wosize <= Max_young_wosize) {
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
-#if 0
-    /* XXX KC: TODO */
     if (ops->finalize != NULL || mem != 0) {
       /* Remember that the block needs processing after minor GC. */
-      add_to_custom_table (&caml_custom_table, result, mem, max);
-    }
+      add_to_custom_table (&Caml_state->minor_tables->custom, result, mem, max);
+#if 0 /* XXX TODO KC */
+      /* Keep track of extra resources held by custom block in
+         minor heap. */
+      if (mem != 0) {
+        if (max == 0) max = 1;
+        caml_extra_heap_resources_minor += (double) mem / (double) max;
+        if (caml_extra_heap_resources_minor > 1.0) {
+          caml_request_minor_gc ();
+          caml_gc_dispatch ();
+        }
+      }
 #endif
+    }
   } else {
-    result = caml_alloc_shr(wosize, Custom_tag);
+    result = caml_alloc_shr (wosize, Custom_tag);
     Custom_ops_val(result) = ops;
-    /* !! caml_adjust_gc_speed(mem, max); */
+    /* !!caml_adjust_gc_speed(mem,max); */
     result = caml_check_urgent_gc(result);
   }
-  return result;
+  CAMLreturn(result);
 }
 
 struct custom_operations_list {

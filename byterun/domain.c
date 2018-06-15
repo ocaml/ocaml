@@ -218,7 +218,7 @@ static void create_domain(uintnat initial_minor_heap_size) {
 
     domain_state->young_start = domain_state->young_end =
       domain_state->young_ptr = 0;
-    domain_state->remembered_set = caml_alloc_remembered_set();
+    domain_state->minor_tables = caml_alloc_minor_tables();
 
     d->state.state->shared_heap = caml_init_shared_heap();
     caml_init_major_gc(domain_state);
@@ -870,11 +870,12 @@ static void domain_terminate()
     caml_plat_unlock(&s->lock);
   }
 
+  caml_stat_free(domain_state->final_info);
   caml_teardown_major_gc();
   caml_teardown_shared_heap(domain_state->shared_heap);
   domain_state->shared_heap = 0;
-  caml_free_remembered_set(domain_state->remembered_set);
-  domain_state->remembered_set = 0;
+  caml_free_minor_tables(domain_state->minor_tables);
+  domain_state->minor_tables = 0;
 
   if (Caml_state->critical_section_nesting) {
     Caml_state->critical_section_nesting = 0;

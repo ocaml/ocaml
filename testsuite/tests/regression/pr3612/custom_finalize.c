@@ -32,10 +32,10 @@ static void caml_test_serialize(value v,
   *wsize_64 = 0;
 }
 
-uintnat caml_test_deserialize(void * dst)
+value caml_test_deserialize()
 {
   alloc_counter++;
-  return 0;
+  return Val_unit;
 }
 
 static struct custom_operations caml_test_ops = {
