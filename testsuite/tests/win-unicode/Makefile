@@ -24,5 +24,11 @@ include $(BASEDIR)/makefiles/Makefile.common
 
 GENERATED_SOURCES=symlink_tests.precheck
 
+ifeq ($(CCOMPTYPE),msvc)
+CCOMP=set -o pipefail ; $(CC) $(CFLAGS) $(CPPFLAGS) /Fe$(1) $(addprefix /link ,$(LDFLAGS)) | tail -n +2
+else
+CCOMP=$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $(1)
+endif
+
 %.exe: %.c
-	@$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(if $(filter msvc,$(CCOMPTYPE)),/Fe$*.exe,-o$*.exe) $*.c
+	@$(call CCOMP,$*.exe $*.c)
