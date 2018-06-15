@@ -28,21 +28,13 @@ TEXT_FLAGS = -fix -exec xxdate.exe -text -w 79
 
 manual: files
 	cd texstuff \
-	  && TEXINPUTS=$(TEXINPUTS) latex manual.tex
-
-pdfmanual: files
-	cd texstuff \
-	  && TEXINPUTS=$(TEXINPUTS) pdflatex pdfmanual.tex
+	  && TEXINPUTS=$(TEXINPUTS) pdflatex manual.tex
 
 index:
 	cd texstuff \
 	  && sh ../../tools/fix_index.sh manual.idx \
 	  && makeindex manual.idx \
 	  && makeindex manual.kwd.idx
-	cd texstuff \
-	  && sh ../../tools/fix_index.sh pdfmanual.idx \
-	  && makeindex pdfmanual.idx \
-	  && makeindex pdfmanual.kwd.idx
 
 
 # libref/style.css is used as witness for the generation of the html stdlib
@@ -85,19 +77,17 @@ text: files
 
 
 all:
-	$(MAKE) html text info manual pdfmanual
-	$(MAKE) manual pdfmanual
+	$(MAKE) html text info manual
+	$(MAKE) manual
 	$(MAKE) index
-	$(MAKE) manual pdfmanual
+	$(MAKE) manual
 
 release: all
-	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
-	dvips -o '!gzip > $(RELEASE)refman.ps.gz' texstuff/manual.dvi
 	cp htmlman/manual.html $(RELEASE)refman.html
 	rm -f htmlman/manual.{html,haux,hmanual*,htoc}
 	tar zcf $(RELEASE)refman-html.tar.gz htmlman/*.* htmlman/libref
 	zip -8 $(RELEASE)refman-html.zip htmlman/*.* htmlman/libref/*.*
-	cp texstuff/pdfmanual.pdf $(RELEASE)refman.pdf
+	cp texstuff/manual.pdf $(RELEASE)refman.pdf
 	cp textman/manual.txt $(RELEASE)refman.txt
 	tar cf - infoman/ocaml.info* | gzip > $(RELEASE)refman.info.tar.gz
 
