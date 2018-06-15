@@ -34,7 +34,7 @@ UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
   exit.c getaddrinfo.c getcwd.c gethost.c gethostname.c \
   getnameinfo.c getproto.c \
   getserv.c gmtime.c mmap_ba.c putenv.c rmdir.c \
-  socketaddr.c strofaddr.c time.c unlink.c
+  socketaddr.c strofaddr.c time.c unlink.c fsync.c
 
 UNIX_CAML_FILES = unix.mli unixLabels.mli unixLabels.ml
 

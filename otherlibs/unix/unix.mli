@@ -307,6 +307,9 @@ val openfile : string -> open_flag list -> file_perm -> file_descr
 val close : file_descr -> unit
 (** Close a file descriptor. *)
 
+val fsync : file_descr -> unit
+(** Synchronize a file's in-core state with the storage device. *)
+
 val read : file_descr -> bytes -> int -> int -> int
 (** [read fd buff ofs len] reads [len] bytes from descriptor [fd],
     storing them in byte sequence [buff], starting at position [ofs] in
