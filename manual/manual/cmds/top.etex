@@ -125,6 +125,10 @@ The following command-line options are recognized by the "ocaml" command.
 \begin{unix}
 The following environment variables are also consulted:
 \begin{options}
+\item["OCAMLTOP_INCLUDE_PATH"]  Additional directories to search for
+  compiled object code files (".cmi", ".cmo" and ".cma"). The directory list
+  is searched in left-to-right order.
+
 \item["OCAMLTOP_UTF_8"] When printing string values, non-ascii bytes
 ($ {} > "\0x7E" $) are printed as decimal escape sequence if "OCAMLTOP_UTF_8" is
 set to false. Otherwise, they are printed unescaped.
@@ -424,16 +428,6 @@ compiled object code files (".cmo" and ".cma").
 \item["-o" \var{exec-file}]
 Specify the name of the toplevel file produced by the linker.
 The default is "a.out".
-
-\end{options}
-
-\noindent
-The following environment variables are also consulted:
-
-\begin{options}
-
-\item["OCAMLTOP_INCLUDE_PATH"]  Additional directories to search for
-  compiled object code files (".cmo" and ".cma").
 
 \end{options}
 
