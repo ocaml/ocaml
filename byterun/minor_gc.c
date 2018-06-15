@@ -723,7 +723,6 @@ CAMLexport void caml_minor_collection (void)
   caml_handle_incoming_interrupts ();
   caml_major_collection_slice (0, 0);
   caml_final_do_calls();
-  CAMLassert (Caml_state->young_end == Caml_state->young_ptr);
 
   caml_ev_resume();
 

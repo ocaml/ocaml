@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "caml/callback.h"
+#include "caml/eventlog.h"
 #include "caml/fail.h"
 #include "caml/finalise.h"
 #include "caml/memory.h"
@@ -113,7 +114,9 @@ int caml_final_update_first (struct domain* d)
 {
   struct caml_final_info *f = d->state->final_info;
   if (!f->updated_first) {
+    caml_ev_begin("major_gc/final_update_first");
     generic_final_update (d, &f->first, /* darken_value */ 1);
+    caml_ev_end("major_gc/final_update_first");
     f->updated_first = 1;
     return 1;
   }
@@ -124,7 +127,9 @@ int caml_final_update_last (struct domain* d)
 {
   struct caml_final_info *f = d->state->final_info;
   if (!f->updated_last) {
+    caml_ev_begin("major_gc/final_update_last");
     generic_final_update (d, &f->last, /* darken_value */ 0);
+    caml_ev_end("major_gc/final_update_last");
     f->updated_last = 1;
     return 1;
   }
@@ -280,13 +285,6 @@ void caml_final_empty_young (struct domain* d)
   struct caml_final_info *f = d->state->final_info;
   f->first.old = f->first.young;
   f->last.old = f->last.young;
-}
-
-void caml_final_major_cycle (struct domain* d)
-{
-  struct caml_final_info *f = d->state->final_info;
-  f->updated_first = 0;
-  f->updated_last = 0;
 }
 
 void caml_final_merge_finalisable (struct finalisable *source, struct finalisable *target)

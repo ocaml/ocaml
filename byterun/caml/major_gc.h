@@ -36,11 +36,12 @@ void caml_mark_root(value, value*);
 void caml_empty_mark_stack(void);
 void caml_finish_major_cycle(void);
 
-/* Ephemerons */
+/* Ephemerons and finalisers */
 void caml_ephe_todo_list_emptied(void);
 void caml_add_orphaned_ephe(value todo_head, value todo_tail,
                             value live_head, value live_tail);
 void caml_add_orphaned_finalisers (struct caml_final_info*);
+void caml_final_domain_terminate (caml_domain_state *domain_state);
 void caml_adopt_orphaned_work (void);
 
 struct heap_stats {
