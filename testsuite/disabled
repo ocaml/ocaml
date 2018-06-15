@@ -19,7 +19,7 @@ tests/lib-dynlink-native/main
 tests/weak-ephe-final/weaktest.ml
 
 # Custom finalisers are unimplemented (#194)
-tests/regression/pr3612
+tests/regression/pr3612/
 
 # ocamldebug is broken (#34)
 tool-debugger
