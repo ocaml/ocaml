@@ -282,11 +282,6 @@ let box_int dbg bi arg =
   | _ ->
       box_int_gen dbg bi arg
 
-let make_unsigned_int bi arg dbg =
-  if bi = Pint32 && size_int = 8
-  then Cop(Cand, [arg; Cconst_natint (0xFFFFFFFFn, dbg)], dbg)
-  else arg
-
 (* Boxed numbers *)
 
 let equal_unboxed_integer ui1 ui2 =

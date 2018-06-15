@@ -1030,3 +1030,8 @@ let rec unbox_int bi arg dbg =
                 Mutable),
           [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
 
+let make_unsigned_int bi arg dbg =
+  if bi = Primitive.Pint32 && size_int = 8
+  then Cop(Cand, [arg; Cconst_natint (0xFFFFFFFFn, dbg)], dbg)
+  else arg
+
