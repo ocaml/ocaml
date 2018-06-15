@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-9-40-41-42-44-45"]
+
 module V = Backend_var
 module VP = Backend_var.With_provenance
 open Cmm
@@ -541,15 +543,15 @@ let rec unbox_float dbg cmm =
     map_ccatch (unbox_float dbg) rec_flag handlers body
   | Ctrywith(e1, id, e2, dbg) ->
       Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2, dbg)
-  | c -> Cop(Cload (Double_u, Asttypes.Immutable), [c], dbg)
+  | c -> Cop(Cload (Double_u, Immutable), [c], dbg)
 
 (* Complex *)
 
 let box_complex dbg c_re c_im =
   Cop(Calloc, [alloc_floatarray_header 2 dbg; c_re; c_im], dbg)
 
-let complex_re c dbg = Cop(Cload (Double_u, Asttypes.Immutable), [c], dbg)
-let complex_im c dbg = Cop(Cload (Double_u, Asttypes.Immutable),
+let complex_re c dbg = Cop(Cload (Double_u, Immutable), [c], dbg)
+let complex_im c dbg = Cop(Cload (Double_u, Immutable),
                         [Cop(Cadda, [c; Cconst_int (size_float, dbg)], dbg)],
                         dbg)
 
@@ -606,7 +608,7 @@ let non_profinfo_mask =
 let get_header ptr dbg =
   (* We cannot deem this as [Immutable] due to the presence of [Obj.truncate]
      and [Obj.set_tag]. *)
-  Cop(Cload (Word_int, Asttypes.Mutable),
+  Cop(Cload (Word_int, Mutable),
     [Cop(Cadda, [ptr; Cconst_int(-size_int, dbg)], dbg)], dbg)
 
 let get_header_without_profinfo ptr dbg =
@@ -623,7 +625,7 @@ let get_tag ptr dbg =
     Cop(Cand, [get_header ptr dbg; Cconst_int (255, dbg)], dbg)
   else                                  (* If byte loads are efficient *)
     (* Same comment as [get_header] above *)
-    Cop(Cload (Byte_unsigned, Asttypes.Mutable),
+    Cop(Cload (Byte_unsigned, Mutable),
         [Cop(Cadda, [ptr; Cconst_int(tag_offset, dbg)], dbg)], dbg)
 
 let get_size ptr dbg =
@@ -690,13 +692,13 @@ let array_indexing ?typ log2size ptr ofs dbg =
                     Cconst_int((-1) lsl (log2size - 1), dbg)], dbg)
 
 let addr_array_ref arr ofs dbg =
-  Cop(Cload (Word_val, Asttypes.Mutable),
+  Cop(Cload (Word_val, Mutable),
     [array_indexing log2_size_addr arr ofs dbg], dbg)
 let int_array_ref arr ofs dbg =
-  Cop(Cload (Word_int, Asttypes.Mutable),
+  Cop(Cload (Word_int, Mutable),
     [array_indexing log2_size_addr arr ofs dbg], dbg)
 let unboxed_float_array_ref arr ofs dbg =
-  Cop(Cload (Double_u, Asttypes.Mutable),
+  Cop(Cload (Double_u, Mutable),
     [array_indexing log2_size_float arr ofs dbg], dbg)
 let float_array_ref arr ofs dbg =
   box_float dbg (unboxed_float_array_ref arr ofs dbg)
@@ -731,11 +733,11 @@ let string_length exp dbg =
              dbg),
          Cop(Csubi,
              [Cvar tmp_var;
-               Cop(Cload (Byte_unsigned, Asttypes.Mutable),
+               Cop(Cload (Byte_unsigned, Mutable),
                      [Cop(Cadda, [str; Cvar tmp_var], dbg)], dbg)], dbg)))
 
 let bigstring_length ba dbg =
-  Cop(Cload (Word_int, Asttypes.Mutable), [field_address ba 5 dbg], dbg)
+  Cop(Cload (Word_int, Mutable), [field_address ba 5 dbg], dbg)
 
 (* Message sending *)
 
@@ -747,7 +749,7 @@ let lookup_tag obj tag dbg =
 
 let lookup_label obj lab dbg =
   bind "lab" lab (fun lab ->
-    let table = Cop (Cload (Word_val, Asttypes.Mutable), [obj], dbg) in
+    let table = Cop (Cload (Word_val, Mutable), [obj], dbg) in
     addr_array_ref table lab dbg)
 
 let call_cached_method obj tag cache pos args dbg =
@@ -822,7 +824,6 @@ let bigarray_elt_size : Lambda.bigarray_kind -> int = function
   | Pbigarray_native_int -> size_int
   | Pbigarray_complex32 -> 8
   | Pbigarray_complex64 -> 16
-[@@ocaml.warning "-40"]
 
 (* Produces a pointer to the element of the bigarray [b] on the position
    [args].  [args] is given as a list of tagged int expressions, one per array
@@ -841,7 +842,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
         bind "idx" arg (fun idx ->
           (* Load the untagged int bound for the given dimension *)
           let bound =
-            Cop(Cload (Word_int, Asttypes.Mutable),
+            Cop(Cload (Word_int, Mutable),
                 [field_address b dim_ofs dbg], dbg)
           in
           let idxn = untag_int idx dbg in
@@ -852,7 +853,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
       let rem = ba_indexing (dim_ofs + delta_ofs) delta_ofs argl in
       (* Load the untagged int bound for the given dimension *)
       let bound =
-        Cop(Cload (Word_int, Asttypes.Mutable),
+        Cop(Cload (Word_int, Mutable),
             [field_address b dim_ofs dbg], dbg)
       in
       if unsafe then add_int (mul_int (decr_int rem dbg) bound dbg) arg1 dbg
@@ -866,7 +867,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
             in
             check_ba_bound bound idxn offset)) in
   (* The offset as an expression evaluating to int *)
-  let[@ocaml.warning "-40"] offset =
+  let offset =
     match (layout : Lambda.bigarray_layout) with
       Pbigarray_unknown_layout ->
         assert false
@@ -879,7 +880,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
     bigarray_elt_size elt_kind in
   (* [array_indexing] can simplify the given expressions *)
   array_indexing ~typ:Addr (Misc.log2 elt_size)
-                 (Cop(Cload (Word_int, Asttypes.Mutable),
+                 (Cop(Cload (Word_int, Mutable),
                     [field_address b 1 dbg], dbg)) offset dbg
 
 let bigarray_word_kind : Lambda.bigarray_kind -> memory_chunk = function
@@ -896,7 +897,6 @@ let bigarray_word_kind : Lambda.bigarray_kind -> memory_chunk = function
   | Pbigarray_native_int -> Word_int
   | Pbigarray_complex32 -> Single
   | Pbigarray_complex64 -> Double
-[@@ocaml.warning "-40"]
 
 let bigarray_get unsafe elt_kind layout b args dbg =
   bind "ba" b (fun b ->
@@ -916,7 +916,6 @@ let bigarray_get unsafe elt_kind layout b args dbg =
         Cop(Cload (bigarray_word_kind elt_kind, Mutable),
             [bigarray_indexing unsafe elt_kind layout b args dbg],
             dbg))
-[@@ocaml.warning "-40"]
 
 let bigarray_set unsafe elt_kind layout b args newval dbg =
   bind "ba" b (fun b ->
@@ -937,5 +936,4 @@ let bigarray_set unsafe elt_kind layout b args newval dbg =
         Cop(Cstore (bigarray_word_kind elt_kind, Assignment),
             [bigarray_indexing unsafe elt_kind layout b args dbg; newval],
             dbg))
-[@@ocaml.warning "-40"]
 
