@@ -135,7 +135,7 @@ void caml_ephe_clean (struct domain* d, value v) {
           } else {
             Op_val(v)[i] = child = f;
             if (Is_block (f) && Is_young (f))
-              add_to_ephe_ref_table(&Caml_state->remembered_set->ephe_ref, v, i);
+              add_to_ephe_ref_table(&Caml_state->minor_tables->ephe_ref, v, i);
             goto ephemeron_again;
           }
         }
@@ -175,7 +175,7 @@ static void do_set (struct domain* d, value e, mlsize_t offset, value v)
     value old = Op_val(e)[offset];
     Op_val(e)[offset] = v;
     if (!(Is_block(old) && Is_young(old)))
-      add_to_ephe_ref_table (&d->state->remembered_set->ephe_ref,
+      add_to_ephe_ref_table (&d->state->minor_tables->ephe_ref,
                              e, offset);
   } else {
     Op_val(e)[offset] = v;
