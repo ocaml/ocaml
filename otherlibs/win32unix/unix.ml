@@ -182,7 +182,7 @@ type file_perm = int
 external openfile : string -> open_flag list -> file_perm -> file_descr
            = "unix_open"
 external close : file_descr -> unit = "unix_close"
-external fsync : file_descr -> unit = "fsync"
+external fsync : file_descr -> unit = "unix_fsync"
 external unsafe_read : file_descr -> bytes -> int -> int -> int
                      = "unix_read"
 external unsafe_write : file_descr -> bytes -> int -> int -> int
