@@ -1,5 +1,4 @@
 \chapter{The standard library} \label{c:stdlib}\cutname{stdlib.html}
-\pdfchapterfold{-32}{The standard library}
 
 This chapter describes the functions provided by the OCaml
 standard library. The modules from the standard library are
