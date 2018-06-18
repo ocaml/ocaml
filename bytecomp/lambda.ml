@@ -190,6 +190,8 @@ let equal_boxed_integer x y =
   | (Pnativeint | Pint32 | Pint64), _ ->
     false
 
+let equal_primitive = (=)
+
 let equal_value_kind x y =
   match x, y with
   | Pgenval, Pgenval -> true

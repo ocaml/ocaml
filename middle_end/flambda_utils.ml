@@ -190,7 +190,8 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   | Move_within_set_of_closures _, _ | _, Move_within_set_of_closures _ ->
     false
   | Prim (p1, al1, _), Prim (p2, al2, _) ->
-    Stdlib.(=) p1 p2 && Misc.Stdlib.List.equal Variable.equal al1 al2
+    Lambda.equal_primitive p1 p2
+      && Misc.Stdlib.List.equal Variable.equal al1 al2
   | Prim _, _ | _, Prim _ -> false
   | Expr e1, Expr e2 -> same e1 e2
 
