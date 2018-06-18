@@ -309,8 +309,21 @@ val make_float_alloc : Debuginfo.t -> int -> expression list -> expression
 
 (** Bounds checking *)
 
-(** Generate a [Ccheckbound] term *)
+(** Generate a [Ccheckbound] term
+    [Ccheckbounds] takes two arguments : first the bound to check against,
+    then the index.
+    It results in a bounds error if the index is greater than or equal to
+    the bound. *)
 val make_checkbound : Debuginfo.t -> expression list -> expression
+
+(** [check_bound safety access_size dbg length a2 k] prefixes expression [k]
+    with a check that reading [access_size] bits starting at position [a2]
+    in a string/bytes value of length [length] is within bounds, unless
+    [safety] is [Unsafe]. *)
+val check_bound :
+  Lambda.is_safe -> Clambda_primitives.memory_access_size -> Debuginfo.t ->
+  expression -> expression -> expression ->
+  expression
 
 (** Generic application functions *)
 
@@ -363,4 +376,31 @@ val unbox_int :
 (** Used to prepare 32-bit integers on 64-bit platforms for a lsr operation *)
 val make_unsigned_int :
   Primitive.boxed_integer -> expression -> Debuginfo.t -> expression
+
+val unaligned_load_16 : expression -> expression -> Debuginfo.t -> expression
+val unaligned_set_16 :
+  expression -> expression -> expression -> Debuginfo.t -> expression
+val unaligned_load_32 : expression -> expression -> Debuginfo.t -> expression
+val unaligned_set_32 :
+  expression -> expression -> expression -> Debuginfo.t -> expression
+val unaligned_load_64 : expression -> expression -> Debuginfo.t -> expression
+val unaligned_set_64 :
+  expression -> expression -> expression -> Debuginfo.t -> expression
+
+(** Raw memory accesses *)
+
+(** [unaligned_set size ptr idx newval dbg] *)
+val unaligned_set :
+  Clambda_primitives.memory_access_size ->
+  expression -> expression -> expression -> Debuginfo.t -> expression
+
+(** [unaligned_load size ptr idx dbg] *)
+val unaligned_load :
+  Clambda_primitives.memory_access_size ->
+  expression -> expression -> Debuginfo.t -> expression
+
+(** [box_sized size dbg exp] *)
+val box_sized :
+  Clambda_primitives.memory_access_size ->
+  Debuginfo.t -> expression -> expression
 

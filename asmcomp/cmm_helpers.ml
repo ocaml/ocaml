@@ -1035,3 +1035,249 @@ let make_unsigned_int bi arg dbg =
   then Cop(Cand, [arg; Cconst_natint (0xFFFFFFFFn, dbg)], dbg)
   else arg
 
+let unaligned_load_16 ptr idx dbg =
+  if Arch.allow_unaligned_access
+  then Cop(Cload (Sixteen_unsigned, Mutable), [add_int ptr idx dbg], dbg)
+  else
+    let cconst_int i = Cconst_int (i, dbg) in
+    let v1 = Cop(Cload (Byte_unsigned, Mutable), [add_int ptr idx dbg], dbg) in
+    let v2 = Cop(Cload (Byte_unsigned, Mutable),
+                 [add_int (add_int ptr idx dbg) (cconst_int 1) dbg], dbg) in
+    let b1, b2 = if Arch.big_endian then v1, v2 else v2, v1 in
+    Cop(Cor, [lsl_int b1 (cconst_int 8) dbg; b2], dbg)
+
+let unaligned_set_16 ptr idx newval dbg =
+  if Arch.allow_unaligned_access
+  then
+    Cop(Cstore (Sixteen_unsigned, Assignment),
+      [add_int ptr idx dbg; newval], dbg)
+  else
+    let cconst_int i = Cconst_int (i, dbg) in
+    let v1 =
+      Cop(Cand, [Cop(Clsr, [newval; cconst_int 8], dbg);
+        cconst_int 0xFF], dbg)
+    in
+    let v2 = Cop(Cand, [newval; cconst_int 0xFF], dbg) in
+    let b1, b2 = if Arch.big_endian then v1, v2 else v2, v1 in
+    Csequence(
+        Cop(Cstore (Byte_unsigned, Assignment), [add_int ptr idx dbg; b1], dbg),
+        Cop(Cstore (Byte_unsigned, Assignment),
+            [add_int (add_int ptr idx dbg) (cconst_int 1) dbg; b2], dbg))
+
+let unaligned_load_32 ptr idx dbg =
+  if Arch.allow_unaligned_access
+  then Cop(Cload (Thirtytwo_unsigned, Mutable), [add_int ptr idx dbg], dbg)
+  else
+    let cconst_int i = Cconst_int (i, dbg) in
+    let v1 = Cop(Cload (Byte_unsigned, Mutable), [add_int ptr idx dbg], dbg) in
+    let v2 = Cop(Cload (Byte_unsigned, Mutable),
+                 [add_int (add_int ptr idx dbg) (cconst_int 1) dbg], dbg)
+    in
+    let v3 = Cop(Cload (Byte_unsigned, Mutable),
+                 [add_int (add_int ptr idx dbg) (cconst_int 2) dbg], dbg)
+    in
+    let v4 = Cop(Cload (Byte_unsigned, Mutable),
+                 [add_int (add_int ptr idx dbg) (cconst_int 3) dbg], dbg)
+    in
+    let b1, b2, b3, b4 =
+      if Arch.big_endian
+      then v1, v2, v3, v4
+      else v4, v3, v2, v1 in
+    Cop(Cor,
+      [Cop(Cor, [lsl_int b1 (cconst_int 24) dbg;
+         lsl_int b2 (cconst_int 16) dbg], dbg);
+       Cop(Cor, [lsl_int b3 (cconst_int 8) dbg; b4], dbg)],
+      dbg)
+
+let unaligned_set_32 ptr idx newval dbg =
+  if Arch.allow_unaligned_access
+  then
+    Cop(Cstore (Thirtytwo_unsigned, Assignment), [add_int ptr idx dbg; newval],
+      dbg)
+  else
+    let cconst_int i = Cconst_int (i, dbg) in
+    let v1 =
+      Cop(Cand, [Cop(Clsr, [newval; cconst_int 24], dbg); cconst_int 0xFF], dbg)
+    in
+    let v2 =
+      Cop(Cand, [Cop(Clsr, [newval; cconst_int 16], dbg); cconst_int 0xFF], dbg)
+    in
+    let v3 =
+      Cop(Cand, [Cop(Clsr, [newval; cconst_int 8], dbg); cconst_int 0xFF], dbg)
+    in
+    let v4 = Cop(Cand, [newval; cconst_int 0xFF], dbg) in
+    let b1, b2, b3, b4 =
+      if Arch.big_endian
+      then v1, v2, v3, v4
+      else v4, v3, v2, v1 in
+    Csequence(
+        Csequence(
+            Cop(Cstore (Byte_unsigned, Assignment),
+                [add_int ptr idx dbg; b1], dbg),
+            Cop(Cstore (Byte_unsigned, Assignment),
+                [add_int (add_int ptr idx dbg) (cconst_int 1) dbg; b2],
+                dbg)),
+        Csequence(
+            Cop(Cstore (Byte_unsigned, Assignment),
+                [add_int (add_int ptr idx dbg) (cconst_int 2) dbg; b3],
+                dbg),
+            Cop(Cstore (Byte_unsigned, Assignment),
+                [add_int (add_int ptr idx dbg) (cconst_int 3) dbg; b4],
+                dbg)))
+
+let unaligned_load_64 ptr idx dbg =
+  assert(size_int = 8);
+  if Arch.allow_unaligned_access
+  then Cop(Cload (Word_int, Mutable), [add_int ptr idx dbg], dbg)
+  else
+    let cconst_int i = Cconst_int (i, dbg) in
+    let v1 = Cop(Cload (Byte_unsigned, Mutable), [add_int ptr idx dbg], dbg) in
+    let v2 = Cop(Cload (Byte_unsigned, Mutable),
+                 [add_int (add_int ptr idx dbg) (cconst_int 1) dbg], dbg) in
+    let v3 = Cop(Cload (Byte_unsigned, Mutable),
+                 [add_int (add_int ptr idx dbg) (cconst_int 2) dbg], dbg) in
+    let v4 = Cop(Cload (Byte_unsigned, Mutable),
+                 [add_int (add_int ptr idx dbg) (cconst_int 3) dbg], dbg) in
+    let v5 = Cop(Cload (Byte_unsigned, Mutable),
+                 [add_int (add_int ptr idx dbg) (cconst_int 4) dbg], dbg) in
+    let v6 = Cop(Cload (Byte_unsigned, Mutable),
+                 [add_int (add_int ptr idx dbg) (cconst_int 5) dbg], dbg) in
+    let v7 = Cop(Cload (Byte_unsigned, Mutable),
+                 [add_int (add_int ptr idx dbg) (cconst_int 6) dbg], dbg) in
+    let v8 = Cop(Cload (Byte_unsigned, Mutable),
+                 [add_int (add_int ptr idx dbg) (cconst_int 7) dbg], dbg) in
+    let b1, b2, b3, b4, b5, b6, b7, b8 =
+      if Arch.big_endian
+      then v1, v2, v3, v4, v5, v6, v7, v8
+      else v8, v7, v6, v5, v4, v3, v2, v1 in
+    Cop(Cor,
+        [Cop(Cor,
+             [Cop(Cor, [lsl_int b1 (cconst_int (8*7)) dbg;
+                        lsl_int b2 (cconst_int (8*6)) dbg], dbg);
+              Cop(Cor, [lsl_int b3 (cconst_int (8*5)) dbg;
+                        lsl_int b4 (cconst_int (8*4)) dbg], dbg)],
+             dbg);
+         Cop(Cor,
+             [Cop(Cor, [lsl_int b5 (cconst_int (8*3)) dbg;
+                        lsl_int b6 (cconst_int (8*2)) dbg], dbg);
+              Cop(Cor, [lsl_int b7 (cconst_int 8) dbg;
+                        b8], dbg)],
+             dbg)], dbg)
+
+let unaligned_set_64 ptr idx newval dbg =
+  assert(size_int = 8);
+  if Arch.allow_unaligned_access
+  then Cop(Cstore (Word_int, Assignment), [add_int ptr idx dbg; newval], dbg)
+  else
+    let cconst_int i = Cconst_int (i, dbg) in
+    let v1 =
+      Cop(Cand, [Cop(Clsr, [newval; cconst_int (8*7)], dbg); cconst_int 0xFF],
+        dbg)
+    in
+    let v2 =
+      Cop(Cand, [Cop(Clsr, [newval; cconst_int (8*6)], dbg); cconst_int 0xFF],
+        dbg)
+    in
+    let v3 =
+      Cop(Cand, [Cop(Clsr, [newval; cconst_int (8*5)], dbg); cconst_int 0xFF],
+        dbg)
+    in
+    let v4 =
+      Cop(Cand, [Cop(Clsr, [newval; cconst_int (8*4)], dbg); cconst_int 0xFF],
+        dbg)
+    in
+    let v5 =
+      Cop(Cand, [Cop(Clsr, [newval; cconst_int (8*3)], dbg); cconst_int 0xFF],
+        dbg)
+    in
+    let v6 =
+      Cop(Cand, [Cop(Clsr, [newval; cconst_int (8*2)], dbg); cconst_int 0xFF],
+        dbg)
+    in
+    let v7 =
+      Cop(Cand, [Cop(Clsr, [newval; cconst_int 8], dbg); cconst_int 0xFF],
+        dbg)
+    in
+    let v8 = Cop(Cand, [newval; cconst_int 0xFF], dbg) in
+    let b1, b2, b3, b4, b5, b6, b7, b8 =
+      if Arch.big_endian
+      then v1, v2, v3, v4, v5, v6, v7, v8
+      else v8, v7, v6, v5, v4, v3, v2, v1 in
+    Csequence(
+        Csequence(
+            Csequence(
+                Cop(Cstore (Byte_unsigned, Assignment),
+                    [add_int ptr idx dbg; b1],
+                    dbg),
+                Cop(Cstore (Byte_unsigned, Assignment),
+                    [add_int (add_int ptr idx dbg) (cconst_int 1) dbg; b2],
+                    dbg)),
+            Csequence(
+                Cop(Cstore (Byte_unsigned, Assignment),
+                    [add_int (add_int ptr idx dbg) (cconst_int 2) dbg; b3],
+                    dbg),
+                Cop(Cstore (Byte_unsigned, Assignment),
+                    [add_int (add_int ptr idx dbg) (cconst_int 3) dbg; b4],
+                    dbg))),
+        Csequence(
+            Csequence(
+                Cop(Cstore (Byte_unsigned, Assignment),
+                    [add_int (add_int ptr idx dbg) (cconst_int 4) dbg; b5],
+                    dbg),
+                Cop(Cstore (Byte_unsigned, Assignment),
+                    [add_int (add_int ptr idx dbg) (cconst_int 5) dbg; b6],
+                    dbg)),
+            Csequence(
+                Cop(Cstore (Byte_unsigned, Assignment),
+                    [add_int (add_int ptr idx dbg) (cconst_int 6) dbg; b7],
+                    dbg),
+                Cop(Cstore (Byte_unsigned, Assignment),
+                    [add_int (add_int ptr idx dbg) (cconst_int 7) dbg; b8],
+                    dbg))))
+
+let max_or_zero a dbg =
+  bind "size" a (fun a ->
+    (* equivalent to
+       Cifthenelse(Cop(Ccmpi Cle, [a; cconst_int 0]), cconst_int 0, a)
+
+       if a is positive, sign is 0 hence sign_negation is full of 1
+                         so sign_negation&a = a
+       if a is negative, sign is full of 1 hence sign_negation is 0
+                         so sign_negation&a = 0 *)
+    let sign = Cop(Casr, [a; Cconst_int (size_int * 8 - 1, dbg)], dbg) in
+    let sign_negation = Cop(Cxor, [sign; Cconst_int (-1, dbg)], dbg) in
+    Cop(Cand, [sign_negation; a], dbg))
+
+let check_bound safety access_size dbg length a2 k =
+  match (safety : Lambda.is_safe) with
+  | Unsafe -> k
+  | Safe ->
+      let offset =
+        match (access_size : Clambda_primitives.memory_access_size) with
+        | Sixteen -> 1
+        | Thirty_two -> 3
+        | Sixty_four -> 7
+      in
+      let a1 =
+        sub_int length (Cconst_int (offset, dbg)) dbg
+      in
+      Csequence(make_checkbound dbg [max_or_zero a1 dbg; a2], k)
+
+let unaligned_set size ptr idx newval dbg =
+  match (size : Clambda_primitives.memory_access_size) with
+  | Sixteen -> unaligned_set_16 ptr idx newval dbg
+  | Thirty_two -> unaligned_set_32 ptr idx newval dbg
+  | Sixty_four -> unaligned_set_64 ptr idx newval dbg
+
+let unaligned_load size ptr idx dbg =
+  match (size : Clambda_primitives.memory_access_size) with
+  | Sixteen -> unaligned_load_16 ptr idx dbg
+  | Thirty_two -> unaligned_load_32 ptr idx dbg
+  | Sixty_four -> unaligned_load_64 ptr idx dbg
+
+let box_sized size dbg exp =
+  match (size : Clambda_primitives.memory_access_size) with
+  | Sixteen -> tag_int exp dbg
+  | Thirty_two -> box_int_gen dbg Pint32 exp
+  | Sixty_four -> box_int_gen dbg Pint64 exp
+
