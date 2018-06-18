@@ -404,3 +404,7 @@ val box_sized :
   Clambda_primitives.memory_access_size ->
   Debuginfo.t -> expression -> expression
 
+(** Primitives *)
+
+val simplif_primitive :
+  Clambda_primitives.primitive -> Clambda_primitives.primitive

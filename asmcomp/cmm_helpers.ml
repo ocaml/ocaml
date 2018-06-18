@@ -1281,3 +1281,81 @@ let box_sized size dbg exp =
   | Thirty_two -> box_int_gen dbg Pint32 exp
   | Sixty_four -> box_int_gen dbg Pint64 exp
 
+(* Simplification of some primitives into C calls *)
+
+let default_prim name =
+  Primitive.simple ~name ~arity:0(*ignored*) ~alloc:true
+
+
+let int64_native_prim name arity ~alloc =
+  let u64 = Primitive.Unboxed_integer Primitive.Pint64 in
+  let rec make_args = function 0 -> [] | n -> u64 :: make_args (n - 1) in
+  Primitive.make ~name ~native_name:(name ^ "_native")
+    ~alloc
+    ~native_repr_args:(make_args arity)
+    ~native_repr_res:u64
+
+let simplif_primitive_32bits :
+  Clambda_primitives.primitive -> Clambda_primitives.primitive = function
+    Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
+  | Pintofbint Pint64 -> Pccall (default_prim "caml_int64_to_int")
+  | Pcvtbint(Pint32, Pint64) -> Pccall (default_prim "caml_int64_of_int32")
+  | Pcvtbint(Pint64, Pint32) -> Pccall (default_prim "caml_int64_to_int32")
+  | Pcvtbint(Pnativeint, Pint64) ->
+      Pccall (default_prim "caml_int64_of_nativeint")
+  | Pcvtbint(Pint64, Pnativeint) ->
+      Pccall (default_prim "caml_int64_to_nativeint")
+  | Pnegbint Pint64 -> Pccall (int64_native_prim "caml_int64_neg" 1
+                                 ~alloc:false)
+  | Paddbint Pint64 -> Pccall (int64_native_prim "caml_int64_add" 2
+                                 ~alloc:false)
+  | Psubbint Pint64 -> Pccall (int64_native_prim "caml_int64_sub" 2
+                                 ~alloc:false)
+  | Pmulbint Pint64 -> Pccall (int64_native_prim "caml_int64_mul" 2
+                                 ~alloc:false)
+  | Pdivbint {size=Pint64} -> Pccall (int64_native_prim "caml_int64_div" 2
+                                        ~alloc:true)
+  | Pmodbint {size=Pint64} -> Pccall (int64_native_prim "caml_int64_mod" 2
+                                        ~alloc:true)
+  | Pandbint Pint64 -> Pccall (int64_native_prim "caml_int64_and" 2
+                                 ~alloc:false)
+  | Porbint Pint64 ->  Pccall (int64_native_prim "caml_int64_or" 2
+                                 ~alloc:false)
+  | Pxorbint Pint64 -> Pccall (int64_native_prim "caml_int64_xor" 2
+                                 ~alloc:false)
+  | Plslbint Pint64 -> Pccall (default_prim "caml_int64_shift_left")
+  | Plsrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right_unsigned")
+  | Pasrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right")
+  | Pbintcomp(Pint64, Lambda.Ceq) -> Pccall (default_prim "caml_equal")
+  | Pbintcomp(Pint64, Lambda.Cne) -> Pccall (default_prim "caml_notequal")
+  | Pbintcomp(Pint64, Lambda.Clt) -> Pccall (default_prim "caml_lessthan")
+  | Pbintcomp(Pint64, Lambda.Cgt) -> Pccall (default_prim "caml_greaterthan")
+  | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
+  | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "caml_greaterequal")
+  | Pbigarrayref(_unsafe, n, Pbigarray_int64, _layout) ->
+      Pccall (default_prim ("caml_ba_get_" ^ Int.to_string n))
+  | Pbigarrayset(_unsafe, n, Pbigarray_int64, _layout) ->
+      Pccall (default_prim ("caml_ba_set_" ^ Int.to_string n))
+  | Pstring_load(Sixty_four, _) -> Pccall (default_prim "caml_string_get64")
+  | Pbytes_load(Sixty_four, _) -> Pccall (default_prim "caml_bytes_get64")
+  | Pbytes_set(Sixty_four, _) -> Pccall (default_prim "caml_bytes_set64")
+  | Pbigstring_load(Sixty_four,_) -> Pccall (default_prim "caml_ba_uint8_get64")
+  | Pbigstring_set(Sixty_four,_) -> Pccall (default_prim "caml_ba_uint8_set64")
+  | Pbbswap Pint64 -> Pccall (default_prim "caml_int64_bswap")
+  | p -> p
+
+let simplif_primitive p : Clambda_primitives.primitive =
+  match (p : Clambda_primitives.primitive) with
+  | Pduprecord _ ->
+      Pccall (default_prim "caml_obj_dup")
+  | Pbigarrayref(_unsafe, n, Pbigarray_unknown, _layout) ->
+      Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
+  | Pbigarrayset(_unsafe, n, Pbigarray_unknown, _layout) ->
+      Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
+  | Pbigarrayref(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
+      Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
+  | Pbigarrayset(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
+      Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
+  | p ->
+      if size_int = 8 then p else simplif_primitive_32bits p
+
