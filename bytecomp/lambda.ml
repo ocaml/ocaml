@@ -190,7 +190,11 @@ let equal_boxed_integer x y =
   | (Pnativeint | Pint32 | Pint64), _ ->
     false
 
-let equal_primitive = (=)
+let equal_primitive =
+  (* Should be implemented like [equal_value_kind] of [equal_boxed_integer],
+     i.e. by matching over the various constructors but the type has more
+     than 100 constructors... *)
+  (=)
 
 let equal_value_kind x y =
   match x, y with
