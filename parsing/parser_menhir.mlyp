@@ -532,7 +532,6 @@ let mk_directive ~loc name arg =
 #define _pat_of_label(s, p) (pat_of_label ~loc:$loc s $locof(p))
 #define _exp_of_label(s, p) (exp_of_label ~loc:$loc s $locof(p))
 
-#define _unclosed(s1, p1, s2, p2) (unclosed s1 ($locof(p1)) s2 ($locof(p2)))
 #define _expecting(p, s) (expecting $locof(p) s)
 #define _not_expecting(p, s) (not_expecting $locof(p) s)
 
@@ -770,6 +769,8 @@ The precedences must be listed from low to high.
       mkrhs $1 (make_loc $startpos $endpos) }
 ;
 
+%inline only_loc(symb): symb { make_loc $startpos $endpos }
+
 /* Entry points */
 
 implementation:
@@ -849,8 +850,8 @@ module_expr:
       { _mkmod(Pmod_ident $1) }
   | STRUCT attributes structure END
       { _mkmod ~attrs:$2 (Pmod_structure($3)) }
-  | STRUCT attributes structure error
-      { _unclosed("struct", 1, "end", 4) }
+  | only_loc(STRUCT) attributes structure only_loc(error)
+      { unclosed "struct" $1 "end" $4 }
   | FUNCTOR attributes functor_args MINUSGREATER module_expr
       { let loc = make_loc $symbolstartpos $endpos in
         let modexp =
@@ -873,12 +874,12 @@ module_expr:
 paren_module_expr:
     LPAREN module_expr COLON module_type RPAREN
       { _mkmod(Pmod_constraint($2, $4)) }
-  | LPAREN module_expr COLON module_type error
-      { _unclosed("(", 1, ")", 5) }
+  | only_loc(LPAREN) module_expr COLON module_type only_loc(error)
+      { unclosed "(" $1 ")" $5 }
   | LPAREN module_expr RPAREN
       { $2 }
-  | LPAREN module_expr error
-      { _unclosed("(", 1, ")", 3) }
+  | only_loc(LPAREN) module_expr only_loc(error)
+      { unclosed "(" $1 ")" $3 }
   | LPAREN VAL attributes expr RPAREN
       { _mkmod ~attrs:$3 (Pmod_unpack $4)}
   | LPAREN VAL attributes expr COLON package_type RPAREN
@@ -897,12 +898,12 @@ paren_module_expr:
         _mkmod ~attrs:$3
           (Pmod_unpack(
                ghexp ~loc:constr_loc (Pexp_coerce($4, None, $6)))) }
-  | LPAREN VAL attributes expr COLON error
-      { _unclosed("(", 1, ")", 6) }
-  | LPAREN VAL attributes expr COLONGREATER error
-      { _unclosed("(", 1, ")", 6) }
-  | LPAREN VAL attributes expr error
-      { _unclosed("(", 1, ")", 5) }
+  | only_loc(LPAREN) VAL attributes expr COLON only_loc(error)
+      { unclosed "(" $1 ")" $6 }
+  | only_loc(LPAREN) VAL attributes expr COLONGREATER only_loc(error)
+      { unclosed "(" $1 ")" $6 }
+  | only_loc(LPAREN) VAL attributes expr only_loc(error)
+      { unclosed "(" $1 ")" $5 }
 ;
 
 structure: extra_str(structure_nodoc) { $1 }
@@ -1002,8 +1003,8 @@ module_type:
       { _mkmty(Pmty_ident $1) }
   | SIG attributes signature END
       { _mkmty ~attrs:$2 (Pmty_signature ($3)) }
-  | SIG attributes signature error
-      { _unclosed("sig", 1, "end", 4) }
+  | only_loc(SIG) attributes signature only_loc(error)
+      { unclosed "sig" $1 "end" $4 }
   | FUNCTOR attributes functor_args MINUSGREATER module_type
       %prec below_WITH
       { let loc = make_loc $symbolstartpos $endpos in
@@ -1023,8 +1024,8 @@ module_type:
       { _mkmty (Pmty_alias $3) } */
   | LPAREN module_type RPAREN
       { $2 }
-  | LPAREN module_type error
-      { _unclosed("(", 1, ")", 3) }
+  | only_loc(LPAREN) module_type only_loc(error)
+      { unclosed "(" $1 ")" $3 }
   | extension
       { _mkmty(Pmty_extension $1) }
   | module_type attribute
@@ -1203,16 +1204,16 @@ class_simple_expr:
       { _mkclass(Pcl_constr($1, [])) }
   | OBJECT attributes class_structure END
       { _mkclass ~attrs:$2 (Pcl_structure $3) }
-  | OBJECT attributes class_structure error
-      { _unclosed("object", 1, "end", 4) }
+  | only_loc(OBJECT) attributes class_structure only_loc(error)
+      { unclosed "object" $1 "end" $4 }
   | LPAREN class_expr COLON class_type RPAREN
       { _mkclass(Pcl_constraint($2, $4)) }
-  | LPAREN class_expr COLON class_type error
-      { _unclosed("(", 1, ")", 5) }
+  | only_loc(LPAREN) class_expr COLON class_type only_loc(error)
+      { unclosed "(" $1 ")" $5 }
   | LPAREN class_expr RPAREN
       { $2 }
-  | LPAREN class_expr error
-      { _unclosed("(", 1, ")", 3) }
+  | only_loc(LPAREN) class_expr only_loc(error)
+      { unclosed "(" $1 ")" $3 }
 ;
 class_structure:
   |  class_self_pattern extra_cstr(class_fields)
@@ -1322,8 +1323,8 @@ class_signature:
       { _mkcty(Pcty_constr ($1, [])) }
   | OBJECT attributes class_sig_body END
       { _mkcty ~attrs:$2 (Pcty_signature $3) }
-  | OBJECT attributes class_sig_body error
-      { _unclosed("object", 1, "end", 4) }
+  | only_loc(OBJECT) attributes class_sig_body only_loc(error)
+      { unclosed "object" $1 "end" $4 }
   | class_signature attribute
       { Cty.attr $1 $2 }
   | extension
@@ -1598,8 +1599,8 @@ expr:
       { _mkexp_attrs (Pexp_lazy $3) $2 }
   | OBJECT ext_attributes class_structure END
       { _mkexp_attrs (Pexp_object $3) $2 }
-  | OBJECT ext_attributes class_structure error
-      { _unclosed("object", 1, "end", 4) }
+  | only_loc(OBJECT) ext_attributes class_structure only_loc(error)
+      { unclosed "object" $1 "end" $4 }
   | expr attribute
       { Exp.attr $1 $2 }
   | UNDERSCORE
@@ -1617,15 +1618,16 @@ simple_expr:
   | LPAREN seq_expr RPAREN
       { let loc = make_loc $symbolstartpos $endpos in
         reloc_exp ~loc $2 }
-  | LPAREN seq_expr error
-      { _unclosed("(", 1, ")", 3) }
+  | only_loc(LPAREN) seq_expr only_loc(error)
+      { unclosed "(" $1 ")" $3 }
   | BEGIN ext_attributes seq_expr END
       { let loc = make_loc $symbolstartpos $endpos in
         wrap_exp_attrs ~loc (reloc_exp ~loc $3) $2 (* check location *) }
   | BEGIN ext_attributes END
-      { mkexp_attrs ~loc:$loc (Pexp_construct (mkloc (Lident "()") $loc, None)) $2 }
-  | BEGIN ext_attributes seq_expr error
-      { _unclosed("begin", 1, "end", 4) }
+      { mkexp_attrs ~loc:$loc
+          (Pexp_construct (mkloc (Lident "()") $loc, None)) $2 }
+  | only_loc(BEGIN) ext_attributes seq_expr only_loc(error)
+      { unclosed "begin" $1 "end" $4 }
   | LPAREN seq_expr type_constraint RPAREN
       { _mkexp_constraint $2 $3 }
   | simple_expr DOT mkrhs(label_longident)
@@ -1636,79 +1638,83 @@ simple_expr:
       { _mkexp(Pexp_open(Fresh, $1,
                         _mkexp(Pexp_construct(_mkrhs2((Lident "()"), 3, 4),
                                               None)))) }
-  | mod_longident DOT LPAREN seq_expr error
-      { _unclosed("(", 3, ")", 5) }
+  | mod_longident DOT only_loc(LPAREN) seq_expr only_loc(error)
+      { unclosed "(" $3 ")" $5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
       { _mkexp(Pexp_apply(_ghexp(Pexp_ident(_array_function "Array" "get")),
                          [Nolabel,$1; Nolabel,$4])) }
-  | simple_expr DOT LPAREN seq_expr error
-      { _unclosed("(", 3, ")", 5) }
+  | simple_expr DOT only_loc(LPAREN) seq_expr only_loc(error)
+      { unclosed "(" $3 ")" $5 }
   | simple_expr DOT LBRACKET seq_expr RBRACKET
       { _mkexp(Pexp_apply(_ghexp(Pexp_ident(_array_function "String" "get")),
                          [Nolabel,$1; Nolabel,$4])) }
-  | simple_expr DOT LBRACKET seq_expr error
-      { _unclosed("[", 3, "]", 5) }
+  | simple_expr DOT only_loc(LBRACKET) seq_expr only_loc(error)
+      { unclosed "[" $3 "]" $5 }
   | simple_expr DOTOP LBRACKET expr RBRACKET
       { let id = _mkexp @@ Pexp_ident(_ghloc @@ Lident ("." ^ $2 ^ "[]")) in
         _mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
-  | simple_expr DOTOP LBRACKET expr error
-      { _unclosed("[", 3, "]", 5) }
+  | simple_expr DOTOP only_loc(LBRACKET) expr only_loc(error)
+      { unclosed "[" $3 "]" $5 }
   | simple_expr DOTOP LPAREN expr RPAREN
       { let id = _mkexp @@ Pexp_ident(_ghloc @@ Lident ("." ^ $2 ^ "()")) in
         _mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
-  | simple_expr DOTOP LPAREN expr error
-      { _unclosed("(", 3, ")", 5) }
+  | simple_expr DOTOP only_loc(LPAREN) expr only_loc(error)
+      { unclosed "(" $3 ")" $5 }
   | simple_expr DOTOP LBRACE expr RBRACE
       { let id = _mkexp @@ Pexp_ident(_ghloc @@ Lident ("." ^ $2 ^ "{}")) in
         _mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
-  | simple_expr DOTOP LBRACE expr error
-      { _unclosed("{", 3, "}", 5) }
+  | simple_expr DOTOP only_loc(LBRACE) expr only_loc(error)
+      { unclosed "{" $3 "}" $5 }
   | simple_expr DOT mod_longident DOTOP LBRACKET expr RBRACKET
       { let id = _mkexp @@ Pexp_ident(_ghloc @@ Ldot($3, "." ^ $4 ^ "[]")) in
         _mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $6]) }
-  | simple_expr DOT mod_longident DOTOP LBRACKET expr error
-      { _unclosed("[", 5, "]", 7) }
+  | simple_expr DOT
+    mod_longident DOTOP only_loc(LBRACKET) expr only_loc(error)
+      { unclosed "[" $5 "]" $7 }
   | simple_expr DOT mod_longident DOTOP LPAREN expr RPAREN
       { let id = _mkexp @@ Pexp_ident(_ghloc @@ Ldot($3, "." ^ $4 ^ "()")) in
         _mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $6]) }
-  | simple_expr DOT mod_longident DOTOP LPAREN expr error
-      { _unclosed("(", 5, ")", 7) }
+  | simple_expr DOT
+    mod_longident DOTOP only_loc(LPAREN) expr only_loc(error)
+      { unclosed "(" $5 ")" $7 }
   | simple_expr DOT mod_longident DOTOP LBRACE expr RBRACE
       { let id = _mkexp @@ Pexp_ident(_ghloc @@ Ldot($3, "." ^ $4 ^ "{}")) in
         _mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $6]) }
-  | simple_expr DOT mod_longident DOTOP LBRACE expr error
-      { _unclosed("{", 5, "}", 7) }
+  | simple_expr DOT
+    mod_longident DOTOP only_loc(LBRACE) expr only_loc(error)
+      { unclosed "{" $5 "}" $7 }
   | simple_expr DOT LBRACE expr RBRACE
       { _bigarray_get $1 $4 }
-  | simple_expr DOT LBRACE expr_comma_list error
-      { _unclosed("{", 3, "}", 5) }
+  | simple_expr DOT only_loc(LBRACE) expr_comma_list only_loc(error)
+      { unclosed "{" $3 "}" $5 }
   | LBRACE record_expr RBRACE
       { let (exten, fields) = $2 in _mkexp (Pexp_record(fields, exten)) }
-  | LBRACE record_expr error
-      { _unclosed("{", 1, "}", 3) }
+  | only_loc(LBRACE) record_expr only_loc(error)
+      { unclosed "{" $1 "}" $3 }
   | mkrhs(mod_longident) DOT LBRACE record_expr RBRACE
       { let (exten, fields) = $4 in
         let rec_exp = _mkexp(Pexp_record(fields, exten)) in
         _mkexp(Pexp_open(Fresh, $1, rec_exp)) }
-  | mod_longident DOT LBRACE record_expr error
-      { _unclosed("{", 3, "}", 5) }
+  | mod_longident DOT only_loc(LBRACE) record_expr only_loc(error)
+      { unclosed "{" $3 "}" $5 }
   | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { _mkexp (Pexp_array(List.rev $2)) }
-  | LBRACKETBAR expr_semi_list opt_semi error
-      { _unclosed("[|", 1, "|]", 4) }
+  | only_loc(LBRACKETBAR) expr_semi_list opt_semi only_loc(error)
+      { unclosed "[|" $1 "|]" $4 }
   | LBRACKETBAR BARRBRACKET
       { _mkexp (Pexp_array []) }
   | mkrhs(mod_longident) DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { _mkexp(Pexp_open(Fresh, $1, _mkexp(Pexp_array(List.rev $4)))) }
   | mkrhs(mod_longident) DOT LBRACKETBAR BARRBRACKET
       { _mkexp(Pexp_open(Fresh, $1, _mkexp(Pexp_array []))) }
-  | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi error
-      { _unclosed("[|", 3, "|]", 6) }
+  | mod_longident DOT
+    only_loc(LBRACKETBAR) expr_semi_list opt_semi only_loc(error)
+      { unclosed "[|" $3 "|]" $6 }
   | LBRACKET expr_semi_list opt_semi RBRACKET
       { let loc = make_loc $symbolstartpos $endpos in
         reloc_exp ~loc (mktailexp (_rhs_loc(4)) (List.rev $2)) }
-  | LBRACKET expr_semi_list opt_semi error
-      { _unclosed("[", 1, "]", 4) }
+  | only_loc(LBRACKET) expr_semi_list opt_semi only_loc(error)
+      { unclosed "[" $1 "]" $4 }
   | mkrhs(mod_longident) DOT LBRACKET expr_semi_list opt_semi RBRACKET
       { let loc = make_loc $symbolstartpos $endpos in
         let list_exp = reloc_exp ~loc (mktailexp (_rhs_loc(6)) (List.rev $4)) in
@@ -1717,8 +1723,9 @@ simple_expr:
       { _mkexp(Pexp_open(Fresh, $1,
                         _mkexp(Pexp_construct(_mkrhs2((Lident "[]"), 3, 4),
                                               None)))) }
-  | mod_longident DOT LBRACKET expr_semi_list opt_semi error
-      { _unclosed("[", 3, "]", 6) }
+  | mod_longident DOT
+    only_loc(LBRACKET) expr_semi_list opt_semi only_loc(error)
+      { unclosed "[" $3 "]" $6 }
   | PREFIXOP simple_expr
       { _mkexp(Pexp_apply(_mkoperator($1, 1), [Nolabel,$2])) }
   | BANG simple_expr
@@ -1727,14 +1734,14 @@ simple_expr:
       { _mkexp_attrs (Pexp_new($3)) $2 }
   | LBRACELESS field_expr_list GREATERRBRACE
       { _mkexp (Pexp_override $2) }
-  | LBRACELESS field_expr_list error
-      { _unclosed("{<", 1, ">}", 3) }
+  | only_loc(LBRACELESS) field_expr_list only_loc(error)
+      { unclosed "{<" $1 ">}" $3 }
   | LBRACELESS GREATERRBRACE
       { _mkexp (Pexp_override [])}
   | mkrhs(mod_longident) DOT LBRACELESS field_expr_list GREATERRBRACE
       { _mkexp(Pexp_open(Fresh, $1, _mkexp (Pexp_override $4)))}
-  | mod_longident DOT LBRACELESS field_expr_list error
-      { _unclosed("{<", 3, ">}", 5) }
+  | mod_longident DOT only_loc(LBRACELESS) field_expr_list only_loc(error)
+      { unclosed "{<" $3 ">}" $5 }
   | simple_expr HASH mkrhs(label)
       { _mkexp(Pexp_send($1, $3)) }
   | simple_expr HASHOP simple_expr
@@ -1744,15 +1751,16 @@ simple_expr:
   | LPAREN MODULE ext_attributes module_expr COLON package_type RPAREN
       { _mkexp_attrs (Pexp_constraint (_ghexp (Pexp_pack $4), $6))
                     $3 }
-  | LPAREN MODULE ext_attributes module_expr COLON error
-      { _unclosed("(", 1, ")", 6) }
+  | only_loc(LPAREN) MODULE ext_attributes module_expr COLON only_loc(error)
+      { unclosed "(" $1 ")" $6 }
   | mkrhs(mod_longident) DOT LPAREN MODULE ext_attributes module_expr COLON
     package_type RPAREN
       { _mkexp(Pexp_open(Fresh, $1,
         _mkexp_attrs(Pexp_constraint (_ghexp(Pexp_pack $6), $8))
                     $5 )) }
-  | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON error
-      { _unclosed("(", 3, ")", 8) }
+  | mod_longident DOT
+    only_loc(LPAREN) MODULE ext_attributes module_expr COLON only_loc(error)
+      { unclosed "(" $3 ")" $8 }
   | extension
       { _mkexp (Pexp_extension $1) }
 ;
@@ -2002,19 +2010,19 @@ simple_pattern_not_ident:
                  Ppat_construct ( _mkrhs2((Lident "()"), 3, 4), None) ) }
   | mkrhs(mod_longident) DOT LPAREN pattern RPAREN
       { _mkpat @@ Ppat_open ($1, $4) }
-  | mod_longident DOT LPAREN pattern error
-      { _unclosed("(", 3, ")", 5)  }
+  | mod_longident DOT only_loc(LPAREN) pattern only_loc(error)
+      {unclosed "(" $3 ")" $5  }
   | mod_longident DOT LPAREN error
       { _expecting(4, "pattern") }
   | LPAREN pattern RPAREN
       { let loc = make_loc $symbolstartpos $endpos in
         reloc_pat ~loc $2 }
-  | LPAREN pattern error
-      { _unclosed("(", 1, ")", 3) }
+  | only_loc(LPAREN) pattern only_loc(error)
+      { unclosed "(" $1 ")" $3 }
   | LPAREN pattern COLON core_type RPAREN
       { _mkpat(Ppat_constraint($2, $4)) }
-  | LPAREN pattern COLON core_type error
-      { _unclosed("(", 1, ")", 5) }
+  | only_loc(LPAREN) pattern COLON core_type only_loc(error)
+      { unclosed "(" $1 ")" $5 }
   | LPAREN pattern COLON error
       { _expecting(4, "type") }
   | LPAREN MODULE ext_attributes mkrhs(UIDENT) RPAREN
@@ -2023,8 +2031,9 @@ simple_pattern_not_ident:
       { _mkpat_attrs
           (Ppat_constraint(_mkpat(Ppat_unpack $4), $6))
           $3 }
-  | LPAREN MODULE ext_attributes UIDENT COLON package_type error
-      { _unclosed("(", 1, ")", 7) }
+  | only_loc(LPAREN) MODULE ext_attributes UIDENT COLON package_type
+    only_loc(error)
+      { unclosed "(" $1 ")" $7 }
   | extension
       { _mkpat(Ppat_extension $1) }
 ;
@@ -2032,19 +2041,19 @@ simple_pattern_not_ident:
 simple_delimited_pattern:
   | LBRACE lbl_pattern_list RBRACE
     { let (fields, closed) = $2 in _mkpat(Ppat_record(fields, closed)) }
-  | LBRACE lbl_pattern_list error
-    { _unclosed("{", 1, "}", 3) }
+  | only_loc(LBRACE) lbl_pattern_list only_loc(error)
+    { unclosed "{" $1 "}" $3 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
     { let loc = make_loc $symbolstartpos $endpos in
       reloc_pat ~loc (mktailpat (_rhs_loc(4)) (List.rev $2)) }
-  | LBRACKET pattern_semi_list opt_semi error
-    { _unclosed("[", 1, "]", 4) }
+  | only_loc(LBRACKET) pattern_semi_list opt_semi only_loc(error)
+    { unclosed "[" $1 "]" $4 }
   | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
     { _mkpat(Ppat_array(List.rev $2)) }
   | LBRACKETBAR BARRBRACKET
     { _mkpat(Ppat_array []) }
-  | LBRACKETBAR pattern_semi_list opt_semi error
-    { _unclosed("[|", 1, "|]", 4) }
+  | only_loc(LBRACKETBAR) pattern_semi_list opt_semi only_loc(error)
+    { unclosed "[|" $1 "|]" $4 }
 
 pattern_comma_list:
     pattern_comma_list COMMA pattern            { $3 :: $1 }
@@ -2582,7 +2591,7 @@ ident:
 val_ident:
     LIDENT                                      { $1 }
   | LPAREN operator RPAREN                      { $2 }
-  | LPAREN operator error                       { _unclosed("(", 1, ")", 3) }
+  | only_loc(LPAREN) operator only_loc(error)   { unclosed "(" $1 ")" $3 }
   | LPAREN error                                { _expecting(2, "operator") }
   | LPAREN MODULE error                         { _expecting(3, "module-expr") }
 ;
