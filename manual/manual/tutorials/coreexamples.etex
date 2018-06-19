@@ -514,7 +514,18 @@ name_of_binary_digit (-1);;
 The "with" part does pattern matching on the
 exception value with the same syntax and behavior as "match". Thus,
 several exceptions can be caught by one
-"try"\ldots"with" construct. Also, finalization can be performed by
+"try"\ldots"with" construct:
+\begin{caml_example}{toplevel}
+let rec first_named_value values names =
+  try
+    List.assoc (head values) names
+  with
+  | Empty_list -> "no named value"
+  | Not_found -> first_named_value (List.tl values) names;;
+first_named_value [ 0; 10 ] [ 1, "one"; 10, "ten"];;
+\end{caml_example}
+
+Also, finalization can be performed by
 trapping all exceptions, performing the finalization, then re-raising
 the exception:
 \begin{caml_example}{toplevel}
@@ -529,6 +540,39 @@ let temporarily_set_reference ref newval funct =
     ref := oldval;
     raise x;;
 \end{caml_example}
+
+An alternative to "try"\ldots"with" is to catch the exception while
+pattern matching:
+\begin{caml_example}{toplevel}
+let assoc_may_map f x l =
+  match List.assoc x l with
+  | exception Not_found -> None
+  | y -> f y;;
+\end{caml_example}
+Note that this construction is only useful if the exception is raised
+between "match"\ldots"with". Moreover, exceptions can only
+appear at the toplevel of such a pattern match.
+For instance, exception cases cannot currently be combined with an
+or-pattern: "exception A | exception B ->" \ldots .
+
+When exceptions are used as a control structure, it can be useful to make
+them as local as possible by using a locally defined exception.
+For instance, with
+\begin{caml_eval}
+  let ref x: _ ref = {contents=x};;
+\end{caml_eval}
+\begin{caml_example}{toplevel}
+let fixpoint f x =
+  let exception Done in
+  let x = ref x in
+  try while true do
+      let y = f !x in
+      if !x = y then raise Done else x := y
+    done; assert false
+  with Done -> !x;;
+\end{caml_example}
+the function "f" cannot raise a "Done" exception, which removes an
+entire class of misbehaving functions.
 
 \section{Symbolic processing of expressions}
 
