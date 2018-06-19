@@ -114,7 +114,7 @@ let max_tag = 245
 let lazy_tag = 246
 
 let max_young_wosize = 256
-let stack_threshold = 256 (* see byterun/config.h *)
+let stack_threshold = 256 (* see byterun/caml/config.h *)
 let stack_safety_margin = 60
 
 let architecture = "%%ARCH%%"
