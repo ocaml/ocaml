@@ -236,8 +236,8 @@ let lapply p1 p2 =
 let exp_of_label ~loc lbl pos =
   mkexp ~loc (Pexp_ident(mkrhs (Lident(Longident.last lbl)) pos))
 
-let pat_of_label ~loc lbl pos =
-  mkpat ~loc (Ppat_var (mkrhs (Longident.last lbl) pos))
+let pat_of_label ~loc {Location.txt = lbl; loc = var_loc} =
+  mkpat ~loc (Ppat_var (mkrhs (Longident.last lbl) var_loc))
 
 let mk_newtypes ~loc newtypes exp =
   let mkexp = mkexp ~loc in
@@ -528,7 +528,6 @@ let mk_directive ~loc name arg =
 #define _expr_of_let_bindings (expr_of_let_bindings ~loc:$loc)
 #define _class_of_let_bindings (class_of_let_bindings ~loc:$loc)
 
-#define _pat_of_label(s, p) (pat_of_label ~loc:$loc s $locof(p))
 #define _exp_of_label(s, p) (exp_of_label ~loc:$loc s $locof(p))
 
 #define _text_str(p) (text_str $startpos($ ## p))
@@ -2076,10 +2075,11 @@ lbl_pattern_list:
 ;
 lbl_pattern:
     mkrhs(label_longident) opt_pattern_type_constraint EQUAL pattern
-     { ($1, mkpat_opt_constraint ~loc:$loc $4 $2) }
+     { let loc = make_loc $symbolstartpos $endpos in
+       ($1, mkpat_opt_constraint ~loc $4 $2) }
   | mkrhs(label_longident) opt_pattern_type_constraint
-     { ($1, mkpat_opt_constraint ~loc:$loc
-          (_pat_of_label($1.Location.txt, 1)) $2) }
+     { let loc = make_loc $symbolstartpos $endpos in
+       ($1, mkpat_opt_constraint ~loc (pat_of_label ~loc $1) $2) }
 ;
 opt_pattern_type_constraint:
     COLON core_type { Some $2 }
