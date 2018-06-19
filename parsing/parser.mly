@@ -39,6 +39,11 @@ let mkcf ?attrs ?docs d =
 
 let mkrhs rhs pos = mkloc rhs (rhs_loc pos)
 
+let mkrhs2 rhs pos1 pos2 =
+  let loc_start = Parsing.rhs_start_pos pos1 in
+  let loc_end = Parsing.rhs_end_pos pos2 in
+  mkloc rhs { loc_start; loc_end; loc_ghost = false }
+
 let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
 
@@ -686,7 +691,7 @@ parse_pattern:
 
 functor_arg:
     LPAREN RPAREN
-      { mkrhs "*" 2, None }
+      { mkrhs2 "*" 1 2, None }
   | LPAREN functor_arg_name COLON module_type RPAREN
       { mkrhs $2 2, Some $4 }
 ;
@@ -937,7 +942,7 @@ module_declaration_body:
   | LPAREN UIDENT COLON module_type RPAREN module_declaration_body
       { mkmty(Pmty_functor(mkrhs $2 2, Some $4, $6)) }
   | LPAREN RPAREN module_declaration_body
-      { mkmty(Pmty_functor(mkrhs "*" 1, None, $3)) }
+      { mkmty(Pmty_functor(mkrhs2 "*" 1 2, None, $3)) }
 ;
 module_declaration:
     MODULE ext_attributes UIDENT module_declaration_body post_item_attributes
@@ -1472,7 +1477,7 @@ simple_expr:
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, $4)) }
   | mod_longident DOT LPAREN RPAREN
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
-                        mkexp(Pexp_construct(mkrhs (Lident "()") 1, None)))) }
+                        mkexp(Pexp_construct(mkrhs2 (Lident "()") 3 4, None)))) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
@@ -1550,7 +1555,7 @@ simple_expr:
         mkexp(Pexp_open(Fresh, mkrhs $1 1, list_exp)) }
   | mod_longident DOT LBRACKET RBRACKET
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
-                        mkexp(Pexp_construct(mkrhs (Lident "[]") 1, None)))) }
+                        mkexp(Pexp_construct(mkrhs2 (Lident "[]") 3 4, None)))) }
   | mod_longident DOT LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 3 "]" 6 }
   | PREFIXOP simple_expr
@@ -1822,10 +1827,10 @@ simple_pattern_not_ident:
       { mkpat @@ Ppat_open(mkrhs $1 1, $3) }
   | mod_longident DOT LBRACKET RBRACKET
     { mkpat @@ Ppat_open(mkrhs $1 1, mkpat @@
-               Ppat_construct ( mkrhs (Lident "[]") 4, None)) }
+               Ppat_construct ( mkrhs2 (Lident "[]") 3 4, None)) }
   | mod_longident DOT LPAREN RPAREN
       { mkpat @@ Ppat_open( mkrhs $1 1, mkpat @@
-                 Ppat_construct ( mkrhs (Lident "()") 4, None) ) }
+                 Ppat_construct ( mkrhs2 (Lident "()") 3 4, None) ) }
   | mod_longident DOT LPAREN pattern RPAREN
       { mkpat @@ Ppat_open (mkrhs $1 1, $4)}
   | mod_longident DOT LPAREN pattern error
