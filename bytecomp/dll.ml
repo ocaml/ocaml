@@ -140,7 +140,7 @@ let ld_library_path_contents () =
       Misc.split_path_contents s
 
 let split_dll_path path =
-  String.split_on_char '\000' path
+  Misc.split_path_contents ~sep:'\000' path
 
 (* Initialization for separate compilation *)
 
