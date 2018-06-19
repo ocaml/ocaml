@@ -796,25 +796,26 @@ The precedences must be listed from low to high.
 /* Entry points */
 
 implementation:
-    extra_str(structure) EOF                        { $1 }
+    structure EOF                        { $1 }
 ;
 interface:
-    extra_sig(signature) EOF                        { $1 }
+    signature EOF                        { $1 }
 ;
 toplevel_phrase:
-    extra_str(top_structure) SEMISEMI    { Ptop_def ($1) }
+    top_structure SEMISEMI               { Ptop_def ($1) }
   | toplevel_directive SEMISEMI          { $1 }
   | EOF                                  { raise End_of_file }
 ;
-top_structure:
+top_structure: extra_str(top_structure_nodoc) { $1 }
+top_structure_nodoc:
     seq_expr post_item_attributes
       { _text_str(1) @ [mkstrexp $1 $2] }
-  | top_structure_tail
+  | top_structure_tail_nodoc
       { $1 }
 ;
-top_structure_tail:
-    /* empty */                          { [] }
-  | structure_item top_structure_tail    { _text_str(1) @ $1 :: $2 }
+top_structure_tail_nodoc:
+    /* empty */                              { [] }
+  | structure_item top_structure_tail_nodoc  { _text_str(1) @ $1 :: $2 }
 ;
 use_file:
     extra_def(use_file_body)             { $1 }
@@ -869,7 +870,7 @@ functor_args:
 module_expr:
     mkrhs(mod_longident)
       { _mkmod(Pmod_ident $1) }
-  | STRUCT attributes extra_str(structure) END
+  | STRUCT attributes structure END
       { _mkmod ~attrs:$2 (Pmod_structure($3)) }
   | STRUCT attributes structure error
       { _unclosed("struct", 1, "end", 4) }
@@ -926,16 +927,17 @@ paren_module_expr:
       { _unclosed("(", 1, ")", 5) }
 ;
 
-structure:
-    seq_expr post_item_attributes structure_tail
+structure: extra_str(structure_nodoc) { $1 }
+structure_nodoc:
+    seq_expr post_item_attributes structure_tail_nodoc
       { _mark_rhs_docs(1, 2);
         _text_str(1) @ mkstrexp $1 $2 :: $3 }
-  | structure_tail { $1 }
+  | structure_tail_nodoc { $1 }
 ;
-structure_tail:
-    /* empty */          { [] }
-  | SEMISEMI structure   { _text_str(1) @ $2 }
-  | structure_item structure_tail { _text_str(1) @ $1 :: $2 }
+structure_tail_nodoc:
+    /* empty */                         { [] }
+  | SEMISEMI structure_nodoc            { _text_str(1) @ $2 }
+  | structure_item structure_tail_nodoc { _text_str(1) @ $1 :: $2 }
 ;
 structure_item:
     let_bindings
@@ -1014,7 +1016,7 @@ and_module_binding:
 module_type:
     mkrhs(mty_longident)
       { _mkmty(Pmty_ident $1) }
-  | SIG attributes extra_sig(signature) END
+  | SIG attributes signature END
       { _mkmty ~attrs:$2 (Pmty_signature ($3)) }
   | SIG attributes signature error
       { _unclosed("sig", 1, "end", 4) }
@@ -1043,10 +1045,12 @@ module_type:
   | module_type attribute
       { Mty.attr $1 $2 }
 ;
-signature:
-    /* empty */          { [] }
-  | SEMISEMI signature   { _text_sig(1) @ $2 }
-  | signature_item signature { _text_sig(1) @ $1 :: $2 }
+
+signature: extra_sig(signature_nodoc) { $1 }
+signature_nodoc:
+    /* empty */                    { [] }
+  | SEMISEMI signature_nodoc       { _text_sig(1) @ $2 }
+  | signature_item signature_nodoc { _text_sig(1) @ $1 :: $2 }
 ;
 signature_item:
     value_description
