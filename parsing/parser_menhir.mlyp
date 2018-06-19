@@ -328,7 +328,8 @@ let extra_csig p1 p2 items = extra_text p1 p2 Ctf.text  items
 let extra_def p1 p2 items =
   extra_text p1 p2 (fun txt -> [Ptop_def (Str.text txt)]) items
 
-let extra_rhs_core_type ct docs =
+let extra_rhs_core_type ct ~pos =
+  let docs = rhs_info pos in
   { ct with ptyp_attributes = add_info_attrs docs ct.ptyp_attributes }
 
 type let_binding =
@@ -482,8 +483,6 @@ let mk_directive ~loc name arg =
 #define _symbol_post_extra_text() (symbol_post_extra_text $endpos)
 #define _rhs_pre_extra_text(p) (rhs_pre_extra_text $startpos($ ## p))
 #define _rhs_post_extra_text(p) (rhs_post_extra_text $endpos($ ## p))
-
-#define _extra_rhs_core_type(a, p) (extra_rhs_core_type a _rhs_info(p))
 
 #define _rhs_docs(p1, p2) (rhs_docs $startpos($ ## p1) $endpos($ ## p2))
 
@@ -2406,20 +2405,16 @@ core_type_no_attr:
 core_type2:
     simple_core_type_or_tuple
       { $1 }
-  | QUESTION LIDENT COLON core_type2 MINUSGREATER core_type2
-      { let param = _extra_rhs_core_type($4, 4) in
-        _mktyp (Ptyp_arrow(Optional $2 , param, $6)) }
-  | OPTLABEL core_type2 MINUSGREATER core_type2
-      { let param = _extra_rhs_core_type ($2, 2) in
-        _mktyp(Ptyp_arrow(Optional $1 , param, $4))
-      }
-  | LIDENT COLON core_type2 MINUSGREATER core_type2
-      { let param = _extra_rhs_core_type($3, 3) in
-        _mktyp(Ptyp_arrow(Labelled $1, param, $5)) }
-  | core_type2 MINUSGREATER core_type2
-      { let param = _extra_rhs_core_type($1, 1) in
-        _mktyp(Ptyp_arrow(Nolabel, param, $3)) }
+  | QUESTION LIDENT COLON extra_core_type2 MINUSGREATER core_type2
+      { _mktyp (Ptyp_arrow(Optional $2, $4, $6)) }
+  | OPTLABEL extra_core_type2 MINUSGREATER core_type2
+      { _mktyp(Ptyp_arrow(Optional $1, $2, $4)) }
+  | LIDENT COLON extra_core_type2 MINUSGREATER core_type2
+      { _mktyp(Ptyp_arrow(Labelled $1, $3, $5)) }
+  | extra_core_type2 MINUSGREATER core_type2
+      { _mktyp(Ptyp_arrow(Nolabel, $1, $3)) }
 ;
+%inline extra_core_type2: core_type2 { extra_rhs_core_type $1 ~pos:$endpos($1) };
 
 simple_core_type:
     simple_core_type2  %prec below_HASH
