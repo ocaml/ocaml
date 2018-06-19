@@ -39,6 +39,11 @@ let mkcf ?attrs ?docs d =
 
 let mkrhs rhs pos = mkloc rhs (rhs_loc pos)
 
+let mkrhs2 rhs pos1 pos2 =
+  let loc_start = Parsing.rhs_start_pos pos1 in
+  let loc_end = Parsing.rhs_end_pos pos2 in
+  mkloc rhs { loc_start; loc_end; loc_ghost = false }
+
 let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
 
@@ -686,7 +691,7 @@ parse_pattern:
 
 functor_arg:
     LPAREN RPAREN
-      { mkrhs "*" 2, None }
+      { mkrhs2 "*" 1 2, None }
   | LPAREN functor_arg_name COLON module_type RPAREN
       { mkrhs $2 2, Some $4 }
 ;
@@ -937,7 +942,7 @@ module_declaration_body:
   | LPAREN UIDENT COLON module_type RPAREN module_declaration_body
       { mkmty(Pmty_functor(mkrhs $2 2, Some $4, $6)) }
   | LPAREN RPAREN module_declaration_body
-      { mkmty(Pmty_functor(mkrhs "*" 1, None, $3)) }
+      { mkmty(Pmty_functor(mkrhs2 "*" 1 2, None, $3)) }
 ;
 module_declaration:
     MODULE ext_attributes UIDENT module_declaration_body post_item_attributes
@@ -1043,7 +1048,7 @@ class_expr:
 ;
 class_simple_expr:
     LBRACKET core_type_comma_list RBRACKET class_longident
-      { mkclass(Pcl_constr(mkloc $4 (rhs_loc 4), List.rev $2)) }
+      { mkclass(Pcl_constr(mkrhs $4 4, List.rev $2)) }
   | class_longident
       { mkclass(Pcl_constr(mkrhs $1 1, [])) }
   | OBJECT attributes class_structure END
@@ -1107,7 +1112,7 @@ value:
 /* TODO: factorize these rules (also with method): */
     override_flag attributes MUTABLE VIRTUAL label COLON core_type
       { if $1 = Override then syntax_error ();
-        (mkloc $5 (rhs_loc 5), Mutable, Cfk_virtual $7), $2 }
+        (mkrhs $5 5, Mutable, Cfk_virtual $7), $2 }
   | override_flag attributes VIRTUAL mutable_flag label COLON core_type
       { if $1 = Override then syntax_error ();
         (mkrhs $5 5, $4, Cfk_virtual $7), $2 }
@@ -1123,20 +1128,20 @@ method_:
 /* TODO: factorize those rules... */
     override_flag attributes PRIVATE VIRTUAL label COLON poly_type
       { if $1 = Override then syntax_error ();
-        (mkloc $5 (rhs_loc 5), Private, Cfk_virtual $7), $2 }
+        (mkrhs $5 5, Private, Cfk_virtual $7), $2 }
   | override_flag attributes VIRTUAL private_flag label COLON poly_type
       { if $1 = Override then syntax_error ();
-        (mkloc $5 (rhs_loc 5), $4, Cfk_virtual $7), $2 }
+        (mkrhs $5 5, $4, Cfk_virtual $7), $2 }
   | override_flag attributes private_flag label strict_binding
-      { (mkloc $4 (rhs_loc 4), $3,
+      { (mkrhs $4 4, $3,
         Cfk_concrete ($1, ghexp(Pexp_poly ($5, None)))), $2 }
   | override_flag attributes private_flag label COLON poly_type EQUAL seq_expr
-      { (mkloc $4 (rhs_loc 4), $3,
+      { (mkrhs $4 4, $3,
         Cfk_concrete ($1, ghexp(Pexp_poly($8, Some $6)))), $2 }
   | override_flag attributes private_flag label COLON TYPE lident_list
     DOT core_type EQUAL seq_expr
       { let exp, poly = wrap_type_annotation $7 $9 $11 in
-        (mkloc $4 (rhs_loc 4), $3,
+        (mkrhs $4 4, $3,
         Cfk_concrete ($1, ghexp(Pexp_poly(exp, Some poly)))), $2 }
 ;
 
@@ -1157,7 +1162,7 @@ class_type:
  ;
 class_signature:
     LBRACKET core_type_comma_list RBRACKET clty_longident
-      { mkcty(Pcty_constr (mkloc $4 (rhs_loc 4), List.rev $2)) }
+      { mkcty(Pcty_constr (mkrhs $4 4, List.rev $2)) }
   | clty_longident
       { mkcty(Pcty_constr (mkrhs $1 1, [])) }
   | OBJECT attributes class_sig_body END
@@ -1472,7 +1477,7 @@ simple_expr:
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, $4)) }
   | mod_longident DOT LPAREN RPAREN
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
-                        mkexp(Pexp_construct(mkrhs (Lident "()") 1, None)))) }
+                        mkexp(Pexp_construct(mkrhs2 (Lident "()") 3 4, None)))) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
@@ -1550,7 +1555,7 @@ simple_expr:
         mkexp(Pexp_open(Fresh, mkrhs $1 1, list_exp)) }
   | mod_longident DOT LBRACKET RBRACKET
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
-                        mkexp(Pexp_construct(mkrhs (Lident "[]") 1, None)))) }
+                        mkexp(Pexp_construct(mkrhs2 (Lident "[]") 3 4, None)))) }
   | mod_longident DOT LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 3 "]" 6 }
   | PREFIXOP simple_expr
@@ -1822,10 +1827,10 @@ simple_pattern_not_ident:
       { mkpat @@ Ppat_open(mkrhs $1 1, $3) }
   | mod_longident DOT LBRACKET RBRACKET
     { mkpat @@ Ppat_open(mkrhs $1 1, mkpat @@
-               Ppat_construct ( mkrhs (Lident "[]") 4, None)) }
+               Ppat_construct ( mkrhs2 (Lident "[]") 3 4, None)) }
   | mod_longident DOT LPAREN RPAREN
       { mkpat @@ Ppat_open( mkrhs $1 1, mkpat @@
-                 Ppat_construct ( mkrhs (Lident "()") 4, None) ) }
+                 Ppat_construct ( mkrhs2 (Lident "()") 3 4, None) ) }
   | mod_longident DOT LPAREN pattern RPAREN
       { mkpat @@ Ppat_open (mkrhs $1 1, $4)}
   | mod_longident DOT LPAREN pattern error
