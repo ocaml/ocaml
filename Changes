@@ -215,7 +215,8 @@ Working version
 
 - GPR#1841, MPR#7808: the environment variable OCAMLTOP_INCLUDE_PATH can now
   specify a list of additional include directories for the ocaml toplevel.
-  (Nicolás Ojeda Bär, request by Daniel Bünzli, review by Damien Doligez)
+  (Nicolás Ojeda Bär, request by Daniel Bünzli, review by Daniel Bünzli and
+  Damien Doligez)
 
 ### Code generation and optimizations:
 
