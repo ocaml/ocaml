@@ -537,9 +537,7 @@ let mk_directive ~loc name arg =
 #define _wrap_type_annotation (wrap_type_annotation ~loc:$loc)
 
 #define _mkstr_ext (mkstr_ext ~loc:$loc)
-#define _wrap_str_ext (wrap_str_ext ~loc:$loc)
 #define _mksig_ext (mksig_ext ~loc:$loc)
-#define _wrap_sig_ext (wrap_sig_ext ~loc:$loc)
 
 #define _mkpatvar(s, p) (mkpatvar s $locof(p))
 #define _pat_of_label(s, p) (pat_of_label ~loc:$loc s $locof(p))
