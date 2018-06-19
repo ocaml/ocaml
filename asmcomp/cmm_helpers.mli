@@ -408,3 +408,23 @@ val box_sized :
 
 val simplif_primitive :
   Clambda_primitives.primitive -> Clambda_primitives.primitive
+
+(** Switch *)
+
+(** [transl_isout h arg dbg] *)
+val transl_isout : expression -> expression -> Debuginfo.t -> expression
+
+(** [make_switch arg cases actions dbg] : Generate a Cswitch construct,
+    or optimize as a static table lookup when possible. *)
+val make_switch :
+  expression -> int array -> (expression * Debuginfo.t) array -> Debuginfo.t ->
+  expression
+
+(** [transl_int_switch loc arg low high cases default] *)
+val transl_int_switch :
+  Location.t -> expression -> int -> int ->
+  (int * expression) list -> expression -> expression
+
+(** [transl_switch_clambda loc arg index cases] *)
+val transl_switch_clambda :
+  Location.t -> expression -> int array -> expression array -> expression

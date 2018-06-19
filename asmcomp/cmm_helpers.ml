@@ -1359,3 +1359,240 @@ let simplif_primitive p : Clambda_primitives.primitive =
   | p ->
       if size_int = 8 then p else simplif_primitive_32bits p
 
+(* Build switchers both for constants and blocks *)
+
+let transl_isout h arg dbg = tag_int (Cop(Ccmpa Clt, [h ; arg], dbg)) dbg
+
+(* Build an actual switch (ie jump table) *)
+
+let make_switch arg cases actions dbg =
+  let extract_uconstant =
+    function
+    (* Constant integers loaded from a table should end in 1,
+       so that Cload never produces untagged integers *)
+    | Cconst_int     (n, _), _dbg
+    | Cconst_pointer (n, _), _dbg when (n land 1) = 1 ->
+        Some (Cint (Nativeint.of_int n))
+    | Cconst_natint     (n, _), _dbg
+    | Cconst_natpointer (n, _), _dbg
+      when Nativeint.(to_int (logand n one) = 1) ->
+        Some (Cint n)
+    | Cconst_symbol (s,_), _dbg ->
+        Some (Csymbol_address s)
+    | _ -> None
+  in
+  let extract_affine ~cases ~const_actions =
+    let length = Array.length cases in
+    if length >= 2
+    then begin
+      match const_actions.(cases.(0)), const_actions.(cases.(1)) with
+      | Cint v0, Cint v1 ->
+          let slope = Nativeint.sub v1 v0 in
+          let check i = function
+            | Cint v -> v = Nativeint.(add (mul (of_int i) slope) v0)
+            | _ -> false
+          in
+          if Misc.Stdlib.Array.for_alli
+              (fun i idx -> check i const_actions.(idx)) cases
+          then Some (v0, slope)
+          else None
+      | _, _ ->
+          None
+    end
+    else None
+  in
+  let make_table_lookup ~cases ~const_actions arg dbg =
+    let table = Compilenv.new_const_symbol () in
+    Cmmgen_state.add_constant table (Const_table (Local,
+        Array.to_list (Array.map (fun act ->
+          const_actions.(act)) cases)));
+    addr_array_ref (Cconst_symbol (table, dbg)) (tag_int arg dbg) dbg
+  in
+  let make_affine_computation ~offset ~slope arg dbg =
+    (* In case the resulting integers are an affine function of the index, we
+       don't emit a table, and just compute the result directly *)
+    add_int
+      (mul_int arg (natint_const_untagged dbg slope) dbg)
+      (natint_const_untagged dbg offset)
+      dbg
+  in
+  match Misc.Stdlib.Array.all_somes (Array.map extract_uconstant actions) with
+  | None ->
+      Cswitch (arg,cases,actions,dbg)
+  | Some const_actions ->
+      match extract_affine ~cases ~const_actions with
+      | Some (offset, slope) ->
+          make_affine_computation ~offset ~slope arg dbg
+      | None -> make_table_lookup ~cases ~const_actions arg dbg
+
+module SArgBlocks =
+struct
+  type primitive = operation
+
+  let eqint = Ccmpi Ceq
+  let neint = Ccmpi Cne
+  let leint = Ccmpi Cle
+  let ltint = Ccmpi Clt
+  let geint = Ccmpi Cge
+  let gtint = Ccmpi Cgt
+
+  type act = expression
+
+  (* CR mshinwell: GPR#2294 will fix the Debuginfo here *)
+
+  let make_const i =  Cconst_int (i, Debuginfo.none)
+  let make_prim p args = Cop (p,args, Debuginfo.none)
+  let make_offset arg n = add_const arg n Debuginfo.none
+  let make_isout h arg = Cop (Ccmpa Clt, [h ; arg], Debuginfo.none)
+  let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
+  let make_if cond ifso ifnot =
+    Cifthenelse (cond, Debuginfo.none, ifso, Debuginfo.none, ifnot,
+      Debuginfo.none)
+  let make_switch loc arg cases actions =
+    let dbg = Debuginfo.from_location loc in
+    let actions = Array.map (fun expr -> expr, dbg) actions in
+    make_switch arg cases actions dbg
+  let bind arg body = bind "switcher" arg body
+
+  let make_catch handler = match handler with
+  | Cexit (i,[]) -> i,fun e -> e
+  | _ ->
+      let dbg = Debuginfo.none in
+      let i = Lambda.next_raise_count () in
+(*
+      Printf.eprintf  "SHARE CMM: %i\n" i ;
+      Printcmm.expression Format.str_formatter handler ;
+      Printf.eprintf "%s\n" (Format.flush_str_formatter ()) ;
+*)
+      i,
+      (fun body -> match body with
+      | Cexit (j,_) ->
+          if i=j then handler
+          else body
+      | _ ->  ccatch (i,[],body,handler, dbg))
+
+  let make_exit i = Cexit (i,[])
+
+end
+
+(* cmm store, as sharing as normally been detected in previous
+   phases, we only share exits *)
+(* Some specific patterns can lead to switches where several cases
+   point to the same action, but this action is not an exit (see GPR#1370).
+   The addition of the index in the action array as context allows to
+   share them correctly without duplication. *)
+module StoreExpForSwitch =
+  Switch.CtxStore
+    (struct
+      type t = expression
+      type key = int option * int
+      type context = int
+      let make_key index expr =
+        let continuation =
+          match expr with
+          | Cexit (i,[]) -> Some i
+          | _ -> None
+        in
+        Some (continuation, index)
+      let compare_key (cont, index) (cont', index') =
+        match cont, cont' with
+        | Some i, Some i' when i = i' -> 0
+        | _, _ -> Stdlib.compare index index'
+    end)
+
+(* For string switches, we can use a generic store *)
+module StoreExp =
+  Switch.Store
+    (struct
+      type t = expression
+      type key = int
+      let make_key = function
+        | Cexit (i,[]) -> Some i
+        | _ -> None
+      let compare_key = Stdlib.compare
+    end)
+
+module SwitcherBlocks = Switch.Make(SArgBlocks)
+
+(* Int switcher, arg in [low..high],
+   cases is list of individual cases, and is sorted by first component *)
+
+let transl_int_switch loc arg low high cases default = match cases with
+| [] -> assert false
+| _::_ ->
+    let store = StoreExp.mk_store () in
+    assert (store.Switch.act_store () default = 0) ;
+    let cases =
+      List.map
+        (fun (i,act) -> i,store.Switch.act_store () act)
+        cases in
+    let rec inters plow phigh pact = function
+      | [] ->
+          if phigh = high then [plow,phigh,pact]
+          else [(plow,phigh,pact); (phigh+1,high,0) ]
+      | (i,act)::rem ->
+          if i = phigh+1 then
+            if pact = act then
+              inters plow i pact rem
+            else
+              (plow,phigh,pact)::inters i i act rem
+          else (* insert default *)
+            if pact = 0 then
+              if act = 0 then
+                inters plow i 0 rem
+              else
+                (plow,i-1,pact)::
+                inters i i act rem
+            else (* pact <> 0 *)
+              (plow,phigh,pact)::
+              begin
+                if act = 0 then inters (phigh+1) i 0 rem
+                else (phigh+1,i-1,0)::inters i i act rem
+              end in
+    let inters = match cases with
+    | [] -> assert false
+    | (k0,act0)::rem ->
+        if k0 = low then inters k0 k0 act0 rem
+        else inters low (k0-1) 0 cases in
+    bind "switcher" arg
+      (fun a ->
+        SwitcherBlocks.zyva
+          loc
+          (low,high)
+          a
+          (Array.of_list inters) store)
+
+
+let transl_switch_clambda loc arg index cases =
+  let store = StoreExpForSwitch.mk_store () in
+  let index =
+    Array.map
+      (fun j -> store.Switch.act_store j cases.(j))
+      index in
+  let n_index = Array.length index in
+  let inters = ref []
+  and this_high = ref (n_index-1)
+  and this_low = ref (n_index-1)
+  and this_act = ref index.(n_index-1) in
+  for i = n_index-2 downto 0 do
+    let act = index.(i) in
+    if act = !this_act then
+      decr this_low
+    else begin
+      inters := (!this_low, !this_high, !this_act) :: !inters ;
+      this_high := i ;
+      this_low := i ;
+      this_act := act
+    end
+  done ;
+  inters := (0, !this_high, !this_act) :: !inters ;
+  match !inters with
+  | [_] -> cases.(0)
+  | inters ->
+      bind "switcher" arg
+        (fun a ->
+           SwitcherBlocks.zyva
+             loc
+             (0,n_index-1)
+             a
+             (Array.of_list inters) store)
