@@ -192,9 +192,9 @@ val remove_unit : expression -> expression
     [n]th field of the block pointed to by [ptr] *)
 val field_address : expression -> int -> Debuginfo.t -> expression
 
-(** [mk_get_field mut ptr n dbg] returns an expression for the access to the
+(** [get_field_gen mut ptr n dbg] returns an expression for the access to the
     [n]th field of the block pointed to by [ptr] *)
-val mk_get_field :
+val get_field_gen :
   Asttypes.mutable_flag -> expression -> int -> Debuginfo.t -> expression
 
 (** [set_field ptr n newval init dbg] returns an expression for setting the
@@ -428,3 +428,16 @@ val transl_int_switch :
 (** [transl_switch_clambda loc arg index cases] *)
 val transl_switch_clambda :
   Location.t -> expression -> int array -> expression array -> expression
+(** From transl_exp *)
+
+(** Adds a constant offset to a pointer (for infix access) *)
+val ptr_offset : expression -> int -> Debuginfo.t -> expression
+
+(** Direct application of a symbol *)
+val direct_apply : string -> expression list -> Debuginfo.t -> expression
+
+(** Generic application of a function to one or several arguments *)
+val generic_apply :
+  Asttypes.mutable_flag ->
+  expression -> expression list -> Debuginfo.t -> expression
+

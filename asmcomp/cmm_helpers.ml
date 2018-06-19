@@ -594,7 +594,7 @@ let field_address ptr n dbg =
   then ptr
   else Cop(Cadda, [ptr; Cconst_int(n * size_addr, dbg)], dbg)
 
-let mk_get_field mut ptr n dbg =
+let get_field_gen mut ptr n dbg =
   Cop(Cload (Word_val, mut), [field_address ptr n dbg], dbg)
 
 let set_field ptr n newval init dbg =
@@ -1596,3 +1596,23 @@ let transl_switch_clambda loc arg index cases =
              (0,n_index-1)
              a
              (Array.of_list inters) store)
+
+let ptr_offset ptr offset dbg =
+  if offset = 0
+  then ptr
+  else Cop(Caddv, [ptr; Cconst_int(offset * size_addr, dbg)], dbg)
+
+let direct_apply lbl args dbg =
+  Cop(Capply typ_val, Cconst_symbol (lbl, dbg) :: args, dbg)
+
+let generic_apply mut clos args dbg =
+  match args with
+  | [arg] ->
+      bind "fun" clos (fun clos ->
+        Cop(Capply typ_val, [get_field_gen mut clos 0 dbg; arg; clos],
+          dbg))
+  | _ ->
+      let arity = List.length args in
+      let cargs = Cconst_symbol(apply_function arity, dbg) :: args @ [clos] in
+      Cop(Capply typ_val, cargs, dbg)
+

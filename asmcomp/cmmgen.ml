@@ -86,19 +86,20 @@ let create_loop body dbg =
   let body = Csequence (body, call_cont) in
   Ccatch (Recursive, [cont, [], body, dbg], call_cont)
 
+let mut_from_env env ptr =
+  match env.environment_param with
+  | None -> Mutable
+  | Some environment_param ->
+    match ptr with
+    | Cvar ptr ->
+      (* Loads from the current function's closure are immutable. *)
+      if V.same environment_param ptr then Immutable
+      else Mutable
+    | _ -> Mutable
+
 let get_field env ptr n dbg =
-  let mut =
-    match env.environment_param with
-    | None -> Mutable
-    | Some environment_param ->
-      match ptr with
-      | Cvar ptr ->
-        (* Loads from the current function's closure are immutable. *)
-        if V.same environment_param ptr then Immutable
-        else Mutable
-      | _ -> Mutable
-  in
-  mk_get_field mut ptr n dbg
+  let mut = mut_from_env env ptr in
+  get_field_gen mut ptr n dbg
 
 (* To compile "let rec" over values *)
 
@@ -497,23 +498,14 @@ let rec transl env e =
       (* produces a valid Caml value, pointing just after an infix header *)
       let ptr = transl env arg in
       let dbg = Debuginfo.none in
-      if offset = 0
-      then ptr
-      else Cop(Caddv, [ptr; Cconst_int(offset * size_addr, dbg)], dbg)
+      ptr_offset ptr offset dbg
   | Udirect_apply(lbl, args, dbg) ->
-      Cop(Capply typ_val,
-        Cconst_symbol (lbl, dbg) :: List.map (transl env) args,
-        dbg)
-  | Ugeneric_apply(clos, [arg], dbg) ->
-      bind "fun" (transl env clos) (fun clos ->
-        Cop(Capply typ_val,
-          [get_field env clos 0 dbg; transl env arg; clos],
-          dbg))
+      let args = List.map (transl env) args in
+      direct_apply lbl args dbg
   | Ugeneric_apply(clos, args, dbg) ->
-      let arity = List.length args in
-      let cargs = Cconst_symbol(apply_function arity, dbg) ::
-        List.map (transl env) (args @ [clos]) in
-      Cop(Capply typ_val, cargs, dbg)
+      let clos = transl env clos in
+      let args = List.map (transl env) args in
+      generic_apply (mut_from_env env clos) clos args dbg
   | Usend(kind, met, obj, args, dbg) ->
       let call_met obj args clos =
         if args = [] then
