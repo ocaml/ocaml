@@ -25,7 +25,7 @@
  * [backtrace_prim.c] contains all backend-specific code, and has two different
  * implementations in [byterun/backtrace_prim.c] and [asmrun/backtrace_prim.c].
  *
- * [backtrace.c] has a unique implementation, and expose a uniform
+ * [backtrace.c] has a unique implementation, and exposes a uniform
  * higher level API above [backtrace_prim.c].
  */
 
