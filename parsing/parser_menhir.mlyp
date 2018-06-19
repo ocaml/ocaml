@@ -296,16 +296,10 @@ let wrap_str_ext ~loc body ext =
   | None -> body
   | Some id -> ghstr ~loc (Pstr_extension ((id, PStr [body]), []))
 
-let mkstr_ext ~loc d ext =
-  wrap_str_ext ~loc (mkstr ~loc d) ext
-
 let wrap_sig_ext ~loc body ext =
   match ext with
   | None -> body
   | Some id -> ghsig ~loc (Psig_extension ((id, PSig [body]), []))
-
-let mksig_ext ~loc d ext =
-  wrap_sig_ext ~loc (mksig ~loc d) ext
 
 let text_str pos = Str.text (rhs_text pos)
 let text_sig pos = Sig.text (rhs_text pos)
@@ -919,7 +913,7 @@ structure_item:
   | structure_item_with_ext
       { let item, ext = $1 in
         let loc = make_loc $startpos $endpos in
-        mkstr_ext ~loc item ext }
+        wrap_str_ext ~loc (mkstr ~loc item) ext }
   | item_extension post_item_attributes
       { _mkstr(Pstr_extension ($1, (add_docs_attrs (_symbol_docs ()) $2))) }
   | floating_attribute
@@ -939,7 +933,7 @@ structure_item_with_ext:
   | module_binding
       { let (body, ext) = $1 in (Pstr_module body, ext) }
   | rec_module_bindings
-      { let (l, ext) = $1 in (Pstr_recmodule(List.rev l), ext) }
+      { let (l, ext) = $1 in (Pstr_recmodule (List.rev l), ext) }
   | module_type_declaration
       { let (body, ext) = $1 in (Pstr_modtype body, ext) }
   | open_statement
@@ -1036,7 +1030,7 @@ signature_item:
   | signature_item_with_ext
       { let item, ext = $1 in
         let loc = make_loc $startpos $endpos in
-        mksig_ext ~loc item ext }
+        wrap_sig_ext ~loc (mksig ~loc item) ext }
   | item_extension post_item_attributes
       { _mksig (Psig_extension ($1, (add_docs_attrs (_symbol_docs ()) $2))) }
   | floating_attribute
