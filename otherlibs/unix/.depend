@@ -25,6 +25,11 @@ bind.o: bind.c ../../byterun/caml/fail.h ../../byterun/caml/misc.h \
  ../../byterun/caml/s.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/mlvalues.h unixsupport.h socketaddr.h \
  ../../byterun/caml/misc.h
+channels.o: channels.c ../../byterun/caml/mlvalues.h \
+ ../../byterun/caml/config.h ../../byterun/caml/m.h \
+ ../../byterun/caml/s.h ../../byterun/caml/misc.h ../../byterun/caml/io.h \
+ ../../byterun/caml/mlvalues.h ../../byterun/caml/signals.h unixsupport.h \
+ socketaddr.h ../../byterun/caml/misc.h
 chdir.o: chdir.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \

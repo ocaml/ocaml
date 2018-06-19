@@ -351,7 +351,8 @@ typing/subst.cmo : typing/types.cmi utils/tbl.cmi typing/path.cmi \
 typing/subst.cmx : typing/types.cmx utils/tbl.cmx typing/path.cmx \
     utils/misc.cmx parsing/location.cmx typing/ident.cmx utils/clflags.cmx \
     typing/btype.cmx parsing/ast_mapper.cmx typing/subst.cmi
-typing/subst.cmi : typing/types.cmi typing/path.cmi typing/ident.cmi
+typing/subst.cmi : typing/types.cmi typing/path.cmi parsing/location.cmi \
+    typing/ident.cmi
 typing/tast_mapper.cmo : typing/typedtree.cmi typing/env.cmi \
     parsing/asttypes.cmi typing/tast_mapper.cmi
 typing/tast_mapper.cmx : typing/typedtree.cmx typing/env.cmx \

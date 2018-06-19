@@ -361,7 +361,9 @@ meta.$(O): meta.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
  ../byterun/caml/minor_gc.h ../byterun/caml/misc.h \
  ../byterun/caml/mlvalues.h ../byterun/caml/prims.h \
- ../byterun/caml/stacks.h ../byterun/caml/memory.h
+ ../byterun/caml/stacks.h ../byterun/caml/memory.h \
+ ../byterun/caml/backtrace_prim.h ../byterun/caml/backtrace.h \
+ ../byterun/caml/exec.h
 dynlink.$(O): dynlink.c ../byterun/caml/config.h ../byterun/caml/m.h \
  ../byterun/caml/s.h ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/mlvalues.h \
@@ -790,7 +792,9 @@ meta.p.$(O): meta.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
  ../byterun/caml/minor_gc.h ../byterun/caml/misc.h \
  ../byterun/caml/mlvalues.h ../byterun/caml/prims.h \
- ../byterun/caml/stacks.h ../byterun/caml/memory.h
+ ../byterun/caml/stacks.h ../byterun/caml/memory.h \
+ ../byterun/caml/backtrace_prim.h ../byterun/caml/backtrace.h \
+ ../byterun/caml/exec.h
 dynlink.p.$(O): dynlink.c ../byterun/caml/config.h ../byterun/caml/m.h \
  ../byterun/caml/s.h ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/mlvalues.h \
@@ -1219,7 +1223,9 @@ meta.d.$(O): meta.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
  ../byterun/caml/minor_gc.h ../byterun/caml/misc.h \
  ../byterun/caml/mlvalues.h ../byterun/caml/prims.h \
- ../byterun/caml/stacks.h ../byterun/caml/memory.h
+ ../byterun/caml/stacks.h ../byterun/caml/memory.h \
+ ../byterun/caml/backtrace_prim.h ../byterun/caml/backtrace.h \
+ ../byterun/caml/exec.h
 dynlink.d.$(O): dynlink.c ../byterun/caml/config.h ../byterun/caml/m.h \
  ../byterun/caml/s.h ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/mlvalues.h \
@@ -1648,7 +1654,9 @@ meta.i.$(O): meta.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
  ../byterun/caml/minor_gc.h ../byterun/caml/misc.h \
  ../byterun/caml/mlvalues.h ../byterun/caml/prims.h \
- ../byterun/caml/stacks.h ../byterun/caml/memory.h
+ ../byterun/caml/stacks.h ../byterun/caml/memory.h \
+ ../byterun/caml/backtrace_prim.h ../byterun/caml/backtrace.h \
+ ../byterun/caml/exec.h
 dynlink.i.$(O): dynlink.c ../byterun/caml/config.h ../byterun/caml/m.h \
  ../byterun/caml/s.h ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/mlvalues.h \

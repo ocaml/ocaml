@@ -150,7 +150,7 @@ meta.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/stacks.h \
- caml/memory.h
+ caml/memory.h caml/backtrace_prim.h caml/backtrace.h caml/exec.h
 minor_gc.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
@@ -391,7 +391,7 @@ meta.d.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/stacks.h \
- caml/memory.h
+ caml/memory.h caml/backtrace_prim.h caml/backtrace.h caml/exec.h
 minor_gc.d.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
@@ -629,7 +629,7 @@ meta.i.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/stacks.h \
- caml/memory.h
+ caml/memory.h caml/backtrace_prim.h caml/backtrace.h caml/exec.h
 minor_gc.i.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
@@ -867,7 +867,7 @@ meta.pic.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/intext.h caml/io.h caml/major_gc.h caml/freelist.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/address_class.h \
  caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/stacks.h \
- caml/memory.h
+ caml/memory.h caml/backtrace_prim.h caml/backtrace.h caml/exec.h
 minor_gc.pic.$(O): minor_gc.c caml/custom.h caml/mlvalues.h caml/config.h \
  caml/m.h caml/s.h caml/misc.h caml/config.h caml/fail.h caml/finalise.h \
  caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h \
