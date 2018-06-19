@@ -530,10 +530,6 @@ let mk_directive ~loc name arg =
 #define _expr_of_let_bindings (expr_of_let_bindings ~loc:$loc)
 #define _class_of_let_bindings (class_of_let_bindings ~loc:$loc)
 
-#define _reloc_typ (reloc_typ ~loc:$loc)
-#define _reloc_exp (reloc_exp ~loc:$loc)
-#define _reloc_pat (reloc_pat ~loc:$loc)
-
 #define _wrap_exp_attrs (wrap_exp_attrs ~loc:$loc)
 #define _wrap_typ_attrs (wrap_typ_attrs ~loc:$loc)
 #define _wrap_mod_attrs (wrap_mod_attrs ~loc:$loc)
@@ -1230,7 +1226,8 @@ class_structure:
 ;
 class_self_pattern:
     LPAREN pattern RPAREN
-      { _reloc_pat $2 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        reloc_pat ~loc $2 }
   | LPAREN pattern COLON core_type RPAREN
       { _mkpat(Ppat_constraint($2, $4)) }
   | /* empty */
@@ -1620,11 +1617,13 @@ simple_expr:
   | name_tag %prec prec_constant_constructor
       { _mkexp(Pexp_variant($1, None)) }
   | LPAREN seq_expr RPAREN
-      { _reloc_exp $2 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        reloc_exp ~loc $2 }
   | LPAREN seq_expr error
       { _unclosed("(", 1, ")", 3) }
   | BEGIN ext_attributes seq_expr END
-      { _wrap_exp_attrs (_reloc_exp $3) $2 (* check location *) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        _wrap_exp_attrs (reloc_exp ~loc $3) $2 (* check location *) }
   | BEGIN ext_attributes END
       { _mkexp_attrs (Pexp_construct (mkloc (Lident "()") (_symbol_rloc()),
                                None)) $2 }
@@ -1709,11 +1708,13 @@ simple_expr:
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi error
       { _unclosed("[|", 3, "|]", 6) }
   | LBRACKET expr_semi_list opt_semi RBRACKET
-      { _reloc_exp (mktailexp (_rhs_loc(4)) (List.rev $2)) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        reloc_exp ~loc (mktailexp (_rhs_loc(4)) (List.rev $2)) }
   | LBRACKET expr_semi_list opt_semi error
       { _unclosed("[", 1, "]", 4) }
   | mkrhs(mod_longident) DOT LBRACKET expr_semi_list opt_semi RBRACKET
-      { let list_exp = _reloc_exp (mktailexp (_rhs_loc(6)) (List.rev $4)) in
+      { let loc = make_loc $symbolstartpos $endpos in
+        let list_exp = reloc_exp ~loc (mktailexp (_rhs_loc(6)) (List.rev $4)) in
         _mkexp(Pexp_open(Fresh, $1, list_exp)) }
   | mkrhs(mod_longident) DOT LBRACKET RBRACKET
       { _mkexp(Pexp_open(Fresh, $1,
@@ -2004,7 +2005,8 @@ simple_pattern_not_ident:
   | mod_longident DOT LPAREN error
       { _expecting(4, "pattern") }
   | LPAREN pattern RPAREN
-      { _reloc_pat $2 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        reloc_pat ~loc $2 }
   | LPAREN pattern error
       { _unclosed("(", 1, ")", 3) }
   | LPAREN pattern COLON core_type RPAREN
@@ -2031,7 +2033,8 @@ simple_delimited_pattern:
   | LBRACE lbl_pattern_list error
     { _unclosed("{", 1, "}", 3) }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
-    { _reloc_pat (mktailpat (_rhs_loc(4)) (List.rev $2)) }
+    { let loc = make_loc $symbolstartpos $endpos in
+      reloc_pat ~loc (mktailpat (_rhs_loc(4)) (List.rev $2)) }
   | LBRACKET pattern_semi_list opt_semi error
     { _unclosed("[", 1, "]", 4) }
   | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
@@ -2466,7 +2469,8 @@ simple_core_type2:
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
       { _mktyp(Ptyp_variant(List.rev $3, Closed, Some (List.rev $5))) }
   | LPAREN MODULE ext_attributes package_type RPAREN
-      { _wrap_typ_attrs (_reloc_typ $4) $3 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        _wrap_typ_attrs (reloc_typ ~loc $4) $3 }
   | extension
       { _mktyp (Ptyp_extension $1) }
 ;
