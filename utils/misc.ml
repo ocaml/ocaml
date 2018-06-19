@@ -272,17 +272,14 @@ let expand_directory alt s =
                        (String.sub s 1 (String.length s - 1))
   else s
 
-let split_path_contents ?sep = function
+let path_separator =
+  match Sys.os_type with
+  | "Win32" -> ';'
+  | _ -> ':'
+
+let split_path_contents ?(sep = path_separator) = function
   | "" -> []
-  | s ->
-      let path_separator =
-        match sep, Sys.os_type with
-        | Some c, _ -> c
-        | None, ("Unix" | "Cygwin") -> ':'
-        | None, "Win32" -> ';'
-        | None, _ -> assert false
-      in
-      String.split_on_char path_separator s
+  | s -> String.split_on_char sep s
 
 (* Hashtable functions *)
 
