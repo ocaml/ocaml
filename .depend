@@ -373,7 +373,7 @@ typing/typecore.cmo : utils/warnings.cmi typing/typetexp.cmi \
     typing/typedecl.cmi typing/subst.cmi typing/stypes.cmi \
     typing/printtyp.cmi typing/printpat.cmi typing/primitive.cmi \
     typing/predef.cmi typing/path.cmi parsing/parsetree.cmi \
-    typing/parmatch.cmi typing/oprint.cmi utils/misc.cmi \
+    typing/parmatch.cmi typing/oprint.cmi typing/mtype.cmi utils/misc.cmi \
     parsing/longident.cmi parsing/location.cmi typing/ident.cmi \
     typing/env.cmi typing/ctype.cmi utils/config.cmi typing/cmt_format.cmi \
     utils/clflags.cmi parsing/builtin_attributes.cmi typing/btype.cmi \
@@ -384,7 +384,7 @@ typing/typecore.cmx : utils/warnings.cmx typing/typetexp.cmx \
     typing/typedecl.cmx typing/subst.cmx typing/stypes.cmx \
     typing/printtyp.cmx typing/printpat.cmx typing/primitive.cmx \
     typing/predef.cmx typing/path.cmx parsing/parsetree.cmi \
-    typing/parmatch.cmx typing/oprint.cmx utils/misc.cmx \
+    typing/parmatch.cmx typing/oprint.cmx typing/mtype.cmx utils/misc.cmx \
     parsing/longident.cmx parsing/location.cmx typing/ident.cmx \
     typing/env.cmx typing/ctype.cmx utils/config.cmx typing/cmt_format.cmx \
     utils/clflags.cmx parsing/builtin_attributes.cmx typing/btype.cmx \
@@ -795,13 +795,13 @@ asmcomp/asmlibrarian.cmi :
 asmcomp/asmlink.cmo : bytecomp/runtimedef.cmi utils/profile.cmi \
     utils/misc.cmi parsing/location.cmi asmcomp/emitaux.cmi asmcomp/emit.cmi \
     utils/consistbl.cmi utils/config.cmi asmcomp/compilenv.cmi \
-    asmcomp/cmx_format.cmi asmcomp/cmmgen.cmi utils/clflags.cmi \
-    utils/ccomp.cmi asmcomp/asmgen.cmi asmcomp/asmlink.cmi
+    asmcomp/cmx_format.cmi asmcomp/cmmgen.cmi asmcomp/cmm.cmi \
+    utils/clflags.cmi utils/ccomp.cmi asmcomp/asmgen.cmi asmcomp/asmlink.cmi
 asmcomp/asmlink.cmx : bytecomp/runtimedef.cmx utils/profile.cmx \
     utils/misc.cmx parsing/location.cmx asmcomp/emitaux.cmx asmcomp/emit.cmx \
     utils/consistbl.cmx utils/config.cmx asmcomp/compilenv.cmx \
-    asmcomp/cmx_format.cmi asmcomp/cmmgen.cmx utils/clflags.cmx \
-    utils/ccomp.cmx asmcomp/asmgen.cmx asmcomp/asmlink.cmi
+    asmcomp/cmx_format.cmi asmcomp/cmmgen.cmx asmcomp/cmm.cmx \
+    utils/clflags.cmx utils/ccomp.cmx asmcomp/asmgen.cmx asmcomp/asmlink.cmi
 asmcomp/asmlink.cmi : asmcomp/cmx_format.cmi
 asmcomp/asmpackager.cmo : typing/typemod.cmi bytecomp/translmod.cmi \
     utils/profile.cmi utils/misc.cmi middle_end/middle_end.cmi \
