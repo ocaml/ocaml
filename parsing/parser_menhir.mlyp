@@ -490,7 +490,6 @@ let mk_directive ~loc name arg =
 #define _mkrhs(s, p) (mkrhs (s) $locof(p))
 #define _mkrhs2(s, p1, p2) (mkrhs2 (s) $startpos($ ## p1) $endpos($ ## p2))
 
-#define _mkpat (mkpat ~loc:$loc)
 #define _mkexp (mkexp ~loc:$loc)
 #define _mkmty (mkmty ~loc:$loc)
 #define _mksig (mksig ~loc:$loc)
@@ -504,7 +503,6 @@ let mk_directive ~loc name arg =
 #define _mkclass (mkclass ~loc:$loc)
 
 #define _mkexp_attrs (mkexp_attrs ~loc:$loc)
-#define _mkpat_attrs (mkpat_attrs ~loc:$loc)
 #define _mkexp_constraint (mkexp_constraint ~loc:$loc)
 #define _mkoperator(s, p) (mkoperator s $locof(p))
 #define _mkuplus (mkuplus ~loc:$loc ~oploc:$locof(1))
@@ -1219,7 +1217,8 @@ class_self_pattern:
       { let loc = make_loc $symbolstartpos $endpos in
         reloc_pat ~loc $2 }
   | LPAREN pattern COLON core_type RPAREN
-      { _mkpat(Ppat_constraint($2, $4)) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat ~loc (Ppat_constraint($2, $4)) }
   | /* empty */
       { _ghpat(Ppat_any) }
 ;
@@ -1448,9 +1447,14 @@ labeled_simple_pattern:
   | simple_pattern
       { (Nolabel, None, $1) }
 ;
+pattern_var2:
+    mkrhs(LIDENT)     { Ppat_var $1 }
+  | UNDERSCORE        { Ppat_any }
+;
 pattern_var:
-    mkrhs(LIDENT)            { _mkpat(Ppat_var $1) }
-  | UNDERSCORE        { _mkpat Ppat_any }
+    pattern_var2
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat ~loc $1 }
 ;
 opt_default:
     /* empty */                         { None }
@@ -1460,16 +1464,21 @@ label_let_pattern:
     label_var
       { $1 }
   | label_var COLON core_type
-      { let (lab, pat) = $1 in (lab, _mkpat(Ppat_constraint(pat, $3))) }
+      { let (lab, pat) = $1 in
+        let loc = make_loc $symbolstartpos $endpos in
+        (lab, mkpat ~loc (Ppat_constraint(pat, $3))) }
 ;
 label_var:
-    mkrhs(LIDENT)    { ($1.Location.txt, _mkpat(Ppat_var $1)) }
+    mkrhs(LIDENT)
+      { let loc = make_loc $symbolstartpos $endpos in
+        ($1.Location.txt, mkpat ~loc (Ppat_var $1)) }
 ;
 let_pattern:
     pattern
       { $1 }
   | pattern COLON core_type
-      { _mkpat(Ppat_constraint($1, $3)) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat ~loc (Ppat_constraint($1, $3)) }
 ;
 expr:
     simple_expr %prec below_HASH
@@ -1925,44 +1934,55 @@ opt_type_constraint:
 
 /* Patterns */
 
-pattern:
+%inline pattern2:
   | pattern AS mkrhs(val_ident)
-      { _mkpat(Ppat_alias($1, $3)) }
+      { Ppat_alias($1, $3) }
   | pattern AS only_loc(error)
       { expecting $3 "identifier" }
   | pattern_comma_list  %prec below_COMMA
-      { _mkpat(Ppat_tuple(List.rev $1)) }
-  | pattern COLONCOLON pattern
-      { let loc = $loc in 
-        mkpat_cons (_rhs_loc(2)) (ghpat ~loc (Ppat_tuple[$1;$3])) loc }
+      { Ppat_tuple(List.rev $1) }
   | pattern COLONCOLON only_loc(error)
       { expecting $3 "pattern" }
   | pattern BAR pattern
-      { _mkpat(Ppat_or($1, $3)) }
+      { Ppat_or($1, $3) }
   | pattern BAR only_loc(error)
       { expecting $3 "pattern" }
+;
+pattern:
+    pattern2
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat ~loc $1 }
+  | pattern COLONCOLON pattern
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat_cons (_rhs_loc(2)) (ghpat ~loc (Ppat_tuple[$1;$3])) loc }
   | EXCEPTION ext_attributes pattern %prec prec_constr_appl
-      { _mkpat_attrs (Ppat_exception $3) $2}
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat_attrs ~loc (Ppat_exception $3) $2}
   | pattern attribute
       { Pat.attr $1 $2 }
   | pattern_gen { $1 }
 ;
-pattern_no_exn:
+%inline pattern_no_exn2:
   | pattern_no_exn AS mkrhs(val_ident)
-      { _mkpat(Ppat_alias($1, $3)) }
+      { Ppat_alias($1, $3) }
   | pattern_no_exn AS only_loc(error)
       { expecting $3 "identifier" }
   | pattern_no_exn_comma_list  %prec below_COMMA
-      { _mkpat(Ppat_tuple(List.rev $1)) }
-  | pattern_no_exn COLONCOLON pattern
-      { let loc = $loc in
-        mkpat_cons (_rhs_loc(2)) (ghpat ~loc (Ppat_tuple[$1;$3])) loc }
+      { Ppat_tuple(List.rev $1) }
   | pattern_no_exn COLONCOLON only_loc(error)
       { expecting $3 "pattern" }
   | pattern_no_exn BAR pattern
-      { _mkpat(Ppat_or($1, $3)) }
+      { Ppat_or($1, $3) }
   | pattern_no_exn BAR only_loc(error)
       { expecting $3 "pattern" }
+;
+pattern_no_exn:
+    pattern_no_exn2
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat ~loc $1 }
+  | pattern_no_exn COLONCOLON pattern
+      { let loc = $loc in
+        mkpat_cons (_rhs_loc(2)) (ghpat ~loc (Ppat_tuple[$1;$3])) loc }
   | pattern_no_exn attribute
       { Pat.attr $1 $2 }
   | pattern_gen { $1 }
@@ -1971,73 +1991,88 @@ pattern_gen:
     simple_pattern
       { $1 }
   | mkrhs(constr_longident) pattern %prec prec_constr_appl
-      { _mkpat(Ppat_construct($1, Some $2)) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat ~loc (Ppat_construct($1, Some $2)) }
   | name_tag pattern %prec prec_constr_appl
-      { _mkpat(Ppat_variant($1, Some $2)) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat ~loc (Ppat_variant($1, Some $2)) }
   | LAZY ext_attributes simple_pattern
-      { _mkpat_attrs (Ppat_lazy $3) $2}
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat_attrs ~loc (Ppat_lazy $3) $2}
 ;
 simple_pattern:
     mkrhs(val_ident) %prec below_EQUAL
-      { _mkpat(Ppat_var ($1)) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat ~loc (Ppat_var ($1)) }
   | simple_pattern_not_ident { $1 }
 ;
-simple_pattern_not_ident:
+%inline simple_pattern_not_ident2:
   | UNDERSCORE
-      { _mkpat(Ppat_any) }
+      { Ppat_any }
   | signed_constant
-      { _mkpat(Ppat_constant $1) }
+      { Ppat_constant $1 }
   | signed_constant DOTDOT signed_constant
-      { _mkpat(Ppat_interval ($1, $3)) }
+      { Ppat_interval ($1, $3) }
   | mkrhs(constr_longident)
-      { _mkpat(Ppat_construct($1, None)) }
+      { Ppat_construct($1, None) }
   | name_tag
-      { _mkpat(Ppat_variant($1, None)) }
+      { Ppat_variant($1, None) }
   | HASH mkrhs(type_longident)
-      { _mkpat(Ppat_type ($2)) }
-  | simple_delimited_pattern
-      { $1 }
+      { Ppat_type ($2) }
   | mkrhs(mod_longident) DOT simple_delimited_pattern
-      { _mkpat @@ Ppat_open($1, $3) }
+      { Ppat_open($1, $3) }
   | mkrhs(mod_longident) DOT LBRACKET RBRACKET
-    { _mkpat @@ Ppat_open($1, _mkpat @@
-               Ppat_construct ( _mkrhs2((Lident "[]"), 3, 4), None)) }
+    { let loc = make_loc $symbolstartpos $endpos in
+      let nil = _mkrhs2((Lident "[]"), 3, 4) in
+      Ppat_open($1, mkpat ~loc (Ppat_construct(nil, None))) }
   | mkrhs(mod_longident) DOT LPAREN RPAREN
-      { _mkpat @@ Ppat_open($1, _mkpat @@
-                 Ppat_construct ( _mkrhs2((Lident "()"), 3, 4), None) ) }
+    { let loc = make_loc $symbolstartpos $endpos in
+      let nil = _mkrhs2((Lident "()"), 3, 4) in
+      Ppat_open($1, mkpat ~loc (Ppat_construct(nil, None))) }
   | mkrhs(mod_longident) DOT LPAREN pattern RPAREN
-      { _mkpat @@ Ppat_open ($1, $4) }
+      { Ppat_open ($1, $4) }
   | mod_longident DOT only_loc(LPAREN) pattern only_loc(error)
-      {unclosed "(" $3 ")" $5  }
+      { unclosed "(" $3 ")" $5  }
   | mod_longident DOT LPAREN only_loc(error)
       { expecting $4 "pattern" }
-  | LPAREN pattern RPAREN
-      { let loc = make_loc $symbolstartpos $endpos in
-        reloc_pat ~loc $2 }
   | only_loc(LPAREN) pattern only_loc(error)
       { unclosed "(" $1 ")" $3 }
   | LPAREN pattern COLON core_type RPAREN
-      { _mkpat(Ppat_constraint($2, $4)) }
+      { Ppat_constraint($2, $4) }
   | only_loc(LPAREN) pattern COLON core_type only_loc(error)
       { unclosed "(" $1 ")" $5 }
   | LPAREN pattern COLON only_loc(error)
       { expecting $4 "type" }
-  | LPAREN MODULE ext_attributes mkrhs(UIDENT) RPAREN
-      { _mkpat_attrs (Ppat_unpack $4) $3 }
-  | LPAREN MODULE ext_attributes mkrhs(UIDENT) COLON package_type RPAREN
-      { _mkpat_attrs
-          (Ppat_constraint(_mkpat(Ppat_unpack $4), $6))
-          $3 }
   | only_loc(LPAREN) MODULE ext_attributes UIDENT COLON package_type
     only_loc(error)
       { unclosed "(" $1 ")" $7 }
   | extension
-      { _mkpat(Ppat_extension $1) }
+      { Ppat_extension $1 }
+;
+simple_pattern_not_ident:
+    simple_pattern_not_ident2
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat ~loc $1 }
+  | LPAREN pattern RPAREN
+      { let loc = make_loc $symbolstartpos $endpos in
+        reloc_pat ~loc $2 }
+  | simple_delimited_pattern
+      { $1 }
+  | LPAREN MODULE ext_attributes mkrhs(UIDENT) RPAREN
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat_attrs ~loc (Ppat_unpack $4) $3 }
+  | LPAREN MODULE ext_attributes mkrhs(UIDENT) COLON package_type RPAREN
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkpat_attrs ~loc
+          (Ppat_constraint(mkpat ~loc (Ppat_unpack $4), $6))
+          $3 }
 ;
 
 simple_delimited_pattern:
   | LBRACE lbl_pattern_list RBRACE
-    { let (fields, closed) = $2 in _mkpat(Ppat_record(fields, closed)) }
+    { let (fields, closed) = $2 in
+      let loc = make_loc $symbolstartpos $endpos in
+      mkpat ~loc (Ppat_record(fields, closed)) }
   | only_loc(LBRACE) lbl_pattern_list only_loc(error)
     { unclosed "{" $1 "}" $3 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
@@ -2046,9 +2081,11 @@ simple_delimited_pattern:
   | only_loc(LBRACKET) pattern_semi_list opt_semi only_loc(error)
     { unclosed "[" $1 "]" $4 }
   | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
-    { _mkpat(Ppat_array(List.rev $2)) }
+    { let loc = make_loc $symbolstartpos $endpos in
+      mkpat ~loc (Ppat_array(List.rev $2)) }
   | LBRACKETBAR BARRBRACKET
-    { _mkpat(Ppat_array []) }
+    { let loc = make_loc $symbolstartpos $endpos in
+      mkpat ~loc (Ppat_array []) }
   | only_loc(LBRACKETBAR) pattern_semi_list opt_semi only_loc(error)
     { unclosed "[|" $1 "|]" $4 }
 
