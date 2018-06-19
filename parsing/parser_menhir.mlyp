@@ -486,7 +486,6 @@ let mk_directive ~loc name arg =
 #define _extra_rhs_core_type(a, p) (extra_rhs_core_type a _rhs_info(p))
 
 #define _rhs_docs(p1, p2) (rhs_docs $startpos($ ## p1) $endpos($ ## p2))
-#define _mark_symbol_docs() (mark_symbol_docs $symbolstartpos $endpos)
 
 #define _mark_rhs_docs(p1, p2) (mark_rhs_docs $startpos($ ## p1) $endpos($ ## p2))
 
@@ -2813,7 +2812,7 @@ post_item_attribute:
 ;
 floating_attribute:
   LBRACKETATATAT attr_id payload RBRACKET
-      { _mark_symbol_docs ();
+      { mark_symbol_docs $symbolstartpos $endpos;
         Attr.mk ~loc:(_symbol_rloc()) $2 $3 }
 ;
 post_item_attributes:
