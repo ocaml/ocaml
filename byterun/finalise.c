@@ -314,7 +314,7 @@ static void generic_final_minor_update (struct finalisable * final)
       CAMLassert (Is_block (final->table[i].val));
       CAMLassert (Is_in_heap_or_young (final->table[i].val));
       CAMLassert (Tag_val (final->table[i].val) != Forward_tag);
-      if(Is_young(final->table[j].val) && Hd_val(final->table[i].val) != 0){
+      if(Is_young(final->table[i].val) && Hd_val(final->table[i].val) != 0){
         /** dead */
         to_do_tl->item[k] = final->table[i];
         /* The finalisation function is called with unit not with the value */
