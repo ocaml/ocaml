@@ -547,7 +547,7 @@ let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
   close_in ic;
   close_out oc;
   remove_file bytecode_name;
-  remove_file prim_name
+  if not !Clflags.keep_camlprimc_file then remove_file prim_name
 
 (* Fix the name of the output file, if the C compiler changes it behind
    our back. *)
@@ -582,7 +582,11 @@ let link ppf objfiles output_name =
     link_bytecode ppf tolink output_name true
   else if not !Clflags.output_c_object then begin
     let bytecode_name = Filename.temp_file "camlcode" "" in
-    let prim_name = Filename.temp_file "camlprim" ".c" in
+    let prim_name =
+      if !Clflags.keep_camlprimc_file then
+        output_name ^ ".camlprim.c"
+      else
+        Filename.temp_file "camlprim" ".c" in
     try
       link_bytecode ppf tolink bytecode_name false;
       let poc = open_out prim_name in
@@ -608,12 +612,13 @@ let link ppf objfiles output_name =
       let exec_name = fix_exec_name output_name in
       if not (build_custom_runtime prim_name exec_name)
       then raise(Error Custom_runtime);
-      if !Clflags.make_runtime
-      then (remove_file bytecode_name; remove_file prim_name)
-      else append_bytecode_and_cleanup bytecode_name exec_name prim_name
+      if !Clflags.make_runtime then begin
+        remove_file bytecode_name;
+        if not !Clflags.keep_camlprimc_file then remove_file prim_name
+      end else append_bytecode_and_cleanup bytecode_name exec_name prim_name
     with x ->
       remove_file bytecode_name;
-      remove_file prim_name;
+      if not !Clflags.keep_camlprimc_file then remove_file prim_name;
       raise x
   end else begin
     let basename = Filename.chop_extension output_name in
