@@ -532,9 +532,6 @@ let mk_directive ~loc name arg =
 #define _pat_of_label(s, p) (pat_of_label ~loc:$loc s $locof(p))
 #define _exp_of_label(s, p) (exp_of_label ~loc:$loc s $locof(p))
 
-#define _expecting(p, s) (expecting $locof(p) s)
-#define _not_expecting(p, s) (not_expecting $locof(p) s)
-
 #define _text_str(p) (text_str $startpos($ ## p))
 #define _text_sig(p) (text_sig $startpos($ ## p))
 #define _text_cstr(p) (text_cstr $startpos($ ## p))
@@ -770,6 +767,7 @@ The precedences must be listed from low to high.
 ;
 
 %inline only_loc(symb): symb { make_loc $startpos $endpos }
+%inline with_loc(symb): symb { ($1, make_loc $startpos $endpos) }
 
 /* Entry points */
 
@@ -1603,8 +1601,8 @@ expr:
       { unclosed "object" $1 "end" $4 }
   | expr attribute
       { Exp.attr $1 $2 }
-  | UNDERSCORE
-     { _not_expecting(1, "wildcard \"_\"") }
+  | only_loc(UNDERSCORE)
+     { not_expecting $1 "wildcard \"_\"" }
 ;
 simple_expr:
     mkrhs(val_longident)
@@ -1931,19 +1929,19 @@ opt_type_constraint:
 pattern:
   | pattern AS mkrhs(val_ident)
       { _mkpat(Ppat_alias($1, $3)) }
-  | pattern AS error
-      { _expecting(3, "identifier") }
+  | pattern AS only_loc(error)
+      { expecting $3 "identifier" }
   | pattern_comma_list  %prec below_COMMA
       { _mkpat(Ppat_tuple(List.rev $1)) }
   | pattern COLONCOLON pattern
       { let loc = $loc in 
         mkpat_cons (_rhs_loc(2)) (ghpat ~loc (Ppat_tuple[$1;$3])) loc }
-  | pattern COLONCOLON error
-      { _expecting(3, "pattern") }
+  | pattern COLONCOLON only_loc(error)
+      { expecting $3 "pattern" }
   | pattern BAR pattern
       { _mkpat(Ppat_or($1, $3)) }
-  | pattern BAR error
-      { _expecting(3, "pattern") }
+  | pattern BAR only_loc(error)
+      { expecting $3 "pattern" }
   | EXCEPTION ext_attributes pattern %prec prec_constr_appl
       { _mkpat_attrs (Ppat_exception $3) $2}
   | pattern attribute
@@ -1953,19 +1951,19 @@ pattern:
 pattern_no_exn:
   | pattern_no_exn AS mkrhs(val_ident)
       { _mkpat(Ppat_alias($1, $3)) }
-  | pattern_no_exn AS error
-      { _expecting(3, "identifier") }
+  | pattern_no_exn AS only_loc(error)
+      { expecting $3 "identifier" }
   | pattern_no_exn_comma_list  %prec below_COMMA
       { _mkpat(Ppat_tuple(List.rev $1)) }
   | pattern_no_exn COLONCOLON pattern
       { let loc = $loc in
         mkpat_cons (_rhs_loc(2)) (ghpat ~loc (Ppat_tuple[$1;$3])) loc }
-  | pattern_no_exn COLONCOLON error
-      { _expecting(3, "pattern") }
+  | pattern_no_exn COLONCOLON only_loc(error)
+      { expecting $3 "pattern" }
   | pattern_no_exn BAR pattern
       { _mkpat(Ppat_or($1, $3)) }
-  | pattern_no_exn BAR error
-      { _expecting(3, "pattern") }
+  | pattern_no_exn BAR only_loc(error)
+      { expecting $3 "pattern" }
   | pattern_no_exn attribute
       { Pat.attr $1 $2 }
   | pattern_gen { $1 }
@@ -2012,8 +2010,8 @@ simple_pattern_not_ident:
       { _mkpat @@ Ppat_open ($1, $4) }
   | mod_longident DOT only_loc(LPAREN) pattern only_loc(error)
       {unclosed "(" $3 ")" $5  }
-  | mod_longident DOT LPAREN error
-      { _expecting(4, "pattern") }
+  | mod_longident DOT LPAREN only_loc(error)
+      { expecting $4 "pattern" }
   | LPAREN pattern RPAREN
       { let loc = make_loc $symbolstartpos $endpos in
         reloc_pat ~loc $2 }
@@ -2023,8 +2021,8 @@ simple_pattern_not_ident:
       { _mkpat(Ppat_constraint($2, $4)) }
   | only_loc(LPAREN) pattern COLON core_type only_loc(error)
       { unclosed "(" $1 ")" $5 }
-  | LPAREN pattern COLON error
-      { _expecting(4, "type") }
+  | LPAREN pattern COLON only_loc(error)
+      { expecting $4 "type" }
   | LPAREN MODULE ext_attributes mkrhs(UIDENT) RPAREN
       { _mkpat_attrs (Ppat_unpack $4) $3 }
   | LPAREN MODULE ext_attributes mkrhs(UIDENT) COLON package_type RPAREN
@@ -2058,12 +2056,12 @@ simple_delimited_pattern:
 pattern_comma_list:
     pattern_comma_list COMMA pattern            { $3 :: $1 }
   | pattern COMMA pattern                       { [$3; $1] }
-  | pattern COMMA error                         { _expecting(3, "pattern") }
+  | pattern COMMA only_loc(error)               { expecting $3 "pattern" }
 ;
 pattern_no_exn_comma_list:
     pattern_no_exn_comma_list COMMA pattern     { $3 :: $1 }
   | pattern_no_exn COMMA pattern                { [$3; $1] }
-  | pattern_no_exn COMMA error                  { _expecting(3, "pattern") }
+  | pattern_no_exn COMMA only_loc(error)        { expecting $3 "pattern" }
 ;
 pattern_semi_list:
     pattern                                     { [$1] }
@@ -2291,19 +2289,21 @@ label_declaration_semi:
 /* Type Extensions */
 
 str_type_extension:
-  TYPE ext_attributes nonrec_flag optional_type_parameters mkrhs(type_longident)
+  TYPE ext_attributes
+  with_loc(nonrec_flag) optional_type_parameters mkrhs(type_longident)
   PLUSEQ private_flag str_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
-        if $3 <> Recursive then _not_expecting(3, "nonrec flag");
+        if fst $3 <> Recursive then not_expecting (snd $3) "nonrec flag";
         Te.mk $5 (List.rev $8) ~params:$4 ~priv:$7
           ~attrs:(attrs@$9) ~docs:(_symbol_docs ())
         , ext }
 ;
 sig_type_extension:
-  TYPE ext_attributes nonrec_flag optional_type_parameters mkrhs(type_longident)
+  TYPE ext_attributes
+  with_loc(nonrec_flag) optional_type_parameters mkrhs(type_longident)
   PLUSEQ private_flag sig_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
-        if $3 <> Recursive then _not_expecting(3, "nonrec flag");
+        if fst $3 <> Recursive then not_expecting (snd $3) "nonrec flag";
         Te.mk $5 (List.rev $8) ~params:$4 ~priv:$7
           ~attrs:(attrs @ $9) ~docs:(_symbol_docs ())
         , ext }
@@ -2592,8 +2592,8 @@ val_ident:
     LIDENT                                      { $1 }
   | LPAREN operator RPAREN                      { $2 }
   | only_loc(LPAREN) operator only_loc(error)   { unclosed "(" $1 ")" $3 }
-  | LPAREN error                                { _expecting(2, "operator") }
-  | LPAREN MODULE error                         { _expecting(3, "module-expr") }
+  | LPAREN only_loc(error)                      { expecting $2 "operator" }
+  | LPAREN MODULE only_loc(error)               { expecting $3 "module-expr" }
 ;
 operator:
     PREFIXOP                                    { $1 }
