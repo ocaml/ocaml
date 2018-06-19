@@ -528,7 +528,6 @@ let mk_directive ~loc name arg =
 #define _expr_of_let_bindings (expr_of_let_bindings ~loc:$loc)
 #define _class_of_let_bindings (class_of_let_bindings ~loc:$loc)
 
-#define _mkpatvar(s, p) (mkpatvar s $locof(p))
 #define _pat_of_label(s, p) (pat_of_label ~loc:$loc s $locof(p))
 #define _exp_of_label(s, p) (exp_of_label ~loc:$loc s $locof(p))
 
@@ -1791,11 +1790,13 @@ lident_list:
     mkrhs(LIDENT)                     { [$1] }
   | mkrhs(LIDENT) lident_list         { $1 :: $2 }
 ;
+%inline let_ident:
+    val_ident { mkpatvar $1 (make_loc $startpos $endpos) };
 let_binding_body:
-    val_ident strict_binding
-      { (_mkpatvar($1, 1), $2) }
-  | val_ident type_constraint EQUAL seq_expr
-      { let v = _mkpatvar($1, 1) in (* PR#7344 *)
+    let_ident strict_binding
+      { ($1, $2) }
+  | let_ident type_constraint EQUAL seq_expr
+      { let v = $1 in (* PR#7344 *)
         let t =
           match $2 with
             Some t, None -> t
@@ -1806,19 +1807,18 @@ let_binding_body:
         let patloc = _rhs_interval(1, 2) in
         (ghpat ~loc:patloc (Ppat_constraint(v, typ)),
          _mkexp_constraint $4 $2) }
-  | val_ident COLON typevar_list DOT core_type EQUAL seq_expr
+  | let_ident COLON typevar_list DOT core_type EQUAL seq_expr
       { let typloc = _rhs_interval(3, 5) in
         let patloc = _rhs_interval(1, 5) in
         (ghpat ~loc:patloc
-           (Ppat_constraint(_mkpatvar($1, 1),
-                            ghtyp ~loc:typloc (Ptyp_poly(List.rev $3,$5)))),
+           (Ppat_constraint($1, ghtyp ~loc:typloc (Ptyp_poly(List.rev $3,$5)))),
          $7) }
-  | val_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
+  | let_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
       { let exp, poly =
           let loc = make_loc $symbolstartpos $endpos in
           wrap_type_annotation ~loc $4 $6 $8 in
         let loc = _rhs_interval(1, 6) in
-        (ghpat ~loc (Ppat_constraint(_mkpatvar($1, 1), poly)), exp) }
+        (ghpat ~loc (Ppat_constraint($1, poly)), exp) }
   | pattern_no_exn EQUAL seq_expr
       { ($1, $3) }
   | simple_pattern_not_ident COLON core_type EQUAL seq_expr
