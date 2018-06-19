@@ -807,8 +807,7 @@ structure_item:
   | item_extension post_item_attributes
       { mkstr(Pstr_extension ($1, (add_docs_attrs (symbol_docs ()) $2))) }
   | floating_attribute
-      { mark_symbol_docs ();
-        mkstr(Pstr_attribute $1) }
+      { mkstr(Pstr_attribute $1) }
 ;
 str_include_statement:
     INCLUDE ext_attributes module_expr post_item_attributes
@@ -919,8 +918,7 @@ signature_item:
   | item_extension post_item_attributes
       { mksig(Psig_extension ($1, (add_docs_attrs (symbol_docs ()) $2))) }
   | floating_attribute
-      { mark_symbol_docs ();
-        mksig(Psig_attribute $1) }
+      { mksig(Psig_attribute $1) }
 ;
 open_statement:
   | OPEN override_flag ext_attributes mod_longident post_item_attributes
@@ -1099,8 +1097,7 @@ class_field:
   | item_extension post_item_attributes
       { mkcf (Pcf_extension $1) ~attrs:$2 ~docs:(symbol_docs ()) }
   | floating_attribute
-      { mark_symbol_docs ();
-        mkcf (Pcf_attribute $1) }
+      { mkcf (Pcf_attribute $1) }
 ;
 parent_binder:
     AS LIDENT
@@ -1207,8 +1204,7 @@ class_sig_field:
   | item_extension post_item_attributes
       { mkctf (Pctf_extension $1) ~attrs:$2 ~docs:(symbol_docs ()) }
   | floating_attribute
-      { mark_symbol_docs ();
-        mkctf(Pctf_attribute $1) }
+      { mkctf(Pctf_attribute $1) }
 ;
 value_type:
     VIRTUAL mutable_flag label COLON core_type
@@ -2631,7 +2627,9 @@ post_item_attribute:
   LBRACKETATAT attr_id payload RBRACKET { ($2, $3) }
 ;
 floating_attribute:
-  LBRACKETATATAT attr_id payload RBRACKET { ($2, $3) }
+  LBRACKETATATAT attr_id payload RBRACKET
+      { mark_symbol_docs ();
+        ($2, $3) }
 ;
 post_item_attributes:
     /* empty */  { [] }
