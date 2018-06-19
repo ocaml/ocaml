@@ -1048,7 +1048,7 @@ class_expr:
 ;
 class_simple_expr:
     LBRACKET core_type_comma_list RBRACKET class_longident
-      { mkclass(Pcl_constr(mkloc $4 (rhs_loc 4), List.rev $2)) }
+      { mkclass(Pcl_constr(mkrhs $4 4, List.rev $2)) }
   | class_longident
       { mkclass(Pcl_constr(mkrhs $1 1, [])) }
   | OBJECT attributes class_structure END
@@ -1112,7 +1112,7 @@ value:
 /* TODO: factorize these rules (also with method): */
     override_flag attributes MUTABLE VIRTUAL label COLON core_type
       { if $1 = Override then syntax_error ();
-        (mkloc $5 (rhs_loc 5), Mutable, Cfk_virtual $7), $2 }
+        (mkrhs $5 5, Mutable, Cfk_virtual $7), $2 }
   | override_flag attributes VIRTUAL mutable_flag label COLON core_type
       { if $1 = Override then syntax_error ();
         (mkrhs $5 5, $4, Cfk_virtual $7), $2 }
@@ -1128,20 +1128,20 @@ method_:
 /* TODO: factorize those rules... */
     override_flag attributes PRIVATE VIRTUAL label COLON poly_type
       { if $1 = Override then syntax_error ();
-        (mkloc $5 (rhs_loc 5), Private, Cfk_virtual $7), $2 }
+        (mkrhs $5 5, Private, Cfk_virtual $7), $2 }
   | override_flag attributes VIRTUAL private_flag label COLON poly_type
       { if $1 = Override then syntax_error ();
-        (mkloc $5 (rhs_loc 5), $4, Cfk_virtual $7), $2 }
+        (mkrhs $5 5, $4, Cfk_virtual $7), $2 }
   | override_flag attributes private_flag label strict_binding
-      { (mkloc $4 (rhs_loc 4), $3,
+      { (mkrhs $4 4, $3,
         Cfk_concrete ($1, ghexp(Pexp_poly ($5, None)))), $2 }
   | override_flag attributes private_flag label COLON poly_type EQUAL seq_expr
-      { (mkloc $4 (rhs_loc 4), $3,
+      { (mkrhs $4 4, $3,
         Cfk_concrete ($1, ghexp(Pexp_poly($8, Some $6)))), $2 }
   | override_flag attributes private_flag label COLON TYPE lident_list
     DOT core_type EQUAL seq_expr
       { let exp, poly = wrap_type_annotation $7 $9 $11 in
-        (mkloc $4 (rhs_loc 4), $3,
+        (mkrhs $4 4, $3,
         Cfk_concrete ($1, ghexp(Pexp_poly(exp, Some poly)))), $2 }
 ;
 
@@ -1162,7 +1162,7 @@ class_type:
  ;
 class_signature:
     LBRACKET core_type_comma_list RBRACKET clty_longident
-      { mkcty(Pcty_constr (mkloc $4 (rhs_loc 4), List.rev $2)) }
+      { mkcty(Pcty_constr (mkrhs $4 4, List.rev $2)) }
   | clty_longident
       { mkcty(Pcty_constr (mkrhs $1 1, [])) }
   | OBJECT attributes class_sig_body END
