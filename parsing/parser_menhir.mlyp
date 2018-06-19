@@ -530,7 +530,6 @@ let mk_directive ~loc name arg =
 #define _expr_of_let_bindings (expr_of_let_bindings ~loc:$loc)
 #define _class_of_let_bindings (class_of_let_bindings ~loc:$loc)
 
-#define _wrap_exp_attrs (wrap_exp_attrs ~loc:$loc)
 #define _wrap_typ_attrs (wrap_typ_attrs ~loc:$loc)
 #define _wrap_mod_attrs (wrap_mod_attrs ~loc:$loc)
 #define _wrap_mty_attrs (wrap_mty_attrs ~loc:$loc)
@@ -1623,7 +1622,7 @@ simple_expr:
       { _unclosed("(", 1, ")", 3) }
   | BEGIN ext_attributes seq_expr END
       { let loc = make_loc $symbolstartpos $endpos in
-        _wrap_exp_attrs (reloc_exp ~loc $3) $2 (* check location *) }
+        wrap_exp_attrs ~loc (reloc_exp ~loc $3) $2 (* check location *) }
   | BEGIN ext_attributes END
       { _mkexp_attrs (Pexp_construct (mkloc (Lident "()") (_symbol_rloc()),
                                None)) $2 }
