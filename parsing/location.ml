@@ -67,6 +67,12 @@ let rhs_loc n = {
   loc_ghost = false;
 };;
 
+let rhs_interval m n = {
+  loc_start = Parsing.rhs_start_pos m;
+  loc_end = Parsing.rhs_end_pos n;
+  loc_ghost = false;
+};;
+
 let input_name = ref "_none_"
 let input_lexbuf = ref (None : lexbuf option)
 

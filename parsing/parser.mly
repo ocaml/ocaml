@@ -46,6 +46,7 @@ let mkrhs2 rhs pos1 pos2 =
 
 let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
+let reloc_typ x = { x with ptyp_loc = symbol_rloc () };;
 
 let mkoperator name pos =
   let loc = rhs_loc pos in
@@ -71,9 +72,14 @@ let mkpatvar name pos =
   AST node, then the location must be real; in all other cases,
   it must be ghost.
 *)
-let ghexp d = Exp.mk ~loc:(symbol_gloc ()) d
-let ghpat d = Pat.mk ~loc:(symbol_gloc ()) d
-let ghtyp d = Typ.mk ~loc:(symbol_gloc ()) d
+let ghost = function
+  | None -> symbol_gloc ()
+  | Some l -> { l with loc_ghost = true }
+
+let ghexp ?loc d = Exp.mk ~loc:(ghost loc) d
+let ghpat ?loc d = Pat.mk ~loc:(ghost loc) d
+let ghtyp ?loc d = Typ.mk ~loc:(ghost loc) d
+
 let ghloc d = { txt = d; loc = symbol_gloc () }
 let ghstr d = Str.mk ~loc:(symbol_gloc()) d
 let ghsig d = Sig.mk ~loc:(symbol_gloc()) d
@@ -249,9 +255,6 @@ let wrap_typ_attrs typ (ext, attrs) =
   match ext with
   | None -> typ
   | Some id -> ghtyp(Ptyp_extension (id, PTyp typ))
-
-let mktyp_attrs d attrs =
-  wrap_typ_attrs (mktyp d) attrs
 
 let wrap_pat_attrs pat (ext, attrs) =
   (* todo: keep exact location for the entire attribute *)
@@ -747,17 +750,16 @@ paren_module_expr:
   | LPAREN VAL attributes expr COLON package_type RPAREN
       { mkmod ~attrs:$3
           (Pmod_unpack(
-               ghexp(Pexp_constraint($4, ghtyp(Ptyp_package $6))))) }
+               ghexp(Pexp_constraint($4, $6)))) }
   | LPAREN VAL attributes expr COLON package_type COLONGREATER package_type
     RPAREN
       { mkmod ~attrs:$3
           (Pmod_unpack(
-               ghexp(Pexp_coerce($4, Some(ghtyp(Ptyp_package $6)),
-                                 ghtyp(Ptyp_package $8))))) }
+               ghexp(Pexp_coerce($4, Some $6, $8)))) }
   | LPAREN VAL attributes expr COLONGREATER package_type RPAREN
       { mkmod ~attrs:$3
           (Pmod_unpack(
-               ghexp(Pexp_coerce($4, None, ghtyp(Ptyp_package $6))))) }
+               ghexp(Pexp_coerce($4, None, $6)))) }
   | LPAREN VAL attributes expr COLON error
       { unclosed "(" 1 ")" 6 }
   | LPAREN VAL attributes expr COLONGREATER error
@@ -1579,16 +1581,14 @@ simple_expr:
   | LPAREN MODULE ext_attributes module_expr RPAREN
       { mkexp_attrs (Pexp_pack $4) $3 }
   | LPAREN MODULE ext_attributes module_expr COLON package_type RPAREN
-      { mkexp_attrs (Pexp_constraint (ghexp (Pexp_pack $4),
-                                      ghtyp (Ptyp_package $6)))
+      { mkexp_attrs (Pexp_constraint (ghexp (Pexp_pack $4), $6))
                     $3 }
   | LPAREN MODULE ext_attributes module_expr COLON error
       { unclosed "(" 1 ")" 6 }
   | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON
     package_type RPAREN
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
-        mkexp_attrs (Pexp_constraint (ghexp (Pexp_pack $6),
-                                ghtyp (Ptyp_package $8)))
+        mkexp_attrs (Pexp_constraint (ghexp (Pexp_pack $6), $8))
                     $5 )) }
   | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON error
       { unclosed "(" 3 ")" 8 }
@@ -1635,19 +1635,26 @@ let_binding_body:
           | _, Some t -> t
           | _ -> assert false
         in
-        (ghpat(Ppat_constraint(v, ghtyp(Ptyp_poly([],t)))),
+        let typ = ghtyp ~loc:t.ptyp_loc (Ptyp_poly([],t)) in
+        let patloc = rhs_interval 1 2 in
+        (ghpat ~loc:patloc (Ppat_constraint(v, typ)),
          mkexp_constraint $4 $2) }
   | val_ident COLON typevar_list DOT core_type EQUAL seq_expr
-      { (ghpat(Ppat_constraint(mkpatvar $1 1,
-                               ghtyp(Ptyp_poly(List.rev $3,$5)))),
+      { let typloc = rhs_interval 3 5 in
+        let patloc = rhs_interval 1 5 in
+        (ghpat ~loc:patloc
+           (Ppat_constraint(mkpatvar $1 1,
+                            ghtyp ~loc:typloc (Ptyp_poly(List.rev $3,$5)))),
          $7) }
   | val_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
       { let exp, poly = wrap_type_annotation $4 $6 $8 in
-        (ghpat(Ppat_constraint(mkpatvar $1 1, poly)), exp) }
+        let loc = rhs_interval 1 6 in
+        (ghpat ~loc (Ppat_constraint(mkpatvar $1 1, poly)), exp) }
   | pattern_no_exn EQUAL seq_expr
       { ($1, $3) }
   | simple_pattern_not_ident COLON core_type EQUAL seq_expr
-      { (ghpat(Ppat_constraint($1, $3)), $5) }
+      { let loc = rhs_interval 1 3 in
+        (ghpat ~loc (Ppat_constraint($1, $3)), $5) }
 ;
 let_bindings:
     let_binding                                 { $1 }
@@ -1847,8 +1854,7 @@ simple_pattern_not_ident:
       { mkpat_attrs (Ppat_unpack (mkrhs $4 4)) $3 }
   | LPAREN MODULE ext_attributes UIDENT COLON package_type RPAREN
       { mkpat_attrs
-          (Ppat_constraint(mkpat(Ppat_unpack (mkrhs $4 4)),
-                           ghtyp(Ptyp_package $6)))
+          (Ppat_constraint(mkpat(Ppat_unpack (mkrhs $4 4)), $6))
           $3 }
   | LPAREN MODULE ext_attributes UIDENT COLON package_type error
       { unclosed "(" 1 ")" 7 }
@@ -2297,12 +2303,12 @@ simple_core_type2:
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, Closed, Some (List.rev $5))) }
   | LPAREN MODULE ext_attributes package_type RPAREN
-      { mktyp_attrs (Ptyp_package $4) $3 }
+      { wrap_typ_attrs (reloc_typ $4) $3 }
   | extension
       { mktyp (Ptyp_extension $1) }
 ;
 package_type:
-    module_type { package_type_of_module_type $1 }
+    module_type { mktyp (Ptyp_package (package_type_of_module_type $1)) }
 ;
 row_field_list:
     row_field                                   { [$1] }
