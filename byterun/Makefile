@@ -68,7 +68,7 @@ OC_CFLAGS += -g
 endif
 
 OC_DEBUG_CPPFLAGS=-DDEBUG
-IFLAGS=$(OC_CFLAGS) -DCAML_INSTR
+OC_INSTR_CPPFLAGS=-DCAML_INSTR
 PICFLAGS=$(OC_CFLAGS) $(SHAREDLIB_CFLAGS)
 
 DBGO=d.$(O)
@@ -214,8 +214,9 @@ libcamlrun_shared.$(SO): $(PICOBJS)
 %.$(DBGO): %.c
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
+%.i.$(O): OC_CPPFLAGS += $(OC_INSTR_CPPFLAGS)
 %.i.$(O): %.c
-	$(CC) -c $(IFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.pic.$(O): %.c
 	$(CC) -c $(PICFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
@@ -229,7 +230,8 @@ depend: prims.c caml/opnames.h caml/jumptbl.h caml/version.h
 	$(CC) -MM $(OC_CPPFLAGS) *.c | sed -e 's/\.o/.$$(O)/'>.$@
 	$(CC) -MM $(OC_CPPFLAGS) $(OC_DEBUG_CPPFLAGS) *.c | \
 	  sed -e 's/\.o/.d.$$(O)/'>>.$@
-	$(CC) -MM $(IFLAGS) $(OC_CPPFLAGS) *.c | sed -e 's/\.o/.i.$$(O)/'>>.$@
+	$(CC) -MM $(OC_CPPFLAGS) $(OC_INSTR_CPPFLAGS) *.c | \
+	  sed -e 's/\.o/.i.$$(O)/' >> .$@
 	$(CC) -MM $(PICFLAGS) $(OC_CPPFLAGS) *.c | \
 	  sed -e 's/\.o/.pic.$$(O)/'>>.$@
 endif

@@ -61,7 +61,7 @@ PFLAGS=$(OC_CFLAGS) -pg -DPROFILING
 ASMOBJS=$(ARCH).$(O)
 endif
 
-IFLAGS=$(OC_CFLAGS) -DCAML_INSTR
+OC_INSTR_CPPFLAGS=-DCAML_INSTR
 PICFLAGS=$(OC_CFLAGS) $(SHAREDLIB_CFLAGS)
 
 ASPPFLAGS = -DSYS_$(SYSTEM) -I../byterun
@@ -145,8 +145,9 @@ $(LINKEDFILES): %.c: ../byterun/%.c
 %.d.$(O): %.c
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
+%.i.$(O): OC_CPPFLAGS += $(OC_INSTR_CPPFLAGS)
 %.i.$(O): %.c
-	$(CC) -c $(IFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.p.$(O): %.c
 	$(CC) -c $(PFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
@@ -197,8 +198,8 @@ depend: $(COBJS:.$(O)=.c) $(sources)
 	  >> .depend
 	$(CC) -MM $(OC_CPPFLAGS) $(OC_DEBUG_CPPFLAGS) $^ | \
 	  sed -e 's/\.o/.d.$$(O)/' >> .depend
-	$(CC) -MM $(IFLAGS) $(OC_CPPFLAGS) $^ | sed -e 's/\.o/.i.$$(O)/' \
-	  >> .depend
+	$(CC) -MM $(OC_CPPFLAGS) $(OC_INSTR_CPPFLAGS) $^ | \
+	  sed -e 's/\.o/.i.$$(O)/' >> .depend
 endif
 
 include .depend
