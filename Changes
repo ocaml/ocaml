@@ -119,6 +119,10 @@ Working version
   (Sébastien Hinderer, Xavier Leroy and Damien Doligez; review by
   Gabriel Scherer)
 
+- GPR#1840: build system enhancements
+  (Sébastien Hinderer, review by David Allsopp, Xavier Leroy and
+  Damien Doligez)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables
