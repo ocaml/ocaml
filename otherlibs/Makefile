@@ -31,7 +31,7 @@ endif
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
         -I $(ROOTDIR)/stdlib
-CFLAGS += $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
+CFLAGS += $(SHAREDLIB_CFLAGS) $(EXTRACFLAGS)
 CPPFLAGS += -I$(ROOTDIR)/byterun
 
 # Compilation options

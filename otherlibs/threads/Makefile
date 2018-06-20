@@ -21,7 +21,7 @@ include ../../Makefile.common
 CAMLRUN ?= ../../boot/ocamlrun
 CAMLYACC ?= ../../boot/ocamlyacc
 
-CFLAGS += $(SHAREDCCCOMPOPTS)
+CFLAGS += $(SHAREDLIB_CFLAGS)
 CPPFLAGS += -I../../byterun
 ROOTDIR=../..
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib \

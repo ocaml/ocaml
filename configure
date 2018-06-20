@@ -425,9 +425,9 @@ esac
 # In other words, when ocamlc is called to compile a third-party C
 # source file, it will _not_ pass these options to the C compiler.
 
-# The SHAREDCCCOMPOPTS make variable contains options to use to compile C
+# The SHAREDLIB_CFLAGS make variable contains options to use to compile C
 # source files so that the resulting object files can then be integrated
-# into shared libraries. It is passed to BYTECC for both C source files
+# into shared libraries. It is passed to CC for both C source files
 # in the OCaml distribution and third-party C source files compiled
 # with ocamlc.
 
@@ -805,7 +805,7 @@ esac
 
 shared_libraries_supported=false
 dl_needs_underscore=false
-sharedcccompopts=''
+sharedlib_cflags=''
 mksharedlib='shared-libs-not-available'
 rpath=''
 mksharedlibrpath=''
@@ -824,13 +824,13 @@ if $with_sharedlibs; then
     alpha*-*-osf*)
       case "$cc" in
         *gcc*)
-          sharedcccompopts="-fPIC"
+          sharedlib_cflags="-fPIC"
           mksharedlib="$cc -shared"
           rpath="-Wl,-rpath,"
           mksharedlibrpath="-Wl,-rpath,"
           shared_libraries_supported=true;;
         cc*)
-          sharedcccompopts=""
+          sharedlib_cflags=""
           mksharedlib="ld -shared -expect_unresolved '*'"
           rpath="-Wl,-rpath,"
           mksharedlibrpath="-rpath "
@@ -839,7 +839,7 @@ if $with_sharedlibs; then
     *-*-solaris2*)
       case "$cc" in
         *gcc*)
-          sharedcccompopts="-fPIC"
+          sharedlib_cflags="-fPIC"
           if sh ./solaris-ld; then
             mksharedlib="ld -G"
             rpath="-R"
@@ -853,7 +853,7 @@ if $with_sharedlibs; then
           fi
           shared_libraries_supported=true;;
         *)
-          sharedcccompopts="-KPIC"
+          sharedlib_cflags="-KPIC"
           rpath="-R"
           mksharedlibrpath="-R"
           mksharedlib="/usr/ccs/bin/ld -G"
@@ -861,8 +861,8 @@ if $with_sharedlibs; then
       esac;;
     mips*-*-irix[56]*)
       case "$cc" in
-        cc*) sharedcccompopts="";;
-        *gcc*) sharedcccompopts="-fPIC";;
+        cc*) sharedlib_cflags="";;
+        *gcc*) sharedlib_cflags="-fPIC";;
       esac
       mksharedlib="ld -shared -rdata_shared"
       rpath="-Wl,-rpath,"
@@ -882,7 +882,7 @@ if $with_sharedlibs; then
       shared_libraries_supported=true;;
     *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
-      sharedcccompopts="-fPIC"
+      sharedlib_cflags="-fPIC"
       mksharedlib="$cc -shared"
       ldflags="$ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
@@ -891,7 +891,7 @@ if $with_sharedlibs; then
       shared_libraries_supported=true;;
     powerpc-*-aix*)
       case "$ccfamily" in
-        xlc-*)sharedcccompopts="-qpic"
+        xlc-*)sharedlib_cflags="-qpic"
               mksharedlib="$cc -qmkshrobj -G"
               mksharedlibrpath="-Wl,-blibpath,"
               ldflags="$ldflags -brtl -bexpfull"
@@ -2051,8 +2051,8 @@ if ! $shared_libraries_supported; then
 fi
 
 if $with_fpic; then
-  common_cflags="$common_cflags $sharedcccompopts"
-  aspp="$aspp $sharedcccompopts"
+  common_cflags="$common_cflags $sharedlib_cflags"
+  aspp="$aspp $sharedlib_cflags"
 fi
 
 
@@ -2083,7 +2083,7 @@ config CC "$cc"
 config CPP "$cpp"
 config CFLAGS "$common_cflags $internal_cflags"
 config CPPFLAGS "$common_cppflags $internal_cppflags"
-config OCAMLC_CFLAGS "$common_cflags $sharedcccompopts"
+config OCAMLC_CFLAGS "$common_cflags $sharedlib_cflags"
 config OCAMLC_CPPFLAGS "$common_cppflags"
 config LDFLAGS "$ldflags"
 config BYTECCLIBS "$cclibs $dllib $pthread_link $instrumented_runtime_libs"
@@ -2092,7 +2092,7 @@ config EXE "$exe"
 config EMPTY ""
 config OUTPUTEXE "-o \$(EMPTY)"
 config SUPPORTS_SHARED_LIBRARIES "$shared_libraries_supported"
-config SHAREDCCCOMPOPTS "$sharedcccompopts"
+config SHAREDLIB_CFLAGS "$sharedlib_cflags"
 config MKSHAREDLIBRPATH "$mksharedlibrpath"
 config NATDYNLINKOPTS "$natdynlinkopts"
 cat >> Makefile <<EOF
@@ -2191,7 +2191,7 @@ inf "        options for compiling..... $common_cflags"
 inf "        options for linking....... $ldflags $cclibs $dllib $pthread_link"
 if $shared_libraries_supported; then
 inf "        shared libraries are supported"
-inf "        options for compiling..... $sharedcccompopts $common_cflags"
+inf "        options for compiling..... $sharedlib_cflags $common_cflags"
 inf "        command for building...... $mksharedlib -o lib.so" \
                                        "$mksharedlibrpath/a/path objs"
 else

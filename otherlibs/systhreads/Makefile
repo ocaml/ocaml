@@ -101,11 +101,11 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 
 st_stubs_b.$(O): st_stubs.c $(HEADER)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/byterun  \
-	  $(SHAREDCCCOMPOPTS) $(OUTPUTOBJ)$@ $<
+	  $(SHAREDLIB_CFLAGS) $(OUTPUTOBJ)$@ $<
 
 st_stubs_n.$(O): st_stubs.c $(HEADER)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
-	  $(SHAREDCCCOMPOPTS) -DNATIVE_CODE \
+	  $(SHAREDLIB_CFLAGS) -DNATIVE_CODE \
 	  -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
 	  $(OUTPUTOBJ)$@ -c $<
 

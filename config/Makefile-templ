@@ -93,7 +93,7 @@ RANLIBCMD=ranlib
 #CUSTOM_IF_NOT_SHARED=
 #CUSTOM_IF_NOT_SHARED=-custom
 # Options to $(BYTECC) to produce shared objects (e.g. PIC)
-#SHAREDCCCOMPOPTS=-fPIC
+#SHAREDLIB_CFLAGS=-fPIC
 # How to build a shared library, invoked with output .so as first arg
 # and object files as remaining args
 #MKSHAREDLIB=gcc -shared -o
