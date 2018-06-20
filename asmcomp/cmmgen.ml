@@ -78,7 +78,7 @@ let bind_nonvar name arg fn =
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
-    (* cf. byterun/caml/gc.h *)
+    (* cf. runtime/caml/gc.h *)
 
 (* Block headers. Meaning of the tag field: see stdlib/obj.ml *)
 
@@ -3429,7 +3429,7 @@ module IntSet = Set.Make(
 
 let default_apply = IntSet.add 2 (IntSet.add 3 IntSet.empty)
   (* These apply funs are always present in the main program because
-     the run-time system needs them (cf. asmrun/<arch>.S) . *)
+     the run-time system needs them (cf. runtime/<arch>.S) . *)
 
 let generic_functions shared units =
   let (apply,send,curry) =

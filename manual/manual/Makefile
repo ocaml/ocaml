@@ -6,13 +6,13 @@ SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
 
 OCAMLDOC = $(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
   $(SRC)/ocamldoc/ocamldoc.opt,\
-  $(SET_LD_PATH) $(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
+  $(SET_LD_PATH) $(SRC)/runtime/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
   -hide Pervasives -nostdlib -initially-opened-module Pervasives
 
 # Copy and unprefix the standard library when needed
 include $(SRC)/ocamldoc/Makefile.unprefix
 
-TEXQUOTE = $(SRC)/byterun/ocamlrun ../tools/texquote2
+TEXQUOTE = $(SRC)/runtime/ocamlrun ../tools/texquote2
 
 
 FILES = allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex

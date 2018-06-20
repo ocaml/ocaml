@@ -940,7 +940,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
      which accumulates the [ocaml_entry_point]s.
 
      The layout of the node is described in the "system shape table"; see
-     asmrun/amd64.S.
+     amd64.S.
   */
 
   value node;
@@ -997,7 +997,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
     || Is_ocaml_node(*caml_spacetime_trie_node_ptr));
 }
 
-extern void caml_garbage_collection(void);  /* signals_asm.c */
+extern void caml_garbage_collection(void);  /* signals_nat.c */
 extern void caml_array_bound_error(void);  /* fail.c */
 
 CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,

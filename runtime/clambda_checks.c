@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 
-#include <caml/mlvalues.h>
+#include "caml/mlvalues.h"
 
 value caml_check_value_is_closure(value v, value v_descr)
 {

@@ -204,8 +204,8 @@ case $configure in
     eval "./configure -prefix '$instdir' $confoptions"
   ;;
   nt)
-    cp config/m-nt.h byterun/caml/m.h
-    cp config/s-nt.h byterun/caml/s.h
+    cp config/m-nt.h runtime/caml/m.h
+    cp config/s-nt.h runtime/caml/s.h
     cp config/Makefile.${OCAML_ARCH} config/Makefile
     sed -i "s%PREFIX=\(.\+\)%PREFIX=${instdir}%" config/Makefile
     sed -i 's%RUNTIMED=.\+%RUNTIMED=true%' config/Makefile

@@ -34,8 +34,8 @@ function run {
 }
 
 function set_configuration {
-    cp config/m-nt.h byterun/caml/m.h
-    cp config/s-nt.h byterun/caml/s.h
+    cp config/m-nt.h runtime/caml/m.h
+    cp config/s-nt.h runtime/caml/s.h
 
     FILE=$(pwd | cygpath -f - -m)/config/Makefile
     echo "Edit $FILE to set PREFIX=$2"

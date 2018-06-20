@@ -64,7 +64,7 @@ static int unix_check_stream_semantics(int fd)
   }
 }
 
-/* From byterun/io.c.  To be declared in <caml/io.h> ? */
+/* From runtime/io.c.  To be declared in <caml/io.h> ? */
 extern value caml_ml_open_descriptor_in(value fd);
 extern value caml_ml_open_descriptor_out(value fd);
 

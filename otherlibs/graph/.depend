@@ -1,60 +1,60 @@
-color.o: color.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h
-draw.o: draw.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h ../../byterun/caml/alloc.h \
- ../../byterun/caml/mlvalues.h
-dump_img.o: dump_img.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h image.h ../../byterun/caml/alloc.h \
- ../../byterun/caml/mlvalues.h ../../byterun/caml/memory.h
-events.o: events.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h ../../byterun/caml/alloc.h \
- ../../byterun/caml/mlvalues.h ../../byterun/caml/signals.h
-fill.o: fill.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h ../../byterun/caml/memory.h \
- ../../byterun/caml/mlvalues.h
-image.o: image.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h image.h ../../byterun/caml/alloc.h \
- ../../byterun/caml/mlvalues.h ../../byterun/caml/custom.h
-make_img.o: make_img.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h image.h ../../byterun/caml/memory.h \
- ../../byterun/caml/mlvalues.h
-open.o: open.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h ../../byterun/caml/alloc.h \
- ../../byterun/caml/mlvalues.h ../../byterun/caml/callback.h \
- ../../byterun/caml/fail.h ../../byterun/caml/memory.h
-point_col.o: point_col.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h
-sound.o: sound.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h
-subwindow.o: subwindow.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h
-text.o: text.c libgraph.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/m.h \
- ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/misc.h ../../byterun/caml/alloc.h \
- ../../byterun/caml/mlvalues.h
+color.o: color.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h
+draw.o: draw.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/mlvalues.h
+dump_img.o: dump_img.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h image.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/memory.h
+events.o: events.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/signals.h
+fill.o: fill.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/mlvalues.h
+image.o: image.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h image.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/custom.h
+make_img.o: make_img.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h image.h ../../runtime/caml/memory.h \
+ ../../runtime/caml/mlvalues.h
+open.o: open.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/callback.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/memory.h
+point_col.o: point_col.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h
+sound.o: sound.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h
+subwindow.o: subwindow.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h
+text.o: text.c libgraph.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/misc.h ../../runtime/caml/alloc.h \
+ ../../runtime/caml/mlvalues.h
 graphics.cmo : graphics.cmi
 graphics.cmx : graphics.cmi
 graphics.cmi :

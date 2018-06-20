@@ -56,8 +56,6 @@ README*                  ocaml-typo=missing-header
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
 asmcomp/power/NOTES.md   ocaml-typo=missing-header
 
-asmrun/i386.S            ocaml-typo=long-line
-
 config/gnu               ocaml-typo=prune
 
 emacs/*.el               ocaml-typo=long-line,unused-prop
@@ -76,6 +74,8 @@ ocamldoc/odoc_index.html ocaml-typo=missing-header
 otherlibs/win32unix/readlink.c    ocaml-typo=long-line
 otherlibs/win32unix/stat.c        ocaml-typo=long-line
 otherlibs/win32unix/symlink.c     ocaml-typo=long-line
+
+runtime/i386.S            ocaml-typo=long-line
 
 stdlib/hashbang     ocaml-typo=white-at-eol,missing-lf
 

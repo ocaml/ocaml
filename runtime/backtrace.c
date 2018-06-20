@@ -70,7 +70,7 @@ CAMLprim value caml_backtrace_status(value vunit)
      (!li->loc_valid && li->loc_is_raise)
    caml_debuginfo_location guarantees that when li->loc_valid is
    0, then li->loc_is_raise is always 1, so the latter test is
-   useless. We kept it to keep code identical to the byterun/
+   useless. We kept it to keep code identical to the runtime/
    implementation. */
 static void print_location(struct caml_loc_info * li, int index)
 {

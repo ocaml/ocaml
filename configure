@@ -1949,7 +1949,7 @@ fi
 # The number of bits used for profiling information is configurable here.
 # The more bits used for profiling, the smaller will be Max_wosize.
 # Note that PROFINFO_WIDTH must still be defined even if not configuring
-# for Spacetime (see comment in byterun/caml/mlvalues.h on [Profinfo_hd]).
+# for Spacetime (see comment in runtime/caml/mlvalues.h on [Profinfo_hd]).
 echo "#define PROFINFO_WIDTH $profinfo_width" >> m.h
 if $with_profinfo; then
     echo "#define WITH_PROFINFO" >> m.h
@@ -2171,8 +2171,8 @@ config CC_HAS_DEBUG_PREFIX_MAP "$cc_has_debug_prefix_map"
 
 
 rm -f tst hasgot.c
-rm -f ../../byterun/caml/m.h ../../byterun/caml/s.h ../Makefile
-mv m.h s.h ../../byterun/caml/
+rm -f ../../runtime/caml/m.h ../../runtime/caml/s.h ../Makefile
+mv m.h s.h ../../runtime/caml/
 mv Makefile ..
 
 # Print a summary

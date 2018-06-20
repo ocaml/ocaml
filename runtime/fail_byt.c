@@ -84,11 +84,11 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
 /* PR#5115: Built-in exceptions can be triggered by input_value
    while reading the initial value of [caml_global_data].
 
-   We check against this issue here in byterun/fail.c instead of
-   byterun/intern.c. Having the check here means that these calls will
+   We check against this issue here in runtime/fail_byt.c instead of
+   runtime/intern.c. Having the check here means that these calls will
    be slightly slower for all bytecode programs (not just the calls
-   coming from intern). Because intern.c is shared between byterun/
-   and asmrun/, putting checks there would slow do input_value for
+   coming from intern). Because intern.c is shared between the bytecode and
+   the native runtimes, putting checks there would slow do input_value for
    natively-compiled programs that do not need these checks.
 */
 static void check_global_data(char const *exception_name)

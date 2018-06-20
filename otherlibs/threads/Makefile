@@ -22,7 +22,7 @@ CAMLRUN ?= ../../boot/ocamlrun
 CAMLYACC ?= ../../boot/ocamlyacc
 
 OC_CFLAGS += $(SHAREDLIB_CFLAGS)
-OC_CPPFLAGS += -I../../byterun
+OC_CPPFLAGS += -I../../runtime
 ROOTDIR=../..
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib \
       -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix

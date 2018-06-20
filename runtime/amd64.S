@@ -635,7 +635,7 @@ LBL(112):
 CFI_ENDPROC
 
 /* Raise a Stack_overflow exception on return from segv_handler()
-   (in asmrun/signals_asm.c).  On entry, the stack is full, so we
+   (in runtime/signals_nat.c).  On entry, the stack is full, so we
    cannot record a backtrace.
    No CFI information here since this function disrupts the stack
    backtrace anyway. */

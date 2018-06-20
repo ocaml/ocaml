@@ -40,13 +40,13 @@ state but builds more things than actually required.)
 
         make coreall
 +
-This will rebuild byterun/ocamlrun, ocamlc, etc.
+This will rebuild runtime/ocamlrun, ocamlc, etc.
 
 6. (optional) The new system can now be tested:
 
         echo 'let _ = print_string "Hello world!\n"' > foo.ml
         ./boot/ocamlrun ./ocamlc -I ./stdlib foo.ml
-        ./byterun/ocamlrun a.out
+        ./runtime/ocamlrun a.out
 
 7. We now know the system works and can thus build the new boot/
    binaries:

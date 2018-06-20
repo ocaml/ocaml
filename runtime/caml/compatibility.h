@@ -118,8 +118,8 @@
 #define raise_zero_divide caml_raise_zero_divide
 #define raise_not_found caml_raise_not_found
 #define raise_sys_blocked_io caml_raise_sys_blocked_io
-/* **** asmrun/fail.c */
-/* **** asmrun/<arch>.s */
+/* **** runtime/fail_nat.c */
+/* **** runtime/<arch>.s */
 
 /* **** finalise.c */
 
@@ -269,7 +269,7 @@
 #define enter_blocking_section caml_enter_blocking_section
 #define leave_blocking_section caml_leave_blocking_section
 #define convert_signal_number caml_convert_signal_number
-/* **** asmrun/signals.c */
+/* **** runtime/signals.c */
 #define garbage_collection caml_garbage_collection
 
 /* **** stacks.c */
@@ -282,7 +282,7 @@
 
 /* **** startup.c */
 #define atom_table caml_atom_table
-/* **** asmrun/startup.c */
+/* **** runtime/startup_nat.c */
 #define static_data_start caml_static_data_start
 #define static_data_end caml_static_data_end
 

@@ -60,7 +60,7 @@ else
 WITH_OCAMLDEBUG := false
 endif
 
-OC_CPPFLAGS += -I../byterun -DCAML_INTERNALS
+OC_CPPFLAGS += -I../runtime -DCAML_INTERNALS
 
 run := run_$(UNIX_OR_WIN32)
 
@@ -158,13 +158,13 @@ flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error A
 
-ocamlc := $(FLEXLINK_ENV) ../byterun/ocamlrun ../ocamlc $(flags)
+ocamlc := $(FLEXLINK_ENV) ../runtime/ocamlrun ../ocamlc $(flags)
 
-ocamlopt := $(FLEXLINK_ENV) ../byterun/ocamlrun ../ocamlopt $(flags)
+ocamlopt := $(FLEXLINK_ENV) ../runtime/ocamlrun ../ocamlopt $(flags)
 
-ocamldep := ../byterun/ocamlrun ../tools/ocamldep -slash
+ocamldep := ../runtime/ocamlrun ../tools/ocamldep -slash
 
-ocamllex := ../byterun/ocamlrun ../lex/ocamllex
+ocamllex := ../runtime/ocamlrun ../lex/ocamllex
 
 ocamlyacc := ../yacc/ocamlyacc
 

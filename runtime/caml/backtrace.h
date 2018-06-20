@@ -29,8 +29,9 @@
  *   whether a backtrace should be generated when using "raise".
  *
  * Backtrace generation is split in multiple steps.
- * The lowest-level one, done by [backtrace_prim.c] just fills the
- * [caml_backtrace_buffer] variable each time a frame is unwinded.
+ * The lowest-level one, done by [backtrace_byt.c] and
+ * [backtrace_nat.c] just fills the [caml_backtrace_buffer]
+ * variable each time a frame is unwinded.
  * At that point, we don't know whether the backtrace will be useful or not so
  * this code should be as fast as possible.
  *
@@ -59,8 +60,8 @@ CAMLextern int caml_backtrace_active;
 /* The [backtrace_slot] type represents values stored in the
  * [caml_backtrace_buffer].  In bytecode, it is the same as a
  * [code_t], in native code it as a [frame_descr *].  The difference
- * doesn't matter for code outside [backtrace_prim.c], so it is just
- * exposed as a [backtrace_slot].
+ * doesn't matter for code outside [backtrace_{byt,nat}.c],
+ * so it is just exposed as a [backtrace_slot].
  */
 typedef void * backtrace_slot;
 

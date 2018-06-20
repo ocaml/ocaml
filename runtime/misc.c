@@ -88,7 +88,7 @@ CAMLexport void caml_fatal_error (char *msg, ...)
 }
 
 /* If you change the caml_ext_table* functions, also update
-   asmrun/spacetime.c:find_trie_node_from_libunwind. */
+   runtime/spacetime_nat.c:find_trie_node_from_libunwind. */
 
 void caml_ext_table_init(struct ext_table * tbl, int init_capa)
 {

@@ -20,13 +20,14 @@
 
 #include "backtrace.h"
 
-/* Backtrace generation is split in [backtrace.c] and [backtrace_prim.c].
+/* Backtrace generation is split in [backtrace.c] and [backtrace_prim].
  *
- * [backtrace_prim.c] contains all backend-specific code, and has two different
- * implementations in [byterun/backtrace_prim.c] and [asmrun/backtrace_prim.c].
+ * [backtrace_prim] contains all backend-specific
+ * code, and has two different
+ * implementations in [runtime/backtrace_byt.c] and [runtime/backtrace_nat.c].
  *
  * [backtrace.c] has a unique implementation, and exposes a uniform
- * higher level API above [backtrace_prim.c].
+ * higher level API above [backtrace_{byt,nat}.c].
  */
 
 /* Extract location information for the given raw_backtrace_slot */

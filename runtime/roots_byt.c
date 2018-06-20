@@ -32,7 +32,7 @@ CAMLexport struct caml__roots_block *caml_local_roots = NULL;
 CAMLexport void (*caml_scan_roots_hook) (scanning_action f) = NULL;
 
 /* FIXME should rename to [caml_oldify_minor_roots] and synchronise with
-   asmrun/roots.c */
+   roots_nat.c */
 /* Call [caml_oldify_one] on (at least) all the roots that point to the minor
    heap. */
 void caml_oldify_local_roots (void)

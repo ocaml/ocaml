@@ -3,10 +3,10 @@ and standard library.
 
 It is used on Inria's CI to make sure the bootstrap procedure works.
 
-diff --git a/byterun/floats.c b/byterun/floats.c
+diff --git a/runtime/floats.c b/runtime/floats.c
 index 7e98f473d..792196a4e 100644
---- a/byterun/floats.c
-+++ b/byterun/floats.c
+--- a/runtime/floats.c
++++ b/runtime/floats.c
 @@ -536,11 +536,6 @@ CAMLprim value caml_sin_float(value f)
    return caml_copy_double(sin(Double_val(f)));
  }
