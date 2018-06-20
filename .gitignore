@@ -99,7 +99,6 @@ _ocamltestd
 /asmrun/weak.c
 /asmrun/win32.c
 
-/boot/Saved
 /boot/ocamlrun
 /boot/ocamlyacc
 /boot/camlheader

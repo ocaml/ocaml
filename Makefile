@@ -260,8 +260,6 @@ PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 
-MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
-
 COMPLIBDIR=$(LIBDIR)/compiler-libs
 
 TOPINCLUDES=$(addprefix -I otherlibs/,$(filter-out %threads,$(OTHERLIBRARIES)))
@@ -426,11 +424,6 @@ promote-cross: promote-common
 promote: PROMOTE = $(CAMLRUN) tools/stripdebug
 promote: promote-common
 	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
-
-# Remove old bootstrap compilers
-.PHONY: cleanboot
-cleanboot:
-	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
 .PHONY: opt-core
