@@ -43,13 +43,13 @@ OC_CPPFLAGS += -DMODEL_$(MODEL)
 endif
 
 OC_CPPFLAGS += -DSYS_$(SYSTEM) $(IFLEXDIR) $(LIBUNWIND_INCLUDE_FLAGS)
+OC_DEBUG_CPPFLAGS = -DDEBUG
 
 ifneq "$(CCOMPTYPE)" "msvc"
 OC_CFLAGS += -g
 endif
 
 ifeq "$(TOOLCHAIN)" "msvc"
-DFLAGS = $(OC_CFLAGS) -DDEBUG
 PFLAGS=$(OC_CFLAGS) -DPROFILING
 ASMOBJS=$(ARCH)nt.$(O)
 ASMFLAGS=
@@ -57,7 +57,6 @@ ifeq ($(WITH_SPACETIME),true)
 ASMFLAGS=/DWITH_SPACETIME
 endif
 else
-DFLAGS = $(OC_CFLAGS) -g -DDEBUG
 PFLAGS=$(OC_CFLAGS) -pg -DPROFILING
 ASMOBJS=$(ARCH).$(O)
 endif
@@ -142,8 +141,9 @@ install:
 $(LINKEDFILES): %.c: ../byterun/%.c
 	$(LN) $< $@
 
+%.d.$(O): OC_CPPFLAGS += $(OC_DEBUG_CPPFLAGS)
 %.d.$(O): %.c
-	$(CC) -c $(DFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.i.$(O): %.c
 	$(CC) -c $(IFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
@@ -195,8 +195,8 @@ depend: $(COBJS:.$(O)=.c) $(sources)
 	  sed -e 's/\.o/.$$(O)/' > .depend
 	$(CC) -MM $(PFLAGS) $(OC_CPPFLAGS) $^ | sed -e 's/\.o/.p.$$(O)/' \
 	  >> .depend
-	$(CC) -MM $(DFLAGS) $(OC_CPPFLAGS) $^ | sed -e 's/\.o/.d.$$(O)/' \
-	  >> .depend
+	$(CC) -MM $(OC_CPPFLAGS) $(OC_DEBUG_CPPFLAGS) $^ | \
+	  sed -e 's/\.o/.d.$$(O)/' >> .depend
 	$(CC) -MM $(IFLAGS) $(OC_CPPFLAGS) $^ | sed -e 's/\.o/.i.$$(O)/' \
 	  >> .depend
 endif
