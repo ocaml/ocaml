@@ -50,14 +50,16 @@ OC_CFLAGS += -g
 endif
 
 ifeq "$(TOOLCHAIN)" "msvc"
-PFLAGS=$(OC_CFLAGS) -DPROFILING
+OC_PROF_CFLAGS=
+OC_PROF_CPPFLAGS=-DPROFILING
 ASMOBJS=$(ARCH)nt.$(O)
 ASMFLAGS=
 ifeq ($(WITH_SPACETIME),true)
 ASMFLAGS=/DWITH_SPACETIME
 endif
 else
-PFLAGS=$(OC_CFLAGS) -pg -DPROFILING
+OC_PROF_CFLAGS=-pg
+OC_PROF_CPPFLAGS=-DPROFILING
 ASMOBJS=$(ARCH).$(O)
 endif
 
@@ -149,8 +151,10 @@ $(LINKEDFILES): %.c: ../byterun/%.c
 %.i.$(O): %.c
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
+%.p.$(O): OC_CFLAGS += $(OC_PROF_CFLAGS)
+%.p.$(O): OC_CPPFLAGS += $(OC_PROF_CPPFLAGS)
 %.p.$(O): %.c
-	$(CC) -c $(PFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.pic.$(O): %.c
 	$(CC) -c $(PICFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
@@ -194,8 +198,8 @@ else
 depend: $(COBJS:.$(O)=.c) $(sources)
 	$(CC) -MM $(OC_CPPFLAGS) $^ | \
 	  sed -e 's/\.o/.$$(O)/' > .depend
-	$(CC) -MM $(PFLAGS) $(OC_CPPFLAGS) $^ | sed -e 's/\.o/.p.$$(O)/' \
-	  >> .depend
+	$(CC) -MM $(OC_CPPFLAGS) $(OC_PROF_CPPFLAGS) $^ | \
+	  sed -e 's/\.o/.p.$$(O)/' >> .depend
 	$(CC) -MM $(OC_CPPFLAGS) $(OC_DEBUG_CPPFLAGS) $^ | \
 	  sed -e 's/\.o/.d.$$(O)/' >> .depend
 	$(CC) -MM $(OC_CPPFLAGS) $(OC_INSTR_CPPFLAGS) $^ | \
