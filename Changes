@@ -720,6 +720,11 @@ OCaml 4.07
 - GPR#1835: Fix off-by-one errors in Weak.get_copy and Weak.blit
   (KC Sivaramakrishnan)
 
+- GPR#1849: bug in runtime function generic_final_minor_update()
+  that could lead to crashes when Gc.finalise_last is used
+  (report and fix by Yuriy Vostrikov, review by François Bobot)
+
+
 OCaml 4.06.1 (16 Feb 2018):
 ---------------------------
 
