@@ -191,7 +191,7 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend: $(COBJS:.$(O)=.c) $(sources)
-	$(CC) -MM $(OC_CFLAGS) $(OC_CPPFLAGS) $^ | \
+	$(CC) -MM $(OC_CPPFLAGS) $^ | \
 	  sed -e 's/\.o/.$$(O)/' > .depend
 	$(CC) -MM $(PFLAGS) $(OC_CPPFLAGS) $^ | sed -e 's/\.o/.p.$$(O)/' \
 	  >> .depend
