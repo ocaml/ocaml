@@ -390,15 +390,16 @@ OCaml 4.07
 - GPR#1701: fix missing root bug in GPR#1476.
   (Mark Shinwell)
 
-- GPR#1752: do not alias function arguments to sigprocmask. (Anil Madhavapeddy)
+- GPR#1752: do not alias function arguments to sigprocmask.
+  (Anil Madhavapeddy)
 
-- GPR#1753: avoid potential off-by-one overflow in debugger socket path
-  length. (Anil Madhavapeddy)
+- GPR#1753: avoid potential off-by-one overflow in debugger socket path length.
+  (Anil Madhavapeddy)
 
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
-  structures and signatures, e.g."include struct … include(struct … end) … end"
+  structures and signatures, e.g. "include struct … include(struct … end) … end"
   (Florian Angeletti, review by Gabriel Scherer, report by Christophe Raffalli)
 
 - MPR#7687, GPR#1653: deprecate -thread option,
@@ -503,7 +504,7 @@ OCaml 4.07
 
 - GPR#1513: Allow compilation units to shadow sub-modules of Pervasives.
   For instance users can now use a largeFile.ml file in their project.
-  (Jérémie Dimino, review by  Nicolás Ojeda Bär, Alain Frisch and Gabriel
+  (Jérémie Dimino, review by Nicolás Ojeda Bär, Alain Frisch and Gabriel
   Radanne)
 
 - GPR#1516: Allow float array construction in recursive bindings
@@ -648,7 +649,7 @@ OCaml 4.07
 - MPR#7712, GPR#1576: assertion failure with type abbreviations.
   (Thomas Refis, report by Michael O'Connor, review by Jacques Garrigue)
 
-- MPR#7747: Type checker can loop indefinitely and consumes all computer memory
+- MPR#7747: Type checker can loop infinitely and consume all computer memory.
   (Jacques Garrigue, report by kantian)
 
 - MPR#7751, GPR#1657: The toplevel prints some concrete types as abstract.
@@ -707,7 +708,8 @@ OCaml 4.07
   (Leo White, review by Thomas Refis)
 
 - GPR#1755: ensure that a bigarray is never collected while reading complex
-  values. (Xavier Clerc, Mark Shinwell and Leo White, report by Chris Hardin,
+  values.
+  (Xavier Clerc, Mark Shinwell and Leo White, report by Chris Hardin,
   reviews by Stephen Dolan and Xavier Leroy)
 
 - GPR#1764: in byterun/memory.c, struct pool_block, use C99 flexible arrays
