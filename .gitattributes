@@ -69,11 +69,6 @@ experimental             ocaml-typo=prune
 
 manual                   ocaml-typo=prune
 
-ocamlbuild/*             ocaml-typo=long-line
-ocamlbuild/AUTHORS       ocaml-typo=missing-header
-ocamlbuild/ChangeLog     ocaml-typo=tab,missing-header
-ocamlbuild/TODO          ocaml-typo=missing-header
-
 ocamldoc/Changes.txt     ocaml-typo=missing-header
 ocamldoc/ocamldoc.sty    ocaml-typo=missing-header
 ocamldoc/odoc_index.html ocaml-typo=missing-header

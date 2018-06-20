@@ -150,12 +150,6 @@ _ocamltestd
 /manual/manual/cmds/warnings-help.etex
 /manual/manual/warnings-help.etex
 
-/ocamlbuild/ocamlbuild_config.ml
-/ocamlbuild/lexers.ml
-/ocamlbuild/glob_lexer.ml
-/ocamlbuild/ocamlbuild.native
-/ocamlbuild/ocamlbuild.byte
-
 /ocamldoc/ocamldoc
 /ocamldoc/ocamldoc.opt
 /ocamldoc/odoc
