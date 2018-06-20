@@ -149,6 +149,10 @@ Working version
   (Gabriel Scherer and Nicolás Ojeda Bär, report by Guillaume Melquiond, review
   by Gabriel Scherer)
 
+- GPR#1843: ocamloptp was doing the wrong thing with option -inline-max-unroll
+  (Github user @poechsel, review by Nicolás Ojeda Bär).
+
+
 OCaml 4.07
 ----------
 
