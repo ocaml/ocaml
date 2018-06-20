@@ -431,7 +431,7 @@ esac
 # in the OCaml distribution and third-party C source files compiled
 # with ocamlc.
 
-mkexe="\$(CC) \$(CFLAGS) \$(CPPFLAGS) \$(LDFLAGS)"
+mkexe="\$(CC) \$(OC_CFLAGS) \$(OC_CPPFLAGS) \$(OC_LDFLAGS)"
 mkexedebugflag="-g"
 common_cflags=""
 common_cppflags=""
@@ -2081,11 +2081,11 @@ cclibs="$cclibs $mathlib"
 
 config CC "$cc"
 config CPP "$cpp"
-config CFLAGS "$common_cflags $internal_cflags"
-config CPPFLAGS "$common_cppflags $internal_cppflags"
+config OC_CFLAGS "$common_cflags $internal_cflags"
+config OC_CPPFLAGS "$common_cppflags $internal_cppflags"
 config OCAMLC_CFLAGS "$common_cflags $sharedlib_cflags"
 config OCAMLC_CPPFLAGS "$common_cppflags"
-config LDFLAGS "$ldflags"
+config OC_LDFLAGS "$ldflags"
 config BYTECCLIBS "$cclibs $dllib $pthread_link $instrumented_runtime_libs"
 config RPATH "$rpath"
 config EXE "$exe"

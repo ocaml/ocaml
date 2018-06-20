@@ -280,7 +280,7 @@ and data segment size (type `limit` under csh or `ulimit -a` under bash). Make
 sure the limit on the stack size is at least 4M.
 
 Try recompiling the runtime system with optimizations turned off (change
-`CFLAGS` in `byterun/Makefile` and `asmrun/Makefile`). The runtime system
+`OC_CFLAGS` in `byterun/Makefile` and `asmrun/Makefile`). The runtime system
 contains some complex, atypical pieces of C code which can uncover bugs in
 optimizing compilers.  Alternatively, try another C compiler (e.g. `gcc` instead
 of the vendor-supplied `cc`).

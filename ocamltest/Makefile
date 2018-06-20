@@ -26,7 +26,7 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
   else
     FLEXLINK_ENV=OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe"
   endif
-  mkexe := $(MKEXE_ANSI) -link $(LDFLAGS)
+  mkexe := $(MKEXE_ANSI) -link $(OC_LDFLAGS)
 else
   unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
@@ -60,7 +60,7 @@ else
 WITH_OCAMLDEBUG := false
 endif
 
-CPPFLAGS += -I../byterun -DCAML_INTERNALS
+OC_CPPFLAGS += -I../byterun -DCAML_INTERNALS
 
 run := run_$(UNIX_OR_WIN32)
 
@@ -194,7 +194,7 @@ ocamltest.opt$(EXE): $(native_modules)
 	$(ocamllex) -q $<
 
 %.$(O): %.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(BYTECCCOMPOPTS) -c $<
+	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) $(BYTECCCOMPOPTS) -c $<
 
 ocamltest_config.ml: ocamltest_config.ml.in Makefile
 	sed \
@@ -225,7 +225,7 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile
 	  -e 's|@@NATIVECCLIBS@@|$(NATIVECCLIBS)|' \
 	  -e 's|@@ASM@@|$(ASM)|' \
 	  -e 's|@@CC@@|$(CC)|' \
-	  -e 's|@@CFLAGS@@|$(CFLAGS)|' \
+	  -e 's|@@CFLAGS@@|$(OC_CFLAGS)|' \
 	  -e 's|@@CCOMPTYPE@@|$(CCOMPTYPE)|' \
 	  -e 's|@@WINDOWS_UNICODE@@|$(WINDOWS_UNICODE)|' \
 	  $< > $@
@@ -242,7 +242,7 @@ clean:
 ifneq "$(TOOLCHAIN)" "msvc"
 .PHONY: depend
 depend: $(dependencies_generated_prereqs)
-	$(CC) -MM $(CPPFLAGS) $(c_files) \
+	$(CC) -MM $(OC_CPPFLAGS) $(c_files) \
 	  | sed -e 's/\.o/.$$(O)/' > .depend
 	$(ocamldep) $(mli_files) $(ml_files) >> .depend
 endif

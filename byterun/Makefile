@@ -42,7 +42,7 @@ endif
 endif
 
 ifdef BOOTSTRAPPING_FLEXLINK
-CFLAGS += -DBOOTSTRAPPING_FLEXLINK
+OC_CFLAGS += -DBOOTSTRAPPING_FLEXLINK
 endif
 
 # On Windows, OCAML_STDLIB_DIR needs to be defined dynamically
@@ -58,18 +58,18 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 # than \UXXXXXXXX). The \u is then translated to \x in order to accommodate
 # pre-Visual Studio 2013 compilers where \x is a non-standard alias for \u.
 OCAML_STDLIB_DIR = $(shell echo $(LIBDIR)| iconv -t JAVA | sed -e 's/\\u/\\x/g')
-CFLAGS += -DOCAML_STDLIB_DIR='L"$(OCAML_STDLIB_DIR)"'
+OC_CFLAGS += -DOCAML_STDLIB_DIR='L"$(OCAML_STDLIB_DIR)"'
 endif
 
-CFLAGS += $(IFLEXDIR)
+OC_CFLAGS += $(IFLEXDIR)
 
 ifneq "$(CCOMPTYPE)" "msvc"
-CFLAGS += -g
+OC_CFLAGS += -g
 endif
 
-DFLAGS=$(CFLAGS) -DDEBUG
-IFLAGS=$(CFLAGS) -DCAML_INSTR
-PICFLAGS=$(CFLAGS) $(SHAREDLIB_CFLAGS)
+DFLAGS=$(OC_CFLAGS) -DDEBUG
+IFLAGS=$(OC_CFLAGS) -DCAML_INSTR
+PICFLAGS=$(OC_CFLAGS) $(SHAREDLIB_CFLAGS)
 
 DBGO=d.$(O)
 
@@ -82,7 +82,7 @@ MAKE_OCAMLRUN = $(MKEXE) -o $(1) $(2)
 endif
 else
 LIBS = $(BYTECCLIBS)
-MAKE_OCAMLRUN = $(MKEXE) $(LDFLAGS) -o $(1) $(2)
+MAKE_OCAMLRUN = $(MKEXE) $(OC_LDFLAGS) -o $(1) $(2)
 endif
 
 PRIMS=\
@@ -208,16 +208,16 @@ libcamlrun_shared.$(SO): $(PICOBJS)
 	$(MKDLL) -o $@ $^ $(BYTECCLIBS)
 
 %.$(O): %.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $<
 
 %.$(DBGO): %.c
-	$(CC) -c $(DFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(DFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.i.$(O): %.c
-	$(CC) -c $(IFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(IFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.pic.$(O): %.c
-	$(CC) -c $(PICFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(PICFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 .PHONY: depend
 ifeq "$(TOOLCHAIN)" "msvc"
@@ -225,10 +225,11 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend: prims.c caml/opnames.h caml/jumptbl.h caml/version.h
-	$(CC) -MM $(CFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.$$(O)/'>.$@
-	$(CC) -MM $(DFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.d.$$(O)/'>>.$@
-	$(CC) -MM $(IFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.i.$$(O)/'>>.$@
-	$(CC) -MM $(PICFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.pic.$$(O)/'>>.$@
+	$(CC) -MM $(OC_CFLAGS) $(OC_CPPFLAGS) *.c | sed -e 's/\.o/.$$(O)/'>.$@
+	$(CC) -MM $(DFLAGS) $(OC_CPPFLAGS) *.c | sed -e 's/\.o/.d.$$(O)/'>>.$@
+	$(CC) -MM $(IFLAGS) $(OC_CPPFLAGS) *.c | sed -e 's/\.o/.i.$$(O)/'>>.$@
+	$(CC) -MM $(PICFLAGS) $(OC_CPPFLAGS) *.c | \
+	  sed -e 's/\.o/.pic.$$(O)/'>>.$@
 endif
 
 include .depend

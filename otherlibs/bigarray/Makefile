@@ -26,9 +26,9 @@ LDOPTS=-ldopt "-link -static-libgcc"
 endif
 
 mmap.$(O): ../$(UNIXLIB)/mmap.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 mmap_ba.$(O): ../unix/mmap_ba.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 .PHONY: depend
 

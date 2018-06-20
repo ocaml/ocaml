@@ -100,12 +100,12 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 # twice, each time with different options).
 
 st_stubs_b.$(O): st_stubs.c $(HEADER)
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/byterun  \
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) -I$(ROOTDIR)/byterun  \
 	  $(SHAREDLIB_CFLAGS) $(OUTPUTOBJ)$@ $<
 
 st_stubs_n.$(O): st_stubs.c $(HEADER)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
-	  $(SHAREDLIB_CFLAGS) -DNATIVE_CODE \
+	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -I$(ROOTDIR)/asmrun \
+	  -I$(ROOTDIR)/byterun $(SHAREDLIB_CFLAGS) -DNATIVE_CODE \
 	  -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
 	  $(OUTPUTOBJ)$@ -c $<
 
@@ -161,10 +161,10 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend:
-	$(CC) -MM $(CPPFLAGS) -I$(ROOTDIR)/byterun st_stubs.c \
+	$(CC) -MM $(OC_CPPFLAGS) -I$(ROOTDIR)/byterun st_stubs.c \
 	  | sed -e 's/st_stubs\.o/st_stubs_b.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' > .depend
-	$(CC) -MM $(CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
+	$(CC) -MM $(OC_CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
 	  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
 	  st_stubs.c | sed -e 's/st_stubs\.o/st_stubs_n.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' >> .depend

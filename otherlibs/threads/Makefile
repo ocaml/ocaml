@@ -21,8 +21,8 @@ include ../../Makefile.common
 CAMLRUN ?= ../../boot/ocamlrun
 CAMLYACC ?= ../../boot/ocamlyacc
 
-CFLAGS += $(SHAREDLIB_CFLAGS)
-CPPFLAGS += -I../../byterun
+OC_CFLAGS += $(SHAREDLIB_CFLAGS)
+OC_CPPFLAGS += -I../../byterun
 ROOTDIR=../..
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib \
       -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
@@ -142,12 +142,15 @@ installopt:
 .ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
+%.$(O): %.c
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+
 .PHONY: depend
 depend:
 ifeq "$(TOOLCHAIN)" "msvc"
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
-	$(CC) -MM $(CPPFLAGS) *.c > .depend
+	$(CC) -MM $(OC_CPPFLAGS) *.c > .depend
 	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
 endif
 

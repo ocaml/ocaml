@@ -41,7 +41,7 @@ function set_configuration {
     echo "Edit $FILE to set PREFIX=$2"
     sed -e "/PREFIX=/s|=.*|=$2|" \
         -e "/RUNTIMED=/s|=.*|=true|" \
-        -e "/^ *CFLAGS *=/s/\r\?$/ $3\0/" \
+        -e "/^ *OC_CFLAGS *=/s/\r\?$/ $3\0/" \
          config/Makefile.$1 > config/Makefile
 #    run "Content of $FILE" cat config/Makefile
 }

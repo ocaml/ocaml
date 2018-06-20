@@ -36,34 +36,34 @@ LN = ln -s
 sources += ../byterun/win32.c
 endif
 
-CPPFLAGS += -I../byterun -DNATIVE_CODE -DTARGET_$(ARCH)
+OC_CPPFLAGS += -I../byterun -DNATIVE_CODE -DTARGET_$(ARCH)
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
-CPPFLAGS += -DMODEL_$(MODEL)
+OC_CPPFLAGS += -DMODEL_$(MODEL)
 endif
 
-CPPFLAGS += -DSYS_$(SYSTEM) $(IFLEXDIR) $(LIBUNWIND_INCLUDE_FLAGS)
+OC_CPPFLAGS += -DSYS_$(SYSTEM) $(IFLEXDIR) $(LIBUNWIND_INCLUDE_FLAGS)
 
 ifneq "$(CCOMPTYPE)" "msvc"
-CFLAGS += -g
+OC_CFLAGS += -g
 endif
 
 ifeq "$(TOOLCHAIN)" "msvc"
-DFLAGS = $(CFLAGS) -DDEBUG
-PFLAGS=$(CFLAGS) -DPROFILING
+DFLAGS = $(OC_CFLAGS) -DDEBUG
+PFLAGS=$(OC_CFLAGS) -DPROFILING
 ASMOBJS=$(ARCH)nt.$(O)
 ASMFLAGS=
 ifeq ($(WITH_SPACETIME),true)
 ASMFLAGS=/DWITH_SPACETIME
 endif
 else
-DFLAGS = $(CFLAGS) -g -DDEBUG
-PFLAGS=$(CFLAGS) -pg -DPROFILING
+DFLAGS = $(OC_CFLAGS) -g -DDEBUG
+PFLAGS=$(OC_CFLAGS) -pg -DPROFILING
 ASMOBJS=$(ARCH).$(O)
 endif
 
-IFLAGS=$(CFLAGS) -DCAML_INSTR
-PICFLAGS=$(CFLAGS) $(SHAREDLIB_CFLAGS)
+IFLAGS=$(OC_CFLAGS) -DCAML_INSTR
+PICFLAGS=$(OC_CFLAGS) $(SHAREDLIB_CFLAGS)
 
 ASPPFLAGS = -DSYS_$(SYSTEM) -I../byterun
 ifeq "$(UNIX_OR_WIN32)" "unix"
@@ -143,19 +143,19 @@ $(LINKEDFILES): %.c: ../byterun/%.c
 	$(LN) $< $@
 
 %.d.$(O): %.c
-	$(CC) -c $(DFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(DFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.i.$(O): %.c
-	$(CC) -c $(IFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(IFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.p.$(O): %.c
-	$(CC) -c $(PFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(PFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.pic.$(O): %.c
-	$(CC) -c $(PICFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(PICFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.$(O): %.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $<
 
 %.o: %.S
 	$(ASPP) $(ASPPFLAGS) -o $@ $< || \
@@ -191,12 +191,13 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend: $(COBJS:.$(O)=.c) $(sources)
-	$(CC) -MM $(CFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.$$(O)/' > .depend
-	$(CC) -MM $(PFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.p.$$(O)/' \
+	$(CC) -MM $(OC_CFLAGS) $(OC_CPPFLAGS) $^ | \
+	  sed -e 's/\.o/.$$(O)/' > .depend
+	$(CC) -MM $(PFLAGS) $(OC_CPPFLAGS) $^ | sed -e 's/\.o/.p.$$(O)/' \
 	  >> .depend
-	$(CC) -MM $(DFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.d.$$(O)/' \
+	$(CC) -MM $(DFLAGS) $(OC_CPPFLAGS) $^ | sed -e 's/\.o/.d.$$(O)/' \
 	  >> .depend
-	$(CC) -MM $(IFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.i.$$(O)/' \
+	$(CC) -MM $(IFLAGS) $(OC_CPPFLAGS) $^ | sed -e 's/\.o/.i.$$(O)/' \
 	  >> .depend
 endif
 

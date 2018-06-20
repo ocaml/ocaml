@@ -303,7 +303,7 @@ SUBST_ESCAPE=$(subst ",\\",$(subst \,\\,$(if $2,$2,$($1))))
 SUBST=-e 's|%%$1%%|$(call SUBST_ESCAPE,$1,$2)|'
 SUBST_QUOTE2=-e 's|%%$1%%|$(if $2,"$2")|'
 SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$(call SUBST_ESCAPE,$1,$2))
-FLEXLINK_LDFLAGS=$(if $(LDFLAGS), -link "$(LDFLAGS)")
+FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
 utils/config.ml: utils/config.mlp config/Makefile Makefile
 	sed $(call SUBST,AFL_INSTRUMENT) \
 	    $(call SUBST,ARCH) \
