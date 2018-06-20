@@ -42,7 +42,7 @@ endif
 endif
 
 ifdef BOOTSTRAPPING_FLEXLINK
-OC_CFLAGS += -DBOOTSTRAPPING_FLEXLINK
+OC_CPPFLAGS += -DBOOTSTRAPPING_FLEXLINK
 endif
 
 # On Windows, OCAML_STDLIB_DIR needs to be defined dynamically
@@ -58,10 +58,10 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 # than \UXXXXXXXX). The \u is then translated to \x in order to accommodate
 # pre-Visual Studio 2013 compilers where \x is a non-standard alias for \u.
 OCAML_STDLIB_DIR = $(shell echo $(LIBDIR)| iconv -t JAVA | sed -e 's/\\u/\\x/g')
-OC_CFLAGS += -DOCAML_STDLIB_DIR='L"$(OCAML_STDLIB_DIR)"'
+OC_CPPFLAGS += -DOCAML_STDLIB_DIR='L"$(OCAML_STDLIB_DIR)"'
 endif
 
-OC_CFLAGS += $(IFLEXDIR)
+OC_CPPFLAGS += $(IFLEXDIR)
 
 ifneq "$(CCOMPTYPE)" "msvc"
 OC_CFLAGS += -g
@@ -225,7 +225,7 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend: prims.c caml/opnames.h caml/jumptbl.h caml/version.h
-	$(CC) -MM $(OC_CFLAGS) $(OC_CPPFLAGS) *.c | sed -e 's/\.o/.$$(O)/'>.$@
+	$(CC) -MM $(OC_CPPFLAGS) *.c | sed -e 's/\.o/.$$(O)/'>.$@
 	$(CC) -MM $(DFLAGS) $(OC_CPPFLAGS) *.c | sed -e 's/\.o/.d.$$(O)/'>>.$@
 	$(CC) -MM $(IFLAGS) $(OC_CPPFLAGS) *.c | sed -e 's/\.o/.i.$$(O)/'>>.$@
 	$(CC) -MM $(PICFLAGS) $(OC_CPPFLAGS) *.c | \
