@@ -64,7 +64,6 @@ ASMOBJS=$(ARCH).$(O)
 endif
 
 OC_INSTR_CPPFLAGS=-DCAML_INSTR
-PICFLAGS=$(OC_CFLAGS) $(SHAREDLIB_CFLAGS)
 
 ASPPFLAGS = -DSYS_$(SYSTEM) -I../byterun
 ifeq "$(UNIX_OR_WIN32)" "unix"
@@ -156,8 +155,9 @@ $(LINKEDFILES): %.c: ../byterun/%.c
 %.p.$(O): %.c
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
+%.pic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 %.pic.$(O): %.c
-	$(CC) -c $(PICFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.$(O): %.c
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $<

@@ -69,7 +69,6 @@ endif
 
 OC_DEBUG_CPPFLAGS=-DDEBUG
 OC_INSTR_CPPFLAGS=-DCAML_INSTR
-PICFLAGS=$(OC_CFLAGS) $(SHAREDLIB_CFLAGS)
 
 DBGO=d.$(O)
 
@@ -218,8 +217,9 @@ libcamlrun_shared.$(SO): $(PICOBJS)
 %.i.$(O): %.c
 	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
+%.pic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 %.pic.$(O): %.c
-	$(CC) -c $(PICFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 .PHONY: depend
 ifeq "$(TOOLCHAIN)" "msvc"
@@ -232,8 +232,7 @@ depend: prims.c caml/opnames.h caml/jumptbl.h caml/version.h
 	  sed -e 's/\.o/.d.$$(O)/'>>.$@
 	$(CC) -MM $(OC_CPPFLAGS) $(OC_INSTR_CPPFLAGS) *.c | \
 	  sed -e 's/\.o/.i.$$(O)/' >> .$@
-	$(CC) -MM $(PICFLAGS) $(OC_CPPFLAGS) *.c | \
-	  sed -e 's/\.o/.pic.$$(O)/'>>.$@
+	$(CC) -MM $(OC_CPPFLAGS) *.c | sed -e 's/\.o/.pic.$$(O)/'>>.$@
 endif
 
 include .depend
