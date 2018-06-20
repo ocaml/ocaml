@@ -206,20 +206,24 @@ libcamlrun_pic.$(A): $(PICOBJS)
 libcamlrun_shared.$(SO): $(PICOBJS)
 	$(MKDLL) -o $@ $^ $(BYTECCLIBS)
 
-%.$(O): %.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $<
-
 %.$(DBGO): OC_CPPFLAGS += $(OC_DEBUG_CPPFLAGS)
-%.$(DBGO): %.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.i.$(O): OC_CPPFLAGS += $(OC_INSTR_CPPFLAGS)
-%.i.$(O): %.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.pic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
-%.pic.$(O): %.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+
+# The COMPILE_C_FILE macro below receives as argument the pattern
+# that corresponds to the name of the generated object file
+# (without the extension, which is added by the macro)
+define COMPILE_C_FILE
+$(1).$(O): %.c
+	$$(CC) -c $$(OC_CFLAGS) $$(OC_CPPFLAGS) $$(OUTPUTOBJ)$$@ $$<
+endef
+
+object_types := % %.d %.i %.pic
+
+$(foreach object_type, $(object_types), \
+  $(eval $(call COMPILE_C_FILE,$(object_type))))
 
 .PHONY: depend
 ifeq "$(TOOLCHAIN)" "msvc"

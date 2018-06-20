@@ -142,25 +142,29 @@ install:
 $(LINKEDFILES): %.c: ../byterun/%.c
 	$(LN) $< $@
 
+
+
 %.d.$(O): OC_CPPFLAGS += $(OC_DEBUG_CPPFLAGS)
-%.d.$(O): %.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.i.$(O): OC_CPPFLAGS += $(OC_INSTR_CPPFLAGS)
-%.i.$(O): %.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.p.$(O): OC_CFLAGS += $(OC_PROF_CFLAGS)
 %.p.$(O): OC_CPPFLAGS += $(OC_PROF_CPPFLAGS)
-%.p.$(O): %.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.pic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
-%.pic.$(O): %.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
-%.$(O): %.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $<
+# The COMPILE_C_FILE macro below receives as argument the pattern
+# that corresponds to the name of the generated object file
+# (without the extension, which is added by the macro)
+define COMPILE_C_FILE
+$(1).$(O): %.c
+	$$(CC) -c $$(OC_CFLAGS) $$(OC_CPPFLAGS) $$(OUTPUTOBJ)$$@ $$<
+endef
+
+object_types := % %.d %.i %.p %.pic
+
+$(foreach object_type, $(object_types), \
+  $(eval $(call COMPILE_C_FILE,$(object_type))))
 
 %.o: %.S
 	$(ASPP) $(ASPPFLAGS) -o $@ $< || \
