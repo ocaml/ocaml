@@ -409,6 +409,7 @@ export cc verbose
 # Determine the C compiler family (GCC, Clang, etc)
 
 ccfamily=`$cc -E cckind.c | grep '^[a-z]' | tr -s ' ' '-'`
+cc_has_debug_prefix_map=`$cc -E cc_has_debug_prefix_map.c | grep '^[a-z]'`
 case $? in
   0) inf "Compiler family and version: $ccfamily.";;
   *) err "Unable to preprocess the test program.\n" \
@@ -2167,6 +2168,7 @@ config AFL_INSTRUMENT "$afl_instrument"
 config MAX_TESTSUITE_DIR_RETRIES "$max_testsuite_dir_retries"
 config FLAT_FLOAT_ARRAY "$flat_float_array"
 config AWK "awk"
+config CC_HAS_DEBUG_PREFIX_MAP "$cc_has_debug_prefix_map"
 
 
 rm -f tst hasgot.c

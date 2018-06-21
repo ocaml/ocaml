@@ -536,8 +536,13 @@ let link_bytecode_as_c ppf tolink outfile =
 
 let build_custom_runtime prim_name exec_name =
   let runtime_lib = "-lcamlrun" ^ !Clflags.runtime_variant in
+  let debug_prefix_map =
+    if Config.c_has_debug_prefix_map then
+      [Printf.sprintf "-fdebug-prefix-map=%s=camlprim.c" prim_name]
+    else
+      [] in
   Ccomp.call_linker Ccomp.Exe exec_name
-    ([prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
+    (debug_prefix_map @ [prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
     (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
