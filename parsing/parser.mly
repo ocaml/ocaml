@@ -748,18 +748,21 @@ paren_module_expr:
   | LPAREN VAL attributes expr RPAREN
       { mkmod ~attrs:$3 (Pmod_unpack $4)}
   | LPAREN VAL attributes expr COLON package_type RPAREN
-      { mkmod ~attrs:$3
+      { let constr_loc = rhs_interval 4 6 in
+        mkmod ~attrs:$3
           (Pmod_unpack(
-               ghexp(Pexp_constraint($4, $6)))) }
+               ghexp ~loc:constr_loc (Pexp_constraint($4, $6)))) }
   | LPAREN VAL attributes expr COLON package_type COLONGREATER package_type
     RPAREN
-      { mkmod ~attrs:$3
+      { let constr_loc = rhs_interval 4 8 in
+        mkmod ~attrs:$3
           (Pmod_unpack(
-               ghexp(Pexp_coerce($4, Some $6, $8)))) }
+               ghexp ~loc:constr_loc (Pexp_coerce($4, Some $6, $8)))) }
   | LPAREN VAL attributes expr COLONGREATER package_type RPAREN
-      { mkmod ~attrs:$3
+      { let constr_loc = rhs_interval 4 6 in
+        mkmod ~attrs:$3
           (Pmod_unpack(
-               ghexp(Pexp_coerce($4, None, $6)))) }
+               ghexp ~loc:constr_loc (Pexp_coerce($4, None, $6)))) }
   | LPAREN VAL attributes expr COLON error
       { unclosed "(" 1 ")" 6 }
   | LPAREN VAL attributes expr COLONGREATER error
@@ -1132,16 +1135,19 @@ method_:
       { if $1 = Override then syntax_error ();
         (mkrhs $5 5, $4, Cfk_virtual $7), $2 }
   | override_flag attributes private_flag label strict_binding
-      { (mkrhs $4 4, $3,
-        Cfk_concrete ($1, ghexp(Pexp_poly ($5, None)))), $2 }
+      { let e = $5 in
+        (mkrhs $4 4, $3,
+        Cfk_concrete ($1, ghexp ~loc:e.pexp_loc (Pexp_poly (e, None)))), $2 }
   | override_flag attributes private_flag label COLON poly_type EQUAL seq_expr
-      { (mkrhs $4 4, $3,
-        Cfk_concrete ($1, ghexp(Pexp_poly($8, Some $6)))), $2 }
+      { let loc = rhs_interval 6 8 in
+        (mkrhs $4 4, $3,
+        Cfk_concrete ($1, ghexp ~loc (Pexp_poly($8, Some $6)))), $2 }
   | override_flag attributes private_flag label COLON TYPE lident_list
     DOT core_type EQUAL seq_expr
       { let exp, poly = wrap_type_annotation $7 $9 $11 in
+        let loc = rhs_interval 7 11 in
         (mkrhs $4 4, $3,
-        Cfk_concrete ($1, ghexp(Pexp_poly(exp, Some poly)))), $2 }
+        Cfk_concrete ($1, ghexp ~loc (Pexp_poly(exp, Some poly)))), $2 }
 ;
 
 /* Class types */
