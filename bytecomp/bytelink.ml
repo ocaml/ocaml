@@ -537,7 +537,7 @@ let link_bytecode_as_c ppf tolink outfile =
 let build_custom_runtime prim_name exec_name =
   let runtime_lib = "-lcamlrun" ^ !Clflags.runtime_variant in
   let debug_prefix_map =
-    if Config.c_has_debug_prefix_map then
+    if Config.c_has_debug_prefix_map && not !Clflags.keep_camlprimc_file then
       [Printf.sprintf "-fdebug-prefix-map=%s=camlprim.c" prim_name]
     else
       [] in
