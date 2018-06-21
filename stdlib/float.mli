@@ -89,7 +89,7 @@ val is_infinite : float -> bool
 (** [is_infinite x] says whether [x] is [infinity] or [neg_infinity]. *)
 
 val is_nan : float -> bool
-(** [is_nan x] returns [true] if and only if [x] represents a [nan]. *)
+(** [is_nan x] returns [true] if and only if [x] is [nan]. *)
 
 val is_integer : float -> bool
 (** Say whether the floating point is an integer. *)
