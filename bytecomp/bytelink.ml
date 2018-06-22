@@ -628,14 +628,14 @@ let link ppf objfiles output_name =
   end else begin
     let basename = Filename.chop_extension output_name in
     let temps = ref [] in
-    let c_file =
+    let c_file, stable_name =
       if !Clflags.output_complete_object
          && not (Filename.check_suffix output_name ".c")
-      then Filename.temp_file "camlobj" ".c"
+      then Filename.temp_file "camlobj" ".c", "camlobj.c"
       else begin
         let f = basename ^ ".c" in
         if Sys.file_exists f then raise(Error(File_exists f));
-        f
+        f, ""
       end
     in
     let obj_file =
@@ -647,7 +647,7 @@ let link ppf objfiles output_name =
       link_bytecode_as_c ppf tolink c_file;
       if not (Filename.check_suffix output_name ".c") then begin
         temps := c_file :: !temps;
-        if Ccomp.compile_file ~output:obj_file c_file <> 0 then
+        if Ccomp.compile_file ~output:obj_file ~stable_name c_file <> 0 then
           raise(Error Custom_runtime);
         if not (Filename.check_suffix output_name Config.ext_obj) ||
            !Clflags.output_complete_object then begin
