@@ -51,6 +51,12 @@ exception Exit
 (** The [Exit] exception is not raised by any library function.  It is
     provided for use in your programs. *)
 
+val try_finally : (unit -> 'a) -> (unit -> unit) -> 'a
+(** [try_finally f g] calls [f ()] and returns its result.  If it raises,
+    the same exception is raised; in {b: any} case, [g ()] is called after
+    [f ()] terminates.
+
+    @since NEXT_RELEASE *)
 
 (** {1 Comparisons} *)
 

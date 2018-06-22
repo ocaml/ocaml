@@ -39,6 +39,11 @@ let invalid_arg s = raise(Invalid_argument s)
 
 exception Exit
 
+let try_finally (work: unit -> 'a) (cleanup: unit -> unit) : 'a =
+  let result = (try work () with e -> cleanup (); raise e) in
+  cleanup ();
+  result
+
 (* Composition operators *)
 
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
