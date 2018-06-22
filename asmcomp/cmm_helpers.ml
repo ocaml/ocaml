@@ -1616,3 +1616,20 @@ let generic_apply mut clos args dbg =
       let cargs = Cconst_symbol(apply_function arity, dbg) :: args @ [clos] in
       Cop(Capply typ_val, cargs, dbg)
 
+let send kind met obj args dbg =
+  let call_met obj args clos =
+    (* met is never a simple expression, so it never gets turned into an
+       Immutable load *)
+    generic_apply Asttypes.Mutable clos (obj :: args) dbg
+  in
+  bind "obj" obj (fun obj ->
+      match (kind : Lambda.meth_kind), args with
+        Self, _ ->
+          bind "met" (lookup_label obj met dbg)
+            (call_met obj args)
+      | Cached, cache :: pos :: args ->
+          call_cached_method obj met cache pos args dbg
+      | _ ->
+          bind "met" (lookup_tag obj met dbg)
+            (call_met obj args))
+

@@ -428,7 +428,8 @@ val transl_int_switch :
 (** [transl_switch_clambda loc arg index cases] *)
 val transl_switch_clambda :
   Location.t -> expression -> int array -> expression array -> expression
-(** From transl_exp *)
+
+(** From transl (clambda expressions) *)
 
 (** Adds a constant offset to a pointer (for infix access) *)
 val ptr_offset : expression -> int -> Debuginfo.t -> expression
@@ -436,8 +437,22 @@ val ptr_offset : expression -> int -> Debuginfo.t -> expression
 (** Direct application of a symbol *)
 val direct_apply : string -> expression list -> Debuginfo.t -> expression
 
-(** Generic application of a function to one or several arguments *)
+(** Generic application of a function to one or several arguments
+    The mutable_flag argument annotates the code pointer load
+    from the closure. The original implementation uses a mutable load by
+    default, with a special case when the load is from (the first function of)
+    the currently defined closure. *)
 val generic_apply :
   Asttypes.mutable_flag ->
   expression -> expression list -> Debuginfo.t -> expression
 
+(** Method call : [send kind met obj args dbg]
+    - [met] is a method identifier, which can be a hashed variant or an index
+    in [obj]'s method table, depending on [kind]
+    - [obj] is the object whose method is being called
+    - [args] is the extra arguments to the method call (Note: I'm not aware
+    of any way for the frontend to generate any arguments other than the
+    cache and cache position) *)
+val send :
+  Lambda.meth_kind -> expression -> expression -> expression list ->
+  Debuginfo.t -> expression

@@ -507,28 +507,10 @@ let rec transl env e =
       let args = List.map (transl env) args in
       generic_apply (mut_from_env env clos) clos args dbg
   | Usend(kind, met, obj, args, dbg) ->
-      let call_met obj args clos =
-        if args = [] then
-          Cop(Capply typ_val,
-            [get_field env clos 0 dbg; obj; clos], dbg)
-        else
-          let arity = List.length args + 1 in
-          let cargs = Cconst_symbol(apply_function arity, dbg) :: obj ::
-            (List.map (transl env) args) @ [clos] in
-          Cop(Capply typ_val, cargs, dbg)
-      in
-      bind "obj" (transl env obj) (fun obj ->
-        match kind, args with
-          Self, _ ->
-            bind "met" (lookup_label obj (transl env met) dbg)
-              (call_met obj args)
-        | Cached, cache :: pos :: args ->
-            call_cached_method obj
-              (transl env met) (transl env cache) (transl env pos)
-              (List.map (transl env) args) dbg
-        | _ ->
-            bind "met" (lookup_tag obj (transl env met) dbg)
-              (call_met obj args))
+      let met = transl env met in
+      let obj = transl env obj in
+      let args = List.map (transl env) args in
+      send kind met obj args dbg
   | Ulet(str, kind, id, exp, body) ->
       transl_let env str kind id exp body
   | Uphantom_let (var, defining_expr, body) ->
