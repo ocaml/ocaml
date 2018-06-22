@@ -51,10 +51,40 @@ exception Exit
 (** The [Exit] exception is not raised by any library function.  It is
     provided for use in your programs. *)
 
-val try_finally : (unit -> 'a) -> (unit -> unit) -> 'a
-(** [try_finally f g] calls [f ()] and returns its result.  If it raises,
-    the same exception is raised unless [g ()] itself raises;
-    in {b: any} case, [g ()] is called after [f ()] terminates.
+val try_finally :
+  ?always:(unit -> unit) ->
+  ?exceptionally:(unit -> unit) ->
+  (unit -> 'a) -> 'a
+(** [try_finally work ~always ~exceptionally] is designed to run code
+    in [work] that may fail with an exception, and has two kind of
+    cleanup routines:
+    {ul
+    {- [always], that must be run after {b any} execution
+       of the function (typically, freeing system resources), and}
+    {- [exceptionally], that should be run {b only} if [work] or [always]
+       failed with an exception (typically, undoing user-visible state
+       changes that would only make sense if the function completes
+       correctly).}
+    }
+    For example:
+    {[
+      let outfile = outputprefix ^ ".cmo" in
+      let oc = open_out_bin objfile in
+      try_finally
+        (fun () ->
+           bytecode
+           ++ Timings.(accumulate_time (Generate sourcefile))
+               (Emitcode.to_file oc modulename objfile);
+           Warnings.check_fatal ())
+        ~always:(fun () -> close_out oc)
+        ~exceptionally:(fun _exn -> remove_file objfile);
+    ]}
+    If [exceptionally] fail with an exception, it is propagated as
+    usual.
+    If [always] or [exceptionally] use exceptions internally for
+    control-flow but do not raise, then [try_finally] is careful to
+    preserve any exception backtrace coming from [work] or [always]
+    for easier debugging.
 
     @since NEXT_RELEASE *)
 

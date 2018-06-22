@@ -35,10 +35,33 @@ let invalid_arg s = raise(Invalid_argument s)
 
 exception Exit
 
-let try_finally (work: unit -> 'a) (cleanup: unit -> unit) : 'a =
+type _raw_backtrace
+external _get_raw_backtrace:
+  unit -> _raw_backtrace = "caml_get_exception_raw_backtrace"
+external _raise_with_backtrace: exn -> _raw_backtrace -> 'a
+  = "%raise_with_backtrace"
+
+let try_finally ?(always=fun () -> ()) ?(exceptionally=fun () -> ()) work =
   match work () with
-  | result -> cleanup (); result
-  | exception e -> cleanup (); raise e
+  | result ->
+      begin match always () with
+      | () -> result
+      | exception always_exn ->
+          let always_bt = _get_raw_backtrace () in
+          exceptionally ();
+          _raise_with_backtrace always_exn always_bt
+      end
+  | exception work_exn ->
+      let work_bt = _get_raw_backtrace () in
+      begin match always () with
+      | () ->
+          exceptionally ();
+          _raise_with_backtrace work_exn work_bt
+      | exception always_exn ->
+          let always_bt = _get_raw_backtrace () in
+          exceptionally ();
+          _raise_with_backtrace always_exn always_bt
+      end
 
 (* Composition operators *)
 
