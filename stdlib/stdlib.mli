@@ -53,8 +53,8 @@ exception Exit
 
 val try_finally : (unit -> 'a) -> (unit -> unit) -> 'a
 (** [try_finally f g] calls [f ()] and returns its result.  If it raises,
-    the same exception is raised; in {b: any} case, [g ()] is called after
-    [f ()] terminates.
+    the same exception is raised unless [g ()] itself raises;
+    in {b: any} case, [g ()] is called after [f ()] terminates.
 
     @since NEXT_RELEASE *)
 
