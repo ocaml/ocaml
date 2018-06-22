@@ -34,6 +34,12 @@ let rec longident ppf = function
 
 (* Print an identifier avoiding name collisions *)
 
+module Out_name = struct
+  let create x = { printed_name = x }
+  let print x = x.printed_name
+  let set out_name x = out_name.printed_name <- x
+end
+
 (* printing environment for path shortening and naming *)
 let printing_env = ref Env.empty
 let human_unique n id = Printf.sprintf "%s/%d" (Ident.name id) n
@@ -164,16 +170,15 @@ type mapping =
       The [map] argument contains the specific binding time attributed to each
       types.
   *)
-  | Uniquely_associated_to of Ident.t * string ref
-    (** [Uniquely_associated_to (id,name_ref)] for now, the name has been
-        attributed to [id], the reference [name_ref] is used to expand
-        the name associated to [id] if a conflict arises at a later point
+  | Uniquely_associated_to of Ident.t * out_name
+    (** For now, the name [Ident.name id] has been attributed to [id],
+        [out_name] is used to expand this name if a conflict arises
+        at a later point
     *)
-  | Associated_to_pervasives of string ref
-  (** [Associated_to_pervasives name_ref] is used when the item
+  | Associated_to_pervasives of out_name
+  (** [Associated_to_pervasives out_name] is used when the item
       [Pervasives.$name] has been associated to the name [$name].
-      Upon a conflict, this name will be expanded to
-      [name_ref := "Pervasives." ^ name ] *)
+      Upon a conflict, this name will be expanded to ["Pervasives." ^ name ] *)
 
 let hid_start = 0
 
@@ -199,18 +204,18 @@ let add_protected id = protected := S.add (Ident.name id) !protected
 let reset_protected () = protected := S.empty
 
 let pervasives_name namespace name =
-  if not !enabled then ref name else
+  if not !enabled then Out_name.create name else
   match M.find name (get namespace) with
   | Associated_to_pervasives r -> r
-  | Need_unique_name _ -> ref (pervasives name)
+  | Need_unique_name _ -> Out_name.create (pervasives name)
   | Uniquely_associated_to (id',r) ->
       let hid, map = add_hid_id id' N.empty in
-      r := human_unique hid id';
+      Out_name.set r (human_unique hid id');
       Conflicts.explain namespace hid id';
       set namespace @@ M.add name (Need_unique_name map) (get namespace);
-      ref (pervasives name)
+      Out_name.create (pervasives name)
   | exception Not_found ->
-      let r = ref name in
+      let r = Out_name.create name in
       set namespace @@ M.add name (Associated_to_pervasives r) (get namespace);
       r
 
@@ -224,7 +229,7 @@ let env_ident namespace name =
 
 (** Associate a name to the identifier [id] within [namespace] *)
 let ident_name_simple namespace id =
-  if not !enabled then ref (Ident.name id) else
+  if not !enabled then Out_name.create (Ident.name id) else
   let name = Ident.name id in
   match M.find name (get namespace) with
   | Uniquely_associated_to (id',r) when Ident.same id id' ->
@@ -233,22 +238,22 @@ let ident_name_simple namespace id =
       let hid, m = find_hid id map in
       Conflicts.explain namespace hid id;
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
-      ref (human_unique hid id)
+      Out_name.create (human_unique hid id)
   | Uniquely_associated_to (id',r) ->
       let hid', m = find_hid id' N.empty in
       let hid, m = find_hid id m in
-      r := human_unique hid' id';
+      Out_name.set r (human_unique hid' id');
       List.iter (fun (id,hid) -> Conflicts.explain namespace hid id)
         [id, hid; id', hid' ];
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
-      ref (human_unique hid id)
+      Out_name.create (human_unique hid id)
   | Associated_to_pervasives r ->
-      r := "Pervasives." ^ !r;
+      Out_name.set r ("Pervasives." ^ Out_name.print r);
       let hid, m = find_hid id N.empty in
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
-      ref (human_unique hid id)
+      Out_name.create (human_unique hid id)
   | exception Not_found ->
-      let r = ref name in
+      let r = Out_name.create name in
       set namespace
       @@ M.add name (Uniquely_associated_to (id,r) ) (get namespace);
       r
@@ -270,7 +275,7 @@ let ident_name = Naming_context.ident_name
 let reset_naming_context = Naming_context.reset
 
 let ident ppf id = pp_print_string ppf
-    !(Naming_context.ident_name_simple Other id)
+    (Out_name.print (Naming_context.ident_name_simple Other id))
 
 (* Print a path *)
 
@@ -381,7 +386,7 @@ let path ppf p =
   path ppf (rewrite_double_underscore_paths !printing_env p)
 
 let rec string_of_out_ident = function
-  | Oide_ident s -> !s
+  | Oide_ident s -> Out_name.print s
   | Oide_dot (id, s) -> String.concat "." [string_of_out_ident id; s]
   | Oide_apply (id1, id2) ->
       String.concat ""

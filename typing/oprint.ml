@@ -28,7 +28,7 @@ let print_lident ppf = function
 
 let rec print_ident ppf =
   function
-    Oide_ident s -> print_lident ppf !s
+    Oide_ident s -> print_lident ppf s.printed_name
   | Oide_dot (id, s) ->
       print_ident ppf id; pp_print_char ppf '.'; print_lident ppf s
   | Oide_apply (id1, id2) ->

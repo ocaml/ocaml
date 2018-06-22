@@ -22,12 +22,14 @@
       [Toploop.print_out_sig_item]
       [Toploop.print_out_phrase] *)
 
+(** An [out_name] is a string representation of an identifier which can be
+    rewritten on the fly to avoid name collisions *)
+type out_name = { mutable printed_name: string }
+
 type out_ident =
   | Oide_apply of out_ident * out_ident
   | Oide_dot of out_ident * string
-  | Oide_ident of string ref
-  (** Beware that identifier names can be renamed on the fly to avoid
-      name collision between different identifiers, see {!Printtyp} *)
+  | Oide_ident of out_name
 
 type out_string =
   | Ostr_string

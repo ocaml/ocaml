@@ -25,6 +25,11 @@ val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
 val string_of_path: Path.t -> string
 
+module Out_name: sig
+  val create: string -> out_name
+  val print: out_name -> string
+end
+
 type namespace =
   | Type
   | Module
