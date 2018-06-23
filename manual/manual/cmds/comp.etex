@@ -271,12 +271,12 @@ are two ways to fix this error:
 type (without type variables) to \var{name}. For instance, instead of
 writing
 \begin{verbatim}
-    let sort_int_list = Sort.list (<)
+    let sort_int_list = List.sort Stdlib.compare
     (* inferred type 'a list -> 'a list, with 'a not generalized *)
 \end{verbatim}
 write
 \begin{verbatim}
-    let sort_int_list = (Sort.list (<) : int list -> int list);;
+    let sort_int_list = (List.sort Stdlib.compare : int list -> int list);;
 \end{verbatim}
 \item If you really need \var{name} to have a polymorphic type, turn
 its defining expression into a function by adding an extra parameter.

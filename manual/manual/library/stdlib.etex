@@ -42,7 +42,6 @@ Here is a short listing, by theme, of the standard library modules.
 the above 4 modules \\
 "Char" & p.~\pageref{Char} & character operations \\
 "Uchar" & p.~\pageref{Uchar} & Unicode characters \\
-"Sort" & p.~\pageref{Sort} & (deprecated) \\
 "Hashtbl" & p.~\pageref{Hashtbl} & hash tables and hash functions \\
 "Random" & p.~\pageref{Random} & pseudo-random number generator \\
 "Set" & p.~\pageref{Set} & sets over ordered types \\
@@ -137,7 +136,6 @@ be called from C \\
 \item \ahref{libref/Scanf.html}{Module \texttt{Scanf}: formatted input functions}
 \item \ahref{libref/Seq.html}{Module \texttt{Seq}: functional iterators}
 \item \ahref{libref/Set.html}{Module \texttt{Set}: sets over ordered types}
-\item \ahref{libref/Sort.html}{Module \texttt{Sort}: deprecated}
 \item \ahref{libref/Spacetime.html}{Module \texttt{Spacetime}: memory profiler}
 \item \ahref{libref/Stack.html}{Module \texttt{Stack}: last-in first-out stacks}
 \item \ahref{libref/StdLabels.html}{Module \texttt{StdLabels}: Include modules \texttt{Array}, \texttt{List} and \texttt{String} with labels}
@@ -186,7 +184,6 @@ be called from C \\
 \input{Scanf.tex}
 \input{Seq.tex}
 \input{Set.tex}
-\input{Sort.tex}
 \input{Spacetime.tex}
 \input{Stack.tex}
 \input{StdLabels.tex}

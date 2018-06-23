@@ -153,9 +153,6 @@ stdlib__seq.cmi :
 stdlib__set.cmo : stdlib__seq.cmi stdlib__list.cmi stdlib__set.cmi
 stdlib__set.cmx : stdlib__seq.cmx stdlib__list.cmx stdlib__set.cmi
 stdlib__set.cmi : stdlib__seq.cmi
-stdlib__sort.cmo : stdlib__array.cmi stdlib__sort.cmi
-stdlib__sort.cmx : stdlib__array.cmx stdlib__sort.cmi
-stdlib__sort.cmi :
 stdlib__spacetime.cmo : stdlib__gc.cmi stdlib__spacetime.cmi
 stdlib__spacetime.cmx : stdlib__gc.cmx stdlib__spacetime.cmi
 stdlib__spacetime.cmi :
@@ -303,8 +300,6 @@ stdlib__seq.cmo : stdlib__seq.cmi
 stdlib__seq.p.cmx : stdlib__seq.cmi
 stdlib__set.cmo : stdlib__seq.cmi stdlib__list.cmi stdlib__set.cmi
 stdlib__set.p.cmx : stdlib__seq.cmx stdlib__list.cmx stdlib__set.cmi
-stdlib__sort.cmo : stdlib__array.cmi stdlib__sort.cmi
-stdlib__sort.p.cmx : stdlib__array.cmx stdlib__sort.cmi
 stdlib__spacetime.cmo : stdlib__gc.cmi stdlib__spacetime.cmi
 stdlib__spacetime.p.cmx : stdlib__gc.cmx stdlib__spacetime.cmi
 stdlib__stack.cmo : stdlib__seq.cmi stdlib__list.cmi stdlib__stack.cmi

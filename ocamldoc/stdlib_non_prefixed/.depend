@@ -126,7 +126,6 @@ semantics_of_primitives.cmi : lambda.cmi
 seq.cmi :
 set.cmi : seq.cmi
 simplif.cmi : misc.cmi location.cmi lambda.cmi ident.cmi
-sort.cmi :
 spacetime.cmi :
 stack.cmi : seq.cmi
 stdLabels.cmi : stringLabels.cmi listLabels.cmi bytesLabels.cmi \

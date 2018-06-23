@@ -65,7 +65,6 @@ STDLIB_MODULES=\
   $(P)scanf \
   $(P)seq \
   $(P)set \
-  $(P)sort \
   $(P)stack \
   $(P)stdLabels \
   stdlib \

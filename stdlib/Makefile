@@ -40,7 +40,7 @@ P=stdlib__
 OBJS=camlinternalFormatBasics.cmo stdlib.cmo $(OTHERS)
 OTHERS=$(P)seq.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo $(P)list.cmo \
   $(P)bytes.cmo $(P)string.cmo \
-  $(P)sort.cmo $(P)marshal.cmo $(P)obj.cmo $(P)float.cmo $(P)array.cmo \
+  $(P)marshal.cmo $(P)obj.cmo $(P)float.cmo $(P)array.cmo \
   $(P)int32.cmo $(P)int64.cmo $(P)nativeint.cmo \
   $(P)lexing.cmo $(P)parsing.cmo \
   $(P)set.cmo $(P)map.cmo $(P)stack.cmo $(P)queue.cmo \
