@@ -595,7 +595,6 @@ module Random       = Random
 module Scanf        = Scanf
 module Seq          = Seq
 module Set          = Set
-module Sort         = Sort
 module Spacetime    = Spacetime
 module Stack        = Stack
 module StdLabels    = StdLabels

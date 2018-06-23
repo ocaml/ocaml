@@ -42,6 +42,10 @@ Working version
 - MPR#7235: Format, flush err_formatter at exit.
   (Pierre Weis, request by Jun Furuse)
 
+- GPR#1857, MPR#7812: Remove Sort module, deprecated since 2000 and emitting
+  a deprecation warning since 4.02.
+  (whitequark)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
