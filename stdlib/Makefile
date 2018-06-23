@@ -76,8 +76,9 @@ else
 PROFILINGTARGET = noprof
 endif
 
-.PHONY: allopt
+.PHONY: allopt opt.opt # allopt and opt.opt are synonyms
 allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILINGTARGET)
+opt.opt: allopt
 
 .PHONY: allopt-noprof
 allopt-noprof:

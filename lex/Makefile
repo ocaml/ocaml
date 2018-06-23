@@ -40,8 +40,10 @@ CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
      compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
 
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 all: ocamllex
 allopt: ocamllex.opt
+opt.opt: allopt
 
 ocamllex: $(OBJS)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamllex $(OBJS)
