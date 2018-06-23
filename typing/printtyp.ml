@@ -183,7 +183,7 @@ type mapping =
 let hid_start = 0
 
 let add_hid_id id map =
-  let new_id = 1 + try snd (N.max_binding map) with Not_found -> hid_start in
+  let new_id = 1 + N.fold (fun _ -> max) map hid_start in
   new_id, N.add (Ident.binding_time id) new_id  map
 
 let find_hid id map =

@@ -369,3 +369,48 @@ Definition of module M/1
 Line _:
 Definition of module M/2
 |}]
+
+
+(** Multiple redefinition of t *)
+type t = A;;
+type t = B;;
+type t = C;;
+type t = D;;
+module M: sig val f: t -> t -> t -> t end = struct
+  let f A B C = D
+end;;
+[%%expect {|
+type t = A
+type t = B
+type t = C
+type t = D
+Line _, characters 44-72:
+  ............................................struct
+    let f A B C = D
+  end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig val f : t/2 -> t/3 -> t/4 -> t/1 end
+       is not included in
+         sig val f : t -> t -> t -> t end
+       Values do not match:
+         val f : t/2 -> t/3 -> t/4 -> t/1
+       is not included in
+         val f : t/1 -> t/1 -> t/1 -> t/1
+       Line _, characters 0-10:
+  type t = D;;
+  ^^^^^^^^^^
+Definition of type t/1
+Line _, characters 0-10:
+  type t = A;;
+  ^^^^^^^^^^
+Definition of type t/2
+Line _, characters 0-10:
+  type t = B;;
+  ^^^^^^^^^^
+Definition of type t/3
+Line _, characters 0-10:
+  type t = C;;
+  ^^^^^^^^^^
+Definition of type t/4
+|}]
