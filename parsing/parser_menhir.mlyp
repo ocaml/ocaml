@@ -530,12 +530,6 @@ let mk_directive ~loc name arg =
 #define _expr_of_let_bindings (expr_of_let_bindings ~loc:$loc)
 #define _class_of_let_bindings (class_of_let_bindings ~loc:$loc)
 
-#define _wrap_mod_attrs (wrap_mod_attrs ~loc:$loc)
-#define _wrap_mty_attrs (wrap_mty_attrs ~loc:$loc)
-#define _wrap_class_attrs (wrap_class_attrs ~loc:$loc)
-#define _wrap_class_type_attrs (wrap_class_type_attrs ~loc:$loc)
-#define _wrap_type_annotation (wrap_type_annotation ~loc:$loc)
-
 #define _mkstr_ext (mkstr_ext ~loc:$loc)
 #define _mksig_ext (mksig_ext ~loc:$loc)
 
@@ -866,11 +860,12 @@ module_expr:
   | STRUCT attributes structure error
       { _unclosed("struct", 1, "end", 4) }
   | FUNCTOR attributes functor_args MINUSGREATER module_expr
-      { let modexp =
+      { let loc = make_loc $symbolstartpos $endpos in
+        let modexp =
           List.fold_left
             (fun acc (n, t) -> _mkmod(Pmod_functor(n, t, acc)))
             $5 $3
-        in _wrap_mod_attrs modexp $2 }
+        in wrap_mod_attrs ~loc modexp $2 }
   | module_expr paren_module_expr
       { _mkmod(Pmod_apply($1, $2)) }
   | module_expr LPAREN RPAREN
@@ -1013,11 +1008,12 @@ module_type:
       { _unclosed("sig", 1, "end", 4) }
   | FUNCTOR attributes functor_args MINUSGREATER module_type
       %prec below_WITH
-      { let mty =
+      { let loc = make_loc $symbolstartpos $endpos in
+        let mty =
           List.fold_left
             (fun acc (n, t) -> _mkmty(Pmty_functor(n, t, acc)))
             $5 $3
-        in _wrap_mty_attrs mty $2 }
+        in wrap_mty_attrs ~loc mty $2 }
   | module_type MINUSGREATER module_type
       %prec below_WITH
       { _mkmty(Pmty_functor(mknoloc "_", Some $1, $3)) }
@@ -1186,13 +1182,15 @@ class_expr:
     class_simple_expr
       { $1 }
   | FUN attributes class_fun_def
-      { _wrap_class_attrs $3 $2 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        wrap_class_attrs ~loc $3 $2 }
   | class_simple_expr simple_labeled_expr_list
       { _mkclass(Pcl_apply($1, List.rev $2)) }
   | let_bindings IN class_expr
       { _class_of_let_bindings $1 $3 }
   | LET OPEN override_flag attributes mkrhs(mod_longident) IN class_expr
-      { _wrap_class_attrs (_mkclass(Pcl_open($3, $5, $7))) $4 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        wrap_class_attrs ~loc (_mkclass(Pcl_open($3, $5, $7))) $4 }
   | class_expr attribute
       { Cl.attr $1 $2 }
   | extension
@@ -1294,7 +1292,9 @@ method_:
         Cfk_concrete ($1, ghexp ~loc (Pexp_poly($8, Some $6)))), $2 }
   | override_flag attributes private_flag label COLON TYPE lident_list
     DOT core_type EQUAL seq_expr
-      { let exp, poly = _wrap_type_annotation $7 $9 $11 in
+      { let exp, poly =
+          let loc = make_loc $symbolstartpos $endpos in
+          wrap_type_annotation ~loc $7 $9 $11 in
         let loc = _rhs_interval(7, 11) in
         (_mkrhs($4, 4), $3,
         Cfk_concrete ($1, ghexp ~loc (Pexp_poly(exp, Some poly)))), $2 }
@@ -1329,7 +1329,8 @@ class_signature:
   | extension
       { _mkcty(Pcty_extension $1) }
   | LET OPEN override_flag attributes mkrhs(mod_longident) IN class_signature
-      { _wrap_class_type_attrs (_mkcty(Pcty_open($3, $5, $7))) $4 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        wrap_class_type_attrs ~loc (_mkcty(Pcty_open($3, $5, $7))) $4 }
 ;
 class_sig_body:
     class_self_type extra_csig(class_sig_fields)
@@ -1807,7 +1808,9 @@ let_binding_body:
                             ghtyp ~loc:typloc (Ptyp_poly(List.rev $3,$5)))),
          $7) }
   | val_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
-      { let exp, poly = _wrap_type_annotation $4 $6 $8 in
+      { let exp, poly =
+          let loc = make_loc $symbolstartpos $endpos in
+          wrap_type_annotation ~loc $4 $6 $8 in
         let loc = _rhs_interval(1, 6) in
         (ghpat ~loc (Ppat_constraint(_mkpatvar($1, 1), poly)), exp) }
   | pattern_no_exn EQUAL seq_expr
