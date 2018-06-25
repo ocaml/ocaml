@@ -595,6 +595,8 @@ let link ppf objfiles output_name =
     try
       link_bytecode ppf tolink bytecode_name false;
       let poc = open_out prim_name in
+      (* note: builds will not be reproducible if the C code contains macros
+         such as __FILE__. *)
       output_string poc "\
         #ifdef __cplusplus\n\
         extern \"C\" {\n\
