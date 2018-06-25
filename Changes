@@ -123,6 +123,9 @@ Working version
   (Sébastien Hinderer, review by David Allsopp, Xavier Leroy and
   Damien Doligez)
 
+- GPR#1854: remove the no longer defined BYTECCCOMPOPTS build variable.
+  (Sébastien Hinderer, review by Damien Doligez)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables.

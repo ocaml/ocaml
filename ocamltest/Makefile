@@ -199,7 +199,7 @@ ocamltest.opt$(EXE): $(native_modules)
 	$(ocamllex) -q $<
 
 %.$(O): %.c
-	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) $(BYTECCCOMPOPTS) -c $<
+	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -c $<
 
 ocamltest_config.ml: ocamltest_config.ml.in Makefile
 	sed \

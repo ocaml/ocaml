@@ -419,12 +419,6 @@ esac
 # invoked to process a third-party C source file passed to ocamlc
 # when no -cc command-line option has been specified.
 
-# The BYTECCCOMPOPTS make variable contains options to pass to the C
-# compiler but only when compiling C files that belong to the OCaml
-# distribution.
-# In other words, when ocamlc is called to compile a third-party C
-# source file, it will _not_ pass these options to the C compiler.
-
 # The SHAREDLIB_CFLAGS make variable contains options to use to compile C
 # source files so that the resulting object files can then be integrated
 # into shared libraries. It is passed to CC for both C source files
