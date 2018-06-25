@@ -66,7 +66,7 @@ let display_msvc_output file name =
     close_in c;
     Sys.remove file
 
-let compile_file ?output ?(opt="") ?(stable_name=None) name =
+let compile_file ?output ?(opt="") ?(stable_name="") name =
   let (pipe, file) =
     if Config.ccomp_type = "msvc" && not !Clflags.verbose then
       try
@@ -78,9 +78,10 @@ let compile_file ?output ?(opt="") ?(stable_name=None) name =
     else
       ("", "") in
   let debug_prefix_map =
-    match stable_name with
-    | None -> ""
-    | Some stable -> Printf.sprintf " -fdebug-prefix-map=%s=%s" name stable in
+    if stable_name = "" then
+      ""
+    else
+      Printf.sprintf " -fdebug-prefix-map=%s=%s" name stable_name in
   let exit =
     command
       (Printf.sprintf
