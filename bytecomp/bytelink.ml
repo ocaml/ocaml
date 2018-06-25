@@ -633,11 +633,11 @@ let link ppf objfiles output_name =
     let c_file, stable_name =
       if !Clflags.output_complete_object
          && not (Filename.check_suffix output_name ".c")
-      then Filename.temp_file "camlobj" ".c", "camlobj.c"
+      then Filename.temp_file "camlobj" ".c", Some "camlobj.c"
       else begin
         let f = basename ^ ".c" in
         if Sys.file_exists f then raise(Error(File_exists f));
-        f, ""
+        f, None
       end
     in
     let obj_file =
