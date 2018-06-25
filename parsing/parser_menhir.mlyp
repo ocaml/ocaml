@@ -515,7 +515,6 @@ let mk_directive ~loc name arg =
 
 #define _mark_rhs_docs(p1, p2) (mark_rhs_docs $startpos($ ## p1) $endpos($ ## p2))
 
-#define _mkrhs(s, p) (mkrhs (s) $locof(p))
 #define _mkrhs2(s, p1, p2) (mkrhs2 (s) $startpos($ ## p1) $endpos($ ## p2))
 
 #define _mkexp (mkexp ~loc:$loc)
@@ -1292,27 +1291,28 @@ value:
 ;
 method_:
 /* TODO: factorize those rules... */
-    override_flag attributes PRIVATE VIRTUAL label COLON poly_type
+    override_flag attributes PRIVATE VIRTUAL mkrhs(label) COLON poly_type
       { if $1 = Override then syntax_error ();
-        (_mkrhs($5, 5), Private, Cfk_virtual $7), $2 }
-  | override_flag attributes VIRTUAL private_flag label COLON poly_type
+        ($5, Private, Cfk_virtual $7), $2 }
+  | override_flag attributes VIRTUAL private_flag mkrhs(label) COLON poly_type
       { if $1 = Override then syntax_error ();
-        (_mkrhs($5, 5), $4, Cfk_virtual $7), $2 }
-  | override_flag attributes private_flag label strict_binding
+        ($5, $4, Cfk_virtual $7), $2 }
+  | override_flag attributes private_flag mkrhs(label) strict_binding
       { let e = $5 in
-        (_mkrhs($4, 4), $3,
+        ($4, $3,
         Cfk_concrete ($1, ghexp ~loc:e.pexp_loc (Pexp_poly (e, None)))), $2 }
-  | override_flag attributes private_flag label COLON poly_type EQUAL seq_expr
+  | override_flag attributes private_flag mkrhs(label)
+    COLON poly_type EQUAL seq_expr
       { let loc = _rhs_interval(6, 8) in
-        (_mkrhs($4, 4), $3,
+        ($4, $3,
         Cfk_concrete ($1, ghexp ~loc (Pexp_poly($8, Some $6)))), $2 }
-  | override_flag attributes private_flag label COLON TYPE lident_list
-    DOT core_type EQUAL seq_expr
+  | override_flag attributes private_flag mkrhs(label)
+    COLON TYPE lident_list DOT core_type EQUAL seq_expr
       { let exp, poly =
           let loc = make_loc $symbolstartpos $endpos in
           wrap_type_annotation ~loc $7 $9 $11 in
         let loc = _rhs_interval(7, 11) in
-        (_mkrhs($4, 4), $3,
+        ($4, $3,
         Cfk_concrete ($1, ghexp ~loc (Pexp_poly(exp, Some poly)))), $2 }
 ;
 
@@ -1815,7 +1815,9 @@ label_expr:
       { (Optional $1, $2) }
 ;
 label_ident:
-    LIDENT   { ($1, _mkexp(Pexp_ident(_mkrhs((Lident $1), 1)))) }
+    LIDENT
+      { let loc = make_loc $symbolstartpos $endpos in
+        ($1, mkexp ~loc (Pexp_ident(mkrhs (Lident $1) loc))) }
 ;
 lident_list:
     mkrhs(LIDENT)                     { [$1] }
@@ -2422,11 +2424,12 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    TYPE optional_type_parameters label_longident with_type_binder
+    TYPE optional_type_parameters mkrhs(label_longident) with_type_binder
     core_type_no_attr constraints
-      { Pwith_type
-          (_mkrhs($3, 3),
-           (Type.mk (_mkrhs((Longident.last $3), 3))
+      { let lident = { $3 with Location.txt = Longident.last $3.Location.txt } in
+        Pwith_type
+          ($3,
+           (Type.mk lident
               ~params:$2
               ~cstrs:(List.rev $6)
               ~manifest:$5
@@ -2434,10 +2437,11 @@ with_constraint:
               ~loc:$loc)) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
-  | TYPE optional_type_parameters label_longident COLONEQUAL core_type_no_attr
-      { Pwith_typesubst
-         (_mkrhs($3, 3),
-           (Type.mk (_mkrhs((Longident.last $3), 3))
+  | TYPE optional_type_parameters mkrhs(label_longident) COLONEQUAL core_type_no_attr
+      { let lident = { $3 with Location.txt = Longident.last $3.Location.txt } in
+        Pwith_typesubst
+         ($3,
+           (Type.mk lident
               ~params:$2
               ~manifest:$5
               ~loc:$loc)) }
