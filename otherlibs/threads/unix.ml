@@ -295,7 +295,7 @@ external fstat : file_descr -> stats = "unix_fstat"
 external isatty : file_descr -> bool = "unix_isatty"
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
-external link : string -> string -> unit = "unix_link"
+external link : ?follow:bool -> string -> string -> unit = "unix_link"
 
 module LargeFile =
   struct
