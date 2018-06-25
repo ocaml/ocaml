@@ -409,7 +409,6 @@ export cc verbose
 # Determine the C compiler family (GCC, Clang, etc)
 
 ccfamily=`$cc -E cckind.c | grep '^[a-z]' | tr -s ' ' '-'`
-cc_has_debug_prefix_map=`$cc -E cc_has_debug_prefix_map.c | grep '^[a-z]'`
 case $? in
   0) inf "Compiler family and version: $ccfamily.";;
   *) err "Unable to preprocess the test program.\n" \
@@ -1528,6 +1527,12 @@ fi
 if sh ./hasgot pwrite; then
   inf "pwrite() found"
   echo "#define HAS_PWRITE" >> s.h
+fi
+
+if sh ./trycompile -fdebug-prefix-map=old=new ansi.c; then
+    cc_has_debug_prefix_map=true
+else
+    cc_has_debug_prefix_map=false
 fi
 
 nanosecond_stat=none
