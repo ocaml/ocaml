@@ -52,14 +52,11 @@ exception Exit
     provided for use in your programs. *)
 
 val try_finally : always:(unit -> unit) -> (unit -> 'a) -> 'a
-(** [try_finally ~always work] is designed to run code in [work] that
-    may fail with an exception.
-    The function [always], is guaranteed to run after {b any} execution
-    of the [work] function. Exceptions raised by [always] are not
-    caught, they will be propagated to the caller as usual.
-    In any other case [try_finally] will return the result of the
-    [work] funciton or re-raise its exception, preserving the
-    backtrace (For more details, see {!Printexc.raise_with_backtrace}).
+(** [try_finally ~always work] invokes [work ()] and then [always ()]
+    before [work] returns with its value or an exception. In the latter
+    case the exception is re-raised after [always ()].
+    If [always ()] raises, this exception is not caught and may shadow
+    one [work ()] may have raised.
 
     @since NEXT_RELEASE *)
 
