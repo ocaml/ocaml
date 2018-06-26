@@ -39,7 +39,7 @@ In the manual:
 
 - The Info manual is in directory `infoman`.
 
-- The PDF manual is in directory `texstuff` as file `pdfmanual.pdf`.
+- The PDF manual is in directory `texstuff` as file `manual.pdf`.
 
 Source files
 ------------
