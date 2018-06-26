@@ -463,6 +463,77 @@ val of_seq : char Seq.t -> t
 (** Create a string from the generator
     @since 4.07 *)
 
+(** {6 Binary storage of numbers} *)
+
+external get_int16_bin : bytes -> int -> int = "%caml_bytes_get16"
+(** [get_int16_bin s n] reads a 16-bit integer from the byte sequence
+    [s] starting at index [n], in binary form, using the machine
+    native endianness.
+
+    Raise [Invalid_argument] if [n] or [n+1] are not a valid indices in
+    [s].
+
+    @since XXX
+*)
+
+external get_int32_bin : bytes -> int -> int32 = "%caml_bytes_get32"
+(** [get_int32_bin s n] reads a 32-bit integer from the byte sequence
+    [s] starting at index [n], in binary form, using the machine
+    native endianness.
+
+    Raise [Invalid_argument] if [n] or [n+3] are not a valid indices in
+    [s].
+
+    @since XXX
+*)
+
+
+external get_int64_bin : bytes -> int -> int64 = "%caml_bytes_get64"
+(** [get_int64_bin s n] reads a 64-bit integer from the byte sequence
+    [s] starting at index [n], in binary form, using the machine
+    native endianness.
+
+    Raise [Invalid_argument] if [n] or [n+7] are not a valid indices in
+    [s].
+
+    @since XXX
+*)
+
+
+external set_int16_bin : bytes -> int -> int -> unit = "%caml_bytes_set16"
+(** [set_int16_bin s n x] writes the least significant 16-bits of [x]
+    to the byte sequence [s] starting at index [n], in binary form,
+    using the machine native endianness.
+
+    Raise [Invalid_argument] if [n] or [n+1] are not a valid indices in
+    [s].
+
+    @since XXX
+*)
+
+external set_int32_bin : bytes -> int -> int32 -> unit = "%caml_bytes_set32"
+(** [set_int32_bin s n x] writes the 32-bit integer [x] to the byte
+    sequence [s] starting at index [n], in binary form, using the
+    machine native endianness.
+
+    Raise [Invalid_argument] if [n] or [n+3] are not a valid indices in
+    [s].
+
+    @since XXX
+*)
+
+external set_int64_bin : bytes -> int -> int64 -> unit = "%caml_bytes_set64"
+(** [set_int64_bin s n x] writes the 64-bit integer [x] to the byte
+    sequence [s] starting at index [n], in binary form, using the
+    machine native endianness.
+
+    Raise [Invalid_argument] if [n] or [n+7] are not a valid indices in
+    [s].
+
+    @since XXX
+*)
+
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)

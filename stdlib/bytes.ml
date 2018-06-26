@@ -38,6 +38,13 @@ external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
 external unsafe_blit_string : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
 
+external get_int16_bin : bytes -> int -> int = "%caml_bytes_get16"
+external get_int32_bin : bytes -> int -> int32 = "%caml_bytes_get32"
+external get_int64_bin : bytes -> int -> int64 = "%caml_bytes_get64"
+external set_int16_bin : bytes -> int -> int -> unit = "%caml_bytes_set16"
+external set_int32_bin : bytes -> int -> int32 -> unit = "%caml_bytes_set32"
+external set_int64_bin : bytes -> int -> int64 -> unit = "%caml_bytes_set64"
+
 let make n c =
   let s = create n in
   unsafe_fill s 0 n c;

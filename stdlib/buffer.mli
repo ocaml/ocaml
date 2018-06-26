@@ -177,3 +177,42 @@ val add_seq : t -> char Seq.t -> unit
 val of_seq : char Seq.t -> t
 (** Create a buffer from the generator
     @since 4.07 *)
+
+(** {6 Binary storage of numbers} *)
+
+val add_int16_bin : t -> int -> unit
+(** Add the binary representation of the least significant 16-bits of
+    the integer in binary form, using the machine native endianness.
+
+    @since XXX
+*)
+
+val add_int32_bin : t -> int32 -> unit
+(** Add the binary representation of the 32-bit integer, in binary
+    form, using the machine native endianness.
+
+    @since XXX
+*)
+
+val add_int64_bin : t -> int64 -> unit
+(** Add the binary representation of the 64-bit integer, in binary
+    form, using the machine native endianness.
+
+    @since XXX
+*)
+
+val add_float32_bin : t -> float -> unit
+(** Add the binary representation of the number stored
+    as an IEEE 754 single-precision float (32-bit), in
+    binary form, using the machine native endianness.
+
+    @since XXX
+*)
+
+val add_float64_bin : t -> float -> unit
+(** Add the binary representation of the number stored
+    as an IEEE 754 double-precision float (32-bit), in
+    binary form, using the machine native endianness.
+
+    @since XXX
+*)

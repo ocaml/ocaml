@@ -299,3 +299,41 @@ let of_seq i =
   let b = create 32 in
   add_seq b i;
   b
+
+
+let add_int16_bin b x =
+  let new_position = b.position + 2 in
+  if new_position > b.length then resize b 2;
+  Bytes.set_int16_bin b.buffer b.position x;
+  b.position <- new_position
+
+let add_int32_bin b x =
+  let new_position = b.position + 4 in
+  if new_position > b.length then resize b 4;
+  Bytes.set_int32_bin b.buffer b.position x;
+  b.position <- new_position
+
+let add_int64_bin b x =
+  let new_position = b.position + 8 in
+  if new_position > b.length then resize b 8;
+  Bytes.set_int64_bin b.buffer b.position x;
+  b.position <- new_position
+
+external bits_of_float32 : float -> int32
+  = "caml_int32_bits_of_float" "caml_int32_bits_of_float_unboxed"
+  [@@unboxed] [@@noalloc]
+external bits_of_float64 : float -> int64
+  = "caml_int64_bits_of_float" "caml_int64_bits_of_float_unboxed"
+  [@@unboxed] [@@noalloc]
+
+let add_float32_bin b x =
+  let new_position = b.position + 4 in
+  if new_position > b.length then resize b 4;
+  Bytes.set_int32_bin b.buffer b.position (bits_of_float32 x);
+  b.position <- new_position
+
+let add_float64_bin b x =
+  let new_position = b.position + 8 in
+  if new_position > b.length then resize b 8;
+  Bytes.set_int64_bin b.buffer b.position (bits_of_float64 x);
+  b.position <- new_position
