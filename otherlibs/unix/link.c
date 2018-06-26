@@ -13,6 +13,10 @@
 /*                                                                        */
 /**************************************************************************/
 
+/* Needed to get linkat exposed in compliant OS.
+   Must be defined before the first system .h is included. */
+#define _XOPEN_SOURCE 700
+
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
@@ -20,6 +24,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 CAMLprim value unix_link(value follow, value path1, value path2)
 {
@@ -35,7 +40,7 @@ CAMLprim value unix_link(value follow, value path1, value path2)
   if (follow == Val_int(0) /* None */)
     ret = link(p1, p2);
   else { /* Some bool */
-# if _XOPEN_VERSION >= 700 || _POSIX_VERSION >= 200809L || defined (_ATFILE_SOURCE)
+# ifdef AT_SYMLINK_FOLLOW
     int flags =
       Is_block(follow) && Bool_val(Field(follow, 0)) /* Some true */
       ? AT_SYMLINK_FOLLOW
