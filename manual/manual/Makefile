@@ -12,7 +12,7 @@ OCAMLDOC = $(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
 # Copy and unprefix the standard library when needed
 include $(SRC)/ocamldoc/Makefile.unprefix
 
-TEXQUOTE = ../tools/texquote2
+TEXQUOTE = $(SRC)/byterun/ocamlrun ../tools/texquote2
 
 
 FILES = allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex
