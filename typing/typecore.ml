@@ -719,7 +719,9 @@ end) = struct
     let tpaths = unique (compare_type_path env) [tpath] others in
     match tpaths with
       [_] -> []
-    | _ -> List.map Printtyp.string_of_path tpaths
+    | _ -> let open Printtyp in
+        wrap_printing_env ~error:true env (fun () ->
+            reset(); strings_of_paths Type tpaths)
 
   let disambiguate_by_type env tpath lbls =
     let check_type (lbl, _) =
@@ -736,11 +738,13 @@ end) = struct
           [] -> unbound_name_error env lid
         | (lbl, use) :: rest ->
             use ();
+            Printtyp.Conflicts.reset ();
             let paths = ambiguous_types env lbl rest in
+            let expansion = Format.asprintf "%t" Printtyp.Conflicts.print in
             if paths <> [] then
               warn lid.loc
                 (Warnings.Ambiguous_name ([Longident.last lid.txt],
-                                          paths, false));
+                                          paths, false, expansion));
             lbl
         end
     | Some(tpath0, tpath, pr) ->
@@ -761,11 +765,14 @@ end) = struct
                 let lbl_tpath = get_type_path lbl' in
                 if not (compare_type_path env tpath lbl_tpath) then warn_pr ()
                 else
+                  Printtyp.Conflicts.reset ();
                   let paths = ambiguous_types env lbl rest in
+                  let expansion =
+                    Format.asprintf "%t" Printtyp.Conflicts.print in
                   if paths <> [] then
                     warn lid.loc
                       (Warnings.Ambiguous_name ([Longident.last lid.txt],
-                                                paths, false))
+                                                paths, false, expansion))
           end;
           lbl
         with Not_found -> try
@@ -841,7 +848,7 @@ let disambiguate_lid_a_list loc closed env opath lid_a_list =
     let open Warnings in
     match msg with
     | Not_principal _ -> w_pr := true
-    | Ambiguous_name([s], l, _) -> w_amb := (s, l) :: !w_amb
+    | Ambiguous_name([s], l, _, ex) -> w_amb := (s, l, ex) :: !w_amb
     | Name_out_of_scope(ty, [s], _) ->
         w_scope := s :: !w_scope; w_scope_ty := ty
     | _ -> Location.prerr_warning loc msg
@@ -875,17 +882,18 @@ let disambiguate_lid_a_list loc closed env opath lid_a_list =
       (Warnings.Not_principal "this type-based record disambiguation")
   else begin
     match List.rev !w_amb with
-      (_,types)::_ as amb ->
+      (_,types,ex)::_ as amb ->
         let paths =
           List.map (fun (_,lbl,_) -> Label.get_type_path lbl) lbl_a_list in
         let path = List.hd paths in
+        let fst3 (x,_,_) = x in
         if List.for_all (compare_type_path env path) (List.tl paths) then
           Location.prerr_warning loc
-            (Warnings.Ambiguous_name (List.map fst amb, types, true))
+            (Warnings.Ambiguous_name (List.map fst3 amb, types, true, ex))
         else
           List.iter
-            (fun (s,l) -> Location.prerr_warning loc
-                (Warnings.Ambiguous_name ([s],l,false)))
+            (fun (s,l,ex) -> Location.prerr_warning loc
+                (Warnings.Ambiguous_name ([s],l,false, ex)))
             amb
     | _ -> ()
   end;

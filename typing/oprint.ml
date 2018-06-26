@@ -28,7 +28,7 @@ let print_lident ppf = function
 
 let rec print_ident ppf =
   function
-    Oide_ident s -> print_lident ppf s
+    Oide_ident s -> print_lident ppf s.printed_name
   | Oide_dot (id, s) ->
       print_ident ppf id; pp_print_char ppf '.'; print_lident ppf s
   | Oide_apply (id1, id2) ->
@@ -309,7 +309,7 @@ and print_simple_out_type ppf =
   | Otyp_sum _ | Otyp_manifest (_, _) -> ()
   | Otyp_record lbls -> print_record_decl ppf lbls
   | Otyp_module (p, n, tyl) ->
-      fprintf ppf "@[<1>(module %s" p;
+      fprintf ppf "@[<1>(module %a" print_ident p;
       let first = ref true in
       List.iter2
         (fun s t ->
