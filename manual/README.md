@@ -39,8 +39,6 @@ In the manual:
 
 - The Info manual is in directory `infoman`.
 
-- The DVI manual is in directory `texstuff` as file `manual.dvi`.
-
 - The PDF manual is in directory `texstuff` as file `pdfmanual.pdf`.
 
 Source files
