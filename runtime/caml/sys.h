@@ -37,14 +37,9 @@ CAMLnoreturn_end;
 CAMLextern double caml_sys_time_unboxed(value);
 CAMLextern void caml_sys_init (char_os * exe_name, char_os ** argv);
 
-#ifndef CAML_WITH_CPLUGINS
 CAMLnoreturn_start
 CAMLextern value caml_sys_exit (value)
 CAMLnoreturn_end;
-#else
-CAMLextern value caml_sys_exit (value);
-         /* A plugin could cause caml_sys_exit to return normally */
-#endif
 
 extern double caml_sys_time_unboxed(value);
 CAMLextern value caml_sys_get_argv(value unit);

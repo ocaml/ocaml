@@ -66,7 +66,6 @@ force_safe_string=false
 default_safe_string=true
 afl_instrument=false
 max_testsuite_dir_retries=0
-with_cplugins=false
 with_fpic=false
 flat_float_array=true
 with_flambda_invariants=false
@@ -224,9 +223,9 @@ while : ; do
     -with-flambda-invariants|--with-flambda-invariants)
         with_flambda_invariants=true;;
     -with-cplugins|--with-cplugins)
-        with_cplugins=true;;
+        err "--with-cplugins is no longer supported";;  # Transitional?
     -no-cplugins|--no-cplugins)
-        ;; # Ignored for backward compatibility
+        ;; # Ignored for backward compatibility; transitional?
     -fPIC|--fPIC)
         with_fpic=true;;
 
@@ -2046,19 +2045,11 @@ if $with_spacetime; then
   fi
 fi
 
-if ! $shared_libraries_supported; then
-  with_cplugins=false
-fi
-
 if $with_fpic; then
   common_cflags="$common_cflags $sharedlib_cflags"
   aspp="$aspp $sharedlib_cflags"
 fi
 
-
-if $with_cplugins; then
-  echo "#define CAML_WITH_CPLUGINS" >> m.h
-fi
 
 if $with_fpic; then
   echo "#define CAML_WITH_FPIC" >> m.h
@@ -2151,7 +2142,6 @@ config LIBUNWIND_AVAILABLE "$libunwind_available"
 config LIBUNWIND_INCLUDE_FLAGS "$libunwind_include"
 config LIBUNWIND_LINK_FLAGS "$libunwind_lib"
 config PROFINFO_WIDTH "$profinfo_width"
-config WITH_CPLUGINS "$with_cplugins"
 config WITH_FPIC "$with_fpic"
 config TARGET "$target"
 config HOST "$host"
@@ -2263,11 +2253,6 @@ else
     *)
       ;;
   esac
-  if $with_cplugins; then
-  inf "        C plugins................. yes"
-  else
-  inf "        C plugins................. no"
-  fi
   if $with_fpic; then
   inf "        compile with -fPIC........ yes"
   else
