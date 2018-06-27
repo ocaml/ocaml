@@ -99,7 +99,8 @@ VPATH := $(filter-out -I,$(INCLUDES))
 
 # scrapelabels addlabels
 
-.PHONY: all opt.opt
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
+allopt: opt.opt
 
 # The dependency generator
 

@@ -42,7 +42,7 @@
       <def>
           attribute "foo"
             []
-        pattern (attributes.ml[14,206+4]..[14,206+38]) ghost
+        pattern (attributes.ml[14,206+4]..[14,206+27]) ghost
           Ppat_constraint
           pattern (attributes.ml[14,206+4]..[14,206+13])
             attribute "foo"

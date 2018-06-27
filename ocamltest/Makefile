@@ -172,6 +172,11 @@ ocamlcdefaultflags :=
 
 ocamloptdefaultflags := $(shell ./getocamloptdefaultflags $(TARGET))
 
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
+all: ocamltest$(EXE)
+allopt: ocamltest.opt$(EXE)
+opt.opt: allopt
+
 ocamltest$(EXE): $(bytecode_modules)
 	$(ocamlc) -custom ocamlcommon.cma -o $@ $^
 
@@ -194,7 +199,7 @@ ocamltest.opt$(EXE): $(native_modules)
 	$(ocamllex) -q $<
 
 %.$(O): %.c
-	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) $(BYTECCCOMPOPTS) -c $<
+	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -c $<
 
 ocamltest_config.ml: ocamltest_config.ml.in Makefile
 	sed \

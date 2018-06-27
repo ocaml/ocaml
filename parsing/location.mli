@@ -50,6 +50,8 @@ val symbol_gloc: unit -> t
   at 1, in the current parser rule. *)
 val rhs_loc: int -> t
 
+val rhs_interval: int -> int -> t
+
 val input_name: string ref
 val input_lexbuf: Lexing.lexbuf option ref
 

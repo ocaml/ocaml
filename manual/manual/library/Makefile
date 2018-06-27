@@ -15,7 +15,7 @@ OCAMLDOC = $(if $(wildcard $(CSLDIR)/ocamldoc/ocamldoc.opt),\
 include $(SRC)/ocamldoc/Makefile.unprefix
 
 
-TEXQUOTE = ../../tools/texquote2
+TEXQUOTE = $(SRC)/byterun/ocamlrun ../../tools/texquote2
 
 
 CORE_INTF = Pervasives.tex

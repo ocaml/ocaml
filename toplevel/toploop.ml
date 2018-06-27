@@ -272,7 +272,7 @@ let execute_phrase print_outcome ppf phr =
                       Ophr_eval (outv, ty)
 
                   | [] -> Ophr_signature []
-                  | _ -> Ophr_signature (pr_item newenv sg'))
+                  | _ -> Ophr_signature (pr_item oldenv sg'))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;

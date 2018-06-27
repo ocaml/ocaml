@@ -189,8 +189,9 @@ lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 .PHONY: generators
 generators: $(GENERATORS_CMOS)
 
-.PHONY: opt.opt
+.PHONY: opt.opt allopt # allopt and opt.opt are synonyms
 opt.opt: exeopt libopt generatorsopt
+allopt: opt.opt
 
 .PHONY: exeopt
 exeopt: $(OCAMLDOC_OPT)

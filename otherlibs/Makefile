@@ -60,9 +60,11 @@ CMIFILES ?= $(CAMLOBJS:.cmo=.cmi)
 CAMLOBJS_NAT ?= $(CAMLOBJS:.cmo=.cmx)
 CLIBNAME ?= $(LIBNAME)
 
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 all: lib$(CLIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 
 allopt: lib$(CLIBNAME).$(A) $(LIBNAME).cmxa $(LIBNAME).$(CMXS) $(CMIFILES)
+opt.opt: allopt
 
 $(LIBNAME).cma: $(CAMLOBJS)
 	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlc '$(CAMLC)' -linkall \

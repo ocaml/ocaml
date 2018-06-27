@@ -1887,9 +1887,9 @@ let report_error env ppf = function
       Printtyp.reset_and_mark_loops_list [abbrev; actual; expected];
       fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"
-       Printtyp.type_expr abbrev
-       Printtyp.type_expr actual
-       Printtyp.type_expr expected
+        !Oprint.out_type (Printtyp.tree_of_typexp false abbrev)
+        !Oprint.out_type (Printtyp.tree_of_typexp false actual)
+        !Oprint.out_type (Printtyp.tree_of_typexp false expected)
   | Constructor_type_mismatch (c, trace) ->
       Printtyp.report_unification_error ppf env trace
         (function ppf ->
@@ -1929,7 +1929,9 @@ let report_error env ppf = function
       fprintf ppf
         "@[The abbreviation %a@ is used with parameters@ %a@ \
            which are incompatible with constraints@ %a@]"
-        Printtyp.ident id Printtyp.type_expr params Printtyp.type_expr cstrs
+        Printtyp.ident id
+        !Oprint.out_type (Printtyp.tree_of_typexp false params)
+        !Oprint.out_type (Printtyp.tree_of_typexp false cstrs)
   | Class_match_failure error ->
       Includeclass.report_error ppf error
   | Unbound_val lab ->
@@ -1941,7 +1943,9 @@ let report_error env ppf = function
         List.iter Printtyp.mark_loops [ty; ty1];
         fprintf ppf
           "The %s %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
-            kind lab Printtyp.type_expr ty Printtyp.type_expr ty0
+          kind lab
+          !Oprint.out_type (Printtyp.tree_of_typexp false ty)
+          !Oprint.out_type (Printtyp.tree_of_typexp false ty0)
       in
       let print_reason ppf = function
       | Ctype.CC_Method (ty0, real, lab, ty) ->
