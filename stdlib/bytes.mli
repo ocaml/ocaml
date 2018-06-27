@@ -465,8 +465,8 @@ val of_seq : char Seq.t -> t
 
 (** {6 Binary storage of numbers} *)
 
-external get_int16_bin : bytes -> int -> int = "%caml_bytes_get16"
-(** [get_int16_bin s n] reads a 16-bit integer from the byte sequence
+external get_int16 : bytes -> int -> int = "%caml_bytes_get16"
+(** [get_int16 s n] reads a 16-bit integer from the byte sequence
     [s] starting at index [n], in binary form, using the machine
     native endianness.
 
@@ -476,8 +476,8 @@ external get_int16_bin : bytes -> int -> int = "%caml_bytes_get16"
     @since XXX
 *)
 
-external get_int32_bin : bytes -> int -> int32 = "%caml_bytes_get32"
-(** [get_int32_bin s n] reads a 32-bit integer from the byte sequence
+external get_int32 : bytes -> int -> int32 = "%caml_bytes_get32"
+(** [get_int32 s n] reads a 32-bit integer from the byte sequence
     [s] starting at index [n], in binary form, using the machine
     native endianness.
 
@@ -488,8 +488,8 @@ external get_int32_bin : bytes -> int -> int32 = "%caml_bytes_get32"
 *)
 
 
-external get_int64_bin : bytes -> int -> int64 = "%caml_bytes_get64"
-(** [get_int64_bin s n] reads a 64-bit integer from the byte sequence
+external get_int64 : bytes -> int -> int64 = "%caml_bytes_get64"
+(** [get_int64 s n] reads a 64-bit integer from the byte sequence
     [s] starting at index [n], in binary form, using the machine
     native endianness.
 
@@ -500,8 +500,8 @@ external get_int64_bin : bytes -> int -> int64 = "%caml_bytes_get64"
 *)
 
 
-external set_int16_bin : bytes -> int -> int -> unit = "%caml_bytes_set16"
-(** [set_int16_bin s n x] writes the least significant 16-bits of [x]
+external set_int16 : bytes -> int -> int -> unit = "%caml_bytes_set16"
+(** [set_int16 s n x] writes the least significant 16-bits of [x]
     to the byte sequence [s] starting at index [n], in binary form,
     using the machine native endianness.
 
@@ -511,8 +511,8 @@ external set_int16_bin : bytes -> int -> int -> unit = "%caml_bytes_set16"
     @since XXX
 *)
 
-external set_int32_bin : bytes -> int -> int32 -> unit = "%caml_bytes_set32"
-(** [set_int32_bin s n x] writes the 32-bit integer [x] to the byte
+external set_int32 : bytes -> int -> int32 -> unit = "%caml_bytes_set32"
+(** [set_int32 s n x] writes the 32-bit integer [x] to the byte
     sequence [s] starting at index [n], in binary form, using the
     machine native endianness.
 
@@ -522,8 +522,8 @@ external set_int32_bin : bytes -> int -> int32 -> unit = "%caml_bytes_set32"
     @since XXX
 *)
 
-external set_int64_bin : bytes -> int -> int64 -> unit = "%caml_bytes_set64"
-(** [set_int64_bin s n x] writes the 64-bit integer [x] to the byte
+external set_int64 : bytes -> int -> int64 -> unit = "%caml_bytes_set64"
+(** [set_int64 s n x] writes the 64-bit integer [x] to the byte
     sequence [s] starting at index [n], in binary form, using the
     machine native endianness.
 
