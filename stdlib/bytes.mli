@@ -463,14 +463,27 @@ val of_seq : char Seq.t -> t
 (** Create a string from the generator
     @since 4.07 *)
 
-(** {6 Binary storage of numbers} *)
+(** {6 Binary storage of integers} *)
+
+val get_uint16_ne : bytes -> int -> int
+(** [get_uint16_ne s n] reads a 16-bit unsigned integer from the byte
+    sequence [s] starting at index [n], in binary form, using the
+    machine native endianness. The result is an integer between 0 and
+    65535.
+
+    Raise [Invalid_argument] if [n] or [n+1] is not a valid index in
+    [s].
+
+    @since XXX
+*)
 
 val get_int16_ne : bytes -> int -> int
-(** [get_int16_ne s n] reads a 16-bit integer from the byte sequence
-    [s] starting at index [n], in binary form, using the machine
-    native endianness.
+(** [get_int16_ne s n] reads a 16-bit signed integer from the byte
+    sequence [s] starting at index [n], in binary form, using the
+    machine native endianness.  The result is sign-extended to an
+    integer between -32768 and 32767.
 
-    Raise [Invalid_argument] if [n] or [n+1] are not a valid indices in
+    Raise [Invalid_argument] if [n] or [n+1] is not a valid index in
     [s].
 
     @since XXX
@@ -481,7 +494,7 @@ val get_int32_ne : bytes -> int -> int32
     [s] starting at index [n], in binary form, using the machine
     native endianness.
 
-    Raise [Invalid_argument] if [n] or [n+3] are not a valid indices in
+    Raise [Invalid_argument] if [n] or [n+3] is not a valid index in
     [s].
 
     @since XXX
@@ -493,7 +506,7 @@ val get_int64_ne : bytes -> int -> int64
     [s] starting at index [n], in binary form, using the machine
     native endianness.
 
-    Raise [Invalid_argument] if [n] or [n+7] are not a valid indices in
+    Raise [Invalid_argument] if [n] or [n+7] is not a valid index in
     [s].
 
     @since XXX
@@ -505,7 +518,7 @@ val set_int16_ne : bytes -> int -> int -> unit
     to the byte sequence [s] starting at index [n], in binary form,
     using the machine native endianness.
 
-    Raise [Invalid_argument] if [n] or [n+1] are not a valid indices in
+    Raise [Invalid_argument] if [n] or [n+1] is not a valid index in
     [s].
 
     @since XXX
@@ -516,7 +529,7 @@ val set_int32_ne : bytes -> int -> int32 -> unit
     sequence [s] starting at index [n], in binary form, using the
     machine native endianness.
 
-    Raise [Invalid_argument] if [n] or [n+3] are not a valid indices in
+    Raise [Invalid_argument] if [n] or [n+3] is not a valid index in
     [s].
 
     @since XXX
@@ -527,7 +540,7 @@ val set_int64_ne : bytes -> int -> int64 -> unit
     sequence [s] starting at index [n], in binary form, using the
     machine native endianness.
 
-    Raise [Invalid_argument] if [n] or [n+7] are not a valid indices in
+    Raise [Invalid_argument] if [n] or [n+7] is not a valid index in
     [s].
 
     @since XXX
@@ -536,6 +549,8 @@ val set_int64_ne : bytes -> int -> int64 -> unit
 
 val get_int16_be : bytes -> int -> int
 val get_int16_le : bytes -> int -> int
+val get_uint16_be : bytes -> int -> int
+val get_uint16_le : bytes -> int -> int
 val get_int32_be : bytes -> int -> int32
 val get_int32_le : bytes -> int -> int32
 val get_int64_be : bytes -> int -> int64

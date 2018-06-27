@@ -38,7 +38,7 @@ external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
 external unsafe_blit_string : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
 
-external get_int16_ne : bytes -> int -> int = "%caml_bytes_get16"
+external get_uint16_ne : bytes -> int -> int = "%caml_bytes_get16"
 external get_int32_ne : bytes -> int -> int32 = "%caml_bytes_get32"
 external get_int64_ne : bytes -> int -> int64 = "%caml_bytes_get64"
 external set_int16_ne : bytes -> int -> int -> unit = "%caml_bytes_set16"
@@ -379,13 +379,24 @@ let of_seq i =
     i;
   sub !buf 0 !n
 
+
+
+let get_uint16_le b i =
+  if Sys.big_endian then swap16 (get_uint16_ne b i)
+  else get_uint16_ne b i
+
+let get_uint16_be b i =
+  if not Sys.big_endian then swap16 (get_uint16_ne b i)
+  else get_uint16_ne b i
+
+let get_int16_ne b i =
+  ((get_uint16_ne b i) lsl (Sys.int_size - 16)) asr (Sys.int_size - 16)
+
 let get_int16_le b i =
-  if Sys.big_endian then swap16 (get_int16_ne b i)
-  else get_int16_ne b i
+  ((get_uint16_le b i) lsl (Sys.int_size - 16)) asr (Sys.int_size - 16)
 
 let get_int16_be b i =
-  if not Sys.big_endian then swap16 (get_int16_ne b i)
-  else get_int16_ne b i
+  ((get_uint16_be b i) lsl (Sys.int_size - 16)) asr (Sys.int_size - 16)
 
 let get_int32_le b i =
   if Sys.big_endian then swap32 (get_int32_ne b i)
