@@ -200,19 +200,3 @@ val add_int64_bin : t -> int64 -> unit
 
     @since XXX
 *)
-
-val add_float32_bin : t -> float -> unit
-(** Add the binary representation of the number stored
-    as an IEEE 754 single-precision float (32-bit), in
-    binary form, using the machine native endianness.
-
-    @since XXX
-*)
-
-val add_float64_bin : t -> float -> unit
-(** Add the binary representation of the number stored
-    as an IEEE 754 double-precision float (32-bit), in
-    binary form, using the machine native endianness.
-
-    @since XXX
-*)
