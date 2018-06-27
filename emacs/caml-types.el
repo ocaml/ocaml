@@ -85,7 +85,9 @@ type call ident")
   (setq caml-types-location-re
         (concat "^" caml-types-position-re " " caml-types-position-re)))
 
-(defface caml-types-expr-face '((t :background "#88FF44"))
+(defface caml-types-expr-face
+  '((((class color) (background light)) :background "#88FF44")
+    (((class color) (background  dark)) :background "dark green"))
   "Face for highlighting expressions and types")
 
 (defvar caml-types-expr-ovl (make-overlay 1 1))
@@ -97,7 +99,9 @@ type call ident")
 (defvar caml-types-typed-ovl (make-overlay 1 1))
 (overlay-put caml-types-typed-ovl 'face 'caml-types-typed-face)
 
-(defface caml-types-scope-face '((t :background "#BBFFFF"))
+(defface caml-types-scope-face
+  '((((class color) (background light)) :background "#BBFFFF")
+    (((class color) (background  dark)) :background "dark blue"))
   "Face for highlighting variable scopes.")
 
 (defvar caml-types-scope-ovl (make-overlay 1 1))
@@ -109,7 +113,9 @@ type call ident")
 (defvar caml-types-def-ovl (make-overlay 1 1))
 (overlay-put caml-types-def-ovl 'face 'caml-types-def-face)
 
-(defface caml-types-occ-face '((t :background "#44FF44"))
+(defface caml-types-occ-face
+  '((((class color) (background light)) :background "#44FF44")
+    (((class color) (background  dark)) :background "dark green"))
   "Face for highlighting variable occurrences.")
 
 (defvar caml-types-occ-ovl (make-overlay 1 1))

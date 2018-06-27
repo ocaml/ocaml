@@ -108,6 +108,10 @@ Working version
   modules to open as if they had been passed via the command line -open flag.
   (Nicolás Ojeda Bär, review by Mark Shinwell)
 
+- GPR#1865: support dark themes in Emacs, and clean up usage of
+  deprecated Emacs APIs
+  (Wilfred Hughes, review by Clément Pit-Claudel)
+
 ### Manual and documentation:
 
 - GPR#1788: move the quoted string description to the main chapters.
