@@ -301,22 +301,27 @@ let of_seq i =
   b
 
 
+external unsafe_set_int16_bin : bytes -> int -> int -> unit = "%caml_bytes_set16u"
+external unsafe_set_int32_bin : bytes -> int -> int32 -> unit = "%caml_bytes_set32u"
+external unsafe_set_int64_bin : bytes -> int -> int64 -> unit = "%caml_bytes_set64u"
+
+
 let add_int16_bin b x =
   let new_position = b.position + 2 in
   if new_position > b.length then resize b 2;
-  Bytes.set_int16_bin b.buffer b.position x;
+  unsafe_set_int16_bin b.buffer b.position x;
   b.position <- new_position
 
 let add_int32_bin b x =
   let new_position = b.position + 4 in
   if new_position > b.length then resize b 4;
-  Bytes.set_int32_bin b.buffer b.position x;
+  unsafe_set_int32_bin b.buffer b.position x;
   b.position <- new_position
 
 let add_int64_bin b x =
   let new_position = b.position + 8 in
   if new_position > b.length then resize b 8;
-  Bytes.set_int64_bin b.buffer b.position x;
+  unsafe_set_int64_bin b.buffer b.position x;
   b.position <- new_position
 
 external bits_of_float32 : float -> int32
@@ -329,11 +334,11 @@ external bits_of_float64 : float -> int64
 let add_float32_bin b x =
   let new_position = b.position + 4 in
   if new_position > b.length then resize b 4;
-  Bytes.set_int32_bin b.buffer b.position (bits_of_float32 x);
+  unsafe_set_int32_bin b.buffer b.position (bits_of_float32 x);
   b.position <- new_position
 
 let add_float64_bin b x =
   let new_position = b.position + 8 in
   if new_position > b.length then resize b 8;
-  Bytes.set_int64_bin b.buffer b.position (bits_of_float64 x);
+  unsafe_set_int64_bin b.buffer b.position (bits_of_float64 x);
   b.position <- new_position
