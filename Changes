@@ -76,6 +76,11 @@ Working version
 - GPR#1822: keep attributes attached to pattern variables from being discarded.
   (Nicolás Ojeda Bär, review by Thomas Refis)
 
+- GPR#1845: new `-dcamlprimc` option to keep the generated C file containing
+  the information about primitives; pass `-fdebug-prefix-map` to the C compiler
+  when supported
+  (Xavier Clerc, review by Jérémie Dimino)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.
