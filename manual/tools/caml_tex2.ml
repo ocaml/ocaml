@@ -61,11 +61,11 @@ module Toplevel = struct
 
   type output =
     {
-      error:string; (** error message text *)
-      warnings:string list; (** warning messages text *)
-      values:string; (** toplevel output *)
-      stdout:string; (** output printed on the toplevel stdout *)
-      underlined: (int * int) list
+      error : string; (** error message text *)
+      warnings : string list; (** warning messages text *)
+      values : string; (** toplevel output *)
+      stdout : string; (** output printed on the toplevel stdout *)
+      underlined : (int * int) list
       (** locations to underline in input phrases *)
     }
 
@@ -250,8 +250,14 @@ module Output = struct
   (** {1 Exceptions } *)
   exception Parsing_error of kind * string
 
-  type source = { file:string; lines:int * int; phrase:string; output:string }
-  type unexpected_report = {source:source; expected:status; got:status}
+  type source =
+    {
+      file : string;
+      lines : int * int;
+      phrase : string;
+      output : string
+    }
+  type unexpected_report = {source : source; expected : status; got : status}
   exception Unexpected_status of unexpected_report
 
   let print_source ppf {file; lines = (start, stop); phrase; output} =
@@ -357,12 +363,13 @@ module Text_transform = struct
     | Underline
     | Ellipsis
 
-  type t = { kind:kind; start:int; stop:int}
+  type t = { kind : kind; start : int; stop : int}
   exception Intersection of
-      {line:int;
-       file:string;
-       left: t;
-       right: t;
+      {
+        line : int;
+        file : string;
+        left : t;
+        right : t;
       }
 
   let pp ppf = function
@@ -464,11 +471,11 @@ module Ellipsis = struct
       An ellipsis is either an [[@ellipsis]] attribute, or a pair
       of [[@@@ellipsis.start]...[@@@ellipsis.stop]] attributes. *)
 
-  exception Unmatched_ellipsis of {kind:string; start:int; stop:int}
+  exception Unmatched_ellipsis of {kind : string; start : int; stop : int}
   (** raised when an [[@@@ellipsis.start]] or [[@@@ellipsis.stop]] is
       not paired with another ellipsis attribute *)
 
-  exception Nested_ellipses of {first:int ; second:int }
+  exception Nested_ellipses of {first : int ; second : int}
   (** raised by [[@@@ellipsis.start][@@@ellipsis.start]] *)
 
   let extract f x =
