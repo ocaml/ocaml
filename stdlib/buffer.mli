@@ -180,23 +180,31 @@ val of_seq : char Seq.t -> t
 
 (** {6 Binary storage of numbers} *)
 
-val add_int16 : t -> int -> unit
+val add_int16_ne : t -> int -> unit
 (** Add the binary representation of the least significant 16-bits of
     the integer in binary form, using the machine native endianness.
 
     @since XXX
 *)
 
-val add_int32 : t -> int32 -> unit
+val add_int32_ne : t -> int32 -> unit
 (** Add the binary representation of the 32-bit integer, in binary
     form, using the machine native endianness.
 
     @since XXX
 *)
 
-val add_int64 : t -> int64 -> unit
+val add_int64_ne  : t -> int64 -> unit
 (** Add the binary representation of the 64-bit integer, in binary
     form, using the machine native endianness.
 
     @since XXX
 *)
+
+
+val add_int16_le : t -> int -> unit
+val add_int16_be : t -> int -> unit
+val add_int32_le : t -> int32 -> unit
+val add_int32_be : t -> int32 -> unit
+val add_int64_le : t -> int64 -> unit
+val add_int64_be : t -> int64 -> unit
