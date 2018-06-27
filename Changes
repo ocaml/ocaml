@@ -68,6 +68,10 @@ Working version
 - GPR#1822: keep attributes attached to pattern variables from being discarded.
   (Nicolás Ojeda Bär, review by Thomas Refis)
 
+- GPR#1856: use `BUILD_PATH_PREFIX_MAP` when compiling primitives in order to
+  make builds reproducible if code contains uses of `__FILE__` or `__LOC__`
+  (Xavier Clerc, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.
