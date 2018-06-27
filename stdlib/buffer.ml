@@ -309,17 +309,17 @@ external unsafe_set_int64 : bytes -> int -> int64 -> unit = "%caml_bytes_set64u"
 let add_int16 b x =
   let new_position = b.position + 2 in
   if new_position > b.length then resize b 2;
-  unsafe_set_int16_bin b.buffer b.position x;
+  unsafe_set_int16 b.buffer b.position x;
   b.position <- new_position
 
 let add_int32 b x =
   let new_position = b.position + 4 in
   if new_position > b.length then resize b 4;
-  unsafe_set_int32_bin b.buffer b.position x;
+  unsafe_set_int32 b.buffer b.position x;
   b.position <- new_position
 
 let add_int64 b x =
   let new_position = b.position + 8 in
   if new_position > b.length then resize b 8;
-  unsafe_set_int64_bin b.buffer b.position x;
+  unsafe_set_int64 b.buffer b.position x;
   b.position <- new_position
