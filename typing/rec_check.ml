@@ -16,147 +16,132 @@ open Asttypes
 open Typedtree
 open Types
 
+[@@@warning "-27"] (* TODO remove *)
+
 exception Illegal_expr
 
 module Rec_context =
 struct
-  type access =
+  type mode =
       Dereferenced
     (** [Dereferenced] indicates that the value (not just the address) of a
-        variable is accessed *)
+        variable is accessed, or that an expression needs to be evaluated
+        and accessed. *)
 
     | Guarded
     (** [Guarded] indicates that the address of a variable is used in a
-        guarded context, i.e. under a constructor.  A variable that is
-        dereferenced within a function body or lazy context is also considered
-        guarded. *)
+        guarded context, i.e. under a constructor, or stored in a closure.
+        An expression is [Guarded] the address of its value is used in a
+        guarded context.*)
+
+    | Delayed
+    (** [Delayed] indicates that an expression has its evaluation delayed,
+        i.e it is placed in a function or it is lazily evaluated.  A variable
+        is delayed it is is placed in such an expression. *)
+
+    | Unused
+    (** [Unused] indicates that a variable is not used in an expression. *)
 
     | Unguarded
     (** [Unguarded] indicates that the address of a variable is used in an
         unguarded context, i.e. not under a constructor. *)
 
-  (** [guard] represents guarded contexts such as [C -] and [{l = -}] *)
-  let guard : access -> access = function
-    | Dereferenced -> Dereferenced
-    | Guarded -> Guarded
-    | Unguarded -> Guarded
+  (* Returns the most conservative mode of the two arguments. *)
+  let prec m m' =
+    match m, m' with
+    | Dereferenced, _
+    | _, Dereferenced -> Dereferenced
+    | Unguarded, _
+    | _, Unguarded -> Unguarded
+    | Guarded, _
+    | _, Guarded -> Guarded
+    | Delayed, _
+    | _, Delayed -> Delayed
+    | _ -> Unused
 
-  (** [inspect] represents elimination contexts such as [match - with cases],
-      [e -] and [- e] *)
-  let inspect : access -> access = function
-    | Dereferenced -> Dereferenced
-    | Guarded -> Dereferenced
-    | Unguarded -> Dereferenced
+  (* Suppose that a variable x is used with the mode m' in an expression
+     that is used with mode m in a more global context.
+     (compos m m') is the mode of x in this global context. *)
+  let compos m m' = match m, m' with
+    | Unused, _
+    | _, Unused -> failwith "Not defined."
+    | Dereferenced, _ -> Dereferenced
+    | Delayed, _ -> Delayed
+    | m, Unguarded -> m
+    | Unguarded, m'
+    | Guarded, m' -> m'
 
-  (** [delay] represents contexts that delay evaluation such as [fun p -> -]
-      or [lazy -] *)
-  let delay : access -> access = function
-    | Dereferenced -> Guarded
-    | Guarded -> Guarded
-    | Unguarded -> Guarded
-
-  module Use :
+  module Env :
   sig
     type t
-    val guard : t -> t
-    (** An expression appears in a guarded context *)
 
-    val discard : t -> t
-    (** The address of a subexpression is not used, but may be bound *)
-
-    val inspect : t -> t
-    (** The value of a subexpression is inspected with match, application,
-        etc. *)
-
-    val delay : t -> t
-    (** An expression appears under 'fun p ->' or 'lazy' *)
-
-    val join : t -> t -> t
-    (** Combine the access information of two expressions *)
-
-    val single : Ident.t -> access -> t
-    (** Combine the access information of two expressions *)
+    val single : Ident.t -> mode -> t
+    (** Create an environment with a single identifier used with a given mode.
+    *)
 
     val empty : t
-    (** No variables are accessed in an expression; it might be a
-        constant or a global identifier *)
+    (** An environment with no used identifiers. *)
 
-    val unguarded : t -> Ident.t list
-    (** The list of identifiers that are used in an unguarded context *)
+    val find : t -> Ident.t -> mode
+    (** Find the mode of an indentifier in an environment.  The default mode is
+        Unused. *)
 
-    val dependent : t -> Ident.t list
-    (** The list of all used identifiers *)
+    val unguarded : t -> Ident.t list -> Ident.t list
+    (** unguarded e l: the list of all identifiers in e that are unguarded of
+        dereferenced in the environment e. *)
+
+    val dependent : t -> Ident.t list -> Ident.t list
+    (** unguarded e l: the list of all identifiers in e that are used in e. *)
+
+    val join : t -> t -> t
+
+    val remove : Ident.t -> t -> t
+    (* Remove an indentifier from an environment. *)
+
+    val remove_list : Ident.t list -> t -> t
+    (* Remove all the identifiers of a list from an environment. *)
   end =
   struct
     module M = Map.Make(Ident)
 
     (** A "t" maps each rec-bound variable to an access status *)
-    type t = access M.t
+    type t = mode M.t
 
-    let map f tbl = M.map f tbl
-    let guard t = map guard t
-    let inspect t = map inspect t
-    let delay t = map delay t
-    let discard = guard
+    let find (tbl: t) (id: Ident.t) =
+      try M.find id tbl with Not_found -> Unused
 
-    let prec x y =
-      match x, y with
-      | Dereferenced, _
-      | _, Dereferenced -> Dereferenced
-      | Unguarded, _
-      | _, Unguarded -> Unguarded
-      | _ -> Guarded
-
-    let join x y =
+    let join (x: t) (y: t) =
       M.fold
-        (fun id v tbl ->
-           let v' = try M.find id tbl with Not_found -> Guarded in
+        (fun (id: Ident.t) (v: mode) (tbl: t) ->
+           let v' = find tbl id in
            M.add id (prec v v') tbl)
         x y
 
-    let single id access = M.add id access M.empty
+    let single id mode = M.add id mode M.empty
 
     let empty = M.empty
 
+    (*
     let list_matching p t =
       let r = ref [] in
       M.iter (fun id v -> if p v then r := id :: !r) t;
       !r
+    *)
 
-    let unguarded =
-      list_matching (function Unguarded | Dereferenced -> true | _ -> false)
+    let unguarded x =
+      List.filter (fun id -> find x id = Dereferenced || find x id = Unguarded)
 
-    let dependent =
-      list_matching (function _ -> true)
-  end
+    let dependent x =
+      List.filter (fun id -> find x id <> Unused)
 
-  module Env =
-  struct
-    (* A typing environment maps identifiers to types *)
-    type env = Use.t Ident.tbl
+    let remove = M.remove
 
-    let empty = Ident.empty
-
-    let join x y =
-      let r =
-      Ident.fold_all
-        (fun id v tbl ->
-           let v' = try Ident.find_same id tbl with Not_found -> Use.empty in
-           Ident.add id (Use.join v v') tbl)
-        x
-        y
-      in
-      r
+    let remove_list l env =
+      List.fold_left (fun e x -> M.remove x e) env l
   end
 end
 
 open Rec_context
-
-let build_unguarded_env : Ident.t list -> Env.env = fun idlist ->
-  List.fold_left
-    (fun env id -> Ident.add id (Use.single id Unguarded) env)
-    Env.empty
-    idlist
 
 let is_ref : Types.value_description -> bool = function
   | { Types.val_kind =
@@ -306,201 +291,407 @@ let classify_expression : Typedtree.expression -> sd =
         Dynamic
   in classify_expression Ident.empty
 
-let rec expression : Env.env -> Typedtree.expression -> Use.t =
-  fun env exp -> match exp.exp_desc with
+let rec expression : mode -> Typedtree.expression -> Env.t =
+  fun mode exp -> match exp.exp_desc with
     | Texp_ident (pth, _, _) ->
-        (path env pth)
-    | Texp_let (rec_flag, bindings, body) ->
-      let env', ty = value_bindings rec_flag env bindings in
-      (* Here and in other binding constructs 'discard' is used in a
-          similar way to the way it's used in sequence: uses are
-          propagated, but unguarded access are not. *)
-      Use.join (Use.discard ty) (expression (Env.join env env') body)
-    | Texp_letmodule (x, _, m, e) ->
-      let ty = modexp env m in
-      Use.join (Use.discard ty) (expression (Ident.add x ty env) e)
-    | Texp_match (e, cases, _) ->
-      let t = expression env e in
-      list (case ~scrutinee:t) env cases
-    | Texp_for (_, _, e1, e2, _, e3) ->
-      Use.(join
-              (join
-                  (inspect (expression env e1))
-                  (inspect (expression env e2)))
-              (* The body is evaluated, but not used, and not available
-                  for inclusion in another value *)
-              (discard (expression env e3)))
+        (path mode pth)
+    | Texp_let (_rec_flag, bindings, body) ->
+      (*
+        G1, {x: _, x in V} |- p1: G = e1 in m
+        ...
+        Gn, {x: _, x in V} |- pn: G = en in m
+        G, {pi: msi} |- e: m
+        ---
+        G1 + ... + Gn + G'|- let (rec)? p1 = e1 and ... and pn = en in e: m
 
+      where V = union(vars(pi)) and G' = G \ V.
+
+      *)
+      let env0 = expression mode body in
+      let vars = List.fold_left (fun v b -> (pat_bound_idents b.vb_pat) @ v)
+                                []
+                                bindings
+      in
+      let env1 = Env.remove_list vars env0 in
+      let env2 = list (value_binding env0 vars) mode bindings in
+      Env.join env1 env2
+    | Texp_letmodule (x, _, mexp, e) ->
+      (*a
+        G1 |- M: m[mx + Guarded]
+        G2, X: mx |- e: m
+        -----------------------------------
+        G1 + G2 |- let module X = M in e: m
+      *)
+      let env_0 = expression mode e in
+      let mode_x = Env.find env_0 x in
+      let m' = compos mode (prec mode_x Guarded) in
+      let env_1 = modexp m' mexp in
+      Env.join (Env.remove x env_0) env_1
+    | Texp_match (e, cases, _) ->
+      let env_pat, m_e =
+        List.fold_left
+          (fun (env, m) c ->
+            let (env', m') = case mode c in
+            (Env.join env env'), (prec m m'))
+          (Env.empty, Unused)
+          cases
+      in
+      let env_e = expression m_e e in
+      Env.join env_pat env_e
+    | Texp_for (_, _, e1, e2, _, e3) ->
+      (*
+        G1 |- e1: m[Dereferenced]
+        G2 |- e2: m[Dereferenced]
+        G3 |- e3: m[Guarded]
+        ---
+        G1 + G2 + G3 |- for _ = e1 (down)?to e2 do e3 done: m
+
+        e3 is evaluated in the mode m[Guarded] because this expression is
+        evaluated but not used.
+        Jeremy Yallop notes that e3 is not available for inclusion in another
+        value, but I don't understand what it means.
+      *)
+      let env_1 = expression (compos mode Dereferenced) e1 in
+      let env_2 = expression (compos mode Dereferenced) e2 in
+      let env_3 = expression (compos mode Guarded) e3 in
+      Env.join (Env.join env_1 env_2) env_3
     | Texp_constant _ ->
-      Use.empty
+      Env.empty
     | Texp_new (pth, _, _) ->
-        Use.inspect (path env pth)
-    | Texp_instvar _ ->
+      (*
+        G |- c: m[Dereferenced]
+        -----------------------
+        G |- new c: m
+      *)
+      path (compos mode Dereferenced) pth
+    | Texp_instvar _ -> failwith "TODO instvar"
+        (*
       Use.empty
+*)
     | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, [_, Some arg])
       when is_ref vd ->
-        Use.guard (expression env arg)
+      (*
+        G |- e: m[Guarded]
+        ------------------
+        G |- ref e: m
+      *)
+      expression (compos mode Guarded) arg
     | Texp_apply (e, args)  ->
-        let arg env (_, eo) = option expression env eo in
-        let ty = Use.join (list arg env args) (expression env e) in
-        if List.exists is_abstracted_arg args
+        let arg m (_, eo) = option expression m eo in
+        let m' = if List.exists is_abstracted_arg args
         then (* evaluate expressions, abstract over the results
                 let g = f and x = e in fun z -> g ~x z *)
-          Use.discard ty
-        else Use.inspect ty
+          compos mode Delayed
+        else compos mode Dereferenced
+        in
+        Env.join (list arg m' args) (expression m' e)
     | Texp_tuple exprs ->
-      Use.guard (list expression env exprs)
-    | Texp_array args ->
-      let ty = list expression env args in
-      begin match Typeopt.array_kind exp with
-      | Lambda.Pfloatarray ->
-          (* (flat) float arrays unbox their elements *)
-          Use.inspect ty
-      | Lambda.Pgenarray ->
-          (* This is counted as a use, because constructing a generic array
-             involves inspecting to decide whether to unbox (PR#6939). *)
-          Use.inspect ty
-      | Lambda.Paddrarray | Lambda.Pintarray ->
-          (* non-generic, non-float arrays act as constructors *)
-          Use.guard ty
-      end
+      list expression (compos mode Guarded) exprs
+    | Texp_array exprs ->
+      let array_mode = match Typeopt.array_kind exp with
+        | Lambda.Pfloatarray ->
+            (* (flat) float arrays unbox their elements *)
+            Dereferenced
+        | Lambda.Pgenarray ->
+            (* This is counted as a use, because constructing a generic array
+               involves inspecting to decide whether to unbox (PR#6939). *)
+            Dereferenced
+        | Lambda.Paddrarray | Lambda.Pintarray ->
+            (* non-generic, non-float arrays act as constructors *)
+            Guarded
+      in
+      list expression (compos mode array_mode) exprs
     | Texp_construct (_, desc, exprs) ->
       let access_constructor =
         match desc.cstr_tag with
-        | Cstr_extension (pth, _) -> Use.inspect (path env pth)
-        | _ -> Use.empty
+        | Cstr_extension (pth, _) ->
+          path (compos mode Dereferenced) pth
+        | _ -> Env.empty
       in
-      let use = match desc.cstr_tag with
-        | Cstr_unboxed -> (fun x -> x)
-        | Cstr_constant _ | Cstr_block _ | Cstr_extension _ -> Use.guard
+      let m' = match desc.cstr_tag with
+        | Cstr_unboxed ->
+          compos mode Unguarded
+        | Cstr_constant _ | Cstr_block _ | Cstr_extension _ ->
+          compos mode Guarded
       in
-      Use.join access_constructor (use (list expression env exprs))
+      Env.join access_constructor (list expression m' exprs)
     | Texp_variant (_, eo) ->
-      Use.guard (option expression env eo)
+      (*
+        G |- e: m[Guarded]
+        ------------------   -----------
+        G |- `A e: m         [] |- `A: m
+      *)
+      option expression (compos mode Guarded) eo
     | Texp_record { fields = es; extended_expression = eo;
                     representation = rep } ->
-        let use = match rep with
-          | Record_float -> Use.inspect
-          | Record_unboxed _ -> (fun x -> x)
+        let m' = match rep with
+          | Record_float -> compos mode Dereferenced
+          | Record_unboxed _ -> mode
           | Record_regular | Record_inlined _
-          | Record_extension -> Use.guard
+          | Record_extension -> compos mode Guarded
         in
-        let field env = function
-            _, Kept _ -> Use.empty
-          | _, Overridden (_, e) -> expression env e
+        let field m = function
+            _, Kept _ -> Env.empty
+          | _, Overridden (_, e) -> expression m e
         in
-        Use.join
-          (use (array field env es))
-          (option expression env eo)
+        Env.join (array field m' es)
+                 (option expression mode eo)
     | Texp_ifthenelse (cond, ifso, ifnot) ->
-        Use.(join (inspect (expression env cond))
-                (join
-                    (expression env ifso)
-                    (option expression env ifnot)))
+      (*
+        Gc |- c: m[Dereferenced]
+        G1 |- e1: m
+        G2 |- e2: m
+        ---
+        Gc + G1 + G2 |- if c then e1 else e2: m
+
+      Note: `if c then e1 else e2` is treated in the same way as
+      `match c with true -> e1 | false -> e2`
+      *)
+      let env_cond = expression (compos mode Dereferenced) cond in
+      let env_ifso = expression mode ifso in
+      let env_ifnot = option expression mode ifnot in
+      Env.join env_cond (Env.join env_ifso env_ifnot)
     | Texp_setfield (e1, _, _, e2) ->
-        Use.(join (inspect (expression env e1))
-              (inspect (expression env e2)))
+      (*
+        G1 |- e1: m[Dereferenced]
+        G2 |- e2: m[Dereferenced]
+        ---
+        G1 + G2 |- e1.x <- e2: m
+      *)
+      let env_1 = expression (compos mode Dereferenced) e1 in
+      let env_2 = expression (compos mode Dereferenced) e2 in
+      Env.join env_1 env_2
     | Texp_sequence (e1, e2) ->
-      Use.(join (discard (expression env e1))
-              (expression env e2))
+      (*
+        G1 |- e1: m[Guarded]
+        G2 |- e2: m
+        --------------------
+        G1 + G2 |- e1; e2: m
+
+        Note: `e1; e2` is treated in the same way as `let _ = e1 in e2`
+      *)
+      let env1 = expression (compos mode Guarded) e1 in
+      let env2 = expression mode e2 in
+      Env.join env1 env2
     | Texp_while (e1, e2) ->
-      Use.(join (inspect (expression env e1))
-              (discard (expression env e2)))
+      (*
+        G1 |- e1: m[Dereferenced]
+        G2 |- e2: m[Guarded]
+        ---------------------------------
+        G1 + G2 |- while e1 do e2 done: m
+      *)
+      let env_1 = expression (compos mode Dereferenced) e1 in
+      let env_2 = expression (compos mode Guarded) e2 in
+      Env.join env_1 env_2
     | Texp_send (e1, _, eo) ->
-      Use.(join (inspect (expression env e1))
-              (inspect (option expression env eo)))
+      (*
+        G |- e: m[Dereferenced]
+        -----------------------
+        G |- e#x: m
+
+        Note (Alban): don't really understand what eo mean, especially when eo
+        is not None, so I can't write the full inference rule.
+      *)
+      Env.join (expression (compos mode Dereferenced) e1)
+               (option expression (compos mode Dereferenced) eo)
     | Texp_field (e, _, _) ->
-      Use.(inspect (expression env e))
+      (*
+        G |- e: m[Dereferenced]
+        -----------------------
+        G |- e.x: m
+      *)
+      expression (compos mode Dereferenced) e
     | Texp_setinstvar (_,_,_,e) ->
-        Use.(inspect (expression env e))
+      (*
+        G |- e: m[Dereferenced]
+        -----------------------
+        G |- x <- e: m
+      *)
+      expression (compos mode Dereferenced) e
     | Texp_letexception (_, e) ->
-        expression env e
+      (* G |- e: m
+         ----------------------------
+         G |- let exception A in e: m
+      *)
+      expression mode e
     | Texp_assert e ->
-        Use.inspect (expression env e)
-    | Texp_pack m ->
-        modexp env m
+      (*
+        G |- e: m[Dereferenced]
+        -----------------------
+        G |- assert e: m
+
+        Note: `assert e` is treated just as if `assert` was a function.
+      *)
+        expression (compos mode Dereferenced) e
+    | Texp_pack mexp ->
+      (*
+        G |- M: m
+        ----------------
+        G |- module M: m
+      *)
+      modexp mode mexp
     | Texp_object (clsstrct, _) ->
-        class_structure env clsstrct
+      class_structure mode clsstrct
     | Texp_try (e, cases) ->
-      (* This is more permissive than the old check. *)
-      let case env {Typedtree.c_rhs} = expression env c_rhs in
-      Use.join (expression env e)
-        (list case env cases)
-    | Texp_override (_, fields) ->
+      (*
+        G |- e: m
+        G1 |- e1: m
+        ...
+        Gn |- en: m
+        ---
+        G + G1 + ... + Gn |- try e with p1 -> e1 | ... | pn -> en: m
+      *)
+      let case m {Typedtree.c_rhs} = expression m c_rhs in
+      Env.join (expression mode e)
+        (list case mode cases)
+    | Texp_override (_, fields) -> failwith "TODO override"
+    (*
       let field env (_, _, e) = expression env e in
       Use.inspect (list field env fields)
+*)
     | Texp_function { cases } ->
-      Use.delay (list (case ~scrutinee:Use.empty) env cases)
+      (* Approximation: function `p1 -> e1, ..., pn -> en` is the same as
+         `fun x -> match x with p1 -> e1, ..., pn -> en`.
+
+         The typing of this expression is nearly the same as the typing of
+         a `match` expression, the differences are:
+         - e1, ..., en are evaluated in the m[Delayed] mode instead of m
+         - we don't care about the mode returned by the `case` function.
+      *)
+      let m = compos mode Delayed in
+      list (fun m c -> fst (case m c)) m cases
     | Texp_lazy e ->
-        begin match Typeopt.classify_lazy_argument e with
+      (*
+        G |- e:
+        ---
+        ... |- lazy e: m
+      *)
+      let m' = begin match Typeopt.classify_lazy_argument e with
         | `Constant_or_function
         | `Identifier _
         | `Float_that_cannot_be_shortcut ->
-          expression env e
+          mode
         | `Other ->
-          Use.delay (expression env e)
+          compos mode Delayed
         end
+      in
+      expression m' e
     | Texp_unreachable ->
+      (*
+        ----------
+        [] |- .: m
+      *)
+      Env.empty
+    | Texp_extension_constructor _ -> failwith "TODO extension_constructor"
+    (*
       Use.empty
-    | Texp_extension_constructor _ ->
-      Use.empty
-and option : 'a. (Env.env -> 'a -> Use.t) -> Env.env -> 'a option -> Use.t =
-  fun f env -> Misc.Stdlib.Option.value_default (f env) ~default:Use.empty
-and list : 'a. (Env.env -> 'a -> Use.t) -> Env.env -> 'a list -> Use.t =
-  fun f env ->
-    List.fold_left (fun typ item -> Use.join (f env item) typ) Use.empty
-and array : 'a. (Env.env -> 'a -> Use.t) -> Env.env -> 'a array -> Use.t =
-  fun f env ->
-    Array.fold_left (fun typ item -> Use.join (f env item) typ) Use.empty
-and class_structure : Env.env -> Typedtree.class_structure -> Use.t =
-  fun env cs -> Use.(inspect (list class_field env cs.cstr_fields))
-and class_field : Env.env -> Typedtree.class_field -> Use.t =
-  fun env cf -> match cf.cf_desc with
+      *)
+
+(* option f m o:
+   If o is Some(x), returns f m x.
+   If o is None, returns Env.empty *)
+and option : 'a. (mode -> 'a -> Env.t) -> mode -> 'a option -> Env.t =
+  fun f m -> Misc.Stdlib.Option.value_default (f m) ~default:Env.empty
+
+(* list f m l:
+   Compute the environments e_i = f l_i m, with l_i an element
+   of the list l.
+   Join the environments e_i and return the result.
+*)
+and list : 'a. (mode -> 'a -> Env.t) -> mode -> 'a list -> Env.t =
+  fun f m ->
+    List.fold_left (fun env item -> Env.join (f m item) env) Env.empty
+and array : 'a. (mode -> 'a -> Env.t) -> mode -> 'a array -> Env.t =
+  fun f m ->
+    Array.fold_left (fun env item -> Env.join (f m item) env) Env.empty
+and class_structure : mode -> Typedtree.class_structure -> Env.t =
+  (* Note (Alban): why should we evaluate the class field in a Dereferenced
+     mode? Is it possible to be more permissive? *)
+  fun m cs -> list class_field (compos m Dereferenced) cs.cstr_fields
+and class_field : mode -> Typedtree.class_field -> Env.t =
+  fun m cf -> match cf.cf_desc with
     | Tcf_inherit (_, ce, _super, _inh_vars, _inh_meths) ->
-        Use.inspect (class_expr env ce)
+      failwith "TODO Tcf_inherit"
+      (* expression (compos m Dereferenced) ce *)
     | Tcf_val (_lab, _mut, _, cfk, _) ->
-        class_field_kind env cfk
+      class_field_kind m cfk
     | Tcf_method (_, _, cfk) ->
-        class_field_kind env cfk
-    | Tcf_constraint _ ->
-        Use.empty
+      class_field_kind m cfk
+    | Tcf_constraint _ -> failwith "Tcf_constraint"
+        (* Use.empty *)
     | Tcf_initializer e ->
-        Use.inspect (expression env e)
-    | Tcf_attribute _ ->
-        Use.empty
-and class_field_kind : Env.env -> Typedtree.class_field_kind -> Use.t =
-  fun env cfk -> match cfk with
+      expression (compos m Dereferenced) e
+    | Tcf_attribute _ -> failwith "Tcf_attribute"
+        (* Use.empty *)
+and class_field_kind : mode -> Typedtree.class_field_kind -> Env.t =
+  fun m cfk -> match cfk with
     | Tcfk_virtual _ ->
-        Use.empty
+        Env.empty
     | Tcfk_concrete (_, e) ->
-        Use.inspect (expression env e)
-and modexp : Env.env -> Typedtree.module_expr -> Use.t =
-  fun env m -> match m.mod_desc with
+        expression (compos m Dereferenced) e
+and modexp : mode -> Typedtree.module_expr -> Env.t =
+  fun mode mexp -> match mexp.mod_desc with
     | Tmod_ident (pth, _) ->
-        (path env pth)
+        (path mode pth)
     | Tmod_structure s ->
-        structure env s
-    | Tmod_functor (_, _, _, e) ->
-      Use.delay (modexp env e)
-    | Tmod_apply (f, p, _) ->
+        structure mode s
+    | Tmod_functor (_, _, _, e) -> failwith "TODO functor"
+      (* Use.delay (modexp env e) *)
+    | Tmod_apply (f, p, _) -> failwith "TODO module-apply"
+    (*
       Use.(join
               (inspect (modexp env f))
               (inspect (modexp env p)))
-    | Tmod_constraint (m, _, _, Tcoerce_none) ->
-      modexp env m
-    | Tmod_constraint (m, _, _, _) ->
-      Use.inspect (modexp env m)
+    *)
+    | Tmod_constraint (mexp, _, _, Tcoerce_none) ->
+      modexp mode mexp
+    | Tmod_constraint (mexp, _, _, _) ->
+      (*
+        G |- M: m[Dereferenced]
+        -----------------------
+        G |- (M: T): m
+
+        Note (Alban): why do we condider that a module constrained need to be
+        inpected?
+      *)
+      modexp (compos mode Dereferenced) mexp
     | Tmod_unpack (e, _) ->
-        expression env e
-and path : Env.env -> Path.t -> Use.t =
-  fun env pth -> match pth with
+        expression mode e
+and path : mode -> Path.t -> Env.t =
+  (*
+    ------------
+    x: m |- x: m
+
+    G |- A: m[Dereferenced]
+    -----------------------
+    G |- A.x: m
+
+    G1 |- A: m[Dereferenced]
+    G2 |- B: m[Dereferenced]
+    ------------------------ ???
+    G1 + G2 |- A(B): m
+  *)
+  fun mode pth -> match pth with
     | Path.Pident x ->
-        (try Ident.find_same x env with Not_found -> Use.empty)
+        Env.single x mode
     | Path.Pdot (t, _, _) ->
-        Use.inspect (path env t)
-    | Path.Papply (f, p) ->
+        path (compos mode Dereferenced) t
+    | Path.Papply (f, p) -> failwith "TODO Path.Papply"
+    (*
         Use.(inspect (join (path env f) (path env p)))
-and structure : Env.env -> Typedtree.structure -> Use.t =
+        *)
+and structure : mode -> Typedtree.structure -> Env.t =
+  (*
+    G1, {x: _, x in vars(G1)} |- item1: G2 + ... + Gn in m
+    G2, {x: _, x in vars(G2)} |- item2: G3 + ... + Gn in m
+    ...
+    Gn, {x: _, x in vars(Gn)} |- itemn: [] in m
+    ---
+    (G1 + ... + Gn) - V |- struct item1 ... itemn end: m
+  *)
+  fun m s ->
+    List.fold_right (structure_item m) s.str_items Env.empty
+  (*
   fun env s ->
     let _, ty =
       List.fold_left
@@ -511,45 +702,92 @@ and structure : Env.env -> Typedtree.structure -> Use.t =
         s.str_items
     in
     Use.guard ty
-and structure_item : Env.env -> Typedtree.structure_item -> Env.env * Use.t =
-  fun env s -> match s.str_desc with
+  *)
+and structure_item : mode -> Typedtree.structure_item -> Env.t -> Env.t =
+  fun m s env -> match s.str_desc with
     | Tstr_eval (e, _) ->
-        Env.empty, expression env e
-    | Tstr_value (rec_flag, valbinds) ->
-        value_bindings rec_flag env valbinds
+      (*
+        G |- e: m[Guarded]
+        G' |- struct {items} end: m
+        ------------------------------------
+        G + G' |- struct e: m {items} end: m
+
+        The expression `e` is treated in the same way as let _ = e
+      *)
+      Env.join env (expression (compos m Guarded) e)
+    | Tstr_value (_, valbinds) ->
+      (* Similar to the `Texp_let` rule. TODO: should I factorize some code?
+       * *)
+      let vars = List.fold_left (fun v b -> (pat_bound_idents b.vb_pat) @ v)
+                                []
+                                valbinds
+      in
+      let env1 = Env.remove_list vars env in
+      let env2 = list (value_binding env vars) m valbinds in
+      Env.join env1 env2
     | Tstr_module {mb_id; mb_expr} ->
-        let ty = modexp env mb_expr in
-        Ident.add mb_id ty Env.empty, ty
-    | Tstr_recmodule mbs ->
+      (*
+        G |- M: m[m' + Guarded]
+        G', M: m' |- struct {items} end: m
+        ---
+        G + G' |- struct module M = E {items} end: m
+
+        Very similar to the `Texp_letmodule` rule. (Again, should I
+        factorize?)
+      *)
+      let m_mod = Env.find env mb_id in
+      let m_eval = compos m (prec m_mod Guarded) in
+      let env' = modexp m_eval mb_expr in
+      Env.join (Env.remove mb_id env) env'
+    | Tstr_recmodule mbs -> failwith "TODO Tstr_recmodule"
+      (*
         let modbind env {mb_expr} = modexp env mb_expr in
         (* Over-approximate: treat any access as a use *)
         Env.empty, Use.inspect (list modbind env mbs)
-    | Tstr_primitive _ ->
-        Env.empty, Use.empty
+*)
+    | Tstr_primitive _ -> failwith "TODO Tstr_primitive"
+        (* Env.empty, Use.empty *)
     | Tstr_type _ ->
-        Env.empty, Use.empty
-    | Tstr_typext _ ->
-        Env.empty, Use.empty
+      (*
+        ---------------
+        [] |- type t: m
+      *)
+        env
+    | Tstr_typext _ -> failwith "TODO Tstr_typext"
+        (* Env.empty, Use.empty *)
     | Tstr_exception _ ->
-        Env.empty, Use.empty
-    | Tstr_modtype _ ->
-        Env.empty, Use.empty
-    | Tstr_open _ ->
-        Env.empty, Use.empty
-    | Tstr_class classes ->
+      (*
+        --------------------
+        [] |- exception e: m
+      *)
+        env
+    | Tstr_modtype _ -> failwith "TODO Tstr_modtype"
+        (* Env.empty, Use.empty *)
+    | Tstr_open _ -> failwith "TODO open"
+        (* Env.empty, Use.empty *)
+    | Tstr_class classes -> failwith "TODO Tstr_class"
+      (*
         (* Any occurrence in a class definition is counted as a use,
             so there's no need to add anything to the environment. *)
         let cls env ({ci_expr=ce}, _) = class_expr env ce in
         Env.empty, Use.inspect (list cls env classes)
-    | Tstr_class_type _ ->
+*)
+    | Tstr_class_type _ -> failwith "TODO Tstr_class_type"
+    (*
         Env.empty, Use.empty
-    | Tstr_include inc ->
+        *)
+    | Tstr_include inc -> failwith "TODO Tstr_inspect"
+    (*
         (* This is a kind of projection.  There's no need to add
             anything to the environment because everything is used in
             the type component already *)
         Env.empty, Use.inspect (modexp env inc.incl_mod)
-    | Tstr_attribute _ ->
+*)
+    | Tstr_attribute _ -> failwith "TODO Tstr_attribute"
+    (*
         Env.empty, Use.empty
+        *)
+(*
 and class_expr : Env.env -> Typedtree.class_expr -> Use.t =
   fun env ce -> match ce.cl_desc with
     | Tcl_ident (pth, _, _) ->
@@ -571,22 +809,36 @@ and class_expr : Env.env -> Typedtree.class_expr -> Use.t =
         class_expr env ce
     | Tcl_open (_, _, _, _, ce) ->
         class_expr env ce
-and case : Env.env -> Typedtree.case -> scrutinee:Use.t -> Use.t =
-  fun env { Typedtree.c_lhs; c_guard; c_rhs } ~scrutinee:ty ->
-    let ty =
-      if is_destructuring_pattern c_lhs then Use.inspect ty
-      else Use.discard ty (* as in 'let' *)
-    in
+*)
+
+(* TODO: split this function in 2 sub-functions instead of a function returning
+   a couple. *)
+and case : mode -> Typedtree.case (* -> scrutinee:Use.t *) -> Env.t * mode =
+  fun m { Typedtree.c_lhs; c_guard; c_rhs } (* ~scrutinee:ty *) ->
+    let env_guard = option expression (compos m Guarded) c_guard in
+    let env_rhs = expression m c_rhs in
+    let env = Env.join env_guard env_rhs in
     let vars = pat_bound_idents c_lhs in
-    let env =
-      List.fold_left
-        (fun env id -> Ident.add id ty env)
-        env
-        vars
-    in
-    Use.(join ty
-            (join (expression env c_rhs)
-                (inspect (option expression env c_guard))))
+    (Env.remove_list vars env), (pattern env m c_lhs)
+and pattern : Env.t -> mode -> pattern -> mode = fun env m pat ->
+  (*
+    G |- e: m[sum{G(x), x in vars(p)} + mode(p)]
+    --------------------------------------------
+    G |- p: G = e in m
+
+    where mode(p) = | Dereferenced if p is destructive
+                    | Guarded      otherwise
+  *)
+  let vars = pat_bound_idents pat in
+  let uses = List.map (Env.find env) vars in
+  let m_pat = if is_destructuring_pattern pat
+              then Dereferenced
+              else Guarded
+  in
+  (* The maximal use mode of the variables appearing in c_lhs: *)
+  let m_vars = List.fold_left prec Unused uses in
+  compos m (prec m_pat m_vars)
+(*
 and value_bindings :
   rec_flag -> Env.env -> Typedtree.value_binding list -> Env.env * Use.t =
   fun rec_flag env bindings ->
@@ -622,22 +874,28 @@ and value_bindings :
               (Env.join env2 env', Use.join ty ty'))
           (Env.empty, Use.empty)
           bindings
-and value_binding : Env.env -> Typedtree.value_binding -> Env.env * Use.t =
-  (* NB: returns new environment only *)
-  fun env { vb_pat; vb_expr } ->
-    let vars = pat_bound_idents vb_pat in
-    let ty = expression env vb_expr in
-    let ty = if is_destructuring_pattern vb_pat then Use.inspect ty else ty in
-    (List.fold_left
-      (fun env id -> Ident.add id ty env)
-      Env.empty
-      vars,
-      ty)
+*)
+(* value_bindig env vars m bind:
+   Get the environment in which this binding must be evaluated.
+
+   The pattern and the parameter `env` are used to determine the mode in
+   which the expression must be evaluated.
+
+   `vars` is a list of indentifiers that must be removed from the resulting
+   environment. *)
+and value_binding : Env.t -> Ident.t list -> mode -> Typedtree.value_binding
+                          -> Env.t =
+  fun env vars m { vb_pat; vb_expr } ->
+    let m' = pattern env m vb_pat in
+    let env' = expression m' vb_expr in
+    Env.remove_list vars env'
+
 and is_destructuring_pattern : Typedtree.pattern -> bool =
   fun pat -> match pat.pat_desc with
     | Tpat_any -> false
-    | Tpat_var (_, _) -> false
-    | Tpat_alias (pat, _, _) -> is_destructuring_pattern pat
+    | Tpat_var (id, _) -> false
+    | Tpat_alias (pat, _, _) ->
+        is_destructuring_pattern pat
     | Tpat_constant _ -> true
     | Tpat_tuple _ -> true
     | Tpat_construct (_, _, _) -> true
@@ -650,8 +908,9 @@ and is_destructuring_pattern : Typedtree.pattern -> bool =
     | Tpat_exception _ -> false
 
 let is_valid_recursive_expression idlist expr =
-  let ty = expression (build_unguarded_env idlist) expr in
-  match Use.unguarded ty, Use.dependent ty, classify_expression expr with
+  let ty = expression Unguarded expr in
+  match Env.unguarded ty idlist, Env.dependent ty idlist,
+        classify_expression expr with
   | _ :: _, _, _ (* The expression inspects rec-bound variables *)
   | _, _ :: _, Dynamic -> (* The expression depends on rec-bound variables
                               and its size is unknown *)
@@ -662,26 +921,42 @@ let is_valid_recursive_expression idlist expr =
       true
 
 let is_valid_class_expr idlist ce =
-  let rec class_expr : Env.env -> Typedtree.class_expr -> Use.t =
-    fun env ce -> match ce.cl_desc with
-      | Tcl_ident (_, _, _) -> Use.empty
-      | Tcl_structure _ -> Use.empty
-      | Tcl_fun (_, _, _, _, _) -> Use.empty
-      | Tcl_apply (_, _) -> Use.empty
+  let rec class_expr : mode -> Typedtree.class_expr -> Env.t =
+    fun mode ce -> match ce.cl_desc with
+      | Tcl_ident (_, _, _) ->
+        (*
+          ----------
+          [] |- a: m
+        *)
+        Env.empty
+      | Tcl_structure _ ->
+        (*
+          -----------------------
+          [] |- struct ... end: m
+        *)
+        Env.empty
+      | Tcl_fun (_, _, _, _, _) -> Env.empty
+        (*
+          ---------------------------
+          [] |- fun x1 ... xn -> C: m
+        *)
+      | Tcl_apply (_, _) -> Env.empty
       | Tcl_let (rec_flag, valbinds, _, ce) ->
-          (* This rule looks like the `Texp_let` rule in the `expression`
-             function. There is no `Use.discard` here because the
-             occurrences of the variables in [idlist] are only of the form
-             [new id], so they are either absent, Dereferenced, or Guarded
-             (under a delay), never Unguarded, and `discard` would be a no-op.
-          *)
-          let env', ty = value_bindings rec_flag env valbinds in
-          Use.join ty (class_expr env' ce)
+        (*
+        *)
+        let env0 = class_expr mode ce in
+        let vars = List.fold_left (fun v b -> (pat_bound_idents b.vb_pat) @ v)
+                                  []
+                                  valbinds
+        in
+        let env1 = Env.remove_list vars env0 in
+        let env2 = list (value_binding env0 vars) mode valbinds in
+        Env.join env1 env2
       | Tcl_constraint (ce, _, _, _, _) ->
-          class_expr env ce
+          class_expr mode ce
       | Tcl_open (_, _, _, _, ce) ->
-          class_expr env ce
+          class_expr mode ce
   in
-  match Use.unguarded (class_expr (build_unguarded_env idlist) ce) with
+  match Env.unguarded (class_expr Unguarded ce) idlist with
   | [] -> true
   | _ :: _ -> false
