@@ -89,7 +89,6 @@ type error =
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
-  | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential of existential_restriction * string * string list
   | Invalid_interval
   | Invalid_for_loop_index
@@ -397,9 +396,6 @@ let unify_pat_types_gadt loc env ty ty' =
       raise(Error(loc, !env, Pattern_type_clash(trace)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, !env, Typetexp.Variant_tags (l1, l2)))
-  | Unification_recursive_abbrev trace ->
-      raise(Error(loc, !env, Recursive_local_constraint trace))
-
 
 (* Creating new conjunctive types is not allowed when typing patterns *)
 
@@ -4713,12 +4709,6 @@ let report_error env ppf = function
       fprintf ppf
         "This expression is packed module, but the expected type is@ %a"
         type_expr ty
-  | Recursive_local_constraint trace ->
-      report_unification_error ppf env trace
-        (function ppf ->
-           fprintf ppf "Recursive local constraint when unifying")
-        (function ppf ->
-           fprintf ppf "with")
   | Unexpected_existential (reason, name, types) -> (
       begin match reason with
       | In_class_args ->
