@@ -78,11 +78,6 @@ exception Cannot_expand
 
 exception Cannot_apply
 
-exception Recursive_abbrev
-
-(* GADT: recursive abbrevs can appear as a result of local constraints *)
-exception Unification_recursive_abbrev of (type_expr * type_expr) list
-
 (**** Type level management ****)
 
 let current_level = ref 0
@@ -2853,9 +2848,6 @@ let unify env ty1 ty2 =
     Unify trace ->
       undo_compress snap;
       raise (Unify (expand_trace !env trace))
-  | Recursive_abbrev ->
-      undo_compress snap;
-      raise (Unification_recursive_abbrev (expand_trace !env [(ty1,ty2)]))
 
 let unify_gadt ~equations_level:lev (env:Env.t ref) ty1 ty2 =
   try
