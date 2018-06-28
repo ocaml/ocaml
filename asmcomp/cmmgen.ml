@@ -1896,7 +1896,11 @@ let rec transl env e =
   | Ucatch(nfail, [], body, handler) ->
       make_catch nfail (transl env body) (transl env handler)
   | Ucatch(nfail, ids, body, handler) ->
-      ccatch(nfail, ids, transl env body, transl env handler)
+      (* CR-someday mshinwell: consider how we can do better than
+         [typ_val] when appropriate. *)
+      let ids_with_types =
+        List.map (fun i -> (i, Cmm.typ_val)) ids in
+      ccatch(nfail, ids_with_types, transl env body, transl env handler)
   | Utrywith(body, exn, handler) ->
       Ctrywith(transl env body, exn, transl env handler)
   | Uifthenelse(cond, ifso, ifnot) ->
