@@ -94,10 +94,10 @@ The capitalization rules  are summarized in the table below.
 \entree{Module types}{any}
 \end{tableau}
 
-{\it Note on polymorphic variant tags:\/} the current implementation accepts
-lowercase variant tags in addition to capitalized variant tags, but we
-suggest you avoid lowercase variant tags for portability and
-compatibility with future OCaml versions.
+{\it Note on polymorphic variant tags:\/} Despite this specification
+allowing only capitalized polymorphic variant tags, the current 
+implementation also accepts lowercase and it is used in some 3rd party
+libraries. However, for portability, we recommend following the specification.
 
 \subsubsection*{Referring to named objects}
 
