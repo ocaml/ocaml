@@ -371,6 +371,10 @@ Working version
 - GPR#1833: allow non-val payloads in CMM Ccatch handlers
   (Simon Fowler, review by Xavier Clerc)
 
+- GPR#1877: document the release process
+  (Damien Doligez and Gabriel Scherer, review by Sébastien Hinderer,
+   Perry E. Metzger, Xavier Leroy and David Allsopp)
+
 - GPR#1886: move the Location.absname reference to Clflags.absname
   (Armaël Guéneau, review by Jérémie Dimino)
 

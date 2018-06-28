@@ -1,0 +1,389 @@
+These are informal notes on how to do an OCaml release.
+
+Following these steps requires commit right in the OCaml repository,
+as well as SSH access to the inria.fr file servers hosting the
+distribution archives and manual.
+
+We are not fully confident that those steps are correct, feel free to
+check with other release managers in case of doubt.
+
+Note: we say that a new release is a "testing release" if it is a Beta
+version or Release Candidate. Otherwise, we call it a "production
+release".
+
+
+## A few days in advance
+
+Warn Gabriel Scherer (to make a pass on Changes) and OCamlLabs
+(for OPAM testing).
+
+## 0: release environment setup
+
+```
+export MAJOR=4
+export MINOR=07
+export BUGFIX=0
+export PLUSEXT=+rc2
+
+export BRANCH=$MAJOR.$MINOR
+export VERSION=$MAJOR.$MINOR.$BUGFIX$PLUSEXT
+
+export REPO=http://github.com/ocaml/ocaml
+
+# these values are specific to caml.inria's host setup
+export ARCHIVE_HOST=<<archive machine>>
+export ARCHIVE_PATH=<<dist>>
+export WEB_HOST=<<online manual machine>>
+export WEB_PATH=<<www>
+export DIST=$ARCHIVE_PATH/ocaml/ocaml-$MAJOR.$MINOR
+```
+
+
+## 1: check repository state
+
+```
+git status  # check that the repo is in a clean state
+git pull
+```
+
+## 2: magic numbers
+
+If you are about to do a major release, you should check that the
+magic numbers have been updated since the last major release. It is
+preferable to do this just before the first testing release for this
+major version, typically the first beta.
+
+See the HACKING file of `utils/` for documentation on how to bump the
+magic numbers.
+
+## 3: build, refresh dependencies, sanity checks
+
+```
+make distclean
+
+INSTDIR=/tmp/ocaml-${VERSION}
+rm -rf ${INSTDIR}
+./configure -prefix ${INSTDIR}
+
+make world.opt -j5
+make alldepend
+  # note: you have to run 'alldepend' after 'world',
+  # not just after 'core' as before, because
+  # ocamldoc/stdlib_non_prefixed depends on 'world'
+
+# check that .depend files have no absolute path in them
+find . -name .depend | xargs grep ' /'
+  # must have empty output
+
+make install
+./tools/check-symbol-names runtime/*.a
+  # must have empty output and return 0
+```
+
+
+## 4: tests
+
+```
+make tests
+```
+
+
+## 5: build, tag and push the new release
+
+```
+# at this point, the VERSION file contains N+devD
+# increment it into N+dev(D+1); for example,
+#   4.07.0+dev8-2018-06-19 => 4.07.0+dev9-2018-06-26
+# for production releases: check and change the Changes header
+#  (remove "next version" and add a date)
+git add VERSION Changes
+git commit -m "last commit before tagging $VERSION"
+# update VERSION with the new release; for example,
+#   4.07.0+dev9-2018-06-26 => 4.07.0+rc2
+make coreboot -j5
+make coreboot -j5 # must say "Fixpoint reached, bootstrap succeeded."
+git commit -m "change VERSION for $VERSION" -a
+git tag -m "release $VERSION" $VERSION
+
+# for production releases, change the VERSION file into (N+1)+dev0; for example,
+#   4.08.0 => 4.08.1+dev0
+# for testing candidates, use N+dev(D+1) instead; for example,
+#   4.07.0+rc2 => 4.07.0+dev10-2018-06-26
+git commit -m "increment version number after tagging $VERSION" VERSION
+git push
+git push --tags
+```
+
+
+## 6: create OPAM switches
+
+Create OPAM switches for the new version, copying the particular
+switch configuration choices from the previous version.
+
+I use a semi-automated process, copying and batch-editing the compiler
+descriptions from the last release. The instructions below assume an
+opam1 repository organization, an opam2 repository will have
+a different layout.
+
+From a branch of the opam-repository, in `compilers/$MAJOR.$MINOR.$BUGFIX`:
+
+```
+# copy foo+rc2+... switches into foo+rc3+...
+OLD_DIRS=*+rc2*
+VER="s/+rc2/+rc3/g"
+
+NEW_DIRS=""
+for f in $OLD_DIRS; do NEW_DIRS="$NEW_DIRS $(echo $f | sed $VER)"; done
+echo $NEW_DIRS # for checking
+
+for f in $OLD_DIRS; do
+    mkdir -p $(echo $f | sed $VER)
+    for file in $f/*; do
+      cp $file $(echo $file | sed $VER)
+      # we copy the file, but their content still corresponds to the old version
+    done
+    git add $(echo $f | sed $VER)
+done
+
+git status
+  # inspect the new filenames
+
+for f in $NEW_DIRS; do sed -i $VER $f/*; done
+git diff # inspect the result of this last change
+
+git add $NEW_DIRS
+
+# the strings below work on .descr files,
+# they may need to be adapted
+for f in $NEW_DIRS; do
+  sed -i "s/rc2/rc3/g" $f/*
+  sed -i "s/Second release candidate/Third release candidate/g" $f/*
+done
+git diff # inspect the result of this last change
+
+git add $NEW_DIRS
+
+git diff --cached # inspect the complete result
+
+git commit -m "OPAM switches for $VERSION"
+```
+
+## 7: build the release archives
+
+```
+TMPDIR=/tmp/ocaml-release
+git checkout $VERSION
+git checkout-index -a -f --prefix=$TMPDIR/ocaml-$VERSION/
+cd $TMPDIR
+(cd ocaml-$VERSION && rm -rf experimental)
+gtar -c --owner 0 --group 0 -f ocaml-$VERSION.tar ocaml-$VERSION
+gzip -9 <ocaml-$VERSION.tar >ocaml-$VERSION.tar.gz
+xz <ocaml-$VERSION.tar >ocaml-$VERSION.tar.xz
+```
+
+
+## 8: upload the archives and compute checksums
+
+```
+scp ocaml-$VERSION.tar.{xz,gz} $ARCHIVE_HOST:$DIST
+```
+
+To update the checksum files on the remote host, we first upload the
+release environment as a script.
+
+
+```
+rm /tmp/env.sh
+echo export MAJOR=$MAJOR >> /tmp/env.sh
+echo export MINOR=$MINOR >> /tmp/env.sh
+echo export BUGFIX=$BUGFIX >> /tmp/env.sh
+echo export PLUSEXT=$PLUSEXT >> /tmp/env.sh
+
+echo export BRANCH=$BRANCH >> /tmp/env.sh
+echo export VERSION=$VERSION >> /tmp/env.sh
+
+echo export REPO=$REPO >> /tmp/env.sh
+echo export DIST=$DIST >> /tmp/env.sh
+echo export ARCHIVE_HOST=$ARCHIVE_HOST >> /tmp/env.sh
+echo export WEB_HOST=$WEB_HOST >> /tmp/env.sh
+echo export WEB_PATH=$WEB_PATH >> /tmp/env.sh
+
+# check env.sh
+cat /tmp/env.sh
+
+scp /tmp/env.sh $ARCHIVE_HOST:/tmp
+```
+
+and then login there to update the checksums (MD5SUM, SHA512SUM)
+
+```
+ssh $ARCHIVE_HOST
+source /tmp/env.sh
+cd $DIST
+
+cp MD5SUM MD5SUM.old
+md5sum ocaml-$VERSION.tar.{xz,gz} > new-md5s
+# check new-md5s to ensure that they look right, and then
+cat new-md5s >> MD5SUM
+# if everything worked well,
+rm MD5SUM.old new-md5s
+
+# same thing for SHA512
+cp SHA512 SHA512.old
+cp SHA512SUM SHA512SUM.old
+sha512sum ocaml-$VERSION.tar.{xz,gz} > new-sha512s
+cat new-sha512s >> SHA512SUM
+rm SHA512SUM.old new-sha512s
+```
+
+
+## 9: update note files (technical documentation)
+
+```
+ssh $ARCHIVE_HOST "mkdir -p $DIST/notes"
+scp INSTALL.adoc LICENSE README.adoc README.win32.adoc Changes \
+   $ARCHIVE_HOST:$DIST/notes/
+```
+
+
+## 10: upload the reference manual
+
+You don't need to do this if the previous release had the same
+$MAJOR.$MINOR ($BRANCH) value and the exact same manual -- this is frequent if
+it was a release candidate.
+
+```
+make world.opt
+make install
+export PATH="$INSTDIR/bin:$PATH"
+cd manual
+make clean
+make
+rm -rf /tmp/release
+mkdir -p /tmp/release
+RELEASENAME="ocaml-$BRANCH-" RELEASE=/tmp/release/$RELEASENAME make release
+scp /tmp/release/* $ARCHIVE_HOST:$DIST/
+
+
+# upload manual checksums
+ssh $ARCHIVE_HOST "cd $DIST; md5sum ocaml-$BRANCH-refman* >>MD5SUM"
+ssh $ARCHIVE_HOST "cd $DIST; sha512sum ocaml-$BRANCH-refman* >>SHA512SUM"
+```
+
+Releasing the manual online happens on another machine:
+
+```
+ssh $ARCHIVE_HOST
+source /tmp/env.sh
+scp /tmp/env.sh $WEB_HOST:/tmp
+ssh $WEB_HOST
+source /tmp/env.sh
+
+cd $WEB_PATH/caml/pub/docs
+mkdir -p manual-ocaml-$BRANCH
+cd manual-ocaml-$BRANCH
+wget http://caml.inria.fr/pub/distrib/ocaml-$BRANCH/ocaml-$BRANCH-refman-html.tar.gz
+tar -xzvf ocaml-$BRANCH-refman-html.tar.gz # this extracts into htmlman/
+cp -r htmlman/* . # move HTML content to docs/manual-caml-$BRANCH
+rm -fR htmlman
+
+cd $WEB_PATH/caml/pub/docs
+ln -sf manual-ocaml-$BRANCH manual-ocaml
+```
+
+
+## 11: prepare web announce for the release
+
+For production releases, you should get in touch with ocaml.org to
+organize the webpage for the new release. See
+
+  <https://github.com/ocaml/ocaml.org/issues/819>
+
+
+## 12: update Mantis
+
+Update Mantis by adding $MAJOR.$MINOR.$BUGFIX as a version number for reports.
+
+Provided you have a sufficient Mantis privilege level, this is done from
+
+  https://caml.inria.fr/mantis/manage_proj_edit_page.php?project_id=1
+
+after login, by scrolling down to "Versions".
+
+(If you don't have the necessary Mantis rights, you need to ask
+someone else to do this.)
+
+
+## 13: announce the release on caml-list and caml-announce
+
+See the email announce templates at the end of this file.
+
+
+
+# Announces
+
+## Announcing a production release:
+
+```
+Dear OCaml users,
+
+We have the pleasure of celebrating <event> by announcing the release of
+OCaml version $VERSION.
+This is mainly a bug-fix release, see the list of changes below.
+
+It is (or soon will be) available as an OPAM switch, or as a source
+download here: < http://caml.inria.fr/download.en.html >
+
+Happy hacking,
+
+-- Damien Doligez for the OCaml team.
+
+<< insert the relevant Changes section >>
+```
+
+## Announcing a release candidate:
+
+```
+Dear OCaml users,
+
+The release of OCaml version <version> is imminent.  We have
+created a <release candidate/beta version> for your testing pleasure.  Please
+download the sources, compile, install, and test your favourite
+software with it.  Then let me know whether it works for you.
+
+We want to know about any show-stopping bugs, especially in the
+compilation and installation phases.
+
+This <release candidate/beta version> is available as source code at this
+address: < http://caml.inria.fr/pub/distrib/ocaml-$MAJOR.$MINOR/ >
+
+Happy hacking,
+
+-- Damien Doligez for the OCaml team.
+
+<< insert the relevant Changes section >>
+```
+
+## Announcing a beta version:
+
+```
+Dear OCaml users,
+
+The release of OCaml 4.05.0 will take place in a few weeks. We have
+created a beta version to help you adapt your software to the new
+features ahead of the release.
+
+The source code is available at this address:
+
+  https://github.com/ocaml/ocaml/archive/4.05.tar.gz
+
+and the compiler is also available as the "4.05.0+beta1" and
+"4.05.0+beta1+flambda" OPAM switches.
+
+We want to know about all bugs. Please report them here:
+  http://caml.inria.fr/mantis/bug_report_page.php
+
+Happy hacking,
+
+-- Damien Doligez for the OCaml team.
+```

@@ -51,6 +51,8 @@ README*                  ocaml-typo=missing-header
 /tools/ci/appveyor/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header,non-ascii text eol=crlf
 /tools/ci/appveyor/appveyor_build.sh       ocaml-typo=non-ascii
 
+/tools/release-checklist                   ocaml-typo=missing-header
+
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
 asmcomp/power/NOTES.md   ocaml-typo=missing-header
 
