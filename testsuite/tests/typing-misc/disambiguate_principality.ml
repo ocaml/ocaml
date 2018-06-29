@@ -281,3 +281,238 @@ Line 3, characters 7-10:
 Warning 18: this type-based field disambiguation is not principal.
 val u : M.r ref -> int = <fun>
 |}]
+
+
+(*** Constructors ***)
+
+(* Expressions *)
+
+module M = struct
+  type t = A | B
+end
+;;
+[%%expect{|
+module M : sig type t = A | B end
+|}]
+
+let before_a : M.t =
+  A
+;;
+[%%expect{|
+val before_a : M.t = M.A
+|}]
+
+let a =
+  let x = (A : M.t) in
+  x
+;;
+[%%expect{|
+val a : M.t = M.A
+|}]
+
+let b =
+  let x = ({ contents = A } : M.t ref) in
+  x := B
+;;
+[%%expect{|
+val b : unit = ()
+|}, Principal{|
+Line 3, characters 7-8:
+    x := B
+         ^
+Warning 18: this type-based constructor disambiguation is not principal.
+val b : unit = ()
+|}]
+
+let d =
+  let x = ({ contents = A } : M.t ref) in
+  x.contents <- B
+;;
+[%%expect{|
+val d : unit = ()
+|}]
+
+let e =
+  let x = ({ contents = A } : M.t ref) in
+  { x with contents = B }
+;;
+[%%expect{|
+Line 3, characters 22-23:
+    { x with contents = B }
+                        ^
+Error: Unbound constructor B
+|}]
+
+(* Patterns *)
+
+let g (x : M.t) =
+  match x with
+  | A | B  -> ()
+;;
+[%%expect{|
+val g : M.t -> unit = <fun>
+|}]
+
+let h x =
+  match x with
+  | (A : M.t) -> ()
+  | B -> ()
+;;
+[%%expect{|
+val h : M.t -> unit = <fun>
+|}, Principal{|
+Line 4, characters 4-5:
+    | B -> ()
+      ^
+Error: Unbound constructor B
+|}]
+
+let i x =
+  match x with
+  | A -> ()
+  | (B : M.t) -> ()
+;;
+[%%expect{|
+Line 3, characters 4-5:
+    | A -> ()
+      ^
+Error: Unbound constructor A
+|}]
+
+let j x =
+  match x with
+  | (A : M.t)
+  | B -> ()
+;;
+[%%expect{|
+val j : M.t -> unit = <fun>
+|}]
+
+let k x =
+  match x with
+  | A
+  | (B : M.t) -> ()
+;;
+[%%expect{|
+Line 3, characters 4-5:
+    | A
+      ^
+Error: Unbound constructor A
+|}]
+
+let l (x : M.t ref) =
+  match x with
+  | { contents = (A | B) } -> ()
+;;
+[%%expect{|
+val l : M.t ref -> unit = <fun>
+|}]
+
+let m x =
+  match x with
+  | { contents = (A | B) } -> ()
+;;
+[%%expect{|
+Line 3, characters 18-19:
+    | { contents = (A | B) } -> ()
+                    ^
+Error: Unbound constructor A
+|}]
+
+let n x =
+  match x with
+  | (_ : M.t ref) -> ()
+  | { contents = A } -> ()
+;;
+[%%expect{|
+Line 4, characters 4-20:
+    | { contents = A } -> ()
+      ^^^^^^^^^^^^^^^^
+Warning 11: this match case is unused.
+val n : M.t ref -> unit = <fun>
+|}, Principal{|
+Line 4, characters 17-18:
+    | { contents = A } -> ()
+                   ^
+Error: Unbound constructor A
+|}]
+
+let o x =
+  match x with
+  | { contents = A } -> ()
+  | (_ : M.t ref) -> ()
+;;
+[%%expect{|
+Line 3, characters 17-18:
+    | { contents = A } -> ()
+                   ^
+Error: Unbound constructor A
+|}]
+
+let p x =
+  match x with
+  | (_ : M.t ref)
+  | { contents = A } -> ()
+;;
+[%%expect{|
+Line 4, characters 4-20:
+    | { contents = A } -> ()
+      ^^^^^^^^^^^^^^^^
+Warning 12: this sub-pattern is unused.
+val p : M.t ref -> unit = <fun>
+|}]
+
+let q x =
+  match x with
+  | { contents = A }
+  | (_ : M.t ref) -> ()
+;;
+[%%expect{|
+Line 3, characters 17-18:
+    | { contents = A }
+                   ^
+Error: Unbound constructor A
+|}]
+
+let s arg =
+  match arg with
+  | (x : M.t ref) ->
+    x := A
+;;
+[%%expect{|
+val s : M.t ref -> unit = <fun>
+|}, Principal{|
+Line 4, characters 9-10:
+      x := A
+           ^
+Warning 18: this type-based constructor disambiguation is not principal.
+val s : M.t ref -> unit = <fun>
+|}]
+
+let t = function
+  | ({ contents = M.A } : M.t ref) as x ->
+    x := B
+;;
+[%%expect{|
+Line 1, characters 8-70:
+  ........function
+    | ({ contents = M.A } : M.t ref) as x ->
+      x := B
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{contents=B}
+val t : M.t ref -> unit = <fun>
+|}, Principal{|
+Line 3, characters 9-10:
+      x := B
+           ^
+Warning 18: this type-based constructor disambiguation is not principal.
+Line 1, characters 8-70:
+  ........function
+    | ({ contents = M.A } : M.t ref) as x ->
+      x := B
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{contents=B}
+val t : M.t ref -> unit = <fun>
+|}]
