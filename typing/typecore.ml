@@ -1200,7 +1200,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
       let opath =
         try
           let (p0, p, _) = extract_concrete_variant !env expected_ty in
-            Some (p0, p, true)
+            Some (p0, p, (repr expected_ty).level = generic_level || not !Clflags.principal)
         with Not_found -> None
       in
       let candidates =
@@ -1343,7 +1343,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
           let ty = instance expected_ty in
           end_def ();
           generalize_structure ty;
-          Some (p0, p, true), ty
+          Some (p0, p, (repr expected_ty).level = generic_level || not !Clflags.principal), ty
         with Not_found -> None, newvar ()
       in
       let type_label_pat (label_lid, label, sarg) k =
@@ -1482,11 +1482,9 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
       let cty, force = Typetexp.transl_simple_type_delayed !env sty in
       let ty = cty.ctyp_type in
       let ty, expected_ty' =
-        if separate then begin
-          end_def();
-          generalize_structure ty;
-          instance ty, ty
-        end else ty, ty
+        end_def();
+        generalize_structure ty;
+        instance ty, ty
       in
       unify_pat_types loc !env ty (instance expected_ty);
       type_pat sp expected_ty' (fun p ->
@@ -2478,7 +2476,7 @@ and type_expect_
           try
             let (p0, p,_) = extract_concrete_record env ty in
             (* XXX level may be wrong *)
-            Some (p0, p, ty.level = generic_level || not !Clflags.principal)
+            Some (p0, p, (repr ty).level = generic_level || not !Clflags.principal)
           with Not_found -> None
         in
         match get_path ty_expected with

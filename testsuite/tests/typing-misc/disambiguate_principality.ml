@@ -142,6 +142,16 @@ Line _, characters 4-15:
       ^^^^^^^^^^^
 Warning 12: this sub-pattern is unused.
 val j : M.r -> unit = <fun>
+|}, Principal{|
+Line _, characters 4-15:
+    | { lbl = _ } -> ()
+      ^^^^^^^^^^^
+Warning 18: this type-based record disambiguation is not principal.
+Line _, characters 4-15:
+    | { lbl = _ } -> ()
+      ^^^^^^^^^^^
+Warning 12: this sub-pattern is unused.
+val j : M.r -> unit = <fun>
 |}]
 
 let k x =
@@ -211,6 +221,16 @@ let p x =
   | { contents = { lbl = _ } } -> ()
 ;;
 [%%expect{|
+Line _, characters 4-30:
+    | { contents = { lbl = _ } } -> ()
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 12: this sub-pattern is unused.
+val p : M.r ref -> unit = <fun>
+|}, Principal{|
+Line _, characters 17-28:
+    | { contents = { lbl = _ } } -> ()
+                   ^^^^^^^^^^^
+Warning 18: this type-based record disambiguation is not principal.
 Line _, characters 4-30:
     | { contents = { lbl = _ } } -> ()
       ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -386,6 +406,12 @@ let j x =
 ;;
 [%%expect{|
 val j : M.t -> unit = <fun>
+|}, Principal{|
+Line _, characters 4-5:
+    | B -> ()
+      ^
+Warning 18: this type-based constructor disambiguation is not principal.
+val j : M.t -> unit = <fun>
 |}]
 
 let k x =
@@ -455,6 +481,16 @@ let p x =
   | { contents = A } -> ()
 ;;
 [%%expect{|
+Line _, characters 4-20:
+    | { contents = A } -> ()
+      ^^^^^^^^^^^^^^^^
+Warning 12: this sub-pattern is unused.
+val p : M.t ref -> unit = <fun>
+|}, Principal{|
+Line _, characters 17-18:
+    | { contents = A } -> ()
+                   ^
+Warning 18: this type-based constructor disambiguation is not principal.
 Line _, characters 4-20:
     | { contents = A } -> ()
       ^^^^^^^^^^^^^^^^
