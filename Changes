@@ -81,9 +81,10 @@ Working version
   when supported, for reproducible builds
   (Xavier Clerc, review by Jérémie Dimino)
 
-- GPR#1856: use `BUILD_PATH_PREFIX_MAP` when compiling primitives in order to
-  make builds reproducible if code contains uses of `__FILE__` or `__LOC__`
-  (Xavier Clerc, review by Gabriel Scherer)
+- GPR#1856, GPR#1869: use `BUILD_PATH_PREFIX_MAP` when compiling primitives
+  in order to make builds reproducible if code contains uses of
+  `__FILE__` or `__LOC__`
+  (Xavier Clerc, review by Gabriel Scherer and Sébastien Hinderer)
 
 ### Code generation and optimizations:
 
