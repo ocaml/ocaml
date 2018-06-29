@@ -79,8 +79,9 @@ let compile_file ?output ?(opt="") ?stable_name name =
       ("", "") in
   let debug_prefix_map =
     match stable_name with
-    | None -> ""
-    | Some stable -> Printf.sprintf " -fdebug-prefix-map=%s=%s" name stable in
+    | Some stable when Config.c_has_debug_prefix_map ->
+      Printf.sprintf " -fdebug-prefix-map=%s=%s" name stable
+    | Some _ | None -> "" in
   let exit =
     command
       (Printf.sprintf
