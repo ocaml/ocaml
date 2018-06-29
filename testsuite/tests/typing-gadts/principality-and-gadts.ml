@@ -42,13 +42,6 @@ let f (type a) t (x : a) =
 ;;
 [%%expect{|
 val f : 'a t -> 'a -> int = <fun>
-|}, Principal{|
-Line 5, characters 4-14:
-5 |   | BoolLit, b -> 1
-        ^^^^^^^^^^
-Error: This pattern matches values of type bool t * a
-       but a pattern was expected which matches values of type int t * a
-       Type bool is not compatible with type int
 |}]
 
 let f (type a) t (x : a) =
@@ -59,13 +52,6 @@ let f (type a) t (x : a) =
 ;;
 [%%expect{|
 val f : 'a t -> 'a -> int = <fun>
-|}, Principal{|
-Line 4, characters 4-13:
-4 |   | IntLit, n -> n+1
-        ^^^^^^^^^
-Error: This pattern matches values of type int t * a
-       but a pattern was expected which matches values of type a t * a
-       Type int is not compatible with type a
 |}]
 
 
@@ -82,13 +68,6 @@ Line 4, characters 4-11:
         ^^^^^^^
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
-       Type bool is not compatible with type int
-|}, Principal{|
-Line 4, characters 4-14:
-4 |   | BoolLit, b -> 1
-        ^^^^^^^^^^
-Error: This pattern matches values of type bool t * a
-       but a pattern was expected which matches values of type int t * a
        Type bool is not compatible with type int
 |}]
 
@@ -134,13 +113,6 @@ let f1 t1 =
   | MAB -> false;;
 [%%expect{|
 val f1 : unit ab M.t -> bool = <fun>
-|}, Principal{|
-Line 4, characters 4-7:
-4 |   | MAB -> false;;
-        ^^^
-Error: This pattern matches values of type unit M.mab M.t
-       but a pattern was expected which matches values of type unit ab M.t
-       Type unit M.mab is not compatible with type unit ab
 |}]
 
 let f2 (type x) t1 =
@@ -150,13 +122,6 @@ let f2 (type x) t1 =
   | MAB -> false;;
 [%%expect{|
 val f2 : 'x M.t -> bool = <fun>
-|}, Principal{|
-Line 5, characters 4-7:
-5 |   | MAB -> false;;
-        ^^^
-Error: This pattern matches values of type unit M.mab M.t
-       but a pattern was expected which matches values of type unit ab M.t
-       Type unit M.mab is not compatible with type unit ab
 |}]
 
 (* This should warn *)
@@ -167,13 +132,6 @@ let f3 t1 =
   | MAB -> false;;
 [%%expect{|
 val f3 : unit ab M.t -> bool = <fun>
-|}, Principal{|
-Line 5, characters 4-7:
-5 |   | MAB -> false;;
-        ^^^
-Error: This pattern matches values of type unit M.mab M.t
-       but a pattern was expected which matches values of type unit ab M.t
-       Type unit M.mab is not compatible with type unit ab
 |}]
 
 (* Example showing we need to warn when any part of the type is non generic. *)
@@ -194,12 +152,6 @@ let g2 (type x) (e : (x, _ option) eq) (x : x) : int option =
    let Refl = e in x;;
 [%%expect{|
 val g2 : ('x, int option) eq -> 'x -> int option = <fun>
-|}, Principal{|
-Line 3, characters 7-11:
-3 |    let Refl = e in x;;
-           ^^^^
-Error: This pattern matches values of type (x, $0 option) eq
-       The type constructor $0 would escape its scope
 |}]
 
 (* Issues with "principal level" *)
@@ -330,13 +282,6 @@ Line 3, characters 4-33:
 Error: This pattern matches values of type N.t foo
        but a pattern was expected which matches values of type 'a
        This instance of M.t is ambiguous:
-       it would escape the scope of its equation
-|}, Principal{|
-Line 3, characters 4-33:
-3 |   | { x = (x : N.t); eq = Refl3 } -> x
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type N.t foo
-       This instance of N.t is ambiguous:
        it would escape the scope of its equation
 |}]
 

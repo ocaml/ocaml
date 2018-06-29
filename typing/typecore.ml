@@ -1495,7 +1495,10 @@ and type_pat_aux
       let expected_type =
         try
           let (p0, p, _) = extract_concrete_variant !env expected_ty in
-            Some (p0, p, true)
+          let principal =
+            (repr expected_ty).level = generic_level || not !Clflags.principal
+          in
+            Some (p0, p, principal)
         with Not_found -> None
       in
       let constr =
@@ -1627,7 +1630,10 @@ and type_pat_aux
           let ty = instance expected_ty in
           end_def ();
           generalize_structure ty;
-          Some (p0, p, true), ty
+          let principal =
+            (repr expected_ty).level = generic_level || not !Clflags.principal
+          in
+          Some (p0, p, principal), ty
         with Not_found -> None, newvar ()
       in
       let type_label_pat (label_lid, label, sarg) k =
@@ -4568,7 +4574,7 @@ and type_cases
     get_current_level ()
   in
   let take_partial_instance =
-    if !Clflags.principal || erase_either
+    if erase_either
     then Some false else None
   in
   begin_def (); (* propagation of the argument *)
