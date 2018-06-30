@@ -46,10 +46,6 @@ let rhs_loc pos = pos
 
 let mkrhs rhs pos = mkloc rhs (rhs_loc pos)
 
-let mkrhs2 rhs startpos endpos =
-  let open Location in
-  mkloc rhs { loc_start = startpos; loc_end = endpos; loc_ghost = false }
-
 let reloc_pat ~loc x = { x with ppat_loc = loc };;
 let reloc_exp ~loc x = { x with pexp_loc = loc };;
 let reloc_typ ~loc x = { x with ptyp_loc = loc };;
@@ -498,8 +494,6 @@ let mk_directive ~loc name arg =
 #define _rhs_text(p)    (rhs_text $startpos($ ## p))
 #define _rhs_text_lazy(p)    (rhs_text_lazy $startpos($ ## p))
 
-#define _mkrhs2(s, p1, p2) (mkrhs2 (s) $startpos($ ## p1) $endpos($ ## p2))
-
 #define _mkexp (mkexp ~loc:$loc)
 #define _mkmty (mkmty ~loc:$loc)
 #define _mksig (mksig ~loc:$loc)
@@ -817,8 +811,8 @@ parse_pattern:
 /* Module expressions */
 
 functor_arg:
-    LPAREN RPAREN
-      { _mkrhs2("*", 1, 2), None }
+    mkrhs(LPAREN RPAREN {"*"})
+      { $1, None }
   | LPAREN mkrhs(functor_arg_name) COLON module_type RPAREN
       { $2, Some $4 }
 ;
@@ -1695,10 +1689,9 @@ simple_expr:
       { _mkexp(Pexp_field($1, $3)) }
   | mkrhs(mod_longident) DOT LPAREN seq_expr RPAREN
       { _mkexp(Pexp_open(Fresh, $1, $4)) }
-  | mkrhs(mod_longident) DOT LPAREN RPAREN
+  | mkrhs(mod_longident) DOT mkrhs(LPAREN RPAREN {Lident "()"})
       { _mkexp(Pexp_open(Fresh, $1,
-                        _mkexp(Pexp_construct(_mkrhs2((Lident "()"), 3, 4),
-                                              None)))) }
+                        _mkexp(Pexp_construct($3, None)))) }
   | mod_longident DOT only_loc(LPAREN) seq_expr only_loc(error)
       { unclosed "(" $3 ")" $5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
@@ -1781,10 +1774,9 @@ simple_expr:
       { let loc = make_loc $symbolstartpos $endpos in
         let list_exp = reloc_exp ~loc (mktailexp $6 (List.rev $4)) in
         _mkexp(Pexp_open(Fresh, $1, list_exp)) }
-  | mkrhs(mod_longident) DOT LBRACKET RBRACKET
+  | mkrhs(mod_longident) DOT mkrhs(LBRACKET RBRACKET {Lident "[]"})
       { _mkexp(Pexp_open(Fresh, $1,
-                        _mkexp(Pexp_construct(_mkrhs2((Lident "[]"), 3, 4),
-                                              None)))) }
+                        _mkexp(Pexp_construct($3, None)))) }
   | mod_longident DOT
     only_loc(LBRACKET) expr_semi_list opt_semi only_loc(error)
       { unclosed "[" $3 "]" $6 }
@@ -2089,14 +2081,12 @@ simple_pattern:
       { Ppat_type ($2) }
   | mkrhs(mod_longident) DOT simple_delimited_pattern
       { Ppat_open($1, $3) }
-  | mkrhs(mod_longident) DOT LBRACKET RBRACKET
+  | mkrhs(mod_longident) DOT mkrhs(LBRACKET RBRACKET {Lident "[]"})
     { let loc = make_loc $symbolstartpos $endpos in
-      let nil = _mkrhs2((Lident "[]"), 3, 4) in
-      Ppat_open($1, mkpat ~loc (Ppat_construct(nil, None))) }
-  | mkrhs(mod_longident) DOT LPAREN RPAREN
+      Ppat_open($1, mkpat ~loc (Ppat_construct($3, None))) }
+  | mkrhs(mod_longident) DOT mkrhs(LPAREN RPAREN {Lident "()"})
     { let loc = make_loc $symbolstartpos $endpos in
-      let nil = _mkrhs2((Lident "()"), 3, 4) in
-      Ppat_open($1, mkpat ~loc (Ppat_construct(nil, None))) }
+      Ppat_open($1, mkpat ~loc (Ppat_construct($3, None))) }
   | mkrhs(mod_longident) DOT LPAREN pattern RPAREN
       { Ppat_open ($1, $4) }
   | mod_longident DOT only_loc(LPAREN) pattern only_loc(error)
