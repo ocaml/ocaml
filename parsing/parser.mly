@@ -1481,7 +1481,8 @@ simple_expr:
       { mkexp(Pexp_open(Fresh, mkrhs $1 1, $4)) }
   | mod_longident DOT LPAREN RPAREN
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
-                        mkexp(Pexp_construct(mkrhs2 (Lident "()") 3 4, None)))) }
+                        mkexp(Pexp_construct(mkrhs2 (Lident "()") 3 4,
+                                                     None)))) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
@@ -1559,7 +1560,8 @@ simple_expr:
         mkexp(Pexp_open(Fresh, mkrhs $1 1, list_exp)) }
   | mod_longident DOT LBRACKET RBRACKET
       { mkexp(Pexp_open(Fresh, mkrhs $1 1,
-                        mkexp(Pexp_construct(mkrhs2 (Lident "[]") 3 4, None)))) }
+                        mkexp(Pexp_construct(mkrhs2 (Lident "[]") 3 4,
+                                             None)))) }
   | mod_longident DOT LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 3 "]" 6 }
   | PREFIXOP simple_expr
