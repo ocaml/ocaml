@@ -524,7 +524,6 @@ let mk_directive ~loc name arg =
 #define _ghloc (ghloc ~loc:$loc)
 #define _ghstr (ghstr ~loc:$loc)
 
-#define _mk_newtypes (mk_newtypes ~loc:$loc)
 #define _val_of_let_bindings (val_of_let_bindings ~loc:$loc)
 #define _expr_of_let_bindings (expr_of_let_bindings ~loc:$loc)
 #define _class_of_let_bindings (class_of_let_bindings ~loc:$loc)
@@ -1554,7 +1553,8 @@ expr:
       { let (l,o,p) = $3 in
         _mkexp_attrs (Pexp_fun(l, o, p, $4)) $2 }
   | FUN ext_attributes LPAREN TYPE lident_list RPAREN fun_def
-      { _mkexp_attrs (_mk_newtypes $5 $7).pexp_desc $2 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkexp_attrs ~loc (mk_newtypes ~loc $5 $7).pexp_desc $2 }
   | MATCH ext_attributes seq_expr WITH opt_bar match_cases
       { _mkexp_attrs (Pexp_match($3, List.rev $6)) $2 }
   | TRY ext_attributes seq_expr WITH opt_bar match_cases
@@ -1921,7 +1921,8 @@ strict_binding:
       { let loc = make_loc $symbolstartpos $endpos in
         let (l, o, p) = $1 in ghexp ~loc (Pexp_fun(l, o, p, $2)) }
   | LPAREN TYPE lident_list RPAREN fun_binding
-      { _mk_newtypes $3 $5 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mk_newtypes ~loc $3 $5 }
 ;
 match_cases:
     match_case { [$1] }
@@ -1948,7 +1949,8 @@ fun_def:
        ghexp ~loc (Pexp_fun(l, o, p, $2))
       }
   | LPAREN TYPE lident_list RPAREN fun_def
-      { _mk_newtypes $3 $5 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mk_newtypes ~loc $3 $5 }
 ;
 expr_comma_list:
     expr_comma_list COMMA expr                  { $3 :: $1 }
