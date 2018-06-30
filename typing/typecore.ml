@@ -1326,7 +1326,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         let (_, ty_arg, ty_res) = instance_label false label in
         begin try
           unify_pat_types loc !env ty_res record_ty
-        with Unify trace ->
+        with Error(_loc, _env, Pattern_type_clash(trace)) ->
           raise(Error(label_lid.loc, !env,
                       Label_mismatch(label_lid.txt, trace)))
         end;
