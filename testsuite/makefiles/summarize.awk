@@ -169,7 +169,7 @@ END {
             if (nresults == passed + skipped + failed + unexped){
                 printf ("\n");
             }else{
-                printf (" (totals don't add up??)");
+                printf (" (totals don't add up??)\n");
             }
             if (reran != 0){
                 printf("  %3d test dir re-runs\n", reran);
