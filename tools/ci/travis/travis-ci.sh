@@ -186,7 +186,7 @@ CheckTypoTree () {
   do
     if not_pruned $path ; then
       echo "Checking $1: $path"
-      if ! tools/check-typo $path ; then
+      if ! tools/check-typo ./$path ; then
         touch check-typo-failed
       fi
     else
