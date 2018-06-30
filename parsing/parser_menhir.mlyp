@@ -503,7 +503,6 @@ let mk_directive ~loc name arg =
 #define _mkclass (mkclass ~loc:$loc)
 
 #define _mkexp_attrs (mkexp_attrs ~loc:$loc)
-#define _mkexp_constraint (mkexp_constraint ~loc:$loc)
 #define _mkinfix (mkinfix ~loc:$loc)
 
 /* Tokens */
@@ -1281,9 +1280,9 @@ value:
   | override_flag attributes mutable_flag mkrhs(label) EQUAL seq_expr
       { ($4, $3, Cfk_concrete ($1, $6)), $2 }
   | override_flag attributes mutable_flag mkrhs(label) type_constraint EQUAL seq_expr
-      {
-       let e = _mkexp_constraint $7 $5 in
-       ($4, $3, Cfk_concrete ($1, e)), $2
+      { let loc = make_loc $symbolstartpos $endpos in
+        let e = mkexp_constraint ~loc $7 $5 in
+        ($4, $3, Cfk_concrete ($1, e)), $2
       }
 ;
 method_:
@@ -1676,7 +1675,8 @@ simple_expr:
   | only_loc(BEGIN) ext_attributes seq_expr only_loc(error)
       { unclosed "begin" $1 "end" $4 }
   | LPAREN seq_expr type_constraint RPAREN
-      { _mkexp_constraint $2 $3 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkexp_constraint ~loc $2 $3 }
   | simple_expr DOT mkrhs(label_longident)
       { _mkexp(Pexp_field($1, $3)) }
   | mkrhs(mod_longident) DOT LPAREN seq_expr RPAREN
@@ -1857,9 +1857,10 @@ let_binding_body:
           | _ -> assert false
         in
         let typ = ghtyp ~loc:t.ptyp_loc (Ptyp_poly([],t)) in
+        let loc = make_loc $symbolstartpos $endpos in
         let patloc = make_loc $startpos($1) $endpos($2) in
         (ghpat ~loc:patloc (Ppat_constraint(v, typ)),
-         _mkexp_constraint $4 $2) }
+         mkexp_constraint ~loc $4 $2) }
   | let_ident COLON typevar_list DOT core_type EQUAL seq_expr
       { let typloc = make_loc $startpos($3) $endpos($5) in
         let patloc = make_loc $startpos($1) $endpos($5) in
@@ -1895,7 +1896,8 @@ fun_binding:
     strict_binding
       { $1 }
   | type_constraint EQUAL seq_expr
-      { _mkexp_constraint $3 $1 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkexp_constraint ~loc $3 $1 }
 ;
 strict_binding:
     EQUAL seq_expr
