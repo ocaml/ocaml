@@ -504,7 +504,6 @@ let mk_directive ~loc name arg =
 
 #define _mkexp_attrs (mkexp_attrs ~loc:$loc)
 #define _mkexp_constraint (mkexp_constraint ~loc:$loc)
-#define _mkoperator(s, p) (mkoperator s $locof(p))
 #define _mkuplus (mkuplus ~loc:$loc ~oploc:$locof(1))
 #define _mkuminus (mkuminus ~loc:$loc ~oploc:$locof(1))
 #define _mkinfix (mkinfix ~loc:$loc ~oploc:$locof(2))
@@ -736,6 +735,11 @@ The precedences must be listed from low to high.
          and $symbolpos do not coincide.  *)
       mkrhs $1 (make_loc $startpos $endpos) }
 ;
+
+%inline mkoperator(symb): symb
+   { (* see the mkrhs comment above
+        for the choice of $startpos over $symbolstartpos *)
+     mkoperator $1 (make_loc $startpos $endpos) }
 
 %inline only_loc(symb): symb { make_loc $startpos $endpos }
 %inline with_loc(symb): symb { ($1, make_loc $startpos $endpos) }
@@ -1766,10 +1770,10 @@ simple_expr:
   | mod_longident DOT
     only_loc(LBRACKET) expr_semi_list opt_semi only_loc(error)
       { unclosed "[" $3 "]" $6 }
-  | PREFIXOP simple_expr
-      { _mkexp(Pexp_apply(_mkoperator($1, 1), [Nolabel,$2])) }
-  | BANG simple_expr
-      { _mkexp(Pexp_apply(_mkoperator("!", 1), [Nolabel,$2])) }
+  | mkoperator(PREFIXOP) simple_expr
+      { _mkexp(Pexp_apply($1, [Nolabel,$2])) }
+  | mkoperator(BANG {"!"}) simple_expr
+      { _mkexp(Pexp_apply($1, [Nolabel,$2])) }
   | NEW ext_attributes mkrhs(class_longident)
       { _mkexp_attrs (Pexp_new($3)) $2 }
   | LBRACELESS field_expr_list GREATERRBRACE
