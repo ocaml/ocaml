@@ -504,8 +504,6 @@ let mk_directive ~loc name arg =
 
 #define _mkexp_attrs (mkexp_attrs ~loc:$loc)
 #define _mkexp_constraint (mkexp_constraint ~loc:$loc)
-#define _mkuplus (mkuplus ~loc:$loc ~oploc:$locof(1))
-#define _mkuminus (mkuminus ~loc:$loc ~oploc:$locof(1))
 #define _mkinfix (mkinfix ~loc:$loc)
 
 /* Tokens */
@@ -1603,10 +1601,14 @@ expr:
       { _mkinfix $1 $2 $3 }
   | expr op(COLONEQUAL {":="}) expr
       { _mkinfix $1 $2 $3 }
-  | subtractive expr %prec prec_unary_minus
-      { _mkuminus $1 $2 }
-  | additive expr %prec prec_unary_plus
-      { _mkuplus $1 $2 }
+  | with_loc(subtractive) expr %prec prec_unary_minus
+      { let op, oploc = $1 in
+        let loc = make_loc $symbolstartpos $endpos in
+        mkuminus ~loc ~oploc op $2 }
+  | with_loc(additive) expr %prec prec_unary_plus
+      { let op, oploc = $1 in
+        let loc = make_loc $symbolstartpos $endpos in
+        mkuplus ~loc ~oploc op $2 }
   | simple_expr DOT mkrhs(label_longident) LESSMINUS expr
       { _mkexp(Pexp_setfield($1, $3, $5)) }
   | simple_expr DOT LPAREN seq_expr RPAREN LESSMINUS expr
