@@ -509,11 +509,6 @@ let mk_directive ~loc name arg =
 #define _mkuminus (mkuminus ~loc:$loc ~oploc:$locof(1))
 #define _mkinfix (mkinfix ~loc:$loc ~oploc:$locof(2))
 
-#define _ghpat (ghpat ~loc:$loc)
-#define _ghtyp (ghtyp ~loc:$loc)
-#define _ghloc (ghloc ~loc:$loc)
-#define _ghstr (ghstr ~loc:$loc)
-
 /* Tokens */
 
 %token AMPERAMPER
@@ -1226,7 +1221,8 @@ class_self_pattern:
       { let loc = make_loc $symbolstartpos $endpos in
         mkpat ~loc (Ppat_constraint($2, $4)) }
   | /* empty */
-      { _ghpat(Ppat_any) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        ghpat ~loc Ppat_any }
 ;
 class_fields:
     /* empty */
