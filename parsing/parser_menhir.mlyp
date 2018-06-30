@@ -514,12 +514,6 @@ let mk_directive ~loc name arg =
 #define _ghloc (ghloc ~loc:$loc)
 #define _ghstr (ghstr ~loc:$loc)
 
-#define _text_str(p) (text_str $startpos($ ## p))
-#define _text_sig(p) (text_sig $startpos($ ## p))
-#define _text_cstr(p) (text_cstr $startpos($ ## p))
-#define _text_csig(p) (text_csig $startpos($ ## p))
-#define _text_def(p) (text_def $startpos($ ## p))
-
 /* Tokens */
 
 %token AMPERAMPER
@@ -767,13 +761,13 @@ toplevel_phrase:
 top_structure: extra_str(top_structure_nodoc) { $1 }
 top_structure_nodoc:
     seq_expr post_item_attributes
-      { _text_str(1) @ [mkstrexp $1 $2] }
+      { text_str $startpos($1) @ [mkstrexp $1 $2] }
   | top_structure_tail_nodoc
       { $1 }
 ;
 top_structure_tail_nodoc:
     /* empty */                              { [] }
-  | structure_item top_structure_tail_nodoc  { _text_str(1) @ $1 :: $2 }
+  | structure_item top_structure_tail_nodoc  { text_str $startpos($1) @ $1 :: $2 }
 ;
 use_file:
     extra_def(use_file_body)             { $1 }
@@ -781,7 +775,7 @@ use_file:
 use_file_body:
     use_file_tail                        { $1 }
   | seq_expr post_item_attributes use_file_tail
-      { _text_def(1) @ Ptop_def[mkstrexp $1 $2] :: $3 }
+      { text_def $startpos($1) @ Ptop_def[mkstrexp $1 $2] :: $3 }
 ;
 use_file_tail:
     /* empty */
@@ -789,10 +783,10 @@ use_file_tail:
   | SEMISEMI use_file_body
       { $2 }
   | structure_item use_file_tail
-      { _text_def(1) @ Ptop_def[$1] :: $2 }
+      { text_def $startpos($1) @ Ptop_def[$1] :: $2 }
   | toplevel_directive use_file_tail
       { mark_rhs_docs $startpos($1) $endpos($1);
-        _text_def(1) @ $1 :: $2 }
+        text_def $startpos($1) @ $1 :: $2 }
 ;
 parse_core_type:
     core_type EOF { $1 }
@@ -893,13 +887,13 @@ structure: extra_str(structure_nodoc) { $1 }
 structure_nodoc:
     seq_expr post_item_attributes structure_tail_nodoc
       { mark_rhs_docs $startpos($1) $endpos($2);
-        _text_str(1) @ mkstrexp $1 $2 :: $3 }
+        text_str $startpos($1) @ mkstrexp $1 $2 :: $3 }
   | structure_tail_nodoc { $1 }
 ;
 structure_tail_nodoc:
     /* empty */                         { [] }
-  | SEMISEMI structure_nodoc            { _text_str(1) @ $2 }
-  | structure_item structure_tail_nodoc { _text_str(1) @ $1 :: $2 }
+  | SEMISEMI structure_nodoc            { text_str $startpos($1) @ $2 }
+  | structure_item structure_tail_nodoc { text_str $startpos($1) @ $1 :: $2 }
 ;
 
 structure_item:
@@ -1027,8 +1021,8 @@ module_type:
 signature: extra_sig(signature_nodoc) { $1 }
 signature_nodoc:
     /* empty */                    { [] }
-  | SEMISEMI signature_nodoc       { _text_sig(1) @ $2 }
-  | signature_item signature_nodoc { _text_sig(1) @ $1 :: $2 }
+  | SEMISEMI signature_nodoc       { text_sig $startpos($1) @ $2 }
+  | signature_item signature_nodoc { text_sig $startpos($1) @ $1 :: $2 }
 ;
 signature_item:
   | signature_item_with_ext
@@ -1238,7 +1232,7 @@ class_fields:
     /* empty */
       { [] }
   | class_fields class_field
-      { $2 :: (List.rev (_text_cstr(2))) @ $1 }
+      { $2 :: List.rev (text_cstr $startpos($2)) @ $1 }
 ;
 class_field:
   | INHERIT override_flag attributes class_expr parent_binder
@@ -1371,8 +1365,8 @@ class_self_type:
         mktyp ~loc Ptyp_any }
 ;
 class_sig_fields:
-    /* empty */                     { [] }
-| class_sig_fields class_sig_field  { $2 :: (List.rev (_text_csig(2))) @ $1 }
+    /* empty */                                 { [] }
+| class_sig_fields class_sig_field     { $2 :: List.rev (text_csig $startpos($2)) @ $1 }
 ;
 class_sig_field:
     INHERIT attributes class_signature post_item_attributes
