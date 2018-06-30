@@ -174,14 +174,6 @@ END {
                 }
             }
             printf("\n");
-            if (failed != 0){
-                printf("\nList of failed tests:\n");
-                for (i=0; i < failed; i++) printf("    %s\n", fail[i]);
-            }
-            if (unexped != 0){
-                printf("\nList of unexpected errors:\n");
-                for (i=0; i < unexped; i++) printf("    %s\n", unexp[i]);
-            }
             if (skipped != 0){
                 printf("\nList of skipped tests:\n");
                 for (i=0; i < skipidx; i++) printf("    %s\n", skips[i]);
@@ -189,6 +181,14 @@ END {
             if (empty != 0){
                 printf("\nList of directories returning no results:\n");
                 for (i=0; i < empty; i++) printf("    %s\n", blanks[i]);
+            }
+            if (failed != 0){
+                printf("\nList of failed tests:\n");
+                for (i=0; i < failed; i++) printf("    %s\n", fail[i]);
+            }
+            if (unexped != 0){
+                printf("\nList of unexpected errors:\n");
+                for (i=0; i < unexped; i++) printf("    %s\n", unexp[i]);
             }
             printf("\n");
             printf("Summary:\n");
