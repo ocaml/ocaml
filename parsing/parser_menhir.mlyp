@@ -498,9 +498,6 @@ let mk_directive ~loc name arg =
 #define _rhs_text(p)    (rhs_text $startpos($ ## p))
 #define _rhs_text_lazy(p)    (rhs_text_lazy $startpos($ ## p))
 
-#define _rhs_pre_extra_text(p) (rhs_pre_extra_text $startpos($ ## p))
-#define _rhs_post_extra_text(p) (rhs_post_extra_text $endpos($ ## p))
-
 #define _rhs_docs(p1, p2) (rhs_docs $startpos($ ## p1) $endpos($ ## p2))
 
 #define _mark_rhs_docs(p1, p2) (mark_rhs_docs $startpos($ ## p1) $endpos($ ## p2))
