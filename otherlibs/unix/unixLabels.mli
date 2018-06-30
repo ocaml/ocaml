@@ -502,7 +502,8 @@ val link : ?follow:bool -> src:string -> dst:string -> unit
    [link(2)] function is used whose behaviour is OS-dependent, but more widely
    available.
 
-   @raise ENOSYS On {e Unix} if [~follow:_] is requested, but linkat is unavailable.
+   @raise ENOSYS On {e Unix} if [~follow:_] is requested, but linkat is
+                 unavailable.
    @raise ENOSYS On {e Windows} if [~follow:false] is requested. *)
 
 
