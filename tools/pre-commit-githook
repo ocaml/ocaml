@@ -45,6 +45,24 @@ if ! git diff-index --check --cached $against -- $FILES ; then
   exit 1
 fi
 
+# Test to see if any part of the directory name has been marked prune
+not_pruned () {
+  DIR=$(dirname "$1")
+  if [ "$DIR" = "." ] ; then
+    return 0
+  else
+    case ",$(git check-attr ocaml-typo "$DIR" | sed -e 's/.*: //')," in
+      ,prune,)
+      return 1
+      ;;
+      *)
+
+      not_pruned $DIR
+      return $?
+    esac
+  fi
+}
+
 # Now run check-typo over all the files in the index
 ERRORS=0
 export OCAML_CT_PREFIX=:
@@ -52,7 +70,7 @@ export OCAML_CT_CAT="git cat-file --textconv"
 export OCAML_CT_CA_FLAG=--cached
 git diff --diff-filter=d --staged --name-only | (while IFS= read -r path
 do
-  if ! tools/check-typo $path ; then
+  if not_pruned $path && ! tools/check-typo $path ; then
     ERRORS=1
   fi
 done; exit $ERRORS)

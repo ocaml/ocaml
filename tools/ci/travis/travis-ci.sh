@@ -157,6 +157,24 @@ EOF
     testsuite > /dev/null && exit 1 || echo pass
 }
 
+# Test to see if any part of the directory name has been marked prune
+not_pruned () {
+  DIR=$(dirname "$1")
+  if [ "$DIR" = "." ] ; then
+    return 0
+  else
+    case ",$(git check-attr ocaml-typo "$DIR" | sed -e 's/.*: //')," in
+      ,prune,)
+      return 1
+      ;;
+      *)
+
+      not_pruned $DIR
+      return $?
+    esac
+  fi
+}
+
 CheckTypoTree () {
   export OCAML_CT_HEAD=$1
   export OCAML_CT_LS_FILES="git diff-tree --no-commit-id --name-only -r $2 --"
@@ -166,9 +184,13 @@ CheckTypoTree () {
   git diff-tree --diff-filter=d --no-commit-id --name-only -r $1 \
     | (while IFS= read -r path
   do
-    echo "Checking $1: $path"
-    if ! tools/check-typo $path ; then
-      touch check-typo-failed
+    if not_pruned $path ; then
+      echo "Checking $1: $path"
+      if ! tools/check-typo $path ; then
+        touch check-typo-failed
+      fi
+    else
+      echo "NOT checking $1: $path (ocaml-typo=prune)"
     fi
   done)
   rm -f tmp-index
