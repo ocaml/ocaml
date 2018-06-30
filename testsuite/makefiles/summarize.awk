@@ -199,11 +199,10 @@ END {
                    ignored);
             printf("  %3d unexpected errors\n", unexped);
             printf("  %3d tests considered", nresults);
-            if (nresults == passed + skipped + ignored + failed + unexped){
-                printf ("\n");
-            }else{
-                printf (" (totals don't add up??)\n");
+            if (nresults != passed + skipped + ignored + failed + unexped){
+                printf (" (totals don't add up??)");
             }
+            printf ("\n");
             if (reran != 0){
                 printf("  %3d test dir re-runs\n", reran);
             }
