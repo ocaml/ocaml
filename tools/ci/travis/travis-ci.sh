@@ -163,7 +163,8 @@ CheckTypoTree () {
   export OCAML_CT_CAT="git cat-file --textconv"
   export OCAML_CT_PREFIX="$1:"
   GIT_INDEX_FILE=tmp-index git read-tree --reset -i $1
-  git diff-tree --no-commit-id --name-only -r $1 | (while IFS= read -r path
+  git diff-tree --diff-filter=d --no-commit-id --name-only -r $1 \
+    | (while IFS= read -r path
   do
     echo "Checking $1: $path"
     if ! tools/check-typo $path ; then

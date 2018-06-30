@@ -50,7 +50,7 @@ ERRORS=0
 export OCAML_CT_PREFIX=:
 export OCAML_CT_CAT="git cat-file --textconv"
 export OCAML_CT_CA_FLAG=--cached
-git diff --staged --name-only | (while IFS= read -r path
+git diff --diff-filter=d --staged --name-only | (while IFS= read -r path
 do
   if ! tools/check-typo $path ; then
     ERRORS=1
