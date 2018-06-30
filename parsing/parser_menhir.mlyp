@@ -524,10 +524,6 @@ let mk_directive ~loc name arg =
 #define _ghloc (ghloc ~loc:$loc)
 #define _ghstr (ghstr ~loc:$loc)
 
-#define _val_of_let_bindings (val_of_let_bindings ~loc:$loc)
-#define _expr_of_let_bindings (expr_of_let_bindings ~loc:$loc)
-#define _class_of_let_bindings (class_of_let_bindings ~loc:$loc)
-
 #define _text_str(p) (text_str $startpos($ ## p))
 #define _text_sig(p) (text_sig $startpos($ ## p))
 #define _text_cstr(p) (text_cstr $startpos($ ## p))
@@ -918,7 +914,8 @@ structure_tail_nodoc:
 
 structure_item:
     let_bindings
-      { _val_of_let_bindings $1 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        val_of_let_bindings ~loc $1 }
   | structure_item_with_ext
       { let item, ext = $1 in
         let loc = make_loc $startpos $endpos in
@@ -1205,7 +1202,8 @@ class_expr:
   | class_simple_expr simple_labeled_expr_list
       { _mkclass(Pcl_apply($1, List.rev $2)) }
   | let_bindings IN class_expr
-      { _class_of_let_bindings $1 $3 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        class_of_let_bindings ~loc $1 $3 }
   | LET OPEN override_flag attributes mkrhs(mod_longident) IN class_expr
       { let loc = make_loc $symbolstartpos $endpos in
         wrap_class_attrs ~loc (_mkclass(Pcl_open($3, $5, $7))) $4 }
@@ -1540,7 +1538,8 @@ expr:
   | simple_expr simple_labeled_expr_list
       { _mkexp(Pexp_apply($1, List.rev $2)) }
   | let_bindings IN seq_expr
-      { _expr_of_let_bindings $1 $3 }
+      { let loc = make_loc $symbolstartpos $endpos in
+        expr_of_let_bindings ~loc $1 $3 }
   | LET MODULE ext_attributes mkrhs(UIDENT) module_binding_body IN seq_expr
       { _mkexp_attrs (Pexp_letmodule($4, $5, $7)) $3 }
   | LET EXCEPTION ext_attributes let_exception_declaration IN seq_expr
