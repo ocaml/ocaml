@@ -490,10 +490,6 @@ let mk_directive ~loc name arg =
 #define $loc (make_loc $symbolstartpos $endpos)
 #define $locof(p) (make_loc $startpos($ ## p) $endpos($ ## p))
 
-#define _rhs_info(p)    (rhs_info $endpos($ ## p))
-#define _rhs_text(p)    (rhs_text $startpos($ ## p))
-#define _rhs_text_lazy(p)    (rhs_text_lazy $startpos($ ## p))
-
 #define _mkexp (mkexp ~loc:$loc)
 #define _mkmty (mkmty ~loc:$loc)
 #define _mksig (mksig ~loc:$loc)
@@ -2379,7 +2375,7 @@ label_declaration_semi:
     mutable_flag mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
       { let loc = make_loc $symbolstartpos $endpos in
         let info =
-          match _rhs_info(5) with
+          match rhs_info $endpos($5) with
           | Some _ as info_before_semi -> info_before_semi
           | None -> symbol_info $endpos
        in
@@ -2679,7 +2675,7 @@ field_semi:
   mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
     { let loc = make_loc $symbolstartpos $endpos in
       let info =
-        match _rhs_info(4) with
+        match rhs_info $endpos($4) with
         | Some _ as info_before_semi -> info_before_semi
         | None -> symbol_info $endpos
       in
