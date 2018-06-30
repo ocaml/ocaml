@@ -226,3 +226,11 @@ TSAN_OPTIONS="die_after_fork=0" $run_testsuite
 # # Build the system (bytecode only) and test
 # make $jobs world
 # $run_testsuite
+
+#########################################################################
+
+# Ensure that the repo still passes the check-typo script
+if [ ! -x tools/check-typo ] ; then
+  error "tools/check-typo does not appear to be executable?"
+fi
+tools/check-typo
