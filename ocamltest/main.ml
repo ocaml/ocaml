@@ -71,7 +71,7 @@ let rec run_test log common_prefix path behavior = function
   Node (testenvspec, test, env_modifiers, subtrees) ->
   Printf.printf "%s %s (%s) => %!" common_prefix path test.Tests.test_name;
   let (msg, b) = match behavior with
-    | Skip_all_tests -> "skipped", Skip_all_tests
+    | Skip_all_tests -> "n/a", Skip_all_tests
     | Run env ->
       let testenv0 = interprete_environment_statements env testenvspec in
       let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in

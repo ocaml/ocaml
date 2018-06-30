@@ -41,6 +41,14 @@ function record_skip() {
     clear();
 }
 
+function record_na() {
+    check();
+    if (!(key in RESULTS)) ++nresults;
+    RESULTS[key] = "n";
+    if (curdir in SKIPPED) SKIPPED[curdir] = 1;
+    clear();
+}
+
 # The output cares only if the test passes at least once so if a test passes,
 # but then fails in a re-run triggered by a different test, ignore it.
 function record_fail() {
@@ -105,6 +113,10 @@ function record_unexp() {
     record_skip();
 }
 
+/=> n\/a/ {
+    record_na();
+}
+
 /=> failed/ {
     record_fail();
 }
@@ -157,6 +169,8 @@ END {
                     }else{
                         skips[skipidx++] = key;
                     }
+                }else if (r == "n"){
+                    ++ ignored;
                 }
             }
             printf("\n");
@@ -164,9 +178,11 @@ END {
             printf("  %3d tests passed\n", passed);
             printf("  %3d tests skipped\n", skipped);
             printf("  %3d tests failed\n", failed);
+            printf("  %3d tests not started (parent test skipped or failed)\n",
+                   ignored);
             printf("  %3d unexpected errors\n", unexped);
             printf("  %3d tests considered", nresults);
-            if (nresults == passed + skipped + failed + unexped){
+            if (nresults == passed + skipped + ignored + failed + unexped){
                 printf ("\n");
             }else{
                 printf (" (totals don't add up??)\n");
