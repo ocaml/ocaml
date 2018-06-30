@@ -793,7 +793,8 @@ method emit_expr (env:environment) exp =
         List.map (fun (nfail, ids, e2) ->
             let rs =
               List.map
-                (fun (id, typ) -> let r = self#regs_for typ in name_regs id r; r)
+                (fun (id, typ) ->
+                  let r = self#regs_for typ in name_regs id r; r)
                 ids in
             (nfail, ids, rs, e2))
           handlers
@@ -1124,7 +1125,8 @@ method emit_tail (env:environment) exp =
         List.map (fun (nfail, ids, e2) ->
             let rs =
               List.map
-                (fun (id, typ) -> let r = self#regs_for typ in name_regs id r; r)
+                (fun (id, typ) ->
+                  let r = self#regs_for typ in name_regs id r; r)
                 ids in
             (nfail, ids, rs, e2))
           handlers in
