@@ -498,10 +498,6 @@ let mk_directive ~loc name arg =
 #define _rhs_text(p)    (rhs_text $startpos($ ## p))
 #define _rhs_text_lazy(p)    (rhs_text_lazy $startpos($ ## p))
 
-#define _rhs_docs(p1, p2) (rhs_docs $startpos($ ## p1) $endpos($ ## p2))
-
-#define _mark_rhs_docs(p1, p2) (mark_rhs_docs $startpos($ ## p1) $endpos($ ## p2))
-
 #define _mkrhs2(s, p1, p2) (mkrhs2 (s) $startpos($ ## p1) $endpos($ ## p2))
 
 #define _mkexp (mkexp ~loc:$loc)
@@ -810,7 +806,7 @@ use_file_tail:
   | structure_item use_file_tail
       { _text_def(1) @ Ptop_def[$1] :: $2 }
   | toplevel_directive use_file_tail
-      { _mark_rhs_docs(1, 1);
+      { mark_rhs_docs $startpos($1) $endpos($1);
         _text_def(1) @ $1 :: $2 }
 ;
 parse_core_type:
@@ -911,7 +907,7 @@ paren_module_expr:
 structure: extra_str(structure_nodoc) { $1 }
 structure_nodoc:
     seq_expr post_item_attributes structure_tail_nodoc
-      { _mark_rhs_docs(1, 2);
+      { mark_rhs_docs $startpos($1) $endpos($2);
         _text_str(1) @ mkstrexp $1 $2 :: $3 }
   | structure_tail_nodoc { $1 }
 ;
