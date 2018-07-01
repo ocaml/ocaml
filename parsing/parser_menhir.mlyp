@@ -750,9 +750,11 @@ The precedences must be listed from low to high.
 implementation:
     structure EOF                        { $1 }
 ;
+
 interface:
     signature EOF                        { $1 }
 ;
+
 toplevel_phrase:
     top_structure SEMISEMI               { Ptop_def ($1) }
   | toplevel_directive SEMISEMI          { $1 }
@@ -769,8 +771,16 @@ top_structure_tail_nodoc:
     /* empty */                              { [] }
   | structure_item top_structure_tail_nodoc  { text_str $startpos($1) @ $1 :: $2 }
 ;
+
 use_file:
     extra_def(use_file_body)             { $1 }
+/* TODO Menhir reports:
+   > Warning: production use_file_tail -> is never reduced.
+
+   This warning can be fixed by adding an EOF token
+   at the end of the use_file production. Is this
+   the right move?
+*/
 ;
 use_file_body:
     use_file_tail                        { $1 }
@@ -788,12 +798,15 @@ use_file_tail:
       { mark_rhs_docs $startpos($1) $endpos($1);
         text_def $startpos($1) @ $1 :: $2 }
 ;
+
 parse_core_type:
     core_type EOF { $1 }
 ;
+
 parse_expression:
     seq_expr EOF { $1 }
 ;
+
 parse_pattern:
     pattern EOF { $1 }
 ;
