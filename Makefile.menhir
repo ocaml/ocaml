@@ -51,10 +51,4 @@ partialclean-menhir::
 	  $(addprefix parsing/parser_menhir.,ml mli) \
 	  $(addprefix parsing/menhirLib.,ml mli)
 
-parsing/parser_menhir.mly: parsing/parser_menhir.mlyp
-	gcc -E -x c -P parsing/parser_menhir.mlyp > parsing/parser_menhir.mly
-
-partialclean-menhir::
-	rm -f parsing/parser_menhir.mly
-
 clean-menhir: partialclean-menhir
