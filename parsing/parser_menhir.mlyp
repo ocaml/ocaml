@@ -489,9 +489,6 @@ let mk_directive ~loc name arg =
 #define $loc (make_loc $symbolstartpos $endpos)
 #define $locof(p) (make_loc $startpos($ ## p) $endpos($ ## p))
 
-#define _mksig (mksig ~loc:$loc)
-#define _mkmod (mkmod ~loc:$loc)
-#define _mkstr (mkstr ~loc:$loc)
 #define _mkcty (mkcty ~loc:$loc)
 #define _mkctf (mkctf ~loc:$loc)
 #define _mkcf  (mkcf  ~loc:$loc)
@@ -732,6 +729,19 @@ The precedences must be listed from low to high.
         for the choice of $startpos over $symbolstartpos *)
      mkoperator $1 (make_loc $startpos $endpos) }
 
+%inline mkexp(symb): symb
+    { let loc = make_loc $symbolstartpos $endpos in
+      mkexp ~loc $1 }
+%inline mkmod(symb): symb
+    { let loc = make_loc $symbolstartpos $endpos in
+      mkmod ~loc $1 }
+%inline mkcty(symb): symb
+    { let loc = make_loc $symbolstartpos $endpos in
+      mkcty ~loc $1 }
+%inline mkclass(symb): symb
+    { let loc = make_loc $symbolstartpos $endpos in
+      mkclass ~loc $1 }
+
 %inline only_loc(symb): symb { make_loc $startpos $endpos }
 %inline with_loc(symb): symb { ($1, make_loc $startpos $endpos) }
 
@@ -810,34 +820,42 @@ functor_args:
 ;
 
 module_expr:
-    mkrhs(mod_longident)
-      { _mkmod(Pmod_ident $1) }
   | STRUCT attributes structure END
-      { _mkmod ~attrs:$2 (Pmod_structure($3)) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkmod ~loc ~attrs:$2 (Pmod_structure($3)) }
   | only_loc(STRUCT) attributes structure only_loc(error)
       { unclosed "struct" $1 "end" $4 }
   | FUNCTOR attributes functor_args MINUSGREATER module_expr
       { let loc = make_loc $symbolstartpos $endpos in
         let modexp =
           List.fold_left
-            (fun acc (n, t) -> _mkmod(Pmod_functor(n, t, acc)))
+            (fun acc (n, t) -> mkmod ~loc (Pmod_functor(n, t, acc)))
             $5 $3
         in wrap_mod_attrs ~loc modexp $2 }
-  | module_expr paren_module_expr
-      { _mkmod(Pmod_apply($1, $2)) }
-  | module_expr LPAREN RPAREN
-      { _mkmod(Pmod_apply($1, _mkmod(Pmod_structure []))) }
+  | mkmod(module_expr2)
+      { $1 }
   | paren_module_expr
       { $1 }
   | module_expr attribute
       { Mod.attr $1 $2 }
+;
+%inline module_expr2:
+  | mkrhs(mod_longident)
+    { Pmod_ident $1 }
+  | module_expr paren_module_expr
+    { Pmod_apply($1, $2) }
+  | module_expr with_loc(LPAREN RPAREN { Pmod_structure [] })
+    { let loc = make_loc $symbolstartpos $endpos in
+      (* TODO review mkmod location *)
+      Pmod_apply($1, mkmod ~loc (fst $2)) }
   | extension
-      { _mkmod(Pmod_extension $1) }
+    { Pmod_extension $1 }
 ;
 
 paren_module_expr:
     LPAREN module_expr COLON module_type RPAREN
-      { _mkmod(Pmod_constraint($2, $4)) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkmod ~loc (Pmod_constraint($2, $4)) }
   | only_loc(LPAREN) module_expr COLON module_type only_loc(error)
       { unclosed "(" $1 ")" $5 }
   | LPAREN module_expr RPAREN
@@ -845,7 +863,8 @@ paren_module_expr:
   | only_loc(LPAREN) module_expr only_loc(error)
       { unclosed "(" $1 ")" $3 }
   | LPAREN VAL attributes expr RPAREN
-      { _mkmod ~attrs:$3 (Pmod_unpack $4)}
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkmod ~loc ~attrs:$3 (Pmod_unpack $4)}
   | LPAREN VAL attributes expr COLON package_type RPAREN
       { let loc = make_loc $symbolstartpos $endpos in
         let constr_loc = make_loc $startpos($4) $endpos($6) in
@@ -940,9 +959,11 @@ module_binding_body:
     EQUAL module_expr
       { $2 }
   | COLON module_type EQUAL module_expr
-      { _mkmod(Pmod_constraint($4, $2)) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkmod ~loc (Pmod_constraint($4, $2)) }
   | functor_arg module_binding_body
-      { _mkmod(Pmod_functor(fst $1, snd $1, $2)) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkmod ~loc (Pmod_functor(fst $1, snd $1, $2)) }
 ;
 module_binding:
     MODULE ext_attributes mkrhs(UIDENT) module_binding_body post_item_attributes
@@ -1457,9 +1478,9 @@ and_class_type_declaration:
 seq_expr:
   | expr        %prec below_SEMI  { $1 }
   | expr SEMI                     { $1 }
-  | expr SEMI seq_expr
-    { let loc = make_loc $symbolstartpos $endpos in
-      mkexp ~loc (Pexp_sequence($1, $3)) }
+  | mkexp(expr SEMI seq_expr
+    { Pexp_sequence($1, $3) })
+    { $1 }
   | expr SEMI PERCENT attr_id seq_expr
     { let loc = make_loc $symbolstartpos $endpos in
       let seq = mkexp ~loc (Pexp_sequence ($1, $5)) in
@@ -1525,9 +1546,8 @@ expr:
     { let loc = make_loc $symbolstartpos $endpos in
       let desc, attrs = $1 in
       mkexp_attrs ~loc desc attrs }
-  | expr2
-    { let loc = make_loc $symbolstartpos $endpos in
-      mkexp ~loc $1 }
+  | mkexp(expr2)
+    { $1 }
   | let_bindings IN seq_expr
     { let loc = make_loc $symbolstartpos $endpos in
       expr_of_let_bindings ~loc $1 $3 }
@@ -1965,9 +1985,9 @@ match_case:
 fun_def:
     MINUSGREATER seq_expr
       { $2 }
-  | COLON simple_core_type MINUSGREATER seq_expr
-      { let loc = make_loc $symbolstartpos $endpos in
-        mkexp ~loc (Pexp_constraint ($4, $2)) }
+  | mkexp(COLON simple_core_type MINUSGREATER seq_expr
+      { Pexp_constraint ($4, $2) })
+      { $1 }
 /* Cf #5939: we used to accept (fun p when e0 -> e) */
   | labeled_simple_pattern fun_def
       {
