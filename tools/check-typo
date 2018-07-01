@@ -282,7 +282,7 @@ EXIT_CODE=0
 
         $0 !~ /\t/ && length($0) > 80 {
           t = utf8_decode($0);
-          sub(/https?:[A-Za-z0-9._~:/?#\[\]@!$&\047()*+,;=%-]{73,}$/, "", t);
+          sub(/https?:[A-Za-z0-9._~:\/?#\[\]@!$&\047()*+,;=%-]{73,}$/, "", t);
           if (length(t) > 80) {
             RSTART = 81;
             RLENGTH = 0;
