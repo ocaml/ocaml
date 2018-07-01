@@ -310,8 +310,6 @@ let mkpat_attrs ~loc d attrs =
 
 let wrap_class_attrs ~loc:_ body attrs =
   {body with pcl_attributes = attrs @ body.pcl_attributes}
-let wrap_class_type_attrs ~loc:_ body attrs =
-  {body with pcty_attributes = attrs @ body.pcty_attributes}
 let wrap_mod_attrs ~loc:_ body attrs =
   {body with pmod_attributes = attrs @ body.pmod_attributes}
 let wrap_mty_attrs ~loc:_ body attrs =
@@ -489,7 +487,6 @@ let mk_directive ~loc name arg =
 #define $loc (make_loc $symbolstartpos $endpos)
 #define $locof(p) (make_loc $startpos($ ## p) $endpos($ ## p))
 
-#define _mkcty (mkcty ~loc:$loc)
 #define _mkctf (mkctf ~loc:$loc)
 #define _mkcf  (mkcf  ~loc:$loc)
 #define _mklb  (mklb  ~loc:$loc)
@@ -1358,32 +1355,36 @@ method_:
 class_type:
     class_signature
       { $1 }
-  | QUESTION LIDENT COLON simple_core_type_or_tuple MINUSGREATER
-    class_type
-      { _mkcty(Pcty_arrow(Optional $2 , $4, $6)) }
-  | OPTLABEL simple_core_type_or_tuple MINUSGREATER class_type
-      { _mkcty(Pcty_arrow(Optional $1, $2, $4)) }
-  | LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
-      { _mkcty(Pcty_arrow(Labelled $1, $3, $5)) }
-  | simple_core_type_or_tuple MINUSGREATER class_type
-      { _mkcty(Pcty_arrow(Nolabel, $1, $3)) }
+  | mkcty(
+      QUESTION LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
+        { Pcty_arrow(Optional $2 , $4, $6) }
+    | OPTLABEL simple_core_type_or_tuple MINUSGREATER class_type
+        { Pcty_arrow(Optional $1, $2, $4) }
+    | LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
+        { Pcty_arrow(Labelled $1, $3, $5) }
+    | simple_core_type_or_tuple MINUSGREATER class_type
+        { Pcty_arrow(Nolabel, $1, $3) }
+    ) { $1 }
  ;
 class_signature:
-    LBRACKET core_type_comma_list RBRACKET mkrhs(clty_longident)
-      { _mkcty(Pcty_constr ($4, List.rev $2)) }
-  | mkrhs(clty_longident)
-      { _mkcty(Pcty_constr ($1, [])) }
+    mkcty(
+      LBRACKET core_type_comma_list RBRACKET mkrhs(clty_longident)
+        { Pcty_constr ($4, List.rev $2) }
+    | mkrhs(clty_longident)
+        { Pcty_constr ($1, []) }
+    | extension
+        { Pcty_extension $1 }
+    ) { $1 }
   | OBJECT attributes class_sig_body END
-      { _mkcty ~attrs:$2 (Pcty_signature $3) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkcty ~loc ~attrs:$2 (Pcty_signature $3) }
   | only_loc(OBJECT) attributes class_sig_body only_loc(error)
       { unclosed "object" $1 "end" $4 }
   | class_signature attribute
       { Cty.attr $1 $2 }
-  | extension
-      { _mkcty(Pcty_extension $1) }
   | LET OPEN override_flag attributes mkrhs(mod_longident) IN class_signature
       { let loc = make_loc $symbolstartpos $endpos in
-        wrap_class_type_attrs ~loc (_mkcty(Pcty_open($3, $5, $7))) $4 }
+        mkcty ~loc ~attrs:$4 (Pcty_open($3, $5, $7)) }
 ;
 class_sig_body:
     class_self_type extra_csig(class_sig_fields)
