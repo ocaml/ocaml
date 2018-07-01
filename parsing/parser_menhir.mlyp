@@ -489,7 +489,6 @@ let mk_directive ~loc name arg =
 #define $loc (make_loc $symbolstartpos $endpos)
 #define $locof(p) (make_loc $startpos($ ## p) $endpos($ ## p))
 
-#define _mkmty (mkmty ~loc:$loc)
 #define _mksig (mksig ~loc:$loc)
 #define _mkmod (mkmod ~loc:$loc)
 #define _mkstr (mkstr ~loc:$loc)
@@ -976,10 +975,12 @@ and_module_binding:
 /* Module types */
 
 module_type:
-    mkrhs(mty_longident)
-      { _mkmty(Pmty_ident $1) }
+  | module_type2
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkmty ~loc $1 }
   | SIG attributes signature END
-      { _mkmty ~attrs:$2 (Pmty_signature ($3)) }
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkmty ~loc ~attrs:$2 (Pmty_signature ($3)) }
   | only_loc(SIG) attributes signature only_loc(error)
       { unclosed "sig" $1 "end" $4 }
   | FUNCTOR attributes functor_args MINUSGREATER module_type
@@ -987,26 +988,31 @@ module_type:
       { let loc = make_loc $symbolstartpos $endpos in
         let mty =
           List.fold_left
-            (fun acc (n, t) -> _mkmty(Pmty_functor(n, t, acc)))
+            (fun acc (n, t) -> mkmty ~loc (Pmty_functor(n, t, acc)))
             $5 $3
         in wrap_mty_attrs ~loc mty $2 }
-  | module_type MINUSGREATER module_type
-      %prec below_WITH
-      { _mkmty(Pmty_functor(mknoloc "_", Some $1, $3)) }
-  | module_type WITH with_constraints
-      { _mkmty(Pmty_with($1, List.rev $3)) }
   | MODULE TYPE OF attributes module_expr %prec below_LBRACKETAT
-      { _mkmty ~attrs:$4 (Pmty_typeof $5) }
-/*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
-      { _mkmty (Pmty_alias $3) } */
+      { let loc = make_loc $symbolstartpos $endpos in
+        mkmty ~loc ~attrs:$4 (Pmty_typeof $5) }
   | LPAREN module_type RPAREN
       { $2 }
   | only_loc(LPAREN) module_type only_loc(error)
       { unclosed "(" $1 ")" $3 }
-  | extension
-      { _mkmty(Pmty_extension $1) }
   | module_type attribute
       { Mty.attr $1 $2 }
+;
+%inline module_type2:
+  | mkrhs(mty_longident)
+      { Pmty_ident $1 }
+  | module_type MINUSGREATER module_type
+      %prec below_WITH
+      { Pmty_functor(mknoloc "_", Some $1, $3) }
+  | module_type WITH with_constraints
+      { Pmty_with($1, List.rev $3) }
+/*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
+      { Pmty_alias $3 } */
+  | extension
+      { Pmty_extension $1 }
 ;
 
 signature: extra_sig(signature_nodoc) { $1 }
