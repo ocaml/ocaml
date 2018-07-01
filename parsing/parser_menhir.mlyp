@@ -487,8 +487,6 @@ let mk_directive ~loc name arg =
 #define $loc (make_loc $symbolstartpos $endpos)
 #define $locof(p) (make_loc $startpos($ ## p) $endpos($ ## p))
 
-#define _mkclass (mkclass ~loc:$loc)
-
 /* Tokens */
 
 %token AMPERAMPER
@@ -1186,20 +1184,24 @@ and_class_declaration:
 class_fun_binding:
     EQUAL class_expr
       { $2 }
-  | COLON class_type EQUAL class_expr
-      { _mkclass(Pcl_constraint($4, $2)) }
-  | labeled_simple_pattern class_fun_binding
-      { let (l,o,p) = $1 in _mkclass(Pcl_fun(l, o, p, $2)) }
+  | mkclass(
+      COLON class_type EQUAL class_expr
+        { Pcl_constraint($4, $2) }
+    | labeled_simple_pattern class_fun_binding
+      { let (l,o,p) = $1 in Pcl_fun(l, o, p, $2) }
+    ) { $1 }
 ;
 class_type_parameters:
     /*empty*/                                   { [] }
   | LBRACKET type_parameter_list RBRACKET       { List.rev $2 }
 ;
-class_fun_def:
+
+class_fun_def: mkclass(class_fun_def_desc) { $1 };
+class_fun_def_desc:
     labeled_simple_pattern MINUSGREATER class_expr
-      { let (l,o,p) = $1 in _mkclass(Pcl_fun(l, o, p, $3)) }
+      { let (l,o,p) = $1 in Pcl_fun(l, o, p, $3) }
   | labeled_simple_pattern class_fun_def
-      { let (l,o,p) = $1 in _mkclass(Pcl_fun(l, o, p, $2)) }
+      { let (l,o,p) = $1 in Pcl_fun(l, o, p, $2) }
 ;
 class_expr:
     class_simple_expr
@@ -1207,36 +1209,41 @@ class_expr:
   | FUN attributes class_fun_def
       { let loc = make_loc $symbolstartpos $endpos in
         wrap_class_attrs ~loc $3 $2 }
-  | class_simple_expr simple_labeled_expr_list
-      { _mkclass(Pcl_apply($1, List.rev $2)) }
   | let_bindings IN class_expr
       { let loc = make_loc $symbolstartpos $endpos in
         class_of_let_bindings ~loc $1 $3 }
   | LET OPEN override_flag attributes mkrhs(mod_longident) IN class_expr
       { let loc = make_loc $symbolstartpos $endpos in
-        wrap_class_attrs ~loc (_mkclass(Pcl_open($3, $5, $7))) $4 }
+        mkclass ~loc ~attrs:$4 (Pcl_open($3, $5, $7)) }
   | class_expr attribute
       { Cl.attr $1 $2 }
-  | extension
-      { _mkclass(Pcl_extension $1) }
+  | mkclass(
+      class_simple_expr simple_labeled_expr_list
+        { Pcl_apply($1, List.rev $2) }
+    | extension
+        { Pcl_extension $1 }
+    ) { $1 }
 ;
 class_simple_expr:
-    LBRACKET core_type_comma_list RBRACKET mkrhs(class_longident)
-      { _mkclass(Pcl_constr($4, List.rev $2)) }
-  | mkrhs(class_longident)
-      { _mkclass(Pcl_constr($1, [])) }
-  | OBJECT attributes class_structure END
-      { _mkclass ~attrs:$2 (Pcl_structure $3) }
-  | only_loc(OBJECT) attributes class_structure only_loc(error)
-      { unclosed "object" $1 "end" $4 }
-  | LPAREN class_expr COLON class_type RPAREN
-      { _mkclass(Pcl_constraint($2, $4)) }
-  | only_loc(LPAREN) class_expr COLON class_type only_loc(error)
-      { unclosed "(" $1 ")" $5 }
   | LPAREN class_expr RPAREN
       { $2 }
   | only_loc(LPAREN) class_expr only_loc(error)
       { unclosed "(" $1 ")" $3 }
+  | mkclass(
+      LBRACKET core_type_comma_list RBRACKET mkrhs(class_longident)
+        { Pcl_constr($4, List.rev $2) }
+    | mkrhs(class_longident)
+        { Pcl_constr($1, []) }
+    | only_loc(OBJECT) attributes class_structure only_loc(error)
+        { unclosed "object" $1 "end" $4 }
+    | LPAREN class_expr COLON class_type RPAREN
+        { Pcl_constraint($2, $4) }
+    | only_loc(LPAREN) class_expr COLON class_type only_loc(error)
+        { unclosed "(" $1 ")" $5 }
+    ) { $1 }
+  | OBJECT attributes class_structure END
+    { let loc = make_loc $symbolstartpos $endpos in
+      mkclass ~loc ~attrs:$2 (Pcl_structure $3) }
 ;
 class_structure:
   |  class_self_pattern extra_cstr(class_fields)
