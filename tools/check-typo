@@ -129,6 +129,7 @@ IGNORE_DIRS="
   -type d -exec $0 --check-prune {} ; -prune -o
 "
 
+EXIT_CODE=0
 ( case $# in
     0) find . $IGNORE_DIRS -type f -print;;
     *) for i in "$@"; do find "$i" $IGNORE_DIRS -type f -print; done;;
@@ -190,6 +191,7 @@ IGNORE_DIRS="
         ;;
     esac
 
+    if ! \
     ($OCAML_CT_CAT "$OCAML_CT_PREFIX$f" | tr -d '\r'; echo) \
     | $OCAML_CT_AWK -v rules="$rules" -v svnrules="$svnrules" -v file="$f" \
       '
@@ -378,6 +380,9 @@ IGNORE_DIRS="
           }
           exit got_errors;
         }
-      '
+      ' ; then
+        EXIT_CODE=1
+      fi
   done
+  exit $EXIT_CODE
 )
