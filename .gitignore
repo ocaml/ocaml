@@ -43,7 +43,6 @@ _ocamltestd
 /ocaml
 /ocamlopt
 /ocamlopt.opt
-/package-macosx
 /ocamlnat
 
 # specific files and patterns in sub-directories
