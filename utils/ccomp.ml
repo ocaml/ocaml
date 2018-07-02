@@ -101,7 +101,9 @@ let compile_file ?output ?(opt="") ?stable_name name =
          opt
          (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
          (String.concat " " (List.rev !Clflags.all_ccopts))
-         (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
+         (quote_prefixed "-I"
+            (List.map (Misc.expand_directory Config.standard_library)
+               (List.rev !Clflags.include_dirs)))
          (Clflags.std_include_flag "-I")
          (Filename.quote name)
          (* cl tediously includes the name of the C file as the first thing it

@@ -200,8 +200,7 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let set r () = r := true
   let unset r () = r := false
   let _absname = set Location.absname
-  let _I s = Odoc_global.include_dirs :=
-       (Misc.expand_directory Config.standard_library s) :: !Odoc_global.include_dirs
+  let _I s = Odoc_global.include_dirs := s :: !Odoc_global.include_dirs
   let _impl s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Impl_file s]
   let _intf s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Intf_file s]
   let _intf_suffix s = Config.interface_suffix := s
