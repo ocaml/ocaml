@@ -2969,22 +2969,14 @@ and type_expect_
       let (id, new_env) = Env.enter_module name.txt modl.mod_type env in
       Ctype.init_def(Ident.current_time());
       Typetexp.widen context;
+      (* ideally, we should catch Expr_type_clash errors
+         in type_expect triggered by escaping identifiers from the local module
+         and refine them into Scoping_let_module errors
+      *)
       let body = type_expect new_env sbody ty_expected_explained in
       (* go back to original level *)
       end_def ();
-      (* Unification of body.exp_type with the fresh variable ty
-         fails if and only if the prefix condition is violated,
-         i.e. if generative types rooted at id show up in the
-         type body.exp_type.  Thus, this unification enforces the
-         scoping condition on "let module". *)
-      (* Note that this code will only be reached if ty_expected
-         is a generic type variable, otherwise the error will occur
-         above in type_expect *)
-      begin try
-        Ctype.unify_var new_env ty body.exp_type
-      with Unify _ ->
-        raise(Error(loc, env, Scoping_let_module(name.txt, body.exp_type)))
-      end;
+      Ctype.unify_var new_env ty body.exp_type;
       re {
         exp_desc = Texp_letmodule(id, name, modl, body);
         exp_loc = loc; exp_extra = [];
