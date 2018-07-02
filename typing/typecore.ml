@@ -2687,9 +2687,7 @@ and type_expect_
                 end_def ();
                 let tv = newvar () in
                 let gen = generalizable tv.level arg.exp_type in
-                (try unify_var env tv arg.exp_type with Unify trace ->
-                  raise(Error(arg.exp_loc, env,
-                              Expr_type_clash (trace, None))));
+                unify_var env tv arg.exp_type;
                 gen
               end else true
             in
