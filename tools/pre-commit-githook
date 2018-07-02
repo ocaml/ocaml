@@ -43,11 +43,15 @@ fi
 # The strange construction below creates a list of files which have either
 # white-at-eol or white-at-eof included in ocaml-typo in .gitattributes and by
 # prefixing the names with :! causes git diff-index to skip over them.
-FILES=$(git diff-index --cached --name-only $against \
+if [[ -n $(git diff-index --cached --name-only $against) ]] ; then
+  FILES=$(git diff-index --cached --name-only $against \
           | xargs git check-attr --cached ocaml-typo \
           | sed -ne 's/\(.*\): ocaml-typo:.*[ ,]white-at-eo[fl]\(,\|$\)/:!\1/p')
-if ! git diff-index --check --cached $against -- $FILES ; then
-  exit 1
+  if ! git diff-index --check --cached $against -- $FILES ; then
+    exit 1
+  fi
+else
+  exit 0
 fi
 
 # Test to see if any part of the directory name has been marked prune
