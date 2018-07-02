@@ -54,6 +54,11 @@ Working version
   (Francois Berenger, Nicolás Ojeda Bär, review by Daniel Bünzli, David Allsopp
   and ygrek)
 
+- MPR#5072, MPR#6655, GPR#1876: add aliases in Stdlib for built-in types
+  and exceptions.
+  (Jeremy Yallop, reports by Pierre Letouzey and David Sheets,
+   review by Valentin Gatien-Baron, Gabriel Scherer and Alain Frisch)
+
 - MPR#6701, GPR#1185, GPR#1803: make float_of_string and string_of_float
   locale-independent.
   (ygrek, review by Xavier Leroy and Damien Doligez)
