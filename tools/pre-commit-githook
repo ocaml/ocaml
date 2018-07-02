@@ -13,6 +13,10 @@
 #*                                                                        *
 #**************************************************************************
 
+# Bump this on any changes. It's vital that HOOK_VERSION followed by equals
+# appears nowhere else in these sources!
+HOOK_VERSION=2
+
 # For what it's worth, allow for empty trees!
 if git rev-parse --verify HEAD >/dev/null 2>&1
 then
@@ -27,10 +31,11 @@ exec 1>&2
 
 # Check to see if the script's been updated
 if git ls-files --error-unmatch tools/pre-commit-githook >/dev/null 2>&1 ; then
-  if ! diff -q <(git cat-file --textconv HEAD:tools/pre-commit-githook) "$0" \
-       >/dev/null 2>&1 ; then
-    echo "Note: tools/pre-commit-githook differs from .git/hooks/pre-commit"
-    echo "You may wish to upgrade your local githook"
+  THEIR_VERSION=$(git cat-file --textconv HEAD:tools/pre-commit-githook \
+                    | sed -ne 's/^HOOK_VERSION=//p')
+  if [[ -n $THEIR_VERSION && $THEIR_VERSION -gt $HOOK_VERSION ]] ; then
+    echo "Note: tools/pre-commit-githook is newer than .git/hooks/pre-commit"
+    echo "      You may wish to update your local githook"
   fi
 fi
 
