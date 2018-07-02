@@ -784,14 +784,7 @@ top_structure_tail_nodoc:
 ;
 
 use_file:
-    extra_def(use_file_body)             { $1 }
-/* TODO Menhir reports:
-   > Warning: production use_file_tail -> is never reduced.
-
-   This warning can be fixed by adding an EOF token
-   at the end of the use_file production. Is this
-   the right move?
-*/
+   extra_def(use_file_body) EOF          { $1 }
 ;
 use_file_body:
     use_file_tail                        { $1 }
