@@ -70,8 +70,10 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
     | Paddbint kind when equal_kind kind I.kind -> eval I.add
     | Psubbint kind when equal_kind kind I.kind -> eval I.sub
     | Pmulbint kind when equal_kind kind I.kind -> eval I.mul
-    | Pdivbint {size=kind} when equal_kind kind I.kind && non_zero n2 -> eval I.div
-    | Pmodbint {size=kind} when equal_kind kind I.kind && non_zero n2 -> eval I.rem
+    | Pdivbint {size=kind} when equal_kind kind I.kind && non_zero n2 ->
+      eval I.div
+    | Pmodbint {size=kind} when equal_kind kind I.kind && non_zero n2 ->
+      eval I.rem
     | Pandbint kind when equal_kind kind I.kind -> eval I.logand
     | Porbint kind when equal_kind kind I.kind -> eval I.logor
     | Pxorbint kind when equal_kind kind I.kind -> eval I.logxor
@@ -85,7 +87,8 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
     let precond = 0 <= n2 && n2 < 8 * size_int in
     match p with
     | Plslbint kind when equal_kind kind I.kind && precond -> eval I.shift_left
-    | Plsrbint kind when equal_kind kind I.kind && precond -> eval I.shift_right_logical
+    | Plsrbint kind when equal_kind kind I.kind && precond ->
+      eval I.shift_right_logical
     | Pasrbint kind when equal_kind kind I.kind && precond -> eval I.shift_right
     | _ -> expr, A.value_unknown Other, C.Benefit.zero
 end

@@ -224,9 +224,12 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         | Max_wosize ->
           (* CR-someday mshinwell: this function should maybe not live here. *)
           S.const_int_expr expr ((1 lsl ((8*size_int) - 10)) - 1)
-        | Ostype_unix -> S.const_bool_expr expr (String.equal Sys.os_type "Unix")
-        | Ostype_win32 -> S.const_bool_expr expr (String.equal Sys.os_type "Win32")
-        | Ostype_cygwin -> S.const_bool_expr expr (String.equal Sys.os_type "Cygwin")
+        | Ostype_unix ->
+          S.const_bool_expr expr (String.equal Sys.os_type "Unix")
+        | Ostype_win32 ->
+          S.const_bool_expr expr (String.equal Sys.os_type "Win32")
+        | Ostype_cygwin ->
+          S.const_bool_expr expr (String.equal Sys.os_type "Cygwin")
         | Backend_type ->
           S.const_ptr_expr expr 0 (* tag 0 is the same as Native *)
         end

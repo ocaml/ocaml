@@ -481,7 +481,9 @@ module Whether_sufficient_benefit = struct
     end
 
   let evaluate t =
-    Float.compare (float t.new_size -. estimated_benefit t) (float t.original_size) <= 0
+    Float.compare
+      (float t.new_size -. estimated_benefit t)
+      (float t.original_size) <= 0
 
   let to_string t =
     let lifting = t.toplevel && t.lifting && t.branch_depth = 0 in

@@ -214,7 +214,10 @@ type specialise_attribute =
   | Never_specialise (* [@specialise never] *)
   | Default_specialise (* no [@specialise] attribute *)
 
-val equal_specialise_attribute : specialise_attribute -> specialise_attribute -> bool
+val equal_specialise_attribute
+   : specialise_attribute
+  -> specialise_attribute
+  -> bool
 
 type function_kind = Curried | Tupled
 

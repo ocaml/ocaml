@@ -78,7 +78,9 @@ let description_of_toplevel_node (expr : Flambda.t) =
   | While _ -> "while"
   | For _ -> "for"
 
-let equal_direction_flag (x : Asttypes.direction_flag) (y : Asttypes.direction_flag) =
+let equal_direction_flag
+      (x : Asttypes.direction_flag)
+      (y : Asttypes.direction_flag) =
   match x, y with
   | Upto, Upto -> true
   | Downto, Downto -> true

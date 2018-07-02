@@ -108,9 +108,14 @@ let inline_by_copying_function_body ~env ~r
       ~function_decl ~function_body
   in
   let body =
-    if function_body.stub &&
-       ((not (Lambda.equal_inline_attribute inline_requested Default_inline))
-        || (not (Lambda.equal_specialise_attribute specialise_requested Default_specialise))) then
+    let default_inline =
+      Lambda.equal_inline_attribute inline_requested Default_inline
+    in
+    let default_specialise =
+      Lambda.equal_specialise_attribute specialise_requested Default_specialise
+    in
+    if function_body.stub
+    && ((not default_inline) || (not default_specialise)) then
       (* When the function inlined function is a stub, the annotation
          is reported to the function applications inside the stub.
          This allows to report the annotation to the application the
