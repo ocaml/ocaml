@@ -128,7 +128,7 @@ void caml_setup_eventlog()
     Caml_state->unique_id, \
     (ev).name, \
     ## __VA_ARGS__)
-    
+
 
 /* must be called holding the lock */
 static void flush_events(FILE* out, struct event_buffer* eb)
@@ -185,8 +185,8 @@ static void teardown_eventlog()
           "\"s\": \"g\"}\n"
           "]\n}\n",
           (caml_time_counter() - startup_timestamp) / 1000,
-          Caml_state->id,
-          Caml_state->id);
+          Caml_state->unique_id,
+          Caml_state->unique_id);
   fclose(output);
   caml_plat_unlock(&lock);
 }
