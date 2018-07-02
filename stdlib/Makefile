@@ -102,14 +102,16 @@ install::
 # Stdlib versions.
 	rm -f "$(INSTALL_LIBDIR)/pervasives.*" "$(INSTALL_LIBDIR)/bigarray.*"
 # End transitional
-	$(INSTALL_DATA) \
-	  stdlib.cma std_exit.cmo *.cmi camlheader_ur \
-	  "$(INSTALL_LIBDIR)"
+	$(MKDIR) "$(INSTALL_LIBDIR)/stdlib"
+	$(INSTALL_DATA) stdlib.cma std_exit.cmo *.cmi \
+	  "$(INSTALL_LIBDIR)/stdlib"
+	$(INSTALL_DATA) camlheader_ur "$(INSTALL_LIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  *.cmt *.cmti *.mli *.ml \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR)/stdlib"
 endif
+	mv "$(INSTALL_LIBDIR)/stdlib"/std_exit.* "$(INSTALL_LIBDIR)"
 	$(INSTALL_DATA) target_camlheader "$(INSTALL_LIBDIR)/camlheader"
 
 ifeq "$(RUNTIMED)" "true"
@@ -129,8 +131,9 @@ installopt: installopt-default installopt-$(PROFILINGTARGET)
 installopt-default:
 	$(INSTALL_DATA) \
 	  stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx \
-	  "$(INSTALL_LIBDIR)"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.$(A)
+	  "$(INSTALL_LIBDIR)/stdlib"
+	mv "$(INSTALL_LIBDIR)/stdlib"/std_exit.* "$(INSTALL_LIBDIR)"
+	cd "$(INSTALL_LIBDIR)/stdlib"; $(RANLIB) stdlib.$(A)
 
 .PHONY: installopt-noprof
 installopt-noprof:
@@ -139,8 +142,9 @@ installopt-noprof:
 installopt-prof:
 	$(INSTALL_DATA) \
 	  stdlib.p.cmxa stdlib.p.$(A) std_exit.p.cmx std_exit.p.$(O) \
-	  "$(INSTALL_LIBDIR)"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.p.$(A)
+	  "$(INSTALL_LIBDIR)/stdlib"
+	mv "$(INSTALL_LIBDIR)/stdlib"/std_exit.* "$(INSTALL_LIBDIR)"
+	cd "$(INSTALL_LIBDIR)/stdlib"; $(RANLIB) stdlib.p.$(A)
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 HEADERPROGRAM = header.c

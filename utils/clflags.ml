@@ -149,7 +149,7 @@ let std_includes () =
   if !no_stdlib
   then []
   else
-    "stdlib" ::
+    "" (* for std_exit *) :: "stdlib" ::
       (if !no_stdincludes
        then []
        else [
@@ -163,9 +163,7 @@ let std_includes () =
 
 let std_include_dirs () =
   List.map (fun lib ->
-    match lib with
-    | "stdlib" -> Config.standard_library
-    | _ -> Filename.concat Config.standard_library lib
+    Filename.concat Config.standard_library lib
   ) (std_includes ())
 
 let std_include_flags prefix =
