@@ -48,8 +48,6 @@ extern uintnat caml_major_heap_increment; /* percent or words; see major_gc.c */
 extern uintnat caml_percent_free;         /*        see major_gc.c */
 extern uintnat caml_percent_max;          /*        see compact.c */
 extern uintnat caml_allocation_policy;    /*        see freelist.c */
-extern value caml_ephe_none;              /*        see weak.c */
-extern gc_phase_t caml_gc_phase;          /*        see major_gc.c */
 
 CAMLprim value caml_gc_quick_stat(value v)
 {
@@ -62,7 +60,6 @@ CAMLprim value caml_gc_quick_stat(value v)
   intnat majcoll = Caml_state->stat_major_collections;
 
   res = caml_alloc_tuple (16);
-  for (int i = 0; i < 16; i++) Op_val(res)[i] = Val_unit;
   Store_field (res, 0, caml_copy_double ((double)s.minor_words));
   Store_field (res, 1, caml_copy_double ((double)s.promoted_words));
   Store_field (res, 2, caml_copy_double ((double)s.major_words));
