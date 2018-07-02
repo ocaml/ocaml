@@ -139,6 +139,18 @@ static inline int is_in_interval (value v, char* low_closed, char* high_open)
   return low_closed <= (char*)v && (char*)v < high_open;
 }
 
+/* If [*v] is an [Infix_tag] object, [v] is updated to point to the first
+ * object in the block. */
+static inline void resolve_infix_val (value* v)
+{
+  int offset = 0;
+  if (Hd_val(*v) == Infix_tag) {
+    offset = Infix_offset_val(*v);
+    CAMLassert (offset > 0);
+    *v -= offset;
+  }
+}
+
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
 
@@ -279,9 +291,12 @@ static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re,
   for (i = CAML_EPHE_FIRST_KEY; i < Wosize_val(re->ephe); i++) {
     child = Op_val(re->ephe)[i];
     if (child != caml_ephe_none
-        && Is_block (child) && is_in_interval(child, young_ptr, young_end)
-        && Hd_val (child) != 0) { /* value not copied to major heap */
-      return 0;
+        && Is_block (child) && is_in_interval(child, young_ptr, young_end)) {
+      resolve_infix_val(&child);
+      if (Hd_val(child) != 0) {
+        /* value not copied to major heap */
+        return 0;
+      }
     }
   }
   return 1;
@@ -343,6 +358,7 @@ static void oldify_mopup (struct oldify_state* st)
       value *data = &Ephe_data(re->ephe);
       if (*data != caml_ephe_none && Is_block(*data) &&
           is_in_interval(*data, young_ptr, young_end)) {
+        resolve_infix_val(data);
         if (Hd_val(*data) == 0) { /* Value copied to major heap */
           *data = Op_val(*data)[0];
         } else {
@@ -620,9 +636,16 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     caml_ev_begin("minor_gc/ephemerons");
     for (re = remembered_set->ephe_ref.base;
          re < remembered_set->ephe_ref.ptr; re++) {
+      CAMLassert (Ephe_domain(re->ephe) == domain);
+      if (re->offset == CAML_EPHE_DATA_OFFSET) {
+        /* Data field has already been handled in oldify_mopup. Handle only
+         * keys here. */
+        continue;
+      }
       value* key = &Op_val(re->ephe)[re->offset];
       if (*key != caml_ephe_none && Is_block(*key) &&
           is_in_interval(*key, young_ptr, young_end)) {
+        resolve_infix_val(key);
         if (Hd_val(*key) == 0) { /* value copied to major heap */
           *key = Op_val(*key)[0];
         } else {
