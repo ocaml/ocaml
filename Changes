@@ -39,6 +39,9 @@ Working version
   alternative integer formatting.
   (ygrek, review by Gabriel Scherer)
 
+- MPR#7235: Format, flush err_formatter at exit.
+  (Pierre Weis, request by Jun Furuse)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
