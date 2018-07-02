@@ -1923,7 +1923,7 @@ increasing the $\var{used} / \var{max}$ ratio.
 Use this function when your custom block holds only out-of-heap memory
 (memory allocated with "malloc" or "caml_stat_alloc") and no other
 resources. "used" should be the number of bytes of out-of-heap
-memory that is held by your custom block. This function works like
+memory that are held by your custom block. This function works like
 "caml_alloc_custom" except that the "max" parameter is under the
 control of the user (via the "custom_major_ratio",
 "custom_minor_ratio", and "custom_minor_max_size" parameters) and
