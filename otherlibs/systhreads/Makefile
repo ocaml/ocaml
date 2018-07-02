@@ -117,7 +117,7 @@ install:
 	fi
 	$(INSTALL_DATA) libthreads.$(A) "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreads.$(A)
-	mkdir -p "$(INSTALL_THREADSLIBDIR)"
+	$(MKDIR) "$(INSTALL_THREADSLIBDIR)"
 	$(INSTALL_DATA) \
 	  $(CMIFILES) threads.cma \
 	  "$(INSTALL_THREADSLIBDIR)"

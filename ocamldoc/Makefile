@@ -40,7 +40,6 @@ OCAMLPP=-pp 'sh ./remove_DEBUG'
 # For installation
 ##############
 
-MKDIR=mkdir -p
 CP=cp
 OCAMLDOC=ocamldoc
 

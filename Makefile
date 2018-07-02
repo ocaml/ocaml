@@ -34,7 +34,6 @@ else
 	@echo "Please refer to the instructions in file README.win32.adoc."
 endif
 
-MKDIR=mkdir -p
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp
 else
