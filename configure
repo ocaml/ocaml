@@ -223,9 +223,9 @@ while : ; do
     -with-flambda-invariants|--with-flambda-invariants)
         with_flambda_invariants=true;;
     -with-cplugins|--with-cplugins)
-        err "--with-cplugins is no longer supported";;  # Transitional?
+        err "--with-cplugins is no longer supported";;
     -no-cplugins|--no-cplugins)
-        ;; # Ignored for backward compatibility; transitional?
+        ;; # Ignored for backward compatibility
     -fPIC|--fPIC)
         with_fpic=true;;
 
