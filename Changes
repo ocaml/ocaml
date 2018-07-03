@@ -112,6 +112,9 @@ Working version
 - GPR#1747: type_cases: always propagate
   (Thomas Refis, review by Jacques Garrigue)
 
+- GPR#1811: shadow the polymorphic comparison in the middle-end
+  (Xavier Clerc, review by Pierre Chambart)
+
 ### Bug fixes:
 
 - GPR#1719: fix Pervasives.LargeFile functions under Windows
