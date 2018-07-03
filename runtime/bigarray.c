@@ -73,7 +73,8 @@ CAMLexport struct custom_operations caml_ba_ops = {
   caml_ba_hash,
   caml_ba_serialize,
   caml_ba_deserialize,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  custom_fixed_length_default
 };
 
 /* Allocation of a big array */

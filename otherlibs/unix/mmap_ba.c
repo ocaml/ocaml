@@ -61,7 +61,8 @@ static struct custom_operations caml_ba_mapped_ops = {
   caml_ba_hash,
   caml_ba_serialize,
   caml_ba_deserialize,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  custom_fixed_length_default
 };
 
 /* [caml_ba_mapped_alloc] allocates a new bigarray object in the heap

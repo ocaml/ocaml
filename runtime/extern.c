@@ -541,18 +541,31 @@ static void extern_rec(value v)
       void (*serialize)(value v, uintnat * bsize_32,
                         uintnat * bsize_64)
         = Custom_ops_val(v)->serialize;
+      const struct custom_fixed_length* fixed_length
+        = Custom_ops_val(v)->fixed_length;
       if (serialize == NULL)
         extern_invalid_argument("output_value: abstract value (Custom)");
-      write(CODE_CUSTOM_LEN);
-      writeblock(ident, strlen(ident) + 1);
-      /* Reserve 12 bytes for the lengths (sz_32 and sz_64). */
-      if (extern_ptr + 12 >= extern_limit) grow_extern_output(12);
-      size_header = extern_ptr;
-      extern_ptr += 12;
-      Custom_ops_val(v)->serialize(v, &sz_32, &sz_64);
-      /* Store length before serialized block */
-      store32(size_header, sz_32);
-      store64(size_header + 4, sz_64);
+      if (fixed_length == NULL) {
+        write(CODE_CUSTOM_LEN);
+        writeblock(ident, strlen(ident) + 1);
+        /* Reserve 12 bytes for the lengths (sz_32 and sz_64). */
+        if (extern_ptr + 12 >= extern_limit) grow_extern_output(12);
+        size_header = extern_ptr;
+        extern_ptr += 12;
+        serialize(v, &sz_32, &sz_64);
+        /* Store length before serialized block */
+        store32(size_header, sz_32);
+        store64(size_header + 4, sz_64);
+      } else {
+        write(CODE_CUSTOM_FIXED);
+        writeblock(ident, strlen(ident) + 1);
+        serialize(v, &sz_32, &sz_64);
+        if (sz_32 != fixed_length->bsize_32 ||
+            sz_64 != fixed_length->bsize_64)
+          caml_fatal_error(
+            "output_value: incorrect fixed sizes specified by %s",
+            ident);
+      }
       size_32 += 2 + ((sz_32 + 3) >> 2);  /* header + ops + data */
       size_64 += 2 + ((sz_64 + 7) >> 3);
       extern_record_location(v);
