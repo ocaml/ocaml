@@ -181,7 +181,7 @@ CheckTypoTree () {
   export OCAML_CT_CAT="git cat-file --textconv"
   export OCAML_CT_PREFIX="$1:"
   GIT_INDEX_FILE=tmp-index git read-tree --reset -i $1
-  git diff-tree --diff-filter=d --no-commit-id --name-only -r $1 \
+  git diff-tree --diff-filter=d --no-commit-id --name-only -r $2 \
     | (while IFS= read -r path
   do
     if not_pruned $path ; then
