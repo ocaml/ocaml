@@ -174,45 +174,7 @@ let transl_constant dbg = function
   | Uconst_ref (label, _) ->
       Cconst_symbol (label, dbg)
 
-let cdefine_symbol (symb, (global : Cmmgen_state.is_global)) =
-  match global with
-  | Global -> [Cglobal_symbol symb; Cdefine_symbol symb]
-  | Local -> [Cdefine_symbol symb]
-
-let emit_block symb is_global white_header cont =
-  (* Headers for structured constants must be marked black in case we
-     are in no-naked-pointers mode.  See [caml_darken]. *)
-  let black_header = Nativeint.logor white_header caml_black in
-  Cint black_header :: cdefine_symbol (symb, is_global) @ cont
-
-let rec emit_structured_constant (sym, is_global) cst cont =
-  match cst with
-  | Uconst_float s ->
-      emit_block sym is_global float_header (Cdouble s :: cont)
-  | Uconst_string s ->
-      emit_block sym is_global (string_header (String.length s))
-        (emit_string_constant s cont)
-  | Uconst_int32 n ->
-      emit_block sym is_global boxedint32_header
-        (emit_boxed_int32_constant n cont)
-  | Uconst_int64 n ->
-      emit_block sym is_global boxedint64_header
-        (emit_boxed_int64_constant n cont)
-  | Uconst_nativeint n ->
-      emit_block sym is_global boxedintnat_header
-        (emit_boxed_nativeint_constant n cont)
-  | Uconst_block (tag, csts) ->
-      let cont = List.fold_right emit_constant csts cont in
-      emit_block sym is_global (block_header tag (List.length csts)) cont
-  | Uconst_float_array fields ->
-      emit_block sym is_global (floatarray_header (List.length fields))
-        (Misc.map_end (fun f -> Cdouble f) fields cont)
-  | Uconst_closure(fundecls, lbl, fv) ->
-      Cmmgen_state.add_constant lbl (Const_closure (is_global, fundecls, fv));
-      List.iter (fun f -> Cmmgen_state.add_function f) fundecls;
-      cont
-
-and emit_constant cst cont =
+let emit_constant cst cont =
   match cst with
   | Uconst_int n | Uconst_ptr n ->
       cint_const n
@@ -220,46 +182,47 @@ and emit_constant cst cont =
   | Uconst_ref (sym, _) ->
       Csymbol_address sym :: cont
 
-and emit_string_constant s cont =
-  let n = size_int - 1 - (String.length s) mod size_int in
-  Cstring s :: Cskip n :: Cint8 n :: cont
-
-and emit_boxed_int32_constant n cont =
-  let n = Nativeint.of_int32 n in
-  if size_int = 8 then
-    Csymbol_address caml_int32_ops :: Cint32 n :: Cint32 0n :: cont
-  else
-    Csymbol_address caml_int32_ops :: Cint n :: cont
-
-and emit_boxed_nativeint_constant n cont =
-  Csymbol_address caml_nativeint_ops :: Cint n :: cont
-
-and emit_boxed_int64_constant n cont =
-  let lo = Int64.to_nativeint n in
-  if size_int = 8 then
-    Csymbol_address caml_int64_ops :: Cint lo :: cont
-  else begin
-    let hi = Int64.to_nativeint (Int64.shift_right n 32) in
-    if big_endian then
-      Csymbol_address caml_int64_ops :: Cint hi :: Cint lo :: cont
-    else
-      Csymbol_address caml_int64_ops :: Cint lo :: Cint hi :: cont
-  end
+let emit_structured_constant ((_sym, is_global) as symb) cst cont =
+  match cst with
+  | Uconst_float s ->
+      emit_block symb float_header (Cdouble s :: cont)
+  | Uconst_string s ->
+      emit_block symb (string_header (String.length s))
+        (emit_string_constant s cont)
+  | Uconst_int32 n ->
+      emit_block symb boxedint32_header
+        (emit_boxed_int32_constant n cont)
+  | Uconst_int64 n ->
+      emit_block symb boxedint64_header
+        (emit_boxed_int64_constant n cont)
+  | Uconst_nativeint n ->
+      emit_block symb boxedintnat_header
+        (emit_boxed_nativeint_constant n cont)
+  | Uconst_block (tag, csts) ->
+      let cont = List.fold_right emit_constant csts cont in
+      emit_block symb (block_header tag (List.length csts)) cont
+  | Uconst_float_array fields ->
+      emit_block symb (floatarray_header (List.length fields))
+        (Misc.map_end (fun f -> Cdouble f) fields cont)
+  | Uconst_closure(fundecls, lbl, fv) ->
+      Cmmgen_state.add_constant lbl (Const_closure (is_global, fundecls, fv));
+      List.iter (fun f -> Cmmgen_state.add_function f) fundecls;
+      cont
 
 (* Boxed integers *)
 
 let box_int_constant sym bi n =
   match bi with
     Pnativeint ->
-      emit_block sym Local boxedintnat_header
+      emit_block (sym, Local) boxedintnat_header
         (emit_boxed_nativeint_constant n [])
   | Pint32 ->
       let n = Nativeint.to_int32 n in
-      emit_block sym Local boxedint32_header
+      emit_block (sym, Local) boxedint32_header
         (emit_boxed_int32_constant n [])
   | Pint64 ->
       let n = Int64.of_nativeint n in
-      emit_block sym Local boxedint64_header
+      emit_block (sym, Local) boxedint64_header
         (emit_boxed_int64_constant n [])
 
 let box_int dbg bi arg =
@@ -1792,13 +1755,10 @@ let preallocate_block cont { Clambda.symbol; exported; tag; fields } =
             Csymbol_address label)
       fields
   in
+  let global = Cmmgen_state.(if exported then Global else Local) in
+  let symb = (symbol, global) in
   let data =
-    Cint(black_block_header tag (List.length fields)) ::
-    if exported then
-      Cglobal_symbol symbol ::
-      Cdefine_symbol symbol :: space
-    else
-      Cdefine_symbol symbol :: space
+    emit_block symb (block_header tag (List.length fields)) space
   in
   Cdata data :: cont
 
@@ -1937,7 +1897,7 @@ let code_segment_table namelist =
 let predef_exception i name =
   let name_sym = Compilenv.new_const_symbol () in
   let data_items =
-    emit_block name_sym Local (string_header (String.length name))
+    emit_block (name_sym, Local) (string_header (String.length name))
       (emit_string_constant name [])
   in
   let exn_sym = "caml_exn_" ^ name in
@@ -1948,7 +1908,9 @@ let predef_exception i name =
       :: (cint_const (-i - 1))
       :: data_items
   in
-  let data_items = emit_block exn_sym Global (block_header tag size) fields in
+  let data_items =
+    emit_block (exn_sym, Global) (block_header tag size) fields
+  in
   Cdata data_items
 
 (* Header for a plugin *)

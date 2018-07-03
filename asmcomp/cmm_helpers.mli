@@ -467,3 +467,27 @@ val generic_functions : bool -> Cmx_format.unit_infos list -> Cmm.phrase list
 val placeholder_dbg : unit -> Debuginfo.t
 val placeholder_fun_dbg : human_name:string -> Debuginfo.t
 
+(** Emit constant symbols *)
+
+(** Produce the data_item list corresponding to a symbol definition *)
+val cdefine_symbol : (string * Cmmgen_state.is_global) -> data_item list
+
+(** [emit_block symb white_header cont] prepends to [cont] the header and symbol
+    for the block.
+    [cont] must already contain the fields of the block (and may contain
+    additional data items afterwards). *)
+val emit_block :
+  (string * Cmmgen_state.is_global) -> nativeint -> data_item list ->
+  data_item list
+
+(** Emit the fields for some specific block kinds (prepended to the given
+    data items) *)
+val emit_string_constant :
+  string -> data_item list -> data_item list
+val emit_boxed_int32_constant :
+  int32 -> data_item list -> data_item list
+val emit_boxed_int64_constant :
+  int64 -> data_item list -> data_item list
+val emit_boxed_nativeint_constant :
+  nativeint -> data_item list -> data_item list
+

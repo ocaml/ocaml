@@ -2016,3 +2016,40 @@ let generic_functions shared units =
   let accu = Int.Set.fold (fun n accu -> send_function n :: accu) send accu in
   Int.Set.fold (fun n accu -> curry_function n @ accu) curry accu
 
+let cdefine_symbol (symb, (global: Cmmgen_state.is_global)) =
+  match global with
+  | Global -> [Cglobal_symbol symb; Cdefine_symbol symb]
+  | Local -> [Cdefine_symbol symb]
+
+let emit_block symb white_header cont =
+  (* Headers for structured constants must be marked black in case we
+     are in no-naked-pointers mode.  See [caml_darken]. *)
+  let black_header = Nativeint.logor white_header caml_black in
+  Cint black_header :: cdefine_symbol symb @ cont
+
+let emit_string_constant s cont =
+  let n = size_int - 1 - (String.length s) mod size_int in
+  Cstring s :: Cskip n :: Cint8 n :: cont
+
+let emit_boxed_int32_constant n cont =
+  let n = Nativeint.of_int32 n in
+  if size_int = 8 then
+    Csymbol_address caml_int32_ops :: Cint32 n :: Cint32 0n :: cont
+  else
+    Csymbol_address caml_int32_ops :: Cint n :: cont
+
+let emit_boxed_int64_constant n cont =
+  let lo = Int64.to_nativeint n in
+  if size_int = 8 then
+    Csymbol_address caml_int64_ops :: Cint lo :: cont
+  else begin
+    let hi = Int64.to_nativeint (Int64.shift_right n 32) in
+    if big_endian then
+      Csymbol_address caml_int64_ops :: Cint hi :: Cint lo :: cont
+    else
+      Csymbol_address caml_int64_ops :: Cint lo :: Cint hi :: cont
+  end
+
+let emit_boxed_nativeint_constant n cont =
+  Csymbol_address caml_nativeint_ops :: Cint n :: cont
+
