@@ -107,7 +107,7 @@ let compile_genfuns ~ppf_dump f =
        | (Cfunction {fun_name = name}) as ph when f name ->
            compile_phrase ~ppf_dump ph
        | _ -> ())
-    (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
+    (Cmm_helpers.generic_functions true [Compilenv.current_unit_infos ()])
 
 let compile_unit asm_filename keep_asm obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in

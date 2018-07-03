@@ -277,6 +277,12 @@ let mk_not dbg cmm =
       Cop(Csubi, [Cconst_int (4, dbg); c], dbg)
 
 
+let create_loop body dbg =
+  let cont = Lambda.next_raise_count () in
+  let call_cont = Cexit (cont, []) in
+  let body = Csequence (body, call_cont) in
+  Ccatch (Recursive, [cont, [], body, dbg], call_cont)
+
 (* Turning integer divisions into multiply-high then shift.
    The [division_parameters] function is used in module Emit for
    those target platforms that support this optimization. *)
@@ -800,9 +806,9 @@ let make_checkbound dbg = function
 
 (* Record application and currying functions *)
 
-let apply_function n =
+let apply_function_sym n =
   Compilenv.need_apply_fun n; "caml_apply" ^ Int.to_string n
-let curry_function n =
+let curry_function_sym n =
   Compilenv.need_curry_fun n;
   if n >= 0
   then "caml_curry" ^ Int.to_string n
@@ -1613,7 +1619,9 @@ let generic_apply mut clos args dbg =
           dbg))
   | _ ->
       let arity = List.length args in
-      let cargs = Cconst_symbol(apply_function arity, dbg) :: args @ [clos] in
+      let cargs =
+        Cconst_symbol(apply_function_sym arity, dbg) :: args @ [clos]
+      in
       Cop(Capply typ_val, cargs, dbg)
 
 let send kind met obj args dbg =
@@ -1632,4 +1640,379 @@ let send kind met obj args dbg =
       | _ ->
           bind "met" (lookup_tag obj met dbg)
             (call_met obj args))
+
+(*
+CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
+{
+  int li = 3, hi = Field(meths,0), mi;
+  while (li < hi) { // no need to check the 1st time
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < Field(meths,mi)) hi = mi-2;
+    else li = mi;
+  }
+  *cache = (li-3)*sizeof(value)+1;
+  return Field (meths, li-1);
+}
+*)
+
+let cache_public_method meths tag cache dbg =
+  let raise_num = Lambda.next_raise_count () in
+  let cconst_int i = Cconst_int (i, dbg) in
+  let li = V.create_local "*li*" and hi = V.create_local "*hi*"
+  and mi = V.create_local "*mi*" and tagged = V.create_local "*tagged*" in
+  Clet (
+  VP.create li, cconst_int 3,
+  Clet (
+  VP.create hi, Cop(Cload (Word_int, Mutable), [meths], dbg),
+  Csequence(
+  ccatch
+    (raise_num, [],
+     create_loop
+       (Clet(
+        VP.create mi,
+        Cop(Cor,
+            [Cop(Clsr, [Cop(Caddi, [Cvar li; Cvar hi], dbg); cconst_int 1],
+               dbg);
+             cconst_int 1],
+            dbg),
+        Csequence(
+        Cifthenelse
+          (Cop (Ccmpi Clt,
+                [tag;
+                 Cop(Cload (Word_int, Mutable),
+                     [Cop(Cadda,
+                          [meths; lsl_const (Cvar mi) log2_size_addr dbg],
+                          dbg)],
+                     dbg)], dbg),
+           dbg, Cassign(hi, Cop(Csubi, [Cvar mi; cconst_int 2], dbg)),
+           dbg, Cassign(li, Cvar mi),
+           dbg),
+        Cifthenelse
+          (Cop(Ccmpi Cge, [Cvar li; Cvar hi], dbg),
+           dbg, Cexit (raise_num, []),
+           dbg, Ctuple [],
+           dbg))))
+       dbg,
+     Ctuple [],
+     dbg),
+  Clet (
+    VP.create tagged,
+      Cop(Cadda, [lsl_const (Cvar li) log2_size_addr dbg;
+        cconst_int(1 - 3 * size_addr)], dbg),
+    Csequence(Cop (Cstore (Word_int, Assignment), [cache; Cvar tagged], dbg),
+              Cvar tagged)))))
+
+(* CR mshinwell: These will be filled in by later pull requests. *)
+let placeholder_dbg () = Debuginfo.none
+let placeholder_fun_dbg ~human_name:_ = Debuginfo.none
+
+(* Generate an application function:
+     (defun caml_applyN (a1 ... aN clos)
+       (if (= clos.arity N)
+         (app clos.direct a1 ... aN clos)
+         (let (clos1 (app clos.code a1 clos)
+               clos2 (app clos1.code a2 clos)
+               ...
+               closN-1 (app closN-2.code aN-1 closN-2))
+           (app closN-1.code aN closN-1))))
+*)
+
+let apply_function_body arity =
+  let dbg = placeholder_dbg in
+  let arg = Array.make arity (V.create_local "arg") in
+  for i = 1 to arity - 1 do arg.(i) <- V.create_local "arg" done;
+  let clos = V.create_local "clos" in
+  let rec app_fun clos n =
+    if n = arity-1 then
+      Cop(Capply typ_val,
+          [get_field_gen Asttypes.Mutable (Cvar clos) 0 (dbg ());
+           Cvar arg.(n);
+           Cvar clos],
+          dbg ())
+    else begin
+      let newclos = V.create_local "clos" in
+      Clet(VP.create newclos,
+           Cop(Capply typ_val,
+               [get_field_gen Asttypes.Mutable (Cvar clos) 0 (dbg ());
+                Cvar arg.(n); Cvar clos], dbg ()),
+           app_fun newclos (n+1))
+    end in
+  let args = Array.to_list arg in
+  let all_args = args @ [clos] in
+  (args, clos,
+   if arity = 1 then app_fun clos 0 else
+   Cifthenelse(
+   Cop(Ccmpi Ceq, [get_field_gen Asttypes.Mutable (Cvar clos) 1 (dbg ());
+                   int_const (dbg ()) arity], dbg ()),
+   dbg (),
+   Cop(Capply typ_val,
+       get_field_gen Asttypes.Mutable (Cvar clos) 2 (dbg ())
+       :: List.map (fun s -> Cvar s) all_args,
+       dbg ()),
+   dbg (),
+   app_fun clos 0,
+   dbg ()))
+
+let send_function arity =
+  let dbg = placeholder_dbg in
+  let cconst_int i = Cconst_int (i, dbg ()) in
+  let (args, clos', body) = apply_function_body (1+arity) in
+  let cache = V.create_local "cache"
+  and obj = List.hd args
+  and tag = V.create_local "tag" in
+  let clos =
+    let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
+    let meths = V.create_local "meths" and cached = V.create_local "cached" in
+    let real = V.create_local "real" in
+    let mask = get_field_gen Asttypes.Mutable (Cvar meths) 1 (dbg ()) in
+    let cached_pos = Cvar cached in
+    let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg ());
+                              cconst_int(3*size_addr-1)], dbg ()) in
+    let tag' = Cop(Cload (Word_int, Mutable), [tag_pos], dbg ()) in
+    Clet (
+    VP.create meths, Cop(Cload (Word_val, Mutable), [obj], dbg ()),
+    Clet (
+    VP.create cached,
+      Cop(Cand, [Cop(Cload (Word_int, Mutable), [cache], dbg ()); mask],
+          dbg ()),
+    Clet (
+    VP.create real,
+    Cifthenelse(Cop(Ccmpa Cne, [tag'; tag], dbg ()),
+                dbg (),
+                cache_public_method (Cvar meths) tag cache (dbg ()),
+                dbg (),
+                cached_pos,
+                dbg ()),
+    Cop(Cload (Word_val, Mutable),
+      [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths], dbg ());
+       cconst_int(2*size_addr-1)], dbg ())], dbg ()))))
+
+  in
+  let body = Clet(VP.create clos', clos, body) in
+  let cache = cache in
+  let fun_name = "caml_send" ^ Int.to_string arity in
+  let fun_args =
+    [obj, typ_val; tag, typ_int; cache, typ_val]
+    @ List.map (fun id -> (id, typ_val)) (List.tl args) in
+  let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
+  Cfunction
+   {fun_name;
+    fun_args = List.map (fun (arg, ty) -> VP.create arg, ty) fun_args;
+    fun_body = body;
+    fun_codegen_options = [];
+    fun_dbg;
+   }
+
+let apply_function arity =
+  let (args, clos, body) = apply_function_body arity in
+  let all_args = args @ [clos] in
+  let fun_name = "caml_apply" ^ Int.to_string arity in
+  let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
+  Cfunction
+   {fun_name;
+    fun_args = List.map (fun arg -> (VP.create arg, typ_val)) all_args;
+    fun_body = body;
+    fun_codegen_options = [];
+    fun_dbg;
+   }
+
+(* Generate tuplifying functions:
+      (defun caml_tuplifyN (arg clos)
+        (app clos.direct #0(arg) ... #N-1(arg) clos)) *)
+
+let tuplify_function arity =
+  let dbg = placeholder_dbg in
+  let arg = V.create_local "arg" in
+  let clos = V.create_local "clos" in
+  let rec access_components i =
+    if i >= arity
+    then []
+    else get_field_gen Asttypes.Mutable (Cvar arg) i (dbg ())
+         :: access_components(i+1)
+  in
+  let fun_name = "caml_tuplify" ^ Int.to_string arity in
+  let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
+  Cfunction
+   {fun_name;
+    fun_args = [VP.create arg, typ_val; VP.create clos, typ_val];
+    fun_body =
+      Cop(Capply typ_val,
+          get_field_gen Asttypes.Mutable (Cvar clos) 2 (dbg ())
+          :: access_components 0 @ [Cvar clos],
+          (dbg ()));
+    fun_codegen_options = [];
+    fun_dbg;
+   }
+
+(* Generate currying functions:
+      (defun caml_curryN (arg clos)
+         (alloc HDR caml_curryN_1 <arity (N-1)> caml_curry_N_1_app arg clos))
+      (defun caml_curryN_1 (arg clos)
+         (alloc HDR caml_curryN_2 <arity (N-2)> caml_curry_N_2_app arg clos))
+      ...
+      (defun caml_curryN_N-1 (arg clos)
+         (let (closN-2 clos.vars[1]
+               closN-3 closN-2.vars[1]
+               ...
+               clos1 clos2.vars[1]
+               clos clos1.vars[1])
+           (app clos.direct
+                clos1.vars[0] ... closN-2.vars[0] clos.vars[0] arg clos)))
+
+    Special "shortcut" functions are also generated to handle the
+    case where a partially applied function is applied to all remaining
+    arguments in one go.  For instance:
+      (defun caml_curry_N_1_app (arg2 ... argN clos)
+        (let clos' clos.vars[1]
+           (app clos'.direct clos.vars[0] arg2 ... argN clos')))
+
+    Those shortcuts may lead to a quadratic number of application
+    primitives being generated in the worst case, which resulted in
+    linking time blowup in practice (PR#5933), so we only generate and
+    use them when below a fixed arity 'max_arity_optimized'.
+*)
+
+let max_arity_optimized = 15
+let final_curry_function arity =
+  let dbg = placeholder_dbg in
+  let last_arg = V.create_local "arg" in
+  let last_clos = V.create_local "clos" in
+  let rec curry_fun args clos n =
+    if n = 0 then
+      Cop(Capply typ_val,
+          get_field_gen Asttypes.Mutable (Cvar clos) 2 (dbg ()) ::
+            args @ [Cvar last_arg; Cvar clos],
+          dbg ())
+    else
+      if n = arity - 1 || arity > max_arity_optimized then
+        begin
+      let newclos = V.create_local "clos" in
+      Clet(VP.create newclos,
+           get_field_gen Asttypes.Mutable (Cvar clos) 3 (dbg ()),
+           curry_fun (get_field_gen Asttypes.Mutable (Cvar clos) 2 (dbg ())
+                      :: args)
+             newclos (n-1))
+        end else
+        begin
+          let newclos = V.create_local "clos" in
+          Clet(VP.create newclos,
+               get_field_gen Asttypes.Mutable (Cvar clos) 4 (dbg ()),
+               curry_fun
+                 (get_field_gen Asttypes.Mutable (Cvar clos) 3 (dbg ()) :: args)
+                 newclos (n-1))
+    end in
+  let fun_name =
+    "caml_curry" ^ Int.to_string arity ^ "_" ^ Int.to_string (arity-1)
+  in
+  let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
+  Cfunction
+   {fun_name;
+    fun_args = [VP.create last_arg, typ_val; VP.create last_clos, typ_val];
+    fun_body = curry_fun [] last_clos (arity-1);
+    fun_codegen_options = [];
+    fun_dbg;
+   }
+
+let rec intermediate_curry_functions arity num =
+  let dbg = placeholder_dbg in
+  if num = arity - 1 then
+    [final_curry_function arity]
+  else begin
+    let name1 = "caml_curry" ^ Int.to_string arity in
+    let name2 = if num = 0 then name1 else name1 ^ "_" ^ Int.to_string num in
+    let arg = V.create_local "arg" and clos = V.create_local "clos" in
+    let fun_dbg = placeholder_fun_dbg ~human_name:name2 in
+    Cfunction
+     {fun_name = name2;
+      fun_args = [VP.create arg, typ_val; VP.create clos, typ_val];
+      fun_body =
+         if arity - num > 2 && arity <= max_arity_optimized then
+           Cop(Calloc,
+               [alloc_closure_header 5 (dbg ());
+                Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1), dbg ());
+                int_const (dbg ()) (arity - num - 1);
+                Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1) ^ "_app",
+                  dbg ());
+                Cvar arg; Cvar clos],
+               dbg ())
+         else
+           Cop(Calloc,
+                [alloc_closure_header 4 (dbg ());
+                 Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1), dbg ());
+                 int_const (dbg ()) 1; Cvar arg; Cvar clos],
+                dbg ());
+      fun_codegen_options = [];
+      fun_dbg;
+     }
+    ::
+      (if arity <= max_arity_optimized && arity - num > 2 then
+          let rec iter i =
+            if i <= arity then
+              let arg = V.create_local (Printf.sprintf "arg%d" i) in
+              (arg, typ_val) :: iter (i+1)
+            else []
+          in
+          let direct_args = iter (num+2) in
+          let rec iter i args clos =
+            if i = 0 then
+              Cop(Capply typ_val,
+                  (get_field_gen Asttypes.Mutable (Cvar clos) 2 (dbg ()))
+                  :: args @ [Cvar clos],
+                  dbg ())
+            else
+              let newclos = V.create_local "clos" in
+              Clet(VP.create newclos,
+                   get_field_gen Asttypes.Mutable (Cvar clos) 4 (dbg ()),
+                   iter (i-1)
+                     (get_field_gen Asttypes.Mutable (Cvar clos) 3 (dbg ())
+                      :: args)
+                     newclos)
+          in
+          let fun_args =
+            List.map (fun (arg, ty) -> VP.create arg, ty)
+              (direct_args @ [clos, typ_val])
+          in
+          let fun_name = name1 ^ "_" ^ Int.to_string (num+1) ^ "_app" in
+          let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
+          let cf =
+            Cfunction
+              {fun_name;
+               fun_args;
+               fun_body = iter (num+1)
+                  (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
+               fun_codegen_options = [];
+               fun_dbg;
+              }
+          in
+          cf :: intermediate_curry_functions arity (num+1)
+       else
+          intermediate_curry_functions arity (num+1))
+  end
+
+let curry_function arity =
+  assert(arity <> 0);
+  (* Functions with arity = 0 does not have a curry_function *)
+  if arity > 0
+  then intermediate_curry_functions arity 0
+  else [tuplify_function (-arity)]
+
+module Int = Numbers.Int
+
+let default_apply = Int.Set.add 2 (Int.Set.add 3 Int.Set.empty)
+  (* These apply funs are always present in the main program because
+     the run-time system needs them (cf. asmrun/<arch>.S) . *)
+
+let generic_functions shared units =
+  let (apply,send,curry) =
+    List.fold_left
+      (fun (apply,send,curry) (ui : Cmx_format.unit_infos) ->
+         List.fold_right Int.Set.add ui.ui_apply_fun apply,
+         List.fold_right Int.Set.add ui.ui_send_fun send,
+         List.fold_right Int.Set.add ui.ui_curry_fun curry)
+      (Int.Set.empty,Int.Set.empty,Int.Set.empty)
+      units in
+  let apply = if shared then apply else Int.Set.union apply default_apply in
+  let accu = Int.Set.fold (fun n accu -> apply_function n :: accu) apply [] in
+  let accu = Int.Set.fold (fun n accu -> send_function n :: accu) send accu in
+  Int.Set.fold (fun n accu -> curry_function n @ accu) curry accu
 

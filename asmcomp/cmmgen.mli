@@ -21,10 +21,6 @@ val compunit
     * Clambda.preallocated_constant list
   -> Cmm.phrase list
 
-val apply_function: int -> Cmm.phrase
-val send_function: int -> Cmm.phrase
-val curry_function: int -> Cmm.phrase list
-val generic_functions: bool -> Cmx_format.unit_infos list -> Cmm.phrase list
 val entry_point: string list -> Cmm.phrase
 val global_table: string list -> Cmm.phrase
 val reference_symbols: string list -> Cmm.phrase

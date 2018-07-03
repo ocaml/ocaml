@@ -157,6 +157,10 @@ val mk_if_then_else :
 (** Boolean negation *)
 val mk_not : Debuginfo.t -> expression -> expression
 
+(** Loop construction (while true do expr done).
+    Used to be represented as Cloop. *)
+val create_loop : expression -> Debuginfo.t -> expression
+
 (** Exception raising *)
 val raise_regular : Debuginfo.t -> expression -> expression
 val raise_symbol : Debuginfo.t -> string -> expression
@@ -329,12 +333,12 @@ val check_bound :
 
 (** Get the symbol for the generic application with [n] arguments, and
     ensure its presence in the set of defined symbols *)
-val apply_function : int -> string
+val apply_function_sym : int -> string
 
 (** If [n] is positive, get the symbol for the generic curryfication with
     [n] arguments, and ensure its presence in the set of defined symbols.
     Otherwise, do the same for the generic tuplification with [-n] arguments. *)
-val curry_function : int -> string
+val curry_function_sym : int -> string
 
 (** Bigarrays *)
 
@@ -456,3 +460,10 @@ val generic_apply :
 val send :
   Lambda.meth_kind -> expression -> expression -> expression list ->
   Debuginfo.t -> expression
+
+(** Generate generic functions *)
+val generic_functions : bool -> Cmx_format.unit_infos list -> Cmm.phrase list
+
+val placeholder_dbg : unit -> Debuginfo.t
+val placeholder_fun_dbg : human_name:string -> Debuginfo.t
+
