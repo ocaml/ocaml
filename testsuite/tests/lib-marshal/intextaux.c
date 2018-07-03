@@ -48,7 +48,8 @@ static struct custom_operations buggy_ops = {
   custom_hash_default,
   bad_serialize,
   bad_deserialize,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  custom_fixed_length_default
 };
 
 value init_buggy_custom_ops()

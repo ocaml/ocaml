@@ -207,6 +207,8 @@ static value int32_deserialize()
   return caml_copy_int32(caml_deserialize_sint_4());
 }
 
+static const struct custom_fixed_length int32_length = { 4, 4 };
+
 CAMLexport const struct custom_operations caml_int32_ops = {
   "_i",
   custom_finalize_default,
@@ -214,7 +216,8 @@ CAMLexport const struct custom_operations caml_int32_ops = {
   int32_hash,
   int32_serialize,
   int32_deserialize,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  &int32_length
 };
 
 CAMLexport value caml_copy_int32(int32_t i)
@@ -395,6 +398,8 @@ static value int64_deserialize()
   return caml_copy_int64(caml_deserialize_sint_8());
 }
 
+static const struct custom_fixed_length int64_length = { 8, 8 };
+
 CAMLexport const struct custom_operations caml_int64_ops = {
   "_j",
   custom_finalize_default,
@@ -402,7 +407,8 @@ CAMLexport const struct custom_operations caml_int64_ops = {
   int64_hash,
   int64_serialize,
   int64_deserialize,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  &int64_length
 };
 
 CAMLexport value caml_copy_int64(int64_t i)
@@ -680,6 +686,7 @@ static value nativeint_deserialize()
   }
 }
 
+static const struct custom_fixed_length nativeint_length = { 4, 8 };
 CAMLexport const struct custom_operations caml_nativeint_ops = {
   "_n",
   custom_finalize_default,
@@ -687,7 +694,8 @@ CAMLexport const struct custom_operations caml_nativeint_ops = {
   nativeint_hash,
   nativeint_serialize,
   nativeint_deserialize,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  &nativeint_length
 };
 
 CAMLexport value caml_copy_nativeint(intnat i)

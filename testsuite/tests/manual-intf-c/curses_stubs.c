@@ -15,7 +15,8 @@ static struct custom_operations curses_window_ops = {
   custom_hash_default,
   custom_serialize_default,
   custom_deserialize_default,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  custom_fixed_length_default
 };
 
 /* Accessing the WINDOW * part of an OCaml custom block */
