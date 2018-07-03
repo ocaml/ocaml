@@ -139,6 +139,14 @@ module Stdlib = struct
   module Option = struct
     type 'a t = 'a option
 
+    let is_none = function
+      | None -> true
+      | Some _ -> false
+
+    let is_some = function
+      | None -> false
+      | Some _ -> true
+
     let equal eq o1 o2 =
       match o1, o2 with
       | None, None -> true

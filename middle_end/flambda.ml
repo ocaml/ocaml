@@ -534,14 +534,10 @@ let rec variables_usage ?ignore_uses_as_callee ?ignore_uses_as_argument
       | Let { var; free_vars_of_defining_expr; free_vars_of_body;
               defining_expr; body; _ } ->
         bound_variable var;
-        let is_not_none = function
-          | None -> false
-          | Some _ -> true
-        in
         if all_used_variables
-           || is_not_none ignore_uses_as_callee
-           || is_not_none ignore_uses_as_argument
-           || is_not_none ignore_uses_in_project_var
+           || Misc.Stdlib.Option.is_some ignore_uses_as_callee
+           || Misc.Stdlib.Option.is_some ignore_uses_as_argument
+           || Misc.Stdlib.Option.is_some ignore_uses_in_project_var
         then begin
           (* In these cases we can't benefit from the pre-computed free
              variable sets. *)

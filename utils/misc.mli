@@ -83,6 +83,9 @@ module Stdlib : sig
   module Option : sig
     type 'a t = 'a option
 
+    val is_none : 'a t -> bool
+    val is_some : 'a t -> bool
+
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 
     val iter : ('a -> unit) -> 'a t -> unit
