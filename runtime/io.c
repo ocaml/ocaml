@@ -118,7 +118,7 @@ static void unlink_channel(struct channel *channel)
 
 CAMLexport void caml_close_channel(struct channel *channel)
 {
-  CAML_SYS_CLOSE(channel->fd);
+  close(channel->fd);
   if (channel->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(channel);
   unlink_channel(channel);
@@ -545,7 +545,7 @@ CAMLprim value caml_ml_close_channel(value vchannel)
 
   if (do_syscall) {
     caml_enter_blocking_section();
-    result = CAML_SYS_CLOSE(fd);
+    result = close(fd);
     caml_leave_blocking_section();
   }
 

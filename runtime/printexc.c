@@ -149,7 +149,6 @@ void caml_fatal_uncaught_exception(value exn)
   if (caml_abort_on_uncaught_exn) {
     abort();
   } else {
-    CAML_SYS_EXIT(2);
-    exit(2); /* Second exit needed for the Noreturn flag */
+    exit(2);
   }
 }

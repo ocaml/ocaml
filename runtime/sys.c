@@ -156,10 +156,7 @@ CAMLprim value caml_sys_exit(value retcode_v)
 #ifdef _WIN32
   caml_restore_win32_terminal();
 #endif
-  CAML_SYS_EXIT(retcode);
-#ifdef CAML_WITH_CPLUGINS
-  return Val_unit;
-#endif
+  exit(retcode);
 }
 
 #ifndef O_BINARY
@@ -201,7 +198,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   perm = Int_val(vperm);
   /* open on a named FIFO can block (PR#1533) */
   caml_enter_blocking_section();
-  fd = CAML_SYS_OPEN(p, flags, perm);
+  fd = open_os(p, flags, perm);
   /* fcntl on a fd can block (PR#5069)*/
 #if defined(F_SETFD) && defined(FD_CLOEXEC) && !defined(_WIN32) \
   && !defined(O_CLOEXEC)
@@ -218,7 +215,7 @@ CAMLprim value caml_sys_close(value fd_v)
 {
   int fd = Int_val(fd_v);
   caml_enter_blocking_section();
-  CAML_SYS_CLOSE(fd);
+  close(fd);
   caml_leave_blocking_section();
   return Val_unit;
 }
@@ -236,7 +233,7 @@ CAMLprim value caml_sys_file_exists(value name)
   if (! caml_string_is_c_safe(name)) return Val_false;
   p = caml_stat_strdup_to_os(String_val(name));
   caml_enter_blocking_section();
-  ret = CAML_SYS_STAT(p, &st);
+  ret = stat_os(p, &st);
   caml_leave_blocking_section();
   caml_stat_free(p);
 
@@ -257,7 +254,7 @@ CAMLprim value caml_sys_is_directory(value name)
   caml_sys_check_path(name);
   p = caml_stat_strdup_to_os(String_val(name));
   caml_enter_blocking_section();
-  ret = CAML_SYS_STAT(p, &st);
+  ret = stat_os(p, &st);
   caml_leave_blocking_section();
   caml_stat_free(p);
 
@@ -277,7 +274,7 @@ CAMLprim value caml_sys_remove(value name)
   caml_sys_check_path(name);
   p = caml_stat_strdup_to_os(String_val(name));
   caml_enter_blocking_section();
-  ret = CAML_SYS_UNLINK(p);
+  ret = unlink_os(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret != 0) caml_sys_error(name);
@@ -294,7 +291,7 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
   p_old = caml_stat_strdup_to_os(String_val(oldname));
   p_new = caml_stat_strdup_to_os(String_val(newname));
   caml_enter_blocking_section();
-  ret = CAML_SYS_RENAME(p_old, p_new);
+  ret = rename_os(p_old, p_new);
   caml_leave_blocking_section();
   caml_stat_free(p_new);
   caml_stat_free(p_old);
@@ -311,7 +308,7 @@ CAMLprim value caml_sys_chdir(value dirname)
   caml_sys_check_path(dirname);
   p = caml_stat_strdup_to_os(String_val(dirname));
   caml_enter_blocking_section();
-  ret = CAML_SYS_CHDIR(p);
+  ret = chdir_os(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret != 0) caml_sys_error(dirname);
@@ -341,7 +338,7 @@ CAMLprim value caml_sys_unsafe_getenv(value var)
 #ifdef _WIN32
   res = caml_win32_getenv(p);
 #else
-  res = CAML_SYS_GETENV(p);
+  res = getenv(p);
 #endif
   caml_stat_free(p);
   if (res == 0) caml_raise_not_found();
@@ -400,9 +397,6 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
   caml_setup_win32_terminal();
 #endif
 #endif
-#ifdef CAML_WITH_CPLUGINS
-  caml_cplugins_init(exe_name, argv);
-#endif
   caml_exe_name = exe_name;
   caml_main_argv = argv;
 }
@@ -430,7 +424,7 @@ CAMLprim value caml_sys_system_command(value command)
   }
   buf = caml_stat_strdup_to_os(String_val(command));
   caml_enter_blocking_section ();
-  status = CAML_SYS_SYSTEM(buf);
+  status = system_os(buf);
   caml_leave_blocking_section ();
   caml_stat_free(buf);
   if (status == -1) caml_sys_error(command);
@@ -619,7 +613,7 @@ CAMLprim value caml_sys_read_directory(value path)
   caml_ext_table_init(&tbl, 50);
   p = caml_stat_strdup_to_os(String_val(path));
   caml_enter_blocking_section();
-  ret = CAML_SYS_READ_DIRECTORY(p, &tbl);
+  ret = caml_read_directory(p, &tbl);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1){
@@ -648,76 +642,3 @@ CAMLprim value caml_sys_isatty(value chan)
 
   return ret;
 }
-
-/* Load dynamic plugins indicated in the CAML_CPLUGINS environment
-   variable. These plugins can be used to set currently existing
-   hooks, such as GC hooks and system calls tracing (see misc.h).
- */
-
-#ifdef CAML_WITH_CPLUGINS
-
-value (*caml_cplugins_prim)(int,value,value,value) = NULL;
-
-#define DLL_EXECUTABLE 1
-#define DLL_NOT_GLOBAL 0
-
-static struct cplugin_context cplugin_context;
-
-void caml_load_plugin(char_os *plugin)
-{
-  void* dll_handle = NULL;
-  char* u8;
-
-  dll_handle = caml_dlopen(plugin, DLL_EXECUTABLE, DLL_NOT_GLOBAL);
-  if( dll_handle != NULL ){
-   void (* dll_init)(struct cplugin_context*) =
-     caml_dlsym(dll_handle, "caml_cplugin_init");
-   if( dll_init != NULL ){
-     cplugin_context.plugin=plugin;
-     dll_init(&cplugin_context);
-   } else {
-     caml_dlclose(dll_handle);
-   }
-  } else {
-   u8 = caml_stat_strdup_of_os(plugin);
-   fprintf(stderr, "Cannot load C plugin %s\nReason: %s\n",
-           u8, caml_dlerror());
-   caml_stat_free(u8);
-  }
-}
-
-void caml_cplugins_load(char_os *env_variable)
-{
-  char_os *plugins = caml_secure_getenv(env_variable);
-  if(plugins != NULL){
-    char_os* curs = plugins;
-    while(*curs != 0){
-      if(*curs == _T(',')){
-          if(curs > plugins){
-            *curs = 0;
-            caml_load_plugin(plugins);
-          }
-          plugins = curs+1;
-        }
-        curs++;
-    }
-    if(curs > plugins) caml_load_plugin(plugins);
-  }
-}
-
-void caml_cplugins_init(char_os * exe_name, char_os **argv)
-{
-  cplugin_context.api_version = CAML_CPLUGIN_CONTEXT_API;
-  cplugin_context.prims_bitmap = CAML_CPLUGINS_PRIMS_BITMAP;
-  cplugin_context.exe_name = exe_name;
-  cplugin_context.argv = argv;
-  cplugin_context.ocaml_version = OCAML_VERSION_STRING;
-  caml_cplugins_load(_T("CAML_CPLUGINS"));
-#ifdef NATIVE_CODE
-  caml_cplugins_load(_T("CAML_NATIVE_CPLUGINS"));
-#else
-  caml_cplugins_load(_T("CAML_BYTE_CPLUGINS"));
-#endif
-}
-
-#endif /* CAML_WITH_CPLUGINS */
