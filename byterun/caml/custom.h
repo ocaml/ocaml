@@ -22,6 +22,11 @@
 #endif
 #include "mlvalues.h"
 
+struct custom_fixed_length {
+  intnat bsize_32;
+  intnat bsize_64;
+};
+
 struct custom_operations {
   char *identifier;
   void (*finalize)(value v);
@@ -32,6 +37,7 @@ struct custom_operations {
                     /*out*/ uintnat * bsize_64 /*size in bytes*/);
   value (*deserialize)(void);
   int (*compare_ext)(value v1, value v2);
+  const struct custom_fixed_length* fixed_length;
 };
 
 #define custom_finalize_default NULL
@@ -40,6 +46,7 @@ struct custom_operations {
 #define custom_serialize_default NULL
 #define custom_deserialize_default NULL
 #define custom_compare_ext_default NULL
+#define custom_fixed_length_default NULL
 
 #define Custom_ops_val(v) (*((const struct custom_operations **) (v)))
 
