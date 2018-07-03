@@ -179,7 +179,7 @@ CheckTypoTree () {
   export OCAML_CT_HEAD=$1
   export OCAML_CT_LS_FILES="git diff-tree --no-commit-id --name-only -r $2 --"
   export OCAML_CT_CAT="git cat-file --textconv"
-  export OCAML_CT_PREFIX="$3:"
+  export OCAML_CT_PREFIX="$1:"
   GIT_INDEX_FILE=tmp-index git read-tree --reset -i $1
   git diff-tree --diff-filter=d --no-commit-id --name-only -r $1 \
     | (while IFS= read -r path
@@ -206,7 +206,7 @@ CheckTypo () {
   export OCAML_CT_AWK="awk --re-interval"
   rm -f check-typo-failed
   if test -z "$TRAVIS_COMMIT_RANGE"
-  then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT $TRAVIS_COMMIT
+  then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT
   else
     if [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]
     then TRAVIS_COMMIT_RANGE=$TRAVIS_BRANCH..$TRAVIS_PULL_REQUEST_SHA
@@ -215,14 +215,12 @@ CheckTypo () {
     then
       for commit in $(git rev-list $TRAVIS_COMMIT_RANGE --reverse)
       do
-        CheckTypoTree $commit $commit $commit
+        CheckTypoTree $commit $commit
       done
     else
       if [ -z "$TRAVIS_PULL_REQUEST_SHA" ]
-      then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT $TRAVIS_COMMIT
-      else CheckTypoTree $TRAVIS_PULL_REQUEST_SHA \
-                         $TRAVIS_COMMIT_RANGE \
-                         $TRAVIS_COMMIT
+      then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT
+      else CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT_RANGE
       fi
     fi
   fi
