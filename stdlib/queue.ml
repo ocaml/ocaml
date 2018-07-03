@@ -146,4 +146,3 @@ let of_seq g =
   let q = create() in
   add_seq q g;
   q
-

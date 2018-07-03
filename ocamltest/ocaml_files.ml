@@ -34,7 +34,7 @@ let ocamlrun ocamlsrcdir =
     | Debug -> "ocamlrund"
     | Instrumented -> "ocamlruni" in
   let ocamlrunfile = Filename.mkexe runtime in
-  Filename.make_path [ocamlsrcdir; "byterun"; ocamlrunfile]
+  Filename.make_path [ocamlsrcdir; "runtime"; ocamlrunfile]
 
 let ocamlc ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "ocamlc"]

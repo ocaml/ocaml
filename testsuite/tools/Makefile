@@ -38,7 +38,7 @@ codegen_OBJECTS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo codegen_main.cmo
 
 codegen_ADD_COMPFLAGS=$(codegen_INCLUDES) -w -40 -g
 
-targets := $(expect_PROG) 
+targets := $(expect_PROG)
 
 ifneq "$(ARCH)" "none"
 targets += codegen
@@ -79,4 +79,3 @@ lexcmm.ml: lexcmm.mll
 asmgen_i386.obj: asmgen_i386nt.asm
 	@set -o pipefail ; \
 	$(ASM) $@ $^ | tail -n +2
-

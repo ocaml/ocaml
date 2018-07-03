@@ -1,5 +1,5 @@
 (* TEST
-   flags = " -short-paths " 
+   flags = " -short-paths "
    modules = "gpr1223_foo.mli gpr1223_bar.mli"
    * toplevel
 *)

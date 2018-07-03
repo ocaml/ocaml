@@ -60,7 +60,7 @@ type t =
   | Unused_extension of string * bool * bool * bool (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool   (* 40 *)
-  | Ambiguous_name of string list * string list * bool (* 41 *)
+  | Ambiguous_name of string list * string list * bool * string (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
   | Open_shadow_identifier of string * string (* 44 *)
@@ -82,6 +82,7 @@ type t =
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
   | Constraint_on_gadt                      (* 62 *)
+  | Erroneous_printed_signature of string   (* 63 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

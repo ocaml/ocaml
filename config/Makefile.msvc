@@ -69,8 +69,7 @@ X11_INCLUDES=
 X11_LINK=
 RPATH=
 SUPPORTS_SHARED_LIBRARIES=true
-SHAREDCCCOMPOPTS=
-NATIVECCPROFOPTS=
+SHAREDLIB_CFLAGS=
 ASM=ml -nologo -coff -Cp -c -Fo
 ASPP=
 ASPPPROFFLAGS=
@@ -101,18 +100,20 @@ DEFAULT_SAFE_STRING=true
 WINDOWS_UNICODE=1
 AFL_INSTRUMENT=false
 AWK=gawk
+CC_HAS_DEBUG_PREFIX_MAP=false
 
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
 CC=cl
-CFLAGS=-nologo -O2 -Gy- -MD
-CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE -DCAML_NAME_SPACE -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
+OC_CFLAGS=-nologo -O2 -Gy- -MD
+OC_CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE -DCAML_NAME_SPACE -DUNICODE -D_UNICODE \
+  -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
 OCAMLC_CFLAGS=-nologo -O2 -Gy- -MD
 OCAMLC_CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE
 BYTECCDBGCOMPOPTS=-Zi
 
-LDFLAGS=/ENTRY:wmainCRTStartup
+OC_LDFLAGS=/ENTRY:wmainCRTStartup
 
 ### Libraries needed
 BYTECCLIBS=advapi32.lib ws2_32.lib version.lib
@@ -138,7 +139,7 @@ endif
 #   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
-MKEXE=$(MKEXE_ANSI) $(if $(LDFLAGS),-link "$(LDFLAGS)")
+MKEXE=$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")
 MKEXEDEBUGFLAG=
 MKMAINDLL=$(FLEXLINK) -maindll
 
@@ -146,8 +147,8 @@ MKMAINDLL=$(FLEXLINK) -maindll
 MERGEMANIFESTEXE=test ! -f $(1).manifest \
 	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
 	            && rm -f $(1).manifest
-MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) /link /subsystem:console $(LDFLAGS) \
-	   && ($(MERGEMANIFESTEXE))
+MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OUTPUTEXE)$(1) $(2) \
+  /link /subsystem:console $(OC_LDFLAGS) && ($(MERGEMANIFESTEXE))
 
 ### Native command to build an ANSI executable
 MKEXE_ANSI=$(FLEXLINK) -exe
@@ -173,6 +174,7 @@ ARCMD=
 
 ### Name of architecture for the native-code compiler
 ARCH=i386
+ARCH64=false
 
 ### Name of architecture model for the native-code compiler.
 MODEL=default

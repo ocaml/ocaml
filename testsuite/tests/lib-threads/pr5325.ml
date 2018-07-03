@@ -17,15 +17,12 @@ open Printf
        (the one connected to the echo server)
 *)
 
-let serve_connection s =
+let server sock =
+  let (s, _) = Unix.accept sock in
   let buf = Bytes.make 1024 '>' in
   let n = Unix.read s buf 2 (Bytes.length buf - 2) in
   ignore (Unix.write s buf 0 (n + 2));
   Unix.close s
-
-let server sock =
-  let (s, _) = Unix.accept sock in
-  ignore(Thread.create serve_connection s)
 
 let reader s =
   let buf = Bytes.make 1024 ' ' in

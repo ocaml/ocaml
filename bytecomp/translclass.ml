@@ -167,7 +167,6 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
            params obj_init,
          has_init))
   | Tcl_fun (_, pat, vals, cl, partial) ->
-      let vals = List.map (fun (id, _, e) -> id,e) vals in
       let (inh_init, obj_init) =
         build_object_init cl_table obj (vals @ params) inh_init obj_init cl
       in
@@ -190,7 +189,6 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
       in
       (inh_init, transl_apply obj_init oexprs Location.none)
   | Tcl_let (rec_flag, defs, vals, cl) ->
-      let vals = List.map (fun (id, _, e) -> id,e) vals in
       let (inh_init, obj_init) =
         build_object_init cl_table obj (vals @ params) inh_init obj_init cl
       in
@@ -202,7 +200,6 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
 let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
   match cl.cl_desc with
     Tcl_let (_rec_flag, _defs, vals, cl) ->
-      let vals = List.map (fun (id, _, e) -> id,e) vals in
       build_object_init_0 cl_table (vals@params) cl copy_env subst_env top ids
   | _ ->
       let self = Ident.create "self" in
@@ -262,7 +259,7 @@ let rec index a = function
   | b :: l ->
       if b = a then 0 else 1 + index a l
 
-let bind_id_as_val (id, _, _) = ("", id)
+let bind_id_as_val (id, _) = ("", id)
 
 let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
   match cl.cl_desc with

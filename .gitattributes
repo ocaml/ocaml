@@ -44,50 +44,58 @@ README*                  ocaml-typo=missing-header
 
 /.mailmap                ocaml-typo=long-line,missing-header,non-ascii
 /.merlin                 ocaml-typo=missing-header
-/Changes                 ocaml-typo=non-ascii,missing-header
+/Changes                 ocaml-typo=utf8,missing-header
 /INSTALL                 ocaml-typo=missing-header
 /LICENSE                 ocaml-typo=long-line,very-long-line,missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
-/tools/ci/appveyor/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header text eol=crlf
+/tools/ci/appveyor/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header,non-ascii text eol=crlf
 /tools/ci/appveyor/appveyor_build.sh       ocaml-typo=non-ascii
 
 
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
 asmcomp/power/NOTES.md   ocaml-typo=missing-header
 
-asmrun/i386.S            ocaml-typo=long-line
-
-config/gnu               ocaml-typo=prune
+/config/gnu              ocaml-typo=prune
 
 emacs/*.el               ocaml-typo=long-line,unused-prop
 emacs/caml.el            ocaml-typo=long-line,unused-prop,missing-header
 emacs/COPYING            ocaml-typo=tab,non-printing,missing-header
 emacs/ocamltags.in       ocaml-typo=non-printing
 
-experimental             ocaml-typo=prune
+/experimental            ocaml-typo=prune
 
-manual                   ocaml-typo=prune
-
-ocamlbuild/*             ocaml-typo=long-line
-ocamlbuild/AUTHORS       ocaml-typo=missing-header
-ocamlbuild/ChangeLog     ocaml-typo=tab,missing-header
-ocamlbuild/TODO          ocaml-typo=missing-header
+/manual                  ocaml-typo=prune
 
 ocamldoc/Changes.txt     ocaml-typo=missing-header
 ocamldoc/ocamldoc.sty    ocaml-typo=missing-header
+ocamldoc/odoc_index.html ocaml-typo=missing-header
 
 otherlibs/win32unix/readlink.c    ocaml-typo=long-line
 otherlibs/win32unix/stat.c        ocaml-typo=long-line
 otherlibs/win32unix/symlink.c     ocaml-typo=long-line
 
+runtime/i386.S            ocaml-typo=long-line
+
 stdlib/hashbang     ocaml-typo=white-at-eol,missing-lf
 
-testsuite/tests/**                        ocaml-typo=missing-header
-testsuite/tests/lib-unix/win-stat/fakeclock.c ocaml-typo=
-testsuite/tests/lib-bigarray-2/bigarrf.f  ocaml-typo=missing-header,tab
-testsuite/tests/misc-unsafe/almabench.ml  ocaml-typo=missing-header,long-line
-testsuite/typing                          ocaml-typo=missing-header
+testsuite/tests/**                                      ocaml-typo=missing-header
+testsuite/tests/lib-bigarray-2/bigarrf.f                ocaml-typo=missing-header,tab
+testsuite/tests/lib-unix/win-stat/fakeclock.c           ocaml-typo=
+testsuite/tests/misc-unsafe/almabench.ml                ocaml-typo=missing-header,long-line
+testsuite/tests/tool-toplevel/strings.ml                ocaml-typo=utf8,missing-header
+testsuite/tests/typing-unboxed-types/test.ml.reference* ocaml-typo=white-at-eof,missing-header
+testsuite/tests/win-unicode/*.ml                        ocaml-typo=utf8,missing-header
+testsuite/tools/*.S                                     ocaml-typo=missing-header
+testsuite/tools/*.asm                                   ocaml-typo=missing-header
+testsuite/typing                                        ocaml-typo=missing-header
+
+# Expect tests with overly long lines of expected output
+testsuite/tests/parsing/docstrings.ml        ocaml-typo=long-line,very-long-line,missing-header
+testsuite/tests/typing-objects/Exemples.ml   ocaml-typo=long-line,missing-header
+testsuite/tests/typing-modules/firstclass.ml ocaml-typo=long-line,missing-header
+testsuite/tests/typing-gadts/test.ml         ocaml-typo=long-line,missing-header
+testsuite/tests/typing-gadts/pr7160.ml       ocaml-typo=long-line,missing-header
 
 tools/magic         ocaml-typo=missing-header
 
@@ -98,10 +106,9 @@ yacc/*.[ch]   ocaml-typo=long-line,very-long-line,unused-prop
 *.sh.in text eol=lf
 *.awk text eol=lf
 
-# Test suite command fragments
-*.checker text eol=lf
-*.precheck text eol=lf
-*.runner text eol=lf
+# ocamltest hooks which are used in the testsuite
+*.check-program-output text eol=lf
+*.run text eol=lf
 
 configure text eol=lf
 config/auto-aux/hasgot text eol=lf
@@ -117,6 +124,7 @@ ocamldoc/remove_DEBUG text eol=lf
 ocamltest/getocamloptdefaultflags text eol=lf
 stdlib/Compflags text eol=lf
 stdlib/sharpbang text eol=lf
+tools/ci/inria/remove-sinh-primitive.patch text eol=lf ocaml-typo=white-at-eol,missing-header
 tools/check-typo text eol=lf
 tools/ci-build text eol=lf
 tools/msvs-promote-path text eol=lf
@@ -127,6 +135,7 @@ tools/make-package-macosx text eol=lf
 tools/ocaml-objcopy-macosx text eol=lf
 tools/ocamlmktop.tpl text eol=lf
 tools/ocamlsize text eol=lf
+tools/pre-commit-githook text eol=lf
 
 # These two are cat scripts, so may not actually require this
 config/auto-aux/sharpbang text eol=lf
@@ -142,11 +151,17 @@ manual/tools/texexpand text eol=lf
 
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.
+testsuite/tests/basic-more/morematch.ml text eol=lf
+testsuite/tests/basic-more/robustmatch.ml text eol=lf
 testsuite/tests/parsing/*.ml text eol=lf
 testsuite/tests/docstrings/empty.ml text eol=lf
 testsuite/tests/functors/functors.ml text eol=lf
 testsuite/tests/translprim/module_coercion.ml text eol=lf
+testsuite/tests/typing-objects-bugs/pr3968_bad.ml text eol=lf
+testsuite/tests/typing-recmod/t12bad.ml text eol=lf
+testsuite/tests/typing-safe-linking/b_bad.ml text eol=lf
 testsuite/tests/warnings/w04.ml text eol=lf
+testsuite/tests/warnings/w04_failure.ml text eol=lf
 testsuite/tests/warnings/w32.ml text eol=lf
 
 # These are forced to \n to allow the Cygwin testsuite to pass on a
@@ -154,12 +169,18 @@ testsuite/tests/warnings/w32.ml text eol=lf
 testsuite/tests/formatting/margins.ml text eol=lf
 testsuite/tests/letrec-disallowed/disallowed.ml text eol=lf
 testsuite/tests/letrec-disallowed/extension_constructor.ml text eol=lf
-testsuite/tests/letrec-disallowed/float_block.ml text eol=lf
+testsuite/tests/letrec-disallowed/float_block_allowed.ml text eol=lf
+testsuite/tests/letrec-disallowed/float_block_disallowed.ml text eol=lf
 testsuite/tests/letrec-disallowed/generic_arrays.ml text eol=lf
+testsuite/tests/letrec-disallowed/lazy_.ml text eol=lf
 testsuite/tests/letrec-disallowed/module_constraints.ml text eol=lf
+testsuite/tests/letrec-disallowed/unboxed.ml text eol=lf
 testsuite/tests/letrec-disallowed/pr7215.ml text eol=lf
+testsuite/tests/letrec-disallowed/pr7231.ml text eol=lf
+testsuite/tests/letrec-disallowed/pr7706.ml text eol=lf
 testsuite/tests/lexing/uchar_esc.ml text eol=lf
 testsuite/tests/match-exception-warnings/exhaustiveness_warnings.ml text eol=lf
+testsuite/tests/tool-toplevel/pr7060.ml text eol=lf
 testsuite/tests/typing-extension-constructor/test.ml text eol=lf
 testsuite/tests/typing-extensions/extensions.ml text eol=lf
 testsuite/tests/typing-extensions/open_types.ml text eol=lf

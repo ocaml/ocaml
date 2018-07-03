@@ -1,5 +1,5 @@
 (* TEST
-script = "sh ${test_source_directory}/has-lib-bfd"
+script = "sh ${test_source_directory}/has-lib-bfd.sh"
 * shared-libraries
 ** script
 *** setup-ocamlopt.byte-build-env

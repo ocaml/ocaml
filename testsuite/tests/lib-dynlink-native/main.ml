@@ -1,11 +1,14 @@
 (* TEST
 
-files = "a.ml api.ml b.ml bug.ml c.ml factorial.c pack_client.ml packed1_client.ml packed1.ml plugin2.ml plugin4.ml plugin_ext.ml plugin_high_arity.ml plugin.ml plugin.mli plugin_ref.ml plugin_simple.ml plugin_thread.ml"
+files = "a.ml api.ml b.ml bug.ml c.ml factorial.c pack_client.ml \
+         packed1_client.ml packed1.ml plugin2.ml plugin4.ml plugin_ext.ml \
+         plugin_high_arity.ml plugin.ml plugin.mli plugin_ref.ml \
+         plugin_simple.ml plugin_thread.ml"
 
 include systhreads
 include dynlink
 
-set subdir = "${test_source_directory}/sub" 
+set subdir = "${test_source_directory}/sub"
 
 * native-dynlink
 libraries = "" (* We will add them manually where appropriated *)
@@ -14,7 +17,8 @@ ocamlopt_default_flags = "" (* Removes the -ccopt -no-pie on ised on OpenBSD *)
 *** script
 script = "mkdir sub"
 **** script
-script = "cp ${subdir}/api.mli ${subdir}/api.ml ${subdir}/plugin3.ml ${subdir}/plugin.ml sub"
+script = "cp ${subdir}/api.mli ${subdir}/api.ml ${subdir}/plugin3.ml \
+             ${subdir}/plugin.ml sub"
 ***** ocamlopt.byte
 module = "api.ml"
 ****** ocamlopt.byte

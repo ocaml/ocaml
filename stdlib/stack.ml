@@ -53,4 +53,3 @@ let of_seq g =
   let s = create() in
   add_seq s g;
   s
-

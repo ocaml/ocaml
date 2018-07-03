@@ -50,7 +50,8 @@ static struct custom_operations win_handle_ops = {
 
 value win_alloc_handle(HANDLE h)
 {
-  value res = caml_alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
+  value res =
+    caml_alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
   Handle_val(res) = h;
   Descr_kind_val(res) = KIND_HANDLE;
   CRT_fd_val(res) = NO_CRT_FD;
@@ -60,7 +61,8 @@ value win_alloc_handle(HANDLE h)
 
 value win_alloc_socket(SOCKET s)
 {
-  value res = caml_alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
+  value res =
+    caml_alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
   Socket_val(res) = s;
   Descr_kind_val(res) = KIND_SOCKET;
   CRT_fd_val(res) = NO_CRT_FD;

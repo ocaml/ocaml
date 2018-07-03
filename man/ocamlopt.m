@@ -373,6 +373,11 @@ than with the usual graph coloring allocator, sometimes quite drastically so for
 long functions and modules. On the other hand, the generated code can be a bit
 slower.
 .TP
+.B \-match\-context\-rows
+Set number of rows of context used during pattern matching
+compilation. Lower values cause faster compilation, but
+less optimized code. The default value is 32.
+.TP
 .B \-no-alias-deps
 Do not record dependencies for module aliases.
 .TP
@@ -567,8 +572,7 @@ is saved in the file
 .B \-safe\-string
 Enforce the separation between types
 .BR string \ and\  bytes ,
-thereby making strings read-only. This will become the default in
-a future version of OCaml.
+thereby making strings read-only. This is the default.
 .TP
 .B \-shared
 Build a plugin (usually .cmxs) that can be dynamically loaded with
@@ -626,9 +630,9 @@ exception.
 .B \-unsafe\-string
 Identify the types
 .BR string \ and\  bytes ,
-thereby making strings writable. For reasons of backward compatibility,
-this is the default setting for the moment, but this will change in a future
-version of OCaml.
+thereby making strings writable.
+This is intended for compatibility with old source code and should not
+be used with new software.
 .TP
 .B \-v
 Print the version number of the compiler and the location of the

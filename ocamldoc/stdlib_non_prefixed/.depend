@@ -47,7 +47,7 @@ digest.cmi :
 dll.cmi :
 docstrings.cmi : parsetree.cmi location.cmi lexing.cmi lazy.cmi
 dynlink.cmi : digest.cmi
-emitcode.cmi : instruct.cmi ident.cmi cmo_format.cmi
+emitcode.cmi : misc.cmi instruct.cmi ident.cmi cmo_format.cmi
 env.cmi : warnings.cmi types.cmi subst.cmi path.cmi misc.cmi map.cmi \
     longident.cmi location.cmi ident.cmi format.cmi digest.cmi consistbl.cmi \
     cmi_format.cmi asttypes.cmi
@@ -137,7 +137,7 @@ string.cmi : seq.cmi
 stringLabels.cmi : seq.cmi
 strongly_connected_components.cmi : identifiable.cmi
 stypes.cmi : typedtree.cmi location.cmi annot.cmi
-subst.cmi : types.cmi path.cmi ident.cmi
+subst.cmi : types.cmi path.cmi location.cmi ident.cmi
 switch.cmi : location.cmi
 symtable.cmi : obj.cmi misc.cmi lambda.cmi ident.cmi format.cmi digest.cmi \
     cmo_format.cmi

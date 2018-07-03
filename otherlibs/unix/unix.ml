@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let shell = "/bin/sh"
+
 type error =
     E2BIG
   | EACCES
@@ -216,7 +218,7 @@ let execvpe_ml name args env =
       let argc = Array.length args in
       (* Drop the original args.(0) if it is there *)
       let new_args = Array.append
-        [| "/bin/sh"; file |]
+        [| shell; file |]
         (if argc = 0 then args else Array.sub args 1 (argc - 1)) in
       execve new_args.(0) new_args env in
   (* Try each path element in turn *)
@@ -332,9 +334,9 @@ let single_write_substring fd buf ofs len =
   single_write fd (Bytes.unsafe_of_string buf) ofs len
 
 external in_channel_of_descr : file_descr -> in_channel
-                             = "caml_ml_open_descriptor_in"
+                             = "unix_inchannel_of_filedescr"
 external out_channel_of_descr : file_descr -> out_channel
-                              = "caml_ml_open_descriptor_out"
+                              = "unix_outchannel_of_filedescr"
 external descr_of_in_channel : in_channel -> file_descr
                              = "caml_channel_descriptor"
 external descr_of_out_channel : out_channel -> file_descr
@@ -378,7 +380,7 @@ external fstat : file_descr -> stats = "unix_fstat"
 external isatty : file_descr -> bool = "unix_isatty"
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
-external link : string -> string -> unit = "unix_link"
+external link : ?follow:bool -> string -> string -> unit = "unix_link"
 
 module LargeFile =
   struct
@@ -941,7 +943,7 @@ external sys_exit : int -> 'a = "caml_sys_exit"
 let system cmd =
   match fork() with
      0 -> begin try
-            execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+            execv shell [| shell; "-c"; cmd |]
           with _ ->
             sys_exit 127
           end
@@ -1055,7 +1057,8 @@ let open_process_args prog args =
   let outchan = out_channel_of_descr out_write in
   begin
     try
-      open_proc prog args None (Process(inchan, outchan)) out_read in_write stderr
+      open_proc prog args None
+                (Process(inchan, outchan)) out_read in_write stderr
     with e ->
       close out_read; close out_write;
       close in_read; close in_write;
@@ -1093,7 +1096,6 @@ let open_process_args_full prog args env =
   (inchan, outchan, errchan)
 
 let open_process_shell fn cmd =
-  let shell = "/bin/sh" in
   fn shell [|shell; "-c"; cmd|]
 let open_process_in cmd =
   open_process_shell open_process_args_in cmd

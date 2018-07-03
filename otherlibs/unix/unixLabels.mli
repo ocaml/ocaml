@@ -370,7 +370,7 @@ type stats = Unix.stats =
     st_nlink : int;             (** Number of links *)
     st_uid : int;               (** User id of the owner *)
     st_gid : int;               (** Group ID of the file's group *)
-    st_rdev : int;              (** Device minor number *)
+    st_rdev : int;              (** Device ID (if special file) *)
     st_size : int;              (** Size in bytes *)
     st_atime : float;           (** Last access time *)
     st_mtime : float;           (** Last modification time *)
@@ -408,7 +408,7 @@ module LargeFile :
         st_nlink : int;             (** Number of links *)
         st_uid : int;               (** User id of the owner *)
         st_gid : int;               (** Group ID of the file's group *)
-        st_rdev : int;              (** Device minor number *)
+        st_rdev : int;              (** Device ID (if special file) *)
         st_size : int64;            (** Size in bytes *)
         st_atime : float;           (** Last access time *)
         st_mtime : float;           (** Last modification time *)
@@ -492,9 +492,19 @@ val unlink : string -> unit
 val rename : src:string -> dst:string -> unit
 (** [rename old new] changes the name of a file from [old] to [new]. *)
 
-val link : src:string -> dst:string -> unit
-(** [link source dest] creates a hard link named [dest] to the file
-   named [source]. *)
+val link : ?follow:bool -> src:string -> dst:string -> unit
+(** [link ?follow source dest] creates a hard link named [dest] to the file
+   named [source].
+
+   @param follow indicates whether a [source] symlink is followed or a
+   hardlink to [source] itself will be created. On {e Unix} systems this is
+   done using the [linkat(2)] function. If [?follow] is not provided, then the
+   [link(2)] function is used whose behaviour is OS-dependent, but more widely
+   available.
+
+   @raise ENOSYS On {e Unix} if [~follow:_] is requested, but linkat is
+                 unavailable.
+   @raise ENOSYS On {e Windows} if [~follow:false] is requested. *)
 
 
 (** {1 File permissions and ownership} *)
@@ -693,7 +703,8 @@ val open_process_args : string -> string array -> in_channel * out_channel
     @since 4.08.0 *)
 
 val open_process_args_full :
-  string -> string array -> string array -> in_channel * out_channel * in_channel
+  string -> string array -> string array ->
+    in_channel * out_channel * in_channel
 (** Similar to {!Unix.open_process_args}, but the third argument specifies the
    environment passed to the command.  The result is a triple of channels
    connected respectively to the standard output, standard input, and standard

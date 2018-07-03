@@ -1,4 +1,5 @@
 \documentclass[11pt]{book}
+\usepackage{ae}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 % HEVEA\@def@charset{UTF-8}%
@@ -11,10 +12,6 @@
 \usepackage{caml-sl}
 \usepackage{ocamldoc}
 \usepackage{xspace}
-\newif\ifplaintext
-\plaintextfalse
-%\newif\ifpdf
-%\pdffalse
 
 \input{macros.tex}
 
@@ -29,7 +26,7 @@
 }
 \fi
 
-\usepackage{hyperref}
+\usepackage[colorlinks,linkcolor=blue]{hyperref}
 %\makeatletter \def\@wrindex#1#2{\xdef \@indexfile{\csname #1@idxfile\endcsname}\@@wrindex#2||\\}\makeatother
 \def\th{^{\hbox{\scriptsize th}}}
 

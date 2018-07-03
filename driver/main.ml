@@ -107,14 +107,16 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _where = print_standard_library
   let _verbose = set verbose
   let _nopervasives = set nopervasives
+  let _match_context_rows n = match_context_rows := n
   let _dno_unique_ids = unset unique_ids
-  let _dunique_ids = set unique_ids  
+  let _dunique_ids = set unique_ids
   let _dsource = set dump_source
   let _dparsetree = set dump_parsetree
   let _dtypedtree = set dump_typedtree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
+  let _dcamlprimc = set keep_camlprimc_file
   let _dtimings () = profile_columns := [ `Time ]
   let _dprofile () = profile_columns := Profile.all_columns
 

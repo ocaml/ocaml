@@ -24,8 +24,6 @@ exception Subtype of
         (type_expr * type_expr) list * (type_expr * type_expr) list
 exception Cannot_expand
 exception Cannot_apply
-exception Recursive_abbrev
-exception Unification_recursive_abbrev of (type_expr * type_expr) list
 
 val init_def: int -> unit
         (* Set the initial variable level *)
@@ -170,7 +168,8 @@ val enforce_constraints: Env.t -> type_expr -> unit
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
-val unify_gadt: equations_level:int -> Env.t ref -> type_expr -> type_expr -> unit
+val unify_gadt:
+        equations_level:int -> Env.t ref -> type_expr -> type_expr -> unit
         (* Unify the two types given and update the environment with the
            local constraints. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit

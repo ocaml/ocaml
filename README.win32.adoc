@@ -96,7 +96,7 @@ Visual C/C++ Compiler as well as the Build Tools for Visual Studio.
 
 |=====
 |                    | `cl` Version | Express                 | SDK/Build Tools
-| Visual Studio 2005 | 14.00.x.x    | 32-bit only <<vs1,(*)>> |                                                    
+| Visual Studio 2005 | 14.00.x.x    | 32-bit only <<vs1,(*)>> |
 | Visual Studio 2008 | 15.00.x.x    | 32-bit only             | Windows SDK 7.0 also provides 32/64-bit compilers
 | Visual Studio 2010 | 16.00.x.x    | 32-bit only             | Windows SDK 7.1 also provides 32/64-bit compilers
 | Visual Studio 2012 | 17.00.x.x    | 32/64-bit               |
@@ -196,8 +196,8 @@ quickly as it will be unable to link `ocamlrun`.
 
 Now run:
 
-        cp config/m-nt.h byterun/caml/m.h
-        cp config/s-nt.h byterun/caml/s.h
+        cp config/m-nt.h runtime/caml/m.h
+        cp config/s-nt.h runtime/caml/s.h
 
 followed by:
 
@@ -227,7 +227,7 @@ like to copy the `tools/msvs-promote-path` script and add the `eval` line to
 your `~/.bashrc` file.
 
 * The Microsoft Visual C/C++ compiler does not implement "computed gotos", and
-  therefore generates inefficient code for `byterun/interp.c`.  Consequently,
+  therefore generates inefficient code for `runtime/interp.c`.  Consequently,
   the performance of bytecode programs is about 2/3 of that obtained under
   Unix/GCC,  Cygwin or Mingw-w64 on similar hardware.
 
@@ -268,8 +268,8 @@ the WinZip Options Window.)
 
 Now run:
 
-        cp config/m-nt.h byterun/caml/m.h
-        cp config/s-nt.h byterun/caml/s.h
+        cp config/m-nt.h runtime/caml/m.h
+        cp config/s-nt.h runtime/caml/s.h
 
 followed by:
 

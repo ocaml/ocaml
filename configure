@@ -419,19 +419,13 @@ esac
 # invoked to process a third-party C source file passed to ocamlc
 # when no -cc command-line option has been specified.
 
-# The BYTECCCOMPOPTS make variable contains options to pass to the C
-# compiler but only when compiling C files that belong to the OCaml
-# distribution.
-# In other words, when ocamlc is called to compile a third-party C
-# source file, it will _not_ pass these options to the C compiler.
-
-# The SHAREDCCCOMPOPTS make variable contains options to use to compile C
+# The SHAREDLIB_CFLAGS make variable contains options to use to compile C
 # source files so that the resulting object files can then be integrated
-# into shared libraries. It is passed to BYTECC for both C source files
+# into shared libraries. It is passed to CC for both C source files
 # in the OCaml distribution and third-party C source files compiled
 # with ocamlc.
 
-mkexe="\$(CC) \$(CFLAGS) \$(CPPFLAGS) \$(LDFLAGS)"
+mkexe="\$(CC) \$(OC_CFLAGS) \$(OC_CPPFLAGS) \$(OC_LDFLAGS)"
 mkexedebugflag="-g"
 common_cflags=""
 common_cppflags=""
@@ -670,9 +664,11 @@ if test "$?" -eq 0; then
   case "$3" in
     4) inf "OK, this is a regular 32 bit architecture."
        echo "#undef ARCH_SIXTYFOUR" >> m.h
+       config ARCH64 "false"
        arch64=false;;
     8) inf "Wow! A 64 bit architecture!"
        echo "#define ARCH_SIXTYFOUR" >> m.h
+       config ARCH64 "true"
        arch64=true;;
     *) err "This architecture seems to be neither 32 bits nor 64 bits.\n" \
            "OCaml won't run on this architecture.";;
@@ -803,7 +799,7 @@ esac
 
 shared_libraries_supported=false
 dl_needs_underscore=false
-sharedcccompopts=''
+sharedlib_cflags=''
 mksharedlib='shared-libs-not-available'
 rpath=''
 mksharedlibrpath=''
@@ -822,13 +818,13 @@ if $with_sharedlibs; then
     alpha*-*-osf*)
       case "$cc" in
         *gcc*)
-          sharedcccompopts="-fPIC"
+          sharedlib_cflags="-fPIC"
           mksharedlib="$cc -shared"
           rpath="-Wl,-rpath,"
           mksharedlibrpath="-Wl,-rpath,"
           shared_libraries_supported=true;;
         cc*)
-          sharedcccompopts=""
+          sharedlib_cflags=""
           mksharedlib="ld -shared -expect_unresolved '*'"
           rpath="-Wl,-rpath,"
           mksharedlibrpath="-rpath "
@@ -837,7 +833,7 @@ if $with_sharedlibs; then
     *-*-solaris2*)
       case "$cc" in
         *gcc*)
-          sharedcccompopts="-fPIC"
+          sharedlib_cflags="-fPIC"
           if sh ./solaris-ld; then
             mksharedlib="ld -G"
             rpath="-R"
@@ -851,7 +847,7 @@ if $with_sharedlibs; then
           fi
           shared_libraries_supported=true;;
         *)
-          sharedcccompopts="-KPIC"
+          sharedlib_cflags="-KPIC"
           rpath="-R"
           mksharedlibrpath="-R"
           mksharedlib="/usr/ccs/bin/ld -G"
@@ -859,8 +855,8 @@ if $with_sharedlibs; then
       esac;;
     mips*-*-irix[56]*)
       case "$cc" in
-        cc*) sharedcccompopts="";;
-        *gcc*) sharedcccompopts="-fPIC";;
+        cc*) sharedlib_cflags="";;
+        *gcc*) sharedlib_cflags="-fPIC";;
       esac
       mksharedlib="ld -shared -rdata_shared"
       rpath="-Wl,-rpath,"
@@ -880,7 +876,7 @@ if $with_sharedlibs; then
       shared_libraries_supported=true;;
     *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
-      sharedcccompopts="-fPIC"
+      sharedlib_cflags="-fPIC"
       mksharedlib="$cc -shared"
       ldflags="$ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
@@ -889,7 +885,7 @@ if $with_sharedlibs; then
       shared_libraries_supported=true;;
     powerpc-*-aix*)
       case "$ccfamily" in
-        xlc-*)sharedcccompopts="-qpic"
+        xlc-*)sharedlib_cflags="-qpic"
               mksharedlib="$cc -qmkshrobj -G"
               mksharedlibrpath="-Wl,-blibpath,"
               ldflags="$ldflags -brtl -bexpfull"
@@ -1031,8 +1027,6 @@ case "$native_compiler" in
     false)
       arch=none; model=default; system=unknown; natdynlink=false;;
 esac
-
-nativeccprofopts=''
 
 case "$arch,$cc,$system,$model" in
   *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
@@ -1483,9 +1477,19 @@ if sh ./hasgot putenv; then
   echo "#define HAS_PUTENV" >> s.h
 fi
 
-if sh ./hasgot -i locale.h && sh ./hasgot setlocale; then
-  inf "setlocale() and <locale.h> found."
-  echo "#define HAS_LOCALE" >> s.h
+if sh ./hasgot -i locale.h && sh ./hasgot newlocale freelocale uselocale; then
+  inf "newlocale() and <locale.h> found."
+  echo "#define HAS_LOCALE_H" >> s.h
+fi
+
+if sh ./hasgot -i xlocale.h && sh ./hasgot newlocale freelocale uselocale; then
+  inf "newlocale() and <xlocale.h> found."
+  echo "#define HAS_XLOCALE_H" >> s.h
+fi
+
+if sh ./hasgot strtod_l; then
+  inf "strtod_l() found."
+  echo "#define HAS_STRTOD_L" >> s.h
 fi
 
 
@@ -1517,6 +1521,12 @@ fi
 if sh ./hasgot pwrite; then
   inf "pwrite() found"
   echo "#define HAS_PWRITE" >> s.h
+fi
+
+if sh ./trycompile -fdebug-prefix-map=old=new ansi.c; then
+    cc_has_debug_prefix_map=true
+else
+    cc_has_debug_prefix_map=false
 fi
 
 nanosecond_stat=none
@@ -1939,7 +1949,7 @@ fi
 # The number of bits used for profiling information is configurable here.
 # The more bits used for profiling, the smaller will be Max_wosize.
 # Note that PROFINFO_WIDTH must still be defined even if not configuring
-# for Spacetime (see comment in byterun/caml/mlvalues.h on [Profinfo_hd]).
+# for Spacetime (see comment in runtime/caml/mlvalues.h on [Profinfo_hd]).
 echo "#define PROFINFO_WIDTH $profinfo_width" >> m.h
 if $with_profinfo; then
     echo "#define WITH_PROFINFO" >> m.h
@@ -2041,8 +2051,8 @@ if ! $shared_libraries_supported; then
 fi
 
 if $with_fpic; then
-  common_cflags="$common_cflags $sharedcccompopts"
-  aspp="$aspp $sharedcccompopts"
+  common_cflags="$common_cflags $sharedlib_cflags"
+  aspp="$aspp $sharedlib_cflags"
 fi
 
 
@@ -2071,18 +2081,18 @@ cclibs="$cclibs $mathlib"
 
 config CC "$cc"
 config CPP "$cpp"
-config CFLAGS "$common_cflags $internal_cflags"
-config CPPFLAGS "$common_cppflags $internal_cppflags"
-config OCAMLC_CFLAGS "$common_cflags $sharedcccompopts"
+config OC_CFLAGS "$common_cflags $internal_cflags"
+config OC_CPPFLAGS "$common_cppflags $internal_cppflags"
+config OCAMLC_CFLAGS "$common_cflags $sharedlib_cflags"
 config OCAMLC_CPPFLAGS "$common_cppflags"
-config LDFLAGS "$ldflags"
+config OC_LDFLAGS "$ldflags"
 config BYTECCLIBS "$cclibs $dllib $pthread_link $instrumented_runtime_libs"
 config RPATH "$rpath"
 config EXE "$exe"
 config EMPTY ""
 config OUTPUTEXE "-o \$(EMPTY)"
 config SUPPORTS_SHARED_LIBRARIES "$shared_libraries_supported"
-config SHAREDCCCOMPOPTS "$sharedcccompopts"
+config SHAREDLIB_CFLAGS "$sharedlib_cflags"
 config MKSHAREDLIBRPATH "$mksharedlibrpath"
 config NATDYNLINKOPTS "$natdynlinkopts"
 cat >> Makefile <<EOF
@@ -2100,7 +2110,6 @@ config MODEL "$model"
 config SYSTEM "$system"
 config OCAMLOPT_CFLAGS "$common_cflags"
 config OCAMLOPT_CPPFLAGS "$common_cppflags"
-config NATIVECCPROFOPTS "$nativeccprofopts"
 config NATIVECCLIBS "$cclibs $dllib"
 config ASM "$as"
 config ASPP "$aspp"
@@ -2158,11 +2167,12 @@ config AFL_INSTRUMENT "$afl_instrument"
 config MAX_TESTSUITE_DIR_RETRIES "$max_testsuite_dir_retries"
 config FLAT_FLOAT_ARRAY "$flat_float_array"
 config AWK "awk"
+config CC_HAS_DEBUG_PREFIX_MAP "$cc_has_debug_prefix_map"
 
 
 rm -f tst hasgot.c
-rm -f ../../byterun/caml/m.h ../../byterun/caml/s.h ../Makefile
-mv m.h s.h ../../byterun/caml/
+rm -f ../../runtime/caml/m.h ../../runtime/caml/s.h ../Makefile
+mv m.h s.h ../../runtime/caml/
 mv Makefile ..
 
 # Print a summary
@@ -2173,7 +2183,8 @@ inf
 inf "Directories where OCaml will be installed:"
 inf "        binaries.................. $bindir"
 inf "        standard library.......... $libdir"
-inf "        manual pages.............. $mandir (with extension .$programs_man_section)"
+inf "        manual pages.............. $mandir (with extension" \
+                                       ".$programs_man_section)"
 
 inf "Configuration for the bytecode compiler:"
 inf "        C compiler used........... $cc"
@@ -2181,7 +2192,7 @@ inf "        options for compiling..... $common_cflags"
 inf "        options for linking....... $ldflags $cclibs $dllib $pthread_link"
 if $shared_libraries_supported; then
 inf "        shared libraries are supported"
-inf "        options for compiling..... $sharedcccompopts $common_cflags"
+inf "        options for compiling..... $sharedlib_cflags $common_cflags"
 inf "        command for building...... $mksharedlib -o lib.so" \
                                        "$mksharedlibrpath/a/path objs"
 else

@@ -78,11 +78,6 @@ exception Cannot_expand
 
 exception Cannot_apply
 
-exception Recursive_abbrev
-
-(* GADT: recursive abbrevs can appear as a result of local constraints *)
-exception Unification_recursive_abbrev of (type_expr * type_expr) list
-
 (**** Type level management ****)
 
 let current_level = ref 0
@@ -2853,9 +2848,6 @@ let unify env ty1 ty2 =
     Unify trace ->
       undo_compress snap;
       raise (Unify (expand_trace !env trace))
-  | Recursive_abbrev ->
-      undo_compress snap;
-      raise (Unification_recursive_abbrev (expand_trace !env [(ty1,ty2)]))
 
 let unify_gadt ~equations_level:lev (env:Env.t ref) ty1 ty2 =
   try
@@ -4369,7 +4361,10 @@ let nondep_variants = TypeHash.create 17
 let clear_hash ()   =
   TypeHash.clear nondep_hash; TypeHash.clear nondep_variants
 
-let rec nondep_type_rec env id ty =
+let rec nondep_type_rec ?(expand_private=false) env id ty =
+  let expand_abbrev env t =
+    if expand_private then expand_abbrev_opt env t else expand_abbrev env t
+  in
   match ty.desc with
     Tvar _ | Tunivar _ -> ty
   | Tlink ty -> nondep_type_rec env id ty
@@ -4382,7 +4377,7 @@ let rec nondep_type_rec env id ty =
       | Tconstr(p, tl, _abbrev) ->
           if Path.isfree id p then
             begin try
-              Tlink (nondep_type_rec env id
+              Tlink (nondep_type_rec ~expand_private env id
                        (expand_abbrev env (newty2 ty.level ty.desc)))
               (*
                  The [Tlink] is important. The expanded type may be a
@@ -4460,19 +4455,25 @@ let nondep_type_decl env mid id is_covariant decl =
     let tk =
       try map_kind (nondep_type_rec env mid) decl.type_kind
       with Not_found when is_covariant -> Type_abstract
-    and tm =
-      try match decl.type_manifest with
-        None -> None
+    and tm, priv =
+      match decl.type_manifest with
+      | None -> None, decl.type_private
       | Some ty ->
-          Some (unroll_abbrev id params (nondep_type_rec env mid ty))
-      with Not_found when is_covariant ->
-        None
+          try Some (unroll_abbrev id params
+                      (nondep_type_rec env mid ty)),
+              decl.type_private
+          with Not_found when is_covariant ->
+            clear_hash ();
+            try Some (nondep_type_rec ~expand_private:true env mid ty),
+                Private
+            with Not_found ->
+              None, decl.type_private
     in
     clear_hash ();
     let priv =
       match tm with
       | Some ty when Btype.has_constr_row ty -> Private
-      | _ -> decl.type_private
+      | _ -> priv
     in
     { type_params = params;
       type_arity = decl.type_arity;

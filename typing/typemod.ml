@@ -470,7 +470,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             in
             let params = tdecl.typ_type.type_params in
             if params_are_constrained params
-            then raise(Error(loc, initial_env, With_cannot_remove_constrained_type));
+            then raise(Error(loc, initial_env,
+                             With_cannot_remove_constrained_type));
             fun s path -> Subst.add_type_function path ~params ~body s
        in
        let sub = Subst.change_locs Subst.identity loc in
@@ -844,7 +845,9 @@ and transl_signature env sg =
             let (ext, newenv) = Typedecl.transl_type_exception env sext in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_exception ext) env loc :: trem,
-            Sig_typext(ext.tyexn_constructor.ext_id, ext.tyexn_constructor.ext_type, Text_exception) :: rem,
+            Sig_typext(ext.tyexn_constructor.ext_id,
+                       ext.tyexn_constructor.ext_type,
+                       Text_exception) :: rem,
             final_env
         | Psig_module pmd ->
             check_name check_module names pmd.pmd_name;
@@ -968,7 +971,9 @@ and transl_signature env sg =
     (fun () ->
        let (trem, rem, final_env) = transl_sig (Env.in_signature true env) sg in
        let rem = simplify_signature rem in
-       let sg = { sig_items = trem; sig_type =  rem; sig_final_env = final_env } in
+       let sg =
+         { sig_items = trem; sig_type = rem; sig_final_env = final_env }
+       in
        Cmt_format.set_saved_types
          ((Cmt_format.Partial_signature sg) :: previous_saved_types);
        sg
@@ -1384,13 +1389,26 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                               mty_res
             | None ->
                 if generative then mty_res else
-                try
-                  Mtype.nondep_supertype
-                    (Env.add_module ~arg:true param arg.mod_type env)
-                    param mty_res
-                with Not_found ->
-                  raise(Error(smod.pmod_loc, env,
-                              Cannot_eliminate_dependency mty_functor))
+                let env = Env.add_module ~arg:true param arg.mod_type env in
+                let nondep_mty =
+                  try Mtype.nondep_supertype env param mty_res
+                  with Not_found ->
+                    raise(Error(smod.pmod_loc, env,
+                                Cannot_eliminate_dependency mty_functor))
+                in
+                begin match
+                  Includemod.modtypes ~loc:smod.pmod_loc env mty_res nondep_mty
+                with
+                | Tcoerce_none -> ()
+                | _ ->
+                  fatal_error
+                    "unexpected coercion from original module type to \
+                     nondep_supertype one"
+                | exception Includemod.Error _ ->
+                  fatal_error
+                    "nondep_supertype not included in original module type"
+                end;
+                nondep_mty
           in
           rm { mod_desc = Tmod_apply(funct, arg, coercion);
                mod_type = mty_appl;
@@ -1513,7 +1531,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         check_name check_typext names sext.ptyexn_constructor.pext_name;
         let (ext, newenv) = Typedecl.transl_type_exception env sext in
         Tstr_exception ext,
-        [Sig_typext(ext.tyexn_constructor.ext_id, ext.tyexn_constructor.ext_type, Text_exception)],
+        [Sig_typext(ext.tyexn_constructor.ext_id,
+                    ext.tyexn_constructor.ext_type,
+                    Text_exception)],
         newenv
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;
@@ -1842,7 +1862,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   if !Clflags.print_types then begin
     Typecore.force_delayed_checks ();
     Printtyp.wrap_printing_env ~error:false initial_env
-      (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
+      (fun () -> fprintf std_formatter "%a@."
+          (Printtyp.printed_signature sourcefile) simple_sg
+      );
     (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
     let sourceintf =
@@ -1969,7 +1991,8 @@ let package_units initial_env objfiles cmifile modulename =
           (prefix ^ ".cmi") imports
       in
       Cmt_format.save_cmt (prefix ^ ".cmt")  modulename
-        (Cmt_format.Packed (cmi.Cmi_format.cmi_sign, objfiles)) None initial_env (Some cmi)
+        (Cmt_format.Packed (cmi.Cmi_format.cmi_sign, objfiles)) None initial_env
+        (Some cmi)
     end;
     Tcoerce_none
   end

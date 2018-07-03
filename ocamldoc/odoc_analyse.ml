@@ -26,10 +26,7 @@ open Typedtree
    The current directory is always searched first,
    then the directories specified with the -I option (in command-line order),
    then the standard library directory. *)
-let init_path () =
-  Config.load_path :=
-    "" :: List.rev ( Clflags.std_include_dir () @ !Clflags.include_dirs);
-  Env.reset_cache ()
+let init_path () = Compmisc.init_path false
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =

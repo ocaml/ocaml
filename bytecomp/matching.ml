@@ -104,7 +104,7 @@ let rec small_enough n = function
       else small_enough (n-1) rem
 
 let ctx_lshift ctx =
-  if small_enough 31 ctx then
+  if small_enough (!Clflags.match_context_rows - 1) ctx then
     List.map lshift ctx
   else (* Context pruning *) begin
     get_mins le_ctx (List.map lforget ctx)
@@ -2226,7 +2226,7 @@ let mk_failaction_pos partial seen ctx defs  =
       | _  -> scan_def ((List.map fst now,idef)::env) later rem in
 
   let fail_pats = complete_pats_constrs seen in
-  if List.length fail_pats < 32 then begin
+  if List.length fail_pats < !Clflags.match_context_rows then begin
     let fail,jmps =
       scan_def
         []

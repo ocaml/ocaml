@@ -26,18 +26,13 @@ LDOPTS=-ldopt "-link -static-libgcc"
 endif
 
 mmap.$(O): ../$(UNIXLIB)/mmap.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 mmap_ba.$(O): ../unix/mmap_ba.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 .PHONY: depend
 
 depend:
-ifeq "$(TOOLCHAIN)" "msvc"
-	$(error Dependencies cannot be regenerated using the MSVC ports)
-else
-	$(CC) -MM $(CFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.$$(O)/g' > .depend
-	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash *.mli *.ml >> .depend
-endif
+	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash *.mli *.ml > .depend
 
 include .depend

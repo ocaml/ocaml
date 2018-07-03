@@ -2,8 +2,6 @@ TOPDIR=../..
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/str -I $(OTOPDIR)/otherlibs/unix
 include $(TOPDIR)/Makefile.tools
 
-CFLAGS=-g -O
-
 all: texquote2 transf caml-tex2
 
 
@@ -17,6 +15,9 @@ caml-tex2: caml_tex2.ml
 	$(OCAMLC) $(TOPDIR)/compilerlibs/ocamlcommon.cma -I $(TOPDIR)/parsing \
 	  -o $@ str.cma unix.cma $<
 
+texquote2: texquote2.ml
+	$(OCAMLC) -o $@ $<
+
 
 %.cmo: %.ml
 	$(OCAMLC) -c $<
@@ -26,9 +27,6 @@ caml-tex2: caml_tex2.ml
 
 %.ml: %.mll
 	$(OCAMLLEX) $<
-
-%: %.c
-	$(CC) $(CFLAGS) -o $@ $<
 
 
 .PHONY: clean

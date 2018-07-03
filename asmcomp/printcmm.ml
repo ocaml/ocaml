@@ -185,7 +185,8 @@ let rec expr ppf = function
           i
           (fun ppf ids ->
              List.iter
-               (fun id -> fprintf ppf " %a" Ident.print id)
+               (fun (id, ty) ->
+                 fprintf ppf "@ %a: %a" Ident.print id machtype ty)
                ids) ids
           sequence e2
       in

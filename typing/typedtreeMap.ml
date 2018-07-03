@@ -219,7 +219,8 @@ module MakeMap(Map : MapArgument) = struct
     let tyexn_constructor =
       map_extension_constructor tyexn.tyexn_constructor
     in
-    Map.leave_type_exception { tyexn with tyexn_constructor = tyexn_constructor }
+    Map.leave_type_exception
+      { tyexn with tyexn_constructor = tyexn_constructor }
 
   and map_extension_constructor ext =
     let ext = Map.enter_extension_constructor ext in
@@ -555,8 +556,8 @@ module MakeMap(Map : MapArgument) = struct
         | Tcl_structure clstr -> Tcl_structure (map_class_structure clstr)
         | Tcl_fun (label, pat, priv, cl, partial) ->
           Tcl_fun (label, map_pattern pat,
-                   List.map (fun (id, name, exp) ->
-                     (id, name, map_expression exp)) priv,
+                   List.map (fun (id, exp) ->
+                     (id, map_expression exp)) priv,
                    map_class_expr cl, partial)
 
         | Tcl_apply (cl, args) ->
@@ -566,8 +567,8 @@ module MakeMap(Map : MapArgument) = struct
                      ) args)
         | Tcl_let (rec_flag, bindings, ivars, cl) ->
           Tcl_let (rec_flag, map_bindings bindings,
-                   List.map (fun (id, name, exp) ->
-                     (id, name, map_expression exp)) ivars,
+                   List.map (fun (id, exp) ->
+                     (id, map_expression exp)) ivars,
                    map_class_expr cl)
 
         | Tcl_constraint (cl, Some clty, vals, meths, concrs) ->

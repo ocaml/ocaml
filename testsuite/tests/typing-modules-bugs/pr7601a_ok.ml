@@ -25,4 +25,3 @@ module Make2 (M : Param2) = struct
   include M
   let f = f ~a:""
 end
-

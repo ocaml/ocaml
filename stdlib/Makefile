@@ -57,6 +57,7 @@ OTHERS=$(P)seq.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo $(P)list.cmo \
   $(P)spacetime.cmo $(P)bigarray.cmo
 
 PREFIXED_OBJS=$(filter stdlib__%.cmo,$(OBJS))
+UNPREFIXED_OBJS=$(PREFIXED_OBJS:stdlib__%.cmo=%)
 
 .PHONY: all
 all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
@@ -75,8 +76,9 @@ else
 PROFILINGTARGET = noprof
 endif
 
-.PHONY: allopt
+.PHONY: allopt opt.opt # allopt and opt.opt are synonyms
 allopt: stdlib.cmxa std_exit.cmx allopt-$(PROFILINGTARGET)
+opt.opt: allopt
 
 .PHONY: allopt-noprof
 allopt-noprof:
@@ -85,11 +87,13 @@ allopt-noprof:
 allopt-prof: stdlib.p.cmxa std_exit.p.cmx
 	rm -f std_exit.p.cmi
 
+LEGACY_OBJS=$(patsubst stdlib__%,"$(INSTALL_LIBDIR)/%", \
+                                  $(filter stdlib__%,$(OBJS)))
 .PHONY: install
 install::
 # Transitional: when upgrading from 4.06 -> 4.07, module M is in stdlib__m.cm*,
 # while previously it was in m.cm*, which confuses the compiler.
-	rm -f $(patsubst stdlib__%,"$(INSTALL_LIBDIR)/%", $(filter stdlib__%,$(OBJS)))
+	rm -f $(LEGACY_OBJS)
 # Remove "old" pervasives.* and bigarray.* to avoid getting confused with the
 # Stdlib versions.
 	rm -f "$(INSTALL_LIBDIR)/pervasives.*" "$(INSTALL_LIBDIR)/bigarray.*"
@@ -106,12 +110,12 @@ endif
 
 ifeq "$(RUNTIMED)" "true"
 install::
-	$(INSTALL_DATA) target_camlheaderd $(INSTALL_LIBDIR)
+	$(INSTALL_DATA) target_camlheaderd "$(INSTALL_LIBDIR)"
 endif
 
 ifeq "$(RUNTIMEI)" "true"
 install::
-	$(INSTALL_DATA) target_camlheaderi $(INSTALL_LIBDIR)
+	$(INSTALL_DATA) target_camlheaderi "$(INSTALL_LIBDIR)"
 endif
 
 .PHONY: installopt
@@ -159,12 +163,12 @@ $(CAMLHEADERS): $(HEADERPROGRAM) ../config/Makefile
 ifeq "$(UNIX_OR_WIN32)" "unix"
 $(CAMLHEADERS):
 	for suff in '' d i; do \
-	  $(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(LDFLAGS) \
+	  $(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime $(OC_LDFLAGS) \
 	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
 	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader$$suff && \
-	  $(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(LDFLAGS) \
+	  $(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime $(OC_LDFLAGS) \
 	            -DRUNTIME_NAME='"$(TARGET_BINDIR)/ocamlrun'$$suff'"' \
 	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
@@ -178,7 +182,7 @@ else # Windows
 # with those above
 
 camlheader: headernt.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime \
 	          -DRUNTIME_NAME='"ocamlrun"' $(OUTPUTOBJ)headernt.$(O) $<
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	rm -f camlheader.exe
@@ -191,7 +195,7 @@ camlheader_ur: camlheader
 	cp camlheader camlheader_ur
 
 camlheaderd: headernt.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime \
 	          -DRUNTIME_NAME='"ocamlrund"' $(OUTPUTOBJ)headerntd.$(O) $<
 	$(MKEXE) -o tmpheaderd.exe headerntd.$(O) $(EXTRALIBS)
 	mv tmpheaderd.exe camlheaderd
@@ -200,7 +204,7 @@ target_camlheaderd: camlheaderd
 	cp camlheaderd target_camlheaderd
 
 camlheaderi: headernt.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime \
 	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernti.$(O) $<
 	$(MKEXE) -o tmpheaderi.exe headernti.$(O) $(EXTRALIBS)
 	mv tmpheaderi.exe camlheaderi
@@ -304,6 +308,6 @@ depend:
 	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" stdlib.ml \
 	  | sed -e 's/\.cmx : /.p.cmx : /g' >> .depend.tmp
 	sed -Ee \
-	  's#(^| )(${subst ${SPACE},|,${PREFIXED_OBJS:stdlib__%.cmo=%}})[.]#\1stdlib__\2.#g' \
+	  's#(^| )(${subst ${SPACE},|,${UNPREFIXED_OBJS}})[.]#\1stdlib__\2.#g' \
 	  .depend.tmp > .depend
 	rm -f .depend.tmp

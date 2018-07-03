@@ -554,7 +554,8 @@ let rec comp_expr env exp sz cont =
                        (add_pop ndecl cont)))
       end else begin
         let decl_size =
-          List.map (fun (id, exp) -> (id, exp, size_of_lambda Ident.empty exp)) decl in
+          List.map (fun (id, exp) -> (id, exp, size_of_lambda Ident.empty exp))
+            decl in
         let rec comp_init new_env sz = function
           | [] -> comp_nonrec new_env sz ndecl decl_size
           | (id, _exp, RHS_floatblock blocksize) :: rem ->

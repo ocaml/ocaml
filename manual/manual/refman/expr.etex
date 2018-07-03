@@ -1,5 +1,4 @@
 \section{Expressions\label{s:value-expr}}
-\pdfsection{Expressions}
 %HEVEA\cutname{expr.html}
 \ikwd{in\@\texttt{in}|see{\texttt{let}}}
 \ikwd{and\@\texttt{and}}
@@ -63,6 +62,7 @@ expr:
   | 'fun' {{ parameter }} [ ':' typexpr ] '->' expr
   | 'try' expr 'with' pattern-matching
   | 'let' ['rec'] let-binding { 'and' let-binding } 'in' expr
+  | "let" "exception" constr-decl "in" expr
   | 'new' class-path
   | 'object' class-body 'end'
   | expr '#' method-name
@@ -118,10 +118,10 @@ See also the following language extensions:
 \hyperref[s:explicit-overriding-open]{overriding in open statements},
 \hyperref[s:bigarray-access]{syntax for Bigarray access},
 \hyperref[s:attributes]{attributes},
-\hyperref[s:extension-nodes]{extension nodes},
-\hyperref[s:local-exceptions]{local exceptions}
+\hyperref[s:extension-nodes]{extension nodes} and
 \hyperref[s:index-operators]{extended indexing operators}.
 
+\subsection{Precedence and associativity}
 The table below shows the relative precedences and associativity of
 operators and non-closed constructions. The constructions with higher
 precedence come first. For infix and prefix symbols, we write
@@ -429,6 +429,19 @@ These annotations explicitly require the defined value to be polymorphic,
 and allow one to use this polymorphism in recursive occurrences
 (when using @"let" "rec"@). Note however that this is a normal polymorphic
 type, unifiable with any instance of itself.
+
+It is possible to define local exceptions in expressions:
+@ "let" exception constr-decl "in" expr @ .
+The syntactic scope of the exception constructor is the inner
+expression, but nothing prevents exception values created with this
+constructor from escaping this scope.  Two executions of the definition
+above result in two incompatible exception constructors (as for any
+exception definition). For instance, the following assertion is
+true:
+\begin{verbatim}
+  let gen () = let exception A in A
+  let () = assert(gen () <> gen ())
+\end{verbatim}
 
 \subsection{Control structures}
 

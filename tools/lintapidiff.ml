@@ -248,7 +248,8 @@ module Diff = struct
     let first_seen = Version.of_string_exn rev in
     let empty = {last_not_seen=None;first_seen;deprecated=false} in
     let f = Ast.parse_file ~orig:path ~init:empty ~f:(fun _ _ attrs ->
-        { last_not_seen=None;first_seen; deprecated=Doc.is_deprecated attrs }) in
+        { last_not_seen=None;first_seen; deprecated=Doc.is_deprecated attrs })
+    in
     let map = match Git.with_show ~f rev path with
       | Ok r -> r
       | Error `Not_found -> IdMap.empty

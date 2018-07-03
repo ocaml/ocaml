@@ -75,9 +75,13 @@ CAMLprim value unix_readlink(value opath)
         if (point->ReparseTag == IO_REPARSE_TAG_SYMLINK) {
           int cbLen = point->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
           int len;
-          len = win_wide_char_to_multi_byte(point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR), cbLen, NULL, 0);
+          len =
+            win_wide_char_to_multi_byte(
+              point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
+              cbLen, NULL, 0);
           result = caml_alloc_string(len);
-          win_wide_char_to_multi_byte(point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
+          win_wide_char_to_multi_byte(
+            point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
             cbLen,
             String_val(result),
             len);

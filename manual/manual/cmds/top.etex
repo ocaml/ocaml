@@ -1,5 +1,4 @@
 \chapter{The toplevel system or REPL (ocaml)} \label{c:camllight}
-\pdfchapter{The toplevel system or REPL (ocaml)}
 %HEVEA\cutname{toplevel.html}
 
 This chapter describes the toplevel system for OCaml, that permits

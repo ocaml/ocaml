@@ -46,7 +46,9 @@ module type Map = sig
   val filter_map : 'a t -> f:(key -> 'a -> 'b option) -> 'b t
   val of_list : (key * 'a) list -> 'a t
 
-  val disjoint_union : ?eq:('a -> 'a -> bool) -> ?print:(Format.formatter -> 'a -> unit) -> 'a t -> 'a t -> 'a t
+  val disjoint_union :
+    ?eq:('a -> 'a -> bool) -> ?print:(Format.formatter -> 'a -> unit) -> 'a t ->
+    'a t -> 'a t
 
   val union_right : 'a t -> 'a t -> 'a t
 

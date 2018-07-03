@@ -170,10 +170,8 @@ has excellent documentation.
   README.win32.adoc::     general information on the Windows ports of OCaml
   VERSION::               version string
   asmcomp/::              native-code compiler and linker
-  asmrun/::               native-code runtime library
   boot/::                 bootstrap compiler
   bytecomp/::             bytecode compiler and linker
-  byterun/::              bytecode interpreter and runtime system
   compilerlibs/::         the OCaml compiler as a library
   config/::               configuration files
   configure::             configure script
@@ -190,6 +188,7 @@ has excellent documentation.
   ocamltest/::            test driver
   otherlibs/::            several additional libraries
   parsing/::              syntax analysis -- see link:parsing/HACKING.adoc[]
+  runtime/::              bytecode interpreter and runtime systems
   stdlib/::               standard library
   testsuite/::            tests -- see link:testsuite/HACKING.adoc[]
   tools/::                various utilities

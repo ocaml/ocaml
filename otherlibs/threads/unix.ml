@@ -63,6 +63,8 @@ let _ = thread_initialize()
 
 (* Back to the Unix module *)
 
+let shell = "/bin/sh"
+
 type error =
     E2BIG
   | EACCES
@@ -293,7 +295,7 @@ external fstat : file_descr -> stats = "unix_fstat"
 external isatty : file_descr -> bool = "unix_isatty"
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
-external link : string -> string -> unit = "unix_link"
+external link : ?follow:bool -> string -> string -> unit = "unix_link"
 
 module LargeFile =
   struct
@@ -962,7 +964,7 @@ let rec waitpid_non_intr pid =
 let system cmd =
   match fork() with
      0 -> begin try
-            execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+            execv shell [| shell; "-c"; cmd |]
           with _ ->
             exit 127
           end
@@ -1059,7 +1061,8 @@ let open_process_args prog args =
     let (out_read, out_write) = pipe ~cloexec:true () in
     let outchan = out_channel_of_descr out_write in
     try
-      open_proc prog args None (Process(inchan, outchan)) out_read in_write stderr;
+      open_proc prog args None
+                (Process(inchan, outchan)) out_read in_write stderr;
       close out_read;
       close in_write;
       (inchan, outchan)
@@ -1102,7 +1105,6 @@ let open_process_args_full prog args env =
     raise e
 
 let open_process_shell fn cmd =
-  let shell = "/bin/sh" in
   fn shell [|shell; "-c"; cmd|]
 let open_process_in cmd =
   open_process_shell open_process_args_in cmd

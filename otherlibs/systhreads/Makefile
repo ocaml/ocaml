@@ -75,13 +75,15 @@ lib$(LIBNAME)nat.$(A): $(NATIVECODE_C_OBJS)
 
 $(LIBNAME).cma: $(THREADS_BCOBJS)
 ifeq "$(UNIX_OR_WIN32)" "unix"
-	$(MKLIB) -o $(LIBNAME) -ocamlc '$(CAMLC)' -cclib -lunix -linkall $(PTHREAD_CAML_LINK) $^
+	$(MKLIB) -o $(LIBNAME) -ocamlc '$(CAMLC)' -cclib -lunix -linkall \
+	  $(PTHREAD_CAML_LINK) $^
 # TODO: Figure out why -cclib -lunix is used here.
 # It may be because of the threadsUnix module which is deprecated.
 # It may hence be good to figure out whether this module shouldn't be
 # removed, and then -cclib -lunix arguments.
 else # Windows
-	$(MKLIB) -o $(LIBNAME) -ocamlc "$(CAMLC)" -linkall $(PTHREAD_CAML_LINK) $^
+	$(MKLIB) -o $(LIBNAME) -ocamlc "$(CAMLC)" -linkall \
+	  $(PTHREAD_CAML_LINK) $^
 endif
 
 # See remark above: force static linking of libthreadsnat.a
@@ -98,12 +100,12 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 # twice, each time with different options).
 
 st_stubs_b.$(O): st_stubs.c $(HEADER)
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/byterun  \
-	  $(SHAREDCCCOMPOPTS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) -I$(ROOTDIR)/runtime  \
+	  $(SHAREDLIB_CFLAGS) $(OUTPUTOBJ)$@ $<
 
 st_stubs_n.$(O): st_stubs.c $(HEADER)
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
-	  $(SHAREDCCCOMPOPTS) -DNATIVE_CODE \
+	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) \
+	  -I$(ROOTDIR)/runtime $(SHAREDLIB_CFLAGS) -DNATIVE_CODE \
 	  -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
 	  $(OUTPUTOBJ)$@ -c $<
 
@@ -130,7 +132,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  $(CMIFILES:.cmi=.cmti) \
 	  "$(INSTALL_THREADSLIBDIR)"
-	$(INSTALL_DATA) $(MLIFILES) "$(INSTALL_LIBDIR)"
+	$(INSTALL_DATA) $(MLIFILES) "$(INSTALL_THREADSLIBDIR)"
 endif
 	$(INSTALL_DATA) threads.h "$(INSTALL_LIBDIR)/caml"
 
@@ -159,10 +161,10 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend:
-	$(CC) -MM $(CPPFLAGS) -I$(ROOTDIR)/byterun st_stubs.c \
+	$(CC) -MM $(OC_CPPFLAGS) -I$(ROOTDIR)/runtime st_stubs.c \
 	  | sed -e 's/st_stubs\.o/st_stubs_b.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' > .depend
-	$(CC) -MM $(CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
+	$(CC) -MM $(OC_CPPFLAGS) -I$(ROOTDIR)/runtime \
 	  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
 	  st_stubs.c | sed -e 's/st_stubs\.o/st_stubs_n.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' >> .depend

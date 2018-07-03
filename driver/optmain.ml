@@ -191,6 +191,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _where () = print_standard_library ()
 
   let _nopervasives = set nopervasives
+  let _match_context_rows n = match_context_rows := n
   let _dno_unique_ids = clear unique_ids
   let _dunique_ids = set unique_ids
   let _dsource = set dump_source
@@ -243,7 +244,8 @@ let main () =
     Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
     Clflags.add_arguments __LOC__
       ["-depend", Arg.Unit Makedepend.main_from_option,
-       "<options> Compute dependencies (use 'ocamlopt -depend -help' for details)"];
+       "<options> Compute dependencies \
+        (use 'ocamlopt -depend -help' for details)"];
     Clflags.parse_arguments anonymous usage;
     Compmisc.read_color_env ppf;
     if !gprofile && not Config.profiling then

@@ -43,6 +43,53 @@ Warning 3: deprecated: X.x
 val x : X.t = <abstr>
 |}]
 
+(* Patterns *)
+
+let (_, foo [@deprecated], _) = 1, (), 3
+;;
+foo;;
+[%%expect{|
+val foo : unit = ()
+Line _, characters 0-3:
+  foo;;
+  ^^^
+Warning 3: deprecated: foo
+- : unit = ()
+|}]
+
+let (_, foo, bar) [@deprecated] = 1, (), 3
+;;
+foo;;
+[%%expect{|
+val foo : unit = ()
+val bar : int = 3
+- : unit = ()
+|}]
+
+let f = function
+  | bar, cho [@deprecated], _ -> cho + 1
+;;
+[%%expect{|
+Line _, characters 33-36:
+    | bar, cho [@deprecated], _ -> cho + 1
+                                   ^^^
+Warning 3: deprecated: cho
+val f : 'a * int * 'b -> int = <fun>
+|}]
+
+class c (_, (foo [@deprecated] : int)) =
+  object
+    val h = foo
+  end
+;;
+[%%expect{|
+Line _, characters 12-15:
+      val h = foo
+              ^^^
+Warning 3: deprecated: foo
+class c : 'a * int -> object val h : int end
+|}]
+
 (* Type declarations *)
 
 type t = X.t * X.s
@@ -178,7 +225,10 @@ Warning 3: deprecated: X.x
 module rec M : sig val x : X.t end
 |}]
 
-module rec M : sig val x: X.t end = struct let x = X.x end [@@ocaml.warning "-3"]
+module rec M : sig val x: X.t end =
+  struct
+    let x = X.x
+  end [@@ocaml.warning "-3"]
 [%%expect{|
 module rec M : sig val x : X.t end
 |}]
@@ -528,17 +578,21 @@ Warning 22: Pp warning2!
 module X : sig  end
 |}]
 
-let x = ((() [@ocaml.ppwarning "Pp warning 1!"]) [@ocaml.warning "-22"])  [@ocaml.ppwarning  "Pp warning 2!"]
+let x =
+  ((() [@ocaml.ppwarning "Pp warning 1!"]) [@ocaml.warning "-22"])
+    [@ocaml.ppwarning  "Pp warning 2!"]
 ;;
 [%%expect{|
-Line _, characters 93-108:
-  let x = ((() [@ocaml.ppwarning "Pp warning 1!"]) [@ocaml.warning "-22"])  [@ocaml.ppwarning  "Pp warning 2!"]
-                                                                                               ^^^^^^^^^^^^^^^
+Line _, characters 23-38:
+      [@ocaml.ppwarning  "Pp warning 2!"]
+                         ^^^^^^^^^^^^^^^
 Warning 22: Pp warning 2!
 val x : unit = ()
 |}]
 
-type t = ((unit [@ocaml.ppwarning "Pp warning 1!"]) [@ocaml.warning "-22"])  [@ocaml.ppwarning  "Pp warning 2!"]
+type t =
+  ((unit [@ocaml.ppwarning "Pp warning 1!"]) [@ocaml.warning "-22"])
+  [@ocaml.ppwarning  "Pp warning 2!"]
   [@@ocaml.ppwarning "Pp warning 3!"]
 ;;
 [%%expect{|
@@ -546,9 +600,9 @@ Line _, characters 21-36:
     [@@ocaml.ppwarning "Pp warning 3!"]
                        ^^^^^^^^^^^^^^^
 Warning 22: Pp warning 3!
-Line _, characters 96-111:
-  type t = ((unit [@ocaml.ppwarning "Pp warning 1!"]) [@ocaml.warning "-22"])  [@ocaml.ppwarning  "Pp warning 2!"]
-                                                                                                  ^^^^^^^^^^^^^^^
+Line _, characters 21-36:
+    [@ocaml.ppwarning  "Pp warning 2!"]
+                       ^^^^^^^^^^^^^^^
 Warning 22: Pp warning 2!
 type t = unit
 |}]

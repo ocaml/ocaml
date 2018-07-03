@@ -67,7 +67,7 @@ type t =
   | Unused_extension of string * bool * bool * bool (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
-  | Ambiguous_name of string list * string list *  bool    (* 41 *)
+  | Ambiguous_name of string list * string list *  bool * string (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
   | Open_shadow_identifier of string * string (* 44 *)
@@ -89,6 +89,7 @@ type t =
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
   | Constraint_on_gadt                      (* 62 *)
+  | Erroneous_printed_signature of string  (* 63 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -160,9 +161,10 @@ let number = function
   | Unused_module _ -> 60
   | Unboxable_type_in_prim_decl _ -> 61
   | Constraint_on_gadt -> 62
+  | Erroneous_printed_signature _ -> 63
 ;;
 
-let last_warning_number = 62
+let last_warning_number = 63
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -436,14 +438,16 @@ let message = function
        not visible in the current scope: "
       ^ String.concat " " slist ^ ".\n\
        They will not be selected if the type becomes unknown."
-  | Ambiguous_name ([s], tl, false) ->
+  | Ambiguous_name ([s], tl, false, expansion) ->
       s ^ " belongs to several types: " ^ String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
-  | Ambiguous_name (_, _, false) -> assert false
-  | Ambiguous_name (_slist, tl, true) ->
+      ^ expansion
+  | Ambiguous_name (_, _, false, _ ) -> assert false
+  | Ambiguous_name (_slist, tl, true, expansion) ->
       "these field labels belong to several types: " ^
       String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
+      ^ expansion
   | Disambiguated_name s ->
       "this use of " ^ s ^ " relies on type-directed disambiguation,\n\
        it will not compile with OCaml 4.00 or earlier."
@@ -521,6 +525,14 @@ let message = function
          or [@@unboxed]." t t
   | Constraint_on_gadt ->
       "Type constraints do not apply to GADT cases of variant types."
+  | Erroneous_printed_signature s ->
+      "The printed interface differs from the inferred interface.\n\
+       The inferred interface contained items which could not be printed\n\
+       properly due to name collisions between identifiers."
+     ^ s
+     ^ "\nBeware that this warning is purely informational and will not catch\n\
+        all instances of erroneous printed interface."
+
 ;;
 
 let sub_locs = function
@@ -636,7 +648,8 @@ let descriptions =
    59, "Assignment to non-mutable value";
    60, "Unused module declaration";
    61, "Unboxable type in primitive declaration";
-   62, "Type constraint on GADT type declaration"
+   62, "Type constraint on GADT type declaration";
+   63,  "Erroneous printed signature"
   ]
 ;;
 

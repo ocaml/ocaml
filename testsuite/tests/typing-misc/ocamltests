@@ -4,6 +4,8 @@ inside_out.ml
 labels.ml
 occur_check.ml
 polyvars.ml
+pr6416.ml
+pr6634.ml
 pr6939-flat-float-array.ml
 pr6939-no-flat-float-array.ml
 pr7103.ml
@@ -11,6 +13,7 @@ pr7228.ml
 pr7668_bad.ml
 printing.ml
 records.ml
+unique_names_in_unification.ml
 variant.ml
 wellfounded.ml
 empty_variant.ml

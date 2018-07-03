@@ -235,7 +235,8 @@ let read_one_param ppf position name v =
 
   | "pp" -> preprocessor := Some v
   | "runtime-variant" -> runtime_variant := v
-  | "open" -> open_modules := List.rev_append (String.split_on_char ',' v) !open_modules
+  | "open" ->
+      open_modules := List.rev_append (String.split_on_char ',' v) !open_modules
   | "cc" -> c_compiler := Some v
 
   | "clambda-checks" -> set "clambda-checks" [ clambda_checks ] v

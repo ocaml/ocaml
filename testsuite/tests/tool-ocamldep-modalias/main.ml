@@ -2,7 +2,7 @@
 
 files = "A.ml B.ml C.ml D.ml lib_impl.ml lib.mli"
 
-script = "sh ${test_source_directory}/setup-links"
+script = "sh ${test_source_directory}/setup-links.sh"
 set sources = "A.ml B.ml C.ml D.ml"
 set links = "LibA.ml LibB.ml LibC.ml LibD.ml"
 set stdlib = "-nostdlib -I ${ocamlsrcdir}/stdlib"

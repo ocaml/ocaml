@@ -83,7 +83,6 @@ CAMLprim value caml_spacetime_unmarshal_trie (value v_channel)
 
 CAMLprim value caml_spacetime_node_num_header_words(value unit)
 {
-  unit = Val_unit;
   return Val_long(Node_num_header_words);
 }
 

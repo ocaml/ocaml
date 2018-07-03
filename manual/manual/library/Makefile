@@ -8,14 +8,14 @@ SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_PATH)
 
 OCAMLDOC = $(if $(wildcard $(CSLDIR)/ocamldoc/ocamldoc.opt),\
   $(CSLDIR)/ocamldoc/ocamldoc.opt,\
-  $(SET_LD_PATH) $(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc) \
+  $(SET_LD_PATH) $(CSLDIR)/runtime/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc) \
   -nostdlib -initially-opened-module Pervasives
 
 # Copy and unprefix the standard library when needed
 include $(SRC)/ocamldoc/Makefile.unprefix
 
 
-TEXQUOTE = ../../tools/texquote2
+TEXQUOTE = $(SRC)/runtime/ocamlrun ../../tools/texquote2
 
 
 CORE_INTF = Pervasives.tex

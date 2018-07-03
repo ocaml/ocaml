@@ -74,7 +74,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dump_pass = option_with_arg "-dump-pass"
   let _inline_max_depth n = option_with_arg "-inline-max-depth" n
   let _rounds n = option_with_int "-rounds" n
-  let _inline_max_unroll n = option_with_arg "-unroll" n
+  let _inline_max_unroll n = option_with_arg "-inline-max-unroll" n
   let _inline_call_cost n = option_with_arg "-inline-call-cost" n
   let _inline_alloc_cost n = option_with_arg "-inline-alloc-cost" n
   let _inline_prim_cost n = option_with_arg "-inline-prim-cost" n
@@ -147,6 +147,7 @@ module Options = Main_args.Make_optcomp_options (struct
 
   let _linscan = option "-linscan"
   let _nopervasives = option "-nopervasives"
+  let _match_context_rows n = option_with_int "-match-context-rows" n
   let _dno_unique_ids = option "-dno-unique_ids"
   let _dunique_ids = option "-dunique_ids"
   let _dsource = option "-dsource"

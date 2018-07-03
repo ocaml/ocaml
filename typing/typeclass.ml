@@ -1008,11 +1008,11 @@ and class_expr_aux cl_num val_env met_env scl =
       end;
       let pv =
         List.map
-          begin fun (id, id_loc, id', _ty) ->
+          begin fun (id, id', _ty) ->
             let path = Pident id' in
             (* do not mark the value as being used *)
             let vd = Env.find_value path val_env' in
-            (id, id_loc,
+            (id,
              {exp_desc =
               Texp_ident(path, mknoloc (Longident.Lident (Ident.name id)), vd);
               exp_loc = Location.none; exp_extra = [];
@@ -1158,7 +1158,7 @@ and class_expr_aux cl_num val_env met_env scl =
         Typecore.type_let In_class_def val_env rec_flag sdefs None in
       let (vals, met_env) =
         List.fold_right
-          (fun (id, id_loc) (vals, met_env) ->
+          (fun (id, _id_loc) (vals, met_env) ->
              let path = Pident id in
              (* do not mark the value as used *)
              let vd = Env.find_value path val_env in
@@ -1182,7 +1182,7 @@ and class_expr_aux cl_num val_env met_env scl =
                }
              in
              let id' = Ident.create (Ident.name id) in
-             ((id', id_loc, expr)
+             ((id', expr)
               :: vals,
               Env.add_value id' desc met_env))
           (let_bound_idents_with_loc defs)
@@ -1228,8 +1228,10 @@ and class_expr_aux cl_num val_env met_env scl =
          }
   | Pcl_open (ovf, lid, e) ->
       let used_slot = ref false in
-      let (path, new_val_env) = !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc lid in
-      let (_path, new_met_env) = !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc lid in
+      let (path, new_val_env) =
+        !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc lid in
+      let (_path, new_met_env) =
+        !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc lid in
       let cl = class_expr cl_num new_val_env new_met_env e in
       rc {cl_desc = Tcl_open (ovf, path, lid, new_val_env, cl);
           cl_loc = scl.pcl_loc;
@@ -1885,9 +1887,9 @@ let report_error env ppf = function
       Printtyp.reset_and_mark_loops_list [abbrev; actual; expected];
       fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"
-       Printtyp.type_expr abbrev
-       Printtyp.type_expr actual
-       Printtyp.type_expr expected
+        !Oprint.out_type (Printtyp.tree_of_typexp false abbrev)
+        !Oprint.out_type (Printtyp.tree_of_typexp false actual)
+        !Oprint.out_type (Printtyp.tree_of_typexp false expected)
   | Constructor_type_mismatch (c, trace) ->
       Printtyp.report_unification_error ppf env trace
         (function ppf ->
@@ -1927,7 +1929,9 @@ let report_error env ppf = function
       fprintf ppf
         "@[The abbreviation %a@ is used with parameters@ %a@ \
            which are incompatible with constraints@ %a@]"
-        Printtyp.ident id Printtyp.type_expr params Printtyp.type_expr cstrs
+        Printtyp.ident id
+        !Oprint.out_type (Printtyp.tree_of_typexp false params)
+        !Oprint.out_type (Printtyp.tree_of_typexp false cstrs)
   | Class_match_failure error ->
       Includeclass.report_error ppf error
   | Unbound_val lab ->
@@ -1939,7 +1943,9 @@ let report_error env ppf = function
         List.iter Printtyp.mark_loops [ty; ty1];
         fprintf ppf
           "The %s %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
-            kind lab Printtyp.type_expr ty Printtyp.type_expr ty0
+          kind lab
+          !Oprint.out_type (Printtyp.tree_of_typexp false ty)
+          !Oprint.out_type (Printtyp.tree_of_typexp false ty0)
       in
       let print_reason ppf = function
       | Ctype.CC_Method (ty0, real, lab, ty) ->

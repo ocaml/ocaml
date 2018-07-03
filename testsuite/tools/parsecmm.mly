@@ -1,3 +1,18 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
 /* A simple parser for C-- */
 
 %{
@@ -210,7 +225,8 @@ expr:
     { Cexit(find_label $3, List.rev $4) }
   | LPAREN CATCH sequence WITH catch_handlers RPAREN
     { let handlers = $5 in
-      List.iter (fun (_, l, _) -> List.iter unbind_ident l) handlers;
+      List.iter (fun (_, l, _) ->
+        List.iter (fun (x, _) -> unbind_ident x) l) handlers;
       Ccatch(Recursive, handlers, $3) }
   | EXIT        { Cexit(0,[]) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
@@ -361,12 +377,8 @@ catch_handlers:
 catch_handler:
   | sequence
     { 0, [], $1 }
-  | LPAREN IDENT bind_identlist RPAREN sequence
+  | LPAREN IDENT params RPAREN sequence
     { find_label $2, $3, $5 }
-
-bind_identlist:
-    /**/                        { [] }
-  | bind_ident bind_identlist   { $1 :: $2 }
 
 location:
     /**/                        { None }

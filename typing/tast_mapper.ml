@@ -508,7 +508,7 @@ let class_expr sub x =
         Tcl_fun (
           label,
           sub.pat sub pat,
-          List.map (tuple3 id id (sub.expr sub)) priv,
+          List.map (tuple2 id (sub.expr sub)) priv,
           sub.class_expr sub cl,
           partial
         )
@@ -524,7 +524,7 @@ let class_expr sub x =
         Tcl_let (
           rec_flag,
           value_bindings,
-          List.map (tuple3 id id (sub.expr sub)) ivars,
+          List.map (tuple2 id (sub.expr sub)) ivars,
           sub.class_expr sub cl
         )
     | Tcl_ident (path, lid, tyl) ->

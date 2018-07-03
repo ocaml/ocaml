@@ -27,7 +27,7 @@ export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
 endif
 
 CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot \
-      -use-prims ../byterun/primitives
+      -use-prims ../runtime/primitives
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
           -safe-string -strict-sequence -strict-formats -bin-annot
@@ -40,8 +40,10 @@ CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
      compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
 
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 all: ocamllex
 allopt: ocamllex.opt
+opt.opt: allopt
 
 ocamllex: $(OBJS)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamllex $(OBJS)

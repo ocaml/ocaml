@@ -416,7 +416,8 @@ and transl_exp0 e =
   | Texp_new (cl, {Location.loc=loc}, _) ->
       Lapply{ap_should_be_tailcall=false;
              ap_loc=loc;
-             ap_func=Lprim(Pfield 0, [transl_class_path ~loc e.exp_env cl], loc);
+             ap_func=
+               Lprim(Pfield 0, [transl_class_path ~loc e.exp_env cl], loc);
              ap_args=[lambda_unit];
              ap_inlined=Default_inline;
              ap_specialised=Default_specialise}
@@ -468,11 +469,13 @@ and transl_exp0 e =
          do *)
       begin match Typeopt.classify_lazy_argument e with
       | `Constant_or_function ->
-        (* a constant expr of type <> float gets compiled as itself *)
+        (* A constant expr (of type <> float if [Config.flat_float_array] is
+           true) gets compiled as itself. *)
          transl_exp e
-      | `Float ->
+      | `Float_that_cannot_be_shortcut ->
           (* We don't need to wrap with Popaque: this forward
-             block will never be shortcutted since it points to a float. *)
+             block will never be shortcutted since it points to a float
+             and Config.flat_float_array is true. *)
           Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
                 [transl_exp e], e.exp_loc)
       | `Identifier `Forward_value ->

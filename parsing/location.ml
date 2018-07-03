@@ -19,7 +19,8 @@ let absname = ref false
     (* This reference should be in Clflags, but it would create an additional
        dependency and make bootstrapping Camlp4 more difficult. *)
 
-type t = Warnings.loc = { loc_start: position; loc_end: position; loc_ghost: bool };;
+type t = Warnings.loc =
+  { loc_start: position; loc_end: position; loc_ghost: bool };;
 
 let in_file name =
   let loc = {
@@ -62,6 +63,12 @@ let symbol_gloc () = {
 
 let rhs_loc n = {
   loc_start = Parsing.rhs_start_pos n;
+  loc_end = Parsing.rhs_end_pos n;
+  loc_ghost = false;
+};;
+
+let rhs_interval m n = {
+  loc_start = Parsing.rhs_start_pos m;
   loc_end = Parsing.rhs_end_pos n;
   loc_ghost = false;
 };;

@@ -37,7 +37,7 @@
 
 static int access_permission_table[] = {
   R_OK,
-  W_OK, 
+  W_OK,
 #ifdef _WIN32
   /* Since there is no concept of execute permission on Windows,
      we fall b+ack to the read permission */
