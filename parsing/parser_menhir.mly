@@ -655,7 +655,6 @@ The precedences must be listed from low to high.
 %right    INFIXOP1                      /* expr (e OP e OP e) */
 %nonassoc below_LBRACKETAT
 %nonassoc LBRACKETAT
-%nonassoc LBRACKETATAT
 %right    COLONCOLON                    /* expr (e :: e :: e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT PLUSEQ /* expr (e OP e OP e) */
 %left     PERCENT INFIXOP3 STAR                 /* expr (e OP e OP e) */
@@ -672,7 +671,7 @@ The precedences must be listed from low to high.
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW PREFIXOP STRING TRUE UIDENT
-          LBRACKETPERCENT LBRACKETPERCENTPERCENT
+          LBRACKETPERCENT
 
 
 /* Entry points */
