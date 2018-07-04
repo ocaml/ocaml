@@ -47,11 +47,7 @@ frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp)
     /* Skip to next frame */
     if (d->frame_size != 0xFFFF) {
       /* Regular frame, update sp/pc and return the frame descriptor */
-#ifndef Stack_grows_upwards
       *sp += (d->frame_size & 0xFFFC);
-#else
-      *sp -= (d->frame_size & 0xFFFC);
-#endif
       *pc = Saved_return_address(*sp);
 #ifdef Mask_already_scanned
       *pc = Mask_already_scanned(*pc);
@@ -102,11 +98,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     caml_backtrace_buffer[caml_backtrace_pos++] = (backtrace_slot) descr;
 
     /* Stop when we reach the current exception handler */
-#ifndef Stack_grows_upwards
     if (sp > trapsp) return;
-#else
-    if (sp < trapsp) return;
-#endif
   }
 }
 
@@ -129,8 +121,6 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
   /* first compute the size of the trace */
   {
     uintnat pc = caml_last_return_address;
-    /* note that [caml_bottom_of_stack] always points to the most recent
-     * frame, independently of the [Stack_grows_upwards] setting */
     char * sp = caml_bottom_of_stack;
     char * limitsp = caml_top_of_stack;
 
@@ -141,11 +131,7 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
       if (trace_size >= max_frames) break;
       ++trace_size;
 
-#ifndef Stack_grows_upwards
       if (sp > limitsp) break;
-#else
-      if (sp < limitsp) break;
-#endif
     }
   }
 

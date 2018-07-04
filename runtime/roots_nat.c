@@ -243,11 +243,7 @@ void caml_oldify_local_roots (void)
   uintnat h;
   intnat i, j;
   int n, ofs;
-#ifdef Stack_grows_upwards
-  short * p;  /* PR#4339: stack offsets are negative in this case */
-#else
   unsigned short * p;
-#endif
   value * glob;
   value * root;
   struct caml__roots_block *lr;
@@ -299,11 +295,7 @@ void caml_oldify_local_roots (void)
           Oldify (root);
         }
         /* Move to next frame */
-#ifndef Stack_grows_upwards
         sp += (d->frame_size & 0xFFFC);
-#else
-        sp -= (d->frame_size & 0xFFFC);
-#endif
         retaddr = Saved_return_address(sp);
 #ifdef Already_scanned
         /* Stop here if the frame has been scanned during earlier GCs  */
@@ -446,11 +438,7 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
   frame_descr * d;
   uintnat h;
   int i, j, n, ofs;
-#ifdef Stack_grows_upwards
-  short * p;  /* PR#4339: stack offsets are negative in this case */
-#else
   unsigned short * p;
-#endif
   value * root;
   struct caml__roots_block *lr;
 
@@ -478,11 +466,7 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
           f (*root, root);
         }
         /* Move to next frame */
-#ifndef Stack_grows_upwards
         sp += (d->frame_size & 0xFFFC);
-#else
-        sp -= (d->frame_size & 0xFFFC);
-#endif
         retaddr = Saved_return_address(sp);
 #ifdef Mask_already_scanned
         retaddr = Mask_already_scanned(retaddr);
