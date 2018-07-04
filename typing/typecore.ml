@@ -4063,7 +4063,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     if may_contain_gadts then init_env () else get_current_level ()
   in
   let take_partial_instance =
-    if !Clflags.principal || erase_either
+    if erase_either
     then Some false else None
   in
   begin_def (); (* propagation of the argument *)

@@ -113,10 +113,15 @@ Line _, characters 4-15:
 Warning 11: this match case is unused.
 val h : M.r -> unit = <fun>
 |}, Principal{|
-Line _, characters 6-9:
+Line _, characters 4-15:
     | { lbl = _ } -> ()
-        ^^^
-Error: Unbound record field lbl
+      ^^^^^^^^^^^
+Warning 18: this type-based record disambiguation is not principal.
+Line _, characters 4-15:
+    | { lbl = _ } -> ()
+      ^^^^^^^^^^^
+Warning 11: this match case is unused.
+val h : M.r -> unit = <fun>
 |}]
 
 let i x =
@@ -197,10 +202,15 @@ Line _, characters 4-30:
 Warning 11: this match case is unused.
 val n : M.r ref -> unit = <fun>
 |}, Principal{|
-Line _, characters 19-22:
+Line _, characters 17-28:
     | { contents = { lbl = _ } } -> ()
-                     ^^^
-Error: Unbound record field lbl
+                   ^^^^^^^^^^^
+Warning 18: this type-based record disambiguation is not principal.
+Line _, characters 4-30:
+    | { contents = { lbl = _ } } -> ()
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 11: this match case is unused.
+val n : M.r ref -> unit = <fun>
 |}]
 
 let o x =
@@ -384,7 +394,8 @@ val h : M.t -> unit = <fun>
 Line _, characters 4-5:
     | B -> ()
       ^
-Error: Unbound constructor B
+Warning 18: this type-based constructor disambiguation is not principal.
+val h : M.t -> unit = <fun>
 |}]
 
 let i x =
@@ -460,7 +471,12 @@ val n : M.t ref -> unit = <fun>
 Line _, characters 17-18:
     | { contents = A } -> ()
                    ^
-Error: Unbound constructor A
+Warning 18: this type-based constructor disambiguation is not principal.
+Line _, characters 4-20:
+    | { contents = A } -> ()
+      ^^^^^^^^^^^^^^^^
+Warning 11: this match case is unused.
+val n : M.t ref -> unit = <fun>
 |}]
 
 let o x =

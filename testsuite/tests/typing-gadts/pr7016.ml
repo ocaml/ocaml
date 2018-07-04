@@ -25,12 +25,4 @@ let get1' = function
   | Nil -> assert false ;; (* ok *)
 [%%expect{|
 val get1' : ('b * 'a as 'a, 'a) t -> 'b = <fun>
-|}, Principal{|
-Line _, characters 4-7:
-    | Nil -> assert false ;; (* ok *)
-      ^^^
-Error: This pattern matches values of type ('b * 'a, 'b * 'a) t
-       but a pattern was expected which matches values of type
-         ('b * 'a, 'a) t
-       The type variable 'a occurs inside 'b * 'a
 |}];;

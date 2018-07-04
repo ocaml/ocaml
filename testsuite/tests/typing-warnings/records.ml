@@ -122,16 +122,25 @@ Line _, characters 8-9:
 Warning 27: unused variable x.
 module F2 : sig val f : M1.t -> int end
 |}, Principal{|
+Line _, characters 8-9:
+         {x; y} -> y + y
+          ^
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
+Line _, characters 11-12:
+         {x; y} -> y + y
+             ^
+Warning 42: this use of y relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Line _, characters 7-13:
          {x; y} -> y + y
          ^^^^^^
-Warning 41: these field labels belong to several types: M1.u M1.t
-The first one was selected. Please disambiguate if this is wrong.
-Line _, characters 7-13:
+Warning 18: this type-based record disambiguation is not principal.
+Line _, characters 8-9:
          {x; y} -> y + y
-         ^^^^^^
-Error: This pattern matches values of type M1.u
-       but a pattern was expected which matches values of type M1.t
+          ^
+Warning 27: unused variable x.
+module F2 : sig val f : M1.t -> int end
 |}]
 
 (* Use type information with modules*)
@@ -628,21 +637,20 @@ module P6235' :
     val f : u -> string
   end
 |}, Principal{|
+Line _, characters 11-14:
+      |`Key {loc} -> loc
+             ^^^
+Warning 42: this use of loc relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Line _, characters 10-15:
       |`Key {loc} -> loc
             ^^^^^
-Warning 41: these field labels belong to several types: v t
-The first one was selected. Please disambiguate if this is wrong.
-Line _, characters 10-15:
-      |`Key {loc} -> loc
-            ^^^^^
-Warning 9: the following labels are not bound in this record pattern:
-x
-Either bind these labels explicitly or add '; _' to the pattern.
-Line _, characters 5-15:
-      |`Key {loc} -> loc
-       ^^^^^^^^^^
-Error: This pattern matches values of type [? `Key of v ]
-       but a pattern was expected which matches values of type u
-       Types for tag `Key are incompatible
+Warning 18: this type-based record disambiguation is not principal.
+module P6235' :
+  sig
+    type t = { loc : string; }
+    type v = { loc : string; x : int; }
+    type u = [ `Key of t ]
+    val f : u -> string
+  end
 |}]
