@@ -1435,18 +1435,13 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
   | Ppat_constraint(sp, sty) ->
-      (* Separate when not already separated by !principal *)
-      let separate = true in
-      if separate then begin_def();
+      (* Pretend separate = true *)
+      begin_def();
       let cty, force = Typetexp.transl_simple_type_delayed !env sty in
       let ty = cty.ctyp_type in
-      let ty, expected_ty' =
-        if separate then begin
-          end_def();
-          generalize_structure ty;
-          instance ty, instance ty
-        end else ty, ty
-      in
+      end_def();
+      generalize_structure ty;
+      let ty, expected_ty' = instance ty, instance ty in
       unify_pat_types loc !env ty expected_ty;
       type_pat ~exception_allowed sp expected_ty' (fun p ->
         (*Format.printf "%a@.%a@."
@@ -1455,7 +1450,6 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         pattern_force := force :: !pattern_force;
         let extra = (Tpat_constraint cty, loc, sp.ppat_attributes) in
         let p =
-          if not separate then p else
           match p.pat_desc with
             Tpat_var (id,s) ->
               {p with pat_type = ty;
@@ -2685,18 +2679,13 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_constraint (sarg, sty) ->
-      let separate = true in (* always separate, 1% slowdown for lablgtk *)
-      if separate then begin_def ();
+      (* Pretend separate = true, 1% slowdown for lablgtk *)
+      begin_def ();
       let cty = Typetexp.transl_simple_type env false sty in
       let ty = cty.ctyp_type in
-      let (arg, ty') =
-        if separate then begin
-          end_def ();
-          generalize_structure ty;
-          (type_argument env sarg ty (instance ty), instance ty)
-        end else
-          (type_argument env sarg ty ty, ty)
-      in
+      end_def ();
+      generalize_structure ty;
+      let (arg, ty') = (type_argument env sarg ty (instance ty), instance ty) in
       rue {
         exp_desc = arg.exp_desc;
         exp_loc = arg.exp_loc;
@@ -2707,7 +2696,7 @@ and type_expect_
           (Texp_constraint cty, loc, sexp.pexp_attributes) :: arg.exp_extra;
       }
   | Pexp_coerce(sarg, sty, sty') ->
-      let separate = true in (* always separate, 1% slowdown for lablgtk *)
+      (* Pretend separate = true, 1% slowdown for lablgtk *)
       (* Also see PR#7199 for a problem with the following:
          let separate = !Clflags.principal || Env.has_local_constraints env in*)
       let (arg, ty',cty,cty') =
@@ -2717,17 +2706,12 @@ and type_expect_
               Typetexp.transl_simple_type_delayed env sty'
             in
             let ty' = cty'.ctyp_type in
-            if separate then begin_def ();
+            begin_def ();
             let arg = type_exp env sarg in
-            let gen =
-              if separate then begin
-                end_def ();
-                let tv = newvar () in
-                let gen = generalizable tv.level arg.exp_type in
-                unify_var env tv arg.exp_type;
-                gen
-              end else true
-            in
+            end_def ();
+            let tv = newvar () in
+            let gen = generalizable tv.level arg.exp_type in
+            unify_var env tv arg.exp_type;
             begin match arg.exp_desc, !self_coercion, (repr ty').desc with
               Texp_ident(_, _, {val_kind=Val_self _}), (path,r) :: _,
               Tconstr(path',_,_) when Path.same path path' ->
@@ -2764,7 +2748,7 @@ and type_expect_
             end;
             (arg, ty', None, cty')
         | Some sty ->
-            if separate then begin_def ();
+            begin_def ();
             let (cty, force) =
               Typetexp.transl_simple_type_delayed env sty
             and (cty', force') =
@@ -2778,14 +2762,11 @@ and type_expect_
             with Subtype (tr1, tr2) ->
               raise(Error(loc, env, Not_subtype(tr1, tr2)))
             end;
-            if separate then begin
-              end_def ();
-              generalize_structure ty;
-              generalize_structure ty';
-              (type_argument env sarg ty (instance ty),
-               instance ty', Some cty, cty')
-            end else
-              (type_argument env sarg ty ty, ty', Some cty, cty')
+            end_def ();
+            generalize_structure ty;
+            generalize_structure ty';
+            (type_argument env sarg ty (instance ty),
+             instance ty', Some cty, cty')
       in
       rue {
         exp_desc = arg.exp_desc;
