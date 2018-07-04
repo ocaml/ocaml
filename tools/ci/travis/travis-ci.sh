@@ -14,10 +14,6 @@
 #*                                                                        *
 #**************************************************************************
 
-PREFIX=~/local
-
-MAKE=make SHELL=dash
-
 # TRAVIS_COMMIT_RANGE has the form   <commit1>...<commit2>
 # TRAVIS_CUR_HEAD is <commit1>
 # TRAVIS_PR_HEAD is <commit2>
@@ -33,6 +29,14 @@ MAKE=make SHELL=dash
 #  TRAVIS_MERGE_BASE
 #
 echo TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE
+echo TRAVIS_COMMIT=$TRAVIS_COMMIT
+
+set -x
+
+PREFIX=~/local
+
+MAKE=make SHELL=dash
+
 TRAVIS_CUR_HEAD=${TRAVIS_COMMIT_RANGE%%...*}
 TRAVIS_PR_HEAD=${TRAVIS_COMMIT_RANGE##*...}
 case $TRAVIS_EVENT_TYPE in
