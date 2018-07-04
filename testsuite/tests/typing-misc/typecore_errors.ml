@@ -10,11 +10,11 @@
 
 (** Illegal interval *)
 
-let x = function 'a'..10 -> ()
+let x = function 0. .. 1. -> ()
 [%%expect {|
-Line _, characters 17-24:
-  let x = function 'a'..10 -> ()
-                   ^^^^^^^
+Line _, characters 17-25:
+  let x = function 0. .. 1. -> ()
+                   ^^^^^^^^
 Error: Only character intervals are supported in patterns.
 |}]
 
