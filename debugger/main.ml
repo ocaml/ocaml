@@ -148,8 +148,7 @@ exception Found_program_name
 let anonymous s =
   program_name := Unix_tools.make_absolute s; raise Found_program_name
 let add_include d =
-  default_load_path :=
-    Misc.expand_directory Config.standard_library d :: !default_load_path
+  default_load_path := Clflags.expand_include d @ !default_load_path
 let set_socket s =
   socket_name := s
 let set_topdirs_path s =

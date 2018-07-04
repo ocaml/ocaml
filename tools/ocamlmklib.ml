@@ -279,9 +279,7 @@ let transl_path s =
 
 let flexdll_dirs =
   let dirs =
-    let expand = Misc.expand_directory Config.standard_library in
-    List.map expand Config.flexdll_dirs
-  in
+    List.concat (List.map Clflags.expand_include Config.flexdll_dirs) in
   let f dir =
     let dir =
       if String.contains dir ' ' then

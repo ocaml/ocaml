@@ -513,9 +513,11 @@ Working version
   pull requests; see CONTRIBUTING.md for more details.
   (David Allsopp, review by Damien Doligez and Sébastien Hinderer)
 
-* GPR#1569: install each compiler libs in a separate directory. Code that
-  builds against, say, ocamlcommon now needs to specify -I +ocamlcommon
-  instead of -I +compiler-libs (or both for compatibility).
+* GPR#1569: install each compiler libs in a separate directory. Code that builds
+  against, say, ocamlcommon can now specify -I +ocamlcommon, although -I
+  +compiler-libs still works for compatibility.
+  External tools using `Misc.expand_directory Config.standard` should use
+  instead `Clflags.expand_include` to get the same compatibility.
   (Valentin Gatien-Baron, review by Nicolás Ojeda Bär)
 
 - GPR#1610: Remove positions from paths

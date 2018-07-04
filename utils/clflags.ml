@@ -169,6 +169,21 @@ let std_include_dirs () =
 let std_include_flags prefix =
   List.map (fun dir -> prefix ^ Filename.quote dir) (std_include_dirs ())
 
+let expand_include =
+  let expand_one = Misc.expand_directory Config.standard_library in
+  fun s ->
+    match s with
+    | "+compiler-libs" ->
+       List.map expand_one
+         [ s;
+           "+ocamlcommon";
+           "+ocamlbytecomp";
+           "+ocamloptcomp";
+           "+ocamltoplevel";
+           "+ocamlopttoplevel";
+         ]
+    | _ -> [ expand_one s ]
+
 let shared = ref false (* -shared *)
 let dlcode = ref true (* not -nodynlink *)
 

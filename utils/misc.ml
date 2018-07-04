@@ -280,8 +280,7 @@ let remove_file filename =
 
 let expand_directory alt s =
   if String.length s > 0 && s.[0] = '+'
-  then Filename.concat alt
-                       (String.sub s 1 (String.length s - 1))
+  then Filename.concat alt (String.sub s 1 (String.length s - 1))
   else s
 
 let path_separator =

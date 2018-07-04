@@ -183,6 +183,7 @@ val inline_branch_factor : Float_arg_helper.parsed ref
 val dont_write_files : bool ref
 val std_include_flags : string -> string list
 val std_include_dirs : unit -> string list
+val expand_include : string -> string list
 val shared : bool ref
 val dlcode : bool ref
 val pic_code : bool ref

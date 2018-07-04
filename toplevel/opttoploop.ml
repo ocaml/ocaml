@@ -543,14 +543,14 @@ let set_paths () =
   (* Add whatever -I options have been specified on the command line,
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
-  let expand = Misc.expand_directory Config.standard_library in
+  let expand = Clflags.expand_include in
   load_path := List.concat [
     [ "" ];
-    List.map expand (List.rev !Compenv.first_include_dirs);
-    List.map expand (List.rev !Clflags.include_dirs);
-    List.map expand (List.rev !Compenv.last_include_dirs);
+    List.concat (List.map expand (List.rev !Compenv.first_include_dirs));
+    List.concat (List.map expand (List.rev !Clflags.include_dirs));
+    List.concat (List.map expand (List.rev !Compenv.last_include_dirs));
     !load_path;
-    [expand "+camlp4"];
+    expand "+camlp4";
   ]
 
 let initialize_toplevel_env () =

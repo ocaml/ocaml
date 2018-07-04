@@ -147,7 +147,8 @@ installopt::
 # To help building mixed-mode libraries (OCaml + C)
 
 $(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
-	         build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
+        build_path_prefix_map.cmo misc.cmo identifiable.cmo numbers.cmo \
+        arg_helper.cmo clflags.cmo ocamlmklib.cmo,)
 
 
 ocamlmklibconfig.ml: $(ROOTDIR)/Makefile.config Makefile

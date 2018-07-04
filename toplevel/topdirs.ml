@@ -69,9 +69,9 @@ let _ = add_directive "quit" (Directive_none dir_quit)
 (* To add a directory to the load path *)
 
 let dir_directory s =
-  let d = expand_directory Config.standard_library s in
-  Config.load_path := d :: !Config.load_path;
-  Dll.add_path [d]
+  let d = Clflags.expand_include s in
+  Config.load_path := d @ !Config.load_path;
+  Dll.add_path d
 
 let _ = add_directive "directory" (Directive_string dir_directory)
     {
@@ -82,9 +82,10 @@ let _ = add_directive "directory" (Directive_string dir_directory)
 
 (* To remove a directory from the load path *)
 let dir_remove_directory s =
-  let d = expand_directory Config.standard_library s in
-  Config.load_path := List.filter (fun d' -> d' <> d) !Config.load_path;
-  Dll.remove_path [d]
+  let d = Clflags.expand_include s in
+  Config.load_path :=
+    List.filter (fun d' -> not (List.mem d' d)) !Config.load_path;
+  Dll.remove_path d
 
 let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
     {

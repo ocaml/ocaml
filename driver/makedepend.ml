@@ -71,9 +71,10 @@ let add_to_list li s =
 
 let add_to_load_path dir =
   try
-    let dir = Misc.expand_directory Config.standard_library dir in
-    let contents = readdir dir in
-    add_to_list load_path (dir, contents)
+    List.iter (fun dir ->
+      let contents = readdir dir in
+      add_to_list load_path (dir, contents)
+    ) (Clflags.expand_include dir)
   with Sys_error msg ->
     Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
     error_occurred := true
