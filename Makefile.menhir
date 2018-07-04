@@ -15,8 +15,17 @@
 
 MENHIR ?= menhir
 
-MENHIRFLAGS=--explain --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer\
-	--table --external-tokens Parser
+MENHIRFLAGS := --explain --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer\
+	--table --external-tokens Parser\
+        --unused-token COMMENT --unused-token DOCSTRING --unused-token EOL\
+        --unused-token GREATERRBRACKET
+
+# tokens COMMENT, DOCSTRING and EOL are produced by special lexer
+# modes used by other consumers than the parser.
+
+# GREATERBRACKET ">]" was added by the parser by symmetry with "[<"
+# (which is used in polymorphic variant), but is not currently used by
+# the grammar.
 
 .PHONY: import-menhirLib
 
