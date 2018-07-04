@@ -33,6 +33,7 @@ type type_forcing_context =
   | For_loop_body
   | Assert_condition
   | Sequence_left_hand_side
+  | When_guard
 
 type type_expected = {
   ty: type_expr;
@@ -4132,7 +4133,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
           | Some scond ->
               Some
                 (type_expect ext_env (wrap_unpacks scond unpacks)
-                   (mk_expected Predef.type_bool))
+                   (mk_expected ~explanation:When_guard Predef.type_bool))
         in
         let exp =
           type_expect ?in_function ext_env sexp (mk_expected ty_res') in
@@ -4496,6 +4497,8 @@ let report_type_expected_explanation expl ppf =
       fprintf ppf "the condition of an assertion"
   | Sequence_left_hand_side ->
       fprintf ppf "the left-hand side of a sequence"
+  | When_guard ->
+      fprintf ppf "a when-guard"
 
 let report_type_expected_explanation_opt expl ppf =
   match expl with
