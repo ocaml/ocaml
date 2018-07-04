@@ -1106,7 +1106,7 @@ open_statement:
         Opn.mk $4 ~override:$2 ~attrs:(attrs@$5) ~loc ~docs, ext}
 ;
 sig_include_statement:
-    INCLUDE ext_attributes module_type post_item_attributes %prec below_WITH
+    INCLUDE ext_attributes module_type post_item_attributes
       { let (ext, attrs) = $2 in
         let loc = make_loc $symbolstartpos $endpos in
         let docs = symbol_docs $symbolstartpos $endpos in
