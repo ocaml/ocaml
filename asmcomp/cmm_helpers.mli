@@ -461,11 +461,44 @@ val send :
   Lambda.meth_kind -> expression -> expression -> expression list ->
   Debuginfo.t -> expression
 
+(** Generic Cmm fragments *)
+
 (** Generate generic functions *)
 val generic_functions : bool -> Cmx_format.unit_infos list -> Cmm.phrase list
 
 val placeholder_dbg : unit -> Debuginfo.t
 val placeholder_fun_dbg : human_name:string -> Debuginfo.t
+
+(** Entry point *)
+val entry_point : string list -> phrase
+
+(** Generate the caml_globals table *)
+val global_table: string list -> phrase
+
+(** Add references to the given symbols *)
+val reference_symbols: string list -> phrase
+
+(** Generate the caml_globals_map structure, as a marshalled string constant *)
+val globals_map:
+  (string * Digest.t option * Digest.t option * string list) list -> phrase
+
+(** Generate the caml_frametable table, referencing the frametables
+    from the given compilation units *)
+val frame_table: string list -> phrase
+
+(** Generate the caml_spacetime_shapes table, referencing the spacetime shapes
+    from the given compilation units *)
+val spacetime_shapes: string list -> phrase
+
+(** Generate the tables for respectively data and code positions of the given
+    compilation units *)
+val data_segment_table: string list -> phrase
+val code_segment_table: string list -> phrase
+
+(** Generate data for a predefined exception *)
+val predef_exception: int -> string -> phrase
+
+val plugin_header: (Cmx_format.unit_infos * Digest.t) list -> phrase
 
 (** Emit constant symbols *)
 
@@ -480,14 +513,23 @@ val emit_block :
   (string * Cmmgen_state.is_global) -> nativeint -> data_item list ->
   data_item list
 
-(** Emit the fields for some specific block kinds (prepended to the given
-    data items) *)
+(** Emit specific kinds of constant block as data items *)
+val emit_float_constant :
+  (string * Cmmgen_state.is_global) -> float -> data_item list ->
+  data_item list
 val emit_string_constant :
-  string -> data_item list -> data_item list
-val emit_boxed_int32_constant :
-  int32 -> data_item list -> data_item list
-val emit_boxed_int64_constant :
-  int64 -> data_item list -> data_item list
-val emit_boxed_nativeint_constant :
-  nativeint -> data_item list -> data_item list
+  (string * Cmmgen_state.is_global) -> string -> data_item list ->
+  data_item list
+val emit_int32_constant :
+  (string * Cmmgen_state.is_global) -> int32 -> data_item list ->
+  data_item list
+val emit_int64_constant :
+  (string * Cmmgen_state.is_global) -> int64 -> data_item list ->
+  data_item list
+val emit_nativeint_constant :
+  (string * Cmmgen_state.is_global) -> nativeint -> data_item list ->
+  data_item list
+val emit_float_array_constant :
+  (string * Cmmgen_state.is_global) -> float list -> data_item list ->
+  data_item list
 

@@ -2027,18 +2027,18 @@ let emit_block symb white_header cont =
   let black_header = Nativeint.logor white_header caml_black in
   Cint black_header :: cdefine_symbol symb @ cont
 
-let emit_string_constant s cont =
+let emit_string_constant_fields s cont =
   let n = size_int - 1 - (String.length s) mod size_int in
   Cstring s :: Cskip n :: Cint8 n :: cont
 
-let emit_boxed_int32_constant n cont =
+let emit_boxed_int32_constant_fields n cont =
   let n = Nativeint.of_int32 n in
   if size_int = 8 then
     Csymbol_address caml_int32_ops :: Cint32 n :: Cint32 0n :: cont
   else
     Csymbol_address caml_int32_ops :: Cint n :: cont
 
-let emit_boxed_int64_constant n cont =
+let emit_boxed_int64_constant_fields n cont =
   let lo = Int64.to_nativeint n in
   if size_int = 8 then
     Csymbol_address caml_int64_ops :: Cint lo :: cont
@@ -2050,6 +2050,157 @@ let emit_boxed_int64_constant n cont =
       Csymbol_address caml_int64_ops :: Cint lo :: Cint hi :: cont
   end
 
-let emit_boxed_nativeint_constant n cont =
+let emit_boxed_nativeint_constant_fields n cont =
   Csymbol_address caml_nativeint_ops :: Cint n :: cont
+
+let emit_float_constant symb f cont =
+  emit_block symb float_header (Cdouble f :: cont)
+
+let emit_string_constant symb s cont =
+  emit_block symb (string_header (String.length s))
+    (emit_string_constant_fields s cont)
+
+let emit_int32_constant symb n cont =
+  emit_block symb boxedint32_header
+    (emit_boxed_int32_constant_fields n cont)
+
+let emit_int64_constant symb n cont =
+  emit_block symb boxedint64_header
+    (emit_boxed_int64_constant_fields n cont)
+
+let emit_nativeint_constant symb n cont =
+  emit_block symb boxedintnat_header
+    (emit_boxed_nativeint_constant_fields n cont)
+
+let emit_float_array_constant symb fields cont =
+  emit_block symb (floatarray_header (List.length fields))
+    (Misc.map_end (fun f -> Cdouble f) fields cont)
+
+(* Generate the entry point *)
+
+let entry_point namelist =
+  let dbg = placeholder_dbg in
+  let cconst_int i = Cconst_int (i, dbg ()) in
+  let cconst_symbol sym = Cconst_symbol (sym, dbg ()) in
+  let incr_global_inited () =
+    Cop(Cstore (Word_int, Assignment),
+        [cconst_symbol "caml_globals_inited";
+         Cop(Caddi, [Cop(Cload (Word_int, Mutable),
+                       [cconst_symbol "caml_globals_inited"], dbg ());
+                     cconst_int 1], dbg ())], dbg ()) in
+  let body =
+    List.fold_right
+      (fun name next ->
+        let entry_sym = Compilenv.make_symbol ~unitname:name (Some "entry") in
+        Csequence(Cop(Capply typ_void,
+                         [cconst_symbol entry_sym], dbg ()),
+                  Csequence(incr_global_inited (), next)))
+      namelist (cconst_int 1) in
+  let fun_name = "caml_program" in
+  let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
+  Cfunction {fun_name;
+             fun_args = [];
+             fun_body = body;
+             fun_codegen_options = [Reduce_code_size];
+             fun_dbg;
+            }
+
+(* Generate the table of globals *)
+
+let cint_zero = Cint 0n
+
+let global_table namelist =
+  let mksym name =
+    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some "gc_roots"))
+  in
+  Cdata(Cglobal_symbol "caml_globals" ::
+        Cdefine_symbol "caml_globals" ::
+        List.map mksym namelist @
+        [cint_zero])
+
+let reference_symbols namelist =
+  let mksym name = Csymbol_address name in
+  Cdata(List.map mksym namelist)
+
+let global_data name v =
+  Cdata(emit_string_constant (name, Global)
+          (Marshal.to_string v []) [])
+
+let globals_map v = global_data "caml_globals_map" v
+
+(* Generate the master table of frame descriptors *)
+
+let frame_table namelist =
+  let mksym name =
+    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some "frametable"))
+  in
+  Cdata(Cglobal_symbol "caml_frametable" ::
+        Cdefine_symbol "caml_frametable" ::
+        List.map mksym namelist
+        @ [cint_zero])
+
+(* Generate the master table of Spacetime shapes *)
+
+let spacetime_shapes namelist =
+  let mksym name =
+    Csymbol_address (
+      Compilenv.make_symbol ~unitname:name (Some "spacetime_shapes"))
+  in
+  Cdata(Cglobal_symbol "caml_spacetime_shapes" ::
+        Cdefine_symbol "caml_spacetime_shapes" ::
+        List.map mksym namelist
+        @ [cint_zero])
+
+(* Generate the table of module data and code segments *)
+
+let segment_table namelist symbol begname endname =
+  let addsyms name lst =
+    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some begname)) ::
+    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some endname)) ::
+    lst
+  in
+  Cdata(Cglobal_symbol symbol ::
+        Cdefine_symbol symbol ::
+        List.fold_right addsyms namelist [cint_zero])
+
+let data_segment_table namelist =
+  segment_table namelist "caml_data_segments" "data_begin" "data_end"
+
+let code_segment_table namelist =
+  segment_table namelist "caml_code_segments" "code_begin" "code_end"
+
+(* Initialize a predefined exception *)
+
+let predef_exception i name =
+  let name_sym = Compilenv.new_const_symbol () in
+  let data_items =
+    emit_string_constant (name_sym, Local) name []
+  in
+  let exn_sym = "caml_exn_" ^ name in
+  let tag = Obj.object_tag in
+  let size = 2 in
+  let fields =
+    (Csymbol_address name_sym)
+      :: (cint_const (-i - 1))
+      :: data_items
+  in
+  let data_items =
+    emit_block (exn_sym, Global) (block_header tag size) fields
+  in
+  Cdata data_items
+
+(* Header for a plugin *)
+
+let plugin_header units =
+  let mk ((ui : Cmx_format.unit_infos),crc) : Cmxs_format.dynunit =
+    { dynu_name = ui.ui_name;
+      dynu_crc = crc;
+      dynu_imports_cmi = ui.ui_imports_cmi;
+      dynu_imports_cmx = ui.ui_imports_cmx;
+      dynu_defines = ui.ui_defines
+    } in
+  global_data "caml_plugin_header"
+    ({ dynu_magic = Config.cmxs_magic_number;
+       dynu_units = List.map mk units }
+     : Cmxs_format.dynheader)
 

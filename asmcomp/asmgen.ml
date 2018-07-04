@@ -144,7 +144,7 @@ let end_gen_implementation ?toplevel ~ppf_dump
      This is important if a module that uses such a symbol is later
      dynlinked. *)
   compile_phrase ~ppf_dump
-    (Cmmgen.reference_symbols
+    (Cmm_helpers.reference_symbols
        (List.filter_map (fun prim ->
            if not (Primitive.native_name_is_external prim) then None
            else Some (Primitive.native_name prim))

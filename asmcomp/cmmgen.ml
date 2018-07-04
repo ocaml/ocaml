@@ -26,8 +26,6 @@ open Lambda
 open Clambda
 open Clambda_primitives
 open Cmm
-open Cmx_format
-open Cmxs_format
 
 module String = Misc.Stdlib.String
 module V = Backend_var
@@ -185,25 +183,20 @@ let emit_constant cst cont =
 let emit_structured_constant ((_sym, is_global) as symb) cst cont =
   match cst with
   | Uconst_float s ->
-      emit_block symb float_header (Cdouble s :: cont)
+      emit_float_constant symb s cont
   | Uconst_string s ->
-      emit_block symb (string_header (String.length s))
-        (emit_string_constant s cont)
+      emit_string_constant symb s cont
   | Uconst_int32 n ->
-      emit_block symb boxedint32_header
-        (emit_boxed_int32_constant n cont)
+      emit_int32_constant symb n cont
   | Uconst_int64 n ->
-      emit_block symb boxedint64_header
-        (emit_boxed_int64_constant n cont)
+      emit_int64_constant symb n cont
   | Uconst_nativeint n ->
-      emit_block symb boxedintnat_header
-        (emit_boxed_nativeint_constant n cont)
+      emit_nativeint_constant symb n cont
   | Uconst_block (tag, csts) ->
       let cont = List.fold_right emit_constant csts cont in
       emit_block symb (block_header tag (List.length csts)) cont
   | Uconst_float_array fields ->
-      emit_block symb (floatarray_header (List.length fields))
-        (Misc.map_end (fun f -> Cdouble f) fields cont)
+      emit_float_array_constant symb fields cont
   | Uconst_closure(fundecls, lbl, fv) ->
       Cmmgen_state.add_constant lbl (Const_closure (is_global, fundecls, fv));
       List.iter (fun f -> Cmmgen_state.add_function f) fundecls;
@@ -214,16 +207,13 @@ let emit_structured_constant ((_sym, is_global) as symb) cst cont =
 let box_int_constant sym bi n =
   match bi with
     Pnativeint ->
-      emit_block (sym, Local) boxedintnat_header
-        (emit_boxed_nativeint_constant n [])
+      emit_nativeint_constant (sym, Local) n []
   | Pint32 ->
       let n = Nativeint.to_int32 n in
-      emit_block (sym, Local) boxedint32_header
-        (emit_boxed_int32_constant n [])
+      emit_int32_constant (sym, Local) n []
   | Pint64 ->
       let n = Int64.of_nativeint n in
-      emit_block (sym, Local) boxedint64_header
-        (emit_boxed_int64_constant n [])
+      emit_int64_constant (sym, Local) n []
 
 let box_int dbg bi arg =
   match arg with
@@ -1799,129 +1789,3 @@ let compunit (ulam, preallocated_blocks, constants) =
   let c4 = emit_preallocated_blocks preallocated_blocks c3 in
   emit_cmm_data_items_for_constants c4
 
-(* Generate the entry point *)
-
-let entry_point namelist =
-  let dbg = placeholder_dbg in
-  let cconst_int i = Cconst_int (i, dbg ()) in
-  let cconst_symbol sym = Cconst_symbol (sym, dbg ()) in
-  let incr_global_inited () =
-    Cop(Cstore (Word_int, Assignment),
-        [cconst_symbol "caml_globals_inited";
-         Cop(Caddi, [Cop(Cload (Word_int, Mutable),
-                       [cconst_symbol "caml_globals_inited"], dbg ());
-                     cconst_int 1], dbg ())], dbg ()) in
-  let body =
-    List.fold_right
-      (fun name next ->
-        let entry_sym = Compilenv.make_symbol ~unitname:name (Some "entry") in
-        Csequence(Cop(Capply typ_void,
-                         [cconst_symbol entry_sym], dbg ()),
-                  Csequence(incr_global_inited (), next)))
-      namelist (cconst_int 1) in
-  let fun_name = "caml_program" in
-  let fun_dbg = placeholder_fun_dbg ~human_name:fun_name in
-  Cfunction {fun_name;
-             fun_args = [];
-             fun_body = body;
-             fun_codegen_options = [Reduce_code_size];
-             fun_dbg;
-            }
-
-(* Generate the table of globals *)
-
-let cint_zero = Cint 0n
-
-let global_table namelist =
-  let mksym name =
-    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some "gc_roots"))
-  in
-  Cdata(Cglobal_symbol "caml_globals" ::
-        Cdefine_symbol "caml_globals" ::
-        List.map mksym namelist @
-        [cint_zero])
-
-let reference_symbols namelist =
-  let mksym name = Csymbol_address name in
-  Cdata(List.map mksym namelist)
-
-let global_data name v =
-  Cdata(emit_structured_constant (name, Global)
-          (Uconst_string (Marshal.to_string v [])) [])
-
-let globals_map v = global_data "caml_globals_map" v
-
-(* Generate the master table of frame descriptors *)
-
-let frame_table namelist =
-  let mksym name =
-    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some "frametable"))
-  in
-  Cdata(Cglobal_symbol "caml_frametable" ::
-        Cdefine_symbol "caml_frametable" ::
-        List.map mksym namelist
-        @ [cint_zero])
-
-(* Generate the master table of Spacetime shapes *)
-
-let spacetime_shapes namelist =
-  let mksym name =
-    Csymbol_address (
-      Compilenv.make_symbol ~unitname:name (Some "spacetime_shapes"))
-  in
-  Cdata(Cglobal_symbol "caml_spacetime_shapes" ::
-        Cdefine_symbol "caml_spacetime_shapes" ::
-        List.map mksym namelist
-        @ [cint_zero])
-
-(* Generate the table of module data and code segments *)
-
-let segment_table namelist symbol begname endname =
-  let addsyms name lst =
-    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some begname)) ::
-    Csymbol_address (Compilenv.make_symbol ~unitname:name (Some endname)) ::
-    lst
-  in
-  Cdata(Cglobal_symbol symbol ::
-        Cdefine_symbol symbol ::
-        List.fold_right addsyms namelist [cint_zero])
-
-let data_segment_table namelist =
-  segment_table namelist "caml_data_segments" "data_begin" "data_end"
-
-let code_segment_table namelist =
-  segment_table namelist "caml_code_segments" "code_begin" "code_end"
-
-(* Initialize a predefined exception *)
-
-let predef_exception i name =
-  let name_sym = Compilenv.new_const_symbol () in
-  let data_items =
-    emit_block (name_sym, Local) (string_header (String.length name))
-      (emit_string_constant name [])
-  in
-  let exn_sym = "caml_exn_" ^ name in
-  let tag = Obj.object_tag in
-  let size = 2 in
-  let fields =
-    (Csymbol_address name_sym)
-      :: (cint_const (-i - 1))
-      :: data_items
-  in
-  let data_items =
-    emit_block (exn_sym, Global) (block_header tag size) fields
-  in
-  Cdata data_items
-
-(* Header for a plugin *)
-
-let plugin_header units =
-  let mk (ui,crc) =
-    { dynu_name = ui.ui_name;
-      dynu_crc = crc;
-      dynu_imports_cmi = ui.ui_imports_cmi;
-      dynu_imports_cmx = ui.ui_imports_cmx;
-      dynu_defines = ui.ui_defines
-    } in
-  global_data "caml_plugin_header"
-    { dynu_magic = Config.cmxs_magic_number; dynu_units = List.map mk units }

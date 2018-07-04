@@ -20,15 +20,3 @@ val compunit
     * Clambda.preallocated_block list
     * Clambda.preallocated_constant list
   -> Cmm.phrase list
-
-val entry_point: string list -> Cmm.phrase
-val global_table: string list -> Cmm.phrase
-val reference_symbols: string list -> Cmm.phrase
-val globals_map:
-  (string * Digest.t option * Digest.t option * string list) list -> Cmm.phrase
-val frame_table: string list -> Cmm.phrase
-val spacetime_shapes: string list -> Cmm.phrase
-val data_segment_table: string list -> Cmm.phrase
-val code_segment_table: string list -> Cmm.phrase
-val predef_exception: int -> string -> Cmm.phrase
-val plugin_header: (Cmx_format.unit_infos * Digest.t) list -> Cmm.phrase
