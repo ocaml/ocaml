@@ -16,7 +16,7 @@
 MENHIR ?= menhir
 
 MENHIRFLAGS := --explain --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer\
-	--table --external-tokens Parser\
+	--strict --table --external-tokens Parser\
         --unused-token COMMENT --unused-token DOCSTRING --unused-token EOL\
         --unused-token GREATERRBRACKET
 
