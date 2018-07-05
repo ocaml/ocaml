@@ -91,6 +91,7 @@ val match_context_rows : int ref
 val open_modules : string list ref
 val preprocessor : string option ref
 val all_ppx : string list ref
+val absname : bool ref
 val annotations : bool ref
 val binary_annotations : bool ref
 val use_threads : bool ref
