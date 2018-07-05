@@ -2886,7 +2886,8 @@ let unify_var env t1 t2 =
         reset_trace_gadt_instances reset_tracing;
       with Unify trace ->
         reset_trace_gadt_instances reset_tracing;
-        let expanded_trace = expand_trace env ((t1,t2)::trace) in
+        let full_trace = List.map (fun (x,y) -> y,x) ((t1,t2)::trace) in
+        let expanded_trace = expand_trace env full_trace in
         raise (Unify expanded_trace)
       end
   | _ ->

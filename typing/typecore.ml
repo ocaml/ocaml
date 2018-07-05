@@ -53,6 +53,7 @@ type error =
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
   | Or_pattern_type_clash of Ident.t * (type_expr * type_expr) list
+  | Or_pattern_scope_escape of Ident.t * (type_expr * type_expr) list
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of (type_expr * type_expr) list * type_forcing_context option
@@ -1401,7 +1402,6 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         let initial_pattern_variables = !pattern_variables in
         let initial_module_variables = !module_variables in
         let equation_level = !gadt_equations_level in
-        let outter_lev = get_current_level () in
         begin_def ();
         let lev = get_current_level () in
         gadt_equations_level := Some lev;
@@ -1422,11 +1422,15 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         let p2_variables = !pattern_variables in
         (* Make sure no var with an ambiguous type gets added to the
            environment *)
-        List.iter (fun { pv_type; pv_loc; _ } ->
-          check_scope_escape pv_loc !env outter_lev pv_type
+        List.iter (fun { pv_type; pv_loc; pv_id; _ } ->
+          try unify_var !env (newvar ()) pv_type
+          with Unify trace ->
+            raise(Error(pv_loc, !env, Or_pattern_scope_escape(pv_id, trace)))
         ) p1_variables;
-        List.iter (fun { pv_type; pv_loc; _ } ->
-          check_scope_escape pv_loc !env outter_lev pv_type
+        List.iter (fun { pv_type; pv_loc; pv_id; _ } ->
+          try unify_var !env (newvar ()) pv_type
+          with Unify trace ->
+            raise(Error(pv_loc, !env, Or_pattern_scope_escape(pv_id, trace)))
         ) p2_variables;
         match p1, p2 with
           None, None -> raise Need_backtrack
@@ -4567,6 +4571,12 @@ let report_error env ppf = function
                        or-pattern has type" (Ident.name id))
         (function ppf ->
           fprintf ppf "but on the right-hand side it has type")
+  | Or_pattern_scope_escape (id, trace) ->
+      report_unification_error ppf env trace
+        (function ppf ->
+          fprintf ppf "The variable %s has type" (Ident.name id))
+        (function ppf ->
+          fprintf ppf "but was expected to have type")
   | Multiply_bound_variable name ->
       fprintf ppf "Variable %s is bound several times in this matching" name
   | Orpat_vars (id, valid_idents) ->

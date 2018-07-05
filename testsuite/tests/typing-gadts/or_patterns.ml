@@ -220,8 +220,7 @@ let simple_merged_annotated_return (type a) (t : a t) (a : a) =
 Line _, characters 12-20:
     | IntLit, (3 as x)
               ^^^^^^^^
-Error: This pattern matches values of type a
-       but a pattern was expected which matches values of type 'a
+Error: The variable x has type a but was expected to have type 'a
        This instance of a is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -579,7 +578,7 @@ let extract_merged_super_lightly_annotated (type a) (t2 : a t2) =
 val extract_merged_super_lightly_annotated : 'a t2 -> 'a = <fun>
 |}]
 
-let ambiguity (type a) (t2 : a t2) =
+let lambiguity (type a) (t2 : a t2) =
   match t2 with
   | Int ((_ : a) as x)
   | Bool (x : a) -> x
@@ -589,8 +588,22 @@ let ambiguity (type a) (t2 : a t2) =
 Line _, characters 8-22:
     | Int ((_ : a) as x)
           ^^^^^^^^^^^^^^
-Error: This pattern matches values of type a
-       but a pattern was expected which matches values of type 'a
+Error: The variable x has type a but was expected to have type 'a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+let rambiguity (type a) (t2 : a t2) =
+  match t2 with
+  | Int (_ as x)
+  | Bool ((_ : a) as x) -> x
+;;
+
+[%%expect{|
+Line _, characters 9-23:
+    | Bool ((_ : a) as x) -> x
+           ^^^^^^^^^^^^^^
+Error: The variable x has type a but was expected to have type 'a
        This instance of a is ambiguous:
        it would escape the scope of its equation
 |}]
