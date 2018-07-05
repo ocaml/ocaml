@@ -62,16 +62,10 @@ void caml_raise(value v)
   Unlock_exn();
   if (caml_exception_pointer == NULL) caml_fatal_uncaught_exception(v);
 
-#ifndef Stack_grows_upwards
-#define PUSHED_AFTER <
-#else
-#define PUSHED_AFTER >
-#endif
   while (caml_local_roots != NULL &&
-         (char *) caml_local_roots PUSHED_AFTER caml_exception_pointer) {
+         (char *) caml_local_roots < caml_exception_pointer) {
     caml_local_roots = caml_local_roots->next;
   }
-#undef PUSHED_AFTER
 
   caml_raise_exception(v);
 }
