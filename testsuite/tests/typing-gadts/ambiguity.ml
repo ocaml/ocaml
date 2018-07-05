@@ -122,6 +122,22 @@ Error: This pattern matches values of type (a, b) eq * b list
        it would escape the scope of its equation
 |}]
 
+let f_or (type a b) (x : (a, b) eq) =
+  match x, [] with
+  | Refl, [(_ : a) | (_ : b)]
+  | _, [(_ : a)] -> []
+;;
+[%%expect{|
+Line _, characters 21-28:
+    | Refl, [(_ : a) | (_ : b)]
+                       ^^^^^^^
+Error: This pattern matches values of type b = a
+       but a pattern was expected which matches values of type a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+
 let g1 (type a b) (x : (a, b) eq) =
   match x, [] with
   | Refl, [(_ : a) | (_ : b)] -> []
@@ -137,6 +153,21 @@ Error: This pattern matches values of type (a, b) eq * b list
        it would escape the scope of its equation
 |}]
 
+let g1_or (type a b) (x : (a, b) eq) =
+  match x, [] with
+  | Refl, [(_ : a) | (_ : b)]
+  | _, [(_ : b)] -> []
+;;
+[%%expect{|
+Line _, characters 21-28:
+    | Refl, [(_ : a) | (_ : b)]
+                       ^^^^^^^
+Error: This pattern matches values of type b = a
+       but a pattern was expected which matches values of type a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
+|}]
+
 let g2 (type a b) (x : (a, b) eq) =
   match x, [] with
   | Refl, [(_ : b) | (_ : a)] -> []
@@ -149,6 +180,21 @@ Line _, characters 4-29:
 Error: This pattern matches values of type (a, b) eq * b list
        but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+let g2_or (type a b) (x : (a, b) eq) =
+  match x, [] with
+  | Refl, [(_ : b) | (_ : a)]
+  | _, [(_ : a)] -> []
+;;
+[%%expect{|
+Line _, characters 21-28:
+    | Refl, [(_ : b) | (_ : a)]
+                       ^^^^^^^
+Error: This pattern matches values of type a
+       but a pattern was expected which matches values of type b = a
+       This instance of a is ambiguous:
        it would escape the scope of its equation
 |}]
 
