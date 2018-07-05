@@ -1406,29 +1406,17 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         let lev = get_current_level () in
         gadt_equations_level := Some lev;
         let p1 =
-          match
-            type_pat ~mode:Inside_or sp1 expected_ty (fun x -> x)
-              ~env:(ref !env)
-          with
-          | exception Need_backtrack -> None
-          | pat ->
-            check_scope_escape pat.pat_loc !env outter_lev expected_ty;
-            Some pat
-        in
+          try Some (type_pat ~mode:Inside_or sp1 expected_ty (fun x -> x)
+                      ~env:(ref !env))
+          with Need_backtrack -> None in
         let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
         module_variables := initial_module_variables;
         let p2 =
-          match
-            type_pat ~mode:Inside_or sp2 expected_ty (fun x -> x)
-              ~env:(ref !env)
-          with
-          | exception Need_backtrack -> None
-          | pat ->
-            check_scope_escape pat.pat_loc !env outter_lev expected_ty;
-            Some pat
-        in
+          try Some (type_pat ~mode:Inside_or sp2 expected_ty (fun x -> x)
+                      ~env:(ref !env))
+          with Need_backtrack -> None in
         end_def ();
         gadt_equations_level := equation_level;
         let p2_variables = !pattern_variables in
