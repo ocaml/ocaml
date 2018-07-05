@@ -1603,6 +1603,15 @@ let transl_switch_clambda loc arg index cases =
              a
              (Array.of_list inters) store)
 
+let strmatch_compile =
+  let module S =
+    Strmatch.Make
+      (struct
+        let string_block_length ptr = get_size ptr Debuginfo.none
+        let transl_switch = transl_int_switch
+      end) in
+  S.compile
+
 let ptr_offset ptr offset dbg =
   if offset = 0
   then ptr

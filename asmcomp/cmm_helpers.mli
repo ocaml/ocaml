@@ -433,6 +433,11 @@ val transl_int_switch :
 val transl_switch_clambda :
   Location.t -> expression -> int array -> expression array -> expression
 
+(** [strmatch_compile dbg arg default cases] *)
+val strmatch_compile :
+  Debuginfo.t -> expression -> expression option ->
+  (string * expression) list -> expression
+
 (** From transl (clambda expressions) *)
 
 (** Adds a constant offset to a pointer (for infix access) *)

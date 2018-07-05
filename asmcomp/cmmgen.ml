@@ -386,15 +386,6 @@ let assignment_kind ptr init =
 
 (* Translate an expression *)
 
-let strmatch_compile =
-  let module S =
-    Strmatch.Make
-      (struct
-        let string_block_length ptr = get_size ptr Debuginfo.none
-        let transl_switch = transl_int_switch
-      end) in
-  S.compile
-
 let rec transl env e =
   match e with
     Uvar id ->
