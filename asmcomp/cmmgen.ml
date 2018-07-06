@@ -93,36 +93,24 @@ let get_field env ptr n dbg =
   let mut = mut_from_env env ptr in
   get_field_gen mut ptr n dbg
 
-(* To compile "let rec" over values *)
-
-let fundecls_size fundecls =
-  let sz = ref (-1) in
-  List.iter
-    (fun f ->
-       let indirect_call_code_pointer_size =
-         match f.arity with
-         | 0 | 1 -> 0
-           (* arity 1 does not need an indirect call handler.
-              arity 0 cannot be indirect called *)
-         | _ -> 1
-           (* For other arities there is an indirect call handler.
-              if arity >= 2 it is caml_curry...
-              if arity < 0 it is caml_tuplify... *)
-       in
-       sz := !sz + 1 + 2 + indirect_call_code_pointer_size)
-    fundecls;
-  !sz
-
 type rhs_kind =
   | RHS_block of int
   | RHS_floatblock of int
   | RHS_nonrec
 ;;
+
+let summary f =
+  { slabel = f.label;
+    sarity = f.arity;
+  }
+
+let summaries fundecls = List.map summary fundecls
+
 let rec expr_size env = function
   | Uvar id ->
       begin try V.find_same id env with Not_found -> RHS_nonrec end
   | Uclosure(fundecls, clos_vars) ->
-      RHS_block (fundecls_size fundecls + List.length clos_vars)
+      RHS_block (fundecls_size (summaries fundecls) + List.length clos_vars)
   | Ulet(_str, _kind, id, exp, body) ->
       expr_size (V.add (VP.var id) (expr_size env exp) env) body
   | Uletrec(bindings, body) ->
@@ -1599,55 +1587,6 @@ let rec transl_all_functions already_translated cont =
         ((f.dbg, transl_function f) :: cont)
     end
 
-(* Emit constant closures *)
-
-let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
-  let closure_symbol f =
-    if Config.flambda then
-      cdefine_symbol (f.label ^ "_closure", global_symb)
-    else
-      []
-  in
-  match fundecls with
-    [] ->
-      (* This should probably not happen: dead code has normally been
-         eliminated and a closure cannot be accessed without going through
-         a [Project_closure], which depends on the function. *)
-      assert (clos_vars = []);
-      cdefine_symbol symb @
-        List.fold_right emit_constant clos_vars cont
-  | f1 :: remainder ->
-      let rec emit_others pos = function
-          [] ->
-            List.fold_right emit_constant clos_vars cont
-      | f2 :: rem ->
-          if f2.arity = 1 || f2.arity = 0 then
-            Cint(infix_header pos) ::
-            (closure_symbol f2) @
-            Csymbol_address f2.label ::
-            cint_const f2.arity ::
-            emit_others (pos + 3) rem
-          else
-            Cint(infix_header pos) ::
-            (closure_symbol f2) @
-            Csymbol_address(curry_function_sym f2.arity) ::
-            cint_const f2.arity ::
-            Csymbol_address f2.label ::
-            emit_others (pos + 4) rem in
-      Cint(black_closure_header (fundecls_size fundecls
-                                 + List.length clos_vars)) ::
-      cdefine_symbol symb @
-      (closure_symbol f1) @
-      if f1.arity = 1 || f1.arity = 0 then
-        Csymbol_address f1.label ::
-        cint_const f1.arity ::
-        emit_others 3 remainder
-      else
-        Csymbol_address(curry_function_sym f1.arity) ::
-        cint_const f1.arity ::
-        Csymbol_address f1.label ::
-        emit_others 4 remainder
-
 (* Emit constant blocks *)
 
 let emit_constant_table symb elems =
@@ -1678,7 +1617,8 @@ let emit_cmm_data_items_for_constants cont =
       match cst with
       | Const_closure (global, fundecls, clos_vars) ->
           let cmm =
-            emit_constant_closure (symbol, global) fundecls clos_vars []
+            emit_constant_closure (symbol, global) (summaries fundecls)
+              (List.fold_right emit_constant clos_vars [])
           in
           c := (Cdata cmm) :: !c
       | Const_table (global, elems) ->

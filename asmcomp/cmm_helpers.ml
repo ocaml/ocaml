@@ -2213,3 +2213,73 @@ let plugin_header units =
        dynu_units = List.map mk units }
      : Cmxs_format.dynheader)
 
+type fundecl_summary = { slabel: string; sarity: int; }
+
+(* To compile "let rec" over values *)
+
+let fundecls_size fundecls =
+  let sz = ref (-1) in
+  List.iter
+    (fun f ->
+       let indirect_call_code_pointer_size =
+         match f.sarity with
+         | 0 | 1 -> 0
+           (* arity 1 does not need an indirect call handler.
+              arity 0 cannot be indirect called *)
+         | _ -> 1
+           (* For other arities there is an indirect call handler.
+              if arity >= 2 it is caml_curry...
+              if arity < 0 it is caml_tuplify... *)
+       in
+       sz := !sz + 1 + 2 + indirect_call_code_pointer_size)
+    fundecls;
+  !sz
+
+(* Emit constant closures *)
+
+let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars =
+  let closure_symbol f =
+    if Config.flambda then
+      cdefine_symbol (f.slabel ^ "_closure", global_symb)
+    else
+      []
+  in
+  match fundecls with
+    [] ->
+      (* This should probably not happen: dead code has normally been
+         eliminated and a closure cannot be accessed without going through
+         a [Project_closure], which depends on the function. *)
+      assert (clos_vars = []);
+      cdefine_symbol symb @
+        clos_vars
+  | f1 :: remainder ->
+      let rec emit_others pos = function
+          [] -> clos_vars
+      | f2 :: rem ->
+          if f2.sarity = 1 || f2.sarity = 0 then
+            Cint(infix_header pos) ::
+            (closure_symbol f2) @
+            Csymbol_address f2.slabel ::
+            cint_const f2.sarity ::
+            emit_others (pos + 3) rem
+          else
+            Cint(infix_header pos) ::
+            (closure_symbol f2) @
+            Csymbol_address(curry_function_sym f2.sarity) ::
+            cint_const f2.sarity ::
+            Csymbol_address f2.slabel ::
+            emit_others (pos + 4) rem in
+      Cint(black_closure_header (fundecls_size fundecls
+                                 + List.length clos_vars)) ::
+      cdefine_symbol symb @
+      (closure_symbol f1) @
+      if f1.sarity = 1 || f1.sarity = 0 then
+        Csymbol_address f1.slabel ::
+        cint_const f1.sarity ::
+        emit_others 3 remainder
+      else
+        Csymbol_address(curry_function_sym f1.sarity) ::
+        cint_const f1.sarity ::
+        Csymbol_address f1.slabel ::
+        emit_others 4 remainder
+
