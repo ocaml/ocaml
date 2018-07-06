@@ -238,7 +238,7 @@ options.
 .TP
 .BI \-open \ module
 Opens
-.IR module
+.I module
 before typing.
 .TP
 .BI \-pp \ command
