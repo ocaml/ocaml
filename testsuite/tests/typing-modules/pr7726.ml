@@ -31,6 +31,17 @@ Error: In the signature of this functor application:
        F(Fixed).t
 |}]
 
+(* Positive example *)
+module F3(X:T) = struct type t = Z | S of X.t end;;
+module T3 = Fix(F3);;
+let x : T3.Fixed.t = S Z;;
+[%%expect{|
+module F3 : functor (X : T) -> sig type t = Z | S of X.t end
+module T3 : sig module rec Fixed : sig type t = F3(Fixed).t end end
+val x : T3.Fixed.t = F3(T3.Fixed).S F3(T3.Fixed).Z
+|}]
+
+(* Torture the type checker more *)
 module M = struct
   module F (X : T) : T = X
   module rec Fixed : sig type t = F(Fixed).t end = Fixed
