@@ -103,8 +103,6 @@ val show_filename: string -> string
         Otherwise, returns the filename unchanged. *)
 
 
-val absname: bool ref
-
 (** Support for located errors *)
 
 type error =

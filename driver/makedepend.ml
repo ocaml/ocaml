@@ -550,7 +550,7 @@ let main () =
   Compenv.readenv ppf Before_args;
   Clflags.reset_arguments (); (* reset arguments from ocamlc/ocamlopt *)
   Clflags.add_arguments __LOC__ [
-     "-absname", Arg.Set Location.absname,
+     "-absname", Arg.Set Clflags.absname,
         " Show absolute filenames in error messages";
      "-all", Arg.Set all_dependencies,
         " Generate dependencies on all files";

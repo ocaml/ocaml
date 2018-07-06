@@ -15,10 +15,6 @@
 
 open Lexing
 
-let absname = ref false
-    (* This reference should be in Clflags, but it would create an additional
-       dependency and make bootstrapping Camlp4 more difficult. *)
-
 type t = Warnings.loc =
   { loc_start: position; loc_end: position; loc_ghost: bool };;
 
@@ -272,7 +268,7 @@ let absolute_path s = (* This function could go into Filename *)
   aux s
 
 let show_filename file =
-  if !absname then absolute_path file else file
+  if !Clflags.absname then absolute_path file else file
 
 let print_filename ppf file =
   Format.fprintf ppf "%s" (show_filename file)

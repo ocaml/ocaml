@@ -97,7 +97,7 @@ module Options = Main_args.Make_opttop_options (struct
   let set r () = r := true
   let clear r () = r := false
 
-  let _absname = set Location.absname
+  let _absname = set absname
   let _compact = clear optimize_for_speed
   let _I dir = include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
