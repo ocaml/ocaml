@@ -236,6 +236,11 @@ This option is meaningful only in conjunction with the
 .BR \-latex , \ \-texi ,\ or \ \-dot
 options.
 .TP
+.BI \-open \ module
+Opens
+.IR module
+before typing.
+.TP
 .BI \-pp \ command
 Pipe sources through preprocessor
 .IR command .
