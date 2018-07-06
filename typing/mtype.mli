@@ -32,9 +32,9 @@ val strengthen: aliasable:bool -> Env.t -> module_type -> Path.t -> module_type
            given path. *)
 val strengthen_decl:
   aliasable:bool -> Env.t -> module_declaration -> Path.t -> module_declaration
-val nondep_supertype: Env.t -> Ident.t -> module_type -> module_type
+val nondep_supertype: Env.t -> Ident.t list -> module_type -> module_type
         (* Return the smallest supertype of the given type
-           in which the given ident does not appear.
+           in which none of the given idents appears.
            Raise [Not_found] if no such type exists. *)
 val no_code_needed: Env.t -> module_type -> bool
 val no_code_needed_sig: Env.t -> signature -> bool

@@ -237,23 +237,22 @@ val subtype: Env.t -> type_expr -> type_expr -> unit -> unit
            enforce and returns a function that enforces this
            constraints. *)
 
-val nondep_type: Env.t -> Ident.t -> type_expr -> type_expr
+val nondep_type: Env.t -> Ident.t list -> type_expr -> type_expr
         (* Return a type equivalent to the given type but without
-           references to the given module identifier. Raise [Not_found]
+           references to the given identifiers. Raise [Not_found]
            if no such type exists. *)
 val nondep_type_decl:
-        Env.t -> Ident.t -> bool -> type_declaration ->
-        type_declaration
+        Env.t -> Ident.t list -> bool -> type_declaration -> type_declaration
         (* Same for type declarations. *)
 val nondep_extension_constructor:
-        Env.t -> Ident.t -> extension_constructor ->
+        Env.t -> Ident.t list -> extension_constructor ->
         extension_constructor
           (* Same for extension constructor *)
 val nondep_class_declaration:
-        Env.t -> Ident.t -> class_declaration -> class_declaration
+        Env.t -> Ident.t list -> class_declaration -> class_declaration
         (* Same for class declarations. *)
 val nondep_cltype_declaration:
-        Env.t -> Ident.t -> class_type_declaration -> class_type_declaration
+        Env.t -> Ident.t list -> class_type_declaration -> class_type_declaration
         (* Same for class type declarations. *)
 (*val correct_abbrev: Env.t -> Path.t -> type_expr list -> type_expr -> unit*)
 val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool

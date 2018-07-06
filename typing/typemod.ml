@@ -1444,7 +1444,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                 check_well_formed_module env smod.pmod_loc
                   "the signature of this functor application" mty_res;
                 let nondep_mty =
-                  try Mtype.nondep_supertype env param mty_res
+                  try Mtype.nondep_supertype env [param] mty_res
                   with Not_found ->
                     raise(Error(smod.pmod_loc, env,
                                 Cannot_eliminate_dependency mty_functor))

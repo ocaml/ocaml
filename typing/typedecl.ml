@@ -1929,8 +1929,7 @@ let approx_type_decl sdecl_list =
 let check_recmod_typedecl env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
-  let to_check path =
-    List.exists (fun id -> Path.isfree id path) recmod_ids in
+  let to_check path = Path.exists_free recmod_ids path in
   check_well_founded_decl env loc path decl to_check;
   check_recursion env loc path decl to_check
 

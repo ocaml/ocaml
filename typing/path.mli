@@ -22,7 +22,7 @@ type t =
 
 val same: t -> t -> bool
 val compare: t -> t -> int
-val isfree: Ident.t -> t -> bool
+val exists_free: Ident.t list -> t -> bool
 val binding_time: t -> int
 val flatten : t -> [ `Contains_apply | `Ok of Ident.t * string list ]
 
