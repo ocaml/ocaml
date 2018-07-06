@@ -167,6 +167,9 @@ Working version
 - GPR#1833: allow non-val payloads in CMM Ccatch handlers
   (Simon Fowler, review by Xavier Clerc)
 
+- GPR#1886: move the Location.absname reference to Clflags.absname
+  (Armaël Guéneau, review by Jérémie Dimino)
+
 ### Bug fixes:
 
 - GPR#1719: fix Pervasives.LargeFile functions under Windows.
