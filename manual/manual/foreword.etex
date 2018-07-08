@@ -2,16 +2,16 @@
 \markboth{Foreword}{}
 %HEVEA\cutname{foreword.html}
 
-This manual documents the release \ocamlversion\ of the OCaml
-system. It is organized as follows.
+This manual documents release \ocamlversion\ of the OCaml
+system. It is organized as follows:
 \begin{itemize}
-\item Part~\ref{p:tutorials}, ``An introduction to OCaml'',
+\item Part~\ref{p:tutorials}, ``An Introduction to OCaml'',
 gives an overview of the language.
-\item Part~\ref{p:refman}, ``The OCaml language'', is the
+\item Part~\ref{p:refman}, ``The OCaml Language'', is the
 reference description of the language.
-\item Part~\ref{p:commands}, ``The OCaml tools'', documents
+\item Part~\ref{p:commands}, ``The OCaml Tools'', documents
 the compilers, toplevel system, and programming utilities.
-\item Part~\ref{p:library}, ``The OCaml library'', describes the
+\item Part~\ref{p:library}, ``The OCaml Library'', describes the
 modules provided in the standard library.
 \begin{latexonly}
 \item Part~\ref{p:appendix}, ``Appendix'', contains an
@@ -45,7 +45,7 @@ The OCaml system is open source and can be freely
 redistributed.  See the file "LICENSE" in the distribution for
 licensing information.
 
-The present documentation is copyright \copyright\ \number\year\
+This documentation is copyright \copyright\ \number\year\
 Institut National de Recherche en Informatique et en
 Automatique (INRIA).  The OCaml documentation and user's
 manual may be reproduced and distributed in whole or
@@ -75,8 +75,8 @@ The former Web site contains a lot of additional information on OCaml.
 
 \begin{htmlonly}
 The complete OCaml distribution can be accessed via the
-\href{http://www.ocaml.org/}{community Caml Web site} and the
+\href{http://www.ocaml.org/}{community OCaml Web site} and the
 \href{http://caml.inria.fr/}{older Caml Web site}.
-The \href{http://www.ocaml.org/}{community Caml Web site}
+The \href{http://www.ocaml.org/}{community OCaml Web site}
 contains a lot of additional information on OCaml.
 \end{htmlonly}

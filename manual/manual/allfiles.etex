@@ -8,9 +8,9 @@
 \thispagestyle{empty}
 \begin{maintitle}
 ~\vfill
-\Huge           The OCaml system \\
-                release \ocamlversion \\[1cm]
-\Large          Documentation and user's manual \\[1cm]
+\Huge           The OCaml System \\
+                Documentation and User's Manual \\[1cm]
+\Large          Release \ocamlversion \\[1cm]
 \large          Xavier Leroy, \\
                 Damien Doligez, Alain Frisch, Jacques Garrigue, Didier Rémy and Jérôme Vouillon \\[1cm]
                 \today \\
@@ -41,7 +41,7 @@ and as a
 
 \input{foreword.tex}
 
-\part{An introduction to OCaml}
+\part{An Introduction to OCaml}
 \label{p:tutorials}
 \input{coreexamples.tex}
 \input{moduleexamples.tex}
@@ -50,12 +50,12 @@ and as a
 \input{polymorphism.tex}
 \input{advexamples.tex}
 
-\part{The OCaml language}
+\part{The OCaml Language}
 \label{p:refman}
 \input{refman.tex}
 \input{exten.tex}
 
-\part{The OCaml tools}
+\part{The OCaml Tools}
 \label{p:commands}
 
 \input{comp.tex}
@@ -76,7 +76,7 @@ and as a
 \input{afl-fuzz.tex}
 \input{plugins}
 
-\part{The OCaml library}
+\part{The OCaml Library}
 \label{p:library}
 \input{core.tex}
 \input{stdlib.tex}
@@ -94,15 +94,15 @@ and as a
 
 \ifouthtml
 \begin{links}
-\item \ahref{libref/index_modules.html}{Index of modules}
-\item \ahref{libref/index_module_types.html}{Index of module types}
-\item \ahref{libref/index_types.html}{Index of types}
-\item \ahref{libref/index_exceptions.html}{Index of exceptions}
-\item \ahref{libref/index_values.html}{Index of values}
+\item \ahref{libref/index_modules.html}{Index of Modules}
+\item \ahref{libref/index_module_types.html}{Index of Module Types}
+\item \ahref{libref/index_types.html}{Index of Types}
+\item \ahref{libref/index_exceptions.html}{Index of Exceptions}
+\item \ahref{libref/index_values.html}{Index of Values}
 \end{links}
 \else
-\printindex{\jobname}{Index to the library}
+\printindex{\jobname}{Index to the Library}
 \fi
-\printindex{\jobname.kwd}{Index of keywords}
+\printindex{\jobname.kwd}{Index of Keywords}
 
 \end{document}
