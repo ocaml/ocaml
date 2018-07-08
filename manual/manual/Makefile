@@ -139,6 +139,6 @@ clean:
 	$(MAKE) -C refman    clean
 	$(MAKE) -C tutorials clean
 	-rm -f texstuff/*
-	cd htmlman; rm -rf libref index.html manual*.html *.haux *.hind
+	cd htmlman; rm -rf libref index.html manual*.html *.haux *.hind *.svg
 	cd textman; rm -f manual.txt *.haux *.hind
 	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind
