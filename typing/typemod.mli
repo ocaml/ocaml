@@ -18,14 +18,16 @@
 open Types
 open Format
 
+type signature_simplification_info
+
 val type_module:
         Env.t -> Parsetree.module_expr -> Typedtree.module_expr
 val type_structure:
-        Env.t -> Parsetree.structure -> Location.t ->
-         Typedtree.structure * Types.signature * Env.t
+  Env.t -> Parsetree.structure -> Location.t ->
+  Typedtree.structure * Types.signature * signature_simplification_info * Env.t
 val type_toplevel_phrase:
-        Env.t -> Parsetree.structure ->
-         Typedtree.structure * Types.signature * Env.t
+  Env.t -> Parsetree.structure ->
+  Typedtree.structure * Types.signature * signature_simplification_info * Env.t
 val type_implementation:
   string -> string -> string -> Env.t -> Parsetree.structure ->
   Typedtree.structure * Typedtree.module_coercion
@@ -42,7 +44,8 @@ val type_open_:
 val modtype_of_package:
         Env.t -> Location.t ->
         Path.t -> Longident.t list -> type_expr list -> module_type
-val simplify_signature: signature -> signature
+val simplify_signature:
+  Env.t -> signature_simplification_info -> signature -> signature
 
 val path_of_module : Typedtree.module_expr -> Path.t option
 
@@ -59,6 +62,29 @@ val initial_env:
   initially_opened_module:string option ->
   open_implicit_modules:string list -> Env.t
 
+module Sig_component_kind : sig
+  type t =
+    | Value
+    | Type
+    | Module
+    | Module_type
+    | Extension_constructor
+    | Class
+    | Class_type
+
+  val to_string : t -> string
+end
+
+type hidding_error = {
+  shadowed_item_id: Ident.t;
+  shadowed_item_kind: Sig_component_kind.t;
+  shadowed_item_loc: Location.t;
+  shadower_id: Ident.t;
+  user_id: Ident.t;
+  user_kind: Sig_component_kind.t;
+  user_loc: Location.t;
+}
+
 type error =
     Cannot_apply of module_type
   | Not_included of Includemod.error list
@@ -71,7 +97,7 @@ type error =
       Longident.t * Path.t * Includemod.error list
   | With_changes_module_alias of Longident.t * Ident.t * Path.t
   | With_cannot_remove_constrained_type
-  | Repeated_name of string * string
+  | Repeated_name of Sig_component_kind.t * string
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
@@ -85,6 +111,7 @@ type error =
   | Apply_generative
   | Cannot_scrape_alias of Path.t
   | Badly_formed_signature of string * Typedecl.error
+  | Cannot_hide_id of hidding_error
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

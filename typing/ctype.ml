@@ -4358,6 +4358,8 @@ let nondep_variants = TypeHash.create 17
 let clear_hash ()   =
   TypeHash.clear nondep_hash; TypeHash.clear nondep_variants
 
+exception Nondep_cannot_erase of Ident.t
+
 let rec nondep_type_rec ?(expand_private=false) env ids ty =
   let expand_abbrev env t =
     if expand_private then expand_abbrev_opt env t else expand_abbrev env t
@@ -4372,25 +4374,29 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
     ty'.desc <-
       begin match ty.desc with
       | Tconstr(p, tl, _abbrev) ->
-          if Path.exists_free ids p then
-            begin try
-              Tlink (nondep_type_rec ~expand_private env ids
-                       (expand_abbrev env (newty2 ty.level ty.desc)))
-              (*
-                 The [Tlink] is important. The expanded type may be a
-                 variable, or may not be completely copied yet
-                 (recursive type), so one cannot just take its
-                 description.
-               *)
-            with Cannot_expand | Unify _ ->
-              raise Not_found
-            end
-          else
-            Tconstr(p, List.map (nondep_type_rec env ids) tl, ref Mnil)
+          begin match Path.find_free_opt ids p with
+          | Some id ->
+              begin try
+                Tlink (nondep_type_rec ~expand_private env ids
+                         (expand_abbrev env (newty2 ty.level ty.desc)))
+                (*
+                   The [Tlink] is important. The expanded type may be a
+                   variable, or may not be completely copied yet
+                   (recursive type), so one cannot just take its
+                   description.
+                 *)
+              with Cannot_expand | Unify _ ->
+                raise (Nondep_cannot_erase id)
+              end
+          | None ->
+              Tconstr(p, List.map (nondep_type_rec env ids) tl, ref Mnil)
+          end
       | Tpackage(p, nl, tl) when Path.exists_free ids p ->
           let p' = normalize_package_path env p in
-          if Path.exists_free ids p' then raise Not_found;
-          Tpackage (p', nl, List.map (nondep_type_rec env ids) tl)
+          begin match Path.find_free_opt ids p' with
+          | Some id -> raise (Nondep_cannot_erase id)
+          | None -> Tpackage (p', nl, List.map (nondep_type_rec env ids) tl)
+          end
       | Tobject (t1, name) ->
           Tobject (nondep_type_rec env ids t1,
                  ref (match !name with
@@ -4429,9 +4435,9 @@ let nondep_type env id ty =
     let ty' = nondep_type_rec env id ty in
     clear_hash ();
     ty'
-  with Not_found ->
+  with Nondep_cannot_erase _ as exn ->
     clear_hash ();
-    raise Not_found
+    raise exn
 
 let () = nondep_type' := nondep_type
 
@@ -4441,17 +4447,17 @@ let nondep_type_decl env mid is_covariant decl =
     let params = List.map (nondep_type_rec env mid) decl.type_params in
     let tk =
       try map_kind (nondep_type_rec env mid) decl.type_kind
-      with Not_found when is_covariant -> Type_abstract
+      with Nondep_cannot_erase _ when is_covariant -> Type_abstract
     and tm, priv =
       match decl.type_manifest with
       | None -> None, decl.type_private
       | Some ty ->
           try Some (nondep_type_rec env mid ty), decl.type_private
-          with Not_found when is_covariant ->
+          with Nondep_cannot_erase _ when is_covariant ->
             clear_hash ();
             try Some (nondep_type_rec ~expand_private:true env mid ty),
                 Private
-            with Not_found ->
+            with Nondep_cannot_erase _ ->
               None, decl.type_private
     in
     clear_hash ();
@@ -4473,15 +4479,16 @@ let nondep_type_decl env mid is_covariant decl =
       type_immediate = decl.type_immediate;
       type_unboxed = decl.type_unboxed;
     }
-  with Not_found ->
+  with Nondep_cannot_erase _ as exn ->
     clear_hash ();
-    raise Not_found
+    raise exn
 
 (* Preserve sharing inside extension constructors. *)
 let nondep_extension_constructor env ids ext =
   try
     let type_path, type_params =
-      if Path.exists_free ids ext.ext_type_path then
+      match Path.find_free_opt ids ext.ext_type_path with
+      | Some id ->
         begin
           let ty =
             newgenty (Tconstr(ext.ext_type_path, ext.ext_type_params, ref Mnil))
@@ -4489,9 +4496,9 @@ let nondep_extension_constructor env ids ext =
           let ty' = nondep_type_rec env ids ty in
             match (repr ty').desc with
                 Tconstr(p, tl, _) -> p, tl
-              | _ -> raise Not_found
+              | _ -> raise (Nondep_cannot_erase id)
         end
-      else
+      | None ->
         let type_params =
           List.map (nondep_type_rec env ids) ext.ext_type_params
         in
@@ -4508,9 +4515,9 @@ let nondep_extension_constructor env ids ext =
         ext_attributes = ext.ext_attributes;
         ext_loc = ext.ext_loc;
       }
-  with Not_found ->
+  with Nondep_cannot_erase _ as exn ->
     clear_hash ();
-    raise Not_found
+    raise exn
 
 
 (* Preserve sharing inside class types. *)

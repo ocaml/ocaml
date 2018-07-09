@@ -237,10 +237,13 @@ val subtype: Env.t -> type_expr -> type_expr -> unit -> unit
            enforce and returns a function that enforces this
            constraints. *)
 
+exception Nondep_cannot_erase of Ident.t
+
 val nondep_type: Env.t -> Ident.t list -> type_expr -> type_expr
         (* Return a type equivalent to the given type but without
-           references to the given identifiers. Raise [Not_found]
-           if no such type exists. *)
+           references to any of the given identifiers.
+           Raise [Nondep_cannot_erase id] if no such type exists because [id],
+           in particular, could not be erased. *)
 val nondep_type_decl:
         Env.t -> Ident.t list -> bool -> type_declaration -> type_declaration
         (* Same for type declarations. *)
@@ -252,7 +255,7 @@ val nondep_class_declaration:
         Env.t -> Ident.t list -> class_declaration -> class_declaration
         (* Same for class declarations. *)
 val nondep_cltype_declaration:
-        Env.t -> Ident.t list -> class_type_declaration -> class_type_declaration
+  Env.t -> Ident.t list -> class_type_declaration -> class_type_declaration
         (* Same for class type declarations. *)
 (*val correct_abbrev: Env.t -> Path.t -> type_expr list -> type_expr -> unit*)
 val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool

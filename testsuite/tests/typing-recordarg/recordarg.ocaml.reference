@@ -30,34 +30,26 @@ Line 3, characters 13-22:
                ^^^^^^^^^
 Error: This expression creates fresh types.
        It is not allowed inside applicative functors.
-Line 5, characters 12-13:
+Line 5, characters 2-29:
     exception A of {x : string}
-              ^
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
-Line 4, characters 12-13:
+Line 4, characters 2-29:
     exception A of {x : string}
-              ^
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
 module M1 : sig exception A of { x : int; } end
-Line 4, characters 2-12:
-    include M1
-    ^^^^^^^^^^
-Error: Multiple definition of the extension constructor name A.
-       Names must be unique in a given structure or signature.
+module M : sig exception A of { x : int; } end
 module type S1 = sig exception A of { x : int; } end
-Line 4, characters 2-12:
-    include S1
-    ^^^^^^^^^^
-Error: Multiple definition of the extension constructor name A.
-       Names must be unique in a given structure or signature.
+module type S = sig exception A of { x : int; } end
 module M : sig exception A of { x : int; } end
 module X1 : sig type t = .. end
 module X2 : sig type t = .. end
-Line 3, characters 15-16:
+Line 3, characters 15-28:
     type X2.t += A of {x: int}
-                 ^
+                 ^^^^^^^^^^^^^
 Error: Multiple definition of the extension constructor name A.
        Names must be unique in a given structure or signature.
 type _ c = C : [ `A ] c

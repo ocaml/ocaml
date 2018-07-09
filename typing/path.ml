@@ -40,10 +40,18 @@ let rec compare p1 p2 =
   | ((Pident _ | Pdot _), (Pdot _ | Papply _)) -> -1
   | ((Pdot _ | Papply _), (Pident _ | Pdot _)) -> 1
 
-let rec exists_free ids = function
-    Pident id -> List.exists (Ident.same id) ids
-  | Pdot(p, _s, _pos) -> exists_free ids p
-  | Papply(p1, p2) -> exists_free ids p1 || exists_free ids p2
+let rec find_free_opt ids = function
+    Pident id -> List.find_opt (Ident.same id) ids
+  | Pdot(p, _s, _pos) -> find_free_opt ids p
+  | Papply(p1, p2) ->
+      match find_free_opt ids p1 with
+      | None -> find_free_opt ids p2
+      | Some _ as res -> res
+
+let exists_free ids p =
+  match find_free_opt ids p with
+  | None -> false
+  | _ -> true
 
 let rec binding_time = function
     Pident id -> Ident.binding_time id

@@ -150,67 +150,72 @@ let scrape_for_type_of env mty =
 
 type variance = Co | Contra | Strict
 
-let nondep_supertype env ids mty =
+let rec nondep_mty env va ids mty =
+  match mty with
+    Mty_ident p ->
+      begin match Path.find_free_opt ids p with
+      | Some id ->
+          let expansion =
+            try Env.find_modtype_expansion p env
+            with Not_found ->
+              raise (Ctype.Nondep_cannot_erase id)
+          in
+          nondep_mty env va ids expansion
+      | None -> mty
+      end
+  | Mty_alias(_, p) ->
+      begin match Path.find_free_opt ids p with
+      | Some id ->
+          let expansion =
+            try Env.find_module p env
+            with Not_found ->
+              raise (Ctype.Nondep_cannot_erase id)
+          in
+          nondep_mty env va ids expansion.md_type
+      | None -> mty
+      end
+  | Mty_signature sg ->
+      Mty_signature(nondep_sig env va ids sg)
+  | Mty_functor(param, arg, res) ->
+      let var_inv =
+        match va with Co -> Contra | Contra -> Co | Strict -> Strict in
+      Mty_functor(param, Misc.may_map (nondep_mty env var_inv ids) arg,
+                  nondep_mty
+                    (Env.add_module ~arg:true param
+                        (Btype.default_mty arg) env) va ids res)
 
-  let rec nondep_mty env va mty =
-    match mty with
-      Mty_ident p ->
-        if Path.exists_free ids p then
-          nondep_mty env va (Env.find_modtype_expansion p env)
-        else mty
-    | Mty_alias(_, p) ->
-        if Path.exists_free ids p then
-          nondep_mty env va (Env.find_module p env).md_type
-        else mty
-    | Mty_signature sg ->
-        Mty_signature(nondep_sig env va sg)
-    | Mty_functor(param, arg, res) ->
-        let var_inv =
-          match va with Co -> Contra | Contra -> Co | Strict -> Strict in
-        Mty_functor(param, Misc.may_map (nondep_mty env var_inv) arg,
-                    nondep_mty
-                      (Env.add_module ~arg:true param
-                         (Btype.default_mty arg) env) va res)
+and nondep_sig_item env va ids = function
+  | Sig_value(id, d) ->
+      Sig_value(id,
+                {d with val_type = Ctype.nondep_type env ids d.val_type})
+  | Sig_type(id, d, rs) ->
+      Sig_type(id, Ctype.nondep_type_decl env ids (va = Co) d, rs)
+  | Sig_typext(id, ext, es) ->
+      Sig_typext(id, Ctype.nondep_extension_constructor env ids ext, es)
+  | Sig_module(id, md, rs) ->
+      Sig_module(id, {md with md_type=nondep_mty env va ids md.md_type}, rs)
+  | Sig_modtype(id, d) ->
+      begin try
+        Sig_modtype(id, nondep_modtype_decl env ids d)
+      with Ctype.Nondep_cannot_erase _ as exn ->
+        match va with
+          Co -> Sig_modtype(id, {mtd_type=None; mtd_loc=Location.none;
+                                 mtd_attributes=[]})
+        | _  -> raise exn
+      end
+  | Sig_class(id, d, rs) ->
+      Sig_class(id, Ctype.nondep_class_declaration env ids d, rs)
+  | Sig_class_type(id, d, rs) ->
+      Sig_class_type(id, Ctype.nondep_cltype_declaration env ids d, rs)
 
-  and nondep_sig env va = function
-    [] -> []
-  | item :: rem ->
-      let rem' = nondep_sig env va rem in
-      match item with
-        Sig_value(id, d) ->
-          Sig_value(id,
-                    {d with val_type = Ctype.nondep_type env ids d.val_type})
-          :: rem'
-      | Sig_type(id, d, rs) ->
-          Sig_type(id, Ctype.nondep_type_decl env ids (va = Co) d, rs)
-          :: rem'
-      | Sig_typext(id, ext, es) ->
-          Sig_typext(id, Ctype.nondep_extension_constructor env ids ext, es)
-          :: rem'
-      | Sig_module(id, md, rs) ->
-          Sig_module(id, {md with md_type=nondep_mty env va md.md_type}, rs)
-          :: rem'
-      | Sig_modtype(id, d) ->
-          begin try
-            Sig_modtype(id, nondep_modtype_decl env d) :: rem'
-          with Not_found ->
-            match va with
-              Co -> Sig_modtype(id, {mtd_type=None; mtd_loc=Location.none;
-                                     mtd_attributes=[]}) :: rem'
-            | _  -> raise Not_found
-          end
-      | Sig_class(id, d, rs) ->
-          Sig_class(id, Ctype.nondep_class_declaration env ids d, rs)
-          :: rem'
-      | Sig_class_type(id, d, rs) ->
-          Sig_class_type(id, Ctype.nondep_cltype_declaration env ids d, rs)
-          :: rem'
+and nondep_sig env va ids sg =
+  List.map (nondep_sig_item env va ids) sg
 
-  and nondep_modtype_decl env mtd =
-    {mtd with mtd_type = Misc.may_map (nondep_mty env Strict) mtd.mtd_type}
+and nondep_modtype_decl env ids mtd =
+  {mtd with mtd_type = Misc.may_map (nondep_mty env Strict ids) mtd.mtd_type}
 
-  in
-    nondep_mty env Co mty
+let nondep_supertype env ids = nondep_mty env Co ids
+let nondep_sig_item env ids = nondep_sig_item env Co ids
 
 let enrich_typedecl env p id decl =
   match decl.type_manifest with
