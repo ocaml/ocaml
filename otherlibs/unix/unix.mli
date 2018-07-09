@@ -308,7 +308,7 @@ val close : file_descr -> unit
 (** Close a file descriptor. *)
 
 val fsync : file_descr -> unit
-(** Synchronize a file's in-core state with the storage device. *)
+(** Flush file buffers to disk. *)
 
 val read : file_descr -> bytes -> int -> int -> int
 (** [read fd buff ofs len] reads [len] bytes from descriptor [fd],
