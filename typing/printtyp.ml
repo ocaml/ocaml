@@ -77,9 +77,11 @@ module Namespace = struct
     let to_lookup f lid =
       fst @@ f ?loc:None ?mark:(Some false) (Lident lid) !printing_env in
     function
-    | Type -> fun id -> Env.lookup_type ?loc:None (Lident id) !printing_env
+    | Type -> fun id ->
+      Env.lookup_type ?loc:None ~mark:false (Lident id) !printing_env
     | Module -> fun id ->
-      Env.lookup_module ~load:false ?loc:None (Lident id) !printing_env
+      Env.lookup_module ~load:true ~mark:false ?loc:None
+        (Lident id) !printing_env
     | Module_type -> to_lookup Env.lookup_modtype
     | Class -> to_lookup Env.lookup_class
     | Class_type -> to_lookup Env.lookup_cltype
