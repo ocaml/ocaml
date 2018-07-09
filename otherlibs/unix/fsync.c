@@ -17,11 +17,17 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
+#ifdef _WIN32
+#define fsync(fd) _commit(win_CRT_fd_of_filedescr(fd))
+#else
+#define fsync(fd) fsync(Int_val(fd))
+#endif
+
 CAMLprim value unix_fsync(value fd)
 {
   int ret;
   caml_enter_blocking_section();
-  ret = fsync(Int_val(fd));
+  ret = fsync(fd);
   caml_leave_blocking_section();
   if (ret == -1) uerror("fsync", Nothing);
   return Val_unit;

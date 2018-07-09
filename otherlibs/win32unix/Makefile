@@ -18,7 +18,7 @@
 # This directory could even become a subdirectory of the unix directory.
 
 # Files in this directory
-WIN_FILES = accept.c bind.c channels.c close.c fsync.c \
+WIN_FILES = accept.c bind.c channels.c close.c \
   close_on.c connect.c createprocess.c dup.c dup2.c errmsg.c envir.c \
   getpeername.c getpid.c getsockname.c gettimeofday.c isatty.c \
   link.c listen.c lockf.c lseek.c nonblock.c \
@@ -34,7 +34,7 @@ UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
   exit.c getaddrinfo.c getcwd.c gethost.c gethostname.c \
   getnameinfo.c getproto.c \
   getserv.c gmtime.c mmap_ba.c putenv.c rmdir.c \
-  socketaddr.c strofaddr.c time.c unlink.c	
+  socketaddr.c strofaddr.c time.c unlink.c fsync.c
 
 UNIX_CAML_FILES = unix.mli unixLabels.mli unixLabels.ml
 
