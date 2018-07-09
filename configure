@@ -1064,7 +1064,7 @@ fi
 # For the Pervasives module
 
 if sh ./hasgot2 -i math.h $mathlib expm1 log1p hypot copysign; then
-  inf "expm1(), log1p(), hypot(), copysign() found."
+  inf "expm1(), log1p(), hypot(), copysign(), fma() found."
   echo "#define HAS_C99_FLOAT_OPS" >> s.h
 fi
 

@@ -57,6 +57,13 @@ external mul : float -> float -> float = "%mulfloat"
 external div : float -> float -> float = "%divfloat"
 (** Floating-point division. *)
 
+external fma : float -> float -> float -> float =
+  "caml_fma_float" "caml_fma" [@@unboxed] [@@noalloc]
+(** A fused multiply-add [fma x y z] computes [x * y + z] with a
+   single rounding. Deprecated if no hardware FMA support is provided,
+   double-rounding issue may happen with software emulation fallback.
+   @since 4.09.0 *)
+
 external rem : float -> float -> float = "caml_fmod_float" "fmod"
 [@@unboxed] [@@noalloc]
 (** [rem a b] returns the remainder of [a] with respect to [b].  The returned
