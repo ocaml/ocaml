@@ -277,23 +277,31 @@ module MT = struct
     | Pwith_modsubst (s, lid) ->
         Pwith_modsubst (map_loc sub s, map_loc sub lid)
 
-  let map_signature_item sub {psig_desc = desc; psig_loc = loc} =
+  let map_signature_item sub
+        {psig_desc = desc; psig_loc = loc; psig_private = private_ } =
     let open Sig in
     let loc = sub.location sub loc in
     match desc with
-    | Psig_value vd -> value ~loc (sub.value_description sub vd)
-    | Psig_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
-    | Psig_typext te -> type_extension ~loc (sub.type_extension sub te)
-    | Psig_exception ed -> exception_ ~loc (sub.type_exception sub ed)
-    | Psig_module x -> module_ ~loc (sub.module_declaration sub x)
+    | Psig_value vd -> value ~private_ ~loc (sub.value_description sub vd)
+    | Psig_type (rf, l) ->
+        type_ ~private_ ~loc rf (List.map (sub.type_declaration sub) l)
+    | Psig_typext te ->
+        type_extension ~private_ ~loc (sub.type_extension sub te)
+    | Psig_exception ed ->
+        exception_ ~private_ ~loc (sub.type_exception sub ed)
+    | Psig_module x ->
+        module_ ~private_ ~loc (sub.module_declaration sub x)
     | Psig_recmodule l ->
-        rec_module ~loc (List.map (sub.module_declaration sub) l)
-    | Psig_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
+        rec_module ~private_ ~loc (List.map (sub.module_declaration sub) l)
+    | Psig_modtype x ->
+        modtype ~private_ ~loc (sub.module_type_declaration sub x)
     | Psig_open x -> open_ ~loc (sub.open_description sub x)
-    | Psig_include x -> include_ ~loc (sub.include_description sub x)
-    | Psig_class l -> class_ ~loc (List.map (sub.class_description sub) l)
+    | Psig_include x ->
+        include_ ~private_ ~loc (sub.include_description sub x)
+    | Psig_class l ->
+        class_ ~private_ ~loc (List.map (sub.class_description sub) l)
     | Psig_class_type l ->
-        class_type ~loc (List.map (sub.class_type_declaration sub) l)
+        class_type ~private_ ~loc (List.map (sub.class_type_declaration sub) l)
     | Psig_extension (x, attrs) ->
         let attrs = sub.attributes sub attrs in
         extension ~loc ~attrs (sub.extension sub x)
@@ -323,26 +331,37 @@ module M = struct
     | Pmod_unpack e -> unpack ~loc ~attrs (sub.expr sub e)
     | Pmod_extension x -> extension ~loc ~attrs (sub.extension sub x)
 
-  let map_structure_item sub {pstr_loc = loc; pstr_desc = desc} =
+  let map_structure_item sub
+        {pstr_loc = loc; pstr_desc = desc; pstr_private = private_ } =
     let open Str in
     let loc = sub.location sub loc in
     match desc with
     | Pstr_eval (x, attrs) ->
         let attrs = sub.attributes sub attrs in
         eval ~loc ~attrs (sub.expr sub x)
-    | Pstr_value (r, vbs) -> value ~loc r (List.map (sub.value_binding sub) vbs)
-    | Pstr_primitive vd -> primitive ~loc (sub.value_description sub vd)
-    | Pstr_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
-    | Pstr_typext te -> type_extension ~loc (sub.type_extension sub te)
-    | Pstr_exception ed -> exception_ ~loc (sub.type_exception sub ed)
-    | Pstr_module x -> module_ ~loc (sub.module_binding sub x)
-    | Pstr_recmodule l -> rec_module ~loc (List.map (sub.module_binding sub) l)
-    | Pstr_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
+    | Pstr_value (r, vbs) ->
+        value ~private_ ~loc r (List.map (sub.value_binding sub) vbs)
+    | Pstr_primitive vd ->
+        primitive ~private_ ~loc (sub.value_description sub vd)
+    | Pstr_type (rf, l) ->
+        type_ ~private_ ~loc rf (List.map (sub.type_declaration sub) l)
+    | Pstr_typext te ->
+        type_extension ~private_ ~loc (sub.type_extension sub te)
+    | Pstr_exception ed ->
+        exception_ ~private_ ~loc (sub.type_exception sub ed)
+    | Pstr_module x ->
+        module_ ~private_ ~loc (sub.module_binding sub x)
+    | Pstr_recmodule l ->
+        rec_module ~private_ ~loc (List.map (sub.module_binding sub) l)
+    | Pstr_modtype x ->
+        modtype ~private_ ~loc (sub.module_type_declaration sub x)
     | Pstr_open x -> open_ ~loc (sub.open_description sub x)
-    | Pstr_class l -> class_ ~loc (List.map (sub.class_declaration sub) l)
+    | Pstr_class l ->
+        class_ ~private_ ~loc (List.map (sub.class_declaration sub) l)
     | Pstr_class_type l ->
-        class_type ~loc (List.map (sub.class_type_declaration sub) l)
-    | Pstr_include x -> include_ ~loc (sub.include_declaration sub x)
+        class_type ~private_ ~loc (List.map (sub.class_type_declaration sub) l)
+    | Pstr_include x ->
+        include_ ~private_ ~loc (sub.include_declaration sub x)
     | Pstr_extension (x, attrs) ->
         let attrs = sub.attributes sub attrs in
         extension ~loc ~attrs (sub.extension sub x)
@@ -899,7 +918,7 @@ let apply_lazy ~source ~target mapper =
         mapper.structure mapper ast
       with exn ->
         [{pstr_desc = Pstr_extension (extension_of_exn exn, []);
-          pstr_loc  = Location.none}]
+          pstr_loc  = Location.none; pstr_private = false}]
     in
     let fields = PpxContext.update_cookies fields in
     Str.attribute (PpxContext.mk fields) :: ast
@@ -920,7 +939,7 @@ let apply_lazy ~source ~target mapper =
         mapper.signature mapper ast
       with exn ->
         [{psig_desc = Psig_extension (extension_of_exn exn, []);
-          psig_loc  = Location.none}]
+          psig_loc  = Location.none; psig_private = false}]
     in
     let fields = PpxContext.update_cookies fields in
     Sig.attribute (PpxContext.mk fields) :: ast

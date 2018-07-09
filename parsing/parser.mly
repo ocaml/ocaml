@@ -173,7 +173,8 @@ let rec mktailpat nilloc = let open Location in function
       ghpat_cons_desc loc arg, loc
 
 let mkstrexp e attrs =
-  { pstr_desc = Pstr_eval (e, attrs); pstr_loc = e.pexp_loc }
+  { pstr_desc = Pstr_eval (e, attrs); pstr_loc = e.pexp_loc;
+    pstr_private = false }
 
 let mkexp_constraint ~loc e (t1, t2) =
   match t1, t2 with

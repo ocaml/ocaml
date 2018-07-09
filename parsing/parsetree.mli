@@ -705,6 +705,7 @@ and signature_item =
     {
      psig_desc: signature_item_desc;
      psig_loc: Location.t;
+     psig_private: bool;
     }
 
 and signature_item_desc =
@@ -828,6 +829,7 @@ and structure_item =
     {
      pstr_desc: structure_item_desc;
      pstr_loc: Location.t;
+     pstr_private: bool;
     }
 
 and structure_item_desc =

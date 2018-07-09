@@ -96,7 +96,8 @@ let docs_attr ds =
       pexp_attributes = []; }
   in
   let item =
-    { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc }
+    { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc;
+      pstr_private = false }
   in
   { attr_name = doc_loc;
     attr_payload = PStr [item];
@@ -146,7 +147,8 @@ let text_attr ds =
       pexp_attributes = []; }
   in
   let item =
-    { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc }
+    { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc;
+      pstr_private = false }
   in
   { attr_name = text_loc;
     attr_payload = PStr [item];

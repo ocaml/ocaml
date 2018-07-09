@@ -266,19 +266,28 @@ module Mod:
 (** Signature items *)
 module Sig:
   sig
-    val mk: ?loc:loc -> signature_item_desc -> signature_item
+    val mk: ?private_:bool -> ?loc:loc -> signature_item_desc -> signature_item
 
-    val value: ?loc:loc -> value_description -> signature_item
-    val type_: ?loc:loc -> rec_flag -> type_declaration list -> signature_item
-    val type_extension: ?loc:loc -> type_extension -> signature_item
-    val exception_: ?loc:loc -> type_exception -> signature_item
-    val module_: ?loc:loc -> module_declaration -> signature_item
-    val rec_module: ?loc:loc -> module_declaration list -> signature_item
-    val modtype: ?loc:loc -> module_type_declaration -> signature_item
+    val value: ?private_:bool -> ?loc:loc -> value_description -> signature_item
+    val type_: ?private_:bool -> ?loc:loc -> rec_flag -> type_declaration list
+      -> signature_item
+    val type_extension: ?private_:bool -> ?loc:loc -> type_extension ->
+      signature_item
+    val exception_: ?private_:bool -> ?loc:loc -> type_exception ->
+      signature_item
+    val module_: ?private_:bool -> ?loc:loc -> module_declaration ->
+      signature_item
+    val rec_module: ?private_:bool -> ?loc:loc -> module_declaration list ->
+      signature_item
+    val modtype: ?private_:bool -> ?loc:loc -> module_type_declaration ->
+      signature_item
     val open_: ?loc:loc -> open_description -> signature_item
-    val include_: ?loc:loc -> include_description -> signature_item
-    val class_: ?loc:loc -> class_description list -> signature_item
-    val class_type: ?loc:loc -> class_type_declaration list -> signature_item
+    val include_: ?private_:bool -> ?loc:loc -> include_description ->
+      signature_item
+    val class_: ?private_:bool -> ?loc:loc -> class_description list ->
+      signature_item
+    val class_type: ?private_:bool -> ?loc:loc -> class_type_declaration list ->
+      signature_item
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> signature_item
     val attribute: ?loc:loc -> attribute -> signature_item
     val text: text -> signature_item list
@@ -287,21 +296,31 @@ module Sig:
 (** Structure items *)
 module Str:
   sig
-    val mk: ?loc:loc -> structure_item_desc -> structure_item
+    val mk: ?private_:bool -> ?loc:loc -> structure_item_desc -> structure_item
 
     val eval: ?loc:loc -> ?attrs:attributes -> expression -> structure_item
-    val value: ?loc:loc -> rec_flag -> value_binding list -> structure_item
-    val primitive: ?loc:loc -> value_description -> structure_item
-    val type_: ?loc:loc -> rec_flag -> type_declaration list -> structure_item
-    val type_extension: ?loc:loc -> type_extension -> structure_item
-    val exception_: ?loc:loc -> type_exception -> structure_item
-    val module_: ?loc:loc -> module_binding -> structure_item
-    val rec_module: ?loc:loc -> module_binding list -> structure_item
-    val modtype: ?loc:loc -> module_type_declaration -> structure_item
+    val value: ?private_:bool -> ?loc:loc -> rec_flag -> value_binding list ->
+      structure_item
+    val primitive: ?private_:bool -> ?loc:loc -> value_description ->
+      structure_item
+    val type_: ?private_:bool -> ?loc:loc -> rec_flag -> type_declaration list
+      -> structure_item
+    val type_extension: ?private_:bool -> ?loc:loc -> type_extension ->
+      structure_item
+    val exception_: ?private_:bool -> ?loc:loc -> type_exception ->
+      structure_item
+    val module_: ?private_:bool -> ?loc:loc -> module_binding -> structure_item
+    val rec_module: ?private_:bool -> ?loc:loc -> module_binding list ->
+      structure_item
+    val modtype: ?private_:bool -> ?loc:loc -> module_type_declaration ->
+      structure_item
     val open_: ?loc:loc -> open_description -> structure_item
-    val class_: ?loc:loc -> class_declaration list -> structure_item
-    val class_type: ?loc:loc -> class_type_declaration list -> structure_item
-    val include_: ?loc:loc -> include_declaration -> structure_item
+    val class_: ?private_:bool -> ?loc:loc -> class_declaration list ->
+      structure_item
+    val class_type: ?private_:bool -> ?loc:loc -> class_type_declaration list ->
+      structure_item
+    val include_: ?private_:bool -> ?loc:loc -> include_declaration ->
+      structure_item
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> structure_item
     val attribute: ?loc:loc -> attribute -> structure_item
     val text: text -> structure_item list

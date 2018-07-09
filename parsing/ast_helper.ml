@@ -248,20 +248,23 @@ let mk ?(loc = !default_loc) ?(attrs = []) d =
 end
 
 module Sig = struct
-  let mk ?(loc = !default_loc) d = {psig_desc = d; psig_loc = loc}
+  let mk ?(private_ = false) ?(loc = !default_loc) d =
+    {psig_desc = d; psig_loc = loc; psig_private = private_}
 
-  let value ?loc a = mk ?loc (Psig_value a)
-  let type_ ?loc rec_flag a = mk ?loc (Psig_type (rec_flag, a))
-  let type_extension ?loc a = mk ?loc (Psig_typext a)
-  let exception_ ?loc a = mk ?loc (Psig_exception a)
-  let module_ ?loc a = mk ?loc (Psig_module a)
-  let rec_module ?loc a = mk ?loc (Psig_recmodule a)
-  let modtype ?loc a = mk ?loc (Psig_modtype a)
+  let value ?private_ ?loc a = mk ?private_ ?loc (Psig_value a)
+  let type_ ?private_ ?loc rec_flag a =
+    mk ?private_ ?loc (Psig_type (rec_flag, a))
+  let type_extension ?private_ ?loc a = mk ?private_ ?loc (Psig_typext a)
+  let exception_ ?private_ ?loc a = mk ?private_ ?loc (Psig_exception a)
+  let module_ ?private_ ?loc a = mk ?private_ ?loc (Psig_module a)
+  let rec_module ?private_ ?loc a = mk ?private_ ?loc (Psig_recmodule a)
+  let modtype ?private_ ?loc a = mk ?private_ ?loc (Psig_modtype a)
   let open_ ?loc a = mk ?loc (Psig_open a)
-  let include_ ?loc a = mk ?loc (Psig_include a)
-  let class_ ?loc a = mk ?loc (Psig_class a)
-  let class_type ?loc a = mk ?loc (Psig_class_type a)
-  let extension ?loc ?(attrs = []) a = mk ?loc (Psig_extension (a, attrs))
+  let include_ ?private_ ?loc a = mk ?private_ ?loc (Psig_include a)
+  let class_ ?private_ ?loc a = mk ?private_ ?loc (Psig_class a)
+  let class_type ?private_ ?loc a = mk ?private_ ?loc (Psig_class_type a)
+  let extension ?loc ?(attrs = []) a =
+    mk ?loc (Psig_extension (a, attrs))
   let attribute ?loc a = mk ?loc (Psig_attribute a)
   let text txt =
     let f_txt = List.filter (fun ds -> docstring_body ds <> "") txt in
@@ -271,21 +274,24 @@ module Sig = struct
 end
 
 module Str = struct
-  let mk ?(loc = !default_loc) d = {pstr_desc = d; pstr_loc = loc}
+  let mk ?(private_ = false) ?(loc = !default_loc) d =
+    {pstr_desc = d; pstr_loc = loc; pstr_private = private_}
 
-  let eval ?loc ?(attrs = []) a = mk ?loc (Pstr_eval (a, attrs))
-  let value ?loc a b = mk ?loc (Pstr_value (a, b))
-  let primitive ?loc a = mk ?loc (Pstr_primitive a)
-  let type_ ?loc rec_flag a = mk ?loc (Pstr_type (rec_flag, a))
-  let type_extension ?loc a = mk ?loc (Pstr_typext a)
-  let exception_ ?loc a = mk ?loc (Pstr_exception a)
-  let module_ ?loc a = mk ?loc (Pstr_module a)
-  let rec_module ?loc a = mk ?loc (Pstr_recmodule a)
-  let modtype ?loc a = mk ?loc (Pstr_modtype a)
+  let eval ?loc ?(attrs = []) a =
+    mk ?loc (Pstr_eval (a, attrs))
+  let value ?private_ ?loc a b = mk ?private_ ?loc (Pstr_value (a, b))
+  let primitive ?private_ ?loc a = mk ?private_ ?loc (Pstr_primitive a)
+  let type_ ?private_ ?loc rec_flag a =
+    mk ?private_ ?loc (Pstr_type (rec_flag, a))
+  let type_extension ?private_ ?loc a = mk ?private_ ?loc (Pstr_typext a)
+  let exception_ ?private_ ?loc a = mk ?private_ ?loc (Pstr_exception a)
+  let module_ ?private_ ?loc a = mk ?private_ ?loc (Pstr_module a)
+  let rec_module ?private_ ?loc a = mk ?private_ ?loc (Pstr_recmodule a)
+  let modtype ?private_ ?loc a = mk ?private_ ?loc (Pstr_modtype a)
   let open_ ?loc a = mk ?loc (Pstr_open a)
-  let class_ ?loc a = mk ?loc (Pstr_class a)
-  let class_type ?loc a = mk ?loc (Pstr_class_type a)
-  let include_ ?loc a = mk ?loc (Pstr_include a)
+  let class_ ?private_ ?loc a = mk ?private_ ?loc (Pstr_class a)
+  let class_type ?private_ ?loc a = mk ?private_ ?loc (Pstr_class_type a)
+  let include_ ?private_ ?loc a = mk ?private_ ?loc (Pstr_include a)
   let extension ?loc ?(attrs = []) a = mk ?loc (Pstr_extension (a, attrs))
   let attribute ?loc a = mk ?loc (Pstr_attribute a)
   let text txt =
