@@ -37,6 +37,7 @@ type type_forcing_context =
   | For_loop_body
   | Assert_condition
   | Sequence_left_hand_side
+  | When_guard
 
 (* The combination of a type and a "type forcing context". The intent is that it
    describes a type that is "expected" (required) by the context. If unifying
@@ -154,7 +155,6 @@ type error =
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
-  | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential of existential_restriction * string * string list
   | Invalid_interval
   | Invalid_for_loop_index

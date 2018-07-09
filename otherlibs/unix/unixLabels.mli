@@ -492,9 +492,19 @@ val unlink : string -> unit
 val rename : src:string -> dst:string -> unit
 (** [rename old new] changes the name of a file from [old] to [new]. *)
 
-val link : src:string -> dst:string -> unit
-(** [link source dest] creates a hard link named [dest] to the file
-   named [source]. *)
+val link : ?follow:bool -> src:string -> dst:string -> unit
+(** [link ?follow source dest] creates a hard link named [dest] to the file
+   named [source].
+
+   @param follow indicates whether a [source] symlink is followed or a
+   hardlink to [source] itself will be created. On {e Unix} systems this is
+   done using the [linkat(2)] function. If [?follow] is not provided, then the
+   [link(2)] function is used whose behaviour is OS-dependent, but more widely
+   available.
+
+   @raise ENOSYS On {e Unix} if [~follow:_] is requested, but linkat is
+                 unavailable.
+   @raise ENOSYS On {e Windows} if [~follow:false] is requested. *)
 
 
 (** {1 File permissions and ownership} *)

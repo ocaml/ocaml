@@ -34,6 +34,16 @@ void printf_int(char * fmt, int arg)
   printf(fmt, arg);
 }
 
+#define FLOATTEST(arg,res) \
+  { double result = (res); \
+    if (arg < result || arg > result) { \
+      printf("Failed test \"%s == %s\": " \
+             "result %.15g, expected %.15g\n", \
+             #arg, #res, arg, result); \
+      return(2); \
+    } \
+  }
+
 #ifdef SORT
 
 int cmpint(const void * i, const void * j)
@@ -69,6 +79,14 @@ int main(int argc, char **argv)
   { extern double FUN(long);
     extern double call_gen_code(double (*)(long), long);
     printf("%f\n", call_gen_code(FUN, atoi(argv[1])));
+  }
+#endif
+#ifdef FLOAT_CATCH
+  { extern double FUN(long);
+    extern double call_gen_code(double (*)(long), long);
+    double result = call_gen_code(FUN, 1);
+    FLOATTEST(result, 1110.0)
+    printf("%f\n", result);
   }
 #endif
 #ifdef SORT

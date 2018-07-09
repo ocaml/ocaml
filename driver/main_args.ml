@@ -682,6 +682,10 @@ let mk_dinstr f =
   "-dinstr", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dcamlprimc f =
+  "-dcamlprimc", Arg.Unit f, " (undocumented)"
+;;
+
 let mk_dcmm f =
   "-dcmm", Arg.Unit f, " (undocumented)"
 ;;
@@ -923,6 +927,7 @@ module type Bytecomp_options = sig
   val _use_runtime : string -> unit
 
   val _dinstr : unit -> unit
+  val _dcamlprimc : unit -> unit
 
   val _use_prims : string -> unit
 end;;
@@ -1123,6 +1128,7 @@ struct
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
+    mk_dcamlprimc F._dcamlprimc;
     mk_dtimings F._dtimings;
     mk_dprofile F._dprofile;
 

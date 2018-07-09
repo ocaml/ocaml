@@ -41,7 +41,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let clear r () = r := false
 
   let _a = set make_archive
-  let _absname = set Location.absname
+  let _absname = set Clflags.absname
   let _afl_instrument = set afl_instrument
   let _afl_inst_ratio n = afl_inst_ratio := n
   let _annot = set annotations

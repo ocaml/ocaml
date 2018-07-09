@@ -175,3 +175,16 @@ Error: This variant expression is expected to have type unit
          because it is in the result of a conditional with no else branch
        The constructor :: does not belong to type unit
 |}];;
+
+(function
+  | y when y + 1 -> ()
+  | _ -> ());;
+
+[%%expect{|
+Line _, characters 11-16:
+    | y when y + 1 -> ()
+             ^^^^^
+Error: This expression has type int but an expression was expected of type
+         bool
+       because it is in a when-guard
+|}];;

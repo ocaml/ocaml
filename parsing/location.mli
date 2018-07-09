@@ -50,6 +50,8 @@ val symbol_gloc: unit -> t
   at 1, in the current parser rule. *)
 val rhs_loc: int -> t
 
+val rhs_interval: int -> int -> t
+
 val input_name: string ref
 val input_lexbuf: Lexing.lexbuf option ref
 
@@ -100,8 +102,6 @@ val show_filename: string -> string
     (** In -absname mode, return the absolute path for this filename.
         Otherwise, returns the filename unchanged. *)
 
-
-val absname: bool ref
 
 (** Support for located errors *)
 

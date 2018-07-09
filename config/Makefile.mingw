@@ -75,7 +75,7 @@ X11_INCLUDES=
 X11_LINK=
 RPATH=
 SUPPORTS_SHARED_LIBRARIES=true
-SHAREDCCCOMPOPTS=
+SHAREDLIB_CFLAGS=
 MKSHAREDLIBRPATH=
 ASM=$(TOOLPREF)as
 ASPP=$(TOOLPREF)gcc -c
@@ -107,21 +107,22 @@ DEFAULT_SAFE_STRING=true
 WINDOWS_UNICODE=1
 AFL_INSTRUMENT=false
 AWK=gawk
+CC_HAS_DEBUG_PREFIX_MAP=false
 
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
 CC=$(TOOLPREF)gcc
-CFLAGS=-O -mms-bitfields -Wall -Wno-unused -fno-tree-vrp
+OC_CFLAGS=-O -mms-bitfields -Wall -Wno-unused -fno-tree-vrp
 # -fno-tree-vrp is here to try to work around the Skylake/Kaby lake bug,
 # and only works on GCC 4.2 and later.
-CPPFLAGS=-DCAML_NAME_SPACE -DUNICODE -D_UNICODE \
+OC_CPPFLAGS=-DCAML_NAME_SPACE -DUNICODE -D_UNICODE \
   -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
 OCAMLC_CFLAGS=-O -mms-bitfields
 
 BYTECCDBGCOMPOPTS=-g
 
-LDFLAGS=-municode
+OC_LDFLAGS=-municode
 
 ### Libraries needed
 BYTECCLIBS=-lws2_32 -lversion
@@ -147,12 +148,12 @@ endif
 #   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
-MKEXE=$(MKEXE_ANSI) $(if $(LDFLAGS),-link "$(LDFLAGS)")
+MKEXE=$(MKEXE_ANSI) $(if $(OC_LDFLAGS),-link "$(OC_LDFLAGS)")
 MKEXEDEBUGFLAG=-g
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink
-MKEXE_BOOT=$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUTEXE)$(1) $(2)
+MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OC_LDFLAGS) $(OUTPUTEXE)$(1) $(2)
 
 ### Native command to build an ANSI executable
 MKEXE_ANSI=$(FLEXLINK) -exe

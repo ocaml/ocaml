@@ -31,6 +31,8 @@ val c_compiler: string
 val c_output_obj: string
         (* Name of the option of the C compiler for specifying the output
            file *)
+val c_has_debug_prefix_map : bool
+        (* Whether the C compiler supports -fdebug-prefix-map *)
 val ocamlc_cflags : string
         (* The flags ocamlc should pass to the C compiler *)
 val ocamlc_cppflags : string
@@ -96,7 +98,7 @@ val max_young_wosize: int
            minor heap *)
 val stack_threshold: int
         (* Size in words of safe area at bottom of VM stack,
-           see byterun/config.h *)
+           see runtime/caml/config.h *)
 val stack_safety_margin: int
         (* Size in words of the safety margin between the bottom of
            the stack and the stack pointer. This margin can be used by

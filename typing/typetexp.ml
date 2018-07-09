@@ -922,9 +922,9 @@ let report_error env ppf = function
         Printtyp.reset_and_mark_loops_list [ty; ty'];
         fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
           "This variant type contains a constructor"
-          Printtyp.type_expr ty
+          !Oprint.out_type (tree_of_typexp false ty)
           "which should be"
-          Printtyp.type_expr ty')
+           !Oprint.out_type (tree_of_typexp false ty'))
   | Not_a_variant ty ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf

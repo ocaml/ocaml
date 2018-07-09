@@ -34,14 +34,14 @@ function run {
 }
 
 function set_configuration {
-    cp config/m-nt.h byterun/caml/m.h
-    cp config/s-nt.h byterun/caml/s.h
+    cp config/m-nt.h runtime/caml/m.h
+    cp config/s-nt.h runtime/caml/s.h
 
     FILE=$(pwd | cygpath -f - -m)/config/Makefile
     echo "Edit $FILE to set PREFIX=$2"
     sed -e "/PREFIX=/s|=.*|=$2|" \
         -e "/RUNTIMED=/s|=.*|=true|" \
-        -e "/^ *CFLAGS *=/s/\r\?$/ $3\0/" \
+        -e "/^ *OC_CFLAGS *=/s/\r\?$/ $3\0/" \
          config/Makefile.$1 > config/Makefile
 #    run "Content of $FILE" cat config/Makefile
 }

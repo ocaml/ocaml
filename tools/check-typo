@@ -91,7 +91,8 @@ export LC_ALL=C
 # Special case for recursive call from the find command (see IGNORE_DIRS).
 case "$1" in
   --check-prune)
-    case `git check-attr ocaml-typo "$2" 2>/dev/null` in
+    case `env $OCAML_CT_GIT_INDEX git check-attr $OCAML_CT_CA_FLAG \
+                                                 ocaml-typo "$2" 2>/dev/null` in
       *prune*) echo "INFO: pruned directory $2 (ocaml-typo=prune)" >&2; exit 0;;
       *) exit 3;;
     esac;;
@@ -113,18 +114,29 @@ while : ; do
   esac
 done
 
+OCAML_CT_CAT=${OCAML_CT_CAT:-cat}
+OCAML_CT_LS_FILES=${OCAML_CT_LS_FILES:-git ls-files}
+OCAML_CT_HEAD=${OCAML_CT_HEAD:-HEAD}
+OCAML_CT_AWK=${OCAML_CT_AWK:-awk}
+if [ -z "${OCAML_CT_GIT_INDEX+x}" ] ; then
+  OCAML_CT_GIT_INDEX=
+else
+  OCAML_CT_GIT_INDEX="GIT_INDEX_FILE=$OCAML_CT_GIT_INDEX"
+fi
+
 IGNORE_DIRS="
   -name .git -prune -o
   -type d -exec $0 --check-prune {} ; -prune -o
 "
 
+EXIT_CODE=0
 ( case $# in
     0) find . $IGNORE_DIRS -type f -print;;
     *) for i in "$@"; do find "$i" $IGNORE_DIRS -type f -print; done;;
   esac
 ) | (
   while read f; do
-    case `git ls-files "$f" 2>&1` in
+    case `$OCAML_CT_LS_FILES "$f" 2>&1` in
       "") is_svn=false;;
       *) is_svn=true;;
     esac
@@ -147,9 +159,11 @@ IGNORE_DIRS="
       #    the documentation for the --numstat option. Commands designated as
       #    "plumbing" commands in git have stable output intended for parsing)
       EMPTY=`git hash-object -t tree /dev/null`
-      git diff-tree --numstat $EMPTY HEAD -- "$f" | grep -q "^-[[:blank:]]-" \
-        && continue
-      svnrules=`git check-attr ocaml-typo "$f" | sed -e 's/.*: //'`
+      git diff-tree --numstat $EMPTY $OCAML_CT_HEAD -- "$f" \
+        | grep -q "^-[[:blank:]]-" && continue
+      svnrules=`env $OCAML_CT_GIT_INDEX git check-attr $OCAML_CT_CA_FLAG \
+                                                       ocaml-typo "$f" \
+                  | sed -e 's/.*: //'`
       case $svnrules in unspecified) svnrules= ;; esac
     fi
     rules="$userrules"
@@ -169,15 +183,17 @@ IGNORE_DIRS="
         # requires the entire line to match. This specifically detects the
         # presence of lines containing malformed UTF-8. It may be tested using
         # https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
-        if LC_ALL=en_US.UTF8 grep -qaxv '.*' "$f" ; then
+        if $OCAML_CT_CAT "$OCAML_CT_PREFIX$f" \
+             | LC_ALL=en_US.UTF8 grep -qaxv '.*' ; then
           echo File "$f" is not correctly encoded in UTF-8
           exit 2
         fi
         ;;
     esac
 
-    (cat "$f" | tr -d '\r'; echo) \
-    | awk -v rules="$rules" -v svnrules="$svnrules" -v file="$f" \
+    if ! \
+    ($OCAML_CT_CAT "$OCAML_CT_PREFIX$f" | tr -d '\r'; echo) \
+    | $OCAML_CT_AWK -v rules="$rules" -v svnrules="$svnrules" -v file="$f" \
       '
         function is_err(name) {
           return (("," rules svnrules ",") !~ ("[, ]" name "[, ]"));
@@ -266,7 +282,7 @@ IGNORE_DIRS="
 
         $0 !~ /\t/ && length($0) > 80 {
           t = utf8_decode($0);
-          sub(/https?:[A-Za-z0-9._~:/?#\[\]@!$&\047()*+,;=%-]{73,}$/, "", t);
+          sub(/https?:[A-Za-z0-9._~:\/?#\[\]@!$&\047()*+,;=%-]{73,}$/, "", t);
           if (length(t) > 80) {
             RSTART = 81;
             RLENGTH = 0;
@@ -364,6 +380,9 @@ IGNORE_DIRS="
           }
           exit got_errors;
         }
-      '
+      ' ; then
+        EXIT_CODE=1
+      fi
   done
+  exit $EXIT_CODE
 )

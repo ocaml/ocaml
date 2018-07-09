@@ -60,12 +60,12 @@ quote1 () {
 # Functions used to modify the source code
 
 change_exe_magic_number() {
-  old=`./byterun/ocamlrun -M`
+  old=`./runtime/ocamlrun -M`
   new="$1"
   echo Changing executable magic number from ${old} to ${new}
-  # Change magic number in byterun/caml/exec.h
+  # Change magic number in runtime/caml/exec.h
   sed -i 's/\x23define \+EXEC_MAGIC \+\x22'${old}\
-'\x22/#define EXEC_MAGIC "'${new}'"/' byterun/caml/exec.h
+'\x22/#define EXEC_MAGIC "'${new}'"/' runtime/caml/exec.h
   # Change magic number in utils/config.mlp
   sed -i 's/let \+exec_magic_number \+= \+\x22'${old}\
 '\x22/let exec_magic_number = "'${new}'"/' utils/config.mlp
@@ -227,8 +227,8 @@ case $configure in
     eval "./configure -prefix '$instdir' $confoptions"
   ;;
   nt)
-    cp config/m-nt.h byterun/caml/m.h
-    cp config/s-nt.h byterun/caml/s.h
+    cp config/m-nt.h runtime/caml/m.h
+    cp config/s-nt.h runtime/caml/s.h
     cp config/Makefile.${OCAML_ARCH} config/Makefile
     sed -i "s%PREFIX=\(.\+\)%PREFIX=${instdir}%" config/Makefile
     sed -i 's%RUNTIMED=.\+%RUNTIMED=true%' config/Makefile

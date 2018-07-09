@@ -360,10 +360,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let set r () = r := true
   let clear r () = r := false
   open Clflags
-  let _absname = set Location.absname
-  let _I dir =
-    let dir = Misc.expand_directory Config.standard_library dir in
-    include_dirs := dir :: !include_dirs
+  let _absname = set absname
+  let _I dir = include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
   let _noinit = set noinit
   let _labels = clear classic
@@ -410,6 +408,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _dtimings () = profile_columns := [ `Time ]
   let _dprofile () = profile_columns := Profile.all_columns
   let _dinstr = set dump_instr
+  let _dcamlprimc = set keep_camlprimc_file
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0

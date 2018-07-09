@@ -80,7 +80,7 @@ export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
 endif
 
 CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot \
-      -use-prims ../byterun/primitives -I ..
+      -use-prims ../runtime/primitives -I ..
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 ifeq "$(UNIX_OR_WIN32)" "win32"
   ifneq "$(wildcard ../flexdll/Makefile)" ""
@@ -99,7 +99,8 @@ VPATH := $(filter-out -I,$(INCLUDES))
 
 # scrapelabels addlabels
 
-.PHONY: all opt.opt
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
+allopt: opt.opt
 
 # The dependency generator
 
@@ -313,8 +314,8 @@ make_opcodes.ml: make_opcodes.mll
 make_opcodes: make_opcodes.ml
 	$(CAMLC) make_opcodes.ml -o $@
 
-opnames.ml: ../byterun/caml/instruct.h make_opcodes
-	../byterun/ocamlrun make_opcodes -opnames < $< > $@
+opnames.ml: ../runtime/caml/instruct.h make_opcodes
+	../runtime/ocamlrun make_opcodes -opnames < $< > $@
 
 clean::
 	rm -f opnames.ml make_opcodes make_opcodes.ml
@@ -329,8 +330,8 @@ else
 DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
 endif
 
-objinfo_helper$(EXE): objinfo_helper.c ../byterun/caml/s.h
-	$(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(OUTPUTEXE)$@ \
+objinfo_helper$(EXE): objinfo_helper.c ../runtime/caml/s.h
+	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime $(OUTPUTEXE)$@ \
           $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) $< $(LIBBFD_LINK)
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \

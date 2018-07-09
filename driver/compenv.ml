@@ -205,7 +205,7 @@ let read_one_param ppf position name v =
   | "afl-inst-ratio" ->
       int_setter ppf "afl-inst-ratio" afl_inst_ratio v
   | "annot" -> set "annot" [ Clflags.annotations ] v
-  | "absname" -> set "absname" [ Location.absname ] v
+  | "absname" -> set "absname" [ Clflags.absname ] v
   | "compat-32" -> set "compat-32" [ bytecode_compatible_32 ] v
   | "noassert" -> set "noassert" [ noassert ] v
   | "noautolink" -> set "noautolink" [ no_auto_link ] v

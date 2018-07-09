@@ -189,8 +189,9 @@ lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 .PHONY: generators
 generators: $(GENERATORS_CMOS)
 
-.PHONY: opt.opt
+.PHONY: opt.opt allopt # allopt and opt.opt are synonyms
 opt.opt: exeopt libopt generatorsopt
+allopt: opt.opt
 
 .PHONY: exeopt
 exeopt: $(OCAMLDOC_OPT)
@@ -289,19 +290,19 @@ INSTALL_MANODIR=$(INSTALL_MANDIR)/man3
 .PHONY: install
 install:
 	$(MKDIR) "$(INSTALL_BINDIR)"
-	$(MKDIR) "$(INSTALL_LIBDIR)"
+	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
 	$(MKDIR) "$(INSTALL_MANODIR)"
 	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
 	$(INSTALL_DATA) \
 	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR)/ocamldoc"
 	$(INSTALL_DATA) \
 	  $(OCAMLDOC_LIBCMIS) \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR)/ocamldoc"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR)/ocamldoc"
 endif
 	if test -d stdlib_man; then \
 	  $(INSTALL_DATA) stdlib_man/* "$(INSTALL_MANODIR)"; \
@@ -317,20 +318,20 @@ installopt:
 .PHONY: installopt_really
 installopt_really:
 	$(MKDIR) "$(INSTALL_BINDIR)"
-	$(MKDIR) "$(INSTALL_LIBDIR)"
+	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
 	$(INSTALL_PROG) \
 	   $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
 	$(INSTALL_DATA) \
 	  $(OCAMLDOC_LIBCMIS) \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR)/ocamldoc"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR)/ocamldoc"
 endif
 	$(INSTALL_DATA) \
 	  ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR)/ocamldoc"
 
 # TODO: also split into several rules
 

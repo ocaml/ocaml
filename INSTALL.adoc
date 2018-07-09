@@ -26,7 +26,7 @@
         ./configure
 +
 This generates the three configuration files `config/Makefile`,
-`byterun/caml/m.h` and `byterun/caml/s.h`.
+`runtime/caml/m.h` and `runtime/caml/s.h`.
 +
 The `configure` script accepts the following options:
 +
@@ -271,7 +271,7 @@ In the latter case, the destination directory defaults to the
 Read the "common problems" and "machine-specific hints" section at the end of
 this file.
 
-Check the files `m.h` and `s.h` in `byterun/caml/`.
+Check the files `m.h` and `s.h` in `runtime/caml/`.
 Wrong endianness or alignment constraints in `machine.h` will
 immediately crash the bytecode interpreter.
 
@@ -280,12 +280,12 @@ and data segment size (type `limit` under csh or `ulimit -a` under bash). Make
 sure the limit on the stack size is at least 4M.
 
 Try recompiling the runtime system with optimizations turned off (change
-`CFLAGS` in `byterun/Makefile` and `asmrun/Makefile`). The runtime system
+`OC_CFLAGS` in `runtime/Makefile`). The runtime system
 contains some complex, atypical pieces of C code which can uncover bugs in
 optimizing compilers.  Alternatively, try another C compiler (e.g. `gcc` instead
 of the vendor-supplied `cc`).
 
-You can also build a debug version of the runtime system. Go to the `byterun/`
+You can also build a debug version of the runtime system. Go to the `runtime/`
 directory and do `make ocamlrund`.  Then, copy `ocamlrund` to
 `../boot/ocamlrun`, and try again.  This version of the runtime system contains
 lots of assertions and sanity checks that could help you pinpoint the problem.

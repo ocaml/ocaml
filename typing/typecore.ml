@@ -33,6 +33,7 @@ type type_forcing_context =
   | For_loop_body
   | Assert_condition
   | Sequence_left_hand_side
+  | When_guard
 
 type type_expected = {
   ty: type_expr;
@@ -89,7 +90,6 @@ type error =
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
-  | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential of existential_restriction * string * string list
   | Invalid_interval
   | Invalid_for_loop_index
@@ -397,9 +397,6 @@ let unify_pat_types_gadt loc env ty ty' =
       raise(Error(loc, !env, Pattern_type_clash(trace)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, !env, Typetexp.Variant_tags (l1, l2)))
-  | Unification_recursive_abbrev trace ->
-      raise(Error(loc, !env, Recursive_local_constraint trace))
-
 
 (* Creating new conjunctive types is not allowed when typing patterns *)
 
@@ -719,7 +716,9 @@ end) = struct
     let tpaths = unique (compare_type_path env) [tpath] others in
     match tpaths with
       [_] -> []
-    | _ -> List.map Printtyp.string_of_path tpaths
+    | _ -> let open Printtyp in
+        wrap_printing_env ~error:true env (fun () ->
+            reset(); strings_of_paths Type tpaths)
 
   let disambiguate_by_type env tpath lbls =
     let check_type (lbl, _) =
@@ -736,11 +735,13 @@ end) = struct
           [] -> unbound_name_error env lid
         | (lbl, use) :: rest ->
             use ();
+            Printtyp.Conflicts.reset ();
             let paths = ambiguous_types env lbl rest in
+            let expansion = Format.asprintf "%t" Printtyp.Conflicts.print in
             if paths <> [] then
               warn lid.loc
                 (Warnings.Ambiguous_name ([Longident.last lid.txt],
-                                          paths, false));
+                                          paths, false, expansion));
             lbl
         end
     | Some(tpath0, tpath, pr) ->
@@ -761,11 +762,14 @@ end) = struct
                 let lbl_tpath = get_type_path lbl' in
                 if not (compare_type_path env tpath lbl_tpath) then warn_pr ()
                 else
+                  Printtyp.Conflicts.reset ();
                   let paths = ambiguous_types env lbl rest in
+                  let expansion =
+                    Format.asprintf "%t" Printtyp.Conflicts.print in
                   if paths <> [] then
                     warn lid.loc
                       (Warnings.Ambiguous_name ([Longident.last lid.txt],
-                                                paths, false))
+                                                paths, false, expansion))
           end;
           lbl
         with Not_found -> try
@@ -841,7 +845,7 @@ let disambiguate_lid_a_list loc closed env opath lid_a_list =
     let open Warnings in
     match msg with
     | Not_principal _ -> w_pr := true
-    | Ambiguous_name([s], l, _) -> w_amb := (s, l) :: !w_amb
+    | Ambiguous_name([s], l, _, ex) -> w_amb := (s, l, ex) :: !w_amb
     | Name_out_of_scope(ty, [s], _) ->
         w_scope := s :: !w_scope; w_scope_ty := ty
     | _ -> Location.prerr_warning loc msg
@@ -875,17 +879,18 @@ let disambiguate_lid_a_list loc closed env opath lid_a_list =
       (Warnings.Not_principal "this type-based record disambiguation")
   else begin
     match List.rev !w_amb with
-      (_,types)::_ as amb ->
+      (_,types,ex)::_ as amb ->
         let paths =
           List.map (fun (_,lbl,_) -> Label.get_type_path lbl) lbl_a_list in
         let path = List.hd paths in
+        let fst3 (x,_,_) = x in
         if List.for_all (compare_type_path env path) (List.tl paths) then
           Location.prerr_warning loc
-            (Warnings.Ambiguous_name (List.map fst amb, types, true))
+            (Warnings.Ambiguous_name (List.map fst3 amb, types, true, ex))
         else
           List.iter
-            (fun (s,l) -> Location.prerr_warning loc
-                (Warnings.Ambiguous_name ([s],l,false)))
+            (fun (s,l,ex) -> Location.prerr_warning loc
+                (Warnings.Ambiguous_name ([s],l,false, ex)))
             amb
     | _ -> ()
   end;
@@ -1318,7 +1323,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         let (_, ty_arg, ty_res) = instance_label false label in
         begin try
           unify_pat_types loc !env ty_res record_ty
-        with Unify trace ->
+        with Error(_loc, _env, Pattern_type_clash(trace)) ->
           raise(Error(label_lid.loc, !env,
                       Label_mismatch(label_lid.txt, trace)))
         end;
@@ -2682,9 +2687,7 @@ and type_expect_
                 end_def ();
                 let tv = newvar () in
                 let gen = generalizable tv.level arg.exp_type in
-                (try unify_var env tv arg.exp_type with Unify trace ->
-                  raise(Error(arg.exp_loc, env,
-                              Expr_type_clash (trace, None))));
+                unify_var env tv arg.exp_type;
                 gen
               end else true
             in
@@ -2966,22 +2969,14 @@ and type_expect_
       let (id, new_env) = Env.enter_module name.txt modl.mod_type env in
       Ctype.init_def(Ident.current_time());
       Typetexp.widen context;
+      (* ideally, we should catch Expr_type_clash errors
+         in type_expect triggered by escaping identifiers from the local module
+         and refine them into Scoping_let_module errors
+      *)
       let body = type_expect new_env sbody ty_expected_explained in
       (* go back to original level *)
       end_def ();
-      (* Unification of body.exp_type with the fresh variable ty
-         fails if and only if the prefix condition is violated,
-         i.e. if generative types rooted at id show up in the
-         type body.exp_type.  Thus, this unification enforces the
-         scoping condition on "let module". *)
-      (* Note that this code will only be reached if ty_expected
-         is a generic type variable, otherwise the error will occur
-         above in type_expect *)
-      begin try
-        Ctype.unify_var new_env ty body.exp_type
-      with Unify _ ->
-        raise(Error(loc, env, Scoping_let_module(name.txt, body.exp_type)))
-      end;
+      Ctype.unify_var new_env ty body.exp_type;
       re {
         exp_desc = Texp_letmodule(id, name, modl, body);
         exp_loc = loc; exp_extra = [];
@@ -4128,7 +4123,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
           | Some scond ->
               Some
                 (type_expect ext_env (wrap_unpacks scond unpacks)
-                   (mk_expected Predef.type_bool))
+                   (mk_expected ~explanation:When_guard Predef.type_bool))
         in
         let exp =
           type_expect ?in_function ext_env sexp (mk_expected ty_res') in
@@ -4492,6 +4487,8 @@ let report_type_expected_explanation expl ppf =
       fprintf ppf "the condition of an assertion"
   | Sequence_left_hand_side ->
       fprintf ppf "the left-hand side of a sequence"
+  | When_guard ->
+      fprintf ppf "a when-guard"
 
 let report_type_expected_explanation_opt expl ppf =
   match expl with
@@ -4705,12 +4702,6 @@ let report_error env ppf = function
       fprintf ppf
         "This expression is packed module, but the expected type is@ %a"
         type_expr ty
-  | Recursive_local_constraint trace ->
-      report_unification_error ppf env trace
-        (function ppf ->
-           fprintf ppf "Recursive local constraint when unifying")
-        (function ppf ->
-           fprintf ppf "with")
   | Unexpected_existential (reason, name, types) -> (
       begin match reason with
       | In_class_args ->

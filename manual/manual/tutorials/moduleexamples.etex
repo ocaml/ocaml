@@ -1,11 +1,9 @@
 \chapter{The module system} \label{c:moduleexamples}
-\pdfchapterfold{-5}{Tutorial: The module system}
 %HEVEA\cutname{moduleexamples.html}
 
 This chapter introduces the module system of OCaml.
 
 \section{Structures}
-\pdfsection{Structures}
 
 A primary motivation for modules is to package together related
 definitions (such as the definitions of a data type and associated
@@ -121,7 +119,6 @@ an exception when the priority queue is empty.
 \end{caml_example}
 
 \section{Signatures}
-\pdfsection{Signatures}
 
 Signatures are interfaces for structures. A signature specifies
 which components of a structure are accessible from the outside, and
@@ -176,7 +173,6 @@ module type PRIOQUEUE_WITH_OPT =
 
 
 \section{Functors}
-\pdfsection{Functors}
 
 Functors are ``functions'' from modules to modules. Functors let you create
 parameterized modules and then provide other modules as parameter(s) to get
@@ -228,7 +224,6 @@ StringSet.member "bar" (StringSet.add "foo" StringSet.empty);;
 \end{caml_example}
 
 \section{Functors and type abstraction}
-\pdfsection{Functors and type abstraction}
 
 As in the "PrioQueue" example, it would be good style to hide the
 actual implementation of the type "set", so that users of the
@@ -318,7 +313,6 @@ operations from "AbstractStringSet" to values of type
 lists that violate the invariants of "NoCaseStringSet".
 
 \section{Modules and separate compilation}
-\pdfsection{Modules and separate compilation}
 
 All examples of modules so far have been given in the context of the
 interactive system. However, modules are most useful for large,

@@ -56,23 +56,16 @@ README*                  ocaml-typo=missing-header
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
 asmcomp/power/NOTES.md   ocaml-typo=missing-header
 
-asmrun/i386.S            ocaml-typo=long-line
-
-config/gnu               ocaml-typo=prune
+/config/gnu              ocaml-typo=prune
 
 emacs/*.el               ocaml-typo=long-line,unused-prop
 emacs/caml.el            ocaml-typo=long-line,unused-prop,missing-header
 emacs/COPYING            ocaml-typo=tab,non-printing,missing-header
 emacs/ocamltags.in       ocaml-typo=non-printing
 
-experimental             ocaml-typo=prune
+/experimental            ocaml-typo=prune
 
-manual                   ocaml-typo=prune
-
-ocamlbuild/*             ocaml-typo=long-line
-ocamlbuild/AUTHORS       ocaml-typo=missing-header
-ocamlbuild/ChangeLog     ocaml-typo=tab,missing-header
-ocamlbuild/TODO          ocaml-typo=missing-header
+/manual                  ocaml-typo=prune
 
 ocamldoc/Changes.txt     ocaml-typo=missing-header
 ocamldoc/ocamldoc.sty    ocaml-typo=missing-header
@@ -81,6 +74,8 @@ ocamldoc/odoc_index.html ocaml-typo=missing-header
 otherlibs/win32unix/readlink.c    ocaml-typo=long-line
 otherlibs/win32unix/stat.c        ocaml-typo=long-line
 otherlibs/win32unix/symlink.c     ocaml-typo=long-line
+
+runtime/i386.S            ocaml-typo=long-line
 
 stdlib/hashbang     ocaml-typo=white-at-eol,missing-lf
 
@@ -140,6 +135,7 @@ tools/make-package-macosx text eol=lf
 tools/ocaml-objcopy-macosx text eol=lf
 tools/ocamlmktop.tpl text eol=lf
 tools/ocamlsize text eol=lf
+tools/pre-commit-githook text eol=lf
 
 # These two are cat scripts, so may not actually require this
 config/auto-aux/sharpbang text eol=lf

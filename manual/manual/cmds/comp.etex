@@ -1,5 +1,4 @@
 \chapter{Batch compilation (ocamlc)} \label{c:camlc}
-\pdfchapter{Batch compilation (ocamlc)}
 %HEVEA\cutname{comp.html}
 
 This chapter describes the OCaml batch compiler "ocamlc",

@@ -78,7 +78,7 @@ let bind_nonvar name arg fn =
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
-    (* cf. byterun/gc.h *)
+    (* cf. runtime/caml/gc.h *)
 
 (* Block headers. Meaning of the tag field: see stdlib/obj.ml *)
 
@@ -1896,7 +1896,11 @@ let rec transl env e =
   | Ucatch(nfail, [], body, handler) ->
       make_catch nfail (transl env body) (transl env handler)
   | Ucatch(nfail, ids, body, handler) ->
-      ccatch(nfail, ids, transl env body, transl env handler)
+      (* CR-someday mshinwell: consider how we can do better than
+         [typ_val] when appropriate. *)
+      let ids_with_types =
+        List.map (fun i -> (i, Cmm.typ_val)) ids in
+      ccatch(nfail, ids_with_types, transl env body, transl env handler)
   | Utrywith(body, exn, handler) ->
       Ctrywith(transl env body, exn, transl env handler)
   | Uifthenelse(cond, ifso, ifnot) ->
@@ -3429,7 +3433,7 @@ module IntSet = Set.Make(
 
 let default_apply = IntSet.add 2 (IntSet.add 3 IntSet.empty)
   (* These apply funs are always present in the main program because
-     the run-time system needs them (cf. asmrun/<arch>.S) . *)
+     the run-time system needs them (cf. runtime/<arch>.S) . *)
 
 let generic_functions shared units =
   let (apply,send,curry) =
