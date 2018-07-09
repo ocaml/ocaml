@@ -192,6 +192,9 @@ Working version
 - GPR#1843: ocamloptp was doing the wrong thing with option -inline-max-unroll.
   (Github user @poechsel, review by Nicolás Ojeda Bär).
 
+- GPR#1890: remove last use of Ctype.unroll_abbrev
+  (Thomas Refis, report by Leo White, review by Jacques Garrigue)
+
 
 OCaml 4.07
 ----------
