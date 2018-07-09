@@ -58,8 +58,12 @@ module F :
 
 module N = F(struct end);;
 [%%expect{|
-Uncaught exception: Misc.Fatal_error
-
+module N :
+  sig
+    type s = private [ `Bar of 'a | `Foo ] as 'a
+    val from : M.t -> s
+    val to_ : s -> M.t
+  end
 |}]
 
 let y =
@@ -68,8 +72,9 @@ let y =
   | `Foo -> assert false
 ;;
 [%%expect{|
-Line _, characters 35-38:
+Line _, characters 8-48:
     match (N.from M.bar :> [ `Bar of N.s | `Foo ]) with
-                                     ^^^
-Error: Unbound module N
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Type N.s is not a subtype of [ `Bar of N.s | `Foo ]
+       Type N.s = [ `Bar of N.s | `Foo ] is not a subtype of N.s
 |}]

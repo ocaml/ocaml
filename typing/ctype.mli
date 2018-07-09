@@ -244,7 +244,7 @@ val nondep_type: Env.t -> Ident.t -> type_expr -> type_expr
            references to the given module identifier. Raise [Not_found]
            if no such type exists. *)
 val nondep_type_decl:
-        Env.t -> Ident.t -> Ident.t -> bool -> type_declaration ->
+        Env.t -> Ident.t -> bool -> type_declaration ->
         type_declaration
         (* Same for type declarations. *)
 val nondep_extension_constructor:

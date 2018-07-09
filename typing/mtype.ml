@@ -182,7 +182,7 @@ let nondep_supertype env mid mty =
                     {d with val_type = Ctype.nondep_type env mid d.val_type})
           :: rem'
       | Sig_type(id, d, rs) ->
-          Sig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d, rs)
+          Sig_type(id, Ctype.nondep_type_decl env mid (va = Co) d, rs)
           :: rem'
       | Sig_typext(id, ext, es) ->
           Sig_typext(id, Ctype.nondep_extension_constructor env mid ext, es)
