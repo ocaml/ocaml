@@ -27,13 +27,6 @@ FIXME: This file should use C11 atomics if they are available.
 #define INLINE static
 #endif
 
-#if defined(__GNUC__)
-#define compiler_expect_1(c) __builtin_expect((c), 1)
-#else
-#define compiler_expect_1(c) c
-#endif
-
-
 /* Loads and stores with acquire and release semantics respectively */
 
 #if defined(__x86_64__) || defined(__i386__)
@@ -112,7 +105,7 @@ unsigned caml_plat_spin_wait(unsigned spins,
   unsigned GENSYM(caml__spins) = 0;                                     \
   for (; 1; cpu_relax(),                                                \
          GENSYM(caml__spins) =                                          \
-           compiler_expect_1(GENSYM(caml__spins) < Max_spins) ?         \
+           CAMLlikely(GENSYM(caml__spins) < Max_spins) ?                \
          GENSYM(caml__spins) + 1 :                                      \
          caml_plat_spin_wait(GENSYM(caml__spins),                       \
                              __FILE__, __LINE__, __func__))

@@ -122,8 +122,30 @@ CAMLextern int caml_failed_assert (char *, char *, int);
 
 #ifdef __GNUC__
 #define CAMLcheckresult __attribute__((warn_unused_result))
+#define CAMLlikely(e)   __builtin_expect((e), 1)
+#define CAMLunlikely(e) __builtin_expect((e), 0)
 #else
 #define CAMLcheckresult
+#define CAMLlikely(e) (e)
+#define CAMLunlikely(e) (e)
+#endif
+
+/* GC status assertions.
+
+   CAMLnoalloc at the start of a block means that the GC must not be
+   invoked during the block. */
+#if defined(__GNUC__) && defined(DEBUG)
+int caml_noalloc_begin(void);
+void caml_noalloc_end(int*);
+void caml_alloc_point_here(void);
+#define CAMLnoalloc                          \
+  int caml__noalloc                          \
+  __attribute__((cleanup(caml_noalloc_end))) \
+    = caml_noalloc_begin()
+#define CAMLalloc_point_here (caml_alloc_point_here())
+#else
+#define CAMLnoalloc
+#define CAMLalloc_point_here ((void)0)
 #endif
 
 #define Is_power_of_2(x) (((x) & ((x) - 1)) == 0)

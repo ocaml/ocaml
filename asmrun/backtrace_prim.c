@@ -120,13 +120,15 @@ value get_callstack(value stack, value max_frames_value)
      from the OCaml side would overflow on 64bits machines. */
   intnat max_frames = Long_val(max_frames_value);
   intnat trace_pos;
-  char *sp;
-  uintnat pc;
-  caml_frame_descrs fds = caml_get_frame_descrs();
 
   saved_stack = stack;
   /* first compute the size of the trace */
   {
+    CAMLnoalloc;
+    char *sp;
+    uintnat pc;
+    caml_frame_descrs fds = caml_get_frame_descrs();
+
     caml_get_stack_sp_pc(stack, &sp, &pc);
     trace_pos = 0;
 
@@ -148,6 +150,11 @@ value get_callstack(value stack, value max_frames_value)
 
   /* then collect the trace */
   {
+    CAMLnoalloc;
+    char *sp;
+    uintnat pc;
+    caml_frame_descrs fds = caml_get_frame_descrs();
+
     caml_get_stack_sp_pc(stack, &sp, &pc);
     trace_pos = 0;
 
