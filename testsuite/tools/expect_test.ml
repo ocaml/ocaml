@@ -141,7 +141,7 @@ module Compiler_messages = struct
       begin match !Location.input_lexbuf with
       | None -> ()
       | Some lexbuf ->
-         Location.show_code_at_location ppf lexbuf loc
+         Location.show_code_at_location ppf lexbuf [loc]
       end;
     ()
 
