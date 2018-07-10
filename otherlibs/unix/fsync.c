@@ -18,6 +18,7 @@
 #include "unixsupport.h"
 
 #ifdef _WIN32
+#include <io.h>
 #define fsync(fd) _commit(win_CRT_fd_of_filedescr(fd))
 #else
 #define fsync(fd) fsync(Int_val(fd))
