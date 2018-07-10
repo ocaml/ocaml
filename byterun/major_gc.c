@@ -44,7 +44,7 @@ uintnat caml_percent_free = Percent_free_def;
 
 /* This variable is only written with the world stopped,
    so it need not be atomic */
-static uintnat major_cycles_completed = 0;
+uintnat caml_major_cycles_completed = 0;
 
 static atomic_uintnat num_domains_to_sweep = {0};
 static atomic_uintnat num_domains_to_mark = {0};
@@ -112,7 +112,7 @@ static void handle_steal_req (struct domain* targetd, void* plv,
   uintnat steal_size, new_size;
   caml_domain_state* target = targetd->state;
 
-  if (pl->major_cycle != major_cycles_completed) {
+  if (pl->major_cycle != caml_major_cycles_completed) {
     pl->result = Not_shared;
   } else if (target->stealing || target->mark_stack_count == 0) {
     pl->result = No_work;
@@ -157,7 +157,7 @@ static int steal_mark_work () {
   int i;
 
   pl.thief = Caml_state;
-  pl.major_cycle = major_cycles_completed;
+  pl.major_cycle = caml_major_cycles_completed;
 
   if (atomic_load_acq(&num_domains_to_mark) == 0)
     return -1;
@@ -177,7 +177,7 @@ static int steal_mark_work () {
 
     /* Abort stealing if marking was done or a major cycle was completed. */
     if (atomic_load_acq(&num_domains_to_mark) == 0 ||
-        pl.major_cycle != major_cycles_completed)
+        pl.major_cycle != caml_major_cycles_completed)
       break;
   }
 
@@ -331,7 +331,7 @@ void caml_sample_gc_stats(struct gc_stats* buf)
   /* we read from the buffers that are not currently being
      written to. that way, we pick up the numbers written
      at the end of the most recently completed GC cycle */
-  int phase = ! (major_cycles_completed & 1);
+  int phase = ! (caml_major_cycles_completed & 1);
   int i;
   intnat pool_max = 0, large_max = 0;
   for (i=0; i<Max_domains; i++) {
@@ -371,7 +371,7 @@ static void major_cycle_callback(struct domain* domain, void* unused)
 
   {
     /* update GC stats */
-    int stats_phase = major_cycles_completed & 1;
+    int stats_phase = caml_major_cycles_completed & 1;
     struct gc_stats* stats = &sampled_gc_stats[stats_phase][domain->state->id];
     stats->minor_words = domain->state->stat_minor_words;
     stats->promoted_words = domain->state->stat_promoted_words;
@@ -387,9 +387,9 @@ static void major_cycle_callback(struct domain* domain, void* unused)
     if (caml_global_barrier_is_final(b)) {
       caml_cycle_heap_stw();
       /* FIXME: Maybe logging outside the barrier would be better */
-      caml_gc_log("GC cycle %lu completed (heap cycled)", (long unsigned int)major_cycles_completed);
+      caml_gc_log("GC cycle %lu completed (heap cycled)", (long unsigned int)caml_major_cycles_completed);
       caml_ev_global_sync();
-      major_cycles_completed++;
+      caml_major_cycles_completed++;
 
       num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
       atomic_store_rel(&num_domains_to_sweep, num_domains_in_stw);
@@ -434,11 +434,11 @@ static void major_cycle_callback(struct domain* domain, void* unused)
 }
 
 void caml_finish_major_cycle() {
-  uintnat cycle = major_cycles_completed;
+  uintnat cycle = caml_major_cycles_completed;
   /* To handle the case where multiple domains try to finish the major
      cycle simultaneously, we loop until the current cycle has ended,
      ignoring whether caml_try_run_on_all_domains succeeds. */
-  while (cycle == major_cycles_completed) {
+  while (cycle == caml_major_cycles_completed) {
     caml_try_run_on_all_domains(&major_cycle_callback, 0);
   }
 }

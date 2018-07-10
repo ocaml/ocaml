@@ -60,6 +60,10 @@ void caml_sample_gc_stats(struct gc_stats* buf);
 */
 void caml_finalise_heap (void);
 
+/* This variable is only written with the world stopped,
+   so it need not be atomic */
+extern uintnat caml_major_cycles_completed;
+
 #endif /* CAML_INTERNALiS */
 
 #endif /* CAML_MAJOR_GC_H */

@@ -1,8 +1,7 @@
 #ifndef CAML_FRAME_DESCRIPTORS_H
 #define CAML_FRAME_DESCRIPTORS_H
 
-#include "caml/mlvalues.h"
-#include "caml/roots.h"
+#include "caml/config.h"
 
 #define Hash_retaddr(addr, mask)                          \
   (((uintnat)(addr) >> 3) & (mask))
@@ -16,13 +15,18 @@ typedef struct {
   unsigned short live_ofs[1];
 } frame_descr;
 
-
 void caml_init_frame_descriptors(void);
-
 void caml_register_frametable(intnat *table);
 
-frame_descr* caml_find_frame_descr(uintnat pc);
+typedef struct {
+  frame_descr** descriptors;
+  int mask;
+} caml_frame_descrs;
 
-CAMLextern value caml_frame_descriptor_table;
+caml_frame_descrs caml_get_frame_descrs(void);
+
+/* Find the current table of frame descriptors.
+   The resulting structure is only valid until the next GC */
+frame_descr* caml_find_frame_descr(caml_frame_descrs fds, uintnat pc);
 
 #endif /* CAML_FRAME_DESCRIPTORS_H */
