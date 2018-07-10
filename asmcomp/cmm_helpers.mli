@@ -538,12 +538,10 @@ val emit_float_array_constant :
   (string * Cmmgen_state.is_global) -> float list -> data_item list ->
   data_item list
 
-type fundecl_summary = { slabel: string; sarity: int; }
-
-val fundecls_size : fundecl_summary list -> int
+val fundecls_size : Clambda.ufunction list -> int
 
 val emit_constant_closure :
-  (string * Cmmgen_state.is_global) -> fundecl_summary list -> data_item list ->
+  (string * Cmmgen_state.is_global) -> Clambda.ufunction list -> data_item list ->
   data_item list -> data_item list
 
 val emit_preallocated_blocks :

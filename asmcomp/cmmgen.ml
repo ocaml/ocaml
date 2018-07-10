@@ -99,18 +99,11 @@ type rhs_kind =
   | RHS_nonrec
 ;;
 
-let summary f =
-  { slabel = f.label;
-    sarity = f.arity;
-  }
-
-let summaries fundecls = List.map summary fundecls
-
 let rec expr_size env = function
   | Uvar id ->
       begin try V.find_same id env with Not_found -> RHS_nonrec end
   | Uclosure(fundecls, clos_vars) ->
-      RHS_block (fundecls_size (summaries fundecls) + List.length clos_vars)
+      RHS_block (fundecls_size fundecls + List.length clos_vars)
   | Ulet(_str, _kind, id, exp, body) ->
       expr_size (V.add (VP.var id) (expr_size env exp) env) body
   | Uletrec(bindings, body) ->
@@ -1617,7 +1610,7 @@ let emit_cmm_data_items_for_constants cont =
       match cst with
       | Const_closure (global, fundecls, clos_vars) ->
           let cmm =
-            emit_constant_closure (symbol, global) (summaries fundecls)
+            emit_constant_closure (symbol, global) fundecls
               (List.fold_right emit_constant clos_vars []) []
           in
           c := (Cdata cmm) :: !c
