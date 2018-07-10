@@ -34,12 +34,12 @@
 
 /* Returns the next frame descriptor (or NULL if none is available),
    and updates *pc and *sp to point to the following one.  */
-frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp, value stack)
+frame_descr * caml_next_frame_descriptor(caml_frame_descrs fds, uintnat * pc, char ** sp, value stack)
 {
   frame_descr * d;
 
   while (1) {
-    d = caml_find_frame_descr(*pc);
+    d = caml_find_frame_descr(fds, *pc);
     /* Skip to next frame */
     if (d->frame_size != 0xFFFF) {
       /* Regular frame, update sp/pc and return the frame descriptor */
@@ -91,6 +91,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, uintnat trapsp_off)
 {
   caml_domain_state* domain_state = Caml_state;
   char* stack_high = (char*)domain_state->stack_high;
+  caml_frame_descrs fds;
 
   if (exn != caml_read_root(domain_state->backtrace_last_exn)) {
     domain_state->backtrace_pos = 0;
@@ -101,9 +102,10 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, uintnat trapsp_off)
       caml_alloc_backtrace_buffer() == -1)
     return;
 
+  fds = caml_get_frame_descrs();
   /* iterate on each frame  */
   while (1) {
-    frame_descr * descr = caml_next_frame_descriptor(&pc, &sp, domain_state->current_stack);
+    frame_descr * descr = caml_next_frame_descriptor(fds, &pc, &sp, domain_state->current_stack);
     if (descr == NULL) return;
     /* store its descriptor in the backtrace buffer */
     if (domain_state->backtrace_pos >= BACKTRACE_BUFFER_SIZE) return;
@@ -136,6 +138,7 @@ value get_callstack(value stack, value max_frames_value)
   intnat trace_pos;
   char *sp;
   uintnat pc;
+  caml_frame_descrs fds = caml_get_frame_descrs();
 
   saved_stack = stack;
   /* first compute the size of the trace */
@@ -144,7 +147,7 @@ value get_callstack(value stack, value max_frames_value)
     trace_pos = 0;
 
     while(1) {
-      frame_descr *descr = caml_next_frame_descriptor(&pc, &sp, stack);
+      frame_descr *descr = caml_next_frame_descriptor(fds, &pc, &sp, stack);
       if (trace_pos >= max_frames) break;
       if (descr == NULL) {
         stack = Stack_parent(stack);
@@ -165,7 +168,7 @@ value get_callstack(value stack, value max_frames_value)
     trace_pos = 0;
 
     while(1) {
-      frame_descr *descr = caml_next_frame_descriptor(&pc, &sp, stack);
+      frame_descr *descr = caml_next_frame_descriptor(fds, &pc, &sp, stack);
       if (trace_pos >= max_frames) break;
       if (descr == NULL) {
         stack = Stack_parent(stack);

@@ -318,10 +318,10 @@ void caml_init_gc ()
   caml_gc_log ("Initial stack limit: %luk bytes",
                caml_max_stack_size / 1024 * sizeof (value));
   caml_setup_eventlog();
-  caml_init_domains(caml_params->init_minor_heap_wsz);
   #ifdef NATIVE_CODE
   caml_init_frame_descriptors();
   #endif
+  caml_init_domains(caml_params->init_minor_heap_wsz);
 /*
   caml_major_heap_increment = major_incr;
   caml_percent_free = norm_pfree (percent_fr);
