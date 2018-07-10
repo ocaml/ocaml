@@ -827,9 +827,7 @@ static void domain_terminate() {
     Caml_state->critical_section_nesting = 0;
     acknowledge_all_pending_interrupts();
   }
-  caml_ev_resume();
-  caml_enter_blocking_section();
-  caml_ev_resume();
+  caml_plat_unlock(&domain_self->roots_lock);
   caml_plat_assert_all_locks_unlocked();
 }
 
