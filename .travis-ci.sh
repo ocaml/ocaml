@@ -20,7 +20,7 @@
 PREFIX=~/inst/ocaml
 
 # turn on heap verifier for CI builds
-export OCAMLRUNPARAM=V=1
+export OCAMLRUNPARAM=v=0,V=1
 
 set -e
 
