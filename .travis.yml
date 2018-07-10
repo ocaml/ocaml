@@ -18,6 +18,15 @@ language: c
 git:
   submodules: false
 script: bash -ex .travis-ci.sh
+
+# also run tests under the debug runtime
+matrix:
+  include:
+  - compiler: gcc
+    os: linux
+    env:
+    - XARCH=x86_64
+    - USE_RUNTIME=d
 os:
   - linux
   - osx
