@@ -271,13 +271,10 @@ let show_filename file =
   if !Clflags.absname then absolute_path file else file
 
 let print_filename ppf file =
-  Format.fprintf ppf "%s" (show_filename file)
+  Format.pp_print_string ppf (show_filename file)
 
 let reset () =
   num_loc_lines := 0
-
-let (msg_file, msg_line, msg_chars, msg_to, msg_colon) =
-  ("File \"", "\", line ", ", characters ", "-", ":")
 
 (* return file, line, char from the given position *)
 let get_pos_info pos =
@@ -296,10 +293,10 @@ let print_loc ppf loc =
       Format.fprintf ppf "Characters %i-%i"
         loc.loc_start.pos_cnum loc.loc_end.pos_cnum
   end else begin
-    Format.fprintf ppf "%s@{<loc>%a%s%i"
-      msg_file print_filename file msg_line line;
+    Format.fprintf ppf "File \"@{<loc>%a\", line %i"
+      print_filename file line;
     if startchar >= 0 then
-      Format.fprintf ppf "%s%i%s%i" msg_chars startchar msg_to endchar;
+      Format.fprintf ppf ", characters %i-%i" startchar endchar;
     Format.fprintf ppf "@}"
   end
 ;;
@@ -308,7 +305,7 @@ let default_printer ppf loc =
   setup_colors ();
   if loc.loc_start.pos_fname = "//toplevel//"
   && highlight_locations ppf [loc] then ()
-  else Format.fprintf ppf "@{<loc>%a@}%s@," print_loc loc msg_colon
+  else Format.fprintf ppf "@{<loc>%a@}:@," print_loc loc
 ;;
 
 let printer = ref default_printer
