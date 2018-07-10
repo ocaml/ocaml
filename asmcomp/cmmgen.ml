@@ -1618,7 +1618,7 @@ let emit_cmm_data_items_for_constants cont =
       | Const_closure (global, fundecls, clos_vars) ->
           let cmm =
             emit_constant_closure (symbol, global) (summaries fundecls)
-              (List.fold_right emit_constant clos_vars [])
+              (List.fold_right emit_constant clos_vars []) []
           in
           c := (Cdata cmm) :: !c
       | Const_table (global, elems) ->

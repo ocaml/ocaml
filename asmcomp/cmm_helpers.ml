@@ -2237,7 +2237,7 @@ let fundecls_size fundecls =
 
 (* Emit constant closures *)
 
-let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars =
+let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
   let closure_symbol f =
     if Config.flambda then
       cdefine_symbol (f.slabel ^ "_closure", global_symb)
@@ -2250,11 +2250,10 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars =
          eliminated and a closure cannot be accessed without going through
          a [Project_closure], which depends on the function. *)
       assert (clos_vars = []);
-      cdefine_symbol symb @
-        clos_vars
+      cdefine_symbol symb @ clos_vars @ cont
   | f1 :: remainder ->
       let rec emit_others pos = function
-          [] -> clos_vars
+          [] -> clos_vars @ cont
       | f2 :: rem ->
           if f2.sarity = 1 || f2.sarity = 0 then
             Cint(infix_header pos) ::
