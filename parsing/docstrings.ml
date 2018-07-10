@@ -348,11 +348,11 @@ end
 include WithParsing
 
 module WithMenhir = struct
-let symbol_docs startpos endpos =
+let symbol_docs (startpos, endpos) =
   { docs_pre = get_pre_docs startpos;
     docs_post = get_post_docs endpos; }
 
-let symbol_docs_lazy p1 p2 =
+let symbol_docs_lazy (p1, p2) =
   lazy { docs_pre = get_pre_docs p1;
          docs_post = get_post_docs p2; }
 
@@ -364,7 +364,7 @@ let rhs_docs_lazy p1 p2 =
     lazy { docs_pre = get_pre_docs p1;
            docs_post = get_post_docs p2; }
 
-let mark_symbol_docs startpos endpos =
+let mark_symbol_docs (startpos, endpos) =
   mark_pre_docs startpos;
   mark_post_docs endpos;
   ()
