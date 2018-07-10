@@ -1647,50 +1647,6 @@ let transl_all_functions cont =
   in
   translated_functions @ cont
 
-(* Build the NULL terminated array of gc roots *)
-
-let emit_gc_roots_table ~symbols cont =
-  let table_symbol = Compilenv.make_symbol (Some "gc_roots") in
-  Cdata(Cglobal_symbol table_symbol ::
-        Cdefine_symbol table_symbol ::
-        List.map (fun s -> Csymbol_address s) symbols @
-        [Cint 0n])
-  :: cont
-
-(* Build preallocated blocks (used for Flambda [Initialize_symbol]
-   constructs, and Clambda global module) *)
-
-let preallocate_block cont { Clambda.symbol; exported; tag; fields } =
-  let space =
-    (* These words will be registered as roots and as such must contain
-       valid values, in case we are in no-naked-pointers mode.  Likewise
-       the block header must be black, below (see [caml_darken]), since
-       the overall record may be referenced. *)
-    List.map (fun field ->
-        match field with
-        | None ->
-            Cint (Nativeint.of_int 1 (* Val_unit *))
-        | Some (Uconst_field_int n) ->
-            cint_const n
-        | Some (Uconst_field_ref label) ->
-            Csymbol_address label)
-      fields
-  in
-  let global = Cmmgen_state.(if exported then Global else Local) in
-  let symb = (symbol, global) in
-  let data =
-    emit_block symb (block_header tag (List.length fields)) space
-  in
-  Cdata data :: cont
-
-let emit_preallocated_blocks preallocated_blocks cont =
-  let symbols =
-    List.map (fun ({ Clambda.symbol }:Clambda.preallocated_block) -> symbol)
-      preallocated_blocks
-  in
-  let c1 = emit_gc_roots_table ~symbols cont in
-  List.fold_left preallocate_block c1 preallocated_blocks
-
 (* Translate a compilation unit *)
 
 let compunit (ulam, preallocated_blocks, constants) =

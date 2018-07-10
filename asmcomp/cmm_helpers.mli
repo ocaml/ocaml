@@ -545,3 +545,6 @@ val fundecls_size : fundecl_summary list -> int
 val emit_constant_closure :
   (string * Cmmgen_state.is_global) -> fundecl_summary list -> data_item list ->
   data_item list -> data_item list
+
+val emit_preallocated_blocks :
+  Clambda.preallocated_block list -> phrase list -> phrase list
