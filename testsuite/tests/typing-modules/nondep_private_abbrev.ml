@@ -70,7 +70,7 @@ module I : functor (X : sig  end) -> sig type t = Priv(X).t end
 
 module IndirectPub = H(struct end);;
 [%%expect{|
-module IndirectPub : sig type t = [ `Foo of t ] end
+module IndirectPub : sig type t = [ `Foo of 'a ] as 'a end
 |}]
 
 (* The result would be

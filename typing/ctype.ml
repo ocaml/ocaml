@@ -4438,18 +4438,8 @@ let nondep_type env id ty =
 
 let () = nondep_type' := nondep_type
 
-let unroll_abbrev id tl ty =
-  let ty = repr ty and path = Path.Pident id in
-  if is_Tvar ty || (List.exists (deep_occur ty) tl)
-  || is_object_type path then
-    ty
-  else
-    let ty' = newty2 ty.level ty.desc in
-    link_type ty (newty2 ty.level (Tconstr (path, tl, ref Mnil)));
-    ty'
-
 (* Preserve sharing inside type declarations. *)
-let nondep_type_decl env mid id is_covariant decl =
+let nondep_type_decl env mid is_covariant decl =
   try
     let params = List.map (nondep_type_rec env mid) decl.type_params in
     let tk =
@@ -4459,9 +4449,7 @@ let nondep_type_decl env mid id is_covariant decl =
       match decl.type_manifest with
       | None -> None, decl.type_private
       | Some ty ->
-          try Some (unroll_abbrev id params
-                      (nondep_type_rec env mid ty)),
-              decl.type_private
+          try Some (nondep_type_rec env mid ty), decl.type_private
           with Not_found when is_covariant ->
             clear_hash ();
             try Some (nondep_type_rec ~expand_private:true env mid ty),
