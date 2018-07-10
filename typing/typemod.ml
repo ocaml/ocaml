@@ -55,15 +55,23 @@ module Sig_component_kind = struct
         true
 end
 
-type hidding_error = {
-  shadowed_item_id: Ident.t;
-  shadowed_item_kind: Sig_component_kind.t;
-  shadowed_item_loc: Location.t;
-  shadower_id: Ident.t;
-  user_id: Ident.t;
-  user_kind: Sig_component_kind.t;
-  user_loc: Location.t;
-}
+type hidding_error =
+  | Private_appears_in_public_sig of {
+      private_item_id: Ident.t;
+      private_item_kind: Sig_component_kind.t;
+      user_id: Ident.t;
+      user_kind: Sig_component_kind.t;
+      user_loc: Location.t;
+    }
+  | Illegal_shadowing of {
+      shadowed_item_id: Ident.t;
+      shadowed_item_kind: Sig_component_kind.t;
+      shadowed_item_loc: Location.t;
+      shadower_id: Ident.t;
+      user_id: Ident.t;
+      user_kind: Sig_component_kind.t;
+      user_loc: Location.t;
+    }
 
 type error =
     Cannot_apply of module_type
@@ -771,18 +779,25 @@ let approx_modtype env smty =
 
 type info =
   | Exported
+  | Private
   | Shadowable of Ident.t * Location.t
 
 let check cl loc tbl id info to_be_removed =
-  let name = Ident.name id in
-  match Hashtbl.find_opt tbl name with
-  | None -> Hashtbl.add tbl name info
-  | Some (Shadowable (shadowed_id, shadowed_loc)) ->
-      Hashtbl.replace tbl name info;
-      to_be_removed :=
-        Ident.Map.add shadowed_id (cl, shadowed_loc, id, loc) !to_be_removed
-  | Some Exported ->
-      raise(Error(loc, Env.empty, Repeated_name(cl, name)))
+  match info with
+  | Private ->
+      to_be_removed := Ident.Map.add id
+                        (cl, loc, None) !to_be_removed
+  | _ ->
+      let name = Ident.name id in
+      match Hashtbl.find_opt tbl name with
+      | Some Private -> assert false
+      | None -> Hashtbl.add tbl name info
+      | Some (Shadowable (shadowed_id, shadowed_loc)) ->
+          Hashtbl.replace tbl name info;
+          to_be_removed := Ident.Map.add shadowed_id
+                            (cl, shadowed_loc, Some (id, loc)) !to_be_removed
+      | Some Exported ->
+          raise(Error(loc, Env.empty, Repeated_name(cl, name)))
 
 type names_infos = (string, info) Hashtbl.t
 
@@ -829,21 +844,27 @@ let check_class ?(info=Exported) names loc id =
 let check_class_type ?(info=Exported) names loc id =
   check Sig_component_kind.Class_type loc names.class_types id info
 
-let check_sig_item names loc = function
+let check_sig_item ?info names loc component =
+  let info id loc =
+    match info with
+    | None -> Shadowable (id, loc)
+    | Some i -> i
+  in
+  match component with
   | Sig_type(id, _, _) ->
-      check_type names loc id ~info:(Shadowable (id, loc))
+      check_type names loc id ~info:(info id loc)
   | Sig_module(id, _, _) ->
-      check_module names loc id ~info:(Shadowable (id, loc))
+      check_module names loc id ~info:(info id loc)
   | Sig_modtype(id, _) ->
-      check_modtype names loc id ~info:(Shadowable (id, loc))
+      check_modtype names loc id ~info:(info id loc)
   | Sig_typext(id, _, _) ->
-      check_typext names loc id ~info:(Shadowable (id, loc))
+      check_typext names loc id ~info:(info id loc)
   | Sig_value (id, _) ->
-      check_value names loc id ~info:(Shadowable (id, loc))
+      check_value names loc id ~info:(info id loc)
   | Sig_class (id, _, _) ->
-      check_class names loc id ~info:(Shadowable (id, loc))
+      check_class names loc id ~info:(info id loc)
   | Sig_class_type (id, _, _) ->
-      check_class_type names loc id ~info:(Shadowable (id, loc))
+      check_class_type names loc id ~info:(info id loc)
 
 (* We usually require name uniqueness of signature components (e.g. types,
    modules, etc), however in some situation reusing the name is allowed: if the
@@ -856,11 +877,12 @@ let check_sig_item names loc = function
 *)
 
 type signature_simplification_info =
-  (Sig_component_kind.t * Location.t * Ident.t * Location.t) Ident.Map.t
+  (Sig_component_kind.t * Location.t * (Ident.t * Location.t) option)
+    Ident.Map.t
 
 let simplify_signature env to_remove sg =
   let ids_to_remove =
-    Ident.Map.fold (fun id (kind, _, _, _) lst ->
+    Ident.Map.fold (fun id (kind, _, _) lst ->
       if Sig_component_kind.can_appear_in_types kind then
         id :: lst
       else
@@ -886,15 +908,34 @@ let simplify_signature env to_remove sg =
         | [] -> component
         | ids ->
           try Mtype.nondep_sig_item env ids component with
-          | Ctype.Nondep_cannot_erase shadowed_item_id ->
-            let (shadowed_item_kind, shadowed_item_loc, ser_id, ser_loc) =
-              Ident.Map.find shadowed_item_id to_remove
+          | Ctype.Nondep_cannot_erase hidden_item_id ->
+            let (hidden_item_kind, hidden_item_loc, ser_id_loc_opt) =
+              Ident.Map.find hidden_item_id to_remove
             in
-            let hidding_error =
-              { shadowed_item_kind; shadowed_item_id; shadowed_item_loc;
-                shadower_id = ser_id; user_id; user_kind; user_loc }
+            let err_loc, hidding_error =
+              match ser_id_loc_opt with
+              | None ->
+                  hidden_item_loc,
+                  Private_appears_in_public_sig {
+                    private_item_kind = hidden_item_kind;
+                    private_item_id = hidden_item_id;
+                    user_id;
+                    user_kind;
+                    user_loc;
+                  }
+              | Some (shadower_id, shadower_loc) ->
+                  shadower_loc,
+                  Illegal_shadowing {
+                    shadowed_item_kind = hidden_item_kind;
+                    shadowed_item_id = hidden_item_id;
+                    shadowed_item_loc = hidden_item_loc;
+                    shadower_id;
+                    user_id;
+                    user_kind;
+                    user_loc;
+                  }
             in
-            raise (Error(ser_loc, env, Cannot_hide_id hidding_error))
+            raise (Error(err_loc, env, Cannot_hide_id hidding_error))
       in
       component :: sg
   in
@@ -929,8 +970,8 @@ let mkmty desc typ env loc attrs =
   Cmt_format.add_saved_type (Cmt_format.Partial_module_type mty);
   mty
 
-let mksig desc env loc =
-  let sg = { sig_desc = desc; sig_loc = loc; sig_env = env } in
+let mksig sig_desc sig_env sig_loc sig_private =
+  let sg = { sig_desc; sig_loc; sig_env; sig_private } in
   Cmt_format.add_saved_type (Cmt_format.Partial_signature_item sg);
   sg
 
@@ -997,27 +1038,39 @@ and transl_signature env sg =
       [] -> [], [], env
     | item :: srem ->
         let loc = item.psig_loc in
+        let priv = item.psig_private in
+        let info = if priv then Some Private else None in
         match item.psig_desc with
         | Psig_value sdesc ->
             let (tdesc, newenv) =
               Typedecl.transl_value_decl env item.psig_loc sdesc
             in
-            check_value names tdesc.val_loc tdesc.val_id to_be_removed;
+            check_value ?info names tdesc.val_loc tdesc.val_id to_be_removed;
             let (trem,rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_value tdesc) env loc :: trem,
-            Sig_value(tdesc.val_id, tdesc.val_val) :: rem,
-              final_env
+            let sg =
+              if priv
+              then rem
+              else Sig_value(tdesc.val_id, tdesc.val_val) :: rem
+            in
+            mksig (Tsig_value tdesc) env loc priv :: trem, sg, final_env
         | Psig_type (rec_flag, sdecls) ->
             let (decls, newenv) =
               Typedecl.transl_type_decl env rec_flag sdecls
             in
             List.iter
-              (fun td -> check_type names td.typ_loc td.typ_id to_be_removed)
+              (fun td -> check_type ?info names td.typ_loc td.typ_id
+                           to_be_removed)
               decls;
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_type (rec_flag, decls)) env loc :: trem,
-            map_rec_type_with_row_types ~rec_flag
-              (fun rs td -> Sig_type(td.typ_id, td.typ_type, rs)) decls rem,
+            let sg =
+              if priv then
+                rem
+              else
+                map_rec_type_with_row_types ~rec_flag
+                  (fun rs td -> Sig_type(td.typ_id, td.typ_type, rs)) decls rem
+            in
+            mksig (Tsig_type (rec_flag, decls)) env loc priv :: trem,
+            sg,
             final_env
         | Psig_typext styext ->
             let (tyext, newenv) =
@@ -1025,27 +1078,35 @@ and transl_signature env sg =
             in
             let constructors = tyext.tyext_constructors in
             List.iter (fun ext ->
-              check_typext names ext.ext_loc ext.ext_id to_be_removed
+              check_typext ?info names ext.ext_loc ext.ext_id to_be_removed
             ) constructors;
             let (trem, rem, final_env) = transl_sig newenv srem in
-              mksig (Tsig_typext tyext) env loc :: trem,
-              map_ext (fun es ext ->
-                Sig_typext(ext.ext_id, ext.ext_type, es)) constructors rem,
-              final_env
+            let sg =
+              if priv then
+                rem
+              else
+                map_ext (fun es ext ->
+                  Sig_typext(ext.ext_id, ext.ext_type, es)) constructors rem
+            in
+              mksig (Tsig_typext tyext) env loc priv :: trem, sg, final_env
         | Psig_exception sext ->
             let (ext, newenv) = Typedecl.transl_type_exception env sext in
             let constructor = ext.tyexn_constructor in
-            check_typext names constructor.ext_loc constructor.ext_id
+            check_typext ?info names constructor.ext_loc constructor.ext_id
               to_be_removed;
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_exception ext) env loc :: trem,
-            Sig_typext(constructor.ext_id,
-                       constructor.ext_type,
-                       Text_exception) :: rem,
-            final_env
+            let sg =
+              if priv then
+                rem
+              else
+                Sig_typext(constructor.ext_id,
+                           constructor.ext_type,
+                           Text_exception) :: rem
+            in
+            mksig (Tsig_exception ext) env loc priv :: trem, sg, final_env
         | Psig_module pmd ->
             let id = Ident.create pmd.pmd_name.txt in
-            check_module names pmd.pmd_name.loc id to_be_removed;
+            check_module ?info names pmd.pmd_name.loc id to_be_removed;
             let tmty =
               Builtin_attributes.warning_scope pmd.pmd_attributes
                 (fun () -> transl_modtype env pmd.pmd_type)
@@ -1058,40 +1119,51 @@ and transl_signature env sg =
             in
             let newenv = Env.enter_module_declaration id md env in
             let (trem, rem, final_env) = transl_sig newenv srem in
+            let sg =
+              if priv then
+                rem
+              else
+                Sig_module(id, md, Trec_not) :: rem
+            in
             mksig (Tsig_module {md_id=id; md_name=pmd.pmd_name; md_type=tmty;
                                 md_loc=pmd.pmd_loc;
                                 md_attributes=pmd.pmd_attributes})
-              env loc :: trem,
-            Sig_module(id, md, Trec_not) :: rem,
+              env loc priv :: trem,
+            sg,
             final_env
         | Psig_recmodule sdecls ->
             let (decls, newenv) =
               transl_recmodule_modtypes env sdecls in
             List.iter
-              (fun md -> check_module names md.md_loc md.md_id to_be_removed)
+              (fun md -> check_module ?info names md.md_loc md.md_id
+                           to_be_removed)
               decls;
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_recmodule decls) env loc :: trem,
-            map_rec (fun rs md ->
-                let d = {Types.md_type = md.md_type.mty_type;
-                         md_attributes = md.md_attributes;
-                         md_loc = md.md_loc;
-                        } in
-                Sig_module(md.md_id, d, rs))
-              decls rem,
-            final_env
+            let sg =
+              if priv then
+                rem
+              else
+                map_rec (fun rs md ->
+                  let d = {Types.md_type = md.md_type.mty_type;
+                           md_attributes = md.md_attributes;
+                           md_loc = md.md_loc;
+                          } in
+                  Sig_module(md.md_id, d, rs))
+                  decls rem
+            in
+            mksig (Tsig_recmodule decls) env loc priv :: trem, sg, final_env
         | Psig_modtype pmtd ->
             let newenv, mtd, sg =
-              transl_modtype_decl to_be_removed names env pmtd
+              transl_modtype_decl ~info to_be_removed names env pmtd
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_modtype mtd) env loc :: trem,
-            sg :: rem,
+            mksig (Tsig_modtype mtd) env loc priv :: trem,
+            (if priv then rem else sg :: rem),
             final_env
         | Psig_open sod ->
             let (_path, newenv, od) = type_open env sod in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_open od) env loc :: trem,
+            mksig (Tsig_open od) env loc priv :: trem,
             rem, final_env
         | Psig_include sincl ->
             let smty = sincl.pincl_mod in
@@ -1103,7 +1175,8 @@ and transl_signature env sg =
             let sg = Subst.signature Subst.identity
                        (extract_sig env smty.pmty_loc mty) in
             List.iter
-              (fun i -> check_sig_item names item.psig_loc i to_be_removed)
+              (fun i -> check_sig_item ?info names item.psig_loc i
+                          to_be_removed)
               (List.rev sg);
             let newenv = Env.add_signature sg env in
             let incl =
@@ -1114,60 +1187,72 @@ and transl_signature env sg =
               }
             in
             let (trem, rem, final_env) = transl_sig newenv srem  in
-            mksig (Tsig_include incl) env loc :: trem,
-            sg @ rem,
+            mksig (Tsig_include incl) env loc priv :: trem,
+            (if priv then rem else sg @ rem),
             final_env
         | Psig_class cl ->
             let (classes, newenv) = Typeclass.class_descriptions env cl in
             List.iter (fun cls ->
               let open Typeclass in
               let loc = cls.cls_id_loc.Location.loc in
-              check_type names loc cls.cls_obj_id to_be_removed;
-              check_class names loc cls.cls_id to_be_removed;
-              check_class_type names loc cls.cls_ty_id to_be_removed;
-              check_type names loc cls.cls_typesharp_id to_be_removed;
+              check_type ?info names loc cls.cls_obj_id to_be_removed;
+              check_class ?info names loc cls.cls_id to_be_removed;
+              check_class_type ?info names loc cls.cls_ty_id to_be_removed;
+              check_type ?info names loc cls.cls_typesharp_id to_be_removed;
             ) classes;
             let (trem, rem, final_env) = transl_sig newenv srem in
+            let sg =
+              if priv then
+                rem
+              else
+                List.flatten
+                  (map_rec
+                     (fun rs cls ->
+                        let open Typeclass in
+                        [Sig_class(cls.cls_id, cls.cls_decl, rs);
+                         Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs);
+                         Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs);
+                         Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs)])
+                     classes [rem])
+            in
             mksig (Tsig_class
                      (List.map (fun decr ->
-                          decr.Typeclass.cls_info) classes)) env loc
+                          decr.Typeclass.cls_info) classes)) env loc priv
             :: trem,
-            List.flatten
-              (map_rec
-                 (fun rs cls ->
-                    let open Typeclass in
-                    [Sig_class(cls.cls_id, cls.cls_decl, rs);
-                     Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs);
-                     Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs);
-                     Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs)])
-                 classes [rem]),
+            sg,
             final_env
         | Psig_class_type cl ->
             let (classes, newenv) = Typeclass.class_type_declarations env cl in
             List.iter (fun decl ->
               let open Typeclass in
               let loc = decl.clsty_id_loc.Location.loc in
-              check_class_type names loc decl.clsty_ty_id to_be_removed;
-              check_type names loc decl.clsty_obj_id to_be_removed;
-              check_type names loc decl.clsty_typesharp_id to_be_removed;
+              check_class_type ?info names loc decl.clsty_ty_id to_be_removed;
+              check_type ?info names loc decl.clsty_obj_id to_be_removed;
+              check_type ?info names loc decl.clsty_typesharp_id to_be_removed;
             ) classes;
             let (trem,rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_class_type
-                     (List.map (fun decl -> decl.Typeclass.clsty_info) classes))
-              env loc :: trem,
-            List.flatten
-              (map_rec
-                 (fun rs decl ->
+            let sg =
+              if priv then
+                rem
+              else
+                List.flatten (
+                  map_rec (fun rs decl ->
                     let open Typeclass in
                     [Sig_class_type(decl.clsty_ty_id, decl.clsty_ty_decl, rs);
                      Sig_type(decl.clsty_obj_id, decl.clsty_obj_abbr, rs);
-                     Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs)])
-                 classes [rem]),
+                     Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs)]
+                  ) classes [rem]
+                )
+            in
+            mksig (Tsig_class_type
+                     (List.map (fun decl -> decl.Typeclass.clsty_info) classes))
+              env loc priv :: trem,
+            sg,
             final_env
         | Psig_attribute x ->
             Builtin_attributes.warning_attribute x;
             let (trem,rem, final_env) = transl_sig env srem in
-            mksig (Tsig_attribute x) env loc :: trem, rem, final_env
+            mksig (Tsig_attribute x) env loc priv :: trem, rem, final_env
         | Psig_extension (ext, _attrs) ->
             raise (Error_forward (Builtin_attributes.error_of_extension ext))
   in
@@ -1184,11 +1269,11 @@ and transl_signature env sg =
        sg
     )
 
-and transl_modtype_decl to_be_removed names env pmtd =
+and transl_modtype_decl ~info to_be_removed names env pmtd =
   Builtin_attributes.warning_scope pmtd.pmtd_attributes
-    (fun () -> transl_modtype_decl_aux to_be_removed names env pmtd)
+    (fun () -> transl_modtype_decl_aux ~info to_be_removed names env pmtd)
 
-and transl_modtype_decl_aux to_be_removed names env
+and transl_modtype_decl_aux ~info to_be_removed names env
     {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} =
   let tmty = Misc.may_map (transl_modtype env) pmtd_type in
   let decl =
@@ -1199,7 +1284,7 @@ and transl_modtype_decl_aux to_be_removed names env
     }
   in
   let (id, newenv) = Env.enter_modtype pmtd_name.txt decl env in
-  check_modtype names pmtd_loc id to_be_removed;
+  check_modtype ?info names pmtd_loc id to_be_removed;
   let mtd =
     {
      mtd_id=id;
@@ -1684,7 +1769,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let names = new_names () in
   let to_be_removed = ref Ident.Map.empty in
 
-  let type_str_item env srem {pstr_loc = loc; pstr_desc = desc} =
+  let type_str_item env srem
+        {pstr_loc = loc; pstr_desc = desc; pstr_private = private_ } =
+    let info = if private_ then Some Private else None in
     match desc with
     | Pstr_eval (sexpr, attrs) ->
         let expr =
@@ -1711,64 +1798,98 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let () = if rec_flag = Recursive then
           Typecore.check_recursive_bindings env defs
         in
+        let let_bound_idents_with_loc = let_bound_idents_with_loc defs in
+        List.iter (fun (id, { Asttypes.loc ; _ } )->
+          check_value ?info names loc id to_be_removed
+        ) let_bound_idents_with_loc;
+        let sg =
+          if private_ then
+            []
+          else
+            List.map (fun (id, _)->
+              Sig_value(id, Env.find_value (Pident id) newenv)
+            ) let_bound_idents_with_loc
+        in
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
-        Tstr_value(rec_flag, defs),
-        List.map (fun (id, { Asttypes.loc; _ })->
-          check_value names loc id to_be_removed;
-          Sig_value(id, Env.find_value (Pident id) newenv)
-        ) (let_bound_idents_with_loc defs),
-        newenv
+        Tstr_value(rec_flag, defs), sg, newenv
     | Pstr_primitive sdesc ->
         let (desc, newenv) = Typedecl.transl_value_decl env loc sdesc in
         check_value names desc.val_loc desc.val_id to_be_removed;
-        Tstr_primitive desc, [Sig_value(desc.val_id, desc.val_val)], newenv
+        let sg =
+          if private_ then
+            []
+          else (
+            [Sig_value(desc.val_id, desc.val_val)]
+          )
+        in
+        Tstr_primitive desc, sg, newenv
     | Pstr_type (rec_flag, sdecls) ->
         let (decls, newenv) = Typedecl.transl_type_decl env rec_flag sdecls in
         List.iter
-          (fun td -> check_type names td.typ_loc td.typ_id to_be_removed)
+          (fun td -> check_type ?info names td.typ_loc td.typ_id to_be_removed)
           decls;
-        Tstr_type (rec_flag, decls),
-        map_rec_type_with_row_types ~rec_flag
-          (fun rs info -> Sig_type(info.typ_id, info.typ_type, rs))
-          decls [],
-        enrich_type_decls anchor decls env newenv
+        let sg, newenv =
+          if private_ then
+            [], newenv
+          else
+            map_rec_type_with_row_types ~rec_flag (fun rs td ->
+              Sig_type(td.typ_id, td.typ_type, rs)
+            ) decls [], enrich_type_decls anchor decls env newenv
+        in
+        Tstr_type (rec_flag, decls), sg, newenv
     | Pstr_typext styext ->
         let (tyext, newenv) =
           Typedecl.transl_type_extension true env loc styext
         in
         let constructors = tyext.tyext_constructors in
         List.iter
-          (fun ext -> check_typext names ext.ext_loc ext.ext_id to_be_removed)
+          (fun ext -> check_typext ?info names ext.ext_loc ext.ext_id
+                        to_be_removed)
           constructors;
-        (Tstr_typext tyext,
-         map_ext
-           (fun es ext -> Sig_typext(ext.ext_id, ext.ext_type, es))
-           constructors [],
-         newenv)
+        let sg =
+          if private_ then
+            []
+          else
+            map_ext (fun es ext ->
+              Sig_typext(ext.ext_id, ext.ext_type, es)
+            ) constructors []
+        in
+        (Tstr_typext tyext, sg, newenv)
     | Pstr_exception sext ->
         let (ext, newenv) = Typedecl.transl_type_exception env sext in
         let constructor = ext.tyexn_constructor in
-        check_typext names constructor.ext_loc constructor.ext_id to_be_removed;
-        Tstr_exception ext,
-        [Sig_typext(constructor.ext_id,
-                    constructor.ext_type,
-                    Text_exception)],
-        newenv
+        check_typext ?info names constructor.ext_loc constructor.ext_id
+          to_be_removed;
+        let sg =
+          if private_ then
+            []
+          else
+            [Sig_typext(constructor.ext_id,
+                        constructor.ext_type,
+                        Text_exception)]
+        in
+        Tstr_exception ext, sg, newenv
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;
                   } ->
         let id = Ident.create name.txt in (* create early for PR#6752 *)
-        check_module names pmb_loc id to_be_removed;
+        check_module ?info names pmb_loc id to_be_removed;
         let modl =
           Builtin_attributes.warning_scope attrs
             (fun () ->
-               type_module ~alias:true true funct_body
-                 (anchor_submodule name.txt anchor) env smodl
+               let anchor =
+                 if private_ then None else anchor_submodule name.txt anchor
+               in
+               type_module ~alias:true true funct_body anchor env smodl
             )
         in
+        let md_type =
+          if private_ then modl.mod_type
+          else enrich_module_type anchor name.txt modl.mod_type env
+        in
         let md =
-          { md_type = enrich_module_type anchor name.txt modl.mod_type env;
+          { md_type;
             md_attributes = attrs;
             md_loc = pmb_loc;
           }
@@ -1776,14 +1897,20 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (*prerr_endline (Ident.unique_toplevel_name id);*)
         Mtype.lower_nongen (Ident.binding_time id - 1) md.md_type;
         let newenv = Env.enter_module_declaration id md env in
+        let sg =
+          if private_ then
+            []
+          else
+            [Sig_module(id,
+                        {md_type = modl.mod_type;
+                         md_attributes = attrs;
+                         md_loc = pmb_loc;
+                        }, Trec_not)]
+        in
         Tstr_module {mb_id=id; mb_name=name; mb_expr=modl;
                      mb_attributes=attrs;  mb_loc=pmb_loc;
                     },
-        [Sig_module(id,
-                    {md_type = modl.mod_type;
-                     md_attributes = attrs;
-                     md_loc = pmb_loc;
-                    }, Trec_not)],
+        sg,
         newenv
     | Pstr_recmodule sbind ->
         let sbind =
@@ -1821,7 +1948,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                    )
                in
                let mty' =
-                 enrich_module_type anchor (Ident.name id) modl.mod_type newenv
+                 if private_ then
+                   modl.mod_type
+                 else
+                   enrich_module_type anchor (Ident.name id) modl.mod_type
+                     newenv
                in
                (id, name, mty, modl, mty', attrs, loc))
             decls sbind in
@@ -1841,19 +1972,23 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         in
         let bindings2 =
           check_recmodule_inclusion newenv bindings1 in
-        Tstr_recmodule bindings2,
-        map_rec (fun rs mb ->
-            Sig_module(mb.mb_id, {
+        let sg =
+          if private_ then
+            []
+          else
+            map_rec (fun rs mb ->
+              Sig_module(mb.mb_id, {
                 md_type=mb.mb_expr.mod_type;
                 md_attributes=mb.mb_attributes;
                 md_loc=mb.mb_loc;
               }, rs))
-           bindings2 [],
-        newenv
+              bindings2 []
+        in
+        Tstr_recmodule bindings2, sg, newenv
     | Pstr_modtype pmtd ->
         (* check that it is non-abstract *)
         let newenv, mtd, sg =
-          transl_modtype_decl to_be_removed names env pmtd
+          transl_modtype_decl ~info to_be_removed names env pmtd
         in
         Tstr_modtype mtd, [sg], newenv
     | Pstr_open sod ->
@@ -1864,11 +1999,25 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         List.iter (fun cls ->
           let open Typeclass in
           let loc = cls.cls_id_loc.Location.loc in
-          check_class names loc cls.cls_id to_be_removed;
-          check_class_type names loc cls.cls_ty_id to_be_removed;
-          check_type names loc cls.cls_obj_id to_be_removed;
-          check_type names loc cls.cls_typesharp_id to_be_removed;
+          check_class ?info names loc cls.cls_id to_be_removed;
+          check_class_type ?info names loc cls.cls_ty_id to_be_removed;
+          check_type ?info names loc cls.cls_obj_id to_be_removed;
+          check_type ?info names loc cls.cls_typesharp_id to_be_removed;
         ) classes;
+        let sg =
+          if private_ then
+            []
+          else
+            List.flatten
+              (map_rec
+                 (fun rs cls ->
+                    let open Typeclass in
+                    [Sig_class(cls.cls_id, cls.cls_decl, rs);
+                     Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs);
+                     Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs);
+                     Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs)])
+                 classes [])
+        in
         Tstr_class
           (List.map (fun cls ->
                (cls.Typeclass.cls_info,
@@ -1881,25 +2030,30 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
       Tstr_type
           (List.map (fun (_,_,_,_,_,_, i, d, _,_,_) -> (i, d)) classes) ::
 *)
-        List.flatten
-          (map_rec
-            (fun rs cls ->
-              let open Typeclass in
-              [Sig_class(cls.cls_id, cls.cls_decl, rs);
-               Sig_class_type(cls.cls_ty_id, cls.cls_ty_decl, rs);
-               Sig_type(cls.cls_obj_id, cls.cls_obj_abbr, rs);
-               Sig_type(cls.cls_typesharp_id, cls.cls_abbr, rs)])
-             classes []),
+        sg,
         new_env
     | Pstr_class_type cl ->
         let (classes, new_env) = Typeclass.class_type_declarations env cl in
         List.iter (fun decl ->
           let open Typeclass in
           let loc = decl.clsty_id_loc.Location.loc in
-          check_class_type names loc decl.clsty_ty_id to_be_removed;
-          check_type names loc decl.clsty_obj_id to_be_removed;
-          check_type names loc decl.clsty_typesharp_id to_be_removed;
+          check_class_type ?info names loc decl.clsty_ty_id to_be_removed;
+          check_type ?info names loc decl.clsty_obj_id to_be_removed;
+          check_type ?info names loc decl.clsty_typesharp_id to_be_removed;
         ) classes;
+        let sg =
+          if private_ then
+            []
+          else
+            List.flatten
+              (map_rec
+                 (fun rs decl ->
+                    let open Typeclass in
+                    [Sig_class_type(decl.clsty_ty_id, decl.clsty_ty_decl, rs);
+                     Sig_type(decl.clsty_obj_id, decl.clsty_obj_abbr, rs);
+                     Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs)])
+                 classes [])
+        in
         Tstr_class_type
           (List.map (fun cl ->
                (cl.Typeclass.clsty_ty_id,
@@ -1910,14 +2064,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
              (List.map (fun (_, _, i, d, _, _) -> (i, d)) classes) ::
            Tstr_type
              (List.map (fun (_, _, _, _, i, d) -> (i, d)) classes) :: *)
-        List.flatten
-          (map_rec
-             (fun rs decl ->
-                let open Typeclass in
-                [Sig_class_type(decl.clsty_ty_id, decl.clsty_ty_decl, rs);
-                 Sig_type(decl.clsty_obj_id, decl.clsty_obj_abbr, rs);
-                 Sig_type(decl.clsty_typesharp_id, decl.clsty_abbr, rs)])
-             classes []),
+        sg,
         new_env
     | Pstr_include sincl ->
         let smodl = sincl.pincl_mod in
@@ -1938,7 +2085,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             incl_loc = sincl.pincl_loc;
           }
         in
-        Tstr_include incl, sg, new_env
+        Tstr_include incl, (if private_ then [] else sg), new_env
     | Pstr_extension (ext, _attrs) ->
         raise (Error_forward (Builtin_attributes.error_of_extension ext))
     | Pstr_attribute x ->
@@ -1952,7 +2099,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | pstr :: srem ->
         let previous_saved_types = Cmt_format.get_saved_types () in
         let desc, sg, new_env = type_str_item env srem pstr in
-        let str = { str_desc = desc; str_loc = pstr.pstr_loc; str_env = env } in
+        let str =
+          { str_desc = desc; str_loc = pstr.pstr_loc; str_env = env;
+            str_private = pstr.pstr_private }
+        in
         Cmt_format.set_saved_types (Cmt_format.Partial_structure_item str
                                     :: previous_saved_types);
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
@@ -2331,8 +2481,20 @@ let report_error ppf = function
         path p
   | Badly_formed_signature (context, err) ->
       fprintf ppf "@[In %s:@ %a@]" context Typedecl.report_error err
-  | Cannot_hide_id { shadowed_item_kind; shadowed_item_id; shadowed_item_loc;
-                     shadower_id; user_id; user_kind; user_loc } ->
+  | Cannot_hide_id Private_appears_in_public_sig
+      { private_item_kind; private_item_id; user_id; user_kind; user_loc } ->
+      fprintf ppf
+        "@[<v>This %s %s cannot be made private@ \
+         @[<hov 2>%a:@;The %s %s has no valid type if %s is removed from the@ \
+         signature@]@]"
+        (Sig_component_kind.to_string private_item_kind)
+        (Ident.name private_item_id)
+        Location.print_loc user_loc
+        (Sig_component_kind.to_string user_kind) (Ident.name user_id)
+        (Ident.name private_item_id)
+  | Cannot_hide_id Illegal_shadowing
+      { shadowed_item_kind; shadowed_item_id; shadowed_item_loc;
+        shadower_id; user_id; user_kind; user_loc } ->
       let shadowed_item_kind= Sig_component_kind.to_string shadowed_item_kind in
       fprintf ppf
         "@[<v>Illegal shadowing of included %s %a by %a@ \

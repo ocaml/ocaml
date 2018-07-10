@@ -75,15 +75,23 @@ module Sig_component_kind : sig
   val to_string : t -> string
 end
 
-type hidding_error = {
-  shadowed_item_id: Ident.t;
-  shadowed_item_kind: Sig_component_kind.t;
-  shadowed_item_loc: Location.t;
-  shadower_id: Ident.t;
-  user_id: Ident.t;
-  user_kind: Sig_component_kind.t;
-  user_loc: Location.t;
-}
+type hidding_error =
+  | Private_appears_in_public_sig of {
+      private_item_id: Ident.t;
+      private_item_kind: Sig_component_kind.t;
+      user_id: Ident.t;
+      user_kind: Sig_component_kind.t;
+      user_loc: Location.t;
+    }
+  | Illegal_shadowing of {
+      shadowed_item_id: Ident.t;
+      shadowed_item_kind: Sig_component_kind.t;
+      shadowed_item_loc: Location.t;
+      shadower_id: Ident.t;
+      user_id: Ident.t;
+      user_kind: Sig_component_kind.t;
+      user_loc: Location.t;
+    }
 
 type error =
     Cannot_apply of module_type

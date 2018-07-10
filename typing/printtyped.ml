@@ -666,7 +666,8 @@ and module_type i ppf x =
 and signature i ppf x = list i signature_item ppf x.sig_items
 
 and signature_item i ppf x =
-  line i ppf "signature_item %a\n" fmt_location x.sig_loc;
+  line i ppf "%ssignature_item %a\n"
+    (if x.sig_private then "private " else "") fmt_location x.sig_loc;
   let i = i+1 in
   match x.sig_desc with
   | Tsig_value vd ->
@@ -764,7 +765,8 @@ and module_expr i ppf x =
 and structure i ppf x = list i structure_item ppf x.str_items
 
 and structure_item i ppf x =
-  line i ppf "structure_item %a\n" fmt_location x.str_loc;
+  line i ppf "%sstructure_item %a\n"
+    (if x.str_private then "private " else "") fmt_location x.str_loc;
   let i = i+1 in
   match x.str_desc with
   | Tstr_eval (e, attrs) ->

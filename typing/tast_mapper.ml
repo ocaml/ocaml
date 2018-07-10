@@ -101,7 +101,7 @@ let class_type_declaration sub x =
 let class_declaration sub x =
   class_infos sub (sub.class_expr sub) x
 
-let structure_item sub {str_desc; str_loc; str_env} =
+let structure_item sub {str_desc; str_loc; str_env; str_private} =
   let str_env = sub.env sub str_env in
   let str_desc =
     match str_desc with
@@ -130,7 +130,7 @@ let structure_item sub {str_desc; str_loc; str_env} =
     | Tstr_open _
     | Tstr_attribute _ as d -> d
   in
-  {str_desc; str_env; str_loc}
+  {str_desc; str_env; str_loc; str_private}
 
 let value_description sub x =
   let val_desc = sub.typ sub x.val_desc in

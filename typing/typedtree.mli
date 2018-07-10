@@ -341,7 +341,8 @@ and structure = {
 and structure_item =
   { str_desc : structure_item_desc;
     str_loc : Location.t;
-    str_env : Env.t
+    str_env : Env.t;
+    str_private: bool;
   }
 
 and structure_item_desc =
@@ -418,6 +419,7 @@ and signature = {
 and signature_item =
   { sig_desc: signature_item_desc;
     sig_env : Env.t; (* BINANNOT ADDED *)
+    sig_private: bool;
     sig_loc: Location.t }
 
 and signature_item_desc =
