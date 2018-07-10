@@ -512,6 +512,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
 void caml_empty_minor_heap_domain (struct domain* domain)
 {
+  CAMLnoalloc;
   caml_domain_state* domain_state = domain->state;
   struct caml_remembered_set *remembered_set = domain_state->remembered_set;
   unsigned rewritten = 0;
