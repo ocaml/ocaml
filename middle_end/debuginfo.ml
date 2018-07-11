@@ -13,6 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open! Int_replace_polymorphic_compare
 open Lexing
 open Location
 
@@ -49,7 +50,7 @@ let item_from_location loc =
     dinfo_line = loc.loc_start.pos_lnum;
     dinfo_char_start = loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
     dinfo_char_end =
-      if loc.loc_end.pos_fname = loc.loc_start.pos_fname
+      if String.equal loc.loc_end.pos_fname loc.loc_start.pos_fname
       then loc.loc_end.pos_cnum - loc.loc_start.pos_bol
       else loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
   }
@@ -88,7 +89,7 @@ let compare dbg1 dbg2 =
     | _ :: _, [] -> 1
     | [], _ :: _ -> -1
     | d1 :: ds1, d2 :: ds2 ->
-      let c = compare d1.dinfo_file d2.dinfo_file in
+      let c = String.compare d1.dinfo_file d2.dinfo_file in
       if c <> 0 then c else
       let c = compare d1.dinfo_line d2.dinfo_line in
       if c <> 0 then c else

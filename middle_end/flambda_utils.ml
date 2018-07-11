@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 let name_expr ~name (named : Flambda.named) : Flambda.t =
   let var =
@@ -77,15 +78,13 @@ let description_of_toplevel_node (expr : Flambda.t) =
   | While _ -> "while"
   | For _ -> "for"
 
-let compare_const (c1 : Flambda.const) (c2 : Flambda.const) =
-  match c1, c2 with
-  | Int v1, Int v2 -> compare v1 v2
-  | Char v1, Char v2 -> compare v1 v2
-  | Const_pointer v1, Const_pointer v2 -> compare v1 v2
-  | Int _, _ -> -1
-  | _, Int _ -> 1
-  | Char _, _ -> -1
-  | _, Char _ -> 1
+let equal_direction_flag
+      (x : Asttypes.direction_flag)
+      (y : Asttypes.direction_flag) =
+  match x, y with
+  | Upto, Upto -> true
+  | Downto, Downto -> true
+  | (Upto | Downto), _ -> false
 
 let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   l1 == l2 || (* it is ok for the string case: if they are physically the same,
@@ -94,7 +93,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | Var v1 , Var v2  -> Variable.equal v1 v2
   | Var _, _ | _, Var _ -> false
   | Apply a1 , Apply a2  ->
-    a1.kind = a2.kind
+    Flambda.equal_call_kind a1.kind a2.kind
       && Variable.equal a1.func a2.func
       && Misc.Stdlib.List.equal Variable.equal a1.args a2.args
   | Apply _, _ | _, Apply _ -> false
@@ -108,7 +107,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
     ->
     Mutable_variable.equal mv1 mv2
       && Variable.equal v1 v2
-      && ck1 = ck2
+      && Lambda.equal_value_kind ck1 ck2
       && same b1 b2
   | Let_mutable _, _ | _, Let_mutable _ -> false
   | Let_rec (bl1, a1), Let_rec (bl2, a2) ->
@@ -120,7 +119,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | String_switch (a1, s1, d1), String_switch (a2, s2, d2) ->
     Variable.equal a1 a2
       && Misc.Stdlib.List.equal
-        (fun (s1, e1) (s2, e2) -> s1 = s2 && same e1 e2) s1 s2
+        (fun (s1, e1) (s2, e2) -> String.equal s1 s2 && same e1 e2) s1 s2
       && Misc.Stdlib.Option.equal same d1 d2
   | String_switch _, _ | _, String_switch _ -> false
   | Static_raise (e1, a1), Static_raise (e2, a2) ->
@@ -148,7 +147,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
     Variable.equal bound_var1 bound_var2
       && Variable.equal from_value1 from_value2
       && Variable.equal to_value1 to_value2
-      && direction1 = direction2
+      && equal_direction_flag direction1 direction2
       && same body1 body2
   | For _, _ | _, For _ -> false
   | Assign { being_assigned = being_assigned1; new_value = new_value1; },
@@ -158,7 +157,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | Assign _, _ | _, Assign _ -> false
   | Send { kind = kind1; meth = meth1; obj = obj1; args = args1; dbg = _; },
     Send { kind = kind2; meth = meth2; obj = obj2; args = args2; dbg = _; } ->
-    kind1 = kind2
+    Lambda.equal_meth_kind kind1 kind2
       && Variable.equal meth1 meth2
       && Variable.equal obj1 obj2
       && Misc.Stdlib.List.equal Variable.equal args1 args2
@@ -169,7 +168,7 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   match named1, named2 with
   | Symbol s1 , Symbol s2  -> Symbol.equal s1 s2
   | Symbol _, _ | _, Symbol _ -> false
-  | Const c1, Const c2 -> compare_const c1 c2 = 0
+  | Const c1, Const c2 -> Flambda.compare_const c1 c2 = 0
   | Const _, _ | _, Const _ -> false
   | Allocated_const c1, Allocated_const c2 ->
     Allocated_const.compare c1 c2 = 0
@@ -193,7 +192,8 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   | Move_within_set_of_closures _, _ | _, Move_within_set_of_closures _ ->
     false
   | Prim (p1, al1, _), Prim (p2, al2, _) ->
-    p1 = p2 && Misc.Stdlib.List.equal Variable.equal al1 al2
+    Lambda.equal_primitive p1 p2
+      && Misc.Stdlib.List.equal Variable.equal al1 al2
   | Prim _, _ | _, Prim _ -> false
   | Expr e1, Expr e2 -> same e1 e2
 
@@ -226,8 +226,8 @@ and samebinding (v1, n1) (v2, n2) =
 
 and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
   let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
-  fs1.numconsts = fs2.numconsts
-    && fs1.numblocks = fs2.numblocks
+  Numbers.Int.Set.equal fs1.numconsts fs2.numconsts
+    && Numbers.Int.Set.equal fs1.numblocks fs2.numblocks
     && Misc.Stdlib.List.equal samecase fs1.consts fs2.consts
     && Misc.Stdlib.List.equal samecase fs1.blocks fs2.blocks
     && Misc.Stdlib.Option.equal same fs1.failaction fs2.failaction
@@ -797,7 +797,7 @@ module Switch_storer = Switch.Store (struct
       | Symbol s1, Symbol s2 -> Symbol.compare s1 s2
       | Symbol _, (Const _ | Expr _ | Prim _) -> -1
       | (Const _ | Expr _ | Prim _), Symbol _ ->  1
-      | Const c1, Const c2 -> compare c1 c2
+      | Const c1, Const c2 -> Flambda.compare_const c1 c2
       | Const _, (Expr _ | Prim _) -> -1
       | (Expr _ | Prim _), Const _ ->  1
       | Expr e1, Expr e2 -> compare_expr env e1 e2

@@ -688,10 +688,20 @@ val print_specialised_to
   -> specialised_to
   -> unit
 
+val equal_call_kind
+   : call_kind
+  -> call_kind
+  -> bool
+
 val equal_specialised_to
    : specialised_to
   -> specialised_to
   -> bool
+
+val compare_const
+   : const
+  -> const
+  -> int
 
 val compare_project_var : project_var -> project_var -> int
 

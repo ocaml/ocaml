@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 type t = int
 
@@ -30,3 +31,5 @@ let to_int t = t
 
 let zero = 0
 let object_tag = Obj.object_tag
+
+let compare : t -> t -> int = Stdlib.compare

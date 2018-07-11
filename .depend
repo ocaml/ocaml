@@ -1718,6 +1718,11 @@ middle_end/inlining_transforms.cmi : middle_end/base_types/variable.cmi \
     middle_end/inlining_decision_intf.cmi \
     middle_end/inline_and_simplify_aux.cmi middle_end/flambda.cmi \
     middle_end/debuginfo.cmi middle_end/base_types/closure_id.cmi
+middle_end/int_replace_polymorphic_compare.cmo : \
+    middle_end/int_replace_polymorphic_compare.cmi
+middle_end/int_replace_polymorphic_compare.cmx : \
+    middle_end/int_replace_polymorphic_compare.cmi
+middle_end/int_replace_polymorphic_compare.cmi :
 middle_end/internal_variable_names.cmo : parsing/location.cmi \
     bytecomp/lambda.cmi middle_end/internal_variable_names.cmi
 middle_end/internal_variable_names.cmx : parsing/location.cmx \

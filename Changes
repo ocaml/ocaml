@@ -164,6 +164,9 @@ Working version
 - GPR#1747: type_cases: always propagate.
   (Thomas Refis, review by Jacques Garrigue)
 
+- GPR#1811: shadow the polymorphic comparison in the middle-end
+  (Xavier Clerc, review by Pierre Chambart)
+
 - GPR#1833: allow non-val payloads in CMM Ccatch handlers
   (Simon Fowler, review by Xavier Clerc)
 

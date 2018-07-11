@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 module A = Simple_value_approx
 module B = Inlining_cost.Benefit
@@ -1361,7 +1362,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         String_switch (arg, sw, def), ret r (A.value_unknown Other)
       | Some arg_string ->
         let branch =
-          match List.find (fun (str, _) -> str = arg_string) sw with
+          match List.find (fun (str, _) -> String.equal str arg_string) sw with
           | (_, branch) -> branch
           | exception Not_found ->
             match def with
@@ -1455,7 +1456,7 @@ let constant_defining_value_approx
     (* At toplevel, there is no freshening currently happening (this
        cannot be the body of a currently inlined function), so we can
        keep the original set_of_closures in the approximation. *)
-    assert(E.freshening env = Freshening.empty);
+    assert(Freshening.is_empty (E.freshening env));
     assert(Variable.Map.is_empty free_vars);
     assert(Variable.Map.is_empty specialised_args);
     let invariant_params =

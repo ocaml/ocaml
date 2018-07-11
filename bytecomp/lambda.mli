@@ -188,6 +188,12 @@ and raise_kind =
   | Raise_reraise
   | Raise_notrace
 
+val equal_primitive : primitive -> primitive -> bool
+
+val equal_value_kind : value_kind -> value_kind -> bool
+
+val equal_boxed_integer : boxed_integer -> boxed_integer -> bool
+
 type structured_constant =
     Const_base of constant
   | Const_pointer of int
@@ -201,10 +207,17 @@ type inline_attribute =
   | Unroll of int (* [@unroll x] *)
   | Default_inline (* no [@inline] attribute *)
 
+val equal_inline_attribute : inline_attribute -> inline_attribute -> bool
+
 type specialise_attribute =
   | Always_specialise (* [@specialise] or [@specialise always] *)
   | Never_specialise (* [@specialise never] *)
   | Default_specialise (* no [@specialise] attribute *)
+
+val equal_specialise_attribute
+   : specialise_attribute
+  -> specialise_attribute
+  -> bool
 
 type function_kind = Curried | Tupled
 
@@ -221,6 +234,8 @@ type let_kind = Strict | Alias | StrictOpt | Variable
  *)
 
 type meth_kind = Self | Public | Cached
+
+val equal_meth_kind : meth_kind -> meth_kind -> bool
 
 type shared_code = (int * int) list     (* stack size -> code label *)
 

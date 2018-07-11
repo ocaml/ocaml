@@ -98,8 +98,6 @@ val name_expr_from_var
    -> Flambda.named
    -> Flambda.t
 
-val compare_const : Flambda.const -> Flambda.const -> int
-
 val initialize_symbols
    : Flambda.program
   -> (Symbol.t * Tag.t * Flambda.t list) list

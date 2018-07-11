@@ -181,6 +181,30 @@ and raise_kind =
   | Raise_reraise
   | Raise_notrace
 
+let equal_boxed_integer x y =
+  match x, y with
+  | Pnativeint, Pnativeint
+  | Pint32, Pint32
+  | Pint64, Pint64 ->
+    true
+  | (Pnativeint | Pint32 | Pint64), _ ->
+    false
+
+let equal_primitive =
+  (* Should be implemented like [equal_value_kind] of [equal_boxed_integer],
+     i.e. by matching over the various constructors but the type has more
+     than 100 constructors... *)
+  (=)
+
+let equal_value_kind x y =
+  match x, y with
+  | Pgenval, Pgenval -> true
+  | Pfloatval, Pfloatval -> true
+  | Pboxedintval bi1, Pboxedintval bi2 -> equal_boxed_integer bi1 bi2
+  | Pintval, Pintval -> true
+  | (Pgenval | Pfloatval | Pboxedintval _ | Pintval), _ -> false
+
+
 type structured_constant =
     Const_base of constant
   | Const_pointer of int
@@ -194,16 +218,43 @@ type inline_attribute =
   | Unroll of int (* [@unroll x] *)
   | Default_inline (* no [@inline] attribute *)
 
+let equal_inline_attribute x y =
+  match x, y with
+  | Always_inline, Always_inline
+  | Never_inline, Never_inline
+  | Default_inline, Default_inline ->
+    true
+  | Unroll u, Unroll v ->
+    u = v
+  | (Always_inline | Never_inline | Unroll _ | Default_inline), _ ->
+    false
+
 type specialise_attribute =
   | Always_specialise (* [@specialise] or [@specialise always] *)
   | Never_specialise (* [@specialise never] *)
   | Default_specialise (* no [@specialise] attribute *)
+
+let equal_specialise_attribute x y =
+  match x, y with
+  | Always_specialise, Always_specialise
+  | Never_specialise, Never_specialise
+  | Default_specialise, Default_specialise ->
+    true
+  | (Always_specialise | Never_specialise | Default_specialise), _ ->
+    false
 
 type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
 
 type meth_kind = Self | Public | Cached
+
+let equal_meth_kind x y =
+  match x, y with
+  | Self, Self -> true
+  | Public, Public -> true
+  | Cached, Cached -> true
+  | (Self | Public | Cached), _ -> false
 
 type shared_code = (int * int) list
 

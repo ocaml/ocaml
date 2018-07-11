@@ -68,8 +68,8 @@ val const_integer_comparison_expr
 val const_float_comparison_expr
    : Flambda.named
   -> Lambda.float_comparison
-  -> 'a
-  -> 'a
+  -> float
+  -> float
   -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t
 
 (** Functions for transposing the order of bytes within words of various

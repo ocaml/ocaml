@@ -13,6 +13,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 type t = string
 
@@ -292,7 +293,7 @@ let zero = "zero"
 
 let anon_fn_with_loc_fmt = format_of_string "anon_fn[%a]"
 let anon_fn_with_loc loc =
-  if loc = Location.none then anon_fn
+  if loc.Location.loc_ghost then anon_fn
   else begin
     Format.asprintf anon_fn_with_loc_fmt Location.print_compact loc
   end

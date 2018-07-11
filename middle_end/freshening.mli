@@ -26,6 +26,8 @@ type subst = t
     freshening. *)
 val empty : t
 
+val is_empty : t -> bool
+
 (** Activate the freshening.  Without activation, operations to request
     freshenings have no effect (cf. the documentation below for
     [add_variable]).  As such, the inactive renaming is unique. *)
