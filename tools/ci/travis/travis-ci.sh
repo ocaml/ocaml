@@ -43,6 +43,13 @@ TRAVIS_PR_HEAD=${TRAVIS_COMMIT_RANGE##*...}
 case $TRAVIS_EVENT_TYPE in
    # If this is not a pull request then TRAVIS_COMMIT_RANGE may be empty.
    pull_request)
+     DEEPEN=50
+     while ! git cat-file -e $TRAVIS_CUR_HEAD 2> /dev/null
+     do
+       echo Deepening $TRAVIS_BRANCH by $DEEPEN commits in search of $TRAVIS_CUR_HEAD
+       git fetch origin --deepen=$DEEPEN $TRAVIS_BRANCH
+       ((DEEPEN*=2))
+     done
      TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD);;
 esac
 
