@@ -13,6 +13,15 @@ let () =
   ()
 ;;  
 
+(* MPR 7820 *)
+let () =
+  assert
+    ([| 1;2;3 |] =
+      (Array.to_seq [| 1;2;3 |]
+      |> Array.of_seq));
+  ()
+;;
+
 let () = print_endline "OK";;
 
 

@@ -334,7 +334,7 @@ let of_rev_list = function
           [] -> a
         | hd::tl -> unsafe_set a i hd; fill (i-1) tl
       in
-      fill (len-1) tl
+      fill (len-2) tl
 
 let of_seq i =
   let l = Seq.fold_left (fun acc x -> x::acc) [] i in

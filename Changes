@@ -1,3 +1,11 @@
+OCaml 4.07 maintenance branch
+-----------------------------
+
+- MPR#7820, GPR#1897: Fix Array.of_seq. This function used to apply a circular
+  permutation of one cell to the right on the sequence.
+  (Thierry Martinez, review by Nicolás Ojeda Bär)
+
+
 OCaml 4.07.0 (10 July 2018)
 ---------------------------
 
