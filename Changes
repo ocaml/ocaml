@@ -42,6 +42,10 @@ Working version
 - MPR#7235: Format, flush err_formatter at exit.
   (Pierre Weis, request by Jun Furuse)
 
+- MPR#7820, GPR#1897: Fix Array.of_seq. This function used to apply a circular
+  permutation of one cell to the right on the sequence.
+  (Thierry Martinez, review by Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
