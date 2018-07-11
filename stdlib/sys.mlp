@@ -45,6 +45,7 @@ let unix = unix ()
 let win32 = win32 ()
 let cygwin = cygwin ()
 let max_array_length = max_wosize ()
+let max_floatarray_length = max_array_length / (64 / word_size)
 let max_string_length = word_size / 8 * max_array_length - 1
 external runtime_variant : unit -> string = "caml_runtime_variant"
 external runtime_parameters : unit -> string = "caml_runtime_parameters"
