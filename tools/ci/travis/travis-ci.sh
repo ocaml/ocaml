@@ -55,7 +55,7 @@ case $TRAVIS_EVENT_TYPE in
    # If this is not a pull request then TRAVIS_COMMIT_RANGE may be empty.
    pull_request)
      DEEPEN=50
-     while ! git cat-file -e $TRAVIS_CUR_HEAD 2> /dev/null
+     while ! git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD > /dev/null 2>&1
      do
        echo Deepening $TRAVIS_BRANCH by $DEEPEN commits in search of $TRAVIS_CUR_HEAD
        git fetch origin --deepen=$DEEPEN $TRAVIS_BRANCH
