@@ -236,7 +236,7 @@ CheckTypo () {
   then CheckTypoTree $TRAVIS_COMMIT $TRAVIS_COMMIT
   else
     if [ "$TRAVIS_EVENT_TYPE" = "pull_request" ]
-    then TRAVIS_COMMIT_RANGE=$TRAVIS_BRANCH..$TRAVIS_PULL_REQUEST_SHA
+    then TRAVIS_COMMIT_RANGE=$TRAVIS_MERGE_BASE..$TRAVIS_PULL_REQUEST_SHA
     fi
     if [ $CHECK_ALL_COMMITS -eq 1 ]
     then
