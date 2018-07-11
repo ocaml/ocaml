@@ -61,7 +61,7 @@ case $TRAVIS_EVENT_TYPE in
      DEEPEN=50
      while ! git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD > /dev/null 2>&1
      do
-       echo Deepening $TRAVIS_BRANCH by $DEEPEN commits in search of $TRAVIS_CUR_HEAD
+       echo Deepening $TRAVIS_BRANCH by $DEEPEN commits
        git fetch origin --deepen=$DEEPEN $TRAVIS_BRANCH
        ((DEEPEN*=2))
      done
