@@ -1,4 +1,5 @@
 (* TEST
+  flags="-no-alias-deps -w +40"
   * expect
 *)
 module M = struct
@@ -413,4 +414,43 @@ Line _, characters 0-10:
   type t = C;;
   ^^^^^^^^^^
 Definition of type t/4
+|}]
+
+(** Check interaction with no-alias-deps *)
+module Foo = struct
+  type info = { doc : unit }
+  type t = { info : info }
+end
+let add_extra_info arg = arg.Foo.info.doc
+[%%expect {|
+module Foo : sig type info = { doc : unit; } type t = { info : info; } end
+Line _, characters 38-41:
+  let add_extra_info arg = arg.Foo.info.doc
+                                        ^^^
+Warning 40: doc was selected from type Foo.info.
+It is not visible in the current scope, and will not
+be selected if the type becomes unknown.
+val add_extra_info : Foo.t -> unit = <fun>
+|}]
+
+(** Check type-directed disambiguation *)
+module Bar = struct
+  type info = { doc : unit }
+end;;
+module Foo = struct
+  type t = { info : Bar.info }
+end;;
+module Bar = struct end;;
+let add_extra_info arg = arg.Foo.info.doc
+[%%expect{|
+module Bar : sig type info = { doc : unit; } end
+module Foo : sig type t = { info : Bar.info; } end
+module Bar : sig  end
+Line _, characters 38-41:
+  let add_extra_info arg = arg.Foo.info.doc
+                                        ^^^
+Warning 40: doc was selected from type Bar/2.info.
+It is not visible in the current scope, and will not
+be selected if the type becomes unknown.
+val add_extra_info : Foo.t -> unit = <fun>
 |}]

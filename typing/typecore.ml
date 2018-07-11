@@ -776,7 +776,9 @@ end) = struct
           let lbl = lookup_from_type env tpath lid in
           if in_env lbl then
           begin
-          let s = Printtyp.string_of_path tpath in
+          let s =
+            Printtyp.wrap_printing_env ~error:true env
+              (fun () -> Printtyp.string_of_path tpath) in
           warn lid.loc
             (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
           end;
