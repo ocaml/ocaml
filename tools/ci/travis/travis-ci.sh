@@ -30,8 +30,12 @@
 #
 echo TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE
 echo TRAVIS_COMMIT=$TRAVIS_COMMIT
-FETCH_HEAD=$(git rev-parse FETCH_HEAD)
-echo FETCH_HEAD=$FETCH_HEAD
+if [[ $TRAVIS_EVENT_TYPE = "pull_request" ]] ; then
+  FETCH_HEAD=$(git rev-parse FETCH_HEAD)
+  echo FETCH_HEAD=$FETCH_HEAD
+else
+  FETCH_HEAD=$TRAVIS_COMMIT
+fi
 
 if [[ $TRAVIS_COMMIT != $(git rev-parse FETCH_HEAD) ]] ; then
   echo "WARNING! Travis TRAVIS_COMMIT and FETCH_HEAD do not agree!"
