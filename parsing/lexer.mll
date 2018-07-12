@@ -635,6 +635,8 @@ and comment = parse
         store_lexeme lexbuf;
         comment lexbuf
       }
+  | (lowercase | uppercase) identchar *
+      { store_lexeme lexbuf; comment lexbuf }
   | _
       { store_lexeme lexbuf; comment lexbuf }
 
