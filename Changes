@@ -155,6 +155,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- GPR#1894: generalize highlight_dumb in location.ml to handle highlighting
+  several locations (Armaël Guéneau, review by Gabriel Scherer)
+
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables.
   (Thomas Refis, review by Leo White)
 
