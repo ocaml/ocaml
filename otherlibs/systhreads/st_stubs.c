@@ -550,6 +550,8 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
 #ifdef NATIVE_CODE
   struct longjmp_buffer termination_buf;
   char tos;
+  /* Record top of stack (approximative) */
+  th->top_of_stack = &tos;
 #endif
 
   /* Associate the thread descriptor with the thread */
@@ -557,8 +559,6 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   /* Acquire the global mutex */
   caml_leave_blocking_section();
 #ifdef NATIVE_CODE
-  /* Record top of stack (approximative) */
-  th->top_of_stack = &tos;
   /* Setup termination handler (for caml_thread_exit) */
   if (sigsetjmp(termination_buf.buf, 0) == 0) {
     th->exit_buf = &termination_buf;
