@@ -46,9 +46,15 @@ type error =
   | Recursive_module_require_explicit_type
   | Apply_generative
   | Cannot_scrape_alias of Path.t
+  | Badly_formed_signature of string * Typedecl.error
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
+
+let update_location loc = function
+    Error (_, env, err) -> Error (loc, env, err)
+  | err -> err
+let () = Typetexp.typemod_update_location := update_location
 
 module ImplementationHooks = Misc.MakeHooks(struct
     type t = Typedtree.structure * Typedtree.module_coercion
@@ -58,8 +64,6 @@ module InterfaceHooks = Misc.MakeHooks(struct
   end)
 
 open Typedtree
-
-let fst3 (x,_,_) = x
 
 let rec path_concat head p =
   match p with
@@ -156,6 +160,20 @@ let type_module_type_of_fwd :
       Typedtree.module_expr * Types.module_type) ref
   = ref (fun _env _m -> assert false)
 
+(* Additional validity checks on type definitions arising from
+   recursive modules *)
+
+let check_recmod_typedecls env decls =
+  let recmod_ids = List.map fst decls in
+  List.iter
+    (fun (id, md) ->
+      List.iter
+        (fun path ->
+          Typedecl.check_recmod_typedecl env md.Types.md_loc recmod_ids
+                                         path (Env.find_type path env))
+        (Mtype.type_paths env (Pident id) md.Types.md_type))
+    decls
+
 (* Merge one "with" constraint in a signature *)
 
 let rec add_rec_types env = function
@@ -185,7 +203,7 @@ let update_rec_next rs rem =
           Sig_module (id, mty, rs) :: rem
       | _ -> rem
 
-let make p n i =
+let make_variance p n i =
   let open Variance in
   set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
 
@@ -215,14 +233,14 @@ let path_is_strict_prefix =
        && list_is_strict_prefix l1 ~prefix:l2
 
 let iterator_with_env env =
-  let env = ref env in
+  let env = ref (lazy env) in
   let super = Btype.type_iterators in
   env, { super with
     Btype.it_signature = (fun self sg ->
       (* add all items to the env before recursing down, to handle recursive
          definitions *)
       let env_before = !env in
-      List.iter (fun i -> env := Env.add_item i !env) sg;
+      env := lazy (Env.add_signature sg (Lazy.force env_before));
       super.Btype.it_signature self sg;
       env := env_before
     );
@@ -230,7 +248,8 @@ let iterator_with_env env =
     | Mty_functor (param, mty_arg, mty_body) ->
       may (self.Btype.it_module_type self) mty_arg;
       let env_before = !env in
-      env := Env.add_module ~arg:true param (Btype.default_mty mty_arg) !env;
+      env := lazy (Env.add_module ~arg:true param (Btype.default_mty mty_arg)
+                     (Lazy.force env_before));
       self.Btype.it_module_type self mty_body;
       env := env_before;
     | mty ->
@@ -267,7 +286,7 @@ let check_usage_of_path_of_substituted_item paths env signature ~loc ~lid =
                paths
         ->
          let e = With_changes_module_alias (lid.txt, id, aliased_path) in
-         raise(Error(loc, !env, e))
+         raise(Error(loc, Lazy.force !env, e))
       | sig_item ->
          super.Btype.it_signature_item self sig_item
       );
@@ -277,7 +296,7 @@ let check_usage_of_path_of_substituted_item paths env signature ~loc ~lid =
                (fun path -> path_is_strict_prefix path ~prefix:arg)
                paths
           then
-            let env = !env in
+            let env = Lazy.force !env in
             try retype_applicative_functor_type ~loc env funct arg
             with Includemod.Error explanation ->
               raise(Error(loc, env,
@@ -289,6 +308,47 @@ let check_usage_of_path_of_substituted_item paths env signature ~loc ~lid =
   in
   iterator.Btype.it_signature iterator signature;
   Btype.unmark_iterators.Btype.it_signature Btype.unmark_iterators signature
+
+(* After substitution one also needs to re-check the well-foundedness
+   of type declarations in recursive modules *)
+let rec extract_next_modules = function
+  | Sig_module (id, mty, Trec_next) :: rem ->
+      let (id_mty_l, rem) = extract_next_modules rem in
+      ((id, mty) :: id_mty_l, rem)
+  | sg -> ([], sg)
+
+let check_well_formed_module env loc context mty =
+  (* Format.eprintf "@[check_well_formed_module@ %a@]@."
+     Printtyp.modtype mty; *)
+  let open Btype in
+  let iterator =
+    let rec check_signature env = function
+      | [] -> ()
+      | Sig_module (id, mty, Trec_first) :: rem ->
+          let (id_mty_l, rem) = extract_next_modules rem in
+          begin try
+            check_recmod_typedecls (Lazy.force env) ((id, mty) :: id_mty_l)
+          with Typedecl.Error (_, err) ->
+            raise (Error (loc, Lazy.force env,
+                          Badly_formed_signature(context, err)))
+          end;
+          check_signature env rem
+      | _ :: rem ->
+          check_signature env rem
+    in
+    let env, super = iterator_with_env env in
+    { super with
+      it_type_expr = (fun _self _ty -> ());
+      it_signature = (fun self sg ->
+        let env_before = !env in
+        let env = lazy (Env.add_signature sg (Lazy.force env_before)) in
+        check_signature env sg;
+        super.it_signature self sg);
+    }
+  in
+  iterator.it_module_type iterator mty
+
+let () = Env.check_well_formed_module := check_well_formed_module
 
 let type_decl_is_alias sdecl = (* assuming no explicit constraint *)
   match sdecl.ptype_manifest with
@@ -355,7 +415,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
                      | Contravariant -> false, true
                      | Invariant -> false, false
                    in
-                   make (not n) (not c) false
+                   make_variance (not n) (not c) false
                 )
                 sdecl.ptype_params;
             type_loc = sdecl.ptype_loc;
@@ -489,6 +549,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
     | _ ->
        sg
     in
+    check_well_formed_module initial_env loc "this instantiated signature"
+      (Mty_signature sg);
     (tcstr, sg)
   with Includemod.Error explanation ->
     raise(Error(loc, initial_env, With_mismatch(lid.txt, explanation)))
@@ -633,21 +695,6 @@ and approx_modtype_info env sinfo =
 let approx_modtype env smty =
   Warnings.without_warnings
     (fun () -> approx_modtype env smty)
-
-(* Additional validity checks on type definitions arising from
-   recursive modules *)
-
-let check_recmod_typedecls env sdecls decls =
-  let recmod_ids = List.map fst3 decls in
-  List.iter2
-    (fun pmd (id, _, mty) ->
-       let mty = mty.mty_type in
-      List.iter
-        (fun path ->
-          Typedecl.check_recmod_typedecl env pmd.pmd_type.pmty_loc recmod_ids
-                                         path (Env.find_type path env))
-        (Mtype.type_paths env (Pident id) mty))
-    sdecls decls
 
 (* Auxiliaries for checking uniqueness of names in signatures and structures *)
 
@@ -1024,6 +1071,11 @@ and transl_recmodule_modtypes env sdecls =
         in
         (id, id_loc, tmty))
       sdecls curr in
+  let map_mtys = List.map
+      (fun (id, _, mty) ->
+        (id, Types.{md_type = mty.mty_type;
+                    md_loc = mty.mty_loc;
+                    md_attributes = mty.mty_attributes})) in
   let ids = List.map (fun x -> Ident.create x.pmd_name.txt) sdecls in
   let approx_env =
     (*
@@ -1052,7 +1104,7 @@ and transl_recmodule_modtypes env sdecls =
       (fun () -> transition env0 init)
   in
   let env1 = make_env2 dcl1 in
-  check_recmod_typedecls env1 sdecls dcl1;
+  check_recmod_typedecls env1 (map_mtys dcl1);
   let dcl2 = transition env1 dcl1 in
 (*
   List.iter
@@ -1061,7 +1113,7 @@ and transl_recmodule_modtypes env sdecls =
     dcl2;
 *)
   let env2 = make_env2 dcl2 in
-  check_recmod_typedecls env2 sdecls dcl2;
+  check_recmod_typedecls env2 (map_mtys dcl2);
   let dcl2 =
     List.map2
       (fun pmd (id, id_loc, mty) ->
@@ -1390,6 +1442,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
             | None ->
                 if generative then mty_res else
                 let env = Env.add_module ~arg:true param arg.mod_type env in
+                check_well_formed_module env smod.pmod_loc
+                  "the signature of this functor application" mty_res;
                 let nondep_mty =
                   try Mtype.nondep_supertype env param mty_res
                   with Not_found ->
@@ -1410,6 +1464,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                 end;
                 nondep_mty
           in
+          check_well_formed_module env smod.pmod_loc
+            "the signature of this functor application" mty_appl;
           rm { mod_desc = Tmod_apply(funct, arg, coercion);
                mod_type = mty_appl;
                mod_env = env;
@@ -2098,6 +2154,8 @@ let report_error ppf = function
       fprintf ppf
         "This is an alias for module %a, which is missing"
         path p
+  | Badly_formed_signature (context, err) ->
+      fprintf ppf "@[In %s:@ %a@]" context Typedecl.report_error err
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env ~error:true env (fun () -> report_error ppf err)

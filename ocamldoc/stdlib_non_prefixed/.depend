@@ -169,9 +169,9 @@ typedtree.cmi : types.cmi primitive.cmi path.cmi parsetree.cmi longident.cmi \
     location.cmi ident.cmi env.cmi asttypes.cmi
 typedtreeIter.cmi : typedtree.cmi asttypes.cmi
 typedtreeMap.cmi : typedtree.cmi
-typemod.cmi : types.cmi typedtree.cmi path.cmi parsetree.cmi misc.cmi \
-    longident.cmi location.cmi includemod.cmi ident.cmi format.cmi env.cmi \
-    cmi_format.cmi asttypes.cmi
+typemod.cmi : types.cmi typedtree.cmi typedecl.cmi path.cmi parsetree.cmi \
+    misc.cmi longident.cmi location.cmi includemod.cmi ident.cmi format.cmi \
+    env.cmi cmi_format.cmi asttypes.cmi
 typeopt.cmi : types.cmi typedtree.cmi path.cmi lambda.cmi env.cmi
 types.cmi : set.cmi primitive.cmi path.cmi parsetree.cmi map.cmi \
     longident.cmi location.cmi ident.cmi asttypes.cmi

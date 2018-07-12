@@ -119,3 +119,6 @@ val find_class_type:
 
 val unbound_constructor_error: Env.t -> Longident.t Location.loc -> 'a
 val unbound_label_error: Env.t -> Longident.t Location.loc -> 'a
+
+(* To update location from typemod errors *)
+val typemod_update_location: (Location.t -> exn -> exn) ref
