@@ -94,8 +94,10 @@ let print_updating_num_loc_lines ppf f arg =
   pp_print_flush ppf ();
   pp_set_formatter_out_functions ppf out_functions
 
-(* Highlight the locations using standout mode. *)
+(* Highlight the locations using standout mode.
 
+   If [locs] is empty, this function is a no-op.
+*)
 let highlight_terminfo ppf lb locs =
   Format.pp_print_flush ppf ();  (* avoid mixing Format and normal output *)
   (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
@@ -130,78 +132,117 @@ let highlight_terminfo ppf lb locs =
   Terminfo.resume stdout !num_loc_lines;
   flush stdout
 
-(* Highlight the location by printing it again. *)
+(* Highlight the location by printing it again.
 
-let highlight_dumb ~print_chars ppf lb loc =
-  (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
-  let pos0 = -lb.lex_abs_pos in
-  (* Do nothing if the buffer does not contain the whole phrase. *)
-  if pos0 < 0 then raise Exit;
-  let end_pos = lb.lex_buffer_len - pos0 - 1 in
-  (* Determine line numbers for the start and end points *)
-  let line_start = ref 0 and line_end = ref 0 in
-  for pos = 0 to end_pos do
-    if Bytes.get lb.lex_buffer (pos + pos0) = '\n' then begin
-      if loc.loc_start.pos_cnum > pos then incr line_start;
-      if loc.loc_end.pos_cnum   > pos then incr line_end;
-    end
-  done;
-  Format.fprintf ppf "@[<v>";
-  (* Print character location (useful for Emacs) *)
-  if print_chars then begin
-    Format.fprintf ppf "Characters %i-%i:@,"
-                   loc.loc_start.pos_cnum loc.loc_end.pos_cnum
-  end;
-  (* Print the input, underlining the location *)
-  Format.pp_print_string ppf "  ";
-  let line = ref 0 in
-  let pos_at_bol = ref 0 in
-  for pos = 0 to end_pos do
-    match Bytes.get lb.lex_buffer (pos + pos0) with
-    | '\n' ->
-      if !line = !line_start && !line = !line_end then begin
-        (* loc is on one line: underline location *)
-        Format.fprintf ppf "@,  ";
-        for _i = !pos_at_bol to loc.loc_start.pos_cnum - 1 do
-          Format.pp_print_char ppf ' '
-        done;
-        for _i = loc.loc_start.pos_cnum to loc.loc_end.pos_cnum - 1 do
-          Format.pp_print_char ppf '^'
-        done
-      end;
-      if !line >= !line_start && !line <= !line_end then begin
-        Format.fprintf ppf "@,";
-        if pos < loc.loc_end.pos_cnum then Format.pp_print_string ppf "  "
-      end;
-      incr line;
-      pos_at_bol := pos + 1
-    | '\r' -> () (* discard *)
-    | c ->
-      if !line = !line_start && !line = !line_end then
-        (* loc is on one line: print whole line *)
-        Format.pp_print_char ppf c
-      else if !line = !line_start then
-        (* first line of multiline loc:
-           print a dot for each char before loc_start *)
-        if pos < loc.loc_start.pos_cnum then
-          Format.pp_print_char ppf '.'
-        else
-          Format.pp_print_char ppf c
-      else if !line = !line_end then
-        (* last line of multiline loc: print a dot for each char
-           after loc_end, even whitespaces *)
-        if pos < loc.loc_end.pos_cnum then
-          Format.pp_print_char ppf c
-        else
-          Format.pp_print_char ppf '.'
-      else if !line > !line_start && !line < !line_end then
-        (* intermediate line of multiline loc: print whole line *)
-        Format.pp_print_char ppf c
-  done;
-  Format.fprintf ppf "@]"
+   There are two different styles for highlighting errors in "dumb" mode,
+   depending if the error fits on a single line or spans across several lines.
 
-let show_code_at_location ppf lb loc =
-  highlight_dumb ~print_chars:false ppf lb loc
+   For single-line errors,
+
+     foo the_error bar
+
+   gets displayed as:
+
+     foo the_error bar
+         ^^^^^^^^^
+
+
+   For multi-line errors,
+
+     foo the_
+     error bar
+
+   gets displayed as:
+
+     ....the_
+     error....
+
+   If [locs] is empty then this function is a no-op.
+*)
+let highlight_dumb ~print_chars ppf lb locs =
+  let locs = Misc.Stdlib.List.filter_map (fun loc ->
+    let s, e = loc.loc_start.pos_cnum, loc.loc_end.pos_cnum in
+    (* Ignore dummy locations *)
+    if s = -1 && e = -1 then None
+    else Some (s, e)
+  ) locs
+  in
+  if locs = [] then ()
+  else begin
+    (* Helper to check if a given position is to be highlighted *)
+    let is_highlighted pos =
+      List.exists (fun (s, e) -> s <= pos && pos < e) locs in
+    (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
+    let pos0 = -lb.lex_abs_pos in
+    (* Helper to read a char in the buffer *)
+    let read_char pos = Bytes.get lb.lex_buffer (pos + pos0) in
+    (* Do nothing if the buffer does not contain the whole phrase. *)
+    if pos0 < 0 then raise Exit;
+    let end_pos = lb.lex_buffer_len - pos0 - 1 in
+    (* Leftmost starting position of all locations *)
+    let leftmost_start, _ =
+      List.hd @@ List.sort (fun (s, _) (s', _) -> compare s s') locs in
+    (* Rightmost ending position of all locations *)
+    let _, rightmost_end =
+      List.hd @@ List.sort (fun (_, e) (_, e') -> compare e' e) locs in
+    (* Determine line numbers and positions for the start and end points *)
+    let line_start, line_end, line_start_pos, line_end_pos =
+      let line_start = ref 0 and line_end = ref 0 in
+      let line_start_pos = ref 0 and line_end_pos = ref 0 in
+      let rec loop pos line line_bol_pos =
+        if pos > end_pos then ()
+        else if read_char pos = '\n' then
+          let line_bol_pos' = pos + 1 in
+          if line_bol_pos <= leftmost_start
+          && leftmost_start < line_bol_pos' then begin
+            line_start := line;
+            line_start_pos := line_bol_pos
+          end;
+          if line_bol_pos <= rightmost_end
+          && rightmost_end < line_bol_pos' then begin
+            line_end := line;
+            line_end_pos := pos
+          end;
+          loop (pos + 1) (line + 1) line_bol_pos'
+        else
+          loop (pos + 1) line line_bol_pos
+      in
+      loop 0 0 0;
+      !line_start, !line_end, !line_start_pos, !line_end_pos
+    in
+    Format.fprintf ppf "@[<v>";
+    (* Print character location (useful for Emacs) *)
+    if print_chars then begin
+      Format.fprintf ppf "Characters %i-%i:@,"
+        leftmost_start rightmost_end
+    end;
+    (* Print the input, highlighting the locations.
+       Indent by two spaces. *)
+    Format.fprintf ppf "  @[<v>";
+    if line_start = line_end then begin
+      (* single-line error *)
+      for pos = line_start_pos to line_end_pos - 1 do
+        Format.pp_print_char ppf (read_char pos)
+      done;
+      Format.fprintf ppf "@,";
+      for pos = line_start_pos to rightmost_end - 1 do
+        if is_highlighted pos then Format.pp_print_char ppf '^'
+        else Format.pp_print_char ppf ' '
+      done
+    end else begin
+      (* multi-line error *)
+      for pos = line_start_pos to line_end_pos - 1 do
+        let c = read_char pos in
+        if c = '\n' then Format.fprintf ppf "@,"
+        else if is_highlighted pos then Format.pp_print_char ppf c
+        else Format.pp_print_char ppf '.'
+      done
+    end;
+    Format.fprintf ppf "@]@,@]"
+  end
+
+let show_code_at_location ppf lb locs =
+  highlight_dumb ~print_chars:false ppf lb locs
 
 (* Highlight the location using one of the supported modes. *)
 
@@ -216,8 +257,7 @@ let rec highlight_locations ppf locs =
           let norepeat =
             try Sys.getenv "TERM" = "norepeat" with Not_found -> false in
           if norepeat then false else
-            let loc1 = List.hd locs in
-            try highlight_dumb ~print_chars:true ppf lb loc1; true
+            try highlight_dumb ~print_chars:true ppf lb locs; true
             with Exit -> false
       end
   | Terminfo.Good_term ->

@@ -77,7 +77,7 @@ val default_warning_printer : t -> formatter -> Warnings.t -> unit
 
 val highlight_locations: formatter -> t list -> bool
 
-val show_code_at_location: formatter -> Lexing.lexbuf -> t -> unit
+val show_code_at_location: formatter -> Lexing.lexbuf -> t list -> unit
 
 type 'a loc = {
   txt : 'a;

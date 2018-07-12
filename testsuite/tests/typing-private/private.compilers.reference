@@ -112,9 +112,6 @@ type t = private < x : int; .. >
 type t = private < x : int; .. >
 type t = private < x : int >
 type t = private < x : int >
-Characters -1--1:
-  type 'a t = private < x : int; .. > as 'a;;
-  
 Error: Type declarations do not match:
          type 'a t = private < x : int; .. > constraint 'a = 'a t
        is not included in
