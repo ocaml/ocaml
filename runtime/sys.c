@@ -150,7 +150,7 @@ CAMLprim value caml_sys_exit(value retcode_v)
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT);
 #endif
-  CAML_INSTR_ATEXIT ();
+  caml_instr_atexit ();
   if (caml_cleanup_on_exit)
     caml_shutdown();
 #ifdef _WIN32

@@ -337,31 +337,31 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #include <stdio.h>
 
 extern intnat caml_stat_minor_collections;
-extern intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
+extern intnat caml_instr_starttime, caml_instr_stoptime;
 
-struct CAML_INSTR_BLOCK {
+struct caml_instr_block {
   struct timespec ts[10];
   char *tag[10];
   int index;
-  struct CAML_INSTR_BLOCK *next;
+  struct caml_instr_block *next;
 };
 
-extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
+extern struct caml_instr_block *caml_instr_log;
 
 /* Declare a timer/counter name. [t] must be a new variable name. */
 #define CAML_INSTR_DECLARE(t)                                       \
-  struct CAML_INSTR_BLOCK *t = NULL
+  struct caml_instr_block *t = NULL
 
 /* Allocate the data block for a given name.
    [t] must have been declared with [CAML_INSTR_DECLARE]. */
 #define CAML_INSTR_ALLOC(t) do{                                     \
-    if (caml_stat_minor_collections >= CAML_INSTR_STARTTIME         \
-        && caml_stat_minor_collections < CAML_INSTR_STOPTIME){      \
-      t = caml_stat_alloc_noexc (sizeof (struct CAML_INSTR_BLOCK)); \
+    if (caml_stat_minor_collections >= caml_instr_starttime         \
+        && caml_stat_minor_collections < caml_instr_stoptime){      \
+      t = caml_stat_alloc_noexc (sizeof (struct caml_instr_block)); \
       t->index = 0;                                                 \
       t->tag[0] = "";                                               \
-      t->next = CAML_INSTR_LOG;                                     \
-      CAML_INSTR_LOG = t;                                           \
+      t->next = caml_instr_log;                                     \
+      caml_instr_log = t;                                           \
     }                                                               \
   }while(0)
 
@@ -409,11 +409,11 @@ extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
 /* This function is called at the start of the program to set up
    the data for the above macros.
 */
-extern void CAML_INSTR_INIT (void);
+extern void caml_instr_init (void);
 
 /* This function is automatically called by the runtime to output
    the collected data to the dump file. */
-extern void CAML_INSTR_ATEXIT (void);
+extern void caml_instr_atexit (void);
 
 #else /* CAML_INSTR */
 
@@ -423,8 +423,8 @@ extern void CAML_INSTR_ATEXIT (void);
 #define CAML_INSTR_SETUP(t, name) /**/
 #define CAML_INSTR_TIME(t, msg) /**/
 #define CAML_INSTR_INT(msg, c) /**/
-#define CAML_INSTR_INIT() /**/
-#define CAML_INSTR_ATEXIT() /**/
+#define caml_instr_init() /**/
+#define caml_instr_atexit() /**/
 
 #endif /* CAML_INSTR */
 
