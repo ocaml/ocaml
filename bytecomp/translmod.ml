@@ -535,7 +535,11 @@ and transl_structure loc fields cc rootpath final_env = function
       | Tstr_value(rec_flag, pat_expr_list) ->
           (* Translate bindings first *)
           let mk_lam_let =  transl_let rec_flag pat_expr_list in
-          let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
+          let new_fields =
+            if item.str_private then []
+            else rev_let_bound_idents pat_expr_list
+          in
+          let ext_fields = new_fields @ fields in
           (* Then, translate remainder of struct *)
           let body, size =
             transl_structure loc ext_fields cc rootpath final_env rem
@@ -548,16 +552,22 @@ and transl_structure loc fields cc rootpath final_env = function
           transl_structure loc fields cc rootpath final_env rem
       | Tstr_typext(tyext) ->
           let ids = List.map (fun ext -> ext.ext_id) tyext.tyext_constructors in
+          let new_fields =
+            if item.str_private then
+              fields
+            else
+              List.rev_append ids fields
+          in
           let body, size =
-            transl_structure loc (List.rev_append ids fields)
-              cc rootpath final_env rem
+            transl_structure loc new_fields cc rootpath final_env rem
           in
           transl_type_extension item.str_env rootpath tyext body, size
       | Tstr_exception ext ->
           let id = ext.tyexn_constructor.ext_id in
           let path = field_path rootpath id in
+          let new_fields = if item.str_private then fields else id :: fields in
           let body, size =
-            transl_structure loc (id :: fields) cc rootpath final_env rem
+            transl_structure loc new_fields cc rootpath final_env rem
           in
           Llet(Strict, Pgenval, id,
                transl_extension_constructor item.str_env
@@ -575,8 +585,9 @@ and transl_structure loc fields cc rootpath final_env = function
                                                  mb.mb_attributes
           in
           (* Translate remainder second *)
+          let new_fields = if item.str_private then fields else id :: fields in
           let body, size =
-            transl_structure loc (id :: fields) cc rootpath final_env rem
+            transl_structure loc new_fields cc rootpath final_env rem
           in
           let module_body =
             Levent (module_body, {
@@ -591,7 +602,10 @@ and transl_structure loc fields cc rootpath final_env = function
                body), size
       | Tstr_recmodule bindings ->
           let ext_fields =
-            List.rev_append (List.map (fun mb -> mb.mb_id) bindings) fields
+            if item.str_private then
+              fields
+            else
+              List.rev_append (List.map (fun mb -> mb.mb_id) bindings) fields
           in
           let body, size =
             transl_structure loc ext_fields cc rootpath final_env rem
@@ -614,9 +628,11 @@ and transl_structure loc fields cc rootpath final_env = function
           lam, size
       | Tstr_class cl_list ->
           let (ids, class_bindings) = transl_class_bindings cl_list in
+          let new_fields =
+            if item.str_private then fields else List.rev_append ids fields
+          in
           let body, size =
-            transl_structure loc (List.rev_append ids fields)
-              cc rootpath final_env rem
+            transl_structure loc new_fields cc rootpath final_env rem
           in
           Lletrec(class_bindings, body), size
       | Tstr_include incl ->
@@ -627,8 +643,11 @@ and transl_structure loc fields cc rootpath final_env = function
               [] ->
                 transl_structure loc newfields cc rootpath final_env rem
             | id :: ids ->
+                let newfields =
+                  if item.str_private then newfields else id :: newfields
+                in
                 let body, size =
-                  rebind_idents (pos + 1) (id :: newfields) ids
+                  rebind_idents (pos + 1) newfields ids
                 in
                 Llet(Alias, Pgenval, id,
                      Lprim(Pfield pos, [Lvar mid], incl.incl_loc), body),
