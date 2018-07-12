@@ -132,6 +132,9 @@ Working version
   (Thomas Refis, review by David Allsopp, Florian Angeletti, Gabriel Radanne,
    Gabriel Scherer and Xavier Leroy)
 
+- #1901: Fix lexing of apostrophes in comments
+  (Pieter Goetschalckx, review by Damien Doligez)
+
 ### Runtime system:
 
 - #1725, #2279: Deprecate Obj.set_tag and Obj.truncate
