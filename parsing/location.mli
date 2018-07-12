@@ -66,8 +66,8 @@ val prerr_warning: t -> Warnings.t -> unit
 val echo_eof: unit -> unit
 val reset: unit -> unit
 
-val default_printer : formatter -> t -> unit
 val printer : (formatter -> t -> unit) ref
+(** By default, [!printer] is equal to [print_loc]. *)
 
 val warning_printer : (t -> formatter -> Warnings.t -> unit) ref
 (** Hook for intercepting warnings. *)

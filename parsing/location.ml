@@ -330,25 +330,17 @@ let print_loc ppf loc =
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
   if file = "//toplevel//" then begin
     if highlight_locations ppf [loc] then () else
-      Format.fprintf ppf "Characters %i-%i"
+      Format.fprintf ppf "@{<loc>Characters %i-%i@}:@,"
         loc.loc_start.pos_cnum loc.loc_end.pos_cnum
   end else begin
-    Format.fprintf ppf "File \"@{<loc>%a\", line %i"
+    Format.fprintf ppf "@{<loc>File \"%a\", line %i"
       print_filename file line;
     if startchar >= 0 then
       Format.fprintf ppf ", characters %i-%i" startchar endchar;
-    Format.fprintf ppf "@}"
+    Format.fprintf ppf "@}:@,"
   end
-;;
 
-let default_printer ppf loc =
-  setup_colors ();
-  if loc.loc_start.pos_fname = "//toplevel//"
-  && highlight_locations ppf [loc] then ()
-  else Format.fprintf ppf "@{<loc>%a@}:@," print_loc loc
-;;
-
-let printer = ref default_printer
+let printer = ref print_loc
 let print ppf loc = !printer ppf loc
 
 let error_prefix = "Error"
