@@ -462,6 +462,38 @@ let scrape_for_type_of ~remove_aliases env mty =
     scrape_for_type_of env mty
   end
 
+(* Check aliases inside non aliasable modules *)
+
+exception Invalid_alias of Path.t
+
+let rec check_aliases_mty env mty =
+  match mty with
+    Mty_signature sg ->
+      let env = Env.add_signature ~arg:true sg env in
+      List.iter (check_aliases_item env) sg
+  | Mty_alias (_, p) ->
+      if Env.is_functor_arg p env then raise (Invalid_alias p)
+  | Mty_ident p ->
+      begin
+        try check_aliases_mty env (Env.find_modtype_expansion p env)
+        with Not_found -> ()
+      end
+  | Mty_functor (id, Some mty1, mty2) ->
+      let env = Env.add_module ~arg:true id mty1 env in
+      check_aliases_mty env mty2
+  | Mty_functor (_, None, mty2) ->
+      check_aliases_mty env mty2
+
+and check_aliases_item env it =
+  match it with
+    Sig_module (_, md, _) ->
+      check_aliases_mty env md.md_type
+  | _ -> ()
+
+let check_aliases env mty =
+  try check_aliases_mty env mty; None
+  with Invalid_alias p -> Some p
+
 (* Lower non-generalizable type variables *)
 
 let lower_nongen nglev mty =

@@ -24,6 +24,9 @@ val scrape: Env.t -> module_type -> module_type
 val scrape_for_type_of:
   remove_aliases:bool -> Env.t -> module_type -> module_type
         (* Expand module aliases *)
+val check_aliases: Env.t -> module_type -> Path.t option
+        (* Look for internal aliases in a module type.
+           This is not allowed for functor arguments. *)
 val freshen: module_type -> module_type
         (* Return an alpha-equivalent copy of the given module type
            where bound identifiers are fresh. *)

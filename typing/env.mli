@@ -151,8 +151,8 @@ val add_local_type: Path.t -> type_declaration -> t -> t
 
 (* Insertion of all fields of a signature. *)
 
-val add_item: signature_item -> t -> t
-val add_signature: signature -> t -> t
+val add_item: ?arg:bool -> signature_item -> t -> t
+val add_signature: ?arg:bool -> signature -> t -> t
 
 (* Insertion of all fields of a signature, relative to the given path.
    Used to implement open. Returns None if the path refers to a functor,

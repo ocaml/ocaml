@@ -1949,20 +1949,20 @@ let enter_module ?arg s mty env =
 
 (* Insertion of all components of a signature *)
 
-let add_item comp env =
+let add_item ?arg comp env =
   match comp with
     Sig_value(id, decl)     -> add_value id decl env
   | Sig_type(id, decl, _)   -> add_type ~check:false id decl env
   | Sig_typext(id, ext, _)  -> add_extension ~check:false id ext env
-  | Sig_module(id, md, _)   -> add_module_declaration ~check:false id md env
+  | Sig_module(id, md, _) -> add_module_declaration ?arg ~check:false id md env
   | Sig_modtype(id, decl)   -> add_modtype id decl env
   | Sig_class(id, decl, _)  -> add_class id decl env
   | Sig_class_type(id, decl, _) -> add_cltype id decl env
 
-let rec add_signature sg env =
+let rec add_signature ?arg sg env =
   match sg with
     [] -> env
-  | comp :: rem -> add_signature rem (add_item comp env)
+  | comp :: rem -> add_signature ?arg rem (add_item ?arg comp env)
 
 (* Open a signature path *)
 

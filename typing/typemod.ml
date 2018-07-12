@@ -46,6 +46,7 @@ type error =
   | Recursive_module_require_explicit_type
   | Apply_generative
   | Cannot_scrape_alias of Path.t
+  | Invalid_alias of Path.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -1346,8 +1347,14 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let mty = may_map (transl_modtype env) smty in
       let ty_arg = may_map (fun m -> m.mty_type) mty in
       let (id, newenv), funct_body =
-        match ty_arg with None -> (Ident.create "*", env), false
-        | Some mty -> Env.enter_module ~arg:true name.txt mty env, true in
+        match mty with None -> (Ident.create "*", env), false
+        | Some mty ->
+            begin match Mtype.check_aliases env mty.mty_type with
+              None -> ()
+            | Some p -> raise (Error (mty.mty_loc, env, Invalid_alias p))
+            end;
+            Env.enter_module ~arg:true name.txt mty.mty_type env, true
+      in
       Ctype.init_def(Ident.current_time()); (* PR#6981 *)
       let body = type_module sttn funct_body None newenv sbody in
       rm { mod_desc = Tmod_functor(id, name, mty, body);
@@ -2073,6 +2080,10 @@ let report_error ppf = function
       fprintf ppf
         "This is an alias for module %a, which is missing"
         path p
+  | Invalid_alias p ->
+      fprintf ppf
+        "@[This module type contains an alias for %a.@ %s.@]"
+        path p "Internal aliases are not allowed in functor argument types"
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env ~error:true env (fun () -> report_error ppf err)

@@ -1,3 +1,8 @@
+### Bug fixes:
+
+* MPR#7818: Unaliasable module can be aliased
+  (Jacques Garrigue, report by mandrykin)
+
 OCaml 4.07.0 (10 July 2018)
 ---------------------------
 
