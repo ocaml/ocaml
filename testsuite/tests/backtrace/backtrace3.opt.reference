@@ -60,7 +60,14 @@ Called from file "backtrace3.ml", line 20, characters 4-11
 Re-raised at file "backtrace3.ml", line 47, characters 45-55
 Called from file "backtrace3.ml", line 54, characters 11-23
 Uncaught exception Backtrace3.Error("h")
-Raised at file "backtrace3.ml", line 50, characters 10-17
+Raised at file "backtrace3.ml", line 16, characters 16-32
+Called from file "backtrace3.ml", line 16, characters 42-53
+Called from file "backtrace3.ml", line 16, characters 42-53
+Called from file "backtrace3.ml", line 16, characters 42-53
+Called from file "backtrace3.ml", line 16, characters 42-53
+Called from file "backtrace3.ml", line 16, characters 42-53
+Called from file "backtrace3.ml", line 20, characters 4-11
+Re-raised at file "backtrace3.ml", line 50, characters 10-17
 Called from file "backtrace3.ml", line 54, characters 11-23
 Uncaught exception Invalid_argument("index out of bounds")
 Raised by primitive operation at file "backtrace3.ml", line 54, characters 14-22
