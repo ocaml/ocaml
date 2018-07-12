@@ -267,7 +267,7 @@ caml/opnames.h : caml/instruct.h
 	cat $^ | tr -d '\r' | \
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
-	    -e 's/enum /char * names_of_/' \
+	    -e 's/enum /static char * names_of_/' \
 	    -e 's/{$$/[] = {/' \
 	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' > $@
 
