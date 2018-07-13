@@ -207,27 +207,27 @@ int caml_runtime_warnings_active(void)
 #include <sys/types.h>
 #include <unistd.h>
 
-struct CAML_INSTR_BLOCK *CAML_INSTR_LOG = NULL;
-intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
+struct caml_instr_block *caml_instr_log = NULL;
+intnat caml_instr_starttime, caml_instr_stoptime;
 
 #define Get_time(p,i) ((p)->ts[(i)].tv_nsec + 1000000000 * (p)->ts[(i)].tv_sec)
 
-void CAML_INSTR_INIT (void)
+void caml_instr_init (void)
 {
   char *s;
 
-  CAML_INSTR_STARTTIME = 0;
+  caml_instr_starttime = 0;
   s = caml_secure_getenv ("OCAML_INSTR_START");
-  if (s != NULL) CAML_INSTR_STARTTIME = atol (s);
-  CAML_INSTR_STOPTIME = LONG_MAX;
+  if (s != NULL) caml_instr_starttime = atol (s);
+  caml_instr_stoptime = LONG_MAX;
   s = caml_secure_getenv ("OCAML_INSTR_STOP");
-  if (s != NULL) CAML_INSTR_STOPTIME = atol (s);
+  if (s != NULL) caml_instr_stoptime = atol (s);
 }
 
-void CAML_INSTR_ATEXIT (void)
+void caml_instr_atexit (void)
 {
   int i;
-  struct CAML_INSTR_BLOCK *p, *prev, *next;
+  struct caml_instr_block *p, *prev, *next;
   FILE *f = NULL;
   char *fname;
 
@@ -254,16 +254,16 @@ void CAML_INSTR_ATEXIT (void)
   if (f != NULL){
     /* reverse the list */
     prev = NULL;
-    p = CAML_INSTR_LOG;
+    p = caml_instr_log;
     while (p != NULL){
       next = p->next;
       p->next = prev;
       prev = p;
       p = next;
     }
-    CAML_INSTR_LOG = prev;
+    caml_instr_log = prev;
     fprintf (f, "==== OCAML INSTRUMENTATION DATA %s\n", OCAML_VERSION_STRING);
-    for (p = CAML_INSTR_LOG; p != NULL; p = p->next){
+    for (p = caml_instr_log; p != NULL; p = p->next){
       for (i = 0; i < p->index; i++){
         fprintf (f, "@@ %19ld %19ld %s\n",
                  (long) Get_time (p, i),
