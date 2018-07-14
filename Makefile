@@ -79,7 +79,7 @@ UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
   parsing/ast_helper.cmo parsing/parser.cmo \
-  parsing/menhirLib.cmo parsing/parser_menhir.cmo \
+  parsing/camlinternalMenhirLib.cmo parsing/parser_menhir.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
   parsing/ast_mapper.cmo parsing/ast_iterator.cmo parsing/attr_helper.cmo \
@@ -1066,6 +1066,7 @@ clean::
 # we store the result of the parser generator (which
 # are OCaml source files) and Menhir's runtime libraries
 # (that the parser files rely on) in boot/
+
 parsing/parser_menhir.ml: \
   boot/menhir/parser_menhir.ml parsing/parser_menhir.mly
 	@if [ parsing/parser_menhir.mly -nt boot/menhir/parser_menhir.ml ]; \
@@ -1078,13 +1079,17 @@ parsing/parser_menhir.ml: \
 	  echo "    make promote-menhir"; \
 	  echo; \
 	fi
-	cp $< parsing
+	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
 parsing/parser_menhir.mli: boot/menhir/parser_menhir.mli
-	cp $< parsing
-parsing/menhirLib.ml: boot/menhir/menhirLib.ml
-	cp $< parsing
-parsing/menhirLib.mli: boot/menhir/menhirLib.mli
-	cp $< parsing
+	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
+
+# We rename the menhirLib module into CamlinternalMenhirlib,
+# to avoid module-name conflicts with compiler-libs users
+# also linking their own MenhirLib module for another parser.
+parsing/camlinternalMenhirLib.ml: boot/menhir/menhirLib.ml
+	cp $< $@
+parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
+	cp $< $@
 
 # Makefile.menhir exports an promote-menhir rule that calls Menhir on
 # the current grammar and refreshes the boot/ files. It must be called

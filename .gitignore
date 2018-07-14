@@ -160,8 +160,8 @@ _ocamltestd
 /parsing/parser.automaton
 /parsing/parser.conflicts
 
-/parsing/menhirLib.ml
-/parsing/menhirLib.mli
+/parsing/camlinternalMenhirLib.ml
+/parsing/camlinternalMenhirLib.mli
 /parsing/parser_menhir.ml
 /parsing/parser_menhir.mli
 

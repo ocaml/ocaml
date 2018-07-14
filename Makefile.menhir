@@ -53,11 +53,13 @@ promote-menhir: parsing/parser_menhir.mly parsing/parser.cmo
 .PHONY: test-menhir
 test-menhir: parsing/parser_menhir.mly
 	$(MENHIR) $(MENHIRFLAGS) parsing/parser_menhir.mly
+	sed -i "s/MenhirLib/CamlinternalMenhirLib/g" \
+	  $(addprefix parsing/parser_menhir.,ml mli)
 	$(MAKE) parsing/parser_menhir.cmo
 
 partialclean-menhir::
 	rm -f \
 	  $(addprefix parsing/parser_menhir.,ml mli) \
-	  $(addprefix parsing/menhirLib.,ml mli)
+	  $(addprefix parsing/camlinternalMenhirLib.,ml mli)
 
 clean-menhir: partialclean-menhir

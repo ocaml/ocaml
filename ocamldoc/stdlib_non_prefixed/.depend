@@ -84,7 +84,7 @@ longident.cmi :
 map.cmi : seq.cmi
 marshal.cmi :
 matching.cmi : typedtree.cmi location.cmi lambda.cmi ident.cmi
-menhirLib.cmi : obj.cmi lexing.cmi lazy.cmi
+camlinternalMenhirLib.cmi : obj.cmi lexing.cmi lazy.cmi
 meta.cmi : obj.cmi instruct.cmi
 misc.cmi : string.cmi stdlib.cmi set.cmi map.cmi hashtbl.cmi format.cmi \
     build_path_prefix_map.cmi
@@ -102,7 +102,7 @@ parmatch.cmi : types.cmi typedtree.cmi parsetree.cmi location.cmi \
     hashtbl.cmi env.cmi asttypes.cmi
 parse.cmi : parsetree.cmi lexing.cmi
 parser.cmi : parsetree.cmi location.cmi lexing.cmi docstrings.cmi
-parser_menhir.cmi : parsetree.cmi parser.cmi menhirLib.cmi lexing.cmi
+parser_menhir.cmi : parsetree.cmi parser.cmi camlinternalMenhirLib.cmi lexing.cmi
 parsetree.cmi : longident.cmi location.cmi asttypes.cmi
 parsing.cmi : obj.cmi lexing.cmi
 path.cmi : set.cmi map.cmi ident.cmi
