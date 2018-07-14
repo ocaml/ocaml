@@ -126,3 +126,35 @@ OCaml 4.06.0 (3 Nov 2017):
     found as a separate OPAM package.
 
 See the detailed list of changes: (Changes#4.06.0).
+
+
+OCaml 4.05.0 (13 Jul 2017):
+---------------------------
+
+Some highlights include:
+
+-   Instrumentation support for fuzzing with afl-fuzz.
+    (GPR#504, by Stephen Dolan)
+
+-   The compilers now accept new `-args/-args0 <file>` comand-line
+    parameters to provide extra command-line arguments in a file.  User
+    programs may implement similar options using the new `Expand`
+    constructor of the `Arg` module.
+    (GPR#748, GPR#843, GPR#864, by Bernhard Schommer)
+
+-   Many functions of the standard library that raise an exception now
+    have an option-returning variable suffixed by `_opt` Typical
+    examples of the new functions include:
+
+        int_of_string_opt: string -> int option
+        List.nth_opt: 'a list -> int -> 'a option
+        Hashtbl.find_opt : ('a, 'b) t -> 'a -> 'b option
+
+    (GPR#885, by Alain Frisch)
+
+-   The security of the runtime system is now hardened by using `secure_getenv`
+    to access environment variables whenever its possible, to avoid unplanned
+    privilege-escalation when running setuid binaries.
+    (GPR#1213, by Damien Doligez)
+
+See the detailed list of changes: (Changes#4.05.0).
