@@ -2331,15 +2331,18 @@ row_field_list:
   | row_field_list BAR row_field                { $3 :: $1 }
 ;
 row_field:
-    tag_field                                   { $1 }
-  | simple_core_type                            { Rinherit $1 }
+    tag_field                          { $1 }
+  | simple_core_type                   { Rf.inherit_ ~loc:(symbol_rloc ()) $1 }
 ;
 tag_field:
     name_tag OF opt_ampersand amper_type_list attributes
-      { Rtag (mkrhs $1 1, add_info_attrs (symbol_info ()) $5,
-               $3, List.rev $4) }
+      { let loc = symbol_rloc () in
+        let attrs = add_info_attrs (symbol_info ()) $5 in
+        Rf.tag ~loc ~attrs (mkrhs $1 1) $3 (List.rev $4) }
   | name_tag attributes
-      { Rtag (mkrhs $1 1, add_info_attrs (symbol_info ()) $2, true, []) }
+      { let loc = symbol_rloc () in
+        let attrs = add_info_attrs (symbol_info ()) $2 in
+        Rf.tag ~loc ~attrs (mkrhs $1 1) true [] }
 ;
 opt_ampersand:
     AMPERSAND                                   { true }
@@ -2359,41 +2362,46 @@ simple_core_type_or_tuple:
       { mktyp(Ptyp_tuple($1 :: List.rev $3)) }
 ;
 core_type_comma_list:
-    core_type                                   { [$1] }
-  | core_type_comma_list COMMA core_type        { $3 :: $1 }
+    core_type                              { [$1] }
+  | core_type_comma_list COMMA core_type   { $3 :: $1 }
 ;
 core_type_list:
-    simple_core_type                            { [$1] }
-  | core_type_list STAR simple_core_type        { $3 :: $1 }
+    simple_core_type                       { [$1] }
+  | core_type_list STAR simple_core_type   { $3 :: $1 }
 ;
 meth_list:
     field_semi meth_list
       { let (f, c) = $2 in ($1 :: f, c) }
   | inherit_field_semi meth_list
       { let (f, c) = $2 in ($1 :: f, c) }
-  | field_semi                                  { [$1], Closed }
-  | field                                       { [$1], Closed }
-  | inherit_field_semi                          { [$1], Closed }
-  | simple_core_type                            { [Oinherit $1], Closed }
-  | DOTDOT                                      { [], Open }
+  | field_semi                             { [$1], Closed }
+  | field                                  { [$1], Closed }
+  | inherit_field_semi                     { [$1], Closed }
+  | simple_core_type                       {
+        let loc = symbol_rloc () in          [Of.inherit_ ~loc $1], Closed }
+  | DOTDOT                                 { [], Open }
 ;
 field:
   label COLON poly_type_no_attr attributes
-    { Otag (mkrhs $1 1, add_info_attrs (symbol_info ()) $4, $3) }
+    { let loc = symbol_rloc () in
+      let attrs = add_info_attrs (symbol_info ()) $4 in
+      Of.tag ~loc ~attrs (mkrhs $1 1) $3 }
 ;
 
 field_semi:
   label COLON poly_type_no_attr attributes SEMI attributes
-    { let info =
+    { let loc = symbol_rloc () in
+      let info =
         match rhs_info 4 with
         | Some _ as info_before_semi -> info_before_semi
         | None -> symbol_info ()
       in
-      ( Otag (mkrhs $1 1, add_info_attrs info ($4 @ $6), $3)) }
+      let attrs = add_info_attrs info ($4 @ $6) in
+      Of.tag ~loc ~attrs (mkrhs $1 1) $3 }
 ;
 
 inherit_field_semi:
-  simple_core_type SEMI { Oinherit $1 }
+  simple_core_type SEMI { Of.inherit_ ~loc:(symbol_rloc ()) $1 }
 
 label:
     LIDENT                                      { $1 }

@@ -718,17 +718,23 @@ let class_structure sub cs =
     pcstr_fields = List.map (sub.class_field sub) cs.cstr_fields;
   }
 
-let row_field sub rf =
-  match rf with
-    Ttag (label, attrs, bool, list) ->
-      Rtag (label, sub.attributes sub attrs, bool, List.map (sub.typ sub) list)
-  | Tinherit ct -> Rinherit (sub.typ sub ct)
+let row_field sub {rf_loc; rf_desc} =
+  let loc = sub.location sub rf_loc in
+  let desc = match rf_desc with
+    | Ttag (label, attrs, bool, list) ->
+        Rtag (label, sub.attributes sub attrs, bool, List.map (sub.typ sub) list)
+    | Tinherit ct -> Rinherit (sub.typ sub ct)
+  in
+  Rf.mk ~loc desc
 
-let object_field sub ofield =
-  match ofield with
-    OTtag (label, attrs, ct) ->
-      Otag (label, sub.attributes sub attrs, sub.typ sub ct)
-  | OTinherit ct -> Oinherit (sub.typ sub ct)
+let object_field sub {of_loc; of_desc} =
+  let loc = sub.location sub of_loc in
+  let desc = match of_desc with
+    | OTtag (label, attrs, ct) ->
+        Otag (label, sub.attributes sub attrs, sub.typ sub ct)
+    | OTinherit ct -> Oinherit (sub.typ sub ct)
+  in
+  Of.mk ~loc desc
 
 and is_self_pat = function
   | { pat_desc = Tpat_alias(_pat, id, _) } ->

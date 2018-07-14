@@ -190,7 +190,7 @@ let rec core_type i ppf x =
   | Ttyp_object (l, c) ->
       line i ppf "Ttyp_object %a\n" fmt_closed_flag c;
       let i = i + 1 in
-      List.iter (function
+      List.iter (fun {of_desc; _} -> match of_desc with
         | OTtag (s, attrs, t) ->
             line i ppf "method %s\n" s.txt;
             attributes i ppf attrs;
@@ -882,8 +882,8 @@ and ident_x_expression_def i ppf (l, e) =
   expression (i+1) ppf e;
 
 and label_x_bool_x_core_type_list i ppf x =
-  match x with
-    Ttag (l, attrs, b, ctl) ->
+  match x.rf_desc with
+  | Ttag (l, attrs, b, ctl) ->
       line i ppf "Ttag \"%s\" %s\n" l.txt (string_of_bool b);
       attributes (i+1) ppf attrs;
       list (i+1) core_type ppf ctl

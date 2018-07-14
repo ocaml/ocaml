@@ -550,8 +550,10 @@ and transl_type_aux env policy styp =
         with Not_found ->
           Hashtbl.add hfields h (l,f)
       in
-      let add_field = function
-          Rtag (l, attrs, c, stl) ->
+      let add_field field =
+        let rf_loc = field.prf_loc in
+        let rf_desc = match field.prf_desc with
+        | Rtag (l, attrs, c, stl) ->
             name := None;
             let tl =
               Builtin_attributes.warning_scope attrs
@@ -613,6 +615,8 @@ and transl_type_aux env policy styp =
                 add_typed_field sty.ptyp_loc l f)
               fl;
               Tinherit cty
+        in
+        { rf_desc; rf_loc }
       in
       let tfields = List.map add_field fields in
       let fields = Hashtbl.fold (fun _ p l -> p :: l) hfields [] in
@@ -699,7 +703,9 @@ and transl_fields env policy o fields =
           raise(Error(loc, env, Method_mismatch (l, ty, ty')))
     with Not_found ->
       Hashtbl.add hfields l ty in
-  let add_field = function
+  let add_field {pof_desc; pof_loc;} =
+    let of_loc = pof_loc in
+    let of_desc = match pof_desc with
     | Otag (s, a, ty1) -> begin
         let ty1 =
           Builtin_attributes.warning_scope a
@@ -734,6 +740,8 @@ and transl_fields env policy o fields =
             raise (Error (sty.ptyp_loc, env, Unbound_type_constructor_2 p))
         | _ -> raise (Error (sty.ptyp_loc, env, Not_an_object t))
       end in
+    { of_desc; of_loc; }
+  in
   let object_fields = List.map add_field fields in
   let fields = Hashtbl.fold (fun s ty l -> (s, ty) :: l) hfields [] in
   let ty_init =

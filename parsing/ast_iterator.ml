@@ -59,6 +59,8 @@ type iterator = {
   structure: iterator -> structure -> unit;
   structure_item: iterator -> structure_item -> unit;
   typ: iterator -> core_type -> unit;
+  row_field: iterator -> row_field -> unit;
+  object_field: iterator -> object_field -> unit;
   type_declaration: iterator -> type_declaration -> unit;
   type_extension: iterator -> type_extension -> unit;
   type_exception: iterator -> type_exception -> unit;
@@ -83,12 +85,22 @@ let iter_loc sub {loc; txt = _} = sub.location sub loc
 module T = struct
   (* Type expressions for the core language *)
 
-  let row_field sub = function
+  let row_field sub {
+      prf_desc;
+      prf_loc;
+    } =
+    sub.location sub prf_loc;
+    match prf_desc with
     | Rtag (_, attrs, _, tl) ->
         sub.attributes sub attrs; List.iter (sub.typ sub) tl
     | Rinherit t -> sub.typ sub t
 
-  let object_field sub = function
+  let object_field sub {
+      pof_desc;
+      pof_loc;
+    } =
+    sub.location sub pof_loc;
+    match pof_desc with
     | Otag (_, attrs, t) ->
         sub.attributes sub attrs; sub.typ sub t
     | Oinherit t -> sub.typ sub t
@@ -501,6 +513,8 @@ let default_iterator =
     type_declaration = T.iter_type_declaration;
     type_kind = T.iter_type_kind;
     typ = T.iter;
+    row_field = T.row_field;
+    object_field = T.object_field;
     type_extension = T.iter_type_extension;
     type_exception = T.iter_type_exception;
     extension_constructor = T.iter_extension_constructor;

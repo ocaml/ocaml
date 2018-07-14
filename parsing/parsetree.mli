@@ -145,24 +145,32 @@ and package_type = Longident.t loc * (Longident.t loc * core_type) list
         (module S with type t1 = T1 and ... and tn = Tn)
        *)
 
-and row_field =
+and row_field = {
+  prf_desc : row_field_desc;
+  prf_loc : Location.t;
+}
+
+and row_field_desc =
   | Rtag of label loc * attributes * bool * core_type list
         (* [`A]                   ( true,  [] )
            [`A of T]              ( false, [T] )
            [`A of T1 & .. & Tn]   ( false, [T1;...Tn] )
            [`A of & T1 & .. & Tn] ( true,  [T1;...Tn] )
 
-          - The 2nd field is true if the tag contains a
+          - The 3rd field is true if the tag contains a
             constant (empty) constructor.
           - '&' occurs when several types are used for the same constructor
             (see 4.2 in the manual)
-
-          - TODO: switch to a record representation, and keep location
         *)
   | Rinherit of core_type
         (* [ T ] *)
 
-and object_field =
+and object_field = {
+  pof_desc : object_field_desc;
+  pof_loc : Location.t;
+}
+
+and object_field_desc =
   | Otag of label loc * attributes * core_type
   | Oinherit of core_type
 
@@ -458,6 +466,7 @@ and type_extension =
      ptyext_params: (core_type * variance) list;
      ptyext_constructors: extension_constructor list;
      ptyext_private: private_flag;
+     ptyext_loc: Location.t;
      ptyext_attributes: attributes;   (* ... [@@id1] [@@id2] *)
     }
 (*
@@ -476,6 +485,7 @@ and extension_constructor =
 and type_exception =
   {
     ptyexn_constructor: extension_constructor;
+    ptyexn_loc: Location.t;
     ptyexn_attributes: attributes; (* ... [@@id1] [@@id2] *)
   }
 

@@ -288,6 +288,7 @@ module Analyser =
         | Some core_ty ->
           begin match core_ty.ptyp_desc with
           | Ptyp_object (fields, _) ->
+            let fields = List.map (fun {pof_desc; _} -> pof_desc) fields in
             let rec f = function
               | [] -> []
               | Otag ({txt=""},_,_) :: _ ->
