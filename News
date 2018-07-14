@@ -82,3 +82,47 @@ This release consists mostly of bug fixes. The most salient bugs were
     case. (GPR#1470, by Leo White)
 
 See the detailed list of fixes at (Changes#4.06.1).
+
+
+OCaml 4.06.0 (3 Nov 2017):
+--------------------------
+
+-   Strings (type `string`) are now immutable by default. In-place
+    modification must use the type `bytes` of byte sequences, which is
+    distinct from `string`.  This corresponds to the `-safe-string`
+    compile-time option, which was introduced in OCaml 4.02 in 2014, and
+    which is now the default.
+    (GPR#1252, by Damien Doligez)
+
+-   Object types can now extend a previously-defined object type,
+    as in `<t; a: int>`.
+    (GPR#1118, by Runhang Li)
+
+-   Destructive substitution over module signatures can now express more
+    substitutions, such as `S with type M.t := type-expr` and `S with
+    module M.N := path`.
+    (GPR#792, by Valentin Gatien-Baron)
+
+-   Users can now define operators that look like array indexing,
+    e.g. `let ( .%() ) = List.nth in [0; 1; 2].%(1)`
+    (GPR#1064, GPR#1392, by Florian Angeletti)
+
+-   New escape `\u{XXXX}` in string literals, denoting the UTF-8
+    encoding of the Unicode code point `XXXX`.
+    (GPR#1232, by Daniel Bünzli)
+
+-   Full Unicode support was added to the Windows runtime system.  In
+    particular, file names can now contain Unicode characters.
+    (GPR#153, GPR#1200, GPR#1357, GPR#1362, GPR#1363, GPR#1369, GPR#1398,
+    GPR#1446, GPR#1448, by ygrek and Nicolás Ojeda Bär)
+
+-   An alternate register allocator based on linear scan can be selected
+    with `ocamlopt -linscan`.  It reduces compilation time compared with
+    the default register allocator.
+    (GPR#375, Marcell Fischbach and Benedikt Meurer)
+
+-   The Num library for arbitrary-precision integer and rational
+    arithmetic is no longer part of the core distribution and can be
+    found as a separate OPAM package.
+
+See the detailed list of changes: (Changes#4.06.0).
