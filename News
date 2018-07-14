@@ -65,3 +65,20 @@ Some highlights of this release are:
     (GPR#1476, by Alain Frsich)
 
 See also the detailed list of changes: (Changes#4.07.0).
+
+
+OCaml 4.06.1 (16 Feb 2018):
+---------------------------
+
+This release consists mostly of bug fixes. The most salient bugs were
+
+-   An incorrect compilation of pattern-matching in presence of
+    extensible variant constructors (such as exceptions), that had been
+    present for a long time.
+    (GPR#1459, GPR#1538, by Luc Maranget, Thomas Refis and Gabriel Scherer)
+
+-   An optimization of `not (x = y)` into `x <> y`, introduced in
+    4.06.0, is incorrect on floating-point numbers in the `nan`
+    case. (GPR#1470, by Leo White)
+
+See the detailed list of fixes at (Changes#4.06.1).
