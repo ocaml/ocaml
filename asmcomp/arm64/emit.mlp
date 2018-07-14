@@ -595,7 +595,7 @@ let emit_instr i =
         if f = 0L then
           `	fmov	{emit_reg i.res.(0)}, xzr\n`
         else if is_immediate_float f then
-          `	fmov	{emit_reg i.res.(0)}, #{emit_printf "0x%Lx" f}\n`
+          `	fmov	{emit_reg i.res.(0)}, #{emit_printf "%.7f" (Int64.float_of_bits f)}\n`
         else begin
           let lbl = float_literal f in
           `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
