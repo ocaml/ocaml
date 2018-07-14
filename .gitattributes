@@ -153,6 +153,7 @@ tools/ocaml-objcopy-macosx text eol=lf
 tools/ocamlmktop.tpl text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
+tools/markdown-add-pr-links.sh text eol=lf
 
 # These two are cat scripts, so may not actually require this
 config/auto-aux/sharpbang text eol=lf
