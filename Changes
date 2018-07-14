@@ -286,6 +286,10 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- GPR#292: use Menhir as the parser generator for the OCaml parser.
+  (Gabriel Scherer, Nicolás Ojeda Bär, Frédéric Bour and Thomas Refis,
+   review by Leo White and ???)
+
 - GPR#374: use Misc.try_finally for resource cleanup in the compiler
   codebase. This should fix the problem of catch-and-reraise `try .. with`
   blocks destroying backtrace information.
