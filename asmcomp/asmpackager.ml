@@ -79,7 +79,7 @@ let check_units members =
 
 (* Make the .o file for the package *)
 
-let make_package_object ppf members targetobj targetname coercion
+let make_package_object ~ppf_dump members targetobj targetname coercion
       ~backend =
   Profile.record_call (Printf.sprintf "pack(%s)" targetname) (fun () ->
     let objtemp =
@@ -102,7 +102,7 @@ let make_package_object ppf members targetobj targetname coercion
     if Config.flambda then begin
       let size, lam = Translmod.transl_package_flambda components coercion in
       let flam =
-        Middle_end.middle_end ppf
+        Middle_end.middle_end ~ppf_dump
           ~prefixname
           ~backend
           ~size
@@ -111,13 +111,13 @@ let make_package_object ppf members targetobj targetname coercion
           ~module_initializer:lam
       in
       Asmgen.compile_implementation_flambda
-        prefixname ~backend ~required_globals:Ident.Set.empty ppf flam;
+        prefixname ~backend ~required_globals:Ident.Set.empty ~ppf_dump flam;
     end else begin
       let main_module_block_size, code =
         Translmod.transl_store_package
           components (Ident.create_persistent targetname) coercion in
       Asmgen.compile_implementation_clambda
-        prefixname ppf { Lambda.code; main_module_block_size;
+        prefixname ~ppf_dump { Lambda.code; main_module_block_size;
                          module_ident; required_globals = Ident.Set.empty }
     end;
     let objfiles =
@@ -220,7 +220,7 @@ let build_package_cmx members cmxfile =
 
 (* Make the .cmx and the .o for the package *)
 
-let package_object_files ppf files targetcmx
+let package_object_files ~ppf_dump files targetcmx
                          targetobj targetname coercion ~backend =
   let pack_path =
     match !Clflags.for_package with
@@ -228,12 +228,12 @@ let package_object_files ppf files targetcmx
     | Some p -> p ^ "." ^ targetname in
   let members = map_left_right (read_member_info pack_path) files in
   check_units members;
-  make_package_object ppf members targetobj targetname coercion ~backend;
+  make_package_object ~ppf_dump members targetobj targetname coercion ~backend;
   build_package_cmx members targetcmx
 
 (* The entry point *)
 
-let package_files ppf initial_env files targetcmx ~backend =
+let package_files ~ppf_dump initial_env files targetcmx ~backend =
   let files =
     List.map
       (fun f ->
@@ -251,8 +251,8 @@ let package_files ppf initial_env files targetcmx ~backend =
   Misc.try_finally (fun () ->
       let coercion =
         Typemod.package_units initial_env files targetcmi targetname in
-      package_object_files ppf files targetcmx targetobj targetname coercion
-        ~backend
+      package_object_files ~ppf_dump files targetcmx targetobj targetname
+        coercion ~backend
     )
     ~exceptionally:(fun () -> remove_file targetcmx; remove_file targetobj)
 

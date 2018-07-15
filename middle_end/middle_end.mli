@@ -19,7 +19,7 @@
 (* Translate Lambda code to Flambda code and then optimize it. *)
 
 val middle_end
-   : Format.formatter
+   : ppf_dump:Format.formatter
   -> prefixname:string
   -> backend:(module Backend_intf.S)
   -> size:int

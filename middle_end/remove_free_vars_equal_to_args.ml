@@ -92,8 +92,8 @@ let rewrite_one_set_of_closures (set_of_closures : Flambda.set_of_closures) =
     in
     Some set_of_closures
 
-let run set_of_closures =
-  Pass_wrapper.with_dump ~pass_name ~input:set_of_closures
+let run ~ppf_dump set_of_closures =
+  Pass_wrapper.with_dump ~ppf_dump ~pass_name ~input:set_of_closures
     ~print_input:Flambda.print_set_of_closures
     ~print_output:Flambda.print_set_of_closures
     ~f:(fun () -> rewrite_one_set_of_closures set_of_closures)

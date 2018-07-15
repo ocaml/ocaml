@@ -203,11 +203,12 @@ let scan_file obj_name tolink = match read_file obj_name with
 
 (* Second pass: generate the startup file and link it with everything else *)
 
-let force_linking_of_startup ppf =
-  Asmgen.compile_phrase ppf (Cmm.Cdata ([Cmm.Csymbol_address "caml_startup"]))
+let force_linking_of_startup ~ppf_dump =
+  Asmgen.compile_phrase ~ppf_dump
+    (Cmm.Cdata ([Cmm.Csymbol_address "caml_startup"]))
 
-let make_startup_file ppf units_list =
-  let compile_phrase p = Asmgen.compile_phrase ppf p in
+let make_startup_file ~ppf_dump units_list =
+  let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset "_startup";
   (* set the name of the "current" compunit *)
@@ -242,11 +243,11 @@ let make_startup_file ppf units_list =
     compile_phrase (Cmmgen.spacetime_shapes all_names);
   end;
   if !Clflags.output_complete_object then
-    force_linking_of_startup ppf;
+    force_linking_of_startup ~ppf_dump;
   Emit.end_assembly ()
 
-let make_shared_startup_file ppf units =
-  let compile_phrase p = Asmgen.compile_phrase ppf p in
+let make_shared_startup_file ~ppf_dump units =
+  let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup";
   Compilenv.reset "_shared_startup";
   Emit.begin_assembly ();
@@ -257,7 +258,7 @@ let make_shared_startup_file ppf units =
     (Cmmgen.global_table
        (List.map (fun (ui,_) -> ui.ui_symbol) units));
   if !Clflags.output_complete_object then
-    force_linking_of_startup ppf;
+    force_linking_of_startup ~ppf_dump;
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
   Emit.end_assembly ()
@@ -266,7 +267,7 @@ let call_linker_shared file_list output_name =
   if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")
   then raise(Error Linking_error)
 
-let link_shared ppf objfiles output_name =
+let link_shared ~ppf_dump objfiles output_name =
   Profile.record_call output_name (fun () ->
     let units_tolink = List.fold_right scan_file objfiles [] in
     List.iter
@@ -285,7 +286,7 @@ let link_shared ppf objfiles output_name =
     Asmgen.compile_unit output_name
       startup !Clflags.keep_startup_file startup_obj
       (fun () ->
-         make_shared_startup_file ppf
+         make_shared_startup_file ~ppf_dump
            (List.map (fun (ui,_,crc) -> (ui,crc)) units_tolink)
       );
     call_linker_shared (startup_obj :: objfiles) output_name;
@@ -321,7 +322,7 @@ let call_linker file_list startup_file output_name =
 
 (* Main entry point *)
 
-let link ppf objfiles output_name =
+let link ~ppf_dump objfiles output_name =
   Profile.record_call output_name (fun () ->
     let stdlib =
       if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
@@ -350,7 +351,7 @@ let link ppf objfiles output_name =
     let startup_obj = Filename.temp_file "camlstartup" ext_obj in
     Asmgen.compile_unit output_name
       startup !Clflags.keep_startup_file startup_obj
-      (fun () -> make_startup_file ppf units_tolink);
+      (fun () -> make_startup_file ~ppf_dump units_tolink);
     Misc.try_finally
       (fun () ->
          call_linker (List.map object_file_name objfiles)

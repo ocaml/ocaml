@@ -23,6 +23,7 @@ module Env = struct
   type t = {
     backend : (module Backend_intf.S);
     round : int;
+    ppf_dump : Format.formatter;
     approx : (scope * Simple_value_approx.t) Variable.Map.t;
     approx_mutable : Simple_value_approx.t Mutable_variable.Map.t;
     approx_sym : Simple_value_approx.t Symbol.Map.t;
@@ -45,9 +46,10 @@ module Env = struct
     inlined_debuginfo : Debuginfo.t;
   }
 
-  let create ~never_inline ~backend ~round =
+  let create ~never_inline ~backend ~round ~ppf_dump =
     { backend;
       round;
+      ppf_dump;
       approx = Variable.Map.empty;
       approx_mutable = Mutable_variable.Map.empty;
       approx_sym = Symbol.Map.empty;
@@ -70,6 +72,7 @@ module Env = struct
 
   let backend t = t.backend
   let round t = t.round
+  let ppf_dump t = t.ppf_dump
 
   let local env =
     { env with

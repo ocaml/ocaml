@@ -210,6 +210,8 @@ val all_passes : string list ref
 val dumped_pass : string -> bool
 val set_dumped_pass : string -> bool -> unit
 
+val dump_into_file : bool ref
+
 val parse_color_setting : string -> Misc.Color.setting option
 val color : Misc.Color.setting option ref
 

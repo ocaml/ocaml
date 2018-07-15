@@ -192,6 +192,7 @@ module Options = Main_args.Make_optcomp_options (struct
 
   let _nopervasives = set nopervasives
   let _match_context_rows n = match_context_rows := n
+  let _dump_into_file = set dump_into_file
   let _dno_unique_ids = clear unique_ids
   let _dunique_ids = set unique_ids
   let _dsource = set dump_source
@@ -270,24 +271,29 @@ let main () =
                      [make_package; make_archive; shared;
                       compile_only; output_c_object]) > 1
     then
-      fatal "Please specify at most one of -pack, -a, -shared, -c, -output-obj";
+      fatal "Please specify at most one of -pack, -a, -shared, -c, \
+             -output-obj";
     if !make_archive then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmlibrarian.create_archive (get_objfiles ~with_ocamlparam:false) target;
+      Asmlibrarian.create_archive
+        (get_objfiles ~with_ocamlparam:false) target;
       Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmpackager.package_files ppf (Compmisc.initial_env ())
-        (get_objfiles ~with_ocamlparam:false) target ~backend;
+      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+        Asmpackager.package_files ~ppf_dump (Compmisc.initial_env ())
+          (get_objfiles ~with_ocamlparam:false) target ~backend);
       Warnings.check_fatal ();
     end
     else if !shared then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmlink.link_shared ppf (get_objfiles ~with_ocamlparam:false) target;
+      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+        Asmlink.link_shared ~ppf_dump
+          (get_objfiles ~with_ocamlparam:false) target);
       Warnings.check_fatal ();
     end
     else if not !compile_only && !objfiles <> [] then begin
@@ -307,7 +313,8 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path true;
-      Asmlink.link ppf (get_objfiles ~with_ocamlparam:true) target;
+      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+        Asmlink.link ~ppf_dump (get_objfiles ~with_ocamlparam:true) target);
       Warnings.check_fatal ();
     end;
   with x ->

@@ -614,6 +614,10 @@ let mk_use_prims f =
   "-use-prims", Arg.String f, "<file>  (undocumented)"
 ;;
 
+let mk_dump_into_file f =
+  "-dump-into-file", Arg.Unit f, " dump output like -dlambda into <target>.dump"
+;;
+
 let mk_dparsetree f =
   "-dparsetree", Arg.Unit f, " (undocumented)"
 ;;
@@ -895,6 +899,7 @@ module type Compiler_options = sig
   val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit
+  val _dump_into_file : unit -> unit
 
   val _args: string -> string array
   val _args0: string -> string array
@@ -1131,6 +1136,7 @@ struct
     mk_dcamlprimc F._dcamlprimc;
     mk_dtimings F._dtimings;
     mk_dprofile F._dprofile;
+    mk_dump_into_file F._dump_into_file;
 
     mk_args F._args;
     mk_args0 F._args0;
@@ -1333,6 +1339,7 @@ struct
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
     mk_dprofile F._dprofile;
+    mk_dump_into_file F._dump_into_file;
     mk_dump_pass F._dump_pass;
 
     mk_args F._args;

@@ -111,6 +111,10 @@ Working version
   returns a syntax tree, to replace the print that was there already
   (Valentin Gatien-Baron)
 
+- GPR#1913: new flag -dump-into-file to print debug output like -dlambda into
+  a file named after the file being built, instead of on stderr.
+  (Valentin Gatien-Baron, review by Thomas Refis)
+
 - GPR#1921: in the compilation context passed to ppx extensions,
   add more configuration options related to type-checking:
   -rectypes, -principal, -alias-deps, -unboxed-types, -unsafe-string

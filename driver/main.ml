@@ -108,6 +108,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _verbose = set verbose
   let _nopervasives = set nopervasives
   let _match_context_rows n = match_context_rows := n
+  let _dump_into_file = set dump_into_file
   let _dno_unique_ids = unset unique_ids
   let _dunique_ids = set unique_ids
   let _dsource = set dump_source
@@ -151,8 +152,9 @@ let main () =
     end;
     readenv ppf Before_link;
     if
-      List.length (List.filter (fun x -> !x)
-                      [make_archive;make_package;compile_only;output_c_object])
+      List.length
+        (List.filter (fun x -> !x)
+           [make_archive;make_package;compile_only;output_c_object])
         > 1
     then
       if !print_types then
@@ -162,16 +164,18 @@ let main () =
     if !make_archive then begin
       Compmisc.init_path false;
 
-      Bytelibrarian.create_archive (Compenv.get_objfiles ~with_ocamlparam:false)
-                                   (extract_output !output_name);
+      Bytelibrarian.create_archive
+        (Compenv.get_objfiles ~with_ocamlparam:false)
+        (extract_output !output_name);
       Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compmisc.init_path false;
       let extracted_output = extract_output !output_name in
       let revd = get_objfiles ~with_ocamlparam:false in
-      Bytepackager.package_files (Compmisc.initial_env ())
-        revd (extracted_output);
+      Compmisc.with_ppf_dump ~fileprefix:extracted_output (fun ppf_dump ->
+        Bytepackager.package_files ~ppf_dump (Compmisc.initial_env ())
+          revd (extracted_output));
       Warnings.check_fatal ();
     end
     else if not !compile_only && !objfiles <> [] then begin

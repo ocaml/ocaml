@@ -16,7 +16,8 @@
 (* Translation from closed lambda to C-- *)
 
 val compunit:
-    Clambda.ulambda
+  ppf_dump:Format.formatter
+  -> Clambda.ulambda
     * Clambda.preallocated_block list
     * Clambda.preallocated_constant list
   -> Cmm.phrase list
