@@ -546,6 +546,10 @@ Working version
 - GPR#1903: parsetree, add locations to all nodes with attributes
   (Gabriel Scherer, review by Thomas Refis)
 
+- GPR#1905: add check-typo-since to check the files changed
+  since a given git reference
+  (Gabriel Scherer, review by David Allsopp)
+
 - GPR#1910: improve the check-typo use of .gitattributes
   (Gabriel Scherer, review by David Allsopp and Damien Doligez)
 
