@@ -171,7 +171,7 @@ let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
     try
       if is_ast_file then begin
         Location.input_name := (input_value ic : string);
-        if !Clflags.fast then
+        if !Clflags.unsafe then
           Location.prerr_warning (Location.in_file !Location.input_name)
             Warnings.Unsafe_without_parsing;
         (input_value ic : a)

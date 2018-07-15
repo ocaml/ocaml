@@ -161,7 +161,7 @@ let mkpat_opt_constraint p = function
   | Some typ -> mkpat (Ppat_constraint(p, typ))
 
 let array_function str name =
-  ghloc (Ldot(Lident str, (if !Clflags.fast then "unsafe_" ^ name else name)))
+  ghloc (Ldot(Lident str, (if !Clflags.unsafe then "unsafe_" ^ name else name)))
 
 let syntax_error () =
   raise Syntaxerr.Escape_error
@@ -184,7 +184,7 @@ let bigarray_untuplify = function
   | exp -> [exp]
 
 let bigarray_get arr arg =
-  let get = if !Clflags.fast then "unsafe_get" else "get" in
+  let get = if !Clflags.unsafe then "unsafe_get" else "get" in
   match bigarray_untuplify arg with
     [c1] ->
       mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" get)),
@@ -200,7 +200,7 @@ let bigarray_get arr arg =
                        [Nolabel, arr; Nolabel, ghexp(Pexp_array coords)]))
 
 let bigarray_set arr arg newval =
-  let set = if !Clflags.fast then "unsafe_set" else "set" in
+  let set = if !Clflags.unsafe then "unsafe_set" else "set" in
   match bigarray_untuplify arg with
     [c1] ->
       mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" set)),

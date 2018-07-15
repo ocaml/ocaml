@@ -89,7 +89,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _vmthread = set use_vmthreads
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = unset unboxed_types
-  let _unsafe = set fast
+  let _unsafe = set unsafe
   let _unsafe_string = set unsafe_string
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s
