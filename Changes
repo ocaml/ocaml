@@ -93,6 +93,10 @@ Working version
   `__FILE__` or `__LOC__`
   (Xavier Clerc, review by Gabriel Scherer and Sébastien Hinderer)
 
+- GPR#1906: created warning 64 when using -unsafe and a -pp argument that
+  returns a syntax tree, to replace the print that was there already
+  (Valentin Gatien-Baron)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.

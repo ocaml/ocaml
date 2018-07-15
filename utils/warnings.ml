@@ -89,7 +89,8 @@ type t =
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
   | Constraint_on_gadt                      (* 62 *)
-  | Erroneous_printed_signature of string  (* 63 *)
+  | Erroneous_printed_signature of string   (* 63 *)
+  | Unsafe_without_parsing                  (* 64 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -162,9 +163,10 @@ let number = function
   | Unboxable_type_in_prim_decl _ -> 61
   | Constraint_on_gadt -> 62
   | Erroneous_printed_signature _ -> 63
+  | Unsafe_without_parsing -> 64
 ;;
 
-let last_warning_number = 63
+let last_warning_number = 64
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -532,7 +534,8 @@ let message = function
      ^ s
      ^ "\nBeware that this warning is purely informational and will not catch\n\
         all instances of erroneous printed interface."
-
+  | Unsafe_without_parsing ->
+     "option -unsafe used with a preprocessor returning a syntax tree"
 ;;
 
 let sub_locs = function
@@ -649,7 +652,8 @@ let descriptions =
    60, "Unused module declaration";
    61, "Unboxable type in primitive declaration";
    62, "Type constraint on GADT type declaration";
-   63,  "Erroneous printed signature"
+   63, "Erroneous printed signature";
+   64, "-unsafe used with a preprocessor returning a syntax tree";
   ]
 ;;
 

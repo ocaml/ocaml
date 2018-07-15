@@ -945,6 +945,9 @@ mutually recursive types.
 63
 \ \ Erroneous printed signature
 
+64
+\ \ -unsafe used with a preprocessor returning a syntax tree
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 

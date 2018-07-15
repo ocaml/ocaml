@@ -32,7 +32,7 @@ let interface ppf sourcefile outputprefix =
     let modulename = module_of_filename ppf sourcefile outputprefix in
     Env.set_unit_name modulename;
     let initial_env = Compmisc.initial_env () in
-    let ast = Pparse.parse_interface ~tool_name ppf sourcefile in
+    let ast = Pparse.parse_interface ~tool_name sourcefile in
 
     if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
     if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
@@ -76,7 +76,7 @@ let implementation ppf sourcefile outputprefix =
     let env = Compmisc.initial_env() in
     try
       let (typedtree, coercion) =
-        Pparse.parse_implementation ~tool_name ppf sourcefile
+        Pparse.parse_implementation ~tool_name sourcefile
         ++ print_if ppf Clflags.dump_parsetree Printast.implementation
         ++ print_if ppf Clflags.dump_source Pprintast.structure
         ++ Profile.(record typing)

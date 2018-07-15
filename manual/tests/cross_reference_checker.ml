@@ -130,8 +130,8 @@ end
 (** {1 Extract references from Ocaml source files} *)
 module OCaml_refs = struct
 
-  let parse ppf sourcefile  =
-    Pparse.parse_implementation ppf ~tool_name:"manual_cross_reference_check"
+  let parse sourcefile  =
+    Pparse.parse_implementation ~tool_name:"manual_cross_reference_check"
       sourcefile
 
   (** search for an attribute [[@manual.ref "tex_label_name"]] *)
@@ -213,7 +213,7 @@ module OCaml_refs = struct
     iterator.structure iterator ast
 
   let from_file m f =
-    from_ast m @@ parse Format.std_formatter f
+    from_ast m @@ parse f
 end
 
 

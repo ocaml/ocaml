@@ -174,7 +174,7 @@ module Ast = struct
       let id =
         orig |> Filename.chop_extension |> Filename.basename |>
         String.capitalize_ascii |> Ident.create in
-      let ast = Pparse.file ~tool_name:"lintapidiff" Format.err_formatter input
+      let ast = Pparse.file ~tool_name:"lintapidiff" input
           Parse.interface Pparse.Signature in
       Location.input_name := orig;
       add_items ~f (Path.Pident id) (init,IdMap.empty) ast
