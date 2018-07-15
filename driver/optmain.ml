@@ -247,7 +247,7 @@ let main () =
        "<options> Compute dependencies \
         (use 'ocamlopt -depend -help' for details)"];
     Clflags.parse_arguments anonymous usage;
-    Compmisc.read_color_env ppf;
+    Compmisc.read_color_env ();
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";
     begin try

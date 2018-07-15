@@ -45,11 +45,11 @@ let middle_end ppf ~prefixname ~backend
       end)
     in
     let warning_set = ref WarningSet.empty in
-    let flambda_warning_printer loc _fmt w =
+    let flambda_warning_printer loc ppf w =
       let elt = loc, w in
       if not (WarningSet.mem elt !warning_set) then begin
         warning_set := WarningSet.add elt !warning_set;
-        previous_warning_printer loc !Location.formatter_for_warnings w
+        previous_warning_printer loc ppf w
       end;
     in
     Misc.protect_refs

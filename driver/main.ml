@@ -134,7 +134,7 @@ let main () =
   try
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
-    Compmisc.read_color_env ppf;
+    Compmisc.read_color_env ();
     begin try
       Compenv.process_deferred_actions
         (ppf,
@@ -162,8 +162,7 @@ let main () =
     if !make_archive then begin
       Compmisc.init_path false;
 
-      Bytelibrarian.create_archive ppf
-                                   (Compenv.get_objfiles ~with_ocamlparam:false)
+      Bytelibrarian.create_archive (Compenv.get_objfiles ~with_ocamlparam:false)
                                    (extract_output !output_name);
       Warnings.check_fatal ();
     end
@@ -171,7 +170,7 @@ let main () =
       Compmisc.init_path false;
       let extracted_output = extract_output !output_name in
       let revd = get_objfiles ~with_ocamlparam:false in
-      Bytepackager.package_files ppf (Compmisc.initial_env ())
+      Bytepackager.package_files (Compmisc.initial_env ())
         revd (extracted_output);
       Warnings.check_fatal ();
     end
@@ -193,7 +192,7 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path false;
-      Bytelink.link ppf (get_objfiles ~with_ocamlparam:true) target;
+      Bytelink.link (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
   with x ->
