@@ -102,7 +102,7 @@ get_attrs() {
 case "$1" in
   --check-prune)
     case $2,"$(get_attrs "$2" | grep -xF prune)" in
-      *,prune|.git,*)
+      *,prune|.git,*|.git/*,*)
           echo "INFO: pruned directory $2 (typo.prune)" >&2
           exit 0;;
       *,*) exit 3;;
