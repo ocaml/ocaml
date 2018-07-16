@@ -3,6 +3,7 @@ disambiguate_principality.ml
 inside_out.ml
 labels.ml
 occur_check.ml
+pat_type_sharing.ml
 polyvars.ml
 pr6416.ml
 pr6634.ml
