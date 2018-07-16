@@ -56,6 +56,7 @@ and pattern_desc =
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * row_desc option
   | Tpat_lazy of pattern
+  | Tpat_exception of pattern
 
 and expression =
   { exp_desc: expression_desc;
@@ -80,7 +81,7 @@ and expression_desc =
   | Texp_function of { arg_label : arg_label; param : Ident.t;
       cases : case list; partial : partial; }
   | Texp_apply of expression * (arg_label * expression option) list
-  | Texp_match of expression * case list * case list * partial
+  | Texp_match of expression * case list * partial
   | Texp_try of expression * case list
   | Texp_tuple of expression list
   | Texp_construct of
@@ -546,6 +547,7 @@ let iter_pattern_desc f = function
   | Tpat_array patl -> List.iter f patl
   | Tpat_or(p1, p2, _) -> f p1; f p2
   | Tpat_lazy p -> f p
+  | Tpat_exception p -> f p
   | Tpat_any
   | Tpat_var _
   | Tpat_constant _ -> ()
@@ -563,6 +565,7 @@ let map_pattern_desc f d =
   | Tpat_array pats ->
       Tpat_array (List.map f pats)
   | Tpat_lazy p1 -> Tpat_lazy (f p1)
+  | Tpat_exception p1 -> Tpat_exception (f p1)
   | Tpat_variant (x1, Some p1, x2) ->
       Tpat_variant (x1, Some (f p1), x2)
   | Tpat_or (p1,p2,path) ->
@@ -626,3 +629,31 @@ let rec alpha_pat env p = match p.pat_desc with
 
 let mkloc = Location.mkloc
 let mknoloc = Location.mknoloc
+
+let split_pattern pat =
+  let combine_pattern_desc_opts ~into p1 p2 =
+    match p1, p2 with
+    | None, None -> None
+    | Some p, None
+    | None, Some p ->
+        Some p
+    | Some p1, Some p2 ->
+        (* The third parameter of [Tpat_or] is [Some _] only for "#typ"
+           patterns, which we do *not* expand. Hence we can put [None] here. *)
+        Some { into with pat_desc = Tpat_or (p1, p2, None) }
+  in
+  let rec split_pattern pat =
+    match pat.pat_desc with
+    | Tpat_or (p1, p2, None) ->
+        let vals1, exns1 = split_pattern p1 in
+        let vals2, exns2 = split_pattern p2 in
+        combine_pattern_desc_opts ~into:pat vals1 vals2,
+        (* We could change the pattern type for exception patterns to
+           [Predef.exn], but it doesn't really matter. *)
+        combine_pattern_desc_opts ~into:pat exns1 exns2
+    | Tpat_exception p ->
+        None, Some p
+    | _ ->
+        Some pat, None
+  in
+  split_pattern pat

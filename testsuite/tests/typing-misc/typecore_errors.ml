@@ -57,7 +57,7 @@ let f = function Some(exception Not_found) -> 0
 Line _, characters 21-42:
   let f = function Some(exception Not_found) -> 0
                        ^^^^^^^^^^^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+Error: Exception patterns are not allowed in this position.
 |}]
 
 (** Extension *)

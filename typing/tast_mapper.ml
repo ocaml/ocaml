@@ -215,6 +215,7 @@ let pat sub x =
         Tpat_or (sub.pat sub p1, sub.pat sub p2, rd)
     | Tpat_alias (p, id, s) -> Tpat_alias (sub.pat sub p, id, s)
     | Tpat_lazy p -> Tpat_lazy (sub.pat sub p)
+    | Tpat_exception p -> Tpat_exception (sub.pat sub p)
   in
   {x with pat_extra; pat_desc; pat_env}
 
@@ -246,11 +247,10 @@ let expr sub x =
           sub.expr sub exp,
           List.map (tuple2 id (opt (sub.expr sub))) list
         )
-    | Texp_match (exp, cases, exn_cases, p) ->
+    | Texp_match (exp, cases, p) ->
         Texp_match (
           sub.expr sub exp,
           sub.cases sub cases,
-          sub.cases sub exn_cases,
           p
         )
     | Texp_try (exp, cases) ->

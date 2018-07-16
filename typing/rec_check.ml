@@ -372,12 +372,9 @@ let rec expression : Env.env -> Typedtree.expression -> Use.t =
     | Texp_letmodule (x, _, m, e) ->
       let ty = modexp env m in
       Use.join (Use.discard ty) (expression (Ident.add x ty env) e)
-    | Texp_match (e, val_cases, exn_cases, _) ->
+    | Texp_match (e, cases, _) ->
       let t = expression env e in
-      let exn_case env {Typedtree.c_rhs} = expression env c_rhs in
-      let cs = list (case ~scrutinee:t) env val_cases
-      and es = list exn_case env exn_cases in
-      Use.(join cs es)
+      list (case ~scrutinee:t) env cases
     | Texp_for (_, _, e1, e2, _, e3) ->
       Use.(join
               (join
@@ -697,6 +694,7 @@ and is_destructuring_pattern : Typedtree.pattern -> bool =
     | Tpat_or (l,r,_) ->
         is_destructuring_pattern l || is_destructuring_pattern r
     | Tpat_lazy _ -> true
+    | Tpat_exception _ -> false
 
 let is_valid_recursive_expression idlist expr =
   let ty = expression (build_unguarded_env idlist) expr in

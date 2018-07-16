@@ -2,6 +2,7 @@ backtrace.ml
 backtrace2.ml
 backtrace3.ml
 backtrace_deprecated.ml
+backtrace_or_exception.ml
 backtrace_slots.ml
 backtraces_and_finalizers.ml
 callstack.ml

@@ -1,5 +1,6 @@
 allocation.ml
 exception_propagation.ml
+identifier_sharing.ml
 match_failure.ml
 nested_handlers.ml
 raise_from_success_continuation.ml
