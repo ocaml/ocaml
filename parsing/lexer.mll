@@ -103,11 +103,7 @@ let () =
      same stdlib
   *)
   let version = 
-(* #if undefined BS_MIN_LEX_DEPS then  *)
     Config.version (* so that it can be overridden*)
-(* #else  *)
-(*     Sys.ocaml_version *)
-(* #end *)
   in
   replace_directive_built_in_value "OCAML_VERSION" 
     (Dir_string version);
@@ -306,10 +302,8 @@ let directive_parse token_with_comments lexbuf =
     | None ->
        let rec skip () = 
         match token_with_comments lexbuf  with
-        | COMMENT _ -> skip ()
-(* #if undefined BS_MIN_LEX_DEPS then *)
-        | DOCSTRING _ -> skip ()
-(* #end *)
+        | COMMENT _ 
+        | DOCSTRING _ 
         | EOL -> skip ()
         | EOF -> raise (Error (Unterminated_if, Location.curr lexbuf)) 
         | t -> t 
@@ -671,14 +665,10 @@ let add_comment com =
   comment_list := com :: !comment_list
 
 let add_docstring_comment ds =
-(* #if undefined BS_MIN_LEX_DEPS then    *)
   let com =
     ("*" ^ Docstrings.docstring_body ds, Docstrings.docstring_loc ds)
   in
     add_comment com
-(* #else *)
-(*     () *)
-(* #end *)    
 
 let comments () = List.rev !comment_list
 
