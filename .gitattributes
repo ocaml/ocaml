@@ -54,6 +54,20 @@ README*                  typo.missing-header
 /tools/ci/inria/remove-sinh-primitive.patch typo.white-at-eol typo.missing-header typo.long-line
 /tools/release-checklist                    typo.missing-header
 
+# ignore auto-generated .depend files
+**/.depend*              typo.prune
+
+# Makefiles may contain tabs
+Makefile*                typo.tab=may
+
+# no headers for ocamlbuild files
+*.mlpack                 typo.missing-header=may
+*.mllib                  typo.missing-header=may
+*.mltop                  typo.missing-header=may
+*.odocl                  typo.missing-header=may
+*.itarget                typo.missing-header=may
+*.clib                   typo.missing-header=may
+
 asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
 asmcomp/power/NOTES.md   typo.missing-header
 
@@ -66,6 +80,7 @@ emacs/ocamltags.in       typo.non-printing
 
 /manual                  typo.prune
 
+**/ocamldoc/**           typo.long-line=may
 ocamldoc/Changes.txt     typo.missing-header
 ocamldoc/ocamldoc.sty    typo.missing-header
 ocamldoc/odoc_index.html typo.missing-header
@@ -74,7 +89,7 @@ otherlibs/win32unix/readlink.c    typo.long-line
 otherlibs/win32unix/stat.c        typo.long-line
 otherlibs/win32unix/symlink.c     typo.long-line
 
-runtime/i386.S            typo.long-line
+runtime/i386.S      typo.long-line
 
 stdlib/hashbang     typo.white-at-eol typo.missing-lf
 
@@ -89,6 +104,11 @@ testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/typing                                        typo.missing-header
 
+# prune testsuite reference files
+testsuite/tests/**/*.reference               typo.prune
+testsuite/tests/**/*.opt_reference           typo.prune
+testsuite/tests/**/reference                 typo.prune
+
 # Expect tests with overly long lines of expected output
 testsuite/tests/parsing/docstrings.ml        typo.long-line typo.very-long-line
 testsuite/tests/typing-objects/Exemples.ml   typo.long-line
@@ -99,7 +119,7 @@ testsuite/tests/typing-modules/pr7726.ml     typo.long-line
 
 tools/magic         typo.missing-header
 
-yacc/*.[ch]   typo.long-line typo.very-long-line=may
+yacc/*.[ch]         typo.long-line typo.very-long-line=may
 
 menhir-bench.bash typo.missing-header typo.utf8
 

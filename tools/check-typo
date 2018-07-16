@@ -35,27 +35,9 @@
 # which lists the rules that should be disabled for this file.
 # The rule names are the ones shown above in parentheses.
 
-# Built-in exceptions:
+# Built-in exception:
 # - Any file git identifies as binary
 #   is automatically exempt from all the rules.
-# - Any file whose name matches one of the following patterns is
-#   automatically exempt from all rules
-#     *.reference
-#     *.opt_reference
-#     */reference
-#     */.depend*
-# - Any file whose name begins with "Makefile" is automatically exempt
-#   from the "tabs" rule.
-# - Any file whose name matches one of the following patterns is
-#   automatically exempt from the "missing-header" rule.
-#     *.mlpack
-#     *.mllib
-#     *.mltop
-#     *.odocl
-#     *.clib
-# - Any file whose name matches the following pattern is automatically
-#   exempt from the "long-line" rule (but not from "very-long-line").
-#   */ocamldoc/*
 
 # ASCII characters are bytes from 0 to 127.  Any other byte is
 # flagged as a non-ASCII character.
@@ -188,15 +170,6 @@ EXIT_CODE=0
       attr_rules=$(get_attrs "$f")
     fi
     rules="$userrules"
-    add_hd(){ rules="missing-header $rules"; }
-    case "$f" in
-      Makefile*|*/Makefile*) rules="tab $rules";;
-      *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) add_hd;;
-      *.reference|*.opt_reference|*/reference|*/.depend*) continue;;
-    esac
-    case "$f" in
-      ocamldoc/*|*/ocamldoc/*) rules="long-line $rules";;
-    esac
 
     # remove newlines, ensure spaces at boundary
     rules=" $(echo $rules) "
