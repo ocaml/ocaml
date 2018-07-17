@@ -5,7 +5,7 @@ OCaml 4.07 maintenance branch
   permutation of one cell to the right on the sequence.
   (Thierry Martinez, review by Nicolás Ojeda Bär)
 
-- MPR#7821, GPR#....: make sure that the compilation of extension
+- MPR#7821, GPR#1908: make sure that the compilation of extension
   constructors doesn't cause the compiler to load more cmi files
   (Jérémie Dimino)
 
