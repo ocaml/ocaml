@@ -147,6 +147,11 @@ IGNORE_DIRS="
   -name .git -prune -o
   -type d -exec $0 --check-prune {} ; -prune -o
 "
+# `-type d`: simple files (not directories) are not pruned during the
+# "find" invocation but below (look for " prune ") for performance
+# reasons: most files outside pruned directories are not pruned, so it
+# is faster to optimistically run check-typo on them (and maybe get
+# out in the middle) than to first check then run.
 
 EXIT_CODE=0
 ( case $# in
@@ -197,6 +202,10 @@ EXIT_CODE=0
     rules=" $(echo $rules) "
     attr_rules=" $(echo $attr_rules) "
 
+    if test -n "$(echo "$rules $attr_rules" | grep " prune ")"
+    then
+        continue
+    fi
     if test -n "$(echo "$rules $attr_rules" | grep " utf8 ")"
     then
         # grep -a is used to force the file to be considered as text and -x
