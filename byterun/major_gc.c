@@ -41,8 +41,14 @@
 */
 #define MARK_STACK_SIZE (1 << 14)
 
+typedef struct {
+  value block;
+  uintnat offset;
+  uintnat end;
+} mark_entry;
+
 struct mark_stack {
-  value* stack;
+  mark_entry* stack;
   uintnat count;
 };
 
@@ -315,7 +321,7 @@ static void handle_steal_req (struct domain* targetd, void* plv,
     }
     new_size = target->mark_stack->count - steal_size;
     memcpy(pl->thief->mark_stack->stack, &target->mark_stack->stack[new_size],
-           steal_size * sizeof(value));
+           steal_size * sizeof(mark_entry));
     target->mark_stack->count = new_size;
 
     /* Mark stack size and domain local marking_done flag are updated in
@@ -374,21 +380,9 @@ static int steal_mark_work () {
   return -1;
 }
 
-static void mark_stack_prune();
+static void mark_stack_prune(struct mark_stack* stk);
 static struct pool* find_pool_to_rescan();
 
-static void mark_stack_push(value v) {
-  CAMLassert(Is_block(v));
-  struct mark_stack* stk = Caml_state->mark_stack;
-  if (stk->count >= MARK_STACK_SIZE)
-    mark_stack_prune();
-  stk->stack[stk->count++] = v;
-}
-
-/* to fit scanning_action */
-static void mark_stack_push_act(void* state, value v, value* ignored) {
-  mark_stack_push(v);
-}
 
 #ifdef DEBUG
 #define Is_markable(v) (Is_block(v) && !Is_minor(v) && v != Debug_free_major)
@@ -396,62 +390,88 @@ static void mark_stack_push_act(void* state, value v, value* ignored) {
 #define Is_markable(v) (Is_block(v) && !Is_minor(v))
 #endif
 
-/* mark until the budget runs out or the mark stack empties */
+static void mark_stack_push(struct mark_stack* stk, mark_entry e)
+{
+  value v;
+  CAMLassert(Is_block(e.block) && !Is_young(e.block));
+  CAMLassert(Tag_val(e.block) != Infix_tag);
+  if (Tag_val(e.block) >= No_scan_tag)
+    /* nothing to do */
+    return;
+  else if (Tag_val(e.block) != Stack_tag) {
+    while (1) {
+      if (e.offset == e.end)
+        /* nothing left to mark */
+        return;
+      v = Op_val(e.block)[e.offset];
+      if (Is_markable(v))
+        /* found something to mark */
+        break;
+      else
+        /* keep going */
+        e.offset++;
+    }
+  }
+  if (stk->count >= MARK_STACK_SIZE)
+    mark_stack_prune(stk);
+  stk->stack[stk->count++] = e;
+}
+
+/* to fit scanning_action */
+static void mark_stack_push_act(void* state, value v, value* ignored) {
+  mark_entry e = { v, 0, Wosize_val(v) };
+  mark_stack_push(Caml_state->mark_stack, e);
+}
+
 static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
-  status UNMARKED = global.UNMARKED;
-  status MARKED = global.MARKED;
-  value* stack = stk->stack;
-  uintnat stack_count = stk->count;
-  uintnat blocks_marked = 0;
-
-  while (budget > 0 && stack_count > 0) {
-    value v = stack[--stack_count];
-    header_t hd_v;
-
-    CAMLassert(Is_markable(v));
-    CAMLassert(Tag_val(v) != Infix_tag);
-
-    blocks_marked++;
-    /* mark the current object */
-    hd_v = Hd_val(v);
-    if (Tag_hd (hd_v) == Stack_tag) {
-      stk->count = stack_count;
-      caml_darken_stack(v);
-      stack = stk->stack;
-      stack_count = stk->count;
-    } else if (Tag_hd (hd_v) < No_scan_tag) {
-      int i;
-      for (i = 0; i < Wosize_hd(hd_v); i++) {
-        value child = Op_val(v)[i];
-        /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
-           However, it's a useful debugging aid for now */
-        CAMLassert(!Is_debug_tag(child) || child == Debug_uninit_major || child == Debug_uninit_minor);
-        if (Is_markable(child)) {
-          header_t hd = Hd_val(child);
-          if (Tag_hd(hd) == Infix_tag) {
-            child -= Infix_offset_hd(hd);
-            hd = Hd_val(child);
-          }
-          /* FIXME: short-circuit Forward_tag here? */
-          CAMLassert (!Has_status_hd(hd, global.GARBAGE));
-          if (Has_status_hd(hd, UNMARKED)) {
-            Hd_val(child) = With_status_hd(hd, MARKED);
-            if (stack_count >= MARK_STACK_SIZE) {
-              stk->count = stack_count;
-              mark_stack_prune();
-              stack = stk->stack;
-              stack_count = stk->count;
-            }
-            stack[stack_count++] = child;
-          }
+  // FIXME: stat_blocks_marked
+  mark_entry e = {0};
+  while (budget > 0) {
+    value v;
+    if (e.block && Tag_val(e.block) == Stack_tag) {
+      caml_darken_stack(e.block);
+      e.offset = e.end;
+    }
+    if (e.offset == e.end) {
+      while (1) {
+        if (stk->count == 0)
+          return budget;
+        e = stk->stack[--stk->count];
+        if (Tag_val(e.block) == Stack_tag) {
+          CAMLassert(e.offset == 0);
+          caml_darken_stack(e.block);
+        } else {
+          break;
         }
       }
     }
-    budget -= Whsize_hd(hd_v);
+    CAMLassert(Is_markable(e.block) &&
+               Has_status_hd(Hd_val(e.block), global.MARKED) &&
+               Tag_val(e.block) < No_scan_tag &&
+               Tag_val(e.block) != Stack_tag);
+    v = Op_val(e.block)[e.offset++];
+    budget--;
+    if (Is_markable(v)) {
+      header_t hd = Hd_val(v);
+      if (Tag_hd(hd) == Infix_tag) {
+        v -= Infix_offset_hd(hd);
+        hd = Hd_val(v);
+      }
+      CAMLassert (!Has_status_hd(hd, global.GARBAGE));
+      if (Has_status_hd(hd, global.UNMARKED)) {
+        Hd_val(v) = With_status_hd(hd, global.MARKED);
+        if (Tag_val(v) < No_scan_tag) {
+          mark_entry child = {v, 0, Wosize_hd(hd)};
+          mark_stack_push(stk, e);
+          e = child;
+        }
+      }
+    }
   }
-  Caml_state->stat_blocks_marked += blocks_marked;
-  stk->count = stack_count;
-  return budget;
+  if (e.block) {
+    mark_stack_push(stk, e);
+  }
+  return 0;
 }
 
 /* mark until the budget runs out or marking is done */
@@ -487,7 +507,7 @@ void caml_darken(void* state, value v, value* ignored) {
       Caml_state->marking_done = 0;
     }
     Hd_val(v) = With_status_hd(hd, global.MARKED);
-    mark_stack_push(v);
+    mark_stack_push_act(0, v, 0);
   }
 }
 
@@ -1023,14 +1043,13 @@ static int pool_count_cmp(const void* a, const void* b)
   return p->occurs - q->occurs;
 }
 
-static void mark_stack_prune ()
+static void mark_stack_prune (struct mark_stack* stk)
 {
   struct addrmap t = ADDRMAP_INIT;
   int count = 0, entry;
-  caml_domain_state* domain_state = Caml_state;
   addrmap_iterator i;
-  uintnat mark_stack_count = domain_state->mark_stack->count;
-  value* mark_stack = domain_state->mark_stack->stack;
+  uintnat mark_stack_count = stk->count;
+  mark_entry* mark_stack = stk->stack;
 
   /* space used by the computations below */
   uintnat table_max = mark_stack_count / 100;
@@ -1051,7 +1070,7 @@ static void mark_stack_prune ()
      repeated elements", 1982). */
 
   for (entry = 0; entry < mark_stack_count; entry++) {
-    struct pool* pool = caml_pool_of_shared_block(mark_stack[entry]);
+    struct pool* pool = caml_pool_of_shared_block(mark_stack[entry].block);
     if (!pool) continue;
     value p = (value)pool;
     if (caml_addrmap_contains(&t, p)) {
@@ -1091,7 +1110,7 @@ static void mark_stack_prune ()
     *caml_addrmap_iter_val_pos(&t, i) = 0;
   }
   for (entry = 0; entry < mark_stack_count; entry++) {
-    value p = (value)caml_pool_of_shared_block(mark_stack[entry]);
+    value p = (value)caml_pool_of_shared_block(mark_stack[entry].block);
     if (p && caml_addrmap_contains(&t, p))
       (*caml_addrmap_insert_pos(&t, p))++;
   }
@@ -1125,17 +1144,17 @@ static void mark_stack_prune ()
   }
   int out = 0;
   for (entry = 0; entry < mark_stack_count; entry++) {
-    value v = mark_stack[entry];
-    value p = (value)caml_pool_of_shared_block(v);
+    mark_entry e = mark_stack[entry];
+    value p = (value)caml_pool_of_shared_block(e.block);
     if (!(p && caml_addrmap_contains(&t, p))) {
-      mark_stack[out++] = v;
+      mark_stack[out++] = e;
     }
   }
-  domain_state->mark_stack->count = out;
+  stk->count = out;
 
   caml_gc_log("Mark stack overflow. Postponing %d pools (%.1f%%, leaving %d).",
               count-start, 100. * (double)total / (double)mark_stack_count,
-              (int)domain_state->mark_stack->count);
+              (int)stk->count);
 
 
   /* Add the pools to rescan to the global list.
@@ -1159,7 +1178,7 @@ static void mark_stack_prune ()
 
 void caml_init_major_gc(caml_domain_state* d) {
   Caml_state->mark_stack = caml_stat_alloc(sizeof(struct mark_stack));
-  Caml_state->mark_stack->stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
+  Caml_state->mark_stack->stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(mark_entry));
   Caml_state->mark_stack->count = 0;
   /* Fresh domains do not need to performing marking or sweeping. */
   d->sweeping_done = 1;
