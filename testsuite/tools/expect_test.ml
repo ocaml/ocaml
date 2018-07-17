@@ -363,6 +363,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let clear r () = r := false
   open Clflags
   let _absname = set absname
+  let _alert = Warnings.parse_alert_option
   let _I dir = include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
   let _noinit = set noinit
