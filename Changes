@@ -18,10 +18,6 @@ Working version
   abstracting when removing references to an identifier.
   (Thomas Refis and Leo White, review by Jacques Garrigue)
 
-- MPR#7821, GPR#1908: make sure that the compilation of extension
-  constructors doesn't cause the compiler to load more cmi files
-  (Jérémie Dimino)
-
 ### Standard library:
 
 - MPR#6701, GPR#1185, GPR#1803: make float_of_string and string_of_float
@@ -237,6 +233,10 @@ OCaml 4.07 maintenance branch
 - MPR#7820, GPR#1897: Fix Array.of_seq. This function used to apply a circular
   permutation of one cell to the right on the sequence.
   (Thierry Martinez, review by Nicolás Ojeda Bär)
+
+- MPR#7821, GPR#1908: make sure that the compilation of extension
+  constructors doesn't cause the compiler to load more cmi files
+  (Jérémie Dimino, review by Gabriel Scherer)
 
 OCaml 4.07.0 (10 July 2018)
 ---------------------------
