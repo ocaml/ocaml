@@ -57,11 +57,11 @@ let initial_env () =
     ~initially_opened_module
     ~open_implicit_modules:(List.rev !Clflags.open_modules)
 
-let read_color_env ppf =
+let read_color_env () =
   try
     match Clflags.parse_color_setting (Sys.getenv "OCAML_COLOR") with
     | None ->
-        Location.print_warning Location.none ppf
+        Location.prerr_warning Location.none
           (Warnings.Bad_env_variable
              ("OCAML_COLOR",
               "expected \"auto\", \"always\" or \"never\""));

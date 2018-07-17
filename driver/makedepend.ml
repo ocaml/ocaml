@@ -281,10 +281,7 @@ let read_parse_and_extract parse_function extract_function def ast_kind
   try
     let input_file = Pparse.preprocess source_file in
     begin try
-      let ast =
-        Pparse.file ~tool_name Format.err_formatter
-                    input_file parse_function ast_kind
-      in
+      let ast = Pparse.file ~tool_name input_file parse_function ast_kind in
       let bound_vars =
         List.fold_left
           (fun bv modname ->

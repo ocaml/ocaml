@@ -315,7 +315,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim ((Pdivint Safe | Pmodint Safe
            | Pdivbint { is_safe = Safe } | Pmodbint { is_safe = Safe }) as prim,
            [arg1; arg2], loc)
-      when not !Clflags.fast -> (* not -unsafe *)
+      when not !Clflags.unsafe ->
     let arg2 = close t env arg2 in
     let arg1 = close t env arg1 in
     let numerator = Variable.create Names.numerator in
@@ -374,7 +374,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
                     (Prim (prim, [numerator; denominator], dbg))))))))
   | Lprim ((Pdivint Safe | Pmodint Safe
            | Pdivbint { is_safe = Safe } | Pmodbint { is_safe = Safe }), _, _)
-      when not !Clflags.fast ->
+      when not !Clflags.unsafe ->
     Misc.fatal_error "Pdivint / Pmodint must have exactly two arguments"
   | Lprim (Psequor, [arg1; arg2], _) ->
     let arg1 = close t env arg1 in

@@ -27,8 +27,7 @@ type error = Assembler_error of string
 
 exception Error of error
 
-let liveness ppf phrase =
-  Liveness.fundecl ppf phrase; phrase
+let liveness phrase = Liveness.fundecl phrase; phrase
 
 let dump_if ppf flag message phrase =
   if !flag then Printmach.phase message ppf phrase
@@ -96,7 +95,7 @@ let rec regalloc ppf round fd =
   let (newfd, redo_regalloc) = Reload.fundecl fd in
   dump_if ppf dump_reload "After insertion of reloading code" newfd;
   if redo_regalloc then begin
-    Reg.reinit(); Liveness.fundecl ppf newfd; regalloc ppf (round + 1) newfd
+    Reg.reinit(); Liveness.fundecl newfd; regalloc ppf (round + 1) newfd
   end else newfd
 
 let (++) x f = f x
@@ -111,15 +110,15 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ pass_dump_if ppf dump_combine "After allocation combining"
   ++ Profile.record ~accumulate:true "cse" CSE.fundecl
   ++ pass_dump_if ppf dump_cse "After CSE"
-  ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
+  ++ Profile.record ~accumulate:true "liveness" liveness
   ++ Profile.record ~accumulate:true "deadcode" Deadcode.fundecl
   ++ pass_dump_if ppf dump_live "Liveness analysis"
   ++ Profile.record ~accumulate:true "spill" Spill.fundecl
-  ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
+  ++ Profile.record ~accumulate:true "liveness" liveness
   ++ pass_dump_if ppf dump_spill "After spilling"
   ++ Profile.record ~accumulate:true "split" Split.fundecl
   ++ pass_dump_if ppf dump_split "After live range splitting"
-  ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
+  ++ Profile.record ~accumulate:true "liveness" liveness
   ++ Profile.record ~accumulate:true "regalloc" (regalloc ppf 1)
   ++ Profile.record ~accumulate:true "available_regs" Available_regs.fundecl
   ++ Profile.record ~accumulate:true "linearize" Linearize.fundecl

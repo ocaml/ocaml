@@ -174,7 +174,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _unbox_closures_factor f = unbox_closures_factor := f
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = clear unboxed_types
-  let _unsafe = set fast
+  let _unsafe = set unsafe
   let _unsafe_string = set unsafe_string
   let _v () = print_version_and_library "native-code compiler"
   let _version () = print_version_string ()
@@ -247,7 +247,7 @@ let main () =
        "<options> Compute dependencies \
         (use 'ocamlopt -depend -help' for details)"];
     Clflags.parse_arguments anonymous usage;
-    Compmisc.read_color_env ppf;
+    Compmisc.read_color_env ();
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";
     begin try

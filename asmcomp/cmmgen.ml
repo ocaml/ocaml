@@ -444,7 +444,7 @@ let rec div_int c1 c2 is_safe dbg =
           let t = if p > 0 then Cop(Casr, [t; Cconst_int p], dbg) else t in
           add_int t (lsr_int c1 (Cconst_int (Nativeint.size - 1)) dbg) dbg)
       end
-  | (c1, c2) when !Clflags.fast || is_safe = Lambda.Unsafe ->
+  | (c1, c2) when !Clflags.unsafe || is_safe = Lambda.Unsafe ->
       Cop(Cdivi, [c1; c2], dbg)
   | (c1, c2) ->
       bind "divisor" c2 (fun c2 ->
@@ -480,7 +480,7 @@ let mod_int c1 c2 is_safe dbg =
       else
         bind "dividend" c1 (fun c1 ->
           sub_int c1 (mul_int (div_int c1 c2 is_safe dbg) c2 dbg) dbg)
-  | (c1, c2) when !Clflags.fast || is_safe = Lambda.Unsafe ->
+  | (c1, c2) when !Clflags.unsafe || is_safe = Lambda.Unsafe ->
       (* Flambda already generates that test *)
       Cop(Cmodi, [c1; c2], dbg)
   | (c1, c2) ->
