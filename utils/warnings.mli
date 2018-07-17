@@ -22,7 +22,7 @@ type loc = {
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Alert of {kind:string; message:string; def:loc; use:loc}        (*  3 *)
+(*| Deprecated --> alert "deprecated" *)    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -86,6 +86,8 @@ type t =
   | Unsafe_without_parsing                  (* 64 *)
 ;;
 
+type alert = {kind:string; message:string; def:loc; use:loc}
+
 val parse_options : bool -> string -> unit;;
 
 val without_warnings : (unit -> 'a) -> 'a
@@ -97,13 +99,14 @@ val defaults_w : string;;
 val defaults_warn_error : string;;
 
 type reporting_information =
-  { number : int
+  { id : string
   ; message : string
   ; is_error : bool
   ; sub_locs : (loc * string) list;
   }
 
 val report : t -> [ `Active of reporting_information | `Inactive ]
+val report_alert : alert -> [ `Active of reporting_information | `Inactive ]
 
 exception Errors;;
 
@@ -117,14 +120,8 @@ val backup: unit -> state
 val restore: state -> unit
 val mk_lazy: (unit -> 'a) -> 'a Lazy.t
     (** Like [Lazy.of_fun], but the function is applied with
-        the warning settings at the time [mk_lazy] is called. *)
+        the warning/alert settings at the time [mk_lazy] is called. *)
 
-
-val set_alert: error:bool -> enable:bool -> string -> unit
-  (** Control a given alert setting (enable or disable,
-      for the error-mode or node) a specific alert,
-      or all alerts (if the string argument is "all").
-  *)
 
 val parse_alert_option: string -> unit
   (** Disable/enable alerts based on the parameter to the -alert

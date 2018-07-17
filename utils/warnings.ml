@@ -29,7 +29,7 @@ type loc = {
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Alert of {kind:string; message:string; def:loc; use:loc}        (*  3 *)
+(*| Deprecated --> alert "deprecated" *)    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -99,10 +99,12 @@ type t =
    do NOT reuse one of the holes.
 *)
 
+type alert = {kind:string; message:string; def:loc; use:loc}
+
+
 let number = function
   | Comment_start -> 1
   | Comment_not_end -> 2
-  | Alert _ -> 3
   | Fragile_match _ -> 4
   | Partial_application -> 5
   | Labels_omitted _ -> 6
@@ -230,23 +232,18 @@ let backup () = !current
 let restore x = current := x
 
 let is_active x =
-  not !disabled && (!current).active.(number x) &&
-  match x with
-  | Alert {kind; _} ->
-      let (set, pos) = (!current).alerts in
-      Misc.Stdlib.String.Set.mem kind set = pos
-  | _ ->
-      true
+  not !disabled && (!current).active.(number x)
 
 let is_error x =
   not !disabled && (!current).error.(number x)
-  &&
-  match x with
-  | Alert {kind; _} ->
-      let (set, pos) = (!current).alert_errors in
-      Misc.Stdlib.String.Set.mem kind set = pos
-  | _ ->
-      true
+
+let alert_is_active {kind; _} =
+  let (set, pos) = (!current).alerts in
+  Misc.Stdlib.String.Set.mem kind set = pos
+
+let alert_is_error {kind; _} =
+  let (set, pos) = (!current).alert_errors in
+  Misc.Stdlib.String.Set.mem kind set = pos
 
 let mk_lazy f =
   let state = backup () in
@@ -344,9 +341,9 @@ let set_alert ~error ~enable s =
         (f s set, pos)
   in
   if error then
-    current := {(!current) with alerts=upd}
-  else
     current := {(!current) with alert_errors=upd}
+  else
+    current := {(!current) with alerts=upd}
 
 let parse_alert_option s =
   let n = String.length s in
@@ -391,14 +388,6 @@ let message = function
       "this `(*' is the start of a comment.\n\
        Hint: Did you forget spaces when writing the infix operator `( * )'?"
   | Comment_not_end -> "this is not the end of a comment."
-  | Alert {kind; message; def=_; use=_} ->
-      (* Reduce \r\n to \n:
-           - Prevents any \r characters being printed on Unix when processing
-             Windows sources
-           - Prevents \r\r\n being generated on Windows, which affects the
-             testsuite
-       *)
-       kind ^ ": " ^ Misc.normalise_eol message
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
@@ -611,19 +600,10 @@ let message = function
      "option -unsafe used with a preprocessor returning a syntax tree"
 ;;
 
-let sub_locs = function
-  | Alert {def; use; _} ->
-      if not def.loc_ghost && not use.loc_ghost then [
-        def, "Definition";
-        use, "Expected signature";
-      ]
-      else []
-  | _ -> []
-
 let nerrors = ref 0;;
 
 type reporting_information =
-  { number : int
+  { id : string
   ; message : string
   ; is_error : bool
   ; sub_locs : (loc * string) list;
@@ -634,10 +614,42 @@ let report w =
   | false -> `Inactive
   | true ->
      if is_error w then incr nerrors;
-     `Active { number = number w; message = message w; is_error = is_error w;
-               sub_locs = sub_locs w;
-             }
-;;
+     `Active
+       { id = string_of_int (number w);
+         message = message w;
+         is_error = is_error w;
+         sub_locs = [];
+       }
+
+let report_alert (alert : alert) =
+  match alert_is_active alert with
+  | false -> `Inactive
+  | true ->
+      let is_error = alert_is_error alert in
+      if is_error then incr nerrors;
+      let message = Misc.normalise_eol alert.message in
+       (* Reduce \r\n to \n:
+           - Prevents any \r characters being printed on Unix when processing
+             Windows sources
+           - Prevents \r\r\n being generated on Windows, which affects the
+             testsuite
+       *)
+      let sub_locs =
+        if not alert.def.loc_ghost && not alert.use.loc_ghost then
+          [
+            alert.def, "Definition";
+            alert.use, "Expected signature";
+          ]
+        else
+          []
+      in
+      `Active
+        {
+          id = alert.kind;
+          message;
+          is_error;
+          sub_locs;
+        }
 
 exception Errors;;
 

@@ -114,8 +114,10 @@ val msg: ?loc:t -> ('a, Format.formatter, unit, msg) format4 -> 'a
 
 type report_kind =
   | Report_error
-  | Report_warning of int
-  | Report_warning_as_error of int
+  | Report_warning of string
+  | Report_warning_as_error of string
+  | Report_alert of string
+  | Report_alert_as_error of string
 
 type report = {
   kind : report_kind;
@@ -198,6 +200,30 @@ val print_warning: t -> formatter -> Warnings.t -> unit
 
 val prerr_warning: t -> Warnings.t -> unit
 (** Same as [print_warning], but uses [!formatter_for_warnings] as output
+   formatter. *)
+
+(** {1 Reporting alerts} *)
+
+(** {2 Converting an [Alert.t] into a [report]} *)
+
+val report_alert: t -> Warnings.alert -> report option
+(** [report_alert loc w] produces a report for the given alert [w], or
+   [None] if the alert is not to be printed. *)
+
+val alert_reporter: (t -> Warnings.alert -> report option) ref
+(** Hook for intercepting alerts. *)
+
+val default_alert_reporter: t -> Warnings.alert -> report option
+(** Original alert reporter for use in hooks. *)
+
+(** {2 Printing alerts} *)
+
+val print_alert: t -> formatter -> Warnings.alert -> unit
+(** Prints an alert. This is simply the composition of [report_alert] and
+   [print_report]. *)
+
+val prerr_alert: t -> Warnings.alert -> unit
+(** Same as [print_alert], but uses [!formatter_for_warnings] as output
    formatter. *)
 
 val deprecated: ?def:t -> ?use:t -> t -> string -> unit
