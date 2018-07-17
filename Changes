@@ -18,7 +18,7 @@ Working version
   abstracting when removing references to an identifier.
   (Thomas Refis and Leo White, review by Jacques Garrigue)
 
-- MPR#7821, GPR#....: make sure that the compilation of extension
+- MPR#7821, GPR#1908: make sure that the compilation of extension
   constructors doesn't cause the compiler to load more cmi files
   (Jérémie Dimino)
 
