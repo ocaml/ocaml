@@ -120,10 +120,14 @@ val mk_lazy: (unit -> 'a) -> 'a Lazy.t
         the warning settings at the time [mk_lazy] is called. *)
 
 
-val set_alert: string -> bool -> unit
-  (** Enable(=true) or disable(=false) a given alert,
-      or all alerts (if the string argument is "all"). *)
+val set_alert: error:bool -> enable:bool -> string -> unit
+  (** Control a given alert setting (enable or disable,
+      for the error-mode or node) a specific alert,
+      or all alerts (if the string argument is "all").
+  *)
 
 val parse_alert_option: string -> unit
-  (** Disable/enable alerts based on the parameter to the -alert command-line
-      option *)
+  (** Disable/enable alerts based on the parameter to the -alert
+      command-line option.  Raises [Arg.Bad] if the string is not a
+      valid specification.
+  *)

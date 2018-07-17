@@ -22,8 +22,11 @@ let mk_alert f =
   Printf.sprintf
     "<list>  Enable or disable alerts according to <list>:\n\
     \n\      +<alertname>  enable alert <alertname>\n\
-    \n\      -<alertname>  disable alert <alertname>"
-;;
+    \n\      -<alertname>  disable alert <alertname>\n\
+    \n\      ++<alertname> treat <alertname> as fatal error\n\
+    \n\      --<alertname> treat <alertname> as non-fatal\n\
+    \n\      @<alertname>  enable <alertname> and treat it as fatal error\n\
+    <alertname> can be 'all' to refer to all alert names";;
 
 let mk_absname f =
   "-absname", Arg.Unit f, " Show absolute filenames in error messages"

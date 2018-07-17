@@ -207,7 +207,8 @@ type state =
   {
     active: bool array;
     error: bool array;
-    alerts: (Misc.Stdlib.String.Set.t * bool); (* true/false: positive/negative set *)
+    alerts: (Misc.Stdlib.String.Set.t * bool); (* false=>complement of the set *)
+    alert_errors: (Misc.Stdlib.String.Set.t * bool); (* false=>complement of the set *)
   }
 
 let current =
@@ -215,7 +216,8 @@ let current =
     {
       active = Array.make (last_warning_number + 1) true;
       error = Array.make (last_warning_number + 1) false;
-      alerts = (Misc.Stdlib.String.Set.empty, false);
+      alerts = (Misc.Stdlib.String.Set.empty, false); (* all alerts enabled *)
+      alert_errors = (Misc.Stdlib.String.Set.empty, true); (* all alerts are soft *)
     }
 
 let disabled = ref false
@@ -236,7 +238,15 @@ let is_active x =
   | _ ->
       true
 
-let is_error x = not !disabled && (!current).error.(number x);;
+let is_error x =
+  not !disabled && (!current).error.(number x)
+  &&
+  match x with
+  | Alert {kind; _} ->
+      let (set, pos) = (!current).alert_errors in
+      Misc.Stdlib.String.Set.mem kind set = pos
+  | _ ->
+      true
 
 let mk_lazy f =
   let state = backup () in
@@ -308,7 +318,7 @@ let parse_options errflag s =
   let error = Array.copy (!current).error in
   let active = Array.copy (!current).active in
   parse_opt error active (if errflag then error else active) s;
-  current := {error; active; alerts = (!current).alerts}
+  current := {(!current) with error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60";;
@@ -317,20 +327,26 @@ let defaults_warn_error = "-a+31";;
 let () = parse_options false defaults_w;;
 let () = parse_options true defaults_warn_error;;
 
-let set_alert s b =
-  let alerts =
+let set_alert ~error ~enable s =
+  let upd =
     match s with
     | "all" ->
-        (Misc.Stdlib.String.Set.empty, not b)
+        (Misc.Stdlib.String.Set.empty, not enable)
     | s ->
-        let (set, pos) = (!current).alerts in
+        let (set, pos) =
+          if error then (!current).alert_errors else (!current).alerts
+        in
         let f =
-          if b = pos then Misc.Stdlib.String.Set.add
+          if enable = pos
+          then Misc.Stdlib.String.Set.add
           else Misc.Stdlib.String.Set.remove
         in
         (f s set, pos)
   in
-  current := {(!current) with alerts}
+  if error then
+    current := {(!current) with alerts=upd}
+  else
+    current := {(!current) with alert_errors=upd}
 
 let parse_alert_option s =
   let n = String.length s in
@@ -343,15 +359,23 @@ let parse_alert_option s =
   in
   let rec scan i =
     if i = n then ()
-    else match s.[i] with
-      | '+' -> id true (i + 1)
-      | '-' -> id false (i + 1)
+    else if i + 1 = n then raise (Arg.Bad "Ill-formed list of alert settings")
+    else match s.[i], s.[i+1] with
+      | '+', '+' -> id (set_alert ~error:true ~enable:true) (i + 2)
+      | '+', _ -> id (set_alert ~error:false ~enable:true) (i + 1)
+      | '-', '-' -> id (set_alert ~error:true ~enable:false) (i + 2)
+      | '-', _ -> id (set_alert ~error:false ~enable:false) (i + 1)
+      | '@', _ ->
+          id (fun s ->
+              set_alert ~error:true ~enable:true s;
+              set_alert ~error:false ~enable:true s)
+            (i + 1)
       | _ -> raise (Arg.Bad "Ill-formed list of alert settings")
-  and id b i =
+  and id f i =
     let j = parse_id i in
     if j = i then raise (Arg.Bad "Ill-formed list of alert settings");
     let id = String.sub s i (j - i) in
-    set_alert id b;
+    f id;
     scan j
   in
   scan 0

@@ -159,39 +159,32 @@ let check_no_alert attrs =
     )
     (alert_attrs attrs)
 
+let warn_payload loc txt msg =
+  Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg))
+
 let warning_attribute ?(ppwarning = true) =
   let process loc txt errflag payload =
     match string_of_payload payload with
     | Some s ->
         begin try Warnings.parse_options errflag s
-        with Arg.Bad _ ->
-          Location.prerr_warning loc
-            (Warnings.Attribute_payload
-               (txt, "Ill-formed list of warnings"))
+        with Arg.Bad msg -> warn_payload loc txt msg
         end
     | None ->
-        Location.prerr_warning loc
-          (Warnings.Attribute_payload
-             (txt, "A single string literal is expected"))
+        warn_payload loc txt "A single string literal is expected"
   in
   let process_alert loc txt = function
-  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_apply
-                                   ({pexp_desc=Pexp_ident{txt=Longident.Lident "~+"}},
-                                    [Nolabel,{pexp_desc=Pexp_ident{txt=Longident.Lident id}}])
-                              },_)}] ->
-      Warnings.set_alert id true
-  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_apply
-                                   ({pexp_desc=Pexp_ident{txt=Longident.Lident "~-"}},
-                                    [Nolabel,{pexp_desc=Pexp_ident{txt=Longident.Lident id}}])
-                              },_)}] ->
-      Warnings.set_alert id false
-  | k ->
-      match kind_and_message k with
-      | Some _ -> ()
-      | None ->
-          Location.prerr_warning loc
-            (Warnings.Attribute_payload
-               (txt, "Invalid payload"))
+    | PStr[{pstr_desc=
+              Pstr_eval(
+                {pexp_desc=Pexp_constant(Pconst_string(s,_))},
+                _)
+           }] ->
+        begin try Warnings.parse_alert_option s
+        with Arg.Bad msg -> warn_payload loc txt msg
+        end
+    | k ->
+        match kind_and_message k with
+        | Some _ -> ()
+        | None -> warn_payload loc txt "Invalid payload"
   in
   function
   | {attr_name = {txt = ("ocaml.warning"|"warning") as txt; _};
