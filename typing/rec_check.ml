@@ -169,7 +169,7 @@ let is_ref : Types.value_description -> bool = function
 let scrape env ty =
   (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
 
-let array_element_kind env ty =
+let rec array_element_kind env ty =
   match scrape env ty with
   | Tvar _ | Tunivar _ ->
       `Pgenarray
@@ -179,10 +179,10 @@ let array_element_kind env ty =
       else if Path.same p Predef.path_float then
         if Config.flat_float_array then `Pfloatarray else `Paddrarray
       else if Path.same p Predef.path_string
-            || Path.same p Predef.path_array
-            || Path.same p Predef.path_nativeint
-            || Path.same p Predef.path_int32
-            || Path.same p Predef.path_int64 then
+           || Path.same p Predef.path_array
+           || Path.same p Predef.path_nativeint
+           || Path.same p Predef.path_int32
+           || Path.same p Predef.path_int64 then
         `Paddrarray
       else begin
         try
@@ -193,7 +193,7 @@ let array_element_kind env ty =
             when List.for_all (fun c -> c.Types.cd_args = Types.Cstr_tuple [])
                 cstrs ->
               `Pintarray
-          | {type_kind = _} ->
+          | {type_kind = Type_variant _ | Type_open | Type_record _} ->
               `Paddrarray
         with Not_found ->
           (* This can happen due to e.g. missing -I options,
@@ -201,7 +201,18 @@ let array_element_kind env ty =
               Maybe we should emit a warning. *)
           `Pgenarray
       end
-  | _ ->
+  | Tlink _ | Tsubst _ ->
+      (* [Typeopt.scrape_ty] starts with [Ctype.expand_head_opt],
+         so these cases are impossible *)
+      assert false
+  | Tpoly(t, _alphas) ->
+      (* this case should not occur after [scrape_ty],
+         but we handle it defensively *)
+      array_element_kind env t
+  | Tarrow _ | Ttuple _
+  | Tobject _ | Tfield _
+  | Tvariant _ | Tnil
+  | Tpackage _ ->
       `Paddrarray
 
 let array_type_kind env ty =
