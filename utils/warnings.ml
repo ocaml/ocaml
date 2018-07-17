@@ -238,10 +238,12 @@ let is_error x =
   not !disabled && (!current).error.(number x)
 
 let alert_is_active {kind; _} =
+  not !disabled &&
   let (set, pos) = (!current).alerts in
   Misc.Stdlib.String.Set.mem kind set = pos
 
 let alert_is_error {kind; _} =
+  not !disabled &&
   let (set, pos) = (!current).alert_errors in
   Misc.Stdlib.String.Set.mem kind set = pos
 

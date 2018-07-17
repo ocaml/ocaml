@@ -90,7 +90,14 @@ type alert = {kind:string; message:string; def:loc; use:loc}
 
 val parse_options : bool -> string -> unit;;
 
+val parse_alert_option: string -> unit
+  (** Disable/enable alerts based on the parameter to the -alert
+      command-line option.  Raises [Arg.Bad] if the string is not a
+      valid specification.
+  *)
+
 val without_warnings : (unit -> 'a) -> 'a
+  (** Run the thunk with all warnings and alerts disabled. *)
 
 val is_active : t -> bool;;
 val is_error : t -> bool;;
@@ -121,10 +128,3 @@ val restore: state -> unit
 val mk_lazy: (unit -> 'a) -> 'a Lazy.t
     (** Like [Lazy.of_fun], but the function is applied with
         the warning/alert settings at the time [mk_lazy] is called. *)
-
-
-val parse_alert_option: string -> unit
-  (** Disable/enable alerts based on the parameter to the -alert
-      command-line option.  Raises [Arg.Bad] if the string is not a
-      valid specification.
-  *)
