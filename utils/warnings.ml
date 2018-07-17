@@ -262,70 +262,6 @@ let mk_lazy f =
         raise exn
     )
 
-let parse_opt error active flags s =
-  let set i = flags.(i) <- true in
-  let clear i = flags.(i) <- false in
-  let set_all i = active.(i) <- true; error.(i) <- true in
-  let error () = raise (Arg.Bad "Ill-formed list of warnings") in
-  let rec get_num n i =
-    if i >= String.length s then i, n
-    else match s.[i] with
-    | '0'..'9' -> get_num (10 * n + Char.code s.[i] - Char.code '0') (i + 1)
-    | _ -> i, n
-  in
-  let get_range i =
-    let i, n1 = get_num 0 i in
-    if i + 2 < String.length s && s.[i] = '.' && s.[i + 1] = '.' then
-      let i, n2 = get_num 0 (i + 2) in
-      if n2 < n1 then error ();
-      i, n1, n2
-    else
-      i, n1, n1
-  in
-  let rec loop i =
-    if i >= String.length s then () else
-    match s.[i] with
-    | 'A' .. 'Z' ->
-       List.iter set (letter (Char.lowercase_ascii s.[i]));
-       loop (i+1)
-    | 'a' .. 'z' ->
-       List.iter clear (letter s.[i]);
-       loop (i+1)
-    | '+' -> loop_letter_num set (i+1)
-    | '-' -> loop_letter_num clear (i+1)
-    | '@' -> loop_letter_num set_all (i+1)
-    | _ -> error ()
-  and loop_letter_num myset i =
-    if i >= String.length s then error () else
-    match s.[i] with
-    | '0' .. '9' ->
-        let i, n1, n2 = get_range i in
-        for n = n1 to min n2 last_warning_number do myset n done;
-        loop i
-    | 'A' .. 'Z' ->
-       List.iter myset (letter (Char.lowercase_ascii s.[i]));
-       loop (i+1)
-    | 'a' .. 'z' ->
-       List.iter myset (letter s.[i]);
-       loop (i+1)
-    | _ -> error ()
-  in
-  loop 0
-;;
-
-let parse_options errflag s =
-  let error = Array.copy (!current).error in
-  let active = Array.copy (!current).active in
-  parse_opt error active (if errflag then error else active) s;
-  current := {(!current) with error; active}
-
-(* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60";;
-let defaults_warn_error = "-a+31";;
-
-let () = parse_options false defaults_w;;
-let () = parse_options true defaults_warn_error;;
-
 let set_alert ~error ~enable s =
   let upd =
     match s with
@@ -378,6 +314,86 @@ let parse_alert_option s =
     scan j
   in
   scan 0
+
+let parse_opt error active errflag s =
+  let flags = if errflag then error else active in
+  let set i =
+    if i = 3 then set_alert ~error:errflag ~enable:true "deprecated"
+    else flags.(i) <- true
+  in
+  let clear i =
+    if i = 3 then set_alert ~error:errflag ~enable:false "deprecated"
+    else flags.(i) <- false
+  in
+  let set_all i =
+    if i = 3 then begin
+      set_alert ~error:false ~enable:true "deprecated";
+      set_alert ~error:true ~enable:true "deprecated"
+    end
+    else begin
+      active.(i) <- true;
+      error.(i) <- true
+    end
+  in
+  let error () = raise (Arg.Bad "Ill-formed list of warnings") in
+  let rec get_num n i =
+    if i >= String.length s then i, n
+    else match s.[i] with
+    | '0'..'9' -> get_num (10 * n + Char.code s.[i] - Char.code '0') (i + 1)
+    | _ -> i, n
+  in
+  let get_range i =
+    let i, n1 = get_num 0 i in
+    if i + 2 < String.length s && s.[i] = '.' && s.[i + 1] = '.' then
+      let i, n2 = get_num 0 (i + 2) in
+      if n2 < n1 then error ();
+      i, n1, n2
+    else
+      i, n1, n1
+  in
+  let rec loop i =
+    if i >= String.length s then () else
+    match s.[i] with
+    | 'A' .. 'Z' ->
+       List.iter set (letter (Char.lowercase_ascii s.[i]));
+       loop (i+1)
+    | 'a' .. 'z' ->
+       List.iter clear (letter s.[i]);
+       loop (i+1)
+    | '+' -> loop_letter_num set (i+1)
+    | '-' -> loop_letter_num clear (i+1)
+    | '@' -> loop_letter_num set_all (i+1)
+    | _ -> error ()
+  and loop_letter_num myset i =
+    if i >= String.length s then error () else
+    match s.[i] with
+    | '0' .. '9' ->
+        let i, n1, n2 = get_range i in
+        for n = n1 to min n2 last_warning_number do myset n done;
+        loop i
+    | 'A' .. 'Z' ->
+       List.iter myset (letter (Char.lowercase_ascii s.[i]));
+       loop (i+1)
+    | 'a' .. 'z' ->
+       List.iter myset (letter s.[i]);
+       loop (i+1)
+    | _ -> error ()
+  in
+  loop 0
+;;
+
+let parse_options errflag s =
+  let error = Array.copy (!current).error in
+  let active = Array.copy (!current).active in
+  parse_opt error active errflag s;
+  current := {(!current) with error; active}
+
+(* If you change these, don't forget to change them in man/ocamlc.m *)
+let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60";;
+let defaults_warn_error = "-a+31";;
+
+let () = parse_options false defaults_w;;
+let () = parse_options true defaults_warn_error;;
 
 let ref_manual_explanation () =
   (* manual references are checked a posteriori by the manual
@@ -669,7 +685,7 @@ let descriptions =
   [
     1, "Suspicious-looking start-of-comment mark.";
     2, "Suspicious-looking end-of-comment mark.";
-    3, "Deprecated deprecated warning, please use alerts instead.";
+    3, "Deprecated synonym for the 'deprecated' alert";
     4, "Fragile pattern matching: matching that will remain complete even\n\
    \    if additional constructors are added to one of the variant types\n\
    \    matched.";
