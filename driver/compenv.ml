@@ -253,6 +253,8 @@ let read_one_param ppf position name v =
   |  "w"  ->               Warnings.parse_options false v
   (* warn-errors *)
   | "wwe" ->               Warnings.parse_options false v
+  (* alerts *)
+  | "alert" ->             Warnings.parse_alert_option v
 
   (* inlining *)
   | "inline" ->

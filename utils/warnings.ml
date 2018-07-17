@@ -332,6 +332,30 @@ let set_alert s b =
   in
   current := {(!current) with alerts}
 
+let parse_alert_option s =
+  let n = String.length s in
+  let id_char = function
+    | 'a'..'z' | 'A'..'Z' | '_' | '\'' | '0'..'9' -> true
+    | _ -> false
+  in
+  let rec parse_id i =
+    if i < n && id_char s.[i] then parse_id (i + 1) else i
+  in
+  let rec scan i =
+    if i = n then ()
+    else match s.[i] with
+      | '+' -> id true (i + 1)
+      | '-' -> id false (i + 1)
+      | _ -> raise (Arg.Bad "Ill-formed list of alert settings")
+  and id b i =
+    let j = parse_id i in
+    if j = i then raise (Arg.Bad "Ill-formed list of alert settings");
+    let id = String.sub s i (j - i) in
+    set_alert id b;
+    scan j
+  in
+  scan 0
+
 let ref_manual_explanation () =
   (* manual references are checked a posteriori by the manual
      cross-reference consistency check in manual/tests*)

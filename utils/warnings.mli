@@ -123,3 +123,7 @@ val mk_lazy: (unit -> 'a) -> 'a Lazy.t
 val set_alert: string -> bool -> unit
   (** Enable(=true) or disable(=false) a given alert,
       or all alerts (if the string argument is "all"). *)
+
+val parse_alert_option: string -> unit
+  (** Disable/enable alerts based on the parameter to the -alert command-line
+      option *)
