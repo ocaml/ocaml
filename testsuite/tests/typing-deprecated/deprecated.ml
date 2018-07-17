@@ -19,7 +19,7 @@ end;;
 Line 7, characters 9-10:
     val x: t [@@ocaml.deprecated]
            ^
-Warning 3: deprecated: t
+Alert deprecated: t
 module X : sig type t type s type u val x : t end
 |}]
 
@@ -29,7 +29,7 @@ type t = X.t
 Line 1, characters 9-12:
   type t = X.t
            ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 type t = X.t
 |}]
 
@@ -39,7 +39,7 @@ let x = X.x
 Line 1, characters 8-11:
   let x = X.x
           ^^^
-Warning 3: deprecated: X.x
+Alert deprecated: X.x
 val x : X.t = <abstr>
 |}]
 
@@ -53,7 +53,7 @@ val foo : unit = ()
 Line 3, characters 0-3:
   foo;;
   ^^^
-Warning 3: deprecated: foo
+Alert deprecated: foo
 - : unit = ()
 |}]
 
@@ -73,7 +73,7 @@ let f = function
 Line 2, characters 33-36:
     | bar, cho [@deprecated], _ -> cho + 1
                                    ^^^
-Warning 3: deprecated: cho
+Alert deprecated: cho
 val f : 'a * int * 'b -> int = <fun>
 |}]
 
@@ -86,7 +86,7 @@ class c (_, (foo [@deprecated] : int)) =
 Line 3, characters 12-15:
       val h = foo
               ^^^
-Warning 3: deprecated: foo
+Alert deprecated: foo
 class c : 'a * int -> object val h : int end
 |}]
 
@@ -102,7 +102,7 @@ Warning 3: deprecated: X.t
 Line 1, characters 15-18:
   type t = X.t * X.s
                  ^^^
-Warning 3: deprecated: X.s
+Alert deprecated: X.s
 type t = X.t * X.s
 |}]
 
@@ -119,7 +119,7 @@ and t2 = X.s
 Line 2, characters 9-12:
   and t2 = X.s
            ^^^
-Warning 3: deprecated: X.s
+Alert deprecated: X.s
 type t1 = X.t
 and t2 = X.s
 |}]
@@ -130,7 +130,7 @@ type t = A of t [@@ocaml.deprecated]
 Line 1, characters 14-15:
   type t = A of t [@@ocaml.deprecated]
                 ^
-Warning 3: deprecated: t
+Alert deprecated: t
 type t = A of t
 |}]
 
@@ -156,7 +156,7 @@ type t = (X.t [@ocaml.warning "-3"]) * X.s
 Line 1, characters 39-42:
   type t = (X.t [@ocaml.warning "-3"]) * X.s
                                          ^^^
-Warning 3: deprecated: X.s
+Alert deprecated: X.s
 type t = X.t * X.s
 |}]
 
@@ -176,7 +176,7 @@ let _ = function (_ : X.t) -> ()
 Line 1, characters 22-25:
   let _ = function (_ : X.t) -> ()
                         ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 - : X.t -> unit = <fun>
 |}]
 
@@ -195,7 +195,7 @@ module M = struct let x = X.x end
 Line 1, characters 26-29:
   module M = struct let x = X.x end
                             ^^^
-Warning 3: deprecated: X.x
+Alert deprecated: X.x
 module M : sig val x : X.t end
 |}]
 
@@ -221,7 +221,7 @@ Warning 3: deprecated: X.t
 Line 1, characters 51-54:
   module rec M : sig val x: X.t end = struct let x = X.x end
                                                      ^^^
-Warning 3: deprecated: X.x
+Alert deprecated: X.x
 module rec M : sig val x : X.t end
 |}]
 
@@ -247,7 +247,7 @@ module rec M :
 Line 3, characters 17-20:
     struct let x = X.x end
                    ^^^
-Warning 3: deprecated: X.x
+Alert deprecated: X.x
 module rec M : sig val x : X.t end
 |}]
 
@@ -259,7 +259,7 @@ module type S = sig type t = X.t end
 Line 1, characters 29-32:
   module type S = sig type t = X.t end
                                ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 module type S = sig type t = X.t end
 |}]
 
@@ -284,7 +284,7 @@ class c = object method x = X.x end
 Line 1, characters 28-31:
   class c = object method x = X.x end
                               ^^^
-Warning 3: deprecated: X.x
+Alert deprecated: X.x
 class c : object method x : X.t end
 |}]
 
@@ -315,7 +315,7 @@ class type c = object method x : X.t end
 Line 1, characters 33-36:
   class type c = object method x : X.t end
                                    ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 class type c = object method x : X.t end
 |}]
 
@@ -347,7 +347,7 @@ external foo: unit -> X.t = "foo"
 Line 1, characters 22-25:
   external foo: unit -> X.t = "foo"
                         ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 external foo : unit -> X.t = "foo"
 |}]
 
@@ -366,7 +366,7 @@ X.x
 Line 1, characters 0-3:
   X.x
   ^^^
-Warning 3: deprecated: X.x
+Alert deprecated: X.x
 - : X.t = <abstr>
 |}]
 
@@ -388,7 +388,7 @@ module D : sig  end
 Line 3, characters 5-6:
   open D
        ^
-Warning 3: deprecated: module D
+Alert deprecated: module D
 |}]
 
 open D [@@ocaml.warning "-3"]
@@ -402,7 +402,7 @@ include D
 Line 1, characters 8-9:
   include D
           ^
-Warning 3: deprecated: module D
+Alert deprecated: module D
 |}]
 
 include D [@@ocaml.warning "-3"]
@@ -428,7 +428,7 @@ type ext +=
 Line 2, characters 9-12:
     | A of X.t
            ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 type ext += A of X.t | B of X.s | C of X.u
 |}]
 
@@ -447,7 +447,7 @@ exception Foo of X.t
 Line 1, characters 17-20:
   exception Foo of X.t
                    ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 exception Foo of X.t
 |}]
 
@@ -469,7 +469,7 @@ type t =
 Line 2, characters 9-12:
     | A of X.t
            ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 type t = A of X.t | B of X.s | C of X.u
 |}]
 
@@ -484,7 +484,7 @@ type t =
 Line 3, characters 7-10:
       a: X.t;
          ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 type t = { a : X.t; b : X.s; c : X.u; }
 |}]
 
@@ -500,7 +500,7 @@ type t =
 Line 3, characters 7-10:
       a: X.t;
          ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 type t = < a : X.t; b : X.s; c : X.u >
 |}]
 
@@ -516,7 +516,7 @@ type t =
 Line 3, characters 10-13:
     | `A of X.t
             ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 type t = [ `A of X.t | `B of X.s | `C of X.u ]
 |}]
 

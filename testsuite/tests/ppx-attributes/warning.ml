@@ -2,6 +2,7 @@
 *)
 
 [@@@ocaml.warning "@A"]
+[@@@ocaml.alert "++all"]
 
 (* Fixture *)
 
@@ -25,26 +26,26 @@ module A = struct let _ = let x = 1 in () end
 [@@ocaml.warning "-26"]
 
 module rec B : sig type t end = struct type t = T.deprecated end
-[@@ocaml.warning "-3"]
+[@@ocaml.alert "-deprecated"]
 
 module type T = sig type t = T.deprecated end
-[@@ocaml.warning "-3"]
+[@@ocaml.alert "-deprecated"]
 
 (* Signature items *)
 
 module type S = sig
   val x : T.deprecated
-  [@@ocaml.warning "-3"]
+  [@@ocaml.alert "-deprecated"]
 
   module AA : sig type t = T.deprecated end
-  [@@ocaml.warning "-3"]
+  [@@ocaml.alert "-deprecated"]
 
   module rec BB : sig type t = T.deprecated end
-  [@@ocaml.warning "-3"]
+  [@@ocaml.alert "-deprecated"]
 
   module type T = sig type t = T.deprecated end
-  [@@ocaml.warning "-3"]
+  [@@ocaml.alert "-deprecated"]
 
   include DEPRECATED
-  [@@ocaml.warning "-3"]
+  [@@ocaml.alert "-deprecated"]
 end

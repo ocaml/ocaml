@@ -54,7 +54,7 @@ type t = Foo of unit | Bar
 Line 6, characters 0-6:
   Foo ();;
   ^^^^^^
-Error (warning 3): deprecated: Foo
+Error (alert deprecated): Foo
 |}];;
 function
 Foo _ -> () | Bar -> ();;
@@ -63,7 +63,7 @@ Foo _ -> () | Bar -> ();;
 Line 2, characters 0-5:
   Foo _ -> () | Bar -> ();;
   ^^^^^
-Error (warning 3): deprecated: Foo
+Error (alert deprecated): Foo
 |}];;
 
 

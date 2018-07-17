@@ -36,7 +36,7 @@ module M :
 |}]
 
 module Global_attributes = struct
-  [@@@ocaml.warning "-3"]
+  [@@@ocaml.alert "-deprecated"]
 
   external a : float -> float = "a" "noalloc" "a_nat" "float"
   external b : float -> float = "b" "noalloc" "b_nat"
