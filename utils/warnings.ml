@@ -667,7 +667,7 @@ let descriptions =
   [
     1, "Suspicious-looking start-of-comment mark.";
     2, "Suspicious-looking end-of-comment mark.";
-    3, "Built-in or user-defined alert (deprecated, unsafe, etc).";
+    3, "Deprecated deprecated warning, please use alerts instead.";
     4, "Fragile pattern matching: matching that will remain complete even\n\
    \    if additional constructors are added to one of the variant types\n\
    \    matched.";
