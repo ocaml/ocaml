@@ -41,6 +41,11 @@
 */
 #define MARK_STACK_SIZE (1 << 14)
 
+struct mark_stack {
+  value* stack;
+  uintnat count;
+};
+
 uintnat caml_percent_free = Percent_free_def;
 
 /* This variable is only written with the world stopped,
@@ -297,21 +302,21 @@ static void handle_steal_req (struct domain* targetd, void* plv,
 
   if (pl->major_cycle != caml_major_cycles_completed) {
     pl->result = Not_shared;
-  } else if (target->stealing || target->mark_stack_count == 0) {
+  } else if (target->stealing || target->mark_stack == NULL || target->mark_stack->count == 0) {
     pl->result = No_work;
   } else {
-    CAMLassert(pl->thief->mark_stack_count == 0);
+    CAMLassert(pl->thief->mark_stack->count == 0);
 
-    if (target->mark_stack_count < 16) {
-      steal_size = target->mark_stack_count;
+    if (target->mark_stack->count < 16) {
+      steal_size = target->mark_stack->count;
     } else {
-      steal_size = target->mark_stack_count / 2
-                 + target->mark_stack_count % 2;
+      steal_size = target->mark_stack->count / 2
+                 + target->mark_stack->count % 2;
     }
-    new_size = target->mark_stack_count - steal_size;
-    memcpy(pl->thief->mark_stack, &target->mark_stack[new_size],
+    new_size = target->mark_stack->count - steal_size;
+    memcpy(pl->thief->mark_stack->stack, &target->mark_stack->stack[new_size],
            steal_size * sizeof(value));
-    target->mark_stack_count = new_size;
+    target->mark_stack->count = new_size;
 
     /* Mark stack size and domain local marking_done flag are updated in
      * steal_mark_work(). */
@@ -324,7 +329,7 @@ static void handle_steal_req (struct domain* targetd, void* plv,
       target->marking_done = 1;
     }
 
-    pl->thief->mark_stack_count = steal_size;
+    pl->thief->mark_stack->count = steal_size;
     pl->thief->marking_done = 0;
     pl->result = Shared;
   }
@@ -352,7 +357,7 @@ static int steal_mark_work () {
     if(victim->state && caml_domain_rpc(victim, &handle_steal_req, &pl)) {
       if (pl.result == Shared) {
         caml_gc_log("Stolen mark work (size=%"ARCH_INTNAT_PRINTF_FORMAT"u) from domain %d",
-                    domain_self->state->mark_stack_count, i);
+                    domain_self->state->mark_stack->count, i);
         Caml_state->stealing = 0;
         return i;
       }
@@ -374,10 +379,10 @@ static struct pool* find_pool_to_rescan();
 
 static void mark_stack_push(value v) {
   CAMLassert(Is_block(v));
-  caml_domain_state* domain_state = Caml_state;
-  if (domain_state->mark_stack_count >= MARK_STACK_SIZE)
+  struct mark_stack* stk = Caml_state->mark_stack;
+  if (stk->count >= MARK_STACK_SIZE)
     mark_stack_prune();
-  domain_state->mark_stack[domain_state->mark_stack_count++] = v;
+  stk->stack[stk->count++] = v;
 }
 
 /* to fit scanning_action */
@@ -392,11 +397,11 @@ static void mark_stack_push_act(void* state, value v, value* ignored) {
 #endif
 
 /* mark until the budget runs out or the mark stack empties */
-static intnat do_some_marking(intnat budget) {
+static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
   status UNMARKED = global.UNMARKED;
   status MARKED = global.MARKED;
-  value* stack = Caml_state->mark_stack;
-  uint64_t stack_count = Caml_state->mark_stack_count;
+  value* stack = stk->stack;
+  uintnat stack_count = stk->count;
   uintnat blocks_marked = 0;
 
   while (budget > 0 && stack_count > 0) {
@@ -410,10 +415,10 @@ static intnat do_some_marking(intnat budget) {
     /* mark the current object */
     hd_v = Hd_val(v);
     if (Tag_hd (hd_v) == Stack_tag) {
-      Caml_state->mark_stack_count = stack_count;
+      stk->count = stack_count;
       caml_darken_stack(v);
-      stack = Caml_state->mark_stack;
-      stack_count = Caml_state->mark_stack_count;
+      stack = stk->stack;
+      stack_count = stk->count;
     } else if (Tag_hd (hd_v) < No_scan_tag) {
       int i;
       for (i = 0; i < Wosize_hd(hd_v); i++) {
@@ -432,10 +437,10 @@ static intnat do_some_marking(intnat budget) {
           if (Has_status_hd(hd, UNMARKED)) {
             Hd_val(child) = With_status_hd(hd, MARKED);
             if (stack_count >= MARK_STACK_SIZE) {
-              Caml_state->mark_stack_count = stack_count;
+              stk->count = stack_count;
               mark_stack_prune();
-              stack = Caml_state->mark_stack;
-              stack_count = Caml_state->mark_stack_count;
+              stack = stk->stack;
+              stack_count = stk->count;
             }
             stack[stack_count++] = child;
           }
@@ -445,14 +450,14 @@ static intnat do_some_marking(intnat budget) {
     budget -= Whsize_hd(hd_v);
   }
   Caml_state->stat_blocks_marked += blocks_marked;
-  Caml_state->mark_stack_count = stack_count;
+  stk->count = stack_count;
   return budget;
 }
 
 /* mark until the budget runs out or marking is done */
 static intnat mark(intnat budget) {
   while (budget > 0 && !Caml_state->marking_done) {
-    budget = do_some_marking(budget);
+    budget = do_some_marking(Caml_state->mark_stack, budget);
     if (budget > 0) {
       struct pool* p = find_pool_to_rescan();
       if (p) {
@@ -698,7 +703,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   caml_do_roots (&caml_darken, NULL, domain, 0);
   caml_ev_end("major_gc/roots");
 
-  if (domain->state->mark_stack_count == 0) {
+  if (domain->state->mark_stack->count == 0) {
     atomic_fetch_add_verify_ge0(&num_domains_to_mark, -1);
     domain->state->marking_done = 1;
   }
@@ -1024,8 +1029,8 @@ static void mark_stack_prune ()
   int count = 0, entry;
   caml_domain_state* domain_state = Caml_state;
   addrmap_iterator i;
-  uintnat mark_stack_count = domain_state->mark_stack_count;
-  value* mark_stack = domain_state->mark_stack;
+  uintnat mark_stack_count = domain_state->mark_stack->count;
+  value* mark_stack = domain_state->mark_stack->stack;
 
   /* space used by the computations below */
   uintnat table_max = mark_stack_count / 100;
@@ -1126,11 +1131,11 @@ static void mark_stack_prune ()
       mark_stack[out++] = v;
     }
   }
-  domain_state->mark_stack_count = out;
+  domain_state->mark_stack->count = out;
 
   caml_gc_log("Mark stack overflow. Postponing %d pools (%.1f%%, leaving %d).",
               count-start, 100. * (double)total / (double)mark_stack_count,
-              (int)domain_state->mark_stack_count);
+              (int)domain_state->mark_stack->count);
 
 
   /* Add the pools to rescan to the global list.
@@ -1153,8 +1158,9 @@ static void mark_stack_prune ()
 }
 
 void caml_init_major_gc(caml_domain_state* d) {
-  d->mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
-  d->mark_stack_count = 0;
+  Caml_state->mark_stack = caml_stat_alloc(sizeof(struct mark_stack));
+  Caml_state->mark_stack->stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
+  Caml_state->mark_stack->count = 0;
   /* Fresh domains do not need to performing marking or sweeping. */
   d->sweeping_done = 1;
   d->marking_done = 1;
@@ -1166,7 +1172,8 @@ void caml_init_major_gc(caml_domain_state* d) {
 }
 
 void caml_teardown_major_gc() {
-  CAMLassert(Caml_state->mark_stack_count == 0);
+  CAMLassert(Caml_state->mark_stack->count == 0);
+  caml_stat_free(Caml_state->mark_stack->stack);
   caml_stat_free(Caml_state->mark_stack);
   Caml_state->mark_stack = NULL;
 }
