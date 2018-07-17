@@ -91,10 +91,12 @@ export LC_ALL=C
 # Special case for recursive call from the find command (see IGNORE_DIRS).
 case "$1" in
   --check-prune)
-    case `env $OCAML_CT_GIT_INDEX git check-attr $OCAML_CT_CA_FLAG \
+    case $2,`env $OCAML_CT_GIT_INDEX git check-attr $OCAML_CT_CA_FLAG \
                                                  ocaml-typo "$2" 2>/dev/null` in
-      *prune*) echo "INFO: pruned directory $2 (ocaml-typo=prune)" >&2; exit 0;;
-      *) exit 3;;
+      *,*prune*|.git,*)
+          echo "INFO: pruned directory $2 (ocaml-typo=prune)" >&2
+          exit 0;;
+      *,*) exit 3;;
     esac;;
 esac
 
