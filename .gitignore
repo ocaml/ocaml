@@ -245,6 +245,7 @@ _ocamltestd
 /tools/stripdebug.opt
 /tools/make_opcodes
 /tools/make_opcodes.ml
+/tools/caml-tex
 
 /utils/config.ml
 

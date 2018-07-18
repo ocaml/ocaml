@@ -392,6 +392,23 @@ install::
 	  "$(INSTALL_BINDIR)/"
 endif
 
+CAMLTEX= ../compilerlibs/ocamlcommon.cma \
+	../compilerlibs/ocamlbytecomp.cma \
+	../compilerlibs/ocamltoplevel.cma \
+	../otherlibs/str/str.cma \
+	../otherlibs/unix/unix.cma \
+	caml_tex.ml
+
+#Scan latex files, and run ocaml code examples
+
+caml-tex: INCLUDES+= -I ../otherlibs/str -I ../otherlibs/unix
+caml-tex: $(CAMLTEX)
+	$(CAMLC) $(LINKFLAGS) -I .. -linkall -o $@ $(CAMLTEX)
+
+opt.opt:caml-tex
+clean::
+	rm -f -- caml-tex caml_tex.cm?
+
 # Common stuff
 
 .SUFFIXES:

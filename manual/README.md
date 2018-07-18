@@ -117,7 +117,7 @@ Latex extensions
 
 ### Caml environments
 
-The tool `tools/caml-tex2` is used to generate the latex code for the examples
+The tool `tools/caml-tex` is used to generate the latex code for the examples
 in the introduction and language extension parts of the manual. It implements
 two pseudo-environments: `caml_example` and `caml_eval`.
 
@@ -145,10 +145,10 @@ otherwise an error would be raised.
 The `verbatim` does not require a final `;;` and is intended to be
 a lighter mode for code examples.
 
-By default, `caml_tex2` raises an error and stops if the output of one
+By default, `caml-tex` raises an error and stops if the output of one
 the `caml_example` environment contains an unexpected error or warning.
 If such an error or warning is, in fact, expected, it is necessary to
-indicate the expected output status to `caml_tex2` by adding either
+indicate the expected output status to `caml-tex` by adding either
 an option to the `caml_example` environment:
 ```latex
 \begin{caml_example}{toplevel}[error]

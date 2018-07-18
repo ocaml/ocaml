@@ -1,5 +1,4 @@
-(* $Id$ *)
-
+[@@@warning "a-40-6"]
 open StdLabels
 open Str
 
@@ -205,7 +204,7 @@ let () =
              "-v", Arg.Bool (fun b -> verbose := b ), "output result on stderr"
             ]
     (fun s -> files := s :: !files)
-    "caml-tex2: ";
+    "caml-tex: ";
   Toplevel.init ()
 
 
@@ -527,7 +526,6 @@ module Ellipsis = struct
 end
 
 let process_file file =
-  prerr_endline ("Processing " ^ file);
   let ic = try open_in file with _ -> failwith "Cannot read input file" in
   let phrase_start = ref 1 and phrase_stop = ref 1 in
   let incr_phrase_start () =
