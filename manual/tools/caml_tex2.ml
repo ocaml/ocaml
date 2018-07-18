@@ -99,10 +99,8 @@ module Toplevel = struct
     let rec loop retry =
       try
         let n = Unix.read stdout_out b 0 size in
-        if n = size then
-          (Buffer.add_bytes buffer b; loop max_retry)
-        else
-          Buffer.add_bytes buffer (Bytes.sub b 0 n)
+        Buffer.add_subbytes buffer b 0 n;
+        if n = size then loop max_retry
       with Unix.(Unix_error (EAGAIN,_,_) ) ->
         if retry = 0 then () else loop (retry - 1)
     in
