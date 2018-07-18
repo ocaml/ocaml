@@ -12,6 +12,9 @@ Working version
 - GPR#1705: Allow @@attributes on exceptions.
   (Hugo Heuzard, review by Gabriel Radanne and Thomas Refis)
 
+- GPR#1804: New notion of "alerts" that generalizes the deprecated warning
+  (Alain Frisch, review by Leo White and Damien Doligez)
+
 - GPR#1892: Allow shadowing of items coming from an include
   (Thomas Refis, review by Gabriel Radanne)
 
