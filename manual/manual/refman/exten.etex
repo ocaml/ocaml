@@ -2320,3 +2320,76 @@ Empty variant type can be eliminated by refutation case of pattern matching.
 type t = |
 let f (x: t) = match x with _ -> .
 \end{caml_example*}
+
+
+\section{Alerts \label{s:alerts} }
+(Introduced in 4.08)
+
+Since OCaml 4.08, it is possible to mark components (such as value or
+type declarations) in signatures with "alerts" that will be reported
+when those components are referenced.  This generalizes the notion of
+"deprecated" components which were previously reported as warning 3.
+Those alerts can be used for instance to report usage of unsafe
+features, or of features which are only available on some platforms,
+etc.
+
+Alert categories are identified by a symbolic identifier (a lowercase
+identifier, following the usual lexical rules) and an optional
+message.  The identifier is used to control which alerts are enabled,
+and which ones are turned into fatal errors.  The message is reported
+to the user when the alert is triggered (i.e. when the marked
+component is referenced).
+
+The "ocaml.alert" or "alert" attribute is used to mark components.
+Here is an example of a value declaration marked with an "unsafe" alert:
+
+\begin{verbatim}
+module U: sig
+  val fork: unit -> bool
+    [@@alert unix "This function is only available under Unix."]
+end
+\end{verbatim}
+
+Here "unix" is the identifier for the alert.  If this alert category
+is enabled, any reference to "U.fork" will produce a message at
+compile time, which can be turned or not into a fatal error.
+
+
+Controlling which alerts are enabled and whether they are turned into
+fatal errors is done either through the compiler's command-line option
+"-alert <spec>" or locally in the code through a "alert" or
+"ocaml.alert" attribute taking a single string payload "<spec>".  In
+both cases, the syntax for "<spec>" is a concatenation of items of the
+form:
+
+\begin{itemize}
+\item "+id" enables alert "id".
+\item "-id" disables alert "id".
+\item "++id" turns alert "id" into a fatal error.
+\item "--id" turns alert "id" into non-fatal mode.
+\item "@id" equivalent to "++id+id" (enables "id" and turns it into a fatal-error)
+\end{itemize}
+
+As a special case, if "id" is "all", it stands for all alerts.
+
+Here are some examples:
+
+\begin{verbatim}
+
+(* Disable all alerts, reenables just unix (as a soft alert) and window
+   (and a fatal-error), for the rest of the current structure *)
+
+[@@@alert "-all--all+unix@window"]
+ ...
+
+let x =
+  (* Locally disable the window alert *)
+  begin[@alert "-window"]
+      ...
+  end
+\end{verbatim}
+
+Before OCaml 4.08, there was support for a single kind of deprecation
+alert.  It is now known as the "deprecated" alert, but legacy
+attributes to trigger it and the legacy way to control it as warning 3
+are still supported.
