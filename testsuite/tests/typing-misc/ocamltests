@@ -17,5 +17,6 @@ unique_names_in_unification.ml
 variant.ml
 wellfounded.ml
 empty_variant.ml
+typecore_empty_polyvariant_error.ml
 typecore_errors.ml
 typecore_nolabel_errors.ml
