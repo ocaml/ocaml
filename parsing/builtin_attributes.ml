@@ -67,12 +67,18 @@ let error_of_extension ext =
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
 let kind_and_message = function
-  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_apply
-                                   ({pexp_desc=Pexp_ident{txt=Longident.Lident id}},
-                                    [Nolabel,{pexp_desc=Pexp_constant (Pconst_string(s,_))}])
-                              },_)}] ->
+  | PStr[
+      {pstr_desc=
+         Pstr_eval
+           ({pexp_desc=Pexp_apply
+                 ({pexp_desc=Pexp_ident{txt=Longident.Lident id}},
+                  [Nolabel,{pexp_desc=Pexp_constant (Pconst_string(s,_))}])
+            },_)}] ->
       Some (id, s)
-  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_ident{txt=Longident.Lident id}},_)}] ->
+  | PStr[
+      {pstr_desc=
+         Pstr_eval
+           ({pexp_desc=Pexp_ident{txt=Longident.Lident id}},_)}] ->
       Some (id, "")
   | _ -> None
 
