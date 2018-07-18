@@ -185,12 +185,28 @@ let exec_phrase ppf phrase =
   if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
   Toploop.execute_phrase true ppf phrase
 
+let ppx_rewrite = function
+  | Parsetree.Ptop_def x ->
+      let ast =  try
+          let ast = Pparse.apply_rewriters_str ~tool_name:"expect_test" x in
+          Ast_invariants.structure ast;
+          ast
+        with
+        | Syntaxerr.Error (e) ->
+            let msg = Format.asprintf "%a" Syntaxerr.report_error e in
+            let error = Location.error msg in
+            [Ast_helper.Str.extension
+               (Ast_mapper.extension_of_error error)] in
+      Parsetree.Ptop_def ast
+  | Ptop_dir (_,_) as x -> x
+
 let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in
   Location.init lexbuf fname;
   Location.input_name := fname;
   Location.input_lexbuf := Some lexbuf;
-  Parse.use_file lexbuf
+  let ast = Parse.use_file lexbuf in
+  List.map ppx_rewrite ast
 
 let eval_expectation expectation ~output =
   let s =
@@ -375,7 +391,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
   let _open s = open_modules := s :: !open_modules
-  let _ppx _s = (* disabled *) ()
+  let _ppx s = all_ppx := s :: !all_ppx
   let _principal = set principal
   let _no_principal = clear principal
   let _rectypes = set recursive_types

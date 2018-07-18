@@ -33,6 +33,7 @@ let bytecode =
   test_actions =
   [
     setup_ocamlc_byte_build_env;
+    compile_ppxs;
     ocamlc_byte;
     check_ocamlc_byte_output;
     run;
@@ -44,6 +45,7 @@ let native =
   let opt_actions =
   [
     setup_ocamlopt_byte_build_env;
+    compile_ppxs;
     ocamlopt_byte;
     check_ocamlopt_byte_output;
     run;
@@ -66,6 +68,7 @@ let toplevel = {
   test_actions =
   [
     setup_ocaml_build_env;
+    compile_ppxs;
     ocaml;
     check_ocaml_output;
 (*
@@ -82,7 +85,8 @@ let expect =
   test_run_by_default = false;
   test_actions =
   [
-    setup_simple_build_env;
+    setup_simple_build_env_with_ppxs;
+    compile_ppxs;
     run_expect;
     check_program_output
   ]

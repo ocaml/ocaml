@@ -111,6 +111,8 @@ let module_ = make ("module",
 let modules = make ("modules",
   "Other modules of the test")
 
+let ppxs = make("ppxs", "ppx for the test")
+
 let nativecc_libs = make ("nativecc_libs",
   "Libraries to link with for native code")
 
@@ -245,6 +247,7 @@ let _ = List.iter register_variable
     mkdll;
     module_;
     modules;
+    ppxs;
     nativecc_libs;
     objext;
     ocamlc_byte;

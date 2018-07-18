@@ -39,6 +39,9 @@ let modules env =
 let plugins env =
   Actions_helpers.words_of_variable env Ocaml_variables.plugins
 
+let ppxs env =
+  Actions_helpers.words_of_variable env Ocaml_variables.ppxs
+
 let directories env =
   Actions_helpers.words_of_variable env Ocaml_variables.directories
 
@@ -176,6 +179,70 @@ let get_program_file backend env =
   Filename.make_path [test_build_directory; program_filename]
 
 let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C
+
+let ppx_exe s = Filename.(mkexe @@ chop_extension s)
+
+let compile_ppx ocamlsrcdir ppx log env =
+  let compiler = Ocaml_compilers.ocamlc_byte in
+  let what = Printf.sprintf "Compiling ppx %s" ppx in
+  Printf.fprintf log "%s\n%!" what;
+  let compilerlibs = List.map (fun x -> Filename.make_path[ocamlsrcdir;x])
+      ["compilerlibs";"utils";"parsing"] in
+  let ppxflags = List.map ( (^) "-I ") compilerlibs in
+  let output = "-o "^ ppx_exe ppx in
+  let commandline =
+  [
+    compiler#name ocamlsrcdir;
+    Ocaml_flags.stdlib ocamlsrcdir;
+    directory_flags env;
+  ]
+  @ ppxflags @
+  [ flags env;
+    libraries compiler#target env;
+    backend_default_flags env compiler#target;
+    backend_flags env compiler#target;
+    "ocamlcommon.cma";
+    ppx;
+    "-custom";
+    output
+  ] in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:dumb_term
+      ~stdin_variable: Ocaml_variables.compiler_stdin
+      ~stdout_variable:compiler#output_variable
+      ~stderr_variable:compiler#output_variable
+      ~append:true
+      log env commandline in
+  if exit_status=0
+  then (Result.pass, env)
+  else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
+
+
+let compile_ppxs =
+  let single ocamlsrcdir log status ppx  =
+    match status with
+    | Error _ as e -> e
+    | Ok env ->
+      let r,env = compile_ppx ocamlsrcdir ppx log env in
+      if Result.is_pass r then
+        let ppx = Filename.make_path
+            [Actions_helpers.test_build_directory env; ppx_exe ppx] in
+        Ok (Environments.append Ocaml_variables.flags (" -ppx " ^ ppx) env)
+      else Error r in
+
+  Actions.make "compile-ppxs" (fun log env ->
+    let ocamlsrcdir = Ocaml_directories.srcdir () in
+    let ppxs = ppxs env in
+    match List.fold_left (single ocamlsrcdir log) (Ok env) ppxs with
+    | Error r -> r, env
+    | Ok env -> Result.pass, env
+  )
 
 let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let program_variable = compiler#program_variable in
@@ -327,6 +394,7 @@ let setup_tool_build_env tool log env =
   in
   let source_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
+  let ppxs = ppxs env in
   let tool_directory_suffix =
     Environments.safe_lookup Ocaml_variables.compiler_directory_suffix env in
   let tool_directory_name =
@@ -349,7 +417,13 @@ let setup_tool_build_env tool log env =
   Sys.force_remove tool_output_file;
   let env =
     Environments.add Builtin_variables.test_build_directory build_dir env in
-  Actions_helpers.setup_build_env false source_modules log env
+  Actions_helpers.setup_build_env false (ppxs @ source_modules) log env
+
+let setup_simple_build_env_with_ppxs =
+  Actions.make "setup-simple-build-env-with-ppxs" (fun log env ->
+      let ppxs = ppxs env in
+      Actions_helpers.setup_simple_build_env true ppxs log env
+    )
 
 let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
   let (r, env) = setup_tool_build_env compiler log env in
@@ -1313,7 +1387,9 @@ let _ =
     setup_ocamlopt_opt_build_env;
     ocamlopt_opt;
     check_ocamlopt_opt_output;
+    compile_ppxs;
     run_expect;
+    setup_simple_build_env_with_ppxs;
     compare_bytecode_programs;
     compare_native_programs;
     setup_ocaml_build_env;

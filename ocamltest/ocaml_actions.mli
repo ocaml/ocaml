@@ -28,6 +28,7 @@ val setup_ocamlopt_opt_build_env : Actions.t
 val ocamlopt_opt : Actions.t
 val check_ocamlopt_opt_output : Actions.t
 val run_expect : Actions.t
+val setup_simple_build_env_with_ppxs: Actions.t
 val compare_bytecode_programs : Actions.t
 val compare_native_programs : Actions.t
 val setup_ocaml_build_env : Actions.t
@@ -54,3 +55,4 @@ val no_afl_instrument : Actions.t
 val codegen : Actions.t
 
 val cc : Actions.t
+val compile_ppxs: Actions.t
