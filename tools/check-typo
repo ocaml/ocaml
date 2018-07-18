@@ -98,15 +98,25 @@ get_attrs() {
   | sed "s/: set//g" | sed "s/: true//g" | sed "s/: may/?/g"
 }
 
+# empty if the path is *not* pruned
+check_prune() {
+  env $OCAML_CT_GIT_INDEX git check-attr typo.prune $OCAML_CT_CA_FLAG "$1" \
+  | grep -v ': unspecified$' | grep -v ': false$'
+}
+
 # Special case for recursive call from the find command (see IGNORE_DIRS).
 case "$1" in
   --check-prune)
-    case $2,"$(get_attrs "$2" | grep -xF prune)" in
-      *,prune|.git,*|.git/*,*)
-          echo "INFO: pruned directory $2 (typo.prune)" >&2
+    case $2 in
+      .git|.git/*)
+          echo "INFO: pruned path $2 (.git)" >&2
           exit 0;;
-      *,*) exit 3;;
-    esac;;
+    esac
+    if test -n "$(check_prune "$2")"; then
+        echo "INFO: pruned path $2 (typo.prune)" >&2
+        exit 0
+    fi
+    exit 3;;
 esac
 
 case "$1" in
@@ -136,7 +146,7 @@ IGNORE_DIRS="
   -type d -exec $0 --check-prune {} ; -prune -o
 "
 # `-type d`: simple files (not directories) are not pruned during the
-# "find" invocation but below (look for " prune ") for performance
+# "find" invocation but below (look for "check_prune") for performance
 # reasons: most files outside pruned directories are not pruned, so it
 # is faster to optimistically run check-typo on them (and maybe get
 # out in the middle) than to first check then run.
@@ -148,6 +158,7 @@ EXIT_CODE=0
   esac
 ) | (
   while read f; do
+    if test -n "$(check_prune "$f")"; then continue; fi
     case `$OCAML_CT_LS_FILES "$f" 2>&1` in
       "") path_in_index=false;;
       *) path_in_index=true;;
@@ -181,10 +192,6 @@ EXIT_CODE=0
     rules=" $(echo $rules) "
     attr_rules=" $(echo $attr_rules) "
 
-    if test -n "$(echo "$rules $attr_rules" | grep " prune ")"
-    then
-        continue
-    fi
     if test -n "$(echo "$rules $attr_rules" | grep " utf8 ")"
     then
         # grep -a is used to force the file to be considered as text and -x
