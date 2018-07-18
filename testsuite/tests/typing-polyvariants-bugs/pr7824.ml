@@ -56,13 +56,6 @@ let f x =
 ;;
 [%%expect{|
 type _ t = T : 'a -> 'a t
-Line _, characters 11-37:
-    | T _ -> (x :> [`A | `C] Element.t)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type [ `A ] Element.t is not a subtype of [ `A | `C ] Element.t
-       The first variant type does not allow tag(s) `C
-|}, Principal{|
-type _ t = T : 'a -> 'a t
 val f : [ `A ] Element.t -> [ `A | `C ] Element.t = <fun>
 |}];;
 
@@ -72,11 +65,7 @@ let f () =
   (x :> [ `A | `C ] Element.t)
 ;;
 [%%expect{|
-Line _, characters 2-30:
-    (x :> [ `A | `C ] Element.t)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type [ `A ] Element.t is not a subtype of [ `A | `C ] Element.t
-       The first variant type does not allow tag(s) `C
+val f : unit -> [ `A | `C ] Element.t = <fun>
 |}];;
 
 let f () =
