@@ -395,22 +395,19 @@ static void mark_stack_push(struct mark_stack* stk, mark_entry e)
   value v;
   CAMLassert(Is_block(e.block) && !Is_young(e.block));
   CAMLassert(Tag_val(e.block) != Infix_tag);
-  if (Tag_val(e.block) >= No_scan_tag)
-    /* nothing to do */
-    return;
-  else if (Tag_val(e.block) != Stack_tag) {
-    while (1) {
-      if (e.offset == e.end)
-        /* nothing left to mark */
-        return;
-      v = Op_val(e.block)[e.offset];
-      if (Is_markable(v))
-        /* found something to mark */
-        break;
-      else
-        /* keep going */
-        e.offset++;
-    }
+  CAMLassert(Tag_val(e.block) != Stack_tag);
+  CAMLassert(Tag_val(e.block) < No_scan_tag);
+  while (1) {
+    if (e.offset == e.end)
+      /* nothing left to mark */
+      return;
+    v = Op_val(e.block)[e.offset];
+    if (Is_markable(v))
+      /* found something to mark */
+      break;
+    else
+      /* keep going */
+      e.offset++;
   }
   if (stk->count >= MARK_STACK_SIZE)
     mark_stack_prune(stk);
@@ -426,31 +423,23 @@ static void mark_stack_push_act(void* state, value v, value* ignored) {
 static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
   // FIXME: stat_blocks_marked
   mark_entry e = {0};
-  while (budget > 0) {
+  while (1) {
     value v;
-    if (e.block && Tag_val(e.block) == Stack_tag) {
-      caml_darken_stack(e.block);
-      e.offset = e.end;
-    }
     if (e.offset == e.end) {
-      while (1) {
-        if (stk->count == 0)
-          return budget;
-        e = stk->stack[--stk->count];
-        if (Tag_val(e.block) == Stack_tag) {
-          CAMLassert(e.offset == 0);
-          caml_darken_stack(e.block);
-        } else {
-          break;
-        }
-      }
+      if (stk->count == 0)
+        return budget;
+      e = stk->stack[--stk->count];
+    }
+    budget--;
+    if (budget <= 0) {
+      mark_stack_push(stk, e);
+      return 0;
     }
     CAMLassert(Is_markable(e.block) &&
                Has_status_hd(Hd_val(e.block), global.MARKED) &&
                Tag_val(e.block) < No_scan_tag &&
                Tag_val(e.block) != Stack_tag);
     v = Op_val(e.block)[e.offset++];
-    budget--;
     if (Is_markable(v)) {
       header_t hd = Hd_val(v);
       if (Tag_hd(hd) == Infix_tag) {
@@ -460,7 +449,11 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
       CAMLassert (!Has_status_hd(hd, global.GARBAGE));
       if (Has_status_hd(hd, global.UNMARKED)) {
         Hd_val(v) = With_status_hd(hd, global.MARKED);
-        if (Tag_val(v) < No_scan_tag) {
+        if (Tag_hd(hd) == Stack_tag) {
+          mark_stack_push(stk, e);
+          caml_darken_stack(v);
+          e = stk->stack[--stk->count];
+        } else if (Tag_hd(hd) < No_scan_tag) {
           mark_entry child = {v, 0, Wosize_hd(hd)};
           mark_stack_push(stk, e);
           e = child;
@@ -468,10 +461,6 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
       }
     }
   }
-  if (e.block) {
-    mark_stack_push(stk, e);
-  }
-  return 0;
 }
 
 /* mark until the budget runs out or marking is done */
@@ -506,8 +495,15 @@ void caml_darken(void* state, value v, value* ignored) {
       atomic_fetch_add(&num_domains_to_mark, 1);
       Caml_state->marking_done = 0;
     }
-    Hd_val(v) = With_status_hd(hd, global.MARKED);
-    mark_stack_push_act(0, v, 0);
+    if (Tag_hd(hd) == Stack_tag) {
+      Hd_val(v) = With_status_hd(hd, global.MARKED);
+      caml_darken_stack(v);
+    } else if (Tag_hd(hd) < No_scan_tag) {
+      Hd_val(v) = With_status_hd(hd, global.MARKED);
+      mark_stack_push_act(0, v, 0);
+    } else {
+      Hd_val(v) = With_status_hd(hd, global.MARKED);
+    }
   }
 }
 
