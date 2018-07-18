@@ -716,8 +716,14 @@ let is_valid_class_expr idlist ce =
       | Tcl_fun (_, _, _, _, _) -> Use.empty
       | Tcl_apply (_, _) -> Use.empty
       | Tcl_let (rec_flag, valbinds, _, ce) ->
-          let _, ty = value_bindings rec_flag env valbinds in
-          Use.join ty (class_expr env ce)
+          (* This rule looks like the `Texp_let` rule in the `expression`
+             function. There is no `Use.discard` here because the
+             occurrences of the variables in [idlist] are only of the form
+             [new id], so they are either absent, Dereferenced, or Guarded
+             (under a delay), never Unguarded, and `discard` would be a no-op.
+          *)
+          let env', ty = value_bindings rec_flag env valbinds in
+          Use.join ty (class_expr env' ce)
       | Tcl_constraint (ce, _, _, _, _) ->
           class_expr env ce
       | Tcl_open (_, _, _, _, ce) ->

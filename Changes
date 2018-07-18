@@ -287,6 +287,9 @@ OCaml 4.07 maintenance branch
 - MPR#7824, GPR#1914: subtype_row: filter out absent fields when row is closed
   (Leo White and Thomas Refis, report by talex, review by Jacques Garrigue)
 
+- GPR#1915: rec_check.ml is too permissive for certain class declarations.
+  (Alban Reynaud with Gabriel Scherer, review by Jeremy Yallop)
+
 OCaml 4.07.0 (10 July 2018)
 ---------------------------
 
