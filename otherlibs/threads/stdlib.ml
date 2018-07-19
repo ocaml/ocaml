@@ -645,6 +645,7 @@ end
 include Pervasives
 
 (*MODULE_ALIASES*)
+module Applicative  = Applicative
 module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels

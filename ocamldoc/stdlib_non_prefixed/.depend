@@ -1,4 +1,5 @@
 annot.cmi : location.cmi
+applicative.cmi : functor.cmi
 arg.cmi :
 arg_helper.cmi : map.cmi
 array.cmi : seq.cmi
@@ -57,6 +58,7 @@ event.cmi :
 filename.cmi :
 float.cmi : pervasives.cmi
 format.cmi : pervasives.cmi buffer.cmi
+functor.cmi :
 gc.cmi :
 genlex.cmi : stream.cmi
 graphics.cmi :

@@ -1236,6 +1236,7 @@ end
 include module type of struct include Pervasives end
 
 (*MODULE_ALIASES*)
+module Applicative  = Applicative
 module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels

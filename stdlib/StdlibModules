@@ -22,6 +22,7 @@ P ?= stdlib__
 
 STDLIB_MODULES=\
   $(P)spacetime \
+  $(P)applicative \
   $(P)arg \
   $(P)array \
   $(P)arrayLabels \

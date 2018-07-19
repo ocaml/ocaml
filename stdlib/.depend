@@ -1,3 +1,6 @@
+stdlib__applicative.cmo : stdlib__functor.cmi stdlib__applicative.cmi
+stdlib__applicative.cmx : stdlib__functor.cmx stdlib__applicative.cmi
+stdlib__applicative.cmi : stdlib__functor.cmi
 stdlib__arg.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__printf.cmi stdlib__list.cmi stdlib__buffer.cmi stdlib__array.cmi \
     stdlib__arg.cmi
 stdlib__arg.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__printf.cmx stdlib__list.cmx stdlib__buffer.cmx stdlib__array.cmx \
@@ -191,6 +194,8 @@ stdlib__weak.cmi : stdlib__hashtbl.cmi
 stdlib.cmo : camlinternalFormatBasics.cmi stdlib.cmi
 stdlib.cmx : camlinternalFormatBasics.cmx stdlib.cmi
 stdlib.cmi : camlinternalFormatBasics.cmi
+stdlib__applicative.cmo : stdlib__functor.cmi stdlib__applicative.cmi
+stdlib__applicative.p.cmx : stdlib__functor.cmx stdlib__applicative.cmi
 stdlib__arg.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__printf.cmi stdlib__list.cmi stdlib__buffer.cmi stdlib__array.cmi \
     stdlib__arg.cmi
 stdlib__arg.p.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__printf.cmx stdlib__list.cmx stdlib__buffer.cmx stdlib__array.cmx \
