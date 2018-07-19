@@ -2326,9 +2326,9 @@ let f (x: t) = match x with _ -> .
 (Introduced in 4.08)
 
 Since OCaml 4.08, it is possible to mark components (such as value or
-type declarations) in signatures with "alerts" that will be reported
+type declarations) in signatures with ``alerts'' that will be reported
 when those components are referenced.  This generalizes the notion of
-"deprecated" components which were previously reported as warning 3.
+``deprecated'' components which were previously reported as warning 3.
 Those alerts can be used for instance to report usage of unsafe
 features, or of features which are only available on some platforms,
 etc.
@@ -2341,7 +2341,7 @@ to the user when the alert is triggered (i.e. when the marked
 component is referenced).
 
 The "ocaml.alert" or "alert" attribute is used to mark components.
-Here is an example of a value declaration marked with an "unsafe" alert:
+Here is an example of a value declaration marked with an alert:
 
 \begin{verbatim}
 module U: sig
@@ -2357,7 +2357,7 @@ compile time, which can be turned or not into a fatal error.
 
 Controlling which alerts are enabled and whether they are turned into
 fatal errors is done either through the compiler's command-line option
-"-alert <spec>" or locally in the code through a "alert" or
+"-alert <spec>" or locally in the code through the "alert" or
 "ocaml.alert" attribute taking a single string payload "<spec>".  In
 both cases, the syntax for "<spec>" is a concatenation of items of the
 form:
@@ -2367,7 +2367,7 @@ form:
 \item "-id" disables alert "id".
 \item "++id" turns alert "id" into a fatal error.
 \item "--id" turns alert "id" into non-fatal mode.
-\item "@id" equivalent to "++id+id" (enables "id" and turns it into a fatal-error)
+\item "\@id" equivalent to "++id+id" (enables "id" and turns it into a fatal-error)
 \end{itemize}
 
 As a special case, if "id" is "all", it stands for all alerts.
@@ -2391,5 +2391,18 @@ let x =
 
 Before OCaml 4.08, there was support for a single kind of deprecation
 alert.  It is now known as the "deprecated" alert, but legacy
-attributes to trigger it and the legacy way to control it as warning 3
-are still supported.
+attributes to trigger it and the legacy ways to control it as warning
+3 are still supported. For instance, passing "-w +3" on the
+command-line is equivant to "-alert +deprecated", and:
+
+\begin{verbatim}
+val x: int
+  [@@@ocaml.deprecated "Please do something else"]
+\end{verbatim}
+
+is equivalent to:
+
+\begin{verbatim}
+val x: int
+  [@@@ocaml.alert deprecated "Please do something else"]
+\end{verbatim}
