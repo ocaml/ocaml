@@ -14,13 +14,9 @@ struct domain {
   caml_domain_state* state;
 };
 
-#ifdef __GNUC__
-  #define Caml_check_gc_interrupt(dom_st) \
-    __builtin_expect(((uintnat)(dom_st)->young_ptr < (dom_st)->young_limit), 0)
-#else
-  #define Caml_check_gc_interrupt(dom_st) \
-    ((uintnat)(dom_st)->young_ptr < (dom_st)->young_limit)
-#endif
+#define Caml_check_gc_interrupt(dom_st)   \
+  (CAMLalloc_point_here, \
+   CAMLunlikely((uintnat)(dom_st)->young_ptr < (dom_st)->young_limit))
 
 asize_t caml_norm_minor_heap_size (intnat);
 void caml_reallocate_minor_heap(asize_t);

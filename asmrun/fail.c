@@ -59,15 +59,10 @@ void caml_raise(value v)
   if (Caml_state->system_exnptr_offset == 0)
     caml_fatal_uncaught_exception(v);
 
-#ifndef Stack_grows_upwards
-#define PUSHED_AFTER <
-#else
-#define PUSHED_AFTER >
-#endif
   char* exception_pointer = Caml_state->system_stack_high
                           - Caml_state->system_exnptr_offset;
   while (CAML_LOCAL_ROOTS != NULL &&
-         (char *) CAML_LOCAL_ROOTS PUSHED_AFTER exception_pointer) {
+         (char *) CAML_LOCAL_ROOTS < exception_pointer) {
     Assert(CAML_LOCAL_ROOTS != NULL);
     struct caml__mutex_unwind* m = CAML_LOCAL_ROOTS->mutexes;
     while (m) {
@@ -77,7 +72,6 @@ void caml_raise(value v)
     }
     CAML_LOCAL_ROOTS = CAML_LOCAL_ROOTS->next;
   }
-#undef PUSHED_AFTER
 
   caml_raise_exception(Caml_state->young_ptr, v);
 }

@@ -43,32 +43,20 @@ frame_descr * caml_next_frame_descriptor(caml_frame_descrs fds, uintnat * pc, ch
     /* Skip to next frame */
     if (d->frame_size != 0xFFFF) {
       /* Regular frame, update sp/pc and return the frame descriptor */
-#ifndef Stack_grows_upwards
       *sp += (d->frame_size & 0xFFFC);
-#else
-      *sp -= (d->frame_size & 0xFFFC);
-#endif
       *pc = Saved_return_address(*sp);
       return d;
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous stack
        * chunk. This includes skipping over the trap frame (2 words). */
-#ifndef Stack_grows_upwards
       *sp += 2 * sizeof(value);
-#else
-      *sp -= 2 * sizeof(value);
-#endif
       if (*sp == (char*)Stack_high(stack)) {
         /* We've reached the top of stack. No more frames. */
         *pc = 0;
         return NULL;
       }
-#ifndef Stack_grows_upwards
       *sp += sizeof(struct caml_context) /* context */
           + sizeof(value); /* return address */
-#else
-      *sp -= sizeof(struct caml_context) + sizeof(value);
-#endif
     }
   }
 }
@@ -113,11 +101,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, uintnat trapsp_off)
       (backtrace_slot) descr;
 
     /* Stop when we reach the current exception handler */
-#ifndef Stack_grows_upwards
     if (sp > stack_high - trapsp_off) return;
-#else
-    if (sp < stack_high - trapsp_off) return;
-#endif
   }
 }
 
@@ -136,13 +120,15 @@ value get_callstack(value stack, value max_frames_value)
      from the OCaml side would overflow on 64bits machines. */
   intnat max_frames = Long_val(max_frames_value);
   intnat trace_pos;
-  char *sp;
-  uintnat pc;
-  caml_frame_descrs fds = caml_get_frame_descrs();
 
   saved_stack = stack;
   /* first compute the size of the trace */
   {
+    CAMLnoalloc;
+    char *sp;
+    uintnat pc;
+    caml_frame_descrs fds = caml_get_frame_descrs();
+
     caml_get_stack_sp_pc(stack, &sp, &pc);
     trace_pos = 0;
 
@@ -164,6 +150,11 @@ value get_callstack(value stack, value max_frames_value)
 
   /* then collect the trace */
   {
+    CAMLnoalloc;
+    char *sp;
+    uintnat pc;
+    caml_frame_descrs fds = caml_get_frame_descrs();
+
     caml_get_stack_sp_pc(stack, &sp, &pc);
     trace_pos = 0;
 
