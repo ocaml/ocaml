@@ -283,10 +283,11 @@ code_t caml_next_frame_pointer(value* stack_high, value ** sp,
    traverse the stack to compute the right size, then allocate space for the
    trace. */
 
-static value get_callstack(value* sp, intnat trap_spoff, value stack,
+static value get_callstack(value* sp, intnat trap_spoff,
+                           struct stack_info* stack,
                            value max_frames_value)
 {
-  CAMLparam2(max_frames_value, stack);
+  CAMLparam1(max_frames_value);
   CAMLlocal1(trace);
 
   /* we use `intnat` here because, were it only `int`, passing `max_int`
@@ -294,7 +295,7 @@ static value get_callstack(value* sp, intnat trap_spoff, value stack,
   intnat max_frames = Long_val(max_frames_value);
   intnat trace_size;
 
-  value parent = Stack_parent(stack);
+  struct stack_info* parent = Stack_parent(stack);
   value *stack_high = Stack_high(stack);
   value* saved_sp = sp;
   intnat saved_trap_spoff = trap_spoff;
@@ -305,7 +306,7 @@ static value get_callstack(value* sp, intnat trap_spoff, value stack,
     while (trace_size < max_frames) {
       code_t p = caml_next_frame_pointer(stack_high, &sp, &trap_spoff);
       if (p == NULL) {
-        if (parent == Val_unit) break;
+        if (parent == NULL) break;
         sp = Stack_high(parent) + Stack_sp(parent);
         trap_spoff = Long_val(sp[0]);
         stack_high = Stack_high(parent);
@@ -359,8 +360,11 @@ CAMLprim value caml_get_current_callstack (value max_frames_value)
 
 CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
 {
+  caml_failwith("unimplemented");
+  #if 0
   CAMLparam1(cont);
-  CAMLlocal2(stack, callstack);
+  CAMLlocal1(callstack);
+  struct stack_info *stack;
   intnat bvar_stat;
   value *sp;
 
@@ -376,6 +380,7 @@ CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
   caml_reverse_fiber_stack(stack);
 
   CAMLreturn(callstack);
+  #endif
 }
 
 

@@ -48,12 +48,12 @@ static void init_callback_code(void)
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 {
   CAMLparam0();
-  CAMLlocal1(parent_stack);
+  struct stack_info* parent_stack;
   int i;
   value res;
   caml_domain_state* domain_state = Caml_state;
   parent_stack = Stack_parent(domain_state->current_stack);
-  Stack_parent(domain_state->current_stack) = Val_unit;
+  Stack_parent(domain_state->current_stack) = NULL;
 
   CAMLassert(narg + 4 <= 256);
   domain_state->extern_sp -= narg + 4;
@@ -72,7 +72,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   res = caml_interprete(code, sizeof(code));
   if (Is_exception_result(res)) domain_state->extern_sp += narg + 4; /* PR#1228 */
 
-  Assert(Stack_parent(domain_state->current_stack) == Val_unit);
+  Assert(Stack_parent(domain_state->current_stack) == NULL);
   Stack_parent(domain_state->current_stack) = parent_stack;
   CAMLreturn (res);
 }

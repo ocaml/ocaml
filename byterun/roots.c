@@ -75,7 +75,6 @@ CAMLexport void caml_do_local_roots (scanning_action f, void* fdata,
   }
 #endif
 
-  f(fdata, domain->state->current_stack, &(domain->state->current_stack));
   for (lr = domain->state->local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
