@@ -318,6 +318,7 @@ void caml_init_gc ()
   caml_gc_log ("Initial stack limit: %luk bytes",
                caml_max_stack_size / 1024 * sizeof (value));
   caml_setup_eventlog();
+  caml_gc_phase = Phase_sweep_and_mark_main;
   #ifdef NATIVE_CODE
   caml_init_frame_descriptors();
   #endif

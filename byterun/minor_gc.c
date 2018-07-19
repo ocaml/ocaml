@@ -36,6 +36,7 @@
 #include "caml/fiber.h"
 #include "caml/eventlog.h"
 
+extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
 
 /* [sz] and [rsv] are numbers of entries */
@@ -62,7 +63,7 @@ void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
   alloc_generic_table ((struct generic_table *) tbl, sz, rsv, sizeof (value *));
 }
 
-static void reset_table (struct caml_ref_table *tbl)
+static void reset_table (struct generic_table *tbl)
 {
   tbl->size = 0;
   tbl->reserve = 0;
@@ -70,7 +71,7 @@ static void reset_table (struct caml_ref_table *tbl)
   tbl->base = tbl->ptr = tbl->threshold = tbl->limit = tbl->end = NULL;
 }
 
-static void clear_table (struct caml_ref_table *tbl)
+static void clear_table (struct generic_table *tbl)
 {
     tbl->ptr = tbl->base;
     tbl->limit = tbl->threshold;
@@ -90,9 +91,10 @@ void caml_free_remembered_set(struct caml_remembered_set* r)
   CAMLassert(r->minor_ref.ptr == r->minor_ref.base);
   CAMLassert(r->fiber_ref.ptr == r->fiber_ref.base + 1);
   CAMLassert((value)*r->fiber_ref.base == Caml_state->current_stack);
-  reset_table(&r->major_ref);
-  reset_table(&r->minor_ref);
-  reset_table(&r->fiber_ref);
+  reset_table((struct generic_table *)&r->major_ref);
+  reset_table((struct generic_table *)&r->minor_ref);
+  reset_table((struct generic_table *)&r->fiber_ref);
+  reset_table((struct generic_table *)&r->ephe_ref);
   caml_stat_free(r);
 }
 
@@ -100,12 +102,15 @@ void caml_free_remembered_set(struct caml_remembered_set* r)
 void caml_set_minor_heap_size (asize_t size)
 {
   caml_domain_state* domain_state = Caml_state;
+  struct caml_remembered_set *r = domain_state->remembered_set;
   if (domain_state->young_ptr != domain_state->young_end) caml_minor_collection ();
 
   caml_reallocate_minor_heap(size);
 
-  reset_table (&domain_state->remembered_set->major_ref);
-  reset_table (&domain_state->remembered_set->minor_ref);
+  reset_table ((struct generic_table *)&r->major_ref);
+  reset_table ((struct generic_table *)&r->minor_ref);
+  reset_table ((struct generic_table *)&r->fiber_ref);
+  reset_table ((struct generic_table *)&r->ephe_ref);
 }
 
 //*****************************************************************************
@@ -129,6 +134,23 @@ static value alloc_shared(mlsize_t wosize, tag_t tag)
   return Val_hp(mem);
 }
 
+static inline int is_in_interval (value v, char* low_closed, char* high_open)
+{
+  return low_closed <= (char*)v && (char*)v < high_open;
+}
+
+/* If [*v] is an [Infix_tag] object, [v] is updated to point to the first
+ * object in the block. */
+static inline void resolve_infix_val (value* v)
+{
+  int offset = 0;
+  if (Hd_val(*v) == Infix_tag) {
+    offset = Infix_offset_val(*v);
+    CAMLassert (offset > 0);
+    *v -= offset;
+  }
+}
+
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
 
@@ -150,9 +172,7 @@ static void oldify_one (void* st_v, value v, value *p)
           domain_state->young_ptr <= domain_state->young_end);
 
  tail_call:
-  if (!Is_block(v)
-      || !(young_ptr <= (char*)Hp_val(v)
-           && (char*)Hp_val(v) < young_end)) {
+  if (!(Is_block(v) && is_in_interval((value)Hp_val(v), young_ptr, young_end))) {
     /* not a minor block */
     *p = v;
     return;
@@ -261,6 +281,27 @@ static void oldify_one (void* st_v, value v, value *p)
   }
 }
 
+/* Test if the ephemeron is alive */
+static inline int ephe_check_alive_data (struct caml_ephe_ref_elt *re,
+                                         char* young_ptr, char* young_end)
+{
+  mlsize_t i;
+  value child;
+
+  for (i = CAML_EPHE_FIRST_KEY; i < Wosize_val(re->ephe); i++) {
+    child = Op_val(re->ephe)[i];
+    if (child != caml_ephe_none
+        && Is_block (child) && is_in_interval(child, young_ptr, young_end)) {
+      resolve_infix_val(&child);
+      if (Hd_val(child) != 0) {
+        /* value not copied to major heap */
+        return 0;
+      }
+    }
+  }
+  return 1;
+}
+
 /* Finish the work that was put off by [oldify_one].
    Note that [oldify_one] itself is called by oldify_mopup, so we
    have to be careful to remove the first entry from the list before
@@ -271,10 +312,13 @@ static void oldify_mopup (struct oldify_state* st)
   mlsize_t i;
   caml_domain_state* domain_state =
     st->promote_domain ? st->promote_domain->state : Caml_state;
+  struct caml_ephe_ref_table ephe_ref_table = domain_state->remembered_set->ephe_ref;
+  struct caml_ephe_ref_elt *re;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
+  int redo = 0;
 
-  while (st->todo_list != 0){
+  while (st->todo_list != 0) {
     v = st->todo_list;                 /* Get the head. */
     CAMLassert (Hd_val (v) == 0);             /* It must be forwarded. */
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
@@ -286,15 +330,15 @@ static void oldify_mopup (struct oldify_state* st)
 
       f = Op_val (new_v)[0];
       CAMLassert (!Is_debug_tag(f));
-      if (Is_block (f) && young_ptr <= (char*)Hp_val(v)
-          && (char*)Hp_val(v) < young_end) {
+      if (Is_block (f) &&
+          is_in_interval((value)Hp_val(v), young_ptr, young_end)) {
         oldify_one (st, f, Op_val (new_v));
       }
       for (i = 1; i < Wosize_val (new_v); i++){
         f = Op_val (v)[i];
         CAMLassert (!Is_debug_tag(f));
-        if (Is_block (f) && young_ptr <= (char*)Hp_val(v)
-            && (char*)Hp_val(v) < young_end) {
+        if (Is_block (f) &&
+            is_in_interval((value)Hp_val(v), young_ptr, young_end)) {
           oldify_one (st, f, Op_val (new_v) + i);
         } else {
           Op_val (new_v)[i] = f;
@@ -304,6 +348,30 @@ static void oldify_mopup (struct oldify_state* st)
 
     CAMLassert (Wosize_val(new_v));
   }
+
+  /* Oldify the data in the minor heap of alive ephemeron
+     During minor collection keys outside the minor heap are considered alive */
+  for (re = ephe_ref_table.base;
+       re < ephe_ref_table.ptr; re++) {
+    /* look only at ephemeron with data in the minor heap */
+    if (re->offset == CAML_EPHE_DATA_OFFSET) {
+      value *data = &Ephe_data(re->ephe);
+      if (*data != caml_ephe_none && Is_block(*data) &&
+          is_in_interval(*data, young_ptr, young_end)) {
+        resolve_infix_val(data);
+        if (Hd_val(*data) == 0) { /* Value copied to major heap */
+          *data = Op_val(*data)[0];
+        } else {
+          if (ephe_check_alive_data(re, young_ptr, young_end)) {
+            oldify_one(st, *data, data);
+            redo = 1; /* oldify_todo_list can still be 0 */
+          }
+        }
+      }
+    }
+  }
+
+  if (redo) oldify_mopup (st);
 }
 
 //*****************************************************************************
@@ -318,7 +386,7 @@ void forward_pointer (void* state, value v, value *p) {
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
 
-  if (Is_block (v) && young_ptr <= (char*)Hp_val(v) && (char*)Hp_val(v) < young_end) {
+  if (Is_block (v) && is_in_interval((value)Hp_val(v), young_ptr, young_end)) {
     hd = Hd_val(v);
     if (hd == 0) {
       *p = Op_val(v)[0];
@@ -362,11 +430,12 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   int saved_stack = 0;
   caml_domain_state* domain_state = domain->state;
   struct caml_remembered_set *remembered_set = domain_state->remembered_set;
-  value young_ptr = (value)domain_state->young_ptr;
-  value young_end = (value)domain_state->young_end;
+  char* young_ptr = domain_state->young_ptr;
+  char* young_end = domain_state->young_end;
   float percent_to_scan;
   uintnat prev_alloc_words = domain_state->allocated_words;
   struct oldify_state st = {0};
+  struct caml_ephe_ref_elt *re;
 
   /* Integers are already shared */
   if (Is_long(root))
@@ -417,9 +486,9 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     caml_clean_stack_domain(root, domain);
   }
 
-  percent_to_scan = st.oldest_promoted <= young_ptr ? 0.0 :
-    (((float)(st.oldest_promoted - young_ptr)) * 100.0 /
-     (young_end - (value)domain_state->young_start));
+  percent_to_scan = st.oldest_promoted <= (value)young_ptr ? 0.0 :
+    (((float)(st.oldest_promoted - (value)young_ptr)) * 100.0 /
+     ((value)young_end - (value)domain_state->young_start));
 
   if (percent_to_scan > Percent_to_promote_with_GC) {
     caml_gc_log("caml_promote: forcing minor GC. %%_minor_to_scan=%f", percent_to_scan);
@@ -434,13 +503,23 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     caml_scan_stack (forward_pointer, st.promote_domain, domain_state->current_stack);
 
     /* Scan major to young pointers. */
-    for (r = remembered_set->major_ref.base; r < remembered_set->major_ref.ptr; r++) {
+    for (r = remembered_set->major_ref.base;
+         r < remembered_set->major_ref.ptr; r++) {
       value old_p = **r;
-      if (Is_block(old_p) && young_ptr <= old_p && old_p < young_end) {
+      if (Is_block(old_p) && is_in_interval(old_p,young_ptr,young_end)) {
         value new_p = old_p;
         forward_pointer (st.promote_domain, new_p, &new_p);
         if (old_p != new_p)
           caml_atomic_cas_raw (*r,old_p,new_p);
+      }
+    }
+
+    /* Scan ephemeron ref table */
+    for (re = remembered_set->ephe_ref.base;
+         re < remembered_set->ephe_ref.ptr; re++) {
+      value* key = &Op_val(re->ephe)[re->offset];
+      if (Is_block(*key) && is_in_interval(*key,young_ptr,young_end)) {
+        forward_pointer (st.promote_domain, *key, key);
       }
     }
 
@@ -451,8 +530,8 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     for (r = remembered_set->minor_ref.base; r < remembered_set->minor_ref.ptr; r++) {
       *caml_addrmap_insert_pos(&young_young_ptrs, (value)*r) = 1;
     }
-    for (iter = young_ptr;
-         iter < young_end;
+    for (iter = (value)young_ptr;
+         iter < (value)young_end;
          iter = next_minor_block(domain_state, iter)) {
       value hd = Hd_hp(iter);
       if (hd != 0) {
@@ -461,7 +540,8 @@ CAMLexport value caml_promote(struct domain* domain, value root)
         if (tag < No_scan_tag && tag != Stack_tag) {
           for (i = 0; i < Wosize_hd(hd); i++) {
             value* f = Op_val(curr) + i;
-            if (Is_block(*f) && young_ptr <= *f && *f < young_end && *f < curr) {
+            if (Is_block(*f) && is_in_interval(*f, young_ptr, young_end) &&
+                *f < curr) {
               CAMLassert(caml_addrmap_contains(&young_young_ptrs, (value)f));
             }
           }
@@ -477,7 +557,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     }
 
     /* Scan newer objects */
-    for (iter = young_ptr;
+    for (iter = (value)young_ptr;
          iter <= st.oldest_promoted;
          iter = next_minor_block(domain_state, iter)) {
       value hd = Hd_hp(iter);
@@ -515,13 +595,15 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   CAMLnoalloc;
   caml_domain_state* domain_state = domain->state;
   struct caml_remembered_set *remembered_set = domain_state->remembered_set;
-  unsigned rewritten = 0;
+  unsigned rewrite_successes = 0;
+  unsigned rewrite_failures = 0;
   int saved_stack = 0;
-  value young_ptr = (value)domain_state->young_ptr;
-  value young_end = (value)domain_state->young_end;
+  char* young_ptr = domain_state->young_ptr;
+  char* young_end = domain_state->young_end;
   uintnat minor_allocated_bytes = young_end - young_ptr;
   struct oldify_state st = {0};
   value **r;
+  struct caml_ephe_ref_elt *re;
 
   if (!caml_stack_is_saved()) {
     saved_stack = 1;
@@ -542,7 +624,8 @@ void caml_empty_minor_heap_domain (struct domain* domain)
       caml_scan_dirty_stack_domain (&oldify_one, &st, (value)*r, domain);
     }
 
-    for (r = remembered_set->major_ref.base; r < remembered_set->major_ref.ptr; r++) { value x = **r;
+    for (r = remembered_set->major_ref.base; r < remembered_set->major_ref.ptr; r++) {
+      value x = **r;
       oldify_one (&st, x, &x);
     }
     caml_ev_end("minor_gc/roots");
@@ -551,12 +634,35 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     oldify_mopup (&st);
     caml_ev_end("minor_gc/promote");
 
+    caml_ev_begin("minor_gc/ephemerons");
+    for (re = remembered_set->ephe_ref.base;
+         re < remembered_set->ephe_ref.ptr; re++) {
+      CAMLassert (Ephe_domain(re->ephe) == domain);
+      if (re->offset == CAML_EPHE_DATA_OFFSET) {
+        /* Data field has already been handled in oldify_mopup. Handle only
+         * keys here. */
+        continue;
+      }
+      value* key = &Op_val(re->ephe)[re->offset];
+      if (*key != caml_ephe_none && Is_block(*key) &&
+          is_in_interval(*key, young_ptr, young_end)) {
+        resolve_infix_val(key);
+        if (Hd_val(*key) == 0) { /* value copied to major heap */
+          *key = Op_val(*key)[0];
+        } else {
+          CAMLassert(!ephe_check_alive_data(re,young_ptr,young_end));
+          *key = caml_ephe_none;
+          Ephe_data(re->ephe) = caml_ephe_none;
+        }
+      }
+    }
+    caml_ev_end("minor_gc/ephemerons");
+
     caml_ev_begin("minor_gc/update_remembered_set");
-    for (r = remembered_set->major_ref.base; r < remembered_set->major_ref.ptr; r++) {
+    for (r = remembered_set->major_ref.base;
+         r < remembered_set->major_ref.ptr; r++) {
       value v = **r;
-      if (Is_block (v) &&
-          young_ptr <= (value)Hp_val(v) &&
-          (value)Hp_val(v) < young_end) {
+      if (Is_block (v) && is_in_interval ((value)Hp_val(v), young_ptr, young_end)) {
         value vnew;
         header_t hd = Hd_val(v);
         int offset = 0;
@@ -572,23 +678,26 @@ void caml_empty_minor_heap_domain (struct domain* domain)
           CAMLassert(Tag_val(vnew) == Infix_tag);
           v += offset;
         }
-        if (caml_atomic_cas_raw(*r,v,vnew)) ++rewritten;
+        if (caml_atomic_cas_raw(*r,v,vnew)) ++rewrite_successes;
+        else ++rewrite_failures;
       }
     }
+    CAMLassert (!caml_domain_alone() || rewrite_failures == 0);
     caml_ev_end("minor_gc/update_remembered_set");
 
-    clear_table (&remembered_set->major_ref);
-    clear_table (&remembered_set->minor_ref);
+    clear_table ((struct generic_table *)&remembered_set->major_ref);
+    clear_table ((struct generic_table *)&remembered_set->minor_ref);
+    clear_table ((struct generic_table *)&remembered_set->ephe_ref);
     domain_state->young_ptr = domain_state->young_end;
     domain_state->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
     domain_state->stat_minor_collections++;
     domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
 
     caml_ev_end("minor_gc");
-    caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, %u pointers rewritten",
+    caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, rewrite: successes=%u failures=%u",
                  domain->state->id,
                  100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
-                 (unsigned)(minor_allocated_bytes + 512)/1024, rewritten);
+                 (unsigned)(minor_allocated_bytes + 512)/1024, rewrite_successes, rewrite_failures);
   }
   else {
     caml_gc_log ("Minor collection of domain %d: skipping", domain->state->id);
@@ -597,7 +706,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   for (r = remembered_set->fiber_ref.base; r < remembered_set->fiber_ref.ptr; r++) {
     caml_clean_stack_domain ((value)*r, domain);
   }
-  clear_table (&remembered_set->fiber_ref);
+  clear_table ((struct generic_table *)&remembered_set->fiber_ref);
 
   if (saved_stack) {
     caml_restore_stack_gc();
@@ -695,4 +804,14 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
      "ref_table threshold crossed\n",
      "Growing ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
      "Fatal error: ref_table overflow\n");
+}
+
+void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
+{
+  realloc_generic_table
+    ((struct generic_table *) tbl, sizeof (struct caml_ephe_ref_elt),
+     "request_minor/realloc_ephe_ref_table@",
+     "ephe_ref_table threshold crossed\n",
+     "Growing ephe_ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Fatal error: ephe_ref_table overflow\n");
 }

@@ -443,6 +443,14 @@ int is_foreign(value v) {
 int is_young(value v) {
   return Is_young(v);
 }
+
+int has_status(value v, status s) {
+  return Has_status_hd(Hd_val(v),s);
+}
+
+int tag_val(value v) {
+  return (int)Tag_val(v);
+}
 #endif
 
 /* Global memory pool.

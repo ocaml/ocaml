@@ -31,8 +31,17 @@
 }
 
 struct caml_ref_table CAML_TABLE_STRUCT(value *);
+
+struct caml_ephe_ref_elt {
+  value ephe;      /* an ephemeron in major heap */
+  mlsize_t offset; /* the offset that points in the minor heap  */
+};
+
+struct caml_ephe_ref_table CAML_TABLE_STRUCT(struct caml_ephe_ref_elt);
+
 struct caml_remembered_set {
   struct caml_ref_table major_ref, minor_ref, fiber_ref;
+  struct caml_ephe_ref_table ephe_ref;
 };
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
@@ -40,10 +49,13 @@ extern void caml_empty_minor_heap (void);
 CAMLextern void caml_minor_collection (void);
 CAMLextern void forward_pointer (void* domain, value v, value* p);
 CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
+
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv);
 extern void caml_realloc_ref_table (struct caml_ref_table *);
+extern void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);
 struct caml_remembered_set* caml_alloc_remembered_set();
 void caml_free_remembered_set(struct caml_remembered_set*);
+
 struct domain;
 CAMLextern value caml_promote(struct domain*, value root);
 int caml_stack_is_saved (void);
@@ -56,5 +68,19 @@ int caml_stack_is_saved (void);
     }                                                                   \
     *ref->ptr++ = (x);                                                  \
   } while (0)
+
+static inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
+                                          value ar, mlsize_t offset)
+{
+  struct caml_ephe_ref_elt *ephe_ref;
+  if (tbl->ptr >= tbl->limit){
+    CAMLassert (tbl->ptr == tbl->limit);
+    caml_realloc_ephe_ref_table (tbl);
+  }
+  ephe_ref = tbl->ptr++;
+  ephe_ref->ephe = ar;
+  ephe_ref->offset = offset;
+  CAMLassert(ephe_ref->offset < Wosize_val(ephe_ref->ephe));
+}
 
 #endif /* CAML_MINOR_GC_H */
