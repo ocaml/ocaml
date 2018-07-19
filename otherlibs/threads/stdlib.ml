@@ -660,6 +660,7 @@ module Ephemeron    = Ephemeron
 module Filename     = Filename
 module Float        = Float
 module Format       = Format
+module Functor      = Functor
 module Gc           = Gc
 module Genlex       = Genlex
 module Hashtbl      = Hashtbl

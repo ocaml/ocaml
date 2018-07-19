@@ -113,8 +113,8 @@ printf.cmi : buffer.cmi
 printinstr.cmi : instruct.cmi format.cmi
 printlambda.cmi : lambda.cmi format.cmi
 printpat.cmi : typedtree.cmi format.cmi asttypes.cmi
-printtyp.cmi : types.cmi path.cmi outcometree.cmi longident.cmi ident.cmi \
-    format.cmi env.cmi asttypes.cmi
+printtyp.cmi : types.cmi path.cmi outcometree.cmi longident.cmi location.cmi \
+    ident.cmi format.cmi env.cmi asttypes.cmi
 printtyped.cmi : typedtree.cmi format.cmi
 profile.cmi : format.cmi
 queue.cmi : seq.cmi

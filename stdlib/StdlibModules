@@ -42,6 +42,7 @@ STDLIB_MODULES=\
   $(P)filename \
   $(P)float \
   $(P)format \
+  $(P)functor \
   $(P)gc \
   $(P)genlex \
   $(P)hashtbl \
