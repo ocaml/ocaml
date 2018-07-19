@@ -19,8 +19,11 @@ type 'a t
 
 external create : int -> 'a t = "caml_weak_create"
 
-(** number of additional values in a weak pointer *)
-let additional_values = 2
+(** number of additional values in a weak pointer
+ *    - Link
+ *    - Domain
+ *    - Data *)
+let additional_values = 3 (* CAML_EPHE_FIRST_KEY in weak.h *)
 
 let length x = Obj.size(Obj.repr x) - additional_values
 

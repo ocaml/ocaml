@@ -20,12 +20,28 @@
 
 #include "mlvalues.h"
 
-#define CAML_EPHE_LINK_OFFSET 0
-#define CAML_EPHE_DATA_OFFSET 1
-#define CAML_EPHE_FIRST_KEY 2
+extern value caml_ephe_none;
 
-extern value caml_weak_list_head;
-extern value caml_weak_none;
+#define CAML_EPHE_LINK_OFFSET 0
+#define CAML_EPHE_DOMAIN_OFFSET 1
+#define CAML_EPHE_DATA_OFFSET 2
+#define CAML_EPHE_FIRST_KEY 3
+
+/** The first field 0:  weak list;
+       second field 1:  owning domain;
+        third field 2:  data;
+       others       3..:  keys;
+
+    A weak pointer is an ephemeron with the data at caml_ephe_none
+    If fields are added, don't forget to update weak.ml [additional_values].
+ */
+
+#define Ephe_link(e) (*(Op_val(e) + CAML_EPHE_LINK_OFFSET))
+#define Ephe_domain(e) (*(struct domain**)(Op_val(e) + CAML_EPHE_DOMAIN_OFFSET))
+#define Ephe_data(e) (*(Op_val(e) + CAML_EPHE_DATA_OFFSET))
+
+void caml_ephe_clean(struct domain* d, value e);
+value caml_bias_ephe_list(value, struct domain*);
 
 #endif /* CAML_INTERNALS */
 

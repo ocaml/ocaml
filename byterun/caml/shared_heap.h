@@ -48,6 +48,13 @@ static inline int is_garbage(value v) {
   return Has_status_hd(Hd_val(v), global.GARBAGE);
 }
 
+static inline int is_unmarked(value v) {
+  return Has_status_hd(Hd_val(v), global.UNMARKED);
+}
+
+static inline int is_marked(value v) {
+  return Has_status_hd(Hd_val(v), global.MARKED);
+}
 
 void caml_redarken_pool(struct pool*, scanning_action, void*);
 

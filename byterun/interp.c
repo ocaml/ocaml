@@ -299,6 +299,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   env = Atom(0);
   accu = Val_int(0);
 
+
 #ifdef THREADED_CODE
 #ifdef DEBUG
  next_instr:
@@ -325,6 +326,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       fflush(stdout);
     };
     CAMLassert(sp == domain_state->stack_high || caml_on_current_stack(sp));
+
 #endif
     curr_instr = *pc++;
 

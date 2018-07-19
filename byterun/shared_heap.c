@@ -519,7 +519,9 @@ void caml_verify_root(void* state, value v, value* p)
 static void verify_object(struct heap_verify_state* st, value v) {
   if (!Is_block(v)) return;
 
+  Assert (!Is_minor(v));
   Assert (Hd_val(v));
+
   if (Tag_val(v) == Infix_tag) {
     v -= Infix_offset_val(v);
     Assert(Tag_val(v) == Closure_tag);
@@ -532,10 +534,7 @@ static void verify_object(struct heap_verify_state* st, value v) {
   if (Has_status_hd(Hd_val(v), NOT_MARKABLE)) return;
   st->objs++;
 
-  // caml_gc_log ("verify_object: v=0x%lx hd=0x%lx tag=%u", v, Hd_val(v), Tag_val(v));
-  if (!Is_minor(v)) {
-    Assert(Has_status_hd(Hd_val(v), global.UNMARKED));
-  }
+  Assert(Has_status_hd(Hd_val(v), global.UNMARKED));
 
   if (Tag_val(v) == Stack_tag) {
     caml_scan_stack(verify_push, st, v);

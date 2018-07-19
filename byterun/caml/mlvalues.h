@@ -230,31 +230,6 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
     Minor_val_bitmask) == 0)
 
 
-CAMLextern value caml_read_barrier(value, int);
-static inline value Field(value x, int i) {
-  Assert (Hd_val(x));
-  value v = (((value*)x))[i];
-  //if (Is_young(v)) Assert(young_ptr < (char*)v);
-  return Is_foreign(v) ? caml_read_barrier(x, i) : v;
-}
-
-static inline void caml_read_field(value x, int i, value* ret) {
-  Assert (Hd_val(x));
-  value v = Op_val(x)[i];
-  //if (Is_young(v)) Assert(young_ptr < (char*)v);
-  *ret = Is_foreign(v) ? caml_read_barrier(x, i) : v;
-}
-
-static inline value Field_imm(value x, int i) {
-  value v = (Op_val(x)[i] + 0);
-  Assert (!Is_foreign(v));
-  return v;
-}
-
-#define Int_field(x, i) Int_val(Op_val(x)[i])
-#define Long_field(x, i) Long_val(Op_val(x)[i])
-#define Bool_field(x, i) Bool_val(Op_val(x)[i])
-
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.
    See [caml_oldify_one] in minor_gc.c for more details.
@@ -442,6 +417,37 @@ CAMLextern value caml_atom(tag_t);
 CAMLextern value caml_set_oo_id(value obj);
 
 CAMLextern value caml_set_oo_id(value obj);
+
+/* Field access macros and functions */
+
+static inline value Field_imm(value x, int i) {
+  Assert (Hd_val(x));
+  Assert (Tag_val(x) == Infix_tag || i < Wosize_val(x));
+  value v = Op_val(x)[i];
+  Assert (!Is_foreign(v));
+  return v;
+}
+
+CAMLextern value caml_read_barrier(value, int);
+static inline value Field(value x, int i) {
+  Assert (Hd_val(x));
+  value v = (((value*)x))[i];
+  //if (Is_young(v)) Assert(young_ptr < (char*)v);
+  return Is_foreign(v) ? caml_read_barrier(x, i) : v;
+}
+
+static inline void caml_read_field(value x, int i, value* ret) {
+  Assert (Hd_val(x));
+  value v = Op_val(x)[i];
+  //if (Is_young(v)) Assert(young_ptr < (char*)v);
+  *ret = Is_foreign(v) ? caml_read_barrier(x, i) : v;
+}
+
+#define Int_field(x, i) Int_val(Op_val(x)[i])
+#define Long_field(x, i) Long_val(Op_val(x)[i])
+#define Bool_field(x, i) Bool_val(Op_val(x)[i])
+
+
 
 #ifdef __cplusplus
 }
