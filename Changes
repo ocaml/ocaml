@@ -299,6 +299,9 @@ Working version
   stubs on 32bits
   (Jérémie Dimino)
 
+- GPR#1917: comballoc: ensure object allocation order is preserved
+  (Stephen Dolan)
+
 ### Runtime system:
 
 - MPR#7198, MPR#7750, GPR#1738: add a function (caml_custom_alloc_mem)
