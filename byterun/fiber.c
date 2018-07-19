@@ -144,10 +144,8 @@ void caml_scan_stack(scanning_action f, void* fdata, value stack)
 #endif
   value *root;
   struct caml_context* context;
-  frame_descr** frame_descriptors;
-  int frame_descriptors_mask;
+  caml_frame_descrs fds = caml_get_frame_descrs();
 
-  f(fdata, caml_frame_descriptor_table, &caml_frame_descriptor_table);
   f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
   f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
   f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
@@ -155,9 +153,6 @@ void caml_scan_stack(scanning_action f, void* fdata, value stack)
 
   if (Stack_sp(stack) == 0) return;
   sp = (char*)(Stack_high(stack) + Stack_sp(stack));
-  Assert(caml_frame_descriptor_table != Val_unit);
-  frame_descriptors = Data_abstract_val(caml_frame_descriptor_table);
-  frame_descriptors_mask = Wosize_val(caml_frame_descriptor_table) - 1;
 
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
@@ -179,11 +174,11 @@ next_chunk:
 
   while(1) {
     /* Find the descriptor corresponding to the return address */
-    h = Hash_retaddr(retaddr, frame_descriptors_mask);
+    h = Hash_retaddr(retaddr, fds.mask);
     while(1) {
-      d = frame_descriptors[h];
+      d = fds.descriptors[h];
       if (d->retaddr == retaddr) break;
-      h = (h+1) & frame_descriptors_mask;
+      h = (h+1) & fds.mask;
     }
     if (d->frame_size != 0xFFFF) {
       /* Scan the roots in this frame */
