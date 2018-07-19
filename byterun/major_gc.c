@@ -18,20 +18,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "caml/config.h"
-#include "caml/mlvalues.h"
-#include "caml/memory.h"
-#include "caml/fail.h"
-#include "caml/shared_heap.h"
-#include "caml/memory.h"
-#include "caml/roots.h"
-#include "caml/globroots.h"
-#include "caml/domain.h"
-#include "caml/fiber.h"
 #include "caml/addrmap.h"
-#include "caml/platform.h"
-#include "caml/startup_aux.h"
+#include "caml/config.h"
+#include "caml/domain.h"
 #include "caml/eventlog.h"
+#include "caml/fail.h"
+#include "caml/fiber.h"
+#include "caml/finalise.h"
+#include "caml/globroots.h"
+#include "caml/memory.h"
+#include "caml/mlvalues.h"
+#include "caml/platform.h"
+#include "caml/roots.h"
+#include "caml/shared_heap.h"
+#include "caml/startup_aux.h"
 #include "caml/weak.h"
 
 /*
@@ -50,6 +50,9 @@ uintnat caml_major_cycles_completed = 0;
 static atomic_uintnat num_domains_to_sweep = {0};
 static atomic_uintnat num_domains_to_mark = {0};
 static atomic_uintnat num_domains_to_ephe_sweep = {0};
+static atomic_uintnat num_domains_to_final_update_first = {0};
+static atomic_uintnat num_domains_to_final_update_last = {0};
+
 gc_phase_t caml_gc_phase;
 
 uintnat caml_get_num_domains_to_mark () {
@@ -89,7 +92,7 @@ void caml_ephe_todo_list_emptied ()
   caml_plat_lock(&ephe_lock);
   --ephe_cycle_info.num_domains_todo.val;
   caml_plat_unlock(&ephe_lock);
-  atomic_fetch_add(&num_domains_to_ephe_sweep, -1);
+  atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
 }
 
 void caml_ephe_todo_list_stolen ()
@@ -121,9 +124,45 @@ static void record_ephe_marking_done (uintnat ephe_cycle)
 static struct {
   value ephe_list_todo;
   value ephe_list_live;
-} orphaned_ephe = {0, 0};
+  struct caml_final_info *final_info;
+} orph_structs = {0, 0, 0};
 
 static caml_plat_mutex orphaned_lock = CAML_PLAT_MUTEX_INITIALIZER;
+
+void caml_add_orphaned_finalisers (struct caml_final_info* f)
+{
+  CAMLassert (caml_gc_phase == Phase_sweep_and_mark_main);
+  CAMLassert (!f->updated_first);
+  CAMLassert (!f->updated_last);
+
+  caml_plat_lock(&orphaned_lock);
+  f->next = orph_structs.final_info;
+  orph_structs.final_info = f;
+  caml_plat_unlock(&orphaned_lock);
+
+}
+
+/* Called by terminating domain from handover_finalisers */
+void caml_final_domain_terminate (caml_domain_state *domain_state)
+{
+  struct caml_final_info *f = domain_state->final_info;
+  if(!f->updated_first) {
+    atomic_fetch_add_verify_ge0(&num_domains_to_final_update_first, -1);
+    f->updated_first = 1;
+  }
+  if(!f->updated_last) {
+    atomic_fetch_add_verify_ge0(&num_domains_to_final_update_last, -1);
+    f->updated_last = 1;
+  }
+}
+
+static int no_orphaned_work ()
+{
+  return
+    orph_structs.ephe_list_todo == 0 &&
+    orph_structs.ephe_list_live == 0 &&
+    orph_structs.final_info == NULL;
+}
 
 void caml_add_orphaned_ephe(value todo_head, value todo_tail,
                             value live_head, value live_tail)
@@ -131,43 +170,69 @@ void caml_add_orphaned_ephe(value todo_head, value todo_tail,
   caml_plat_lock(&orphaned_lock);
   if (todo_head) {
     CAMLassert(Ephe_link(todo_tail) == 0);
-    Ephe_link(todo_tail) = orphaned_ephe.ephe_list_todo;
-    orphaned_ephe.ephe_list_todo = todo_head;
+    Ephe_link(todo_tail) = orph_structs.ephe_list_todo;
+    orph_structs.ephe_list_todo = todo_head;
   }
   if (live_head) {
     CAMLassert(Ephe_link(live_tail) == 0);
-    Ephe_link(live_tail) = orphaned_ephe.ephe_list_live;
-    orphaned_ephe.ephe_list_live = live_head;
+    Ephe_link(live_tail) = orph_structs.ephe_list_live;
+    orph_structs.ephe_list_live = live_head;
   }
   caml_plat_unlock(&orphaned_lock);
 }
 
-void caml_steal_ephe_work()
+void caml_adopt_orphaned_work ()
 {
   struct domain* d = caml_domain_self();
   caml_domain_state* domain_state = Caml_state;
   value last;
+  struct caml_final_info *f, *myf, *temp;
 
-  if (orphaned_ephe.ephe_list_todo == 0 &&
-      orphaned_ephe.ephe_list_live == 0)
+  if (no_orphaned_work() || caml_domain_is_terminating())
     return;
 
   caml_plat_lock(&orphaned_lock);
-  if (orphaned_ephe.ephe_list_live) {
-    last = caml_bias_ephe_list(orphaned_ephe.ephe_list_live, d);
+
+  if (orph_structs.ephe_list_live) {
+    last = caml_bias_ephe_list(orph_structs.ephe_list_live, d);
     Ephe_link(last) = domain_state->ephe_list_live;
-    domain_state->ephe_list_live = orphaned_ephe.ephe_list_live;
-    orphaned_ephe.ephe_list_live = 0;
+    domain_state->ephe_list_live = orph_structs.ephe_list_live;
+    orph_structs.ephe_list_live = 0;
   }
-  if (orphaned_ephe.ephe_list_todo) {
+
+  if (orph_structs.ephe_list_todo) {
     if (domain_state->ephe_list_todo == 0) {
       caml_ephe_todo_list_stolen();
     }
-    last = caml_bias_ephe_list(orphaned_ephe.ephe_list_todo, d);
+    last = caml_bias_ephe_list(orph_structs.ephe_list_todo, d);
     Ephe_link(last) = domain_state->ephe_list_todo;
-    domain_state->ephe_list_todo = orphaned_ephe.ephe_list_todo;
-    orphaned_ephe.ephe_list_todo = 0;
+    domain_state->ephe_list_todo = orph_structs.ephe_list_todo;
+    orph_structs.ephe_list_todo = 0;
   }
+
+  f = orph_structs.final_info;
+  myf = domain_state->final_info;
+  while (f != NULL) {
+    CAMLassert (!f->updated_first);
+    CAMLassert (!f->updated_last);
+    CAMLassert (!myf->updated_first);
+    CAMLassert (!myf->updated_last);
+    CAMLassert (caml_gc_phase == Phase_sweep_and_mark_main);
+    if (f->todo_head) {
+      myf->todo_tail->next = f->todo_head;
+      myf->todo_tail = f->todo_tail;
+    }
+    if (f->first.young > 0) {
+      caml_final_merge_finalisable (&f->first, &myf->first);
+    }
+    if (f->last.young > 0) {
+      caml_final_merge_finalisable (&f->last, &myf->last);
+    }
+    temp = f;
+    f = f->next;
+    caml_stat_free (temp);
+  }
+  orph_structs.final_info = NULL;
   caml_plat_unlock(&orphaned_lock);
 }
 
@@ -255,7 +320,7 @@ static void handle_steal_req (struct domain* targetd, void* plv,
 
     if (new_size == 0) {
       CAMLassert(!target->marking_done);
-      atomic_fetch_add(&num_domains_to_mark, -1);
+      atomic_fetch_add_verify_ge0(&num_domains_to_mark, -1);
       target->marking_done = 1;
     }
 
@@ -395,7 +460,7 @@ static intnat mark(intnat budget) {
       } else {
         update_ephe_info_for_marking_done();
         Caml_state->marking_done = 1;
-        atomic_fetch_add(&num_domains_to_mark, -1);
+        atomic_fetch_add_verify_ge0(&num_domains_to_mark, -1);
       }
     }
   }
@@ -604,6 +669,8 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
       ephe_cycle_info.ephe_cycle.val = 0;
       ephe_cycle_info.num_domains_done.val = 0;
       atomic_store_rel(&num_domains_to_ephe_sweep, num_domains_in_stw);
+      atomic_store_rel(&num_domains_to_final_update_first, num_domains_in_stw);
+      atomic_store_rel(&num_domains_to_final_update_last, num_domains_in_stw);
     }
     // should interrupts be processed here or not?
     // depends on whether marking above may need interrupts
@@ -614,9 +681,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
      running OCaml code. */
   if (caml_params->verify_heap) {
     struct heap_verify_state* ver = caml_verify_begin();
-    caml_do_local_roots(&caml_verify_root, ver, caml_domain_self());
-    caml_scan_stack(&caml_verify_root, ver, Caml_state->current_stack);
-    caml_scan_global_roots(&caml_verify_root, ver);
+    caml_do_roots (&caml_verify_root, ver, domain, 1);
     caml_verify_heap(ver);
     caml_gc_log("Heap verified");
     caml_global_barrier();
@@ -630,13 +695,11 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   domain->state->marking_done = 0;
 
   caml_ev_begin("major_gc/roots");
-  caml_do_local_roots(&caml_darken, 0, caml_domain_self());
-  caml_scan_stack(&caml_darken, 0, domain->state->current_stack);
-  caml_scan_global_roots(&caml_darken, 0);
+  caml_do_roots (&caml_darken, NULL, domain, 0);
   caml_ev_end("major_gc/roots");
 
   if (domain->state->mark_stack_count == 0) {
-    atomic_fetch_add(&num_domains_to_mark, -1);
+    atomic_fetch_add_verify_ge0(&num_domains_to_mark, -1);
     domain->state->marking_done = 1;
   }
 
@@ -648,8 +711,51 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   if (domain->state->ephe_list_todo == (value) NULL)
     caml_ephe_todo_list_emptied();
 
+  /* Finalisers */
+  domain->state->final_info->updated_first = 0;
+  domain->state->final_info->updated_last = 0;
 
   caml_ev_end("major_gc/stw");
+}
+
+static int is_complete_phase_sweep_and_mark_main (struct domain *d)
+{
+  return
+    caml_gc_phase == Phase_sweep_and_mark_main &&
+    atomic_load_acq (&num_domains_to_mark) == 0 &&
+    /* Marking is done */
+    atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
+    atomic_load_acq(&ephe_cycle_info.num_domains_done) &&
+    /* Ephemeron marking is done */
+    no_orphaned_work();
+    /* All orphaned ephemerons have been adopted */
+}
+
+static int is_complete_phase_mark_final (struct domain *d)
+{
+  return
+    caml_gc_phase == Phase_mark_final &&
+    atomic_load_acq (&num_domains_to_final_update_first) == 0 &&
+    /* updated finalise first values */
+    atomic_load_acq (&num_domains_to_mark) == 0 &&
+    /* Marking is done */
+    atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
+    atomic_load_acq(&ephe_cycle_info.num_domains_done) &&
+    /* Ephemeron marking is done */
+    no_orphaned_work();
+    /* All orphaned ephemerons have been adopted */
+}
+
+static int is_complete_phase_sweep_ephe (struct domain *d)
+{
+  return
+    caml_gc_phase == Phase_sweep_ephe &&
+    atomic_load_acq (&num_domains_to_ephe_sweep) == 0 &&
+    /* All domains have swept their ephemerons */
+    atomic_load_acq (&num_domains_to_final_update_last) == 0 &&
+    /* All domains have updated finalise last values */
+    no_orphaned_work();
+    /* All orphaned structures have been adopted */
 }
 
 static void try_complete_gc_phase (struct domain* domain, void* unused)
@@ -658,10 +764,9 @@ static void try_complete_gc_phase (struct domain* domain, void* unused)
 
   b = caml_global_barrier_begin ();
   if (caml_global_barrier_is_final(b)) {
-    if (caml_gc_phase == Phase_sweep_and_mark_main &&
-        orphaned_ephe.ephe_list_todo == 0 &&
-        atomic_load_acq(&num_domains_to_mark) == 0 &&
-        ephe_cycle_info.num_domains_todo.val == ephe_cycle_info.num_domains_done.val) {
+    if (is_complete_phase_sweep_and_mark_main(domain)) {
+      caml_gc_phase = Phase_mark_final;
+    } else if (is_complete_phase_mark_final(domain)) {
       caml_gc_phase = Phase_sweep_ephe;
     }
   }
@@ -702,7 +807,7 @@ static intnat major_collection_slice(intnat howmuch,
 
     if (budget > 0) {
       domain_state->sweeping_done = 1;
-      atomic_fetch_add(&num_domains_to_sweep, -1);
+      atomic_fetch_add_verify_ge0(&num_domains_to_sweep, -1);
     }
 
     caml_ev_end("major_gc/sweep");
@@ -740,12 +845,31 @@ mark_again:
     caml_ev_end("major_gc/mark");
   mark_work -= budget;
 
-  caml_steal_ephe_work();
+  /* Finalisers */
+  if (caml_gc_phase == Phase_mark_final &&
+      caml_final_update_first(d)) {
+    /* This domain has updated finalise first values */
+    atomic_fetch_add_verify_ge0(&num_domains_to_final_update_first, -1);
+    if (budget > 0 && !domain_state->marking_done)
+      goto mark_again;
+  }
 
+  if (caml_gc_phase == Phase_sweep_ephe &&
+      caml_final_update_last(d)) {
+    /* This domain has updated finalise last values */
+    atomic_fetch_add_verify_ge0(&num_domains_to_final_update_last, -1);
+    /* Nothing has been marked while updating last */
+  }
+
+  caml_adopt_orphaned_work();
+
+  /* Ephemerons */
   saved_ephe_cycle = atomic_load_acq(&ephe_cycle_info.ephe_cycle);
   if (domain_state->ephe_list_todo != (value) NULL &&
       saved_ephe_cycle > domain_state->ephe_cycle) {
+    caml_ev_begin("major_gc/ephe_mark");
     budget = ephe_mark(budget);
+    caml_ev_end("major_gc/ephe_mark");
     if (domain_state->ephe_list_todo == (value) NULL)
       caml_ephe_todo_list_emptied ();
     else if (budget > 0 && domain_state->marking_done)
@@ -753,26 +877,27 @@ mark_again:
     else if (budget > 0) goto mark_again;
   }
 
-  if (atomic_load_acq(&num_domains_to_mark) == 0 &&
-      atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
-        atomic_load_acq(&ephe_cycle_info.num_domains_done) &&
-      orphaned_ephe.ephe_list_todo == 0 &&
-      caml_gc_phase != Phase_sweep_ephe) {
-    /* Try to move to the next phase. */
-    if (from_barrier) {
-      try_complete_gc_phase (caml_domain_self(), (void*)0);
-    } else {
-      caml_try_run_on_all_domains(&try_complete_gc_phase, 0);
+  if (caml_gc_phase == Phase_sweep_ephe &&
+      domain_state->ephe_list_todo != 0) {
+    caml_ev_begin("major_gc/ephe_sweep");
+    budget = ephe_sweep (d, budget);
+    caml_ev_end("major_gc/ephe_sweep");
+    if (domain_state->ephe_list_todo == 0) {
+      atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
     }
   }
 
-  if (caml_gc_phase == Phase_sweep_ephe) {
-    if (domain_state->ephe_list_todo != 0) {
-      budget = ephe_sweep (d, budget);
-      if (domain_state->ephe_list_todo == 0) {
-        atomic_fetch_add(&num_domains_to_ephe_sweep, -1);
-      }
+  /* Complete GC phase */
+  if (is_complete_phase_sweep_and_mark_main(d) ||
+      is_complete_phase_mark_final (d)) {
+    caml_ev_begin("major_gc/phase_change");
+    if (from_barrier) {
+      try_complete_gc_phase (d, (void*)0);
+    } else {
+      caml_try_run_on_all_domains (&try_complete_gc_phase, 0);
     }
+    caml_ev_end("major_gc/phase_change");
+    if (budget > 0) goto mark_again;
   }
 
   caml_ev_end("major_gc/slice");
@@ -789,19 +914,19 @@ mark_again:
 
   caml_restore_stack_gc();
 
-  if (caml_gc_phase == Phase_sweep_ephe &&
-      orphaned_ephe.ephe_list_todo == 0 &&
-      atomic_load_acq(&num_domains_to_ephe_sweep) == 0) {
+  if (is_complete_phase_sweep_ephe(d)) {
     saved_major_cycle = caml_major_cycles_completed;
     /* To handle the case where multiple domains try to finish the major
       cycle simultaneously, we loop until the current cycle has ended,
       ignoring whether caml_try_run_on_all_domains succeeds. */
     while (saved_major_cycle == caml_major_cycles_completed) {
+      caml_ev_begin("major_gc/phase_change");
       if (from_barrier) {
-        cycle_all_domains_callback(caml_domain_self(), (void*)0);
+        cycle_all_domains_callback(d, (void*)0);
       } else {
         caml_try_run_on_all_domains(&cycle_all_domains_callback, 0);
       }
+      caml_ev_end("major_gc/phase_change");
     }
   }
 
@@ -857,7 +982,7 @@ void caml_finish_sweeping () {
     caml_ev_begin("major_gc/finish_sweeping");
     while (caml_sweep(Caml_state->shared_heap, 10) <= 0);
     Caml_state->sweeping_done = 1;
-    atomic_fetch_add(&num_domains_to_sweep, -1);
+    atomic_fetch_add_verify_ge0(&num_domains_to_sweep, -1);
     caml_ev_end("major_gc/finish_sweeping");
   }
 }
@@ -1027,13 +1152,17 @@ static void mark_stack_prune ()
   caml_plat_unlock(&pools_to_rescan_lock);
 }
 
-void caml_init_major_gc() {
-  Caml_state->mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
-  Caml_state->mark_stack_count = 0;
+void caml_init_major_gc(caml_domain_state* d) {
+  d->mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
+  d->mark_stack_count = 0;
   /* Fresh domains do not need to performing marking or sweeping. */
-  Caml_state->sweeping_done = 1;
-  Caml_state->marking_done = 1;
-  Caml_state->stealing = 0;
+  d->sweeping_done = 1;
+  d->marking_done = 1;
+  d->stealing = 0;
+  /* Finalisers. Fresh domains participate in updating finalisers. */
+  d->final_info = caml_alloc_final_info ();
+  atomic_fetch_add(&num_domains_to_final_update_first, 1);
+  atomic_fetch_add(&num_domains_to_final_update_last, 1);
 }
 
 void caml_teardown_major_gc() {

@@ -250,7 +250,7 @@ CAMLprim value caml_gc_major(value v)
   caml_ev_pause(EV_PAUSE_GC);
   caml_empty_minor_heap ();
   caml_finish_major_cycle();
-  /* !! caml_final_do_calls (); */
+  caml_final_do_calls ();
   caml_ev_resume();
   return Val_unit;
 }
@@ -265,6 +265,7 @@ CAMLprim value caml_gc_full_major(value v)
   for (i = 0; i < 3; i++) {
     caml_empty_minor_heap();
     caml_finish_major_cycle();
+    caml_final_do_calls ();
   }
   caml_ev_resume();
   return Val_unit;

@@ -126,6 +126,12 @@ INLINE uintnat atomic_fetch_add(atomic_uintnat* p, uintnat v) {
   return __sync_fetch_and_add(&p->val, v);
 }
 
+INLINE uintnat atomic_fetch_add_verify_ge0(atomic_uintnat* p, uintnat v) {
+  uintnat result = atomic_fetch_add(p,v);
+  CAMLassert ((intnat)result > 0);
+  return result;
+}
+
 /* atomically: if (*p == vold) { *p = vnew; return 1; } else { return 0; }
    may spuriously return 0 even when *p == vold */
 INLINE int atomic_cas(atomic_uintnat* p, uintnat vold, uintnat vnew) {

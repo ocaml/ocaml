@@ -54,7 +54,7 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
          return;
 
       /* Add to remembered set */
-      Ref_table_add(&domain_state->remembered_set->major_ref, Op_val(obj) + field);
+      Ref_table_add(&domain_state->minor_tables->major_ref, Op_val(obj) + field);
     }
   } else if (Is_young(new_val) && new_val < obj) {
 
@@ -66,7 +66,7 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
       return;
 
     /* Add to remembered set */
-    Ref_table_add(&domain_state->remembered_set->minor_ref, Op_val(obj) + field);
+    Ref_table_add(&domain_state->minor_tables->minor_ref, Op_val(obj) + field);
   }
 }
 
