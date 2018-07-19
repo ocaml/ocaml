@@ -120,11 +120,7 @@ void caml_get_stack_sp_pc (value stack, char** sp /* out */, uintnat* pc /* out 
   Assert(Tag_val(stack) == Stack_tag);
   char* p = (char*)(Stack_high(stack) + Stack_sp(stack));
 
-#ifndef Stack_grows_upwards
   p += sizeof(struct caml_context) + sizeof(value);
-#else
-  p -= sizeof(struct caml_context) + sizeof(value);
-#endif
   *sp = p;
   *pc = Saved_return_address(*sp);
 }
@@ -137,11 +133,7 @@ void caml_scan_stack(scanning_action f, void* fdata, value stack)
   frame_descr * d;
   uintnat h;
   int n, ofs;
-#ifdef Stack_grows_upwards
-  short * p;  /* PR#4339: stack offsets are negative in this case */
-#else
   unsigned short * p;
-#endif
   value *root;
   struct caml_context* context;
   caml_frame_descrs fds = caml_get_frame_descrs();
@@ -158,19 +150,11 @@ next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
   context = (struct caml_context*)sp;
   regs = context->gc_regs;
-#ifndef Stack_grows_upwards
   sp += sizeof(struct caml_context);
-#else
-  sp -= sizeof(struct caml_context);
-#endif
 
   if (sp == (char*)Stack_high(stack)) return;
   retaddr = *(uintnat*)sp;
-#ifndef Stack_grows_upwards
   sp += sizeof(value);
-#else
-  sp -= sizeof(value);
-#endif
 
   while(1) {
     /* Find the descriptor corresponding to the return address */
@@ -192,21 +176,13 @@ next_chunk:
         f (fdata, *root, root);
       }
       /* Move to next frame */
-#ifndef Stack_grows_upwards
       sp += (d->frame_size & 0xFFFC);
-#else
-      sp -= (d->frame_size & 0xFFFC);
-#endif
       retaddr = Saved_return_address(sp);
       /* XXX KC: disabled already scanned optimization. */
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous stack
        * chunk. This includes skipping over the trap frame (2 words). */
-#ifndef Stack_grows_upwards
       sp += 2 * sizeof(value);
-#else
-      sp -= 2 * sizeof(value);
-#endif
       goto next_chunk;
     }
   }
