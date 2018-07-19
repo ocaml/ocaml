@@ -46,7 +46,7 @@ static void dirty_stack(value stack)
           break;
         }
       }
-      Ref_table_add(&Caml_state->remembered_set->fiber_ref, (value*)stack);
+      Ref_table_add(&Caml_state->minor_tables->fiber_ref, (value*)stack);
     }
   }
 }
@@ -400,6 +400,7 @@ void caml_scan_dirty_stack_domain(scanning_action f, void* fdata, value stack,
   }
 }
 
+/* Used only by major GC marking */
 void caml_darken_stack(value stack)
 {
   Assert(Tag_val(stack) == Stack_tag);

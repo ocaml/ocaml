@@ -36,12 +36,19 @@ struct caml_ephe_ref_elt {
   value ephe;      /* an ephemeron in major heap */
   mlsize_t offset; /* the offset that points in the minor heap  */
 };
-
 struct caml_ephe_ref_table CAML_TABLE_STRUCT(struct caml_ephe_ref_elt);
 
-struct caml_remembered_set {
+struct caml_custom_elt {
+  value block;     /* The finalized block in the minor heap. */
+  mlsize_t mem;    /* The parameters for adjusting GC speed. */
+  mlsize_t max;
+};
+struct caml_custom_table CAML_TABLE_STRUCT(struct caml_custom_elt);
+
+struct caml_minor_tables {
   struct caml_ref_table major_ref, minor_ref, fiber_ref;
   struct caml_ephe_ref_table ephe_ref;
+  struct caml_custom_table custom;
 };
 
 extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
@@ -53,8 +60,9 @@ CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv);
 extern void caml_realloc_ref_table (struct caml_ref_table *);
 extern void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);
-struct caml_remembered_set* caml_alloc_remembered_set();
-void caml_free_remembered_set(struct caml_remembered_set*);
+extern void caml_realloc_custom_table (struct caml_custom_table *);
+struct caml_minor_tables* caml_alloc_minor_tables();
+void caml_free_minor_tables(struct caml_minor_tables*);
 
 struct domain;
 CAMLextern value caml_promote(struct domain*, value root);
@@ -81,6 +89,20 @@ static inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
   ephe_ref->ephe = ar;
   ephe_ref->offset = offset;
   CAMLassert(ephe_ref->offset < Wosize_val(ephe_ref->ephe));
+}
+
+static inline void add_to_custom_table (struct caml_custom_table *tbl, value v,
+                                        mlsize_t mem, mlsize_t max)
+{
+  struct caml_custom_elt *elt;
+  if (tbl->ptr >= tbl->limit){
+    CAMLassert (tbl->ptr == tbl->limit);
+    caml_realloc_custom_table (tbl);
+  }
+  elt = tbl->ptr++;
+  elt->block = v;
+  elt->mem = mem;
+  elt->max = max;
 }
 
 #endif /* CAML_MINOR_GC_H */

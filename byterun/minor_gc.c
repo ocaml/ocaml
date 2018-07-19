@@ -17,8 +17,14 @@
 
 #include <string.h>
 #include <stdio.h>
+
+#include "caml/addrmap.h"
 #include "caml/config.h"
+#include "caml/custom.h"
+#include "caml/domain.h"
+#include "caml/eventlog.h"
 #include "caml/fail.h"
+#include "caml/fiber.h"
 #include "caml/finalise.h"
 #include "caml/gc.h"
 #include "caml/gc_ctrl.h"
@@ -28,13 +34,9 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
+#include "caml/shared_heap.h"
 #include "caml/signals.h"
 #include "caml/weak.h"
-#include "caml/domain.h"
-#include "caml/shared_heap.h"
-#include "caml/addrmap.h"
-#include "caml/fiber.h"
-#include "caml/eventlog.h"
 
 extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
@@ -77,15 +79,15 @@ static void clear_table (struct generic_table *tbl)
     tbl->limit = tbl->threshold;
 }
 
-struct caml_remembered_set* caml_alloc_remembered_set()
+struct caml_minor_tables* caml_alloc_minor_tables()
 {
-  struct caml_remembered_set* r =
-    caml_stat_alloc(sizeof(struct caml_remembered_set));
+  struct caml_minor_tables* r =
+    caml_stat_alloc(sizeof(struct caml_minor_tables));
   memset(r, 0, sizeof(*r));
   return r;
 }
 
-void caml_free_remembered_set(struct caml_remembered_set* r)
+void caml_free_minor_tables(struct caml_minor_tables* r)
 {
   CAMLassert(r->major_ref.ptr == r->major_ref.base);
   CAMLassert(r->minor_ref.ptr == r->minor_ref.base);
@@ -95,6 +97,7 @@ void caml_free_remembered_set(struct caml_remembered_set* r)
   reset_table((struct generic_table *)&r->minor_ref);
   reset_table((struct generic_table *)&r->fiber_ref);
   reset_table((struct generic_table *)&r->ephe_ref);
+  reset_table((struct generic_table *)&r->custom);
   caml_stat_free(r);
 }
 
@@ -102,7 +105,7 @@ void caml_free_remembered_set(struct caml_remembered_set* r)
 void caml_set_minor_heap_size (asize_t size)
 {
   caml_domain_state* domain_state = Caml_state;
-  struct caml_remembered_set *r = domain_state->remembered_set;
+  struct caml_minor_tables *r = domain_state->minor_tables;
   if (domain_state->young_ptr != domain_state->young_end) caml_minor_collection ();
 
   caml_reallocate_minor_heap(size);
@@ -111,6 +114,7 @@ void caml_set_minor_heap_size (asize_t size)
   reset_table ((struct generic_table *)&r->minor_ref);
   reset_table ((struct generic_table *)&r->fiber_ref);
   reset_table ((struct generic_table *)&r->ephe_ref);
+  reset_table((struct generic_table *)&r->custom);
 }
 
 //*****************************************************************************
@@ -165,7 +169,7 @@ static void oldify_one (void* st_v, value v, value *p)
   int stack_used;
   caml_domain_state* domain_state =
     st->promote_domain ? st->promote_domain->state : Caml_state;
-  struct caml_remembered_set *remembered_set = domain_state->remembered_set;
+  struct caml_minor_tables *minor_tables = domain_state->minor_tables;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
   CAMLassert (domain_state->young_start <= domain_state->young_ptr &&
@@ -205,7 +209,7 @@ static void oldify_one (void* st_v, value v, value *p)
 
     if (tag == Stack_tag && !st->should_promote_stacks) {
       /* Stacks are not promoted unless explicitly requested. */
-      Ref_table_add(&remembered_set->major_ref, p);
+      Ref_table_add(&minor_tables->major_ref, p);
     } else {
       sz = Wosize_hd (hd);
       st->live_bytes += Bhsize_hd(hd);
@@ -312,7 +316,7 @@ static void oldify_mopup (struct oldify_state* st)
   mlsize_t i;
   caml_domain_state* domain_state =
     st->promote_domain ? st->promote_domain->state : Caml_state;
-  struct caml_ephe_ref_table ephe_ref_table = domain_state->remembered_set->ephe_ref;
+  struct caml_ephe_ref_table ephe_ref_table = domain_state->minor_tables->ephe_ref;
   struct caml_ephe_ref_elt *re;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
@@ -429,7 +433,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   tag_t tag;
   int saved_stack = 0;
   caml_domain_state* domain_state = domain->state;
-  struct caml_remembered_set *remembered_set = domain_state->remembered_set;
+  struct caml_minor_tables *minor_tables = domain_state->minor_tables;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
   float percent_to_scan;
@@ -496,15 +500,12 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     // ???
     caml_empty_minor_heap_domain (domain);
   } else {
-    /* Scan local roots */
-    caml_do_local_roots (forward_pointer, st.promote_domain, domain);
-
-    /* Scan current stack */
-    caml_scan_stack (forward_pointer, st.promote_domain, domain_state->current_stack);
+    caml_do_local_roots (&forward_pointer, st.promote_domain, domain, 1);
+    caml_scan_stack (&forward_pointer, st.promote_domain, domain_state->current_stack);
 
     /* Scan major to young pointers. */
-    for (r = remembered_set->major_ref.base;
-         r < remembered_set->major_ref.ptr; r++) {
+    for (r = minor_tables->major_ref.base;
+         r < minor_tables->major_ref.ptr; r++) {
       value old_p = **r;
       if (Is_block(old_p) && is_in_interval(old_p,young_ptr,young_end)) {
         value new_p = old_p;
@@ -515,8 +516,8 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     }
 
     /* Scan ephemeron ref table */
-    for (re = remembered_set->ephe_ref.base;
-         re < remembered_set->ephe_ref.ptr; re++) {
+    for (re = minor_tables->ephe_ref.base;
+         re < minor_tables->ephe_ref.ptr; re++) {
       value* key = &Op_val(re->ephe)[re->offset];
       if (Is_block(*key) && is_in_interval(*key,young_ptr,young_end)) {
         forward_pointer (st.promote_domain, *key, key);
@@ -527,7 +528,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
     /* In DEBUG mode, verify that the minor_ref table contains all young-young pointers
        from older to younger objects */
     struct addrmap young_young_ptrs = ADDRMAP_INIT;
-    for (r = remembered_set->minor_ref.base; r < remembered_set->minor_ref.ptr; r++) {
+    for (r = minor_tables->minor_ref.base; r < minor_tables->minor_ref.ptr; r++) {
       *caml_addrmap_insert_pos(&young_young_ptrs, (value)*r) = 1;
     }
     for (iter = (value)young_ptr;
@@ -552,7 +553,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 #endif
 
     /* Scan young to young pointers */
-    for (r = remembered_set->minor_ref.base; r < remembered_set->minor_ref.ptr; r++) {
+    for (r = minor_tables->minor_ref.base; r < minor_tables->minor_ref.ptr; r++) {
       forward_pointer (st.promote_domain, **r, *r);
     }
 
@@ -594,7 +595,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
 {
   CAMLnoalloc;
   caml_domain_state* domain_state = domain->state;
-  struct caml_remembered_set *remembered_set = domain_state->remembered_set;
+  struct caml_minor_tables *minor_tables = domain_state->minor_tables;
   unsigned rewrite_successes = 0;
   unsigned rewrite_failures = 0;
   int saved_stack = 0;
@@ -604,6 +605,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   struct oldify_state st = {0};
   value **r;
   struct caml_ephe_ref_elt *re;
+  struct caml_custom_elt *elt;
 
   if (!caml_stack_is_saved()) {
     saved_stack = 1;
@@ -618,13 +620,13 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
     caml_ev_begin("minor_gc");
     caml_ev_begin("minor_gc/roots");
-    caml_do_local_roots(&oldify_one, &st, domain);
+    caml_do_local_roots(&oldify_one, &st, domain, 0);
 
-    for (r = remembered_set->fiber_ref.base; r < remembered_set->fiber_ref.ptr; r++) {
+    for (r = minor_tables->fiber_ref.base; r < minor_tables->fiber_ref.ptr; r++) {
       caml_scan_dirty_stack_domain (&oldify_one, &st, (value)*r, domain);
     }
 
-    for (r = remembered_set->major_ref.base; r < remembered_set->major_ref.ptr; r++) {
+    for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
       value x = **r;
       oldify_one (&st, x, &x);
     }
@@ -635,8 +637,8 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     caml_ev_end("minor_gc/promote");
 
     caml_ev_begin("minor_gc/ephemerons");
-    for (re = remembered_set->ephe_ref.base;
-         re < remembered_set->ephe_ref.ptr; re++) {
+    for (re = minor_tables->ephe_ref.base;
+         re < minor_tables->ephe_ref.ptr; re++) {
       CAMLassert (Ephe_domain(re->ephe) == domain);
       if (re->offset == CAML_EPHE_DATA_OFFSET) {
         /* Data field has already been handled in oldify_mopup. Handle only
@@ -658,9 +660,9 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     }
     caml_ev_end("minor_gc/ephemerons");
 
-    caml_ev_begin("minor_gc/update_remembered_set");
-    for (r = remembered_set->major_ref.base;
-         r < remembered_set->major_ref.ptr; r++) {
+    caml_ev_begin("minor_gc/update_minor_tables");
+    for (r = minor_tables->major_ref.base;
+         r < minor_tables->major_ref.ptr; r++) {
       value v = **r;
       if (Is_block (v) && is_in_interval ((value)Hp_val(v), young_ptr, young_end)) {
         value vnew;
@@ -683,11 +685,30 @@ void caml_empty_minor_heap_domain (struct domain* domain)
       }
     }
     CAMLassert (!caml_domain_alone() || rewrite_failures == 0);
-    caml_ev_end("minor_gc/update_remembered_set");
+    caml_ev_end("minor_gc/update_minor_tables");
 
-    clear_table ((struct generic_table *)&remembered_set->major_ref);
-    clear_table ((struct generic_table *)&remembered_set->minor_ref);
-    clear_table ((struct generic_table *)&remembered_set->ephe_ref);
+    caml_ev_begin("minor_gc/finalisers");
+    caml_final_update_last_minor(domain);
+    /* Run custom block finalisation of dead minor values */
+    for (elt = minor_tables->custom.base; elt < minor_tables->custom.ptr; elt++) {
+      value v = elt->block;
+      if (Hd_val(v) == 0) {
+        /* !!caml_adjust_gc_speed(elt->mem, elt->max); */
+      } else {
+        /* Block will be freed: call finalisation function, if any */
+        void (*final_fun)(value) = Custom_ops_val(v)->finalize;
+        if (final_fun != NULL) final_fun(v);
+      }
+    }
+    caml_final_empty_young(domain);
+    caml_ev_end("minor_gc/finalisers");
+
+
+    clear_table ((struct generic_table *)&minor_tables->major_ref);
+    clear_table ((struct generic_table *)&minor_tables->minor_ref);
+    clear_table ((struct generic_table *)&minor_tables->ephe_ref);
+    clear_table ((struct generic_table *)&minor_tables->custom);
+
     domain_state->young_ptr = domain_state->young_end;
     domain_state->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
     domain_state->stat_minor_collections++;
@@ -700,13 +721,14 @@ void caml_empty_minor_heap_domain (struct domain* domain)
                  (unsigned)(minor_allocated_bytes + 512)/1024, rewrite_successes, rewrite_failures);
   }
   else {
+    caml_final_empty_young(domain);
     caml_gc_log ("Minor collection of domain %d: skipping", domain->state->id);
   }
 
-  for (r = remembered_set->fiber_ref.base; r < remembered_set->fiber_ref.ptr; r++) {
+  for (r = minor_tables->fiber_ref.base; r < minor_tables->fiber_ref.ptr; r++) {
     caml_clean_stack_domain ((value)*r, domain);
   }
-  clear_table ((struct generic_table *)&remembered_set->fiber_ref);
+  clear_table ((struct generic_table *)&minor_tables->fiber_ref);
 
   if (saved_stack) {
     caml_restore_stack_gc();
@@ -742,12 +764,7 @@ CAMLexport void caml_minor_collection (void)
   caml_empty_minor_heap ();
   caml_handle_incoming_interrupts ();
   caml_major_collection_slice (0, 0);
-
-  /* FIXME: run finalisers.
-     If finalisers run, need to rerun caml_empty_minor_heap.
-   */
-
-  CAMLassert (Caml_state->young_end == Caml_state->young_ptr);
+  caml_final_do_calls();
 
   caml_ev_resume();
 
@@ -814,4 +831,14 @@ void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
      "ephe_ref_table threshold crossed\n",
      "Growing ephe_ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
      "Fatal error: ephe_ref_table overflow\n");
+}
+
+void caml_realloc_custom_table (struct caml_custom_table *tbl)
+{
+  realloc_generic_table
+    ((struct generic_table *) tbl, sizeof (struct caml_custom_elt),
+     "request_minor/realloc_custom_table@",
+     "custom_table threshold crossed\n",
+     "Growing custom_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "custom_table overflow");
 }

@@ -24,6 +24,8 @@
 #include "caml/gc_ctrl.h"
 #include "caml/osdeps.h"
 #include "caml/weak.h"
+#include "caml/finalise.h"
+#include "caml/gc_ctrl.h"
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
@@ -216,14 +218,12 @@ static void create_domain(uintnat initial_minor_heap_size) {
 
     domain_state->young_start = domain_state->young_end =
       domain_state->young_ptr = 0;
-    domain_state->remembered_set = caml_alloc_remembered_set();
+    domain_state->minor_tables = caml_alloc_minor_tables();
 
     d->state.state->shared_heap = caml_init_shared_heap();
-    caml_init_major_gc();
+    caml_init_major_gc(domain_state);
     caml_reallocate_minor_heap(initial_minor_heap_size);
-
     caml_init_main_stack();
-
 
     domain_state->backtrace_buffer = NULL;
 #ifndef NATIVE_CODE
@@ -804,7 +804,30 @@ static void handover_ephemerons(caml_domain_state* domain_state)
   }
   domain_state->ephe_list_live = 0;
   domain_state->ephe_list_todo = 0;
+}
 
+static void handover_finalisers(caml_domain_state* domain_state)
+{
+  struct caml_final_info* f = domain_state->final_info;
+
+  if (f->todo_head != NULL || f->first.size != 0 || f->last.size != 0) {
+    /* have some final structures */
+    if (caml_gc_phase != Phase_sweep_and_mark_main) {
+      /* Force a major GC to simplify constraints for
+      * handing over ephemerons. */
+      caml_gc_major(Val_unit);
+    }
+    caml_add_orphaned_finalisers (f);
+    /* Create a dummy final info */
+    domain_state->final_info = caml_alloc_final_info();
+  }
+  caml_final_domain_terminate(domain_state);
+}
+
+int caml_domain_is_terminating ()
+{
+  struct interruptor* s = &domain_self->interruptor;
+  return s->terminating;
 }
 
 static void domain_terminate()
@@ -821,6 +844,7 @@ static void domain_terminate()
     caml_empty_minor_heap();
     caml_finish_marking();
     handover_ephemerons(domain_state);
+    handover_finalisers(domain_state);
 
     caml_plat_lock(&s->lock);
 
@@ -848,11 +872,12 @@ static void domain_terminate()
     caml_plat_unlock(&s->lock);
   }
 
+  caml_stat_free(domain_state->final_info);
   caml_teardown_major_gc();
   caml_teardown_shared_heap(domain_state->shared_heap);
   domain_state->shared_heap = 0;
-  caml_free_remembered_set(domain_state->remembered_set);
-  domain_state->remembered_set = 0;
+  caml_free_minor_tables(domain_state->minor_tables);
+  domain_state->minor_tables = 0;
 
   if (Caml_state->critical_section_nesting) {
     Caml_state->critical_section_nesting = 0;

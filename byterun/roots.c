@@ -45,7 +45,16 @@ static intnat caml_globals_scanned = 0;
 
 CAMLexport void (*caml_scan_roots_hook)(scanning_action, void* fdata, struct domain*) = NULL;
 
-CAMLexport void caml_do_local_roots (scanning_action f, void* fdata, struct domain* domain)
+void caml_do_roots (scanning_action f, void* fdata, struct domain* d, int do_final_val)
+{
+  caml_do_local_roots(f, fdata, d, do_final_val);
+  caml_scan_stack(f, fdata, d->state->current_stack);
+  caml_scan_global_roots(f, fdata);
+  caml_final_do_roots(f, fdata, d, do_final_val);
+}
+
+CAMLexport void caml_do_local_roots (scanning_action f, void* fdata,
+                                     struct domain* domain, int do_final_val)
 {
   struct caml__roots_block *lr;
   int i, j;
@@ -77,6 +86,7 @@ CAMLexport void caml_do_local_roots (scanning_action f, void* fdata, struct doma
       }
     }
   }
+  caml_final_do_young_roots (f, fdata, domain, do_final_val);
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f, fdata, domain);
 }
