@@ -8,17 +8,18 @@ let main_join n =
   let ok = Array.to_list a |> List.for_all (fun x -> x) in
   assert ok
 
-let rec other_join cnt n domain =
+let rec other_join flags n domain =
   if n > 0 then
-    Domain.spawn (fun () -> incr cnt; Domain.join domain)
-    |> other_join cnt (n-1)
+    Domain.spawn (fun () -> flags.(n-1) <- true; Domain.join domain)
+    |> other_join flags (n-1)
   else
     Domain.join domain
 
+exception Ex of string
 let join_exn () =
-  match Domain.(join (spawn (fun () -> failwith (String.make 5 '!')))) with
+  match Domain.(join (spawn (fun () -> raise (Ex (String.make 5 '!'))))) with
   | _ -> assert false
-  | exception (Failure "!!!!!") -> ()
+  | exception (Ex "!!!!!") -> ()
 
 let join_slow () =
   let rec burn l =
@@ -41,9 +42,9 @@ let join2 () =
 
 let () =
   main_join 100;
-  let cnt = ref 0 in
-  other_join cnt 100 (Domain.spawn ignore);
-  assert (!cnt = 100);
+  let flags = Array.make 100 false in
+  other_join flags (Array.length flags) (Domain.spawn ignore);
+  assert (Array.for_all (fun x -> x) flags);
   join2 ();
   join_exn ();
   join_slow ();

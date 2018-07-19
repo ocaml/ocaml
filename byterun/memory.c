@@ -92,8 +92,12 @@ CAMLexport void caml_initialize_field (value obj, int field, value val)
   Assert(0 <= field && field < Wosize_val(obj));
 #ifdef DEBUG
   /* caml_initialize_field can only be used on just-allocated objects */
-  if (Is_young(obj)) Assert(Op_val(obj)[field] == Debug_uninit_minor);
-  else Assert(Op_val(obj)[field] == Debug_uninit_major);
+  if (Is_young(obj))
+    Assert(Op_val(obj)[field] == Debug_uninit_minor ||
+           Op_val(obj)[field] == Val_unit);
+  else
+    Assert(Op_val(obj)[field] == Debug_uninit_major ||
+           Op_val(obj)[field] == Val_unit);
 #endif
 
   if (!Is_young(obj) && Is_young(val)) {

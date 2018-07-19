@@ -57,7 +57,7 @@ static void init_startup_params()
   params.init_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
 #endif
 #ifdef DEBUG
-  params.verb_gc = 1;
+  params.verb_gc = 0x3F;
 #endif
 #ifndef NATIVE_CODE
   cds_file = caml_secure_getenv(_T("CAML_DEBUG_FILE"));
@@ -206,10 +206,6 @@ CAMLprim value caml_maybe_print_stats (value v)
 int caml_parse_command_line(char_os **argv)
 {
   int i, j;
-
-#ifdef DEBUG
-  params.verb_gc = 0x3F;
-#endif
 
   for(i = 1; argv[i] != NULL && argv[i][0] == _T('-'); i++) {
     switch(argv[i][1]) {

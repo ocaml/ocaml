@@ -574,6 +574,8 @@ void caml_urge_major_slice (void)
 
 void caml_handle_gc_interrupt() {
   atomic_uintnat* young_limit = domain_self->interrupt_word_address;
+  CAMLalloc_point_here;
+
   if (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
     /* interrupt */
     caml_ev_begin("handle_interrupt");
@@ -856,9 +858,7 @@ static void domain_terminate()
     Caml_state->critical_section_nesting = 0;
     acknowledge_all_pending_interrupts();
   }
-  caml_ev_resume();
-  caml_enter_blocking_section();
-  caml_ev_resume();
+  caml_plat_unlock(&domain_self->roots_lock);
   caml_plat_assert_all_locks_unlocked();
 }
 

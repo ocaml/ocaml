@@ -70,7 +70,12 @@ function record_fail() {
 function record_unexp() {
     if (!(key in RESULTS) || RESULTS[key] == "s"){
         if (!(key in RESULTS)) ++nresults;
-        RESULTS[key] = "e";
+        testcase = sprintf ("%s/%s", curdir, curfile);
+        if (is_disabled[testcase]) {
+            RESULTS[key] = "d";
+        } else {
+            RESULTS[key] = "e";
+        }
     }
     delete SKIPPED[curdir];
     clear();

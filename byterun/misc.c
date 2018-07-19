@@ -65,6 +65,21 @@ int caml_failed_assert (char * expr, char * file, int line)
   abort();
 }
 
+static __thread int noalloc_level = 0;
+int caml_noalloc_begin()
+{
+  return noalloc_level++;
+}
+void caml_noalloc_end(int* noalloc)
+{
+  int curr = --noalloc_level;
+  CAMLassert(*noalloc == curr);
+}
+void caml_alloc_point_here()
+{
+  CAMLassert(noalloc_level == 0);
+}
+
 #endif /* DEBUG */
 
 void caml_gc_log (char *msg, ...)

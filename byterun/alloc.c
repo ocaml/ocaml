@@ -43,11 +43,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) {
-        value init_val = Val_unit;
-        #ifdef DEBUG
-          init_val = Debug_uninit_minor;
-        #endif
-        Op_val(result)[i] = init_val;
+        Op_val(result)[i] = Val_unit;
       }
     }
     if (tag == Stack_tag)
