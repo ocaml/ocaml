@@ -24,7 +24,9 @@ let data =
   )
 ;;
 
-let gccount () = (Gc.quick_stat ()).Gc.major_collections;;
+let gccount () =
+  let res = (Gc.quick_stat ()).Gc.major_collections in
+  res
 
 (* Check the correctness condition on the data at (i,j):
    1. if the block is present, the weak pointer must be full
