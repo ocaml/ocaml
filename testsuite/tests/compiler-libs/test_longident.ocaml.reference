@@ -69,3 +69,17 @@ val parse_to_string : (bool * L.t * L.t) list =
    (true, L.Ldot (L.Ldot (L.Lident "M", "N"), "foo"),
     L.Ldot (L.Ldot (L.Lident "M", "N"), "foo"))]
 
+Longident.pp
+- : unit = ()
+val test : L.t -> string = <fun>
+val pp_ident : string = "foo"
+val pp_dot : string = "M.foo"
+val pp_apply : string = "F(X)"
+val pp_dot_apply : string = "F(X).foo"
+val parse_pp : (bool * L.t * L.t) list =
+  [(true, L.Lident "foo", L.Lident "foo");
+   (true, L.Ldot (L.Lident "M", "foo"), L.Ldot (L.Lident "M", "foo"));
+   (true, L.Ldot (L.Lident "M", "N"), L.Ldot (L.Lident "M", "N"));
+   (true, L.Ldot (L.Ldot (L.Lident "M", "N"), "foo"),
+    L.Ldot (L.Ldot (L.Lident "M", "N"), "foo"))]
+

@@ -54,3 +54,8 @@ let to_string lid =
     | Ldot (lid, id) -> print lid ("." :: id :: acc)
     | Lapply (la, lb) -> print la ("(" :: print lb (")" :: acc))
   in String.concat "" (print lid [])
+
+let rec pp ppf = function
+  | Lident s -> Format.pp_print_string ppf s
+  | Ldot(p, s) -> Format.fprintf ppf "%a.%s" pp p s
+  | Lapply(p1, p2) -> Format.fprintf ppf "%a(%a)" pp p1 pp p2

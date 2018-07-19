@@ -26,11 +26,7 @@ open Btype
 open Outcometree
 
 (* Print a long identifier *)
-
-let rec longident ppf = function
-  | Lident s -> pp_print_string ppf s
-  | Ldot(p, s) -> fprintf ppf "%a.%s" longident p s
-  | Lapply(p1, p2) -> fprintf ppf "%a(%a)" longident p1 longident p2
+let longident = Longident.pp
 
 (* Print an identifier avoiding name collisions *)
 

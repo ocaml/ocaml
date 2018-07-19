@@ -64,3 +64,15 @@ let to_string_dot_apply =
 let parse_to_string =
   Examples.all_noapp |> List.map (roundtrip L.parse L.to_string)
 ;;
+
+section "Longident.pp";;
+let test lid = Format.flush_str_formatter (L.pp Format.str_formatter lid)
+let pp_ident = test (L.Lident "foo");;
+let pp_dot = test (L.Ldot (L.Lident "M", "foo"));;
+let pp_apply = test (L.Lapply (L.Lident "F", L.Lident "X"));;
+let pp_dot_apply =
+  test (L.Ldot (L.Lapply (L.Lident "F", L.Lident "X"), "foo"));;
+
+let parse_pp =
+  Examples.all_noapp |> List.map (roundtrip L.parse test)
+;;
