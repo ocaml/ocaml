@@ -534,14 +534,15 @@ value caml_interprete(code_t prog, asize_t prog_size)
     do_return:
       if (sp == domain_state->stack_high) {
         /* return to parent stack */
-        value parent_stack = Stack_parent(domain_state->current_stack);
+        struct stack_info* parent_stack =
+          Stack_parent(domain_state->current_stack);
         value hval = Stack_handle_value(domain_state->current_stack);
-        Assert(parent_stack != Val_long(0));
+        Assert(parent_stack != NULL);
 
         domain_state->extern_sp = sp;
-        value old_stack = caml_switch_stack(parent_stack);
+        struct stack_info* old_stack = caml_switch_stack(parent_stack);
         sp = domain_state->extern_sp;
-        Stack_parent(old_stack) = Val_long(0);
+        Stack_parent(old_stack) = NULL;
 
         domain_state->trap_sp_off = Long_val(sp[0]);
         extra_args = Long_val(sp[1]);
@@ -947,19 +948,20 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (domain_state->backtrace_active) caml_stash_backtrace(accu, pc, sp, 0);
     raise_notrace:
       if (domain_state->trap_sp_off > 0) {
-        if (Stack_parent(domain_state->current_stack) == Val_long(0)) {
+        if (Stack_parent(domain_state->current_stack) == NULL) {
           domain_state->external_raise = initial_external_raise;
           domain_state->trap_sp_off = initial_trap_sp_off;
           domain_state->extern_sp = domain_state->stack_high - initial_stack_words ;
           caml_decr_callback_depth ();
           return Make_exception_result(accu);
         } else {
-          value parent_stack = Stack_parent(domain_state->current_stack);
+          struct stack_info* parent_stack =
+            Stack_parent(domain_state->current_stack);
           value hexn = Stack_handle_exception(domain_state->current_stack);
           domain_state->extern_sp = sp;
-          value old_stack = caml_switch_stack(parent_stack);
+          struct stack_info* old_stack = caml_switch_stack(parent_stack);
           sp = domain_state->extern_sp;
-          Stack_parent(old_stack) = Val_long(0);
+          Stack_parent(old_stack) = NULL;
 
           domain_state->trap_sp_off = Long_val(sp[0]);
           extra_args = Long_val(sp[1]);
@@ -1271,10 +1273,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto do_resume;
 
 do_resume:
-      accu = caml_find_performer(accu);
+      accu = Val_ptr(caml_find_performer(Ptr_val(accu)));
 
       domain_state->extern_sp = sp;
-      caml_switch_stack(accu);
+      caml_switch_stack(Ptr_val(accu));
       sp = domain_state->extern_sp;
 
       domain_state->trap_sp_off = Long_val(sp[0]);
@@ -1296,10 +1298,11 @@ do_resume:
 
     Instruct(PERFORM): {
       value eff = accu;
-      value parent_stack = Stack_parent(domain_state->current_stack);
+      struct stack_info* parent_stack =
+        Stack_parent(domain_state->current_stack);
       value heff = Stack_handle_effect(domain_state->current_stack);
 
-      if (parent_stack == Val_long(0)) {
+      if (parent_stack == NULL) {
         accu = Field_imm(caml_read_root(caml_global_data), UNHANDLED_EXN);
         goto raise_exception;
       }
@@ -1311,14 +1314,14 @@ do_resume:
       sp[3] = Val_long(extra_args);
 
       domain_state->extern_sp = sp;
-      value old_stack = caml_switch_stack(parent_stack);
+      struct stack_info* old_stack = caml_switch_stack(parent_stack);
       sp = domain_state->extern_sp;
-      Stack_parent(old_stack) = Val_long(0);
+      Stack_parent(old_stack) = NULL;
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);
       sp[0] = eff;
-      sp[1] = old_stack;
+      sp[1] = Val_ptr(old_stack);
       accu = heff;
       pc = Code_val(accu);
       env = accu;
@@ -1329,25 +1332,25 @@ do_resume:
     Instruct(REPERFORMTERM): {
       value eff = accu;
       value performer = sp[0];
-      value self = domain_state->current_stack;
-      value parent = Stack_parent(domain_state->current_stack);
+      struct stack_info* self = domain_state->current_stack;
+      struct stack_info* parent = Stack_parent(domain_state->current_stack);
 
       sp = sp + *pc - 2;
       sp[0] = Val_long(domain_state->trap_sp_off);
       sp[1] = Val_long(extra_args);
 
-      if (parent == Val_long(0)) {
+      if (parent == NULL) {
         accu = performer;
         resume_fn = caml_read_root(raise_unhandled);
         resume_arg = Field_imm(caml_read_root(caml_global_data), UNHANDLED_EXN);
         goto do_resume;
       }
 
-      Stack_parent(self) = performer;
+      Stack_parent(self) = Ptr_val(performer);
 
       domain_state->extern_sp = sp;
 #ifdef DEBUG
-      value old_stack = caml_switch_stack(parent);
+      struct stack_info* old_stack = caml_switch_stack(parent);
       Assert(old_stack == self);
 #else
       caml_switch_stack(parent);
@@ -1357,7 +1360,7 @@ do_resume:
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);
       sp[0] = eff;
-      sp[1] = self;
+      sp[1] = Val_ptr(self);
       accu = Stack_handle_effect(self);
       pc = Code_val(accu);
       env = accu;

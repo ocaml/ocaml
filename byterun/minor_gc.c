@@ -91,11 +91,8 @@ void caml_free_minor_tables(struct caml_minor_tables* r)
 {
   CAMLassert(r->major_ref.ptr == r->major_ref.base);
   CAMLassert(r->minor_ref.ptr == r->minor_ref.base);
-  CAMLassert(r->fiber_ref.ptr == r->fiber_ref.base + 1);
-  CAMLassert((value)*r->fiber_ref.base == Caml_state->current_stack);
   reset_table((struct generic_table *)&r->major_ref);
   reset_table((struct generic_table *)&r->minor_ref);
-  reset_table((struct generic_table *)&r->fiber_ref);
   reset_table((struct generic_table *)&r->ephe_ref);
   reset_table((struct generic_table *)&r->custom);
   caml_stat_free(r);
@@ -112,7 +109,6 @@ void caml_set_minor_heap_size (asize_t size)
 
   reset_table ((struct generic_table *)&r->major_ref);
   reset_table ((struct generic_table *)&r->minor_ref);
-  reset_table ((struct generic_table *)&r->fiber_ref);
   reset_table ((struct generic_table *)&r->ephe_ref);
   reset_table((struct generic_table *)&r->custom);
 }
@@ -122,7 +118,6 @@ void caml_set_minor_heap_size (asize_t size)
 struct oldify_state {
   value todo_list;
   uintnat live_bytes;
-  int should_promote_stacks;
   struct domain* promote_domain;
   value oldest_promoted;
 };
@@ -157,7 +152,6 @@ static inline void resolve_infix_val (value* v)
 
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
-
 static void oldify_one (void* st_v, value v, value *p)
 {
   struct oldify_state* st = st_v;
@@ -166,10 +160,8 @@ static void oldify_one (void* st_v, value v, value *p)
   mlsize_t sz, i;
   mlsize_t infix_offset;
   tag_t tag;
-  int stack_used;
   caml_domain_state* domain_state =
     st->promote_domain ? st->promote_domain->state : Caml_state;
-  struct caml_minor_tables *minor_tables = domain_state->minor_tables;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
   CAMLassert (domain_state->young_start <= domain_state->young_ptr &&
@@ -204,45 +196,34 @@ static void oldify_one (void* st_v, value v, value *p)
     st->oldest_promoted = (value)Hp_val(v);
   }
 
-  if (tag < Infix_tag){
+  if (tag == Cont_tag) {
+    struct stack_info* stk = Ptr_val(Op_val(v)[0]);
+    CAMLassert(Wosize_hd(hd) == 1 && infix_offset == 0);
+    result = alloc_shared(1, Cont_tag);
+    *p = result;
+    Op_val(result)[0] = Val_ptr(stk);
+    Hd_val (v) = 0;
+    Op_val(v)[0] = result;
+    caml_scan_stack(&oldify_one, st, stk);
+  } else if (tag < Infix_tag) {
     value field0;
-
-    if (tag == Stack_tag && !st->should_promote_stacks) {
-      /* Stacks are not promoted unless explicitly requested. */
-      Ref_table_add(&minor_tables->major_ref, p);
-    } else {
-      sz = Wosize_hd (hd);
-      st->live_bytes += Bhsize_hd(hd);
-      result = alloc_shared (sz, tag);
-      *p = result + infix_offset;
-      if (tag == Stack_tag) {
-        /* Ensure that the stack remains 16-byte aligned. Note: Stack_high
-         * always returns 16-byte aligned down address. */
-        stack_used = -Stack_sp(v);
-        memcpy((void*)result, (void*)v, sizeof(value) * Stack_ctx_words);
-        memcpy(Stack_high(result) - stack_used, Stack_high(v) - stack_used,
-               stack_used * sizeof(value));
-
-        Hd_val (v) = 0;
-        Op_val(v)[0] = result;
-        Op_val(v)[1] = st->todo_list;
-        st->todo_list = v;
-      } else {
-        field0 = Op_val(v)[0];
-        CAMLassert (!Is_debug_tag(field0));
-        Hd_val (v) = 0;            /* Set forward flag */
-        Op_val(v)[0] = result;     /*  and forward pointer. */
-        if (sz > 1){
-          Op_val (result)[0] = field0;
-          Op_val (result)[1] = st->todo_list;    /* Add this block */
-          st->todo_list = v;                     /*  to the "to do" list. */
-        }else{
-          CAMLassert (sz == 1);
-          p = Op_val(result);
-          v = field0;
-          goto tail_call;
-        }
-      }
+    sz = Wosize_hd (hd);
+    st->live_bytes += Bhsize_hd(hd);
+    result = alloc_shared (sz, tag);
+    *p = result + infix_offset;
+    field0 = Op_val(v)[0];
+    CAMLassert (!Is_debug_tag(field0));
+    Hd_val (v) = 0;            /* Set forward flag */
+    Op_val(v)[0] = result;     /*  and forward pointer. */
+    if (sz > 1){
+      Op_val (result)[0] = field0;
+      Op_val (result)[1] = st->todo_list;    /* Add this block */
+      st->todo_list = v;                     /*  to the "to do" list. */
+    }else{
+      CAMLassert (sz == 1);
+      p = Op_val(result);
+      v = field0;
+      goto tail_call;
     }
   } else if (tag >= No_scan_tag) {
     sz = Wosize_hd (hd);
@@ -326,30 +307,24 @@ static void oldify_mopup (struct oldify_state* st)
     v = st->todo_list;                 /* Get the head. */
     CAMLassert (Hd_val (v) == 0);             /* It must be forwarded. */
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
-    if (Tag_val(new_v) == Stack_tag) {
-      st->todo_list = Op_val (v)[1];   /* Remove from list (stack) */
-      caml_scan_stack(oldify_one, st, new_v);
-    } else {
-      st->todo_list = Op_val (new_v)[1]; /* Remove from list (non-stack) */
+    st->todo_list = Op_val (new_v)[1]; /* Remove from list. */
 
-      f = Op_val (new_v)[0];
+    f = Op_val (new_v)[0];
+    CAMLassert (!Is_debug_tag(f));
+    if (Is_block (f) &&
+        is_in_interval((value)Hp_val(v), young_ptr, young_end)) {
+      oldify_one (st, f, Op_val (new_v));
+    }
+    for (i = 1; i < Wosize_val (new_v); i++){
+      f = Op_val (v)[i];
       CAMLassert (!Is_debug_tag(f));
       if (Is_block (f) &&
           is_in_interval((value)Hp_val(v), young_ptr, young_end)) {
-        oldify_one (st, f, Op_val (new_v));
-      }
-      for (i = 1; i < Wosize_val (new_v); i++){
-        f = Op_val (v)[i];
-        CAMLassert (!Is_debug_tag(f));
-        if (Is_block (f) &&
-            is_in_interval((value)Hp_val(v), young_ptr, young_end)) {
-          oldify_one (st, f, Op_val (new_v) + i);
-        } else {
-          Op_val (new_v)[i] = f;
-        }
+        oldify_one (st, f, Op_val (new_v) + i);
+      } else {
+        Op_val (new_v)[i] = f;
       }
     }
-
     CAMLassert (Wosize_val(new_v));
   }
 
@@ -430,7 +405,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   value **r;
   value iter, f;
   mlsize_t i;
-  tag_t tag;
   int saved_stack = 0;
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
@@ -445,9 +419,8 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   if (Is_long(root))
     return root;
 
-  tag = Tag_val(root);
-   /* Non-stack objects which are in the major heap are already shared. */
-  if (tag != Stack_tag && !Is_minor(root))
+  /* Objects which are in the major heap are already shared. */
+  if (!Is_minor(root))
     return root;
 
   if (!caml_stack_is_saved()) {
@@ -458,37 +431,13 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   st.oldest_promoted = (value)domain_state->young_start;
   st.promote_domain = domain;
 
-  if (tag != Stack_tag) {
-    CAMLassert(caml_owner_of_young_block(root) == domain);
-
-    /* For non-stack objects, don't promote referenced stacks. They are
-     * promoted only when explicitly requested. */
-    oldify_one (&st, root, &root);
-  } else {
-    /* The object is a stack */
-
-    if (Is_minor(root)) {
-      /* While we do not in general promote stacks that we find, we
-         certainly want to promote the root if it happens to be a stack */
-      st.should_promote_stacks = 1;
-      oldify_one (&st, root, &root);
-      st.should_promote_stacks = 0;
-    } else {
-      /* Though the stack is in the major heap, it can contain objects in the
-       * minor heap. They must be promoted. */
-      caml_scan_dirty_stack_domain(&oldify_one, &st, root, domain);
-    }
-  }
-
+  CAMLassert(caml_owner_of_young_block(root) == domain);
+  oldify_one (&st, root, &root);
   oldify_mopup (&st);
 
   CAMLassert (!Is_minor(root));
+  /* FIXME: surely a newly-allocated root is already darkened? */
   caml_darken(0, root, 0);
-
-  if (tag == Stack_tag) {
-    /* Since we've promoted the objects on the stack, the stack is now clean. */
-    caml_clean_stack_domain(root, domain);
-  }
 
   percent_to_scan = st.oldest_promoted <= (value)young_ptr ? 0.0 :
     (((float)(st.oldest_promoted - (value)young_ptr)) * 100.0 /
@@ -538,7 +487,9 @@ CAMLexport value caml_promote(struct domain* domain, value root)
       if (hd != 0) {
         value curr = Val_hp(iter);
         tag_t tag = Tag_hd (hd);
-        if (tag < No_scan_tag && tag != Stack_tag) {
+        
+        if (tag < No_scan_tag && tag != Cont_tag) {
+          // FIXME: should scan Cont_tag
           for (i = 0; i < Wosize_hd(hd); i++) {
             value* f = Op_val(curr) + i;
             if (Is_block(*f) && is_in_interval(*f, young_ptr, young_end) &&
@@ -565,7 +516,11 @@ CAMLexport value caml_promote(struct domain* domain, value root)
       value curr = Val_hp(iter);
       if (hd != 0) {
         tag_t tag = Tag_hd (hd);
-        if (tag < No_scan_tag && tag != Stack_tag) { /* Stacks will be scanned lazily, so skip. */
+        if (tag == Cont_tag) {
+          struct stack_info* stk = Ptr_val(Op_val(curr)[0]);
+          if (stk != NULL)
+            caml_scan_stack(&forward_pointer, &st, stk);
+        } else if (tag < No_scan_tag) {
           for (i = 0; i < Wosize_hd (hd); i++) {
             f = Op_val(curr)[i];
             if (Is_block(f)) {
@@ -578,8 +533,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
     if (saved_stack)
       caml_restore_stack_gc();
-
-    domain_state->promoted_in_current_cycle = 1;
   }
   domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
   return root;
@@ -613,7 +566,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   }
 
   st.promote_domain = domain;
-  st.should_promote_stacks = 1;
 
   if (minor_allocated_bytes != 0) {
     uintnat prev_alloc_words = domain_state->allocated_words;
@@ -622,9 +574,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     caml_ev_begin("minor_gc/roots");
     caml_do_local_roots(&oldify_one, &st, domain, 0);
 
-    for (r = minor_tables->fiber_ref.base; r < minor_tables->fiber_ref.ptr; r++) {
-      caml_scan_dirty_stack_domain (&oldify_one, &st, (value)*r, domain);
-    }
+    caml_scan_stack(&oldify_one, &st, domain_state->current_stack);
 
     for (r = minor_tables->major_ref.base; r < minor_tables->major_ref.ptr; r++) {
       value x = **r;
@@ -725,16 +675,9 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     caml_gc_log ("Minor collection of domain %d: skipping", domain->state->id);
   }
 
-  for (r = minor_tables->fiber_ref.base; r < minor_tables->fiber_ref.ptr; r++) {
-    caml_clean_stack_domain ((value)*r, domain);
-  }
-  clear_table ((struct generic_table *)&minor_tables->fiber_ref);
-
   if (saved_stack) {
     caml_restore_stack_gc();
   }
-
-  domain_state->promoted_in_current_cycle = 0;
 
 #ifdef DEBUG
   {

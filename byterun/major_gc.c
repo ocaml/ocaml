@@ -395,7 +395,7 @@ static void mark_stack_push(struct mark_stack* stk, mark_entry e)
   value v;
   CAMLassert(Is_block(e.block) && !Is_young(e.block));
   CAMLassert(Tag_val(e.block) != Infix_tag);
-  CAMLassert(Tag_val(e.block) != Stack_tag);
+  CAMLassert(Tag_val(e.block) != Cont_tag);
   CAMLassert(Tag_val(e.block) < No_scan_tag);
   while (1) {
     if (e.offset == e.end)
@@ -417,10 +417,11 @@ static void mark_stack_push(struct mark_stack* stk, mark_entry e)
 /* to fit scanning_action */
 static void mark_stack_push_act(void* state, value v, value* ignored) {
   mark_entry e = { v, 0, Wosize_val(v) };
-  if (Tag_val(v) < No_scan_tag && Tag_val(v) != Stack_tag)
+  if (Tag_val(v) < No_scan_tag && Tag_val(v) != Cont_tag)
     mark_stack_push(Caml_state->mark_stack, e);
 }
 
+void caml_darken_cont(value cont);
 static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
   // FIXME: stat_blocks_marked
   mark_entry e = {0};
@@ -439,7 +440,7 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
     CAMLassert(Is_markable(e.block) &&
                Has_status_hd(Hd_val(e.block), global.MARKED) &&
                Tag_val(e.block) < No_scan_tag &&
-               Tag_val(e.block) != Stack_tag);
+               Tag_val(e.block) != Cont_tag);
     v = Op_val(e.block)[e.offset++];
     if (Is_markable(v)) {
       header_t hd = Hd_val(v);
@@ -449,15 +450,17 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
       }
       CAMLassert (!Has_status_hd(hd, global.GARBAGE));
       if (Has_status_hd(hd, global.UNMARKED)) {
-        Hd_val(v) = With_status_hd(hd, global.MARKED);
-        if (Tag_hd(hd) == Stack_tag) {
+        if (Tag_hd(hd) == Cont_tag) {
           mark_stack_push(stk, e);
-          caml_darken_stack(v);
+          caml_darken_cont(v);
           e = stk->stack[--stk->count];
         } else if (Tag_hd(hd) < No_scan_tag) {
           mark_entry child = {v, 0, Wosize_hd(hd)};
+          Hd_val(v) = With_status_hd(hd, global.MARKED);
           mark_stack_push(stk, e);
           e = child;
+        } else {
+          Hd_val(v) = With_status_hd(hd, global.MARKED);
         }
       }
     }
@@ -482,6 +485,27 @@ static intnat mark(intnat budget) {
   return budget;
 }
 
+void caml_darken_cont(value cont)
+{
+  CAMLassert(Is_block(cont) && !Is_young(cont) && Tag_val(cont) == Cont_tag);
+  SPIN_WAIT {
+    header_t hd = Hd_val(cont);
+    CAMLassert(!Has_status_hd(hd, global.GARBAGE));
+    if (Has_status_hd(hd, global.MARKED))
+      break;
+    // FIXME atomics here
+    if (Has_status_hd(hd, global.UNMARKED) &&
+        __sync_bool_compare_and_swap
+           (&Hd_val(cont), hd,
+            With_status_hd(hd, NOT_MARKABLE))) {
+      value stk = Op_val(cont)[0];
+      CAMLassert(stk != Val_unit);
+      caml_scan_stack(&caml_darken, 0, Ptr_val(stk));
+      Hd_val(cont) = With_status_hd(hd, global.MARKED);
+    }
+  }
+}
+
 void caml_darken(void* state, value v, value* ignored) {
   header_t hd;
   if (!Is_markable (v)) return; /* foreign stack, at least */
@@ -496,9 +520,8 @@ void caml_darken(void* state, value v, value* ignored) {
       atomic_fetch_add(&num_domains_to_mark, 1);
       Caml_state->marking_done = 0;
     }
-    if (Tag_hd(hd) == Stack_tag) {
-      Hd_val(v) = With_status_hd(hd, global.MARKED);
-      caml_darken_stack(v);
+    if (Tag_hd(hd) == Cont_tag) {
+      caml_darken_cont(v);
     } else if (Tag_hd(hd) < No_scan_tag) {
       mark_entry e = {v, 0, Wosize_val(v)};
       Hd_val(v) = With_status_hd(hd, global.MARKED);

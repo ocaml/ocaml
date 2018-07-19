@@ -1391,8 +1391,8 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
     static_catch [transl_exp arg] [val_id]
       (Matching.for_function e.exp_loc None (Lvar val_id) cases partial)
 
-and prim_bvar_create =
-  Pccall (Primitive.simple ~name:"caml_bvar_create" ~arity:1 ~alloc:true)
+and prim_cont_create =
+  Pccall (Primitive.simple ~name:"caml_continuation_create" ~arity:1 ~alloc:true)
 
 and prim_alloc_stack =
   Pccall (Primitive.simple ~name:"caml_alloc_stack" ~arity:3 ~alloc:true)
@@ -1427,7 +1427,7 @@ and transl_handler e body val_caselist exn_caselist eff_caselist =
     Lfunction { kind = Curried; params = [param; raw_cont];
       attr = default_function_attribute; loc = Location.none;
       body = Llet(StrictOpt, Pgenval, cont,
-          Lprim (prim_bvar_create, [Lvar raw_cont], Location.none),
+          Lprim (prim_cont_create, [Lvar raw_cont], Location.none),
           Matching.for_handler (Lvar param) (Lvar raw_cont) eff_cases) }
   in
   let is_pure = function

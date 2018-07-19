@@ -61,16 +61,18 @@ class BlockPrinter:
             self.tagname = TAGS.get(self.tag, 'Block')
 
     def children(self):
-        if self.tag < No_scan_tag:
-            fields = self.p.cast(gdb.lookup_type('value').pointer())
-            for i in range(self.length):
-                yield '[%d]' % i, (fields + i).dereference()
-        elif self.tagname == 'Double_array_tag':
-            words_per_double = \
-              gdb.lookup_type('double').sizeof / gdb.lookup_type('value').sizeof
-            fields = self.p.cast(gdb.lookup_type('double').pointer())
-            for i in range(int(self.length / words_per_double)):
-                yield '[%d]' % i, (fields + i).dereference()
+#        if self.tag < No_scan_tag:
+#            fields = self.p.cast(gdb.lookup_type('value').pointer())
+#            for i in range(self.length):
+#                yield '[%d]' % i, (fields + i).dereference()
+#        elif self.tagname == 'Double_array_tag':
+#            words_per_double = \
+#              gdb.lookup_type('double').sizeof / gdb.lookup_type('value').sizeof
+#            fields = self.p.cast(gdb.lookup_type('double').pointer())
+#            for i in range(int(self.length / words_per_double)):
+#                yield '[%d]' % i, (fields + i).dereference()
+#
+        return []
 
     def to_string(self):
         if self.tag == 1000:
