@@ -338,7 +338,7 @@ header_t *caml_fl_allocate (mlsize_t wo_sz)
         mlsize_t oldsz = sz;
 
         prev = flp[i];
-        while (prev != flp[i+1]){
+        while (prev != flp[i+1] && j < FLP_MAX - i){
           cur = Next (prev);
           sz = Wosize_bp (cur);
           if (sz > prevsz){
