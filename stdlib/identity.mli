@@ -22,7 +22,7 @@ val return : 'a -> 'a
 (** The identity function *)
 
 val compose_after : ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
-(** Function composition; [compose_before g f x] is [g (f x)] *)
+(** Function composition; [compose_after g f x] is [g (f x)] *)
 
 val compose_before : ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
-(** Function composition; [compose_after f g x] is [g (f x)] *)
+(** Function composition; [compose_before f g x] is [g (f x)] *)
