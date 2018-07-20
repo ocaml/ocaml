@@ -225,7 +225,8 @@ Quoting commands for execution by cmd.exe is difficult.
     else
       f
   (* Redirections in cmd.exe: see https://ss64.com/nt/syntax-redirection.html
-     and https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-xp/bb490982(v=technet.10) *)
+     and https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-xp/bb490982(v=technet.10)
+  *)
   let quote_command cmd ?stdin ?stdout ?stderr args =
     String.concat "" [
       "\"";
