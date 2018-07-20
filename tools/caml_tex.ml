@@ -111,7 +111,7 @@ module Toplevel = struct
 
   (** Store character intervals directly *)
   let locs = ref []
-  let print_loc _ppf (loc : Location.t) =
+  let register_loc (loc : Location.t) =
     let startchar = loc.loc_start.pos_cnum in
     let endchar = loc.loc_end.pos_cnum in
     if startchar >= 0 then
@@ -120,6 +120,7 @@ module Toplevel = struct
   (** Capture warnings and keep them in a list *)
   let warnings = ref []
   let print_warning loc _ppf w =
+    if Warnings.report w <> `Inactive then register_loc loc;
     Location.default_warning_printer loc (snd warning_fmt) w;
     let w = flush_fmt warning_fmt in
     warnings := w :: !warnings
@@ -130,13 +131,14 @@ module Toplevel = struct
       self_error_fmt ("@[<hov 2>  Error " ^^ fmt)
 
   let init () =
-    Location.printer := print_loc;
+    Location.printer := (fun _ _ -> ());
     Location.warning_printer := print_warning;
     Clflags.color := Some Misc.Color.Never;
     Clflags.no_std_include := true;
     Compenv.last_include_dirs := [Filename.concat !repo_root "stdlib"];
     Location.error_reporter :=
-      (fun _ e -> Location.default_error_reporter (snd error_fmt) e);
+      (fun _ e -> register_loc e.loc;
+        Location.default_error_reporter (snd error_fmt) e);
     Compmisc.init_path false;
     try
       Toploop.initialize_toplevel_env ();
