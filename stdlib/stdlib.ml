@@ -577,6 +577,7 @@ module Functor      = Functor
 module Gc           = Gc
 module Genlex       = Genlex
 module Hashtbl      = Hashtbl
+module Identity     = Identity
 module Int32        = Int32
 module Int64        = Int64
 module Lazy         = Lazy

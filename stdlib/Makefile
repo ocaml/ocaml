@@ -38,7 +38,7 @@ CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 P=stdlib__
 
 OBJS=camlinternalFormatBasics.cmo stdlib.cmo $(OTHERS)
-OTHERS=$(P)functor.cmo $(P)applicative.cmo $(P)monad.cmo \
+OTHERS=$(P)functor.cmo $(P)applicative.cmo $(P)monad.cmo $(P)identity.cmo \
   $(P)seq.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo $(P)list.cmo \
   $(P)bytes.cmo $(P)string.cmo \
   $(P)marshal.cmo $(P)obj.cmo $(P)float.cmo $(P)array.cmo \
