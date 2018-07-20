@@ -234,7 +234,12 @@ val numfloat_shift : int
 val is_addr_array_hdr : expression -> Debuginfo.t -> expression
 val is_addr_array_ptr : expression -> Debuginfo.t -> expression
 
-(** Get the length of an array from its header *)
+(** Get the length of an array from its header
+    Shifts by one bit less than necessary, keeping one of the GC colour bits,
+    to save an operation when returning the length as a caml integer or when
+    comparing it to a caml integer.
+    Assumes the header does not have any profiling info
+    (as returned by get_header_without_profinfo) *)
 val addr_array_length : expression -> Debuginfo.t -> expression
 val float_array_length : expression -> Debuginfo.t -> expression
 
@@ -412,6 +417,38 @@ val box_sized :
 
 val simplif_primitive :
   Clambda_primitives.primitive -> Clambda_primitives.primitive
+
+type unary_primitive = expression -> Debuginfo.t -> expression
+
+(** Return the n-th field of a float array (or float-only record), as an
+    unboxed float *)
+val floatfield : int -> unary_primitive
+
+(** Int_as_pointer primitive *)
+val int_as_pointer : unary_primitive
+
+(** Raise primitive *)
+val raise_prim : Lambda.raise_kind -> unary_primitive
+
+(** Unary negation of a caml integer *)
+val negint : unary_primitive
+
+(** Add a fixed number to a caml integer *)
+val offsetint : int -> unary_primitive
+
+(** Add a fixed number to a caml integer reference *)
+val offsetref : int -> unary_primitive
+
+(** Return the length of the array argument, as a caml integer *)
+val arraylength : Lambda.array_kind -> unary_primitive
+
+(** Byte swap primitive
+    Operates on Cmm integers (unboxed values) *)
+val bbswap : Primitive.boxed_integer -> unary_primitive
+
+(** 16-bit byte swap primitive
+    Operates on Cmm integers (untagged integers) *)
+val bswap16 : unary_primitive
 
 (** Switch *)
 

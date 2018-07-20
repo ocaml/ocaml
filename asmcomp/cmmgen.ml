@@ -728,40 +728,19 @@ and transl_prim_1 env p arg dbg =
       get_field env (transl env arg) n dbg
   | Pfloatfield n ->
       let ptr = transl env arg in
-      box_float dbg (
-        Cop(Cload (Double_u, Mutable),
-            [if n = 0
-             then ptr
-             else Cop(Cadda, [ptr; Cconst_int(n * size_float, dbg)], dbg)],
-            dbg))
+      box_float dbg (floatfield n ptr dbg)
   | Pint_as_pointer ->
-     Cop(Caddi, [transl env arg; Cconst_int (-1, dbg)], dbg)
-     (* always a pointer outside the heap *)
+      int_as_pointer (transl env arg) dbg
   (* Exceptions *)
-  | Praise _ when not (!Clflags.debug) ->
-      Cop(Craise Cmm.Raise_notrace, [transl env arg], dbg)
-  | Praise Lambda.Raise_notrace ->
-      Cop(Craise Cmm.Raise_notrace, [transl env arg], dbg)
-  | Praise Lambda.Raise_reraise ->
-      Cop(Craise Cmm.Raise_withtrace, [transl env arg], dbg)
-  | Praise Lambda.Raise_regular ->
-      raise_regular dbg (transl env arg)
+  | Praise rkind ->
+      raise_prim rkind (transl env arg) dbg
   (* Integer operations *)
   | Pnegint ->
-      Cop(Csubi, [Cconst_int (2, dbg); transl env arg], dbg)
+      negint (transl env arg) dbg
   | Poffsetint n ->
-      if no_overflow_lsl n 1 then
-        add_const (transl env arg) (n lsl 1) dbg
-      else
-        transl_prim_2 env Paddint arg (Uconst (Uconst_int n)) dbg
+      offsetint n (transl env arg) dbg
   | Poffsetref n ->
-      return_unit dbg
-        (bind "ref" (transl env arg) (fun arg ->
-          Cop(Cstore (Word_int, Assignment),
-              [arg;
-               add_const (Cop(Cload (Word_int, Mutable), [arg], dbg))
-                 (n lsl 1) dbg],
-              dbg)))
+      offsetref n (transl env arg) dbg
   (* Floating-point operations *)
   | Pfloatofint ->
       box_float dbg (Cop(Cfloatofint, [untag_int(transl env arg) dbg], dbg))
@@ -776,29 +755,7 @@ and transl_prim_1 env p arg dbg =
       tag_int(string_length (transl env arg) dbg) dbg
   (* Array operations *)
   | Parraylength kind ->
-      let hdr = get_header_without_profinfo (transl env arg) dbg in
-      begin match kind with
-        Pgenarray ->
-          let len =
-            if wordsize_shift = numfloat_shift then
-              Cop(Clsr, [hdr; Cconst_int (wordsize_shift, dbg)], dbg)
-            else
-              bind "header" hdr (fun hdr ->
-                Cifthenelse(is_addr_array_hdr hdr dbg,
-                            dbg,
-                            Cop(Clsr,
-                              [hdr; Cconst_int (wordsize_shift, dbg)], dbg),
-                            dbg,
-                            Cop(Clsr,
-                              [hdr; Cconst_int (numfloat_shift, dbg)], dbg),
-                            dbg))
-          in
-          Cop(Cor, [len; Cconst_int (1, dbg)], dbg)
-      | Paddrarray | Pintarray ->
-          Cop(Cor, [addr_array_length hdr dbg; Cconst_int (1, dbg)], dbg)
-      | Pfloatarray ->
-          Cop(Cor, [float_array_length hdr dbg; Cconst_int (1, dbg)], dbg)
-      end
+      arraylength kind (transl env arg) dbg
   (* Boolean operations *)
   | Pnot ->
       transl_if env Then_false_else_true
@@ -820,19 +777,9 @@ and transl_prim_1 env p arg dbg =
         (Cop(Csubi, [Cconst_int (0, dbg); transl_unbox_int dbg env bi arg],
           dbg))
   | Pbbswap bi ->
-      let prim = match bi with
-        | Pnativeint -> "nativeint"
-        | Pint32 -> "int32"
-        | Pint64 -> "int64" in
-      box_int dbg bi (Cop(Cextcall(Printf.sprintf "caml_%s_direct_bswap" prim,
-                               typ_int, false, None),
-                      [transl_unbox_int dbg env bi arg],
-                      dbg))
+      box_int dbg bi (bbswap bi (transl_unbox_int dbg env bi arg) dbg)
   | Pbswap16 ->
-      tag_int (Cop(Cextcall("caml_bswap16_direct", typ_int, false, None),
-                   [untag_int (transl env arg) dbg],
-                   dbg))
-              dbg
+      tag_int (bswap16 (untag_int (transl env arg) dbg) dbg) dbg
   | (Pfield_computed | Psequand | Psequor
     | Paddint | Psubint | Pmulint | Pandint
     | Porint | Pxorint | Plslint | Plsrint | Pasrint

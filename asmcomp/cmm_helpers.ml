@@ -2025,6 +2025,93 @@ let generic_functions shared units =
   let accu = Int.Set.fold (fun n accu -> send_function n :: accu) send accu in
   Int.Set.fold (fun n accu -> curry_function n @ accu) curry accu
 
+(* Primitives *)
+
+type unary_primitive = expression -> Debuginfo.t -> expression
+
+let floatfield n ptr dbg =
+  Cop(Cload (Double_u, Mutable),
+      [if n = 0 then ptr
+       else Cop(Cadda, [ptr; Cconst_int(n * size_float, dbg)], dbg)],
+      dbg)
+
+let int_as_pointer arg dbg =
+  Cop(Caddi, [arg; Cconst_int (-1, dbg)], dbg)
+  (* always a pointer outside the heap *)
+
+let raise_prim rkind arg dbg =
+  if !Clflags.debug then begin
+    match (rkind : Lambda.raise_kind) with
+    | Raise_notrace ->
+        Cop (Craise Raise_notrace, [arg], dbg)
+    | Raise_reraise ->
+        Cop (Craise Raise_withtrace, [arg], dbg)
+    | Raise_regular ->
+        raise_regular dbg arg
+  end
+  else
+    Cop (Craise Raise_notrace, [arg], dbg)
+
+let negint arg dbg =
+  Cop(Csubi, [Cconst_int (2, dbg); arg], dbg)
+
+let offsetint n arg dbg =
+  if Misc.no_overflow_lsl n 1 then
+    add_const arg (n lsl 1) dbg
+  else
+    decr_int (add_int arg (int_const dbg n) dbg) dbg
+
+let offsetref n arg dbg =
+  return_unit dbg
+    (bind "ref" arg (fun arg ->
+         Cop(Cstore (Word_int, Assignment),
+             [arg;
+              add_const (Cop(Cload (Word_int, Mutable), [arg], dbg))
+                (n lsl 1) dbg],
+             dbg)))
+
+let arraylength kind arg dbg =
+  let hdr = get_header_without_profinfo arg dbg in
+  match (kind : Lambda.array_kind) with
+    Pgenarray ->
+      let len =
+        if wordsize_shift = numfloat_shift then
+          Cop(Clsr, [hdr; Cconst_int (wordsize_shift, dbg)], dbg)
+        else
+          bind "header" hdr (fun hdr ->
+              Cifthenelse(is_addr_array_hdr hdr dbg,
+                          dbg,
+                          Cop(Clsr,
+                            [hdr; Cconst_int (wordsize_shift, dbg)], dbg),
+                          dbg,
+                          Cop(Clsr,
+                            [hdr; Cconst_int (numfloat_shift, dbg)], dbg),
+                          dbg))
+      in
+      Cop(Cor, [len; Cconst_int (1, dbg)], dbg)
+  | Paddrarray | Pintarray ->
+      Cop(Cor, [addr_array_length hdr dbg; Cconst_int (1, dbg)], dbg)
+  | Pfloatarray ->
+      Cop(Cor, [float_array_length hdr dbg; Cconst_int (1, dbg)], dbg)
+
+let bbswap bi arg dbg =
+  let prim = match (bi : Primitive.boxed_integer) with
+    | Pnativeint -> "nativeint"
+    | Pint32 -> "int32"
+    | Pint64 -> "int64"
+  in
+  Cop(Cextcall(Printf.sprintf "caml_%s_direct_bswap" prim,
+               typ_int, false, None),
+      [arg],
+      dbg)
+
+let bswap16 arg dbg =
+  (Cop(Cextcall("caml_bswap16_direct", typ_int, false, None),
+       [arg],
+       dbg))
+
+(* Symbols *)
+
 let cdefine_symbol (symb, (global: Cmmgen_state.is_global)) =
   match global with
   | Global -> [Cglobal_symbol symb; Cdefine_symbol symb]
