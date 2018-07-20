@@ -98,6 +98,7 @@ numbers.cmi : set.cmi int64.cmi identifiable.cmi
 obj.cmi : int32.cmi
 oo.cmi : camlinternalOO.cmi
 oprint.cmi : outcometree.cmi format.cmi
+option.cmi : monad.cmi
 outcometree.cmi : format.cmi asttypes.cmi
 parmatch.cmi : types.cmi typedtree.cmi parsetree.cmi location.cmi \
     hashtbl.cmi env.cmi asttypes.cmi
