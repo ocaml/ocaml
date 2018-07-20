@@ -1,10 +1,10 @@
 (* TEST
    reference="${test_source_directory}/redirections.reference"
    output="redirections.output"
-   script = "${ocamlrun} ${ocamlsrcdir}/tools/caml-tex -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
+   script = "${ocamlrun} ${ocamlsrcdir}/tools/caml-tex \
+   -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
   * script with unix,str
   ** check-program-output
-
 *)
 
 \begin{caml_example}{toplevel}

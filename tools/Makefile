@@ -396,15 +396,18 @@ CAMLTEX= ../compilerlibs/ocamlcommon.cma \
 	../compilerlibs/ocamlbytecomp.cma \
 	../compilerlibs/ocamltoplevel.cma \
 	../otherlibs/str/str.cma \
-	../otherlibs/unix/unix.cma \
+	../otherlibs/$(UNIXLIB)/unix.cma \
 	caml_tex.ml
 
 #Scan latex files, and run ocaml code examples
 
-caml-tex: INCLUDES+= -I ../otherlibs/str -I ../otherlibs/unix
+caml-tex: INCLUDES+= -I ../otherlibs/str -I ../otherlibs/$(UNIXLIB)
 caml-tex: $(CAMLTEX)
-	$(CAMLC) $(LINKFLAGS) -I .. -linkall -o $@ $(CAMLTEX)
+	../runtime/ocamlrun ../ocamlc -nostdlib -I ../stdlib $(LINKFLAGS) \
+	-linkall -o $@ $(CAMLTEX)
 
+# we need str and unix which depend on the bytecode version of other tools
+# thus we delay building caml-tex to the opt.opt stage
 opt.opt:caml-tex
 clean::
 	rm -f -- caml-tex caml_tex.cm?

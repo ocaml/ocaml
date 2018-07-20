@@ -84,8 +84,7 @@ module Toplevel = struct
 
   (** Redirect the stdout *)
   let stdout_out, stdout_in = Unix.pipe ~cloexec:true ()
-  let () = Unix.dup2 stdout_in Unix.stdout;
-    Unix.set_nonblock stdout_out
+  let () = Unix.dup2 stdout_in Unix.stdout
 
   let self_error_fmt = Format.formatter_of_out_channel stderr
   let eprintf = Format.eprintf
@@ -94,17 +93,16 @@ module Toplevel = struct
     let size = 50 in
     let b = Bytes.create size in
     let buffer = Buffer.create 100 in
-    let max_retry = 5 in
-    let rec loop retry =
-      try
-        let n = Unix.read stdout_out b 0 size in
-        Buffer.add_subbytes buffer b 0 n;
-        if n = size then loop max_retry
-      with Unix.(Unix_error (EAGAIN,_,_) ) ->
-        if retry = 0 then () else loop (retry - 1)
+    let rec read_toplevel_stdout () =
+      match Unix.select[stdout_out][][] 0. with
+      | [a], _, _ ->
+          let n = Unix.read stdout_out b 0 size in
+          Buffer.add_subbytes buffer b 0 n;
+          if n = size then read_toplevel_stdout ()
+      | _  -> ()
     in
     fun () ->
-      let () = flush stdout; loop max_retry in
+      let () = flush stdout; read_toplevel_stdout () in
       let r = Buffer.contents buffer in
       Buffer.reset buffer;
       r
