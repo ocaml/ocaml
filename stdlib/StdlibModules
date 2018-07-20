@@ -55,6 +55,7 @@ STDLIB_MODULES=\
   $(P)listLabels \
   $(P)map \
   $(P)marshal \
+  $(P)monad \
   $(P)moreLabels \
   $(P)nativeint \
   $(P)obj \

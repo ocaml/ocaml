@@ -117,6 +117,9 @@ stdlib__map.cmi : stdlib__seq.cmi
 stdlib__marshal.cmo : stdlib__bytes.cmi stdlib__marshal.cmi
 stdlib__marshal.cmx : stdlib__bytes.cmx stdlib__marshal.cmi
 stdlib__marshal.cmi :
+stdlib__monad.cmo : stdlib__applicative.cmi stdlib__monad.cmi
+stdlib__monad.cmx : stdlib__applicative.cmx stdlib__monad.cmi
+stdlib__monad.cmi : stdlib__applicative.cmi
 stdlib__moreLabels.cmo : stdlib__set.cmi stdlib__map.cmi stdlib__hashtbl.cmi stdlib__moreLabels.cmi
 stdlib__moreLabels.cmx : stdlib__set.cmx stdlib__map.cmx stdlib__hashtbl.cmx stdlib__moreLabels.cmi
 stdlib__moreLabels.cmi : stdlib__set.cmi stdlib__seq.cmi stdlib__map.cmi stdlib__hashtbl.cmi
@@ -280,6 +283,8 @@ stdlib__map.cmo : stdlib__seq.cmi stdlib__map.cmi
 stdlib__map.p.cmx : stdlib__seq.cmx stdlib__map.cmi
 stdlib__marshal.cmo : stdlib__bytes.cmi stdlib__marshal.cmi
 stdlib__marshal.p.cmx : stdlib__bytes.cmx stdlib__marshal.cmi
+stdlib__monad.cmo : stdlib__applicative.cmi stdlib__monad.cmi
+stdlib__monad.p.cmx : stdlib__applicative.cmx stdlib__monad.cmi
 stdlib__moreLabels.cmo : stdlib__set.cmi stdlib__map.cmi stdlib__hashtbl.cmi stdlib__moreLabels.cmi
 stdlib__moreLabels.p.cmx : stdlib__set.cmx stdlib__map.cmx stdlib__hashtbl.cmx stdlib__moreLabels.cmi
 stdlib__nativeint.cmo : stdlib__sys.cmi stdlib__nativeint.cmi

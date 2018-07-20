@@ -39,7 +39,7 @@ LIB=../../stdlib
 P=stdlib__
 
 LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo stdlib.cmo \
-  $(LIB)/$(P)functor.cmo $(LIB)/$(P)applicative.cmo \
+  $(LIB)/$(P)functor.cmo $(LIB)/$(P)applicative.cmo $(LIB)/$(P)monad.cmo \
   $(LIB)/$(P)seq.cmo $(LIB)/$(P)array.cmo $(LIB)/$(P)list.cmo \
   $(LIB)/$(P)char.cmo $(LIB)/$(P)bytes.cmo $(LIB)/$(P)string.cmo \
   $(LIB)/$(P)sys.cmo marshal.cmo \

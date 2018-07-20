@@ -673,6 +673,7 @@ module List         = List
 module ListLabels   = ListLabels
 module Map          = Map
 module Marshal      = Marshal
+module Monad        = Monad
 module MoreLabels   = MoreLabels
 module Nativeint    = Nativeint
 module Obj          = Obj

@@ -88,6 +88,7 @@ marshal.cmi :
 matching.cmi : typedtree.cmi location.cmi lambda.cmi ident.cmi
 meta.cmi : obj.cmi instruct.cmi
 misc.cmi : set.cmi map.cmi hashtbl.cmi format.cmi
+monad.cmi : applicative.cmi
 moreLabels.cmi : set.cmi seq.cmi map.cmi hashtbl.cmi
 mtype.cmi : types.cmi path.cmi ident.cmi env.cmi
 mutex.cmi :
