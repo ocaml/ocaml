@@ -7,6 +7,8 @@ end
 
 module type S = sig
   include Basic
+  val (<@@>) : ('a -> 'b) -> 'a t -> 'b t
+  (** Infix alias for [map] *)
 end
 (** The functor interface and output signature of the functor {!Functor.Make} *)
 

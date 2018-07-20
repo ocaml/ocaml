@@ -13,6 +13,12 @@ module type S = sig
 
   val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
   (** Infix alias for [bind] *)
+
+  val compose_after : ('b -> 'c t) -> ('a -> 'b t) -> 'a -> 'c t
+  (** Kleisli compositon *)
+
+  val compose_before : ('a -> 'b t) -> ('b -> 'c t) -> 'a -> 'c t
+  (** Kleisli compositon *)
 end
 (** The monad interface and output signature of the functor {!Monad.Make} *)
 
