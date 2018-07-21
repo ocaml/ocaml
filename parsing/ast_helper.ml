@@ -40,6 +40,13 @@ module Const = struct
   let string ?quotation_delimiter s = Pconst_string (s, quotation_delimiter)
 end
 
+module Attr = struct
+  let mk ?(loc= !default_loc) name payload =
+    { attr_name = name;
+      attr_payload = payload;
+      attr_loc = loc }
+end
+
 module Typ = struct
   let mk ?(loc = !default_loc) ?(attrs = []) d =
     {ptyp_desc = d; ptyp_loc = loc; ptyp_attributes = attrs}

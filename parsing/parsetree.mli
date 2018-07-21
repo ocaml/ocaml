@@ -39,7 +39,11 @@ type constant =
 
 (** {1 Extension points} *)
 
-type attribute = string loc * payload
+type attribute = {
+    attr_name : string loc;
+    attr_payload : payload;
+    attr_loc : Location.t;
+  }
        (* [@id ARG]
           [@@id ARG]
 

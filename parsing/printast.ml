@@ -404,14 +404,16 @@ and type_declaration i ppf x =
   line i ppf "ptype_manifest =\n";
   option (i+1) core_type ppf x.ptype_manifest
 
+and attribute i ppf k a =
+  line i ppf "%s \"%s\"\n" k a.attr_name.txt;
+  payload i ppf a.attr_payload;
+
 and attributes i ppf l =
   let i = i + 1 in
-  List.iter
-    (fun (s, arg) ->
-      line i ppf "attribute \"%s\"\n" s.txt;
-      payload (i + 1) ppf arg;
-    )
-    l
+  List.iter (fun a ->
+    line i ppf "attribute \"%s\"\n" a.attr_name.txt;
+    payload (i + 1) ppf a.attr_payload;
+  ) l;
 
 and payload i ppf = function
   | PStr x -> structure i ppf x
@@ -523,9 +525,8 @@ and class_type_field i ppf x =
       line i ppf "Pctf_constraint\n";
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
-  | Pctf_attribute (s, arg) ->
-      line i ppf "Pctf_attribute \"%s\"\n" s.txt;
-      payload i ppf arg
+  | Pctf_attribute a ->
+      attribute i ppf "Pctf_attribute" a
   | Pctf_extension (s, arg) ->
       line i ppf "Pctf_extension \"%s\"\n" s.txt;
      payload i ppf arg
@@ -618,9 +619,8 @@ and class_field i ppf x =
   | Pcf_initializer (e) ->
       line i ppf "Pcf_initializer\n";
       expression (i+1) ppf e;
-  | Pcf_attribute (s, arg) ->
-      line i ppf "Pcf_attribute \"%s\"\n" s.txt;
-      payload i ppf arg
+  | Pcf_attribute a ->
+      attribute i ppf "Pcf_attribute" a
   | Pcf_extension (s, arg) ->
       line i ppf "Pcf_extension \"%s\"\n" s.txt;
       payload i ppf arg
@@ -717,9 +717,8 @@ and signature_item i ppf x =
       line i ppf "Psig_extension \"%s\"\n" s.txt;
       attributes i ppf attrs;
       payload i ppf arg
-  | Psig_attribute (s, arg) ->
-      line i ppf "Psig_attribute \"%s\"\n" s.txt;
-      payload i ppf arg
+  | Psig_attribute a ->
+      attribute i ppf "Psig_attribute" a
 
 and modtype_declaration i ppf = function
   | None -> line i ppf "#abstract"
@@ -824,9 +823,8 @@ and structure_item i ppf x =
       line i ppf "Pstr_extension \"%s\"\n" s.txt;
       attributes i ppf attrs;
       payload i ppf arg
-  | Pstr_attribute (s, arg) ->
-      line i ppf "Pstr_attribute \"%s\"\n" s.txt;
-      payload i ppf arg
+  | Pstr_attribute a ->
+      attribute i ppf "Pstr_attribute" a
 
 and module_declaration i ppf pmd =
   string_loc i ppf pmd.pmd_name;

@@ -1610,8 +1610,9 @@ and trees_of_sigitem = function
       [tree_of_extension_constructor id ext es]
   | Sig_module(id, md, rs) ->
       let ellipsis =
-        List.exists (function ({txt="..."}, Parsetree.PStr []) -> true
-                            | _ -> false)
+        List.exists (function
+          | Parsetree.{attr_name = {txt="..."}; attr_payload = PStr []} -> true
+          | _ -> false)
           md.md_attributes in
       [tree_of_module id md.md_type rs ~ellipsis]
   | Sig_modtype(id, decl) ->

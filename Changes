@@ -143,6 +143,9 @@ Working version
   (Xavier Clerc, review by Gabriel Scherer, Sébastien Hinderer, and
    Xavier Leroy)
 
+- GRP#1953: Add locations to attributes in the parsetree.
+  (Hugo Heuzard, review by Gabriel Radanne)
+
 - GPR#1954: Add locations to toplevel directives.
   (Hugo Heuzard, review by Gabriel Radanne)
 

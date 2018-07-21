@@ -1980,7 +1980,8 @@ let create_package_type loc env (p, l) =
    let open Ast_helper in
    List.fold_left
      (fun sexp (name, loc) ->
-       Exp.letmodule ~loc:sexp.pexp_loc ~attrs:[mknoloc "#modulepat",PStr []]
+       Exp.letmodule ~loc:sexp.pexp_loc
+         ~attrs:[Attr.mk (mknoloc "#modulepat") (PStr [])]
          name
          (Mod.unpack ~loc
             (Exp.ident ~loc:name.loc (mkloc (Longident.Lident name.txt)
@@ -2288,7 +2289,7 @@ and type_expect_
         else With_attributes in
       let scp =
         match sexp.pexp_attributes, rec_flag with
-        | [{txt="#default"},_], _ -> None
+        | [{attr_name = {txt="#default"}; _}], _ -> None
         | _, Recursive -> Some (Annot.Idef loc)
         | _, Nonrecursive -> Some (Annot.Idef sbody.pexp_loc)
       in
@@ -2337,7 +2338,8 @@ and type_expect_
       in
       let pat = Pat.var ~loc:sloc (mknoloc "*opt*") in
       let body =
-        Exp.let_ ~loc Nonrecursive ~attrs:[mknoloc "#default",PStr []]
+        Exp.let_ ~loc Nonrecursive
+          ~attrs:[Attr.mk (mknoloc "#default") (PStr [])]
           [Vb.mk spat smatch] sbody
       in
       type_function ?in_function loc sexp.pexp_attributes env

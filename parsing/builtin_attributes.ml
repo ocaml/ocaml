@@ -64,7 +64,7 @@ let cat s1 s2 =
 
 let deprecated_attr x =
   match x with
-  | ({txt = "ocaml.deprecated"|"deprecated"; _},_) -> Some x
+  | {attr_name = {txt = "ocaml.deprecated"|"deprecated"; _};_} -> Some x
   | _ -> None
 
 let rec deprecated_attrs = function
@@ -77,7 +77,7 @@ let rec deprecated_attrs = function
 let deprecated_of_attrs l =
   match deprecated_attrs l with
   | None -> None
-  | Some (_,p) -> Some (string_of_opt_payload p)
+  | Some a -> Some (string_of_opt_payload a.attr_payload)
 
 let check_deprecated loc attrs s =
   match deprecated_of_attrs attrs with
@@ -91,8 +91,9 @@ let check_deprecated_inclusion ~def ~use loc attrs1 attrs2 s =
 
 let rec deprecated_mutable_of_attrs = function
   | [] -> None
-  | ({txt = "ocaml.deprecated_mutable"|"deprecated_mutable"; _}, p) :: _ ->
-      Some (string_of_opt_payload p)
+  | {attr_name =  {txt = "ocaml.deprecated_mutable"|"deprecated_mutable"; _};
+     attr_payload = p} :: _ ->
+     Some (string_of_opt_payload p)
   | _ :: tl -> deprecated_mutable_of_attrs tl
 
 let check_deprecated_mutable loc attrs s =
@@ -131,8 +132,8 @@ let rec deprecated_of_str = function
 let check_no_deprecated attrs =
   match deprecated_attrs attrs with
   | None -> ()
-  | Some ({txt;loc},_) ->
-    Location.prerr_warning loc (Warnings.Misplaced_attribute txt)
+  | Some {attr_name = {txt;_};attr_loc} ->
+    Location.prerr_warning attr_loc (Warnings.Misplaced_attribute txt)
 
 let warning_attribute ?(ppwarning = true) =
   let process loc txt errflag payload =
@@ -150,17 +151,28 @@ let warning_attribute ?(ppwarning = true) =
              (txt, "A single string literal is expected"))
   in
   function
-  | ({txt = ("ocaml.warning"|"warning") as txt; loc}, payload) ->
-      process loc txt false payload
-  | ({txt = ("ocaml.warnerror"|"warnerror") as txt; loc}, payload) ->
-      process loc txt true payload
-  | {txt="ocaml.ppwarning"|"ppwarning"},
-    PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
-                                   (Pconst_string (s, _))},_);
-          pstr_loc}] when ppwarning ->
-      Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
+  | {attr_name = {txt = ("ocaml.warning"|"warning") as txt; _};
+     attr_loc;
+     attr_payload;
+     } ->
+      process attr_loc txt false attr_payload
+  | {attr_name = {txt = ("ocaml.warnerror"|"warnerror") as txt; _};
+     attr_loc;
+     attr_payload
+    } ->
+      process attr_loc txt true attr_payload
+  | {attr_name = {txt="ocaml.ppwarning"|"ppwarning"; _};
+     attr_loc = _;
+     attr_payload =
+       PStr [
+         { pstr_desc=
+             Pstr_eval({pexp_desc=Pexp_constant (Pconst_string (s, _))},_);
+           pstr_loc }
+       ];
+    } when ppwarning ->
+     Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
   | _ ->
-      ()
+     ()
 
 let warning_scope ?ppwarning attrs f =
   let prev = Warnings.backup () in
@@ -176,24 +188,23 @@ let warning_scope ?ppwarning attrs f =
 
 let warn_on_literal_pattern =
   List.exists
-    (function
-      | ({txt="ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern"; _}, _)
-        -> true
-      | _ -> false
+    (fun a -> match a.attr_name.txt with
+       | "ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern" -> true
+       | _ -> false
     )
 
 let explicit_arity =
   List.exists
-    (function
-      | ({txt="ocaml.explicit_arity"|"explicit_arity"; _}, _) -> true
-      | _ -> false
+    (fun a -> match a.attr_name.txt with
+       | "ocaml.explicit_arity"|"explicit_arity" -> true
+       | _ -> false
     )
 
 let immediate =
   List.exists
-    (function
-      | ({txt="ocaml.immediate"|"immediate"; _}, _) -> true
-      | _ -> false
+    (fun a -> match a.attr_name.txt with
+       | "ocaml.immediate"|"immediate" -> true
+       | _ -> false
     )
 
 (* The "ocaml.boxed (default)" and "ocaml.unboxed (default)"
@@ -203,7 +214,7 @@ let immediate =
    source file because the default can change between compiler
    invocations. *)
 
-let check l (x, _) = List.mem x.txt l
+let check l a = List.mem a.attr_name.txt l
 
 let has_unboxed attr =
   List.exists (check ["ocaml.unboxed"; "unboxed"])

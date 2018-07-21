@@ -97,7 +97,9 @@ let docs_attr ds =
   let item =
     { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc }
   in
-    (doc_loc, PStr [item])
+  { attr_name = doc_loc;
+    attr_payload = PStr [item];
+    attr_loc = Location.none }
 
 let add_docs_attrs docs attrs =
   let attrs =
@@ -144,7 +146,9 @@ let text_attr ds =
   let item =
     { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc }
   in
-    (text_loc, PStr [item])
+  { attr_name = text_loc;
+    attr_payload = PStr [item];
+    attr_loc = Location.none }
 
 let add_text_attrs dsl attrs =
   let fdsl = List.filter (function {ds_body=""} -> false| _ ->true) dsl in

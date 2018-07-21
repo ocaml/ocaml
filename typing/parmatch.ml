@@ -2453,7 +2453,8 @@ let all_rhs_idents exp =
    and perform "indirect check for them" *)
     let is_unpack exp =
       List.exists
-        (fun (attr, _) -> attr.txt = "#modulepat") exp.exp_attributes
+        (fun attr -> attr.Parsetree.attr_name.txt = "#modulepat")
+        exp.exp_attributes
 
     let leave_expression exp =
       if is_unpack exp then begin match exp.exp_desc with

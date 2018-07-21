@@ -46,6 +46,11 @@ module Const : sig
   val float : ?suffix:char -> string -> constant
 end
 
+(** {1 Attributes} *)
+module Attr : sig
+  val mk: ?loc:loc -> str -> payload -> attribute
+end
+
 (** {1 Core language} *)
 
 (** Type expressions *)

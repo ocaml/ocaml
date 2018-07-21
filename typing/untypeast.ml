@@ -126,7 +126,12 @@ let constant = function
   | Const_nativeint i -> Pconst_integer (Nativeint.to_string i, Some 'n')
   | Const_float f -> Pconst_float (f,None)
 
-let attribute sub (s, p) = (map_loc sub s, p)
+let attribute sub a = {
+    attr_name = map_loc sub a.attr_name;
+    attr_payload = a.attr_payload;
+    attr_loc = a.attr_loc
+  }
+
 let attributes sub l = List.map (sub.attribute sub) l
 
 let structure sub str =

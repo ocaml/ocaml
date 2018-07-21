@@ -754,14 +754,14 @@ and attributes ctxt f l =
 and item_attributes ctxt f l =
   List.iter (item_attribute ctxt f) l
 
-and attribute ctxt f (s, e) =
-  pp f "@[<2>[@@%s@ %a]@]" s.txt (payload ctxt) e
+and attribute ctxt f a =
+  pp f "@[<2>[@@%s@ %a]@]" a.attr_name.txt (payload ctxt) a.attr_payload
 
-and item_attribute ctxt f (s, e) =
-  pp f "@[<2>[@@@@%s@ %a]@]" s.txt (payload ctxt) e
+and item_attribute ctxt f a =
+  pp f "@[<2>[@@@@%s@ %a]@]" a.attr_name.txt (payload ctxt) a.attr_payload
 
-and floating_attribute ctxt f (s, e) =
-  pp f "@[<2>[@@@@@@%s@ %a]@]" s.txt (payload ctxt) e
+and floating_attribute ctxt f a =
+  pp f "@[<2>[@@@@@@%s@ %a]@]" a.attr_name.txt (payload ctxt) a.attr_payload
 
 and value_description ctxt f x =
   (* note: value_description has an attribute field,

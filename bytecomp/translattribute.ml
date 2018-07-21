@@ -18,31 +18,31 @@ open Lambda
 open Location
 
 let is_inline_attribute = function
-  | {txt=("inline"|"ocaml.inline")}, _ -> true
+  | {txt=("inline"|"ocaml.inline")} -> true
   | _ -> false
 
 let is_inlined_attribute = function
-  | {txt=("inlined"|"ocaml.inlined")}, _ -> true
-  | {txt=("unrolled"|"ocaml.unrolled")}, _ when Config.flambda -> true
+  | {txt=("inlined"|"ocaml.inlined")} -> true
+  | {txt=("unrolled"|"ocaml.unrolled")} when Config.flambda -> true
   | _ -> false
 
 let is_specialise_attribute = function
-  | {txt=("specialise"|"ocaml.specialise")}, _ when Config.flambda -> true
+  | {txt=("specialise"|"ocaml.specialise")} when Config.flambda -> true
   | _ -> false
 
 let is_specialised_attribute = function
-  | {txt=("specialised"|"ocaml.specialised")}, _ when Config.flambda -> true
+  | {txt=("specialised"|"ocaml.specialised")} when Config.flambda -> true
   | _ -> false
 
 let find_attribute p attributes =
   let inline_attribute, other_attributes =
-    List.partition p attributes
+    List.partition (fun a -> p a.Parsetree.attr_name) attributes
   in
   let attr =
     match inline_attribute with
     | [] -> None
     | [attr] -> Some attr
-    | _ :: ({txt;loc}, _) :: _ ->
+    | _ :: {Parsetree.attr_name = {txt;loc}; _} :: _ ->
       Location.prerr_warning loc (Warnings.Duplicated_attribute txt);
       None
   in
@@ -56,7 +56,7 @@ let is_unrolled = function
 let parse_inline_attribute attr =
   match attr with
   | None -> Default_inline
-  | Some ({txt;loc} as id, payload) ->
+  | Some {Parsetree.attr_name = {txt;loc} as id; attr_payload = payload} ->
     let open Parsetree in
     if is_unrolled id then begin
       (* the 'unrolled' attributes must be used as [@unrolled n]. *)
@@ -108,7 +108,7 @@ let parse_inline_attribute attr =
 let parse_specialise_attribute attr =
   match attr with
   | None -> Default_specialise
-  | Some ({txt; loc}, payload) ->
+  | Some {Parsetree.attr_name = {txt; loc}; attr_payload = payload} ->
     let open Parsetree in
     let warning txt =
       Warnings.Attribute_payload
@@ -220,7 +220,7 @@ let get_and_remove_specialised_attribute e =
    get_inlined_attribute *)
 let get_tailcall_attribute e =
   let is_tailcall_attribute = function
-    | {txt=("tailcall"|"ocaml.tailcall")}, _ -> true
+    | {Parsetree.attr_name = {txt=("tailcall"|"ocaml.tailcall")}; _} -> true
     | _ -> false
   in
   let tailcalls, exp_attributes =
@@ -231,12 +231,12 @@ let get_tailcall_attribute e =
   | _ :: r ->
       begin match r with
       | [] -> ()
-      | ({txt;loc}, _) :: _ ->
+      | {Parsetree.attr_name = {txt;loc}; _} :: _ ->
           Location.prerr_warning loc (Warnings.Duplicated_attribute txt)
       end;
       true, { e with exp_attributes }
 
-let check_attribute e ({ txt; loc }, _) =
+let check_attribute e {Parsetree.attr_name = { txt; loc }; _} =
   match txt with
   | "inline" | "ocaml.inline"
   | "specialise" | "ocaml.specialise" -> begin
@@ -254,7 +254,7 @@ let check_attribute e ({ txt; loc }, _) =
         (Warnings.Misplaced_attribute txt)
   | _ -> ()
 
-let check_attribute_on_module e ({ txt; loc }, _) =
+let check_attribute_on_module e {Parsetree.attr_name = { txt; loc }; _} =
   match txt with
   | "inline" | "ocaml.inline" ->  begin
       match e.mod_desc with
