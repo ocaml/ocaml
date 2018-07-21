@@ -50,6 +50,9 @@ Working version
   a deprecation warning since 4.02.
   (whitequark)
 
+- GPR#1920: Add Functor, Applicative, Monad, Identity, and Option modules
+  (TheAspiringHacker)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking

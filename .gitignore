@@ -34,6 +34,8 @@
 _ocamltest
 _ocamltestd
 *.odoc
+*~
+#*
 
 # local to root directory
 

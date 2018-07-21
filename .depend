@@ -520,11 +520,11 @@ typing/untypeast.cmi : typing/typedtree.cmi typing/path.cmi \
     parsing/asttypes.cmi
 bytecomp/bytegen.cmo : typing/types.cmi bytecomp/switch.cmi typing/subst.cmi \
     typing/primitive.cmi utils/misc.cmi bytecomp/matching.cmi \
-    bytecomp/lambda.cmi bytecomp/instruct.cmi typing/ident.cmi \
+    bytecomp/lambda.cmi bytecomp/instruct.cmi typing/ident.cmi typing/env.cmi \
     utils/config.cmi parsing/asttypes.cmi bytecomp/bytegen.cmi
 bytecomp/bytegen.cmx : typing/types.cmx bytecomp/switch.cmx typing/subst.cmx \
     typing/primitive.cmx utils/misc.cmx bytecomp/matching.cmx \
-    bytecomp/lambda.cmx bytecomp/instruct.cmx typing/ident.cmx \
+    bytecomp/lambda.cmx bytecomp/instruct.cmx typing/ident.cmx typing/env.cmx \
     utils/config.cmx parsing/asttypes.cmi bytecomp/bytegen.cmi
 bytecomp/bytegen.cmi : bytecomp/lambda.cmi bytecomp/instruct.cmi
 bytecomp/bytelibrarian.cmo : utils/misc.cmi parsing/location.cmi \
@@ -2419,14 +2419,14 @@ driver/optmain.cmx : utils/warnings.cmx utils/profile.cmx asmcomp/proc.cmx \
     asmcomp/asmlink.cmx asmcomp/asmlibrarian.cmx asmcomp/arch.cmx \
     driver/optmain.cmi
 driver/optmain.cmi :
-driver/pparse.cmo : utils/profile.cmi parsing/parsetree.cmi \
-    parsing/parse.cmi utils/misc.cmi parsing/location.cmi utils/config.cmi \
-    utils/clflags.cmi utils/ccomp.cmi parsing/ast_mapper.cmi \
-    parsing/ast_invariants.cmi driver/pparse.cmi
-driver/pparse.cmx : utils/profile.cmx parsing/parsetree.cmi \
-    parsing/parse.cmx utils/misc.cmx parsing/location.cmx utils/config.cmx \
-    utils/clflags.cmx utils/ccomp.cmx parsing/ast_mapper.cmx \
-    parsing/ast_invariants.cmx driver/pparse.cmi
+driver/pparse.cmo : utils/warnings.cmi utils/profile.cmi \
+    parsing/parsetree.cmi parsing/parse.cmi utils/misc.cmi \
+    parsing/location.cmi utils/config.cmi utils/clflags.cmi utils/ccomp.cmi \
+    parsing/ast_mapper.cmi parsing/ast_invariants.cmi driver/pparse.cmi
+driver/pparse.cmx : utils/warnings.cmx utils/profile.cmx \
+    parsing/parsetree.cmi parsing/parse.cmx utils/misc.cmx \
+    parsing/location.cmx utils/config.cmx utils/clflags.cmx utils/ccomp.cmx \
+    parsing/ast_mapper.cmx parsing/ast_invariants.cmx driver/pparse.cmi
 driver/pparse.cmi : parsing/parsetree.cmi utils/misc.cmi
 toplevel/expunge.cmo : bytecomp/symtable.cmi bytecomp/runtimedef.cmi \
     utils/misc.cmi typing/ident.cmi bytecomp/bytesections.cmi

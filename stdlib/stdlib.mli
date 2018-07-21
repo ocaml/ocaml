@@ -1236,6 +1236,7 @@ end
 include module type of struct include Pervasives end
 
 (*MODULE_ALIASES*)
+module Applicative  = Applicative
 module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels
@@ -1251,9 +1252,11 @@ module Ephemeron    = Ephemeron
 module Filename     = Filename
 module Float        = Float
 module Format       = Format
+module Functor      = Functor
 module Gc           = Gc
 module Genlex       = Genlex
 module Hashtbl      = Hashtbl
+module Identity     = Identity
 module Int32        = Int32
 module Int64        = Int64
 module Lazy         = Lazy
@@ -1262,10 +1265,12 @@ module List         = List
 module ListLabels   = ListLabels
 module Map          = Map
 module Marshal      = Marshal
+module Monad        = Monad
 module MoreLabels   = MoreLabels
 module Nativeint    = Nativeint
 module Obj          = Obj
 module Oo           = Oo
+module Option       = Option
 module Parsing      = Parsing
 module Printexc     = Printexc
 module Printf       = Printf

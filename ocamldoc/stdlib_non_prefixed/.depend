@@ -1,4 +1,5 @@
 annot.cmi : location.cmi
+applicative.cmi : functor.cmi
 arg.cmi :
 arg_helper.cmi : map.cmi
 array.cmi : seq.cmi
@@ -57,6 +58,7 @@ event.cmi :
 filename.cmi :
 float.cmi : pervasives.cmi
 format.cmi : pervasives.cmi buffer.cmi
+functor.cmi :
 gc.cmi :
 genlex.cmi : stream.cmi
 graphics.cmi :
@@ -64,6 +66,7 @@ graphicsX11.cmi :
 hashtbl.cmi : seq.cmi
 ident.cmi : identifiable.cmi
 identifiable.cmi : set.cmi map.cmi hashtbl.cmi format.cmi
+identity.cmi :
 includeclass.cmi : types.cmi location.cmi format.cmi env.cmi ctype.cmi
 includecore.cmi : types.cmi typedtree.cmi location.cmi ident.cmi format.cmi \
     env.cmi
@@ -86,6 +89,7 @@ marshal.cmi :
 matching.cmi : typedtree.cmi location.cmi lambda.cmi ident.cmi
 meta.cmi : obj.cmi instruct.cmi
 misc.cmi : set.cmi map.cmi hashtbl.cmi format.cmi
+monad.cmi : applicative.cmi
 moreLabels.cmi : set.cmi seq.cmi map.cmi hashtbl.cmi
 mtype.cmi : types.cmi path.cmi ident.cmi env.cmi
 mutex.cmi :
@@ -94,6 +98,7 @@ numbers.cmi : set.cmi int64.cmi identifiable.cmi
 obj.cmi : int32.cmi
 oo.cmi : camlinternalOO.cmi
 oprint.cmi : outcometree.cmi format.cmi
+option.cmi : monad.cmi
 outcometree.cmi : format.cmi asttypes.cmi
 parmatch.cmi : types.cmi typedtree.cmi parsetree.cmi location.cmi \
     hashtbl.cmi env.cmi asttypes.cmi
@@ -113,8 +118,8 @@ printf.cmi : buffer.cmi
 printinstr.cmi : instruct.cmi format.cmi
 printlambda.cmi : lambda.cmi format.cmi
 printpat.cmi : typedtree.cmi format.cmi asttypes.cmi
-printtyp.cmi : types.cmi path.cmi outcometree.cmi longident.cmi ident.cmi \
-    format.cmi env.cmi asttypes.cmi
+printtyp.cmi : types.cmi path.cmi outcometree.cmi longident.cmi location.cmi \
+    ident.cmi format.cmi env.cmi asttypes.cmi
 printtyped.cmi : typedtree.cmi format.cmi
 profile.cmi : format.cmi
 queue.cmi : seq.cmi

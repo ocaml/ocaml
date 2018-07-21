@@ -22,6 +22,7 @@ P ?= stdlib__
 
 STDLIB_MODULES=\
   $(P)spacetime \
+  $(P)applicative \
   $(P)arg \
   $(P)array \
   $(P)arrayLabels \
@@ -42,9 +43,11 @@ STDLIB_MODULES=\
   $(P)filename \
   $(P)float \
   $(P)format \
+  $(P)functor \
   $(P)gc \
   $(P)genlex \
   $(P)hashtbl \
+  $(P)identity \
   $(P)int32 \
   $(P)int64 \
   $(P)lazy \
@@ -53,10 +56,12 @@ STDLIB_MODULES=\
   $(P)listLabels \
   $(P)map \
   $(P)marshal \
+  $(P)monad \
   $(P)moreLabels \
   $(P)nativeint \
   $(P)obj \
   $(P)oo \
+  $(P)option \
   $(P)parsing \
   $(P)printexc \
   $(P)printf \

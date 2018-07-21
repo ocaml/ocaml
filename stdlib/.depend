@@ -1,3 +1,6 @@
+stdlib__applicative.cmo : stdlib__functor.cmi stdlib__applicative.cmi
+stdlib__applicative.cmx : stdlib__functor.cmx stdlib__applicative.cmi
+stdlib__applicative.cmi : stdlib__functor.cmi
 stdlib__arg.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__printf.cmi stdlib__list.cmi stdlib__buffer.cmi stdlib__array.cmi \
     stdlib__arg.cmi
 stdlib__arg.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__printf.cmx stdlib__list.cmx stdlib__buffer.cmx stdlib__array.cmx \
@@ -74,6 +77,9 @@ stdlib__format.cmo : stdlib__string.cmi stdlib__list.cmi camlinternalFormatBasic
 stdlib__format.cmx : stdlib__string.cmx stdlib__list.cmx camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx stdlib__buffer.cmx stdlib__format.cmi
 stdlib__format.cmi : stdlib__buffer.cmi
+stdlib__functor.cmo : stdlib__functor.cmi
+stdlib__functor.cmx : stdlib__functor.cmi
+stdlib__functor.cmi :
 stdlib__gc.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__printf.cmi stdlib__gc.cmi
 stdlib__gc.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__printf.cmx stdlib__gc.cmi
 stdlib__gc.cmi :
@@ -87,6 +93,9 @@ stdlib__hashtbl.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib_
 stdlib__hashtbl.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__random.cmx stdlib__obj.cmx stdlib__lazy.cmx \
     stdlib__array.cmx stdlib__hashtbl.cmi
 stdlib__hashtbl.cmi : stdlib__seq.cmi
+stdlib__identity.cmo : stdlib__identity.cmi
+stdlib__identity.cmx : stdlib__identity.cmi
+stdlib__identity.cmi :
 stdlib__int32.cmo : stdlib__int32.cmi
 stdlib__int32.cmx : stdlib__int32.cmi
 stdlib__int32.cmi :
@@ -111,6 +120,9 @@ stdlib__map.cmi : stdlib__seq.cmi
 stdlib__marshal.cmo : stdlib__bytes.cmi stdlib__marshal.cmi
 stdlib__marshal.cmx : stdlib__bytes.cmx stdlib__marshal.cmi
 stdlib__marshal.cmi :
+stdlib__monad.cmo : stdlib__applicative.cmi stdlib__monad.cmi
+stdlib__monad.cmx : stdlib__applicative.cmx stdlib__monad.cmi
+stdlib__monad.cmi : stdlib__applicative.cmi
 stdlib__moreLabels.cmo : stdlib__set.cmi stdlib__map.cmi stdlib__hashtbl.cmi stdlib__moreLabels.cmi
 stdlib__moreLabels.cmx : stdlib__set.cmx stdlib__map.cmx stdlib__hashtbl.cmx stdlib__moreLabels.cmi
 stdlib__moreLabels.cmi : stdlib__set.cmi stdlib__seq.cmi stdlib__map.cmi stdlib__hashtbl.cmi
@@ -123,6 +135,9 @@ stdlib__obj.cmi : stdlib__int32.cmi
 stdlib__oo.cmo : camlinternalOO.cmi stdlib__oo.cmi
 stdlib__oo.cmx : camlinternalOO.cmx stdlib__oo.cmi
 stdlib__oo.cmi : camlinternalOO.cmi
+stdlib__option.cmo : stdlib__monad.cmi stdlib__identity.cmi stdlib__option.cmi
+stdlib__option.cmx : stdlib__monad.cmx stdlib__identity.cmx stdlib__option.cmi
+stdlib__option.cmi : stdlib__monad.cmi
 stdlib__parsing.cmo : stdlib__obj.cmi stdlib__lexing.cmi stdlib__array.cmi stdlib__parsing.cmi
 stdlib__parsing.cmx : stdlib__obj.cmx stdlib__lexing.cmx stdlib__array.cmx stdlib__parsing.cmi
 stdlib__parsing.cmi : stdlib__obj.cmi stdlib__lexing.cmi
@@ -188,6 +203,8 @@ stdlib__weak.cmi : stdlib__hashtbl.cmi
 stdlib.cmo : camlinternalFormatBasics.cmi stdlib.cmi
 stdlib.cmx : camlinternalFormatBasics.cmx stdlib.cmi
 stdlib.cmi : camlinternalFormatBasics.cmi
+stdlib__applicative.cmo : stdlib__functor.cmi stdlib__applicative.cmi
+stdlib__applicative.p.cmx : stdlib__functor.cmx stdlib__applicative.cmi
 stdlib__arg.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__printf.cmi stdlib__list.cmi stdlib__buffer.cmi stdlib__array.cmi \
     stdlib__arg.cmi
 stdlib__arg.p.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__printf.cmx stdlib__list.cmx stdlib__buffer.cmx stdlib__array.cmx \
@@ -244,6 +261,8 @@ stdlib__format.cmo : stdlib__string.cmi stdlib__list.cmi camlinternalFormatBasic
     camlinternalFormat.cmi stdlib__buffer.cmi stdlib__format.cmi
 stdlib__format.p.cmx : stdlib__string.cmx stdlib__list.cmx camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx stdlib__buffer.cmx stdlib__format.cmi
+stdlib__functor.cmo : stdlib__functor.cmi
+stdlib__functor.p.cmx : stdlib__functor.cmi
 stdlib__gc.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__printf.cmi stdlib__gc.cmi
 stdlib__gc.p.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__printf.cmx stdlib__gc.cmi
 stdlib__genlex.cmo : stdlib__string.cmi stdlib__stream.cmi stdlib__list.cmi stdlib__hashtbl.cmi stdlib__char.cmi stdlib__bytes.cmi \
@@ -254,6 +273,8 @@ stdlib__hashtbl.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib_
     stdlib__array.cmi stdlib__hashtbl.cmi
 stdlib__hashtbl.p.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__random.cmx stdlib__obj.cmx stdlib__lazy.cmx \
     stdlib__array.cmx stdlib__hashtbl.cmi
+stdlib__identity.cmo : stdlib__identity.cmi
+stdlib__identity.p.cmx : stdlib__identity.cmi
 stdlib__int32.cmo : stdlib__int32.cmi
 stdlib__int32.p.cmx : stdlib__int32.cmi
 stdlib__int64.cmo : stdlib__int64.cmi
@@ -270,6 +291,8 @@ stdlib__map.cmo : stdlib__seq.cmi stdlib__map.cmi
 stdlib__map.p.cmx : stdlib__seq.cmx stdlib__map.cmi
 stdlib__marshal.cmo : stdlib__bytes.cmi stdlib__marshal.cmi
 stdlib__marshal.p.cmx : stdlib__bytes.cmx stdlib__marshal.cmi
+stdlib__monad.cmo : stdlib__applicative.cmi stdlib__monad.cmi
+stdlib__monad.p.cmx : stdlib__applicative.cmx stdlib__monad.cmi
 stdlib__moreLabels.cmo : stdlib__set.cmi stdlib__map.cmi stdlib__hashtbl.cmi stdlib__moreLabels.cmi
 stdlib__moreLabels.p.cmx : stdlib__set.cmx stdlib__map.cmx stdlib__hashtbl.cmx stdlib__moreLabels.cmi
 stdlib__nativeint.cmo : stdlib__sys.cmi stdlib__nativeint.cmi
@@ -278,6 +301,8 @@ stdlib__obj.cmo : stdlib__marshal.cmi stdlib__int32.cmi stdlib__obj.cmi
 stdlib__obj.p.cmx : stdlib__marshal.cmx stdlib__int32.cmx stdlib__obj.cmi
 stdlib__oo.cmo : camlinternalOO.cmi stdlib__oo.cmi
 stdlib__oo.p.cmx : camlinternalOO.cmx stdlib__oo.cmi
+stdlib__option.cmo : stdlib__monad.cmi stdlib__identity.cmi stdlib__option.cmi
+stdlib__option.p.cmx : stdlib__monad.cmx stdlib__identity.cmx stdlib__option.cmi
 stdlib__parsing.cmo : stdlib__obj.cmi stdlib__lexing.cmi stdlib__array.cmi stdlib__parsing.cmi
 stdlib__parsing.p.cmx : stdlib__obj.cmx stdlib__lexing.cmx stdlib__array.cmx stdlib__parsing.cmi
 stdlib__printexc.cmo : stdlib__printf.cmi stdlib__obj.cmi stdlib__buffer.cmi stdlib__array.cmi stdlib__printexc.cmi
