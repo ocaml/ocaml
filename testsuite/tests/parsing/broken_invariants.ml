@@ -1,5 +1,5 @@
 (* TEST
-  ppxs="illegal_ppx.ml"
+  ppx="illegal_ppx.ml"
   * expect
 *)
 

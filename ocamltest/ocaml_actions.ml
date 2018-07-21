@@ -39,8 +39,8 @@ let modules env =
 let plugins env =
   Actions_helpers.words_of_variable env Ocaml_variables.plugins
 
-let ppxs env =
-  Actions_helpers.words_of_variable env Ocaml_variables.ppxs
+let ppx env =
+  Actions_helpers.words_of_variable env Ocaml_variables.ppx
 
 let directories env =
   Actions_helpers.words_of_variable env Ocaml_variables.directories
@@ -224,7 +224,7 @@ let compile_ppx ocamlsrcdir ppx log env =
   end
 
 
-let compile_ppxs =
+let compile_ppx =
   let single ocamlsrcdir log status ppx  =
     match status with
     | Error _ as e -> e
@@ -236,9 +236,9 @@ let compile_ppxs =
         Ok (Environments.append Ocaml_variables.flags (" -ppx " ^ ppx) env)
       else Error r in
 
-  Actions.make "compile-ppxs" (fun log env ->
+  Actions.make "compile-ppx" (fun log env ->
     let ocamlsrcdir = Ocaml_directories.srcdir () in
-    let ppxs = ppxs env in
+    let ppxs = ppx env in
     match List.fold_left (single ocamlsrcdir log) (Ok env) ppxs with
     | Error r -> r, env
     | Ok env -> Result.pass, env
@@ -394,7 +394,7 @@ let setup_tool_build_env tool log env =
   in
   let source_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
-  let ppxs = ppxs env in
+  let ppx = ppx env in
   let tool_directory_suffix =
     Environments.safe_lookup Ocaml_variables.compiler_directory_suffix env in
   let tool_directory_name =
@@ -417,12 +417,12 @@ let setup_tool_build_env tool log env =
   Sys.force_remove tool_output_file;
   let env =
     Environments.add Builtin_variables.test_build_directory build_dir env in
-  Actions_helpers.setup_build_env false (ppxs @ source_modules) log env
+  Actions_helpers.setup_build_env false (ppx @ source_modules) log env
 
-let setup_simple_build_env_with_ppxs =
-  Actions.make "setup-simple-build-env-with-ppxs" (fun log env ->
-      let ppxs = ppxs env in
-      Actions_helpers.setup_simple_build_env true ppxs log env
+let setup_simple_build_env_with_ppx =
+  Actions.make "setup-simple-build-env-with-ppx" (fun log env ->
+      let ppx = ppx env in
+      Actions_helpers.setup_simple_build_env true ppx log env
     )
 
 let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
@@ -1387,9 +1387,9 @@ let _ =
     setup_ocamlopt_opt_build_env;
     ocamlopt_opt;
     check_ocamlopt_opt_output;
-    compile_ppxs;
+    compile_ppx;
     run_expect;
-    setup_simple_build_env_with_ppxs;
+    setup_simple_build_env_with_ppx;
     compare_bytecode_programs;
     compare_native_programs;
     setup_ocaml_build_env;

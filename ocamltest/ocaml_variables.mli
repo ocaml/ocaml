@@ -68,7 +68,7 @@ val module_ : Variables.t
 
 val modules : Variables.t
 
-val ppxs : Variables.t
+val ppx : Variables.t
 
 val nativecc_libs : Variables.t
 (** Libraries to link with for native code *)
