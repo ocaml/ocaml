@@ -1,4 +1,26 @@
-use_threads=true
-use_vmthreads=false
-use_threads=false
-use_vmthreads=true
+<ppx-context>
+tool_name: "ocamlc"
+open_modules: ["List"]
+for_package: "None"
+use_debug: false
+use_threads: true
+use_vmthreads: false
+recursive_types: true
+principal: true
+transparent_modules: false
+unboxed_types: true
+unsafe_string: false
+</ppx-context>
+<ppx-context>
+tool_name: "ocamlc"
+open_modules: []
+for_package: "None"
+use_debug: true
+use_threads: false
+use_vmthreads: true
+recursive_types: false
+principal: false
+transparent_modules: true
+unboxed_types: false
+unsafe_string: true
+</ppx-context>

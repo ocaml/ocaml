@@ -734,6 +734,11 @@ module PpxContext = struct
         lid "debug",        make_bool !Clflags.debug;
         lid "use_threads",  make_bool !Clflags.use_threads;
         lid "use_vmthreads", make_bool !Clflags.use_vmthreads;
+        lid "recursive_types", make_bool !Clflags.recursive_types;
+        lid "principal", make_bool !Clflags.principal;
+        lid "transparent_modules", make_bool !Clflags.transparent_modules;
+        lid "unboxed_types", make_bool !Clflags.unboxed_types;
+        lid "unsafe_string", make_bool !Clflags.unsafe_string;
         get_cookies ()
       ]
     in
@@ -804,6 +809,16 @@ module PpxContext = struct
           Clflags.use_threads := get_bool payload
       | "use_vmthreads" ->
           Clflags.use_vmthreads := get_bool payload
+      | "recursive_types" ->
+          Clflags.recursive_types := get_bool payload
+      | "principal" ->
+          Clflags.principal := get_bool payload
+      | "transparent_modules" ->
+          Clflags.transparent_modules := get_bool payload
+      | "unboxed_types" ->
+          Clflags.unboxed_types := get_bool payload
+      | "unsafe_string" ->
+          Clflags.unsafe_string := get_bool payload
       | "cookies" ->
           let l = get_list (get_pair get_string (fun x -> x)) payload in
           cookies :=

@@ -101,6 +101,11 @@ Working version
   returns a syntax tree, to replace the print that was there already
   (Valentin Gatien-Baron)
 
+- GPR#1921: in the compilation context passed to ppx extensions,
+  add more configuration options related to type-checking:
+  -rectypes, -principal, -alias-deps, -unboxed-types, -unsafe-string
+  (Gabriel Scherer, review by Gabriel Radanne, Xavier Clerc and Frédéric Bour)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.
