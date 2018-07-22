@@ -277,9 +277,9 @@ and quoted_string delim = parse
     { quoted_string delim lexbuf }
 
 (*
-   Lexers comment and action are quite similar,
-   they should lex both strings and characters,
-   in order not to be confused by what is inside then
+   Lexers comment and action are quite similar.
+   They should lex strings, quoted strings and characters,
+   in order not to be confused by what is inside them.
 *)
 
 and comment = parse
