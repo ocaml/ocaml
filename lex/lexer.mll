@@ -219,11 +219,13 @@ and string = parse
       string lexbuf }
   | '\\' (['0'-'9'] as c) (['0'-'9'] as d) (['0'-'9']  as u)
     { let v = decimal_code c d u in
-      if in_pattern () && v > 255 then
-       warning lexbuf
-        (Printf.sprintf
-          "illegal backslash escape in string: '\\%c%c%c'" c d u) ;
-      store_string_char (Char.chr v);
+      if in_pattern () then
+        if v > 255 then
+          raise_lexical_error lexbuf
+            (Printf.sprintf
+              "illegal backslash escape in string: '\\%c%c%c'" c d u)
+        else
+          store_string_char (Char.chr v);
       string lexbuf }
   | '\\' 'o' (['0'-'3'] as c) (['0'-'7'] as d) (['0'-'7'] as u)
     { store_string_char (char_for_octal_code c d u);
@@ -233,11 +235,13 @@ and string = parse
       string lexbuf }
   | '\\' 'u' '{' (['0'-'9' 'a'-'f' 'A'-'F'] + as s) '}'
     { let v = hexadecimal_code s in
-      if in_pattern () && not (Uchar.is_valid v) then
-       warning lexbuf
-        (Printf.sprintf
-          "illegal uchar escape in string: '\\u{%s}'" s);
-      store_string_uchar (Uchar.unsafe_of_int v);
+      if in_pattern () then
+        if not (Uchar.is_valid v) then
+          raise_lexical_error lexbuf
+            (Printf.sprintf
+              "illegal uchar escape in string: '\\u{%s}'" s)
+        else
+          store_string_uchar (Uchar.unsafe_of_int v);
       string lexbuf }
   | '\\' (_ as c)
     {if in_pattern () then
