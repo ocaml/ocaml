@@ -171,6 +171,8 @@ rule main = parse
           (Printf.sprintf "illegal escape sequence \\%c%c%c" c d u)
       else
         Tchar v }
+  | "'" '\\' 'o' (['0'-'3'] as c) (['0'-'7'] as d) (['0'-'7'] as u) "'"
+    { Tchar(Char.code(char_for_octal_code c d u)) }
   | "'" '\\' 'x'
        (['0'-'9' 'a'-'f' 'A'-'F'] as d) (['0'-'9' 'a'-'f' 'A'-'F'] as u) "'"
        { Tchar(Char.code(char_for_hexadecimal_code d u)) }
