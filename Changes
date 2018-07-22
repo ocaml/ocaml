@@ -231,7 +231,7 @@ Working version
 
 - GPR#1912: Allow quoted strings, octal/unicode escape sequences and identifiers
   containing apostrophes in ocamllex actions and comments.
-  (Pieter Goetschalckx)
+  (Pieter Goetschalckx, review by Damien Doligez)
 
 OCaml 4.07 maintenance branch
 -----------------------------
