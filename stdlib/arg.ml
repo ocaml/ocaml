@@ -188,7 +188,7 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
           | Some _ -> ()
         in
         let rec treat_action = function
-        | Unit f -> f ();
+        | Unit f -> no_arg (); f ();
         | Bool f ->
             let arg = get_arg () in
             begin match bool_of_string_opt arg with
@@ -243,8 +243,10 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
             end;
             consume_arg ();
         | Tuple specs ->
+            no_arg ();
             List.iter treat_action specs;
         | Rest f ->
+            no_arg ();
             while !current < (Array.length !argv) - 1 do
               f !argv.(!current + 1);
               consume_arg ();
