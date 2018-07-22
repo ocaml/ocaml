@@ -52,7 +52,7 @@ Working version
 
 - GPR#1923: Arg module sometimes misbehaved instead of rejecting invalid
   -keyword=arg inputs
-  (Valentin Gatien-Baron, review by ..)
+  (Valentin Gatien-Baron, review by Gabriel Scherer)
 
 ### Other libraries:
 
