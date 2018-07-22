@@ -296,7 +296,7 @@ and comment = parse
   | '{' (['a'-'z' '_'] * as delim) '|'
     { quoted_string delim lexbuf;
       comment lexbuf }
-  | '\''
+  | "'"
     { skip_char lexbuf ;
       comment lexbuf }
   | eof
