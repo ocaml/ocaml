@@ -20,8 +20,8 @@ struct stack_info {
 };
 
 /* One word at the base of the stack is used to store the stack pointer */
-#define Stack_ctx_words 6
-#define Stack_base(stk) ((value*)(stk) + Stack_ctx_words)
+#define Stack_ctx_words (sizeof(struct stack_info) / sizeof(value))
+#define Stack_base(stk) ((value*)(stk + 1))
 
 /* 16-byte align-down caml_stack_high for certain architectures like arm64
  * demand 16-byte alignment. Leaves a word unused at the bottom of the stack if
