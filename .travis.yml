@@ -17,22 +17,18 @@ sudo: false
 language: c
 git:
   submodules: false
-script: bash -ex .travis-ci.sh
+script:
+  - mkdir ~/inst && ./configure -prefix ~/inst -with-debug-runtime
+  - make -j4 world.opt
+  - OCAMLRUNPARAM=v=0,V=1 make -C testsuite all-enabled
 
-# also run tests under the debug runtime
+# For speed, only run a few compiler/OS combinations
 matrix:
   include:
   - compiler: gcc
     os: linux
     env:
-    - XARCH=x86_64
-    - USE_RUNTIME=d
-os:
-  - linux
-  - osx
-compiler:
-  - clang
-  - gcc
-env:
-  - XARCH=x86_64
-  - XARCH=i386
+    - USE_RUNTIME: d
+
+  - compiler: clang
+    os: osx
