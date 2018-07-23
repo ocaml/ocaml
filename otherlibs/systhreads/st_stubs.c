@@ -298,7 +298,6 @@ static caml_thread_t caml_thread_new_info(void)
   stack->wosize = Thread_stack_size;
   stack->magic = 42;
   Stack_sp(stack) = 0;
-  Stack_dirty_domain(stack) = 0;
   Stack_handle_value(stack) = Val_long(0);
   Stack_handle_exception(stack) = Val_long(0);
   Stack_handle_effect(stack) = Val_long(0);
