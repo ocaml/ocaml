@@ -232,5 +232,6 @@ let flush_input lb =
   lb.lex_curr_pos <- 0;
   lb.lex_abs_pos <- 0;
   let lcp = lb.lex_curr_p in
-  if lcp != dummy_pos then lb.lex_curr_p <- {lcp with pos_cnum = 0};
+  if lcp != dummy_pos then
+    lb.lex_curr_p <- {zero_pos with pos_fname = lcp.pos_fname};
   lb.lex_buffer_len <- 0;
