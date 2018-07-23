@@ -494,14 +494,14 @@ void caml_darken_cont(value cont)
     CAMLassert(!Has_status_hd(hd, global.GARBAGE));
     if (Has_status_hd(hd, global.MARKED))
       break;
-    // FIXME atomics here
     if (Has_status_hd(hd, global.UNMARKED) &&
         __sync_bool_compare_and_swap
            (&Hd_val(cont), hd,
             With_status_hd(hd, NOT_MARKABLE))) {
       value stk = Op_val(cont)[0];
-      CAMLassert(stk != Val_unit);
-      caml_scan_stack(&caml_darken, 0, Ptr_val(stk));
+      if (Ptr_val(stk) != NULL)
+        caml_scan_stack(&caml_darken, 0, Ptr_val(stk));
+      // FIXME atomic store release here
       Hd_val(cont) = With_status_hd(hd, global.MARKED);
     }
   }
