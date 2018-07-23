@@ -342,11 +342,10 @@
 /* Stack-local variables */
 
 #define Stack_sp(REG)               (REG)
-#define Stack_dirty(REG)            8(REG)
-#define Stack_handle_value(REG)     16(REG)
-#define Stack_handle_exception(REG) 24(REG)
-#define Stack_handle_effect(REG)    32(REG)
-#define Stack_parent(REG)           40(REG)
+#define Stack_handle_value(REG)     8(REG)
+#define Stack_handle_exception(REG) 16(REG)
+#define Stack_handle_effect(REG)    24(REG)
+#define Stack_parent(REG)           32(REG)
 
 /******************************************************************************/
 /* text section
@@ -1075,14 +1074,15 @@ CFI_STARTPROC
         mov     %rax, %r12
         LOAD_TL_VAR(caml_current_stack, %rbx)      /* Second argument */
         movq    Stack_parent(%rbx), %rdi        /* Parent stack. */
-        cmpq    $1, %rdi                        /* Parent is NULL? */
+        cmpq    $0, %rdi                        /* Parent is NULL? */
         je      LBL(112)
         movq    Stack_handle_effect(%rbx), %r13 /* effect handler (third argument) */
-        movq    $1, Stack_parent(%rbx)          /* Set parent stack of performer to NULL */
+        movq    $0, Stack_parent(%rbx)          /* Set parent stack of performer to NULL */
     /* Switch stacks */
         SWITCH_OCAML_STACKS
     /* Invoke effect handler */
         movq    %r12, %rax        /* First argument */
+        orq     $1, %rbx          /* %rbx = Val_ptr(%rbx) */
         movq    %r13, %rdi        /* Third argument */
         LEA_VAR(caml_apply2, %rsi)
         jmp     *%rsi
@@ -1096,9 +1096,10 @@ FUNCTION(G(caml_reperform))
 CFI_STARTPROC
     /* %rax -> effect (first argument), %rbx -> performer */
         movq    %rax, %r12
+        andq    $-2, %rbx                        /* %rbx = Ptr_val(%rbx) */
         LOAD_TL_VAR(caml_current_stack, %rax)
         movq    Stack_parent(%rax), %rdi         /* Parent stack */
-        cmpq    $1, %rdi                         /* Parent is Null? */
+        cmpq    $0, %rdi                         /* Parent is Null? */
         je      LBL(113)
         movq    %rbx, Stack_parent(%rax)         /* Set performer as parent */
         movq    Stack_handle_effect(%rax), %r13  /* Save effect handler (callee-saved) */
@@ -1107,6 +1108,7 @@ CFI_STARTPROC
         SWITCH_OCAML_STACKS
     /* Invoke effect handler */
         movq    %r12, %rax                       /* First argument */
+        orq     $1, %rbx                         /* %rbx = Val_ptr(%rbx) */
         movq    %r13, %rdi                       /* Third argument */
         LEA_VAR(caml_apply2, %rsi)
         jmp     *%rsi
@@ -1115,7 +1117,7 @@ LBL(113):
         movq    %rbx, %rdi
         movq    Stack_parent(%rdi), %rbx
         movq    %rax, Stack_parent(%rdi)
-        cmpq    $1, %rbx
+        cmpq    $0, %rbx
         movq    %rdi, %rax
         jne     LBL(113)
     /* %rdi now has the desired head of stack list */
@@ -1128,6 +1130,7 @@ CFI_ENDPROC
 FUNCTION(G(caml_resume))
 CFI_STARTPROC
     /* %rax -> tail of stack list, %rbx -> fun, %rdi -> arg */
+        andq    $-2, %rax       /* %rax = Ptr_val(%rax) */
         movq    %rdi, %r12      /* Save arg (callee-saved) */
         LOAD_TL_VAR(caml_current_stack, %rcx)
 LBL(114):
@@ -1135,7 +1138,7 @@ LBL(114):
         movq    %rax, %rdi
         movq    Stack_parent(%rdi), %rax
         movq    %rcx, Stack_parent(%rdi)
-        cmpq    $1, %rax
+        cmpq    $0, %rax
         movq    %rdi, %rcx
         jne     LBL(114)
     /* %rdi now has the desired head of stack list */

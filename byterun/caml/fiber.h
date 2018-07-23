@@ -101,7 +101,7 @@ void caml_maybe_expand_stack();
 int  caml_on_current_stack(value*);
 int  caml_running_main_fiber();
 #ifdef NATIVE_CODE
-int caml_switch_stack(value stk);
+int caml_switch_stack(struct stack_info* stk);
 #else
 struct stack_info* caml_switch_stack(struct stack_info* stk);
 #endif
@@ -109,7 +109,7 @@ value caml_fiber_death();
 struct stack_info* caml_reverse_fiber_stack (struct stack_info* stack);
 
 #ifdef NATIVE_CODE
-void caml_get_stack_sp_pc (value stack, char** sp /* out */, uintnat* pc /* out */);
+void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintnat* pc /* out */);
 #endif
 
 #endif /* CAML_INTERNALS */
