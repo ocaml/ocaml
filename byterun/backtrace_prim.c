@@ -283,18 +283,12 @@ code_t caml_next_frame_pointer(value* stack_high, value ** sp,
    traverse the stack to compute the right size, then allocate space for the
    trace. */
 
-static value get_callstack(value* sp, intnat trap_spoff,
-                           struct stack_info* stack,
-                           value max_frames_value)
+static void get_callstack(value* sp, intnat trap_spoff,
+                          struct stack_info* stack,
+                          intnat max_frames,
+                          code_t** trace, intnat* trace_size)
 {
-  CAMLparam1(max_frames_value);
-  CAMLlocal1(trace);
-
-  /* we use `intnat` here because, were it only `int`, passing `max_int`
-     from the OCaml side would overflow on 64bits machines. */
-  intnat max_frames = Long_val(max_frames_value);
-  intnat trace_size;
-
+  CAMLnoalloc;
   struct stack_info* parent = Stack_parent(stack);
   value *stack_high = Stack_high(stack);
   value* saved_sp = sp;
@@ -302,8 +296,8 @@ static value get_callstack(value* sp, intnat trap_spoff,
 
   /* first compute the size of the trace */
   {
-    trace_size = 0;
-    while (trace_size < max_frames) {
+    *trace_size = 0;
+    while (*trace_size < max_frames) {
       code_t p = caml_next_frame_pointer(stack_high, &sp, &trap_spoff);
       if (p == NULL) {
         if (parent == NULL) break;
@@ -312,12 +306,12 @@ static value get_callstack(value* sp, intnat trap_spoff,
         stack_high = Stack_high(parent);
         parent = Stack_parent(parent);
       } else {
-        ++trace_size;
+        ++*trace_size;
       }
     }
   }
 
-  trace = caml_alloc(trace_size, 0);
+  *trace = caml_stat_alloc(sizeof(code_t*) * *trace_size);
 
   sp = saved_sp;
   parent = Stack_parent(stack);
@@ -328,7 +322,7 @@ static value get_callstack(value* sp, intnat trap_spoff,
   {
     uintnat trace_pos = 0;
 
-    while (trace_pos < trace_size) {
+    while (trace_pos < *trace_size) {
       code_t p = caml_next_frame_pointer(stack_high, &sp, &trap_spoff);
       if (p == NULL) {
         sp = Stack_high(parent) + Stack_sp(parent);
@@ -336,51 +330,54 @@ static value get_callstack(value* sp, intnat trap_spoff,
         stack_high = Stack_high(parent);
         parent = Stack_parent(parent);
       } else {
-        caml_initialize_field(trace, trace_pos, Val_backtrace_slot(p));
+        (*trace)[trace_pos] = p;
         ++trace_pos;
       }
     }
   }
+}
 
-  CAMLreturn(trace);
+static value alloc_callstack(code_t* trace, intnat trace_len)
+{
+  CAMLparam0();
+  CAMLlocal1(callstack);
+  int i;
+  callstack = caml_alloc(trace_len, 0);
+  for (i = 0; i < trace_len; i++)
+    Store_field(callstack, i, Val_backtrace_slot(trace[i]));
+  caml_stat_free(trace);
+  CAMLreturn(callstack);
 }
 
 CAMLprim value caml_get_current_callstack (value max_frames_value)
 {
-  CAMLparam1(max_frames_value);
-  CAMLlocal2(stack, callstack);
-  caml_domain_state* domain_state = Caml_state;
-
-  callstack =
-    get_callstack (domain_state->extern_sp, domain_state->trap_sp_off,
-                   domain_state->current_stack, max_frames_value);
-
-  CAMLreturn(callstack);
+  code_t* trace;
+  intnat trace_len;
+  get_callstack(Caml_state->extern_sp, Caml_state->trap_sp_off,
+                Caml_state->current_stack, Long_val(max_frames_value),
+                &trace, &trace_len);
+  return alloc_callstack(trace, trace_len);
 }
 
 CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
 {
-  caml_failwith("unimplemented");
-  #if 0
-  CAMLparam1(cont);
-  CAMLlocal1(callstack);
+  code_t* trace;
+  intnat trace_len;
   struct stack_info *stack;
-  intnat bvar_stat;
   value *sp;
 
-  bvar_stat = caml_bvar_status(cont);
-  if (bvar_stat & BVAR_EMPTY)
-    caml_invalid_argument ("continuation already taken");
+  stack = Ptr_val(caml_continuation_use(cont));
+  {
+    CAMLnoalloc; /* GC must not see the stack outside the cont */
+    stack = caml_reverse_fiber_stack(stack);
+    sp = Stack_high(stack) + Stack_sp(stack);
+    get_callstack(sp, Long_val(sp[0]), stack, Long_val(max_frames),
+                  &trace, &trace_len);
+    stack = caml_reverse_fiber_stack(stack);
+    caml_continuation_replace(cont, stack);
+  }
 
-  caml_read_field(cont, 0, &stack);
-
-  stack = caml_reverse_fiber_stack(stack);
-  sp = Stack_high(stack) + Stack_sp(stack);
-  callstack = get_callstack (sp, Long_val(sp[0]), stack, max_frames);
-  caml_reverse_fiber_stack(stack);
-
-  CAMLreturn(callstack);
-  #endif
+  return alloc_callstack(trace, trace_len);
 }
 
 

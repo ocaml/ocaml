@@ -515,3 +515,10 @@ CAMLprim value caml_continuation_use (value cont)
     }
   }
 }
+
+void caml_continuation_replace(value cont, struct stack_info* stk)
+{
+  int b = __sync_bool_compare_and_swap(Op_val(cont), Val_ptr(NULL), Val_ptr(stk));
+  CAMLassert(b);
+  (void)b; /* squash unused warning */
+}
