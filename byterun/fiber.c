@@ -24,22 +24,19 @@ static __thread int stack_is_saved = 0;
 
 #ifdef NATIVE_CODE
 
-static value save_stack ()
+static struct stack_info* save_stack ()
 {
   caml_domain_state* domain_state = Caml_state;
-  Assert (Hd_val(domain_state->current_stack) &&
-          (Is_minor(domain_state->current_stack) || !is_garbage(domain_state->current_stack)));
-  value old_stack = domain_state->current_stack;
+  struct stack_info* old_stack = domain_state->current_stack;
   return old_stack;
 }
 
-static void load_stack (value stack) {
+static void load_stack (struct stack_info* stack) {
   caml_domain_state* domain_state = Caml_state;
   domain_state->stack_threshold = Stack_base(stack)
     + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value);
   domain_state->stack_high = Stack_high(stack);
   domain_state->current_stack = stack;
-  dirty_stack(stack);
 }
 
 extern void caml_fiber_exn_handler (value) Noreturn;
@@ -49,15 +46,17 @@ extern void caml_fiber_val_handler (value) Noreturn;
 
 value caml_alloc_stack (value hval, value hexn, value heff) {
   CAMLparam3(hval, hexn, heff);
-  CAMLlocal1(stack);
+  struct stack_info* stack;
   char* sp;
   struct caml_context *ctxt;
 
-  stack = caml_alloc(caml_fiber_wsz + caml_params->profile_slop_wsz, Stack_tag);
+  stack = caml_stat_alloc(sizeof(value) * (caml_fiber_wsz + caml_params->profile_slop_wsz));
+  stack->wosize = caml_fiber_wsz + caml_params->profile_slop_wsz;
+  stack->magic = 42;
   Stack_handle_value(stack) = hval;
   Stack_handle_exception(stack) = hexn;
   Stack_handle_effect(stack) = heff;
-  Stack_parent(stack) = Val_unit;
+  Stack_parent(stack) = NULL;
 
   sp = (char*)Stack_high(stack);
   /* Fiber exception handler that returns to parent */
@@ -77,14 +76,13 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   ctxt->gc_regs = NULL;
   Stack_sp(stack) = -INIT_FIBER_USED;
 
-  caml_gc_log ("Allocate stack=0x%lx of %lu words", stack, caml_fiber_wsz);
+  caml_gc_log ("Allocate stack=%p of %lu words", stack, caml_fiber_wsz);
 
-  CAMLreturn (stack);
+  CAMLreturn (Val_ptr(stack));
 }
 
-void caml_get_stack_sp_pc (value stack, char** sp /* out */, uintnat* pc /* out */)
+void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintnat* pc /* out */)
 {
-  Assert(Tag_val(stack) == Stack_tag);
   char* p = (char*)(Stack_high(stack) + Stack_sp(stack));
 
   p += sizeof(struct caml_context) + sizeof(value);
@@ -92,7 +90,7 @@ void caml_get_stack_sp_pc (value stack, char** sp /* out */, uintnat* pc /* out 
   *pc = Saved_return_address(*sp);
 }
 
-void caml_scan_stack(scanning_action f, void* fdata, value stack)
+void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
 {
   char * sp;
   uintnat retaddr;
@@ -108,7 +106,8 @@ void caml_scan_stack(scanning_action f, void* fdata, value stack)
   f(fdata, Stack_handle_value(stack), &Stack_handle_value(stack));
   f(fdata, Stack_handle_exception(stack), &Stack_handle_exception(stack));
   f(fdata, Stack_handle_effect(stack), &Stack_handle_effect(stack));
-  f(fdata, Stack_parent(stack), &Stack_parent(stack));
+  if (Stack_parent(stack) != NULL)
+    caml_scan_stack(f, fdata, Stack_parent(stack));
 
   if (Stack_sp(stack) == 0) return;
   sp = (char*)(Stack_high(stack) + Stack_sp(stack));
@@ -159,9 +158,7 @@ void caml_maybe_expand_stack ()
 {
   uintnat stack_available;
 
-  Assert(Tag_val(Caml_state->current_stack) == Stack_tag);
-
-  stack_available = Wosize_val(Caml_state->current_stack)
+  stack_available = Caml_state->current_stack->wosize
                   /* Stack_sp() is a -ve value in words */
                   + Stack_sp (Caml_state->current_stack)
                   - Stack_ctx_words;
@@ -180,7 +177,7 @@ void caml_update_gc_regs_slot (value* gc_regs)
 
 /* Returns 1 if the target stack is a fresh stack to which control is switching
  * to. */
-int caml_switch_stack(value stk)
+int caml_switch_stack(struct stack_info* stk)
 {
   save_stack();
   load_stack(stk);
@@ -490,6 +487,11 @@ struct stack_info* caml_reverse_fiber_stack (struct stack_info* stack)
   }
 
   return prev;
+}
+
+CAMLprim value caml_continuation_create (value stk)
+{
+  return caml_alloc_1(Cont_tag, stk);
 }
 
 CAMLprim value caml_continuation_use (value cont)

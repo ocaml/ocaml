@@ -125,7 +125,7 @@ static value do_callback(callback_stub* cbstub, value closure,
   /* we don't put the args in a CAMLparam, because we don't want
      to keep them alive for the whole duration of the callback */
   CAMLparam1(closure);
-  CAMLlocal1(saved_parent);
+  struct stack_info* saved_parent;
   char* saved_system_sp;
   uintnat saved_system_exnptr_offset;
   value ret;
@@ -134,7 +134,7 @@ static value do_callback(callback_stub* cbstub, value closure,
   saved_system_exnptr_offset = Caml_state->system_exnptr_offset;
   saved_parent = Stack_parent(Caml_state->current_stack);
 
-  Stack_parent(Caml_state->current_stack) = Val_unit;
+  Stack_parent(Caml_state->current_stack) = NULL;
 
   check_stack(nargs, args);
   ret = cbstub(Caml_state->young_ptr, closure, args);
