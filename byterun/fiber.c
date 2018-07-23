@@ -500,13 +500,18 @@ CAMLprim value caml_continuation_use (value cont)
   CAMLassert(Is_block(cont) && Tag_val(cont) == Cont_tag);
   if (Is_young(cont)) {
     stk = Ptr_val(Op_val(cont)[0]);
-    Op_val(cont)[0] = Val_unit;
+    Op_val(cont)[0] = Val_ptr(NULL);
+    if (stk == NULL) caml_failwith("Continuation already used");
     return Val_ptr(stk);
   } else {
+    value v;
     caml_darken_cont(cont);
-    // FIXME atomic exchange here
-    stk = Ptr_val(Op_val(cont)[0]);
-    Op_val(cont)[0] = Val_unit;
-    return Val_ptr(stk);
+    v = Op_val(cont)[0];
+    if (v != Val_ptr(NULL) &&
+        __sync_bool_compare_and_swap(Op_val(cont), v, Val_ptr(NULL))) {
+      return v;
+    } else {
+      caml_failwith("Continuation already used");
+    }
   }
 }
