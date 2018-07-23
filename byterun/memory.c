@@ -323,17 +323,25 @@ static void send_read_fault(struct read_fault_req* req)
 
 CAMLexport value caml_read_barrier(value obj, int field)
 {
+  /* A GC may occur just before or just after sending a fault.
+     The obj and ret values must be roots, because if a GC occurs
+     just after a fault is handled they must be preserved.
+     The orig value must *not* be a root, since it may contain
+     a foreign value, which the GC must not see even if it runs
+     just before the fault is handled. */
   CAMLparam1(obj);
-  CAMLlocal1(v);
-  v = Op_val(obj)[field];
-  if (Is_foreign(v)) {
-    struct read_fault_req req = {obj, field, &v};
+  CAMLlocal1(ret);
+  value orig = Op_val(obj)[field];
+  if (Is_foreign(orig)) {
+    struct read_fault_req req = {obj, field, &ret};
     caml_ev_begin("fault/read");
     send_read_fault(&req);
     caml_ev_end("fault/read");
-    Assert (!Is_foreign(v));
+    Assert (!Is_foreign(ret));
+  } else {
+    ret = orig;
   }
-  CAMLreturn (v);
+  CAMLreturn (ret);
 }
 
 CAMLprim value caml_bvar_create(value v)
