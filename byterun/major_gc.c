@@ -423,19 +423,18 @@ static void mark_stack_push_act(void* state, value v, value* ignored) {
 
 void caml_darken_cont(value cont);
 static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
-  // FIXME: stat_blocks_marked
   mark_entry e = {0};
   while (1) {
     value v;
     if (e.offset == e.end) {
       if (stk->count == 0)
-        return budget;
+        break;
       e = stk->stack[--stk->count];
     }
     budget--;
     if (budget <= 0) {
       mark_stack_push(stk, e);
-      return 0;
+      break;
     }
     CAMLassert(Is_markable(e.block) &&
                Has_status_hd(Hd_val(e.block), global.MARKED) &&
@@ -450,6 +449,7 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
       }
       CAMLassert (!Has_status_hd(hd, global.GARBAGE));
       if (Has_status_hd(hd, global.UNMARKED)) {
+        Caml_state->stat_blocks_marked++;
         if (Tag_hd(hd) == Cont_tag) {
           mark_stack_push(stk, e);
           caml_darken_cont(v);
@@ -465,6 +465,7 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
       }
     }
   }
+  return budget;
 }
 
 /* mark until the budget runs out or marking is done */
