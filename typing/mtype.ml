@@ -359,24 +359,21 @@ let contains_type env mty =
 
 (* Remove module aliases from a signature *)
 
-module PathSet = Set.Make (Path)
-module PathMap = Map.Make (Path)
-
 let rec get_prefixes = function
-    Pident _ -> PathSet.empty
+    Pident _ -> Path.Set.empty
   | Pdot (p, _, _)
-  | Papply (p, _) -> PathSet.add p (get_prefixes p)
+  | Papply (p, _) -> Path.Set.add p (get_prefixes p)
 
 let rec get_arg_paths = function
-    Pident _ -> PathSet.empty
+    Pident _ -> Path.Set.empty
   | Pdot (p, _, _) -> get_arg_paths p
   | Papply (p1, p2) ->
-      PathSet.add p2
-        (PathSet.union (get_prefixes p2)
-           (PathSet.union (get_arg_paths p1) (get_arg_paths p2)))
+      Path.Set.add p2
+        (Path.Set.union (get_prefixes p2)
+           (Path.Set.union (get_arg_paths p1) (get_arg_paths p2)))
 
 let rec rollback_path subst p =
-  try Pident (PathMap.find p subst)
+  try Pident (Path.Map.find p subst)
   with Not_found ->
     match p with
       Pident _ | Papply _ -> p
@@ -397,12 +394,12 @@ let rec collect_ids subst bindings p =
 
 let collect_arg_paths mty =
   let open Btype in
-  let paths = ref PathSet.empty
-  and subst = ref PathMap.empty
+  let paths = ref Path.Set.empty
+  and subst = ref Path.Map.empty
   and bindings = ref Ident.empty in
   (* let rt = Ident.create "Root" in
      and prefix = ref (Path.Pident rt) in *)
-  let it_path p = paths := PathSet.union (get_arg_paths p) !paths
+  let it_path p = paths := Path.Set.union (get_arg_paths p) !paths
   and it_signature_item it si =
     type_iterators.it_signature_item it si;
     match si with
@@ -412,7 +409,7 @@ let collect_arg_paths mty =
         List.iter
           (function Sig_module (id', _, _) ->
               subst :=
-                PathMap.add (Pdot (Pident id, Ident.name id', -1)) id' !subst
+                Path.Map.add (Pdot (Pident id, Ident.name id', -1)) id' !subst
             | _ -> ())
           sg
     | _ -> ()
@@ -420,7 +417,7 @@ let collect_arg_paths mty =
   let it = {type_iterators with it_path; it_signature_item} in
   it.it_module_type it mty;
   it.it_module_type unmark_iterators mty;
-  PathSet.fold (fun p -> Ident.Set.union (collect_ids !subst !bindings p))
+  Path.Set.fold (fun p -> Ident.Set.union (collect_ids !subst !bindings p))
     !paths Ident.Set.empty
 
 let rec remove_aliases_mty env excl mty =

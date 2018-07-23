@@ -21,28 +21,30 @@ open Cmm
 open Reg
 open Mach
 
+module Int = Numbers.Int
+
 type environment =
-  { vars : (Ident.t, Reg.t array) Tbl.t;
-    static_exceptions : (int, Reg.t array list) Tbl.t;
+  { vars : Reg.t array Ident.Map.t;
+    static_exceptions : Reg.t array list Int.Map.t;
     (** Which registers must be populated when jumping to the given
         handler. *)
   }
 
 let env_add id v env =
-  { env with vars = Tbl.add id v env.vars }
+  { env with vars = Ident.Map.add id v env.vars }
 
 let env_add_static_exception id v env =
-  { env with static_exceptions = Tbl.add id v env.static_exceptions }
+  { env with static_exceptions = Int.Map.add id v env.static_exceptions }
 
 let env_find id env =
-  Tbl.find id env.vars
+  Ident.Map.find id env.vars
 
 let env_find_static_exception id env =
-  Tbl.find id env.static_exceptions
+  Int.Map.find id env.static_exceptions
 
 let env_empty = {
-  vars = Tbl.empty;
-  static_exceptions = Tbl.empty;
+  vars = Ident.Map.empty;
+  static_exceptions = Int.Map.empty;
 }
 
 (* Infer the type of the result of an operation *)
@@ -81,7 +83,7 @@ let size_expr (env:environment) exp =
     | Cblockheader _ -> Arch.size_int
     | Cvar id ->
         begin try
-          Tbl.find id localenv
+          Ident.Map.find id localenv
         with Not_found ->
         try
           let regs = env_find id env in
@@ -95,12 +97,12 @@ let size_expr (env:environment) exp =
     | Cop(op, _, _) ->
         size_machtype(oper_result_type op)
     | Clet(id, arg, body) ->
-        size (Tbl.add id (size localenv arg) localenv) body
+        size (Ident.Map.add id (size localenv arg) localenv) body
     | Csequence(_e1, e2) ->
         size localenv e2
     | _ ->
         fatal_error "Selection.size_expr"
-  in size Tbl.empty exp
+  in size Ident.Map.empty exp
 
 (* Swap the two arguments of an integer comparison *)
 

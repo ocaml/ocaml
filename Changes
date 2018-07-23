@@ -695,6 +695,10 @@ OCaml 4.07.0 (10 July 2018)
 * GPR#1704: Make Ident.t abstract and immutable.
   (Gabriel Radanne, review by Mark Shinwell)
 
+- GPR#1699: Clean up Maps and Sets throughout the compiler.
+  Remove the Tbl module in favor of dedicated Maps.
+  (Gabriel Radanne, review by Mark Shinwell)
+
 ### Bug fixes:
 
 - MPR#4499, GPR#1479: Use native Windows API to implement Sys.getenv,

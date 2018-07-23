@@ -24,6 +24,7 @@ open Types
 open Typedtree
 open Outcometree
 open Ast_helper
+module String = Misc.Stdlib.String
 
 type directive_fun =
    | Directive_none of (unit -> unit)
@@ -39,18 +40,16 @@ type directive_info = {
 
 (* The table of toplevel value bindings and its accessors *)
 
-module StringMap = Map.Make(String)
-
-let toplevel_value_bindings : Obj.t StringMap.t ref = ref StringMap.empty
+let toplevel_value_bindings : Obj.t String.Map.t ref = ref String.Map.empty
 
 let getvalue name =
   try
-    StringMap.find name !toplevel_value_bindings
+    String.Map.find name !toplevel_value_bindings
   with Not_found ->
     fatal_error (name ^ " unbound at toplevel")
 
 let setvalue name v =
-  toplevel_value_bindings := StringMap.add name v !toplevel_value_bindings
+  toplevel_value_bindings := String.Map.add name v !toplevel_value_bindings
 
 (* Return the value referred to by a path *)
 
@@ -61,7 +60,7 @@ let rec eval_path = function
       else begin
         let name = Translmod.toplevel_name id in
         try
-          StringMap.find name !toplevel_value_bindings
+          String.Map.find name !toplevel_value_bindings
         with Not_found ->
           raise (Symtable.Error(Symtable.Undefined_global name))
       end

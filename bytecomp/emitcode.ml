@@ -22,8 +22,7 @@ open Lambda
 open Instruct
 open Opcodes
 open Cmo_format
-
-module StringSet = Set.Make(String)
+module String = Misc.Stdlib.String
 
 type error = Not_compatible_32 of (string * string)
 exception Error of error
@@ -165,15 +164,15 @@ and slot_for_c_prim name =
 (* Debugging events *)
 
 let events = ref ([] : debug_event list)
-let debug_dirs = ref StringSet.empty
+let debug_dirs = ref String.Set.empty
 
 let record_event ev =
   let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
   let abspath = Location.absolute_path path in
-  debug_dirs := StringSet.add (Filename.dirname abspath) !debug_dirs;
+  debug_dirs := String.Set.add (Filename.dirname abspath) !debug_dirs;
   if Filename.is_relative path then begin
     let cwd = Location.rewrite_absolute_path (Sys.getcwd ()) in
-    debug_dirs := StringSet.add cwd !debug_dirs;
+    debug_dirs := String.Set.add cwd !debug_dirs;
   end;
   ev.ev_pos <- !out_position;
   events := ev :: !events
@@ -184,7 +183,7 @@ let init () =
   out_position := 0;
   label_table := Array.make 16 (Label_undefined []);
   reloc_info := [];
-  debug_dirs := StringSet.empty;
+  debug_dirs := String.Set.empty;
   events := []
 
 (* Emission of one instruction *)
@@ -408,12 +407,12 @@ let to_file outchan unit_name objfile ~required_globals code =
   LongString.output outchan !out_buffer 0 !out_position;
   let (pos_debug, size_debug) =
     if !Clflags.debug then begin
-      debug_dirs := StringSet.add
+      debug_dirs := String.Set.add
         (Filename.dirname (Location.absolute_path objfile))
         !debug_dirs;
       let p = pos_out outchan in
       output_value outchan !events;
-      output_value outchan (StringSet.elements !debug_dirs);
+      output_value outchan (String.Set.elements !debug_dirs);
       (p, pos_out outchan - p)
     end else
       (0, 0) in

@@ -69,8 +69,10 @@ type error =
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
+(** Map indexed by type variable names. *)
+module TyVarMap = Misc.Stdlib.String.Map
 
-type variable_context = int * (string, type_expr) Tbl.t
+type variable_context = int * type_expr TyVarMap.t
 
 (* To update locations from Typemod.check_well_founded_module. *)
 
@@ -248,15 +250,15 @@ let create_package_mty fake loc env (p, l) =
 
 (* Translation of type expressions *)
 
-let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
+let type_variables = ref (TyVarMap.empty : type_expr TyVarMap.t)
 let univars        = ref ([] : (string * type_expr) list)
 let pre_univars    = ref ([] : type_expr list)
-let used_variables = ref (Tbl.empty : (string, type_expr * Location.t) Tbl.t)
+let used_variables = ref (TyVarMap.empty : (type_expr * Location.t) TyVarMap.t)
 
 let reset_type_variables () =
   reset_global_level ();
   Ctype.reset_reified_var_counter ();
-  type_variables := Tbl.empty
+  type_variables := TyVarMap.empty
 
 let narrow () =
   (increase_global_level (), !type_variables)
@@ -279,7 +281,7 @@ let newvar ?name () =
 
 let type_variable loc name =
   try
-    Tbl.find name !type_variables
+    TyVarMap.find name !type_variables
   with Not_found ->
     raise(Error(loc, Env.empty, Unbound_type_variable ("'" ^ name)))
 
@@ -295,11 +297,11 @@ let transl_type_param env styp =
         try
           if name <> "" && name.[0] = '_' then
             raise (Error (loc, Env.empty, Invalid_variable_name ("'" ^ name)));
-          ignore (Tbl.find name !type_variables);
+          ignore (TyVarMap.find name !type_variables);
           raise Already_bound
         with Not_found ->
           let v = new_global_var ~name () in
-            type_variables := Tbl.add name v !type_variables;
+            type_variables := TyVarMap.add name v !type_variables;
             v
       in
         { ctyp_desc = Ttyp_var name; ctyp_type = ty; ctyp_env = env;
@@ -348,12 +350,12 @@ and transl_type_aux env policy styp =
       begin try
         instance (List.assoc name !univars)
       with Not_found -> try
-        instance (fst(Tbl.find name !used_variables))
+        instance (fst (TyVarMap.find name !used_variables))
       with Not_found ->
         let v =
           if policy = Univars then new_pre_univar ~name () else newvar ~name ()
         in
-        used_variables := Tbl.add name (v, styp.ptyp_loc) !used_variables;
+        used_variables := TyVarMap.add name (v, styp.ptyp_loc) !used_variables;
         v
       end
     in
@@ -495,7 +497,7 @@ and transl_type_aux env policy styp =
           let t =
             try List.assoc alias !univars
             with Not_found ->
-              instance (fst(Tbl.find alias !used_variables))
+              instance (fst(TyVarMap.find alias !used_variables))
           in
           let ty = transl_type env policy st in
           begin try unify_var env t ty.ctyp_type with Unify trace ->
@@ -506,7 +508,8 @@ and transl_type_aux env policy styp =
         with Not_found ->
           if !Clflags.principal then begin_def ();
           let t = newvar () in
-          used_variables := Tbl.add alias (t, styp.ptyp_loc) !used_variables;
+          used_variables :=
+            TyVarMap.add alias (t, styp.ptyp_loc) !used_variables;
           let ty = transl_type env policy st in
           begin try unify_var env t ty.ctyp_type with Unify trace ->
             let trace = swap_list trace in
@@ -772,21 +775,21 @@ let create_package_mty = create_package_mty false
 
 let globalize_used_variables env fixed =
   let r = ref [] in
-  Tbl.iter
+  TyVarMap.iter
     (fun name (ty, loc) ->
       let v = new_global_var () in
       let snap = Btype.snapshot () in
       if try unify env v ty; true with _ -> Btype.backtrack snap; false
       then try
-        r := (loc, v,  Tbl.find name !type_variables) :: !r
+        r := (loc, v,  TyVarMap.find name !type_variables) :: !r
       with Not_found ->
         if fixed && Btype.is_Tvar (repr ty) then
           raise(Error(loc, env, Unbound_type_variable ("'"^name)));
         let v2 = new_global_var () in
         r := (loc, v, v2) :: !r;
-        type_variables := Tbl.add name v2 !type_variables)
+        type_variables := TyVarMap.add name v2 !type_variables)
     !used_variables;
-  used_variables := Tbl.empty;
+  used_variables := TyVarMap.empty;
   fun () ->
     List.iter
       (function (loc, t1, t2) ->
@@ -795,23 +798,23 @@ let globalize_used_variables env fixed =
       !r
 
 let transl_simple_type env fixed styp =
-  univars := []; used_variables := Tbl.empty;
+  univars := []; used_variables := TyVarMap.empty;
   let typ = transl_type env (if fixed then Fixed else Extensible) styp in
   globalize_used_variables env fixed ();
   make_fixed_univars typ.ctyp_type;
   typ
 
 let transl_simple_type_univars env styp =
-  univars := []; used_variables := Tbl.empty; pre_univars := [];
+  univars := []; used_variables := TyVarMap.empty; pre_univars := [];
   begin_def ();
   let typ = transl_type env Univars styp in
   (* Only keep already global variables in used_variables *)
   let new_variables = !used_variables in
-  used_variables := Tbl.empty;
-  Tbl.iter
+  used_variables := TyVarMap.empty;
+  TyVarMap.iter
     (fun name p ->
-      if Tbl.mem name !type_variables then
-        used_variables := Tbl.add name p !used_variables)
+      if TyVarMap.mem name !type_variables then
+        used_variables := TyVarMap.add name p !used_variables)
     new_variables;
   globalize_used_variables env false ();
   end_def ();
@@ -831,7 +834,7 @@ let transl_simple_type_univars env styp =
         instance (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
 
 let transl_simple_type_delayed env styp =
-  univars := []; used_variables := Tbl.empty;
+  univars := []; used_variables := TyVarMap.empty;
   let typ = transl_type env Extensible styp in
   make_fixed_univars typ.ctyp_type;
   (typ, globalize_used_variables env false)

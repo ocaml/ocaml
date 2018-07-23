@@ -19,8 +19,7 @@
 open Instruct
 open Debugger_config (* Toplevel *)
 open Program_loading
-
-module StringSet = Set.Make(String)
+module String = Misc.Stdlib.String
 
 let modules =
   ref ([] : string list)
@@ -72,7 +71,7 @@ let read_symbols' bytecode_file =
     raise Toplevel
   end;
   let num_eventlists = input_binary_int ic in
-  let dirs = ref StringSet.empty in
+  let dirs = ref String.Set.empty in
   let eventlists = ref [] in
   for _i = 1 to num_eventlists do
     let orig = input_binary_int ic in
@@ -82,7 +81,7 @@ let read_symbols' bytecode_file =
     let evll = partition_modules evl in
     eventlists := evll @ !eventlists;
     dirs :=
-      List.fold_left (fun s e -> StringSet.add e s) !dirs (input_value ic)
+      List.fold_left (fun s e -> String.Set.add e s) !dirs (input_value ic)
   done;
   begin try
     ignore (Bytesections.seek_section ic "CODE")
@@ -98,7 +97,7 @@ let read_symbols bytecode_file =
   let all_events, all_dirs = read_symbols' bytecode_file in
 
   modules := []; events := [];
-  program_source_dirs := StringSet.elements all_dirs;
+  program_source_dirs := String.Set.elements all_dirs;
   Hashtbl.clear events_by_pc; Hashtbl.clear events_by_module;
   Hashtbl.clear all_events_by_module;
 

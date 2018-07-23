@@ -22,6 +22,8 @@ open Primitive
 open Types
 open Typetexp
 
+module String = Misc.Stdlib.String
+
 type native_repr_kind = Unboxed | Untagged
 
 type error =
@@ -205,12 +207,6 @@ let set_fixed_row env loc p decl =
 
 (* Translate one type declaration *)
 
-module StringSet =
-  Set.Make(struct
-    type t = string
-    let compare (x:t) y = compare x y
-  end)
-
 let make_params env params =
   let make_param (sty, v) =
     try
@@ -222,12 +218,12 @@ let make_params env params =
 
 let transl_labels env closed lbls =
   assert (lbls <> []);
-  let all_labels = ref StringSet.empty in
+  let all_labels = ref String.Set.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
-       if StringSet.mem name !all_labels then
+       if String.Set.mem name !all_labels then
          raise(Error(loc, Duplicate_label name));
-       all_labels := StringSet.add name !all_labels)
+       all_labels := String.Set.add name !all_labels)
     lbls;
   let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
           pld_attributes=attrs} =
@@ -435,12 +431,12 @@ let transl_declaration env sdecl id =
           | (_,_,loc)::_ ->
               Location.prerr_warning loc Warnings.Constraint_on_gadt
         end;
-        let all_constrs = ref StringSet.empty in
+        let all_constrs = ref String.Set.empty in
         List.iter
           (fun {pcd_name = {txt = name}} ->
-            if StringSet.mem name !all_constrs then
+            if String.Set.mem name !all_constrs then
               raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
-            all_constrs := StringSet.add name !all_constrs)
+            all_constrs := String.Set.add name !all_constrs)
           scstrs;
         if List.length
             (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
@@ -598,8 +594,6 @@ let rec check_constraints_rec env loc visited ty =
       Btype.iter_type_expr (check_constraints_rec env loc visited) ty
   end
 
-module SMap = Map.Make(String)
-
 let check_constraints_labels env visited l pl =
   let rec get_loc name = function
       [] -> assert false
@@ -624,14 +618,14 @@ let check_constraints env sdecl (_, decl) =
       let pl = find_pl sdecl.ptype_kind in
       let pl_index =
         let foldf acc x =
-          SMap.add x.pcd_name.txt x acc
+          String.Map.add x.pcd_name.txt x acc
         in
-        List.fold_left foldf SMap.empty pl
+        List.fold_left foldf String.Map.empty pl
       in
       List.iter
         (fun {Types.cd_id=name; cd_args; cd_res} ->
           let {pcd_args; pcd_res; _} =
-            try SMap.find (Ident.name name) pl_index
+            try String.Map.find (Ident.name name) pl_index
             with Not_found -> assert false in
           begin match cd_args, pcd_args with
           | Cstr_tuple tyl, Pcstr_tuple styl ->

@@ -15,7 +15,7 @@
 
 open Compenv
 open Parsetree
-module StringMap = Depend.StringMap
+module String = Misc.Stdlib.String
 
 let ppf = Format.err_formatter
 (* Print the dependencies *)
@@ -34,10 +34,10 @@ let sort_files = ref false
 let all_dependencies = ref false
 let one_line = ref false
 let files =
-  ref ([] : (string * file_kind * Depend.StringSet.t * string list) list)
+  ref ([] : (string * file_kind * String.Set.t * string list) list)
 let allow_approximation = ref false
 let map_files = ref []
-let module_map = ref StringMap.empty
+let module_map = ref String.Map.empty
 let debug = ref false
 
 (* Fix path to use '/' as directory separator instead of '\'.
@@ -50,10 +50,10 @@ let fix_slash s =
 
 (* Since we reinitialize load_path after reading OCAMLCOMP,
   we must use a cache instead of calling Sys.readdir too often. *)
-let dirs = ref StringMap.empty
+let dirs = ref String.Map.empty
 let readdir dir =
   try
-    StringMap.find dir !dirs
+    String.Map.find dir !dirs
   with Not_found ->
     let contents =
       try
@@ -63,7 +63,7 @@ let readdir dir =
         error_occurred := true;
         [||]
     in
-    dirs := StringMap.add dir contents !dirs;
+    dirs := String.Map.add dir contents !dirs;
     contents
 
 let add_to_list li s =
@@ -203,7 +203,7 @@ let print_dependencies target_files deps =
 
 let print_raw_dependencies source_file deps =
   print_filename source_file; print_string depends_on;
-  Depend.StringSet.iter
+  String.Set.iter
     (fun dep ->
        (* filter out "*predef*" *)
       if (String.length dep > 0)
@@ -240,7 +240,7 @@ let rec lexical_approximation lexbuf =
       match Lexer.token lexbuf with
       | Parser.UIDENT name ->
           Depend.free_structure_names :=
-            Depend.StringSet.add name !Depend.free_structure_names;
+            String.Set.add name !Depend.free_structure_names;
           process false lexbuf
       | Parser.LIDENT _ -> process true lexbuf
       | Parser.DOT when after_lident -> process false lexbuf
@@ -259,7 +259,7 @@ let rec lexical_approximation lexbuf =
 
 let read_and_approximate inputfile =
   error_occurred := false;
-  Depend.free_structure_names := Depend.StringSet.empty;
+  Depend.free_structure_names := String.Set.empty;
   let ic = open_in_bin inputfile in
   try
     seek_in ic 0;
@@ -277,7 +277,7 @@ let read_and_approximate inputfile =
 let read_parse_and_extract parse_function extract_function def ast_kind
     source_file =
   Depend.pp_deps := [];
-  Depend.free_structure_names := Depend.StringSet.empty;
+  Depend.free_structure_names := String.Set.empty;
   try
     let input_file = Pparse.preprocess source_file in
     begin try
@@ -298,7 +298,7 @@ let read_parse_and_extract parse_function extract_function def ast_kind
   with x -> begin
     report_err x;
     if not !allow_approximation
-    then (Depend.StringSet.empty, def)
+    then (String.Set.empty, def)
     else (read_and_approximate source_file, def)
   end
 
@@ -320,7 +320,7 @@ let print_ml_dependencies source_file extracted_deps pp_deps =
          (if !all_dependencies then [cmi_name] else [])
   in
   let (byt_deps, native_deps) =
-    Depend.StringSet.fold (find_dependency ML)
+    String.Set.fold (find_dependency ML)
       extracted_deps init_deps in
   if not !native_only then
     print_dependencies (byte_targets @ extra_targets) (byt_deps @ pp_deps);
@@ -336,7 +336,7 @@ let print_ml_dependencies source_file extracted_deps pp_deps =
 let print_mli_dependencies source_file extracted_deps pp_deps =
   let basename = Filename.chop_extension source_file in
   let (byt_deps, _opt_deps) =
-    Depend.StringSet.fold (find_dependency MLI)
+    String.Set.fold (find_dependency MLI)
       extracted_deps ([], []) in
   print_dependencies [basename ^ ".cmi"] (byt_deps @ pp_deps)
 
@@ -422,7 +422,7 @@ let sort_files_by_dependencies files =
     let add_dep modname kind =
       new_deps := (modname, kind) :: !new_deps;
     in
-    Depend.StringSet.iter (fun modname ->
+    String.Set.iter (fun modname ->
       match file_kind with
           ML -> (* ML depends both on ML and MLI *)
             if Hashtbl.mem h (modname, MLI) then add_dep modname MLI;
@@ -485,30 +485,30 @@ let sort_files_by_dependencies files =
 
 let rec dump_map s0 ppf m =
   let open Depend in
-  StringMap.iter
+  String.Map.iter
     (fun key (Node(s1,m')) ->
-      let s = StringSet.diff s1 s0 in
-      if StringSet.is_empty s then
+      let s = String.Set.diff s1 s0 in
+      if String.Set.is_empty s then
         Format.fprintf ppf "@ @[<hv2>module %s : sig%a@;<1 -2>end@]"
-          key (dump_map (StringSet.union s1 s0)) m'
+          key (dump_map (String.Set.union s1 s0)) m'
       else
-        Format.fprintf ppf "@ module %s = %s" key (StringSet.choose s))
+        Format.fprintf ppf "@ module %s = %s" key (String.Set.choose s))
     m
 
 let process_ml_map =
   read_parse_and_extract Parse.implementation Depend.add_implementation_binding
-                         StringMap.empty Pparse.Structure
+                         String.Map.empty Pparse.Structure
 
 let process_mli_map =
   read_parse_and_extract Parse.interface Depend.add_signature_binding
-                         StringMap.empty Pparse.Signature
+                         String.Map.empty Pparse.Signature
 
 let parse_map fname =
   map_files := fname :: !map_files ;
   let old_transp = !Clflags.transparent_modules in
   Clflags.transparent_modules := true;
   let (deps, m) =
-    process_file fname ~def:(Depend.StringSet.empty, StringMap.empty)
+    process_file fname ~def:(String.Set.empty, String.Map.empty)
       ~ml_file:process_ml_map
       ~mli_file:process_mli_map
   in
@@ -516,16 +516,16 @@ let parse_map fname =
   let modname =
     String.capitalize_ascii
       (Filename.basename (Filename.chop_extension fname)) in
-  if StringMap.is_empty m then
+  if String.Map.is_empty m then
     report_err (Failure (fname ^ " : empty map file or parse error"));
   let mm = Depend.make_node m in
   if !debug then begin
     Format.printf "@[<v>%s:%t%a@]@." fname
-      (fun ppf -> Depend.StringSet.iter (Format.fprintf ppf " %s") deps)
-      (dump_map deps) (StringMap.add modname mm StringMap.empty)
+      (fun ppf -> String.Set.iter (Format.fprintf ppf " %s") deps)
+      (dump_map deps) (String.Map.add modname mm String.Map.empty)
   end;
-  let mm = Depend.(weaken_map (StringSet.singleton modname) mm) in
-  module_map := StringMap.add modname mm !module_map
+  let mm = Depend.(weaken_map (String.Set.singleton modname) mm) in
+  module_map := String.Map.add modname mm !module_map
 ;;
 
 

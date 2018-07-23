@@ -24,6 +24,7 @@ open Lambda
 open Clambda
 open Cmm
 open Cmx_format
+module String = Misc.Stdlib.String
 
 (* Environments used for translation to Cmm. *)
 
@@ -2847,20 +2848,14 @@ let transl_function f =
 
 (* Translate all function definitions *)
 
-module StringSet =
-  Set.Make(struct
-    type t = string
-    let compare (x:t) y = compare x y
-  end)
-
 let rec transl_all_functions already_translated cont =
   try
     let f = Queue.take functions in
-    if StringSet.mem f.label already_translated then
+    if String.Set.mem f.label already_translated then
       transl_all_functions already_translated cont
     else begin
       transl_all_functions
-        (StringSet.add f.label already_translated)
+        (String.Set.add f.label already_translated)
         ((f.dbg, transl_function f) :: cont)
     end
   with Queue.Empty ->
@@ -3034,7 +3029,7 @@ let transl_all_functions_and_emit_all_constants cont =
       aux already_translated cont translated_functions
   in
   let cont, translated_functions =
-    aux StringSet.empty cont []
+    aux String.Set.empty cont []
   in
   let translated_functions =
     (* Sort functions according to source position *)
@@ -3424,14 +3419,9 @@ let curry_function arity =
   then intermediate_curry_functions arity 0
   else [tuplify_function (-arity)]
 
+module Int = Numbers.Int
 
-module IntSet = Set.Make(
-  struct
-    type t = int
-    let compare (x:t) y = compare x y
-  end)
-
-let default_apply = IntSet.add 2 (IntSet.add 3 IntSet.empty)
+let default_apply = Int.Set.add 2 (Int.Set.add 3 Int.Set.empty)
   (* These apply funs are always present in the main program because
      the run-time system needs them (cf. runtime/<arch>.S) . *)
 
@@ -3439,15 +3429,15 @@ let generic_functions shared units =
   let (apply,send,curry) =
     List.fold_left
       (fun (apply,send,curry) ui ->
-         List.fold_right IntSet.add ui.ui_apply_fun apply,
-         List.fold_right IntSet.add ui.ui_send_fun send,
-         List.fold_right IntSet.add ui.ui_curry_fun curry)
-      (IntSet.empty,IntSet.empty,IntSet.empty)
+         List.fold_right Int.Set.add ui.ui_apply_fun apply,
+         List.fold_right Int.Set.add ui.ui_send_fun send,
+         List.fold_right Int.Set.add ui.ui_curry_fun curry)
+      (Int.Set.empty,Int.Set.empty,Int.Set.empty)
       units in
-  let apply = if shared then apply else IntSet.union apply default_apply in
-  let accu = IntSet.fold (fun n accu -> apply_function n :: accu) apply [] in
-  let accu = IntSet.fold (fun n accu -> send_function n :: accu) send accu in
-  IntSet.fold (fun n accu -> curry_function n @ accu) curry accu
+  let apply = if shared then apply else Int.Set.union apply default_apply in
+  let accu = Int.Set.fold (fun n accu -> apply_function n :: accu) apply [] in
+  let accu = Int.Set.fold (fun n accu -> send_function n :: accu) send accu in
+  Int.Set.fold (fun n accu -> curry_function n @ accu) curry accu
 
 (* Generate the entry point *)
 

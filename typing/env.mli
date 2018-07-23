@@ -16,9 +16,7 @@
 (* Environment handling *)
 
 open Types
-
-module PathMap : Map.S with type key = Path.t
-                        and type 'a t = 'a Map.Make(Path).t
+open Misc.Stdlib
 
 type summary =
     Env_empty
@@ -29,11 +27,11 @@ type summary =
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
-  | Env_open of summary * Misc.StringSet.t * Path.t
+  | Env_open of summary * String.Set.t * Path.t
   (** The string set argument of [Env_open] represents a list of module names
       to skip, i.e. that won't be imported in the toplevel namespace. *)
   | Env_functor_arg of summary * Ident.t
-  | Env_constraints of summary * type_declaration PathMap.t
+  | Env_constraints of summary * type_declaration Path.Map.t
   | Env_copy_types of summary * string list
 
 type t
@@ -181,7 +179,7 @@ val open_signature_of_initially_opened_module:
 (* Similar to [open_signature] except that sub-modules of the opened modules
    that are in [hidden_submodules] are not added to the environment. *)
 val open_signature_from_env_summary:
-    Path.t -> t -> hidden_submodules:Misc.StringSet.t -> t option
+    Path.t -> t -> hidden_submodules:String.Set.t -> t option
 
 val open_pers_signature: string -> t -> t
 

@@ -46,6 +46,7 @@ val current_state: unit -> global_map
 val restore_state: global_map -> unit
 val hide_additions: global_map -> unit
 val filter_global_map: (Ident.t -> bool) -> global_map -> global_map
+val iter_global_map : (Ident.t -> int -> unit) -> global_map -> unit
 
 (* Error report *)
 

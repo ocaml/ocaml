@@ -21,6 +21,8 @@ open Parsetree
 open Types
 open Format
 
+module String = Misc.Stdlib.String
+
 type error =
     Cannot_apply of module_type
   | Not_included of Includemod.error list
@@ -698,28 +700,25 @@ let approx_modtype env smty =
 
 (* Auxiliaries for checking uniqueness of names in signatures and structures *)
 
-module StringSet =
-  Set.Make(struct type t = string let compare (x:t) y = String.compare x y end)
-
 let check cl loc set_ref name =
-  if StringSet.mem name !set_ref
+  if String.Set.mem name !set_ref
   then raise(Error(loc, Env.empty, Repeated_name(cl, name)))
-  else set_ref := StringSet.add name !set_ref
+  else set_ref := String.Set.add name !set_ref
 
 type names =
   {
-    types: StringSet.t ref;
-    modules: StringSet.t ref;
-    modtypes: StringSet.t ref;
-    typexts: StringSet.t ref;
+    types: String.Set.t ref;
+    modules: String.Set.t ref;
+    modtypes: String.Set.t ref;
+    typexts: String.Set.t ref;
   }
 
 let new_names () =
   {
-    types = ref StringSet.empty;
-    modules = ref StringSet.empty;
-    modtypes = ref StringSet.empty;
-    typexts = ref StringSet.empty;
+    types = ref String.Set.empty;
+    modules = ref String.Set.empty;
+    modtypes = ref String.Set.empty;
+    typexts = ref String.Set.empty;
   }
 
 
@@ -744,12 +743,12 @@ let check_sig_item names loc = function
 
 let simplify_signature sg =
   let rec aux = function
-    | [] -> [], StringSet.empty
+    | [] -> [], String.Set.empty
     | (Sig_value(id, _descr) as component) :: sg ->
         let (sg, val_names) as k = aux sg in
         let name = Ident.name id in
-        if StringSet.mem name val_names then k
-        else (component :: sg, StringSet.add name val_names)
+        if String.Set.mem name val_names then k
+        else (component :: sg, String.Set.add name val_names)
     | component :: sg ->
         let (sg, val_names) = aux sg in
         (component :: sg, val_names)
