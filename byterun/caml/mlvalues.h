@@ -262,8 +262,16 @@ CAMLextern value caml_get_public_method (value obj, value tag);
    Note however that tags being hashed, same tag does not necessarily mean
    same method name. */
 
-#define Val_ptr(p) (Assert(((value)(p) & 1) == 0), (value)(p) + 1)
-#define Ptr_val(val) (Assert(val & 1),  (void*)(val - 1))
+static inline value Val_ptr(void* p)
+{
+  CAMLassert(((value)p & 1) == 0);
+  return (value)p + 1;
+}
+static inline void* Ptr_val(value val)
+{
+  CAMLassert(val & 1);
+  return (void*)(val - 1);
+}
 
 #define Val_pc(pc) Val_ptr(pc)
 #define Pc_val(val) ((code_t)Ptr_val(val))
