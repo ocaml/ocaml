@@ -114,8 +114,8 @@ let remove_printer = Printer.remove_printer
 
 (* Hooks for parsing functions *)
 
-let parse_toplevel_phrase = ref Parse.toplevel_phrase
-let parse_use_file = ref Parse.use_file
+let parse_toplevel_phrase = ref Parse.toplevel_phrase_menhir
+let parse_use_file = ref Parse.use_file_menhir
 let print_location = Location.print_loc
 let print_error = Location.print_report
 let print_warning = Location.print_warning
