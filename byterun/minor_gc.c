@@ -519,7 +519,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
         if (tag == Cont_tag) {
           struct stack_info* stk = Ptr_val(Op_val(curr)[0]);
           if (stk != NULL)
-            caml_scan_stack(&forward_pointer, &st, stk);
+            caml_scan_stack(&forward_pointer, st.promote_domain, stk);
         } else if (tag < No_scan_tag) {
           for (i = 0; i < Wosize_hd (hd); i++) {
             f = Op_val(curr)[i];
