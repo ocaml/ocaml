@@ -17,31 +17,36 @@
 
 (* Skip tokens to the end of the phrase *)
 
+let last_token = ref Parser.EOF
+
+let token lexbuf =
+  let token = Lexer.token lexbuf in
+  last_token := token;
+  token
+
 let rec skip_phrase lexbuf =
-  try
-    match Lexer.token lexbuf with
-      Parser.SEMISEMI | Parser.EOF -> ()
-    | _ -> skip_phrase lexbuf
-  with
-    | Lexer.Error (Lexer.Unterminated_comment _, _)
-    | Lexer.Error (Lexer.Unterminated_string, _)
-    | Lexer.Error (Lexer.Unterminated_string_in_comment _, _)
-    | Lexer.Error (Lexer.Illegal_character _, _) -> skip_phrase lexbuf
-;;
+  match token lexbuf with
+  | Parser.SEMISEMI | Parser.EOF -> ()
+  | _ -> skip_phrase lexbuf
+  | exception (Lexer.Error (Lexer.Unterminated_comment _, _)
+              | Lexer.Error (Lexer.Unterminated_string, _)
+              | Lexer.Error (Lexer.Unterminated_string_in_comment _, _)
+              | Lexer.Error (Lexer.Illegal_character _, _)) ->
+      skip_phrase lexbuf
 
 let maybe_skip_phrase lexbuf =
-  if Parsing.is_current_lookahead Parser.SEMISEMI
-  || Parsing.is_current_lookahead Parser.EOF
-  then ()
-  else skip_phrase lexbuf
+  match !last_token with
+  | Parser.SEMISEMI | Parser.EOF -> ()
+  | _ -> skip_phrase lexbuf
 
 let wrap parsing_fun lexbuf =
   try
     Docstrings.init ();
     Lexer.init ();
-    let ast = parsing_fun Lexer.token lexbuf in
+    let ast = parsing_fun token lexbuf in
     Parsing.clear_parser();
     Docstrings.warn_bad_docstrings ();
+    last_token := Parser.EOF;
     ast
   with
   | Lexer.Error(Lexer.Illegal_character _, _) as err
