@@ -1,4 +1,4 @@
-Characters 34-41:
+Characters 197-204:
   let x = (1 + 2) +. 3. in ();;
           ^^^^^^^
 Error: This expression has type int but an expression was expected of type
@@ -25,6 +25,20 @@ Characters 9-18:
   ........(1
     +
   2)...
+Error: This expression has type int but an expression was expected of type
+         float
+File "error_highlighting_use1.ml", line 1, characters 8-15:
+Error: This expression has type int but an expression was expected of type
+         float
+File "error_highlighting_use2.ml", line 1, characters 15-17:
+Error: Syntax error: ')' expected
+File "error_highlighting_use2.ml", line 1, characters 8-9:
+Error: This '(' might be unmatched
+File "error_highlighting_use3.ml", line 3, characters 2-4:
+Error: Syntax error: ')' expected
+File "error_highlighting_use3.ml", line 1, characters 8-9:
+Error: This '(' might be unmatched
+File "error_highlighting_use4.ml", line 1, characters 8-17:
 Error: This expression has type int but an expression was expected of type
          float
 
