@@ -112,6 +112,14 @@ struct stack_info* caml_reverse_fiber_stack (struct stack_info* stack);
 void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintnat* pc /* out */);
 #endif
 
+value caml_continuation_use (value cont);
+
+/* Replace the stack of a continuation that was previouly removed
+   with caml_continuation_use. The GC must not be allowed to run
+   between continuation_use and continuation_replace.
+   Used for cloning continuations and continuation backtraces. */
+void caml_continuation_replace(value cont, struct stack_info* stack);
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_FIBER_H */
