@@ -41,12 +41,12 @@ external _get_raw_backtrace:
 external _raise_with_backtrace: exn -> _raw_backtrace -> 'a
   = "%raise_with_backtrace"
 
-let try_finally ~(always: unit -> unit) work =
+let protect ~(finally: unit -> unit) work =
   match work () with
-  | result -> always (); result
+  | result -> finally (); result
   | exception work_exn ->
     let work_bt = _get_raw_backtrace () in
-    always ();
+    finally ();
     _raise_with_backtrace work_exn work_bt
 
 (* Composition operators *)

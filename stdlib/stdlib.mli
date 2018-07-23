@@ -51,11 +51,11 @@ exception Exit
 (** The [Exit] exception is not raised by any library function.  It is
     provided for use in your programs. *)
 
-val try_finally : always:(unit -> unit) -> (unit -> 'a) -> 'a
-(** [try_finally ~always work] invokes [work ()] and then [always ()]
+val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
+(** [protect ~finally work] invokes [work ()] and then [finally ()]
     before [work] returns with its value or an exception. In the latter
-    case the exception is re-raised after [always ()].
-    If [always ()] raises, this exception is not caught and may shadow
+    case the exception is re-raised after [finally ()].
+    If [finally ()] raises, this exception is not caught and may shadow
     one [work ()] may have raised.
 
     @since NEXT_RELEASE *)
