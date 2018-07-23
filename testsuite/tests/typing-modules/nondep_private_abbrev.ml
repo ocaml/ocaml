@@ -99,7 +99,7 @@ end = struct
   type s = t
 end;;
 [%%expect{|
-Line _, characters 6-29:
+Line 3, characters 6-29:
   ......struct
     type s = t
   end..

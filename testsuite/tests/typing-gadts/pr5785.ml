@@ -13,7 +13,7 @@ struct
     | Two, Two -> "four"
 end;;
 [%%expect{|
-Line _, characters 43-100:
+Line 7, characters 43-100:
   ...........................................function
       | One, One -> "two"
       | Two, Two -> "four"

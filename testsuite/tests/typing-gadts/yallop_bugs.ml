@@ -18,7 +18,7 @@ let magic : 'a 'b. 'a -> 'b =
 ;;
 [%%expect{|
 type (_, _) eq = Refl : ('a, 'a) eq
-Line _, characters 44-52:
+Line 8, characters 44-52:
            let f (Refl : (a T.t, b T.t) eq) = (x :> b)
                                               ^^^^^^^^
 Error: Type a is not a subtype of b
@@ -37,7 +37,7 @@ let magic : 'a 'b. 'a -> 'b =
     (downcast bad_proof ((object method m = x end) :> < >)) # m
 ;;
 [%%expect{|
-Line _, characters 0-36:
+Line 1, characters 0-36:
   type (_, +_) eq = Refl : ('a, 'a) eq
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this GADT definition, the variance of some parameter
@@ -56,7 +56,7 @@ let check : type s . s t * s -> bool = function
 ;;
 [%%expect{|
 type _ t = IntLit : int t | BoolLit : bool t
-Line _, characters 39-99:
+Line 5, characters 39-99:
   .......................................function
     | BoolLit, false -> false
     | IntLit , 6 -> false
@@ -74,7 +74,7 @@ let check : type s . (s t, s) pair -> bool = function
 ;;
 [%%expect{|
 type ('a, 'b) pair = { fst : 'a; snd : 'b; }
-Line _, characters 45-134:
+Line 3, characters 45-134:
   .............................................function
     | {fst = BoolLit; snd = false} -> false
     | {fst = IntLit ; snd =  6} -> false

@@ -94,6 +94,121 @@ let print_updating_num_loc_lines ppf f arg =
   pp_print_flush ppf ();
   pp_set_formatter_out_functions ppf out_functions
 
+let setup_colors () =
+  Misc.Color.setup !Clflags.color
+
+(******************************************************************************)
+(* Printing locations, e.g. 'File "foo.ml", line 3, characters 10-12' *)
+
+let rewrite_absolute_path =
+  let init = ref false in
+  let map_cache = ref None in
+  fun path ->
+    if not !init then begin
+      init := true;
+      match Sys.getenv "BUILD_PATH_PREFIX_MAP" with
+      | exception Not_found -> ()
+      | encoded_map ->
+        match Build_path_prefix_map.decode_map encoded_map with
+          | Error err ->
+              Misc.fatal_errorf
+                "Invalid value for the environment variable \
+                 BUILD_PATH_PREFIX_MAP: %s" err
+          | Ok map -> map_cache := Some map
+    end;
+    match !map_cache with
+    | None -> path
+    | Some map -> Build_path_prefix_map.rewrite map path
+
+let absolute_path s = (* This function could go into Filename *)
+  let open Filename in
+  let s =
+    if not (is_relative s) then s
+    else (rewrite_absolute_path (concat (Sys.getcwd ()) s))
+  in
+  (* Now simplify . and .. components *)
+  let rec aux s =
+    let base = basename s in
+    let dir = dirname s in
+    if dir = s then dir
+    else if base = current_dir_name then aux dir
+    else if base = parent_dir_name then dirname (aux dir)
+    else concat (aux dir) base
+  in
+  aux s
+
+let show_filename file =
+  if !Clflags.absname then absolute_path file else file
+
+let print_filename ppf file =
+  Format.pp_print_string ppf (show_filename file)
+
+(* Best-effort printing of the text describing a location, of the form
+   'File "foo.ml", line 3, characters 10-12'.
+
+   Some of the information (filename, line number or characters numbers) in the
+   location might be invalid; in which case we do not print it.
+ *)
+let print_loc ppf loc =
+  setup_colors ();
+  let file_valid = function
+    | "_none_" ->
+        (* This is a dummy placeholder, but we print it anyway to please editors
+           that parse locations in error messages (e.g. Emacs). *)
+        true
+    | "" | "//toplevel//" -> false
+    | _ -> true
+  in
+  let line_valid line = line <> -1 in
+  let chars_valid ~startchar ~endchar = startchar <> -1 && endchar <> -1 in
+
+  let file =
+    (* According to the comment in location.mli, if [pos_fname] is "", we must
+       use [!input_name]. *)
+    if loc.loc_start.pos_fname = "" then !input_name
+    else loc.loc_start.pos_fname
+  in
+  let line = loc.loc_start.pos_lnum in
+  let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
+  let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_bol in
+
+  let first = ref true in
+  let capitalize s =
+    if !first then (first := false; String.capitalize_ascii s)
+    else s in
+  let comma () =
+    if !first then () else Format.fprintf ppf ", " in
+
+  Format.fprintf ppf "@{<loc>";
+
+  if file_valid file then
+    Format.fprintf ppf "%s \"%a\"" (capitalize "file") print_filename file;
+  if line_valid line then (
+    comma ();
+    Format.fprintf ppf "%s %i" (capitalize "line") line
+  );
+  if chars_valid ~startchar ~endchar then (
+    comma ();
+    Format.fprintf ppf "%s %i-%i" (capitalize "characters") startchar endchar
+  );
+
+  if !first then
+    (* Nothing has been printed. This might happen if a preprocessor badly
+       messes up the locations it produces.
+       Print the position characters as a best effort. *)
+    Format.fprintf ppf "Characters %i-%i"
+      loc.loc_start.pos_cnum loc.loc_end.pos_cnum;
+
+  Format.fprintf ppf "@}"
+
+(* Print a comma-separated list of locations *)
+let print_locs ppf locs =
+  Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ",@ ")
+    print_loc ppf locs
+
+(******************************************************************************)
+(* Toplevel: highlighting and quoting locations *)
+
 (* Highlight the locations using standout mode.
 
    If [locs] is empty, this function is a no-op.
@@ -160,18 +275,18 @@ let highlight_terminfo ppf lb locs =
    If [locs] is empty then this function is a no-op.
 *)
 let highlight_dumb ~print_chars ppf lb locs =
-  let locs = Misc.Stdlib.List.filter_map (fun loc ->
+  let locs' = Misc.Stdlib.List.filter_map (fun loc ->
     let s, e = loc.loc_start.pos_cnum, loc.loc_end.pos_cnum in
     (* Ignore dummy locations *)
-    if s = -1 && e = -1 then None
+    if s = -1 || e = -1 then None
     else Some (s, e)
   ) locs
   in
-  if locs = [] then ()
+  if locs' = [] then ()
   else begin
     (* Helper to check if a given position is to be highlighted *)
     let is_highlighted pos =
-      List.exists (fun (s, e) -> s <= pos && pos < e) locs in
+      List.exists (fun (s, e) -> s <= pos && pos < e) locs' in
     (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
     let pos0 = -lb.lex_abs_pos in
     (* Helper to read a char in the buffer *)
@@ -181,10 +296,10 @@ let highlight_dumb ~print_chars ppf lb locs =
     let end_pos = lb.lex_buffer_len - pos0 - 1 in
     (* Leftmost starting position of all locations *)
     let leftmost_start, _ =
-      List.hd @@ List.sort (fun (s, _) (s', _) -> compare s s') locs in
+      List.hd @@ List.sort (fun (s, _) (s', _) -> compare s s') locs' in
     (* Rightmost ending position of all locations *)
     let _, rightmost_end =
-      List.hd @@ List.sort (fun (_, e) (_, e') -> compare e' e) locs in
+      List.hd @@ List.sort (fun (_, e) (_, e') -> compare e' e) locs' in
     (* Determine line numbers and positions for the start and end points *)
     let line_start, line_end, line_start_pos, line_end_pos =
       let line_start = ref 0 and line_end = ref 0 in
@@ -212,10 +327,8 @@ let highlight_dumb ~print_chars ppf lb locs =
     in
     Format.fprintf ppf "@[<v>";
     (* Print character location (useful for Emacs) *)
-    if print_chars then begin
-      Format.fprintf ppf "Characters %i-%i:@,"
-        leftmost_start rightmost_end
-    end;
+    if print_chars then
+      Format.fprintf ppf "%a:@," print_locs locs;
     (* Print the input, highlighting the locations.
        Indent by two spaces. *)
     Format.fprintf ppf "  @[<v>";
@@ -242,7 +355,8 @@ let highlight_dumb ~print_chars ppf lb locs =
   end
 
 let show_code_at_location ppf lb locs =
-  highlight_dumb ~print_chars:false ppf lb locs
+  try highlight_dumb ~print_chars:false ppf lb locs
+  with Exit -> ()
 
 (* Highlight the location using one of the supported modes. *)
 
@@ -268,77 +382,12 @@ let rec highlight_locations ppf locs =
           with Exit -> false
       end
 
-(* Print the location in some way or another *)
-
-let rewrite_absolute_path =
-  let init = ref false in
-  let map_cache = ref None in
-  fun path ->
-    if not !init then begin
-      init := true;
-      match Sys.getenv "BUILD_PATH_PREFIX_MAP" with
-      | exception Not_found -> ()
-      | encoded_map ->
-        match Build_path_prefix_map.decode_map encoded_map with
-          | Error err ->
-              Misc.fatal_errorf
-                "Invalid value for the environment variable \
-                 BUILD_PATH_PREFIX_MAP: %s" err
-          | Ok map -> map_cache := Some map
-    end;
-    match !map_cache with
-    | None -> path
-    | Some map -> Build_path_prefix_map.rewrite map path
-
-let absolute_path s = (* This function could go into Filename *)
-  let open Filename in
-  let s =
-    if not (is_relative s) then s
-    else (rewrite_absolute_path (concat (Sys.getcwd ()) s))
-  in
-  (* Now simplify . and .. components *)
-  let rec aux s =
-    let base = basename s in
-    let dir = dirname s in
-    if dir = s then dir
-    else if base = current_dir_name then aux dir
-    else if base = parent_dir_name then dirname (aux dir)
-    else concat (aux dir) base
-  in
-  aux s
-
-let show_filename file =
-  if !Clflags.absname then absolute_path file else file
-
-let print_filename ppf file =
-  Format.pp_print_string ppf (show_filename file)
-
 let reset () =
   num_loc_lines := 0
 
 (* return file, line, char from the given position *)
 let get_pos_info pos =
   (pos.pos_fname, pos.pos_lnum, pos.pos_cnum - pos.pos_bol)
-;;
-
-let setup_colors () =
-  Misc.Color.setup !Clflags.color
-
-let print_loc ppf loc =
-  setup_colors ();
-  let (file, line, startchar) = get_pos_info loc.loc_start in
-  let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
-  if file = "//toplevel//" then begin
-    if highlight_locations ppf [loc] then () else
-      Format.fprintf ppf "Characters %i-%i"
-        loc.loc_start.pos_cnum loc.loc_end.pos_cnum
-  end else begin
-    Format.fprintf ppf "File \"@{<loc>%a\", line %i"
-      print_filename file line;
-    if startchar >= 0 then
-      Format.fprintf ppf ", characters %i-%i" startchar endchar;
-    Format.fprintf ppf "@}"
-  end
 ;;
 
 let default_printer ppf loc =

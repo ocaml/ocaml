@@ -4,13 +4,13 @@
 
 type 'a t = [`A of 'a t t] as 'a;; (* fails *)
 [%%expect{|
-Line _, characters 0-32:
+Line 1, characters 0-32:
   type 'a t = [`A of 'a t t] as 'a;; (* fails *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of t contains a cycle:
        'a t t as 'a
 |}, Principal{|
-Line _, characters 0-32:
+Line 1, characters 0-32:
   type 'a t = [`A of 'a t t] as 'a;; (* fails *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of t contains a cycle:
@@ -18,21 +18,21 @@ Error: The definition of t contains a cycle:
 |}];;
 type 'a t = [`A of 'a t t];; (* fails *)
 [%%expect{|
-Line _, characters 0-26:
+Line 1, characters 0-26:
   type 'a t = [`A of 'a t t];; (* fails *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition of t, type 'a t t should be 'a t
 |}];;
 type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
-Line _, characters 0-47:
+Line 1, characters 0-47:
   type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation t is cyclic
 |}];;
 type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
-Line _, characters 0-45:
+Line 1, characters 0-45:
   type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation t is cyclic
@@ -45,7 +45,7 @@ type 'a t = [ `A of 'b ] as 'b constraint 'a = [ `A of 'a ]
 |}];;
 type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
 [%%expect{|
-Line _, characters 0-41:
+Line 1, characters 0-41:
   type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of v contains a cycle:
@@ -73,7 +73,7 @@ module type PR6505 = sig
 end
 ;; (* fails *)
 [%%expect{|
-Line _, characters 2-44:
+Line 3, characters 2-44:
     and 'o abs constraint 'o = 'o is_an_object
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of abs contains a cycle:
@@ -93,7 +93,7 @@ module PR6505a :
     and ('a, 'l) abs = 'l constraint 'a = 'l is_an_object
     val y : (<  > is_an_object, <  > is_an_object) abs
   end
-Line _, characters 8-17:
+Line 6, characters 8-17:
   let _ = PR6505a.y#bang;; (* fails *)
           ^^^^^^^^^
 Error: This expression has type
@@ -106,7 +106,7 @@ module PR6505a :
     and ('a, 'l) abs = 'l constraint 'a = 'l is_an_object
     val y : (<  >, <  >) abs
   end
-Line _, characters 8-17:
+Line 6, characters 8-17:
   let _ = PR6505a.y#bang;; (* fails *)
           ^^^^^^^^^
 Error: This expression has type (<  >, <  >) PR6505a.abs
@@ -126,7 +126,7 @@ module PR6505b :
     and ('a, 'l) abs = 'l constraint 'a = 'l is_an_object
     val x : (([> `Foo of int ] as 'a) is_an_object, 'a is_an_object) abs
   end
-Line _, characters 23-57:
+Line 6, characters 23-57:
   let () = print_endline (match PR6505b.x with `Bar s -> s);; (* fails *)
                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.

@@ -16,7 +16,7 @@ module M : sig type t val equal : 'a -> 'a -> bool end
 
 type t = Set.Make(M).t
 [%%expect{|
-Line _, characters 9-22:
+Line 1, characters 9-22:
   type t = Set.Make(M).t
            ^^^^^^^^^^^^^
 Error: The type of M does not match Set.Make's parameter
@@ -40,7 +40,7 @@ module F :
 
 type t = F(M).t
 [%%expect{|
-Line _, characters 9-15:
+Line 1, characters 9-15:
   type t = F(M).t
            ^^^^^^
 Error: The type of M does not match F's parameter
@@ -63,7 +63,7 @@ module Generative : functor () -> sig type t end
 
 type t = Generative(M).t
 [%%expect{|
-Line _, characters 9-24:
+Line 1, characters 9-24:
   type t = Generative(M).t
            ^^^^^^^^^^^^^^^
 Error: The functor Generative is generative, it cannot be applied in type
@@ -76,7 +76,7 @@ module F(X : sig module type S module F : S end) = struct
   type t = X.F(Parsing).t
 end
 [%%expect{|
-Line _, characters 11-25:
+Line 2, characters 11-25:
     type t = X.F(Parsing).t
              ^^^^^^^^^^^^^^
 Error: The module X.F is abstract, it cannot be applied

@@ -1,4 +1,4 @@
-Characters 470-480:
+Line 14, characters 14-24:
     let rec x = [| y; y |] and y = 1. in
                 ^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'

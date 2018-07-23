@@ -34,7 +34,7 @@ let after_a =
   { x with lbl = 4 }
 ;;
 [%%expect{|
-Line _, characters 2-20:
+Line 3, characters 2-20:
     { x with lbl = 4 }
     ^^^^^^^^^^^^^^^^^^
 Warning 23: all the fields are explicitly listed in this record:
@@ -49,7 +49,7 @@ let b =
 [%%expect{|
 val b : unit = ()
 |}, Principal{|
-Line _, characters 7-18:
+Line 3, characters 7-18:
     x := { lbl = 4 }
          ^^^^^^^^^^^
 Warning 18: this type-based record disambiguation is not principal.
@@ -77,7 +77,7 @@ let e =
   { x with contents = { lbl = 4 } }
 ;;
 [%%expect{|
-Line _, characters 24-27:
+Line 3, characters 24-27:
     { x with contents = { lbl = 4 } }
                           ^^^
 Error: Unbound record field lbl
@@ -107,13 +107,13 @@ let h x =
   | { lbl = _ } -> ()
 ;;
 [%%expect{|
-Line _, characters 4-15:
+Line 4, characters 4-15:
     | { lbl = _ } -> ()
       ^^^^^^^^^^^
 Warning 11: this match case is unused.
 val h : M.r -> unit = <fun>
 |}, Principal{|
-Line _, characters 6-9:
+Line 4, characters 6-9:
     | { lbl = _ } -> ()
         ^^^
 Error: Unbound record field lbl
@@ -125,7 +125,7 @@ let i x =
   | (_ : M.r) -> ()
 ;;
 [%%expect{|
-Line _, characters 6-9:
+Line 3, characters 6-9:
     | { lbl = _ } -> ()
         ^^^
 Error: Unbound record field lbl
@@ -137,7 +137,7 @@ let j x =
   | { lbl = _ } -> ()
 ;;
 [%%expect{|
-Line _, characters 4-15:
+Line 4, characters 4-15:
     | { lbl = _ } -> ()
       ^^^^^^^^^^^
 Warning 12: this sub-pattern is unused.
@@ -150,7 +150,7 @@ let k x =
   | (_ : M.r) -> ()
 ;;
 [%%expect{|
-Line _, characters 6-9:
+Line 3, characters 6-9:
     | { lbl = _ }
         ^^^
 Error: Unbound record field lbl
@@ -169,7 +169,7 @@ let m x =
   | { contents = { lbl = _ } } -> ()
 ;;
 [%%expect{|
-Line _, characters 19-22:
+Line 3, characters 19-22:
     | { contents = { lbl = _ } } -> ()
                      ^^^
 Error: Unbound record field lbl
@@ -181,13 +181,13 @@ let n x =
   | { contents = { lbl = _ } } -> ()
 ;;
 [%%expect{|
-Line _, characters 4-30:
+Line 4, characters 4-30:
     | { contents = { lbl = _ } } -> ()
       ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 11: this match case is unused.
 val n : M.r ref -> unit = <fun>
 |}, Principal{|
-Line _, characters 19-22:
+Line 4, characters 19-22:
     | { contents = { lbl = _ } } -> ()
                      ^^^
 Error: Unbound record field lbl
@@ -199,7 +199,7 @@ let o x =
   | (_ : M.r ref) -> ()
 ;;
 [%%expect{|
-Line _, characters 19-22:
+Line 3, characters 19-22:
     | { contents = { lbl = _ } } -> ()
                      ^^^
 Error: Unbound record field lbl
@@ -211,7 +211,7 @@ let p x =
   | { contents = { lbl = _ } } -> ()
 ;;
 [%%expect{|
-Line _, characters 4-30:
+Line 4, characters 4-30:
     | { contents = { lbl = _ } } -> ()
       ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 12: this sub-pattern is unused.
@@ -224,7 +224,7 @@ let q x =
   | (_ : M.r ref) -> ()
 ;;
 [%%expect{|
-Line _, characters 19-22:
+Line 3, characters 19-22:
     | { contents = { lbl = _ } }
                      ^^^
 Error: Unbound record field lbl
@@ -247,7 +247,7 @@ let s arg =
 [%%expect{|
 val s : M.r ref -> unit = <fun>
 |}, Principal{|
-Line _, characters 9-20:
+Line 4, characters 9-20:
       x := { lbl = 4 }
            ^^^^^^^^^^^
 Warning 18: this type-based record disambiguation is not principal.
@@ -261,7 +261,7 @@ let t = function
 [%%expect{|
 val t : M.r ref -> unit = <fun>
 |}, Principal{|
-Line _, characters 9-20:
+Line 3, characters 9-20:
       x := { lbl = 4 }
            ^^^^^^^^^^^
 Warning 18: this type-based record disambiguation is not principal.
@@ -275,7 +275,7 @@ let u = function
 [%%expect{|
 val u : M.r ref -> int = <fun>
 |}, Principal{|
-Line _, characters 7-10:
+Line 3, characters 7-10:
       !x.lbl
          ^^^
 Warning 18: this type-based field disambiguation is not principal.

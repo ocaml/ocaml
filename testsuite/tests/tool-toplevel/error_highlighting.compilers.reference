@@ -1,27 +1,30 @@
-Characters 197-204:
+Line 9, characters 8-15:
   let x = (1 + 2) +. 3. in ();;
           ^^^^^^^
 Error: This expression has type int but an expression was expected of type
          float
-Characters 9-18:
+Line 2, characters 8-9,
+Line 2, characters 15-17:
   let x = (1 + 2 in ();;
           ^      ^^
 Syntax error: ')' expected, the highlighted '(' might be unmatched
-Characters 9-17:
+Line 2, characters 8-9,
+Line 2, characters 14-16:
   let x = (1 + 2;;
           ^     ^^
 Syntax error: ')' expected, the highlighted '(' might be unmatched
-Characters 22-23:
+Line 3, characters 8-9:
   let y = 1 +. 2. in
           ^
 Error: This expression has type int but an expression was expected of type
          float
-Characters 9-20:
+Line 2, characters 8-9,
+Line 4, characters 2-4:
   ........(.
   ...
   ..in
 Syntax error: ')' expected, the highlighted '(' might be unmatched
-Characters 9-18:
+Line 2, characters 8-17:
   ........(1
     +
   2)...

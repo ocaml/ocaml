@@ -1,4 +1,4 @@
-Characters 136-146:
+Line 10, characters 9-19:
    let _ = { a = () }
            ^^^^^^^^^^
 Error: Some record fields are undefined: b

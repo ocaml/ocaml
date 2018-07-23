@@ -10,27 +10,27 @@ module M :
     external a : int -> (int [@untagged]) = "a" "a_nat"
     external b : (int [@untagged]) -> int = "b" "b_nat"
   end
-Characters 382-451:
+Line 12, characters 2-71:
     external f : (int32 [@unboxed]) -> (int32 [@unboxed]) = "f" "noalloc"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
-Characters 63-122:
+Line 4, characters 2-61:
     external a : float -> float = "a" "noalloc" "a_nat" "float"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used instead of "float"
-Characters 125-176:
+Line 5, characters 2-53:
     external b : float -> float = "b" "noalloc" "b_nat"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 3: deprecated: [@@noalloc] should be used instead of "noalloc"
-Characters 179-228:
+Line 6, characters 2-51:
     external c : float -> float = "c" "c_nat" "float"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used instead of "float"
-Characters 231-274:
+Line 7, characters 2-45:
     external d : float -> float = "d" "noalloc"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 3: deprecated: [@@noalloc] should be used instead of "noalloc"
-Characters 441-505:
+Line 15, characters 6-70:
   ......struct
     external f : int -> (int [@untagged]) = "f" "f_nat"
   end..
@@ -43,7 +43,7 @@ Error: Signature mismatch:
          external f : int -> (int [@untagged]) = "f" "f_nat"
        is not included in
          external f : int -> int = "f" "f_nat"
-Characters 65-129:
+Line 4, characters 6-70:
   ......struct
     external f : (int [@untagged]) -> int = "f" "f_nat"
   end..
@@ -56,7 +56,7 @@ Error: Signature mismatch:
          external f : (int [@untagged]) -> int = "f" "f_nat"
        is not included in
          external f : int -> int = "a" "a_nat"
-Characters 69-136:
+Line 4, characters 6-73:
   ......struct
     external f : float -> (float [@unboxed]) = "f" "f_nat"
   end..
@@ -69,7 +69,7 @@ Error: Signature mismatch:
          external f : float -> (float [@unboxed]) = "f" "f_nat"
        is not included in
          external f : float -> float = "f" "f_nat"
-Characters 69-136:
+Line 4, characters 6-73:
   ......struct
     external f : (float [@unboxed]) -> float = "f" "f_nat"
   end..
@@ -82,7 +82,7 @@ Error: Signature mismatch:
          external f : (float [@unboxed]) -> float = "f" "f_nat"
        is not included in
          external f : float -> float = "a" "a_nat"
-Characters 149-199:
+Line 6, characters 6-56:
   ......struct
     external f : int -> int = "f" "f_nat"
   end..
@@ -95,7 +95,7 @@ Error: Signature mismatch:
          external f : int -> int = "f" "f_nat"
        is not included in
          external f : int -> (int [@untagged]) = "f" "f_nat"
-Characters 79-129:
+Line 4, characters 6-56:
   ......struct
     external f : int -> int = "a" "a_nat"
   end..
@@ -108,7 +108,7 @@ Error: Signature mismatch:
          external f : int -> int = "a" "a_nat"
        is not included in
          external f : (int [@untagged]) -> int = "f" "f_nat"
-Characters 82-136:
+Line 4, characters 6-60:
   ......struct
     external f : float -> float = "f" "f_nat"
   end..
@@ -121,7 +121,7 @@ Error: Signature mismatch:
          external f : float -> float = "f" "f_nat"
        is not included in
          external f : float -> (float [@unboxed]) = "f" "f_nat"
-Characters 82-136:
+Line 4, characters 6-60:
   ......struct
     external f : float -> float = "a" "a_nat"
   end..
@@ -134,56 +134,56 @@ Error: Signature mismatch:
          external f : float -> float = "a" "a_nat"
        is not included in
          external f : (float [@unboxed]) -> float = "f" "f_nat"
-Characters 67-72:
+Line 4, characters 14-19:
   external g : (float [@untagged]) -> float = "g" "g_nat";;
                 ^^^^^
 Error: Don't know how to untag this type. Only int can be untagged
-Characters 14-17:
+Line 1, characters 14-17:
   external h : (int [@unboxed]) -> float = "h" "h_nat";;
                 ^^^
 Error: Don't know how to unbox this type. Only float, int32, int64 and nativeint can be unboxed
-Characters 52-64:
+Line 3, characters 13-25:
   external i : int -> float [@unboxed] = "i" "i_nat";;
                ^^^^^^^^^^^^
 Error: Don't know how to unbox this type. Only float, int32, int64 and nativeint can be unboxed
-Characters 61-66:
+Line 3, characters 21-26:
   external j : int -> (float [@unboxed]) * float = "j" "j_nat";;
                        ^^^^^
 Error: The attribute '@unboxed' should be attached to a direct argument or result of the primitive, it should not occur deeply into its type
 external k : int -> float = "k" "k_nat"
-Characters 58-119:
+Line 4, characters 0-61:
   external l : float -> float = "l" "l_nat" "float" [@@unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged]
-Characters 0-62:
+Line 1, characters 0-62:
   external m : (float [@unboxed]) -> float = "m" "m_nat" "float";;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged]
-Characters 0-55:
+Line 1, characters 0-55:
   external n : float -> float = "n" "noalloc" [@@noalloc];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Cannot use "noalloc" in conjunction with [@@noalloc]
-Characters 70-115:
+Line 3, characters 0-45:
   external o : (float[@unboxed]) -> float = "o";;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
-Characters 0-45:
+Line 1, characters 0-45:
   external p : float -> (float[@unboxed]) = "p";;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
-Characters 0-44:
+Line 1, characters 0-44:
   external q : (int[@untagged]) -> float = "q";;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
-Characters 0-42:
+Line 1, characters 0-42:
   external r : int -> (int[@untagged]) = "r";;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
-Characters 0-42:
+Line 1, characters 0-42:
   external s : int -> int = "s" [@@untagged];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
-Characters 0-45:
+Line 1, characters 0-45:
   external t : float -> float = "t" [@@unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present

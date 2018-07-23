@@ -1,12 +1,12 @@
 - : unit = ()
 val f : unit -> 'a = <fun>
-Characters 11-15:
+Line 1, characters 11-15:
   let g () = f (); 1;;
              ^^^^
 Warning 21: this statement never returns (or has an unsound type.)
 val g : unit -> int = <fun>
 Exception: Not_found.
-Raised at file "//toplevel//", line 7, characters 17-26
-Called from file "//toplevel//", line 7, characters 10-14
+Raised at file "//toplevel//", line 2, characters 17-26
+Called from file "//toplevel//", line 1, characters 11-15
 Called from file "toplevel/toploop.ml", line 179, characters 17-27
 
