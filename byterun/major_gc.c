@@ -745,6 +745,7 @@ static int is_complete_phase_sweep_and_mark_main (struct domain *d)
 {
   return
     caml_gc_phase == Phase_sweep_and_mark_main &&
+    atomic_load_acq (&num_domains_to_sweep) == 0 &&
     atomic_load_acq (&num_domains_to_mark) == 0 &&
     /* Marking is done */
     atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
