@@ -54,7 +54,6 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   struct caml_context *ctxt;
 
   stack = caml_alloc(caml_fiber_wsz + caml_params->profile_slop_wsz, Stack_tag);
-  Stack_dirty_domain(stack) = FIBER_CLEAN;
   Stack_handle_value(stack) = hval;
   Stack_handle_exception(stack) = hexn;
   Stack_handle_effect(stack) = heff;
@@ -392,14 +391,6 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
     Stack_debugger_slot_offset_to_parent_slot(new_stack);
 #endif
 
-#if 0
-  Stack_dirty_domain(new_stack) = FIBER_CLEAN;
-  if (Stack_dirty_domain(old_stack) != FIBER_CLEAN) {
-    Assert (Stack_dirty_domain(old_stack) == caml_domain_self());
-    dirty_stack(new_stack);
-  }
-#endif
-
   load_stack(new_stack);
 
   /* Reset old stack */
@@ -466,7 +457,6 @@ CAMLprim value caml_clone_continuation (value cont)
     memcpy((void*)target, (void*)source, sizeof(value) * Stack_ctx_words);
     memcpy(Stack_high(target) - stack_used, Stack_high(source) - stack_used,
            stack_used * sizeof(value));
-    Stack_dirty_domain(target) = FIBER_CLEAN;
 
     if (prev_target == Val_unit) {
       new_cont = caml_bvar_create (target);

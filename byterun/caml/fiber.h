@@ -10,7 +10,6 @@
 
 struct stack_info {
   long sp;
-  struct domain* dirty_domain;
   value handle_value;
   value handle_exn;
   value handle_effect;
@@ -29,7 +28,6 @@ struct stack_info {
 #define Stack_high(stk) ((value*)(((uintnat)stk + sizeof(value) * stk->wosize) & (-1uLL << 4)))
 
 #define Stack_sp(stk) (stk)->sp
-#define Stack_dirty_domain(stk) (stk)->dirty_domain
 #define Stack_handle_value(stk) (stk)->handle_value
 #define Stack_handle_exception(stk) (stk)->handle_exn
 #define Stack_handle_effect(stk) (stk)->handle_effect
