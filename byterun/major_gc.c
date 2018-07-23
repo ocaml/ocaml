@@ -417,7 +417,8 @@ static void mark_stack_push(struct mark_stack* stk, mark_entry e)
 /* to fit scanning_action */
 static void mark_stack_push_act(void* state, value v, value* ignored) {
   mark_entry e = { v, 0, Wosize_val(v) };
-  mark_stack_push(Caml_state->mark_stack, e);
+  if (Tag_val(v) < No_scan_tag && Tag_val(v) != Stack_tag)
+    mark_stack_push(Caml_state->mark_stack, e);
 }
 
 static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
@@ -499,8 +500,9 @@ void caml_darken(void* state, value v, value* ignored) {
       Hd_val(v) = With_status_hd(hd, global.MARKED);
       caml_darken_stack(v);
     } else if (Tag_hd(hd) < No_scan_tag) {
+      mark_entry e = {v, 0, Wosize_val(v)};
       Hd_val(v) = With_status_hd(hd, global.MARKED);
-      mark_stack_push_act(0, v, 0);
+      mark_stack_push(Caml_state->mark_stack, e);
     } else {
       Hd_val(v) = With_status_hd(hd, global.MARKED);
     }
