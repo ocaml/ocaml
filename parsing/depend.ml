@@ -485,7 +485,7 @@ and add_implementation_binding bv l =
 
 and add_top_phrase bv = function
   | Ptop_def str -> add_structure bv str
-  | Ptop_dir (_, _) -> bv
+  | Ptop_dir _ -> bv
 
 and add_class_expr bv ce =
   match ce.pcl_desc with

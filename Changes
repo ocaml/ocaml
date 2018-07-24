@@ -143,6 +143,9 @@ Working version
   (Xavier Clerc, review by Gabriel Scherer, Sébastien Hinderer, and
    Xavier Leroy)
 
+- GPR#1954: Add locations to toplevel directives.
+  (Hugo Heuzard, review by Gabriel Radanne)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.

@@ -870,11 +870,23 @@ and module_binding =
 
 type toplevel_phrase =
   | Ptop_def of structure
-  | Ptop_dir of string * directive_argument
+  | Ptop_dir of toplevel_directive
      (* #use, #load ... *)
 
+and toplevel_directive =
+  {
+    pdir_name : string loc;
+    pdir_arg : directive_argument option;
+    pdir_loc : Location.t;
+  }
+
 and directive_argument =
-  | Pdir_none
+  {
+    pdira_desc : directive_argument_desc;
+    pdira_loc : Location.t;
+  }
+
+and directive_argument_desc =
   | Pdir_string of string
   | Pdir_int of string * char option
   | Pdir_ident of Longident.t

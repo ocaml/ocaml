@@ -766,8 +766,8 @@ and eq_expression : (expression * expression) -> 'result =
      { pexp_desc = b0; pexp_loc = b1 })
     -> (eq_expression_desc (a0, b0)) && (Location.eq_t (a1, b1))
 
-let rec eq_directive_argument :
-  (directive_argument * directive_argument) -> 'result =
+let rec eq_directive_argument_desc :
+  (directive_argument_desc * directive_argument_desc) -> 'result =
   function
   | (Pdir_none, Pdir_none) -> true
   | (Pdir_string a0, Pdir_string b0) -> eq_string (a0, b0)
@@ -775,10 +775,18 @@ let rec eq_directive_argument :
   | (Pdir_ident a0, Pdir_ident b0) -> Longident.eq_t (a0, b0)
   | (Pdir_bool a0, Pdir_bool b0) -> eq_bool (a0, b0)
   | (_, _) -> false
+and eq_directive_argument :
+  (directive_argument * directive_argument) -> 'result =
+  fun
+    ({pdira_desc = a0; pdira_loc = a1},
+     {pdira_desc = b0; pdira_loc = b1})
+    -> (eq_directive_argument_desc (a0, b0)) && (Location.eq_t (a1, b1))
+
 and eq_toplevel_phrase :
   (toplevel_phrase * toplevel_phrase) -> 'result =
   function
   | (Ptop_def a0, Ptop_def b0) -> eq_structure (a0, b0)
-  | (Ptop_dir (a0, a1), Ptop_dir (b0, b1)) ->
-      (eq_string (a0, b0)) && (eq_directive_argument (a1, b1))
+  | (Ptop_dir a0, Ptop_dir a1) ->
+    Asttypes.eq_loc eq_string (a0.pdir_name, b0.pdir_name) &&
+    (eq_directive_argument (a1, b1))
   | (_, _) -> false
