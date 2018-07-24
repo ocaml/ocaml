@@ -20,7 +20,7 @@ UNIXDIR=../otherlibs/$(UNIXLIB)
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 
-CAMLC=$(CAMLRUN) ../ocamlc -nostdlib -I ../stdlib
+CAMLC=$(CAMLRUN) ../ocamlc -g -nostdlib -I ../stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
           -safe-string -strict-sequence -strict-formats
 LINKFLAGS=-linkall -I $(UNIXDIR)
