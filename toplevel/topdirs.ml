@@ -294,7 +294,7 @@ let match_simple_printer_type desc printer_type =
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
     (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance_def desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
   (ty_arg, None)
@@ -312,7 +312,7 @@ let match_generic_printer_type desc path args printer_type =
       ty_args (Ctype.newconstr printer_type [ty_target]) in
   Ctype.unify !toplevel_env
     ty_expected
-    (Ctype.instance_def desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_expected;
   if not (Ctype.all_distinct_vars !toplevel_env args) then

@@ -762,7 +762,7 @@ and class_field_aux self_loc cl_num self_type meths vars
           let meth_type = mk_expected (
             Ctype.newty
               (Tarrow (Nolabel, self_type,
-                       Ctype.instance_def Predef.type_unit, Cok))
+                       Ctype.instance Predef.type_unit, Cok))
           ) in
           vars := vars_local;
           let texp = type_expect met_env expr meth_type in
@@ -1040,7 +1040,7 @@ and class_expr_aux cl_num val_env met_env scl =
       rc {cl_desc = Tcl_fun (l, pat, pv, cl, partial);
           cl_loc = scl.pcl_loc;
           cl_type = Cty_arrow
-            (l, Ctype.instance_def pat.pat_type, cl.cl_type);
+            (l, Ctype.instance pat.pat_type, cl.cl_type);
           cl_env = val_env;
           cl_attributes = scl.pcl_attributes;
          }
@@ -1253,7 +1253,7 @@ let rec approx_declaration cl =
   match cl.pcl_desc with
     Pcl_fun (l, _, _, cl) ->
       let arg =
-        if Btype.is_optional l then Ctype.instance_def var_option
+        if Btype.is_optional l then Ctype.instance var_option
         else Ctype.newvar () in
       Ctype.newty (Tarrow (l, arg, approx_declaration cl, Cok))
   | Pcl_let (_, _, cl) ->
@@ -1266,7 +1266,7 @@ let rec approx_description ct =
   match ct.pcty_desc with
     Pcty_arrow (l, _, ct) ->
       let arg =
-        if Btype.is_optional l then Ctype.instance_def var_option
+        if Btype.is_optional l then Ctype.instance var_option
         else Ctype.newvar () in
       Ctype.newty (Tarrow (l, arg, approx_description ct, Cok))
   | _ -> Ctype.newvar ()
