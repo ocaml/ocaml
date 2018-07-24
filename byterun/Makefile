@@ -141,9 +141,9 @@ install:
 # "using sort to process pathnames, it is recommended that LC_ALL .. set to C"
 
 
-primitives : $(PRIMS)
+primitives.new : $(PRIMS)
 	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" $(PRIMS) \
-	  | LC_ALL=C sort | uniq > primitives
+	  | LC_ALL=C sort | uniq > primitives.new
 
 prims.c : primitives
 	(echo '#define CAML_INTERNALS'; \
@@ -156,6 +156,13 @@ prims.c : primitives
 	 echo 'const char * const caml_names_of_builtin_cprim[] = {'; \
 	 sed -e 's/.*/	"&",/' primitives; \
 	 echo '	 0 };') > prims.c
+
+# To speed up builds, we avoid changing "primitives" when files
+# in PRIMS change but the primitives table does not.
+.PHONY: maybe-update-primitives
+maybe-update-primitives: primitives.new
+	cmp primitives primitives.new || cp primitives.new primitives
+primitives: maybe-update-primitives
 
 caml/opnames.h : caml/instruct.h
 	sed -e '/\/\*/d' \
