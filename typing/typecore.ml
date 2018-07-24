@@ -276,13 +276,13 @@ let iter_expression f e =
 (* Typing of constants *)
 
 let type_constant = function
-    Const_int _ -> instance_def Predef.type_int
-  | Const_char _ -> instance_def Predef.type_char
-  | Const_string _ -> instance_def Predef.type_string
-  | Const_float _ -> instance_def Predef.type_float
-  | Const_int32 _ -> instance_def Predef.type_int32
-  | Const_int64 _ -> instance_def Predef.type_int64
-  | Const_nativeint _ -> instance_def Predef.type_nativeint
+    Const_int _ -> instance Predef.type_int
+  | Const_char _ -> instance Predef.type_char
+  | Const_string _ -> instance Predef.type_string
+  | Const_float _ -> instance Predef.type_float
+  | Const_int32 _ -> instance Predef.type_int32
+  | Const_int64 _ -> instance Predef.type_int64
+  | Const_nativeint _ -> instance Predef.type_nativeint
 
 let constant : Parsetree.constant -> (Asttypes.constant, error) result =
   function
@@ -1370,7 +1370,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
   | Ppat_array spl ->
       let ty_elt = newvar() in
       unify_pat_types
-        loc !env (instance_def (Predef.type_array ty_elt)) expected_ty;
+        loc !env (instance (Predef.type_array ty_elt)) expected_ty;
       map_fold_cont (fun p -> type_pat p ty_elt) spl (fun pl ->
         rp k {
         pat_desc = Tpat_array pl;
@@ -1424,7 +1424,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       end
   | Ppat_lazy sp1 ->
       let nv = newvar () in
-      unify_pat_types loc !env (instance_def (Predef.type_lazy_t nv))
+      unify_pat_types loc !env (instance (Predef.type_lazy_t nv))
         expected_ty;
       (* do not explode under lazy: PR#7421 *)
       type_pat ~explode:0 sp1 nv (fun p1 ->
@@ -2235,7 +2235,7 @@ and type_expect_
       rue {
         exp_desc = Texp_constant cst;
         exp_loc = loc; exp_extra = [];
-        exp_type = instance_def Predef.type_string;
+        exp_type = instance Predef.type_string;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   )
@@ -2594,7 +2594,7 @@ and type_expect_
       rue {
         exp_desc = Texp_setfield(record, label_loc, label, newval);
         exp_loc = loc; exp_extra = [];
-        exp_type = instance_def Predef.type_unit;
+        exp_type = instance Predef.type_unit;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_array(sargl) ->
@@ -2652,7 +2652,7 @@ and type_expect_
       rue {
         exp_desc = Texp_while(cond, body);
         exp_loc = loc; exp_extra = [];
-        exp_type = instance_def Predef.type_unit;
+        exp_type = instance Predef.type_unit;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_for(param, slow, shigh, dir, sbody) ->
@@ -2664,7 +2664,7 @@ and type_expect_
         match param.ppat_desc with
         | Ppat_any -> Ident.create "_for", env
         | Ppat_var {txt} ->
-            Env.enter_value txt {val_type = instance_def Predef.type_int;
+            Env.enter_value txt {val_type = instance Predef.type_int;
                                  val_attributes = [];
                                  val_kind = Val_reg; Types.val_loc = loc; } env
               ~check:(fun s -> Warnings.Unused_for_index s)
@@ -2675,7 +2675,7 @@ and type_expect_
       rue {
         exp_desc = Texp_for(id, param, low, high, dir, body);
         exp_loc = loc; exp_extra = [];
-        exp_type = instance_def Predef.type_unit;
+        exp_type = instance Predef.type_unit;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_constraint (sarg, sty) ->
@@ -2861,7 +2861,7 @@ and type_expect_
               snd (instance_poly false tl ty)
           | {desc = Tvar _} as ty ->
               let ty' = newvar () in
-              unify env (instance_def ty) (newty(Tpoly(ty',[])));
+              unify env (instance ty) (newty(Tpoly(ty',[])));
               (* if not !Clflags.nolabels then
                  Location.prerr_warning loc (Warnings.Unknown_method met); *)
               ty'
@@ -2900,7 +2900,7 @@ and type_expect_
             rue {
               exp_desc = Texp_new (cl_path, cl, cl_decl);
               exp_loc = loc; exp_extra = [];
-              exp_type = instance_def ty;
+              exp_type = instance ty;
               exp_attributes = sexp.pexp_attributes;
               exp_env = env }
         end
@@ -2918,7 +2918,7 @@ and type_expect_
             rue {
               exp_desc = Texp_setinstvar(path_self, path, lab, newval);
               exp_loc = loc; exp_extra = [];
-              exp_type = instance_def Predef.type_unit;
+              exp_type = instance Predef.type_unit;
               exp_attributes = sexp.pexp_attributes;
               exp_env = env }
         | Val_ivar _ ->
@@ -3019,7 +3019,7 @@ and type_expect_
         | Texp_construct(_, {cstr_name="false"}, _) ->
             instance ty_expected
         | _ ->
-            instance_def Predef.type_unit
+            instance Predef.type_unit
       in
       rue {
         exp_desc = Texp_assert cond;
@@ -3188,7 +3188,7 @@ and type_expect_
           rue {
             exp_desc = Texp_extension_constructor (lid, path);
             exp_loc = loc; exp_extra = [];
-            exp_type = instance_def Predef.type_extension_constructor;
+            exp_type = instance Predef.type_extension_constructor;
             exp_attributes = sexp.pexp_attributes;
             exp_env = env }
       | _ ->
@@ -3544,12 +3544,12 @@ and type_label_exp create env loc ty_expected
     generalize_structure ty_res
   end;
   begin try
-    unify env (instance_def ty_res) (instance ty_expected)
+    unify env (instance ty_res) (instance ty_expected)
   with Unify trace ->
     raise (Error(lid.loc, env, Label_mismatch(lid.txt, trace)))
   end;
   (* Instantiate so that we can generalize internal nodes *)
-  let ty_arg = instance_def ty_arg in
+  let ty_arg = instance ty_arg in
   if separate then begin
     end_def ();
     (* Generalize information merged from ty_expected *)
@@ -3917,7 +3917,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
     end_def ();
     generalize_structure ty_res;
     with_explanation explanation (fun () ->
-      unify_exp env {texp with exp_type = instance_def ty_res}
+      unify_exp env {texp with exp_type = instance ty_res}
                     (instance ty_expected));
     end_def ();
     List.iter generalize_structure ty_args;
@@ -3963,7 +3963,7 @@ and type_statement ?explanation env sexp =
   if is_Tvar ty && ty.level > tv.level then
       Location.prerr_warning loc Warnings.Nonreturning_statement;
   if !Clflags.strict_sequence then
-    let expected_ty = instance_def Predef.type_unit in
+    let expected_ty = instance Predef.type_unit in
     with_explanation explanation (fun () ->
       unify_exp env exp expected_ty);
     exp

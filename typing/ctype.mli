@@ -117,8 +117,6 @@ val instance: ?partial:bool -> type_expr -> type_expr
         (* partial=None  -> normal
            partial=false -> newvar() for non generic subterms
            partial=true  -> newty2 ty.level Tvar for non generic subterms *)
-val instance_def: type_expr -> type_expr
-        (* use defaults *)
 val generic_instance: type_expr -> type_expr
         (* Same as instance, but new nodes at generic_level *)
 val instance_list: type_expr list -> type_expr list

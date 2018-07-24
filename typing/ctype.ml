@@ -1089,11 +1089,6 @@ let instance ?partial sch =
   cleanup_types ();
   ty
 
-let instance_def sch =
-  let ty = copy sch in
-  cleanup_types ();
-  ty
-
 let generic_instance sch =
   let old = !current_level in
   current_level := generic_level;
