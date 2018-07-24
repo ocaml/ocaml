@@ -430,43 +430,29 @@ void caml_init_main_stack ()
 
 CAMLprim value caml_clone_continuation (value cont)
 {
-  caml_failwith("broke this");//FIXME
-#if 0
   CAMLparam1(cont);
-  CAMLlocal4(new_cont, prev_target, source, target);
-  intnat bvar_stat;
-  int stack_used;
+  CAMLlocal1(new_cont);
+  intnat stack_used;
+  struct stack_info *source, *orig_source, *target, *ret_stack;
+  struct stack_info **link = &ret_stack;
 
-  bvar_stat = caml_bvar_status(cont);
-  if (bvar_stat & BVAR_EMPTY)
-    caml_invalid_argument ("Obj.clone: continuation already taken");
-
-  prev_target = Val_unit;
-  caml_read_field(cont, 0, &source);
-
+  new_cont = caml_alloc_1(Cont_tag, Val_ptr(NULL));
+  orig_source = source = Ptr_val(caml_continuation_use(cont));
   do {
-    Assert (Is_block (source) && Tag_val(source) == Stack_tag);
-
-    /* Ensure that the stack remains 16-byte aligned. Note: Stack_high
-     * always returns 16-byte aligned down address. */
+    CAMLnoalloc;
     stack_used = -Stack_sp(source);
-    target = caml_alloc (Wosize_val(source), Stack_tag);
-    memcpy((void*)target, (void*)source, sizeof(value) * Stack_ctx_words);
+    target = caml_stat_alloc(sizeof(value) * source->wosize);
+    *target = *source;
     memcpy(Stack_high(target) - stack_used, Stack_high(source) - stack_used,
            stack_used * sizeof(value));
 
-    if (prev_target == Val_unit) {
-      new_cont = caml_bvar_create (target);
-    } else {
-      Stack_parent(prev_target) = target;
-    }
-
-    prev_target = target;
+    *link = target;
+    link = &Stack_parent(target);
     source = Stack_parent(source);
-  } while (source != Val_unit);
-
-  CAMLreturn(new_cont);
-#endif
+  } while (source != NULL);
+  caml_continuation_replace(cont, orig_source);
+  caml_continuation_replace(new_cont, ret_stack);
+  CAMLreturn (new_cont);
 }
 
 void caml_restore_stack()
@@ -501,7 +487,7 @@ CAMLprim value caml_continuation_use (value cont)
   if (Is_young(cont)) {
     stk = Ptr_val(Op_val(cont)[0]);
     Op_val(cont)[0] = Val_ptr(NULL);
-    if (stk == NULL) caml_failwith("Continuation already used");
+    if (stk == NULL) caml_invalid_argument("continuation already taken");
     return Val_ptr(stk);
   } else {
     value v;
@@ -511,7 +497,7 @@ CAMLprim value caml_continuation_use (value cont)
         __sync_bool_compare_and_swap(Op_val(cont), v, Val_ptr(NULL))) {
       return v;
     } else {
-      caml_failwith("Continuation already used");
+      caml_invalid_argument("continuation already taken");
     }
   }
 }
