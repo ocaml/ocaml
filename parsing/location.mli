@@ -96,6 +96,9 @@ val rewrite_absolute_path: string -> string
         variable (https://reproducible-builds.org/specs/build-path-prefix-map/)
         if it is set. *)
 
+val get_build_path_prefix_map: unit -> Build_path_prefix_map.map option
+    (** Returns the map used by [rewrite_absolute_path]. *)
+
 val absolute_path: string -> string
 
 val show_filename: string -> string

@@ -114,6 +114,9 @@ Working version
   and expect tests
   (Armaël Guéneau, review by Thomas Refis, Gabriel Scherer and François Bobot)
 
+- GPR#????: pass the elements from `BUILD_PATH_PREFIX_MAP` to the assembler
+  (Xavier Clerc, review by ???)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.

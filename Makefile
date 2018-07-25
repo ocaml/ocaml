@@ -356,6 +356,7 @@ utils/config.ml: utils/config.mlp config/Makefile Makefile
 	    $(call SUBST,ENABLE_CALL_COUNTS) \
 	    $(call SUBST,FLAT_FLOAT_ARRAY) \
 	    $(call SUBST,CC_HAS_DEBUG_PREFIX_MAP) \
+	    $(call SUBST,AS_HAS_DEBUG_PREFIX_MAP) \
 	    $< > $@
 
 ifeq "$(UNIX_OR_WIN32)" "unix"

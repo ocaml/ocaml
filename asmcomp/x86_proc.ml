@@ -249,7 +249,26 @@ let compile infile outfile =
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
                    (if !Clflags.verbose then "" else ">NUL"))
   else
-    Ccomp.command (Config.asm ^ " -o " ^
+    let debug_prefix_map_switches =
+      if Config.as_has_debug_prefix_map then begin
+        match Location.get_build_path_prefix_map () with
+        | None -> ""
+        | Some map ->
+          let buff = Buffer.create 64 in
+          List.iter
+            (function
+              | None -> ()
+              | Some { Build_path_prefix_map.target; source; } ->
+                Buffer.add_string buff " --debug-prefix-map ";
+                Buffer.add_string buff source;
+                Buffer.add_char buff '=';
+                Buffer.add_string buff target)
+            map;
+          Buffer.contents buff
+      end else
+        ""
+    in
+    Ccomp.command (Config.asm ^ debug_prefix_map_switches ^ " -o " ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 let assemble_file infile outfile =

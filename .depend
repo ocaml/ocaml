@@ -109,7 +109,7 @@ parsing/location.cmo : utils/warnings.cmi utils/terminfo.cmi utils/misc.cmi \
     utils/clflags.cmi utils/build_path_prefix_map.cmi parsing/location.cmi
 parsing/location.cmx : utils/warnings.cmx utils/terminfo.cmx utils/misc.cmx \
     utils/clflags.cmx utils/build_path_prefix_map.cmx parsing/location.cmi
-parsing/location.cmi : utils/warnings.cmi
+parsing/location.cmi : utils/warnings.cmi utils/build_path_prefix_map.cmi
 parsing/longident.cmo : utils/misc.cmi parsing/longident.cmi
 parsing/longident.cmx : utils/misc.cmx parsing/longident.cmi
 parsing/longident.cmi :
@@ -1277,10 +1277,12 @@ asmcomp/x86_masm.cmo : asmcomp/x86_proc.cmi asmcomp/x86_ast.cmi \
 asmcomp/x86_masm.cmx : asmcomp/x86_proc.cmx asmcomp/x86_ast.cmi \
     asmcomp/x86_masm.cmi
 asmcomp/x86_masm.cmi : asmcomp/x86_ast.cmi
-asmcomp/x86_proc.cmo : asmcomp/x86_ast.cmi utils/config.cmi \
-    utils/clflags.cmi utils/ccomp.cmi asmcomp/x86_proc.cmi
-asmcomp/x86_proc.cmx : asmcomp/x86_ast.cmi utils/config.cmx \
-    utils/clflags.cmx utils/ccomp.cmx asmcomp/x86_proc.cmi
+asmcomp/x86_proc.cmo : asmcomp/x86_ast.cmi parsing/location.cmi \
+    utils/config.cmi utils/clflags.cmi utils/ccomp.cmi \
+    utils/build_path_prefix_map.cmi asmcomp/x86_proc.cmi
+asmcomp/x86_proc.cmx : asmcomp/x86_ast.cmi parsing/location.cmx \
+    utils/config.cmx utils/clflags.cmx utils/ccomp.cmx \
+    utils/build_path_prefix_map.cmx asmcomp/x86_proc.cmi
 asmcomp/x86_proc.cmi : asmcomp/x86_ast.cmi
 middle_end/alias_analysis.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \

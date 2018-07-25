@@ -42,7 +42,8 @@ STDLIB_MLIS=\
 STDLIB_MLIS:=$(addprefix $(STDLIB_UNPREFIXED)/, $(STDLIB_MLIS))
 
 # Dependencies for the documented modules
-STDLIB_DEPS:=$(STDLIB_MLIS) \
+STDLIB_DEPS:=$(UTILS_MLIS:$(SRC)/utils/%.mli=$(STDLIB_UNPREFIXED)/%.mli) \
+  $(STDLIB_MLIS) \
   $(TYPING_MLIS:$(SRC)/typing/%.mli=$(STDLIB_UNPREFIXED)/%.mli) \
   $(BYTECOMP_MLIS:$(SRC)/bytecomp/%.mli=$(STDLIB_UNPREFIXED)/%.mli)
 
