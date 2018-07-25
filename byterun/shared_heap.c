@@ -543,7 +543,9 @@ static void verify_object(struct heap_verify_state* st, value v) {
   Assert(Has_status_hd(Hd_val(v), global.UNMARKED));
 
   if (Tag_val(v) == Cont_tag) {
-    caml_scan_stack(verify_push, st, Ptr_val(Op_val(v)[0]));
+    struct stack_info* stk = Ptr_val(Op_val(v)[0]);
+    if (stk != NULL)
+      caml_scan_stack(verify_push, st, stk);
   } else if (Tag_val(v) < No_scan_tag) {
     int i;
     for (i = 0; i < Wosize_val(v); i++) {
