@@ -2,7 +2,7 @@
 include config
 include testing
 binary_modules =
-  "config misc identifiable numbers strongly_connected_components"
+  "config build_path_prefix_map misc identifiable numbers strongly_connected_components"
 * bytecode
 *)
 
