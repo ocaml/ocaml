@@ -217,6 +217,10 @@ Working version
 - MPR#7726, GPR#1676: Recursive modules, equi-recursive types and stack overflow
   (Jacques Garrigue, report by Jeremy Yallop, review by Leo White)
 
+- MPR#7723, GPR#1698: Ensure `with module` and `with type` do not weaken
+  module aliases.
+  (Leo White, review by Gabriel Radanne and Jacques Garrigue)
+
 - GPR#1719: fix Pervasives.LargeFile functions under Windows.
   (Alain Frisch)
 
