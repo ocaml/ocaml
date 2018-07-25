@@ -204,7 +204,8 @@ static void oldify_one (void* st_v, value v, value *p)
     Op_val(result)[0] = Val_ptr(stk);
     Hd_val (v) = 0;
     Op_val(v)[0] = result;
-    caml_scan_stack(&oldify_one, st, stk);
+    if (stk != NULL)
+      caml_scan_stack(&oldify_one, st, stk);
   } else if (tag < Infix_tag) {
     value field0;
     sz = Wosize_hd (hd);
