@@ -98,10 +98,11 @@ void caml_restore_stack();
 void caml_realloc_stack (asize_t required_size, value* save, int nsave);
 void caml_change_max_stack_size (uintnat new_max_size);
 void caml_maybe_expand_stack();
+void caml_free_stack(struct stack_info* stk);
 int  caml_on_current_stack(value*);
 int  caml_running_main_fiber();
 #ifdef NATIVE_CODE
-int caml_switch_stack(struct stack_info* stk);
+int caml_switch_stack(struct stack_info* stk, int should_free);
 #else
 struct stack_info* caml_switch_stack(struct stack_info* stk);
 #endif

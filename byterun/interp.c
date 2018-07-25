@@ -542,7 +542,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         domain_state->extern_sp = sp;
         struct stack_info* old_stack = caml_switch_stack(parent_stack);
         sp = domain_state->extern_sp;
-        Stack_parent(old_stack) = NULL;
+        caml_free_stack(old_stack);
 
         domain_state->trap_sp_off = Long_val(sp[0]);
         extra_args = Long_val(sp[1]);
@@ -961,7 +961,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
           domain_state->extern_sp = sp;
           struct stack_info* old_stack = caml_switch_stack(parent_stack);
           sp = domain_state->extern_sp;
-          Stack_parent(old_stack) = NULL;
+          caml_free_stack(old_stack);
 
           domain_state->trap_sp_off = Long_val(sp[0]);
           extra_args = Long_val(sp[1]);
