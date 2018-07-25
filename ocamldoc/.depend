@@ -9,7 +9,7 @@ odoc_analyse.cmo : ../utils/warnings.cmi ../typing/types.cmi \
     odoc_merge.cmi odoc_global.cmi odoc_dep.cmo odoc_cross.cmi \
     odoc_comments.cmi odoc_class.cmo odoc_ast.cmi ../parsing/location.cmi \
     ../parsing/lexer.cmi ../typing/env.cmi ../utils/config.cmi \
-    ../utils/clflags.cmi odoc_analyse.cmi
+    ../driver/compmisc.cmi ../utils/clflags.cmi odoc_analyse.cmi
 odoc_analyse.cmx : ../utils/warnings.cmx ../typing/types.cmx \
     ../typing/typemod.cmx ../typing/typedtree.cmx ../parsing/syntaxerr.cmx \
     ../driver/pparse.cmx ../parsing/parse.cmx odoc_types.cmx odoc_text.cmx \
@@ -17,20 +17,18 @@ odoc_analyse.cmx : ../utils/warnings.cmx ../typing/types.cmx \
     odoc_merge.cmx odoc_global.cmx odoc_dep.cmx odoc_cross.cmx \
     odoc_comments.cmx odoc_class.cmx odoc_ast.cmx ../parsing/location.cmx \
     ../parsing/lexer.cmx ../typing/env.cmx ../utils/config.cmx \
-    ../utils/clflags.cmx odoc_analyse.cmi
+    ../driver/compmisc.cmx ../utils/clflags.cmx odoc_analyse.cmi
 odoc_analyse.cmi : odoc_module.cmo odoc_global.cmi
 odoc_args.cmo : ../utils/warnings.cmi odoc_types.cmi odoc_texi.cmo \
     odoc_messages.cmo odoc_man.cmo odoc_latex.cmo odoc_html.cmo \
     odoc_global.cmi odoc_gen.cmi odoc_dot.cmo odoc_config.cmi \
-    ../utils/misc.cmi ../driver/main_args.cmi ../parsing/location.cmi \
-    ../utils/config.cmi ../driver/compenv.cmi ../utils/clflags.cmi \
-    odoc_args.cmi
+    ../driver/main_args.cmi ../utils/config.cmi ../driver/compenv.cmi \
+    ../utils/clflags.cmi odoc_args.cmi
 odoc_args.cmx : ../utils/warnings.cmx odoc_types.cmx odoc_texi.cmx \
     odoc_messages.cmx odoc_man.cmx odoc_latex.cmx odoc_html.cmx \
     odoc_global.cmx odoc_gen.cmx odoc_dot.cmx odoc_config.cmx \
-    ../utils/misc.cmx ../driver/main_args.cmx ../parsing/location.cmx \
-    ../utils/config.cmx ../driver/compenv.cmx ../utils/clflags.cmx \
-    odoc_args.cmi
+    ../driver/main_args.cmx ../utils/config.cmx ../driver/compenv.cmx \
+    ../utils/clflags.cmx odoc_args.cmi
 odoc_args.cmi : odoc_gen.cmi
 odoc_ast.cmo : ../typing/types.cmi ../typing/typedtree.cmi \
     ../typing/predef.cmi ../typing/path.cmi ../parsing/parsetree.cmi \
