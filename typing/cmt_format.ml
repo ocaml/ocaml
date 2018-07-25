@@ -112,28 +112,29 @@ let output_cmt oc cmt =
 let read filename =
 (*  Printf.fprintf stderr "Cmt_format.read %s\n%!" filename; *)
   let ic = open_in_bin filename in
-  Misc.try_finally (fun () ->
-      let magic_number = read_magic_number ic in
-      let cmi, cmt =
-        if magic_number = Config.cmt_magic_number then
-          None, Some (input_cmt ic)
-        else if magic_number = Config.cmi_magic_number then
-          let cmi = Cmi_format.input_cmi ic in
-          let cmt = try
-              let magic_number = read_magic_number ic in
-              if magic_number = Config.cmt_magic_number then
-                let cmt = input_cmt ic in
-                Some cmt
-              else None
-            with _ -> None
-          in
-          Some cmi, cmt
-        else
-          raise(Cmi_format.Error(Cmi_format.Not_an_interface filename))
-      in
-      cmi, cmt
-    )
+  Misc.try_finally
     ~always:(fun () -> close_in ic)
+    (fun () ->
+       let magic_number = read_magic_number ic in
+       let cmi, cmt =
+         if magic_number = Config.cmt_magic_number then
+           None, Some (input_cmt ic)
+         else if magic_number = Config.cmi_magic_number then
+           let cmi = Cmi_format.input_cmi ic in
+           let cmt = try
+               let magic_number = read_magic_number ic in
+               if magic_number = Config.cmt_magic_number then
+                 let cmt = input_cmt ic in
+                 Some cmt
+               else None
+             with _ -> None
+           in
+           Some cmi, cmt
+         else
+           raise(Cmi_format.Error(Cmi_format.Not_an_interface filename))
+       in
+       cmi, cmt
+    )
 
 let read_cmt filename =
   match read filename with

@@ -103,14 +103,15 @@ let implementation ppf sourcefile outputprefix =
           in
           let objfile = outputprefix ^ ".cmo" in
           let oc = open_out_bin objfile in
-          Misc.try_finally (fun () ->
-              bytecode
-              ++ Profile.(record ~accumulate:true generate)
-                (Emitcode.to_file oc modulename objfile ~required_globals);
-              Warnings.check_fatal ()
-            )
+          Misc.try_finally
             ~always:(fun () -> close_out oc)
             ~exceptionally:(fun () -> remove_file objfile)
+            (fun () ->
+               bytecode
+               ++ Profile.(record ~accumulate:true generate)
+                 (Emitcode.to_file oc modulename objfile ~required_globals);
+               Warnings.check_fatal ()
+            )
         end
       )
       ~always:(fun () -> Stypes.dump (Some (outputprefix ^ ".annot")))

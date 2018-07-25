@@ -202,20 +202,10 @@ let generate_equations = ref false
 let assume_injective = ref false
 
 let set_mode_pattern ~generate ~injective f =
-  let old_unification_mode = !umode
-  and old_gen = !generate_equations
-  and old_inj = !assume_injective in
-  Misc.try_finally (fun () ->
-      umode := Pattern;
-      generate_equations := generate;
-      assume_injective := injective;
-      f ()
-    )
-    ~always:(fun () ->
-        umode := old_unification_mode;
-        generate_equations := old_gen;
-        assume_injective := old_inj
-      )
+  Misc.protect_refs
+    [Misc.R (umode, Pattern);
+     Misc.R (generate_equations, generate);
+     Misc.R (assume_injective, injective)] f
 
 (*** Checks for type definitions ***)
 
@@ -3418,10 +3408,9 @@ and eqtype_row rename type_pairs subst env row1 row2 =
 let eqtype_list rename type_pairs subst env tl1 tl2 =
   univar_pairs := [];
   let snap = Btype.snapshot () in
-  Misc.try_finally (fun () ->
-      eqtype_list rename type_pairs subst env tl1 tl2
-    )
+  Misc.try_finally
     ~always:(fun () -> backtrack snap)
+    (fun () -> eqtype_list rename type_pairs subst env tl1 tl2)
 
 let eqtype rename type_pairs subst env t1 t2 =
   eqtype_list rename type_pairs subst env [t1] [t2]

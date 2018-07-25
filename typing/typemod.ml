@@ -2090,8 +2090,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           in
           Typecore.force_delayed_checks ();
           (* It is important to run these checks after the inclusion test above,
-             so that value declarations which are not used internally but exported
-             are not reported as being unused. *)
+             so that value declarations which are not used internally but
+             exported are not reported as being unused. *)
           Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
             (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
           (str, coercion)

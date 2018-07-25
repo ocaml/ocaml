@@ -159,10 +159,9 @@ let rec load_file recursive ppf name =
   | None -> fprintf ppf "Cannot find file %s.@." name; false
   | Some filename ->
       let ic = open_in_bin filename in
-      Misc.try_finally (fun () ->
-          really_load_file recursive ppf name filename ic
-        )
+      Misc.try_finally
         ~always:(fun () -> close_in ic)
+        (fun () -> really_load_file recursive ppf name filename ic)
 
 and really_load_file recursive ppf name filename ic =
   let buffer = really_input_string ic (String.length Config.cmo_magic_number) in

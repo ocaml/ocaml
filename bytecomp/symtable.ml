@@ -164,26 +164,28 @@ let init () =
   (* Initialize the known C primitives *)
   let set_prim_table_from_file primfile =
     let ic = open_in primfile in
-    Misc.try_finally (fun () ->
-        try
-          while true do
-            set_prim_table (input_line ic)
-          done
-        with End_of_file -> ()
-      )
+    Misc.try_finally
       ~always:(fun () -> close_in ic)
+      (fun () ->
+         try
+           while true do
+             set_prim_table (input_line ic)
+           done
+         with End_of_file -> ()
+      )
   in
   if String.length !Clflags.use_prims > 0 then
     set_prim_table_from_file !Clflags.use_prims
   else if String.length !Clflags.use_runtime > 0 then begin
     let primfile = Filename.temp_file "camlprims" "" in
-    Misc.try_finally (fun () ->
-        if Sys.command(Printf.sprintf "%s -p > %s"
-                         !Clflags.use_runtime primfile) <> 0
-        then raise(Error(Wrong_vm !Clflags.use_runtime));
-        set_prim_table_from_file primfile
-      )
+    Misc.try_finally
       ~always:(fun () -> remove_file primfile)
+      (fun () ->
+         if Sys.command(Printf.sprintf "%s -p > %s"
+                          !Clflags.use_runtime primfile) <> 0
+         then raise(Error(Wrong_vm !Clflags.use_runtime));
+         set_prim_table_from_file primfile
+      )
   end else begin
     Array.iter set_prim_table Runtimedef.builtin_primitives
   end

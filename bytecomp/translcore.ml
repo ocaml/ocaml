@@ -838,7 +838,8 @@ and transl_match e arg pat_expr_list partial =
         let rhs =
           Misc.try_finally
             (fun () -> event_before c_rhs (transl_exp c_rhs))
-            ~always:(fun () -> iter_exn_names Translprim.remove_exception_ident pe)
+            ~always:(fun () ->
+                iter_exn_names Translprim.remove_exception_ident pe)
         in
         (pv, static_raise vids) :: val_cases,
         (pe, static_raise ids) :: exn_cases,

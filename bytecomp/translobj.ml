@@ -171,34 +171,28 @@ let oo_add_class id =
 let oo_wrap env req f x =
   if !wrapping then
     if !cache_required then f x else
-      Misc.try_finally (fun () ->
-          cache_required := true;
+      Misc.protect_refs [Misc.R (cache_required, true)] (fun () ->
           f x
         )
-        ~always:(fun () -> cache_required := false)
   else
-    Misc.try_finally (fun () ->
-        wrapping := true;
-        cache_required := req;
-        top_env := env;
-        classes := [];
-        method_ids := Ident.Set.empty;
-        let lambda = f x in
-        let lambda =
-          List.fold_left
-            (fun lambda id ->
-               Llet(StrictOpt, Pgenval, id,
-                    Lprim(Pmakeblock(0, Mutable, None),
-                          [lambda_unit; lambda_unit; lambda_unit],
-                          Location.none),
-                    lambda))
-            lambda !classes
-        in
-        lambda
+    Misc.protect_refs [Misc.R (wrapping, true); Misc.R (top_env, env)]
+      (fun () ->
+         cache_required := req;
+         classes := [];
+         method_ids := Ident.Set.empty;
+         let lambda = f x in
+         let lambda =
+           List.fold_left
+             (fun lambda id ->
+                Llet(StrictOpt, Pgenval, id,
+                     Lprim(Pmakeblock(0, Mutable, None),
+                           [lambda_unit; lambda_unit; lambda_unit],
+                           Location.none),
+                     lambda))
+             lambda !classes
+         in
+         lambda
       )
-      ~always:(fun () ->
-          wrapping := false;
-          top_env := Env.empty)
 
 let reset () =
   Hashtbl.clear consts;

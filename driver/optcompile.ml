@@ -78,68 +78,67 @@ let implementation ~backend ppf sourcefile outputprefix =
     Compilenv.reset ?packname:!Clflags.for_package modulename;
     let cmxfile = outputprefix ^ ".cmx" in
     let objfile = outputprefix ^ ext_obj in
-    let comp ast =
-      let (typedtree, coercion) =
-        ast
-        ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-        ++ print_if ppf Clflags.dump_source Pprintast.structure
-        ++ Profile.(record typing)
-            (Typemod.type_implementation sourcefile outputprefix modulename env)
-        ++ print_if ppf Clflags.dump_typedtree
-            Printtyped.implementation_with_coercion
-      in
-      if not !Clflags.print_types then begin
-        if Config.flambda then begin
-          if !Clflags.classic_inlining then begin
-            Clflags.default_simplify_rounds := 1;
-            Clflags.use_inlining_arguments_set Clflags.classic_arguments;
-            Clflags.unbox_free_vars_of_closures := false;
-            Clflags.unbox_specialised_args := false
-          end;
-          (typedtree, coercion)
-          ++ Profile.(record transl)
-              (Translmod.transl_implementation_flambda modulename)
-          ++ Profile.(record generate)
-            (fun { Lambda.module_ident; main_module_block_size;
-                   required_globals; code } ->
-            ((module_ident, main_module_block_size), code)
-            +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
-            +++ Simplif.simplify_lambda sourcefile
-            +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-            ++ (fun ((module_ident, size), lam) ->
-                Middle_end.middle_end ppf
-                  ~prefixname:outputprefix
-                  ~size
-                  ~filename:sourcefile
-                  ~module_ident
-                  ~backend
-                  ~module_initializer:lam)
-            ++ Asmgen.compile_implementation_flambda
-              outputprefix ~required_globals ~backend ppf;
-            Compilenv.save_unit_info cmxfile)
-        end
-        else begin
-          Clflags.use_inlining_arguments_set Clflags.classic_arguments;
-          (typedtree, coercion)
-          ++ Profile.(record transl)
-              (Translmod.transl_store_implementation modulename)
-          ++ print_if ppf Clflags.dump_rawlambda Printlambda.program
-          ++ Profile.(record generate)
-              (fun program ->
-                { program with
-                  Lambda.code = Simplif.simplify_lambda sourcefile
-                    program.Lambda.code }
-                ++ print_if ppf Clflags.dump_lambda Printlambda.program
-                ++ Asmgen.compile_implementation_clambda
-                  outputprefix ppf;
-                Compilenv.save_unit_info cmxfile)
-        end
-      end;
-      Warnings.check_fatal ()
-    in
-    Misc.try_finally (fun () ->
-        comp (Pparse.parse_implementation ~tool_name sourcefile)
+    Misc.try_finally
+      ~exceptionally:(fun () -> remove_file objfile; remove_file cmxfile)
+      (fun () ->
+         let (typedtree, coercion) =
+           Pparse.parse_implementation ~tool_name sourcefile
+           ++ print_if ppf Clflags.dump_parsetree Printast.implementation
+           ++ print_if ppf Clflags.dump_source Pprintast.structure
+           ++ Profile.(record typing)
+             (Typemod.type_implementation sourcefile outputprefix
+                modulename env)
+           ++ print_if ppf Clflags.dump_typedtree
+             Printtyped.implementation_with_coercion
+         in
+         if not !Clflags.print_types then begin
+           if Config.flambda then begin
+             if !Clflags.classic_inlining then begin
+               Clflags.default_simplify_rounds := 1;
+               Clflags.use_inlining_arguments_set Clflags.classic_arguments;
+               Clflags.unbox_free_vars_of_closures := false;
+               Clflags.unbox_specialised_args := false
+             end;
+             (typedtree, coercion)
+             ++ Profile.(record transl)
+               (Translmod.transl_implementation_flambda modulename)
+             ++ Profile.(record generate)
+               (fun { Lambda.module_ident; main_module_block_size;
+                      required_globals; code } ->
+                 ((module_ident, main_module_block_size), code)
+                 +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+                 +++ Simplif.simplify_lambda sourcefile
+                 +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+                 ++ (fun ((module_ident, size), lam) ->
+                     Middle_end.middle_end ppf
+                       ~prefixname:outputprefix
+                       ~size
+                       ~filename:sourcefile
+                       ~module_ident
+                       ~backend
+                       ~module_initializer:lam)
+                 ++ Asmgen.compile_implementation_flambda
+                   outputprefix ~required_globals ~backend ppf;
+                 Compilenv.save_unit_info cmxfile)
+           end
+           else begin
+             Clflags.use_inlining_arguments_set Clflags.classic_arguments;
+             (typedtree, coercion)
+             ++ Profile.(record transl)
+               (Translmod.transl_store_implementation modulename)
+             ++ print_if ppf Clflags.dump_rawlambda Printlambda.program
+             ++ Profile.(record generate)
+               (fun program ->
+                  { program with
+                    Lambda.code = Simplif.simplify_lambda sourcefile
+                        program.Lambda.code }
+                  ++ print_if ppf Clflags.dump_lambda Printlambda.program
+                  ++ Asmgen.compile_implementation_clambda
+                    outputprefix ppf;
+                  Compilenv.save_unit_info cmxfile)
+           end
+         end;
+         Warnings.check_fatal ()
       )
       ~always:(fun () -> Stypes.dump (Some (outputprefix ^ ".annot")))
-      ~exceptionally:(fun () -> remove_file objfile; remove_file cmxfile)
   )
