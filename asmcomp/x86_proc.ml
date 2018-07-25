@@ -249,7 +249,7 @@ let compile infile outfile =
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
                    (if !Clflags.verbose then "" else ">NUL"))
   else
-    let debug_prefix_map_switches =
+    let debug_prefix_map_flags =
       if not Config.as_has_debug_prefix_map then
         ""
       else begin
@@ -269,7 +269,7 @@ let compile infile outfile =
           Buffer.contents buff
       end
     in
-    Ccomp.command (Config.asm ^ debug_prefix_map_switches ^ " -o " ^
+    Ccomp.command (Config.asm ^ debug_prefix_map_flags ^ " -o " ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 let assemble_file infile outfile =
