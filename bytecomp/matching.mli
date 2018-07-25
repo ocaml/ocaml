@@ -26,7 +26,7 @@ val for_function:
 val for_trywith:
         lambda -> (pattern * lambda) list -> lambda
 val for_handler:
-        lambda -> lambda -> (pattern * lambda) list -> lambda
+        lambda -> lambda -> lambda -> (pattern * lambda) list -> lambda
 val for_let:
         Location.t -> lambda -> pattern -> lambda -> lambda
 val for_multiple_match:

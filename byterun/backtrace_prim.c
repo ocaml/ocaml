@@ -369,11 +369,9 @@ CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
   stack = Ptr_val(caml_continuation_use(cont));
   {
     CAMLnoalloc; /* GC must not see the stack outside the cont */
-    stack = caml_reverse_fiber_stack(stack);
     sp = Stack_high(stack) + Stack_sp(stack);
     get_callstack(sp, Long_val(sp[0]), stack, Long_val(max_frames),
                   &trace, &trace_len);
-    stack = caml_reverse_fiber_stack(stack);
     caml_continuation_replace(cont, stack);
   }
 

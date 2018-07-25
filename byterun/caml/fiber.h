@@ -81,8 +81,6 @@ struct stack_info {
   (sizeof(value) * ((Stack_high(stk) - (value*)stk) - 2 - Stack_parent_offset))
 #endif
 
-struct stack_info* caml_find_performer(struct stack_info* stack);
-
 /* The table of global identifiers */
 extern caml_root caml_global_data;
 
