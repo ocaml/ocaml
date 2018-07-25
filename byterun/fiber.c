@@ -177,10 +177,13 @@ void caml_update_gc_regs_slot (value* gc_regs)
 
 /* Returns 1 if the target stack is a fresh stack to which control is switching
  * to. */
-int caml_switch_stack(struct stack_info* stk)
+int caml_switch_stack(struct stack_info* stk, int should_free)
 {
+  struct stack_info* old = Caml_state->current_stack;
   save_stack();
   load_stack(stk);
+  if (should_free)
+    caml_free_stack(old);
   if (Stack_sp(stk) == -INIT_FIBER_USED)
     return 1;
   return 0;
@@ -388,10 +391,8 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
     Stack_debugger_slot_offset_to_parent_slot(new_stack);
 #endif
 
+  caml_free_stack(old_stack);
   load_stack(new_stack);
-
-  /* Reset old stack */
-  Stack_sp(old_stack) = 0;
 
   CAMLreturn0;
 }
@@ -426,6 +427,14 @@ void caml_init_main_stack ()
   stack = caml_alloc_main_stack (caml_params->profile_slop_wsz +
                             Stack_size/sizeof(value));
   load_stack(stack);
+}
+
+void caml_free_stack (struct stack_info* stack)
+{
+#ifdef DEBUG
+  memset(stack, 0x42, sizeof(value) * stack->wosize);
+#endif
+  caml_stat_free(stack);
 }
 
 CAMLprim value caml_clone_continuation (value cont)

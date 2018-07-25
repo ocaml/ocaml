@@ -228,6 +228,23 @@
         ENTER_FUNCTION; \
     /* Call switch stack */ \
         PREPARE_FOR_C_CALL; \
+        movq    $0, %rsi; \
+        call    GCALL(caml_switch_stack); \
+        CLEANUP_AFTER_C_CALL; \
+    /* Load ocaml stack and restore global variables */ \
+        LEAVE_FUNCTION; \
+        SWITCH_C_TO_OCAML(%r10)
+
+/* Switch between OCaml stacks and free the current one.
+ * arguments : target stack (%rdi)
+ * preserves : %rbx, %r12, %r13 */
+#define SWITCH_OCAML_STACKS_AND_FREE \
+    /* Switch from OCaml to C */ \
+        SWITCH_OCAML_TO_C(%r10); \
+        ENTER_FUNCTION; \
+    /* Call switch stack */ \
+        PREPARE_FOR_C_CALL; \
+        movq    $1, %rsi; \
         call    GCALL(caml_switch_stack); \
         CLEANUP_AFTER_C_CALL; \
     /* Load ocaml stack and restore global variables */ \
@@ -1039,7 +1056,7 @@ CFI_STARTPROC
         movq    Stack_handle_exception(%rsi), %r12  /* exception handler */
         movq    Stack_parent(%rsi), %rdi            /* parent stack. Never NULL here. */
     /* Switch stacks */
-        SWITCH_OCAML_STACKS
+        SWITCH_OCAML_STACKS_AND_FREE
     /* Invoke exception handler */
         movq    %rbx, %rax        /* First argument */
         movq    %r12, %rbx        /* Second argument */
@@ -1060,7 +1077,7 @@ LBL(111):
         popq    %r10; CFI_ADJUST(-8)
         popq    %r10; CFI_ADJUST(-8)
     /* Switch stacks */
-        SWITCH_OCAML_STACKS
+        SWITCH_OCAML_STACKS_AND_FREE
     /* Invoke value handler */
         movq    %rbx, %rax        /* First argument */
         movq    %r12, %rbx        /* Second argument */
