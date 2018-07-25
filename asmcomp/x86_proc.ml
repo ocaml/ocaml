@@ -250,7 +250,9 @@ let compile infile outfile =
                    (if !Clflags.verbose then "" else ">NUL"))
   else
     let debug_prefix_map_switches =
-      if Config.as_has_debug_prefix_map then begin
+      if not Config.as_has_debug_prefix_map then
+        ""
+      else begin
         match Location.get_build_path_prefix_map () with
         | None -> ""
         | Some map ->
@@ -265,8 +267,7 @@ let compile infile outfile =
                 Buffer.add_string buff target)
             map;
           Buffer.contents buff
-      end else
-        ""
+      end
     in
     Ccomp.command (Config.asm ^ debug_prefix_map_switches ^ " -o " ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile)
