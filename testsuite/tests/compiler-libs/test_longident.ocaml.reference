@@ -1,0 +1,85 @@
+module L = Longident
+module Examples :
+  sig
+    val foo : L.t
+    val _M : L.t
+    val _M_foo : L.t
+    val _M_N : L.t
+    val _M_N_foo : L.t
+    val _F : L.t
+    val _X : L.t
+    val _F_X : L.t
+    val complex : L.t
+    val all : L.t list
+    val all_noapp : L.t list
+  end
+val roundtrip : ('a -> 'b) -> ('b -> 'a) -> 'b -> bool * 'b * 'b = <fun>
+val roundtrip_opt :
+  ('a -> 'b option) -> ('b -> 'a) -> 'b -> bool * 'b * 'b option = <fun>
+val section : string -> unit = <fun>
+
+Longident.flatten
+- : unit = ()
+val flatten_ident : string list = ["foo"]
+val flatten_dot : string list = ["M"; "foo"]
+>> Fatal error: Longident.flat
+Exception: Misc.Fatal_error.
+
+Longident.unflatten
+- : unit = ()
+val unflatten_empty : L.t option = None
+val unflatten_sing : L.t option = Some (L.Lident "foo")
+val unflatten_dot : L.t option =
+  Some (L.Ldot (L.Ldot (L.Lident "M", "N"), "foo"))
+val unflatten_flatten : (bool * L.t * L.t option) list =
+  [(true, L.Lident "foo", Some (L.Lident "foo"));
+   (true, L.Ldot (L.Lident "M", "foo"), Some (L.Ldot (L.Lident "M", "foo")));
+   (true, L.Ldot (L.Lident "M", "N"), Some (L.Ldot (L.Lident "M", "N")));
+   (true, L.Ldot (L.Ldot (L.Lident "M", "N"), "foo"),
+    Some (L.Ldot (L.Ldot (L.Lident "M", "N"), "foo")))]
+
+Longident.last
+- : unit = ()
+val last_ident : string = "foo"
+val last_dot : string = "foo"
+>> Fatal error: Longident.last
+Exception: Misc.Fatal_error.
+val last_dot_apply : L.t =
+  L.Ldot (L.Lapply (L.Lident "F", L.Lident "X"), "foo")
+
+Longident.parse
+- : unit = ()
+val parse_empty : L.t = L.Lident ""
+val parse_ident : L.t = L.Lident "foo"
+val parse_dot : L.t = L.Ldot (L.Lident "M", "foo")
+val parse_path : L.t = L.Ldot (L.Ldot (L.Lident "M", "N"), "foo")
+val parse_complex : L.t =
+  L.Ldot (L.Ldot (L.Ldot (L.Lident "F(M", "N)"), "N"), "foo")
+
+Longident.to_string
+- : unit = ()
+val to_string_ident : string = "foo"
+val to_string_dot : string = "M.foo"
+val to_string_apply : string = "F(X)"
+val to_string_dot_apply : string = "F(X).foo"
+val parse_to_string : (bool * L.t * L.t) list =
+  [(true, L.Lident "foo", L.Lident "foo");
+   (true, L.Ldot (L.Lident "M", "foo"), L.Ldot (L.Lident "M", "foo"));
+   (true, L.Ldot (L.Lident "M", "N"), L.Ldot (L.Lident "M", "N"));
+   (true, L.Ldot (L.Ldot (L.Lident "M", "N"), "foo"),
+    L.Ldot (L.Ldot (L.Lident "M", "N"), "foo"))]
+
+Longident.pp
+- : unit = ()
+val test : L.t -> string = <fun>
+val pp_ident : string = "foo"
+val pp_dot : string = "M.foo"
+val pp_apply : string = "F(X)"
+val pp_dot_apply : string = "F(X).foo"
+val parse_pp : (bool * L.t * L.t) list =
+  [(true, L.Lident "foo", L.Lident "foo");
+   (true, L.Ldot (L.Lident "M", "foo"), L.Ldot (L.Lident "M", "foo"));
+   (true, L.Ldot (L.Lident "M", "N"), L.Ldot (L.Lident "M", "N"));
+   (true, L.Ldot (L.Ldot (L.Lident "M", "N"), "foo"),
+    L.Ldot (L.Ldot (L.Lident "M", "N"), "foo"))]
+

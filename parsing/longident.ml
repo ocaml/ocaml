@@ -47,3 +47,15 @@ let parse s =
   | None -> Lident ""  (* should not happen, but don't put assert false
                           so as not to crash the toplevel (see Genprintval) *)
   | Some v -> v
+
+let to_string lid =
+  let rec print lid acc = match lid with
+    | Lident s -> s::acc
+    | Ldot (lid, id) -> print lid ("." :: id :: acc)
+    | Lapply (la, lb) -> print la ("(" :: print lb (")" :: acc))
+  in String.concat "" (print lid [])
+
+let rec pp ppf = function
+  | Lident s -> Format.pp_print_string ppf s
+  | Ldot(p, s) -> Format.fprintf ppf "%a.%s" pp p s
+  | Lapply(p1, p2) -> Format.fprintf ppf "%a(%a)" pp p1 pp p2

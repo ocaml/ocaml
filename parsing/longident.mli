@@ -24,3 +24,6 @@ val flatten: t -> string list
 val unflatten: string list -> t option
 val last: t -> string
 val parse: string -> t
+
+val pp: Format.formatter -> t -> unit
+val to_string: t -> string

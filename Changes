@@ -215,6 +215,9 @@ Working version
 - GPR#1886: move the Location.absname reference to Clflags.absname
   (Armaël Guéneau, review by Jérémie Dimino)
 
+- GPR#1918: Longident.to_string
+  (Gabriel Scherer, review by Florian Angeletti and Gabriel Radanne)
+
 ### Bug fixes:
 
 - MPR#7726, GPR#1676: Recursive modules, equi-recursive types and stack overflow
