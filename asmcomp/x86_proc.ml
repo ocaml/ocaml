@@ -253,7 +253,7 @@ let compile infile outfile =
       if not Config.as_has_debug_prefix_map then
         ""
       else begin
-        match Location.get_build_path_prefix_map () with
+        match Misc.get_build_path_prefix_map () with
         | None -> ""
         | Some map ->
           let buff = Buffer.create 64 in

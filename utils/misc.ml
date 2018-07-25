@@ -769,3 +769,21 @@ let show_config_variable_and_exit x =
       exit 0
   | None ->
       exit 2
+
+let get_build_path_prefix_map =
+  let init = ref false in
+  let map_cache = ref None in
+  fun () ->
+    if not !init then begin
+      init := true;
+      match Sys.getenv "BUILD_PATH_PREFIX_MAP" with
+      | exception Not_found -> ()
+      | encoded_map ->
+        match Build_path_prefix_map.decode_map encoded_map with
+          | Error err ->
+              fatal_errorf
+                "Invalid value for the environment variable \
+                 BUILD_PATH_PREFIX_MAP: %s" err
+          | Ok map -> map_cache := Some map
+    end;
+    !map_cache
