@@ -152,6 +152,9 @@ Working version
 - GPR#1831: move the local exceptions and exception cases to the main chapters.
   (Florian Angeletti, review by Perry E. Metzger and Jeremy Yallop)
 
+- GPR#1863: caml-tex2, move to compiler-libs
+  (Florian Angeletti, review by Sébastien Hinderer and Gabriel Scherer)
+
 ### Compiler distribution build system:
 
 - GPR#1776: add -no-install-bytecode-programs and related configure options to
