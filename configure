@@ -1909,7 +1909,7 @@ asm_cfi_supported=false
 
 export as aspp
 
-if $as --debug-prefix-map old=new simple.S; then
+if $as --debug-prefix-map old=new simple.S 2> /dev/null; then
     as_has_debug_prefix_map=true
 else
     as_has_debug_prefix_map=false
