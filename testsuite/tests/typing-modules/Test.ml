@@ -103,9 +103,9 @@ Error: This variant or record definition does not match that of type u
 
 module type S = sig exception Foo of int  exception Foo of bool end;;
 [%%expect{|
-Line 1, characters 52-55:
+Line 1, characters 42-63:
   module type S = sig exception Foo of int  exception Foo of bool end;;
-                                                      ^^^
+                                            ^^^^^^^^^^^^^^^^^^^^^
 Error: Multiple definition of the extension constructor name Foo.
        Names must be unique in a given structure or signature.
 |}];;
