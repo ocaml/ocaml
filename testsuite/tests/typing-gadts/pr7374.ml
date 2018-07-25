@@ -21,7 +21,7 @@ end = struct
     fun Refl -> Refl
 end;; (* should fail *)
 [%%expect{|
-Line _, characters 16-20:
+Line 7, characters 16-20:
       fun Refl -> Refl
                   ^^^^
 Error: This expression has type (a, a) eq
@@ -47,7 +47,7 @@ module F (X : sig type 'a t end) = struct
     fun Refl Refl -> Refl;;
 end;; (* should fail *)
 [%%expect{|
-Line _, characters 21-25:
+Line 4, characters 21-25:
       fun Refl Refl -> Refl;;
                        ^^^^
 Error: This expression has type (a, a) eq

@@ -1,7 +1,7 @@
 module type S = sig type t end
 module N : sig type 'a t = 'a end
 val f : (module S with type t = unit) -> unit = <fun>
-Characters 19-20:
+Line 1, characters 19-20:
   let () = f (module N);;
                      ^
 Error: Signature mismatch:

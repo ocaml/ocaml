@@ -28,7 +28,7 @@ let y =
   | `Foo -> assert false
 ;;
 [%%expect{|
-Line _, characters 8-41:
+Line 2, characters 8-41:
     match (M.bar :> [ `Bar of M.t | `Foo ]) with
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type M.t is not a subtype of [ `Bar of M.t | `Foo ]
@@ -72,7 +72,7 @@ let y =
   | `Foo -> assert false
 ;;
 [%%expect{|
-Line _, characters 8-48:
+Line 2, characters 8-48:
     match (N.from M.bar :> [ `Bar of N.s | `Foo ]) with
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type N.s is not a subtype of [ `Bar of N.s | `Foo ]

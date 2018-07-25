@@ -20,7 +20,7 @@ else `Right ()) xs
 val partition_map :
   ('a -> [< `Left of 'b | `Right of 'c ]) -> 'a list -> 'b list * 'c list =
   <fun>
-Line _, characters 35-96:
+Line 12, characters 35-96:
   ...................................partition_map (fun x -> if x then `Left ()
   else `Right ()) xs
 Error: This expression has type unit list * unit list

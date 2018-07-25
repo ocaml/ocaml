@@ -1,6 +1,6 @@
 module A : sig val f : fpclass -> fpclass end
 type fpclass = A
-Characters 49-85:
+Line 3, characters 2-38:
   ..struct
       let f A = FP_normal
     end

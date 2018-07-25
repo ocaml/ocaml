@@ -1,8 +1,8 @@
-Characters 84-90:
+Line 5, characters 58-64:
   let rec r = let rec x () = r and y () = x () in y () in r "oops";;
                                                             ^^^^^^
 Warning 20: this argument will not be used by the function.
-Characters 38-78:
+Line 5, characters 12-52:
   let rec r = let rec x () = r and y () = x () in y () in r "oops";;
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'

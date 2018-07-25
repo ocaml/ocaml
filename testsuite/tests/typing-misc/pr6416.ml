@@ -12,7 +12,7 @@ module M = struct
   end
 end;;
 [%%expect{|
-Line _, characters 8-52:
+Line 5, characters 8-52:
   ........struct
       type t = B
       let f B = ()
@@ -26,11 +26,11 @@ Error: Signature mismatch:
          val f : t/1 -> unit
        is not included in
          val f : t/2 -> unit
-       Line _, characters 4-14:
+       Line 6, characters 4-14:
       type t = B
       ^^^^^^^^^^
 Definition of type t/1
-Line _, characters 2-12:
+Line 2, characters 2-12:
     type t = A
     ^^^^^^^^^^
 Definition of type t/2
@@ -42,7 +42,7 @@ module N = struct
   struct type t = B type u = A of t end
 end;;
 [%%expect{|
-Line _, characters 2-39:
+Line 4, characters 2-39:
     struct type t = B type u = A of t end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
@@ -55,11 +55,11 @@ Error: Signature mismatch:
        is not included in
          type u = A of t/2
        The types for field A are not equal.
-       Line _, characters 9-19:
+       Line 4, characters 9-19:
     struct type t = B type u = A of t end
            ^^^^^^^^^^
 Definition of type t/1
-Line _, characters 2-11:
+Line 2, characters 2-11:
     type t= A
     ^^^^^^^^^
 Definition of type t/2
@@ -75,7 +75,7 @@ module K = struct
 end;;
 
 [%%expect{|
-Line _, characters 4-70:
+Line 4, characters 4-70:
   ....struct
         module type s
         module A(X:s) =struct end
@@ -92,11 +92,11 @@ Error: Signature mismatch:
          functor (X : s/2) -> sig  end
        At position module A(X : <here>) : ...
        Modules do not match: s/2 is not included in s/1
-       Line _, characters 6-19:
+       Line 5, characters 6-19:
         module type s
         ^^^^^^^^^^^^^
 Definition of module type s/1
-Line _, characters 2-15:
+Line 2, characters 2-15:
     module type s
     ^^^^^^^^^^^^^
 Definition of module type s/2
@@ -111,7 +111,7 @@ module L = struct
     end
 end;;
       [%%expect {|
-Line _, characters 4-77:
+Line 4, characters 4-77:
   ....struct
         module T = struct type t end
         type t = A of T.t
@@ -126,11 +126,11 @@ Error: Signature mismatch:
        is not included in
          type t = A of T/2.t
        The types for field A are not equal.
-       Line _, characters 6-34:
+       Line 5, characters 6-34:
         module T = struct type t end
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Definition of module T/1
-Line _, characters 2-30:
+Line 2, characters 2-30:
     module T = struct type t end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Definition of module T/2
@@ -144,7 +144,7 @@ module O = struct
 end;;
 
 [%%expect{|
-Line _, characters 2-62:
+Line 5, characters 2-62:
     struct module type s type t = B let f (module X:s) A = B end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
@@ -156,19 +156,19 @@ Error: Signature mismatch:
          val f : (module s/1) -> t/2 -> t/1
        is not included in
          val f : (module s/2) -> t/2 -> t/2
-       Line _, characters 23-33:
+       Line 5, characters 23-33:
     struct module type s type t = B let f (module X:s) A = B end
                          ^^^^^^^^^^
 Definition of type t/1
-Line _, characters 2-12:
+Line 3, characters 2-12:
     type t = A
     ^^^^^^^^^^
 Definition of type t/2
-Line _, characters 9-22:
+Line 5, characters 9-22:
     struct module type s type t = B let f (module X:s) A = B end
            ^^^^^^^^^^^^^
 Definition of module type s/1
-Line _, characters 2-15:
+Line 2, characters 2-15:
     module type s
     ^^^^^^^^^^^^^
 Definition of module type s/2
@@ -182,7 +182,7 @@ module P = struct
 end;;
 
 [%%expect{|
-Line _, characters 5-41:
+Line 5, characters 5-41:
      = struct type a = B let f A _  = B end
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
@@ -194,11 +194,11 @@ Error: Signature mismatch:
          val f : a/2 -> 'a -> a/1
        is not included in
          val f : a/2 -> (module a) -> a/2
-       Line _, characters 12-22:
+       Line 5, characters 12-22:
      = struct type a = B let f A _  = B end
               ^^^^^^^^^^
 Definition of type a/1
-Line _, characters 2-12:
+Line 3, characters 2-12:
     type a = A
     ^^^^^^^^^^
 Definition of type a/2
@@ -215,7 +215,7 @@ end;;
 
 
 [%%expect{|
-Line _, characters 2-105:
+Line 4, characters 2-105:
   ..struct
       class a = object method c = let module X = struct type t end in () end
       class b = a
@@ -231,11 +231,11 @@ Error: Signature mismatch:
          class b : a/2
        The first class type has no method m
        The public method c cannot be hidden
-       Line _, characters 4-74:
+       Line 5, characters 4-74:
       class a = object method c = let module X = struct type t end in () end
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Definition of class type a/1
-Line _, characters 2-36:
+Line 2, characters 2-36:
     class a = object method m = () end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Definition of class type a/2
@@ -251,7 +251,7 @@ module R = struct
 end;;
 
 [%%expect{|
-Line _, characters 2-65:
+Line 4, characters 2-65:
   ..struct
       class type a = object end
       class type b = a
@@ -266,11 +266,11 @@ Error: Signature mismatch:
        does not match
          class type b = a/2
        The first class type has no method m
-       Line _, characters 4-29:
+       Line 5, characters 4-29:
       class type a = object end
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Definition of class type a/1
-Line _, characters 2-42:
+Line 2, characters 2-42:
     class type a = object method m: unit end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Definition of class type a/2
@@ -302,7 +302,7 @@ end = struct
 end;;
 
 [%%expect{|
-Line _, characters 6-141:
+Line 8, characters 6-141:
   ......struct
     type t
     class type a = object method m:t end
@@ -336,11 +336,11 @@ Error: Signature mismatch:
          class type c = object method m : t/1 end
        The method m has type t/2 but is expected to have type t/1
        Type t/2 is not compatible with type t/1 = K.t
-       Line _, characters 4-10:
+       Line 12, characters 4-10:
       type t
       ^^^^^^
 Definition of type t/1
-Line _, characters 2-8:
+Line 9, characters 2-8:
     type t
     ^^^^^^
 Definition of type t/2
@@ -351,7 +351,7 @@ module rec M: sig type t type a = M.t end  =
 struct type t module M = struct type t end type a = M.t end;;
 
 [%%expect{|
-Line _, characters 0-59:
+Line 2, characters 0-59:
   struct type t module M = struct type t end type a = M.t end;;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
@@ -363,11 +363,11 @@ Error: Signature mismatch:
          type a = M/1.t
        is not included in
          type a = M/2.t
-       Line _, characters 14-42:
+       Line 2, characters 14-42:
   struct type t module M = struct type t end type a = M.t end;;
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Definition of module M/1
-Line _:
+File "_none_", line 1:
 Definition of module M/2
 |}]
 
@@ -385,7 +385,7 @@ type t = A
 type t = B
 type t = C
 type t = D
-Line _, characters 44-72:
+Line 5, characters 44-72:
   ............................................struct
     let f A B C = D
   end..
@@ -398,19 +398,19 @@ Error: Signature mismatch:
          val f : t/2 -> t/3 -> t/4 -> t/1
        is not included in
          val f : t/1 -> t/1 -> t/1 -> t/1
-       Line _, characters 0-10:
+       Line 4, characters 0-10:
   type t = D;;
   ^^^^^^^^^^
 Definition of type t/1
-Line _, characters 0-10:
+Line 1, characters 0-10:
   type t = A;;
   ^^^^^^^^^^
 Definition of type t/2
-Line _, characters 0-10:
+Line 2, characters 0-10:
   type t = B;;
   ^^^^^^^^^^
 Definition of type t/3
-Line _, characters 0-10:
+Line 3, characters 0-10:
   type t = C;;
   ^^^^^^^^^^
 Definition of type t/4
@@ -424,7 +424,7 @@ end
 let add_extra_info arg = arg.Foo.info.doc
 [%%expect {|
 module Foo : sig type info = { doc : unit; } type t = { info : info; } end
-Line _, characters 38-41:
+Line 5, characters 38-41:
   let add_extra_info arg = arg.Foo.info.doc
                                         ^^^
 Warning 40: doc was selected from type Foo.info.
@@ -446,7 +446,7 @@ let add_extra_info arg = arg.Foo.info.doc
 module Bar : sig type info = { doc : unit; } end
 module Foo : sig type t = { info : Bar.info; } end
 module Bar : sig  end
-Line _, characters 38-41:
+Line 8, characters 38-41:
   let add_extra_info arg = arg.Foo.info.doc
                                         ^^^
 Warning 40: doc was selected from type Bar/2.info.

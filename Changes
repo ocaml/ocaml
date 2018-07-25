@@ -110,6 +110,10 @@ Working version
   -rectypes, -principal, -alias-deps, -unboxed-types, -unsafe-string
   (Gabriel Scherer, review by Gabriel Radanne, Xavier Clerc and Frédéric Bour)
 
+- GPR#1925: Print error locations more consistently between batch mode, toplevel
+  and expect tests
+  (Armaël Guéneau, review by Thomas Refis, Gabriel Scherer and François Bobot)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.
