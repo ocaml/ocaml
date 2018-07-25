@@ -2923,9 +2923,9 @@ let for_trywith param pat_act_list =
     (fun () -> Lprim(Praise Raise_reraise, [param], Location.none))
     param pat_act_list Partial
 
-let for_handler param raw_cont pat_act_list =
+let for_handler param cont cont_tail pat_act_list =
   compile_matching None
-    (fun () -> Lprim (Preperform, [param; raw_cont], Location.none))
+    (fun () -> Lprim (Preperform, [param; cont; cont_tail], Location.none))
     param pat_act_list Partial
 
 let simple_for_let loc param pat body =

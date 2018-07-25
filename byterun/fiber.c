@@ -240,28 +240,6 @@ CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
   CAMLreturn (Val_ptr(stack));
 }
 
-/*
-  Find the stack that performed an effect, skipping over several stacks that
-  reperformed the effect if necessary.
-
-  Reverses the parent pointers to point
-  performer -> delegator instead of
-  delegator -> performer.
-*/
-struct stack_info* caml_find_performer(struct stack_info* stack)
-{
-  caml_domain_state* domain_state = Caml_state;
-  struct stack_info* parent = domain_state->current_stack;
-  Assert (parent != NULL);
-  do {
-    struct stack_info* delegator = Stack_parent(stack);
-    Stack_parent(stack) = parent;
-    parent = stack;
-    stack = delegator;
-  } while (stack != NULL);
-  return parent;
-}
-
 CAMLprim value caml_ensure_stack_capacity(value required_space)
 {
   asize_t req = Long_val(required_space);

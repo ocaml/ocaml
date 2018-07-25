@@ -1391,9 +1391,6 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
     static_catch [transl_exp arg] [val_id]
       (Matching.for_function e.exp_loc None (Lvar val_id) cases partial)
 
-and prim_cont_create =
-  Pccall (Primitive.simple ~name:"caml_continuation_create" ~arity:1 ~alloc:true)
-
 and prim_alloc_stack =
   Pccall (Primitive.simple ~name:"caml_alloc_stack" ~arity:3 ~alloc:true)
 
@@ -1421,14 +1418,13 @@ and transl_handler e body val_caselist exn_caselist eff_caselist =
   in
   let eff_fun =
     let param = Typecore.name_pattern "eff" eff_caselist in
-    let raw_cont = Ident.create "cont" in
     let cont = Ident.create "k" in
+    let cont_tail = Ident.create "ktail" in
     let eff_cases = transl_cases ~cont eff_caselist in
-    Lfunction { kind = Curried; params = [param; raw_cont];
+    Lfunction { kind = Curried; params = [param; cont; cont_tail];
       attr = default_function_attribute; loc = Location.none;
-      body = Llet(StrictOpt, Pgenval, cont,
-          Lprim (prim_cont_create, [Lvar raw_cont], Location.none),
-          Matching.for_handler (Lvar param) (Lvar raw_cont) eff_cases) }
+      body = Matching.for_handler (Lvar param)
+               (Lvar cont) (Lvar cont_tail) eff_cases }
   in
   let is_pure = function
     | Lconst _ -> true

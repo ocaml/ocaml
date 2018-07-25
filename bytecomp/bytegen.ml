@@ -684,7 +684,8 @@ let rec comp_expr env exp sz cont =
   | Lprim(Presume, args, _) ->
       let nargs = List.length args - 1 in
       assert (nargs = 2);
-      check_stack (sz + 3);
+      (* Resume itself only pushes 3 words, but perform adds another *)
+      check_stack (sz + 4);
       if is_tailcall cont then
         comp_args env args sz
           (Kresumeterm(sz + nargs) :: discard_dead_code cont)
@@ -692,7 +693,7 @@ let rec comp_expr env exp sz cont =
         comp_args env args sz (Kresume :: cont)
   | Lprim(Preperform, args, _) ->
       let nargs = List.length args - 1 in
-      assert (nargs = 1);
+      assert (nargs = 2);
       check_stack (sz + 3);
       if is_tailcall cont then
         comp_args env args sz
