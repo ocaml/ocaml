@@ -2110,6 +2110,101 @@ let bswap16 arg dbg =
        [arg],
        dbg))
 
+type binary_primitive = expression -> expression -> Debuginfo.t -> expression
+
+(* let pfield_computed = addr_array_ref *)
+
+(* Helper for compilation of initialization and assignment operations *)
+
+type assignment_kind = Caml_modify | Caml_initialize | Simple
+
+let assignment_kind
+    (ptr: Lambda.immediate_or_pointer)
+    (init: Lambda.initialization_or_assignment) =
+  match init, ptr with
+  | Assignment, Pointer -> Caml_modify
+  | Heap_initialization, Pointer -> Caml_initialize
+  | Assignment, Immediate
+  | Heap_initialization, Immediate
+  | Root_initialization, (Immediate | Pointer) -> Simple
+
+let setfield n ptr init arg1 arg2 dbg =
+  match assignment_kind ptr init with
+  | Caml_modify ->
+      return_unit dbg (Cop(Cextcall("caml_modify", typ_void, false, None),
+                      [field_address arg1 n dbg;
+                       arg2],
+                      dbg))
+  | Caml_initialize ->
+      return_unit dbg (Cop(Cextcall("caml_initialize", typ_void, false, None),
+                      [field_address arg1 n dbg;
+                       arg2],
+                      dbg))
+  | Simple ->
+      return_unit dbg (set_field arg1 n arg2 init dbg)
+
+let setfloatfield n init arg1 arg2 dbg =
+  return_unit dbg (
+    Cop(Cstore (Double_u, init),
+        [if n = 0 then arg1
+         else Cop(Cadda, [arg1; Cconst_int(n * size_float, dbg)], dbg);
+         arg2], dbg))
+
+let add_int_caml arg1 arg2 dbg =
+  decr_int (add_int arg1 arg2 dbg) dbg
+
+let sub_int_caml arg1 arg2 dbg =
+  incr_int (sub_int arg1 arg2 dbg) dbg
+
+let mul_int_caml arg1 arg2 dbg =
+  (* decrementing the non-constant part helps when the multiplication is
+     followed by an addition;
+     for example, using this trick compiles (100 * a + 7) into
+       (+ ( * a 100) -85)
+     rather than
+       (+ ( * 200 (>>s a 1)) 15)
+  *)
+  match arg1, arg2 with
+  | Cconst_int _ as c1, c2 ->
+      incr_int (mul_int (untag_int c1 dbg) (decr_int c2 dbg) dbg) dbg
+  | c1, c2 ->
+      incr_int (mul_int (decr_int c1 dbg) (untag_int c2 dbg) dbg) dbg
+
+let div_int_caml is_safe arg1 arg2 dbg =
+  tag_int(div_int (untag_int arg1 dbg)
+            (untag_int arg2 dbg) is_safe dbg) dbg
+
+let mod_int_caml is_safe arg1 arg2 dbg =
+  tag_int(mod_int (untag_int arg1 dbg)
+            (untag_int arg2 dbg) is_safe dbg) dbg
+
+let and_int_caml arg1 arg2 dbg =
+  Cop(Cand, [arg1; arg2], dbg)
+
+let or_int_caml arg1 arg2 dbg =
+  Cop(Cor, [arg1; arg2], dbg)
+
+let xor_int_caml arg1 arg2 dbg =
+  Cop(Cor, [Cop(Cxor, [ignore_low_bit_int arg1;
+                       ignore_low_bit_int arg2], dbg);
+            Cconst_int (1, dbg)], dbg)
+
+let lsl_int_caml arg1 arg2 dbg =
+  incr_int(lsl_int (decr_int arg1 dbg)
+             (untag_int arg2 dbg) dbg) dbg
+
+let lsr_int_caml arg1 arg2 dbg =
+  Cop(Cor, [lsr_int arg1 (untag_int arg2 dbg) dbg;
+            Cconst_int (1, dbg)], dbg)
+
+let asr_int_caml arg1 arg2 dbg =
+  Cop(Cor, [asr_int arg1 (untag_int arg2 dbg) dbg;
+            Cconst_int (1, dbg)], dbg)
+
+let int_comp_caml cmp arg1 arg2 dbg =
+  tag_int(Cop(Ccmpi cmp,
+              [arg1; arg2], dbg)) dbg
+
 (* Symbols *)
 
 let cdefine_symbol (symb, (global: Cmmgen_state.is_global)) =

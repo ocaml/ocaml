@@ -353,18 +353,6 @@ let rec is_unboxed_number ~strict env e =
       join (is_unboxed_number ~strict env e1) e2
   | _ -> No_unboxing
 
-(* Helper for compilation of initialization and assignment operations *)
-
-type assignment_kind = Caml_modify | Caml_initialize | Simple
-
-let assignment_kind ptr init =
-  match init, ptr with
-  | Assignment, Pointer -> Caml_modify
-  | Heap_initialization, Pointer -> Caml_initialize
-  | Assignment, Immediate
-  | Heap_initialization, Immediate
-  | Root_initialization, (Immediate | Pointer) -> Simple
-
 (* Translate an expression *)
 
 let rec transl env e =
@@ -806,29 +794,11 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Pfield_computed ->
       addr_array_ref (transl env arg1) (transl env arg2) dbg
   | Psetfield(n, ptr, init) ->
-      begin match assignment_kind ptr init with
-      | Caml_modify ->
-        return_unit dbg (Cop(Cextcall("caml_modify", typ_void, false, None),
-                        [field_address (transl env arg1) n dbg;
-                         transl env arg2],
-                        dbg))
-      | Caml_initialize ->
-        return_unit dbg (Cop(Cextcall("caml_initialize", typ_void, false, None),
-                        [field_address (transl env arg1) n dbg;
-                         transl env arg2],
-                        dbg))
-      | Simple ->
-        return_unit dbg
-          (set_field (transl env arg1) n (transl env arg2) init dbg)
-      end
+      setfield n ptr init (transl env arg1) (transl env arg2) dbg
   | Psetfloatfield (n, init) ->
       let ptr = transl env arg1 in
-      return_unit dbg (
-        Cop(Cstore (Double_u, init),
-            [if n = 0 then ptr
-                      else
-                        Cop(Cadda, [ptr; Cconst_int(n * size_float, dbg)], dbg);
-             transl_unbox_float dbg env arg2], dbg))
+      let float_val = transl_unbox_float dbg env arg2 in
+      setfloatfield n init ptr float_val dbg
 
   (* Boolean operations *)
   | Psequand ->
@@ -850,50 +820,29 @@ and transl_prim_2 env p arg1 arg2 dbg =
         dbg' (Cconst_pointer (1, dbg))
   (* Integer operations *)
   | Paddint ->
-      decr_int(add_int (transl env arg1) (transl env arg2) dbg) dbg
+      add_int_caml (transl env arg1) (transl env arg2) dbg
   | Psubint ->
-      incr_int(sub_int (transl env arg1) (transl env arg2) dbg) dbg
+      sub_int_caml (transl env arg1) (transl env arg2) dbg
   | Pmulint ->
-     begin
-       (* decrementing the non-constant part helps when the multiplication is
-          followed by an addition;
-          for example, using this trick compiles (100 * a + 7) into
-            (+ ( * a 100) -85)
-          rather than
-            (+ ( * 200 (>>s a 1)) 15)
-        *)
-       match transl env arg1, transl env arg2 with
-       | Cconst_int _ as c1, c2 ->
-         incr_int (mul_int (untag_int c1 dbg) (decr_int c2 dbg) dbg) dbg
-       | c1, c2 ->
-         incr_int (mul_int (decr_int c1 dbg) (untag_int c2 dbg) dbg) dbg
-     end
+      mul_int_caml (transl env arg1) (transl env arg2) dbg
   | Pdivint is_safe ->
-      tag_int(div_int (untag_int(transl env arg1) dbg)
-        (untag_int(transl env arg2) dbg) is_safe dbg) dbg
+      div_int_caml is_safe (transl env arg1) (transl env arg2) dbg
   | Pmodint is_safe ->
-      tag_int(mod_int (untag_int(transl env arg1) dbg)
-        (untag_int(transl env arg2) dbg) is_safe dbg) dbg
+      mod_int_caml is_safe (transl env arg1) (transl env arg2) dbg
   | Pandint ->
-      Cop(Cand, [transl env arg1; transl env arg2], dbg)
+      and_int_caml (transl env arg1) (transl env arg2) dbg
   | Porint ->
-      Cop(Cor, [transl env arg1; transl env arg2], dbg)
+      or_int_caml (transl env arg1) (transl env arg2) dbg
   | Pxorint ->
-      Cop(Cor, [Cop(Cxor, [ignore_low_bit_int(transl env arg1);
-                           ignore_low_bit_int(transl env arg2)], dbg);
-                Cconst_int (1, dbg)], dbg)
+      xor_int_caml (transl env arg1) (transl env arg2) dbg
   | Plslint ->
-      incr_int(lsl_int (decr_int(transl env arg1) dbg)
-        (untag_int(transl env arg2) dbg) dbg) dbg
+      lsl_int_caml (transl env arg1) (transl env arg2) dbg
   | Plsrint ->
-      Cop(Cor, [lsr_int (transl env arg1) (untag_int(transl env arg2) dbg) dbg;
-                Cconst_int (1, dbg)], dbg)
+      lsr_int_caml (transl env arg1) (transl env arg2) dbg
   | Pasrint ->
-      Cop(Cor, [asr_int (transl env arg1) (untag_int(transl env arg2) dbg) dbg;
-                Cconst_int (1, dbg)], dbg)
+      asr_int_caml (transl env arg1) (transl env arg2) dbg
   | Pintcomp cmp ->
-      tag_int(Cop(Ccmpi cmp,
-                  [transl env arg1; transl env arg2], dbg)) dbg
+      int_comp_caml cmp (transl env arg1) (transl env arg2) dbg
   | Pisout ->
       transl_isout (transl env arg1) (transl env arg2) dbg
   (* Float operations *)

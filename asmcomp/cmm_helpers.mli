@@ -450,6 +450,42 @@ val bbswap : Primitive.boxed_integer -> unary_primitive
     Operates on Cmm integers (untagged integers) *)
 val bswap16 : unary_primitive
 
+type binary_primitive = expression -> expression -> Debuginfo.t -> expression
+
+(* val pfield_computed : binary_primitive *)
+(* Equivalent to addr_array_ref *)
+
+type assignment_kind = Caml_modify | Caml_initialize | Simple
+
+(** TODO: remove after setcomputedfield *)
+val assignment_kind :
+ Lambda.immediate_or_pointer -> Lambda.initialization_or_assignment ->
+ assignment_kind
+
+(** [setfield offset value_is_ptr init ptr value dbg] *)
+val setfield :
+  int -> Lambda.immediate_or_pointer -> Lambda.initialization_or_assignment ->
+  binary_primitive
+
+(** [setfloatfield offset init ptr value dbg]
+    [value] is expected to be an unboxed floating point number *)
+val setfloatfield :
+  int -> Lambda.initialization_or_assignment -> binary_primitive
+
+(** Operations on caml integers *)
+val add_int_caml : binary_primitive
+val sub_int_caml : binary_primitive
+val mul_int_caml : binary_primitive
+val div_int_caml : Lambda.is_safe -> binary_primitive
+val mod_int_caml : Lambda.is_safe -> binary_primitive
+val and_int_caml : binary_primitive
+val or_int_caml : binary_primitive
+val xor_int_caml : binary_primitive
+val lsl_int_caml : binary_primitive
+val lsr_int_caml : binary_primitive
+val asr_int_caml : binary_primitive
+val int_comp_caml : Lambda.integer_comparison -> binary_primitive
+
 (** Switch *)
 
 (** [transl_isout h arg dbg] *)
