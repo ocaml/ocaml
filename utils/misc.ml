@@ -790,19 +790,19 @@ let get_build_path_prefix_map =
 
 let debug_prefix_map_flags () =
   if not Config.as_has_debug_prefix_map then
-    ""
+    []
   else begin
     match get_build_path_prefix_map () with
-    | None -> ""
+    | None -> []
     | Some map ->
-      let buff = Buffer.create 64 in
-      List.iter
-        (function
-          | None -> ()
-          | Some { Build_path_prefix_map.target; source; } ->
-            Printf.bprintf buff " --debug-prefix-map %s=%s"
-              (Filename.quote source)
-              (Filename.quote target))
-        map;
-      Buffer.contents buff
+      List.fold_right
+        (fun map_elem acc ->
+           match map_elem with
+           | None -> acc
+           | Some { Build_path_prefix_map.target; source; } ->
+             (Printf.sprintf "--debug-prefix-map %s=%s"
+                (Filename.quote source)
+                (Filename.quote target)) :: acc)
+        map
+        []
   end
