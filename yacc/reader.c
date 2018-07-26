@@ -370,6 +370,9 @@ static void process_comment(FILE *const f) {
                 process_open_curly_bracket(f);
                 continue;
             default:
+                if (In_bitmap(caml_ident_start, c)) {
+                  while (In_bitmap(caml_ident_body, *cptr)) cptr++;
+                }
                 continue;
             }
         }
@@ -608,6 +611,12 @@ loop:
         goto loop;
     default:
         putc(c, f);
+        if (In_bitmap(caml_ident_start, c)) {
+          while (In_bitmap(caml_ident_body, *cptr)) {
+            putc(*cptr, f);
+            cptr++;
+          }
+        }
         need_newline = 1;
         goto loop;
     }
