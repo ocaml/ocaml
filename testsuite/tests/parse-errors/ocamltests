@@ -1,3 +1,4 @@
+escape_error.ml
 unclosed_class_signature.mli
 unclosed_class_simpl_expr1.ml
 unclosed_class_simpl_expr2.ml
