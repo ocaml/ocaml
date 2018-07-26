@@ -115,7 +115,8 @@ Working version
   (Armaël Guéneau, review by Thomas Refis, Gabriel Scherer and François Bobot)
 
 - GPR#1930: pass the elements from `BUILD_PATH_PREFIX_MAP` to the assembler
-  (Xavier Clerc, review by Gabriel Scherer and Sébastien Hinderer)
+  (Xavier Clerc, review by Gabriel Scherer, Sébastien Hinderer, and
+   Xavier Leroy)
 
 ### Code generation and optimizations:
 
