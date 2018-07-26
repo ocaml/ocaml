@@ -33,12 +33,12 @@ else # Windows
   find := /usr/bin/find
   FLEXDLL_SUBMODULE_PRESENT := $(wildcard ../flexdll/Makefile)
   ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
-    FLEXLINK_PREFIX=
+    FLEXLINK_ENV =
   else
     ROOT:=$(shell cd .. && pwd| cygpath -m -f -)
-    EMPTY=
-    FLEXLINK_PREFIX:=OCAML_FLEXLINK="$(ROOT)/boot/ocamlrun \
-                                     $(ROOT)/flexdll/flexlink.exe" $(EMPTY)
+    # FLEXLINK_ENV must have a space at the end
+    FLEXLINK_ENV = \
+      OCAML_FLEXLINK="$(ROOT)/boot/ocamlrun $(ROOT)/flexdll/flexlink.exe" #
   endif
 endif
 
@@ -52,12 +52,12 @@ ocamltest_program := $(or \
   $(wildcard $(ocamltest_directory)/ocamltest.opt$(EXE)),\
   $(wildcard $(ocamltest_directory)/ocamltest$(EXE)))
 
-ifneq "$(FLEXLINK_PREFIX)" ""
+ifneq "$(FLEXLINK_ENV)" ""
   MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
                                    $(FLEXLINK_FLAGS)
 endif
-ocamltest := $(FLEXLINK_PREFIX) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
-                                $(ocamltest_program)
+ocamltest := $(FLEXLINK_ENV)MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
+                            $(ocamltest_program)
 
 .PHONY: default
 default:
