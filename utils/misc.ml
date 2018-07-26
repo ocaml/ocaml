@@ -800,10 +800,7 @@ let debug_prefix_map_flags () =
         (function
           | None -> ()
           | Some { Build_path_prefix_map.target; source; } ->
-            Buffer.add_string buff " --debug-prefix-map ";
-            Buffer.add_string buff source;
-            Buffer.add_char buff '=';
-            Buffer.add_string buff target)
+            Printf.bprintf buff " --debug-prefix-map %S=%S" source target)
         map;
       Buffer.contents buff
   end
