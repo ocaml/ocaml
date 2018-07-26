@@ -21,17 +21,17 @@
 #include <caml/fail.h>
 #include <caml/signals.h>
 #include <caml/io.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
-
 #include <windows.h>
 
-int win_truncate(char * path, long long len)
+int win_truncate(WCHAR * path, long long len)
 {
   HANDLE fh;
   LARGE_INTEGER fp;
   fp.QuadPart = len;
   fh = CreateFile(path, GENERIC_WRITE, 0, NULL,
-                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL); 
+                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (fh == INVALID_HANDLE_VALUE) {  // failure: Unable to open file
     return -1;
   }
@@ -47,10 +47,10 @@ int win_truncate(char * path, long long len)
 CAMLprim value unix_truncate(value path, value len)
 {
   CAMLparam2(path, len);
-  char * p;
+  WCHAR * p;
   int ret;
   caml_unix_check_path(path, "truncate");
-  p = caml_stat_strdup(String_val(path));
+  p = caml_stat_strdup_to_utf16(String_val(path));
   caml_enter_blocking_section();
   ret = win_truncate(p, Long_val(len));
   caml_leave_blocking_section();
@@ -63,11 +63,11 @@ CAMLprim value unix_truncate(value path, value len)
 CAMLprim value unix_truncate_64(value path, value vlen)
 {
   CAMLparam2(path, vlen);
-  char * p;
+  WCHAR * p;
   int ret;
   file_offset len = File_offset_val(vlen);
   caml_unix_check_path(path, "truncate");
-  p = caml_stat_strdup(String_val(path));
+  p = caml_stat_strdup_to_utf16(String_val(path));
   caml_enter_blocking_section();
   ret = win_truncate(p, len);
   caml_leave_blocking_section();
