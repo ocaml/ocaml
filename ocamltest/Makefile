@@ -15,17 +15,20 @@
 
 # The Makefile for ocamltest
 
-include ../config/Makefile
+ROOTDIR=..
+
+include $(ROOTDIR)/config/Makefile
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
   unix := false
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -w -f - \
     | sed 's/\\/\\\\\\\\/g')
-  ifeq "$(wildcard ../flexdll/Makefile)" ""
+  ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
     FLEXLINK_ENV =
   else
     # FLEXLINK_ENV must have a space at the end
-    FLEXLINK_ENV = OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe" #
+    FLEXLINK_ENV = \
+      OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
   endif
   mkexe := $(MKEXE_ANSI) -link $(OC_LDFLAGS)
 else
@@ -61,7 +64,7 @@ else
 WITH_OCAMLDEBUG := false
 endif
 
-OC_CPPFLAGS += -I../runtime -DCAML_INTERNALS
+OC_CPPFLAGS += -I$(ROOTDIR)/runtime -DCAML_INTERNALS
 
 run := run_$(UNIX_OR_WIN32)
 
@@ -151,7 +154,8 @@ bytecode_modules := $(o_files) $(cmo_files)
 
 native_modules := $(o_files) $(cmx_files)
 
-directories := ../utils ../parsing ../stdlib ../compilerlibs
+directories := $(ROOTDIR)/utils $(ROOTDIR)/parsing $(ROOTDIR)/stdlib \
+               $(ROOTDIR)/compilerlibs
 
 include_directories := $(addprefix -I , $(directories))
 
@@ -159,15 +163,15 @@ flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error A
 
-ocamlc := ../runtime/ocamlrun ../ocamlc $(flags)
+ocamlc := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlc $(flags)
 
-ocamlopt := ../runtime/ocamlrun ../ocamlopt $(flags)
+ocamlopt := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlopt $(flags)
 
-ocamldep := ../runtime/ocamlrun ../tools/ocamldep -slash
+ocamldep := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/tools/ocamldep -slash
 
-ocamllex := ../runtime/ocamlrun ../lex/ocamllex
+ocamllex := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/lex/ocamllex
 
-ocamlyacc := ../yacc/ocamlyacc
+ocamlyacc := $(ROOTDIR)/yacc/ocamlyacc
 
 ocamlcdefaultflags :=
 
