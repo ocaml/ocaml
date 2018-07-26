@@ -67,7 +67,8 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
     OCAMLDOC_RUN=$(OCAMLRUN) ./$(OCAMLDOC)
   endif
 else # Windows
-  OCAMLDOC_RUN = CAML_LD_LIBRARY_PATH="../otherlibs/win32unix;../otherlibs/str" $(OCAMLRUN) ./$(OCAMLDOC)
+  OCAMLDOC_RUN = \
+    CAML_LD_LIBRARY_PATH="$(ROOTDIR)/otherlibs/win32unix;$(ROOTDIR)/otherlibs/str" $(OCAMLRUN) ./$(OCAMLDOC)
 endif
 
 OCAMLDOC_OPT=$(OCAMLDOC).opt
@@ -353,17 +354,17 @@ test:
 test_stdlib:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
-	../stdlib/*.mli \
-	../otherlibs/$(UNIXLIB)/unix.mli \
-	../otherlibs/str/str.mli
+	$(ROOTDIR)/stdlib/*.mli \
+	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/otherlibs/str/str.mli
 
 .PHONY: test_stdlib_code
 test_stdlib_code:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
-	`ls ../stdlib/*.ml | grep -v Labels` \
-	../otherlibs/$(UNIXLIB)/unix.ml \
-	../otherlibs/str/str.ml
+	`ls $(ROOTDIR)/stdlib/*.ml | grep -v Labels` \
+	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.ml \
+	$(ROOTDIR)/otherlibs/str/str.ml
 
 .PHONY: test_framed
 test_framed:
@@ -374,17 +375,17 @@ test_framed:
 test_latex:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml \
-	        odoc*.mli test2.txt ../stdlib/*.mli ../otherlibs/unix/unix.mli
+	        odoc*.mli test2.txt $(ROOTDIR)/stdlib/*.mli $(ROOTDIR)/otherlibs/unix/unix.mli
 
 .PHONY: test_latex_simple
 test_latex_simple:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) \
 	-latextitle 6,subsection -latextitle 7,subsubection \
-	../stdlib/hashtbl.mli \
-	../stdlib/arg.mli \
-	../otherlibs/$(UNIXLIB)/unix.mli \
-	../stdlib/map.mli
+	$(ROOTDIR)/stdlib/hashtbl.mli \
+	$(ROOTDIR)/stdlib/arg.mli \
+	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/stdlib/map.mli
 
 .PHONY: test_man
 test_man:
@@ -423,9 +424,9 @@ autotest_stdlib:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -g autotest/odoc_test.cmo\
 	$(INCLUDES) -keep-code \
-	../stdlib/*.mli \
-	../otherlibs/$(UNIXLIB)/unix.mli \
-	../otherlibs/str/str.mli
+	$(ROOTDIR)/stdlib/*.mli \
+	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/otherlibs/str/str.mli
 
 
 # odoc rules :
@@ -436,22 +437,22 @@ odoc:
 	rm -rf odoc
 	$(MKDIR) odoc
 	# .cmti --> .odoc
-	for fn in ../stdlib/stdlib*.cmti; do \
-	  odoc compile $(INCLUDES) --package stdlib ../stdlib/$$fn; \
+	for fn in $(ROOTDIR)/stdlib/stdlib*.cmti; do \
+	  odoc compile $(INCLUDES) --package stdlib $(ROOTDIR)/stdlib/$$fn; \
 	done
 	for lib in str bigarray; do \
-	  odoc compile $(INCLUDES) --package $$lib ../otherlibs/$$lib/$$lib.cmti; \
+	  odoc compile $(INCLUDES) --package $$lib $(ROOTDIR)/otherlibs/$$lib/$$lib.cmti; \
 	done
-	odoc compile $(INCLUDES) --package unix ../otherlibs/$(UNIXLIB)/unix.cmti
-	for fn in ../parsing/*.cmti; do \
-	  odoc compile $(INCLUDES) --package parsing ../parsing/$$fn; \
+	odoc compile $(INCLUDES) --package unix $(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.cmti
+	for fn in $(ROOTDIR)/parsing/*.cmti; do \
+	  odoc compile $(INCLUDES) --package parsing $(ROOTDIR)/parsing/$$fn; \
 	done
 	# .odoc --> .html
-	odoc html $(INCLUDES) --output-dir odoc ../stdlib/stdlib.odoc
+	odoc html $(INCLUDES) --output-dir odoc $(ROOTDIR)/stdlib/stdlib.odoc
 	for lib in str bigarray $(UNIXLIB); do \
-	  odoc html $(INCLUDES) --output-dir odoc ../otherlibs/$$lib/$$lib.odoc; \
+	  odoc html $(INCLUDES) --output-dir odoc $(ROOTDIR)/otherlibs/$$lib/$$lib.odoc; \
 	done
-	for fn in ../parsing/*.odoc; do \
+	for fn in $(ROOTDIR)/parsing/*.odoc; do \
 	  odoc html $(INCLUDES) --output-dir odoc $$fn; \
 	done
 	for d in odoc/*; do \
