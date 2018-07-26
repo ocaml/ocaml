@@ -25,12 +25,12 @@
 
 #include <windows.h>
 
-int win_truncate(char * filename, long long len)
+int win_truncate(char * path, long long len)
 {
   HANDLE fh;
   LARGE_INTEGER fp;
   fp.QuadPart = len;
-  fh = CreateFile(filename, GENERIC_WRITE, 0, NULL,
+  fh = CreateFile(path, GENERIC_WRITE, 0, NULL,
                   OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL); 
   if (fh == INVALID_HANDLE_VALUE) {  // failure: Unable to open file
     return -1;
