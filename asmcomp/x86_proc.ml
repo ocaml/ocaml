@@ -243,33 +243,13 @@ let use_plt =
 *)
 let binary_content = ref None
 
-let debug_prefix_map_flags () =
-  if not Config.as_has_debug_prefix_map then
-    ""
-  else begin
-    match Misc.get_build_path_prefix_map () with
-    | None -> ""
-    | Some map ->
-      let buff = Buffer.create 64 in
-      List.iter
-        (function
-          | None -> ()
-          | Some { Build_path_prefix_map.target; source; } ->
-            Buffer.add_string buff " --debug-prefix-map ";
-            Buffer.add_string buff source;
-            Buffer.add_char buff '=';
-            Buffer.add_string buff target)
-        map;
-      Buffer.contents buff
-  end
-
 let compile infile outfile =
   if masm then
     Ccomp.command (Config.asm ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile ^
                    (if !Clflags.verbose then "" else ">NUL"))
   else
-    Ccomp.command (Config.asm ^ debug_prefix_map_flags () ^ " -o " ^
+    Ccomp.command (Config.asm ^ Misc.debug_prefix_map_flags () ^ " -o " ^
                    Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 let assemble_file infile outfile =

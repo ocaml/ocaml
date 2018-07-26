@@ -787,3 +787,23 @@ let get_build_path_prefix_map =
           | Ok map -> map_cache := Some map
     end;
     !map_cache
+
+let debug_prefix_map_flags () =
+  if not Config.as_has_debug_prefix_map then
+    ""
+  else begin
+    match get_build_path_prefix_map () with
+    | None -> ""
+    | Some map ->
+      let buff = Buffer.create 64 in
+      List.iter
+        (function
+          | None -> ()
+          | Some { Build_path_prefix_map.target; source; } ->
+            Buffer.add_string buff " --debug-prefix-map ";
+            Buffer.add_string buff source;
+            Buffer.add_char buff '=';
+            Buffer.add_string buff target)
+        map;
+      Buffer.contents buff
+  end
