@@ -105,7 +105,6 @@ int caml_switch_stack(struct stack_info* stk, int should_free);
 struct stack_info* caml_switch_stack(struct stack_info* stk);
 #endif
 value caml_fiber_death();
-struct stack_info* caml_reverse_fiber_stack (struct stack_info* stack);
 
 #ifdef NATIVE_CODE
 void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintnat* pc /* out */);

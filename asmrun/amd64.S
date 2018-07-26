@@ -221,7 +221,7 @@
 
 /* Switch between OCaml stacks.
  * arguments : target stack (%rdi)
- * preserves : %rbx, %r12, %r13 */
+ * preserves : %rbx, %r8, %r9, %r12, %r13 */
 #define SWITCH_OCAML_STACKS \
     /* Switch from OCaml to C */ \
         SWITCH_OCAML_TO_C(%r10); \
@@ -362,7 +362,7 @@
 #define Stack_handle_value(REG)     8(REG)
 #define Stack_handle_exception(REG) 16(REG)
 #define Stack_handle_effect(REG)    24(REG)
-#define Stack_parent(REG)           32(REG)
+#define Stack_parent                32
 
 /******************************************************************************/
 /* text section
@@ -1087,22 +1087,27 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_perform))
 CFI_STARTPROC
-    /* In handler. %rax has effect */
-        mov     %rax, %r12
-        LOAD_TL_VAR(caml_current_stack, %rbx)      /* Second argument */
+    /*  %rax: effect to perform
+        %rbx: freshly allocated continuation */
+        mov     %rax, %r12                      /* r8,r9,r12,r13 are preserved across C call */
+        mov     %rbx, %r13
+        LOAD_TL_VAR(caml_current_stack, %rbx)   /* Second argument */
         movq    Stack_parent(%rbx), %rdi        /* Parent stack. */
         cmpq    $0, %rdi                        /* Parent is NULL? */
         je      LBL(112)
-        movq    Stack_handle_effect(%rbx), %r13 /* effect handler (third argument) */
+        leaq    1(%rbx), %r8                    /* %r8 := Val_ptr(%rbx) */
         movq    $0, Stack_parent(%rbx)          /* Set parent stack of performer to NULL */
+        movq    %r8, 0(%r13)                    /* Initialise continuation */
+        movq    Stack_handle_effect(%rbx), %r9  /* effect handler */
     /* Switch stacks */
         SWITCH_OCAML_STACKS
     /* Invoke effect handler */
-        movq    %r12, %rax        /* First argument */
-        orq     $1, %rbx          /* %rbx = Val_ptr(%rbx) */
-        movq    %r13, %rdi        /* Third argument */
-        LEA_VAR(caml_apply2, %rsi)
-        jmp     *%rsi
+        movq    %r12, %rax        /* Arg 1: effect */
+        movq    %r13, %rbx        /* Arg 2: continuation */
+        movq    %r8, %rdi         /* Arg 3: cont_tail */
+        movq    %r9, %rsi         /* Effect handler */
+        LEA_VAR(caml_apply3, %rcx)
+        jmp     *%rcx
 LBL(112):
     /* No parent stack. Raise Unhandled. */
         LEA_VAR(caml_exn_Unhandled, %rax)
@@ -1111,33 +1116,34 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_reperform))
 CFI_STARTPROC
-    /* %rax -> effect (first argument), %rbx -> performer */
-        movq    %rax, %r12
-        andq    $-2, %rbx                        /* %rbx = Ptr_val(%rbx) */
-        LOAD_TL_VAR(caml_current_stack, %rax)
-        movq    Stack_parent(%rax), %rdi         /* Parent stack */
+    /*  %rax: effect to reperform
+        %rbx: continuation
+        %rdi: continuation tail */
+        movq    %rax, %r12                      /* r8,r9,r12,r13 are preserved across C call */
+        movq    %rbx, %r13
+        movq    %rdi, %r8
+        LOAD_TL_VAR(caml_current_stack, %rbx)
+        movq    Stack_parent(%rbx), %rdi         /* Parent stack */   
         cmpq    $0, %rdi                         /* Parent is Null? */
         je      LBL(113)
-        movq    %rbx, Stack_parent(%rax)         /* Set performer as parent */
-        movq    Stack_handle_effect(%rax), %r13  /* Save effect handler (callee-saved) */
-        movq    %rax, %rbx                       /* Save current stack (callee-saved & second argument) */
+        movq    %rbx, (Stack_parent-1)(%r8)      /* Append to cont_tail in Stack_parent(Ptr_val(r8)) */
+        leaq    1(%rbx), %r8                     /* %r8 := Val_ptr(%rbx) */
+        movq    $0, Stack_parent(%rbx)           /* Set parent stack of performer to NULL */
+        movq    Stack_handle_effect(%rbx), %r9   /* effect handler */
     /* Switch stacks */
         SWITCH_OCAML_STACKS
     /* Invoke effect handler */
-        movq    %r12, %rax                       /* First argument */
-        orq     $1, %rbx                         /* %rbx = Val_ptr(%rbx) */
-        movq    %r13, %rdi                       /* Third argument */
-        LEA_VAR(caml_apply2, %rsi)
-        jmp     *%rsi
+        movq    %r12, %rax        /* Arg 1: effect */
+        movq    %r13, %rbx        /* Arg 2: continuation */
+        movq    %r8, %rdi         /* Arg 3: cont_tail */
+        movq    %r9, %rsi         /* Effect handler */
+        LEA_VAR(caml_apply3, %rcx)
+        jmp     *%rcx
 LBL(113):
-    /* Rewind parent pointers to find the performer */
-        movq    %rbx, %rdi
-        movq    Stack_parent(%rdi), %rbx
-        movq    %rax, Stack_parent(%rdi)
-        cmpq    $0, %rbx
-        movq    %rdi, %rax
-        jne     LBL(113)
-    /* %rdi now has the desired head of stack list */
+    /* switch back to original performer before raising Unhandled */
+        movq    %rbx, (Stack_parent-1)(%r8)
+        movq    0(%r13), %rdi                     /* load performer stack from continuation */
+        subq    $1, %rdi                          /* rdi := Ptr_val(rdi) */
         SWITCH_OCAML_STACKS
     /* No parent stack. Raise Unhandled. */
         LEA_VAR(caml_exn_Unhandled, %rax)
@@ -1146,19 +1152,18 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_resume))
 CFI_STARTPROC
-    /* %rax -> tail of stack list, %rbx -> fun, %rdi -> arg */
+    /* %rax -> stack, %rbx -> fun, %rdi -> arg */
         andq    $-2, %rax       /* %rax = Ptr_val(%rax) */
         movq    %rdi, %r12      /* Save arg (callee-saved) */
-        LOAD_TL_VAR(caml_current_stack, %rcx)
-LBL(114):
-    /* Rewind parent pointers to find the performer */
         movq    %rax, %rdi
-        movq    Stack_parent(%rdi), %rax
-        movq    %rcx, Stack_parent(%rdi)
-        cmpq    $0, %rax
-        movq    %rdi, %rcx
-        jne     LBL(114)
-    /* %rdi now has the desired head of stack list */
+    /* Find end of list of stacks and add current */
+1:      cmpq    $0, Stack_parent(%rax)
+        je      2f
+        movq    Stack_parent(%rax), %rax
+        jmp     1b
+2:      LOAD_TL_VAR(caml_current_stack, %rcx)
+        movq    %rcx, Stack_parent(%rax)
+    /* %rdi has new stack */
         SWITCH_OCAML_STACKS
     /* Return value is 1 if switching to a fresh stack. */
         cmpq    $1, %rax
