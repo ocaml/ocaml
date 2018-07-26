@@ -19,7 +19,41 @@ val fatal_error: string -> 'a
 val fatal_errorf: ('a, Format.formatter, unit, 'b) format4 -> 'a
 exception Fatal_error
 
-val try_finally : (unit -> 'a) -> (unit -> unit) -> 'a;;
+val try_finally :
+  ?always:(unit -> unit) ->
+  ?exceptionally:(unit -> unit) ->
+  (unit -> 'a) -> 'a
+(** [try_finally work ~always ~exceptionally] is designed to run code
+    in [work] that may fail with an exception, and has two kind of
+    cleanup routines: [always], that must be run after any execution
+    of the function (typically, freeing system resources), and
+    [exceptionally], that should be run only if [work] or [always]
+    failed with an exception (typically, undoing user-visible state
+    changes that would only make sense if the function completes
+    correctly). For example:
+
+    {[
+      let objfile = outputprefix ^ ".cmo" in
+      let oc = open_out_bin objfile in
+      Misc.try_finally
+        (fun () ->
+           bytecode
+           ++ Timings.(accumulate_time (Generate sourcefile))
+               (Emitcode.to_file oc modulename objfile);
+           Warnings.check_fatal ())
+        ~always:(fun () -> close_out oc)
+        ~exceptionally:(fun _exn -> remove_file objfile);
+    ]}
+
+    If [exceptionally] fail with an exception, it is propagated as
+    usual.
+
+    If [always] or [exceptionally] use exceptions internally for
+    control-flow but do not raise, then [try_finally] is careful to
+    preserve any exception backtrace coming from [work] or [always]
+    for easier debugging.
+*)
+
 
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
         (* [map_end f l t] is [map f l @ t], just more efficient. *)

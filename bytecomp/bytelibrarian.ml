@@ -90,29 +90,28 @@ let copy_object_file oc name =
 
 let create_archive file_list lib_name =
   let outchan = open_out_bin lib_name in
-  try
-    output_string outchan cma_magic_number;
-    let ofs_pos_toc = pos_out outchan in
-    output_binary_int outchan 0;
-    let units =
-      List.flatten(List.map (copy_object_file outchan) file_list) in
-    let toc =
-      { lib_units = units;
-        lib_custom = !Clflags.custom_runtime;
-        lib_ccobjs = !Clflags.ccobjs @ !lib_ccobjs;
-        lib_ccopts = !Clflags.all_ccopts @ !lib_ccopts;
-        lib_dllibs = !Clflags.dllibs @ !lib_dllibs } in
-    let pos_toc = pos_out outchan in
-    Emitcode.marshal_to_channel_with_possibly_32bit_compat
-      ~filename:lib_name ~kind:"bytecode library"
-      outchan toc;
-    seek_out outchan ofs_pos_toc;
-    output_binary_int outchan pos_toc;
-    close_out outchan
-  with x ->
-    close_out outchan;
-    remove_file lib_name;
-    raise x
+  Misc.try_finally
+    ~always:(fun () -> close_out outchan)
+    ~exceptionally:(fun () -> remove_file lib_name)
+    (fun () ->
+       output_string outchan cma_magic_number;
+       let ofs_pos_toc = pos_out outchan in
+       output_binary_int outchan 0;
+       let units =
+         List.flatten(List.map (copy_object_file outchan) file_list) in
+       let toc =
+         { lib_units = units;
+           lib_custom = !Clflags.custom_runtime;
+           lib_ccobjs = !Clflags.ccobjs @ !lib_ccobjs;
+           lib_ccopts = !Clflags.all_ccopts @ !lib_ccopts;
+           lib_dllibs = !Clflags.dllibs @ !lib_dllibs } in
+       let pos_toc = pos_out outchan in
+       Emitcode.marshal_to_channel_with_possibly_32bit_compat
+         ~filename:lib_name ~kind:"bytecode library"
+         outchan toc;
+       seek_out outchan ofs_pos_toc;
+       output_binary_int outchan pos_toc;
+    )
 
 open Format
 

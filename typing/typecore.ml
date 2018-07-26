@@ -1493,19 +1493,14 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
 
 let type_pat ?exception_allowed ?no_existentials ?constrs ?labels ?(mode=Normal)
     ?(explode=0) ?(lev=get_current_level()) env sp expected_ty =
-  gadt_equations_level := Some lev;
-  try
-    let r =
-      type_pat ?exception_allowed ~no_existentials ~constrs ~labels ~mode
-        ~explode ~env sp expected_ty (fun x -> x)
-    in
-    iter_pattern (fun p -> p.pat_env <- !env) r;
-    gadt_equations_level := None;
-    r
-  with e ->
-    gadt_equations_level := None;
-    raise e
-
+  Misc.protect_refs [Misc.R (gadt_equations_level, Some lev)] (fun () ->
+      let r =
+        type_pat ?exception_allowed ~no_existentials ~constrs ~labels ~mode
+          ~explode ~env sp expected_ty (fun x -> x)
+      in
+      iter_pattern (fun p -> p.pat_env <- !env) r;
+      r
+    )
 
 (* this function is passed to Partial.parmatch
    to type check gadt nonexhaustiveness *)

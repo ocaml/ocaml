@@ -353,9 +353,9 @@ let link ppf objfiles output_name =
       (fun () -> make_startup_file ppf units_tolink);
     Misc.try_finally
       (fun () ->
-        call_linker (List.map object_file_name objfiles)
-                    startup_obj output_name)
-      (fun () -> remove_file startup_obj)
+         call_linker (List.map object_file_name objfiles)
+           startup_obj output_name)
+      ~always:(fun () -> remove_file startup_obj)
   )
 
 (* Error report *)
