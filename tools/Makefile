@@ -156,8 +156,8 @@ installopt::
 
 # To help building mixed-mode libraries (OCaml + C)
 
-$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo build_path_prefix_map.cmo misc.cmo \
-	         ocamlmklib.cmo,)
+$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
+	         build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
 
 
 ocamlmklibconfig.ml: ../config/Makefile Makefile
@@ -177,8 +177,8 @@ clean::
 # To make custom toplevels
 
 OCAMLMKTOP=ocamlmktop.cmo
-OCAMLMKTOP_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
-       numbers.cmo arg_helper.cmo clflags.cmo ccomp.cmo
+OCAMLMKTOP_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo \
+       identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo ccomp.cmo
 
 $(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 
@@ -217,8 +217,8 @@ clean::
 
 # Insert labels following an interface file (upgrade 3.02 to 3.03)
 
-ADDLABELS_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo arg_helper.cmo clflags.cmo \
-  identifiable.cmo numbers.cmo terminfo.cmo \
+ADDLABELS_IMPORTS=config.cmo build_path_prefix_map.cmo misc.cmo arg_helper.cmo \
+  clflags.cmo identifiable.cmo numbers.cmo terminfo.cmo \
   warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo parser.cmo lexer.cmo parse.cmo
 
