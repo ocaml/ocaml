@@ -24,17 +24,6 @@ OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc $(STDLIBFLAGS)
 OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt $(STDLIBFLAGS)
-ifeq "$(UNIX_OR_WIN32)" "unix"
-FLEXLINK_ENV =
-else # Windows
-  ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-  FLEXLINK_ENV =
-  else
-  # FLEXLINK_ENV must have a space at the end
-  FLEXLINK_ENV = \
-    OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
-  endif
-endif
 OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep -slash
 OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
 # TODO: figure out whether the DEBUG lines the following preprocessor removes

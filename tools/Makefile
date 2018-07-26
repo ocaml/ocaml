@@ -73,14 +73,6 @@ $(eval $(call \
  byte_and_opt_,$(subst $$,$$$$,$1),$(subst $$,$$$$,$2),$(subst $$,$$$$,$3)))
 endef
 
-ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-FLEXLINK_ENV =
-else
-# FLEXLINK_ENV must have a space at the end
-FLEXLINK_ENV = \
-  OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
-endif
-
 CAMLC=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -g -nostdlib -I $(ROOTDIR)/boot \
       -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
