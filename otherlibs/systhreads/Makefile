@@ -21,9 +21,11 @@ include $(ROOTDIR)/Makefile.common
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 
 ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-export OCAML_FLEXLINK:=
+FLEXLINK_ENV =
 else
-export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
+# FLEXLINK_ENV must have a space at the end
+FLEXLINK_ENV = \
+  OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
 endif
 
 LIBS = -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
@@ -67,10 +69,10 @@ all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 allopt: lib$(LIBNAME)nat.$(A) $(LIBNAME).cmxa $(CMIFILES)
 
 lib$(LIBNAME).$(A): $(BYTECODE_C_OBJS)
-	$(MKLIB) -o $(LIBNAME) $(BYTECODE_C_OBJS) $(PTHREAD_LINK)
+	$(FLEXLINK_ENV)$(MKLIB) -o $(LIBNAME) $(BYTECODE_C_OBJS) $(PTHREAD_LINK)
 
 lib$(LIBNAME)nat.$(A): $(NATIVECODE_C_OBJS)
-	$(MKLIB) -o $(LIBNAME)nat $^
+	$(FLEXLINK_ENV)$(MKLIB) -o $(LIBNAME)nat $^
 
 $(LIBNAME).cma: $(THREADS_BCOBJS)
 ifeq "$(UNIX_OR_WIN32)" "unix"
