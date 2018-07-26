@@ -1017,10 +1017,13 @@ let rec close fenv cenv = function
       let dbg = Debuginfo.from_location loc in
       (Uprim(Praise k, [ulam], dbg),
        Value_unknown)
-  | Lprim(Pperform, args, loc) ->
-      let args = close_list fenv cenv args in
+  | Lprim(Pperform, [arg], loc) ->
+      let (arg, _approx) = close fenv cenv arg in
       let dbg = Debuginfo.from_location loc in
-      (Udirect_apply ("caml_perform", args, dbg), Value_unknown)
+      let alloc_cont = Uprim(Pmakeblock(Obj.cont_tag, Mutable, None),
+                             [Uconst (Uconst_int 0)],
+                             dbg) in
+      (Udirect_apply ("caml_perform", [arg; alloc_cont], dbg), Value_unknown)
   | Lprim(Presume, args, loc) ->
       let args = close_list fenv cenv args in
       let dbg = Debuginfo.from_location loc in

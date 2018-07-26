@@ -26,9 +26,7 @@ static __thread int stack_is_saved = 0;
 
 static struct stack_info* save_stack ()
 {
-  caml_domain_state* domain_state = Caml_state;
-  struct stack_info* old_stack = domain_state->current_stack;
-  return old_stack;
+  return Caml_state->current_stack;
 }
 
 static void load_stack (struct stack_info* stack) {
@@ -445,26 +443,6 @@ CAMLprim value caml_clone_continuation (value cont)
 void caml_restore_stack()
 {
   load_stack(Caml_state->current_stack);
-}
-
-struct stack_info* caml_reverse_fiber_stack (struct stack_info* stack)
-{
-  struct stack_info* next;
-  struct stack_info* prev = NULL;
-
-  while (stack != NULL) {
-    next = Stack_parent(stack);
-    Stack_parent(stack) = prev;
-    prev = stack;
-    stack = next;
-  }
-
-  return prev;
-}
-
-CAMLprim value caml_continuation_create (value stk)
-{
-  return caml_alloc_1(Cont_tag, stk);
 }
 
 CAMLprim value caml_continuation_use (value cont)
