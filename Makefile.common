@@ -28,3 +28,16 @@ INSTALL_BINDIR = $(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR = $(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR = $(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR = $(DESTDIR)$(MANDIR)
+
+ifeq "$(UNIX_OR_WIN32)" "win32"
+FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
+ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
+  FLEXLINK_ENV =
+else
+  # FLEXLINK_ENV must have a space at the end
+  FLEXLINK_ENV = \
+    OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
+endif
+else
+FLEXLINK_ENV =
+endif

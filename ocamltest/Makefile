@@ -18,23 +18,16 @@
 ROOTDIR=..
 
 include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.common
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
   unix := false
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -w -f - \
     | sed 's/\\/\\\\\\\\/g')
-  ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-    FLEXLINK_ENV =
-  else
-    # FLEXLINK_ENV must have a space at the end
-    FLEXLINK_ENV = \
-      OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
-  endif
   mkexe := $(MKEXE_ANSI) -link $(OC_LDFLAGS)
 else
   unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
-  FLEXLINK_ENV =
   mkexe := $(MKEXE)
 endif
 

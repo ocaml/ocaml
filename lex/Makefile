@@ -20,14 +20,6 @@ ROOTDIR=..
 include $(ROOTDIR)/config/Makefile
 include $(ROOTDIR)/Makefile.common
 
-ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-FLEXLINK_ENV =
-else
-# FLEXLINK_ENV must have a space at the end
-FLEXLINK_ENV = \
-  OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
-endif
-
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 
