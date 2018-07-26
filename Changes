@@ -64,6 +64,9 @@ Working version
   (Christopher Zimmermann, review by Xavier Leroy, Damien Doligez, David
    Allsopp, David Sheets)
 
+- Add the function Unix.truncate for Windows.
+  (Florent Monnier)
+
 ### Compiler user-interface and warnings:
 
 - PR#6416, GPR#1120: unique printed names for identifiers
