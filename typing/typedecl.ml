@@ -1739,7 +1739,7 @@ let check_unboxable env loc ty =
   try match ty.desc with
   | Tconstr (p, _, _) ->
     let tydecl = Env.find_type p env in
-    if tydecl.type_unboxed.unboxed then
+    if tydecl.type_unboxed.default then
       Location.prerr_warning loc
         (Warnings.Unboxable_type_in_prim_decl (Path.name p))
   | _ -> ()
