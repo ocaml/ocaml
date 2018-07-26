@@ -234,6 +234,14 @@ int process_apostrophe(FILE *const f)
             && cptr[4] == '\'') {
         fwrite(cptr, 1, 5, f);
         cptr += 5;
+    } else if (cptr[0] == '\\'
+            && cptr[1] == 'o'
+            && cptr[2] >= '0' && cptr[2] <= '3'
+            && cptr[3] >= '0' && cptr[3] <= '7'
+            && cptr[4] >= '0' && cptr[4] <= '7'
+            && cptr[5] == '\'') {
+        fwrite(cptr, 1, 6, f);
+        cptr += 6;
     } else if (cptr[0] == '\\' && cptr[2] == '\'') {
         fwrite(cptr, 1, 3, f);
         cptr += 3;
