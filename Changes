@@ -25,6 +25,10 @@ Working version
 - #1901: Fix lexing of character literals in comments
   (Pieter Goetschalckx, review by Damien Doligez)
 
+- #1932: Allow octal escape sequences and identifiers containing apostrophes
+  in ocamlyacc actions and comments.
+  (Pieter Goetschalckx, review by Damien Doligez)
+
 - #2288: Move middle end code from [Asmgen] to [Clambda_middle_end] and
   [Flambda_middle_end].  Run [Un_anf] from the middle end, not [Cmmgen].
   (Mark Shinwell, review by Pierre Chambart)
