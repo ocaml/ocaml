@@ -25,8 +25,8 @@ WIN_FILES = accept.c bind.c channels.c close.c \
   mkdir.c mmap.c open.c pipe.c read.c readlink.c rename.c \
   select.c sendrecv.c \
   shutdown.c sleep.c socket.c sockopt.c startup.c stat.c \
-  symlink.c system.c times.c unixsupport.c windir.c winwait.c write.c \
-  winlist.c winworker.c windbug.c utimes.c
+  symlink.c system.c times.c truncate.c unixsupport.c windir.c winwait.c \
+  write.c winlist.c winworker.c windbug.c utimes.c
 
 # Files from the ../unix directory
 UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
