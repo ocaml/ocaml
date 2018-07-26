@@ -168,6 +168,9 @@ Working version
 
 ### Other libraries:
 
+- #2023: Add the function Unix.truncate for Windows.
+  (Florent Monnier)
+
 - #7903, #2306: Make Thread.delay interruptible by signals again
   (Xavier Leroy, review by Jacques-Henri Jourdan and Edwin Török)
 
