@@ -14,8 +14,10 @@
 #**************************************************************************
 
 MAKEFLAGS := -r -R
-include ../config/Makefile
-include ../Makefile.common
+ROOTDIR=..
+
+include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.common
 
 ifeq ($(SYSTEM),unix)
 override define shellquote
@@ -24,7 +26,7 @@ endef
 $(foreach i,BINDIR LIBDIR STUBLIBDIR MANDIR,$(eval $(shellquote)))
 endif
 
-CAMLRUN ?= ../boot/ocamlrun
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 DESTDIR ?=
 # Setup GNU make variables storing per-target source and target,
 # a list of installed tools, and a function to quote a filename for
@@ -47,10 +49,10 @@ define byte_and_opt_
 $(and $(filter-out 1,$(words $1)),$(error \
    cannot build file with whitespace in name))
 $1: $3 $2
-	$$(CAMLC) $$(LINKFLAGS) -I .. -o $$@ $2
+	$$(CAMLC) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ $2
 
 $1.opt: $3 $$(call byte2native,$2)
-	$$(FLEXLINK_ENV)$$(CAMLOPT) $$(LINKFLAGS) -I .. -o $$@ \
+	$$(FLEXLINK_ENV)$$(CAMLOPT) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ \
 	                            $$(call byte2native,$2)
 
 all: $1
@@ -71,8 +73,6 @@ $(eval $(call \
  byte_and_opt_,$(subst $$,$$$$,$1),$(subst $$,$$$$,$2),$(subst $$,$$$$,$3)))
 endef
 
-ROOTDIR=..
-
 ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
 FLEXLINK_ENV =
 else
@@ -81,13 +81,14 @@ FLEXLINK_ENV = \
   OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
 endif
 
-CAMLC=$(CAMLRUN) ../boot/ocamlc -g -nostdlib -I ../boot \
-      -use-prims ../runtime/primitives -I ..
-CAMLOPT=$(CAMLRUN) ../ocamlopt -g -nostdlib -I ../stdlib
-CAMLLEX=$(CAMLRUN) ../boot/ocamllex
-INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
-         -I ../middle_end -I ../middle_end/base_types -I ../driver \
-         -I ../toplevel
+CAMLC=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -g -nostdlib -I $(ROOTDIR)/boot \
+      -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
+CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
+CAMLLEX=$(CAMLRUN) $(ROOTDIR)/boot/ocamllex
+INCLUDES=-I $(ROOTDIR)/utils -I $(ROOTDIR)/parsing -I $(ROOTDIR)/typing \
+         -I $(ROOTDIR)/bytecomp -I $(ROOTDIR)/asmcomp -I $(ROOTDIR)/middle_end \
+         -I $(ROOTDIR)/middle_end/base_types -I $(ROOTDIR)/driver \
+         -I $(ROOTDIR)/toplevel
 COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
  -safe-string -strict-formats -bin-annot $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
@@ -102,8 +103,8 @@ allopt: opt.opt
 
 CAMLDEP_OBJ=ocamldep.cmo
 CAMLDEP_IMPORTS= \
-  ../compilerlibs/ocamlcommon.cma \
-  ../compilerlibs/ocamlbytecomp.cma
+  $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+  $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma
 ocamldep: LINKFLAGS += -compat-32
 $(call byte_and_opt,ocamldep,$(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
 ocamldep: depend.cmi
@@ -158,13 +159,13 @@ $(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
 	         build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
 
 
-ocamlmklibconfig.ml: ../config/Makefile Makefile
+ocamlmklibconfig.ml: $(ROOTDIR)/config/Makefile Makefile
 	(echo 'let bindir = "$(BINDIR)"'; \
          echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
          echo 'let default_rpath = "$(RPATH)"'; \
          echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \
          echo 'let toolpref = "$(TOOLPREF)"'; \
-         sed -n -e 's/^#ml //p' ../config/Makefile) \
+         sed -n -e 's/^#ml //p' $(ROOTDIR)/config/Makefile) \
         > ocamlmklibconfig.ml
 
 beforedepend:: ocamlmklibconfig.ml
@@ -281,8 +282,8 @@ beforedepend:: cvt_emit.ml
 # Reading cmt files
 
 READ_CMT= \
-          ../compilerlibs/ocamlcommon.cma \
-          ../compilerlibs/ocamlbytecomp.cma \
+          $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+          $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
           \
           cmt2annot.cmo read_cmt.cmo
 
@@ -300,8 +301,8 @@ install::
 # The bytecode disassembler
 
 DUMPOBJ= \
-          ../compilerlibs/ocamlcommon.cma \
-          ../compilerlibs/ocamlbytecomp.cma \
+          $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+          $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
           \
           opnames.cmo dumpobj.cmo
 
@@ -313,8 +314,8 @@ make_opcodes.ml: make_opcodes.mll
 make_opcodes: make_opcodes.ml
 	$(CAMLC) make_opcodes.ml -o $@
 
-opnames.ml: ../runtime/caml/instruct.h make_opcodes
-	../runtime/ocamlrun make_opcodes -opnames < $< > $@
+opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h make_opcodes
+	$(ROOTDIR)/runtime/ocamlrun make_opcodes -opnames < $< > $@
 
 clean::
 	rm -f opnames.ml make_opcodes make_opcodes.ml
@@ -329,15 +330,15 @@ else
 DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
 endif
 
-objinfo_helper$(EXE): objinfo_helper.c ../runtime/caml/s.h
-	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime $(OUTPUTEXE)$@ \
+objinfo_helper$(EXE): objinfo_helper.c $(ROOTDIR)/runtime/caml/s.h
+	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -I$(ROOTDIR)/runtime $(OUTPUTEXE)$@ \
           $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) $< $(LIBBFD_LINK)
 
-OBJINFO=../compilerlibs/ocamlcommon.cma \
-        ../compilerlibs/ocamlbytecomp.cma \
-        ../compilerlibs/ocamlmiddleend.cma \
-        ../asmcomp/printclambda.cmo \
-        ../asmcomp/export_info.cmo \
+OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+        $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
+        $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
+        $(ROOTDIR)/asmcomp/printclambda.cmo \
+        $(ROOTDIR)/asmcomp/export_info.cmo \
         objinfo.cmo
 
 $(call byte_and_opt,ocamlobjinfo,$(OBJINFO),objinfo_helper$(EXE))
@@ -346,24 +347,25 @@ install::
 	$(INSTALL_PROG) \
 	  objinfo_helper$(EXE) "$(INSTALL_LIBDIR)/objinfo_helper$(EXE)"
 
-primreq=../compilerlibs/ocamlcommon.cma \
-        ../compilerlibs/ocamlbytecomp.cma \
+primreq=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+        $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
         primreq.cmo
 
 # Scan object files for required primitives
 $(call byte_and_opt,primreq,$(primreq),)
 
-LINTAPIDIFF=../compilerlibs/ocamlcommon.cmxa \
-        ../compilerlibs/ocamlbytecomp.cmxa \
-        ../compilerlibs/ocamlmiddleend.cmxa \
-        ../asmcomp/printclambda.cmx \
-        ../asmcomp/export_info.cmx \
-	../otherlibs/str/str.cmxa \
+LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
+        $(ROOTDIR)/compilerlibs/ocamlbytecomp.cmxa \
+        $(ROOTDIR)/compilerlibs/ocamlmiddleend.cmxa \
+        $(ROOTDIR)/asmcomp/printclambda.cmx \
+        $(ROOTDIR)/asmcomp/export_info.cmx \
+	$(ROOTDIR)/otherlibs/str/str.cmxa \
 	lintapidiff.cmx
 
-lintapidiff.opt: INCLUDES+= -I ../otherlibs/str
+lintapidiff.opt: INCLUDES+= -I $(ROOTDIR)/otherlibs/str
 lintapidiff.opt: $(LINTAPIDIFF)
-	$(FLEXLINK_ENV)$(CAMLOPT) $(LINKFLAGS) -I .. -o $@ $(LINTAPIDIFF)
+	$(FLEXLINK_ENV)$(CAMLOPT) $(LINKFLAGS) -I $(ROOTDIR) -o $@ \
+	                          $(LINTAPIDIFF)
 clean::
 	rm -f -- lintapidiff.opt lintapidiff.cm? lintapidiff.o
 
@@ -374,16 +376,16 @@ clean::
 
 # Copy a bytecode executable, stripping debug info
 
-stripdebug=../compilerlibs/ocamlcommon.cma \
-           ../compilerlibs/ocamlbytecomp.cma \
+stripdebug=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+           $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
            stripdebug.cmo
 
 $(call byte_and_opt,stripdebug,$(stripdebug),)
 
 # Compare two bytecode executables
 
-CMPBYT=../compilerlibs/ocamlcommon.cma \
-       ../compilerlibs/ocamlbytecomp.cma \
+CMPBYT=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+       $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
        cmpbyt.cmo
 
 $(call byte_and_opt,cmpbyt,$(CMPBYT),)
@@ -395,19 +397,21 @@ install::
 	  "$(INSTALL_BINDIR)/"
 endif
 
-CAMLTEX= ../compilerlibs/ocamlcommon.cma \
-	../compilerlibs/ocamlbytecomp.cma \
-	../compilerlibs/ocamltoplevel.cma \
-	../otherlibs/str/str.cma \
-	../otherlibs/$(UNIXLIB)/unix.cma \
+CAMLTEX= $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+	$(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
+	$(ROOTDIR)/compilerlibs/ocamltoplevel.cma \
+	$(ROOTDIR)/otherlibs/str/str.cma \
+	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.cma \
 	caml_tex.ml
 
 #Scan latex files, and run ocaml code examples
 
-caml-tex: INCLUDES+= -I ../otherlibs/str -I ../otherlibs/$(UNIXLIB)
+caml-tex: INCLUDES+= -I $(ROOTDIR)/otherlibs/str \
+                     -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
 caml-tex: $(CAMLTEX)
-	../runtime/ocamlrun ../ocamlc -nostdlib -I ../stdlib $(LINKFLAGS) \
-	-linkall -o $@ -no-alias-deps $(CAMLTEX)
+	$(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlc -nostdlib \
+	                            -I $(ROOTDIR)/stdlib $(LINKFLAGS) -linkall \
+	                            -o $@ -no-alias-deps $(CAMLTEX)
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we delay building caml-tex to the opt.opt stage
