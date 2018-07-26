@@ -1280,11 +1280,9 @@ asmcomp/x86_masm.cmx : asmcomp/x86_proc.cmx asmcomp/x86_ast.cmi \
     asmcomp/x86_masm.cmi
 asmcomp/x86_masm.cmi : asmcomp/x86_ast.cmi
 asmcomp/x86_proc.cmo : asmcomp/x86_ast.cmi utils/misc.cmi utils/config.cmi \
-    utils/clflags.cmi utils/ccomp.cmi utils/build_path_prefix_map.cmi \
-    asmcomp/x86_proc.cmi
+    utils/clflags.cmi utils/ccomp.cmi asmcomp/x86_proc.cmi
 asmcomp/x86_proc.cmx : asmcomp/x86_ast.cmi utils/misc.cmx utils/config.cmx \
-    utils/clflags.cmx utils/ccomp.cmx utils/build_path_prefix_map.cmx \
-    asmcomp/x86_proc.cmi
+    utils/clflags.cmx utils/ccomp.cmx asmcomp/x86_proc.cmi
 asmcomp/x86_proc.cmi : asmcomp/x86_ast.cmi
 middle_end/alias_analysis.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
