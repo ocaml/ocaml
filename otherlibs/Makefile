@@ -22,9 +22,11 @@ include $(ROOTDIR)/Makefile.common
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 
 ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-export OCAML_FLEXLINK:=
+FLEXLINK_ENV =
 else
-export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
+# FLEXLINK_ENV must have a space at the end
+FLEXLINK_ENV = \
+  OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
 endif
 
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
@@ -74,10 +76,11 @@ $(LIBNAME).cmxa: $(CAMLOBJS_NAT)
 	         $(CAMLOBJS_NAT) $(LINKOPTS)
 
 $(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(CLIBNAME).$(A)
-	$(CAMLOPT) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
+	$(FLEXLINK_ENV)$(CAMLOPT) -shared -o $(LIBNAME).cmxs -I . \
+	                                     $(LIBNAME).cmxa
 
 lib$(CLIBNAME).$(A): $(COBJS)
-	$(MKLIB) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
+	$(FLEXLINK_ENV)$(MKLIB) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
 
 install::
 	if test -f dll$(CLIBNAME)$(EXT_DLL); then \

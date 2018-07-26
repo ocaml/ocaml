@@ -22,15 +22,16 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -w -f - \
     | sed 's/\\/\\\\\\\\/g')
   ifeq "$(wildcard ../flexdll/Makefile)" ""
-    FLEXLINK_ENV=
+    FLEXLINK_ENV =
   else
-    FLEXLINK_ENV=OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe"
+    # FLEXLINK_ENV must have a space at the end
+    FLEXLINK_ENV = OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe" #
   endif
   mkexe := $(MKEXE_ANSI) -link $(OC_LDFLAGS)
 else
   unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
-  FLEXLINK_ENV=
+  FLEXLINK_ENV =
   mkexe := $(MKEXE)
 endif
 
@@ -158,9 +159,9 @@ flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error A
 
-ocamlc := $(FLEXLINK_ENV) ../runtime/ocamlrun ../ocamlc $(flags)
+ocamlc := ../runtime/ocamlrun ../ocamlc $(flags)
 
-ocamlopt := $(FLEXLINK_ENV) ../runtime/ocamlrun ../ocamlopt $(flags)
+ocamlopt := ../runtime/ocamlrun ../ocamlopt $(flags)
 
 ocamldep := ../runtime/ocamlrun ../tools/ocamldep -slash
 
@@ -178,13 +179,13 @@ allopt: ocamltest.opt$(EXE)
 opt.opt: allopt
 
 ocamltest$(EXE): $(bytecode_modules)
-	$(ocamlc) -custom ocamlcommon.cma -o $@ $^
+	$(FLEXLINK_ENV)$(ocamlc) -custom ocamlcommon.cma -o $@ $^
 
 %.cmo: %.ml
 	$(ocamlc) -c $<
 
 ocamltest.opt$(EXE): $(native_modules)
-	$(ocamlopt) ocamlcommon.cmxa -o $@ $^
+	$(FLEXLINK_ENV)$(ocamlopt) ocamlcommon.cmxa -o $@ $^
 
 %.cmx: %.ml
 	$(ocamlopt) -c $<

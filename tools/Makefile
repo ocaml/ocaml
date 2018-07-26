@@ -50,7 +50,8 @@ $1: $3 $2
 	$$(CAMLC) $$(LINKFLAGS) -I .. -o $$@ $2
 
 $1.opt: $3 $$(call byte2native,$2)
-	$$(CAMLOPT) $$(LINKFLAGS) -I .. -o $$@ $$(call byte2native,$2)
+	$$(FLEXLINK_ENV)$$(CAMLOPT) $$(LINKFLAGS) -I .. -o $$@ \
+	                            $$(call byte2native,$2)
 
 all: $1
 
@@ -73,20 +74,16 @@ endef
 ROOTDIR=..
 
 ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-export OCAML_FLEXLINK:=
+FLEXLINK_ENV =
 else
-export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
+# FLEXLINK_ENV must have a space at the end
+FLEXLINK_ENV = \
+  OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
 endif
 
 CAMLC=$(CAMLRUN) ../boot/ocamlc -g -nostdlib -I ../boot \
       -use-prims ../runtime/primitives -I ..
 CAMLOPT=$(CAMLRUN) ../ocamlopt -g -nostdlib -I ../stdlib
-ifeq "$(UNIX_OR_WIN32)" "win32"
-  ifneq "$(wildcard ../flexdll/Makefile)" ""
-    CAMLOPT := OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe" \
-      $(CAMLOPT)
-  endif
-endif
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../middle_end -I ../middle_end/base_types -I ../driver \
@@ -366,7 +363,7 @@ LINTAPIDIFF=../compilerlibs/ocamlcommon.cmxa \
 
 lintapidiff.opt: INCLUDES+= -I ../otherlibs/str
 lintapidiff.opt: $(LINTAPIDIFF)
-	$(CAMLOPT) $(LINKFLAGS) -I .. -o $@ $(LINTAPIDIFF)
+	$(FLEXLINK_ENV)$(CAMLOPT) $(LINKFLAGS) -I .. -o $@ $(LINTAPIDIFF)
 clean::
 	rm -f -- lintapidiff.opt lintapidiff.cm? lintapidiff.o
 

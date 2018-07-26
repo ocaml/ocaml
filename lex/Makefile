@@ -21,9 +21,11 @@ CAMLYACC ?= ../yacc/ocamlyacc
 ROOTDIR=..
 
 ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-export OCAML_FLEXLINK:=
+FLEXLINK_ENV =
 else
-export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
+# FLEXLINK_ENV must have a space at the end
+FLEXLINK_ENV = \
+  OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
 endif
 
 CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot \
@@ -49,7 +51,7 @@ ocamllex: $(OBJS)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamllex $(OBJS)
 
 ocamllex.opt: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -o ocamllex.opt $(OBJS:.cmo=.cmx)
+	$(FLEXLINK_ENV)$(CAMLOPT) -o ocamllex.opt $(OBJS:.cmo=.cmx)
 
 clean::
 	rm -f ocamllex ocamllex.opt

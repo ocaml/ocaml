@@ -23,15 +23,17 @@ OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc $(STDLIBFLAGS)
-ifeq "$(UNIX_OR_WIN32)" "unix"
 OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt $(STDLIBFLAGS)
+ifeq "$(UNIX_OR_WIN32)" "unix"
+FLEXLINK_ENV =
 else # Windows
   ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-    FLEXLINK_ENV=
+  FLEXLINK_ENV =
   else
-    FLEXLINK_ENV=OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe"
+  # FLEXLINK_ENV must have a space at the end
+  FLEXLINK_ENV = \
+    OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe" #
   endif
-  OCAMLOPT = $(FLEXLINK_ENV) $(OCAMLRUN) $(ROOTDIR)/ocamlopt $(STDLIBFLAGS)
 endif
 OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep -slash
 OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
@@ -216,7 +218,7 @@ $(OCAMLDOC): $(EXECMOFILES)
 	$(OCAMLC) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_BCLIBRARIES) $^
 
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(OCAMLOPT) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_NCLIBRARIES) $^
+	$(FLEXLINK_ENV)$(OCAMLOPT) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_NCLIBRARIES) $^
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 	$(OCAMLC) -a -o $@ $(LINKFLAGS) $^
@@ -268,7 +270,7 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 	$(OCAMLOPT) $(OCAMLPP) $(COMPFLAGS) -c $<
 
 .ml.cmxs:
-	$(OCAMLOPT) -shared -o $@ $(OCAMLPP) $(COMPFLAGS) $<
+	$(FLEXLINK_ENV)$(OCAMLOPT) -shared -o $@ $(OCAMLPP) $(COMPFLAGS) $<
 
 .mll.ml:
 	$(OCAMLLEX) $<
