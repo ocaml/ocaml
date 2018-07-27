@@ -4623,7 +4623,7 @@ and type_cases ?in_function env ty_arg ty_res ?conts partial_flag loc caselist =
   let cases =
     List.map2
       (fun (pat, (ext_env, unpacks), cont) {pc_lhs; pc_guard; pc_rhs} ->
-        let cont, ext_env =
+        let cont, ext_env' =
           match cont with
           | Some (id, desc) ->
               let ext_env =
@@ -4649,11 +4649,17 @@ and type_cases ?in_function env ty_arg ty_res ?conts partial_flag loc caselist =
           match pc_guard with
           | None -> None
           | Some scond ->
-              Some
+             (* It is crucial that the continuation is not used in the
+                `when' expression as the extent of the continuation is
+                yet to be determined. We make the continuation
+                inaccessible by typing the `when' expression using the
+                environment `ext_env' which does not bind the
+                continuation variable. *)
+             Some
                 (type_expect ext_env (wrap_unpacks scond unpacks)
                    Predef.type_bool)
         in
-        let exp = type_expect ?in_function ext_env sexp ty_res' in
+        let exp = type_expect ?in_function ext_env' sexp ty_res' in
         {
          c_lhs = pat;
          c_cont = cont;
