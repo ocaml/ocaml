@@ -1,61 +1,87 @@
-Line 5, characters 0-1, Line 5, characters 5-7:  (3; 2;;
-                                                 ^    ^^
-Syntax error: ')' expected, the highlighted '(' might be unmatched
-Line 2, characters 0-5,
-Line 2, characters 10-12:
+Line 5, characters 5-7,
+Line 5, characters 0-1:
+  (3; 2;;
+  ^    ^^
+Error: Syntax error: ')' expected
+       Line 5, characters 0-1:
+       This '(' might be unmatched
+Line 2, characters 10-12,
+Line 2, characters 0-5:
   begin 3; 2;;
   ^^^^^     ^^
-Syntax error: 'end' expected, the highlighted 'begin' might be unmatched
-Line 2, characters 5-6,
-Line 2, characters 10-12:
+Error: Syntax error: 'end' expected
+       Line 2, characters 0-5:
+       This 'begin' might be unmatched
+Line 2, characters 10-12,
+Line 2, characters 5-6:
   List.(3; 2;;
        ^    ^^
-Syntax error: ')' expected, the highlighted '(' might be unmatched
-Line 2, characters 12-13,
-Line 2, characters 17-19:
+Error: Syntax error: ')' expected
+       Line 2, characters 5-6:
+       This '(' might be unmatched
+Line 2, characters 17-19,
+Line 2, characters 12-13:
   simple_expr.(3; 2;;
               ^    ^^
-Syntax error: ')' expected, the highlighted '(' might be unmatched
-Line 2, characters 12-13,
-Line 2, characters 17-19:
+Error: Syntax error: ')' expected
+       Line 2, characters 12-13:
+       This '(' might be unmatched
+Line 2, characters 17-19,
+Line 2, characters 12-13:
   simple_expr.[3; 2;;
               ^    ^^
-Syntax error: ']' expected, the highlighted '[' might be unmatched
-Line 2, characters 13-14,
-Line 2, characters 15-17:
+Error: Syntax error: ']' expected
+       Line 2, characters 12-13:
+       This '[' might be unmatched
+Line 2, characters 15-17,
+Line 2, characters 13-14:
   simple_expr.%[3;;
                ^ ^^
-Syntax error: ']' expected, the highlighted '[' might be unmatched
-Line 2, characters 13-14,
-Line 2, characters 15-17:
+Error: Syntax error: ']' expected
+       Line 2, characters 13-14:
+       This '[' might be unmatched
+Line 2, characters 15-17,
+Line 2, characters 13-14:
   simple_expr.%(3;;
                ^ ^^
-Syntax error: ')' expected, the highlighted '(' might be unmatched
-Line 2, characters 13-14,
-Line 2, characters 15-17:
+Error: Syntax error: ')' expected
+       Line 2, characters 13-14:
+       This '(' might be unmatched
+Line 2, characters 15-17,
+Line 2, characters 13-14:
   simple_expr.%{3;;
                ^ ^^
-Syntax error: '}' expected, the highlighted '{' might be unmatched
-Line 2, characters 9-10,
-Line 2, characters 11-13:
+Error: Syntax error: '}' expected
+       Line 2, characters 13-14:
+       This '{' might be unmatched
+Line 2, characters 11-13,
+Line 2, characters 9-10:
   foo.Bar.%[3;;
            ^ ^^
-Syntax error: ']' expected, the highlighted '[' might be unmatched
-Line 2, characters 9-10,
-Line 2, characters 11-13:
+Error: Syntax error: ']' expected
+       Line 2, characters 9-10:
+       This '[' might be unmatched
+Line 2, characters 11-13,
+Line 2, characters 9-10:
   foo.Bar.%(3;;
            ^ ^^
-Syntax error: ')' expected, the highlighted '(' might be unmatched
-Line 2, characters 9-10,
-Line 2, characters 11-13:
+Error: Syntax error: ')' expected
+       Line 2, characters 9-10:
+       This '(' might be unmatched
+Line 2, characters 11-13,
+Line 2, characters 9-10:
   foo.Bar.%{3;;
            ^ ^^
-Syntax error: '}' expected, the highlighted '{' might be unmatched
-Line 2, characters 12-13,
-Line 2, characters 17-19:
+Error: Syntax error: '}' expected
+       Line 2, characters 9-10:
+       This '{' might be unmatched
+Line 2, characters 17-19,
+Line 2, characters 12-13:
   simple_expr.{3, 2;;
               ^    ^^
-Syntax error: '}' expected, the highlighted '{' might be unmatched
+Error: Syntax error: '}' expected
+       Line 2, characters 12-13:
+       This '{' might be unmatched
 Line 2, characters 10-12:
   { x = 3; y;;
             ^^
@@ -88,20 +114,26 @@ Line 2, characters 17-19:
   List.{< x = 3; y ;;
                    ^^
 Error: Syntax error
-Line 2, characters 0-1,
-Line 2, characters 20-22:
+Line 2, characters 20-22,
+Line 2, characters 0-1:
   (module struct end :;;
   ^                   ^^
-Syntax error: ')' expected, the highlighted '(' might be unmatched
-Line 2, characters 5-6,
-Line 2, characters 25-27:
+Error: Syntax error: ')' expected
+       Line 2, characters 0-1:
+       This '(' might be unmatched
+Line 2, characters 25-27,
+Line 2, characters 5-6:
   List.(module struct end :;;
        ^                   ^^
-Syntax error: ')' expected, the highlighted '(' might be unmatched
+Error: Syntax error: ')' expected
+       Line 2, characters 5-6:
+       This '(' might be unmatched
 
-Line 2, characters 0-1,
-Line 2, characters 2-3:
+Line 2, characters 2-3,
+Line 2, characters 0-1:
   (=;
   ^ ^
-Syntax error: ')' expected, the highlighted '(' might be unmatched
+Error: Syntax error: ')' expected
+       Line 2, characters 0-1:
+       This '(' might be unmatched
 

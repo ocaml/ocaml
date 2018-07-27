@@ -247,35 +247,36 @@ let comments () = List.rev !comment_list
 
 open Format
 
-let report_error ppf = function
+let prepare_error loc = function
   | Illegal_character c ->
-      fprintf ppf "Illegal character (%s)" (Char.escaped c)
+      Location.errorf ~loc "Illegal character (%s)" (Char.escaped c)
   | Illegal_escape s ->
-      fprintf ppf "Illegal backslash escape in string or character (%s)" s
+      Location.errorf ~loc
+        "Illegal backslash escape in string or character (%s)" s
   | Unterminated_comment _ ->
-      fprintf ppf "Comment not terminated"
+      Location.errorf ~loc "Comment not terminated"
   | Unterminated_string ->
-      fprintf ppf "String literal not terminated"
-  | Unterminated_string_in_comment (_, loc) ->
-      fprintf ppf "This comment contains an unterminated string literal@.\
-                   %aString literal begins here"
-              Location.print_error loc
+      Location.errorf ~loc "String literal not terminated"
+  | Unterminated_string_in_comment (_, literal_loc) ->
+      Location.errorf ~loc
+        "This comment contains an unterminated string literal"
+        ~sub:[Location.msg ~loc:literal_loc "String literal begins here"]
   | Keyword_as_label kwd ->
-      fprintf ppf "`%s' is a keyword, it cannot be used as label name" kwd
+      Location.errorf ~loc
+        "`%s' is a keyword, it cannot be used as label name" kwd
   | Invalid_literal s ->
-      fprintf ppf "Invalid literal %s" s
+      Location.errorf ~loc "Invalid literal %s" s
   | Invalid_directive (dir, explanation) ->
-      fprintf ppf "Invalid lexer directive %S" dir;
-      begin match explanation with
-        | None -> ()
-        | Some expl -> fprintf ppf ": %s" expl
-      end
+      Location.errorf ~loc "Invalid lexer directive %S%t" dir
+        (fun ppf -> match explanation with
+           | None -> ()
+           | Some expl -> fprintf ppf ": %s" expl)
 
 let () =
   Location.register_error_of_exn
     (function
       | Error (err, loc) ->
-          Some (Location.error_of_printer loc report_error err)
+          Some (prepare_error loc err)
       | _ ->
           None
     )

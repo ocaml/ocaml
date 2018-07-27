@@ -62,8 +62,7 @@ let match_expect_extension (ext : Parsetree.extension) =
   match ext with
   | ({Asttypes.txt="expect"|"ocaml.expect"; loc = extid_loc}, payload) ->
     let invalid_payload () =
-      Location.raise_errorf ~loc:extid_loc
-        "invalid [%%%%expect payload]"
+      Location.raise_errorf ~loc:extid_loc "invalid [%%%%expect payload]"
     in
     let string_constant (e : Parsetree.expression) =
       match e.pexp_desc with
@@ -130,16 +129,25 @@ let split_chunks phrases =
   loop phrases [] []
 
 module Compiler_messages = struct
-  let print_loc ppf (loc : Location.t) =
-    Format.fprintf ppf "%a:@." Location.print_loc loc;
+  let highlight ppf locs =
     match !Location.input_lexbuf with
     | None -> ()
-    | Some lexbuf -> Location.show_code_at_location ppf lexbuf [loc]
+    | Some lb -> Location.highlight_dumb ~print_chars:true lb ppf locs
+
+  let expect_printer () =
+    let dumb_toplevel_printer = Location.toplevel_printer ~highlight in
+    let pp_main_loc _self (report: Location.report) ppf _  =
+      (* We want to highlight locations even coming from a file, but the default
+         toplevel printer will only highlight locations from the toplevel. *)
+      let sub_locs = List.map (fun { Location.loc; _ } -> loc) report.sub in
+      highlight ppf (report.main.loc :: sub_locs)
+    in
+    { dumb_toplevel_printer with pp_main_loc }
 
   let capture ppf ~f =
     Misc.protect_refs
       [ R (Location.formatter_for_warnings , ppf)
-      ; R (Location.printer                , print_loc)
+      ; R (Location.report_printer         , expect_printer)
       ]
       f
 end

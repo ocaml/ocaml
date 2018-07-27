@@ -2389,7 +2389,7 @@ let () =
       | Error (Missing_module (loc, _, _)
               | Illegal_value_name (loc, _)
                as err) when loc <> Location.none ->
-          Some (Location.error_of_printer loc report_error err)
+          Some (Location.error_of_printer ~loc report_error err)
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )

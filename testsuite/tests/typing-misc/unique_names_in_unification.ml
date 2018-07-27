@@ -16,14 +16,10 @@ Line 5, characters 27-28:
                              ^
 Error: This expression has type t/2 but an expression was expected of type
          t/1
-Line 4, characters 2-12:
-    type t = B
-    ^^^^^^^^^^
-Definition of type t/1
-Line 1, characters 0-10:
-  type t = A
-  ^^^^^^^^^^
-Definition of type t/2
+       Line 4, characters 2-12:
+         Definition of type t/1
+       Line 1, characters 0-10:
+         Definition of type t/2
 |}]
 
 module M = struct type t = B end
@@ -43,15 +39,10 @@ Line 7, characters 34-35:
                                     ^
 Error: This expression has type M/2.t but an expression was expected of type
          M/1.t
-Line 4, characters 2-41:
-  ..module M = struct
-       type t = C
-    end
-Definition of module M/1
-Line 1, characters 0-32:
-  module M = struct type t = B end
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Definition of module M/2
+       Line 4, characters 2-41:
+         Definition of module M/1
+       Line 1, characters 0-32:
+         Definition of module M/2
 |}]
 
 type t = D
@@ -65,14 +56,10 @@ Line 2, characters 25-26:
                            ^
 Error: This expression has type t/1 but an expression was expected of type
          t/2
-Line 1, characters 0-10:
-  type t = A
-  ^^^^^^^^^^
-Definition of type t/1
-Line 1, characters 0-10:
-  type t = D
-  ^^^^^^^^^^
-Definition of type t/2
+       Line 1, characters 0-10:
+         Definition of type t/1
+       Line 1, characters 0-10:
+         Definition of type t/2
 |}]
 
 type ttt
@@ -93,12 +80,8 @@ Line 2, characters 32-33:
                                   ^
 Error: This expression has type ttt/2 but an expression was expected of type
          ttt/1
-Line 1, characters 0-26:
-  type nonrec ttt = X of ttt
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Definition of type ttt/1
-Line 2, characters 0-30:
-  type ttt = A of ttt | B of uuu
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Definition of type ttt/2
+       Line 1, characters 0-26:
+         Definition of type ttt/1
+       Line 2, characters 0-30:
+         Definition of type ttt/2
 |}]

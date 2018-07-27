@@ -661,7 +661,6 @@ module rec Bad : A = Bad;;
 [%%expect{|
 module type Alias = sig module N : sig  end module M = N end
 module F : functor (X : sig  end) -> sig type t end
-Line 1:
 Error: Module type declarations do not match:
          module type A = sig module M = F(List) end
        does not match

@@ -3,27 +3,33 @@ Line 9, characters 8-15:
           ^^^^^^^
 Error: This expression has type int but an expression was expected of type
          float
-Line 2, characters 8-9,
-Line 2, characters 15-17:
+Line 2, characters 15-17,
+Line 2, characters 8-9:
   let x = (1 + 2 in ();;
           ^      ^^
-Syntax error: ')' expected, the highlighted '(' might be unmatched
-Line 2, characters 8-9,
-Line 2, characters 14-16:
+Error: Syntax error: ')' expected
+       Line 2, characters 8-9:
+       This '(' might be unmatched
+Line 2, characters 14-16,
+Line 2, characters 8-9:
   let x = (1 + 2;;
           ^     ^^
-Syntax error: ')' expected, the highlighted '(' might be unmatched
+Error: Syntax error: ')' expected
+       Line 2, characters 8-9:
+       This '(' might be unmatched
 Line 3, characters 8-9:
   let y = 1 +. 2. in
           ^
 Error: This expression has type int but an expression was expected of type
          float
-Line 2, characters 8-9,
-Line 4, characters 2-4:
+Line 4, characters 2-4,
+Line 2, characters 8-9:
   ........(.
   ...
   ..in
-Syntax error: ')' expected, the highlighted '(' might be unmatched
+Error: Syntax error: ')' expected
+       Line 2, characters 8-9:
+       This '(' might be unmatched
 Line 2, characters 8-17:
   ........(1
     +
@@ -35,12 +41,12 @@ Error: This expression has type int but an expression was expected of type
          float
 File "error_highlighting_use2.ml", line 1, characters 15-17:
 Error: Syntax error: ')' expected
-File "error_highlighting_use2.ml", line 1, characters 8-9:
-Error: This '(' might be unmatched
+       File "error_highlighting_use2.ml", line 1, characters 8-9:
+       This '(' might be unmatched
 File "error_highlighting_use3.ml", line 3, characters 2-4:
 Error: Syntax error: ')' expected
-File "error_highlighting_use3.ml", line 1, characters 8-9:
-Error: This '(' might be unmatched
+       File "error_highlighting_use3.ml", line 1, characters 8-9:
+       This '(' might be unmatched
 File "error_highlighting_use4.ml", line 1, characters 8-17:
 Error: This expression has type int but an expression was expected of type
          float
