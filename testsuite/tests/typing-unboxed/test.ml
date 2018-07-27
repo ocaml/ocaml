@@ -130,11 +130,3 @@ external t : float -> float = "t" [@@unboxed];;
 
 (* PR#7424 *)
 type 'a b = B of 'a b b [@@unboxed];;
-
-(* MPR#7828 *)
-type i = I of int
-external id : i -> i = "%identity";;
-type ib = I of int [@@boxed]
-external idb : ib -> ib = "%identity";;
-type iub = I of int [@@unboxed]
-external idub : iub -> iub = "%identity";;

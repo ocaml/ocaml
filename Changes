@@ -261,7 +261,8 @@ Working version
   review by Gabriel Scherer)
 
 - MPR#7828: correct the conditions that generate warning 61,
-  Unboxable_type_in_prim_decl (Stefan Muenzel)
+  Unboxable_type_in_prim_decl
+  (Stefan Muenzel)
 
 OCaml 4.07 maintenance branch
 -----------------------------

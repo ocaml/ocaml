@@ -188,24 +188,4 @@ Line 1, characters 0-45:
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
 type 'a b = B of 'a b b [@@unboxed]
-Line 4, characters 0-34:
-  external id : i -> i = "%identity";;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 61: This primitive declaration uses type i, which is unannotated and
-unboxable. The representation of such types may change in future
-versions. You should annotate the declaration of i with [@@boxed]
-or [@@unboxed].
-Line 4, characters 0-34:
-  external id : i -> i = "%identity";;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 61: This primitive declaration uses type i, which is unannotated and
-unboxable. The representation of such types may change in future
-versions. You should annotate the declaration of i with [@@boxed]
-or [@@unboxed].
-type i = I of int
-external id : i -> i = "%identity"
-type ib = I of int
-external idb : ib -> ib = "%identity"
-type iub = I of int [@@unboxed]
-external idub : iub -> iub = "%identity"
 
