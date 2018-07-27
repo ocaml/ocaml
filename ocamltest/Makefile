@@ -15,7 +15,7 @@
 
 # The Makefile for ocamltest
 
-ROOTDIR=..
+ROOTDIR = ..
 
 include $(ROOTDIR)/config/Makefile
 include $(ROOTDIR)/Makefile.common
@@ -147,8 +147,7 @@ bytecode_modules := $(o_files) $(cmo_files)
 
 native_modules := $(o_files) $(cmx_files)
 
-directories := $(ROOTDIR)/utils $(ROOTDIR)/parsing $(ROOTDIR)/stdlib \
-               $(ROOTDIR)/compilerlibs
+directories := $(addprefix $(ROOTDIR)/,utils parsing stdlib compilerlibs)
 
 include_directories := $(addprefix -I , $(directories))
 

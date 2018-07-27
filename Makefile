@@ -15,7 +15,7 @@
 
 # The main Makefile
 
-ROOTDIR=.
+ROOTDIR = .
 
 include config/Makefile
 include Makefile.common
@@ -289,7 +289,7 @@ ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
   FLEXDLL_DIR =
 else
   BOOT_FLEXLINK_CMD = FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
-  FLEXDLL_DIR=$(if $(wildcard flexdll/flexdll_*.$(O)),+flexdll)
+  FLEXDLL_DIR = $(if $(wildcard flexdll/flexdll_*.$(O)),+flexdll)
 endif
 else
   FLEXDLL_DIR =

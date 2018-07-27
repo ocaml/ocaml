@@ -14,7 +14,7 @@
 #**************************************************************************
 
 MAKEFLAGS := -r -R
-ROOTDIR=..
+ROOTDIR = ..
 
 include $(ROOTDIR)/config/Makefile
 include $(ROOTDIR)/Makefile.common
@@ -73,17 +73,15 @@ $(eval $(call \
  byte_and_opt_,$(subst $$,$$$$,$1),$(subst $$,$$$$,$2),$(subst $$,$$$$,$3)))
 endef
 
-CAMLC=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -g -nostdlib -I $(ROOTDIR)/boot \
-      -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
-CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
-CAMLLEX=$(CAMLRUN) $(ROOTDIR)/boot/ocamllex
-INCLUDES=-I $(ROOTDIR)/utils -I $(ROOTDIR)/parsing -I $(ROOTDIR)/typing \
-         -I $(ROOTDIR)/bytecomp -I $(ROOTDIR)/asmcomp -I $(ROOTDIR)/middle_end \
-         -I $(ROOTDIR)/middle_end/base_types -I $(ROOTDIR)/driver \
-         -I $(ROOTDIR)/toplevel
-COMPFLAGS= -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
+CAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc -g -nostdlib -I $(ROOTDIR)/boot \
+        -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
+CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
+CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
+INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp asmcomp \
+                       middle_end middle_end/base_types driver toplevel)
+COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
  -safe-string -strict-formats -bin-annot $(INCLUDES)
-LINKFLAGS=$(INCLUDES)
+LINKFLAGS = $(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 
 # scrapelabels addlabels
@@ -398,8 +396,7 @@ CAMLTEX= $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
 
 #Scan latex files, and run ocaml code examples
 
-caml-tex: INCLUDES+= -I $(ROOTDIR)/otherlibs/str \
-                     -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
+caml-tex: INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str $(UNIXLIB))
 caml-tex: $(CAMLTEX)
 	$(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlc -nostdlib \
 	                            -I $(ROOTDIR)/stdlib $(LINKFLAGS) -linkall \
