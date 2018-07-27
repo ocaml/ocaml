@@ -35,7 +35,7 @@ else # Windows
   ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
     FLEXLINK_ENV =
   else
-    ROOT:=$(shell cd .. && pwd| cygpath -m -f -)
+    ROOT := $(shell cd .. && pwd| cygpath -m -f -)
     # FLEXLINK_ENV must have a space at the end
     FLEXLINK_ENV = \
       OCAML_FLEXLINK="$(ROOT)/boot/ocamlrun $(ROOT)/flexdll/flexlink.exe" #
