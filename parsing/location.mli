@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Source code locations (ranges of positions), used in parsetree. *)
+(** {1 Source code locations (ranges of positions), used in parsetree} *)
 
 open Format
 
@@ -52,32 +52,8 @@ val rhs_loc: int -> t
 
 val rhs_interval: int -> int -> t
 
-val input_name: string ref
-val input_lexbuf: Lexing.lexbuf option ref
-
-val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
-val print_loc: formatter -> t -> unit
-val print_error_prefix: formatter -> unit
-val print_error: formatter -> t -> unit
-val print_error_cur_file: formatter -> unit -> unit
-val print_warning: t -> formatter -> Warnings.t -> unit
-val formatter_for_warnings : formatter ref
-val prerr_warning: t -> Warnings.t -> unit
-val echo_eof: unit -> unit
-val reset: unit -> unit
-
-val default_printer : formatter -> t -> unit
-val printer : (formatter -> t -> unit) ref
-
-val warning_printer : (t -> formatter -> Warnings.t -> unit) ref
-(** Hook for intercepting warnings. *)
-
-val default_warning_printer : t -> formatter -> Warnings.t -> unit
-(** Original warning printer for use in hooks. *)
-
-val highlight_locations: formatter -> t list -> bool
-
-val show_code_at_location: formatter -> Lexing.lexbuf -> t list -> unit
+val get_pos_info: Lexing.position -> string * int * int
+(** file, line, char *)
 
 type 'a loc = {
   txt : 'a;
@@ -87,9 +63,20 @@ type 'a loc = {
 val mknoloc : 'a -> 'a loc
 val mkloc : 'a -> t -> 'a loc
 
-val print: formatter -> t -> unit
-val print_compact: formatter -> t -> unit
-val print_filename: formatter -> string -> unit
+
+(** {1 Input info} *)
+
+val input_name: string ref
+val input_lexbuf: Lexing.lexbuf option ref
+
+
+(** {1 Toplevel-specific functions} *)
+
+val echo_eof: unit -> unit
+val reset: unit -> unit
+
+
+(** {1 Printing locations} *)
 
 val rewrite_absolute_path: string -> string
     (** rewrite absolute path to honor the BUILD_PATH_PREFIX_MAP
@@ -102,6 +89,44 @@ val show_filename: string -> string
     (** In -absname mode, return the absolute path for this filename.
         Otherwise, returns the filename unchanged. *)
 
+val print_filename: formatter -> string -> unit
+
+val print_loc: formatter -> t -> unit
+
+val default_printer : formatter -> t -> unit
+val printer : (formatter -> t -> unit) ref
+val print: formatter -> t -> unit
+val print_compact: formatter -> t -> unit
+
+
+(** {1 Toplevel-specific location highlighting} *)
+
+val highlight_locations: formatter -> t list -> bool
+
+val show_code_at_location: formatter -> Lexing.lexbuf -> t list -> unit
+
+
+(** {1 Reporting warnings} *)
+
+val print_warning: t -> formatter -> Warnings.t -> unit
+val formatter_for_warnings : formatter ref
+val prerr_warning: t -> Warnings.t -> unit
+
+val warning_printer : (t -> formatter -> Warnings.t -> unit) ref
+(** Hook for intercepting warnings. *)
+
+val default_warning_printer : t -> formatter -> Warnings.t -> unit
+(** Original warning printer for use in hooks. *)
+
+val deprecated: ?def:t -> ?use:t -> t -> string -> unit
+(** Print a deprecation warning. *)
+
+
+(** {1 Reporting errors} *)
+
+val print_error_prefix: formatter -> unit
+val print_error: formatter -> t -> unit
+val print_error_cur_file: formatter -> unit -> unit
 
 (** Support for located errors *)
 
@@ -113,30 +138,14 @@ type error =
     if_highlight: string; (* alternative message if locations are highlighted *)
   }
 
-exception Already_displayed_error
-exception Error of error
-
 val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 
 val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
             -> ('a, Format.formatter, unit, error) format4 -> 'a
 
-val raise_errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
-            -> ('a, Format.formatter, unit, 'b) format4 -> 'a
-
 val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
 
 val error_of_printer_file: (formatter -> 'a -> unit) -> 'a -> error
-
-val error_of_exn: exn -> [ `Ok of error | `Already_displayed ] option
-
-val register_error_of_exn: (exn -> error option) -> unit
-(** Each compiler module which defines a custom type of exception
-    which can surface as a user-visible error should register
-    a "printer" for this exception using [register_error_of_exn].
-    The result of the printer is an [error] value containing
-    a location, a message, and optionally sub-messages (each of them
-    being located as well). *)
 
 val report_error: formatter -> error -> unit
 
@@ -146,7 +155,29 @@ val error_reporter : (formatter -> error -> unit) ref
 val default_error_reporter : formatter -> error -> unit
 (** Original error reporter for use in hooks. *)
 
+
+(** {1 Automatically reportitng errors for raised exceptions} *)
+
+val register_error_of_exn: (exn -> error option) -> unit
+(** Each compiler module which defines a custom type of exception
+    which can surface as a user-visible error should register
+    a "printer" for this exception using [register_error_of_exn].
+    The result of the printer is an [error] value containing
+    a location, a message, and optionally sub-messages (each of them
+    being located as well). *)
+
+val error_of_exn: exn -> [ `Ok of error | `Already_displayed ] option
+
+exception Error of error
+(** Raising [Error e] signals an error [e]; the exception will be caught and the
+   error will be printed. *)
+
+exception Already_displayed_error
+(** Raising [Already_displayed_error] signals an error which has already been
+   printed. The exception will be caught, but nothing will be printed *)
+
+val raise_errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
+            -> ('a, Format.formatter, unit, 'b) format4 -> 'a
+
 val report_exception: formatter -> exn -> unit
 (** Reraise the exception if it is unknown. *)
-
-val deprecated: ?def:t -> ?use:t -> t -> string -> unit
