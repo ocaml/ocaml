@@ -69,15 +69,53 @@ let rhs_interval m n = {
   loc_ghost = false;
 };;
 
+(* return file, line, char from the given position *)
+let get_pos_info pos =
+  (pos.pos_fname, pos.pos_lnum, pos.pos_cnum - pos.pos_bol)
+;;
+
+type 'a loc = {
+  txt : 'a;
+  loc : t;
+}
+
+let mkloc txt loc = { txt ; loc }
+let mknoloc txt = mkloc txt none
+
+(******************************************************************************)
+(* Input info *)
+
 let input_name = ref "_none_"
 let input_lexbuf = ref (None : lexbuf option)
 
+(******************************************************************************)
 (* Terminal info *)
 
 let status = ref Terminfo.Uninitialised
 
-let num_loc_lines = ref 0 (* number of lines already printed after input *)
+(* The number of lines already printed after input.
 
+   This is used by [highlight_terminfo] to identify the current position of the
+   input in the terminal. This would not be possible without this information,
+   since printing several warnings/errors adds text between the user input and
+   the bottom of the terminal.
+*)
+let num_loc_lines = ref 0
+
+(* This is used by the toplevel to reset [num_loc_lines] before each phrase *)
+let reset () =
+  num_loc_lines := 0
+
+(* This is used by the toplevel *)
+let echo_eof () =
+  print_newline ();
+  incr num_loc_lines
+
+(* Code printing errors and warnings must be wrapped using this function, in
+   order to update [num_loc_lines].
+
+   [print_updating_num_loc_lines ppf f arg] is equivalent to calling [f ppf
+   arg], and additionally updates [num_loc_lines]. *)
 let print_updating_num_loc_lines ppf f arg =
   let open Format in
   let out_functions = pp_get_formatter_out_functions ppf () in
@@ -367,14 +405,6 @@ let rec highlight_locations ppf locs =
           with Exit -> false
       end
 
-let reset () =
-  num_loc_lines := 0
-
-(* return file, line, char from the given position *)
-let get_pos_info pos =
-  (pos.pos_fname, pos.pos_lnum, pos.pos_cnum - pos.pos_bol)
-;;
-
 let default_printer ppf loc =
   setup_colors ();
   if loc.loc_start.pos_fname = "//toplevel//"
@@ -384,14 +414,6 @@ let default_printer ppf loc =
 
 let printer = ref default_printer
 let print ppf loc = !printer ppf loc
-
-let error_prefix = "Error"
-let warning_prefix = "Warning"
-
-let print_error_prefix ppf =
-  setup_colors ();
-  Format.fprintf ppf "@{<error>%s@}" error_prefix;
-;;
 
 let print_compact ppf loc =
   if loc.loc_start.pos_fname = "//toplevel//"
@@ -404,53 +426,20 @@ let print_compact ppf loc =
   end
 ;;
 
+(******************************************************************************)
+(* Reporting errors *)
+
+let error_prefix = "Error"
+
+let print_error_prefix ppf =
+  setup_colors ();
+  Format.fprintf ppf "@{<error>%s@}" error_prefix;
+;;
+
 let print_error ppf loc =
   Format.fprintf ppf "%a%t:" print loc print_error_prefix
 
 let print_error_cur_file ppf () = print_error ppf (in_file !input_name);;
-
-let default_warning_printer loc ppf w =
-  match Warnings.report w with
-  | `Inactive -> ()
-  | `Active { Warnings. number; message; is_error; sub_locs } ->
-    setup_colors ();
-    Format.fprintf ppf "@[<v>";
-    print ppf loc;
-    if is_error
-    then
-      Format.fprintf ppf "%t (%s %d): %s@," print_error_prefix
-        (String.uncapitalize_ascii warning_prefix) number message
-    else
-      Format.fprintf ppf "@{<warning>%s@} %d: %s@," warning_prefix
-        number message;
-    List.iter
-      (fun (loc, msg) ->
-         if loc <> none then Format.fprintf ppf "  %a  %s@," print loc msg
-      )
-      sub_locs;
-    Format.fprintf ppf "@]"
-
-let warning_printer = ref default_warning_printer ;;
-
-let print_warning loc ppf w =
-  print_updating_num_loc_lines ppf (!warning_printer loc) w
-;;
-
-let formatter_for_warnings = ref Format.err_formatter;;
-let prerr_warning loc w = print_warning loc !formatter_for_warnings w;;
-
-let echo_eof () =
-  print_newline ();
-  incr num_loc_lines
-
-type 'a loc = {
-  txt : 'a;
-  loc : t;
-}
-
-let mkloc txt loc = { txt ; loc }
-let mknoloc txt = mkloc txt none
-
 
 type error =
   {
@@ -489,25 +478,6 @@ let errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") fmt =
 let error ?(loc = none) ?(sub = []) ?(if_highlight = "") msg =
   {loc; msg; sub; if_highlight}
 
-let error_of_exn : (exn -> error option) list ref = ref []
-
-let register_error_of_exn f = error_of_exn := f :: !error_of_exn
-
-exception Already_displayed_error = Warnings.Errors
-
-let error_of_exn exn =
-  match exn with
-  | Already_displayed_error -> Some `Already_displayed
-  | _ ->
-     let rec loop = function
-       | [] -> None
-       | f :: rest ->
-          match f exn with
-          | Some error -> Some (`Ok error)
-          | None -> loop rest
-     in
-     loop !error_of_exn
-
 let rec default_error_reporter ppf ({loc; msg; sub; if_highlight} as err) =
   let highlighted =
     if if_highlight <> "" && loc.loc_start.pos_fname = "//toplevel//" then
@@ -538,6 +508,66 @@ let error_of_printer loc print x =
 
 let error_of_printer_file print x =
   error_of_printer (in_file !input_name) print x
+
+(******************************************************************************)
+(* Reporting warnings *)
+
+let warning_prefix = "Warning"
+
+let default_warning_printer loc ppf w =
+  match Warnings.report w with
+  | `Inactive -> ()
+  | `Active { Warnings. number; message; is_error; sub_locs } ->
+    setup_colors ();
+    Format.fprintf ppf "@[<v>";
+    print ppf loc;
+    if is_error
+    then
+      Format.fprintf ppf "%t (%s %d): %s@," print_error_prefix
+        (String.uncapitalize_ascii warning_prefix) number message
+    else
+      Format.fprintf ppf "@{<warning>%s@} %d: %s@," warning_prefix
+        number message;
+    List.iter
+      (fun (loc, msg) ->
+         if loc <> none then Format.fprintf ppf "  %a  %s@," print loc msg
+      )
+      sub_locs;
+    Format.fprintf ppf "@]"
+
+let warning_printer = ref default_warning_printer ;;
+
+let print_warning loc ppf w =
+  print_updating_num_loc_lines ppf (!warning_printer loc) w
+;;
+
+let formatter_for_warnings = ref Format.err_formatter;;
+let prerr_warning loc w = print_warning loc !formatter_for_warnings w;;
+
+let deprecated ?(def = none) ?(use = none) loc msg =
+  prerr_warning loc (Warnings.Deprecated (msg, def, use))
+
+(******************************************************************************)
+(* Reporting errors on exceptions *)
+
+let error_of_exn : (exn -> error option) list ref = ref []
+
+let register_error_of_exn f = error_of_exn := f :: !error_of_exn
+
+exception Already_displayed_error = Warnings.Errors
+
+let error_of_exn exn =
+  match exn with
+  | Already_displayed_error -> Some `Already_displayed
+  | _ ->
+     let rec loop = function
+       | [] -> None
+       | f :: rest ->
+          match f exn with
+          | Some error -> Some (`Ok error)
+          | None -> loop rest
+     in
+     loop !error_of_exn
 
 let () =
   register_error_of_exn
@@ -584,6 +614,3 @@ let raise_errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") =
   pp_ksprintf
     ~before:print_phantom_error_prefix
     (fun msg -> raise (Error ({loc; msg; sub; if_highlight})))
-
-let deprecated ?(def = none) ?(use = none) loc msg =
-  prerr_warning loc (Warnings.Deprecated (msg, def, use))
