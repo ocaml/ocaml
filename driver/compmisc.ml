@@ -70,3 +70,17 @@ let read_color_env () =
       | Some _ -> ()
   with
     Not_found -> ()
+
+let with_ppf_dump ~fileprefix f =
+  let ppf_dump, finally =
+    if not !Clflags.dump_into_file
+    then Format.err_formatter, ignore
+    else
+       let ch = open_out (fileprefix ^ ".dump") in
+       let ppf = Format.formatter_of_out_channel ch in
+       ppf,
+       (fun () ->
+         Format.pp_print_flush ppf ();
+         close_out ch)
+  in
+  Misc.try_finally (fun () -> f ppf_dump) ~always:finally

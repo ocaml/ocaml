@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val module_of_filename : Format.formatter -> string -> string -> string
+val module_of_filename : string -> string -> string
 
 val output_prefix : string -> string
 val extract_output : string option -> string
@@ -49,7 +49,7 @@ val readenv : Format.formatter -> readenv_position -> unit
 val is_unit_name : string -> bool
 (* [check_unit_name ppf filename name] prints a warning in [filename]
    on [ppf] if [name] should not be used as a module name. *)
-val check_unit_name : Format.formatter -> string -> string -> unit
+val check_unit_name : string -> string -> unit
 
 (* Deferred actions of the compiler, while parsing arguments *)
 
@@ -70,8 +70,8 @@ val intf : string -> unit
 
 val process_deferred_actions :
   Format.formatter *
-  (Format.formatter -> string -> string -> unit) * (* compile implementation *)
-  (Format.formatter -> string -> string -> unit) * (* compile interface *)
+  (string -> string -> unit) * (* compile implementation *)
+  (string -> string -> unit) * (* compile interface *)
   string * (* ocaml module extension *)
   string -> (* ocaml library extension *)
   unit

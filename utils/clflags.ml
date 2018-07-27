@@ -365,6 +365,8 @@ let set_dumped_pass s enabled =
     dumped_passes_list := dumped_passes
   end
 
+let dump_into_file = ref false (* -dump-into-file *)
+
 let parse_color_setting = function
   | "auto" -> Some Misc.Color.Auto
   | "always" -> Some Misc.Color.Always

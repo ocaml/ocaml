@@ -27,19 +27,22 @@ open Compenv
 
 let tool_name = "ocamlopt"
 
-let interface ppf sourcefile outputprefix =
+let interface sourcefile outputprefix =
+  Compmisc.with_ppf_dump ~fileprefix:(outputprefix ^ ".cmi") (fun ppf_dump ->
   Profile.record_call sourcefile (fun () ->
     Compmisc.init_path false;
-    let modulename = module_of_filename ppf sourcefile outputprefix in
+    let modulename = module_of_filename sourcefile outputprefix in
     Env.set_unit_name modulename;
     let initial_env = Compmisc.initial_env () in
     let ast = Pparse.parse_interface ~tool_name sourcefile in
-    if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
-    if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
+    if !Clflags.dump_parsetree then
+      fprintf ppf_dump "%a@." Printast.interface ast;
+    if !Clflags.dump_source then
+      fprintf ppf_dump "%a@." Pprintast.signature ast;
     Profile.(record_call typing) (fun () ->
       let tsg = Typemod.type_interface sourcefile initial_env ast in
       if !Clflags.dump_typedtree then
-        fprintf ppf "%a@." Printtyped.interface tsg;
+        fprintf ppf_dump "%a@." Printtyped.interface tsg;
       let sg = tsg.sig_type in
       if !Clflags.print_types then
         Printtyp.wrap_printing_env ~error:false initial_env (fun () ->
@@ -58,7 +61,7 @@ let interface ppf sourcefile outputprefix =
           initial_env sg ;
       end
     )
-  )
+  ))
 
 (* Compile a .ml file *)
 
@@ -69,10 +72,11 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
-let implementation ~backend ppf sourcefile outputprefix =
+let implementation ~backend sourcefile outputprefix =
+  Compmisc.with_ppf_dump ~fileprefix:(outputprefix ^ ".cmx") (fun ppf_dump ->
   Profile.record_call sourcefile (fun () ->
     Compmisc.init_path true;
-    let modulename = module_of_filename ppf sourcefile outputprefix in
+    let modulename = module_of_filename sourcefile outputprefix in
     Env.set_unit_name modulename;
     let env = Compmisc.initial_env() in
     Compilenv.reset ?packname:!Clflags.for_package modulename;
@@ -83,12 +87,12 @@ let implementation ~backend ppf sourcefile outputprefix =
       (fun () ->
          let (typedtree, coercion) =
            Pparse.parse_implementation ~tool_name sourcefile
-           ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-           ++ print_if ppf Clflags.dump_source Pprintast.structure
+           ++ print_if ppf_dump Clflags.dump_parsetree Printast.implementation
+           ++ print_if ppf_dump Clflags.dump_source Pprintast.structure
            ++ Profile.(record typing)
              (Typemod.type_implementation sourcefile outputprefix
                 modulename env)
-           ++ print_if ppf Clflags.dump_typedtree
+           ++ print_if ppf_dump Clflags.dump_typedtree
              Printtyped.implementation_with_coercion
          in
          if not !Clflags.print_types then begin
@@ -106,11 +110,11 @@ let implementation ~backend ppf sourcefile outputprefix =
                (fun { Lambda.module_ident; main_module_block_size;
                       required_globals; code } ->
                  ((module_ident, main_module_block_size), code)
-                 +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+                 +++ print_if ppf_dump Clflags.dump_rawlambda Printlambda.lambda
                  +++ Simplif.simplify_lambda sourcefile
-                 +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+                 +++ print_if ppf_dump Clflags.dump_lambda Printlambda.lambda
                  ++ (fun ((module_ident, size), lam) ->
-                     Middle_end.middle_end ppf
+                     Middle_end.middle_end ~ppf_dump
                        ~prefixname:outputprefix
                        ~size
                        ~filename:sourcefile
@@ -118,7 +122,7 @@ let implementation ~backend ppf sourcefile outputprefix =
                        ~backend
                        ~module_initializer:lam)
                  ++ Asmgen.compile_implementation_flambda
-                   outputprefix ~required_globals ~backend ppf;
+                   outputprefix ~required_globals ~backend ~ppf_dump;
                  Compilenv.save_unit_info cmxfile)
            end
            else begin
@@ -126,19 +130,19 @@ let implementation ~backend ppf sourcefile outputprefix =
              (typedtree, coercion)
              ++ Profile.(record transl)
                (Translmod.transl_store_implementation modulename)
-             ++ print_if ppf Clflags.dump_rawlambda Printlambda.program
+             ++ print_if ppf_dump Clflags.dump_rawlambda Printlambda.program
              ++ Profile.(record generate)
                (fun program ->
                   { program with
                     Lambda.code = Simplif.simplify_lambda sourcefile
                         program.Lambda.code }
-                  ++ print_if ppf Clflags.dump_lambda Printlambda.program
+                  ++ print_if ppf_dump Clflags.dump_lambda Printlambda.program
                   ++ Asmgen.compile_implementation_clambda
-                    outputprefix ppf;
+                    outputprefix ~ppf_dump;
                   Compilenv.save_unit_info cmxfile)
            end
          end;
          Warnings.check_fatal ()
       )
       ~always:(fun () -> Stypes.dump (Some (outputprefix ^ ".annot")))
-  )
+  ))

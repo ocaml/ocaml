@@ -33,6 +33,7 @@ module Env : sig
      : never_inline:bool
     -> backend:(module Backend_intf.S)
     -> round:int
+    -> ppf_dump:Format.formatter
     -> t
 
   (** Obtain the first-class module that gives information about the
@@ -46,6 +47,9 @@ module Env : sig
 
   (** Which simplification round we are currently in. *)
   val round : t -> int
+
+  (** Where to print intermediate asts and similar debug information *)
+  val ppf_dump : t -> Format.formatter
 
   (** Add the approximation of a variable---that is to say, some knowledge
       about the value(s) the variable may take on at runtime---to the

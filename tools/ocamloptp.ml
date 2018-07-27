@@ -148,6 +148,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _linscan = option "-linscan"
   let _nopervasives = option "-nopervasives"
   let _match_context_rows n = option_with_int "-match-context-rows" n
+  let _dump_into_file = option "-dump-into-file"
   let _dno_unique_ids = option "-dno-unique_ids"
   let _dunique_ids = option "-dunique_ids"
   let _dsource = option "-dsource"

@@ -26,20 +26,23 @@ open Compenv
 
 let tool_name = "ocamlc"
 
-let interface ppf sourcefile outputprefix =
+let interface sourcefile outputprefix =
+  Compmisc.with_ppf_dump ~fileprefix:(outputprefix ^ ".cmi") (fun ppf_dump ->
   Profile.record_call sourcefile (fun () ->
     Compmisc.init_path false;
-    let modulename = module_of_filename ppf sourcefile outputprefix in
+    let modulename = module_of_filename sourcefile outputprefix in
     Env.set_unit_name modulename;
     let initial_env = Compmisc.initial_env () in
     let ast = Pparse.parse_interface ~tool_name sourcefile in
 
-    if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
-    if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
+    if !Clflags.dump_parsetree then
+      fprintf ppf_dump "%a@." Printast.interface ast;
+    if !Clflags.dump_source then
+      fprintf ppf_dump "%a@." Pprintast.signature ast;
     Profile.(record_call typing) (fun () ->
       let tsg = Typemod.type_interface sourcefile initial_env ast in
       if !Clflags.dump_typedtree then
-        fprintf ppf "%a@." Printtyped.interface tsg;
+        fprintf ppf_dump "%a@." Printtyped.interface tsg;
       let sg = tsg.sig_type in
       if !Clflags.print_types then
         Printtyp.wrap_printing_env ~error:false initial_env (fun () ->
@@ -58,7 +61,7 @@ let interface ppf sourcefile outputprefix =
           initial_env sg ;
       end
     )
-  )
+  ))
 
 (* Compile a .ml file *)
 
@@ -68,20 +71,21 @@ let print_if ppf flag printer arg =
 
 let (++) x f = f x
 
-let implementation ppf sourcefile outputprefix =
+let implementation sourcefile outputprefix =
+  Compmisc.with_ppf_dump ~fileprefix:(outputprefix ^ ".cmo") (fun ppf_dump ->
   Profile.record_call sourcefile (fun () ->
     Compmisc.init_path false;
-    let modulename = module_of_filename ppf sourcefile outputprefix in
+    let modulename = module_of_filename sourcefile outputprefix in
     Env.set_unit_name modulename;
     let env = Compmisc.initial_env() in
     Misc.try_finally (fun () ->
         let (typedtree, coercion) =
           Pparse.parse_implementation ~tool_name sourcefile
-          ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-          ++ print_if ppf Clflags.dump_source Pprintast.structure
+          ++ print_if ppf_dump Clflags.dump_parsetree Printast.implementation
+          ++ print_if ppf_dump Clflags.dump_source Pprintast.structure
           ++ Profile.(record typing)
             (Typemod.type_implementation sourcefile outputprefix modulename env)
-          ++ print_if ppf Clflags.dump_typedtree
+          ++ print_if ppf_dump Clflags.dump_typedtree
             Printtyped.implementation_with_coercion
         in
         if !Clflags.print_types then begin
@@ -94,11 +98,12 @@ let implementation ppf sourcefile outputprefix =
               (Translmod.transl_implementation modulename)
             ++ Profile.(record ~accumulate:true generate)
               (fun { Lambda.code = lambda; required_globals } ->
-                 print_if ppf Clflags.dump_rawlambda Printlambda.lambda lambda
+                 lambda
+                 ++ print_if ppf_dump Clflags.dump_rawlambda Printlambda.lambda
                  ++ Simplif.simplify_lambda sourcefile
-                 ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+                 ++ print_if ppf_dump Clflags.dump_lambda Printlambda.lambda
                  ++ Bytegen.compile_implementation modulename
-                 ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
+                 ++ print_if ppf_dump Clflags.dump_instr Printinstr.instrlist
                  ++ fun bytecode -> bytecode, required_globals)
           in
           let objfile = outputprefix ^ ".cmo" in
@@ -115,4 +120,4 @@ let implementation ppf sourcefile outputprefix =
         end
       )
       ~always:(fun () -> Stypes.dump (Some (outputprefix ^ ".annot")))
-    )
+    ))

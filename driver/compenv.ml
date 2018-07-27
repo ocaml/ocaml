@@ -76,13 +76,13 @@ let is_unit_name name =
   with Exit -> false
 ;;
 
-let check_unit_name ppf filename name =
+let check_unit_name filename name =
   if not (is_unit_name name) then
-    Location.print_warning (Location.in_file filename) ppf
+    Location.prerr_warning (Location.in_file filename)
       (Warnings.Bad_module_name name);;
 
 (* Compute name of module from output file name *)
-let module_of_filename ppf inputfile outputprefix =
+let module_of_filename inputfile outputprefix =
   let basename = Filename.basename outputprefix in
   let name =
     try
@@ -91,7 +91,7 @@ let module_of_filename ppf inputfile outputprefix =
     with Not_found -> basename
   in
   let name = String.capitalize_ascii name in
-  check_unit_name ppf inputfile name;
+  check_unit_name inputfile name;
   name
 ;;
 
@@ -576,12 +576,12 @@ let process_action
   | ProcessImplementation name ->
       readenv ppf (Before_compile name);
       let opref = output_prefix name in
-      implementation ppf name opref;
+      implementation name opref;
       objfiles := (opref ^ ocaml_mod_ext) :: !objfiles
   | ProcessInterface name ->
       readenv ppf (Before_compile name);
       let opref = output_prefix name in
-      interface ppf name opref;
+      interface name opref;
       if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
   | ProcessCFile name ->
       readenv ppf (Before_compile name);

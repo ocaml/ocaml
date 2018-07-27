@@ -734,7 +734,7 @@ and un_anf_list ident_info env clams : Clambda.ulambda list =
 and un_anf_array ident_info env clams : Clambda.ulambda array =
   Array.map (un_anf ident_info env) clams
 
-let apply clam ~what =
+let apply ~ppf_dump clam ~what =
   let ident_info = make_ident_info clam in
   let let_bound_vars_that_can_be_moved =
     let_bound_vars_that_can_be_moved ident_info clam
@@ -746,6 +746,7 @@ let apply clam ~what =
   let ident_info = make_ident_info clam in
   let clam = un_anf ident_info Ident.Map.empty clam in
   if !Clflags.dump_clambda then begin
-    Format.eprintf "@.un-anf (%s):@ %a@." what Printclambda.clambda clam
+    Format.fprintf ppf_dump
+      "@.un-anf (%s):@ %a@." what Printclambda.clambda clam
   end;
   clam

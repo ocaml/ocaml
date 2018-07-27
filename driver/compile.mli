@@ -15,7 +15,5 @@
 
 (* Compile a .ml or .mli file *)
 
-open Format
-
-val interface: formatter -> string -> string -> unit
-val implementation: formatter -> string -> string -> unit
+val interface: string -> string -> unit
+val implementation: string -> string -> unit

@@ -184,7 +184,7 @@ let rec rename_append_bytecode_list packagename oc mapping defined ofs
 
 (* Generate the code that builds the tuple representing the package module *)
 
-let build_global_target oc target_name members mapping pos coercion =
+let build_global_target ~ppf_dump oc target_name members mapping pos coercion =
   let components =
     List.map2
       (fun m (_id1, id2) ->
@@ -196,7 +196,7 @@ let build_global_target oc target_name members mapping pos coercion =
     Translmod.transl_package
       components (Ident.create_persistent target_name) coercion in
   if !Clflags.dump_lambda then
-    Format.printf "%a@." Printlambda.lambda lam;
+    Format.fprintf ppf_dump "%a@." Printlambda.lambda lam;
   let instrs =
     Bytegen.compile_implementation target_name lam in
   let rel =
@@ -205,7 +205,7 @@ let build_global_target oc target_name members mapping pos coercion =
 
 (* Build the .cmo file obtained by packaging the given .cmo files. *)
 
-let package_object_files files targetfile targetname coercion =
+let package_object_files ~ppf_dump files targetfile targetname coercion =
   let members =
     map_left_right read_member_info files in
   let required_globals =
@@ -242,7 +242,7 @@ let package_object_files files targetfile targetname coercion =
     let pos_code = pos_out oc in
     let ofs = rename_append_bytecode_list targetname oc mapping [] 0
                                           targetname Subst.identity members in
-    build_global_target oc targetname members mapping ofs coercion;
+    build_global_target ~ppf_dump oc targetname members mapping ofs coercion;
     let pos_debug = pos_out oc in
     if !Clflags.debug && !events <> [] then begin
       output_value oc (List.rev !events);
@@ -277,7 +277,7 @@ let package_object_files files targetfile targetname coercion =
 
 (* The entry point *)
 
-let package_files initial_env files targetfile =
+let package_files ~ppf_dump initial_env files targetfile =
     let files =
     List.map
         (fun f ->
@@ -290,7 +290,7 @@ let package_files initial_env files targetfile =
     Misc.try_finally (fun () ->
         let coercion =
           Typemod.package_units initial_env files targetcmi targetname in
-        package_object_files files targetfile targetname coercion
+        package_object_files ~ppf_dump files targetfile targetname coercion
       )
       ~exceptionally:(fun () -> remove_file targetfile)
 

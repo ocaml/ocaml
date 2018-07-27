@@ -31,7 +31,7 @@ let _dump_function_sizes flam ~backend =
           | None -> assert false)
         set_of_closures.function_decls.funs)
 
-let middle_end ppf ~prefixname ~backend
+let middle_end ~ppf_dump ~prefixname ~backend
     ~size
     ~filename
     ~module_ident
@@ -69,10 +69,10 @@ let middle_end ppf ~prefixname ~backend
          let (+-+) flam (name, pass) =
            incr pass_number;
            if !Clflags.dump_flambda_verbose then begin
-             Format.fprintf ppf "@.PASS: %s@." name;
-             Format.fprintf ppf "Before pass %d, round %d:@ %a@." !pass_number
-               !round_number Flambda.print_program flam;
-             Format.eprintf "\n@?"
+             Format.fprintf ppf_dump "@.PASS: %s@." name;
+             Format.fprintf ppf_dump "Before pass %d, round %d:@ %a@."
+               !pass_number !round_number Flambda.print_program flam;
+             Format.fprintf ppf_dump "\n@?"
            end;
            let flam = Profile.record ~accumulate:true name pass flam in
            if !Clflags.flambda_invariant_checks then begin
@@ -90,7 +90,7 @@ let middle_end ppf ~prefixname ~backend
            in
            if !Clflags.dump_rawflambda
            then
-             Format.fprintf ppf "After closure conversion:@ %a@."
+             Format.fprintf ppf_dump "After closure conversion:@ %a@."
                Flambda.print_program flam;
            check flam;
            let fast_mode flam =
@@ -104,7 +104,7 @@ let middle_end ppf ~prefixname ~backend
                   Lift_let_to_initialize_symbol.lift ~backend)
              +-+ ("Inline_and_simplify",
                   Inline_and_simplify.run ~never_inline:false ~backend
-                    ~prefixname ~round)
+                    ~prefixname ~round ~ppf_dump)
              +-+ ("Remove_unused_closure_vars 2",
                   Remove_unused_closure_vars.remove_unused_closure_variables
                     ~remove_direct_call_surrogates:false)
@@ -135,14 +135,14 @@ let middle_end ppf ~prefixname ~backend
                       ~remove_direct_call_surrogates:false)
                +-+ ("Inline_and_simplify",
                     Inline_and_simplify.run ~never_inline:false ~backend
-                      ~prefixname ~round)
+                      ~prefixname ~round ~ppf_dump)
                +-+ ("Remove_unused_closure_vars 2",
                     Remove_unused_closure_vars.remove_unused_closure_variables
                       ~remove_direct_call_surrogates:false)
                +-+ ("lift_lets 3", Lift_code.lift_lets)
                +-+ ("Inline_and_simplify noinline",
                     Inline_and_simplify.run ~never_inline:true ~backend
-                      ~prefixname ~round)
+                      ~prefixname ~round ~ppf_dump)
                +-+ ("Remove_unused_closure_vars 3",
                     Remove_unused_closure_vars.remove_unused_closure_variables
                       ~remove_direct_call_surrogates:false)
@@ -191,7 +191,7 @@ let middle_end ppf ~prefixname ~backend
                      was being applied)"));
            if !Clflags.dump_flambda
            then
-             Format.fprintf ppf "End of middle end:@ %a@."
+             Format.fprintf ppf_dump "End of middle end:@ %a@."
                Flambda.print_program flam;
            check flam;
            (* CR-someday mshinwell: add -d... option for this *)
