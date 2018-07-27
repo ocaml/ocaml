@@ -100,6 +100,7 @@ WINDOWS_UNICODE=1
 AFL_INSTRUMENT=false
 AWK=gawk
 CC_HAS_DEBUG_PREFIX_MAP=false
+AS_HAS_DEBUG_PREFIX_MAP=false
 
 ########## Configuration for the bytecode compiler
 

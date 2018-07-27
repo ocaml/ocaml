@@ -100,25 +100,10 @@ let setup_colors () =
 (******************************************************************************)
 (* Printing locations, e.g. 'File "foo.ml", line 3, characters 10-12' *)
 
-let rewrite_absolute_path =
-  let init = ref false in
-  let map_cache = ref None in
-  fun path ->
-    if not !init then begin
-      init := true;
-      match Sys.getenv "BUILD_PATH_PREFIX_MAP" with
-      | exception Not_found -> ()
-      | encoded_map ->
-        match Build_path_prefix_map.decode_map encoded_map with
-          | Error err ->
-              Misc.fatal_errorf
-                "Invalid value for the environment variable \
-                 BUILD_PATH_PREFIX_MAP: %s" err
-          | Ok map -> map_cache := Some map
-    end;
-    match !map_cache with
-    | None -> path
-    | Some map -> Build_path_prefix_map.rewrite map path
+let rewrite_absolute_path path =
+  match Misc.get_build_path_prefix_map () with
+  | None -> path
+  | Some map -> Build_path_prefix_map.rewrite map path
 
 let absolute_path s = (* This function could go into Filename *)
   let open Filename in

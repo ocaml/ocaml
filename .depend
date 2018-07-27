@@ -23,9 +23,11 @@ utils/consistbl.cmi :
 utils/identifiable.cmo : utils/misc.cmi utils/identifiable.cmi
 utils/identifiable.cmx : utils/misc.cmx utils/identifiable.cmi
 utils/identifiable.cmi :
-utils/misc.cmo : utils/config.cmi utils/misc.cmi
-utils/misc.cmx : utils/config.cmx utils/misc.cmi
-utils/misc.cmi :
+utils/misc.cmo : utils/config.cmi utils/build_path_prefix_map.cmi \
+    utils/misc.cmi
+utils/misc.cmx : utils/config.cmx utils/build_path_prefix_map.cmx \
+    utils/misc.cmi
+utils/misc.cmi : utils/build_path_prefix_map.cmi
 utils/numbers.cmo : utils/misc.cmi utils/identifiable.cmi utils/numbers.cmi
 utils/numbers.cmx : utils/misc.cmx utils/identifiable.cmx utils/numbers.cmi
 utils/numbers.cmi : utils/identifiable.cmi
@@ -1277,9 +1279,9 @@ asmcomp/x86_masm.cmo : asmcomp/x86_proc.cmi asmcomp/x86_ast.cmi \
 asmcomp/x86_masm.cmx : asmcomp/x86_proc.cmx asmcomp/x86_ast.cmi \
     asmcomp/x86_masm.cmi
 asmcomp/x86_masm.cmi : asmcomp/x86_ast.cmi
-asmcomp/x86_proc.cmo : asmcomp/x86_ast.cmi utils/config.cmi \
+asmcomp/x86_proc.cmo : asmcomp/x86_ast.cmi utils/misc.cmi utils/config.cmi \
     utils/clflags.cmi utils/ccomp.cmi asmcomp/x86_proc.cmi
-asmcomp/x86_proc.cmx : asmcomp/x86_ast.cmi utils/config.cmx \
+asmcomp/x86_proc.cmx : asmcomp/x86_ast.cmi utils/misc.cmx utils/config.cmx \
     utils/clflags.cmx utils/ccomp.cmx asmcomp/x86_proc.cmi
 asmcomp/x86_proc.cmi : asmcomp/x86_ast.cmi
 middle_end/alias_analysis.cmo : middle_end/base_types/variable.cmi \
