@@ -1,0 +1,30 @@
+Line 6, characters 9-10, Line 7, characters 0-2:  .........(.
+                                                  ;;
+Syntax error: ')' expected, the highlighted '(' might be unmatched
+Line 3, characters 4-5,
+Line 4, characters 0-2:
+  ....(.
+  ;;
+Syntax error: ')' expected, the highlighted '(' might be unmatched
+Line 3, characters 4-5,
+Line 4, characters 0-2:
+  ....(.......
+  ;;
+Syntax error: ')' expected, the highlighted '(' might be unmatched
+Line 7, characters 0-2:
+  ;;
+  ^^
+Error: Syntax error: module-expr expected.
+Line 7, characters 0-2:
+  ;;
+  ^^
+Error: Syntax error
+Line 4, characters 0-2:
+  ;;
+  ^^
+Error: Syntax error
+Line 4, characters 0-2:
+  ;;
+  ^^
+Error: Syntax error
+
