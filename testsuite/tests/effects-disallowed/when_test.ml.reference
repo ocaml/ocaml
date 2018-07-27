@@ -1,0 +1,7 @@
+
+# * *     effect E : unit
+#           Characters 76-77:
+     | effect E k when (continue k (); false) -> assert false
+                                 ^
+Error: Unbound value k
+# 
