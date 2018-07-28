@@ -15,3 +15,9 @@ let rec e = lazy (fun _ -> f) and f = ();;
 val e : ('a -> unit) lazy_t = lazy <fun>
 val f : unit = ()
 |}];;
+
+let rec x = lazy (Lazy.force x + Lazy.force x)
+  ;;
+[%%expect{|
+val x : int Lazy.t = <lazy>
+|}];;

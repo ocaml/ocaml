@@ -1,11 +1,11 @@
-allowed.ml
-disallowed.ml
+basic.ml
 extension_constructor.ml
 flat_float_array.ml
 no_flat_float_array.ml
 labels.ml
 lazy_.ml
-module_constraints.ml
+modules.ml
+objects.ml
 pr7215.ml
 pr7231.ml
 pr7706.ml

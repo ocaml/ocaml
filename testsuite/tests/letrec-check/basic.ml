@@ -2,6 +2,26 @@
    * expect
 *)
 
+let rec x = (x; ());;
+[%%expect{|
+val x : unit = ()
+|}];;
+
+let rec x = "x";;
+[%%expect{|
+val x : string = "x"
+|}];;
+
+let rec x = let x = () in x;;
+[%%expect{|
+val x : unit = ()
+|}];;
+
+let rec x = let y = (x; ()) in y;;
+[%%expect{|
+val x : unit = ()
+|}];;
+
 let rec x = let y = () in x;;
 [%%expect{|
 Line 1, characters 12-27:
@@ -10,55 +30,50 @@ Line 1, characters 12-27:
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
-let rec x = let module M = struct let f = x let g = x () end in fun () -> ();;
+let rec x = [y]
+and y = let x = () in x;;
 [%%expect{|
-Line 1, characters 12-76:
-  let rec x = let module M = struct let f = x let g = x () end in fun () -> ();;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+val x : unit list = [()]
+val y : unit = ()
 |}];;
 
-let rec x = let module M = struct let f = x () let g = x end in fun () -> ();;
+let rec x = [y]
+and y = let rec x = () in x;;
 [%%expect{|
-Line 1, characters 12-76:
-  let rec x = let module M = struct let f = x () let g = x end in fun () -> ();;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+val x : unit list = [()]
+val y : unit = ()
 |}];;
 
-let rec x = (let module M = struct let f = y 0 let g = () end in fun () -> ())
-    and y = succ;;
+let rec x =
+  let a = x in
+  fun () -> a ()
+and y =
+  [x];;
 [%%expect{|
-Line 1, characters 12-78:
-  let rec x = (let module M = struct let f = y 0 let g = () end in fun () -> ())
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+val x : unit -> 'a = <fun>
+val y : (unit -> 'a) list = [<fun>]
 |}];;
 
-let rec x = let module M = struct module N = struct let y = x end end in M.N.y;;
+let rec x = [|y|] and y = 0;;
 [%%expect{|
-Line 1, characters 12-78:
-  let rec x = let module M = struct module N = struct let y = x end end in M.N.y;;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+val x : int array = [|0|]
+val y : int = 0
 |}];;
 
-let rec x = let module M = struct let f = x () and g = x end in fun () -> ();;
+
+let rec x = (y, y)
+and y = fun () -> ignore x;;
 [%%expect{|
-Line 1, characters 12-76:
-  let rec x = let module M = struct let f = x () and g = x end in fun () -> ();;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+val x : (unit -> unit) * (unit -> unit) = (<fun>, <fun>)
+val y : unit -> unit = <fun>
 |}];;
 
-class c _ = object end
-let rec x = new c x;;
+let rec x = Some y
+and y = fun () -> ignore x
+;;
 [%%expect{|
-class c : 'a -> object  end
-Line 2, characters 12-19:
-  let rec x = new c x;;
-              ^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+val x : (unit -> unit) option = Some <fun>
+val y : unit -> unit = <fun>
 |}];;
 
 let rec x = ignore x;;
@@ -77,6 +92,31 @@ Line 1, characters 12-15:
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
+let rec b = if b then true else false;;
+[%%expect{|
+Line 1, characters 12-37:
+  let rec b = if b then true else false;;
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This kind of expression is not allowed as right-hand side of `let rec'
+|}];;
+
+let rec x = function
+    Some _ -> ignore (y [])
+  | None -> ignore (y [])
+and y = function
+    [] -> ignore (x None)
+  | _ :: _ -> ignore (x None)
+    ;;
+[%%expect{|
+val x : 'a option -> unit = <fun>
+val y : 'a list -> unit = <fun>
+|}];;
+
+let rec x = { x with contents = 3 }  [@ocaml.warning "-23"];;
+[%%expect{|
+val x : int ref = {contents = 3}
+|}];;
+
 let rec c = { c with Complex.re = 1.0 };;
 [%%expect{|
 Line 1, characters 12-39:
@@ -85,12 +125,32 @@ Line 1, characters 12-39:
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
-let rec b = if b then true else false;;
+let rec x = `A y
+and y = fun () -> ignore x
+;;
 [%%expect{|
-Line 1, characters 12-37:
-  let rec b = if b then true else false;;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+val x : [> `A of unit -> unit ] = `A <fun>
+val y : unit -> unit = <fun>
+|}];;
+
+let rec x = { contents = y }
+and y = fun () -> ignore x;;
+[%%expect{|
+val x : (unit -> unit) ref = {contents = <fun>}
+val y : unit -> unit = <fun>
+|}];;
+
+let r = ref (fun () -> ())
+let rec x = fun () -> r := x;;
+[%%expect{|
+val r : (unit -> unit) ref = {contents = <fun>}
+val x : unit -> unit = <fun>
+|}];;
+
+let rec x = fun () -> y.contents and y = { contents = 3 };;
+[%%expect{|
+val x : unit -> int = <fun>
+val y : int ref = {contents = 3}
 |}];;
 
 let r = ref ()
@@ -181,35 +241,13 @@ Line 2, characters 2-45:
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
-let rec x = y#m and y = object method m = () end;;
-[%%expect{|
-Line 1, characters 12-15:
-  let rec x = y#m and y = object method m = () end;;
-              ^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
-|}];;
 
-let rec x = (object method m _ = () end)#m x;;
-[%%expect{|
-Line 1, characters 12-44:
-  let rec x = (object method m _ = () end)#m x;;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
-|}];;
 
 let rec x = y.contents and y = { contents = 3 };;
 [%%expect{|
 Line 1, characters 12-22:
   let rec x = y.contents and y = { contents = 3 };;
               ^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
-|}];;
-
-let rec x = object val mutable v = 0 method m = v <- y end and y = 1;;
-[%%expect{|
-Line 1, characters 12-58:
-  let rec x = object val mutable v = 0 method m = v <- y end and y = 1;;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -221,20 +259,20 @@ Line 1, characters 12-20:
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
-let rec x = object method m = x end;;
+(* Recursively constructing arrays of known non-float type is permitted *)
+let rec deep_cycle : [`Tuple of [`Shared of 'a] array] as 'a
+  = `Tuple [| `Shared deep_cycle |];;
 [%%expect{|
-Line 1, characters 12-35:
-  let rec x = object method m = x end;;
-              ^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+val deep_cycle : [ `Tuple of [ `Shared of 'a ] array ] as 'a =
+  `Tuple [|`Shared <cycle>|]
 |}];;
 
-let rec x = object method m = ignore x end;;
+(* Constructing float arrays was disallowed altogether at one point
+   by an overzealous check.  Constructing float arrays in recursive
+   bindings is fine when they don't partake in the recursion. *)
+let rec _x = let _ = [| 1.0 |] in 1. in ();;
 [%%expect{|
-Line 1, characters 12-42:
-  let rec x = object method m = ignore x end;;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+- : unit = ()
 |}];;
 
 (* The builtin Pervasives.ref is currently treated as a constructor.
@@ -269,18 +307,6 @@ let foo p x =
 Line 3, characters 4-52:
       if p then (fun y -> x + g y) else (fun y -> g y)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
-|}];;
-
-module type T = sig end
-let rec x = (module (val y : T) : T)
-and y = let module M = struct let x = x end in (module M : T)
-;;
-[%%expect{|
-module type T = sig  end
-Line 2, characters 12-36:
-  let rec x = (module (val y : T) : T)
-              ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
