@@ -1,3 +1,4 @@
+allowed.ml
 disallowed.ml
 extension_constructor.ml
 float_block_allowed.ml
