@@ -1,5 +1,5 @@
 (* TEST
-   * toplevel
+   * expect
 *)
 
 (* Example from Stephen Dolan.
@@ -8,9 +8,18 @@
  *)
 module type T =
   sig exception A of int end;;
+[%%expect{|
+module type T = sig exception A of int end
+|}];;
 
 let rec x =
   let module M = (val m) in
   M.A 42
 and (m : (module T)) =
-  (module (struct exception A of int end));;
+  (module (struct exception A of int end) : T);;
+[%%expect{|
+Line 2, characters 2-36:
+  ..let module M = (val m) in
+    M.A 42
+Error: This kind of expression is not allowed as right-hand side of `let rec'
+|}];;
