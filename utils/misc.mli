@@ -398,3 +398,7 @@ val get_build_path_prefix_map: unit -> Build_path_prefix_map.map option
 val debug_prefix_map_flags: unit -> string list
 (** Returns the list of [--debug-prefix-map] flags to be passed to the
     assembler, built from the [BUILD_PATH_PREFIX_MAP] environment variable. *)
+
+val print_if :
+  Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
+(** [print_if ppf flag fmt x] prints [x] with [fmt] on [ppf] if [b] is true. *)
