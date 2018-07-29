@@ -207,6 +207,8 @@ module Exp = struct
   let newtype ?loc ?attrs a b = mk ?loc ?attrs (Pexp_newtype (a, b))
   let pack ?loc ?attrs a = mk ?loc ?attrs (Pexp_pack a)
   let open_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_open (a, b))
+  let letop ?loc ?attrs let_ ands body =
+    mk ?loc ?attrs (Pexp_letop {let_; ands; body})
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pexp_extension a)
   let unreachable ?loc ?attrs () = mk ?loc ?attrs Pexp_unreachable
 
@@ -215,6 +217,14 @@ module Exp = struct
      pc_lhs = lhs;
      pc_guard = guard;
      pc_rhs = rhs;
+    }
+
+  let binding_op op pat exp loc =
+    {
+      pbop_op = op;
+      pbop_pat = pat;
+      pbop_exp = exp;
+      pbop_loc = loc;
     }
 end
 

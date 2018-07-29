@@ -197,6 +197,16 @@ let rec iter_exn_names f pat =
       iter_exn_names f p
   | _ -> ()
 
+let transl_ident loc env ty path desc =
+  match desc.val_kind with
+  | Val_prim p ->
+      Translprim.transl_primitive loc p env ty (Some path)
+  | Val_anc _ ->
+      raise(Error(loc, Free_super_var))
+  | Val_reg | Val_self _ ->
+      transl_value_path loc env path
+  |  _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
+
 let rec transl_exp e =
   List.iter (Translattribute.check_attribute e) e.exp_attributes;
   let eval_once =
@@ -210,13 +220,8 @@ let rec transl_exp e =
 
 and transl_exp0 e =
   match e.exp_desc with
-  | Texp_ident(path, _, {val_kind = Val_prim p}) ->
-      Translprim.transl_primitive e.exp_loc p e.exp_env e.exp_type (Some path)
-  | Texp_ident(_, _, {val_kind = Val_anc _}) ->
-      raise(Error(e.exp_loc, Free_super_var))
-  | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
-      transl_value_path e.exp_loc e.exp_env path
-  | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
+  | Texp_ident(path, _, desc) ->
+      transl_ident e.exp_loc e.exp_env e.exp_type path desc
   | Texp_constant cst ->
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
@@ -536,6 +541,9 @@ and transl_exp0 e =
           cl_env = e.exp_env;
           cl_attributes = [];
          }
+  | Texp_letop{let_; ands; param; body; partial} ->
+      event_after e
+        (transl_letop e.exp_loc e.exp_env let_ ands param body partial)
   | Texp_unreachable ->
       raise (Error (e.exp_loc, Unreachable_reached))
   | Texp_open (od, e) ->
@@ -974,6 +982,51 @@ and transl_match e arg pat_expr_list partial =
     Lstaticcatch (body, (static_exception_id, val_ids), handler)
   ) classic static_handlers
 
+and transl_letop loc env let_ ands param case partial =
+  let rec loop prev_lam = function
+    | [] -> prev_lam
+    | and_ :: rest ->
+        let left_id = Ident.create_local "left" in
+        let right_id = Ident.create_local "right" in
+        let op =
+          transl_ident and_.bop_op_name.loc env
+            and_.bop_op_type and_.bop_op_path and_.bop_op_val
+        in
+        let exp = transl_exp and_.bop_exp in
+        let lam =
+          bind Strict right_id exp
+            (Lapply{ap_should_be_tailcall = false;
+                    ap_loc = and_.bop_loc;
+                    ap_func = op;
+                    ap_args=[Lvar left_id; Lvar right_id];
+                    ap_inlined=Default_inline;
+                    ap_specialised=Default_specialise})
+        in
+        bind Strict left_id prev_lam (loop lam rest)
+  in
+  let op =
+    transl_ident let_.bop_op_name.loc env
+      let_.bop_op_type let_.bop_op_path let_.bop_op_val
+  in
+  let exp = loop (transl_exp let_.bop_exp) ands in
+  let func =
+    let return_kind = value_kind case.c_rhs.exp_env case.c_rhs.exp_type in
+    let (kind, params, return), body =
+      event_function case.c_rhs
+        (function repr ->
+           transl_function case.c_rhs.exp_loc return_kind
+             !Clflags.native_code repr partial param [case])
+    in
+    let attr = default_function_attribute in
+    let loc = case.c_rhs.exp_loc in
+    Lfunction{kind; params; return; body; attr; loc}
+  in
+  Lapply{ap_should_be_tailcall = false;
+         ap_loc = loc;
+         ap_func = op;
+         ap_args=[exp; func];
+         ap_inlined=Default_inline;
+         ap_specialised=Default_specialise}
 
 (* Wrapper for class compilation *)
 

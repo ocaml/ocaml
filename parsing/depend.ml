@@ -246,6 +246,10 @@ let rec add_expr bv exp =
   | Pexp_open (o, e) ->
       let bv = open_declaration bv o in
       add_expr bv e
+  | Pexp_letop {let_; ands; body} ->
+      let bv' = add_binding_op bv bv let_ in
+      let bv' = List.fold_left (add_binding_op bv) bv' ands in
+      add_expr bv' body
   | Pexp_extension (({ txt = ("ocaml.extension_constructor"|
                               "extension_constructor"); _ },
                      PStr [item]) as e) ->
@@ -269,6 +273,10 @@ and add_bindings recf bv pel =
   let bv = if recf = Recursive then bv' else bv in
   List.iter (fun x -> add_expr bv x.pvb_expr) pel;
   bv'
+
+and add_binding_op bv bv' pbop =
+  add_expr bv pbop.pbop_exp;
+  add_pattern bv' pbop.pbop_pat
 
 and add_modtype bv mty =
   match mty.pmty_desc with

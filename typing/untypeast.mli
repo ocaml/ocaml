@@ -20,6 +20,8 @@ val lident_of_path : Path.t -> Longident.t
 type mapper = {
   attribute: mapper -> Typedtree.attribute -> attribute;
   attributes: mapper -> Typedtree.attribute list -> attribute list;
+  binding_op: mapper -> Typedtree.binding_op -> Typedtree.pattern
+              -> binding_op;
   case: mapper -> Typedtree.case -> case;
   cases: mapper -> Typedtree.case list -> case list;
   class_declaration: mapper -> Typedtree.class_declaration -> class_declaration;

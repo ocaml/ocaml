@@ -377,6 +377,11 @@ and expression i ppf x =
       line i ppf "Pexp_open %a\n" fmt_override_flag o.popen_override;
       module_expr i ppf o.popen_expr;
       expression i ppf e
+  | Pexp_letop {let_; ands; body} ->
+      line i ppf "Pexp_letop\n";
+      binding_op i ppf let_;
+      list i binding_op ppf ands;
+      expression i ppf body
   | Pexp_extension (s, arg) ->
       line i ppf "Pexp_extension \"%s\"\n" s.txt;
       payload i ppf arg
@@ -887,6 +892,12 @@ and value_binding i ppf x =
   attributes (i+1) ppf x.pvb_attributes;
   pattern (i+1) ppf x.pvb_pat;
   expression (i+1) ppf x.pvb_expr
+
+and binding_op i ppf x =
+  line i ppf "<binding_op> %a %a"
+    fmt_string_loc x.pbop_op fmt_location x.pbop_loc;
+  pattern (i+1) ppf x.pbop_pat;
+  expression (i+1) ppf x.pbop_exp;
 
 and string_x_expression i ppf (s, e) =
   line i ppf "<override> %a\n" fmt_string_loc s;
