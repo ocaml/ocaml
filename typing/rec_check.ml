@@ -40,12 +40,23 @@ struct
     (** A [Guard] context returns the value as a member of a data structure,
         for example a variant constructor or record. The value can safely be
         defined mutually-recursively with their context, for example in
-        [let rec li = 1 :: li]. *)
+        [let rec li = 1 :: li].
+        When these subexpressions participate in a cyclic definition,
+        this definition is productive/guarded.
+
+        The [Guard] mode is also used when a value is not dereferenced,
+        it is returned by a sub-expression, but the result of this
+        sub-expression is discarded instead of being returned.
+        For example, the subterm [?] is in a [Guard] context
+        in [let _ = ? in e] and in [?; e].
+        When these subexpressions participate in a cyclic definition,
+        they cannot create a self-loop.
+    *)
 
     | Delay
     (** A [Delay] context can be fully evaluated without evaluting its argument,
         which will only be needed at a later point of program execution. For
-        example, (fun x -> ?) or (lazy ?) are [Delay] contexts. *)
+        example, [fun x -> ?] or [lazy ?] are [Delay] contexts. *)
 
     | Unused
     (** [Unused] is for subexpressions that are not used at all during
@@ -343,23 +354,19 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
       in
       let env_e = expression m_e e in
       Env.join env_pat env_e
-    | Texp_for (_, _, e1, e2, _, e3) ->
+    | Texp_for (_, _, low, high, _, body) ->
       (*
-        G1 |- e1: m[Dereference]
-        G2 |- e2: m[Dereference]
-        G3 |- e3: m[Guard]
+        G1 |- low: m[Dereference]
+        G2 |- high: m[Dereference]
+        G3 |- body: m[Guard]
         ---
-        G1 + G2 + G3 |- for _ = e1 (down)?to e2 do e3 done: m
+        G1 + G2 + G3 |- for _ = low (down)?to high do body done: m
 
-        e3 is evaluated in the mode m[Guard] because this expression is
-        evaluated but not used.
-        Jeremy Yallop notes that e3 is not available for inclusion in another
-        value, but I don't understand what it means.
       *)
-      let env_1 = expression (compos mode Dereference) e1 in
-      let env_2 = expression (compos mode Dereference) e2 in
-      let env_3 = expression (compos mode Guard) e3 in
-      Env.join (Env.join env_1 env_2) env_3
+      let env_low = expression (compos mode Dereference) low in
+      let env_high = expression (compos mode Dereference) high in
+      let env_body = expression (compos mode Guard) body in
+      Env.join (Env.join env_low env_high) env_body
     | Texp_constant _ ->
       Env.empty
     | Texp_new (pth, _, _) ->
@@ -430,17 +437,17 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
       option expression (compos mode Guard) eo
     | Texp_record { fields = es; extended_expression = eo;
                     representation = rep } ->
-        let m' = match rep with
-          | Record_float -> compos mode Dereference
-          | Record_unboxed _ -> mode
+        let mfield = match rep with
+          | Record_float -> Dereference
+          | Record_unboxed _ -> Return
           | Record_regular | Record_inlined _
-          | Record_extension -> compos mode Guard
+          | Record_extension -> Guard
         in
         let field m = function
             _, Kept _ -> Env.empty
           | _, Overridden (_, e) -> expression m e
         in
-        Env.join (array field m' es)
+        Env.join (array field (compos mode mfield) es)
                  (option expression (compos mode Dereference) eo)
     | Texp_ifthenelse (cond, ifso, ifnot) ->
       (*
@@ -481,10 +488,10 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
       Env.join env1 env2
     | Texp_while (e1, e2) ->
       (*
-        G1 |- e1: m[Dereference]
-        G2 |- e2: m[Guard]
+        G1 |- cond: m[Dereference]
+        G2 |- body: m[Guard]
         ---------------------------------
-        G1 + G2 |- while e1 do e2 done: m
+        G1 + G2 |- while cond do body done: m
       *)
       let env_1 = expression (compos mode Dereference) e1 in
       let env_2 = expression (compos mode Guard) e2 in
@@ -836,7 +843,7 @@ and case : mode -> Typedtree.case -> Env.t * mode =
 and pattern : Env.t -> pattern -> mode = fun env pat ->
   (*
     mp := | Dereference if p is destructuring
-          | Guard      otherwise
+          | Guard       otherwise
     me := sum{G(x), x in vars(p)}
     --------------------------------------------
     p : (mp + me) -| G
