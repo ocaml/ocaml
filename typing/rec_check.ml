@@ -18,7 +18,6 @@ open Types
 
 exception Illegal_expr
 
-module Env' = Env
 module Rec_context =
 struct
   type access =
@@ -165,58 +164,6 @@ let is_ref : Types.value_description -> bool = function
                           prim_arity = 1 } } ->
         true
   | _ -> false
-
-let scrape env ty =
-  (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
-
-let array_element_kind env ty =
-  match scrape env ty with
-  | Tvar _ | Tunivar _ ->
-      `Pgenarray
-  | Tconstr(p, _, _) ->
-      if Path.same p Predef.path_int || Path.same p Predef.path_char then
-        `Pintarray
-      else if Path.same p Predef.path_float then
-        if Config.flat_float_array then `Pfloatarray else `Paddrarray
-      else if Path.same p Predef.path_string
-            || Path.same p Predef.path_array
-            || Path.same p Predef.path_nativeint
-            || Path.same p Predef.path_int32
-            || Path.same p Predef.path_int64 then
-        `Paddrarray
-      else begin
-        try
-          match Env'.find_type p env with
-            {type_kind = Type_abstract} ->
-              `Pgenarray
-          | {type_kind = Type_variant cstrs}
-            when List.for_all (fun c -> c.Types.cd_args = Types.Cstr_tuple [])
-                cstrs ->
-              `Pintarray
-          | {type_kind = _} ->
-              `Paddrarray
-        with Not_found ->
-          (* This can happen due to e.g. missing -I options,
-              causing some .cmi files to be unavailable.
-              Maybe we should emit a warning. *)
-          `Pgenarray
-      end
-  | _ ->
-      `Paddrarray
-
-let array_type_kind env ty =
-  match scrape env ty with
-  | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
-    when Path.same p Predef.path_array ->
-      array_element_kind env elt_ty
-  | _ ->
-      (* This can happen with e.g. Obj.field *)
-      `Pgenarray
-
-let array_kind exp = array_type_kind exp.exp_env exp.exp_type
-
-let has_concrete_element_type : Typedtree.expression -> bool =
-  fun e -> array_kind e <> `Pgenarray
 
 (* See the note on abstracted arguments in the documentation for
     Typedtree.Texp_apply *)
@@ -403,14 +350,20 @@ let rec expression : Env.env -> Typedtree.expression -> Use.t =
         else Use.inspect ty
     | Texp_tuple exprs ->
       Use.guard (list expression env exprs)
-    | Texp_array exprs when array_kind exp = `Pfloatarray ->
-      Use.inspect (list expression env exprs)
-    | Texp_array exprs when has_concrete_element_type exp ->
-      Use.guard (list expression env exprs)
-    | Texp_array exprs ->
-      (* This is counted as a use, because constructing a generic array
-          involves inspecting the elements (PR#6939). *)
-      Use.inspect (list expression env exprs)
+    | Texp_array args ->
+      let ty = list expression env args in
+      begin match Typeopt.array_kind exp with
+      | Lambda.Pfloatarray ->
+          (* (flat) float arrays unbox their elements *)
+          Use.inspect ty
+      | Lambda.Pgenarray ->
+          (* This is counted as a use, because constructing a generic array
+             involves inspecting to decide whether to unbox (PR#6939). *)
+          Use.inspect ty
+      | Lambda.Paddrarray | Lambda.Pintarray ->
+          (* non-generic, non-float arrays act as constructors *)
+          Use.guard ty
+      end
     | Texp_construct (_, desc, exprs) ->
       let access_constructor =
         match desc.cstr_tag with
