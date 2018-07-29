@@ -441,7 +441,7 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
           | _, Overridden (_, e) -> expression m e
         in
         Env.join (array field m' es)
-                 (option expression mode eo)
+                 (option expression (compos mode Dereference) eo)
     | Texp_ifthenelse (cond, ifso, ifnot) ->
       (*
         Gc |- c: m[Dereference]
