@@ -565,8 +565,8 @@ and class_expr : Env.env -> Typedtree.class_expr -> Use.t =
         Use.inspect (Use.join (class_expr env ce)
                         (list arg env args))
     | Tcl_let (rec_flag, valbinds, _, ce) ->
-        let _, ty = value_bindings rec_flag env valbinds in
-        Use.(inspect (join ty (class_expr env ce)))
+        let env', ty = value_bindings rec_flag env valbinds in
+        Use.(inspect (join ty (class_expr env' ce)))
     | Tcl_constraint (ce, _, _, _, _) ->
         class_expr env ce
     | Tcl_open (_, _, _, _, ce) ->
