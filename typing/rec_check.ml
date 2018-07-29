@@ -116,6 +116,7 @@ struct
     (** unguarded e l: the list of all identifiers in e that are used in e. *)
 
     val join : t -> t -> t
+    val join_list : t list -> t
 
     val remove : Ident.t -> t -> t
     (* Remove an identifier from an environment. *)
@@ -135,6 +136,8 @@ struct
     let find (id: Ident.t) (tbl: t) =
       try M.find id tbl with Not_found -> Unused
 
+    let empty = M.empty
+
     let join (x: t) (y: t) =
       M.fold
         (fun (id: Ident.t) (v: mode) (tbl: t) ->
@@ -142,9 +145,9 @@ struct
            M.add id (prec v v') tbl)
         x y
 
-    let single id mode = M.add id mode M.empty
+    let join_list li = List.fold_left join empty li
 
-    let empty = M.empty
+    let single id mode = M.add id mode empty
 
     let unguarded env li =
       let not_guarded = function
@@ -319,40 +322,74 @@ let classify_expression : Typedtree.expression -> sd =
         Dynamic
   in classify_expression Ident.empty
 
-let remove_pat : Typedtree.pattern -> Env.t -> Env.t =
-  fun pat env ->
-    Env.remove_list (pat_bound_idents pat) env
+let remove_pat pat env =
+  Env.remove_list (pat_bound_idents pat) env
 
-let remove_patlist : Typedtree.pattern list -> Env.t -> Env.t =
-  fun pats env -> List.fold_right remove_pat pats env
+let remove_patlist pats env =
+  List.fold_right remove_pat pats env
 
-let option : 'a. (mode -> 'a -> Env.t) -> mode -> 'a option -> Env.t =
-  fun f m -> Misc.Stdlib.Option.value_default (f m) ~default:Env.empty
-let list : 'a. (mode -> 'a -> Env.t) -> mode -> 'a list -> Env.t =
-  fun f m ->
-    List.fold_left (fun env item -> Env.join (f m item) env) Env.empty
-let array : 'a. (mode -> 'a -> Env.t) -> mode -> 'a array -> Env.t =
-  fun f m ->
-    Array.fold_left (fun env item -> Env.join (f m item) env) Env.empty
+(* Usage mode judgments.
 
-let rec expression : mode -> Typedtree.expression -> Env.t =
-  fun mode exp -> match exp.exp_desc with
+   There are two main groups of judgment functions:
+
+   - Judgments of the form "Gamma |- ... : m"
+     compute the environment of a subterm from its mode,
+     so the corresponding function has type [... -> mode -> Env.t].
+
+     We write ['a -> term_judg] in this case.
+
+   - Judgments of the form "Gamma |- ... : m -| Gamma'"
+     correspond to binding constructs that have both an
+     exterior environment (the environment of the whole term)
+     and an interior environment (the environment after the binding
+     construct has introduced new names in scope).
+
+     For example, a toplevel let-binding could be given
+     the following rule:
+
+       G |- e : m + m'
+       -------------------------------
+       G |- (let x = e : m) -| x:m', G
+
+     In this case, the corresponding function has type
+     [... -> mode -> Env.t -> Env.t]: it takes the mode
+     and interior environment as inputs, and returns
+     the exterior environment.
+
+     We write ['a -> bind_judg] in this case.
+*)
+type term_judg = mode -> Env.t
+type bind_judg = mode -> Env.t -> Env.t
+
+let option : 'a. ('a -> term_judg) -> 'a option -> term_judg =
+  fun f o m -> match o with
+    | None -> Env.empty
+    | Some v -> f v m
+let list : 'a. ('a -> term_judg) -> 'a list -> term_judg =
+  fun f li m ->
+    List.fold_left (fun env item -> Env.join env (f item m)) Env.empty li
+let array : 'a. ('a -> term_judg) -> 'a array -> term_judg =
+  fun f ar m ->
+    Array.fold_left (fun env item -> Env.join env (f item m)) Env.empty ar
+
+let rec expression : Typedtree.expression -> term_judg =
+  fun exp mode -> match exp.exp_desc with
     | Texp_ident (pth, _, _) ->
-      path mode pth
+      path pth mode
     | Texp_let (rec_flag, bindings, body) ->
-      value_bindings (expression mode body) rec_flag mode bindings
+      value_bindings rec_flag bindings mode (expression body mode)
     | Texp_letmodule (x, _, mexp, e) ->
-      module_binding (expression mode e) mode (x, mexp)
+      module_binding (x, mexp) mode (expression e mode)
     | Texp_match (e, cases, _) ->
       let env_pat, m_e =
         List.fold_left
           (fun (env, m) c ->
-            let (env', m') = case mode c in
+            let (env', m') = case c mode in
             (Env.join env env'), (prec m m'))
           (Env.empty, Unused)
           cases
       in
-      let env_e = expression m_e e in
+      let env_e = expression e m_e in
       Env.join env_pat env_e
     | Texp_for (_, _, low, high, _, body) ->
       (*
@@ -360,13 +397,13 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
         G2 |- high: m[Dereference]
         G3 |- body: m[Guard]
         ---
-        G1 + G2 + G3 |- for _ = low (down)?to high do body done: m
-
+        G1 + G2 + G3 |- for _ = low to high do body done: m
       *)
-      let env_low = expression (compos mode Dereference) low in
-      let env_high = expression (compos mode Dereference) high in
-      let env_body = expression (compos mode Guard) body in
-      Env.join (Env.join env_low env_high) env_body
+      Env.join_list [
+        expression low (compos mode Dereference);
+        expression high (compos mode Dereference);
+        expression body (compos mode Guard);
+      ]
     | Texp_constant _ ->
       Env.empty
     | Texp_new (pth, _, _) ->
@@ -375,11 +412,11 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
         -----------------------
         G |- new c: m
       *)
-      path (compos mode Dereference) pth
+      path pth (compos mode Dereference)
     | Texp_instvar (self_path, pth, _inst_var) ->
         Env.join
-          (path (compos mode Dereference) self_path)
-          (path mode pth)
+          (path self_path (compos mode Dereference))
+          (path pth mode)
     | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, [_, Some arg])
       when is_ref vd ->
       (*
@@ -387,9 +424,9 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
         ------------------
         G |- ref e: m
       *)
-      expression (compos mode Guard) arg
+      expression arg (compos mode Guard)
     | Texp_apply (e, args)  ->
-        let arg m (_, eo) = option expression m eo in
+        let arg (_, eo) m = option expression eo m in
         let m' = if List.exists is_abstracted_arg args
           then (* see the comment on Texp_apply in typedtree.mli;
                   the non-abstracted arguments are bound to local
@@ -397,9 +434,9 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
             compos mode Guard
           else compos mode Dereference
         in
-        Env.join (list arg m' args) (expression m' e)
+        Env.join (list arg args m') (expression e m')
     | Texp_tuple exprs ->
-      list expression (compos mode Guard) exprs
+      list expression exprs (compos mode Guard)
     | Texp_array exprs ->
       let array_mode = match Typeopt.array_kind exp with
         | Lambda.Pfloatarray ->
@@ -413,12 +450,12 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
             (* non-generic, non-float arrays act as constructors *)
             Guard
       in
-      list expression (compos mode array_mode) exprs
+      list expression exprs (compos mode array_mode)
     | Texp_construct (_, desc, exprs) ->
       let access_constructor =
         match desc.cstr_tag with
         | Cstr_extension (pth, _) ->
-          path (compos mode Dereference) pth
+          path pth (compos mode Dereference)
         | _ -> Env.empty
       in
       let m' = match desc.cstr_tag with
@@ -427,14 +464,14 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
         | Cstr_constant _ | Cstr_block _ | Cstr_extension _ ->
           compos mode Guard
       in
-      Env.join access_constructor (list expression m' exprs)
+      Env.join access_constructor (list expression exprs m')
     | Texp_variant (_, eo) ->
       (*
         G |- e: m[Guard]
         ------------------   -----------
         G |- `A e: m         [] |- `A: m
       *)
-      option expression (compos mode Guard) eo
+      option expression eo (compos mode Guard)
     | Texp_record { fields = es; extended_expression = eo;
                     representation = rep } ->
         let mfield = match rep with
@@ -443,12 +480,12 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
           | Record_regular | Record_inlined _
           | Record_extension -> Guard
         in
-        let field m = function
-            _, Kept _ -> Env.empty
-          | _, Overridden (_, e) -> expression m e
+        let field (_label, field_def) m = match field_def with
+            Kept _ -> Env.empty
+          | Overridden (_, e) -> expression e m
         in
-        Env.join (array field (compos mode mfield) es)
-                 (option expression (compos mode Dereference) eo)
+        Env.join (array field es (compos mode mfield))
+                 (option expression eo (compos mode Dereference))
     | Texp_ifthenelse (cond, ifso, ifnot) ->
       (*
         Gc |- c: m[Dereference]
@@ -460,10 +497,11 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
       Note: `if c then e1 else e2` is treated in the same way as
       `match c with true -> e1 | false -> e2`
       *)
-      let env_cond = expression (compos mode Dereference) cond in
-      let env_ifso = expression mode ifso in
-      let env_ifnot = option expression mode ifnot in
-      Env.join env_cond (Env.join env_ifso env_ifnot)
+      Env.join_list [
+        expression cond (compos mode Dereference);
+        expression ifso mode;
+        option expression ifnot mode;
+      ]
     | Texp_setfield (e1, _, _, e2) ->
       (*
         G1 |- e1: m[Dereference]
@@ -471,8 +509,8 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
         ---
         G1 + G2 |- e1.x <- e2: m
       *)
-      let env_1 = expression (compos mode Dereference) e1 in
-      let env_2 = expression (compos mode Dereference) e2 in
+      let env_1 = expression e1 (compos mode Dereference) in
+      let env_2 = expression e2 (compos mode Dereference) in
       Env.join env_1 env_2
     | Texp_sequence (e1, e2) ->
       (*
@@ -483,8 +521,8 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
 
         Note: `e1; e2` is treated in the same way as `let _ = e1 in e2`
       *)
-      let env1 = expression (compos mode Guard) e1 in
-      let env2 = expression mode e2 in
+      let env1 = expression e1 (compos mode Guard) in
+      let env2 = expression e2 mode in
       Env.join env1 env2
     | Texp_while (e1, e2) ->
       (*
@@ -493,8 +531,8 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
         ---------------------------------
         G1 + G2 |- while cond do body done: m
       *)
-      let env_1 = expression (compos mode Dereference) e1 in
-      let env_2 = expression (compos mode Guard) e2 in
+      let env_1 = expression e1 (compos mode Dereference) in
+      let env_2 = expression e2 (compos mode Guard) in
       Env.join env_1 env_2
     | Texp_send (e1, _, eo) ->
       (*
@@ -502,15 +540,15 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
         ---------------------- (plus weird 'eo' option)
         G |- e#x: m
       *)
-      Env.join (expression (compos mode Dereference) e1)
-               (option expression (compos mode Dereference) eo)
+      Env.join (expression e1 (compos mode Dereference))
+               (option expression eo (compos mode Dereference))
     | Texp_field (e, _, _) ->
       (*
         G |- e: m[Dereference]
         -----------------------
         G |- e.x: m
       *)
-      expression (compos mode Dereference) e
+      expression e (compos mode Dereference)
     | Texp_setinstvar (pth,_,_,e) ->
       (*
         G |- e: m[Dereference]  (*TODO: why is this a dereference?*)
@@ -518,14 +556,14 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
         G |- x <- e: m
       *)
       Env.join
-        (path (compos mode Dereference) pth)
-        (expression (compos mode Dereference) e)
+        (path pth (compos mode Dereference))
+        (expression e (compos mode Dereference))
     | Texp_letexception ({ext_id}, e) ->
       (* G |- e: m
          ----------------------------
          G |- let exception A in e: m
       *)
-      Env.remove ext_id (expression mode e)
+      Env.remove ext_id (expression e mode)
     | Texp_assert e ->
       (*
         G |- e: m[Dereference]
@@ -534,16 +572,16 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
 
         Note: `assert e` is treated just as if `assert` was a function.
       *)
-      expression (compos mode Dereference) e
+      expression e (compos mode Dereference)
     | Texp_pack mexp ->
       (*
         G |- M: m
         ----------------
         G |- module M: m
       *)
-      modexp mode mexp
+      modexp mexp mode
     | Texp_object (clsstrct, _) ->
-      class_structure mode clsstrct
+      class_structure clsstrct mode
     | Texp_try (e, cases) ->
       (*
         G |- e: m
@@ -553,12 +591,12 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
         ---
         G + G1 + ... + Gn |- try e with p1 -> e1 | ... | pn -> en: m
       *)
-      let case m {Typedtree.c_rhs} = expression m c_rhs in
-      Env.join (expression mode e) (list case mode cases)
+      let case {Typedtree.c_rhs} m = expression c_rhs m in
+      Env.join (expression e mode) (list case cases mode)
     | Texp_override (pth, fields) ->
-      let field m (_, _, arg) = expression m arg in
+      let field (_, _, arg) m = expression arg m in
       let m' = compos mode Dereference in
-      Env.join (path m' pth) (list field m' fields)
+      Env.join (path pth m') (list field fields m')
     | Texp_function { cases } ->
       (* Approximation: function `p1 -> e1, ..., pn -> en` is the same as
          `fun x -> match x with p1 -> e1, ..., pn -> en`.
@@ -568,8 +606,7 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
          - e1, ..., en are evaluated in the m[Delay] mode instead of m
          - we don't care about the mode returned by the `case` function.
       *)
-      let m = compos mode Delay in
-      list (fun m c -> fst (case m c)) m cases
+      list (fun c m -> fst (case c m)) cases (compos mode Delay)
     | Texp_lazy e ->
       (*
         G |- e:
@@ -585,7 +622,7 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
           compos mode Delay
         end
       in
-      expression m' e
+      expression e m'
     | Texp_unreachable ->
       (*
         ----------
@@ -593,44 +630,44 @@ let rec expression : mode -> Typedtree.expression -> Env.t =
       *)
       Env.empty
     | Texp_extension_constructor (_lid, pth) ->
-      path (compos mode Dereference) pth
+      path pth (compos mode Dereference)
 
-and class_structure : mode -> Typedtree.class_structure -> Env.t =
-  fun m cs -> list class_field m cs.cstr_fields
+and class_structure : Typedtree.class_structure -> term_judg =
+  fun cs m -> list class_field cs.cstr_fields m
 
-and class_field : mode -> Typedtree.class_field -> Env.t =
-  fun m cf -> match cf.cf_desc with
+and class_field : Typedtree.class_field -> term_judg =
+  fun cf m -> match cf.cf_desc with
     | Tcf_inherit (_, ce, _super, _inh_vars, _inh_meths) ->
-      class_expr (compos m Dereference) ce
+      class_expr ce (compos m Dereference)
     | Tcf_val (_lab, _mut, _, cfk, _) ->
-      class_field_kind m cfk
+      class_field_kind cfk m
     | Tcf_method (_, _, cfk) ->
-      class_field_kind m cfk
+      class_field_kind cfk m
     | Tcf_constraint _ ->
       Env.empty
     | Tcf_initializer e ->
-      expression (compos m Dereference) e
+      expression e (compos m Dereference)
     | Tcf_attribute _ ->
       Env.empty
 
-and class_field_kind : mode -> Typedtree.class_field_kind -> Env.t =
-  fun m cfk -> match cfk with
+and class_field_kind : Typedtree.class_field_kind -> term_judg =
+  fun cfk m -> match cfk with
     | Tcfk_virtual _ ->
       Env.empty
     | Tcfk_concrete (_, e) ->
-      expression (compos m Dereference) e
+      expression e (compos m Dereference)
 
-and modexp : mode -> Typedtree.module_expr -> Env.t =
-  fun mode mexp -> match mexp.mod_desc with
+and modexp : Typedtree.module_expr -> term_judg =
+  fun mexp mode -> match mexp.mod_desc with
     | Tmod_ident (pth, _) ->
-      path mode pth
+      path pth mode
     | Tmod_structure s ->
-      structure mode s
+      structure s mode
     | Tmod_functor (_, _, _, e) ->
-      modexp (compos mode Delay) e
+      modexp e (compos mode Delay)
     | Tmod_apply (f, p, _) ->
       let m' = compos mode Dereference in
-      Env.join (modexp m' f) (modexp m' p)
+      Env.join (modexp f m') (modexp p m')
     | Tmod_constraint (mexp, _, _, coe) ->
       let rec coercion k = function
         | Tcoerce_none ->
@@ -648,13 +685,13 @@ and modexp : mode -> Typedtree.module_expr -> Env.t =
         | Tcoerce_alias (pth, coe) ->
           (* Alias coercions ignore their arguments, but they evaluate
              their alias module 'pth' under another coercion. *)
-          coercion (fun m -> path (compos mode m) pth) coe
+          coercion (fun m -> path pth (compos mode m)) coe
       in
-      coercion (fun m -> modexp (compos mode m) mexp) coe
+      coercion (fun m -> modexp mexp (compos mode m)) coe
     | Tmod_unpack (e, _) ->
-      expression mode e
+      expression e mode
 
-and path : mode -> Path.t -> Env.t =
+and path : Path.t -> term_judg =
   (*
     ------------
     x: m |- x: m
@@ -668,16 +705,16 @@ and path : mode -> Path.t -> Env.t =
     ------------------------ (as for term application)
     G1 + G2 |- A(B): m
   *)
-  fun mode pth -> match pth with
+  fun pth mode -> match pth with
     | Path.Pident x ->
         Env.single x mode
     | Path.Pdot (t, _, _) ->
-        path (compos mode Dereference) t
+        path t (compos mode Dereference)
     | Path.Papply (f, p) ->
         let m = compos mode Dereference in
-        Env.join (path m f) (path m p)
+        Env.join (path f m) (path p m)
 
-and structure : mode -> Typedtree.structure -> Env.t =
+and structure : Typedtree.structure -> term_judg =
   (*
     G1, {x: _, x in vars(G1)} |- item1: G2 + ... + Gn in m
     G2, {x: _, x in vars(G2)} |- item2: G3 + ... + Gn in m
@@ -686,11 +723,12 @@ and structure : mode -> Typedtree.structure -> Env.t =
     ---
     (G1 + ... + Gn) - V |- struct item1 ... itemn end: m
   *)
-  fun m s ->
-    List.fold_right (structure_item m) s.str_items Env.empty
+  fun s m ->
+    List.fold_right (fun it env -> structure_item it m env)
+      s.str_items Env.empty
 
-and structure_item : mode -> Typedtree.structure_item -> Env.t -> Env.t =
-  fun m s env -> match s.str_desc with
+and structure_item : Typedtree.structure_item -> bind_judg =
+  fun s m env -> match s.str_desc with
     | Tstr_eval (e, _) ->
       (*
         G |- e: m[Guard]
@@ -700,14 +738,14 @@ and structure_item : mode -> Typedtree.structure_item -> Env.t -> Env.t =
 
         The expression `e` is treated in the same way as let _ = e
       *)
-      Env.join env (expression (compos m Guard) e)
+      Env.join env (expression e (compos m Guard))
     | Tstr_value (rec_flag, bindings) ->
-      value_bindings env rec_flag m bindings
+      value_bindings rec_flag bindings m env
     | Tstr_module {mb_id; mb_expr} ->
-      module_binding env m (mb_id, mb_expr)
+      module_binding (mb_id, mb_expr) m env
     | Tstr_recmodule mbs ->
-      recursive_module_bindings env m
-        (List.map (fun {mb_id; mb_expr} -> (mb_id, mb_expr)) mbs)
+      let bindings = List.map (fun {mb_id; mb_expr} -> (mb_id, mb_expr)) mbs in
+      recursive_module_bindings bindings m env
     | Tstr_primitive _ ->
       env
     | Tstr_type _ ->
@@ -719,11 +757,11 @@ and structure_item : mode -> Typedtree.structure_item -> Env.t -> Env.t =
     | Tstr_typext {tyext_constructors = exts; _} ->
       let ext_ids = List.map (fun {ext_id = id; _} -> id) exts in
       Env.join
-        (list extension_constructor m exts)
+        (list extension_constructor exts m)
         (Env.remove_list ext_ids env)
     | Tstr_exception {tyexn_constructor = ext; _} ->
       Env.join
-        (extension_constructor m ext)
+        (extension_constructor ext m)
         (Env.remove ext.ext_id env)
     | Tstr_modtype _
     | Tstr_class_type _
@@ -740,10 +778,10 @@ and structure_item : mode -> Typedtree.structure_item -> Env.t -> Env.t =
         let class_ids =
           let class_id ({ci_id_class = id; _}, _) = id in
           List.map class_id classes in
-        let class_declaration m ({ci_expr; _}, _) =
-          Env.remove_list class_ids (class_expr m ci_expr) in
+        let class_declaration ({ci_expr; _}, _) m =
+          Env.remove_list class_ids (class_expr ci_expr m) in
         Env.join
-          (list class_declaration m classes)
+          (list class_declaration classes m)
           (Env.remove_list class_ids env)
     | Tstr_include { incl_mod = mexp; incl_type = mty; _ } ->
       let included_ids =
@@ -758,58 +796,56 @@ and structure_item : mode -> Typedtree.structure_item -> Env.t -> Env.t =
             -> id
         in
         List.map sigitem_id mty in
-      Env.join (modexp m mexp) (Env.remove_list included_ids env)
+      Env.join (modexp mexp m) (Env.remove_list included_ids env)
 
-and module_binding : Env.t -> mode -> (Ident.t * Typedtree.module_expr) -> Env.t =
-  fun env m (id, mexp) ->
+and module_binding : (Ident.t * Typedtree.module_expr) -> bind_judg =
+  fun (id, mexp) m env ->
       (*
         GE |- E: m[mM + Guard]
         -------------------------------------
         GE + G |- module M = E : m -| M:mM, G
       *)
       let mM, env = Env.take id env in
-      Env.join (modexp (compos m (prec mM Guard)) mexp) env
+      Env.join (modexp mexp (compos m (prec mM Guard))) env
 
-and recursive_module_bindings
-  : Env.t -> mode -> (Ident.t * Typedtree.module_expr) list -> Env.t =
-  fun env m m_bindings ->
+and recursive_module_bindings : (Ident.t * Typedtree.module_expr) list -> bind_judg =
+  fun m_bindings m env ->
     let mids = List.map fst m_bindings in
-    let binding m (mid, mexp) =
+    let binding (mid, mexp) m =
       let mM = Env.find mid env in
-      Env.remove_list mids (modexp (compos m (prec mM Guard)) mexp)
+      Env.remove_list mids (modexp mexp (compos m (prec mM Guard)))
     in
-    Env.join (list binding m m_bindings) (Env.remove_list mids env)
+    Env.join (list binding m_bindings m) (Env.remove_list mids env)
 
-and class_expr : mode -> Typedtree.class_expr -> Env.t =
-  fun m ce -> match ce.cl_desc with
+and class_expr : Typedtree.class_expr -> term_judg =
+  fun ce m -> match ce.cl_desc with
     | Tcl_ident (pth, _, _) ->
-        path (compos m Dereference) pth
+        path pth (compos m Dereference)
     | Tcl_structure cs ->
-        class_structure m cs
+        class_structure cs m
     | Tcl_fun (_, _, args, ce, _) ->
         let ids = List.map fst args in
-        Env.remove_list ids (class_expr (compos m Delay) ce)
+        Env.remove_list ids (class_expr ce (compos m Delay))
     | Tcl_apply (ce, args) ->
         let m' = compos m Dereference in
-        let arg m (_label, eo) = option expression m eo in
-        Env.join (class_expr m' ce) (list arg m' args)
+        let arg (_label, eo) m = option expression eo m in
+        Env.join (class_expr ce m') (list arg args m')
     | Tcl_let (rec_flag, bindings, _, ce) ->
-      value_bindings (class_expr m ce) rec_flag m bindings
+      value_bindings rec_flag bindings m (class_expr ce m)
     | Tcl_constraint (ce, _, _, _, _) ->
-        class_expr m ce
+        class_expr ce m
     | Tcl_open (_, _, _, _, ce) ->
-        class_expr m ce
+        class_expr ce m
 
-and extension_constructor : mode -> Typedtree.extension_constructor -> Env.t =
-  fun m ec -> match ec.ext_kind with
+and extension_constructor : Typedtree.extension_constructor -> term_judg =
+  fun ec m -> match ec.ext_kind with
     | Text_decl _ ->
       Env.empty
     | Text_rebind (pth, _lid) ->
-      path m pth
+      path pth m
 
-and value_bindings:
-  Env.t -> rec_flag -> mode -> Typedtree.value_binding list -> Env.t =
-  fun bound_env rec_flag mode bindings ->
+and value_bindings : rec_flag -> Typedtree.value_binding list -> bind_judg =
+  fun rec_flag bindings mode bound_env ->
     (*
        (Gi |- ei : m[mi])^i       (pi : mi -| D)^i
        G := sum(Gi - if (rec) then (pj)^j else pi)^i
@@ -817,30 +853,30 @@ and value_bindings:
        G + (D - (pj)^j) |- let (rec)? (pi=ei)^i : m -| D
     *)
     let all_bound_pats = List.map (fun vb -> vb.vb_pat) bindings in
-    let binding_env m {vb_pat; vb_expr; _} =
+    let binding_env {vb_pat; vb_expr; _} m =
       let bound_pats = match rec_flag with
         | Recursive -> all_bound_pats
         | Nonrecursive -> [vb_pat] in
-      let m' = compos m (pattern bound_env vb_pat) in
-      remove_patlist bound_pats (expression m' vb_expr) in
+      let m' = compos m (pattern vb_pat bound_env) in
+      remove_patlist bound_pats (expression vb_expr m') in
     Env.join
-      (list binding_env mode bindings)
+      (list binding_env bindings mode)
       (remove_patlist all_bound_pats bound_env)
 
-and case : mode -> Typedtree.case -> Env.t * mode =
-  fun m { Typedtree.c_lhs; c_guard; c_rhs } ->
+and case : Typedtree.case -> mode -> Env.t * mode =
+  fun { Typedtree.c_lhs; c_guard; c_rhs } m ->
     (*
        Ge |- e : m    Gg |- g : m[Dereference]
        G := Ge+Gg     p : mp -| G
        ----------------------------------------
        G - p; m[mp] |- (p (when g)? -> e) : m
     *)
-    let env_guard = option expression (compos m Dereference) c_guard in
-    let env_rhs = expression m c_rhs in
+    let env_guard = option expression c_guard (compos m Dereference) in
+    let env_rhs = expression c_rhs m in
     let env = Env.join env_guard env_rhs in
-    (remove_pat c_lhs env), compos m (pattern env c_lhs)
+    (remove_pat c_lhs env), compos m (pattern c_lhs env)
 
-and pattern : Env.t -> pattern -> mode = fun env pat ->
+and pattern : pattern -> Env.t -> mode = fun pat env ->
   (*
     mp := | Dereference if p is destructuring
           | Guard       otherwise
@@ -877,7 +913,7 @@ and is_destructuring_pattern : Typedtree.pattern -> bool =
     | Tpat_exception _ -> false
 
 let is_valid_recursive_expression idlist expr =
-  let ty = expression Return expr in
+  let ty = expression expr Return in
   match Env.unguarded ty idlist, Env.dependent ty idlist,
         classify_expression expr with
   | _ :: _, _, _ (* The expression inspects rec-bound variables *)
@@ -911,7 +947,7 @@ let is_valid_class_expr idlist ce =
         *)
       | Tcl_apply (_, _) -> Env.empty
       | Tcl_let (rec_flag, bindings, _, ce) ->
-        value_bindings (class_expr mode ce) rec_flag mode bindings
+        value_bindings rec_flag bindings mode (class_expr mode ce)
       | Tcl_constraint (ce, _, _, _, _) ->
         class_expr mode ce
       | Tcl_open (_, _, _, _, ce) ->
