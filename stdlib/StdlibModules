@@ -57,6 +57,7 @@ STDLIB_MODULES=\
   $(P)nativeint \
   $(P)obj \
   $(P)oo \
+  $(P)option \
   $(P)parsing \
   $(P)printexc \
   $(P)printf \

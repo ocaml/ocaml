@@ -1266,6 +1266,7 @@ module MoreLabels   = MoreLabels
 module Nativeint    = Nativeint
 module Obj          = Obj
 module Oo           = Oo
+module Option       = Option
 module Parsing      = Parsing
 module Printexc     = Printexc
 module Printf       = Printf
