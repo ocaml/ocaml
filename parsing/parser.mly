@@ -87,6 +87,10 @@ let ghsig d = Sig.mk ~loc:(symbol_gloc()) d
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, [Nolabel, arg1; Nolabel, arg2]))
 
+let mkmatchfix matchop expr cases =
+  let func = mkexp (Pexp_function cases) in
+  mkexp(Pexp_apply(matchop, [Nolabel, func; Nolabel, expr]))
+
 let neg_string f =
   if String.length f > 0 && f.[0] = '-'
   then String.sub f 1 (String.length f - 1)
@@ -480,6 +484,7 @@ let package_type_of_module_type pmty =
 %token <string> INFIXOP3
 %token <string> INFIXOP4
 %token <string> DOTOP
+%token <string> MATCHOP
 %token INHERIT
 %token INITIALIZER
 %token <string * char option> INT
@@ -1345,6 +1350,8 @@ expr:
       { mkexp_attrs (mk_newtypes $5 $7).pexp_desc $2 }
   | MATCH ext_attributes seq_expr WITH opt_bar match_cases
       { mkexp_attrs (Pexp_match($3, List.rev $6)) $2 }
+  | MATCHOP seq_expr WITH opt_bar match_cases
+      { mkmatchfix (mkoperator $1 1) $2 (List.rev $5) }
   | TRY ext_attributes seq_expr WITH opt_bar match_cases
       { mkexp_attrs (Pexp_try($3, List.rev $6)) $2 }
   | TRY ext_attributes seq_expr WITH error
@@ -2427,6 +2434,7 @@ operator:
   | INFIXOP2                                    { $1 }
   | INFIXOP3                                    { $1 }
   | INFIXOP4                                    { $1 }
+  | MATCHOP                                     { $1 }
   | DOTOP LPAREN RPAREN                         { "."^ $1 ^"()" }
   | DOTOP LPAREN RPAREN LESSMINUS               { "."^ $1 ^ "()<-" }
   | DOTOP LBRACKET RBRACKET                     { "."^ $1 ^"[]" }

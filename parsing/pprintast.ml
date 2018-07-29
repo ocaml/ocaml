@@ -36,6 +36,15 @@ let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
 let special_infix_strings =
   ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!="; "::" ]
 
+let matchop s =
+  String.length s > 5
+  && s.[0] = 'm'
+  && s.[1] = 'a'
+  && s.[2] = 't'
+  && s.[3] = 'c'
+  && s.[4] = 'h'
+  && List.mem s.[5] infix_symbols
+
 (* determines if the string is an infix string.
    checks backwards, first allowing a renaming postfix ("_102") which
    may have resulted from Pexp -> Texp -> Pexp translation, then checking
@@ -46,6 +55,7 @@ let fixity_of_string  = function
   | s when List.mem s.[0] infix_symbols -> `Infix s
   | s when List.mem s.[0] prefix_symbols -> `Prefix s
   | s when s.[0] = '.' -> `Mixfix s
+  | s when matchop s -> `Matchop s
   | _ -> `Normal
 
 let view_fixity_of_exp = function
@@ -55,12 +65,14 @@ let view_fixity_of_exp = function
 
 let is_infix  = function  | `Infix _ -> true | _  -> false
 let is_mixfix = function `Mixfix _ -> true | _ -> false
+let is_kwdop = function `Matchop _ -> true | _ -> false
 
 (* which identifiers are in fact operators needing parentheses *)
 let needs_parens txt =
   let fix = fixity_of_string txt in
   is_infix fix
   || is_mixfix fix
+  || is_kwdop fix
   || List.mem txt.[0] prefix_symbols
 
 (* some infixes need spaces around parens to avoid clashes with comment
