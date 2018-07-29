@@ -32,9 +32,8 @@ open Mach
      Itailcall_ind                      R
      Iload                      R       R       R
      Istore                             R       R
-     Iintop(Icomp)              R       R       S
-                            or  S       S       R
-     Iintop(Imul|Idiv|Imod)     R       R       S
+     Iintop(Icomp
+            |Imul|Idiv|Imod)    R       R       S
      Iintop(Imulh)              R       R       S
      Iintop(shift)              S       S       R
      Iintop(others)             R       R       S
@@ -65,7 +64,7 @@ inherit Reloadgen.reload_generic as super
 
 method! reload_operation op arg res =
   match op with
-  | Iintop(Iadd|Isub|Iand|Ior|Ixor|Icomp _|Icheckbound _) ->
+  | Iintop(Iadd|Isub|Iand|Ior|Ixor|Icheckbound _) ->
       (* One of the two arguments can reside in the stack, but not both *)
       if stackp arg.(0) && stackp arg.(1)
       then ([|arg.(0); self#makereg arg.(1)|], res)
@@ -80,7 +79,7 @@ method! reload_operation op arg res =
       (* Note: Imulh, Idiv, Imod: arg(0) and res(0) already forced in regs
                Ilsl, Ilsr, Iasr: arg(1) already forced in regs *)
       (arg, res)
-  | Iintop(Imul) | Iaddf | Isubf | Imulf | Idivf ->
+  | Iintop(Icomp _ | Imul) | Iaddf | Isubf | Imulf | Idivf ->
       (* First argument (= result) must be in register, second arg
          can reside in the stack *)
       if stackp arg.(0)
