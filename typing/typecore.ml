@@ -640,7 +640,10 @@ let build_or_pat env loc lid =
       pats
   in
   match pats with
-    [] -> raise(Error(lid.loc, env, Not_a_variant_type lid.txt))
+    [] ->
+      (* empty polymorphic variants: not possible with the concrete language
+         but valid at the ast level *)
+      raise(Error(lid.loc, env, Not_a_variant_type lid.txt))
   | pat :: pats ->
       let r =
         List.fold_left
