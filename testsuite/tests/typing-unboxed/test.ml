@@ -56,7 +56,8 @@ end;;
 Line 11, characters 2-71:
     external f : (int32 [@unboxed]) -> (int32 [@unboxed]) = "f" "noalloc"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
+Error: [@The native code version of the primitive is mandatory
+when attributes [@untagged] or [@unboxed] are present.
 |}]
 
 module Old_style_warning = struct
@@ -71,7 +72,8 @@ end;;
 Line 3, characters 2-61:
     external a : float -> float = "a" "noalloc" "a_nat" "float"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used instead of "float"
+Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used
+instead of "float"
 Line 4, characters 2-53:
     external b : float -> float = "b" "noalloc" "b_nat"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -79,7 +81,8 @@ Warning 3: deprecated: [@@noalloc] should be used instead of "noalloc"
 Line 5, characters 2-51:
     external c : float -> float = "c" "c_nat" "float"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used instead of "float"
+Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used
+instead of "float"
 Line 6, characters 2-45:
     external d : float -> float = "d" "noalloc"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -281,14 +284,16 @@ external g : (float [@untagged]) -> float = "g" "g_nat";;
 Line 1, characters 14-19:
   external g : (float [@untagged]) -> float = "g" "g_nat";;
                 ^^^^^
-Error: Don't know how to untag this type. Only int can be untagged
+Error: [@Don't know how to untag this type.
+Only int can be untagged.
 |}]
 external h : (int [@unboxed]) -> float = "h" "h_nat";;
 [%%expect{|
 Line 1, characters 14-17:
   external h : (int [@unboxed]) -> float = "h" "h_nat";;
                 ^^^
-Error: Don't know how to unbox this type. Only float, int32, int64 and nativeint can be unboxed
+Error: [@Don't know how to unbox this type.
+Only float, int32, int64 and nativeint can be unboxed.
 |}]
 
 (* Bad: unboxing the function type *)
@@ -297,7 +302,8 @@ external i : int -> float [@unboxed] = "i" "i_nat";;
 Line 1, characters 13-25:
   external i : int -> float [@unboxed] = "i" "i_nat";;
                ^^^^^^^^^^^^
-Error: Don't know how to unbox this type. Only float, int32, int64 and nativeint can be unboxed
+Error: [@Don't know how to unbox this type.
+Only float, int32, int64 and nativeint can be unboxed.
 |}]
 
 (* Bad: unboxing a "deep" sub-type. *)
@@ -306,7 +312,9 @@ external j : int -> (float [@unboxed]) * float = "j" "j_nat";;
 Line 1, characters 21-26:
   external j : int -> (float [@unboxed]) * float = "j" "j_nat";;
                        ^^^^^
-Error: The attribute '@unboxed' should be attached to a direct argument or result of the primitive, it should not occur deeply into its type
+Error: The attribute '@unboxed' should be attached to
+       a direct argument or result of the primitive,
+       it should not occur deeply into its type.
 |}]
 
 (* This should be rejected, but it is quite complicated to do
@@ -324,21 +332,21 @@ external l : float -> float = "l" "l_nat" "float" [@@unboxed];;
 Line 1, characters 0-61:
   external l : float -> float = "l" "l_nat" "float" [@@unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged]
+Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged].
 |}]
 external m : (float [@unboxed]) -> float = "m" "m_nat" "float";;
 [%%expect{|
 Line 1, characters 0-62:
   external m : (float [@unboxed]) -> float = "m" "m_nat" "float";;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged]
+Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged].
 |}]
 external n : float -> float = "n" "noalloc" [@@noalloc];;
 [%%expect{|
 Line 1, characters 0-55:
   external n : float -> float = "n" "noalloc" [@@noalloc];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot use "noalloc" in conjunction with [@@noalloc]
+Error: Cannot use "noalloc" in conjunction with [@@noalloc].
 |}]
 
 (* Warnings: unboxed / untagged without any native implementation *)
@@ -347,42 +355,48 @@ external o : (float[@unboxed]) -> float = "o";;
 Line 1, characters 0-45:
   external o : (float[@unboxed]) -> float = "o";;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
+Error: [@The native code version of the primitive is mandatory
+when attributes [@untagged] or [@unboxed] are present.
 |}]
 external p : float -> (float[@unboxed]) = "p";;
 [%%expect{|
 Line 1, characters 0-45:
   external p : float -> (float[@unboxed]) = "p";;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
+Error: [@The native code version of the primitive is mandatory
+when attributes [@untagged] or [@unboxed] are present.
 |}]
 external q : (int[@untagged]) -> float = "q";;
 [%%expect{|
 Line 1, characters 0-44:
   external q : (int[@untagged]) -> float = "q";;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
+Error: [@The native code version of the primitive is mandatory
+when attributes [@untagged] or [@unboxed] are present.
 |}]
 external r : int -> (int[@untagged]) = "r";;
 [%%expect{|
 Line 1, characters 0-42:
   external r : int -> (int[@untagged]) = "r";;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
+Error: [@The native code version of the primitive is mandatory
+when attributes [@untagged] or [@unboxed] are present.
 |}]
 external s : int -> int = "s" [@@untagged];;
 [%%expect{|
 Line 1, characters 0-42:
   external s : int -> int = "s" [@@untagged];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
+Error: [@The native code version of the primitive is mandatory
+when attributes [@untagged] or [@unboxed] are present.
 |}]
 external t : float -> float = "t" [@@unboxed];;
 [%%expect{|
 Line 1, characters 0-45:
   external t : float -> float = "t" [@@unboxed];;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
+Error: [@The native code version of the primitive is mandatory
+when attributes [@untagged] or [@unboxed] are present.
 |}]
 
 (* PR#7424 *)
