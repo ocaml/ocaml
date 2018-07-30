@@ -1012,12 +1012,22 @@ let emit_profile () =
        all the registers used for argument passing, so we don't
        need to preserve other regs.  We do need to initialize rbp
        like mcount expects it, though. *)
+    if not fp then I.lea (mem64 NONE (-8) RSP) rbp;
+    I.mov rsp r10;
+    I.mov r15 r11;
+    locate_domain_state r11;
+    cfi_remember_state ();
+    I.mov (domain_field Domainstate.Domain_system_sp R11) rsp;
+    cfi_def_cfa_offset 8;
     I.push r10;
-    if not fp then I.mov rsp rbp;
+    cfi_adjust_cfa_offset 8;
     (* No Spacetime instrumentation needed: [mcount] cannot call anything
        OCaml-related. *)
     emit_call "mcount";
-    I.pop r10
+    I.pop r10;
+    cfi_adjust_cfa_offset (-8);
+    I.mov r10 rsp;
+    cfi_restore_state()
   end
 
 let all_functions = ref []
