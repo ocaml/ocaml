@@ -381,16 +381,16 @@ let rec expression : Typedtree.expression -> term_judg =
     | Texp_letmodule (x, _, mexp, e) ->
       module_binding (x, mexp) mode (expression e mode)
     | Texp_match (e, cases, _) ->
-      let env_pat, m_e =
-        List.fold_left
-          (fun (env, m) c ->
-            let (env', m') = case c mode in
-            (Env.join env env'), (prec m m'))
-          (Env.empty, Unused)
-          cases
-      in
-      let env_e = expression e m_e in
-      Env.join env_pat env_e
+      (*
+         (Gi; mi |- pi -> ei : m)^i
+         G |- e : sum(mi)^i
+         ----------------------------------------------
+         G + sum(Gi)^i |- match e with (pi -> ei)^i : m
+       *)
+      let pat_envs, pat_modes =
+        List.split (List.map (fun c -> case c mode) cases) in
+      let env_e = expression e (List.fold_left prec Unused pat_modes) in
+      Env.join_list (env_e :: pat_envs)
     | Texp_for (_, _, low, high, _, body) ->
       (*
         G1 |- low: m[Dereference]
@@ -584,34 +584,37 @@ let rec expression : Typedtree.expression -> term_judg =
       class_structure clsstrct mode
     | Texp_try (e, cases) ->
       (*
-        G |- e: m
-        G1 |- e1: m
-        ...
-        Gn |- en: m
-        ---
-        G + G1 + ... + Gn |- try e with p1 -> e1 | ... | pn -> en: m
+        G |- e: m      (Gi; _ |- pi -> ei : m)^i
+        --------------------------------------------
+        G + sum(Gi)^i |- try e with (pi -> ei)^i : m
+
+        Contrarily to match, the patterns p do not inspect
+        the value of e, so their mode does not influence the
+        mode of e.
       *)
-      let case {Typedtree.c_rhs} m = expression c_rhs m in
-      Env.join (expression e mode) (list case cases mode)
+      let case_env c m = fst (case c m) in
+      Env.join (expression e mode) (list case_env cases mode)
     | Texp_override (pth, fields) ->
       let field (_, _, arg) m = expression arg m in
       let m' = compos mode Dereference in
       Env.join (path pth m') (list field fields m')
     | Texp_function { cases } ->
-      (* Approximation: function `p1 -> e1, ..., pn -> en` is the same as
-         `fun x -> match x with p1 -> e1, ..., pn -> en`.
+      (*
+         (Gi; _ |- pi -> ei : m)^i
+         --------------------------------------
+         sum(Gi)^i |- function (pi -> ei)^i : m
 
-         The typing of this expression is nearly the same as the typing of
-         a `match` expression, the differences are:
-         - e1, ..., en are evaluated in the m[Delay] mode instead of m
-         - we don't care about the mode returned by the `case` function.
+         Contrarily to match, the value that is pattern-matched
+         is bound locally, so the pattern modes do not influence
+         the final environment.
       *)
-      list (fun c m -> fst (case c m)) cases (compos mode Delay)
+      let case_env c m = fst (case c m) in
+      list case_env cases (compos mode Delay)
     | Texp_lazy e ->
       (*
-        G |- e:
-        ---
-        ... |- lazy e: m
+        G |- e: m[Delay]
+        ----------------  (modulo some subtle compiler optimizations)
+        G |- lazy e: m
       *)
       let m' = begin match Typeopt.classify_lazy_argument e with
         | `Constant_or_function
