@@ -77,10 +77,18 @@ let implementation ~backend ~sourcefile ~outputprefix =
     init ppf_dump ~init_path:true ~tool_name ~sourcefile ~outputprefix
   in
   Compilenv.reset ?packname:!Clflags.for_package info.modulename;
-  let frontend info = typecheck_impl info @@ parse_impl info in
-  let backend info typed =
-    if Config.flambda
-    then flambda info backend typed
-    else clambda info typed
-  in
-  wrap_compilation ~frontend ~backend info
+  Profile.record_call info.sourcefile @@ fun () ->
+  let parsed = parse_impl info in
+  let typed = typecheck_impl info parsed in
+  if not !Clflags.print_types then begin
+    let exceptionally () =
+      Misc.remove_file (Compile_common.obj info);
+      Misc.remove_file (Compile_common.cmx info);
+    in
+    Misc.try_finally ~exceptionally (fun () ->
+      if Config.flambda
+      then flambda info backend typed
+      else clambda info typed
+    )
+  end;
+  Warnings.check_fatal ();

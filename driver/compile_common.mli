@@ -67,13 +67,6 @@ val typecheck_impl :
     its public interface.
 *)
 
-val wrap_compilation :
-  frontend:(info -> 'a) ->
-  backend:(info -> 'a -> unit) -> info -> unit
-(** [wrap_compilation ~frontend ~backend info] calls [frontend] and [backend]
-    in succession while handling options and errors.
-*)
-
 (** {2 Build artifacts} *)
 
 val cmo : info -> string
