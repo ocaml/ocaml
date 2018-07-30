@@ -24,6 +24,9 @@ Working version
 - GPR#1909: unsharing pattern types
   (Thomas Refis, with help from Leo White, review by Jacques Garrigue)
 
+- GPR#1942: simplification of the static check for recursive definitions
+  (Alban Reynaud and Gabriel Scherer, review by ??? and Armaël Guéneau)
+
 ### Standard library:
 
 - GPR#1940: Add Option module and Format.pp_print_option
