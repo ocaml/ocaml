@@ -1735,15 +1735,25 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
 
 
 let check_unboxable env loc ty =
-  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
-  try match ty.desc with
-  | Tconstr (p, _, _) ->
-    let tydecl = Env.find_type p env in
-    if tydecl.type_unboxed.default then
-      Location.prerr_warning loc
-        (Warnings.Unboxable_type_in_prim_decl (Path.name p))
-  | _ -> ()
-  with Not_found -> ()
+  let check_type acc ty : Path.Set.t =
+    let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
+    try match ty.desc with
+      | Tconstr (p, _, _) ->
+        let tydecl = Env.find_type p env in
+        if tydecl.type_unboxed.default then
+          Path.Set.add p acc
+        else acc
+      | _ -> acc
+    with Not_found -> acc
+  in
+  let all_unboxable_types = Btype.fold_type_expr check_type Path.Set.empty ty in
+  Path.Set.fold
+    (fun p () ->
+       Location.prerr_warning loc
+         (Warnings.Unboxable_type_in_prim_decl (Path.name p))
+    )
+    all_unboxable_types
+    ()
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
@@ -1779,7 +1789,7 @@ let transl_value_decl env loc valdecl =
       && prim.prim_arity > 5
       && prim.prim_native_name = ""
       then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
-      Btype.iter_type_expr (check_unboxable env loc) ty;
+      check_unboxable env loc ty;
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
   in

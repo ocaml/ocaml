@@ -404,14 +404,30 @@ Warning 61: This primitive declaration uses type i, which is unannotated and
 unboxable. The representation of such types may change in future
 versions. You should annotate the declaration of i with [@@boxed]
 or [@@unboxed].
-Line 2, characters 0-34:
-  external id : i -> i = "%identity";;
+external id : i -> i = "%identity"
+|}];;
+
+type i = I of int
+type j = J of int
+external id : i -> j = "%identity";;
+[%%expect{|
+type i = I of int
+type j = J of int
+Line 3, characters 0-34:
+  external id : i -> j = "%identity";;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 61: This primitive declaration uses type i, which is unannotated and
 unboxable. The representation of such types may change in future
 versions. You should annotate the declaration of i with [@@boxed]
 or [@@unboxed].
-external id : i -> i = "%identity"
+Line 3, characters 0-34:
+  external id : i -> j = "%identity";;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 61: This primitive declaration uses type j, which is unannotated and
+unboxable. The representation of such types may change in future
+versions. You should annotate the declaration of j with [@@boxed]
+or [@@unboxed].
+external id : i -> j = "%identity"
 |}];;
 
 type ib = I of int [@@boxed]
