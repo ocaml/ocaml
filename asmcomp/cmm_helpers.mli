@@ -486,6 +486,20 @@ val lsr_int_caml : binary_primitive
 val asr_int_caml : binary_primitive
 val int_comp_caml : Lambda.integer_comparison -> binary_primitive
 
+(** String, Bytes and Bigstrings *)
+
+(** Regular string/bytes access. Args: string/bytes, index *)
+val stringref_unsafe : binary_primitive
+val stringref_safe : binary_primitive
+
+(** Load by chunk from string/bytes, bigstring. Args: string, index *)
+val string_load :
+  Clambda_primitives.memory_access_size -> Lambda.is_safe -> binary_primitive
+val bigstring_load :
+  Clambda_primitives.memory_access_size -> Lambda.is_safe -> binary_primitive
+
+
+
 (** Switch *)
 
 (** [transl_isout h arg dbg] *)

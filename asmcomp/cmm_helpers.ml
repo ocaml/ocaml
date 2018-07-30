@@ -2205,6 +2205,40 @@ let int_comp_caml cmp arg1 arg2 dbg =
   tag_int(Cop(Ccmpi cmp,
               [arg1; arg2], dbg)) dbg
 
+let stringref_unsafe arg1 arg2 dbg =
+  tag_int(Cop(Cload (Byte_unsigned, Mutable),
+              [add_int arg1 (untag_int arg2 dbg) dbg],
+              dbg)) dbg
+
+let stringref_safe arg1 arg2 dbg =
+  tag_int
+    (bind "str" arg1 (fun str ->
+      bind "index" (untag_int arg2 dbg) (fun idx ->
+        Csequence(
+          make_checkbound dbg [string_length str dbg; idx],
+          Cop(Cload (Byte_unsigned, Mutable),
+            [add_int str idx dbg], dbg))))) dbg
+
+let string_load size unsafe arg1 arg2 dbg =
+  box_sized size dbg
+    (bind "str" arg1 (fun str ->
+     bind "index" (untag_int arg2 dbg) (fun idx ->
+       check_bound unsafe size dbg
+          (string_length str dbg)
+          idx (unaligned_load size str idx dbg))))
+
+let bigstring_load size unsafe arg1 arg2 dbg =
+  box_sized size dbg
+   (bind "ba" arg1 (fun ba ->
+    bind "index" (untag_int arg2 dbg) (fun idx ->
+    bind "ba_data"
+     (Cop(Cload (Word_int, Mutable), [field_address ba 1 dbg], dbg))
+     (fun ba_data ->
+        check_bound unsafe size dbg
+          (bigstring_length ba dbg)
+          idx
+          (unaligned_load size ba_data idx dbg)))))
+
 (* Symbols *)
 
 let cdefine_symbol (symb, (global: Cmmgen_state.is_global)) =

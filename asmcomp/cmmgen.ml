@@ -874,39 +874,13 @@ and transl_prim_2 env p arg1 arg2 dbg =
 
   (* String operations *)
   | Pstringrefu | Pbytesrefu ->
-      tag_int(Cop(Cload (Byte_unsigned, Mutable),
-                  [add_int (transl env arg1) (untag_int(transl env arg2) dbg)
-                    dbg],
-                  dbg)) dbg
+      stringref_unsafe (transl env arg1) (transl env arg2) dbg
   | Pstringrefs | Pbytesrefs ->
-      tag_int
-        (bind "str" (transl env arg1) (fun str ->
-          bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
-            Csequence(
-              make_checkbound dbg [string_length str dbg; idx],
-              Cop(Cload (Byte_unsigned, Mutable),
-                [add_int str idx dbg], dbg))))) dbg
-
+      stringref_safe (transl env arg1) (transl env arg2) dbg
   | Pstring_load(size, unsafe) | Pbytes_load(size, unsafe) ->
-     box_sized size dbg
-       (bind "str" (transl env arg1) (fun str ->
-        bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
-          check_bound unsafe size dbg
-             (string_length str dbg)
-             idx (unaligned_load size str idx dbg))))
-
+      string_load size unsafe (transl env arg1) (transl env arg2) dbg
   | Pbigstring_load(size, unsafe) ->
-      box_sized size dbg
-       (bind "ba" (transl env arg1) (fun ba ->
-        bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
-        bind "ba_data"
-         (Cop(Cload (Word_int, Mutable), [field_address ba 1 dbg], dbg))
-         (fun ba_data ->
-            check_bound unsafe size dbg
-              (bigstring_length ba dbg)
-              idx
-              (unaligned_load size ba_data idx dbg)))))
-
+      bigstring_load size unsafe (transl env arg1) (transl env arg2) dbg
   (* Array operations *)
   | Parrayrefu kind ->
       begin match kind with
