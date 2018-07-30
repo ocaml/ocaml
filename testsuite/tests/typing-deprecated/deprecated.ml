@@ -98,7 +98,7 @@ type t = X.t * X.s
 Line 1, characters 9-12:
   type t = X.t * X.s
            ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 Line 1, characters 15-18:
   type t = X.t * X.s
                  ^^^
@@ -217,7 +217,7 @@ module rec M : sig val x: X.t end = struct let x = X.x end
 Line 1, characters 26-29:
   module rec M : sig val x: X.t end = struct let x = X.x end
                             ^^^
-Warning 3: deprecated: X.t
+Alert deprecated: X.t
 Line 1, characters 51-54:
   module rec M : sig val x: X.t end = struct let x = X.x end
                                                      ^^^

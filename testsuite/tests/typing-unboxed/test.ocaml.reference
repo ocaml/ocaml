@@ -17,19 +17,19 @@ Error: The native code version of the primitive is mandatory when attributes [@u
 Line 4, characters 2-61:
     external a : float -> float = "a" "noalloc" "a_nat" "float"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used instead of "float"
+Alert deprecated: [@@unboxed] + [@@noalloc] should be used instead of "float"
 Line 5, characters 2-53:
     external b : float -> float = "b" "noalloc" "b_nat"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 3: deprecated: [@@noalloc] should be used instead of "noalloc"
+Alert deprecated: [@@noalloc] should be used instead of "noalloc"
 Line 6, characters 2-51:
     external c : float -> float = "c" "c_nat" "float"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used instead of "float"
+Alert deprecated: [@@unboxed] + [@@noalloc] should be used instead of "float"
 Line 7, characters 2-45:
     external d : float -> float = "d" "noalloc"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 3: deprecated: [@@noalloc] should be used instead of "noalloc"
+Alert deprecated: [@@noalloc] should be used instead of "noalloc"
 Line 15, characters 6-70:
   ......struct
     external f : int -> (int [@untagged]) = "f" "f_nat"
@@ -188,3 +188,4 @@ Line 1, characters 0-45:
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The native code version of the primitive is mandatory when attributes [@untagged] or [@unboxed] are present
 type 'a b = B of 'a b b [@@unboxed]
+
