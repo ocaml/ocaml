@@ -2239,6 +2239,69 @@ let bigstring_load size unsafe arg1 arg2 dbg =
           idx
           (unaligned_load size ba_data idx dbg)))))
 
+let arrayref_unsafe kind arg1 arg2 dbg =
+  match (kind : Lambda.array_kind) with
+  | Pgenarray ->
+      bind "arr" arg1 (fun arr ->
+        bind "index" arg2 (fun idx ->
+          Cifthenelse(is_addr_array_ptr arr dbg,
+                      dbg,
+                      addr_array_ref arr idx dbg,
+                      dbg,
+                      float_array_ref arr idx dbg,
+                      dbg)))
+  | Paddrarray ->
+      addr_array_ref arg1 arg2 dbg
+  | Pintarray ->
+      (* CR mshinwell: for int/addr_array_ref move "dbg" to first arg *)
+      int_array_ref arg1 arg2 dbg
+  | Pfloatarray ->
+      float_array_ref arg1 arg2 dbg
+
+let arrayref_safe kind arg1 arg2 dbg =
+  match (kind : Lambda.array_kind) with
+  | Pgenarray ->
+      bind "index" arg2 (fun idx ->
+      bind "arr" arg1 (fun arr ->
+      bind "header" (get_header_without_profinfo arr dbg) (fun hdr ->
+        if wordsize_shift = numfloat_shift then
+          Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
+                    Cifthenelse(is_addr_array_hdr hdr dbg,
+                                dbg,
+                                addr_array_ref arr idx dbg,
+                                dbg,
+                                float_array_ref arr idx dbg,
+                                dbg))
+        else
+          Cifthenelse(is_addr_array_hdr hdr dbg,
+            dbg,
+            Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
+                      addr_array_ref arr idx dbg),
+            dbg,
+            Csequence(make_checkbound dbg [float_array_length hdr dbg; idx],
+                      float_array_ref arr idx dbg),
+            dbg))))
+      | Paddrarray ->
+          bind "index" arg2 (fun idx ->
+          bind "arr" arg1 (fun arr ->
+            Csequence(make_checkbound dbg [
+              addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
+                      addr_array_ref arr idx dbg)))
+      | Pintarray ->
+          bind "index" arg2 (fun idx ->
+          bind "arr" arg1 (fun arr ->
+            Csequence(make_checkbound dbg [
+              addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
+                      int_array_ref arr idx dbg)))
+      | Pfloatarray ->
+          box_float dbg (
+            bind "index" arg2 (fun idx ->
+            bind "arr" arg1 (fun arr ->
+              Csequence(make_checkbound dbg
+                [float_array_length(get_header_without_profinfo arr dbg) dbg;
+                  idx],
+                unboxed_float_array_ref arr idx dbg))))
+
 (* Symbols *)
 
 let cdefine_symbol (symb, (global: Cmmgen_state.is_global)) =

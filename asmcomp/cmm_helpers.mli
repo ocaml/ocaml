@@ -498,7 +498,11 @@ val string_load :
 val bigstring_load :
   Clambda_primitives.memory_access_size -> Lambda.is_safe -> binary_primitive
 
+(** Arrays *)
 
+(** Array access. Args: array, index *)
+val arrayref_unsafe : Lambda.array_kind -> binary_primitive
+val arrayref_safe : Lambda.array_kind -> binary_primitive
 
 (** Switch *)
 

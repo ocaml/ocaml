@@ -881,70 +881,12 @@ and transl_prim_2 env p arg1 arg2 dbg =
       string_load size unsafe (transl env arg1) (transl env arg2) dbg
   | Pbigstring_load(size, unsafe) ->
       bigstring_load size unsafe (transl env arg1) (transl env arg2) dbg
+
   (* Array operations *)
   | Parrayrefu kind ->
-      begin match kind with
-        Pgenarray ->
-          bind "arr" (transl env arg1) (fun arr ->
-            bind "index" (transl env arg2) (fun idx ->
-              Cifthenelse(is_addr_array_ptr arr dbg,
-                          dbg,
-                          addr_array_ref arr idx dbg,
-                          dbg,
-                          float_array_ref arr idx dbg,
-                          dbg)))
-      | Paddrarray ->
-          addr_array_ref (transl env arg1) (transl env arg2) dbg
-      | Pintarray ->
-          (* CR mshinwell: for int/addr_array_ref move "dbg" to first arg *)
-          int_array_ref (transl env arg1) (transl env arg2) dbg
-      | Pfloatarray ->
-          float_array_ref (transl env arg1) (transl env arg2) dbg
-      end
+      arrayref_unsafe kind (transl env arg1) (transl env arg2) dbg
   | Parrayrefs kind ->
-      begin match kind with
-      | Pgenarray ->
-          bind "index" (transl env arg2) (fun idx ->
-          bind "arr" (transl env arg1) (fun arr ->
-          bind "header" (get_header_without_profinfo arr dbg) (fun hdr ->
-            if wordsize_shift = numfloat_shift then
-              Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
-                        Cifthenelse(is_addr_array_hdr hdr dbg,
-                                    dbg,
-                                    addr_array_ref arr idx dbg,
-                                    dbg,
-                                    float_array_ref arr idx dbg,
-                                    dbg))
-            else
-              Cifthenelse(is_addr_array_hdr hdr dbg,
-                dbg,
-                Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
-                          addr_array_ref arr idx dbg),
-                dbg,
-                Csequence(make_checkbound dbg [float_array_length hdr dbg; idx],
-                          float_array_ref arr idx dbg),
-                dbg))))
-      | Paddrarray ->
-          bind "index" (transl env arg2) (fun idx ->
-          bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [
-              addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
-                      addr_array_ref arr idx dbg)))
-      | Pintarray ->
-          bind "index" (transl env arg2) (fun idx ->
-          bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [
-              addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
-                      int_array_ref arr idx dbg)))
-      | Pfloatarray ->
-          box_float dbg (
-            bind "index" (transl env arg2) (fun idx ->
-            bind "arr" (transl env arg1) (fun arr ->
-              Csequence(make_checkbound dbg
-                [float_array_length(get_header_without_profinfo arr dbg) dbg;
-                  idx],
-                unboxed_float_array_ref arr idx dbg))))
-      end
+      arrayref_safe kind (transl env arg1) (transl env arg2) dbg
 
   (* Boxed integers *)
   | Paddbint bi ->
