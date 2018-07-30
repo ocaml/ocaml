@@ -101,7 +101,13 @@ let alert_attrs l =
 
 let alerts_of_attrs l =
   List.fold_left
-    (fun acc (_, kind, message) -> Misc.Stdlib.String.Map.add kind message acc)
+    (fun acc (_, kind, message) ->
+       let upd = function
+         | None | Some "" -> Some message
+         | Some s -> Some (cat s message)
+       in
+       Misc.Stdlib.String.Map.update kind upd acc
+    )
     Misc.Stdlib.String.Map.empty
     (alert_attrs l)
 
