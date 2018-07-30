@@ -92,7 +92,7 @@ let alert_attr x =
   | "ocaml.alert"|"alert" ->
       begin match kind_and_message x.attr_payload with
       | Some (kind, message) -> Some (x, kind, message)
-      | None -> None (* bad payload => warn? *)
+      | None -> None (* note: bad payloads detected by warning_attribute *)
       end
   | _ -> None
 
