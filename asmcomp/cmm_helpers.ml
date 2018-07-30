@@ -2302,6 +2302,123 @@ let arrayref_safe kind arg1 arg2 dbg =
                   idx],
                 unboxed_float_array_ref arr idx dbg))))
 
+type ternary_primitive =
+  expression -> expression -> expression -> Debuginfo.t -> expression
+
+let setfield_computed ptr init arg1 arg2 arg3 dbg =
+  match assignment_kind ptr init with
+  | Caml_modify ->
+      return_unit dbg (addr_array_set arg1 arg2 arg3 dbg)
+  | Caml_initialize ->
+      return_unit dbg (addr_array_initialize arg1 arg2 arg3 dbg)
+  | Simple ->
+      return_unit dbg (int_array_set arg1 arg2 arg3 dbg)
+
+let bytesset_unsafe arg1 arg2 arg3 dbg =
+      return_unit dbg (Cop(Cstore (Byte_unsigned, Assignment),
+                      [add_int arg1 (untag_int arg2 dbg) dbg;
+                       untag_int arg3 dbg], dbg))
+
+let bytesset_safe arg1 arg2 arg3 dbg =
+  return_unit dbg
+    (bind "str" arg1 (fun str ->
+      bind "index" (untag_int arg2 dbg) (fun idx ->
+        Csequence(
+          make_checkbound dbg [string_length str dbg; idx],
+          Cop(Cstore (Byte_unsigned, Assignment),
+              [add_int str idx dbg; untag_int arg3 dbg],
+              dbg)))))
+
+let arrayset_unsafe kind arg1 arg2 arg3 dbg =
+  return_unit dbg (match (kind: Lambda.array_kind) with
+  | Pgenarray ->
+      bind "newval" arg3 (fun newval ->
+        bind "index" arg2 (fun index ->
+          bind "arr" arg1 (fun arr ->
+            Cifthenelse(is_addr_array_ptr arr dbg,
+                        dbg,
+                        addr_array_set arr index newval dbg,
+                        dbg,
+                        float_array_set arr index (unbox_float dbg newval)
+                          dbg,
+                        dbg))))
+  | Paddrarray ->
+      addr_array_set arg1 arg2 arg3 dbg
+  | Pintarray ->
+      int_array_set arg1 arg2 arg3 dbg
+  | Pfloatarray ->
+      float_array_set arg1 arg2 arg3 dbg
+  )
+
+let arrayset_safe kind arg1 arg2 arg3 dbg =
+  return_unit dbg (match (kind: Lambda.array_kind) with
+  | Pgenarray ->
+      bind "newval" arg3 (fun newval ->
+      bind "index" arg2 (fun idx ->
+      bind "arr" arg1 (fun arr ->
+      bind "header" (get_header_without_profinfo arr dbg) (fun hdr ->
+        if wordsize_shift = numfloat_shift then
+          Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
+                    Cifthenelse(is_addr_array_hdr hdr dbg,
+                                dbg,
+                                addr_array_set arr idx newval dbg,
+                                dbg,
+                                float_array_set arr idx
+                                                (unbox_float dbg newval)
+                                                dbg,
+                                dbg))
+        else
+          Cifthenelse(is_addr_array_hdr hdr dbg,
+            dbg,
+            Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
+                      addr_array_set arr idx newval dbg),
+            dbg,
+            Csequence(make_checkbound dbg [float_array_length hdr dbg; idx],
+                      float_array_set arr idx
+                                      (unbox_float dbg newval) dbg),
+            dbg)))))
+  | Paddrarray ->
+      bind "newval" arg3 (fun newval ->
+      bind "index" arg2 (fun idx ->
+      bind "arr" arg1 (fun arr ->
+        Csequence(make_checkbound dbg [
+          addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
+                  addr_array_set arr idx newval dbg))))
+  | Pintarray ->
+      bind "newval" arg3 (fun newval ->
+      bind "index" arg2 (fun idx ->
+      bind "arr" arg1 (fun arr ->
+        Csequence(make_checkbound dbg [
+          addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
+                  int_array_set arr idx newval dbg))))
+  | Pfloatarray ->
+      bind_load "newval" arg3 (fun newval ->
+      bind "index" arg2 (fun idx ->
+      bind "arr" arg1 (fun arr ->
+        Csequence(make_checkbound dbg [
+          float_array_length (get_header_without_profinfo arr dbg) dbg;idx],
+                  float_array_set arr idx newval dbg))))
+  )
+
+let bytes_set size unsafe arg1 arg2 arg3 dbg =
+  return_unit dbg
+   (bind "str" arg1 (fun str ->
+    bind "index" (untag_int arg2 dbg) (fun idx ->
+    bind "newval" arg3 (fun newval ->
+      check_bound unsafe size dbg (string_length str dbg)
+                  idx (unaligned_set size str idx newval dbg)))))
+
+let bigstring_set size unsafe arg1 arg2 arg3 dbg =
+  return_unit dbg
+   (bind "ba" arg1 (fun ba ->
+    bind "index" (untag_int arg2 dbg) (fun idx ->
+    bind "newval" arg3 (fun newval ->
+    bind "ba_data"
+         (Cop(Cload (Word_int, Mutable), [field_address ba 1 dbg], dbg))
+         (fun ba_data ->
+            check_bound unsafe size dbg (bigstring_length ba dbg)
+              idx (unaligned_set size ba_data idx newval dbg))))))
+
 (* Symbols *)
 
 let cdefine_symbol (symb, (global: Cmmgen_state.is_global)) =

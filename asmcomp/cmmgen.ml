@@ -957,130 +957,39 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   match p with
   (* Heap operations *)
   | Psetfield_computed(ptr, init) ->
-      begin match assignment_kind ptr init with
-      | Caml_modify ->
-        return_unit dbg (
-          addr_array_set (transl env arg1) (transl env arg2) (transl env arg3)
-            dbg)
-      | Caml_initialize ->
-        return_unit dbg (
-          addr_array_initialize (transl env arg1) (transl env arg2)
-            (transl env arg3) dbg)
-      | Simple ->
-        return_unit dbg (
-          int_array_set (transl env arg1) (transl env arg2) (transl env arg3)
-            dbg)
-      end
+      setfield_computed ptr init
+        (transl env arg1) (transl env arg2) (transl env arg3) dbg
   (* String operations *)
   | Pbytessetu ->
-      return_unit dbg (Cop(Cstore (Byte_unsigned, Assignment),
-                      [add_int (transl env arg1)
-                          (untag_int(transl env arg2) dbg)
-                          dbg;
-                        untag_int(transl env arg3) dbg], dbg))
+      bytesset_unsafe
+        (transl env arg1) (transl env arg2) (transl env arg3) dbg
   | Pbytessets ->
-      return_unit dbg
-        (bind "str" (transl env arg1) (fun str ->
-          bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
-            Csequence(
-              make_checkbound dbg [string_length str dbg; idx],
-              Cop(Cstore (Byte_unsigned, Assignment),
-                  [add_int str idx dbg; untag_int(transl env arg3) dbg],
-                  dbg)))))
+      bytesset_safe
+        (transl env arg1) (transl env arg2) (transl env arg3) dbg
 
   (* Array operations *)
   | Parraysetu kind ->
-      return_unit dbg (begin match kind with
-        Pgenarray ->
-          bind "newval" (transl env arg3) (fun newval ->
-            bind "index" (transl env arg2) (fun index ->
-              bind "arr" (transl env arg1) (fun arr ->
-                Cifthenelse(is_addr_array_ptr arr dbg,
-                            dbg,
-                            addr_array_set arr index newval dbg,
-                            dbg,
-                            float_array_set arr index (unbox_float dbg newval)
-                              dbg,
-                            dbg))))
-      | Paddrarray ->
-          addr_array_set (transl env arg1) (transl env arg2) (transl env arg3)
-            dbg
-      | Pintarray ->
-          int_array_set (transl env arg1) (transl env arg2) (transl env arg3)
-            dbg
-      | Pfloatarray ->
-          float_array_set (transl env arg1) (transl env arg2)
-            (transl_unbox_float dbg env arg3)
-            dbg
-      end)
+      let newval =
+        match kind with
+        | Pfloatarray -> transl_unbox_float dbg env arg3
+        | _ -> transl env arg3
+      in
+      arrayset_unsafe kind (transl env arg1) (transl env arg2) newval dbg
   | Parraysets kind ->
-      return_unit dbg (begin match kind with
-      | Pgenarray ->
-          bind "newval" (transl env arg3) (fun newval ->
-          bind "index" (transl env arg2) (fun idx ->
-          bind "arr" (transl env arg1) (fun arr ->
-          bind "header" (get_header_without_profinfo arr dbg) (fun hdr ->
-            if wordsize_shift = numfloat_shift then
-              Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
-                        Cifthenelse(is_addr_array_hdr hdr dbg,
-                                    dbg,
-                                    addr_array_set arr idx newval dbg,
-                                    dbg,
-                                    float_array_set arr idx
-                                                    (unbox_float dbg newval)
-                                                    dbg,
-                                    dbg))
-            else
-              Cifthenelse(is_addr_array_hdr hdr dbg,
-                dbg,
-                Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
-                          addr_array_set arr idx newval dbg),
-                dbg,
-                Csequence(make_checkbound dbg [float_array_length hdr dbg; idx],
-                          float_array_set arr idx
-                                          (unbox_float dbg newval) dbg),
-                dbg)))))
-      | Paddrarray ->
-          bind "newval" (transl env arg3) (fun newval ->
-          bind "index" (transl env arg2) (fun idx ->
-          bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [
-              addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
-                      addr_array_set arr idx newval dbg))))
-      | Pintarray ->
-          bind "newval" (transl env arg3) (fun newval ->
-          bind "index" (transl env arg2) (fun idx ->
-          bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [
-              addr_array_length(get_header_without_profinfo arr dbg) dbg; idx],
-                      int_array_set arr idx newval dbg))))
-      | Pfloatarray ->
-          bind_load "newval" (transl_unbox_float dbg env arg3) (fun newval ->
-          bind "index" (transl env arg2) (fun idx ->
-          bind "arr" (transl env arg1) (fun arr ->
-            Csequence(make_checkbound dbg [
-              float_array_length (get_header_without_profinfo arr dbg) dbg;idx],
-                      float_array_set arr idx newval dbg))))
-      end)
+      let newval =
+        match kind with
+        | Pfloatarray -> transl_unbox_float dbg env arg3
+        | _ -> transl env arg3
+      in
+      arrayset_safe kind (transl env arg1) (transl env arg2) newval dbg
 
   | Pbytes_set(size, unsafe) ->
-     return_unit dbg
-       (bind "str" (transl env arg1) (fun str ->
-        bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
-        bind "newval" (transl_unbox_sized size dbg env arg3) (fun newval ->
-          check_bound unsafe size dbg (string_length str dbg)
-                      idx (unaligned_set size str idx newval dbg)))))
+      bytes_set size unsafe (transl env arg1) (transl env arg2)
+        (transl_unbox_sized size dbg env arg3) dbg
 
   | Pbigstring_set(size, unsafe) ->
-     return_unit dbg
-       (bind "ba" (transl env arg1) (fun ba ->
-        bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
-        bind "newval" (transl_unbox_sized size dbg env arg3) (fun newval ->
-        bind "ba_data"
-             (Cop(Cload (Word_int, Mutable), [field_address ba 1 dbg], dbg))
-             (fun ba_data ->
-                check_bound unsafe size dbg (bigstring_length ba dbg)
-                  idx (unaligned_set size ba_data idx newval dbg))))))
+      bigstring_set size unsafe (transl env arg1) (transl env arg2)
+        (transl_unbox_sized size dbg env arg3) dbg
 
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint

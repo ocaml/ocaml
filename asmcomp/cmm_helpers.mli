@@ -504,6 +504,37 @@ val bigstring_load :
 val arrayref_unsafe : Lambda.array_kind -> binary_primitive
 val arrayref_safe : Lambda.array_kind -> binary_primitive
 
+type ternary_primitive =
+  expression -> expression -> expression -> Debuginfo.t -> expression
+
+(** Same as setfield, except the offset is one of the arguments.
+    Args: pointer (structure/array/...), index, value *)
+val setfield_computed :
+  Lambda.immediate_or_pointer -> Lambda.initialization_or_assignment ->
+  ternary_primitive
+
+(** Set the byte at the given offset to the given value.
+    Args: bytes, index, value *)
+val bytesset_unsafe : ternary_primitive
+val bytesset_safe : ternary_primitive
+
+(** Set the element at the given index in the given array to the given value.
+    WARNING: if [kind] is [Pfloatarray], then [value] is expected to be an
+    _unboxed_ float. Otherwise, it is expected to be a regular caml value,
+    including in the case where the array contains floats.
+    Args: array, index, value *)
+val arrayset_unsafe : Lambda.array_kind -> ternary_primitive
+val arrayset_safe : Lambda.array_kind -> ternary_primitive
+
+(** Set a chunk of data in the given bytes or bigstring structure.
+    See also [string_load] and [bigstring_load].
+    Note: [value] is expected to be an unboxed number of the given size.
+    Args: pointer, index, value *)
+val bytes_set :
+  Clambda_primitives.memory_access_size -> Lambda.is_safe -> ternary_primitive
+val bigstring_set :
+  Clambda_primitives.memory_access_size -> Lambda.is_safe -> ternary_primitive
+
 (** Switch *)
 
 (** [transl_isout h arg dbg] *)
