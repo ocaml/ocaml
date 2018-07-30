@@ -474,36 +474,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
       }
     }
 
-#ifdef DEBUG
-    /* In DEBUG mode, verify that the minor_ref table contains all young-young pointers
-       from older to younger objects */
-    struct addrmap young_young_ptrs = ADDRMAP_INIT;
-    for (r = minor_tables->minor_ref.base; r < minor_tables->minor_ref.ptr; r++) {
-      *caml_addrmap_insert_pos(&young_young_ptrs, (value)*r) = 1;
-    }
-    for (iter = (value)young_ptr;
-         iter < (value)young_end;
-         iter = next_minor_block(domain_state, iter)) {
-      value hd = Hd_hp(iter);
-      if (hd != 0) {
-        value curr = Val_hp(iter);
-        tag_t tag = Tag_hd (hd);
-        
-        if (tag < No_scan_tag && tag != Cont_tag) {
-          // FIXME: should scan Cont_tag
-          for (i = 0; i < Wosize_hd(hd); i++) {
-            value* f = Op_val(curr) + i;
-            if (Is_block(*f) && is_in_interval(*f, young_ptr, young_end) &&
-                *f < curr) {
-              CAMLassert(caml_addrmap_contains(&young_young_ptrs, (value)f));
-            }
-          }
-        }
-      }
-    }
-    caml_addrmap_clear(&young_young_ptrs);
-#endif
-
     /* Scan young to young pointers */
     for (r = minor_tables->minor_ref.base; r < minor_tables->minor_ref.ptr; r++) {
       forward_pointer (st.promote_domain, **r, *r);
@@ -570,6 +540,41 @@ void caml_empty_minor_heap_domain (struct domain* domain)
 
   if (minor_allocated_bytes != 0) {
     uintnat prev_alloc_words = domain_state->allocated_words;
+
+#ifdef DEBUG
+    /* In DEBUG mode, verify that the minor_ref table contains all young-young pointers
+       from older to younger objects */
+    {
+    struct addrmap young_young_ptrs = ADDRMAP_INIT;
+    mlsize_t i;
+    value iter;
+    for (r = minor_tables->minor_ref.base; r < minor_tables->minor_ref.ptr; r++) {
+      *caml_addrmap_insert_pos(&young_young_ptrs, (value)*r) = 1;
+    }
+    for (iter = (value)young_ptr;
+         iter < (value)young_end;
+         iter = next_minor_block(domain_state, iter)) {
+      value hd = Hd_hp(iter);
+      if (hd != 0) {
+        value curr = Val_hp(iter);
+        tag_t tag = Tag_hd (hd);
+        
+        if (tag < No_scan_tag && tag != Cont_tag) {
+          // FIXME: should scan Cont_tag
+          for (i = 0; i < Wosize_hd(hd); i++) {
+            value* f = Op_val(curr) + i;
+            if (Is_block(*f) && is_in_interval(*f, young_ptr, young_end) &&
+                *f < curr) {
+              CAMLassert(caml_addrmap_contains(&young_young_ptrs, (value)f));
+            }
+          }
+        }
+      }
+    }
+    caml_addrmap_clear(&young_young_ptrs);
+    }
+#endif
+
     caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
     caml_ev_begin("minor_gc");
     caml_ev_begin("minor_gc/roots");
