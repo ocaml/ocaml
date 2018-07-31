@@ -148,6 +148,7 @@ _ocamltestd
 /otherlibs/win32unix/strofaddr.c
 /otherlibs/win32unix/time.c
 /otherlibs/win32unix/unlink.c
+/otherlibs/win32unix/fsync.c
 
 /parsing/parser.ml
 /parsing/parser.mli
