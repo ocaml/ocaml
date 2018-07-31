@@ -1735,15 +1735,25 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
 
 
 let check_unboxable env loc ty =
-  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
-  try match ty.desc with
-  | Tconstr (p, _, _) ->
-    let tydecl = Env.find_type p env in
-    if tydecl.type_unboxed.unboxed then
-      Location.prerr_warning loc
-        (Warnings.Unboxable_type_in_prim_decl (Path.name p))
-  | _ -> ()
-  with Not_found -> ()
+  let check_type acc ty : Path.Set.t =
+    let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
+    try match ty.desc with
+      | Tconstr (p, _, _) ->
+        let tydecl = Env.find_type p env in
+        if tydecl.type_unboxed.default then
+          Path.Set.add p acc
+        else acc
+      | _ -> acc
+    with Not_found -> acc
+  in
+  let all_unboxable_types = Btype.fold_type_expr check_type Path.Set.empty ty in
+  Path.Set.fold
+    (fun p () ->
+       Location.prerr_warning loc
+         (Warnings.Unboxable_type_in_prim_decl (Path.name p))
+    )
+    all_unboxable_types
+    ()
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
@@ -1779,7 +1789,7 @@ let transl_value_decl env loc valdecl =
       && prim.prim_arity > 5
       && prim.prim_native_name = ""
       then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
-      Btype.iter_type_expr (check_unboxable env loc) ty;
+      check_unboxable env loc ty;
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
   in
@@ -2146,15 +2156,16 @@ let report_error ppf = function
   | Multiple_native_repr_attributes ->
       fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
   | Cannot_unbox_or_untag_type Unboxed ->
-      fprintf ppf "Don't know how to unbox this type. Only float, int32, \
-                   int64 and nativeint can be unboxed"
+      fprintf ppf "[@Don't know how to unbox this type.@ \
+                    Only float, int32, int64 and nativeint can be unboxed.@]"
   | Cannot_unbox_or_untag_type Untagged ->
-      fprintf ppf "Don't know how to untag this type. Only int \
-                   can be untagged"
+      fprintf ppf "[@Don't know how to untag this type.@ \
+                   Only int can be untagged.@]"
   | Deep_unbox_or_untag_attribute kind ->
       fprintf ppf
-        "The attribute '%s' should be attached to a direct argument or \
-         result of the primitive, it should not occur deeply into its type"
+        "@[The attribute '%s' should be attached to@ \
+           a direct argument or result of the primitive,@ \
+           it should not occur deeply into its type.@]"
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
   | Bad_immediate_attribute ->
       fprintf ppf "@[%s@ %s@]"
