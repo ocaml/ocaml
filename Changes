@@ -26,9 +26,9 @@ Working version
 
 ### Standard library:
 
-- MPR#2533, GPR#1839: added Unix.fsync
-  (Nicolas Ojeda Bar, Francois Berenger, review by Daniel Bunzli and
-  David Allsopp)
+- MPR#2533, GPR#1839, GPR#1949: added Unix.fsync
+  (Francois Berenger, Nicolás Ojeda Bär, review by Daniel Bünzli, David Allsopp
+  and ygrek)
 
 - MPR#6701, GPR#1185, GPR#1803: make float_of_string and string_of_float
   locale-independent.
