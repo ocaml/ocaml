@@ -1950,6 +1950,7 @@ asmcomp/asmgen.cmo : \
     asmcomp/comballoc.cmi \
     asmcomp/coloring.cmi \
     asmcomp/cmmgen.cmi \
+    asmcomp/cmm_helpers.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     middle_end/clambda.cmi \
@@ -1989,6 +1990,7 @@ asmcomp/asmgen.cmx : \
     asmcomp/comballoc.cmx \
     asmcomp/coloring.cmx \
     asmcomp/cmmgen.cmx \
+    asmcomp/cmm_helpers.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     middle_end/clambda.cmx \
@@ -2040,7 +2042,7 @@ asmcomp/asmlink.cmo : \
     utils/config.cmi \
     middle_end/compilenv.cmi \
     file_formats/cmx_format.cmi \
-    asmcomp/cmmgen.cmi \
+    asmcomp/cmm_helpers.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     utils/ccomp.cmi \
@@ -2058,7 +2060,7 @@ asmcomp/asmlink.cmx : \
     utils/config.cmx \
     middle_end/compilenv.cmx \
     file_formats/cmx_format.cmi \
-    asmcomp/cmmgen.cmx \
+    asmcomp/cmm_helpers.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     utils/ccomp.cmx \
@@ -2164,22 +2166,10 @@ asmcomp/cmm.cmi : \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi
 asmcomp/cmm_helpers.cmo : \
-    asmcomp/cmm.cmi \
-    middle_end/backend_var.cmi \
-    asmcomp/cmm_helpers.cmi
-asmcomp/cmm_helpers.cmx : \
-    asmcomp/cmm.cmx \
-    middle_end/backend_var.cmx \
-    asmcomp/cmm_helpers.cmi
-asmcomp/cmm_helpers.cmi : \
-    asmcomp/cmm.cmi
-asmcomp/cmmgen.cmo : \
-    typing/types.cmi \
     utils/targetint.cmi \
     lambda/switch.cmi \
     asmcomp/strmatch.cmi \
     asmcomp/proc.cmi \
-    middle_end/printclambda_primitives.cmi \
     typing/primitive.cmi \
     utils/numbers.cmi \
     utils/misc.cmi \
@@ -2189,6 +2179,60 @@ asmcomp/cmmgen.cmo : \
     middle_end/compilenv.cmi \
     file_formats/cmxs_format.cmi \
     file_formats/cmx_format.cmi \
+    asmcomp/cmmgen_state.cmi \
+    asmcomp/cmm.cmi \
+    utils/clflags.cmi \
+    middle_end/clambda_primitives.cmi \
+    middle_end/clambda.cmi \
+    middle_end/backend_var.cmi \
+    parsing/asttypes.cmi \
+    asmcomp/arch.cmo \
+    asmcomp/cmm_helpers.cmi
+asmcomp/cmm_helpers.cmx : \
+    utils/targetint.cmx \
+    lambda/switch.cmx \
+    asmcomp/strmatch.cmx \
+    asmcomp/proc.cmx \
+    typing/primitive.cmx \
+    utils/numbers.cmx \
+    utils/misc.cmx \
+    lambda/lambda.cmx \
+    lambda/debuginfo.cmx \
+    utils/config.cmx \
+    middle_end/compilenv.cmx \
+    file_formats/cmxs_format.cmi \
+    file_formats/cmx_format.cmi \
+    asmcomp/cmmgen_state.cmx \
+    asmcomp/cmm.cmx \
+    utils/clflags.cmx \
+    middle_end/clambda_primitives.cmx \
+    middle_end/clambda.cmx \
+    middle_end/backend_var.cmx \
+    parsing/asttypes.cmi \
+    asmcomp/arch.cmx \
+    asmcomp/cmm_helpers.cmi
+asmcomp/cmm_helpers.cmi : \
+    utils/targetint.cmi \
+    typing/primitive.cmi \
+    parsing/location.cmi \
+    lambda/lambda.cmi \
+    lambda/debuginfo.cmi \
+    file_formats/cmx_format.cmi \
+    asmcomp/cmmgen_state.cmi \
+    asmcomp/cmm.cmi \
+    middle_end/clambda_primitives.cmi \
+    middle_end/clambda.cmi \
+    middle_end/backend_var.cmi \
+    parsing/asttypes.cmi
+asmcomp/cmmgen.cmo : \
+    typing/types.cmi \
+    middle_end/printclambda_primitives.cmi \
+    typing/primitive.cmi \
+    utils/misc.cmi \
+    lambda/lambda.cmi \
+    lambda/debuginfo.cmi \
+    utils/config.cmi \
+    middle_end/compilenv.cmi \
     asmcomp/cmmgen_state.cmi \
     asmcomp/cmm_helpers.cmi \
     asmcomp/cmm.cmi \
@@ -2202,20 +2246,13 @@ asmcomp/cmmgen.cmo : \
     asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmx : \
     typing/types.cmx \
-    utils/targetint.cmx \
-    lambda/switch.cmx \
-    asmcomp/strmatch.cmx \
-    asmcomp/proc.cmx \
     middle_end/printclambda_primitives.cmx \
     typing/primitive.cmx \
-    utils/numbers.cmx \
     utils/misc.cmx \
     lambda/lambda.cmx \
     lambda/debuginfo.cmx \
     utils/config.cmx \
     middle_end/compilenv.cmx \
-    file_formats/cmxs_format.cmi \
-    file_formats/cmx_format.cmi \
     asmcomp/cmmgen_state.cmx \
     asmcomp/cmm_helpers.cmx \
     asmcomp/cmm.cmx \
@@ -2228,7 +2265,6 @@ asmcomp/cmmgen.cmx : \
     asmcomp/afl_instrument.cmx \
     asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmi : \
-    file_formats/cmx_format.cmi \
     asmcomp/cmm.cmi \
     middle_end/clambda.cmi
 asmcomp/cmmgen_state.cmo : \
