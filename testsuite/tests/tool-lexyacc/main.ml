@@ -24,7 +24,7 @@ let main () =
   let source_name = Sys.argv.(1) in
   let dest_name =
     if Filename.check_suffix source_name ".mll" then
-      Filename.chop_suffix source_name ".mll" ^ ".ml"
+      Filename.check_and_chop_sufffix source_name ".mll" ^ ".ml"
     else
       source_name ^ ".ml" in
   ic := open_in source_name;

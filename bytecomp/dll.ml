@@ -48,7 +48,7 @@ let remove_path dirs =
 
 let extract_dll_name file =
   if Filename.check_suffix file Config.ext_dll then
-    Filename.chop_suffix file Config.ext_dll
+    Filename.check_and_chop_sufffix file Config.ext_dll
   else if String.length file >= 2 && String.sub file 0 2 = "-l" then
     "dll" ^ String.sub file 2 (String.length file - 2)
   else

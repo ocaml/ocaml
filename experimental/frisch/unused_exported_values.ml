@@ -36,7 +36,7 @@ end
 
 let rec load_file fn =
   if Filename.check_suffix fn ".cmi"
-      && Sys.file_exists (Filename.chop_suffix fn ".cmi" ^ ".mli") then
+      && Sys.file_exists (Filename.check_and_chop_sufffix fn ".cmi" ^ ".mli") then
     (* only consider module with an explicit interface *)
     let open Cmi_format in
 (*    Printf.eprintf "Scanning %s\n%!" fn; *)

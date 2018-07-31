@@ -444,7 +444,7 @@ let add_labels ~intf ~impl ~file =
 let process_file file =
   prerr_endline ("Processing " ^ file);
   if Filename.check_suffix file ".ml" then
-    let intf = Filename.chop_suffix file ".ml" ^ ".mli" in
+    let intf = Filename.check_and_chop_sufffix file ".ml" ^ ".mli" in
     let ic = open_in intf in
     let lexbuf = Lexing.from_channel ic in
     Location.init lexbuf intf;

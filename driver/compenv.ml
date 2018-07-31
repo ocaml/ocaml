@@ -568,7 +568,7 @@ type deferred_action =
   | ProcessDLLs of string list
 
 let c_object_of_filename name =
-  Filename.chop_suffix (Filename.basename name) ".c" ^ Config.ext_obj
+  Filename.check_and_chop_sufffix (Filename.basename name) ".c" ^ Config.ext_obj
 
 let process_action
     (ppf, implementation, interface, ocaml_mod_ext, ocaml_lib_ext) action =

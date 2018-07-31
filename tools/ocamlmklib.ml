@@ -49,7 +49,7 @@ let starts_with s pref =
 let ends_with = Filename.check_suffix
 let chop_prefix s pref =
   String.sub s (String.length pref) (String.length s - String.length pref)
-let chop_suffix = Filename.chop_suffix
+let chop_suffix = Filename.check_and_chop_sufffix
 
 exception Bad_argument of string
 

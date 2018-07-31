@@ -121,9 +121,9 @@ let object_file_name name =
     with Not_found ->
       fatal_errorf "Asmlink.object_file_name: %s not found" name in
   if Filename.check_suffix file_name ".cmx" then
-    Filename.chop_suffix file_name ".cmx" ^ ext_obj
+    Filename.check_and_chop_sufffix file_name ".cmx" ^ ext_obj
   else if Filename.check_suffix file_name ".cmxa" then
-    Filename.chop_suffix file_name ".cmxa" ^ ext_lib
+    Filename.check_and_chop_sufffix file_name ".cmxa" ^ ext_lib
   else
     fatal_error "Asmlink.object_file_name: bad ext"
 

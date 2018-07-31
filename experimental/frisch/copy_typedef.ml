@@ -124,9 +124,9 @@ module Main : sig end = struct
       | PStr [] ->
           let file =
             if Filename.check_suffix file ".ml"
-            then (Filename.chop_suffix file ".ml") ^ ".mli"
+            then (Filename.check_and_chop_sufffix file ".ml") ^ ".mli"
             else if Filename.check_suffix file ".mli"
-            then (Filename.chop_suffix file ".mli") ^ ".ml"
+            then (Filename.check_and_chop_sufffix file ".mli") ^ ".ml"
             else failwith "Unknown source extension"
           in
           file, path, name

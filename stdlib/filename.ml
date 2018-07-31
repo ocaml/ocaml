@@ -197,12 +197,12 @@ let concat dirname filename =
 
 let chop_suffix name suff =
   let n = String.length name - String.length suff in
-  if n < 0 then invalid_arg "Filename.chop_suffix" else String.sub name 0 n
+  if n < 0 then invalid_arg "Filename.check_and_chop_sufffix" else String.sub name 0 n
 
 let check_and_chop_suffix name suff =
   if check_suffix name suff then
     String.sub name 0 (String.length name - String.length suff)
-  else invalid_arg "Filename.chop_suffix"
+  else invalid_arg "Filename.check_and_chop_sufffix"
 
 let extension_len name =
   let rec check i0 i =
