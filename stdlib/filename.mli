@@ -45,9 +45,16 @@ val check_suffix : string -> string -> bool
    ends with the suffix [suff]. *)
 
 val chop_suffix : string -> string -> string
+  [@@ocaml.deprecated "Use Filename.check_and_chop_suffix instead."]
 (** [chop_suffix name suff] removes the suffix [suff] from
-   the filename [name]. The behavior is undefined if [name] does not
-   end with the suffix [suff]. *)
+   the filename [name]. The behavior is unspecified if [name] does not
+   end with the suffix [suff].
+   @deprecated This function with unspecified behavior is deprecated. *)
+
+val check_and_chop_suffix : string -> string -> string
+(** [chop_suffix name suff] removes the suffix [suff] from the
+   filename [name].  If [check_suffix name suff] would return [false],
+   raises [Invalid_argument]. *)
 
 val extension : string -> string
 (** [extension name] is the shortest suffix [ext] of [name0] where:

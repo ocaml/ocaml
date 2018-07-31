@@ -64,6 +64,10 @@ Working version
   -keyword=arg inputs
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
+- GPR#1858, MPR#7812: Deprecate Filename.chop_suffix in favor of
+  Filename.check_and_chop_suffix that has fully specified behavior.
+  (whitequark)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
