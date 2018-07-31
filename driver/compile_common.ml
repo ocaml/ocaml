@@ -103,3 +103,20 @@ let typecheck_impl i parsetree =
     |> print_if i.ppf_dump Clflags.dump_typedtree
       Printtyped.implementation_with_coercion
   )
+
+let implementation ~tool_name ~native ~backend ~sourcefile ~outputprefix =
+  let suf, sufs = if native then ".cmx", [ cmx; obj ] else ".cmo", [ cmo ] in
+  Compmisc.with_ppf_dump ~fileprefix:(outputprefix ^ suf) @@ fun ppf_dump ->
+  let info =
+    init ppf_dump ~init_path:native ~tool_name ~sourcefile ~outputprefix
+  in
+  Profile.record_call info.sourcefile @@ fun () ->
+  let parsed = parse_impl info in
+  let typed = typecheck_impl info parsed in
+  if not !Clflags.print_types then begin
+    let exceptionally () =
+      List.iter (fun suf -> remove_file (suf info)) sufs;
+    in
+    Misc.try_finally ~exceptionally (fun () -> backend info typed)
+  end;
+  Warnings.check_fatal ();

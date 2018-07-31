@@ -49,16 +49,9 @@ let emit_bytecode i (bytecode, required_globals) =
          (Emitcode.to_file oc i.modulename cmofile ~required_globals);
     )
 
-let implementation ~sourcefile ~outputprefix =
-  Compmisc.with_ppf_dump ~fileprefix:(outputprefix ^ ".cmo") @@ fun ppf_dump ->
-  let info =
-    init ppf_dump ~init_path:false ~tool_name ~sourcefile ~outputprefix
-  in
-  Profile.record_call info.sourcefile @@ fun () ->
-  let parsed = parse_impl info in
-  let typed = typecheck_impl info parsed in
-  if not !Clflags.print_types then begin
-    let bytecode = to_bytecode info typed in
-    emit_bytecode info bytecode
-  end;
-  Warnings.check_fatal ();
+let implementation =
+  Compile_common.implementation
+    ~native:false ~tool_name ~backend:(fun info typed ->
+      let bytecode = to_bytecode info typed in
+      emit_bytecode info bytecode
+    )

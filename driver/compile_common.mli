@@ -67,6 +67,15 @@ val typecheck_impl :
     its public interface.
 *)
 
+val implementation :
+  tool_name:string ->
+  native:bool ->
+  backend:(info -> Typedtree.structure * Typedtree.module_coercion -> unit) ->
+  sourcefile:string ->
+  outputprefix:string ->
+  unit
+(** The complete compilation pipeline for implementations. *)
+
 (** {2 Build artifacts} *)
 
 val cmo : info -> string

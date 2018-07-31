@@ -71,24 +71,11 @@ let clambda i typed =
          i.outputprefix ~ppf_dump:i.ppf_dump;
        Compilenv.save_unit_info (cmx i))
 
-let implementation ~backend ~sourcefile ~outputprefix =
-  Compmisc.with_ppf_dump ~fileprefix:(outputprefix ^ ".cmo") @@ fun ppf_dump ->
-  let info =
-    init ppf_dump ~init_path:true ~tool_name ~sourcefile ~outputprefix
-  in
-  Compilenv.reset ?packname:!Clflags.for_package info.modulename;
-  Profile.record_call info.sourcefile @@ fun () ->
-  let parsed = parse_impl info in
-  let typed = typecheck_impl info parsed in
-  if not !Clflags.print_types then begin
-    let exceptionally () =
-      Misc.remove_file (Compile_common.obj info);
-      Misc.remove_file (Compile_common.cmx info);
-    in
-    Misc.try_finally ~exceptionally (fun () ->
+let implementation ~backend =
+  Compile_common.implementation ~tool_name
+    ~native:true ~backend:(fun info typed ->
+      Compilenv.reset ?packname:!Clflags.for_package info.modulename;
       if Config.flambda
       then flambda info backend typed
       else clambda info typed
     )
-  end;
-  Warnings.check_fatal ();
