@@ -107,6 +107,7 @@ type error =
   | Illegal_letrec_expr
   | Illegal_class_expr
   | Empty_pattern
+  | Too_many_existentials of string
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -1015,14 +1016,17 @@ let unify_head_only loc env ty constr =
 type state =
  { snapshot: Btype.snapshot;
    levels: Ctype.levels;
+   current_time: int;
    env: Env.t; }
 let save_state env =
   { snapshot = Btype.snapshot ();
     levels = Ctype.save_levels ();
+    current_time = Ident.current_time ();
     env = !env; }
 let set_state s env =
   Btype.backtrack s.snapshot;
   Ctype.set_levels s.levels;
+  Ident.reset_current_time s.current_time;
   env := s.env
 
 (* type_pat does not generate local constraints inside or patterns *)
@@ -1062,6 +1066,7 @@ let all_idents_cases half_typed_cases =
 
 
 exception Need_backtrack
+let total_pat_split = ref 0
 
 (* type_pat propagates the expected type as well as maps for
    constructors and labels.
@@ -1100,7 +1105,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
       in
-      if explode > 0 then
+      if explode > 0 && !total_pat_split > 0 then
         let (sp, constrs, labels) =
           try
             Parmatch.ppat_of_type !env expected_ty
@@ -1113,6 +1118,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
             Parsetree.Ppat_or _ -> explode - 5
           | _ -> explode - 1
         in
+        decr total_pat_split;
         type_pat ~constrs:(Some constrs) ~labels:(Some labels)
           ~explode sp expected_ty k
       else k' Tpat_any
@@ -1537,6 +1543,7 @@ let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
   let state = save_state env in
   try
     reset_pattern None true;
+    total_pat_split := 1000;
     let typed_p =
       Ctype.with_passive_variants
         (type_pat ~lev ~constrs ~labels ?mode ?explode env p)
@@ -1545,9 +1552,13 @@ let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
     set_state state env;
     (* types are invalidated but we don't need them here *)
     Some typed_p
-  with Error _ ->
-    set_state state env;
-    None
+  with
+    Error _ ->
+      set_state state env;
+      None
+  | Ctype.Too_many_existentials ->
+      raise (Error (p.ppat_loc, !env,
+                    Too_many_existentials "exhaustiveness analysis"))
 
 let check_partial ?(lev=get_current_level ()) env expected_ty loc cases =
   let explode = match cases with [_] -> 5 | _ -> 0 in
@@ -4068,7 +4079,9 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
         end_def ();
         generalize_structure ty_arg;
         let (pat, ext_env, force, pvs, unpacks) =
-          type_pattern ?exception_allowed ~lev env pc_lhs scope ty_arg
+          try type_pattern ?exception_allowed ~lev env pc_lhs scope ty_arg
+          with Ctype.Too_many_existentials ->
+            raise (Error (loc, env, Too_many_existentials "typing"))
         in
         pattern_force := force @ !pattern_force;
         let pat =
@@ -4181,10 +4194,6 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
     List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
   end;
   let do_init = does_contain_gadt || needs_exhaust_check in
-  let lev =
-    (* if [may_contain_gadt] then [init_env] was already called, no need to do
-       it again. *)
-    if do_init && not may_contain_gadts then init_env () else lev in
   let ty_arg_check =
     if do_init then
       (* Hack: use for_saving to copy variables too *)
@@ -4196,20 +4205,23 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
     raise (Error (loc, env, No_value_clauses));
   let partial =
     if partial_flag then
-      check_partial ~lev env ty_arg_check loc val_cases
+      let state = save_state (ref env) in
+      let lev = if do_init then init_env () else get_current_level () in
+      let p = check_partial ~lev env ty_arg_check loc val_cases in
+      set_state state (ref env);
+      p
     else
       Partial
   in
   let unused_check do_init =
-    let lev =
-      if do_init then init_env () else get_current_level ()
-    in
+    let state = save_state (ref env) in
+    let lev = if do_init then init_env () else get_current_level () in
     List.iter (fun { typed_pat; branch_env; _ } ->
       check_absent_variant branch_env typed_pat
     ) half_typed_cases;
     check_unused ~lev env ty_arg_check val_cases ;
     check_unused ~lev env Predef.type_exn exn_cases ;
-    if do_init then end_def ();
+    set_state state (ref env);
     Parmatch.check_ambiguous_bindings val_cases ;
     Parmatch.check_ambiguous_bindings exn_cases
   in
@@ -4218,7 +4230,7 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
   else
     unused_check false;
   (* Check for unused cases, do not delay because of gadts *)
-  if do_init then begin
+  if may_contain_gadts then begin
     end_def ();
     (* Ensure that existential types do not escape *)
     unify_exp_types loc env (instance ty_res) (newvar ()) ;
@@ -4827,6 +4839,9 @@ let report_error env ppf = function
   | Illegal_class_expr ->
       fprintf ppf "This kind of recursive class expression is not allowed"
   | Empty_pattern -> assert false
+  | Too_many_existentials where ->
+      fprintf ppf "@[During the %s of this pattern-matching,@ %s@]"
+        where "too many existentials were generated."
 
 let report_error env ppf err =
   wrap_printing_env ~error:true env (fun () -> report_error env ppf err)

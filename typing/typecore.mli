@@ -174,6 +174,7 @@ type error =
   | Illegal_letrec_expr
   | Illegal_class_expr
   | Empty_pattern
+  | Too_many_existentials of string
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

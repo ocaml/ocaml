@@ -24,6 +24,9 @@ Working version
 - GPR#1909: unsharing pattern types
   (Thomas Refis, with help from Leo White, review by Jacques Garrigue)
 
+- MPR#7822, GPR?: Refuting a pathological but reachable pattern with chess
+  (Jacques Garrigue, report by Florian Angeletti)
+
 ### Standard library:
 
 - MPR#2533, GPR#1839, GPR#1949: added Unix.fsync

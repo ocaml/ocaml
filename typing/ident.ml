@@ -64,6 +64,7 @@ let binding_time i = i.stamp
 
 let current_time() = !currentstamp
 let set_current_time t = currentstamp := max !currentstamp t
+let reset_current_time t = currentstamp := t
 
 let reinit_level = ref (-1)
 
