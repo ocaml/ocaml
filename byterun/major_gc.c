@@ -826,7 +826,12 @@ static intnat major_collection_slice(intnat howmuch,
       available = budget > Chunk_size ? Chunk_size : budget;
       left = caml_sweep(domain_state->shared_heap, available);
       budget -= available - left;
+      /*
+        FIXME: we would like to handle steal interrupts regularly,
+        but bad things happen if the GC cycles ends via an STW
+        interrupt here.
       caml_handle_incoming_interrupts();
+      */
     } while (budget > 0 && available != left);
 
     if (budget > 0) {
@@ -837,7 +842,12 @@ static intnat major_collection_slice(intnat howmuch,
     caml_ev_end("major_gc/sweep");
     sweep_work -= budget;
 
+    /*
+      FIXME: we would like to handle steal interrupts regularly,
+      but bad things happen if the GC cycles ends via an STW
+      interrupt here.
     caml_handle_incoming_interrupts();
+    */
   }
 
 mark_again:
@@ -851,7 +861,12 @@ mark_again:
       available = budget > Chunk_size ? Chunk_size : budget;
       left = mark(available);
       budget -= available - left;
+      /*
+        FIXME: we would like to handle steal interrupts regularly,
+        but bad things happen if the GC cycles ends via an STW
+        interrupt here.
       caml_handle_incoming_interrupts();
+      */
     } else if (0) {
       if (was_marking) {
         caml_ev_end("major_gc/mark");
