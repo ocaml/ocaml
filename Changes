@@ -20,6 +20,9 @@ OCaml 4.07 maintenance branch
 - GPR#1915: rec_check.ml is too permissive for certain class declarations.
   (Alban Reynaud with Gabriel Scherer, review by Jeremy Yallop)
 
+- MPR#7833, GPR#1946: typecore: only 1k existential per match, not 100k
+  (Thomas Refis, report by Jerome Simeon, review by Jacques Garrigue)
+
 OCaml 4.07.0 (10 July 2018)
 ---------------------------
 
