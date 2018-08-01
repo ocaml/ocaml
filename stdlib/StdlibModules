@@ -62,6 +62,7 @@ STDLIB_MODULES=\
   $(P)printf \
   $(P)queue \
   $(P)random \
+  $(P)result \
   $(P)scanf \
   $(P)seq \
   $(P)set \
