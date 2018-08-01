@@ -380,6 +380,11 @@ let of_seq i =
   sub !buf 0 !n
 
 
+let get_uint8 b i =
+  Char.code (get b i)
+
+let get_int8 b i =
+  ((get_uint8 b i) lsl (Sys.int_size - 8)) asr (Sys.int_size - 8)
 
 let get_uint16_le b i =
   if Sys.big_endian then swap16 (get_uint16_ne b i)
@@ -414,6 +419,8 @@ let get_int64_be b i =
   if not Sys.big_endian then swap64 (get_int64_ne b i)
   else get_int64_ne b i
 
+let set_int8 b i x =
+  set b i (Char.unsafe_chr x)
 
 let set_int16_le b i x =
   if Sys.big_endian then set_int16_ne b i (swap16 x)

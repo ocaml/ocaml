@@ -309,6 +309,12 @@ external swap32 : int32 -> int32 = "%bswap_int32"
 external swap64 : int64 -> int64 = "%bswap_int64"
 
 
+let add_int8 b x =
+  let pos = b.position in
+  if pos >= b.length then resize b 1;
+  Bytes.unsafe_set b.buffer pos (Char.unsafe_chr x);
+  b.position <- pos + 1
+
 let add_int16_ne b x =
   let new_position = b.position + 2 in
   if new_position > b.length then resize b 2;

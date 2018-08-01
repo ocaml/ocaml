@@ -465,6 +465,14 @@ val of_seq : char Seq.t -> t
 
 (** {6 Binary storage of integers} *)
 
+val get_uint8 : bytes -> int -> int
+(** [get_uint8 s n] reads an 8-bit unsigned integer from the byte
+    sequence [s] starting at index [n], in binary form. *)
+
+val get_int8 : bytes -> int -> int
+(** [get_int8 s n] reads an 8-bit signed integer from the byte
+    sequence [s] starting at index [n], in binary form. *)
+
 val get_uint16_ne : bytes -> int -> int
 (** [get_uint16_ne s n] reads a 16-bit unsigned integer from the byte
     sequence [s] starting at index [n], in binary form, using the
@@ -507,6 +515,16 @@ val get_int64_ne : bytes -> int -> int64
     native endianness.
 
     Raise [Invalid_argument] if [n] or [n+7] is not a valid index in
+    [s].
+
+    @since XXX
+*)
+
+val set_int8 : bytes -> int -> int -> unit
+(** [set_int8 s n x] writes the least significant 8-bits of [x]
+    to the byte sequence [s] starting at index [n], in binary form.
+
+    Raise [Invalid_argument] if [n] is not a valid index in
     [s].
 
     @since XXX

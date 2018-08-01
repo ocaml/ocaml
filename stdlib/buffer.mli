@@ -180,6 +180,13 @@ val of_seq : char Seq.t -> t
 
 (** {6 Binary storage of numbers} *)
 
+val add_int8 : t -> int -> unit
+(** Add the binary representation of the least significant 8-bits of
+    the integer in binary form.
+
+    @since XXX
+*)
+
 val add_int16_ne : t -> int -> unit
 (** Add the binary representation of the least significant 16-bits of
     the integer in binary form, using the machine native endianness.
