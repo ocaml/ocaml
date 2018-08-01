@@ -24,6 +24,7 @@ exception Subtype of
         (type_expr * type_expr) list * (type_expr * type_expr) list
 exception Cannot_expand
 exception Cannot_apply
+exception Too_many_existentials
 
 val init_def: int -> unit
         (* Set the initial variable level *)

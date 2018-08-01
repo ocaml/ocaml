@@ -1123,6 +1123,8 @@ let existential_name cstr ty = match repr ty with
   | {desc = Tvar (Some name)} -> "$" ^ cstr.cstr_name ^ "_'" ^ name
   | _ -> "$" ^ cstr.cstr_name
 
+exception Too_many_existentials
+
 let instance_constructor ?in_pattern cstr =
   begin match in_pattern with
   | None -> ()
@@ -1131,6 +1133,9 @@ let instance_constructor ?in_pattern cstr =
         let decl = new_declaration (Some expansion_scope) None in
         let name = existential_name cstr existential in
         let path = Path.Pident (Ident.create (get_new_abstract_name name)) in
+        let binding_time = Ident.current_time () in
+        (* be on the safe side for the begin_def's in type_cases *)
+        if binding_time >= !current_level - 5 then raise Too_many_existentials;
         let new_env = Env.add_local_type path decl !env in
         env := new_env;
         let to_unify = newty (Tconstr (path,[],ref Mnil)) in
@@ -1925,6 +1930,8 @@ let reify env t =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
     let path = Path.Pident (Ident.create (get_new_abstract_name name)) in
     let binding_time = Ident.current_time () in
+    (* be on the safe side for the begin_def's in type_cases *)
+    if binding_time > !current_level - 5 then raise Too_many_existentials;
     let decl = new_declaration (Some binding_time) None in
     let new_env = Env.add_local_type path decl !env in
     let t = newty2 lev (Tconstr (path,[],ref Mnil))  in
