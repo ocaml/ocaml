@@ -35,9 +35,19 @@ val pop : 'a t -> 'a
 (** [pop s] removes and returns the topmost element in stack [s],
    or raises {!Empty} if the stack is empty. *)
 
+val pop_opt : 'a t -> 'a option
+(** [pop_opt s] removes and returns the topmost element in stack [s],
+   or returns [None] if the stack is empty.
+   @since 4.08 *)
+
 val top : 'a t -> 'a
 (** [top s] returns the topmost element in stack [s],
    or raises {!Empty} if the stack is empty. *)
+
+val top_opt : 'a t -> 'a option
+(** [top_opt s] returns the topmost element in stack [s],
+   or [None] if the stack is empty.
+   @since 4.08 *)
 
 val clear : 'a t -> unit
 (** Discard all elements from a stack. *)

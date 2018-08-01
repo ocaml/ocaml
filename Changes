@@ -60,6 +60,9 @@ Working version
   -keyword=arg inputs
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
+- GPR#XXXX: Add Stack.{top_opt,pop_opt} and Queue.{peek_opt,take_opt}.
+  (Vladimir Keleshev, review by _)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
