@@ -19,14 +19,19 @@
 
 #ifdef _WIN32
 #include <io.h>
-#define fsync(fd) _commit(win_CRT_fd_of_filedescr(fd))
+#define fsync(fd) _commit(fd)
 #else
-#define fsync(fd) fsync(Int_val(fd))
+#define fsync(fd) fsync(fd)
 #endif
 
-CAMLprim value unix_fsync(value fd)
+CAMLprim value unix_fsync(value v)
 {
   int ret;
+#ifdef _WIN32
+  int fd = win_CRT_fd_of_filedescr(v);
+#else
+  int fd = Int_val(v);
+#endif
   caml_enter_blocking_section();
   ret = fsync(fd);
   caml_leave_blocking_section();
