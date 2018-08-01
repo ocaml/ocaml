@@ -4038,7 +4038,7 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
     begin_def ();
     Ident.set_current_time (get_current_level ());
     let lev = Ident.current_time () in
-    Ctype.init_def (lev+100000);                 (* up to 1000 existentials *)
+    Ctype.init_def (lev+1000);                 (* up to 1000 existentials *)
     lev
   in
   let lev =
