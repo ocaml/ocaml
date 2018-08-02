@@ -249,7 +249,7 @@ static intnat do_compare_val(struct compare_stack* stk,
     case Infix_tag:
       compare_free_stack(stk);
       caml_invalid_argument("compare: functional value");
-    case Stack_tag:
+    case Cont_tag:
       compare_free_stack(stk);
       caml_invalid_argument("compare: continuation value");
     case Object_tag: {

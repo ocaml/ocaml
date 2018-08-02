@@ -8,29 +8,31 @@
 #include "memory.h"
 #include "roots.h"
 
+struct stack_info {
+  long sp;
+  value handle_value;
+  value handle_exn;
+  value handle_effect;
+  struct stack_info* parent;
+  uintnat wosize;
+  uintnat magic;
+};
 
 /* One word at the base of the stack is used to store the stack pointer */
-#define Stack_ctx_words 6
-#define Stack_base(stk) (Op_val(stk) + Stack_ctx_words)
+#define Stack_ctx_words (sizeof(struct stack_info) / sizeof(value))
+#define Stack_base(stk) ((value*)(stk + 1))
 
 /* 16-byte align-down caml_stack_high for certain architectures like arm64
  * demand 16-byte alignment. Leaves a word unused at the bottom of the stack if
  * the Op_val(stk) + Wosize_val(stk) is not 16-byte aligned. */
-#define Stack_high(stk) ((value*)(((value)(Op_val(stk) + Wosize_val(stk))) & (-1uLL << 4)))
+#define Stack_high(stk) ((value*)(((uintnat)stk + sizeof(value) * stk->wosize) & (-1uLL << 4)))
 
-#define Stack_sp(stk) (*(long*)(Op_val(stk) + 0))
-#define Stack_dirty_domain(stk) (*(struct domain**)(Op_val(stk) + 1))
-#define Stack_handle_value(stk) (*(Op_val(stk) + 2))
-#define Stack_handle_exception(stk) (*(Op_val(stk) + 3))
-#define Stack_handle_effect(stk) (*(Op_val(stk) + 4))
+#define Stack_sp(stk) (stk)->sp
+#define Stack_handle_value(stk) (stk)->handle_value
+#define Stack_handle_exception(stk) (stk)->handle_exn
+#define Stack_handle_effect(stk) (stk)->handle_effect
 #define Stack_parent_offset 5
-#define Stack_parent(stk) (*(Op_val(stk) + Stack_parent_offset))
-
-/* States for Stack_dirty_domain field */
-/* A clean fiber does not have pointers into any minor heaps */
-#define FIBER_CLEAN ((struct domain*)0)
-/* A clean fiber is being scanned by a GC thread */
-#define FIBER_SCANNING ((struct domain*)1)
+#define Stack_parent(stk) (stk)->parent
 
 #ifdef NATIVE_CODE
 
@@ -79,42 +81,40 @@
   (sizeof(value) * ((Stack_high(stk) - (value*)stk) - 2 - Stack_parent_offset))
 #endif
 
-value caml_find_performer(value stack);
-
 /* The table of global identifiers */
 extern caml_root caml_global_data;
 
 #define Trap_pc(tp) ((tp)[0])
 #define Trap_link(tp) ((tp)[1])
 
-void caml_init_stack(value stack);
-value caml_alloc_main_stack (uintnat init_size);
+struct stack_info* caml_alloc_main_stack (uintnat init_size);
 void caml_init_main_stack(void);
-void caml_scan_dirty_stack_domain(scanning_action f, void*, value stack,
-                                  struct domain* domain);
-void caml_scan_stack(scanning_action, void*, value stack);
+void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack);
 void caml_save_stack_gc();
 void caml_restore_stack_gc();
 void caml_restore_stack();
-void caml_clean_stack(value stack);
-void caml_clean_stack_domain(value stack, struct domain* domain);
 void caml_realloc_stack (asize_t required_size, value* save, int nsave);
 void caml_change_max_stack_size (uintnat new_max_size);
 void caml_maybe_expand_stack();
+void caml_free_stack(struct stack_info* stk);
 int  caml_on_current_stack(value*);
-int  caml_running_main_fiber();
 #ifdef NATIVE_CODE
-int caml_switch_stack(value stk);
+int caml_switch_stack(struct stack_info* stk, int should_free);
 #else
-value caml_switch_stack(value stk);
+struct stack_info* caml_switch_stack(struct stack_info* stk);
 #endif
-value caml_fiber_death();
-void caml_darken_stack(value stack);
-value caml_reverse_fiber_stack(value stack);
 
 #ifdef NATIVE_CODE
-void caml_get_stack_sp_pc (value stack, char** sp /* out */, uintnat* pc /* out */);
+void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintnat* pc /* out */);
 #endif
+
+value caml_continuation_use (value cont);
+
+/* Replace the stack of a continuation that was previouly removed
+   with caml_continuation_use. The GC must not be allowed to run
+   between continuation_use and continuation_replace.
+   Used for cloning continuations and continuation backtraces. */
+void caml_continuation_replace(value cont, struct stack_info* stack);
 
 #endif /* CAML_INTERNALS */
 

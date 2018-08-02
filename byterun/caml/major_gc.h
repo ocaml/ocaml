@@ -32,6 +32,7 @@ uintnat caml_get_num_domains_to_mark(void);
 void caml_init_major_gc(caml_domain_state*);
 void caml_teardown_major_gc(void);
 void caml_darken(void*, value, value* ignored);
+void caml_darken_cont(value);
 void caml_mark_root(value, value*);
 void caml_empty_mark_stack(void);
 void caml_finish_major_cycle(void);

@@ -34,7 +34,7 @@
 
 /* Returns the next frame descriptor (or NULL if none is available),
    and updates *pc and *sp to point to the following one.  */
-frame_descr * caml_next_frame_descriptor(caml_frame_descrs fds, uintnat * pc, char ** sp, value stack)
+static frame_descr * caml_next_frame_descriptor(caml_frame_descrs fds, uintnat * pc, char ** sp, struct stack_info* stack)
 {
   frame_descr * d;
 
@@ -111,24 +111,18 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, uintnat trapsp_off)
    (hopefully less often). Instead of using a bounded buffer as
    [caml_stash_backtrace], we first traverse the stack to compute the
    right size, then allocate space for the trace. */
-value get_callstack(value stack, value max_frames_value)
+static void get_callstack(struct stack_info* orig_stack, intnat max_frames,
+                          frame_descr*** trace, intnat* trace_size)
 {
-  CAMLparam2(stack, max_frames_value);
-  CAMLlocal2(saved_stack, trace);
-
-  /* we use `intnat` here because, were it only `int`, passing `max_int`
-     from the OCaml side would overflow on 64bits machines. */
-  intnat max_frames = Long_val(max_frames_value);
+  CAMLnoalloc;
   intnat trace_pos;
+  char *sp;
+  uintnat pc;
+  caml_frame_descrs fds = caml_get_frame_descrs();
 
-  saved_stack = stack;
   /* first compute the size of the trace */
   {
-    CAMLnoalloc;
-    char *sp;
-    uintnat pc;
-    caml_frame_descrs fds = caml_get_frame_descrs();
-
+    struct stack_info* stack = orig_stack;
     caml_get_stack_sp_pc(stack, &sp, &pc);
     trace_pos = 0;
 
@@ -137,7 +131,7 @@ value get_callstack(value stack, value max_frames_value)
       if (trace_pos >= max_frames) break;
       if (descr == NULL) {
         stack = Stack_parent(stack);
-        if (stack == Val_unit) break;
+        if (stack == NULL) break;
         caml_get_stack_sp_pc(stack, &sp, &pc);
       } else {
         ++trace_pos;
@@ -145,16 +139,12 @@ value get_callstack(value stack, value max_frames_value)
     }
   }
 
-  trace = caml_alloc((mlsize_t) trace_pos, 0);
-  stack = saved_stack;
+  *trace_size = trace_pos;
+  *trace = caml_stat_alloc(sizeof(frame_descr*) * trace_pos);
 
   /* then collect the trace */
   {
-    CAMLnoalloc;
-    char *sp;
-    uintnat pc;
-    caml_frame_descrs fds = caml_get_frame_descrs();
-
+    struct stack_info* stack = orig_stack;
     caml_get_stack_sp_pc(stack, &sp, &pc);
     trace_pos = 0;
 
@@ -163,40 +153,51 @@ value get_callstack(value stack, value max_frames_value)
       if (trace_pos >= max_frames) break;
       if (descr == NULL) {
         stack = Stack_parent(stack);
-        if (stack == Val_unit) break;
+        if (stack == NULL) break;
         caml_get_stack_sp_pc(stack, &sp, &pc);
       } else {
-        caml_modify_field(trace, trace_pos, Val_backtrace_slot(descr));
+        (*trace)[trace_pos] = descr;
         ++trace_pos;
       }
     }
   }
+}
 
-  CAMLreturn(trace);
+static value alloc_callstack(frame_descr** trace, intnat trace_len)
+{
+  CAMLparam0();
+  CAMLlocal1(callstack);
+  int i;
+  callstack = caml_alloc(trace_len, 0);
+  for (i = 0; i < trace_len; i++)
+    Store_field(callstack, i, Val_backtrace_slot(trace[i]));
+  caml_stat_free(trace);
+  CAMLreturn(callstack);
 }
 
 CAMLprim value caml_get_current_callstack (value max_frames_value) {
-  caml_domain_state* domain_state = Caml_state;
-  return get_callstack(domain_state->current_stack, max_frames_value);
+  frame_descr** trace;
+  intnat trace_len;
+  get_callstack(Caml_state->current_stack, Long_val(max_frames_value),
+                &trace, &trace_len);
+  return alloc_callstack(trace, trace_len);
 }
 
 CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
 {
-  CAMLparam1(cont);
-  CAMLlocal2(stack, callstack);
-  intnat bvar_stat;
+  frame_descr** trace;
+  intnat trace_len;
+  struct stack_info* stack;
+  
+  stack = Ptr_val(caml_continuation_use(cont));
+  {
+    CAMLnoalloc;
+    get_callstack(stack, max_frames,
+                  &trace, &trace_len);
+    caml_continuation_replace(cont, stack);
+  }
 
-  bvar_stat = caml_bvar_status(cont);
-  if (bvar_stat & BVAR_EMPTY)
-    caml_invalid_argument ("continuation already taken");
-
-  caml_read_field(cont, 0, &stack);
-
-  stack = caml_reverse_fiber_stack(stack);
-  callstack = get_callstack (stack, max_frames);
-  caml_reverse_fiber_stack(stack);
-
-  CAMLreturn(callstack);
+  return alloc_callstack(trace, trace_len);
 }
 
 debuginfo caml_debuginfo_extract(backtrace_slot slot)

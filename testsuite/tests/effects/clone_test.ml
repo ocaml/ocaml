@@ -38,7 +38,8 @@ module Segfault = struct
   let boom () =
     let unyield action () =
       try action () with
-        effect (Yield _) _ -> ()
+        effect (Yield _) k ->
+          try discontinue k Exit with Exit -> ()
     in
     let state = ref [] in
     let stateful action () =

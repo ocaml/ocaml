@@ -46,12 +46,8 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
         Op_val(result)[i] = Val_unit;
       }
     }
-    if (tag == Stack_tag)
-      caml_init_stack (result);
   } else {
     result = caml_alloc_shr (wosize, tag);
-    if (tag == Stack_tag)
-      caml_init_stack (result);
     result = caml_check_urgent_gc(result);
   }
 

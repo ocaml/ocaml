@@ -38,7 +38,7 @@ exception Exit
 
 
 type ('a, 'b) stack
-external take_cont : ('a, 'b) continuation -> ('a, 'b) stack = "caml_bvar_take"
+external take_cont : ('a, 'b) continuation -> ('a, 'b) stack = "caml_continuation_use"
 external resume : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%resume"
 
 let continue k v =
