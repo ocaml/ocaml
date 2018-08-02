@@ -333,6 +333,28 @@ let write_substring fd buf ofs len =
 let single_write_substring fd buf ofs len =
   single_write fd (Bytes.unsafe_of_string buf) ofs len
 
+external unsafe_read_bigstring :
+  file_descr -> bigstring -> int -> int -> int = "unix_read_ba_1"
+external unsafe_write_bigstring :
+  file_descr -> bigstring -> int -> int -> int = "unix_write_ba_1"
+external unsafe_single_write_bigstring :
+  file_descr -> bigstring -> int -> int -> int = "unix_single_write_ba_1"
+
+let read_bigstring fd buf ofs len =
+  if ofs < 0 || len < 0 || ofs > Bigstring.length buf - len
+  then invalid_arg "Unix.read_bigstring"
+  else unsafe_read_bigstring fd buf ofs len
+
+let write_bigstring fd buf ofs len =
+  if ofs < 0 || len < 0 || ofs > Bigstring.length buf - len
+  then invalid_arg "Unix.write_bigstring"
+  else unsafe_write_bigstring fd buf ofs len
+
+let single_write_bigstring fd buf ofs len =
+  if ofs < 0 || len < 0 || ofs > Bigstring.length buf - len
+  then invalid_arg "Unix.single_write_bigstring"
+  else unsafe_single_write_bigstring fd buf ofs len
+
 external in_channel_of_descr : file_descr -> in_channel
                              = "unix_inchannel_of_filedescr"
 external out_channel_of_descr : file_descr -> out_channel
