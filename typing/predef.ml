@@ -46,6 +46,7 @@ and ident_lazy_t = ident_create "lazy_t"
 and ident_string = ident_create "string"
 and ident_extension_constructor = ident_create "extension_constructor"
 and ident_floatarray = ident_create "floatarray"
+and ident_bigstring = ident_create "bigstring"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -64,6 +65,7 @@ and path_lazy_t = Pident ident_lazy_t
 and path_string = Pident ident_string
 and path_extension_constructor = Pident ident_extension_constructor
 and path_floatarray = Pident ident_floatarray
+and path_bigstring = Pident ident_bigstring
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
 and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
@@ -222,6 +224,7 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_int32 decl_abstr (
   add_type ident_nativeint decl_abstr (
   add_type ident_lazy_t decl_lazy_t (
+  add_type ident_bigstring decl_abstr (
   add_type ident_option decl_option (
   add_type ident_list decl_list (
   add_type ident_array decl_array (
@@ -234,7 +237,7 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_int decl_abstr_imm (
   add_type ident_extension_constructor decl_abstr (
   add_type ident_floatarray decl_abstr (
-    empty_env))))))))))))))))))))))))))))
+    empty_env)))))))))))))))))))))))))))))
 
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in

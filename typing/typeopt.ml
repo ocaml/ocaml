@@ -147,6 +147,8 @@ let layout_table =
 
 let bigarray_type_kind_and_layout env typ =
   match scrape env typ with
+  | Tconstr(p, [], _) when Path.same p Predef.path_bigstring ->
+      (Pbigarray_uint8, Pbigarray_c_layout)
   | Tconstr(_p, [_caml_type; elt_type; layout_type], _abbrev) ->
       (bigarray_decode_type env elt_type kind_table Pbigarray_unknown,
        bigarray_decode_type env layout_type layout_table
