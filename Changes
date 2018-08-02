@@ -60,8 +60,8 @@ Working version
   -keyword=arg inputs
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
-- GPR#XXXX: Add Stack.{top_opt,pop_opt} and Queue.{peek_opt,take_opt}.
-  (Vladimir Keleshev, review by _)
+- GPR#1957: Add Stack.{top_opt,pop_opt} and Queue.{peek_opt,take_opt}.
+  (Vladimir Keleshev, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
 ### Other libraries:
 
