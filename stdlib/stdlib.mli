@@ -872,6 +872,11 @@ val output_substring : out_channel -> string -> int -> int -> unit
    a byte sequence.
    @since 4.02.0 *)
 
+val output_bigstring : out_channel -> bigstring -> int -> int -> unit
+(** Same as {!output}, but takes the data from a big string.
+
+    @since 4.08.0 *)
+
 val output_byte : out_channel -> int -> unit
 (** Write one 8-bit integer (as the single character with that code)
    on the given output channel. The given integer is taken modulo
@@ -978,6 +983,11 @@ val input : in_channel -> bytes -> int -> int -> int
    Exception [Invalid_argument "input"] is raised if [pos] and [len]
    do not designate a valid range of [buf]. *)
 
+val input_bigstring : in_channel -> bigstring -> int -> int -> int
+(** Same as {!input}, but reads the data into a big string.
+
+    @since 4.08.0 *)
+
 val really_input : in_channel -> bytes -> int -> int -> unit
 (** [really_input ic buf pos len] reads [len] characters from channel [ic],
    storing them in byte sequence [buf], starting at character number [pos].
@@ -992,6 +1002,11 @@ val really_input_string : in_channel -> int -> string
    Raise [End_of_file] if the end of file is reached before [len]
    characters have been read.
    @since 4.02.0 *)
+
+val really_input_bigstring : in_channel -> bigstring -> int -> int -> unit
+(** Same as {!really_input}, but reads the data into a big string.
+
+    @since 4.08.0 *)
 
 val input_byte : in_channel -> int
 (** Same as {!Pervasives.input_char}, but return the 8-bit integer representing

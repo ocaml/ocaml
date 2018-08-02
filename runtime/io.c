@@ -40,6 +40,7 @@
 #include "caml/osdeps.h"
 #include "caml/signals.h"
 #include "caml/sys.h"
+#include "caml/bigarray.h"
 
 #ifndef SEEK_SET
 #define SEEK_SET 0
@@ -686,6 +687,37 @@ CAMLprim value caml_ml_output(value vchannel, value buff, value start,
   return caml_ml_output_bytes (vchannel, buff, start, length);
 }
 
+
+CAMLprim value caml_ml_output_bigstring(value vchannel,
+                                        value buff, value start, value length)
+{
+  CAMLparam0();
+  struct channel * channel = Channel(vchannel);
+  char *data = (char *)Caml_ba_data_val(buff);
+
+  Lock(channel);
+  caml_really_putblock(channel, data + Long_val(start), Long_val(length));
+  Unlock(channel);
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_ml_output_bigstring_partial(value vchannel,
+                                                value buff, value start,
+                                                value length)
+{
+  CAMLparam0();
+  struct channel * channel = Channel(vchannel);
+  char *data = (char *)Caml_ba_data_val(buff);
+  int n;
+
+  Lock(channel);
+  n = caml_putblock(channel, data + Long_val(start), Long_val(length));
+  Unlock(channel);
+
+  CAMLreturn(Val_int(n));
+}
+
 CAMLprim value caml_ml_seek_out(value vchannel, value pos)
 {
   CAMLparam2 (vchannel, pos);
@@ -780,6 +812,21 @@ CAMLprim value caml_ml_input(value vchannel, value buff, value vstart,
   }
   Unlock(channel);
   CAMLreturn (Val_long(n));
+}
+
+CAMLprim value caml_ml_input_bigstring(value vchannel,
+                                       value buff, value start, value length)
+{
+  CAMLparam0();
+  struct channel * channel = Channel(vchannel);
+  char *data = (char *)Caml_ba_data_val(buff);
+  int n;
+
+  Lock(channel);
+  n = caml_getblock(channel, data + Long_val(start), Long_val(length));
+  Unlock(channel);
+
+  CAMLreturn(Val_long(n));
 }
 
 CAMLprim value caml_ml_seek_in(value vchannel, value pos)
