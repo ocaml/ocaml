@@ -656,8 +656,21 @@ let rec approx_modtype env smty =
         Env.enter_module ~arg:true param.txt (Btype.default_mty arg) env in
       let res = approx_modtype newenv sres in
       Mty_functor(id, arg, res)
-  | Pmty_with(sbody, _constraints) ->
-      approx_modtype env sbody
+  | Pmty_with(sbody, constraints) ->
+      let body = approx_modtype env sbody in
+      List.iter
+        (fun sdecl ->
+          match sdecl with
+          | Pwith_type _ -> ()
+          | Pwith_typesubst _ -> ()
+          | Pwith_module (_, lid') ->
+              (* Lookup the module to make sure that it is not recursive.
+                 (GPR#1626) *)
+              ignore (Typetexp.find_module env lid'.loc lid'.txt)
+          | Pwith_modsubst (_, lid') ->
+              ignore (Typetexp.find_module env lid'.loc lid'.txt))
+        constraints;
+      body
   | Pmty_typeof smod ->
       let (_, mty) = !type_module_type_of_fwd env smod in
       mty

@@ -242,6 +242,9 @@ Working version
 
 ### Bug fixes:
 
+- GPR#1626: Do not allow recursive modules in `with module`
+  (Leo White, review by Gabriel Radanne)
+
 - MPR#7726, GPR#1676: Recursive modules, equi-recursive types and stack overflow
   (Jacques Garrigue, report by Jeremy Yallop, review by Leo White)
 
