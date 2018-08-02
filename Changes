@@ -67,6 +67,14 @@ Working version
 - GPR#1957: Add Stack.{top_opt,pop_opt} and Queue.{peek_opt,take_opt}.
   (Vladimir Keleshev, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
+- GPR#1959: Add Format.dprintf, a printing function which ouputs a closure
+  usable with %t.
+  (Gabriel Radanne, request by Armaël Guéneau,
+   review by Florian Angeletti and Gabriel Scherer)
+
+- GPR#1959: Small simplification and optimization to Format.ifprintf
+  (Gabriel Radanne, review by Gabriel Scherer)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
