@@ -3317,6 +3317,7 @@ and type_format loc str env =
       let mk_exp_loc pexp_desc = {
         pexp_desc = pexp_desc;
         pexp_loc = loc;
+        pexp_loc_stack = [];
         pexp_attributes = [];
       } and mk_lid_loc lid = {
         txt = lid;

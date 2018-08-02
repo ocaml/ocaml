@@ -63,9 +63,20 @@ let mkcf ~loc ?attrs ?docs d =
 let mkrhs rhs loc = mkloc rhs (make_loc loc)
 let ghrhs rhs loc = mkloc rhs (ghost_loc loc)
 
-let reloc_pat ~loc x = { x with ppat_loc = make_loc loc };;
-let reloc_exp ~loc x = { x with pexp_loc = make_loc loc };;
-let reloc_typ ~loc x = { x with ptyp_loc = make_loc loc };;
+let push_loc x acc =
+  if x.Location.loc_ghost
+  then acc
+  else x :: acc
+
+let reloc_pat ~loc x =
+  { x with ppat_loc = make_loc loc;
+           ppat_loc_stack = push_loc x.ppat_loc x.ppat_loc_stack };;
+let reloc_exp ~loc x =
+  { x with pexp_loc = make_loc loc;
+           pexp_loc_stack = push_loc x.pexp_loc x.pexp_loc_stack };;
+let reloc_typ ~loc x =
+  { x with ptyp_loc = make_loc loc;
+           ptyp_loc_stack = push_loc x.ptyp_loc x.ptyp_loc_stack };;
 
 let mkoperator ~loc name =
   mkexp ~loc (Pexp_ident(mkrhs (Lident name) loc))

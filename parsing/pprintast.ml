@@ -900,7 +900,10 @@ and class_field ctxt f x =
       let bind e =
         binding ctxt f
           {pvb_pat=
-             {ppat_desc=Ppat_var s;ppat_loc=Location.none;ppat_attributes=[]};
+             {ppat_desc=Ppat_var s;
+              ppat_loc=Location.none;
+              ppat_loc_stack=[];
+              ppat_attributes=[]};
            pvb_expr=e;
            pvb_attributes=[];
            pvb_loc=Location.none;
