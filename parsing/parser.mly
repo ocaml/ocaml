@@ -951,10 +951,9 @@ sig_include_statement:
 module_declaration_body:
     COLON module_type
       { $2 }
-  | LPAREN UIDENT COLON module_type RPAREN module_declaration_body
-      { mkmty(Pmty_functor(mkrhs $2 2, Some $4, $6)) }
-  | LPAREN RPAREN module_declaration_body
-      { mkmty(Pmty_functor(mkrhs2 "*" 1 2, None, $3)) }
+  | functor_arg module_declaration_body
+      { let (name,typ) = $1 in
+        mkmty(Pmty_functor(name, typ, $2)) }
 ;
 module_declaration:
     MODULE ext_attributes UIDENT module_declaration_body post_item_attributes
