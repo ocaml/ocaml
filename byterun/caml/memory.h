@@ -36,9 +36,6 @@
 extern "C" {
 #endif
 
-#define BVAR_EMPTY      0x10000
-#define BVAR_OWNER_MASK 0x0ffff
-
 #define STAT_ALLOC_MAGIC 0x314159
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
@@ -608,14 +605,6 @@ CAMLextern value caml_read_root (caml_root);
 /* [caml_modify_root] stores a new value in a root */
 
 CAMLextern void caml_modify_root (caml_root, value);
-
-/* BVars */
-
-CAMLprim value caml_bvar_create(value);
-intnat caml_bvar_status(value);
-
-
-
 
 #ifdef __cplusplus
 }

@@ -50,7 +50,7 @@ let unmarshal str pos =
 let first_non_constant_constructor_tag = 0
 let last_non_constant_constructor_tag = 244
 
-let stack_tag = 245
+let cont_tag = 245
 let lazy_tag = 246
 let closure_tag = 247
 let object_tag = 248

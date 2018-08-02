@@ -74,7 +74,7 @@ struct caml_thread_struct {
   struct caml_thread_struct * next;  /* Double linking of running threads */
   struct caml_thread_struct * prev;
 
-  value current_stack;         /* Saved value of caml_current_stack */
+  struct stack_info* current_stack;         /* Saved value of caml_current_stack */
   struct caml__roots_block *local_roots; /* Saved value of local_roots */
 #ifdef NATIVE_CODE
   char *system_sp;
@@ -151,8 +151,6 @@ static void caml_thread_scan_roots(scanning_action action, void* fdata, struct d
     (*action)(fdata, th->descr, &th->descr);
     /* Don't rescan the stack of the current thread, it was done already */
     if (th != curr_thread) {
-      (*action)(fdata, th->current_stack, &th->current_stack);
-
       for (lr = th->local_roots; lr != NULL; lr = lr->next) {
         for (i = 0; i < lr->ntables; i++){
           for (j = 0; j < lr->nitems; j++){
@@ -260,15 +258,6 @@ static int caml_thread_try_leave_blocking_section(void)
   return 0;
 }
 
-/* Hook for estimating stack usage */
-
-static uintnat (*prev_stack_usage_hook)(void);
-
-static uintnat caml_thread_stack_usage(void)
-{
-  return 0;
-}
-
 /* Create and setup a new thread info block.
    This block has no associated thread descriptor and
    is not inserted in the list of threads. */
@@ -277,7 +266,7 @@ static caml_thread_t caml_thread_new_info(void)
 {
   caml_thread_t th;
 #ifndef NATIVE_CODE
-  value stack;
+  struct stack_info* stack;
 #endif
 
   th = (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
@@ -305,13 +294,14 @@ static caml_thread_t caml_thread_new_info(void)
     th->spacetime_finaliser_trie_root);
 #endif
 #else
-  stack = caml_alloc_shr(Thread_stack_size, Stack_tag);
+  stack = caml_stat_alloc(sizeof(value) * Thread_stack_size);
+  stack->wosize = Thread_stack_size;
+  stack->magic = 42;
   Stack_sp(stack) = 0;
-  Stack_dirty_domain(stack) = 0;
   Stack_handle_value(stack) = Val_long(0);
   Stack_handle_exception(stack) = Val_long(0);
   Stack_handle_effect(stack) = Val_long(0);
-  Stack_parent(stack) = Val_unit;
+  Stack_parent(stack) = NULL;
 
   th->current_stack = stack;
   th->trap_sp_off = 1;
@@ -514,7 +504,6 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
 CAMLprim value caml_thread_new(value clos)          /* ML */
 {
   CAMLparam1(clos);
-  CAMLlocal1(stack);
   caml_thread_t th;
   st_retcode err;
   uintnat domain_id;
@@ -522,7 +511,6 @@ CAMLprim value caml_thread_new(value clos)          /* ML */
   /* Create a thread info block */
   th = caml_thread_new_info();
   if (th == NULL) caml_raise_out_of_memory();
-  stack = th->current_stack;
   /* Equip it with a thread descriptor */
   th->descr = caml_thread_new_descriptor(clos);
   /* Add thread info block to the list of threads */

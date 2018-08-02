@@ -242,8 +242,8 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         #endif
         h = 42;
         break;
-      case Stack_tag:
-        /* All stacks hash to the same value, since we have no idea how to distinguish them. */
+      case Cont_tag:
+        /* All continuations hash to the same value, since we have no idea how to distinguish them. */
         h = 42;
         break;
       case Forward_tag:

@@ -111,10 +111,3 @@ let get_id { domain; _ } = domain
 
 let self () = Raw.self ()
 
-module BVar = struct
-  type 'a t
-  external create : 'a -> 'a t = "caml_bvar_create"
-  external take : 'a t -> 'a = "caml_bvar_take"
-  external put : 'a t -> 'a -> unit = "caml_bvar_put"
-  external is_empty : 'a t -> bool = "caml_bvar_is_empty"
-end
