@@ -1068,6 +1068,18 @@ val asprintf : ('a, formatter, unit, string) format4 -> 'a
   @since 4.01.0
 *)
 
+val dprintf :
+  ('a, formatter, unit, formatter -> unit) format4 -> 'a
+(** Same as {!fprintf}, except the formatter is the last argument.
+  All printing actions are delayed until the formatter is provided.
+  In particular, [printff "..." a b c] is a
+  function of type [formatter -> unit] which can be given to
+  a format specifier [%t].
+
+  @since NEXT_VERSION
+*)
+
+
 val ifprintf : formatter -> ('a, formatter, unit) format -> 'a
 (** Same as [fprintf] above, but does not print anything.
   Useful to ignore some material when conditionally printing.
@@ -1082,6 +1094,15 @@ val kfprintf :
   ('b, formatter, unit, 'a) format4 -> 'b
 (** Same as [fprintf] above, but instead of returning immediately,
   passes the formatter to its first argument at the end of printing. *)
+
+val kdprintf :
+  ((formatter -> unit) -> 'a) ->
+  ('b, formatter, unit, 'a) format4 -> 'b
+(** Same as {!dprintf} above, but instead of returning immediately,
+  passes the suspended printer to its first argument at the end of printing.
+
+  @since NEXT_VERSION
+*)
 
 val ikfprintf :
   (formatter -> 'a) -> formatter ->

@@ -1345,6 +1345,13 @@ let ifprintf ppf = ikfprintf ignore ppf
 let printf fmt = fprintf std_formatter fmt
 let eprintf fmt = fprintf err_formatter fmt
 
+let kdprintf k (Format (fmt, _)) =
+  make_printf
+    (fun acc -> k (fun ppf -> output_acc ppf acc))
+    End_of_acc fmt
+
+let dprintf fmt = kdprintf (fun i -> i) fmt
+
 let ksprintf k (Format (fmt, _)) =
   let b = pp_make_buffer () in
   let ppf = formatter_of_buffer b in
