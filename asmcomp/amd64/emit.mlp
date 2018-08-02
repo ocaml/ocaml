@@ -1116,21 +1116,13 @@ let fundecl fundecl =
   end;
 
   let preproc_res = preproc_fun fundecl.fun_body fundecl.fun_name in
-  let s = !Clflags.stack_slop + preproc_res.max_stack_size in
-
-  (* Extra 1k bytes slop space if profiling is enabled. Ensures that `mcount`
-   * and signal handlers do not stack overflow. *)
-  let profile_slop =
-    if !Clflags.gprofile then Config.profile_slop * 8 else 0
-  in
-  let s = s + profile_slop in
+  let s = preproc_res.max_stack_size in
 
   (* Extra 24 bytes for caml_context at the bottom of OCaml stack if the
    * function makes external calls *)
   let s = if preproc_res.contains_external_calls then s + 24 else s in
 
-  if not preproc_res.contains_nontail_calls &&
-     s < stack_threshold_size + profile_slop
+  if not preproc_res.contains_nontail_calls && s < stack_threshold_size
   then begin
     def_label !tailrec_entry_point;
     emit_all true fundecl.fun_body;
