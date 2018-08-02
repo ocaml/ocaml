@@ -138,6 +138,11 @@ val blit_string : string -> int -> bytes -> int -> int -> unit
     designate a valid range of [src], or if [dstoff] and [len]
     do not designate a valid range of [dst]. *)
 
+val blit_bigstring : bigstring -> int -> bytes -> int -> int -> unit
+(** Same as {!blit}, but copies data from a bigstring.
+
+    @since 4.08.0 *)
+
 val concat : bytes -> bytes list -> bytes
 (** [concat sep sl] concatenates the list of byte sequences [sl],
     inserting the separator byte sequence [sep] between each, and
