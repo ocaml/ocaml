@@ -284,16 +284,15 @@ external g : (float [@untagged]) -> float = "g" "g_nat";;
 Line 1, characters 14-19:
   external g : (float [@untagged]) -> float = "g" "g_nat";;
                 ^^^^^
-Error: [@Don't know how to untag this type.
-Only int can be untagged.
+Error: Don't know how to untag this type. Only int can be untagged.
 |}]
 external h : (int [@unboxed]) -> float = "h" "h_nat";;
 [%%expect{|
 Line 1, characters 14-17:
   external h : (int [@unboxed]) -> float = "h" "h_nat";;
                 ^^^
-Error: [@Don't know how to unbox this type.
-Only float, int32, int64 and nativeint can be unboxed.
+Error: Don't know how to unbox this type.
+       Only float, int32, int64 and nativeint can be unboxed.
 |}]
 
 (* Bad: unboxing the function type *)
@@ -302,8 +301,8 @@ external i : int -> float [@unboxed] = "i" "i_nat";;
 Line 1, characters 13-25:
   external i : int -> float [@unboxed] = "i" "i_nat";;
                ^^^^^^^^^^^^
-Error: [@Don't know how to unbox this type.
-Only float, int32, int64 and nativeint can be unboxed.
+Error: Don't know how to unbox this type.
+       Only float, int32, int64 and nativeint can be unboxed.
 |}]
 
 (* Bad: unboxing a "deep" sub-type. *)
