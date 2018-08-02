@@ -26,6 +26,10 @@ Working version
 
 ### Standard library:
 
+- MPR#7772: Add bigstring type and Bigstring module, plus related functions in
+  Bytes, Stdlib, and Unix.
+  (Nicolás Ojeda Bär)
+
 - MPR#2533, GPR#1839, GPR#1949: added Unix.fsync
   (Francois Berenger, Nicolás Ojeda Bär, review by Daniel Bünzli, David Allsopp
   and ygrek)
