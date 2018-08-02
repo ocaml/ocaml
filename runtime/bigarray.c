@@ -693,6 +693,49 @@ CAMLprim value caml_ba_uint8_get64(value vb, value vind)
   return caml_copy_int64(res);
 }
 
+CAMLprim value caml_ba_uint8_blit(value val_buf1, value val_ofs1,
+                                  value val_buf2, value val_ofs2,
+                                  value val_len)
+{
+  memmove((char *)Caml_ba_data_val(val_buf2) + Long_val(val_ofs2),
+          (char *)Caml_ba_data_val(val_buf1) + Long_val(val_ofs1),
+          Long_val(val_len));
+  return Val_unit;
+}
+
+CAMLprim value caml_ba_uint8_blit_from_bytes(value val_buf1, value val_ofs1,
+                                             value val_buf2, value val_ofs2,
+                                             value val_len)
+{
+  memcpy((char *)Caml_ba_data_val(val_buf2) + Long_val(val_ofs2),
+         String_val(val_buf1) + Long_val(val_ofs1), Long_val(val_len));
+  return Val_unit;
+}
+
+CAMLprim value caml_ba_uint8_blit_to_bytes(value val_buf1, value val_ofs1,
+                                           value val_buf2, value val_ofs2,
+                                           value val_len)
+{
+  memcpy(String_val(val_buf2) + Long_val(val_ofs2),
+         (char *)Caml_ba_data_val(val_buf1) + Long_val(val_ofs1),
+         Long_val(val_len));
+  return Val_unit;
+}
+
+CAMLprim value caml_ba_uint8_fill(value val_buf, value val_ofs, value val_len,
+                                  value val_char)
+{
+  memset((char *)Caml_ba_data_val(val_buf) + Long_val(val_ofs),
+         Int_val(val_char), Long_val(val_len));
+  return Val_unit;
+}
+
+CAMLprim value caml_ba_uint8_create(value len)
+{
+  return caml_ba_alloc_dims(CAML_BA_CHAR | CAML_BA_C_LAYOUT, 1,
+                            NULL, Long_val(len));
+}
+
 /* Generic write to a big array */
 
 static value caml_ba_set_aux(value vb, value * vind, intnat nind, value newval)
@@ -932,6 +975,17 @@ static void caml_ba_update_proxy(struct caml_ba_array * b1,
     b1->proxy = proxy;
     b2->proxy = proxy;
   }
+}
+
+CAMLprim value caml_ba_uint8_of_genarray(value buf)
+{
+  CAMLparam1(buf);
+  CAMLlocal1(v);
+  v = caml_ba_alloc_dims(CAML_BA_CHAR | CAML_BA_C_LAYOUT | CAML_BA_MANAGED, 1,
+                         Caml_ba_data_val(buf),
+                         caml_ba_byte_size(Caml_ba_array_val(buf)));
+  caml_ba_update_proxy(Caml_ba_array_val(buf), Caml_ba_array_val(v));
+  CAMLreturn(v);
 }
 
 /* Slicing */
