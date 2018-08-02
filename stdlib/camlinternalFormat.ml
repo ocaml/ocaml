@@ -1781,8 +1781,8 @@ and make_custom : type x y a b c d e f .
 
 let const x _ = x
 
-let rec make_iprintf : type a b c d e f.
-  (b -> f) -> b -> (a, b, c, d, e, f) fmt -> a =
+let rec make_iprintf : type a b c d e f state.
+  (state -> f) -> state -> (a, b, c, d, e, f) fmt -> a =
   fun k o fmt -> match fmt with
     | Char rest ->
         const (make_iprintf k o rest)
@@ -1855,8 +1855,8 @@ let rec make_iprintf : type a b c d e f.
     | End_of_format ->
         k o
 and fn_of_padding_precision :
-  type x y z a b c d e f.
-  (b -> f) -> b -> (a, b, c, d, e, f) fmt ->
+  type x y z a b c d e f state.
+  (state -> f) -> state -> (a, b, c, d, e, f) fmt ->
   (x, y) padding -> (y, z -> a) precision -> x =
   fun k o fmt pad prec -> match pad, prec with
     | No_padding   , No_precision    ->
@@ -1877,8 +1877,9 @@ and fn_of_padding_precision :
         const (const (make_iprintf k o fmt))
     | Arg_padding _, Arg_precision   ->
         const (const (const (make_iprintf k o fmt)))
-and fn_of_custom_arity : type x y a b c d e f .
-  (b -> f) -> b -> (a, b, c, d, e, f) fmt -> (a, x, y) custom_arity -> y =
+and fn_of_custom_arity : type x y a b c d e f state.
+  (state -> f) ->
+  state -> (a, b, c, d, e, f) fmt -> (a, x, y) custom_arity -> y =
   fun k o fmt -> function
     | Custom_zero ->
         make_iprintf k o fmt
