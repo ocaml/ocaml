@@ -11,6 +11,7 @@ ast_mapper.cmi : parsetree.cmi location.cmi
 asttypes.cmi : location.cmi
 attr_helper.cmi : parsetree.cmi location.cmi format.cmi asttypes.cmi
 bigarray.cmi : complex.cmi
+bigstring.cmi : seq.cmi bigarray.cmi
 btype.cmi : types.cmi set.cmi path.cmi map.cmi hashtbl.cmi format.cmi \
     asttypes.cmi
 buffer.cmi : uchar.cmi seq.cmi
