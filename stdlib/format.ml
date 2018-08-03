@@ -424,20 +424,14 @@ let rec advance_left state =
 (* To enqueue a token : try to advance. *)
 let enqueue_advance state tok = pp_enqueue state tok; advance_left state
 
-(* Building pretty-printer queue elements. *)
-let make_queue_elem size tok len =
-  { size; token = tok; length = len; }
-
 
 (* To enqueue strings. *)
 let enqueue_string_as state size s =
-  let len = Size.to_int size in
-  enqueue_advance state (make_queue_elem size (Pp_text s) len)
+  enqueue_advance state { size; token = Pp_text s; length = Size.to_int size }
 
 
 let enqueue_string state s =
-  let len = String.length s in
-  enqueue_string_as state (Size.of_int len) s
+  enqueue_string_as state (Size.of_int (String.length s)) s
 
 
 (* Routines for scan stack
@@ -446,7 +440,7 @@ let enqueue_string state s =
 (* The scan_stack is never empty. *)
 let initialize_scan_stack stack =
   Stack.clear stack;
-  let queue_elem = make_queue_elem Size.unknown (Pp_text "") 0 in
+  let queue_elem = { size = Size.unknown; token = Pp_text ""; length = 0 } in
   Stack.push { left_total = -1; queue_elem } stack
 
 (* Setting the size of boxes on scan stack:
@@ -498,11 +492,8 @@ let scan_push state b token =
 let pp_open_box_gen state indent br_ty =
   state.pp_curr_depth <- state.pp_curr_depth + 1;
   if state.pp_curr_depth < state.pp_max_boxes then
-    let elem =
-      make_queue_elem
-        (Size.of_int (- state.pp_right_total))
-        (Pp_begin (indent, br_ty))
-        0 in
+    let size = Size.of_int (- state.pp_right_total) in
+    let elem = { size; token = Pp_begin (indent, br_ty); length = 0 } in
     scan_push state false elem else
   if state.pp_curr_depth = state.pp_max_boxes
   then enqueue_string state state.pp_ellipsis
@@ -517,8 +508,7 @@ let pp_close_box state () =
   begin
     if state.pp_curr_depth < state.pp_max_boxes then
     begin
-      pp_enqueue state
-        { size = Size.zero; token = Pp_end; length = 0; };
+      pp_enqueue state { size = Size.zero; token = Pp_end; length = 0 };
       set_size state true; set_size state false
     end;
     state.pp_curr_depth <- state.pp_curr_depth - 1;
@@ -533,21 +523,14 @@ let pp_open_tag state tag_name =
     state.pp_print_open_tag tag_name
   end;
   if state.pp_mark_tags then
-    pp_enqueue state {
-      size = Size.zero;
-      token = Pp_open_tag tag_name;
-      length = 0;
-    }
+    let token = Pp_open_tag tag_name in
+    pp_enqueue state { size = Size.zero; token; length = 0 }
 
 
 (* Close a tag, popping it from the tag stack. *)
 let pp_close_tag state () =
   if state.pp_mark_tags then
-    pp_enqueue state {
-      size = Size.zero;
-      token = Pp_close_tag;
-      length = 0;
-    };
+    pp_enqueue state { size = Size.zero; token = Pp_close_tag; length = 0 };
   if state.pp_print_tags then
     match Stack.pop_opt state.pp_tag_stack with
     | None -> () (* No more tag to close. *)
@@ -672,13 +655,14 @@ and pp_print_flush state () =
 (* To get a newline when one does not want to close the current box. *)
 let pp_force_newline state () =
   if state.pp_curr_depth < state.pp_max_boxes then
-    enqueue_advance state (make_queue_elem Size.zero Pp_newline 0)
+    enqueue_advance state { size = Size.zero; token = Pp_newline; length = 0 }
 
 
 (* To format something, only in case the line has just been broken. *)
 let pp_print_if_newline state () =
   if state.pp_curr_depth < state.pp_max_boxes then
-    enqueue_advance state (make_queue_elem Size.zero Pp_if_newline 0)
+    enqueue_advance state
+      { size = Size.zero; token = Pp_if_newline; length = 0 }
 
 
 (* Printing break hints:
@@ -687,11 +671,8 @@ let pp_print_if_newline state () =
    box else (the value of) width blanks are printed. *)
 let pp_print_break state width offset =
   if state.pp_curr_depth < state.pp_max_boxes then
-    let elem =
-      make_queue_elem
-        (Size.of_int (- state.pp_right_total))
-        (Pp_break (width, offset))
-        width in
+    let size = Size.of_int (- state.pp_right_total) in
+    let elem = { size; token = Pp_break (width, offset); length = width } in
     scan_push state true elem
 
 
@@ -708,7 +689,8 @@ and pp_print_cut state () = pp_print_break state 0 0
 let pp_open_tbox state () =
   state.pp_curr_depth <- state.pp_curr_depth + 1;
   if state.pp_curr_depth < state.pp_max_boxes then
-    let elem = make_queue_elem Size.zero (Pp_tbegin (Pp_tbox (ref []))) 0 in
+    let size = Size.zero in
+    let elem = { size; token = Pp_tbegin (Pp_tbox (ref [])); length = 0 } in
     enqueue_advance state elem
 
 
@@ -717,7 +699,7 @@ let pp_close_tbox state () =
   if state.pp_curr_depth > 1 then
   begin
    if state.pp_curr_depth < state.pp_max_boxes then
-     let elem = make_queue_elem Size.zero Pp_tend 0 in
+     let elem = { size = Size.zero; token = Pp_tend; length = 0 } in
      enqueue_advance state elem;
      state.pp_curr_depth <- state.pp_curr_depth - 1
   end
@@ -726,11 +708,8 @@ let pp_close_tbox state () =
 (* Print a tabulation break. *)
 let pp_print_tbreak state width offset =
   if state.pp_curr_depth < state.pp_max_boxes then
-    let elem =
-      make_queue_elem
-        (Size.of_int (- state.pp_right_total))
-        (Pp_tbreak (width, offset))
-        width in
+    let size = Size.of_int (- state.pp_right_total) in
+    let elem = { size; token = Pp_tbreak (width, offset); length = width } in
     scan_push state true elem
 
 
@@ -738,7 +717,7 @@ let pp_print_tab state () = pp_print_tbreak state 0 0
 
 let pp_set_tab state () =
   if state.pp_curr_depth < state.pp_max_boxes then
-    let elem = make_queue_elem Size.zero Pp_stab 0 in
+    let elem = { size = Size.zero; token = Pp_stab; length = 0 } in
     enqueue_advance state elem
 
 
@@ -878,7 +857,7 @@ let pp_make_formatter f g h i j =
   (* The initial state of the formatter contains a dummy box. *)
   let pp_queue = Queue.create () in
   let sys_tok =
-    make_queue_elem Size.unknown (Pp_begin (0, Pp_hovbox)) 0 in
+    { size = Size.unknown; token = Pp_begin (0, Pp_hovbox); length = 0 } in
   Queue.add sys_tok pp_queue;
   let scan_stack = Stack.create () in
   initialize_scan_stack scan_stack;
