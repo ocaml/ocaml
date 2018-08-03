@@ -102,6 +102,9 @@ Working version
   for consistency with OSX & Linux. Previously was located at `lib`.
   (Bryan Phelps, Jordan Walke, review by David Allsopp)
 
+- GPR#1966: Add Format semantic tags using extensible sum types.
+  (Gabriel Radanne, review by Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
