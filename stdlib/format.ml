@@ -20,13 +20,28 @@
    The pretty-printing engine internal data structures.
 *)
 
+let id x = x
+
 (* A devoted type for sizes to avoid confusion
    between sizes and mere integers. *)
-type size
+module Size : sig
+  type t
 
-external size_of_int : int -> size = "%identity"
+  val to_int : t -> int
+  val of_int : int -> t
+  val zero : t
+  val unknown : t
+  val is_unknown : t -> bool
+end  = struct
+  type t = int
 
-external int_of_size : size -> int = "%identity"
+  let to_int = id
+  let of_int = id
+  let zero = 0
+  let unknown = -1
+  let is_unknown n = n < 0
+end
+
 
 
 (* The pretty-printing boxes definition:
@@ -103,7 +118,7 @@ type 'a queue = {
      (size is set when the size of the box is known, so that size of break
       hints are definitive). *)
 type pp_queue_elem = {
-  mutable elem_size : size;
+  mutable elem_size : Size.t;
   token : pp_token;
   length : int;
 }
@@ -330,7 +345,7 @@ let pp_skip_token state =
   match take_queue state.pp_queue with
   | { elem_size = size; length = len; token = _; } ->
     state.pp_left_total <- state.pp_left_total - len;
-    state.pp_space_left <- state.pp_space_left + int_of_size size
+    state.pp_space_left <- state.pp_space_left + Size.to_int size
 
 
 (*
@@ -460,7 +475,6 @@ let format_pp_token state size = function
 
 
 (* Print if token size is known else printing is delayed.
-   Size is known when not negative.
    Printing is delayed when the text waiting in the queue requires
    more room to format than exists on the current line.
 
@@ -468,13 +482,14 @@ let format_pp_token state size = function
 let rec advance_loop state =
   match peek_queue state.pp_queue with
   | {elem_size = size; token = tok; length = len} ->
-    let size = int_of_size size in
     if not
-         (size < 0 &&
+         (Size.is_unknown size &&
           (state.pp_right_total - state.pp_left_total < state.pp_space_left))
     then begin
       ignore (take_queue state.pp_queue);
-      format_pp_token state (if size < 0 then pp_infinity else size) tok;
+      let token_size =
+        if Size.is_unknown size then pp_infinity else Size.to_int size in
+      format_pp_token state token_size tok;
       state.pp_left_total <- len + state.pp_left_total;
       advance_loop state
     end
@@ -495,13 +510,13 @@ let make_queue_elem size tok len =
 
 (* To enqueue strings. *)
 let enqueue_string_as state size s =
-  let len = int_of_size size in
+  let len = Size.to_int size in
   enqueue_advance state (make_queue_elem size (Pp_text s) len)
 
 
 let enqueue_string state s =
   let len = String.length s in
-  enqueue_string_as state (size_of_int len) s
+  enqueue_string_as state (Size.of_int len) s
 
 
 (* Routines for scan stack
@@ -509,7 +524,7 @@ let enqueue_string state s =
 
 (* The scan_stack is never empty. *)
 let scan_stack_bottom =
-  let q_elem = make_queue_elem (size_of_int (-1)) (Pp_text "") 0 in
+  let q_elem = make_queue_elem (Size.unknown) (Pp_text "") 0 in
   [Scan_elem (-1, q_elem)]
 
 
@@ -530,20 +545,20 @@ let set_size state ty =
   | Scan_elem
       (left_tot,
        ({ elem_size = size; token = tok; length = _; } as queue_elem)) :: t ->
-    let size = int_of_size size in
+    let size = Size.to_int size in
     (* test if scan stack contains any data that is not obsolete. *)
     if left_tot < state.pp_left_total then clear_scan_stack state else
       begin match tok with
       | Pp_break (_, _) | Pp_tbreak (_, _) ->
         if ty then
         begin
-          queue_elem.elem_size <- size_of_int (state.pp_right_total + size);
+          queue_elem.elem_size <- Size.of_int (state.pp_right_total + size);
           state.pp_scan_stack <- t
         end
       | Pp_begin (_, _) ->
         if not ty then
         begin
-          queue_elem.elem_size <- size_of_int (state.pp_right_total + size);
+          queue_elem.elem_size <- Size.of_int (state.pp_right_total + size);
           state.pp_scan_stack <- t
         end
       | Pp_text _ | Pp_stab | Pp_tbegin _ | Pp_tend | Pp_end
@@ -571,7 +586,7 @@ let pp_open_box_gen state indent br_ty =
   if state.pp_curr_depth < state.pp_max_boxes then
     let elem =
       make_queue_elem
-        (size_of_int (- state.pp_right_total))
+        (Size.of_int (- state.pp_right_total))
         (Pp_begin (indent, br_ty))
         0 in
     scan_push state false elem else
@@ -589,7 +604,7 @@ let pp_close_box state () =
     if state.pp_curr_depth < state.pp_max_boxes then
     begin
       pp_enqueue state
-        { elem_size = size_of_int 0; token = Pp_end; length = 0; };
+        { elem_size = Size.zero; token = Pp_end; length = 0; };
       set_size state true; set_size state false
     end;
     state.pp_curr_depth <- state.pp_curr_depth - 1;
@@ -605,7 +620,7 @@ let pp_open_tag state tag_name =
   end;
   if state.pp_mark_tags then
     pp_enqueue state {
-      elem_size = size_of_int 0;
+      elem_size = Size.zero;
       token = Pp_open_tag tag_name;
       length = 0;
     }
@@ -615,7 +630,7 @@ let pp_open_tag state tag_name =
 let pp_close_tag state () =
   if state.pp_mark_tags then
     pp_enqueue state {
-      elem_size = size_of_int 0;
+      elem_size = Size.zero;
       token = Pp_close_tag;
       length = 0;
     };
@@ -701,7 +716,7 @@ let pp_print_as_size state size s =
 
 
 let pp_print_as state isize s =
-  pp_print_as_size state (size_of_int isize) s
+  pp_print_as_size state (Size.of_int isize) s
 
 
 let pp_print_string state s =
@@ -748,13 +763,13 @@ and pp_print_flush state () =
 (* To get a newline when one does not want to close the current box. *)
 let pp_force_newline state () =
   if state.pp_curr_depth < state.pp_max_boxes then
-    enqueue_advance state (make_queue_elem (size_of_int 0) Pp_newline 0)
+    enqueue_advance state (make_queue_elem Size.zero Pp_newline 0)
 
 
 (* To format something, only in case the line has just been broken. *)
 let pp_print_if_newline state () =
   if state.pp_curr_depth < state.pp_max_boxes then
-    enqueue_advance state (make_queue_elem (size_of_int 0) Pp_if_newline 0)
+    enqueue_advance state (make_queue_elem Size.zero Pp_if_newline 0)
 
 
 (* Printing break hints:
@@ -765,7 +780,7 @@ let pp_print_break state width offset =
   if state.pp_curr_depth < state.pp_max_boxes then
     let elem =
       make_queue_elem
-        (size_of_int (- state.pp_right_total))
+        (Size.of_int (- state.pp_right_total))
         (Pp_break (width, offset))
         width in
     scan_push state true elem
@@ -785,7 +800,7 @@ let pp_open_tbox state () =
   state.pp_curr_depth <- state.pp_curr_depth + 1;
   if state.pp_curr_depth < state.pp_max_boxes then
     let elem =
-      make_queue_elem (size_of_int 0) (Pp_tbegin (Pp_tbox (ref []))) 0 in
+      make_queue_elem Size.zero (Pp_tbegin (Pp_tbox (ref []))) 0 in
     enqueue_advance state elem
 
 
@@ -794,7 +809,7 @@ let pp_close_tbox state () =
   if state.pp_curr_depth > 1 then
   begin
    if state.pp_curr_depth < state.pp_max_boxes then
-     let elem = make_queue_elem (size_of_int 0) Pp_tend 0 in
+     let elem = make_queue_elem Size.zero Pp_tend 0 in
      enqueue_advance state elem;
      state.pp_curr_depth <- state.pp_curr_depth - 1
   end
@@ -805,7 +820,7 @@ let pp_print_tbreak state width offset =
   if state.pp_curr_depth < state.pp_max_boxes then
     let elem =
       make_queue_elem
-        (size_of_int (- state.pp_right_total))
+        (Size.of_int (- state.pp_right_total))
         (Pp_tbreak (width, offset))
         width in
     scan_push state true elem
@@ -816,7 +831,7 @@ let pp_print_tab state () = pp_print_tbreak state 0 0
 let pp_set_tab state () =
   if state.pp_curr_depth < state.pp_max_boxes then
     let elem =
-      make_queue_elem (size_of_int 0) Pp_stab 0 in
+      make_queue_elem Size.zero Pp_stab 0 in
     enqueue_advance state elem
 
 
@@ -956,7 +971,7 @@ let pp_make_formatter f g h i j =
   (* The initial state of the formatter contains a dummy box. *)
   let pp_queue = make_queue () in
   let sys_tok =
-    make_queue_elem (size_of_int (-1)) (Pp_begin (0, Pp_hovbox)) 0 in
+    make_queue_elem Size.unknown (Pp_begin (0, Pp_hovbox)) 0 in
   add_queue sys_tok pp_queue;
   let sys_scan_stack =
     Scan_elem (1, sys_tok) :: scan_stack_bottom in
@@ -1267,11 +1282,11 @@ let rec output_acc ppf acc = match acc with
   | Acc_string_literal (Acc_formatting_lit (p, Magic_size (_, size)), s)
   | Acc_data_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
     output_acc ppf p;
-    pp_print_as_size ppf (size_of_int size) s;
+    pp_print_as_size ppf (Size.of_int size) s;
   | Acc_char_literal (Acc_formatting_lit (p, Magic_size (_, size)), c)
   | Acc_data_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
     output_acc ppf p;
-    pp_print_as_size ppf (size_of_int size) (String.make 1 c);
+    pp_print_as_size ppf (Size.of_int size) (String.make 1 c);
   | Acc_formatting_lit (p, f) ->
     output_acc ppf p;
     output_formatting_lit ppf f;
@@ -1299,14 +1314,14 @@ let rec strput_acc ppf acc = match acc with
   | Acc_string_literal (Acc_formatting_lit (p, Magic_size (_, size)), s)
   | Acc_data_string (Acc_formatting_lit (p, Magic_size (_, size)), s) ->
     strput_acc ppf p;
-    pp_print_as_size ppf (size_of_int size) s;
+    pp_print_as_size ppf (Size.of_int size) s;
   | Acc_char_literal (Acc_formatting_lit (p, Magic_size (_, size)), c)
   | Acc_data_char (Acc_formatting_lit (p, Magic_size (_, size)), c) ->
     strput_acc ppf p;
-    pp_print_as_size ppf (size_of_int size) (String.make 1 c);
+    pp_print_as_size ppf (Size.of_int size) (String.make 1 c);
   | Acc_delay (Acc_formatting_lit (p, Magic_size (_, size)), f) ->
     strput_acc ppf p;
-    pp_print_as_size ppf (size_of_int size) (f ());
+    pp_print_as_size ppf (Size.of_int size) (f ());
   | Acc_formatting_lit (p, f) ->
     strput_acc ppf p;
     output_formatting_lit ppf f;
