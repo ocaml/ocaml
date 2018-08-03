@@ -85,32 +85,12 @@ and tag = string
 and tbox = Pp_tbox of int list ref  (* Tabulation box *)
 
 
-(* The pretty-printer queue definition:
+(* The pretty-printer queue:
    pretty-printing material is not written in the output as soon as emitted;
    instead, the material is simply recorded in the pretty-printer queue,
    until the enclosing box has a known computed size and proper splitting
    decisions can be made.
 
-   To define the pretty-printer queue, we first define polymorphic queues,
-   then pretty-printer queue elements.
-*)
-
-(* The pretty-printer queue: polymorphic queue definition. *)
-type 'a queue_elem =
-  | Nil
-  | Cons of {
-      head : 'a;
-      mutable tail : 'a queue_elem;
-    }
-
-
-type 'a queue = {
-  mutable insert : 'a queue_elem;
-  mutable body : 'a queue_elem;
-}
-
-
-(* The pretty-printer queue: queue element definition.
    The pretty-printer queue contains formatting elements to be printed.
    Each formatting element is a tuple (size, token, length), where
    - length is the declared length of the token,
@@ -125,7 +105,7 @@ type pp_queue_elem = {
 
 
 (* The pretty-printer queue definition. *)
-type pp_queue = pp_queue_elem queue
+type pp_queue = pp_queue_elem Queue.t
 
 (* The pretty-printer scanning stack. *)
 
@@ -205,7 +185,7 @@ type formatter = {
   mutable pp_print_open_tag : tag -> unit;
   mutable pp_print_close_tag : tag -> unit;
   (* The pretty-printer queue. *)
-  mutable pp_queue : pp_queue;
+  pp_queue : pp_queue;
 }
 
 
@@ -234,46 +214,15 @@ type formatter_out_functions = {
 
 *)
 
-(* Queues auxiliaries. *)
-
-let make_queue () = { insert = Nil; body = Nil; }
-
-let clear_queue q = q.insert <- Nil; q.body <- Nil
-
-let add_queue x q =
-  let c = Cons { head = x; tail = Nil; } in
-  match q with
-  | { insert = Cons cell; body = _; } ->
-    q.insert <- c; cell.tail <- c
-  (* Invariant: when insert is Nil body should be Nil. *)
-  | { insert = Nil; body = _; } ->
-    q.insert <- c; q.body <- c
-
-
-exception Empty_queue
-
-let peek_queue = function
-  | { body = Cons { head = x; tail = _; }; _ } -> x
-  | { body = Nil; insert = _; } -> raise_notrace Empty_queue
-
-
-let take_queue = function
-  | { body = Cons { head = x; tail = tl; }; _ } as q ->
-    q.body <- tl;
-    if tl = Nil then q.insert <- Nil; (* Maintain the invariant. *)
-    x
-  | { body = Nil; insert = _; } -> raise_notrace Empty_queue
-
-
 (* Enter a token in the pretty-printer queue. *)
-let pp_enqueue state ({ length = len; _} as token) =
-  state.pp_right_total <- state.pp_right_total + len;
-  add_queue token state.pp_queue
+let pp_enqueue state token =
+  state.pp_right_total <- state.pp_right_total + token.length;
+  Queue.add token state.pp_queue
 
 
 let pp_clear_queue state =
   state.pp_left_total <- 1; state.pp_right_total <- 1;
-  clear_queue state.pp_queue
+  Queue.clear state.pp_queue
 
 
 (* Pp_infinity: large value for default tokens size.
@@ -342,10 +291,9 @@ let pp_force_break_line state =
 (* To skip a token, if the previous line has been broken. *)
 let pp_skip_token state =
   (* When calling pp_skip_token the queue cannot be empty. *)
-  match take_queue state.pp_queue with
-  | { elem_size = size; length = len; token = _; } ->
-    state.pp_left_total <- state.pp_left_total - len;
-    state.pp_space_left <- state.pp_space_left + Size.to_int size
+  let { elem_size; length; _ } = Queue.take state.pp_queue in
+  state.pp_left_total <- state.pp_left_total - length;
+  state.pp_space_left <- state.pp_space_left + Size.to_int elem_size
 
 
 (*
@@ -480,24 +428,24 @@ let format_pp_token state size = function
 
    Note: [advance_loop] must be tail recursive to prevent stack overflows. *)
 let rec advance_loop state =
-  match peek_queue state.pp_queue with
-  | {elem_size = size; token = tok; length = len} ->
-    if not
-         (Size.is_unknown size &&
-          (state.pp_right_total - state.pp_left_total < state.pp_space_left))
-    then begin
-      ignore (take_queue state.pp_queue);
-      let token_size =
-        if Size.is_unknown size then pp_infinity else Size.to_int size in
-      format_pp_token state token_size tok;
-      state.pp_left_total <- len + state.pp_left_total;
-      advance_loop state
-    end
+  let { elem_size; token; length } = Queue.peek state.pp_queue in
+  let is_size_unknown = Size.is_unknown elem_size in
+  if not
+       (is_size_unknown &&
+        (state.pp_right_total - state.pp_left_total < state.pp_space_left))
+  then begin
+    ignore (Queue.take state.pp_queue);
+    let token_size =
+      if is_size_unknown then pp_infinity else Size.to_int elem_size in
+    format_pp_token state token_size token;
+    state.pp_left_total <- length + state.pp_left_total;
+    advance_loop state
+  end
 
 
 let advance_left state =
   try advance_loop state with
-  | Empty_queue -> ()
+  | Queue.Empty -> ()
 
 
 (* To enqueue a token : try to advance. *)
@@ -969,10 +917,10 @@ let default_pp_print_close_tag = ignore
    Other fields get reasonable default values. *)
 let pp_make_formatter f g h i j =
   (* The initial state of the formatter contains a dummy box. *)
-  let pp_queue = make_queue () in
+  let pp_queue = Queue.create () in
   let sys_tok =
     make_queue_elem Size.unknown (Pp_begin (0, Pp_hovbox)) 0 in
-  add_queue sys_tok pp_queue;
+  Queue.add sys_tok pp_queue;
   let sys_scan_stack =
     Scan_elem (1, sys_tok) :: scan_stack_bottom in
   let pp_margin = 78
