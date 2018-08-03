@@ -217,7 +217,7 @@ end = struct
 end;;
 [%%expect {|
 type (_, _) eq = Refl : ('a, 'a) eq
-Line _, characters 18-58:
+Line 11, characters 18-58:
     module type T = S with type N.t = M.t with module N := N;;
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this `with' constraint, the new definition of N
