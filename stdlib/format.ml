@@ -109,10 +109,11 @@ type pp_queue = pp_queue_elem Queue.t
 
 (* The pretty-printer scanning stack. *)
 
-(* The pretty-printer scanning stack: scanning element definition.
-   Each element is (left_total, queue element) where left_total
-   is the value of pp_left_total when the element has been enqueued. *)
-type pp_scan_elem = Scan_elem of int * pp_queue_elem
+(* The pretty-printer scanning stack: scanning element definition. *)
+type pp_scan_elem = {
+  left_total : int; (* Value of pp_left_total when the element was enqueued. *)
+  queue_elem : pp_queue_elem
+}
 
 (* The pretty-printer formatting stack:
    the formatting stack contains the description of all the currently active
@@ -445,7 +446,8 @@ let enqueue_string state s =
 (* The scan_stack is never empty. *)
 let initialize_scan_stack stack =
   Stack.clear stack;
-  Stack.push (Scan_elem (-1, make_queue_elem Size.unknown (Pp_text "") 0)) stack
+  let queue_elem = make_queue_elem Size.unknown (Pp_text "") 0 in
+  Stack.push { left_total = -1; queue_elem } stack
 
 (* Setting the size of boxes on scan stack:
    if ty = true then size of break is set else size of box is set;
@@ -459,13 +461,13 @@ let initialize_scan_stack stack =
 let set_size state ty =
   match Stack.top_opt state.pp_scan_stack with
   | None -> () (* scan_stack is never empty. *)
-  | Some (Scan_elem (left_total, ({ size; token; _ } as queue_elem))) ->
-    let size = Size.to_int size in
+  | Some { left_total; queue_elem } ->
+    let size = Size.to_int queue_elem.size in
     (* test if scan stack contains any data that is not obsolete. *)
     if left_total < state.pp_left_total then
       initialize_scan_stack state.pp_scan_stack
     else
-      match token with
+      match queue_elem.token with
       | Pp_break (_, _) | Pp_tbreak (_, _) ->
         if ty then begin
           queue_elem.size <- Size.of_int (state.pp_right_total + size);
@@ -486,7 +488,8 @@ let set_size state ty =
 let scan_push state b token =
   pp_enqueue state token;
   if b then set_size state true;
-  Stack.push (Scan_elem (state.pp_right_total, token)) state.pp_scan_stack
+  let elem = { left_total = state.pp_right_total; queue_elem = token } in
+  Stack.push elem state.pp_scan_stack
 
 
 (* To open a new box :
@@ -879,7 +882,7 @@ let pp_make_formatter f g h i j =
   Queue.add sys_tok pp_queue;
   let scan_stack = Stack.create () in
   initialize_scan_stack scan_stack;
-  Stack.push (Scan_elem (1, sys_tok)) scan_stack;
+  Stack.push { left_total = 1; queue_elem = sys_tok } scan_stack;
   let pp_margin = 78
   and pp_min_space_left = 10 in
   {
