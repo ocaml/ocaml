@@ -90,6 +90,8 @@ t
  309
 ! % @ , and constants
  310 311 312 313 314 315 316
+Delayed printf
+ 317 318 319
 end of tests
 
 All tests succeeded.
