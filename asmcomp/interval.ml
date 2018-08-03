@@ -148,10 +148,6 @@ let build_intervals fd =
         insert_destroyed_at_oper intervals i !pos;
         Array.iter walk_instruction cases;
         walk_instruction i.next
-    | Iloop body ->
-        insert_destroyed_at_oper intervals i !pos;
-        walk_instruction body;
-        walk_instruction i.next
     | Icatch(_, handlers, body) ->
         insert_destroyed_at_oper intervals i !pos;
         List.iter (fun (_, i) -> walk_instruction i) handlers;
