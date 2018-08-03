@@ -1389,4 +1389,3 @@ let compunit (ulam, preallocated_blocks, constants) =
   let c3 = transl_all_functions c2 in
   let c4 = emit_preallocated_blocks preallocated_blocks c3 in
   emit_cmm_data_items_for_constants c4
-
