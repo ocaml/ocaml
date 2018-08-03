@@ -122,7 +122,7 @@ type pp_scan_elem = {
 
 (* The pretty-printer formatting stack: formatting stack element definition.
    Each stack element describes a pretty-printing box. *)
-type pp_format_elem = Format_elem of box_type * int
+type pp_format_elem = { box_type : box_type; width : int }
 
 (* The formatter definition.
    Each formatter value is a pretty-printer instance with all its
@@ -274,7 +274,7 @@ let break_same_line state width =
 let pp_force_break_line state =
   match Stack.top_opt state.pp_format_stack with
   | None -> pp_output_newline state
-  | Some (Format_elem (box_type, width)) ->
+  | Some { box_type; width } ->
     if width > state.pp_space_left then
       match box_type with
       | Pp_fits | Pp_hbox -> ()
@@ -308,13 +308,13 @@ let format_pp_token state size = function
     if insertion_point > state.pp_max_indent then
       (* can not open a box right there. *)
       begin pp_force_break_line state end;
-    let offset = state.pp_space_left - off in
+    let width = state.pp_space_left - off in
     let box_type =
       match ty with
       | Pp_vbox -> Pp_vbox
       | Pp_hbox | Pp_hvbox | Pp_hovbox | Pp_box | Pp_fits ->
         if size > state.pp_space_left then ty else Pp_fits in
-    Stack.push (Format_elem (box_type, offset)) state.pp_format_stack
+    Stack.push { box_type; width } state.pp_format_stack
 
   | Pp_end ->
     Stack.pop_opt state.pp_format_stack |> ignore
@@ -358,7 +358,7 @@ let format_pp_token state size = function
   | Pp_newline ->
     begin match Stack.top_opt state.pp_format_stack with
     | None -> pp_output_newline state (* No open box. *)
-    | Some (Format_elem (_, width)) -> break_line state width
+    | Some { width; _} -> break_line state width
     end
 
   | Pp_if_newline ->
@@ -368,7 +368,7 @@ let format_pp_token state size = function
   | Pp_break (n, off) ->
     begin match Stack.top_opt state.pp_format_stack with
     | None -> () (* No open box. *)
-    | Some (Format_elem (box_type, width)) ->
+    | Some { box_type; width } ->
       begin match box_type with
       | Pp_hovbox ->
         if size > state.pp_space_left
