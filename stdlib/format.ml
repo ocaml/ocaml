@@ -31,7 +31,7 @@ module Size : sig
   val of_int : int -> t
   val zero : t
   val unknown : t
-  val is_unknown : t -> bool
+  val is_known : t -> bool
 end  = struct
   type t = int
 
@@ -39,7 +39,7 @@ end  = struct
   let of_int = id
   let zero = 0
   let unknown = -1
-  let is_unknown n = n < 0
+  let is_known n = n >= 0
 end
 
 
@@ -283,10 +283,11 @@ let pp_force_break_line state =
 
 (* To skip a token, if the previous line has been broken. *)
 let pp_skip_token state =
-  (* When calling pp_skip_token the queue cannot be empty. *)
-  let { size; length; _ } = Queue.take state.pp_queue in
-  state.pp_left_total <- state.pp_left_total - length;
-  state.pp_space_left <- state.pp_space_left + Size.to_int size
+  match Queue.take_opt state.pp_queue with
+  | None -> () (* print_if_newline must have been the last printing command *)
+  | Some { size; length; _ } ->
+    state.pp_left_total <- state.pp_left_total - length;
+    state.pp_space_left <- state.pp_space_left + Size.to_int size
 
 
 (*
