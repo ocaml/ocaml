@@ -2156,10 +2156,10 @@ let report_error ppf = function
   | Multiple_native_repr_attributes ->
       fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
   | Cannot_unbox_or_untag_type Unboxed ->
-      fprintf ppf "[@Don't know how to unbox this type.@ \
+      fprintf ppf "@[Don't know how to unbox this type.@ \
                     Only float, int32, int64 and nativeint can be unboxed.@]"
   | Cannot_unbox_or_untag_type Untagged ->
-      fprintf ppf "[@Don't know how to untag this type.@ \
+      fprintf ppf "@[Don't know how to untag this type.@ \
                    Only int can be untagged.@]"
   | Deep_unbox_or_untag_attribute kind ->
       fprintf ppf
