@@ -268,7 +268,7 @@ void caml_init_signals(void)
     stk.ss_size = SIGSTKSZ;
     stk.ss_flags = 0;
     SET_SIGACT(act, segv_handler);
-    act.sa_flags |= SA_ONSTACK | SA_NODEFER;
+    act.sa_flags |= SA_NODEFER;
     sigemptyset(&act.sa_mask);
     system_stack_top = (char *) &act;
     if (sigaltstack(&stk, NULL) == 0) { sigaction(SIGSEGV, &act, NULL); }

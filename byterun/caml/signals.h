@@ -30,6 +30,8 @@ extern "C" {
 CAMLextern intnat volatile caml_signals_are_pending;
 CAMLextern intnat volatile caml_pending_signals[];
 CAMLextern int volatile caml_something_to_do;
+void caml_init_signal_stack(void);
+void caml_free_signal_stack(void);
 void caml_init_signal_handling(void);
 /* </private> */
 
@@ -47,6 +49,7 @@ CAMLextern int caml_rev_convert_signal_number (int);
 void caml_record_signal(int signal_number);
 void caml_process_pending_signals(void);
 int caml_set_signal_action(int signo, int action);
+
 
 CAMLextern void (* volatile caml_async_action_hook)(void);
 #endif /* CAML_INTERNALS */
