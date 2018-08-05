@@ -428,7 +428,7 @@ module IdTbl =
       | Some {root; using = _; next; components} ->
           NameMap.iter
             (fun s (x, pos) ->
-              f (Ident.hide (Ident.create s) (* ??? *))
+              f (Ident.create_hidden s (* ??? *))
                 (Pdot (root, s, pos), x))
             components;
           iter f next

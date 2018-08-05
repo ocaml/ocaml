@@ -28,6 +28,9 @@ let create s =
   incr currentstamp;
   { name = s; stamp = !currentstamp; flags = 0 }
 
+let create_hidden s =
+  { name = s; stamp = -1; flags = 0 }
+
 let create_predef_exn s =
   incr currentstamp;
   { name = s; stamp = !currentstamp;
@@ -71,9 +74,6 @@ let reinit () =
   if !reinit_level < 0
   then reinit_level := !currentstamp
   else currentstamp := !reinit_level
-
-let hide i =
-  { i with stamp = -1 }
 
 let global i =
   (i.flags land global_flag) <> 0
