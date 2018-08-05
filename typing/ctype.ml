@@ -816,7 +816,6 @@ let generalize_expansive env ty =
   simple_abbrevs := Mnil;
   generalize_expansive env !nongen_level (Hashtbl.create 7) ty
 
-let generalize_global ty = generalize_structure !global_level ty
 let generalize_structure ty = generalize_structure !current_level ty
 
 (* Correct the levels of type [ty]. *)
