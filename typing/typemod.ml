@@ -521,10 +521,20 @@ let merge_constraint initial_env remove_aliases loc sg constr =
         real_ids := [Pident id];
         (Pident id, lid, Twith_modsubst (path, lid')),
         update_rec_next rs rem
+    | (Sig_module(id, ({md_type = Mty_alias _} as md), _) as item :: rem,
+       s :: namelist, (Pwith_module _ | Pwith_type _))
+      when Ident.name id = s ->
+        let ((path, _, tcstr), _) =
+          merge env (extract_sig env loc md.md_type) namelist None
+        in
+        let path = path_concat id path in
+        real_ids := path :: !real_ids;
+        (path, lid, tcstr), item :: rem
     | (Sig_module(id, md, rs) :: rem, s :: namelist, _)
       when Ident.name id = s ->
         let ((path, _path_loc, tcstr), newsg) =
-          merge env (extract_sig env loc md.md_type) namelist None in
+          merge env (extract_sig env loc md.md_type) namelist None
+        in
         let path = path_concat id path in
         real_ids := path :: !real_ids;
         let item = Sig_module(id, {md with md_type=Mty_signature newsg}, rs) in
