@@ -795,7 +795,10 @@ let rec generalize_expansive env var_level visited ty =
       Tconstr (path, tyl, abbrev) ->
         let variance =
           try (Env.find_type path env).type_variance
-          with Not_found -> List.map (fun _ -> Variance.may_inv) tyl in
+          with Not_found ->
+            (* See testsuite/tests/typing-missing-cmi-2 for an example *)
+            List.map (fun _ -> Variance.may_inv) tyl
+        in
         abbrev := Mnil;
         List.iter2
           (fun v t ->
