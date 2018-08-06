@@ -1,6 +1,6 @@
 File "cannot_shadow_error.ml", line 23, characters 2-36:
-Error: Illegal shadowing of included type t/1143 by t/1147
+Error: Illegal shadowing of included type t/1 by t/2
        File "cannot_shadow_error.ml", line 22, characters 2-19:
-         Type t/1143 came from this include
+         Type t/1 came from this include
        File "cannot_shadow_error.ml", line 13, characters 2-43:
-         The value print has no valid type if t/1143 is shadowed
+         The value print has no valid type if t/1 is shadowed
