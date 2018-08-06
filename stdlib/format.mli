@@ -949,6 +949,15 @@ val pp_print_text : formatter -> string -> unit
   @since 4.02.0
 *)
 
+val pp_print_option :
+  ?none:(formatter -> unit -> unit) ->
+  (formatter -> 'a -> unit) -> (formatter -> 'a option -> unit)
+(** [pp_print_option ?none pp_v ppf o] prints [o] on [ppf]
+    using [pp_v] if [o] is [Some v] and [none] if it is [None]. [none]
+    prints nothing by default.
+
+    @since 4.08 *)
+
 val pp_print_result :
   ok:(formatter -> 'a -> unit) -> error:(formatter -> 'e -> unit) ->
   formatter -> ('a, 'e) result -> unit
