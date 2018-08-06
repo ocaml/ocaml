@@ -646,7 +646,13 @@ let default_mapper =
     location = (fun _this l -> l);
 
     extension = (fun this (s, e) -> (map_loc this s, this.payload this e));
-    attribute = (fun this (s, e) -> (map_loc this s, this.payload this e));
+    attribute = (fun this a ->
+      {
+        attr_name = map_loc this a.attr_name;
+        attr_payload = this.payload this a.attr_payload;
+        attr_loc = this.location this a.attr_loc
+      }
+    );
     attributes = (fun this l -> List.map (this.attribute this) l);
     payload =
       (fun this -> function
@@ -664,8 +670,9 @@ let rec extension_of_error {loc; msg; if_highlight; sub} =
         (List.map (fun ext -> Str.extension (extension_of_error ext)) sub))
 
 let attribute_of_warning loc s =
-  { loc; txt = "ocaml.ppwarning" },
-  PStr ([Str.eval ~loc (Exp.constant (Pconst_string (s, None)))])
+  Attr.mk
+    {loc; txt = "ocaml.ppwarning" }
+    (PStr ([Str.eval ~loc (Exp.constant (Pconst_string (s, None)))]))
 
 let cookies = ref String.Map.empty
 
@@ -716,8 +723,11 @@ module PpxContext = struct
       (String.Map.bindings !cookies)
 
   let mk fields =
-    { txt = "ocaml.ppx.context"; loc = Location.none },
-    Parsetree.PStr [Str.eval (Exp.record fields None)]
+    {
+      attr_name = { txt = "ocaml.ppx.context"; loc = Location.none };
+      attr_payload = Parsetree.PStr [Str.eval (Exp.record fields None)];
+      attr_loc = Location.none
+    }
 
   let make ~tool_name () =
     let fields =
@@ -849,7 +859,8 @@ let apply_lazy ~source ~target mapper =
   let implem ast =
     let fields, ast =
       match ast with
-      | {pstr_desc = Pstr_attribute ({txt = "ocaml.ppx.context"}, x)} :: l ->
+      | {pstr_desc = Pstr_attribute ({attr_name = {txt = "ocaml.ppx.context"};
+                                      attr_payload = x})} :: l ->
           PpxContext.get_fields x, l
       | _ -> [], ast
     in
@@ -868,7 +879,9 @@ let apply_lazy ~source ~target mapper =
   let iface ast =
     let fields, ast =
       match ast with
-      | {psig_desc = Psig_attribute ({txt = "ocaml.ppx.context"}, x)} :: l ->
+      | {psig_desc = Psig_attribute ({attr_name = {txt = "ocaml.ppx.context"};
+                                      attr_payload = x;
+                                      attr_loc = _})} :: l ->
           PpxContext.get_fields x, l
       | _ -> [], ast
     in
@@ -912,7 +925,10 @@ let apply_lazy ~source ~target mapper =
   else fail ()
 
 let drop_ppx_context_str ~restore = function
-  | {pstr_desc = Pstr_attribute({Location.txt = "ocaml.ppx.context"}, a)}
+  | {pstr_desc = Pstr_attribute
+                   {attr_name = {Location.txt = "ocaml.ppx.context"};
+                    attr_payload = a;
+                    attr_loc = _}}
     :: items ->
       if restore then
         PpxContext.restore (PpxContext.get_fields a);
@@ -920,7 +936,10 @@ let drop_ppx_context_str ~restore = function
   | items -> items
 
 let drop_ppx_context_sig ~restore = function
-  | {psig_desc = Psig_attribute({Location.txt = "ocaml.ppx.context"}, a)}
+  | {psig_desc = Psig_attribute
+                   {attr_name = {Location.txt = "ocaml.ppx.context"};
+                    attr_payload = a;
+                    attr_loc = _}}
     :: items ->
       if restore then
         PpxContext.restore (PpxContext.get_fields a);

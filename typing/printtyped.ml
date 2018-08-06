@@ -154,14 +154,16 @@ let record_representation i ppf = let open Types in function
   | Record_inlined i -> line i ppf "Record_inlined %d\n" i
   | Record_extension -> line i ppf "Record_extension\n"
 
+let attribute i ppf k a =
+  line i ppf "%s \"%s\"\n" k a.Parsetree.attr_name.txt;
+  Printast.payload i ppf a.Parsetree.attr_payload
+
 let attributes i ppf l =
   let i = i + 1 in
-  List.iter
-    (fun (s, arg) ->
-      line i ppf "attribute \"%s\"\n" s.txt;
-      Printast.payload (i + 1) ppf arg;
-    )
-    l
+  List.iter (fun a ->
+    line i ppf "attribute \"%s\"\n" a.Parsetree.attr_name.txt;
+    Printast.payload (i + 1) ppf a.Parsetree.attr_payload
+  ) l
 
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ctyp_loc;
@@ -532,9 +534,8 @@ and class_type_field i ppf x =
       line i ppf "Tctf_constraint\n";
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
-  | Tctf_attribute (s, arg) ->
-      line i ppf "Tctf_attribute \"%s\"\n" s.txt;
-      Printast.payload i ppf arg
+  | Tctf_attribute a ->
+      attribute i ppf "Tctf_attribute" a
 
 and class_description i ppf x =
   line i ppf "class_description %a\n" fmt_location x.ci_loc;
@@ -618,9 +619,8 @@ and class_field i ppf x =
   | Tcf_initializer (e) ->
       line i ppf "Tcf_initializer\n";
       expression (i+1) ppf e;
-  | Tcf_attribute (s, arg) ->
-      line i ppf "Tcf_attribute \"%s\"\n" s.txt;
-      Printast.payload i ppf arg
+  | Tcf_attribute a ->
+      attribute i ppf "Tcf_attribute" a
 
 and class_field_kind i ppf = function
   | Tcfk_concrete (o, e) ->
@@ -706,9 +706,8 @@ and signature_item i ppf x =
   | Tsig_class_type (l) ->
       line i ppf "Tsig_class_type\n";
       list i class_type_declaration ppf l;
-  | Tsig_attribute (s, arg) ->
-      line i ppf "Tsig_attribute \"%s\"\n" s.txt;
-      Printast.payload i ppf arg
+  | Tsig_attribute a ->
+      attribute i ppf "Tsig_attribute" a
 
 and module_declaration i ppf md =
   line i ppf "%a" fmt_ident md.md_id;
@@ -811,9 +810,8 @@ and structure_item i ppf x =
       line i ppf "Tstr_include";
       attributes i ppf incl.incl_attributes;
       module_expr i ppf incl.incl_mod;
-  | Tstr_attribute (s, arg) ->
-      line i ppf "Tstr_attribute \"%s\"\n" s.txt;
-      Printast.payload i ppf arg
+  | Tstr_attribute a ->
+      attribute i ppf "Tstr_attribute" a
 
 and longident_x_with_constraint i ppf (li, _, wc) =
   line i ppf "%a\n" fmt_path li;

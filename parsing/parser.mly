@@ -240,7 +240,6 @@ let wrap_type_annotation newtypes core_type body =
   (exp, ghtyp(Ptyp_poly(newtypes, Typ.varify_constructors newtypes core_type)))
 
 let wrap_exp_attrs body (ext, attrs) =
-  (* todo: keep exact location for the entire attribute *)
   let body = {body with pexp_attributes = attrs @ body.pexp_attributes} in
   match ext with
   | None -> body
@@ -250,14 +249,12 @@ let mkexp_attrs d attrs =
   wrap_exp_attrs (mkexp d) attrs
 
 let wrap_typ_attrs typ (ext, attrs) =
-  (* todo: keep exact location for the entire attribute *)
   let typ = {typ with ptyp_attributes = attrs @ typ.ptyp_attributes} in
   match ext with
   | None -> typ
   | Some id -> ghtyp(Ptyp_extension (id, PTyp typ))
 
 let wrap_pat_attrs pat (ext, attrs) =
-  (* todo: keep exact location for the entire attribute *)
   let pat = {pat with ppat_attributes = attrs @ pat.ppat_attributes} in
   match ext with
   | None -> pat
@@ -2654,15 +2651,15 @@ attr_id:
   | single_attr_id DOT attr_id { mkloc ($1 ^ "." ^ $3.txt) (symbol_rloc())}
 ;
 attribute:
-  LBRACKETAT attr_id payload RBRACKET { ($2, $3) }
+  LBRACKETAT attr_id payload RBRACKET { Attr.mk ~loc:(symbol_rloc ()) $2 $3 }
 ;
 post_item_attribute:
-  LBRACKETATAT attr_id payload RBRACKET { ($2, $3) }
+  LBRACKETATAT attr_id payload RBRACKET { Attr.mk ~loc:(symbol_rloc ()) $2 $3 }
 ;
 floating_attribute:
   LBRACKETATATAT attr_id payload RBRACKET
       { mark_symbol_docs ();
-        ($2, $3) }
+        Attr.mk ~loc:(symbol_rloc ()) $2 $3 }
 ;
 post_item_attributes:
     /* empty */  { [] }

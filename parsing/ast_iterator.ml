@@ -600,7 +600,11 @@ let default_iterator =
     location = (fun _this _l -> ());
 
     extension = (fun this (s, e) -> iter_loc this s; this.payload this e);
-    attribute = (fun this (s, e) -> iter_loc this s; this.payload this e);
+    attribute = (fun this a ->
+      iter_loc this a.attr_name;
+      this.payload this a.attr_payload;
+      this.location this a.attr_loc
+    );
     attributes = (fun this l -> List.iter (this.attribute this) l);
     payload =
       (fun this -> function

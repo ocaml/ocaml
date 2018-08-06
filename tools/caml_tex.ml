@@ -500,7 +500,7 @@ module Ellipsis = struct
       (* we rely on the fact that the default iterator call first
          the location subiterator, then the attribute subiterator *)
       last_loc := loc in
-    let attribute _this (attr,_) =
+    let attribute _this {Parsetree.attr_name = attr;_} =
       let name = attr.Location.txt in
       let loc = !last_loc in
       let start = loc.Location.loc_start.Lexing.pos_cnum in

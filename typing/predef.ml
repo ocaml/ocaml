@@ -199,9 +199,9 @@ let common_initial_env add_type add_extension empty_env =
         ext_ret_type = None;
         ext_private = Asttypes.Public;
         ext_loc = Location.none;
-        ext_attributes = [{Asttypes.txt="ocaml.warn_on_literal_pattern";
-                           loc=Location.none},
-                          Parsetree.PStr[]] }
+        ext_attributes = [Ast_helper.Attr.mk
+                            (Location.mknoloc "ocaml.warn_on_literal_pattern")
+                            (Parsetree.PStr [])] }
   in
   add_extension ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
