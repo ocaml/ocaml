@@ -186,8 +186,7 @@ static inline void caml_thread_save_runtime_state(void)
     = caml_spacetime_finaliser_trie_root;
 #endif
 #else
-  Stack_sp(Caml_state->current_stack) =
-    Caml_state->extern_sp - Caml_state->stack_high;
+  Caml_state->current_stack->sp = Caml_state->extern_sp;
   curr_thread->trap_sp_off = Caml_state->trap_sp_off;
   curr_thread->trap_barrier_off = Caml_state->trap_barrier_off;
   curr_thread->external_raise = Caml_state->external_raise;
@@ -297,7 +296,7 @@ static caml_thread_t caml_thread_new_info(void)
   stack = caml_stat_alloc(sizeof(value) * Thread_stack_size);
   stack->wosize = Thread_stack_size;
   stack->magic = 42;
-  Stack_sp(stack) = 0;
+  stack->sp = Stack_high(stack);
   Stack_handle_value(stack) = Val_long(0);
   Stack_handle_exception(stack) = Val_long(0);
   Stack_handle_effect(stack) = Val_long(0);

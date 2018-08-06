@@ -35,6 +35,8 @@ static void load_stack (struct stack_info* stack) {
     + Stack_threshold / sizeof(value);
   domain_state->stack_high = Stack_high(stack);
   domain_state->current_stack = stack;
+  CAMLassert(Stack_base(stack) < (value*)stack->sp &&
+             (value*)stack->sp <= Stack_high(stack));
 }
 
 extern void caml_fiber_exn_handler (value) Noreturn;
@@ -72,7 +74,8 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   ctxt = (struct caml_context*)sp;
   ctxt->exception_ptr_offset = 2 * sizeof(value);
   ctxt->gc_regs = NULL;
-  Stack_sp(stack) = -INIT_FIBER_USED;
+
+  stack->sp = Stack_high(stack) - INIT_FIBER_USED;
 
   caml_gc_log ("Allocate stack=%p of %lu words", stack, caml_fiber_wsz);
 
@@ -81,7 +84,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
 
 void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintnat* pc /* out */)
 {
-  char* p = (char*)(Stack_high(stack) + Stack_sp(stack));
+  char* p = (char*)stack->sp;
 
   p += sizeof(struct caml_context) + sizeof(value);
   *sp = p;
@@ -107,8 +110,8 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
   if (Stack_parent(stack) != NULL)
     caml_scan_stack(f, fdata, Stack_parent(stack));
 
-  if (Stack_sp(stack) == 0) return;
-  sp = (char*)(Stack_high(stack) + Stack_sp(stack));
+  if (stack->sp == Stack_high(stack)) return;
+  sp = (char*)stack->sp;
 
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
@@ -154,12 +157,10 @@ next_chunk:
 
 void caml_maybe_expand_stack ()
 {
-  uintnat stack_available;
+  struct stack_info* stk = Caml_state->current_stack;
+  uintnat stack_available =
+    (value*)stk->sp - Stack_base(stk);
 
-  stack_available = Caml_state->current_stack->wosize
-                  /* Stack_sp() is a -ve value in words */
-                  + Stack_sp (Caml_state->current_stack)
-                  - Stack_ctx_words;
   if (stack_available < 2 * Stack_threshold / sizeof(value))
     caml_realloc_stack (0, 0, 0);
 }
@@ -167,8 +168,7 @@ void caml_maybe_expand_stack ()
 void caml_update_gc_regs_slot (value* gc_regs)
 {
   struct caml_context *ctxt;
-  ctxt = (struct caml_context*) (Stack_high(Caml_state->current_stack)
-                                 + Stack_sp(Caml_state->current_stack));
+  ctxt = (struct caml_context*) Caml_state->current_stack->sp;
   ctxt->gc_regs = gc_regs;
 }
 
@@ -181,7 +181,7 @@ int caml_switch_stack(struct stack_info* stk, int should_free)
   load_stack(stk);
   if (should_free)
     caml_free_stack(old);
-  if (Stack_sp(stk) == -INIT_FIBER_USED)
+  if (stk->sp == Stack_high(stk) - INIT_FIBER_USED)
     return 1;
   return 0;
 }
@@ -194,11 +194,11 @@ static struct stack_info* save_stack ()
 {
   caml_domain_state* domain_state = Caml_state;
   struct stack_info* old_stack = domain_state->current_stack;
-  Stack_sp(old_stack) = domain_state->extern_sp - domain_state->stack_high;
+  old_stack->sp = domain_state->extern_sp;
   Assert(domain_state->stack_threshold ==
          Stack_base(old_stack) + Stack_threshold / sizeof(value));
   Assert(domain_state->stack_high == Stack_high(old_stack));
-  Assert(domain_state->extern_sp == domain_state->stack_high + Stack_sp(old_stack));
+  Assert(domain_state->extern_sp == old_stack->sp);
   return old_stack;
 }
 
@@ -208,7 +208,7 @@ static void load_stack(struct stack_info* new_stack)
   domain_state->stack_threshold =
     Stack_base(new_stack) + Stack_threshold / sizeof(value);
   domain_state->stack_high = Stack_high(new_stack);
-  domain_state->extern_sp = domain_state->stack_high + Stack_sp(new_stack);
+  domain_state->extern_sp = new_stack->sp;
   domain_state->current_stack = new_stack;
 }
 
@@ -217,18 +217,17 @@ CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
   CAMLparam3(hval, hexn, heff);
   struct stack_info* stack;
   value* sp;
-  value* high;
 
   stack = caml_stat_alloc(sizeof(value) * caml_fiber_wsz);
   stack->wosize = caml_fiber_wsz;
   stack->magic = 42;
-  high = sp = Stack_high(stack);
+  sp = Stack_high(stack);
 
   // ?
   sp -= 1;
   sp[0] = Val_long(1); /* trapsp ?? */
 
-  Stack_sp(stack) = sp - high;
+  stack->sp = sp;
   Stack_handle_value(stack) = hval;
   Stack_handle_exception(stack) = hexn;
   Stack_handle_effect(stack) = heff;
@@ -276,7 +275,7 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
     caml_scan_stack(f, fdata, Stack_parent(stack));
 
   high = Stack_high(stack);
-  low = high + Stack_sp(stack);
+  low = stack->sp;
   for (sp = low; sp < high; sp++) {
     f(fdata, *sp, sp);
   }
@@ -332,7 +331,7 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
 
   old_stack = save_stack();
 
-  stack_used = -Stack_sp(old_stack);
+  stack_used = Stack_high(old_stack) - (value*)old_stack->sp;
   size = Stack_high(old_stack) - Stack_base(old_stack);
   do {
     if (size >= caml_max_stack_size) caml_raise_stack_overflow();
@@ -355,7 +354,7 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
          Stack_high(old_stack) - stack_used,
          stack_used * sizeof(value));
 
-  Stack_sp(new_stack) = Stack_sp(old_stack);
+  new_stack->sp = Stack_high(new_stack) - stack_used;
   Stack_handle_value(new_stack) = Stack_handle_value(old_stack);
   Stack_handle_exception(new_stack) = Stack_handle_exception(old_stack);
   Stack_handle_effect(new_stack) = Stack_handle_effect(old_stack);
@@ -373,7 +372,7 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
 
 static void caml_init_stack (struct stack_info* stack)
 {
-  Stack_sp(stack) = 0;
+  stack->sp = Stack_high(stack);
   Stack_handle_value(stack) = Val_long(0);
   Stack_handle_exception(stack) = Val_long(0);
   Stack_handle_effect(stack) = Val_long(0);
@@ -422,11 +421,12 @@ CAMLprim value caml_clone_continuation (value cont)
   orig_source = source = Ptr_val(caml_continuation_use(cont));
   do {
     CAMLnoalloc;
-    stack_used = -Stack_sp(source);
+    stack_used = Stack_high(source) - (value*)source->sp;
     target = caml_stat_alloc(sizeof(value) * source->wosize);
     *target = *source;
     memcpy(Stack_high(target) - stack_used, Stack_high(source) - stack_used,
            stack_used * sizeof(value));
+    target->sp = Stack_high(target) - stack_used;
 
     *link = target;
     link = &Stack_parent(target);
