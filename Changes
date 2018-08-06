@@ -305,6 +305,9 @@ Working version
   Unboxable_type_in_prim_decl
   (Stefan Muenzel)
 
+- GPR#1970: fix order of floatting documentation comments in classes
+  (Hugo Heuzard, review by Nicolás Ojeda Bär)
+
 OCaml 4.07 maintenance branch
 -----------------------------
 
