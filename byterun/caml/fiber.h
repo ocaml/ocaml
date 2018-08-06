@@ -9,7 +9,7 @@
 #include "roots.h"
 
 struct stack_info {
-  long sp;
+  void* sp;
   value handle_value;
   value handle_exn;
   value handle_effect;
@@ -27,7 +27,6 @@ struct stack_info {
  * the Op_val(stk) + Wosize_val(stk) is not 16-byte aligned. */
 #define Stack_high(stk) ((value*)(((uintnat)stk + sizeof(value) * stk->wosize) & (-1uLL << 4)))
 
-#define Stack_sp(stk) (stk)->sp
 #define Stack_handle_value(stk) (stk)->handle_value
 #define Stack_handle_exception(stk) (stk)->handle_exn
 #define Stack_handle_effect(stk) (stk)->handle_effect
