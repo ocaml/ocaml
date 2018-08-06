@@ -93,8 +93,6 @@ extern caml_root caml_global_data;
 struct stack_info* caml_alloc_main_stack (uintnat init_size);
 void caml_init_main_stack(void);
 void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack);
-void caml_save_stack_gc();
-void caml_restore_stack_gc();
 void caml_restore_stack();
 void caml_realloc_stack (asize_t required_size, value* save, int nsave);
 void caml_change_max_stack_size (uintnat new_max_size);

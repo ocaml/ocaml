@@ -560,13 +560,11 @@ static void verify_object(struct heap_verify_state* st, value v) {
 }
 
 void caml_verify_heap(struct heap_verify_state* st) {
-  caml_save_stack_gc();
   while (st->sp) verify_object(st, st->stack[--st->sp]);
 
   caml_addrmap_clear(&st->seen);
   caml_stat_free(st->stack);
   caml_stat_free(st);
-  caml_restore_stack_gc();
 }
 
 

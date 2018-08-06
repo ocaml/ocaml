@@ -406,7 +406,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   value **r;
   value iter, f;
   mlsize_t i;
-  int saved_stack = 0;
   caml_domain_state* domain_state = domain->state;
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
   char* young_ptr = domain_state->young_ptr;
@@ -423,11 +422,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   /* Objects which are in the major heap are already shared. */
   if (!Is_minor(root))
     return root;
-
-  if (!caml_stack_is_saved()) {
-    saved_stack = 1;
-    caml_save_stack_gc();
-  }
 
   st.oldest_promoted = (value)domain_state->young_start;
   st.promote_domain = domain;
@@ -446,7 +440,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
   if (percent_to_scan > Percent_to_promote_with_GC) {
     caml_gc_log("caml_promote: forcing minor GC. %%_minor_to_scan=%f", percent_to_scan);
-    if (saved_stack) caml_restore_stack_gc();
     // ???
     caml_empty_minor_heap_domain (domain);
   } else {
@@ -501,9 +494,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
         }
       }
     }
-
-    if (saved_stack)
-      caml_restore_stack_gc();
   }
   domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
   return root;
@@ -522,7 +512,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   struct caml_minor_tables *minor_tables = domain_state->minor_tables;
   unsigned rewrite_successes = 0;
   unsigned rewrite_failures = 0;
-  int saved_stack = 0;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
   uintnat minor_allocated_bytes = young_end - young_ptr;
@@ -530,11 +519,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   value **r;
   struct caml_ephe_ref_elt *re;
   struct caml_custom_elt *elt;
-
-  if (!caml_stack_is_saved()) {
-    saved_stack = 1;
-    caml_save_stack_gc();
-  }
 
   st.promote_domain = domain;
 
@@ -679,10 +663,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   else {
     caml_final_empty_young(domain);
     caml_gc_log ("Minor collection of domain %d: skipping", domain->state->id);
-  }
-
-  if (saved_stack) {
-    caml_restore_stack_gc();
   }
 
 #ifdef DEBUG
