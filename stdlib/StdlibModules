@@ -26,6 +26,7 @@ STDLIB_MODULES=\
   $(P)array \
   $(P)arrayLabels \
   $(P)bigarray \
+  $(P)bigstring \
   $(P)buffer \
   $(P)bytes \
   $(P)bytesLabels \

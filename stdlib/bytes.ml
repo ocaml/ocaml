@@ -37,6 +37,8 @@ external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
                      = "caml_blit_bytes" [@@noalloc]
 external unsafe_blit_string : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
+external unsafe_blit_bigstring : bigstring -> int -> bytes -> int -> int -> unit
+                     = "caml_ba_uint8_blit_to_bytes" [@@noalloc]
 
 let make n c =
   let s = create n in
@@ -104,6 +106,14 @@ let blit_string s1 ofs1 s2 ofs2 len =
              || ofs2 < 0 || ofs2 > length s2 - len
   then invalid_arg "String.blit / Bytes.blit_string"
   else unsafe_blit_string s1 ofs1 s2 ofs2 len
+
+external bigstring_length : bigstring -> int = "%caml_ba_dim_1"
+
+let blit_bigstring s1 ofs1 s2 ofs2 len =
+  if len < 0 || ofs1 < 0 || ofs1 > bigstring_length s1 - len
+             || ofs2 < 0 || ofs2 > length s2 - len
+  then invalid_arg "Bytes.blit_bigstring"
+  else unsafe_blit_bigstring s1 ofs1 s2 ofs2 len
 
 (* duplicated in string.ml *)
 let iter f a =

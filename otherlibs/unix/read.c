@@ -36,3 +36,19 @@ CAMLprim value unix_read(value fd, value buf, value ofs, value len)
   End_roots();
   return Val_int(ret);
 }
+
+#include <caml/bigarray.h>
+
+CAMLprim value unix_read_ba_1(value fd, value buf, value ofs, value len)
+{
+  CAMLparam0 ();
+  long ret, numbytes;
+  char *data = (char *)Caml_ba_data_val(buf);
+  numbytes = Long_val(len);
+  if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
+  caml_enter_blocking_section();
+  ret = read(Int_val(fd), data + Long_val(ofs), numbytes);
+  caml_leave_blocking_section();
+  if (ret == -1) uerror("read_bigstring", Nothing);
+  CAMLreturn(Val_long(ret));
+}

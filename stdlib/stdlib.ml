@@ -344,6 +344,8 @@ external unsafe_output : out_channel -> bytes -> int -> int -> unit
                        = "caml_ml_output_bytes"
 external unsafe_output_string : out_channel -> string -> int -> int -> unit
                               = "caml_ml_output"
+external unsafe_output_bigstring :
+  out_channel -> bigstring -> int -> int -> unit = "caml_ml_output_bigstring"
 
 external output_char : out_channel -> char -> unit = "caml_ml_output_char"
 
@@ -362,6 +364,13 @@ let output_substring oc s ofs len =
   if ofs < 0 || len < 0 || ofs > string_length s - len
   then invalid_arg "output_substring"
   else unsafe_output_string oc s ofs len
+
+external bigstring_length : bigstring -> int = "%caml_ba_dim_1"
+
+let output_bigstring oc s ofs len =
+  if ofs < 0 || len < 0 || ofs > bigstring_length s - len
+  then invalid_arg "output_bigstring"
+  else unsafe_output_bigstring oc s ofs len
 
 external output_byte : out_channel -> int -> unit = "caml_ml_output_char"
 external output_binary_int : out_channel -> int -> unit = "caml_ml_output_int"
@@ -407,6 +416,14 @@ let input ic s ofs len =
   then invalid_arg "input"
   else unsafe_input ic s ofs len
 
+external unsafe_input_bigstring :
+  in_channel -> bigstring -> int -> int -> int = "caml_ml_input_bigstring"
+
+let input_bigstring ic s ofs len =
+  if ofs < 0 || len < 0 || ofs > bigstring_length s - len
+  then invalid_arg "input_bigstring"
+  else unsafe_input_bigstring ic s ofs len
+
 let rec unsafe_really_input ic s ofs len =
   if len <= 0 then () else begin
     let r = unsafe_input ic s ofs len in
@@ -424,6 +441,19 @@ let really_input_string ic len =
   let s = bytes_create len in
   really_input ic s 0 len;
   bytes_unsafe_to_string s
+
+let rec unsafe_really_input_bigstring ic s ofs len =
+  if len <= 0 then () else begin
+    let r = unsafe_input_bigstring ic s ofs len in
+    if r = 0
+    then raise End_of_file
+    else unsafe_really_input_bigstring ic s (ofs + r) (len - r)
+  end
+
+let really_input_bigstring ic s ofs len =
+  if ofs < 0 || len < 0 || ofs > bigstring_length s - len
+  then invalid_arg "really_input_bigstring"
+  else unsafe_really_input_bigstring ic s ofs len
 
 external input_scan_line : in_channel -> int = "caml_ml_input_scan_line"
 
@@ -561,6 +591,7 @@ module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels
 module Bigarray     = Bigarray
+module Bigstring    = Bigstring
 module Buffer       = Buffer
 module Bytes        = Bytes
 module BytesLabels  = BytesLabels

@@ -408,6 +408,26 @@ let output oc s ofs len =
 let output_substring oc s ofs len =
   output oc (bytes_unsafe_of_string s) ofs len
 
+external bigstring_length : bigstring -> int = "%caml_ba_dim_1"
+external unsafe_output_bigstring_partial :
+  out_channel -> bigstring -> int -> int -> int
+  = "caml_ml_output_bigstring_partial"
+
+let rec unsafe_output_bigstring oc buf pos len =
+  if len > 0 then begin
+    let written =
+      try
+        unsafe_output_bigstring_partial oc buf pos len
+      with Sys_blocked_io ->
+        wait_outchan oc len; 0 in
+    unsafe_output_bigstring oc buf (pos + written) (len - written)
+  end
+
+let output_bigstring oc s ofs len =
+  if ofs < 0 || len < 0 || ofs > bigstring_length s - len
+  then invalid_arg "output_bigstring"
+  else unsafe_output_bigstring oc s ofs len
+
 let rec output_byte oc b =
   try
     output_byte_blocking oc b
@@ -478,6 +498,14 @@ let input ic s ofs len =
   then invalid_arg "input"
   else unsafe_input ic s ofs len
 
+external unsafe_input_bigstring :
+  in_channel -> bigstring -> int -> int -> int = "caml_ml_input_bigstring"
+
+let input_bigstring ic s ofs len =
+  if ofs < 0 || len < 0 || ofs > bigstring_length s - len
+  then invalid_arg "input_bigstring"
+  else unsafe_input_bigstring ic s ofs len
+
 let rec unsafe_really_input ic s ofs len =
   if len <= 0 then () else begin
     let r = unsafe_input ic s ofs len in
@@ -495,6 +523,19 @@ let really_input_string ic len =
   let s = bytes_create len in
   really_input ic s 0 len;
   bytes_unsafe_to_string s
+
+let rec unsafe_really_input_bigstring ic s ofs len =
+  if len <= 0 then () else begin
+    let r = unsafe_input_bigstring ic s ofs len in
+    if r = 0
+    then raise End_of_file
+    else unsafe_really_input_bigstring ic s (ofs + r) (len - r)
+  end
+
+let really_input_bigstring ic s ofs len =
+  if ofs < 0 || len < 0 || ofs > bigstring_length s - len
+  then invalid_arg "really_input_bigstring"
+  else unsafe_really_input_bigstring ic s ofs len
 
 external bytes_set : bytes -> int -> char -> unit = "%bytes_safe_set"
 
@@ -649,6 +690,7 @@ module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels
 module Bigarray     = Bigarray
+module Bigstring    = Bigstring
 module Buffer       = Buffer
 module Bytes        = Bytes
 module BytesLabels  = BytesLabels

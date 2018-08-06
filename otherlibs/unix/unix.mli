@@ -315,6 +315,9 @@ val read : file_descr -> bytes -> int -> int -> int
     storing them in byte sequence [buff], starting at position [ofs] in
     [buff]. Return the number of bytes actually read. *)
 
+val read_bigstring : file_descr -> bigstring -> int -> int -> int
+(** Same as {!read}, but reads the data into a big string. *)
+
 val write : file_descr -> bytes -> int -> int -> int
 (** [write fd buff ofs len] writes [len] bytes to descriptor [fd],
     taking them from byte sequence [buff], starting at position [ofs]
@@ -336,6 +339,18 @@ val single_write_substring : file_descr -> string -> int -> int -> int
 (** Same as [single_write], but take the data from a string instead of
     a byte sequence.
     @since 4.02.0 *)
+
+val write_bigstring : file_descr -> bigstring -> int -> int -> int
+(** Same as {!write}, but take the data from a big string instead of a byte
+    sequence.
+
+    @since 4.08.0 *)
+
+val single_write_bigstring : file_descr -> bigstring -> int -> int -> int
+(** Same as {!single_write}, but take the data from a big string instead of a
+    byte sequence.
+
+    @since 4.08.0 *)
 
 (** {1 Interfacing with the standard input/output library} *)
 

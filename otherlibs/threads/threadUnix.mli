@@ -37,6 +37,9 @@ val write : Unix.file_descr -> bytes -> int -> int -> int
 val single_write : Unix.file_descr -> bytes -> int -> int -> int
 val write_substring : Unix.file_descr -> string -> int -> int -> int
 val single_write_substring : Unix.file_descr -> string -> int -> int -> int
+val read_bigstring : Unix.file_descr -> bigstring -> int -> int -> int
+val write_bigstring : Unix.file_descr -> bigstring -> int -> int -> int
+val single_write_bigstring : Unix.file_descr -> bigstring -> int -> int -> int
 
 (** {1 Input/output with timeout} *)
 
