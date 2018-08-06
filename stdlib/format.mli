@@ -949,6 +949,14 @@ val pp_print_text : formatter -> string -> unit
   @since 4.02.0
 *)
 
+val pp_print_result :
+  ok:(formatter -> 'a -> unit) -> error:(formatter -> 'e -> unit) ->
+  formatter -> ('a, 'e) result -> unit
+(** [pp_print_result ~ok ~error ppf r] prints [r] on [ppf] using
+    [ok] if [r] is [Ok _] and [error] if [r] is [Error _].
+
+    @since 4.08 *)
+
 (** {1:fpp Formatted pretty-printing} *)
 
 (**
