@@ -550,12 +550,12 @@ static void thread_reschedule(void)
   CAMLassert(curr_thread != NULL);
   /* Pop accu from event frame, making it look like a C_CALL frame
      followed by a RETURN frame */
-  accu = *Caml_state->extern_sp++;
+  accu = *Caml_state->current_stack->sp++;
   /* Reschedule */
   Assign(curr_thread->retval, accu);
   accu = schedule_thread();
   /* Push accu below C_CALL frame so that it looks like an event frame */
-  *--Caml_state->extern_sp = accu;
+  *--Caml_state->current_stack->sp = accu;
 }
 
 /* Request a re-scheduling as soon as possible */

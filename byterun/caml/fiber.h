@@ -9,7 +9,11 @@
 #include "roots.h"
 
 struct stack_info {
+#ifdef NATIVE_CODE
   void* sp;
+#else
+  value* sp;
+#endif
   value handle_value;
   value handle_exn;
   value handle_effect;

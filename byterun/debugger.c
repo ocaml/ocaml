@@ -269,7 +269,7 @@ void caml_debugger(enum event_kind event)
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 
   /* Reset current frame */
-  frame = Caml_state->extern_sp + 1;
+  frame = Caml_state->current_stack->sp + 1;
 
   /* Report the event to the debugger */
   switch(event) {
@@ -356,7 +356,7 @@ void caml_debugger(enum event_kind event)
 #endif
       break;
     case REQ_INITIAL_FRAME:
-      frame = Caml_state->extern_sp + 1;
+      frame = Caml_state->current_stack->sp + 1;
       /* Fall through */
     case REQ_GET_FRAME:
       caml_putword(dbg_out, Caml_state->stack_high - frame);
@@ -402,7 +402,7 @@ void caml_debugger(enum event_kind event)
       caml_flush(dbg_out);
       break;
     case REQ_GET_ACCU:
-      putval(dbg_out, *Caml_state->extern_sp);
+      putval(dbg_out, *Caml_state->current_stack->sp);
       caml_flush(dbg_out);
       break;
     case REQ_GET_HEADER:

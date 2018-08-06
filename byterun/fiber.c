@@ -194,11 +194,9 @@ static struct stack_info* save_stack ()
 {
   caml_domain_state* domain_state = Caml_state;
   struct stack_info* old_stack = domain_state->current_stack;
-  old_stack->sp = domain_state->extern_sp;
   Assert(domain_state->stack_threshold ==
          Stack_base(old_stack) + Stack_threshold / sizeof(value));
   Assert(domain_state->stack_high == Stack_high(old_stack));
-  Assert(domain_state->extern_sp == old_stack->sp);
   return old_stack;
 }
 
@@ -208,7 +206,6 @@ static void load_stack(struct stack_info* new_stack)
   domain_state->stack_threshold =
     Stack_base(new_stack) + Stack_threshold / sizeof(value);
   domain_state->stack_high = Stack_high(new_stack);
-  domain_state->extern_sp = new_stack->sp;
   domain_state->current_stack = new_stack;
 }
 
@@ -239,14 +236,14 @@ CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 CAMLprim value caml_ensure_stack_capacity(value required_space)
 {
   asize_t req = Long_val(required_space);
-  if (Caml_state->extern_sp - req < Stack_base(Caml_state->current_stack))
+  if (Caml_state->current_stack->sp - req < Stack_base(Caml_state->current_stack))
     caml_realloc_stack(req, 0, 0);
   return Val_unit;
 }
 
 void caml_change_max_stack_size (uintnat new_max_size)
 {
-  asize_t size = Caml_state->stack_high - Caml_state->extern_sp
+  asize_t size = Caml_state->stack_high - Caml_state->current_stack->sp
                  + Stack_threshold / sizeof (value);
 
   if (new_max_size < size) new_max_size = size;
