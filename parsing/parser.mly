@@ -1083,7 +1083,7 @@ class_fields:
     /* empty */
       { [] }
   | class_fields class_field
-      { $2 :: (text_cstr 2) @ $1 }
+      { $2 :: (List.rev (text_cstr 2)) @ $1 }
 ;
 class_field:
   | INHERIT override_flag attributes class_expr parent_binder
@@ -1192,8 +1192,8 @@ class_self_type:
       { mktyp(Ptyp_any) }
 ;
 class_sig_fields:
-    /* empty */                                 { [] }
-| class_sig_fields class_sig_field     { $2 :: (text_csig 2) @ $1 }
+    /* empty */                     { [] }
+| class_sig_fields class_sig_field  { $2 :: (List.rev (text_csig 2)) @ $1 }
 ;
 class_sig_field:
     INHERIT attributes class_signature post_item_attributes
