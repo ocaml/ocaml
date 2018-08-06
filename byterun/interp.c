@@ -71,15 +71,15 @@ sp is a local copy of the global variable caml_extern_sp. */
 /* GC interface */
 
 #define Setup_for_gc \
-  { sp -= 2; sp[0] = accu; sp[1] = env; domain_state->extern_sp = sp; }
+  { sp -= 2; sp[0] = accu; sp[1] = env; domain_state->current_stack->sp = sp; }
 #define Restore_after_gc \
-  { sp = domain_state->extern_sp; accu = sp[0]; env = sp[1]; sp += 2; }
+  { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 2; }
 #define Enter_gc \
   { Setup_for_gc; caml_handle_gc_interrupt(); Restore_after_gc; }
 #define Setup_for_c_call \
-  { saved_pc = pc; *--sp = env; domain_state->extern_sp = sp; }
+  { saved_pc = pc; *--sp = env; domain_state->current_stack->sp = sp; }
 #define Restore_after_c_call \
-  { sp = domain_state->extern_sp; env = *sp++; saved_pc = NULL; }
+  { sp = domain_state->current_stack->sp; env = *sp++; saved_pc = NULL; }
 
 /* An event frame must look like accu + a C_CALL frame + a RETURN 1 frame */
 #define Setup_for_event \
@@ -90,9 +90,9 @@ sp is a local copy of the global variable caml_extern_sp. */
     sp[3] = Val_pc(pc); /* RETURN frame: saved return address */  \
     sp[4] = env; /* RETURN frame: saved environment */ \
     sp[5] = Val_long(extra_args); /* RETURN frame: saved extra args */ \
-    domain_state->extern_sp = sp; }
+    domain_state->current_stack->sp = sp; }
 #define Restore_after_event \
-  { sp = domain_state->extern_sp; accu = sp[0]; \
+  { sp = domain_state->current_stack->sp; accu = sp[0]; \
     pc = Pc_val(sp[3]); env = sp[4]; extra_args = Long_val(sp[5]); \
     sp += 6; }
 
@@ -102,7 +102,7 @@ sp is a local copy of the global variable caml_extern_sp. */
    { sp -= 4; \
      sp[0] = accu; sp[1] = (value)(pc - 1); \
      sp[2] = env; sp[3] = Val_long(extra_args); \
-     domain_state->extern_sp = sp; }
+     domain_state->current_stack->sp = sp; }
 #define Restore_after_debugger { sp += 4; }
 
 #ifdef THREADED_CODE
@@ -275,14 +275,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
   jumptbl_base = Jumptbl_base;
 #endif
   initial_trap_sp_off = domain_state->trap_sp_off;
-  initial_stack_words = domain_state->stack_high - domain_state->extern_sp;
+  initial_stack_words = domain_state->stack_high - domain_state->current_stack->sp;
   initial_external_raise = domain_state->external_raise;
   caml_incr_callback_depth ();
   saved_pc = NULL;
 
   if (sigsetjmp(raise_buf.buf, 0)) {
     /* no local variables read here */
-    sp = domain_state->extern_sp;
+    sp = domain_state->current_stack->sp;
     accu = domain_state->exn_bucket;
     pc = saved_pc; saved_pc = NULL;
     if (pc != NULL) pc += 2;
@@ -293,7 +293,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
   domain_state->trap_sp_off = 1;
 
-  sp = domain_state->extern_sp;
+  sp = domain_state->current_stack->sp;
   pc = prog;
   extra_args = 0;
   env = Atom(0);
@@ -539,9 +539,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
         value hval = Stack_handle_value(domain_state->current_stack);
         Assert(parent_stack != NULL);
 
-        domain_state->extern_sp = sp;
+        domain_state->current_stack->sp = sp;
         struct stack_info* old_stack = caml_switch_stack(parent_stack);
-        sp = domain_state->extern_sp;
+        sp = domain_state->current_stack->sp;
         caml_free_stack(old_stack);
 
         domain_state->trap_sp_off = Long_val(sp[0]);
@@ -951,16 +951,16 @@ value caml_interprete(code_t prog, asize_t prog_size)
         if (Stack_parent(domain_state->current_stack) == NULL) {
           domain_state->external_raise = initial_external_raise;
           domain_state->trap_sp_off = initial_trap_sp_off;
-          domain_state->extern_sp = domain_state->stack_high - initial_stack_words ;
+          domain_state->current_stack->sp = domain_state->stack_high - initial_stack_words ;
           caml_decr_callback_depth ();
           return Make_exception_result(accu);
         } else {
           struct stack_info* parent_stack =
             Stack_parent(domain_state->current_stack);
           value hexn = Stack_handle_exception(domain_state->current_stack);
-          domain_state->extern_sp = sp;
+          domain_state->current_stack->sp = sp;
           struct stack_info* old_stack = caml_switch_stack(parent_stack);
-          sp = domain_state->extern_sp;
+          sp = domain_state->current_stack->sp;
           caml_free_stack(old_stack);
 
           domain_state->trap_sp_off = Long_val(sp[0]);
@@ -990,9 +990,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
     check_stacks:
       if (sp < domain_state->stack_threshold) {
         value saved[] = {env, accu};
-        domain_state->extern_sp = sp;
+        domain_state->current_stack->sp = sp;
         caml_realloc_stack(Stack_threshold / sizeof(value), saved, 2);
-        sp = domain_state->extern_sp;
+        sp = domain_state->current_stack->sp;
         env = saved[0];
         accu = saved[1];
       }
@@ -1240,7 +1240,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(STOP):
       domain_state->external_raise = initial_external_raise;
       domain_state->trap_sp_off = initial_trap_sp_off;
-      domain_state->extern_sp = sp;
+      domain_state->current_stack->sp = sp;
       caml_decr_callback_depth ();
       return accu;
 
@@ -1277,9 +1277,9 @@ do_resume: {
       while (Stack_parent(stk) != NULL) stk = Stack_parent(stk);
       Stack_parent(stk) = Caml_state->current_stack;
 
-      domain_state->extern_sp = sp;
+      domain_state->current_stack->sp = sp;
       caml_switch_stack(Ptr_val(accu));
-      sp = domain_state->extern_sp;
+      sp = domain_state->current_stack->sp;
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       sp[0] = resume_arg;
@@ -1317,9 +1317,9 @@ do_resume: {
       sp[2] = env;
       sp[3] = Val_long(extra_args);
 
-      domain_state->extern_sp = sp;
+      domain_state->current_stack->sp = sp;
       struct stack_info* old_stack = caml_switch_stack(parent_stack);
-      sp = domain_state->extern_sp;
+      sp = domain_state->current_stack->sp;
       Stack_parent(old_stack) = NULL;
       Init_field(cont, 0, Val_ptr(old_stack));
 
@@ -1354,9 +1354,9 @@ do_resume: {
         goto do_resume;
       }
 
-      domain_state->extern_sp = sp;
+      domain_state->current_stack->sp = sp;
       self = caml_switch_stack(parent);
-      sp = domain_state->extern_sp;
+      sp = domain_state->current_stack->sp;
 
       CAMLassert(Stack_parent(cont_tail) == NULL);
       Stack_parent(self) = NULL;

@@ -353,7 +353,7 @@ CAMLprim value caml_get_current_callstack (value max_frames_value)
 {
   code_t* trace;
   intnat trace_len;
-  get_callstack(Caml_state->extern_sp, Caml_state->trap_sp_off,
+  get_callstack(Caml_state->current_stack->sp, Caml_state->trap_sp_off,
                 Caml_state->current_stack, Long_val(max_frames_value),
                 &trace, &trace_len);
   return alloc_callstack(trace, trace_len);

@@ -186,7 +186,7 @@ static inline void caml_thread_save_runtime_state(void)
     = caml_spacetime_finaliser_trie_root;
 #endif
 #else
-  Caml_state->current_stack->sp = Caml_state->extern_sp;
+  Caml_state->current_stack->sp = Caml_state->current_stack->sp;
   curr_thread->trap_sp_off = Caml_state->trap_sp_off;
   curr_thread->trap_barrier_off = Caml_state->trap_barrier_off;
   curr_thread->external_raise = Caml_state->external_raise;
