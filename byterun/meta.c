@@ -62,7 +62,7 @@ CAMLprim value caml_reify_bytecode(value prog, value len)
 #ifdef THREADED_CODE
   caml_thread_code((code_t) prog, (asize_t) Long_val(len));
 #endif
-  return caml_alloc_1(Closure_tag, Val_bytecode(prog));
+  return caml_alloc_1(Closure_tag, Val_bytecode((code_t) prog));
 }
 
 /* signal to the interpreter machinery that a bytecode is no more

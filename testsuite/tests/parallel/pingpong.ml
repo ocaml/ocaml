@@ -30,13 +30,14 @@ let rec odd lim put =
 
 let go n put =
   r := Some 0;
-  Domain.spawn (fun () -> even n put);
+  let d = Domain.spawn (fun () -> even n put) in
   odd n put;
-  match !r with
+  (match !r with
   | Some n ->
      Printf.printf "%d\n%!" n
   | None ->
-     assert false
+     assert false);
+  Domain.join d
 
 
 let () =

@@ -9,7 +9,6 @@ external critical_adjust : int -> unit
 
 let go () =
   let in_crit = Atomic.make false in
-  let woken = Atomic.make false in
   (* notify does actually notify *)
   let d = spawn (fun () ->
     critical_section (fun () ->

@@ -140,7 +140,7 @@ void caml_noalloc_end(int*);
 void caml_alloc_point_here(void);
 #define CAMLnoalloc                          \
   int caml__noalloc                          \
-  __attribute__((cleanup(caml_noalloc_end))) \
+  __attribute__((cleanup(caml_noalloc_end),unused)) \
     = caml_noalloc_begin()
 #define CAMLalloc_point_here (caml_alloc_point_here())
 #else
