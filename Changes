@@ -244,12 +244,13 @@ Working version
 - GPR#374: use Misc.try_finally for resource cleanup in the compiler
   codebase. This should fix the problem of catch-and-reraise `try .. with`
   blocks destroying backtrace information.
-  (François Bobot, Gabriel Scherer, and Nicolás Ojeda Bär, review by Gabriel
-  Scherer)
+  (François Bobot, help from Gabriel Scherer and Nicolás Ojeda Bär,
+   review by Gabriel Scherer)
 
-- GPR#1703 : Add the module Compile_common, which factorizes the common
+- GPR#1703, GPR#1944: Add the module Compile_common, which factorizes the common
   part in Compile and Optcompile. This also makes the pipeline more modular.
-  (Gabriel Radanne, review by Mark Shinwell)
+  (Gabriel Radanne, help from Gabriel Scherer and Valentin Gatien-Baron,
+   review by Mark Shinwell and Gabriel Radanne)
 
 ### Bug fixes:
 

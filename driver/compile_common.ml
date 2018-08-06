@@ -94,25 +94,29 @@ let parse_impl i =
   |> print_if i.ppf_dump Clflags.dump_source Pprintast.structure
 
 let typecheck_impl i parsetree =
-  parsetree
-  |> Profile.(record typing)
-    (Typemod.type_implementation i.sourcefile i.outputprefix i.modulename i.env)
-  |> print_if i.ppf_dump Clflags.dump_typedtree
-    Printtyped.implementation_with_coercion
+  let always () = Stypes.dump (Some (annot i)) in
+  Misc.try_finally ~always (fun () ->
+    parsetree
+    |> Profile.(record typing)
+      (Typemod.type_implementation
+         i.sourcefile i.outputprefix i.modulename i.env)
+    |> print_if i.ppf_dump Clflags.dump_typedtree
+      Printtyped.implementation_with_coercion
+  )
 
-let wrap_compilation ~frontend ~backend info =
+let implementation ~tool_name ~native ~backend ~sourcefile ~outputprefix =
+  let suf, sufs = if native then ".cmx", [ cmx; obj ] else ".cmo", [ cmo ] in
+  Compmisc.with_ppf_dump ~fileprefix:(outputprefix ^ suf) @@ fun ppf_dump ->
+  let info =
+    init ppf_dump ~init_path:native ~tool_name ~sourcefile ~outputprefix
+  in
   Profile.record_call info.sourcefile @@ fun () ->
-  Misc.try_finally (fun () ->
-      let typed = frontend info in
-      if not !Clflags.print_types then begin
-        backend info typed
-      end;
-      Warnings.check_fatal ();
-    )
-    ~always:(fun () ->
-        Stypes.dump (Some (annot info))
-      )
-    ~exceptionally:(fun () ->
-        Misc.remove_file (obj info);
-        Misc.remove_file (cmx info);
-      )
+  let parsed = parse_impl info in
+  let typed = typecheck_impl info parsed in
+  if not !Clflags.print_types then begin
+    let exceptionally () =
+      List.iter (fun suf -> remove_file (suf info)) sufs;
+    in
+    Misc.try_finally ~exceptionally (fun () -> backend info typed)
+  end;
+  Warnings.check_fatal ();
