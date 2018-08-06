@@ -20,8 +20,6 @@
 #include "frame_descriptors.h"
 #endif
 
-static __thread int stack_is_saved = 0;
-
 #ifdef NATIVE_CODE
 
 static struct stack_info* save_stack ()
@@ -287,27 +285,6 @@ struct stack_info* caml_switch_stack(struct stack_info* stk)
 
 #endif /* end BYTE_CODE */
 
-void caml_save_stack_gc()
-{
-  Assert(stack_is_saved >= 0);
-  save_stack();
-  ++stack_is_saved;
-}
-
-int caml_stack_is_saved ()
-{
-  return stack_is_saved;
-}
-
-void caml_restore_stack_gc()
-{
-  caml_domain_state* domain_state = Caml_state;
-  Assert(stack_is_saved > 0);
-  --stack_is_saved;
-  if (stack_is_saved == 0)
-    load_stack(domain_state->current_stack);
-}
-
 /*
   Stack management.
 
@@ -325,6 +302,9 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   struct stack_info *old_stack, *new_stack;
   asize_t size;
   int stack_used;
+  /* No heap allocation here, but this function should never be called during
+     CAMLnoalloc calls because it invalidates pointers into the stack */
+  CAMLalloc_point_here;
 
   old_stack = save_stack();
 

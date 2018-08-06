@@ -839,7 +839,6 @@ static intnat major_collection_slice(intnat howmuch,
   uintnat saved_ephe_cycle;
   uintnat saved_major_cycle;
 
-  caml_save_stack_gc();
   caml_ev_begin("major_gc/slice");
 
   if (!domain_state->sweeping_done) {
@@ -975,8 +974,6 @@ mark_again:
   domain_state->stat_major_words += domain_state->allocated_words;
   domain_state->allocated_words = 0;
 
-  caml_restore_stack_gc();
-
   if (is_complete_phase_sweep_ephe(d)) {
     saved_major_cycle = caml_major_cycles_completed;
     /* To handle the case where multiple domains try to finish the major
@@ -1031,11 +1028,9 @@ void caml_empty_mark_stack () {
 void caml_finish_marking () {
   if (!Caml_state->marking_done) {
     caml_ev_begin("major_gc/finish_marking");
-    caml_save_stack_gc();
     caml_empty_mark_stack();
     Caml_state->stat_major_words += Caml_state->allocated_words;
     Caml_state->allocated_words = 0;
-    caml_restore_stack_gc();
     caml_ev_end("major_gc/finish_marking");
   }
 }
