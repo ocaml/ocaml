@@ -112,19 +112,25 @@ let apply_rewriters_str ?(restore = true) ~tool_name ast =
   match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->
-      ast
-      |> Ast_mapper.add_ppx_context_str ~tool_name
-      |> rewrite Structure ppxs
-      |> Ast_mapper.drop_ppx_context_str ~restore
+      let ast =
+        ast
+        |> Ast_mapper.add_ppx_context_str ~tool_name
+        |> rewrite Structure ppxs
+        |> Ast_mapper.drop_ppx_context_str ~restore
+      in
+      Ast_invariants.structure ast; ast
 
 let apply_rewriters_sig ?(restore = true) ~tool_name ast =
   match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->
-      ast
-      |> Ast_mapper.add_ppx_context_sig ~tool_name
-      |> rewrite Signature ppxs
-      |> Ast_mapper.drop_ppx_context_sig ~restore
+      let ast =
+        ast
+        |> Ast_mapper.add_ppx_context_sig ~tool_name
+        |> rewrite Signature ppxs
+        |> Ast_mapper.drop_ppx_context_sig ~restore
+      in
+      Ast_invariants.signature ast; ast
 
 let apply_rewriters ?restore ~tool_name
     (type a) (kind : a ast_kind) (ast : a) : a =
@@ -170,7 +176,10 @@ let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
         if !Clflags.unsafe then
           Location.prerr_warning (Location.in_file !Location.input_name)
             Warnings.Unsafe_without_parsing;
-        (input_value ic : a)
+        let ast = (input_value ic : a) in
+        if !Clflags.all_ppx = [] then invariant_fun ast;
+        (* if all_ppx <> [], invariant_fun will be called by apply_rewriters *)
+        ast
       end else begin
         seek_in ic 0;
         let lexbuf = Lexing.from_channel ic in
@@ -180,11 +189,9 @@ let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
     with x -> close_in ic; raise x
   in
   close_in ic;
-  let ast =
-    Profile.record_call "-ppx" (fun () ->
-      apply_rewriters ~restore:false ~tool_name kind ast) in
-  if is_ast_file || !Clflags.all_ppx <> [] then invariant_fun ast;
-  ast
+  Profile.record_call "-ppx" (fun () ->
+      apply_rewriters ~restore:false ~tool_name kind ast
+    )
 
 let file ~tool_name inputfile parse_fun ast_kind =
   file_aux ~tool_name inputfile parse_fun ignore ast_kind

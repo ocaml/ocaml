@@ -255,6 +255,9 @@ Working version
   (Gabriel Radanne, help from Gabriel Scherer and Valentin Gatien-Baron,
    review by Mark Shinwell and Gabriel Radanne)
 
+- GPR#1938: always check ast invariants after preprocessing
+  (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)
+
 ### Bug fixes:
 
 - GPR#1626: Do not allow recursive modules in `with module`
