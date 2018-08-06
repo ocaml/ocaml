@@ -88,7 +88,7 @@ void caml_init_signal_stack()
   stk.ss_size = SIGSTKSZ;
   stk.ss_sp = caml_stat_alloc(stk.ss_size);
   if (sigaltstack(&stk, NULL) < 0) {
-    caml_fatal_error_arg("Could not allocate signal stack: ", strerror(errno));
+    caml_fatal_error_arg("Could not allocate signal stack: %s", strerror(errno));
   }
 
   /* gprof installs a signal handler for SIGPROF.
@@ -111,10 +111,13 @@ void caml_init_signal_stack()
 void caml_free_signal_stack()
 {
 #ifdef POSIX_SIGNALS
-  stack_t stk, disable;
+  stack_t stk, disable = {0};
   disable.ss_flags = SS_DISABLE;
+  /* POSIX says ss_size is ignored when SS_DISABLE is set,
+     but OSX/Darwin fails if the size isn't set. */
+  disable.ss_size = SIGSTKSZ;
   if (sigaltstack(&disable, &stk) < 0) {
-    caml_fatal_error_arg("Failed to reset signal stack: ", strerror(errno));
+    caml_fatal_error_arg("Failed to reset signal stack: %s", strerror(errno));
   }
   caml_stat_free(stk.ss_sp);
 #endif
