@@ -1503,8 +1503,7 @@ and label_x_expression_param ctxt f (l,e) =
         pp f "~%s:%a" lbl (simple_expr ctxt) e
 
 and directive_argument f x =
-  match x with
-  | Pdir_none -> ()
+  match x.pdira_desc with
   | Pdir_string (s) -> pp f "@ %S" s
   | Pdir_int (n, None) -> pp f "@ %s" n
   | Pdir_int (n, Some m) -> pp f "@ %s%c" n m
@@ -1517,9 +1516,10 @@ let toplevel_phrase f x =
    (* pp_open_hvbox f 0; *)
    (* pp_print_list structure_item f s ; *)
    (* pp_close_box f (); *)
-  | Ptop_dir (s, da) ->
-   pp f "@[<hov2>#%s@ %a@]" s directive_argument da
-   (* pp f "@[<hov2>#%s@ %a@]" s directive_argument da *)
+  | Ptop_dir {pdir_name; pdir_arg = None; _} ->
+   pp f "@[<hov2>#%s@]" pdir_name.txt
+  | Ptop_dir {pdir_name; pdir_arg = Some pdir_arg; _} ->
+   pp f "@[<hov2>#%s@ %a@]" pdir_name.txt directive_argument pdir_arg
 
 let expression f x =
   pp f "@[%a@]" (expression reset_ctxt) x

@@ -362,7 +362,7 @@ let execute_phrase print_outcome ppf phr =
       with x ->
         toplevel_env := oldenv; raise x
       end
-  | Ptop_dir(dir_name, dir_arg) ->
+  | Ptop_dir {pdir_name = {Location.txt = dir_name}; pdir_arg } ->
       let d =
         try Some (Hashtbl.find directive_table dir_name)
         with Not_found -> None
@@ -372,10 +372,10 @@ let execute_phrase print_outcome ppf phr =
           fprintf ppf "Unknown directive `%s'.@." dir_name;
           false
       | Some d ->
-          match d, dir_arg with
-          | Directive_none f, Pdir_none -> f (); true
-          | Directive_string f, Pdir_string s -> f s; true
-          | Directive_int f, Pdir_int (n,None) ->
+          match d, pdir_arg with
+          | Directive_none f, None -> f (); true
+          | Directive_string f, Some {pdira_desc = Pdir_string s} -> f s; true
+          | Directive_int f, Some {pdira_desc = Pdir_int (n,None)} ->
              begin match Int_literal_converter.int n with
              | n -> f n; true
              | exception _ ->
@@ -384,12 +384,12 @@ let execute_phrase print_outcome ppf phr =
                        dir_name;
                false
              end
-          | Directive_int _, Pdir_int (_, Some _) ->
+          | Directive_int _, Some {pdira_desc = Pdir_int (_, Some _)} ->
               fprintf ppf "Wrong integer literal for directive `%s'.@."
                 dir_name;
               false
-          | Directive_ident f, Pdir_ident lid -> f lid; true
-          | Directive_bool f, Pdir_bool b -> f b; true
+          | Directive_ident f, Some {pdira_desc = Pdir_ident lid} -> f lid; true
+          | Directive_bool f, Some {pdira_desc = Pdir_bool b} -> f b; true
           | _ ->
               fprintf ppf "Wrong type of argument for directive `%s'.@."
                 dir_name;

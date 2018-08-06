@@ -538,7 +538,7 @@ module Ellipsis = struct
 
   let find = function
     | Parsetree.Ptop_def ast -> extract (fun it -> it.structure it) ast
-    | Ptop_dir (_,_) -> []
+    | Ptop_dir _ -> []
 
 end
 

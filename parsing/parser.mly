@@ -427,6 +427,18 @@ let package_type_of_module_type pmty =
       err pmty.pmty_loc
         "only module type identifier and 'with type' constraints are supported"
 
+let mk_directive_arg k =
+  { pdira_desc = k;
+    pdira_loc = symbol_rloc ()
+  }
+
+let mk_directive name arg =
+  Ptop_dir {
+      pdir_name = name;
+      pdir_arg = arg;
+      pdir_loc = symbol_rloc ()
+    }
+
 
 %}
 
@@ -2506,14 +2518,21 @@ class_longident:
 /* Toplevel directives */
 
 toplevel_directive:
-    HASH ident                 { Ptop_dir($2, Pdir_none) }
-  | HASH ident STRING          { Ptop_dir($2, Pdir_string (fst $3)) }
-  | HASH ident INT             { let (n, m) = $3 in
-                                  Ptop_dir($2, Pdir_int (n ,m)) }
-  | HASH ident val_longident   { Ptop_dir($2, Pdir_ident $3) }
-  | HASH ident mod_longident   { Ptop_dir($2, Pdir_ident $3) }
-  | HASH ident FALSE           { Ptop_dir($2, Pdir_bool false) }
-  | HASH ident TRUE            { Ptop_dir($2, Pdir_bool true) }
+    HASH ident
+    { mk_directive (mkrhs $2 2) None }
+  | HASH ident toplevel_directive_argument
+    { mk_directive (mkrhs $2 2) (Some $3) }
+;
+
+toplevel_directive_argument:
+  | STRING        { let (s, _) = $1 in
+                    mk_directive_arg (Pdir_string s) }
+  | INT           { let (n, m) = $1 in
+                    mk_directive_arg (Pdir_int (n ,m)) }
+  | val_longident { mk_directive_arg (Pdir_ident $1) }
+  | mod_longident { mk_directive_arg (Pdir_ident $1) }
+  | FALSE         { mk_directive_arg (Pdir_bool false) }
+  | TRUE          { mk_directive_arg (Pdir_bool true) }
 ;
 
 /* Miscellaneous */
