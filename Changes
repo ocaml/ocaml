@@ -8,6 +8,9 @@ Working version
 - GPR#1579: Add a separate types for clambda primitives
   (Pierre Chambart, review by Vincent Laviron and Mark Shinwell)
 
+- GPR#1973: fix compilation of catches with multiple handlers
+  (Vincent Laviron)
+
 - GPR#2228: refactoring the handling of .cmi files by moving it from
   Env to a new module Persistent_env
   (Gabriel Scherer, review by Jérémie Dimino and Thomas Refis)
