@@ -4,11 +4,10 @@
 
 module type Printable = sig
   type t
-  val print : Format.formatter -> t -> unit
+  val print : t -> unit
 end
 [%%expect {|
-module type Printable =
-  sig type t val print : Format.formatter -> t -> unit end
+module type Printable = sig type t val print : t -> unit end
 |}]
 module type Comparable = sig
   type t
@@ -25,11 +24,11 @@ end
 Line 3, characters 2-36:
     include Comparable with type t = t
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Illegal shadowing of included type t/1154 by t/1158
+Error: Illegal shadowing of included type t/1019 by t/1023
        Line 2, characters 2-19:
-         Type t/1154 came from this include
-       Line 3, characters 2-43:
-         The value print has no valid type if t/1154 is shadowed
+         Type t/1019 came from this include
+       Line 3, characters 2-23:
+         The value print has no valid type if t/1019 is shadowed
 |}]
 
 module type Sunderscore = sig
@@ -69,11 +68,7 @@ module type PrintableComparable = sig
 end
 [%%expect {|
 module type PrintableComparable =
-  sig
-    type t
-    val print : Format.formatter -> t -> unit
-    val compare : t -> t -> int
-  end
+  sig type t val print : t -> unit val compare : t -> t -> int end
 |}]
 module type PrintableComparable = sig
   include Printable
@@ -81,11 +76,7 @@ module type PrintableComparable = sig
 end
 [%%expect {|
 module type PrintableComparable =
-  sig
-    type t
-    val print : Format.formatter -> t -> unit
-    val compare : t -> t -> int
-  end
+  sig type t val print : t -> unit val compare : t -> t -> int end
 |}]
 module type ComparableInt = Comparable with type t := int
 [%%expect {|

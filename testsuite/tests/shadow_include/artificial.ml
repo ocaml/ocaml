@@ -1,5 +1,6 @@
 (* TEST
    * expect
+   flags = "-nostdlib -nopervasives"
 *)
 
 module Foo : sig
