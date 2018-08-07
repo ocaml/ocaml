@@ -96,9 +96,6 @@ val max_young_wosize: int
 val stack_threshold: int
         (* Size in words of safe area at bottom of VM stack,
            see byterun/config.h *)
-val profile_slop : int
-        (* Size in words of extra stack slop space at the bottom of stack if
-           profiling is enabled. See byterun/config.h *)
 val stack_safety_margin: int
         (* Size in words of the safety margin between the bottom of
            the stack and the stack pointer. This margin can be used by

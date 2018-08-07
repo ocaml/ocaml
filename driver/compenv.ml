@@ -226,7 +226,6 @@ let read_one_param ppf position name v =
   | "pp" -> preprocessor := Some v
   | "runtime-variant" -> runtime_variant := v
   | "cc" -> c_compiler := Some v
-  | "stack-slop" -> stack_slop := 8 * int_of_string v
 
   | "clambda-checks" -> set "clambda-checks" [ clambda_checks ] v
 

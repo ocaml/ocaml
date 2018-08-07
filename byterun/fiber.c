@@ -32,7 +32,7 @@ static struct stack_info* save_stack ()
 static void load_stack (struct stack_info* stack) {
   caml_domain_state* domain_state = Caml_state;
   domain_state->stack_threshold = Stack_base(stack)
-    + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value);
+    + Stack_threshold / sizeof(value);
   domain_state->stack_high = Stack_high(stack);
   domain_state->current_stack = stack;
 }
@@ -48,8 +48,8 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   char* sp;
   struct caml_context *ctxt;
 
-  stack = caml_stat_alloc(sizeof(value) * (caml_fiber_wsz + caml_params->profile_slop_wsz));
-  stack->wosize = caml_fiber_wsz + caml_params->profile_slop_wsz;
+  stack = caml_stat_alloc(sizeof(value) * caml_fiber_wsz);
+  stack->wosize = caml_fiber_wsz;
   stack->magic = 42;
   Stack_handle_value(stack) = hval;
   Stack_handle_exception(stack) = hexn;
@@ -160,8 +160,7 @@ void caml_maybe_expand_stack ()
                   /* Stack_sp() is a -ve value in words */
                   + Stack_sp (Caml_state->current_stack)
                   - Stack_ctx_words;
-  if (stack_available < caml_params->profile_slop_wsz
-                      + 2 * Stack_threshold / sizeof(value))
+  if (stack_available < 2 * Stack_threshold / sizeof(value))
     caml_realloc_stack (0, 0, 0);
 }
 
@@ -197,7 +196,7 @@ static struct stack_info* save_stack ()
   struct stack_info* old_stack = domain_state->current_stack;
   Stack_sp(old_stack) = domain_state->extern_sp - domain_state->stack_high;
   Assert(domain_state->stack_threshold ==
-         Stack_base(old_stack) + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value));
+         Stack_base(old_stack) + Stack_threshold / sizeof(value));
   Assert(domain_state->stack_high == Stack_high(old_stack));
   Assert(domain_state->extern_sp == domain_state->stack_high + Stack_sp(old_stack));
   return old_stack;
@@ -207,7 +206,7 @@ static void load_stack(struct stack_info* new_stack)
 {
   caml_domain_state* domain_state = Caml_state;
   domain_state->stack_threshold =
-    Stack_base(new_stack) + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value);
+    Stack_base(new_stack) + Stack_threshold / sizeof(value);
   domain_state->stack_high = Stack_high(new_stack);
   domain_state->extern_sp = domain_state->stack_high + Stack_sp(new_stack);
   domain_state->current_stack = new_stack;
@@ -249,7 +248,6 @@ CAMLprim value caml_ensure_stack_capacity(value required_space)
 void caml_change_max_stack_size (uintnat new_max_size)
 {
   asize_t size = Caml_state->stack_high - Caml_state->extern_sp
-                 + caml_params->profile_slop_wsz
                  + Stack_threshold / sizeof (value);
 
   if (new_max_size < size) new_max_size = size;
@@ -400,8 +398,7 @@ struct stack_info* caml_alloc_main_stack (uintnat init_size)
 void caml_init_main_stack ()
 {
   struct stack_info* stack;
-  stack = caml_alloc_main_stack (caml_params->profile_slop_wsz +
-                            Stack_size/sizeof(value));
+  stack = caml_alloc_main_stack (Stack_size/sizeof(value));
   load_stack(stack);
 }
 

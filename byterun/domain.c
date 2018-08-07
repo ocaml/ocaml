@@ -216,6 +216,8 @@ static void create_domain(uintnat initial_minor_heap_size) {
     /* FIXME: code below does not handle failure to allocate memory
        early in a domain's lifetime correctly */
 
+    caml_init_signal_stack();
+
     domain_state->young_start = domain_state->young_end =
       domain_state->young_ptr = 0;
     domain_state->minor_tables = caml_alloc_minor_tables();
@@ -878,6 +880,7 @@ static void domain_terminate()
   domain_state->shared_heap = 0;
   caml_free_minor_tables(domain_state->minor_tables);
   domain_state->minor_tables = 0;
+  caml_free_signal_stack();
 
   if (Caml_state->critical_section_nesting) {
     Caml_state->critical_section_nesting = 0;

@@ -24,7 +24,7 @@
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
-     sigact.sa_flags = SA_SIGINFO
+     sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
   typedef greg_t context_reg;
   #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
@@ -41,7 +41,7 @@
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_sigaction = (name); \
-     sigact.sa_flags = SA_SIGINFO | SA_64REGSET
+     sigact.sa_flags = SA_ONSTACK | SA_SIGINFO | SA_64REGSET
 
   #include <sys/ucontext.h>
   #include <AvailabilityMacros.h>
@@ -75,7 +75,7 @@
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
-     sigact.sa_flags = SA_SIGINFO
+     sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
   typedef unsigned long context_reg;
   #define CONTEXT_PC (context->uc_mcontext.arm_pc)
@@ -94,7 +94,7 @@
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
-     sigact.sa_flags = SA_SIGINFO
+     sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
   typedef unsigned long context_reg;
   #define CONTEXT_PC (context->uc_mcontext.pc)
@@ -113,7 +113,7 @@
 
   #define SET_SIGACT(sigact,name) \
     sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
-    sigact.sa_flags = SA_SIGINFO
+    sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
   typedef greg_t context_reg;
   #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
@@ -130,7 +130,7 @@
 
  #define SET_SIGACT(sigact,name) \
  sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
- sigact.sa_flags = SA_SIGINFO
+ sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
  #define CONTEXT_PC (context->sc_rip)
  #define CONTEXT_EXCEPTION_POINTER (context->sc_r14)
@@ -147,7 +147,7 @@
 
  #define SET_SIGACT(sigact,name) \
  sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
- sigact.sa_flags = SA_SIGINFO
+ sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
  #define CONTEXT_PC (_UC_MACHINE_PC(context))
  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.gregs[REG_R14])
@@ -163,7 +163,7 @@
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_handler = (void (*)(int)) (name); \
-     sigact.sa_flags = 0
+     sigact.sa_flags = SA_ONSTACK
 
   #define CONTEXT_FAULTING_ADDRESS ((char *) context.cr2)
 
@@ -182,7 +182,7 @@
 
  #define SET_SIGACT(sigact,name) \
  sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
- sigact.sa_flags = SA_SIGINFO
+ sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
  #if defined (__NetBSD__)
   #define CONTEXT_PC (_UC_MACHINE_PC(context))
@@ -200,7 +200,7 @@
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_sigaction = (name); \
-     sigact.sa_flags = SA_SIGINFO
+     sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
@@ -213,7 +213,7 @@
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_sigaction = (name); \
-     sigact.sa_flags = SA_SIGINFO
+     sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
   #include <sys/ucontext.h>
   #include <AvailabilityMacros.h>
@@ -238,7 +238,7 @@
 
   #define SET_SIGACT(sigact,name) \
     sigact.sa_sigaction = (name); \
-    sigact.sa_flags = SA_SIGINFO
+    sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
@@ -255,7 +255,7 @@
   #ifdef __LP64__
     #define SET_SIGACT(sigact,name) \
        sigact.sa_sigaction = (name); \
-       sigact.sa_flags = SA_SIGINFO | SA_64REGSET
+       sigact.sa_flags = SA_ONSTACK | SA_SIGINFO | SA_64REGSET
 
     typedef unsigned long long context_reg;
 
@@ -263,7 +263,7 @@
   #else
     #define SET_SIGACT(sigact,name) \
        sigact.sa_sigaction = (name); \
-       sigact.sa_flags = SA_SIGINFO
+       sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
     typedef unsigned long context_reg;
 
@@ -294,7 +294,7 @@
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_handler = (void (*)(int)) (name); \
-     sigact.sa_flags = 0
+     sigact.sa_flags = SA_ONSTACK
 
   typedef unsigned long context_reg;
   #define CONTEXT_PC (context->regs->nip)
@@ -313,7 +313,7 @@
 
   #define SET_SIGACT(sigact,name) \
   sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
-  sigact.sa_flags = SA_SIGINFO
+  sigact.sa_flags = SA_ONSTACK | SA_SIGINFO
 
   typedef long context_reg;
   #define CONTEXT_PC (_UC_MACHINE_PC(context))
@@ -334,7 +334,7 @@
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_handler = (void (*)(int)) (name); \
-     sigact.sa_flags = 0
+     sigact.sa_flags = SA_ONSTACK
 
   typedef unsigned long context_reg;
   #define CONTEXT_PC (context->sc_frame.srr0)
@@ -351,7 +351,7 @@
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_handler = (void (*)(int)) (name); \
-     sigact.sa_flags = 0
+     sigact.sa_flags = SA_ONSTACK
 
   typedef unsigned long context_reg;
   #define CONTEXT_PC (context->sregs->regs.psw.addr)
@@ -369,6 +369,6 @@
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_handler = (name); \
-     sigact.sa_flags = 0
+     sigact.sa_flags = SA_ONSTACK
 
 #endif

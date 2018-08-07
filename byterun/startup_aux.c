@@ -51,11 +51,7 @@ static void init_startup_params()
   params.init_heap_chunk_sz = Heap_chunk_def;
   params.init_heap_wsz = Init_heap_def;
   params.init_max_stack_wsz = Max_stack_def;
-#ifdef PROFILING
-  params.init_fiber_wsz = Profile_slop + (Stack_threshold * 2) / sizeof(value);
-#else
   params.init_fiber_wsz = (Stack_threshold * 2) / sizeof(value);
-#endif
 #ifdef DEBUG
   params.verb_gc = 0x3F;
 #endif
@@ -65,7 +61,6 @@ static void init_startup_params()
     params.cds_file = caml_stat_strdup_os(cds_file);
   }
 #endif
-  params.profile_slop_wsz = 0;
   params.cleanup_on_exit = 0;
 }
 
