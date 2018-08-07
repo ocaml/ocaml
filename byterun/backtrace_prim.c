@@ -301,7 +301,7 @@ static void get_callstack(value* sp, intnat trap_spoff,
       code_t p = caml_next_frame_pointer(stack_high, &sp, &trap_spoff);
       if (p == NULL) {
         if (parent == NULL) break;
-        sp = Stack_high(parent) + Stack_sp(parent);
+        sp = parent->sp;
         trap_spoff = Long_val(sp[0]);
         stack_high = Stack_high(parent);
         parent = Stack_parent(parent);
@@ -325,7 +325,7 @@ static void get_callstack(value* sp, intnat trap_spoff,
     while (trace_pos < *trace_size) {
       code_t p = caml_next_frame_pointer(stack_high, &sp, &trap_spoff);
       if (p == NULL) {
-        sp = Stack_high(parent) + Stack_sp(parent);
+        sp = parent->sp;
         trap_spoff = Long_val(sp[0]);
         stack_high = Stack_high(parent);
         parent = Stack_parent(parent);
@@ -353,7 +353,7 @@ CAMLprim value caml_get_current_callstack (value max_frames_value)
 {
   code_t* trace;
   intnat trace_len;
-  get_callstack(Caml_state->extern_sp, Caml_state->trap_sp_off,
+  get_callstack(Caml_state->current_stack->sp, Caml_state->trap_sp_off,
                 Caml_state->current_stack, Long_val(max_frames_value),
                 &trace, &trace_len);
   return alloc_callstack(trace, trace_len);
@@ -369,7 +369,7 @@ CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
   stack = Ptr_val(caml_continuation_use(cont));
   {
     CAMLnoalloc; /* GC must not see the stack outside the cont */
-    sp = Stack_high(stack) + Stack_sp(stack);
+    sp = stack->sp;
     get_callstack(sp, Long_val(sp[0]), stack, Long_val(max_frames),
                   &trace, &trace_len);
     caml_continuation_replace(cont, stack);

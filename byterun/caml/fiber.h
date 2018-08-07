@@ -9,7 +9,11 @@
 #include "roots.h"
 
 struct stack_info {
-  long sp;
+#ifdef NATIVE_CODE
+  void* sp;
+#else
+  value* sp;
+#endif
   value handle_value;
   value handle_exn;
   value handle_effect;
@@ -27,7 +31,6 @@ struct stack_info {
  * the Op_val(stk) + Wosize_val(stk) is not 16-byte aligned. */
 #define Stack_high(stk) ((value*)(((uintnat)stk + sizeof(value) * stk->wosize) & (-1uLL << 4)))
 
-#define Stack_sp(stk) (stk)->sp
 #define Stack_handle_value(stk) (stk)->handle_value
 #define Stack_handle_exception(stk) (stk)->handle_exn
 #define Stack_handle_effect(stk) (stk)->handle_effect
@@ -90,8 +93,6 @@ extern caml_root caml_global_data;
 struct stack_info* caml_alloc_main_stack (uintnat init_size);
 void caml_init_main_stack(void);
 void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack);
-void caml_save_stack_gc();
-void caml_restore_stack_gc();
 void caml_restore_stack();
 void caml_realloc_stack (asize_t required_size, value* save, int nsave);
 void caml_change_max_stack_size (uintnat new_max_size);

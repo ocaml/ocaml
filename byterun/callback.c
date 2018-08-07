@@ -56,8 +56,8 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   Stack_parent(domain_state->current_stack) = NULL;
 
   CAMLassert(narg + 4 <= 256);
-  domain_state->extern_sp -= narg + 4;
-  for (i = 0; i < narg; i++) domain_state->extern_sp[i] = args[i]; /* arguments */
+  domain_state->current_stack->sp -= narg + 4;
+  for (i = 0; i < narg; i++) domain_state->current_stack->sp[i] = args[i]; /* arguments */
 
   opcode_t code[7] = {
     callback_code[0], narg + 3,
@@ -65,12 +65,12 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
     callback_code[4], callback_code[5], callback_code[6]
   };
 
-  domain_state->extern_sp[narg] = Val_pc (code + 4); /* return address */
-  domain_state->extern_sp[narg + 1] = Val_unit;    /* environment */
-  domain_state->extern_sp[narg + 2] = Val_long(0); /* extra args */
-  domain_state->extern_sp[narg + 3] = closure;
+  domain_state->current_stack->sp[narg] = Val_pc (code + 4); /* return address */
+  domain_state->current_stack->sp[narg + 1] = Val_unit;    /* environment */
+  domain_state->current_stack->sp[narg + 2] = Val_long(0); /* extra args */
+  domain_state->current_stack->sp[narg + 3] = closure;
   res = caml_interprete(code, sizeof(code));
-  if (Is_exception_result(res)) domain_state->extern_sp += narg + 4; /* PR#1228 */
+  if (Is_exception_result(res)) domain_state->current_stack->sp += narg + 4; /* PR#1228 */
 
   Assert(Stack_parent(domain_state->current_stack) == NULL);
   Stack_parent(domain_state->current_stack) = parent_stack;

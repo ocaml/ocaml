@@ -66,7 +66,6 @@ void caml_free_minor_tables(struct caml_minor_tables*);
 
 struct domain;
 CAMLextern value caml_promote(struct domain*, value root);
-int caml_stack_is_saved (void);
 
 #define Ref_table_add(ref_table, x) do {                                \
     struct caml_ref_table* ref = (ref_table);                           \
