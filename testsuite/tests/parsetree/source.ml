@@ -4820,6 +4820,7 @@ module Z = functor (_: sig end) (_:sig end) (_: sig end) -> struct end;;
 module GZ : functor (X: sig end) () (Z: sig end) -> sig end
           = functor (X: sig end) () (Z: sig end) -> struct end;;
 module F (X : sig end) = struct type t = int end;;
+module F (_ : sig end) = struct type t = int end;;
 type t = F(Does_not_exist).t;;
 type expr =
   [ `Abs of string * expr

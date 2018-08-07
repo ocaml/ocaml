@@ -308,6 +308,9 @@ Working version
   Unboxable_type_in_prim_decl
   (Stefan Muenzel)
 
+- GPR#1958: allow [module M(_:S) = struct end] syntax
+  (Hugo Heuzard, review by Gabriel Scherer)
+
 - GPR#1970: fix order of floatting documentation comments in classes
   (Hugo Heuzard, review by Nicolás Ojeda Bär)
 
