@@ -58,7 +58,7 @@ val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
     If [finally ()] raises, this exception is not caught and may shadow
     one [work ()] may have raised.
 
-    @since NEXT_RELEASE *)
+    @since 4.08.0 *)
 
 (** {1 Comparisons} *)
 
