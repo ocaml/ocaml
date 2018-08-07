@@ -821,6 +821,7 @@ module type Common_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
+  val _nopervasives : unit -> unit
   val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
@@ -895,7 +896,6 @@ module type Compiler_options = sig
   val _where : unit -> unit
   val _color : string -> unit
 
-  val _nopervasives : unit -> unit
   val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit
@@ -1083,6 +1083,7 @@ struct
     mk_noautolink_byt F._noautolink;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
+    mk_nopervasives F._nopervasives;
     mk_o F._o;
     mk_opaque F._opaque;
     mk_open F._open;
@@ -1122,7 +1123,6 @@ struct
     mk_where F._where;
     mk__ F.anonymous;
 
-    mk_nopervasives F._nopervasives;
     mk_match_context_rows F._match_context_rows;
     mk_use_prims F._use_prims;
     mk_dno_unique_ids F._dno_unique_ids;
@@ -1160,6 +1160,7 @@ struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_nopervasives F._nopervasives;
     mk_open F._open;
     mk_ppx F._ppx;
     mk_principal F._principal;
@@ -1255,6 +1256,7 @@ struct
     mk_nodynlink F._nodynlink;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
+    mk_nopervasives F._nopervasives;
     mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
     mk_no_unbox_specialised_args F._no_unbox_specialised_args;
     mk_o F._o;
@@ -1303,7 +1305,6 @@ struct
     mk_where F._where;
     mk__ F.anonymous;
 
-    mk_nopervasives F._nopervasives;
     mk_match_context_rows F._match_context_rows;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
@@ -1377,6 +1378,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
+    mk_nopervasives F._nopervasives;
     mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
     mk_no_unbox_specialised_args F._no_unbox_specialised_args;
     mk_o2 F._o2;
