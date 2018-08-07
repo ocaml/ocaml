@@ -1,5 +1,6 @@
 (* TEST
    * expect
+   flags = "-nopervasives" (* can't pass -nostdlib because of objects. *)
 *)
 
 (* Signatures *)

@@ -1,5 +1,6 @@
 (* TEST
 * setup-ocamlc.byte-build-env
+flags = "-nostdlib -nopervasives"
 ** ocamlc.byte
 ocamlc_byte_exit_status = "2"
 *** check-ocamlc.byte-output
@@ -10,7 +11,7 @@ ocamlc_byte_exit_status = "2"
 
 module type Printable = sig
   type t
-  val print : Format.formatter -> t -> unit
+  val print : t -> unit
 end
 
 module type Comparable = sig
