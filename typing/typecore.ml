@@ -1989,17 +1989,72 @@ let check_univars env expans kind exp ty_expected vars =
   raise (Error (exp.exp_loc, env,
                 Less_general(kind, [Unification_trace.diff ty ty_expected])))
 
-(* Check that a type is not a function *)
-let check_application_result env statement exp =
-  let loc = exp.exp_loc in
-  match (expand_head env exp.exp_type).desc with
-  | Tarrow _ ->
-      Location.prerr_warning exp.exp_loc Warnings.Partial_application
-  | Tvar _ -> ()
-  | Tconstr (p, _, _) when Path.same p Predef.path_unit -> ()
-  | _ ->
-      if statement then
-        Location.prerr_warning loc Warnings.Statement_type
+let check_partial_application statement exp =
+  let rec f delay =
+    let ty = (expand_head exp.exp_env exp.exp_type).desc in
+    let check_statement () =
+      match ty with
+      | Tconstr (p, _, _)  when Path.same p Predef.path_unit ->
+          ()
+      | _ ->
+          if statement then
+            let rec loop {exp_loc; exp_desc; exp_extra; _} =
+              match exp_desc with
+              | Texp_let (_, _, e)
+              | Texp_sequence (_, e)
+              | Texp_letexception (_, e)
+              | Texp_letmodule (_, _, _, e) ->
+                  loop e
+              | _ ->
+                  let loc =
+                    match List.find_opt (function
+                        | (Texp_constraint _, _, _) -> true
+                        | _ -> false) exp_extra
+                    with
+                    | Some (_, loc, _) -> loc
+                    | None -> exp_loc
+                  in
+                  Location.prerr_warning loc Warnings.Statement_type
+            in
+            loop exp
+    in
+    match ty, exp.exp_desc with
+    | Tarrow _, _ ->
+        let rec check {exp_desc; exp_loc; exp_extra; _} =
+          if List.exists (function
+              | (Texp_constraint _, _, _) -> true
+              | _ -> false) exp_extra then check_statement ()
+          else begin
+            match exp_desc with
+            | Texp_ident _ | Texp_constant _ | Texp_tuple _
+            | Texp_construct _ | Texp_variant _ | Texp_record _
+            | Texp_field _ | Texp_setfield _ | Texp_array _
+            | Texp_while _ | Texp_for _ | Texp_instvar _
+            | Texp_setinstvar _ | Texp_override _ | Texp_assert _
+            | Texp_lazy _ | Texp_object _ | Texp_pack _ | Texp_unreachable
+            | Texp_extension_constructor _ | Texp_ifthenelse (_, _, None)
+            | Texp_function _ ->
+                check_statement ()
+            | Texp_match (_, cases, _) ->
+                List.iter (fun {c_rhs; _} -> check c_rhs) cases
+            | Texp_try (e, cases) ->
+                check e; List.iter (fun {c_rhs; _} -> check c_rhs) cases
+            | Texp_ifthenelse (_, e1, Some e2) ->
+                check e1; check e2
+            | Texp_let (_, _, e) | Texp_sequence (_, e)
+            | Texp_letexception (_, e) | Texp_letmodule (_, _, _, e) ->
+                check e
+            | Texp_apply _ | Texp_send _ | Texp_new _ ->
+                Location.prerr_warning exp_loc Warnings.Partial_application
+          end
+        in
+        check exp
+    | Tvar _, _ ->
+        if delay then add_delayed_check (fun () -> f false)
+    | _ ->
+        check_statement ()
+  in
+  f true
 
 (* Check that a type is generalizable at some level *)
 let generalizable level ty =
@@ -3941,13 +3996,7 @@ and type_application env funct sargs =
         filter_arrow env (instance funct.exp_type) Nolabel
       in
       let exp = type_expect env sarg (mk_expected ty_arg) in
-      begin match (expand_head env exp.exp_type).desc with
-      | Tarrow _ ->
-          Location.prerr_warning exp.exp_loc Warnings.Partial_application
-      | Tvar _ ->
-          add_delayed_check (fun () -> check_application_result env false exp)
-      | _ -> ()
-      end;
+      check_partial_application false exp;
       ([Nolabel, Some exp], ty_res)
   | _ ->
       let ty = funct.exp_type in
@@ -4050,15 +4099,7 @@ and type_statement ?explanation env sexp =
       unify_exp env exp expected_ty);
     exp
   else begin
-    begin match ty.desc with
-    | Tarrow _ ->
-        Location.prerr_warning loc Warnings.Partial_application
-    | Tconstr (p, _, _) when Path.same p Predef.path_unit -> ()
-    | Tvar _ ->
-        add_delayed_check (fun () -> check_application_result env true exp)
-    | _ ->
-        Location.prerr_warning loc Warnings.Statement_type
-    end;
+    check_partial_application true exp;
     unify_var env tv ty;
     exp
   end
@@ -4504,6 +4545,12 @@ and type_let
          | Tpat_alias ({pat_desc=Tpat_any}, _, _) -> ()
          | _ -> raise(Error(pat.pat_loc, env, Illegal_letrec_pat)))
       l;
+  List.iter (function
+      | {vb_pat = {pat_desc = Tpat_any; pat_extra; _}; vb_expr; _} ->
+          if not (List.exists (function (Tpat_constraint _, _, _) -> true
+                                      | _ -> false) pat_extra) then
+            check_partial_application false vb_expr
+      | _ -> ()) l;
   (l, new_env, unpacks)
 
 (* Typing of toplevel bindings *)
