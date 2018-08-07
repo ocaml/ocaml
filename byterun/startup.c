@@ -372,7 +372,7 @@ CAMLexport void caml_main(char_os **argv)
   if (Is_exception_result(res)) {
     Caml_state->exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
-      Caml_state->extern_sp = &Caml_state->exn_bucket; /* The debugger needs the
+      Caml_state->current_stack->sp = &Caml_state->exn_bucket; /* The debugger needs the
                                                exception value.*/
       caml_debugger(UNCAUGHT_EXC);
     }
@@ -460,7 +460,7 @@ CAMLexport void caml_startup_code(
   if (Is_exception_result(res)) {
     Caml_state->exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {
-      Caml_state->extern_sp = &Caml_state->exn_bucket; /* The debugger needs the
+      Caml_state->current_stack->sp = &Caml_state->exn_bucket; /* The debugger needs the
                                                exception value.*/
       caml_debugger(UNCAUGHT_EXC);
     }
