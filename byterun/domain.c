@@ -109,7 +109,7 @@ void caml_init_domain_state_key ()
 }
 
 #else
-CAMLexport __thread caml_domain_state* caml_domain_curr_state;
+CAMLexport __thread caml_domain_state* Caml_state;
 #endif
 
 asize_t caml_norm_minor_heap_size (intnat wsize)
