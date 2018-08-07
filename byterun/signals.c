@@ -19,6 +19,7 @@
 
 #include <signal.h>
 #include <errno.h>
+#include <string.h>
 #include "caml/alloc.h"
 #include "caml/callback.h"
 #include "caml/config.h"
@@ -77,6 +78,49 @@ void caml_record_signal(int signal_number)
   caml_pending_signals[signal_number] = 1;
   caml_signals_are_pending = 1;
   caml_interrupt_self();
+}
+
+void caml_init_signal_stack()
+{
+#ifdef POSIX_SIGNALS
+  stack_t stk;
+  stk.ss_flags = 0;
+  stk.ss_size = SIGSTKSZ;
+  stk.ss_sp = caml_stat_alloc(stk.ss_size);
+  if (sigaltstack(&stk, NULL) < 0) {
+    caml_fatal_error_arg("Could not allocate signal stack: %s", strerror(errno));
+  }
+
+  /* gprof installs a signal handler for SIGPROF.
+     Make it run on the alternate signal stack, to prevent segfaults. */
+  {
+    struct sigaction act;
+    sigaction(SIGPROF, NULL, &act);
+    if ((act.sa_flags & SA_SIGINFO) ||
+        (act.sa_handler != SIG_IGN && act.sa_handler != SIG_DFL)) {
+      /* found a handler */
+      if ((act.sa_flags & SA_ONSTACK) == 0) {
+        act.sa_flags |= SA_ONSTACK;
+        sigaction(SIGPROF, &act, NULL);
+      }
+    }
+  }
+#endif
+}
+
+void caml_free_signal_stack()
+{
+#ifdef POSIX_SIGNALS
+  stack_t stk, disable = {0};
+  disable.ss_flags = SS_DISABLE;
+  /* POSIX says ss_size is ignored when SS_DISABLE is set,
+     but OSX/Darwin fails if the size isn't set. */
+  disable.ss_size = SIGSTKSZ;
+  if (sigaltstack(&disable, &stk) < 0) {
+    caml_fatal_error_arg("Failed to reset signal stack: %s", strerror(errno));
+  }
+  caml_stat_free(stk.ss_sp);
+#endif
 }
 
 /* Execute a signal handler immediately */
