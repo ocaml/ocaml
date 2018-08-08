@@ -120,7 +120,8 @@ let _ =
   | Some gen ->
       let generator = Odoc_gen.get_minimal_generator gen in
       Odoc_info.verbose Odoc_messages.generating_doc;
-      generator#generate modules;
+      Printtyp.wrap_printing_env Env.empty ~error:false (fun () ->
+          generator#generate modules);
       Odoc_info.verbose Odoc_messages.ok
 
 let _ =
