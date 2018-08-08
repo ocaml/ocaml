@@ -662,6 +662,10 @@ OCaml 4.08.0 (13 June 2019)
   shouldn't create randomized hash tables.
   (David Allsopp, review by Alain Frisch)
 
+- GPR#640: Add safe IO functions, prefixed by `with_`, in `Pervasives`,
+  with automatic disposal of resources
+  (Simon Cruanes, review by Daniel Bünzli, Alain Frisch, Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - #2533, #1839, #1949: added Unix.fsync
