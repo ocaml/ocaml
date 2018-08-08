@@ -127,11 +127,9 @@ static value do_callback(callback_stub* cbstub, value closure,
   CAMLparam1(closure);
   struct stack_info* saved_parent;
   char* saved_system_sp;
-  uintnat saved_system_exnptr_offset;
   value ret;
 
   saved_system_sp = Caml_state->system_sp;
-  saved_system_exnptr_offset = Caml_state->system_exnptr_offset;
   saved_parent = Stack_parent(Caml_state->current_stack);
 
   Stack_parent(Caml_state->current_stack) = NULL;
@@ -140,7 +138,6 @@ static value do_callback(callback_stub* cbstub, value closure,
   ret = cbstub(Caml_state->young_ptr, closure, args);
 
   Caml_state->system_sp = saved_system_sp;
-  Caml_state->system_exnptr_offset = saved_system_exnptr_offset;
   Stack_parent(Caml_state->current_stack) = saved_parent;
 
   CAMLreturn(ret);

@@ -78,8 +78,6 @@ struct caml_thread_struct {
   struct caml__roots_block *local_roots; /* Saved value of local_roots */
 #ifdef NATIVE_CODE
   char *system_sp;
-  char *system_stack_high;
-  uintnat system_exnptr_offset;
   struct longjmp_buffer *exit_buf; /* For thread exit */
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   value internal_spacetime_trie_root;
@@ -177,8 +175,6 @@ static inline void caml_thread_save_runtime_state(void)
   curr_thread->local_roots = CAML_LOCAL_ROOTS;
 #ifdef NATIVE_CODE
   curr_thread->system_sp = Caml_state->system_sp;
-  curr_thread->system_stack_high = Caml_state->system_stack_high;
-  curr_thread->system_exnptr_offset = Caml_state->system_exnptr_offset;
 #ifdef WITH_SPACETIME
   curr_thread->spacetime_trie_node_ptr
     = caml_spacetime_trie_node_ptr;
@@ -207,8 +203,6 @@ static inline void caml_thread_restore_runtime_state(void)
   CAML_LOCAL_ROOTS = curr_thread->local_roots;
 #ifdef NATIVE_CODE
   Caml_state->system_sp = curr_thread->system_sp;
-  Caml_state->system_stack_high = curr_thread->system_stack_high;
-  Caml_state->system_exnptr_offset = curr_thread->system_exnptr_offset;
 #ifdef WITH_SPACETIME
   caml_spacetime_trie_node_ptr
     = curr_thread->spacetime_trie_node_ptr;
@@ -275,8 +269,6 @@ static caml_thread_t caml_thread_new_info(void)
 #ifdef NATIVE_CODE
   th->current_stack = caml_alloc_main_stack(Thread_stack_size);
   th->system_sp = NULL;
-  th->system_stack_high = NULL;
-  th->system_exnptr_offset = 0;
   th->exit_buf = NULL;
 #ifdef WITH_SPACETIME
   /* CR-someday mshinwell: The commented-out changes here are for multicore,
@@ -468,7 +460,6 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   value clos;
 #ifdef NATIVE_CODE
   struct longjmp_buffer termination_buf;
-  char tos;
 #endif
 
   info = (struct st_thread_info*) arg;
@@ -480,8 +471,6 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   /* Acquire the global mutex */
   caml_leave_blocking_section();
 #ifdef NATIVE_CODE
-  /* Record top of stack (approximative) */
-  Caml_state->system_stack_high = &tos;
   /* Setup termination handler (for caml_thread_exit) */
   if (sigsetjmp(termination_buf.buf, 0) == 0) {
     th->exit_buf = &termination_buf;
@@ -552,9 +541,6 @@ CAMLexport int caml_c_thread_register(void)
   /* Create a thread info block */
   th = caml_thread_new_info();
   if (th == NULL) return 0;
-#ifdef NATIVE_CODE
-  th->system_stack_high = (char *) &err;
-#endif
   /* Take master lock to protect access to the chaining of threads */
   st_masterlock_acquire(&caml_master_lock);
   /* Add thread info block to the list of threads */
