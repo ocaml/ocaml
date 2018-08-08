@@ -243,8 +243,6 @@ caml_system__code_begin:
         bl      caml_update_gc_regs_slot; \
     /* Args are relevant only for caml_realloc_stack */ \
         mov     x0, 0; \
-        mov     x1, 0; \
-        mov     x2, 0; \
         bl      TARGET_FUN; \
     /* Restore registers */ \
         ldp     x0, x1, [sp, 16]; \
