@@ -1128,6 +1128,10 @@ let pp_print_text ppf s =
   done;
   if !left <> len then flush ()
 
+let pp_print_option ?(none = fun _ () -> ()) pp_v ppf = function
+| None -> none ppf ()
+| Some v -> pp_v ppf v
+
 let pp_print_result ~ok ~error ppf = function
 | Ok v -> ok ppf v
 | Error e -> error ppf e
