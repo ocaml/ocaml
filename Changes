@@ -268,6 +268,10 @@ Working version
 - GPR#1938: always check ast invariants after preprocessing
   (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)
 
+- GPR#1948: Refactor Stdlib.Format. Notably, use Stdlib.Stack and Stdlib.Queue,
+  and avoid exceptions for control flow.
+  (Vladimir Keleshev, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
 ### Bug fixes:
 
 - GPR#1626: Do not allow recursive modules in `with module`
