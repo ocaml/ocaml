@@ -51,6 +51,14 @@ exception Exit
 (** The [Exit] exception is not raised by any library function.  It is
     provided for use in your programs. *)
 
+val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
+(** [protect ~finally work] invokes [work ()] and then [finally ()]
+    before [work] returns with its value or an exception. In the latter
+    case the exception is re-raised after [finally ()].
+    If [finally ()] raises, this exception is not caught and may shadow
+    one [work ()] may have raised.
+
+    @since 4.08.0 *)
 
 (** {1 Comparisons} *)
 
