@@ -141,6 +141,7 @@ Error: Signature mismatch:
          type t += E of int
        is not included in
          type t += E
+       The arities for field E differ.
 |}];;
 
 module M : sig type t += E of char end = struct type t += E of int end;;
@@ -157,6 +158,7 @@ Error: Signature mismatch:
          type t += E of int
        is not included in
          type t += E of char
+       The types for field E are not equal.
 |}];;
 
 module M : sig type t += C of int end = struct type t += E of int end;;
@@ -191,4 +193,5 @@ Error: Signature mismatch:
          type t += E of int
        is not included in
          type t += E of { x : int; }
+       The types for field E are not equal.
 |}];;

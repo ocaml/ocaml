@@ -33,7 +33,7 @@ type error =
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Cycle_in_def of string * type_expr
-  | Definition_mismatch of type_expr * Includecore.type_mismatch list
+  | Definition_mismatch of type_expr * Includecore.type_mismatch option
   | Constraint_failed of type_expr * type_expr
   | Inconsistent_constraint of Env.t * (type_expr * type_expr) list
   | Type_clash of Env.t * (type_expr * type_expr) list
@@ -43,7 +43,7 @@ type error =
   | Unbound_type_var of type_expr * type_declaration
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
-  | Extension_mismatch of Path.t * Includecore.type_mismatch list
+  | Extension_mismatch of Path.t * Includecore.type_mismatch
   | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
   | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
@@ -676,9 +676,9 @@ let check_coherence env loc id decl =
             let decl' = Env.find_type path env in
             let err =
               if List.length args <> List.length decl.type_params
-              then [Includecore.Arity]
+              then Some Includecore.Arity
               else if not (Ctype.equal env false args decl.type_params)
-              then [Includecore.Constraint]
+              then Some Includecore.Constraint
               else
                 Includecore.type_declarations ~loc ~equality:true env
                   ~mark:true
@@ -688,12 +688,12 @@ let check_coherence env loc id decl =
                   (Subst.type_declaration
                      (Subst.add_type id path Subst.identity) decl)
             in
-            if err <> [] then
+            if err <> None then
               raise(Error(loc, Definition_mismatch (ty, err)))
           with Not_found ->
             raise(Error(loc, Unavailable_type_constructor path))
           end
-      | _ -> raise(Error(loc, Definition_mismatch (ty, [])))
+      | _ -> raise(Error(loc, Definition_mismatch (ty, None)))
       end
   | _ -> ()
 
@@ -1559,16 +1559,18 @@ let transl_type_extension extend env loc styext =
   in
   let err =
     if type_decl.type_arity <> List.length styext.ptyext_params then
-      [Includecore.Arity]
+      Some Includecore.Arity
     else
       if List.for_all2
            (fun (c1, n1, _) (c2, n2, _) -> (not c2 || c1) && (not n2 || n1))
            type_variance
            (add_injectivity (List.map snd styext.ptyext_params))
-      then [] else [Includecore.Variance]
+      then None else Some Includecore.Variance
   in
-  if err <> [] then
-    raise (Error(loc, Extension_mismatch (type_path, err)));
+  begin match err with
+  | None -> ()
+  | Some err -> raise (Error(loc, Extension_mismatch (type_path, err)))
+  end;
   let ttype_params = make_params env styext.ptyext_params in
   let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
   List.iter2 (Ctype.unify_var env)
@@ -2006,13 +2008,18 @@ let report_error ppf = function
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[<v>The definition of %s contains a cycle:@ %a@]"
         s Printtyp.type_expr ty
-  | Definition_mismatch (ty, errs) ->
+  | Definition_mismatch (ty, None) ->
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@]"
+        "This variant or record definition" "does not match that of type"
+        Printtyp.type_expr ty
+  | Definition_mismatch (ty, Some err) ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
         "This variant or record definition" "does not match that of type"
         Printtyp.type_expr ty
         (Includecore.report_type_mismatch "the original" "this" "definition")
-        errs
+        err
   | Constraint_failed (ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
@@ -2080,13 +2087,13 @@ let report_error ppf = function
         "Type definition"
         Printtyp.path path
         "is not extensible"
-  | Extension_mismatch (path, errs) ->
+  | Extension_mismatch (path, err) ->
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%s@]%a@]"
         "This extension" "does not match the definition of type"
         (Path.name path)
         (Includecore.report_type_mismatch
            "the type" "this extension" "definition")
-        errs
+        err
   | Rebind_wrong_type (lid, env, trace) ->
       Printtyp.report_unification_error ppf env trace
         (function ppf ->
