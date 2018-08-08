@@ -121,3 +121,74 @@ Line 2, characters 0-3:
   ^^^
 Error: The module F is a functor, it cannot have any components
 |}];;
+
+type t = ..;;
+[%%expect{|
+type t = ..
+|}];;
+
+module M : sig type t += E end = struct type t += E of int end;;
+[%%expect{|
+Line 1, characters 33-62:
+  module M : sig type t += E end = struct type t += E of int end;;
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t += E of int end
+       is not included in
+         sig type t += E end
+       Extension declarations do not match:
+         type t += E of int
+       is not included in
+         type t += E
+|}];;
+
+module M : sig type t += E of char end = struct type t += E of int end;;
+[%%expect{|
+Line 1, characters 41-70:
+  module M : sig type t += E of char end = struct type t += E of int end;;
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t += E of int end
+       is not included in
+         sig type t += E of char end
+       Extension declarations do not match:
+         type t += E of int
+       is not included in
+         type t += E of char
+|}];;
+
+module M : sig type t += C of int end = struct type t += E of int end;;
+[%%expect{|
+Line 1, characters 40-69:
+  module M : sig type t += C of int end = struct type t += E of int end;;
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t += E of int end
+       is not included in
+         sig type t += C of int end
+       The extension constructor `C' is required but not provided
+|}];;
+
+module M : sig
+  type t += E of { x : int }
+end = struct
+  type t += E of int
+end;;
+[%%expect{|
+Line 3, characters 6-37:
+  ......struct
+    type t += E of int
+  end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t += E of int end
+       is not included in
+         sig type t += E of { x : int; } end
+       Extension declarations do not match:
+         type t += E of int
+       is not included in
+         type t += E of { x : int; }
+|}];;
