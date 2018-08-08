@@ -94,7 +94,9 @@ struct stack_info* caml_alloc_main_stack (uintnat init_size);
 void caml_init_main_stack(void);
 void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack);
 void caml_restore_stack();
-void caml_realloc_stack (asize_t required_size, value* save, int nsave);
+/* try to grow the stack until at least required_size words are available.
+   returns nonzero on success */
+int caml_try_realloc_stack (asize_t required_size);
 void caml_change_max_stack_size (uintnat new_max_size);
 void caml_maybe_expand_stack();
 void caml_free_stack(struct stack_info* stk);

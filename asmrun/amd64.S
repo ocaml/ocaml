@@ -168,15 +168,15 @@
 /* Stack switching operations */
 /******************************************************************************/
 
-/* Switch from OCaml to C stack. Clobbers %r14. */
+/* Switch from OCaml to C stack. Clobbers REG. */
 #define SWITCH_OCAML_TO_C_NO_CTXT(REG) \
     /* Save OCaml SP in the stack slot */ \
-        LOAD_TL_VAR(caml_current_stack, %r14); \
-        movq    %rsp, Stack_sp(%r14); \
+        LOAD_TL_VAR(caml_current_stack, REG); \
+        movq    %rsp, Stack_sp(REG); \
     /* Switch to system stack */ \
-        LOAD_TL_VAR(caml_system_sp, %r14); \
-        movq    %rsp, 16(%r14); /* For DWARF CFI. See OFFXXX. */ \
-        movq    %r14, %rsp; \
+        LOAD_TL_VAR(caml_system_sp, REG); \
+        movq    %rsp, 16(REG); /* For DWARF CFI. See OFFXXX. */ \
+        movq    REG, %rsp; \
         .cfi_def_cfa_offset 8 /* SYSCFAXXX */
 
 /* Switch from OCaml to C stack. Also builds a context at
@@ -519,8 +519,6 @@ CFI_ENDPROC
         PREPARE_FOR_C_CALL;                                                    \
     /* Args are relevant only for caml_realloc_stack */                        \
         movq    $0, C_ARG_1;                                                   \
-        movq    $0, C_ARG_2;                                                   \
-        movq    $0, C_ARG_3;                                                   \
         LEA_VAR(TARGET_FUN, %rax);                                             \
         CAML_CALL_ENTER_C;                                                     \
         CLEANUP_AFTER_C_CALL;                                                  \
@@ -584,19 +582,19 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_call_realloc_stack))
 CFI_STARTPROC
-        SWITCH_OCAML_TO_C(%r10)
+        SWITCH_OCAML_TO_C_NO_CTXT(%r10)
 #ifdef WITH_FRAME_POINTERS
         ENTER_FUNCTION
 #else
         pushq   %rbp; CFI_ADJUST(8);
 #endif
-        SAVE_ALL_REGS_AND_CALL(caml_realloc_stack)
+        int3  ; FIXME
 #ifdef WITH_FRAME_POINTERS
         LEAVE_FUNCTION;
 #else
         popq    %rbp; CFI_ADJUST(-8)
 #endif
-        SWITCH_C_TO_OCAML(%r10)
+        SWITCH_C_TO_OCAML_NO_CTXT(%r10, 0) /* FIXME CFA */
     /* Return to caller */
         ret
 CFI_ENDPROC
