@@ -1050,7 +1050,9 @@ let preproc_fun fun_body _fun_name =
           | Lpoptrap -> (r, a-16)
           | Lop (Iextcall _ | Ialloc _ | Iintop (Icheckbound _)
                  | Iintop_imm (Icheckbound _, _)) ->
-              ({r with contains_external_calls = true}, a)
+              ({r with contains_external_calls = true;
+                       (* +24 bytes for caml_context *)
+                       max_stack_size = max r.max_stack_size (a+24)}, a)
           | Lop (Icall_ind _ | Icall_imm _ ) ->
               ({r with contains_nontail_calls = true}, a)
           | _ -> (r, a)
@@ -1102,6 +1104,22 @@ let fundecl fundecl =
   cfi_startproc ();
   if !Clflags.runtime_variant = "d" then
     emit_call "caml_assert_stack_invariants";
+  let { max_stack_size; contains_nontail_calls; contains_external_calls = _ } =
+    preproc_fun fundecl.fun_body fundecl.fun_name in
+  let handle_overflow = ref None in
+  if contains_nontail_calls || max_stack_size >= stack_threshold_size then begin
+    let (overflow,ret) = new_label(), new_label() in
+    I.lea (mem64 NONE (-max_stack_size) RSP) r10;
+    I.mov r15 r11;
+    locate_domain_state r11;
+    if Config.stats then begin
+      I.inc (domain_field Domainstate.Domain_stackoverflow_checks R11);
+    end;
+    I.cmp (domain_field Domainstate.Domain_stack_threshold R11) r10;
+    I.jb (label overflow);
+    def_label ret;
+    handle_overflow := Some (overflow, ret)
+  end;
   if fp then begin
     I.push rbp;
     cfi_adjust_cfa_offset 8;
@@ -1116,55 +1134,21 @@ let fundecl fundecl =
       cfi_adjust_cfa_offset n
     end
   end;
-
-  let preproc_res = preproc_fun fundecl.fun_body fundecl.fun_name in
-  let s = preproc_res.max_stack_size in
-
-  (* Extra 24 bytes for caml_context at the bottom of OCaml stack if the
-   * function makes external calls *)
-  let s = if preproc_res.contains_external_calls then s + 24 else s in
-
-  if not preproc_res.contains_nontail_calls && s < stack_threshold_size
-  then begin
-    def_label !tailrec_entry_point;
-    emit_all true fundecl.fun_body;
-    List.iter emit_call_gc !call_gc_sites;
-    List.iter emit_call_read_barrier !read_barrier_call_sites;
-    emit_call_bound_errors ();
-  end
-  else begin
-    (* XXX KC: fundecl.fun_body.live does not capture liveness at the start of
-    the function properly. Hence, consider all argument registers as live.
-    Stragely, all arguments are typed as Int regs (see regs.mli). These are
-    ignored by record_frame_label. Hence, consider all of them to be type Val.
-    *)
-    let live_initially =
-      Reg.Set.(fold (fun r s -> add {r with typ = Val} s)
-        fundecl.fun_args empty)
-    in
-    let handle_overflow = new_label() in
-    let after_overflow = record_frame_label live_initially false Debuginfo.none in
-
-    I.mov r15 r11;
-    locate_domain_state r11;
-    if Config.stats then begin
-      I.inc (domain_field Domainstate.Domain_stackoverflow_checks R11);
-    end;
-    I.mov (domain_field Domainstate.Domain_stack_threshold R11) r11;
-    I.add (int s) r11;
-    I.cmp r11 rsp;
-    I.jb (label handle_overflow);
-    def_label !tailrec_entry_point;
-    emit_all true fundecl.fun_body;
-    List.iter emit_call_gc !call_gc_sites;
-    List.iter emit_call_read_barrier !read_barrier_call_sites;
-    emit_call_bound_errors ();
-    def_label handle_overflow;
+  def_label !tailrec_entry_point;
+  emit_all true fundecl.fun_body;
+  List.iter emit_call_gc !call_gc_sites;
+  List.iter emit_call_read_barrier !read_barrier_call_sites;
+  emit_call_bound_errors ();
+  (match !handle_overflow with None -> () | Some (overflow,ret) -> begin
+    def_label overflow;
+    (* Pass the desired stack size on the stack, since all of the
+       argument-passing registers may be in use.
+       Also serves to align the stack properly before the call *)
+    I.push (int (Config.stack_threshold + max_stack_size / 8)); (* measured in words *)
     emit_call "caml_call_realloc_stack";
-    def_label after_overflow;
-    I.jmp (label !tailrec_entry_point);
-  end;
-
+    I.pop r10; (* ignored *)
+    I.jmp (label ret)
+   end);
   if frame_required() then begin
     let n = frame_size() - 8 - (if fp then 8 else 0) in
     if n <> 0
