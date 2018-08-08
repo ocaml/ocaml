@@ -101,13 +101,12 @@ val highlight_terminfo:
   Lexing.lexbuf -> formatter -> t list -> unit
 
 val highlight_dumb:
-  print_chars:bool -> Lexing.lexbuf -> formatter -> t list -> unit
-
-val highlight_locations:
-  formatter -> t list -> unit
+  Lexing.lexbuf -> formatter -> t list -> unit
 
 
 (** {1 Reporting errors and warnings} *)
+
+(** {2 The type of reports and report printers} *)
 
 type msg = (Format.formatter -> unit) loc
 
@@ -149,16 +148,27 @@ type report_printer = {
     existing ones.
 *)
 
+(** {2 Report printers used in the compiler} *)
+
 val batch_mode_printer: report_printer
-val toplevel_printer:
-  highlight:(formatter -> t list -> unit) ->
-  report_printer
+
+val terminfo_toplevel_printer: Lexing.lexbuf -> report_printer
+val dumb_toplevel_printer: Lexing.lexbuf -> report_printer
+
+val best_toplevel_printer: unit -> report_printer
+(** Detects the terminal capabilities and selects an adequate printer *)
+
+(** {2 Printing a [report]} *)
 
 val print_report: formatter -> report -> unit
 (** Display an error or warning report. *)
 
 val report_printer: (unit -> report_printer) ref
-(** Hook for redefining the printer of reports. *)
+(** Hook for redefining the printer of reports.
+
+    The hook is a [unit -> report_printer] and not simply a [report_printer]:
+    this is useful so that it can detect the type of the output (a file, a
+    terminal, ...) and select a printer accordingly. *)
 
 val default_report_printer: unit -> report_printer
 (** Original report printer for use in hooks. *)

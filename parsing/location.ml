@@ -305,7 +305,7 @@ let highlight_terminfo lb ppf locs =
 
    If [locs] is empty then this function is a no-op.
 *)
-let highlight_dumb ~print_chars lb ppf locs =
+let highlight_dumb lb ppf locs =
   let locs' = Misc.Stdlib.List.filter_map (fun loc ->
     let s, e = loc.loc_start.pos_cnum, loc.loc_end.pos_cnum in
     (* Ignore dummy locations *)
@@ -357,9 +357,6 @@ let highlight_dumb ~print_chars lb ppf locs =
       !line_start, !line_end, !line_start_pos, !line_end_pos
     in
     Format.fprintf ppf "@[<v>";
-    (* Print character location (useful for Emacs) *)
-    if print_chars then
-      Format.fprintf ppf "%a:@," print_locs locs;
     (* Print the input, highlighting the locations.
        Indent by two spaces. *)
     Format.fprintf ppf "  @[<v>";
@@ -385,24 +382,8 @@ let highlight_dumb ~print_chars lb ppf locs =
     Format.fprintf ppf "@]@,@]"
   end
 
-let highlight_dumb ~print_chars lb ppf locs =
-  try highlight_dumb ~print_chars lb ppf locs
-  with Exit -> ()
-
-(* Return the "best" highlighting function depending on the capabilities of the
-   terminal. *)
-let highlight_locations ppf locs =
-  setup_terminal ();
-  let norepeat =
-    try Sys.getenv "TERM" = "norepeat" with Not_found -> false
-  in
-  match !status, !input_lexbuf, norepeat with
-  | Terminfo.Good_term, Some lb, _ ->
-      highlight_terminfo lb ppf locs
-  | Terminfo.Bad_term, Some lb, false ->
-      highlight_dumb ~print_chars:true lb ppf locs
-  | _, _, _ ->
-      Format.fprintf ppf "@[<v>%a:@,@]" print_locs locs
+let highlight_dumb lb ppf locs =
+  try highlight_dumb lb ppf locs with Exit -> ()
 
 (******************************************************************************)
 (* Reporting errors and warnings *)
@@ -495,40 +476,61 @@ let is_dummy_loc loc =
      valid. *)
   loc.loc_start.pos_cnum = -1 || loc.loc_end.pos_cnum = -1
 
-let toplevel_printer
-    ~(highlight: Format.formatter -> t list -> unit):
-  report_printer
-  =
-  let super = batch_mode_printer in
+(* It only makes sense to highlight (i.e. quote or underline the corresponding
+   source code) locations that originate from the toplevel. *)
+let is_toplevel_loc loc =
+  not (is_dummy_loc loc)
+  && loc.loc_start.pos_fname = "//toplevel//"
+  && loc.loc_end.pos_fname = "//toplevel//"
+
+let dumb_toplevel_printer (lb: lexbuf): report_printer =
   let pp self ppf err =
     setup_colors ();
     (* Since we're printing in the toplevel, we have to keep [num_loc_lines]
        updated. *)
-    print_updating_num_loc_lines ppf (fun ppf err ->
-      (* Highlight all toplevel locations of the report, instead of displaying
-         the main location. Do it now instead of in [pp_main_loc], to avoid
-         messing with Format boxes. *)
-      let sub_locs = List.map (fun { loc; _ } -> loc) err.sub in
-      let all_locs = err.main.loc :: sub_locs in
-      let locs_highlighted = List.filter (fun loc ->
-        not (is_dummy_loc loc)
-        && loc.loc_start.pos_fname = "//toplevel//"
-        && loc.loc_end.pos_fname = "//toplevel//"
-      ) all_locs in
-      highlight ppf locs_highlighted;
-      super.pp self ppf err
-    ) err
+    print_updating_num_loc_lines ppf (batch_mode_printer.pp self) err
   in
-  let pp_main_loc _self _ _ _ =
-    ()
+  let pp_loc _ _ ppf loc =
+    let highlight ppf loc =
+      if is_toplevel_loc loc then highlight_dumb lb ppf [loc] in
+    Format.fprintf ppf "%a:@,%a" print_loc loc highlight loc
   in
-  { super with pp; pp_main_loc }
+  { batch_mode_printer with pp; pp_main_loc = pp_loc; pp_submsg_loc = pp_loc }
+
+let terminfo_toplevel_printer (lb: lexbuf): report_printer =
+  let pp self ppf err =
+    setup_colors ();
+    (* Highlight all toplevel locations of the report, instead of displaying
+       the main location. Do it now instead of in [pp_main_loc], to avoid
+       messing with Format boxes. *)
+    let sub_locs = List.map (fun { loc; _ } -> loc) err.sub in
+    let all_locs = err.main.loc :: sub_locs in
+    let locs_highlighted = List.filter is_toplevel_loc all_locs in
+    highlight_terminfo lb ppf locs_highlighted;
+    (* Make sure we keep [num_loc_lines] updated. *)
+    print_updating_num_loc_lines ppf (batch_mode_printer.pp self) err
+  in
+  let pp_main_loc _ _ _ _ = () in
+  { batch_mode_printer with pp; pp_main_loc }
+
+let best_toplevel_printer () =
+  setup_terminal ();
+  let norepeat =
+    try Sys.getenv "TERM" = "norepeat" with Not_found -> false
+  in
+  match !status, !input_lexbuf, norepeat with
+  | Terminfo.Good_term, Some lb, _ ->
+      terminfo_toplevel_printer lb
+  | Terminfo.Bad_term, Some lb, false ->
+      dumb_toplevel_printer lb
+  | _, _, _ ->
+      batch_mode_printer
 
 (* Creates a printer for the current input *)
 let default_report_printer () : report_printer =
-  if !input_name = "//toplevel//" then begin
-    toplevel_printer ~highlight:highlight_locations
-  end else
+  if !input_name = "//toplevel//" then
+    best_toplevel_printer ()
+  else
     batch_mode_printer
 
 let report_printer = ref default_report_printer

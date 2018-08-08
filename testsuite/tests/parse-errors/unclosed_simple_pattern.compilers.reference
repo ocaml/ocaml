@@ -1,23 +1,26 @@
-Line 7, characters 0-2,
-Line 6, characters 9-10:
-  .........(.
+Line 7, characters 0-2:
   ;;
+  ^^
 Error: Syntax error: ')' expected
        Line 6, characters 9-10:
+           | List.(_
+                  ^
        This '(' might be unmatched
-Line 4, characters 0-2,
-Line 3, characters 4-5:
-  ....(.
+Line 4, characters 0-2:
   ;;
+  ^^
 Error: Syntax error: ')' expected
        Line 3, characters 4-5:
+           | (_
+             ^
        This '(' might be unmatched
-Line 4, characters 0-2,
-Line 3, characters 4-5:
-  ....(.......
+Line 4, characters 0-2:
   ;;
+  ^^
 Error: Syntax error: ')' expected
        Line 3, characters 4-5:
+           | (_ : int
+             ^
        This '(' might be unmatched
 Line 7, characters 0-2:
   ;;

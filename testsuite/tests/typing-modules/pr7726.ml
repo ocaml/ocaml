@@ -110,6 +110,7 @@ M.f 5;;
 module Foo :
   functor (F : T -> T) -> sig val f : Fix(F).Fixed.t -> Fix(F).Fixed.t end
 module M : sig val f : Fix(Id).Fixed.t -> Fix(Id).Fixed.t end
+Line 1:
 Error: In the signature of Fix(Id):
        The definition of Fixed.t contains a cycle:
        Id(Fixed).t

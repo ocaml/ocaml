@@ -3,32 +3,34 @@ Line 9, characters 8-15:
           ^^^^^^^
 Error: This expression has type int but an expression was expected of type
          float
-Line 2, characters 15-17,
-Line 2, characters 8-9:
+Line 2, characters 15-17:
   let x = (1 + 2 in ();;
-          ^      ^^
+                 ^^
 Error: Syntax error: ')' expected
        Line 2, characters 8-9:
+         let x = (1 + 2 in ();;
+                 ^
        This '(' might be unmatched
-Line 2, characters 14-16,
-Line 2, characters 8-9:
+Line 2, characters 14-16:
   let x = (1 + 2;;
-          ^     ^^
+                ^^
 Error: Syntax error: ')' expected
        Line 2, characters 8-9:
+         let x = (1 + 2;;
+                 ^
        This '(' might be unmatched
 Line 3, characters 8-9:
   let y = 1 +. 2. in
           ^
 Error: This expression has type int but an expression was expected of type
          float
-Line 4, characters 2-4,
-Line 2, characters 8-9:
-  ........(.
-  ...
-  ..in
+Line 4, characters 2-4:
+  2 in
+    ^^
 Error: Syntax error: ')' expected
        Line 2, characters 8-9:
+         let x = (1
+                 ^
        This '(' might be unmatched
 Line 2, characters 8-17:
   ........(1

@@ -129,20 +129,21 @@ let split_chunks phrases =
   loop phrases [] []
 
 module Compiler_messages = struct
-  let highlight ppf locs =
-    match !Location.input_lexbuf with
-    | None -> ()
-    | Some lb -> Location.highlight_dumb ~print_chars:true lb ppf locs
+  let printer (lb: Lexing.lexbuf) =
+    let pp_loc _ _ ppf loc =
+      (* We want to highlight locations even coming from a file, but the
+         toplevel printer will only highlight locations from the toplevel. *)
+      Format.fprintf ppf "%a:@,%a"
+        Location.print_loc loc
+        (Location.highlight_dumb lb) [loc]
+    in
+    { (Location.dumb_toplevel_printer lb)
+      with pp_main_loc = pp_loc; pp_submsg_loc = pp_loc }
 
   let expect_printer () =
-    let dumb_toplevel_printer = Location.toplevel_printer ~highlight in
-    let pp_main_loc _self (report: Location.report) ppf _  =
-      (* We want to highlight locations even coming from a file, but the default
-         toplevel printer will only highlight locations from the toplevel. *)
-      let sub_locs = List.map (fun { Location.loc; _ } -> loc) report.sub in
-      highlight ppf (report.main.loc :: sub_locs)
-    in
-    { dumb_toplevel_printer with pp_main_loc }
+    match !Location.input_lexbuf with
+    | None -> Location.batch_mode_printer
+    | Some lb -> printer lb
 
   let capture ppf ~f =
     Misc.protect_refs
