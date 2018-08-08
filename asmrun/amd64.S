@@ -872,10 +872,6 @@ LBL(caml_start_program):
     /* System stack is captured unaligned. Hence, any OCaml to C calls
      * are expected to explicitly align stack using ENTER_FUNCTION and such. */
         STORE_TL_VAR(%rsp, caml_system_sp)
-    /* Load C exception handler */
-        LOAD_TL_VAR(caml_system_stack_high, %r14)
-        subq    %rsp, %r14
-        STORE_TL_VAR(%r14, caml_system_exnptr_offset)
     /* Switch from C to OCaml stack. CFA offset -8 refers to OCAMLCFAXXX. */
         SWITCH_C_TO_OCAML_NO_CTXT(%r10,-8)
     /* Setup alloc ptr */
@@ -966,14 +962,7 @@ CFI_STARTPROC
         movq    C_ARG_1, %r15                /* young_ptr */
         movq    C_ARG_2, %rax
 LBL(caml_raise_exception):
-        LOAD_TL_VAR(caml_system_exnptr_offset, %r14)
-        LOAD_TL_VAR(caml_system_stack_high, %r11);
-        sub     %r14, %r11;
-        movq    %r11, %rsp;
-    /* Prepare for return to OCaml */
-        LOAD_TL_VAR(caml_young_ptr, %r15)
     /* Load ocaml stack and restore global variables */
-        LEAVE_FUNCTION
         SWITCH_C_TO_OCAML(%r10)
     /* Raise the exception in OCaml */
         jmp LBL(caml_raise_exn)

@@ -94,7 +94,6 @@ extern void caml_install_invalid_parameter_handler();
 value caml_startup_common(char_os **argv, int pooling)
 {
   char_os * exe_name, * proc_self_exe;
-  char tos;
 
   CAML_INIT_DOMAIN_STATE;
 
@@ -120,10 +119,6 @@ value caml_startup_common(char_os **argv, int pooling)
 
   if (caml_params->backtrace_enabled_init)
     caml_record_backtrace(Val_int(1));
-
-  /* Capture 16-byte aligned (ceil) system_stack_high */
-  Caml_state->system_stack_high =
-    (char*)((((uintnat)&tos + 16) >> 4) << 4);
 
   init_segments();
   caml_init_signals();
