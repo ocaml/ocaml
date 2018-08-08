@@ -942,7 +942,9 @@ val with_open_out_bin : string -> (out_channel -> 'a) -> 'a
     mode, this function behaves like {!Pervasives.with_open_out}.
     @since NEXT_RELEASE *)
 
-val with_open_out_gen : open_flag list -> int -> string -> (out_channel -> 'a) -> 'a
+val with_open_out_gen :
+  open_flag list -> int -> string ->
+  (out_channel -> 'a) -> 'a
 (** [with_open_out_gen mode perm filename f] opens the named file for writing,
     as described above, then gives the channel to [f] and ensures
     that the channel is closed after [f] raises or returns.
@@ -1068,7 +1070,9 @@ val with_open_in_bin : string -> (in_channel -> 'a) -> 'a
     see {!open_in_bin}
     @since NEXT_RELEASE *)
 
-val with_open_in_gen : open_flag list -> int -> string -> (in_channel -> 'a) -> 'a
+val with_open_in_gen :
+  open_flag list -> int -> string ->
+  (in_channel -> 'a) -> 'a
 (** [with_open_in_gen mode perm filename f] opens the named file for reading,
     as described above, and gives the channel to [f]. It closes the channel
     once [f] is done.
