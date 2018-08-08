@@ -517,8 +517,6 @@ CFI_ENDPROC
         movsd   %xmm14, 14*8(%rsp);                                            \
         movsd   %xmm15, 15*8(%rsp);                                            \
         PREPARE_FOR_C_CALL;                                                    \
-    /* Args are relevant only for caml_realloc_stack */                        \
-        movq    $0, C_ARG_1;                                                   \
         LEA_VAR(TARGET_FUN, %rax);                                             \
         CAML_CALL_ENTER_C;                                                     \
         CLEANUP_AFTER_C_CALL;                                                  \
@@ -582,18 +580,67 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_call_realloc_stack))
 CFI_STARTPROC
+        movq    8(%rsp), %r11 /* argument */
         SWITCH_OCAML_TO_C_NO_CTXT(%r10)
-#ifdef WITH_FRAME_POINTERS
         ENTER_FUNCTION
-#else
-        pushq   %rbp; CFI_ADJUST(8);
-#endif
-        int3  ; FIXME
-#ifdef WITH_FRAME_POINTERS
-        LEAVE_FUNCTION;
-#else
-        popq    %rbp; CFI_ADJUST(-8)
-#endif
+    /* Save the registers that might be used as arguments. (see proc.ml) */
+        pushq   %r13; CFI_ADJUST (8)
+        pushq   %r12; CFI_ADJUST (8)
+        pushq   %r9; CFI_ADJUST (8)
+        pushq   %r8; CFI_ADJUST (8)
+        pushq   %rcx; CFI_ADJUST (8)
+        pushq   %rdx; CFI_ADJUST (8)
+        pushq   %rsi; CFI_ADJUST (8)
+        pushq   %rdi; CFI_ADJUST (8)
+        pushq   %rbx; CFI_ADJUST (8)
+        pushq   %rax; CFI_ADJUST (8)
+        subq    $(10*8), %rsp; CFI_ADJUST (16*8)
+        movsd   %xmm0, 0*8(%rsp)
+        movsd   %xmm1, 1*8(%rsp)
+        movsd   %xmm2, 2*8(%rsp)
+        movsd   %xmm3, 3*8(%rsp)
+        movsd   %xmm4, 4*8(%rsp)
+        movsd   %xmm5, 5*8(%rsp)
+        movsd   %xmm6, 6*8(%rsp)
+        movsd   %xmm7, 7*8(%rsp)
+        movsd   %xmm8, 8*8(%rsp)
+        movsd   %xmm9, 9*8(%rsp)
+
+        movq    %r11, C_ARG_1
+        PREPARE_FOR_C_CALL
+        call    GCALL(caml_try_realloc_stack)
+        CLEANUP_AFTER_C_CALL
+        cmpq    $0, %rax
+        jnz     1f
+        LEA_VAR(caml_exn_Stack_overflow, %rax)
+        SWITCH_C_TO_OCAML_NO_CTXT(%r10, 0) /* FIXME CFA */
+        /* pop argument, retaddr */
+        add     $16, %rsp
+        jmp     GCALL(caml_raise_exn)
+1:
+
+        movsd   0*8(%rsp), %xmm0
+        movsd   1*8(%rsp), %xmm1
+        movsd   2*8(%rsp), %xmm2
+        movsd   3*8(%rsp), %xmm3
+        movsd   4*8(%rsp), %xmm4
+        movsd   5*8(%rsp), %xmm5
+        movsd   6*8(%rsp), %xmm6
+        movsd   7*8(%rsp), %xmm7
+        movsd   8*8(%rsp), %xmm8
+        movsd   9*8(%rsp), %xmm9
+        addq    $(10*8), %rsp; CFI_ADJUST(-16*8)
+        popq    %rax; CFI_ADJUST(-8)
+        popq    %rbx; CFI_ADJUST(-8)
+        popq    %rdi; CFI_ADJUST(-8)
+        popq    %rsi; CFI_ADJUST(-8)
+        popq    %rdx; CFI_ADJUST(-8)
+        popq    %rcx; CFI_ADJUST(-8)
+        popq    %r8; CFI_ADJUST(-8)
+        popq    %r9; CFI_ADJUST(-8)
+        popq    %r12; CFI_ADJUST(-8)
+        popq    %r13; CFI_ADJUST(-8)
+        LEAVE_FUNCTION
         SWITCH_C_TO_OCAML_NO_CTXT(%r10, 0) /* FIXME CFA */
     /* Return to caller */
         ret
@@ -1159,12 +1206,14 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_assert_stack_invariants))
 CFI_STARTPROC
-        test    $0xf, %rsp
-        jz      1f
-        int3
+/*        test    $0xf, %rsp */
+/*        jz      1f */
+/*        int3 */
 1:      LOAD_TL_VAR(caml_stack_threshold, %r11)
-        cmp     %r11, %rsp
-        ja      1f
+        movq    %rsp, %r10
+        subq    %r11, %r10      /* %r10: number of words left before threshold */
+        cmp     $(-2*8), %r10   /* can be two words over: the return addresses */
+        jge     1f
         int3
 1:      ret
 CFI_ENDPROC

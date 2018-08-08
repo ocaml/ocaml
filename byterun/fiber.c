@@ -160,7 +160,7 @@ void caml_maybe_expand_stack ()
     (value*)stk->sp - Stack_base(stk);
 
   if (stack_available < 2 * Stack_threshold / sizeof(value))
-    if (!caml_try_realloc_stack (0))
+    if (!caml_try_realloc_stack (2 * Stack_threshold / sizeof(value)))
       caml_raise_stack_overflow();
 }
 
@@ -298,7 +298,7 @@ int caml_on_current_stack(value* p)
   return Stack_base(Caml_state->current_stack) <= p && p < Caml_state->stack_high;
 }
 
-void caml_try_realloc_stack(asize_t required_space)
+int caml_try_realloc_stack(asize_t required_space)
 {
   struct stack_info *old_stack, *new_stack;
   asize_t size;
@@ -309,7 +309,8 @@ void caml_try_realloc_stack(asize_t required_space)
 
   stack_used = Stack_high(old_stack) - (value*)old_stack->sp;
 #ifdef DEBUG
-  size = stack_used * 17 / 16 + required_space;
+  size = stack_used + stack_used / 16 + required_space;
+  if (size >= caml_max_stack_size) return 0;
 #else
   size = Stack_high(old_stack) - Stack_base(old_stack);
   do {
@@ -327,7 +328,8 @@ void caml_try_realloc_stack(asize_t required_space)
                  (uintnat) size * sizeof(value));
   }
 
-  new_stack = caml_stat_alloc(sizeof(value) * (Stack_ctx_words + size));
+  new_stack = caml_stat_alloc_noexc(sizeof(value) * (Stack_ctx_words + size));
+  if (!new_stack) return 0;
   new_stack->wosize = Stack_ctx_words + size;
   new_stack->magic = 42;
   memcpy(Stack_high(new_stack) - stack_used,
