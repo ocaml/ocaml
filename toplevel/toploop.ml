@@ -283,7 +283,8 @@ let execute_phrase print_outcome ppf phr =
               in
               Ophr_exception (exn, outv)
         in
-        !print_out_phrase ppf out_phr;
+        Printtyp.wrap_printing_env ~error:false oldenv (fun () ->
+            !print_out_phrase ppf out_phr);
         if Printexc.backtrace_status ()
         then begin
           match !backtrace with

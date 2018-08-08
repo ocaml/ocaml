@@ -1038,6 +1038,10 @@ let report_error env ppf = function
         "you should add the 'rec' keyword on line"
         line
 
+let report_error env ppf err =
+  Printtyp.wrap_printing_env ~error:true env (fun () ->
+      report_error env ppf err)
+
 let () =
   Location.register_error_of_exn
     (function

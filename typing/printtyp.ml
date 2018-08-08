@@ -27,6 +27,66 @@ open Outcometree
 
 module String = Misc.Stdlib.String
 
+(* Printing environment for path shortening and naming *)
+
+module Printing_env : sig
+  (* Temporarily set the printing environemnt for duration of [f
+     ()]. Once the execution of [f ()] finishes or raises, the
+     original printing environment is restored. [acknowledge_env] is
+     called before and after to acknowledge the change of printing
+     environment. *)
+  val with_env
+    :  Env.t
+    -> acknowledge_env:(Env.t -> unit)
+    -> f:(unit -> 'a)
+    -> 'a
+
+  (* Return the printing environment currently set. It is now allowed
+     to use this function outside of [with_env]. *)
+  val get : unit -> Env.t
+
+  (* Set the current printing environment. The new printing
+     environment will be in effect until the end of the innermost
+     [with_env]. *)
+  val set : Env.t -> unit
+
+  val is_empty_or_unset : unit -> bool
+end = struct
+  type state = Set of Env.t | Unset
+
+  let printing_env = ref Unset
+
+  let get () =
+    match !printing_env with
+    | Set env -> env
+    | Unset ->
+        failwith "Printtyp.Printing_env.get called outside of \
+                  wrap_printing_env"
+
+  let set env =
+    match !printing_env with
+    | Set _ -> printing_env := Set env;
+    | Unset ->
+        failwith "Printtyp.Printing_env.set called outside of \
+                  wrap_printing_env"
+
+  let is_empty_or_unset () =
+    match !printing_env with
+    | Set env -> env == Env.empty
+    | Unset -> true
+
+  let with_env env ~acknowledge_env ~f =
+    let old = !printing_env in
+    printing_env := Set env;
+    acknowledge_env env;
+    try_finally f ~always:(fun () ->
+        printing_env := old;
+        acknowledge_env
+          (match old with
+           | Set env -> env
+           | Unset -> Env.empty))
+end
+
 (* Print a long identifier *)
 
 let rec longident ppf = function
@@ -42,8 +102,6 @@ module Out_name = struct
   let set out_name x = out_name.printed_name <- x
 end
 
-(* printing environment for path shortening and naming *)
-let printing_env = ref Env.empty
 let human_unique n id = Printf.sprintf "%s/%d" (Ident.name id) n
 
 type namespace =
@@ -77,20 +135,22 @@ module Namespace = struct
 
   let lookup =
     let to_lookup f lid =
-      fst @@ f ?loc:None ?mark:(Some false) (Lident lid) !printing_env in
+      fst @@ f ?loc:None ?mark:(Some false) (Lident lid)
+        (Printing_env.get ())
+    in
     function
     | Type -> fun id ->
-      Env.lookup_type ?loc:None ~mark:false (Lident id) !printing_env
+      Env.lookup_type ?loc:None ~mark:false (Lident id) (Printing_env.get ())
     | Module -> fun id ->
       Env.lookup_module ~load:true ~mark:false ?loc:None
-        (Lident id) !printing_env
+        (Lident id) (Printing_env.get ())
     | Module_type -> to_lookup Env.lookup_modtype
     | Class -> to_lookup Env.lookup_class
     | Class_type -> to_lookup Env.lookup_cltype
     | Other -> fun _ -> raise Not_found
 
   let location namespace id =
-    let env = !printing_env in
+    let env = (Printing_env.get ()) in
     let path = Path.Pident id in
     try Some (
         match namespace with
@@ -223,7 +283,7 @@ let pervasives_name namespace name =
       set namespace @@ M.add name (Associated_to_pervasives r) (get namespace);
       r
 
-(** Lookup for preexisting named item within the current {!printing_env} *)
+(** Lookup for preexisting named item within the current printing environment *)
 let env_ident namespace name =
   if S.mem name !protected then None else
   match Namespace.lookup namespace name with
@@ -263,7 +323,7 @@ let ident_name_simple namespace id =
       r
 
 (** Same as {!ident_name_simple} but lookup to existing named identifiers
-    in the current {!printing_env} *)
+    in the current printing environment *)
 let ident_name namespace id =
   begin match env_ident namespace (Ident.name id) with
   | Some id' -> ignore (ident_name_simple namespace id')
@@ -288,15 +348,15 @@ let ident_stdlib = Ident.create_persistent "Stdlib"
 let non_shadowed_pervasive = function
   | Pdot(Pident id, s, _) as path ->
       Ident.same id ident_stdlib &&
-      (try Path.same path (Env.lookup_type (Lident s) !printing_env)
+      (try Path.same path (Env.lookup_type (Lident s) (Printing_env.get ()))
        with Not_found -> true)
   | Pdot(Pdot (Pident id, "Pervasives", _), s, _) as path ->
       Ident.same id ident_stdlib &&
       (* Make sure Stdlib.<s> is the same as Stdlib.Pervasives.<s> *)
       (try
          let td =
-           Env.find_type (Env.lookup_type (Lident s) !printing_env)
-             !printing_env
+           let env = Printing_env.get () in
+           Env.find_type (Env.lookup_type (Lident s) env) env
          in
          match td.type_private, td.type_manifest with
          | Private, _ | _, None -> false
@@ -385,9 +445,10 @@ let rec path ppf = function
       fprintf ppf "%a(%a)" path p1 path p2
 
 let tree_of_path namespace p =
-  tree_of_path namespace (rewrite_double_underscore_paths !printing_env p)
+  tree_of_path namespace
+    (rewrite_double_underscore_paths (Printing_env.get ()) p)
 let path ppf p =
-  path ppf (rewrite_double_underscore_paths !printing_env p)
+  path ppf (rewrite_double_underscore_paths (Printing_env.get ()) p)
 
 let rec string_of_out_ident = function
   | Oide_ident s -> Out_name.print s
@@ -623,10 +684,9 @@ let same_printing_env env =
   let used_pers = Env.used_persistent () in
   Env.same_types !printing_old env && Concr.equal !printing_pers used_pers
 
-let set_printing_env env =
-  printing_env := env;
+let recompute_map env =
   if !Clflags.real_paths ||
-     !printing_env == Env.empty ||
+     env == Env.empty ||
      same_printing_env env then
     ()
   else begin
@@ -654,8 +714,14 @@ let set_printing_env env =
   end
 
 let wrap_printing_env env f =
-  set_printing_env env; reset_naming_context ();
-  try_finally f ~always:(fun () -> set_printing_env Env.empty)
+  Printing_env.with_env env ~f
+    ~acknowledge_env:(fun env ->
+        recompute_map env;
+        reset_naming_context ())
+
+let set_printing_env env =
+  Printing_env.set env;
+  recompute_map env
 
 let wrap_printing_env ~error env f =
   if error then Env.without_cmis (wrap_printing_env env) f
@@ -687,18 +753,18 @@ let rec get_best_path r =
           (* Format.eprintf "evaluating %a@." path p; *)
           match !r with
             Best p' when path_size p >= path_size p' -> ()
-          | _ -> if is_unambiguous p !printing_env then r := Best p)
+          | _ -> if is_unambiguous p (Printing_env.get ()) then r := Best p)
               (* else Format.eprintf "%a ignored as ambiguous@." path p *)
         l;
       get_best_path r
 
 let best_type_path p =
-  if !printing_env == Env.empty
+  if Printing_env.is_empty_or_unset ()
   then (p, Id)
   else if !Clflags.real_paths
   then (p, Id)
   else
-    let (p', s) = normalize_type_path !printing_env p in
+    let (p', s) = normalize_type_path (Printing_env.get ()) p in
     let get_path () = get_best_path (Path.Map.find  p' !printing_map) in
     while !printing_cont <> [] &&
       try fst (path_size (get_path ())) > !printing_depth with Not_found -> true
@@ -1499,11 +1565,9 @@ let cltype_declaration id ppf cl =
 (* Print a module type *)
 
 let wrap_env fenv ftree arg =
-  let env = !printing_env in
-  set_printing_env (fenv env);
-  let tree = ftree arg in
-  set_printing_env env;
-  tree
+  let env = (Printing_env.get ()) in
+  Printing_env.with_env (fenv env) ~acknowledge_env:recompute_map
+    ~f:(fun () -> ftree arg)
 
 let filter_rem_sig item rem =
   match item, rem with
@@ -1538,7 +1602,7 @@ let hide_rec_items = function
       in
       let ids = id :: get_ids rem in
       set_printing_env
-        (hide ids !printing_env)
+        (hide ids (Printing_env.get ()))
   | _ -> ()
 
 let recursive_sigitem = function
@@ -1585,7 +1649,8 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       Omty_alias (tree_of_path Module p)
 
 and tree_of_signature sg =
-  wrap_env (fun env -> env) (tree_of_signature_rec !printing_env false) sg
+  wrap_env (fun env -> env)
+    (tree_of_signature_rec (Printing_env.get ()) false) sg
 
 and tree_of_signature_rec env' in_type_group = function
     [] -> []

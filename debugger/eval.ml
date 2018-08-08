@@ -209,3 +209,7 @@ let report_error ppf = function
         "@[The type@ %a@ is not a record type@]@." Printtyp.type_expr ty
   | No_result ->
       fprintf ppf "@[No result available at current program event@]@."
+
+let report_error ppf err =
+  Printtyp.wrap_printing_env Env.empty ~error:true (fun () ->
+      report_error ppf err)
