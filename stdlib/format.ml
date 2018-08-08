@@ -1225,6 +1225,10 @@ let pp_print_text ppf s =
   done;
   if !left <> len then flush ()
 
+let pp_print_result ~ok ~error ppf = function
+| Ok v -> ok ppf v
+| Error e -> error ppf e
+
  (**************************************************************)
 
 let compute_tag output tag_acc =

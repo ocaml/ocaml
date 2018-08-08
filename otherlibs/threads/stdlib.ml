@@ -680,6 +680,7 @@ module Printexc     = Printexc
 module Printf       = Printf
 module Queue        = Queue
 module Random       = Random
+module Result       = Result
 module Scanf        = Scanf
 module Seq          = Seq
 module Set          = Set

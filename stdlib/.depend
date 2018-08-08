@@ -142,6 +142,9 @@ stdlib__random.cmo : stdlib__string.cmi stdlib__nativeint.cmi stdlib__int64.cmi 
 stdlib__random.cmx : stdlib__string.cmx stdlib__nativeint.cmx stdlib__int64.cmx stdlib__int32.cmx stdlib__digest.cmx \
     stdlib__char.cmx stdlib__array.cmx stdlib__random.cmi
 stdlib__random.cmi : stdlib__nativeint.cmi stdlib__int64.cmi stdlib__int32.cmi
+stdlib__result.cmo : stdlib__seq.cmi stdlib__result.cmi
+stdlib__result.cmx : stdlib__seq.cmx stdlib__result.cmi
+stdlib__result.cmi : stdlib__seq.cmi
 stdlib__scanf.cmo : stdlib__string.cmi stdlib__printf.cmi stdlib__list.cmi camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi stdlib__bytes.cmi stdlib__buffer.cmi stdlib__scanf.cmi
 stdlib__scanf.cmx : stdlib__string.cmx stdlib__printf.cmx stdlib__list.cmx camlinternalFormatBasics.cmx \
@@ -292,6 +295,8 @@ stdlib__random.cmo : stdlib__string.cmi stdlib__nativeint.cmi stdlib__int64.cmi 
     stdlib__char.cmi stdlib__array.cmi stdlib__random.cmi
 stdlib__random.p.cmx : stdlib__string.cmx stdlib__nativeint.cmx stdlib__int64.cmx stdlib__int32.cmx stdlib__digest.cmx \
     stdlib__char.cmx stdlib__array.cmx stdlib__random.cmi
+stdlib__result.cmo : stdlib__seq.cmi stdlib__result.cmi
+stdlib__result.p.cmx : stdlib__seq.cmx stdlib__result.cmi
 stdlib__scanf.cmo : stdlib__string.cmi stdlib__printf.cmi stdlib__list.cmi camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi stdlib__bytes.cmi stdlib__buffer.cmi stdlib__scanf.cmi
 stdlib__scanf.p.cmx : stdlib__string.cmx stdlib__printf.cmx stdlib__list.cmx camlinternalFormatBasics.cmx \
