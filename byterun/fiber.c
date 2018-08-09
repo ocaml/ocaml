@@ -309,11 +309,15 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   old_stack = save_stack();
 
   stack_used = Stack_high(old_stack) - (value*)old_stack->sp;
+#ifdef DEBUG
+  size = stack_used * 17 / 16 + required_space;
+#else
   size = Stack_high(old_stack) - Stack_base(old_stack);
   do {
     if (size >= caml_max_stack_size) caml_raise_stack_overflow();
     size *= 2;
   } while (size < stack_used + required_space);
+#endif
   if (size > 4096 / sizeof(value)) {
     caml_gc_log ("Growing stack to %"
                  ARCH_INTNAT_PRINTF_FORMAT "uk bytes",

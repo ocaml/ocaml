@@ -143,7 +143,11 @@ typedef uint64_t uintnat;
 #define Page_size (1 << Page_log)
 
 /* Initial size of stack (bytes). */
+#ifdef DEBUG
+#define Stack_size (32 * sizeof(value))
+#else
 #define Stack_size (4096 * sizeof(value))
+#endif
 
 /* Minimum free size of stack (bytes); below that, it is reallocated. */
 #define Stack_threshold (16 * sizeof(value))
