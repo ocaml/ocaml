@@ -1,0 +1,11 @@
+(executables
+ (names   make_opcodes cvt_emit)
+ (modules make_opcodes cvt_emit))
+
+(ocamllex
+ (modules make_opcodes)
+ (mode    fallback))
+
+(ocamllex
+ (modules cvt_emit)
+ (mode    fallback))

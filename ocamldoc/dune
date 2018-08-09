@@ -1,0 +1,11 @@
+(ocamllex  odoc_lexer odoc_ocamlhtml odoc_see_lexer odoc_text_lexer)
+(ocamlyacc odoc_parser odoc_text_parser)
+
+(executable
+ (name odoc)
+ (modes byte)
+ (flags (:standard -nostdlib -w -9-32))
+ (libraries dynlink ocamlcommon stdlib runtime str unix))
+
+(rule
+ (copy odoc.exe ocamldoc.byte))

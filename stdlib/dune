@@ -1,0 +1,77 @@
+(library
+ (name stdlib)
+ (stdlib
+   (exit_module std_exit)
+   (internal_modules Camlinternal*)
+   (modules_before_stdlib
+     camlinternalFormatBasics))
+ (flags (:standard -w -9))
+ ;; We're listing the modules here to avoid building the Labels ones.
+ (modules
+  spacetime
+  arg
+  array
+  bigarray
+  buffer
+  bytes
+  callback
+  camlinternalFormat
+  camlinternalFormatBasics
+  camlinternalLazy
+  camlinternalMod
+  camlinternalOO
+  char
+  complex
+  digest
+  ephemeron
+  filename
+  float
+  format
+  gc
+  genlex
+  hashtbl
+  int32
+  int64
+  lazy
+  lexing
+  list
+  map
+  marshal
+  nativeint
+  obj
+  oo
+  option
+  parsing
+  pervasives
+  printexc
+  printf
+  queue
+  random
+  result
+  scanf
+  seq
+  set
+  stack
+  stdlib
+  stream
+  string
+  sys
+  uchar
+  weak
+  ;; booh
+  std_exit
+  )
+ (preprocess
+   (per_module
+     ((action
+        (run awk -v dune_wrapped=true
+               -f %{dep:expand_module_aliases.awk} %{input-file}))
+      stdlib))))
+
+(rule
+ (targets sys.ml)
+ (deps (:version ../VERSION) (:p sys.mlp))
+ (action
+   (with-stdout-to %{targets}
+     (bash
+       "sed -e \"s|%%VERSION%%|`sed -e 1q %{version} | tr -d '\r'`|\" %{p}"))))

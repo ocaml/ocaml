@@ -1,0 +1,157 @@
+;; Too annoying to get to work. Use (copy_files# ...) instead
+; (include_subdirs unqualified)
+; (ignored_subdirs (lex yacc testsuite ocamldoc ocamltest toplevel otherlibs))
+
+(copy_files# utils/*.ml{,i})
+(copy_files# parsing/*.ml{,i})
+(copy_files# typing/*.ml{,i})
+(copy_files# bytecomp/*.ml{,i})
+(copy_files# driver/*.ml{,i})
+(copy_files# asmcomp/*.ml{,i})
+(copy_files# asmcomp/debug/*.ml{,i})
+(copy_files# middle_end/*.ml{,i})
+(copy_files# middle_end/base_types/*.ml{,i})
+
+(library
+ (name ocamlcommon)
+ (wrapped false)
+ (flags (:standard -nostdlib -w -9))
+ (libraries stdlib)
+ (modules_without_implementation
+   annot asttypes cmo_format outcometree parsetree)
+ (modules
+   ;; UTILS
+   config build_path_prefix_map misc identifiable numbers arg_helper clflags
+   profile terminfo ccomp warnings consistbl strongly_connected_components
+   targetint
+
+   ;; PARSING
+   location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
+   parser lexer parse printast pprintast ast_mapper ast_iterator attr_helper
+   builtin_attributes ast_invariants depend
+   ; manual update: mli only files
+   asttypes parsetree
+
+   ;; TYPING
+   ident path primitive types btype oprint subst predef datarepr cmi_format env
+   typedtree printtyped ctype printtyp includeclass mtype envaux includecore
+   typedtreeIter typedtreeMap tast_mapper cmt_format untypeast includemod
+   typetexp printpat parmatch stypes typedecl typeopt rec_check typecore
+   typeclass typemod
+   ; manual update: mli only files
+   annot outcometree
+
+   ;; COMP
+   lambda printlambda semantics_of_primitives switch matching translobj
+   translattribute translprim translcore translclass translmod simplif
+   runtimedef meta opcodes bytesections dll symtable pparse main_args compenv
+   compmisc compdynlink compplugin makedepend compile_common
+   ; manual update: mli only files
+   cmo_format
+   ; manual update: this is required.
+   instruct
+   ))
+
+(library
+ (name ocamlbytecomp)
+ (wrapped false)
+ (flags (:standard -nostdlib -w -9))
+ (libraries stdlib ocamlcommon)
+ (modules
+   bytegen printinstr emitcode bytelink bytelibrarian bytepackager errors
+   compile))
+
+(library
+ (name ocamloptcomp)
+ (wrapped false)
+ (flags (:standard -nostdlib -w -9))
+ (libraries stdlib ocamlcommon)
+ (modules_without_implementation
+   cmx_format x86_ast backend_intf inlining_decision_intf
+   simplify_boxed_integer_ops_intf)
+ (modules
+   ;; ASMCOMP
+   arch backend_var cmm printcmm reg reg_with_debug_info reg_availability_set
+   mach proc clambda printclambda export_info export_info_for_pack compilenv
+   closure traverse_for_exported_symbols build_export_info closure_offsets
+   flambda_to_clambda import_approx un_anf afl_instrument strmatch cmmgen
+   interval printmach selectgen spacetime_profiling selection comballoc CSEgen
+   CSE liveness spill split interf coloring linscan reloadgen reload deadcode
+   printlinear linearize available_regs schedgen scheduling
+   branch_relaxation_intf branch_relaxation emitaux emit asmgen asmlink
+   asmlibrarian asmpackager opterrors optcompile
+   ; manual update: mli only files
+   cmx_format
+
+   ; arch specific files: we always include them even though depending on the
+   ; target architecture they might not be used.
+   x86_ast
+   x86_proc
+   x86_dsl
+   x86_gas
+   x86_masm
+
+   ;; MIDDLE_END
+   int_replace_polymorphic_compare debuginfo tag linkage_name compilation_unit
+   internal_variable_names variable mutable_variable id_types set_of_closures_id
+   set_of_closures_origin closure_element closure_id closure_origin
+   var_within_closure static_exception export_id symbol pass_wrapper
+   allocated_const parameter projection flambda flambda_iterators flambda_utils
+   inlining_cost effect_analysis freshening simple_value_approx lift_code
+   closure_conversion_aux closure_conversion initialize_symbol_to_let_symbol
+   lift_let_to_initialize_symbol find_recursive_functions invariant_params
+   inconstant_idents alias_analysis lift_constants share_constants
+   simplify_common remove_unused_arguments remove_unused_closure_vars
+   remove_unused_program_constructs simplify_boxed_integer_ops
+   simplify_primitives inlining_stats_types inlining_stats
+   inline_and_simplify_aux remove_free_vars_equal_to_args extract_projections
+   augment_specialised_args unbox_free_vars_of_closures unbox_specialised_args
+   unbox_closures inlining_transforms inlining_decision inline_and_simplify
+   ref_to_variables flambda_invariants middle_end
+   ; manual update: mli only files
+   backend_intf inlining_decision_intf simplify_boxed_integer_ops_intf
+ )
+)
+
+;;;;;;;;;;;;;;
+;;; ocamlc ;;;
+;;;;;;;;;;;;;;
+
+(executable
+ (name main)
+ (modes byte)
+ (flags (:standard -nostdlib))
+ (libraries ocamlbytecomp ocamlcommon runtime stdlib)
+ (modules main))
+
+(rule
+ (copy main.exe ocamlc.byte))
+
+;;;;;;;;;;;;;;;;
+;;; ocamlopt ;;;
+;;;;;;;;;;;;;;;;
+
+(executable
+ (name optmain)
+ (modes byte)
+ (flags (:standard -nostdlib))
+ (libraries ocamloptcomp ocamlcommon runtime stdlib)
+ (modules optmain))
+
+(rule
+ (copy optmain.exe ocamlopt.byte))
+
+;;;;;;;;;;;;;;;
+;;; aliases ;;;
+;;;;;;;;;;;;;;;
+
+(alias
+ (name world)
+ (deps ocamlc.byte
+       ocamlopt.byte
+       debugger/ocamldebug.byte
+       ocamldoc/ocamldoc.byte
+       ocamltest/ocamltest.byte
+       toplevel/ocaml.byte
+       toplevel/expunge.exe
+       ))

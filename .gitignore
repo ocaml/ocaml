@@ -34,6 +34,8 @@
 _ocamltest
 _ocamltestd
 *.odoc
+.merlin
+_build
 
 # local to root directory
 

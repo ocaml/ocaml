@@ -1,0 +1,11 @@
+(ocamllex lexer)
+(ocamlyacc parser)
+
+(executable
+ (name main)
+ (modes byte)
+ (flags (:standard -w -9))
+ (modules_without_implementation parser_aux)
+ (libraries ocamlcommon ocamltoplevel runtime stdlib unix))
+
+(rule (copy main.exe ocamldebug.byte))

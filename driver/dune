@@ -1,0 +1,6 @@
+(rule
+ (targets compdynlink.ml)
+ (deps (:ml (file ../otherlibs/dynlink/dynlink.ml)))
+ (action
+   (with-stdout-to %{targets}
+     (bash "grep -v 'REMOVE_ME for ../../debugger/dynlink.ml' %{ml}"))))
