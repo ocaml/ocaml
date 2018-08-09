@@ -164,6 +164,9 @@ Working version
 - GPR#1976: Better error messages for extension constructor type mismatches
   (Thomas Refis, review by Gabriel Scherer)
 
+* GPR#1979: Remove support for TERM=norepeat when displaying errors
+  (Armaël Guéneau, review by Gabriel Scherer and Florian Angeletti)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.

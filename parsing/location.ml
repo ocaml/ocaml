@@ -515,15 +515,12 @@ let terminfo_toplevel_printer (lb: lexbuf): report_printer =
 
 let best_toplevel_printer () =
   setup_terminal ();
-  let norepeat =
-    try Sys.getenv "TERM" = "norepeat" with Not_found -> false
-  in
-  match !status, !input_lexbuf, norepeat with
-  | Terminfo.Good_term, Some lb, _ ->
+  match !status, !input_lexbuf with
+  | Terminfo.Good_term, Some lb ->
       terminfo_toplevel_printer lb
-  | Terminfo.Bad_term, Some lb, false ->
+  | Terminfo.Bad_term, Some lb ->
       dumb_toplevel_printer lb
-  | _, _, _ ->
+  | _, _ ->
       batch_mode_printer
 
 (* Creates a printer for the current input *)
