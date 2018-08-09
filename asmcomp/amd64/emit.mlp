@@ -1100,6 +1100,8 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
+  if !Clflags.runtime_variant = "d" then
+    emit_call "caml_assert_stack_invariants";
   if fp then begin
     I.push rbp;
     cfi_adjust_cfa_offset 8;

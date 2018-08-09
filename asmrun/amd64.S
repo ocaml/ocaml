@@ -1159,6 +1159,18 @@ CFI_STARTPROC
         jmp     LBL(caml_c_call)
 CFI_ENDPROC
 
+FUNCTION(G(caml_assert_stack_invariants))
+CFI_STARTPROC
+        test    $0xf, %rsp
+        jz      1f
+        int3
+1:      LOAD_TL_VAR(caml_stack_threshold, %r11)
+        cmp     %r11, %rsp
+        ja      1f
+        int3
+1:      ret
+CFI_ENDPROC
+
         .globl  G(caml_system__code_end)
 G(caml_system__code_end):
 
