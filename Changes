@@ -334,6 +334,10 @@ Working version
 - GPR#1970: fix order of floatting documentation comments in classes
   (Hugo Heuzard, review by Nicolás Ojeda Bär)
 
+- GPR#1977: [@@ocaml.warning "..."] attributes attached to type declarations are
+  no longer ignored.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
 OCaml 4.07 maintenance branch
 -----------------------------
 
