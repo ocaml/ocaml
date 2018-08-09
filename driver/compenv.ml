@@ -476,8 +476,9 @@ let scan_line ic =
 let load_config ppf filename =
   match open_in_bin filename with
   | exception e ->
-      Location.print_error ppf (Location.in_file filename);
-      Format.fprintf ppf "Cannot open file %s@." (Printexc.to_string e);
+      Location.errorf ~loc:(Location.in_file filename)
+        "Cannot open file %s" (Printexc.to_string e)
+      |> Location.print_report ppf;
       raise Exit
   | ic ->
       let sic = Scanf.Scanning.from_channel ic in
@@ -500,8 +501,8 @@ let load_config ppf filename =
                 loc_ghost = false;
               }
             in
-            Location.print_error ppf loc;
-            Format.fprintf ppf "Configuration file error %s@." error;
+            Location.errorf ~loc "Configuration file error %s" error
+            |> Location.print_report ppf;
             close_in ic;
             raise Exit
         | line ->

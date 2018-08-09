@@ -1597,8 +1597,7 @@ and g = <a:t>
 Line 1, characters 10-11:
   type t = <g>
             ^
-Error: The type constructor g
-is not yet completely defined
+Error: The type constructor g is not yet completely defined
 |}]
 
 type t = int

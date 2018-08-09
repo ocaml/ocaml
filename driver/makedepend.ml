@@ -460,9 +460,8 @@ let sort_files_by_dependencies files =
   done;
 
   if !worklist <> [] then begin
-    Format.fprintf Format.err_formatter
-      "@[%t: cycle in dependencies. End of list is not sorted.@]@."
-      Location.print_error_prefix;
+    Location.error "cycle in dependencies. End of list is not sorted."
+    |> Location.print_report Format.err_formatter;
     let sorted_deps =
       let li = ref [] in
       Hashtbl.iter (fun _ file_deps -> li := file_deps :: !li) h;

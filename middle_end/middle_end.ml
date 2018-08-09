@@ -37,7 +37,7 @@ let middle_end ~ppf_dump ~prefixname ~backend
     ~module_ident
     ~module_initializer =
   Profile.record_call "flambda" (fun () ->
-    let previous_warning_printer = !Location.warning_printer in
+    let previous_warning_reporter = !Location.warning_reporter in
     let module WarningSet =
       Set.Make (struct
         type t = Location.t * Warnings.t
@@ -45,15 +45,15 @@ let middle_end ~ppf_dump ~prefixname ~backend
       end)
     in
     let warning_set = ref WarningSet.empty in
-    let flambda_warning_printer loc ppf w =
+    let flambda_warning_reporter loc w =
       let elt = loc, w in
       if not (WarningSet.mem elt !warning_set) then begin
         warning_set := WarningSet.add elt !warning_set;
-        previous_warning_printer loc ppf w
-      end;
+        previous_warning_reporter loc w
+      end else None
     in
     Misc.protect_refs
-      [Misc.R (Location.warning_printer, flambda_warning_printer)]
+      [Misc.R (Location.warning_reporter, flambda_warning_reporter)]
       (fun () ->
          let pass_number = ref 0 in
          let round_number = ref 0 in

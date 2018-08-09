@@ -30,32 +30,39 @@ let string_of_opt_payload p =
   | Some s -> s
   | None -> ""
 
-let rec error_of_extension ext =
+let error_of_extension ext =
+  let submessage_from main_loc main_txt = function
+    | {pstr_desc=Pstr_extension
+           (({txt = ("ocaml.error"|"error"); loc}, p), _)} ->
+        begin match p with
+        | PStr([{pstr_desc=Pstr_eval
+                     ({pexp_desc=Pexp_constant(Pconst_string(msg,_))}, _)}]) ->
+            { Location.loc; txt = fun ppf -> Format.pp_print_text ppf msg }
+        | _ ->
+            { Location.loc; txt = fun ppf ->
+                Format.fprintf ppf
+                  "Invalid syntax for sub-message of extension '%s'." main_txt }
+        end
+    | {pstr_desc=Pstr_extension (({txt; loc}, _), _)} ->
+        { Location.loc; txt = fun ppf ->
+            Format.fprintf ppf "Uninterpreted extension '%s'." txt }
+    | _ ->
+        { Location.loc = main_loc; txt = fun ppf ->
+            Format.fprintf ppf
+              "Invalid syntax for sub-message of extension '%s'." main_txt }
+  in
   match ext with
   | ({txt = ("ocaml.error"|"error") as txt; loc}, p) ->
-    let rec sub_from inner =
-      match inner with
-      | {pstr_desc=Pstr_extension (ext, _)} :: rest ->
-          error_of_extension ext :: sub_from rest
-      | _ :: rest ->
-          (Location.errorf ~loc
-             "Invalid syntax for sub-error of extension '%s'." txt) ::
-            sub_from rest
-      | [] -> []
-    in
-    begin match p with
-    | PStr [] -> raise Location.Already_displayed_error
-    | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Pconst_string(msg,_))}, _)}::
-           {pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Pconst_string(if_highlight,_))}, _)}::
-           inner) ->
-        Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
-    | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Pconst_string(msg,_))}, _)}::inner) ->
-        Location.error ~loc ~sub:(sub_from inner) msg
-    | _ -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt
-    end
+      begin match p with
+      | PStr [] -> raise Location.Already_displayed_error
+      | PStr({pstr_desc=Pstr_eval
+                  ({pexp_desc=Pexp_constant(Pconst_string(msg,_))}, _)}::
+             inner) ->
+          let sub = List.map (submessage_from loc txt) inner in
+          Location.error_of_printer ~loc ~sub Format.pp_print_text msg
+      | _ ->
+          Location.errorf ~loc "Invalid syntax for extension '%s'." txt
+      end
   | ({txt; loc}, _) ->
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
 

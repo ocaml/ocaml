@@ -540,10 +540,11 @@ let message = function
 
 let sub_locs = function
   | Deprecated (_, def, use) ->
-      [
+      if not def.loc_ghost && not use.loc_ghost then [
         def, "Definition";
         use, "Expected signature";
       ]
+      else []
   | _ -> []
 
 let nerrors = ref 0;;

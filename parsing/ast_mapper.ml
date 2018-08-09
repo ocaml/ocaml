@@ -663,11 +663,22 @@ let default_mapper =
       );
   }
 
-let rec extension_of_error {loc; msg; if_highlight; sub} =
-  { loc; txt = "ocaml.error" },
-  PStr ([Str.eval (Exp.constant (Pconst_string (msg, None)));
-         Str.eval (Exp.constant (Pconst_string (if_highlight, None)))] @
-        (List.map (fun ext -> Str.extension (extension_of_error ext)) sub))
+let extension_of_error {kind; main; sub} =
+  if kind <> Location.Report_error then
+    raise (Invalid_argument "extension_of_error: expected kind Report_error");
+  let str_of_pp pp_msg =
+    let b = Buffer.create 15 in
+    let ppf = Format.formatter_of_buffer b in
+    pp_msg ppf; Format.pp_print_flush ppf ();
+    Buffer.contents b
+  in
+  let extension_of_sub sub =
+    { loc = sub.loc; txt = "ocaml.error" },
+    PStr ([Str.eval (Exp.constant (Pconst_string (str_of_pp sub.txt, None)))])
+  in
+  { loc = main.loc; txt = "ocaml.error" },
+  PStr (Str.eval (Exp.constant (Pconst_string (str_of_pp main.txt, None))) ::
+        List.map (fun msg -> Str.extension (extension_of_sub msg)) sub)
 
 let attribute_of_warning loc s =
   Attr.mk

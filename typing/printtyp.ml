@@ -131,8 +131,8 @@ module Conflicts = struct
             M.add name { kind = namespace; location; name } !explanations
 
   let pp_explanation ppf r=
-    Format.fprintf ppf "@[<v 2>%aDefinition of %s %s@]"
-      Location.print r.location (Namespace.show r.kind) r.name
+    Format.fprintf ppf "@[<v 2>%a:@,Definition of %s %s@]"
+      Location.print_loc r.location (Namespace.show r.kind) r.name
 
   let pp ppf l =
     Format.fprintf ppf "@[<v>%a@]" (Format.pp_print_list pp_explanation) l

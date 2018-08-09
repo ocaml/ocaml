@@ -77,8 +77,7 @@ Line 1, characters 3-15:
   if (fun x -> x) then ();;
      ^^^^^^^^^^^^
 Error: This expression should not be a function, the expected type is
-bool
-because it is in the condition of an if-statement
+       bool because it is in the condition of an if-statement
 |}];;
 
 while 42 do () done;;
