@@ -82,7 +82,7 @@ let get_unboxed_from_attributes sdecl =
 (* Enter all declared types in the environment as abstract types *)
 
 let add_type ~check id decl env =
-  Builtin_attributes.warning_scope decl.type_attributes
+  Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
     (fun () -> Env.add_type ~check id decl env)
 
 let enter_type rec_flag env sdecl id =
