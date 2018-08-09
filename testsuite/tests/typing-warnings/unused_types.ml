@@ -80,3 +80,13 @@ end = struct
   module type X =
     sig type t = private [> `Foo | `Bar] include S with type t := t end
 end;;
+
+module Unused_type_disable_warning : sig
+end = struct
+  type t = A [@@warning "-34"]
+end;;
+
+module Unused_constructor_disable_warning : sig
+end = struct
+  type t = A [@@warning "-37"]
+end;;

@@ -54,4 +54,14 @@ It is exported or rebound as a private extension.
 module Unused_private_extension :
   sig type t = .. type t += private Private_ext end
 module Pr7438 : sig  end
+Line 4, characters 2-30:
+    type t = A [@@warning "-34"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 37: unused constructor A.
+module Unused_type_disable_warning : sig  end
+Line 4, characters 2-30:
+    type t = A [@@warning "-37"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 34: unused type t.
+module Unused_constructor_disable_warning : sig  end
 

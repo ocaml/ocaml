@@ -81,6 +81,10 @@ let get_unboxed_from_attributes sdecl =
 
 (* Enter all declared types in the environment as abstract types *)
 
+let add_type ~check id decl env =
+  Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
+    (fun () -> Env.add_type ~check id decl env)
+
 let enter_type rec_flag env sdecl id =
   let needed =
     match rec_flag with
@@ -114,7 +118,7 @@ let enter_type rec_flag env sdecl id =
       type_unboxed = unboxed_false_default_false;
     }
   in
-  Env.add_type ~check:true id decl env
+  add_type ~check:true id decl env
 
 let update_type temp_env env id loc =
   let path = Path.Pident id in
@@ -1140,7 +1144,7 @@ let rec compute_properties_fixpoint env decls required variances immediacies =
   in
   let new_env =
     List.fold_right
-      (fun (id, decl) env -> Env.add_type ~check:true id decl env)
+      (fun (id, decl) env -> add_type ~check:true id decl env)
       new_decls env
   in
   let new_variances =
@@ -1329,7 +1333,7 @@ let transl_type_decl env rec_flag sdecl_list =
   (* Build the final env. *)
   let newenv =
     List.fold_right
-      (fun (id, decl) env -> Env.add_type ~check:true id decl env)
+      (fun (id, decl) env -> add_type ~check:true id decl env)
       decls env
   in
   (* Update stubs *)
