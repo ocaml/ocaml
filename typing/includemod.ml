@@ -23,9 +23,9 @@ type symptom =
     Missing_field of Ident.t * Location.t * string (* kind *)
   | Value_descriptions of Ident.t * value_description * value_description
   | Type_declarations of Ident.t * type_declaration
-        * type_declaration * Includecore.type_mismatch list
-  | Extension_constructors of
-      Ident.t * extension_constructor * extension_constructor
+        * type_declaration * Includecore.type_mismatch
+  | Extension_constructors of Ident.t * extension_constructor
+        * extension_constructor * Includecore.type_mismatch
   | Module_types of module_type * module_type
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
   | Modtype_permutation
@@ -85,21 +85,23 @@ let type_declarations ~loc env ~mark ?old_env:_ cxt subst id decl1 decl2 =
   if mark then
     Env.mark_type_used (Ident.name id) decl1;
   let decl2 = Subst.type_declaration subst decl2 in
-  let err =
+  match
     Includecore.type_declarations ~loc env ~mark
       (Ident.name id) decl1 id decl2
-  in
-  if err <> [] then
-    raise(Error[cxt, env, Type_declarations(id, decl1, decl2, err)])
+  with
+  | None -> ()
+  | Some err ->
+      raise(Error[cxt, env, Type_declarations(id, decl1, decl2, err)])
 
 (* Inclusion between extension constructors *)
 
 let extension_constructors ~loc env ~mark cxt subst id ext1 ext2 =
   let mark = mark_positive mark in
   let ext2 = Subst.extension_constructor subst ext2 in
-  if Includecore.extension_constructors ~loc env ~mark id ext1 ext2
-  then ()
-  else raise(Error[cxt, env, Extension_constructors(id, ext1, ext2)])
+  match Includecore.extension_constructors ~loc env ~mark id ext1 ext2 with
+  | None -> ()
+  | Some err ->
+      raise(Error[cxt, env, Extension_constructors(id, ext1, ext2, err)])
 
 (* Inclusion between class declarations *)
 
@@ -586,7 +588,7 @@ let include_err ppf = function
         !Oprint.out_sig_item (Printtyp.tree_of_value_description id d1)
         !Oprint.out_sig_item (Printtyp.tree_of_value_description id d2);
       show_locs ppf (d1.val_loc, d2.val_loc)
-  | Type_declarations(id, d1, d2, errs) ->
+  | Type_declarations(id, d1, d2, err) ->
       fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Type declarations do not match"
         !Oprint.out_sig_item
@@ -596,16 +598,18 @@ let include_err ppf = function
         (Printtyp.tree_of_type_declaration id d2 Trec_first)
         show_locs (d1.type_loc, d2.type_loc)
         (Includecore.report_type_mismatch
-           "the first" "the second" "declaration") errs
-  | Extension_constructors(id, x1, x2) ->
-      fprintf ppf
-       "@[<hv 2>Extension declarations do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]"
-       !Oprint.out_sig_item
-       (Printtyp.tree_of_extension_constructor id x1 Text_first)
-       !Oprint.out_sig_item
-       (Printtyp.tree_of_extension_constructor id x2 Text_first);
-      show_locs ppf (x1.ext_loc, x2.ext_loc)
+           "the first" "the second" "declaration") err
+  | Extension_constructors(id, x1, x2, err) ->
+      fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
+        "Extension declarations do not match"
+        !Oprint.out_sig_item
+        (Printtyp.tree_of_extension_constructor id x1 Text_first)
+        "is not included in"
+        !Oprint.out_sig_item
+        (Printtyp.tree_of_extension_constructor id x2 Text_first)
+        show_locs (x1.ext_loc, x2.ext_loc)
+        (Includecore.report_type_mismatch
+           "the first" "the second" "declaration") err
   | Module_types(mty1, mty2)->
       fprintf ppf
        "@[<hv 2>Modules do not match:@ \

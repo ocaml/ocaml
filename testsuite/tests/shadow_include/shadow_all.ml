@@ -100,11 +100,11 @@ end
 Line 4, characters 2-11:
     include S
     ^^^^^^^^^
-Error: Illegal shadowing of included type t/1155 by t/1172
+Error: Illegal shadowing of included type t/1143 by t/1160
        Line 2, characters 2-11:
-         Type t/1155 came from this include
+         Type t/1143 came from this include
        Line 3, characters 2-24:
-         The value ignore has no valid type if t/1155 is shadowed
+         The value ignore has no valid type if t/1143 is shadowed
 |}]
 
 module type Module = sig
@@ -140,11 +140,11 @@ end
 Line 4, characters 2-11:
     include S
     ^^^^^^^^^
-Error: Illegal shadowing of included module M/1247 by M/1264
+Error: Illegal shadowing of included module M/1231 by M/1248
        Line 2, characters 2-11:
-         Module M/1247 came from this include
+         Module M/1231 came from this include
        Line 3, characters 2-26:
-         The value ignore has no valid type if M/1247 is shadowed
+         The value ignore has no valid type if M/1231 is shadowed
 |}]
 
 
@@ -181,11 +181,11 @@ end
 Line 4, characters 2-11:
     include S
     ^^^^^^^^^
-Error: Illegal shadowing of included module type T/1336 by T/1354
+Error: Illegal shadowing of included module type T/1316 by T/1334
        Line 2, characters 2-11:
-         Module type T/1336 came from this include
+         Module type T/1316 came from this include
        Line 3, characters 2-39:
-         The module F has no valid type if T/1336 is shadowed
+         The module F has no valid type if T/1316 is shadowed
 |}]
 
 module type Extension = sig
@@ -198,11 +198,11 @@ end
 Line 4, characters 2-11:
     include S
     ^^^^^^^^^
-Error: Illegal shadowing of included type ext/1372 by ext/1389
+Error: Illegal shadowing of included type ext/1352 by ext/1369
        Line 2, characters 2-11:
-         Type ext/1372 came from this include
+         Type ext/1352 came from this include
        Line 3, characters 14-16:
-         The extension constructor C2 has no valid type if ext/1372 is shadowed
+         The extension constructor C2 has no valid type if ext/1352 is shadowed
 |}]
 
 module type Class = sig

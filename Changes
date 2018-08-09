@@ -161,6 +161,9 @@ Working version
 - GPR#1954: Add locations to toplevel directives.
   (Hugo Heuzard, review by Gabriel Radanne)
 
+- GPR#1976: Better error messages for extension constructor type mismatches
+  (Thomas Refis, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.
