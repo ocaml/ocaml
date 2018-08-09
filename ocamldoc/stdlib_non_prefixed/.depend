@@ -75,7 +75,7 @@ int64.cmi :
 lambda.cmi : types.cmi primitive.cmi path.cmi location.cmi ident.cmi env.cmi \
     asttypes.cmi
 lazy.cmi :
-lexer.cmi : parser.cmi location.cmi lexing.cmi format.cmi
+lexer.cmi : parser.cmi location.cmi lexing.cmi
 lexing.cmi :
 list.cmi : seq.cmi
 listLabels.cmi : seq.cmi
@@ -95,6 +95,7 @@ numbers.cmi : set.cmi int64.cmi identifiable.cmi
 obj.cmi : int32.cmi
 oo.cmi : camlinternalOO.cmi
 oprint.cmi : outcometree.cmi format.cmi
+option.cmi : seq.cmi
 outcometree.cmi : format.cmi asttypes.cmi
 parmatch.cmi : types.cmi typedtree.cmi parsetree.cmi location.cmi \
     hashtbl.cmi env.cmi asttypes.cmi
@@ -121,6 +122,7 @@ profile.cmi : format.cmi
 queue.cmi : seq.cmi
 random.cmi : nativeint.cmi int64.cmi int32.cmi
 rec_check.cmi : typedtree.cmi ident.cmi
+result.cmi : seq.cmi
 runtimedef.cmi :
 scanf.cmi : pervasives.cmi
 semantics_of_primitives.cmi : lambda.cmi
