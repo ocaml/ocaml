@@ -3272,7 +3272,11 @@ and type_function ?in_function loc attrs env ty_expected_explained l caselist =
       true loc caselist in
   let not_function ty =
     let ls, tvar = list_labels env ty in
-    ls = [] && not tvar
+    not tvar &&
+    List.for_all (function
+        | Nolabel | Optional _ -> false
+        | Labelled _ -> true
+      ) ls
   in
   if is_optional l && not_function ty_res then
     Location.prerr_warning (List.hd cases).c_lhs.pat_loc
