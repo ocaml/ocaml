@@ -345,6 +345,11 @@ Working version
   no longer ignored.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- GPR#1983, MPR#7837: Warning 16 ("optional argument cannot be erased") is now
+  correctly triggered if the optional argument is followed solely by labelled
+  arguments.
+  (Nicolás Ojeda Bär)
+
 OCaml 4.07 maintenance branch
 -----------------------------
 
