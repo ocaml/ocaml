@@ -30,6 +30,10 @@ This argument cannot be applied with label ~y
 let f ?x ~a ?y ~z = ()
 let g = f ?y:None ?x:None ~a:()
 [%%expect {|
+Line 1, characters 13-14:
+  let f ?x ~a ?y ~z = ()
+               ^
+Warning 16: this optional argument cannot be erased.
 val f : ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit = <fun>
 Line 2, characters 13-17:
   let g = f ?y:None ?x:None ~a:()
