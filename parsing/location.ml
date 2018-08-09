@@ -19,12 +19,7 @@ type t = Warnings.loc =
   { loc_start: position; loc_end: position; loc_ghost: bool };;
 
 let in_file name =
-  let loc = {
-    pos_fname = name;
-    pos_lnum = 1;
-    pos_bol = 0;
-    pos_cnum = -1;
-  } in
+  let loc = { dummy_pos with pos_fname = name } in
   { loc_start = loc; loc_end = loc; loc_ghost = true }
 ;;
 
@@ -186,7 +181,7 @@ let print_loc ppf loc =
     | "" | "//toplevel//" -> false
     | _ -> true
   in
-  let line_valid line = line <> -1 in
+  let line_valid line = line > 0 in
   let chars_valid ~startchar ~endchar = startchar <> -1 && endchar <> -1 in
 
   let file =
@@ -210,21 +205,18 @@ let print_loc ppf loc =
 
   if file_valid file then
     Format.fprintf ppf "%s \"%a\"" (capitalize "file") print_filename file;
-  if line_valid line then (
-    comma ();
-    Format.fprintf ppf "%s %i" (capitalize "line") line
-  );
+
+  (* Print "line 1" in the case of a dummy line number. This is to please the
+     existing setup of editors that parse locations in error messages (e.g.
+     Emacs). *)
+  comma ();
+  Format.fprintf ppf "%s %i" (capitalize "line")
+    (if line_valid line then line else 1);
+
   if chars_valid ~startchar ~endchar then (
     comma ();
     Format.fprintf ppf "%s %i-%i" (capitalize "characters") startchar endchar
   );
-
-  if !first then
-    (* Nothing has been printed. This might happen if a preprocessor badly
-       messes up the locations it produces.
-       Print the position characters as a best effort. *)
-    Format.fprintf ppf "Characters %i-%i"
-      loc.loc_start.pos_cnum loc.loc_end.pos_cnum;
 
   Format.fprintf ppf "@}"
 
