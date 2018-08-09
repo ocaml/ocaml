@@ -114,7 +114,8 @@ let enter_type rec_flag env sdecl id =
       type_unboxed = unboxed_false_default_false;
     }
   in
-  Env.add_type ~check:true id decl env
+  Builtin_attributes.warning_scope decl.type_attributes
+    (fun () -> Env.add_type ~check:true id decl env)
 
 let update_type temp_env env id loc =
   let path = Path.Pident id in
