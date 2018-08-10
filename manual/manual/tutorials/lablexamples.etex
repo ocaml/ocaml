@@ -116,9 +116,10 @@ A function taking some optional arguments must also take at least one
 non-optional argument. The criterion for deciding whether an optional
 argument has been omitted is the non-labeled application of an
 argument appearing after this optional argument in the function type.
+
 Note that if that argument is labeled, you will only be able to
-eliminate optional arguments through the special case for total
-applications.
+eliminate optional arguments by totally applying the function,
+omitting all optional arguments and omitting all labels.
 
 \begin{caml_example}{toplevel}
 let test ?(x = 0) ?(y = 0) () ?(z = 0) () = (x, y, z);;
