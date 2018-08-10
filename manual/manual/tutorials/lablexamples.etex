@@ -119,7 +119,8 @@ argument appearing after this optional argument in the function type.
 
 Note that if that argument is labeled, you will only be able to
 eliminate optional arguments by totally applying the function,
-omitting all optional arguments and omitting all labels.
+omitting all optional arguments and omitting all labels for all
+arguments.
 
 \begin{caml_example}{toplevel}
 let test ?(x = 0) ?(y = 0) () ?(z = 0) () = (x, y, z);;
