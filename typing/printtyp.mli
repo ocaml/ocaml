@@ -22,8 +22,6 @@ open Outcometree
 val longident: formatter -> Longident.t -> unit
 val ident: formatter -> Ident.t -> unit
 val tree_of_path: Path.t -> out_ident
-val out_ident: formatter -> out_ident -> unit
-val string_of_out_ident: out_ident -> string
 val path: formatter -> Path.t -> unit
 val string_of_path: Path.t -> string
 

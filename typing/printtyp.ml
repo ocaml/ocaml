@@ -374,25 +374,16 @@ let rec tree_of_path namespace = function
 let tree_of_path namespace p =
   tree_of_path namespace (rewrite_double_underscore_paths !printing_env p)
 
-let rec string_of_out_ident = function
-  | Oide_ident s -> Out_name.print s
-  | Oide_dot (id, s) -> String.concat "." [string_of_out_ident id; s]
-  | Oide_apply (id1, id2) ->
-      String.concat ""
-        [string_of_out_ident id1; "("; string_of_out_ident id2; ")"]
-
-let out_ident ppf id =
-  Format.pp_print_string ppf (string_of_out_ident id)
-
-let string_of_path p = string_of_out_ident (tree_of_path Other p)
-
 let path ppf p =
-  Format.pp_print_string ppf (string_of_path p)
+  !Oprint.out_ident ppf (tree_of_path Other p)
+
+let string_of_path p =
+  Format.asprintf "%a" path p
 
 let strings_of_paths namespace p =
   reset_naming_context ();
   let trees = List.map (tree_of_path namespace) p in
-  List.map string_of_out_ident trees
+  List.map (Format.asprintf "%a" !Oprint.out_ident) trees
 
 (* Print a recursive annotation *)
 
@@ -1730,10 +1721,11 @@ let trees_of_type_path_expansion (tp,tp') =
     Diff(tree_of_path Type tp, tree_of_path Type tp')
 
 let type_path_expansion ppf = function
-  | Same p -> fprintf ppf "%s" (string_of_out_ident p)
+  | Same p -> !Oprint.out_ident ppf p
   | Diff(p,p') ->
-      fprintf ppf "@[<2>%s@ =@ %s@]" (string_of_out_ident p)
-        (string_of_out_ident p')
+      fprintf ppf "@[<2>%a@ =@ %a@]"
+        !Oprint.out_ident p
+        !Oprint.out_ident p'
 
 let rec trace fst txt ppf = function
   | te :: te2 :: rem ->
