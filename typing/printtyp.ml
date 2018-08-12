@@ -371,23 +371,8 @@ let rec tree_of_path namespace = function
   | Papply(p1, p2) ->
       Oide_apply (tree_of_path Module p1, tree_of_path Module p2)
 
-let rec path ppf = function
-  | Pident id ->
-      ident ppf id
-  | Pdot(_, s, _pos) as path
-    when non_shadowed_pervasive path ->
-      pp_print_string ppf s
-  | Pdot(p, s, _pos) ->
-      path ppf p;
-      pp_print_char ppf '.';
-      pp_print_string ppf s
-  | Papply(p1, p2) ->
-      fprintf ppf "%a(%a)" path p1 path p2
-
 let tree_of_path namespace p =
   tree_of_path namespace (rewrite_double_underscore_paths !printing_env p)
-let path ppf p =
-  path ppf (rewrite_double_underscore_paths !printing_env p)
 
 let rec string_of_out_ident = function
   | Oide_ident s -> Out_name.print s
@@ -396,7 +381,13 @@ let rec string_of_out_ident = function
       String.concat ""
         [string_of_out_ident id1; "("; string_of_out_ident id2; ")"]
 
+let out_ident ppf id =
+  Format.pp_print_string ppf (string_of_out_ident id)
+
 let string_of_path p = string_of_out_ident (tree_of_path Other p)
+
+let path ppf p =
+  Format.pp_print_string ppf (string_of_path p)
 
 let strings_of_paths namespace p =
   reset_naming_context ();
