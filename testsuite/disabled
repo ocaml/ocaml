@@ -36,3 +36,7 @@ tests/asmcomp/is_static
 
 # Unwind using libunwind doesn't work due to fibers
 tests/unwind/unwind_test
+
+# GC bug in callbacks (#211)
+tests/callback/nested_fiber.byte
+tests/callback/nested_fiber.native
