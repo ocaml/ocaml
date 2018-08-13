@@ -87,6 +87,9 @@ Working version
   (Marcello Seri, review by Daniel Bünzli, Gabriel Scherer, François Bobot,
   Nicolás Ojeda Bär, Xavier Clerc and Boris Yakobowski)
 
+- GPR#1986, MPR#6450: Add Set.disjoint
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
