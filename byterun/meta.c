@@ -32,6 +32,7 @@
 #include "caml/prims.h"
 #include "caml/fiber.h"
 #include "caml/startup_aux.h"
+#include "caml/backtrace_prim.h"
 
 #ifndef NATIVE_CODE
 
@@ -47,36 +48,95 @@ CAMLprim value caml_get_section_table(value unit)
                                      caml_params->section_table_size);
 }
 
-CAMLprim value caml_reify_bytecode(value prog, value len)
-{
-  struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
+struct bytecode {
+  code_t prog;
+  asize_t len;
+};
+#define Bc_val(p) ((struct bytecode*)Data_abstract_val(p))
 
+/* Convert a bytes array (= LongString.t) to a contiguous buffer.
+   The result is allocated with caml_stat_alloc */
+static char* buffer_of_bytes_array(value ls, asize_t *len)
+{
+  CAMLparam1(ls);
+  CAMLlocal1(s);
+  asize_t off;
+  char *ret;
+  int i;
+
+  *len = 0;
+  for (i = 0; i < Wosize_val(ls); i++) {
+    s = Field(ls, i);
+    *len += caml_string_length(s);
+  }
+
+  ret = caml_stat_alloc(*len);
+  off = 0;
+  for (i = 0; i < Wosize_val(ls); i++) {
+    size_t s_len;
+    s = Field(ls, i);
+    s_len = caml_string_length(s);
+    memcpy(ret + off, Bytes_val(s), s_len);
+    off += s_len;
+  }
+
+  CAMLreturnT (char*, ret);
+}
+
+CAMLprim value caml_reify_bytecode(value ls_prog, value debuginfo, value digest_opt)
+{
+  CAMLparam3(ls_prog, debuginfo, digest_opt);
+  CAMLlocal3(clos, bytecode, retval);
+  struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
+  code_t prog;
+  asize_t len;
+
+  prog = (code_t)buffer_of_bytes_array(ls_prog, &len);
+  caml_add_debug_info(prog, Val_long(len), debuginfo);
   cf->code_start = (char *) prog;
-  cf->code_end = (char *) prog + Long_val(len);
-  cf->digest_computed = 0;
+  cf->code_end = (char *) prog + len;
+  /* match (digest_opt : string option) with */
+  if (Is_block(digest_opt)) {
+    /* | Some digest -> */
+    memcpy(cf->digest, String_val(Field(digest_opt, 0)), 16);
+    cf->digest_computed = 1;
+  } else {
+    /* | None -> */
+    cf->digest_computed = 0;
+  }
   caml_ext_table_add(&caml_code_fragments_table, cf);
 
 #ifdef ARCH_BIG_ENDIAN
-  caml_fixup_endianness((code_t) prog, (asize_t) Long_val(len));
+  caml_fixup_endianness((code_t) prog, len);
 #endif
 #ifdef THREADED_CODE
-  caml_thread_code((code_t) prog, (asize_t) Long_val(len));
+  caml_thread_code((code_t) prog, len);
 #endif
-  return caml_alloc_1(Closure_tag, Val_bytecode((code_t) prog));
+  clos = caml_alloc_1 (Closure_tag, Val_bytecode(prog));
+  bytecode = caml_alloc_small (2, Abstract_tag);
+  Bc_val(bytecode)->prog = prog;
+  Bc_val(bytecode)->len = len;
+  retval = caml_alloc_2 (0, bytecode, clos);
+  CAMLreturn (retval);
 }
 
 /* signal to the interpreter machinery that a bytecode is no more
    needed (before freeing it) - this might be useful for a JIT
    implementation */
 
-CAMLprim value caml_static_release_bytecode(value prog, value len)
+CAMLprim value caml_static_release_bytecode(value bc)
 {
+  code_t prog;
+  asize_t len;
   struct code_fragment * cf = NULL, * cfi;
   int i;
+  prog = Bc_val(bc)->prog;
+  len = Bc_val(bc)->len;
+  caml_remove_debug_info(prog);
   for (i = 0; i < caml_code_fragments_table.size; i++) {
     cfi = (struct code_fragment *) caml_code_fragments_table.contents[i];
     if (cfi->code_start == (char *) prog &&
-        cfi->code_end == (char *) prog + Long_val(len)) {
+        cfi->code_end == (char *) prog + len) {
       cf = cfi;
       break;
     }
@@ -89,6 +149,11 @@ CAMLprim value caml_static_release_bytecode(value prog, value len)
       caml_ext_table_remove(&caml_code_fragments_table, cf);
   }
 
+#ifndef NATIVE_CODE
+#else
+  caml_failwith("Meta.static_release_bytecode impossible with native code");
+#endif
+  caml_stat_free(prog);
   return Val_unit;
 }
 

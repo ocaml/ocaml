@@ -73,6 +73,14 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li);
 /* Allocate the caml_backtrace_buffer. Returns 0 on success, -1 otherwise */
 int caml_alloc_backtrace_buffer(void);
 
+#ifndef NATIVE_CODE
+/* These two functions are used by the bytecode runtime when loading
+   and unloading bytecode */
+value caml_add_debug_info(code_t code_start, value code_size,
+                                   value events_heap);
+value caml_remove_debug_info(code_t start);
+#endif
+
 #define BACKTRACE_BUFFER_SIZE 1024
 
 /* Besides decoding backtrace info, [backtrace_prim] has two other
