@@ -404,7 +404,6 @@ struct pool_block {
 #endif
   struct pool_block *next;
   struct pool_block *prev;
-  header_t header;
   union max_align data[1];  /* not allocated, used for alignment purposes */
 };
 
@@ -440,7 +439,6 @@ CAMLexport void caml_stat_create_pool(void)
 #endif
     pool->next = pool;
     pool->prev = pool;
-    pool->header = Make_header(STAT_ALLOC_MAGIC, Abstract_tag, NOT_MARKABLE);
   }
 }
 
@@ -459,49 +457,12 @@ CAMLexport void caml_stat_destroy_pool(void)
   caml_plat_unlock(&pool_mutex);
 }
 
-static void * stat_alloc_no_pooling (asize_t sz)
-{
-  void* result = malloc (sizeof(value) + sz);
-  if (result == NULL)
-    caml_raise_out_of_memory();
-  Hd_hp(result) = Make_header(STAT_ALLOC_MAGIC, Abstract_tag, NOT_MARKABLE);
-#ifdef DEBUG
-  memset ((void*)Val_hp(result), Debug_uninit_stat, sz);
-#endif
-  return (void*)Val_hp(result);
-}
-
-static void stat_free_no_pooling (void * p)
-{
-  if (p == NULL) return;
-  Assert(Wosize_val((value)p) == STAT_ALLOC_MAGIC);
-  Assert(Tag_val((value)p) == Abstract_tag);
-  free (Hp_val((value)p));
-}
-
-static void * stat_resize_no_pooling (void * p, asize_t sz)
-{
-  void * result;
-
-  if (p == NULL)
-    return caml_stat_alloc(sz);
-
-  result = realloc (Hp_val((value)p), sizeof(value) + sz);
-
-  if (result == NULL) {
-    caml_stat_free(p);
-    caml_raise_out_of_memory ();
-  }
-
-  return (void*)Val_hp(result);
-}
-
 /* [sz] is a number of bytes */
 CAMLexport caml_stat_block caml_stat_alloc_noexc(asize_t sz)
 {
   /* Backward compatibility mode */
   if (pool == NULL)
-    return stat_alloc_no_pooling(sz);
+    return malloc(sz);
   else {
     struct pool_block *pb = malloc(sz + SIZEOF_POOL_BLOCK);
     if (pb == NULL) return NULL;
@@ -509,7 +470,6 @@ CAMLexport caml_stat_block caml_stat_alloc_noexc(asize_t sz)
     memset(&(pb->data), Debug_uninit_stat, sz);
     pb->magic = Debug_pool_magic;
 #endif
-    pb->header = Make_header(STAT_ALLOC_MAGIC, Abstract_tag, NOT_MARKABLE);
 
     /* Linking the block into the ring */
     caml_plat_lock(&pool_mutex);
@@ -575,7 +535,7 @@ CAMLexport void caml_stat_free(caml_stat_block b)
 {
   /* Backward compatibility mode */
   if (pool == NULL)
-    stat_free_no_pooling(b);
+    free(b);
   else {
     struct pool_block *pb = get_pool_block(b);
     if (pb == NULL) return;
@@ -595,7 +555,7 @@ CAMLexport caml_stat_block caml_stat_resize_noexc(caml_stat_block b, asize_t sz)
 {
   /* Backward compatibility mode */
   if (pool == NULL)
-    return stat_resize_no_pooling(b, sz);
+    return realloc(b, sz);
   else {
     struct pool_block *pb = get_pool_block(b);
     struct pool_block *pb_new = realloc(pb, sz + SIZEOF_POOL_BLOCK);

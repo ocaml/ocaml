@@ -36,8 +36,6 @@
 extern "C" {
 #endif
 
-#define STAT_ALLOC_MAGIC 0x314159
-
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
 #ifdef WITH_PROFINFO
 CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
