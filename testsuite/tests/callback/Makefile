@@ -39,8 +39,8 @@ skip:
 .PHONY: run-byte
 run-byte:
 	@for f in *.ml; do \
-	  printf " ... testing 'bytecode':"; \
 	  F=`basename $$f .ml`; \
+	  printf " ... testing '$$F.byte$(EXE)':"; \
 		$(CC) -I $(CTOPDIR)/byterun -c $$F.c; \
 		$(OCAMLC) $(COMPFLAGS) -c $$F.mli; \
 		$(OCAMLC) $(COMPFLAGS) -c $$F.ml; \
@@ -53,8 +53,8 @@ run-byte:
 run-opt:
 	@if $(BYTECODE_ONLY); then : ; else \
 		for f in *.ml; do \
-			printf " ... testing 'nativecode':"; \
 			F=`basename $$f .ml`; \
+			printf " ... testing '$$F.native$(EXE)':"; \
 			$(CC) -I $(CTOPDIR)/byterun -c $$F.c; \
 			mv $$F.$(O) $$F.c.$(O); \
 			$(OCAMLOPT) $(COMPFLAGS) -c $$F.mli; \
