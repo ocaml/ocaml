@@ -666,12 +666,7 @@ let default_mapper =
 let extension_of_error {kind; main; sub} =
   if kind <> Location.Report_error then
     raise (Invalid_argument "extension_of_error: expected kind Report_error");
-  let str_of_pp pp_msg =
-    let b = Buffer.create 15 in
-    let ppf = Format.formatter_of_buffer b in
-    pp_msg ppf; Format.pp_print_flush ppf ();
-    Buffer.contents b
-  in
+  let str_of_pp pp_msg = Format.asprintf "%t" pp_msg in
   let extension_of_sub sub =
     { loc = sub.loc; txt = "ocaml.error" },
     PStr ([Str.eval (Exp.constant (Pconst_string (str_of_pp sub.txt, None)))])
