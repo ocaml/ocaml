@@ -34,13 +34,28 @@ let rec print_ident ppf =
   | Oide_apply (id1, id2) ->
       fprintf ppf "%a(%a)" print_ident id1 print_ident id2
 
+(* Check a character matches the [identchar_latin1] class from the lexer *)
+let is_ident_char c =
+  match c with
+  | 'A'..'Z' | 'a'..'z' | '_' | '\192'..'\214' | '\216'..'\246'
+  | '\248'..'\255' | '\'' | '0'..'9' -> true
+  | _ -> false
+
+let all_ident_chars s =
+  let rec loop s len i =
+    if i < len then begin
+      if is_ident_char s.[i] then loop s len (i+1)
+      else false
+    end else begin
+      true
+    end
+  in
+  let len = String.length s in
+  loop s len 0
+
 let parenthesized_ident name =
   (List.mem name ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"])
-  ||
-  (match name.[0] with
-      'a'..'z' | 'A'..'Z' | '\223'..'\246' | '\248'..'\255' | '_' ->
-        false
-    | _ -> true)
+  || not (all_ident_chars name)
 
 let value_ident ppf name =
   if parenthesized_ident name then
