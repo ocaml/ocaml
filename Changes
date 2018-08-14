@@ -134,8 +134,12 @@ OCaml 4.07.0 (10 July 2018)
 
 - GPR#1845: new `-dcamlprimc` option to keep the generated C file containing
   the information about primitives; pass `-fdebug-prefix-map` to the C compiler
-  when supported
+  when supported, for reproducible builds
   (Xavier Clerc, review by Jérémie Dimino)
+
+- GPR#1856: use `BUILD_PATH_PREFIX_MAP` when compiling primitives in order to
+  make builds reproducible if code contains uses of `__FILE__` or `__LOC__`
+  (Xavier Clerc, review by Gabriel Scherer)
 
 ### Code generation and optimizations:
 
