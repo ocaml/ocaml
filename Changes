@@ -132,6 +132,11 @@ OCaml 4.07.0 (10 July 2018)
 - GPR#1806: add linscan to OCAMLPARAM options
   (Raja Boujbel)
 
+- GPR#1845: new `-dcamlprimc` option to keep the generated C file containing
+  the information about primitives; pass `-fdebug-prefix-map` to the C compiler
+  when supported
+  (Xavier Clerc, review by Jérémie Dimino)
+
 ### Code generation and optimizations:
 
 - MPR#7630, GPR#1401: Faster compilation of large modules with Flambda.

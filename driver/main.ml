@@ -119,6 +119,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
+  let _dcamlprimc = set keep_camlprimc_file
   let _dtimings () = profile_columns := [ `Time ]
   let _dprofile () = profile_columns := Profile.all_columns
 
