@@ -49,10 +49,12 @@ struct filedescr {
 #define CRT_fd_val(v) (((struct filedescr *) Data_custom_val(v))->crt_fd)
 #define Flags_fd_val(v) (((struct filedescr *) Data_custom_val(v))->flags_fd)
 
-/* extern value win_alloc_handle_or_socket(HANDLE); */
+extern value win_alloc_handle_or_socket(HANDLE);
 extern value win_alloc_handle(HANDLE);
 extern value win_alloc_socket(SOCKET);
 extern int win_CRT_fd_of_filedescr(value handle);
+/* Defined in channels.c */
+extern value win_handle_fd(value);
 
 #define NO_CRT_FD (-1)
 #define Nothing ((value) 0)

@@ -30,7 +30,7 @@ WIN_FILES = accept.c bind.c channels.c close.c \
 
 # Files from the ../unix directory
 UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
-  cstringv.c execv.c execve.c execvp.c \
+  cstringv.c descr.c execv.c execve.c execvp.c \
   exit.c getaddrinfo.c getcwd.c gethost.c gethostname.c \
   getnameinfo.c getproto.c \
   getserv.c gmtime.c mmap_ba.c putenv.c rmdir.c \

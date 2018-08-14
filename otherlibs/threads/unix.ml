@@ -210,7 +210,8 @@ type file_perm = int
 
 external openfile : string -> open_flag list -> file_perm -> file_descr
            = "unix_open"
-
+external descr_of_fd : int -> file_descr = "unix_descr_of_fd"
+let descr_of_os fd = descr_of_fd (Nativeint.to_int fd)
 external close : file_descr -> unit = "unix_close"
 external fsync : file_descr -> unit = "unix_fsync"
 external unsafe_read : file_descr -> bytes -> int -> int -> int = "unix_read"

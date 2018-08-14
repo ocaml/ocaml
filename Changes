@@ -97,6 +97,10 @@ Working version
   (Christopher Zimmermann, review by Xavier Leroy, Damien Doligez, David
    Allsopp, David Sheets)
 
+- GPR#????: Add Unix.descr_of_fd and Unix.descr_of_os for obtaining file_descr
+  values representing fds/handles supplied outside the runtime.
+  (David Allsopp, review by ???)
+
 ### Compiler user-interface and warnings:
 
 - PR#6416, GPR#1120: unique printed names for identifiers

@@ -304,6 +304,20 @@ val openfile : string -> open_flag list -> file_perm -> file_descr
    permissions to give to the file if it is created (see
    {!umask}). Return a file descriptor on the named file. *)
 
+val descr_of_fd : int -> file_descr
+(** Return a [file_descr] representing the given C fd number. This can be used
+    to get an OCaml descriptor for handles which the process knows may have been
+    provided externally. Once an fd has been passed to OCaml this way, the fd
+    should not be used from C. If access to the fd is also required in C, it is
+    better to use [dup] and maintain separate fds for C code and OCaml code
+    (this does not apply to C stub functions which should observe all the normal
+    caution of interacting with OCaml's Unix library. *)
+
+val descr_of_os : nativeint -> file_descr
+(** On Unix, identical to {!descr_of_fd}. On Windows, this allows a native
+    Windows API HANDLE to be converted to a file_descr. The same restrictions on
+    subsequent use of the handle from C apply. *)
+
 val close : file_descr -> unit
 (** Close a file descriptor. *)
 
