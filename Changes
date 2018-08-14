@@ -341,6 +341,10 @@ Working version
   Unboxable_type_in_prim_decl
   (Stefan Muenzel)
 
+- GPR#1943: Fix reloading of Icomp operands after register spill
+  (Simon Fowler with help from Stephen Dolan and Mark Shinwell,
+   review by Nicolás Ojeda Bär)
+
 - GPR#1958: allow [module M(_:S) = struct end] syntax
   (Hugo Heuzard, review by Gabriel Scherer)
 
