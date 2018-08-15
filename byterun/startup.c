@@ -370,13 +370,13 @@ CAMLexport void caml_main(char_os **argv)
   res = caml_interprete(caml_start_code, caml_code_size);
   caml_maybe_print_stats(Val_unit);
   if (Is_exception_result(res)) {
-    Caml_state->exn_bucket = Extract_exception(res);
+    value exn = Extract_exception(res);
     if (caml_debugger_in_use) {
-      Caml_state->current_stack->sp = &Caml_state->exn_bucket; /* The debugger needs the
+      Caml_state->current_stack->sp = &exn; /* The debugger needs the
                                                exception value.*/
       caml_debugger(UNCAUGHT_EXC);
     }
-    caml_fatal_uncaught_exception(Caml_state->exn_bucket);
+    caml_fatal_uncaught_exception(exn);
   }
 }
 
@@ -458,12 +458,12 @@ CAMLexport void caml_startup_code(
                               section_table, section_table_size,
                               pooling, argv);
   if (Is_exception_result(res)) {
-    Caml_state->exn_bucket = Extract_exception(res);
+    value exn = Extract_exception(res);
     if (caml_debugger_in_use) {
-      Caml_state->current_stack->sp = &Caml_state->exn_bucket; /* The debugger needs the
+      Caml_state->current_stack->sp = &exn; /* The debugger needs the
                                                exception value.*/
       caml_debugger(UNCAUGHT_EXC);
     }
-    caml_fatal_uncaught_exception(Caml_state->exn_bucket);
+    caml_fatal_uncaught_exception(exn);
   }
 }

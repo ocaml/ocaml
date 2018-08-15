@@ -33,8 +33,8 @@
 CAMLexport void caml_raise(value v)
 {
   caml_domain_state* domain_state = Caml_state;
-  domain_state->exn_bucket = v;
   if (domain_state->external_raise == NULL) caml_fatal_uncaught_exception(v);
+  *domain_state->external_raise->exn_bucket = v;
   while (domain_state->local_roots != Caml_state->external_raise->local_roots) {
     Assert(domain_state->local_roots != NULL);
     struct caml__mutex_unwind* m = domain_state->local_roots->mutexes;
