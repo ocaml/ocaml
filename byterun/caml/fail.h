@@ -63,6 +63,7 @@ struct longjmp_buffer {
 struct caml_exception_context {
   struct longjmp_buffer* jmp;
   struct caml__roots_block* local_roots;
+  volatile value* exn_bucket;
 };
 
 int caml_is_special_exception(value exn);

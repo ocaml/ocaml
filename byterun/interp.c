@@ -241,9 +241,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
   int initial_stack_words;
   intnat initial_trap_sp_off;
   volatile code_t saved_pc = NULL;
+  volatile value raise_exn_bucket = Val_unit;
   struct longjmp_buffer raise_buf;
   caml_domain_state* domain_state = Caml_state;
-  struct caml_exception_context exception_ctx = { &raise_buf, domain_state->local_roots};
+  struct caml_exception_context exception_ctx =
+    { &raise_buf, domain_state->local_roots, &raise_exn_bucket};
 #ifndef THREADED_CODE
   opcode_t curr_instr;
 #endif
@@ -281,9 +283,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
   saved_pc = NULL;
 
   if (sigsetjmp(raise_buf.buf, 0)) {
-    /* no local variables read here */
+    /* no non-volatile local variables read here */
     sp = domain_state->current_stack->sp;
-    accu = domain_state->exn_bucket;
+    accu = raise_exn_bucket;
     pc = saved_pc; saved_pc = NULL;
     if (pc != NULL) pc += 2;
         /* +2 adjustement for the sole purpose of backtraces */
