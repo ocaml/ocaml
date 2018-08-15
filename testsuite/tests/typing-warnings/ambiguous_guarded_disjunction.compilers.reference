@@ -66,8 +66,8 @@ val not_ambiguous__several_orpats :
   [> `A of
        [> `B of 'a * 'b option * 'c option ] *
        [> `C of 'a * 'd option * 'e option ] *
-       [> `D1 of 'f * 'a * 'g option * 'h | `D2 of 'i * 'a * 'j * 'k option ] ] ->
-  unit = <fun>
+       [> `D1 of 'f * 'a * 'g option * 'h | `D2 of 'i * 'a * 'j * 'k option ]
+  ] -> unit = <fun>
 Line 3, characters 4-101:
   ....`A ((`B (Some x, _) | `B (_, Some x)),
           (`C (Some y, Some _, _) | `C (Some y, _, Some _))).................
