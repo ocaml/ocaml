@@ -81,7 +81,6 @@ struct caml_thread_struct {
   struct caml_thread_struct * prev;
   value * stack_low;            /* The execution stack for this thread */
   value * stack_high;
-  value * stack_threshold;
   value * sp;
   intnat trap_spoff;
   value backtrace_pos;          /* The backtrace info for this thread */
@@ -176,7 +175,6 @@ value thread_initialize(value unit)       /* ML */
   curr_thread->prev = curr_thread;
   curr_thread->stack_low = caml_stack_low;
   curr_thread->stack_high = caml_stack_high;
-  curr_thread->stack_threshold = caml_stack_threshold;
   curr_thread->sp = caml_extern_sp;
   curr_thread->trap_spoff = caml_trap_sp_off;
   curr_thread->backtrace_pos = Val_int(caml_backtrace_pos);
@@ -241,7 +239,6 @@ value thread_new(value clos)          /* ML */
   next_ident = Val_int(Int_val(next_ident) + 1);
   th->stack_low = (value *) caml_stat_alloc(Thread_stack_size);
   th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
-  th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
   th->sp = th->stack_high;
   th->trap_spoff = 0;
   /* Set up a return frame that pretends we're applying the function to ().
@@ -321,7 +318,6 @@ static value schedule_thread(void)
   /* Save the status of the current thread */
   curr_thread->stack_low = caml_stack_low;
   curr_thread->stack_high = caml_stack_high;
-  curr_thread->stack_threshold = caml_stack_threshold;
   curr_thread->sp = caml_extern_sp;
   curr_thread->trap_spoff = caml_trap_sp_off;
   curr_thread->backtrace_pos = Val_int(caml_backtrace_pos);
@@ -513,7 +509,6 @@ try_again:
   curr_thread = run_thread;
   caml_stack_low = curr_thread->stack_low;
   caml_stack_high = curr_thread->stack_high;
-  caml_stack_threshold = curr_thread->stack_threshold;
   caml_extern_sp = curr_thread->sp;
   caml_trap_sp_off = curr_thread->trap_spoff;
   caml_backtrace_pos = Int_val(curr_thread->backtrace_pos);
@@ -769,7 +764,6 @@ value thread_kill(value thread)       /* ML */
   caml_stat_free((char *) th->stack_low);
   th->stack_low = NULL;
   th->stack_high = NULL;
-  th->stack_threshold = NULL;
   th->sp = NULL;
   th->trap_spoff = 0;
   if (th->backtrace_buffer != NULL) {

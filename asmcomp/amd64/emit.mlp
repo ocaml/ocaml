@@ -1109,13 +1109,14 @@ let fundecl fundecl =
   let handle_overflow = ref None in
   if contains_nontail_calls || max_stack_size >= stack_threshold_size then begin
     let (overflow,ret) = new_label(), new_label() in
-    I.lea (mem64 NONE (-max_stack_size) RSP) r10;
+    let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
+    I.lea (mem64 NONE (-(max_stack_size + threshold_offset)) RSP) r10;
     I.mov r15 r11;
     locate_domain_state r11;
     if Config.stats then begin
       I.inc (domain_field Domainstate.Domain_stackoverflow_checks R11);
     end;
-    I.cmp (domain_field Domainstate.Domain_stack_threshold R11) r10;
+    I.cmp (domain_field Domainstate.Domain_current_stack R11) r10;
     I.jb (label overflow);
     def_label ret;
     handle_overflow := Some (overflow, ret)
