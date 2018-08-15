@@ -29,8 +29,7 @@ static struct stack_info* save_stack ()
 
 static void load_stack (struct stack_info* stack) {
   caml_domain_state* domain_state = Caml_state;
-  domain_state->stack_threshold = Stack_base(stack)
-    + Stack_threshold / sizeof(value);
+  domain_state->stack_threshold = Stack_threshold_ptr(stack);
   domain_state->stack_high = Stack_high(stack);
   domain_state->current_stack = stack;
   CAMLassert(Stack_base(stack) < (value*)stack->sp &&
@@ -193,8 +192,7 @@ static struct stack_info* save_stack ()
 {
   caml_domain_state* domain_state = Caml_state;
   struct stack_info* old_stack = domain_state->current_stack;
-  Assert(domain_state->stack_threshold ==
-         Stack_base(old_stack) + Stack_threshold / sizeof(value));
+  Assert(domain_state->stack_threshold == Stack_threshold_ptr(old_stack));
   Assert(domain_state->stack_high == Stack_high(old_stack));
   return old_stack;
 }
@@ -202,8 +200,7 @@ static struct stack_info* save_stack ()
 static void load_stack(struct stack_info* new_stack)
 {
   caml_domain_state* domain_state = Caml_state;
-  domain_state->stack_threshold =
-    Stack_base(new_stack) + Stack_threshold / sizeof(value);
+  domain_state->stack_threshold = Stack_threshold_ptr(new_stack);
   domain_state->stack_high = Stack_high(new_stack);
   domain_state->current_stack = new_stack;
 }
