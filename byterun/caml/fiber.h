@@ -22,8 +22,7 @@ struct stack_info {
   uintnat magic;
 };
 
-/* One word at the base of the stack is used to store the stack pointer */
-#define Stack_ctx_words (sizeof(struct stack_info) / sizeof(value))
+CAML_STATIC_ASSERT(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value));
 #define Stack_base(stk) ((value*)(stk + 1))
 #define Stack_threshold_ptr(stk) (Stack_base(stk) + Stack_threshold / sizeof(value))
 

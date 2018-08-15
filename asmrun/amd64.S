@@ -1209,10 +1209,11 @@ CFI_STARTPROC
 /*        test    $0xf, %rsp */
 /*        jz      1f */
 /*        int3 */
-1:      LOAD_TL_VAR(caml_stack_threshold, %r11)
+1:      LOAD_TL_VAR(caml_current_stack, %r11)
         movq    %rsp, %r10
-        subq    %r11, %r10      /* %r10: number of words left before threshold */
-        cmp     $(-2*8), %r10   /* can be two words over: the return addresses */
+        subq    %r11, %r10      /* %r10: number of bytes left on stack */
+        /* can be two words over: the return addresses */
+        cmp     $((Stack_threshold_words + Stack_ctx_words - 2)*8), %r10
         jge     1f
         int3
 1:      ret

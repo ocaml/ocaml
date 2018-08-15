@@ -1,7 +1,9 @@
-(* must be kept in sync with byterun/config.h
-   (FIXME: should be done using CPP or similar) *)
-let minor_heap_sel_bits = 8
-let minor_heap_align_bits = 24
+
+#define CAML_CONFIG_H_NO_TYPEDEFS
+#include "config.h"
+let minor_heap_sel_bits = Minor_heap_sel_bits
+let minor_heap_align_bits = Minor_heap_align_bits
+let stack_ctx_words = Stack_ctx_words
 
 type t =
 #define DOMAIN_STATE(type, name) | Domain_##name

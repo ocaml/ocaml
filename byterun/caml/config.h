@@ -150,7 +150,12 @@ typedef uint64_t uintnat;
 #endif
 
 /* Minimum free size of stack (bytes); below that, it is reallocated. */
-#define Stack_threshold (16 * sizeof(value))
+#define Stack_threshold_words 16
+#define Stack_threshold (Stack_threshold_words * sizeof(value))
+
+/* Number of words used in the control structure at the start of a stack
+   (see fiber.h) */
+#define Stack_ctx_words 7
 
 /* Default maximum size of the stack (words). */
 #define Max_stack_def (1024 * 1024)

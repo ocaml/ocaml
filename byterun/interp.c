@@ -990,7 +990,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Stack checks */
 
     check_stacks:
-      if (sp < domain_state->stack_threshold) {
+      if (sp < Stack_threshold_ptr(domain_state->current_stack)) {
         domain_state->current_stack->sp = sp;
         if (!caml_try_realloc_stack(Stack_threshold / sizeof(value))) {
           Setup_for_c_call; caml_raise_stack_overflow();
