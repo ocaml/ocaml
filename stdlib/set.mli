@@ -99,7 +99,8 @@ module type S =
     (** Set intersection. *)
 
     val disjoint: t -> t -> bool
-    (** Test if two sets are disjoint. *)
+    (** Test if two sets are disjoint.
+        @since 4.08.0 *)
 
     val diff: t -> t -> t
     (** Set difference. *)
