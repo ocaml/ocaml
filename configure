@@ -340,8 +340,6 @@ case "$bindir" in
    *) config BINDIR "$bindir";;
 esac
 
-config BYTERUN '$(BINDIR)/ocamlrun'
-
 case "$libdir" in
   "") config LIBDIR '$(PREFIX)/lib/ocaml'
       libdir="$prefix/lib/ocaml";;

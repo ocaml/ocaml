@@ -249,6 +249,9 @@ Working version
 - GPR#1854: remove the no longer defined BYTECCCOMPOPTS build variable.
   (Sébastien Hinderer, review by Damien Doligez)
 
+* GPR#1992: remove the standard_runtime configuration variable.
+  (Sébastien Hinderer, review by ?)
+
 ### Internal/compiler-libs changes:
 
 * GPR#1952: refactor the code responsible for displaying errors and warnings
