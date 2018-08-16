@@ -162,14 +162,18 @@ module T = struct
       {ptyext_path; ptyext_params;
        ptyext_constructors;
        ptyext_private = _;
+       ptyext_loc;
        ptyext_attributes} =
     iter_loc sub ptyext_path;
     List.iter (sub.extension_constructor sub) ptyext_constructors;
     List.iter (iter_fst (sub.typ sub)) ptyext_params;
+    sub.location sub ptyext_loc;
     sub.attributes sub ptyext_attributes
 
-  let iter_type_exception sub {ptyexn_constructor; ptyexn_attributes} =
+  let iter_type_exception sub
+      {ptyexn_constructor; ptyexn_loc; ptyexn_attributes} =
     sub.extension_constructor sub ptyexn_constructor;
+    sub.location sub ptyexn_loc;
     sub.attributes sub ptyexn_attributes
 
   let iter_extension_constructor_kind sub = function
@@ -271,7 +275,8 @@ module MT = struct
     | Psig_class_type l ->
         List.iter (sub.class_type_declaration sub) l
     | Psig_extension (x, attrs) ->
-        sub.extension sub x; sub.attributes sub attrs
+        sub.attributes sub attrs;
+        sub.extension sub x
     | Psig_attribute x -> sub.attribute sub x
 end
 
@@ -300,7 +305,7 @@ module M = struct
     sub.location sub loc;
     match desc with
     | Pstr_eval (x, attrs) ->
-        sub.expr sub x; sub.attributes sub attrs
+        sub.attributes sub attrs; sub.expr sub x
     | Pstr_value (_r, vbs) -> List.iter (sub.value_binding sub) vbs
     | Pstr_primitive vd -> sub.value_description sub vd
     | Pstr_type (_rf, l) -> List.iter (sub.type_declaration sub) l
@@ -315,7 +320,7 @@ module M = struct
         List.iter (sub.class_type_declaration sub) l
     | Pstr_include x -> sub.include_declaration sub x
     | Pstr_extension (x, attrs) ->
-        sub.extension sub x; sub.attributes sub attrs
+        sub.attributes sub attrs; sub.extension sub x
     | Pstr_attribute x -> sub.attribute sub x
 end
 
@@ -523,8 +528,8 @@ let default_iterator =
                  pval_attributes} ->
         iter_loc this pval_name;
         this.typ this pval_type;
+        this.location this pval_loc;
         this.attributes this pval_attributes;
-        this.location this pval_loc
       );
 
     pat = P.iter;
@@ -534,23 +539,23 @@ let default_iterator =
       (fun this {pmd_name; pmd_type; pmd_attributes; pmd_loc} ->
          iter_loc this pmd_name;
          this.module_type this pmd_type;
+         this.location this pmd_loc;
          this.attributes this pmd_attributes;
-         this.location this pmd_loc
       );
 
     module_type_declaration =
       (fun this {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} ->
          iter_loc this pmtd_name;
          iter_opt (this.module_type this) pmtd_type;
+         this.location this pmtd_loc;
          this.attributes this pmtd_attributes;
-         this.location this pmtd_loc
       );
 
     module_binding =
       (fun this {pmb_name; pmb_expr; pmb_attributes; pmb_loc} ->
          iter_loc this pmb_name; this.module_expr this pmb_expr;
+         this.location this pmb_loc;
          this.attributes this pmb_attributes;
-         this.location this pmb_loc
       );
 
 
