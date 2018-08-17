@@ -279,12 +279,6 @@ let new_global_var ?name () =
 let newvar ?name () =
   newvar ?name:(validate_name name) ()
 
-let type_variable loc name =
-  try
-    TyVarMap.find name !type_variables
-  with Not_found ->
-    raise(Error(loc, Env.empty, Unbound_type_variable ("'" ^ name)))
-
 let transl_type_param env styp =
   let loc = styp.ptyp_loc in
   match styp.ptyp_desc with
@@ -887,10 +881,11 @@ let fold_cltypes = fold_simple Env.fold_cltypes
 
 let report_error env ppf = function
   | Unbound_type_variable name ->
-     (* we don't use "spellcheck" here: the function that raises this
-        error seems not to be called anywhere, so it's unclear how it
-        should be handled *)
-    fprintf ppf "Unbound type parameter %s@." name
+      let add_name name _ l = if name = "_" then l else ("'" ^ name) :: l in
+      let names = TyVarMap.fold add_name !type_variables [] in
+    fprintf ppf "The type variable %s is unbound in this type declaration.@ %a"
+      name
+      did_you_mean (fun () -> Misc.spellcheck names name )
   | Unbound_type_constructor lid ->
     fprintf ppf "Unbound type constructor %a" longident lid;
     spellcheck ppf fold_types env lid;
