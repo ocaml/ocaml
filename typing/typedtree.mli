@@ -512,19 +512,21 @@ and package_type = {
 and row_field = {
   rf_desc : row_field_desc;
   rf_loc : Location.t;
+  rf_attributes : attributes;
 }
 
 and row_field_desc =
-    Ttag of string loc * attributes * bool * core_type list
+    Ttag of string loc * bool * core_type list
   | Tinherit of core_type
 
 and object_field = {
   of_desc : object_field_desc;
   of_loc : Location.t;
+  of_attributes : attributes;
 }
 
 and object_field_desc =
-  | OTtag of string loc * attributes * core_type
+  | OTtag of string loc * core_type
   | OTinherit of core_type
 
 and value_description =

@@ -654,22 +654,22 @@ module MakeMap(Map : MapArgument) = struct
     Map.leave_class_structure { cs with cstr_self; cstr_fields }
 
   and map_row_field field =
-    let { rf_desc; rf_loc; } = Map.enter_row_field field in
+    let { rf_desc; rf_loc; rf_attributes; } = Map.enter_row_field field in
     let rf_desc = match rf_desc with
-      | Ttag (label, attrs, bool, list) ->
-          Ttag (label, attrs, bool, List.map map_core_type list)
+      | Ttag (label, bool, list) ->
+          Ttag (label, bool, List.map map_core_type list)
       | Tinherit ct -> Tinherit (map_core_type ct)
     in
-    Map.leave_row_field { rf_desc; rf_loc; }
+    Map.leave_row_field { rf_desc; rf_loc; rf_attributes; }
 
   and map_object_field field =
-    let { of_desc; of_loc; } = Map.enter_object_field field in
+    let { of_desc; of_loc; of_attributes; } = Map.enter_object_field field in
     let of_desc = match of_desc with
-      | OTtag (label, attrs, ct) ->
-          OTtag (label, attrs, map_core_type ct)
+      | OTtag (label, ct) ->
+          OTtag (label, map_core_type ct)
       | OTinherit ct -> OTinherit (map_core_type ct)
     in
-    Map.leave_object_field { of_desc; of_loc; }
+    Map.leave_object_field { of_desc; of_loc; of_attributes; }
 
   and map_class_field cf =
     let cf = Map.enter_class_field cf in

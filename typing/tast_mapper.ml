@@ -614,16 +614,16 @@ let class_structure sub x =
 
 let row_field sub x =
   let rf_desc = match x.rf_desc with
-    | Ttag (label, attrs, b, list) ->
-        Ttag (label, attrs, b, List.map (sub.typ sub) list)
+    | Ttag (label, b, list) ->
+        Ttag (label, b, List.map (sub.typ sub) list)
     | Tinherit ct -> Tinherit (sub.typ sub ct)
   in
   { x with rf_desc; }
 
 let object_field sub x =
   let of_desc = match x.of_desc with
-    | OTtag (label, attrs, ct) ->
-        OTtag (label, attrs, (sub.typ sub ct))
+    | OTtag (label, ct) ->
+        OTtag (label, (sub.typ sub ct))
     | OTinherit ct -> OTinherit (sub.typ sub ct)
   in
   { x with of_desc; }

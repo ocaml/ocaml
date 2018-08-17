@@ -114,16 +114,16 @@ module Typ = struct
       {t with ptyp_desc = desc}
     and loop_row_field field =
       let prf_desc = match field.prf_desc with
-        | Rtag(label,attrs,flag,lst) ->
-            Rtag(label,attrs,flag,List.map loop lst)
+        | Rtag(label,flag,lst) ->
+            Rtag(label,flag,List.map loop lst)
         | Rinherit t ->
             Rinherit (loop t)
       in
       { field with prf_desc; }
     and loop_object_field field =
       let pof_desc = match field.pof_desc with
-        | Otag(label, attrs, t) ->
-            Otag(label, attrs, loop t)
+        | Otag(label, t) ->
+            Otag(label, loop t)
         | Oinherit t ->
             Oinherit (loop t)
       in
@@ -581,24 +581,26 @@ end
 
 (** Row fields *)
 module Rf = struct
-  let mk ?(loc = !default_loc) desc = {
+  let mk ?(loc = !default_loc) ?(attrs = []) desc = {
     prf_desc = desc;
     prf_loc = loc;
+    prf_attributes = attrs;
   }
-  let tag ?(loc = !default_loc) ?(attrs = []) label const tys =
-    mk ~loc (Rtag (label, attrs, const, tys))
-  let inherit_ ?(loc = !default_loc) ty =
-    mk ~loc (Rinherit ty)
+  let tag ?loc ?attrs label const tys =
+    mk ?loc ?attrs (Rtag (label, const, tys))
+  let inherit_?loc ty =
+    mk ?loc (Rinherit ty)
 end
 
 (** Object fields *)
 module Of = struct
-  let mk ?(loc = !default_loc) desc = {
+  let mk ?(loc = !default_loc) ?(attrs=[]) desc = {
     pof_desc = desc;
     pof_loc = loc;
+    pof_attributes = attrs;
   }
-  let tag ?(loc = !default_loc) ?(attrs = []) label ty =
-    mk ~loc (Otag (label, attrs, ty))
-  let inherit_ ?(loc = !default_loc) ty =
-    mk ~loc (Oinherit ty)
+  let tag ?loc ?attrs label ty =
+    mk ?loc ?attrs (Otag (label, ty))
+  let inherit_ ?loc ty =
+    mk ?loc (Oinherit ty)
 end

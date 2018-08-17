@@ -88,28 +88,28 @@ module T = struct
   let row_field sub {
       prf_desc;
       prf_loc;
+      prf_attributes;
     } =
     let loc = sub.location sub prf_loc in
+    let attrs = sub.attributes sub prf_attributes in
     let desc = match prf_desc with
-      | Rtag (l, attrs, b, tl) ->
-          let attrs = sub.attributes sub attrs in
-          Rtag (map_loc sub l, attrs, b, List.map (sub.typ sub) tl)
+      | Rtag (l, b, tl) -> Rtag (map_loc sub l, b, List.map (sub.typ sub) tl)
       | Rinherit t -> Rinherit (sub.typ sub t)
     in
-    Rf.mk ~loc desc
+    Rf.mk ~loc ~attrs desc
 
   let object_field sub {
       pof_desc;
       pof_loc;
+      pof_attributes;
     } =
     let loc = sub.location sub pof_loc in
+    let attrs = sub.attributes sub pof_attributes in
     let desc = match pof_desc with
-      | Otag (l, attrs, t) ->
-          let attrs = sub.attributes sub attrs in
-          Otag (map_loc sub l, attrs, sub.typ sub t)
+      | Otag (l, t) -> Otag (map_loc sub l, sub.typ sub t)
       | Oinherit t -> Oinherit (sub.typ sub t)
     in
-    Of.mk ~loc desc
+    Of.mk ~loc ~attrs desc
 
   let map sub {ptyp_desc = desc; ptyp_loc = loc; ptyp_attributes = attrs} =
     let open Typ in

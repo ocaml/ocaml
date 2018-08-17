@@ -291,15 +291,15 @@ module Analyser =
             let fields = List.map (fun {pof_desc; _} -> pof_desc) fields in
             let rec f = function
               | [] -> []
-              | Otag ({txt=""},_,_) :: _ ->
+              | Otag ({txt=""},_) :: _ ->
                 (* Fields with no name have been eliminated previously. *)
                 assert false
-              | Otag ({txt=name}, _atts, ct) :: [] ->
+              | Otag ({txt=name}, ct) :: [] ->
                 let pos = Loc.ptyp_end ct in
                 let (_,comment_opt) = just_after_special pos pos_end in
                 [name, comment_opt]
-              | Otag ({txt=name}, _, ct) ::
-                  ((Oinherit ct2 | Otag (_, _, ct2)) as ele2) :: q ->
+              | Otag ({txt=name}, ct) ::
+                  ((Oinherit ct2 | Otag (_, ct2)) as ele2) :: q ->
                 let pos = Loc.ptyp_end ct in
                 let pos2 = Loc.ptyp_start ct2 in
                 let (_,comment_opt) = just_after_special pos pos2 in
@@ -308,7 +308,7 @@ module Analyser =
             in
             let is_named_field field =
               match field with
-              | Otag ({txt=""},_,_) -> false
+              | Otag ({txt=""},_) -> false
               | _ -> true
             in
             (0, f @@ List.filter is_named_field fields)

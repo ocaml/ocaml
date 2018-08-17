@@ -552,11 +552,12 @@ and transl_type_aux env policy styp =
       in
       let add_field field =
         let rf_loc = field.prf_loc in
+        let rf_attributes = field.prf_attributes in
         let rf_desc = match field.prf_desc with
-        | Rtag (l, attrs, c, stl) ->
+        | Rtag (l, c, stl) ->
             name := None;
             let tl =
-              Builtin_attributes.warning_scope attrs
+              Builtin_attributes.warning_scope rf_attributes
                 (fun () -> List.map (transl_type env policy) stl)
             in
             let f = match present with
@@ -572,7 +573,7 @@ and transl_type_aux env policy styp =
                       Rpresent (Some st.ctyp_type)
             in
             add_typed_field styp.ptyp_loc l.txt f;
-              Ttag (l,attrs,c,tl)
+              Ttag (l,c,tl)
         | Rinherit sty ->
             let cty = transl_type env policy sty in
             let ty = cty.ctyp_type in
@@ -616,7 +617,7 @@ and transl_type_aux env policy styp =
               fl;
               Tinherit cty
         in
-        { rf_desc; rf_loc }
+        { rf_desc; rf_loc; rf_attributes; }
       in
       let tfields = List.map add_field fields in
       let fields = Hashtbl.fold (fun _ p l -> p :: l) hfields [] in
@@ -703,15 +704,16 @@ and transl_fields env policy o fields =
           raise(Error(loc, env, Method_mismatch (l, ty, ty')))
     with Not_found ->
       Hashtbl.add hfields l ty in
-  let add_field {pof_desc; pof_loc;} =
+  let add_field {pof_desc; pof_loc; pof_attributes;} =
     let of_loc = pof_loc in
+    let of_attributes = pof_attributes in
     let of_desc = match pof_desc with
-    | Otag (s, a, ty1) -> begin
+    | Otag (s, ty1) -> begin
         let ty1 =
-          Builtin_attributes.warning_scope a
+          Builtin_attributes.warning_scope of_attributes
             (fun () -> transl_poly_type env policy ty1)
         in
-        let field = OTtag (s, a, ty1) in
+        let field = OTtag (s, ty1) in
         add_typed_field ty1.ctyp_loc s.txt ty1.ctyp_type;
         field
       end
@@ -740,7 +742,7 @@ and transl_fields env policy o fields =
             raise (Error (sty.ptyp_loc, env, Unbound_type_constructor_2 p))
         | _ -> raise (Error (sty.ptyp_loc, env, Not_an_object t))
       end in
-    { of_desc; of_loc; }
+    { of_desc; of_loc; of_attributes; }
   in
   let object_fields = List.map add_field fields in
   let fields = Hashtbl.fold (fun s ty l -> (s, ty) :: l) hfields [] in

@@ -596,13 +596,13 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
     and iter_row_field rf =
       match rf.rf_desc with
-      | Ttag (_label, _attrs, _bool, list) ->
+      | Ttag (_label, _bool, list) ->
           List.iter iter_core_type list
       | Tinherit ct -> iter_core_type ct
 
     and iter_object_field ofield =
       match ofield.of_desc with
-      | OTtag (_, _, ct) | OTinherit ct -> iter_core_type ct
+      | OTtag (_, ct) | OTinherit ct -> iter_core_type ct
 
     and iter_class_field cf =
       Iter.enter_class_field cf;

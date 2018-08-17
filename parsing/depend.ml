@@ -105,14 +105,14 @@ let rec add_type bv ty =
   | Ptyp_object (fl, _) ->
       List.iter
        (fun {pof_desc; _} -> match pof_desc with
-         | Otag (_, _, t) -> add_type bv t
+         | Otag (_, t) -> add_type bv t
          | Oinherit t -> add_type bv t) fl
   | Ptyp_class(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_alias(t, _) -> add_type bv t
   | Ptyp_variant(fl, _, _) ->
       List.iter
         (fun {prf_desc; _} -> match prf_desc with
-          | Rtag(_,_,_,stl) -> List.iter (add_type bv) stl
+          | Rtag(_, _, stl) -> List.iter (add_type bv) stl
           | Rinherit sty -> add_type bv sty)
         fl
   | Ptyp_poly(_, t) -> add_type bv t

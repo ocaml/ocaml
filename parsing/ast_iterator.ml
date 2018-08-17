@@ -88,21 +88,23 @@ module T = struct
   let row_field sub {
       prf_desc;
       prf_loc;
+      prf_attributes;
     } =
     sub.location sub prf_loc;
+    sub.attributes sub prf_attributes;
     match prf_desc with
-    | Rtag (_, attrs, _, tl) ->
-        sub.attributes sub attrs; List.iter (sub.typ sub) tl
+    | Rtag (_, _, tl) -> List.iter (sub.typ sub) tl
     | Rinherit t -> sub.typ sub t
 
   let object_field sub {
       pof_desc;
       pof_loc;
+      pof_attributes;
     } =
     sub.location sub pof_loc;
+    sub.attributes sub pof_attributes;
     match pof_desc with
-    | Otag (_, attrs, t) ->
-        sub.attributes sub attrs; sub.typ sub t
+    | Otag (_, t) -> sub.typ sub t
     | Oinherit t -> sub.typ sub t
 
   let iter sub {ptyp_desc = desc; ptyp_loc = loc; ptyp_attributes = attrs} =

@@ -288,13 +288,13 @@ and core_type1 ctxt f x =
     | Ptyp_variant (l, closed, low) ->
         let type_variant_helper f x =
           match x.prf_desc with
-          | Rtag (l, attrs, _, ctl) ->
+          | Rtag (l, _, ctl) ->
               pp f "@[<2>%a%a@;%a@]" (iter_loc string_quot) l
                 (fun f l -> match l with
                    |[] -> ()
                    | _ -> pp f "@;of@;%a"
                             (list (core_type ctxt) ~sep:"&")  ctl) ctl
-                (attributes ctxt) attrs
+                (attributes ctxt) x.prf_attributes
           | Rinherit ct -> core_type ctxt f ct in
         pp f "@[<2>[%a%a]@]"
           (fun f l ->
@@ -315,9 +315,10 @@ and core_type1 ctxt f x =
                    (list string_quot) xs) low
     | Ptyp_object (l, o) ->
         let core_field_type f x = match x.pof_desc with
-          | Otag (l, attrs, ct) ->
+          | Otag (l, ct) ->
+            (* Cf #7200 *)
             pp f "@[<hov2>%s: %a@ %a@ @]" l.txt
-              (core_type ctxt) ct (attributes ctxt) attrs (* Cf #7200 *)
+              (core_type ctxt) ct (attributes ctxt) x.pof_attributes
           | Oinherit ct ->
             pp f "@[<hov2>%a@ @]" (core_type ctxt) ct
         in

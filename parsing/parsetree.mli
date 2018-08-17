@@ -148,16 +148,17 @@ and package_type = Longident.t loc * (Longident.t loc * core_type) list
 and row_field = {
   prf_desc : row_field_desc;
   prf_loc : Location.t;
+  prf_attributes : attributes;
 }
 
 and row_field_desc =
-  | Rtag of label loc * attributes * bool * core_type list
+  | Rtag of label loc * bool * core_type list
         (* [`A]                   ( true,  [] )
            [`A of T]              ( false, [T] )
            [`A of T1 & .. & Tn]   ( false, [T1;...Tn] )
            [`A of & T1 & .. & Tn] ( true,  [T1;...Tn] )
 
-          - The 3rd field is true if the tag contains a
+          - The 'bool' field is true if the tag contains a
             constant (empty) constructor.
           - '&' occurs when several types are used for the same constructor
             (see 4.2 in the manual)
@@ -168,10 +169,11 @@ and row_field_desc =
 and object_field = {
   pof_desc : object_field_desc;
   pof_loc : Location.t;
+  pof_attributes : attributes;
 }
 
 and object_field_desc =
-  | Otag of label loc * attributes * core_type
+  | Otag of label loc * core_type
   | Oinherit of core_type
 
 (* Patterns *)
