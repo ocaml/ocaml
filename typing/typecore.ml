@@ -390,16 +390,22 @@ let unify_exp_types loc env ty expected_ty =
       raise(Typetexp.Error(loc, env, Typetexp.Variant_tags (l1, l2)))
 
 (* level at which to create the local type declarations *)
-let gadt_equations_level = ref None
-let get_gadt_equations_level () =
-  match !gadt_equations_level with
+let newtype_level = ref None
+let get_newtype_level () =
+  match !newtype_level with
     Some y -> y
   | None -> assert false
 
 let unify_pat_types_gadt loc env ty ty' =
-  try unify_gadt ~equations_level:(get_gadt_equations_level ()) env ty ty'
+  let newtype_level =
+    match !newtype_level with
+    | None -> assert false
+    | Some x -> x
+  in
+  try
+    unify_gadt ~newtype_level env ty ty'
   with
-  | Unify trace ->
+    Unify trace ->
       raise(Error(loc, !env, Pattern_type_clash(trace)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, !env, Typetexp.Variant_tags (l1, l2)))
@@ -1185,8 +1191,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         raise(Error(loc, !env, Constructor_arity_mismatch(lid.txt,
                                      constr.cstr_arity, List.length sargs)));
       let (ty_args, ty_res) =
-        instance_constructor ~in_pattern:(env, get_gadt_equations_level ())
-          constr
+        instance_constructor ~in_pattern:(env, get_newtype_level ()) constr
       in
       (* PR#7214: do not use gadt unification for toplevel lets *)
       if not constr.cstr_generalized || mode = Inside_or || no_existentials
@@ -1409,16 +1414,16 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
 
 let type_pat ?(allow_existentials=false) ?constrs ?labels ?(mode=Normal)
     ?(explode=0) ?(lev=get_current_level()) env sp expected_ty =
-  gadt_equations_level := Some lev;
+  newtype_level := Some lev;
   try
     let r =
       type_pat ~no_existentials:(not allow_existentials) ~constrs ~labels
         ~mode ~explode ~env sp expected_ty (fun x -> x) in
     iter_pattern (fun p -> p.pat_env <- !env) r;
-    gadt_equations_level := None;
+    newtype_level := None;
     r
   with e ->
-    gadt_equations_level := None;
+    newtype_level := None;
     raise e
 
 
@@ -3736,6 +3741,7 @@ and type_expect_
       (* remember original level *)
       begin_def ();
       (* Create a fake abstract type declaration for name. *)
+      let level = get_current_level () in
       let decl = {
         type_params = [];
         type_arity = 0;
@@ -3743,8 +3749,7 @@ and type_expect_
         type_private = Public;
         type_manifest = None;
         type_variance = [];
-        type_is_newtype = true;
-        type_expansion_scope = None;
+        type_newtype_level = Some (level, level);
         type_loc = loc;
         type_attributes = [];
         type_immediate = false;
@@ -4650,17 +4655,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     | _ -> true
   in
   let outer_level = get_current_level () in
-  let init_env () =
-    (* raise level for existentials *)
-    begin_def ();
-    Ident.set_current_time (get_current_level ());
-    let lev = Ident.current_time () in
-    Ctype.init_def (lev+100000);                 (* up to 1000 existentials *)
-    lev
-  in
-  let lev =
-    if may_contain_gadts then init_env () else get_current_level ()
-  in
+  if may_contain_gadts then begin_def ();
+  let lev = get_current_level () in
   (* Do we need to propagate polymorphism *)
   let propagate =
     !Clflags.principal || may_contain_gadts || (repr ty_arg).level = generic_level ||
@@ -4726,7 +4722,9 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   if take_partial_instance <> None then unify_pats (instance ty_arg);
   if propagate then begin
     List.iter
-      (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar()))) patl;
+      (fun (pat, _, (env, _)) ->
+         iter_pattern (fun {pat_type=t} -> unify_var env (newvar()) t) pat)
+      pat_env_list;
     end_def ();
     generalize ty_arg';
     List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
@@ -4773,8 +4771,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* We could check whether there actually is a GADT here instead of reusing
      [has_constructor], but I'm not sure it's worth it. *)
   let do_init = may_contain_gadts || needs_exhaust_check in
-  let lev =
-    if do_init && not may_contain_gadts then init_env () else lev in
+  if do_init && not may_contain_gadts then begin_def ();
+  let lev = get_current_level () in
   let ty_arg_check =
     if do_init then
       (* Hack: use for_saving to copy variables too *)
@@ -4787,20 +4785,19 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     else
       Partial
   in
-  let unused_check do_init =
-    let lev =
-      if do_init then init_env () else get_current_level ()
-    in
+  let unused_check () =
+    begin_def ();
+    init_def lev;
     List.iter (fun (pat, _, (env, _)) -> check_absent_variant env pat)
       pat_env_list;
-    check_unused ~lev env (instance ty_arg_check) cases ;
-    if do_init then end_def ();
-    Parmatch.check_ambiguous_bindings cases
+    check_unused ~lev env (instance ty_arg_check) cases;
+    Parmatch.check_ambiguous_bindings cases;
+    end_def ()
   in
   if contains_polyvars || do_init then
-    add_delayed_check (fun () -> unused_check do_init)
+    add_delayed_check unused_check
   else
-    unused_check false;
+    unused_check ();
   (* Check for unused cases, do not delay because of gadts *)
   if do_init then begin
     end_def ();
