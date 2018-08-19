@@ -505,16 +505,18 @@ module Ellipsis = struct
     let last_loc = ref Location.none in
     let left_mark = ref None (* stored position of [@@@ellipsis.start]*) in
     let location _this loc =
-      (* we rely on the fact that the default iterator call first
+      (* we rely on the fact that the default iterator calls first
          the location subiterator, then the attribute subiterator *)
       last_loc := loc in
-    let attribute _this {Parsetree.attr_name = attr;_} =
-      let name = attr.Location.txt in
+    let attribute _this attr =
+      let module L = Location in
+      let module P = Parsetree in
+      let name = attr.P.attr_name.L.txt in
       let loc = !last_loc in
-      let start = loc.Location.loc_start.Lexing.pos_cnum in
-      let attr_start = attr.Location.loc.loc_start.Lexing.pos_cnum in
-      let attr_stop = 1 + attr.Location.loc.loc_end.Lexing.pos_cnum in
-      let stop = loc.Location.loc_end.Lexing.pos_cnum in
+      let start = loc.L.loc_start.Lexing.pos_cnum in
+      let attr_start = attr.P.attr_loc.L.loc_start.Lexing.pos_cnum in
+      let attr_stop = attr.P.attr_loc.L.loc_end.Lexing.pos_cnum in
+      let stop = loc.L.loc_end.Lexing.pos_cnum in
       let check_nested () = match !left_mark with
         | Some (first,_) -> raise (Nested_ellipses {first; second=attr_start})
         | None -> () in
@@ -753,4 +755,4 @@ let _ =
     try close_out (open_out !outfile)
     with _ -> failwith "Cannot open output file"
   end;
-  List.iter process_file (List.rev !files)
+  List.iter process_file (List.rev !files);
