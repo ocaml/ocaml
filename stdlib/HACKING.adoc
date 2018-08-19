@@ -1,10 +1,10 @@
 = Contributing to the standard library
 
 For guidelines about standard library content, see
-link:../CONTRIBUTING.md#contributing-to-the-standard-library[CONTRIBUTING.md].
+link:../CONTRIBUTING.md#contributing-to-the-standard-library[].
 
 First, build the compiler. Run `./configure`, then `make world.opt`. See
-link:../HACKING.adoc[HACKING.adoc].
+link:../HACKING.adoc[].
 
 Note: All paths are given relative to the root of the repository.
 
