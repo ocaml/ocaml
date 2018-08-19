@@ -10,6 +10,7 @@ tests: manual
 tools:
 	$(MAKE) -C tools clean
 	$(MAKE) -C tools all
+	$(MAKE) -C tests tools
 
 manual: tools
 	$(MAKE) -C manual all
