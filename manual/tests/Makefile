@@ -2,8 +2,11 @@ TOPDIR=$(abspath ../..)
 include $(TOPDIR)/Makefile.tools
 MANUAL=$(TOPDIR)/manual/manual
 
+.PHONY: all
 all: check-cross-references check-stdlib
 
+.PHONY: tools
+tools: cross-reference-checker
 
 cross-reference-checker: cross_reference_checker.ml
 	$(OCAMLC) $(TOPDIR)/compilerlibs/ocamlcommon.cma \
