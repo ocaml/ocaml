@@ -42,6 +42,7 @@ let special_infix_strings =
    if all the characters in the beginning of the string are valid infix
    characters. *)
 let fixity_of_string  = function
+  | "" -> `Normal
   | s when List.mem s special_infix_strings -> `Infix s
   | s when List.mem s.[0] infix_symbols -> `Infix s
   | s when List.mem s.[0] prefix_symbols -> `Prefix s
@@ -53,20 +54,28 @@ let view_fixity_of_exp = function
       fixity_of_string l
   | _ -> `Normal
 
-let is_infix  = function  | `Infix _ -> true | _  -> false
+let is_infix  = function `Infix _ -> true | _  -> false
 let is_mixfix = function `Mixfix _ -> true | _ -> false
+
+let first_is c str =
+  str <> "" && str.[0] = c
+let last_is c str =
+  str <> "" && str.[String.length str - 1] = c
+
+let first_is_in cs str =
+  str <> "" && List.mem str.[0] cs
 
 (* which identifiers are in fact operators needing parentheses *)
 let needs_parens txt =
   let fix = fixity_of_string txt in
   is_infix fix
   || is_mixfix fix
-  || List.mem txt.[0] prefix_symbols
+  || first_is_in prefix_symbols txt
 
 (* some infixes need spaces around parens to avoid clashes with comment
    syntax *)
 let needs_spaces txt =
-  txt.[0]='*' || txt.[String.length txt - 1] = '*'
+  first_is '*' txt || last_is '*' txt
 
 (* add parentheses to binders when they are in fact infix or prefix operators *)
 let protect_ident ppf txt =
@@ -192,15 +201,20 @@ let rec longident f = function
 let longident_loc f x = pp f "%a" longident x.txt
 
 let constant f = function
-  | Pconst_char i -> pp f "%C"  i
-  | Pconst_string (i, None) -> pp f "%S" i
-  | Pconst_string (i, Some delim) -> pp f "{%s|%s|%s}" delim i delim
-  | Pconst_integer (i, None) -> paren (i.[0]='-') (fun f -> pp f "%s") f i
+  | Pconst_char i ->
+      pp f "%C"  i
+  | Pconst_string (i, None) ->
+      pp f "%S" i
+  | Pconst_string (i, Some delim) ->
+      pp f "{%s|%s|%s}" delim i delim
+  | Pconst_integer (i, None) ->
+      paren (first_is '-' i) (fun f -> pp f "%s") f i
   | Pconst_integer (i, Some m) ->
-    paren (i.[0]='-') (fun f (i, m) -> pp f "%s%c" i m) f (i,m)
-  | Pconst_float (i, None) -> paren (i.[0]='-') (fun f -> pp f "%s") f i
-  | Pconst_float (i, Some m) -> paren (i.[0]='-') (fun f (i,m) ->
-      pp f "%s%c" i m) f (i,m)
+      paren (first_is '-' i) (fun f (i, m) -> pp f "%s%c" i m) f (i,m)
+  | Pconst_float (i, None) ->
+      paren (first_is '-' i) (fun f -> pp f "%s") f i
+  | Pconst_float (i, Some m) ->
+      paren (first_is '-' i) (fun f (i,m) -> pp f "%s%c" i m) f (i,m)
 
 (* trailing space*)
 let mutable_flag f = function
@@ -515,15 +529,15 @@ and sugar_expr ctxt f e =
           | _ -> false
         end
       | (Lident s | Ldot(_,s)) , a :: i :: rest
-        when s.[0] = '.' ->
-          let n = String.length s in
+        when first_is '.' s ->
           (* extract operator:
              assignment operators end with [right_bracket ^ "<-"],
              access operators end with [right_bracket] directly
           *)
-          let assign = s.[n - 1] = '-'  in
+          let assign = last_is '-' s in
           let kind =
             (* extract the right end bracket *)
+            let n = String.length s in
             if assign then s.[n - 3] else s.[n - 1] in
           let left, right = match kind with
             | ')' -> '(', ")"
