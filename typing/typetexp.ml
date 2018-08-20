@@ -953,11 +953,15 @@ let report_error env ppf = function
       fprintf ppf "The type variable name %s is not allowed in programs" name
   | Cannot_quantify (name, v) ->
       fprintf ppf
-        "@[<hov>The universal type variable '%s cannot be generalized:@ %s.@]"
-        name
-        (if Btype.is_Tvar v then "it escapes its scope" else
-         if Btype.is_Tunivar v then "it is already bound to another variable"
-         else "it is not a variable")
+        "@[<hov>The universal type variable '%s cannot be generalized:@ "
+        name;
+      if Btype.is_Tvar v then
+        fprintf ppf "it escapes its scope"
+      else if Btype.is_Tunivar v then
+        fprintf ppf "it is already bound to another variable"
+      else
+        fprintf ppf "it is bound to@ %a" Printtyp.type_expr v;
+      fprintf ppf ".@]";
   | Multiple_constraints_on_type s ->
       fprintf ppf "Multiple constraints for type %a" longident s
   | Method_mismatch (l, ty, ty') ->
