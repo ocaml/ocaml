@@ -48,7 +48,7 @@ let prim_fresh_oo_id =
 
 let transl_extension_constructor env path ext =
   let path =
-    Printtyp.wrap_printing_env env ~error:true (fun () ->
+    Printtyp.wrap_printing_env env ~error:true (fun (module Printtyp) ->
       Stdlib.Option.map (Printtyp.rewrite_double_underscore_paths env) path)
   in
   let name =

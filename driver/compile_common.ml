@@ -55,7 +55,8 @@ let typecheck_intf info ast =
   in
   let sg = tsg.Typedtree.sig_type in
   if !Clflags.print_types then
-    Printtyp.wrap_printing_env ~error:false info.env (fun () ->
+    Printtyp.wrap_printing_env ~error:false info.env
+      (fun (module Printtyp:Printtyp.S) ->
         Format.(fprintf std_formatter) "%a@."
           (Printtyp.printed_signature info.sourcefile)
           sg);

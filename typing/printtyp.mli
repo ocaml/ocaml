@@ -21,9 +21,6 @@ open Outcometree
 
 val longident: formatter -> Longident.t -> unit
 val ident: formatter -> Ident.t -> unit
-val tree_of_path: Path.t -> out_ident
-val path: formatter -> Path.t -> unit
-val string_of_path: Path.t -> string
 
 module Out_name: sig
   val create: string -> out_name
@@ -38,17 +35,10 @@ type namespace =
   | Class_type
   | Other (** Other bypasses the unique name for identifier mechanism *)
 
-val strings_of_paths: namespace -> Path.t list -> string list
-    (** Print a list of paths, using the same naming context to
-        avoid name collisions *)
 
 val raw_type_expr: formatter -> type_expr -> unit
 val string_of_label: Asttypes.arg_label -> string
 
-val wrap_printing_env: error:bool -> Env.t -> (unit -> 'a) -> 'a
-    (* Call the function using the environment for type path shortening *)
-    (* This affects all the printing functions below *)
-    (* Also, if [~error:true], then disable the loading of cmis *)
 
 module Naming_context: sig
   val enable: bool -> unit
@@ -77,6 +67,20 @@ module Conflicts: sig
   val reset: unit -> unit
 end
 
+val reset: unit -> unit
+val mark_loops: type_expr -> unit
+
+module type S = sig
+val longident: formatter -> Longident.t -> unit
+val ident: formatter -> Ident.t -> unit
+val tree_of_path: Path.t -> out_ident
+val path: formatter -> Path.t -> unit
+val string_of_path: Path.t -> string
+val strings_of_paths: namespace -> Path.t list -> string list
+    (** Print a list of paths, using the same naming context to
+        avoid name collisions *)
+
+val raw_type_expr: formatter -> type_expr -> unit
 
 val reset: unit -> unit
 val mark_loops: type_expr -> unit
@@ -146,3 +150,30 @@ val rewrite_double_underscore_paths: Env.t -> Path.t -> Path.t
 (** [printed_signature sourcefile ppf sg] print the signature [sg] of
     [sourcefile] with potential warnings for name collisions *)
 val printed_signature: string -> formatter -> signature -> unit
+end
+
+
+(** Simple heuristic to rewrite Foo__bar.* as Foo.Bar.* when Foo.Bar is an alias
+   for Foo__bar. This pattern is used by the stdlib. *)
+val rewrite_double_underscore_paths: Env.t -> Path.t -> Path.t
+
+val report_unification_error:
+    formatter -> Env.t -> ?unif:bool ->
+    (type_expr * type_expr) list ->
+    ?type_expected_explanation:(formatter -> unit) ->
+    (formatter -> unit) -> (formatter -> unit) ->
+    unit
+val report_subtyping_error:
+    formatter -> Env.t -> (type_expr * type_expr) list ->
+    string -> (type_expr * type_expr) list -> unit
+val report_ambiguous_type_error:
+    formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list ->
+    (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
+
+val print_items: (Env.t -> signature_item -> 'a option) ->
+  Env.t -> signature_item list -> (out_sig_item * 'a option) list
+
+
+val wrap_printing_env: error:bool -> Env.t -> ((module S) -> 'a) -> 'a
+    (* Access function using the environment for type path shortening *)
+    (* Also, if [~error:true], then disable the loading of cmis *)

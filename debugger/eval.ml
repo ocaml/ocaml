@@ -165,7 +165,7 @@ and find_label lbl env ty path tydesc pos = function
 
 open Format
 
-let report_error ppf = function
+let report_error (module Printtyp:Printtyp.S) ppf = function
   | Unbound_identifier id ->
       fprintf ppf "@[Unbound identifier %s@]@." (Ident.name id)
   | Not_initialized_yet path ->
@@ -209,3 +209,7 @@ let report_error ppf = function
         "@[The type@ %a@ is not a record type@]@." Printtyp.type_expr ty
   | No_result ->
       fprintf ppf "@[No result available at current program event@]@."
+
+let report_error ppf x =
+  Printtyp.wrap_printing_env ~error:true Env.empty
+  @@ fun p -> report_error p ppf x

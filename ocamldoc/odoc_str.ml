@@ -51,6 +51,8 @@ let raw_string_of_type_list sep type_list =
     | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
   in
   let print_one_type variance t =
+      Printtyp.wrap_printing_env Env.empty ~error:false
+      @@ fun (module Printtyp) ->
     Printtyp.mark_loops t;
     if need_parent t then
       (

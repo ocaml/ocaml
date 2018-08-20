@@ -851,7 +851,6 @@ let transl_type_scheme env styp =
 (* Error report *)
 
 open Format
-open Printtyp
 
 let spellcheck ppf fold env lid =
   let choices ~path name =
@@ -885,7 +884,9 @@ let fold_classs = fold_simple Env.fold_classs
 let fold_modtypes = fold_simple Env.fold_modtypes
 let fold_cltypes = fold_simple Env.fold_cltypes
 
-let report_error env ppf = function
+let report_error (module Printtyp:Printtyp.S) env ppf =
+  let open Printtyp in
+  function
   | Unbound_type_variable name ->
      (* we don't use "spellcheck" here: the function that raises this
         error seems not to be called anywhere, so it's unclear how it
@@ -927,13 +928,12 @@ let report_error env ppf = function
   | Present_has_no_type l ->
       fprintf ppf "The present constructor %s has no type" l
   | Constructor_mismatch (ty, ty') ->
-      wrap_printing_env ~error:true env (fun ()  ->
-        Printtyp.reset_and_mark_loops_list [ty; ty'];
-        fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
-          "This variant type contains a constructor"
-          !Oprint.out_type (tree_of_typexp false ty)
-          "which should be"
-           !Oprint.out_type (tree_of_typexp false ty'))
+      Printtyp.reset_and_mark_loops_list [ty; ty'];
+      fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
+        "This variant type contains a constructor"
+        !Oprint.out_type (tree_of_typexp false ty)
+        "which should be"
+        !Oprint.out_type (tree_of_typexp false ty')
   | Not_a_variant ty ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf
@@ -961,10 +961,9 @@ let report_error env ppf = function
   | Multiple_constraints_on_type s ->
       fprintf ppf "Multiple constraints for type %a" longident s
   | Method_mismatch (l, ty, ty') ->
-      wrap_printing_env ~error:true env (fun ()  ->
-        Printtyp.reset_and_mark_loops_list [ty; ty'];
-        fprintf ppf "@[<hov>Method '%s' has type %a,@ which should be %a@]"
-          l Printtyp.type_expr ty Printtyp.type_expr ty')
+      Printtyp.reset_and_mark_loops_list [ty; ty'];
+      fprintf ppf "@[<hov>Method '%s' has type %a,@ which should be %a@]"
+        l Printtyp.type_expr ty Printtyp.type_expr ty'
   | Unbound_value lid ->
       fprintf ppf "Unbound value %a" longident lid;
       spellcheck ppf fold_values env lid;
@@ -1037,6 +1036,10 @@ let report_error env ppf = function
         "Hint: If this is a recursive definition,"
         "you should add the 'rec' keyword on line"
         line
+
+let report_error env ppf x =
+  Printtyp.wrap_printing_env env ~error:true
+    (fun  p -> report_error p env ppf x)
 
 let () =
   Location.register_error_of_exn

@@ -202,30 +202,30 @@ let rec print_list pr ppf = function
 let print_list pr ppf l =
   Format.fprintf ppf "[@[%a@]]" (print_list pr) l
 
-let rec print_coercion ppf c =
+let rec print_coercion ((module Printtyp:Printtyp.S) as m) ppf c =
   let pr fmt = Format.fprintf ppf fmt in
   match c with
     Tcoerce_none -> pr "id"
   | Tcoerce_structure (fl, nl) ->
       pr "@[<2>struct@ %a@ %a@]"
-        (print_list print_coercion2) fl
-        (print_list print_coercion3) nl
+        (print_list @@ print_coercion2 m) fl
+        (print_list @@ print_coercion3 m) nl
   | Tcoerce_functor (inp, out) ->
       pr "@[<2>functor@ (%a)@ (%a)@]"
-        print_coercion inp
-        print_coercion out
+        (print_coercion m) inp
+        (print_coercion m) out
   | Tcoerce_primitive {pc_desc; pc_env = _; pc_type}  ->
       pr "prim %s@ (%a)" pc_desc.Primitive.prim_name
         Printtyp.raw_type_expr pc_type
   | Tcoerce_alias (p, c) ->
       pr "@[<2>alias %a@ (%a)@]"
         Printtyp.path p
-        print_coercion c
-and print_coercion2 ppf (n, c) =
-  Format.fprintf ppf "@[%d,@ %a@]" n print_coercion c
-and print_coercion3 ppf (i, n, c) =
+        (print_coercion m) c
+and print_coercion2 m ppf (n, c) =
+  Format.fprintf ppf "@[%d,@ %a@]" n (print_coercion m) c
+and print_coercion3 m ppf (i, n, c) =
   Format.fprintf ppf "@[%s, %d,@ %a@]"
-    (Ident.unique_name i) n print_coercion c
+    (Ident.unique_name i) n (print_coercion m) c
 
 (* Simplify a structure coercion *)
 
@@ -515,6 +515,10 @@ and check_modtype_equiv ~loc env ~mark cxt mty1 mty2 =
         print_coercion _c1 print_coercion _c2; *)
       raise(Error [cxt, env, Modtype_permutation])
 
+let print_coercion ppf x =
+  Printtyp.wrap_printing_env Env.empty ~error:false
+    (fun p -> print_coercion p ppf x)
+
 (* Simplified inclusion check between module types (for Env) *)
 
 let can_alias env path =
@@ -577,7 +581,7 @@ let show_locs ppf (loc1, loc2) =
   show_loc "Expected declaration" ppf loc2;
   show_loc "Actual declaration" ppf loc1
 
-let include_err ppf = function
+let include_err (module Printtyp:Printtyp.S) ppf = function
   | Missing_field (id, loc, kind) ->
       fprintf ppf "The %s `%a' is required but not provided"
         kind Printtyp.ident id;
@@ -686,7 +690,7 @@ let path_of_context = function
       in subm (Path.Pident id) rem
   | _ -> assert false
 
-let context ppf cxt =
+let context (module Printtyp:Printtyp.S) ppf cxt =
   if cxt = [] then () else
   if List.for_all (function Module _ -> true | _ -> false) cxt then
     fprintf ppf "In module %a:@ " Printtyp.path (path_of_context cxt)
@@ -694,8 +698,9 @@ let context ppf cxt =
     fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
 
 let include_err ppf (cxt, env, err) =
-  Printtyp.wrap_printing_env ~error:true env (fun () ->
-    fprintf ppf "@[<v>%a%a@]" context (List.rev cxt) include_err err)
+  Printtyp.wrap_printing_env ~error:true env (fun pr ->
+      fprintf ppf "@[<v>%a%a@]" (context pr) (List.rev cxt)
+        (include_err pr) err)
 
 let buffer = ref Bytes.empty
 let is_big obj =

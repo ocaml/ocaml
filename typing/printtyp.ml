@@ -355,6 +355,7 @@ let rec rewrite_double_underscore_paths env p =
         else
           p
 
+module Self=struct
 let rewrite_double_underscore_paths env p =
   if env == Env.empty then
     p
@@ -2013,3 +2014,107 @@ let type_expansion ty ppf ty' =
   type_expansion ppf (trees_of_type_expansion (ty,ty'))
 let tree_of_type_declaration id td rs =
   wrap_env (hide [id]) (fun () -> tree_of_type_declaration id td rs) ()
+let ident = ident
+let longident = longident
+end
+open Self
+
+(** The module signature *)
+module type S = sig
+  val longident: formatter -> Longident.t -> unit
+  val ident: formatter -> Ident.t -> unit
+  val tree_of_path: Path.t -> out_ident
+  val path: formatter -> Path.t -> unit
+  val string_of_path: Path.t -> string
+  val strings_of_paths: namespace -> Path.t list -> string list
+  (** Print a list of paths, using the same naming context to
+      avoid name collisions *)
+
+  val raw_type_expr: formatter -> type_expr -> unit
+
+  val reset: unit -> unit
+  val mark_loops: type_expr -> unit
+  val reset_and_mark_loops: type_expr -> unit
+  val reset_and_mark_loops_list: type_expr list -> unit
+  val type_expr: formatter -> type_expr -> unit
+  val constructor_arguments: formatter -> constructor_arguments -> unit
+  val tree_of_type_scheme: type_expr -> out_type
+  val type_sch : formatter -> type_expr -> unit
+  val type_scheme: formatter -> type_expr -> unit
+  (* Maxence *)
+  val reset_names: unit -> unit
+  val type_scheme_max: ?b_reset_names: bool ->
+    formatter -> type_expr -> unit
+  (* End Maxence *)
+  val tree_of_value_description: Ident.t -> value_description -> out_sig_item
+  val value_description: Ident.t -> formatter -> value_description -> unit
+  val tree_of_type_declaration:
+    Ident.t -> type_declaration -> rec_status -> out_sig_item
+  val type_declaration: Ident.t -> formatter -> type_declaration -> unit
+  val tree_of_extension_constructor:
+    Ident.t -> extension_constructor -> ext_status -> out_sig_item
+  val extension_constructor:
+    Ident.t -> formatter -> extension_constructor -> unit
+  val tree_of_module:
+    Ident.t -> ?ellipsis:bool -> module_type -> rec_status -> out_sig_item
+  val modtype: formatter -> module_type -> unit
+  val signature: formatter -> signature -> unit
+  val tree_of_modtype: module_type -> out_module_type
+  val tree_of_modtype_declaration:
+    Ident.t -> modtype_declaration -> out_sig_item
+  val tree_of_signature: Types.signature -> out_sig_item list
+  val tree_of_typexp: bool -> type_expr -> out_type
+  val modtype_declaration: Ident.t -> formatter -> modtype_declaration -> unit
+  val class_type: formatter -> class_type -> unit
+  val tree_of_class_declaration:
+    Ident.t -> class_declaration -> rec_status -> out_sig_item
+  val class_declaration: Ident.t -> formatter -> class_declaration -> unit
+  val tree_of_cltype_declaration:
+    Ident.t -> class_type_declaration -> rec_status -> out_sig_item
+  val cltype_declaration: Ident.t -> formatter -> class_type_declaration -> unit
+  val type_expansion: type_expr -> Format.formatter -> type_expr -> unit
+  val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
+  val trace:
+    bool -> bool-> string -> formatter -> (type_expr * type_expr) list -> unit
+  val report_unification_error:
+    formatter -> Env.t -> ?unif:bool ->
+    (type_expr * type_expr) list ->
+    ?type_expected_explanation:(formatter -> unit) ->
+    (formatter -> unit) -> (formatter -> unit) ->
+    unit
+  val report_subtyping_error:
+    formatter -> Env.t -> (type_expr * type_expr) list ->
+    string -> (type_expr * type_expr) list -> unit
+  val report_ambiguous_type_error:
+    formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list ->
+    (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
+
+  (* for toploop *)
+  val print_items: (Env.t -> signature_item -> 'a option) ->
+    Env.t -> signature_item list -> (out_sig_item * 'a option) list
+
+  (* Simple heuristic to rewrite Foo__bar.* as Foo.Bar.* when Foo.Bar is an alias
+      for Foo__bar. This pattern is used by the stdlib. *)
+  val rewrite_double_underscore_paths: Env.t -> Path.t -> Path.t
+
+  (* [printed_signature sourcefile ppf sg] print the signature [sg] of
+      [sourcefile] with potential warnings for name collisions *)
+  val printed_signature: string -> formatter -> signature -> unit
+end
+
+let print_items p env l =
+  wrap_printing_env ~error:false env (fun () -> print_items p env l)
+
+
+let wrap_printing_env ~error env f =
+  wrap_printing_env ~error env (fun () -> f (module Self:S))
+
+let report_unification_error = report_unification_error
+let report_ambiguous_type_error = report_ambiguous_type_error
+let report_subtyping_error = report_subtyping_error
+
+let string_of_label = string_of_label
+let raw_type_expr = raw_type_expr
+let reset = reset
+let mark_loops = mark_loops
+let rewrite_double_underscore_paths = rewrite_double_underscore_paths

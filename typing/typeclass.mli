@@ -89,6 +89,10 @@ val type_classes :
            list * Env.t
 *)
 
+type unbound =
+  | Unbound_class of Ident.t * class_declaration
+  | Unbound_cltype of Ident.t * class_type_declaration
+
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
   | Field_type_mismatch of string * string * (type_expr * type_expr) list
@@ -107,7 +111,7 @@ type error =
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
-  | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
+  | Unbound_type_var of unbound * Ctype.closed_class_failure
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of

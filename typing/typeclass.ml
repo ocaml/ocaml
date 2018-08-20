@@ -47,6 +47,10 @@ type class_type_info = {
   clsty_info : Typedtree.class_type_declaration;
 }
 
+type unbound =
+  | Unbound_class of Ident.t * class_declaration
+  | Unbound_cltype of Ident.t * class_type_declaration
+
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
   | Field_type_mismatch of string * string * (type_expr * type_expr) list
@@ -65,7 +69,7 @@ type error =
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
-  | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
+  | Unbound_type_var of unbound * Ctype.closed_class_failure
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
@@ -1611,12 +1615,12 @@ let final_decl env define_class
   with
     None        -> ()
   | Some reason ->
-      let printer =
+      let unbound =
         if define_class
-        then function ppf -> Printtyp.class_declaration id ppf clty
-        else function ppf -> Printtyp.cltype_declaration id ppf cltydef
+        then Unbound_class(id,clty)
+        else Unbound_cltype (id,cltydef)
       in
-      raise(Error(cl.pci_loc, env, Unbound_type_var(printer, reason)))
+      raise(Error(cl.pci_loc, env, Unbound_type_var(unbound, reason)))
   end;
 
   (id, cl.pci_name, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
@@ -1841,9 +1845,7 @@ let approx_class_declarations env sdecls =
 
 (* Error report *)
 
-open Format
-
-let report_error env ppf = function
+let report_error (module Printtyp:Printtyp.S) env ppf = function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
   | Unconsistent_constraint trace ->
@@ -1936,7 +1938,7 @@ let report_error env ppf = function
       Includeclass.report_error ppf error
   | Unbound_val lab ->
       fprintf ppf "Unbound instance variable %s" lab
-  | Unbound_type_var (printer, reason) ->
+  | Unbound_type_var (unbound, reason) ->
       let print_common ppf kind ty0 real lab ty =
         let ty1 =
           if real then ty0 else Btype.newgenty(Tobject(ty0, ref None)) in
@@ -1954,6 +1956,11 @@ let report_error env ppf = function
           print_common ppf "instance variable" ty0 real lab ty
       in
       Printtyp.reset ();
+      let printer ppf = match unbound with
+        | Unbound_class (id,cl) ->
+            Printtyp.class_declaration id ppf cl
+        | Unbound_cltype (id,cl) ->
+            Printtyp.cltype_declaration id ppf cl in
       fprintf ppf
         "@[<v>@[Some type variables are unbound in this type:@;<1 2>%t@]@ \
               @[%a@]@]"
@@ -2008,7 +2015,7 @@ let report_error env ppf = function
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env ~error:true
-    env (fun () -> report_error env ppf err)
+    env (fun p -> report_error p env ppf err)
 
 let () =
   Location.register_error_of_exn

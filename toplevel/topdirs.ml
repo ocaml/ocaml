@@ -407,6 +407,8 @@ let tracing_function_ptr =
 
 let dir_trace ppf lid =
   try
+    Printtyp.wrap_printing_env !toplevel_env ~error:true @@
+    fun (module Printtyp:Printtyp.S) ->
     let (path, desc) = Env.lookup_value lid !toplevel_env in
     (* Check if this is a primitive *)
     match desc.val_kind with
@@ -461,6 +463,8 @@ let dir_untrace ppf lid =
   | Not_found -> fprintf ppf "Unbound value %a.@." Printtyp.longident lid
 
 let dir_untrace_all ppf () =
+  Printtyp.wrap_printing_env !toplevel_env ~error:true @@
+  fun (module Printtyp:Printtyp.S) ->
   List.iter
     (fun f ->
       set_code_pointer f.closure f.actual_code;
@@ -509,7 +513,7 @@ let show_prim to_sig ppf lid =
     let id = Ident.create_persistent s in
     let sg = to_sig env loc id lid in
     Printtyp.wrap_printing_env ~error:false env
-      (fun () -> fprintf ppf "@[%a@]@." Printtyp.signature sg)
+      (fun (module Printtyp) -> fprintf ppf "@[%a@]@." Printtyp.signature sg)
   with
   | Not_found ->
       fprintf ppf "@[Unknown element.@]@."

@@ -734,8 +734,8 @@ end) = struct
     match tpaths with
       [_] -> []
     | _ -> let open Printtyp in
-        wrap_printing_env ~error:true env (fun () ->
-            reset(); strings_of_paths Type tpaths)
+        wrap_printing_env ~error:true env ( fun (module P) ->
+            reset(); P.strings_of_paths Type tpaths)
 
   let disambiguate_by_type env tpath lbls =
     let check_type (lbl, _) =
@@ -795,7 +795,7 @@ end) = struct
           begin
           let s =
             Printtyp.wrap_printing_env ~error:true env
-              (fun () -> Printtyp.string_of_path tpath) in
+              (fun (module Printtyp) -> Printtyp.string_of_path tpath) in
           warn lid.loc
             (Warnings.Name_out_of_scope (s, [Longident.last lid.txt], false));
           end;
@@ -4548,7 +4548,9 @@ let report_type_expected_explanation_opt expl ppf =
       fprintf ppf "@ because it is in %t"
         (report_type_expected_explanation expl)
 
-let report_error env ppf = function
+let report_error (module P: Printtyp.S) env ppf =
+  let open P in
+  function
   | Constructor_arity_mismatch(lid, expected, provided) ->
       fprintf ppf
        "@[The constructor %a@ expects %i argument(s),@ \
@@ -4834,7 +4836,7 @@ let report_error env ppf = function
   | Empty_pattern -> assert false
 
 let report_error env ppf err =
-  wrap_printing_env ~error:true env (fun () -> report_error env ppf err)
+  wrap_printing_env ~error:true env (fun p -> report_error p env ppf err)
 
 let () =
   Location.register_error_of_exn

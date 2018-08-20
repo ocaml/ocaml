@@ -154,6 +154,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     ] : (Path.t * printer) list)
 
     let exn_printer ppf path exn =
+      Printtyp.wrap_printing_env Env.empty ~error:true @@
+      fun (module Printtyp: Printtyp.S) ->
       fprintf ppf "<printer %a raised an exception: %s>" Printtyp.path path
         (Printexc.to_string exn)
 
@@ -197,7 +199,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
        it comes from. Attempt to omit the prefix if the type comes from
        a module that has been opened. *)
 
-    let tree_of_qualified lookup_fun env ty_path name =
+    let tree_of_qualified (module Printtyp:Printtyp.S) lookup_fun env ty_path
+        name =
       match ty_path with
       | Pident _ ->
           Oide_ident name
@@ -211,6 +214,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           else Oide_dot (Printtyp.tree_of_path p, Out_name.print name)
       | Papply _ ->
           Printtyp.tree_of_path ty_path
+
+    let tree_of_qualified lookup_fun env ty_path name =
+      Printtyp.wrap_printing_env env ~error:false
+        ( fun p -> tree_of_qualified p lookup_fun env ty_path name)
 
     let tree_of_constr =
       tree_of_qualified
@@ -594,6 +601,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       | _ ->
           (fun _obj ->
             let printer ppf =
+              Printtyp.wrap_printing_env Env.empty ~error:true @@
+              fun (module Printtyp: Printtyp.S) ->
               fprintf ppf "<internal error: incorrect arity for '%a'>"
                 Printtyp.path path in
             Oval_printer printer)

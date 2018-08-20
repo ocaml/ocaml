@@ -95,4 +95,7 @@ open Format
 
 let report_error ppf = function
   | Module_not_found p ->
-      fprintf ppf "@[Cannot find module %a@].@." Printtyp.path p
+      Printtyp.wrap_printing_env Env.empty ~error:true @@
+      fun (module Printtyp:Printtyp.S) ->
+      fprintf ppf "@[Cannot find module %a@].@."
+        Printtyp.path p

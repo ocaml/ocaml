@@ -2092,7 +2092,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       if !Clflags.print_types then begin
         Typecore.force_delayed_checks ();
         Printtyp.wrap_printing_env ~error:false initial_env
-          (fun () -> fprintf std_formatter "%a@."
+          (fun (module Printtyp) -> fprintf std_formatter "%a@."
               (Printtyp.printed_signature sourcefile) simple_sg
           );
         (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
@@ -2229,9 +2229,9 @@ let package_units initial_env objfiles cmifile modulename =
 
 (* Error report *)
 
-open Printtyp
-
-let report_error ppf = function
+let report_error (module Printtyp: Printtyp.S) ppf =
+  let open Printtyp in
+  function
     Cannot_apply mty ->
       fprintf ppf
         "@[This module is not a functor; it has type@ %a@]" modtype mty
@@ -2347,7 +2347,7 @@ let report_error ppf = function
         Ident.print shadowed_item_id
 
 let report_error env ppf err =
-  Printtyp.wrap_printing_env ~error:true env (fun () -> report_error ppf err)
+  Printtyp.wrap_printing_env ~error:true env (fun p -> report_error p ppf err)
 
 let () =
   Location.register_error_of_exn

@@ -1954,7 +1954,7 @@ let check_recmod_typedecl env loc recmod_ids path decl =
 
 open Format
 
-let explain_unbound_gen ppf tv tl typ kwd pr =
+let explain_unbound_gen (module Printtyp:Printtyp.S) ppf tv tl typ kwd pr =
   try
     let ti = List.find (fun ti -> Ctype.deep_occur tv (typ ti)) tl in
     let ty0 = (* Hack to force aliasing when needed *)
@@ -1965,23 +1965,23 @@ let explain_unbound_gen ppf tv tl typ kwd pr =
       kwd pr ti Printtyp.type_expr tv
   with Not_found -> ()
 
-let explain_unbound ppf tv tl typ kwd lab =
-  explain_unbound_gen ppf tv tl typ kwd
+let explain_unbound ((module Printtyp:Printtyp.S) as p) ppf tv tl typ kwd lab =
+  explain_unbound_gen p ppf tv tl typ kwd
     (fun ppf ti -> fprintf ppf "%s%a" (lab ti) Printtyp.type_expr (typ ti))
 
-let explain_unbound_single ppf tv ty =
+let explain_unbound_single pr ppf tv ty =
   let trivial ty =
-    explain_unbound ppf tv [ty] (fun t -> t) "type" (fun _ -> "") in
+    explain_unbound pr ppf tv [ty] (fun t -> t) "type" (fun _ -> "") in
   match (Ctype.repr ty).desc with
     Tobject(fi,_) ->
       let (tl, rv) = Ctype.flatten_fields fi in
       if rv == tv then trivial ty else
-      explain_unbound ppf tv tl (fun (_,_,t) -> t)
+      explain_unbound pr ppf tv tl (fun (_,_,t) -> t)
         "method" (fun (lab,_,_) -> lab ^ ": ")
   | Tvariant row ->
       let row = Btype.row_repr row in
       if row.row_more == tv then trivial ty else
-      explain_unbound ppf tv row.row_fields
+      explain_unbound pr ppf tv row.row_fields
         (fun (_l,f) -> match Btype.row_field_repr f with
           Rpresent (Some t) -> t
         | Reither (_,[t],_,_) -> t
@@ -1995,7 +1995,8 @@ let tys_of_constr_args = function
   | Types.Cstr_tuple tl -> tl
   | Types.Cstr_record lbls -> List.map (fun l -> l.Types.ld_type) lbls
 
-let report_error ppf = function
+module P = Printtyp
+let report_error ( (module Printtyp:Printtyp.S) as pr) ppf = function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
   | Duplicate_constructor s ->
@@ -2027,7 +2028,7 @@ let report_error ppf = function
   | Constraint_failed (ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
-      Printtyp.Naming_context.reset ();
+      P.Naming_context.reset ();
       fprintf ppf "@[%s@ @[<hv>Type@ %a@ should be an instance of@ %a@]@]"
         "Constraints are not satisfied in this type."
         !Oprint.out_type (Printtyp.tree_of_typexp false ty)
@@ -2035,7 +2036,7 @@ let report_error ppf = function
   | Parameters_differ (path, ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
-      Printtyp.Naming_context.reset ();
+      P.Naming_context.reset ();
       fprintf ppf
         "@[<hv>In the definition of %s, type@ %a@ should be@ %a@]"
         (Path.name path)
@@ -2063,7 +2064,7 @@ let report_error ppf = function
       let ty = Ctype.repr ty in
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant tl, _ ->
-          explain_unbound_gen ppf ty tl (fun c ->
+          explain_unbound_gen pr ppf ty tl (fun c ->
               let tl = tys_of_constr_args c.Types.cd_args in
               Btype.newgenty (Ttuple tl)
             )
@@ -2072,16 +2073,16 @@ let report_error ppf = function
                   "%a of %a" Printtyp.ident c.Types.cd_id
                   Printtyp.constructor_arguments c.Types.cd_args)
       | Type_record (tl, _), _ ->
-          explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
+          explain_unbound pr ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
       | Type_abstract, Some ty' ->
-          explain_unbound_single ppf ty ty'
+          explain_unbound_single pr ppf ty ty'
       | _ -> ()
       end
   | Unbound_type_var_ext (ty, ext) ->
       fprintf ppf "A type variable is unbound in this extension constructor";
       let args = tys_of_constr_args ext.ext_args in
-      explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "")
+      explain_unbound pr ppf ty args (fun c -> c) "type" (fun _ -> "")
   | Cannot_extend_private_type path ->
       fprintf ppf "@[%s@ %a@]"
         "Cannot extend private type definition"
@@ -2193,6 +2194,10 @@ let report_error ppf = function
   | Nonrec_gadt ->
       fprintf ppf
         "@[GADT case syntax cannot be used in a 'nonrec' block.@]"
+
+let report_error ppf x =
+  Printtyp.wrap_printing_env ~error:true Env.empty (fun pr ->
+      report_error pr ppf x)
 
 let () =
   Location.register_error_of_exn

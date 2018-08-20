@@ -329,18 +329,19 @@ let execute_phrase print_outcome ppf phr =
               else
                 Compilenv.record_global_approx_toplevel ();
               if print_outcome then
-                Printtyp.wrap_printing_env ~error:false oldenv (fun () ->
+                Printtyp.wrap_printing_env ~error:false oldenv
+                  (fun  (module Printtyp:Printtyp.S) ->
                 match str.str_items with
                 | [] -> Ophr_signature []
                 | _ ->
                     if rewritten then
                       match sg' with
                       | [ Sig_value (id, vd) ] ->
+                          let ty = Printtyp.tree_of_type_scheme vd.val_type in
                           let outv =
                             outval_of_value newenv (toplevel_value id)
                               vd.val_type
                           in
-                          let ty = Printtyp.tree_of_type_scheme vd.val_type in
                           Ophr_eval (outv, ty)
                       | _ -> assert false
                     else

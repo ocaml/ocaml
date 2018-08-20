@@ -39,6 +39,8 @@ let (modtype_fmt, flush_modtype_fmt) = new_fmt ()
 
 
 let string_of_type_expr t =
+  Printtyp.wrap_printing_env Env.empty ~error:false
+  @@ fun (module Printtyp) ->
   Printtyp.mark_loops t;
   Printtyp.type_scheme_max ~b_reset_names: false type_fmt t;
   flush_type_fmt ()
@@ -69,6 +71,8 @@ let simpl_module_type ?code t =
 
 let string_of_module_type ?code ?(complete=false) t =
   try
+    Printtyp.wrap_printing_env Env.empty ~error:false
+    @@ fun (module Printtyp) ->
     let t2 = if complete then t else simpl_module_type ?code t in
     Printtyp.modtype modtype_fmt t2;
     flush_modtype_fmt ()
@@ -101,6 +105,8 @@ let simpl_class_type t =
   iter t
 
 let string_of_class_type ?(complete=false) t =
+  Printtyp.wrap_printing_env Env.empty ~error:false
+  @@ fun (module Printtyp) ->
   let t2 = if complete then t else simpl_class_type t in
   (* FIXME : my own Printtyp.class_type variant to avoid reset_names *)
   Printtyp.class_type modtype_fmt t2;
