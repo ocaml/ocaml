@@ -307,6 +307,10 @@ Working version
   and avoid exceptions for control flow.
   (Vladimir Keleshev, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
+- GPR#1996: expose Pprintast.longident to help compiler-libs users print
+  Longident.t values.
+  (Gabriel Scherer, review by Florian Angeletti and Thomas Refis)
+
 ### Bug fixes:
 
 - GPR#1626: Do not allow recursive modules in `with module`
