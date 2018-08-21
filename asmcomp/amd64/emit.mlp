@@ -701,7 +701,7 @@ let emit_instr fallthrough i =
         I.inc (domain_field Domainstate.Domain_mutable_loads RAX);
       end;
       I.mov (mem64 QWORD 0 ~base:(arg64 i 0) (arg64 i 1) ~scale:8) (reg i.res.(0));
-      I.mov (arg i 0) rax;
+      I.mov (res i 0) rax;
       I.xor r15 rax;
       let s = Nativeint.(shift_left one Domainstate.minor_heap_align_bits) in
       I.sub (nat s) rax;
