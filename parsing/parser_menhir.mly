@@ -266,12 +266,11 @@ let bigarray_set ~loc arr arg newval =
                         Nolabel, ghexp(Pexp_array coords);
                         Nolabel, newval]))
 
-(* TODO FIX lapply *)
-let lapply p1 p2 =
+let lapply ~loc p1 p2 =
   if !Clflags.applicative_functors
   then Lapply(p1, p2)
   else raise (Syntaxerr.Error(
-                  Syntaxerr.Applicative_path (Location.symbol_rloc())))
+                  Syntaxerr.Applicative_path (make_loc loc)))
 
 let exp_of_longident ~loc lid =
   mkexp ~loc (Pexp_ident {lid with txt = Lident(Longident.last lid.txt)})
@@ -2755,7 +2754,8 @@ mod_longident:
 mod_ext_longident:
     UIDENT                                      { Lident $1 }
   | mod_ext_longident DOT UIDENT                { Ldot($1, $3) }
-  | mod_ext_longident LPAREN mod_ext_longident RPAREN { lapply $1 $3 }
+  | mod_ext_longident LPAREN mod_ext_longident RPAREN
+      { lapply ~loc:$sloc $1 $3 }
 ;
 mty_longident:
     ident                                       { Lident $1 }
