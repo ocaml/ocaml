@@ -555,9 +555,6 @@ let mk_directive ~loc name arg =
 #define _mkpat_opt_constraint (mkpat_opt_constraint ~loc:$loc)
 #define _mkexp_opt_constraint (mkexp_opt_constraint ~loc:$loc)
 
-#define _mk_directive_arg (mk_directive_arg ~loc:$loc)
-#define _mk_directive (mk_directive ~loc:$loc)
-
 #define _unclosed(s1, p1, s2, p2) (unclosed s1 ($locof(p1)) s2 ($locof(p2)))
 #define _expecting(p, s) (expecting $locof(p) s)
 #define _not_expecting(p, s) (not_expecting $locof(p) s)
@@ -2657,20 +2654,20 @@ class_longident:
 
 toplevel_directive:
     HASH ident
-    { _mk_directive (_mkrhs($2, 2)) None }
+    { mk_directive ~loc:$loc (_mkrhs($2, 2)) None }
   | HASH ident toplevel_directive_argument
-    { _mk_directive (_mkrhs($2, 2)) (Some $3) }
+    { mk_directive ~loc:$loc (_mkrhs($2, 2)) (Some $3) }
 ;
 
 toplevel_directive_argument:
   | STRING        { let (s, _) = $1 in
-                    _mk_directive_arg (Pdir_string s) }
+                    mk_directive_arg ~loc:$loc (Pdir_string s) }
   | INT           { let (n, m) = $1 in
-                    _mk_directive_arg (Pdir_int (n ,m)) }
-  | val_longident { _mk_directive_arg (Pdir_ident $1) }
-  | mod_longident { _mk_directive_arg (Pdir_ident $1) }
-  | FALSE         { _mk_directive_arg (Pdir_bool false) }
-  | TRUE          { _mk_directive_arg (Pdir_bool true) }
+                    mk_directive_arg ~loc:$loc (Pdir_int (n ,m)) }
+  | val_longident { mk_directive_arg ~loc:$loc (Pdir_ident $1) }
+  | mod_longident { mk_directive_arg ~loc:$loc (Pdir_ident $1) }
+  | FALSE         { mk_directive_arg ~loc:$loc (Pdir_bool false) }
+  | TRUE          { mk_directive_arg ~loc:$loc (Pdir_bool true) }
 ;
 
 /* Miscellaneous */
