@@ -712,7 +712,7 @@ let emit_instr fallthrough i =
       let lbl_call_read_barrier = new_label () in
       let lbl_return = new_label () in
       let lbl_frame = record_frame_label i.live false Debuginfo.none in
-      I.jmp (label lbl_call_read_barrier);
+      I.je (label lbl_call_read_barrier);
       def_label lbl_return;
       read_barrier_call_sites :=
         { rb_base = i.arg.(0);
