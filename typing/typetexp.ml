@@ -279,6 +279,12 @@ let new_global_var ?name () =
 let newvar ?name () =
   newvar ?name:(validate_name name) ()
 
+let type_variable loc name =
+  try
+    TyVarMap.find name !type_variables
+  with Not_found ->
+    raise(Error(loc, Env.empty, Unbound_type_variable ("'" ^ name)))
+
 let transl_type_param env styp =
   let loc = styp.ptyp_loc in
   match styp.ptyp_desc with
