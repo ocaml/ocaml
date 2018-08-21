@@ -843,6 +843,30 @@ val open_process_args_full :
 
     @since 4.08.0 *)
 
+val process_in_pid : in_channel -> int
+(** Return the pid of a process opened via {!Unix.open_process_in} or
+   {!Unix.open_process_args_in}.
+
+    @since 4.08.0 *)
+
+val process_out_pid : out_channel -> int
+(** Return the pid of a process opened via {!Unix.open_process_out} or
+   {!Unix.open_process_args_out}.
+
+    @since 4.08.0 *)
+
+val process_pid : in_channel * out_channel -> int
+(** Return the pid of a process opened via {!Unix.open_process} or
+   {!Unix.open_process_args}.
+
+    @since 4.08.0 *)
+
+val process_full_pid : in_channel * out_channel * in_channel -> int
+(** Return the pid of a process opened via {!Unix.open_process_full} or
+   {!Unix.open_process_args_full}.
+
+    @since 4.08.0 *)
+
 val close_process_in : in_channel -> process_status
 (** Close channels opened by {!Unix.open_process_in},
    wait for the associated command to terminate,
