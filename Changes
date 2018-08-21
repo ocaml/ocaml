@@ -355,6 +355,10 @@ Working version
   no longer ignored.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+- MPR#7830, GPR#1987: fix ocamldebug crash when printing a value in the scope of
+  an `open` statement for which the `.cmi` is not available.
+  (Nicolás Ojeda Bär, report Jocelyn Sérot, review by Gabriel Scherer)
+
 OCaml 4.07 maintenance branch
 -----------------------------
 
