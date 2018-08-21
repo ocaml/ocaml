@@ -312,7 +312,6 @@ utils/config.ml: utils/config.mlp config/Makefile Makefile
 	    $(call SUBST,ASM) \
 	    $(call SUBST,ASM_CFI_SUPPORTED) \
 	    $(call SUBST,BYTECCLIBS) \
-	    $(call SUBST,BYTERUN) \
 	    $(call SUBST,CC) \
 	    $(call SUBST,CCOMPTYPE) \
 	    $(call SUBST,CC_PROFILE) \
