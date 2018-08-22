@@ -1,5 +1,6 @@
 Documentation_tags.mli
 Extensible_variant.ml
+Include_module_type_of.mli
 Inline_records.mli
 Inline_records_bis.ml
 Item_ids.mli
