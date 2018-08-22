@@ -22,3 +22,4 @@ empty_variant.ml
 typecore_errors.ml
 typecore_nolabel_errors.ml
 typecore_empty_polyvariant_error.ml
+typetexp_errors.ml
