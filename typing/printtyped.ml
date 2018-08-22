@@ -190,10 +190,11 @@ let rec core_type i ppf x =
   | Ttyp_object (l, c) ->
       line i ppf "Ttyp_object %a\n" fmt_closed_flag c;
       let i = i + 1 in
-      List.iter (function
-        | OTtag (s, attrs, t) ->
+      List.iter (fun {of_desc; of_attributes; _} ->
+        match of_desc with
+        | OTtag (s, t) ->
             line i ppf "method %s\n" s.txt;
-            attributes i ppf attrs;
+            attributes i ppf of_attributes;
             core_type (i + 1) ppf t
         | OTinherit ct ->
             line i ppf "OTinherit\n";
@@ -882,10 +883,10 @@ and ident_x_expression_def i ppf (l, e) =
   expression (i+1) ppf e;
 
 and label_x_bool_x_core_type_list i ppf x =
-  match x with
-    Ttag (l, attrs, b, ctl) ->
+  match x.rf_desc with
+  | Ttag (l, b, ctl) ->
       line i ppf "Ttag \"%s\" %s\n" l.txt (string_of_bool b);
-      attributes (i+1) ppf attrs;
+      attributes (i+1) ppf x.rf_attributes;
       list (i+1) core_type ppf ctl
   | Tinherit (ct) ->
       line i ppf "Tinherit\n";

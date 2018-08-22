@@ -226,6 +226,8 @@ let private_flag f = function
   | Public -> ()
   | Private -> pp f "private@ "
 
+let iter_loc f ctxt {txt; loc = _} = f ctxt txt
+
 let constant_string f s = pp f "%S" s
 let tyvar f str = pp f "'%s" str
 let tyvar_loc f str = pp f "'%s" str.txt
@@ -285,14 +287,14 @@ and core_type1 ctxt f x =
           l longident_loc li
     | Ptyp_variant (l, closed, low) ->
         let type_variant_helper f x =
-          match x with
-          | Rtag (l, attrs, _, ctl) ->
-              pp f "@[<2>%a%a@;%a@]" string_quot l.txt
+          match x.prf_desc with
+          | Rtag (l, _, ctl) ->
+              pp f "@[<2>%a%a@;%a@]" (iter_loc string_quot) l
                 (fun f l -> match l with
                    |[] -> ()
                    | _ -> pp f "@;of@;%a"
                             (list (core_type ctxt) ~sep:"&")  ctl) ctl
-                (attributes ctxt) attrs
+                (attributes ctxt) x.prf_attributes
           | Rinherit ct -> core_type ctxt f ct in
         pp f "@[<2>[%a%a]@]"
           (fun f l ->
@@ -312,10 +314,11 @@ and core_type1 ctxt f x =
                  pp f ">@ %a"
                    (list string_quot) xs) low
     | Ptyp_object (l, o) ->
-        let core_field_type f = function
-          | Otag (l, attrs, ct) ->
+        let core_field_type f x = match x.pof_desc with
+          | Otag (l, ct) ->
+            (* Cf #7200 *)
             pp f "@[<hov2>%s: %a@ %a@ @]" l.txt
-              (core_type ctxt) ct (attributes ctxt) attrs (* Cf #7200 *)
+              (core_type ctxt) ct (attributes ctxt) x.pof_attributes
           | Oinherit ct ->
             pp f "@[<hov2>%a@ @]" (core_type ctxt) ct
         in
@@ -326,7 +329,8 @@ and core_type1 ctxt f x =
               | [] -> pp f ".."
               | _ -> pp f " ;.."
         in
-        pp f "@[<hov2><@ %a%a@ > @]" (list core_field_type ~sep:";") l
+        pp f "@[<hov2><@ %a%a@ > @]"
+          (list core_field_type ~sep:";") l
           field_var o (* Cf #7200 *)
     | Ptyp_class (li, l) ->   (*FIXME*)
         pp f "@[<hov2>%a#%a@]"

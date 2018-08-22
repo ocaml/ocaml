@@ -163,11 +163,11 @@ let rec core_type i ppf x =
   | Ptyp_object (l, c) ->
       line i ppf "Ptyp_object %a\n" fmt_closed_flag c;
       let i = i + 1 in
-      List.iter (
-        function
-          | Otag (l, attrs, t) ->
+      List.iter (fun field ->
+        match field.pof_desc with
+          | Otag (l, t) ->
             line i ppf "method %s\n" l.txt;
-            attributes i ppf attrs;
+            attributes i ppf field.pof_attributes;
             core_type (i + 1) ppf t
           | Oinherit ct ->
               line i ppf "Oinherit\n";
@@ -893,10 +893,10 @@ and label_x_expression i ppf (l,e) =
   expression (i+1) ppf e;
 
 and label_x_bool_x_core_type_list i ppf x =
-  match x with
-    Rtag (l, attrs, b, ctl) ->
+  match x.prf_desc with
+    Rtag (l, b, ctl) ->
       line i ppf "Rtag \"%s\" %s\n" l.txt (string_of_bool b);
-      attributes (i+1) ppf attrs;
+      attributes (i+1) ppf x.prf_attributes;
       list (i+1) core_type ppf ctl
   | Rinherit (ct) ->
       line i ppf "Rinherit\n";

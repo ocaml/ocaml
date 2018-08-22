@@ -1620,6 +1620,7 @@ let transl_type_extension extend env loc styext =
       tyext_params = ttype_params;
       tyext_constructors = constructors;
       tyext_private = styext.ptyext_private;
+      tyext_loc = styext.ptyext_loc;
       tyext_attributes = styext.ptyext_attributes; }
   in
     (tyext, newenv)
@@ -1657,6 +1658,7 @@ let transl_type_exception env t =
       )
   in
   {tyexn_constructor = contructor;
+   tyexn_loc = t.ptyexn_loc;
    tyexn_attributes = t.ptyexn_attributes}, newenv
 
 

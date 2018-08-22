@@ -19,9 +19,11 @@ open Asttypes
 open Docstrings
 open Parsetree
 
-type lid = Longident.t loc
-type str = string loc
+type 'a with_loc = 'a Location.loc
 type loc = Location.t
+
+type lid = Longident.t with_loc
+type str = string with_loc
 type attrs = attribute list
 
 (** {1 Default locations} *)
@@ -207,11 +209,11 @@ module Type:
 (** Type extensions *)
 module Te:
   sig
-    val mk: ?attrs:attrs -> ?docs:docs ->
+    val mk: ?loc:loc -> ?attrs:attrs -> ?docs:docs ->
       ?params:(core_type * variance) list -> ?priv:private_flag ->
       lid -> extension_constructor list -> type_extension
 
-    val mk_exception: ?attrs:attrs -> ?docs:docs ->
+    val mk_exception: ?loc:loc -> ?attrs:attrs -> ?docs:docs ->
       extension_constructor -> type_exception
 
     val constructor: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> ?info:info ->
@@ -447,4 +449,23 @@ module Csig:
 module Cstr:
   sig
     val mk: pattern -> class_field list -> class_structure
+  end
+
+(** Row fields *)
+module Rf:
+  sig
+    val mk: ?loc:loc -> ?attrs:attrs -> row_field_desc -> row_field
+    val tag: ?loc:loc -> ?attrs:attrs ->
+      label with_loc -> bool -> core_type list -> row_field
+    val inherit_: ?loc:loc -> core_type -> row_field
+  end
+
+(** Object fields *)
+module Of:
+  sig
+    val mk: ?loc:loc -> ?attrs:attrs ->
+      object_field_desc -> object_field
+    val tag: ?loc:loc -> ?attrs:attrs ->
+      label with_loc -> core_type -> object_field
+    val inherit_: ?loc:loc -> core_type -> object_field
   end

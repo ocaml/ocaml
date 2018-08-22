@@ -59,6 +59,8 @@ type iterator = {
   structure: iterator -> structure -> unit;
   structure_item: iterator -> structure_item -> unit;
   typ: iterator -> core_type -> unit;
+  row_field: iterator -> row_field -> unit;
+  object_field: iterator -> object_field -> unit;
   type_declaration: iterator -> type_declaration -> unit;
   type_extension: iterator -> type_extension -> unit;
   type_exception: iterator -> type_exception -> unit;
@@ -83,14 +85,26 @@ let iter_loc sub {loc; txt = _} = sub.location sub loc
 module T = struct
   (* Type expressions for the core language *)
 
-  let row_field sub = function
-    | Rtag (_, attrs, _, tl) ->
-        sub.attributes sub attrs; List.iter (sub.typ sub) tl
+  let row_field sub {
+      prf_desc;
+      prf_loc;
+      prf_attributes;
+    } =
+    sub.location sub prf_loc;
+    sub.attributes sub prf_attributes;
+    match prf_desc with
+    | Rtag (_, _, tl) -> List.iter (sub.typ sub) tl
     | Rinherit t -> sub.typ sub t
 
-  let object_field sub = function
-    | Otag (_, attrs, t) ->
-        sub.attributes sub attrs; sub.typ sub t
+  let object_field sub {
+      pof_desc;
+      pof_loc;
+      pof_attributes;
+    } =
+    sub.location sub pof_loc;
+    sub.attributes sub pof_attributes;
+    match pof_desc with
+    | Otag (_, t) -> sub.typ sub t
     | Oinherit t -> sub.typ sub t
 
   let iter sub {ptyp_desc = desc; ptyp_loc = loc; ptyp_attributes = attrs} =
@@ -150,14 +164,18 @@ module T = struct
       {ptyext_path; ptyext_params;
        ptyext_constructors;
        ptyext_private = _;
+       ptyext_loc;
        ptyext_attributes} =
     iter_loc sub ptyext_path;
     List.iter (sub.extension_constructor sub) ptyext_constructors;
     List.iter (iter_fst (sub.typ sub)) ptyext_params;
+    sub.location sub ptyext_loc;
     sub.attributes sub ptyext_attributes
 
-  let iter_type_exception sub {ptyexn_constructor; ptyexn_attributes} =
+  let iter_type_exception sub
+      {ptyexn_constructor; ptyexn_loc; ptyexn_attributes} =
     sub.extension_constructor sub ptyexn_constructor;
+    sub.location sub ptyexn_loc;
     sub.attributes sub ptyexn_attributes
 
   let iter_extension_constructor_kind sub = function
@@ -259,7 +277,8 @@ module MT = struct
     | Psig_class_type l ->
         List.iter (sub.class_type_declaration sub) l
     | Psig_extension (x, attrs) ->
-        sub.extension sub x; sub.attributes sub attrs
+        sub.attributes sub attrs;
+        sub.extension sub x
     | Psig_attribute x -> sub.attribute sub x
 end
 
@@ -288,7 +307,7 @@ module M = struct
     sub.location sub loc;
     match desc with
     | Pstr_eval (x, attrs) ->
-        sub.expr sub x; sub.attributes sub attrs
+        sub.attributes sub attrs; sub.expr sub x
     | Pstr_value (_r, vbs) -> List.iter (sub.value_binding sub) vbs
     | Pstr_primitive vd -> sub.value_description sub vd
     | Pstr_type (_rf, l) -> List.iter (sub.type_declaration sub) l
@@ -303,7 +322,7 @@ module M = struct
         List.iter (sub.class_type_declaration sub) l
     | Pstr_include x -> sub.include_declaration sub x
     | Pstr_extension (x, attrs) ->
-        sub.extension sub x; sub.attributes sub attrs
+        sub.attributes sub attrs; sub.extension sub x
     | Pstr_attribute x -> sub.attribute sub x
 end
 
@@ -501,6 +520,8 @@ let default_iterator =
     type_declaration = T.iter_type_declaration;
     type_kind = T.iter_type_kind;
     typ = T.iter;
+    row_field = T.row_field;
+    object_field = T.object_field;
     type_extension = T.iter_type_extension;
     type_exception = T.iter_type_exception;
     extension_constructor = T.iter_extension_constructor;
@@ -509,8 +530,8 @@ let default_iterator =
                  pval_attributes} ->
         iter_loc this pval_name;
         this.typ this pval_type;
+        this.location this pval_loc;
         this.attributes this pval_attributes;
-        this.location this pval_loc
       );
 
     pat = P.iter;
@@ -520,23 +541,23 @@ let default_iterator =
       (fun this {pmd_name; pmd_type; pmd_attributes; pmd_loc} ->
          iter_loc this pmd_name;
          this.module_type this pmd_type;
+         this.location this pmd_loc;
          this.attributes this pmd_attributes;
-         this.location this pmd_loc
       );
 
     module_type_declaration =
       (fun this {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} ->
          iter_loc this pmtd_name;
          iter_opt (this.module_type this) pmtd_type;
+         this.location this pmtd_loc;
          this.attributes this pmtd_attributes;
-         this.location this pmtd_loc
       );
 
     module_binding =
       (fun this {pmb_name; pmb_expr; pmb_attributes; pmb_loc} ->
          iter_loc this pmb_name; this.module_expr this pmb_expr;
+         this.location this pmb_loc;
          this.attributes this pmb_attributes;
-         this.location this pmb_loc
       );
 
 

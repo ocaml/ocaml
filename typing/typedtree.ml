@@ -386,12 +386,24 @@ and package_type = {
   pack_txt : Longident.t loc;
 }
 
-and row_field =
-    Ttag of string loc * attributes * bool * core_type list
+and row_field = {
+  rf_desc : row_field_desc;
+  rf_loc : Location.t;
+  rf_attributes : attributes;
+}
+
+and row_field_desc =
+    Ttag of string loc * bool * core_type list
   | Tinherit of core_type
 
-and object_field =
-  | OTtag of string loc * attributes * core_type
+and object_field = {
+  of_desc : object_field_desc;
+  of_loc : Location.t;
+  of_attributes : attributes;
+}
+
+and object_field_desc =
+  | OTtag of string loc * core_type
   | OTinherit of core_type
 
 and value_description =
@@ -454,12 +466,14 @@ and type_extension =
     tyext_params: (core_type * variance) list;
     tyext_constructors: extension_constructor list;
     tyext_private: private_flag;
+    tyext_loc: Location.t;
     tyext_attributes: attribute list;
   }
 
 and type_exception =
   {
     tyexn_constructor: extension_constructor;
+    tyexn_loc: Location.t;
     tyexn_attributes: attribute list;
   }
 

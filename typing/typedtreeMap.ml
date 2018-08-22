@@ -45,6 +45,8 @@ module type MapArgument = sig
   val enter_class_structure : class_structure -> class_structure
   val enter_class_field : class_field -> class_field
   val enter_structure_item : structure_item -> structure_item
+  val enter_row_field : row_field -> row_field
+  val enter_object_field : object_field -> object_field
 
   val leave_structure : structure -> structure
   val leave_value_description : value_description -> value_description
@@ -75,6 +77,8 @@ module type MapArgument = sig
   val leave_class_structure : class_structure -> class_structure
   val leave_class_field : class_field -> class_field
   val leave_structure_item : structure_item -> structure_item
+  val leave_row_field : row_field -> row_field
+  val leave_object_field : object_field -> object_field
 
 end
 
@@ -649,17 +653,23 @@ module MakeMap(Map : MapArgument) = struct
     let cstr_fields = List.map map_class_field cs.cstr_fields in
     Map.leave_class_structure { cs with cstr_self; cstr_fields }
 
-  and map_row_field rf =
-    match rf with
-        Ttag (label, attrs, bool, list) ->
-          Ttag (label, attrs, bool, List.map map_core_type list)
+  and map_row_field field =
+    let { rf_desc; rf_loc; rf_attributes; } = Map.enter_row_field field in
+    let rf_desc = match rf_desc with
+      | Ttag (label, bool, list) ->
+          Ttag (label, bool, List.map map_core_type list)
       | Tinherit ct -> Tinherit (map_core_type ct)
+    in
+    Map.leave_row_field { rf_desc; rf_loc; rf_attributes; }
 
-  and map_object_field ofield =
-    match ofield with
-        OTtag (label, attrs, ct) ->
-          OTtag (label, attrs, map_core_type ct)
+  and map_object_field field =
+    let { of_desc; of_loc; of_attributes; } = Map.enter_object_field field in
+    let of_desc = match of_desc with
+      | OTtag (label, ct) ->
+          OTtag (label, map_core_type ct)
       | OTinherit ct -> OTinherit (map_core_type ct)
+    in
+    Map.leave_object_field { of_desc; of_loc; of_attributes; }
 
   and map_class_field cf =
     let cf = Map.enter_class_field cf in
@@ -712,6 +722,8 @@ module DefaultMapArgument = struct
   let enter_class_structure t = t
   let enter_class_field t = t
   let enter_structure_item t = t
+  let enter_row_field t = t
+  let enter_object_field t = t
 
 
   let leave_structure t = t
@@ -740,5 +752,7 @@ module DefaultMapArgument = struct
   let leave_class_structure t = t
   let leave_class_field t = t
   let leave_structure_item t = t
+  let leave_row_field t = t
+  let leave_object_field t = t
 
 end

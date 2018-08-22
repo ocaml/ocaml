@@ -294,6 +294,9 @@ Working version
   (Gabriel Radanne, help from Gabriel Scherer and Valentin Gatien-Baron,
    review by Mark Shinwell and Gabriel Radanne)
 
+- GPR#1903: parsetree, add locations to all nodes with attributes
+  (Gabriel Scherer, review by Thomas Refis)
+
 - GPR#1938: always check ast invariants after preprocessing
   (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)
 
