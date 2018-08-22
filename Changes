@@ -214,6 +214,9 @@ Working version
   deprecated Emacs APIs
   (Wilfred Hughes, review by Clément Pit-Claudel)
 
+- GPR#2000: ocamdoc, extended support for "include module type of ..."
+  (Florian Angeletti, review by Jérémie Dimino)
+
 ### Manual and documentation:
 
 - GPR#1788: move the quoted string description to the main chapters.
