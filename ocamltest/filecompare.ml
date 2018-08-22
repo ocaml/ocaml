@@ -88,7 +88,7 @@ let compare_text_files dropped_lines file1 file2 =
   else
     Different
 
-(* Version of Pervasives.really_input which stops at EOF, rather than raising
+(* Version of Stdlib.really_input which stops at EOF, rather than raising
    an exception. *)
 let really_input_up_to ic =
   let block_size = 8192 in
