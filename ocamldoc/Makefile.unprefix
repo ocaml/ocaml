@@ -59,7 +59,7 @@ $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/stdlib/%.mli
 	cp $< $@
 
 $(STDLIB_UNPREFIXED)/pervasives.mli:
-	echo '[@@@deprecated "Use Stdlib instead"]' > $@
+	echo '[@@@deprecated "Use Stdlib instead."]' > $@
 	echo 'include module type of struct include Stdlib end' >> $@
 
 $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/parsing/%.mli
