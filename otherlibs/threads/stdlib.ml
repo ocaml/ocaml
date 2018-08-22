@@ -654,9 +654,6 @@ let exit retcode =
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
 
-(* Because [Pervasives] is deprecated *)
-[@@@warning "-3"]
-
 (*MODULE_ALIASES*)
 module Arg          = Arg
 module Array        = Array
