@@ -7,9 +7,9 @@ ocaml_script_as_argument = "true"
 *)
 
 open Lib;;
-if Pervasives.int_of_string "123" <> 123 then raise Not_found;;
+if Stdlib.int_of_string "123" <> 123 then raise Not_found;;
 (** test for fix of bug 6649: http://caml.inria.fr/mantis/view.php?id=6649 *)
-if Pervasives.int_of_string "+123" <> 123 then raise Not_found;;
+if Stdlib.int_of_string "+123" <> 123 then raise Not_found;;
 
 if Int32.of_string "+123" <> Int32.of_int 123 then raise Not_found;;
 if Int64.of_string "+123" <> Int64.of_int 123 then raise Not_found;;
