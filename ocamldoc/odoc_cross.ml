@@ -31,7 +31,7 @@ open Odoc_parameter
 module S = Set.Make
     (
      struct type t = string * ref_kind option
-       let compare = Pervasives.compare
+       let compare = Stdlib.compare
      end
     )
 

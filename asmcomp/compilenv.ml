@@ -46,7 +46,7 @@ module CstMap =
   Map.Make(struct
     type t = Clambda.ustructured_constant
     let compare = Clambda.compare_structured_constants
-    (* PR#6442: it is incorrect to use Pervasives.compare on values of type t
+    (* PR#6442: it is incorrect to use Stdlib.compare on values of type t
        because it compares "0.0" and "-0.0" equal. *)
   end)
 

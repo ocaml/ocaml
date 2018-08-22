@@ -1267,6 +1267,7 @@ module Oo           = Oo
 module Option       = Option
 module Parsing      = Parsing
 module Pervasives   = Pervasives
+[@@deprecated "Use Stdlib instead"]
 module Printexc     = Printexc
 module Printf       = Printf
 module Queue        = Queue

@@ -140,6 +140,8 @@ module Stdlib : sig
     module Set : Set.S with type elt = string
     module Map : Map.S with type key = string
   end
+
+  external compare : 'a -> 'a -> int = "%compare"
 end
 
 val find_in_path: string list -> string -> string

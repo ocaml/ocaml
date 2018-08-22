@@ -135,7 +135,7 @@ let output_env ic oc tr env =
       let env =
         List.sort
           (fun ((_,p1),_) ((_,p2),_) ->
-            Pervasives.compare p1.start_pos  p2.start_pos)
+            Stdlib.compare p1.start_pos  p2.start_pos)
           env in
 
       List.iter

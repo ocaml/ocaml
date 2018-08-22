@@ -41,7 +41,7 @@ let middle_end ~ppf_dump ~prefixname ~backend
     let module WarningSet =
       Set.Make (struct
         type t = Location.t * Warnings.t
-        let compare = Pervasives.compare
+        let compare = Stdlib.compare
       end)
     in
     let warning_set = ref WarningSet.empty in

@@ -512,7 +512,7 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty
 let sort_pattern_variables vs =
   List.sort
     (fun {pv_id = x; _} {pv_id = y; _} ->
-      Pervasives.compare (Ident.name x) (Ident.name y))
+      Stdlib.compare (Ident.name x) (Ident.name y))
     vs
 
 let enter_orpat_variables loc env  p1_vs p2_vs =

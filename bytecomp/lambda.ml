@@ -345,7 +345,7 @@ let default_stub_attribute =
 
 (* Build sharing keys *)
 (*
-   Those keys are later compared with Pervasives.compare.
+   Those keys are later compared with Stdlib.compare.
    For that reason, they should not include cycles.
 *)
 

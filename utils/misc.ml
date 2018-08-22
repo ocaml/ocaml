@@ -208,6 +208,7 @@ module Stdlib = struct
     module Map = Map.Make(String)
   end
 
+  external compare : 'a -> 'a -> int = "%compare"
 end
 
 let may = Stdlib.Option.iter

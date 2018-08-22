@@ -85,7 +85,7 @@ map.cmi : seq.cmi
 marshal.cmi :
 matching.cmi : typedtree.cmi location.cmi lambda.cmi ident.cmi
 meta.cmi : obj.cmi instruct.cmi
-misc.cmi : string.cmi set.cmi map.cmi hashtbl.cmi format.cmi \
+misc.cmi : string.cmi stdlib.cmi set.cmi map.cmi hashtbl.cmi format.cmi \
     build_path_prefix_map.cmi
 moreLabels.cmi : set.cmi seq.cmi map.cmi hashtbl.cmi
 mtype.cmi : types.cmi path.cmi ident.cmi env.cmi
