@@ -1027,7 +1027,8 @@ let rec copy ?partial ?keep_names ty =
                 match more.desc with
                   Tsubst ty -> ty
                 | Tconstr _ | Tnil ->
-                    if keep then save_desc more more.desc;
+                    if more.level <> generic_level then
+                      save_desc more more.desc;
                     copy more
                 | Tvar _ | Tunivar _ ->
                     save_desc more more.desc;
