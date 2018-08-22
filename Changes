@@ -173,6 +173,9 @@ Working version
 - GPR#1993: Expanded error messages for universal quantification failure
   (Florian Angeletti, review by Jacques Garrigue)
 
+- GPR#1998: More context for unbound type parameter error
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.
