@@ -60,6 +60,3 @@ DOMAIN_STATE(uintnat, tailcall_ind)
 DOMAIN_STATE(uintnat, call_imm)
 DOMAIN_STATE(uintnat, call_ind)
 DOMAIN_STATE(uintnat, stackoverflow_checks)
-
-/* Event logs */
-DOMAIN_STATE(intnat, gc_event_nesting_depth)
