@@ -1029,7 +1029,7 @@ let transl_store_structure glob map prims str =
       match cc with
         Tcoerce_none ->
           Ident.add id
-            (Lprim(Pfield (pos, Pointer, Mutable),
+            (Lprim(Pfield (pos, Pointer, Immutable),
                    [Lprim(Pgetglobal glob, [], Location.none)],
                    Location.none))
             subst
