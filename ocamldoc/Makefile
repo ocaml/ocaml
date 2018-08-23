@@ -225,10 +225,10 @@ $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
 
 .PHONY: manpages
-manpages: stdlib_man/Pervasives.3o
+manpages: stdlib_man/Stdlib.3o
 
 .PHONY: html_doc
-html_doc: stdlib_html/Pervasives.html
+html_doc: stdlib_html/Stdlib.html
 
 .PHONY: dot
 dot: ocamldoc.dot
@@ -397,18 +397,24 @@ test_texi:
 # stdlib non-prefixed :
 #######################
 SRC=$(ROOTDIR)
-include Makefile.unprefix
 
-stdlib_man/Pervasives.3o: $(OCAMLDOC) $(STDLIB_MLIS)
-	$(MAKE) unprefix_stdlib_for_ocamldoc
+# Documented modules: stdlib + otherlib + utils(?) + parsing(for compiler-libs)
+
+include Makefile.docfiles
+
+stdlib_man/Stdlib.3o: $(OCAMLDOC) $(STDLIB_DEPS)
 	$(MKDIR) stdlib_man
-	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib -I stdlib_non_prefixed \
+	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib $(DOC_INCLUDES) \
+	-hide Stdlib  -lib Stdlib \
+	-pp "awk -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" -man-mini $(STDLIB_MLIS)
 
-stdlib_html/Pervasives.html: $(OCAMLDOC) $(STDLIB_MLIS)
-	$(MAKE) unprefix_stdlib_for_ocamldoc
+stdlib_html/Stdlib.html: $(OCAMLDOC) $(STDLIB_DEPS)
 	$(MKDIR) stdlib_html
-	$(OCAMLDOC_RUN) -d stdlib_html -html -nostdlib -I stdlib_non_prefixed \
+	$(OCAMLDOC_RUN) \
+	-hide Stdlib -lib Stdlib \
+	-pp "awk -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
+	-d stdlib_html -html -nostdlib $(DOC_INCLUDES) \
 	-t "OCaml library" $(STDLIB_MLIS)
 
 .PHONY: autotest_stdlib
@@ -470,7 +476,6 @@ clean:
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 	rm -rf stdlib_man stdlib_html
 	rm -f generators/*.cm[taiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
-	rm -f stdlib_non_prefixed/*.mli stdlib_non_prefixed/*.cmi
 
 .PHONY: depend
 depend:
