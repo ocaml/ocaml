@@ -90,7 +90,7 @@ void caml_gc_log (char *msg, ...)
 
   char fmtbuf[512];
 
-  if (caml_params->verb_gc) {
+  if ((caml_params->verb_gc & 0x800) != 0) {
     sprintf(fmtbuf, "[%02d] %s\n", Caml_state ? Caml_state->id : -1, msg);
     vfprintf(stderr, fmtbuf, args);
   }
