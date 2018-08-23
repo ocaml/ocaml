@@ -260,13 +260,16 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-* GPR#1952: refactor the code responsible for displaying errors and warnings
-  `Location.report_error` is removed, use `Location.print_report` instead
-  (Armaël Guéneau, review by Thomas Refis)
+- GPR#374: use Misc.try_finally for resource cleanup in the compiler
+  codebase. This should fix the problem of catch-and-reraise `try .. with`
+  blocks destroying backtrace information.
+  (François Bobot, help from Gabriel Scherer and Nicolás Ojeda Bär,
+   review by Gabriel Scherer)
 
-- GPR#1894: generalize highlight_dumb in location.ml to handle highlighting
-  several locations
-  (Armaël Guéneau, review by Gabriel Scherer)
+- GPR#1703, GPR#1944: Add the module Compile_common, which factorizes the common
+  part in Compile and Optcompile. This also makes the pipeline more modular.
+  (Gabriel Radanne, help from Gabriel Scherer and Valentin Gatien-Baron,
+   review by Mark Shinwell and Gabriel Radanne)
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables.
   (Thomas Refis, review by Leo White)
@@ -286,16 +289,9 @@ Working version
 - GPR#1886: move the Location.absname reference to Clflags.absname
   (Armaël Guéneau, review by Jérémie Dimino)
 
-- GPR#374: use Misc.try_finally for resource cleanup in the compiler
-  codebase. This should fix the problem of catch-and-reraise `try .. with`
-  blocks destroying backtrace information.
-  (François Bobot, help from Gabriel Scherer and Nicolás Ojeda Bär,
-   review by Gabriel Scherer)
-
-- GPR#1703, GPR#1944: Add the module Compile_common, which factorizes the common
-  part in Compile and Optcompile. This also makes the pipeline more modular.
-  (Gabriel Radanne, help from Gabriel Scherer and Valentin Gatien-Baron,
-   review by Mark Shinwell and Gabriel Radanne)
+- GPR#1894: generalize highlight_dumb in location.ml to handle highlighting
+  several locations
+  (Armaël Guéneau, review by Gabriel Scherer)
 
 - GPR#1903: parsetree, add locations to all nodes with attributes
   (Gabriel Scherer, review by Thomas Refis)
@@ -306,6 +302,10 @@ Working version
 - GPR#1948: Refactor Stdlib.Format. Notably, use Stdlib.Stack and Stdlib.Queue,
   and avoid exceptions for control flow.
   (Vladimir Keleshev, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
+* GPR#1952: refactor the code responsible for displaying errors and warnings
+  `Location.report_error` is removed, use `Location.print_report` instead
+  (Armaël Guéneau, review by Thomas Refis)
 
 - GPR#1996: expose Pprintast.longident to help compiler-libs users print
   Longident.t values.
