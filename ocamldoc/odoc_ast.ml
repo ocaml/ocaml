@@ -1699,7 +1699,7 @@ module Analyser =
            Typedtree.Tmod_constraint
              ({Typedtree.mod_desc = Typedtree.Tmod_ident (path, _)}, _, _, _))
           ->
-          let alias_name = Odoc_env.full_module_name env (Name.from_path path) in
+            let alias_name = Odoc_env.full_module_name env (Name.from_path path) in
           { m_base with m_kind = Module_alias { ma_name = alias_name ;
                                                 ma_module = None ; } }
 

@@ -44,6 +44,9 @@ val depth : t -> int
    If the two names are equal, then it is false (strict prefix).*)
 val prefix : t -> t -> bool
 
+(** remove a [Stdlib__] prefix and capitalize the resulting name *)
+val stdlib_unprefix: t -> t
+
 (** Take two names n1 and n2 = n3.n4 and return n4 if n3=n1 or else n2. *)
 val get_relative : t -> t -> t
 

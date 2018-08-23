@@ -185,6 +185,15 @@ let get_relative n1 n2 =
   else
     n2
 
+let stdlib_unprefix s =
+  let p = "Stdlib__" in
+  let n, k = String.(length p, length s) in
+  if k > n &&
+     String.sub s 0 n = p then
+    String.( capitalize_ascii @@ sub s n (k-n) )
+  else
+    s
+
 let hide_given_modules l s =
   let rec iter = function
       [] -> s
