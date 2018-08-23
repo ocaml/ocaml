@@ -400,8 +400,9 @@ and associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module
             Some _ ->
               (acc_b, acc_inc, acc_names)
           | None ->
+              let mta_name = Name.get_relative "Stdlib" mta.mta_name in
               let mt_opt =
-                try Some (lookup_module_type mta.mta_name)
+                try Some (lookup_module_type mta_name)
                 with Not_found -> None
               in
               match mt_opt with
@@ -412,7 +413,7 @@ and associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module
                       mta.mta_name = Odoc_messages.sig_end then
                       acc_names
                     else
-                      (NF_mt mta.mta_name) :: acc_names)
+                      (NF_mt mta_name) :: acc_names)
                   )
               | Some mt ->
                   mta.mta_module <- Some mt ;

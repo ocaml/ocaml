@@ -1242,18 +1242,27 @@ class html =
     method create_fully_qualified_idents_links m_name s =
       let f str_t =
         let match_s = Str.matched_string str_t in
+        let known_type = String.Set.mem match_s known_types_names in
+        let known_class = String.Set.mem match_s known_classes_names in
+        let retry, match_s = if not (known_type || known_class) then
+            true, Name.get_relative "Stdlib" match_s
+          else
+            false, match_s
+        in
         let rel = Name.get_relative m_name match_s in
         let s_final = Odoc_info.apply_if_equal
             Odoc_info.use_hidden_modules
             match_s
             rel
         in
-        if String.Set.mem match_s known_types_names then
+        if known_type ||
+           (retry && String.Set.mem match_s known_types_names) then
            "<a href=\""^(Naming.complete_target Naming.mark_type match_s)^"\">"^
            s_final^
            "</a>"
         else
-          if String.Set.mem match_s known_classes_names then
+        if known_class ||
+           (retry && String.Set.mem match_s known_classes_names) then
             let (html_file, _) = Naming.html_files match_s in
             "<a href=\""^html_file^"\">"^s_final^"</a>"
           else
@@ -1269,13 +1278,20 @@ class html =
     method create_fully_qualified_module_idents_links m_name s =
       let f str_t =
         let match_s = Str.matched_string str_t in
+        let known_module = String.Set.mem match_s known_modules_names in
+        let retry, match_s =
+          if not known_module then
+            true, Name.get_relative "Stdlib" match_s
+          else
+            false, match_s in
         let rel = Name.get_relative m_name match_s in
         let s_final = Odoc_info.apply_if_equal
             Odoc_info.use_hidden_modules
             match_s
             rel
         in
-        if String.Set.mem match_s known_modules_names then
+        if known_module ||
+           (retry && String.Set.mem match_s known_modules_names) then
           let (html_file, _) = Naming.html_files match_s in
           "<a href=\""^html_file^"\">"^s_final^"</a>"
         else
@@ -2400,12 +2416,17 @@ class html =
         let f_ele e =
           let simple_name = Name.simple (name e) in
           let father_name = Name.father (name e) in
+          if father_name = "Stdlib" && father_name <> simple_name then
+            (* avoid duplicata *) ()
+          else
+            begin
           bp b "<tr><td><a href=\"%s\">%s</a> " (target e) (self#escape simple_name);
           if simple_name <> father_name && father_name <> "" then
             bp b "[<a href=\"%s\">%s</a>]" (fst (Naming.html_files father_name)) father_name;
           bs b "</td>\n<td>";
           self#html_of_info_first_sentence b (info e);
-          bs b "</td></tr>\n";
+          bs b "</td></tr>\n"
+        end
         in
         let f_group l =
           match l with
