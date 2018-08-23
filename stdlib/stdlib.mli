@@ -1233,6 +1233,8 @@ val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
 
 val do_at_exit : unit -> unit
 
+(**/**)
+
 (*MODULE_ALIASES*)
 module Arg          = Arg
 module Array        = Array
