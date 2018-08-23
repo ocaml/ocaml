@@ -15,7 +15,7 @@
 
 (** Option values.
 
-    Option values explicitely indicate the presence or absence of a value.
+    Option values explicitly indicate the presence or absence of a value.
 
     @since 4.08 *)
 
