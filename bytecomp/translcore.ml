@@ -436,6 +436,12 @@ let specialize_primitive p env ty ~has_constant_constructor =
     match (p, params) with
       (Psetfield(n, _, init), [_p1; p2]) ->
         Psetfield(n, maybe_pointer_type env p2, init)
+    | (Pfield (n, Pointer, mut), _) ->
+       (* try strength reduction based on the *result type* *)
+       let is_int = match is_function_type env ty with
+         | None -> Pointer
+         | Some (_p1, rhs) -> maybe_pointer_type env rhs in
+       Pfield (n, is_int, mut)
     | (Parraylength t, [p])   ->
         Parraylength(glb_array_type t (array_type_kind env p))
     | (Parrayrefu t, p1 :: _) ->
