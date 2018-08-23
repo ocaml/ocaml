@@ -23,6 +23,9 @@ OCaml 4.07 maintenance branch
 - MPR#7833, GPR#1946: typecore: only 1k existential per match, not 100k
   (Thomas Refis, report by Jerome Simeon, review by Jacques Garrigue)
 
+- MPR#7838: -principal causes assertion failure in type checker
+  (Jacques Garrigue, report by Markus Mottl, review by Thomas Refis)
+
 OCaml 4.07.0 (10 July 2018)
 ---------------------------
 
