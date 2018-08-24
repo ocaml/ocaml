@@ -26,6 +26,9 @@ Working version
 
 ### Standard library:
 
+- GPR#2005: Float.Array interface: turn external declarations into val ones.
+  (Daniel C. Bünzli)
+
 - GPR#1940: Add Option module and Format.pp_print_option
   (Many fine eyes)
 
