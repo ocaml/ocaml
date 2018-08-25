@@ -16,7 +16,7 @@
 MENHIR ?= menhir
 
 MENHIRFLAGS := --explain --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer\
-	--lalr --strict --table --external-tokens Parser\
+	--lalr --strict --table \
         --unused-token COMMENT --unused-token DOCSTRING --unused-token EOL\
         --unused-token GREATERRBRACKET --fixed-exception
 
@@ -40,12 +40,13 @@ import-menhirLib:
 # would be easy to generate a parser and keep an incompatible version of
 # menhirLib, which would fail at compile-time.
 #
-# We assume that parser.ml and parser_menhir.ml depend
-# on the same modules, so that the dependency on
-# parsing/parser.cmo makes --infer work: the .cmi
-# of all modules that parser{_menhir}.mly semantic
-# actions depend on have already been built.
-promote-menhir: parsing/parser_menhir.mly parsing/parser.cmo
+# TODO review this in the wake of yacc parser's removal:
+# # We assume that parser.ml and parser_menhir.ml depend
+# # on the same modules, so that the dependency on
+# # parsing/parser.cmo makes --infer work: the .cmi
+# # of all modules that parser{_menhir}.mly semantic
+# # actions depend on have already been built.
+promote-menhir: parsing/parser_menhir.mly
 	$(MAKE) import-menhirLib
 	$(MENHIR) $(MENHIRFLAGS) parsing/parser_menhir.mly
 	cp $(addprefix parsing/parser_menhir.,ml mli) boot/menhir

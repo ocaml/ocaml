@@ -89,6 +89,9 @@ parsing/builtin_attributes.cmo : utils/warnings.cmi parsing/parsetree.cmi \
 parsing/builtin_attributes.cmx : utils/warnings.cmx parsing/parsetree.cmi \
     parsing/location.cmx parsing/asttypes.cmi parsing/builtin_attributes.cmi
 parsing/builtin_attributes.cmi : parsing/parsetree.cmi parsing/location.cmi
+parsing/camlinternalMenhirLib.cmo : parsing/camlinternalMenhirLib.cmi
+parsing/camlinternalMenhirLib.cmx : parsing/camlinternalMenhirLib.cmi
+parsing/camlinternalMenhirLib.cmi :
 parsing/depend.cmo : parsing/parsetree.cmi utils/misc.cmi \
     parsing/longident.cmi parsing/location.cmi utils/clflags.cmi \
     parsing/builtin_attributes.cmi parsing/asttypes.cmi parsing/depend.cmi
@@ -102,11 +105,13 @@ parsing/docstrings.cmo : utils/warnings.cmi parsing/parsetree.cmi \
 parsing/docstrings.cmx : utils/warnings.cmx parsing/parsetree.cmi \
     parsing/location.cmx parsing/docstrings.cmi
 parsing/docstrings.cmi : parsing/parsetree.cmi parsing/location.cmi
-parsing/lexer.cmo : utils/warnings.cmi parsing/parser.cmi utils/misc.cmi \
-    parsing/location.cmi parsing/docstrings.cmi parsing/lexer.cmi
-parsing/lexer.cmx : utils/warnings.cmx parsing/parser.cmx utils/misc.cmx \
-    parsing/location.cmx parsing/docstrings.cmx parsing/lexer.cmi
-parsing/lexer.cmi : parsing/parser.cmi parsing/location.cmi
+parsing/lexer.cmo : utils/warnings.cmi parsing/parser_menhir.cmi \
+    utils/misc.cmi parsing/location.cmi parsing/docstrings.cmi \
+    parsing/lexer.cmi
+parsing/lexer.cmx : utils/warnings.cmx parsing/parser_menhir.cmx \
+    utils/misc.cmx parsing/location.cmx parsing/docstrings.cmx \
+    parsing/lexer.cmi
+parsing/lexer.cmi : parsing/parser_menhir.cmi parsing/location.cmi
 parsing/location.cmo : utils/warnings.cmi utils/terminfo.cmi utils/misc.cmi \
     utils/clflags.cmi utils/build_path_prefix_map.cmi parsing/location.cmi
 parsing/location.cmx : utils/warnings.cmx utils/terminfo.cmx utils/misc.cmx \
@@ -115,15 +120,12 @@ parsing/location.cmi : utils/warnings.cmi
 parsing/longident.cmo : utils/misc.cmi parsing/longident.cmi
 parsing/longident.cmx : utils/misc.cmx parsing/longident.cmi
 parsing/longident.cmi :
-parsing/camlinternalMenhirLib.cmo : parsing/camlinternalMenhirLib.cmi
-parsing/camlinternalMenhirLib.cmx : parsing/camlinternalMenhirLib.cmi
-parsing/camlinternalMenhirLib.cmi :
 parsing/parse.cmo : parsing/syntaxerr.cmi parsing/parser_menhir.cmi \
-    parsing/parser.cmi parsing/location.cmi parsing/lexer.cmi \
-    parsing/docstrings.cmi parsing/parse.cmi
+    parsing/location.cmi parsing/lexer.cmi parsing/docstrings.cmi \
+    parsing/parse.cmi
 parsing/parse.cmx : parsing/syntaxerr.cmx parsing/parser_menhir.cmx \
-    parsing/parser.cmx parsing/location.cmx parsing/lexer.cmx \
-    parsing/docstrings.cmx parsing/parse.cmi
+    parsing/location.cmx parsing/lexer.cmx parsing/docstrings.cmx \
+    parsing/parse.cmi
 parsing/parse.cmi : parsing/parsetree.cmi
 parsing/parser.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
     parsing/longident.cmi parsing/location.cmi parsing/docstrings.cmi \
@@ -136,15 +138,15 @@ parsing/parser.cmx : parsing/syntaxerr.cmx parsing/parsetree.cmi \
 parsing/parser.cmi : parsing/parsetree.cmi parsing/location.cmi \
     parsing/docstrings.cmi
 parsing/parser_menhir.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
-    parsing/parser.cmi parsing/camlinternalMenhirLib.cmi parsing/longident.cmi \
-    parsing/location.cmi parsing/docstrings.cmi utils/clflags.cmi \
-    parsing/asttypes.cmi parsing/ast_helper.cmi parsing/parser_menhir.cmi
+    parsing/longident.cmi parsing/location.cmi parsing/docstrings.cmi \
+    utils/clflags.cmi parsing/camlinternalMenhirLib.cmi parsing/asttypes.cmi \
+    parsing/ast_helper.cmi parsing/parser_menhir.cmi
 parsing/parser_menhir.cmx : parsing/syntaxerr.cmx parsing/parsetree.cmi \
-    parsing/parser.cmx parsing/camlinternalMenhirLib.cmx parsing/longident.cmx \
-    parsing/location.cmx parsing/docstrings.cmx utils/clflags.cmx \
-    parsing/asttypes.cmi parsing/ast_helper.cmx parsing/parser_menhir.cmi
-parsing/parser_menhir.cmi : parsing/parsetree.cmi parsing/parser.cmi \
-    parsing/camlinternalMenhirLib.cmi
+    parsing/longident.cmx parsing/location.cmx parsing/docstrings.cmx \
+    utils/clflags.cmx parsing/camlinternalMenhirLib.cmx parsing/asttypes.cmi \
+    parsing/ast_helper.cmx parsing/parser_menhir.cmi
+parsing/parser_menhir.cmi : parsing/parsetree.cmi parsing/location.cmi \
+    parsing/docstrings.cmi parsing/camlinternalMenhirLib.cmi
 parsing/parsetree.cmi : parsing/longident.cmi parsing/location.cmi \
     parsing/asttypes.cmi
 parsing/pprintast.cmo : parsing/parsetree.cmi utils/misc.cmi \
@@ -2394,15 +2396,15 @@ driver/main_args.cmx : utils/warnings.cmx utils/profile.cmx utils/config.cmx \
     utils/clflags.cmx driver/main_args.cmi
 driver/main_args.cmi :
 driver/makedepend.cmo : driver/pparse.cmi parsing/parsetree.cmi \
-    parsing/parser.cmi parsing/parse.cmi utils/misc.cmi parsing/longident.cmi \
-    parsing/location.cmi parsing/lexer.cmi parsing/depend.cmi \
-    utils/config.cmi driver/compplugin.cmi driver/compenv.cmi \
-    utils/clflags.cmi driver/makedepend.cmi
+    parsing/parser_menhir.cmi parsing/parse.cmi utils/misc.cmi \
+    parsing/longident.cmi parsing/location.cmi parsing/lexer.cmi \
+    parsing/depend.cmi utils/config.cmi driver/compplugin.cmi \
+    driver/compenv.cmi utils/clflags.cmi driver/makedepend.cmi
 driver/makedepend.cmx : driver/pparse.cmx parsing/parsetree.cmi \
-    parsing/parser.cmx parsing/parse.cmx utils/misc.cmx parsing/longident.cmx \
-    parsing/location.cmx parsing/lexer.cmx parsing/depend.cmx \
-    utils/config.cmx driver/compplugin.cmx driver/compenv.cmx \
-    utils/clflags.cmx driver/makedepend.cmi
+    parsing/parser_menhir.cmx parsing/parse.cmx utils/misc.cmx \
+    parsing/longident.cmx parsing/location.cmx parsing/lexer.cmx \
+    parsing/depend.cmx utils/config.cmx driver/compplugin.cmx \
+    driver/compenv.cmx utils/clflags.cmx driver/makedepend.cmi
 driver/makedepend.cmi :
 driver/optcompile.cmo : bytecomp/translmod.cmi bytecomp/simplif.cmi \
     utils/profile.cmi bytecomp/printlambda.cmi utils/misc.cmi \

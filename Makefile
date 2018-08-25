@@ -78,7 +78,7 @@ UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
-  parsing/ast_helper.cmo parsing/parser.cmo \
+  parsing/ast_helper.cmo \
   parsing/camlinternalMenhirLib.cmo parsing/parser_menhir.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
@@ -856,16 +856,6 @@ natruntop:
 
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 	$(MAKE) -C otherlibs/dynlink allopt
-
-# The parser
-
-parsing/parser.mli parsing/parser.ml: parsing/parser.mly
-	$(CAMLYACC) $(YACCFLAGS) $<
-
-partialclean::
-	rm -f parsing/parser.mli parsing/parser.ml parsing/parser.output
-
-beforedepend:: parsing/parser.mli parsing/parser.ml
 
 # The lexer
 

@@ -18,7 +18,7 @@
 {
 open Lexing
 open Misc
-open Parser
+open Parser_menhir
 
 type error =
   | Illegal_character of char

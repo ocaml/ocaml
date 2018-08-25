@@ -165,11 +165,6 @@ let parse (type a) (kind : a ast_kind) lexbuf : a =
   | Structure -> Parse.implementation lexbuf
   | Signature -> Parse.interface lexbuf
 
-let parse_menhir (type a) (kind : a ast_kind) lexbuf : a =
-  match kind with
-  | Structure -> Parse.implementation_menhir lexbuf
-  | Signature -> Parse.interface_menhir lexbuf
-
 let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
              (kind : a ast_kind) : a =
   let ast_magic = magic_of_kind kind in
@@ -256,7 +251,6 @@ module InterfaceHooks = Misc.MakeHooks(struct
     type t = Parsetree.signature
   end)
 
-let yacc = "yacc"
 let menhir = "menhir"
 
 let choose_parsers parser_table =
@@ -279,8 +273,7 @@ let choose_parsers parser_table =
 
 let parse_implementation ~tool_name sourcefile =
   let parse = choose_parsers [
-      (yacc, parse Structure);
-      (menhir, parse_menhir Structure)
+      (menhir, parse Structure)
     ] in
   parse_file ~tool_name Ast_invariants.structure
       parse Printast.implementation Structure sourcefile
@@ -288,8 +281,7 @@ let parse_implementation ~tool_name sourcefile =
 
 let parse_interface ~tool_name sourcefile =
   let parse = choose_parsers [
-      (yacc, parse Signature);
-      (menhir, parse_menhir Signature)
+      (menhir, parse Signature)
     ] in
   parse_file ~tool_name Ast_invariants.signature
     parse Printast.interface Signature sourcefile

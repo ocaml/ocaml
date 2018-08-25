@@ -17,6 +17,8 @@
 
 (* Skip tokens to the end of the phrase *)
 
+module Parser = Parser_menhir
+
 let last_token = ref Parser.EOF
 
 let token lexbuf =
@@ -62,17 +64,6 @@ let wrap parsing_fun lexbuf =
       if !Location.input_name = "//toplevel//"
       then maybe_skip_phrase lexbuf;
       raise(Syntaxerr.Error(Syntaxerr.Other loc))
-
-let wrap_yacc parsing_fun =
-  wrap (fun lexbuf -> parsing_fun token lexbuf)
-
-let implementation = wrap_yacc Parser.implementation
-and interface = wrap_yacc Parser.interface
-and toplevel_phrase = wrap_yacc Parser.toplevel_phrase
-and use_file = wrap_yacc Parser.use_file
-and core_type = wrap_yacc Parser.parse_core_type
-and expression = wrap_yacc Parser.parse_expression
-and pattern = wrap_yacc Parser.parse_pattern
 
 let rec loop lexbuf in_error checkpoint =
   let module I = Parser_menhir.MenhirInterpreter in
@@ -123,10 +114,10 @@ let wrap_menhir entry lexbuf =
   let initial = entry lexbuf.Lexing.lex_curr_p in
   wrap (fun lexbuf -> loop lexbuf false initial) lexbuf
 
-let implementation_menhir = wrap_menhir Parser_menhir.Incremental.implementation
-and interface_menhir = wrap_menhir Parser_menhir.Incremental.interface
-and toplevel_phrase_menhir = wrap_menhir Parser_menhir.Incremental.toplevel_phrase
-and use_file_menhir = wrap_menhir Parser_menhir.Incremental.use_file
-and core_type_menhir = wrap_menhir Parser_menhir.Incremental.parse_core_type
-and expression_menhir = wrap_menhir Parser_menhir.Incremental.parse_expression
-and pattern_menhir = wrap_menhir Parser_menhir.Incremental.parse_pattern
+let implementation = wrap_menhir Parser_menhir.Incremental.implementation
+and interface = wrap_menhir Parser_menhir.Incremental.interface
+and toplevel_phrase = wrap_menhir Parser_menhir.Incremental.toplevel_phrase
+and use_file = wrap_menhir Parser_menhir.Incremental.use_file
+and core_type = wrap_menhir Parser_menhir.Incremental.parse_core_type
+and expression = wrap_menhir Parser_menhir.Incremental.parse_expression
+and pattern = wrap_menhir Parser_menhir.Incremental.parse_pattern
