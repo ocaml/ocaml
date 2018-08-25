@@ -19,7 +19,6 @@ include $(ROOTDIR)/config/Makefile
 include $(ROOTDIR)/Makefile.common
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
-CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 
 ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
 export OCAML_FLEXLINK:=

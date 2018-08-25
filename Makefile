@@ -40,7 +40,6 @@ LN = ln -sf
 endif
 
 CAMLRUN ?= boot/ocamlrun
-CAMLYACC ?= boot/ocamlyacc
 include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims runtime/primitives
