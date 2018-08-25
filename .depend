@@ -105,12 +105,10 @@ parsing/docstrings.cmo : utils/warnings.cmi parsing/parsetree.cmi \
 parsing/docstrings.cmx : utils/warnings.cmx parsing/parsetree.cmi \
     parsing/location.cmx parsing/docstrings.cmi
 parsing/docstrings.cmi : parsing/parsetree.cmi parsing/location.cmi
-parsing/lexer.cmo : utils/warnings.cmi parsing/parser.cmi \
-    utils/misc.cmi parsing/location.cmi parsing/docstrings.cmi \
-    parsing/lexer.cmi
-parsing/lexer.cmx : utils/warnings.cmx parsing/parser.cmx \
-    utils/misc.cmx parsing/location.cmx parsing/docstrings.cmx \
-    parsing/lexer.cmi
+parsing/lexer.cmo : utils/warnings.cmi parsing/parser.cmi utils/misc.cmi \
+    parsing/location.cmi parsing/docstrings.cmi parsing/lexer.cmi
+parsing/lexer.cmx : utils/warnings.cmx parsing/parser.cmx utils/misc.cmx \
+    parsing/location.cmx parsing/docstrings.cmx parsing/lexer.cmi
 parsing/lexer.cmi : parsing/parser.cmi parsing/location.cmi
 parsing/location.cmo : utils/warnings.cmi utils/terminfo.cmi utils/misc.cmi \
     utils/clflags.cmi utils/build_path_prefix_map.cmi parsing/location.cmi
@@ -129,16 +127,6 @@ parsing/parse.cmx : parsing/syntaxerr.cmx parsing/parser.cmx \
 parsing/parse.cmi : parsing/parsetree.cmi
 parsing/parser.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
     parsing/longident.cmi parsing/location.cmi parsing/docstrings.cmi \
-    utils/clflags.cmi parsing/asttypes.cmi parsing/ast_helper.cmi \
-    parsing/parser.cmi
-parsing/parser.cmx : parsing/syntaxerr.cmx parsing/parsetree.cmi \
-    parsing/longident.cmx parsing/location.cmx parsing/docstrings.cmx \
-    utils/clflags.cmx parsing/asttypes.cmi parsing/ast_helper.cmx \
-    parsing/parser.cmi
-parsing/parser.cmi : parsing/parsetree.cmi parsing/location.cmi \
-    parsing/docstrings.cmi
-parsing/parser.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
-    parsing/longident.cmi parsing/location.cmi parsing/docstrings.cmi \
     utils/clflags.cmi parsing/camlinternalMenhirLib.cmi parsing/asttypes.cmi \
     parsing/ast_helper.cmi parsing/parser.cmi
 parsing/parser.cmx : parsing/syntaxerr.cmx parsing/parsetree.cmi \
@@ -155,7 +143,7 @@ parsing/pprintast.cmo : parsing/parsetree.cmi utils/misc.cmi \
 parsing/pprintast.cmx : parsing/parsetree.cmi utils/misc.cmx \
     parsing/longident.cmx parsing/location.cmx parsing/asttypes.cmi \
     parsing/ast_helper.cmx parsing/pprintast.cmi
-parsing/pprintast.cmi : parsing/parsetree.cmi
+parsing/pprintast.cmi : parsing/parsetree.cmi parsing/longident.cmi
 parsing/printast.cmo : parsing/parsetree.cmi utils/misc.cmi \
     parsing/longident.cmi parsing/location.cmi parsing/asttypes.cmi \
     parsing/printast.cmi
@@ -2396,15 +2384,15 @@ driver/main_args.cmx : utils/warnings.cmx utils/profile.cmx utils/config.cmx \
     utils/clflags.cmx driver/main_args.cmi
 driver/main_args.cmi :
 driver/makedepend.cmo : driver/pparse.cmi parsing/parsetree.cmi \
-    parsing/parser.cmi parsing/parse.cmi utils/misc.cmi \
-    parsing/longident.cmi parsing/location.cmi parsing/lexer.cmi \
-    parsing/depend.cmi utils/config.cmi driver/compplugin.cmi \
-    driver/compenv.cmi utils/clflags.cmi driver/makedepend.cmi
+    parsing/parser.cmi parsing/parse.cmi utils/misc.cmi parsing/longident.cmi \
+    parsing/location.cmi parsing/lexer.cmi parsing/depend.cmi \
+    utils/config.cmi driver/compplugin.cmi driver/compenv.cmi \
+    utils/clflags.cmi driver/makedepend.cmi
 driver/makedepend.cmx : driver/pparse.cmx parsing/parsetree.cmi \
-    parsing/parser.cmx parsing/parse.cmx utils/misc.cmx \
-    parsing/longident.cmx parsing/location.cmx parsing/lexer.cmx \
-    parsing/depend.cmx utils/config.cmx driver/compplugin.cmx \
-    driver/compenv.cmx utils/clflags.cmx driver/makedepend.cmi
+    parsing/parser.cmx parsing/parse.cmx utils/misc.cmx parsing/longident.cmx \
+    parsing/location.cmx parsing/lexer.cmx parsing/depend.cmx \
+    utils/config.cmx driver/compplugin.cmx driver/compenv.cmx \
+    utils/clflags.cmx driver/makedepend.cmi
 driver/makedepend.cmi :
 driver/optcompile.cmo : bytecomp/translmod.cmi bytecomp/simplif.cmi \
     utils/profile.cmi bytecomp/printlambda.cmi utils/misc.cmi \
@@ -2439,15 +2427,13 @@ driver/optmain.cmx : utils/warnings.cmx utils/profile.cmx asmcomp/proc.cmx \
     driver/optmain.cmi
 driver/optmain.cmi :
 driver/pparse.cmo : utils/warnings.cmi utils/profile.cmi \
-    parsing/printast.cmi parsing/parsetree.cmi parsing/parse.cmi \
-    utils/misc.cmi parsing/location.cmi utils/config.cmi utils/clflags.cmi \
-    utils/ccomp.cmi parsing/ast_mapper.cmi parsing/ast_invariants.cmi \
-    driver/pparse.cmi
+    parsing/parsetree.cmi parsing/parse.cmi utils/misc.cmi \
+    parsing/location.cmi utils/config.cmi utils/clflags.cmi utils/ccomp.cmi \
+    parsing/ast_mapper.cmi parsing/ast_invariants.cmi driver/pparse.cmi
 driver/pparse.cmx : utils/warnings.cmx utils/profile.cmx \
-    parsing/printast.cmx parsing/parsetree.cmi parsing/parse.cmx \
-    utils/misc.cmx parsing/location.cmx utils/config.cmx utils/clflags.cmx \
-    utils/ccomp.cmx parsing/ast_mapper.cmx parsing/ast_invariants.cmx \
-    driver/pparse.cmi
+    parsing/parsetree.cmi parsing/parse.cmx utils/misc.cmx \
+    parsing/location.cmx utils/config.cmx utils/clflags.cmx utils/ccomp.cmx \
+    parsing/ast_mapper.cmx parsing/ast_invariants.cmx driver/pparse.cmi
 driver/pparse.cmi : parsing/parsetree.cmi utils/misc.cmi
 toplevel/expunge.cmo : bytecomp/symtable.cmi bytecomp/runtimedef.cmi \
     utils/misc.cmi typing/ident.cmi bytecomp/bytesections.cmi
