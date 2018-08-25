@@ -39,13 +39,6 @@ import-menhirLib:
 # is paired with an update of the imported menhirLib; otherwise it
 # would be easy to generate a parser and keep an incompatible version of
 # menhirLib, which would fail at compile-time.
-#
-# TODO review this in the wake of yacc parser's removal:
-# # We assume that parser.ml and parser_menhir.ml depend
-# # on the same modules, so that the dependency on
-# # parsing/parser.cmo makes --infer work: the .cmi
-# # of all modules that parser{_menhir}.mly semantic
-# # actions depend on have already been built.
 promote-menhir: parsing/parser.mly
 	$(MAKE) import-menhirLib
 	$(MENHIR) $(MENHIRFLAGS) parsing/parser.mly
@@ -64,3 +57,12 @@ partialclean-menhir::
 	  $(addprefix parsing/camlinternalMenhirLib.,ml mli)
 
 clean-menhir: partialclean-menhir
+
+.PHONY: depend-menhir
+depend-menhir:
+	$(MENHIR) --depend --ocamldep "$(CAMLDEP) -slash $(DEPFLAGS)" \
+          parsing/parser.mly > .depend.menhir
+# this rule depends on the variables CAMLDEP and DEPFLAGS
+# define in Makefile, so it can only be invoked from the main Makefile
+
+include .depend.menhir
