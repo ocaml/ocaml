@@ -211,36 +211,12 @@ let () =
       | _ -> None
     )
 
-let compare_parsers parsers sourcefile print use =
-  let asts = List.map (fun (name, parse) -> (name, use name parse)) parsers in
-  match asts with
-  | [] -> invalid_arg "run_parser: empty parser list"
-  | (name1, ast1) :: _ ->
-      begin match List.find (fun (_, ast) -> ast <> ast1) asts with
-      | (name2, _ast2) ->
-        let output (name, ast) =
-          let out = open_out (String.concat "." [sourcefile; name; "ast"]) in
-          let ppf = Format.formatter_of_out_channel out in
-          print ppf ast;
-          Format.pp_print_flush ppf ();
-          close_out out;
-        in
-        List.iter output asts;
-        Printf.kprintf failwith
-          "Parsers '%s' and '%s' returned different ASTs on '%s'. \
-           See files %s.{%s,%s}.ast for details."
-          name1 name2 sourcefile
-          sourcefile name1 name2;
-      | exception Not_found -> ast1
-      end
-
-let parse_file ~tool_name invariant_fun parsers printer kind sourcefile =
+let parse_file ~tool_name invariant_fun parse kind sourcefile =
   Location.input_name := sourcefile;
   let inputfile = preprocess sourcefile in
   Misc.try_finally
     (fun () ->
-       compare_parsers parsers sourcefile printer @@ fun name parse ->
-       Profile.record_call (Printf.sprintf "parsing(%s)" name) @@ fun () ->
+       Profile.record_call "parsing" @@ fun () ->
        file_aux ~tool_name inputfile parse invariant_fun kind)
     ~always:(fun () -> remove_preprocessed inputfile)
 
@@ -251,38 +227,12 @@ module InterfaceHooks = Misc.MakeHooks(struct
     type t = Parsetree.signature
   end)
 
-let menhir = "menhir"
-
-let choose_parsers parser_table =
-  match Sys.getenv "OCAML_PARSERS" with
-  | exception Not_found -> parser_table
-  | env_param ->
-      let env_parsers = List.rev (Misc.rev_split_words env_param) in
-      let get_parser name =
-        match List.assoc name parser_table with
-        | exception Not_found ->
-            let available_parsers =
-              String.concat " " (List.map fst parser_table) in
-            Printf.kprintf failwith
-              "%S is not a valid parser name,\
-               use a space-separated list among \"%s\""
-              name available_parsers
-        | parse -> (name, parse)
-      in
-      List.map get_parser env_parsers
-
 let parse_implementation ~tool_name sourcefile =
-  let parse = choose_parsers [
-      (menhir, parse Structure)
-    ] in
   parse_file ~tool_name Ast_invariants.structure
-      parse Printast.implementation Structure sourcefile
+      (parse Structure) Structure sourcefile
   |> ImplementationHooks.apply_hooks { Misc.sourcefile }
 
 let parse_interface ~tool_name sourcefile =
-  let parse = choose_parsers [
-      (menhir, parse Signature)
-    ] in
   parse_file ~tool_name Ast_invariants.signature
-    parse Printast.interface Signature sourcefile
+    (parse Signature) Signature sourcefile
   |> InterfaceHooks.apply_hooks { Misc.sourcefile }
