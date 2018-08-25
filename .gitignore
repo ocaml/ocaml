@@ -56,7 +56,6 @@ _ocamltestd
 /asmcomp/CSE.ml
 
 /boot/ocamlrun
-/boot/ocamlyacc
 /boot/camlheader
 
 /bytecomp/runtimedef.ml

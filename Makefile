@@ -377,8 +377,6 @@ beforedepend:: utils/config.ml
 coldstart:
 	$(MAKE) -C runtime $(BOOT_FLEXLINK_CMD) all
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
-	$(MAKE) -C yacc $(BOOT_FLEXLINK_CMD) all
-	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
 	$(MAKE) -C stdlib $(BOOT_FLEXLINK_CMD) \
 	  COMPILER="../boot/ocamlc -use-prims ../runtime/primitives" all
 	cd stdlib; cp $(LIBFILES) ../boot
@@ -388,7 +386,7 @@ coldstart:
 .PHONY: coreall
 coreall: runtime
 	$(MAKE) ocamlc
-	$(MAKE) ocamllex ocamlyacc ocamltools library
+	$(MAKE) ocamllex ocamltools library
 
 # Build the core system: the minimum needed to make depend and bootstrap
 .PHONY: core
@@ -415,7 +413,6 @@ PROMOTE ?= cp
 promote-common:
 	$(PROMOTE) ocamlc boot/ocamlc
 	$(PROMOTE) lex/ocamllex boot/ocamllex
-	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
 	cd stdlib; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of cross compiler
@@ -1190,7 +1187,7 @@ partialclean::
 # Tools
 
 .PHONY: ocamltools
-ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi \
+ocamltools: ocamlc ocamllex asmcomp/cmx_format.cmi \
             asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
             asmcomp/export_info.cmo
 	$(MAKE) -C tools all
@@ -1200,7 +1197,7 @@ ocamltoolsopt: ocamlopt
 	$(MAKE) -C tools opt
 
 .PHONY: ocamltoolsopt.opt
-ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex.opt asmcomp/cmx_format.cmi \
+ocamltoolsopt.opt: ocamlc.opt ocamllex.opt asmcomp/cmx_format.cmi \
                    asmcomp/printclambda.cmx compilerlibs/ocamlmiddleend.cmxa \
                    asmcomp/export_info.cmx
 	$(MAKE) -C tools opt.opt
@@ -1344,7 +1341,7 @@ depend: beforedepend
 .PHONY: distclean
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
-	      boot/ocamlyacc boot/*.cm* boot/libcamlrun.$(A)
+	boot/*.cm* boot/libcamlrun.$(A)
 	rm -f config/Makefile runtime/caml/m.h runtime/caml/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
