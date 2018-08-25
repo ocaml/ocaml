@@ -16,7 +16,7 @@
 (* The lexical analyzer *)
 
 val init : unit -> unit
-val token: Lexing.lexbuf -> Parser_menhir.token
+val token: Lexing.lexbuf -> Parser.token
 val skip_hash_bang: Lexing.lexbuf -> unit
 
 type error =
@@ -39,7 +39,7 @@ val in_string : unit -> bool;;
 val print_warnings : bool ref
 val handle_docstrings: bool ref
 val comments : unit -> (string * Location.t) list
-val token_with_comments : Lexing.lexbuf -> Parser_menhir.token
+val token_with_comments : Lexing.lexbuf -> Parser.token
 
 (*
   [set_preprocessor init preprocessor] registers [init] as the function
@@ -54,5 +54,5 @@ changes its behavior to accept backslash-newline as a token-separating blank.
 
 val set_preprocessor :
   (unit -> unit) ->
-  ((Lexing.lexbuf -> Parser_menhir.token) -> Lexing.lexbuf -> Parser_menhir.token) ->
+  ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> Parser.token) ->
   unit

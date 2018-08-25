@@ -236,7 +236,6 @@ let rec lexical_approximation lexbuf =
      - always skip the token after a backquote
   *)
   try
-    let module Parser = Parser_menhir in
     let rec process after_lident lexbuf =
       match Lexer.token lexbuf with
       | Parser.UIDENT name ->

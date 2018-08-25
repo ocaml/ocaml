@@ -79,7 +79,7 @@ UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
   parsing/ast_helper.cmo \
-  parsing/camlinternalMenhirLib.cmo parsing/parser_menhir.cmo \
+  parsing/camlinternalMenhirLib.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
   parsing/ast_mapper.cmo parsing/ast_iterator.cmo parsing/attr_helper.cmo \
@@ -1057,20 +1057,20 @@ clean::
 # are OCaml source files) and Menhir's runtime libraries
 # (that the parser files rely on) in boot/
 
-parsing/parser_menhir.ml: \
-  boot/menhir/parser_menhir.ml parsing/parser_menhir.mly
-	@if [ parsing/parser_menhir.mly -nt boot/menhir/parser_menhir.ml ]; \
+parsing/parser.ml: \
+  boot/menhir/parser.ml parsing/parser.mly
+	@if [ parsing/parser.mly -nt boot/menhir/parser.ml ]; \
 	then \
 	  echo; \
 	  tput setaf 3; tput bold; printf "Warning: "; tput sgr0; \
-	  echo "Your 'parser_menhir.mly' file is more recent \
+	  echo "Your 'parser.mly' file is more recent \
 	than the parser in 'boot/'."; \
 	  echo "Its changes will be ignored unless you run:"; \
 	  echo "    make promote-menhir"; \
 	  echo; \
 	fi
 	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
-parsing/parser_menhir.mli: boot/menhir/parser_menhir.mli
+parsing/parser.mli: boot/menhir/parser.mli
 	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
 
 # We rename the menhirLib module into CamlinternalMenhirlib,

@@ -159,11 +159,8 @@ _ocamltestd
 /parsing/parser.output
 /parsing/parser.automaton
 /parsing/parser.conflicts
-
 /parsing/camlinternalMenhirLib.ml
 /parsing/camlinternalMenhirLib.mli
-/parsing/parser_menhir.ml
-/parsing/parser_menhir.mli
 
 /runtime/caml/jumptbl.h
 /runtime/caml/m.h

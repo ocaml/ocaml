@@ -101,8 +101,7 @@ outcometree.cmi : format.cmi asttypes.cmi
 parmatch.cmi : types.cmi typedtree.cmi parsetree.cmi location.cmi \
     hashtbl.cmi env.cmi asttypes.cmi
 parse.cmi : parsetree.cmi lexing.cmi
-parser.cmi : parsetree.cmi location.cmi lexing.cmi docstrings.cmi
-parser_menhir.cmi : parsetree.cmi parser.cmi camlinternalMenhirLib.cmi lexing.cmi
+parser.cmi : parsetree.cmi parser.cmi camlinternalMenhirLib.cmi lexing.cmi
 parsetree.cmi : longident.cmi location.cmi asttypes.cmi
 parsing.cmi : obj.cmi lexing.cmi
 path.cmi : set.cmi map.cmi ident.cmi

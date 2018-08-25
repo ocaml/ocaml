@@ -17,8 +17,6 @@
 
 (* Skip tokens to the end of the phrase *)
 
-module Parser = Parser_menhir
-
 let last_token = ref Parser.EOF
 
 let token lexbuf =
@@ -66,7 +64,7 @@ let wrap parsing_fun lexbuf =
       raise(Syntaxerr.Error(Syntaxerr.Other loc))
 
 let rec loop lexbuf in_error checkpoint =
-  let module I = Parser_menhir.MenhirInterpreter in
+  let module I = Parser.MenhirInterpreter in
   match checkpoint with
   | I.InputNeeded _env ->
       let triple =
@@ -106,7 +104,7 @@ let rec loop lexbuf in_error checkpoint =
   | I.Shifting _ | I.AboutToReduce _ ->
       loop lexbuf in_error (I.resume checkpoint)
   | I.Accepted v -> v
-  | I.Rejected -> raise Parser_menhir.Error
+  | I.Rejected -> raise Parser.Error
   | I.HandlingError _ ->
       loop lexbuf true (I.resume checkpoint)
 
@@ -114,10 +112,10 @@ let wrap_menhir entry lexbuf =
   let initial = entry lexbuf.Lexing.lex_curr_p in
   wrap (fun lexbuf -> loop lexbuf false initial) lexbuf
 
-let implementation = wrap_menhir Parser_menhir.Incremental.implementation
-and interface = wrap_menhir Parser_menhir.Incremental.interface
-and toplevel_phrase = wrap_menhir Parser_menhir.Incremental.toplevel_phrase
-and use_file = wrap_menhir Parser_menhir.Incremental.use_file
-and core_type = wrap_menhir Parser_menhir.Incremental.parse_core_type
-and expression = wrap_menhir Parser_menhir.Incremental.parse_expression
-and pattern = wrap_menhir Parser_menhir.Incremental.parse_pattern
+let implementation = wrap_menhir Parser.Incremental.implementation
+and interface = wrap_menhir Parser.Incremental.interface
+and toplevel_phrase = wrap_menhir Parser.Incremental.toplevel_phrase
+and use_file = wrap_menhir Parser.Incremental.use_file
+and core_type = wrap_menhir Parser.Incremental.parse_core_type
+and expression = wrap_menhir Parser.Incremental.parse_expression
+and pattern = wrap_menhir Parser.Incremental.parse_pattern

@@ -46,21 +46,21 @@ import-menhirLib:
 # # parsing/parser.cmo makes --infer work: the .cmi
 # # of all modules that parser{_menhir}.mly semantic
 # # actions depend on have already been built.
-promote-menhir: parsing/parser_menhir.mly
+promote-menhir: parsing/parser.mly
 	$(MAKE) import-menhirLib
-	$(MENHIR) $(MENHIRFLAGS) parsing/parser_menhir.mly
-	cp $(addprefix parsing/parser_menhir.,ml mli) boot/menhir
+	$(MENHIR) $(MENHIRFLAGS) parsing/parser.mly
+	cp $(addprefix parsing/parser.,ml mli) boot/menhir
 
 .PHONY: test-menhir
-test-menhir: parsing/parser_menhir.mly
-	$(MENHIR) $(MENHIRFLAGS) parsing/parser_menhir.mly
+test-menhir: parsing/parser.mly
+	$(MENHIR) $(MENHIRFLAGS) parsing/parser.mly
 	sed -i "s/MenhirLib/CamlinternalMenhirLib/g" \
-	  $(addprefix parsing/parser_menhir.,ml mli)
-	$(MAKE) parsing/parser_menhir.cmo
+	  $(addprefix parsing/parser.,ml mli)
+	$(MAKE) parsing/parser.cmo
 
 partialclean-menhir::
 	rm -f \
-	  $(addprefix parsing/parser_menhir.,ml mli) \
+	  $(addprefix parsing/parser.,ml mli) \
 	  $(addprefix parsing/camlinternalMenhirLib.,ml mli)
 
 clean-menhir: partialclean-menhir

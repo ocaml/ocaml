@@ -106,8 +106,8 @@ menhir-bench.bash ocaml-typo=missing-header,utf8
 # bootstrap files produced by Menhir
 /boot/menhir/menhirLib.ml      ocaml-typo=long-line,missing-header,utf8,white-at-eol,unused-prop
 /boot/menhir/menhirLib.mli     ocaml-typo=long-line,missing-header,utf8,white-at-eol,unused-prop
-/boot/menhir/parser_menhir.ml  ocaml-typo=long-line,very-long-line,missing-header,white-at-eol,unused-prop
-/boot/menhir/parser_menhir.mli ocaml-typo=long-line,very-long-line,missing-header,white-at-eol,unused-prop
+/boot/menhir/parser.ml  ocaml-typo=long-line,very-long-line,missing-header,white-at-eol,unused-prop
+/boot/menhir/parser.mli ocaml-typo=long-line,very-long-line,missing-header,white-at-eol,unused-prop
 
 # Line-ending specifications, for Windows interoperability
 *.sh text eol=lf
