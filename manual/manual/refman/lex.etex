@@ -54,6 +54,11 @@ integer-literal:
                             { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
         | ["-"] ("0o"||"0O") ("0"\ldots"7") { "0"\ldots"7"||"_" }
         | ["-"] ("0b"||"0B") ("0"\ldots"1") { "0"\ldots"1"||"_" }
+int32-literal: integer-literal 'l'
+;
+int64-literal: integer-literal 'L'
+;
+nativeint-literal: integer-literal 'n'
 \end{syntax}
 
 An integer literal is a sequence of one or more digits, optionally
@@ -65,6 +70,9 @@ preceded by a minus sign. By default, integer literals are in decimal
 \entree{"0b", "0B"}{binary (radix 2)}
 \end{tableau}
 (The initial @"0"@ is the digit zero; the @"O"@ for octal is the letter O.)
+An integer literal can be followed by one of the letters "l", "L" or "n"
+to indicate that this integer has type "int32", "int64" or "nativeint"
+respectively, instead of the default type "int" for integer literals.
 The interpretation of integer literals that fall outside the range of
 representable integer values is undefined.
 

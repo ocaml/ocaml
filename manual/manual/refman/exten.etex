@@ -5,33 +5,6 @@ This chapter describes language extensions and convenience features
 that are implemented in OCaml, but not described in the
 OCaml reference manual.
 
-\section{Integer literals for types \texttt{int32}, \texttt{int64}
-         and \texttt{nativeint}} \label{s:ext-integer}
-
-(Introduced in Objective Caml 3.07)
-
-\begin{syntax}
-constant: ...
-          | int32-literal
-          | int64-literal
-          | nativeint-literal
-;
-int32-literal: integer-literal 'l'
-;
-int64-literal: integer-literal 'L'
-;
-nativeint-literal: integer-literal 'n'
-\end{syntax}
-
-An integer literal can be followed by one of the letters "l", "L" or "n"
-to indicate that this integer has type "int32", "int64" or "nativeint"
-respectively, instead of the default type "int" for integer literals.
-\index{int32\@\verb`int32`}
-\index{int64\@\verb`int64`}
-\index{nativeint\@\verb`nativeint`}
-The library modules "Int32"[\moduleref{Int32}],
-"Int64"[\moduleref{Int64}] and "Nativeint"[\moduleref{Nativeint}]
-provide operations on these integer types.
 
 \section{Recursive definitions of values} \label{s:letrecvalues}
 
