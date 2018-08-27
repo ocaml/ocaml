@@ -28,6 +28,13 @@
    [nativeint] are generally slower than those on [int].  Use [nativeint]
    only when the application requires the extra bit of precision
    over the [int] type.
+
+    Literals for native integers are suffixed by n:
+    {[
+      let zero: nativeint = 0n
+      let one: nativeint = 1n
+      let m_one: nativeint = -1n
+    ]}
 *)
 
 val zero : nativeint

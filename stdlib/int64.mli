@@ -25,6 +25,13 @@
    space than values of type [int], and arithmetic operations on
    [int64] are generally slower than those on [int].  Use [int64]
    only when the application requires exact 64-bit arithmetic.
+
+    Literals for 64-bit integers are suffixed by L:
+    {[
+      let zero: int64 = 0L
+      let one: int64 = 1L
+      let m_one: int64 = -1L
+    ]}
 *)
 
 val zero : int64

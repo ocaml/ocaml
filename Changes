@@ -238,6 +238,10 @@ Working version
 - GPR#1863: caml-tex2, move to compiler-libs
   (Florian Angeletti, review by Sébastien Hinderer and Gabriel Scherer)
 
+- GPR#2007: move the documentation for 32-bit, 64-bit and native integer
+  literals to the main part of the manual.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Compiler distribution build system:
 
 - GPR#1776: add -no-install-bytecode-programs and related configure options to
