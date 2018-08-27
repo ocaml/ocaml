@@ -1361,7 +1361,7 @@ let print_cycle ppf =
 
 let report_error ppf = function
     Circular_dependency cycle ->
-      let[@manual.ref "s-recursive-modules"] chapter, section = 8, 4 in
+      let[@manual.ref "s-recursive-modules"] chapter, section = 8, 3 in
       fprintf ppf
         "@[Cannot safely evaluate the definition of the following cycle@ \
          of recursively-defined modules:@ %a.@ \

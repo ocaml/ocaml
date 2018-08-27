@@ -54,6 +54,7 @@ integer-literal:
                             { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
         | ["-"] ("0o"||"0O") ("0"\ldots"7") { "0"\ldots"7"||"_" }
         | ["-"] ("0b"||"0B") ("0"\ldots"1") { "0"\ldots"1"||"_" }
+;
 int32-literal: integer-literal 'l'
 ;
 int64-literal: integer-literal 'L'
