@@ -306,7 +306,7 @@ val finalise : ('a -> unit) -> 'a -> unit
 
 
    The results of calling {!String.make}, {!Bytes.make}, {!Bytes.create},
-   {!Array.make}, and {!Pervasives.ref} are guaranteed to be
+   {!Array.make}, and {!Stdlib.ref} are guaranteed to be
    heap-allocated and non-constant except when the length argument is [0].
 *)
 

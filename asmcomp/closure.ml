@@ -29,7 +29,7 @@ module Storer =
       type t = lambda
       type key = lambda
       let make_key =  Lambda.make_key
-      let compare_key = Pervasives.compare
+      let compare_key = Stdlib.compare
     end)
 
 (* Auxiliaries for compiling functions *)

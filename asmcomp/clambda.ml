@@ -112,7 +112,7 @@ type preallocated_constant = {
   definition : ustructured_constant;
 }
 
-(* Comparison functions for constants.  We must not use Pervasives.compare
+(* Comparison functions for constants.  We must not use Stdlib.compare
    because it compares "0.0" and "-0.0" equal.  (PR#6442) *)
 
 let compare_floats x1 x2 =
@@ -134,8 +134,8 @@ let compare_constants c1 c2 =
          Different labels -> different constants, even if the contents
            match, because of string constants that must not be
            reshared. *)
-  | Uconst_int n1, Uconst_int n2 -> Pervasives.compare n1 n2
-  | Uconst_ptr n1, Uconst_ptr n2 -> Pervasives.compare n1 n2
+  | Uconst_int n1, Uconst_int n2 -> Stdlib.compare n1 n2
+  | Uconst_ptr n1, Uconst_ptr n2 -> Stdlib.compare n1 n2
   | Uconst_ref _, _ -> -1
   | Uconst_int _, Uconst_ref _ -> 1
   | Uconst_int _, Uconst_ptr _ -> -1

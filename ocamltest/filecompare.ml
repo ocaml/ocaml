@@ -88,7 +88,7 @@ let compare_text_files dropped_lines file1 file2 =
   else
     Different
 
-(* Version of Pervasives.really_input which stops at EOF, rather than raising
+(* Version of Stdlib.really_input which stops at EOF, rather than raising
    an exception. *)
 let really_input_up_to ic =
   let block_size = 8192 in
@@ -174,7 +174,7 @@ let diff files =
     "> " ^ temporary_file
   ] in
   let result =
-    if (Sys.command diff_commandline) = 2 then Pervasives.Error "diff"
+    if (Sys.command diff_commandline) = 2 then Stdlib.Error "diff"
     else Ok (Sys.string_of_file temporary_file)
   in
   Sys.force_remove temporary_file;

@@ -27,8 +27,8 @@
    abstract {{!section:formatter}formatters} which provide basic output
    functions.
    Some formatters are predefined, notably:
-   - {!std_formatter} outputs to {{!Pervasives.stdout}stdout}
-   - {!err_formatter} outputs to {{!Pervasives.stderr}stderr}
+   - {!std_formatter} outputs to {{!Stdlib.stdout}stdout}
+   - {!err_formatter} outputs to {{!Stdlib.stderr}stderr}
 
    Most functions in the {!Format} module come in two variants:
    a short version that operates on {!std_formatter} and the
@@ -89,7 +89,7 @@
    pending text, and resets the standard pretty-printer.
 
    Warning: mixing calls to pretty-printing functions of this module with
-   calls to {!Pervasives} low level output functions is error prone.
+   calls to {!Stdlib} low level output functions is error prone.
 
    The pretty-printing functions output material that is delayed in the
    pretty-printer queue and stacks in order to compute proper line
@@ -98,9 +98,9 @@
    may appear before the output of a pretty-printing function that has been
    called before. For instance,
    [
-    Pervasives.print_string "<";
+    Stdlib.print_string "<";
     Format.print_string "PRETTY";
-    Pervasives.print_string ">";
+    Stdlib.print_string ">";
     Format.print_string "TEXT";
    ]
    leads to output [<>PRETTYTEXT].
@@ -329,7 +329,7 @@ val print_flush : unit -> unit
   disturb further pretty-printing.
 
   Warning: If the output device of the pretty-printer is an output channel,
-  repeated calls to [print_flush] means repeated calls to {!Pervasives.flush}
+  repeated calls to [print_flush] means repeated calls to {!Stdlib.flush}
   to flush the out channel; these explicit flush calls could foil the
   buffering strategy of output channels and could dramatically impact
   efficiency.
@@ -616,8 +616,8 @@ val get_mark_tags : unit -> bool
 
 (** {1 Redirecting the standard formatter output} *)
 val pp_set_formatter_out_channel :
-  formatter -> Pervasives.out_channel -> unit
-val set_formatter_out_channel : Pervasives.out_channel -> unit
+  formatter -> Stdlib.out_channel -> unit
+val set_formatter_out_channel : Stdlib.out_channel -> unit
 (** Redirect the standard pretty-printer output to the given channel.
   (All the output functions of the standard formatter are set to the
    default output functions printing to the given channel.)
@@ -683,9 +683,9 @@ type formatter_out_functions = {
 
   By default:
 - fields [out_string] and [out_flush] are output device specific;
-  (e.g. {!Pervasives.output_string} and {!Pervasives.flush} for a
-   {!Pervasives.out_channel} device, or [Buffer.add_substring] and
-   {!Pervasives.ignore} for a [Buffer.t] output device),
+  (e.g. {!Stdlib.output_string} and {!Stdlib.flush} for a
+   {!Stdlib.out_channel} device, or [Buffer.add_substring] and
+   {!Stdlib.ignore} for a [Buffer.t] output device),
 - field [out_newline] is equivalent to [out_string "\n" 0 1];
 - fields [out_spaces] and [out_indent] are equivalent to
   [out_string (String.make n ' ') 0 n].
@@ -772,7 +772,7 @@ val get_formatter_tag_functions : unit -> formatter_tag_functions
 
   For instance, given a {!Buffer.t} buffer [b], {!formatter_of_buffer} [b]
   returns a new formatter using buffer [b] as its output device.
-  Similarly, given a {!Pervasives.out_channel} output channel [oc],
+  Similarly, given a {!Stdlib.out_channel} output channel [oc],
   {!formatter_of_out_channel} [oc] returns a new formatter using
   channel [oc] as its output device.
 
@@ -789,13 +789,13 @@ val formatter_of_out_channel : out_channel -> formatter
 val std_formatter : formatter
 (** The standard formatter to write to standard output.
 
-  It is defined as {!formatter_of_out_channel} {!Pervasives.stdout}.
+  It is defined as {!formatter_of_out_channel} {!Stdlib.stdout}.
 *)
 
 val err_formatter : formatter
 (** A formatter to write to standard error.
 
-  It is defined as {!formatter_of_out_channel} {!Pervasives.stderr}.
+  It is defined as {!formatter_of_out_channel} {!Stdlib.stderr}.
 *)
 
 val formatter_of_buffer : Buffer.t -> formatter
@@ -826,9 +826,9 @@ val make_formatter :
 
   For instance, {[
     make_formatter
-      (Pervasives.output oc)
-      (fun () -> Pervasives.flush oc) ]}
-  returns a formatter to the {!Pervasives.out_channel} [oc].
+      (Stdlib.output oc)
+      (fun () -> Stdlib.flush oc) ]}
+  returns a formatter to the {!Stdlib.out_channel} [oc].
 *)
 
 val formatter_of_out_functions :

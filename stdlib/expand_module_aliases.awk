@@ -24,4 +24,6 @@ NR == 1 { printf ("# 1 \"%s\"\n", FILENAME) }
   else if ($1 == "module")
     printf ("\n(** @canonical %s *)\nmodule %s = Stdlib__%s%s\n",
             $2, $2, tolower(substr($4,1,1)), substr($4,2));
+  else
+    print
 }

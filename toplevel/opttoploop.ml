@@ -464,12 +464,12 @@ let first_line = ref true
 let got_eof = ref false;;
 
 let read_input_default prompt buffer len =
-  output_string Pervasives.stdout prompt; flush Pervasives.stdout;
+  output_string stdout prompt; flush stdout;
   let i = ref 0 in
   try
     while true do
       if !i >= len then raise Exit;
-      let c = input_char Pervasives.stdin in
+      let c = input_char stdin in
       Bytes.set buffer !i c;
       incr i;
       if c = '\n' then raise Exit;

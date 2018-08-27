@@ -64,5 +64,5 @@ let of_string_opt s =
 
 type t = int32
 
-let compare (x: t) (y: t) = Pervasives.compare x y
+let compare (x: t) (y: t) = Stdlib.compare x y
 let equal (x: t) (y: t) = compare x y = 0

@@ -804,7 +804,7 @@ module Switch_storer = Switch.Store (struct
       | Expr _, Prim _ -> -1
       | Prim _, Expr _ ->  1
       | Prim (prim1, args1), Prim (prim2, args2) ->
-        let comp_prim = Pervasives.compare prim1 prim2 in
+        let comp_prim = Stdlib.compare prim1 prim2 in
         if comp_prim <> 0 then comp_prim
         else Misc.Stdlib.List.compare (compare_var env) args1 args2
     in

@@ -275,21 +275,21 @@ let rec _x = let _ = [| 1.0 |] in 1. in ();;
 - : unit = ()
 |}];;
 
-(* The builtin Pervasives.ref is currently treated as a constructor.
+(* The builtin Stdlib.ref is currently treated as a constructor.
    Other functions of the same name should not be so treated. *)
 let _ =
-  let module Pervasives =
+  let module Stdlib =
   struct
     let ref _ = assert false
   end in
-  let rec x = Pervasives.ref y
+  let rec x = Stdlib.ref y
   and y = fun () -> ignore x
   in (x, y)
 ;;
 [%%expect{|
-Line 6, characters 14-30:
-    let rec x = Pervasives.ref y
-                ^^^^^^^^^^^^^^^^
+Line 6, characters 14-26:
+    let rec x = Stdlib.ref y
+                ^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 

@@ -22,19 +22,19 @@ external div : float -> float -> float = "%divfloat"
 external rem : float -> float -> float = "caml_fmod_float" "fmod"
   [@@unboxed] [@@noalloc]
 external abs : float -> float = "%absfloat"
-let infinity = Pervasives.infinity
-let neg_infinity = Pervasives.neg_infinity
-let nan = Pervasives.nan
+let infinity = Stdlib.infinity
+let neg_infinity = Stdlib.neg_infinity
+let nan = Stdlib.nan
 let pi = 0x1.921fb54442d18p+1
-let max_float = Pervasives.max_float
-let min_float = Pervasives.min_float
-let epsilon = Pervasives.epsilon_float
+let max_float = Stdlib.max_float
+let min_float = Stdlib.min_float
+let epsilon = Stdlib.epsilon_float
 external of_int : int -> float = "%floatofint"
 external to_int : float -> int = "%intoffloat"
 external of_string : string -> float = "caml_float_of_string"
-let of_string_opt = Pervasives.float_of_string_opt
-let to_string = Pervasives.string_of_float
-type fpclass = Pervasives.fpclass =
+let of_string_opt = Stdlib.float_of_string_opt
+let to_string = Stdlib.string_of_float
+type fpclass = Stdlib.fpclass =
     FP_normal
   | FP_subnormal
   | FP_zero

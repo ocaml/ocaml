@@ -171,7 +171,7 @@ let kind_of_field_desc = function
     such as values and types. *)
 module FieldMap = Map.Make(struct
     type t = field_desc
-    let compare = Pervasives.compare
+    let compare = Stdlib.compare
   end)
 
 let item_ident_name = function

@@ -52,7 +52,7 @@ val mul : t -> t -> t
 val div : t -> t -> t
 (** Integer division.  Raise [Division_by_zero] if the second
    argument is zero.  This division rounds the real quotient of
-   its arguments towards zero, as specified for {!Pervasives.(/)}. *)
+   its arguments towards zero, as specified for {!Stdlib.(/)}. *)
 
 val rem : t -> t -> t
 (** Integer remainder.  If [y] is not zero, the result
@@ -173,7 +173,7 @@ val to_string : t -> string
 
 val compare: t -> t -> int
 (** The comparison function for target integers, with the same specification as
-    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    {!Stdlib.compare}.  Along with the type [t], this function [compare]
     allows the module [Targetint] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
 

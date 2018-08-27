@@ -18,7 +18,6 @@ case $1 in
   stdlib.cm[iox]|stdlib.p.cmx)
       echo ' -nopervasives -no-alias-deps -w -49' \
            ' -pp "$AWK -f expand_module_aliases.awk"';;
-  stdlib__pervasives.cm[iox]|stdlib__pervasives.p.cmx) echo ' -nopervasives';;
   camlinternalOO.cmx|camlinternalOO.p.cmx) echo ' -inline 0 -afl-inst-ratio 0';;
   camlinternalLazy.cmx|camlinternalLazy.p.cmx) echo ' -afl-inst-ratio 0';;
     # never instrument camlinternalOO or camlinternalLazy (PR#7725)
@@ -31,7 +30,5 @@ case $1 in
       echo ' -w Ae';;
   stdlib__scanf.cmx|stdlib__scanf.p.cmx) echo ' -inline 9';;
   *Labels.cm[ox]|*Labels.p.cmx) echo ' -nolabels -no-alias-deps';;
-  pervasives.cm[iox]|pervasives.p.cmx)
-      echo ' -nopervasives -no-alias-deps -w -49';;
   *) echo ' ';;
 esac

@@ -134,8 +134,8 @@ module State = struct
   (* Returns a float 0 <= x <= 1 with at most 60 bits of precision. *)
   let rawfloat s =
     let scale = 1073741824.0  (* 2^30 *)
-    and r1 = Pervasives.float (bits s)
-    and r2 = Pervasives.float (bits s)
+    and r1 = Stdlib.float (bits s)
+    and r2 = Stdlib.float (bits s)
     in (r1 /. scale +. r2) /. scale
 
 
@@ -223,7 +223,7 @@ init 299792643; init_diff2 100; chisquare diff2 100000 100
 (* Return the sum of the squares of v[i0,i1[ *)
 let rec sumsq v i0 i1 =
   if i0 >= i1 then 0.0
-  else if i1 = i0 + 1 then Pervasives.float v.(i0) *. Pervasives.float v.(i0)
+  else if i1 = i0 + 1 then Stdlib.float v.(i0) *. Stdlib.float v.(i0)
   else sumsq v i0 ((i0+i1)/2) +. sumsq v ((i0+i1)/2) i1
 
 
@@ -235,8 +235,8 @@ let chisquare g n r =
     f.(t) <- f.(t) + 1
   done;
   let t = sumsq f 0 r
-  and r = Pervasives.float r
-  and n = Pervasives.float n in
+  and r = Stdlib.float r
+  and n = Stdlib.float n in
   let sr = 2.0 *. sqrt r in
   (r -. sr,   (r *. t /. n) -. n,   r +. sr)
 

@@ -15,5 +15,5 @@ Line 1, characters 9-19:
   let () = raise Exit; () ;; (* warn *)
            ^^^^^^^^^^
 Warning 21: this statement never returns (or has an unsound type.)
-Exception: Stdlib.Pervasives.Exit.
+Exception: Stdlib.Exit.
 |}]

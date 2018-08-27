@@ -13,7 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Pervasives = struct
 (* type 'a option = None | Some of 'a *)
 
 (* Exceptions *)
@@ -566,9 +565,6 @@ let exit retcode =
   sys_exit retcode
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
-end
-
-include Pervasives
 
 (*MODULE_ALIASES*)
 module Arg          = Arg
@@ -603,6 +599,7 @@ module Obj          = Obj
 module Oo           = Oo
 module Option       = Option
 module Parsing      = Parsing
+module Pervasives   = Pervasives
 module Printexc     = Printexc
 module Printf       = Printf
 module Queue        = Queue

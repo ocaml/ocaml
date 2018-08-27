@@ -141,7 +141,7 @@ module Conflicts = struct
   let take () =
     let c = !explanations in
     reset ();
-    c |> M.bindings |> List.map snd |> List.sort Pervasives.compare
+    c |> M.bindings |> List.map snd |> List.sort Stdlib.compare
 
   let print ppf =
     let sep ppf = Format.fprintf ppf "@ " in
@@ -181,8 +181,8 @@ type mapping =
     *)
   | Associated_to_pervasives of out_name
   (** [Associated_to_pervasives out_name] is used when the item
-      [Pervasives.$name] has been associated to the name [$name].
-      Upon a conflict, this name will be expanded to ["Pervasives." ^ name ] *)
+      [Stdlib.$name] has been associated to the name [$name].
+      Upon a conflict, this name will be expanded to ["Stdlib." ^ name ] *)
 
 let hid_start = 0
 
@@ -194,7 +194,7 @@ let find_hid id map =
   try N.find (Ident.binding_time id) map, map with
   Not_found -> add_hid_id id map
 
-let pervasives name = "Pervasives." ^ name
+let pervasives name = "Stdlib." ^ name
 
 let map = Array.make Namespace.size M.empty
 let get namespace = map.(Namespace.id namespace)
@@ -252,7 +252,7 @@ let ident_name_simple namespace id =
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
   | Associated_to_pervasives r ->
-      Out_name.set r ("Pervasives." ^ Out_name.print r);
+      Out_name.set r ("Stdlib." ^ Out_name.print r);
       let hid, m = find_hid id N.empty in
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
@@ -289,21 +289,6 @@ let non_shadowed_pervasive = function
   | Pdot(Pident id, s, _) as path ->
       Ident.same id ident_stdlib &&
       (try Path.same path (Env.lookup_type (Lident s) !printing_env)
-       with Not_found -> true)
-  | Pdot(Pdot (Pident id, "Pervasives", _), s, _) as path ->
-      Ident.same id ident_stdlib &&
-      (* Make sure Stdlib.<s> is the same as Stdlib.Pervasives.<s> *)
-      (try
-         let td =
-           Env.find_type (Env.lookup_type (Lident s) !printing_env)
-             !printing_env
-         in
-         match td.type_private, td.type_manifest with
-         | Private, _ | _, None -> false
-         | Public, Some te ->
-           match (Btype.repr te).desc with
-           | Tconstr (path', _, _) -> Path.same path path'
-           | _ -> false
        with Not_found -> true)
   | _ -> false
 

@@ -25,5 +25,5 @@ Line 1, characters 19-20:
   let _ = raise Exit 3;;
                      ^
 Warning 20: this argument will not be used by the function.
-Exception: Stdlib.Pervasives.Exit.
+Exception: Stdlib.Exit.
 |}]

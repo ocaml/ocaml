@@ -122,7 +122,7 @@ let unbox_record_1 record =
   let block = { record with int32 = record.int32 } in
   for i = 1 to 1000 do
     let y_float =
-      if i mod 2 = 0 then nan else Pervasives.float i
+      if i mod 2 = 0 then nan else Stdlib.float i
     in
     block.float <- block.float +. (y_float *. 2.);
     let y_int32 =

@@ -27,7 +27,7 @@ module Debug_info = struct
     let c = Ident.compare t1.holds_value_of t2.holds_value_of in
     if c <> 0 then c
     else
-      Pervasives.compare
+      Stdlib.compare
         (t1.part_of_value, t1.num_parts_of_value, t1.which_parameter)
         (t2.part_of_value, t2.num_parts_of_value, t2.which_parameter)
 
@@ -142,7 +142,7 @@ module Order_distinguishing_names_and_locations = struct
     | Some di1, Some di2 ->
       let c = Ident.compare di1.holds_value_of di2.holds_value_of in
       if c <> 0 then c
-      else Pervasives.compare t1.reg.loc t2.reg.loc
+      else Stdlib.compare t1.reg.loc t2.reg.loc
 end
 
 module Set_distinguishing_names_and_locations =

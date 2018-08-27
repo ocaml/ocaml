@@ -37,7 +37,7 @@ type rhs = operation * valnum array
 
 module Equations = struct
   module Rhs_map =
-    Map.Make(struct type t = rhs let compare = Pervasives.compare end)
+    Map.Make(struct type t = rhs let compare = Stdlib.compare end)
 
   type 'a t =
     { load_equations : 'a Rhs_map.t;

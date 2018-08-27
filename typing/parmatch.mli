@@ -34,7 +34,7 @@ val normalize_pat : pattern -> pattern
 
 val const_compare : constant -> constant -> int
 (** [const_compare c1 c2] compares the actual values represented by [c1] and
-    [c2], while simply using [Pervasives.compare] would compare the
+    [c2], while simply using [Stdlib.compare] would compare the
     representations.
 
     cf. MPR#5758 *)
