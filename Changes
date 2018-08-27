@@ -94,6 +94,10 @@ Working version
   is no longer needed and Stdlib should be used instead.
   (Jérémie Dimino, review by Nicolás Ojeda Bär)
 
+- GPR#2004: Use common standard library path `lib/ocaml` for Windows,
+  for consistency with OSX & Linux. Previously was located at `lib`.
+  (Bryan Phelps, Jordan Walke, review by David Allsopp)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
