@@ -196,7 +196,9 @@ module Toplevel = struct
           let str =
             Ast_helper.[Str.modtype @@ Mtd.mk ~typ:(Mty.signature sign) name] in
           Ptop_def str
-    with Syntaxerr.Error _ -> raise (Phrase_parsing s)
+    with
+    | Lexer.Error _ | Syntaxerr.Error _ ->
+        raise (Phrase_parsing s)
 
   let take x = let r = !x in x := []; r
 
