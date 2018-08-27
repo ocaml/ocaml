@@ -1635,43 +1635,71 @@ Some attributes are understood by the type-checker:
    default is currently "boxed" but it may change in the future.
 \end{itemize}
 
-\begin{verbatim}
-  [@@deprecated "Please use module 'Y' instead."]
+\begin{caml_example*}{verbatim}
+module X = struct
+  [@@@warning "+9"]  (* locally enable warning 9 in this structure *)
+  [@@@ellipsis]
+end
+[@@deprecated "Please use module 'Y' instead."]
 
-let x = begin[@warning "+9"] ... end in ....
+let x = begin[@warning "+9"] [()[@ellipsis]] end
 
 type t = A | B
   [@@deprecated "Please use type 's' instead."]
+\end{caml_example*}
 
-let f x =
-  assert (x >= 0) [@ppwarning "TODO: remove this later"];
+\begin{caml_example*}{verbatim}[warning=3]
+let uses_deprecated_type (x : t) = ()[@ellipsis]
+\end{caml_example*}
 
-let rec no_op = function
+\begin{caml_example*}{verbatim}[warning=22]
+let fires_warning_22 x =
+  assert (x >= 0) [@ppwarning "TODO: remove this later"]
+\end{caml_example*}
+
+\begin{caml_example*}{verbatim}[warning=51]
+let rec is_a_tail_call = function
   | [] -> ()
-  | _ :: q -> (no_op[@tailcall]) q;;
+  | _ :: q -> (is_a_tail_call[@tailcall]) q
 
+let rec not_a_tail_call = function
+  | [] -> []
+  | x :: q -> x :: (not_a_tail_call[@tailcall]) q
+\end{caml_example*}
+
+\begin{caml_example*}{verbatim}
 let f x = x [@@inline]
 
 let () = (f[@inlined]) ()
+\end{caml_example}
 
+\begin{caml_example*}{verbatim}
 type fragile =
   | Int of int [@warn_on_literal_pattern]
   | String of string [@warn_on_literal_pattern]
+\end{caml_example*}
 
-let f = function
-| Int 0 | String "constant" -> () (* trigger warning 52 *)
+\begin{caml_example}{verbatim}[warning=52]
+let fragile_match_1 = function
+| Int 0 -> ()
 | _ -> ()
+\end{caml_example}
 
+\begin{caml_example}{verbatim}[warning=52]
+let fragile_match_2 = function
+| String "constant" -> ()
+| _ -> ()
+\end{caml_example}
+
+\begin{caml_example*}{verbatim}
 module Immediate: sig
   type t [@@immediate]
   val x: t ref
 end = struct
   type t = A | B
-  let x = ref 0
+  let x = ref A
 end
-  ....
-
-\end{verbatim}
+\end{caml_example*}
 
 
 \section{Extension nodes}\label{s:extension-nodes}
