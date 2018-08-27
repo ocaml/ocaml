@@ -409,7 +409,7 @@ CAMLTEX= ../compilerlibs/ocamlcommon.cma \
 caml-tex: INCLUDES+= -I ../otherlibs/str -I ../otherlibs/$(UNIXLIB)
 caml-tex: $(CAMLTEX)
 	../runtime/ocamlrun ../ocamlc -nostdlib -I ../stdlib $(LINKFLAGS) \
-	-linkall -o $@ $(CAMLTEX)
+	-linkall -o $@ -no-alias-deps $(CAMLTEX)
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we delay building caml-tex to the opt.opt stage

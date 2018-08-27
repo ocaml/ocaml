@@ -219,6 +219,12 @@ Working version
 
 ### Manual and documentation:
 
+- GPR#1209: use the automated caml_example environment in the Extension section,
+  which uses the OCaml compiler to check the manual examples.
+  This change was made possible by a lot of tooling work from Florian Angeletti:
+  GPR#1702, GPR#1765, GPR#1863, and Gabriel Scherer's GPR#1903.
+  (Gabriel Scherer, review by Florian Angeletti)
+
 - GPR#1788: move the quoted string description to the main chapters.
   (Florian Angeletti, review by Xavier Clerc and Perry E. Metzger)
 
