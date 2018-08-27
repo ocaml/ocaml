@@ -1855,22 +1855,24 @@ Extensible variant types are variant types which can be extended with
 new variant constructors. Extensible variant types are defined using
 "..". New variant constructors are added using "+=".
 \begin{caml_example*}{verbatim}
-type attr = ..
+module Expr = struct
+  type attr = ..
 
-type attr += Str of string
+  type attr += Str of string
 
-type attr +=
-  | Int of int
-  | Float of float
+  type attr +=
+    | Int of int
+    | Float of float
+end
 \end{caml_example*}
 
 Pattern matching on an extensible variant type requires a default case
 to handle unknown variant constructors:
 \begin{caml_example*}{verbatim}
 let to_string = function
-  | Str s -> s
-  | Int i -> string_of_int i
-  | Float f -> string_of_float f
+  | Expr.Str s -> s
+  | Expr.Int i -> string_of_int i
+  | Expr.Float f -> string_of_float f
   | _ -> "?"
 \end{caml_example*}
 
@@ -1883,23 +1885,38 @@ type exn += Exc of int
 
 Extensible variant constructors can be rebound to a different name. This
 allows exporting variants from another module.
-\begin{verbatim}
+\begin{caml_example}{toplevel}[error]
+let not_in_scope = Str "Foo";;
+\end{caml_example}
+\begin{caml_example*}{verbatim}
 type Expr.attr += Str = Expr.Str
-\end{verbatim}
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+let now_works = Str "foo";;
+\end{caml_example}
 
 Extensible variant constructors can be declared "private". As with
 regular variants, this prevents them from being constructed directly by
 constructor application while still allowing them to be de-structured in
 pattern-matching.
 \begin{caml_example*}{verbatim}
-module Bool : sig
-  type attr += private Bool of int
-  val bool : bool -> attr
+module B : sig
+  type Expr.attr += private Bool of int
+  val bool : bool -> Expr.attr
 end = struct
-  type attr += Bool of int
+  type Expr.attr += Bool of int
   let bool p = if p then Bool 1 else Bool 0
 end
 \end{caml_example*}
+
+\begin{caml_example}{toplevel}
+let inspection_works = function
+  | B.Bool p -> (p = 1)
+  | _ -> true;;
+\end{caml_example}
+\begin{caml_example}{toplevel}[error]
+let construction_is_forbidden = B.Bool 1;;
+\end{caml_example}
 
 \subsection{Private extensible variant types}
 

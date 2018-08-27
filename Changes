@@ -246,8 +246,8 @@ Working version
   index of modules
   (Florian Angeletti, review by Perry E. Metzger and Gabriel Scherer)
 
-- GPR#1209: use the automated caml_example environment in the Extension section,
-  which uses the OCaml compiler to check the manual examples.
+- GPR#1209, GPR#2008: in the Extension section, use the caml_example environment
+  (uses the compiler to check the example code).
   This change was made possible by a lot of tooling work from Florian Angeletti:
   GPR#1702, GPR#1765, GPR#1863, and Gabriel Scherer's GPR#1903.
   (Gabriel Scherer, review by Florian Angeletti)
