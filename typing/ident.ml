@@ -15,10 +15,10 @@
 
 open Format
 
-type t = { stamp: int; name: string; flags: int; scope: int }
-
-let global_flag = 1
-let predef_exn_flag = 2
+type t =
+  | Local of { name: string; stamp: int; scope: int }
+  | Global of string
+  | Predef_exn of string
 
 (* A stamp of 0 denotes a persistent identifier *)
 
@@ -26,38 +26,55 @@ let currentstamp = ref 0
 
 let create ~scope s =
   incr currentstamp;
-  { name = s; stamp = !currentstamp; flags = 0; scope }
-
-let create_hidden s =
-  { name = s; stamp = -1; flags = 0; scope = -1 }
+  Local { name = s; stamp = !currentstamp; scope }
 
 let create_var s =
   incr currentstamp;
-  { name = s; stamp = !currentstamp; flags = 0; scope = -1 }
+  Local { name = s; stamp = !currentstamp; scope = 0 }
+
+let create_hidden s =
+  Local { name = s; stamp = -1; scope = 0 }
 
 let create_predef_exn s =
-  incr currentstamp;
-  { name = s; stamp = !currentstamp;
-    flags = predef_exn_flag lor global_flag; scope = 0 }
+  Predef_exn s
 
 let create_persistent s =
-  { name = s; stamp = 0; flags = global_flag; scope = 0 }
+  Global s
 
-let rename i =
-  incr currentstamp;
-  { i with stamp = !currentstamp; scope = 0 }
+let name = function
+  | Local { name; _ }
+  | Global name
+  | Predef_exn name -> name
 
-let name i = i.name
+let rename = function
+  | Local { name; stamp = _; scope } ->
+      incr currentstamp;
+      Local { name; stamp = !currentstamp; scope }
+  | id ->
+      Misc.fatal_errorf "Ident.rename %s" (name id)
 
-let with_name i name = { i with name; }
+let unique_name = function
+  | Local { name; stamp } -> name ^ "_" ^ string_of_int stamp
+  | Global name
+  | Predef_exn name -> name
 
-let unique_name i = i.name ^ "_" ^ string_of_int i.stamp
+let unique_toplevel_name = function
+  | Local { name; stamp } -> name ^ "/" ^ string_of_int stamp
+  | Global name
+  | Predef_exn name -> name
 
-let unique_toplevel_name i = i.name ^ "/" ^ string_of_int i.stamp
+let persistent = function
+  | Global _ -> true
+  | _ -> false
 
-let persistent i = (i.stamp = 0)
-
-let equal i1 i2 = i1.name = i2.name
+let equal i1 i2 =
+  match i1, i2 with
+  | Local { name = name1; _ }, Local { name = name2; _ }
+  | Global name1, Global name2
+  | Predef_exn name1, Predef_exn name2 ->
+      name1 = name2
+  | _ ->
+      false
 
 let same i1 i2 = i1 = i2
   (* Possibly more efficient version (with a real compiler, at least):
@@ -67,8 +84,13 @@ let same i1 i2 = i1 = i2
 
 let compare i1 i2 = Stdlib.compare i1 i2
 
-let stamp i = i.stamp
-let scope i = i.scope
+let stamp = function
+  | Local { stamp; _ } -> stamp
+  | _ -> 0
+
+let scope = function
+  | Local { scope; _ } -> scope
+  | _ -> 0
 
 let current_stamp () = !currentstamp
 let bump_stamp_counter t = currentstamp := max !currentstamp t
@@ -80,21 +102,22 @@ let reinit () =
   then reinit_level := !currentstamp
   else currentstamp := !reinit_level
 
-let global i =
-  (i.flags land global_flag) <> 0
+let global = function
+  | Local _ -> false
+  | Global _
+  | Predef_exn _ -> true
 
-let is_predef_exn i =
-  (i.flags land predef_exn_flag) <> 0
+let is_predef_exn = function
+  | Predef_exn _ -> true
+  | _ -> false
 
-let print ppf i =
-  match i.stamp with
-  | 0 -> fprintf ppf "%s!" i.name
-  | -1 -> fprintf ppf "%s#" i.name
-  | n ->
-    let stampstr =
-      if !Clflags.unique_ids then Printf.sprintf "/%i" n else ""
-    in
-    fprintf ppf "%s%s%s" i.name stampstr (if global i then "g" else "")
+let print ppf = function
+  | Global name
+  | Predef_exn name -> fprintf ppf "%s!" name
+  | Local { name; stamp = -1 } -> fprintf ppf "%s#" name
+  | Local { name; stamp = n } ->
+      fprintf ppf "%s%s" name
+        (if !Clflags.unique_ids then Printf.sprintf "/%i" n else "")
 
 type 'a tbl =
     Empty
@@ -146,7 +169,7 @@ let rec add id data = function
     Empty ->
       Node(Empty, {ident = id; data = data; previous = None}, Empty, 1)
   | Node(l, k, r, h) ->
-      let c = compare id.name k.ident.name in
+      let c = compare (name id) (name k.ident) in
       if c = 0 then
         Node(l, {ident = id; data = data; previous = Some k}, r, h)
       else if c < 0 then
@@ -158,43 +181,44 @@ let rec find_stamp s = function
     None ->
       raise Not_found
   | Some k ->
-      if k.ident.stamp = s then k.data else find_stamp s k.previous
+      if (stamp k.ident)= s then k.data else find_stamp s k.previous
 
 let rec find_same id = function
     Empty ->
       raise Not_found
   | Node(l, k, r, _) ->
-      let c = compare id.name k.ident.name in
+      let c = compare (name id) (name k.ident) in
       if c = 0 then
-        if id.stamp = k.ident.stamp
+        let id_stamp = stamp id in
+        if id_stamp = (stamp k.ident)
         then k.data
-        else find_stamp id.stamp k.previous
+        else find_stamp id_stamp k.previous
       else
         find_same id (if c < 0 then l else r)
 
-let rec find_name name = function
+let rec find_name n = function
     Empty ->
       raise Not_found
   | Node(l, k, r, _) ->
-      let c = compare name k.ident.name in
+      let c = compare n (name k.ident) in
       if c = 0 then
         k.ident, k.data
       else
-        find_name name (if c < 0 then l else r)
+        find_name n (if c < 0 then l else r)
 
 let rec get_all = function
   | None -> []
   | Some k -> (k.ident, k.data) :: get_all k.previous
 
-let rec find_all name = function
+let rec find_all n = function
     Empty ->
       []
   | Node(l, k, r, _) ->
-      let c = compare name k.ident.name in
+      let c = compare n (name k.ident) in
       if c = 0 then
         (k.ident, k.data) :: get_all k.previous
       else
-        find_all name (if c < 0 then l else r)
+        find_all n (if c < 0 then l else r)
 
 let rec fold_aux f stack accu = function
     Empty ->
@@ -229,22 +253,29 @@ let key_name = ""
 
 let make_key_generator () =
   let c = ref 1 in
-  fun id ->
-    let stamp = !c in
-    decr c ;
-    { id with name = key_name; stamp = stamp; }
+  function
+  | Local _ ->
+      let stamp = !c in
+      decr c ;
+      Local { name = key_name; stamp = stamp; scope = 0 }
+  | global_id ->
+      Misc.fatal_errorf "Ident.make_key_generator () %s" (name global_id)
 
 let compare x y =
-  let c = x.stamp - y.stamp in
-  if c <> 0 then c
-  else
-    let c = compare x.name y.name in
-    if c <> 0 then c
-    else
-      compare x.flags y.flags
+  match x, y with
+  | Local x, Local y ->
+      let c = x.stamp - y.stamp in
+      if c <> 0 then c
+      else compare x.name y.name
+  | Local _, _ -> 1
+  | _, Local _ -> (-1)
+  | Global x, Global y -> compare x y
+  | Global _, _ -> 1
+  | _, Global _ -> (-1)
+  | Predef_exn x, Predef_exn y -> compare x y
 
 let output oc id = output_string oc (unique_name id)
-let hash i = (Char.code i.name.[0]) lxor i.stamp
+let hash i = (Char.code (name i).[0]) lxor (stamp i)
 
 let original_equal = equal
 include Identifiable.Make (struct
