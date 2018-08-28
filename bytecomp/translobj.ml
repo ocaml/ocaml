@@ -37,7 +37,7 @@ let share c =
       begin try
         Lvar (Hashtbl.find consts c)
       with Not_found ->
-        let id = Ident.create_var "shared" in
+        let id = Ident.create_local "shared" in
         Hashtbl.add consts c id;
         Lvar id
       end
@@ -112,7 +112,7 @@ let transl_label_init_general f =
 
 let transl_label_init_flambda f =
   assert(Config.flambda);
-  let method_cache_id = Ident.create_var "method_cache" in
+  let method_cache_id = Ident.create_local "method_cache" in
   method_cache := Lvar method_cache_id;
   (* Calling f (usually Translmod.transl_struct) requires the
      method_cache variable to be initialised to be able to generate

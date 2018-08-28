@@ -16,7 +16,8 @@
 open Format
 
 type t =
-  | Local of { name: string; stamp: int; scope: int }
+  | Local of { name: string; stamp: int }
+  | Scoped of { name: string; stamp: int; scope: int }
   | Global of string
   | Predef_exn of string
 
@@ -24,16 +25,16 @@ type t =
 
 let currentstamp = ref 0
 
-let create ~scope s =
+let create_scoped ~scope s =
   incr currentstamp;
-  Local { name = s; stamp = !currentstamp; scope }
+  Scoped { name = s; stamp = !currentstamp; scope }
 
-let create_var s =
+let create_local s =
   incr currentstamp;
-  Local { name = s; stamp = !currentstamp; scope = 0 }
+  Local { name = s; stamp = !currentstamp }
 
 let create_hidden s =
-  Local { name = s; stamp = -1; scope = 0 }
+  Local { name = s; stamp = -1 }
 
 let create_predef_exn s =
   Predef_exn s
@@ -43,23 +44,29 @@ let create_persistent s =
 
 let name = function
   | Local { name; _ }
+  | Scoped { name; _ }
   | Global name
   | Predef_exn name -> name
 
 let rename = function
-  | Local { name; stamp = _; scope } ->
+  | Local { name; stamp = _ } ->
       incr currentstamp;
-      Local { name; stamp = !currentstamp; scope }
+      Local { name; stamp = !currentstamp }
+  | Scoped { name; stamp = _; scope } ->
+      incr currentstamp;
+      Scoped { name; stamp = !currentstamp; scope }
   | id ->
       Misc.fatal_errorf "Ident.rename %s" (name id)
 
 let unique_name = function
-  | Local { name; stamp } -> name ^ "_" ^ string_of_int stamp
+  | Local { name; stamp }
+  | Scoped { name; stamp } -> name ^ "_" ^ string_of_int stamp
   | Global name
   | Predef_exn name -> name
 
 let unique_toplevel_name = function
-  | Local { name; stamp } -> name ^ "/" ^ string_of_int stamp
+  | Local { name; stamp }
+  | Scoped { name; stamp } -> name ^ "/" ^ string_of_int stamp
   | Global name
   | Predef_exn name -> name
 
@@ -70,6 +77,7 @@ let persistent = function
 let equal i1 i2 =
   match i1, i2 with
   | Local { name = name1; _ }, Local { name = name2; _ }
+  | Scoped { name = name1; _ }, Scoped { name = name2; _ }
   | Global name1, Global name2
   | Predef_exn name1, Predef_exn name2 ->
       name1 = name2
@@ -85,11 +93,12 @@ let same i1 i2 = i1 = i2
 let compare i1 i2 = Stdlib.compare i1 i2
 
 let stamp = function
-  | Local { stamp; _ } -> stamp
+  | Local { stamp; _ }
+  | Scoped { stamp; _ } -> stamp
   | _ -> 0
 
 let scope = function
-  | Local { scope; _ } -> scope
+  | Scoped { scope; _ } -> scope
   | _ -> 0
 
 let current_stamp () = !currentstamp
@@ -103,7 +112,8 @@ let reinit () =
   else currentstamp := !reinit_level
 
 let global = function
-  | Local _ -> false
+  | Local _
+  | Scoped _ -> false
   | Global _
   | Predef_exn _ -> true
 
@@ -118,6 +128,9 @@ let print ppf = function
   | Local { name; stamp = n } ->
       fprintf ppf "%s%s" name
         (if !Clflags.unique_ids then Printf.sprintf "/%i" n else "")
+  | Scoped { name; stamp = n; scope } ->
+      fprintf ppf "%s%s" name
+        (if !Clflags.unique_ids then Printf.sprintf "/%i[%i]" n scope else "")
 
 type 'a tbl =
     Empty
@@ -254,10 +267,11 @@ let key_name = ""
 let make_key_generator () =
   let c = ref 1 in
   function
-  | Local _ ->
+  | Local _
+  | Scoped _ ->
       let stamp = !c in
       decr c ;
-      Local { name = key_name; stamp = stamp; scope = 0 }
+      Local { name = key_name; stamp = stamp }
   | global_id ->
       Misc.fatal_errorf "Ident.make_key_generator () %s" (name global_id)
 
@@ -269,6 +283,12 @@ let compare x y =
       else compare x.name y.name
   | Local _, _ -> 1
   | _, Local _ -> (-1)
+  | Scoped x, Scoped y ->
+      let c = x.stamp - y.stamp in
+      if c <> 0 then c
+      else compare x.name y.name
+  | Scoped _, _ -> 1
+  | _, Scoped _ -> (-1)
   | Global x, Global y -> compare x y
   | Global _, _ -> 1
   | _, Global _ -> (-1)

@@ -34,7 +34,7 @@ let omega = make_pat Tpat_any Ctype.none Env.empty
 
 let extra_pat =
   make_pat
-    (Tpat_var (Ident.create_var "+", mknoloc "+"))
+    (Tpat_var (Ident.create_local "+", mknoloc "+"))
     Ctype.none Env.empty
 
 let rec omegas i =
@@ -974,7 +974,7 @@ let some_private_tag = "<some private tag>"
 let build_other ext env = match env with
 | ({pat_desc = Tpat_construct (lid, {cstr_tag=Cstr_extension _},_)},_) :: _ ->
         (* let c = {c with cstr_name = "*extension*"} in *) (* PR#7330 *)
-        make_pat (Tpat_var (Ident.create_var "*extension*",
+        make_pat (Tpat_var (Ident.create_local "*extension*",
                             {lid with txt="*extension*"})) Ctype.none Env.empty
 | ({pat_desc = Tpat_construct _} as p,_) :: _ ->
     begin match ext with

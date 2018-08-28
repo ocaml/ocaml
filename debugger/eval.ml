@@ -39,7 +39,8 @@ exception Error of error
 let abstract_type =
   Btype.newgenty (
     Tconstr
-      (Pident (Ident.create ~scope:Btype.lowest_level "<abstr>"), [], ref Mnil)
+      (Pident (
+         Ident.create_scoped ~scope:Btype.lowest_level "<abstr>"), [], ref Mnil)
   )
 
 let rec path event = function

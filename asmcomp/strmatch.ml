@@ -67,8 +67,8 @@ module Make(I:I) = struct
 
 (* Utilities *)
 
-  let gen_cell_id () = Ident.create_var "cell"
-  let gen_size_id () = Ident.create_var "size"
+  let gen_cell_id () = Ident.create_local "cell"
+  let gen_size_id () = Ident.create_local "size"
 
   let mk_let_cell id str ind body =
     let dbg = Debuginfo.none in

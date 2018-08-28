@@ -1959,7 +1959,7 @@ let add_local_type path info env =
 (* Insertion of bindings by name *)
 
 let enter scope store_fun name data env =
-  let id = Ident.create ~scope name in (id, store_fun id data env)
+  let id = Ident.create_scoped ~scope name in (id, store_fun id data env)
 
 let enter_value ?check = enter 0 (store_value ?check)
 and enter_type ~scope = enter scope (store_type ~check:true)
@@ -1973,7 +1973,7 @@ and enter_class ~scope = enter scope store_class
 and enter_cltype ~scope = enter scope store_cltype
 
 let enter_module ~scope ?arg s mty env =
-  let id = Ident.create ~scope s in
+  let id = Ident.create_scoped ~scope s in
   (id, enter_module_declaration ?arg id (md mty) env)
 
 (* Insertion of all components of a signature *)

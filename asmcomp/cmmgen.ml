@@ -64,7 +64,7 @@ let bind name arg fn =
     Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
   | Cconst_pointer _ | Cconst_natpointer _
   | Cblockheader _ -> fn arg
-  | _ -> let id = Ident.create_var name in Clet(id, arg, fn (Cvar id))
+  | _ -> let id = Ident.create_local name in Clet(id, arg, fn (Cvar id))
 
 let bind_load name arg fn =
   match arg with
@@ -76,7 +76,7 @@ let bind_nonvar name arg fn =
     Cconst_int _ | Cconst_natint _ | Cconst_symbol _
   | Cconst_pointer _ | Cconst_natpointer _
   | Cblockheader _ -> fn arg
-  | _ -> let id = Ident.create_var name in Clet(id, arg, fn (Cvar id))
+  | _ -> let id = Ident.create_local name in Clet(id, arg, fn (Cvar id))
 
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
     (* cf. runtime/caml/gc.h *)
@@ -728,7 +728,7 @@ let float_array_set arr ofs newval dbg =
 
 let string_length exp dbg =
   bind "str" exp (fun str ->
-    let tmp_var = Ident.create_var "tmp" in
+    let tmp_var = Ident.create_local "tmp" in
     Clet(tmp_var,
          Cop(Csubi,
              [Cop(Clsl,
@@ -770,7 +770,7 @@ let make_alloc_generic set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
     Cop(Calloc, Cblockheader(block_header tag wordsize, dbg) :: args, dbg)
   else begin
-    let id = Ident.create_var "alloc" in
+    let id = Ident.create_local "alloc" in
     let rec fill_fields idx = function
       [] -> Cvar id
     | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int idx) e1 dbg,
@@ -2664,7 +2664,7 @@ and transl_let env str kind id exp body =
          there may be constant closures inside that need lifting out. *)
       Clet(id, transl env exp, transl env body)
   | Boxed (boxed_number, _false) ->
-      let unboxed_id = Ident.create_var (Ident.name id) in
+      let unboxed_id = Ident.create_local (Ident.name id) in
       Clet(unboxed_id, transl_unbox_number dbg env boxed_number exp,
            transl (add_unboxed_id id unboxed_id boxed_number env) body)
 
@@ -3127,8 +3127,8 @@ CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
 
 let cache_public_method meths tag cache dbg =
   let raise_num = next_raise_count () in
-  let li = Ident.create_var "li" and hi = Ident.create_var "hi"
-  and mi = Ident.create_var "mi" and tagged = Ident.create_var "tagged" in
+  let li = Ident.create_local "li" and hi = Ident.create_local "hi"
+  and mi = Ident.create_local "mi" and tagged = Ident.create_local "tagged" in
   Clet (
   li, Cconst_int 3,
   Clet (
@@ -3179,16 +3179,16 @@ let cache_public_method meths tag cache dbg =
 
 let apply_function_body arity =
   let dbg = Debuginfo.none in
-  let arg = Array.make arity (Ident.create_var "arg") in
-  for i = 1 to arity - 1 do arg.(i) <- Ident.create_var "arg" done;
-  let clos = Ident.create_var "clos" in
+  let arg = Array.make arity (Ident.create_local "arg") in
+  for i = 1 to arity - 1 do arg.(i) <- Ident.create_local "arg" done;
+  let clos = Ident.create_local "clos" in
   let env = empty_env in
   let rec app_fun clos n =
     if n = arity-1 then
       Cop(Capply typ_val,
           [get_field env (Cvar clos) 0 dbg; Cvar arg.(n); Cvar clos], dbg)
     else begin
-      let newclos = Ident.create_var "clos" in
+      let newclos = Ident.create_local "clos" in
       Clet(newclos,
            Cop(Capply typ_val,
                [get_field env (Cvar clos) 0 dbg; Cvar arg.(n); Cvar clos], dbg),
@@ -3208,14 +3208,15 @@ let apply_function_body arity =
 let send_function arity =
   let dbg = Debuginfo.none in
   let (args, clos', body) = apply_function_body (1+arity) in
-  let cache = Ident.create_var "cache"
+  let cache = Ident.create_local "cache"
   and obj = List.hd args
-  and tag = Ident.create_var "tag" in
+  and tag = Ident.create_local "tag" in
   let env = empty_env in
   let clos =
     let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
-    let meths = Ident.create_var "meths" and cached = Ident.create_var "cached" in
-    let real = Ident.create_var "real" in
+    let meths = Ident.create_local "meths"
+    and cached = Ident.create_local "cached" in
+    let real = Ident.create_local "real" in
     let mask = get_field env (Cvar meths) 1 dbg in
     let cached_pos = Cvar cached in
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg);
@@ -3267,8 +3268,8 @@ let apply_function arity =
 
 let tuplify_function arity =
   let dbg = Debuginfo.none in
-  let arg = Ident.create_var "arg" in
-  let clos = Ident.create_var "clos" in
+  let arg = Ident.create_local "arg" in
+  let clos = Ident.create_local "clos" in
   let env = empty_env in
   let rec access_components i =
     if i >= arity
@@ -3317,8 +3318,8 @@ let tuplify_function arity =
 let max_arity_optimized = 15
 let final_curry_function arity =
   let dbg = Debuginfo.none in
-  let last_arg = Ident.create_var "arg" in
-  let last_clos = Ident.create_var "clos" in
+  let last_arg = Ident.create_local "arg" in
+  let last_clos = Ident.create_local "clos" in
   let env = empty_env in
   let rec curry_fun args clos n =
     if n = 0 then
@@ -3329,13 +3330,13 @@ let final_curry_function arity =
     else
       if n = arity - 1 || arity > max_arity_optimized then
         begin
-      let newclos = Ident.create_var "clos" in
+      let newclos = Ident.create_local "clos" in
       Clet(newclos,
            get_field env (Cvar clos) 3 dbg,
            curry_fun (get_field env (Cvar clos) 2 dbg :: args) newclos (n-1))
         end else
         begin
-          let newclos = Ident.create_var "clos" in
+          let newclos = Ident.create_local "clos" in
           Clet(newclos,
                get_field env (Cvar clos) 4 dbg,
                curry_fun (get_field env (Cvar clos) 3 dbg :: args)
@@ -3357,7 +3358,7 @@ let rec intermediate_curry_functions arity num =
   else begin
     let name1 = "caml_curry" ^ string_of_int arity in
     let name2 = if num = 0 then name1 else name1 ^ "_" ^ string_of_int num in
-    let arg = Ident.create_var "arg" and clos = Ident.create_var "clos" in
+    let arg = Ident.create_local "arg" and clos = Ident.create_local "clos" in
     Cfunction
      {fun_name = name2;
       fun_args = [arg, typ_val; clos, typ_val];
@@ -3382,7 +3383,7 @@ let rec intermediate_curry_functions arity num =
       (if arity <= max_arity_optimized && arity - num > 2 then
           let rec iter i =
             if i <= arity then
-              let arg = Ident.create_var (Printf.sprintf "arg%d" i) in
+              let arg = Ident.create_local (Printf.sprintf "arg%d" i) in
               (arg, typ_val) :: iter (i+1)
             else []
           in
@@ -3393,7 +3394,7 @@ let rec intermediate_curry_functions arity num =
                   (get_field env (Cvar clos) 2 dbg) :: args @ [Cvar clos],
                   dbg)
             else
-              let newclos = Ident.create_var "clos" in
+              let newclos = Ident.create_local "clos" in
               Clet(newclos,
                    get_field env (Cvar clos) 4 dbg,
                    iter (i-1) (get_field env (Cvar clos) 3 dbg :: args) newclos)

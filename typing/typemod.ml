@@ -470,7 +470,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             type_immediate = false;
             type_unboxed = unboxed_false_default_false;
           }
-        and id_row = Ident.create ~scope:(Ctype.get_current_level ())
+        and id_row = Ident.create_scoped ~scope:(Ctype.get_current_level ())
                        (s^"#row")
         in
         let initial_env =
@@ -709,7 +709,7 @@ and approx_sig env ssg =
           map_rec_type ~rec_flag
             (fun rs (id, info) -> Sig_type(id, info, rs)) decls rem
       | Psig_module pmd ->
-          let id = Ident.create ~scope:(Ctype.get_current_level ())
+          let id = Ident.create_scoped ~scope:(Ctype.get_current_level ())
                     pmd.pmd_name.txt in
           let md = approx_module_declaration env pmd in
           let newenv = Env.enter_module_declaration id md env in
@@ -718,7 +718,7 @@ and approx_sig env ssg =
           let decls =
             List.map
               (fun pmd ->
-                 (Ident.create ~scope:(Ctype.get_current_level ())
+                 (Ident.create_scoped ~scope:(Ctype.get_current_level ())
                     pmd.pmd_name.txt,
                   approx_module_declaration env pmd)
               )
@@ -1059,7 +1059,7 @@ and transl_signature env sg =
                        Text_exception) :: rem,
             final_env
         | Psig_module pmd ->
-            let id = Ident.create ~scope:(Ctype.get_current_level ())
+            let id = Ident.create_scoped ~scope:(Ctype.get_current_level ())
                        pmd.pmd_name.txt in
             check_module names pmd.pmd_name.loc id to_be_removed;
             let tmty =
@@ -1253,7 +1253,9 @@ and transl_recmodule_modtypes env sdecls =
                     md_loc = mty.mty_loc;
                     md_attributes = mty.mty_attributes})) in
   let scope = Ctype.get_current_level () in
-  let ids = List.map (fun x -> Ident.create ~scope x.pmd_name.txt) sdecls in
+  let ids =
+    List.map (fun x -> Ident.create_scoped ~scope x.pmd_name.txt) sdecls
+  in
   let approx_env =
     (*
        cf #5965
@@ -1263,7 +1265,9 @@ and transl_recmodule_modtypes env sdecls =
     *)
     List.fold_left
       (fun env id ->
-         let dummy = Mty_ident (Path.Pident (Ident.create ~scope "#recmod#")) in
+         let dummy =
+           Mty_ident (Path.Pident (Ident.create_scoped ~scope "#recmod#"))
+         in
          Env.add_module ~arg:true id dummy env
       )
       env ids
@@ -1584,7 +1588,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let scope = Ctype.get_current_level () in
       let (id, newenv), funct_body =
         match ty_arg with
-        | None -> (Ident.create ~scope "*", env), false
+        | None -> (Ident.create_scoped ~scope "*", env), false
         | Some mty -> Env.enter_module ~scope ~arg:true name.txt mty env, true
       in
       Ctype.init_def(scope + 1); (* PR#6981 *)
@@ -1781,7 +1785,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                    pmb_loc;
                   } ->
         let scope = Ctype.get_current_level () in
-        let id = Ident.create ~scope name.txt in (* create early for PR#6752 *)
+        let id =
+          Ident.create_scoped ~scope name.txt (* create early for PR#6752 *)
+        in
         check_module names pmb_loc id to_be_removed;
         let modl =
           Builtin_attributes.warning_scope attrs
@@ -2061,7 +2067,9 @@ let type_package env m p nl =
     | Tmod_constraint ({mod_desc=Tmod_ident (mp,_)}, _, Tmodtype_implicit, _)
         -> (mp, env)  (* PR#6982 *)
     | _ ->
-      let (id, new_env) = Env.enter_module ~scope ~arg:true "%M" modl.mod_type env in
+      let (id, new_env) =
+        Env.enter_module ~scope ~arg:true "%M" modl.mod_type env
+      in
       (Pident id, new_env)
   in
   let rec mkpath mp = function
@@ -2190,7 +2198,7 @@ let rec package_signatures subst = function
   | (name, sg) :: rem ->
       let sg' = Subst.signature subst sg in
       let oldid = Ident.create_persistent name
-      and newid = Ident.create_var name in
+      and newid = Ident.create_local name in
       Sig_module(newid, {md_type=Mty_signature sg';
                          md_attributes=[];
                          md_loc=Location.none;

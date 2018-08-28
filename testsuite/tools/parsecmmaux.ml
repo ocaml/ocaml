@@ -29,7 +29,7 @@ let ident_name s =
   | n -> String.sub s 0 n
 
 let bind_ident s =
-  let id = Ident.create_var (ident_name s) in
+  let id = Ident.create_local (ident_name s) in
   Hashtbl.add tbl_ident s id;
   id
 

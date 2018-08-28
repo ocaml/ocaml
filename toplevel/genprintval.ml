@@ -133,22 +133,22 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                                      O.t -> Outcometree.out_value) gen_printer)
 
     let printers = ref ([
-      ( Pident(Ident.create_var "print_int"),
+      ( Pident(Ident.create_local "print_int"),
         Simple (Predef.type_int,
                 (fun x -> Oval_int (O.obj x : int))) );
-      ( Pident(Ident.create_var "print_float"),
+      ( Pident(Ident.create_local "print_float"),
         Simple (Predef.type_float,
                 (fun x -> Oval_float (O.obj x : float))) );
-      ( Pident(Ident.create_var "print_char"),
+      ( Pident(Ident.create_local "print_char"),
         Simple (Predef.type_char,
                 (fun x -> Oval_char (O.obj x : char))) );
-      ( Pident(Ident.create_var "print_int32"),
+      ( Pident(Ident.create_local "print_int32"),
         Simple (Predef.type_int32,
                 (fun x -> Oval_int32 (O.obj x : int32))) );
-      ( Pident(Ident.create_var "print_nativeint"),
+      ( Pident(Ident.create_local "print_nativeint"),
         Simple (Predef.type_nativeint,
                 (fun x -> Oval_nativeint (O.obj x : nativeint))) );
-      ( Pident(Ident.create_var "print_int64"),
+      ( Pident(Ident.create_local "print_int64"),
         Simple (Predef.type_int64,
                 (fun x -> Oval_int64 (O.obj x : int64)) ))
     ] : (Path.t * printer) list)
@@ -223,7 +223,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     let abstract_type =
       let scope = Ctype.get_current_level () in
-      let id = Ident.create ~scope "abstract" in
+      let id = Ident.create_scoped ~scope "abstract" in
       let ty = Ctype.newty (Tconstr (Pident id, [], ref Mnil)) in
       Ctype.init_def (scope + 1);
       ty

@@ -25,8 +25,8 @@ include Identifiable.S with type t := t
 *)
 
 
-val create: scope:int -> string -> t
-val create_var: string -> t
+val create_scoped: scope:int -> string -> t
+val create_local: string -> t
 val create_persistent: string -> t
 val create_predef_exn: string -> t
 val rename: t -> t

@@ -436,7 +436,7 @@ and transl_exp0 e =
   | Texp_setinstvar(path_self, path, _, expr) ->
       transl_setinstvar e.exp_loc (transl_normal_path path_self) path expr
   | Texp_override(path_self, modifs) ->
-      let cpy = Ident.create_var "copy" in
+      let cpy = Ident.create_local "copy" in
       Llet(Strict, Pgenval, cpy,
            Lapply{ap_should_be_tailcall=false;
                   ap_loc=Location.none;
@@ -502,7 +502,8 @@ and transl_exp0 e =
          transl_exp e
       | `Other ->
          (* other cases compile to a lazy block holding a function *)
-         let fn = Lfunction {kind = Curried; params= [Ident.create_var "param"];
+         let fn = Lfunction {kind = Curried;
+                             params= [Ident.create_local "param"];
                              attr = default_function_attribute;
                              loc = e.exp_loc;
                              body = transl_exp e} in
@@ -510,7 +511,7 @@ and transl_exp0 e =
       end
   | Texp_object (cs, meths) ->
       let cty = cs.cstr_type in
-      let cl = Ident.create_var "class" in
+      let cl = Ident.create_local "class" in
       !transl_object cl meths
         { cl_desc = Tcl_structure cs;
           cl_loc = e.exp_loc;
@@ -590,7 +591,7 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
           match lam with
             Lvar _ | Lconst _ -> lam
           | _ ->
-              let id = Ident.create_var name in
+              let id = Ident.create_local name in
               defs := (id, lam) :: !defs;
               Lvar id
         in
@@ -601,7 +602,7 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
           if args = [] then lam else lapply lam (List.rev_map fst args) in
         let handle = protect "func" lam
         and l = List.map (fun (arg, opt) -> may_map (protect "arg") arg, opt) l
-        and id_arg = Ident.create_var "param" in
+        and id_arg = Ident.create_local "param" in
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
             Lfunction{kind = Curried; params = ids; body = lam; attr; loc} ->
@@ -646,7 +647,7 @@ and transl_function loc untuplify_fn repr partial param cases =
             (fun {c_lhs; c_guard; c_rhs} ->
               (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
             cases in
-        let params = List.map (fun _ -> Ident.create_var "param") pl in
+        let params = List.map (fun _ -> Ident.create_local "param") pl in
         ((Tupled, params),
          Matching.for_tupled_function loc params
            (transl_tupled_cases pats_expr_list) partial)
@@ -718,7 +719,7 @@ and transl_record loc env fields repres opt_init_expr =
   then begin
     (* Allocate new record with given fields (and remaining fields
        taken from init_expr if any *)
-    let init_id = Ident.create_var "init" in
+    let init_id = Ident.create_local "init" in
     let lv =
       Array.mapi
         (fun i (_, definition) ->
@@ -781,7 +782,7 @@ and transl_record loc env fields repres opt_init_expr =
   end else begin
     (* Take a shallow copy of the init record, then mutate the fields
        of the copy *)
-    let copy_id = Ident.create_var "newrecord" in
+    let copy_id = Ident.create_local "newrecord" in
     let update_field cont (lbl, definition) =
       match definition with
       | Kept _type -> cont

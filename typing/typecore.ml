@@ -491,7 +491,7 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty
   if List.exists (fun {pv_id; _} -> Ident.name pv_id = name.txt)
       !pattern_variables
   then raise(Error(loc, Env.empty, Multiply_bound_variable name.txt));
-  let id = Ident.create_var name.txt in
+  let id = Ident.create_local name.txt in
   pattern_variables :=
     {pv_id = id;
      pv_type = ty;
@@ -1123,7 +1123,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       let ty = instance expected_ty in
       let id = (* PR#7330 *)
         if name.txt = "*extension*" then
-          Ident.create_var name.txt
+          Ident.create_local name.txt
         else
           enter_variable loc name ty sp.ppat_attributes
       in
@@ -1624,7 +1624,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
          let check s =
            if pv_as_var then Warnings.Unused_var s
            else Warnings.Unused_var_strict s in
-         let id' = Ident.create_var (Ident.name pv_id) in
+         let id' = Ident.create_local (Ident.name pv_id) in
          ((id', pv_id, pv_type)::pv,
           Env.add_value id' {val_type = pv_type;
                              val_kind = Val_ivar (Immutable, cl_num);
@@ -2112,7 +2112,7 @@ let proper_exp_loc exp =
 (* To find reasonable names for let-bound and lambda-bound idents *)
 
 let rec name_pattern default = function
-    [] -> Ident.create_var default
+    [] -> Ident.create_local default
   | p :: rem ->
     match p.pat_desc with
       Tpat_var (id, _) -> id
@@ -2694,7 +2694,7 @@ and type_expect_
           (mk_expected ~explanation:For_loop_stop_index Predef.type_int) in
       let id, new_env =
         match param.ppat_desc with
-        | Ppat_any -> Ident.create_var "_for", env
+        | Ppat_any -> Ident.create_local "_for", env
         | Ppat_var {txt} ->
             Env.enter_value txt {val_type = instance Predef.type_int;
                                  val_attributes = [];
@@ -3663,7 +3663,7 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
       if args = [] then texp else
       (* eta-expand to avoid side effects *)
       let var_pair name ty =
-        let id = Ident.create_var name in
+        let id = Ident.create_local name in
         {pat_desc = Tpat_var (id, mknoloc name); pat_type = ty;pat_extra=[];
          pat_attributes = [];
          pat_loc = Location.none; pat_env = env},

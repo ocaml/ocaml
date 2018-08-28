@@ -26,7 +26,7 @@ let wrap create s =
   builtin_idents := (s, id) :: !builtin_idents;
   id
 
-let ident_create = wrap (Ident.create ~scope:lowest_level)
+let ident_create = wrap (Ident.create_scoped ~scope:lowest_level)
 let ident_create_predef_exn = wrap Ident.create_predef_exn
 
 let ident_int = ident_create "int"

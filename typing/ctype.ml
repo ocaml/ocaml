@@ -1132,7 +1132,8 @@ let instance_constructor ?in_pattern cstr =
         let name = existential_name cstr existential in
         let path =
           Path.Pident
-            (Ident.create ~scope:expansion_scope (get_new_abstract_name name))
+            (Ident.create_scoped ~scope:expansion_scope
+               (get_new_abstract_name name))
         in
         let new_env = Env.add_local_type path decl !env in
         env := new_env;
@@ -1937,7 +1938,8 @@ let reify env t =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
     let path =
       Path.Pident
-        (Ident.create ~scope:fresh_constr_scope (get_new_abstract_name name))
+        (Ident.create_scoped ~scope:fresh_constr_scope
+           (get_new_abstract_name name))
     in
     let decl = new_declaration (Some fresh_constr_scope) None in
     let new_env = Env.add_local_type path decl !env in
@@ -2296,7 +2298,7 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
 
      It'd be nice if we avoided creating such temporary dummy modules and broken
      environments though. *)
-  let id2 = Ident.create_var "Pkg" in
+  let id2 = Ident.create_local "Pkg" in
   let env' = Env.add_module id2 mty2 env in
   let rec complete nl1 ntl2 =
     match nl1, ntl2 with
@@ -2976,7 +2978,7 @@ let filter_self_method env lab priv meths ty =
   try
     Meths.find lab !meths
   with Not_found ->
-    let pair = (Ident.create_var lab, ty') in
+    let pair = (Ident.create_local lab, ty') in
     meths := Meths.add lab pair !meths;
     pair
 
