@@ -579,7 +579,7 @@ let penalty s =
 
 let rec path_size = function
     Pident id ->
-      penalty (Ident.name id), -Ident.binding_time id
+      penalty (Ident.name id), -Ident.scope id
   | Pdot (p, _, _) ->
       let (l, b) = path_size p in (1+l, b)
   | Papply (p1, p2) ->
