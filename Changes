@@ -55,6 +55,10 @@ Working version
   Unix.open_process{,_in,_out,_full}, but passing an explicit argv array.
   (Nicolás Ojeda Bär, review by Jérémie Dimino, request by Volker Diels-Grabsch)
 
+- GPR#1999: Add Unix.process{,_in,_out,_full}_pid to retrieve opened process's
+  pid.
+  (Romain Beauxis, review by Nicolás Ojeda Bär)
+
 - GPR#1182: Add new Printf formats %#d %#Ld %#ld %#nd (idem for %i and %u) for
   alternative integer formatting.
   (ygrek, review by Gabriel Scherer)
