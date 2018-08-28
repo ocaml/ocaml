@@ -18,8 +18,8 @@ let index_within_node = ref node_num_header_words
    when not using Spacetime profiling.  (This could cause stamps to differ
    between bytecode and native .cmis when no .mli is present, e.g.
    arch.ml.) *)
-let spacetime_node = ref (lazy (Cmm.Cvar (Ident.create "dummy")))
-let spacetime_node_ident = ref (lazy (Ident.create "dummy"))
+let spacetime_node = ref (lazy (Cmm.Cvar (Ident.create_var "dummy")))
+let spacetime_node_ident = ref (lazy (Ident.create_var "dummy"))
 let current_function_label = ref ""
 let direct_tail_call_point_indexes = ref []
 
@@ -55,15 +55,15 @@ let reset ~spacetime_node_ident:ident ~function_label =
   reverse_shape := []
 
 let code_for_function_prologue ~function_name ~node_hole =
-  let node = Ident.create "node" in
-  let new_node = Ident.create "new_node" in
-  let must_allocate_node = Ident.create "must_allocate_node" in
-  let is_new_node = Ident.create "is_new_node" in
+  let node = Ident.create_var "node" in
+  let new_node = Ident.create_var "new_node" in
+  let must_allocate_node = Ident.create_var "must_allocate_node" in
+  let is_new_node = Ident.create_var "is_new_node" in
   let no_tail_calls = List.length !direct_tail_call_point_indexes < 1 in
   let dbg = Debuginfo.none in
   let open Cmm in
   let initialize_direct_tail_call_points_and_return_node =
-    let new_node_encoded = Ident.create "new_node_encoded" in
+    let new_node_encoded = Ident.create_var "new_node_encoded" in
     (* The callee node pointers within direct tail call points must initially
        point back at the start of the current node and be marked as per
        [Encode_tail_caller_node] in the runtime. *)
@@ -88,7 +88,7 @@ let code_for_function_prologue ~function_name ~node_hole =
         Cop (Cor, [Cvar new_node; Cconst_int 1], dbg),
         body)
   in
-  let pc = Ident.create "pc" in
+  let pc = Ident.create_var "pc" in
   Clet (node, Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
     Clet (must_allocate_node,
       Cop (Cand, [Cvar node; Cconst_int 1], dbg),
@@ -115,10 +115,10 @@ let code_for_function_prologue ~function_name ~node_hole =
 
 let code_for_blockheader ~value's_header ~node ~dbg =
   let num_words = Nativeint.shift_right_logical value's_header 10 in
-  let existing_profinfo = Ident.create "existing_profinfo" in
-  let existing_count = Ident.create "existing_count" in
-  let profinfo = Ident.create "profinfo" in
-  let address_of_profinfo = Ident.create "address_of_profinfo" in
+  let existing_profinfo = Ident.create_var "existing_profinfo" in
+  let existing_count = Ident.create_var "existing_count" in
+  let profinfo = Ident.create_var "profinfo" in
+  let address_of_profinfo = Ident.create_var "address_of_profinfo" in
   let label = Cmm.new_label () in
   let index_within_node =
     next_index_within_node ~part_of_shape:Mach.Allocation_point ~label
@@ -216,7 +216,7 @@ let code_for_call ~node ~callee ~is_tail ~label =
         index_within_node::!direct_tail_call_point_indexes
     | Direct _ | Indirect _ -> ()
   end;
-  let place_within_node = Ident.create "place_within_node" in
+  let place_within_node = Ident.create_var "place_within_node" in
   let dbg = Debuginfo.none in
   let open Cmm in
   Clet (place_within_node,
@@ -227,8 +227,8 @@ let code_for_call ~node ~callee ~is_tail ~label =
     match callee with
     | Direct _callee ->
       if Config.enable_call_counts then begin
-        let count_addr = Ident.create "call_count_addr" in
-        let count = Ident.create "call_count" in
+        let count_addr = Ident.create_var "call_count_addr" in
+        let count = Ident.create_var "call_count" in
         Clet (count_addr,
           Cop (Caddi, [Cvar place_within_node; Cconst_int Arch.size_addr], dbg),
           Clet (count,
@@ -276,7 +276,7 @@ class virtual instruction_selection = object (self)
       ~label_after =
     (* [callee] is a pseudoregister, so we have to bind it in the environment
        and reference the variable to which it is bound. *)
-    let callee_ident = Ident.create "callee" in
+    let callee_ident = Ident.create_var "callee" in
     let env = Selectgen.env_add callee_ident [| callee |] env in
     let instrumentation =
       code_for_call
@@ -424,7 +424,7 @@ class virtual instruction_selection = object (self)
   method! emit_fundecl f =
     if Config.spacetime then begin
       disable_instrumentation <- false;
-      let node = Ident.create "spacetime_node" in
+      let node = Ident.create_var "spacetime_node" in
       reset ~spacetime_node_ident:node ~function_label:f.Cmm.fun_name
     end;
     super#emit_fundecl f

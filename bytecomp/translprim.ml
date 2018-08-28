@@ -668,7 +668,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       in
       Lprim(Praise kind, [arg], loc)
   | Raise_with_backtrace, [exn; bt] ->
-      let vexn = Ident.create "exn" in
+      let vexn = Ident.create_var "exn" in
       let raise_arg =
         match arg_exps with
         | None -> Lvar vexn
@@ -725,7 +725,7 @@ let transl_primitive loc p env ty path =
     | Some prim -> prim
   in
   let rec make_params n =
-    if n <= 0 then [] else Ident.create "prim" :: make_params (n-1)
+    if n <= 0 then [] else Ident.create_var "prim" :: make_params (n-1)
   in
   let params = make_params p.prim_arity in
   let args = List.map (fun id -> Lvar id) params in

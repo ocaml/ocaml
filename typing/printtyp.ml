@@ -1388,7 +1388,7 @@ let rec tree_of_class_type sch params =
        if is_optional l then
          match (repr ty).desc with
          | Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
-         | _ -> newconstr (Path.Pident(Ident.create "<hidden>")) []
+         | _ -> newconstr (Path.Pident(Ident.create_hidden "<hidden>")) []
        else ty in
       let tr = tree_of_typexp sch ty in
       Octy_arrow (lab, tr, tree_of_class_type sch params cty)
@@ -1793,13 +1793,13 @@ let explanation env unif t3 t4 : (Format.formatter -> unit) option =
       Some (fun ppf ->
         fprintf ppf "@,Self type cannot escape its class")
   | Tconstr (p, _, _), Tvar _
-    when unif && t4.level < Path.binding_time p ->
+    when unif && t4.level < Path.scope p ->
       Some (fun ppf ->
         fprintf ppf
           "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
           path p)
   | Tvar _, Tconstr (p, _, _)
-    when unif && t3.level < Path.binding_time p ->
+    when unif && t3.level < Path.scope p ->
       Some (fun ppf ->
         fprintf ppf
           "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"

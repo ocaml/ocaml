@@ -15,7 +15,7 @@
 
 open Format
 
-type t = { stamp: int; name: string; flags: int }
+type t = { stamp: int; name: string; flags: int; scope: int }
 
 let global_flag = 1
 let predef_exn_flag = 2
@@ -24,24 +24,28 @@ let predef_exn_flag = 2
 
 let currentstamp = ref 0
 
-let create s =
+let create ~scope s =
   incr currentstamp;
-  { name = s; stamp = !currentstamp; flags = 0 }
+  { name = s; stamp = !currentstamp; flags = 0; scope }
 
 let create_hidden s =
-  { name = s; stamp = -1; flags = 0 }
+  { name = s; stamp = -1; flags = 0; scope = -1 }
+
+let create_var s =
+  incr currentstamp;
+  { name = s; stamp = !currentstamp; flags = 0; scope = -1 }
 
 let create_predef_exn s =
   incr currentstamp;
   { name = s; stamp = !currentstamp;
-    flags = predef_exn_flag lor global_flag }
+    flags = predef_exn_flag lor global_flag; scope = 0 }
 
 let create_persistent s =
-  { name = s; stamp = 0; flags = global_flag }
+  { name = s; stamp = 0; flags = global_flag; scope = 0 }
 
 let rename i =
   incr currentstamp;
-  { i with stamp = !currentstamp }
+  { i with stamp = !currentstamp; scope = 0 }
 
 let name i = i.name
 
@@ -63,10 +67,11 @@ let same i1 i2 = i1 = i2
 
 let compare i1 i2 = Stdlib.compare i1 i2
 
-let binding_time i = i.stamp
+let stamp i = i.stamp
+let scope i = i.scope
 
-let current_time() = !currentstamp
-let set_current_time t = currentstamp := max !currentstamp t
+let current_stamp () = !currentstamp
+let bump_stamp_counter t = currentstamp := max !currentstamp t
 
 let reinit_level = ref (-1)
 

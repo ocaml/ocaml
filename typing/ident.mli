@@ -25,7 +25,8 @@ include Identifiable.S with type t := t
 *)
 
 
-val create: string -> t
+val create: scope:int -> string -> t
+val create_var: string -> t
 val create_persistent: string -> t
 val create_predef_exn: string -> t
 val rename: t -> t
@@ -50,9 +51,11 @@ val create_hidden: string -> t
 val global: t -> bool
 val is_predef_exn: t -> bool
 
-val binding_time: t -> int
-val current_time: unit -> int
-val set_current_time: int -> unit
+val stamp: t -> int
+val scope: t -> int
+
+val current_stamp: unit -> int
+val bump_stamp_counter: int -> unit
 val reinit: unit -> unit
 
 type 'a tbl

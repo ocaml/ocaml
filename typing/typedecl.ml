@@ -235,7 +235,8 @@ let transl_labels env closed lbls =
       (fun () ->
          let arg = Ast_helper.Typ.force_poly arg in
          let cty = transl_simple_type env closed arg in
-         {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
+         {ld_id = Ident.create_var name.txt;
+          ld_name = name; ld_mutable = mut;
           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
       )
   in
@@ -447,7 +448,7 @@ let transl_declaration env sdecl id =
            > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
         let make_cstr scstr =
-          let name = Ident.create scstr.pcd_name.txt in
+          let name = Ident.create_var scstr.pcd_name.txt in
           let targs, tret_type, args, ret_type, cstr_params =
             make_constructor env (Path.Pident id) params
                              scstr.pcd_args scstr.pcd_res
@@ -1278,8 +1279,9 @@ let transl_type_decl env rec_flag sdecl_list =
   in
 
   (* Create identifiers. *)
+  let scope = Ctype.get_current_level () in
   let id_list =
-    List.map (fun sdecl -> Ident.create sdecl.ptype_name.txt) sdecl_list
+    List.map (fun sdecl -> Ident.create ~scope sdecl.ptype_name.txt) sdecl_list
   in
   (*
      Since we've introduced fresh idents, make sure the definition
@@ -1287,7 +1289,7 @@ let transl_type_decl env rec_flag sdecl_list =
      passing one of the recursively-defined type constrs as argument
      to an abbreviation may fail.
   *)
-  Ctype.init_def(Ident.current_time());
+  Ctype.init_def(scope + 1);
   Ctype.begin_def();
   (* Enter types. *)
   let temp_env =
@@ -1408,7 +1410,7 @@ let transl_type_decl env rec_flag sdecl_list =
 
 let transl_extension_constructor env type_path type_params
                                  typext_params priv sext =
-  let id = Ident.create sext.pext_name.txt in
+  let id = Ident.create_var sext.pext_name.txt in
   let args, ret_type, kind =
     match sext.pext_kind with
       Pext_decl(sargs, sret_type) ->
@@ -1935,9 +1937,10 @@ let abstract_type_decl arity =
   decl
 
 let approx_type_decl sdecl_list =
+  let scope = Ctype.get_current_level () in
   List.map
     (fun sdecl ->
-      (Ident.create sdecl.ptype_name.txt,
+      (Ident.create ~scope sdecl.ptype_name.txt,
        abstract_type_decl (List.length sdecl.ptype_params)))
     sdecl_list
 

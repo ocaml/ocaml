@@ -694,7 +694,7 @@ let mk_alpha_env arg aliases ids =
         | Some v -> v
         | _      -> raise Cannot_flatten
       else
-        Ident.create (Ident.name id))
+        Ident.create_var (Ident.name id))
     ids
 
 let rec explode_or_pat arg patl mk_action rem vars aliases = function
@@ -1510,9 +1510,9 @@ let code_force_lazy =
 *)
 
 let inline_lazy_force_cond arg loc =
-  let idarg = Ident.create "lzarg" in
+  let idarg = Ident.create_var "lzarg" in
   let varg = Lvar idarg in
-  let tag = Ident.create "tag" in
+  let tag = Ident.create_var "tag" in
   let force_fun = Lazy.force code_force_lazy_block in
   Llet(Strict, Pgenval, idarg, arg,
        Llet(Alias, Pgenval, tag, Lprim(Pccall prim_obj_tag, [varg], loc),
@@ -1537,7 +1537,7 @@ let inline_lazy_force_cond arg loc =
                   varg))))
 
 let inline_lazy_force_switch arg loc =
-  let idarg = Ident.create "lzarg" in
+  let idarg = Ident.create_var "lzarg" in
   let varg = Lvar idarg in
   let force_fun = Lazy.force code_force_lazy_block in
   Llet(Strict, Pgenval, idarg, arg,
@@ -1756,7 +1756,7 @@ let prim_string_compare =
 let bind_sw arg k = match arg with
 | Lvar _ -> k arg
 | _ ->
-    let id = Ident.create "switch" in
+    let id = Ident.create_var "switch" in
     Llet (Strict,Pgenval,id,arg,k (Lvar id))
 
 
@@ -1949,7 +1949,7 @@ module SArg = struct
     let newvar,newarg = match arg with
     | Lvar v -> v,arg
     | _      ->
-        let newvar = Ident.create "switcher" in
+        let newvar = Ident.create_var "switcher" in
         newvar,Lvar newvar in
     bind Alias newvar arg (body newarg)
   let make_const i = Lconst (Const_base (Const_int i))
@@ -2353,7 +2353,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
         match nonconsts with
           [] -> default
         | _ ->
-            let tag = Ident.create "tag" in
+            let tag = Ident.create_var "tag" in
             let tests =
               List.fold_right
                 (fun (path, act) rem ->
@@ -2439,7 +2439,7 @@ let call_switcher_variant_constant loc fail arg int_lambda_list =
 
 
 let call_switcher_variant_constr loc fail arg int_lambda_list =
-  let v = Ident.create "variant" in
+  let v = Ident.create_var "variant" in
   Llet(Alias, Pgenval, v, Lprim(Pfield 0, [arg], loc),
        call_switcher loc
          fail (Lvar v) min_int max_int int_lambda_list)
@@ -2501,7 +2501,7 @@ let combine_array loc arg kind partial ctx def
     (len_lambda_list, total1, _pats)  =
   let fail, local_jumps = mk_failaction_neg partial  ctx def in
   let lambda1 =
-    let newvar = Ident.create "len" in
+    let newvar = Ident.create_var "len" in
     let switch =
       call_switcher loc
         fail (Lvar newvar)
@@ -2704,7 +2704,7 @@ let rec name_pattern default = function
       | Tpat_alias(_, id, _) -> id
       | _ -> name_pattern default rem
       end
-  | _ -> Ident.create default
+  | _ -> Ident.create_var default
 
 let arg_to_var arg cls = match arg with
 | Lvar v -> v,arg
@@ -3198,7 +3198,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
       let next, nexts = split_precompile None pm1 in
 
       let size = List.length paraml
-      and idl = List.map (fun _ -> Ident.create "*match*") paraml in
+      and idl = List.map (fun _ -> Ident.create_var "*match*") paraml in
       let args =  List.map (fun id -> Lvar id, Alias) idl in
 
       let flat_next = flatten_precompiled size args next
@@ -3235,7 +3235,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
 
 let param_to_var param = match param with
 | Lvar v -> v,None
-| _ -> Ident.create "*match*",Some param
+| _ -> Ident.create_var "*match*",Some param
 
 let bind_opt (v,eo) k = match eo with
 | None -> k

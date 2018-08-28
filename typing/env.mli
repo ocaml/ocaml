@@ -188,14 +188,18 @@ val open_pers_signature: string -> t -> t
 val enter_value:
     ?check:(string -> Warnings.t) ->
     string -> value_description -> t -> Ident.t * t
-val enter_type: string -> type_declaration -> t -> Ident.t * t
-val enter_extension: string -> extension_constructor -> t -> Ident.t * t
-val enter_module: ?arg:bool -> string -> module_type -> t -> Ident.t * t
+val enter_type: scope:int -> string -> type_declaration -> t -> Ident.t * t
+val enter_extension:
+  scope:int -> string -> extension_constructor -> t -> Ident.t * t
+val enter_module:
+  scope:int -> ?arg:bool -> string -> module_type -> t -> Ident.t * t
 val enter_module_declaration:
     ?arg:bool -> Ident.t -> module_declaration -> t -> t
-val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
-val enter_class: string -> class_declaration -> t -> Ident.t * t
-val enter_cltype: string -> class_type_declaration -> t -> Ident.t * t
+val enter_modtype:
+  scope:int -> string -> modtype_declaration -> t -> Ident.t * t
+val enter_class: scope:int -> string -> class_declaration -> t -> Ident.t * t
+val enter_cltype:
+  scope:int -> string -> class_type_declaration -> t -> Ident.t * t
 
 (* Initialize the cache of in-core module interfaces. *)
 val reset_cache: unit -> unit

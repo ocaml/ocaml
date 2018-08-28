@@ -470,7 +470,9 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             type_immediate = false;
             type_unboxed = unboxed_false_default_false;
           }
-        and id_row = Ident.create (s^"#row") in
+        and id_row = Ident.create ~scope:(Ctype.get_current_level ())
+                       (s^"#row")
+        in
         let initial_env =
           Env.add_type ~check:false id_row decl_row initial_env
         in
@@ -663,7 +665,9 @@ let rec approx_modtype env smty =
   | Pmty_functor(param, sarg, sres) ->
       let arg = may_map (approx_modtype env) sarg in
       let rarg = Mtype.scrape_for_functor_arg env (Btype.default_mty arg) in
-      let (id, newenv) = Env.enter_module ~arg:true param.txt rarg env in
+      let (id, newenv) =
+        Env.enter_module ~scope:(Ctype.get_current_level ()) ~arg:true param.txt
+          rarg env in
       let res = approx_modtype newenv sres in
       Mty_functor(id, arg, res)
   | Pmty_with(sbody, constraints) ->
@@ -705,7 +709,8 @@ and approx_sig env ssg =
           map_rec_type ~rec_flag
             (fun rs (id, info) -> Sig_type(id, info, rs)) decls rem
       | Psig_module pmd ->
-          let id = Ident.create pmd.pmd_name.txt in
+          let id = Ident.create ~scope:(Ctype.get_current_level ())
+                    pmd.pmd_name.txt in
           let md = approx_module_declaration env pmd in
           let newenv = Env.enter_module_declaration id md env in
           Sig_module(id, md, Trec_not) :: approx_sig newenv srem
@@ -713,7 +718,8 @@ and approx_sig env ssg =
           let decls =
             List.map
               (fun pmd ->
-                 (Ident.create pmd.pmd_name.txt,
+                 (Ident.create ~scope:(Ctype.get_current_level ())
+                    pmd.pmd_name.txt,
                   approx_module_declaration env pmd)
               )
               sdecls
@@ -727,7 +733,10 @@ and approx_sig env ssg =
                   (approx_sig newenv srem)
       | Psig_modtype d ->
           let info = approx_modtype_info env d in
-          let (id, newenv) = Env.enter_modtype d.pmtd_name.txt info env in
+          let (id, newenv) =
+            Env.enter_modtype ~scope:(Ctype.get_current_level ())
+              d.pmtd_name.txt info env
+          in
           Sig_modtype(id, info) :: approx_sig newenv srem
       | Psig_open sod ->
           let (_path, mty, _od) = type_open env sod in
@@ -962,9 +971,11 @@ and transl_modtype_aux env smty =
   | Pmty_functor(param, sarg, sres) ->
       let arg = Misc.may_map (transl_modtype_functor_arg env) sarg in
       let ty_arg = Misc.may_map (fun m -> m.mty_type) arg in
+      let scope = Ctype.get_current_level () in
       let (id, newenv) =
-        Env.enter_module ~arg:true param.txt (Btype.default_mty ty_arg) env in
-      Ctype.init_def(Ident.current_time()); (* PR#6513 *)
+        Env.enter_module ~scope ~arg:true param.txt (Btype.default_mty ty_arg)
+          env in
+      Ctype.init_def (scope + 1); (* PR#6513 *)
       let res = transl_modtype newenv sres in
       mkmty (Tmty_functor (id, param, arg, res))
       (Mty_functor(id, ty_arg, res.mty_type)) env loc
@@ -996,7 +1007,7 @@ and transl_signature env sg =
   let names = new_names () in
   let to_be_removed = ref Ident.Map.empty in
   let rec transl_sig env sg =
-    Ctype.init_def(Ident.current_time());
+    Ctype.init_def (Ctype.get_current_level() + 1);
     match sg with
       [] -> [], [], env
     | item :: srem ->
@@ -1048,7 +1059,8 @@ and transl_signature env sg =
                        Text_exception) :: rem,
             final_env
         | Psig_module pmd ->
-            let id = Ident.create pmd.pmd_name.txt in
+            let id = Ident.create ~scope:(Ctype.get_current_level ())
+                       pmd.pmd_name.txt in
             check_module names pmd.pmd_name.loc id to_be_removed;
             let tmty =
               Builtin_attributes.warning_scope pmd.pmd_attributes
@@ -1202,7 +1214,9 @@ and transl_modtype_decl_aux to_be_removed names env
      mtd_loc=pmtd_loc;
     }
   in
-  let (id, newenv) = Env.enter_modtype pmtd_name.txt decl env in
+  let (id, newenv) =
+    Env.enter_modtype ~scope:(Ctype.get_current_level ()) pmtd_name.txt decl env
+  in
   check_modtype names pmtd_loc id to_be_removed;
   let mtd =
     {
@@ -1238,7 +1252,8 @@ and transl_recmodule_modtypes env sdecls =
         (id, Types.{md_type = mty.mty_type;
                     md_loc = mty.mty_loc;
                     md_attributes = mty.mty_attributes})) in
-  let ids = List.map (fun x -> Ident.create x.pmd_name.txt) sdecls in
+  let scope = Ctype.get_current_level () in
+  let ids = List.map (fun x -> Ident.create ~scope x.pmd_name.txt) sdecls in
   let approx_env =
     (*
        cf #5965
@@ -1248,12 +1263,12 @@ and transl_recmodule_modtypes env sdecls =
     *)
     List.fold_left
       (fun env id ->
-         let dummy = Mty_ident (Path.Pident (Ident.create "#recmod#")) in
+         let dummy = Mty_ident (Path.Pident (Ident.create ~scope "#recmod#")) in
          Env.add_module ~arg:true id dummy env
       )
       env ids
   in
-  Ctype.init_def(Ident.current_time()); (* PR#7082 *)
+  Ctype.init_def(scope + 1); (* PR#7082 *)
   let init =
     List.map2
       (fun id pmd ->
@@ -1566,10 +1581,13 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
   | Pmod_functor(name, smty, sbody) ->
       let mty = may_map (transl_modtype_functor_arg env) smty in
       let ty_arg = Misc.may_map (fun m -> m.mty_type) mty in
+      let scope = Ctype.get_current_level () in
       let (id, newenv), funct_body =
-        match ty_arg with None -> (Ident.create "*", env), false
-        | Some mty -> Env.enter_module ~arg:true name.txt mty env, true in
-      Ctype.init_def(Ident.current_time()); (* PR#6981 *)
+        match ty_arg with
+        | None -> (Ident.create ~scope "*", env), false
+        | Some mty -> Env.enter_module ~scope ~arg:true name.txt mty env, true
+      in
+      Ctype.init_def(scope + 1); (* PR#6981 *)
       let body = type_module sttn funct_body None newenv sbody in
       rm { mod_desc = Tmod_functor(id, name, mty, body);
            mod_type = Mty_functor(id, ty_arg, body.mod_type);
@@ -1762,7 +1780,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;
                   } ->
-        let id = Ident.create name.txt in (* create early for PR#6752 *)
+        let scope = Ctype.get_current_level () in
+        let id = Ident.create ~scope name.txt in (* create early for PR#6752 *)
         check_module names pmb_loc id to_be_removed;
         let modl =
           Builtin_attributes.warning_scope attrs
@@ -1778,7 +1797,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           }
         in
         (*prerr_endline (Ident.unique_toplevel_name id);*)
-        Mtype.lower_nongen (Ident.binding_time id - 1) md.md_type;
+        Mtype.lower_nongen (scope - 1) md.md_type;
         let newenv = Env.enter_module_declaration id md env in
         Tstr_module {mb_id=id; mb_name=name; mb_expr=modl;
                      mb_attributes=attrs;  mb_loc=pmb_loc;
@@ -1950,7 +1969,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         Tstr_attribute x, [], env
   in
   let rec type_struct env sstr =
-    Ctype.init_def(Ident.current_time());
+    Ctype.init_def(Ctype.get_current_level () + 1);
     match sstr with
     | [] -> ([], [], env)
     | pstr :: srem ->
@@ -2030,12 +2049,11 @@ let type_module_type_of env smod =
 let type_package env m p nl =
   (* Same as Pexp_letmodule *)
   (* remember original level *)
-  let lv = Ctype.get_current_level () in
   Ctype.begin_def ();
-  Ident.set_current_time lv;
   let context = Typetexp.narrow () in
   let modl = type_module env m in
-  Ctype.init_def(Ident.current_time());
+  let scope = Ctype.get_current_level () + 1 in
+  Ctype.init_def scope;
   Typetexp.widen context;
   let (mp, env) =
     match modl.mod_desc with
@@ -2043,7 +2061,7 @@ let type_package env m p nl =
     | Tmod_constraint ({mod_desc=Tmod_ident (mp,_)}, _, Tmodtype_implicit, _)
         -> (mp, env)  (* PR#6982 *)
     | _ ->
-      let (id, new_env) = Env.enter_module ~arg:true "%M" modl.mod_type env in
+      let (id, new_env) = Env.enter_module ~scope ~arg:true "%M" modl.mod_type env in
       (Pident id, new_env)
   in
   let rec mkpath mp = function
@@ -2172,7 +2190,7 @@ let rec package_signatures subst = function
   | (name, sg) :: rem ->
       let sg' = Subst.signature subst sg in
       let oldid = Ident.create_persistent name
-      and newid = Ident.create name in
+      and newid = Ident.create_var name in
       Sig_module(newid, {md_type=Mty_signature sg';
                          md_attributes=[];
                          md_loc=Location.none;

@@ -491,7 +491,7 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty
   if List.exists (fun {pv_id; _} -> Ident.name pv_id = name.txt)
       !pattern_variables
   then raise(Error(loc, Env.empty, Multiply_bound_variable name.txt));
-  let id = Ident.create name.txt in
+  let id = Ident.create_var name.txt in
   pattern_variables :=
     {pv_id = id;
      pv_type = ty;
@@ -1122,8 +1122,10 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
   | Ppat_var name ->
       let ty = instance expected_ty in
       let id = (* PR#7330 *)
-        if name.txt = "*extension*" then Ident.create name.txt else
-        enter_variable loc name ty sp.ppat_attributes
+        if name.txt = "*extension*" then
+          Ident.create_var name.txt
+        else
+          enter_variable loc name ty sp.ppat_attributes
       in
       rp k {
         pat_desc = Tpat_var (id, name);
@@ -1622,7 +1624,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
          let check s =
            if pv_as_var then Warnings.Unused_var s
            else Warnings.Unused_var_strict s in
-         let id' = Ident.create (Ident.name pv_id) in
+         let id' = Ident.create_var (Ident.name pv_id) in
          ((id', pv_id, pv_type)::pv,
           Env.add_value id' {val_type = pv_type;
                              val_kind = Val_ivar (Immutable, cl_num);
@@ -2110,7 +2112,7 @@ let proper_exp_loc exp =
 (* To find reasonable names for let-bound and lambda-bound idents *)
 
 let rec name_pattern default = function
-    [] -> Ident.create default
+    [] -> Ident.create_var default
   | p :: rem ->
     match p.pat_desc with
       Tpat_var (id, _) -> id
@@ -2692,7 +2694,7 @@ and type_expect_
           (mk_expected ~explanation:For_loop_stop_index Predef.type_int) in
       let id, new_env =
         match param.ppat_desc with
-        | Ppat_any -> Ident.create "_for", env
+        | Ppat_any -> Ident.create_var "_for", env
         | Ppat_var {txt} ->
             Env.enter_value txt {val_type = instance Predef.type_int;
                                  val_attributes = [];
@@ -3010,12 +3012,12 @@ and type_expect_
       let ty = newvar() in
       (* remember original level *)
       begin_def ();
-      Ident.set_current_time ty.level;
       let context = Typetexp.narrow () in
       let modl = !type_module env smodl in
       Mtype.lower_nongen ty.level modl.mod_type;
-      let (id, new_env) = Env.enter_module name.txt modl.mod_type env in
-      Ctype.init_def(Ident.current_time());
+      let scope = get_current_level () in
+      let (id, new_env) = Env.enter_module ~scope name.txt modl.mod_type env in
+      init_def (scope + 1);
       Typetexp.widen context;
       (* ideally, we should catch Expr_type_clash errors
          in type_expect triggered by escaping identifiers from the local module
@@ -3143,9 +3145,9 @@ and type_expect_
         type_unboxed = unboxed_false_default_false;
       }
       in
-      Ident.set_current_time ty.level;
-      let (id, new_env) = Env.enter_type name decl env in
-      Ctype.init_def(Ident.current_time());
+      let scope = get_current_level () in
+      let (id, new_env) = Env.enter_type ~scope name decl env in
+      Ctype.init_def (scope + 1);
 
       let body = type_exp new_env sbody in
       (* Replace every instance of this type constructor in the resulting
@@ -3661,7 +3663,7 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
       if args = [] then texp else
       (* eta-expand to avoid side effects *)
       let var_pair name ty =
-        let id = Ident.create name in
+        let id = Ident.create_var name in
         {pat_desc = Tpat_var (id, mknoloc name); pat_type = ty;pat_extra=[];
          pat_attributes = [];
          pat_loc = Location.none; pat_env = env},
@@ -4044,16 +4046,9 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
     | _ -> true
   in
   let outer_level = get_current_level () in
-  let init_env () =
-    (* raise level for existentials *)
-    begin_def ();
-    Ident.set_current_time (get_current_level ());
-    let lev = Ident.current_time () in
-    Ctype.init_def (lev+1000);                 (* up to 1000 existentials *)
-    lev
-  in
   let lev =
-    if may_contain_gadts then init_env () else get_current_level ()
+    if may_contain_gadts then begin_def ();
+    get_current_level ()
   in
   let take_partial_instance =
     if !Clflags.principal || erase_either
@@ -4191,11 +4186,7 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
     let ty_res' = instance ty_res in
     List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
   end;
-  let do_init = does_contain_gadt || needs_exhaust_check in
-  let lev =
-    (* if [may_contain_gadt] then [init_env] was already called, no need to do
-       it again. *)
-    if do_init && not may_contain_gadts then init_env () else lev in
+  let do_init = may_contain_gadts || needs_exhaust_check in
   let ty_arg_check =
     if do_init then
       (* Hack: use for_saving to copy variables too *)
@@ -4211,25 +4202,23 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
     else
       Partial
   in
-  let unused_check do_init =
-    let lev =
-      if do_init then init_env () else get_current_level ()
-    in
+  let unused_check delayed =
     List.iter (fun { typed_pat; branch_env; _ } ->
       check_absent_variant branch_env typed_pat
     ) half_typed_cases;
+    if delayed then (begin_def (); init_def lev);
     check_unused ~lev env ty_arg_check val_cases ;
     check_unused ~lev env Predef.type_exn exn_cases ;
-    if do_init then end_def ();
+    if delayed then end_def ();
     Parmatch.check_ambiguous_bindings val_cases ;
     Parmatch.check_ambiguous_bindings exn_cases
   in
-  if contains_polyvars || do_init then
-    add_delayed_check (fun () -> unused_check do_init)
+  if contains_polyvars then
+    add_delayed_check (fun () -> unused_check true)
   else
+    (* Check for unused cases, do not delay because of gadts *)
     unused_check false;
-  (* Check for unused cases, do not delay because of gadts *)
-  if do_init then begin
+  if may_contain_gadts then begin
     end_def ();
     (* Ensure that existential types do not escape *)
     unify_exp_types loc env (instance ty_res) (newvar ()) ;

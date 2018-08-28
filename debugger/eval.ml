@@ -37,7 +37,10 @@ type error =
 exception Error of error
 
 let abstract_type =
-  Btype.newgenty (Tconstr (Pident (Ident.create "<abstr>"), [], ref Mnil))
+  Btype.newgenty (
+    Tconstr
+      (Pident (Ident.create ~scope:Btype.lowest_level "<abstr>"), [], ref Mnil)
+  )
 
 let rec path event = function
     Pident id ->

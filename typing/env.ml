@@ -1958,22 +1958,22 @@ let add_local_type path info env =
 
 (* Insertion of bindings by name *)
 
-let enter store_fun name data env =
-  let id = Ident.create name in (id, store_fun id data env)
+let enter scope store_fun name data env =
+  let id = Ident.create ~scope name in (id, store_fun id data env)
 
-let enter_value ?check = enter (store_value ?check)
-and enter_type = enter (store_type ~check:true)
-and enter_extension = enter (store_extension ~check:true)
+let enter_value ?check = enter 0 (store_value ?check)
+and enter_type ~scope = enter scope (store_type ~check:true)
+and enter_extension ~scope = enter scope (store_extension ~check:true)
 and enter_module_declaration ?arg id md env =
   add_module_declaration ?arg ~check:true id md env
   (* let (id, env) = enter store_module name md env in
   (id, add_functor_arg ?arg id env) *)
-and enter_modtype = enter store_modtype
-and enter_class = enter store_class
-and enter_cltype = enter store_cltype
+and enter_modtype ~scope = enter scope store_modtype
+and enter_class ~scope = enter scope store_class
+and enter_cltype ~scope = enter scope store_cltype
 
-let enter_module ?arg s mty env =
-  let id = Ident.create s in
+let enter_module ~scope ?arg s mty env =
+  let id = Ident.create ~scope s in
   (id, enter_module_declaration ?arg id (md mty) env)
 
 (* Insertion of all components of a signature *)

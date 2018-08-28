@@ -658,16 +658,6 @@ let forward_try_expand_once = (* Forward declaration *)
    Lower the levels of a type (assume [level] is not
    [generic_level]).
 *)
-(*
-    The level of a type constructor must be greater than its binding
-    time. That way, a type constructor cannot escape the scope of its
-    definition, as would be the case in
-      let x = ref []
-      module M = struct type t let _ = (x : t list ref) end
-    (without this constraint, the type system would actually be unsound.)
-*)
-let get_path_scope p =
-  Path.binding_time p
 
 let rec normalize_package_path env p =
   let t =
@@ -719,6 +709,14 @@ let update_scope scope ty =
     if ty.level < scope then raise (Unify [(ty, newvar2 ty.level)]);
     set_scope ty (Some scope)
 
+(* Note: the level of a type constructor must be greater than its binding
+    time. That way, a type constructor cannot escape the scope of its
+    definition, as would be the case in
+      let x = ref []
+      module M = struct type t let _ = (x : t list ref) end
+    (without this constraint, the type system would actually be unsound.)
+*)
+
 let rec update_level env level expand ty =
   let ty = repr ty in
   if ty.level > level then begin
@@ -727,7 +725,7 @@ let rec update_level env level expand ty =
     | None -> ()
     end;
     match ty.desc with
-      Tconstr(p, _tl, _abbrev) when level < get_path_scope p ->
+      Tconstr(p, _tl, _abbrev) when level < Path.scope p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
           link_type ty (!forward_try_expand_once env ty);
@@ -743,19 +741,19 @@ let rec update_level env level expand ty =
           set_level ty level;
           iter_type_expr (update_level env level expand) ty
         end
-    | Tpackage (p, nl, tl) when level < Path.binding_time p ->
+    | Tpackage (p, nl, tl) when level < Path.scope p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise (Unify [(ty, newvar2 level)]);
         log_type ty; ty.desc <- Tpackage (p', nl, tl);
         update_level env level expand ty
     | Tobject(_, ({contents=Some(p, _tl)} as nm))
-      when level < get_path_scope p ->
+      when level < Path.scope p ->
         set_name nm None;
         update_level env level expand ty
     | Tvariant row ->
         let row = row_repr row in
         begin match row.row_name with
-        | Some (p, _tl) when level < get_path_scope p ->
+        | Some (p, _tl) when level < Path.scope p ->
             log_type ty;
             ty.desc <- Tvariant {row with row_name = None}
         | _ -> ()
@@ -1132,7 +1130,10 @@ let instance_constructor ?in_pattern cstr =
       let process existential =
         let decl = new_declaration (Some expansion_scope) None in
         let name = existential_name cstr existential in
-        let path = Path.Pident (Ident.create (get_new_abstract_name name)) in
+        let path =
+          Path.Pident
+            (Ident.create ~scope:expansion_scope (get_new_abstract_name name))
+        in
         let new_env = Env.add_local_type path decl !env in
         env := new_env;
         let to_unify = newty (Tconstr (path,[],ref Mnil)) in
@@ -1919,19 +1920,30 @@ let deep_occur t0 ty =
       information is indeed lost, but it probably does not worth it.
 *)
 
+let gadt_equations_level = ref None
+
+let get_gadt_equations_level () =
+  match !gadt_equations_level with
+  | None -> assert false
+  | Some x -> x
+
+
 (* a local constraint can be added only if the rhs
    of the constraint does not contain any Tvars.
    They need to be removed using this function *)
 let reify env t =
+  let fresh_constr_scope = get_gadt_equations_level () in
   let create_fresh_constr lev name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
-    let path = Path.Pident (Ident.create (get_new_abstract_name name)) in
-    let binding_time = Ident.current_time () in
-    let decl = new_declaration (Some binding_time) None in
+    let path =
+      Path.Pident
+        (Ident.create ~scope:fresh_constr_scope (get_new_abstract_name name))
+    in
+    let decl = new_declaration (Some fresh_constr_scope) None in
     let new_env = Env.add_local_type path decl !env in
     let t = newty2 lev (Tconstr (path,[],ref Mnil))  in
     env := new_env;
-    t, binding_time
+    t
   in
   let visited = ref TypeSet.empty in
   let rec iterator ty =
@@ -1940,9 +1952,9 @@ let reify env t =
       visited := TypeSet.add ty !visited;
       match ty.desc with
         Tvar o ->
-          let t, binding_time = create_fresh_constr ty.level o in
+          let t = create_fresh_constr ty.level o in
           link_type ty t;
-          if ty.level < binding_time then
+          if ty.level < fresh_constr_scope then
             raise (Unify [t, newvar2 ty.level])
       | Tvariant r ->
           let r = row_repr r in
@@ -1951,11 +1963,11 @@ let reify env t =
             let m = r.row_more in
             match m.desc with
               Tvar o ->
-                let t, binding_time = create_fresh_constr m.level o in
+                let t = create_fresh_constr m.level o in
                 let row =
                   {r with row_fields=[]; row_fixed=true; row_more = t} in
                 link_type m (newty2 m.level (Tvariant row));
-                if m.level < binding_time then
+                if m.level < fresh_constr_scope then
                   raise (Unify [t, newvar2 m.level])
             | _ -> assert false
           end;
@@ -2226,20 +2238,13 @@ let find_expansion_scope env path =
   | Some x -> x
   | None -> assert false
 
-let gadt_equations_level = ref None
-
-let get_gadt_equations_level () =
-  match !gadt_equations_level with
-  | None -> assert false
-  | Some x -> x
-
 let add_gadt_equation env source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
     (Path.name source) !Btype.print_raw destination; *)
   if local_non_recursive_abbrev !env source destination then begin
     let destination = duplicate_type destination in
     let expansion_scope =
-      max (Path.binding_time source) (get_gadt_equations_level ())
+      max (Path.scope source) (get_gadt_equations_level ())
     in
     let decl = new_declaration (Some expansion_scope) (Some destination) in
     env := Env.add_local_type source decl !env;
@@ -2280,7 +2285,18 @@ let nondep_instance env level id ty =
 (* Find the type paths nl1 in the module type mty2, and add them to the
    list (nl2, tl2). raise Not_found if impossible *)
 let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
-  let id2 = Ident.create "Pkg" in
+  (* This is morally WRONG: we're adding a (dummy) module without a scope in the
+     environment. However no operation which cares about levels/scopes is going
+     to happen while this module exists.
+     The only operations that happen are:
+     - Env.lookup_type
+     - Env.find_type
+     - nondep_instance
+     None of which check the scope.
+
+     It'd be nice if we avoided creating such temporary dummy modules and broken
+     environments though. *)
+  let id2 = Ident.create_var "Pkg" in
   let env' = Env.add_module id2 mty2 env in
   let rec complete nl1 ntl2 =
     match nl1, ntl2 with
@@ -2508,7 +2524,7 @@ and unify3 env t1 t1' t2 t2' =
         when is_instantiable !env path && is_instantiable !env path'
         && !generate_equations ->
           let source, destination =
-            if get_path_scope path > get_path_scope path'
+            if Path.scope path > Path.scope path'
             then  path , t2'
             else  path', t1'
           in
@@ -2960,7 +2976,7 @@ let filter_self_method env lab priv meths ty =
   try
     Meths.find lab !meths
   with Not_found ->
-    let pair = (Ident.create lab, ty') in
+    let pair = (Ident.create_var lab, ty') in
     meths := Meths.add lab pair !meths;
     pair
 

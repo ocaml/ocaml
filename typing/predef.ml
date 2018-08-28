@@ -26,7 +26,7 @@ let wrap create s =
   builtin_idents := (s, id) :: !builtin_idents;
   id
 
-let ident_create = wrap Ident.create
+let ident_create = wrap (Ident.create ~scope:lowest_level)
 let ident_create_predef_exn = wrap Ident.create_predef_exn
 
 let ident_int = ident_create "int"
@@ -250,5 +250,5 @@ let builtin_values =
    be defined in this file (above!) without breaking .cmi
    compatibility. *)
 
-let _ = Ident.set_current_time 999
+let _ = Ident.bump_stamp_counter 999
 let builtin_idents = List.rev !builtin_idents

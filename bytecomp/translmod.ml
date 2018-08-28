@@ -74,7 +74,7 @@ let rec apply_coercion loc strict restr arg =
         in
         wrap_id_pos_list loc id_pos_list get_field lam)
   | Tcoerce_functor(cc_arg, cc_res) ->
-      let param = Ident.create "funarg" in
+      let param = Ident.create_var "funarg" in
       let carg = apply_coercion loc Alias cc_arg (Lvar param) in
       apply_coercion_result loc strict arg [param] [carg] cc_res
   | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
@@ -89,7 +89,7 @@ and apply_coercion_field loc get_field (pos, cc) =
 and apply_coercion_result loc strict funct params args cc_res =
   match cc_res with
   | Tcoerce_functor(cc_arg, cc_res) ->
-    let param = Ident.create "funarg" in
+    let param = Ident.create_var "funarg" in
     let arg = apply_coercion loc Alias cc_arg (Lvar param) in
     apply_coercion_result loc strict funct
       (param :: params) (arg :: args) cc_res
@@ -117,7 +117,7 @@ and wrap_id_pos_list loc id_pos_list get_field lam =
   let (lam,s) =
     List.fold_left (fun (lam, s) (id',pos,c) ->
       if Ident.Set.mem id' fv then
-        let id'' = Ident.create (Ident.name id') in
+        let id'' = Ident.create_var (Ident.name id') in
         (Llet(Alias, Pgenval, id'',
              apply_coercion loc Alias c (get_field pos),lam),
          Ident.Map.add id' id'' s)
@@ -622,7 +622,7 @@ and transl_structure loc fields cc rootpath final_env = function
       | Tstr_include incl ->
           let ids = bound_value_identifiers incl.incl_type in
           let modl = incl.incl_mod in
-          let mid = Ident.create "include" in
+          let mid = Ident.create_var "include" in
           let rec rebind_idents pos newfields = function
               [] ->
                 transl_structure loc newfields cc rootpath final_env rem
@@ -1008,7 +1008,7 @@ let transl_store_structure glob map prims str =
         | Tstr_include incl ->
             let ids = bound_value_identifiers incl.incl_type in
             let modl = incl.incl_mod in
-            let mid = Ident.create "include" in
+            let mid = Ident.create_var "include" in
             let loc = incl.incl_loc in
             let rec store_idents pos = function
                 [] -> transl_store rootpath (add_idents true ids subst) rem
@@ -1236,7 +1236,7 @@ let transl_toplevel_item item =
   | Tstr_include incl ->
       let ids = bound_value_identifiers incl.incl_type in
       let modl = incl.incl_mod in
-      let mid = Ident.create "include" in
+      let mid = Ident.create_var "include" in
       let rec set_idents pos = function
         [] ->
           lambda_unit
@@ -1330,7 +1330,7 @@ let transl_store_package component_names target_name coercion =
               List.map get_component component_names,
               Location.none)
       in
-      let blk = Ident.create "block" in
+      let blk = Ident.create_var "block" in
       (List.length pos_cc_list,
        Llet (Strict, Pgenval, blk,
              apply_coercion Location.none Strict coercion components,

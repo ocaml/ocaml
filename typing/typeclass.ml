@@ -100,7 +100,8 @@ let dummy_method = Btype.dummy_method
    Path associated to the temporary class type of a class being typed
    (its constructor is not available).
 *)
-let unbound_class = Path.Pident (Ident.create "*undef*")
+let unbound_class =
+  Path.Pident (Ident.create ~scope:Btype.lowest_level "*undef*")
 
 
                 (************************************)
@@ -236,10 +237,11 @@ let rc node =
 (* Enter a value in the method environment only *)
 let enter_met_env ?check loc lab kind ty val_env met_env par_env =
   let (id, val_env) =
-    Env.enter_value lab {val_type = ty;
-                         val_kind = Val_unbound Val_unbound_instance_variable;
-                         val_attributes = [];
-                         Types.val_loc = loc} val_env
+    Env.enter_value lab
+      {val_type = ty;
+       val_kind = Val_unbound Val_unbound_instance_variable;
+       val_attributes = [];
+       Types.val_loc = loc} val_env
   in
   (id, val_env,
    Env.add_value ?check id {val_type = ty; val_kind = kind;
@@ -606,7 +608,7 @@ and class_field_aux self_loc cl_num self_type meths vars
       in
       (* Inherited concrete methods *)
       let inh_meths =
-        Concr.fold (fun lab rem -> (lab, Ident.create lab)::rem)
+        Concr.fold (fun lab rem -> (lab, Ident.create_var lab)::rem)
           cl_sig.csig_concr []
       in
       (* Super *)
@@ -1181,7 +1183,7 @@ and class_expr_aux cl_num val_env met_env scl =
                 Types.val_loc = vd.Types.val_loc;
                }
              in
-             let id' = Ident.create (Ident.name id) in
+             let id' = Ident.create_var (Ident.name id) in
              ((id', expr)
               :: vals,
               Env.add_value id' desc met_env))
@@ -1718,15 +1720,18 @@ let check_coercions env
 (*******************************)
 
 let type_classes define_class approx kind env cls =
+  let scope = Ctype.get_current_level () in
   let cls =
     List.map
       (function cl ->
          (cl,
-          Ident.create cl.pci_name.txt, Ident.create cl.pci_name.txt,
-          Ident.create cl.pci_name.txt, Ident.create ("#" ^ cl.pci_name.txt)))
+          Ident.create ~scope cl.pci_name.txt,
+          Ident.create ~scope cl.pci_name.txt,
+          Ident.create ~scope cl.pci_name.txt,
+          Ident.create ~scope ("#" ^ cl.pci_name.txt)))
       cls
   in
-  Ctype.init_def (Ident.current_time ());
+  Ctype.init_def (scope + 1);
   Ctype.begin_class_def ();
   let (res, env) =
     List.fold_left (initial_env define_class approx) ([], env) cls
