@@ -161,7 +161,6 @@ end
 module Naming_context = struct
 
 module M = String.Map
-module N = Numbers.Int.Map
 module S = String.Set
 
 let enabled = ref true
@@ -169,7 +168,7 @@ let enable b = enabled := b
 
 (** Name mapping *)
 type mapping =
-  | Need_unique_name of int N.t
+  | Need_unique_name of int Ident.Map.t
   (** The same name has already been attributed to multiple types.
       The [map] argument contains the specific binding time attributed to each
       types.
@@ -187,11 +186,11 @@ type mapping =
 let hid_start = 0
 
 let add_hid_id id map =
-  let new_id = 1 + N.fold (fun _ -> max) map hid_start in
-  new_id, N.add (Ident.binding_time id) new_id  map
+  let new_id = 1 + Ident.Map.fold (fun _ -> max) map hid_start in
+  new_id, Ident.Map.add id new_id  map
 
 let find_hid id map =
-  try N.find (Ident.binding_time id) map, map with
+  try Ident.Map.find id map, map with
   Not_found -> add_hid_id id map
 
 let pervasives name = "Stdlib." ^ name
@@ -213,7 +212,7 @@ let pervasives_name namespace name =
   | Associated_to_pervasives r -> r
   | Need_unique_name _ -> Out_name.create (pervasives name)
   | Uniquely_associated_to (id',r) ->
-      let hid, map = add_hid_id id' N.empty in
+      let hid, map = add_hid_id id' Ident.Map.empty in
       Out_name.set r (human_unique hid id');
       Conflicts.explain namespace hid id';
       set namespace @@ M.add name (Need_unique_name map) (get namespace);
@@ -244,7 +243,7 @@ let ident_name_simple namespace id =
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
   | Uniquely_associated_to (id',r) ->
-      let hid', m = find_hid id' N.empty in
+      let hid', m = find_hid id' Ident.Map.empty in
       let hid, m = find_hid id m in
       Out_name.set r (human_unique hid' id');
       List.iter (fun (id,hid) -> Conflicts.explain namespace hid id)
@@ -253,7 +252,7 @@ let ident_name_simple namespace id =
       Out_name.create (human_unique hid id)
   | Associated_to_pervasives r ->
       Out_name.set r ("Stdlib." ^ Out_name.print r);
-      let hid, m = find_hid id N.empty in
+      let hid, m = find_hid id Ident.Map.empty in
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
   | exception Not_found ->
