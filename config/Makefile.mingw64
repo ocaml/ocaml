@@ -32,7 +32,7 @@ BINDIR=$(PREFIX)/bin
 BYTERUN=ocamlrun
 
 ### Where to install the standard library
-LIBDIR=$(PREFIX)/lib
+LIBDIR=$(PREFIX)/lib/ocaml
 
 ### Where to install the stub DLLs
 STUBLIBDIR=$(LIBDIR)/stublibs
