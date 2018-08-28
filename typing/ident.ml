@@ -19,11 +19,14 @@ type t =
   | Local of { name: string; stamp: int }
   | Scoped of { name: string; stamp: int; scope: int }
   | Global of string
-  | Predef_exn of string
+  | Predef of { name: string; stamp: int }
+      (* the stamp is here only for fast comparison, but the name of
+         predefined identifiers is always unique. *)
 
 (* A stamp of 0 denotes a persistent identifier *)
 
 let currentstamp = ref 0
+let predefstamp = ref 0
 
 let create_scoped ~scope s =
   incr currentstamp;
@@ -36,8 +39,9 @@ let create_local s =
 let create_hidden s =
   Local { name = s; stamp = -1 }
 
-let create_predef_exn s =
-  Predef_exn s
+let create_predef s =
+  incr predefstamp;
+  Predef { name = s; stamp = !predefstamp }
 
 let create_persistent s =
   Global s
@@ -46,15 +50,13 @@ let name = function
   | Local { name; _ }
   | Scoped { name; _ }
   | Global name
-  | Predef_exn name -> name
+  | Predef { name; _ } -> name
 
 let rename = function
-  | Local { name; stamp = _ } ->
+  | Local { name; stamp = _ }
+  | Scoped { name; stamp = _; scope = _ } ->
       incr currentstamp;
       Local { name; stamp = !currentstamp }
-  | Scoped { name; stamp = _; scope } ->
-      incr currentstamp;
-      Scoped { name; stamp = !currentstamp; scope }
   | id ->
       Misc.fatal_errorf "Ident.rename %s" (name id)
 
@@ -62,13 +64,13 @@ let unique_name = function
   | Local { name; stamp }
   | Scoped { name; stamp } -> name ^ "_" ^ string_of_int stamp
   | Global name
-  | Predef_exn name -> name
+  | Predef { name; _ } -> name
 
 let unique_toplevel_name = function
   | Local { name; stamp }
   | Scoped { name; stamp } -> name ^ "/" ^ string_of_int stamp
   | Global name
-  | Predef_exn name -> name
+  | Predef { name; _ } -> name
 
 let persistent = function
   | Global _ -> true
@@ -78,9 +80,11 @@ let equal i1 i2 =
   match i1, i2 with
   | Local { name = name1; _ }, Local { name = name2; _ }
   | Scoped { name = name1; _ }, Scoped { name = name2; _ }
-  | Global name1, Global name2
-  | Predef_exn name1, Predef_exn name2 ->
+  | Global name1, Global name2 ->
       name1 = name2
+  | Predef { stamp = s1; _ }, Predef { stamp = s2 } ->
+      (* if they don't have the same stamp, they don't have the same name *)
+      s1 = s2
   | _ ->
       false
 
@@ -101,9 +105,6 @@ let scope = function
   | Scoped { scope; _ } -> scope
   | _ -> 0
 
-let current_stamp () = !currentstamp
-let bump_stamp_counter t = currentstamp := max !currentstamp t
-
 let reinit_level = ref (-1)
 
 let reinit () =
@@ -115,15 +116,17 @@ let global = function
   | Local _
   | Scoped _ -> false
   | Global _
-  | Predef_exn _ -> true
+  | Predef _ -> true
 
-let is_predef_exn = function
-  | Predef_exn _ -> true
+let is_predef = function
+  | Predef _ -> true
   | _ -> false
 
 let print ppf = function
-  | Global name
-  | Predef_exn name -> fprintf ppf "%s!" name
+  | Global name -> fprintf ppf "%s!" name
+  | Predef { name; stamp = n } ->
+      fprintf ppf "%s%s!" name
+        (if !Clflags.unique_ids then Printf.sprintf "/%i" n else "")
   | Local { name; stamp = -1 } -> fprintf ppf "%s#" name
   | Local { name; stamp = n } ->
       fprintf ppf "%s%s" name
@@ -190,11 +193,11 @@ let rec add id data = function
       else
         balance l k (add id data r)
 
-let rec find_stamp s = function
+let rec find_previous id = function
     None ->
       raise Not_found
   | Some k ->
-      if (stamp k.ident)= s then k.data else find_stamp s k.previous
+      if same id k.ident then k.data else find_previous id k.previous
 
 let rec find_same id = function
     Empty ->
@@ -202,10 +205,9 @@ let rec find_same id = function
   | Node(l, k, r, _) ->
       let c = compare (name id) (name k.ident) in
       if c = 0 then
-        let id_stamp = stamp id in
-        if id_stamp = (stamp k.ident)
+        if same id k.ident
         then k.data
-        else find_stamp id_stamp k.previous
+        else find_previous id k.previous
       else
         find_same id (if c < 0 then l else r)
 
@@ -292,7 +294,7 @@ let compare x y =
   | Global x, Global y -> compare x y
   | Global _, _ -> 1
   | _, Global _ -> (-1)
-  | Predef_exn x, Predef_exn y -> compare x y
+  | Predef { stamp = s1; _ }, Predef { stamp = s2; _ } -> compare s1 s2
 
 let output oc id = output_string oc (unique_name id)
 let hash i = (Char.code (name i).[0]) lxor (stamp i)

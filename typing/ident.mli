@@ -28,33 +28,36 @@ include Identifiable.S with type t := t
 val create_scoped: scope:int -> string -> t
 val create_local: string -> t
 val create_persistent: string -> t
-val create_predef_exn: string -> t
+val create_predef: string -> t
+
 val rename: t -> t
+        (** Creates an identifier with the same name as the input, a fresh
+            stamp, and no scope.
+            @raises [Fatal_error] if called on a persistent / predef ident. *)
+
 val name: t -> string
 val unique_name: t -> string
 val unique_toplevel_name: t -> string
 val persistent: t -> bool
 val same: t -> t -> bool
-        (* Compare identifiers by binding location.
-           Two identifiers are the same either if they are both
-           non-persistent and have been created by the same call to
-           [new], or if they are both persistent and have the same
-           name. *)
+        (** Compare identifiers by binding location.
+            Two identifiers are the same either if they are both
+            non-persistent and have been created by the same call to
+            [new], or if they are both persistent and have the same
+            name. *)
+
 val compare: t -> t -> int
 
 val create_hidden: string -> t
-        (* Same as [create] but stamp different from any stamp returned by
-           [create]. When put in a 'a tbl, this identifier can only be looked
-           up by name. *)
+        (** Same as [create_local] but stamp different from any stamp returned
+            by [create_*]. When put in a 'a tbl, this identifier can only be
+            looked up by name. *)
 
 val global: t -> bool
-val is_predef_exn: t -> bool
+val is_predef: t -> bool
 
-val stamp: t -> int
 val scope: t -> int
 
-val current_stamp: unit -> int
-val bump_stamp_counter: int -> unit
 val reinit: unit -> unit
 
 type 'a tbl
