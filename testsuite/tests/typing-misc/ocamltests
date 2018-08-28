@@ -15,6 +15,7 @@ pr7228.ml
 pr7668_bad.ml
 printing.ml
 records.ml
+scope_escape.ml
 unique_names_in_unification.ml
 variant.ml
 wellfounded.ml
