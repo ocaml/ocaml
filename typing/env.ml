@@ -594,7 +594,8 @@ let without_cmis f x =
 
 let components_of_module' =
   ref ((fun ~alerts:_ ~loc:_ _env _sub _path _mty -> assert false) :
-         alerts:string Misc.Stdlib.String.Map.t -> loc:Location.t -> t -> Subst.t ->
+         alerts:string Misc.Stdlib.String.Map.t -> loc:Location.t -> t ->
+       Subst.t ->
        Path.t -> module_type ->
        module_components)
 let components_of_module_maker' =

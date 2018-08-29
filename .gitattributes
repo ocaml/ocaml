@@ -96,6 +96,7 @@ testsuite/tests/typing-objects/Exemples.ml   ocaml-typo=long-line,missing-header
 testsuite/tests/typing-modules/firstclass.ml ocaml-typo=long-line,missing-header
 testsuite/tests/typing-gadts/test.ml         ocaml-typo=long-line,missing-header
 testsuite/tests/typing-gadts/pr7160.ml       ocaml-typo=long-line,missing-header
+testsuite/tests/typing-deprecated/alerts.ml  ocaml-typo=long-line,missing-header
 
 tools/magic         ocaml-typo=missing-header
 

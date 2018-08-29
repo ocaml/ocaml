@@ -209,8 +209,8 @@ type state =
   {
     active: bool array;
     error: bool array;
-    alerts: (Misc.Stdlib.String.Set.t * bool); (* false=>complement of the set *)
-    alert_errors: (Misc.Stdlib.String.Set.t * bool); (* false=>complement of the set *)
+    alerts: (Misc.Stdlib.String.Set.t * bool); (* false:set complement *)
+    alert_errors: (Misc.Stdlib.String.Set.t * bool); (* false:set complement *)
   }
 
 let current =
@@ -218,8 +218,8 @@ let current =
     {
       active = Array.make (last_warning_number + 1) true;
       error = Array.make (last_warning_number + 1) false;
-      alerts = (Misc.Stdlib.String.Set.empty, false); (* all alerts enabled *)
-      alert_errors = (Misc.Stdlib.String.Set.empty, true); (* all alerts are soft *)
+      alerts = (Misc.Stdlib.String.Set.empty, false); (* all enabled *)
+      alert_errors = (Misc.Stdlib.String.Set.empty, true); (* all soft *)
     }
 
 let disabled = ref false
