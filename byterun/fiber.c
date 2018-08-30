@@ -44,6 +44,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   CAMLparam3(hval, hexn, heff);
   struct stack_info* stack;
   char* sp;
+  char* trapsp;
   struct caml_context *ctxt;
 
   stack = caml_stat_alloc(sizeof(value) * caml_fiber_wsz);
@@ -61,6 +62,8 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   /* No previous exception frame. Infact, this is the debugger slot. Initialize it. */
   sp -= sizeof(value);
   Stack_debugger_slot(stack) = Stack_debugger_slot_offset_to_parent_slot(stack);
+  trapsp = sp;
+
   /* Value handler that returns to parent */
   sp -= sizeof(value);
   *(value**)sp = (value*)caml_fiber_val_handler;
@@ -68,7 +71,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   /* Build a context */
   sp -= sizeof(struct caml_context);
   ctxt = (struct caml_context*)sp;
-  ctxt->exception_ptr_offset = 2 * sizeof(value);
+  ctxt->exception_ptr_offset = trapsp - ((char*)&ctxt->exception_ptr_offset);
   ctxt->gc_regs = NULL;
 
   stack->sp = Stack_high(stack) - INIT_FIBER_USED;
@@ -156,9 +159,12 @@ void caml_maybe_expand_stack ()
   struct stack_info* stk = Caml_state->current_stack;
   uintnat stack_available =
     (value*)stk->sp - Stack_base(stk);
+  uintnat stack_needed =
+    Stack_threshold / sizeof(value)
+    + 8 /* for words pushed by caml_start_program */;
 
-  if (stack_available < 2 * Stack_threshold / sizeof(value))
-    if (!caml_try_realloc_stack (2 * Stack_threshold / sizeof(value)))
+  if (stack_available < stack_needed)
+    if (!caml_try_realloc_stack (stack_needed))
       caml_raise_stack_overflow();
 }
 
@@ -338,6 +344,10 @@ int caml_try_realloc_stack(asize_t required_space)
 #ifdef NATIVE_CODE
   Stack_debugger_slot(new_stack) =
     Stack_debugger_slot_offset_to_parent_slot(new_stack);
+  CAMLassert(Stack_base(old_stack) < (value*)Caml_state->exn_handler &&
+             (value*)Caml_state->exn_handler <= Stack_high(old_stack));
+  Caml_state->exn_handler =
+    Stack_high(new_stack) - (Stack_high(old_stack) - (value*)Caml_state->exn_handler);
 #endif
 
   caml_free_stack(old_stack);

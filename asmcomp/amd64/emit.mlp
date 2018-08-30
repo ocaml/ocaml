@@ -963,15 +963,18 @@ let emit_instr fallthrough i =
       I.call (label lbl)
   | Lpushtrap ->
       cfi_adjust_cfa_offset 8;
-      I.push r14;
-      cfi_adjust_cfa_offset 8;
       I.mov r15 r14;
       locate_domain_state r14;
-      I.mov (domain_field Domainstate.Domain_stack_high R14) r14;
-      I.sub rsp r14;
+      I.push (domain_field Domainstate.Domain_exn_handler R14);
+      cfi_adjust_cfa_offset 8;
+      I.sub rsp (mem64 NONE 0 RSP);
+      I.mov rsp (domain_field Domainstate.Domain_exn_handler R14);
       stack_offset := !stack_offset + 16
   | Lpoptrap ->
-      I.pop r14;
+      I.add rsp (mem64 NONE 0 RSP);
+      I.mov r15 r14;
+      locate_domain_state r14;
+      I.pop (domain_field Domainstate.Domain_exn_handler R14);
       cfi_adjust_cfa_offset (-8);
       I.add (int 8) rsp;
       cfi_adjust_cfa_offset (-8);
@@ -988,11 +991,11 @@ let emit_instr fallthrough i =
           emit_call "caml_reraise_exn";
           record_frame Reg.Set.empty true i.dbg
       | Lambda.Raise_notrace ->
-          I.mov r15 rsp;
-          locate_domain_state rsp;
-          I.mov (domain_field Domainstate.Domain_stack_high RSP) rsp;
-          I.sub r14 rsp;
-          I.pop r14;
+          I.mov r15 r14;
+          locate_domain_state r14;
+          I.mov (domain_field Domainstate.Domain_exn_handler R14) rsp;
+          I.add rsp (mem64 NONE 0 RSP);
+          I.pop (domain_field Domainstate.Domain_exn_handler R14);
           I.ret ()
       end
 

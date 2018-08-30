@@ -152,6 +152,18 @@
         leaq    G(label)(%rip), dst
 #endif
 
+/* Push the current exception handler.
+   (Stored as an offset, to survive stack reallocations). Clobbers REG */
+#define PUSH_EXN_HANDLER(REG) \
+        LOAD_TL_VAR(caml_exn_handler, REG); \
+        pushq   REG; CFI_ADJUST(8); \
+        subq    %rsp, 0(%rsp)
+
+/* Pop the current exception handler. Undoes PUSH_EXN_HANDLER. Clobbers REG. */
+#define POP_EXN_HANDLER(REG) \
+        ADDR_TL_VAR(caml_exn_handler, REG); \
+        addq    %rsp, 0(%rsp); \
+        popq    (REG); CFI_ADJUST(-8)
 
 /******************************************************************************/
 /* Stack switching operations */
@@ -173,7 +185,7 @@
 #define SWITCH_OCAML_TO_C(REG) \
     /* Build caml_context at the bottom of the stack */ \
         pushq   $0 ; CFI_ADJUST(8); \
-        pushq   %r14; CFI_ADJUST(8); \
+        PUSH_EXN_HANDLER(REG); \
         SWITCH_OCAML_TO_C_NO_CTXT(REG)
 
 /* Switch from C to OCaml stack.  Clobbers REG. */
@@ -189,16 +201,14 @@
 #define SWITCH_C_TO_OCAML(REG) \
         SWITCH_C_TO_OCAML_NO_CTXT(REG,24); \
     /* Pop the caml_context from the bottom of stack updating %r14 */ \
-        popq    %r14; CFI_ADJUST(-8); \
+        POP_EXN_HANDLER(REG); \
         popq    REG; CFI_ADJUST(-8); \
 
 /* Load [caml_stack_high - %r14] into %rsp. %r14 is an offset. Clobbers %r11. */
 #define RESTORE_EXN_HANDLER_OCAML \
-        LOAD_TL_VAR(caml_stack_high, %r11); \
-        sub     %r14, %r11; \
-        movq    %r11, %rsp; \
+        LOAD_TL_VAR(caml_exn_handler, %rsp); \
         .cfi_def_cfa_offset 16; \
-        popq    %r14; CFI_ADJUST(-8)
+        POP_EXN_HANDLER(%r11)
 
 /* Switch between OCaml stacks.
  * arguments : target stack (%rdi)
@@ -916,8 +926,7 @@ LBL(caml_start_program):
     /* dummy prev trap. Important that this is 0 for indicating CFI last frame.
      * See OCAMLCFAXXX. */
         pushq   $0 ; CFI_ADJUST(8)
-        LOAD_TL_VAR(caml_stack_high, %r14); \
-        sub     %rsp, %r14
+        STORE_TL_VAR(%rsp, caml_exn_handler)
     /* Call the OCaml code */
         .cfi_remember_state
         LOAD_TL_VAR(caml_system_sp, %r13)
@@ -927,7 +936,7 @@ LBL(108):
         nop
         .cfi_restore_state
     /* Pop the OCaml exception handler */
-        popq    %r14; CFI_ADJUST(-8)
+        POP_EXN_HANDLER(%r11)
         popq    %r12; CFI_ADJUST(-8)   /* dummy register */
 LBL(110):
     /* Update alloc ptr */
@@ -970,7 +979,8 @@ LBL(117):
         movq    %rax, C_ARG_1     /* arg 1: exception bucket */
         movq    (%r10), C_ARG_2   /* arg 2: pc of raise */
         leaq    8(%r10), C_ARG_3  /* arg 3: sp at raise */
-        movq    %r14, C_ARG_4     /* arg 4: sp offset of handler */
+        LOAD_TL_VAR(caml_exn_handler, C_ARG_4)
+                                  /* arg 4: sp of handler */
         ENTER_FUNCTION
         PREPARE_FOR_C_CALL
         call    GCALL(caml_stash_backtrace)
