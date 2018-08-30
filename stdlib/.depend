@@ -87,6 +87,9 @@ stdlib__hashtbl.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib_
 stdlib__hashtbl.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__random.cmx stdlib__obj.cmx stdlib__lazy.cmx \
     stdlib__array.cmx stdlib__hashtbl.cmi
 stdlib__hashtbl.cmi : stdlib__seq.cmi
+stdlib__int.cmo : stdlib.cmi stdlib__int.cmi
+stdlib__int.cmx : stdlib.cmx stdlib__int.cmi
+stdlib__int.cmi :
 stdlib__int32.cmo : stdlib.cmi stdlib__int32.cmi
 stdlib__int32.cmx : stdlib.cmx stdlib__int32.cmi
 stdlib__int32.cmi :
@@ -266,6 +269,8 @@ stdlib__hashtbl.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib_
     stdlib__array.cmi stdlib__hashtbl.cmi
 stdlib__hashtbl.p.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__random.cmx stdlib__obj.cmx stdlib__lazy.cmx \
     stdlib__array.cmx stdlib__hashtbl.cmi
+stdlib__int.cmo : stdlib.cmi stdlib__int.cmi
+stdlib__int.p.cmx : stdlib.cmx stdlib__int.cmi
 stdlib__int32.cmo : stdlib.cmi stdlib__int32.cmi
 stdlib__int32.p.cmx : stdlib.cmx stdlib__int32.cmi
 stdlib__int64.cmo : stdlib.cmi stdlib__int64.cmi
