@@ -12,6 +12,9 @@ stdlib__arrayLabels.cmi : stdlib__seq.cmi
 stdlib__bigarray.cmo : stdlib__sys.cmi stdlib__complex.cmi stdlib__array.cmi stdlib__bigarray.cmi
 stdlib__bigarray.cmx : stdlib__sys.cmx stdlib__complex.cmx stdlib__array.cmx stdlib__bigarray.cmi
 stdlib__bigarray.cmi : stdlib__complex.cmi
+stdlib__bool.cmo : stdlib.cmi stdlib__bool.cmi
+stdlib__bool.cmx : stdlib.cmx stdlib__bool.cmi
+stdlib__bool.cmi :
 stdlib__buffer.cmo : stdlib__uchar.cmi stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib__char.cmi stdlib__bytes.cmi \
     stdlib__buffer.cmi
 stdlib__buffer.cmx : stdlib__uchar.cmx stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__char.cmx stdlib__bytes.cmx \
@@ -213,6 +216,8 @@ stdlib__arrayLabels.cmo : stdlib__array.cmi stdlib__arrayLabels.cmi
 stdlib__arrayLabels.p.cmx : stdlib__array.cmx stdlib__arrayLabels.cmi
 stdlib__bigarray.cmo : stdlib__sys.cmi stdlib__complex.cmi stdlib__array.cmi stdlib__bigarray.cmi
 stdlib__bigarray.p.cmx : stdlib__sys.cmx stdlib__complex.cmx stdlib__array.cmx stdlib__bigarray.cmi
+stdlib__bool.cmo : stdlib.cmi stdlib__bool.cmi
+stdlib__bool.p.cmx : stdlib.cmx stdlib__bool.cmi
 stdlib__buffer.cmo : stdlib__uchar.cmi stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib__char.cmi stdlib__bytes.cmi \
     stdlib__buffer.cmi
 stdlib__buffer.p.cmx : stdlib__uchar.cmx stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__char.cmx stdlib__bytes.cmx \

@@ -1240,6 +1240,7 @@ module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels
 module Bigarray     = Bigarray
+module Bool         = Bool
 module Buffer       = Buffer
 module Bytes        = Bytes
 module BytesLabels  = BytesLabels
