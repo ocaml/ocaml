@@ -143,17 +143,6 @@
         GET_DOMAIN_STATE(%rax)  ; \
         cmpq (8 * domain_field_##var)(%rax), reg
 
-/* Push a value from the current domain block onto the stack.  Clobbers %r11. */
-#define PUSH_TL_VAR(var) \
-        LOAD_TL_VAR(var, %r11)  ; \
-        pushq %r11
-
-/* Pop a value from the current domain block onto the stack.
-   Clobbers %r11 and %r13. */
-#define POP_TL_VAR(var) \
-        popq %r13               ; \
-        STORE_TL_VAR(%r13, var)
-
 /* Load address of global [label] in register [dst]. */
 #if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
 #define LEA_VAR(label,dst) \
