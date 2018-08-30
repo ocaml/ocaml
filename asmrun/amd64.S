@@ -104,8 +104,7 @@
 #include "../byterun/caml/config.h"
 
 #define GET_DOMAIN_STATE(reg) \
-  movq  %r15, reg ; \
-  andq  $(0xffffffffffffffff << Minor_heap_align_bits), reg
+  movq  %r14, reg
 
 /* CR mshinwell: We should optimize the case where there are multiple
    loads/stores in one go to the domain state block. */
@@ -116,6 +115,8 @@
         .set    domain_curr_field, domain_curr_field + 1
 #include "../byterun/caml/domain_state.tbl"
 #undef DOMAIN_STATE
+
+#define Caml_state(var) (8*domain_field_caml_##var)(%r14)
 
 /* Load address of field from the current domain state block.  Clobbers only
  * the destination. */
@@ -181,7 +182,7 @@
         .cfi_def_cfa_offset 8 /* SYSCFAXXX */
 
 /* Switch from OCaml to C stack. Also builds a context at
- * the bottom of the OCaml stack. Clobbers REG & %r14. */
+ * the bottom of the OCaml stack. Clobbers REG. */
 #define SWITCH_OCAML_TO_C(REG) \
     /* Build caml_context at the bottom of the stack */ \
         pushq   $0 ; CFI_ADJUST(8); \
@@ -197,14 +198,14 @@
         .cfi_def_cfa_offset CFA_OFF
 
 /* Switch from C to OCaml stack. Also pops the context
- * from the bottom of the OCaml stack. Clobbers REG & %r14. */
+ * from the bottom of the OCaml stack. Clobbers REG. */
 #define SWITCH_C_TO_OCAML(REG) \
         SWITCH_C_TO_OCAML_NO_CTXT(REG,24); \
-    /* Pop the caml_context from the bottom of stack updating %r14 */ \
+    /* Pop the caml_context from the bottom of stack */ \
         POP_EXN_HANDLER(REG); \
         popq    REG; CFI_ADJUST(-8); \
 
-/* Load [caml_stack_high - %r14] into %rsp. %r14 is an offset. Clobbers %r11. */
+/* Load Caml_state->exn_handler into %rsp and restores prior exn_handler. Clobbers %r11. */
 #define RESTORE_EXN_HANDLER_OCAML \
         LOAD_TL_VAR(caml_exn_handler, %rsp); \
         .cfi_def_cfa_offset 16; \
@@ -898,8 +899,8 @@ FUNCTION(G(caml_start_program))
 CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
-    /* Load caml_young_ptr into r15 (was passed as an argument from C) */
-        movq    C_ARG_1, %r15
+    /* Load Caml_state into r14 (was passed as an argument from C) */
+        movq    C_ARG_1, %r14
     /* Initial entry point is G(caml_program) */
         LEA_VAR(caml_program, %r12)
         movq    $0, %rax  /* dummy */
@@ -909,6 +910,8 @@ CFI_STARTPROC
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
         pushq   $0   ; CFI_ADJUST(8) // alignment word
+    /* Load young_ptr into %r15 */
+        movq    Caml_state(young_ptr), %r15
     /* Build context on system stack for DWARF CFI */
         ADDR_TL_VAR(caml_current_stack, %r13)
         pushq   %r13; CFI_ADJUST(8)
@@ -1003,8 +1006,10 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_raise_exception))
 CFI_STARTPROC
-        movq    C_ARG_1, %r15                /* young_ptr */
+        movq    C_ARG_1, %r14                /* Caml_state */
         movq    C_ARG_2, %rax
+    /* Load young_ptr into %r15 */
+        movq    Caml_state(young_ptr), %r15
 LBL(caml_raise_exception):
     /* Load ocaml stack and restore global variables */
         SWITCH_C_TO_OCAML(%r10)
@@ -1031,7 +1036,7 @@ CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %r15      /* young_ptr */
+        movq    C_ARG_1, %r14      /* Caml_state */
         movq    C_ARG_2, %rbx      /* closure */
         movq    0(C_ARG_3), %rax   /* argument */
         movq    0(%rbx), %r12      /* code pointer */
@@ -1045,7 +1050,7 @@ CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %r15      /* young_ptr */
+        movq    C_ARG_1, %r14      /* Caml_state */
         movq    C_ARG_2, %rdi      /* closure */
         movq    0(C_ARG_3), %rax   /* first argument */
         movq    8(C_ARG_3), %rbx   /* second argument */
@@ -1059,7 +1064,7 @@ CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %r15      /* young_ptr */
+        movq    C_ARG_1, %r14      /* Caml_state */
         movq    0(C_ARG_3), %rax   /* first argument */
         movq    8(C_ARG_3), %rbx   /* second argument */
         movq    C_ARG_2, %rsi      /* closure */
