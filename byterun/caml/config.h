@@ -173,7 +173,7 @@ typedef uint64_t uintnat;
 
 /* There may be at most 1<<Minor_heap_sel_bits minor
    heaps allocated */
-#define Minor_heap_sel_bits 8
+#define Minor_heap_sel_bits 7
 
 /* An entire minor heap must fit inside one region
    of size 1 << Minor_heap_align_bits, which determines
