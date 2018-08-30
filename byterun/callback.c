@@ -108,7 +108,7 @@ static void init_callback_code(void)
 {
 }
 
-typedef value (callback_stub)(char* young, value closure, value* args);
+typedef value (callback_stub)(caml_domain_state* state, value closure, value* args);
 
 callback_stub caml_callback_asm, caml_callback2_asm, caml_callback3_asm;
 
@@ -135,7 +135,7 @@ static value do_callback(callback_stub* cbstub, value closure,
   Stack_parent(Caml_state->current_stack) = NULL;
 
   check_stack(nargs, args);
-  ret = cbstub(Caml_state->young_ptr, closure, args);
+  ret = cbstub(Caml_state, closure, args);
 
   Caml_state->system_sp = saved_system_sp;
   Stack_parent(Caml_state->current_stack) = saved_parent;
