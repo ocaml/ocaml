@@ -54,7 +54,7 @@ module Id(E:sig end) : Id = struct
     else Some name
   let to_string (t,name) =
     if name == empty_string
-    then string_of_int t
+    then Int.to_string t
     else Printf.sprintf "%s_%i" name t
   let output fd t = output_string fd (to_string t)
   let print ppf v = Format.pp_print_string ppf (to_string v)

@@ -27,7 +27,7 @@ open Lexing;;
 open Location;;
 open Typedtree;;
 
-let output_int oc i = output_string oc (string_of_int i)
+let output_int oc i = output_string oc (Int.to_string i)
 
 type annotation =
   | Ti_pat   of pattern

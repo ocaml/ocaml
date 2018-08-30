@@ -262,7 +262,7 @@ let bad_magic_number =
 let not_a_module_name s = s^" is not a valid module name"
 let load_file_error f e = "Error while loading file "^f^":\n"^e
 let wrong_format s = "Wrong format for \""^s^"\""
-let errors_occured n = (string_of_int n)^" error(s) encountered"
+let errors_occured n = (Int.to_string n)^" error(s) encountered"
 let parse_error = "Parse error"
 let text_parse_error l c s =
   let lines = Str.split (Str.regexp_string "\n") s in
@@ -316,7 +316,7 @@ let module_not_found_in_typedtree m = "Module "^m^" was not found in typed tree.
 let class_not_found_in_typedtree c = "Class "^c^" was not found in typed tree."
 let class_type_not_found_in_typedtree ct = "Class type "^ct^" was not found in typed tree."
 let inherit_classexp_not_found_in_typedtree n =
-  "Inheritance class expression number "^(string_of_int n)^" was not found in typed tree."
+  "Inheritance class expression number "^(Int.to_string n)^" was not found in typed tree."
 let attribute_not_found_in_typedtree att = "Class attribute "^att^" was not found in typed tree."
 let method_not_found_in_typedtree met = "Class method "^met^" was not found in typed tree."
 let misplaced_comment file pos =

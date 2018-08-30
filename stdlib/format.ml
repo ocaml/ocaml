@@ -622,7 +622,7 @@ let pp_print_string state s =
 
 
 (* To format an integer. *)
-let pp_print_int state i = pp_print_string state (string_of_int i)
+let pp_print_int state i = pp_print_string state (Int.to_string i)
 
 (* To format a float. *)
 let pp_print_float state f = pp_print_string state (string_of_float f)

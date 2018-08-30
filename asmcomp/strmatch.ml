@@ -65,7 +65,7 @@ module Make(I:I) = struct
   let pp_match chan tag idxs cases =
     Printf.eprintf
       "%s: idx=[%s]\n" tag
-      (String.concat "; " (List.map string_of_int idxs)) ;
+      (String.concat "; " (List.map Int.to_string idxs)) ;
     do_pp_cases chan cases
 
 (* Utilities *)

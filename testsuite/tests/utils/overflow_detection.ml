@@ -11,7 +11,7 @@ let print_int i =
   else if i = min_int then
     "min_int"
   else
-    string_of_int i
+    Int.to_string i
 
 let test_no_overflow_add a b =
   Printf.printf "Misc.no_overflow_add %s %s = %b\n"

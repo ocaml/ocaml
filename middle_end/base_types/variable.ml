@@ -43,7 +43,7 @@ include Identifiable.Make (struct
   let output chan t =
     output_string chan t.name;
     output_string chan "_";
-    output_string chan (string_of_int t.name_stamp)
+    output_string chan (Int.to_string t.name_stamp)
 
   let hash t = t.name_stamp lxor (Compilation_unit.hash t.compilation_unit)
 
@@ -95,7 +95,7 @@ let get_compilation_unit t = t.compilation_unit
 let name t = t.name
 
 let unique_name t =
-  t.name ^ "_" ^ (string_of_int t.name_stamp)
+  t.name ^ "_" ^ (Int.to_string t.name_stamp)
 
 let print_list ppf ts =
   List.iter (fun t -> Format.fprintf ppf "@ %a" print t) ts

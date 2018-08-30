@@ -676,7 +676,7 @@ let help_warnings () =
     | l ->
         Printf.printf "  %c warnings %s.\n"
           (Char.uppercase_ascii c)
-          (String.concat ", " (List.map string_of_int l))
+          (String.concat ", " (List.map Int.to_string l))
   done;
   exit 0
 ;;

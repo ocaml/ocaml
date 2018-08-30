@@ -842,7 +842,7 @@ method emit_expr (env:environment) exp =
             try env_find_static_exception nfail env
             with Not_found ->
               Misc.fatal_error ("Selection.emit_expr: unbound label "^
-                                string_of_int nfail)
+                                Stdlib.Int.to_string nfail)
           in
           (* Intermediate registers to handle cases where some
              registers from src are present in dest *)

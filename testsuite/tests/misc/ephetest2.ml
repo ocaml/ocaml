@@ -149,5 +149,5 @@ let run test init =
 
 let () =
   for i = 0 to nb_test do
-    ignore (run ("test"^(string_of_int i)) i);
+    ignore (run ("test"^(Int.to_string i)) i);
   done

@@ -1235,7 +1235,7 @@ let next_char ob () =
 
 let send_string ob s =
   Buffer.add_string ob s; Buffer.add_char ob '\n';;
-let send_int ob i = send_string ob (string_of_int i);;
+let send_int ob i = send_string ob (Int.to_string i);;
 
 let rec reader =
   let count = ref 0 in

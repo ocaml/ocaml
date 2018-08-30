@@ -45,7 +45,7 @@ let expand_test = function
   | T (s, fn, p) -> Test (s, fn, p)
 
 let string_of : type a. a typ -> a -> string = function
-  | Int       -> string_of_int
+  | Int       -> Int.to_string
   | Int32     -> Printf.sprintf "%ldl"
   | Int64     -> Printf.sprintf "%LdL"
   | Nativeint -> Printf.sprintf "%ndn"
