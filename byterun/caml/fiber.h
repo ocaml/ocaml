@@ -91,9 +91,7 @@ extern caml_root caml_global_data;
 #define Trap_link(tp) ((tp)[1])
 
 struct stack_info* caml_alloc_main_stack (uintnat init_size);
-void caml_init_main_stack(void);
 void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack);
-void caml_restore_stack();
 /* try to grow the stack until at least required_size words are available.
    returns nonzero on success */
 int caml_try_realloc_stack (asize_t required_size);

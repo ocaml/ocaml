@@ -199,7 +199,6 @@ static inline void caml_thread_restore_runtime_state(void)
   curr_thread = st_tls_get(thread_descriptor_key);
   /* Restore the stack-related global variables */
   Caml_state->current_stack = curr_thread->current_stack;
-  caml_restore_stack();
   CAML_LOCAL_ROOTS = curr_thread->local_roots;
 #ifdef NATIVE_CODE
   Caml_state->system_sp = curr_thread->system_sp;
