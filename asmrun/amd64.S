@@ -103,13 +103,6 @@
 #define CAML_CONFIG_H_NO_TYPEDEFS
 #include "../byterun/caml/config.h"
 
-#define GET_DOMAIN_STATE(reg) \
-  movq  %r15, reg ; \
-  andq  $(0xffffffffffffffff << Minor_heap_align_bits), reg
-
-/* CR mshinwell: We should optimize the case where there are multiple
-   loads/stores in one go to the domain state block. */
-
         .set    domain_curr_field, 0
 #define DOMAIN_STATE(c_type, name) \
         .equ    domain_field_caml_##name, domain_curr_field ; \
@@ -117,31 +110,7 @@
 #include "../byterun/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
-/* Load address of field from the current domain state block.  Clobbers only
- * the destination. */
-#define ADDR_TL_VAR(var,dstreg) \
-        GET_DOMAIN_STATE(dstreg) ; \
-        leaq (8 * domain_field_##var)(dstreg), dstreg
-
-/* Load from the current domain state block.  Clobbers only the destination. */
-#define LOAD_TL_VAR(var,dstreg) \
-        GET_DOMAIN_STATE(dstreg) ; \
-        movq (8 * domain_field_##var)(dstreg), dstreg
-
-/* Store to the current domain state block.  Clobbers %r11. */
-#define STORE_TL_VAR(srcreg, var) \
-        GET_DOMAIN_STATE(%r11)  ; \
-        movq srcreg, (8 * domain_field_##var)(%r11)
-
-/* Test against a value in the current domain block.  Clobbers %r11. */
-#define TEST_TL_VAR(value, var) \
-        GET_DOMAIN_STATE(%r11)  ; \
-        testq value, (8 * domain_field_##var)(%r11)
-
-/* Compare against a value in the current domain block.  Clobbers %rax. */
-#define CMP_TL_VAR(var, reg) \
-        GET_DOMAIN_STATE(%rax)  ; \
-        cmpq (8 * domain_field_##var)(%rax), reg
+#define Caml_state(var) (8*domain_field_caml_##var)(%r14)
 
 /* Load address of global [label] in register [dst]. */
 #if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
@@ -152,6 +121,18 @@
         leaq    G(label)(%rip), dst
 #endif
 
+/* Push the current exception handler.
+   (Stored as an offset, to survive stack reallocations). Clobbers REG */
+#define PUSH_EXN_HANDLER(REG) \
+        movq	Caml_state(exn_handler), REG; \
+        pushq   REG; CFI_ADJUST(8); \
+        subq    %rsp, 0(%rsp)
+
+/* Pop the current exception handler. Undoes PUSH_EXN_HANDLER. Clobbers REG. */
+#define POP_EXN_HANDLER(REG) \
+        leaq	Caml_state(exn_handler), REG; \
+        addq    %rsp, 0(%rsp); \
+        popq    (REG); CFI_ADJUST(-8)
 
 /******************************************************************************/
 /* Stack switching operations */
@@ -160,45 +141,43 @@
 /* Switch from OCaml to C stack. Clobbers REG. */
 #define SWITCH_OCAML_TO_C_NO_CTXT(REG) \
     /* Save OCaml SP in the stack slot */ \
-        LOAD_TL_VAR(caml_current_stack, REG); \
+        movq	Caml_state(current_stack), REG; \
         movq    %rsp, Stack_sp(REG); \
     /* Switch to system stack */ \
-        LOAD_TL_VAR(caml_system_sp, REG); \
+        movq	Caml_state(system_sp), REG; \
         movq    %rsp, 16(REG); /* For DWARF CFI. See OFFXXX. */ \
         movq    REG, %rsp; \
         .cfi_def_cfa_offset 8 /* SYSCFAXXX */
 
 /* Switch from OCaml to C stack. Also builds a context at
- * the bottom of the OCaml stack. Clobbers REG & %r14. */
+ * the bottom of the OCaml stack. Clobbers REG. */
 #define SWITCH_OCAML_TO_C(REG) \
     /* Build caml_context at the bottom of the stack */ \
         pushq   $0 ; CFI_ADJUST(8); \
-        pushq   %r14; CFI_ADJUST(8); \
+        PUSH_EXN_HANDLER(REG); \
         SWITCH_OCAML_TO_C_NO_CTXT(REG)
 
 /* Switch from C to OCaml stack.  Clobbers REG. */
 #define SWITCH_C_TO_OCAML_NO_CTXT(REG,CFA_OFF) \
     /* Switch to OCaml stack */ \
-        LOAD_TL_VAR(caml_current_stack, REG); \
+        movq	Caml_state(current_stack), REG; \
     /* REG is Stack_sp(caml_current_stack) */ \
         movq    Stack_sp(REG), %rsp; \
         .cfi_def_cfa_offset CFA_OFF
 
 /* Switch from C to OCaml stack. Also pops the context
- * from the bottom of the OCaml stack. Clobbers REG & %r14. */
+ * from the bottom of the OCaml stack. Clobbers REG. */
 #define SWITCH_C_TO_OCAML(REG) \
         SWITCH_C_TO_OCAML_NO_CTXT(REG,24); \
-    /* Pop the caml_context from the bottom of stack updating %r14 */ \
-        popq    %r14; CFI_ADJUST(-8); \
+    /* Pop the caml_context from the bottom of stack */ \
+        POP_EXN_HANDLER(REG); \
         popq    REG; CFI_ADJUST(-8); \
 
-/* Load [caml_stack_high - %r14] into %rsp. %r14 is an offset. Clobbers %r11. */
+/* Load Caml_state->exn_handler into %rsp and restores prior exn_handler. Clobbers %r11. */
 #define RESTORE_EXN_HANDLER_OCAML \
-        LOAD_TL_VAR(caml_stack_high, %r11); \
-        sub     %r14, %r11; \
-        movq    %r11, %rsp; \
+        movq	Caml_state(exn_handler), %rsp; \
         .cfi_def_cfa_offset 16; \
-        popq    %r14; CFI_ADJUST(-8)
+        POP_EXN_HANDLER(%r11)
 
 /* Switch between OCaml stacks.
  * arguments : target stack (%rdi)
@@ -407,7 +386,7 @@ CFI_ENDPROC
 
 #define CAML_CALL_ENTER_C \
         subq    $8, %rsp; CFI_ADJUST(8); \
-        ADDR_TL_VAR(caml_current_stack, %rbx); \
+        leaq	Caml_state(current_stack), %rbx; \
         pushq   %rbx; CFI_ADJUST(8); \
         movq    (%rbx), %rbx; \
         pushq   (%rbx); CFI_ADJUST(8); \
@@ -486,7 +465,7 @@ CFI_ENDPROC
         call    GCALL(caml_update_gc_regs_slot);                               \
         CLEANUP_AFTER_C_CALL;                                                  \
     /* Save caml_young_ptr */                                                  \
-        STORE_TL_VAR(%r15, caml_young_ptr);                                    \
+        movq	%r15, Caml_state(young_ptr);                                    \
     /* Save floating-point registers */                                        \
         subq    $(16*8), %rsp; CFI_ADJUST (16*8);                              \
         movsd   %xmm0, 0*8(%rsp);                                              \
@@ -510,7 +489,7 @@ CFI_ENDPROC
         CAML_CALL_ENTER_C;                                                     \
         CLEANUP_AFTER_C_CALL;                                                  \
     /* Restore caml_young_ptr */                                               \
-        LOAD_TL_VAR(caml_young_ptr, %r15);                                     \
+        movq	Caml_state(young_ptr), %r15;                                     \
     /* Restore all regs used by the code generator */                          \
         movsd   0*8(%rsp), %xmm0;                                              \
         movsd   1*8(%rsp), %xmm1;                                              \
@@ -640,7 +619,7 @@ FUNCTION(G(caml_call_read_barrier))
 CFI_STARTPROC
         /* Save %r10, and use it as a temp to switch stacks. */
         pushq   %r10; CFI_ADJUST(8)
-        LOAD_TL_VAR(caml_system_sp, %r10)
+        movq	Caml_state(system_sp), %r10
         popq    -8(%r10); CFI_ADJUST(-8)
         SWITCH_OCAML_TO_C(%r10)
         movq    -8(%rsp), %r10
@@ -671,7 +650,7 @@ CFI_STARTPROC
         movq    (%rsp), C_ARG_1;        /* rax = base */
         movq    32(%rsp), C_ARG_2;      /* rdx = offset */
     /* Save caml_young_ptr */
-        STORE_TL_VAR(%r15, caml_young_ptr);
+        movq	%r15, Caml_state(young_ptr);
     /* Save floating-point registers */
         subq    $(16*8), %rsp; CFI_ADJUST (16*8);
         movsd   %xmm0, 0*8(%rsp);
@@ -697,7 +676,7 @@ CFI_STARTPROC
     /* Result is in %rax */
         CLEANUP_AFTER_C_CALL;
     /* Restore caml_young_ptr */
-        LOAD_TL_VAR(caml_young_ptr, %r15);
+        movq	Caml_state(young_ptr), %r15;
     /* Restore all regs used by the code generator */
         movsd   0*8(%rsp), %xmm0;
         movsd   1*8(%rsp), %xmm1;
@@ -743,7 +722,7 @@ FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
 LBL(caml_alloc1):
         subq    $16, %r15
-        CMP_TL_VAR(caml_young_limit, %r15)
+        cmpq	Caml_state(young_limit), %r15
         jb      LBL(100)
         ret
 LBL(100):
@@ -760,7 +739,7 @@ FUNCTION(G(caml_alloc2))
 CFI_STARTPROC
 LBL(caml_alloc2):
         subq    $24, %r15
-        CMP_TL_VAR(caml_young_limit, %r15)
+        cmpq	Caml_state(young_limit), %r15
         jb      LBL(101)
         ret
 LBL(101):
@@ -777,7 +756,7 @@ FUNCTION(G(caml_alloc3))
 CFI_STARTPROC
 LBL(caml_alloc3):
         subq    $32, %r15
-        CMP_TL_VAR(caml_young_limit, %r15)
+        cmpq	Caml_state(young_limit), %r15
         jb      LBL(102)
         ret
 LBL(102):
@@ -795,7 +774,7 @@ CFI_STARTPROC
 LBL(caml_allocN):
         pushq   %rax; CFI_ADJUST(8)        /* save desired size */
         subq    %rax, %r15
-        CMP_TL_VAR(caml_young_limit, %r15)
+        cmpq	Caml_state(young_limit), %r15
         jb      LBL(103)
         addq    $8, %rsp; CFI_ADJUST (-8)  /* drop desired size */
         ret
@@ -803,7 +782,7 @@ LBL(103):
         movq    (%rsp), %rax
         addq    %rax, %r15
         /* Save desired size on system stack */
-        LOAD_TL_VAR(caml_system_sp, %rax)
+        movq	Caml_state(system_sp), %rax
         popq    -8(%rax); CFI_ADJUST(-8)
         SWITCH_OCAML_TO_C(%rax)
         subq    $16, %rsp; CFI_ADJUST(16)
@@ -811,7 +790,7 @@ LBL(103):
         call    LBL(do_gc)
         LEAVE_FUNCTION
         SWITCH_C_TO_OCAML(%rax)
-        LOAD_TL_VAR(caml_system_sp, %rax)
+        movq	Caml_state(system_sp), %rax
         movq    -8(%rax), %rax
         jmp     LBL(caml_allocN)
 CFI_ENDPROC
@@ -830,7 +809,7 @@ LBL(caml_c_call):
         SWITCH_OCAML_TO_C(%r10)
         ENTER_FUNCTION
     /* Make the alloc ptr available to the C code */
-        STORE_TL_VAR(%r15, caml_young_ptr)
+        movq	%r15, Caml_state(young_ptr)
     /* Call the function (address in %rax) */
         PREPARE_FOR_C_CALL
         .cfi_remember_state
@@ -840,7 +819,7 @@ LBL(caml_c_call):
         .cfi_restore_state
         CLEANUP_AFTER_C_CALL
     /* Prepare for return to OCaml */
-        LOAD_TL_VAR(caml_young_ptr, %r15)
+        movq	Caml_state(young_ptr), %r15
     /* Load ocaml stack and restore global variables */
         LEAVE_FUNCTION
         SWITCH_C_TO_OCAML(%r10)
@@ -858,7 +837,7 @@ CFI_STARTPROC
         SWITCH_OCAML_TO_C(%r10)
         ENTER_FUNCTION
     /* Make the alloc ptr available to the C code */
-        STORE_TL_VAR(%r15, caml_young_ptr)
+        movq	%r15, Caml_state(young_ptr)
     /* Copy arguments from OCaml to C stack */
 LBL(105):
         subq    $8, %r12
@@ -872,7 +851,7 @@ LBL(106):
         call    *%rax
         CLEANUP_AFTER_C_CALL
     /* Prepare for return to OCaml */
-        LOAD_TL_VAR(caml_young_ptr, %r15)
+        movq	Caml_state(young_ptr), %r15
     /* Load ocaml stack and restore global variables */
         LEAVE_FUNCTION
         SWITCH_C_TO_OCAML(%r10)
@@ -888,8 +867,8 @@ FUNCTION(G(caml_start_program))
 CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
-    /* Load caml_young_ptr into r15 (was passed as an argument from C) */
-        movq    C_ARG_1, %r15
+    /* Load Caml_state into r14 (was passed as an argument from C) */
+        movq    C_ARG_1, %r14
     /* Initial entry point is G(caml_program) */
         LEA_VAR(caml_program, %r12)
         movq    $0, %rax  /* dummy */
@@ -899,39 +878,40 @@ CFI_STARTPROC
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
         pushq   $0   ; CFI_ADJUST(8) // alignment word
+    /* Load young_ptr into %r15 */
+        movq    Caml_state(young_ptr), %r15
     /* Build context on system stack for DWARF CFI */
-        ADDR_TL_VAR(caml_current_stack, %r13)
+        leaq	Caml_state(current_stack), %r13
         pushq   %r13; CFI_ADJUST(8)
         pushq   $0 ; CFI_ADJUST(8) /* will be filled in at SWITCH_OCAML_TO_C. See OFFXXX. */
     /* System stack is captured unaligned. Hence, any OCaml to C calls
      * are expected to explicitly align stack using ENTER_FUNCTION and such. */
-        STORE_TL_VAR(%rsp, caml_system_sp)
+        movq	%rsp, Caml_state(system_sp)
     /* Switch from C to OCaml stack. CFA offset -8 refers to OCAMLCFAXXX. */
         SWITCH_C_TO_OCAML_NO_CTXT(%r10,-8)
     /* Setup alloc ptr */
-        LOAD_TL_VAR(caml_young_ptr, %r15)
+        movq	Caml_state(young_ptr), %r15
     /* Build a handler for exceptions raised in OCaml */
         lea     LBL(109)(%rip), %r13
         pushq   %r13; CFI_ADJUST(8)
     /* dummy prev trap. Important that this is 0 for indicating CFI last frame.
      * See OCAMLCFAXXX. */
         pushq   $0 ; CFI_ADJUST(8)
-        LOAD_TL_VAR(caml_stack_high, %r14); \
-        sub     %rsp, %r14
+        movq	%rsp, Caml_state(exn_handler)
     /* Call the OCaml code */
         .cfi_remember_state
-        LOAD_TL_VAR(caml_system_sp, %r13)
+        movq	Caml_state(system_sp), %r13
         call    GCALL(caml_enter_caml)
 LBL(108):
         .cfi_def_cfa_offset 120
         nop
         .cfi_restore_state
     /* Pop the OCaml exception handler */
-        popq    %r14; CFI_ADJUST(-8)
+        POP_EXN_HANDLER(%r11)
         popq    %r12; CFI_ADJUST(-8)   /* dummy register */
 LBL(110):
     /* Update alloc ptr */
-        STORE_TL_VAR(%r15,caml_young_ptr)
+        movq	%r15, Caml_state(young_ptr)
     /* Return to C stack. */
         SWITCH_OCAML_TO_C_NO_CTXT(%r10)
     /* Pop the C exception handler and DWARF cfi info. */
@@ -957,20 +937,21 @@ CFI_ENDPROC
 FUNCTION(G(caml_raise_exn))
 CFI_STARTPROC
 LBL(caml_raise_exn):
-        TEST_TL_VAR($1, caml_backtrace_active)
+        testq	$1, Caml_state(backtrace_active)
         jne   LBL(116)
         RESTORE_EXN_HANDLER_OCAML
         ret
 LBL(116):
-        STORE_TL_VAR($0, caml_backtrace_pos)
+        movq	$0, Caml_state(backtrace_pos)
 LBL(117):
         movq    %rsp, %r10        /* Save OCaml stack pointer */
         movq    %rax, %r12        /* Save exception bucket */
-        LOAD_TL_VAR(caml_system_sp, %rsp)
+        movq	Caml_state(system_sp), %rsp
         movq    %rax, C_ARG_1     /* arg 1: exception bucket */
         movq    (%r10), C_ARG_2   /* arg 2: pc of raise */
         leaq    8(%r10), C_ARG_3  /* arg 3: sp at raise */
-        movq    %r14, C_ARG_4     /* arg 4: sp offset of handler */
+        movq	Caml_state(exn_handler), C_ARG_4
+                                  /* arg 4: sp of handler */
         ENTER_FUNCTION
         PREPARE_FOR_C_CALL
         call    GCALL(caml_stash_backtrace)
@@ -983,7 +964,7 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_reraise_exn))
 CFI_STARTPROC
-        TEST_TL_VAR($1, caml_backtrace_active)
+        testq	$1, Caml_state(backtrace_active)
         jne   LBL(117)
         RESTORE_EXN_HANDLER_OCAML
         ret
@@ -993,8 +974,10 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_raise_exception))
 CFI_STARTPROC
-        movq    C_ARG_1, %r15                /* young_ptr */
+        movq    C_ARG_1, %r14                /* Caml_state */
         movq    C_ARG_2, %rax
+    /* Load young_ptr into %r15 */
+        movq    Caml_state(young_ptr), %r15
 LBL(caml_raise_exception):
     /* Load ocaml stack and restore global variables */
         SWITCH_C_TO_OCAML(%r10)
@@ -1021,7 +1004,7 @@ CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %r15      /* young_ptr */
+        movq    C_ARG_1, %r14      /* Caml_state */
         movq    C_ARG_2, %rbx      /* closure */
         movq    0(C_ARG_3), %rax   /* argument */
         movq    0(%rbx), %r12      /* code pointer */
@@ -1035,7 +1018,7 @@ CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %r15      /* young_ptr */
+        movq    C_ARG_1, %r14      /* Caml_state */
         movq    C_ARG_2, %rdi      /* closure */
         movq    0(C_ARG_3), %rax   /* first argument */
         movq    8(C_ARG_3), %rbx   /* second argument */
@@ -1049,7 +1032,7 @@ CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Initial loading of arguments */
-        movq    C_ARG_1, %r15      /* young_ptr */
+        movq    C_ARG_1, %r14      /* Caml_state */
         movq    0(C_ARG_3), %rax   /* first argument */
         movq    8(C_ARG_3), %rbx   /* second argument */
         movq    C_ARG_2, %rsi      /* closure */
@@ -1066,7 +1049,7 @@ FUNCTION(G(caml_fiber_exn_handler))
 CFI_STARTPROC
     /* In handler. %rax has exception */
         mov     %rax, %rbx
-        LOAD_TL_VAR(caml_current_stack, %rsi)
+        movq	Caml_state(current_stack), %rsi
         movq    Stack_handle_exception(%rsi), %r12  /* exception handler */
         movq    Stack_parent(%rsi), %rdi            /* parent stack. Never NULL here. */
     /* Switch stacks */
@@ -1083,7 +1066,7 @@ CFI_STARTPROC
 LBL(111):
     /* In handler. %rax has value */
         mov     %rax, %rbx
-        LOAD_TL_VAR(caml_current_stack, %rsi)
+        movq	Caml_state(current_stack), %rsi
         movq    Stack_handle_value(%rsi), %r12    /* value handler */
         movq    Stack_parent(%rsi), %rdi          /* parent stack. Never NULL here. */
     /* Reset stack. First pop off fiber exn handler. */
@@ -1104,7 +1087,7 @@ CFI_STARTPROC
         %rbx: freshly allocated continuation */
         mov     %rax, %r12                      /* r8,r9,r12,r13 are preserved across C call */
         mov     %rbx, %r13
-        LOAD_TL_VAR(caml_current_stack, %rbx)   /* Second argument */
+        movq	Caml_state(current_stack), %rbx   /* Second argument */
         movq    Stack_parent(%rbx), %rdi        /* Parent stack. */
         cmpq    $0, %rdi                        /* Parent is NULL? */
         je      LBL(112)
@@ -1135,7 +1118,7 @@ CFI_STARTPROC
         movq    %rax, %r12                      /* r8,r9,r12,r13 are preserved across C call */
         movq    %rbx, %r13
         movq    %rdi, %r8
-        LOAD_TL_VAR(caml_current_stack, %rbx)
+        movq	Caml_state(current_stack), %rbx
         movq    Stack_parent(%rbx), %rdi         /* Parent stack */   
         cmpq    $0, %rdi                         /* Parent is Null? */
         je      LBL(113)
@@ -1174,7 +1157,7 @@ CFI_STARTPROC
         je      2f
         movq    Stack_parent(%rax), %rax
         jmp     1b
-2:      LOAD_TL_VAR(caml_current_stack, %rcx)
+2:      movq	Caml_state(current_stack), %rcx
         movq    %rcx, Stack_parent(%rax)
     /* %rdi has new stack */
         SWITCH_OCAML_STACKS
@@ -1198,7 +1181,7 @@ CFI_STARTPROC
 /*        test    $0xf, %rsp */
 /*        jz      1f */
 /*        int3 */
-1:      LOAD_TL_VAR(caml_current_stack, %r11)
+1:      movq	Caml_state(current_stack), %r11
         movq    %rsp, %r10
         subq    %r11, %r10      /* %r10: number of bytes left on stack */
         /* can be two words over: the return addresses */

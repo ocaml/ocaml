@@ -75,10 +75,9 @@ int caml_alloc_backtrace_buffer(void){
    preserved the global, statically bounded buffer of the old
    implementation -- before the more flexible
    [caml_get_current_callstack] was implemented. */
-void caml_stash_backtrace(value exn, uintnat pc, char * sp, uintnat trapsp_off)
+void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
 {
   caml_domain_state* domain_state = Caml_state;
-  char* stack_high = (char*)domain_state->stack_high;
   caml_frame_descrs fds;
 
   if (exn != caml_read_root(domain_state->backtrace_last_exn)) {
@@ -101,7 +100,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, uintnat trapsp_off)
       (backtrace_slot) descr;
 
     /* Stop when we reach the current exception handler */
-    if (sp > stack_high - trapsp_off) return;
+    if (sp > trapsp) return;
   }
 }
 
