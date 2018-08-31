@@ -271,14 +271,14 @@ signals.$(O): signals.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/alloc.h caml/config.h caml/fail.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/roots.h caml/signals.h caml/signals_machdep.h \
+ caml/mlvalues.h caml/roots.h caml/signals.h  \
  caml/sys.h
 signals_byt.$(O): signals_byt.c caml/config.h caml/m.h caml/s.h \
  caml/memory.h caml/config.h caml/gc.h caml/mlvalues.h caml/misc.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/memory.h caml/alloc.h caml/osdeps.h caml/signals.h \
- caml/signals_machdep.h
+ 
 spacetime.$(O): spacetime.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/mlvalues.h
@@ -615,14 +615,14 @@ signals.d.$(O): signals.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/alloc.h caml/config.h caml/fail.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/roots.h caml/signals.h caml/signals_machdep.h \
+ caml/mlvalues.h caml/roots.h caml/signals.h  \
  caml/sys.h
 signals_byt.d.$(O): signals_byt.c caml/config.h caml/m.h caml/s.h \
  caml/memory.h caml/config.h caml/gc.h caml/mlvalues.h caml/misc.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/memory.h caml/alloc.h caml/osdeps.h caml/signals.h \
- caml/signals_machdep.h
+ 
 spacetime.d.$(O): spacetime.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/mlvalues.h
@@ -953,14 +953,14 @@ signals.i.$(O): signals.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/alloc.h caml/config.h caml/fail.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/roots.h caml/signals.h caml/signals_machdep.h \
+ caml/mlvalues.h caml/roots.h caml/signals.h  \
  caml/sys.h
 signals_byt.i.$(O): signals_byt.c caml/config.h caml/m.h caml/s.h \
  caml/memory.h caml/config.h caml/gc.h caml/mlvalues.h caml/misc.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/memory.h caml/alloc.h caml/osdeps.h caml/signals.h \
- caml/signals_machdep.h
+ 
 spacetime.i.$(O): spacetime.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/mlvalues.h
@@ -1291,14 +1291,14 @@ signals.pic.$(O): signals.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/alloc.h caml/config.h caml/fail.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/roots.h caml/signals.h caml/signals_machdep.h \
+ caml/mlvalues.h caml/roots.h caml/signals.h  \
  caml/sys.h
 signals_byt.pic.$(O): signals_byt.c caml/config.h caml/m.h caml/s.h \
  caml/memory.h caml/config.h caml/gc.h caml/mlvalues.h caml/misc.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/memory.h caml/alloc.h caml/osdeps.h caml/signals.h \
- caml/signals_machdep.h
+ 
 spacetime.pic.$(O): spacetime.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/mlvalues.h

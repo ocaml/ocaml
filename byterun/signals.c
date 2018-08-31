@@ -29,7 +29,6 @@
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
-#include "caml/signals_machdep.h"
 #include "caml/sys.h"
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
