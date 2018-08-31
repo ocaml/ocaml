@@ -16,7 +16,6 @@
 (* Selection of pseudo-instructions, assignment of pseudo-registers,
    sequentialization. *)
 
-open Misc
 open Cmm
 open Reg
 open Mach
@@ -94,8 +93,8 @@ let size_expr (env:environment) exp =
           let regs = env_find id env in
           size_machtype (Array.map (fun r -> r.typ) regs)
         with Not_found ->
-          fatal_error("Selection.size_expr: unbound var " ^
-                      V.unique_name id)
+          Misc.fatal_error("Selection.size_expr: unbound var " ^
+                           V.unique_name id)
         end
     | Ctuple el ->
         List.fold_right (fun e sz -> size localenv e + sz) el 0
@@ -106,7 +105,7 @@ let size_expr (env:environment) exp =
     | Csequence(_e1, e2) ->
         size localenv e2
     | _ ->
-        fatal_error "Selection.size_expr"
+        Misc.fatal_error "Selection.size_expr"
   in size V.Map.empty exp
 
 (* Swap the two arguments of an integer comparison *)
@@ -475,7 +474,7 @@ method select_operation op args _dbg =
     let extra_args = self#select_checkbound_extra_args () in
     let op = self#select_checkbound () in
     self#select_arith op (args @ extra_args)
-  | _ -> fatal_error "Selection.select_oper"
+  | _ -> Misc.fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
     [arg; Cconst_int n] when self#is_immediate n ->
@@ -593,8 +592,8 @@ method adjust_type src dst =
     match ts, td with
     | Val, Int -> dst.typ <- Val
     | Int, Val -> ()
-    | _, _ -> fatal_error("Selection.adjust_type: bad assignment to "
-                                                           ^ Reg.name dst)
+    | _, _ -> Misc.fatal_error("Selection.adjust_type: bad assignment to "
+                               ^ Reg.name dst)
 
 method adjust_types src dst =
   for i = 0 to min (Array.length src) (Array.length dst) - 1 do
@@ -665,7 +664,7 @@ method emit_expr (env:environment) exp =
       begin try
         Some(env_find v env)
       with Not_found ->
-        fatal_error("Selection.emit_expr: unbound var " ^ V.unique_name v)
+        Misc.fatal_error("Selection.emit_expr: unbound var " ^ V.unique_name v)
       end
   | Clet(v, e1, e2) ->
       begin match self#emit_expr env e1 with
@@ -679,7 +678,7 @@ method emit_expr (env:environment) exp =
         try
           env_find v env
         with Not_found ->
-          fatal_error ("Selection.emit_expr: unbound var " ^ V.name v) in
+          Misc.fatal_error ("Selection.emit_expr: unbound var " ^ V.name v) in
       begin match self#emit_expr env e1 with
         None -> None
       | Some r1 -> self#adjust_types r1 rv; self#insert_moves r1 rv; Some [||]
@@ -842,8 +841,8 @@ method emit_expr (env:environment) exp =
           let dest_args =
             try env_find_static_exception nfail env
             with Not_found ->
-              fatal_error ("Selection.emit_expr: unbound label "^
-                           string_of_int nfail)
+              Misc.fatal_error ("Selection.emit_expr: unbound label "^
+                                string_of_int nfail)
           in
           (* Intermediate registers to handle cases where some
              registers from src are present in dest *)
@@ -1107,7 +1106,7 @@ method emit_tail (env:environment) exp =
                 self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
                 self#insert Ireturn loc_res [||]
               end
-          | _ -> fatal_error "Selection.emit_tail"
+          | _ -> Misc.fatal_error "Selection.emit_tail"
       end
   | Csequence(e1, e2) ->
       begin match self#emit_expr env e1 with
