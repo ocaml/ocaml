@@ -277,7 +277,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   jumptbl_base = Jumptbl_base;
 #endif
   initial_trap_sp_off = domain_state->trap_sp_off;
-  initial_stack_words = domain_state->stack_high - domain_state->current_stack->sp;
+  initial_stack_words = Stack_high(domain_state->current_stack) - domain_state->current_stack->sp;
   initial_external_raise = domain_state->external_raise;
   caml_incr_callback_depth ();
   saved_pc = NULL;
@@ -306,7 +306,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef DEBUG
  next_instr:
   if (caml_icount-- == 0) caml_stop_here ();
-  Assert(sp == domain_state->stack_high || caml_on_current_stack(sp));
+  Assert(Stack_base(domain_state->current_stack) <= sp &&
+         sp <= Stack_high(domain_state->current_stack));
 #endif
   goto *(void *)(jumptbl_base + *pc++); /* Jump to the first instruction */
 #else
@@ -327,7 +328,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       caml_trace_accu_sp_file(accu,sp,prog,prog_size,stdout);
       fflush(stdout);
     };
-    CAMLassert(sp == domain_state->stack_high || caml_on_current_stack(sp));
+    Assert(Stack_base(domain_state->current_stack) <= sp &&
+           sp <= Stack_high(domain_state->current_stack));
 
 #endif
     curr_instr = *pc++;
@@ -534,7 +536,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
 
     do_return:
-      if (sp == domain_state->stack_high) {
+      if (sp == Stack_high(domain_state->current_stack)) {
         /* return to parent stack */
         struct stack_info* parent_stack =
           Stack_parent(domain_state->current_stack);
@@ -918,7 +920,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Trap_link(sp) = Val_long(domain_state->trap_sp_off);
       sp[2] = env;
       sp[3] = Val_long(extra_args);
-      domain_state->trap_sp_off = sp - domain_state->stack_high;
+      domain_state->trap_sp_off = sp - Stack_high(domain_state->current_stack);
       pc++;
       Next;
 
@@ -953,7 +955,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
         if (Stack_parent(domain_state->current_stack) == NULL) {
           domain_state->external_raise = initial_external_raise;
           domain_state->trap_sp_off = initial_trap_sp_off;
-          domain_state->current_stack->sp = domain_state->stack_high - initial_stack_words ;
+          domain_state->current_stack->sp =
+            Stack_high(domain_state->current_stack) - initial_stack_words ;
           caml_decr_callback_depth ();
           return Make_exception_result(accu);
         } else {
@@ -976,7 +979,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
           goto check_stacks;
         }
       } else {
-        sp = domain_state->stack_high + domain_state->trap_sp_off;
+        sp = Stack_high(domain_state->current_stack) + domain_state->trap_sp_off;
         pc = Pc_val(Trap_pc(sp));
         domain_state->trap_sp_off = Long_val(Trap_link(sp));
         env = sp[2];

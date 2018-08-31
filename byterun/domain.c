@@ -225,7 +225,7 @@ static void create_domain(uintnat initial_minor_heap_size) {
     d->state.state->shared_heap = caml_init_shared_heap();
     caml_init_major_gc(domain_state);
     caml_reallocate_minor_heap(initial_minor_heap_size);
-    caml_init_main_stack();
+    Caml_state->current_stack = caml_alloc_main_stack (Stack_size/sizeof(value));
 
     domain_state->backtrace_buffer = NULL;
 #ifndef NATIVE_CODE

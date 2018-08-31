@@ -107,8 +107,10 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
     fprintf (f, "=code@%ld", Pc_val(v) - prog);
   else if (Is_long (v))
     fprintf (f, "=long%" ARCH_INTNAT_PRINTF_FORMAT "d", Long_val (v));
-  else if (caml_on_current_stack((value*)v))
-    fprintf (f, "=stack_%ld", (long) ((intnat*)Caml_state->stack_high - (intnat*)v));
+  else if (Stack_base(Caml_state->current_stack) <= (value*)v &&
+           (value*)v < Stack_high(Caml_state->current_stack))
+    fprintf (f, "=stack_%ld",
+             (long)((intnat*)Stack_high(Caml_state->current_stack)-(intnat*)v));
   else if (Is_block (v)) {
     int s = Wosize_val (v);
     int tg = Tag_val (v);
@@ -172,11 +174,12 @@ caml_trace_accu_sp_file (value accu, value * sp, code_t prog, int proglen,
   fprintf (f, "accu=");
   caml_trace_value_file (accu, prog, proglen, f);
   fprintf (f, "\n sp=%#" ARCH_INTNAT_PRINTF_FORMAT "x @%ld:",
-           (intnat) sp, (long) (Caml_state->stack_high - sp));
+           (intnat) sp, (long) (Stack_high(Caml_state->current_stack) - sp));
   for (p = sp, i = 0;
-       i < 12 + (1 << caml_params->trace_level) && p < Caml_state->stack_high;
+       i < 12 + (1 << caml_params->trace_level) &&
+         p < Stack_high(Caml_state->current_stack);
        p++, i++) {
-    fprintf (f, "\n[%ld] ", (long) (Caml_state->stack_high - p));
+    fprintf (f, "\n[%ld] ", (long) (Stack_high(Caml_state->current_stack) - p));
     caml_trace_value_file (*p, prog, proglen, f);
   };
   putc ('\n', f);

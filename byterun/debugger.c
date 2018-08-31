@@ -265,6 +265,7 @@ void caml_debugger(enum event_kind event)
   value * frame;
   intnat i, pos;
   value val;
+  value* stack_high = Stack_high(Caml_state->current_stack);
 
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 
@@ -293,7 +294,7 @@ void caml_debugger(enum event_kind event)
   }
   caml_putword(dbg_out, caml_event_count);
   if (event == EVENT_COUNT || event == BREAKPOINT) {
-    caml_putword(dbg_out, Caml_state->stack_high - frame);
+    caml_putword(dbg_out, stack_high - frame);
     caml_putword(dbg_out, (Pc(frame) - caml_start_code) * sizeof(opcode_t));
   } else {
     /* No PC and no stack frame associated with other events */
@@ -359,8 +360,8 @@ void caml_debugger(enum event_kind event)
       frame = Caml_state->current_stack->sp + 1;
       /* Fall through */
     case REQ_GET_FRAME:
-      caml_putword(dbg_out, Caml_state->stack_high - frame);
-      if (frame < Caml_state->stack_high){
+      caml_putword(dbg_out, stack_high - frame);
+      if (frame < stack_high){
         caml_putword(dbg_out, (Pc(frame) - caml_start_code) * sizeof(opcode_t));
       }else{
         caml_putword (dbg_out, 0);
@@ -369,15 +370,15 @@ void caml_debugger(enum event_kind event)
       break;
     case REQ_SET_FRAME:
       i = caml_getword(dbg_in);
-      frame = Caml_state->stack_high - i;
+      frame = stack_high - i;
       break;
     case REQ_UP_FRAME:
       i = caml_getword(dbg_in);
-      if (frame + Extra_args(frame) + i + 3 >= Caml_state->stack_high) {
+      if (frame + Extra_args(frame) + i + 3 >= stack_high) {
         caml_putword(dbg_out, -1);
       } else {
         frame += Extra_args(frame) + i + 3;
-        caml_putword(dbg_out, Caml_state->stack_high - frame);
+        caml_putword(dbg_out, stack_high - frame);
         caml_putword(dbg_out, (Pc(frame) - caml_start_code) * sizeof(opcode_t));
       }
       caml_flush(dbg_out);

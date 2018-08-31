@@ -20,20 +20,8 @@
 #include "frame_descriptors.h"
 #endif
 
+
 #ifdef NATIVE_CODE
-
-static struct stack_info* save_stack ()
-{
-  return Caml_state->current_stack;
-}
-
-static void load_stack (struct stack_info* stack) {
-  caml_domain_state* domain_state = Caml_state;
-  domain_state->stack_high = Stack_high(stack);
-  domain_state->current_stack = stack;
-  CAMLassert(Stack_base(stack) < (value*)stack->sp &&
-             (value*)stack->sp <= Stack_high(stack));
-}
 
 extern void caml_fiber_exn_handler (value) Noreturn;
 extern void caml_fiber_val_handler (value) Noreturn;
@@ -180,8 +168,9 @@ void caml_update_gc_regs_slot (value* gc_regs)
 int caml_switch_stack(struct stack_info* stk, int should_free)
 {
   struct stack_info* old = Caml_state->current_stack;
-  save_stack();
-  load_stack(stk);
+  Caml_state->current_stack = stk;
+  CAMLassert(Stack_base(stk) < (value*)stk->sp &&
+             stk->sp <= Stack_high(stk));
   if (should_free)
     caml_free_stack(old);
   if (stk->sp == Stack_high(stk) - INIT_FIBER_USED)
@@ -192,21 +181,6 @@ int caml_switch_stack(struct stack_info* stk, int should_free)
 #else /* End NATIVE_CODE, begin BYTE_CODE */
 
 caml_root caml_global_data;
-
-static struct stack_info* save_stack ()
-{
-  caml_domain_state* domain_state = Caml_state;
-  struct stack_info* old_stack = domain_state->current_stack;
-  Assert(domain_state->stack_high == Stack_high(old_stack));
-  return old_stack;
-}
-
-static void load_stack(struct stack_info* new_stack)
-{
-  caml_domain_state* domain_state = Caml_state;
-  domain_state->stack_high = Stack_high(new_stack);
-  domain_state->current_stack = new_stack;
-}
 
 CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 {
@@ -243,7 +217,7 @@ CAMLprim value caml_ensure_stack_capacity(value required_space)
 
 void caml_change_max_stack_size (uintnat new_max_size)
 {
-  asize_t size = Caml_state->stack_high - Caml_state->current_stack->sp
+  asize_t size = Stack_high(Caml_state->current_stack) - Caml_state->current_stack->sp
                  + Stack_threshold / sizeof (value);
 
   if (new_max_size < size) new_max_size = size;
@@ -280,9 +254,11 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
 
 struct stack_info* caml_switch_stack(struct stack_info* stk)
 {
-  struct stack_info* s = save_stack();
-  load_stack(stk);
-  return s;
+  struct stack_info* old = Caml_state->current_stack;
+  Caml_state->current_stack = stk;
+  CAMLassert(Stack_base(stk) < (value*)stk->sp &&
+             stk->sp <= Stack_high(stk));
+  return old;
 }
 
 #endif /* end BYTE_CODE */
@@ -293,11 +269,6 @@ struct stack_info* caml_switch_stack(struct stack_info* stk)
   Used by the interpreter to allocate stack space.
 */
 
-int caml_on_current_stack(value* p)
-{
-  return Stack_base(Caml_state->current_stack) <= p && p < Caml_state->stack_high;
-}
-
 int caml_try_realloc_stack(asize_t required_space)
 {
   struct stack_info *old_stack, *new_stack;
@@ -305,8 +276,7 @@ int caml_try_realloc_stack(asize_t required_space)
   int stack_used;
   CAMLnoalloc;
 
-  old_stack = save_stack();
-
+  old_stack = Caml_state->current_stack;
   stack_used = Stack_high(old_stack) - (value*)old_stack->sp;
 #ifdef DEBUG
   size = stack_used + stack_used / 16 + required_space;
@@ -351,7 +321,7 @@ int caml_try_realloc_stack(asize_t required_space)
 #endif
 
   caml_free_stack(old_stack);
-  load_stack(new_stack);
+  Caml_state->current_stack = new_stack;
   return 1;
 }
 
@@ -368,22 +338,13 @@ struct stack_info* caml_alloc_main_stack (uintnat init_size)
 {
   struct stack_info* stk;
 
-  /* Create a stack for the main program.
-     The GC is not initialised yet, so we use caml_alloc_shr
-     which cannot trigger it */
+  /* Create a stack for the main program. */
   stk = caml_stat_alloc(sizeof(value) * init_size);
   stk->wosize = init_size;
   stk->magic = 42;
   caml_init_stack (stk);
 
   return stk;
-}
-
-void caml_init_main_stack ()
-{
-  struct stack_info* stack;
-  stack = caml_alloc_main_stack (Stack_size/sizeof(value));
-  load_stack(stack);
 }
 
 void caml_free_stack (struct stack_info* stack)
@@ -420,11 +381,6 @@ CAMLprim value caml_clone_continuation (value cont)
   caml_continuation_replace(cont, orig_source);
   caml_continuation_replace(new_cont, ret_stack);
   CAMLreturn (new_cont);
-}
-
-void caml_restore_stack()
-{
-  load_stack(Caml_state->current_stack);
 }
 
 CAMLprim value caml_continuation_use (value cont)
