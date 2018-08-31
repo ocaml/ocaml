@@ -1,4 +1,3 @@
-
 #define CAML_CONFIG_H_NO_TYPEDEFS
 #include "config.h"
 let minor_heap_sel_bits = Minor_heap_sel_bits
