@@ -707,8 +707,9 @@ let emit_instr fallthrough i =
       I.sub (nat s) rax;
       let bits = Domainstate.minor_heap_align_bits + Domainstate.minor_heap_sel_bits in
       let minor_val_bitmask = Nativeint.(logor one (shift_left minus_one bits)) in
-      I.mov (nat minor_val_bitmask) rdx;
-      I.test rdx rax;
+      (* The test instruction sign-extends a 32-bit immediate *)
+      assert (minor_val_bitmask = Nativeint.(minor_val_bitmask |> to_int32 |> of_int32));
+      I.test (nat minor_val_bitmask) rax;
       let lbl_call_read_barrier = new_label () in
       let lbl_return = new_label () in
       let lbl_frame = record_frame_label i.live false Debuginfo.none in
