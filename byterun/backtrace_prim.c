@@ -245,7 +245,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
 
   /* Traverse the stack and put all values pointing into bytecode
      into the backtrace buffer. */
-  value *trap_sp = Caml_state->stack_high + Caml_state->trap_sp_off;
+  value *trap_sp = Stack_high(Caml_state->current_stack) + Caml_state->trap_sp_off;
   for (/*nothing*/; sp < trap_sp; sp++) {
     if (Is_long(*sp)) {
       code_t p = Pc_val(*sp);

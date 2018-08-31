@@ -29,7 +29,6 @@ static struct stack_info* save_stack ()
 
 static void load_stack (struct stack_info* stack) {
   caml_domain_state* domain_state = Caml_state;
-  domain_state->stack_high = Stack_high(stack);
   domain_state->current_stack = stack;
   CAMLassert(Stack_base(stack) < (value*)stack->sp &&
              (value*)stack->sp <= Stack_high(stack));
@@ -197,14 +196,12 @@ static struct stack_info* save_stack ()
 {
   caml_domain_state* domain_state = Caml_state;
   struct stack_info* old_stack = domain_state->current_stack;
-  Assert(domain_state->stack_high == Stack_high(old_stack));
   return old_stack;
 }
 
 static void load_stack(struct stack_info* new_stack)
 {
   caml_domain_state* domain_state = Caml_state;
-  domain_state->stack_high = Stack_high(new_stack);
   domain_state->current_stack = new_stack;
 }
 
@@ -243,7 +240,7 @@ CAMLprim value caml_ensure_stack_capacity(value required_space)
 
 void caml_change_max_stack_size (uintnat new_max_size)
 {
-  asize_t size = Caml_state->stack_high - Caml_state->current_stack->sp
+  asize_t size = Stack_high(Caml_state->current_stack) - Caml_state->current_stack->sp
                  + Stack_threshold / sizeof (value);
 
   if (new_max_size < size) new_max_size = size;
@@ -292,11 +289,6 @@ struct stack_info* caml_switch_stack(struct stack_info* stk)
 
   Used by the interpreter to allocate stack space.
 */
-
-int caml_on_current_stack(value* p)
-{
-  return Stack_base(Caml_state->current_stack) <= p && p < Caml_state->stack_high;
-}
 
 int caml_try_realloc_stack(asize_t required_space)
 {
