@@ -64,6 +64,7 @@ let new_value = "new_value"
 let numerator = "numerator"
 let obj = "obj"
 let offsetted = "offsetted"
+let pidentityfloat = "Pidentityfloat"
 let pabsfloat = "Pabsfloat"
 let paddbint = "Paddbint"
 let paddfloat = "Paddfloat"
@@ -168,6 +169,7 @@ let psubfloat = "Psubfloat"
 let psubint = "Psubint"
 let pxorbint = "Pxorbint"
 let pxorint = "Pxorint"
+let pidentityfloat_arg = "Pidentityfloat_arg"
 let pabsfloat_arg = "Pabsfloat_arg"
 let paddbint_arg = "Paddbint_arg"
 let paddfloat_arg = "Paddfloat_arg"
@@ -337,6 +339,7 @@ let of_primitive : Lambda.primitive -> string = function
   | Pintcomp _ -> pintcomp
   | Poffsetint _ -> poffsetint
   | Poffsetref _ -> poffsetref
+  | Pidentityfloat -> pidentityfloat
   | Pintoffloat -> pintoffloat
   | Pfloatofint -> pfloatofint
   | Pnegfloat -> pnegfloat
@@ -440,6 +443,7 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pintcomp _ -> pintcomp_arg
   | Poffsetint _ -> poffsetint_arg
   | Poffsetref _ -> poffsetref_arg
+  | Pidentityfloat -> pidentityfloat_arg
   | Pintoffloat -> pintoffloat_arg
   | Pfloatofint -> pfloatofint_arg
   | Pnegfloat -> pnegfloat_arg

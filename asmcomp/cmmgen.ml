@@ -1621,6 +1621,7 @@ let rec is_unboxed_number ~strict env e =
   | Uprim(p, _, dbg) ->
       begin match simplif_primitive p with
         | Pccall p -> unboxed_number_kind_of_unbox dbg p.prim_native_repr_res
+        | Pidentityfloat
         | Pfloatfield _
         | Pfloatofint
         | Pnegfloat
@@ -2064,6 +2065,8 @@ and transl_prim_1 env p arg dbg =
                  (n lsl 1) dbg],
               dbg)))
   (* Floating-point operations *)
+  | Pidentityfloat ->
+      box_float dbg (transl_unbox_float dbg env arg)
   | Pfloatofint ->
       box_float dbg (Cop(Cfloatofint, [untag_int(transl env arg) dbg], dbg))
   | Pintoffloat ->
