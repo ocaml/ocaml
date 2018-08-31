@@ -206,6 +206,10 @@ Working version
 
 ### Tools
 
+- MPR#7843, GPR#2013: ocamldoc, better handling of {{!label}text} in the latex
+  backend.
+  (Florian Angeletti, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
 - GPR#1711: the new 'open' flag in OCAMLRUNPARAM takes a comma-separated list of
   modules to open as if they had been passed via the command line -open flag.
   (Nicolás Ojeda Bär, review by Mark Shinwell)

@@ -1,0 +1,27 @@
+\documentclass[11pt]{article} 
+\usepackage[latin1]{inputenc} 
+\usepackage[T1]{fontenc} 
+\usepackage{textcomp}
+\usepackage{fullpage} 
+\usepackage{url} 
+\usepackage{ocamldoc}
+\begin{document}
+\tableofcontents
+\section{Module {\tt{Latex\_ref}} : Latex-only test}
+\label{Latex-underscoreref}\index{Latex-underscoreref@\verb`Latex_ref`}
+
+
+
+
+\ocamldocvspace{0.5cm}
+
+
+
+\subsection*{Title }
+\label{lbl}
+
+
+    Check that this text[\ref{lbl}] is present in the generated latex
+    with a reference to [\ref{lbl}].
+
+\end{document}
