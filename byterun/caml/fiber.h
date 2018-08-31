@@ -26,7 +26,7 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value))
 #define Stack_base(stk) ((value*)(stk + 1))
 #define Stack_threshold_ptr(stk) (Stack_base(stk) + Stack_threshold / sizeof(value))
 
-/* 16-byte align-down caml_stack_high for certain architectures like arm64
+/* 16-byte align-down Stack_high because certain architectures like arm64
  * demand 16-byte alignment. Leaves a word unused at the bottom of the stack if
  * the Op_val(stk) + Wosize_val(stk) is not 16-byte aligned. */
 #define Stack_high(stk) ((value*)(((uintnat)stk + sizeof(value) * stk->wosize) & (-1uLL << 4)))
@@ -100,7 +100,6 @@ int caml_try_realloc_stack (asize_t required_size);
 void caml_change_max_stack_size (uintnat new_max_size);
 void caml_maybe_expand_stack();
 void caml_free_stack(struct stack_info* stk);
-int  caml_on_current_stack(value*);
 #ifdef NATIVE_CODE
 int caml_switch_stack(struct stack_info* stk, int should_free);
 #else
