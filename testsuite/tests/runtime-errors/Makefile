@@ -30,9 +30,6 @@ compile:
 	    $(OCAMLOPT) -w a -o $$F.native$(EXE) $$f; \
 	  fi; \
 	done
-	$(if $(findstring win32,$(UNIX_OR_WIN32)),:, \
-	@grep -q HAS_STACK_OVERFLOW_DETECTION $(TOPDIR)/byterun/caml/s.h \
-	  || rm -f stackoverflow.native$(EXE))
 
 # Cygwin doesn't allow the stack limit to be changed - the 4096 is
 # intended to be larger than the its default stack size. The logic
