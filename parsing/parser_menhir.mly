@@ -16,6 +16,13 @@
 /* The parser definition */
 
 %{
+module Pervasives = Stdlib
+(* In 4.08+dev, 'Pervasives' is deprecated in favor of Stdlib. We need
+   to disable the deprecation warning not because of any OCaml code
+   below, but because Menhir generates code using Pervasives (in the
+   interpretation of $symbolstartpos). Yes, this is ugly, but right now
+   we don't see an easier way.  *)
+
 open Asttypes
 open Longident
 open Parsetree
