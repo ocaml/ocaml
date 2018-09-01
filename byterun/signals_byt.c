@@ -23,7 +23,6 @@
 #include "caml/memory.h"
 #include "caml/osdeps.h"
 #include "caml/signals.h"
-#include "caml/signals_machdep.h"
 
 #ifndef NSIG
 #define NSIG 64
