@@ -1240,12 +1240,13 @@ class html =
        type (or class or class type) idents
        have been replaced by links to the type referenced by the ident.*)
     method create_fully_qualified_idents_links m_name s =
+      let ln = !Odoc_global.library_namespace in
       let f str_t =
         let match_s = Str.matched_string str_t in
         let known_type = String.Set.mem match_s known_types_names in
         let known_class = String.Set.mem match_s known_classes_names in
-        let retry, match_s = if not (known_type || known_class) then
-            true, Name.get_relative "Stdlib" match_s
+        let retry, match_s = if not (known_type || known_class) && ln <> "" then
+            true, Name.get_relative_opt ln match_s
           else
             false, match_s
         in
@@ -1279,9 +1280,10 @@ class html =
       let f str_t =
         let match_s = Str.matched_string str_t in
         let known_module = String.Set.mem match_s known_modules_names in
+        let ln = !Odoc_global.library_namespace in
         let retry, match_s =
-          if not known_module then
-            true, Name.get_relative "Stdlib" match_s
+          if not known_module && ln <> "" then
+            true, Name.get_relative_opt ln match_s
           else
             false, match_s in
         let rel = Name.get_relative m_name match_s in

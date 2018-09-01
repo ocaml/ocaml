@@ -105,3 +105,6 @@ val with_trailer : bool ref
 
 (** Name of the module that is initially opened. *)
 val initially_opened_module : string ref
+
+(** Name of the library namespace for a prefixed library *)
+val library_namespace: string ref

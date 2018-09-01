@@ -1498,8 +1498,9 @@ module Analyser =
           begin
             match sig_module_type with
               Types.Mty_alias(_, path) ->
+                let ln = !Odoc_global.library_namespace in
                 let alias_name = Odoc_env.full_module_name env
-                    Name.(stdlib_unprefix @@ from_path path) in
+                    Name.(alias_unprefix ln @@ from_path path) in
                 let ma = { ma_name = alias_name ; ma_module = None } in
                 Module_alias ma
             | _ ->

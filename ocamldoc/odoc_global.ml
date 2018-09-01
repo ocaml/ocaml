@@ -79,3 +79,5 @@ let with_toc = ref true
 let with_index = ref true
 
 let initially_opened_module = ref "Stdlib"
+
+let library_namespace = ref ""
