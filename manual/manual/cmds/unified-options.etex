@@ -606,6 +606,12 @@ runtime, which is useful for debugging pointer problems in low-level
 code such as C stubs.
 }%notop
 
+\notop{
+\item["-stop-after" \var{pass}]
+Stop compilation after the given compilation pass. The currently
+supported passes are: "parsing", "typing".
+}%notop
+
 \nat{%
 \item["-S"]
 Keep the assembly code produced during the compilation. The assembly

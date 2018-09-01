@@ -56,7 +56,22 @@ module Options = Main_args.Make_optcomp_options (struct
   let _config_var = Misc.show_config_variable_and_exit
   let _for_pack s = for_package := Some s
   let _g = set debug
-  let _i () = print_types := true; compile_only := true
+  let _i () =
+    print_types := true;
+    compile_only := true;
+    stop_after := Some Compiler_pass.Typing;
+    ()
+  let _stop_after pass =
+    let module P = Compiler_pass in
+    begin match P.of_string pass with
+    | None -> () (* this should not occur as we use Arg.Symbol *)
+    | Some pass ->
+        stop_after := Some pass;
+        begin match pass with
+        | P.Parsing | P.Typing ->
+            compile_only := true
+        end;
+    end
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
   let _inline spec =

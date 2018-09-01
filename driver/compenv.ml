@@ -105,6 +105,10 @@ type readenv_position =
    or ':', '|', ';', ' ' or ',' *)
 exception SyntaxError of string
 
+let print_error ppf msg =
+  Location.print_warning Location.none ppf
+    (Warnings.Bad_env_variable ("OCAMLPARAM", msg))
+
 let parse_args s =
   let args =
     let len = String.length s in
@@ -148,25 +152,22 @@ let setter ppf f name options s =
     in
     List.iter (fun b -> b := f bool) options
   with Not_found ->
-    Location.print_warning Location.none ppf
-      (Warnings.Bad_env_variable ("OCAMLPARAM",
-                                  Printf.sprintf "bad value for %s" name))
+    Printf.ksprintf (print_error ppf)
+      "bad value %s for %s" s name
 
 let int_setter ppf name option s =
   try
     option := int_of_string s
   with _ ->
-    Location.print_warning Location.none ppf
-      (Warnings.Bad_env_variable
-         ("OCAMLPARAM", Printf.sprintf "non-integer parameter for \"%s\"" name))
+    Printf.ksprintf (print_error ppf)
+      "non-integer parameter %s for %S" s name
 
 let int_option_setter ppf name option s =
   try
     option := Some (int_of_string s)
   with _ ->
-    Location.print_warning Location.none ppf
-      (Warnings.Bad_env_variable
-         ("OCAMLPARAM", Printf.sprintf "non-integer parameter for \"%s\"" name))
+    Printf.ksprintf (print_error ppf)
+      "non-integer parameter %s for %S" s name
 
 (*
 let float_setter ppf name option s =
@@ -185,9 +186,8 @@ let check_bool ppf name s =
   | "0" -> false
   | "1" -> true
   | _ ->
-    Location.print_warning Location.none ppf
-      (Warnings.Bad_env_variable ("OCAMLPARAM",
-                                  Printf.sprintf "bad value for %s" name));
+    Printf.ksprintf (print_error ppf)
+      "bad value %s for %s" s name;
     false
 
 (* 'can-discard=' specifies which arguments can be discarded without warning
@@ -260,12 +260,8 @@ let read_one_param ppf position name v =
       begin match F.parse_no_error v inline_threshold with
       | F.Ok -> ()
       | F.Parse_failed exn ->
-          let error =
-            Printf.sprintf "bad syntax for \"inline\": %s"
-              (Printexc.to_string exn)
-          in
-          Location.print_warning Location.none ppf
-            (Warnings.Bad_env_variable ("OCAMLPARAM", error))
+          Printf.ksprintf (print_error ppf)
+            "bad syntax %s for \"inline\": %s" v (Printexc.to_string exn)
       end
 
   | "inline-toplevel" ->
@@ -348,10 +344,9 @@ let read_one_param ppf position name v =
   | "color" ->
       begin match parse_color_setting v with
       | None ->
-        Location.print_warning Location.none ppf
-          (Warnings.Bad_env_variable ("OCAMLPARAM",
-           "bad value for \"color\", \
-            (expected \"auto\", \"always\" or \"never\")"))
+        Printf.ksprintf (print_error ppf)
+          "bad value %s for \"color\", \
+           (expected \"auto\", \"always\" or \"never\")" v
       | Some setting -> color := Some setting
       end
 
@@ -426,10 +421,24 @@ let read_one_param ppf position name v =
 
   | "plugin" -> !load_plugin v
 
+  | "stop-after" ->
+    let module P = Clflags.Compiler_pass in
+    begin match P.of_string v with
+    | None ->
+        Printf.ksprintf (print_error ppf)
+          "bad value %s for option \"stop-after\" (expected one of: %s)"
+          v (String.concat ", " P.pass_names)
+    | Some pass ->
+        Clflags.stop_after := Some pass;
+        begin match pass with
+        | P.Parsing | P.Typing ->
+            compile_only := true
+        end;
+    end
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;
-      Printf.eprintf
+      Printf.ksprintf (print_error ppf)
         "Warning: discarding value of variable %S in OCAMLPARAM\n%!"
         name
     end
@@ -441,9 +450,8 @@ let read_OCAMLPARAM ppf position =
       try
         parse_args s
       with SyntaxError s ->
-         Location.print_warning Location.none ppf
-           (Warnings.Bad_env_variable ("OCAMLPARAM", s));
-         [],[]
+        print_error ppf s;
+        [],[]
     in
     List.iter (fun (name, v) -> read_one_param ppf position name v)
       (match position with

@@ -376,6 +376,42 @@ let color = ref None ;; (* -color *)
 
 let unboxed_types = ref false
 
+(* This is used by the -stop-after option. *)
+module Compiler_pass = struct
+  (* If you add a new pass, the following must be updated:
+     - the variable `passes` below
+     - the manpages in man/ocaml{c,opt}.m
+     - the manual manual/manual/cmds/unified-options.etex
+  *)
+  type t = Parsing | Typing
+
+  let to_string = function
+    | Parsing -> "parsing"
+    | Typing -> "typing"
+
+  let of_string = function
+    | "parsing" -> Some Parsing
+    | "typing" -> Some Typing
+    | _ -> None
+
+  let rank = function
+    | Parsing -> 0
+    | Typing -> 1
+
+  let passes = [
+    Parsing;
+    Typing;
+  ]
+  let pass_names = List.map to_string passes
+end
+
+let stop_after = ref None (* -stop-after *)
+
+let should_stop_after pass =
+  match !stop_after with
+  | None -> false
+  | Some stop -> Compiler_pass.rank stop <= Compiler_pass.rank pass
+
 module String = Misc.Stdlib.String
 
 let arg_spec = ref []
