@@ -978,21 +978,10 @@ CFI_STARTPROC
         movq    C_ARG_2, %rax
     /* Load young_ptr into %r15 */
         movq    Caml_state(young_ptr), %r15
-LBL(caml_raise_exception):
     /* Load ocaml stack and restore global variables */
         SWITCH_C_TO_OCAML(%r10)
     /* Raise the exception in OCaml */
         jmp LBL(caml_raise_exn)
-CFI_ENDPROC
-
-/* Raise a Stack_overflow exception on return from segv_handler()
-   (in asmrun/signals_asm.c).  On entry, the stack is full, so we
-   cannot record a backtrace. */
-
-FUNCTION(G(caml_stack_overflow))
-CFI_STARTPROC
-        LEA_VAR(caml_exn_Stack_overflow, %rax)
-        jmp     LBL(caml_raise_exception)
 CFI_ENDPROC
 
 /******************************************************************************/

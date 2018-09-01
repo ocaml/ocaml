@@ -68,7 +68,7 @@ signals.$(O): signals.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/fail.h ../byterun/caml/memory.h \
  ../byterun/caml/misc.h ../byterun/caml/mlvalues.h \
  ../byterun/caml/roots.h ../byterun/caml/signals.h \
- ../byterun/caml/signals_machdep.h ../byterun/caml/sys.h
+  ../byterun/caml/sys.h
 signals_asm.$(O): signals_asm.c ../byterun/caml/fail.h \
  ../byterun/caml/misc.h ../byterun/caml/config.h ../byterun/caml/m.h \
  ../byterun/caml/s.h ../byterun/caml/mlvalues.h \
@@ -78,7 +78,7 @@ signals_asm.$(O): signals_asm.c ../byterun/caml/fail.h \
  ../byterun/caml/domain.h ../byterun/caml/memory.h \
  ../byterun/caml/alloc.h ../byterun/caml/osdeps.h \
  ../byterun/caml/domain.h ../byterun/caml/signals.h \
- ../byterun/caml/signals_machdep.h signals_osdep.h \
+   \
  ../byterun/caml/stack.h ../byterun/caml/spacetime.h ../byterun/caml/io.h \
  ../byterun/caml/platform.h ../byterun/caml/misc.h
 misc.$(O): misc.c ../byterun/caml/config.h ../byterun/caml/m.h \
@@ -674,7 +674,7 @@ signals.p.$(O): signals.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/fail.h ../byterun/caml/memory.h \
  ../byterun/caml/misc.h ../byterun/caml/mlvalues.h \
  ../byterun/caml/roots.h ../byterun/caml/signals.h \
- ../byterun/caml/signals_machdep.h ../byterun/caml/sys.h
+  ../byterun/caml/sys.h
 signals_asm.p.$(O): signals_asm.c ../byterun/caml/fail.h \
  ../byterun/caml/misc.h ../byterun/caml/config.h ../byterun/caml/m.h \
  ../byterun/caml/s.h ../byterun/caml/mlvalues.h \
@@ -684,7 +684,7 @@ signals_asm.p.$(O): signals_asm.c ../byterun/caml/fail.h \
  ../byterun/caml/domain.h ../byterun/caml/memory.h \
  ../byterun/caml/alloc.h ../byterun/caml/osdeps.h \
  ../byterun/caml/domain.h ../byterun/caml/signals.h \
- ../byterun/caml/signals_machdep.h signals_osdep.h \
+   \
  ../byterun/caml/stack.h ../byterun/caml/spacetime.h ../byterun/caml/io.h \
  ../byterun/caml/platform.h ../byterun/caml/misc.h
 misc.p.$(O): misc.c ../byterun/caml/config.h ../byterun/caml/m.h \
@@ -1280,7 +1280,7 @@ signals.d.$(O): signals.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/fail.h ../byterun/caml/memory.h \
  ../byterun/caml/misc.h ../byterun/caml/mlvalues.h \
  ../byterun/caml/roots.h ../byterun/caml/signals.h \
- ../byterun/caml/signals_machdep.h ../byterun/caml/sys.h
+  ../byterun/caml/sys.h
 signals_asm.d.$(O): signals_asm.c ../byterun/caml/fail.h \
  ../byterun/caml/misc.h ../byterun/caml/config.h ../byterun/caml/m.h \
  ../byterun/caml/s.h ../byterun/caml/mlvalues.h \
@@ -1290,7 +1290,7 @@ signals_asm.d.$(O): signals_asm.c ../byterun/caml/fail.h \
  ../byterun/caml/domain.h ../byterun/caml/memory.h \
  ../byterun/caml/alloc.h ../byterun/caml/osdeps.h \
  ../byterun/caml/domain.h ../byterun/caml/signals.h \
- ../byterun/caml/signals_machdep.h signals_osdep.h \
+   \
  ../byterun/caml/stack.h ../byterun/caml/spacetime.h ../byterun/caml/io.h \
  ../byterun/caml/platform.h ../byterun/caml/misc.h
 misc.d.$(O): misc.c ../byterun/caml/config.h ../byterun/caml/m.h \
@@ -1886,7 +1886,7 @@ signals.i.$(O): signals.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/fail.h ../byterun/caml/memory.h \
  ../byterun/caml/misc.h ../byterun/caml/mlvalues.h \
  ../byterun/caml/roots.h ../byterun/caml/signals.h \
- ../byterun/caml/signals_machdep.h ../byterun/caml/sys.h
+  ../byterun/caml/sys.h
 signals_asm.i.$(O): signals_asm.c ../byterun/caml/fail.h \
  ../byterun/caml/misc.h ../byterun/caml/config.h ../byterun/caml/m.h \
  ../byterun/caml/s.h ../byterun/caml/mlvalues.h \
@@ -1896,7 +1896,7 @@ signals_asm.i.$(O): signals_asm.c ../byterun/caml/fail.h \
  ../byterun/caml/domain.h ../byterun/caml/memory.h \
  ../byterun/caml/alloc.h ../byterun/caml/osdeps.h \
  ../byterun/caml/domain.h ../byterun/caml/signals.h \
- ../byterun/caml/signals_machdep.h signals_osdep.h \
+   \
  ../byterun/caml/stack.h ../byterun/caml/spacetime.h ../byterun/caml/io.h \
  ../byterun/caml/platform.h ../byterun/caml/misc.h
 misc.i.$(O): misc.c ../byterun/caml/config.h ../byterun/caml/m.h \
