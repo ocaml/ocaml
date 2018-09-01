@@ -56,14 +56,14 @@ module Mode = struct
         which will only be needed at a later point of program execution. For
         example, [fun x -> ?] or [lazy ?] are [Delay] contexts. *)
 
-    | Unused
-    (** [Unused] is for subexpressions that are not used at all during
+    | Ignore
+    (** [Ignore] is for subexpressions that are not used at all during
        the evaluation of the whole program. This is the mode of
        a variable in an expression in which it does not occur. *)
 
   (* Returns the most conservative mode of the two arguments.
 
-     Dereference < Return < Guard < Delay < Unused
+     Dereference < Return < Guard < Delay < Ignore
 
      In judgments we write (m + m') for (join m m').
   *)
@@ -77,15 +77,18 @@ module Mode = struct
     | _, Guard -> Guard
     | Delay, _
     | _, Delay -> Delay
-    | _ -> Unused
+    | _ -> Ignore
 
   (* If x is used with the mode m in e[x], and e[x] is used with mode
-     m' in e'[e[x]], then x is used with mode m'[m] in e'[e[x]].
+     m' in e'[e[x]], then x is used with mode m'[m] (our notation for
+     "compose m' m") in e'[e[x]].
 
      Return is neutral for composition: m[Return] = m = Return[m].
-  *)
-  let compos m' m = match m', m with
-    | Unused, _ | _, Unused -> Unused
+
+     Composition is associative and [Ignore] is a zero/annihilator for
+     it: (compose Ignore m) and (compose m Ignore) are both Ignore. *)
+  let compose m' m = match m', m with
+    | Ignore, _ | _, Ignore -> Ignore
     | Dereference, _ -> Dereference
     | Delay, _ -> Delay
     | Guard, Return -> Guard
@@ -94,7 +97,7 @@ module Mode = struct
     | Return, ((Dereference | Guard | Delay) as m) -> m
 end
 
-type mode = Mode.t = Dereference | Return | Guard | Delay | Unused
+type mode = Mode.t = Dereference | Return | Guard | Delay | Ignore
 
 module Env :
 sig
@@ -109,7 +112,7 @@ sig
 
   val find : Ident.t -> t -> Mode.t
   (** Find the mode of an indentifier in an environment.  The default mode is
-      Unused. *)
+      Ignore. *)
 
   val unguarded : t -> Ident.t list -> Ident.t list
   (** unguarded e l: the list of all identifiers in l that are dereferenced or
@@ -137,7 +140,7 @@ end = struct
   type t = Mode.t M.t
 
   let find (id: Ident.t) (tbl: t) =
-    try M.find id tbl with Not_found -> Unused
+    try M.find id tbl with Not_found -> Ignore
 
   let empty = M.empty
 
@@ -155,14 +158,14 @@ end = struct
   let unguarded env li =
     let not_guarded = function
       | Dereference | Return -> true
-      | Guard | Delay | Unused -> false
+      | Guard | Delay | Ignore -> false
     in
     List.filter (fun id -> not_guarded (find id env)) li
 
   let dependent env li =
     let used = function
       | Dereference | Return | Guard | Delay -> true
-      | Unused -> false
+      | Ignore -> false
     in
     List.filter (fun id -> used (find id env)) li
 
@@ -433,7 +436,7 @@ let rec expression : Typedtree.expression -> term_judg =
       (fun mode ->
         let pat_envs, pat_modes =
           List.split (List.map (fun c -> case c mode) cases) in
-        let env_e = expression e (List.fold_left Mode.join Unused pat_modes) in
+        let env_e = expression e (List.fold_left Mode.join Ignore pat_modes) in
         Env.join_list (env_e :: pat_envs))
     | Texp_for (_, _, low, high, _, body) ->
       (*
@@ -757,7 +760,7 @@ and modexp : Typedtree.module_expr -> term_judg =
         | Tcoerce_primitive _ ->
           (* This corresponds to 'external' declarations,
              and the coercion ignores its argument *)
-          k Unused
+          k Ignore
         | Tcoerce_alias (pth, coe) ->
           (* Alias coercions ignore their arguments, but they evaluate
              their alias module 'pth' under another coercion. *)
@@ -995,7 +998,7 @@ and pattern : pattern -> Env.t -> mode = fun pat env ->
   let m_env =
     pat_bound_idents pat
     |> List.map (fun id -> Env.find id env)
-    |> List.fold_left Mode.join Unused
+    |> List.fold_left Mode.join Ignore
   in
   Mode.join m_pat m_env
 
