@@ -2,6 +2,7 @@ basic.ml
 extension_constructor.ml
 flat_float_array.ml
 no_flat_float_array.ml
+float_unboxing.ml
 records.ml
 labels.ml
 lazy_.ml

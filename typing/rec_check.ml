@@ -552,9 +552,13 @@ let rec expression : Typedtree.expression -> term_judg =
     | Texp_setfield (e1, _, _, e2) ->
       (*
         G1 |- e1: m[Dereference]
-        G2 |- e2: m[Dereference] (*TODO: why is this a dereference?*)
+        G2 |- e2: m[Dereference]
         ---
         G1 + G2 |- e1.x <- e2: m
+
+        Note: e2 is dereferenced in the case of a field assignment to
+        a record of unboxed floats in that case, e2 evaluates to
+        a boxed float and it is unboxed on assignment.
       *)
       join [
         expression e1 << Dereference;
@@ -603,8 +607,8 @@ let rec expression : Typedtree.expression -> term_judg =
       expression e << Dereference
     | Texp_setinstvar (pth,_,_,e) ->
       (*
-        G |- e: m[Dereference]  (*TODO: why is this a dereference?*)
-        -----------------------
+        G |- e: m[Dereference]
+        ----------------------
         G |- x <- e: m
       *)
       join [
