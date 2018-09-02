@@ -61,7 +61,9 @@ module Mode = struct
        the evaluation of the whole program. This is the mode of
        a variable in an expression in which it does not occur. *)
 
-  (* Returns the most conservative mode of the two arguments.
+  (* Returns the more conservative mode of the two arguments
+     (the mode corresponding to the context that makes the
+      strongest use and thus rejects more subterms.)
 
      Dereference < Return < Guard < Delay < Ignore
 
@@ -111,7 +113,7 @@ sig
   (** An environment with no used identifiers. *)
 
   val find : Ident.t -> t -> Mode.t
-  (** Find the mode of an indentifier in an environment.  The default mode is
+  (** Find the mode of an identifier in an environment.  The default mode is
       Ignore. *)
 
   val unguarded : t -> Ident.t list -> Ident.t list
@@ -119,7 +121,8 @@ sig
       returned in the environment e. *)
 
   val dependent : t -> Ident.t list -> Ident.t list
-  (** unguarded e l: the list of all identifiers in e that are used in e. *)
+  (** dependent e l: the list of all identifiers in l that are used in e
+      (not ignored). *)
 
   val join : t -> t -> t
   val join_list : t list -> t
@@ -398,7 +401,7 @@ let empty = fun _ -> Env.empty
    returns an environment. The judgment [judg << m], given a mode [m']
    from the context, evaluates [judg] in the composed mode [m'[m]]. *)
 let (<<) : term_judg -> Mode.t -> term_judg =
-  fun f inner_mode -> fun outer_mode -> f (Mode.compos outer_mode inner_mode)
+  fun f inner_mode -> fun outer_mode -> f (Mode.compose outer_mode inner_mode)
 
 (* A binding judgment [binder] expects a mode and an inner environment,
    and returns an outer environment. [binder >> judg] computes
@@ -409,7 +412,7 @@ let (>>) : bind_judg -> term_judg -> term_judg =
 
 (* Expression judgment:
      G |- e : m
-   where (m) is an output of the code and (G) is an output;
+   where (m) is an input of the code and (G) is an output;
    in the Prolog mode notation, this is (+G |- -e : -m).
 *)
 let rec expression : Typedtree.expression -> term_judg =
@@ -903,7 +906,7 @@ and recursive_module_bindings
     let mids = List.map fst m_bindings in
     let binding (mid, mexp) m =
       let mM = Env.find mid env in
-      Env.remove_list mids (modexp mexp Mode.(compos m (join mM Guard)))
+      Env.remove_list mids (modexp mexp Mode.(compose m (join mM Guard)))
     in
     Env.join (list binding m_bindings m) (Env.remove_list mids env)
 
@@ -950,7 +953,7 @@ and value_bindings : rec_flag -> Typedtree.value_binding list -> bind_judg =
       let bound_pats = match rec_flag with
         | Recursive -> all_bound_pats
         | Nonrecursive -> [vb_pat] in
-      let m' = Mode.compos m (pattern vb_pat bound_env) in
+      let m' = Mode.compose m (pattern vb_pat bound_env) in
       remove_patlist bound_pats (expression vb_expr m') in
     Env.join
       (list binding_env bindings mode)
@@ -976,7 +979,7 @@ and case : Typedtree.case -> mode -> Env.t * mode =
       ] in
     (fun m ->
        let env = judg m in
-       (remove_pat c_lhs env), Mode.compos m (pattern c_lhs env))
+       (remove_pat c_lhs env), Mode.compose m (pattern c_lhs env))
 
 (* p : m -| G
    with output m and output G
@@ -1005,9 +1008,8 @@ and pattern : pattern -> Env.t -> mode = fun pat env ->
 and is_destructuring_pattern : Typedtree.pattern -> bool =
   fun pat -> match pat.pat_desc with
     | Tpat_any -> false
-    | Tpat_var (_id, _) -> false
-    | Tpat_alias (pat, _, _) ->
-        is_destructuring_pattern pat
+    | Tpat_var (_, _) -> false
+    | Tpat_alias (pat, _, _) -> is_destructuring_pattern pat
     | Tpat_constant _ -> true
     | Tpat_tuple _ -> true
     | Tpat_construct (_, _, _) -> true

@@ -25,7 +25,8 @@ Working version
   (Thomas Refis, with help from Leo White, review by Jacques Garrigue)
 
 - GPR#1942: simplification of the static check for recursive definitions
-  (Alban Reynaud and Gabriel Scherer, review by ??? and Armaël Guéneau)
+  (Alban Reynaud and Gabriel Scherer,
+   review by Jeremy Yallop and Armaël Guéneau)
 
 ### Standard library:
 
