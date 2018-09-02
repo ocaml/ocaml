@@ -7,6 +7,7 @@ Item_ids.mli
 Paragraph.mli
 Module_whitespace.ml
 No_preamble.mli
+latex_ref.mli
 Level_0.mli
 Linebreaks.mli
 Loop.ml
