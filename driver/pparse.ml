@@ -166,7 +166,7 @@ let parse (type a) (kind : a ast_kind) lexbuf : a =
   | Signature -> Parse.interface lexbuf
 
 let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
-             (kind : a ast_kind) =
+             (kind : a ast_kind) : a =
   let ast_magic = magic_of_kind kind in
   let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
   let ast =
@@ -211,17 +211,14 @@ let () =
       | _ -> None
     )
 
-let parse_file ~tool_name invariant_fun apply_hooks kind sourcefile =
+let parse_file ~tool_name invariant_fun parse kind sourcefile =
   Location.input_name := sourcefile;
   let inputfile = preprocess sourcefile in
-  let ast =
-    Misc.try_finally (fun () ->
-        file_aux ~tool_name inputfile (parse kind) invariant_fun kind
-      )
-      ~always:(fun () -> remove_preprocessed inputfile)
-  in
-  let ast = apply_hooks { Misc.sourcefile } ast in
-  ast
+  Misc.try_finally
+    (fun () ->
+       Profile.record_call "parsing" @@ fun () ->
+       file_aux ~tool_name inputfile parse invariant_fun kind)
+    ~always:(fun () -> remove_preprocessed inputfile)
 
 module ImplementationHooks = Misc.MakeHooks(struct
     type t = Parsetree.structure
@@ -231,10 +228,11 @@ module InterfaceHooks = Misc.MakeHooks(struct
   end)
 
 let parse_implementation ~tool_name sourcefile =
-  Profile.record_call "parsing" (fun () ->
-    parse_file ~tool_name Ast_invariants.structure
-      ImplementationHooks.apply_hooks Structure sourcefile)
+  parse_file ~tool_name Ast_invariants.structure
+      (parse Structure) Structure sourcefile
+  |> ImplementationHooks.apply_hooks { Misc.sourcefile }
+
 let parse_interface ~tool_name sourcefile =
-  Profile.record_call "parsing" (fun () ->
-    parse_file ~tool_name Ast_invariants.signature
-      InterfaceHooks.apply_hooks Signature sourcefile)
+  parse_file ~tool_name Ast_invariants.signature
+    (parse Signature) Signature sourcefile
+  |> InterfaceHooks.apply_hooks { Misc.sourcefile }

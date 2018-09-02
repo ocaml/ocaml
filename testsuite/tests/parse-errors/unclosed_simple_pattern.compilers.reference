@@ -22,20 +22,32 @@ Error: Syntax error: ')' expected
            | (_ : int
              ^
        This '(' might be unmatched
+Line 6, characters 18-25:
+    | (module Foo : sig end
+                    ^^^^^^^
+Error: invalid package type: only module type identifier and 'with type' constraints are supported
 Line 7, characters 0-2:
   ;;
   ^^
-Error: Syntax error: module-expr expected.
-Line 7, characters 0-2:
-  ;;
-  ^^
-Error: Syntax error
+Error: Syntax error: '}' expected
+       Line 6, characters 4-5:
+           | { foo; bar;
+             ^
+       This '{' might be unmatched
 Line 4, characters 0-2:
   ;;
   ^^
-Error: Syntax error
+Error: Syntax error: ']' expected
+       Line 3, characters 4-5:
+           | [ 1; 2;
+             ^
+       This '[' might be unmatched
 Line 4, characters 0-2:
   ;;
   ^^
-Error: Syntax error
+Error: Syntax error: '|]' expected
+       Line 3, characters 4-6:
+           | [| 3; 4;
+             ^^
+       This '[|' might be unmatched
 

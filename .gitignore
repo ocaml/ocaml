@@ -56,7 +56,6 @@ _ocamltestd
 /asmcomp/CSE.ml
 
 /boot/ocamlrun
-/boot/ocamlyacc
 /boot/camlheader
 
 /bytecomp/runtimedef.ml
@@ -159,6 +158,8 @@ _ocamltestd
 /parsing/parser.output
 /parsing/parser.automaton
 /parsing/parser.conflicts
+/parsing/camlinternalMenhirLib.ml
+/parsing/camlinternalMenhirLib.mli
 
 /runtime/caml/jumptbl.h
 /runtime/caml/m.h

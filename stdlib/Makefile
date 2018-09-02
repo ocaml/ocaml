@@ -17,7 +17,6 @@ include ../config/Makefile
 include ../Makefile.common
 
 CAMLRUN ?= ../boot/ocamlrun
-CAMLYACC ?= ../boot/ocamlyacc
 TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=../ocamlc

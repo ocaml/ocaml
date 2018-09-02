@@ -27,6 +27,7 @@ callback.cmi :
 camlinternalFormat.cmi : camlinternalFormatBasics.cmi buffer.cmi
 camlinternalFormatBasics.cmi :
 camlinternalLazy.cmi :
+camlinternalMenhirLib.cmi : obj.cmi lexing.cmi lazy.cmi
 camlinternalMod.cmi : obj.cmi
 camlinternalOO.cmi : obj.cmi
 ccomp.cmi :
@@ -100,13 +101,14 @@ outcometree.cmi : format.cmi asttypes.cmi
 parmatch.cmi : types.cmi typedtree.cmi parsetree.cmi location.cmi \
     hashtbl.cmi env.cmi asttypes.cmi
 parse.cmi : parsetree.cmi lexing.cmi
-parser.cmi : parsetree.cmi location.cmi lexing.cmi docstrings.cmi
+parser.cmi : parsetree.cmi location.cmi lexing.cmi docstrings.cmi \
+    camlinternalMenhirLib.cmi
 parsetree.cmi : longident.cmi location.cmi asttypes.cmi
 parsing.cmi : obj.cmi lexing.cmi
 path.cmi : set.cmi map.cmi ident.cmi
 pervasives.cmi : stdlib.cmi
 pparse.cmi : parsetree.cmi misc.cmi lexing.cmi format.cmi
-pprintast.cmi : parsetree.cmi format.cmi
+pprintast.cmi : parsetree.cmi longident.cmi format.cmi
 predef.cmi : types.cmi path.cmi ident.cmi
 primitive.cmi : parsetree.cmi outcometree.cmi location.cmi
 printast.cmi : parsetree.cmi format.cmi

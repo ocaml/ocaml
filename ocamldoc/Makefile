@@ -19,7 +19,7 @@ include $(ROOTDIR)/config/Makefile
 include $(ROOTDIR)/Makefile.common
 
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
-OCAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
+OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc $(STDLIBFLAGS)

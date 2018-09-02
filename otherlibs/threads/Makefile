@@ -19,7 +19,6 @@ include ../../config/Makefile
 include ../../Makefile.common
 
 CAMLRUN ?= ../../boot/ocamlrun
-CAMLYACC ?= ../../boot/ocamlyacc
 
 OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 OC_CPPFLAGS += -I../../runtime

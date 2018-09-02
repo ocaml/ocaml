@@ -1,0 +1,68 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Gabriel Scherer, projet Parsifal, INRIA Saclay              *
+#*                                                                        *
+#*   Copyright 2018 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+MENHIR ?= menhir
+
+MENHIRFLAGS := --explain --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer\
+	--lalr --strict --table \
+        --unused-token COMMENT --unused-token DOCSTRING --unused-token EOL\
+        --unused-token GREATERRBRACKET --fixed-exception
+
+# tokens COMMENT, DOCSTRING and EOL are produced by special lexer
+# modes used by other consumers than the parser.
+
+# GREATERBRACKET ">]" was added by the parser by symmetry with "[<"
+# (which is used in polymorphic variant), but is not currently used by
+# the grammar.
+
+.PHONY: import-menhirLib
+
+import-menhirLib:
+	mkdir -p boot/menhir
+	cp \
+           $(addprefix `$(MENHIR) --suggest-menhirLib`/menhirLib.,ml mli) \
+           boot/menhir
+
+# The import-menhirLib invocation ensures that each call to $(MENHIR)
+# is paired with an update of the imported menhirLib; otherwise it
+# would be easy to generate a parser and keep an incompatible version of
+# menhirLib, which would fail at compile-time.
+promote-menhir: parsing/parser.mly
+	$(MAKE) import-menhirLib
+	$(MENHIR) $(MENHIRFLAGS) parsing/parser.mly
+	cp $(addprefix parsing/parser.,ml mli) boot/menhir
+
+.PHONY: test-menhir
+test-menhir: parsing/parser.mly
+	$(MENHIR) $(MENHIRFLAGS) parsing/parser.mly
+	sed -i "s/MenhirLib/CamlinternalMenhirLib/g" \
+	  $(addprefix parsing/parser.,ml mli)
+	$(MAKE) parsing/parser.cmo
+
+partialclean-menhir::
+	rm -f \
+	  $(addprefix parsing/parser.,ml mli) \
+	  $(addprefix parsing/camlinternalMenhirLib.,ml mli)
+
+clean-menhir: partialclean-menhir
+
+.PHONY: depend-menhir
+depend-menhir:
+	$(MENHIR) --depend --ocamldep "$(CAMLDEP) -slash $(DEPFLAGS)" \
+          parsing/parser.mly > .depend.menhir
+# this rule depends on the variables CAMLDEP and DEPFLAGS
+# define in Makefile, so it can only be invoked from the main Makefile
+
+include .depend.menhir

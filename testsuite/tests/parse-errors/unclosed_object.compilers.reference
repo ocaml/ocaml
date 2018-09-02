@@ -1,2 +1,4 @@
 File "unclosed_object.ml", line 11, characters 0-0:
-Error: Syntax error
+Error: Syntax error: 'end' expected
+       File "unclosed_object.ml", line 10, characters 8-14:
+       This 'object' might be unmatched
