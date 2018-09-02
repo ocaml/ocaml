@@ -77,12 +77,15 @@ type pp_token =
   | Pp_newline                 (* to force a newline inside a box *)
   | Pp_if_newline              (* to do something only if this very
                                   line has been broken *)
-  | Pp_open_tag of tag         (* opening a tag name *)
+  | Pp_open_tag of stag         (* opening a tag name *)
   | Pp_close_tag               (* closing the most recently open tag *)
 
-and tag = string
+and stag = ..
 
 and tbox = Pp_tbox of int list ref  (* Tabulation box *)
+
+type tag = string
+type stag += String_tag of tag
 
 
 (* The pretty-printer queue:
@@ -134,8 +137,8 @@ type formatter = {
   pp_format_stack : pp_format_elem Stack.t;
   pp_tbox_stack : tbox Stack.t;
   (* The pretty-printer semantics tag stack. *)
-  pp_tag_stack : tag Stack.t;
-  pp_mark_stack : tag Stack.t;
+  pp_tag_stack : stag Stack.t;
+  pp_mark_stack : stag Stack.t;
   (* Value of right margin. *)
   mutable pp_margin : int;
   (* Minimal space left before margin, when opening a box. *)
@@ -174,21 +177,21 @@ type formatter = {
   (* Are tags marked ? *)
   mutable pp_mark_tags : bool;
   (* Find opening and closing markers of tags. *)
-  mutable pp_mark_open_tag : tag -> string;
-  mutable pp_mark_close_tag : tag -> string;
-  mutable pp_print_open_tag : tag -> unit;
-  mutable pp_print_close_tag : tag -> unit;
+  mutable pp_mark_open_tag : stag -> string;
+  mutable pp_mark_close_tag : stag -> string;
+  mutable pp_print_open_tag : stag -> unit;
+  mutable pp_print_close_tag : stag -> unit;
   (* The pretty-printer queue. *)
   pp_queue : pp_queue;
 }
 
 
 (* The formatter specific tag handling functions. *)
-type formatter_tag_functions = {
-  mark_open_tag : tag -> string;
-  mark_close_tag : tag -> string;
-  print_open_tag : tag -> unit;
-  print_close_tag : tag -> unit;
+type formatter_stag_functions = {
+  mark_open_stag : stag -> string;
+  mark_close_stag : stag -> string;
+  print_open_stag : stag -> unit;
+  print_close_stag : stag -> unit;
 }
 
 
@@ -517,7 +520,7 @@ let pp_close_box state () =
 
 
 (* Open a tag, pushing it on the tag stack. *)
-let pp_open_tag state tag_name =
+let pp_open_stag state tag_name =
   if state.pp_print_tags then
   begin
     Stack.push tag_name state.pp_tag_stack;
@@ -529,7 +532,7 @@ let pp_open_tag state tag_name =
 
 
 (* Close a tag, popping it from the tag stack. *)
-let pp_close_tag state () =
+let pp_close_stag state () =
   if state.pp_mark_tags then
     pp_enqueue state { size = Size.zero; token = Pp_close_tag; length = 0 };
   if state.pp_print_tags then
@@ -538,6 +541,8 @@ let pp_close_tag state () =
     | Some tag_name ->
       state.pp_print_close_tag tag_name
 
+let pp_open_tag state s = pp_open_stag state (String_tag s)
+let pp_close_tag state () = pp_close_stag state ()
 
 let pp_set_print_tags state b = state.pp_print_tags <- b
 let pp_set_mark_tags state b = state.pp_mark_tags <- b
@@ -548,19 +553,19 @@ let pp_set_tags state b =
 
 
 (* Handling tag handling functions: get/set functions. *)
-let pp_get_formatter_tag_functions state () = {
-  mark_open_tag = state.pp_mark_open_tag;
-  mark_close_tag = state.pp_mark_close_tag;
-  print_open_tag = state.pp_print_open_tag;
-  print_close_tag = state.pp_print_close_tag;
+let pp_get_formatter_stag_functions state () = {
+  mark_open_stag = state.pp_mark_open_tag;
+  mark_close_stag = state.pp_mark_close_tag;
+  print_open_stag = state.pp_print_open_tag;
+  print_close_stag = state.pp_print_close_tag;
 }
 
 
-let pp_set_formatter_tag_functions state {
-     mark_open_tag = mot;
-     mark_close_tag = mct;
-     print_open_tag = pot;
-     print_close_tag = pct;
+let pp_set_formatter_stag_functions state {
+     mark_open_stag = mot;
+     mark_close_stag = mct;
+     print_open_stag = pot;
+     print_close_stag = pct;
   } =
   state.pp_mark_open_tag <- mot;
   state.pp_mark_close_tag <- mct;
@@ -846,8 +851,12 @@ let pp_set_formatter_out_channel state oc =
 
 *)
 
-let default_pp_mark_open_tag s = "<" ^ s ^ ">"
-let default_pp_mark_close_tag s = "</" ^ s ^ ">"
+let default_pp_mark_open_tag = function
+  | String_tag s -> "<" ^ s ^ ">"
+  | _ -> ""
+let default_pp_mark_close_tag = function
+  | String_tag s -> "</" ^ s ^ ">"
+  | _ -> ""
 
 let default_pp_print_open_tag = ignore
 let default_pp_print_close_tag = ignore
@@ -1032,6 +1041,8 @@ and open_box = pp_open_box std_formatter
 and close_box = pp_close_box std_formatter
 and open_tag = pp_open_tag std_formatter
 and close_tag = pp_close_tag std_formatter
+and open_stag = pp_open_stag std_formatter
+and close_stag = pp_close_stag std_formatter
 and print_as = pp_print_as std_formatter
 and print_string = pp_print_string std_formatter
 and print_int = pp_print_int std_formatter
@@ -1079,10 +1090,10 @@ and set_formatter_output_functions =
 and get_formatter_output_functions =
   pp_get_formatter_output_functions std_formatter
 
-and set_formatter_tag_functions =
-  pp_set_formatter_tag_functions std_formatter
-and get_formatter_tag_functions =
-  pp_get_formatter_tag_functions std_formatter
+and set_formatter_stag_functions =
+  pp_set_formatter_stag_functions std_formatter
+and get_formatter_stag_functions =
+  pp_get_formatter_stag_functions std_formatter
 and set_print_tags =
   pp_set_print_tags std_formatter
 and get_print_tags =
@@ -1188,7 +1199,7 @@ let rec output_acc ppf acc = match acc with
     output_formatting_lit ppf f;
   | Acc_formatting_gen (p, Acc_open_tag acc') ->
     output_acc ppf p;
-    pp_open_tag ppf (compute_tag output_acc acc')
+    pp_open_stag ppf (String_tag (compute_tag output_acc acc'))
   | Acc_formatting_gen (p, Acc_open_box acc') ->
     output_acc ppf p;
     let (indent, bty) = open_box_of_string (compute_tag output_acc acc') in
@@ -1223,7 +1234,7 @@ let rec strput_acc ppf acc = match acc with
     output_formatting_lit ppf f;
   | Acc_formatting_gen (p, Acc_open_tag acc') ->
     strput_acc ppf p;
-    pp_open_tag ppf (compute_tag strput_acc acc')
+    pp_open_stag ppf (String_tag (compute_tag strput_acc acc'))
   | Acc_formatting_gen (p, Acc_open_box acc') ->
     strput_acc ppf p;
     let (indent, bty) = open_box_of_string (compute_tag strput_acc acc') in
@@ -1339,3 +1350,40 @@ let bprintf b (Format (fmt, _) : ('a, formatter, unit) format) =
 
 (* Deprecated : alias for ksprintf. *)
 let kprintf = ksprintf
+
+
+
+(* Deprecated tag functions *)
+
+type formatter_tag_functions = {
+  mark_open_tag : tag -> string;
+  mark_close_tag : tag -> string;
+  print_open_tag : tag -> unit;
+  print_close_tag : tag -> unit;
+}
+
+
+let pp_set_formatter_tag_functions state {
+     mark_open_tag = mot;
+     mark_close_tag = mct;
+     print_open_tag = pot;
+     print_close_tag = pct;
+   } =
+  let stringify f e = function String_tag s -> f s | _ -> e in
+  state.pp_mark_open_tag <- stringify mot "";
+  state.pp_mark_close_tag <- stringify mct "";
+  state.pp_print_open_tag <- stringify pot ();
+  state.pp_print_close_tag <- stringify pct ()
+
+let pp_get_formatter_tag_functions fmt () =
+  let funs = pp_get_formatter_stag_functions fmt () in
+  let mark_open_tag s = funs.mark_open_stag (String_tag s) in
+  let mark_close_tag s = funs.mark_close_stag (String_tag s) in
+  let print_open_tag s = funs.print_open_stag (String_tag s) in
+  let print_close_tag s = funs.print_close_stag (String_tag s) in
+  {mark_open_tag; mark_close_tag; print_open_tag; print_close_tag}
+
+let set_formatter_tag_functions =
+  pp_set_formatter_tag_functions std_formatter
+and get_formatter_tag_functions =
+  pp_get_formatter_tag_functions std_formatter
