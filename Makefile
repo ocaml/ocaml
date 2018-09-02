@@ -1055,7 +1055,9 @@ clean::
 
 parsing/parser.ml: \
   boot/menhir/parser.ml parsing/parser.mly
-	@if [ parsing/parser.mly -nt boot/menhir/parser.ml ]; \
+	@if [ -n "$(shell find parsing/parser.mly \
+	            -prune -newer boot/menhir/parser.ml \
+	            -exec echo parser-changed \;)" ]; \
 	then \
 	  echo; \
 	  tput setaf 3; tput bold; printf "Warning: "; tput sgr0; \
