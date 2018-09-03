@@ -39,7 +39,7 @@ DOMAIN_STATE(struct interrupt*, pending_interrupts)
 /* See parsing.c */
 DOMAIN_STATE(int, parser_trace)
 
-DOMAIN_STATE(asize_t, minor_heap_size)
+DOMAIN_STATE(asize_t, minor_heap_wsz)
 
 DOMAIN_STATE(struct caml_heap_state*, shared_heap)
 DOMAIN_STATE(int, id)

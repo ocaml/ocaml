@@ -253,7 +253,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
     caml_raise_out_of_memory ();
   }
   dom_st->allocated_words += Whsize_wosize (wosize);
-  if (dom_st->allocated_words > Wsize_bsize (dom_st->minor_heap_size)) {
+  if (dom_st->allocated_words > dom_st->minor_heap_wsz) {
     caml_urge_major_slice();
   }
 

@@ -98,14 +98,13 @@ void caml_free_minor_tables(struct caml_minor_tables* r)
   caml_stat_free(r);
 }
 
-/* size in bytes */
-void caml_set_minor_heap_size (asize_t size)
+void caml_set_minor_heap_size (asize_t wsize)
 {
   caml_domain_state* domain_state = Caml_state;
   struct caml_minor_tables *r = domain_state->minor_tables;
   if (domain_state->young_ptr != domain_state->young_end) caml_minor_collection ();
 
-  caml_reallocate_minor_heap(size);
+  caml_reallocate_minor_heap(wsize);
 
   reset_table ((struct generic_table *)&r->major_ref);
   reset_table ((struct generic_table *)&r->minor_ref);
@@ -717,7 +716,7 @@ static void realloc_generic_table
   CAMLassert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
-    alloc_generic_table (tbl, Caml_state->minor_heap_size / sizeof(value) / 8, 256,
+    alloc_generic_table (tbl, Caml_state->minor_heap_wsz / 8, 256,
                          element_size);
   }else if (tbl->limit == tbl->threshold){
     CAML_INSTR_INT (msg_intr_int, 1);
