@@ -27,6 +27,8 @@ val remove_exception_ident : Ident.t -> unit
 val clear_used_primitives : unit -> unit
 val get_used_primitives: unit -> Path.t list
 
+val check_primitive_arity : Location.t -> Primitive.description -> unit
+
 val transl_primitive :
   Location.t -> Primitive.description -> Env.t ->
   Types.type_expr -> Path.t option -> Lambda.lambda

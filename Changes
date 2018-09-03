@@ -410,6 +410,9 @@ Working version
   an `open` statement for which the `.cmi` is not available.
   (Nicolás Ojeda Bär, report by Jocelyn Sérot, review by Gabriel Scherer)
 
+- MPR#7408, MPR#7846, GPR#2015: Check arity of primitives.
+  (Hugo Heuzard, review by Nicolás Ojeda Bär)
+
 OCaml 4.07 maintenance branch
 -----------------------------
 
