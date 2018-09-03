@@ -52,10 +52,10 @@ libs: $(FILES)
 # ocamldoc.out is used as witness for the generation of the stdlib tex files to
 # avoid issues with parallel make invocations.
 $(INTF): ocamldoc.out
-ocamldoc.out: $(STDLIB_DEPS)
+ocamldoc.out: $(DOC_ALL_MLIS)
 	$(OCAMLDOC) -latex \
-	  $(DOC_INCLUDES) \
-	  $(STDLIB_MLIS) \
+	  $(DOC_ALL_INCLUDES) \
+	  $(DOC_ALL_MLIS) \
 	  -sepfiles \
 	  -latextitle "1,subsection*" \
 	  -latextitle "2,subsubsection*" \

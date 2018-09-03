@@ -242,6 +242,10 @@ Working version
 
 ### Manual and documentation:
 
+- MPR#7825: html manual split compilerlibs from stdlib in the html
+  index of modules
+  (Florian Angeletti, review by Perry E. Metzger and Gabriel Scherer)
+
 - GPR#1209: use the automated caml_example environment in the Extension section,
   which uses the OCaml compiler to check the manual examples.
   This change was made possible by a lot of tooling work from Florian Angeletti:
