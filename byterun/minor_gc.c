@@ -542,7 +542,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
       if (hd != 0) {
         value curr = Val_hp(iter);
         tag_t tag = Tag_hd (hd);
-        
+
         if (tag < No_scan_tag && tag != Cont_tag) {
           // FIXME: should scan Cont_tag
           for (i = 0; i < Wosize_hd(hd); i++) {
