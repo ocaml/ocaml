@@ -175,7 +175,8 @@ let compose_coercions c1 c2 =
 
 let primitive_declarations = ref ([] : Primitive.description list)
 let record_primitive = function
-  | {val_kind=Val_prim p} ->
+  | {val_kind=Val_prim p;val_loc} ->
+      Translprim.check_primitive_arity val_loc p;
       primitive_declarations := p :: !primitive_declarations
   | _ -> ()
 
@@ -1245,9 +1246,11 @@ let transl_toplevel_item item =
                     set_idents (pos + 1) ids) in
       Llet(Strict, Pgenval, mid,
            transl_module Tcoerce_none None modl, set_idents 0 ids)
+  | Tstr_primitive descr ->
+      record_primitive descr.val_val;
+      lambda_unit
   | Tstr_modtype _
   | Tstr_open _
-  | Tstr_primitive _
   | Tstr_type _
   | Tstr_class_type _
   | Tstr_attribute _ ->
