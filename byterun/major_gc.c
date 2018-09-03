@@ -248,6 +248,8 @@ void caml_adopt_orphaned_work ()
 }
 
 static uintnat default_slice_budget() {
+  double p, heap_words;
+  intnat computed_work;
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = caml_stat_heap_size * caml_percent_free
@@ -272,23 +274,51 @@ static uintnat default_slice_budget() {
      Amount of sweeping work for the GC cycle:
                  SW = caml_stat_heap_size
 
-     Total amount of work for the GC cycle:
-                 TW = MW + SW
+     In order to finish marking with a non-empty free list, we will
+     use 40% of the time for marking, and 60% for sweeping.
+
+     If TW is the total work for this cycle,
+                 MW = 40/100 * TW
+                 SW = 60/100 * TW
 
      Amount of work to do for this slice:
-                 W = P * TW
+                 W  = P * TW
+
+     Amount of marking work for a marking slice:
+                 MS = P * MW / (40/100)
+                 MS = P * caml_stat_heap_size * 250 / (100 + caml_percent_free)
+     Amount of sweeping work for a sweeping slice:
+                 SS = P * SW / (60/100)
+                 SS = P * caml_stat_heap_size * 5 / 3
+
+     This slice will either mark MS words or sweep SS words.
   */
   uintnat heap_size = caml_heap_size(Caml_state->shared_heap);
-  double heap_words = (double)Wsize_bsize(heap_size);
-  double p = (double) Caml_state->allocated_words * 3.0 * (100 + caml_percent_free)
+  heap_words = (double)Wsize_bsize(heap_size);
+  p = (double) Caml_state->allocated_words * 3.0 * (100 + caml_percent_free)
       / heap_words / caml_percent_free / 2.0;
 
-  double total_work =
-    heap_words * 100 / (100 + caml_percent_free) /* marking */
-    + heap_words; /* sweeping */
+  if (!Caml_state->sweeping_done) {
+    /* Multicore sweeps first and then marks */
+    computed_work = (intnat) (p * heap_words * 5 / 3);
+  } else {
+    computed_work = (intnat) (p * heap_words * 250
+                              / (100 + caml_percent_free));
+  }
 
-  return (intnat)(p * total_work);
-  //return 1ll << 50;
+  caml_gc_message (0x40, "heap_words = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+                         (uintnat)heap_words);
+  caml_gc_message (0x40, "allocated_words = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+                   Caml_state->allocated_words);
+  caml_gc_message (0x40, "amount of work to do = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "uu\n",
+                   (uintnat) (p * 1000000));
+  caml_gc_message (0x40, "ordered work = %ld words\n", (intnat)-1);
+  caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
+
+  return computed_work;
 }
 
 enum steal_result { Shared, Not_shared, No_work };
@@ -431,7 +461,6 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
         break;
       e = stk->stack[--stk->count];
     }
-    budget--;
     if (budget <= 0) {
       mark_stack_push(stk, e);
       break;
@@ -463,6 +492,7 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
           Hd_val(v) = With_status_hd(hd, global.MARKED);
         }
       }
+      budget -= Whsize_hd(hd);
     }
   }
   return budget;
@@ -702,8 +732,8 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
     barrier_status b = caml_global_barrier_begin();
     if (caml_global_barrier_is_final(b)) {
       caml_cycle_heap_stw();
-      /* FIXME: Maybe logging outside the barrier would be better */
       caml_gc_log("GC cycle %lu completed (heap cycled)", (long unsigned int)caml_major_cycles_completed);
+      caml_gc_message(0x40, "Starting major GC cycle\n");
       caml_ev_global_sync();
       caml_major_cycles_completed++;
 
