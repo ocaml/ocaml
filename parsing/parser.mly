@@ -49,9 +49,9 @@ let mktyp ~loc d = Typ.mk ~loc:(make_loc loc) d
 let mkpat ~loc d = Pat.mk ~loc:(make_loc loc) d
 let mkexp ~loc d = Exp.mk ~loc:(make_loc loc) d
 let mkmty ~loc ?attrs d = Mty.mk ~loc:(make_loc loc) ?attrs d
-let mksig ~loc d = Sig.mk ~loc:(make_loc loc) d
+let mksig ?private_ ~loc d = Sig.mk ?private_ ~loc:(make_loc loc) d
 let mkmod ~loc ?attrs d = Mod.mk ~loc:(make_loc loc) ?attrs d
-let mkstr ~loc d = Str.mk ~loc:(make_loc loc) d
+let mkstr ?private_ ~loc d = Str.mk ?private_ ~loc:(make_loc loc) d
 let mkclass ~loc ?attrs d = Cl.mk ~loc:(make_loc loc) ?attrs d
 let mkcty ~loc ?attrs d = Cty.mk ~loc:(make_loc loc) ?attrs d
 
@@ -421,7 +421,7 @@ let mklbs ~loc ext rf lb =
 let addlb lbs lb =
   { lbs with lbs_bindings = lb :: lbs.lbs_bindings }
 
-let val_of_let_bindings ~loc lbs =
+let val_of_let_bindings ~private_ ~loc lbs =
   let bindings =
     List.map
       (fun lb ->
@@ -431,7 +431,7 @@ let val_of_let_bindings ~loc lbs =
            lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
-  let str = mkstr ~loc (Pstr_value(lbs.lbs_rec, List.rev bindings)) in
+  let str = mkstr ~private_ ~loc (Pstr_value(lbs.lbs_rec, List.rev bindings)) in
   match lbs.lbs_extension with
   | None -> str
   | Some id -> ghstr ~loc (Pstr_extension((id, PStr [str]), []))
@@ -940,6 +940,11 @@ paren_module_expr:
       { unclosed "(" $loc($1) ")" $loc($5) }
 ;
 
+%inline private_item:
+  | { false }
+  | PRIVATE { true }
+;
+
 structure: extra_str(structure_nodoc) { $1 }
 structure_nodoc:
     seq_expr post_item_attributes structure_tail_nodoc
@@ -954,11 +959,11 @@ structure_tail_nodoc:
 ;
 
 structure_item:
-    let_bindings
-      { val_of_let_bindings ~loc:$sloc $1 }
-  | structure_item_with_ext
-      { let item, ext = $1 in
-        wrap_str_ext ~loc:$loc (mkstr ~loc:$loc item) ext }
+    private_item let_bindings
+      { val_of_let_bindings ~private_:$1 ~loc:$sloc $2 }
+  | private_item structure_item_with_ext
+      { let item, ext = $2 in
+        wrap_str_ext ~loc:$sloc (mkstr ~private_:$1 ~loc:$sloc item) ext }
   | item_extension post_item_attributes
       { let docs = symbol_docs $sloc in
         mkstr ~loc:$sloc (Pstr_extension ($1, (add_docs_attrs docs $2))) }
@@ -1080,9 +1085,9 @@ signature_nodoc:
   | signature_item signature_nodoc { text_sig $startpos($1) @ $1 :: $2 }
 ;
 signature_item:
-  | signature_item_with_ext
-      { let item, ext = $1 in
-        wrap_sig_ext ~loc:$loc (mksig ~loc:$sloc item) ext }
+  | private_item signature_item_with_ext
+      { let item, ext = $2 in
+        wrap_sig_ext ~loc:$sloc (mksig ~private_:$1 ~loc:$sloc item) ext }
   | item_extension post_item_attributes
       { let docs = symbol_docs $sloc in
         mksig ~loc:$sloc (Psig_extension ($1, (add_docs_attrs docs $2))) }
