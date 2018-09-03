@@ -626,7 +626,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   match prim, args with
   | Primitive prim, args ->
       Lprim(prim, args, loc)
-  | Comparison(comp, knd), args ->
+  | Comparison(comp, knd), ([_; _] as args) ->
       let prim = comparison_primitive comp knd in
       Lprim(prim, args, loc)
   | Raise kind, [arg] ->
@@ -670,7 +670,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       Lsend(Self, meth, obj, [], loc)
   | Send_cache, [obj; meth; cache; pos] ->
       Lsend(Cached, meth, obj, [cache; pos], loc)
-  | (Raise _ | Raise_with_backtrace
+  | (Raise _ | Raise_with_backtrace | Comparison _
     | Lazy_force | Loc _
     | Send | Send_self | Send_cache), _ ->
       raise(Error(loc, Wrong_arity_builtin_primitive prim_name))
