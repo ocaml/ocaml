@@ -120,34 +120,17 @@ CAMLprim value caml_gc_get(value v)
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  res = caml_alloc_tuple (7);
+  res = caml_alloc_tuple (8);
+  Store_field (res, 0, Val_long (Caml_state->minor_heap_wsz));  /* s */
+  Store_field (res, 2, Val_long (caml_percent_free));           /* o */
+  Store_field (res, 3, Val_long (caml_params->verb_gc));        /* v */
 #ifndef NATIVE_CODE
-  Store_field (res, 5, Val_long (caml_max_stack_size));                 /* l */
+  Store_field (res, 5, Val_long (caml_max_stack_size));         /* l */
 #else
   Store_field (res, 5, Val_long (0));
 #endif
 
   CAMLreturn (res);
-
-#if 0
-  CAMLparam0 ();   /* v is ignored */
-  CAMLlocal1 (res);
-
-  res = caml_alloc_tuple (7);
-  Store_field (res, 0, Val_long (Wsize_bsize (Caml_state->minor_heap_size)));  /* s */
-  Store_field (res, 1, Val_long (caml_major_heap_increment));           /* i */
-  Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
-  Store_field (res, 3, Val_long (caml_params->verb_gc));         /* v */
-  Store_field (res, 4, Val_long (caml_percent_max));                    /* O */
-#ifndef NATIVE_CODE
-  Store_field (res, 5, Val_long (caml_max_stack_size));                 /* l */
-#else
-  Store_field (res, 5, Val_long (0));
-#endif
-  Store_field (res, 6, Val_long (caml_allocation_policy));              /* a */
-  Store_field (res, 7, Val_long (caml_major_window));                   /* w */
-  CAMLreturn (res);
-#endif
 }
 
 #define Max(x,y) ((x) < (y) ? (y) : (x))
@@ -164,15 +147,8 @@ static uintnat norm_pmax (uintnat p)
 
 CAMLprim value caml_gc_set(value v)
 {
-  return Val_unit;
-#if 0
-  uintnat newpf, newpm;
-  asize_t newheapincr;
-  asize_t newminwsz;
-  uintnat oldpolicy;
-  CAML_INSTR_SETUP (tmr, "");
-
-  caml_params->verb_gc = Long_field (v, 3);
+  uintnat newpf;
+  uintnat newminwsz;
 
 #ifndef NATIVE_CODE
   caml_change_max_stack_size (Long_field (v, 5));
@@ -185,54 +161,16 @@ CAMLprim value caml_gc_set(value v)
                      ARCH_INTNAT_PRINTF_FORMAT "u%%\n", caml_percent_free);
   }
 
-  newpm = norm_pmax (Long_field (v, 4));
-  if (newpm != caml_percent_max){
-    caml_percent_max = newpm;
-    caml_gc_message (0x20, "New max overhead: %"
-                     ARCH_INTNAT_PRINTF_FORMAT "u%%\n", caml_percent_max);
+  /* Minor heap size comes last because it will trigger a minor collection
+     (thus invalidating [v]) and it can raise [Out_of_memory]. */
+  newminwsz = caml_norm_minor_heap_size (Long_field (v, 0));
+  if (newminwsz != Caml_state->minor_heap_wsz){
+    caml_gc_message (0x20, "New minor heap size: %"
+                     ARCH_SIZET_PRINTF_FORMAT "uk words\n", newminwsz / 1024);
+    caml_set_minor_heap_size (newminwsz);
   }
 
-  newheapincr = Long_field (v, 1);
-  if (newheapincr != caml_major_heap_increment){
-    caml_major_heap_increment = newheapincr;
-    if (newheapincr > 1000){
-      caml_gc_message (0x20, "New heap increment size: %"
-                       ARCH_INTNAT_PRINTF_FORMAT "uk words\n",
-                       caml_major_heap_increment/1024);
-    }else{
-      caml_gc_message (0x20, "New heap increment size: %"
-                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
-                       caml_major_heap_increment);
-    }
-  }
-  oldpolicy = caml_allocation_policy;
-  caml_set_allocation_policy (Long_field (v, 6));
-  if (oldpolicy != caml_allocation_policy){
-    caml_gc_message (0x20, "New allocation policy: %"
-                     ARCH_INTNAT_PRINTF_FORMAT "u\n", caml_allocation_policy);
-  }
-
-  /* This field was added in 4.03.0. */
-  if (Wosize_val (v) >= 8){
-    int old_window = caml_major_window;
-    caml_set_major_window (norm_window (Long_val (Field (v, 7))));
-    if (old_window != caml_major_window){
-      caml_gc_message (0x20, "New smoothing window size: %d\n",
-                       caml_major_window);
-    }
-  }
-
-    /* Minor heap size comes last because it will trigger a minor collection
-       (thus invalidating [v]) and it can raise [Out_of_memory]. */
-  newminsize = caml_norm_minor_heap_size (Long_field (v, 0));
-  if (newminsize != Caml_state->minor_heap_size){
-    caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
-                     newminsize/1024);
-    caml_set_minor_heap_size (newminsize);
-  }
-  CAML_INSTR_TIME (tmr, "explicit/gc_set");
   return Val_unit;
-#endif
 }
 
 CAMLprim value caml_gc_minor(value v)
