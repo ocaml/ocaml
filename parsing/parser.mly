@@ -2552,8 +2552,8 @@ core_type2_:
 simple_core_type:
     simple_core_type2  %prec below_HASH
       { $1 }
-  | LPAREN core_type_comma_list RPAREN %prec below_HASH
-      { match $2 with [sty] -> sty | _ -> raise Parsing.Parse_error }
+  | LPAREN core_type RPAREN %prec below_HASH
+      { $2 }
 ;
 simple_core_type2:
   | LPAREN MODULE ext_attributes package_type RPAREN
@@ -2570,7 +2570,7 @@ simple_core_type2_:
       { Ptyp_constr($1, []) }
   | simple_core_type2 mkrhs(type_longident)
       { Ptyp_constr($2, [$1]) }
-  | LPAREN core_type_comma_list RPAREN mkrhs(type_longident)
+  | LPAREN inline_core_type_comma_list RPAREN mkrhs(type_longident)
       { Ptyp_constr($4, List.rev $2) }
   | LESS meth_list GREATER
       { let (f, c) = $2 in Ptyp_object (f, c) }
@@ -2580,7 +2580,7 @@ simple_core_type2_:
       { Ptyp_class($2, []) }
   | simple_core_type2 HASH mkrhs(class_longident)
       { Ptyp_class($3, [$1]) }
-  | LPAREN core_type_comma_list RPAREN HASH mkrhs(class_longident)
+  | LPAREN inline_core_type_comma_list RPAREN HASH mkrhs(class_longident)
       { Ptyp_class($5, List.rev $2) }
   | LBRACKET tag_field RBRACKET
       { Ptyp_variant([$2], Closed, None) }
@@ -2648,6 +2648,19 @@ simple_core_type_or_tuple:
 (* A [core_type_comma_list] is a nonempty, comma-separated list of types. *)
 %inline core_type_comma_list:
   tys = reversed_separated_nonempty_list(COMMA, core_type)
+    { tys }
+;
+(* [inline_core_type_comma_list] is semantically equivalent to
+   [core_type_comma_list], that is, it recognizes the same language.
+   It is used in some places to avoid a conflict between the normal use of
+   parentheses as a disambiguation device, e.g.
+     (foo -> bar) -> baz
+   and the use of parentheses in parameterized types, e.g.
+     (foo -> bar) list
+   Inlining allows the parser to shift the closing parenthesis without (yet)
+   deciding which of the above two situations we have. *)
+%inline inline_core_type_comma_list:
+  tys = inline_reversed_separated_nonempty_list(COMMA, core_type)
     { tys }
 ;
 core_type_list:
