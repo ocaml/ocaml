@@ -10,7 +10,7 @@ OCAMLDOC = $(if $(wildcard $(CSLDIR)/ocamldoc/ocamldoc.opt),\
   $(CSLDIR)/ocamldoc/ocamldoc.opt,\
   $(SET_LD_PATH) $(CSLDIR)/runtime/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc) \
    -hide Stdlib -lib Stdlib -nostdlib \
-   -pp "awk -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk"
+   -pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk"
 
 
 #Import mli file lists

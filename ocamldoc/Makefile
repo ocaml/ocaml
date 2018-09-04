@@ -406,14 +406,14 @@ stdlib_man/Stdlib.3o: $(OCAMLDOC) $(STDLIB_DEPS)
 	$(MKDIR) stdlib_man
 	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib $(DOC_INCLUDES) \
 	-hide Stdlib  -lib Stdlib \
-	-pp "awk -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
+	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" -man-mini $(STDLIB_MLIS)
 
 stdlib_html/Stdlib.html: $(OCAMLDOC) $(STDLIB_DEPS)
 	$(MKDIR) stdlib_html
 	$(OCAMLDOC_RUN) \
 	-hide Stdlib -lib Stdlib \
-	-pp "awk -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
+	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-d stdlib_html -html -nostdlib $(DOC_INCLUDES) \
 	-t "OCaml library" $(STDLIB_MLIS)
 
