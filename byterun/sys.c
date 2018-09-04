@@ -60,6 +60,7 @@
 #include "caml/version.h"
 #include "caml/callback.h"
 #include "caml/startup_aux.h"
+#include "caml/major_gc.h"
 
 static char * error_message(void)
 {
@@ -117,30 +118,31 @@ CAMLprim value caml_sys_exit(value retcode_v)
 {
   caml_domain_state* domain_state = Caml_state;
   int retcode = Int_val(retcode_v);
+  struct gc_stats s;
 
-
-  /* XXX KC: Only prints stats for this domain */
   if ((caml_params->verb_gc & 0x400) != 0) {
+    caml_sample_gc_stats(&s);
     /* cf caml_gc_counters */
-    double minwords = domain_state->stat_minor_words
+    double minwords = s.minor_words
       + (double) (domain_state->young_end - domain_state->young_ptr);
-    double prowords = domain_state->stat_promoted_words;
-    double majwords = domain_state->stat_major_words + (double) domain_state->allocated_words;
-    double allocated_words = minwords + majwords - prowords;
-    intnat mincoll = domain_state->stat_minor_collections;
-    intnat majcoll = domain_state->stat_major_collections;
+    double majwords = s.major_words + (double) domain_state->allocated_words;
+    double allocated_words = minwords + majwords - s.promoted_words;
     caml_gc_message(0x400, "allocated_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    (long)allocated_words);
+                    (intnat)allocated_words);
     caml_gc_message(0x400, "minor_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    (long) minwords);
+                    (intnat) minwords);
     caml_gc_message(0x400, "promoted_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    (long) prowords);
+                    (intnat) s.promoted_words);
     caml_gc_message(0x400, "major_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    (long) majwords);
+                    (intnat) majwords);
     caml_gc_message(0x400, "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    mincoll);
+                    s.minor_collections);
     caml_gc_message(0x400, "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                    majcoll);
+                    domain_state->stat_major_collections);
+    caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                    s.major_heap.pool_words + s.major_heap.large_words);
+    caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                    s.major_heap.pool_max_words + s.major_heap.large_max_words);
   }
 
 #ifndef NATIVE_CODE
