@@ -124,10 +124,10 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
 
   if (bs > max) bs = max;
 
-  return bs;
+  return Wsize_bsize(bs);
 }
 
-void caml_reallocate_minor_heap(asize_t size)
+void caml_reallocate_minor_heap(asize_t wsize)
 {
   caml_domain_state* domain_state = Caml_state;
   Assert(domain_state->young_ptr == domain_state->young_end);
@@ -138,9 +138,9 @@ void caml_reallocate_minor_heap(asize_t size)
   caml_mem_decommit((void*)domain_self->minor_heap_area,
                     domain_self->minor_heap_area_end - domain_self->minor_heap_area);
 
-  size = caml_norm_minor_heap_size(size);
+  wsize = caml_norm_minor_heap_size(wsize);
 
-  if (!caml_mem_commit((void*)domain_self->minor_heap_area, size)) {
+  if (!caml_mem_commit((void*)domain_self->minor_heap_area, Bsize_wsize(wsize))) {
     /* FIXME: handle this gracefully */
     caml_fatal_error("Fatal error: No memory for minor heap\n");
   }
@@ -148,19 +148,19 @@ void caml_reallocate_minor_heap(asize_t size)
 #ifdef DEBUG
   {
     uintnat* p = (uintnat*)domain_self->minor_heap_area;
-    for (; p < (uintnat*)(domain_self->minor_heap_area + size); p++)
+    for (; p < (uintnat*)(domain_self->minor_heap_area + Bsize_wsize(wsize)); p++)
       *p = Debug_uninit_align;
   }
 #endif
 
-  Caml_state->minor_heap_size = size;
+  Caml_state->minor_heap_wsz = wsize;
   domain_state->young_start = (char*)domain_self->minor_heap_area;
-  domain_state->young_end = (char*)(domain_self->minor_heap_area + size);
+  domain_state->young_end = (char*)(domain_self->minor_heap_area + Bsize_wsize(wsize));
   domain_state->young_ptr = domain_state->young_end;
 }
 
 /* must be run on the domain's thread */
-static void create_domain(uintnat initial_minor_heap_size) {
+static void create_domain(uintnat initial_minor_heap_wsize) {
   int i;
   dom_internal* d = 0;
   Assert (domain_self == 0);
@@ -224,7 +224,7 @@ static void create_domain(uintnat initial_minor_heap_size) {
 
     d->state.state->shared_heap = caml_init_shared_heap();
     caml_init_major_gc(domain_state);
-    caml_reallocate_minor_heap(initial_minor_heap_size);
+    caml_reallocate_minor_heap(initial_minor_heap_wsize);
     Caml_state->current_stack = caml_alloc_main_stack (Stack_size/sizeof(value));
 
     domain_state->backtrace_buffer = NULL;
@@ -238,7 +238,7 @@ static void create_domain(uintnat initial_minor_heap_size) {
 }
 
 
-void caml_init_domains(uintnat minor_size) {
+void caml_init_domains(uintnat minor_heap_wsz) {
   int i;
   uintnat size;
   void* heaps_base;
@@ -285,7 +285,7 @@ void caml_init_domains(uintnat minor_size) {
   }
 
 
-  create_domain(minor_size);
+  create_domain(minor_heap_wsz);
   if (!domain_self) caml_fatal_error("Failed to create main domain");
 
   caml_init_signal_handling();
