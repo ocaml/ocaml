@@ -29,12 +29,21 @@ THREAD_MLIS = $(addprefix $(SRC)/otherlibs/systhreads/, \
   thread.mli condition.mli mutex.mli event.mli threadUnix.mli)
 DRIVER_MLIS = $(SRC)/driver/pparse.mli
 
-DOC_ALL_DIRS = stdlib parsing utils typing bytecomp driver \
+
+DOC_STDLIB_DIRS = stdlib \
 	otherlibs/str \
 	otherlibs/$(UNIXLIB) otherlibs/graphics otherlibs/dynlink \
 	otherlibs/systhreads
 
-DOC_INCLUDES = $(addprefix -I $(SRC)/, $(DOC_ALL_DIRS))
+DOC_COMPILERLIBS_DIRS= parsing utils typing bytecomp driver
+
+DOC_ALL_DIRS = $(DOC_COMPILERLIBS) $(DOC_STDLIB_DIRS)
+
+DOC_STDLIB_INCLUDES = $(addprefix -I $(SRC)/, $(DOC_STDLIB_DIRS))
+DOC_COMPILERLIBS_INCLUDES = $(addprefix -I $(SRC)/, $(DOC_COMPILERLIBS_DIRS))
+
+DOC_ALL_INCLUDES = $(DOC_STDLIB_INCLUDES) $(DOC_COMPILERLIBS_INCLUDES)
+
 
 STDLIB_MODS = $(STDLIB_MODULES:stdlib__%=%)
 
@@ -42,13 +51,17 @@ STDLIB_MOD_WP = $(filter-out stdlib__pervasives, $(STDLIB_MODULES))
 STDLIB_MLI0 = $(SRC)/stdlib/pervasives.ml $(STDLIB_MOD_WP:%=$(SRC)/stdlib/%.mli)
 STDLIB_MLIS=\
   $(STDLIB_MLI0:$(SRC)/stdlib/stdlib__%=$(SRC)/stdlib/%) \
-  $(PARSING_MLIS) \
-  $(UTILS_MLIS) \
-  $(TYPING_MLIS) \
-  $(BYTECOMP_MLIS) \
-  $(DRIVER_MLIS) \
   $(STR_MLIS) \
   $(UNIX_MLIS) \
   $(THREAD_MLIS) \
   $(GRAPHICS_MLIS) \
   $(DYNLINK_MLIS)
+
+COMPILERLIBS_MLIS=\
+  $(PARSING_MLIS) \
+  $(UTILS_MLIS) \
+  $(TYPING_MLIS) \
+  $(BYTECOMP_MLIS) \
+  $(DRIVER_MLIS)
+
+DOC_ALL_MLIS= $(STDLIB_MLIS) $(COMPILERLIBS_MLIS)

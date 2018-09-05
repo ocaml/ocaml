@@ -402,20 +402,19 @@ SRC=$(ROOTDIR)
 
 include Makefile.docfiles
 
-stdlib_man/Stdlib.3o: $(OCAMLDOC) $(STDLIB_DEPS)
+stdlib_man/Stdlib.3o: $(OCAMLDOC) $(DOC_ALL_MLIS)
 	$(MKDIR) stdlib_man
-	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib $(DOC_INCLUDES) \
-	-hide Stdlib  -lib Stdlib \
+	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib \
+	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-t "OCaml library" -man-mini $(STDLIB_MLIS)
+	-t "OCaml library" -man-mini $(DOC_ALL_MLIS)
 
-stdlib_html/Stdlib.html: $(OCAMLDOC) $(STDLIB_DEPS)
+stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL_MLIS)
 	$(MKDIR) stdlib_html
-	$(OCAMLDOC_RUN) \
-	-hide Stdlib -lib Stdlib \
+	$(OCAMLDOC_RUN) -html -d stdlib_html -nostdlib \
+	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-d stdlib_html -html -nostdlib $(DOC_INCLUDES) \
-	-t "OCaml library" $(STDLIB_MLIS)
+	-t "OCaml library" $(DOC_ALL_MLIS)
 
 .PHONY: autotest_stdlib
 autotest_stdlib:

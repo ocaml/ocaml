@@ -39,9 +39,9 @@ index:
 	  && makeindex manual.kwd.idx
 
 
-# libref/style.css is used as witness for the generation of the html stdlib
-# reference.
-html: htmlman/libref/style.css etex-files
+# libref/style.css and comilerlibref/style.css are used as witness
+# for the generation of the html stdlib and compilerlibs reference.
+html: htmlman/libref/style.css htmlman/compilerlibref/style.css etex-files
 	cd htmlman \
 	  && $(HEVEA) $(HTML_FLAGS) \
 	    -I .. -I ../cmds -I ../library -I ../refman -I ../tutorials \
@@ -49,12 +49,22 @@ html: htmlman/libref/style.css etex-files
 	    manual.hva -e macros.tex ../manual.tex \
 	  && $(HACHA) -tocter manual.html
 
-htmlman/libref/style.css: style.css $(STDLIB_DEPS)
+htmlman/libref/style.css: style.css $(STDLIB_MLIS)
 	mkdir -p htmlman/libref
 	$(OCAMLDOC) -colorize-code -sort -html \
 	  -d htmlman/libref \
-	  $(DOC_INCLUDES) \
+	  $(DOC_STDLIB_INCLUDES) \
 	  $(STDLIB_MLIS)
+	cp style.css $@
+
+
+htmlman/compilerlibref/style.css: style.css $(COMPILERLIBS_MLIS)
+	mkdir -p htmlman/compilerlibref
+	$(OCAMLDOC) -colorize-code -sort -html \
+	  -d htmlman/compilerlibref \
+	  -I $(SRC)/stdlib \
+	  $(DOC_COMPILERLIBS_INCLUDES) \
+	  $(COMPILERLIBS_MLIS)
 	cp style.css $@
 
 
