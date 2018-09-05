@@ -79,6 +79,8 @@ void caml_finalise_heap (void);
    so it need not be atomic */
 extern uintnat caml_major_cycles_completed;
 
+double caml_mean_space_overhead(void);
+
 #endif /* CAML_INTERNALiS */
 
 #endif /* CAML_MAJOR_GC_H */
