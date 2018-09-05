@@ -39,14 +39,13 @@ case $# in
   *) usage;;
 esac
 
-ed "$1" <<'EOF'
-/-pipe-pipe/s/verb`("|hyperindexformat{\\"}/verb`("|"|)`|hyperpage/
-/-pipe-gt/s/verb`("|hyperindexformat{\\>)`}/verb`("|>)`|hyperpage/
-w
-q
-EOF
+sed < "$1" > "$1.new" \
+    -e 's/verb`("|hyperindexformat{\\"}/verb`("|"|)`|hyperpage/' \
+    -e 's/verb`("|hyperindexformat{\\>)`}/verb`("|>)`|hyperpage/'
 
 case $? in
   0) echo "fix_index.sh: fixed $1 successfully.";;
-  *) echo "fix_index.sh: some error occurred."; exit 0;;
+  *) echo "fix_index.sh: some error occurred."; exit 1;;
 esac
+
+mv "$1.new" "$1"
