@@ -16,7 +16,9 @@
 #define CAML_INTERNALS
 
 #include <stdlib.h>
+#include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "caml/addrmap.h"
 #include "caml/config.h"
@@ -655,6 +657,50 @@ intnat ephe_sweep (struct domain* d, intnat budget)
    at the end of the most recently completed GC cycle */
 static struct gc_stats sampled_gc_stats[2][Max_domains];
 
+#define BUFFER_SIZE 64
+
+struct buf_list_t {
+  double buffer[BUFFER_SIZE];
+  struct buf_list_t *next;
+};
+
+static struct {
+  intnat heap_words_last_cycle;
+  int index;
+  struct buf_list_t *l;
+ } stat_space_overhead = {0, 0, NULL};
+
+double caml_mean_space_overhead ()
+{
+  int index = stat_space_overhead.index;
+  struct buf_list_t *t, *l = stat_space_overhead.l;
+  /* Use Welford's online algorithm for calculating running variance to remove
+   * outliers from mean calculation. */
+  double mean = 0.0, m2 = 0.0, stddev = 0.0, v;
+  double delta, delta2;
+  intnat count = 0;
+
+  while (l) {
+    while (index > 0) {
+      v = l->buffer[--index];
+      if (count > 5 && (v < mean - 3 * stddev || v > mean + 3 * stddev)) {
+        continue;
+      }
+      count++;
+      delta = v - mean;
+      mean = mean + delta / count;
+      delta2 = v - mean;
+      m2 = m2 + delta * delta2;
+      stddev = sqrt (m2 / count);
+    }
+    t = l;
+    l = l->next;
+    caml_stat_free(t);
+    index = BUFFER_SIZE;
+  }
+  return mean;
+}
+
 void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
 {
   acc->pool_words += h->pool_words;
@@ -732,10 +778,37 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
     barrier_status b = caml_global_barrier_begin();
     if (caml_global_barrier_is_final(b)) {
       caml_cycle_heap_stw();
-      caml_gc_log("GC cycle %lu completed (heap cycled)", (long unsigned int)caml_major_cycles_completed);
-      caml_gc_message(0x40, "Starting major GC cycle\n");
+      caml_gc_log("GC cycle %lu completed (heap cycled)",
+                  (long unsigned int)caml_major_cycles_completed);
       caml_ev_global_sync();
       caml_major_cycles_completed++;
+      caml_gc_message(0x40, "Starting major GC cycle\n");
+
+      if (caml_params->verb_gc & 0x400) {
+        struct gc_stats s;
+        intnat heap_words, max_heap_words, live_words;
+
+        caml_sample_gc_stats(&s);
+        heap_words = s.major_heap.pool_words + s.major_heap.large_words;
+        live_words = s.major_heap.pool_live_words + s.major_heap.large_words;
+
+        if (stat_space_overhead.l == NULL) {
+          stat_space_overhead.l =
+            (struct buf_list_t*)caml_stat_alloc_noexc(sizeof(struct buf_list_t));
+        } else if (stat_space_overhead.index == BUFFER_SIZE) {
+          struct buf_list_t *l =
+            (struct buf_list_t*)caml_stat_alloc_noexc(sizeof(struct buf_list_t));
+          l->next = stat_space_overhead.l;
+          stat_space_overhead.l = l;
+          stat_space_overhead.index = 0;
+        }
+
+        max_heap_words = stat_space_overhead.heap_words_last_cycle > heap_words ?
+                         stat_space_overhead.heap_words_last_cycle : heap_words;
+        stat_space_overhead.heap_words_last_cycle = heap_words;
+        stat_space_overhead.l->buffer[stat_space_overhead.index++] =
+          (double)(max_heap_words - live_words) * 100.0 / live_words;
+      }
 
       num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
       atomic_store_rel(&num_domains_to_sweep, num_domains_in_stw);

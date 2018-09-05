@@ -143,6 +143,7 @@ CAMLprim value caml_sys_exit(value retcode_v)
                     s.major_heap.pool_words + s.major_heap.large_words);
     caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                     s.major_heap.pool_max_words + s.major_heap.large_max_words);
+    caml_gc_message(0x400, "mean_space_overhead: %lf\n", caml_mean_space_overhead());
   }
 
 #ifndef NATIVE_CODE
