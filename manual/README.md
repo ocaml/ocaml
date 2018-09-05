@@ -6,8 +6,6 @@ Prerequisites
 
 - Any prerequisites required to build OCaml from sources.
 
-- The Unix editor 'ed', no longer installed by default on some systems.
-
 - A LaTeX installation.
 
 - The HeVeA LaTeX-to-HTML convertor (available in OPAM):
