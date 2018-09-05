@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Driver for the parser, external preprocessors and ast plugin hooks *)
+(** Driver for the parser, external preprocessors and ast plugin hooks
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 open Format
 

@@ -245,6 +245,9 @@ Working version
 
 ### Manual and documentation:
 
+- MPR#7546: preambles for compiler-libs
+  (Florian Angeletti)
+
 - MPR#7825: html manual split compilerlibs from stdlib in the html
   index of modules
   (Florian Angeletti, review by Perry E. Metzger and Gabriel Scherer)

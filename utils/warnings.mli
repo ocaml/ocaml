@@ -13,6 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Warning definitions
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
+
 type loc = {
   loc_start: Lexing.position;
   loc_end: Lexing.position;

@@ -23,6 +23,9 @@
    pointer type in the C compiler.  All arithmetic operations over
    are taken modulo 2{^32} or 2{^64} depending
    on the word size of the target architecture.
+
+   Compiler-libs: beware this module makes no compatibility guarantees.
+
 *)
 
 type t

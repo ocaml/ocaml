@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Long identifiers, used in parsetree. *)
+(** Long identifiers, used in parsetree.
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 type t =
     Lident of string

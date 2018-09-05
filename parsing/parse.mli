@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Entry points in the parser *)
+(** Entry points in the parser
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 val implementation : Lexing.lexbuf -> Parsetree.structure
 val interface : Lexing.lexbuf -> Parsetree.signature

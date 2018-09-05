@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Abstract syntax tree produced by parsing *)
+(** Abstract syntax tree produced by parsing
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 open Asttypes
 

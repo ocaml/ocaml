@@ -13,6 +13,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Rewrite paths for reproducible builds
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
+
+
 type path = string
 type path_prefix = string
 type error_message = string

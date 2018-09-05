@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Basic interface to the terminfo database *)
+(** Basic interface to the terminfo database
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 type status =
   | Uninitialised

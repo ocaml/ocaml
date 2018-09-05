@@ -12,7 +12,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Check AST invariants *)
+(** Check AST invariants
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 val structure : Parsetree.structure -> unit
 val signature : Parsetree.signature -> unit

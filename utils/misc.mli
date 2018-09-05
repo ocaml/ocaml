@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Miscellaneous useful types and functions *)
+(** Miscellaneous useful types and functions
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 val fatal_error: string -> 'a
 val fatal_errorf: ('a, Format.formatter, unit, 'b) format4 -> 'a

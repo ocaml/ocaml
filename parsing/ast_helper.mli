@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Helpers to produce Parsetree fragments *)
+(** Helpers to produce Parsetree fragments
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 open Asttypes
 open Docstrings

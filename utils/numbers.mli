@@ -14,7 +14,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Modules about numbers, some of which satisfy {!Identifiable.S}. *)
+(** Modules about numbers, some of which satisfy {!Identifiable.S}.
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 module Int : sig
   include Identifiable.S with type t = int

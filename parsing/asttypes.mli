@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Auxiliary AST types used by parsetree and typedtree. *)
+(** Auxiliary AST types used by parsetree and typedtree.
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 type constant =
     Const_int of int

@@ -13,6 +13,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+
+(** Pretty-printers for {!Parsetree}
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
+
 type space_formatter = (unit, Format.formatter, unit) format
 
 val longident : Format.formatter -> Longident.t -> unit

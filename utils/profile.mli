@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Compiler performance recording *)
+(** Compiler performance recording
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 type file = string
 

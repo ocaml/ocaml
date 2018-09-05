@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** {1 Source code locations (ranges of positions), used in parsetree} *)
+(** {1 Source code locations (ranges of positions), used in parsetree}
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 open Format
 

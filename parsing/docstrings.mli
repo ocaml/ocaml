@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Documentation comments *)
+(** Documentation comments
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 (** (Re)Initialise all docstring state *)
 val init : unit -> unit

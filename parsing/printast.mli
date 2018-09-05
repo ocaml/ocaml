@@ -13,6 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Raw printer for {!Parsetree}
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
+
 open Parsetree;;
 open Format;;
 

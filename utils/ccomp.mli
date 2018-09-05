@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Compiling C files and building C libraries *)
+(** Compiling C files and building C libraries
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 val command: string -> int
 val run_command: string -> unit

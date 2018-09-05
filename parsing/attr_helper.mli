@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Helpers for attributes *)
+(** Helpers for attributes
+
+    Compiler-libs: beware this module makes no compatibility guarantees.
+
+*)
 
 open Asttypes
 open Parsetree

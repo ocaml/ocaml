@@ -13,7 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Lambda simplification and lambda plugin hooks *)
+(** Lambda simplification and lambda plugin hooks
+
+    Plugins: beware this module makes no compatibility guarantees.
+
+*)
 
 (* Elimination of useless Llet(Alias) bindings.
    Transformation of let-bound references into variables.
