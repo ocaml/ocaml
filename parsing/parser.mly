@@ -1892,9 +1892,9 @@ label_ident:
     LIDENT
       { ($1, mkexp ~loc:$sloc (Pexp_ident(mkrhs (Lident $1) $sloc))) }
 ;
-lident_list:
-    mkrhs(LIDENT)                     { [$1] }
-  | mkrhs(LIDENT) lident_list         { $1 :: $2 }
+%inline lident_list:
+  xs = mkrhs(LIDENT)+
+    { xs }
 ;
 %inline let_ident:
     val_ident { mkpatvar ~loc:$sloc $1 };
