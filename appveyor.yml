@@ -28,6 +28,12 @@ environment:
     CYG_CACHE: C:/cygwin64/var/cache/setup
     FLEXDLL_VERSION: 0.37
     OCAMLRUNPARAM: v=0,b
+  matrix:
+    - PORT: mingw32
+    - PORT: msvc64
+
+matrix:
+  fast_finish: true
 
 cache:
   - C:\cygwin64\var\cache\setup
