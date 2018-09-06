@@ -355,6 +355,12 @@ Working version
 
 ### Bug fixes:
 
+- MPR#7847, GPR#2019: Fix an infinite loop that could occur when the
+  (Menhir-generated) parser encountered a syntax error in a certain
+  specific state.
+  (François Pottier, report by Stefan Muenzel,
+  review by Frédéric Bour, Thomas Refis, Gabriel Scherer)
+
 - GPR#1626: Do not allow recursive modules in `with module`
   (Leo White, review by Gabriel Radanne)
 
