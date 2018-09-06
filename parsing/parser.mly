@@ -1882,14 +1882,14 @@ simple_expr:
   | mod_longident DOT LBRACE record_expr error
       { unclosed "{" $loc($3) "}" $loc($5) }
   | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
-      { Pexp_array(List.rev $2) }
+      { Pexp_array($2) }
   | LBRACKETBAR expr_semi_list opt_semi error
       { unclosed "[|" $loc($1) "|]" $loc($4) }
   | LBRACKETBAR BARRBRACKET
       { Pexp_array [] }
   | mkrhs(mod_longident) DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
       { (* TODO: review the location of Pexp_array *)
-        Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_array(List.rev $4))) }
+        Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_array($4))) }
   | mkrhs(mod_longident) DOT LBRACKETBAR BARRBRACKET
       { (* TODO: review the location of Pexp_array *)
         Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_array [])) }
@@ -1897,13 +1897,13 @@ simple_expr:
     LBRACKETBAR expr_semi_list opt_semi error
       { unclosed "[|" $loc($3) "|]" $loc($6) }
   | LBRACKET expr_semi_list opt_semi RBRACKET
-      { fst (mktailexp $loc($4) (List.rev $2)) }
+      { fst (mktailexp $loc($4) $2) }
   | LBRACKET expr_semi_list opt_semi error
       { unclosed "[" $loc($1) "]" $loc($4) }
   | mkrhs(mod_longident) DOT LBRACKET expr_semi_list opt_semi RBRACKET
       { let list_exp =
           (* TODO: review the location of list_exp *)
-          let tail_exp, _tail_loc = mktailexp $loc($6) (List.rev $4) in
+          let tail_exp, _tail_loc = mktailexp $loc($6) $4 in
           mkexp ~loc:$sloc tail_exp in
         Pexp_open(Fresh, $1, list_exp) }
   | mkrhs(mod_longident) DOT mkrhs(LBRACKET RBRACKET {Lident "[]"})
@@ -2066,9 +2066,9 @@ field_expr:
   | mkrhs(label)
       { ($1, exp_of_label ~loc:$sloc {$1 with txt = Lident $1.txt}) }
 ;
-expr_semi_list:
-    expr                                        { [$1] }
-  | expr_semi_list SEMI expr                    { $3 :: $1 }
+%inline expr_semi_list:
+  es = separated_nonempty_llist(SEMI, expr)
+    { es }
 ;
 type_constraint:
     COLON core_type                             { (Some $2, None) }
