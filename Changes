@@ -195,6 +195,9 @@ Working version
 - GPR#1998: More context for unbound type parameter error
   (Florian Angeletti, review by Gabriel Scherer)
 
+- GPR#1960: The parser keeps previous location when relocating ast node.
+  (Hugo Heuzard, review by Jérémie Dimino)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.
