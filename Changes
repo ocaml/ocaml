@@ -295,6 +295,13 @@ Working version
 - GPR#1854: remove the no longer defined BYTECCCOMPOPTS build variable.
   (Sébastien Hinderer, review by Damien Doligez)
 
+- GPR#2024: stop supporting obsolete platforms: Rhapsody (old beta
+  version of MacOS X, BeOS, alpha*-*-linux*, mips-*-irix6*,
+  alpha*-*-unicos, powerpc-*-aix, *-*-solaris2*, mips*-*-irix[56]*,
+  i[3456]86-*-darwin[89].*, i[3456]86-*-solaris*, *-*-sunos* *-*-unicos.
+  (Sébastien Hinderer, review by Xavier Leroy, Damien Doligez, Gabriel
+  Scherer and Armaël Guéneau)
+
 ### Internal/compiler-libs changes:
 
 - GPR#292: use Menhir as the parser generator for the OCaml parser.
