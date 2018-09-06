@@ -96,8 +96,10 @@ import-menhirLib:
 .PHONY: test-menhir
 test-menhir: parsing/parser.mly
 	$(MENHIR) $(MENHIRFLAGS) parsing/parser.mly
-	sed -i "s/MenhirLib/CamlinternalMenhirLib/g" \
-	  $(addprefix parsing/parser.,ml mli)
+	for f in $(addprefix parsing/parser.,ml mli) ; do \
+	  cat $$f | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $$f.tmp && \
+	  mv $$f.tmp $$f ; \
+	done
 	$(MAKE) parsing/parser.cmo
 
 
