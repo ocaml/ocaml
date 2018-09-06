@@ -757,6 +757,24 @@ The precedences must be listed from low to high.
 
 /* Generic definitions */
 
+(* [reversed_nonempty_llist(X)] recognizes a nonempty list of [X]s, and produces
+   an OCaml list in reverse order -- that is, the last element in the input text
+   appears first in this list. Its definition is left-recursive. *)
+
+reversed_nonempty_llist(X):
+  x = X
+    { [ x ] }
+| xs = reversed_nonempty_llist(X) x = X
+    { x :: xs }
+
+(* [nonempty_llist(X)] recognizes a nonempty list of [X]s, and produces an OCaml
+   list in direct order -- that is, the first element in the input text appears
+   first in this list. *)
+
+%inline nonempty_llist(X):
+  xs = reversed_nonempty_llist(X)
+    { List.rev xs }
+
 (* [reversed_separated_nonempty_llist(separator, X)] recognizes a nonempty list
    of [X]s, separated with [separator]s, and produces an OCaml list in reverse
    order -- that is, the last element in the input text appears first in this
@@ -1233,8 +1251,8 @@ class_expr:
   | class_expr attribute
       { Cl.attr $1 $2 }
   | mkclass(
-      class_simple_expr simple_labeled_expr_list
-        { Pcl_apply($1, List.rev $2) }
+      class_simple_expr nonempty_llist(labeled_simple_expr)
+        { Pcl_apply($1, $2) }
     | extension
         { Pcl_extension $1 }
     ) { $1 }
@@ -1637,8 +1655,8 @@ expr:
 ;
 %inline expr_:
   | expr_op { $1 }
-  | simple_expr simple_labeled_expr_list
-    { Pexp_apply($1, List.rev $2) }
+  | simple_expr nonempty_llist(labeled_simple_expr)
+    { Pexp_apply($1, $2) }
   | expr_comma_list %prec below_COMMA
     { Pexp_tuple(List.rev $1) }
   | mkrhs(constr_longident) simple_expr %prec below_HASH
@@ -1853,13 +1871,6 @@ simple_expr:
   | mod_longident DOT
     LPAREN MODULE ext_attributes module_expr COLON error
       { unclosed "(" $loc($3) ")" $loc($8) }
-;
-
-simple_labeled_expr_list:
-    labeled_simple_expr
-      { [$1] }
-  | simple_labeled_expr_list labeled_simple_expr
-      { $2 :: $1 }
 ;
 labeled_simple_expr:
     simple_expr %prec below_HASH
