@@ -1755,7 +1755,7 @@ simple_expr:
       { unclosed "{" $loc($5) "}" $loc($7) }
   | simple_expr DOT LBRACE expr RBRACE
       { bigarray_get ~loc:$sloc $1 $4 }
-  | simple_expr DOT LBRACE expr_comma_list error
+  | simple_expr DOT LBRACE expr error
       { unclosed "{" $loc($3) "}" $loc($5) }
   | simple_expr_attrs
     { let desc, attrs = $1 in
