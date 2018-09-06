@@ -2056,9 +2056,9 @@ lbl_expr:
          mkexp_opt_constraint ~loc:$sloc
            (exp_of_longident ~loc:$sloc $1) $2) }
 ;
-field_expr_list:
-    field_expr opt_semi { [$1] }
-  | field_expr SEMI field_expr_list { $1 :: $3 }
+%inline field_expr_list:
+  xs = separated_or_terminated_nonempty_list(SEMI, field_expr)
+    { xs }
 ;
 field_expr:
     mkrhs(label) EQUAL expr
