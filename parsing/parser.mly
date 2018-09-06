@@ -843,10 +843,7 @@ reversed_separated_nontrivial_llist(separator, X):
    final [delimiter]. Its definition is right-recursive. *)
 
 separated_or_terminated_nonempty_list(delimiter, X):
-  x = X
-    { [x] }
-| x = X
-  delimiter
+  x = X ioption(delimiter)
     { [x] }
 | x = X
   delimiter
