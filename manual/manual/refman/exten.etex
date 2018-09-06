@@ -1635,43 +1635,71 @@ Some attributes are understood by the type-checker:
    default is currently "boxed" but it may change in the future.
 \end{itemize}
 
-\begin{verbatim}
-  [@@deprecated "Please use module 'Y' instead."]
+\begin{caml_example*}{verbatim}
+module X = struct
+  [@@@warning "+9"]  (* locally enable warning 9 in this structure *)
+  [@@@ellipsis]
+end
+[@@deprecated "Please use module 'Y' instead."]
 
-let x = begin[@warning "+9"] ... end in ....
+let x = begin[@warning "+9"] [()[@ellipsis]] end
 
 type t = A | B
   [@@deprecated "Please use type 's' instead."]
+\end{caml_example*}
 
-let f x =
-  assert (x >= 0) [@ppwarning "TODO: remove this later"];
+\begin{caml_example*}{verbatim}[warning=3]
+let uses_deprecated_type (x : t) = ()[@ellipsis]
+\end{caml_example*}
 
-let rec no_op = function
+\begin{caml_example*}{verbatim}[warning=22]
+let fires_warning_22 x =
+  assert (x >= 0) [@ppwarning "TODO: remove this later"]
+\end{caml_example*}
+
+\begin{caml_example*}{verbatim}[warning=51]
+let rec is_a_tail_call = function
   | [] -> ()
-  | _ :: q -> (no_op[@tailcall]) q;;
+  | _ :: q -> (is_a_tail_call[@tailcall]) q
 
+let rec not_a_tail_call = function
+  | [] -> []
+  | x :: q -> x :: (not_a_tail_call[@tailcall]) q
+\end{caml_example*}
+
+\begin{caml_example*}{verbatim}
 let f x = x [@@inline]
 
 let () = (f[@inlined]) ()
+\end{caml_example}
 
+\begin{caml_example*}{verbatim}
 type fragile =
   | Int of int [@warn_on_literal_pattern]
   | String of string [@warn_on_literal_pattern]
+\end{caml_example*}
 
-let f = function
-| Int 0 | String "constant" -> () (* trigger warning 52 *)
+\begin{caml_example}{verbatim}[warning=52]
+let fragile_match_1 = function
+| Int 0 -> ()
 | _ -> ()
+\end{caml_example}
 
+\begin{caml_example}{verbatim}[warning=52]
+let fragile_match_2 = function
+| String "constant" -> ()
+| _ -> ()
+\end{caml_example}
+
+\begin{caml_example*}{verbatim}
 module Immediate: sig
   type t [@@immediate]
   val x: t ref
 end = struct
   type t = A | B
-  let x = ref 0
+  let x = ref A
 end
-  ....
-
-\end{verbatim}
+\end{caml_example*}
 
 
 \section{Extension nodes}\label{s:extension-nodes}
@@ -1827,22 +1855,24 @@ Extensible variant types are variant types which can be extended with
 new variant constructors. Extensible variant types are defined using
 "..". New variant constructors are added using "+=".
 \begin{caml_example*}{verbatim}
-type attr = ..
+module Expr = struct
+  type attr = ..
 
-type attr += Str of string
+  type attr += Str of string
 
-type attr +=
-  | Int of int
-  | Float of float
+  type attr +=
+    | Int of int
+    | Float of float
+end
 \end{caml_example*}
 
 Pattern matching on an extensible variant type requires a default case
 to handle unknown variant constructors:
 \begin{caml_example*}{verbatim}
 let to_string = function
-  | Str s -> s
-  | Int i -> string_of_int i
-  | Float f -> string_of_float f
+  | Expr.Str s -> s
+  | Expr.Int i -> string_of_int i
+  | Expr.Float f -> string_of_float f
   | _ -> "?"
 \end{caml_example*}
 
@@ -1855,23 +1885,38 @@ type exn += Exc of int
 
 Extensible variant constructors can be rebound to a different name. This
 allows exporting variants from another module.
-\begin{verbatim}
+\begin{caml_example}{toplevel}[error]
+let not_in_scope = Str "Foo";;
+\end{caml_example}
+\begin{caml_example*}{verbatim}
 type Expr.attr += Str = Expr.Str
-\end{verbatim}
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+let now_works = Str "foo";;
+\end{caml_example}
 
 Extensible variant constructors can be declared "private". As with
 regular variants, this prevents them from being constructed directly by
 constructor application while still allowing them to be de-structured in
 pattern-matching.
 \begin{caml_example*}{verbatim}
-module Bool : sig
-  type attr += private Bool of int
-  val bool : bool -> attr
+module B : sig
+  type Expr.attr += private Bool of int
+  val bool : bool -> Expr.attr
 end = struct
-  type attr += Bool of int
+  type Expr.attr += Bool of int
   let bool p = if p then Bool 1 else Bool 0
 end
 \end{caml_example*}
+
+\begin{caml_example}{toplevel}
+let inspection_works = function
+  | B.Bool p -> (p = 1)
+  | _ -> true;;
+\end{caml_example}
+\begin{caml_example}{toplevel}[error]
+let construction_is_forbidden = B.Bool 1;;
+\end{caml_example}
 
 \subsection{Private extensible variant types}
 
