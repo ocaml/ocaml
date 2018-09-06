@@ -1881,37 +1881,37 @@ simple_expr:
         Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_record(fields, exten))) }
   | mod_longident DOT LBRACE record_expr error
       { unclosed "{" $loc($3) "}" $loc($5) }
-  | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
+  | LBRACKETBAR expr_semi_list BARRBRACKET
       { Pexp_array($2) }
-  | LBRACKETBAR expr_semi_list opt_semi error
-      { unclosed "[|" $loc($1) "|]" $loc($4) }
+  | LBRACKETBAR expr_semi_list error
+      { unclosed "[|" $loc($1) "|]" $loc($3) }
   | LBRACKETBAR BARRBRACKET
       { Pexp_array [] }
-  | mkrhs(mod_longident) DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
+  | mkrhs(mod_longident) DOT LBRACKETBAR expr_semi_list BARRBRACKET
       { (* TODO: review the location of Pexp_array *)
         Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_array($4))) }
   | mkrhs(mod_longident) DOT LBRACKETBAR BARRBRACKET
       { (* TODO: review the location of Pexp_array *)
         Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_array [])) }
   | mod_longident DOT
-    LBRACKETBAR expr_semi_list opt_semi error
-      { unclosed "[|" $loc($3) "|]" $loc($6) }
-  | LBRACKET expr_semi_list opt_semi RBRACKET
-      { fst (mktailexp $loc($4) $2) }
-  | LBRACKET expr_semi_list opt_semi error
-      { unclosed "[" $loc($1) "]" $loc($4) }
-  | mkrhs(mod_longident) DOT LBRACKET expr_semi_list opt_semi RBRACKET
+    LBRACKETBAR expr_semi_list error
+      { unclosed "[|" $loc($3) "|]" $loc($5) }
+  | LBRACKET expr_semi_list RBRACKET
+      { fst (mktailexp $loc($3) $2) }
+  | LBRACKET expr_semi_list error
+      { unclosed "[" $loc($1) "]" $loc($3) }
+  | mkrhs(mod_longident) DOT LBRACKET expr_semi_list RBRACKET
       { let list_exp =
           (* TODO: review the location of list_exp *)
-          let tail_exp, _tail_loc = mktailexp $loc($6) $4 in
+          let tail_exp, _tail_loc = mktailexp $loc($5) $4 in
           mkexp ~loc:$sloc tail_exp in
         Pexp_open(Fresh, $1, list_exp) }
   | mkrhs(mod_longident) DOT mkrhs(LBRACKET RBRACKET {Lident "[]"})
       { (* TODO: review the location of Pexp_construct *)
         Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_construct($3, None))) }
   | mod_longident DOT
-    LBRACKET expr_semi_list opt_semi error
-      { unclosed "[" $loc($3) "]" $loc($6) }
+    LBRACKET expr_semi_list error
+      { unclosed "[" $loc($3) "]" $loc($5) }
   | mkrhs(mod_longident) DOT LPAREN MODULE ext_attributes module_expr COLON
     package_type RPAREN
       { (* TODO: review the location of Pexp_constraint *)
@@ -2067,7 +2067,7 @@ field_expr:
       { ($1, exp_of_label ~loc:$sloc {$1 with txt = Lident $1.txt}) }
 ;
 %inline expr_semi_list:
-  es = separated_nonempty_llist(SEMI, expr)
+  es = separated_or_terminated_nonempty_list(SEMI, expr)
     { es }
 ;
 type_constraint:
