@@ -25,23 +25,33 @@
 #include "unixsupport.h"
 #include <windows.h>
 
-int win_truncate(WCHAR * path, long long len)
+int win_ftruncate(HANDLE fh, long long len)
 {
-  HANDLE fh;
   LARGE_INTEGER fp;
   fp.QuadPart = len;
-  fh = CreateFile(path, GENERIC_WRITE, 0, NULL,
-                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (fh == INVALID_HANDLE_VALUE) {  // failure: Unable to open file
     return -1;
   }
   if (SetFilePointerEx(fh, fp, NULL, FILE_BEGIN) == 0 ||
       SetEndOfFile(fh) == 0) {
-    CloseHandle(fh);
     return -1;
   }
-  CloseHandle(fh);
   return 0;
+}
+
+int win_truncate(WCHAR * path, long long len)
+{
+  HANDLE fh;
+  int ret;
+  fh = CreateFile(path, GENERIC_WRITE, 0, NULL,
+                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (fh == INVALID_HANDLE_VALUE) {  // failure: Unable to open file
+    return -1;
+  }
+  ret = win_ftruncate(fh, len);
+  CloseHandle(fh);
+
+  return ret;
 }
 
 CAMLprim value unix_truncate(value path, value len)
@@ -74,5 +84,30 @@ CAMLprim value unix_truncate_64(value path, value vlen)
   caml_stat_free(p);
   if (ret == -1)
     uerror("truncate", path);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value unix_ftruncate(value fd, value len)
+{
+  CAMLparam1(len);
+  int ret;
+  caml_enter_blocking_section();
+  ret = win_ftruncate(Handle_val(fd), Long_val(len));
+  caml_leave_blocking_section();
+  if (ret == -1)
+    uerror("ftruncate", Nothing);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value unix_ftruncate_64(value fd, value vlen)
+{
+  CAMLparam1(vlen);
+  int ret;
+  file_offset len = File_offset_val(vlen);
+  caml_enter_blocking_section();
+  ret = win_ftruncate(Handle_val(fd), len);
+  caml_leave_blocking_section();
+  if (ret == -1)
+    uerror("ftruncate", Nothing);
   CAMLreturn(Val_unit);
 }

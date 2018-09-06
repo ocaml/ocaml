@@ -230,7 +230,7 @@ type seek_command =
 external lseek : file_descr -> int -> seek_command -> int = "unix_lseek"
 
 external truncate : string -> int -> unit = "unix_truncate"
-let ftruncate _fd _len = invalid_arg "Unix.ftruncate not implemented"
+external ftruncate : file_descr -> int -> unit = "unix_ftruncate"
 
 (* File statistics *)
 
@@ -275,8 +275,7 @@ module LargeFile =
     external lseek : file_descr -> int64 -> seek_command -> int64
        = "unix_lseek_64"
     external truncate : string -> int64 -> unit = "unix_truncate_64"
-    let ftruncate _name _len =
-      invalid_arg "Unix.LargeFile.ftruncate not implemented"
+    external ftruncate : file_descr -> int64 -> unit = "unix_ftruncate_64"
     type stats =
       { st_dev : int;
         st_ino : int;
