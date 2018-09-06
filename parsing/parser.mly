@@ -2047,10 +2047,9 @@ record_expr:
     simple_expr WITH lbl_expr_list              { (Some $1, $3) }
   | lbl_expr_list                               { (None, $1) }
 ;
-lbl_expr_list:
-     lbl_expr { [$1] }
-  |  lbl_expr SEMI lbl_expr_list { $1 :: $3 }
-  |  lbl_expr SEMI { [$1] }
+%inline lbl_expr_list:
+  xs = separated_or_terminated_nonempty_list(SEMI, lbl_expr)
+    { xs }
 ;
 lbl_expr:
     mkrhs(label_longident) opt_type_constraint EQUAL expr
