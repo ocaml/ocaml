@@ -25,13 +25,10 @@
 #include "unixsupport.h"
 #include <windows.h>
 
-int win_ftruncate(HANDLE fh, long long len)
+static int win_truncate_handle(HANDLE fh, long long len)
 {
   LARGE_INTEGER fp;
   fp.QuadPart = len;
-  if (fh == INVALID_HANDLE_VALUE) {  // failure: Unable to open file
-    return -1;
-  }
   if (SetFilePointerEx(fh, fp, NULL, FILE_BEGIN) == 0 ||
       SetEndOfFile(fh) == 0) {
     return -1;
@@ -39,18 +36,35 @@ int win_ftruncate(HANDLE fh, long long len)
   return 0;
 }
 
-int win_truncate(WCHAR * path, long long len)
+static int win_ftruncate(HANDLE fh, long long len)
+{
+  HANDLE dupfh, currproc;
+  int ret;
+  if (fh == INVALID_HANDLE_VALUE) {
+    return -1;
+  }
+  currproc = GetCurrentProcess();
+  /* Duplicate the handle, so we are free to modify its file position. */
+  if (DuplicateHandle(currproc, fh, currproc, &dupfh, 0, FALSE,
+                      DUPLICATE_SAME_ACCESS) == 0) {
+     return -1;
+  }
+  ret = win_truncate_handle(dupfh, len);
+  CloseHandle(dupfh);
+  return ret;
+}
+
+static int win_truncate(WCHAR * path, long long len)
 {
   HANDLE fh;
   int ret;
   fh = CreateFile(path, GENERIC_WRITE, 0, NULL,
                   OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-  if (fh == INVALID_HANDLE_VALUE) {  // failure: Unable to open file
+  if (fh == INVALID_HANDLE_VALUE) {
     return -1;
   }
-  ret = win_ftruncate(fh, len);
+  ret = win_truncate_handle(fh, len);
   CloseHandle(fh);
-
   return ret;
 }
 
