@@ -68,11 +68,10 @@ $(LIBNAME).cmxa: $(CAMLOBJS_NAT)
 	         $(CAMLOBJS_NAT) $(LINKOPTS)
 
 $(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(CLIBNAME).$(A)
-	$(FLEXLINK_ENV)$(CAMLOPT) -shared -o $(LIBNAME).cmxs -I . \
-	                                     $(LIBNAME).cmxa
+	$(CAMLOPT_CMD) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
 
 lib$(CLIBNAME).$(A): $(COBJS)
-	$(FLEXLINK_ENV)$(MKLIB) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
+	$(MKLIB_CMD) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
 
 install::
 	if test -f dll$(CLIBNAME)$(EXT_DLL); then \
