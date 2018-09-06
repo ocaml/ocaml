@@ -757,6 +757,13 @@ The precedences must be listed from low to high.
 
 /* Generic definitions */
 
+(* [rev(XS)] recognizes the same language as [XS], and reverses the resulting OCaml
+   list. *)
+
+%inline rev(XS):
+  xs = XS
+    { List.rev xs }
+
 (* [reversed_nonempty_llist(X)] recognizes a nonempty list of [X]s, and produces
    an OCaml list in reverse order -- that is, the last element in the input text
    appears first in this list. Its definition is left-recursive. *)
@@ -772,8 +779,8 @@ reversed_nonempty_llist(X):
    first in this list. *)
 
 %inline nonempty_llist(X):
-  xs = reversed_nonempty_llist(X)
-    { List.rev xs }
+  xs = rev(reversed_nonempty_llist(X))
+    { xs }
 
 (* [reversed_separated_nonempty_llist(separator, X)] recognizes a nonempty list
    of [X]s, separated with [separator]s, and produces an OCaml list in reverse
@@ -804,8 +811,32 @@ reversed_separated_nonempty_llist(separator, X):
    that is, the first element in the input text appears first in this list. *)
 
 %inline separated_nonempty_llist(separator, X):
-  xs = reversed_separated_nonempty_llist(separator, X)
-    { List.rev xs }
+  xs = rev(reversed_separated_nonempty_llist(separator, X))
+    { xs }
+
+(* [reversed_separated_nontrivial_llist(separator, X)] recognizes a list of at
+   least two [X]s, separated with [separator]s, and produces an OCaml list in
+   reverse order -- that is, the last element in the input text appears first
+   in this list. Its definition is left-recursive. *)
+
+reversed_separated_nontrivial_llist(separator, X):
+  xs = reversed_separated_nontrivial_llist(separator, X)
+  separator
+  x = X
+    { x :: xs }
+| x1 = X
+  separator
+  x2 = X
+    { [ x2; x1 ] }
+
+(* [separated_nontrivial_llist(separator, X)] recognizes a list of at least
+   two [X]s, separated with [separator]s, and produces an OCaml list in direct
+   order -- that is, the first element in the input text appears first in this
+   list. *)
+
+%inline separated_nontrivial_llist(separator, X):
+  xs = rev(reversed_separated_nontrivial_llist(separator, X))
+    { xs }
 
 /* Entry points */
 
@@ -1666,7 +1697,7 @@ expr:
   | simple_expr nonempty_llist(labeled_simple_expr)
     { Pexp_apply($1, $2) }
   | expr_comma_list %prec below_COMMA
-    { Pexp_tuple(List.rev $1) }
+    { Pexp_tuple($1) }
   | mkrhs(constr_longident) simple_expr %prec below_HASH
     { Pexp_construct($1, Some $2) }
   | name_tag simple_expr %prec below_HASH
@@ -1993,9 +2024,9 @@ fun_def:
   | LPAREN TYPE lident_list RPAREN fun_def
       { mk_newtypes ~loc:$sloc $3 $5 }
 ;
-expr_comma_list:
-    expr_comma_list COMMA expr                  { $3 :: $1 }
-  | expr COMMA expr                             { [$3; $1] }
+%inline expr_comma_list:
+  es = separated_nontrivial_llist(COMMA, expr)
+    { es }
 ;
 record_expr:
     simple_expr WITH lbl_expr_list              { (Some $1, $3) }
