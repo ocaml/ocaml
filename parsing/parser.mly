@@ -838,6 +838,21 @@ reversed_separated_nontrivial_llist(separator, X):
   xs = rev(reversed_separated_nontrivial_llist(separator, X))
     { xs }
 
+(* [separated_or_terminated_nonempty_list(delimiter, X)] recognizes a nonempty
+   list of [X]s, separated with [delimiter]s, and optionally terminated with a
+   final [delimiter]. Its definition is right-recursive. *)
+
+separated_or_terminated_nonempty_list(delimiter, X):
+  x = X
+    { [x] }
+| x = X
+  delimiter
+    { [x] }
+| x = X
+  delimiter
+  xs = separated_or_terminated_nonempty_list(delimiter, X)
+    { x :: xs }
+
 /* Entry points */
 
 implementation:
