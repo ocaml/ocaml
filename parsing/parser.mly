@@ -2216,16 +2216,16 @@ simple_delimited_pattern:
         Ppat_record(fields, closed) }
     | LBRACE lbl_pattern_list error
       { unclosed "{" $loc($1) "}" $loc($3) }
-    | LBRACKET pattern_semi_list opt_semi RBRACKET
-      { fst (mktailpat $loc($4) $2) }
-    | LBRACKET pattern_semi_list opt_semi error
-      { unclosed "[" $loc($1) "]" $loc($4) }
-    | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
+    | LBRACKET pattern_semi_list RBRACKET
+      { fst (mktailpat $loc($3) $2) }
+    | LBRACKET pattern_semi_list error
+      { unclosed "[" $loc($1) "]" $loc($3) }
+    | LBRACKETBAR pattern_semi_list BARRBRACKET
       { Ppat_array $2 }
     | LBRACKETBAR BARRBRACKET
       { Ppat_array [] }
-    | LBRACKETBAR pattern_semi_list opt_semi error
-      { unclosed "[|" $loc($1) "|]" $loc($4) }
+    | LBRACKETBAR pattern_semi_list error
+      { unclosed "[|" $loc($1) "|]" $loc($3) }
   ) { $1 }
 
 pattern_comma_list:
@@ -2239,7 +2239,7 @@ pattern_no_exn_comma_list:
   | pattern_no_exn COMMA error                  { expecting $loc($3) "pattern" }
 ;
 %inline pattern_semi_list:
-  ps = separated_nonempty_llist(SEMI, pattern)
+  ps = separated_or_terminated_nonempty_list(SEMI, pattern)
     { ps }
 ;
 lbl_pattern_list:
