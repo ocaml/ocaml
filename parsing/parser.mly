@@ -757,28 +757,28 @@ The precedences must be listed from low to high.
 
 /* Generic definitions */
 
-(* [reversed_separated_nonempty_list(separator, X)] recognizes a nonempty list
+(* [reversed_separated_nonempty_llist(separator, X)] recognizes a nonempty list
    of [X]s, separated with [separator]s, and produces an OCaml list in reverse
    order -- that is, the last element in the input text appears first in this
-   OCaml list. *)
+   list. Its definition is left-recursive. *)
 
-(* [inline_reversed_separated_nonempty_list(separator, X)] is semantically
-   equivalent to [reversed_separated_nonempty_list(separator, X)], but is
+(* [inline_reversed_separated_nonempty_llist(separator, X)] is semantically
+   equivalent to [reversed_separated_nonempty_llist(separator, X)], but is
    marked %inline, which means that the case of a list of length one and
    the case of a list of length more than one will be distinguished at the
    use site, and will give rise there to two productions. This can be used
    to avoid certain conflicts. *)
 
-%inline inline_reversed_separated_nonempty_list(separator, X):
+%inline inline_reversed_separated_nonempty_llist(separator, X):
   x = X
     { [ x ] }
-| xs = reversed_separated_nonempty_list(separator, X)
+| xs = reversed_separated_nonempty_llist(separator, X)
   separator
   x = X
     { x :: xs }
 
-reversed_separated_nonempty_list(separator, X):
-  xs = inline_reversed_separated_nonempty_list(separator, X)
+reversed_separated_nonempty_llist(separator, X):
+  xs = inline_reversed_separated_nonempty_llist(separator, X)
     { xs }
 
 /* Entry points */
@@ -2648,7 +2648,7 @@ simple_core_type_or_tuple:
 ;
 (* A [core_type_comma_list] is a nonempty, comma-separated list of types. *)
 %inline core_type_comma_list:
-  tys = reversed_separated_nonempty_list(COMMA, core_type)
+  tys = reversed_separated_nonempty_llist(COMMA, core_type)
     { tys }
 ;
 (* [inline_core_type_comma_list] is semantically equivalent to
@@ -2661,7 +2661,7 @@ simple_core_type_or_tuple:
    Inlining allows the parser to shift the closing parenthesis without (yet)
    deciding which of the above two situations we have. *)
 %inline inline_core_type_comma_list:
-  tys = inline_reversed_separated_nonempty_list(COMMA, core_type)
+  tys = inline_reversed_separated_nonempty_llist(COMMA, core_type)
     { tys }
 ;
 core_type_list:
