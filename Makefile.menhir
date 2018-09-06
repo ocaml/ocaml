@@ -63,7 +63,16 @@ MENHIRFLAGS := --explain --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer\
 promote-menhir: parsing/parser.mly
 	$(MAKE) import-menhirLib
 	$(MENHIR) $(MENHIRFLAGS) parsing/parser.mly
-	cp $(addprefix parsing/parser.,ml mli) boot/menhir
+# The generated parser.ml may contain lexer directives containing
+# the absolute path to Menhir's standard library on the promoter's machine.
+# This is benign but will generate pointless churn if another developer
+# rebuilds the same grammar (from the same Menhir version).
+	for f in $(addprefix parser.,ml mli) ; do \
+	  sed \
+	    's,^#\(.*\)"[^"]*/menhir/standard.mly",#\1"menhir/standard.mly",g' \
+	    parsing/$$f \
+	    > boot/menhir/$$f; \
+	done
 
 # The import-menhirLib invocation in promote-menhir ensures that each
 # update of the boot/ parser is paired with an update of the imported

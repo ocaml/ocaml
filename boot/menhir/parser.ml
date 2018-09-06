@@ -39835,7 +39835,7 @@ end
 
 # 39837 "parsing/parser.ml"
 
-# 233 "/usr/local/home/jdimino/opam-root/default/lib/menhir/standard.mly"
+# 233 "menhir/standard.mly"
   
 
 # 39842 "parsing/parser.ml"
