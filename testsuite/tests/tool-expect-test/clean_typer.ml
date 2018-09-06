@@ -72,9 +72,6 @@ Error: This expression has type Variants.bar M.t
 
 let f3 = fbar foo;;
 [%%expect {|
-Uncaught exception: Stack overflow
-
-|}, Principal{|
 Line 1, characters 14-17:
   let f3 = fbar foo;;
                 ^^^
