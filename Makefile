@@ -1050,8 +1050,29 @@ clean::
 # In order to avoid a build-time dependency on Menhir,
 # we store the result of the parser generator (which
 # are OCaml source files) and Menhir's runtime libraries
-# (that the parser files rely on) in boot/
+# (that the parser files rely on) in boot/.
 
+# The rules below do not depend on Menhir being available,
+# they just build the parser from the boot/.
+
+# See Makefile.menhir for the rules to rebuild the parser and update
+# boot/, which require Menhir. The targets in Makefile.menhir
+# (also included here for convenience) must be used after any
+# modification of parser.mly.
+include Makefile.menhir
+
+# To avoid module-name conflicts with compiler-lib users that link
+# with their code with their own MenhirLib module (possibly with
+# a different Menhir version), we rename MenhirLib into
+# CamlinternalMenhirlib -- and replace the module occurrences in the
+# generated parser.ml.
+
+parsing/camlinternalMenhirLib.ml: boot/menhir/menhirLib.ml
+	cp $< $@
+parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
+	cp $< $@
+
+# Copy parsing/parser.ml from boot/
 parsing/parser.ml: \
   boot/menhir/parser.ml parsing/parser.mly
 	@if [ -n "$(shell find parsing/parser.mly \
@@ -1070,21 +1091,8 @@ parsing/parser.ml: \
 parsing/parser.mli: boot/menhir/parser.mli
 	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
 
-# We rename the menhirLib module into CamlinternalMenhirlib,
-# to avoid module-name conflicts with compiler-libs users
-# also linking their own MenhirLib module for another parser.
-parsing/camlinternalMenhirLib.ml: boot/menhir/menhirLib.ml
-	cp $< $@
-parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
-	cp $< $@
-
-# Makefile.menhir exports an promote-menhir rule that calls Menhir on
-# the current grammar and refreshes the boot/ files. It must be called
-# for any modification of the grammar to be taken into account by the
-# compiler.
-include Makefile.menhir
-
 partialclean:: partialclean-menhir
+
 
 # OCamldoc
 
