@@ -175,13 +175,13 @@ allopt: ocamltest.opt$(EXE)
 opt.opt: allopt
 
 ocamltest$(EXE): $(bytecode_modules)
-	$(FLEXLINK_ENV)$(ocamlc) -custom ocamlcommon.cma -o $@ $^
+	$(ocamlc_cmd) -custom ocamlcommon.cma -o $@ $^
 
 %.cmo: %.ml
 	$(ocamlc) -c $<
 
 ocamltest.opt$(EXE): $(native_modules)
-	$(FLEXLINK_ENV)$(ocamlopt) ocamlcommon.cmxa -o $@ $^
+	$(ocamlopt_cmd) ocamlcommon.cmxa -o $@ $^
 
 %.cmx: %.ml
 	$(ocamlopt) -c $<

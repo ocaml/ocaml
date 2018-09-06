@@ -52,8 +52,8 @@ $1: $3 $2
 	$$(CAMLC) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ $2
 
 $1.opt: $3 $$(call byte2native,$2)
-	$$(FLEXLINK_ENV)$$(CAMLOPT) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ \
-	                            $$(call byte2native,$2)
+	$$(CAMLOPT_CMD) $$(LINKFLAGS) -I $$(ROOTDIR) -o $$@ \
+	                $$(call byte2native,$2)
 
 all: $1
 
@@ -354,8 +354,7 @@ LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
 
 lintapidiff.opt: INCLUDES+= -I $(ROOTDIR)/otherlibs/str
 lintapidiff.opt: $(LINTAPIDIFF)
-	$(FLEXLINK_ENV)$(CAMLOPT) $(LINKFLAGS) -I $(ROOTDIR) -o $@ \
-	                          $(LINTAPIDIFF)
+	$(CAMLOPT_CMD) $(LINKFLAGS) -I $(ROOTDIR) -o $@ $(LINTAPIDIFF)
 clean::
 	rm -f -- lintapidiff.opt lintapidiff.cm? lintapidiff.o
 

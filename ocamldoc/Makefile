@@ -208,7 +208,7 @@ $(OCAMLDOC): $(EXECMOFILES)
 	$(OCAMLC) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_BCLIBRARIES) $^
 
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(FLEXLINK_ENV)$(OCAMLOPT) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_NCLIBRARIES) $^
+	$(OCAMLOPT_CMD) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_NCLIBRARIES) $^
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 	$(OCAMLC) -a -o $@ $(LINKFLAGS) $^
@@ -260,7 +260,7 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 	$(OCAMLOPT) $(OCAMLPP) $(COMPFLAGS) -c $<
 
 .ml.cmxs:
-	$(FLEXLINK_ENV)$(OCAMLOPT) -shared -o $@ $(OCAMLPP) $(COMPFLAGS) $<
+	$(OCAMLOPT_CMD) -shared -o $@ $(OCAMLPP) $(COMPFLAGS) $<
 
 .mll.ml:
 	$(OCAMLLEX) $<

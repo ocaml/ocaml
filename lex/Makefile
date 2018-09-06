@@ -46,7 +46,7 @@ ocamllex: $(OBJS)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamllex $(OBJS)
 
 ocamllex.opt: $(OBJS:.cmo=.cmx)
-	$(FLEXLINK_ENV)$(CAMLOPT) -o ocamllex.opt $(OBJS:.cmo=.cmx)
+	$(CAMLOPT_CMD) -o ocamllex.opt $(OBJS:.cmo=.cmx)
 
 clean::
 	rm -f ocamllex ocamllex.opt

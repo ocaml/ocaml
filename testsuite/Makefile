@@ -23,6 +23,16 @@ include $(TOPDIR)/Makefile.tools
 
 OCAMLTESTDIR_CYGPATH=$(shell $(CYGPATH) $(BASEDIR)/$(DIR)/_ocamltest)
 
+failstamp := failure.stamp
+
+TESTLOG ?= _log
+
+ocamltest_directory := ../ocamltest
+
+ocamltest_program := $(or \
+  $(wildcard $(ocamltest_directory)/ocamltest.opt$(EXE)),\
+  $(wildcard $(ocamltest_directory)/ocamltest$(EXE)))
+
 ifeq "$(UNIX_OR_WIN32)" "unix"
   ifeq "$(SYSTEM)" "cygwin"
     find := /usr/bin/find
@@ -36,28 +46,20 @@ else # Windows
     FLEXLINK_ENV =
   else
     ROOT := $(shell cd .. && pwd| cygpath -m -f -)
-    # FLEXLINK_ENV must have a space at the end
     FLEXLINK_ENV = \
-      OCAML_FLEXLINK="$(ROOT)/boot/ocamlrun $(ROOT)/flexdll/flexlink.exe" #
+      OCAML_FLEXLINK="$(ROOT)/boot/ocamlrun $(ROOT)/flexdll/flexlink.exe"
   endif
 endif
 
-failstamp := failure.stamp
-
-TESTLOG ?= _log
-
-ocamltest_directory := ../ocamltest
-
-ocamltest_program := $(or \
-  $(wildcard $(ocamltest_directory)/ocamltest.opt$(EXE)),\
-  $(wildcard $(ocamltest_directory)/ocamltest$(EXE)))
-
-ifneq "$(FLEXLINK_ENV)" ""
+ifeq "$(FLEXLINK_ENV)" ""
+  ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
+else
   MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
                                    $(FLEXLINK_FLAGS)
+
+  ocamltest := $(FLEXLINK_ENV) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
+                               $(ocamltest_program)
 endif
-ocamltest := $(FLEXLINK_ENV)MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
-                            $(ocamltest_program)
 
 .PHONY: default
 default:
