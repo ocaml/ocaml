@@ -14,7 +14,7 @@
 #**************************************************************************
 
 # The rules in this Makefile use Menhir to rebuild the OCaml compiler
-# parser. They are include in the main Makefile, so should be invoked
+# parser. They are included in the main Makefile, so should be invoked
 # directly, for example 'make promote-menhir'. They must be called
 # after any modification to parsing/parser.mly, for the modification
 # to affect the parser linked in the produced compiler:
