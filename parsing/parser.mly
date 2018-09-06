@@ -799,6 +799,14 @@ reversed_separated_nonempty_llist(separator, X):
   xs = inline_reversed_separated_nonempty_llist(separator, X)
     { xs }
 
+(* [separated_nonempty_llist(separator, X)] recognizes a nonempty list of [X]s,
+   separated with [separator]s, and produces an OCaml list in direct order --
+   that is, the first element in the input text appears first in this list. *)
+
+%inline separated_nonempty_llist(separator, X):
+  xs = reversed_separated_nonempty_llist(separator, X)
+    { List.rev xs }
+
 /* Entry points */
 
 implementation:
