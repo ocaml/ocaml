@@ -1073,23 +1073,14 @@ parsing/camlinternalMenhirLib.mli: boot/menhir/menhirLib.mli
 	cp $< $@
 
 # Copy parsing/parser.ml from boot/
-parsing/parser.ml: \
-  boot/menhir/parser.ml parsing/parser.mly
-	@if [ -n "$(shell find parsing/parser.mly \
-	            -prune -newer boot/menhir/parser.ml \
-	            -exec echo parser-changed \;)" ]; \
-	then \
-	  echo; \
-	  tput setaf 3; tput bold; printf "Warning: "; tput sgr0; \
-	  echo "Your 'parser.mly' file is more recent \
-	than the parser in 'boot/'."; \
-	  echo "Its changes will be ignored unless you run:"; \
-	  echo "    make promote-menhir"; \
-	  echo; \
-	fi
+
+parsing/parser.ml: boot/menhir/parser.ml parsing/parser.mly \
+  tools/check-parser-uptodate-or-warn.sh
+	@tools/check-parser-uptodate-or-warn.sh
 	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
 parsing/parser.mli: boot/menhir/parser.mli
 	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
+
 
 partialclean:: partialclean-menhir
 
