@@ -33,6 +33,22 @@ Jeremy Yallop <yallop@gmail.com> yallop <yallop@gmail.com>
 Nicolás Ojeda Bär <n.oje.bar@gmail.com>
 
 
+### Approved Approvers
+
+# The current policy to handle pull requests for the compiler
+# distribution is to merge a PR only it has been "approved" by someone
+# who is not an author of the PR and has the "approver" status, by
+# either
+# (1) having been given commit rights, or
+# (2) being part of the list of "approvers" below.
+#
+# Format:
+#
+#   Preferred Name <nickname>
+
+Gabriel Radanne <Drup>
+
+
 ### Remembering naming preferences for contributors
 
 # The aliases below correspond to preference expressed by
