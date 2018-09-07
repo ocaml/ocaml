@@ -344,8 +344,9 @@ static uintnat default_slice_budget() {
   */
   uintnat heap_size = caml_heap_size(Caml_state->shared_heap);
   heap_words = (double)Wsize_bsize(heap_size);
-  p = (double) Caml_state->allocated_words * 3.0 * (100 + caml_percent_free)
-      / heap_words / caml_percent_free / 2.0;
+  double percent_free = caml_current_space_overhead > 0.0 ? caml_current_space_overhead : caml_percent_free;
+  p = (double) Caml_state->allocated_words * 3.0 * (100 + percent_free)
+      / heap_words / percent_free / 2.0;
 
   if (!Caml_state->sweeping_done) {
     /* Multicore sweeps first and then marks */
