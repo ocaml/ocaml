@@ -249,12 +249,59 @@ void caml_adopt_orphaned_work ()
   caml_plat_unlock(&orphaned_lock);
 }
 
+#define BUFFER_SIZE 64
+
+struct buf_list_t {
+  double buffer[BUFFER_SIZE];
+  struct buf_list_t *next;
+};
+
+static struct {
+  intnat heap_words_last_cycle;
+  intnat not_garbage_words_last_cycle;
+  int index;
+  struct buf_list_t *l;
+ } caml_stat_space_overhead = {0, 0, 0, NULL};
+
+double caml_mean_space_overhead ()
+{
+  int index = caml_stat_space_overhead.index;
+  struct buf_list_t *t, *l = caml_stat_space_overhead.l;
+  /* Use Welford's online algorithm for calculating running variance to remove
+   * outliers from mean calculation. */
+  double mean = 0.0, m2 = 0.0, stddev = 0.0, v;
+  double delta, delta2;
+  intnat count = 0;
+
+  while (l) {
+    while (index > 0) {
+      v = l->buffer[--index];
+      if (count > 5 && (v < mean - 3 * stddev || v > mean + 3 * stddev)) {
+        continue;
+      }
+      count++;
+      delta = v - mean;
+      mean = mean + delta / count;
+      delta2 = v - mean;
+      m2 = m2 + delta * delta2;
+      stddev = sqrt (m2 / count);
+    }
+    t = l;
+    l = l->next;
+    caml_stat_free(t);
+    index = BUFFER_SIZE;
+  }
+  return mean;
+}
+
+double caml_current_space_overhead = 0.0;
+
 static uintnat default_slice_budget() {
   double p, heap_words;
   intnat computed_work;
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
-                 FM = caml_stat_heap_size * caml_percent_free
+                 FM = heap_words * caml_percent_free
                       / (100 + caml_percent_free)
 
      Assuming steady state and enforcing a constant allocation rate, then
@@ -266,15 +313,15 @@ static uintnat default_slice_budget() {
      Proportion of G consumed since the previous slice:
                  PH = Caml_state->allocated_words / G
                     = Caml_state->allocated_words * 3 * (100 + caml_percent_free)
-                      / (2 * caml_stat_heap_size * caml_percent_free)
+                      / (2 * heap_words * caml_percent_free)
      Proportion of extra-heap resources consumed since the previous slice:
                  PE = caml_extra_heap_resources
      Proportion of total work to do in this slice:
                  P  = max (PH, PE)
      Amount of marking work for the GC cycle:
-                 MW = caml_stat_heap_size * 100 / (100 + caml_percent_free)
+                 MW = heap_words * 100 / (100 + caml_percent_free)
      Amount of sweeping work for the GC cycle:
-                 SW = caml_stat_heap_size
+                 SW = heap_words
 
      In order to finish marking with a non-empty free list, we will
      use 40% of the time for marking, and 60% for sweeping.
@@ -288,10 +335,10 @@ static uintnat default_slice_budget() {
 
      Amount of marking work for a marking slice:
                  MS = P * MW / (40/100)
-                 MS = P * caml_stat_heap_size * 250 / (100 + caml_percent_free)
+                 MS = P * heap_words * 250 / (100 + caml_percent_free)
      Amount of sweeping work for a sweeping slice:
                  SS = P * SW / (60/100)
-                 SS = P * caml_stat_heap_size * 5 / 3
+                 SS = P * heap_words * 5 / 3
 
      This slice will either mark MS words or sweep SS words.
   */
@@ -657,50 +704,6 @@ intnat ephe_sweep (struct domain* d, intnat budget)
    at the end of the most recently completed GC cycle */
 static struct gc_stats sampled_gc_stats[2][Max_domains];
 
-#define BUFFER_SIZE 64
-
-struct buf_list_t {
-  double buffer[BUFFER_SIZE];
-  struct buf_list_t *next;
-};
-
-static struct {
-  intnat heap_words_last_cycle;
-  int index;
-  struct buf_list_t *l;
- } stat_space_overhead = {0, 0, NULL};
-
-double caml_mean_space_overhead ()
-{
-  int index = stat_space_overhead.index;
-  struct buf_list_t *t, *l = stat_space_overhead.l;
-  /* Use Welford's online algorithm for calculating running variance to remove
-   * outliers from mean calculation. */
-  double mean = 0.0, m2 = 0.0, stddev = 0.0, v;
-  double delta, delta2;
-  intnat count = 0;
-
-  while (l) {
-    while (index > 0) {
-      v = l->buffer[--index];
-      if (count > 5 && (v < mean - 3 * stddev || v > mean + 3 * stddev)) {
-        continue;
-      }
-      count++;
-      delta = v - mean;
-      mean = mean + delta / count;
-      delta2 = v - mean;
-      m2 = m2 + delta * delta2;
-      stddev = sqrt (m2 / count);
-    }
-    t = l;
-    l = l->next;
-    caml_stat_free(t);
-    index = BUFFER_SIZE;
-  }
-  return mean;
-}
-
 void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
 {
   acc->pool_words += h->pool_words;
@@ -784,31 +787,55 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
       caml_major_cycles_completed++;
       caml_gc_message(0x40, "Starting major GC cycle\n");
 
-      if (caml_params->verb_gc & 0x400) {
-        struct gc_stats s;
-        intnat heap_words, max_heap_words, live_words;
+      struct gc_stats s;
+      intnat heap_words, not_garbage_words, swept_words;
 
-        caml_sample_gc_stats(&s);
-        heap_words = s.major_heap.pool_words + s.major_heap.large_words;
-        live_words = s.major_heap.pool_live_words + s.major_heap.large_words;
+      caml_sample_gc_stats(&s);
+      heap_words = s.major_heap.pool_words + s.major_heap.large_words;
+      not_garbage_words = s.major_heap.pool_live_words + s.major_heap.large_words;
+      swept_words = domain->state->swept_words;
+      caml_gc_log ("heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d "
+                    "not_garbage_words %"ARCH_INTNAT_PRINTF_FORMAT"d "
+                    "swept_words %"ARCH_INTNAT_PRINTF_FORMAT"d",
+                    heap_words, not_garbage_words, swept_words);
 
-        if (stat_space_overhead.l == NULL) {
-          stat_space_overhead.l =
-            (struct buf_list_t*)caml_stat_alloc_noexc(sizeof(struct buf_list_t));
-        } else if (stat_space_overhead.index == BUFFER_SIZE) {
-          struct buf_list_t *l =
-            (struct buf_list_t*)caml_stat_alloc_noexc(sizeof(struct buf_list_t));
-          l->next = stat_space_overhead.l;
-          stat_space_overhead.l = l;
-          stat_space_overhead.index = 0;
+      if (caml_stat_space_overhead.heap_words_last_cycle != 0) {
+        /* At the end of a major cycle, no object has colour MARKED.
+          *
+          * [not_garbage_words] counts all objects which are UNMARKED.
+          * Importantly, this includes both live objects and objects which are
+          * unreachable in the current cycle (i.e, garbage). But we don't get to
+          * know which objects are garbage until the end of the next cycle.
+          *
+          * live_words@N = not_garbage_words@N - swept_words@N+1
+          *
+          * space_overhead@N = 100.0 * (heap_words@N - live_words@N) / live_words@N
+          */
+        double live_words_last_cycle =
+          caml_stat_space_overhead.not_garbage_words_last_cycle - swept_words;
+        caml_current_space_overhead =
+          100.0 * (double)(caml_stat_space_overhead.heap_words_last_cycle
+                           - live_words_last_cycle) / live_words_last_cycle;
+
+        if (caml_params->verb_gc & 0x400) {
+          if (caml_stat_space_overhead.l == NULL) {
+            caml_stat_space_overhead.l =
+              (struct buf_list_t*)caml_stat_alloc_noexc(sizeof(struct buf_list_t));
+          } else if (caml_stat_space_overhead.index == BUFFER_SIZE) {
+            struct buf_list_t *l =
+              (struct buf_list_t*)caml_stat_alloc_noexc(sizeof(struct buf_list_t));
+            l->next = caml_stat_space_overhead.l;
+            caml_stat_space_overhead.l = l;
+            caml_stat_space_overhead.index = 0;
+          }
+          caml_stat_space_overhead.l->buffer[caml_stat_space_overhead.index++] =
+            caml_current_space_overhead;
         }
-
-        max_heap_words = stat_space_overhead.heap_words_last_cycle > heap_words ?
-                         stat_space_overhead.heap_words_last_cycle : heap_words;
-        stat_space_overhead.heap_words_last_cycle = heap_words;
-        stat_space_overhead.l->buffer[stat_space_overhead.index++] =
-          (double)(max_heap_words - live_words) * 100.0 / live_words;
+        caml_gc_log("Previous cycle's space_overhead: %lf", caml_current_space_overhead);
       }
+      caml_stat_space_overhead.heap_words_last_cycle = heap_words;
+      caml_stat_space_overhead.not_garbage_words_last_cycle = not_garbage_words;
+      domain->state->swept_words = 0;
 
       num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
       atomic_store_rel(&num_domains_to_sweep, num_domains_in_stw);
