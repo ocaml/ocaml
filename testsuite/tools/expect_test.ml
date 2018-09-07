@@ -250,6 +250,7 @@ let eval_expect_file _fname ~file_contents =
     let _ : bool =
       List.fold_left phrases ~init:true ~f:(fun acc phrase ->
         acc &&
+        let snap = Btype.snapshot () in
         try
           exec_phrase ppf phrase
         with exn ->
@@ -260,6 +261,7 @@ let eval_expect_file _fname ~file_contents =
               (Printexc.to_string exn)
               (Printexc.raw_backtrace_to_string bt)
           end;
+          Btype.backtrack snap;
           false
       )
     in
