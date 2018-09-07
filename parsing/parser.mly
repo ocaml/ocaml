@@ -921,12 +921,13 @@ toplevel_phrase:
   | toplevel_directive SEMISEMI          { $1 }
   | EOF                                  { raise End_of_file }
 ;
-top_structure: extra_str(top_structure_nodoc) { $1 }
-top_structure_nodoc:
+%inline top_structure:
+  extra_str(
     seq_expr post_item_attributes
       { text_str $startpos($1) @ [mkstrexp $1 $2] }
   | top_structure_tail_nodoc
       { $1 }
+  ) { $1 }
 ;
 top_structure_tail_nodoc:
     /* empty */
