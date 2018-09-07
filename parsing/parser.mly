@@ -1969,7 +1969,7 @@ let_binding_body:
       { let typloc = ($startpos($3), $endpos($5)) in
         let patloc = ($startpos($1), $endpos($5)) in
         (ghpat ~loc:patloc
-           (Ppat_constraint($1, ghtyp ~loc:typloc (Ptyp_poly(List.rev $3,$5)))),
+           (Ppat_constraint($1, ghtyp ~loc:typloc (Ptyp_poly($3,$5)))),
          $7) }
   | let_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
       { let exp, poly =
@@ -2558,22 +2558,26 @@ with_type_binder:
 
 /* Polymorphic types */
 
-typevar_list:
-        QUOTE mkrhs(ident)                      { [$2] }
-      | typevar_list QUOTE mkrhs(ident)         { $3 :: $1 }
+%inline typevar:
+  QUOTE mkrhs(ident)
+    { $2 }
+;
+%inline typevar_list:
+  nonempty_llist(typevar)
+    { $1 }
 ;
 poly_type:
         core_type
           { $1 }
       | mktyp(typevar_list DOT core_type
-          { Ptyp_poly(List.rev $1, $3) })
+          { Ptyp_poly($1, $3) })
           { $1 }
 ;
 poly_type_no_attr:
         core_type_no_attr
           { $1 }
       | mktyp(typevar_list DOT core_type_no_attr
-          { Ptyp_poly(List.rev $1, $3) })
+          { Ptyp_poly($1, $3) })
           { $1 }
 ;
 
