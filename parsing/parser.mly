@@ -1966,6 +1966,8 @@ let_binding_body:
         (ghpat ~loc:patloc (Ppat_constraint(v, typ)),
          mkexp_constraint ~loc:$sloc $4 $2) }
   | let_ident COLON typevar_list DOT core_type EQUAL seq_expr
+      (* TODO: could replace [typevar_list DOT core_type] with [mktyp(poly(core_type))]
+               and simplify the semantic action? *)
       { let typloc = ($startpos($3), $endpos($5)) in
         let patloc = ($startpos($1), $endpos($5)) in
         (ghpat ~loc:patloc
@@ -2566,19 +2568,23 @@ with_type_binder:
   nonempty_llist(typevar)
     { $1 }
 ;
-poly_type:
-        core_type
-          { $1 }
-      | mktyp(typevar_list DOT core_type
-          { Ptyp_poly($1, $3) })
-          { $1 }
+%inline poly(X):
+  typevar_list DOT X
+    { Ptyp_poly($1, $3) }
 ;
-poly_type_no_attr:
-        core_type_no_attr
-          { $1 }
-      | mktyp(typevar_list DOT core_type_no_attr
-          { Ptyp_poly($1, $3) })
-          { $1 }
+possibly_poly(X):
+  X
+    { $1 }
+| mktyp(poly(X))
+    { $1 }
+;
+%inline poly_type:
+  possibly_poly(core_type)
+    { $1 }
+;
+%inline poly_type_no_attr:
+  possibly_poly(core_type_no_attr)
+    { $1 }
 ;
 
 /* Core types */
