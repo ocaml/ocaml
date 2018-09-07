@@ -2692,7 +2692,7 @@ simple_core_type2_:
   | LBRACKETLESS opt_bar row_field_list RBRACKET
       { Ptyp_variant($3, Closed, Some []) }
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
-      { Ptyp_variant($3, Closed, Some (List.rev $5)) }
+      { Ptyp_variant($3, Closed, Some $5) }
   | extension
       { Ptyp_extension $1 }
 ;
@@ -2728,9 +2728,9 @@ opt_ampersand:
   separated_nonempty_llist(AMPERSAND, core_type_no_attr)
     { $1 }
 ;
-name_tag_list:
-    name_tag                                    { [$1] }
-  | name_tag_list name_tag                      { $2 :: $1 }
+%inline name_tag_list:
+  nonempty_llist(name_tag)
+    { $1 }
 ;
 simple_core_type_or_tuple:
     simple_core_type { $1 }
