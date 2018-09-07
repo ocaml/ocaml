@@ -6,3 +6,21 @@ read before any further exploration of the compiler.
 link:location.mli[Location]:: This module contains utilities
 related to locations and error handling. In particular, it contains
 handlers that are used for all the error reporting in the compiler.
+
+link:parser.mly[parser.mly]:: This file contains the grammar used to
+generated the parser -- using the
+link:http://gallium.inria.fr/~fpottier/menhir/[menhir] parser
+generator, which is an external tool that you need to install if you
+wish to modify the parser.
+
+=== Working on the parser grammar
+
+To avoid depending on an external tool, the compiler build system does
+not rebuild the parser from the source grammar link:parser.mly[] each
+time. It works from a versioned copy of the generated parser stored
+in the `boot/menhir` subdirectory.
+
+If you change link:parser.mly[], you need to run the `promote-menhir`
+target of the root Makefile to rebuild the compiler parser. See
+link:../Makefile.menhir[] for the details of the various
+Menhir-related targets and their use.
