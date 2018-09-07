@@ -2661,17 +2661,17 @@ simple_core_type2_:
       { Ptyp_variant([$2], Closed, None) }
 */
   | LBRACKET BAR row_field_list RBRACKET
-      { Ptyp_variant(List.rev $3, Closed, None) }
+      { Ptyp_variant($3, Closed, None) }
   | LBRACKET row_field BAR row_field_list RBRACKET
-      { Ptyp_variant($2 :: List.rev $4, Closed, None) }
+      { Ptyp_variant($2 :: $4, Closed, None) }
   | LBRACKETGREATER opt_bar row_field_list RBRACKET
-      { Ptyp_variant(List.rev $3, Open, None) }
+      { Ptyp_variant($3, Open, None) }
   | LBRACKETGREATER RBRACKET
       { Ptyp_variant([], Open, None) }
   | LBRACKETLESS opt_bar row_field_list RBRACKET
-      { Ptyp_variant(List.rev $3, Closed, Some []) }
+      { Ptyp_variant($3, Closed, Some []) }
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
-      { Ptyp_variant(List.rev $3, Closed, Some (List.rev $5)) }
+      { Ptyp_variant($3, Closed, Some (List.rev $5)) }
   | extension
       { Ptyp_extension $1 }
 ;
@@ -2681,9 +2681,9 @@ package_type:
       { Ptyp_package (package_type_of_module_type $1) })
       { $1 }
 ;
-row_field_list:
-    row_field                                   { [$1] }
-  | row_field_list BAR row_field                { $3 :: $1 }
+%inline row_field_list:
+  separated_nonempty_llist(BAR, row_field)
+    { $1 }
 ;
 row_field:
     tag_field          { $1 }
