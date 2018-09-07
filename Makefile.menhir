@@ -84,7 +84,7 @@ promote-menhir: parsing/parser.mly
 .PHONY: import-menhirLib
 import-menhirLib:
 	mkdir -p boot/menhir
-	mv \
+	cp \
            $(addprefix `$(MENHIR) --suggest-menhirLib`/menhirLib.,ml mli) \
            boot/menhir
 
