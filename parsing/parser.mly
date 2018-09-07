@@ -1280,7 +1280,7 @@ class_fun_binding:
 ;
 class_type_parameters:
     /*empty*/                                   { [] }
-  | LBRACKET type_parameter_list RBRACKET       { List.rev $2 }
+  | LBRACKET type_parameter_list RBRACKET       { $2 }
 ;
 
 class_fun_def: mkclass(class_fun_def_desc) { $1 };
@@ -2375,9 +2375,9 @@ type_variance:
 type_variable:
     mktyp(QUOTE ident { Ptyp_var $2 }) { $1 }
 ;
-type_parameter_list:
-    type_parameter                              { [$1] }
-  | type_parameter_list COMMA type_parameter    { $3 :: $1 }
+%inline type_parameter_list:
+  tys = separated_nonempty_llist(COMMA, type_parameter)
+    { tys }
 ;
 constructor_declarations:
   | BAR                                                  { [  ] }
