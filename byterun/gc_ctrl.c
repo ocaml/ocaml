@@ -229,7 +229,7 @@ CAMLprim value caml_gc_compaction(value v)
 
 CAMLprim value caml_gc_stat(value v)
 {
-  caml_gc_major(Val_unit);
+  caml_gc_full_major(Val_unit);
   return caml_gc_quick_stat(Val_unit);
 }
 
