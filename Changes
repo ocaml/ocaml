@@ -363,6 +363,10 @@ Working version
   Longident.t values.
   (Gabriel Scherer, review by Florian Angeletti and Thomas Refis)
 
+- GPR#2030: makefile targets to build AST files of sources
+  for parser testing. See parsing/HACKING.adoc.
+  (Gabriel Scherer, review by Nicolás Ojeda Bär)
+
 ### Bug fixes:
 
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the
