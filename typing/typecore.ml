@@ -2355,6 +2355,32 @@ and type_expect_
       begin_def (); (* one more level for non-returning functions *)
       if !Clflags.principal then begin_def ();
       let funct = type_exp env sfunct in
+      begin match funct.exp_desc with
+      | Texp_ident (_, _, {val_attributes;_}) ->
+          let check (b, lab, msg) =
+            let warn loc =
+              Location.deprecated loc
+                (Printf.sprintf "%soptional argument %s\n%s"
+                   (if b then "" else "missing ") lab msg
+                )
+            in
+            let rec scan = function
+              | [] ->
+                  if not b then warn sexp.pexp_loc
+              | (Optional s, e) :: _ when s = lab ->
+                  warn e.pexp_loc
+              | (Labelled s, e) :: _ when s = lab ->
+                  if b then warn e.pexp_loc
+              | _ :: rest ->
+                  scan rest
+            in
+            scan sargs
+          in
+          List.iter check
+            (Builtin_attributes.deprecated_arguments_of_attrs val_attributes)
+      | _ ->
+          ()
+      end;
       if !Clflags.principal then begin
           end_def ();
           generalize_structure funct.exp_type

@@ -69,6 +69,38 @@ let error_of_extension ext =
 let cat s1 s2 =
   if s2 = "" then s1 else s1 ^ "\n" ^ s2
 
+let deprecated_argument_payload b  = function
+  | PStr[{pstr_desc=Pstr_eval(
+      {pexp_desc=Pexp_apply (
+           {pexp_desc = Pexp_ident {txt = Longident.Lident id}},
+           [Nolabel, {pexp_desc=Pexp_constant (Pconst_string (msg, _))}]
+         )
+      }, _)}] -> Some (b, id, msg)
+  | PStr[{pstr_desc=Pstr_eval(
+           {pexp_desc = Pexp_ident {txt = Longident.Lident id}}
+         , _)}] -> Some (b, id, "")
+  | _ -> None (* TODO: warning invalid payload *)
+
+let deprecated_argument_of_attr = function
+  | {attr_name = {txt = "ocaml.deprecated_argument"|
+                        "deprecated_argument"; _};
+     attr_payload;
+     _} ->
+      deprecated_argument_payload true attr_payload
+  | {attr_name = {txt = "ocaml.deprecated_missing_argument"|
+                        "deprecated_missing_argument"; _};
+     attr_payload;
+     _} ->
+      deprecated_argument_payload false attr_payload
+  | _ -> None
+
+let rec deprecated_arguments_of_attrs = function
+  | [] -> []
+  | hd :: tl ->
+      match deprecated_argument_of_attr hd with
+      | None -> deprecated_arguments_of_attrs tl
+      | Some x -> x :: deprecated_arguments_of_attrs tl
+
 let deprecated_attr x =
   match x with
   | {attr_name = {txt = "ocaml.deprecated"|"deprecated"; _};_} -> Some x

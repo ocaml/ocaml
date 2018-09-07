@@ -35,6 +35,12 @@ val check_deprecated_inclusion:
 val deprecated_of_attrs: Parsetree.attributes -> string option
 val deprecated_of_sig: Parsetree.signature -> string option
 val deprecated_of_str: Parsetree.structure -> string option
+val deprecated_arguments_of_attrs:
+  Parsetree.attributes -> (bool * string * string) list
+    (* (b, label, message)
+       b = true -> warn if argument is passed
+       b = false -> warn if argument is missing
+    *)
 
 val check_deprecated_mutable:
     Location.t -> Parsetree.attributes -> string -> unit
