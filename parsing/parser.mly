@@ -850,6 +850,27 @@ separated_or_terminated_nonempty_list(delimiter, X):
   xs = separated_or_terminated_nonempty_list(delimiter, X)
     { x :: xs }
 
+(* [reversed_preceded_or_separated_nonempty_llist(delimiter, X)] recognizes a
+   nonempty list of [X]s, separated with [delimiter]s, and optionally preceded
+   with a leading [delimiter]. It produces an OCaml list in reverse order. Its
+   definition is left-recursive. *)
+
+reversed_preceded_or_separated_nonempty_llist(delimiter, X):
+  ioption(delimiter) x = X
+    { [x] }
+| xs = reversed_preceded_or_separated_nonempty_llist(delimiter, X)
+  delimiter
+  x = X
+    { x :: xs }
+
+(* [preceded_or_separated_nonempty_llist(delimiter, X)] recognizes a nonempty
+   list of [X]s, separated with [delimiter]s, and optionally preceded with a
+   leading [delimiter]. It produces an OCaml list in direct order. *)
+
+%inline preceded_or_separated_nonempty_llist(delimiter, X):
+  xs = rev(reversed_preceded_or_separated_nonempty_llist(delimiter, X))
+    { xs }
+
 /* Entry points */
 
 implementation:
