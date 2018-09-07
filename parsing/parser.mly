@@ -2693,7 +2693,7 @@ tag_field:
     mkrhs(name_tag) OF opt_ampersand amper_type_list attributes
       { let info = symbol_info $endpos in
         let attrs = add_info_attrs info $5 in
-        Rf.tag ~loc:(make_loc $sloc) ~attrs $1 $3 (List.rev $4) }
+        Rf.tag ~loc:(make_loc $sloc) ~attrs $1 $3 $4 }
   | mkrhs(name_tag) attributes
       { let info = symbol_info $endpos in
         let attrs = add_info_attrs info $2 in
@@ -2703,9 +2703,9 @@ opt_ampersand:
     AMPERSAND                                   { true }
   | /* empty */                                 { false }
 ;
-amper_type_list:
-    core_type_no_attr                           { [$1] }
-  | amper_type_list AMPERSAND core_type_no_attr { $3 :: $1 }
+%inline amper_type_list:
+  separated_nonempty_llist(AMPERSAND, core_type_no_attr)
+    { $1 }
 ;
 name_tag_list:
     name_tag                                    { [$1] }
