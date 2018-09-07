@@ -15,7 +15,8 @@
 
 (** Documentation comments
 
-    Compiler-libs: beware this module makes no compatibility guarantees.
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
 
 *)
 

@@ -24,7 +24,8 @@
    are taken modulo 2{^32} or 2{^64} depending
    on the word size of the target architecture.
 
-   Compiler-libs: beware this module makes no compatibility guarantees.
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
 
 *)
 

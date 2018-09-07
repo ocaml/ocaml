@@ -15,7 +15,8 @@
 
 (** {1 Source code locations (ranges of positions), used in parsetree}
 
-    Compiler-libs: beware this module makes no compatibility guarantees.
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
 
 *)
 

@@ -17,7 +17,8 @@
     typical mapper would be based on {!default_iterator}, a trivial iterator,
     and will fall back on it for handling the syntax it does not modify.
 
-    Compiler-libs: beware this module makes no compatibility guarantees.
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
 
 *)
 
