@@ -1018,7 +1018,7 @@ paren_module_expr:
       { unclosed "(" $loc($1) ")" $loc($5) }
 ;
 
-structure: extra_str(structure_nodoc) { $1 }
+%inline structure: extra_str(structure_nodoc) { $1 }
 structure_nodoc:
     seq_expr post_item_attributes structure_tail_nodoc
       { mark_rhs_docs $startpos($1) $endpos($2);
@@ -1043,7 +1043,7 @@ structure_item:
   | floating_attribute
       { mkstr ~loc:$sloc (Pstr_attribute $1) }
 ;
-structure_item_with_ext:
+%inline structure_item_with_ext:
   | primitive_declaration
       { let (body, ext) = $1 in (Pstr_primitive body, ext) }
   | value_description
@@ -1070,7 +1070,7 @@ structure_item_with_ext:
       { let (body, ext) = $1 in (Pstr_include body, ext) }
 ;
 
-str_include_statement:
+%inline str_include_statement:
     INCLUDE ext_attributes module_expr post_item_attributes
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
@@ -1086,7 +1086,7 @@ module_binding_body:
         { Pmod_functor(fst $1, snd $1, $2) }
   ) { $1 }
 ;
-module_binding:
+%inline module_binding:
     MODULE ext_attributes mkrhs(UIDENT) module_binding_body post_item_attributes
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
@@ -1098,14 +1098,14 @@ rec_module_bindings:
   | rec_module_bindings and_module_binding
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
-rec_module_binding:
+%inline rec_module_binding:
     MODULE ext_attributes REC mkrhs(UIDENT)
     module_binding_body post_item_attributes
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
         Mb.mk $4 $5 ~attrs:(attrs@$6) ~loc:(make_loc $sloc) ~docs, ext }
 ;
-and_module_binding:
+%inline and_module_binding:
     AND attributes mkrhs(UIDENT) module_binding_body post_item_attributes
       { let docs = symbol_docs $sloc in
         let text = symbol_text $symbolstartpos in
@@ -1151,7 +1151,7 @@ module_type:
       { Pmty_extension $1 }
 ;
 
-signature: extra_sig(signature_nodoc) { $1 }
+%inline signature: extra_sig(signature_nodoc) { $1 }
 signature_nodoc:
     /* empty */                    { [] }
   | SEMISEMI signature_nodoc       { text_sig $startpos($1) @ $2 }
@@ -1168,7 +1168,7 @@ signature_item:
       { Psig_attribute $1 })
       { $1 }
 ;
-signature_item_with_ext:
+%inline signature_item_with_ext:
     value_description
       { let (body, ext) = $1 in (Psig_value body, ext) }
   | primitive_declaration
@@ -1203,7 +1203,7 @@ open_statement:
         Opn.mk $4 ~override:$2 ~attrs:(attrs@$5) ~loc:(make_loc $sloc) ~docs
         , ext }
 ;
-sig_include_statement:
+%inline sig_include_statement:
     INCLUDE ext_attributes module_type post_item_attributes
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
@@ -1217,7 +1217,7 @@ module_declaration_body:
         Pmty_functor(name, typ, $2) })
       { $1 }
 ;
-module_declaration:
+%inline module_declaration:
     MODULE ext_attributes mkrhs(UIDENT)
     module_declaration_body post_item_attributes
       { let (ext, attrs) = $2 in
@@ -1226,7 +1226,7 @@ module_declaration:
 ;
 %inline module_expr_alias: mkrhs(mod_longident)
   { Mty.alias ~loc:(make_loc $sloc) $1 };
-module_alias:
+%inline module_alias:
     MODULE ext_attributes mkrhs(UIDENT)
     EQUAL module_expr_alias post_item_attributes
       { let (ext, attrs) = $2 in
@@ -1239,20 +1239,20 @@ rec_module_declarations:
   | rec_module_declarations and_module_declaration
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
-rec_module_declaration:
+%inline rec_module_declaration:
     MODULE ext_attributes REC mkrhs(UIDENT)
     COLON module_type post_item_attributes
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
         Md.mk $4 $6 ~attrs:(attrs@$7) ~loc:(make_loc $sloc) ~docs, ext }
 ;
-and_module_declaration:
+%inline and_module_declaration:
     AND attributes mkrhs(UIDENT) COLON module_type post_item_attributes
       { let docs = symbol_docs $sloc in
         let text = symbol_text $symbolstartpos in
         Md.mk $3 $5 ~attrs:($2@$6) ~loc:(make_loc $sloc) ~text ~docs }
 ;
-module_type_declaration_body:
+%inline module_type_declaration_body:
     /* empty */               { None }
   | EQUAL module_type         { Some $2 }
 ;
@@ -1271,7 +1271,7 @@ class_declarations:
   | class_declarations and_class_declaration
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
-class_declaration:
+%inline class_declaration:
     CLASS ext_attributes virtual_flag class_type_parameters mkrhs(LIDENT)
     class_fun_binding post_item_attributes
       { let (ext, attrs) = $2 in
@@ -1280,7 +1280,7 @@ class_declaration:
                     ~attrs:(attrs@$7) ~loc:(make_loc $sloc) ~docs
         , ext }
 ;
-and_class_declaration:
+%inline and_class_declaration:
     AND attributes virtual_flag class_type_parameters mkrhs(LIDENT)
     class_fun_binding post_item_attributes
       { let docs = symbol_docs $sloc in
@@ -1303,7 +1303,7 @@ class_type_parameters:
   | LBRACKET type_parameter_list RBRACKET       { $2 }
 ;
 
-class_fun_def: mkclass(class_fun_def_desc) { $1 };
+%inline class_fun_def: mkclass(class_fun_def_desc) { $1 };
 class_fun_def_desc:
     labeled_simple_pattern MINUSGREATER class_expr
       { let (l,o,p) = $1 in Pcl_fun(l, o, p, $3) }
@@ -1367,7 +1367,7 @@ class_fields:
   | class_fields class_field
       { $2 :: List.rev (text_cstr $startpos($2)) @ $1 }
 ;
-class_field:
+%inline class_field:
   | INHERIT override_flag attributes class_expr parent_binder
     post_item_attributes
       { let docs = symbol_docs $sloc in
@@ -1393,7 +1393,7 @@ class_field:
       { Pcf_attribute $1 })
       { $1 }
 ;
-parent_binder:
+%inline parent_binder:
     AS mkrhs(LIDENT)
           { Some $2 }
   | /* empty */
@@ -1482,7 +1482,7 @@ class_signature:
   | LET OPEN override_flag attributes mkrhs(mod_longident) IN class_signature
       { mkcty ~loc:$sloc ~attrs:$4 (Pcty_open($3, $5, $7)) }
 ;
-class_sig_body:
+%inline class_sig_body:
     class_self_type extra_csig(class_sig_fields)
       { Csig.mk $1 (List.rev $2) }
 ;
@@ -1498,7 +1498,7 @@ class_sig_fields:
 | class_sig_fields class_sig_field
     { $2 :: List.rev (text_csig $startpos($2)) @ $1 }
 ;
-class_sig_field:
+%inline class_sig_field:
     INHERIT attributes class_signature post_item_attributes
       { let docs = symbol_docs $sloc in
         mkctf ~loc:$sloc (Pctf_inherit $3) ~attrs:($2@$4) ~docs }
@@ -1520,7 +1520,7 @@ class_sig_field:
       { Pctf_attribute $1 })
       { $1 }
 ;
-value_type:
+%inline value_type:
     VIRTUAL mutable_flag mkrhs(label) COLON core_type
       { $3, $2, Virtual, $5 }
   | MUTABLE virtual_flag mkrhs(label) COLON core_type
@@ -1528,8 +1528,8 @@ value_type:
   | mkrhs(label) COLON core_type
       { $1, Immutable, Concrete, $3 }
 ;
-constrain:
-    core_type EQUAL core_type
+%inline constrain:
+  core_type EQUAL core_type
     { $1, $3, make_loc $sloc }
 ;
 constrain_field:
@@ -1542,7 +1542,7 @@ class_descriptions:
   | class_descriptions and_class_description
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
-class_description:
+%inline class_description:
     CLASS ext_attributes virtual_flag class_type_parameters mkrhs(LIDENT)
     COLON class_type post_item_attributes
       { let (ext, attrs) = $2 in
@@ -1551,7 +1551,7 @@ class_description:
                     ~attrs:(attrs @ $8) ~loc:(make_loc $sloc) ~docs
         , ext }
 ;
-and_class_description:
+%inline and_class_description:
     AND attributes virtual_flag class_type_parameters mkrhs(LIDENT)
     COLON class_type post_item_attributes
       { let docs = symbol_docs $sloc in
@@ -1565,7 +1565,7 @@ class_type_declarations:
   | class_type_declarations and_class_type_declaration
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
-class_type_declaration:
+%inline class_type_declaration:
     CLASS TYPE ext_attributes virtual_flag class_type_parameters mkrhs(LIDENT)
     EQUAL class_signature post_item_attributes
       { let (ext, attrs) = $3 in
@@ -1574,7 +1574,7 @@ class_type_declaration:
                     ~attrs:(attrs@$9) ~loc:(make_loc $sloc) ~docs
         , ext }
 ;
-and_class_type_declaration:
+%inline and_class_type_declaration:
     AND attributes virtual_flag class_type_parameters mkrhs(LIDENT) EQUAL
     class_signature post_item_attributes
       { let docs = symbol_docs $sloc in
@@ -1615,7 +1615,7 @@ labeled_simple_pattern:
       { (Nolabel, None, $1) }
 ;
 
-pattern_var:
+%inline pattern_var:
     mkpat(pattern_var_)
       { $1 }
 ;
@@ -1635,7 +1635,7 @@ label_let_pattern:
       { let (lab, pat) = $1 in
         (lab, mkpat ~loc:$sloc (Ppat_constraint(pat, $3))) }
 ;
-label_var:
+%inline label_var:
     mkrhs(LIDENT)
       { ($1.Location.txt, mkpat ~loc:$sloc (Ppat_var $1)) }
 ;
@@ -1959,7 +1959,7 @@ label_expr:
   | OPTLABEL simple_expr %prec below_HASH
       { (Optional $1, $2) }
 ;
-label_ident:
+%inline label_ident:
     LIDENT
       { ($1, mkexp ~loc:$sloc (Pexp_ident(mkrhs (Lident $1) $sloc))) }
 ;
@@ -2009,12 +2009,12 @@ let_bindings:
     let_binding                                 { $1 }
   | let_bindings and_let_binding                { addlb $1 $2 }
 ;
-let_binding:
+%inline let_binding:
     LET ext_attributes rec_flag let_binding_body post_item_attributes
       { let (ext, attr) = $2 in
         mklbs ~loc:$sloc ext $3 (mklb ~loc:$sloc true $4 (attr@$5)) }
 ;
-and_let_binding:
+%inline and_let_binding:
     AND attributes let_binding_body post_item_attributes
       { mklb ~loc:$sloc false $3 ($2@$4) }
 ;
@@ -2318,7 +2318,7 @@ type_declarations:
       { let (nonrec_flag, tys, ext) = $1 in (nonrec_flag, $2 :: tys, ext) }
 ;
 
-type_declaration:
+%inline type_declaration:
     TYPE ext_attributes nonrec_flag optional_type_parameters mkrhs(LIDENT)
     type_kind constraints post_item_attributes
       { let (kind, priv, manifest) = $6 in
@@ -2330,7 +2330,7 @@ type_declaration:
         in
         ($3, ty, ext) }
 ;
-and_type_declaration:
+%inline and_type_declaration:
     AND attributes optional_type_parameters mkrhs(LIDENT) type_kind constraints
     post_item_attributes
       { let (kind, priv, manifest) = $5 in
@@ -2380,14 +2380,14 @@ optional_type_parameter:
   tys = separated_nonempty_llist(COMMA, optional_type_parameter)
     { tys }
 ;
-optional_type_variable:
+%inline optional_type_variable:
     mktyp(
         QUOTE ident { Ptyp_var $2 }
       | UNDERSCORE  { Ptyp_any }
     ) { $1 }
 ;
 
-type_parameter:
+%inline type_parameter:
     type_variance type_variable                   { $2, $1 }
 ;
 type_variance:
@@ -2395,7 +2395,7 @@ type_variance:
   | PLUS                                        { Covariant }
   | MINUS                                       { Contravariant }
 ;
-type_variable:
+%inline type_variable:
     mktyp(QUOTE ident { Ptyp_var $2 }) { $1 }
 ;
 %inline type_parameter_list:
@@ -2408,7 +2408,7 @@ constructor_declarations:
   | bar_constructor_declaration                          { [$1] }
   | constructor_declarations bar_constructor_declaration { $2 :: $1 }
 ;
-constructor_declaration:
+%inline constructor_declaration:
   | mkrhs(constr_ident) generalized_constructor_arguments attributes
     { let args,res = $2 in
       let info = symbol_info $endpos in
@@ -2441,7 +2441,7 @@ sig_exception_declaration:
                       ~attrs:(attrs @ $5) ~loc:(make_loc $sloc) ~docs)
         , ext }
 ;
-let_exception_declaration:
+%inline let_exception_declaration:
     mkrhs(constr_ident) generalized_constructor_arguments attributes
       { let args, res = $2 in
         Te.decl $1 ~args ?res ~attrs:$3 ~loc:(make_loc $sloc) }
@@ -2464,12 +2464,12 @@ label_declarations:
   | label_declaration_semi                      { [$1] }
   | label_declaration_semi label_declarations   { $1 :: $2 }
 ;
-label_declaration:
+%inline label_declaration:
     mutable_flag mkrhs(label) COLON poly_type_no_attr attributes
       { let info = symbol_info $endpos in
         Type.field $2 $4 ~mut:$1 ~attrs:$5 ~loc:(make_loc $sloc) ~info }
 ;
-label_declaration_semi:
+%inline label_declaration_semi:
     mutable_flag mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
       { let info =
           match rhs_info $endpos($5) with
@@ -2481,7 +2481,7 @@ label_declaration_semi:
 
 /* Type Extensions */
 
-str_type_extension:
+%inline str_type_extension:
   TYPE ext_attributes
   nonrec_flag optional_type_parameters mkrhs(type_longident)
   PLUSEQ private_flag str_extension_constructors post_item_attributes
@@ -2491,7 +2491,7 @@ str_type_extension:
         Te.mk $5 (List.rev $8) ~params:$4 ~priv:$7 ~attrs:(attrs@$9) ~docs
         , ext }
 ;
-sig_type_extension:
+%inline sig_type_extension:
   TYPE ext_attributes
   nonrec_flag optional_type_parameters mkrhs(type_longident)
   PLUSEQ private_flag sig_extension_constructors post_item_attributes
@@ -2529,7 +2529,7 @@ bar_extension_constructor_declaration:
         let info = symbol_info $endpos in
         Te.decl $2 ~args ?res ~attrs:$4 ~loc:(make_loc $sloc) ~info }
 ;
-extension_constructor_rebind:
+%inline extension_constructor_rebind:
   | mkrhs(constr_ident) EQUAL mkrhs(constr_longident) attributes
       { let info = symbol_info $endpos in
         Te.rebind $1 $3 ~attrs:$4 ~loc:(make_loc $sloc) ~info }
@@ -2629,7 +2629,7 @@ core_type2:
   | mktyp(core_type2_)
       { $1 }
 ;
-core_type2_:
+%inline core_type2_:
     QUESTION LIDENT COLON extra_core_type2 MINUSGREATER core_type2
       { Ptyp_arrow(Optional $2, $4, $6) }
   | OPTLABEL extra_core_type2 MINUSGREATER core_type2
@@ -2654,7 +2654,7 @@ simple_core_type2:
   | mktyp(simple_core_type2_)
       { $1 }
 ;
-simple_core_type2_:
+%inline simple_core_type2_:
     QUOTE ident
       { Ptyp_var $2 }
   | UNDERSCORE
@@ -2697,7 +2697,7 @@ simple_core_type2_:
       { Ptyp_extension $1 }
 ;
 
-package_type:
+%inline package_type:
     mktyp(module_type
       { Ptyp_package (package_type_of_module_type $1) })
       { $1 }
@@ -2771,14 +2771,14 @@ meth_list:
   | simple_core_type     { [Of.inherit_ ~loc:(make_loc $sloc) $1], Closed }
   | DOTDOT               { [], Open }
 ;
-field:
+%inline field:
   mkrhs(label) COLON poly_type_no_attr attributes
     { let info = symbol_info $endpos in
       let attrs = add_info_attrs info $4 in
       Of.tag ~loc:(make_loc $sloc) ~attrs $1 $3 }
 ;
 
-field_semi:
+%inline field_semi:
   mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
     { let info =
         match rhs_info $endpos($4) with
@@ -2789,11 +2789,11 @@ field_semi:
       Of.tag ~loc:(make_loc $sloc) ~attrs $1 $3 }
 ;
 
-inherit_field_semi:
+%inline inherit_field_semi:
   simple_core_type SEMI
     { Of.inherit_ ~loc:(make_loc $sloc) $1 }
 
-label:
+%inline label:
     LIDENT                                      { $1 }
 ;
 
@@ -2912,7 +2912,7 @@ class_longident:
 
 /* Toplevel directives */
 
-toplevel_directive:
+%inline toplevel_directive:
   toplevel_directive_
     { let (dir, arg) = $1 in
       mk_directive ~loc:$sloc dir arg }
@@ -2924,7 +2924,7 @@ toplevel_directive_:
     { $2, Some $3 }
 ;
 
-toplevel_directive_argument:
+%inline toplevel_directive_argument:
   toplevel_directive_argument_
     { mk_directive_arg ~loc:$sloc $1 }
 ;
@@ -2939,10 +2939,10 @@ toplevel_directive_argument_:
 
 /* Miscellaneous */
 
-name_tag:
+%inline name_tag:
     BACKQUOTE ident                             { $2 }
 ;
-rec_flag:
+%inline rec_flag:
     /* empty */                                 { Nonrecursive }
   | REC                                         { Recursive }
 ;
@@ -3061,7 +3061,7 @@ attribute:
   LBRACKETAT attr_id payload RBRACKET
     { Attr.mk ~loc:(make_loc $sloc) $2 $3 }
 ;
-post_item_attribute:
+%inline post_item_attribute:
   LBRACKETATAT attr_id payload RBRACKET
     { Attr.mk ~loc:(make_loc $sloc) $2 $3 }
 ;
