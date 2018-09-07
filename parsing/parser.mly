@@ -2456,7 +2456,7 @@ generalized_constructor_arguments:
 ;
 
 constructor_arguments:
-  | core_type_list                   { Pcstr_tuple (List.rev $1) }
+  | core_type_list                   { Pcstr_tuple $1 }
   | LBRACE label_declarations RBRACE { Pcstr_record $2 }
 ;
 label_declarations:
@@ -2735,7 +2735,7 @@ opt_ampersand:
 simple_core_type_or_tuple:
     simple_core_type { $1 }
   | mktyp(simple_core_type STAR core_type_list
-      { Ptyp_tuple($1 :: List.rev $3) })
+      { Ptyp_tuple($1 :: $3) })
       { $1 }
 ;
 (* A [core_type_comma_list] is a nonempty, comma-separated list of types. *)
@@ -2756,9 +2756,9 @@ simple_core_type_or_tuple:
   tys = inline_reversed_separated_nonempty_llist(COMMA, core_type)
     { tys }
 ;
-core_type_list:
-    simple_core_type                       { [$1] }
-  | core_type_list STAR simple_core_type   { $3 :: $1 }
+%inline core_type_list:
+  separated_nonempty_llist(STAR, simple_core_type)
+    { $1 }
 ;
 meth_list:
     field_semi meth_list
