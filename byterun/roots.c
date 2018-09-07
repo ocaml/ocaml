@@ -60,21 +60,6 @@ CAMLexport void caml_do_local_roots (scanning_action f, void* fdata,
   int i, j;
   value* sp;
 
-#ifdef NATIVE_CODE
-  /* The global roots.
-     FIXME: These should be promoted, and not scanned here.
-     FIXME: caml_globals_inited makes assumptions about store ordering.
-  */
-  value *glob;
-  for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
-    for(glob = caml_globals[i]; *glob != 0; glob++) {
-      for (j = 0; j < Wosize_val(*glob); j++){
-        f(fdata, Op_val(*glob)[j], &Op_val(*glob)[j]);
-      }
-    }
-  }
-#endif
-
   for (lr = domain->state->local_roots; lr != NULL; lr = lr->next) {
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
