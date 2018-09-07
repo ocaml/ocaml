@@ -357,6 +357,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass 
       /* update stats */
       s->pool_live_blocks--;
       s->pool_live_words -= Whsize_hd(hd);
+      local->owner->state->swept_words += Whsize_hd(hd);
       s->pool_frag_words -= (wh - Whsize_hd(hd));
     } else {
       /* still live */
@@ -383,6 +384,8 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
   header_t hd = *(header_t*)((char*)a + LARGE_ALLOC_HEADER_SZ);
   if (Has_status_hd(hd, global.GARBAGE)) {
     local->stats.large_words -=
+      Whsize_hd(hd) + Wsize_bsize(LARGE_ALLOC_HEADER_SZ);
+    local->owner->state->swept_words +=
       Whsize_hd(hd) + Wsize_bsize(LARGE_ALLOC_HEADER_SZ);
     local->stats.large_blocks--;
     free(a);
