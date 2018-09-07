@@ -72,7 +72,6 @@ promote-menhir: parsing/parser.mly
 	    's,^#\(.*\)"[^"]*/menhir/standard.mly",#\1"menhir/standard.mly",g' \
 	    parsing/$$f \
 	    > boot/menhir/$$f; \
-	  rm parsing/$$f; \
 	done
 
 # The import-menhirLib invocation in promote-menhir ensures that each
