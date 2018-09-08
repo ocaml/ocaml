@@ -327,6 +327,7 @@ struct pool* caml_pool_of_shared_block(value v)
 /* Sweeping */
 
 static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass sz) {
+  intnat work = 0;
   pool* a = *plist;
   if (!a) return 0;
   *plist = a->next;
@@ -364,6 +365,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass 
       all_free = 0;
     }
     p += wh;
+    work++;
   }
 
   if (all_free) {
@@ -374,7 +376,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist, sizeclass 
     *list = a;
   }
 
-  return POOL_WSIZE;
+  return work;
 }
 
 static intnat large_alloc_sweep(struct caml_heap_state* local) {
@@ -426,6 +428,10 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
 
 uintnat caml_heap_size(struct caml_heap_state* local) {
   return Bsize_wsize(local->stats.pool_words + local->stats.large_words);
+}
+
+uintnat caml_heap_blocks(struct caml_heap_state* local) {
+  return local->stats.pool_live_blocks + local->stats.large_blocks;
 }
 
 void caml_redarken_pool(struct pool* r, scanning_action f, void* fdata) {
