@@ -393,6 +393,9 @@ Working version
   for parser testing. See parsing/HACKING.adoc.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+* GPR#2034: Handle type variable and polymorphic variant in the lexer.
+  (Hugo Heuzard, review by ????)
+
 - GPR#2055: Add [Linearize.Lprologue].
   (Mark Shinwell, review by Pierre Chambart)
 

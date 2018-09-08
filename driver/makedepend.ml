@@ -244,12 +244,12 @@ let rec lexical_approximation lexbuf =
           process false lexbuf
       | Parser.LIDENT _ -> process true lexbuf
       | Parser.DOT when after_lident -> process false lexbuf
-      | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
+      | Parser.DOT -> skip_one lexbuf
       | Parser.EOF -> ()
       | _ -> process false lexbuf
     and skip_one lexbuf =
       match Lexer.token lexbuf with
-      | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
+      | Parser.DOT -> skip_one lexbuf
       | Parser.EOF -> ()
       | _ -> process false lexbuf
 

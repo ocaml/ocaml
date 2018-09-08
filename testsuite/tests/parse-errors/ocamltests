@@ -1,5 +1,6 @@
 escape_error.ml
 expecting.ml
+pr2034.ml
 pr7847.ml
 unclosed_class_signature.mli
 unclosed_class_simpl_expr1.ml

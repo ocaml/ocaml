@@ -27,6 +27,8 @@ type error =
   | Unterminated_string
   | Unterminated_string_in_comment of Location.t * Location.t
   | Keyword_as_label of string
+  | Keyword_as_quoteident of string
+  | Keyword_as_backquoteident of string
   | Invalid_literal of string
   | Invalid_directive of string * string option
 ;;
@@ -210,6 +212,12 @@ let is_keyword name = Hashtbl.mem keyword_table name
 let check_label_name lexbuf name =
   if is_keyword name then error lexbuf (Keyword_as_label name)
 
+let check_quote_name lexbuf name =
+  if is_keyword name then error lexbuf (Keyword_as_quoteident name)
+
+let check_backquote_name lexbuf name =
+  if is_keyword name then error lexbuf (Keyword_as_backquoteident name)
+
 (* Update the current location with file name and line number. *)
 
 let update_loc lexbuf file line absolute chars =
@@ -274,6 +282,12 @@ let prepare_error loc = function
   | Keyword_as_label kwd ->
       Location.errorf ~loc
         "`%s' is a keyword, it cannot be used as label name" kwd
+  | Keyword_as_quoteident kwd ->
+      Location.errorf ~loc
+        "`%s' is a keyword, it cannot be used as type variable name" kwd
+  | Keyword_as_backquoteident kwd ->
+      Location.errorf ~loc
+        "`%s' is a keyword, it cannot be used as polymorphic variant name" kwd
   | Invalid_literal s ->
       Location.errorf ~loc "Invalid literal %s" s
   | Invalid_directive (dir, explanation) ->
@@ -297,9 +311,11 @@ let newline = ('\013'* '\010')
 let blank = [' ' '\009' '\012']
 let lowercase = ['a'-'z' '_']
 let uppercase = ['A'-'Z']
+let anycase = ['A'-'Z' 'a'-'z' '_']
 let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
 let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
+let anycase_latin1 = ['A'-'Z' 'a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let identchar_latin1 =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
@@ -455,8 +471,6 @@ rule token = parse
       }
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
-  | "`"  { BACKQUOTE }
-  | "\'" { QUOTE }
   | "("  { LPAREN }
   | ")"  { RPAREN }
   | "*"  { STAR }
@@ -518,6 +532,18 @@ rule token = parse
             { INFIXOP3 op }
   | '#' (symbolchar | '#') + as op
             { HASHOP op }
+  | '`' (anycase identchar * as name)
+      { check_backquote_name lexbuf name;
+        BACKQUOTEIDENT name }
+  | '`' (anycase_latin1 identchar_latin1 as name)
+      { warn_latin1 lexbuf;
+        BACKQUOTEIDENT name }
+  | "'" (anycase identchar * as name)
+      { check_quote_name lexbuf name;
+        QUOTEIDENT name }
+  | "'" (anycase_latin1 identchar_latin1 * as name)
+      { warn_latin1 lexbuf;
+        QUOTEIDENT name }
   | eof { EOF }
   | (_ as illegal_char)
       { error lexbuf (Illegal_character illegal_char) }

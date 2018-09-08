@@ -516,7 +516,7 @@ let mk_directive ~loc name arg =
 %token AND
 %token AS
 %token ASSERT
-%token BACKQUOTE
+%token <string> BACKQUOTEIDENT
 %token BANG
 %token BAR
 %token BARBAR
@@ -602,7 +602,7 @@ let mk_directive ~loc name arg =
 %token <string> PREFIXOP
 %token PRIVATE
 %token QUESTION
-%token QUOTE
+%token <string> QUOTEIDENT
 %token RBRACE
 %token RBRACKET
 %token REC
@@ -692,7 +692,7 @@ The precedences must be listed from low to high.
 %nonassoc below_DOT
 %nonassoc DOT DOTOP
 /* Finally, the first tokens of simple_expr are above everything else. */
-%nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT
+%nonassoc BACKQUOTEIDENT BANG BEGIN CHAR FALSE FLOAT INT
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW PREFIXOP STRING TRUE UIDENT
           LBRACKETPERCENT
@@ -2383,7 +2383,7 @@ optional_type_parameter:
 ;
 optional_type_variable:
     mktyp(
-        QUOTE ident { Ptyp_var $2 }
+        QUOTEIDENT { Ptyp_var $1 }
       | UNDERSCORE  { Ptyp_any }
     ) { $1 }
 ;
@@ -2397,7 +2397,7 @@ type_variance:
   | MINUS                                       { Contravariant }
 ;
 type_variable:
-    mktyp(QUOTE ident { Ptyp_var $2 }) { $1 }
+    mktyp(QUOTEIDENT { Ptyp_var $1 }) { $1 }
 ;
 %inline type_parameter_list:
   tys = separated_nonempty_llist(COMMA, type_parameter)
@@ -2583,8 +2583,8 @@ with_type_binder:
 /* Polymorphic types */
 
 %inline typevar:
-  QUOTE mkrhs(ident)
-    { $2 }
+  mkrhs(QUOTEIDENT)
+    { $1 }
 ;
 %inline typevar_list:
   nonempty_llist(typevar)
@@ -2620,8 +2620,8 @@ core_type:
 core_type_no_attr:
     core_type2 %prec MINUSGREATER
       { $1 }
-  | mktyp(core_type2 AS QUOTE ident
-      { Ptyp_alias($1, $4) })
+  | mktyp(core_type2 AS QUOTEIDENT
+      { Ptyp_alias($1, $3) })
       { $1 }
 ;
 core_type2:
@@ -2656,8 +2656,8 @@ simple_core_type2:
       { $1 }
 ;
 simple_core_type2_:
-    QUOTE ident
-      { Ptyp_var $2 }
+    QUOTEIDENT
+      { Ptyp_var $1 }
   | UNDERSCORE
       { Ptyp_any }
   | mkrhs(type_longident)
@@ -2941,7 +2941,7 @@ toplevel_directive_argument_:
 /* Miscellaneous */
 
 name_tag:
-    BACKQUOTE ident                             { $2 }
+    BACKQUOTEIDENT                              { $1 }
 ;
 rec_flag:
     /* empty */                                 { Nonrecursive }

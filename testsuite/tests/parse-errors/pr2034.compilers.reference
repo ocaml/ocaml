@@ -1,0 +1,17 @@
+Line 5, characters 13-18:
+  let f ~start ~end:end_ = start, end_;;
+               ^^^^^
+Error: `end' is a keyword, it cannot be used as label name
+Line 2, characters 13-18:
+  let f ?start ?end:end_ = start, end_;;
+               ^^^^^
+Error: `end' is a keyword, it cannot be used as label name
+Line 2, characters 13-17:
+  let f `start `end = `start, `end;;
+               ^^^^
+Error: `end' is a keyword, it cannot be used as polymorphic variant name
+Line 2, characters 31-35:
+  let f (start : 'start) (end_ : 'end) = start, end_;;
+                                 ^^^^
+Error: `end' is a keyword, it cannot be used as type variable name
+
