@@ -294,8 +294,6 @@ double caml_mean_space_overhead ()
   return mean;
 }
 
-double caml_current_space_overhead = 0.0;
-
 static uintnat default_slice_budget() {
   double p, heap_words;
   intnat computed_work;
@@ -788,37 +786,37 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
       caml_major_cycles_completed++;
       caml_gc_message(0x40, "Starting major GC cycle\n");
 
-      struct gc_stats s;
-      intnat heap_words, not_garbage_words, swept_words;
+      if (caml_params->verb_gc & 0x400) {
+        struct gc_stats s;
+        intnat heap_words, not_garbage_words, swept_words;
 
-      caml_sample_gc_stats(&s);
-      heap_words = s.major_heap.pool_words + s.major_heap.large_words;
-      not_garbage_words = s.major_heap.pool_live_words + s.major_heap.large_words;
-      swept_words = domain->state->swept_words;
-      caml_gc_log ("heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d "
-                    "not_garbage_words %"ARCH_INTNAT_PRINTF_FORMAT"d "
-                    "swept_words %"ARCH_INTNAT_PRINTF_FORMAT"d",
-                    heap_words, not_garbage_words, swept_words);
+        caml_sample_gc_stats(&s);
+        heap_words = s.major_heap.pool_words + s.major_heap.large_words;
+        not_garbage_words = s.major_heap.pool_live_words + s.major_heap.large_words;
+        swept_words = domain->state->swept_words;
+        caml_gc_log ("heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d "
+                      "not_garbage_words %"ARCH_INTNAT_PRINTF_FORMAT"d "
+                      "swept_words %"ARCH_INTNAT_PRINTF_FORMAT"d",
+                      heap_words, not_garbage_words, swept_words);
 
-      if (caml_stat_space_overhead.heap_words_last_cycle != 0) {
-        /* At the end of a major cycle, no object has colour MARKED.
-          *
-          * [not_garbage_words] counts all objects which are UNMARKED.
-          * Importantly, this includes both live objects and objects which are
-          * unreachable in the current cycle (i.e, garbage). But we don't get to
-          * know which objects are garbage until the end of the next cycle.
-          *
-          * live_words@N = not_garbage_words@N - swept_words@N+1
-          *
-          * space_overhead@N = 100.0 * (heap_words@N - live_words@N) / live_words@N
-          */
-        double live_words_last_cycle =
-          caml_stat_space_overhead.not_garbage_words_last_cycle - swept_words;
-        caml_current_space_overhead =
-          100.0 * (double)(caml_stat_space_overhead.heap_words_last_cycle
-                           - live_words_last_cycle) / live_words_last_cycle;
+        if (caml_stat_space_overhead.heap_words_last_cycle != 0) {
+          /* At the end of a major cycle, no object has colour MARKED.
+            *
+            * [not_garbage_words] counts all objects which are UNMARKED.
+            * Importantly, this includes both live objects and objects which are
+            * unreachable in the current cycle (i.e, garbage). But we don't get to
+            * know which objects are garbage until the end of the next cycle.
+            *
+            * live_words@N = not_garbage_words@N - swept_words@N+1
+            *
+            * space_overhead@N = 100.0 * (heap_words@N - live_words@N) / live_words@N
+            */
+          double live_words_last_cycle =
+            caml_stat_space_overhead.not_garbage_words_last_cycle - swept_words;
+          double space_overhead =
+            100.0 * (double)(caml_stat_space_overhead.heap_words_last_cycle
+                            - live_words_last_cycle) / live_words_last_cycle;
 
-        if (caml_params->verb_gc & 0x400) {
           if (caml_stat_space_overhead.l == NULL) {
             caml_stat_space_overhead.l =
               (struct buf_list_t*)caml_stat_alloc_noexc(sizeof(struct buf_list_t));
@@ -830,12 +828,12 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
             caml_stat_space_overhead.index = 0;
           }
           caml_stat_space_overhead.l->buffer[caml_stat_space_overhead.index++] =
-            caml_current_space_overhead;
+            space_overhead;
+          caml_gc_log("Previous cycle's space_overhead: %lf", space_overhead);
         }
-        caml_gc_log("Previous cycle's space_overhead: %lf", caml_current_space_overhead);
+        caml_stat_space_overhead.heap_words_last_cycle = heap_words;
+        caml_stat_space_overhead.not_garbage_words_last_cycle = not_garbage_words;
       }
-      caml_stat_space_overhead.heap_words_last_cycle = heap_words;
-      caml_stat_space_overhead.not_garbage_words_last_cycle = not_garbage_words;
       domain->state->swept_words = 0;
 
       num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
