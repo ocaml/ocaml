@@ -80,9 +80,11 @@ let interface ~tool_name ~sourcefile ~outputprefix =
     init ppf_dump ~init_path:false ~tool_name ~sourcefile ~outputprefix
   in
   let ast = parse_intf info in
-  let tsg = typecheck_intf info ast in
-  if not !Clflags.print_types then begin
-    emit_signature info ast tsg
+  if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
+    let tsg = typecheck_intf info ast in
+    if not !Clflags.print_types then begin
+      emit_signature info ast tsg
+    end
   end
 
 
