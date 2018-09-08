@@ -757,8 +757,8 @@ The precedences must be listed from low to high.
 
 /* Generic definitions */
 
-(* [rev(XS)] recognizes the same language as [XS], and reverses the resulting OCaml
-   list. *)
+(* [rev(XS)] recognizes the same language as [XS], and reverses the resulting
+   OCaml list. *)
 
 %inline rev(XS):
   xs = XS
@@ -1987,7 +1987,8 @@ let_binding_body:
         (ghpat ~loc:patloc (Ppat_constraint(v, typ)),
          mkexp_constraint ~loc:$sloc $4 $2) }
   | let_ident COLON typevar_list DOT core_type EQUAL seq_expr
-      (* TODO: could replace [typevar_list DOT core_type] with [mktyp(poly(core_type))]
+      (* TODO: could replace [typevar_list DOT core_type]
+               with [mktyp(poly(core_type))]
                and simplify the semantic action? *)
       { let typloc = ($startpos($3), $endpos($5)) in
         let patloc = ($startpos($1), $endpos($5)) in
