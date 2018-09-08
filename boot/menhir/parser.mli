@@ -25,7 +25,7 @@ type token =
   | REC
   | RBRACKET
   | RBRACE
-  | QUOTE
+  | QUOTEIDENT of (string)
   | QUESTION
   | PRIVATE
   | PREFIXOP of (string)
@@ -115,7 +115,7 @@ type token =
   | BARBAR
   | BAR
   | BANG
-  | BACKQUOTE
+  | BACKQUOTEIDENT of (string)
   | ASSERT
   | AS
   | AND
