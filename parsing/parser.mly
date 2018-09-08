@@ -725,21 +725,11 @@ The precedences must be listed from low to high.
 %inline extra_text(symb): symb { extra_text $startpos $endpos $1 };
 
 %inline mkrhs(symb): symb
-    {
-      (* Semantically we could use $symbolstartpos instead of $startpos
-         here, but the code comes from calls to (Parsing.rhs_loc p) for
-         some position p, which rather corresponds to
-         $startpos, so we kept it for compatibility.
-
-         I do not know if mkrhs is ever used in a situation where $startpos
-         and $symbolpos do not coincide.  *)
-      mkrhs $1 $loc }
+    { mkrhs $1 $sloc }
 ;
 
 %inline op(symb): symb
-   { (* see the mkrhs comment above
-        for the choice of $startpos over $symbolstartpos *)
-     mkoperator ~loc:$loc $1 }
+   { mkoperator ~loc:$sloc $1 }
 
 %inline mkloc(symb): symb
     { mkloc $1 (make_loc $sloc) }
@@ -957,7 +947,7 @@ structure_item:
       { val_of_let_bindings ~loc:$sloc $1 }
   | structure_item_with_ext
       { let item, ext = $1 in
-        wrap_str_ext ~loc:$loc (mkstr ~loc:$loc item) ext }
+        wrap_str_ext ~loc:$sloc (mkstr ~loc:$sloc item) ext }
   | item_extension post_item_attributes
       { let docs = symbol_docs $sloc in
         mkstr ~loc:$sloc (Pstr_extension ($1, (add_docs_attrs docs $2))) }
@@ -1081,7 +1071,7 @@ signature_nodoc:
 signature_item:
   | signature_item_with_ext
       { let item, ext = $1 in
-        wrap_sig_ext ~loc:$loc (mksig ~loc:$sloc item) ext }
+        wrap_sig_ext ~loc:$sloc (mksig ~loc:$sloc item) ext }
   | item_extension post_item_attributes
       { let docs = symbol_docs $sloc in
         mksig ~loc:$sloc (Psig_extension ($1, (add_docs_attrs docs $2))) }
@@ -1896,7 +1886,7 @@ lident_list:
   | mkrhs(LIDENT) lident_list         { $1 :: $2 }
 ;
 %inline let_ident:
-    val_ident { mkpatvar ~loc:$loc $1 };
+    val_ident { mkpatvar ~loc:$sloc $1 };
 let_binding_body:
     let_ident strict_binding
       { ($1, $2) }
