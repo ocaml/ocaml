@@ -1,7 +1,6 @@
 File "hello.ml", line 18, characters 20-27:
 Error: These are the contents of the main error message. It is very long and
        should wrap across several lines.
-       File "hello.ml", line 20, characters 4-8:
-       A located first sub-message.
-       This second sub-message does not have a location;
-       ghost locations of submessages are not printed.
+File "hello.ml", line 20, characters 4-8: A located first sub-message.
+This second sub-message does not have a location;
+ghost locations of submessages are not printed.

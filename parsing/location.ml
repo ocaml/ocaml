@@ -426,11 +426,11 @@ type report_printer = {
 }
 
 let batch_mode_printer : report_printer =
-  let pp_loc ppf loc = Format.fprintf ppf "%a:@," print_loc loc in
+  let pp_loc ppf loc = Format.fprintf ppf "%a:@ " print_loc loc in
   let pp_txt ppf txt = Format.fprintf ppf "@[%t@]" txt in
   let pp self ppf report =
     setup_colors ();
-    Format.fprintf ppf "@[<v>%a%a: @[<v>%a%a@]@]@."
+    Format.fprintf ppf "@[<v>%a%a: %a%a@]@."
       (self.pp_main_loc self report) report.main.loc
       (self.pp_report_kind self report) report.kind
       (self.pp_main_txt self report) report.main.txt
@@ -454,7 +454,7 @@ let batch_mode_printer : report_printer =
     ) msgs
   in
   let pp_submsg self report ppf { loc; txt } =
-    Format.fprintf ppf "%a%a"
+    Format.fprintf ppf "@[<hv 2>%a%a@]"
       (self.pp_submsg_loc self report) loc
       (self.pp_submsg_txt self report) txt
   in
@@ -493,7 +493,7 @@ let dumb_toplevel_printer (lb: lexbuf): report_printer =
   let pp_loc _ _ ppf loc =
     let highlight ppf loc =
       if is_toplevel_loc loc then highlight_dumb lb ppf [loc] in
-    Format.fprintf ppf "%a:@,%a" print_loc loc highlight loc
+    Format.fprintf ppf "@[<v>%a:@,%a@]" print_loc loc highlight loc
   in
   { batch_mode_printer with pp; pp_main_loc = pp_loc; pp_submsg_loc = pp_loc }
 
