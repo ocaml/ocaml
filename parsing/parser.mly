@@ -757,28 +757,118 @@ The precedences must be listed from low to high.
 
 /* Generic definitions */
 
-(* [reversed_separated_nonempty_list(separator, X)] recognizes a nonempty list
-   of [X]s, separated with [separator]s, and produces an OCaml list in reverse
-   order -- that is, the last element in the input text appears first in this
+(* [rev(XS)] recognizes the same language as [XS], and reverses the resulting
    OCaml list. *)
 
-(* [inline_reversed_separated_nonempty_list(separator, X)] is semantically
-   equivalent to [reversed_separated_nonempty_list(separator, X)], but is
+%inline rev(XS):
+  xs = XS
+    { List.rev xs }
+
+(* [reversed_nonempty_llist(X)] recognizes a nonempty list of [X]s, and produces
+   an OCaml list in reverse order -- that is, the last element in the input text
+   appears first in this list. Its definition is left-recursive. *)
+
+reversed_nonempty_llist(X):
+  x = X
+    { [ x ] }
+| xs = reversed_nonempty_llist(X) x = X
+    { x :: xs }
+
+(* [nonempty_llist(X)] recognizes a nonempty list of [X]s, and produces an OCaml
+   list in direct order -- that is, the first element in the input text appears
+   first in this list. *)
+
+%inline nonempty_llist(X):
+  xs = rev(reversed_nonempty_llist(X))
+    { xs }
+
+(* [reversed_separated_nonempty_llist(separator, X)] recognizes a nonempty list
+   of [X]s, separated with [separator]s, and produces an OCaml list in reverse
+   order -- that is, the last element in the input text appears first in this
+   list. Its definition is left-recursive. *)
+
+(* [inline_reversed_separated_nonempty_llist(separator, X)] is semantically
+   equivalent to [reversed_separated_nonempty_llist(separator, X)], but is
    marked %inline, which means that the case of a list of length one and
    the case of a list of length more than one will be distinguished at the
    use site, and will give rise there to two productions. This can be used
    to avoid certain conflicts. *)
 
-%inline inline_reversed_separated_nonempty_list(separator, X):
+%inline inline_reversed_separated_nonempty_llist(separator, X):
   x = X
     { [ x ] }
-| xs = reversed_separated_nonempty_list(separator, X)
+| xs = reversed_separated_nonempty_llist(separator, X)
   separator
   x = X
     { x :: xs }
 
-reversed_separated_nonempty_list(separator, X):
-  xs = inline_reversed_separated_nonempty_list(separator, X)
+reversed_separated_nonempty_llist(separator, X):
+  xs = inline_reversed_separated_nonempty_llist(separator, X)
+    { xs }
+
+(* [separated_nonempty_llist(separator, X)] recognizes a nonempty list of [X]s,
+   separated with [separator]s, and produces an OCaml list in direct order --
+   that is, the first element in the input text appears first in this list. *)
+
+%inline separated_nonempty_llist(separator, X):
+  xs = rev(reversed_separated_nonempty_llist(separator, X))
+    { xs }
+
+(* [reversed_separated_nontrivial_llist(separator, X)] recognizes a list of at
+   least two [X]s, separated with [separator]s, and produces an OCaml list in
+   reverse order -- that is, the last element in the input text appears first
+   in this list. Its definition is left-recursive. *)
+
+reversed_separated_nontrivial_llist(separator, X):
+  xs = reversed_separated_nontrivial_llist(separator, X)
+  separator
+  x = X
+    { x :: xs }
+| x1 = X
+  separator
+  x2 = X
+    { [ x2; x1 ] }
+
+(* [separated_nontrivial_llist(separator, X)] recognizes a list of at least
+   two [X]s, separated with [separator]s, and produces an OCaml list in direct
+   order -- that is, the first element in the input text appears first in this
+   list. *)
+
+%inline separated_nontrivial_llist(separator, X):
+  xs = rev(reversed_separated_nontrivial_llist(separator, X))
+    { xs }
+
+(* [separated_or_terminated_nonempty_list(delimiter, X)] recognizes a nonempty
+   list of [X]s, separated with [delimiter]s, and optionally terminated with a
+   final [delimiter]. Its definition is right-recursive. *)
+
+separated_or_terminated_nonempty_list(delimiter, X):
+  x = X ioption(delimiter)
+    { [x] }
+| x = X
+  delimiter
+  xs = separated_or_terminated_nonempty_list(delimiter, X)
+    { x :: xs }
+
+(* [reversed_preceded_or_separated_nonempty_llist(delimiter, X)] recognizes a
+   nonempty list of [X]s, separated with [delimiter]s, and optionally preceded
+   with a leading [delimiter]. It produces an OCaml list in reverse order. Its
+   definition is left-recursive. *)
+
+reversed_preceded_or_separated_nonempty_llist(delimiter, X):
+  ioption(delimiter) x = X
+    { [x] }
+| xs = reversed_preceded_or_separated_nonempty_llist(delimiter, X)
+  delimiter
+  x = X
+    { x :: xs }
+
+(* [preceded_or_separated_nonempty_llist(delimiter, X)] recognizes a nonempty
+   list of [X]s, separated with [delimiter]s, and optionally preceded with a
+   leading [delimiter]. It produces an OCaml list in direct order. *)
+
+%inline preceded_or_separated_nonempty_llist(delimiter, X):
+  xs = rev(reversed_preceded_or_separated_nonempty_llist(delimiter, X))
     { xs }
 
 /* Entry points */
@@ -1211,7 +1301,7 @@ class_fun_binding:
 ;
 class_type_parameters:
     /*empty*/                                   { [] }
-  | LBRACKET type_parameter_list RBRACKET       { List.rev $2 }
+  | LBRACKET type_parameter_list RBRACKET       { $2 }
 ;
 
 class_fun_def: mkclass(class_fun_def_desc) { $1 };
@@ -1233,8 +1323,8 @@ class_expr:
   | class_expr attribute
       { Cl.attr $1 $2 }
   | mkclass(
-      class_simple_expr simple_labeled_expr_list
-        { Pcl_apply($1, List.rev $2) }
+      class_simple_expr nonempty_llist(labeled_simple_expr)
+        { Pcl_apply($1, $2) }
     | extension
         { Pcl_extension $1 }
     ) { $1 }
@@ -1637,10 +1727,10 @@ expr:
 ;
 %inline expr_:
   | expr_op { $1 }
-  | simple_expr simple_labeled_expr_list
-    { Pexp_apply($1, List.rev $2) }
+  | simple_expr nonempty_llist(labeled_simple_expr)
+    { Pexp_apply($1, $2) }
   | expr_comma_list %prec below_COMMA
-    { Pexp_tuple(List.rev $1) }
+    { Pexp_tuple($1) }
   | mkrhs(constr_longident) simple_expr %prec below_HASH
     { Pexp_construct($1, Some $2) }
   | name_tag simple_expr %prec below_HASH
@@ -1737,7 +1827,7 @@ simple_expr:
       { unclosed "{" $loc($5) "}" $loc($7) }
   | simple_expr DOT LBRACE expr RBRACE
       { bigarray_get ~loc:$sloc $1 $4 }
-  | simple_expr DOT LBRACE expr_comma_list error
+  | simple_expr DOT LBRACE expr error
       { unclosed "{" $loc($3) "}" $loc($5) }
   | simple_expr_attrs
     { let desc, attrs = $1 in
@@ -1812,37 +1902,37 @@ simple_expr:
         Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_record(fields, exten))) }
   | mod_longident DOT LBRACE record_expr error
       { unclosed "{" $loc($3) "}" $loc($5) }
-  | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
-      { Pexp_array(List.rev $2) }
-  | LBRACKETBAR expr_semi_list opt_semi error
-      { unclosed "[|" $loc($1) "|]" $loc($4) }
+  | LBRACKETBAR expr_semi_list BARRBRACKET
+      { Pexp_array($2) }
+  | LBRACKETBAR expr_semi_list error
+      { unclosed "[|" $loc($1) "|]" $loc($3) }
   | LBRACKETBAR BARRBRACKET
       { Pexp_array [] }
-  | mkrhs(mod_longident) DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
+  | mkrhs(mod_longident) DOT LBRACKETBAR expr_semi_list BARRBRACKET
       { (* TODO: review the location of Pexp_array *)
-        Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_array(List.rev $4))) }
+        Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_array($4))) }
   | mkrhs(mod_longident) DOT LBRACKETBAR BARRBRACKET
       { (* TODO: review the location of Pexp_array *)
         Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_array [])) }
   | mod_longident DOT
-    LBRACKETBAR expr_semi_list opt_semi error
-      { unclosed "[|" $loc($3) "|]" $loc($6) }
-  | LBRACKET expr_semi_list opt_semi RBRACKET
-      { fst (mktailexp $loc($4) (List.rev $2)) }
-  | LBRACKET expr_semi_list opt_semi error
-      { unclosed "[" $loc($1) "]" $loc($4) }
-  | mkrhs(mod_longident) DOT LBRACKET expr_semi_list opt_semi RBRACKET
+    LBRACKETBAR expr_semi_list error
+      { unclosed "[|" $loc($3) "|]" $loc($5) }
+  | LBRACKET expr_semi_list RBRACKET
+      { fst (mktailexp $loc($3) $2) }
+  | LBRACKET expr_semi_list error
+      { unclosed "[" $loc($1) "]" $loc($3) }
+  | mkrhs(mod_longident) DOT LBRACKET expr_semi_list RBRACKET
       { let list_exp =
           (* TODO: review the location of list_exp *)
-          let tail_exp, _tail_loc = mktailexp $loc($6) (List.rev $4) in
+          let tail_exp, _tail_loc = mktailexp $loc($5) $4 in
           mkexp ~loc:$sloc tail_exp in
         Pexp_open(Fresh, $1, list_exp) }
   | mkrhs(mod_longident) DOT mkrhs(LBRACKET RBRACKET {Lident "[]"})
       { (* TODO: review the location of Pexp_construct *)
         Pexp_open(Fresh, $1, mkexp ~loc:$sloc (Pexp_construct($3, None))) }
   | mod_longident DOT
-    LBRACKET expr_semi_list opt_semi error
-      { unclosed "[" $loc($3) "]" $loc($6) }
+    LBRACKET expr_semi_list error
+      { unclosed "[" $loc($3) "]" $loc($5) }
   | mkrhs(mod_longident) DOT LPAREN MODULE ext_attributes module_expr COLON
     package_type RPAREN
       { (* TODO: review the location of Pexp_constraint *)
@@ -1853,13 +1943,6 @@ simple_expr:
   | mod_longident DOT
     LPAREN MODULE ext_attributes module_expr COLON error
       { unclosed "(" $loc($3) ")" $loc($8) }
-;
-
-simple_labeled_expr_list:
-    labeled_simple_expr
-      { [$1] }
-  | simple_labeled_expr_list labeled_simple_expr
-      { $2 :: $1 }
 ;
 labeled_simple_expr:
     simple_expr %prec below_HASH
@@ -1881,9 +1964,9 @@ label_ident:
     LIDENT
       { ($1, mkexp ~loc:$sloc (Pexp_ident(mkrhs (Lident $1) $sloc))) }
 ;
-lident_list:
-    mkrhs(LIDENT)                     { [$1] }
-  | mkrhs(LIDENT) lident_list         { $1 :: $2 }
+%inline lident_list:
+  xs = mkrhs(LIDENT)+
+    { xs }
 ;
 %inline let_ident:
     val_ident { mkpatvar ~loc:$sloc $1 };
@@ -1904,10 +1987,13 @@ let_binding_body:
         (ghpat ~loc:patloc (Ppat_constraint(v, typ)),
          mkexp_constraint ~loc:$sloc $4 $2) }
   | let_ident COLON typevar_list DOT core_type EQUAL seq_expr
+      (* TODO: could replace [typevar_list DOT core_type]
+               with [mktyp(poly(core_type))]
+               and simplify the semantic action? *)
       { let typloc = ($startpos($3), $endpos($5)) in
         let patloc = ($startpos($1), $endpos($5)) in
         (ghpat ~loc:patloc
-           (Ppat_constraint($1, ghtyp ~loc:typloc (Ptyp_poly(List.rev $3,$5)))),
+           (Ppat_constraint($1, ghtyp ~loc:typloc (Ptyp_poly($3,$5)))),
          $7) }
   | let_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
       { let exp, poly =
@@ -1974,18 +2060,17 @@ fun_def:
   | LPAREN TYPE lident_list RPAREN fun_def
       { mk_newtypes ~loc:$sloc $3 $5 }
 ;
-expr_comma_list:
-    expr_comma_list COMMA expr                  { $3 :: $1 }
-  | expr COMMA expr                             { [$3; $1] }
+%inline expr_comma_list:
+  es = separated_nontrivial_llist(COMMA, expr)
+    { es }
 ;
 record_expr:
     simple_expr WITH lbl_expr_list              { (Some $1, $3) }
   | lbl_expr_list                               { (None, $1) }
 ;
-lbl_expr_list:
-     lbl_expr { [$1] }
-  |  lbl_expr SEMI lbl_expr_list { $1 :: $3 }
-  |  lbl_expr SEMI { [$1] }
+%inline lbl_expr_list:
+  xs = separated_or_terminated_nonempty_list(SEMI, lbl_expr)
+    { xs }
 ;
 lbl_expr:
     mkrhs(label_longident) opt_type_constraint EQUAL expr
@@ -1995,9 +2080,9 @@ lbl_expr:
          mkexp_opt_constraint ~loc:$sloc
            (exp_of_longident ~loc:$sloc $1) $2) }
 ;
-field_expr_list:
-    field_expr opt_semi { [$1] }
-  | field_expr SEMI field_expr_list { $1 :: $3 }
+%inline field_expr_list:
+  xs = separated_or_terminated_nonempty_list(SEMI, field_expr)
+    { xs }
 ;
 field_expr:
     mkrhs(label) EQUAL expr
@@ -2005,9 +2090,9 @@ field_expr:
   | mkrhs(label)
       { ($1, exp_of_label ~loc:$sloc {$1 with txt = Lident $1.txt}) }
 ;
-expr_semi_list:
-    expr                                        { [$1] }
-  | expr_semi_list SEMI expr                    { $3 :: $1 }
+%inline expr_semi_list:
+  es = separated_or_terminated_nonempty_list(SEMI, expr)
+    { es }
 ;
 type_constraint:
     COLON core_type                             { (Some $2, None) }
@@ -2155,16 +2240,16 @@ simple_delimited_pattern:
         Ppat_record(fields, closed) }
     | LBRACE lbl_pattern_list error
       { unclosed "{" $loc($1) "}" $loc($3) }
-    | LBRACKET pattern_semi_list opt_semi RBRACKET
-      { fst (mktailpat $loc($4) (List.rev $2)) }
-    | LBRACKET pattern_semi_list opt_semi error
-      { unclosed "[" $loc($1) "]" $loc($4) }
-    | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
-      { Ppat_array(List.rev $2) }
+    | LBRACKET pattern_semi_list RBRACKET
+      { fst (mktailpat $loc($3) $2) }
+    | LBRACKET pattern_semi_list error
+      { unclosed "[" $loc($1) "]" $loc($3) }
+    | LBRACKETBAR pattern_semi_list BARRBRACKET
+      { Ppat_array $2 }
     | LBRACKETBAR BARRBRACKET
       { Ppat_array [] }
-    | LBRACKETBAR pattern_semi_list opt_semi error
-      { unclosed "[|" $loc($1) "|]" $loc($4) }
+    | LBRACKETBAR pattern_semi_list error
+      { unclosed "[|" $loc($1) "|]" $loc($3) }
   ) { $1 }
 
 pattern_comma_list:
@@ -2177,9 +2262,9 @@ pattern_no_exn_comma_list:
   | pattern_no_exn COMMA pattern                { [$3; $1] }
   | pattern_no_exn COMMA error                  { expecting $loc($3) "pattern" }
 ;
-pattern_semi_list:
-    pattern                                     { [$1] }
-  | pattern_semi_list SEMI pattern              { $3 :: $1 }
+%inline pattern_semi_list:
+  ps = separated_or_terminated_nonempty_list(SEMI, pattern)
+    { ps }
 ;
 lbl_pattern_list:
     lbl_pattern { [$1], Closed }
@@ -2287,14 +2372,14 @@ type_kind:
 optional_type_parameters:
     /*empty*/                                   { [] }
   | optional_type_parameter                     { [$1] }
-  | LPAREN optional_type_parameter_list RPAREN  { List.rev $2 }
+  | LPAREN optional_type_parameter_list RPAREN  { $2 }
 ;
 optional_type_parameter:
     type_variance optional_type_variable        { $2, $1 }
 ;
-optional_type_parameter_list:
-    optional_type_parameter                              { [$1] }
-  | optional_type_parameter_list COMMA optional_type_parameter    { $3 :: $1 }
+%inline optional_type_parameter_list:
+  tys = separated_nonempty_llist(COMMA, optional_type_parameter)
+    { tys }
 ;
 optional_type_variable:
     mktyp(
@@ -2314,9 +2399,9 @@ type_variance:
 type_variable:
     mktyp(QUOTE ident { Ptyp_var $2 }) { $1 }
 ;
-type_parameter_list:
-    type_parameter                              { [$1] }
-  | type_parameter_list COMMA type_parameter    { $3 :: $1 }
+%inline type_parameter_list:
+  tys = separated_nonempty_llist(COMMA, type_parameter)
+    { tys }
 ;
 constructor_declarations:
   | BAR                                                  { [  ] }
@@ -2372,7 +2457,7 @@ generalized_constructor_arguments:
 ;
 
 constructor_arguments:
-  | core_type_list                   { Pcstr_tuple (List.rev $1) }
+  | core_type_list                   { Pcstr_tuple $1 }
   | LBRACE label_declarations RBRACE { Pcstr_record $2 }
 ;
 label_declarations:
@@ -2497,23 +2582,31 @@ with_type_binder:
 
 /* Polymorphic types */
 
-typevar_list:
-        QUOTE mkrhs(ident)                      { [$2] }
-      | typevar_list QUOTE mkrhs(ident)         { $3 :: $1 }
+%inline typevar:
+  QUOTE mkrhs(ident)
+    { $2 }
 ;
-poly_type:
-        core_type
-          { $1 }
-      | mktyp(typevar_list DOT core_type
-          { Ptyp_poly(List.rev $1, $3) })
-          { $1 }
+%inline typevar_list:
+  nonempty_llist(typevar)
+    { $1 }
 ;
-poly_type_no_attr:
-        core_type_no_attr
-          { $1 }
-      | mktyp(typevar_list DOT core_type_no_attr
-          { Ptyp_poly(List.rev $1, $3) })
-          { $1 }
+%inline poly(X):
+  typevar_list DOT X
+    { Ptyp_poly($1, $3) }
+;
+possibly_poly(X):
+  X
+    { $1 }
+| mktyp(poly(X))
+    { $1 }
+;
+%inline poly_type:
+  possibly_poly(core_type)
+    { $1 }
+;
+%inline poly_type_no_attr:
+  possibly_poly(core_type_no_attr)
+    { $1 }
 ;
 
 /* Core types */
@@ -2590,17 +2683,17 @@ simple_core_type2_:
       { Ptyp_variant([$2], Closed, None) }
 */
   | LBRACKET BAR row_field_list RBRACKET
-      { Ptyp_variant(List.rev $3, Closed, None) }
+      { Ptyp_variant($3, Closed, None) }
   | LBRACKET row_field BAR row_field_list RBRACKET
-      { Ptyp_variant($2 :: List.rev $4, Closed, None) }
+      { Ptyp_variant($2 :: $4, Closed, None) }
   | LBRACKETGREATER opt_bar row_field_list RBRACKET
-      { Ptyp_variant(List.rev $3, Open, None) }
+      { Ptyp_variant($3, Open, None) }
   | LBRACKETGREATER RBRACKET
       { Ptyp_variant([], Open, None) }
   | LBRACKETLESS opt_bar row_field_list RBRACKET
-      { Ptyp_variant(List.rev $3, Closed, Some []) }
+      { Ptyp_variant($3, Closed, Some []) }
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
-      { Ptyp_variant(List.rev $3, Closed, Some (List.rev $5)) }
+      { Ptyp_variant($3, Closed, Some $5) }
   | extension
       { Ptyp_extension $1 }
 ;
@@ -2610,9 +2703,9 @@ package_type:
       { Ptyp_package (package_type_of_module_type $1) })
       { $1 }
 ;
-row_field_list:
-    row_field                                   { [$1] }
-  | row_field_list BAR row_field                { $3 :: $1 }
+%inline row_field_list:
+  separated_nonempty_llist(BAR, row_field)
+    { $1 }
 ;
 row_field:
     tag_field          { $1 }
@@ -2622,7 +2715,7 @@ tag_field:
     mkrhs(name_tag) OF opt_ampersand amper_type_list attributes
       { let info = symbol_info $endpos in
         let attrs = add_info_attrs info $5 in
-        Rf.tag ~loc:(make_loc $sloc) ~attrs $1 $3 (List.rev $4) }
+        Rf.tag ~loc:(make_loc $sloc) ~attrs $1 $3 $4 }
   | mkrhs(name_tag) attributes
       { let info = symbol_info $endpos in
         let attrs = add_info_attrs info $2 in
@@ -2632,23 +2725,23 @@ opt_ampersand:
     AMPERSAND                                   { true }
   | /* empty */                                 { false }
 ;
-amper_type_list:
-    core_type_no_attr                           { [$1] }
-  | amper_type_list AMPERSAND core_type_no_attr { $3 :: $1 }
+%inline amper_type_list:
+  separated_nonempty_llist(AMPERSAND, core_type_no_attr)
+    { $1 }
 ;
-name_tag_list:
-    name_tag                                    { [$1] }
-  | name_tag_list name_tag                      { $2 :: $1 }
+%inline name_tag_list:
+  nonempty_llist(name_tag)
+    { $1 }
 ;
 simple_core_type_or_tuple:
     simple_core_type { $1 }
   | mktyp(simple_core_type STAR core_type_list
-      { Ptyp_tuple($1 :: List.rev $3) })
+      { Ptyp_tuple($1 :: $3) })
       { $1 }
 ;
 (* A [core_type_comma_list] is a nonempty, comma-separated list of types. *)
 %inline core_type_comma_list:
-  tys = reversed_separated_nonempty_list(COMMA, core_type)
+  tys = reversed_separated_nonempty_llist(COMMA, core_type)
     { tys }
 ;
 (* [inline_core_type_comma_list] is semantically equivalent to
@@ -2661,12 +2754,12 @@ simple_core_type_or_tuple:
    Inlining allows the parser to shift the closing parenthesis without (yet)
    deciding which of the above two situations we have. *)
 %inline inline_core_type_comma_list:
-  tys = inline_reversed_separated_nonempty_list(COMMA, core_type)
+  tys = inline_reversed_separated_nonempty_llist(COMMA, core_type)
     { tys }
 ;
-core_type_list:
-    simple_core_type                       { [$1] }
-  | core_type_list STAR simple_core_type   { $3 :: $1 }
+%inline core_type_list:
+  separated_nonempty_llist(STAR, simple_core_type)
+    { $1 }
 ;
 meth_list:
     field_semi meth_list
