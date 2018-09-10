@@ -20,19 +20,18 @@ exception Illegal_expr
 
 module Mode = struct
   (** For an expression in a program, its "usage mode" represents
-     static information about how the value produced by the expression
-     will be used by the context around it. *)
+      static information about how the value produced by the expression
+      will be used by the context around it. *)
   type t =
-    | Dereference
-    (** A [Dereference] context consumes, inspects and uses the value
-        in arbitrary ways. Such a value must be fully defined at the point
-        of usage, it cannot be defined mutually-recursively with its context. *)
+    | Ignore
+    (** [Ignore] is for subexpressions that are not used at all during
+       the evaluation of the whole program. This is the mode of
+       a variable in an expression in which it does not occur. *)
 
-    | Return
-    (** A [Return] context returns its value without further inspection.
-        This value cannot be defined mutually-recursively with its context,
-        as there is a risk of self-loop: in [let rec x = y and y = x], the
-        two definitions use a single variable in [Return] context. *)
+    | Delay
+    (** A [Delay] context can be fully evaluated without evaluting its argument,
+        which will only be needed at a later point of program execution. For
+        example, [fun x -> ?] or [lazy ?] are [Delay] contexts. *)
 
     | Guard
     (** A [Guard] context returns the value as a member of a data structure,
@@ -51,35 +50,36 @@ module Mode = struct
         they cannot create a self-loop.
     *)
 
-    | Delay
-    (** A [Delay] context can be fully evaluated without evaluting its argument,
-        which will only be needed at a later point of program execution. For
-        example, [fun x -> ?] or [lazy ?] are [Delay] contexts. *)
+    | Return
+    (** A [Return] context returns its value without further inspection.
+        This value cannot be defined mutually-recursively with its context,
+        as there is a risk of self-loop: in [let rec x = y and y = x], the
+        two definitions use a single variable in [Return] context. *)
 
-    | Ignore
-    (** [Ignore] is for subexpressions that are not used at all during
-       the evaluation of the whole program. This is the mode of
-       a variable in an expression in which it does not occur. *)
+    | Dereference
+    (** A [Dereference] context consumes, inspects and uses the value
+        in arbitrary ways. Such a value must be fully defined at the point
+        of usage, it cannot be defined mutually-recursively with its context. *)
 
-  (* Returns the more conservative mode of the two arguments
-     (the mode corresponding to the context that makes the
-      strongest use and thus rejects more subterms.)
+  (* Lower-ranked modes demand/use less of the variable/expression they qualify
+     -- so they allow more recursive definitions.
 
-     Dereference < Return < Guard < Delay < Ignore
+     Ignore < Delay < Guard < Return < Dereference
+  *)
+  let rank = function
+    | Ignore -> 0
+    | Delay -> 1
+    | Guard -> 2
+    | Return -> 3
+    | Dereference -> 4
+
+  (* Returns the more conservative (highest-ranking) mode of the two
+     arguments.
 
      In judgments we write (m + m') for (join m m').
   *)
   let join m m' =
-    match m, m' with
-    | Dereference, _
-    | _, Dereference -> Dereference
-    | Return, _
-    | _, Return -> Return
-    | Guard, _
-    | _, Guard -> Guard
-    | Delay, _
-    | _, Delay -> Delay
-    | _ -> Ignore
+    if rank m >= rank m' then m else m'
 
   (* If x is used with the mode m in e[x], and e[x] is used with mode
      m' in e'[e[x]], then x is used with mode m'[m] (our notation for
@@ -99,7 +99,7 @@ module Mode = struct
     | Return, ((Dereference | Guard | Delay) as m) -> m
 end
 
-type mode = Mode.t = Dereference | Return | Guard | Delay | Ignore
+type mode = Mode.t = Ignore | Delay | Guard | Return | Dereference
 
 module Env :
 sig
@@ -159,18 +159,10 @@ end = struct
   let single id mode = M.add id mode empty
 
   let unguarded env li =
-    let not_guarded = function
-      | Dereference | Return -> true
-      | Guard | Delay | Ignore -> false
-    in
-    List.filter (fun id -> not_guarded (find id env)) li
+    List.filter (fun id -> Mode.rank (find id env) > Mode.rank Guard) li
 
   let dependent env li =
-    let used = function
-      | Dereference | Return | Guard | Delay -> true
-      | Ignore -> false
-    in
-    List.filter (fun id -> used (find id env)) li
+    List.filter (fun id -> Mode.rank (find id env) > Mode.rank Ignore) li
 
   let remove = M.remove
 
