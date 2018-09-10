@@ -1310,9 +1310,7 @@ beforedepend:: bytecomp/opcodes.ml
 
 # Testing the parser -- see parsing/HACKING.adoc
 
-SOURCE_FILES=$(shell \
-  git ls-files '*.ml' '*.mli' \
-| grep -v '^experimental/')
+SOURCE_FILES=$(shell git ls-files '*.ml' '*.mli')
 
 AST_FILES=$(addsuffix .ast,$(SOURCE_FILES))
 

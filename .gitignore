@@ -74,9 +74,6 @@ _ocamltestd
 /emacs/ocamltags
 /emacs/*.elc
 
-/experimental/garrigue/*.out
-/experimental/garrigue/*.out2
-
 /lex/parser.ml
 /lex/parser.mli
 /lex/lexer.ml

@@ -63,8 +63,6 @@ emacs/caml.el            ocaml-typo=long-line,unused-prop,missing-header
 emacs/COPYING            ocaml-typo=tab,non-printing,missing-header
 emacs/ocamltags.in       ocaml-typo=non-printing
 
-/experimental            ocaml-typo=prune
-
 /manual                  ocaml-typo=prune
 
 ocamldoc/Changes.txt     ocaml-typo=missing-header
