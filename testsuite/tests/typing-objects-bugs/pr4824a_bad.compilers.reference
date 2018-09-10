@@ -6,5 +6,3 @@ Error: Signature mismatch:
        does not match
          class c : 'a -> object val x : 'b end
        The instance variable x has type 'a but is expected to have type 'b
-       This instance of 'b is ambiguous:
-       it would escape the scope of its equation

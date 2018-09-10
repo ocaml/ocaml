@@ -116,8 +116,7 @@ let f (type a b) (x : (a, b) eq) =
 Line 3, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
+Error:
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -131,8 +130,7 @@ let g1 (type a b) (x : (a, b) eq) =
 Line 3, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
+Error:
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -146,8 +144,7 @@ let g2 (type a b) (x : (a, b) eq) =
 Line 3, characters 4-29:
     | Refl, [(_ : b) | (_ : a)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
+Error:
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -161,8 +158,7 @@ let h1 (type a b) (x : (a, b) eq) =
 Line 4, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
+Error:
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -176,8 +172,7 @@ let h2 (type a b) (x : (a, b) eq) =
 Line 4, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
+Error:
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -191,8 +186,7 @@ let h3 (type a b) (x : (a, b) eq) =
 Line 4, characters 4-29:
     | Refl, [(_ : b) | (_ : a)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
+Error:
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]

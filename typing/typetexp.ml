@@ -34,8 +34,8 @@ type error =
   | Bound_type_variable of string
   | Recursive_type
   | Unbound_row_variable of Longident.t
-  | Type_mismatch of (type_expr * type_expr) list
-  | Alias_type_mismatch of (type_expr * type_expr) list
+  | Type_mismatch of Ctype.Unification_trace.t
+  | Alias_type_mismatch of Ctype.Unification_trace.t
   | Present_has_conjunction of string
   | Present_has_no_type of string
   | Constructor_mismatch of type_expr * type_expr
@@ -318,10 +318,6 @@ let transl_type_param env styp =
 let new_pre_univar ?name () =
   let v = newvar ?name () in pre_univars := v :: !pre_univars; v
 
-let rec swap_list = function
-    x :: y :: l -> y :: x :: swap_list l
-  | l -> l
-
 type policy = Fixed | Extensible | Univars
 
 let rec transl_type env policy styp =
@@ -398,7 +394,9 @@ and transl_type_aux env policy styp =
       List.iter2
         (fun (sty, cty) ty' ->
            try unify_param env ty' cty.ctyp_type with Unify trace ->
-             raise (Error(sty.ptyp_loc, env, Type_mismatch (swap_list trace))))
+             let trace = Unification_trace.swap trace in
+             raise (Error(sty.ptyp_loc, env, Type_mismatch trace))
+        )
         (List.combine stl args) params;
       let constr =
         newconstr path (List.map (fun ctyp -> ctyp.ctyp_type) args) in
@@ -451,7 +449,9 @@ and transl_type_aux env policy styp =
       List.iter2
         (fun (sty, cty) ty' ->
            try unify_var env ty' cty.ctyp_type with Unify trace ->
-             raise (Error(sty.ptyp_loc, env, Type_mismatch (swap_list trace))))
+             let trace = Unification_trace.swap trace in
+             raise (Error(sty.ptyp_loc, env, Type_mismatch trace))
+        )
         (List.combine stl args) params;
         let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
       let ty =
@@ -501,7 +501,7 @@ and transl_type_aux env policy styp =
           in
           let ty = transl_type env policy st in
           begin try unify_var env t ty.ctyp_type with Unify trace ->
-            let trace = swap_list trace in
+            let trace = Unification_trace.swap trace in
             raise(Error(styp.ptyp_loc, env, Alias_type_mismatch trace))
           end;
           ty
@@ -512,7 +512,7 @@ and transl_type_aux env policy styp =
             TyVarMap.add alias (t, styp.ptyp_loc) !used_variables;
           let ty = transl_type env policy st in
           begin try unify_var env t ty.ctyp_type with Unify trace ->
-            let trace = swap_list trace in
+            let trace = Unification_trace.swap trace in
             raise(Error(styp.ptyp_loc, env, Alias_type_mismatch trace))
           end;
           if !Clflags.principal then begin
