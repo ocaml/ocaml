@@ -133,7 +133,7 @@ module Compiler_messages = struct
     let pp_loc _ _ ppf loc =
       (* We want to highlight locations even coming from a file, but the
          toplevel printer will only highlight locations from the toplevel. *)
-      Format.fprintf ppf "%a:@,%a"
+      Format.fprintf ppf "@[<v>%a:@,%a@]"
         Location.print_loc loc
         (Location.highlight_dumb lb) [loc]
     in

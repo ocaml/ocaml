@@ -20,6 +20,11 @@ let () =
     loc_end = { pos with pos_lnum = 20; pos_bol = 0; pos_cnum = 8 };
     loc_ghost = false
   } in
+  let loc3 = {
+    loc_start = { pos with pos_lnum = 20; pos_bol = 0; pos_cnum = 6 };
+    loc_end = { pos with pos_lnum = 20; pos_bol = 0; pos_cnum = 8 };
+    loc_ghost = false
+  } in
   let report = {
     kind = Report_error;
     main = msg ~loc:loc1 "%a" Format.pp_print_text
@@ -27,6 +32,9 @@ let () =
          It is very long and should wrap across several lines.";
     sub = [
       msg ~loc:loc2 "A located first sub-message.";
+      msg ~loc:loc3 "%a" Format.pp_print_text
+        "Longer sub-messages that do not fit on the \
+         same line as the location get indented.";
       msg "@[<v>This second sub-message does not have \
            a location;@,ghost locations of submessages are \
            not printed.@]";
