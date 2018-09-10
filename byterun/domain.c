@@ -791,19 +791,19 @@ static void handover_ephemerons(caml_domain_state* domain_state)
   value todo_tail = 0;
   value live_tail = 0;
 
-  if (domain_state->ephe_list_todo == 0 &&
-      domain_state->ephe_list_live == 0)
+  if (domain_state->ephe_info->todo == 0 &&
+      domain_state->ephe_info->live == 0)
     return;
 
-  todo_tail = caml_bias_ephe_list(domain_state->ephe_list_todo, (struct domain*)NULL);
-  live_tail = caml_bias_ephe_list(domain_state->ephe_list_live, (struct domain*)NULL);
-  caml_add_orphaned_ephe(domain_state->ephe_list_todo, todo_tail,
-                         domain_state->ephe_list_live, live_tail);
-  if (domain_state->ephe_list_todo != 0) {
+  todo_tail = caml_bias_ephe_list(domain_state->ephe_info->todo, (struct domain*)NULL);
+  live_tail = caml_bias_ephe_list(domain_state->ephe_info->live, (struct domain*)NULL);
+  caml_add_orphaned_ephe(domain_state->ephe_info->todo, todo_tail,
+                         domain_state->ephe_info->live, live_tail);
+  if (domain_state->ephe_info->todo != 0) {
     caml_ephe_todo_list_emptied();
   }
-  domain_state->ephe_list_live = 0;
-  domain_state->ephe_list_todo = 0;
+  domain_state->ephe_info->live = 0;
+  domain_state->ephe_info->todo = 0;
 }
 
 static void handover_finalisers(caml_domain_state* domain_state)

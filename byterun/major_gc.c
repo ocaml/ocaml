@@ -77,7 +77,7 @@ extern value caml_ephe_none; /* See weak.c */
 struct ephe_cycle_info_t {
   atomic_uintnat num_domains_todo;
   /* Number of domains that need to scan their ephemerons in the current major
-   * GC cycle. This field is decremented when ephe_list_todo at a domain
+   * GC cycle. This field is decremented when ephe_info->todo list at a domain
    * becomes empty.  */
   atomic_uintnat ephe_cycle;
   /* Ephemeron cycle count */
@@ -127,7 +127,7 @@ static void record_ephe_marking_done (uintnat ephe_cycle)
 
   caml_plat_lock(&ephe_lock);
   if (ephe_cycle == ephe_cycle_info.ephe_cycle.val) {
-    Caml_state->ephe_cycle = ephe_cycle;
+    Caml_state->ephe_info->cycle = ephe_cycle;
     ephe_cycle_info.num_domains_done.val++;
   }
   caml_plat_unlock(&ephe_lock);
@@ -208,18 +208,18 @@ void caml_adopt_orphaned_work ()
 
   if (orph_structs.ephe_list_live) {
     last = caml_bias_ephe_list(orph_structs.ephe_list_live, d);
-    Ephe_link(last) = domain_state->ephe_list_live;
-    domain_state->ephe_list_live = orph_structs.ephe_list_live;
+    Ephe_link(last) = domain_state->ephe_info->live;
+    domain_state->ephe_info->live = orph_structs.ephe_list_live;
     orph_structs.ephe_list_live = 0;
   }
 
   if (orph_structs.ephe_list_todo) {
-    if (domain_state->ephe_list_todo == 0) {
+    if (domain_state->ephe_info->todo == 0) {
       caml_ephe_todo_list_stolen();
     }
     last = caml_bias_ephe_list(orph_structs.ephe_list_todo, d);
-    Ephe_link(last) = domain_state->ephe_list_todo;
-    domain_state->ephe_list_todo = orph_structs.ephe_list_todo;
+    Ephe_link(last) = domain_state->ephe_info->todo;
+    domain_state->ephe_info->todo = orph_structs.ephe_list_todo;
     orph_structs.ephe_list_todo = 0;
   }
 
@@ -595,7 +595,7 @@ void caml_darken(void* state, value v, value* ignored) {
   }
 }
 
-intnat ephe_mark (intnat budget)
+intnat ephe_mark (intnat budget, uintnat for_cycle)
 {
   value v, data, key, f, todo;
   value* prev_linkp;
@@ -603,9 +603,15 @@ intnat ephe_mark (intnat budget)
   mlsize_t size, i;
   caml_domain_state* domain_state = Caml_state;
   int alive_data;
+  intnat marked = 0, made_live = 0;
 
-  todo = domain_state->ephe_list_todo;
-  prev_linkp = &domain_state->ephe_list_todo;
+  if (domain_state->ephe_info->cursor.cycle == for_cycle) {
+    prev_linkp = domain_state->ephe_info->cursor.todop;
+    todo = *prev_linkp;
+  } else {
+    todo = domain_state->ephe_info->todo;
+    prev_linkp = &domain_state->ephe_info->todo;
+  }
   while (todo != 0 && budget > 0) {
     v = todo;
     todo = Ephe_link(v);
@@ -644,14 +650,24 @@ intnat ephe_mark (intnat budget)
       if (data != caml_ephe_none && Is_block(data) && is_unmarked(data)) {
         caml_darken (0, data, 0);
       }
-      Ephe_link(v) = domain_state->ephe_list_live;
-      domain_state->ephe_list_live = v;
+      Ephe_link(v) = domain_state->ephe_info->live;
+      domain_state->ephe_info->live = v;
       *prev_linkp = todo;
+      made_live++;
     } else {
       /* Leave this ephemeron on the todo list */
       prev_linkp = &Ephe_link(v);
     }
+    marked++;
   }
+
+  caml_gc_log ("Mark Ephemeron: %s. for ephemeron cycle=%"ARCH_INTNAT_PRINTF_FORMAT"d "
+               "marked=%"ARCH_INTNAT_PRINTF_FORMAT"d made_live=%"ARCH_INTNAT_PRINTF_FORMAT"d",
+               domain_state->ephe_info->cursor.cycle == for_cycle ? "continued from cursor" : "discarded cursor",
+               for_cycle, marked, made_live);
+
+  domain_state->ephe_info->cursor.cycle = for_cycle;
+  domain_state->ephe_info->cursor.todop = prev_linkp;
 
   return budget;
 }
@@ -662,9 +678,9 @@ intnat ephe_sweep (struct domain* d, intnat budget)
   value v;
   caml_domain_state* domain_state = d->state;
 
-  while (domain_state->ephe_list_todo != 0 && budget > 0) {
-    v = domain_state->ephe_list_todo;
-    domain_state->ephe_list_todo = Ephe_link(v);
+  while (domain_state->ephe_info->todo != 0 && budget > 0) {
+    v = domain_state->ephe_info->todo;
+    domain_state->ephe_info->todo = Ephe_link(v);
     CAMLassert (Tag_val(v) == Abstract_tag);
 
     if (is_unmarked(v)) {
@@ -672,8 +688,8 @@ intnat ephe_sweep (struct domain* d, intnat budget)
       budget -= 1;
     } else {
       caml_ephe_clean(d, v);
-      Ephe_link(v) = domain_state->ephe_list_live;
-      domain_state->ephe_list_live = v;
+      Ephe_link(v) = domain_state->ephe_info->live;
+      domain_state->ephe_info->live = v;
       budget -= Whsize_val(v);
     }
   }
@@ -864,11 +880,13 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   }
 
   /* Ephemerons */
-  CAMLassert(domain->state->ephe_list_todo == (value) NULL);
-  domain->state->ephe_list_todo = domain->state->ephe_list_live;
-  domain->state->ephe_list_live = (value) NULL;
-  domain->state->ephe_cycle = 0;
-  if (domain->state->ephe_list_todo == (value) NULL)
+  CAMLassert(domain->state->ephe_info->todo == (value) NULL);
+  domain->state->ephe_info->todo = domain->state->ephe_info->live;
+  domain->state->ephe_info->live = (value) NULL;
+  domain->state->ephe_info->cycle = 0;
+  domain->state->ephe_info->cursor.todop = NULL;
+  domain->state->ephe_info->cursor.cycle = 0;
+  if (domain->state->ephe_info->todo == (value) NULL)
     caml_ephe_todo_list_emptied();
 
   /* Finalisers */
@@ -1040,12 +1058,12 @@ mark_again:
 
   /* Ephemerons */
   saved_ephe_cycle = atomic_load_acq(&ephe_cycle_info.ephe_cycle);
-  if (domain_state->ephe_list_todo != (value) NULL &&
-      saved_ephe_cycle > domain_state->ephe_cycle) {
+  if (domain_state->ephe_info->todo != (value) NULL &&
+      saved_ephe_cycle > domain_state->ephe_info->cycle) {
     caml_ev_begin("major_gc/ephe_mark");
-    budget = ephe_mark(budget);
+    budget = ephe_mark(budget, saved_ephe_cycle);
     caml_ev_end("major_gc/ephe_mark");
-    if (domain_state->ephe_list_todo == (value) NULL)
+    if (domain_state->ephe_info->todo == (value) NULL)
       caml_ephe_todo_list_emptied ();
     else if (budget > 0 && domain_state->marking_done)
       record_ephe_marking_done(saved_ephe_cycle);
@@ -1053,11 +1071,11 @@ mark_again:
   }
 
   if (caml_gc_phase == Phase_sweep_ephe &&
-      domain_state->ephe_list_todo != 0) {
+      domain_state->ephe_info->todo != 0) {
     caml_ev_begin("major_gc/ephe_sweep");
     budget = ephe_sweep (d, budget);
     caml_ev_end("major_gc/ephe_sweep");
-    if (domain_state->ephe_list_todo == 0) {
+    if (domain_state->ephe_info->todo == 0) {
       atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
     }
   }
@@ -1332,6 +1350,7 @@ void caml_init_major_gc(caml_domain_state* d) {
   d->stealing = 0;
   /* Finalisers. Fresh domains participate in updating finalisers. */
   d->final_info = caml_alloc_final_info ();
+  d->ephe_info = caml_alloc_ephe_info();
   atomic_fetch_add(&num_domains_to_final_update_first, 1);
   atomic_fetch_add(&num_domains_to_final_update_last, 1);
 }
