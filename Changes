@@ -112,6 +112,9 @@ Working version
   (Christopher Zimmermann, review by Xavier Leroy, Damien Doligez, David
    Allsopp, David Sheets)
 
+- GPR#2038: Deprecate vm threads
+  (Jérémie Dimino)
+
 ### Compiler user-interface and warnings:
 
 - PR#6416, GPR#1120: unique printed names for identifiers

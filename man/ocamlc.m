@@ -685,7 +685,7 @@ invocations of the C compiler and linker in
 mode.  Useful to debug C library problems.
 .TP
 .B \-vmthread
-Compile or link multithreaded programs, in combination with the
+Deprecated. Compile or link multithreaded programs, in combination with the
 VM-level threads library described in
 .IR The\ OCaml\ user's\ manual .
 .TP

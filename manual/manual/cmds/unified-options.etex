@@ -707,7 +707,7 @@ Useful to debug C library problems.
 
 \comp{%
 \item["-vmthread"]
-Compile or link multithreaded programs, in combination with the
+Deprecated. Compile or link multithreaded programs, in combination with the
 VM-level "threads" library described in chapter~\ref{c:threads}.
 }%comp
 

@@ -2,6 +2,11 @@
 \label{c:threads}\cutname{threads.html}
 %HEVEA\cutname{libthreads.html}
 
+\textbf{Warning:} the "threads" library is deprecated. Please switch
+to system threads, which have the same API. Lightweight threads with
+VM-level scheduling are provided by third-party libraries such as Lwt,
+but with a different API.
+
 The "threads" library allows concurrent programming in OCaml.
 It provides multiple threads of control (also called lightweight
 processes) that execute concurrently in the same memory space. Threads
