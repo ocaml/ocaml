@@ -36,6 +36,14 @@ value caml_ephe_none = (value)&caml_dummy[1];
 #define None_val (Val_int(0))
 #define Some_tag 0
 
+struct caml_ephe_info* caml_alloc_ephe_info ()
+{
+  struct caml_ephe_info* e =
+    caml_stat_alloc (sizeof(struct caml_ephe_info));
+  memset (e, 0, sizeof(struct caml_ephe_info));
+  return e;
+}
+
 /* [len] is a value that represents a number of words (fields) */
 CAMLprim value caml_ephe_create (value len)
 {
@@ -50,8 +58,8 @@ CAMLprim value caml_ephe_create (value len)
   if (size < CAML_EPHE_FIRST_KEY || size > Max_wosize) caml_invalid_argument ("Weak.create");
   res = caml_alloc_shr (size, Abstract_tag);
 
-  Ephe_link(res) = domain_state->ephe_list_live;
-  domain_state->ephe_list_live = res;
+  Ephe_link(res) = domain_state->ephe_info->live;
+  domain_state->ephe_info->live = res;
   Ephe_domain(res) = caml_domain_self();
   for (i = CAML_EPHE_DATA_OFFSET; i < size; i++)
     Op_val(res)[i] = caml_ephe_none;
