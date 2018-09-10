@@ -22,6 +22,16 @@
 
 extern value caml_ephe_none;
 
+struct caml_ephe_info {
+  value todo;
+  value live;
+  uintnat cycle;
+  struct {
+    value* todop;
+    uintnat cycle;
+  } cursor;
+};
+
 #define CAML_EPHE_LINK_OFFSET 0
 #define CAML_EPHE_DOMAIN_OFFSET 1
 #define CAML_EPHE_DATA_OFFSET 2
@@ -40,6 +50,7 @@ extern value caml_ephe_none;
 #define Ephe_domain(e) (*(struct domain**)(Op_val(e) + CAML_EPHE_DOMAIN_OFFSET))
 #define Ephe_data(e) (*(Op_val(e) + CAML_EPHE_DATA_OFFSET))
 
+struct caml_ephe_info* caml_alloc_ephe_info (void);
 void caml_ephe_clean(struct domain* d, value e);
 value caml_bias_ephe_list(value, struct domain*);
 
