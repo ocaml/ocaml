@@ -3,6 +3,8 @@
 (*                                 OCaml                                  *)
 (*                                                                        *)
 (*               Jeremy Yallop, University of Cambridge                   *)
+(*               Gabriel Scherer, Project Parsifal, INRIA Saclay          *)
+(*               Alban Reynaud, ENS Lyon                                  *)
 (*                                                                        *)
 (*   Copyright 2017 Jeremy Yallop                                         *)
 (*                                                                        *)
@@ -12,11 +14,246 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Static checking of recursive declarations
+
+Some recursive definitions are meaningful
+{[
+  let rec factorial = function 0 -> 1 | n -> n * factorial (n - 1)
+  let rec infinite_list = 0 :: infinite_list
+]}
+but some other are meaningless
+{[
+  let rec x = x
+  let rec x = x+1
+|}
+
+Intuitively, a recursive definition makes sense when the body of the
+definition can be evaluated without fully knowing what the recursive
+name is yet.
+
+In the [factorial] example, the name [factorial] refers to a function,
+evaluating the function definition [function ...] can be done
+immediately and will not force a recursive call to [factorial] -- this
+will only happen later, when [factorial] is called with an argument.
+
+In the [infinite_list] example, we can evaluate [0 :: infinite_list]
+without knowing the full content of [infinite_list], but with just its
+address. This is a case of productive/guarded recursion.
+
+On the contrary, [let rec x = x] is unguarded recursion (the meaning
+is undetermined), and [let rec x = x+1] would need the value of [x]
+while evaluating its definition [x+1].
+
+This file implements a static check to decide which definitions are
+known to be meaningful, and which may be meaningless. In the general
+case, we handle a set of mutually-recursive definitions
+{[
+let rec x1 = e1
+and x2 = e2
+...
+and xn = en
+]}
+
+
+Our check (see function [is_valid_recursive_expression] is defined
+using two criteria:
+
+Usage of recursive variables: how does each of the [e1 .. en] use the
+ recursive variables [x1 .. xn]?
+
+Static or dynamic size: for which of the [ei] can we compute the
+  in-memory size of the value without evaluating [ei] (so that we can
+  pre-allocate it, and thus know its final address before evaluation).
+
+The "static or dynamic size" is decided by the classify_* functions below.
+
+The "variable usage" question is decided by a static analysis looking
+very much like a type system. The idea is to assign "access modes" to
+variables, where an "access mode" [m] is defined as either
+
+    m ::= Ignore (* the value is not used at all *)
+        | Delay (* the value is not needed at definition time *)
+        | Guard (* the value is stored under a data constructor *)
+        | Return (* the value result is directly returned *)
+        | Dereference (* full access and inspection of the value *)
+
+The access modes of an expression [e] are represented by a "context"
+[G], which is simply a mapping from variables (the variables used in
+[e]) to access modes.
+
+The core notion of the static check is a type-system-like judgment of
+the form [G |- e : m], which can be interpreted as meaning either of:
+
+- If we are allowed to use the variables of [e] at the modes in [G]
+  (but not more), then it is safe to use [e] at the mode [m].
+
+- If we want to use [e] at the mode [m], then its variables are
+  used at the modes in [G].
+
+In practice, for a given expression [e], our implementation takes the
+desired mode of use [m] as *input*, and returns a context [G] as
+*output*, which is (uniquely determined as) the most permissive choice
+of modes [G] for the variables of [e] such that [G |- e : m] holds.
+*)
+
 open Asttypes
 open Typedtree
 open Types
 
 exception Illegal_expr
+
+(** {1 Static or dynamic size} *)
+
+type sd = Static | Dynamic
+
+let is_ref : Types.value_description -> bool = function
+  | { Types.val_kind =
+        Types.Val_prim { Primitive.prim_name = "%makemutable";
+                          prim_arity = 1 } } ->
+        true
+  | _ -> false
+
+(* See the note on abstracted arguments in the documentation for
+    Typedtree.Texp_apply *)
+let is_abstracted_arg : arg_label * expression option -> bool = function
+  | (_, None) -> true
+  | (_, Some _) -> false
+
+let classify_expression : Typedtree.expression -> sd =
+  (* We need to keep track of the size of expressions
+      bound by local declarations, to be able to predict
+      the size of variables. Compare:
+
+        let rec r =
+          let y = fun () -> r ()
+          in y
+
+      and
+
+        let rec r =
+          let y = if Random.bool () then ignore else fun () -> r ()
+          in y
+
+    In both cases the final address of `r` must be known before `y` is compiled,
+    and this is only possible if `r` has a statically-known size.
+
+    The first definition can be allowed (`y` has a statically-known
+    size) but the second one is unsound (`y` has no statically-known size).
+  *)
+  let rec classify_expression env e = match e.exp_desc with
+    (* binding and variable cases *)
+    | Texp_let (rec_flag, vb, e) ->
+        let env = classify_value_bindings rec_flag env vb in
+        classify_expression env e
+    | Texp_ident (path, _, _) ->
+        classify_path env path
+
+    (* non-binding cases *)
+    | Texp_letmodule (_, _, _, e)
+    | Texp_sequence (_, e)
+    | Texp_letexception (_, e) ->
+        classify_expression env e
+
+    | Texp_construct (_, {cstr_tag = Cstr_unboxed}, [e]) ->
+        classify_expression env e
+    | Texp_construct _ ->
+        Static
+
+    | Texp_record { representation = Record_unboxed _;
+                    fields = [| _, Overridden (_,e) |] } ->
+        classify_expression env e
+    | Texp_record _ ->
+        Static
+
+    | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, _)
+      when is_ref vd ->
+        Static
+    | Texp_apply (_,args)
+      when List.exists is_abstracted_arg args ->
+        Static
+    | Texp_apply _ ->
+        Dynamic
+
+    | Texp_for _
+    | Texp_constant _
+    | Texp_new _
+    | Texp_instvar _
+    | Texp_tuple _
+    | Texp_array _
+    | Texp_variant _
+    | Texp_setfield _
+    | Texp_while _
+    | Texp_setinstvar _
+    | Texp_pack _
+    | Texp_object _
+    | Texp_function _
+    | Texp_lazy _
+    | Texp_unreachable
+    | Texp_extension_constructor _ ->
+        Static
+
+    | Texp_match _
+    | Texp_ifthenelse _
+    | Texp_send _
+    | Texp_field _
+    | Texp_assert _
+    | Texp_try _
+    | Texp_override _ ->
+        Dynamic
+  and classify_value_bindings rec_flag env bindings =
+    (* We use a non-recursive classification, classifying each
+        binding with respect to the old environment
+        (before all definitions), even if the bindings are recursive.
+
+        Note: computing a fixpoint in some way would be more
+        precise, as the following could be allowed:
+
+          let rec topdef =
+            let rec x = y and y = fun () -> topdef ()
+            in x
+    *)
+    ignore rec_flag;
+    let old_env = env in
+    let add_value_binding env vb =
+      match vb.vb_pat.pat_desc with
+      | Tpat_var (id, _loc) ->
+          let size = classify_expression old_env vb.vb_expr in
+          Ident.add id size env
+      | _ ->
+          (* Note: we don't try to compute any size for complex patterns *)
+          env
+    in
+    List.fold_left add_value_binding env bindings
+  and classify_path env = function
+    | Path.Pident x ->
+        begin
+          try Ident.find_same x env
+          with Not_found ->
+            (* an identifier will be missing from the map if either:
+                - it is a non-local identifier
+                  (bound outside the letrec-binding we are analyzing)
+                - or it is bound by a complex (let p = e in ...) local binding
+                - or it is bound within a module (let module M = ... in ...)
+                  that we are not traversing for size computation
+
+                For non-local identifiers it might be reasonable (although
+                not completely clear) to consider them Static (they have
+                already been evaluated), but for the others we must
+                under-approximate with Dynamic.
+
+                This could be fixed by a more complete implementation.
+            *)
+            Dynamic
+        end
+    | Path.Pdot _ | Path.Papply _ ->
+        (* local modules could have such paths to local definitions;
+            classify_expression could be extend to compute module
+            shapes more precisely *)
+        Dynamic
+  in classify_expression Ident.empty
+
+
+(** {1 Usage of recursive variables} *)
 
 module Mode = struct
   (** For an expression in a program, its "usage mode" represents
@@ -172,154 +409,6 @@ end = struct
     List.fold_left (fun env id -> M.remove id env) env l
 end
 
-let is_ref : Types.value_description -> bool = function
-  | { Types.val_kind =
-        Types.Val_prim { Primitive.prim_name = "%makemutable";
-                          prim_arity = 1 } } ->
-        true
-  | _ -> false
-
-(* See the note on abstracted arguments in the documentation for
-    Typedtree.Texp_apply *)
-let is_abstracted_arg : arg_label * expression option -> bool = function
-  | (_, None) -> true
-  | (_, Some _) -> false
-
-type sd = Static | Dynamic
-
-let classify_expression : Typedtree.expression -> sd =
-  (* We need to keep track of the size of expressions
-      bound by local declarations, to be able to predict
-      the size of variables. Compare:
-
-        let rec r =
-          let y = fun () -> r ()
-          in y
-
-      and
-
-        let rec r =
-          let y = if Random.bool () then ignore else fun () -> r ()
-          in y
-
-    In both cases the final adress of `r` must be known before `y` is compiled,
-    and this is only possible if `r` has a statically-known size.
-
-    The first definition can be allowed (`y` has a statically-known
-    size) but the second one is unsound (`y` has no statically-known size).
-  *)
-  let rec classify_expression env e = match e.exp_desc with
-    (* binding and variable cases *)
-    | Texp_let (rec_flag, vb, e) ->
-        let env = classify_value_bindings rec_flag env vb in
-        classify_expression env e
-    | Texp_ident (path, _, _) ->
-        classify_path env path
-
-    (* non-binding cases *)
-    | Texp_letmodule (_, _, _, e)
-    | Texp_sequence (_, e)
-    | Texp_letexception (_, e) ->
-        classify_expression env e
-
-    | Texp_construct (_, {cstr_tag = Cstr_unboxed}, [e]) ->
-        classify_expression env e
-    | Texp_construct _ ->
-        Static
-
-    | Texp_record { representation = Record_unboxed _;
-                    fields = [| _, Overridden (_,e) |] } ->
-        classify_expression env e
-    | Texp_record _ ->
-        Static
-
-    | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, _)
-      when is_ref vd ->
-        Static
-    | Texp_apply (_,args)
-      when List.exists is_abstracted_arg args ->
-        Static
-    | Texp_apply _ ->
-        Dynamic
-
-    | Texp_for _
-    | Texp_constant _
-    | Texp_new _
-    | Texp_instvar _
-    | Texp_tuple _
-    | Texp_array _
-    | Texp_variant _
-    | Texp_setfield _
-    | Texp_while _
-    | Texp_setinstvar _
-    | Texp_pack _
-    | Texp_object _
-    | Texp_function _
-    | Texp_lazy _
-    | Texp_unreachable
-    | Texp_extension_constructor _ ->
-        Static
-
-    | Texp_match _
-    | Texp_ifthenelse _
-    | Texp_send _
-    | Texp_field _
-    | Texp_assert _
-    | Texp_try _
-    | Texp_override _ ->
-        Dynamic
-  and classify_value_bindings rec_flag env bindings =
-    (* We use a non-recursive classification, classifying each
-        binding with respect to the old environment
-        (before all definitions), even if the bindings are recursive.
-
-        Note: computing a fixpoint in some way would be more
-        precise, as the following could be allowed:
-
-          let rec topdef =
-            let rec x = y and y = fun () -> topdef ()
-            in x
-    *)
-    ignore rec_flag;
-    let old_env = env in
-    let add_value_binding env vb =
-      match vb.vb_pat.pat_desc with
-      | Tpat_var (id, _loc) ->
-          let size = classify_expression old_env vb.vb_expr in
-          Ident.add id size env
-      | _ ->
-          (* Note: we don't try to compute any size for complex patterns *)
-          env
-    in
-    List.fold_left add_value_binding env bindings
-  and classify_path env = function
-    | Path.Pident x ->
-        begin
-          try Ident.find_same x env
-          with Not_found ->
-            (* an identifier will be missing from the map if either:
-                - it is a non-local identifier
-                  (bound outside the letrec-binding we are analyzing)
-                - or it is bound by a complex (let p = e in ...) local binding
-                - or it is bound within a module (let module M = ... in ...)
-                  that we are not traversing for size computation
-
-                For non-local identifiers it might be reasonable (although
-                not completely clear) to consider them Static (they have
-                already been evaluated), but for the others we must
-                under-approximate with Dynamic.
-
-                This could be fixed by a more complete implementation.
-            *)
-            Dynamic
-        end
-    | Path.Pdot _ | Path.Papply _ ->
-        (* local modules could have such paths to local definitions;
-            classify_expression could be extend to compute module
-            shapes more precisely *)
-        Dynamic
-  in classify_expression Ident.empty
-
 let remove_pat pat env =
   Env.remove_list (pat_bound_idents pat) env
 
@@ -330,37 +419,38 @@ let remove_patlist pats env =
 
    There are two main groups of judgment functions:
 
-   - Judgments of the form "Gamma |- ... : m"
-     compute the environment of a subterm from its mode,
-     so the corresponding function has type [... -> Mode.t -> Env.t].
+   - Judgments of the form "G |- ... : m"
+     compute the environment G of a subterm ... from its mode m, so
+     the corresponding function has type [... -> Mode.t -> Env.t].
 
      We write [... -> term_judg] in this case.
 
-   - Judgments of the form "Gamma |- ... : m -| Gamma'"
-     correspond to binding constructs that have both an
-     exterior environment Gamma (the environment of the whole term)
-     and an interior environment Gamma' (the environment after the binding
-     construct has introduced new names in scope).
+   - Judgments of the form "G |- ... : m -| G'"
 
-     For example, a toplevel let-binding could be given
-     the following rule:
+     correspond to binding constructs (for example "let x = e" in the
+     term "let x = e in body") that have both an exterior environment
+     G (the environment of the whole term "let x = e in body") and an
+     interior environment G' (the environment at the "in", after the
+     binding construct has introduced new names in scope).
+
+     For example, let-binding could be given the following rule:
 
        G |- e : m + m'
        -----------------------------------
        G+G' |- (let x = e) : m -| x:m', G'
 
-     And `let .. in` rule composes this judgment
-     with the "Gamma |- e : m" form for the let body:
+     Checking the whole term composes this judgment
+     with the "G |- e : m" form for the let body:
 
-       G  |- <bindings> : m -| G'
+       G  |- (let x = e) : m -| G'
        G' |- body : m
        -------------------------------
-       G |- let <bindings> in body : m
+       G |- let x = e in body : m
 
-     To this judgment "Gamma |- e : m -| Gamma'" our implementation
-     gives the type [... -> Mode.t -> Env.t -> Env.t]: it takes
-     the mode and interior environment as inputs, and returns
-     the exterior environment.
+     To this judgment "G |- e : m -| G'" our implementation gives the
+     type [... -> Mode.t -> Env.t -> Env.t]: it takes the mode and
+     interior environment as inputs, and returns the exterior
+     environment.
 
      We write [... -> bind_judg] in this case.
 *)
