@@ -79,53 +79,53 @@ Line 6, characters 6-7:
         ^
 Alert foo: x
 Foo!
-           Line 4, characters 2-33:
-               val x: int [@@alert foo "Foo!"]
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-           Definition
-           Line 2, characters 2-12:
-               val x: int
-               ^^^^^^^^^^
-           Expected signature
+Line 4, characters 2-33:
+    val x: int [@@alert foo "Foo!"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Definition
+Line 2, characters 2-12:
+    val x: int
+    ^^^^^^^^^^
+Expected signature
 Line 6, characters 6-7:
   end = X;;
         ^
 Error (alert baz): z
 Baz!
-                   Line 6, characters 2-33:
-                       val z: int [@@alert baz "Baz!"]
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                   Definition
-                   Line 4, characters 2-12:
-                       val z: int
-                       ^^^^^^^^^^
-                   Expected signature
+Line 6, characters 2-33:
+    val z: int [@@alert baz "Baz!"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Definition
+Line 4, characters 2-12:
+    val z: int
+    ^^^^^^^^^^
+Expected signature
 Line 6, characters 6-7:
   end = X;;
         ^
 Error (alert baz): t
 BAZ
-                   Line 7, characters 2-72:
-                       val t: int [@@alert foo "FOO"] [@@alert bar "BAR"] [@@alert baz "BAZ"]
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                   Definition
-                   Line 5, characters 2-12:
-                       val t: int
-                       ^^^^^^^^^^
-                   Expected signature
+Line 7, characters 2-72:
+    val t: int [@@alert foo "FOO"] [@@alert bar "BAR"] [@@alert baz "BAZ"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Definition
+Line 5, characters 2-12:
+    val t: int
+    ^^^^^^^^^^
+Expected signature
 Line 6, characters 6-7:
   end = X;;
         ^
 Alert foo: t
 FOO
-           Line 7, characters 2-72:
-               val t: int [@@alert foo "FOO"] [@@alert bar "BAR"] [@@alert baz "BAZ"]
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-           Definition
-           Line 5, characters 2-12:
-               val t: int
-               ^^^^^^^^^^
-           Expected signature
+Line 7, characters 2-72:
+    val t: int [@@alert foo "FOO"] [@@alert bar "BAR"] [@@alert baz "BAZ"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Definition
+Line 5, characters 2-12:
+    val t: int
+    ^^^^^^^^^^
+Expected signature
 |}]
 
 (* Turn all alerts into soft mode *)
@@ -143,53 +143,53 @@ Line 8, characters 6-7:
         ^
 Alert foo: x
 Foo!
-           Line 4, characters 2-33:
-               val x: int [@@alert foo "Foo!"]
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-           Definition
-           Line 4, characters 2-12:
-               val x: int
-               ^^^^^^^^^^
-           Expected signature
+Line 4, characters 2-33:
+    val x: int [@@alert foo "Foo!"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Definition
+Line 4, characters 2-12:
+    val x: int
+    ^^^^^^^^^^
+Expected signature
 Line 8, characters 6-7:
   end = X;;
         ^
 Alert baz: z
 Baz!
-           Line 6, characters 2-33:
-               val z: int [@@alert baz "Baz!"]
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-           Definition
-           Line 6, characters 2-12:
-               val z: int
-               ^^^^^^^^^^
-           Expected signature
+Line 6, characters 2-33:
+    val z: int [@@alert baz "Baz!"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Definition
+Line 6, characters 2-12:
+    val z: int
+    ^^^^^^^^^^
+Expected signature
 Line 8, characters 6-7:
   end = X;;
         ^
 Alert baz: t
 BAZ
-           Line 7, characters 2-72:
-               val t: int [@@alert foo "FOO"] [@@alert bar "BAR"] [@@alert baz "BAZ"]
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-           Definition
-           Line 7, characters 2-12:
-               val t: int
-               ^^^^^^^^^^
-           Expected signature
+Line 7, characters 2-72:
+    val t: int [@@alert foo "FOO"] [@@alert bar "BAR"] [@@alert baz "BAZ"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Definition
+Line 7, characters 2-12:
+    val t: int
+    ^^^^^^^^^^
+Expected signature
 Line 8, characters 6-7:
   end = X;;
         ^
 Alert foo: t
 FOO
-           Line 7, characters 2-72:
-               val t: int [@@alert foo "FOO"] [@@alert bar "BAR"] [@@alert baz "BAZ"]
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-           Definition
-           Line 7, characters 2-12:
-               val t: int
-               ^^^^^^^^^^
-           Expected signature
+Line 7, characters 2-72:
+    val t: int [@@alert foo "FOO"] [@@alert bar "BAR"] [@@alert baz "BAZ"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Definition
+Line 7, characters 2-12:
+    val t: int
+    ^^^^^^^^^^
+Expected signature
 module Z3 : sig val x : int val y : int val z : int val t : int end
 |}]
 
