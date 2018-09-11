@@ -143,10 +143,10 @@ module Options = Main_args.Make_bytecomp_options (struct
 end)
 
 let vmthread_deprecated_message = "\
-The -vmthread argument of ocamlc is deprecated.\n\
-Please switch to system threads, which have the same API. Lightweight\n\
-threads with VM-level scheduling are provided by third-party libraries\n\
-such as Lwt, but with a different API."
+The -vmthread argument of ocamlc is deprecated\n\
+since OCaml 4.08.0.  Please switch to system threads, which have the\n\
+same API. Lightweight threads with VM-level scheduling are provided by\n\
+third-party libraries such as Lwt, but with a different API."
 
 let main () =
   Clflags.add_arguments __LOC__ Options.list;
