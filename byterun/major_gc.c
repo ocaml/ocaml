@@ -319,39 +319,24 @@ static uintnat default_slice_budget() {
      Amount of marking work for the GC cycle:
                  MW = heap_words * 100 / (100 + caml_percent_free)
      Amount of sweeping work for the GC cycle:
-                 SW = heap_words
+                 SW = heap_blocks
+     Amount of total work for the GC cycle:
+                 TW = MW + SW = heap_words * 100 / (100 + caml_percent_free) + heap_blocks
 
-     In order to finish marking with a non-empty free list, we will
-     use 40% of the time for marking, and 60% for sweeping.
+     Amount of time to spend on this slice:
+                 T = P * TT
 
-     If TW is the total work for this cycle,
-                 MW = 40/100 * TW
-                 SW = 60/100 * TW
-
-     Amount of work to do for this slice:
-                 W  = P * TW
-
-     Amount of marking work for a marking slice:
-                 MS = P * MW / (40/100)
-                 MS = P * heap_words * 250 / (100 + caml_percent_free)
-     Amount of sweeping work for a sweeping slice:
-                 SS = P * SW / (60/100)
-                 SS = P * heap_words * 5 / 3
-
-     This slice will either mark MS words or sweep SS words.
+     Since we must do TW amount of work in TT time, the amount of work done
+     for this slice is:
+                 S = P * TW
   */
   uintnat heap_size = caml_heap_size(Caml_state->shared_heap);
   heap_words = (double)Wsize_bsize(heap_size);
+  uintnat heap_blocks = caml_heap_blocks(Caml_state->shared_heap);
   p = (double) Caml_state->allocated_words * 3.0 * (100 + caml_percent_free)
       / heap_words / caml_percent_free / 2.0;
 
-  if (!Caml_state->sweeping_done) {
-    /* Multicore sweeps first and then marks */
-    computed_work = (intnat) (p * heap_words * 5 / 3);
-  } else {
-    computed_work = (intnat) (p * heap_words * 250
-                              / (100 + caml_percent_free));
-  }
+  computed_work = (intnat) (p * (heap_blocks + (heap_words * 100 / (100 + caml_percent_free))));
 
   caml_gc_message (0x40, "heap_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
