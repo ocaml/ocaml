@@ -11,6 +11,9 @@
 # of commits erroneously made under an obscure alias or email adress.
 # (Some Name <some@name.com>, pour ne pas le citer)
 
+
+### Normalizing information for frequent git commit authors
+
 Alain Frisch <alain@frisch.fr> alainfrisch <alain@frisch.fr>
 <damien.doligez@inria.fr> <damien.doligez-inria.fr>
 <damien.doligez@inria.fr> <damien.doligez@gmail.com>
@@ -28,6 +31,25 @@ Mohamed Iguernelala <mohamed.iguernelala@gmail.com>
 Jérémie Dimino <jdimino@janestreet.com>
 Jeremy Yallop <yallop@gmail.com> yallop <yallop@gmail.com>
 Nicolás Ojeda Bär <n.oje.bar@gmail.com>
+
+
+### Approved Approvers
+
+# The current policy to handle pull requests for the compiler
+# distribution is to merge a PR only it has been "approved" by someone
+# who is not an author of the PR and has the "approver" status, by
+# either
+# (1) having been given commit rights, or
+# (2) being part of the list of "approvers" below.
+#
+# Format:
+#
+#   Preferred Name <nickname>
+
+Gabriel Radanne <Drup>
+
+
+### Remembering naming preferences for contributors
 
 # The aliases below correspond to preference expressed by
 # contributors on the name under which they credited, for example
