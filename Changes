@@ -122,6 +122,10 @@ Working version
   (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,
    request by Adrien Nader)
 
+- GPR#1691: add shared_libraries to ocamlc -config exporting
+  SUPPORTS_SHARED_LIBRARIES from Makefile.config.
+  (David Allsopp, review by Gabriel Scherer and Mark Shinwell)
+
 - GPR#1733: change the perspective of the unexpected existential error message.
   (Florian Angeletti, review by Gabriel Scherer and Jeremy Yallop)
 
