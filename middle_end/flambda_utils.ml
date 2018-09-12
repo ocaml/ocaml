@@ -812,13 +812,12 @@ module Switch_storer = Switch.Store (struct
 end)
 
 let fun_vars_referenced_in_decls
-      (function_decls : Flambda.function_declarations) ~backend =
+      (function_decls : Flambda.function_declarations) ~closure_symbol =
   let fun_vars = Variable.Map.keys function_decls.funs in
   let symbols_to_fun_vars =
-    let module Backend = (val backend : Backend_intf.S) in
     Variable.Set.fold (fun fun_var symbols_to_fun_vars ->
         let closure_id = Closure_id.wrap fun_var in
-        let symbol = Backend.closure_symbol closure_id in
+        let symbol = closure_symbol closure_id in
         Symbol.Map.add symbol fun_var symbols_to_fun_vars)
       fun_vars
       Symbol.Map.empty
@@ -840,10 +839,10 @@ let fun_vars_referenced_in_decls
       Variable.Set.union from_symbols from_variables)
     function_decls.funs
 
-let closures_required_by_entry_point ~(entry_point : Closure_id.t) ~backend
-    (function_decls : Flambda.function_declarations) =
+let closures_required_by_entry_point ~(entry_point : Closure_id.t)
+      ~closure_symbol (function_decls : Flambda.function_declarations) =
   let dependencies =
-    fun_vars_referenced_in_decls function_decls ~backend
+    fun_vars_referenced_in_decls function_decls ~closure_symbol
   in
   let set = ref Variable.Set.empty in
   let queue = Queue.create () in
