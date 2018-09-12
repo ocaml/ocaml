@@ -74,4 +74,4 @@ ocamldoc.out: $(DOC_ALL_MLIS)
 .PHONY: clean
 clean:
 	rm -f *.tex ocamldoc.out ocamldoc.sty
-	rm -f compiler-libs.txt
+	rm -f compiler_libs.txt

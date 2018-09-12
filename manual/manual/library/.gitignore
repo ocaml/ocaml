@@ -3,5 +3,5 @@
 arithstatus.mli
 ocamldoc.out
 ocamldoc.sty
-compiler-libs.txt
+compiler_libs.txt
 

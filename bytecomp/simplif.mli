@@ -16,7 +16,7 @@
 (** Lambda simplification and lambda plugin hooks
 
   {b Warning:} this module is unstable and part of
-  {{!Compiler-libs}compiler-libs}.
+  {{!Compiler_libs}compiler-libs}.
 
 *)
 

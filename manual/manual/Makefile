@@ -60,19 +60,19 @@ htmlman/libref/style.css: style.css $(STDLIB_MLIS)
 COMPILERLIBS_MODULES=$(shell echo $(basename $(notdir $(COMPILERLIBS_MLIS))) \
 | sed "s/\<./\U&/g")
 
-library/compiler-libs.txt: library/compiler-libs.mld
+library/compiler_libs.txt: library/compiler_libs.mld
 	cp $< $@ && echo "{!modules:$(COMPILERLIBS_MODULES)}" >> $@
 
 
-htmlman/compilerlibref/style.css: library/compiler-libs.txt style.css \
+htmlman/compilerlibref/style.css: library/compiler_libs.txt style.css \
   $(COMPILERLIBS_MLIS)
 	mkdir -p htmlman/compilerlibref
 	$(OCAMLDOC) -colorize-code -sort -html \
 	  -d htmlman/compilerlibref \
 	  -I $(SRC)/stdlib \
 	  $(DOC_COMPILERLIBS_INCLUDES) \
-          -intro library/compiler-libs.txt \
-          library/compiler-libs.txt \
+          -intro library/compiler_libs.txt \
+          library/compiler_libs.txt \
 	  $(COMPILERLIBS_MLIS)
 	cp style.css $@
 

@@ -16,7 +16,7 @@
 (** Helpers to produce Parsetree fragments
 
   {b Warning} This module is unstable and part of
-  {{!Compiler-libs}compiler-libs}.
+  {{!Compiler_libs}compiler-libs}.
 
 *)
 
