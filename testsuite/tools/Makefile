@@ -13,7 +13,7 @@
 #**************************************************************************
 
 BASEDIR=..
-include $(BASEDIR)/../config/Makefile
+include $(BASEDIR)/../Makefile.config
 expect_MAIN=expect_test
 expect_PROG=$(expect_MAIN)$(EXE)
 expect_COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \

@@ -17,7 +17,7 @@
 
 ROOTDIR = .
 
-include config/Makefile
+include Makefile.config
 include Makefile.common
 
 # For users who don't read the INSTALL file
@@ -306,7 +306,7 @@ SUBST=-e 's|%%$1%%|$(call SUBST_ESCAPE,$1,$2)|'
 SUBST_QUOTE2=-e 's|%%$1%%|$(if $2,"$2")|'
 SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$(call SUBST_ESCAPE,$1,$2))
 FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
-utils/config.ml: utils/config.mlp config/Makefile Makefile
+utils/config.ml: utils/config.mlp Makefile.config Makefile
 	sed $(call SUBST,AFL_INSTRUMENT) \
 	    $(call SUBST,ARCH) \
 	    $(call SUBST,ARCMD) \
@@ -523,7 +523,7 @@ flexdll/Makefile:
 .PHONY: flexdll
 flexdll: flexdll/Makefile flexlink
 	$(MAKE) -C flexdll \
-	     OCAML_CONFIG_FILE=../config/Makefile \
+	     OCAML_CONFIG_FILE=../Makefile.config \
              MSVC_DETECT=0 CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false support
 
 # Bootstrapping flexlink - leaves a bytecode image of flexlink.exe in flexdll/
@@ -533,7 +533,7 @@ flexlink: flexdll/Makefile
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	$(MAKE) -C stdlib COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
 	cd stdlib && cp stdlib.cma std_exit.cmo *.cmi ../boot
-	$(MAKE) -C flexdll MSVC_DETECT=0 OCAML_CONFIG_FILE=../config/Makefile \
+	$(MAKE) -C flexdll MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
 	  CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
 	  OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" \
 	  flexlink.exe
@@ -545,7 +545,7 @@ flexlink.opt:
 	cd flexdll && \
 	mv flexlink.exe flexlink && \
 	($(MAKE) OCAML_FLEXLINK="../boot/ocamlrun ./flexlink" MSVC_DETECT=0 \
-	           OCAML_CONFIG_FILE=../config/Makefile \
+	           OCAML_CONFIG_FILE=../Makefile.config \
 	           OCAMLOPT="../ocamlopt.opt -I ../stdlib" flexlink.exe || \
 	 (mv flexlink flexlink.exe && false)) && \
 	mv flexlink.exe flexlink.opt && \
@@ -642,7 +642,7 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 	  $(MAKE) install-flexdll; \
 	fi
 endif
-	$(INSTALL_DATA) config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
+	$(INSTALL_DATA) Makefile.config "$(INSTALL_LIBDIR)/Makefile.config"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	if test -f ocamlopt; then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
@@ -1374,7 +1374,7 @@ depend: beforedepend
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
 	boot/*.cm* boot/libcamlrun.$(A)
-	rm -f config/Makefile runtime/caml/m.h runtime/caml/s.h
+	rm -f Makefile.config runtime/caml/m.h runtime/caml/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log*

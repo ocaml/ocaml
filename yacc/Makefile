@@ -15,7 +15,7 @@
 
 # Makefile for the parser generator.
 
-include ../config/Makefile
+include ../Makefile.config
 
 OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
   mkpar.$(O) output.$(O) reader.$(O) \

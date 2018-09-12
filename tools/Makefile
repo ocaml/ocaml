@@ -16,7 +16,7 @@
 MAKEFLAGS := -r -R
 ROOTDIR = ..
 
-include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
 ifeq ($(SYSTEM),unix)
@@ -149,13 +149,13 @@ $(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
 	         build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
 
 
-ocamlmklibconfig.ml: $(ROOTDIR)/config/Makefile Makefile
+ocamlmklibconfig.ml: $(ROOTDIR)/Makefile.config Makefile
 	(echo 'let bindir = "$(BINDIR)"'; \
          echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
          echo 'let default_rpath = "$(RPATH)"'; \
          echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \
          echo 'let toolpref = "$(TOOLPREF)"'; \
-         sed -n -e 's/^#ml //p' $(ROOTDIR)/config/Makefile) \
+         sed -n -e 's/^#ml //p' $(ROOTDIR)/Makefile.config) \
         > ocamlmklibconfig.ml
 
 beforedepend:: ocamlmklibconfig.ml

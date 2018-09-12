@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
+include ../Makefile.config
 include ../Makefile.common
 
 # Lists of source files
@@ -224,7 +224,7 @@ distclean: clean
 
 # Generated non-object files
 
-ld.conf: ../config/Makefile
+ld.conf: ../Makefile.config
 	echo "$(STUBLIBDIR)" > $@
 	echo "$(LIBDIR)" >> $@
 

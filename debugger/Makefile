@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
+include ../Makefile.config
 include ../Makefile.common
 
 UNIXDIR=../otherlibs/$(UNIXLIB)

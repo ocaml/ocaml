@@ -12,7 +12,7 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
+include ../Makefile.config
 include ../Makefile.common
 
 # Files to install

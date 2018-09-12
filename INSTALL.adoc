@@ -25,7 +25,7 @@
 
         ./configure
 +
-This generates the three configuration files `config/Makefile`,
+This generates the three configuration files `Makefile.config`,
 `runtime/caml/m.h` and `runtime/caml/s.h`.
 +
 The `configure` script accepts the following options:
