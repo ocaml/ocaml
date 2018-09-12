@@ -18,7 +18,7 @@
     and will fall back on it for handling the syntax it does not modify.
 
   {b Warning:} this module is unstable and part of
-  {{!Compiler-libs}compiler-libs}.
+  {{!Compiler_libs}compiler-libs}.
 
 *)
 

@@ -16,7 +16,7 @@
 (** Consistency tables: for checking consistency of module CRCs
 
   {b Warning:} this module is unstable and part of
-  {{!Compiler-libs}compiler-libs}.
+  {{!Compiler_libs}compiler-libs}.
 
 *)
 

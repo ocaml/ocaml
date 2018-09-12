@@ -400,7 +400,7 @@ stdlib_man/Stdlib.3o: $(OCAMLDOC) $(DOC_ALL_MLIS)
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" -man-mini \
-	-text $(SRC)/manual/manual/library/compiler-libs.mld \
+	-text $(SRC)/manual/manual/library/compiler_libs.mld \
 	$(DOC_ALL_MLIS)
 
 stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL_MLIS)
@@ -409,7 +409,7 @@ stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL_MLIS)
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" \
-	-text $(SRC)/manual/manual/library/compiler-libs.mld \
+	-text $(SRC)/manual/manual/library/compiler_libs.mld \
 	$(DOC_ALL_MLIS)
 
 .PHONY: autotest_stdlib
