@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* The lexical analyzer *)
+(** The lexical analyzer
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
+
+*)
 
 val init : unit -> unit
 val token: Lexing.lexbuf -> Parser.token

@@ -23,6 +23,10 @@
    pointer type in the C compiler.  All arithmetic operations over
    are taken modulo 2{^32} or 2{^64} depending
    on the word size of the target architecture.
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
+
 *)
 
 type t

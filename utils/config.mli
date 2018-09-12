@@ -13,184 +13,237 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* System configuration *)
+(** System configuration
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
+
+*)
 
 val version: string
-        (* The current version number of the system *)
+(** The current version number of the system *)
 
 val standard_library: string
-        (* The directory containing the standard libraries *)
+(** The directory containing the standard libraries *)
+
 val standard_runtime: string
-        (* The full path to the standard bytecode interpreter ocamlrun *)
+(** The full path to the standard bytecode interpreter ocamlrun *)
+
 val ccomp_type: string
-        (* The "kind" of the C compiler, assembler and linker used: one of
-               "cc" (for Unix-style C compilers)
-               "msvc" (for Microsoft Visual C++ and MASM) *)
+(** The "kind" of the C compiler, assembler and linker used: one of
+    "cc" (for Unix-style C compilers)
+    "msvc" (for Microsoft Visual C++ and MASM) *)
+
 val c_compiler: string
-        (* The compiler to use for compiling C files *)
+(** The compiler to use for compiling C files *)
+
 val c_output_obj: string
-        (* Name of the option of the C compiler for specifying the output
-           file *)
+(** Name of the option of the C compiler for specifying the output
+    file *)
+
 val c_has_debug_prefix_map : bool
-        (* Whether the C compiler supports -fdebug-prefix-map *)
+(** Whether the C compiler supports -fdebug-prefix-map *)
+
 val as_has_debug_prefix_map : bool
-        (* Whether the assembler supports --debug-prefix-map *)
+(** Whether the assembler supports --debug-prefix-map *)
+
 val ocamlc_cflags : string
-        (* The flags ocamlc should pass to the C compiler *)
+(** The flags ocamlc should pass to the C compiler *)
+
 val ocamlc_cppflags : string
-        (* The flags ocamlc should pass to the C preprocessor *)
+(** The flags ocamlc should pass to the C preprocessor *)
+
 val ocamlopt_cflags : string
-        (* The flags ocamlopt should pass to the C compiler *)
+(** The flags ocamlopt should pass to the C compiler *)
+
 val ocamlopt_cppflags : string
-        (* The flags ocamlopt should pass to the C preprocessor *)
+(** The flags ocamlopt should pass to the C preprocessor *)
+
 val bytecomp_c_libraries: string
-        (* The C libraries to link with custom runtimes *)
+(** The C libraries to link with custom runtimes *)
+
 val native_c_libraries: string
-        (* The C libraries to link with native-code programs *)
+(** The C libraries to link with native-code programs *)
+
 val native_pack_linker: string
-        (* The linker to use for packaging (ocamlopt -pack) and for partial
-           links (ocamlopt -output-obj). *)
+(** The linker to use for packaging (ocamlopt -pack) and for partial
+    links (ocamlopt -output-obj). *)
+
 val mkdll: string
-        (* The linker command line to build dynamic libraries. *)
+(** The linker command line to build dynamic libraries. *)
+
 val mkexe: string
-        (* The linker command line to build executables. *)
+(** The linker command line to build executables. *)
+
 val mkmaindll: string
-        (* The linker command line to build main programs as dlls. *)
+(** The linker command line to build main programs as dlls. *)
+
 val ranlib: string
-        (* Command to randomize a library, or "" if not needed *)
+(** Command to randomize a library, or "" if not needed *)
+
 val ar: string
-        (* Name of the ar command, or "" if not needed  (MSVC) *)
+(** Name of the ar command, or "" if not needed  (MSVC) *)
+
 val cc_profile : string
-        (* The command line option to the C compiler to enable profiling. *)
+(** The command line option to the C compiler to enable profiling. *)
 
 val load_path: string list ref
-        (* Directories in the search path for .cmi and .cmo files *)
+(** Directories in the search path for .cmi and .cmo files *)
 
 val interface_suffix: string ref
-        (* Suffix for interface file names *)
+(** Suffix for interface file names *)
 
 val exec_magic_number: string
-        (* Magic number for bytecode executable files *)
+(** Magic number for bytecode executable files *)
+
 val cmi_magic_number: string
-        (* Magic number for compiled interface files *)
+(** Magic number for compiled interface files *)
+
 val cmo_magic_number: string
-        (* Magic number for object bytecode files *)
+(** Magic number for object bytecode files *)
+
 val cma_magic_number: string
-        (* Magic number for archive files *)
+(** Magic number for archive files *)
+
 val cmx_magic_number: string
-        (* Magic number for compilation unit descriptions *)
+(** Magic number for compilation unit descriptions *)
+
 val cmxa_magic_number: string
-        (* Magic number for libraries of compilation unit descriptions *)
+(** Magic number for libraries of compilation unit descriptions *)
+
 val ast_intf_magic_number: string
-        (* Magic number for file holding an interface syntax tree *)
+(** Magic number for file holding an interface syntax tree *)
+
 val ast_impl_magic_number: string
-        (* Magic number for file holding an implementation syntax tree *)
+(** Magic number for file holding an implementation syntax tree *)
+
 val cmxs_magic_number: string
-        (* Magic number for dynamically-loadable plugins *)
+(** Magic number for dynamically-loadable plugins *)
+
 val cmt_magic_number: string
-        (* Magic number for compiled interface files *)
+(** Magic number for compiled interface files *)
 
 val max_tag: int
-        (* Biggest tag that can be stored in the header of a regular block. *)
+(** Biggest tag that can be stored in the header of a regular block. *)
+
 val lazy_tag : int
-        (* Normally the same as Obj.lazy_tag.  Separate definition because
-           of technical reasons for bootstrapping. *)
+(** Normally the same as Obj.lazy_tag.  Separate definition because
+    of technical reasons for bootstrapping. *)
+
 val max_young_wosize: int
-        (* Maximal size of arrays that are directly allocated in the
-           minor heap *)
+(** Maximal size of arrays that are directly allocated in the
+    minor heap *)
+
 val stack_threshold: int
-        (* Size in words of safe area at bottom of VM stack,
-           see runtime/caml/config.h *)
+(** Size in words of safe area at bottom of VM stack,
+    see runtime/caml/config.h *)
+
 val stack_safety_margin: int
-        (* Size in words of the safety margin between the bottom of
-           the stack and the stack pointer. This margin can be used by
-           intermediate computations of some instructions, or the event
-           handler. *)
+(** Size in words of the safety margin between the bottom of
+    the stack and the stack pointer. This margin can be used by
+    intermediate computations of some instructions, or the event
+    handler. *)
 
 val architecture: string
-        (* Name of processor type for the native-code compiler *)
+(** Name of processor type for the native-code compiler *)
+
 val model: string
-        (* Name of processor submodel for the native-code compiler *)
+(** Name of processor submodel for the native-code compiler *)
+
 val system: string
-        (* Name of operating system for the native-code compiler *)
+(** Name of operating system for the native-code compiler *)
 
 val asm: string
-        (* The assembler (and flags) to use for assembling
-           ocamlopt-generated code. *)
+(** The assembler (and flags) to use for assembling
+    ocamlopt-generated code. *)
 
 val asm_cfi_supported: bool
-        (* Whether assembler understands CFI directives *)
+(** Whether assembler understands CFI directives *)
+
 val with_frame_pointers : bool
-        (* Whether assembler should maintain frame pointers *)
+(** Whether assembler should maintain frame pointers *)
 
 val ext_obj: string
-        (* Extension for object files, e.g. [.o] under Unix. *)
+(** Extension for object files, e.g. [.o] under Unix. *)
+
 val ext_asm: string
-        (* Extension for assembler files, e.g. [.s] under Unix. *)
+(** Extension for assembler files, e.g. [.s] under Unix. *)
+
 val ext_lib: string
-        (* Extension for library files, e.g. [.a] under Unix. *)
+(** Extension for library files, e.g. [.a] under Unix. *)
+
 val ext_dll: string
-        (* Extension for dynamically-loaded libraries, e.g. [.so] under Unix.*)
+(** Extension for dynamically-loaded libraries, e.g. [.so] under Unix.*)
 
 val default_executable_name: string
-        (* Name of executable produced by linking if none is given with -o,
-           e.g. [a.out] under Unix. *)
+(** Name of executable produced by linking if none is given with -o,
+    e.g. [a.out] under Unix. *)
 
 val systhread_supported : bool
-        (* Whether the system thread library is implemented *)
+(** Whether the system thread library is implemented *)
 
 val flexdll_dirs : string list
-        (* Directories needed for the FlexDLL objects *)
+(** Directories needed for the FlexDLL objects *)
 
 val host : string
-        (* Whether the compiler is a cross-compiler *)
+(** Whether the compiler is a cross-compiler *)
 
 val target : string
-        (* Whether the compiler is a cross-compiler *)
+(** Whether the compiler is a cross-compiler *)
 
 val profiling : bool
-        (* Whether profiling with gprof is supported on this platform *)
+(** Whether profiling with gprof is supported on this platform *)
 
 val flambda : bool
-        (* Whether the compiler was configured for flambda *)
+(** Whether the compiler was configured for flambda *)
+
 val with_flambda_invariants : bool
-        (* Whether the invariants checks for flambda are enabled *)
+(** Whether the invariants checks for flambda are enabled *)
 
 val spacetime : bool
-        (* Whether the compiler was configured for Spacetime profiling *)
+(** Whether the compiler was configured for Spacetime profiling *)
+
 val enable_call_counts : bool
-        (* Whether call counts are to be available when Spacetime profiling *)
+(** Whether call counts are to be available when Spacetime profiling *)
+
 val profinfo : bool
-        (* Whether the compiler was configured for profiling *)
+(** Whether the compiler was configured for profiling *)
+
 val profinfo_width : int
-        (* How many bits are to be used in values' headers for profiling
-           information *)
+(** How many bits are to be used in values' headers for profiling
+    information *)
+
 val libunwind_available : bool
-        (* Whether the libunwind library is available on the target *)
+(** Whether the libunwind library is available on the target *)
+
 val libunwind_link_flags : string
-        (* Linker flags to use libunwind *)
+(** Linker flags to use libunwind *)
 
 val safe_string: bool
-        (* Whether the compiler was configured with -force-safe-string;
-           in that case, the -unsafe-string compile-time option is unavailable
+(** Whether the compiler was configured with -force-safe-string;
+    in that case, the -unsafe-string compile-time option is unavailable
 
-           @since 4.05.0 *)
+    @since 4.05.0 *)
+
 val default_safe_string: bool
-        (* Whether the compiler was configured to use the -safe-string
-           or -unsafe-string compile-time option by default.
+(** Whether the compiler was configured to use the -safe-string
+    or -unsafe-string compile-time option by default.
 
-           @since 4.06.0 *)
+    @since 4.06.0 *)
+
 val flat_float_array : bool
-        (* Whether the compiler and runtime automagically flatten float
-           arrays *)
+(** Whether the compiler and runtime automagically flatten float
+    arrays *)
+
 val windows_unicode: bool
-        (* Whether Windows Unicode runtime is enabled *)
+(** Whether Windows Unicode runtime is enabled *)
+
 val afl_instrument : bool
-        (* Whether afl-fuzz instrumentation is generated by default *)
+(** Whether afl-fuzz instrumentation is generated by default *)
 
 
-(* Access to configuration values *)
-val print_config : out_channel -> unit;;
+(** Access to configuration values *)
+val print_config : out_channel -> unit
 
-val config_var : string -> string option;;
-        (* the configuration value of a variable, if it exists *)
+val config_var : string -> string option
+(** the configuration value of a variable, if it exists *)

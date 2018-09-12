@@ -13,7 +13,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Module dependencies. *)
+(** Module dependencies.
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
+
+*)
+
 module String = Misc.Stdlib.String
 
 type map_tree = Node of String.Set.t * bound_map
@@ -24,7 +30,7 @@ val weaken_map : String.Set.t -> map_tree -> map_tree
 
 val free_structure_names : String.Set.t ref
 
-(* dependencies found by preprocessing tools (plugins) *)
+(** dependencies found by preprocessing tools (plugins) *)
 val pp_deps : string list ref
 
 val open_module : bound_map -> Longident.t -> bound_map

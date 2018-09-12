@@ -14,7 +14,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Uniform interface for common data structures over various things. *)
+(** Uniform interface for common data structures over various things.
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
+
+*)
 
 module type Thing = sig
   type t

@@ -46,6 +46,9 @@ let () =
   the constant [42], can be compiled using
   [ocamlc -o ppx_test -I +compiler-libs ocamlcommon.cma ppx_test.ml].
 
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
+
   *)
 
 open Parsetree

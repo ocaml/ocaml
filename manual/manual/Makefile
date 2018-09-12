@@ -57,13 +57,22 @@ htmlman/libref/style.css: style.css $(STDLIB_MLIS)
 	  $(STDLIB_MLIS)
 	cp style.css $@
 
+COMPILERLIBS_MODULES=$(shell echo $(basename $(notdir $(COMPILERLIBS_MLIS))) \
+| sed "s/\<./\U&/g")
 
-htmlman/compilerlibref/style.css: style.css $(COMPILERLIBS_MLIS)
+library/compiler-libs.txt: library/compiler-libs.mld
+	cp $< $@ && echo "{!modules:$(COMPILERLIBS_MODULES)}" >> $@
+
+
+htmlman/compilerlibref/style.css: library/compiler-libs.txt style.css \
+  $(COMPILERLIBS_MLIS)
 	mkdir -p htmlman/compilerlibref
 	$(OCAMLDOC) -colorize-code -sort -html \
 	  -d htmlman/compilerlibref \
 	  -I $(SRC)/stdlib \
 	  $(DOC_COMPILERLIBS_INCLUDES) \
+          -intro library/compiler-libs.txt \
+          library/compiler-libs.txt \
 	  $(COMPILERLIBS_MLIS)
 	cp style.css $@
 
@@ -153,6 +162,7 @@ clean:
 	$(MAKE) -C refman    clean
 	$(MAKE) -C tutorials clean
 	-rm -f texstuff/*
-	cd htmlman; rm -rf libref index.html manual*.html *.haux *.hind *.svg
+	cd htmlman; rm -rf libref compilerlibref index.html \
+	manual*.html *.haux *.hind *.svg
 	cd textman; rm -f manual.txt *.haux *.hind
 	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind

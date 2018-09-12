@@ -13,6 +13,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Rewrite paths for reproducible builds
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
+
+*)
+
+
 type path = string
 type path_prefix = string
 type error_message = string

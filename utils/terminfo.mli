@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Basic interface to the terminfo database *)
+(** Basic interface to the terminfo database
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
+
+*)
 
 type status =
   | Uninitialised

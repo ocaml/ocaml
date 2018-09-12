@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Compiling C files and building C libraries *)
+(** Compiling C files and building C libraries
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
+
+*)
 
 val command: string -> int
 val run_command: string -> unit

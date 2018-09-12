@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Type-checking of the module language and typed ast plugin hooks *)
+(** Type-checking of the module language and typed ast plugin hooks
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler-libs}compiler-libs}.
+
+*)
 
 open Types
 open Format
