@@ -48,11 +48,6 @@ val same: t -> t -> bool
 
 val compare: t -> t -> int
 
-val create_hidden: string -> t
-        (** Same as [create_local] but stamp different from any stamp returned
-            by [create_*]. When put in a 'a tbl, this identifier can only be
-            looked up by name. *)
-
 val global: t -> bool
 val is_predef: t -> bool
 

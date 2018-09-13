@@ -1384,13 +1384,13 @@ let rec tree_of_class_type sch params =
       let lab =
         if !print_labels || is_optional l then string_of_label l else ""
       in
-      let ty =
+      let tr =
        if is_optional l then
          match (repr ty).desc with
-         | Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
-         | _ -> newconstr (Path.Pident(Ident.create_hidden "<hidden>")) []
-       else ty in
-      let tr = tree_of_typexp sch ty in
+         | Tconstr(path, [ty], _) when Path.same path Predef.path_option ->
+             tree_of_typexp sch ty
+         | _ -> Otyp_stuff "<hidden>"
+       else tree_of_typexp sch ty in
       Octy_arrow (lab, tr, tree_of_class_type sch params cty)
 
 let class_type ppf cty =

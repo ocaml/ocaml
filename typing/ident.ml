@@ -36,9 +36,6 @@ let create_local s =
   incr currentstamp;
   Local { name = s; stamp = !currentstamp }
 
-let create_hidden s =
-  Local { name = s; stamp = -1 }
-
 let create_predef s =
   incr predefstamp;
   Predef { name = s; stamp = !predefstamp }
@@ -127,7 +124,6 @@ let print ppf = function
   | Predef { name; stamp = n } ->
       fprintf ppf "%s%s!" name
         (if !Clflags.unique_ids then Printf.sprintf "/%i" n else "")
-  | Local { name; stamp = -1 } -> fprintf ppf "%s#" name
   | Local { name; stamp = n } ->
       fprintf ppf "%s%s" name
         (if !Clflags.unique_ids then Printf.sprintf "/%i" n else "")
