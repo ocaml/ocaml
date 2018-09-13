@@ -43,7 +43,7 @@ val same: t -> t -> bool
         (** Compare identifiers by binding location.
             Two identifiers are the same either if they are both
             non-persistent and have been created by the same call to
-            [new], or if they are both persistent and have the same
+            [create_*], or if they are both persistent and have the same
             name. *)
 
 val compare: t -> t -> int
