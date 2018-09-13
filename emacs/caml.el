@@ -456,25 +456,6 @@ have caml-electric-indent on, which see.")
 
 ;; Other internal variables
 
-(defvar caml-last-noncomment-pos nil
-  "Caches last buffer position determined not inside a caml comment.")
-(make-variable-buffer-local 'caml-last-noncomment-pos)
-
-;;last-noncomment-pos can be a simple position, because we nil it
-;;anyway whenever buffer changes upstream. last-comment-start and -end
-;;have to be markers, because we preserve them when the changes' end
-;;doesn't overlap with the comment's start.
-
-(defvar caml-last-comment-start nil
-  "A marker caching last determined caml comment start.")
-(make-variable-buffer-local 'caml-last-comment-start)
-
-(defvar caml-last-comment-end nil
-  "A marker caching last determined caml comment end.")
-(make-variable-buffer-local 'caml-last-comment-end)
-
-(make-variable-buffer-local 'before-change-function)
-
 (defvar caml-imenu-shown nil
   "True if we have computed definition list.")
 (make-variable-buffer-local 'caml-imenu-shown)
@@ -531,11 +512,6 @@ have caml-electric-indent on, which see.")
   ;itz Fri Sep 25 13:23:49 PDT 1998
   (make-local-variable 'add-log-current-defun-function)
   (setq add-log-current-defun-function 'caml-current-defun)
-  ;itz 03-25-96
-  (setq before-change-function 'caml-before-change-function)
-  (setq caml-last-noncomment-pos nil)
-  (setq caml-last-comment-start (make-marker))
-  (setq caml-last-comment-end (make-marker))
   ;garrigue 27-11-96
   (setq case-fold-search nil)
   ;garrigue july 97
@@ -1058,22 +1034,6 @@ to the end.
 (defun caml-overlap (b1 e1 b2 e2)
   (<= (max b1 b2) (min e1 e2)))
 
-;this clears the last comment cache if necessary
-(defun caml-before-change-function (begin end)
-  (if (and caml-last-noncomment-pos
-           (> caml-last-noncomment-pos begin))
-      (setq caml-last-noncomment-pos nil))
-  (if (and (marker-position caml-last-comment-start)
-           (marker-position caml-last-comment-end)
-           (caml-overlap begin end
-                         caml-last-comment-start
-                         caml-last-comment-end))
-      (prog2
-          (set-marker caml-last-comment-start nil)
-          (set-marker caml-last-comment-end nil)))
-  (let ((orig-function (default-value 'before-change-function)))
-    (if orig-function (funcall orig-function begin end))))
-
 (defun caml-in-literal-p ()
   "Returns non-nil if point is inside a caml literal."
   (let* ((start-literal (concat "[\"" caml-quote-char "]"))
@@ -1137,57 +1097,7 @@ to the end.
 (defun caml-in-comment-p ()
   "Returns non-nil if point is inside a caml comment.
 Returns nil for the parenthesis opening a comment."
-  ;;we look for comments differently than literals. there are two
-  ;;reasons for this. first, caml has nested comments and it is not so
-  ;;clear that parse-partial-sexp supports them; second, if proper
-  ;;style is used, literals are never split across lines, so we don't
-  ;;have to worry about bogus phrase breaks inside literals, while we
-  ;;have to account for that possibility in comments.
-  (if caml-last-comment-start
-      (save-excursion
-        (let* ((cached-pos caml-last-noncomment-pos)
-               (cached-begin (marker-position caml-last-comment-start))
-               (cached-end (marker-position caml-last-comment-end)))
-          (cond
-           ((and cached-begin cached-end
-                 (< cached-begin (point)) (< (point) cached-end)) t)
-           ((and cached-pos (= cached-pos (point))) nil)
-           ((and cached-pos (> cached-pos (point))
-                 (< (abs (- cached-pos (point))) caml-lookback-limit))
-            (let (end found (here (point)))
-                                        ; go back to somewhere sure
-              (goto-char cached-pos)
-              (while (> (point) here)
-                                        ; look for the end of a comment
-                (while (and (if (search-backward comment-end (1- here) 'move)
-                                (setq end (match-end 0))
-                              (setq end nil))
-                            (caml-in-literal-p)))
-                (if end (setq found (caml-backward-comment))))
-              (if (and found (= (point) here)) (setq end nil))
-              (if (not end)
-                  (setq caml-last-noncomment-pos here)
-                (set-marker caml-last-comment-start (point))
-                (set-marker caml-last-comment-end end))
-              end))
-           (t
-            (let (begin found (here (point)))
-            ;; go back to somewhere sure (or far enough)
-              (goto-char
-               (if cached-pos cached-pos (- (point) caml-lookback-limit)))
-              (while (< (point) here)
-                ;; look for the beginning of a comment
-                (while (and (if (search-forward comment-start (1+ here) 'move)
-                                (setq begin (match-beginning 0))
-                              (setq begin nil))
-                            (caml-in-literal-p)))
-                (if begin (setq found (caml-forward-comment))))
-              (if (and found (= (point) here)) (setq begin nil))
-              (if (not begin)
-                  (setq caml-last-noncomment-pos here)
-                (set-marker caml-last-comment-start begin)
-                (set-marker caml-last-comment-end (point)))
-              begin)))))))
+  (nth 4 (syntax-ppss)))
 
 ;; Various constants and regexps
 
