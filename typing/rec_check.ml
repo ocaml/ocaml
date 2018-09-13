@@ -7,6 +7,8 @@
 (*               Alban Reynaud, ENS Lyon                                  *)
 (*                                                                        *)
 (*   Copyright 2017 Jeremy Yallop                                         *)
+(*   Copyright 2018 Alban Reynaud                                         *)
+(*   Copyright 2018 INRIA                                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
