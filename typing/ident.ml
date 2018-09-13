@@ -60,8 +60,15 @@ let rename = function
 let unique_name = function
   | Local { name; stamp }
   | Scoped { name; stamp } -> name ^ "_" ^ string_of_int stamp
-  | Global name
-  | Predef { name; _ } -> name
+  | Global name ->
+      (* we're adding a fake stamp, because someone could have named his unit
+         [Foo_123] and since we're using unique_name to produce symbol names,
+         we might clash with an ident [Local { "Foo"; 123 }]. *)
+      name ^ "_0"
+  | Predef { name; _ } ->
+      (* we know that none of the predef names (currently) finishes in
+         "_<some number>", and that their name is unique. *)
+      name
 
 let unique_toplevel_name = function
   | Local { name; stamp }
