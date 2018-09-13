@@ -101,7 +101,7 @@ let dummy_method = Btype.dummy_method
    (its constructor is not available).
 *)
 let unbound_class =
-  Path.Pident (Ident.create_scoped ~scope:Btype.lowest_level "*undef*")
+  Path.Pident (Ident.create_local "*undef*")
 
 
                 (************************************)

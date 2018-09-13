@@ -222,10 +222,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     (* An abstract type *)
 
     let abstract_type =
-      let scope = Ctype.get_current_level () in
-      let id = Ident.create_scoped ~scope "abstract" in
-      let ty = Ctype.newty (Tconstr (Pident id, [], ref Mnil)) in
-      Ctype.init_def (scope + 1);
+      let id = Ident.create_local "abstract" in
+      let ty = Btype.newgenty (Tconstr (Pident id, [], ref Mnil)) in
       ty
 
     (* The main printing function *)

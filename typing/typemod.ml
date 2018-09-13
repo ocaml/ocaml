@@ -470,9 +470,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             type_immediate = false;
             type_unboxed = unboxed_false_default_false;
           }
-        and id_row = Ident.create_scoped ~scope:(Ctype.get_current_level ())
-                       (s^"#row")
-        in
+        and id_row = Ident.create_local (s^"#row") in
         let initial_env =
           Env.add_type ~check:false id_row decl_row initial_env
         in
