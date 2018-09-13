@@ -11,6 +11,11 @@ transparent_modules: false
 unboxed_types: true
 unsafe_string: false
 </ppx-context>
+File "_none_", line 1:
+Warning 3: deprecated: The -vmthread argument of ocamlc is deprecated
+since OCaml 4.08.0.  Please switch to system threads, which have the
+same API. Lightweight threads with VM-level scheduling are provided by
+third-party libraries such as Lwt, but with a different API.
 <ppx-context>
 tool_name: "ocamlc"
 open_modules: []
