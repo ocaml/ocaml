@@ -83,16 +83,24 @@ val epsilon : float
 
 val is_finite : float -> bool
 (** [is_finite x] says whether the number is finite i.e., not infinite
-   and not [nan]. *)
+   and not [nan].
+
+   @since 4.08.0 *)
 
 val is_infinite : float -> bool
-(** [is_infinite x] says whether [x] is [infinity] or [neg_infinity]. *)
+(** [is_infinite x] says whether [x] is [infinity] or [neg_infinity].
+
+   @since 4.08.0 *)
 
 val is_nan : float -> bool
-(** [is_nan x] returns [true] if and only if [x] is [nan]. *)
+(** [is_nan x] returns [true] if and only if [x] is [nan].
+
+   @since 4.08.0 *)
 
 val is_integer : float -> bool
-(** Say whether the floating point is an integer. *)
+(** Say whether the floating point is an integer.
+
+   @since 4.08.0 *)
 
 external of_int : int -> float = "%floatofint"
 (** Convert an integer to floating-point. *)
@@ -220,14 +228,18 @@ external tanh : float -> float = "caml_tanh_float" "tanh"
 external trunc : float -> float = "caml_trunc_float" "caml_trunc"
                                     [@@unboxed] [@@noalloc]
 (** [trunc x] rounds [x] to the nearest integer whose absolute value is
-   less than or equal to [x]. *)
+   less than or equal to [x].
+
+   @since 4.08.0 *)
 
 external round : float -> float = "caml_round_float" "caml_round"
                                     [@@unboxed] [@@noalloc]
 (** [round x] rounds [x] to the nearest integer with ties (fractional
    values of 0.5) rounded away from zero, regardless of the current
    rounding direction.  If [x] is an integer, [+0.], [-0.], [nan], or
-   infinite, [x] itself is returned. *)
+   infinite, [x] itself is returned.
+
+   @since 4.08.0 *)
 
 external ceil : float -> float = "caml_ceil_float" "ceil"
 [@@unboxed] [@@noalloc]
@@ -252,7 +264,9 @@ external nextafter : float -> float -> float
    Note that [nextafter max_float infinity = infinity] and that
    [nextafter 0. infinity] is the smallest denormalized positive number.
    If [x] is the smallest denormalized positive number,
-   [nextafter x 0. = 0.] *)
+   [nextafter x 0. = 0.]
+
+   @since 4.08.0 *)
 
 external copysign : float -> float -> float
   = "caml_copysign_float" "caml_copysign"
@@ -266,7 +280,9 @@ external signbit : (float [@unboxed]) -> bool
   = "caml_signbit_float" "caml_signbit" [@@noalloc]
 (** [signbit x] returns [true] iff the sign bit of [x] is set.
     For example [signbit 1.] and [signbit 0.] are [false] while
-    [signbit (-1.)] and [signbit (-0.)] are [true]. *)
+    [signbit (-1.)] and [signbit (-0.)] are [true].
+
+    @since 4.08.0 *)
 
 external frexp : float -> float * int = "caml_frexp_float"
 (** [frexp f] returns the pair of the significant
@@ -298,25 +314,35 @@ val equal: t -> t -> bool
 
 val min : t -> t -> t
 (** [min x y] returns the minimum of [x] and [y].  It returns [nan]
-   when [x] or [y] is [nan].  Moreover [min (-0.) (+0.) = -0.] *)
+   when [x] or [y] is [nan].  Moreover [min (-0.) (+0.) = -0.]
+
+   @since 4.08.0 *)
 
 val max : float -> float -> float
 (** [max x y] returns the maximum of [x] and [y].  It returns [nan]
-   when [x] or [y] is [nan].  Moreover [max (-0.) (+0.) = +0.] *)
+   when [x] or [y] is [nan].  Moreover [max (-0.) (+0.) = +0.]
+
+   @since 4.08.0 *)
 
 val minmax : float -> float -> float * float
 (** [minmax x y] returns [(x, y)] if [x <= y] and [(y, x)] otherwise.
-   It returns [(nan, nan)] when [x] or [y] is [nan]. *)
+   It returns [(nan, nan)] when [x] or [y] is [nan].
+
+   @since 4.08.0 *)
 
 val nanmin : t -> t -> t
 (** [nanmin x y] returns the minimum of [x] and [y] ignoring [nan] except
    if both [x] and [y] are [nan], in which case [nan] is returned.
-   Moreover [nanmin (-0.) (+0.) = -0.]  *)
+   Moreover [nanmin (-0.) (+0.) = -0.]
+
+   @since 4.08.0  *)
 
 val nanmax : t -> t -> t
 (** [nanmax x y] returns the maximum of [x] and [y] ignoring [nan] except
    if both [x] and [y] are [nan], in which case [nan] is returned.
-   Moreover [nanmax (-0.) (+0.) = +0.] *)
+   Moreover [nanmax (-0.) (+0.) = +0.]
+
+   @since 4.08.0 *)
 
 
 val hash: t -> int
