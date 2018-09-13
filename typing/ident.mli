@@ -53,6 +53,9 @@ val is_predef: t -> bool
 
 val scope: t -> int
 
+val lowest_scope : int
+val highest_scope: int
+
 val reinit: unit -> unit
 
 type 'a tbl

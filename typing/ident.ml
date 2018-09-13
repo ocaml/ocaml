@@ -15,6 +15,9 @@
 
 open Format
 
+let lowest_scope  = 0
+let highest_scope = 100000000
+
 type t =
   | Local of { name: string; stamp: int }
   | Scoped of { name: string; stamp: int; scope: int }
@@ -107,7 +110,8 @@ let stamp = function
 
 let scope = function
   | Scoped { scope; _ } -> scope
-  | _ -> 0
+  | Local _ -> highest_scope
+  | Global _ | Predef _ -> lowest_scope
 
 let reinit_level = ref (-1)
 
