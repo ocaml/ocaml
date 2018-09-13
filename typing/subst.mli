@@ -61,6 +61,8 @@ val modtype_declaration: t -> modtype_declaration -> modtype_declaration
 val module_declaration: t -> module_declaration -> module_declaration
 val class_signature: t -> class_signature -> class_signature
 
+val refresh_signature: scope:int -> signature -> signature
+
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 val compose: t -> t -> t

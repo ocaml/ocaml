@@ -742,7 +742,7 @@ and approx_sig env ssg =
       | Psig_include sincl ->
           let smty = sincl.pincl_mod in
           let mty = approx_modtype env smty in
-          let sg = Subst.signature Subst.identity
+          let sg = Subst.refresh_signature ~scope:(Ctype.get_current_level ())
               (extract_sig env smty.pmty_loc mty) in
           let newenv = Env.add_signature sg env in
           sg @ approx_sig newenv srem
@@ -1114,7 +1114,7 @@ and transl_signature env sg =
                 (fun () -> transl_modtype env smty)
             in
             let mty = tmty.mty_type in
-            let sg = Subst.signature Subst.identity
+            let sg = Subst.refresh_signature ~scope:(Ctype.get_current_level ())
                        (extract_sig env smty.pmty_loc mty) in
             List.iter
               (fun i -> check_sig_item names item.psig_loc i to_be_removed)
@@ -1403,11 +1403,13 @@ let check_recmodule_inclusion env bindings =
   let rec check_incl first_time n env s =
     if n > 0 then begin
       (* Generate fresh names Y_i for the rec. bound module idents X_i *)
+      let scope = Ctype.get_current_level () in
       let bindings1 =
         List.map
-          (fun (id, _, _mty_decl, _modl, mty_actual, _attrs, _loc) ->
-             (id, Ident.rename id, mty_actual))
+          (fun (id, name, _mty_decl, _modl, mty_actual, _attrs, _loc) ->
+             (id, Ident.create_scoped ~scope name.txt, mty_actual))
           bindings in
+      Ctype.init_def (scope + 1);
       (* Enter the Y_i in the environment with their actual types substituted
          by the input substitution s *)
       let env' =
@@ -1953,7 +1955,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             (fun () -> type_module true funct_body None env smodl)
         in
         (* Rename all identifiers bound by this signature to avoid clashes *)
-        let sg = Subst.signature Subst.identity
+        let sg = Subst.refresh_signature ~scope:(Ctype.get_current_level ())
             (extract_sig_open env smodl.pmod_loc modl.mod_type) in
         List.iter (fun item -> check_sig_item names loc item to_be_removed)
           (List.rev sg);

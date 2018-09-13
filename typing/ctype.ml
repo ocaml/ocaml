@@ -1192,6 +1192,13 @@ let instance_declaration decl =
   cleanup_types ();
   decl
 
+let generic_instance_declaration decl =
+  let old = !current_level in
+  current_level := generic_level;
+  let decl = instance_declaration decl in
+  current_level := old;
+  decl
+
 let instance_class params cty =
   let rec copy_class_type =
     function

@@ -775,7 +775,7 @@ let check_well_founded_decl env loc path decl to_check =
   let it =
     {type_iterators with
      it_type_expr = (fun _ -> check_well_founded env loc path to_check)} in
-  it.it_type_declaration it (Ctype.instance_declaration decl)
+  it.it_type_declaration it (Ctype.generic_instance_declaration decl)
 
 (* Check for ill-defined abbrevs *)
 
@@ -1411,7 +1411,8 @@ let transl_type_decl env rec_flag sdecl_list =
 
 let transl_extension_constructor env type_path type_params
                                  typext_params priv sext =
-  let id = Ident.create_local sext.pext_name.txt in
+  let scope = Ctype.get_current_level () in
+  let id = Ident.create_scoped ~scope sext.pext_name.txt in
   let args, ret_type, kind =
     match sext.pext_kind with
       Pext_decl(sargs, sret_type) ->

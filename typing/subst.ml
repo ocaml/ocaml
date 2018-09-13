@@ -439,6 +439,7 @@ and signature s sg =
   (* ... then apply it to each signature component in turn *)
   List.map2 (signature_component s') sg new_idents
 
+
 and signature_component s comp newid =
   match comp with
     Sig_value(_id, d) ->
@@ -469,6 +470,33 @@ and modtype_declaration s decl  =
     mtd_attributes = attrs s decl.mtd_attributes;
     mtd_loc = loc s decl.mtd_loc;
   }
+
+(* Same as [signature] except than instead of making the items local, we rescope
+   them. *)
+let refresh_signature ~scope sg =
+  let rec refresh_bound_idents s idents = function
+      [] -> (List.rev idents, s)
+    | Sig_type(id, _, _) :: sg ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
+    | Sig_module(id, _, _) :: sg ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents (add_module id (Pident id') s) (id' :: idents) sg
+    | Sig_modtype(id, _) :: sg ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
+                            (id' :: idents) sg
+    | (Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
+        (* cheat and pretend they are types cf. PR#6650 *)
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
+    | (Sig_value(id, _) | Sig_typext(id, _, _)) :: sg ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents s (id' :: idents) sg
+  in
+  let (new_idents, s') = refresh_bound_idents identity [] sg in
+  List.map2 (signature_component s') sg new_idents
+
 
 (* For every binding k |-> d of m1, add k |-> f d to m2
    and return resulting merged map. *)
