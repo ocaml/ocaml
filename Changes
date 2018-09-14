@@ -723,6 +723,11 @@ OCaml 4.07.0 (10 July 2018)
 - GPR#1753: avoid potential off-by-one overflow in debugger socket path length.
   (Anil Madhavapeddy)
 
+* GPR#1683: Change Marshal format to make Custom_tag objects store their
+  length. Old versions of OCaml will no longer be able to parse new marshalled
+  files containing custom blocks, but old files will still parse.
+  (Stephen Dolan)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
