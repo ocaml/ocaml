@@ -18,17 +18,19 @@ module T1 = Fix(functor (X:sig type t end) -> struct type t = X.t option end);;
 Line 1, characters 12-77:
   module T1 = Fix(functor (X:sig type t end) -> struct type t = X.t option end);;
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In the signature of this functor application:
-       The type abbreviation Fixed.t is cyclic
+Error:
+In the signature of this functor application:
+The type abbreviation Fixed.t is cyclic
 |}]
 module T2 = Fix(functor (X:sig type t end) -> struct type t = X.t end);;
 [%%expect{|
 Line 1, characters 12-70:
   module T2 = Fix(functor (X:sig type t end) -> struct type t = X.t end);;
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In the signature of this functor application:
-       The definition of Fixed.t contains a cycle:
-       F(Fixed).t
+Error:
+In the signature of this functor application:
+The definition of Fixed.t contains a cycle:
+F(Fixed).t
 |}]
 
 (* Positive example *)
@@ -67,9 +69,10 @@ module type Bad = S with module F = Id;;
 Line 1, characters 18-38:
   module type Bad = S with module F = Id;;
                     ^^^^^^^^^^^^^^^^^^^^
-Error: In this instantiated signature:
-       The definition of Fixed.t contains a cycle:
-       F(Fixed).t
+Error:
+In this instantiated signature:
+The definition of Fixed.t contains a cycle:
+F(Fixed).t
 |}]
 
 (* More examples by lpw25 *)
@@ -78,27 +81,30 @@ module M = Fix(Id);;
 Line 1, characters 11-18:
   module M = Fix(Id);;
              ^^^^^^^
-Error: In the signature of this functor application:
-       The definition of Fixed.t contains a cycle:
-       Id(Fixed).t
+Error:
+In the signature of this functor application:
+The definition of Fixed.t contains a cycle:
+Id(Fixed).t
 |}]
 type t = Fix(Id).Fixed.t;;
 [%%expect{|
 Line 1, characters 9-24:
   type t = Fix(Id).Fixed.t;;
            ^^^^^^^^^^^^^^^
-Error: In the signature of Fix(Id):
-       The definition of Fixed.t contains a cycle:
-       Id(Fixed).t
+Error:
+In the signature of Fix(Id):
+The definition of Fixed.t contains a cycle:
+Id(Fixed).t
 |}]
 let f (x : Fix(Id).Fixed.t) = x;;
 [%%expect{|
 Line 1, characters 11-26:
   let f (x : Fix(Id).Fixed.t) = x;;
              ^^^^^^^^^^^^^^^
-Error: In the signature of Fix(Id):
-       The definition of Fixed.t contains a cycle:
-       Id(Fixed).t
+Error:
+In the signature of Fix(Id):
+The definition of Fixed.t contains a cycle:
+Id(Fixed).t
 |}]
 
 module Foo (F : T -> T) = struct
@@ -111,9 +117,10 @@ module Foo :
   functor (F : T -> T) -> sig val f : Fix(F).Fixed.t -> Fix(F).Fixed.t end
 module M : sig val f : Fix(Id).Fixed.t -> Fix(Id).Fixed.t end
 Line 1:
-Error: In the signature of Fix(Id):
-       The definition of Fixed.t contains a cycle:
-       Id(Fixed).t
+Error:
+In the signature of Fix(Id):
+The definition of Fixed.t contains a cycle:
+Id(Fixed).t
 |}]
 
 (* Extra tests for GPR#1676 *)
@@ -144,7 +151,8 @@ module Fix2 :
 Line 5, characters 11-26:
   let f (x : Fix2(Id).R(M).t) = x;;
              ^^^^^^^^^^^^^^^
-Error: In the signature of Fix2(Id):
-       The definition of Fixed.t contains a cycle:
-       Id(Fixed).t
+Error:
+In the signature of Fix2(Id):
+The definition of Fixed.t contains a cycle:
+Id(Fixed).t
 |}]

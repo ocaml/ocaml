@@ -30,6 +30,7 @@ foo (fun ?opt () -> ()) ;; (* fails *)
 Line 1, characters 4-23:
   foo (fun ?opt () -> ()) ;; (* fails *)
       ^^^^^^^^^^^^^^^^^^^
-Error: This function should have type unit -> unit
-       but its first argument is labelled ?opt
+Error:
+This function should have type unit -> unit
+but its first argument is labelled ?opt
 |}];;

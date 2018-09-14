@@ -40,7 +40,8 @@ let f x =
 Line 4, characters 2-54:
   ..match [] with
     | _::_ -> (x :> [`A | `C] Element.t)
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 []
 val f : [ `A ] Element.t -> [ `A | `C ] Element.t = <fun>

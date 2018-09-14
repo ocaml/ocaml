@@ -27,13 +27,14 @@ Line 2, characters 2-38:
   ..struct
       let f A = FP_normal
     end
-Error: Signature mismatch:
-       Modules do not match:
-         sig val f : fpclass -> Stdlib.fpclass end
-       is not included in
-         sig val f : fpclass -> fpclass end
-       Values do not match:
-         val f : fpclass -> Stdlib.fpclass
-       is not included in
-         val f : fpclass -> fpclass
+Error:
+Signature mismatch:
+Modules do not match:
+  sig val f : fpclass -> Stdlib.fpclass end
+is not included in
+  sig val f : fpclass -> fpclass end
+Values do not match:
+  val f : fpclass -> Stdlib.fpclass
+is not included in
+  val f : fpclass -> fpclass
 |}]

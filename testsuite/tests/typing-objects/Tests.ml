@@ -35,9 +35,10 @@ Line 3, characters 4-45:
   ....and d () = object
     inherit ['a] c ()
   end..
-Error: Some type variables are unbound in this type:
-         class d : unit -> object method f : 'a -> unit end
-       The method f has type 'a -> unit where 'a is unbound
+Error:
+Some type variables are unbound in this type:
+  class d : unit -> object method f : 'a -> unit end
+The method f has type 'a -> unit where 'a is unbound
 |}];;
 
 (* Create instance #c *)
@@ -106,8 +107,8 @@ end;;
 Line 1, characters 49-57:
   class virtual c ((x : 'a): < f : int >) = object (_ : 'a) end
                                                    ^^^^^^^^
-Error: This pattern cannot match self: it only matches values of type
-       < f : int >
+Error:
+This pattern cannot match self: it only matches values of type < f : int >
 |}];;
 
 (* Constraint not respected *)
@@ -121,8 +122,9 @@ Line 1, characters 0-78:
     constraint 'a = int
     method f x = (x : bool c)
   end..
-Error: The abbreviation c is used with parameters bool c
-       which are incompatible with constraints int c
+Error:
+The abbreviation c is used with parameters bool c
+which are incompatible with constraints int c
 |}];;
 
 (* Different constraints *)
@@ -166,10 +168,11 @@ Line 1, characters 0-50:
   class ['a] c () = object
     method f = (x : 'a)
   end..
-Error: The type of this class,
-       class ['a] c :
-         unit -> object constraint 'a = '_weak1 list ref method f : 'a end,
-       contains type variables that cannot be generalized
+Error:
+The type of this class,
+class ['a] c :
+  unit -> object constraint 'a = '_weak1 list ref method f : 'a end,
+contains type variables that cannot be generalized
 |}];;
 
 (* Abbreviations *)
@@ -383,8 +386,8 @@ class c () = object val x = - true val y = -. () end;;
 Line 1, characters 30-34:
   class c () = object val x = - true val y = -. () end;;
                                 ^^^^
-Error: This expression has type bool but an expression was expected of type
-         int
+Error:
+This expression has type bool but an expression was expected of type int
 |}];;
 
 class c () = object method f = 1 method g = 1 method h = 1 end;;
@@ -450,24 +453,28 @@ end;;
 Line 3, characters 10-13:
     inherit c 5
             ^^^
-Warning 13: the following instance variables are overridden by the class c :
+Warning 13:
+the following instance variables are overridden by the class c :
   x
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 Line 4, characters 6-7:
     val y = 3
         ^
-Warning 13: the instance variable y is overridden.
+Warning 13:
+the instance variable y is overridden.
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 Line 6, characters 10-13:
     inherit d 7
             ^^^
-Warning 13: the following instance variables are overridden by the class d :
+Warning 13:
+the following instance variables are overridden by the class d :
   t z
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 Line 7, characters 6-7:
     val u = 3
         ^
-Warning 13: the instance variable u is overridden.
+Warning 13:
+the instance variable u is overridden.
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 class e :
   unit ->
@@ -623,8 +630,9 @@ Line 1, characters 0-153:
     val m = Array.make_matrix sz sz init
     method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
   end..
-Error: The abbreviation 'a matrix expands to type < add : 'a matrix -> 'a >
-       but is used with type < m : 'a array array; .. >
+Error:
+The abbreviation 'a matrix expands to type < add : 'a matrix -> 'a >
+but is used with type < m : 'a array array; .. >
 |}];;
 
 class c () = object method m = new c () end;;
@@ -671,15 +679,16 @@ Line 1, characters 12-43:
   ............struct
     let f (x : #c) = x
   end......
-Error: Signature mismatch:
-       Modules do not match:
-         sig val f : (#c as 'a) -> 'a end
-       is not included in
-         sig val f : #c -> #c end
-       Values do not match:
-         val f : (#c as 'a) -> 'a
-       is not included in
-         val f : #c -> #c
+Error:
+Signature mismatch:
+Modules do not match:
+  sig val f : (#c as 'a) -> 'a end
+is not included in
+  sig val f : #c -> #c end
+Values do not match:
+  val f : (#c as 'a) -> 'a
+is not included in
+  val f : #c -> #c
 |}];;
 
 module M = struct type t = int class t () = object end end;;
@@ -687,8 +696,9 @@ module M = struct type t = int class t () = object end end;;
 Line 1, characters 37-38:
   module M = struct type t = int class t () = object end end;;
                                        ^
-Error: Multiple definition of the type name t.
-       Names must be unique in a given structure or signature.
+Error:
+Multiple definition of the type name t.
+Names must be unique in a given structure or signature.
 |}];;
 
 fun x -> (x :> < m : 'a -> 'a > as 'a);;
@@ -701,16 +711,18 @@ fun x -> (x : int -> bool :> 'a -> 'a);;
 Line 1, characters 9-38:
   fun x -> (x : int -> bool :> 'a -> 'a);;
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type int -> bool is not a subtype of int -> int
-       Type bool is not a subtype of int
+Error:
+Type int -> bool is not a subtype of int -> int
+Type bool is not a subtype of int
 |}];;
 fun x -> (x : int -> bool :> int -> int);;
 [%%expect{|
 Line 1, characters 9-40:
   fun x -> (x : int -> bool :> int -> int);;
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type int -> bool is not a subtype of int -> int
-       Type bool is not a subtype of int
+Error:
+Type int -> bool is not a subtype of int -> int
+Type bool is not a subtype of int
 |}];;
 fun x -> (x : < > :> < .. >);;
 [%%expect{|
@@ -744,17 +756,18 @@ fun (x : 'a t as 'a) -> ();;
 Line 1, characters 9-19:
   fun (x : 'a t as 'a) -> ();;
            ^^^^^^^^^^
-Error: This alias is bound to type 'a t but is used as an instance of type 'a
-       The type variable 'a occurs inside 'a t
+Error:
+This alias is bound to type 'a t but is used as an instance of type 'a
+The type variable 'a occurs inside 'a t
 |}];;
 fun (x : 'a t) -> (x : 'a); ();;
 [%%expect{|
 Line 1, characters 19-20:
   fun (x : 'a t) -> (x : 'a); ();;
                      ^
-Error: This expression has type 'a t but an expression was expected of type
-         'a
-       The type variable 'a occurs inside 'a t
+Error:
+This expression has type 'a t but an expression was expected of type 'a
+The type variable 'a occurs inside 'a t
 |}];;
 type 'a t = < x : 'a >;;
 [%%expect{|

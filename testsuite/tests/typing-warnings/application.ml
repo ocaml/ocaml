@@ -14,7 +14,8 @@ let _ = ignore (+);;
 Line 1, characters 15-18:
   let _ = ignore (+);;
                  ^^^
-Warning 5: this function application is partial,
+Warning 5:
+this function application is partial,
 maybe some arguments are missing.
 - : unit = ()
 |}]

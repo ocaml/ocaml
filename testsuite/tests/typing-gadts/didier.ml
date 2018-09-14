@@ -15,7 +15,8 @@ type 'a ty = Int : int ty | Bool : bool ty
 Line 6, characters 2-30:
   ..match tag with
     | Bool -> x
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Int
 val fbool : 'a -> 'a ty -> 'a = <fun>
@@ -31,7 +32,8 @@ let fint (type t) (x : t) (tag : t ty) =
 Line 2, characters 2-33:
   ..match tag with
     | Int -> x > 0
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Bool
 val fint : 'a -> 'a ty -> bool = <fun>
@@ -66,8 +68,8 @@ let g (type t) (x : t) (tag : t ty) =
 Line 4, characters 11-16:
     | Int -> x > 0
              ^^^^^
-Error: This expression has type bool but an expression was expected of type
-         t = int
+Error:
+This expression has type bool but an expression was expected of type t = int
 |}, Principal{|
 Line 4, characters 11-16:
     | Int -> x > 0

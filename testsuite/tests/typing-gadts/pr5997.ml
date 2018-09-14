@@ -25,7 +25,8 @@ module M : sig type t = T val comp : (U.t, t) comp end
 Line 16, characters 0-33:
   match M.comp with | Diff -> false;;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
 Exception: Match_failure ("", 16, 0).
@@ -48,7 +49,8 @@ module M : sig type t = { x : int; } val comp : (U.t, t) comp end
 Line 11, characters 0-33:
   match M.comp with | Diff -> false;;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
 Exception: Match_failure ("", 11, 0).

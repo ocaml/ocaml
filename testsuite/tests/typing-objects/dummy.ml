@@ -45,9 +45,10 @@ end;;
 Line 16, characters 22-26:
         inherit child1' self
                         ^^^^
-Error: This expression has type < child : 'a; previous : 'b option; .. >
-       but an expression was expected of type 'c
-       Self type cannot escape its class
+Error:
+This expression has type < child : 'a; previous : 'b option; .. >
+but an expression was expected of type 'c
+Self type cannot escape its class
 |}]
 
 (* Whether we have [class foo1] or [let foo1] doesn't change a thing. *)
@@ -144,10 +145,11 @@ Line 4, characters 4-65:
         inherit child1 self
         inherit child2
       end
-Error: Cannot close type of object literal:
-       < child : '_weak1; previous : 'a option; _.. > as 'a
-       it has been unified with the self type of a class that is not yet
-       completely defined.
+Error:
+Cannot close type of object literal:
+< child : '_weak1; previous : 'a option; _.. > as 'a
+it has been unified with the self type of a class that is not yet
+completely defined.
 |}]
 
 class assertion_failure = object(self : 'a)
@@ -170,8 +172,9 @@ Line 4, characters 4-129:
         method previous = None
         method child = assert false
       end
-Error: Cannot close type of object literal:
-       < child : '_weak2; previous : 'a option; _.. > as 'a
-       it has been unified with the self type of a class that is not yet
-       completely defined.
+Error:
+Cannot close type of object literal:
+< child : '_weak2; previous : 'a option; _.. > as 'a
+it has been unified with the self type of a class that is not yet
+completely defined.
 |}]

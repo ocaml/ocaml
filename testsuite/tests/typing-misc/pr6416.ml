@@ -17,19 +17,20 @@ Line 5, characters 8-52:
       type t = B
       let f B = ()
     end
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = B val f : t -> unit end
-       is not included in
-         sig val f : t -> unit end
-       Values do not match:
-         val f : t/1 -> unit
-       is not included in
-         val f : t/2 -> unit
-       Line 6, characters 4-14:
-         Definition of type t/1
-       Line 2, characters 2-12:
-         Definition of type t/2
+Error:
+Signature mismatch:
+Modules do not match:
+  sig type t = B val f : t -> unit end
+is not included in
+  sig val f : t -> unit end
+Values do not match:
+  val f : t/1 -> unit
+is not included in
+  val f : t/2 -> unit
+Line 6, characters 4-14:
+  Definition of type t/1
+Line 2, characters 2-12:
+  Definition of type t/2
 |}]
 
 module N = struct
@@ -41,20 +42,21 @@ end;;
 Line 4, characters 2-39:
     struct type t = B type u = A of t end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = B type u = A of t end
-       is not included in
-         sig type u = A of t end
-       Type declarations do not match:
-         type u = A of t/1
-       is not included in
-         type u = A of t/2
-       The types for field A are not equal.
-       Line 4, characters 9-19:
-         Definition of type t/1
-       Line 2, characters 2-11:
-         Definition of type t/2
+Error:
+Signature mismatch:
+Modules do not match:
+  sig type t = B type u = A of t end
+is not included in
+  sig type u = A of t end
+Type declarations do not match:
+  type u = A of t/1
+is not included in
+  type u = A of t/2
+The types for field A are not equal.
+Line 4, characters 9-19:
+  Definition of type t/1
+Line 2, characters 2-11:
+  Definition of type t/2
 |}]
 
 module K = struct
@@ -72,22 +74,23 @@ Line 4, characters 4-70:
         module type s
         module A(X:s) =struct end
       end
-Error: Signature mismatch:
-       Modules do not match:
-         sig module type s module A : functor (X : s) -> sig  end end
-       is not included in
-         sig module A : functor (X : s) -> sig  end end
-       In module A:
-       Modules do not match:
-         functor (X : s/1) -> sig  end
-       is not included in
-         functor (X : s/2) -> sig  end
-       At position module A(X : <here>) : ...
-       Modules do not match: s/2 is not included in s/1
-       Line 5, characters 6-19:
-         Definition of module type s/1
-       Line 2, characters 2-15:
-         Definition of module type s/2
+Error:
+Signature mismatch:
+Modules do not match:
+  sig module type s module A : functor (X : s) -> sig  end end
+is not included in
+  sig module A : functor (X : s) -> sig  end end
+In module A:
+Modules do not match:
+  functor (X : s/1) -> sig  end
+is not included in
+  functor (X : s/2) -> sig  end
+At position module A(X : <here>) : ...
+Modules do not match: s/2 is not included in s/1
+Line 5, characters 6-19:
+  Definition of module type s/1
+Line 2, characters 2-15:
+  Definition of module type s/2
 |}]
 
 module L = struct
@@ -104,20 +107,21 @@ Line 4, characters 4-77:
         module T = struct type t end
         type t = A of T.t
       end
-Error: Signature mismatch:
-       Modules do not match:
-         sig module T : sig type t end type t = A of T.t end
-       is not included in
-         sig type t = A of T.t end
-       Type declarations do not match:
-         type t = A of T/1.t
-       is not included in
-         type t = A of T/2.t
-       The types for field A are not equal.
-       Line 5, characters 6-34:
-         Definition of module T/1
-       Line 2, characters 2-30:
-         Definition of module T/2
+Error:
+Signature mismatch:
+Modules do not match:
+  sig module T : sig type t end type t = A of T.t end
+is not included in
+  sig type t = A of T.t end
+Type declarations do not match:
+  type t = A of T/1.t
+is not included in
+  type t = A of T/2.t
+The types for field A are not equal.
+Line 5, characters 6-34:
+  Definition of module T/1
+Line 2, characters 2-30:
+  Definition of module T/2
 |}]
 
 module O = struct
@@ -131,23 +135,24 @@ end;;
 Line 5, characters 2-62:
     struct module type s type t = B let f (module X:s) A = B end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         sig module type s type t = B val f : (module s) -> t/2 -> t/1 end
-       is not included in
-         sig val f : (module s) -> t -> t end
-       Values do not match:
-         val f : (module s/1) -> t/2 -> t/1
-       is not included in
-         val f : (module s/2) -> t/2 -> t/2
-       Line 5, characters 23-33:
-         Definition of type t/1
-       Line 3, characters 2-12:
-         Definition of type t/2
-       Line 5, characters 9-22:
-         Definition of module type s/1
-       Line 2, characters 2-15:
-         Definition of module type s/2
+Error:
+Signature mismatch:
+Modules do not match:
+  sig module type s type t = B val f : (module s) -> t/2 -> t/1 end
+is not included in
+  sig val f : (module s) -> t -> t end
+Values do not match:
+  val f : (module s/1) -> t/2 -> t/1
+is not included in
+  val f : (module s/2) -> t/2 -> t/2
+Line 5, characters 23-33:
+  Definition of type t/1
+Line 3, characters 2-12:
+  Definition of type t/2
+Line 5, characters 9-22:
+  Definition of module type s/1
+Line 2, characters 2-15:
+  Definition of module type s/2
 |}]
 
 module P = struct
@@ -161,19 +166,20 @@ end;;
 Line 5, characters 5-41:
      = struct type a = B let f A _  = B end
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type a = B val f : a/2 -> 'a -> a/1 end
-       is not included in
-         sig val f : a -> (module a) -> a end
-       Values do not match:
-         val f : a/2 -> 'a -> a/1
-       is not included in
-         val f : a/2 -> (module a) -> a/2
-       Line 5, characters 12-22:
-         Definition of type a/1
-       Line 3, characters 2-12:
-         Definition of type a/2
+Error:
+Signature mismatch:
+Modules do not match:
+  sig type a = B val f : a/2 -> 'a -> a/1 end
+is not included in
+  sig val f : a -> (module a) -> a end
+Values do not match:
+  val f : a/2 -> 'a -> a/1
+is not included in
+  val f : a/2 -> (module a) -> a/2
+Line 5, characters 12-22:
+  Definition of type a/1
+Line 3, characters 2-12:
+  Definition of type a/2
 |}]
 
 module Q = struct
@@ -192,21 +198,19 @@ Line 4, characters 2-105:
       class a = object method c = let module X = struct type t end in () end
       class b = a
     end
-Error: Signature mismatch:
-       Modules do not match:
-         sig class a : object method c : unit end class b : a end
-       is not included in
-         sig class b : a end
-       Class declarations do not match:
-         class b : a
-       does not match
-         class b : a/2
-       The first class type has no method m
-       The public method c cannot be hidden
-       Line 5, characters 4-74:
-         Definition of class type a/1
-       Line 2, characters 2-36:
-         Definition of class type a/2
+Error:
+Signature mismatch:
+Modules do not match:
+  sig class a : object method c : unit end class b : a end
+is not included in
+  sig class b : a end
+Class declarations do not match: class b : a does not match class b : a/2
+The first class type has no method m
+The public method c cannot be hidden
+Line 5, characters 4-74:
+  Definition of class type a/1
+Line 2, characters 2-36:
+  Definition of class type a/2
 |}]
 
 module R = struct
@@ -224,20 +228,21 @@ Line 4, characters 2-65:
       class type a = object end
       class type b = a
     end
-Error: Signature mismatch:
-       Modules do not match:
-         sig class type a = object  end class type b = a end
-       is not included in
-         sig class type b = a end
-       Class type declarations do not match:
-         class type b = a/1
-       does not match
-         class type b = a/2
-       The first class type has no method m
-       Line 5, characters 4-29:
-         Definition of class type a/1
-       Line 2, characters 2-42:
-         Definition of class type a/2
+Error:
+Signature mismatch:
+Modules do not match:
+  sig class type a = object  end class type b = a end
+is not included in
+  sig class type b = a end
+Class type declarations do not match:
+  class type b = a/1
+does not match
+  class type b = a/2
+The first class type has no method m
+Line 5, characters 4-29:
+  Definition of class type a/1
+Line 2, characters 2-42:
+  Definition of class type a/2
 |}]
 
 module S = struct
@@ -275,35 +280,36 @@ Line 8, characters 6-141:
       class type c = object inherit a end
     end
   end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig
-           type t
-           class type a = object method m : t end
-           module K : sig type t class type c = object method m : t/2 end end
-         end
-       is not included in
-         sig
-           type t
-           class type a = object method m : t end
-           module K : sig type t class type c = object method m : t end end
-         end
-       In module K:
-       Modules do not match:
-         sig type t = K.t class type c = object method m : t/2 end end
-       is not included in
-         sig type t class type c = object method m : t end end
-       In module K:
-       Class type declarations do not match:
-         class type c = object method m : t/2 end
-       does not match
-         class type c = object method m : t/1 end
-       The method m has type t/2 but is expected to have type t/1
-       Type t/2 is not compatible with type t/1 = K.t
-       Line 12, characters 4-10:
-         Definition of type t/1
-       Line 9, characters 2-8:
-         Definition of type t/2
+Error:
+Signature mismatch:
+Modules do not match:
+  sig
+    type t
+    class type a = object method m : t end
+    module K : sig type t class type c = object method m : t/2 end end
+  end
+is not included in
+  sig
+    type t
+    class type a = object method m : t end
+    module K : sig type t class type c = object method m : t end end
+  end
+In module K:
+Modules do not match:
+  sig type t = K.t class type c = object method m : t/2 end end
+is not included in
+  sig type t class type c = object method m : t end end
+In module K:
+Class type declarations do not match:
+  class type c = object method m : t/2 end
+does not match
+  class type c = object method m : t/1 end
+The method m has type t/2 but is expected to have type t/1
+Type t/2 is not compatible with type t/1 = K.t
+Line 12, characters 4-10:
+  Definition of type t/1
+Line 9, characters 2-8:
+  Definition of type t/2
 |}]
 ;;
 
@@ -314,19 +320,20 @@ struct type t module M = struct type t end type a = M.t end;;
 Line 2, characters 0-59:
   struct type t module M = struct type t end type a = M.t end;;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = M.t module M : sig type t = M.M.t end type a = M.t end
-       is not included in
-         sig type t type a = M.t end
-       Type declarations do not match:
-         type a = M/1.t
-       is not included in
-         type a = M/2.t
-       Line 2, characters 14-42:
-         Definition of module M/1
-       File "_none_", line 1:
-         Definition of module M/2
+Error:
+Signature mismatch:
+Modules do not match:
+  sig type t = M.t module M : sig type t = M.M.t end type a = M.t end
+is not included in
+  sig type t type a = M.t end
+Type declarations do not match:
+  type a = M/1.t
+is not included in
+  type a = M/2.t
+Line 2, characters 14-42:
+  Definition of module M/1
+File "_none_", line 1:
+  Definition of module M/2
 |}]
 
 
@@ -347,23 +354,24 @@ Line 5, characters 44-72:
   ............................................struct
     let f A B C = D
   end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig val f : t/2 -> t/3 -> t/4 -> t/1 end
-       is not included in
-         sig val f : t -> t -> t -> t end
-       Values do not match:
-         val f : t/2 -> t/3 -> t/4 -> t/1
-       is not included in
-         val f : t/1 -> t/1 -> t/1 -> t/1
-       Line 4, characters 0-10:
-         Definition of type t/1
-       Line 1, characters 0-10:
-         Definition of type t/2
-       Line 2, characters 0-10:
-         Definition of type t/3
-       Line 3, characters 0-10:
-         Definition of type t/4
+Error:
+Signature mismatch:
+Modules do not match:
+  sig val f : t/2 -> t/3 -> t/4 -> t/1 end
+is not included in
+  sig val f : t -> t -> t -> t end
+Values do not match:
+  val f : t/2 -> t/3 -> t/4 -> t/1
+is not included in
+  val f : t/1 -> t/1 -> t/1 -> t/1
+Line 4, characters 0-10:
+  Definition of type t/1
+Line 1, characters 0-10:
+  Definition of type t/2
+Line 2, characters 0-10:
+  Definition of type t/3
+Line 3, characters 0-10:
+  Definition of type t/4
 |}]
 
 (** Check interaction with no-alias-deps *)
@@ -377,7 +385,8 @@ module Foo : sig type info = { doc : unit; } type t = { info : info; } end
 Line 5, characters 38-41:
   let add_extra_info arg = arg.Foo.info.doc
                                         ^^^
-Warning 40: doc was selected from type Foo.info.
+Warning 40:
+doc was selected from type Foo.info.
 It is not visible in the current scope, and will not
 be selected if the type becomes unknown.
 val add_extra_info : Foo.t -> unit = <fun>
@@ -399,7 +408,8 @@ module Bar : sig  end
 Line 8, characters 38-41:
   let add_extra_info arg = arg.Foo.info.doc
                                         ^^^
-Warning 40: doc was selected from type Bar/2.info.
+Warning 40:
+doc was selected from type Bar/2.info.
 It is not visible in the current scope, and will not
 be selected if the type becomes unknown.
 val add_extra_info : Foo.t -> unit = <fun>

@@ -15,7 +15,8 @@ end;;
 Line 7, characters 47-84:
   ...............................................match l, r with
       | A, B -> "f A B"
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (A, A)
 module F :
@@ -42,7 +43,8 @@ end;;
 Line 10, characters 15-52:
   ...............match l, r with
       | A, B -> "f A B"
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (A, A)
 module F :

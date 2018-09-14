@@ -88,7 +88,8 @@ end
 Line 4, characters 2-32:
     exception Nobody_constructs_me
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 38: exception Nobody_constructs_me is never used to build values.
+Warning 38:
+exception Nobody_constructs_me is never used to build values.
 (However, this constructor appears in patterns.)
 module Unused_exception_outside_patterns : sig val falsity : exn -> bool end
 |}]
@@ -108,7 +109,8 @@ end
 Line 6, characters 12-27:
     type t += Noone_builds_me
               ^^^^^^^^^^^^^^^
-Warning 38: extension constructor Noone_builds_me is never used to build values.
+Warning 38:
+extension constructor Noone_builds_me is never used to build values.
 (However, this constructor appears in patterns.)
 module Unused_extension_outside_patterns :
   sig type t = .. val falsity : t -> bool end
@@ -124,7 +126,8 @@ end
 Line 4, characters 2-23:
     exception Private_exn
     ^^^^^^^^^^^^^^^^^^^^^
-Warning 38: exception Private_exn is never used to build values.
+Warning 38:
+exception Private_exn is never used to build values.
 It is exported or rebound as a private extension.
 module Unused_private_exception : sig type exn += private Private_exn end
 |}]
@@ -141,7 +144,8 @@ end
 Line 6, characters 12-23:
     type t += Private_ext
               ^^^^^^^^^^^
-Warning 38: extension constructor Private_ext is never used to build values.
+Warning 38:
+extension constructor Private_ext is never used to build values.
 It is exported or rebound as a private extension.
 module Unused_private_extension :
   sig type t = .. type t += private Private_ext end

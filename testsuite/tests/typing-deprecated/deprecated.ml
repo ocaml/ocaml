@@ -617,7 +617,8 @@ Warning 22: XX
 Line 1, characters 4-31:
   let ([][@ocaml.ppwarning "XX"]) = []
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 _::_
 |}]

@@ -103,15 +103,16 @@ Line 3, characters 6-29:
   ......struct
     type s = t
   end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig type s = t end
-       is not included in
-         sig type s = private [ `Bar of int | `Foo of 'a -> int ] as 'a end
-       Type declarations do not match:
-         type s = t
-       is not included in
-         type s = private [ `Bar of int | `Foo of 'a -> int ] as 'a
+Error:
+Signature mismatch:
+Modules do not match:
+  sig type s = t end
+is not included in
+  sig type s = private [ `Bar of int | `Foo of 'a -> int ] as 'a end
+Type declarations do not match:
+  type s = t
+is not included in
+  type s = private [ `Bar of int | `Foo of 'a -> int ] as 'a
 |}]
 
 (* nondep_type_decl + nondep_type_rec *)

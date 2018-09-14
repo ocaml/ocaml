@@ -34,8 +34,9 @@ val f : ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit = <fun>
 Line 2, characters 13-17:
   let g = f ?y:None ?x:None ~a:()
                ^^^^
-Error: The function applied to this argument has type
-         ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit
+Error:
+The function applied to this argument has type
+  ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit
 This argument cannot be applied with label ?y
 |}]
 

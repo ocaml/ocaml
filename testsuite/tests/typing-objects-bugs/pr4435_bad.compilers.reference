@@ -1,3 +1,4 @@
 File "pr4435_bad.ml", line 14, characters 6-7:
-Error: Multiple definition of the class name c.
-       Names must be unique in a given structure or signature.
+Error:
+Multiple definition of the class name c.
+Names must be unique in a given structure or signature.

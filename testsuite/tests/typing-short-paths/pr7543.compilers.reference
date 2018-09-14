@@ -4,14 +4,15 @@ val f : (module S with type t = unit) -> unit = <fun>
 Line 1, characters 19-20:
   let () = f (module N);;
                      ^
-Error: Signature mismatch:
-       Modules do not match:
-         sig type 'a t = 'a end
-       is not included in
-         sig type t = N.t end
-       Type declarations do not match:
-         type 'a t = 'a
-       is not included in
-         type t = N.t
-       They have different arities.
+Error:
+Signature mismatch:
+Modules do not match:
+  sig type 'a t = 'a end
+is not included in
+  sig type t = N.t end
+Type declarations do not match:
+  type 'a t = 'a
+is not included in
+  type t = N.t
+They have different arities.
 

@@ -33,7 +33,8 @@ Line 12, characters 2-195:
     | Leq, Int x, Int y -> Bool (x <= y)
     | Leq, Bool x, Bool y -> Bool (x <= y)
     | Add, Int x, Int y -> Int (x + y)
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (Eq, Int _, _)
 val eval : ('a, 'b, 'c) binop -> 'a constant -> 'b constant -> 'c constant =

@@ -27,7 +27,8 @@ type aux =
 Line 14, characters 4-5:
     | _ -> .  (* error *)
       ^
-Error: This match case could not be refuted.
-       Here is an example of a value that would reach it:
-       Succ (Succ (Succ (Succ (Succ Zero))))
+Error:
+This match case could not be refuted.
+Here is an example of a value that would reach it:
+Succ (Succ (Succ (Succ (Succ Zero))))
 |}];;

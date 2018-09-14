@@ -1,5 +1,6 @@
 File "deprecated_module_use.ml", line 18, characters 5-22:
-Warning 3: deprecated: module Deprecated_module
+Warning 3:
+deprecated: module Deprecated_module
 
   As you could guess, Deprecated_module is deprecated.
   Please use something else!

@@ -39,7 +39,8 @@ Line 1, characters 0-70:
   match { x = assert false } with
   | { x = 3 } -> ()
   | { x = None } -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=Some _}
 Exception: Assert_failure ("", 1, 12).
@@ -54,7 +55,8 @@ Line 1, characters 0-71:
   match { x = assert false } with
   | { x = None } -> ()
   | { x = "" } -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x="*"}
 Exception: Assert_failure ("", 1, 12).
@@ -69,7 +71,8 @@ Line 1, characters 0-71:
   match { x = assert false } with
   | { x = None } -> ()
   | { x = `X } -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=`AnyOtherTag}
 Exception: Assert_failure ("", 1, 12).
@@ -84,7 +87,8 @@ Line 1, characters 0-70:
   match { x = assert false } with
   | { x = [||] } -> ()
   | { x = 3 } -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}
 Exception: Assert_failure ("", 1, 12).
@@ -99,7 +103,8 @@ Line 1, characters 0-68:
   match { x = assert false } with
   | { x = `X } -> ()
   | { x = 3 } -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}
 Exception: Assert_failure ("", 1, 12).
@@ -114,7 +119,8 @@ Line 1, characters 0-74:
   match { x = assert false } with
   | { x = `X "lol" } -> ()
   | { x = 3 } -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}
 Exception: Assert_failure ("", 1, 12).
@@ -131,7 +137,8 @@ Line 1, characters 0-95:
   | { x = (2., "") } -> ()
   | { x = None } -> ()
   | { x = 3 } -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}
 Exception: Assert_failure ("", 1, 12).

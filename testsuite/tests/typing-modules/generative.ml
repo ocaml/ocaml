@@ -32,8 +32,9 @@ module G (X : sig end) : S = F ();; (* fail *)
 Line 1, characters 29-33:
   module G (X : sig end) : S = F ();; (* fail *)
                                ^^^^
-Error: This expression creates fresh types.
-       It is not allowed inside applicative functors.
+Error:
+This expression creates fresh types.
+It is not allowed inside applicative functors.
 |}];;
 module H() = F();; (* ok *)
 [%%expect{|
@@ -63,11 +64,12 @@ module F1 : functor (X : sig  end) -> sig  end
 Line 2, characters 36-38:
   module F2 : functor () -> sig end = F1;; (* fail *)
                                       ^^
-Error: Signature mismatch:
-       Modules do not match:
-         functor (X : sig  end) -> sig  end
-       is not included in
-         functor () -> sig  end
+Error:
+Signature mismatch:
+Modules do not match:
+  functor (X : sig  end) -> sig  end
+is not included in
+  functor () -> sig  end
 |}];;
 module F3 () = struct end;;
 module F4 : functor (X : sig end) -> sig end = F3;; (* fail *)
@@ -76,11 +78,12 @@ module F3 : functor () -> sig  end
 Line 2, characters 47-49:
   module F4 : functor (X : sig end) -> sig end = F3;; (* fail *)
                                                  ^^
-Error: Signature mismatch:
-       Modules do not match:
-         functor () -> sig  end
-       is not included in
-         functor (X : sig  end) -> sig  end
+Error:
+Signature mismatch:
+Modules do not match:
+  functor () -> sig  end
+is not included in
+  functor (X : sig  end) -> sig  end
 |}];;
 
 (* tests for shortened functor notation () *)
