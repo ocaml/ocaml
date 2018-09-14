@@ -114,6 +114,9 @@ let end_def () =
   let (cl, nl) = List.hd !saved_level in
   saved_level := List.tl !saved_level;
   current_level := cl; nongen_level := nl
+let create_scope () =
+  init_def (!current_level + 1);
+  !current_level
 
 let reset_global_level () =
   global_level := !current_level + 1

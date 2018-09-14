@@ -1279,18 +1279,11 @@ let transl_type_decl env rec_flag sdecl_list =
   in
 
   (* Create identifiers. *)
-  let scope = Ctype.get_current_level () in
+  let scope = Ctype.create_scope () in
   let id_list =
     List.map (fun sdecl -> Ident.create_scoped ~scope sdecl.ptype_name.txt)
       sdecl_list
   in
-  (*
-     Since we've introduced fresh idents, make sure the definition
-     level is at least the binding time of these events. Otherwise,
-     passing one of the recursively-defined type constrs as argument
-     to an abbreviation may fail.
-  *)
-  Ctype.init_def(scope + 1);
   Ctype.begin_def();
   (* Enter types. *)
   let temp_env =
@@ -1411,7 +1404,7 @@ let transl_type_decl env rec_flag sdecl_list =
 
 let transl_extension_constructor env type_path type_params
                                  typext_params priv sext =
-  let scope = Ctype.get_current_level () in
+  let scope = Ctype.create_scope () in
   let id = Ident.create_scoped ~scope sext.pext_name.txt in
   let args, ret_type, kind =
     match sext.pext_kind with
@@ -1939,7 +1932,7 @@ let abstract_type_decl arity =
   decl
 
 let approx_type_decl sdecl_list =
-  let scope = Ctype.get_current_level () in
+  let scope = Ctype.create_scope () in
   List.map
     (fun sdecl ->
       (Ident.create_scoped ~scope sdecl.ptype_name.txt,

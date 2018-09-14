@@ -3015,9 +3015,8 @@ and type_expect_
       let context = Typetexp.narrow () in
       let modl = !type_module env smodl in
       Mtype.lower_nongen ty.level modl.mod_type;
-      let scope = get_current_level () in
+      let scope = create_scope () in
       let (id, new_env) = Env.enter_module ~scope name.txt modl.mod_type env in
-      init_def (scope + 1);
       Typetexp.widen context;
       (* ideally, we should catch Expr_type_clash errors
          in type_expect triggered by escaping identifiers from the local module
@@ -3145,9 +3144,8 @@ and type_expect_
         type_unboxed = unboxed_false_default_false;
       }
       in
-      let scope = get_current_level () in
+      let scope = create_scope () in
       let (id, new_env) = Env.enter_type ~scope name decl env in
-      Ctype.init_def (scope + 1);
 
       let body = type_exp new_env sbody in
       (* Replace every instance of this type constructor in the resulting
