@@ -423,7 +423,7 @@ let batch_mode_printer : report_printer =
   let pp_txt ppf txt = Format.fprintf ppf "@[%t@]" txt in
   let pp self ppf report =
     setup_colors ();
-    Format.fprintf ppf "@[<v>%a%a: %a%a@]@."
+    Format.fprintf ppf "@[<v>%a@[<hv>%a:@ %a@]%a@]@."
       (self.pp_main_loc self report) report.main.loc
       (self.pp_report_kind self report) report.kind
       (self.pp_main_txt self report) report.main.txt
