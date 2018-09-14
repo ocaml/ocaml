@@ -66,6 +66,11 @@ let rec name ?(paren=kfalse) = function
       name ~paren p ^ if paren s then ".( " ^ s ^ " )" else "." ^ s
   | Papply(p1, p2) -> name ~paren p1 ^ "(" ^ name ~paren p2 ^ ")"
 
+let rec print ppf = function
+  | Pident id -> Ident.print_with_scope ppf id
+  | Pdot(p, s, _pos) -> Format.fprintf ppf "%a.%s" print p s
+  | Papply(p1, p2) -> Format.fprintf ppf "%a(%a)" print p1 print p2
+
 let rec head = function
     Pident id -> id
   | Pdot(p, _s, _pos) -> head p

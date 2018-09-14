@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
-
 let lowest_scope  = 0
 let highest_scope = 100000000
 
@@ -130,17 +128,24 @@ let is_predef = function
   | Predef _ -> true
   | _ -> false
 
-let print ppf = function
+let print ~with_scope ppf =
+  let open Format in
+  function
   | Global name -> fprintf ppf "%s!" name
   | Predef { name; stamp = n } ->
       fprintf ppf "%s%s!" name
-        (if !Clflags.unique_ids then Printf.sprintf "/%i" n else "")
+        (if !Clflags.unique_ids then sprintf "/%i" n else "")
   | Local { name; stamp = n } ->
       fprintf ppf "%s%s" name
-        (if !Clflags.unique_ids then Printf.sprintf "/%i" n else "")
+        (if !Clflags.unique_ids then sprintf "/%i" n else "")
   | Scoped { name; stamp = n; scope } ->
-      fprintf ppf "%s%s" name
-        (if !Clflags.unique_ids then Printf.sprintf "/%i[%i]" n scope else "")
+      fprintf ppf "%s%s%s" name
+        (if !Clflags.unique_ids then sprintf "/%i" n else "")
+        (if with_scope then sprintf "[%i]" scope else "")
+
+let print_with_scope ppf id = print ~with_scope:true ppf id
+
+let print ppf id = print ~with_scope:false ppf id
 
 type 'a tbl =
     Empty
