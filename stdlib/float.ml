@@ -504,3 +504,5 @@ module Array = struct
     r
 
 end
+
+module ArrayLabels = Array

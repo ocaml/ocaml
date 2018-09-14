@@ -607,3 +607,46 @@ module Array : sig
   external unsafe_get : t -> int -> float = "%floatarray_unsafe_get"
   external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 end
+
+module ArrayLabels : sig
+
+  type t = floatarray
+  val length : t -> int
+  val get : t -> int -> float
+  val set : t -> int -> float -> unit
+  val make : int -> float -> t
+  val create : int -> t
+  val init : int -> f:(int -> float) -> t
+  val append : t -> t -> t
+  val concat : t list -> t
+  val sub : t -> pos:int -> len:int -> t
+  val copy : t -> t
+  val fill : t -> pos:int -> len:int -> float -> unit
+  val blit : src:t -> src_pos:int -> dst:t -> dst_pos:int -> len:int -> unit
+  val to_list : t -> float list
+  val of_list : float list -> t
+  val iter : f:(float -> unit) -> t -> unit
+  val iteri : f:(int -> float -> unit) -> t -> unit
+  val map : f:(float -> float) -> t -> t
+  val mapi : f:(int -> float -> float) -> t -> t
+  val fold_left : f:('a -> float -> 'a) -> init:'a -> t -> 'a
+  val fold_right : f:(float -> 'a -> 'a) -> t -> init:'a -> 'a
+  val iter2 : f:(float -> float -> unit) -> t -> t -> unit
+  val map2 : f:(float -> float -> float) -> t -> t -> t
+  val for_all : f:(float -> bool) -> t -> bool
+  val exists : f:(float -> bool) -> t -> bool
+  val mem : float -> set:t -> bool
+  val memq : float -> set:t -> bool
+  val sort : cmp:(float -> float -> int) -> t -> unit
+  val stable_sort : cmp:(float -> float -> int) -> t -> unit
+  val fast_sort : cmp:(float -> float -> int) -> t -> unit
+  val to_seq : t -> float Seq.t
+  val to_seqi : t -> (int * float) Seq.t
+  val of_seq : float Seq.t -> t
+  val map_to_array : f:(float -> 'a) -> t -> 'a array
+  val map_from_array : f:('a -> float) -> 'a array -> t
+
+  (* for internal use only *)
+  external unsafe_get : t -> int -> float = "%floatarray_unsafe_get"
+  external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
+end
