@@ -112,11 +112,14 @@ val x : 'a option -> unit = <fun>
 val y : 'a list -> unit = <fun>
 |}];;
 
+(* this is accepted as all fields are overriden *)
 let rec x = { x with contents = 3 }  [@ocaml.warning "-23"];;
 [%%expect{|
 val x : int ref = {contents = 3}
 |}];;
 
+(* this is rejected as `c` will be dereferenced during the copy,
+   and is not yet fully defined *)
 let rec c = { c with Complex.re = 1.0 };;
 [%%expect{|
 Line 1, characters 12-39:
