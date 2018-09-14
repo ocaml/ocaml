@@ -137,8 +137,7 @@ module Compiler_messages = struct
         Location.print_loc loc
         (Location.highlight_dumb lb) [loc]
     in
-    { (Location.dumb_toplevel_printer lb)
-      with pp_main_loc = pp_loc; pp_submsg_loc = pp_loc }
+    { (Location.dumb_toplevel_printer lb) with pp_loc }
 
   let expect_printer () =
     match !Location.input_lexbuf with

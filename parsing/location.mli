@@ -135,6 +135,8 @@ type report_printer = {
 
   pp_report_kind : report_printer -> report ->
     Format.formatter -> report_kind -> unit;
+  pp_loc : report_printer -> report ->
+    Format.formatter -> t -> unit;
   pp_main_loc : report_printer -> report ->
     Format.formatter -> t -> unit;
   pp_main_txt : report_printer -> report ->
