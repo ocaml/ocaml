@@ -258,6 +258,10 @@ Working version
 - GPR#2000: ocamdoc, extended support for "include module type of ..."
   (Florian Angeletti, review by Jérémie Dimino)
 
+- GPR#2045: ocamlmklib now supports options -args and -args0 to provide extra
+  command-line arguments in a file.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer and Daniel Bünzli)
+
 ### Manual and documentation:
 
 - MPR#7546, GPR#2020: preambles and introduction for compiler-libs.
