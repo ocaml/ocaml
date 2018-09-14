@@ -79,7 +79,7 @@ CAMLexport struct custom_operations caml_ba_ops = {
 
 /* Allocation of a big array */
 
-#define CAML_BA_MAX_MEMORY 1024*1024*1024
+#define CAML_BA_MAX_MEMORY (1024*1024*1024)
 /* 1 Gb -- after allocating that much, it's probably worth speeding
    up the major GC */
 
