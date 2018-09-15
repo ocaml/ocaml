@@ -324,6 +324,8 @@ and action = parse
   | '{' (['a'-'z' '_'] * as delim) '|'
     { quoted_string delim lexbuf;
       action lexbuf }
+  | "'" identstart identbody *
+    { action lexbuf }
   | "'"
     { skip_char lexbuf ;
       action lexbuf }
