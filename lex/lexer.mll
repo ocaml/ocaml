@@ -342,10 +342,10 @@ and action = parse
     { action lexbuf }
 
 and skip_char = parse
-  | '\\'? '\010' "'"
+  | '\\'? ('\013'* '\010') "'"
      { incr_loc lexbuf 1;
      }
-  | [^ '\\' '\''] "'" (* regular character *)
+  | [^ '\\' '\'' '\010' '\013'] "'" (* regular character *)
 (* one character and numeric escape sequences *)
   | '\\' _ "'"
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
