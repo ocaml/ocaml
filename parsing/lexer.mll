@@ -387,7 +387,8 @@ rule token = parse
         STRING (get_stored_string(), Some delim) }
   | "\'" newline "\'"
       { update_loc lexbuf None 1 false 1;
-        CHAR (Lexing.lexeme_char lexbuf 1) }
+        (* newline is ('\013'* '\010') *)
+        CHAR '\n' }
   | "\'" [^ '\\' '\'' '\010' '\013'] "\'"
       { CHAR(Lexing.lexeme_char lexbuf 1) }
   | "\'\\" ['\\' '\'' '\"' 'n' 't' 'b' 'r' ' '] "\'"
