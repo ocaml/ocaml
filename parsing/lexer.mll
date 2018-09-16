@@ -22,7 +22,7 @@ open Parser
 
 type error =
   | Illegal_character of char
-  | Illegal_escape of string
+  | Illegal_escape of string * string option
   | Unterminated_comment of Location.t
   | Unterminated_string
   | Unterminated_string_in_comment of Location.t * Location.t
@@ -157,6 +157,10 @@ let char_for_backslash = function
   | 't' -> '\009'
   | c   -> c
 
+let illegal_escape lexbuf reason =
+  let error = Illegal_escape (Lexing.lexeme lexbuf, Some reason) in
+  raise (Error (error, Location.curr lexbuf))
+
 let char_for_decimal_code lexbuf i =
   let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
            10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
@@ -164,8 +168,9 @@ let char_for_decimal_code lexbuf i =
   if (c < 0 || c > 255) then
     if in_comment ()
     then 'x'
-    else raise (Error(Illegal_escape (Lexing.lexeme lexbuf),
-                      Location.curr lexbuf))
+    else
+      illegal_escape lexbuf
+        (Printf.sprintf "%d is outside the range of ASCII characters." c)
   else Char.chr c
 
 let char_for_octal_code lexbuf i =
@@ -175,8 +180,9 @@ let char_for_octal_code lexbuf i =
   if (c < 0 || c > 255) then
     if in_comment ()
     then 'x'
-    else raise (Error(Illegal_escape (Lexing.lexeme lexbuf),
-                      Location.curr lexbuf))
+    else
+      illegal_escape lexbuf
+        (Printf.sprintf "o%o (=%d) is outside the range of ASCII characters." c c)
   else Char.chr c
 
 let char_for_hexadecimal_code lexbuf i =
@@ -184,20 +190,19 @@ let char_for_hexadecimal_code lexbuf i =
   Char.chr byte
 
 let uchar_for_uchar_escape lexbuf =
-  let err e =
-    raise
-      (Error (Illegal_escape (Lexing.lexeme lexbuf ^ e), Location.curr lexbuf))
-  in
   let len = Lexing.lexeme_end lexbuf - Lexing.lexeme_start lexbuf in
   let first = 3 (* skip opening \u{ *) in
   let last = len - 2 (* skip closing } *) in
   let digit_count = last - first + 1 in
   match digit_count > 6 with
-  | true -> err ", too many digits, expected 1 to 6 hexadecimal digits"
+  | true ->
+      illegal_escape lexbuf
+        "too many digits, expected 1 to 6 hexadecimal digits"
   | false ->
       let cp = hex_num_value lexbuf ~first ~last in
       if Uchar.is_valid cp then Uchar.unsafe_of_int cp else
-      err (", " ^ Printf.sprintf "%X" cp ^ " is not a Unicode scalar value")
+      illegal_escape lexbuf
+        (Printf.sprintf "%X is not a Unicode scalar value" cp)
 
 (* recover the name from a LABEL or OPTLABEL token *)
 
@@ -255,9 +260,12 @@ open Format
 let prepare_error loc = function
   | Illegal_character c ->
       Location.errorf ~loc "Illegal character (%s)" (Char.escaped c)
-  | Illegal_escape s ->
+  | Illegal_escape (s, explanation) ->
       Location.errorf ~loc
-        "Illegal backslash escape in string or character (%s)" s
+        "Illegal backslash escape in string or character (%s)%t" s
+        (fun ppf -> match explanation with
+           | None -> ()
+           | Some expl -> fprintf ppf ": %s" expl)
   | Unterminated_comment _ ->
       Location.errorf ~loc "Comment not terminated"
   | Unterminated_string ->
@@ -407,7 +415,7 @@ rule token = parse
   | "\'\\" _
       { let l = Lexing.lexeme lexbuf in
         let esc = String.sub l 1 (String.length l - 1) in
-        raise (Error(Illegal_escape esc, Location.curr lexbuf))
+        raise (Error(Illegal_escape (esc, None), Location.curr lexbuf))
       }
   | "(*"
       { let s, loc = with_comment_buffer comment lexbuf in
@@ -656,7 +664,7 @@ and string = parse
   | '\\' _
       { if not (in_comment ()) then begin
 (*  Should be an error, but we are very lax.
-          raise (Error (Illegal_escape (Lexing.lexeme lexbuf),
+          raise (Error (Illegal_escape (Lexing.lexeme lexbuf, None),
                         Location.curr lexbuf))
 *)
           let loc = Location.curr lexbuf in
