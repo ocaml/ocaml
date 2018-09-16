@@ -6,11 +6,11 @@ val invalid : string = "\\99"
 Line 1, characters 15-19:
   let invalid = "\999" ;;
                  ^^^^
-Error: Illegal backslash escape in string or character (\999): 999 is outside the range of ASCII characters.
+Error: Illegal backslash escape in string or character (\999): 999 is outside the range of legal characters (0-255).
 Line 1, characters 15-20:
   let invalid = "\o777" ;;
                  ^^^^^
-Error: Illegal backslash escape in string or character (\o777): o777 (=511) is outside the range of ASCII characters.
+Error: Illegal backslash escape in string or character (\o777): o777 (=511) is outside the range of legal characters (0-255).
 Line 1, characters 15-17:
   let invalid = "\o77" ;;
                  ^^
