@@ -172,7 +172,12 @@ let char_for_octal_code lexbuf i =
   let c = 64 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
            8 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
                (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in
-  Char.chr c
+  if (c < 0 || c > 255) then
+    if in_comment ()
+    then 'x'
+    else raise (Error(Illegal_escape (Lexing.lexeme lexbuf),
+                      Location.curr lexbuf))
+  else Char.chr c
 
 let char_for_hexadecimal_code lexbuf i =
   let byte = hex_num_value lexbuf ~first:i ~last:(i+1) in
@@ -395,7 +400,7 @@ rule token = parse
       { CHAR(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
   | "\'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "\'"
       { CHAR(char_for_decimal_code lexbuf 2) }
-  | "\'\\" 'o' ['0'-'3'] ['0'-'7'] ['0'-'7'] "\'"
+  | "\'\\" 'o' ['0'-'7'] ['0'-'7'] ['0'-'7'] "'"
       { CHAR(char_for_octal_code lexbuf 3) }
   | "\'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "\'"
       { CHAR(char_for_hexadecimal_code lexbuf 3) }
@@ -639,7 +644,7 @@ and string = parse
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
       { store_escaped_char lexbuf (char_for_decimal_code lexbuf 1);
          string lexbuf }
-  | '\\' 'o' ['0'-'3'] ['0'-'7'] ['0'-'7']
+  | '\\' 'o' ['0'-'7'] ['0'-'7'] ['0'-'7']
       { store_escaped_char lexbuf (char_for_octal_code lexbuf 2);
          string lexbuf }
   | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F']
