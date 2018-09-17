@@ -37,7 +37,8 @@ let after_a =
 Line 3, characters 2-20:
     { x with lbl = 4 }
     ^^^^^^^^^^^^^^^^^^
-Warning 23: all the fields are explicitly listed in this record:
+Warning 23:
+all the fields are explicitly listed in this record:
 the 'with' clause is useless.
 val after_a : M.r = {M.lbl = 4}
 |}]
@@ -498,7 +499,8 @@ Line 1, characters 8-70:
   ........function
     | ({ contents = M.A } : M.t ref) as x ->
       x := B
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {contents=B}
 val t : M.t ref -> unit = <fun>
@@ -511,7 +513,8 @@ Line 1, characters 8-70:
   ........function
     | ({ contents = M.A } : M.t ref) as x ->
       x := B
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {contents=B}
 val t : M.t ref -> unit = <fun>

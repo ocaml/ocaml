@@ -12,7 +12,8 @@ Line 1, characters 8-60:
   ........function
       None, None -> 1
     | Some _, Some _ -> 2..
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 ((Some _, None)|(None, Some _))
 val f : 'a option * 'b option -> int = <fun>
@@ -41,13 +42,15 @@ let f : type a b c d e f g.
 Line 4, characters 1-82:
   .function A, A, A, A, A, A, A, _, U, U -> 1
      | _, _, _, _, _, _, _, G, _, _ -> 1
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (A, A, A, A, A, A, B, (E|F), _, _)
 Line 5, characters 5-33:
      | _, _, _, _, _, _, _, G, _, _ -> 1
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 56: this match case is unreachable.
+Warning 56:
+this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 val f :
   'a t * 'b t * 'c t * 'd t * 'e t * 'f t * 'g t * v * ('a, 'b, 'c, 'd) u *
@@ -60,12 +63,14 @@ let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
 Line 1, characters 20-48:
   let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 4: this pattern-matching is fragile.
+Warning 4:
+this pattern-matching is fragile.
 It will remain exhaustive when constructors are added to type t.
 Line 1, characters 42-43:
   let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
                                             ^
-Warning 56: this match case is unreachable.
+Warning 56:
+this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 val f : int t -> int = <fun>
 |}]
@@ -75,7 +80,8 @@ let f (x : unit t option) = match x with None -> 1 | _ -> 2 ;; (* warn? *)
 Line 1, characters 53-54:
   let f (x : unit t option) = match x with None -> 1 | _ -> 2 ;; (* warn? *)
                                                        ^
-Warning 56: this match case is unreachable.
+Warning 56:
+this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 val f : unit t option -> int = <fun>
 |}]
@@ -85,7 +91,8 @@ let f (x : unit t option) = match x with None -> 1 | Some _ -> 2 ;; (* warn *)
 Line 1, characters 53-59:
   let f (x : unit t option) = match x with None -> 1 | Some _ -> 2 ;; (* warn *)
                                                        ^^^^^^
-Warning 56: this match case is unreachable.
+Warning 56:
+this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 val f : unit t option -> int = <fun>
 |}]
@@ -100,7 +107,8 @@ let f (x : int t option) = match x with None -> 1;; (* warn *)
 Line 1, characters 27-49:
   let f (x : int t option) = match x with None -> 1;; (* warn *)
                              ^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some A
 val f : int t option -> int = <fun>
@@ -120,7 +128,8 @@ let f : (int t box pair * bool) option -> unit = function None -> ();;
 Line 1, characters 49-68:
   let f : (int t box pair * bool) option -> unit = function None -> ();;
                                                    ^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some ({left=Box A; right=Box A}, _)
 val f : (int t box pair * bool) option -> unit = <fun>
@@ -136,7 +145,8 @@ let f = function {left=Box 0; _ } -> ();;
 Line 1, characters 8-39:
   let f = function {left=Box 0; _ } -> ();;
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {left=Box 1; _ }
 val f : int box pair -> unit = <fun>
@@ -147,7 +157,8 @@ let f = function {left=Box 0;right=Box 1} -> ();;
 Line 1, characters 8-47:
   let f = function {left=Box 0;right=Box 1} -> ();;
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {left=Box 0; right=Box 0}
 val f : int box pair -> unit = <fun>
@@ -204,7 +215,8 @@ let f : (A.a, A.b) cmp -> unit = function Any -> ()
 Line 1, characters 33-51:
   let f : (A.a, A.b) cmp -> unit = function Any -> ()
                                    ^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
 val f : (A.a, A.b) cmp -> unit = <fun>
@@ -257,7 +269,8 @@ let harder : (zero succ, zero succ, zero succ) plus option -> bool =
 Line 2, characters 2-24:
     function None -> false
     ^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some (PlusS _)
 val harder : (zero succ, zero succ, zero succ) plus option -> bool = <fun>
@@ -300,8 +313,9 @@ let f () = match None with _ -> .;; (* error *)
 Line 1, characters 27-28:
   let f () = match None with _ -> .;; (* error *)
                              ^
-Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: _
+Error:
+This match case could not be refuted.
+Here is an example of a value that would reach it: _
 |}]
 
 let g () = match None with _ -> () | exception _ -> .;; (* error *)
@@ -309,8 +323,9 @@ let g () = match None with _ -> () | exception _ -> .;; (* error *)
 Line 1, characters 47-48:
   let g () = match None with _ -> () | exception _ -> .;; (* error *)
                                                  ^
-Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: _
+Error:
+This match case could not be refuted.
+Here is an example of a value that would reach it: _
 |}]
 
 let h () = match None with _ -> .  | exception _ -> .;; (* error *)
@@ -318,8 +333,9 @@ let h () = match None with _ -> .  | exception _ -> .;; (* error *)
 Line 1, characters 27-28:
   let h () = match None with _ -> .  | exception _ -> .;; (* error *)
                              ^
-Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: _
+Error:
+This match case could not be refuted.
+Here is an example of a value that would reach it: _
 |}]
 
 let f x = match x with _ -> () | None -> .;; (* do not warn *)
@@ -334,7 +350,8 @@ let f x y = match 1 with 1 when x = y -> 1;;
 Line 1, characters 12-42:
   let f x y = match 1 with 1 when x = y -> 1;;
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 All clauses in this pattern-matching are guarded.
 val f : 'a -> 'a -> int = <fun>
 |}]
@@ -345,7 +362,8 @@ let f = function {contents=_}, 0 -> 0;;
 Line 1, characters 8-37:
   let f = function {contents=_}, 0 -> 0;;
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (_, 1)
 val f : 'a ref * int -> int = <fun>
@@ -363,7 +381,8 @@ Line 1, characters 8-88:
     | None -> ()
     | Some x when x > 0 -> ()
     | Some x when x <= 0 -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some _
 (However, some guarded clause may match this value.)

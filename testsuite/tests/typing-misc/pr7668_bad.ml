@@ -23,7 +23,8 @@ val partition_map :
 Line 12, characters 35-96:
   ...................................partition_map (fun x -> if x then `Left ()
   else `Right ()) xs
-Error: This expression has type unit list * unit list
-       but an expression was expected of type int list * int list
-       Type unit is not compatible with type int
+Error:
+This expression has type unit list * unit list
+but an expression was expected of type int list * int list
+Type unit is not compatible with type int
 |}]

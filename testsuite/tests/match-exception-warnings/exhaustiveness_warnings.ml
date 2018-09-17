@@ -21,7 +21,8 @@ Line 8, characters 4-83:
       | exception e -> ()
       | Some false -> ()
       | None -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
 val test_match_exhaustiveness : unit -> unit = <fun>
@@ -39,7 +40,8 @@ Line 2, characters 4-73:
   ....match None with
       | Some false -> ()
       | None | exception _ -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
 val test_match_exhaustiveness_nest1 : unit -> unit = <fun>
@@ -57,7 +59,8 @@ Line 2, characters 4-73:
   ....match None with
       | Some false | exception _ -> ()
       | None -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
 val test_match_exhaustiveness_nest2 : unit -> unit = <fun>
@@ -77,7 +80,8 @@ Line 2, characters 4-111:
       | exception e -> ()
       | Some false | exception _ -> ()
       | None | exception _ -> ()
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
 Line 4, characters 29-30:

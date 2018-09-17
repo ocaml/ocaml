@@ -24,11 +24,12 @@ end
 Line 3, characters 2-36:
     include Comparable with type t = t
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Illegal shadowing of included type t/1019 by t/1023
-       Line 2, characters 2-19:
-         Type t/1019 came from this include
-       Line 3, characters 2-23:
-         The value print has no valid type if t/1019 is shadowed
+Error:
+Illegal shadowing of included type t/1019 by t/1023
+Line 2, characters 2-19:
+  Type t/1019 came from this include
+Line 3, characters 2-23:
+  The value print has no valid type if t/1019 is shadowed
 |}]
 
 module type Sunderscore = sig
@@ -52,12 +53,10 @@ Line 1, characters 17-115:
     module rec M : sig type t = M2.t end
     and M2 : sig type t = int end
   end with type M.t = int
-Error: In this `with' constraint, the new definition of M.t
-       does not match its original definition in the constrained signature:
-       Type declarations do not match:
-         type t = int
-       is not included in
-         type t = M2.t
+Error:
+In this `with' constraint, the new definition of M.t
+does not match its original definition in the constrained signature:
+Type declarations do not match: type t = int is not included in type t = M2.t
 |}]
 
 
@@ -168,9 +167,10 @@ Line 2, characters 16-142:
     type 'a mylist = 'a list
     val x : int mylist t2
   end with type 'a t2 := 'a t * bool
-Error: Destructive substitutions are not supported for constrained
-       types (other than when replacing a type constructor with
-       a type constructor with the same arguments).
+Error:
+Destructive substitutions are not supported for constrained
+types (other than when replacing a type constructor with
+a type constructor with the same arguments).
 |}]
 
 (* Issue where the typer weakens an alias, which breaks the typing of the rest
@@ -214,12 +214,13 @@ type (_, _) eq = Refl : ('a, 'a) eq
 Line 11, characters 18-58:
     module type T = S with type N.t = M.t with module N := N;;
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this `with' constraint, the new definition of N
-       does not match its original definition in the constrained signature:
-       Modules do not match:
-         sig type t = M.t val compare : t -> t -> int end
-       is not included in
-         (module M)
+Error:
+In this `with' constraint, the new definition of N
+does not match its original definition in the constrained signature:
+Modules do not match:
+  sig type t = M.t val compare : t -> t -> int end
+is not included in
+  (module M)
 |}]
 
 (* Checking that the uses of M.t are rewritten regardless of how they
@@ -272,8 +273,9 @@ Line 1, characters 16-89:
     module M : sig type t end
     module A = M
   end with type M.t := float
-Error: This `with' constraint on M.t changes M, which is aliased
-       in the constrained signature (as A).
+Error:
+This `with' constraint on M.t changes M, which is aliased
+in the constrained signature (as A).
 |}]
 
 (* And more corner cases with applicative functors: *)
@@ -298,13 +300,11 @@ module type S2 = S with type M.t := float
 Line 1, characters 17-41:
   module type S2 = S with type M.t := float
                    ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This `with' constraint on M.t makes the applicative functor
-       type F(M).t ill-typed in the constrained signature:
-       Modules do not match:
-         sig type u = M.u end
-       is not included in
-         sig type t end
-       The type `t' is required but not provided
+Error:
+This `with' constraint on M.t makes the applicative functor
+type F(M).t ill-typed in the constrained signature:
+Modules do not match: sig type u = M.u end is not included in sig type t end
+The type `t' is required but not provided
 |}]
 
 (* However if the applicative functor doesn't care about the type
@@ -334,10 +334,11 @@ Line 2, characters 17-120:
     module rec M : sig type t = A of Id(M2).t end
     and M2 : sig type t end
   end with type M2.t := int
-Error: This `with' constraint on M2.t makes the applicative functor
-       type Id(M2).t ill-typed in the constrained signature:
-       Modules do not match: sig  end is not included in sig type t end
-       The type `t' is required but not provided
+Error:
+This `with' constraint on M2.t makes the applicative functor
+type Id(M2).t ill-typed in the constrained signature:
+Modules do not match: sig  end is not included in sig type t end
+The type `t' is required but not provided
 |}]
 
 
@@ -383,6 +384,7 @@ Line 1, characters 16-159:
     end
     module Alias = M
   end with module M.N := A
-Error: This `with' constraint on M.N changes M, which is aliased
-       in the constrained signature (as Alias).
+Error:
+This `with' constraint on M.N changes M, which is aliased
+in the constrained signature (as Alias).
 |}]

@@ -26,8 +26,9 @@ Error: Unbound record field z
 Line 1, characters 6-14:
   {x=3; contents=2};;
         ^^^^^^^^
-Error: The record field contents belongs to the type 'a ref
-       but is mixed here with fields of type t
+Error:
+The record field contents belongs to the type 'a ref
+but is mixed here with fields of type t
 |}];;
 
 (* private types *)
@@ -73,8 +74,8 @@ type foo = { mutable y : int; }
 Line 2, characters 17-18:
   let f (r: int) = r.y <- 3;;
                    ^
-Error: This expression has type int but an expression was expected of type
-         foo
+Error:
+This expression has type int but an expression was expected of type foo
 |}];;
 
 let f (r: int) =
@@ -84,8 +85,9 @@ let f (r: int) =
 Line 3, characters 4-20:
     | { contents = 3 } -> ()
       ^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type int ref
-       but a pattern was expected which matches values of type int
+Error:
+This pattern matches values of type int ref
+but a pattern was expected which matches values of type int
 |}];;
 
 
@@ -100,8 +102,8 @@ type bar = { x : int; }
 Line 3, characters 20-21:
   let f (r: bar) = ({ r with z = 3 } : foo)
                       ^
-Error: This expression has type bar but an expression was expected of type
-         foo
+Error:
+This expression has type bar but an expression was expected of type foo
 |}];;
 
 type foo = { x: int };;
@@ -137,8 +139,8 @@ Error: Unbound record field Complex.z
 Line 1, characters 2-6:
   { true with contents = 0 };;
     ^^^^
-Error: This expression has type bool but an expression was expected of type
-         'a ref
+Error:
+This expression has type bool but an expression was expected of type 'a ref
 |}];;
 
 type ('a, 'b) t = { fst : 'a; snd : 'b };;
@@ -160,7 +162,8 @@ val x : int t = {f = 12; g = 43}
 Line 3, characters 0-19:
   {x with f = "hola"};;
   ^^^^^^^^^^^^^^^^^^^
-Error: This expression has type string t
-       but an expression was expected of type int t
-       Type string is not compatible with type int
+Error:
+This expression has type string t but an expression was expected of type
+  int t
+Type string is not compatible with type int
 |}]

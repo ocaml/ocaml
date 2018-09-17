@@ -26,6 +26,6 @@ Line 7, characters 0-108:
         match ty with
         | Int -> (this :> bar)
     end.................................
-Error: This class should be virtual.
-       The following methods are undefined : bar
+Error:
+This class should be virtual. The following methods are undefined : bar
 |}];;

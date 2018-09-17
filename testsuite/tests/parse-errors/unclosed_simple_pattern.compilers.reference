@@ -25,7 +25,8 @@ This '(' might be unmatched
 Line 6, characters 18-25:
     | (module Foo : sig end
                     ^^^^^^^
-Error: invalid package type: only module type identifier and 'with type' constraints are supported
+Error:
+invalid package type: only module type identifier and 'with type' constraints are supported
 Line 7, characters 0-2:
   ;;
   ^^

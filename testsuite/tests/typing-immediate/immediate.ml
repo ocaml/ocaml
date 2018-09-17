@@ -109,8 +109,9 @@ end;;
 Line 2, characters 2-31:
     type t = string [@@immediate]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Error:
+Types marked with the immediate attribute must be
+non-pointer types like int or bool
 |}];;
 
 (* Not guaranteed that t is immediate, so this is an invalid declaration *)
@@ -122,8 +123,9 @@ end;;
 Line 3, characters 2-26:
     type s = t [@@immediate]
     ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Error:
+Types marked with the immediate attribute must be
+non-pointer types like int or bool
 |}];;
 
 (* Can't ascribe to an immediate type signature with a non-immediate type *)
@@ -135,16 +137,17 @@ Line 1, characters 42-70:
   ..........................................struct
     type t = string
   end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig type t = string end
-       is not included in
-         sig type t [@@immediate] end
-       Type declarations do not match:
-         type t = string
-       is not included in
-         type t [@@immediate]
-       the first is not an immediate type.
+Error:
+Signature mismatch:
+Modules do not match:
+  sig type t = string end
+is not included in
+  sig type t [@@immediate] end
+Type declarations do not match:
+  type t = string
+is not included in
+  type t [@@immediate]
+the first is not an immediate type.
 |}];;
 
 (* Same as above but with explicit signature *)
@@ -154,13 +157,14 @@ module FM_invalid = F (struct type t = string end);;
 Line 1, characters 23-49:
   module M_invalid : S = struct type t = string end;;
                          ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Signature mismatch:
-       Modules do not match: sig type t = string end is not included in S
-       Type declarations do not match:
-         type t = string
-       is not included in
-         type t [@@immediate]
-       the first is not an immediate type.
+Error:
+Signature mismatch:
+Modules do not match: sig type t = string end is not included in S
+Type declarations do not match:
+  type t = string
+is not included in
+  type t [@@immediate]
+the first is not an immediate type.
 |}];;
 
 (* Can't use a non-immediate type even if mutually recursive *)
@@ -172,6 +176,7 @@ end;;
 Line 2, characters 2-26:
     type t = s [@@immediate]
     ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Error:
+Types marked with the immediate attribute must be
+non-pointer types like int or bool
 |}];;

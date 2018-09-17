@@ -28,7 +28,8 @@ module M : sig type s = private [> `A ] val eq : (s, [ `A | `B ]) t end
 Line 16, characters 39-64:
   .......................................function
     | Any -> "Any"
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
 val f : (M.s, [ `A | `B ]) t -> string = <fun>
@@ -58,7 +59,8 @@ module N :
 Line 12, characters 49-74:
   .................................................function
     | Any -> "Any"
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
 val f : (N.s, < a : int; b : bool >) t -> string = <fun>

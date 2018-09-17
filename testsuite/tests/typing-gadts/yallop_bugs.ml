@@ -40,8 +40,8 @@ let magic : 'a 'b. 'a -> 'b =
 Line 1, characters 0-36:
   type (_, +_) eq = Refl : ('a, 'a) eq
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this GADT definition, the variance of some parameter
-       cannot be checked
+Error:
+In this GADT definition, the variance of some parameter cannot be checked
 |}];;
 
 (* Record patterns *)
@@ -60,7 +60,8 @@ Line 5, characters 39-99:
   .......................................function
     | BoolLit, false -> false
     | IntLit , 6 -> false
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (IntLit, 0)
 val check : 's t * 's -> bool = <fun>
@@ -78,7 +79,8 @@ Line 3, characters 45-134:
   .............................................function
     | {fst = BoolLit; snd = false} -> false
     | {fst = IntLit ; snd =  6} -> false
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {fst=IntLit; snd=0}
 val check : ('s t, 's) pair -> bool = <fun>

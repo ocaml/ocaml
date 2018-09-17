@@ -24,7 +24,8 @@ type (_, _) t = A : ('a, 'a) t | B : string -> ('a, 'b) t
 Line 8, characters 52-74:
   ....................................................function
      | B s -> s
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 A
 module M :

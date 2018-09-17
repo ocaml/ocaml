@@ -9,7 +9,8 @@ Pervasives.(+) 1 1;;
 Line 3, characters 0-14:
   Pervasives.(+) 1 1;;
   ^^^^^^^^^^^^^^
-Error (warning 3): deprecated: module Stdlib.Pervasives
+Error (warning 3):
+deprecated: module Stdlib.Pervasives
 Use Stdlib instead.
 
 If you need to stay compatible with OCaml < 4.07, you can use the
@@ -21,7 +22,8 @@ module X = Pervasives;;
 Line 1, characters 11-21:
   module X = Pervasives;;
              ^^^^^^^^^^
-Error (warning 3): deprecated: module Stdlib.Pervasives
+Error (warning 3):
+deprecated: module Stdlib.Pervasives
 Use Stdlib instead.
 
 If you need to stay compatible with OCaml < 4.07, you can use the
@@ -33,7 +35,8 @@ open Pervasives;;
 Line 1, characters 5-15:
   open Pervasives;;
        ^^^^^^^^^^
-Error (warning 3): deprecated: module Stdlib.Pervasives
+Error (warning 3):
+deprecated: module Stdlib.Pervasives
 Use Stdlib instead.
 
 If you need to stay compatible with OCaml < 4.07, you can use the

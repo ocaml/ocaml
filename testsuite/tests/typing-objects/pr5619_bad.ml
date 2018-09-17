@@ -48,8 +48,8 @@ Line 2, characters 2-156:
             Foo -> (self :> foo_t)
           | _ -> raise Exit
     end
-Error: The class type
-         object method cast : 'a name -> 'a method foo : string end
-       is not matched by the class type foo_t
-       The public method cast cannot be hidden
+Error:
+The class type object method cast : 'a name -> 'a method foo : string end
+is not matched by the class type foo_t
+The public method cast cannot be hidden
 |}]

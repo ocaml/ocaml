@@ -11,7 +11,8 @@ type 'a t
 Line 3, characters 15-40:
   let f (type a) (Neq n : (a, a t) eq) = n;;   (* warn! *)
                  ^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
 val f : ('a, 'a t) eq -> int = <fun>
@@ -24,7 +25,8 @@ end;;
 Line 2, characters 16-43:
    let f (type a) (Neq n : (a, a T.t) eq) = n  (* warn! *)
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
 module F :

@@ -403,6 +403,8 @@ type report_printer = {
 
   pp_report_kind : report_printer -> report ->
     Format.formatter -> report_kind -> unit;
+  pp_loc : report_printer -> report ->
+    Format.formatter -> t -> unit;
   pp_main_loc : report_printer -> report ->
     Format.formatter -> t -> unit;
   pp_main_txt : report_printer -> report ->
@@ -418,11 +420,10 @@ type report_printer = {
 }
 
 let batch_mode_printer : report_printer =
-  let pp_loc ppf loc = Format.fprintf ppf "%a:@ " print_loc loc in
   let pp_txt ppf txt = Format.fprintf ppf "@[%t@]" txt in
   let pp self ppf report =
     setup_colors ();
-    Format.fprintf ppf "@[<v>%a%a: %a%a@]@."
+    Format.fprintf ppf "@[<v>%a@[<hv>%a:@ %a@]%a@]@."
       (self.pp_main_loc self report) report.main.loc
       (self.pp_report_kind self report) report.kind
       (self.pp_main_txt self report) report.main.txt
@@ -434,8 +435,11 @@ let batch_mode_printer : report_printer =
     | Report_warning_as_error w ->
         Format.fprintf ppf "@{<error>Error@} (warning %d)" w
   in
-  let pp_main_loc _self _ ppf loc =
-    pp_loc ppf loc
+  let pp_loc _self _ ppf loc =
+    Format.fprintf ppf "%a:@ " print_loc loc
+  in
+  let pp_main_loc self report ppf loc =
+    self.pp_loc self report ppf loc
   in
   let pp_main_txt _self _ ppf txt =
     pp_txt ppf txt
@@ -450,14 +454,14 @@ let batch_mode_printer : report_printer =
       (self.pp_submsg_loc self report) loc
       (self.pp_submsg_txt self report) txt
   in
-  let pp_submsg_loc _self _ ppf loc =
+  let pp_submsg_loc self report ppf loc =
     if not loc.loc_ghost then
-      pp_loc ppf loc
+      self.pp_loc self report ppf loc
   in
   let pp_submsg_txt _self _ ppf loc =
     pp_txt ppf loc
   in
-  { pp; pp_report_kind; pp_main_loc; pp_main_txt;
+  { pp; pp_report_kind; pp_loc; pp_main_loc; pp_main_txt;
     pp_submsgs; pp_submsg; pp_submsg_loc; pp_submsg_txt }
 
 let is_dummy_loc loc =
@@ -487,7 +491,7 @@ let dumb_toplevel_printer (lb: lexbuf): report_printer =
       if is_toplevel_loc loc then highlight_dumb lb ppf [loc] in
     Format.fprintf ppf "@[<v>%a:@,%a@]" print_loc loc highlight loc
   in
-  { batch_mode_printer with pp; pp_main_loc = pp_loc; pp_submsg_loc = pp_loc }
+  { batch_mode_printer with pp; pp_loc }
 
 let terminfo_toplevel_printer (lb: lexbuf): report_printer =
   let pp self ppf err =

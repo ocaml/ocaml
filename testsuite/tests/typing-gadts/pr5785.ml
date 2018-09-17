@@ -17,7 +17,8 @@ Line 7, characters 43-100:
   ...........................................function
       | One, One -> "two"
       | Two, Two -> "four"
-Warning 8: this pattern-matching is not exhaustive.
+Warning 8:
+this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (Two, One)
 module Add :
