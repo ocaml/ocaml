@@ -20,6 +20,6 @@ module PR_4261 = struct
     type t = D.t
   end
 
-  module rec U : T with module D = U' = U
+  module rec U : T with type D.t = U'.t = U
   and U' : S with type t = U'.t = U
 end;;

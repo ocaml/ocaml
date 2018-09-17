@@ -17,7 +17,6 @@ open! Int_replace_polymorphic_compare
 
 type t = string
 
-let anon_fn = "anon_fn"
 let apply_arg = "apply_arg"
 let apply_funct = "apply_funct"
 let block_symbol = "block_symbol"
@@ -291,12 +290,15 @@ let toplevel_substitution_named = "toplevel_substitution_named"
 let unbox_free_vars_of_closures = "unbox_free_vars_of_closures"
 let zero = "zero"
 
-let anon_fn_with_loc_fmt = format_of_string "anon_fn[%a]"
-let anon_fn_with_loc loc =
-  if loc.Location.loc_ghost then anon_fn
-  else begin
-    Format.asprintf anon_fn_with_loc_fmt Location.print_compact loc
-  end
+let anon_fn_with_loc (loc: Location.t) =
+  let (file, line, startchar) = Location.get_pos_info loc.loc_start in
+  let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_bol in
+  let pp_chars ppf =
+    if startchar >= 0 then Format.fprintf ppf ",%i--%i" startchar endchar in
+  if loc.Location.loc_ghost then "anon_fn"
+  else
+    Format.asprintf "anon_fn[%a:%i%t]"
+      Location.print_filename file line pp_chars
 
 let of_primitive : Lambda.primitive -> string = function
   | Pidentity -> pidentity

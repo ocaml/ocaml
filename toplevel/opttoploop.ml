@@ -155,8 +155,8 @@ let remove_printer = Printer.remove_printer
 
 let parse_toplevel_phrase = ref Parse.toplevel_phrase
 let parse_use_file = ref Parse.use_file
-let print_location = Location.print_error (* FIXME change back to print *)
-let print_error = Location.print_error
+let print_location = Location.print_loc
+let print_error = Location.print_report
 let print_warning = Location.print_warning
 let input_name = Location.input_name
 
@@ -221,13 +221,13 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
   let fn = Filename.chop_extension dll in
   if not Config.flambda then
     Asmgen.compile_implementation_clambda
-      ~toplevel:need_symbol fn ppf
+      ~toplevel:need_symbol fn ~ppf_dump:ppf
       { Lambda.code=slam ; main_module_block_size=size;
         module_ident; required_globals }
   else
     Asmgen.compile_implementation_flambda
-      ~required_globals ~backend ~toplevel:need_symbol fn ppf
-      (Middle_end.middle_end ppf ~prefixname:"" ~backend ~size
+      ~required_globals ~backend ~toplevel:need_symbol fn ~ppf_dump:ppf
+      (Middle_end.middle_end ~ppf_dump:ppf ~prefixname:"" ~backend ~size
          ~module_ident ~module_initializer:slam ~filename:"toplevel");
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
@@ -297,9 +297,9 @@ let execute_phrase print_outcome ppf phr =
             [ Ast_helper.Str.value ~loc Asttypes.Nonrecursive [vb] ], true
         | _ -> sstr, false
       in
-      let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
+      let (str, sg, info, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      let sg' = Typemod.simplify_signature sg in
+      let sg' = Typemod.simplify_signature newenv info sg in
       (* Why is this done? *)
       ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
@@ -362,7 +362,7 @@ let execute_phrase print_outcome ppf phr =
       with x ->
         toplevel_env := oldenv; raise x
       end
-  | Ptop_dir(dir_name, dir_arg) ->
+  | Ptop_dir {pdir_name = {Location.txt = dir_name}; pdir_arg } ->
       let d =
         try Some (Hashtbl.find directive_table dir_name)
         with Not_found -> None
@@ -372,10 +372,10 @@ let execute_phrase print_outcome ppf phr =
           fprintf ppf "Unknown directive `%s'.@." dir_name;
           false
       | Some d ->
-          match d, dir_arg with
-          | Directive_none f, Pdir_none -> f (); true
-          | Directive_string f, Pdir_string s -> f s; true
-          | Directive_int f, Pdir_int (n,None) ->
+          match d, pdir_arg with
+          | Directive_none f, None -> f (); true
+          | Directive_string f, Some {pdira_desc = Pdir_string s} -> f s; true
+          | Directive_int f, Some {pdira_desc = Pdir_int (n,None)} ->
              begin match Int_literal_converter.int n with
              | n -> f n; true
              | exception _ ->
@@ -384,12 +384,12 @@ let execute_phrase print_outcome ppf phr =
                        dir_name;
                false
              end
-          | Directive_int _, Pdir_int (_, Some _) ->
+          | Directive_int _, Some {pdira_desc = Pdir_int (_, Some _)} ->
               fprintf ppf "Wrong integer literal for directive `%s'.@."
                 dir_name;
               false
-          | Directive_ident f, Pdir_ident lid -> f lid; true
-          | Directive_bool f, Pdir_bool b -> f b; true
+          | Directive_ident f, Some {pdira_desc = Pdir_ident lid} -> f lid; true
+          | Directive_bool f, Some {pdira_desc = Pdir_bool b} -> f b; true
           | _ ->
               fprintf ppf "Wrong type of argument for directive `%s'.@."
                 dir_name;
@@ -464,12 +464,12 @@ let first_line = ref true
 let got_eof = ref false;;
 
 let read_input_default prompt buffer len =
-  output_string Pervasives.stdout prompt; flush Pervasives.stdout;
+  output_string stdout prompt; flush stdout;
   let i = ref 0 in
   try
     while true do
       if !i >= len then raise Exit;
-      let c = input_char Pervasives.stdin in
+      let c = input_char stdin in
       Bytes.set buffer !i c;
       incr i;
       if c = '\n' then raise Exit;

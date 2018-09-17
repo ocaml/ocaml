@@ -52,8 +52,8 @@ The following command-line options are recognized by "ocamllex".
 \item["-ml"]
 Output code that does not use OCaml's built-in automata
 interpreter. Instead, the automaton is encoded by OCaml functions.
-This option mainly is useful for debugging "ocamllex", using it for
-production lexers is not recommended.
+This option improves performance when using the native compiler, but
+decreases it when using the bytecode compiler.
 
 \item["-o" \var{output-file}]
 Specify the name of the output file produced by "ocamllex".

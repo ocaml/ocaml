@@ -690,12 +690,13 @@ let transl_class ids cl_id pub_meths cl vflag =
       Ident.Map.empty !new_ids'
   in
   let new_ids_meths = ref [] in
+  let no_env_update _ _ env = env in
   let msubst arr = function
       Lfunction {kind = Curried; params = self :: args; body} ->
         let env = Ident.create "env" in
         let body' =
           if new_ids = [] then body else
-          Lambda.subst (subst env body 0 new_ids_meths) body in
+          Lambda.subst no_env_update (subst env body 0 new_ids_meths) body in
         begin try
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
@@ -722,7 +723,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   and subst_env envs l lam =
     if top then lam else
     (* must be called only once! *)
-    let lam = Lambda.subst (subst env1 lam 1 new_ids_init) lam in
+    let lam = Lambda.subst no_env_update (subst env1 lam 1 new_ids_init) lam in
     Llet(Alias, Pgenval, env1, (if l = [] then Lvar envs else lfield envs 0),
     Llet(Alias, Pgenval, env1',
          (if !new_ids_init = [] then Lvar env1 else lfield env1 0),
@@ -925,7 +926,7 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, err) ->
-        Some (Location.error_of_printer loc report_error err)
+        Some (Location.error_of_printer ~loc report_error err)
       | _ ->
         None
     )

@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Abstract syntax tree produced by parsing *)
+(** Abstract syntax tree produced by parsing
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 open Asttypes
 
@@ -39,7 +44,11 @@ type constant =
 
 (** {1 Extension points} *)
 
-type attribute = string loc * payload
+type attribute = {
+    attr_name : string loc;
+    attr_payload : payload;
+    attr_loc : Location.t;
+  }
        (* [@id ARG]
           [@@id ARG]
 
@@ -70,6 +79,7 @@ and core_type =
     {
      ptyp_desc: core_type_desc;
      ptyp_loc: Location.t;
+     ptyp_loc_stack: Location.t list;
      ptyp_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
@@ -141,25 +151,35 @@ and package_type = Longident.t loc * (Longident.t loc * core_type) list
         (module S with type t1 = T1 and ... and tn = Tn)
        *)
 
-and row_field =
-  | Rtag of label loc * attributes * bool * core_type list
+and row_field = {
+  prf_desc : row_field_desc;
+  prf_loc : Location.t;
+  prf_attributes : attributes;
+}
+
+and row_field_desc =
+  | Rtag of label loc * bool * core_type list
         (* [`A]                   ( true,  [] )
            [`A of T]              ( false, [T] )
            [`A of T1 & .. & Tn]   ( false, [T1;...Tn] )
            [`A of & T1 & .. & Tn] ( true,  [T1;...Tn] )
 
-          - The 2nd field is true if the tag contains a
+          - The 'bool' field is true if the tag contains a
             constant (empty) constructor.
           - '&' occurs when several types are used for the same constructor
             (see 4.2 in the manual)
-
-          - TODO: switch to a record representation, and keep location
         *)
   | Rinherit of core_type
         (* [ T ] *)
 
-and object_field =
-  | Otag of label loc * attributes * core_type
+and object_field = {
+  pof_desc : object_field_desc;
+  pof_loc : Location.t;
+  pof_attributes : attributes;
+}
+
+and object_field_desc =
+  | Otag of label loc * core_type
   | Oinherit of core_type
 
 (* Patterns *)
@@ -168,6 +188,7 @@ and pattern =
     {
      ppat_desc: pattern_desc;
      ppat_loc: Location.t;
+     ppat_loc_stack: Location.t list;
      ppat_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
@@ -233,6 +254,7 @@ and expression =
     {
      pexp_desc: expression_desc;
      pexp_loc: Location.t;
+     pexp_loc_stack: Location.t list;
      pexp_attributes: attributes; (* ... [@id1] [@id2] *)
     }
 
@@ -454,6 +476,7 @@ and type_extension =
      ptyext_params: (core_type * variance) list;
      ptyext_constructors: extension_constructor list;
      ptyext_private: private_flag;
+     ptyext_loc: Location.t;
      ptyext_attributes: attributes;   (* ... [@@id1] [@@id2] *)
     }
 (*
@@ -472,6 +495,7 @@ and extension_constructor =
 and type_exception =
   {
     ptyexn_constructor: extension_constructor;
+    ptyexn_loc: Location.t;
     ptyexn_attributes: attributes; (* ... [@@id1] [@@id2] *)
   }
 
@@ -870,11 +894,23 @@ and module_binding =
 
 type toplevel_phrase =
   | Ptop_def of structure
-  | Ptop_dir of string * directive_argument
+  | Ptop_dir of toplevel_directive
      (* #use, #load ... *)
 
+and toplevel_directive =
+  {
+    pdir_name : string loc;
+    pdir_arg : directive_argument option;
+    pdir_loc : Location.t;
+  }
+
 and directive_argument =
-  | Pdir_none
+  {
+    pdira_desc : directive_argument_desc;
+    pdira_loc : Location.t;
+  }
+
+and directive_argument_desc =
   | Pdir_string of string
   | Pdir_int of string * char option
   | Pdir_ident of Longident.t

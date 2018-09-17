@@ -85,7 +85,7 @@ module Ints =
 
 let id_compare (id1,_) (id2,_) = String.compare id1 id2
 
-let tag_compare t1 t2 = Pervasives.compare t1 t2
+let tag_compare t1 t2 = Stdlib.compare t1 t2
 
 module Tags = Set.Make(struct type t = tag_info let compare = tag_compare end)
 
@@ -528,7 +528,7 @@ type t_transition =
 type transition = t_transition * Tags.t
 
 let trans_compare (t1,tags1) (t2,tags2) =
-  match Pervasives.compare  t1 t2 with
+  match Stdlib.compare  t1 t2 with
   | 0 -> Tags.compare tags1 tags2
   | r -> r
 
@@ -606,12 +606,12 @@ let followpos size entry_list =
 let no_action = max_int
 
 module StateSet =
-  Set.Make (struct type t = t_transition let compare = Pervasives.compare end)
+  Set.Make (struct type t = t_transition let compare = Stdlib.compare end)
 
 
 module MemMap =
   Map.Make (struct type t = int
-                   let compare (x:t) y = Pervasives.compare x y end)
+                   let compare (x:t) y = Stdlib.compare x y end)
 
 type 'a dfa_state =
   {final : int * ('a * int TagMap.t) ;
@@ -672,7 +672,7 @@ module MemKey =
    (struct
      type t = t_equiv
 
-     let compare e1 e2 = match Pervasives.compare e1.tag e2.tag with
+     let compare e1 e2 = match Stdlib.compare e1.tag e2.tag with
      | 0 -> StateSetSet.compare e1.equiv e2.equiv
      | r -> r
    end)

@@ -96,14 +96,14 @@ let rec push_defaults loc bindings cases partial =
         c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
           partial; }}}]
   | [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_attributes=[{txt="#default"},_];
+      c_rhs={exp_attributes=[{Parsetree.attr_name = {txt="#default"};_}];
              exp_desc = Texp_let
                (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
       push_defaults loc (Bind_value binds :: bindings)
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_attributes=[{txt="#modulepat"},_];
+      c_rhs={exp_attributes=[{Parsetree.attr_name = {txt="#modulepat"};_}];
              exp_desc = Texp_letmodule
                (id, name, mexpr, ({exp_desc = Texp_function _} as e2))}}] ->
       push_defaults loc (Bind_module (id, name, mexpr) :: bindings)
@@ -156,7 +156,7 @@ let event_function exp lam =
      Levent(body, {lev_loc = exp.exp_loc;
                    lev_kind = Lev_function;
                    lev_repr = repr;
-                   lev_env = Env.summary exp.exp_env}))
+                   lev_env = exp.exp_env}))
   else
     lam None
 
@@ -456,7 +456,7 @@ and transl_exp0 e =
           lev_loc = loc.loc;
           lev_kind = Lev_module_definition id;
           lev_repr = None;
-          lev_env = Env.summary Env.empty;
+          lev_env = Env.empty;
         })
       in
       Llet(Strict, Pgenval, id, defining_expr, transl_exp body)
@@ -550,8 +550,8 @@ and transl_case_try {c_lhs; c_guard; c_rhs} =
   iter_exn_names Translprim.add_exception_ident c_lhs;
   Misc.try_finally
     (fun () -> c_lhs, transl_guard c_guard c_rhs)
-    (fun () ->
-       iter_exn_names Translprim.remove_exception_ident c_lhs)
+    ~always:(fun () ->
+        iter_exn_names Translprim.remove_exception_ident c_lhs)
 
 and transl_cases_try cases =
   let cases =
@@ -838,7 +838,8 @@ and transl_match e arg pat_expr_list partial =
         let rhs =
           Misc.try_finally
             (fun () -> event_before c_rhs (transl_exp c_rhs))
-            (fun () -> iter_exn_names Translprim.remove_exception_ident pe)
+            ~always:(fun () ->
+                iter_exn_names Translprim.remove_exception_ident pe)
         in
         (pv, static_raise vids) :: val_cases,
         (pe, static_raise ids) :: exn_cases,
@@ -908,7 +909,7 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, err) ->
-          Some (Location.error_of_printer loc report_error err)
+          Some (Location.error_of_printer ~loc report_error err)
       | _ ->
         None
     )

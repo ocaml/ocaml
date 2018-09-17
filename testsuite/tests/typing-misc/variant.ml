@@ -11,7 +11,7 @@ end = struct
  let f = function A | B -> 0
 end;;
 [%%expect{|
-Line _, characters 6-61:
+Line 3, characters 6-61:
   ......struct
    type t = A | B
    let f = function A | B -> 0
@@ -26,3 +26,19 @@ Error: Signature mismatch:
        is not included in
          type t = int * bool
 |}];;
+
+
+(* PR#7838 *)
+
+module Make (X : sig val f : [ `A ] -> unit end) = struct
+ let make f1 f2 arg = match arg with `A -> f1 arg; f2 arg
+ let f = make X.f (fun _ -> ())
+end;;
+[%%expect{|
+module Make :
+  functor (X : sig val f : [ `A ] -> unit end) ->
+    sig
+      val make : (([< `A ] as 'a) -> 'b) -> ('a -> 'c) -> 'a -> 'c
+      val f : [ `A ] -> unit
+    end
+|}]

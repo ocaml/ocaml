@@ -159,13 +159,9 @@ let rec load_file recursive ppf name =
   | None -> fprintf ppf "Cannot find file %s.@." name; false
   | Some filename ->
       let ic = open_in_bin filename in
-      try
-        let success = really_load_file recursive ppf name filename ic in
-        close_in ic;
-        success
-      with exn ->
-        close_in ic;
-        raise exn
+      Misc.try_finally
+        ~always:(fun () -> close_in ic)
+        (fun () -> really_load_file recursive ppf name filename ic)
 
 and really_load_file recursive ppf name filename ic =
   let buffer = really_input_string ic (String.length Config.cmo_magic_number) in
@@ -294,7 +290,7 @@ let match_simple_printer_type desc printer_type =
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
     (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance_def desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
   (ty_arg, None)
@@ -312,7 +308,7 @@ let match_generic_printer_type desc path args printer_type =
       ty_args (Ctype.newconstr printer_type [ty_target]) in
   Ctype.unify !toplevel_env
     ty_expected
-    (Ctype.instance_def desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_expected;
   if not (Ctype.all_distinct_vars !toplevel_env args) then
@@ -484,9 +480,13 @@ let trim_signature = function
         (List.map
            (function
                Sig_module (id, md, rs) ->
+                 let attribute =
+                   Ast_helper.Attr.mk
+                     (Location.mknoloc "...")
+                     (Parsetree.PStr [])
+                 in
                  Sig_module (id, {md with md_attributes =
-                                    (Location.mknoloc "...", Parsetree.PStr [])
-                                    :: md.md_attributes},
+                                            attribute :: md.md_attributes},
                              rs)
              (*| Sig_modtype (id, Modtype_manifest mty) ->
                  Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)

@@ -258,6 +258,7 @@ let default_options = Options.list @
 [
   "-initially-opened-module", Arg.Set_string Odoc_global.initially_opened_module,
   M.initially_opened_module;
+  "-lib", Arg.Set_string Odoc_global.library_namespace, M.library_namespace;
   "-text", Arg.String (fun s ->
        Odoc_global.files := !Odoc_global.files @ [Odoc_global.Text_file s]),
     M.option_text ;

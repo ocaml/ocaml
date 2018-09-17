@@ -1,4 +1,8 @@
 (* TEST
+   files = "error_highlighting_use1.ml \
+            error_highlighting_use2.ml \
+            error_highlighting_use3.ml \
+            error_highlighting_use4.ml"
    * toplevel
 *)
 
@@ -21,3 +25,8 @@ let x = (1
   +
 2) +.
 3. in ();;
+
+#use "error_highlighting_use1.ml";;
+#use "error_highlighting_use2.ml";;
+#use "error_highlighting_use3.ml";;
+#use "error_highlighting_use4.ml";;

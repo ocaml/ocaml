@@ -8,7 +8,7 @@ type 'a t = 'a;;
 let f (g : 'a list -> 'a t -> 'a) s = g s s;;
 [%%expect{|
 type 'a t = 'a
-Line _, characters 42-43:
+Line 2, characters 42-43:
   let f (g : 'a list -> 'a t -> 'a) s = g s s;;
                                             ^
 Error: This expression has type 'a list
@@ -17,7 +17,7 @@ Error: This expression has type 'a list
 |}];;
 let f (g : 'a * 'b -> 'a t -> 'a) s = g s s;;
 [%%expect{|
-Line _, characters 42-43:
+Line 1, characters 42-43:
   let f (g : 'a * 'b -> 'a t -> 'a) s = g s s;;
                                             ^
 Error: This expression has type 'a * 'b

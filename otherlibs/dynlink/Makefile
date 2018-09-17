@@ -21,7 +21,6 @@ include ../../config/Makefile
 include ../../Makefile.common
 
 CAMLRUN ?= ../../boot/ocamlrun
-CAMLYACC ?= ../../boot/ocamlyacc
 
 ROOTDIR   = ../..
 OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
@@ -40,12 +39,12 @@ endif
 OBJS=dynlinkaux.cmo dynlink.cmo
 
 COMPILEROBJS=\
-  ../../utils/config.cmo ../../utils/misc.cmo \
+  ../../utils/config.cmo ../../utils/build_path_prefix_map.cmo \
+  ../../utils/misc.cmo \
   ../../utils/identifiable.cmo ../../utils/numbers.cmo \
   ../../utils/arg_helper.cmo ../../utils/clflags.cmo \
-  ../../utils/tbl.cmo ../../utils/consistbl.cmo \
+  ../../utils/consistbl.cmo \
   ../../utils/terminfo.cmo ../../utils/warnings.cmo \
-  ../../utils/build_path_prefix_map.cmo \
   ../../parsing/asttypes.cmi \
   ../../parsing/location.cmo ../../parsing/longident.cmo \
   ../../parsing/docstrings.cmo ../../parsing/syntaxerr.cmo \

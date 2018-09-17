@@ -10,7 +10,7 @@ end;;
 
 [%%expect{|
 type t = int
-Line _, characters 0-31:
+Line 3, characters 0-31:
   struct
     type t = [`T of t]
   end..
@@ -23,12 +23,8 @@ Error: Signature mismatch:
          type t = [ `T of t/2 ]
        is not included in
          type t = [ `T of t/1 ]
-       Line _, characters 0-12:
-  type t = int
-  ^^^^^^^^^^^^
-Definition of type t/1
-Line _, characters 2-20:
-    type t = [`T of t]
-    ^^^^^^^^^^^^^^^^^^
-Definition of type t/2
+       Line 1, characters 0-12:
+         Definition of type t/1
+       Line 4, characters 2-20:
+         Definition of type t/2
 |}]

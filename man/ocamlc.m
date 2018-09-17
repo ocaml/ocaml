@@ -620,6 +620,12 @@ then the
 .B d
 suffix is supported and gives a debug version of the runtime.
 .TP
+.BI \-stop\-after \ pass
+Stop compilation after the given compilation pass. The currently
+supported passes are:
+.BR parsing ,
+.BR typing .
+.TP
 .B \-safe\-string
 Enforce the separation between types
 .BR string \ and\  bytes ,
@@ -679,8 +685,8 @@ invocations of the C compiler and linker in
 mode.  Useful to debug C library problems.
 .TP
 .B \-vmthread
-Compile or link multithreaded programs, in combination with the
-VM-level threads library described in
+Deprecated since OCaml 4.08.0. Compile or link multithreaded programs,
+in combination with the VM-level threads library described in
 .IR The\ OCaml\ user's\ manual .
 .TP
 .BR \-vnum \ or\  \-version
@@ -938,6 +944,15 @@ mutually recursive types.
 
 61
 \ \ Unannotated unboxable type in primitive declaration.
+
+62
+\ \ Type constraint on GADT type declaration
+
+63
+\ \ Erroneous printed signature
+
+64
+\ \ -unsafe used with a preprocessor returning a syntax tree
 
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.

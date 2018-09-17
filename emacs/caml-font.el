@@ -30,11 +30,6 @@
     (set-face-foreground 'caml-font-doccomment-face "Red")
     'caml-font-doccomment-face))
 
-(unless (facep 'font-lock-preprocessor-face)
-  (defvar font-lock-preprocessor-face
-    (copy-face 'font-lock-builtin-face
-               'font-lock-preprocessor-face)))
-
 (defconst caml-font-lock-keywords
   `(
 ;modules and constructors

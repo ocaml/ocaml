@@ -311,7 +311,7 @@ type t = bytes
 
 val compare: t -> t -> int
 (** The comparison function for byte sequences, with the same
-    specification as {!Pervasives.compare}.  Along with the type [t],
+    specification as {!Stdlib.compare}.  Along with the type [t],
     this function [compare] allows the module [Bytes] to be passed as
     argument to the functors {!Set.Make} and {!Map.Make}. *)
 

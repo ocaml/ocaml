@@ -403,8 +403,12 @@ class text =
            | Some t -> t
            )
       | Some (RK_section _) ->
-          self#latex_of_text_element fmt
-            (Latex ("["^(self#make_ref (self#label ~no_:false (Name.simple name)))^"]"))
+          let text = match text_opt with
+            | None -> []
+            | Some x -> x in
+          let label= self#make_ref (self#label ~no_:false (Name.simple name)) in
+          self#latex_of_text fmt
+            (text @ [Latex ("["^label^"]")] )
       | Some kind ->
           let f_label =
             match kind with

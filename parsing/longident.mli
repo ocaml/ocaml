@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Long identifiers, used in parsetree. *)
+(** Long identifiers, used in parsetree.
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 type t =
     Lident of string
@@ -24,3 +29,6 @@ val flatten: t -> string list
 val unflatten: string list -> t option
 val last: t -> string
 val parse: string -> t
+
+(** To print a longident, see {!Pprintast.longident}, using
+    {!Format.asprintf} to convert to a string. *)

@@ -49,7 +49,7 @@ and no_std_include = ref false          (* -nostdlib *)
 and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
-and fast = ref false                    (* -unsafe *)
+and unsafe = ref false                  (* -unsafe *)
 and use_linscan = ref false             (* -linscan *)
 and link_everything = ref false         (* -linkall *)
 and custom_runtime = ref false          (* -custom *)
@@ -365,6 +365,8 @@ let set_dumped_pass s enabled =
     dumped_passes_list := dumped_passes
   end
 
+let dump_into_file = ref false (* -dump-into-file *)
+
 let parse_color_setting = function
   | "auto" -> Some Misc.Color.Auto
   | "always" -> Some Misc.Color.Always
@@ -374,24 +376,62 @@ let color = ref None ;; (* -color *)
 
 let unboxed_types = ref false
 
+(* This is used by the -stop-after option. *)
+module Compiler_pass = struct
+  (* If you add a new pass, the following must be updated:
+     - the variable `passes` below
+     - the manpages in man/ocaml{c,opt}.m
+     - the manual manual/manual/cmds/unified-options.etex
+  *)
+  type t = Parsing | Typing
+
+  let to_string = function
+    | Parsing -> "parsing"
+    | Typing -> "typing"
+
+  let of_string = function
+    | "parsing" -> Some Parsing
+    | "typing" -> Some Typing
+    | _ -> None
+
+  let rank = function
+    | Parsing -> 0
+    | Typing -> 1
+
+  let passes = [
+    Parsing;
+    Typing;
+  ]
+  let pass_names = List.map to_string passes
+end
+
+let stop_after = ref None (* -stop-after *)
+
+let should_stop_after pass =
+  match !stop_after with
+  | None -> false
+  | Some stop -> Compiler_pass.rank stop <= Compiler_pass.rank pass
+
+module String = Misc.Stdlib.String
+
 let arg_spec = ref []
-let arg_names = ref Misc.StringMap.empty
+let arg_names = ref String.Map.empty
 
 let reset_arguments () =
   arg_spec := [];
-  arg_names := Misc.StringMap.empty
+  arg_names := String.Map.empty
 
 let add_arguments loc args =
   List.iter (function (arg_name, _, _) as arg ->
     try
-      let loc2 = Misc.StringMap.find arg_name !arg_names in
+      let loc2 = String.Map.find arg_name !arg_names in
       Printf.eprintf
         "Warning: plugin argument %s is already defined:\n" arg_name;
       Printf.eprintf "   First definition: %s\n" loc2;
       Printf.eprintf "   New definition: %s\n" loc;
     with Not_found ->
       arg_spec := !arg_spec @ [ arg ];
-      arg_names := Misc.StringMap.add arg_name loc !arg_names
+      arg_names := String.Map.add arg_name loc !arg_names
   ) args
 
 let print_arguments usage =

@@ -27,8 +27,8 @@
    abstract {{!section:formatter}formatters} which provide basic output
    functions.
    Some formatters are predefined, notably:
-   - {!std_formatter} outputs to {{!Pervasives.stdout}stdout}
-   - {!err_formatter} outputs to {{!Pervasives.stderr}stderr}
+   - {!std_formatter} outputs to {{!Stdlib.stdout}stdout}
+   - {!err_formatter} outputs to {{!Stdlib.stderr}stderr}
 
    Most functions in the {!Format} module come in two variants:
    a short version that operates on {!std_formatter} and the
@@ -89,7 +89,7 @@
    pending text, and resets the standard pretty-printer.
 
    Warning: mixing calls to pretty-printing functions of this module with
-   calls to {!Pervasives} low level output functions is error prone.
+   calls to {!Stdlib} low level output functions is error prone.
 
    The pretty-printing functions output material that is delayed in the
    pretty-printer queue and stacks in order to compute proper line
@@ -98,9 +98,9 @@
    may appear before the output of a pretty-printing function that has been
    called before. For instance,
    [
-    Pervasives.print_string "<";
+    Stdlib.print_string "<";
     Format.print_string "PRETTY";
-    Pervasives.print_string ">";
+    Stdlib.print_string ">";
     Format.print_string "TEXT";
    ]
    leads to output [<>PRETTYTEXT].
@@ -329,7 +329,7 @@ val print_flush : unit -> unit
   disturb further pretty-printing.
 
   Warning: If the output device of the pretty-printer is an output channel,
-  repeated calls to [print_flush] means repeated calls to {!Pervasives.flush}
+  repeated calls to [print_flush] means repeated calls to {!Stdlib.flush}
   to flush the out channel; these explicit flush calls could foil the
   buffering strategy of output channels and could dramatically impact
   efficiency.
@@ -502,9 +502,8 @@ val get_ellipsis_text : unit -> string
 
 (** {1:tags Semantic tags} *)
 
-type tag = string
-
-(** {i Semantic tags} (or simply {e tags}) are user's defined delimiters
+type stag = ..
+(** {i Semantic tags} (or simply {e tags}) are user's defined annotations
   to associate user's specific operations to printed entities.
 
   Common usage of semantic tags is text decoration to get specific font or
@@ -513,10 +512,14 @@ type tag = string
   More sophisticated usage of semantic tags could handle dynamic
   modification of the pretty-printer behavior to properly print the material
   within some specific tags.
+  For instance, we can define an RGB tag like so:
+{[
+type stag += RGB of {r:int;g:int;b:int}
+]}
 
   In order to properly delimit printed entities, a semantic tag must be
   opened before and closed after the entity. Semantic tags must be properly
-  nested like parentheses.
+  nested like parentheses using {!pp_open_stag} and {!pp_close_stag}.
 
   Tag specific operations occur any time a tag is opened or closed, At each
   occurrence, two kinds of operations are performed {e tag-marking} and
@@ -537,12 +540,12 @@ type tag = string
   More precisely: when a semantic tag is opened or closed then both and
   successive 'tag-printing' and 'tag-marking' operations occur:
   - Tag-printing a semantic tag means calling the formatter specific function
-  [print_open_tag] (resp. [print_close_tag]) with the name of the tag as
+  [print_open_stag] (resp. [print_close_stag]) with the name of the tag as
   argument: that tag-printing function can then print any regular material
   to the formatter (so that this material is enqueued as usual in the
   formatter queue for further line splitting computation).
   - Tag-marking a semantic tag means calling the formatter specific function
-  [mark_open_tag] (resp. [mark_close_tag]) with the name of the tag as
+  [mark_open_stag] (resp. [mark_close_stag]) with the name of the tag as
   argument: that tag-marking function can then return the 'tag-opening
   marker' (resp. `tag-closing marker') for direct output into the output
   device of the formatter.
@@ -560,35 +563,43 @@ type tag = string
   information. Once [set_tags] is set to [true], the pretty-printer engine
   honors tags and decorates the output accordingly.
 
-  Default tag-marking functions behave the HTML way: tags are enclosed in "<"
-  and ">"; hence, opening marker for tag [t] is ["<t>"] and closing marker is
-  ["</t>"].
+  Default tag-marking functions behave the HTML way: {{!tag}string tags} are
+  enclosed in "<" and ">" while other tags are ignored;
+  hence, opening marker for tag string ["t"] is ["<t>"] and closing marker
+  is ["</t>"].
 
   Default tag-printing functions just do nothing.
 
   Tag-marking and tag-printing functions are user definable and can
-  be set by calling {!set_formatter_tag_functions}.
+  be set by calling {!set_formatter_stag_functions}.
 
   Semantic tag operations may be set on or off with {!set_tags}.
   Tag-marking operations may be set on or off with {!set_mark_tags}.
   Tag-printing operations may be set on or off with {!set_print_tags}.
 *)
 
-val pp_open_tag : formatter -> string -> unit
-val open_tag : tag -> unit
-(** [pp_open_tag ppf t] opens the semantic tag named [t].
-
-  The [print_open_tag] tag-printing function of the formatter is called with
-  [t] as argument; then the opening tag marker for [t], as given by
-  [mark_open_tag t], is written into the output device of the formatter.
+type tag = string
+type stag += String_tag of tag
+(** [String_tag s] is a string tag [s]. String tags can be inserted either
+    by explicitly using the constructor [String_tag] or by using the dedicated
+    format syntax ["@{<s> ... @}"].
 *)
 
-val pp_close_tag : formatter -> unit -> unit
-val close_tag : unit -> unit
-(** [pp_close_tag ppf ()] closes the most recently opened semantic tag [t].
+val pp_open_stag : formatter -> stag -> unit
+val open_stag : stag -> unit
+(** [pp_open_stag ppf t] opens the semantic tag named [t].
 
-  The closing tag marker, as given by [mark_close_tag t], is written into the
-  output device of the formatter; then the [print_close_tag] tag-printing
+  The [print_open_stag] tag-printing function of the formatter is called with
+  [t] as argument; then the opening tag marker for [t], as given by
+  [mark_open_stag t], is written into the output device of the formatter.
+*)
+
+val pp_close_stag : formatter -> unit -> unit
+val close_stag : unit -> unit
+(** [pp_close_stag ppf ()] closes the most recently opened semantic tag [t].
+
+  The closing tag marker, as given by [mark_close_stag t], is written into the
+  output device of the formatter; then the [print_close_stag] tag-printing
   function of the formatter is called with [t] as argument.
 *)
 
@@ -616,8 +627,8 @@ val get_mark_tags : unit -> bool
 
 (** {1 Redirecting the standard formatter output} *)
 val pp_set_formatter_out_channel :
-  formatter -> Pervasives.out_channel -> unit
-val set_formatter_out_channel : Pervasives.out_channel -> unit
+  formatter -> Stdlib.out_channel -> unit
+val set_formatter_out_channel : Stdlib.out_channel -> unit
 (** Redirect the standard pretty-printer output to the given channel.
   (All the output functions of the standard formatter are set to the
    default output functions printing to the given channel.)
@@ -683,9 +694,9 @@ type formatter_out_functions = {
 
   By default:
 - fields [out_string] and [out_flush] are output device specific;
-  (e.g. {!Pervasives.output_string} and {!Pervasives.flush} for a
-   {!Pervasives.out_channel} device, or [Buffer.add_substring] and
-   {!Pervasives.ignore} for a [Buffer.t] output device),
+  (e.g. {!Stdlib.output_string} and {!Stdlib.flush} for a
+   {!Stdlib.out_channel} device, or [Buffer.add_substring] and
+   {!Stdlib.ignore} for a [Buffer.t] output device),
 - field [out_newline] is equivalent to [out_string "\n" 0 1];
 - fields [out_spaces] and [out_indent] are equivalent to
   [out_string (String.make n ' ') 0 n].
@@ -721,11 +732,11 @@ val get_formatter_out_functions : unit -> formatter_out_functions
 
 (** {1:tagsmeaning Redefining semantic tag operations} *)
 
-type formatter_tag_functions = {
-  mark_open_tag : tag -> string;
-  mark_close_tag : tag -> string;
-  print_open_tag : tag -> unit;
-  print_close_tag : tag -> unit;
+type formatter_stag_functions = {
+  mark_open_stag : stag -> string;
+  mark_close_stag : stag -> string;
+  print_open_stag : stag -> unit;
+  print_close_stag : stag -> unit;
 }
 (** The semantic tag handling functions specific to a formatter:
   [mark] versions are the 'tag-marking' functions that associate a string
@@ -735,19 +746,19 @@ type formatter_tag_functions = {
   regular printing when a tag is closed or opened.
 *)
 
-val pp_set_formatter_tag_functions :
-  formatter -> formatter_tag_functions -> unit
-val set_formatter_tag_functions : formatter_tag_functions -> unit
-(** [pp_set_formatter_tag_functions ppf tag_funs] changes the meaning of
+val pp_set_formatter_stag_functions :
+  formatter -> formatter_stag_functions -> unit
+val set_formatter_stag_functions : formatter_stag_functions -> unit
+(** [pp_set_formatter_stag_functions ppf tag_funs] changes the meaning of
   opening and closing semantic tag operations to use the functions in
   [tag_funs] when printing on [ppf].
 
   When opening a semantic tag with name [t], the string [t] is passed to the
-  opening tag-marking function (the [mark_open_tag] field of the
+  opening tag-marking function (the [mark_open_stag] field of the
   record [tag_funs]), that must return the opening tag marker for
-  that name. When the next call to [close_tag ()] happens, the semantic tag
+  that name. When the next call to [close_stag ()] happens, the semantic tag
   name [t] is sent back to the closing tag-marking function (the
-  [mark_close_tag] field of record [tag_funs]), that must return a
+  [mark_close_stag] field of record [tag_funs]), that must return a
   closing tag marker for that name.
 
   The [print_] field of the record contains the tag-printing functions that
@@ -755,9 +766,9 @@ val set_formatter_tag_functions : formatter_tag_functions -> unit
   in the pretty-printer queue.
 *)
 
-val pp_get_formatter_tag_functions :
-  formatter -> unit -> formatter_tag_functions
-val get_formatter_tag_functions : unit -> formatter_tag_functions
+val pp_get_formatter_stag_functions :
+  formatter -> unit -> formatter_stag_functions
+val get_formatter_stag_functions : unit -> formatter_stag_functions
 (** Return the current semantic tag operation functions of the standard
   pretty-printer. *)
 
@@ -772,7 +783,7 @@ val get_formatter_tag_functions : unit -> formatter_tag_functions
 
   For instance, given a {!Buffer.t} buffer [b], {!formatter_of_buffer} [b]
   returns a new formatter using buffer [b] as its output device.
-  Similarly, given a {!Pervasives.out_channel} output channel [oc],
+  Similarly, given a {!Stdlib.out_channel} output channel [oc],
   {!formatter_of_out_channel} [oc] returns a new formatter using
   channel [oc] as its output device.
 
@@ -789,13 +800,13 @@ val formatter_of_out_channel : out_channel -> formatter
 val std_formatter : formatter
 (** The standard formatter to write to standard output.
 
-  It is defined as {!formatter_of_out_channel} {!Pervasives.stdout}.
+  It is defined as {!formatter_of_out_channel} {!Stdlib.stdout}.
 *)
 
 val err_formatter : formatter
 (** A formatter to write to standard error.
 
-  It is defined as {!formatter_of_out_channel} {!Pervasives.stderr}.
+  It is defined as {!formatter_of_out_channel} {!Stdlib.stderr}.
 *)
 
 val formatter_of_buffer : Buffer.t -> formatter
@@ -826,9 +837,9 @@ val make_formatter :
 
   For instance, {[
     make_formatter
-      (Pervasives.output oc)
-      (fun () -> Pervasives.flush oc) ]}
-  returns a formatter to the {!Pervasives.out_channel} [oc].
+      (Stdlib.output oc)
+      (fun () -> Stdlib.flush oc) ]}
+  returns a formatter to the {!Stdlib.out_channel} [oc].
 *)
 
 val formatter_of_out_functions :
@@ -949,6 +960,23 @@ val pp_print_text : formatter -> string -> unit
   @since 4.02.0
 *)
 
+val pp_print_option :
+  ?none:(formatter -> unit -> unit) ->
+  (formatter -> 'a -> unit) -> (formatter -> 'a option -> unit)
+(** [pp_print_option ?none pp_v ppf o] prints [o] on [ppf]
+    using [pp_v] if [o] is [Some v] and [none] if it is [None]. [none]
+    prints nothing by default.
+
+    @since 4.08 *)
+
+val pp_print_result :
+  ok:(formatter -> 'a -> unit) -> error:(formatter -> 'e -> unit) ->
+  formatter -> ('a, 'e) result -> unit
+(** [pp_print_result ~ok ~error ppf r] prints [r] on [ppf] using
+    [ok] if [r] is [Ok _] and [error] if [r] is [Error _].
+
+    @since 4.08 *)
+
 (** {1:fpp Formatted pretty-printing} *)
 
 (**
@@ -1016,8 +1044,8 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
     specification is any character string that does not contain the
     closing character ['>']. If omitted, the tag name defaults to the
     empty string.
-    For more details about semantic tags, see the functions {!open_tag} and
-    {!close_tag}.
+    For more details about semantic tags, see the functions {!open_stag} and
+    {!close_stag}.
   - [@\}]: close the most recently opened semantic tag.
   - [@?]: flush the pretty-printer as with [print_flush ()].
     This is equivalent to the conversion [%!].
@@ -1068,6 +1096,29 @@ val asprintf : ('a, formatter, unit, string) format4 -> 'a
   @since 4.01.0
 *)
 
+val dprintf :
+  ('a, formatter, unit, formatter -> unit) format4 -> 'a
+(** Same as {!fprintf}, except the formatter is the last argument.
+  [dprintf "..." a b c] is a function of type
+  [formatter -> unit] which can be given to a format specifier [%t].
+
+  This can be used as a replacement for {!asprintf} to delay
+  formatting decisions. Using the string returned by {!asprintf} in a
+  formatting context forces formatting decisions to be taken in
+  isolation, and the final string may be created
+  prematurely. {!dprintf} allows delay of formatting decisions until
+  the final formatting context is known.
+  For example:
+{[
+  let t = Format.dprintf "%i@ %i@ %i" 1 2 3 in
+  ...
+  Format.printf "@[<v>%t@]" t
+]}
+
+  @since 4.08.0
+*)
+
+
 val ifprintf : formatter -> ('a, formatter, unit) format -> 'a
 (** Same as [fprintf] above, but does not print anything.
   Useful to ignore some material when conditionally printing.
@@ -1082,6 +1133,15 @@ val kfprintf :
   ('b, formatter, unit, 'a) format4 -> 'b
 (** Same as [fprintf] above, but instead of returning immediately,
   passes the formatter to its first argument at the end of printing. *)
+
+val kdprintf :
+  ((formatter -> unit) -> 'a) ->
+  ('b, formatter, unit, 'a) format4 -> 'b
+(** Same as {!dprintf} above, but instead of returning immediately,
+  passes the suspended printer to its first argument at the end of printing.
+
+  @since 4.08.0
+*)
 
 val ikfprintf :
   (formatter -> 'a) -> formatter ->
@@ -1150,3 +1210,55 @@ val pp_get_all_formatter_output_functions :
   (int -> unit)
 [@@ocaml.deprecated "Use Format.pp_get_formatter_out_functions instead."]
 (** @deprecated Subsumed by [pp_get_formatter_out_functions]. *)
+
+(** {2 String tags} *)
+
+val pp_open_tag : formatter -> tag -> unit
+[@@ocaml.deprecated "Use Format.pp_open_stag."]
+(** @deprecated Subsumed by {!pp_open_stag}. *)
+
+val open_tag : tag -> unit
+[@@ocaml.deprecated "Use Format.open_stag."]
+(** @deprecated Subsumed by {!open_stag}. *)
+
+val pp_close_tag : formatter -> unit -> unit
+[@@ocaml.deprecated "Use Format.pp_close_stag."]
+(** @deprecated Subsumed by {!pp_close_stag}. *)
+
+val close_tag : unit -> unit
+[@@ocaml.deprecated "Use Format.close_stag."]
+(** @deprecated Subsumed by {!close_stag}. *)
+
+type formatter_tag_functions = {
+  mark_open_tag : tag -> string;
+  mark_close_tag : tag -> string;
+  print_open_tag : tag -> unit;
+  print_close_tag : tag -> unit;
+}
+[@@ocaml.deprecated "Use formatter_stag_functions."]
+(** @deprecated Subsumed by {!formatter_stag_functions}. *)
+
+val pp_set_formatter_tag_functions :
+  formatter -> formatter_tag_functions -> unit
+[@@ocaml.deprecated
+  "This function will erase non-string tag formatting functions. \
+   Use Format.pp_set_formatter_stag_functions."]
+[@@warning "-3"]
+(** This function will erase non-string tag formatting functions.
+    @deprecated Subsumed by {!pp_set_formatter_stag_functions}. *)
+
+val set_formatter_tag_functions : formatter_tag_functions -> unit
+[@@ocaml.deprecated "Use Format.set_formatter_stag_functions."]
+[@@warning "-3"]
+(** @deprecated Subsumed by {!set_formatter_stag_functions}. *)
+
+val pp_get_formatter_tag_functions :
+  formatter -> unit -> formatter_tag_functions
+[@@ocaml.deprecated "Use Format.pp_get_formatter_stag_functions."]
+[@@warning "-3"]
+(** @deprecated Subsumed by {!pp_get_formatter_stag_functions}. *)
+
+val get_formatter_tag_functions : unit -> formatter_tag_functions
+[@@ocaml.deprecated "Use Format.get_formatter_stag_functions."]
+[@@warning "-3"]
+(** @deprecated Subsumed by {!get_formatter_stag_functions}. *)

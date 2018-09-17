@@ -56,7 +56,22 @@ module Options = Main_args.Make_optcomp_options (struct
   let _config_var = Misc.show_config_variable_and_exit
   let _for_pack s = for_package := Some s
   let _g = set debug
-  let _i () = print_types := true; compile_only := true
+  let _i () =
+    print_types := true;
+    compile_only := true;
+    stop_after := Some Compiler_pass.Typing;
+    ()
+  let _stop_after pass =
+    let module P = Compiler_pass in
+    begin match P.of_string pass with
+    | None -> () (* this should not occur as we use Arg.Symbol *)
+    | Some pass ->
+        stop_after := Some pass;
+        begin match pass with
+        | P.Parsing | P.Typing ->
+            compile_only := true
+        end;
+    end
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
   let _inline spec =
@@ -174,7 +189,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _unbox_closures_factor f = unbox_closures_factor := f
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = clear unboxed_types
-  let _unsafe = set fast
+  let _unsafe = set unsafe
   let _unsafe_string = set unsafe_string
   let _v () = print_version_and_library "native-code compiler"
   let _version () = print_version_string ()
@@ -192,6 +207,7 @@ module Options = Main_args.Make_optcomp_options (struct
 
   let _nopervasives = set nopervasives
   let _match_context_rows n = match_context_rows := n
+  let _dump_into_file = set dump_into_file
   let _dno_unique_ids = clear unique_ids
   let _dunique_ids = set unique_ids
   let _dsource = set dump_source
@@ -247,7 +263,7 @@ let main () =
        "<options> Compute dependencies \
         (use 'ocamlopt -depend -help' for details)"];
     Clflags.parse_arguments anonymous usage;
-    Compmisc.read_color_env ppf;
+    Compmisc.read_color_env ();
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";
     begin try
@@ -270,24 +286,29 @@ let main () =
                      [make_package; make_archive; shared;
                       compile_only; output_c_object]) > 1
     then
-      fatal "Please specify at most one of -pack, -a, -shared, -c, -output-obj";
+      fatal "Please specify at most one of -pack, -a, -shared, -c, \
+             -output-obj";
     if !make_archive then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmlibrarian.create_archive (get_objfiles ~with_ocamlparam:false) target;
+      Asmlibrarian.create_archive
+        (get_objfiles ~with_ocamlparam:false) target;
       Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmpackager.package_files ppf (Compmisc.initial_env ())
-        (get_objfiles ~with_ocamlparam:false) target ~backend;
+      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+        Asmpackager.package_files ~ppf_dump (Compmisc.initial_env ())
+          (get_objfiles ~with_ocamlparam:false) target ~backend);
       Warnings.check_fatal ();
     end
     else if !shared then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmlink.link_shared ppf (get_objfiles ~with_ocamlparam:false) target;
+      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+        Asmlink.link_shared ~ppf_dump
+          (get_objfiles ~with_ocamlparam:false) target);
       Warnings.check_fatal ();
     end
     else if not !compile_only && !objfiles <> [] then begin
@@ -307,7 +328,8 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path true;
-      Asmlink.link ppf (get_objfiles ~with_ocamlparam:true) target;
+      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+        Asmlink.link ~ppf_dump (get_objfiles ~with_ocamlparam:true) target);
       Warnings.check_fatal ();
     end;
   with x ->

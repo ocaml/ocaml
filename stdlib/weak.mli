@@ -30,7 +30,7 @@ type 'a t
 
    Notes:
    - Integers are not allocated and cannot be stored in weak arrays.
-   - Weak arrays cannot be marshaled using {!Pervasives.output_value}
+   - Weak arrays cannot be marshaled using {!Stdlib.output_value}
      nor the functions of the {!Marshal} module.
 *)
 
@@ -114,7 +114,7 @@ module type S = sig
   type t
     (** The type of tables that contain elements of type [data].
         Note that weak hash sets cannot be marshaled using
-        {!Pervasives.output_value} or the functions of the {!Marshal}
+        {!Stdlib.output_value} or the functions of the {!Marshal}
         module. *)
 
   val create : int -> t

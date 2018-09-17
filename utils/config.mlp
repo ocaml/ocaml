@@ -33,6 +33,7 @@ let ccomp_type = "%%CCOMPTYPE%%"
 let c_compiler = "%%CC%%"
 let c_output_obj = "%%OUTPUTOBJ%%"
 let c_has_debug_prefix_map = %%CC_HAS_DEBUG_PREFIX_MAP%%
+let as_has_debug_prefix_map = %%AS_HAS_DEBUG_PREFIX_MAP%%
 let ocamlc_cflags = "%%OCAMLC_CFLAGS%%"
 let ocamlc_cppflags = "%%OCAMLC_CPPFLAGS%%"
 let ocamlopt_cflags = "%%OCAMLOPT_CFLAGS%%"
@@ -78,6 +79,7 @@ let with_flambda_invariants = %%WITH_FLAMBDA_INVARIANTS%%
 let safe_string = %%FORCE_SAFE_STRING%%
 let default_safe_string = %%DEFAULT_SAFE_STRING%%
 let windows_unicode = %%WINDOWS_UNICODE%% != 0
+let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
 
 let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 
@@ -204,6 +206,7 @@ let configuration_variables =
   p_bool "flat_float_array" flat_float_array;
   p_bool "afl_instrument" afl_instrument;
   p_bool "windows_unicode" windows_unicode;
+  p_bool "supports_shared_libraries" supports_shared_libraries;
 
   p "exec_magic_number" exec_magic_number;
   p "cmi_magic_number" cmi_magic_number;

@@ -24,6 +24,7 @@ open Types
 open Typedtree
 open Outcometree
 open Ast_helper
+module String = Misc.Stdlib.String
 
 type directive_fun =
    | Directive_none of (unit -> unit)
@@ -39,18 +40,16 @@ type directive_info = {
 
 (* The table of toplevel value bindings and its accessors *)
 
-module StringMap = Map.Make(String)
-
-let toplevel_value_bindings : Obj.t StringMap.t ref = ref StringMap.empty
+let toplevel_value_bindings : Obj.t String.Map.t ref = ref String.Map.empty
 
 let getvalue name =
   try
-    StringMap.find name !toplevel_value_bindings
+    String.Map.find name !toplevel_value_bindings
   with Not_found ->
     fatal_error (name ^ " unbound at toplevel")
 
 let setvalue name v =
-  toplevel_value_bindings := StringMap.add name v !toplevel_value_bindings
+  toplevel_value_bindings := String.Map.add name v !toplevel_value_bindings
 
 (* Return the value referred to by a path *)
 
@@ -61,7 +60,7 @@ let rec eval_path = function
       else begin
         let name = Translmod.toplevel_name id in
         try
-          StringMap.find name !toplevel_value_bindings
+          String.Map.find name !toplevel_value_bindings
         with Not_found ->
           raise (Symtable.Error(Symtable.Undefined_global name))
       end
@@ -117,8 +116,8 @@ let remove_printer = Printer.remove_printer
 
 let parse_toplevel_phrase = ref Parse.toplevel_phrase
 let parse_use_file = ref Parse.use_file
-let print_location = Location.print_error (* FIXME change back to print *)
-let print_error = Location.print_error
+let print_location = Location.print_loc
+let print_error = Location.print_report
 let print_warning = Location.print_warning
 let input_name = Location.input_name
 
@@ -240,9 +239,11 @@ let execute_phrase print_outcome ppf phr =
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
       Typecore.reset_delayed_checks ();
-      let (str, sg, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
+      let (str, sg, to_remove_from_sg, newenv) =
+        Typemod.type_toplevel_phrase oldenv sstr
+      in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      let sg' = Typemod.simplify_signature sg in
+      let sg' = Typemod.simplify_signature newenv to_remove_from_sg sg in
       ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();
       let lam = Translmod.transl_toplevel_definition str in
@@ -299,7 +300,7 @@ let execute_phrase print_outcome ppf phr =
       with x ->
         toplevel_env := oldenv; raise x
       end
-  | Ptop_dir(dir_name, dir_arg) ->
+  | Ptop_dir {pdir_name = {Location.txt = dir_name}; pdir_arg } ->
       let d =
         try Some (Hashtbl.find directive_table dir_name)
         with Not_found -> None
@@ -314,10 +315,10 @@ let execute_phrase print_outcome ppf phr =
           fprintf ppf "@.";
           false
       | Some d ->
-          match d, dir_arg with
-          | Directive_none f, Pdir_none -> f (); true
-          | Directive_string f, Pdir_string s -> f s; true
-          | Directive_int f, Pdir_int (n,None) ->
+          match d, pdir_arg with
+          | Directive_none f, None -> f (); true
+          | Directive_string f, Some {pdira_desc = Pdir_string s} -> f s; true
+          | Directive_int f, Some {pdira_desc = Pdir_int (n,None) } ->
              begin match Int_literal_converter.int n with
              | n -> f n; true
              | exception _ ->
@@ -326,12 +327,12 @@ let execute_phrase print_outcome ppf phr =
                        dir_name;
                false
              end
-          | Directive_int _, Pdir_int (_, Some _) ->
+          | Directive_int _, Some {pdira_desc = Pdir_int (_, Some _)} ->
               fprintf ppf "Wrong integer literal for directive `%s'.@."
                 dir_name;
               false
-          | Directive_ident f, Pdir_ident lid -> f lid; true
-          | Directive_bool f, Pdir_bool b -> f b; true
+          | Directive_ident f, Some {pdira_desc = Pdir_ident lid} -> f lid; true
+          | Directive_bool f, Some {pdira_desc = Pdir_bool b} -> f b; true
           | _ ->
               fprintf ppf "Wrong type of argument for directive `%s'.@."
                 dir_name;
@@ -413,12 +414,12 @@ let first_line = ref true
 let got_eof = ref false;;
 
 let read_input_default prompt buffer len =
-  output_string Pervasives.stdout prompt; flush Pervasives.stdout;
+  output_string stdout prompt; flush stdout;
   let i = ref 0 in
   try
     while true do
       if !i >= len then raise Exit;
-      let c = input_char Pervasives.stdin in
+      let c = input_char stdin in
       Bytes.set buffer !i c;
       incr i;
       if c = '\n' then raise Exit;

@@ -445,7 +445,7 @@ let is_immed n = immed_min <= n && n <= immed_max
 module Storer =
   Switch.Store
     (struct type t = lambda type key = lambda
-      let compare_key = Pervasives.compare
+      let compare_key = Stdlib.compare
       let make_key = Lambda.make_key end)
 
 (* Compile an expression.
@@ -843,7 +843,7 @@ let rec comp_expr env exp sz cont =
           ev_loc = lev.lev_loc;
           ev_kind = kind;
           ev_info = info;
-          ev_typenv = lev.lev_env;
+          ev_typenv = Env.summary lev.lev_env;
           ev_typsubst = Subst.identity;
           ev_compenv = env;
           ev_stacksize = sz;

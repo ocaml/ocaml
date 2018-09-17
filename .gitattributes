@@ -63,8 +63,6 @@ emacs/caml.el            ocaml-typo=long-line,unused-prop,missing-header
 emacs/COPYING            ocaml-typo=tab,non-printing,missing-header
 emacs/ocamltags.in       ocaml-typo=non-printing
 
-/experimental            ocaml-typo=prune
-
 /manual                  ocaml-typo=prune
 
 ocamldoc/Changes.txt     ocaml-typo=missing-header
@@ -101,6 +99,14 @@ tools/magic         ocaml-typo=missing-header
 
 yacc/*.[ch]   ocaml-typo=long-line,very-long-line,unused-prop
 
+menhir-bench.bash ocaml-typo=missing-header,utf8
+
+# bootstrap files produced by Menhir
+/boot/menhir/menhirLib.ml      ocaml-typo=long-line,missing-header,utf8,white-at-eol,unused-prop
+/boot/menhir/menhirLib.mli     ocaml-typo=long-line,missing-header,utf8,white-at-eol,unused-prop
+/boot/menhir/parser.ml  ocaml-typo=long-line,very-long-line,missing-header,white-at-eol,unused-prop
+/boot/menhir/parser.mli ocaml-typo=long-line,very-long-line,missing-header,white-at-eol,unused-prop
+
 # Line-ending specifications, for Windows interoperability
 *.sh text eol=lf
 *.sh.in text eol=lf
@@ -124,7 +130,7 @@ ocamldoc/remove_DEBUG text eol=lf
 ocamltest/getocamloptdefaultflags text eol=lf
 stdlib/Compflags text eol=lf
 stdlib/sharpbang text eol=lf
-tools/ci/inria/remove-sinh-primitive.patch text eol=lf ocaml-typo=white-at-eol,missing-header
+tools/ci/inria/remove-sinh-primitive.patch text eol=lf ocaml-typo=white-at-eol,missing-header,long-line
 tools/check-typo text eol=lf
 tools/ci-build text eol=lf
 tools/msvs-promote-path text eol=lf

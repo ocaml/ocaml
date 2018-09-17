@@ -285,7 +285,7 @@ let handle_uncaught_exception' exn debugger_in_use =
       else
         try_get_raw_backtrace ()
     in
-    (try Pervasives.do_at_exit () with _ -> ());
+    (try Stdlib.do_at_exit () with _ -> ());
     match !uncaught_exception_handler with
     | None ->
         eprintf "Fatal error: exception %s\n" (to_string exn);

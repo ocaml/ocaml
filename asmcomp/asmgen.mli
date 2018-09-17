@@ -20,15 +20,15 @@ val compile_implementation_flambda :
     string ->
     required_globals:Ident.Set.t ->
     backend:(module Backend_intf.S) ->
-    Format.formatter -> Flambda.program -> unit
+    ppf_dump:Format.formatter -> Flambda.program -> unit
 
 val compile_implementation_clambda :
     ?toplevel:(string -> bool) ->
     string ->
-    Format.formatter -> Lambda.program -> unit
+    ppf_dump:Format.formatter -> Lambda.program -> unit
 
 val compile_phrase :
-    Format.formatter -> Cmm.phrase -> unit
+    ppf_dump:Format.formatter -> Cmm.phrase -> unit
 
 type error = Assembler_error of string
 exception Error of error

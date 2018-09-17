@@ -17,18 +17,37 @@
 
 exception Fatal_error
 
-let fatal_error msg =
-  prerr_string ">> Fatal error: "; prerr_endline msg; raise Fatal_error
+let fatal_errorf fmt =
+  Format.kfprintf
+    (fun _ -> raise Fatal_error)
+    Format.err_formatter
+    ("@?>> Fatal error: " ^^ fmt ^^ "@.")
 
-let fatal_errorf fmt = Format.kasprintf fatal_error fmt
+let fatal_error msg = fatal_errorf "%s" msg
 
 (* Exceptions *)
 
-let try_finally work cleanup =
-  let result = (try work () with e -> cleanup (); raise e) in
-  cleanup ();
-  result
-;;
+let try_finally ?(always=(fun () -> ())) ?(exceptionally=(fun () -> ())) work =
+  match work () with
+    | result ->
+      begin match always () with
+        | () -> result
+        | exception always_exn ->
+          let always_bt = Printexc.get_raw_backtrace () in
+          exceptionally ();
+          Printexc.raise_with_backtrace always_exn always_bt
+      end
+    | exception work_exn ->
+      let work_bt = Printexc.get_raw_backtrace () in
+      begin match always () with
+        | () ->
+          exceptionally ();
+          Printexc.raise_with_backtrace work_exn work_bt
+        | exception always_exn ->
+          let always_bt = Printexc.get_raw_backtrace () in
+          exceptionally ();
+          Printexc.raise_with_backtrace always_exn always_bt
+      end
 
 type ref_and_value = R : 'a ref * 'a -> ref_and_value
 
@@ -182,6 +201,14 @@ module Stdlib = struct
         else loop (succ i) in
       loop 0
   end
+
+  module String = struct
+    include String
+    module Set = Set.Make(String)
+    module Map = Map.Make(String)
+  end
+
+  external compare : 'a -> 'a -> int = "%compare"
 end
 
 let may = Stdlib.Option.iter
@@ -531,10 +558,6 @@ let cut_at s c =
   let pos = String.index s c in
   String.sub s 0 pos, String.sub s (pos+1) (String.length s - pos - 1)
 
-
-module StringSet = Set.Make(struct type t = string let compare = compare end)
-module StringMap = Map.Make(struct type t = string let compare = compare end)
-
 (* Color handling *)
 module Color = struct
   (* use ANSI color codes, see https://en.wikipedia.org/wiki/ANSI_escape_code *)
@@ -598,9 +621,9 @@ module Color = struct
   (* map a tag to a style, if the tag is known.
      @raise Not_found otherwise *)
   let style_of_tag s = match s with
-    | "error" -> (!cur_styles).error
-    | "warning" -> (!cur_styles).warning
-    | "loc" -> (!cur_styles).loc
+    | Format.String_tag "error" -> (!cur_styles).error
+    | Format.String_tag "warning" -> (!cur_styles).warning
+    | Format.String_tag "loc" -> (!cur_styles).loc
     | _ -> raise Not_found
 
   let color_enabled = ref true
@@ -621,13 +644,13 @@ module Color = struct
   (* add color handling to formatter [ppf] *)
   let set_color_tag_handling ppf =
     let open Format in
-    let functions = pp_get_formatter_tag_functions ppf () in
+    let functions = pp_get_formatter_stag_functions ppf () in
     let functions' = {functions with
-      mark_open_tag=(mark_open_tag ~or_else:functions.mark_open_tag);
-      mark_close_tag=(mark_close_tag ~or_else:functions.mark_close_tag);
+      mark_open_stag=(mark_open_tag ~or_else:functions.mark_open_stag);
+      mark_close_stag=(mark_close_tag ~or_else:functions.mark_close_stag);
     } in
     pp_set_mark_tags ppf true; (* enable tags *)
-    pp_set_formatter_tag_functions ppf functions';
+    pp_set_formatter_stag_functions ppf functions';
     (* also setup margins *)
     pp_set_margin ppf (pp_get_margin std_formatter());
     ()
@@ -766,3 +789,44 @@ let show_config_variable_and_exit x =
       exit 0
   | None ->
       exit 2
+
+let get_build_path_prefix_map =
+  let init = ref false in
+  let map_cache = ref None in
+  fun () ->
+    if not !init then begin
+      init := true;
+      match Sys.getenv "BUILD_PATH_PREFIX_MAP" with
+      | exception Not_found -> ()
+      | encoded_map ->
+        match Build_path_prefix_map.decode_map encoded_map with
+          | Error err ->
+              fatal_errorf
+                "Invalid value for the environment variable \
+                 BUILD_PATH_PREFIX_MAP: %s" err
+          | Ok map -> map_cache := Some map
+    end;
+    !map_cache
+
+let debug_prefix_map_flags () =
+  if not Config.as_has_debug_prefix_map then
+    []
+  else begin
+    match get_build_path_prefix_map () with
+    | None -> []
+    | Some map ->
+      List.fold_right
+        (fun map_elem acc ->
+           match map_elem with
+           | None -> acc
+           | Some { Build_path_prefix_map.target; source; } ->
+             (Printf.sprintf "--debug-prefix-map %s=%s"
+                (Filename.quote source)
+                (Filename.quote target)) :: acc)
+        map
+        []
+  end
+
+let print_if ppf flag printer arg =
+  if !flag then Format.fprintf ppf "%a@." printer arg;
+  arg

@@ -488,9 +488,6 @@ internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 # Adjust according to target
 
 case "$cc,$target" in
-  *,*-*-rhapsody*)
-    common_cppflags="-DSHRINKED_GNUC $common_cppflags"
-    mathlib="";;
   *,*-*-darwin*)
     mathlib=""
     mkexe="$mkexe -Wl,-no_compact_unwind"
@@ -502,32 +499,6 @@ case "$cc,$target" in
   *,*-*-haiku*)
     # No -lm library
     mathlib="";;
-  *,*-*-beos*)
-    # No -lm library
-    mathlib="";;
-  *gcc,alpha*-*-osf*)
-    if sh ./hasgot -mieee; then
-      common_cflags="-mieee $common_cflags";
-    fi
-    # Put code and static data in lower 4GB
-    ldflags="-Wl,-T,12000000 -Wl,-D,14000000"
-    # Tell gcc that we can use 32-bit code addresses for threaded code
-    echo "#define ARCH_CODE32" >> m.h;;
-  cc,alpha*-*-osf*)
-    common_cflags="-std1 -ieee";;
-  *gcc*,alpha*-*-linux*)
-    if sh ./hasgot -mieee; then
-      common_cflags="-mieee $common_cflags";
-    fi;;
-  *,mips-*-irix6*)
-    # Turn off warning "unused library"
-    ldflags="-n32 -Wl,-woff,84";;
-  *,alpha*-*-unicos*)
-    # For the Cray T3E
-    common_cppflags="$common_cppflags -DUMK";;
-  *,powerpc-*-aix*)
-    # Avoid name-space pollution by requiring Unix98-conformant includes
-    common_cppflags="$common_cppflags -D_XOPEN_SOURCE=500 -D_ALL_SOURCE";;
   *,*-*-cygwin*)
     case $target in
       i686-*) flavor=cygwin;;
@@ -814,59 +785,6 @@ if $with_sharedlibs; then
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
-    alpha*-*-osf*)
-      case "$cc" in
-        *gcc*)
-          sharedlib_cflags="-fPIC"
-          mksharedlib="$cc -shared"
-          rpath="-Wl,-rpath,"
-          mksharedlibrpath="-Wl,-rpath,"
-          shared_libraries_supported=true;;
-        cc*)
-          sharedlib_cflags=""
-          mksharedlib="ld -shared -expect_unresolved '*'"
-          rpath="-Wl,-rpath,"
-          mksharedlibrpath="-rpath "
-          shared_libraries_supported=true;;
-      esac;;
-    *-*-solaris2*)
-      case "$cc" in
-        *gcc*)
-          sharedlib_cflags="-fPIC"
-          if sh ./solaris-ld; then
-            mksharedlib="ld -G"
-            rpath="-R"
-            mksharedlibrpath="-R"
-          else
-            mksharedlib="$cc -shared"
-            ldflags="$ldflags -Wl,-E"
-            natdynlinkopts="-Wl,-E"
-            rpath="-Wl,-rpath,"
-            mksharedlibrpath="-Wl,-rpath,"
-          fi
-          shared_libraries_supported=true;;
-        *)
-          sharedlib_cflags="-KPIC"
-          rpath="-R"
-          mksharedlibrpath="-R"
-          mksharedlib="/usr/ccs/bin/ld -G"
-          shared_libraries_supported=true;;
-      esac;;
-    mips*-*-irix[56]*)
-      case "$cc" in
-        cc*) sharedlib_cflags="";;
-        *gcc*) sharedlib_cflags="-fPIC";;
-      esac
-      mksharedlib="ld -shared -rdata_shared"
-      rpath="-Wl,-rpath,"
-      mksharedlibrpath="-rpath "
-      shared_libraries_supported=true;;
-    i[3456]86-*-darwin[89].*)
-      mksharedlib="$cc -shared -flat_namespace -undefined suppress \
-                   -read_only_relocs suppress"
-      common_cflags="$dl_defs $common_cflags"
-      dl_needs_underscore=false
-      shared_libraries_supported=true;;
     *-apple-darwin*)
       mksharedlib="$cc -shared -flat_namespace -undefined suppress \
                    -Wl,-no_compact_unwind"
@@ -882,16 +800,6 @@ if $with_sharedlibs; then
       mksharedlibrpath="-Wl,-rpath,"
       natdynlinkopts="-Wl,-E"
       shared_libraries_supported=true;;
-    powerpc-*-aix*)
-      case "$ccfamily" in
-        xlc-*)sharedlib_cflags="-qpic"
-              mksharedlib="$cc -qmkshrobj -G"
-              mksharedlibrpath="-Wl,-blibpath,"
-              ldflags="$ldflags -brtl -bexpfull"
-              dl_needs_underscore=false
-              rpath="-Wl,-blibpath,"
-              shared_libraries_supported=true;;
-      esac
   esac
 fi
 
@@ -910,7 +818,6 @@ if $with_sharedlibs; then
     i[3456]86-*-linux*)           natdynlink=true;;
     i[3456]86-*-gnu*)             natdynlink=true;;
     x86_64-*-linux*)              natdynlink=true;;
-    i[3456]86-*-darwin[89].*)     natdynlink=true;;
     i[3456]86-*-darwin*)
       if test $arch64 == true; then
         natdynlink=true
@@ -962,13 +869,7 @@ system=unknown
 case "$target" in
   i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
-  i[3456]86-*-solaris*)         if $arch64; then
-                                  arch=amd64; system=solaris
-                                else
-                                  arch=i386; system=solaris
-                                fi;;
   i[3456]86-*-haiku*)           arch=i386; system=beos;;
-  i[3456]86-*-beos*)            arch=i386; system=beos;;
   i[3456]86-*-cygwin*)          arch=i386; system=cygwin;;
   i[3456]86-*-darwin*)          if $arch64; then
                                   arch=amd64; system=macosx
@@ -1028,7 +929,6 @@ case "$native_compiler" in
 esac
 
 case "$arch,$cc,$system,$model" in
-  *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
   amd64,gcc*,solaris,*) partialld="ld -r -m elf_x86_64";;
   power,gcc*,elf,ppc)   partialld="ld -r -m elf32ppclinux";;
@@ -1128,10 +1028,6 @@ chmod +x hashbang4
 if ( (./hashbang || ./hashbang2 || ./hashbang3 || ./hashbang4) >/dev/null); then
   inf "#! appears to work in shell scripts."
   case "$target" in
-    *-*-sunos*|*-*-unicos*)
-      wrn "We won't use it, though, because under SunOS and Unicos it breaks " \
-          "on pathnames longer than 30 characters"
-      config HASHBANGSCRIPTS "false";;
     *-*-cygwin*)
       wrn "We won't use it, though, because of conflicts with .exe extension " \
           "under Cygwin"
@@ -1618,7 +1514,7 @@ fi
 # Determine if system stack overflows can be detected
 
 case "$arch,$system" in
-  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx \
+  i386,linux_elf|amd64,linux|amd64,macosx|i386,macosx \
   |amd64,openbsd|i386,bsd_elf)
     inf "System stack overflow can be detected."
     echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
@@ -1909,6 +1805,12 @@ asm_cfi_supported=false
 
 export as aspp
 
+if $as --debug-prefix-map old=new simple.S 2> /dev/null; then
+    as_has_debug_prefix_map=true
+else
+    as_has_debug_prefix_map=false
+fi
+
 if ! $with_cfi; then
   echo "CFI support: disabled by command-line option -no-cfi"
 elif sh ./tryassemble cfi.S; then
@@ -2158,6 +2060,7 @@ config MAX_TESTSUITE_DIR_RETRIES "$max_testsuite_dir_retries"
 config FLAT_FLOAT_ARRAY "$flat_float_array"
 config AWK "awk"
 config CC_HAS_DEBUG_PREFIX_MAP "$cc_has_debug_prefix_map"
+config AS_HAS_DEBUG_PREFIX_MAP "$as_has_debug_prefix_map"
 
 
 rm -f tst hasgot.c

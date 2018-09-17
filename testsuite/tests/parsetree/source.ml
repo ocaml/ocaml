@@ -4161,7 +4161,7 @@ module Make(O : Set.OrderedType) : S with type elt = O.t =
 
 module rec A : Set.OrderedType = struct
  type t = int
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end
 and B : S = struct
  module C = Make(A)
@@ -4820,6 +4820,7 @@ module Z = functor (_: sig end) (_:sig end) (_: sig end) -> struct end;;
 module GZ : functor (X: sig end) () (Z: sig end) -> sig end
           = functor (X: sig end) () (Z: sig end) -> struct end;;
 module F (X : sig end) = struct type t = int end;;
+module F (_ : sig end) = struct type t = int end;;
 type t = F(Does_not_exist).t;;
 type expr =
   [ `Abs of string * expr
@@ -5762,7 +5763,7 @@ module rec A
      type t = Leaf of int | Node of ASet.t
      let compare x y =
        match (x,y) with
-         (Leaf i, Leaf j) -> Pervasives.compare i j
+         (Leaf i, Leaf j) -> Stdlib.compare i j
        | (Leaf i, Node t) -> -1
        | (Node s, Leaf j) -> 1
        | (Node s, Node t) -> ASet.compare s t

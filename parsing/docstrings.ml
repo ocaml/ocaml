@@ -92,12 +92,15 @@ let docs_attr ds =
   let exp =
     { pexp_desc = Pexp_constant (Pconst_string(ds.ds_body, None));
       pexp_loc = ds.ds_loc;
+      pexp_loc_stack = [];
       pexp_attributes = []; }
   in
   let item =
     { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc }
   in
-    (doc_loc, PStr [item])
+  { attr_name = doc_loc;
+    attr_payload = PStr [item];
+    attr_loc = Location.none }
 
 let add_docs_attrs docs attrs =
   let attrs =
@@ -139,12 +142,15 @@ let text_attr ds =
   let exp =
     { pexp_desc = Pexp_constant (Pconst_string(ds.ds_body, None));
       pexp_loc = ds.ds_loc;
+      pexp_loc_stack = [];
       pexp_attributes = []; }
   in
   let item =
     { pstr_desc = Pstr_eval (exp, []); pstr_loc = exp.pexp_loc }
   in
-    (text_loc, PStr [item])
+  { attr_name = text_loc;
+    attr_payload = PStr [item];
+    attr_loc = Location.none }
 
 let add_text_attrs dsl attrs =
   let fdsl = List.filter (function {ds_body=""} -> false| _ ->true) dsl in
@@ -276,7 +282,7 @@ let get_post_extra_text pos =
   with Not_found -> []
 
 (* Docstrings from parser actions *)
-
+module WithParsing = struct
 let symbol_docs () =
   { docs_pre = get_pre_docs (Parsing.symbol_start_pos ());
     docs_post = get_post_docs (Parsing.symbol_end_pos ()); }
@@ -339,7 +345,70 @@ let rhs_pre_extra_text pos =
 
 let rhs_post_extra_text pos =
   get_post_extra_text (Parsing.rhs_end_pos pos)
+end
 
+include WithParsing
+
+module WithMenhir = struct
+let symbol_docs (startpos, endpos) =
+  { docs_pre = get_pre_docs startpos;
+    docs_post = get_post_docs endpos; }
+
+let symbol_docs_lazy (p1, p2) =
+  lazy { docs_pre = get_pre_docs p1;
+         docs_post = get_post_docs p2; }
+
+let rhs_docs pos1 pos2 =
+  { docs_pre = get_pre_docs pos1;
+    docs_post = get_post_docs pos2; }
+
+let rhs_docs_lazy p1 p2 =
+    lazy { docs_pre = get_pre_docs p1;
+           docs_post = get_post_docs p2; }
+
+let mark_symbol_docs (startpos, endpos) =
+  mark_pre_docs startpos;
+  mark_post_docs endpos;
+  ()
+
+let mark_rhs_docs pos1 pos2 =
+  mark_pre_docs pos1;
+  mark_post_docs pos2;
+  ()
+
+let symbol_info endpos =
+  get_info endpos
+
+let rhs_info endpos =
+  get_info endpos
+
+let symbol_text startpos =
+  get_text startpos
+
+let symbol_text_lazy startpos =
+  lazy (get_text startpos)
+
+let rhs_text pos =
+  get_text pos
+
+let rhs_post_text pos =
+  get_post_text pos
+
+let rhs_text_lazy pos =
+  lazy (get_text pos)
+
+let symbol_pre_extra_text startpos =
+  get_pre_extra_text startpos
+
+let symbol_post_extra_text endpos =
+  get_post_extra_text endpos
+
+let rhs_pre_extra_text pos =
+  get_pre_extra_text pos
+
+let rhs_post_extra_text pos =
+  get_post_extra_text pos
+end
 
 (* (Re)Initialise all comment state *)
 

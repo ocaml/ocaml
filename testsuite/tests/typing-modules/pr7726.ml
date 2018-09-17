@@ -15,7 +15,7 @@ module Fix :
 
 module T1 = Fix(functor (X:sig type t end) -> struct type t = X.t option end);;
 [%%expect{|
-Line _, characters 12-77:
+Line 1, characters 12-77:
   module T1 = Fix(functor (X:sig type t end) -> struct type t = X.t option end);;
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the signature of this functor application:
@@ -23,7 +23,7 @@ Error: In the signature of this functor application:
 |}]
 module T2 = Fix(functor (X:sig type t end) -> struct type t = X.t end);;
 [%%expect{|
-Line _, characters 12-70:
+Line 1, characters 12-70:
   module T2 = Fix(functor (X:sig type t end) -> struct type t = X.t end);;
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the signature of this functor application:
@@ -64,7 +64,7 @@ module Id : functor (X : T) -> sig type t = X.t end
 
 module type Bad = S with module F = Id;;
 [%%expect{|
-Line _, characters 18-38:
+Line 1, characters 18-38:
   module type Bad = S with module F = Id;;
                     ^^^^^^^^^^^^^^^^^^^^
 Error: In this instantiated signature:
@@ -75,7 +75,7 @@ Error: In this instantiated signature:
 (* More examples by lpw25 *)
 module M = Fix(Id);;
 [%%expect{|
-Line _, characters 11-18:
+Line 1, characters 11-18:
   module M = Fix(Id);;
              ^^^^^^^
 Error: In the signature of this functor application:
@@ -84,7 +84,7 @@ Error: In the signature of this functor application:
 |}]
 type t = Fix(Id).Fixed.t;;
 [%%expect{|
-Line _, characters 9-24:
+Line 1, characters 9-24:
   type t = Fix(Id).Fixed.t;;
            ^^^^^^^^^^^^^^^
 Error: In the signature of Fix(Id):
@@ -93,7 +93,7 @@ Error: In the signature of Fix(Id):
 |}]
 let f (x : Fix(Id).Fixed.t) = x;;
 [%%expect{|
-Line _, characters 11-26:
+Line 1, characters 11-26:
   let f (x : Fix(Id).Fixed.t) = x;;
              ^^^^^^^^^^^^^^^
 Error: In the signature of Fix(Id):
@@ -110,7 +110,7 @@ M.f 5;;
 module Foo :
   functor (F : T -> T) -> sig val f : Fix(F).Fixed.t -> Fix(F).Fixed.t end
 module M : sig val f : Fix(Id).Fixed.t -> Fix(Id).Fixed.t end
-Line _:
+Line 1:
 Error: In the signature of Fix(Id):
        The definition of Fixed.t contains a cycle:
        Id(Fixed).t
@@ -123,7 +123,7 @@ type t = F(M).t;;
 [%%expect{|
 module F : functor () -> sig type t end
 module M : sig  end
-Line _, characters 9-15:
+Line 3, characters 9-15:
   type t = F(M).t;;
            ^^^^^^
 Error: The functor F is generative, it cannot be applied in type expressions
@@ -141,7 +141,7 @@ module Fix2 :
       module rec Fixed : sig type t = F(Fixed).t end
       module R : functor (X : sig  end) -> sig type t = Fixed.t end
     end
-Line _, characters 11-26:
+Line 5, characters 11-26:
   let f (x : Fix2(Id).R(M).t) = x;;
              ^^^^^^^^^^^^^^^
 Error: In the signature of Fix2(Id):

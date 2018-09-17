@@ -126,7 +126,12 @@ let constant = function
   | Const_nativeint i -> Pconst_integer (Nativeint.to_string i, Some 'n')
   | Const_float f -> Pconst_float (f,None)
 
-let attribute sub (s, p) = (map_loc sub s, p)
+let attribute sub a = {
+    attr_name = map_loc sub a.attr_name;
+    attr_payload = a.attr_payload;
+    attr_loc = a.attr_loc
+  }
+
 let attributes sub l = List.map (sub.attribute sub) l
 
 let structure sub str =
@@ -713,17 +718,25 @@ let class_structure sub cs =
     pcstr_fields = List.map (sub.class_field sub) cs.cstr_fields;
   }
 
-let row_field sub rf =
-  match rf with
-    Ttag (label, attrs, bool, list) ->
-      Rtag (label, sub.attributes sub attrs, bool, List.map (sub.typ sub) list)
-  | Tinherit ct -> Rinherit (sub.typ sub ct)
+let row_field sub {rf_loc; rf_desc; rf_attributes;} =
+  let loc = sub.location sub rf_loc in
+  let attrs = sub.attributes sub rf_attributes in
+  let desc = match rf_desc with
+    | Ttag (label, bool, list) ->
+        Rtag (label, bool, List.map (sub.typ sub) list)
+    | Tinherit ct -> Rinherit (sub.typ sub ct)
+  in
+  Rf.mk ~loc ~attrs desc
 
-let object_field sub ofield =
-  match ofield with
-    OTtag (label, attrs, ct) ->
-      Otag (label, sub.attributes sub attrs, sub.typ sub ct)
-  | OTinherit ct -> Oinherit (sub.typ sub ct)
+let object_field sub {of_loc; of_desc; of_attributes;} =
+  let loc = sub.location sub of_loc in
+  let attrs = sub.attributes sub of_attributes in
+  let desc = match of_desc with
+    | OTtag (label, ct) ->
+        Otag (label, sub.typ sub ct)
+    | OTinherit ct -> Oinherit (sub.typ sub ct)
+  in
+  Of.mk ~loc ~attrs desc
 
 and is_self_pat = function
   | { pat_desc = Tpat_alias(_pat, id, _) } ->

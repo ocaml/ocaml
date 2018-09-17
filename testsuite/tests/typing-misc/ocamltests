@@ -3,6 +3,8 @@ disambiguate_principality.ml
 inside_out.ml
 labels.ml
 occur_check.ml
+pat_type_sharing.ml
+pattern_open.ml
 polyvars.ml
 pr6416.ml
 pr6634.ml
@@ -19,3 +21,6 @@ wellfounded.ml
 empty_variant.ml
 typecore_errors.ml
 typecore_nolabel_errors.ml
+typecore_empty_polyvariant_error.ml
+typetexp_errors.ml
+external_arity.ml

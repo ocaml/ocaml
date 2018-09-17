@@ -606,6 +606,12 @@ runtime, which is useful for debugging pointer problems in low-level
 code such as C stubs.
 }%notop
 
+\notop{
+\item["-stop-after" \var{pass}]
+Stop compilation after the given compilation pass. The currently
+supported passes are: "parsing", "typing".
+}%notop
+
 \nat{%
 \item["-S"]
 Keep the assembly code produced during the compilation. The assembly
@@ -701,8 +707,9 @@ Useful to debug C library problems.
 
 \comp{%
 \item["-vmthread"]
-Compile or link multithreaded programs, in combination with the
-VM-level "threads" library described in chapter~\ref{c:threads}.
+Deprecated since OCaml 4.08.0. Compile or link multithreaded programs,
+in combination with the VM-level "threads" library described in
+chapter~\ref{c:threads}.
 }%comp
 
 \notop{%

@@ -56,7 +56,6 @@ _ocamltestd
 /asmcomp/CSE.ml
 
 /boot/ocamlrun
-/boot/ocamlyacc
 /boot/camlheader
 
 /bytecomp/runtimedef.ml
@@ -74,9 +73,6 @@ _ocamltestd
 
 /emacs/ocamltags
 /emacs/*.elc
-
-/experimental/garrigue/*.out
-/experimental/garrigue/*.out2
 
 /lex/parser.ml
 /lex/parser.mli
@@ -101,7 +97,6 @@ _ocamltestd
 /ocamldoc/odoc_text_parser.ml
 /ocamldoc/odoc_text_parser.mli
 /ocamldoc/stdlib_man
-/ocamldoc/stdlib_non_prefixed/*.mli
 /ocamldoc/stdlib_html
 /ocamldoc/*.output
 /ocamldoc/test_stdlib
@@ -148,6 +143,7 @@ _ocamltestd
 /otherlibs/win32unix/strofaddr.c
 /otherlibs/win32unix/time.c
 /otherlibs/win32unix/unlink.c
+/otherlibs/win32unix/fsync.c
 
 /parsing/parser.ml
 /parsing/parser.mli
@@ -158,6 +154,8 @@ _ocamltestd
 /parsing/parser.output
 /parsing/parser.automaton
 /parsing/parser.conflicts
+/parsing/camlinternalMenhirLib.ml
+/parsing/camlinternalMenhirLib.mli
 
 /runtime/caml/jumptbl.h
 /runtime/caml/m.h
@@ -245,6 +243,7 @@ _ocamltestd
 /tools/stripdebug.opt
 /tools/make_opcodes
 /tools/make_opcodes.ml
+/tools/caml-tex
 
 /utils/config.ml
 

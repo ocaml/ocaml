@@ -1,0 +1,6 @@
+
+test print_if_newline
+  newline here
+  this gets printed
+print_if_newline doesn't crash when last statement
+  newline here

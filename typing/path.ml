@@ -40,10 +40,18 @@ let rec compare p1 p2 =
   | ((Pident _ | Pdot _), (Pdot _ | Papply _)) -> -1
   | ((Pdot _ | Papply _), (Pident _ | Pdot _)) -> 1
 
-let rec isfree id = function
-    Pident id' -> Ident.same id id'
-  | Pdot(p, _s, _pos) -> isfree id p
-  | Papply(p1, p2) -> isfree id p1 || isfree id p2
+let rec find_free_opt ids = function
+    Pident id -> List.find_opt (Ident.same id) ids
+  | Pdot(p, _s, _pos) -> find_free_opt ids p
+  | Papply(p1, p2) ->
+      match find_free_opt ids p1 with
+      | None -> find_free_opt ids p2
+      | Some _ as res -> res
+
+let exists_free ids p =
+  match find_free_opt ids p with
+  | None -> false
+  | _ -> true
 
 let rec binding_time = function
     Pident id -> Ident.binding_time id
@@ -107,3 +115,10 @@ let is_constructor_typath p =
   match constructor_typath p with
   | Regular _ -> false
   | _ -> true
+
+module T = struct
+  type nonrec t = t
+  let compare = compare
+end
+module Set = Set.Make(T)
+module Map = Map.Make(T)

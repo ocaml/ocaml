@@ -187,6 +187,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
+  let _nopervasives = set nopervasives
   let _ppx s = Compenv.first_ppx := s :: !Compenv.first_ppx
   let _principal = set principal
   let _no_principal = clear principal
@@ -202,7 +203,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _stdin () = file_argument ""
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = clear unboxed_types
-  let _unsafe = set fast
+  let _unsafe = set unsafe
   let _verbose = set verbose
   let _version () = print_version ()
   let _vnum () = print_version_num ()

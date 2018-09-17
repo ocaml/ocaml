@@ -13,6 +13,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Warning definitions
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
+
 type loc = {
   loc_start: Lexing.position;
   loc_end: Lexing.position;
@@ -83,6 +90,7 @@ type t =
   | Unboxable_type_in_prim_decl of string   (* 61 *)
   | Constraint_on_gadt                      (* 62 *)
   | Erroneous_printed_signature of string   (* 63 *)
+  | Unsafe_without_parsing                  (* 64 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

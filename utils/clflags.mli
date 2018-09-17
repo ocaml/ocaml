@@ -76,7 +76,7 @@ val no_std_include : bool ref
 val print_types : bool ref
 val make_archive : bool ref
 val debug : bool ref
-val fast : bool ref
+val unsafe : bool ref
 val use_linscan : bool ref
 val link_everything : bool ref
 val custom_runtime : bool ref
@@ -210,10 +210,22 @@ val all_passes : string list ref
 val dumped_pass : string -> bool
 val set_dumped_pass : string -> bool -> unit
 
+val dump_into_file : bool ref
+
 val parse_color_setting : string -> Misc.Color.setting option
 val color : Misc.Color.setting option ref
 
 val unboxed_types : bool ref
+
+module Compiler_pass : sig
+  type t = Parsing | Typing
+  val of_string : string -> t option
+  val to_string : t -> string
+  val passes : t list
+  val pass_names : string list
+end
+val stop_after : Compiler_pass.t option ref
+val should_stop_after : Compiler_pass.t -> bool
 
 val arg_spec : (string * Arg.spec * string) list ref
 

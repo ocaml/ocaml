@@ -1,9 +1,19 @@
 (* TEST
    flags = " -w A -strict-sequence "
-   * toplevel
+   * expect
 *)
 
 (* Ignore OCAMLRUNPARAM=b to be reproducible *)
 Printexc.record_backtrace false;;
+[%%expect {|
+- : unit = ()
+|}]
 
 let () = raise Exit; () ;; (* warn *)
+[%%expect {|
+Line 1, characters 9-19:
+  let () = raise Exit; () ;; (* warn *)
+           ^^^^^^^^^^
+Warning 21: this statement never returns (or has an unsound type.)
+Exception: Stdlib.Exit.
+|}]

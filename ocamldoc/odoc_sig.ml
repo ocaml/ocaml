@@ -288,17 +288,18 @@ module Analyser =
         | Some core_ty ->
           begin match core_ty.ptyp_desc with
           | Ptyp_object (fields, _) ->
+            let fields = List.map (fun {pof_desc; _} -> pof_desc) fields in
             let rec f = function
               | [] -> []
-              | Otag ({txt=""},_,_) :: _ ->
+              | Otag ({txt=""},_) :: _ ->
                 (* Fields with no name have been eliminated previously. *)
                 assert false
-              | Otag ({txt=name}, _atts, ct) :: [] ->
+              | Otag ({txt=name}, ct) :: [] ->
                 let pos = Loc.ptyp_end ct in
                 let (_,comment_opt) = just_after_special pos pos_end in
                 [name, comment_opt]
-              | Otag ({txt=name}, _, ct) ::
-                  ((Oinherit ct2 | Otag (_, _, ct2)) as ele2) :: q ->
+              | Otag ({txt=name}, ct) ::
+                  ((Oinherit ct2 | Otag (_, ct2)) as ele2) :: q ->
                 let pos = Loc.ptyp_end ct in
                 let pos2 = Loc.ptyp_start ct2 in
                 let (_,comment_opt) = just_after_special pos pos2 in
@@ -307,7 +308,7 @@ module Analyser =
             in
             let is_named_field field =
               match field with
-              | Otag ({txt=""},_,_) -> false
+              | Otag ({txt=""},_) -> false
               | _ -> true
             in
             (0, f @@ List.filter is_named_field fields)
@@ -1221,8 +1222,14 @@ module Analyser =
               | Parsetree.Pmty_with (mt, _) ->
                   f mt.Parsetree.pmty_desc
               | Parsetree.Pmty_typeof mexpr ->
-                  begin match mexpr.Parsetree.pmod_desc with
-                    Parsetree.Pmod_ident longident -> Name.from_longident longident.txt
+                  let open Parsetree in
+                  begin match mexpr.pmod_desc with
+                    Pmod_ident longident -> Name.from_longident longident.txt
+                  | Pmod_structure [
+                      {pstr_desc=Pstr_include
+                           {pincl_mod={pmod_desc=Pmod_ident longident}}
+                      }] -> (* include module type of struct include M end*)
+                      Name.from_longident longident.txt
                   | _ -> "??"
                   end
               | Parsetree.Pmty_extension _ -> assert false
@@ -1491,7 +1498,9 @@ module Analyser =
           begin
             match sig_module_type with
               Types.Mty_alias(_, path) ->
-                let alias_name = Odoc_env.full_module_name env (Name.from_path path) in
+                let ln = !Odoc_global.library_namespace in
+                let alias_name = Odoc_env.full_module_name env
+                    Name.(alias_unprefix ln @@ from_path path) in
                 let ma = { ma_name = alias_name ; ma_module = None } in
                 Module_alias ma
             | _ ->

@@ -25,6 +25,8 @@ open Types
 open Btype
 open Outcometree
 
+module String = Misc.Stdlib.String
+
 (* Print a long identifier *)
 
 let rec longident ppf = function
@@ -116,7 +118,7 @@ end
     the conflicts.
 *)
 module Conflicts = struct
-  module M = Misc.StringMap
+  module M = String.Map
   type explanation = { kind: namespace; name:string; location:Location.t}
   let explanations = ref M.empty
   let explain namespace n id =
@@ -129,8 +131,8 @@ module Conflicts = struct
             M.add name { kind = namespace; location; name } !explanations
 
   let pp_explanation ppf r=
-    Format.fprintf ppf "@[<v 2>%aDefinition of %s %s@]"
-      Location.print r.location (Namespace.show r.kind) r.name
+    Format.fprintf ppf "@[<v 2>%a:@,Definition of %s %s@]"
+      Location.print_loc r.location (Namespace.show r.kind) r.name
 
   let pp ppf l =
     Format.fprintf ppf "@[<v>%a@]" (Format.pp_print_list pp_explanation) l
@@ -139,7 +141,7 @@ module Conflicts = struct
   let take () =
     let c = !explanations in
     reset ();
-    c |> M.bindings |> List.map snd |> List.sort Pervasives.compare
+    c |> M.bindings |> List.map snd |> List.sort Stdlib.compare
 
   let print ppf =
     let sep ppf = Format.fprintf ppf "@ " in
@@ -158,9 +160,9 @@ end
 
 module Naming_context = struct
 
-module M = Misc.StringMap
-module N = Map.Make(struct type t = int let compare = Pervasives.compare end)
-module S = Misc.StringSet
+module M = String.Map
+module N = Numbers.Int.Map
+module S = String.Set
 
 let enabled = ref true
 let enable b = enabled := b
@@ -179,8 +181,8 @@ type mapping =
     *)
   | Associated_to_pervasives of out_name
   (** [Associated_to_pervasives out_name] is used when the item
-      [Pervasives.$name] has been associated to the name [$name].
-      Upon a conflict, this name will be expanded to ["Pervasives." ^ name ] *)
+      [Stdlib.$name] has been associated to the name [$name].
+      Upon a conflict, this name will be expanded to ["Stdlib." ^ name ] *)
 
 let hid_start = 0
 
@@ -192,7 +194,7 @@ let find_hid id map =
   try N.find (Ident.binding_time id) map, map with
   Not_found -> add_hid_id id map
 
-let pervasives name = "Pervasives." ^ name
+let pervasives name = "Stdlib." ^ name
 
 let map = Array.make Namespace.size M.empty
 let get namespace = map.(Namespace.id namespace)
@@ -250,7 +252,7 @@ let ident_name_simple namespace id =
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
   | Associated_to_pervasives r ->
-      Out_name.set r ("Pervasives." ^ Out_name.print r);
+      Out_name.set r ("Stdlib." ^ Out_name.print r);
       let hid, m = find_hid id N.empty in
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
@@ -287,21 +289,6 @@ let non_shadowed_pervasive = function
   | Pdot(Pident id, s, _) as path ->
       Ident.same id ident_stdlib &&
       (try Path.same path (Env.lookup_type (Lident s) !printing_env)
-       with Not_found -> true)
-  | Pdot(Pdot (Pident id, "Pervasives", _), s, _) as path ->
-      Ident.same id ident_stdlib &&
-      (* Make sure Stdlib.<s> is the same as Stdlib.Pervasives.<s> *)
-      (try
-         let td =
-           Env.find_type (Env.lookup_type (Lident s) !printing_env)
-             !printing_env
-         in
-         match td.type_private, td.type_manifest with
-         | Private, _ | _, None -> false
-         | Public, Some te ->
-           match (Btype.repr te).desc with
-           | Tconstr (path', _, _) -> Path.same path path'
-           | _ -> false
        with Not_found -> true)
   | _ -> false
 
@@ -369,37 +356,19 @@ let rec tree_of_path namespace = function
   | Papply(p1, p2) ->
       Oide_apply (tree_of_path Module p1, tree_of_path Module p2)
 
-let rec path ppf = function
-  | Pident id ->
-      ident ppf id
-  | Pdot(_, s, _pos) as path
-    when non_shadowed_pervasive path ->
-      pp_print_string ppf s
-  | Pdot(p, s, _pos) ->
-      path ppf p;
-      pp_print_char ppf '.';
-      pp_print_string ppf s
-  | Papply(p1, p2) ->
-      fprintf ppf "%a(%a)" path p1 path p2
-
 let tree_of_path namespace p =
   tree_of_path namespace (rewrite_double_underscore_paths !printing_env p)
+
 let path ppf p =
-  path ppf (rewrite_double_underscore_paths !printing_env p)
+  !Oprint.out_ident ppf (tree_of_path Other p)
 
-let rec string_of_out_ident = function
-  | Oide_ident s -> Out_name.print s
-  | Oide_dot (id, s) -> String.concat "." [string_of_out_ident id; s]
-  | Oide_apply (id1, id2) ->
-      String.concat ""
-        [string_of_out_ident id1; "("; string_of_out_ident id2; ")"]
-
-let string_of_path p = string_of_out_ident (tree_of_path Other p)
+let string_of_path p =
+  Format.asprintf "%a" path p
 
 let strings_of_paths namespace p =
   reset_naming_context ();
   let trees = List.map (tree_of_path namespace) p in
-  List.map string_of_out_ident trees
+  List.map (Format.asprintf "%a" !Oprint.out_ident) trees
 
 (* Print a recursive annotation *)
 
@@ -565,8 +534,7 @@ let printing_depth = ref 0
 let printing_cont = ref ([] : Env.iter_cont list)
 let printing_old = ref Env.empty
 let printing_pers = ref Concr.empty
-module PathMap = Map.Make(Path)
-let printing_map = ref PathMap.empty
+let printing_map = ref Path.Map.empty
 
 let same_type t t' = repr t == repr t'
 
@@ -632,7 +600,7 @@ let set_printing_env env =
     (* printf "Reset printing_map@."; *)
     printing_old := env;
     printing_pers := Env.used_persistent ();
-    printing_map := PathMap.empty;
+    printing_map := Path.Map.empty;
     printing_depth := 0;
     (* printf "Recompute printing_map.@."; *)
     let cont =
@@ -642,19 +610,19 @@ let set_printing_env env =
           (* Format.eprintf "%a -> %a = %a@." path p path p' path p1 *)
           if s1 = Id then
           try
-            let r = PathMap.find p1 !printing_map in
+            let r = Path.Map.find p1 !printing_map in
             match !r with
               Paths l -> r := Paths (p :: l)
             | Best p' -> r := Paths [p; p'] (* assert false *)
           with Not_found ->
-            printing_map := PathMap.add p1 (ref (Paths [p])) !printing_map)
+            printing_map := Path.Map.add p1 (ref (Paths [p])) !printing_map)
         env in
     printing_cont := [cont];
   end
 
 let wrap_printing_env env f =
   set_printing_env env; reset_naming_context ();
-  try_finally f (fun () -> set_printing_env Env.empty)
+  try_finally f ~always:(fun () -> set_printing_env Env.empty)
 
 let wrap_printing_env ~error env f =
   if error then Env.without_cmis (wrap_printing_env env) f
@@ -698,7 +666,7 @@ let best_type_path p =
   then (p, Id)
   else
     let (p', s) = normalize_type_path !printing_env p in
-    let get_path () = get_best_path (PathMap.find  p' !printing_map) in
+    let get_path () = get_best_path (Path.Map.find  p' !printing_map) in
     while !printing_cont <> [] &&
       try fst (path_size (get_path ())) > !printing_depth with Not_found -> true
     do
@@ -717,7 +685,7 @@ let named_vars = ref ([] : string list)
 
 let weak_counter = ref 1
 let weak_var_map = ref TypeMap.empty
-let named_weak_vars = ref StringSet.empty
+let named_weak_vars = ref String.Set.empty
 
 let reset_names () = names := []; name_counter := 0; named_vars := []
 let add_named_var ty =
@@ -730,7 +698,7 @@ let add_named_var ty =
 let name_is_already_used name =
   List.mem name !named_vars
   || List.exists (fun (_, name') -> name = name') !names
-  || StringSet.mem name !named_weak_vars
+  || String.Set.mem name !named_weak_vars
 
 let rec new_name () =
   let name =
@@ -746,7 +714,7 @@ let rec new_weak_name ty () =
   incr weak_counter;
   if name_is_already_used name then new_weak_name ty ()
   else begin
-      named_weak_vars := StringSet.add name !named_weak_vars;
+      named_weak_vars := String.Set.add name !named_weak_vars;
       weak_var_map := TypeMap.add ty name !weak_var_map;
       name
     end
@@ -1609,8 +1577,9 @@ and trees_of_sigitem = function
       [tree_of_extension_constructor id ext es]
   | Sig_module(id, md, rs) ->
       let ellipsis =
-        List.exists (function ({txt="..."}, Parsetree.PStr []) -> true
-                            | _ -> false)
+        List.exists (function
+          | Parsetree.{attr_name = {txt="..."}; attr_payload = PStr []} -> true
+          | _ -> false)
           md.md_attributes in
       [tree_of_module id md.md_type rs ~ellipsis]
   | Sig_modtype(id, decl) ->
@@ -1643,11 +1612,11 @@ let refresh_weak () =
     if is_non_gen true (repr t) then
       begin
         TypeMap.add t name m,
-        StringSet.add name s
+        String.Set.add name s
       end
     else m, s in
   let m, s =
-    TypeMap.fold refresh !weak_var_map (TypeMap.empty ,StringSet.empty)  in
+    TypeMap.fold refresh !weak_var_map (TypeMap.empty ,String.Set.empty)  in
   named_weak_vars := s;
   weak_var_map := m
 
@@ -1737,10 +1706,11 @@ let trees_of_type_path_expansion (tp,tp') =
     Diff(tree_of_path Type tp, tree_of_path Type tp')
 
 let type_path_expansion ppf = function
-  | Same p -> fprintf ppf "%s" (string_of_out_ident p)
+  | Same p -> !Oprint.out_ident ppf p
   | Diff(p,p') ->
-      fprintf ppf "@[<2>%s@ =@ %s@]" (string_of_out_ident p)
-        (string_of_out_ident p')
+      fprintf ppf "@[<2>%a@ =@ %a@]"
+        !Oprint.out_ident p
+        !Oprint.out_ident p'
 
 let rec trace fst txt ppf = function
   | te :: te2 :: rem ->

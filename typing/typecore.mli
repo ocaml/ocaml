@@ -179,7 +179,7 @@ exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
 val report_error: Env.t -> formatter -> error -> unit
- (* Deprecated.  Use Location.{error_of_exn, report_error}. *)
+ (** @deprecated.  Use {!Location.error_of_exn}, {!Location.print_report}. *)
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref

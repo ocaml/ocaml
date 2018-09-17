@@ -15,7 +15,12 @@
 
 (** {!iterator} allows to implement AST inspection using open recursion.  A
     typical mapper would be based on {!default_iterator}, a trivial iterator,
-    and will fall back on it for handling the syntax it does not modify. *)
+    and will fall back on it for handling the syntax it does not modify.
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 open Parsetree
 
@@ -56,6 +61,8 @@ type iterator = {
   structure: iterator -> structure -> unit;
   structure_item: iterator -> structure_item -> unit;
   typ: iterator -> core_type -> unit;
+  row_field: iterator -> row_field -> unit;
+  object_field: iterator -> object_field -> unit;
   type_declaration: iterator -> type_declaration -> unit;
   type_extension: iterator -> type_extension -> unit;
   type_exception: iterator -> type_exception -> unit;

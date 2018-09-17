@@ -160,7 +160,7 @@ let reset () =
   live_at_raise := Reg.Set.empty;
   live_at_exit := []
 
-let fundecl ppf f =
+let fundecl f =
   let initially_live = live f.fun_body Reg.Set.empty in
   (* Sanity check: only function parameters (and the Spacetime node hole
      register, if profiling) can be live at entrypoint *)
@@ -170,6 +170,6 @@ let fundecl ppf f =
     else Reg.Set.remove Proc.loc_spacetime_node_hole wrong_live
   in
   if not (Reg.Set.is_empty wrong_live) then begin
-    Format.fprintf ppf "%a@." Printmach.regset wrong_live;
-    Misc.fatal_error "Liveness.fundecl"
+    Misc.fatal_errorf "@[Liveness.fundecl:@\n%a@]"
+      Printmach.regset wrong_live
   end

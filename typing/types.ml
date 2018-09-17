@@ -80,9 +80,7 @@ end
 
 (* Maps of methods and instance variables *)
 
-module OrderedString =
-  struct type t = string let compare (x:t) y = compare x y end
-module Meths = Map.Make(OrderedString)
+module Meths = Misc.Stdlib.String.Map
 module Vars = Meths
 
 (* Value descriptions *)
@@ -220,7 +218,7 @@ and type_transparence =
 
 (* Type expressions for the class language *)
 
-module Concr = Set.Make(OrderedString)
+module Concr = Misc.Stdlib.String.Set
 
 type class_type =
     Cty_constr of Path.t * type_expr list * class_type

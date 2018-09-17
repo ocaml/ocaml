@@ -243,37 +243,61 @@ let is_constr_row ~allow_ident t =
                   (*  Utilities for type traversal  *)
                   (**********************************)
 
-let rec iter_row f row =
-  List.iter
-    (fun (_, fi) ->
-      match row_field_repr fi with
-      | Rpresent(Some ty) -> f ty
-      | Reither(_, tl, _, _) -> List.iter f tl
-      | _ -> ())
-    row.row_fields;
+let rec fold_row f init row =
+  let result =
+    List.fold_left
+      (fun init (_, fi) ->
+         match row_field_repr fi with
+         | Rpresent(Some ty) -> f init ty
+         | Reither(_, tl, _, _) -> List.fold_left f init tl
+         | _ -> init)
+      init
+      row.row_fields
+  in
   match (repr row.row_more).desc with
-    Tvariant row -> iter_row f row
+    Tvariant row -> fold_row f result row
   | Tvar _ | Tunivar _ | Tsubst _ | Tconstr _ | Tnil ->
-      Misc.may (fun (_,l) -> List.iter f l) row.row_name
+    begin match
+      Misc.may_map (fun (_,l) -> List.fold_left f result l) row.row_name
+    with
+    | None -> result
+    | Some result -> result
+    end
   | _ -> assert false
 
-let iter_type_expr f ty =
+let iter_row f row =
+  fold_row (fun () v -> f v) () row
+
+let fold_type_expr f init ty =
   match ty.desc with
-    Tvar _              -> ()
-  | Tarrow (_, ty1, ty2, _) -> f ty1; f ty2
-  | Ttuple l            -> List.iter f l
-  | Tconstr (_, l, _)   -> List.iter f l
+    Tvar _              -> init
+  | Tarrow (_, ty1, ty2, _) ->
+    let result = f init ty1 in
+    f result ty2
+  | Ttuple l            -> List.fold_left f init l
+  | Tconstr (_, l, _)   -> List.fold_left f init l
   | Tobject(ty, {contents = Some (_, p)})
-                        -> f ty; List.iter f p
-  | Tobject (ty, _)     -> f ty
-  | Tvariant row        -> iter_row f row; f (row_more row)
-  | Tfield (_, _, ty1, ty2) -> f ty1; f ty2
-  | Tnil                -> ()
-  | Tlink ty            -> f ty
-  | Tsubst ty           -> f ty
-  | Tunivar _           -> ()
-  | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
-  | Tpackage (_, _, l)  -> List.iter f l
+    ->
+    let result = f init ty in
+    List.fold_left f result p
+  | Tobject (ty, _)     -> f init ty
+  | Tvariant row        ->
+    let result = fold_row f init row in
+    f result (row_more row)
+  | Tfield (_, _, ty1, ty2) ->
+    let result = f init ty1 in
+    f result ty2
+  | Tnil                -> init
+  | Tlink ty            -> f init ty
+  | Tsubst ty           -> f init ty
+  | Tunivar _           -> init
+  | Tpoly (ty, tyl)     ->
+    let result = f init ty in
+    List.fold_left f result tyl
+  | Tpackage (_, _, l)  -> List.fold_left f init l
+
+let iter_type_expr f ty =
+  fold_type_expr (fun () v -> f v) () ty
 
 let rec iter_abbrev f = function
     Mnil                   -> ()

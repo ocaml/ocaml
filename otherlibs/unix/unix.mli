@@ -307,6 +307,9 @@ val openfile : string -> open_flag list -> file_perm -> file_descr
 val close : file_descr -> unit
 (** Close a file descriptor. *)
 
+val fsync : file_descr -> unit
+(** Flush file buffers to disk. *)
+
 val read : file_descr -> bytes -> int -> int -> int
 (** [read fd buff ofs len] reads [len] bytes from descriptor [fd],
     storing them in byte sequence [buff], starting at position [ofs] in
@@ -788,7 +791,7 @@ val open_process_out : string -> out_channel
    the command to a pipe.  Data written to the returned output channel
    is sent to the standard input of the command.
    Warning: writes on output channels are buffered, hence be careful
-   to call {!Pervasives.flush} at the right times to ensure
+   to call {!Stdlib.flush} at the right times to ensure
    correct synchronization. *)
 
 val open_process : string -> in_channel * out_channel
@@ -817,7 +820,7 @@ val open_process_args_out : string -> string array -> out_channel
 (** Same as {!Unix.open_process_args_in}, but redirect the standard input of the
    command to a pipe.  Data written to the returned output channel is sent to
    the standard input of the command.  Warning: writes on output channels are
-   buffered, hence be careful to call {!Pervasives.flush} at the right times to
+   buffered, hence be careful to call {!Stdlib.flush} at the right times to
    ensure correct synchronization.
 
     @since 4.08.0 *)
@@ -837,6 +840,30 @@ val open_process_args_full :
    environment passed to the command.  The result is a triple of channels
    connected respectively to the standard output, standard input, and standard
    error of the command.
+
+    @since 4.08.0 *)
+
+val process_in_pid : in_channel -> int
+(** Return the pid of a process opened via {!Unix.open_process_in} or
+   {!Unix.open_process_args_in}.
+
+    @since 4.08.0 *)
+
+val process_out_pid : out_channel -> int
+(** Return the pid of a process opened via {!Unix.open_process_out} or
+   {!Unix.open_process_args_out}.
+
+    @since 4.08.0 *)
+
+val process_pid : in_channel * out_channel -> int
+(** Return the pid of a process opened via {!Unix.open_process} or
+   {!Unix.open_process_args}.
+
+    @since 4.08.0 *)
+
+val process_full_pid : in_channel * out_channel * in_channel -> int
+(** Return the pid of a process opened via {!Unix.open_process_full} or
+   {!Unix.open_process_args_full}.
 
     @since 4.08.0 *)
 
@@ -1461,7 +1488,7 @@ val getsockopt_error : file_descr -> error option
 val open_connection : sockaddr -> in_channel * out_channel
 (** Connect to a server at the given address.
    Return a pair of buffered channels connected to the server.
-   Remember to call {!Pervasives.flush} on the output channel at the right
+   Remember to call {!Stdlib.flush} on the output channel at the right
    times to ensure correct synchronization. *)
 
 val shutdown_connection : in_channel -> unit
@@ -1469,7 +1496,7 @@ val shutdown_connection : in_channel -> unit
    that is, transmit an end-of-file condition to the server reading
    on the other side of the connection. This does not fully close the
    file descriptor associated with the channel, which you must remember
-   to free via {!Pervasives.close_in}. *)
+   to free via {!Stdlib.close_in}. *)
 
 val establish_server : (in_channel -> out_channel -> unit) -> sockaddr -> unit
 (** Establish a server on the given address.

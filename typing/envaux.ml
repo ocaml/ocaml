@@ -67,6 +67,7 @@ let rec env_from_summary sum subst =
                         ~hidden_submodules with
           | Some env -> env
           | None -> assert false
+          | exception Not_found -> raise (Error (Module_not_found path'))
           end
       | Env_functor_arg(Env_module(s, id, desc), id') when Ident.same id id' ->
           Env.add_module_declaration ~check:false
@@ -74,7 +75,7 @@ let rec env_from_summary sum subst =
             ~arg:true (env_from_summary s subst)
       | Env_functor_arg _ -> assert false
       | Env_constraints(s, map) ->
-          PathMap.fold
+          Path.Map.fold
             (fun path info ->
               Env.add_local_type (Subst.type_path subst path)
                 (Subst.type_declaration subst info))

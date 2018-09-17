@@ -303,8 +303,8 @@ type file_perm = int
 
 external openfile : string -> open_flag list -> file_perm -> file_descr
            = "unix_open"
-
 external close : file_descr -> unit = "unix_close"
+external fsync : file_descr -> unit = "unix_fsync"
 external unsafe_read : file_descr -> bytes -> int -> int -> int
    = "unix_read"
 external unsafe_write : file_descr -> bytes -> int -> int -> int = "unix_write"
@@ -1113,6 +1113,16 @@ let find_proc_id fun_name proc =
     pid
   with Not_found ->
     raise(Unix_error(EBADF, fun_name, ""))
+
+let process_in_pid inchan =
+  find_proc_id "process_in_pid" (Process_in inchan)
+let process_out_pid outchan =
+  find_proc_id "process_out_pid" (Process_out outchan)
+let process_pid (inchan, outchan) =
+  find_proc_id "process_pid" (Process(inchan, outchan))
+let process_full_pid (inchan, outchan, errchan) =
+  find_proc_id "process_full_pid"
+    (Process_full(inchan, outchan, errchan))
 
 let close_process_in inchan =
   let pid = find_proc_id "close_process_in" (Process_in inchan) in

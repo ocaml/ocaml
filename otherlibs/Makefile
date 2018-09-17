@@ -20,13 +20,6 @@ include $(ROOTDIR)/config/Makefile
 include $(ROOTDIR)/Makefile.common
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
-CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
-
-ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-export OCAML_FLEXLINK:=
-else
-export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
-endif
 
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
@@ -75,10 +68,10 @@ $(LIBNAME).cmxa: $(CAMLOBJS_NAT)
 	         $(CAMLOBJS_NAT) $(LINKOPTS)
 
 $(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(CLIBNAME).$(A)
-	$(CAMLOPT) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
+	$(CAMLOPT_CMD) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
 
 lib$(CLIBNAME).$(A): $(COBJS)
-	$(MKLIB) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
+	$(MKLIB_CMD) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
 
 install::
 	if test -f dll$(CLIBNAME)$(EXT_DLL); then \

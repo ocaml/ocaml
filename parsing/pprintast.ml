@@ -42,6 +42,7 @@ let special_infix_strings =
    if all the characters in the beginning of the string are valid infix
    characters. *)
 let fixity_of_string  = function
+  | "" -> `Normal
   | s when List.mem s special_infix_strings -> `Infix s
   | s when List.mem s.[0] infix_symbols -> `Infix s
   | s when List.mem s.[0] prefix_symbols -> `Prefix s
@@ -53,20 +54,28 @@ let view_fixity_of_exp = function
       fixity_of_string l
   | _ -> `Normal
 
-let is_infix  = function  | `Infix _ -> true | _  -> false
+let is_infix  = function `Infix _ -> true | _  -> false
 let is_mixfix = function `Mixfix _ -> true | _ -> false
+
+let first_is c str =
+  str <> "" && str.[0] = c
+let last_is c str =
+  str <> "" && str.[String.length str - 1] = c
+
+let first_is_in cs str =
+  str <> "" && List.mem str.[0] cs
 
 (* which identifiers are in fact operators needing parentheses *)
 let needs_parens txt =
   let fix = fixity_of_string txt in
   is_infix fix
   || is_mixfix fix
-  || List.mem txt.[0] prefix_symbols
+  || first_is_in prefix_symbols txt
 
 (* some infixes need spaces around parens to avoid clashes with comment
    syntax *)
 let needs_spaces txt =
-  txt.[0]='*' || txt.[String.length txt - 1] = '*'
+  first_is '*' txt || last_is '*' txt
 
 (* add parentheses to binders when they are in fact infix or prefix operators *)
 let protect_ident ppf txt =
@@ -192,15 +201,20 @@ let rec longident f = function
 let longident_loc f x = pp f "%a" longident x.txt
 
 let constant f = function
-  | Pconst_char i -> pp f "%C"  i
-  | Pconst_string (i, None) -> pp f "%S" i
-  | Pconst_string (i, Some delim) -> pp f "{%s|%s|%s}" delim i delim
-  | Pconst_integer (i, None) -> paren (i.[0]='-') (fun f -> pp f "%s") f i
+  | Pconst_char i ->
+      pp f "%C"  i
+  | Pconst_string (i, None) ->
+      pp f "%S" i
+  | Pconst_string (i, Some delim) ->
+      pp f "{%s|%s|%s}" delim i delim
+  | Pconst_integer (i, None) ->
+      paren (first_is '-' i) (fun f -> pp f "%s") f i
   | Pconst_integer (i, Some m) ->
-    paren (i.[0]='-') (fun f (i, m) -> pp f "%s%c" i m) f (i,m)
-  | Pconst_float (i, None) -> paren (i.[0]='-') (fun f -> pp f "%s") f i
-  | Pconst_float (i, Some m) -> paren (i.[0]='-') (fun f (i,m) ->
-      pp f "%s%c" i m) f (i,m)
+      paren (first_is '-' i) (fun f (i, m) -> pp f "%s%c" i m) f (i,m)
+  | Pconst_float (i, None) ->
+      paren (first_is '-' i) (fun f -> pp f "%s") f i
+  | Pconst_float (i, Some m) ->
+      paren (first_is '-' i) (fun f (i,m) -> pp f "%s%c" i m) f (i,m)
 
 (* trailing space*)
 let mutable_flag f = function
@@ -225,6 +239,8 @@ let direction_flag f = function
 let private_flag f = function
   | Public -> ()
   | Private -> pp f "private@ "
+
+let iter_loc f ctxt {txt; loc = _} = f ctxt txt
 
 let constant_string f s = pp f "%S" s
 let tyvar f str = pp f "'%s" str
@@ -285,14 +301,14 @@ and core_type1 ctxt f x =
           l longident_loc li
     | Ptyp_variant (l, closed, low) ->
         let type_variant_helper f x =
-          match x with
-          | Rtag (l, attrs, _, ctl) ->
-              pp f "@[<2>%a%a@;%a@]" string_quot l.txt
+          match x.prf_desc with
+          | Rtag (l, _, ctl) ->
+              pp f "@[<2>%a%a@;%a@]" (iter_loc string_quot) l
                 (fun f l -> match l with
                    |[] -> ()
                    | _ -> pp f "@;of@;%a"
                             (list (core_type ctxt) ~sep:"&")  ctl) ctl
-                (attributes ctxt) attrs
+                (attributes ctxt) x.prf_attributes
           | Rinherit ct -> core_type ctxt f ct in
         pp f "@[<2>[%a%a]@]"
           (fun f l ->
@@ -312,10 +328,11 @@ and core_type1 ctxt f x =
                  pp f ">@ %a"
                    (list string_quot) xs) low
     | Ptyp_object (l, o) ->
-        let core_field_type f = function
-          | Otag (l, attrs, ct) ->
+        let core_field_type f x = match x.pof_desc with
+          | Otag (l, ct) ->
+            (* Cf #7200 *)
             pp f "@[<hov2>%s: %a@ %a@ @]" l.txt
-              (core_type ctxt) ct (attributes ctxt) attrs (* Cf #7200 *)
+              (core_type ctxt) ct (attributes ctxt) x.pof_attributes
           | Oinherit ct ->
             pp f "@[<hov2>%a@ @]" (core_type ctxt) ct
         in
@@ -326,7 +343,8 @@ and core_type1 ctxt f x =
               | [] -> pp f ".."
               | _ -> pp f " ;.."
         in
-        pp f "@[<hov2><@ %a%a@ > @]" (list core_field_type ~sep:";") l
+        pp f "@[<hov2><@ %a%a@ > @]"
+          (list core_field_type ~sep:";") l
           field_var o (* Cf #7200 *)
     | Ptyp_class (li, l) ->   (*FIXME*)
         pp f "@[<hov2>%a#%a@]"
@@ -511,15 +529,15 @@ and sugar_expr ctxt f e =
           | _ -> false
         end
       | (Lident s | Ldot(_,s)) , a :: i :: rest
-        when s.[0] = '.' ->
-          let n = String.length s in
+        when first_is '.' s ->
           (* extract operator:
              assignment operators end with [right_bracket ^ "<-"],
              access operators end with [right_bracket] directly
           *)
-          let assign = s.[n - 1] = '-'  in
+          let assign = last_is '-' s in
           let kind =
             (* extract the right end bracket *)
+            let n = String.length s in
             if assign then s.[n - 3] else s.[n - 1] in
           let left, right = match kind with
             | ')' -> '(', ")"
@@ -754,14 +772,14 @@ and attributes ctxt f l =
 and item_attributes ctxt f l =
   List.iter (item_attribute ctxt f) l
 
-and attribute ctxt f (s, e) =
-  pp f "@[<2>[@@%s@ %a]@]" s.txt (payload ctxt) e
+and attribute ctxt f a =
+  pp f "@[<2>[@@%s@ %a]@]" a.attr_name.txt (payload ctxt) a.attr_payload
 
-and item_attribute ctxt f (s, e) =
-  pp f "@[<2>[@@@@%s@ %a]@]" s.txt (payload ctxt) e
+and item_attribute ctxt f a =
+  pp f "@[<2>[@@@@%s@ %a]@]" a.attr_name.txt (payload ctxt) a.attr_payload
 
-and floating_attribute ctxt f (s, e) =
-  pp f "@[<2>[@@@@@@%s@ %a]@]" s.txt (payload ctxt) e
+and floating_attribute ctxt f a =
+  pp f "@[<2>[@@@@@@%s@ %a]@]" a.attr_name.txt (payload ctxt) a.attr_payload
 
 and value_description ctxt f x =
   (* note: value_description has an attribute field,
@@ -882,7 +900,10 @@ and class_field ctxt f x =
       let bind e =
         binding ctxt f
           {pvb_pat=
-             {ppat_desc=Ppat_var s;ppat_loc=Location.none;ppat_attributes=[]};
+             {ppat_desc=Ppat_var s;
+              ppat_loc=Location.none;
+              ppat_loc_stack=[];
+              ppat_attributes=[]};
            pvb_expr=e;
            pvb_attributes=[];
            pvb_loc=Location.none;
@@ -1503,8 +1524,7 @@ and label_x_expression_param ctxt f (l,e) =
         pp f "~%s:%a" lbl (simple_expr ctxt) e
 
 and directive_argument f x =
-  match x with
-  | Pdir_none -> ()
+  match x.pdira_desc with
   | Pdir_string (s) -> pp f "@ %S" s
   | Pdir_int (n, None) -> pp f "@ %s" n
   | Pdir_int (n, Some m) -> pp f "@ %s%c" n m
@@ -1517,9 +1537,10 @@ let toplevel_phrase f x =
    (* pp_open_hvbox f 0; *)
    (* pp_print_list structure_item f s ; *)
    (* pp_close_box f (); *)
-  | Ptop_dir (s, da) ->
-   pp f "@[<hov2>#%s@ %a@]" s directive_argument da
-   (* pp f "@[<hov2>#%s@ %a@]" s directive_argument da *)
+  | Ptop_dir {pdir_name; pdir_arg = None; _} ->
+   pp f "@[<hov2>#%s@]" pdir_name.txt
+  | Ptop_dir {pdir_name; pdir_arg = Some pdir_arg; _} ->
+   pp f "@[<hov2>#%s@ %a@]" pdir_name.txt directive_argument pdir_arg
 
 let expression f x =
   pp f "@[%a@]" (expression reset_ctxt) x

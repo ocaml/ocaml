@@ -18,9 +18,9 @@ include ../Makefile.common
 
 UNIXDIR=../otherlibs/$(UNIXLIB)
 CAMLRUN ?= ../boot/ocamlrun
-CAMLYACC ?= ../boot/ocamlyacc
+CAMLYACC ?= ../yacc/ocamlyacc$(EXE)
 
-CAMLC=$(CAMLRUN) ../ocamlc -nostdlib -I ../stdlib
+CAMLC=$(CAMLRUN) ../ocamlc -g -nostdlib -I ../stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
           -safe-string -strict-sequence -strict-formats
 LINKFLAGS=-linkall -I $(UNIXDIR)
@@ -35,11 +35,10 @@ INCLUDES=\
 
 OTHEROBJS=\
   $(UNIXDIR)/unix.cma \
-  ../utils/config.cmo ../utils/tbl.cmo ../utils/misc.cmo \
+  ../utils/config.cmo ../utils/build_path_prefix_map.cmo ../utils/misc.cmo \
   ../utils/identifiable.cmo ../utils/numbers.cmo \
   ../utils/arg_helper.cmo ../utils/clflags.cmo \
   ../utils/consistbl.cmo ../utils/warnings.cmo \
-  ../utils/build_path_prefix_map.cmo \
   ../utils/terminfo.cmo \
   ../parsing/location.cmo ../parsing/longident.cmo ../parsing/docstrings.cmo \
   ../parsing/syntaxerr.cmo \

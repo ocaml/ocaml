@@ -110,7 +110,7 @@ let resume_user_input () =
   if not (List.mem_assoc !user_channel.io_fd !active_files) then begin
     if !interactif && !Parameters.prompt then begin
       print_string !current_prompt;
-      flush Pervasives.stdout
+      flush Stdlib.stdout
       end;
     add_file !user_channel exit_main_loop
     end

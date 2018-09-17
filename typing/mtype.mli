@@ -32,10 +32,15 @@ val strengthen: aliasable:bool -> Env.t -> module_type -> Path.t -> module_type
            given path. *)
 val strengthen_decl:
   aliasable:bool -> Env.t -> module_declaration -> Path.t -> module_declaration
-val nondep_supertype: Env.t -> Ident.t -> module_type -> module_type
+val nondep_supertype: Env.t -> Ident.t list -> module_type -> module_type
         (* Return the smallest supertype of the given type
-           in which the given ident does not appear.
-           Raise [Not_found] if no such type exists. *)
+           in which none of the given idents appears.
+           @raise [Ctype.Nondep_cannot_erase] if no such type exists. *)
+val nondep_sig_item: Env.t -> Ident.t list -> signature_item -> signature_item
+        (* Returns the signature item with its type updated
+           to be the smallest supertype of its initial type
+           in which none of the given idents appears.
+           @raise [Ctype.Nondep_cannot_erase] if no such type exists. *)
 val no_code_needed: Env.t -> module_type -> bool
 val no_code_needed_sig: Env.t -> signature -> bool
         (* Determine whether a module needs no implementation code,

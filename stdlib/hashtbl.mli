@@ -298,7 +298,7 @@ module type HashedType =
               (provided objects do not contain floats)
 -         ([(fun x y -> compare x y = 0)], {!Hashtbl.hash})
               for comparing objects by structure
-              and handling {!Pervasives.nan} correctly
+              and handling {!Stdlib.nan} correctly
 -         ([(==)], {!Hashtbl.hash}) for comparing objects by physical
               equality (e.g. for mutable or cyclic objects). *)
    end
@@ -446,7 +446,7 @@ module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
 val hash : 'a -> int
 (** [Hashtbl.hash x] associates a nonnegative integer to any value of
    any type. It is guaranteed that
-   if [x = y] or [Pervasives.compare x y = 0], then [hash x = hash y].
+   if [x = y] or [Stdlib.compare x y = 0], then [hash x = hash y].
    Moreover, [hash] always terminates, even on cyclic structures. *)
 
 val seeded_hash : int -> 'a -> int

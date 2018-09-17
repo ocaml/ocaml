@@ -71,6 +71,7 @@ let tuple2 f1 f2 (x, y) = (f1 x, f2 y)
 let tuple3 f1 f2 f3 (x, y, z) = (f1 x, f2 y, f3 z)
 let opt f = function None -> None | Some x -> Some (f x)
 
+
 let structure sub {str_items; str_type; str_final_env} =
   {
     str_items = List.map (sub.structure_item sub) str_items;
@@ -611,15 +612,21 @@ let class_structure sub x =
   let cstr_fields = List.map (sub.class_field sub) x.cstr_fields in
   {x with cstr_self; cstr_fields}
 
-let row_field sub = function
-  | Ttag (label, attrs, b, list) ->
-      Ttag (label, attrs, b, List.map (sub.typ sub) list)
-  | Tinherit ct -> Tinherit (sub.typ sub ct)
+let row_field sub x =
+  let rf_desc = match x.rf_desc with
+    | Ttag (label, b, list) ->
+        Ttag (label, b, List.map (sub.typ sub) list)
+    | Tinherit ct -> Tinherit (sub.typ sub ct)
+  in
+  { x with rf_desc; }
 
-let object_field sub = function
-  | OTtag (label, attrs, ct) ->
-      OTtag (label, attrs, (sub.typ sub ct))
-  | OTinherit ct -> OTinherit (sub.typ sub ct)
+let object_field sub x =
+  let of_desc = match x.of_desc with
+    | OTtag (label, ct) ->
+        OTtag (label, (sub.typ sub ct))
+    | OTinherit ct -> OTinherit (sub.typ sub ct)
+  in
+  { x with of_desc; }
 
 let class_field_kind sub = function
   | Tcfk_virtual ct -> Tcfk_virtual (sub.typ sub ct)

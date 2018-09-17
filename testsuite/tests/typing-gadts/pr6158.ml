@@ -15,7 +15,7 @@ struct let f : ('a S.s, 'a S.t) eq -> unit = function Refl -> () end;;
 type 'a t = T of 'a
 type 'a s = S of 'a
 type (_, _) eq = Refl : ('a, 'a) eq
-Line _, characters 45-49:
+Line 6, characters 45-49:
   let f : (int s, int t) eq -> unit = function Refl -> ();;
                                                ^^^^
 Error: This pattern matches values of type (int s, int s) eq

@@ -92,7 +92,7 @@ val equal : t -> t -> bool
 (** [equal u u'] is [u = u']. *)
 
 val compare : t -> t -> int
-(** [compare u u'] is [Pervasives.compare u u']. *)
+(** [compare u u'] is [Stdlib.compare u u']. *)
 
 val hash : t -> int
 (** [hash u] associates a non-negative integer to [u]. *)

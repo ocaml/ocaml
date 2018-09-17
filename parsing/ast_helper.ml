@@ -19,18 +19,17 @@ open Asttypes
 open Parsetree
 open Docstrings
 
-type lid = Longident.t loc
-type str = string loc
+type 'a with_loc = 'a Location.loc
 type loc = Location.t
+
+type lid = Longident.t with_loc
+type str = string with_loc
 type attrs = attribute list
 
 let default_loc = ref Location.none
 
 let with_default_loc l f =
-  let old = !default_loc in
-  default_loc := l;
-  try let r = f () in default_loc := old; r
-  with exn -> default_loc := old; raise exn
+  Misc.protect_refs [Misc.R (default_loc, l)] f
 
 module Const = struct
   let integer ?suffix i = Pconst_integer (i, suffix)
@@ -43,9 +42,20 @@ module Const = struct
   let string ?quotation_delimiter s = Pconst_string (s, quotation_delimiter)
 end
 
+module Attr = struct
+  let mk ?(loc= !default_loc) name payload =
+    { attr_name = name;
+      attr_payload = payload;
+      attr_loc = loc }
+end
+
 module Typ = struct
   let mk ?(loc = !default_loc) ?(attrs = []) d =
-    {ptyp_desc = d; ptyp_loc = loc; ptyp_attributes = attrs}
+    {ptyp_desc = d;
+     ptyp_loc = loc;
+     ptyp_loc_stack = [];
+     ptyp_attributes = attrs}
+
   let attr d a = {d with ptyp_attributes = d.ptyp_attributes @ [a]}
 
   let any ?loc ?attrs () = mk ?loc ?attrs Ptyp_any
@@ -106,18 +116,22 @@ module Typ = struct
             Ptyp_extension (s, arg)
       in
       {t with ptyp_desc = desc}
-    and loop_row_field  =
-      function
-        | Rtag(label,attrs,flag,lst) ->
-            Rtag(label,attrs,flag,List.map loop lst)
+    and loop_row_field field =
+      let prf_desc = match field.prf_desc with
+        | Rtag(label,flag,lst) ->
+            Rtag(label,flag,List.map loop lst)
         | Rinherit t ->
             Rinherit (loop t)
-    and loop_object_field =
-      function
-        | Otag(label, attrs, t) ->
-            Otag(label, attrs, loop t)
+      in
+      { field with prf_desc; }
+    and loop_object_field field =
+      let pof_desc = match field.pof_desc with
+        | Otag(label, t) ->
+            Otag(label, loop t)
         | Oinherit t ->
             Oinherit (loop t)
+      in
+      { field with pof_desc; }
     in
     loop t
 
@@ -125,7 +139,10 @@ end
 
 module Pat = struct
   let mk ?(loc = !default_loc) ?(attrs = []) d =
-    {ppat_desc = d; ppat_loc = loc; ppat_attributes = attrs}
+    {ppat_desc = d;
+     ppat_loc = loc;
+     ppat_loc_stack = [];
+     ppat_attributes = attrs}
   let attr d a = {d with ppat_attributes = d.ppat_attributes @ [a]}
 
   let any ?loc ?attrs () = mk ?loc ?attrs Ppat_any
@@ -150,7 +167,10 @@ end
 
 module Exp = struct
   let mk ?(loc = !default_loc) ?(attrs = []) d =
-    {pexp_desc = d; pexp_loc = loc; pexp_attributes = attrs}
+    {pexp_desc = d;
+     pexp_loc = loc;
+     pexp_loc_stack = [];
+     pexp_attributes = attrs}
   let attr d a = {d with pexp_attributes = d.pexp_attributes @ [a]}
 
   let ident ?loc ?attrs a = mk ?loc ?attrs (Pexp_ident a)
@@ -505,19 +525,22 @@ end
 
 (** Type extensions *)
 module Te = struct
-  let mk ?(attrs = []) ?(docs = empty_docs)
+  let mk ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs)
         ?(params = []) ?(priv = Public) path constructors =
     {
      ptyext_path = path;
      ptyext_params = params;
      ptyext_constructors = constructors;
      ptyext_private = priv;
+     ptyext_loc = loc;
      ptyext_attributes = add_docs_attrs docs attrs;
     }
 
-  let mk_exception ?(attrs = []) ?(docs = empty_docs) constructor =
+  let mk_exception ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs)
+      constructor =
     {
      ptyexn_constructor = constructor;
+     ptyexn_loc = loc;
      ptyexn_attributes = add_docs_attrs docs attrs;
     }
 
@@ -564,4 +587,30 @@ module Cstr = struct
      pcstr_self = self;
      pcstr_fields = fields;
     }
+end
+
+(** Row fields *)
+module Rf = struct
+  let mk ?(loc = !default_loc) ?(attrs = []) desc = {
+    prf_desc = desc;
+    prf_loc = loc;
+    prf_attributes = attrs;
+  }
+  let tag ?loc ?attrs label const tys =
+    mk ?loc ?attrs (Rtag (label, const, tys))
+  let inherit_?loc ty =
+    mk ?loc (Rinherit ty)
+end
+
+(** Object fields *)
+module Of = struct
+  let mk ?(loc = !default_loc) ?(attrs=[]) desc = {
+    pof_desc = desc;
+    pof_loc = loc;
+    pof_attributes = attrs;
+  }
+  let tag ?loc ?attrs label ty =
+    mk ?loc ?attrs (Otag (label, ty))
+  let inherit_ ?loc ty =
+    mk ?loc (Oinherit ty)
 end

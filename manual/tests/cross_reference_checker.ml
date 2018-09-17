@@ -28,7 +28,7 @@ let pp_ref ppf = Format.pp_print_list ~pp_sep:( fun ppf () ->
     Format.pp_print_string ppf ".") Format.pp_print_int ppf
 
 let print_error error =
-  Location.report_error Format.std_formatter @@ match error with
+  Location.print_report Format.std_formatter @@ match error with
   | Tuple_expected loc ->
       Location.errorf ~loc
         "Integer tuple expected after manual reference annotation@."
@@ -130,22 +130,22 @@ end
 (** {1 Extract references from Ocaml source files} *)
 module OCaml_refs = struct
 
-  let parse ppf sourcefile  =
-    Pparse.parse_implementation ppf ~tool_name:"manual_cross_reference_check"
+  let parse sourcefile  =
+    Pparse.parse_implementation ~tool_name:"manual_cross_reference_check"
       sourcefile
 
   (** search for an attribute [[@manual.ref "tex_label_name"]] *)
-  let manual_reference_attribute (s, payload) =
-    if s.Location.txt = "manual.ref" then
-      match payload with
-      | Parsetree.(
-          PStr [{pstr_desc= Pstr_eval
-                     ({ pexp_desc = Pexp_constant Pconst_string (s,_) },_) } ] ) ->
+  let manual_reference_attribute attr =
+    let open Parsetree in
+    if attr.attr_name.Location.txt <> "manual.ref"
+    then None
+    else begin match attr.attr_payload with
+      | PStr [{pstr_desc= Pstr_eval
+                 ({ pexp_desc = Pexp_constant Pconst_string (s,_) },_) } ] ->
           Some s
-      | _ -> print_error (Wrong_attribute_payload s.Location.loc);
+      | _ -> print_error (Wrong_attribute_payload attr.attr_loc);
           Some "" (* triggers an error *)
-    else
-      None
+    end
 
   let rec label_from_attributes = function
     | [] -> None
@@ -213,7 +213,7 @@ module OCaml_refs = struct
     iterator.structure iterator ast
 
   let from_file m f =
-    from_ast m @@ parse Format.std_formatter f
+    from_ast m @@ parse f
 end
 
 

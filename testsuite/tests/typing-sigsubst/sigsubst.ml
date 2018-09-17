@@ -4,11 +4,10 @@
 
 module type Printable = sig
   type t
-  val print : Format.formatter -> t -> unit
+  val print : t -> unit
 end
 [%%expect {|
-module type Printable =
-  sig type t val print : Format.formatter -> t -> unit end
+module type Printable = sig type t val print : t -> unit end
 |}]
 module type Comparable = sig
   type t
@@ -22,11 +21,14 @@ module type PrintableComparable = sig
   include Comparable with type t = t
 end
 [%%expect {|
-Line _, characters 2-36:
+Line 3, characters 2-36:
     include Comparable with type t = t
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Multiple definition of the type name t.
-       Names must be unique in a given structure or signature.
+Error: Illegal shadowing of included type t/1019 by t/1023
+       Line 2, characters 2-19:
+         Type t/1019 came from this include
+       Line 3, characters 2-23:
+         The value print has no valid type if t/1019 is shadowed
 |}]
 
 module type Sunderscore = sig
@@ -45,7 +47,7 @@ module type S0 = sig
   and M2 : sig type t = int end
 end with type M.t = int
 [%%expect {|
-Line _, characters 17-115:
+Line 1, characters 17-115:
   .................sig
     module rec M : sig type t = M2.t end
     and M2 : sig type t = int end
@@ -66,11 +68,7 @@ module type PrintableComparable = sig
 end
 [%%expect {|
 module type PrintableComparable =
-  sig
-    type t
-    val print : Format.formatter -> t -> unit
-    val compare : t -> t -> int
-  end
+  sig type t val print : t -> unit val compare : t -> t -> int end
 |}]
 module type PrintableComparable = sig
   include Printable
@@ -78,11 +76,7 @@ module type PrintableComparable = sig
 end
 [%%expect {|
 module type PrintableComparable =
-  sig
-    type t
-    val print : Format.formatter -> t -> unit
-    val compare : t -> t -> int
-  end
+  sig type t val print : t -> unit val compare : t -> t -> int end
 |}]
 module type ComparableInt = Comparable with type t := int
 [%%expect {|
@@ -168,7 +162,7 @@ module type S = sig
 end with type 'a t2 := 'a t * bool
 [%%expect {|
 type 'a t constraint 'a = 'b list
-Line _, characters 16-142:
+Line 2, characters 16-142:
   ................sig
     type 'a t2 constraint 'a = 'b list
     type 'a mylist = 'a list
@@ -179,8 +173,8 @@ Error: Destructive substitutions are not supported for constrained
        a type constructor with the same arguments).
 |}]
 
-(* Issue where the typer expands an alias, which breaks the typing of the rest
-   of the signature, but no error is given to the user. *)
+(* Issue where the typer weakens an alias, which breaks the typing of the rest
+   of the signature. (MPR#7723)*)
 module type S = sig
   module M1 : sig type t = int end
   module M2 = M1
@@ -192,11 +186,40 @@ end with type M2.t = int
 module type S =
   sig
     module M1 : sig type t = int end
-    module M2 : sig type t = int end
+    module M2 = M1
     module M3 : sig module M = M2 end
     module F : functor (X : sig module M = M1 end) -> sig type t end
     type t = F(M3).t
   end
+|}]
+
+type (_, _) eq = Refl : ('a, 'a) eq
+
+module Equal (M : Set.OrderedType) (N : Set.OrderedType with type t = M.t) : sig
+  val eq : (Set.Make(M).t, Set.Make(N).t) eq
+end = struct
+  type meq = Eq of (Set.Make(M).t, Set.Make(M).t) eq
+  module type S = sig
+    module N = M
+    type neq = meq = Eq of (Set.Make(M).t, Set.Make(N).t) eq
+  end
+  module type T = S with type N.t = M.t with module N := N;;
+  module rec T : T = T
+  let eq =
+    let T.Eq eq = Eq Refl in
+    eq
+end;;
+[%%expect {|
+type (_, _) eq = Refl : ('a, 'a) eq
+Line 11, characters 18-58:
+    module type T = S with type N.t = M.t with module N := N;;
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this `with' constraint, the new definition of N
+       does not match its original definition in the constrained signature:
+       Modules do not match:
+         sig type t = M.t val compare : t -> t -> int end
+       is not included in
+         (module M)
 |}]
 
 (* Checking that the uses of M.t are rewritten regardless of how they
@@ -244,7 +267,7 @@ module type S = sig
   module A = M
 end with type M.t := float
 [%%expect {|
-Line _, characters 16-89:
+Line 1, characters 16-89:
   ................sig
     module M : sig type t end
     module A = M
@@ -272,7 +295,7 @@ module type S =
 (* This particular substitution cannot be made to work *)
 module type S2 = S with type M.t := float
 [%%expect {|
-Line _, characters 17-41:
+Line 1, characters 17-41:
   module type S2 = S with type M.t := float
                    ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This `with' constraint on M.t makes the applicative functor
@@ -306,7 +329,7 @@ module type S3 = sig
 end with type M2.t := int
 [%%expect {|
 module Id : functor (X : sig type t end) -> sig type t = X.t end
-Line _, characters 17-120:
+Line 2, characters 17-120:
   .................sig
     module rec M : sig type t = A of Id(M2).t end
     and M2 : sig type t end
@@ -349,7 +372,7 @@ module type S = sig
   module Alias = M
 end with module M.N := A
 [%%expect {|
-Line _, characters 16-159:
+Line 1, characters 16-159:
   ................sig
     module M : sig
       module N : sig

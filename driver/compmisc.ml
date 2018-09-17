@@ -57,11 +57,11 @@ let initial_env () =
     ~initially_opened_module
     ~open_implicit_modules:(List.rev !Clflags.open_modules)
 
-let read_color_env ppf =
+let read_color_env () =
   try
     match Clflags.parse_color_setting (Sys.getenv "OCAML_COLOR") with
     | None ->
-        Location.print_warning Location.none ppf
+        Location.prerr_warning Location.none
           (Warnings.Bad_env_variable
              ("OCAML_COLOR",
               "expected \"auto\", \"always\" or \"never\""));
@@ -70,3 +70,17 @@ let read_color_env ppf =
       | Some _ -> ()
   with
     Not_found -> ()
+
+let with_ppf_dump ~fileprefix f =
+  let ppf_dump, finally =
+    if not !Clflags.dump_into_file
+    then Format.err_formatter, ignore
+    else
+       let ch = open_out (fileprefix ^ ".dump") in
+       let ppf = Format.formatter_of_out_channel ch in
+       ppf,
+       (fun () ->
+         Format.pp_print_flush ppf ();
+         close_out ch)
+  in
+  Misc.try_finally (fun () -> f ppf_dump) ~always:finally

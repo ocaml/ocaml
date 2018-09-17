@@ -90,12 +90,12 @@ let record_call ?(accumulate = false) name f =
   in
   hierarchy := E this_table;
   Misc.try_finally f
-    (fun () ->
-       hierarchy := E prev_hierarchy;
-       let end_measure = Measure.create () in
-       let measure_diff =
-         Measure_diff.accumulate this_measure_diff start_measure end_measure in
-       Hashtbl.add prev_hierarchy name (measure_diff, E this_table))
+    ~always:(fun () ->
+        hierarchy := E prev_hierarchy;
+        let end_measure = Measure.create () in
+        let measure_diff =
+          Measure_diff.accumulate this_measure_diff start_measure end_measure in
+        Hashtbl.add prev_hierarchy name (measure_diff, E this_table))
 
 let record ?accumulate pass f x = record_call ?accumulate pass (fun () -> f x)
 

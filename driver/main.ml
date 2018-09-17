@@ -41,7 +41,22 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dllpath s = dllpaths := !dllpaths @ [s]
   let _for_pack s = for_package := Some s
   let _g = set debug
-  let _i () = print_types := true; compile_only := true
+  let _i () =
+    print_types := true;
+    compile_only := true;
+    stop_after := Some Compiler_pass.Typing;
+    ()
+  let _stop_after pass =
+    let module P = Compiler_pass in
+    begin match P.of_string pass with
+    | None -> () (* this should not occur as we use Arg.Symbol *)
+    | Some pass ->
+        stop_after := Some pass;
+        begin match pass with
+        | P.Parsing | P.Typing ->
+            compile_only := true
+        end;
+    end
   let _I s = include_dirs := s :: !include_dirs
   let _impl = impl
   let _intf = intf
@@ -89,7 +104,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _vmthread = set use_vmthreads
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = unset unboxed_types
-  let _unsafe = set fast
+  let _unsafe = set unsafe
   let _unsafe_string = set unsafe_string
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s
@@ -108,6 +123,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _verbose = set verbose
   let _nopervasives = set nopervasives
   let _match_context_rows n = match_context_rows := n
+  let _dump_into_file = set dump_into_file
   let _dno_unique_ids = unset unique_ids
   let _dunique_ids = set unique_ids
   let _dsource = set dump_source
@@ -126,6 +142,12 @@ module Options = Main_args.Make_bytecomp_options (struct
   let anonymous = anonymous
 end)
 
+let vmthread_deprecated_message = "\
+The -vmthread argument of ocamlc is deprecated\n\
+since OCaml 4.08.0.  Please switch to system threads, which have the\n\
+same API. Lightweight threads with VM-level scheduling are provided by\n\
+third-party libraries such as Lwt, but with a different API."
+
 let main () =
   Clflags.add_arguments __LOC__ Options.list;
   Clflags.add_arguments __LOC__
@@ -134,7 +156,9 @@ let main () =
   try
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
-    Compmisc.read_color_env ppf;
+    Compmisc.read_color_env ();
+    if !Clflags.use_vmthreads then
+      Location.deprecated Location.none vmthread_deprecated_message;
     begin try
       Compenv.process_deferred_actions
         (ppf,
@@ -151,28 +175,36 @@ let main () =
     end;
     readenv ppf Before_link;
     if
-      List.length (List.filter (fun x -> !x)
-                      [make_archive;make_package;compile_only;output_c_object])
+      List.length
+        (List.filter (fun x -> !x)
+           [make_archive;make_package;compile_only;output_c_object])
         > 1
-    then
-      if !print_types then
-        fatal "Option -i is incompatible with -pack, -a, -output-obj"
-      else
+    then begin
+      let module P = Clflags.Compiler_pass in
+      match !stop_after with
+      | None ->
         fatal "Please specify at most one of -pack, -a, -c, -output-obj";
+      | Some (P.Parsing | P.Typing) ->
+          Printf.ksprintf fatal
+            "Options -i and -stop-after (%s)\
+             are  incompatible with -pack, -a, -output-obj"
+            (String.concat "|" P.pass_names)
+    end;
     if !make_archive then begin
       Compmisc.init_path false;
 
-      Bytelibrarian.create_archive ppf
-                                   (Compenv.get_objfiles ~with_ocamlparam:false)
-                                   (extract_output !output_name);
+      Bytelibrarian.create_archive
+        (Compenv.get_objfiles ~with_ocamlparam:false)
+        (extract_output !output_name);
       Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compmisc.init_path false;
       let extracted_output = extract_output !output_name in
       let revd = get_objfiles ~with_ocamlparam:false in
-      Bytepackager.package_files ppf (Compmisc.initial_env ())
-        revd (extracted_output);
+      Compmisc.with_ppf_dump ~fileprefix:extracted_output (fun ppf_dump ->
+        Bytepackager.package_files ~ppf_dump (Compmisc.initial_env ())
+          revd (extracted_output));
       Warnings.check_fatal ();
     end
     else if not !compile_only && !objfiles <> [] then begin
@@ -193,7 +225,7 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path false;
-      Bytelink.link ppf (get_objfiles ~with_ocamlparam:true) target;
+      Bytelink.link (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
   with x ->

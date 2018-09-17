@@ -202,23 +202,10 @@ let generate_equations = ref false
 let assume_injective = ref false
 
 let set_mode_pattern ~generate ~injective f =
-  let old_unification_mode = !umode
-  and old_gen = !generate_equations
-  and old_inj = !assume_injective in
-  try
-    umode := Pattern;
-    generate_equations := generate;
-    assume_injective := injective;
-    let ret = f () in
-    umode := old_unification_mode;
-    generate_equations := old_gen;
-    assume_injective := old_inj;
-    ret
-  with e ->
-    umode := old_unification_mode;
-    generate_equations := old_gen;
-    assume_injective := old_inj;
-    raise e
+  Misc.protect_refs
+    [Misc.R (umode, Pattern);
+     Misc.R (generate_equations, generate);
+     Misc.R (assume_injective, injective)] f
 
 (*** Checks for type definitions ***)
 
@@ -808,7 +795,10 @@ let rec generalize_expansive env var_level visited ty =
       Tconstr (path, tyl, abbrev) ->
         let variance =
           try (Env.find_type path env).type_variance
-          with Not_found -> List.map (fun _ -> Variance.may_inv) tyl in
+          with Not_found ->
+            (* See testsuite/tests/typing-missing-cmi-2 for an example *)
+            List.map (fun _ -> Variance.may_inv) tyl
+        in
         abbrev := Mnil;
         List.iter2
           (fun v t ->
@@ -829,7 +819,6 @@ let generalize_expansive env ty =
   simple_abbrevs := Mnil;
   generalize_expansive env !nongen_level (Hashtbl.create 7) ty
 
-let generalize_global ty = generalize_structure !global_level ty
 let generalize_structure ty = generalize_structure !current_level ty
 
 (* Correct the levels of type [ty]. *)
@@ -1019,7 +1008,7 @@ let rec copy ?partial ?keep_names ty =
                 match more.desc with
                   Tsubst ty -> ty
                 | Tconstr _ | Tnil ->
-                    if keep then save_desc more more.desc;
+                    save_desc more more.desc;
                     copy more
                 | Tvar _ | Tunivar _ ->
                     save_desc more more.desc;
@@ -1086,11 +1075,6 @@ let instance ?partial sch =
     | Some keep -> Some (compute_univars sch, keep)
   in
   let ty = copy ?partial sch in
-  cleanup_types ();
-  ty
-
-let instance_def sch =
-  let ty = copy sch in
   cleanup_types ();
   ty
 
@@ -1769,10 +1753,10 @@ let occur_univar env ty =
           end
       | _ -> iter_type_expr (occur_rec bound) ty
   in
-  try
-    occur_rec TypeSet.empty ty; unmark_type ty
-  with exn ->
-    unmark_type ty; raise exn
+  Misc.try_finally (fun () ->
+      occur_rec TypeSet.empty ty
+    )
+    ~always:(fun () -> unmark_type ty)
 
 (* Grouping univars by families according to their binders *)
 let add_univars =
@@ -1837,8 +1821,8 @@ let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
   let cl1 = List.map (fun t -> t, ref None) tl1
   and cl2 = List.map (fun t -> t, ref None) tl2 in
   univar_pairs := (cl1,cl2) :: (cl2,cl1) :: old_univars;
-  try let res = f t1 t2 in univar_pairs := old_univars; res
-  with exn -> univar_pairs := old_univars; raise exn
+  Misc.try_finally (fun () -> f t1 t2)
+    ~always:(fun () -> univar_pairs := old_univars)
 
 let univar_pairs = ref []
 
@@ -2285,7 +2269,7 @@ let rec concat_longident lid1 =
   | Lapply (lid2, lid) -> Lapply (concat_longident lid1 lid2, lid)
 
 let nondep_instance env level id ty =
-  let ty = !nondep_type' env id ty in
+  let ty = !nondep_type' env [id] ty in
   if level = generic_level then duplicate_type ty else
   let old = !current_level in
   current_level := level;
@@ -3426,8 +3410,9 @@ and eqtype_row rename type_pairs subst env row1 row2 =
 let eqtype_list rename type_pairs subst env tl1 tl2 =
   univar_pairs := [];
   let snap = Btype.snapshot () in
-  try eqtype_list rename type_pairs subst env tl1 tl2; backtrack snap
-  with exn -> backtrack snap; raise exn
+  Misc.try_finally
+    ~always:(fun () -> backtrack snap)
+    (fun () -> eqtype_list rename type_pairs subst env tl1 tl2)
 
 let eqtype rename type_pairs subst env t1 t2 =
   eqtype_list rename type_pairs subst env [t1] [t2]
@@ -4121,6 +4106,8 @@ and subtype_row env trace row1 row2 cstrs =
   let row1 = row_repr row1 and row2 = row_repr row2 in
   let r1, r2, pairs =
     merge_row_fields row1.row_fields row2.row_fields in
+  let r1 = if row2.row_closed then filter_row_fields false r1 else r1 in
+  let r2 = if row1.row_closed then filter_row_fields false r2 else r2 in
   let more1 = repr row1.row_more
   and more2 = repr row2.row_more in
   match more1.desc, more2.desc with
@@ -4361,13 +4348,15 @@ let nondep_variants = TypeHash.create 17
 let clear_hash ()   =
   TypeHash.clear nondep_hash; TypeHash.clear nondep_variants
 
-let rec nondep_type_rec ?(expand_private=false) env id ty =
+exception Nondep_cannot_erase of Ident.t
+
+let rec nondep_type_rec ?(expand_private=false) env ids ty =
   let expand_abbrev env t =
     if expand_private then expand_abbrev_opt env t else expand_abbrev env t
   in
   match ty.desc with
     Tvar _ | Tunivar _ -> ty
-  | Tlink ty -> nondep_type_rec env id ty
+  | Tlink ty -> nondep_type_rec env ids ty
   | _ -> try TypeHash.find nondep_hash ty
   with Not_found ->
     let ty' = newgenvar () in        (* Stub *)
@@ -4375,32 +4364,36 @@ let rec nondep_type_rec ?(expand_private=false) env id ty =
     ty'.desc <-
       begin match ty.desc with
       | Tconstr(p, tl, _abbrev) ->
-          if Path.isfree id p then
-            begin try
-              Tlink (nondep_type_rec ~expand_private env id
-                       (expand_abbrev env (newty2 ty.level ty.desc)))
-              (*
-                 The [Tlink] is important. The expanded type may be a
-                 variable, or may not be completely copied yet
-                 (recursive type), so one cannot just take its
-                 description.
-               *)
-            with Cannot_expand | Unify _ ->
-              raise Not_found
-            end
-          else
-            Tconstr(p, List.map (nondep_type_rec env id) tl, ref Mnil)
-      | Tpackage(p, nl, tl) when Path.isfree id p ->
+          begin match Path.find_free_opt ids p with
+          | Some id ->
+              begin try
+                Tlink (nondep_type_rec ~expand_private env ids
+                         (expand_abbrev env (newty2 ty.level ty.desc)))
+                (*
+                   The [Tlink] is important. The expanded type may be a
+                   variable, or may not be completely copied yet
+                   (recursive type), so one cannot just take its
+                   description.
+                 *)
+              with Cannot_expand | Unify _ ->
+                raise (Nondep_cannot_erase id)
+              end
+          | None ->
+              Tconstr(p, List.map (nondep_type_rec env ids) tl, ref Mnil)
+          end
+      | Tpackage(p, nl, tl) when Path.exists_free ids p ->
           let p' = normalize_package_path env p in
-          if Path.isfree id p' then raise Not_found;
-          Tpackage (p', nl, List.map (nondep_type_rec env id) tl)
+          begin match Path.find_free_opt ids p' with
+          | Some id -> raise (Nondep_cannot_erase id)
+          | None -> Tpackage (p', nl, List.map (nondep_type_rec env ids) tl)
+          end
       | Tobject (t1, name) ->
-          Tobject (nondep_type_rec env id t1,
+          Tobject (nondep_type_rec env ids t1,
                  ref (match !name with
                         None -> None
                       | Some (p, tl) ->
-                          if Path.isfree id p then None
-                          else Some (p, List.map (nondep_type_rec env id) tl)))
+                          if Path.exists_free ids p then None
+                          else Some (p, List.map (nondep_type_rec env ids) tl)))
       | Tvariant row ->
           let row = row_repr row in
           let more = repr row.row_more in
@@ -4417,13 +4410,13 @@ let rec nondep_type_rec ?(expand_private=false) env id ty =
             let more' = if static then newgenty Tnil else more in
             (* Return a new copy *)
             let row =
-              copy_row (nondep_type_rec env id) true row true more' in
+              copy_row (nondep_type_rec env ids) true row true more' in
             match row.row_name with
-              Some (p, _tl) when Path.isfree id p ->
+              Some (p, _tl) when Path.exists_free ids p ->
                 Tvariant {row with row_name = None}
             | _ -> Tvariant row
           end
-      | _ -> copy_type_desc (nondep_type_rec env id) ty.desc
+      | _ -> copy_type_desc (nondep_type_rec env ids) ty.desc
       end;
     ty'
 
@@ -4432,9 +4425,9 @@ let nondep_type env id ty =
     let ty' = nondep_type_rec env id ty in
     clear_hash ();
     ty'
-  with Not_found ->
+  with Nondep_cannot_erase _ as exn ->
     clear_hash ();
-    raise Not_found
+    raise exn
 
 let () = nondep_type' := nondep_type
 
@@ -4444,17 +4437,17 @@ let nondep_type_decl env mid is_covariant decl =
     let params = List.map (nondep_type_rec env mid) decl.type_params in
     let tk =
       try map_kind (nondep_type_rec env mid) decl.type_kind
-      with Not_found when is_covariant -> Type_abstract
+      with Nondep_cannot_erase _ when is_covariant -> Type_abstract
     and tm, priv =
       match decl.type_manifest with
       | None -> None, decl.type_private
       | Some ty ->
           try Some (nondep_type_rec env mid ty), decl.type_private
-          with Not_found when is_covariant ->
+          with Nondep_cannot_erase _ when is_covariant ->
             clear_hash ();
             try Some (nondep_type_rec ~expand_private:true env mid ty),
                 Private
-            with Not_found ->
+            with Nondep_cannot_erase _ ->
               None, decl.type_private
     in
     clear_hash ();
@@ -4476,32 +4469,33 @@ let nondep_type_decl env mid is_covariant decl =
       type_immediate = decl.type_immediate;
       type_unboxed = decl.type_unboxed;
     }
-  with Not_found ->
+  with Nondep_cannot_erase _ as exn ->
     clear_hash ();
-    raise Not_found
+    raise exn
 
 (* Preserve sharing inside extension constructors. *)
-let nondep_extension_constructor env mid ext =
+let nondep_extension_constructor env ids ext =
   try
     let type_path, type_params =
-      if Path.isfree mid ext.ext_type_path then
+      match Path.find_free_opt ids ext.ext_type_path with
+      | Some id ->
         begin
           let ty =
             newgenty (Tconstr(ext.ext_type_path, ext.ext_type_params, ref Mnil))
           in
-          let ty' = nondep_type_rec env mid ty in
+          let ty' = nondep_type_rec env ids ty in
             match (repr ty').desc with
                 Tconstr(p, tl, _) -> p, tl
-              | _ -> raise Not_found
+              | _ -> raise (Nondep_cannot_erase id)
         end
-      else
+      | None ->
         let type_params =
-          List.map (nondep_type_rec env mid) ext.ext_type_params
+          List.map (nondep_type_rec env ids) ext.ext_type_params
         in
           ext.ext_type_path, type_params
     in
-    let args = map_type_expr_cstr_args (nondep_type_rec env mid) ext.ext_args in
-    let ret_type = may_map (nondep_type_rec env mid) ext.ext_ret_type in
+    let args = map_type_expr_cstr_args (nondep_type_rec env ids) ext.ext_args in
+    let ret_type = may_map (nondep_type_rec env ids) ext.ext_ret_type in
       clear_hash ();
       { ext_type_path = type_path;
         ext_type_params = type_params;
@@ -4511,9 +4505,9 @@ let nondep_extension_constructor env mid ext =
         ext_attributes = ext.ext_attributes;
         ext_loc = ext.ext_loc;
       }
-  with Not_found ->
+  with Nondep_cannot_erase _ as exn ->
     clear_hash ();
-    raise Not_found
+    raise exn
 
 
 (* Preserve sharing inside class types. *)
@@ -4527,29 +4521,29 @@ let nondep_class_signature env id sign =
       List.map (fun (p,tl) -> (p, List.map (nondep_type_rec env id) tl))
         sign.csig_inher }
 
-let rec nondep_class_type env id =
+let rec nondep_class_type env ids =
   function
-    Cty_constr (p, _, cty) when Path.isfree id p ->
-      nondep_class_type env id cty
+    Cty_constr (p, _, cty) when Path.exists_free ids p ->
+      nondep_class_type env ids cty
   | Cty_constr (p, tyl, cty) ->
-      Cty_constr (p, List.map (nondep_type_rec env id) tyl,
-                   nondep_class_type env id cty)
+      Cty_constr (p, List.map (nondep_type_rec env ids) tyl,
+                   nondep_class_type env ids cty)
   | Cty_signature sign ->
-      Cty_signature (nondep_class_signature env id sign)
+      Cty_signature (nondep_class_signature env ids sign)
   | Cty_arrow (l, ty, cty) ->
-      Cty_arrow (l, nondep_type_rec env id ty, nondep_class_type env id cty)
+      Cty_arrow (l, nondep_type_rec env ids ty, nondep_class_type env ids cty)
 
-let nondep_class_declaration env id decl =
-  assert (not (Path.isfree id decl.cty_path));
+let nondep_class_declaration env ids decl =
+  assert (not (Path.exists_free ids decl.cty_path));
   let decl =
-    { cty_params = List.map (nondep_type_rec env id) decl.cty_params;
+    { cty_params = List.map (nondep_type_rec env ids) decl.cty_params;
       cty_variance = decl.cty_variance;
-      cty_type = nondep_class_type env id decl.cty_type;
+      cty_type = nondep_class_type env ids decl.cty_type;
       cty_path = decl.cty_path;
       cty_new =
         begin match decl.cty_new with
           None    -> None
-        | Some ty -> Some (nondep_type_rec env id ty)
+        | Some ty -> Some (nondep_type_rec env ids ty)
         end;
       cty_loc = decl.cty_loc;
       cty_attributes = decl.cty_attributes;
@@ -4558,12 +4552,12 @@ let nondep_class_declaration env id decl =
   clear_hash ();
   decl
 
-let nondep_cltype_declaration env id decl =
-  assert (not (Path.isfree id decl.clty_path));
+let nondep_cltype_declaration env ids decl =
+  assert (not (Path.exists_free ids decl.clty_path));
   let decl =
-    { clty_params = List.map (nondep_type_rec env id) decl.clty_params;
+    { clty_params = List.map (nondep_type_rec env ids) decl.clty_params;
       clty_variance = decl.clty_variance;
-      clty_type = nondep_class_type env id decl.clty_type;
+      clty_type = nondep_class_type env ids decl.clty_type;
       clty_path = decl.clty_path;
       clty_loc = decl.clty_loc;
       clty_attributes = decl.clty_attributes;

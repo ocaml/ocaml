@@ -57,11 +57,14 @@ STDLIB_MODULES=\
   $(P)nativeint \
   $(P)obj \
   $(P)oo \
+  $(P)option \
   $(P)parsing \
+  $(P)pervasives \
   $(P)printexc \
   $(P)printf \
   $(P)queue \
   $(P)random \
+  $(P)result \
   $(P)scanf \
   $(P)seq \
   $(P)set \

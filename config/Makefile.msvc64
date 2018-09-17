@@ -26,7 +26,7 @@ BINDIR=$(PREFIX)/bin
 BYTERUN=ocamlrun
 
 ### Where to install the standard library
-LIBDIR=$(PREFIX)/lib
+LIBDIR=$(PREFIX)/lib/ocaml
 
 ### Where to install the stub DLLs
 STUBLIBDIR=$(LIBDIR)/stublibs
@@ -100,6 +100,7 @@ WINDOWS_UNICODE=1
 AFL_INSTRUMENT=false
 AWK=gawk
 CC_HAS_DEBUG_PREFIX_MAP=false
+AS_HAS_DEBUG_PREFIX_MAP=false
 
 ########## Configuration for the bytecode compiler
 

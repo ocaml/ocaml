@@ -18,18 +18,11 @@
     This module is automatically opened at the beginning of each
     compilation. All components of this module can therefore be
     referred by their short name, without prefixing them by [Stdlib].
-*)
 
-module Pervasives : sig
-(** Pervasive operations.
-
-    This module provides the basic operations over the built-in types
+    It particular, it provides the basic operations over the built-in types
     (numbers, booleans, byte sequences, strings, exceptions, references,
     lists, arrays, input-output channels, ...).
-
-    This module is included in the toplevel [Stdlib] module.
 *)
-
 
 (** {1 Exceptions} *)
 
@@ -51,6 +44,14 @@ exception Exit
 (** The [Exit] exception is not raised by any library function.  It is
     provided for use in your programs. *)
 
+val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
+(** [protect ~finally work] invokes [work ()] and then [finally ()]
+    before [work] returns with its value or an exception. In the latter
+    case the exception is re-raised after [finally ()].
+    If [finally ()] raises, this exception is not caught and may shadow
+    one [work ()] may have raised.
+
+    @since 4.08.0 *)
 
 (** {1 Comparisons} *)
 
@@ -64,19 +65,19 @@ external ( = ) : 'a -> 'a -> bool = "%equal"
    Left-associative operator at precedence level 4/11. *)
 
 external ( <> ) : 'a -> 'a -> bool = "%notequal"
-(** Negation of {!Pervasives.( = )}.
+(** Negation of {!Stdlib.( = )}.
     Left-associative operator at precedence level 4/11. *)
 
 external ( < ) : 'a -> 'a -> bool = "%lessthan"
-(** See {!Pervasives.( >= )}.
+(** See {!Stdlib.( >= )}.
     Left-associative operator at precedence level 4/11. *)
 
 external ( > ) : 'a -> 'a -> bool = "%greaterthan"
-(** See {!Pervasives.( >= )}.
+(** See {!Stdlib.( >= )}.
     Left-associative operator at precedence level 4/11. *)
 
 external ( <= ) : 'a -> 'a -> bool = "%lessequal"
-(** See {!Pervasives.( >= )}.
+(** See {!Stdlib.( >= )}.
     Left-associative operator at precedence level 4/11. *)
 
 external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
@@ -96,7 +97,7 @@ external compare : 'a -> 'a -> int = "%compare"
    if [x] is greater than [y].  The ordering implemented by [compare]
    is compatible with the comparison predicates [=], [<] and [>]
    defined above,  with one difference on the treatment of the float value
-   {!Pervasives.nan}.  Namely, the comparison predicates treat [nan]
+   {!Stdlib.nan}.  Namely, the comparison predicates treat [nan]
    as different from any other float value, including itself;
    while [compare] treats [nan] as equal to itself and less than any
    other float value.  This treatment of [nan] ensures that [compare]
@@ -131,7 +132,7 @@ external ( == ) : 'a -> 'a -> bool = "%eq"
    Left-associative operator at precedence level 4/11. *)
 
 external ( != ) : 'a -> 'a -> bool = "%noteq"
-(** Negation of {!Pervasives.( == )}.
+(** Negation of {!Stdlib.( == )}.
     Left-associative operator at precedence level 4/11. *)
 
 
@@ -148,7 +149,7 @@ external ( && ) : bool -> bool -> bool = "%sequand"
 
 external ( & ) : bool -> bool -> bool = "%sequand"
   [@@ocaml.deprecated "Use (&&) instead."]
-(** @deprecated {!Pervasives.( && )} should be used instead.
+(** @deprecated {!Stdlib.( && )} should be used instead.
     Right-associative operator at precedence level 3/11. *)
 
 external ( || ) : bool -> bool -> bool = "%sequor"
@@ -160,7 +161,7 @@ external ( || ) : bool -> bool -> bool = "%sequor"
 
 external ( or ) : bool -> bool -> bool = "%sequor"
   [@@ocaml.deprecated "Use (||) instead."]
-(** @deprecated {!Pervasives.( || )} should be used instead.
+(** @deprecated {!Stdlib.( || )} should be used instead.
     Right-associative operator at precedence level 2/11. *)
 
 (** {1 Debugging} *)
@@ -516,13 +517,13 @@ external modf : float -> float * float = "caml_modf_float"
    part of [f]. *)
 
 external float : int -> float = "%floatofint"
-(** Same as {!Pervasives.float_of_int}. *)
+(** Same as {!Stdlib.float_of_int}. *)
 
 external float_of_int : int -> float = "%floatofint"
 (** Convert an integer to floating-point. *)
 
 external truncate : float -> int = "%intoffloat"
-(** Same as {!Pervasives.int_of_float}. *)
+(** Same as {!Stdlib.int_of_float}. *)
 
 external int_of_float : float -> int = "%intoffloat"
 (** Truncate the given floating-point number to an integer.
@@ -560,7 +561,7 @@ type fpclass =
   | FP_infinite         (** Number is positive or negative infinity *)
   | FP_nan              (** Not a number: result of an undefined operation *)
 (** The five classes of floating-point numbers, as determined by
-   the {!Pervasives.classify_float} function. *)
+   the {!Stdlib.classify_float} function. *)
 
 external classify_float : (float [@unboxed]) -> fpclass =
   "caml_classify_float" "caml_classify_float_unboxed" [@@noalloc]
@@ -618,7 +619,7 @@ val bool_of_string_opt: string -> bool option
 *)
 
 val bool_of_string : string -> bool
-(** Same as {!Pervasives.bool_of_string_opt}, but raise
+(** Same as {!Stdlib.bool_of_string_opt}, but raise
    [Invalid_argument "bool_of_string"] instead of returning [None]. *)
 
 val string_of_int : int -> string
@@ -646,7 +647,7 @@ val int_of_string_opt: string -> int option
 *)
 
 external int_of_string : string -> int = "caml_int_of_string"
-(** Same as {!Pervasives.int_of_string_opt}, but raise
+(** Same as {!Stdlib.int_of_string_opt}, but raise
    [Failure "int_of_string"] instead of returning [None]. *)
 
 val string_of_float : float -> string
@@ -677,7 +678,7 @@ val float_of_string_opt: string -> float option
 *)
 
 external float_of_string : string -> float = "caml_float_of_string"
-(** Same as {!Pervasives.float_of_string_opt}, but raise
+(** Same as {!Stdlib.float_of_string_opt}, but raise
    [Failure "float_of_string"] instead of returning [None]. *)
 
 (** {1 Pair operations} *)
@@ -790,7 +791,7 @@ val read_int_opt: unit -> int option
 *)
 
 val read_int : unit -> int
-(** Same as {!Pervasives.read_int_opt}, but raise [Failure "int_of_string"]
+(** Same as {!Stdlib.read_int_opt}, but raise [Failure "int_of_string"]
    instead of returning [None]. *)
 
 val read_float_opt: unit -> float option
@@ -803,7 +804,7 @@ val read_float_opt: unit -> float option
 *)
 
 val read_float : unit -> float
-(** Same as {!Pervasives.read_float_opt}, but raise [Failure "float_of_string"]
+(** Same as {!Stdlib.read_float_opt}, but raise [Failure "float_of_string"]
    instead of returning [None]. *)
 
 
@@ -819,8 +820,8 @@ type open_flag =
   | Open_binary      (** open in binary mode (no conversion). *)
   | Open_text        (** open in text mode (may perform conversions). *)
   | Open_nonblock    (** open in non-blocking mode. *)
-(** Opening modes for {!Pervasives.open_out_gen} and
-  {!Pervasives.open_in_gen}. *)
+(** Opening modes for {!Stdlib.open_out_gen} and
+  {!Stdlib.open_in_gen}. *)
 
 val open_out : string -> out_channel
 (** Open the named file for writing, and return a new output channel
@@ -829,17 +830,17 @@ val open_out : string -> out_channel
    is created if it does not already exists. *)
 
 val open_out_bin : string -> out_channel
-(** Same as {!Pervasives.open_out}, but the file is opened in binary mode,
+(** Same as {!Stdlib.open_out}, but the file is opened in binary mode,
    so that no translation takes place during writes. On operating
    systems that do not distinguish between text mode and binary
-   mode, this function behaves like {!Pervasives.open_out}. *)
+   mode, this function behaves like {!Stdlib.open_out}. *)
 
 val open_out_gen : open_flag list -> int -> string -> out_channel
 (** [open_out_gen mode perm filename] opens the named file for writing,
    as described above. The extra argument [mode]
    specifies the opening mode. The extra argument [perm] specifies
    the file permissions, in case the file must be created.
-   {!Pervasives.open_out} and {!Pervasives.open_out_bin} are special
+   {!Stdlib.open_out} and {!Stdlib.open_out_bin} are special
    cases of this function. *)
 
 val flush : out_channel -> unit
@@ -882,15 +883,15 @@ val output_binary_int : out_channel -> int -> unit
    on the given output channel.
    The given integer is taken modulo 2{^32}.
    The only reliable way to read it back is through the
-   {!Pervasives.input_binary_int} function. The format is compatible across
+   {!Stdlib.input_binary_int} function. The format is compatible across
    all machines for a given version of OCaml. *)
 
 val output_value : out_channel -> 'a -> unit
 (** Write the representation of a structured value of any type
    to a channel. Circularities and sharing inside the value
    are detected and preserved. The object can be read back,
-   by the function {!Pervasives.input_value}. See the description of module
-   {!Marshal} for more information. {!Pervasives.output_value} is equivalent
+   by the function {!Stdlib.input_value}. See the description of module
+   {!Marshal} for more information. {!Stdlib.output_value} is equivalent
    to {!Marshal.to_channel} with an empty list of flags. *)
 
 val seek_out : out_channel -> int -> unit
@@ -938,16 +939,16 @@ val open_in : string -> in_channel
    on that file, positioned at the beginning of the file. *)
 
 val open_in_bin : string -> in_channel
-(** Same as {!Pervasives.open_in}, but the file is opened in binary mode,
+(** Same as {!Stdlib.open_in}, but the file is opened in binary mode,
    so that no translation takes place during reads. On operating
    systems that do not distinguish between text mode and binary
-   mode, this function behaves like {!Pervasives.open_in}. *)
+   mode, this function behaves like {!Stdlib.open_in}. *)
 
 val open_in_gen : open_flag list -> int -> string -> in_channel
 (** [open_in_gen mode perm filename] opens the named file for reading,
    as described above. The extra arguments
    [mode] and [perm] specify the opening mode and file permissions.
-   {!Pervasives.open_in} and {!Pervasives.open_in_bin} are special
+   {!Stdlib.open_in} and {!Stdlib.open_in_bin} are special
    cases of this function. *)
 
 val input_char : in_channel -> char
@@ -973,7 +974,7 @@ val input : in_channel -> bytes -> int -> int -> int
    no more characters were available at that time, or because
    the implementation found it convenient to do a partial read;
    [input] must be called again to read the remaining characters,
-   if desired.  (See also {!Pervasives.really_input} for reading
+   if desired.  (See also {!Stdlib.really_input} for reading
    exactly [len] characters.)
    Exception [Invalid_argument "input"] is raised if [pos] and [len]
    do not designate a valid range of [buf]. *)
@@ -994,19 +995,19 @@ val really_input_string : in_channel -> int -> string
    @since 4.02.0 *)
 
 val input_byte : in_channel -> int
-(** Same as {!Pervasives.input_char}, but return the 8-bit integer representing
+(** Same as {!Stdlib.input_char}, but return the 8-bit integer representing
    the character.
    Raise [End_of_file] if an end of file was reached. *)
 
 val input_binary_int : in_channel -> int
 (** Read an integer encoded in binary format (4 bytes, big-endian)
-   from the given input channel. See {!Pervasives.output_binary_int}.
+   from the given input channel. See {!Stdlib.output_binary_int}.
    Raise [End_of_file] if an end of file was reached while reading the
    integer. *)
 
 val input_value : in_channel -> 'a
 (** Read the representation of a structured value, as produced
-   by {!Pervasives.output_value}, and return the corresponding value.
+   by {!Stdlib.output_value}, and return the corresponding value.
    This function is identical to {!Marshal.from_channel};
    see the description of module {!Marshal} for more information,
    in particular concerning the lack of type safety. *)
@@ -1215,7 +1216,7 @@ val at_exit : (unit -> unit) -> unit
 (** Register the given function to be called at program termination
    time. The functions registered with [at_exit] will be called when
    the program does any of the following:
-   - executes {!Pervasives.exit}
+   - executes {!Stdlib.exit}
    - terminates, either normally or because of an uncaught
      exception
    - executes the C function [caml_shutdown].
@@ -1231,9 +1232,8 @@ val valid_float_lexem : string -> string
 val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
 
 val do_at_exit : unit -> unit
-end
 
-include module type of struct include Pervasives end
+(**/**)
 
 (*MODULE_ALIASES*)
 module Arg          = Arg
@@ -1266,11 +1266,18 @@ module MoreLabels   = MoreLabels
 module Nativeint    = Nativeint
 module Obj          = Obj
 module Oo           = Oo
+module Option       = Option
 module Parsing      = Parsing
+module Pervasives   = Pervasives
+[@@deprecated "Use Stdlib instead.\n\
+\n\
+If you need to stay compatible with OCaml < 4.07, you can use the \n\
+stdlib-shims library: https://github.com/ocaml/stdlib-shims"]
 module Printexc     = Printexc
 module Printf       = Printf
 module Queue        = Queue
 module Random       = Random
+module Result       = Result
 module Scanf        = Scanf
 module Seq          = Seq
 module Set          = Set

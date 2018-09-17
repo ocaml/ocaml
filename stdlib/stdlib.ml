@@ -13,7 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Pervasives = struct
 (* type 'a option = None | Some of 'a *)
 
 (* Exceptions *)
@@ -34,6 +33,20 @@ let failwith s = raise(Failure s)
 let invalid_arg s = raise(Invalid_argument s)
 
 exception Exit
+
+type raw_backtrace
+external get_raw_backtrace:
+  unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
+external raise_with_backtrace: exn -> raw_backtrace -> 'a
+  = "%raise_with_backtrace"
+
+let protect ~(finally: unit -> unit) work =
+  match work () with
+  | result -> finally (); result
+  | exception work_exn ->
+    let work_bt = get_raw_backtrace () in
+    finally ();
+    raise_with_backtrace work_exn work_bt
 
 (* Composition operators *)
 
@@ -552,9 +565,6 @@ let exit retcode =
   sys_exit retcode
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
-end
-
-include Pervasives
 
 (*MODULE_ALIASES*)
 module Arg          = Arg
@@ -587,11 +597,14 @@ module MoreLabels   = MoreLabels
 module Nativeint    = Nativeint
 module Obj          = Obj
 module Oo           = Oo
+module Option       = Option
 module Parsing      = Parsing
+module Pervasives   = Pervasives
 module Printexc     = Printexc
 module Printf       = Printf
 module Queue        = Queue
 module Random       = Random
+module Result       = Result
 module Scanf        = Scanf
 module Seq          = Seq
 module Set          = Set

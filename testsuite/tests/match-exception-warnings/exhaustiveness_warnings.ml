@@ -16,7 +16,7 @@ let test_match_exhaustiveness () =
 ;;
 
 [%%expect{|
-Line _, characters 4-83:
+Line 8, characters 4-83:
   ....match None with
       | exception e -> ()
       | Some false -> ()
@@ -35,7 +35,7 @@ let test_match_exhaustiveness_nest1 () =
 ;;
 
 [%%expect{|
-Line _, characters 4-73:
+Line 2, characters 4-73:
   ....match None with
       | Some false -> ()
       | None | exception _ -> ()
@@ -53,7 +53,7 @@ let test_match_exhaustiveness_nest2 () =
 ;;
 
 [%%expect{|
-Line _, characters 4-73:
+Line 2, characters 4-73:
   ....match None with
       | Some false | exception _ -> ()
       | None -> ()
@@ -72,7 +72,7 @@ let test_match_exhaustiveness_full () =
 ;;
 
 [%%expect{|
-Line _, characters 4-111:
+Line 2, characters 4-111:
   ....match None with
       | exception e -> ()
       | Some false | exception _ -> ()
@@ -80,11 +80,11 @@ Line _, characters 4-111:
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
-Line _, characters 29-30:
+Line 4, characters 29-30:
       | Some false | exception _ -> ()
                                ^
 Warning 11: this match case is unused.
-Line _, characters 23-24:
+Line 5, characters 23-24:
       | None | exception _ -> ()
                          ^
 Warning 11: this match case is unused.

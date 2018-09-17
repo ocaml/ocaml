@@ -569,6 +569,12 @@ code for the source file
 is saved in the file
 .IR x .s.
 .TP
+.BI \-stop\-after \ pass
+Stop compilation after the given compilation pass. The currently
+supported passes are:
+.BR parsing ,
+.BR typing .
+.TP
 .B \-safe\-string
 Enforce the separation between types
 .BR string \ and\  bytes ,

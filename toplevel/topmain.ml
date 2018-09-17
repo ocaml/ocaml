@@ -114,6 +114,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
+  let _nopervasives = set nopervasives
   let _open s = open_modules := s :: !open_modules
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
@@ -129,7 +130,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _no_strict_formats = clear strict_formats
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = clear unboxed_types
-  let _unsafe = set fast
+  let _unsafe = set unsafe
   let _unsafe_string = set unsafe_string
   let _version () = print_version ()
   let _vnum () = print_version_num ()

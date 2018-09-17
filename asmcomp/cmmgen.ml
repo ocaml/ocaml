@@ -24,6 +24,7 @@ open Lambda
 open Clambda
 open Cmm
 open Cmx_format
+module String = Misc.Stdlib.String
 
 (* Environments used for translation to Cmm. *)
 
@@ -444,7 +445,7 @@ let rec div_int c1 c2 is_safe dbg =
           let t = if p > 0 then Cop(Casr, [t; Cconst_int p], dbg) else t in
           add_int t (lsr_int c1 (Cconst_int (Nativeint.size - 1)) dbg) dbg)
       end
-  | (c1, c2) when !Clflags.fast || is_safe = Lambda.Unsafe ->
+  | (c1, c2) when !Clflags.unsafe || is_safe = Lambda.Unsafe ->
       Cop(Cdivi, [c1; c2], dbg)
   | (c1, c2) ->
       bind "divisor" c2 (fun c2 ->
@@ -480,7 +481,7 @@ let mod_int c1 c2 is_safe dbg =
       else
         bind "dividend" c1 (fun c1 ->
           sub_int c1 (mul_int (div_int c1 c2 is_safe dbg) c2 dbg) dbg)
-  | (c1, c2) when !Clflags.fast || is_safe = Lambda.Unsafe ->
+  | (c1, c2) when !Clflags.unsafe || is_safe = Lambda.Unsafe ->
       (* Flambda already generates that test *)
       Cop(Cmodi, [c1; c2], dbg)
   | (c1, c2) ->
@@ -1500,7 +1501,7 @@ module StoreExpForSwitch =
       let compare_key (cont, index) (cont', index') =
         match cont, cont' with
         | Some i, Some i' when i = i' -> 0
-        | _, _ -> Pervasives.compare index index'
+        | _, _ -> Stdlib.compare index index'
     end)
 
 (* For string switches, we can use a generic store *)
@@ -1512,7 +1513,7 @@ module StoreExp =
       let make_key = function
         | Cexit (i,[]) -> Some i
         | _ -> None
-      let compare_key = Pervasives.compare
+      let compare_key = Stdlib.compare
     end)
 
 module SwitcherBlocks = Switch.Make(SArgBlocks)
@@ -2820,10 +2821,10 @@ and transl_letrec env bindings cont =
 
 (* Translate a function definition *)
 
-let transl_function f =
+let transl_function ~ppf_dump f =
   let body =
     if Config.flambda then
-      Un_anf.apply f.body ~what:f.label
+      Un_anf.apply ~ppf_dump f.body ~what:f.label
     else
       f.body
   in
@@ -2847,21 +2848,15 @@ let transl_function f =
 
 (* Translate all function definitions *)
 
-module StringSet =
-  Set.Make(struct
-    type t = string
-    let compare (x:t) y = compare x y
-  end)
-
-let rec transl_all_functions already_translated cont =
+let rec transl_all_functions ~ppf_dump already_translated cont =
   try
     let f = Queue.take functions in
-    if StringSet.mem f.label already_translated then
-      transl_all_functions already_translated cont
+    if String.Set.mem f.label already_translated then
+      transl_all_functions ~ppf_dump already_translated cont
     else begin
-      transl_all_functions
-        (StringSet.add f.label already_translated)
-        ((f.dbg, transl_function f) :: cont)
+      transl_all_functions ~ppf_dump
+        (String.Set.add f.label already_translated)
+        ((f.dbg, transl_function ~ppf_dump f) :: cont)
     end
   with Queue.Empty ->
     cont, already_translated
@@ -3021,20 +3016,20 @@ let emit_all_constants cont =
   Compilenv.clear_structured_constants ();
   emit_constants cont constants
 
-let transl_all_functions_and_emit_all_constants cont =
+let transl_all_functions_and_emit_all_constants ~ppf_dump cont =
   let rec aux already_translated cont translated_functions =
     if Compilenv.structured_constants () = [] &&
        Queue.is_empty functions
     then cont, translated_functions
     else
       let translated_functions, already_translated =
-        transl_all_functions already_translated translated_functions
+        transl_all_functions ~ppf_dump already_translated translated_functions
       in
       let cont = emit_all_constants cont in
       aux already_translated cont translated_functions
   in
   let cont, translated_functions =
-    aux StringSet.empty cont []
+    aux String.Set.empty cont []
   in
   let translated_functions =
     (* Sort functions according to source position *)
@@ -3093,7 +3088,7 @@ let emit_preallocated_blocks preallocated_blocks cont =
 
 (* Translate a compilation unit *)
 
-let compunit (ulam, preallocated_blocks, constants) =
+let compunit ~ppf_dump (ulam, preallocated_blocks, constants) =
   let init_code =
     if !Clflags.afl_instrument then
       Afl_instrument.instrument_initialiser (transl empty_env ulam)
@@ -3113,7 +3108,7 @@ let compunit (ulam, preallocated_blocks, constants) =
                          else [ Reduce_code_size ];
                        fun_dbg  = Debuginfo.none }] in
   let c2 = emit_constants c1 constants in
-  let c3 = transl_all_functions_and_emit_all_constants c2 in
+  let c3 = transl_all_functions_and_emit_all_constants ~ppf_dump c2 in
   emit_preallocated_blocks preallocated_blocks c3
 
 (*
@@ -3424,14 +3419,9 @@ let curry_function arity =
   then intermediate_curry_functions arity 0
   else [tuplify_function (-arity)]
 
+module Int = Numbers.Int
 
-module IntSet = Set.Make(
-  struct
-    type t = int
-    let compare (x:t) y = compare x y
-  end)
-
-let default_apply = IntSet.add 2 (IntSet.add 3 IntSet.empty)
+let default_apply = Int.Set.add 2 (Int.Set.add 3 Int.Set.empty)
   (* These apply funs are always present in the main program because
      the run-time system needs them (cf. runtime/<arch>.S) . *)
 
@@ -3439,15 +3429,15 @@ let generic_functions shared units =
   let (apply,send,curry) =
     List.fold_left
       (fun (apply,send,curry) ui ->
-         List.fold_right IntSet.add ui.ui_apply_fun apply,
-         List.fold_right IntSet.add ui.ui_send_fun send,
-         List.fold_right IntSet.add ui.ui_curry_fun curry)
-      (IntSet.empty,IntSet.empty,IntSet.empty)
+         List.fold_right Int.Set.add ui.ui_apply_fun apply,
+         List.fold_right Int.Set.add ui.ui_send_fun send,
+         List.fold_right Int.Set.add ui.ui_curry_fun curry)
+      (Int.Set.empty,Int.Set.empty,Int.Set.empty)
       units in
-  let apply = if shared then apply else IntSet.union apply default_apply in
-  let accu = IntSet.fold (fun n accu -> apply_function n :: accu) apply [] in
-  let accu = IntSet.fold (fun n accu -> send_function n :: accu) send accu in
-  IntSet.fold (fun n accu -> curry_function n @ accu) curry accu
+  let apply = if shared then apply else Int.Set.union apply default_apply in
+  let accu = Int.Set.fold (fun n accu -> apply_function n :: accu) apply [] in
+  let accu = Int.Set.fold (fun n accu -> send_function n :: accu) send accu in
+  Int.Set.fold (fun n accu -> curry_function n @ accu) curry accu
 
 (* Generate the entry point *)
 

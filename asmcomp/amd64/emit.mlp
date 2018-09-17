@@ -16,7 +16,6 @@
 
 (* Emission of Intel x86_64 assembly code *)
 
-open Misc
 open Cmm
 open Arch
 open Proc
@@ -28,6 +27,7 @@ open Emitaux
 open X86_ast
 open X86_proc
 open X86_dsl
+module String = Misc.Stdlib.String
 
 (* [Branch_relaxation] is not used in this file, but is required by
    emit.mlp files for certain other targets; the reference here ensures
@@ -103,11 +103,11 @@ let emit_symbol s = string_of_symbol symbol_prefix s
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
-let symbols_defined = ref StringSet.empty
-let symbols_used = ref StringSet.empty
+let symbols_defined = ref String.Set.empty
+let symbols_used = ref String.Set.empty
 
-let add_def_symbol s = symbols_defined := StringSet.add s !symbols_defined
-let add_used_symbol s = symbols_used := StringSet.add s !symbols_used
+let add_def_symbol s = symbols_defined := String.Set.add s !symbols_defined
+let add_used_symbol s = symbols_used := String.Set.add s !symbols_used
 
 let imp_table = Hashtbl.create 16
 
@@ -1114,13 +1114,13 @@ let end_assembly() =
 
   if system = S_win64 then begin
     D.comment "External functions";
-    StringSet.iter
+    String.Set.iter
       (fun s ->
-         if not (StringSet.mem s !symbols_defined) then
+         if not (String.Set.mem s !symbols_defined) then
            D.extrn (emit_symbol s) NEAR)
       !symbols_used;
-    symbols_used := StringSet.empty;
-    symbols_defined := StringSet.empty;
+    symbols_used := String.Set.empty;
+    symbols_defined := String.Set.empty;
   end;
 
   let asm =

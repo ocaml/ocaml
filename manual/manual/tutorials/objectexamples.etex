@@ -699,7 +699,7 @@ The following idiom separates description and definition.
 \begin{caml_example*}{toplevel}
 class type ['a] iterator =
   object method fold : ('b -> 'a -> 'b) -> 'b -> 'b end;;
-class intlist l =
+class intlist' l =
   object (self : int #iterator)
     method empty = (l = [])
     method fold f accu = List.fold_left f accu l

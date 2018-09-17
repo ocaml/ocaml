@@ -136,6 +136,10 @@ fork.o: fork.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
  ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/debugger.h ../../runtime/caml/mlvalues.h \
  unixsupport.h
+fsync.o: fsync.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/mlvalues.h unixsupport.h
 ftruncate.o: ftruncate.c ../../runtime/caml/fail.h \
  ../../runtime/caml/misc.h ../../runtime/caml/config.h \
  ../../runtime/caml/m.h ../../runtime/caml/s.h \

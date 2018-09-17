@@ -30,18 +30,23 @@ let init_path () = Compmisc.init_path false
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
+  let current = Env.get_unit_name () in
+  let initial = !Odoc_global.initially_opened_module in
   let initially_opened_module =
-    let m = !Odoc_global.initially_opened_module in
-    if m = Env.get_unit_name () then
+    if initial = current then
       None
     else
-      Some m
+      Some initial
   in
+  let open_implicit_modules =
+    let ln = !Odoc_global.library_namespace in
+    let ln = if current = ln || ln = initial || ln = "" then [] else [ln] in
+    ln @ List.rev !Clflags.open_modules in
   Typemod.initial_env
     ~loc:(Location.in_file "ocamldoc command line")
     ~safe_string:(Config.safe_string || not !Clflags.unsafe_string)
+    ~open_implicit_modules
     ~initially_opened_module
-    ~open_implicit_modules:(List.rev !Clflags.open_modules)
 
 (** Optionally preprocess a source file *)
 let preprocess sourcefile =
@@ -73,7 +78,7 @@ let process_implementation_file sourcefile =
   let env = initial_env () in
   try
     let parsetree =
-      Pparse.file ~tool_name Format.err_formatter inputfile
+      Pparse.file ~tool_name inputfile
         (no_docstring Parse.implementation) Pparse.Structure
     in
     let typedtree =
@@ -104,7 +109,7 @@ let process_interface_file sourcefile =
   Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let ast =
-    Pparse.file ~tool_name Format.err_formatter inputfile
+    Pparse.file ~tool_name inputfile
       (no_docstring Parse.interface) Pparse.Signature
   in
   let sg = Typemod.type_interface sourcefile (initial_env()) ast in

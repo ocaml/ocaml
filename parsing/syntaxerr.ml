@@ -28,17 +28,15 @@ type error =
 exception Error of error
 exception Escape_error
 
-let prepare_error = function
+let prepare_error err =
+  match err with
   | Unclosed(opening_loc, opening, closing_loc, closing) ->
-      Location.errorf ~loc:closing_loc
+      Location.errorf
+        ~loc:closing_loc
         ~sub:[
-          Location.errorf ~loc:opening_loc
+          Location.msg ~loc:opening_loc
             "This '%s' might be unmatched" opening
         ]
-        ~if_highlight:
-          (Printf.sprintf "Syntax error: '%s' expected, \
-                           the highlighted '%s' might be unmatched"
-             closing opening)
         "Syntax error: '%s' expected" closing
 
   | Expecting (loc, nonterm) ->
@@ -53,11 +51,12 @@ let prepare_error = function
       Location.errorf ~loc
         "In this scoped type, variable '%s \
          is reserved for the local type %s."
-         var var
+        var var
   | Other loc ->
       Location.errorf ~loc "Syntax error"
   | Ill_formed_ast (loc, s) ->
-      Location.errorf ~loc "broken invariant in parsetree: %s" s
+      Location.errorf ~loc
+        "broken invariant in parsetree: %s" s
   | Invalid_package_type (loc, s) ->
       Location.errorf ~loc "invalid package type: %s" s
 
@@ -70,7 +69,7 @@ let () =
 
 
 let report_error ppf err =
-  Location.report_error ppf (prepare_error err)
+  Location.print_report ppf (prepare_error err)
 
 let location_of_error = function
   | Unclosed(l,_,_,_)

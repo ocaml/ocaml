@@ -60,6 +60,11 @@ let peek q =
   | Nil -> raise Empty
   | Cons { content } -> content
 
+let peek_opt q =
+  match q.first with
+  | Nil -> None
+  | Cons { content } -> Some content
+
 let top =
   peek
 
@@ -73,6 +78,17 @@ let take q =
     q.length <- q.length - 1;
     q.first <- next;
     content
+
+let take_opt q =
+  match q.first with
+  | Nil -> None
+  | Cons { content; next = Nil } ->
+    clear q;
+    Some content
+  | Cons { content; next } ->
+    q.length <- q.length - 1;
+    q.first <- next;
+    Some content
 
 let pop =
   take

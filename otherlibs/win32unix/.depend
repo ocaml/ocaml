@@ -421,6 +421,10 @@ unlink.$(O): unlink.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
  ../../runtime/caml/address_class.h ../../runtime/caml/signals.h \
  ../../runtime/caml/osdeps.h ../../runtime/caml/memory.h unixsupport.h
+fsync.$(O): fsync.c ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/signals.h ../../runtime/caml/mlvalues.h unixsupport.h
 unix.cmo : unix.cmi
 unix.cmx : unix.cmi
 unix.cmi :

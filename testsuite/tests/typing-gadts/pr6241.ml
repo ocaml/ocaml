@@ -21,7 +21,7 @@ let x = N.f A;;
 
 [%%expect{|
 type (_, _) t = A : ('a, 'a) t | B : string -> ('a, 'b) t
-Line _, characters 52-74:
+Line 8, characters 52-74:
   ....................................................function
      | B s -> s
 Warning 8: this pattern-matching is not exhaustive.
