@@ -13,13 +13,15 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../Makefile.config
-include ../Makefile.common
+ROOTDIR = ..
 
-CAMLRUN ?= ../boot/ocamlrun
+include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
+
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 TARGET_BINDIR ?= $(BINDIR)
 
-COMPILER=../ocamlc
+COMPILER=$(ROOTDIR)/ocamlc
 CAMLC=$(CAMLRUN) $(COMPILER)
 COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
           -g -warn-error A -bin-annot -nostdlib \
@@ -29,9 +31,11 @@ OPTCOMPFLAGS=-O3
 else
 OPTCOMPFLAGS=
 endif
-OPTCOMPILER=../ocamlopt
+OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
-CAMLDEP=$(CAMLRUN) ../tools/ocamldep
+CAMLDEP=$(CAMLRUN) $(ROOTDIR)/tools/ocamldep
+
+OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
 # Object file prefix
 P=stdlib__
@@ -150,7 +154,7 @@ CAMLHEADERS =\
   camlheaderi target_camlheaderi
 
 ifeq "$(HASHBANGSCRIPTS)" "true"
-$(CAMLHEADERS): ../Makefile.config
+$(CAMLHEADERS): $(ROOTDIR)/Makefile.config
 	for suff in '' d i; do \
 	  echo '#!$(BINDIR)/ocamlrun'$$suff > camlheader$$suff && \
 	  echo '#!$(TARGET_BINDIR)/ocamlrun'$$suff >target_camlheader$$suff; \
@@ -158,17 +162,17 @@ $(CAMLHEADERS): ../Makefile.config
 	echo '#!' | tr -d '\012' > camlheader_ur;
 else # Hashbang scripts not supported
 
-$(CAMLHEADERS): $(HEADERPROGRAM) ../Makefile.config
+$(CAMLHEADERS): $(HEADERPROGRAM) $(ROOTDIR)/Makefile.config
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 $(CAMLHEADERS):
 	for suff in '' d i; do \
-	  $(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime $(OC_LDFLAGS) \
+	  $(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) $(OC_LDFLAGS) \
 	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
 	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader$$suff && \
-	  $(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime $(OC_LDFLAGS) \
+	  $(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) $(OC_LDFLAGS) \
 	            -DRUNTIME_NAME='"$(TARGET_BINDIR)/ocamlrun'$$suff'"' \
 	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
@@ -182,7 +186,7 @@ else # Windows
 # with those above
 
 camlheader: headernt.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime \
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
 	          -DRUNTIME_NAME='"ocamlrun"' $(OUTPUTOBJ)headernt.$(O) $<
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	rm -f camlheader.exe
@@ -195,7 +199,7 @@ camlheader_ur: camlheader
 	cp camlheader camlheader_ur
 
 camlheaderd: headernt.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime \
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
 	          -DRUNTIME_NAME='"ocamlrund"' $(OUTPUTOBJ)headerntd.$(O) $<
 	$(MKEXE) -o tmpheaderd.exe headerntd.$(O) $(EXTRALIBS)
 	mv tmpheaderd.exe camlheaderd
@@ -204,7 +208,7 @@ target_camlheaderd: camlheaderd
 	cp camlheaderd target_camlheaderd
 
 camlheaderi: headernt.c
-	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) -I../runtime \
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) \
 	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernti.$(O) $<
 	$(MKEXE) -o tmpheaderi.exe headernti.$(O) $(EXTRALIBS)
 	mv tmpheaderi.exe camlheaderi
@@ -228,8 +232,8 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
-sys.ml: sys.mlp ../VERSION
-	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION | tr -d '\r'`|" sys.mlp > $@
+sys.ml: $(ROOTDIR)/VERSION sys.mlp
+	sed -e "s|%%VERSION%%|`sed -e 1q $< | tr -d '\r'`|" sys.mlp > $@
 
 .PHONY: clean
 clean::

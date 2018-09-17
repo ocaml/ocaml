@@ -15,24 +15,25 @@
 
 # FIXME reduce redundancy by including ../Makefile
 
-include ../../Makefile.config
-include ../../Makefile.common
+ROOTDIR = ../..
 
-CAMLRUN ?= ../../boot/ocamlrun
+include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
+
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 
 OC_CFLAGS += $(SHAREDLIB_CFLAGS)
-OC_CPPFLAGS += -I../../runtime
-ROOTDIR=../..
+OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib \
       -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
-MKLIB=$(CAMLRUN) ../../tools/ocamlmklib
+MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string
 
 C_OBJS=scheduler.o
 
 CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 
-LIB=../../stdlib
+LIB=$(ROOTDIR)/stdlib
 
 # Object file prefix
 P=stdlib__
@@ -69,13 +70,13 @@ libvmthreads.a: $(C_OBJS)
 	$(MKLIB) -o threads -oc vmthreads $(C_OBJS)
 
 threads.cma: $(CAML_OBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o threads -oc vmthreads $(CAML_OBJS)
+	$(MKLIB) -ocamlc '$(CAMLC)' -o threads -oc vmthreads $^
 
 stdlib.cma: $(LIB_OBJS)
-	$(CAMLC) -a -o stdlib.cma $(LIB_OBJS)
+	$(CAMLC) -a -o $@ $^
 
 unix.cma: $(UNIXLIB_OBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $(UNIXLIB_OBJS)
+	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $^
 
 stdlib.cmo: stdlib.mli stdlib.cmi stdlib.ml
 	$(CAMLC) ${COMPFLAGS} -nopervasives \
@@ -85,23 +86,23 @@ stdlib.mli: $(LIB)/stdlib.mli
 	ln -s $(LIB)/stdlib.mli stdlib.mli
 
 stdlib.cmi: $(LIB)/stdlib.cmi
-	rm -f stdlib.cmi
-	ln -s $(LIB)/stdlib.cmi stdlib.cmi
+	rm -f $@
+	ln -s $< $@
 
-$(P)marshal.cmo: marshal.mli $(P)marshal.cmi marshal.ml
-	$(CAMLC) ${COMPFLAGS} -o$@ -c marshal.ml
+$(P)marshal.cmo: marshal.ml marshal.mli $(P)marshal.cmi
+	$(CAMLC) ${COMPFLAGS} -o$@ -c $<
 
 marshal.mli: $(LIB)/marshal.mli
-	ln -s $(LIB)/marshal.mli marshal.mli
+	ln -s $< $@
 
 $(P)marshal.cmi: $(LIB)/$(P)marshal.cmi
-	ln -s $(LIB)/$(P)marshal.cmi $(P)marshal.cmi
+	ln -s $< $@
 
 unix.mli: $(UNIXLIB)/unix.mli
-	ln -s -f $(UNIXLIB)/unix.mli unix.mli
+	ln -s -f $< $@
 
 unix.cmi: $(UNIXLIB)/unix.cmi
-	ln -s -f $(UNIXLIB)/unix.cmi unix.cmi
+	ln -s -f $< $@
 
 unix.cmo: unix.mli unix.cmi $(UNIXLIB)/unixLabels.cmo
 	$(CAMLC) ${COMPFLAGS} -c unix.ml

@@ -13,8 +13,10 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../Makefile.config
-include ../Makefile.common
+ROOTDIR = ..
+
+include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
 
 # Lists of source files
 
@@ -167,7 +169,7 @@ OC_PROF_CFLAGS=-pg
 OC_PROF_CPPFLAGS=-DPROFILING
 endif
 
-ASPPFLAGS = -DSYS_$(SYSTEM) -I../runtime
+ASPPFLAGS = -DSYS_$(SYSTEM) -I$(ROOTDIR)/runtime
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ASPPFLAGS += -DMODEL_$(MODEL)
 endif
@@ -224,7 +226,7 @@ distclean: clean
 
 # Generated non-object files
 
-ld.conf: ../Makefile.config
+ld.conf: $(ROOTDIR)/Makefile.config
 	echo "$(STUBLIBDIR)" > $@
 	echo "$(LIBDIR)" >> $@
 
@@ -277,8 +279,8 @@ caml/jumptbl.h : caml/instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
 	       -e '/^}/q' > $@
 
-caml/version.h : ../VERSION ../tools/make-version-header.sh
-	../tools/make-version-header.sh ../VERSION > caml/version.h
+caml/version.h : $(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION
+	$^ > $@
 
 # Libraries and programs
 

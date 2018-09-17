@@ -13,7 +13,8 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../Makefile.config
+ROOTDIR = ..
+include $(ROOTDIR)/Makefile.config
 
 INSTALL_DIR=$(DESTDIR)$(MANDIR)/man$(PROGRAMS_MAN_SECTION)
 
