@@ -439,7 +439,11 @@ Working version
   (Florian Angeletti, report by Valentin Gatien-Baron,
   review by Gabriel Scherer)
 
-- MPR#7828: correct the conditions that generate warning 61,
+- GPR#1912: Allow quoted strings, octal/unicode escape sequences and identifiers
+  containing apostrophes in ocamllex actions and comments.
+  (Pieter Goetschalckx, review by Damien Doligez)
+
+- MPR#7828, GPR#1935: correct the conditions that generate warning 61,
   Unboxable_type_in_prim_decl
   (Stefan Muenzel)
 
@@ -459,6 +463,7 @@ Working version
 
 - MPR#7408, MPR#7846, GPR#2015: Check arity of primitives.
   (Hugo Heuzard, review by Nicolás Ojeda Bär)
+
 
 OCaml 4.07 maintenance branch
 -----------------------------
