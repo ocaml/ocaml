@@ -4426,8 +4426,7 @@ and type_let
               type_expect exp_env sexp (mk_expected pat.pat_type)))
       spat_sexp_list pat_slot_list in
   current_slot := None;
-  if is_recursive && not !rec_needed
-  && Warnings.is_active Warnings.Unused_rec_flag then begin
+  if is_recursive && not !rec_needed then begin
     let {pvb_pat; pvb_attributes} = List.hd spat_sexp_list in
     (* See PR#6677 *)
     Builtin_attributes.warning_scope ~ppwarning:false pvb_attributes

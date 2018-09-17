@@ -41,5 +41,9 @@ val g : unit -> int = <fun>
 
 let[@warning "+39"] rec h () = 3;;
 [%%expect{|
+Line 1, characters 24-25:
+  let[@warning "+39"] rec h () = 3;;
+                          ^
+Warning 39: unused rec flag.
 val h : unit -> int = <fun>
 |}];;
