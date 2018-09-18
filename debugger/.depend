@@ -49,10 +49,10 @@ command_line.cmo : \
     parser_aux.cmi \
     parser.cmi \
     parameters.cmi \
-    ../utils/misc.cmi \
     ../parsing/longident.cmi \
     ../parsing/location.cmi \
     loadprinter.cmi \
+    ../utils/load_path.cmi \
     lexer.cmi \
     int64ops.cmi \
     ../bytecomp/instruct.cmi \
@@ -66,7 +66,6 @@ command_line.cmo : \
     debugger_config.cmi \
     debugcom.cmi \
     ../typing/ctype.cmi \
-    ../utils/config.cmi \
     checkpoints.cmi \
     breakpoints.cmi \
     command_line.cmi
@@ -88,10 +87,10 @@ command_line.cmx : \
     parser_aux.cmi \
     parser.cmx \
     parameters.cmx \
-    ../utils/misc.cmx \
     ../parsing/longident.cmx \
     ../parsing/location.cmx \
     loadprinter.cmx \
+    ../utils/load_path.cmx \
     lexer.cmx \
     int64ops.cmx \
     ../bytecomp/instruct.cmx \
@@ -105,7 +104,6 @@ command_line.cmx : \
     debugger_config.cmx \
     debugcom.cmx \
     ../typing/ctype.cmx \
-    ../utils/config.cmx \
     checkpoints.cmx \
     breakpoints.cmx \
     command_line.cmi
@@ -256,9 +254,9 @@ loadprinter.cmo : \
     parameters.cmi \
     ../utils/misc.cmi \
     ../parsing/longident.cmi \
+    ../utils/load_path.cmi \
     ../typing/env.cmi \
     ../typing/ctype.cmi \
-    ../utils/config.cmi \
     ../driver/compdynlink.cmi \
     loadprinter.cmi
 loadprinter.cmx : \
@@ -270,9 +268,9 @@ loadprinter.cmx : \
     parameters.cmx \
     ../utils/misc.cmx \
     ../parsing/longident.cmx \
+    ../utils/load_path.cmx \
     ../typing/env.cmx \
     ../typing/ctype.cmx \
-    ../utils/config.cmx \
     ../driver/compdynlink.cmi \
     loadprinter.cmi
 loadprinter.cmi : \
@@ -289,6 +287,7 @@ main.cmo : \
     parameters.cmi \
     ../utils/misc.cmi \
     loadprinter.cmi \
+    ../utils/load_path.cmi \
     input_handling.cmi \
     frames.cmi \
     exec.cmi \
@@ -310,6 +309,7 @@ main.cmx : \
     parameters.cmx \
     ../utils/misc.cmx \
     loadprinter.cmx \
+    ../utils/load_path.cmx \
     input_handling.cmx \
     frames.cmx \
     exec.cmx \
@@ -321,13 +321,13 @@ main.cmx : \
     ../utils/clflags.cmx \
     checkpoints.cmx
 parameters.cmo : \
-    primitives.cmi \
+    ../utils/load_path.cmi \
     ../typing/envaux.cmi \
     debugger_config.cmi \
     ../utils/config.cmi \
     parameters.cmi
 parameters.cmx : \
-    primitives.cmx \
+    ../utils/load_path.cmx \
     ../typing/envaux.cmx \
     debugger_config.cmx \
     ../utils/config.cmx \
@@ -443,12 +443,12 @@ program_management.cmo : \
     program_loading.cmi \
     primitives.cmi \
     parameters.cmi \
+    ../utils/load_path.cmi \
     int64ops.cmi \
     input_handling.cmi \
     history.cmi \
     ../typing/envaux.cmi \
     debugger_config.cmi \
-    ../utils/config.cmi \
     breakpoints.cmi \
     program_management.cmi
 program_management.cmx : \
@@ -460,12 +460,12 @@ program_management.cmx : \
     program_loading.cmx \
     primitives.cmx \
     parameters.cmx \
+    ../utils/load_path.cmx \
     int64ops.cmx \
     input_handling.cmx \
     history.cmx \
     ../typing/envaux.cmx \
     debugger_config.cmx \
-    ../utils/config.cmx \
     breakpoints.cmx \
     program_management.cmi
 program_management.cmi :
@@ -533,14 +533,14 @@ show_source.cmi : \
 source.cmo : \
     primitives.cmi \
     ../utils/misc.cmi \
+    ../utils/load_path.cmi \
     debugger_config.cmi \
-    ../utils/config.cmi \
     source.cmi
 source.cmx : \
     primitives.cmx \
     ../utils/misc.cmx \
+    ../utils/load_path.cmx \
     debugger_config.cmx \
-    ../utils/config.cmx \
     source.cmi
 source.cmi :
 symbols.cmo : \

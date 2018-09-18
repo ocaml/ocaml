@@ -52,6 +52,10 @@ Working version
   (Alban Reynaud and Gabriel Scherer,
    review by Jeremy Yallop and Armaël Guéneau)
 
+* MPR#7814, GPR#2041: allow modules from include directories to shadow
+  other ones, even in the toplevel
+  (Jérémie Dimino, review by Alain Frisch and David Allsopp)
+
 ### Standard library:
 
 - GPR#2128: Add Fun module.
@@ -598,6 +602,9 @@ Working version
 - GPR#2030: makefile targets to build AST files of sources
   for parser testing. See parsing/HACKING.adoc.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
+
+* GPR#2041: add a cache for looking up files in the load path
+  (Jérémie Dimino, review by Alain Frisch and David Allsopp)
 
 - GPR#2047: a new type for unification traces
   (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)

@@ -22,7 +22,6 @@
 [@@@ocaml.warning "+a-4-9-40-41-42"]
 
 open Config
-open Misc
 open Cmx_format
 
 type error =
@@ -196,7 +195,7 @@ let get_global_info global_ident = (
         else begin
           try
             let filename =
-              find_in_path_uncap !load_path (modname ^ ".cmx") in
+              Load_path.find_uncap (modname ^ ".cmx") in
             let (ui, crc) = read_unit_info filename in
             if ui.ui_name <> modname then
               raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
