@@ -460,11 +460,12 @@ and remove_aliases_sig env modified excl sg =
 
 let scrape_for_type_of ~aliases env mty =
   match aliases with
-    `Remove | `Functor ->
+    `Remove ->
       let excl_paths = collect_arg_paths mty in
-      let excl id p =
-        Ident.Set.mem id excl_paths ||
-        aliases = `Functor &&
+      let excl id _p = Ident.Set.mem id excl_paths in
+      remove_aliases_mty env (ref false) excl mty
+  | `Functor ->
+      let excl _id p =
         try ignore (Env.find_module p env); true with Not_found -> false
       in
       remove_aliases_mty env (ref false) excl mty
