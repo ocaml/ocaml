@@ -400,7 +400,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
       when Ident.name id = s ->
         let path, md' = Typetexp.find_module initial_env loc lid'.txt in
         let mty = md'.md_type in
-        let mty = Mtype.scrape_for_type_of ~remove_aliases env mty in
+        let aliases = if remove_aliases then `Remove else `Keep in
+        let mty = Mtype.scrape_for_type_of ~aliases env mty in
         let md'' = { md' with md_type = mty } in
         let newmd = Mtype.strengthen_decl ~aliasable:false env md'' path in
         ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
@@ -542,7 +543,7 @@ let rec approx_modtype env smty =
   | Pmty_functor(param, sarg, sres) ->
       let arg = may_map (approx_modtype env) sarg in
       let rarg = Mtype.scrape_for_type_of
-          ~remove_aliases:true env (Btype.default_mty arg) in
+          ~aliases:`Functor env (Btype.default_mty arg) in
       let (id, newenv) = Env.enter_module ~arg:true param.txt rarg env in
       let res = approx_modtype newenv sres in
       Mty_functor(id, arg, res)
@@ -766,7 +767,7 @@ and transl_modtype_aux env smty =
       let arg = Misc.may_map (transl_modtype env) sarg in
       let ty_arg =
         Misc.may_map (fun m ->
-          Mtype.scrape_for_type_of ~remove_aliases:true env m.mty_type) arg in
+          Mtype.scrape_for_type_of ~aliases:`Functor env m.mty_type) arg in
       let (id, newenv) =
         Env.enter_module ~arg:true param.txt (Btype.default_mty ty_arg) env in
       Ctype.init_def(Ident.current_time()); (* PR#6513 *)
@@ -1348,7 +1349,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let mty = may_map (transl_modtype env) smty in
       let ty_arg =
         Misc.may_map (fun m ->
-          Mtype.scrape_for_type_of ~remove_aliases:true env m.mty_type) mty in
+          Mtype.scrape_for_type_of ~aliases:`Functor env m.mty_type) mty in
       let (id, newenv), funct_body =
         match ty_arg with None -> (Ident.create "*", env), false
         | Some mty -> Env.enter_module ~arg:true name.txt mty env, true in
@@ -1768,7 +1769,8 @@ let type_module_type_of env smod =
     | _ -> type_module env smod
   in
   let mty = tmty.mod_type in
-  let mty = Mtype.scrape_for_type_of ~remove_aliases env mty in
+  let aliases = if remove_aliases then `Remove else `Keep in
+  let mty = Mtype.scrape_for_type_of ~aliases env mty in
   (* PR#5036: must not contain non-generalized type variables *)
   if not (closed_modtype env mty) then
     raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));

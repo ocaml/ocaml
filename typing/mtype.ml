@@ -423,48 +423,53 @@ let collect_arg_paths mty =
   PathSet.fold (fun p -> Ident.Set.union (collect_ids !subst !bindings p))
     !paths Ident.Set.empty
 
-let rec remove_aliases_mty env r excl mty =
-  let r' = ref false in
+let rec remove_aliases_mty env modified excl mty =
+  let modified' = ref false in
   let mty' =
     match scrape env mty with
       Mty_signature sg ->
-        Mty_signature (remove_aliases_sig env r' excl sg)
+        Mty_signature (remove_aliases_sig env modified' excl sg)
     | Mty_alias _ ->
         let mty' = Env.scrape_alias env mty in
         if mty' = mty then mty else
-        (r' := true; remove_aliases_mty env r' excl mty')
+        (modified' := true; remove_aliases_mty env modified' excl mty')
     | mty ->
         mty
   in
-  if !r' then (r := true; mty') else mty
+  if !modified' then (modified := true; mty') else mty
 
-and remove_aliases_sig env r excl sg =
+and remove_aliases_sig env modified excl sg =
   match sg with
     [] -> []
   | Sig_module(id, md, rs) :: rem  ->
       let mty =
         match md.md_type with
-          Mty_alias _ when Ident.Set.mem id excl ->
+          Mty_alias (_, p) when excl id p ->
             md.md_type
         | mty ->
-            remove_aliases_mty env r excl mty
+            remove_aliases_mty env modified excl mty
       in
       Sig_module(id, {md with md_type = mty} , rs) ::
-      remove_aliases_sig (Env.add_module id mty env) r excl rem
+      remove_aliases_sig (Env.add_module id mty env) modified excl rem
   | Sig_modtype(id, mtd) :: rem ->
       Sig_modtype(id, mtd) ::
-      remove_aliases_sig (Env.add_modtype id mtd env) r excl rem
+      remove_aliases_sig (Env.add_modtype id mtd env) modified excl rem
   | it :: rem ->
-      it :: remove_aliases_sig env r excl rem
+      it :: remove_aliases_sig env modified excl rem
 
 
-let scrape_for_type_of ~remove_aliases env mty =
-  if remove_aliases then begin
-    let excl = collect_arg_paths mty in
-    remove_aliases_mty env (ref false) excl mty
-  end else begin
-    scrape_for_type_of env mty
-  end
+let scrape_for_type_of ~aliases env mty =
+  match aliases with
+    `Remove | `Functor ->
+      let excl_paths = collect_arg_paths mty in
+      let excl id p =
+        Ident.Set.mem id excl_paths ||
+        aliases = `Functor &&
+        try ignore (Env.find_module p env); true with Not_found -> false
+      in
+      remove_aliases_mty env (ref false) excl mty
+  | `Keep ->
+      scrape_for_type_of env mty
 
 (* Lower non-generalizable type variables *)
 
