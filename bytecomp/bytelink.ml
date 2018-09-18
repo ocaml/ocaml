@@ -109,7 +109,7 @@ let remove_required (rel, _pos) =
 let scan_file obj_name tolink =
   let file_name =
     try
-      find_in_path !load_path obj_name
+      Load_path.find obj_name
     with Not_found ->
       raise(Error(File_not_found obj_name)) in
   let ic = open_in_bin file_name in
@@ -314,7 +314,7 @@ let link_bytecode tolink exec_name standalone =
              if String.length !Clflags.use_runtime > 0
              then "camlheader_ur" else "camlheader" ^ !Clflags.runtime_variant
            in
-           let inchan = open_in_bin (find_in_path !load_path header) in
+           let inchan = open_in_bin (Load_path.find header) in
            copy_file inchan outchan;
            close_in inchan
          with Not_found | Sys_error _ -> ()
@@ -335,7 +335,7 @@ let link_bytecode tolink exec_name standalone =
        if check_dlls then begin
          (* Initialize the DLL machinery *)
          Dll.init_compile !Clflags.no_std_include;
-         Dll.add_path !load_path;
+         Dll.add_path (Load_path.get_paths ());
          try Dll.open_dlls Dll.For_checking sharedobjs
          with Failure reason -> raise(Error(Cannot_open_dll reason))
        end;

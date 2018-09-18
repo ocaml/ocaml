@@ -207,6 +207,13 @@ module Stdlib = struct
       include String
       let hash = Hashtbl.hash
     end)
+
+    let for_all f t =
+      let len = String.length t in
+      let rec loop i =
+        i = len || (f t.[i] && loop (i + 1))
+      in
+      loop 0
   end
 
   external compare : 'a -> 'a -> int = "%compare"

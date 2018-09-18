@@ -120,9 +120,26 @@ val print_out_phrase :
 
 val read_interactive_input : (string -> bytes -> int -> int * bool) ref
 
-(* Hooks for initialization *)
+(* Hooks *)
 
 val toplevel_startup_hook : (unit -> unit) ref
+
+type event = ..
+type event +=
+  | Startup
+  | After_setup
+  (* Just after the setup, when the toplevel is ready to evaluate user
+     input. This happens before the toplevel has evaluated any kind of
+     user input, in particular this happens before loading the
+     [.ocamlinit] file. *)
+
+val add_hook : (event -> unit) -> unit
+(* Add a function that will be called at key points of the toplevel
+   initialization process. *)
+
+val run_hooks : event -> unit
+(* Run all the registered hooks. *)
+
 
 (* Misc *)
 

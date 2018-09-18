@@ -205,6 +205,38 @@ let rec add id data = function
       else
         balance l k (add id data r)
 
+let rec min_binding = function
+    Empty -> raise Not_found
+  | Node (Empty, d, _, _) -> d
+  | Node (l, _, _, _) -> min_binding l
+
+let rec remove_min_binding = function
+    Empty -> invalid_arg "Map.remove_min_elt"
+  | Node (Empty, _, r, _) -> r
+  | Node (l, d, r, _) -> balance (remove_min_binding l) d r
+
+let merge t1 t2 =
+  match (t1, t2) with
+    (Empty, t) -> t
+  | (t, Empty) -> t
+  | (_, _) ->
+      let d = min_binding t2 in
+      balance t1 d (remove_min_binding t2)
+
+let rec remove id = function
+    Empty ->
+      Empty
+  | (Node (l, k, r, h) as m) ->
+      let c = compare (name id) (name k.ident) in
+      if c = 0 then
+        match k.previous with
+        | None -> merge l r
+        | Some k -> Node (l, k, r, h)
+      else if c < 0 then
+        let ll = remove id l in if l == ll then m else balance ll k r
+      else
+        let rr = remove id r in if r == rr then m else balance l k rr
+
 let rec find_previous id = function
     None ->
       raise Not_found

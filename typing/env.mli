@@ -16,7 +16,6 @@
 (* Environment handling *)
 
 open Types
-open Misc.Stdlib
 
 type summary =
     Env_empty
@@ -27,12 +26,13 @@ type summary =
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
-  | Env_open of summary * String.Set.t * Path.t
+  | Env_open of summary * Path.t
   (** The string set argument of [Env_open] represents a list of module names
       to skip, i.e. that won't be imported in the toplevel namespace. *)
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration Path.Map.t
   | Env_copy_types of summary * string list
+  | Env_persistent of summary * Ident.t
 
 type address =
   | Aident of Ident.t
@@ -169,6 +169,25 @@ val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
 val add_local_type: Path.t -> type_declaration -> t -> t
 
+(* Insertion of persistent signatures *)
+
+(* [add_persistent_structure id env] is an environment such that
+   module [id] points to the persistent structure contained in the
+   external compilation unit with the same name.
+
+   The compilation unit itself is looked up in the load path when the
+   contents of the module is accessed. *)
+val add_persistent_structure : Ident.t -> t -> t
+
+(* Returns the set of persistent structures found in the given
+   directory. *)
+val persistent_structures_of_dir : Load_path.Dir.t -> Misc.Stdlib.String.Set.t
+
+(* [filter_non_loaded_persistent f env] removes all the persistent
+   structures that are not yet loaded and for which [f] returns
+   [false]. *)
+val filter_non_loaded_persistent : (Ident.t -> bool) -> t -> t
+
 (* Insertion of all fields of a signature. *)
 
 val add_item: signature_item -> t -> t
@@ -182,23 +201,6 @@ val open_signature:
     ?loc:Location.t -> ?toplevel:bool ->
     Asttypes.override_flag -> Path.t ->
       t -> t option
-
-(* Similar to [open_signature], except that modules from the load path
-   have precedence over sub-modules of the opened module.
-
-   For instance, if opening a module [M] with a sub-module [X]:
-   - if the load path contains a [x.cmi] file, then resolving [X] in the
-     new environment yields the same result as resolving [X] in the
-     old environment
-   - otherwise, in the new environment [X] resolves to [M.X]
-*)
-val open_signature_of_initially_opened_module:
-    Path.t -> t -> t option
-
-(* Similar to [open_signature] except that sub-modules of the opened modules
-   that are in [hidden_submodules] are not added to the environment. *)
-val open_signature_from_env_summary:
-    Path.t -> t -> hidden_submodules:String.Set.t -> t option
 
 val open_pers_signature: string -> t -> t
 

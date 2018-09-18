@@ -58,12 +58,12 @@ open Format
 
 let rec loadfiles ppf name =
   try
-    let filename = find_in_path !Config.load_path name in
+    let filename = Load_path.find name in
     use_debugger_symtable Compdynlink.loadfile filename;
     let d = Filename.dirname name in
     if d <> Filename.current_dir_name then begin
-      if not (List.mem d !Config.load_path) then
-        Config.load_path := d :: !Config.load_path;
+      if not (List.mem d (Load_path.get_paths ())) then
+        Load_path.add_dir d;
     end;
     fprintf ppf "File %s loaded@." filename;
     true

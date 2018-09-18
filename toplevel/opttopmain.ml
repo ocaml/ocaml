@@ -45,7 +45,7 @@ let prepare ppf =
     let res =
       List.for_all (Opttopdirs.load_file ppf) (List.rev !preload_objects)
     in
-    !Opttoploop.toplevel_startup_hook ();
+    Opttoploop.run_hooks Opttoploop.Startup;
     res
   with x ->
     try Location.report_exception ppf x; false
