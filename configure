@@ -1507,6 +1507,12 @@ if sh ./hasgot pwrite; then
   echo "#define HAS_PWRITE" >> s.h
 fi
 
+if sh ./trycompile -fdebug-prefix-map=old=new ansi.c; then
+    cc_has_debug_prefix_map=true
+else
+    cc_has_debug_prefix_map=false
+fi
+
 nanosecond_stat=none
 for i in 1 2 3; do
   if sh ./trycompile -DHAS_NANOSECOND_STAT=$i nanosecond_stat.c; then
@@ -2143,6 +2149,7 @@ config AFL_INSTRUMENT "$afl_instrument"
 config MAX_TESTSUITE_DIR_RETRIES "$max_testsuite_dir_retries"
 config FLAT_FLOAT_ARRAY "$flat_float_array"
 config AWK "awk"
+config CC_HAS_DEBUG_PREFIX_MAP "$cc_has_debug_prefix_map"
 
 
 rm -f tst hasgot.c

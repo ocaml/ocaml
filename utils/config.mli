@@ -30,6 +30,8 @@ val c_compiler: string
         (* The compiler to use for compiling C files *)
 val c_output_obj: string
         (* Name of the option of the C compiler for specifying the output file *)
+val c_has_debug_prefix_map : bool
+        (* Whether the C compiler supports -fdebug-prefix-map *)
 val ocamlc_cflags : string
         (* The flags ocamlc should pass to the C compiler *)
 val ocamlc_cppflags : string
