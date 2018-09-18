@@ -194,7 +194,8 @@ module type S =
     module M1 : sig type t = int end
     module M2 : sig type t = int end
     module M3 : sig module M = M2 end
-    module F : functor (X : sig module M = M1 end) -> sig type t end
+    module F :
+      functor (X : sig module M : sig type t = int end end) -> sig type t end
     type t = F(M3).t
   end
 |}]

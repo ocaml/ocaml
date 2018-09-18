@@ -423,18 +423,22 @@ let collect_arg_paths mty =
   PathSet.fold (fun p -> Ident.Set.union (collect_ids !subst !bindings p))
     !paths Ident.Set.empty
 
-let rec remove_aliases_mty env excl mty =
-  match mty with
-    Mty_signature sg ->
-      Mty_signature (remove_aliases_sig env excl sg)
-  | Mty_alias _ ->
-      let mty' = Env.scrape_alias env mty in
-      if mty' = mty then mty else
-      remove_aliases_mty env excl mty'
-  | mty ->
-      mty
+let rec remove_aliases_mty env r excl mty =
+  let r' = ref false in
+  let mty' =
+    match scrape env mty with
+      Mty_signature sg ->
+        Mty_signature (remove_aliases_sig env r' excl sg)
+    | Mty_alias _ ->
+        let mty' = Env.scrape_alias env mty in
+        if mty' = mty then mty else
+        (r' := true; remove_aliases_mty env r' excl mty')
+    | mty ->
+        mty
+  in
+  if !r' then (r := true; mty') else mty
 
-and remove_aliases_sig env excl sg =
+and remove_aliases_sig env r excl sg =
   match sg with
     [] -> []
   | Sig_module(id, md, rs) :: rem  ->
@@ -443,21 +447,21 @@ and remove_aliases_sig env excl sg =
           Mty_alias _ when Ident.Set.mem id excl ->
             md.md_type
         | mty ->
-            remove_aliases_mty env excl mty
+            remove_aliases_mty env r excl mty
       in
       Sig_module(id, {md with md_type = mty} , rs) ::
-      remove_aliases_sig (Env.add_module id mty env) excl rem
+      remove_aliases_sig (Env.add_module id mty env) r excl rem
   | Sig_modtype(id, mtd) :: rem ->
       Sig_modtype(id, mtd) ::
-      remove_aliases_sig (Env.add_modtype id mtd env) excl rem
+      remove_aliases_sig (Env.add_modtype id mtd env) r excl rem
   | it :: rem ->
-      it :: remove_aliases_sig env excl rem
+      it :: remove_aliases_sig env r excl rem
 
 
 let scrape_for_type_of ~remove_aliases env mty =
   if remove_aliases then begin
     let excl = collect_arg_paths mty in
-    remove_aliases_mty env excl mty
+    remove_aliases_mty env (ref false) excl mty
   end else begin
     scrape_for_type_of env mty
   end

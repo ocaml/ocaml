@@ -541,8 +541,9 @@ let rec approx_modtype env smty =
       Mty_signature(approx_sig env ssg)
   | Pmty_functor(param, sarg, sres) ->
       let arg = may_map (approx_modtype env) sarg in
-      let (id, newenv) =
-        Env.enter_module ~arg:true param.txt (Btype.default_mty arg) env in
+      let rarg = Mtype.scrape_for_type_of
+          ~remove_aliases:true env (Btype.default_mty arg) in
+      let (id, newenv) = Env.enter_module ~arg:true param.txt rarg env in
       let res = approx_modtype newenv sres in
       Mty_functor(id, arg, res)
   | Pmty_with(sbody, _constraints) ->
@@ -763,7 +764,9 @@ and transl_modtype_aux env smty =
         smty.pmty_attributes
   | Pmty_functor(param, sarg, sres) ->
       let arg = Misc.may_map (transl_modtype env) sarg in
-      let ty_arg = Misc.may_map (fun m -> m.mty_type) arg in
+      let ty_arg =
+        Misc.may_map (fun m ->
+          Mtype.scrape_for_type_of ~remove_aliases:true env m.mty_type) arg in
       let (id, newenv) =
         Env.enter_module ~arg:true param.txt (Btype.default_mty ty_arg) env in
       Ctype.init_def(Ident.current_time()); (* PR#6513 *)
@@ -1343,7 +1346,9 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
         Tmodtype_implicit
   | Pmod_functor(name, smty, sbody) ->
       let mty = may_map (transl_modtype env) smty in
-      let ty_arg = may_map (fun m -> m.mty_type) mty in
+      let ty_arg =
+        Misc.may_map (fun m ->
+          Mtype.scrape_for_type_of ~remove_aliases:true env m.mty_type) mty in
       let (id, newenv), funct_body =
         match ty_arg with None -> (Ident.create "*", env), false
         | Some mty -> Env.enter_module ~arg:true name.txt mty env, true in

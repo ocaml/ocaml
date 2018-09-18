@@ -265,7 +265,40 @@ val pow : t -> t -> t = <fun>
 
 module F(X:sig module C = Char end) = struct module C = X.C end;;
 [%%expect{|
-module F : functor (X : sig module C = Char end) -> sig module C = Char end
+module F :
+  functor
+    (X : sig
+           module C :
+             sig
+               external code : char -> int = "%identity"
+               val chr : int -> char
+               val escaped : char -> string
+               val lowercase : char -> char
+               val uppercase : char -> char
+               val lowercase_ascii : char -> char
+               val uppercase_ascii : char -> char
+               type t = char
+               val compare : t -> t -> int
+               val equal : t -> t -> bool
+               external unsafe_chr : int -> char = "%identity"
+             end
+         end) ->
+    sig
+      module C :
+        sig
+          external code : char -> int = "%identity"
+          val chr : int -> char
+          val escaped : char -> string
+          val lowercase : char -> char
+          val uppercase : char -> char
+          val lowercase_ascii : char -> char
+          val uppercase_ascii : char -> char
+          type t = char
+          val compare : t -> t -> int
+          val equal : t -> t -> bool
+          external unsafe_chr : int -> char = "%identity"
+        end
+    end
 |}];;
 
 (* Applicative functors *)
