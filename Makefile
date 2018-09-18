@@ -83,13 +83,12 @@ DEPFLAGS=$(INCLUDES)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
-UTILS=utils/config.cmo utils/misc.cmo \
+UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
   utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
   utils/clflags.cmo utils/tbl.cmo utils/profile.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
   utils/strongly_connected_components.cmo \
-  utils/build_path_prefix_map.cmo \
   utils/targetint.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
@@ -369,6 +368,7 @@ utils/config.ml: utils/config.mlp config/Makefile Makefile
 	    $(call SUBST,ENABLE_CALL_COUNTS) \
 	    $(call SUBST,FLAT_FLOAT_ARRAY) \
 	    $(call SUBST,CC_HAS_DEBUG_PREFIX_MAP) \
+	    $(call SUBST,AS_HAS_DEBUG_PREFIX_MAP) \
 	    $< > $@
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
