@@ -34,13 +34,26 @@ let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
 
 let dir_directory s =
   let d = expand_directory Config.standard_library s in
-  Config.load_path := d :: !Config.load_path
+  let dir = Load_path.Dir.create d in
+  Load_path.add dir;
+  toplevel_env :=
+    Stdlib.String.Set.fold
+      (fun name env ->
+         Env.add_persistent_structure (Ident.create_persistent name) env)
+      (Env.persistent_structures_of_dir dir)
+      !toplevel_env
 
 let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
 (* To remove a directory from the load path *)
 let dir_remove_directory s =
   let d = expand_directory Config.standard_library s in
-  Config.load_path := List.filter (fun d' -> d' <> d) !Config.load_path
+  let keep id =
+    match Load_path.find_uncap (Ident.name id ^ ".cmi") with
+    | exception Not_found -> true
+    | fn -> Filename.dirname fn <> d
+  in
+  toplevel_env := Env.filter_non_loaded_persistent keep !toplevel_env;
+  Load_path.remove_dir s
 
 let _ =
   Hashtbl.add directive_table "remove_directory"
@@ -49,7 +62,7 @@ let _ =
 let _ = Hashtbl.add directive_table "show_dirs"
   (Directive_none
      (fun () ->
-        List.iter print_endline !Config.load_path
+        List.iter print_endline (Load_path.get_paths ())
      ))
 
 (* To change the current directory *)
@@ -62,7 +75,7 @@ let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 
 let load_file ppf name0 =
   let name =
-    try Some (find_in_path !Config.load_path name0)
+    try Some (Load_path.find name0)
     with Not_found -> None
   in
   match name with

@@ -281,7 +281,7 @@ let package_files ~ppf_dump initial_env files targetfile =
     let files =
     List.map
         (fun f ->
-        try find_in_path !Config.load_path f
+        try Load_path.find f
         with Not_found -> raise(Error(File_not_found f)))
         files in
     let prefix = chop_extensions targetfile in

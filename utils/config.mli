@@ -84,9 +84,6 @@ val ar: string
 val cc_profile : string
 (** The command line option to the C compiler to enable profiling. *)
 
-val load_path: string list ref
-(** Directories in the search path for .cmi and .cmo files *)
-
 val interface_suffix: string ref
 (** Suffix for interface file names *)
 
