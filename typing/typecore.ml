@@ -2478,8 +2478,10 @@ and type_expect_
         let get_path ty =
           try
             let (p0, p,_) = extract_concrete_record env ty in
-            (* XXX level may be wrong *)
-            Some (p0, p, ty.level = generic_level || not !Clflags.principal)
+            let principal =
+              (repr ty).level = generic_level || not !Clflags.principal
+            in
+            Some (p0, p, principal)
           with Not_found -> None
         in
         match get_path ty_expected with
@@ -3911,7 +3913,10 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
   let opath =
     try
       let (p0, p,_) = extract_concrete_variant env ty_expected in
-      Some(p0, p, ty_expected.level = generic_level || not !Clflags.principal)
+      let principal =
+        (repr ty_expected).level = generic_level || not !Clflags.principal
+      in
+      Some(p0, p, principal)
     with Not_found -> None
   in
   let constrs = Typetexp.find_all_constructors env lid.loc lid.txt in
