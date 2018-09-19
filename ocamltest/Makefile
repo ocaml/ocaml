@@ -20,6 +20,18 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
+ifeq "$(filter str,$(OTHERLIBRARIES))" ""
+  str := false
+else
+  str := true
+endif
+
+ifeq "$(filter systhreads,$(OTHERLIBRARIES))" ""
+  systhreads := false
+else
+  systhreads := true
+endif
+
 ifeq "$(filter $(UNIXLIB),$(OTHERLIBRARIES))" ""
   unix := None
 else
@@ -214,6 +226,8 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile
 	  -e 's|@@ARCH@@|$(ARCH)|' \
 	  -e 's|@@SHARED_LIBRARIES@@|$(SUPPORTS_SHARED_LIBRARIES)|' \
 	  -e 's|@@UNIX@@|$(unix)|' \
+	  -e 's|@@SYSTHREADS@@|$(systhreads)|' \
+	  -e 's|@@STR@@|$(str)|' \
 	  -e 's|@@SYSTEM@@|$(SYSTEM)|' \
 	  -e 's|@@CPP@@|$(CPP)|' \
 	  -e 's|@@OCAMLCDEFAULTFLAGS@@|$(ocamlcdefaultflags)|' \

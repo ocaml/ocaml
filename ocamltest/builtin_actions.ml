@@ -80,6 +80,18 @@ let libwin32unix = make
     "libwin32unix available"
     "libwin32unix not available")
 
+let hassysthreads = make
+  "hassysthreads"
+  (Actions_helpers.pass_or_skip Ocamltest_config.systhreads
+    "systhreads library available"
+    "systhreads library not available")
+
+let hasstr = make
+  "hasstr"
+  (Actions_helpers.pass_or_skip Ocamltest_config.str
+    "str library available"
+    "str library not available")
+
 let windows_OS = "Windows_NT"
 
 let get_OS () = Sys.safe_getenv "OS"
@@ -177,6 +189,8 @@ let _ =
     cd;
     dumpenv;
     hasunix;
+    hassysthreads;
+    hasstr;
     libunix;
     libwin32unix;
     windows;

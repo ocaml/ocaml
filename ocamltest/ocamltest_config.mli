@@ -40,6 +40,12 @@ val libunix : bool option
 (** [Some true] for unix, [Some false] for win32unix, or [None] if neither is
     built. *)
 
+val systhreads : bool
+(** Indicates whether systhreads is available. *)
+
+val str : bool
+(** Indicates whether str is available. *)
+
 val objext : string
 (** Extension of object files *)
 
