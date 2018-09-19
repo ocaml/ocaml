@@ -1,7 +1,7 @@
 (* TEST
-include unix
 modules = "fakeclock.c"
-* windows
+* libwin32unix
+include unix
 ** bytecode
 ** native
 *)
