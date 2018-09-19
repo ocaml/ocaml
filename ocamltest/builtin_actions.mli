@@ -21,6 +21,7 @@ val fail : Actions.t
 
 val dumpenv : Actions.t
 
+val hasunix : Actions.t
 val libunix : Actions.t
 val libwin32unix : Actions.t
 

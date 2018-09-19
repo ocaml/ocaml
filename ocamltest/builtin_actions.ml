@@ -62,15 +62,21 @@ let dumpenv = make
   (fun log env ->
     Environments.dump log env; (Result.pass, env))
 
+let hasunix = make
+  "hasunix"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.libunix <> None)
+    "unix library available"
+    "unix library not available")
+
 let libunix = make
   "libunix"
-  (Actions_helpers.pass_or_skip Ocamltest_config.libunix
+  (Actions_helpers.pass_or_skip (Ocamltest_config.libunix = Some true)
     "libunix available"
     "libunix not available")
 
 let libwin32unix = make
   "libwin32unix"
-  (Actions_helpers.pass_or_skip (not Ocamltest_config.libunix)
+  (Actions_helpers.pass_or_skip (Ocamltest_config.libunix = Some false)
     "libwin32unix available"
     "libwin32unix not available")
 
@@ -170,6 +176,7 @@ let _ =
     fail;
     cd;
     dumpenv;
+    hasunix;
     libunix;
     libwin32unix;
     windows;

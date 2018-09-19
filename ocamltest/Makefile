@@ -20,13 +20,21 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
+ifeq "$(filter $(UNIXLIB),$(OTHERLIBRARIES))" ""
+  unix := None
+else
+  ifeq "$(UNIX_OR_WIN32)" "win32"
+    unix := Some false
+  else
+    unix := Some true
+  endif
+endif
+
 ifeq "$(UNIX_OR_WIN32)" "win32"
-  unix := false
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -w -f - \
     | sed 's/\\/\\\\\\\\/g')
   mkexe := $(MKEXE_ANSI) -link $(OC_LDFLAGS)
 else
-  unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
   mkexe := $(MKEXE)
 endif
