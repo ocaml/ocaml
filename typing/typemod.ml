@@ -742,9 +742,8 @@ and approx_sig env ssg =
           let smty = sincl.pincl_mod in
           let mty = approx_modtype env smty in
           let scope = Ctype.create_scope () in
-          let sg = Subst.refresh_signature ~scope
-              (extract_sig env smty.pmty_loc mty) in
-          let newenv = Env.add_signature sg env in
+          let sg, newenv = Env.enter_signature ~scope
+              (extract_sig env smty.pmty_loc mty) env in
           sg @ approx_sig newenv srem
       | Psig_class sdecls | Psig_class_type sdecls ->
           let decls = Typeclass.approx_class_declarations env sdecls in
@@ -1113,12 +1112,11 @@ and transl_signature env sg =
             in
             let mty = tmty.mty_type in
             let scope = Ctype.create_scope () in
-            let sg = Subst.refresh_signature ~scope
-                       (extract_sig env smty.pmty_loc mty) in
+            let sg, newenv = Env.enter_signature ~scope
+                       (extract_sig env smty.pmty_loc mty) env in
             List.iter
               (fun i -> check_sig_item names item.psig_loc i to_be_removed)
               (List.rev sg);
-            let newenv = Env.add_signature sg env in
             let incl =
               { incl_mod = tmty;
                 incl_type = sg;
@@ -1951,11 +1949,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         in
         let scope = Ctype.create_scope () in
         (* Rename all identifiers bound by this signature to avoid clashes *)
-        let sg = Subst.refresh_signature ~scope
-            (extract_sig_open env smodl.pmod_loc modl.mod_type) in
+        let sg, new_env = Env.enter_signature ~scope
+            (extract_sig_open env smodl.pmod_loc modl.mod_type) env in
         List.iter (fun item -> check_sig_item names loc item to_be_removed)
           (List.rev sg);
-        let new_env = Env.add_signature sg env in
         let incl =
           { incl_mod = modl;
             incl_type = sg;

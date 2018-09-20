@@ -1994,6 +1994,57 @@ let rec add_signature sg env =
     [] -> env
   | comp :: rem -> add_signature rem (add_item comp env)
 
+let refresh_signature ~scope sg =
+  let rec refresh_bound_idents s sg =
+    let open Subst in
+    function
+      [] -> sg, s
+    | Sig_type(id, td, rs) :: rest ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents
+          (add_type id (Pident id') s)
+          (Sig_type(id', td, rs) :: sg)
+          rest
+    | Sig_module(id, md, rs) :: rest ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents
+          (add_module id (Pident id') s)
+          (Sig_module (id', md, rs) :: sg)
+          rest
+    | Sig_modtype(id, mtd) :: rest ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents
+          (add_modtype id (Mty_ident(Pident id')) s)
+          (Sig_modtype(id', mtd) :: sg)
+          rest
+    | Sig_class(id, cd, rs) :: rest ->
+        (* cheat and pretend they are types cf. PR#6650 *)
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents
+          (add_type id (Pident id') s)
+          (Sig_class(id', cd, rs) :: sg)
+          rest
+    | Sig_class_type(id, ctd, rs) :: rest ->
+        (* cheat and pretend they are types cf. PR#6650 *)
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents
+          (add_type id (Pident id') s)
+          (Sig_class_type(id', ctd, rs) :: sg)
+          rest
+    | Sig_value(id, vd) :: rest ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents s (Sig_value(id', vd) :: sg) rest
+    | Sig_typext(id, ec, es) :: rest ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents s (Sig_typext(id',ec,es) :: sg) rest
+  in
+  let (sg', s') = refresh_bound_idents Subst.identity [] sg in
+  List.rev_map (Subst.signature_item s') sg'
+
+let enter_signature ~scope sg env =
+  let sg = refresh_signature ~scope sg in
+  sg, add_signature sg env
+
 (* Open a signature path *)
 
 let add_components ?filter_modules slot root env0 comps =
