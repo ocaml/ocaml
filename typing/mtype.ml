@@ -473,7 +473,7 @@ let scrape_for_type_of ~remove_aliases env mty =
     let excl = collect_arg_paths mty in
     let exclude id _p = Ident.Set.mem id excl in
     let scrape _ mty = mty in
-    remove_aliases_mty env {modified=false;exclude;scrape} mty
+    remove_aliases_mty env {modified=false; exclude; scrape} mty
   end else begin
     scrape_for_type_of env mty
   end
