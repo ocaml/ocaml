@@ -6,6 +6,10 @@ OCaml 4.07 maintenance branch
 - MPR#7815, GPR#1896: major GC crash with first-fit policy
   (Stephen Dolan and Damien Doligez, report by Joris Giovannangeli)
 
+* MPR#7818, GPR#2051: Remove local aliases in functor argument types,
+  to prevent the aliasing of their target.
+  (Jacques Garrigue, report by mandrykin, review by Leo White)
+
 - MPR#7820, GPR#1897: Fix Array.of_seq. This function used to apply a circular
   permutation of one cell to the right on the sequence.
   (Thierry Martinez, review by Nicolás Ojeda Bär)
