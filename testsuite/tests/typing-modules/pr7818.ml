@@ -153,3 +153,50 @@ Line _, characters 0-6:
   ^^^^^^
 Error: Unbound value M.Id.x
 |}]
+
+
+(* cannot_alias3.ml *)
+module MkT(X : sig end) = struct type t end
+module type S = sig
+  module Term0 : sig module Id : sig end end
+  module T = Term0
+  type t = MkT(T).t
+end;;
+
+module Make1 (T' : S)  = struct
+  module Id = T'.T.Id
+  module Id2 = Id
+  type t = T'.t
+end;;
+
+module IS = struct
+  module Term0 = struct module Id = struct let x = "a" end end
+  module T = Term0
+  type t = MkT(T).t
+end;;
+
+module M = Make1(IS);;
+[%%expect{|
+module MkT : functor (X : sig  end) -> sig type t end
+module type S =
+  sig
+    module Term0 : sig module Id : sig  end end
+    module T = Term0
+    type t = MkT(T).t
+  end
+module Make1 :
+  functor
+    (T' : sig
+            module Term0 : sig module Id : sig  end end
+            module T : sig module Id : sig  end end
+            type t = MkT(T).t
+          end) ->
+    sig module Id : sig  end module Id2 = Id type t = T'.t end
+module IS :
+  sig
+    module Term0 : sig module Id : sig val x : string end end
+    module T = Term0
+    type t = MkT(T).t
+  end
+module M : sig module Id : sig  end module Id2 = Id type t = IS.t end
+|}]
