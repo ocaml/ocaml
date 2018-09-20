@@ -170,7 +170,8 @@ let char_for_decimal_code lexbuf i =
     then 'x'
     else
       illegal_escape lexbuf
-        (Printf.sprintf "%d is outside the range of legal characters (0-255)." c)
+        (Printf.sprintf
+          "%d is outside the range of legal characters (0-255)." c)
   else Char.chr c
 
 let char_for_octal_code lexbuf i =
@@ -182,7 +183,8 @@ let char_for_octal_code lexbuf i =
     then 'x'
     else
       illegal_escape lexbuf
-        (Printf.sprintf "o%o (=%d) is outside the range of legal characters (0-255)." c c)
+        (Printf.sprintf
+          "o%o (=%d) is outside the range of legal characters (0-255)." c c)
   else Char.chr c
 
 let char_for_hexadecimal_code lexbuf i =
