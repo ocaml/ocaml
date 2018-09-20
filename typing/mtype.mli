@@ -21,9 +21,11 @@ val scrape: Env.t -> module_type -> module_type
         (* Expand toplevel module type abbreviations
            till hitting a "hard" module type (signature, functor,
            or abstract module type ident. *)
+val scrape_for_functor_arg: Env.t -> module_type -> module_type
+        (* Remove aliases in a functor argument type *)
 val scrape_for_type_of:
   remove_aliases:bool -> Env.t -> module_type -> module_type
-        (* Expand module aliases *)
+        (* Process type for module type of *)
 val freshen: module_type -> module_type
         (* Return an alpha-equivalent copy of the given module type
            where bound identifiers are fresh. *)
