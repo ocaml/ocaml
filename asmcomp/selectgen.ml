@@ -928,7 +928,7 @@ method private emit_parts (env:environment) ~effects_after exp =
           Some (Ctuple [], env)
         else begin
           (* The normal case *)
-          let id = Ident.create "bind" in
+          let id = Ident.create_local "bind" in
           if all_regs_anonymous r then
             (* r is an anonymous, unshared register; use it directly *)
             Some (Cvar id, env_add id r env)
@@ -1201,7 +1201,7 @@ method emit_fundecl f =
     if not Config.spacetime then None, env
     else begin
       let reg = self#regs_for typ_int in
-      let node_hole = Ident.create "spacetime_node_hole" in
+      let node_hole = Ident.create_local "spacetime_node_hole" in
       Some (node_hole, reg), env_add node_hole reg env
     end
   in

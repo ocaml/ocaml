@@ -437,7 +437,9 @@ let make_key e =
 let name_lambda strict arg fn =
   match arg with
     Lvar id -> fn id
-  | _ -> let id = Ident.create "let" in Llet(strict, Pgenval, id, arg, fn id)
+  | _ ->
+      let id = Ident.create_local "let" in
+      Llet(strict, Pgenval, id, arg, fn id)
 
 let name_lambda_list args fn =
   let rec name_list names = function
@@ -445,7 +447,7 @@ let name_lambda_list args fn =
   | (Lvar _ as arg) :: rem ->
       name_list (arg :: names) rem
   | arg :: rem ->
-      let id = Ident.create "let" in
+      let id = Ident.create_local "let" in
       Llet(Strict, Pgenval, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 

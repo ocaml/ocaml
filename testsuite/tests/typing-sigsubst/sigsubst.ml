@@ -24,11 +24,11 @@ end
 Line 3, characters 2-36:
     include Comparable with type t = t
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Illegal shadowing of included type t/1019 by t/1023
+Error: Illegal shadowing of included type t/20 by t/24
        Line 2, characters 2-19:
-         Type t/1019 came from this include
+         Type t/20 came from this include
        Line 3, characters 2-23:
-         The value print has no valid type if t/1019 is shadowed
+         The value print has no valid type if t/20 is shadowed
 |}]
 
 module type Sunderscore = sig

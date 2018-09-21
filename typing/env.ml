@@ -428,7 +428,8 @@ module IdTbl =
       | Some {root; using = _; next; components} ->
           NameMap.iter
             (fun s (x, pos) ->
-              f (Ident.create_hidden s (* ??? *))
+               let root_scope = Path.scope root in
+              f (Ident.create_scoped ~scope:root_scope s)
                 (Pdot (root, s, pos), x))
             components;
           iter f next
@@ -1958,22 +1959,22 @@ let add_local_type path info env =
 
 (* Insertion of bindings by name *)
 
-let enter store_fun name data env =
-  let id = Ident.create name in (id, store_fun id data env)
+let enter scope store_fun name data env =
+  let id = Ident.create_scoped ~scope name in (id, store_fun id data env)
 
-let enter_value ?check = enter (store_value ?check)
-and enter_type = enter (store_type ~check:true)
-and enter_extension = enter (store_extension ~check:true)
+let enter_value ?check = enter 0 (store_value ?check)
+and enter_type ~scope = enter scope (store_type ~check:true)
+and enter_extension ~scope = enter scope (store_extension ~check:true)
 and enter_module_declaration ?arg id md env =
   add_module_declaration ?arg ~check:true id md env
   (* let (id, env) = enter store_module name md env in
   (id, add_functor_arg ?arg id env) *)
-and enter_modtype = enter store_modtype
-and enter_class = enter store_class
-and enter_cltype = enter store_cltype
+and enter_modtype ~scope = enter scope store_modtype
+and enter_class ~scope = enter scope store_class
+and enter_cltype ~scope = enter scope store_cltype
 
-let enter_module ?arg s mty env =
-  let id = Ident.create s in
+let enter_module ~scope ?arg s mty env =
+  let id = Ident.create_scoped ~scope s in
   (id, enter_module_declaration ?arg id (md mty) env)
 
 (* Insertion of all components of a signature *)
@@ -1992,6 +1993,57 @@ let rec add_signature sg env =
   match sg with
     [] -> env
   | comp :: rem -> add_signature rem (add_item comp env)
+
+let refresh_signature ~scope sg =
+  let rec refresh_bound_idents s sg =
+    let open Subst in
+    function
+      [] -> sg, s
+    | Sig_type(id, td, rs) :: rest ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents
+          (add_type id (Pident id') s)
+          (Sig_type(id', td, rs) :: sg)
+          rest
+    | Sig_module(id, md, rs) :: rest ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents
+          (add_module id (Pident id') s)
+          (Sig_module (id', md, rs) :: sg)
+          rest
+    | Sig_modtype(id, mtd) :: rest ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents
+          (add_modtype id (Mty_ident(Pident id')) s)
+          (Sig_modtype(id', mtd) :: sg)
+          rest
+    | Sig_class(id, cd, rs) :: rest ->
+        (* cheat and pretend they are types cf. PR#6650 *)
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents
+          (add_type id (Pident id') s)
+          (Sig_class(id', cd, rs) :: sg)
+          rest
+    | Sig_class_type(id, ctd, rs) :: rest ->
+        (* cheat and pretend they are types cf. PR#6650 *)
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents
+          (add_type id (Pident id') s)
+          (Sig_class_type(id', ctd, rs) :: sg)
+          rest
+    | Sig_value(id, vd) :: rest ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents s (Sig_value(id', vd) :: sg) rest
+    | Sig_typext(id, ec, es) :: rest ->
+        let id' = Ident.create_scoped ~scope (Ident.name id) in
+        refresh_bound_idents s (Sig_typext(id',ec,es) :: sg) rest
+  in
+  let (sg', s') = refresh_bound_idents Subst.identity [] sg in
+  List.rev_map (Subst.signature_item s') sg'
+
+let enter_signature ~scope sg env =
+  let sg = refresh_signature ~scope sg in
+  sg, add_signature sg env
 
 (* Open a signature path *)
 

@@ -13,47 +13,85 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
+let lowest_scope  = 0
+let highest_scope = 100000000
 
-type t = { stamp: int; name: string; flags: int }
-
-let global_flag = 1
-let predef_exn_flag = 2
+type t =
+  | Local of { name: string; stamp: int }
+  | Scoped of { name: string; stamp: int; scope: int }
+  | Global of string
+  | Predef of { name: string; stamp: int }
+      (* the stamp is here only for fast comparison, but the name of
+         predefined identifiers is always unique. *)
 
 (* A stamp of 0 denotes a persistent identifier *)
 
 let currentstamp = ref 0
+let predefstamp = ref 0
 
-let create s =
+let create_scoped ~scope s =
   incr currentstamp;
-  { name = s; stamp = !currentstamp; flags = 0 }
+  Scoped { name = s; stamp = !currentstamp; scope }
 
-let create_hidden s =
-  { name = s; stamp = -1; flags = 0 }
-
-let create_predef_exn s =
+let create_local s =
   incr currentstamp;
-  { name = s; stamp = !currentstamp;
-    flags = predef_exn_flag lor global_flag }
+  Local { name = s; stamp = !currentstamp }
+
+let create_predef s =
+  incr predefstamp;
+  Predef { name = s; stamp = !predefstamp }
 
 let create_persistent s =
-  { name = s; stamp = 0; flags = global_flag }
+  Global s
 
-let rename i =
-  incr currentstamp;
-  { i with stamp = !currentstamp }
+let name = function
+  | Local { name; _ }
+  | Scoped { name; _ }
+  | Global name
+  | Predef { name; _ } -> name
 
-let name i = i.name
+let rename = function
+  | Local { name; stamp = _ }
+  | Scoped { name; stamp = _; scope = _ } ->
+      incr currentstamp;
+      Local { name; stamp = !currentstamp }
+  | id ->
+      Misc.fatal_errorf "Ident.rename %s" (name id)
 
-let with_name i name = { i with name; }
+let unique_name = function
+  | Local { name; stamp }
+  | Scoped { name; stamp } -> name ^ "_" ^ string_of_int stamp
+  | Global name ->
+      (* we're adding a fake stamp, because someone could have named his unit
+         [Foo_123] and since we're using unique_name to produce symbol names,
+         we might clash with an ident [Local { "Foo"; 123 }]. *)
+      name ^ "_0"
+  | Predef { name; _ } ->
+      (* we know that none of the predef names (currently) finishes in
+         "_<some number>", and that their name is unique. *)
+      name
 
-let unique_name i = i.name ^ "_" ^ string_of_int i.stamp
+let unique_toplevel_name = function
+  | Local { name; stamp }
+  | Scoped { name; stamp } -> name ^ "/" ^ string_of_int stamp
+  | Global name
+  | Predef { name; _ } -> name
 
-let unique_toplevel_name i = i.name ^ "/" ^ string_of_int i.stamp
+let persistent = function
+  | Global _ -> true
+  | _ -> false
 
-let persistent i = (i.stamp = 0)
-
-let equal i1 i2 = i1.name = i2.name
+let equal i1 i2 =
+  match i1, i2 with
+  | Local { name = name1; _ }, Local { name = name2; _ }
+  | Scoped { name = name1; _ }, Scoped { name = name2; _ }
+  | Global name1, Global name2 ->
+      name1 = name2
+  | Predef { stamp = s1; _ }, Predef { stamp = s2 } ->
+      (* if they don't have the same stamp, they don't have the same name *)
+      s1 = s2
+  | _ ->
+      false
 
 let same i1 i2 = i1 = i2
   (* Possibly more efficient version (with a real compiler, at least):
@@ -63,10 +101,15 @@ let same i1 i2 = i1 = i2
 
 let compare i1 i2 = Stdlib.compare i1 i2
 
-let binding_time i = i.stamp
+let stamp = function
+  | Local { stamp; _ }
+  | Scoped { stamp; _ } -> stamp
+  | _ -> 0
 
-let current_time() = !currentstamp
-let set_current_time t = currentstamp := max !currentstamp t
+let scope = function
+  | Scoped { scope; _ } -> scope
+  | Local _ -> highest_scope
+  | Global _ | Predef _ -> lowest_scope
 
 let reinit_level = ref (-1)
 
@@ -75,21 +118,34 @@ let reinit () =
   then reinit_level := !currentstamp
   else currentstamp := !reinit_level
 
-let global i =
-  (i.flags land global_flag) <> 0
+let global = function
+  | Local _
+  | Scoped _ -> false
+  | Global _
+  | Predef _ -> true
 
-let is_predef_exn i =
-  (i.flags land predef_exn_flag) <> 0
+let is_predef = function
+  | Predef _ -> true
+  | _ -> false
 
-let print ppf i =
-  match i.stamp with
-  | 0 -> fprintf ppf "%s!" i.name
-  | -1 -> fprintf ppf "%s#" i.name
-  | n ->
-    let stampstr =
-      if !Clflags.unique_ids then Printf.sprintf "/%i" n else ""
-    in
-    fprintf ppf "%s%s%s" i.name stampstr (if global i then "g" else "")
+let print ~with_scope ppf =
+  let open Format in
+  function
+  | Global name -> fprintf ppf "%s!" name
+  | Predef { name; stamp = n } ->
+      fprintf ppf "%s%s!" name
+        (if !Clflags.unique_ids then sprintf "/%i" n else "")
+  | Local { name; stamp = n } ->
+      fprintf ppf "%s%s" name
+        (if !Clflags.unique_ids then sprintf "/%i" n else "")
+  | Scoped { name; stamp = n; scope } ->
+      fprintf ppf "%s%s%s" name
+        (if !Clflags.unique_ids then sprintf "/%i" n else "")
+        (if with_scope then sprintf "[%i]" scope else "")
+
+let print_with_scope ppf id = print ~with_scope:true ppf id
+
+let print ppf id = print ~with_scope:false ppf id
 
 type 'a tbl =
     Empty
@@ -141,7 +197,7 @@ let rec add id data = function
     Empty ->
       Node(Empty, {ident = id; data = data; previous = None}, Empty, 1)
   | Node(l, k, r, h) ->
-      let c = compare id.name k.ident.name in
+      let c = compare (name id) (name k.ident) in
       if c = 0 then
         Node(l, {ident = id; data = data; previous = Some k}, r, h)
       else if c < 0 then
@@ -149,47 +205,47 @@ let rec add id data = function
       else
         balance l k (add id data r)
 
-let rec find_stamp s = function
+let rec find_previous id = function
     None ->
       raise Not_found
   | Some k ->
-      if k.ident.stamp = s then k.data else find_stamp s k.previous
+      if same id k.ident then k.data else find_previous id k.previous
 
 let rec find_same id = function
     Empty ->
       raise Not_found
   | Node(l, k, r, _) ->
-      let c = compare id.name k.ident.name in
+      let c = compare (name id) (name k.ident) in
       if c = 0 then
-        if id.stamp = k.ident.stamp
+        if same id k.ident
         then k.data
-        else find_stamp id.stamp k.previous
+        else find_previous id k.previous
       else
         find_same id (if c < 0 then l else r)
 
-let rec find_name name = function
+let rec find_name n = function
     Empty ->
       raise Not_found
   | Node(l, k, r, _) ->
-      let c = compare name k.ident.name in
+      let c = compare n (name k.ident) in
       if c = 0 then
         k.ident, k.data
       else
-        find_name name (if c < 0 then l else r)
+        find_name n (if c < 0 then l else r)
 
 let rec get_all = function
   | None -> []
   | Some k -> (k.ident, k.data) :: get_all k.previous
 
-let rec find_all name = function
+let rec find_all n = function
     Empty ->
       []
   | Node(l, k, r, _) ->
-      let c = compare name k.ident.name in
+      let c = compare n (name k.ident) in
       if c = 0 then
         (k.ident, k.data) :: get_all k.previous
       else
-        find_all name (if c < 0 then l else r)
+        find_all n (if c < 0 then l else r)
 
 let rec fold_aux f stack accu = function
     Empty ->
@@ -224,22 +280,36 @@ let key_name = ""
 
 let make_key_generator () =
   let c = ref 1 in
-  fun id ->
-    let stamp = !c in
-    decr c ;
-    { id with name = key_name; stamp = stamp; }
+  function
+  | Local _
+  | Scoped _ ->
+      let stamp = !c in
+      decr c ;
+      Local { name = key_name; stamp = stamp }
+  | global_id ->
+      Misc.fatal_errorf "Ident.make_key_generator () %s" (name global_id)
 
 let compare x y =
-  let c = x.stamp - y.stamp in
-  if c <> 0 then c
-  else
-    let c = compare x.name y.name in
-    if c <> 0 then c
-    else
-      compare x.flags y.flags
+  match x, y with
+  | Local x, Local y ->
+      let c = x.stamp - y.stamp in
+      if c <> 0 then c
+      else compare x.name y.name
+  | Local _, _ -> 1
+  | _, Local _ -> (-1)
+  | Scoped x, Scoped y ->
+      let c = x.stamp - y.stamp in
+      if c <> 0 then c
+      else compare x.name y.name
+  | Scoped _, _ -> 1
+  | _, Scoped _ -> (-1)
+  | Global x, Global y -> compare x y
+  | Global _, _ -> 1
+  | _, Global _ -> (-1)
+  | Predef { stamp = s1; _ }, Predef { stamp = s2; _ } -> compare s1 s2
 
 let output oc id = output_string oc (unique_name id)
-let hash i = (Char.code i.name.[0]) lxor i.stamp
+let hash i = (Char.code (name i).[0]) lxor (stamp i)
 
 let original_equal = equal
 include Identifiable.Make (struct

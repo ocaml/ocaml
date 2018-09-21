@@ -32,10 +32,10 @@ let print_raw =
 
 (**** Type level management ****)
 
-let generic_level = 100000000
+let generic_level = Ident.highest_scope
 
 (* Used to mark a type during a traversal. *)
-let lowest_level = 0
+let lowest_level = Ident.lowest_scope
 let pivot_level = 2 * lowest_level - 1
     (* pivot_level - lowest_level < lowest_level *)
 

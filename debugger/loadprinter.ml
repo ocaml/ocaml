@@ -115,7 +115,6 @@ let match_printer_type desc typename =
       Env.lookup_type (Ldot(Lident "Topdirs", typename)) Env.empty
     with Not_found ->
       raise (Error(Unbound_identifier(Ldot(Lident "Topdirs", typename)))) in
-  Ctype.init_def(Ident.current_time());
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify Env.empty
