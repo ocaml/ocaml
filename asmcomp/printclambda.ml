@@ -63,6 +63,25 @@ let rec structured_constant ppf = function
         List.iter (fun sc -> fprintf ppf "@ %a" uconstant sc) scl in
       fprintf ppf "@[<2>(const_closure%a %s@ %a)@]" funs clos sym sconsts fv
 
+and phantom_defining_expr ppf = function
+  | Uphantom_const const -> uconstant ppf const
+  | Uphantom_var var -> Ident.print ppf var
+  | Uphantom_read_var_field (var, offset) ->
+    Format.fprintf ppf "%a[%d]" Backend_var.print var offset
+  | Uphantom_offset_var (var, offset) ->
+    Format.fprintf ppf "%a+(%d)" Backend_var.print var offset
+  | Uphantom_read_symbol_field (sym, offset) ->
+    Format.fprintf ppf "%a[%d]" uconstant sym offset
+  | Uphantom_block { tag; fields; } ->
+    Format.fprintf ppf "[%d: " tag;
+    List.iter (fun field ->
+        Format.fprintf ppf "%a; " Backend_var.print field)
+      fields;
+    Format.fprintf ppf "]"
+
+and phantom_defining_expr_opt ppf = function
+  | None -> Format.fprintf ppf "DEAD"
+  | Some expr -> phantom_defining_expr ppf expr
 
 and uconstant ppf = function
   | Uconst_ref (s, Some c) ->
@@ -106,6 +125,19 @@ and lam ppf = function
       fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a%s%s@ %a@]"
         VP.print id (mutable_flag mut)
           (value_kind kind) lam arg;
+      let expr = letbody body in
+      fprintf ppf ")@]@ %a)@]" lam expr
+  | Uphantom_let (id, defining_expr, body) ->
+      let rec letbody ul = match ul with
+        | Uphantom_let (id, defining_expr, body) ->
+            fprintf ppf "@ @[<2>%a@ %a@]"
+              Backend_var.With_provenance.print id
+              phantom_defining_expr_opt defining_expr;
+            letbody body
+        | _ -> ul in
+      fprintf ppf "@[<2>(phantom_let@ @[<hv 1>(@[<2>%a@ %a@]"
+        Backend_var.With_provenance.print id
+        phantom_defining_expr_opt defining_expr;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Uletrec(id_arg_list, body) ->
