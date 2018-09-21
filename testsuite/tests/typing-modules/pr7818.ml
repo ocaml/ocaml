@@ -108,7 +108,7 @@ module Make2 (T' : S) : sig module Id : sig end module Id2 = Id end
   module Id2 = Id
 end;;
 [%%expect{|
-Line _, characters 57-107:
+Line 2, characters 57-107:
   .........................................................struct
     module Id = T'.T.Id
     module Id2 = Id
@@ -148,7 +148,7 @@ module M = Make1 (struct module Term0 =
 M.Id.x;;
 [%%expect{|
 module M : sig module Id : sig  end module Id2 = Id end
-Line _, characters 0-6:
+Line 3, characters 0-6:
   M.Id.x;;
   ^^^^^^
 Error: Unbound value M.Id.x
@@ -240,6 +240,7 @@ module MkT :
       val remove : elt -> t -> t
       val union : t -> t -> t
       val inter : t -> t -> t
+      val disjoint : t -> t -> bool
       val diff : t -> t -> t
       val compare : t -> t -> int
       val equal : t -> t -> bool
