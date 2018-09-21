@@ -424,6 +424,21 @@ module BR = Branch_relaxation.Make (struct
     | ELF64v1 -> (fun _ b _ -> b)
     | ELF64v2 -> (fun _ _ c -> c)
 
+  let profiling_prologue_size () =
+    match abi with
+    | ELF32 -> 5
+    | ELF64v1 | ELF64v2 -> 6
+
+  let prologue_size () =
+    profiling_prologue_size ()
+      + (if frame_size () > 0 then 1 else 0)
+      + (if !contains_calls then 
+           2 +
+             match abi with
+             | ELF32 -> 0
+             | ELF64v1 | ELF64v2 -> 1
+         else 0) 
+
   let tocload_size() =
     if !big_toc || !Clflags.for_package <> None then 2 else 1
 
@@ -438,6 +453,7 @@ module BR = Branch_relaxation.Make (struct
 
   let instr_size = function
     | Lend -> 0
+    | Lprologue -> prologue_size ()
     | Lop(Imove | Ispill | Ireload) -> 1
     | Lop(Iconst_int n) ->
       if is_native_immediate n then 1
@@ -501,12 +517,52 @@ module BR = Branch_relaxation.Make (struct
   let relax_intop_imm_checkbound ~bound:_ ~label_after_error:_ = assert false
 end)
 
+(* Emission of the profiling prelude *)
+
+let emit_profile () =
+  match abi with
+  | ELF32 ->
+      `	mflr    0\n`;
+      `	addi	1, 1, -16\n`;
+      `	stw	0, 4(1)\n`;
+      (* _mcount preserves the registers used for parameter passing *)
+      (* when it returns, lr contains the original return address *)
+      `	bl	{emit_symbol "_mcount"}\n`;
+      `	addi	1, 1, 16\n`
+  | ELF64v1 | ELF64v2 ->
+      `	mflr	0\n`;
+      (* save the registers used for parameter passing *)
+      `	bl	{emit_symbol "caml_before_mcount"}\n`;
+      `	bl	{emit_symbol "_mcount"}\n`;
+      `	nop\n`;
+      (* restore the registers used for parameter passing *)
+      `	bl	{emit_symbol "caml_after_mcount"}\n`;
+      `	mtlr	0\n`
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
     emit_debug_info i.dbg;
     match i.desc with
     | Lend -> ()
+    | Lprologue ->
+      if !Clflags.gprofile then emit_profile();
+      let n = frame_size() in
+      if n > 0 then begin
+        `	addi	1, 1, {emit_int(-n)}\n`;
+        cfi_adjust_cfa_offset n
+      end;
+      if !contains_calls then begin
+        let ra = retaddr_offset() in
+        `	mflr	0\n`;
+        `	{emit_string stg}	0, {emit_int ra}(1)\n`;
+        cfi_offset ~reg: 65 (* LR *) ~offset: (ra - n);
+        match abi with
+        | ELF32 -> ()
+        | ELF64v1 | ELF64v2 ->
+          `	std	2, {emit_int(toc_save_offset())}(1)\n`
+      end;
+      `{emit_label !tailrec_entry_point}:\n`
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
@@ -967,28 +1023,6 @@ let rec emit_all i =
   | Lend -> ()
   |  _   -> emit_instr i; emit_all i.next
 
-(* Emission of the profiling prelude *)
-
-let emit_profile () =
-  match abi with
-  | ELF32 ->
-      `	mflr    0\n`;
-      `	addi	1, 1, -16\n`;
-      `	stw	0, 4(1)\n`;
-      (* _mcount preserves the registers used for parameter passing *)
-      (* when it returns, lr contains the original return address *)
-      `	bl	{emit_symbol "_mcount"}\n`;
-      `	addi	1, 1, 16\n`
-  | ELF64v1 | ELF64v2 ->
-      `	mflr	0\n`;
-      (* save the registers used for parameter passing *)
-      `	bl	{emit_symbol "caml_before_mcount"}\n`;
-      `	bl	{emit_symbol "_mcount"}\n`;
-      `	nop\n`;
-      (* restore the registers used for parameter passing *)
-      `	bl	{emit_symbol "caml_after_mcount"}\n`;
-      `	mtlr	0\n`
-
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -1027,23 +1061,6 @@ let fundecl fundecl =
   end;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc();
-  if !Clflags.gprofile then emit_profile();
-  let n = frame_size() in
-  if n > 0 then begin
-    `	addi	1, 1, {emit_int(-n)}\n`;
-    cfi_adjust_cfa_offset n
-  end;
-  if !contains_calls then begin
-    let ra = retaddr_offset() in
-    `	mflr	0\n`;
-    `	{emit_string stg}	0, {emit_int ra}(1)\n`;
-    cfi_offset ~reg: 65 (* LR *) ~offset: (ra - n);
-    match abi with
-    | ELF32 -> ()
-    | ELF64v1 | ELF64v2 ->
-      `	std	2, {emit_int(toc_save_offset())}(1)\n`
-  end;
-  `{emit_label !tailrec_entry_point}:\n`;
   (* On this target, there is at most one "out of line" code block per
      function: a single "call GC" point.  It comes immediately after the
      function's body. *)
