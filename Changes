@@ -425,6 +425,9 @@ Working version
 - GPR#2074: Correct naming of record field inside [Ialloc] terms.
   (Mark Shinwell, review by Jérémie Dimino)
 
+- GPR#2060: "Phantom let" support for the Clambda language.
+  (Mark Shinwell, review by Vincent Laviron)
+
 - GPR#2076: Add [Targetint.print].
   (Mark Shinwell)
 
