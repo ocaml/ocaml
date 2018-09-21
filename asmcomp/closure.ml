@@ -35,6 +35,9 @@ module Storer =
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
+let no_phantom_lets () =
+  Misc.fatal_error "Closure does not support phantom let generation"
+
 (* Auxiliaries for compiling functions *)
 
 let rec split_list n l =
@@ -71,6 +74,7 @@ let occurs_var var u =
     | Uclosure(_fundecls, clos) -> List.exists occurs clos
     | Uoffset(u, _ofs) -> occurs u
     | Ulet(_str, _kind, _id, def, body) -> occurs def || occurs body
+    | Uphantom_let _ -> no_phantom_lets ()
     | Uletrec(decls, body) ->
         List.exists (fun (_id, u) -> occurs u) decls || occurs body
     | Uprim(_p, args, _) -> List.exists occurs args
@@ -159,6 +163,7 @@ let lambda_smaller lam threshold =
         incr size; lambda_size lam
     | Ulet(_str, _kind, _id, lam, body) ->
         lambda_size lam; lambda_size body
+    | Uphantom_let _ -> no_phantom_lets ()
     | Uletrec _ ->
         raise Exit (* usually too large *)
     | Uprim(prim, args, _) ->
@@ -576,6 +581,7 @@ let rec substitute loc fpc sb rn ulam =
       Ulet(str, kind, id', substitute loc fpc sb rn u1,
            substitute loc fpc
              (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2)
+  | Uphantom_let _ -> no_phantom_lets ()
   | Uletrec(bindings, body) ->
       let bindings1 =
         List.map (fun (id, rhs) ->
@@ -1386,6 +1392,7 @@ let collect_exported_structured_constants a =
         List.iter ulam ul
     | Uoffset(u, _) -> ulam u
     | Ulet (_str, _kind, _, u1, u2) -> ulam u1; ulam u2
+    | Uphantom_let _ -> no_phantom_lets ()
     | Uletrec (l, u) -> List.iter (fun (_, u) -> ulam u) l; ulam u
     | Uprim (_, ul, _) -> List.iter ulam ul
     | Uswitch (u, sl, _dbg) ->

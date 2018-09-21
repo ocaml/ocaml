@@ -34,6 +34,8 @@ type var_info =
 let ignore_uconstant (_ : Clambda.uconstant) = ()
 let ignore_ulambda (_ : Clambda.ulambda) = ()
 let ignore_ulambda_list (_ : Clambda.ulambda list) = ()
+let ignore_uphantom_defining_expr_option
+      (_ : Clambda.uphantom_defining_expr option) = ()
 let ignore_function_label (_ : Clambda.function_label) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
 let ignore_int (_ : int) = ()
@@ -110,6 +112,10 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
       ignore_int offset
     | Ulet (_let_kind, _value_kind, _var, def, body) ->
       loop def;
+      loop body
+    | Uphantom_let (var, defining_expr_opt, body) ->
+      ignore_var_with_provenance var;
+      ignore_uphantom_defining_expr_option defining_expr_opt;
       loop body
     | Uletrec (defs, body) ->
       List.iter (fun (var, def) ->
@@ -296,6 +302,9 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
         end;
         loop body
       end
+    | Uphantom_let (var, _defining_expr, body) ->
+      ignore_var_with_provenance var;
+      loop body
     | Uletrec (defs, body) ->
       (* Evaluation order for [defs] is not defined, and this case
          probably isn't important for [Cmmgen] anyway. *)
@@ -442,10 +451,27 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
     let def = substitute_let_moveable is_let_moveable env def in
     if V.Set.mem (VP.var var) is_let_moveable then
       let env = V.Map.add (VP.var var) def env in
-      substitute_let_moveable is_let_moveable env body
+      let body = substitute_let_moveable is_let_moveable env body in
+      (* If we are about to delete a [let] in debug mode, keep it for the
+         debugger. *)
+      (* CR-someday mshinwell: find out why some closure constructions were
+         not leaving phantom lets behind after substitution. *)
+      if not !Clflags.debug_full then
+        body
+      else
+        match def with
+        | Uconst const ->
+          Uphantom_let (var, Some (Clambda.Uphantom_const const), body)
+        | Uvar alias_of ->
+          Uphantom_let (var, Some (Clambda.Uphantom_var alias_of), body)
+        | _ ->
+          Uphantom_let (var, None, body)
     else
       Ulet (let_kind, value_kind,
             var, def, substitute_let_moveable is_let_moveable env body)
+  | Uphantom_let (var, defining_expr, body) ->
+    let body = substitute_let_moveable is_let_moveable env body in
+    Uphantom_let (var, defining_expr, body)
   | Uletrec (defs, body) ->
     let defs =
       List.map (fun (var, def) ->
@@ -622,16 +648,34 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
     let is_linear = V.Set.mem (VP.var var) var_info.linear in
     let is_used = V.Set.mem (VP.var var) var_info.used in
     let is_assigned = V.Set.mem (VP.var var) var_info.assigned in
+    let maybe_for_debugger (body, moveable) : Clambda.ulambda * moveable =
+      if not !Clflags.debug_full then
+        body, moveable
+      else
+        match def with
+        | Uconst const ->
+          Uphantom_let (var, Some (Clambda.Uphantom_const const),
+            body), moveable
+        | Uvar alias_of ->
+          Uphantom_let (var, Some (Clambda.Uphantom_var alias_of), body),
+            moveable
+        | _ ->
+          Uphantom_let (var, None, body), moveable
+    in
     begin match def_moveable, is_linear, is_used, is_assigned with
     | (Constant | Moveable), _, false, _ ->
-      (* A moveable expression that is never used may be eliminated. *)
-      un_anf_and_moveable var_info env body
+      (* A moveable expression that is never used may be eliminated.
+         However, if in debug mode and the defining expression is
+         appropriate, keep the let (as a phantom let) for the debugger. *)
+      maybe_for_debugger (un_anf_and_moveable var_info env body)
     | Constant, _, true, false
     (* A constant expression bound to an unassigned variable can replace any
-         occurrences of the variable. *)
+       occurrences of the variable.  The same comment as above concerning
+       phantom lets applies. *)
     | Moveable, true, true, false  ->
       (* A moveable expression bound to a linear unassigned [V.t]
-         may replace the single occurrence of the variable. *)
+         may replace the single occurrence of the variable.  The same comment
+         as above concerning phantom lets applies. *)
       let def_moveable =
         match def_moveable with
         | Moveable -> Moveable
@@ -639,7 +683,7 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
         | Fixed -> assert false
       in
       let env = V.Map.add (VP.var var) (def_moveable, def) env in
-      un_anf_and_moveable var_info env body
+      maybe_for_debugger (un_anf_and_moveable var_info env body)
     | (Constant | Moveable), _, _, true
         (* Constant or Moveable but assigned. *)
     | Moveable, false, _, _
@@ -649,6 +693,9 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
       Ulet (let_kind, value_kind, var, def, body),
       both_moveable def_moveable body_moveable
     end
+  | Uphantom_let (var, defining_expr, body) ->
+    let body, body_moveable = un_anf_and_moveable var_info env body in
+    Uphantom_let (var, defining_expr, body), body_moveable
   | Uletrec (defs, body) ->
     let defs =
       List.map (fun (var, def) -> var, un_anf var_info env def) defs
