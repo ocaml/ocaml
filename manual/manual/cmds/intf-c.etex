@@ -1844,7 +1844,6 @@ The "deserialize" field can be set to "custom_deserialize_default"
 to indicate that deserialization is not supported.  In this case,
 do not register the "struct custom_operations" with the deserializer
 using "register_custom_operations" (see below).
-\end{itemize}
 
 \item "const struct custom_fixed_length* fixed_length" \\
 Normally, space in the serialized output is reserved to write the
@@ -1854,6 +1853,7 @@ itself! As a space optimisation, if "serialize" always returns the
 same values for "bsize_32" and "bsize_64", then these values may be
 specified in the "fixed_length" structure, and do not consume space in
 the serialized output.
+\end{itemize}
 
 Note: the "finalize", "compare", "hash", "serialize" and "deserialize"
 functions attached to custom block descriptors must never trigger a
