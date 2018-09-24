@@ -26,6 +26,8 @@ let label ppf l =
 let instr ppf i =
   begin match i.desc with
   | Lend -> ()
+  | Lprologue ->
+      fprintf ppf "prologue"
   | Lop op ->
       begin match op with
       | Ialloc _ | Icall_ind _ | Icall_imm _ | Iextcall _ ->
