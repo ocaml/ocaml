@@ -1684,8 +1684,6 @@ expr:
       { dotop_set ~loc:$sloc (Ldot($3, "." ^ $4 ^ "{}<-")) $1 $6 $9 }
   | expr attribute
       { Exp.attr $1 $2 }
-  | UNDERSCORE
-     { not_expecting $loc($1) "wildcard \"_\"" }
 ;
 %inline expr_attrs:
   | LET MODULE ext_attributes mkrhs(UIDENT) module_binding_body IN seq_expr
