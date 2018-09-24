@@ -2553,20 +2553,20 @@ label_declaration_semi:
 
 str_type_extension:
   TYPE ext_attributes
-  nonrec_flag optional_type_parameters mkrhs(type_longident)
+  no_nonrec_flag
+  optional_type_parameters mkrhs(type_longident)
   PLUSEQ private_flag str_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
-        if $3 <> Recursive then not_expecting $loc($3) "nonrec flag";
         let docs = symbol_docs $sloc in
         Te.mk $5 (List.rev $8) ~params:$4 ~priv:$7 ~attrs:(attrs@$9) ~docs
         , ext }
 ;
 sig_type_extension:
   TYPE ext_attributes
-  nonrec_flag optional_type_parameters mkrhs(type_longident)
+  no_nonrec_flag
+  optional_type_parameters mkrhs(type_longident)
   PLUSEQ private_flag sig_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
-        if $3 <> Recursive then not_expecting $loc($3) "nonrec flag";
         let docs = symbol_docs $sloc in
         Te.mk $5 (List.rev $8) ~params:$4 ~priv:$7 ~attrs:(attrs@$9) ~docs
         , ext }
@@ -3018,9 +3018,13 @@ rec_flag:
     /* empty */                                 { Nonrecursive }
   | REC                                         { Recursive }
 ;
-nonrec_flag:
+%inline nonrec_flag:
     /* empty */                                 { Recursive }
   | NONREC                                      { Nonrecursive }
+;
+%inline no_nonrec_flag:
+    /* empty */ { Recursive }
+  | NONREC      { not_expecting $loc "nonrec flag" }
 ;
 direction_flag:
     TO                                          { Upto }
