@@ -21,6 +21,11 @@ type t =
   | Ok of RD.Set.t
   | Unreachable
 
+let map t ~f =
+  match t with
+  | Ok t -> Ok (f t)
+  | Unreachable -> Unreachable
+
 let inter regs1 regs2 =
   match regs1, regs2 with
   | Unreachable, _ -> regs2

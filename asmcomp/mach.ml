@@ -140,17 +140,18 @@ let end_instr () =
     available_across = None;
   }
 
-let instr_cons d a r n =
+let instr_cons ?(phantom_available_before = Backend_var.Set.empty) d a r n =
   { desc = d; next = n; arg = a; res = r;
     dbg = Debuginfo.none; live = Reg.Set.empty;
-    phantom_available_before = Backend_var.Set.empty;
+    phantom_available_before;
     available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
     available_across = None;
   }
 
-let instr_cons_debug d a r dbg n =
+let instr_cons_debug ?(phantom_available_before = Backend_var.Set.empty)
+      d a r dbg n =
   { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty;
-    phantom_available_before = Backend_var.Set.empty;
+    phantom_available_before;
     available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
     available_across = None;
   }
