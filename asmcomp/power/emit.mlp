@@ -506,6 +506,7 @@ module BR = Branch_relaxation.Make (struct
     | Lpushtrap -> size 4 5 5
     | Lpoptrap -> 2
     | Lraise _ -> 6
+    | Lcapture_stack_offset _ -> 0
 
   let relax_allocation ~num_words:words ~label_after_call_gc =
     Lop (Ispecific (Ialloc_far { words; label_after_call_gc; }))
@@ -1015,6 +1016,9 @@ let emit_instr i =
             `	addi	1, 1, {emit_int trap_size}\n`;
             `	bctr\n`
         end
+  | Lcapture_stack_offset byte_offset_from_cfa ->
+      Emitaux.handle_lcapture_stack_offset i ~frame_size ~slot_offset
+        ~register_class ~byte_offset_from_cfa
 
 (* Emit a sequence of instructions *)
 

@@ -502,6 +502,7 @@ module BR = Branch_relaxation.Make (struct
       | Cmm.Raise_withtrace -> 1
       | Cmm.Raise_notrace -> 4
       end
+    | Lcapture_stack_offset _ -> 0
 
   let relax_allocation ~num_words ~label_after_call_gc =
     Lop (Ispecific (Ifar_alloc { words = num_words; label_after_call_gc; }))
@@ -899,6 +900,9 @@ let emit_instr i =
           `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;
           `	br	{emit_reg reg_tmp1}\n`
         end
+  | Lcapture_stack_offset byte_offset_from_cfa ->
+      Emitaux.handle_lcapture_stack_offset i ~frame_size ~slot_offset
+        ~register_class ~byte_offset_from_cfa
 
 (* Emission of an instruction sequence *)
 

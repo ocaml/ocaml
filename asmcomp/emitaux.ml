@@ -307,6 +307,19 @@ let emit_debug_info dbg =
        emit_int file_num; emit_char '\t';
        emit_int line; emit_char '\n')
 
+let handle_lcapture_stack_offset i ~frame_size ~slot_offset ~register_class
+      ~byte_offset_from_cfa =
+  assert (Array.length i.Linearize.arg = 1);
+  let reg = i.Linearize.arg.(0) in
+  let open Reg in
+  begin match reg.loc with
+  | Stack loc ->
+    byte_offset_from_cfa :=
+      frame_size () - (slot_offset loc (register_class reg))
+  | Unknown | Reg _ ->
+    Misc.fatal_error "[Lcapture_stack_offset] only valid for [Stack] regs"
+  end
+
 let reset () =
   reset_debug_info ();
   frame_descriptors := []

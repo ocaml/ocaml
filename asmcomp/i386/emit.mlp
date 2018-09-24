@@ -906,6 +906,9 @@ let emit_instr fallthrough i =
             I.add (int (trap_frame_size - 8)) esp;
           I.ret ()
       end
+  | Lcapture_stack_offset byte_offset_from_cfa ->
+      Emitaux.handle_lcapture_stack_offset i ~frame_size ~slot_offset
+        ~register_class ~byte_offset_from_cfa
 
 let rec emit_all fallthrough i =
   match i.desc with

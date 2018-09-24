@@ -66,6 +66,13 @@ val cfi_endproc : unit -> unit
 val cfi_adjust_cfa_offset : int -> unit
 val cfi_offset : reg:int -> offset:int -> unit
 
+val handle_lcapture_stack_offset
+   : Linearize.instruction
+  -> frame_size:(unit -> int)
+  -> slot_offset:(Reg.stack_location -> int -> int)
+  -> register_class:(Reg.t -> int)
+  -> byte_offset_from_cfa:int ref
+  -> unit
 
 val binary_backend_available: bool ref
     (** Is a binary backend available.  If yes, we don't need

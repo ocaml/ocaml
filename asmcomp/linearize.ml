@@ -43,6 +43,7 @@ and instruction_desc =
   | Lpushtrap
   | Lpoptrap
   | Lraise of Cmm.raise_kind
+  | Lcapture_stack_offset of int ref
 
 let has_fallthrough = function
   | Lreturn | Lbranch _ | Lswitch _ | Lraise _
