@@ -2036,9 +2036,8 @@ let_bindings:
   | let_bindings and_let_binding                { addlb $1 $2 }
 ;
 let_binding:
-    LET ext_attributes rec_flag let_binding_body post_item_attributes
-      { let (ext, attr) = $2 in
-        mklbs ~loc:$sloc ext $3 (mklb ~loc:$sloc true $4 (attr@$5)) }
+    LET ext = ext attr = attributes rec_flag let_binding_body post_item_attributes
+      { mklbs ~loc:$sloc ext $4 (mklb ~loc:$sloc true $5 (attr@$6)) }
 ;
 and_let_binding:
     AND attributes let_binding_body post_item_attributes
