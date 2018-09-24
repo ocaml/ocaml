@@ -161,7 +161,6 @@ end
 module Naming_context = struct
 
 module M = String.Map
-module N = Numbers.Int.Map
 module S = String.Set
 
 let enabled = ref true
@@ -169,7 +168,7 @@ let enable b = enabled := b
 
 (** Name mapping *)
 type mapping =
-  | Need_unique_name of int N.t
+  | Need_unique_name of int Ident.Map.t
   (** The same name has already been attributed to multiple types.
       The [map] argument contains the specific binding time attributed to each
       types.
@@ -187,11 +186,11 @@ type mapping =
 let hid_start = 0
 
 let add_hid_id id map =
-  let new_id = 1 + N.fold (fun _ -> max) map hid_start in
-  new_id, N.add (Ident.binding_time id) new_id  map
+  let new_id = 1 + Ident.Map.fold (fun _ -> max) map hid_start in
+  new_id, Ident.Map.add id new_id  map
 
 let find_hid id map =
-  try N.find (Ident.binding_time id) map, map with
+  try Ident.Map.find id map, map with
   Not_found -> add_hid_id id map
 
 let pervasives name = "Stdlib." ^ name
@@ -213,7 +212,7 @@ let pervasives_name namespace name =
   | Associated_to_pervasives r -> r
   | Need_unique_name _ -> Out_name.create (pervasives name)
   | Uniquely_associated_to (id',r) ->
-      let hid, map = add_hid_id id' N.empty in
+      let hid, map = add_hid_id id' Ident.Map.empty in
       Out_name.set r (human_unique hid id');
       Conflicts.explain namespace hid id';
       set namespace @@ M.add name (Need_unique_name map) (get namespace);
@@ -244,7 +243,7 @@ let ident_name_simple namespace id =
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
   | Uniquely_associated_to (id',r) ->
-      let hid', m = find_hid id' N.empty in
+      let hid', m = find_hid id' Ident.Map.empty in
       let hid, m = find_hid id m in
       Out_name.set r (human_unique hid' id');
       List.iter (fun (id,hid) -> Conflicts.explain namespace hid id)
@@ -253,7 +252,7 @@ let ident_name_simple namespace id =
       Out_name.create (human_unique hid id)
   | Associated_to_pervasives r ->
       Out_name.set r ("Stdlib." ^ Out_name.print r);
-      let hid, m = find_hid id N.empty in
+      let hid, m = find_hid id Ident.Map.empty in
       set namespace @@ M.add name (Need_unique_name m) (get namespace);
       Out_name.create (human_unique hid id)
   | exception Not_found ->
@@ -579,7 +578,7 @@ let penalty s =
 
 let rec path_size = function
     Pident id ->
-      penalty (Ident.name id), -Ident.binding_time id
+      penalty (Ident.name id), -Ident.scope id
   | Pdot (p, _, _) ->
       let (l, b) = path_size p in (1+l, b)
   | Papply (p1, p2) ->
@@ -1385,13 +1384,13 @@ let rec tree_of_class_type sch params =
       let lab =
         if !print_labels || is_optional l then string_of_label l else ""
       in
-      let ty =
+      let tr =
        if is_optional l then
          match (repr ty).desc with
-         | Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
-         | _ -> newconstr (Path.Pident(Ident.create "<hidden>")) []
-       else ty in
-      let tr = tree_of_typexp sch ty in
+         | Tconstr(path, [ty], _) when Path.same path Predef.path_option ->
+             tree_of_typexp sch ty
+         | _ -> Otyp_stuff "<hidden>"
+       else tree_of_typexp sch ty in
       Octy_arrow (lab, tr, tree_of_class_type sch params cty)
 
 let class_type ppf cty =
@@ -1794,13 +1793,13 @@ let explanation env unif t3 t4 : (Format.formatter -> unit) option =
       Some (fun ppf ->
         fprintf ppf "@,Self type cannot escape its class")
   | Tconstr (p, _, _), Tvar _
-    when unif && t4.level < Path.binding_time p ->
+    when unif && t4.level < Path.scope p ->
       Some (fun ppf ->
         fprintf ppf
           "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
           path p)
   | Tvar _, Tconstr (p, _, _)
-    when unif && t3.level < Path.binding_time p ->
+    when unif && t3.level < Path.scope p ->
       Some (fun ppf ->
         fprintf ppf
           "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"

@@ -35,8 +35,8 @@ let rec with_afl_logging b =
        docs/technical_details.txt in afl-fuzz source for for a full
        description of what's going on. *)
     let cur_location = Random.int afl_map_size in
-    let cur_pos = Ident.create "pos" in
-    let afl_area = Ident.create "shared_mem" in
+    let cur_pos = Ident.create_local "pos" in
+    let afl_area = Ident.create_local "shared_mem" in
     let op oper args = Cop (oper, args, Debuginfo.none) in
     Clet(afl_area, op (Cload (Word_int, Asttypes.Mutable)) [afl_area_ptr],
     Clet(cur_pos,  op Cxor [op (Cload (Word_int, Asttypes.Mutable))

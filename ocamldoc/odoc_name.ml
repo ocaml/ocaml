@@ -231,7 +231,7 @@ let to_path n =
     List.fold_left
       (fun acc_opt -> fun s ->
         match acc_opt with
-          None -> Some (Path.Pident (Ident.create s))
+          None -> Some (Path.Pident (Ident.create_local s))
         | Some acc -> Some (Path.Pdot (acc, s, 0)))
       None
       (Str.split (Str.regexp "\\.") n)

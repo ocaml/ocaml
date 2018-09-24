@@ -531,7 +531,7 @@ val unescaped : string -> string
     in the argument.
     Raise {!Scan_failure} if [s] is not properly escaped (i.e. [s] has invalid
     escape sequences or special characters that are not properly escaped).
-    For instance, [String.unescaped "\""] will fail.
+    For instance, [Scanf.unescaped "\""] will fail.
     @since 4.00.0
 *)
 

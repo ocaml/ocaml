@@ -44,6 +44,8 @@ type levels =
 val save_levels: unit -> levels
 val set_levels: levels -> unit
 
+val create_scope : unit -> int
+
 val newty: type_desc -> type_expr
 val newvar: ?name:string -> unit -> type_expr
 val newvar2: ?name:string -> int -> type_expr
@@ -130,6 +132,8 @@ val instance_parameterized_type_2:
         type_expr list -> type_expr list -> type_expr ->
         type_expr list * type_expr list * type_expr
 val instance_declaration: type_declaration -> type_declaration
+val generic_instance_declaration: type_declaration -> type_declaration
+        (* Same as instance_declaration, but new nodes at generic_level *)
 val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
 val instance_poly:

@@ -318,7 +318,6 @@ let match_generic_printer_type desc path args printer_type =
 let match_printer_type ppf desc =
   let printer_type_new = printer_type ppf "printer_type_new" in
   let printer_type_old = printer_type ppf "printer_type_old" in
-  Ctype.init_def(Ident.current_time());
   try
     (match_simple_printer_type desc printer_type_new, false)
   with Ctype.Unify _ ->

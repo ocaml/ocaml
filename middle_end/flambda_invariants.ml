@@ -464,7 +464,7 @@ let primitive_invariants flam ~no_access_to_global_module_identifiers =
           raise (Sequential_logical_operator_primitives_must_be_expanded prim)
         | Pgetglobal id ->
           if no_access_to_global_module_identifiers
-            && not (Ident.is_predef_exn id) then
+            && not (Ident.is_predef id) then
           begin
             raise (Access_to_global_module_identifier prim)
           end

@@ -53,10 +53,10 @@ let exists_free ids p =
   | None -> false
   | _ -> true
 
-let rec binding_time = function
-    Pident id -> Ident.binding_time id
-  | Pdot(p, _s, _pos) -> binding_time p
-  | Papply(p1, p2) -> max (binding_time p1) (binding_time p2)
+let rec scope = function
+    Pident id -> Ident.scope id
+  | Pdot(p, _s, _pos) -> scope p
+  | Papply(p1, p2) -> max (scope p1) (scope p2)
 
 let kfalse _ = false
 
@@ -65,6 +65,11 @@ let rec name ?(paren=kfalse) = function
   | Pdot(p, s, _pos) ->
       name ~paren p ^ if paren s then ".( " ^ s ^ " )" else "." ^ s
   | Papply(p1, p2) -> name ~paren p1 ^ "(" ^ name ~paren p2 ^ ")"
+
+let rec print ppf = function
+  | Pident id -> Ident.print_with_scope ppf id
+  | Pdot(p, s, _pos) -> Format.fprintf ppf "%a.%s" print p s
+  | Papply(p1, p2) -> Format.fprintf ppf "%a(%a)" print p1 print p2
 
 let rec head = function
     Pident id -> id

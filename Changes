@@ -382,6 +382,9 @@ Working version
   `Location.report_error` is removed, use `Location.print_report` instead
   (Armaël Guéneau, review by Thomas Refis)
 
+- MPR#7835, GPR#1980: separate scope from stamp in idents
+  (Thomas Refis, review by Leo White)
+
 - GPR#1996: expose Pprintast.longident to help compiler-libs users print
   Longident.t values.
   (Gabriel Scherer, review by Florian Angeletti and Thomas Refis)

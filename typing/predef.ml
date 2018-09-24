@@ -26,8 +26,7 @@ let wrap create s =
   builtin_idents := (s, id) :: !builtin_idents;
   id
 
-let ident_create = wrap Ident.create
-let ident_create_predef_exn = wrap Ident.create_predef_exn
+let ident_create = wrap Ident.create_predef
 
 let ident_int = ident_create "int"
 and ident_char = ident_create "char"
@@ -84,19 +83,19 @@ and type_extension_constructor =
       newgenty (Tconstr(path_extension_constructor, [], ref Mnil))
 and type_floatarray = newgenty (Tconstr(path_floatarray, [], ref Mnil))
 
-let ident_match_failure = ident_create_predef_exn "Match_failure"
-and ident_out_of_memory = ident_create_predef_exn "Out_of_memory"
-and ident_invalid_argument = ident_create_predef_exn "Invalid_argument"
-and ident_failure = ident_create_predef_exn "Failure"
-and ident_not_found = ident_create_predef_exn "Not_found"
-and ident_sys_error = ident_create_predef_exn "Sys_error"
-and ident_end_of_file = ident_create_predef_exn "End_of_file"
-and ident_division_by_zero = ident_create_predef_exn "Division_by_zero"
-and ident_stack_overflow = ident_create_predef_exn "Stack_overflow"
-and ident_sys_blocked_io = ident_create_predef_exn "Sys_blocked_io"
-and ident_assert_failure = ident_create_predef_exn "Assert_failure"
+let ident_match_failure = ident_create "Match_failure"
+and ident_out_of_memory = ident_create "Out_of_memory"
+and ident_invalid_argument = ident_create "Invalid_argument"
+and ident_failure = ident_create "Failure"
+and ident_not_found = ident_create "Not_found"
+and ident_sys_error = ident_create "Sys_error"
+and ident_end_of_file = ident_create "End_of_file"
+and ident_division_by_zero = ident_create "Division_by_zero"
+and ident_stack_overflow = ident_create "Stack_overflow"
+and ident_sys_blocked_io = ident_create "Sys_blocked_io"
+and ident_assert_failure = ident_create "Assert_failure"
 and ident_undefined_recursive_module =
-        ident_create_predef_exn "Undefined_recursive_module"
+        ident_create "Undefined_recursive_module"
 
 let all_predef_exns = [
   ident_match_failure;
@@ -246,9 +245,4 @@ let build_initial_env add_type add_exception empty_env =
 let builtin_values =
   List.map (fun id -> (Ident.name id, id)) all_predef_exns
 
-(* Start non-predef identifiers at 1000.  This way, more predefs can
-   be defined in this file (above!) without breaking .cmi
-   compatibility. *)
-
-let _ = Ident.set_current_time 999
 let builtin_idents = List.rev !builtin_idents

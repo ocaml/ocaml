@@ -233,7 +233,7 @@ let record_global_approx_toplevel () =
     (get_clambda_approx current_unit)
 
 let global_approx id =
-  if Ident.is_predef_exn id then Clambda.Value_unknown
+  if Ident.is_predef id then Clambda.Value_unknown
   else try Hashtbl.find toplevel_approx (Ident.name id)
   with Not_found ->
     match get_global_info id with
@@ -243,7 +243,7 @@ let global_approx id =
 (* Return the symbol used to refer to a global identifier *)
 
 let symbol_for_global id =
-  if Ident.is_predef_exn id then
+  if Ident.is_predef id then
     "caml_exn_" ^ Ident.name id
   else begin
     let unitname = Ident.name id in
@@ -272,7 +272,7 @@ let is_predefined_exception sym =
 
 let symbol_for_global' id =
   let sym_label = Linkage_name.create (symbol_for_global id) in
-  if Ident.is_predef_exn id then
+  if Ident.is_predef id then
     Symbol.of_global_linkage predefined_exception_compilation_unit sym_label
   else
     Symbol.of_global_linkage (unit_for_global id) sym_label
@@ -298,7 +298,7 @@ let approx_for_global comp_unit =
   if (Compilation_unit.equal
       predefined_exception_compilation_unit
       comp_unit)
-     || Ident.is_predef_exn id
+     || Ident.is_predef id
      || not (Ident.global id)
   then invalid_arg (Format.asprintf "approx_for_global %a" Ident.print id);
   let modname = Ident.name id in
@@ -419,7 +419,7 @@ let function_label fv =
   (concat_symbol unitname (Closure_id.unique_name fv))
 
 let require_global global_ident =
-  if not (Ident.is_predef_exn global_ident) then
+  if not (Ident.is_predef global_ident) then
     ignore (get_global_info global_ident : Cmx_format.unit_infos option)
 
 (* Error report *)
