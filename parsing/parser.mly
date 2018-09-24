@@ -465,8 +465,8 @@ let class_of_let_bindings ~loc lbs body =
            lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
-    if lbs.lbs_extension <> None then
-      raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "extension")));
+    (* Our use of let_bindings(no_ext) guarantees the following: *)
+    assert (lbs.lbs_extension = None);
     mkclass ~loc (Pcl_let (lbs.lbs_rec, List.rev bindings, body))
 
 (* Alternatively, we could keep the generic module type in the Parsetree
@@ -1044,7 +1044,7 @@ structure_tail_nodoc:
 ;
 
 structure_item:
-    let_bindings
+    let_bindings(ext)
       { val_of_let_bindings ~loc:$sloc $1 }
   | structure_item_with_ext
       { let item, ext = $1 in
@@ -1341,7 +1341,7 @@ class_expr:
       { $1 }
   | FUN attributes class_fun_def
       { wrap_class_attrs ~loc:$sloc $3 $2 }
-  | let_bindings IN class_expr
+  | let_bindings(no_ext) IN class_expr
       { class_of_let_bindings ~loc:$sloc $1 $3 }
   | LET OPEN override_flag attributes mkrhs(mod_longident) IN class_expr
       { mkclass ~loc:$sloc ~attrs:$4 (Pcl_open($3, $5, $7)) }
@@ -1681,7 +1681,7 @@ expr:
       mkexp_attrs ~loc:$sloc desc attrs }
   | mkexp(expr_)
     { $1 }
-  | let_bindings IN seq_expr
+  | let_bindings(ext) IN seq_expr
     { expr_of_let_bindings ~loc:$sloc $1 $3 }
   | expr COLONCOLON expr
       { mkexp_cons ~loc:$sloc $loc($2) (ghexp ~loc:$sloc (Pexp_tuple[$1;$3])) }
@@ -2031,12 +2031,16 @@ let_binding_body:
       { let loc = ($startpos($1), $endpos($3)) in
         (ghpat ~loc (Ppat_constraint($1, $3)), $5) }
 ;
-let_bindings:
-    let_binding                                 { $1 }
-  | let_bindings and_let_binding                { addlb $1 $2 }
+(* The formal parameter EXT can be instantiated with ext or no_ext
+   so as to indicate whether an extension is allowed or disallowed. *)
+let_bindings(EXT):
+    let_binding(EXT)                            { $1 }
+  | let_bindings(EXT) and_let_binding           { addlb $1 $2 }
 ;
-let_binding:
-    LET ext = ext attr = attributes rec_flag let_binding_body post_item_attributes
+let_binding(EXT):
+  LET
+  ext = EXT attr = attributes rec_flag
+  let_binding_body post_item_attributes
       { mklbs ~loc:$sloc ext $4 (mklb ~loc:$sloc true $5 (attr@$6)) }
 ;
 and_let_binding:
@@ -3149,6 +3153,10 @@ attributes:
 ext:
   | /* empty */     { None }
   | PERCENT attr_id { Some $2 }
+;
+%inline no_ext:
+  | /* empty */     { None }
+  | PERCENT attr_id { not_expecting $loc "extension" }
 ;
 ext_attributes:
   ext attributes    { $1, $2 }
