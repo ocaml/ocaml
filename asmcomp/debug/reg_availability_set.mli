@@ -18,6 +18,8 @@ type t =
   | Ok of Reg_with_debug_info.Set.t
   | Unreachable
 
+val map : t -> f:(Reg_with_debug_info.Set.t -> Reg_with_debug_info.Set.t) -> t
+
 val inter : t -> t -> t
 (** Intersection of availabilities. *)
 

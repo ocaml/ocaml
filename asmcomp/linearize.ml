@@ -96,34 +96,52 @@ let rec end_instr =
 
 (* Cons an instruction (live, debug empty) *)
 
-let instr_cons d a r n =
+let instr_cons d a r n ~available_before ~phantom_available_before
+      ~available_across =
   { desc = d; next = n; arg = a; res = r;
     dbg = Debuginfo.none; live = Reg.Set.empty;
-    phantom_available_before = Ident.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+    available_before;
+    phantom_available_before;
+    available_across;
   }
+
+(* Like [instr_cons], but takes availability information from the given
+   instruction, with the exception of "available across" which is cleared. *)
+
+let instr_cons_same_avail d a r n =
+  instr_cons d a r n ~available_before:n.available_before
+    ~phantom_available_before:n.phantom_available_before
+    ~available_across:None
 
 (* Cons a simple instruction (arg, res, live empty) *)
 
-let cons_instr d n =
+let cons_instr d n ~available_before ~phantom_available_before
+      ~available_across =
   { desc = d; next = n; arg = [||]; res = [||];
     dbg = Debuginfo.none; live = Reg.Set.empty;
-    phantom_available_before = Ident.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+    available_before;
+    phantom_available_before;
+    available_across;
   }
 
-(* Build an instruction with arg, res, dbg, live taken from
-   the given Mach.instruction *)
+(* Like [cons_instr], but takes availability information from the given
+   instruction, with the exception of "available across" which is cleared. *)
+
+let cons_instr_same_avail d n =
+  cons_instr d n ~available_before:n.available_before
+    ~phantom_available_before:n.phantom_available_before
+    ~available_across:None
+
+(* Build an instruction with arg, res, dbg, live and the availability sets
+   taken from the given Mach.instruction *)
 
 let copy_instr d i n =
   { desc = d; next = n;
     arg = i.Mach.arg; res = i.Mach.res;
     dbg = i.Mach.dbg; live = i.Mach.live;
-    phantom_available_before = Ident.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+    phantom_available_before = i.Mach.phantom_available_before;
+    available_before = i.Mach.available_before;
+    available_across = i.Mach.available_across;
   }
 
 (*
@@ -136,7 +154,9 @@ let get_label n = match n.desc with
     Lbranch lbl -> (lbl, n)
   | Llabel lbl -> (lbl, n)
   | Lend -> (-1, n)
-  | _ -> let lbl = Cmm.new_label() in (lbl, cons_instr (Llabel lbl) n)
+  | _ ->
+    let lbl = Cmm.new_label () in
+    (lbl, cons_instr_same_avail (Llabel lbl) n)
 
 (* Check the fallthrough label *)
 let check_label n = match n.desc with
@@ -170,7 +190,7 @@ let add_branch lbl n =
     let n1 = discard_dead_code n in
     match n1.desc with
     | Llabel lbl1 when lbl1 = lbl -> n1
-    | _ -> cons_instr (Lbranch lbl) n1
+    | _ -> cons_instr_same_avail (Lbranch lbl) n1
   else
     discard_dead_code n
 
@@ -211,15 +231,39 @@ let rec linear i n =
   | Iop(Imove | Ireload | Ispill)
     when i.Mach.arg.(0).loc = i.Mach.res.(0).loc ->
       linear i.Mach.next n
+  | Iop (Iname_for_debugger _) ->
+      (* These aren't needed any more, so to simplify matters, just drop
+         them. *)
+      linear i.Mach.next n
   | Iop op ->
       copy_instr (Lop op) i (linear i.Mach.next n)
   | Ireturn ->
+      assert (i.Mach.available_across = None);
       let n1 = copy_instr Lreturn i (discard_dead_code n) in
-      if !Proc.contains_calls
-      then cons_instr Lreloadretaddr n1
+      if !Proc.contains_calls then
+        (* Make sure that a value still in the "return address register"
+           isn't marked as available at the return instruction if it has to
+           be reloaded immediately prior. *)
+        let available_before =
+          Reg_availability_set.map n1.available_before
+            ~f:(fun set ->
+              Reg_with_debug_info.Set.made_unavailable_by_clobber set
+                ~regs_clobbered:Proc.destroyed_at_reloadretaddr
+                ~register_class:Proc.register_class)
+        in
+        cons_instr_same_avail Lreloadretaddr { n1 with available_before; }
       else n1
   | Iifthenelse(test, ifso, ifnot) ->
       let n1 = linear i.Mach.next n in
+      (* The following cases preserve existing availability information
+         when inserting non-clobbering instructions (specifically
+         [Lcondbranch]).  These instructions receive the same "available
+         before" set as [i] because they are inserted at the start of the
+         linearised equivalent of [i] (just like various other similar cases
+         in this file).  Moreover, they also receive the same "available
+         across" set as [i], because any register that is available across [i]
+         (i.e. the whole if-then-else construct) must also be available across
+         any sub-part of the linearised form of [i]. *)
       begin match (ifso.Mach.desc, ifnot.Mach.desc, n1.desc) with
         Iend, _, Lbranch lbl ->
           copy_instr (Lcondbranch(test, lbl)) i (linear ifnot n1)
@@ -274,10 +318,24 @@ let rec linear i n =
       end else
         copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
   | Iloop body ->
+      let available_before_at_top = body.Mach.available_before in
+      let phantom_available_before_at_top =
+        body.Mach.phantom_available_before
+      in
       let lbl_head = Cmm.new_label() in
       let n1 = linear i.Mach.next n in
-      let n2 = linear body (cons_instr (Lbranch lbl_head) n1) in
-      cons_instr (Llabel lbl_head) n2
+      let n1 =
+        (* The register availability for the branch instruction at the end
+           of the loop, which branches to the top of the loop, must be the
+           same as that of the first instruction of the loop (except for
+           "available across" which is always empty). *)
+        cons_instr (Lbranch lbl_head) n1
+          ~available_before:available_before_at_top
+          ~phantom_available_before:phantom_available_before_at_top
+          ~available_across:None
+      in
+      let n2 = linear body n1 in
+      cons_instr_same_avail (Llabel lbl_head) n2
   | Icatch(_rec_flag, handlers, body) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       (* CR mshinwell for pchambart:
@@ -296,7 +354,7 @@ let rec linear i n =
       let n2 = List.fold_left2 (fun n (_nfail, handler) lbl_handler ->
           match handler.Mach.desc with
           | Iend -> n
-          | _ -> cons_instr (Llabel lbl_handler) (linear handler n))
+          | _ -> cons_instr_same_avail (Llabel lbl_handler) (linear handler n))
           n1 handlers labels_at_entry_to_handlers
       in
       let n3 = linear body (add_branch lbl_end n2) in
@@ -312,12 +370,12 @@ let rec linear i n =
        *)
       let rec loop i tt =
         if t = tt then i
-        else loop (cons_instr Lpushtrap i) (tt - 1)
+        else loop (cons_instr_same_avail Lpushtrap i) (tt - 1)
       in
       let n1 = loop (linear i.Mach.next n) !try_depth in
       let rec loop i tt =
         if t = tt then i
-        else loop (cons_instr Lpoptrap i) (tt - 1)
+        else loop (cons_instr_same_avail Lpoptrap i) (tt - 1)
       in
       loop (add_branch lbl n1) !try_depth
   | Itrywith(body, handler) ->
@@ -325,26 +383,35 @@ let rec linear i n =
       incr try_depth;
       assert (i.Mach.arg = [| |] || Config.spacetime);
       let (lbl_body, n2) =
-        get_label (instr_cons Lpushtrap i.Mach.arg [| |]
-                    (linear body (cons_instr Lpoptrap n1))) in
+        get_label (instr_cons_same_avail Lpushtrap i.Mach.arg [| |]
+                    (linear body (cons_instr_same_avail Lpoptrap n1))) in
       decr try_depth;
-      instr_cons (Lsetuptrap lbl_body) i.Mach.arg [| |]
+      instr_cons_same_avail (Lsetuptrap lbl_body) i.Mach.arg [| |]
         (linear handler (add_branch lbl_join n2))
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
 
 let add_prologue first_insn =
-  let insn = first_insn in
-  { desc = Lprologue;
-    next = insn;
-    arg = [| |];
-    res = [| |];
-    dbg = insn.dbg;
-    live = insn.live;
-    phantom_available_before = Ident.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
-  }
+  (* The prologue needs to come after any [Iname_for_debugger] operations that
+     refer to parameters.  (Such operations always come in a contiguous
+     block, cf. [Selectgen].) *)
+  let rec skip_naming_ops insn =
+    match insn.desc with
+    | Lop (Iname_for_debugger _) ->
+      { insn with next = skip_naming_ops insn.next; }
+    | _ ->
+      { desc = Lprologue;
+        next = insn;
+        arg = [| |];
+        res = [| |];
+        dbg = insn.dbg;
+        live = insn.live;
+        available_before = insn.available_before;
+        phantom_available_before = insn.phantom_available_before;
+        available_across = insn.available_across;
+      }
+  in
+  skip_naming_ops first_insn
 
 let fundecl f =
   let fun_body = add_prologue (linear f.Mach.fun_body end_instr) in

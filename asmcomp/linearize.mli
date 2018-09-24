@@ -54,8 +54,24 @@ and instruction_desc =
 
 val has_fallthrough :  instruction_desc -> bool
 val end_instr: instruction
-val instr_cons:
-  instruction_desc -> Reg.t array -> Reg.t array -> instruction -> instruction
+
+val instr_cons
+   : instruction_desc
+  -> Reg.t array
+  -> Reg.t array
+  -> instruction
+  -> available_before:Reg_availability_set.t
+  -> phantom_available_before:Ident.Set.t
+  -> available_across:Reg_availability_set.t option
+  -> instruction
+
+val instr_cons_same_avail
+   : instruction_desc
+  -> Reg.t array
+  -> Reg.t array
+  -> instruction
+  -> instruction
+
 val invert_test: Mach.test -> Mach.test
 
 type fundecl =
