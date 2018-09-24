@@ -391,7 +391,7 @@ Working version
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
 - GPR#2055: Add [Linearize.Lprologue].
-  (Mark Shinwell)
+  (Mark Shinwell, review by Pierre Chambart)
 
 ### Bug fixes:
 
