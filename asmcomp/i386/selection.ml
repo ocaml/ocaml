@@ -316,7 +316,7 @@ method! emit_extcall_args env args =
   | e :: el ->
       emit_pushes el;
       let (op, arg) = self#select_push e in
-      match self#emit_expr env arg with
+      match self#emit_expr env arg ~bound_name:None with
       | None -> ()
       | Some r -> self#insert (Iop op) r [||] in
   emit_pushes args;

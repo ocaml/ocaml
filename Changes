@@ -407,6 +407,10 @@ Working version
   use [Backend_var.With_provenance] for variables in binding position.
   (Mark Shinwell, review by Pierre Chambart)
 
+- GPR#2063: Generate [Iname_for_debugger] in [Selectgen].  Skip over certain
+  naming operations in [Spill].
+  (Mark Shinwell)
+
 - GPR#2076: Add [Targetint.print].
   (Mark Shinwell)
 

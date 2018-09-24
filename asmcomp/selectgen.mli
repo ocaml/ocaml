@@ -145,8 +145,11 @@ class virtual selector_generic : object
   method insert_moves : Reg.t array -> Reg.t array -> unit
   method adjust_type : Reg.t -> Reg.t -> unit
   method adjust_types : Reg.t array -> Reg.t array -> unit
-  method emit_expr :
-    environment -> Cmm.expression -> Reg.t array option
+  method emit_expr
+     : environment
+    -> Cmm.expression
+    -> bound_name:Backend_var.With_provenance.t option
+    -> Reg.t array option
   method emit_tail : environment -> Cmm.expression -> unit
 
   (* Only for the use of [Spacetime_profiling]. *)
@@ -169,6 +172,7 @@ class virtual selector_generic : object
      : Cmm.fundecl
     -> loc_arg:Reg.t array
     -> rarg:Reg.t array
+    -> num_regs_per_arg:int array
     -> spacetime_node_hole:(Backend_var.t * Reg.t array) option
     -> env:environment
     -> Mach.spacetime_shape option
