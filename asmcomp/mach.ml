@@ -62,7 +62,7 @@ type operation =
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
   | Iname_for_debugger of { ident : Backend_var.t; which_parameter : int option;
-      provenance : unit option; is_assignment : bool; }
+      provenance : Backend_var.Provenance.t option; is_assignment : bool; }
 
 type instruction =
   { desc: instruction_desc;

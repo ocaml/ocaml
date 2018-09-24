@@ -44,6 +44,9 @@ let env_find id env =
   let regs, _provenance = V.Map.find id env.vars in
   regs
 
+let env_find_with_provenance id env =
+  V.Map.find id env.vars
+
 let env_find_static_exception id env =
   Int.Map.find id env.static_exceptions
 
@@ -136,10 +139,37 @@ let name_regs id rv =
       rv.(i).part <- Some i
     done
 
-(* "Join" two instruction sequences, making sure they return their results
-   in the same registers. *)
+let maybe_emit_naming_op _env ~bound_name seq regs =
+  match bound_name with
+  | None -> ()
+  | Some bound_name ->
+    let provenance = VP.provenance bound_name in
+    let bound_name = VP.var bound_name in
+    let naming_op =
+      Iname_for_debugger {
+        ident = bound_name;
+        provenance;
+        which_parameter = None;
+        is_assignment = false;
+      }
+    in
+    seq#insert_debug (Iop naming_op) Debuginfo.none regs [| |]
 
-let join opt_r1 seq1 opt_r2 seq2 =
+(* "Join" two instruction sequences, making sure they return their results
+   in the same registers.
+
+   We also need some special handling relating to names. [Spill] may add spill
+   code at the end of code paths just before join points. If the result of the
+   (e.g.) conditional is [let]-bound then there will also be a naming operation
+   after the join point. However this operation would come after any such spill
+   code and cause the spilled registers not to be named. To avoid this, we
+   explicitly add the naming operations here after each move we insert.  (They
+   are inserted after each move to ensure that the code in [Spill] that
+   looks for naming operations recognises them correctly.)
+*)
+
+let join env opt_r1 seq1 opt_r2 seq2 ~bound_name =
+  let maybe_emit_naming_op = maybe_emit_naming_op env ~bound_name in
   match (opt_r1, opt_r2) with
     (None, _) -> opt_r2
   | (_, None) -> opt_r1
@@ -152,24 +182,29 @@ let join opt_r1 seq1 opt_r2 seq2 =
           && Cmm.ge_component r1.(i).typ r2.(i).typ
         then begin
           r.(i) <- r1.(i);
-          seq2#insert_move r2.(i) r1.(i)
+          seq2#insert_move r2.(i) r1.(i);
+          maybe_emit_naming_op seq2 [| r1.(i) |]
         end else if Reg.anonymous r2.(i)
           && Cmm.ge_component r2.(i).typ r1.(i).typ
         then begin
           r.(i) <- r2.(i);
-          seq1#insert_move r1.(i) r2.(i)
+          seq1#insert_move r1.(i) r2.(i);
+          maybe_emit_naming_op seq1 [| r2.(i) |]
         end else begin
           let typ = Cmm.lub_component r1.(i).typ r2.(i).typ in
           r.(i) <- Reg.create typ;
           seq1#insert_move r1.(i) r.(i);
-          seq2#insert_move r2.(i) r.(i)
+          maybe_emit_naming_op seq1 [| r.(i) |];
+          seq2#insert_move r2.(i) r.(i);
+          maybe_emit_naming_op seq2 [| r.(i) |]
         end
       done;
       Some r
 
 (* Same, for N branches *)
 
-let join_array rs =
+let join_array env rs ~bound_name =
+  let maybe_emit_naming_op = maybe_emit_naming_op env ~bound_name in
   let some_res = ref None in
   for i = 0 to Array.length rs - 1 do
     let (r, _) = rs.(i) in
@@ -196,7 +231,9 @@ let join_array rs =
         let (r, s) = rs.(i) in
         match r with
           None -> ()
-        | Some r -> s#insert_moves r res
+        | Some r ->
+          s#insert_moves r res;
+          maybe_emit_naming_op s res
       done;
       Some res
 
@@ -635,9 +672,12 @@ method private maybe_emit_spacetime_move ~spacetime_reg =
     spacetime_reg
 
 (* Add the instructions for the given expression
-   at the end of the self sequence *)
+   at the end of the self sequence.
+   [bound_name] is the name that will be bound to the result of evaluating
+   the expression, if such exists.
+*)
 
-method emit_expr (env:environment) exp =
+method emit_expr (env:environment) exp ~bound_name =
   match exp with
     Cconst_int n ->
       let r = self#regs_for typ_int in
@@ -666,19 +706,29 @@ method emit_expr (env:environment) exp =
         fatal_error("Selection.emit_expr: unbound var " ^ V.unique_name v)
       end
   | Clet(v, e1, e2) ->
-      begin match self#emit_expr env e1 with
+      begin match self#emit_expr env e1 ~bound_name:(Some v) with
         None -> None
-      | Some r1 -> self#emit_expr (self#bind_let env v r1) e2
+      | Some r1 -> self#emit_expr (self#bind_let env v r1) e2 ~bound_name
       end
   | Cassign(v, e1) ->
-      let rv =
+      let rv, provenance =
         try
-          env_find v env
+          env_find_with_provenance v env
         with Not_found ->
           fatal_error ("Selection.emit_expr: unbound var " ^ V.name v) in
-      begin match self#emit_expr env e1 with
+      begin match self#emit_expr env e1 ~bound_name:None with
         None -> None
-      | Some r1 -> self#adjust_types r1 rv; self#insert_moves r1 rv; Some [||]
+      | Some r1 ->
+        let naming_op =
+          Iname_for_debugger {
+            ident = v;
+            provenance;
+            which_parameter = None;
+            is_assignment = true;
+          }
+        in
+        self#insert_debug (Iop naming_op) Debuginfo.none r1 [| |];
+        self#adjust_types r1 rv; self#insert_moves r1 rv; Some [||]
       end
   | Ctuple [] ->
       Some [||]
@@ -689,7 +739,7 @@ method emit_expr (env:environment) exp =
           Some(self#emit_tuple ext_env simple_list)
       end
   | Cop(Craise k, [arg], dbg) ->
-      begin match self#emit_expr env arg with
+      begin match self#emit_expr env arg ~bound_name:None with
         None -> None
       | Some r1 ->
           let rd = [|Proc.loc_exn_bucket|] in
@@ -699,10 +749,27 @@ method emit_expr (env:environment) exp =
       end
   | Cop(Ccmpf _, _, _) ->
       self#emit_expr env (Cifthenelse(exp, Cconst_int 1, Cconst_int 0))
+        ~bound_name
   | Cop(op, args, dbg) ->
       begin match self#emit_parts_list env args with
         None -> None
       | Some(simple_args, env) ->
+          let add_naming_op_for_bound_name regs =
+            match bound_name with
+            | None -> ()
+            | Some bound_name ->
+              let provenance = VP.provenance bound_name in
+              let bound_name = VP.var bound_name in
+              let naming_op =
+                Iname_for_debugger {
+                  ident = bound_name;
+                  provenance;
+                  which_parameter = None;
+                  is_assignment = false;
+                }
+              in
+              self#insert_debug (Iop naming_op) Debuginfo.none regs [| |]
+          in
           let ty = oper_result_type op in
           let (new_op, new_args) = self#select_operation op simple_args dbg in
           match new_op with
@@ -719,6 +786,12 @@ method emit_expr (env:environment) exp =
               self#maybe_emit_spacetime_move ~spacetime_reg;
               self#insert_debug (Iop new_op) dbg
                           (Array.append [|r1.(0)|] loc_arg) loc_res;
+              (* The destination registers (as per the procedure calling
+                 convention) need to be named right now, otherwise the result
+                 of the function call may be unavailable in the debugger
+                 immediately after the call.  This is what necessitates the
+                 presence of the [bound_name] argument to [emit_expr]. *)
+              add_naming_op_for_bound_name loc_res;
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Icall_imm _ ->
@@ -732,6 +805,7 @@ method emit_expr (env:environment) exp =
               self#insert_move_args r1 loc_arg stack_ofs;
               self#maybe_emit_spacetime_move ~spacetime_reg;
               self#insert_debug (Iop new_op) dbg loc_arg loc_res;
+              add_naming_op_for_bound_name loc_res;
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Iextcall _ ->
@@ -744,6 +818,7 @@ method emit_expr (env:environment) exp =
               let loc_res =
                 self#insert_op_debug new_op dbg
                   loc_arg (Proc.loc_external_results rd) in
+              add_naming_op_for_bound_name loc_res;
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
           | Ialloc { words; spacetime_index; label_after_call_gc; } ->
@@ -755,6 +830,7 @@ method emit_expr (env:environment) exp =
               in
               let args = self#select_allocation_args env in
               self#insert_debug (Iop op) dbg args rd;
+              add_naming_op_for_bound_name rd;
               self#emit_stores env new_args rd;
               Some rd
           | op ->
@@ -763,39 +839,42 @@ method emit_expr (env:environment) exp =
               Some (self#insert_op_debug op dbg r1 rd)
       end
   | Csequence(e1, e2) ->
-      begin match self#emit_expr env e1 with
+      begin match self#emit_expr env e1 ~bound_name:None with
         None -> None
-      | Some _ -> self#emit_expr env e2
+      | Some _ -> self#emit_expr env e2 ~bound_name
       end
   | Cifthenelse(econd, eif, eelse) ->
       let (cond, earg) = self#select_condition econd in
-      begin match self#emit_expr env earg with
+      begin match self#emit_expr env earg ~bound_name:None with
         None -> None
       | Some rarg ->
-          let (rif, sif) = self#emit_sequence env eif in
-          let (relse, selse) = self#emit_sequence env eelse in
-          let r = join rif sif relse selse in
+          let (rif, sif) = self#emit_sequence env eif ~bound_name in
+          let (relse, selse) = self#emit_sequence env eelse ~bound_name in
+          let r = join env rif sif relse selse ~bound_name in
           self#insert (Iifthenelse(cond, sif#extract, selse#extract))
                       rarg [||];
           r
       end
   | Cswitch(esel, index, ecases, _dbg) ->
-      begin match self#emit_expr env esel with
+      begin match self#emit_expr env esel ~bound_name:None with
         None -> None
       | Some rsel ->
-          let rscases = Array.map (self#emit_sequence env) ecases in
-          let r = join_array rscases in
+          let rscases =
+            Array.map (fun case -> self#emit_sequence env case ~bound_name)
+              ecases
+          in
+          let r = join_array env rscases ~bound_name in
           self#insert (Iswitch(index,
                                Array.map (fun (_, s) -> s#extract) rscases))
                       rsel [||];
           r
       end
   | Cloop(ebody) ->
-      let (_rarg, sbody) = self#emit_sequence env ebody in
+      let (_rarg, sbody) = self#emit_sequence env ebody ~bound_name:None in
       self#insert (Iloop(sbody#extract)) [||] [||];
       Some [||]
   | Ccatch(_, [], e1) ->
-      self#emit_expr env e1
+      self#emit_expr env e1 ~bound_name
   | Ccatch(rec_flag, handlers, body) ->
       let handlers =
         List.map (fun (nfail, ids, e2) ->
@@ -815,19 +894,35 @@ method emit_expr (env:environment) exp =
             env_add_static_exception nfail rs env)
           env handlers
       in
-      let (r_body, s_body) = self#emit_sequence env body in
+      let (r_body, s_body) = self#emit_sequence env body ~bound_name in
       let translate_one_handler (nfail, ids, rs, e2) =
         assert(List.length ids = List.length rs);
+        let ids_and_rs = List.combine ids rs in
         let new_env =
           List.fold_left (fun env ((id, _typ), r) -> env_add id r env)
-            env (List.combine ids rs)
+            env ids_and_rs
         in
-        let (r, s) = self#emit_sequence new_env e2 in
+        let (r, s) =
+          self#emit_sequence new_env e2 ~bound_name:None ~at_start:(fun seq ->
+            List.iter (fun ((var, _typ), r) ->
+                let provenance = VP.provenance var in
+                let var = VP.var var in
+                let naming_op =
+                  Iname_for_debugger {
+                    ident = var;
+                    provenance;
+                    which_parameter = None;
+                    is_assignment = false;
+                  }
+                in
+                seq#insert_debug (Iop naming_op) Debuginfo.none r [| |])
+              ids_and_rs)
+        in
         (nfail, (r, s))
       in
       let l = List.map translate_one_handler handlers in
       let a = Array.of_list ((r_body, s_body) :: List.map snd l) in
-      let r = join_array a in
+      let r = join_array env a ~bound_name in
       let aux (nfail, (_r, s)) = (nfail, s#extract) in
       self#insert (Icatch (rec_flag, List.map aux l, s_body#extract)) [||] [||];
       r
@@ -853,10 +948,24 @@ method emit_expr (env:environment) exp =
           None
       end
   | Ctrywith(e1, v, e2) ->
-      let (r1, s1) = self#emit_sequence env e1 in
+      let (r1, s1) = self#emit_sequence env e1 ~bound_name in
       let rv = self#regs_for typ_val in
-      let (r2, s2) = self#emit_sequence (env_add v rv env) e2 in
-      let r = join r1 s1 r2 s2 in
+      let (r2, s2) =
+        self#emit_sequence (env_add v rv env) e2 ~bound_name
+          ~at_start:(fun seq ->
+            let provenance = VP.provenance v in
+            let var = VP.var v in
+            let naming_op =
+              Iname_for_debugger {
+                ident = var;
+                provenance;
+                which_parameter = None;
+                is_assignment = false;
+              }
+            in
+            seq#insert_debug (Iop naming_op) Debuginfo.none rv [| |])
+      in
+      let r = join env r1 s1 r2 s2 ~bound_name in
       self#insert
         (Itrywith(s1#extract,
                   instr_cons (Iop Imove) [|Proc.loc_exn_bucket|] rv
@@ -864,21 +973,37 @@ method emit_expr (env:environment) exp =
         [||] [||];
       r
 
-method private emit_sequence (env:environment) exp =
+method private emit_sequence ?at_start (env:environment) exp ~bound_name =
   let s = {< instr_seq = dummy_instr >} in
-  let r = s#emit_expr env exp in
+  begin match at_start with
+  | None -> ()
+  | Some f -> f s
+  end;
+  let r = s#emit_expr env exp ~bound_name in
   (r, s)
 
 method private bind_let (env:environment) v r1 =
-  if all_regs_anonymous r1 then begin
-    name_regs v r1;
-    env_add v r1 env
-  end else begin
-    let rv = Reg.createv_like r1 in
-    name_regs v rv;
-    self#insert_moves r1 rv;
-    env_add v rv env
-  end
+  let result =
+    if all_regs_anonymous r1 then begin
+      name_regs v r1;
+      env_add v r1 env
+    end else begin
+      let rv = Reg.createv_like r1 in
+      name_regs v rv;
+      self#insert_moves r1 rv;
+      env_add v rv env
+    end
+  in
+  let naming_op =
+    Iname_for_debugger {
+      ident = VP.var v;
+      which_parameter = None;
+      provenance = VP.provenance v;
+      is_assignment = false;
+    }
+  in
+  self#insert_debug (Iop naming_op) Debuginfo.none r1 [| |];
+  result
 
 (* The following two functions, [emit_parts] and [emit_parts_list], force
    right-to-left evaluation order as required by the Flambda [Un_anf] pass
@@ -927,7 +1052,7 @@ method private emit_parts (env:environment) ~effects_after exp =
   if may_defer_evaluation && self#is_simple_expr exp then
     Some (exp, env)
   else begin
-    match self#emit_expr env exp with
+    match self#emit_expr env exp ~bound_name:None with
       None -> None
     | Some r ->
         if Array.length r = 0 then
@@ -975,7 +1100,7 @@ method private emit_tuple_not_flattened env exp_list =
   | exp :: rem ->
       (* Again, force right-to-left evaluation *)
       let loc_rem = emit_list rem in
-      match self#emit_expr env exp with
+      match self#emit_expr env exp ~bound_name:None with
         None -> assert false  (* should have been caught in emit_parts *)
       | Some loc_exp -> loc_exp :: loc_rem
   in
@@ -1004,7 +1129,7 @@ method emit_stores env data regs_addr =
   List.iter
     (fun e ->
       let (op, arg) = self#select_store false !a e in
-      match self#emit_expr env arg with
+      match self#emit_expr env arg ~bound_name:None with
         None -> assert false
       | Some regs ->
           match op with
@@ -1024,7 +1149,7 @@ method emit_stores env data regs_addr =
 (* Same, but in tail position *)
 
 method private emit_return (env:environment) exp =
-  match self#emit_expr env exp with
+  match self#emit_expr env exp ~bound_name:None with
     None -> ()
   | Some r ->
       let loc = Proc.loc_results r in
@@ -1034,7 +1159,7 @@ method private emit_return (env:environment) exp =
 method emit_tail (env:environment) exp =
   match exp with
     Clet(v, e1, e2) ->
-      begin match self#emit_expr env e1 with
+      begin match self#emit_expr env e1 ~bound_name:None with
         None -> ()
       | Some r1 -> self#emit_tail (self#bind_let env v r1) e2
       end
@@ -1105,13 +1230,13 @@ method emit_tail (env:environment) exp =
           | _ -> fatal_error "Selection.emit_tail"
       end
   | Csequence(e1, e2) ->
-      begin match self#emit_expr env e1 with
+      begin match self#emit_expr env e1 ~bound_name:None with
         None -> ()
       | Some _ -> self#emit_tail env e2
       end
   | Cifthenelse(econd, eif, eelse) ->
       let (cond, earg) = self#select_condition econd in
-      begin match self#emit_expr env earg with
+      begin match self#emit_expr env earg ~bound_name:None with
         None -> ()
       | Some rarg ->
           self#insert (Iifthenelse(cond, self#emit_tail_sequence env eif,
@@ -1119,7 +1244,7 @@ method emit_tail (env:environment) exp =
                       rarg [||]
       end
   | Cswitch(esel, index, ecases, _dbg) ->
-      begin match self#emit_expr env esel with
+      begin match self#emit_expr env esel ~bound_name:None with
         None -> ()
       | Some rsel ->
           self#insert
@@ -1145,17 +1270,48 @@ method emit_tail (env:environment) exp =
       let s_body = self#emit_tail_sequence env e1 in
       let aux (nfail, ids, rs, e2) =
         assert(List.length ids = List.length rs);
+        let ids_and_rs = List.combine ids rs in
         let new_env =
           List.fold_left
             (fun env ((id, _typ),r) -> env_add id r env)
-            env (List.combine ids rs) in
-        nfail, self#emit_tail_sequence new_env e2
+            env ids_and_rs in
+        let seq =
+          self#emit_tail_sequence new_env e2 ~at_start:(fun seq ->
+            List.iter (fun ((var, _typ), r) ->
+                let provenance = VP.provenance var in
+                let var = VP.var var in
+                let naming_op =
+                  Iname_for_debugger {
+                    ident = var;
+                    provenance;
+                    which_parameter = None;
+                    is_assignment = false;
+                  }
+                in
+                seq#insert_debug (Iop naming_op) Debuginfo.none r [| |])
+              ids_and_rs)
+        in
+        nfail, seq
       in
       self#insert (Icatch(rec_flag, List.map aux handlers, s_body)) [||] [||]
   | Ctrywith(e1, v, e2) ->
-      let (opt_r1, s1) = self#emit_sequence env e1 in
+      let (opt_r1, s1) = self#emit_sequence env e1 ~bound_name:None in
       let rv = self#regs_for typ_val in
-      let s2 = self#emit_tail_sequence (env_add v rv env) e2 in
+      let s2 =
+        self#emit_tail_sequence (env_add v rv env) e2
+          ~at_start:(fun seq ->
+            let provenance = VP.provenance v in
+            let var = VP.var v in
+            let naming_op =
+              Iname_for_debugger {
+                ident = var;
+                provenance;
+                which_parameter = None;
+                is_assignment = false;
+              }
+            in
+            seq#insert_debug (Iop naming_op) Debuginfo.none rv [| |])
+      in
       self#insert
         (Itrywith(s1#extract,
                   instr_cons (Iop Imove) [|Proc.loc_exn_bucket|] rv s2))
@@ -1170,14 +1326,40 @@ method emit_tail (env:environment) exp =
   | _ ->
       self#emit_return env exp
 
-method private emit_tail_sequence env exp =
+method private emit_tail_sequence ?at_start env exp =
   let s = {< instr_seq = dummy_instr >} in
+  begin match at_start with
+  | None -> ()
+  | Some f -> f s
+  end;
   s#emit_tail env exp;
   s#extract
 
 (* Insertion of the function prologue *)
 
-method insert_prologue _f ~loc_arg ~rarg ~spacetime_node_hole:_ ~env:_ =
+method insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
+      ~spacetime_node_hole:_ ~env:_ =
+  let loc_arg_index = ref 0 in
+  List.iteri (fun param_index (var, _ty) ->
+      let provenance = VP.provenance var in
+      let var = VP.var var in
+      let naming_op =
+        Iname_for_debugger {
+          ident = var;
+          provenance;
+          which_parameter = Some param_index;
+          is_assignment = false;
+        }
+      in
+      let num_regs_for_arg = num_regs_per_arg.(param_index) in
+      let hard_regs_for_arg =
+        Array.init num_regs_for_arg (fun index ->
+          loc_arg.(!loc_arg_index + index))
+      in
+      loc_arg_index := !loc_arg_index + num_regs_for_arg;
+      self#insert_debug (Iop naming_op) Debuginfo.none
+        hard_regs_for_arg [| |])
+    f.Cmm.fun_args;
   self#insert_moves loc_arg rarg;
   None
 
@@ -1188,9 +1370,14 @@ method initial_env () = env_empty
 method emit_fundecl f =
   Proc.contains_calls := false;
   current_function_name := f.Cmm.fun_name;
+  let num_regs_per_arg = Array.make (List.length f.Cmm.fun_args) 0 in
   let rargs =
-    List.map
-      (fun (id, ty) -> let r = self#regs_for ty in name_regs id r; r)
+    List.mapi
+      (fun arg_index (var, ty) ->
+        let r = self#regs_for ty in
+        name_regs var r;
+        num_regs_per_arg.(arg_index) <- Array.length r;
+        r)
       f.Cmm.fun_args in
   let rarg = Array.concat rargs in
   let loc_arg = Proc.loc_parameters rarg in
@@ -1215,7 +1402,8 @@ method emit_fundecl f =
   let body = self#extract in
   instr_seq <- dummy_instr;
   let fun_spacetime_shape =
-    self#insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole ~env
+    self#insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
+      ~spacetime_node_hole ~env
   in
   let body = self#extract_core ~end_instr:body in
   instr_iter (fun instr -> self#mark_instr instr.Mach.desc) body;

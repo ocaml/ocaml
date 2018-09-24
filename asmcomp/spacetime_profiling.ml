@@ -272,7 +272,7 @@ class virtual instruction_selection = object (self)
         ~is_tail
         ~label:label_after
     in
-    match self#emit_expr env instrumentation with
+    match self#emit_expr env instrumentation ~bound_name:None with
     | None -> assert false
     | Some reg -> Some reg
 
@@ -289,7 +289,7 @@ class virtual instruction_selection = object (self)
         ~is_tail
         ~label:label_after
     in
-    match self#emit_expr env instrumentation with
+    match self#emit_expr env instrumentation ~bound_name:None with
     | None -> assert false
     | Some reg -> Some reg
 
@@ -327,7 +327,7 @@ class virtual instruction_selection = object (self)
         ~node:(Lazy.force !spacetime_node_ident)
         ~value's_header ~dbg
     in
-    self#emit_expr env instrumentation
+    self#emit_expr env instrumentation ~bound_name:None
 
   method private emit_prologue f ~node_hole ~env =
     (* We don't need the prologue unless we inserted some instrumentation.
@@ -339,7 +339,7 @@ class virtual instruction_selection = object (self)
       in
       disable_instrumentation <- true;
       let node_temp_reg =
-        match self#emit_expr env prologue_cmm with
+        match self#emit_expr env prologue_cmm ~bound_name:None with
         | None ->
           Misc.fatal_error "Spacetime prologue instruction \
               selection did not yield a destination register"
@@ -433,9 +433,11 @@ class virtual instruction_selection = object (self)
     end;
     super#emit_fundecl f
 
-  method! insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole ~env =
+  method! insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
+        ~spacetime_node_hole ~env =
     let fun_spacetime_shape =
-      super#insert_prologue f ~loc_arg ~rarg ~spacetime_node_hole ~env
+      super#insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
+        ~spacetime_node_hole ~env
     in
     (* CR-soon mshinwell: add check to make sure the node size doesn't exceed
        the chunk size of the allocator *)
