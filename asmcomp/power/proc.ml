@@ -332,6 +332,7 @@ let op_is_pure = function
   | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | Ispecific(Imultaddf | Imultsubf) -> true
   | Ispecific _ -> false
+  | Iname_for_debugger _ -> false
   | _ -> true
 
 (* Layout of the stack *)

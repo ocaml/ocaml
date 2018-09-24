@@ -334,6 +334,7 @@ let op_is_pure = function
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
   | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _)
   | Ispecific(Ishiftcheckbound _) -> false
+  | Iname_for_debugger _ -> false
   | _ -> true
 
 (* Layout of the stack *)
