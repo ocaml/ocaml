@@ -3147,10 +3147,12 @@ attributes:
     /* empty */{ [] }
   | attribute attributes { $1 :: $2 }
 ;
+ext:
+  | /* empty */     { None }
+  | PERCENT attr_id { Some $2 }
+;
 ext_attributes:
-    /* empty */  { None, [] }
-  | attribute attributes { None, $1 :: $2 }
-  | PERCENT attr_id attributes { Some $2, $3 }
+  ext attributes    { $1, $2 }
 ;
 extension:
   LBRACKETPERCENT attr_id payload RBRACKET { ($2, $3) }
