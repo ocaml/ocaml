@@ -538,10 +538,10 @@ rule token = parse
   | '`' (anycase_latin1 identchar_latin1 as name)
       { warn_latin1 lexbuf;
         BACKQUOTEIDENT name }
-  | "'" (anycase identchar * as name)
+  | "\'" (anycase identchar * as name)
       { check_quote_name lexbuf name;
         QUOTEIDENT name }
-  | "'" (anycase_latin1 identchar_latin1 * as name)
+  | "\'" (anycase_latin1 identchar_latin1 * as name)
       { warn_latin1 lexbuf;
         QUOTEIDENT name }
   | eof { EOF }
