@@ -28,7 +28,6 @@ let standard_library =
   with Not_found ->
     standard_library_default
 
-let standard_runtime = "%%BYTERUN%%"
 let ccomp_type = "%%CCOMPTYPE%%"
 let c_compiler = "%%CC%%"
 let c_output_obj = "%%OUTPUTOBJ%%"
@@ -166,7 +165,6 @@ let configuration_variables =
   p "version" version;
   p "standard_library_default" standard_library_default;
   p "standard_library" standard_library;
-  p "standard_runtime" standard_runtime;
   p "ccomp_type" ccomp_type;
   p "c_compiler" c_compiler;
   p "ocamlc_cflags" ocamlc_cflags;
