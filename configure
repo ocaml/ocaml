@@ -1013,7 +1013,6 @@ config ARCMD "${TOOLPREF}ar"
 # Write the OS type (Unix or Cygwin)
 
 echo "#define OCAML_OS_TYPE \"$ostype\"" >> s.h
-echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
 
 # Do #! scripts work?
 
