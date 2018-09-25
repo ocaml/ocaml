@@ -328,6 +328,9 @@ Working version
   (Sébastien Hinderer, review by Xavier Leroy, Damien Doligez, Gabriel
   Scherer and Armaël Guéneau)
 
+* GPR#2059: stop defining OCAML_STDLIB_DIR in s.h.
+  (Sébastien Hinderer, review by David Allsopp and Damien Doligez)
+
 * GPR#2066: remove the standard_runtime configuration variable.
   (Sébastien Hinderer, review by Xavier Leroy, Stephen Dolan and
   Damien Doligez)
