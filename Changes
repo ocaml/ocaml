@@ -411,6 +411,11 @@ Working version
   naming operations in [Spill].
   (Mark Shinwell)
 
+- GPR#2067: Add remaining types and record fields in [Mach] and [Linearize]
+  to communicate register availability information to the debugging
+  information emitter.
+  (Mark Shinwell)
+
 - GPR#2076: Add [Targetint.print].
   (Mark Shinwell)
 

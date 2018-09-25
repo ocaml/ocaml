@@ -225,4 +225,5 @@ let fundecl f =
     fun_codegen_options = f.fun_codegen_options;
     fun_dbg  = f.fun_dbg;
     fun_spacetime_shape = f.fun_spacetime_shape;
+    fun_phantom_lets = f.fun_phantom_lets;
   }
