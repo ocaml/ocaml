@@ -436,6 +436,9 @@ Working version
 - GPR#2068: Propagate availability information in [Linearize] and adjust
   position of prologue.
 
+- GPR#2069: Add [Available_ranges] pass.
+  (Mark Shinwell)
+
 - GPR#2070: "Phantom let" support for the Cmm language.
   (Mark Shinwell)
 
