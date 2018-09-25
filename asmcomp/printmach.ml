@@ -175,7 +175,9 @@ let rec instr ppf i =
     fprintf ppf "}@]@,";
     if !Clflags.dump_avail then begin
       let module RAS = Reg_availability_set in
-      fprintf ppf "@[<1>AB={%a}" (RAS.print ~print_reg:reg) i.available_before;
+      fprintf ppf "@[<1>AB={%a},PAB={%a}"
+        (RAS.print ~print_reg:reg) i.available_before
+        Backend_var.Set.print i.phantom_available_before;
       begin match i.available_across with
       | None -> ()
       | Some available_across ->
@@ -238,14 +240,58 @@ let rec instr ppf i =
   | _ -> fprintf ppf "@,%a" instr i.next
   end
 
+let phantom_defining_expr ppf defining_expr =
+  match defining_expr with
+  | Iphantom_const_int i ->
+    fprintf ppf "@[(const_int@ %d)@]" i
+  | Iphantom_const_symbol sym ->
+    fprintf ppf "@[(const_symbol@ %a)@]" Symbol.print sym
+  | Iphantom_var var ->
+    fprintf ppf "@[(var@ %a)@]" Backend_var.print var
+  | Iphantom_read_field (var, field) ->
+    fprintf ppf "@[((var@ %a)@ (field@ %d))@]"
+      Backend_var.print var
+      field
+  | Iphantom_read_symbol_field { symbol; field; } ->
+    fprintf ppf "@[((symbol@ %a)@ (field@ %d))@]"
+      Symbol.print symbol
+      field
+  | Iphantom_offset_var { var; offset_in_bytes; } ->
+    fprintf ppf "@[((var@ %a)@ (offset_in_bytes@ %d))@]"
+      Backend_var.print var
+      offset_in_bytes
+  | Iphantom_block { tag; fields; } ->
+    fprintf ppf "@[((tag@ %d)@ (fields@ @[(%a)@]))@]"
+      tag
+      (Format.pp_print_list ~pp_sep:Format.pp_print_space
+        (Misc.Stdlib.Option.print Backend_var.print)) fields
+
+let phantom_let ppf (provenance_opt, defining_expr) =
+  match provenance_opt with
+  | None ->
+    fprintf ppf "@[<hov 1>((defining_expr@ %a))@]"
+      phantom_defining_expr defining_expr
+  | Some provenance ->
+    fprintf ppf "@[<hov 1>(\
+        @[<hov 1>(provenance@ %a)@]@ \
+        @[<hov 1>(defining_expr@ %a)@]\
+        )@]"
+      Backend_var.Provenance.print provenance
+      phantom_defining_expr defining_expr
+
 let fundecl ppf f =
   let dbg =
     if Debuginfo.is_none f.fun_dbg then
       ""
     else
       " " ^ Debuginfo.to_string f.fun_dbg in
-  fprintf ppf "@[<v 2>%s(%a)%s@,%a@]"
-    f.fun_name regs f.fun_args dbg instr f.fun_body
+  fprintf ppf "@[<v 2>%s(%a)%s@,%a"
+    f.fun_name regs f.fun_args dbg instr f.fun_body;
+  if not (Backend_var.Map.is_empty f.fun_phantom_lets) then begin
+    fprintf ppf "@,With phantom lets:@,%a"
+      (Backend_var.Map.print phantom_let) f.fun_phantom_lets
+  end;
+  fprintf ppf "@]"
 
 let phase msg ppf f =
   fprintf ppf "*** %s@.%a@." msg fundecl f
