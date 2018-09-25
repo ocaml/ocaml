@@ -31,7 +31,6 @@
 #   http://krlmlr.github.io/using-gitattributes-to-avoid-merge-conflicts/
 /.mailmap                merge=union
 
-
 # We tried using 'union' for Changes and it did not work:
 # instead of creating Changes conflict it would silently duplicate
 # the lines involved in the conflict, which is arguably worse
@@ -51,7 +50,6 @@ README*                  ocaml-typo=missing-header
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
 /tools/ci/appveyor/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header,non-ascii text eol=crlf
 /tools/ci/appveyor/appveyor_build.sh       ocaml-typo=non-ascii
-
 
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
 asmcomp/power/NOTES.md   ocaml-typo=missing-header
