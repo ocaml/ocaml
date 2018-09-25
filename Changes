@@ -426,6 +426,9 @@ Working version
   position of prologue.
   (Mark Shinwell)
 
+- GPR#2069: Add [Available_ranges] pass.
+  (Mark Shinwell)
+
 - GPR#2076: Add [Targetint.print].
   (Mark Shinwell)
 

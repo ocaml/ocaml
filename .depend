@@ -1114,8 +1114,8 @@ asmcomp/linearize.cmx : asmcomp/debug/reg_with_debug_info.cmx \
     utils/config.cmx asmcomp/cmm.cmx asmcomp/backend_var.cmx \
     asmcomp/linearize.cmi
 asmcomp/linearize.cmi : asmcomp/debug/reg_availability_set.cmi \
-    asmcomp/reg.cmi asmcomp/mach.cmi middle_end/debuginfo.cmi asmcomp/cmm.cmi \
-    asmcomp/backend_var.cmi
+    asmcomp/reg.cmi asmcomp/mach.cmi typing/ident.cmi \
+    middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi
 asmcomp/linscan.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/interval.cmi \
     asmcomp/linscan.cmi
 asmcomp/linscan.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/interval.cmx \
@@ -2311,6 +2311,18 @@ middle_end/base_types/variable.cmx : utils/misc.cmx \
 middle_end/base_types/variable.cmi : middle_end/internal_variable_names.cmi \
     utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
+asmcomp/debug/available_ranges.cmo : asmcomp/debug/reg_with_debug_info.cmi \
+    asmcomp/reg.cmi asmcomp/proc.cmi utils/numbers.cmi utils/misc.cmi \
+    asmcomp/mach.cmi asmcomp/linearize.cmi typing/ident.cmi \
+    middle_end/debuginfo.cmi asmcomp/cmm.cmi utils/clflags.cmi \
+    asmcomp/backend_var.cmi asmcomp/debug/available_ranges.cmi
+asmcomp/debug/available_ranges.cmx : asmcomp/debug/reg_with_debug_info.cmx \
+    asmcomp/reg.cmx asmcomp/proc.cmx utils/numbers.cmx utils/misc.cmx \
+    asmcomp/mach.cmx asmcomp/linearize.cmx typing/ident.cmx \
+    middle_end/debuginfo.cmx asmcomp/cmm.cmx utils/clflags.cmx \
+    asmcomp/backend_var.cmx asmcomp/debug/available_ranges.cmi
+asmcomp/debug/available_ranges.cmi : asmcomp/reg.cmi utils/numbers.cmi \
+    asmcomp/mach.cmi asmcomp/linearize.cmi asmcomp/backend_var.cmi
 asmcomp/debug/available_regs.cmo : asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi utils/clflags.cmi \
