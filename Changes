@@ -410,6 +410,11 @@ Working version
   use [Backend_var.With_provenance] for variables in binding position.
   (Mark Shinwell, review by Pierre Chambart)
 
+- GPR#2067: Add remaining types and record fields in [Mach] and [Linearize]
+  to communicate register availability information to the debugging
+  information emitter.
+  (Mark Shinwell)
+
 - GPR#2074: Correct naming of record field inside [Ialloc] terms.
   (Mark Shinwell, review by Jérémie Dimino)
 

@@ -46,6 +46,15 @@ type test =
   | Ioddtest
   | Ieventest
 
+type phantom_defining_expr =
+  | Iphantom_const_int of int
+  | Iphantom_const_symbol of Symbol.t
+  | Iphantom_var of Backend_var.t  (** Must not be a phantom identifier. *)
+  | Iphantom_read_field of Backend_var.t * int
+  | Iphantom_read_symbol_field of { symbol : Symbol.t; field : int; }
+  | Iphantom_offset_var of { var : Backend_var.t; offset_in_bytes : int; }
+  | Iphantom_block of { tag : int; fields : Backend_var.t option list; }
+
 type operation =
     Imove
   | Ispill
@@ -86,6 +95,7 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
+    phantom_available_before: Backend_var.Set.t;
     mutable live: Reg.Set.t;
     mutable available_before: Reg_availability_set.t;
     mutable available_across: Reg_availability_set.t option;
@@ -123,6 +133,9 @@ type fundecl =
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : spacetime_shape option;
+    fun_phantom_lets :
+      (Backend_var.Provenance.t option * phantom_defining_expr)
+        Backend_var.Map.t;
   }
 
 val dummy_instr: instruction
