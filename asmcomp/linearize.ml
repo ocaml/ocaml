@@ -26,7 +26,11 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    live: Reg.Set.t }
+    live: Reg.Set.t;
+    phantom_available_before: Backend_var.Set.t;
+    available_before: Reg_availability_set.t;
+    available_across: Reg_availability_set.t option;
+  }
 
 and instruction_desc =
   | Lprologue
@@ -56,6 +60,9 @@ type fundecl =
     fun_fast: bool;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : Mach.spacetime_shape option;
+    fun_phantom_lets :
+      (Backend_var.Provenance.t option * Mach.phantom_defining_expr)
+        Backend_var.Map.t;
   }
 
 (* Invert a test *)
@@ -81,19 +88,31 @@ let rec end_instr =
     arg = [||];
     res = [||];
     dbg = Debuginfo.none;
-    live = Reg.Set.empty }
+    live = Reg.Set.empty;
+    phantom_available_before = Ident.Set.empty;
+    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
+  }
 
 (* Cons an instruction (live, debug empty) *)
 
 let instr_cons d a r n =
   { desc = d; next = n; arg = a; res = r;
-    dbg = Debuginfo.none; live = Reg.Set.empty }
+    dbg = Debuginfo.none; live = Reg.Set.empty;
+    phantom_available_before = Ident.Set.empty;
+    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
+  }
 
 (* Cons a simple instruction (arg, res, live empty) *)
 
 let cons_instr d n =
   { desc = d; next = n; arg = [||]; res = [||];
-    dbg = Debuginfo.none; live = Reg.Set.empty }
+    dbg = Debuginfo.none; live = Reg.Set.empty;
+    phantom_available_before = Ident.Set.empty;
+    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
+  }
 
 (* Build an instruction with arg, res, dbg, live taken from
    the given Mach.instruction *)
@@ -101,7 +120,11 @@ let cons_instr d n =
 let copy_instr d i n =
   { desc = d; next = n;
     arg = i.Mach.arg; res = i.Mach.res;
-    dbg = i.Mach.dbg; live = i.Mach.live }
+    dbg = i.Mach.dbg; live = i.Mach.live;
+    phantom_available_before = Ident.Set.empty;
+    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
+  }
 
 (*
    Label the beginning of the given instruction sequence.
@@ -318,6 +341,9 @@ let add_prologue first_insn =
     res = [| |];
     dbg = insn.dbg;
     live = insn.live;
+    phantom_available_before = Ident.Set.empty;
+    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
   }
 
 let fundecl f =
@@ -326,5 +352,6 @@ let fundecl f =
     fun_body;
     fun_fast = not (List.mem Cmm.Reduce_code_size f.Mach.fun_codegen_options);
     fun_dbg  = f.Mach.fun_dbg;
+    fun_phantom_lets = f.Mach.fun_phantom_lets;
     fun_spacetime_shape = f.Mach.fun_spacetime_shape;
   }

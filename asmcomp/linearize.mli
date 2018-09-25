@@ -23,7 +23,11 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    live: Reg.Set.t }
+    live: Reg.Set.t;
+    phantom_available_before: Backend_var.Set.t;
+    available_before: Reg_availability_set.t;
+    available_across: Reg_availability_set.t option;
+  }
 
 and instruction_desc =
   | Lprologue
@@ -60,6 +64,9 @@ type fundecl =
     fun_fast: bool;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : Mach.spacetime_shape option;
+    fun_phantom_lets :
+      (Backend_var.Provenance.t option * Mach.phantom_defining_expr)
+        Backend_var.Map.t;
   }
 
 val fundecl: Mach.fundecl -> fundecl
