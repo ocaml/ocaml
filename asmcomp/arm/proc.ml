@@ -274,6 +274,10 @@ let destroyed_at_oper = function
 
 let destroyed_at_raise = all_phys_regs
 
+(* lr is destroyed at [Lreloadretaddr], but lr is not used for register
+   allocation, and thus does not need to (and indeed cannot) occur here. *)
+let destroyed_at_reloadretaddr = [| |]
+
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
