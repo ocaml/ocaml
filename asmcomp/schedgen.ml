@@ -391,6 +391,7 @@ method schedule_fundecl f =
       fun_fast = f.fun_fast;
       fun_dbg  = f.fun_dbg;
       fun_spacetime_shape = f.fun_spacetime_shape;
+      fun_phantom_lets = f.fun_phantom_lets;
     }
   end else
     f
