@@ -414,6 +414,9 @@ Working version
   naming operations in [Spill].
   (Mark Shinwell)
 
+- GPR#2065: Add [Proc.destroyed_at_reloadretaddr].
+  (Mark Shinwell)
+
 - GPR#2067: Add remaining types and record fields in [Mach] and [Linearize]
   to communicate register availability information to the debugging
   information emitter.
