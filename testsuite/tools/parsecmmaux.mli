@@ -15,9 +15,9 @@
 
 (* Auxiliary functions for parsing *)
 
-val bind_ident: string -> Ident.t
-val find_ident: string -> Ident.t
-val unbind_ident: Ident.t -> unit
+val bind_ident: string -> Backend_var.With_provenance.t
+val find_ident: string -> Backend_var.t
+val unbind_ident: Backend_var.With_provenance.t -> unit
 
 val find_label: string -> int
 

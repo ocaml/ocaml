@@ -18,6 +18,9 @@
 open Format
 open Cmm
 
+module V = Backend_var
+module VP = Backend_var.With_provenance
+
 let rec_flag ppf = function
   | Nonrecursive -> ()
   | Recursive -> fprintf ppf " rec"
@@ -127,10 +130,11 @@ let rec expr ppf = function
   | Cconst_symbol s -> fprintf ppf "\"%s\"" s
   | Cconst_pointer n -> fprintf ppf "%ia" n
   | Cconst_natpointer n -> fprintf ppf "%sa" (Nativeint.to_string n)
-  | Cvar id -> Ident.print ppf id
+  | Cvar id -> V.print ppf id
   | Clet(id, def, (Clet(_, _, _) as body)) ->
       let print_binding id ppf def =
-        fprintf ppf "@[<2>%a@ %a@]" Ident.print id expr def in
+        fprintf ppf "@[<2>%a@ %a@]"
+          VP.print id expr def in
       let rec in_part ppf = function
         | Clet(id, def, body) ->
             fprintf ppf "@ %a" (print_binding id) def;
@@ -142,9 +146,9 @@ let rec expr ppf = function
   | Clet(id, def, body) ->
      fprintf ppf
       "@[<2>(let@ @[<2>%a@ %a@]@ %a)@]"
-      Ident.print id expr def sequence body
+      VP.print id expr def sequence body
   | Cassign(id, exp) ->
-      fprintf ppf "@[<2>(assign @[<2>%a@ %a@])@]" Ident.print id expr exp
+      fprintf ppf "@[<2>(assign @[<2>%a@ %a@])@]" V.print id expr exp
   | Ctuple el ->
       let tuple ppf el =
        let first = ref true in
@@ -186,7 +190,8 @@ let rec expr ppf = function
           (fun ppf ids ->
              List.iter
                (fun (id, ty) ->
-                 fprintf ppf "@ %a: %a" Ident.print id machtype ty)
+                 fprintf ppf "@ %a: %a"
+                   VP.print id machtype ty)
                ids) ids
           sequence e2
       in
@@ -204,7 +209,7 @@ let rec expr ppf = function
       fprintf ppf ")@]"
   | Ctrywith(e1, id, e2) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -2>with@ %a@ %a)@]"
-             sequence e1 Ident.print id sequence e2
+             sequence e1 VP.print id sequence e2
 
 and sequence ppf = function
   | Csequence(e1, e2) -> fprintf ppf "%a@ %a" sequence e1 sequence e2
@@ -218,7 +223,7 @@ let fundecl ppf f =
     List.iter
      (fun (id, ty) ->
        if !first then first := false else fprintf ppf "@ ";
-       fprintf ppf "%a: %a" Ident.print id machtype ty)
+       fprintf ppf "%a: %a" VP.print id machtype ty)
      cases in
   fprintf ppf "@[<1>(function%s %s@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
          (Debuginfo.to_string f.fun_dbg) f.fun_name

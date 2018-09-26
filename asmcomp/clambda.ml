@@ -37,35 +37,37 @@ and uconstant =
   | Uconst_ptr of int
 
 and ulambda =
-    Uvar of Ident.t
+    Uvar of Backend_var.t
   | Uconst of uconstant
   | Udirect_apply of function_label * ulambda list * Debuginfo.t
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
   | Uclosure of ufunction list * ulambda list
   | Uoffset of ulambda * int
-  | Ulet of mutable_flag * value_kind * Ident.t * ulambda * ulambda
-  | Uletrec of (Ident.t * ulambda) list * ulambda
+  | Ulet of mutable_flag * value_kind * Backend_var.With_provenance.t
+      * ulambda * ulambda
+  | Uletrec of (Backend_var.With_provenance.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch * Debuginfo.t
   | Ustringswitch of ulambda * (string * ulambda) list * ulambda option
   | Ustaticfail of int * ulambda list
-  | Ucatch of int * Ident.t list * ulambda * ulambda
-  | Utrywith of ulambda * Ident.t * ulambda
+  | Ucatch of int * Backend_var.With_provenance.t list * ulambda * ulambda
+  | Utrywith of ulambda * Backend_var.With_provenance.t * ulambda
   | Uifthenelse of ulambda * ulambda * ulambda
   | Usequence of ulambda * ulambda
   | Uwhile of ulambda * ulambda
-  | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
-  | Uassign of Ident.t * ulambda
+  | Ufor of Backend_var.With_provenance.t * ulambda * ulambda
+      * direction_flag * ulambda
+  | Uassign of Backend_var.t * ulambda
   | Usend of meth_kind * ulambda * ulambda * ulambda list * Debuginfo.t
   | Uunreachable
 
 and ufunction = {
   label  : function_label;
   arity  : int;
-  params : Ident.t list;
+  params : Backend_var.With_provenance.t list;
   body   : ulambda;
   dbg    : Debuginfo.t;
-  env    : Ident.t option;
+  env    : Backend_var.t option;
 }
 
 and ulambda_switch =
@@ -80,7 +82,7 @@ type function_description =
   { fun_label: function_label;          (* Label of direct entry point *)
     fun_arity: int;                     (* Number of arguments *)
     mutable fun_closed: bool;           (* True if environment not used *)
-    mutable fun_inline: (Ident.t list * ulambda) option;
+    mutable fun_inline: (Backend_var.With_provenance.t list * ulambda) option;
     mutable fun_float_const_prop: bool  (* Can propagate FP consts *)
   }
 

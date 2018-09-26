@@ -403,6 +403,10 @@ Working version
 - GPR#2055: Add [Linearize.Lprologue].
   (Mark Shinwell, review by Pierre Chambart)
 
+- GPR#2056: Use [Backend_var] rather than [Ident] from [Clambda] onwards;
+  use [Backend_var.With_provenance] for variables in binding position.
+  (Mark Shinwell, review by Pierre Chambart)
+
 ### Bug fixes:
 
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the

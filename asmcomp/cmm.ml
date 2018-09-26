@@ -157,9 +157,9 @@ type expression =
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
   | Cblockheader of nativeint * Debuginfo.t
-  | Cvar of Ident.t
-  | Clet of Ident.t * expression * expression
-  | Cassign of Ident.t * expression
+  | Cvar of Backend_var.t
+  | Clet of Backend_var.With_provenance.t * expression * expression
+  | Cassign of Backend_var.t * expression
   | Ctuple of expression list
   | Cop of operation * expression list * Debuginfo.t
   | Csequence of expression * expression
@@ -167,10 +167,12 @@ type expression =
   | Cswitch of expression * int array * expression array * Debuginfo.t
   | Cloop of expression
   | Ccatch of
-      rec_flag * (int * (Ident.t * machtype) list * expression) list
-      * expression
+      rec_flag
+        * (int * (Backend_var.With_provenance.t * machtype) list
+          * expression) list
+        * expression
   | Cexit of int * expression list
-  | Ctrywith of expression * Ident.t * expression
+  | Ctrywith of expression * Backend_var.With_provenance.t * expression
 
 type codegen_option =
   | Reduce_code_size
@@ -178,7 +180,7 @@ type codegen_option =
 
 type fundecl =
   { fun_name: string;
-    fun_args: (Ident.t * machtype) list;
+    fun_args: (Backend_var.With_provenance.t * machtype) list;
     fun_body: expression;
     fun_codegen_options : codegen_option list;
     fun_dbg : Debuginfo.t;
