@@ -683,12 +683,10 @@ let check_scope_escape level ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
       ty.level <- pivot_level - ty.level;
-      begin match ty.scope with
-        Some lv ->
+      if level < ty.scope then (
         let var = newvar2 level in
-        if level < lv then raise (Unify [(ty,ty); (var, var)])
-      | None -> ()
-      end;
+        raise (Unify [(ty,ty); (var, var)])
+      );
       iter_type_expr aux ty
     end
   in
@@ -700,17 +698,10 @@ let check_scope_escape level ty =
     raise (Unify ((ty, ty) :: (var, var) :: trace))
 
 let update_scope scope ty =
-  match scope with
-  | None -> ()
-  | Some lvl ->
-    let ty = repr ty in
-    let scope =
-      match ty.scope with
-      | None -> lvl
-      | Some lvl' -> max lvl lvl'
-    in
-    if ty.level < scope then raise (Unify [(ty, newvar2 ty.level)]);
-    set_scope ty (Some scope)
+  let ty = repr ty in
+  let scope = max scope ty.scope in
+  if ty.level < scope then raise (Unify [(ty, newvar2 ty.level)]);
+  set_scope ty scope
 
 (* Note: the level of a type constructor must be greater than its binding
     time. That way, a type constructor cannot escape the scope of its
@@ -723,10 +714,7 @@ let update_scope scope ty =
 let rec update_level env level expand ty =
   let ty = repr ty in
   if ty.level > level then begin
-    begin match ty.scope with
-      Some lv -> if level < lv then raise (Unify [(ty, newvar2 level)])
-    | None -> ()
-    end;
+    if level < ty.scope then raise (Unify [(ty, newvar2 level)]);
     match ty.desc with
       Tconstr(p, _tl, _abbrev) when level < Path.scope p ->
         (* Try first to replace an abbreviation by its expansion. *)
@@ -1131,7 +1119,7 @@ let instance_constructor ?in_pattern cstr =
   | None -> ()
   | Some (env, expansion_scope) ->
       let process existential =
-        let decl = new_declaration (Some expansion_scope) None in
+        let decl = new_declaration expansion_scope None in
         let name = existential_name cstr existential in
         let path =
           Path.Pident
@@ -1439,12 +1427,10 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             (* For gadts, remember type as non exportable *)
             (* The ambiguous level registered for ty' should be the highest *)
             if !trace_gadt_instances then begin
-              match max lv ty.scope with
-                None -> ()
-              | Some lv ->
-                  if level < lv then raise (Unify [(ty, newvar2 level)]);
-                  set_scope ty (Some lv);
-                  set_scope ty' (Some lv)
+              let scope = max lv ty.scope in
+              if level < scope then raise (Unify [(ty, newvar2 level)]);
+              set_scope ty scope;
+              set_scope ty' scope
             end;
             ty'
       end
@@ -1951,7 +1937,7 @@ let reify env t =
         (Ident.create_scoped ~scope:fresh_constr_scope
            (get_new_abstract_name name))
     in
-    let decl = new_declaration (Some fresh_constr_scope) None in
+    let decl = new_declaration fresh_constr_scope None in
     let new_env = Env.add_local_type path decl !env in
     let t = newty2 lev (Tconstr (path,[],ref Mnil))  in
     env := new_env;
@@ -1995,7 +1981,7 @@ let reify env t =
 let is_newtype env p =
   try
     let decl = Env.find_type p env in
-    decl.type_expansion_scope <> None &&
+    decl.type_expansion_scope <> Btype.lowest_level &&
     decl.type_kind = Type_abstract &&
     decl.type_private = Public
   with Not_found -> false
@@ -2246,9 +2232,7 @@ let find_lowest_level ty =
   in find ty; unmark_type ty; !lowest
 
 let find_expansion_scope env path =
-  match (Env.find_type path env).type_expansion_scope with
-  | Some x -> x
-  | None -> assert false
+  (Env.find_type path env).type_expansion_scope
 
 let add_gadt_equation env source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
@@ -2258,7 +2242,7 @@ let add_gadt_equation env source destination =
     let expansion_scope =
       max (Path.scope source) (get_gadt_equations_level ())
     in
-    let decl = new_declaration (Some expansion_scope) (Some destination) in
+    let decl = new_declaration expansion_scope (Some destination) in
     env := Env.add_local_type source decl !env;
     cleanup_abbrev ()
   end
@@ -4491,7 +4475,7 @@ let nondep_type_decl env mid is_covariant decl =
       type_private = priv;
       type_variance = decl.type_variance;
       type_is_newtype = false;
-      type_expansion_scope = None;
+      type_expansion_scope = Btype.lowest_level;
       type_loc = decl.type_loc;
       type_attributes = decl.type_attributes;
       type_immediate = decl.type_immediate;

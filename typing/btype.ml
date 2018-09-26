@@ -44,7 +44,7 @@ let pivot_level = 2 * lowest_level - 1
 let new_id = ref (-1)
 
 let newty2 level desc  =
-  incr new_id; { desc; level; scope = None; id = !new_id }
+  incr new_id; { desc; level; scope = lowest_level; id = !new_id }
 let newgenty desc      = newty2 generic_level desc
 let newgenvar ?name () = newgenty (Tvar name)
 (*
@@ -72,7 +72,7 @@ type change =
     Ctype of type_expr * type_desc
   | Ccompress of type_expr * type_desc * type_desc
   | Clevel of type_expr * int
-  | Cscope of type_expr * int option
+  | Cscope of type_expr * int
   | Cname of
       (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
   | Crow of row_field option ref * row_field option

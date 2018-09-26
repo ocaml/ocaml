@@ -85,8 +85,8 @@ let simpl_class_type t =
         (* we delete vals and methods in order to not print them when
            displaying the type *)
       let tnil =
-        { Types.desc = Types.Tnil ; Types.level = 0; Types.scope = None
-        ; Types.id = 0 }
+        { Types.desc = Types.Tnil ; Types.level = 0
+        ; Types.scope = Btype.lowest_level ; Types.id = 0 }
       in
         Types.Cty_signature { Types.csig_self = { cs.Types.csig_self with
                                                   Types.desc = Types.Tobject (tnil, ref None) };

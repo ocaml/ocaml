@@ -58,7 +58,7 @@ open Asttypes
 type type_expr =
   { mutable desc: type_desc;
     mutable level: int;
-    mutable scope: int option;
+    mutable scope: int;
     id: int }
 
 and type_desc =
@@ -296,7 +296,7 @@ type type_declaration =
     type_variance: Variance.t list;
     (* covariant, contravariant, weakly contravariant, injective *)
     type_is_newtype: bool;
-    type_expansion_scope: int option;
+    type_expansion_scope: int;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
     type_immediate: bool; (* true iff type should not be a pointer *)

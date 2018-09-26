@@ -3137,7 +3137,7 @@ and type_expect_
         type_manifest = None;
         type_variance = [];
         type_is_newtype = true;
-        type_expansion_scope = None;
+        type_expansion_scope = Btype.lowest_level;
         type_loc = loc;
         type_attributes = [];
         type_immediate = false;
