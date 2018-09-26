@@ -1427,12 +1427,12 @@ parent_binder:
 ;
 value:
 /* TODO: factorize these rules (also with method): */
-    override_flag attributes MUTABLE VIRTUAL mkrhs(label) COLON core_type
-      { if $1 = Override then syntax_error ();
-        ($5, Mutable, Cfk_virtual $7), $2 }
-  | override_flag attributes VIRTUAL mutable_flag mkrhs(label) COLON core_type
-      { if $1 = Override then syntax_error ();
-        ($5, $4, Cfk_virtual $7), $2 }
+    no_override_flag
+    attributes MUTABLE VIRTUAL mkrhs(label) COLON core_type
+      { ($5, Mutable, Cfk_virtual $7), $2 }
+  | no_override_flag
+    attributes VIRTUAL mutable_flag mkrhs(label) COLON core_type
+      { ($5, $4, Cfk_virtual $7), $2 }
   | override_flag attributes mutable_flag mkrhs(label) EQUAL seq_expr
       { ($4, $3, Cfk_concrete ($1, $6)), $2 }
   | override_flag attributes mutable_flag mkrhs(label) type_constraint
@@ -1443,12 +1443,12 @@ value:
 ;
 method_:
 /* TODO: factorize those rules... */
-    override_flag attributes PRIVATE VIRTUAL mkrhs(label) COLON poly_type
-      { if $1 = Override then syntax_error ();
-        ($5, Private, Cfk_virtual $7), $2 }
-  | override_flag attributes VIRTUAL private_flag mkrhs(label) COLON poly_type
-      { if $1 = Override then syntax_error ();
-        ($5, $4, Cfk_virtual $7), $2 }
+    no_override_flag
+    attributes PRIVATE VIRTUAL mkrhs(label) COLON poly_type
+      { ($5, Private, Cfk_virtual $7), $2 }
+  | no_override_flag
+    attributes VIRTUAL private_flag mkrhs(label) COLON poly_type
+      { ($5, $4, Cfk_virtual $7), $2 }
   | override_flag attributes private_flag mkrhs(label) strict_binding
       { let e = $5 in
         let loc = Location.(e.pexp_loc.loc_start, e.pexp_loc.loc_end) in
@@ -3049,7 +3049,10 @@ private_virtual_flags:
   | PRIVATE VIRTUAL { Private, Virtual }
   | VIRTUAL PRIVATE { Private, Virtual }
 ;
-override_flag:
+%inline no_override_flag:
+    /* empty */                                 { Fresh }
+;
+%inline override_flag:
     /* empty */                                 { Fresh }
   | BANG                                        { Override }
 ;
