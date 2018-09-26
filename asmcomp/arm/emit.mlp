@@ -858,6 +858,10 @@ let emit_instr i =
           `	mov	sp, trap_ptr\n`;
           `	pop	\{trap_ptr, pc}\n`; 2
         end
+    | Lcapture_stack_offset byte_offset_from_cfa ->
+        Emitaux.handle_lcapture_stack_offset i ~frame_size ~slot_offset
+          ~register_class ~byte_offset_from_cfa;
+        0
 
 (* Upper bound on the size of the code sequence for a Linear instruction,
    in 32-bit words. *)

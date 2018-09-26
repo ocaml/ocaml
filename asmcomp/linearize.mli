@@ -40,6 +40,13 @@ and instruction_desc =
   | Lpushtrap
   | Lpoptrap
   | Lraise of Cmm.raise_kind
+  | Lcapture_stack_offset of int ref
+  (** [Lcapture_stack_offset] takes a single element in the [arg] array.
+      That element must be a register assigned to the stack.  The assembly
+      emitter must fill in the [int ref] with the offset in bytes from the
+      current frame address to the stack slot of such register.
+      This information is used for emission of debugging information for
+      spilled values. *)
 
 val has_fallthrough :  instruction_desc -> bool
 val end_instr: instruction

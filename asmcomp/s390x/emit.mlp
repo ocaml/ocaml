@@ -632,6 +632,9 @@ let emit_instr i =
           emit_stack_adjust (-16);
           `	br	%r1\n`
         end
+  | Lcapture_stack_offset byte_offset_from_cfa ->
+      Emitaux.handle_lcapture_stack_offset i ~frame_size ~slot_offset
+        ~register_class ~byte_offset_from_cfa
 
 
 (* Emit a sequence of instructions *)

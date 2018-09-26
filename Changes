@@ -403,6 +403,9 @@ Working version
 - GPR#2055: Add [Linearize.Lprologue].
   (Mark Shinwell, review by Pierre Chambart)
 
+- GPR#2061: Add [Linearize.Lcapture_stack_offset].
+  (Mark Shinwell, review by Xavier Leroy)
+
 ### Bug fixes:
 
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the
