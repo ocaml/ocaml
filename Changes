@@ -331,7 +331,7 @@ Working version
 ### Internal/compiler-libs changes:
 
 - GPR#292: use Menhir as the parser generator for the OCaml parser.
-  Satellite GPRs: GPR#1844, GPR#1846, GPR#1853, GPR#1850, GPR#1934
+  Satellite GPRs: GPR#1844, GPR#1846, GPR#1853, GPR#1850, GPR#1934, GPR#2064
   (Gabriel Scherer, Nicolás Ojeda Bär, Frédéric Bour and Thomas Refis,
    review by Nicolás Ojeda Bär, Leo White and David Allsopp)
 
