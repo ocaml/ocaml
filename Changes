@@ -439,6 +439,13 @@ Working version
 - GPR#2070: "Phantom let" support for the Cmm language.
   (Mark Shinwell)
 
+- GPR#2071: "Phantom let" support in [Selectgen].
+  (Mark Shinwell)
+
+- GPR#2073: Add [Asm_directives] and [Target_system], initially only for
+  the use of the DWARF debugging information emitter.
+  (Mark Shinwell)
+
 - GPR#2074: Correct naming of record field inside [Ialloc] terms.
   (Mark Shinwell, review by Jérémie Dimino)
 

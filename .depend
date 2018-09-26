@@ -2305,6 +2305,16 @@ middle_end/base_types/variable.cmx : utils/misc.cmx \
 middle_end/base_types/variable.cmi : middle_end/internal_variable_names.cmi \
     utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
+asmcomp/debug/asm_directives.cmo : utils/targetint.cmi \
+    asmcomp/debug/target_system.cmi utils/numbers.cmi utils/misc.cmi \
+    utils/config.cmi asmcomp/cmm.cmi utils/clflags.cmi asmcomp/arch.cmo \
+    asmcomp/debug/asm_directives.cmi
+asmcomp/debug/asm_directives.cmx : utils/targetint.cmx \
+    asmcomp/debug/target_system.cmx utils/numbers.cmx utils/misc.cmx \
+    utils/config.cmx asmcomp/cmm.cmx utils/clflags.cmx asmcomp/arch.cmx \
+    asmcomp/debug/asm_directives.cmi
+asmcomp/debug/asm_directives.cmi : utils/targetint.cmi \
+    asmcomp/debug/target_system.cmi utils/numbers.cmi asmcomp/cmm.cmi
 asmcomp/debug/available_regs.cmo : asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi utils/clflags.cmi \
@@ -2328,6 +2338,11 @@ asmcomp/debug/reg_with_debug_info.cmx : asmcomp/reg.cmx \
     asmcomp/backend_var.cmx asmcomp/debug/reg_with_debug_info.cmi
 asmcomp/debug/reg_with_debug_info.cmi : asmcomp/reg.cmi \
     asmcomp/backend_var.cmi
+asmcomp/debug/target_system.cmo : utils/targetint.cmi utils/misc.cmi \
+    utils/config.cmi asmcomp/debug/target_system.cmi
+asmcomp/debug/target_system.cmx : utils/targetint.cmx utils/misc.cmx \
+    utils/config.cmx asmcomp/debug/target_system.cmi
+asmcomp/debug/target_system.cmi :
 driver/compdynlink.cmi :
 driver/compenv.cmo : utils/warnings.cmi utils/profile.cmi utils/misc.cmi \
     parsing/location.cmi utils/config.cmi utils/clflags.cmi utils/ccomp.cmi \

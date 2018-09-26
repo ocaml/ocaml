@@ -137,6 +137,8 @@ module Stdlib : sig
       -> Format.formatter
       -> 'a t
       -> unit
+
+    val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
   end
 
   module Array : sig

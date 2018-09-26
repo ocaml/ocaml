@@ -194,6 +194,11 @@ module Stdlib = struct
       | None -> Format.pp_print_string ppf "()"
       | Some contents ->
         Format.fprintf ppf "(%a)" print_contents contents
+
+    let (>>=) t f =
+      match t with
+      | None -> None
+      | Some x -> f x
   end
 
   module Array = struct
