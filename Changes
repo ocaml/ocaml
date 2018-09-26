@@ -432,6 +432,8 @@ Working version
 
 - GPR#2068: Propagate availability information in [Linearize] and adjust
   position of prologue.
+
+- GPR#2070: "Phantom let" support for the Cmm language.
   (Mark Shinwell)
 
 - GPR#2074: Correct naming of record field inside [Ialloc] terms.
