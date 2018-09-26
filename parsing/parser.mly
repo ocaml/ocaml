@@ -1399,9 +1399,11 @@ parent_binder:
 ;
 value:
 /* TODO: factorize these rules (also with method): */
-    no_override_flag attributes MUTABLE VIRTUAL mkrhs(label) COLON core_type
+    no_override_flag
+    attributes MUTABLE VIRTUAL mkrhs(label) COLON core_type
       { ($5, Mutable, Cfk_virtual $7), $2 }
-  | no_override_flag attributes VIRTUAL mutable_flag mkrhs(label) COLON core_type
+  | no_override_flag
+    attributes VIRTUAL mutable_flag mkrhs(label) COLON core_type
       { ($5, $4, Cfk_virtual $7), $2 }
   | override_flag attributes mutable_flag mkrhs(label) EQUAL seq_expr
       { ($4, $3, Cfk_concrete ($1, $6)), $2 }
@@ -1413,9 +1415,11 @@ value:
 ;
 method_:
 /* TODO: factorize those rules... */
-    no_override_flag attributes PRIVATE VIRTUAL mkrhs(label) COLON poly_type
+    no_override_flag
+    attributes PRIVATE VIRTUAL mkrhs(label) COLON poly_type
       { ($5, Private, Cfk_virtual $7), $2 }
-  | no_override_flag attributes VIRTUAL private_flag mkrhs(label) COLON poly_type
+  | no_override_flag
+    attributes VIRTUAL private_flag mkrhs(label) COLON poly_type
       { ($5, $4, Cfk_virtual $7), $2 }
   | override_flag attributes private_flag mkrhs(label) strict_binding
       { let e = $5 in
@@ -2004,7 +2008,9 @@ let_bindings(EXT):
   | let_bindings(EXT) and_let_binding           { addlb $1 $2 }
 ;
 let_binding(EXT):
-    LET ext = EXT attr = attributes rec_flag let_binding_body post_item_attributes
+  LET
+  ext = EXT attr = attributes rec_flag
+  let_binding_body post_item_attributes
       { mklbs ~loc:$sloc ext $4 (mklb ~loc:$sloc true $5 (attr@$6)) }
 ;
 and_let_binding:
