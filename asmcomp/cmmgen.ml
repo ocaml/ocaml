@@ -1790,6 +1790,32 @@ let rec transl env e =
   | Ulet(str, kind, id, exp, body) ->
       transl_let env str kind id exp body
   | Uphantom_let (var, defining_expr, body) ->
+      let defining_expr =
+        match defining_expr with
+        | None -> None
+        | Some defining_expr ->
+          let defining_expr =
+            match defining_expr with
+            | Uphantom_const (Uconst_ref (sym, _defining_expr)) ->
+              Cphantom_const_symbol sym
+            | Uphantom_read_symbol_field
+                { sym = Uconst_ref (sym, _defining_expr); field; } ->
+              Cphantom_read_symbol_field { sym; field; }
+            | Uphantom_read_symbol_field _ ->
+              Misc.fatal_errorf "Unknown Clambda constant pattern for \
+                [Uphantom_read_symbol_field]"
+            | Uphantom_const (Uconst_int i) | Uphantom_const (Uconst_ptr i) ->
+              Cphantom_const_int i
+            | Uphantom_var var -> Cphantom_var var
+            | Uphantom_read_field { var; field; } ->
+              Cphantom_read_field { var; field; }
+            | Uphantom_offset_var { var; offset_in_words; } ->
+              Cphantom_offset_var { var; offset_in_words; }
+            | Uphantom_block { tag; fields; } ->
+              Cphantom_block { tag; fields; }
+          in
+          Some defining_expr
+      in
       Cphantom_let (var, defining_expr, transl env body)
   | Uletrec(bindings, body) ->
       transl_letrec env bindings (transl env body)
