@@ -245,7 +245,7 @@ let phantom_defining_expr ppf defining_expr =
   | Iphantom_const_int i ->
     fprintf ppf "@[(const_int@ %d)@]" i
   | Iphantom_const_symbol sym ->
-    fprintf ppf "@[(const_symbol@ %a)@]" Symbol.print sym
+    fprintf ppf "@[(const_symbol@ %s)@]" sym
   | Iphantom_var var ->
     fprintf ppf "@[(var@ %a)@]" Backend_var.print var
   | Iphantom_offset_var { var; offset_in_words; } ->
