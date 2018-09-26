@@ -407,6 +407,10 @@ Working version
   use [Backend_var.With_provenance] for variables in binding position.
   (Mark Shinwell, review by Pierre Chambart)
 
+- GPR#2073: Add [Asm_directives] and [Target_system], initially only for
+  the use of the DWARF debugging information emitter.
+  (Mark Shinwell)
+
 - GPR#2076: Add [Targetint.print].
   (Mark Shinwell)
 

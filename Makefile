@@ -177,6 +177,8 @@ ASMCOMP=\
   asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/debug/available_regs.cmo \
+  asmcomp/debug/target_system.cmo \
+  asmcomp/debug/asm_directives.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \

@@ -189,6 +189,11 @@ module Stdlib = struct
       match a with
       | None -> default
       | Some a -> f a
+
+    let (>>=) t f =
+      match t with
+      | None -> None
+      | Some x -> f x
   end
 
   module Array = struct
