@@ -248,18 +248,18 @@ let phantom_defining_expr ppf defining_expr =
     fprintf ppf "@[(const_symbol@ %a)@]" Symbol.print sym
   | Iphantom_var var ->
     fprintf ppf "@[(var@ %a)@]" Backend_var.print var
-  | Iphantom_read_field (var, field) ->
+  | Iphantom_offset_var { var; offset_in_words; } ->
+    fprintf ppf "@[((var@ %a)@ (offset_in_words@ %d))@]"
+      Backend_var.print var
+      offset_in_words
+  | Iphantom_read_field { var; field; } ->
     fprintf ppf "@[((var@ %a)@ (field@ %d))@]"
       Backend_var.print var
       field
-  | Iphantom_read_symbol_field { symbol; field; } ->
-    fprintf ppf "@[((symbol@ %a)@ (field@ %d))@]"
-      Symbol.print symbol
+  | Iphantom_read_symbol_field { sym; field; } ->
+    fprintf ppf "@[((symbol@ %s)@ (field@ %d))@]"
+      sym
       field
-  | Iphantom_offset_var { var; offset_in_bytes; } ->
-    fprintf ppf "@[((var@ %a)@ (offset_in_bytes@ %d))@]"
-      Backend_var.print var
-      offset_in_bytes
   | Iphantom_block { tag; fields; } ->
     fprintf ppf "@[((tag@ %d)@ (fields@ @[(%a)@]))@]"
       tag
