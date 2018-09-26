@@ -48,10 +48,10 @@ type test =
 
 type phantom_defining_expr =
   | Iphantom_const_int of int
-  | Iphantom_const_symbol of Symbol.t
+  | Iphantom_const_symbol of string
   | Iphantom_var of Backend_var.t  (** Must not be a phantom identifier. *)
   | Iphantom_read_field of Backend_var.t * int
-  | Iphantom_read_symbol_field of { symbol : Symbol.t; field : int; }
+  | Iphantom_read_symbol_field of { symbol : string; field : int; }
   | Iphantom_offset_var of { var : Backend_var.t; offset_in_bytes : int; }
   | Iphantom_block of { tag : int; fields : Backend_var.t option list; }
 
