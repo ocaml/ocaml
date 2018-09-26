@@ -66,12 +66,12 @@ let rec structured_constant ppf = function
 and phantom_defining_expr ppf = function
   | Uphantom_const const -> uconstant ppf const
   | Uphantom_var var -> Ident.print ppf var
-  | Uphantom_read_var_field (var, offset) ->
-    Format.fprintf ppf "%a[%d]" Backend_var.print var offset
-  | Uphantom_offset_var (var, offset) ->
-    Format.fprintf ppf "%a+(%d)" Backend_var.print var offset
-  | Uphantom_read_symbol_field (sym, offset) ->
-    Format.fprintf ppf "%a[%d]" uconstant sym offset
+  | Uphantom_offset_var { var; offset_in_words; } ->
+    Format.fprintf ppf "%a+(%d)" Backend_var.print var offset_in_words
+  | Uphantom_read_field { var; field; } ->
+    Format.fprintf ppf "%a[%d]" Backend_var.print var field
+  | Uphantom_read_symbol_field { sym; field; } ->
+    Format.fprintf ppf "%a[%d]" uconstant sym field
   | Uphantom_block { tag; fields; } ->
     Format.fprintf ppf "[%d: " tag;
     List.iter (fun field ->

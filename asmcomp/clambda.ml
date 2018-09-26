@@ -39,9 +39,9 @@ and uconstant =
 and uphantom_defining_expr =
   | Uphantom_const of uconstant
   | Uphantom_var of Backend_var.t
-  | Uphantom_read_var_field of Backend_var.t * int
-  | Uphantom_offset_var of Backend_var.t * int
-  | Uphantom_read_symbol_field of uconstant * int
+  | Uphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
+  | Uphantom_read_field of { var : Backend_var.t; field : int; }
+  | Uphantom_read_symbol_field of { sym : uconstant; field : int; }
   | Uphantom_block of { tag : int; fields : Backend_var.t list; }
 
 and ulambda =

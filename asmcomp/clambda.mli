@@ -41,14 +41,14 @@ and uphantom_defining_expr =
   (** The phantom-let-bound variable is a constant. *)
   | Uphantom_var of Backend_var.t
   (** The phantom-let-bound variable is an alias for another variable. *)
-  | Uphantom_read_var_field of Backend_var.t * int
+  | Uphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
+  (** The phantom-let-bound-variable's value is defined by adding the given
+      number of words to the pointer contained in the given identifier. *)
+  | Uphantom_read_field of { var : Backend_var.t; field : int; }
   (** The phantom-let-bound-variable's value is found by adding the given
       number of words to the pointer contained in the given identifier, then
       dereferencing. *)
-  | Uphantom_offset_var of Backend_var.t * int
-  (** The phantom-let-bound-variable's value is defined by adding the given
-      number of words to the pointer contained in the given identifier. *)
-  | Uphantom_read_symbol_field of uconstant * int
+  | Uphantom_read_symbol_field of { sym : uconstant; field : int; }
   (** As for [Uphantom_read_var_field], but with the pointer specified by
       a symbol. *)
   | Uphantom_block of { tag : int; fields : Backend_var.t list; }
