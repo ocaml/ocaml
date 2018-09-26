@@ -117,7 +117,7 @@ type raise_kind =
 type rec_flag = Nonrecursive | Recursive
 
 type phantom_defining_expr =
-  | Cphantom_const_int of int
+  | Cphantom_const_int of Targetint.t
   | Cphantom_const_symbol of string
   | Cphantom_var of Backend_var.t
   | Cphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }

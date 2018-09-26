@@ -133,6 +133,10 @@ let int_const n =
 let cint_const n =
   Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
 
+let targetint_const n =
+  Targetint.add (Targetint.shift_left (Targetint.of_int n) 1)
+    Targetint.one
+
 let add_no_overflow n x c dbg =
   let d = n + x in
   if d = 0 then c else Cop(Caddi, [c; Cconst_int d], dbg)
@@ -1798,14 +1802,10 @@ let rec transl env e =
             match defining_expr with
             | Uphantom_const (Uconst_ref (sym, _defining_expr)) ->
               Cphantom_const_symbol sym
-            | Uphantom_read_symbol_field
-                { sym = Uconst_ref (sym, _defining_expr); field; } ->
+            | Uphantom_read_symbol_field { sym; field; } ->
               Cphantom_read_symbol_field { sym; field; }
-            | Uphantom_read_symbol_field _ ->
-              Misc.fatal_errorf "Unknown Clambda constant pattern for \
-                [Uphantom_read_symbol_field]"
             | Uphantom_const (Uconst_int i) | Uphantom_const (Uconst_ptr i) ->
-              Cphantom_const_int i
+              Cphantom_const_int (targetint_const i)
             | Uphantom_var var -> Cphantom_var var
             | Uphantom_read_field { var; field; } ->
               Cphantom_read_field { var; field; }

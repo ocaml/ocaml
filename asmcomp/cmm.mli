@@ -94,8 +94,13 @@ type raise_kind =
 type rec_flag = Nonrecursive | Recursive
 
 type phantom_defining_expr =
-  | Cphantom_const_int of int
-  (** The phantom-let-bound variable is a constant integer. *)
+  (* CR-soon mshinwell: Convert this to [Targetint.OCaml.t] (or whatever the
+     representation of "target-width OCaml integers of type [int]"
+     becomes when merged). *)
+  | Cphantom_const_int of Targetint.t
+  (** The phantom-let-bound variable is a constant integer.
+      The argument must be the tagged representation of an integer within
+      the range of type [int] on the target.  (Analogously to [Cconst_int].) *)
   | Cphantom_const_symbol of string
   (** The phantom-let-bound variable is an alias for a symbol. *)
   | Cphantom_var of Backend_var.t
