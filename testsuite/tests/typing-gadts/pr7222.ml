@@ -38,7 +38,5 @@ Line 9, characters 6-22:
     let Cons(Elt dim, _) = sh in ()
         ^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type ('a -> $0 -> nil) t
-       but a pattern was expected which matches values of type
-         ('a -> 'b -> nil) t
        The type constructor $0 would escape its scope
 |}];;

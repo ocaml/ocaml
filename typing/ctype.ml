@@ -766,6 +766,11 @@ let check_scope_escape level ty =
       ty.level <- pivot_level - ty.level;
       if level < ty.scope then
         raise(Trace.scope_escape ty);
+      begin match ty.desc with
+      | Tconstr (p, _, _) when level < Path.scope p ->
+        raise Trace.(Unify [escape (Constructor p)])
+      | _ -> ()
+      end;
       iter_type_expr aux ty
     end
   in
