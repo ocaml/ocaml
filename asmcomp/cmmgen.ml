@@ -1789,7 +1789,8 @@ let rec transl env e =
               (call_met obj args))
   | Ulet(str, kind, id, exp, body) ->
       transl_let env str kind id exp body
-  | Uphantom_let (_var, _defining_expr, body) -> transl env body
+  | Uphantom_let (var, defining_expr, body) ->
+      Cphantom_let (var, defining_expr, transl env body)
   | Uletrec(bindings, body) ->
       transl_letrec env bindings (transl env body)
 
