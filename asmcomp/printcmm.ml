@@ -78,7 +78,7 @@ let raise_kind fmt = function
 
 let phantom_defining_expr ppf defining_expr =
   match defining_expr with
-  | Cphantom_const_int i -> Format.pp_print_int ppf i
+  | Cphantom_const_int i -> Targetint.print ppf i
   | Cphantom_const_symbol sym -> Format.pp_print_string ppf sym
   | Cphantom_var var -> V.print ppf var
   | Cphantom_offset_var { var; offset_in_words; } ->
