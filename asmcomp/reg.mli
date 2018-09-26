@@ -17,7 +17,7 @@
 
 module Raw_name : sig
   type t
-  val create_from_ident : Ident.t -> t
+  val create_from_var : Backend_var.t -> t
 end
 
 type t =

@@ -22,28 +22,33 @@ open Reg
 open Mach
 
 module Int = Numbers.Int
+module V = Backend_var
+module VP = Backend_var.With_provenance
 
 type environment =
-  { vars : Reg.t array Ident.Map.t;
+  { vars : (Reg.t array * Backend_var.Provenance.t option) V.Map.t;
     static_exceptions : Reg.t array list Int.Map.t;
     (** Which registers must be populated when jumping to the given
         handler. *)
   }
 
-let env_add id v env =
-  { env with vars = Ident.Map.add id v env.vars }
+let env_add var regs env =
+  let provenance = VP.provenance var in
+  let var = VP.var var in
+  { env with vars = V.Map.add var (regs, provenance) env.vars }
 
 let env_add_static_exception id v env =
   { env with static_exceptions = Int.Map.add id v env.static_exceptions }
 
 let env_find id env =
-  Ident.Map.find id env.vars
+  let regs, _provenance = V.Map.find id env.vars in
+  regs
 
 let env_find_static_exception id env =
   Int.Map.find id env.static_exceptions
 
 let env_empty = {
-  vars = Ident.Map.empty;
+  vars = V.Map.empty;
   static_exceptions = Int.Map.empty;
 }
 
@@ -83,26 +88,26 @@ let size_expr (env:environment) exp =
     | Cblockheader _ -> Arch.size_int
     | Cvar id ->
         begin try
-          Ident.Map.find id localenv
+          V.Map.find id localenv
         with Not_found ->
         try
           let regs = env_find id env in
           size_machtype (Array.map (fun r -> r.typ) regs)
         with Not_found ->
           fatal_error("Selection.size_expr: unbound var " ^
-                      Ident.unique_name id)
+                      V.unique_name id)
         end
     | Ctuple el ->
         List.fold_right (fun e sz -> size localenv e + sz) el 0
     | Cop(op, _, _) ->
         size_machtype(oper_result_type op)
     | Clet(id, arg, body) ->
-        size (Ident.Map.add id (size localenv arg) localenv) body
+        size (V.Map.add (VP.var id) (size localenv arg) localenv) body
     | Csequence(_e1, e2) ->
         size localenv e2
     | _ ->
         fatal_error "Selection.size_expr"
-  in size Ident.Map.empty exp
+  in size V.Map.empty exp
 
 (* Swap the two arguments of an integer comparison *)
 
@@ -122,11 +127,12 @@ let all_regs_anonymous rv =
     false
 
 let name_regs id rv =
+  let id = VP.var id in
   if Array.length rv = 1 then
-    rv.(0).raw_name <- Raw_name.create_from_ident id
+    rv.(0).raw_name <- Raw_name.create_from_var id
   else
     for i = 0 to Array.length rv - 1 do
-      rv.(i).raw_name <- Raw_name.create_from_ident id;
+      rv.(i).raw_name <- Raw_name.create_from_var id;
       rv.(i).part <- Some i
     done
 
@@ -657,7 +663,7 @@ method emit_expr (env:environment) exp =
       begin try
         Some(env_find v env)
       with Not_found ->
-        fatal_error("Selection.emit_expr: unbound var " ^ Ident.unique_name v)
+        fatal_error("Selection.emit_expr: unbound var " ^ V.unique_name v)
       end
   | Clet(v, e1, e2) ->
       begin match self#emit_expr env e1 with
@@ -669,7 +675,7 @@ method emit_expr (env:environment) exp =
         try
           env_find v env
         with Not_found ->
-          fatal_error ("Selection.emit_expr: unbound var " ^ Ident.name v) in
+          fatal_error ("Selection.emit_expr: unbound var " ^ V.name v) in
       begin match self#emit_expr env e1 with
         None -> None
       | Some r1 -> self#adjust_types r1 rv; self#insert_moves r1 rv; Some [||]
@@ -928,15 +934,15 @@ method private emit_parts (env:environment) ~effects_after exp =
           Some (Ctuple [], env)
         else begin
           (* The normal case *)
-          let id = Ident.create_local "bind" in
+          let id = V.create_local "bind" in
           if all_regs_anonymous r then
             (* r is an anonymous, unshared register; use it directly *)
-            Some (Cvar id, env_add id r env)
+            Some (Cvar id, env_add (VP.create id) r env)
           else begin
             (* Introduce a fresh temp to hold the result *)
             let tmp = Reg.createv_like r in
             self#insert_moves r tmp;
-            Some (Cvar id, env_add id tmp env)
+            Some (Cvar id, env_add (VP.create id) tmp env)
           end
         end
   end
@@ -1201,8 +1207,8 @@ method emit_fundecl f =
     if not Config.spacetime then None, env
     else begin
       let reg = self#regs_for typ_int in
-      let node_hole = Ident.create_local "spacetime_node_hole" in
-      Some (node_hole, reg), env_add node_hole reg env
+      let node_hole = V.create_local "spacetime_node_hole" in
+      Some (node_hole, reg), env_add (VP.create node_hole) reg env
     end
   in
   self#emit_tail env f.Cmm.fun_body;

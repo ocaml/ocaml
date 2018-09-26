@@ -327,6 +327,7 @@ objinfo_helper$(EXE): objinfo_helper.c $(ROOTDIR)/runtime/caml/s.h
 OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
+        $(ROOTDIR)/asmcomp/backend_var.cmo \
         $(ROOTDIR)/asmcomp/printclambda.cmo \
         $(ROOTDIR)/asmcomp/export_info.cmo \
         objinfo.cmo
@@ -347,6 +348,7 @@ $(call byte_and_opt,primreq,$(primreq),)
 LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cmxa \
+        $(ROOTDIR)/asmcomp/backend_var.cmx \
         $(ROOTDIR)/asmcomp/printclambda.cmx \
         $(ROOTDIR)/asmcomp/export_info.cmx \
 	$(ROOTDIR)/otherlibs/str/str.cmxa \
