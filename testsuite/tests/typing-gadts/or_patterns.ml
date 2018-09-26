@@ -19,8 +19,8 @@ let trivial t =
 
 [%%expect{|
 Line 4, characters 4-11:
-    | BoolLit -> ()
-      ^^^^^^^
+4 |   | BoolLit -> ()
+        ^^^^^^^
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
        Type bool is not compatible with type int
@@ -44,8 +44,8 @@ let trivial_merged t =
 
 [%%expect{|
 Line 4, characters 4-11:
-    | BoolLit -> ()
-      ^^^^^^^
+4 |   | BoolLit -> ()
+        ^^^^^^^
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
        Type bool is not compatible with type int
@@ -58,12 +58,7 @@ let trivial_merged_annotated (type a) (t : a t) =
 ;;
 
 [%%expect{|
-Line 3, characters 4-10:
-    | IntLit
-      ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val trivial_merged_annotated : 'a t -> unit = <fun>
 |}]
 
 let trivial_merged_annotated_under_tuple1 (type a) (t : a t) =
@@ -73,12 +68,7 @@ let trivial_merged_annotated_under_tuple1 (type a) (t : a t) =
 ;;
 
 [%%expect{|
-Line 3, characters 8-14:
-    | _, (IntLit
-          ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val trivial_merged_annotated_under_tuple1 : 'a t -> unit = <fun>
 |}]
 
 let trivial_merged_annotated_under_tuple2 (type a) (tt : a t * a t) =
@@ -89,8 +79,8 @@ let trivial_merged_annotated_under_tuple2 (type a) (tt : a t * a t) =
 
 [%%expect{|
 Line 3, characters 22-29:
-    | IntLit, (IntLit | BoolLit) -> ()
-                        ^^^^^^^
+3 |   | IntLit, (IntLit | BoolLit) -> ()
+                          ^^^^^^^
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type a t
        Type bool is not compatible with type a = int
@@ -103,12 +93,7 @@ let trivial_merged_annotated_under_tuple2 (type a) (tt : a t * a t) =
 ;;
 
 [%%expect{|
-Line 3, characters 5-11:
-    | (IntLit | BoolLit), IntLit -> ()
-       ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val trivial_merged_annotated_under_tuple2 : 'a t * 'a t -> unit = <fun>
 |}]
 
 
@@ -122,12 +107,7 @@ let trivial_merged_annotated_under_array (type a) (t : a t array) =
 ;;
 
 [%%expect{|
-Line 3, characters 8-14:
-    | [| (IntLit | BoolLit); _ |] -> ()
-          ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val trivial_merged_annotated_under_array : 'a t array -> unit = <fun>
 |}]
 
 let simple t a =
@@ -139,15 +119,15 @@ let simple t a =
 
 [%%expect{|
 Line 4, characters 4-11:
-    | BoolLit, true -> ()
-      ^^^^^^^
+4 |   | BoolLit, true -> ()
+        ^^^^^^^
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
        Type bool is not compatible with type int
 |}, Principal{|
 Line 4, characters 4-17:
-    | BoolLit, true -> ()
-      ^^^^^^^^^^^^^
+4 |   | BoolLit, true -> ()
+        ^^^^^^^^^^^^^
 Error: This pattern matches values of type bool t * bool
        but a pattern was expected which matches values of type int t * int
        Type bool is not compatible with type int
@@ -173,8 +153,8 @@ let simple_merged t a =
 
 [%%expect{|
 Line 4, characters 4-11:
-    | BoolLit, true -> ()
-      ^^^^^^^
+4 |   | BoolLit, true -> ()
+        ^^^^^^^
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
        Type bool is not compatible with type int
@@ -188,12 +168,13 @@ let simple_merged_ambi (type a) (t : a t) a =
 ;;
 
 [%%expect{|
-Line 3, characters 4-10:
-    | IntLit, (3 : a)
-      ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+Line 4, characters 13-17:
+4 |   | BoolLit, true -> ()
+                 ^^^^
+Error: This pattern matches values of type bool
+       but a pattern was expected which matches values of type a = bool
+       This instance of bool is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 
@@ -205,12 +186,11 @@ let simple_merged_not_annotated_enough (type a) (t : a t) a =
 ;;
 
 [%%expect{|
-Line 3, characters 4-10:
-    | IntLit, 3
-      ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+Line 4, characters 13-17:
+4 |   | BoolLit, true -> ()
+                 ^^^^
+Error: This pattern matches values of type bool
+       but a pattern was expected which matches values of type int
 |}]
 
 
@@ -222,12 +202,7 @@ let simple_merged_annotated (type a) (t : a t) (a : a) =
 ;;
 
 [%%expect{|
-Line 3, characters 4-10:
-    | IntLit, 3
-      ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val simple_merged_annotated : 'a t -> 'a -> unit = <fun>
 |}]
 
 let simple_mega_merged_annotated (type a) (t : a t) (a : a) =
@@ -238,12 +213,7 @@ let simple_mega_merged_annotated (type a) (t : a t) (a : a) =
 ;;
 
 [%%expect{|
-Line 3, characters 4-10:
-    | IntLit, 3
-      ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val simple_mega_merged_annotated : 'a t -> 'a -> unit = <fun>
 |}]
 
 let simple_merged_annotated_return (type a) (t : a t) (a : a) =
@@ -254,12 +224,12 @@ let simple_merged_annotated_return (type a) (t : a t) (a : a) =
 ;;
 
 [%%expect{|
-Line 3, characters 4-10:
-    | IntLit, (3 as x)
-      ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+Line 3, characters 12-20:
+3 |   | IntLit, (3 as x)
+                ^^^^^^^^
+Error: This pattern matches values of type a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let simple_merged_annotated_return_annotated (type a) (t : a t) (a : a) =
@@ -270,12 +240,11 @@ let simple_merged_annotated_return_annotated (type a) (t : a t) (a : a) =
 ;;
 
 [%%expect{|
-Line 3, characters 4-10:
-    | IntLit, ((3 : a) as x)
-      ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+Line 3, characters 4-57:
+3 | ....IntLit, ((3 : a) as x)
+4 |   | BoolLit, ((true : a) as x)............
+Error: The variable x on the left-hand side of this or-pattern has type
+       a but on the right-hand side it has type bool
 |}]
 
 (* test more scenarios: when the or-pattern itself is not at toplevel but under
@@ -289,12 +258,7 @@ let simple_merged_annotated_under_tuple (type a) (pair : a t * a) =
 ;;
 
 [%%expect{|
-Line 3, characters 10-16:
-    | (), ( IntLit, 3
-            ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val simple_merged_annotated_under_tuple : 'a t * 'a -> unit = <fun>
 |}]
 
 let simple_merged_annotated_under_arrays (type a) (pair : a t * a) =
@@ -305,12 +269,7 @@ let simple_merged_annotated_under_arrays (type a) (pair : a t * a) =
 ;;
 
 [%%expect{|
-Line 3, characters 16-22:
-    | [| _ ; [| ( IntLit, 3
-                  ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val simple_merged_annotated_under_arrays : 'a t * 'a -> unit = <fun>
 |}]
 
 
@@ -322,12 +281,13 @@ let simple_merged_annotated_under_poly_variant (type a) (pair : a t * a) =
 ;;
 
 [%%expect{|
-Line 3, characters 11-17:
-    | `Foo ( IntLit, 3
-             ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+Line 3, characters 19-20:
+3 |   | `Foo ( IntLit, 3
+                       ^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let simple_merged_annotated_under_poly_variant_annotated (type a) pair =
@@ -338,12 +298,8 @@ let simple_merged_annotated_under_poly_variant_annotated (type a) pair =
 ;;
 
 [%%expect{|
-Line 3, characters 11-17:
-    | `Foo ( IntLit, 3
-             ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val simple_merged_annotated_under_poly_variant_annotated : 'a t * 'a -> unit =
+  <fun>
 |}]
 
 type 'a iref = { content : 'a; };;
@@ -358,12 +314,7 @@ let simple_merged_annotated_under_record (type a) (pair : a t * a) =
   | _ -> ()
 ;;
 [%%expect{|
-Line 3, characters 18-24:
-    | { content = ( IntLit, 3
-                    ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val simple_merged_annotated_under_record : 'a t * 'a -> unit = <fun>
 |}]
 
 let simple_merged_annotated_under_mutable_record (type a) (pair : a t * a) =
@@ -373,12 +324,7 @@ let simple_merged_annotated_under_mutable_record (type a) (pair : a t * a) =
   | _ -> ()
 ;;
 [%%expect{|
-Line 3, characters 19-25:
-    | { contents = ( IntLit, 3
-                     ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val simple_merged_annotated_under_mutable_record : 'a t * 'a -> unit = <fun>
 |}]
 
 type 'a piref = { pcontent : 'b. 'a * 'b; };;
@@ -393,12 +339,8 @@ let simple_merged_annotated_under_poly_record1 (type a) (r : (a t * a) piref) =
   | _ -> ()
 ;;
 [%%expect{|
-Line 3, characters 19-25:
-    | { pcontent = ( IntLit, 3
-                     ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val simple_merged_annotated_under_poly_record1 : ('a t * 'a) piref -> unit =
+  <fun>
 |}]
 
 let simple_merged_annotated_under_poly_record2 (type a) (r : (a t * a) piref) =
@@ -408,12 +350,8 @@ let simple_merged_annotated_under_poly_record2 (type a) (r : (a t * a) piref) =
   | _ -> ()
 ;;
 [%%expect{|
-Line 3, characters 20-26:
-    | { pcontent = ( (IntLit, 3), _
-                      ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val simple_merged_annotated_under_poly_record2 : ('a t * 'a) piref -> unit =
+  <fun>
 |}]
 
 let simple_merged_annotated_under_constructor (type a) (pair : a t * a) =
@@ -423,12 +361,7 @@ let simple_merged_annotated_under_constructor (type a) (pair : a t * a) =
   | _ -> ()
 ;;
 [%%expect{|
-Line 3, characters 11-17:
-    | Some ( IntLit, 3
-             ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val simple_merged_annotated_under_constructor : 'a t * 'a -> unit = <fun>
 |}]
 
 type _ gadt_opt =
@@ -446,12 +379,8 @@ let simple_merged_annotated_under_gadt_constructor (type a) (pair : a t * a) =
   | _ -> ()
 ;;
 [%%expect{|
-Line 3, characters 12-18:
-    | GSome ( IntLit, 3
-              ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val simple_merged_annotated_under_gadt_constructor : 'a t * 'a -> unit =
+  <fun>
 |}]
 
 (* back to simpler tests. *)
@@ -464,15 +393,15 @@ let noop t a =
 
 [%%expect{|
 Line 4, characters 4-11:
-    | BoolLit, x -> x
-      ^^^^^^^
+4 |   | BoolLit, x -> x
+        ^^^^^^^
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
        Type bool is not compatible with type int
 |}, Principal{|
 Line 4, characters 4-14:
-    | BoolLit, x -> x
-      ^^^^^^^^^^
+4 |   | BoolLit, x -> x
+        ^^^^^^^^^^
 Error: This pattern matches values of type bool t * 'a
        but a pattern was expected which matches values of type int t * 'b
        Type bool is not compatible with type int
@@ -496,8 +425,8 @@ let noop_merged t a =
 
 [%%expect{|
 Line 4, characters 4-11:
-    | BoolLit, x -> x
-      ^^^^^^^
+4 |   | BoolLit, x -> x
+        ^^^^^^^
 Error: This pattern matches values of type bool t
        but a pattern was expected which matches values of type int t
        Type bool is not compatible with type int
@@ -510,12 +439,7 @@ let noop_merged_annotated (type a) (t : a t) (a : a) : a =
 ;;
 
 [%%expect{|
-Line 3, characters 4-10:
-    | IntLit, x
-      ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val noop_merged_annotated : 'a t -> 'a -> 'a = <fun>
 |}]
 
 (***)
@@ -536,8 +460,8 @@ let trivial2 t2 =
 
 [%%expect{|
 Line 4, characters 4-10:
-    | Bool _ -> ()
-      ^^^^^^
+4 |   | Bool _ -> ()
+        ^^^^^^
 Error: This pattern matches values of type bool t2
        but a pattern was expected which matches values of type int t2
        Type bool is not compatible with type int
@@ -561,8 +485,8 @@ let trivial2_merged t2 =
 
 [%%expect{|
 Line 4, characters 4-10:
-    | Bool _ -> ()
-      ^^^^^^
+4 |   | Bool _ -> ()
+        ^^^^^^
 Error: This pattern matches values of type bool t2
        but a pattern was expected which matches values of type int t2
        Type bool is not compatible with type int
@@ -575,12 +499,7 @@ let trivial2_merged_annotated (type a) (t2 : a t2) =
 ;;
 
 [%%expect{|
-Line 3, characters 4-9:
-    | Int _
-      ^^^^^
-Error: This pattern matches values of type int t2
-       but a pattern was expected which matches values of type a t2
-       Type int is not compatible with type a
+val trivial2_merged_annotated : 'a t2 -> unit = <fun>
 |}]
 
 
@@ -592,8 +511,8 @@ let extract t2 =
 
 [%%expect{|
 Line 4, characters 4-10:
-    | Bool _ -> x
-      ^^^^^^
+4 |   | Bool _ -> x
+        ^^^^^^
 Error: This pattern matches values of type bool t2
        but a pattern was expected which matches values of type int t2
        Type bool is not compatible with type int
@@ -617,8 +536,8 @@ let extract_merged t2 =
 
 [%%expect{|
 Line 4, characters 4-10:
-    | Bool x -> x
-      ^^^^^^
+4 |   | Bool x -> x
+        ^^^^^^
 Error: This pattern matches values of type bool t2
        but a pattern was expected which matches values of type int t2
        Type bool is not compatible with type int
@@ -632,12 +551,11 @@ let extract_merged_annotated (type a) (t2 : a t2) : a =
 
 
 [%%expect{|
-Line 3, characters 4-9:
-    | Int x
-      ^^^^^
-Error: This pattern matches values of type int t2
-       but a pattern was expected which matches values of type a t2
-       Type int is not compatible with type a
+Line 3, characters 4-20:
+3 | ....Int x
+4 |   | Bool x.....
+Error: The variable x on the left-hand side of this or-pattern has type
+       int but on the right-hand side it has type bool
 |}]
 
 let extract_merged_super_annotated (type a) (t2 : a t2) : a =
@@ -647,12 +565,7 @@ let extract_merged_super_annotated (type a) (t2 : a t2) : a =
 ;;
 
 [%%expect{|
-Line 3, characters 4-15:
-    | Int (x : a)
-      ^^^^^^^^^^^
-Error: This pattern matches values of type int t2
-       but a pattern was expected which matches values of type a t2
-       Type int is not compatible with type a
+val extract_merged_super_annotated : 'a t2 -> 'a = <fun>
 |}]
 
 let extract_merged_too_lightly_annotated (type a) (t2 : a t2) : a =
@@ -662,12 +575,11 @@ let extract_merged_too_lightly_annotated (type a) (t2 : a t2) : a =
 ;;
 
 [%%expect{|
-Line 3, characters 4-15:
-    | Int (x : a)
-      ^^^^^^^^^^^
-Error: This pattern matches values of type int t2
-       but a pattern was expected which matches values of type a t2
-       Type int is not compatible with type a
+Line 3, characters 4-26:
+3 | ....Int (x : a)
+4 |   | Bool x.....
+Error: The variable x on the left-hand side of this or-pattern has type
+       a but on the right-hand side it has type bool
 |}]
 
 let extract_merged_super_lightly_annotated (type a) (t2 : a t2) =
@@ -677,12 +589,7 @@ let extract_merged_super_lightly_annotated (type a) (t2 : a t2) =
 ;;
 
 [%%expect{|
-Line 3, characters 4-15:
-    | Int (x : a)
-      ^^^^^^^^^^^
-Error: This pattern matches values of type int t2
-       but a pattern was expected which matches values of type a t2
-       Type int is not compatible with type a
+val extract_merged_super_lightly_annotated : 'a t2 -> 'a = <fun>
 |}]
 
 let lambiguity (type a) (t2 : a t2) =
@@ -692,12 +599,12 @@ let lambiguity (type a) (t2 : a t2) =
 ;;
 
 [%%expect{|
-Line 3, characters 4-22:
-    | Int ((_ : a) as x)
-      ^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type int t2
-       but a pattern was expected which matches values of type a t2
-       Type int is not compatible with type a
+Line 3, characters 8-22:
+3 |   | Int ((_ : a) as x)
+            ^^^^^^^^^^^^^^
+Error: This pattern matches values of type a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let rambiguity (type a) (t2 : a t2) =
@@ -707,12 +614,12 @@ let rambiguity (type a) (t2 : a t2) =
 ;;
 
 [%%expect{|
-Line 3, characters 4-16:
-    | Int (_ as x)
-      ^^^^^^^^^^^^
-Error: This pattern matches values of type int t2
-       but a pattern was expected which matches values of type a t2
-       Type int is not compatible with type a
+Line 4, characters 9-23:
+4 |   | Bool ((_ : a) as x) -> x
+             ^^^^^^^^^^^^^^
+Error: This pattern matches values of type a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 
@@ -742,27 +649,20 @@ let return_int (type a) (x : a t3) =
 ;;
 
 [%%expect{|
-Line 3, characters 4-5:
-    | A | B -> 3
-      ^
-Error: This pattern matches values of type int t3
-       but a pattern was expected which matches values of type a t3
-       Type int is not compatible with type a
+val return_int : 'a t3 -> int = <fun>
 |}]
 
 let return_a (type a) (x : a t3) : a =
   match x with
-  | A | B -> 3 (* fails because the equation [a = int] doesn't escape any of the
-                  branches of this or-pattern. *)
+  | A | B -> 3 (* fails because the equation [a = int] doesn't escape any of
+                  the branches of this or-pattern. *)
 ;;
 
 [%%expect{|
-Line 3, characters 4-5:
-    | A | B -> 3 (* fails because the equation [a = int] doesn't escape any of the
-      ^
-Error: This pattern matches values of type int t3
-       but a pattern was expected which matches values of type a t3
-       Type int is not compatible with type a
+Line 3, characters 13-14:
+3 |   | A | B -> 3 (* fails because the equation [a = int] doesn't escape any of
+                 ^
+Error: This expression has type int but an expression was expected of type a
 |}]
 
 (* Making sure we don't break a frequent pattern of GADTs indexed by polymorphic
@@ -820,12 +720,7 @@ let f_ok (type a) (t : a t) (a : bool iref) (b : a iref) =
   | _, _, _ -> ()
 ;;
 [%%expect{|
-Line 3, characters 4-10:
-    | IntLit,  ({ content = true } as x), _
-      ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+val f_ok : 'a t -> bool iref -> 'a iref -> unit = <fun>
 |}]
 
 
@@ -836,12 +731,13 @@ let f_amb (type a) (t : a t) (a : bool ref) (b : a ref) =
   | _, _, _ -> ()
 ;;
 [%%expect{|
-Line 3, characters 4-10:
-    | IntLit,  ({ contents = true } as x), _
-      ^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type a t
-       Type int is not compatible with type a
+Line 3, characters 4-108:
+3 | ....IntLit,  ({ contents = true } as x), _
+4 |   | BoolLit,  _,                        ({ contents = true} as x)............
+Error: The variable x on the left-hand side of this or-pattern has type
+         bool ref
+       but on the right-hand side it has type a ref
+       Type bool is not compatible with type a
 |}]
 
 (********************************************)
@@ -859,9 +755,9 @@ let f = function
   | B x -> ignore x
 ;;
 [%%expect{|
-Line 2, characters 4-15:
-  ....A x
-    | B x............
-Error: The variable x on the left-hand side of this or-pattern has type
-       $A_'a but on the right-hand side it has type $B_'a
+Line 2, characters 6-7:
+2 |   | A x
+          ^
+Error: This pattern matches values of type $A_'a
+       The type constructor $A_'a would escape its scope
 |}]
