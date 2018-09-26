@@ -139,6 +139,8 @@ and expression =
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression
+  | Cphantom_let of Backend_var.With_provenance.t
+      * Clambda.uphantom_defining_expr option * expression
   | Cassign of Backend_var.t * expression
   | Ctuple of expression list
   | Cop of operation * expression list * Debuginfo.t

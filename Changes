@@ -434,6 +434,12 @@ Working version
 - GPR#2065: Add [Proc.destroyed_at_reloadretaddr].
   (Mark Shinwell, review by Damien Doligez)
 
+- GPR#2060: "Phantom let" support for the Clambda language.
+  (Mark Shinwell, review by Vincent Laviron)
+
+- GPR#2070: "Phantom let" support for the Cmm language.
+  (Mark Shinwell, review by Vincent Laviron)
+
 - GPR#2072: Always associate a scope to a type
   (Thomas Refis, review by Jacques Garrigue and Leo White)
 
