@@ -507,8 +507,8 @@ module BR = Branch_relaxation.Make (struct
     | Lpoptrap -> 2
     | Lraise _ -> 6
 
-  let relax_allocation ~num_words:words ~label_after_call_gc =
-    Lop (Ispecific (Ialloc_far { words; label_after_call_gc; }))
+  let relax_allocation ~num_bytes:bytes ~label_after_call_gc =
+    Lop (Ispecific (Ialloc_far { bytes; label_after_call_gc; }))
 
   (* [classify_addr], above, never identifies these instructions as needing
      relaxing.  As such, these functions should never be called. *)
@@ -770,7 +770,7 @@ let emit_instr i =
           | Single -> "stfs"
           | Double | Double_u -> "stfd" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
-    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
+    | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
         if !call_gc_label = 0 then begin
           match label_after_call_gc with
           | None -> call_gc_label := new_label ()
@@ -782,7 +782,7 @@ let emit_instr i =
         `	bltl	{emit_label !call_gc_label}\n`;
         (* Exactly 4 instructions after the beginning of the alloc sequence *)
         record_frame i.live false Debuginfo.none
-    | Lop(Ispecific(Ialloc_far { words = n; label_after_call_gc; })) ->
+    | Lop(Ispecific(Ialloc_far { bytes = n; label_after_call_gc; })) ->
         if !call_gc_label = 0 then begin
           match label_after_call_gc with
           | None -> call_gc_label := new_label ()

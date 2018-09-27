@@ -600,7 +600,7 @@ let emit_instr i =
           | Double_u -> "fstd"
           | _ (* 32-bit quantities *) -> "str" in
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 1}\n`; 1
-    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
+    | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
         let lbl_frame =
           record_frame_label i.live false i.dbg ?label:label_after_call_gc
         in

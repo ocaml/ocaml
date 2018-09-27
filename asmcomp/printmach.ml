@@ -143,7 +143,7 @@ let operation op arg ppf res =
        (Array.sub arg 1 (Array.length arg - 1))
        reg arg.(0)
        (if is_assign then "(assign)" else "(init)")
-  | Ialloc { words = n; _ } ->
+  | Ialloc { bytes = n; _ } ->
     fprintf ppf "alloc %i" n;
     if Config.spacetime then begin
       fprintf ppf "(spacetime node = %a)" reg arg.(0)

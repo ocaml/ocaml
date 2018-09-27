@@ -54,7 +54,7 @@ type operation =
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
-  | Ialloc of { words : int; label_after_call_gc : label option;
+  | Ialloc of { bytes : int; label_after_call_gc : label option;
         spacetime_index : int; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int

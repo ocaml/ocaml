@@ -630,7 +630,7 @@ let emit_instr fallthrough i =
             I.fstp (addressing addr REAL8 i 1)
           end
       end
-  | Lop(Ialloc { words = n; label_after_call_gc; }) ->
+  | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;

@@ -410,6 +410,9 @@ Working version
   use [Backend_var.With_provenance] for variables in binding position.
   (Mark Shinwell, review by Pierre Chambart)
 
+- GPR#2074: Correct naming of record field inside [Ialloc] terms.
+  (Mark Shinwell, review by Jérémie Dimino)
+
 - GPR#2076: Add [Targetint.print].
   (Mark Shinwell)
 
