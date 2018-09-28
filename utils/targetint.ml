@@ -55,6 +55,7 @@ module type S = sig
   val compare: t -> t -> int
   val equal: t -> t -> bool
   val repr: t -> repr
+  val print : Format.formatter -> t -> unit
 end
 
 let size = Sys.word_size
@@ -80,6 +81,7 @@ module Int32 = struct
   let of_int64 = Int64.to_int32
   let to_int64 = Int64.of_int32
   let repr x = Int32 x
+  let print ppf t = Format.fprintf ppf "%ld" t
 end
 
 module Int64 = struct
@@ -88,6 +90,7 @@ module Int64 = struct
   let of_int64 x = x
   let to_int64 x = x
   let repr x = Int64 x
+  let print ppf t = Format.fprintf ppf "%Ld" t
 end
 
 include (val
