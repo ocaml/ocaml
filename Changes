@@ -414,6 +414,9 @@ Working version
 - GPR#2076: Add [Targetint.print].
   (Mark Shinwell)
 
+- GPR#2077: Add [Dwarf_low] library.
+  (Mark Shinwell)
+
 ### Bug fixes:
 
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the
