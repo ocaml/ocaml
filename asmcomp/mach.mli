@@ -47,7 +47,7 @@ type test =
   | Ieventest
 
 type phantom_defining_expr =
-  | Iphantom_const_int of int
+  | Iphantom_const_int of Targetint.t
   | Iphantom_const_symbol of string
   | Iphantom_var of Backend_var.t  (** Must not be a phantom identifier. *)
   | Iphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
