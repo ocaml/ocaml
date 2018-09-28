@@ -183,7 +183,7 @@ extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 
 #ifdef _WIN32
 
-#define _T(x) L ## x
+#define T(x) L ## x
 
 #define access_os _waccess
 #define open_os _wopen
@@ -213,7 +213,7 @@ extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 
 #else /* _WIN32 */
 
-#define _T(x) x
+#define T(x) x
 
 #define access_os access
 #define open_os open

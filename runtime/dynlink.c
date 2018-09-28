@@ -73,7 +73,7 @@ static c_primitive lookup_primitive(char * name)
 /* Parse the OCAML_STDLIB_DIR/ld.conf file and add the directories
    listed there to the search path */
 
-#define LD_CONF_NAME _T("ld.conf")
+#define LD_CONF_NAME T("ld.conf")
 
 static char_os * parse_ld_conf(void)
 {
@@ -86,10 +86,10 @@ static char_os * parse_ld_conf(void)
 #endif
   int ldconf, nread;
 
-  stdlib = caml_secure_getenv(_T("OCAMLLIB"));
-  if (stdlib == NULL) stdlib = caml_secure_getenv(_T("CAMLLIB"));
+  stdlib = caml_secure_getenv(T("OCAMLLIB"));
+  if (stdlib == NULL) stdlib = caml_secure_getenv(T("CAMLLIB"));
   if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
-  ldconfname = caml_stat_strconcat_os(3, stdlib, _T("/"), LD_CONF_NAME);
+  ldconfname = caml_stat_strconcat_os(3, stdlib, T("/"), LD_CONF_NAME);
   if (stat_os(ldconfname, &st) == -1) {
     caml_stat_free(ldconfname);
     return NULL;
@@ -109,7 +109,7 @@ static char_os * parse_ld_conf(void)
   caml_stat_free(config);
   q = wconfig;
   for (p = wconfig; *p != 0; p++) {
-    if (*p == _T('\n')) {
+    if (*p == '\n') {
       *p = 0;
       caml_ext_table_add(&caml_shared_libs_path, q);
       q = p + 1;
@@ -165,7 +165,7 @@ void caml_build_primitive_table(char_os * lib_path,
      - directories specified in the executable
      - directories specified in the file <stdlib>/ld.conf */
   tofree1 = caml_decompose_path(&caml_shared_libs_path,
-                                caml_secure_getenv(_T("CAML_LD_LIBRARY_PATH")));
+                                caml_secure_getenv(T("CAML_LD_LIBRARY_PATH")));
   if (lib_path != NULL)
     for (p = lib_path; *p != 0; p += strlen_os(p) + 1)
       caml_ext_table_add(&caml_shared_libs_path, p);

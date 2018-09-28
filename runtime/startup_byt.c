@@ -260,40 +260,40 @@ static int parse_command_line(char_os **argv)
 {
   int i, j;
 
-  for(i = 1; argv[i] != NULL && argv[i][0] == _T('-'); i++) {
+  for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
     switch(argv[i][1]) {
-    case _T('t'):
+    case 't':
       ++ caml_trace_level; /* ignored unless DEBUG mode */
       break;
-    case _T('v'):
-      if (!strcmp_os (argv[i], _T("-version"))){
+    case 'v':
+      if (!strcmp_os (argv[i], T("-version"))){
         printf ("%s\n", "The OCaml runtime, version " OCAML_VERSION_STRING);
         exit (0);
-      }else if (!strcmp_os (argv[i], _T("-vnum"))){
+      }else if (!strcmp_os (argv[i], T("-vnum"))){
         printf ("%s\n", OCAML_VERSION_STRING);
         exit (0);
       }else{
         caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
       }
       break;
-    case _T('p'):
+    case 'p':
       for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
         printf("%s\n", caml_names_of_builtin_cprim[j]);
       exit(0);
       break;
-    case _T('b'):
+    case 'b':
       caml_record_backtrace(Val_true);
       break;
-    case _T('I'):
+    case 'I':
       if (argv[i + 1] != NULL) {
         caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
         i++;
       }
       break;
-    case _T('m'):
+    case 'm':
       print_magic = 1;
       break;
-    case _T('M'):
+    case 'M':
       printf ( "%s\n", EXEC_MAGIC);
       exit(0);
       break;
@@ -440,7 +440,7 @@ CAMLexport void caml_main(char_os **argv)
   caml_sys_init(exe_name, argv + pos);
 #ifdef _WIN32
   /* Start a thread to handle signals */
-  if (caml_secure_getenv(_T("CAMLSIGPIPE")))
+  if (caml_secure_getenv(T("CAMLSIGPIPE")))
     _beginthread(caml_signal_thread, 4096, NULL);
 #endif
   /* Execute the program */
@@ -488,7 +488,7 @@ CAMLexport value caml_startup_code_exn(
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-  cds_file = caml_secure_getenv(_T("CAML_DEBUG_FILE"));
+  cds_file = caml_secure_getenv(T("CAML_DEBUG_FILE"));
   if (cds_file != NULL) {
     caml_cds_file = caml_stat_strdup_os(cds_file);
   }
