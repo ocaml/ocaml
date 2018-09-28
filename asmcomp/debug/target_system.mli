@@ -66,7 +66,7 @@ type assembler = private
   | MacOS
   | MASM
 
-type machine_width = private
+type machine_width =
   | Thirty_two
   | Sixty_four
 
