@@ -428,6 +428,9 @@ Working version
 - GPR#2070: "Phantom let" support for the Cmm language.
   (Mark Shinwell)
 
+- GPR#2071: "Phantom let" support in [Selectgen].
+  (Mark Shinwell)
+
 - GPR#2076: Add [Targetint.print].
   (Mark Shinwell)
 
