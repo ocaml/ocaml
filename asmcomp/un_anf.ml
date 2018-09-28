@@ -16,6 +16,15 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+(* CR-someday vlaviron for mshinwell: I believe that the phantom lets introduced
+   in un_anf (when the new debug_full flag is enabled) bind mostly variables
+   that were created in the middle-end. Is it relevant to generate debugging
+   information for such variables ? I expect later pull requests to refine the
+   generation of these phantom constructions anyway, but maybe it would already
+   make sense to restrict the phantom let generation to variables with an actual
+   provenance.
+*)
+
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
