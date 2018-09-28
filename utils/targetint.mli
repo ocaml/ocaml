@@ -190,3 +190,6 @@ type repr =
 
 val repr : t -> repr
 (** The concrete representation of a native integer. *)
+
+val print : Format.formatter -> t -> unit
+(** Print a target integer to a formatter. *)

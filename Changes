@@ -412,6 +412,9 @@ Working version
   information emitter.
   (Mark Shinwell)
 
+- GPR#2076: Add [Targetint.print].
+  (Mark Shinwell)
+
 ### Bug fixes:
 
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the
