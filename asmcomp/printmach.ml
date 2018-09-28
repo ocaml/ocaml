@@ -243,7 +243,7 @@ let rec instr ppf i =
 let phantom_defining_expr ppf defining_expr =
   match defining_expr with
   | Iphantom_const_int i ->
-    fprintf ppf "@[(const_int@ %d)@]" i
+    fprintf ppf "@[(const_int@ %a)@]" Targetint.print i
   | Iphantom_const_symbol sym ->
     fprintf ppf "@[(const_symbol@ %s)@]" sym
   | Iphantom_var var ->
