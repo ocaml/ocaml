@@ -594,7 +594,7 @@ method select_condition = function
 
 method private lower_phantom_let
       ~(provenance : V.Provenance.t option)
-      ~(defining_expr : Clambda.uphantom_defining_expr option) =
+      ~(defining_expr : Cmm.phantom_defining_expr option) =
   match defining_expr with
   | None ->
     (* The defining expression of this phantom let is never going to be
@@ -603,30 +603,23 @@ method private lower_phantom_let
     None
   | Some defining_expr ->
     let defining_expr =
-      let module C = Clambda in
       match defining_expr with
-      | C.Uphantom_const (C.Uconst_ref (sym, _defining_expr)) ->
-        Some (Mach.Iphantom_const_symbol sym)
-      | C.Uphantom_read_symbol_field
-          { sym = C.Uconst_ref (sym, _defining_expr); field; } ->
-        Some (Mach.Iphantom_read_symbol_field { sym; field; })
-      | C.Uphantom_read_symbol_field _ ->
-        Misc.fatal_errorf "Selectgen.lower_phantom_let: unknown Clambda \
-          constant pattern for [Uphantom_read_symbol_field]"
-      | C.Uphantom_const (C.Uconst_int i) | C.Uphantom_const (C.Uconst_ptr i) ->
-        Some (Mach.Iphantom_const_int i)
-      | C.Uphantom_var var ->
+      | Cphantom_const_int i -> Some (Mach.Iphantom_const_int i)
+      | Cphantom_const_symbol sym -> Some (Mach.Iphantom_const_symbol sym)
+      | Cphantom_var var ->
         if V.Set.mem var !dead_phantom_lets then None
         else Some (Mach.Iphantom_var var)
-      | C.Uphantom_read_field { var; field; } ->
-        if V.Set.mem var !dead_phantom_lets then None
-        else Some (Mach.Iphantom_read_field { var; field; })
-      | C.Uphantom_offset_var { var; offset_in_words; } ->
+      | Cphantom_offset_var { var; offset_in_words; } ->
         if V.Set.mem var !dead_phantom_lets then
           None
         else
           Some (Mach.Iphantom_offset_var { var; offset_in_words; })
-      | C.Uphantom_block { tag; fields; } ->
+      | Cphantom_read_symbol_field { sym; field; } ->
+        Some (Mach.Iphantom_read_symbol_field { sym; field; })
+      | Cphantom_read_field { var; field; } ->
+        if V.Set.mem var !dead_phantom_lets then None
+        else Some (Mach.Iphantom_read_field { var; field; })
+      | Cphantom_block { tag; fields; } ->
         let fields =
           List.map (fun field ->
               if V.Set.mem field !dead_phantom_lets then None
@@ -1478,6 +1471,8 @@ method initial_env () = env_empty
 method emit_fundecl f =
   Proc.contains_calls := false;
   current_function_name := f.Cmm.fun_name;
+  Ident.Tbl.clear phantom_lets;
+  dead_phantom_lets := Ident.Set.empty;
   let num_regs_per_arg = Array.make (List.length f.Cmm.fun_args) 0 in
   let rargs =
     List.mapi
