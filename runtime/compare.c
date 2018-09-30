@@ -133,7 +133,8 @@ static intnat do_compare_val(struct compare_stack* stk,
         return Long_val(v1) - Long_val(v2);
       /* Subtraction above cannot overflow and cannot result in UNORDERED */
 #ifndef NO_NAKED_POINTERS
-      if (Is_in_value_area(v2)) {
+      if (!Is_in_value_area(v2))
+        return LESS;
 #endif
         switch (Tag_val(v2)) {
         case Forward_tag:
@@ -151,14 +152,12 @@ static intnat do_compare_val(struct compare_stack* stk,
         }
         default: /*fallthrough*/;
         }
-#ifndef NO_NAKED_POINTERS
-      }
-#endif
       return LESS;                /* v1 long < v2 block */
     }
     if (Is_long(v2)) {
 #ifndef NO_NAKED_POINTERS
-      if (Is_in_value_area(v1)) {
+      if (!Is_in_value_area(v1))
+        return GREATER;
 #endif
         switch (Tag_val(v1)) {
         case Forward_tag:
@@ -176,9 +175,6 @@ static intnat do_compare_val(struct compare_stack* stk,
         }
         default: /*fallthrough*/;
         }
-#ifndef NO_NAKED_POINTERS
-      }
-#endif
       return GREATER;            /* v1 block > v2 long */
     }
 #ifndef NO_NAKED_POINTERS
