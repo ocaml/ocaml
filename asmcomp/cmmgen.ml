@@ -547,7 +547,7 @@ let map_ccatch f rec_flag handlers body =
 
 let rec unbox_float dbg cmm =
   match cmm with
-  | Cop(Calloc, [_header; c], _) -> c
+  | Cop(Calloc, [Cblockheader (header, _); c], _) when header = float_header -> c
   | Clet(id, exp, body) -> Clet(id, exp, unbox_float dbg body)
   | Cifthenelse(cond, e1, e2) ->
       Cifthenelse(cond, unbox_float dbg e1, unbox_float dbg e2)
