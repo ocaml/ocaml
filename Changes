@@ -449,6 +449,9 @@ Working version
   [Proc.stack_ptr_dwarf_register_number].
   (Mark Shinwell, review by Bernhard Schommer)
 
+- GPR#2081: Mark [Iname_for_debugger] as an impure operation.
+  (Mark Shinwell)
+
 ### Bug fixes:
 
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the
