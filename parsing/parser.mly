@@ -2729,22 +2729,17 @@ simple_core_type2_:
       { Ptyp_var $2 }
   | UNDERSCORE
       { Ptyp_any }
-  | mkrhs(type_longident)
-      { Ptyp_constr($1, []) }
-  | simple_core_type2 mkrhs(type_longident)
-      { Ptyp_constr($2, [$1]) }
-  | LPAREN inline_core_type_comma_list RPAREN mkrhs(type_longident)
-      { Ptyp_constr($4, $2) }
+  | tys = actual_type_parameters
+    tid = mkrhs(type_longident)
+      { Ptyp_constr(tid, tys) }
   | LESS meth_list GREATER
       { let (f, c) = $2 in Ptyp_object (f, c) }
   | LESS GREATER
       { Ptyp_object ([], Closed) }
-  | HASH mkrhs(class_longident)
-      { Ptyp_class($2, []) }
-  | simple_core_type2 HASH mkrhs(class_longident)
-      { Ptyp_class($3, [$1]) }
-  | LPAREN inline_core_type_comma_list RPAREN HASH mkrhs(class_longident)
-      { Ptyp_class($5, $2) }
+  | tys = actual_type_parameters
+    HASH
+    cid = mkrhs(class_longident)
+      { Ptyp_class(cid, tys) }
   | LBRACKET tag_field RBRACKET
       { Ptyp_variant([$2], Closed, None) }
 /* PR#3835: this is not LR(1), would need lookahead=2
@@ -2765,6 +2760,15 @@ simple_core_type2_:
       { Ptyp_variant($3, Closed, Some $5) }
   | extension
       { Ptyp_extension $1 }
+;
+
+%inline actual_type_parameters:
+  | /* empty */
+      { [] }
+  | ty = simple_core_type2
+      { [ty] }
+  | LPAREN tys = inline_core_type_comma_list RPAREN
+      { tys }
 ;
 
 package_type:
