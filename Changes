@@ -410,6 +410,10 @@ Working version
 - GPR#2076: Add [Targetint.print].
   (Mark Shinwell)
 
+- GPR#2080: Add [Proc.dwarf_register_numbers] and
+  [Proc.stack_ptr_dwarf_register_number].
+  (Mark Shinwell)
+
 ### Bug fixes:
 
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the
