@@ -1365,7 +1365,7 @@ class_simple_expr:
       { unclosed "(" $loc($1) ")" $loc($3) }
   | mkclass(
       LBRACKET core_type_comma_list RBRACKET mkrhs(class_longident)
-        { Pcl_constr($4, List.rev $2) }
+        { Pcl_constr($4, $2) }
     | mkrhs(class_longident)
         { Pcl_constr($1, []) }
     | OBJECT attributes class_structure error
@@ -1493,7 +1493,7 @@ class_type:
 class_signature:
     mkcty(
       LBRACKET core_type_comma_list RBRACKET mkrhs(clty_longident)
-        { Pcty_constr ($4, List.rev $2) }
+        { Pcty_constr ($4, $2) }
     | mkrhs(clty_longident)
         { Pcty_constr ($1, []) }
     | extension
@@ -2734,7 +2734,7 @@ simple_core_type2_:
   | simple_core_type2 mkrhs(type_longident)
       { Ptyp_constr($2, [$1]) }
   | LPAREN inline_core_type_comma_list RPAREN mkrhs(type_longident)
-      { Ptyp_constr($4, List.rev $2) }
+      { Ptyp_constr($4, $2) }
   | LESS meth_list GREATER
       { let (f, c) = $2 in Ptyp_object (f, c) }
   | LESS GREATER
@@ -2744,7 +2744,7 @@ simple_core_type2_:
   | simple_core_type2 HASH mkrhs(class_longident)
       { Ptyp_class($3, [$1]) }
   | LPAREN inline_core_type_comma_list RPAREN HASH mkrhs(class_longident)
-      { Ptyp_class($5, List.rev $2) }
+      { Ptyp_class($5, $2) }
   | LBRACKET tag_field RBRACKET
       { Ptyp_variant([$2], Closed, None) }
 /* PR#3835: this is not LR(1), would need lookahead=2
@@ -2810,7 +2810,7 @@ simple_core_type_or_tuple:
 ;
 (* A [core_type_comma_list] is a nonempty, comma-separated list of types. *)
 %inline core_type_comma_list:
-  tys = reversed_separated_nonempty_llist(COMMA, core_type)
+  tys = separated_nonempty_llist(COMMA, core_type)
     { tys }
 ;
 (* [inline_core_type_comma_list] is semantically equivalent to
@@ -2823,7 +2823,7 @@ simple_core_type_or_tuple:
    Inlining allows the parser to shift the closing parenthesis without (yet)
    deciding which of the above two situations we have. *)
 %inline inline_core_type_comma_list:
-  tys = inline_reversed_separated_nonempty_llist(COMMA, core_type)
+  tys = inline_separated_nonempty_llist(COMMA, core_type)
     { tys }
 ;
 %inline core_type_list:
