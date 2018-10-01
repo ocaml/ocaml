@@ -639,7 +639,7 @@ let create ~fundecl =
             | Iphantom_const_symbol _
             | Iphantom_read_symbol_field _ -> []
             | Iphantom_var var
-            | Iphantom_read_field (var, _)
+            | Iphantom_read_field { var; _ }
             | Iphantom_offset_var { var; _ } -> [var]
             | Iphantom_block { fields; _ } ->
               Misc.Stdlib.List.filter_map (fun field -> field) fields
