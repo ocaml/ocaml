@@ -209,6 +209,9 @@ Working version
 - GPR#1960: The parser keeps previous location when relocating ast node.
   (Hugo Heuzard, review by Jérémie Dimino)
 
+- GPR#2058: full explanation for unsafe cycles in recursive module definitions
+  (Florian Angeletti, review by Gabriel Scherer, suggested by Ivan Gotovchits)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.

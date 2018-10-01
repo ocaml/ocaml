@@ -27,8 +27,15 @@ open Translobj
 open Translcore
 open Translclass
 
+type unsafe_component =
+  | Unsafe_module_binding
+  | Unsafe_functor
+  | Unsafe_non_function
+  | Unsafe_typext
+
+type unsafe_info = { reason:unsafe_component; loc:Location.t; subid:Ident.t }
 type error =
-  Circular_dependency of Ident.t list
+  Circular_dependency of (Ident.t * unsafe_info) list
 | Conflicting_inline_attributes
 
 exception Error of Location.t * error
@@ -197,29 +204,34 @@ let undefined_location loc =
                       Const_base(Const_int line);
                       Const_base(Const_int char)]))
 
-let init_shape modl =
-  let rec init_shape_mod env mty =
+exception Initialization_failure of unsafe_info
+
+let init_shape id modl =
+  let rec init_shape_mod subid loc env mty =
     match Mtype.scrape env mty with
       Mty_ident _
     | Mty_alias (Mta_present, _) ->
-        raise Not_found
+        raise (Initialization_failure {reason=Unsafe_module_binding;loc;subid})
     | Mty_alias (Mta_absent, _) ->
         Const_block (1, [Const_pointer 0])
     | Mty_signature sg ->
         Const_block(0, [Const_block(0, init_shape_struct env sg)])
     | Mty_functor _ ->
-        raise Not_found (* can we do better? *)
+        (* can we do better? *)
+        raise (Initialization_failure {reason=Unsafe_functor;loc;subid})
   and init_shape_struct env sg =
     match sg with
       [] -> []
-    | Sig_value(_id, {val_kind=Val_reg; val_type=ty}) :: rem ->
+    | Sig_value(subid, {val_kind=Val_reg; val_type=ty; val_loc=loc}) :: rem ->
         let init_v =
           match Ctype.expand_head env ty with
             {desc = Tarrow(_,_,_,_)} ->
               Const_pointer 0 (* camlinternalMod.Function *)
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
               Const_pointer 1 (* camlinternalMod.Lazy *)
-          | _ -> raise Not_found in
+          | _ ->
+              let not_a_function = {reason=Unsafe_non_function; loc; subid } in
+              raise (Initialization_failure not_a_function) in
         init_v :: init_shape_struct env rem
     | Sig_value(_, {val_kind=Val_prim _}) :: rem ->
         init_shape_struct env rem
@@ -227,10 +239,10 @@ let init_shape modl =
         assert false
     | Sig_type(id, tdecl, _) :: rem ->
         init_shape_struct (Env.add_type ~check:false id tdecl env) rem
-    | Sig_typext _ :: _ ->
-        raise Not_found
+    | Sig_typext (subid, {ext_loc=loc},_) :: _ ->
+        raise (Initialization_failure {reason=Unsafe_typext; loc; subid})
     | Sig_module(id, md, _) :: rem ->
-        init_shape_mod env md.md_type ::
+        init_shape_mod id md.md_loc env md.md_type ::
         init_shape_struct (Env.add_module_declaration ~check:false
                              id md env) rem
     | Sig_modtype(id, minfo) :: rem ->
@@ -242,10 +254,9 @@ let init_shape modl =
         init_shape_struct env rem
   in
   try
-    Some(undefined_location modl.mod_loc,
-         Lconst(init_shape_mod modl.mod_env modl.mod_type))
-  with Not_found ->
-    None
+    Ok(undefined_location modl.mod_loc,
+       Lconst(init_shape_mod id modl.mod_loc modl.mod_env modl.mod_type))
+  with Initialization_failure reason -> Result.Error(reason)
 
 (* Reorder bindings to honor dependencies.  *)
 
@@ -254,15 +265,15 @@ type binding_status =
   | Inprogress of int option (** parent node *)
   | Defined
 
-let extract_unsafe_cycle id status cycle_start =
+let extract_unsafe_cycle id status init cycle_start =
+  let info i = match init.(i) with
+    | Result.Error r -> id.(i), r
+    | Ok _ -> assert false in
   let rec collect stop l i = match status.(i) with
     | Inprogress None | Undefined | Defined -> assert false
-    | Inprogress Some i when i = stop -> id.(i) :: l
-    | Inprogress Some i -> collect stop (id.(i)::l) i in
-  collect cycle_start [id.(cycle_start)] cycle_start
-(* This yields [cycle_start; ...; cycle_start]. The start of the cycle
-   is duplicated to make the cycle more visible in the corresponding error
-   message. *)
+    | Inprogress Some i when i = stop -> info i :: l
+    | Inprogress Some i -> collect stop (info i::l) i in
+  collect cycle_start [] cycle_start
 
 let reorder_rec_bindings bindings =
   let id = Array.of_list (List.map (fun (id,_,_,_) -> id) bindings)
@@ -273,21 +284,27 @@ let reorder_rec_bindings bindings =
   let num_bindings = Array.length id in
   let status = Array.make num_bindings Undefined in
   let res = ref [] in
+  let is_unsafe i = match init.(i) with
+    | Ok _ -> false
+    | Result.Error _ -> true in
+  let init_res i = match init.(i) with
+    | Result.Error _ -> None
+    | Ok(a,b) -> Some(a,b) in
   let rec emit_binding parent i =
     match status.(i) with
       Defined -> ()
     | Inprogress _ ->
         status.(i) <- Inprogress parent;
-        let cycle = extract_unsafe_cycle id status i in
+        let cycle = extract_unsafe_cycle id status init i in
         raise(Error(loc.(i), Circular_dependency cycle))
     | Undefined ->
-        if init.(i) = None then begin
+        if is_unsafe i then begin
           status.(i) <- Inprogress parent;
           for j = 0 to num_bindings - 1 do
             if Ident.Set.mem id.(j) fv.(i) then emit_binding (Some i) j
           done
         end;
-        res := (id.(i), init.(i), rhs.(i)) :: !res;
+        res := (id.(i), init_res i, rhs.(i)) :: !res;
         status.(i) <- Defined in
   for i = 0 to num_bindings - 1 do
     match status.(i) with
@@ -342,7 +359,7 @@ let compile_recmodule compile_rhs bindings cont =
     (reorder_rec_bindings
        (List.map
           (fun {mb_id=id; mb_expr=modl; mb_loc=loc; _} ->
-            (id, modl.mod_loc, init_shape modl, compile_rhs id modl loc))
+            (id, modl.mod_loc, init_shape id modl, compile_rhs id modl loc))
           bindings))
     cont
 
@@ -1358,27 +1375,41 @@ let transl_store_package component_names target_name coercion =
 
 open Format
 
-let print_cycle ppf =
-  Format.pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf "@ -> ")
-    Printtyp.ident ppf
+let print_cycle ppf cycle =
+  let print_ident ppf (x,_) = Format.pp_print_string ppf (Ident.name x) in
+  let pp_sep ppf () = fprintf ppf "@ -> " in
+  Format.fprintf ppf "%a%a%s"
+    (Format.pp_print_list ~pp_sep print_ident) cycle
+    pp_sep ()
+    (Ident.name @@ fst @@ List.hd cycle)
+(* we repeat the first element to make the cycle more apparent *)
 
-let report_error ppf = function
-    Circular_dependency cycle ->
+let explanation_submsg (id, {reason;loc;subid}) =
+  let print fmt =
+    let printer = Format.dprintf fmt (Ident.name id) (Ident.name subid) in
+    Location.mkloc printer loc in
+  match reason with
+  | Unsafe_module_binding -> print "Module %s defines an unsafe module, %s ."
+  | Unsafe_functor -> print "Module %s defines an unsafe functor, %s ."
+  | Unsafe_typext ->
+      print "Module %s defines an unsafe extension constructor, %s ."
+  | Unsafe_non_function -> print "Module %s defines an unsafe value, %s ."
+
+let report_error loc = function
+  | Circular_dependency cycle ->
       let[@manual.ref "s-recursive-modules"] chapter, section = 8, 3 in
-      fprintf ppf
-        "@[Cannot safely evaluate the definition of the following cycle@ \
+      Location.errorf ~loc ~sub:(List.map explanation_submsg cycle)
+        "Cannot safely evaluate the definition of the following cycle@ \
          of recursively-defined modules:@ %a.@ \
-         There are no safe modules in this cycle@ (see manual section %d.%d)@]"
+         There are no safe modules in this cycle@ (see manual section %d.%d)."
         print_cycle cycle chapter section
   | Conflicting_inline_attributes ->
-      fprintf ppf
-        "@[Conflicting ``inline'' attributes@]"
+      Location.errorf "@[Conflicting 'inline' attributes@]"
 
 let () =
   Location.register_error_of_exn
     (function
-      | Error (loc, err) ->
-        Some (Location.error_of_printer ~loc report_error err)
+      | Error (loc, err) -> Some (report_error loc err)
       | _ ->
         None
     )
