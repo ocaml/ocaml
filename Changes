@@ -210,7 +210,7 @@ Working version
   (Hugo Heuzard, review by Jérémie Dimino)
 
 - GPR#2058: full explanation for unsafe cycles in recursive module definitions
-  (Florian Angeletti, suggested by Ivan Gotovchits)
+  (Florian Angeletti, review by Gabriel Scherer, suggested by Ivan Gotovchits)
 
 ### Code generation and optimizations:
 

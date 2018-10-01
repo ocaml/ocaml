@@ -205,10 +205,6 @@ let undefined_location loc =
                       Const_base(Const_int char)]))
 
 exception Initialization_failure of unsafe_info
-type init_result =
-  | Ok of lambda * lambda
-  | Fail of unsafe_info
-(* The Error constructor has been stolen earlier, we cannot use result *)
 
 let init_shape id modl =
   let rec init_shape_mod subid loc env mty =
@@ -260,7 +256,7 @@ let init_shape id modl =
   try
     Ok(undefined_location modl.mod_loc,
        Lconst(init_shape_mod id modl.mod_loc modl.mod_env modl.mod_type))
-  with Initialization_failure reason -> Fail(reason)
+  with Initialization_failure reason -> Result.Error(reason)
 
 (* Reorder bindings to honor dependencies.  *)
 
@@ -271,7 +267,7 @@ type binding_status =
 
 let extract_unsafe_cycle id status init cycle_start =
   let info i = match init.(i) with
-    | Fail r -> id.(i), r
+    | Result.Error r -> id.(i), r
     | Ok _ -> assert false in
   let rec collect stop l i = match status.(i) with
     | Inprogress None | Undefined | Defined -> assert false
@@ -288,9 +284,11 @@ let reorder_rec_bindings bindings =
   let num_bindings = Array.length id in
   let status = Array.make num_bindings Undefined in
   let res = ref [] in
-  let is_unsafe i = match init.(i) with Ok _ -> false | Fail _ -> true in
+  let is_unsafe i = match init.(i) with
+    | Ok _ -> false
+    | Result.Error _ -> true in
   let init_res i = match init.(i) with
-    | Fail _ -> None
+    | Result.Error _ -> None
     | Ok(a,b) -> Some(a,b) in
   let rec emit_binding parent i =
     match status.(i) with
@@ -1406,7 +1404,7 @@ let report_error loc = function
          There are no safe modules in this cycle@ (see manual section %d.%d)."
         print_cycle cycle chapter section
   | Conflicting_inline_attributes ->
-      Location.errorf "@[Conflicting ``inline'' attributes@]"
+      Location.errorf "@[Conflicting 'inline' attributes@]"
 
 let () =
   Location.register_error_of_exn
