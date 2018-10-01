@@ -825,6 +825,10 @@ reversed_separated_nonempty_llist(separator, X):
   xs = rev(reversed_separated_nonempty_llist(separator, X))
     { xs }
 
+%inline inline_separated_nonempty_llist(separator, X):
+  xs = rev(inline_reversed_separated_nonempty_llist(separator, X))
+    { xs }
+
 (* [reversed_separated_nontrivial_llist(separator, X)] recognizes a list of at
    least two [X]s, separated with [separator]s, and produces an OCaml list in
    reverse order -- that is, the last element in the input text appears first
