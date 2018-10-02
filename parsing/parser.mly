@@ -1480,13 +1480,13 @@ class_type:
     class_signature
       { $1 }
   | mkcty(
-      QUESTION LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
+      QUESTION LIDENT COLON atomic_type_or_tuple MINUSGREATER class_type
         { Pcty_arrow(Optional $2 , $4, $6) }
-    | OPTLABEL simple_core_type_or_tuple MINUSGREATER class_type
+    | OPTLABEL atomic_type_or_tuple MINUSGREATER class_type
         { Pcty_arrow(Optional $1, $2, $4) }
-    | LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
+    | LIDENT COLON atomic_type_or_tuple MINUSGREATER class_type
         { Pcty_arrow(Labelled $1, $3, $5) }
-    | simple_core_type_or_tuple MINUSGREATER class_type
+    | atomic_type_or_tuple MINUSGREATER class_type
         { Pcty_arrow(Nolabel, $1, $3) }
     ) { $1 }
  ;
@@ -2076,7 +2076,7 @@ match_case:
 fun_def:
     MINUSGREATER seq_expr
       { $2 }
-  | mkexp(COLON simple_core_type MINUSGREATER seq_expr
+  | mkexp(COLON atomic_type MINUSGREATER seq_expr
       { Pexp_constraint ($4, $2) })
       { $1 }
 /* Cf #5939: we used to accept (fun p when e0 -> e) */
@@ -2519,14 +2519,14 @@ let_exception_declaration:
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
   | OF constructor_arguments      { ($2,None) }
-  | COLON constructor_arguments MINUSGREATER simple_core_type
+  | COLON constructor_arguments MINUSGREATER atomic_type %prec below_HASH
                                   { ($2,Some $4) }
-  | COLON simple_core_type
+  | COLON atomic_type %prec below_HASH
                                   { (Pcstr_tuple [],Some $2) }
 ;
 
 constructor_arguments:
-  | core_type_list                   { Pcstr_tuple $1 }
+  | core_type_list %prec below_HASH  { Pcstr_tuple $1 }
   | LBRACE label_declarations RBRACE { Pcstr_record $2 }
 ;
 label_declarations:
@@ -2694,7 +2694,7 @@ core_type_no_attr:
       { $1 }
 ;
 core_type2:
-    simple_core_type_or_tuple
+    atomic_type_or_tuple
       { $1 }
   | mktyp(core_type2_)
       { $1 }
@@ -2712,20 +2712,17 @@ core_type2_:
 %inline extra_core_type2: core_type2
   { extra_rhs_core_type $1 ~pos:$endpos($1) };
 
-simple_core_type:
-    atomic_type  %prec below_HASH
-      { $1 }
-  | LPAREN core_type RPAREN %prec below_HASH
-      { $2 }
-;
 (* Atomic types are the most basic level in the syntax of types.
    Atomic types include:
+   - types between parentheses:           (int -> int)
    - first-class module types:            (module S)
    - type variables:                      'a
    - applications of type constructors:   int, int list, int option list
    - variant types:                       [`A]
  *)
 atomic_type:
+  | LPAREN core_type RPAREN
+      { $2 }
   | LPAREN MODULE ext_attributes package_type RPAREN
       { wrap_typ_attrs ~loc:$sloc (reloc_typ ~loc:$sloc $4) $3 }
   | mktyp( /* begin mktyp group */
@@ -2747,7 +2744,7 @@ atomic_type:
     | LBRACKET tag_field RBRACKET
         { Ptyp_variant([$2], Closed, None) }
   /* PR#3835: this is not LR(1), would need lookahead=2
-    | LBRACKET simple_core_type RBRACKET
+    | LBRACKET atomic_type RBRACKET
         { Ptyp_variant([$2], Closed, None) }
   */
     | LBRACKET BAR row_field_list RBRACKET
@@ -2768,13 +2765,15 @@ atomic_type:
   { $1 } /* end mktyp group */
 ;
 
+(* This is the syntax of the actual type parameters in an application of
+   a type constructor, such as int, int list, or (int, bool) Hashtbl.t. *)
 %inline actual_type_parameters:
   | /* empty */
       { [] }
   | ty = atomic_type
       { [ty] }
-  | LPAREN tys = inline_core_type_comma_list RPAREN
-      { tys }
+  | LPAREN ty = core_type COMMA tys = core_type_comma_list RPAREN
+      { ty :: tys }
 ;
 
 package_type:
@@ -2788,7 +2787,7 @@ package_type:
 ;
 row_field:
     tag_field          { $1 }
-  | simple_core_type   { Rf.inherit_ ~loc:(make_loc $sloc) $1 }
+  | atomic_type   { Rf.inherit_ ~loc:(make_loc $sloc) $1 }
 ;
 tag_field:
     mkrhs(name_tag) OF opt_ampersand amper_type_list attributes
@@ -2812,9 +2811,9 @@ opt_ampersand:
   nonempty_llist(name_tag)
     { $1 }
 ;
-simple_core_type_or_tuple:
-    simple_core_type { $1 }
-  | mktyp(simple_core_type STAR core_type_list
+atomic_type_or_tuple:
+    atomic_type %prec below_HASH { $1 }
+  | mktyp(atomic_type STAR core_type_list
       { Ptyp_tuple($1 :: $3) })
       { $1 }
 ;
@@ -2823,21 +2822,8 @@ simple_core_type_or_tuple:
   tys = separated_nonempty_llist(COMMA, core_type)
     { tys }
 ;
-(* [inline_core_type_comma_list] is semantically equivalent to
-   [core_type_comma_list], that is, it recognizes the same language.
-   It is used in some places to avoid a conflict between the normal use of
-   parentheses as a disambiguation device, e.g.
-     (foo -> bar) -> baz
-   and the use of parentheses in parameterized types, e.g.
-     (foo -> bar) list
-   Inlining allows the parser to shift the closing parenthesis without (yet)
-   deciding which of the above two situations we have. *)
-%inline inline_core_type_comma_list:
-  tys = inline_separated_nonempty_llist(COMMA, core_type)
-    { tys }
-;
 %inline core_type_list:
-  separated_nonempty_llist(STAR, simple_core_type)
+  inline_separated_nonempty_llist(STAR, atomic_type)
     { $1 }
 ;
 meth_list:
@@ -2848,7 +2834,7 @@ meth_list:
   | field_semi           { [$1], Closed }
   | field                { [$1], Closed }
   | inherit_field_semi   { [$1], Closed }
-  | simple_core_type     { [Of.inherit_ ~loc:(make_loc $sloc) $1], Closed }
+  | atomic_type     { [Of.inherit_ ~loc:(make_loc $sloc) $1], Closed }
   | DOTDOT               { [], Open }
 ;
 field:
@@ -2870,7 +2856,7 @@ field_semi:
 ;
 
 inherit_field_semi:
-  simple_core_type SEMI
+  atomic_type SEMI
     { Of.inherit_ ~loc:(make_loc $sloc) $1 }
 
 label:
