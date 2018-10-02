@@ -2680,8 +2680,12 @@ possibly_poly(X):
     { $1 }
 ;
 
-/* Core types */
+(* -------------------------------------------------------------------------- *)
 
+(* Core language types. *)
+
+(* A core type (core_type) is a core type without attributes (core_type_no_attr)
+   followed with a list of attributes. *)
 core_type:
     core_type_no_attr
       { $1 }
@@ -2689,6 +2693,9 @@ core_type:
       { Typ.attr $1 $2 }
 ;
 
+(* A core type without attributes is currently defined as an alias type, but
+   this could change in the future if new forms of types are introduced. From
+   the outside, one should use core_type_no_attr. *)
 %inline core_type_no_attr:
   alias_type
     { $1 }
