@@ -590,7 +590,8 @@ Working version
   the legacy ANSI encoding under Windows.
   (Nicolás Ojeda Bär, report by Tiphaine Turpin)
 
-- GPR#2083: Fix excessively aggressive float unboxing
+- GPR#2083: Fix excessively aggressive float unboxing and introduce similar fix
+  as a preventative measure for boxed int unboxing.
   (Thomas Refis, Mark Shinwell, Leo White)
 
 
