@@ -2688,12 +2688,24 @@ core_type:
   | core_type attribute
       { Typ.attr $1 $2 }
 ;
-core_type_no_attr:
+
+%inline core_type_no_attr:
+  alias_type
+    { $1 }
+;
+
+(* Alias types include:
+   - function types (see below);
+   - proper alias types:                  'a -> int as 'a
+ *)
+alias_type:
     function_type
       { $1 }
-  | mktyp(core_type_no_attr AS QUOTE ident
-      { Ptyp_alias($1, $4) })
-      { $1 }
+  | mktyp(
+      ty = alias_type AS QUOTE tyvar = ident
+        { Ptyp_alias(ty, tyvar) }
+    )
+    { $1 }
 ;
 
 (* Function types include:
