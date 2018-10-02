@@ -2837,8 +2837,10 @@ package_type:
     { $1 }
 ;
 row_field:
-    tag_field          { $1 }
-  | atomic_type   { Rf.inherit_ ~loc:(make_loc $sloc) $1 }
+    tag_field
+      { $1 }
+  | core_type
+      { Rf.inherit_ ~loc:(make_loc $sloc) $1 }
 ;
 tag_field:
     mkrhs(name_tag) OF opt_ampersand amper_type_list attributes
