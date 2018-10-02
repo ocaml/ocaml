@@ -1507,8 +1507,8 @@ class_signature:
 %inline actual_class_parameters:
   | /* empty */
       { [] }
-  | LBRACKET core_type_comma_list RBRACKET
-      { $2 }
+  | LBRACKET tys = separated_nonempty_llist(COMMA, core_type) RBRACKET
+      { tys }
 ;
 class_sig_body:
     class_self_type extra_csig(class_sig_fields)
@@ -2826,11 +2826,6 @@ atomic_type_or_tuple:
   | mktyp(atomic_type STAR atomic_type_star_list
       { Ptyp_tuple($1 :: $3) })
       { $1 }
-;
-(* A [core_type_comma_list] is a nonempty, comma-separated list of types. *)
-%inline core_type_comma_list:
-  tys = separated_nonempty_llist(COMMA, core_type)
-    { tys }
 ;
 (* An [atomic_type_star_list] is a nonempty, star-separated list of
    atomic types. It appears in the syntax of product types and in
