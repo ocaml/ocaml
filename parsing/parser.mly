@@ -3199,9 +3199,9 @@ post_item_attributes:
     /* empty */  { [] }
   | post_item_attribute post_item_attributes { $1 :: $2 }
 ;
-attributes:
-    /* empty */{ [] }
-  | attribute attributes { $1 :: $2 }
+%inline attributes:
+  attribute*
+    { $1 }
 ;
 ext:
   | /* empty */     { None }
