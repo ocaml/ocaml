@@ -2766,14 +2766,22 @@ atomic_type:
 ;
 
 (* This is the syntax of the actual type parameters in an application of
-   a type constructor, such as int, int list, or (int, bool) Hashtbl.t. *)
+   a type constructor, such as int, int list, or (int, bool) Hashtbl.t.
+   We allow one of the following:
+   - zero parameters;
+   - one parameter:
+     an atomic type;
+     among other things, this can be an arbitrary type between parentheses;
+   - two or more parameters:
+     arbitrary types, between parentheses, separated with commas.
+ *)
 %inline actual_type_parameters:
   | /* empty */
       { [] }
   | ty = atomic_type
       { [ty] }
-  | LPAREN ty = core_type COMMA tys = core_type_comma_list RPAREN
-      { ty :: tys }
+  | LPAREN tys = separated_nontrivial_llist(COMMA, core_type) RPAREN
+      { tys }
 ;
 
 package_type:
