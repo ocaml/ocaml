@@ -1478,9 +1478,7 @@ class_type:
     class_signature
       { $1 }
   | mkcty(
-      QUESTION LIDENT COLON tuple_type MINUSGREATER class_type
-        { Pcty_arrow(Optional $2 , $4, $6) }
-    | OPTLABEL tuple_type MINUSGREATER class_type
+      optlabel tuple_type MINUSGREATER class_type
         { Pcty_arrow(Optional $1, $2, $4) }
     | LIDENT COLON tuple_type MINUSGREATER class_type
         { Pcty_arrow(Labelled $1, $3, $5) }
@@ -2709,10 +2707,8 @@ function_type:
   | ty = tuple_type
       { ty }
   | mktyp(
-      QUESTION LIDENT COLON extra_rhs(function_type) MINUSGREATER function_type
-        { Ptyp_arrow(Optional $2, $4, $6) }
-    | OPTLABEL extra_rhs(function_type) MINUSGREATER function_type
-        { Ptyp_arrow(Optional $1 , $2, $4) }
+      optlabel extra_rhs(function_type) MINUSGREATER function_type
+        { Ptyp_arrow(Optional $1, $2, $4) }
     | LIDENT COLON extra_rhs(function_type) MINUSGREATER function_type
         { Ptyp_arrow(Labelled $1, $3, $5) }
     | extra_rhs(function_type) MINUSGREATER function_type
@@ -3098,6 +3094,10 @@ subtractive:
 additive:
   | PLUS                                        { "+" }
   | PLUSDOT                                     { "+." }
+;
+%inline optlabel:
+   | OPTLABEL                                   { $1 }
+   | QUESTION LIDENT COLON                      { $2 }
 ;
 
 /* Attributes and extensions */
