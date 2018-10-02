@@ -403,8 +403,8 @@ method mark_instr = function
 
 (* Default instruction selection for operators *)
 
-method select_allocation words =
-  Ialloc { words; spacetime_index = 0; label_after_call_gc = None; }
+method select_allocation bytes =
+  Ialloc { bytes; spacetime_index = 0; label_after_call_gc = None; }
 method select_allocation_args _env = [| |]
 
 method select_checkbound () =
@@ -746,12 +746,11 @@ method emit_expr (env:environment) exp =
                   loc_arg (Proc.loc_external_results rd) in
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
-          | Ialloc { words; spacetime_index; label_after_call_gc; } ->
-              assert (words <= Config.max_young_wosize);
+          | Ialloc { bytes = _; spacetime_index; label_after_call_gc; } ->
               let rd = self#regs_for typ_val in
-              let size = size_expr env (Ctuple new_args) in
+              let bytes = size_expr env (Ctuple new_args) in
               let op =
-                Ialloc { words = size; spacetime_index; label_after_call_gc; }
+                Ialloc { bytes; spacetime_index; label_after_call_gc; }
               in
               let args = self#select_allocation_args env in
               self#insert_debug (Iop op) dbg args rd;
