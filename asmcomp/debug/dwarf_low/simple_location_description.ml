@@ -19,7 +19,9 @@ module Operator = Dwarf_operator
 type t = Dwarf_operator.t list
 
 let size t =
-  List.fold_left (fun size op -> Int64.add size (Operator.size op)) 0L t
+  List.fold_left (fun size op -> Dwarf_int.add size (Operator.size op))
+    (Dwarf_int.zero ())
+    t
 
 let emit t =
   List.iter (fun op -> Operator.emit op) t

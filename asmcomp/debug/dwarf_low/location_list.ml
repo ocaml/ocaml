@@ -38,10 +38,10 @@ let end_marker () =
   Dwarf_value.Absolute_code_address Targetint.zero
 
 let size t =
-  let (+) = Int64.add in
+  let (+) = Dwarf_int.add in
   let body_size =
     List.fold_left (fun size entry -> size + (Location_list_entry.size entry))
-      Int64.zero
+      (Dwarf_int.zero ())
       t.entries
   in
   let end_marker = end_marker () in

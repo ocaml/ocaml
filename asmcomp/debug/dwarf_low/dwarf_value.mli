@@ -46,7 +46,7 @@ type t =
       relocated when multiple object files are linked together (and DWARF
       information from them concatenated inside each of the various
       sections).
- 
+
       - Offsets into .debug_info are of DW_FORM_ref_addr.
 
       - Offsets into any other section are of DW_FORM_sec_offset.
@@ -59,6 +59,9 @@ type t =
   | Offset_into_debug_line_from_symbol of string
   | Offset_into_debug_loc of Linearize.label
   | Offset_into_debug_abbrev of Linearize.label
-  | Distance_between_labels_32bit of { upper : Cmm.label; lower : Cmm.label; }
+  | Distance_between_labels_32bit of {
+      upper : Linearize.label;
+      lower : Linearize.label;
+    }
 
 include Dwarf_emittable.S with type t := t

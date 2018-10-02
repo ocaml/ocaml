@@ -22,5 +22,5 @@ include Dwarf_emittable.S with type t := t
     simple location descriptions along with the sizes of the described
     objects measured in bytes. *)
 val pieces_of_simple_location_descriptions
-   : (Simple_location_description.t * int) list
+   : (Simple_location_description.t * Targetint.t) list
   -> t

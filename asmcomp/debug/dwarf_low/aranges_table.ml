@@ -18,7 +18,7 @@ module Int8 = Numbers.Int8
 module Int16 = Numbers.Int16
 
 type t = {
-  size : Int64.t;
+  size : Dwarf_int.t;
   values : Dwarf_value.t list;
 }
 
@@ -42,8 +42,8 @@ let create ~start_of_code_symbol ~end_of_code_symbol
   ]
   in
   let size =
-    List.fold_left (fun size value -> Int64.add size (V.size value))
-      Int64.zero
+    List.fold_left (fun size value -> Dwarf_int.add size (V.size value))
+      (Dwarf_int.zero ())
       values
   in
   { size; values; }

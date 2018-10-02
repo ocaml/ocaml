@@ -22,8 +22,7 @@ let encode = function
   | Yes -> 0x01
   | No -> 0x00
 
-let size _t = Int64.of_int 1
+let size _t = Dwarf_int.one ()
 
 let emit t =
-  Dwarf_value.emit (Dwarf_value.Int8 (
-    Numbers.Int8.of_int_exn (encode t)))
+  Dwarf_value.emit (Dwarf_value.Int8 (Numbers.Int8.of_int_exn (encode t)))

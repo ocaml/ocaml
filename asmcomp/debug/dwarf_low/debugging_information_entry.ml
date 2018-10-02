@@ -58,7 +58,7 @@ let emit t =
 
 let size t =
   List.fold_left (fun size attribute_value ->
-      Int64.add size (Attribute_value.size attribute_value))
+      Dwarf_int.add size (Attribute_value.size attribute_value))
     (Abbreviation_code.size t.abbreviation_code)
     t.attribute_values
 

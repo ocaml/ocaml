@@ -15,7 +15,7 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 type implicit_value =
-  | Int of Int64.t
+  | Int of Targetint.t
   | Symbol of string
 
 type t =
@@ -53,56 +53,64 @@ type t =
   | DW_op_reg29
   | DW_op_reg30
   | DW_op_reg31
-  | DW_op_fbreg of { offset_in_bytes : Int64.t; }
-  | DW_op_breg0 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg1 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg2 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg3 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg4 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg5 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg6 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg7 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg8 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg9 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg10 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg11 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg12 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg13 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg14 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg15 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg16 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg17 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg18 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg19 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg20 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg21 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg22 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg23 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg24 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg25 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg26 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg27 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg28 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg29 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg30 of { offset_in_bytes : Int64.t; }
-  | DW_op_breg31 of { offset_in_bytes : Int64.t; }
-  | DW_op_bregx of { reg_number : int; offset_in_bytes : Int64.t; }
+  | DW_op_fbreg of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg0 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg1 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg2 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg3 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg4 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg5 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg6 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg7 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg8 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg9 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg10 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg11 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg12 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg13 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg14 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg15 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg16 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg17 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg18 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg19 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg20 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg21 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg22 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg23 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg24 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg25 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg26 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg27 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg28 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg29 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg30 of { offset_in_bytes : Targetint.t; }
+  | DW_op_breg31 of { offset_in_bytes : Targetint.t; }
+  | DW_op_bregx of { reg_number : int; offset_in_bytes : Targetint.t; }
   | DW_op_deref
-  | DW_op_plus_uconst of Int64.t
-  | DW_op_consts of Int64.t
+  | DW_op_plus_uconst of Targetint.t
+  | DW_op_consts of Targetint.t
   | DW_op_call_frame_cfa
   | DW_op_minus
   | DW_op_implicit_value of implicit_value
   | DW_op_stack_value
-  | DW_op_GNU_implicit_pointer of { offset_in_bytes : int; label : Cmm.label; }
-  | DW_op_implicit_pointer of { offset_in_bytes : int; label : Cmm.label; }
-  | DW_op_piece of { size_in_bytes : int; }
-  (* CR-someday mshinwell: Should probably use DW_op_call_ref, but gdb doesn't
-     currently support it.  This would remove the "header label" nonsense. *)
-  | DW_op_call4 of { label : Cmm.label;
-      compilation_unit_header_label : Cmm.label; }
-  | DW_op_skip of { num_bytes_forward : int; }
-  | DW_op_bra of { num_bytes_forward : int; }
+  | DW_op_GNU_implicit_pointer of {
+      label : Linearize.label;
+      offset_in_bytes : Targetint.t;
+    }
+  | DW_op_implicit_pointer of {
+      label : Linearize.label;
+      offset_in_bytes : Targetint.t;
+    }
+  | DW_op_piece of { size_in_bytes : Targetint.t; }
+    (* CR-someday mshinwell: Should probably use DW_op_call_ref, but gdb doesn't
+       currently support it.  This would remove the "header label" nonsense. *)
+  | DW_op_call4 of {
+      label : Linearize.label;
+      compilation_unit_header_label : Linearize.label;
+    }
+  | DW_op_skip of { num_bytes_forward : Numbers.Int16.t; }
+  | DW_op_bra of { num_bytes_forward : Numbers.Int16.t; }
   | DW_op_drop
   | DW_op_dup
   | DW_op_swap
@@ -146,97 +154,99 @@ let print ppf t =
   | DW_op_reg30 -> fprintf ppf "DW_op_reg30"
   | DW_op_reg31 -> fprintf ppf "DW_op_reg31"
   | DW_op_fbreg { offset_in_bytes; } ->
-    fprintf ppf "DW_op_fbreg 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_fbreg 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg0 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg0 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg0 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg1 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg1 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg1 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg2 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg2 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg2 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg3 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg3 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg3 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg4 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg4 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg4 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg5 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg5 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg5 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg6 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg6 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg6 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg7 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg7 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg7 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg8 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg8 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg8 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg9 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg9 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg9 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg10 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg10 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg10 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg11 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg11 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg11 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg12 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg12 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg12 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg13 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg13 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg13 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg14 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg14 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg14 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg15 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg15 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg15 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg16 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg16 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg16 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg17 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg17 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg17 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg18 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg18 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg18 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg19 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg19 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg19 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg20 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg20 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg20 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg21 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg21 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg21 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg22 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg22 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg22 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg23 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg23 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg23 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg24 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg24 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg24 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg25 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg25 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg25 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg26 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg26 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg26 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg27 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg27 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg27 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg28 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg28 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg28 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg29 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg29 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg29 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg30 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg30 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg30 0x%a" Targetint.print offset_in_bytes
   | DW_op_breg31 { offset_in_bytes; } ->
-    fprintf ppf "DW_op_breg31 0x%Lx" offset_in_bytes
+    fprintf ppf "DW_op_breg31 0x%a" Targetint.print offset_in_bytes
   | DW_op_bregx { reg_number; offset_in_bytes; } ->
-    fprintf ppf "DW_op_bregx %d 0x%Lx" reg_number offset_in_bytes
+    fprintf ppf "DW_op_bregx %d 0x%a" reg_number Targetint.print offset_in_bytes
   | DW_op_deref -> fprintf ppf "DW_op_deref"
-  | DW_op_plus_uconst i -> fprintf ppf "DW_op_plus_uconst %Ld" i
-  | DW_op_consts i -> fprintf ppf "DW_op_consts %Ld" i
+  | DW_op_plus_uconst i -> fprintf ppf "DW_op_plus_uconst %a" Targetint.print i
+  | DW_op_consts i -> fprintf ppf "DW_op_consts %a" Targetint.print i
   | DW_op_call_frame_cfa -> fprintf ppf "DW_op_call_frame_cfa"
   | DW_op_minus -> fprintf ppf "DW_op_minus"
   | DW_op_implicit_value (Int i) ->
-    fprintf ppf "DW_op_implicit_value %Ld" i
+    fprintf ppf "DW_op_implicit_value %a" Targetint.print i
   | DW_op_implicit_value (Symbol symbol) ->
     fprintf ppf "DW_op_implicit_value %s" symbol
   | DW_op_stack_value -> fprintf ppf "DW_op_stack_value"
   | DW_op_GNU_implicit_pointer { offset_in_bytes; label; } ->
-    fprintf ppf "DW_op_GNU_implicit_pointer offset=%d label=%d" offset_in_bytes
+    fprintf ppf "DW_op_GNU_implicit_pointer offset=%a label=%d"
+      Targetint.print offset_in_bytes
       label
   | DW_op_implicit_pointer { offset_in_bytes; label; } ->
-    fprintf ppf "DW_op_implicit_pointer offset=%d label=%d" offset_in_bytes
+    fprintf ppf "DW_op_implicit_pointer offset=%a label=%d"
+      Targetint.print offset_in_bytes
       label
   | DW_op_piece { size_in_bytes; } ->
-    fprintf ppf "DW_op_piece %d" size_in_bytes
+    fprintf ppf "DW_op_piece %a" Targetint.print size_in_bytes
   | DW_op_call4 { label; _ } ->
     fprintf ppf "DW_op_call4 %d" label
   | DW_op_skip { num_bytes_forward; } ->
-    fprintf ppf "DW_op_skip %d" num_bytes_forward
+    fprintf ppf "DW_op_skip %a" Numbers.Int16.print num_bytes_forward
   | DW_op_bra { num_bytes_forward; } ->
-    fprintf ppf "DW_op_bra %d" num_bytes_forward
+    fprintf ppf "DW_op_bra %a" Numbers.Int16.print num_bytes_forward
   | DW_op_drop -> fprintf ppf "DW_op_drop"
   | DW_op_dup -> fprintf ppf "DW_op_dup"
   | DW_op_swap -> fprintf ppf "DW_op_swap"
@@ -337,10 +347,10 @@ let opcode = function
   | DW_op_nop -> 0x96
 
 let size t =
-  let opcode_size = Int64.of_int 1 in
+  let opcode_size = Dwarf_int.one () in
   let args_size =
     match t with
-    | DW_op_addr _addr -> Int64.of_int Arch.size_addr
+    | DW_op_addr _addr -> Dwarf_int.of_host_int_exn Arch.size_addr
     | DW_op_regx { reg_number; } ->
       Dwarf_value.size (Uleb128 (Int64.of_int reg_number))
     | DW_op_reg0
@@ -374,11 +384,13 @@ let size t =
     | DW_op_reg28
     | DW_op_reg29
     | DW_op_reg30
-    | DW_op_reg31 -> 0L
+    | DW_op_reg31 -> Dwarf_int.zero ()
     | DW_op_fbreg { offset_in_bytes; } ->
+      let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
       Dwarf_value.size (Sleb128 offset_in_bytes)
     | DW_op_bregx { reg_number; offset_in_bytes; } ->
-      Int64.add (Dwarf_value.size (Uleb128 (Int64.of_int reg_number)))
+      let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
+      Dwarf_int.add (Dwarf_value.size (Uleb128 (Int64.of_int reg_number)))
         (Dwarf_value.size (Sleb128 offset_in_bytes))
     | DW_op_breg0 { offset_in_bytes; }
     | DW_op_breg1 { offset_in_bytes; }
@@ -412,38 +424,47 @@ let size t =
     | DW_op_breg29 { offset_in_bytes; }
     | DW_op_breg30 { offset_in_bytes; }
     | DW_op_breg31 { offset_in_bytes; } ->
+      let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
       Dwarf_value.size (Sleb128 offset_in_bytes)
     | DW_op_implicit_value (Int _) ->
       let size_int = Int64.of_int Arch.size_int in
-      Int64.add (Dwarf_value.size (Sleb128 size_int)) size_int
+      let size_int' = Dwarf_int.of_host_int_exn Arch.size_int in
+      Dwarf_int.add (Dwarf_value.size (Sleb128 size_int)) size_int'
     | DW_op_implicit_value (Symbol _) ->
       let size_addr = Int64.of_int Arch.size_addr in
-      Int64.add (Dwarf_value.size (Sleb128 size_addr)) size_addr
-    | DW_op_plus_uconst const -> Dwarf_value.size (Uleb128 const)
-    | DW_op_consts const -> Dwarf_value.size (Sleb128 const)
+      let size_addr' = Dwarf_int.of_host_int_exn Arch.size_addr in
+      Dwarf_int.add (Dwarf_value.size (Sleb128 size_addr)) size_addr'
+    | DW_op_plus_uconst const ->
+      let const = Targetint.to_int64 const in
+      Dwarf_value.size (Uleb128 const)
+    | DW_op_consts const ->
+      let const = Targetint.to_int64 const in
+      Dwarf_value.size (Sleb128 const)
     | DW_op_deref
     | DW_op_minus
     | DW_op_call_frame_cfa
-    | DW_op_stack_value -> 0L
+    | DW_op_stack_value -> Dwarf_int.zero ()
     | DW_op_GNU_implicit_pointer { offset_in_bytes; label; }
     | DW_op_implicit_pointer { offset_in_bytes; label; } ->
-      Int64.add (Dwarf_value.size (Offset_into_debug_info label))
-        (Dwarf_value.size (Sleb128 (Int64.of_int offset_in_bytes)))
+      let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
+      Dwarf_int.add (Dwarf_value.size (Offset_into_debug_info label))
+        (Dwarf_value.size (Sleb128 offset_in_bytes))
     | DW_op_piece { size_in_bytes; } ->
-      Dwarf_value.size (Uleb128 (Int64.of_int size_in_bytes))
+      let size_in_bytes = Targetint.to_int64 size_in_bytes in
+      Dwarf_value.size (Uleb128 size_in_bytes)
     | DW_op_call4 { label; compilation_unit_header_label } ->
       Dwarf_value.size (
         Distance_between_labels_32bit
           { upper = label; lower = compilation_unit_header_label; })
     | DW_op_skip { num_bytes_forward; }
     | DW_op_bra { num_bytes_forward; } ->
-      Dwarf_value.size (Int16 (Numbers.Int16.of_int_exn num_bytes_forward))
+      Dwarf_value.size (Int16 num_bytes_forward)
     | DW_op_drop
     | DW_op_dup
     | DW_op_swap
-    | DW_op_nop -> 0L
+    | DW_op_nop -> Dwarf_int.zero ()
   in
-  Int64.add opcode_size args_size
+  Dwarf_int.add opcode_size args_size
 
 let emit t =
   Dwarf_value.emit (Dwarf_value.Int8 (Numbers.Int8.of_int_exn (opcode t)));
@@ -484,8 +505,10 @@ let emit t =
   | DW_op_reg30
   | DW_op_reg31 -> ()
   | DW_op_fbreg { offset_in_bytes; } ->
+    let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
     Dwarf_value.emit (Sleb128 offset_in_bytes)
   | DW_op_bregx { reg_number; offset_in_bytes; } ->
+    let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
     Dwarf_value.emit (Uleb128 (Int64.of_int reg_number));
     Dwarf_value.emit (Sleb128 offset_in_bytes)
   | DW_op_breg0 { offset_in_bytes; }
@@ -520,17 +543,18 @@ let emit t =
   | DW_op_breg29 { offset_in_bytes; }
   | DW_op_breg30 { offset_in_bytes; }
   | DW_op_breg31 { offset_in_bytes; } ->
+    let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
     Dwarf_value.emit (Sleb128 offset_in_bytes)
   | DW_op_implicit_value (Int i) ->
     let buf =
       match Arch.size_int with
       | 4 ->
         let buf = Bytes.create 4 in
-        caml_string_set32 buf ~index:0 (Int64.to_int32 i);
+        caml_string_set32 buf ~index:0 (Targetint.to_int32 i);
         buf
       | 8 ->
         let buf = Bytes.create 8 in
-        caml_string_set64 buf ~index:0 i;
+        caml_string_set64 buf ~index:0 (Targetint.to_int64 i);
         buf
       | n ->
         Misc.fatal_errorf "Dwarf_operator: bad Arch.size_int = %d" n
@@ -540,25 +564,31 @@ let emit t =
   | DW_op_implicit_value (Symbol symbol) ->
     Dwarf_value.emit (Sleb128 (Int64.of_int Arch.size_addr));
     Dwarf_value.emit (Code_address_from_symbol symbol)
-  | DW_op_plus_uconst const -> Dwarf_value.emit (Uleb128 const)
-  | DW_op_consts const -> Dwarf_value.emit (Sleb128 const)
+  | DW_op_plus_uconst const ->
+    let const = Targetint.to_int64 const in
+    Dwarf_value.emit (Uleb128 const)
+  | DW_op_consts const ->
+    let const = Targetint.to_int64 const in
+    Dwarf_value.emit (Sleb128 const)
   | DW_op_deref
   | DW_op_minus
   | DW_op_call_frame_cfa
   | DW_op_stack_value -> ()
   | DW_op_GNU_implicit_pointer { offset_in_bytes; label; }
   | DW_op_implicit_pointer { offset_in_bytes; label; } ->
+    let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
     Dwarf_value.emit (Offset_into_debug_info label);
-    Dwarf_value.emit (Sleb128 (Int64.of_int offset_in_bytes))
+    Dwarf_value.emit (Sleb128 offset_in_bytes)
   | DW_op_piece { size_in_bytes; } ->
-    Dwarf_value.emit (Uleb128 (Int64.of_int size_in_bytes))
+    let size_in_bytes = Targetint.to_int64 size_in_bytes in
+    Dwarf_value.emit (Uleb128 size_in_bytes)
   | DW_op_call4 { label; compilation_unit_header_label; } ->
     Dwarf_value.emit (
         Distance_between_labels_32bit
           { upper = label; lower = compilation_unit_header_label; })
   | DW_op_skip { num_bytes_forward; }
   | DW_op_bra { num_bytes_forward; } ->
-    Dwarf_value.emit (Int16 (Numbers.Int16.of_int_exn num_bytes_forward))
+    Dwarf_value.emit (Int16 num_bytes_forward)
   | DW_op_drop
   | DW_op_dup
   | DW_op_swap

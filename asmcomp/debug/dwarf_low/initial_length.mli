@@ -18,6 +18,6 @@
     (DWARF-4 standard section 7.4). *)
 type t
 
-val create : Int64.t -> t
+val create : Dwarf_int.t -> t
 
 include Dwarf_emittable.S with type t := t
