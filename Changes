@@ -591,7 +591,7 @@ Working version
   (Nicolás Ojeda Bär, report by Tiphaine Turpin)
 
 - GPR#2083: Fix excessively aggressive float unboxing
-  (Mark Shinwell and Leo White)
+  (Thomas Refis, Mark Shinwell, Leo White)
 
 
 OCaml 4.07.1 (4 October 2018)
