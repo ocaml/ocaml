@@ -590,6 +590,10 @@ Working version
   the legacy ANSI encoding under Windows.
   (Nicolás Ojeda Bär, report by Tiphaine Turpin)
 
+- GPR#2083: Fix excessively aggressive float unboxing
+  (Mark Shinwell and Leo White)
+
+
 OCaml 4.07.1 (4 October 2018)
 -----------------------------
 
