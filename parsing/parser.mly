@@ -3195,9 +3195,9 @@ floating_attribute:
     { mark_symbol_docs $sloc;
       Attr.mk ~loc:(make_loc $sloc) $2 $3 }
 ;
-post_item_attributes:
-    /* empty */  { [] }
-  | post_item_attribute post_item_attributes { $1 :: $2 }
+%inline post_item_attributes:
+  post_item_attribute*
+    { $1 }
 ;
 %inline attributes:
   attribute*
