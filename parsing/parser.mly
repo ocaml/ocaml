@@ -2691,7 +2691,7 @@ core_type:
 core_type_no_attr:
     function_type
       { $1 }
-  | mktyp(function_type AS QUOTE ident
+  | mktyp(core_type_no_attr AS QUOTE ident
       { Ptyp_alias($1, $4) })
       { $1 }
 ;
