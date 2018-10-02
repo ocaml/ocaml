@@ -1478,13 +1478,13 @@ class_type:
     class_signature
       { $1 }
   | mkcty(
-      QUESTION LIDENT COLON atomic_type_or_tuple MINUSGREATER class_type
+      QUESTION LIDENT COLON tuple_type MINUSGREATER class_type
         { Pcty_arrow(Optional $2 , $4, $6) }
-    | OPTLABEL atomic_type_or_tuple MINUSGREATER class_type
+    | OPTLABEL tuple_type MINUSGREATER class_type
         { Pcty_arrow(Optional $1, $2, $4) }
-    | LIDENT COLON atomic_type_or_tuple MINUSGREATER class_type
+    | LIDENT COLON tuple_type MINUSGREATER class_type
         { Pcty_arrow(Labelled $1, $3, $5) }
-    | atomic_type_or_tuple MINUSGREATER class_type
+    | tuple_type MINUSGREATER class_type
         { Pcty_arrow(Nolabel, $1, $3) }
     ) { $1 }
  ;
@@ -2699,7 +2699,7 @@ core_type_no_attr:
       { $1 }
 ;
 core_type2:
-    atomic_type_or_tuple
+    tuple_type
       { $1 }
   | mktyp(core_type2_)
       { $1 }
@@ -2716,6 +2716,22 @@ core_type2_:
 ;
 %inline extra_core_type2: core_type2
   { extra_rhs_core_type $1 ~pos:$endpos($1) };
+
+(* Tuple types include:
+   - atomic types (see below);
+   - proper tuple types:                  int * int * int list
+   A proper tuple type is a star-separated list of at least two atomic types.
+ *)
+tuple_type:
+  | ty = atomic_type
+    %prec below_HASH
+      { ty }
+  | mktyp(
+      tys = separated_nontrivial_llist(STAR, atomic_type)
+        { Ptyp_tuple tys }
+    )
+    { $1 }
+;
 
 (* Atomic types are the most basic level in the syntax of types.
    Atomic types include:
@@ -2823,12 +2839,6 @@ opt_ampersand:
 %inline name_tag_list:
   nonempty_llist(name_tag)
     { $1 }
-;
-atomic_type_or_tuple:
-    atomic_type %prec below_HASH { $1 }
-  | mktyp(separated_nontrivial_llist(STAR, atomic_type)
-      { Ptyp_tuple($1) })
-      { $1 }
 ;
 meth_list:
     field_semi meth_list
