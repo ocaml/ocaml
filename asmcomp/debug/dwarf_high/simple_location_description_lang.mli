@@ -81,9 +81,7 @@ module Rvalue : sig
   val in_stack_slot : offset_in_words:Targetint.t -> normal t
 
   (** V will be in the given field of the block whose location is given by
-      the provided simple location description at time T.
-      An exception will be raised if the supplied [t] was constructed using
-      [implicit_pointer]. *)
+      the provided simple location description at time T. *)
   val read_field : block:normal t -> field:Targetint.t -> normal t
 
   (** V will be in the given field of the given symbol at time T. *)
