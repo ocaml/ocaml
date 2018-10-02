@@ -682,7 +682,7 @@ The precedences must be listed from low to high.
 %left     BAR                           /* pattern (p|p|p) */
 %nonassoc below_COMMA
 %left     COMMA                         /* expr/expr_comma_list (e,e,e) */
-%right    MINUSGREATER                  /* core_type2 (t -> t -> t) */
+%right    MINUSGREATER                  /* function_type (t -> t -> t) */
 %right    OR BARBAR                     /* expr (e || e || e) */
 %right    AMPERSAND AMPERAMPER          /* expr (e && e && e) */
 %nonassoc below_EQUAL
@@ -2692,23 +2692,30 @@ core_type:
       { Typ.attr $1 $2 }
 ;
 core_type_no_attr:
-    core_type2 %prec MINUSGREATER
+    function_type %prec MINUSGREATER
       { $1 }
-  | mktyp(core_type2 AS QUOTE ident
+  | mktyp(function_type AS QUOTE ident
       { Ptyp_alias($1, $4) })
       { $1 }
 ;
-core_type2:
+
+(* Function types include:
+   - tuple types (see below);
+   - proper function types:               int -> int -> int
+                                          foo: int -> int
+                                          ?foo: int -> int
+ *)
+function_type:
   | ty = tuple_type
       { ty }
   | mktyp(
-      QUESTION LIDENT COLON extra_rhs(core_type2) MINUSGREATER core_type2
+      QUESTION LIDENT COLON extra_rhs(function_type) MINUSGREATER function_type
         { Ptyp_arrow(Optional $2, $4, $6) }
-    | OPTLABEL extra_rhs(core_type2) MINUSGREATER core_type2
+    | OPTLABEL extra_rhs(function_type) MINUSGREATER function_type
         { Ptyp_arrow(Optional $1 , $2, $4) }
-    | LIDENT COLON extra_rhs(core_type2) MINUSGREATER core_type2
+    | LIDENT COLON extra_rhs(function_type) MINUSGREATER function_type
         { Ptyp_arrow(Labelled $1, $3, $5) }
-    | extra_rhs(core_type2) MINUSGREATER core_type2
+    | extra_rhs(function_type) MINUSGREATER function_type
         { Ptyp_arrow(Nolabel, $1, $3) }
     )
     { $1 }
