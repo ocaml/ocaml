@@ -417,6 +417,9 @@ Working version
 - GPR#2077: Add [Dwarf_low] library.
   (Mark Shinwell)
 
+- GPR#2084: Add [Dwarf_high] library.
+  (Mark Shinwell)
+
 ### Bug fixes:
 
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the

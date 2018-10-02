@@ -193,3 +193,6 @@ val repr : t -> repr
 
 val print : Format.formatter -> t -> unit
 (** Print a target integer to a formatter. *)
+
+val size_in_bytes_as_targetint : t
+(** The width of a target integer in bytes, expressed as a value of type [t]. *)

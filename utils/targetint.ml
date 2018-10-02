@@ -56,6 +56,7 @@ module type S = sig
   val equal: t -> t -> bool
   val repr: t -> repr
   val print : Format.formatter -> t -> unit
+  val size_in_bytes_as_targetint : t
 end
 
 let size = Sys.word_size
@@ -82,6 +83,7 @@ module Int32 = struct
   let to_int64 = Int64.of_int32
   let repr x = Int32 x
   let print ppf t = Format.fprintf ppf "%ld" t
+  let size_in_bytes_as_targetint = 4l
 end
 
 module Int64 = struct
@@ -91,6 +93,7 @@ module Int64 = struct
   let to_int64 x = x
   let repr x = Int64 x
   let print ppf t = Format.fprintf ppf "%Ld" t
+  let size_in_bytes_as_targetint = 8L
 end
 
 include (val

@@ -49,7 +49,8 @@ CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
         -I middle_end/base_types -I asmcomp -I asmcomp/debug \
-        -I asmcomp/debug/dwarf_low -I driver -I toplevel
+        -I asmcomp/debug/dwarf_low -I asmcomp/debug/dwarf_high \
+	-I driver -I toplevel
 
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 \
 	  -warn-error A \
@@ -169,6 +170,14 @@ DWARF_LOW=\
   asmcomp/debug/dwarf_low/debug_info_section.cmo \
   asmcomp/debug/dwarf_low/debug_loc_table.cmo
 
+DWARF_HIGH=\
+  asmcomp/debug/dwarf_high/proto_die.cmo \
+  asmcomp/debug/dwarf_high/dwarf_attribute_helpers.cmo \
+  asmcomp/debug/dwarf_high/operator_builder.cmo \
+  asmcomp/debug/dwarf_high/assign_abbrevs.cmo \
+  asmcomp/debug/dwarf_high/simple_location_description_lang.cmo \
+  asmcomp/debug/dwarf_high/dwarf_world.cmo
+
 ASMCOMP=\
   $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/arch.cmo \
@@ -206,6 +215,7 @@ ASMCOMP=\
   asmcomp/debug/target_system.cmo \
   asmcomp/debug/asm_directives.cmo \
   $(DWARF_LOW) \
+  $(DWARF_HIGH) \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
@@ -1383,7 +1393,7 @@ partialclean::
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
 	         middle_end/base_types asmcomp/debug asmcomp/debug/dwarf_low \
-           driver toplevel tools; do \
+                 asmcomp/debug/dwarf_high driver toplevel tools; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
 	    $$d/*.$(O) $$d/*.$(SO) $d/*~; \
 	done
@@ -1393,7 +1403,7 @@ partialclean::
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
 	 middle_end/base_types asmcomp/debug asmcomp/debug/dwarf_low \
-   driver toplevel; \
+	 asmcomp/debug/dwarf_high driver toplevel; \
 	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -native \
