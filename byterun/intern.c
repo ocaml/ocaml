@@ -35,12 +35,10 @@
 #include "caml/misc.h"
 #include "caml/reverse.h"
 
-/* XXX KC: Should this be made local? */
-static unsigned char * intern_src;
+static __thread unsigned char * intern_src;
 /* Reading pointer in block holding input data. */
 
-/* XXX KC: Should this be made local? */
-static unsigned char * intern_input = NULL;
+static __thread unsigned char * intern_input = NULL;
 /* Pointer to beginning of block holding input data,
    if non-NULL this pointer will be freed by the cleanup function. */
 
