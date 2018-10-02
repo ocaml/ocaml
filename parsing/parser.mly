@@ -3095,7 +3095,7 @@ additive:
   | PLUS                                        { "+" }
   | PLUSDOT                                     { "+." }
 ;
-%inline optlabel:
+optlabel:
    | OPTLABEL                                   { $1 }
    | QUESTION LIDENT COLON                      { $2 }
 ;
