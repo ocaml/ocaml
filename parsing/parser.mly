@@ -2699,20 +2699,19 @@ core_type_no_attr:
       { $1 }
 ;
 core_type2:
-    tuple_type
-      { $1 }
-  | mktyp(core_type2_)
-      { $1 }
-;
-core_type2_:
-    QUESTION LIDENT COLON extra_rhs(core_type2) MINUSGREATER core_type2
-      { Ptyp_arrow(Optional $2, $4, $6) }
-  | OPTLABEL extra_rhs(core_type2) MINUSGREATER core_type2
-      { Ptyp_arrow(Optional $1 , $2, $4) }
-  | LIDENT COLON extra_rhs(core_type2) MINUSGREATER core_type2
-      { Ptyp_arrow(Labelled $1, $3, $5) }
-  | extra_rhs(core_type2) MINUSGREATER core_type2
-      { Ptyp_arrow(Nolabel, $1, $3) }
+  | ty = tuple_type
+      { ty }
+  | mktyp(
+      QUESTION LIDENT COLON extra_rhs(core_type2) MINUSGREATER core_type2
+        { Ptyp_arrow(Optional $2, $4, $6) }
+    | OPTLABEL extra_rhs(core_type2) MINUSGREATER core_type2
+        { Ptyp_arrow(Optional $1 , $2, $4) }
+    | LIDENT COLON extra_rhs(core_type2) MINUSGREATER core_type2
+        { Ptyp_arrow(Labelled $1, $3, $5) }
+    | extra_rhs(core_type2) MINUSGREATER core_type2
+        { Ptyp_arrow(Nolabel, $1, $3) }
+    )
+    { $1 }
 ;
 (* Tuple types include:
    - atomic types (see below);
