@@ -465,6 +465,9 @@ Working version
 - GPR#2081: Mark [Iname_for_debugger] as an impure operation.
   (Mark Shinwell)
 
+- GPR#2084: Add [Dwarf_high] library.
+  (Mark Shinwell)
+
 - GPR#2090: Move stack frame layout calculations from [Emit] into [Proc].
   (Mark Shinwell)
 
