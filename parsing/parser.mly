@@ -2721,45 +2721,44 @@ simple_core_type:
 simple_core_type2:
   | LPAREN MODULE ext_attributes package_type RPAREN
       { wrap_typ_attrs ~loc:$sloc (reloc_typ ~loc:$sloc $4) $3 }
-  | mktyp(simple_core_type2_)
-      { $1 }
-;
-simple_core_type2_:
-    QUOTE ident
-      { Ptyp_var $2 }
-  | UNDERSCORE
-      { Ptyp_any }
-  | tys = actual_type_parameters
-    tid = mkrhs(type_longident)
-      { Ptyp_constr(tid, tys) }
-  | LESS meth_list GREATER
-      { let (f, c) = $2 in Ptyp_object (f, c) }
-  | LESS GREATER
-      { Ptyp_object ([], Closed) }
-  | tys = actual_type_parameters
-    HASH
-    cid = mkrhs(class_longident)
-      { Ptyp_class(cid, tys) }
-  | LBRACKET tag_field RBRACKET
-      { Ptyp_variant([$2], Closed, None) }
-/* PR#3835: this is not LR(1), would need lookahead=2
-  | LBRACKET simple_core_type RBRACKET
-      { Ptyp_variant([$2], Closed, None) }
-*/
-  | LBRACKET BAR row_field_list RBRACKET
-      { Ptyp_variant($3, Closed, None) }
-  | LBRACKET row_field BAR row_field_list RBRACKET
-      { Ptyp_variant($2 :: $4, Closed, None) }
-  | LBRACKETGREATER opt_bar row_field_list RBRACKET
-      { Ptyp_variant($3, Open, None) }
-  | LBRACKETGREATER RBRACKET
-      { Ptyp_variant([], Open, None) }
-  | LBRACKETLESS opt_bar row_field_list RBRACKET
-      { Ptyp_variant($3, Closed, Some []) }
-  | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
-      { Ptyp_variant($3, Closed, Some $5) }
-  | extension
-      { Ptyp_extension $1 }
+  | mktyp( /* begin mktyp group */
+      QUOTE ident
+        { Ptyp_var $2 }
+    | UNDERSCORE
+        { Ptyp_any }
+    | tys = actual_type_parameters
+      tid = mkrhs(type_longident)
+        { Ptyp_constr(tid, tys) }
+    | LESS meth_list GREATER
+        { let (f, c) = $2 in Ptyp_object (f, c) }
+    | LESS GREATER
+        { Ptyp_object ([], Closed) }
+    | tys = actual_type_parameters
+      HASH
+      cid = mkrhs(class_longident)
+        { Ptyp_class(cid, tys) }
+    | LBRACKET tag_field RBRACKET
+        { Ptyp_variant([$2], Closed, None) }
+  /* PR#3835: this is not LR(1), would need lookahead=2
+    | LBRACKET simple_core_type RBRACKET
+        { Ptyp_variant([$2], Closed, None) }
+  */
+    | LBRACKET BAR row_field_list RBRACKET
+        { Ptyp_variant($3, Closed, None) }
+    | LBRACKET row_field BAR row_field_list RBRACKET
+        { Ptyp_variant($2 :: $4, Closed, None) }
+    | LBRACKETGREATER opt_bar row_field_list RBRACKET
+        { Ptyp_variant($3, Open, None) }
+    | LBRACKETGREATER RBRACKET
+        { Ptyp_variant([], Open, None) }
+    | LBRACKETLESS opt_bar row_field_list RBRACKET
+        { Ptyp_variant($3, Closed, Some []) }
+    | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
+        { Ptyp_variant($3, Closed, Some $5) }
+    | extension
+        { Ptyp_extension $1 }
+  )
+  { $1 } /* end mktyp group */
 ;
 
 %inline actual_type_parameters:
