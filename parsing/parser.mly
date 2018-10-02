@@ -2713,12 +2713,19 @@ core_type2_:
   { extra_rhs_core_type $1 ~pos:$endpos($1) };
 
 simple_core_type:
-    simple_core_type2  %prec below_HASH
+    atomic_type  %prec below_HASH
       { $1 }
   | LPAREN core_type RPAREN %prec below_HASH
       { $2 }
 ;
-simple_core_type2:
+(* Atomic types are the most basic level in the syntax of types.
+   Atomic types include:
+   - first-class module types:            (module S)
+   - type variables:                      'a
+   - applications of type constructors:   int, int list, int option list
+   - variant types:                       [`A]
+ *)
+atomic_type:
   | LPAREN MODULE ext_attributes package_type RPAREN
       { wrap_typ_attrs ~loc:$sloc (reloc_typ ~loc:$sloc $4) $3 }
   | mktyp( /* begin mktyp group */
@@ -2764,7 +2771,7 @@ simple_core_type2:
 %inline actual_type_parameters:
   | /* empty */
       { [] }
-  | ty = simple_core_type2
+  | ty = atomic_type
       { [ty] }
   | LPAREN tys = inline_core_type_comma_list RPAREN
       { tys }
