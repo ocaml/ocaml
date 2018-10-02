@@ -1364,10 +1364,8 @@ class_simple_expr:
   | LPAREN class_expr error
       { unclosed "(" $loc($1) ")" $loc($3) }
   | mkclass(
-      LBRACKET core_type_comma_list RBRACKET mkrhs(class_longident)
-        { Pcl_constr($4, $2) }
-    | mkrhs(class_longident)
-        { Pcl_constr($1, []) }
+      tys = actual_class_parameters cid = mkrhs(class_longident)
+        { Pcl_constr(cid, tys) }
     | OBJECT attributes class_structure error
         { unclosed "object" $loc($1) "end" $loc($4) }
     | LPAREN class_expr COLON class_type RPAREN
@@ -1492,10 +1490,8 @@ class_type:
  ;
 class_signature:
     mkcty(
-      LBRACKET core_type_comma_list RBRACKET mkrhs(clty_longident)
-        { Pcty_constr ($4, $2) }
-    | mkrhs(clty_longident)
-        { Pcty_constr ($1, []) }
+      tys = actual_class_parameters cid = mkrhs(clty_longident)
+        { Pcty_constr (cid, tys) }
     | extension
         { Pcty_extension $1 }
     ) { $1 }
@@ -1507,6 +1503,12 @@ class_signature:
       { Cty.attr $1 $2 }
   | LET OPEN override_flag attributes mkrhs(mod_longident) IN class_signature
       { mkcty ~loc:$sloc ~attrs:$4 (Pcty_open($3, $5, $7)) }
+;
+%inline actual_class_parameters:
+  | /* empty */
+      { [] }
+  | LBRACKET core_type_comma_list RBRACKET
+      { $2 }
 ;
 class_sig_body:
     class_self_type extra_csig(class_sig_fields)
