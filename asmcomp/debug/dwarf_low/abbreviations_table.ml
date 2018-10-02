@@ -33,12 +33,12 @@ let find t ~tag ~has_children ~attribute_specs =
   with Not_found -> None
 
 let size t =
-  let (+) = Int64.add in
+  let (+) = Dwarf_int.add in
   (* See below re. the zero word. *)
   Dwarf_value.size (Dwarf_value.Uleb128 0L)
     + List.fold_left
         (fun size entry -> size + Abbreviations_table_entry.size entry)
-        Int64.zero
+        (Dwarf_int.zero ())
         t
 
 let emit t =

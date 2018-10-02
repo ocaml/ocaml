@@ -49,49 +49,54 @@ type t =
   | Offset_into_debug_line_from_symbol of string
   | Offset_into_debug_loc of Linearize.label
   | Offset_into_debug_abbrev of Linearize.label
-  | Distance_between_labels_32bit of { upper : Cmm.label; lower : Cmm.label; }
+  | Distance_between_labels_32bit of {
+      upper : Linearize.label;
+      lower : Linearize.label;
+    }
 
 (* DWARF-4 standard section 7.6. *)
 let rec uleb128_size i =
   assert (Int64.compare i 0L >= 0);
-  if Int64.compare i 128L < 0 then 1L
-  else Int64.add 1L (uleb128_size (Int64.shift_right_logical i 7))
+  if Int64.compare i 128L < 0 then Dwarf_int.one ()
+  else Dwarf_int.succ (uleb128_size (Int64.shift_right_logical i 7))
 
 let rec sleb128_size i =
-  if Int64.compare i (-64L) >= 0 && Int64.compare i 64L < 0 then 1L
-  else Int64.add 1L (sleb128_size (Int64.shift_right i 7))
+  if Int64.compare i (-64L) >= 0 && Int64.compare i 64L < 0 then
+    Dwarf_int.one ()
+  else
+    Dwarf_int.succ (sleb128_size (Int64.shift_right i 7))
 
 let size t =
   match t with
-  | Flag_true -> 0L  (* see comment below *)
-  | Bool _ -> 1L
-  | Int8 _ -> 1L
-  | Int16 _ -> 2L
-  | Int32 _ -> 4L
-  | Int64 _ -> 8L
+  | Flag_true -> Dwarf_int.zero ()  (* see comment below *)
+  | Bool _ -> Dwarf_int.one ()
+  | Int8 _ -> Dwarf_int.one ()
+  | Int16 _ -> Dwarf_int.two ()
+  | Int32 _ -> Dwarf_int.four ()
+  | Int64 _ -> Dwarf_int.eight ()
   | Uleb128 i -> uleb128_size i
   | Sleb128 i -> sleb128_size i
   | Absolute_code_address _
   | Code_address_from_label _
-  | Code_address_from_symbol _ 
+  | Code_address_from_symbol _
   | Code_address_from_label_symbol_diff _
   | Code_address_from_symbol_diff _
   | Code_address_from_symbol_plus_bytes _ ->
     begin match Targetint.size with
-    | 32 -> 4L
-    | 64 -> 8L
+    | 32 -> Dwarf_int.four ()
+    | 64 -> Dwarf_int.eight ()
     | bits -> Misc.fatal_errorf "Unsupported Targetint.size %d" bits
     end
-  | String str -> Int64.of_int (String.length str + 1)
+  | String str ->
+    Dwarf_int.of_targetint_exn (Targetint.of_int (String.length str + 1))
   | Indirect_string _
   | Offset_into_debug_line _
   | Offset_into_debug_line_from_symbol _
   | Offset_into_debug_info _
   | Offset_into_debug_info_from_symbol _
   | Offset_into_debug_loc _
-  | Offset_into_debug_abbrev _ ->
-    Dwarf_int.size (Dwarf_int.zero ())
-  | Distance_between_labels_32bit _ -> 4L
+  | Offset_into_debug_abbrev _ -> Dwarf_int.size (Dwarf_int.zero ())
+  | Distance_between_labels_32bit _ -> Dwarf_int.four ()
 
 let emit t =
   let width_for_ref_addr_or_sec_offset () : Target_system.machine_width =

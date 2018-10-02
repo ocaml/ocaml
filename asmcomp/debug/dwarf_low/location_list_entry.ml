@@ -39,6 +39,7 @@ module Location_list_entry = struct
 
   let expr_size t =
     let size = Single_location_description.size t.expr in
+    let size = Dwarf_int.to_int64 size in
     (* CR-someday mshinwell: maybe this size should be unsigned? *)
     assert (Int64.compare size 0xffffL < 0);
     Numbers.Int16.of_int64_exn size
@@ -71,7 +72,7 @@ module Location_list_entry = struct
     let v1 = beginning_value t in
     let v2 = ending_value t in
     let v3 = Dwarf_value.Int16 (expr_size t) in
-    let (+) = Int64.add in
+    let (+) = Dwarf_int.add in
     Dwarf_value.size v1 + Dwarf_value.size v2 + Dwarf_value.size v3
       + Single_location_description.size t.expr
 
@@ -93,8 +94,8 @@ module Base_address_selection_entry = struct
     ]
 
   let size t =
-    List.fold_left (fun acc v -> Int64.add acc (Dwarf_value.size v))
-      Int64.zero
+    List.fold_left (fun acc v -> Dwarf_int.add acc (Dwarf_value.size v))
+      (Dwarf_int.zero ())
       (to_dwarf_values t)
 
   let emit t =

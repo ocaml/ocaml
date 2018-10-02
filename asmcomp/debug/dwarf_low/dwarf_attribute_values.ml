@@ -70,27 +70,31 @@ module Attribute_value = struct
   (* CR mshinwell: as per CR above.  This shouldn't be here *)
   let rec uleb128_size i =
     assert (Int64.compare i 0L >= 0);
-    if Int64.compare i 128L < 0 then 1L
-    else Int64.add 1L (uleb128_size (Int64.shift_right_logical i 7))
+    if Int64.compare i 128L < 0 then Dwarf_int.one ()
+    else Dwarf_int.succ (uleb128_size (Int64.shift_right_logical i 7))
 
   let size ((_spec, value) : t) =
     match value with
     | Dwarf_value value -> Dwarf_value.size value
     | Single_location_description loc_desc ->
       let loc_desc_size = Single_location_description.size loc_desc in
-      Int64.add (uleb128_size loc_desc_size) loc_desc_size
+      Dwarf_int.add (uleb128_size (Dwarf_int.to_int64 loc_desc_size))
+        loc_desc_size
     | Composite_location_description loc_desc ->
       let loc_desc_size = Composite_location_description.size loc_desc in
-      Int64.add (uleb128_size loc_desc_size) loc_desc_size
+      Dwarf_int.add (uleb128_size (Dwarf_int.to_int64 loc_desc_size))
+        loc_desc_size
 
   let emit ((_spec, value) : t) =
     match value with
     | Dwarf_value value -> Dwarf_value.emit value
     | Single_location_description loc_desc ->
-      A.uleb128 (Single_location_description.size loc_desc);
+      A.uleb128 (Dwarf_int.to_int64 (
+        Single_location_description.size loc_desc));
       Single_location_description.emit loc_desc
     | Composite_location_description loc_desc ->
-      A.uleb128 (Composite_location_description.size loc_desc);
+      A.uleb128 (Dwarf_int.to_int64 (
+        Composite_location_description.size loc_desc));
       Composite_location_description.emit loc_desc
 
   let attribute_spec (spec, _value) = spec

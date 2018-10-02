@@ -31,13 +31,14 @@ let create ~abbreviation_code ~tag ~has_children ~attribute_specs =
   }
 
 let size t =
-  let (+) = Int64.add in
+  let (+) = Dwarf_int.add in
   Abbreviation_code.size t.abbreviation_code
     + Dwarf_tag.size t.tag
     + Child_determination.size t.has_children
-    + AS.Set.fold (fun attr_spec size -> Int64.add size (AS.size attr_spec))
+    + AS.Set.fold (fun attr_spec size ->
+          Dwarf_int.add size (AS.size attr_spec))
         t.attribute_specs
-        0L
+        (Dwarf_int.zero ())
     (* See below regarding the two zero words. *)
     + Dwarf_value.size (Dwarf_value.Uleb128 0L)
     + Dwarf_value.size (Dwarf_value.Uleb128 0L)

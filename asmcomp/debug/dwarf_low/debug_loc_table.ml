@@ -34,8 +34,8 @@ let insert t ~location_list =
 
 let size t =
   List.fold_left (fun size loc_list ->
-      Int64.add size (Location_list.size loc_list))
-    0L
+      Dwarf_int.add size (Location_list.size loc_list))
+    (Dwarf_int.zero ())
     !t
 
 let emit t =

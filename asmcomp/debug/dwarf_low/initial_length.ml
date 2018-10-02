@@ -18,17 +18,11 @@
 
 (* Even on a 32-bit platform, a DWARF section may be larger than the
    maximum representable positive signed 32-bit integer... *)
-type t = Int64.t
+type t = Dwarf_int.t
 
 let create initial_length = initial_length
 
-let size _t =
-  let size =
-    match Dwarf_format.get () with
-    | Thirty_two -> 4
-    | Sixty_four -> 4 + 8
-  in
-  Int64.of_int size
+let size t = Dwarf_int.size t
 
 let sixty_four_bit_indicator = 0xffffffffl
 
@@ -37,14 +31,13 @@ let emit t =
   | Thirty_two ->
     (* Careful: not "Int64.of_int32 0xfffffff0l", which would sign
        extend. *)
-    if Int64.compare t 0xfffffff0L >= 0 then begin
-      Misc.fatal_errorf "Initial length value %Ld is too large for \
+    if Int64.compare (Dwarf_int.to_int64 t) 0xfffffff0L >= 0 then begin
+      (* DWARF-4 standard section 7.2.2. *)
+      Misc.fatal_errorf "Initial length value %a is too large for \
           32-bit DWARF"
-        t
+        Dwarf_int.print t
     end;
-    (* CR mshinwell: check this "to_int32" is correct if the size is
-       large *)
-    Dwarf_value.emit (Dwarf_value.Int32 (Int64.to_int32 t))
+    Dwarf_int.emit t
   | Sixty_four ->
     Dwarf_value.emit (Dwarf_value.Int32 sixty_four_bit_indicator);
-    Dwarf_value.emit (Dwarf_value.Int64 t)
+    Dwarf_int.emit t

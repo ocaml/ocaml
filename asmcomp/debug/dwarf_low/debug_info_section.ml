@@ -41,10 +41,10 @@ let address_width_in_bytes_on_target =
   Dwarf_value.Int8 (Numbers.Int8.of_int_exn Arch.size_addr)
 
 let size_without_first_word t =
-  let (+) = Int64.add in
+  let (+) = Dwarf_int.add in
   let total_die_size =
     List.fold_left (fun size die -> size + DIE.size die)
-      Int64.zero
+      (Dwarf_int.zero ())
       t.dies
   in
   Dwarf_version.size dwarf_version
@@ -55,7 +55,7 @@ let size_without_first_word t =
 let size t =
   let size_without_first_word = size_without_first_word t in
   let initial_length = Initial_length.create size_without_first_word in
-  Int64.add (Initial_length.size initial_length) size_without_first_word
+  Dwarf_int.add (Initial_length.size initial_length) size_without_first_word
 
 let emit t =
   let size_without_first_word = size_without_first_word t in

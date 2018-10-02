@@ -391,7 +391,7 @@ module Attribute_specification = struct
     let size t =
       match t with
       | T1 (T (attribute, form)) ->
-        Int64.add (Attribute.size attribute) (Form.size form)
+        Dwarf_int.add (Attribute.size attribute) (Form.size form)
   end
 
   let seal (t : _ t) : Sealed.t = Sealed.T1 t

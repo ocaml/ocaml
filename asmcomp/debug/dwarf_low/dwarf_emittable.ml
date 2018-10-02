@@ -18,7 +18,7 @@ module type S = sig
   type t
 
   (** Measure the size in bytes of the given entity. *)
-  val size : t -> Int64.t
+  val size : t -> Dwarf_int.t
 
   (** Emit assembler directives to describe the given entity. *)
   val emit : t -> unit
@@ -28,7 +28,7 @@ module type S1_ignore = sig
   type 'a t
 
   (** Measure the size in bytes of the given entity. *)
-  val size : _ t -> Int64.t
+  val size : _ t -> Dwarf_int.t
 
   (** Emit assembler directives to describe the given entity. *)
   val emit : _ t -> unit

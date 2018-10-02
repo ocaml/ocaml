@@ -15,7 +15,7 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 type t =
-  | Pieces of (Simple_location_description.t * int) list
+  | Pieces of (Simple_location_description.t * Targetint.t) list
 
 let pieces_of_simple_location_descriptions slds = Pieces slds
 
@@ -24,10 +24,10 @@ let size t =
   | Pieces slds ->
     List.fold_left (fun size (sld, size_in_bytes) ->
         let pieces = Dwarf_operator.DW_op_piece { size_in_bytes; } in
-        Int64.add size
-          (Int64.add (Simple_location_description.size sld)
+        Dwarf_int.add size
+          (Dwarf_int.add (Simple_location_description.size sld)
             (Dwarf_operator.size pieces)))
-      Int64.zero
+      (Dwarf_int.zero ())
       slds
 
 let emit t =
