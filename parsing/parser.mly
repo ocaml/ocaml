@@ -2788,11 +2788,8 @@ atomic_type:
       cid = mkrhs(class_longident)
         { Ptyp_class(cid, tys) }
     | LBRACKET tag_field RBRACKET
+        (* not row_field; see CONFLICTS *)
         { Ptyp_variant([$2], Closed, None) }
-  /* PR#3835: this is not LR(1), would need lookahead=2
-    | LBRACKET atomic_type RBRACKET
-        { Ptyp_variant([$2], Closed, None) }
-  */
     | LBRACKET BAR row_field_list RBRACKET
         { Ptyp_variant($3, Closed, None) }
     | LBRACKET row_field BAR row_field_list RBRACKET
