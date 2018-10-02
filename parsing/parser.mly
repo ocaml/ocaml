@@ -2690,7 +2690,7 @@ core_type:
       { Typ.attr $1 $2 }
 ;
 core_type_no_attr:
-    function_type %prec MINUSGREATER
+    function_type
       { $1 }
   | mktyp(function_type AS QUOTE ident
       { Ptyp_alias($1, $4) })
@@ -2705,13 +2705,14 @@ core_type_no_attr:
  *)
 function_type:
   | ty = tuple_type
+    %prec MINUSGREATER
       { ty }
   | mktyp(
-      optlabel extra_rhs(function_type) MINUSGREATER function_type
+      optlabel extra_rhs(tuple_type) MINUSGREATER function_type
         { Ptyp_arrow(Optional $1, $2, $4) }
-    | LIDENT COLON extra_rhs(function_type) MINUSGREATER function_type
+    | LIDENT COLON extra_rhs(tuple_type) MINUSGREATER function_type
         { Ptyp_arrow(Labelled $1, $3, $5) }
-    | extra_rhs(function_type) MINUSGREATER function_type
+    | extra_rhs(tuple_type) MINUSGREATER function_type
         { Ptyp_arrow(Nolabel, $1, $3) }
     )
     { $1 }
