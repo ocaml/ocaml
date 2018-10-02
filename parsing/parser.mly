@@ -1478,12 +1478,11 @@ class_type:
     class_signature
       { $1 }
   | mkcty(
-      optlabel tuple_type MINUSGREATER class_type
-        { Pcty_arrow(Optional $1, $2, $4) }
-    | LIDENT COLON tuple_type MINUSGREATER class_type
-        { Pcty_arrow(Labelled $1, $3, $5) }
-    | tuple_type MINUSGREATER class_type
-        { Pcty_arrow(Nolabel, $1, $3) }
+      label = arg_label
+      domain = tuple_type
+      MINUSGREATER
+      codomain = class_type
+        { Pcty_arrow(label, domain, codomain) }
     ) { $1 }
  ;
 class_signature:
@@ -2699,7 +2698,7 @@ core_type_no_attr:
 
 (* Function types include:
    - tuple types (see below);
-   - proper function types:               int -> int -> int
+   - proper function types:               int -> int
                                           foo: int -> int
                                           ?foo: int -> int
  *)
@@ -2708,14 +2707,21 @@ function_type:
     %prec MINUSGREATER
       { ty }
   | mktyp(
-      optlabel extra_rhs(tuple_type) MINUSGREATER function_type
-        { Ptyp_arrow(Optional $1, $2, $4) }
-    | LIDENT COLON extra_rhs(tuple_type) MINUSGREATER function_type
-        { Ptyp_arrow(Labelled $1, $3, $5) }
-    | extra_rhs(tuple_type) MINUSGREATER function_type
-        { Ptyp_arrow(Nolabel, $1, $3) }
+      label = arg_label
+      domain = extra_rhs(tuple_type)
+      MINUSGREATER
+      codomain = function_type
+        { Ptyp_arrow(label, domain, codomain) }
     )
     { $1 }
+;
+%inline arg_label:
+  | label = optlabel
+      { Optional label }
+  | label = LIDENT COLON
+      { Labelled label }
+  | /* empty */
+      { Nolabel }
 ;
 (* Tuple types include:
    - atomic types (see below);
