@@ -2528,8 +2528,11 @@ generalized_constructor_arguments:
 ;
 
 constructor_arguments:
-  | atomic_type_star_list %prec below_HASH  { Pcstr_tuple $1 }
-  | LBRACE label_declarations RBRACE { Pcstr_record $2 }
+  | tys = inline_separated_nonempty_llist(STAR, atomic_type)
+    %prec below_HASH
+      { Pcstr_tuple tys }
+  | LBRACE label_declarations RBRACE
+      { Pcstr_record $2 }
 ;
 label_declarations:
     label_declaration                           { [$1] }
@@ -2823,16 +2826,9 @@ opt_ampersand:
 ;
 atomic_type_or_tuple:
     atomic_type %prec below_HASH { $1 }
-  | mktyp(atomic_type STAR atomic_type_star_list
-      { Ptyp_tuple($1 :: $3) })
+  | mktyp(separated_nontrivial_llist(STAR, atomic_type)
+      { Ptyp_tuple($1) })
       { $1 }
-;
-(* An [atomic_type_star_list] is a nonempty, star-separated list of
-   atomic types. It appears in the syntax of product types and in
-   the syntax of data constructor declarations. *)
-%inline atomic_type_star_list:
-  inline_separated_nonempty_llist(STAR, atomic_type)
-    { $1 }
 ;
 meth_list:
     field_semi meth_list
