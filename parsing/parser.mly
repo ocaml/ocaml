@@ -734,7 +734,7 @@ The precedences must be listed from low to high.
 %inline extra_csig(symb): symb { extra_csig $startpos $endpos $1 };
 %inline extra_def(symb): symb { extra_def $startpos $endpos $1 };
 %inline extra_text(symb): symb { extra_text $startpos $endpos $1 };
-
+%inline extra_rhs(symb): symb { extra_rhs_core_type $1 ~pos:$endpos($1) };
 %inline mkrhs(symb): symb
     { mkrhs $1 $sloc }
 ;
@@ -2705,18 +2705,15 @@ core_type2:
       { $1 }
 ;
 core_type2_:
-    QUESTION LIDENT COLON extra_core_type2 MINUSGREATER core_type2
+    QUESTION LIDENT COLON extra_rhs(core_type2) MINUSGREATER core_type2
       { Ptyp_arrow(Optional $2, $4, $6) }
-  | OPTLABEL extra_core_type2 MINUSGREATER core_type2
+  | OPTLABEL extra_rhs(core_type2) MINUSGREATER core_type2
       { Ptyp_arrow(Optional $1 , $2, $4) }
-  | LIDENT COLON extra_core_type2 MINUSGREATER core_type2
+  | LIDENT COLON extra_rhs(core_type2) MINUSGREATER core_type2
       { Ptyp_arrow(Labelled $1, $3, $5) }
-  | extra_core_type2 MINUSGREATER core_type2
+  | extra_rhs(core_type2) MINUSGREATER core_type2
       { Ptyp_arrow(Nolabel, $1, $3) }
 ;
-%inline extra_core_type2: core_type2
-  { extra_rhs_core_type $1 ~pos:$endpos($1) };
-
 (* Tuple types include:
    - atomic types (see below);
    - proper tuple types:                  int * int * int list
