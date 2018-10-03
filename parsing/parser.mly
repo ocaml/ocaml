@@ -929,11 +929,12 @@ toplevel_phrase:
       { $1 }
   ) { $1 }
 ;
+%inline text_str(symb): symb { text_str $startpos @ [$1] }
 top_structure_tail_nodoc:
     /* empty */
       { [] }
-  | structure_item top_structure_tail_nodoc
-      { text_str $startpos($1) @ $1 :: $2 }
+  | text_str(structure_item) top_structure_tail_nodoc
+      { $1 @ $2 }
 ;
 
 use_file:
