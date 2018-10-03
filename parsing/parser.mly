@@ -1329,7 +1329,7 @@ class_fun_binding:
     ) { $1 }
 ;
 formal_class_parameters:
-  params = class_parameters(optional_type_parameter)
+  params = class_parameters(type_parameter)
     { params }
 ;
 
@@ -2358,7 +2358,7 @@ type_subst_declarations:
 ;
 
 type_subst_declaration:
-    TYPE ext_attributes nrf=nonrec_flag params=optional_type_parameters
+    TYPE ext_attributes nrf=nonrec_flag params=type_parameters
     name=mkrhs(LIDENT) kind_priv_man=type_subst_kind cstrs=constraints
     post_attrs=post_item_attributes
       { check_nonrec_absent (make_loc $loc(nrf)) nrf;
@@ -2372,7 +2372,7 @@ type_subst_declaration:
         (ty, ext) }
 ;
 and_type_subst_declaration:
-    AND attrs=attributes params=optional_type_parameters name=mkrhs(LIDENT)
+    AND attrs=attributes params=type_parameters name=mkrhs(LIDENT)
     kind_priv_man=type_subst_kind cstrs=constraints
     post_attrs=post_item_attributes
       { let docs = symbol_docs $sloc in
@@ -2384,7 +2384,7 @@ and_type_subst_declaration:
 ;
 
 type_declaration:
-    TYPE ext_attributes nonrec_flag optional_type_parameters mkrhs(LIDENT)
+    TYPE ext_attributes nonrec_flag type_parameters mkrhs(LIDENT)
     type_kind constraints post_item_attributes
       { let (kind, priv, manifest) = $6 in
         let (ext, attrs) = $2 in
@@ -2396,7 +2396,7 @@ type_declaration:
         ($3, ty, ext) }
 ;
 and_type_declaration:
-    AND attributes optional_type_parameters mkrhs(LIDENT) type_kind constraints
+    AND attributes type_parameters mkrhs(LIDENT) type_kind constraints
     post_item_attributes
       { let (kind, priv, manifest) = $5 in
         let docs = symbol_docs $sloc in
@@ -2441,39 +2441,30 @@ type_subst_kind:
     nonempty_type_kind(COLONEQUAL)
       { $1 }
 ;
-optional_type_parameters:
+type_parameters:
     /* empty */
       { [] }
-  | p = optional_type_parameter
+  | p = type_parameter
       { [p] }
-  | LPAREN ps = separated_nonempty_llist(COMMA, optional_type_parameter) RPAREN
+  | LPAREN ps = separated_nonempty_llist(COMMA, type_parameter) RPAREN
       { ps }
 ;
-optional_type_parameter:
-    type_variance optional_type_variable        { $2, $1 }
+type_parameter:
+    type_variance type_variable        { $2, $1 }
 ;
-optional_type_variable:
-    ty = type_variable
-  | ty = anonymous_type_variable
-      { ty }
+type_variable:
+  mktyp(
+    QUOTE tyvar = ident
+      { Ptyp_var tyvar }
+  | UNDERSCORE
+      { Ptyp_any }
+  ) { $1 }
 ;
 
 type_variance:
     /* empty */                                 { Invariant }
   | PLUS                                        { Covariant }
   | MINUS                                       { Contravariant }
-;
-%inline type_variable:
-  mktyp(
-    QUOTE tyvar = ident
-      { Ptyp_var tyvar }
-  ) { $1 }
-;
-%inline anonymous_type_variable:
-  mktyp(
-    UNDERSCORE
-      { Ptyp_any }
-  ) { $1 }
 ;
 constructor_declarations:
   | BAR                                                  { [  ] }
@@ -2560,7 +2551,7 @@ label_declaration_semi:
 str_type_extension:
   TYPE ext_attributes
   no_nonrec_flag
-  optional_type_parameters mkrhs(type_longident)
+  type_parameters mkrhs(type_longident)
   PLUSEQ private_flag str_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
@@ -2570,7 +2561,7 @@ str_type_extension:
 sig_type_extension:
   TYPE ext_attributes
   no_nonrec_flag
-  optional_type_parameters mkrhs(type_longident)
+  type_parameters mkrhs(type_longident)
   PLUSEQ private_flag sig_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
@@ -2623,7 +2614,7 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    TYPE optional_type_parameters mkrhs(label_longident) with_type_binder
+    TYPE type_parameters mkrhs(label_longident) with_type_binder
     core_type_no_attr constraints
       { let lident = Location.{ $3 with txt = Longident.last $3.txt } in
         Pwith_type
@@ -2636,7 +2627,7 @@ with_constraint:
               ~loc:(make_loc $sloc))) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
-  | TYPE optional_type_parameters mkrhs(label_longident)
+  | TYPE type_parameters mkrhs(label_longident)
     COLONEQUAL core_type_no_attr
       { let lident = Location.{ $3 with txt = Longident.last $3.txt } in
         Pwith_typesubst
