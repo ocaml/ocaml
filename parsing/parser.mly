@@ -2453,10 +2453,9 @@ optional_type_parameter:
     type_variance optional_type_variable        { $2, $1 }
 ;
 optional_type_variable:
-    mktyp(
-        QUOTE ident { Ptyp_var $2 }
-      | UNDERSCORE  { Ptyp_any }
-    ) { $1 }
+    ty = type_variable
+  | ty = anonymous_type_variable
+      { ty }
 ;
 
 type_parameter:
@@ -2471,6 +2470,12 @@ type_variance:
   mktyp(
     QUOTE tyvar = ident
       { Ptyp_var tyvar }
+  ) { $1 }
+;
+%inline anonymous_type_variable:
+  mktyp(
+    UNDERSCORE
+      { Ptyp_any }
   ) { $1 }
 ;
 constructor_declarations:
