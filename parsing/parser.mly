@@ -1742,17 +1742,17 @@ expr:
       { Pexp_letexception($4, $6), $3 }
   | LET OPEN override_flag ext_attributes mkrhs(mod_longident) IN seq_expr
       { Pexp_open($3, $5, $7), $4 }
-  | FUNCTION ext_attributes opt_bar match_cases
-      { Pexp_function $4, $2 }
+  | FUNCTION ext_attributes match_cases
+      { Pexp_function $3, $2 }
   | FUN ext_attributes labeled_simple_pattern fun_def
       { let (l,o,p) = $3 in
         Pexp_fun(l, o, p, $4), $2 }
   | FUN ext_attributes LPAREN TYPE lident_list RPAREN fun_def
       { (mk_newtypes ~loc:$sloc $5 $7).pexp_desc, $2 }
-  | MATCH ext_attributes seq_expr WITH opt_bar match_cases
-      { Pexp_match($3, $6), $2 }
-  | TRY ext_attributes seq_expr WITH opt_bar match_cases
-      { Pexp_try($3, $6), $2 }
+  | MATCH ext_attributes seq_expr WITH match_cases
+      { Pexp_match($3, $5), $2 }
+  | TRY ext_attributes seq_expr WITH match_cases
+      { Pexp_try($3, $5), $2 }
   | TRY ext_attributes seq_expr WITH error
       { syntax_error() }
   | IF ext_attributes seq_expr THEN expr ELSE expr
@@ -2085,7 +2085,7 @@ strict_binding:
       { mk_newtypes ~loc:$sloc $3 $5 }
 ;
 %inline match_cases:
-  xs = separated_nonempty_llist(BAR, match_case)
+  xs = preceded_or_separated_nonempty_llist(BAR, match_case)
     { xs }
 ;
 match_case:
