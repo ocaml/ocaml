@@ -127,6 +127,11 @@ val compare_structured_constants:
 val compare_constants:
         uconstant -> uconstant -> int
 
+type usymbol_provenance = {
+  original_idents : Ident.t list;
+  module_path : Path.t;
+}
+
 type uconstant_block_field =
   | Uconst_field_ref of string
   | Uconst_field_int of int
@@ -136,10 +141,12 @@ type preallocated_block = {
   exported : bool;
   tag : int;
   fields : uconstant_block_field option list;
+  provenance : usymbol_provenance option;
 }
 
 type preallocated_constant = {
   symbol : string;
   exported : bool;
   definition : ustructured_constant;
+  provenance : usymbol_provenance option;
 }

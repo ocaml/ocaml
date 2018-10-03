@@ -676,6 +676,7 @@ let to_clambda_program t env constants (program : Flambda.program) =
           exported = true;
           tag = Tag.to_int tag;
           fields = constant_fields;
+          provenance = None;
         }
       in
       let e2, constants, preallocated_blocks = loop env constants program in

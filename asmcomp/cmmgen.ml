@@ -3043,7 +3043,7 @@ let emit_constant_table symb elems =
 let emit_constants cont (constants:Clambda.preallocated_constant list) =
   let c = ref cont in
   List.iter
-    (fun { symbol = lbl; exported; definition = cst } ->
+    (fun { symbol = lbl; exported; definition = cst; provenance = _; } ->
        let lbl = S.of_external_name lbl in
        let global = if exported then Global else Not_global in
        let cst = emit_structured_constant (lbl, global) cst [] in

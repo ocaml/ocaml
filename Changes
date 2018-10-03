@@ -479,6 +479,9 @@ Working version
   human name and module path fields in [Closure].
   (Mark Shinwell)
 
+- GPR#2088: Add [Clambda.usymbol_provenance].
+  (Mark Shinwell)
+
 - GPR#2090: Move stack frame layout calculations from [Emit] into [Proc].
   (Mark Shinwell)
 
