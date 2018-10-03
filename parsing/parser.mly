@@ -1329,7 +1329,7 @@ class_fun_binding:
     ) { $1 }
 ;
 formal_class_parameters:
-  params = class_parameters(type_parameter)
+  params = class_parameters(optional_type_parameter)
     { params }
 ;
 
@@ -2458,9 +2458,6 @@ optional_type_variable:
       { ty }
 ;
 
-type_parameter:
-    type_variance type_variable                   { $2, $1 }
-;
 type_variance:
     /* empty */                                 { Invariant }
   | PLUS                                        { Covariant }
