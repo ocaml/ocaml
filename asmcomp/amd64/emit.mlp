@@ -904,7 +904,7 @@ let all_functions = ref []
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
+let fundecl fundecl ~end_of_function_label =
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
@@ -937,6 +937,7 @@ let fundecl fundecl =
     end;
   end;
   cfi_endproc ();
+  _label (emit_label end_of_function_label);
   begin match system with
   | S_gnu | S_linux ->
       D.type_ (emit_symbol fundecl.fun_name) "@function";

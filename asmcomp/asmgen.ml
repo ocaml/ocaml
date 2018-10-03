@@ -98,6 +98,10 @@ let rec regalloc ~ppf_dump round fd =
     Reg.reinit(); Liveness.fundecl newfd; regalloc ~ppf_dump (round + 1) newfd
   end else newfd
 
+let emit fundecl =
+  let end_of_function_label = Cmm.new_label () in
+  Emit.fundecl fundecl ~end_of_function_label
+
 let (++) x f = f x
 
 let compile_fundecl ~ppf_dump fd_cmm =
@@ -125,7 +129,7 @@ let compile_fundecl ~ppf_dump fd_cmm =
   ++ pass_dump_linear_if ppf_dump dump_linear "Linearized code"
   ++ Profile.record ~accumulate:true "scheduling" Scheduling.fundecl
   ++ pass_dump_linear_if ppf_dump dump_scheduling "After instruction scheduling"
-  ++ Profile.record ~accumulate:true "emit" Emit.fundecl
+  ++ Profile.record ~accumulate:true "emit" emit
 
 let compile_phrase ~ppf_dump p =
   if !dump_cmm then fprintf ppf_dump "%a@." Printcmm.phrase p;

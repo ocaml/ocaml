@@ -1025,7 +1025,7 @@ let rec emit_all i =
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
+let fundecl fundecl ~end_of_function_label =
   function_name := fundecl.fun_name;
   tailrec_entry_point := new_label();
   stack_offset := 0;
@@ -1113,7 +1113,8 @@ let fundecl fundecl =
       (fun  lbl ->
           `	.long	{emit_label lbl} - {emit_label !jumptables_lbl}\n`)
       (List.rev !jumptables)
-  end
+  end;
+  `{emit_label end_of_function_label}:\n`
 
 (* Emission of data *)
 

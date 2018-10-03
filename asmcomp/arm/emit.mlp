@@ -902,7 +902,7 @@ let rec emit_all ninstr fallthrough i =
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
+let fundecl fundecl ~end_of_function_label =
   function_name := fundecl.fun_name;
   fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
@@ -928,6 +928,7 @@ let fundecl fundecl =
   List.iter emit_call_gc !call_gc_sites;
   List.iter emit_call_bound_error !bound_error_sites;
   cfi_endproc();
+  `{emit_label end_of_function_label}:\n`;
   `	.type	{emit_symbol fundecl.fun_name}, %function\n`;
   `	.size	{emit_symbol fundecl.fun_name}, .-{emit_symbol fundecl.fun_name}\n`
 

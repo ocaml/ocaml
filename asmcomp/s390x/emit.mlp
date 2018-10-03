@@ -645,7 +645,7 @@ let rec emit_all i =
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
+let fundecl fundecl ~end_of_function_label =
   function_name := fundecl.fun_name;
   tailrec_entry_point := new_label();
   stack_offset := 0;
@@ -678,7 +678,8 @@ let fundecl fundecl =
       (fun (n, lbl) ->
         `{emit_label lbl}:	.quad	{emit_nativeint n}\n`)
       !int_literals
-  end
+  end;
+  `{emit_label end_of_function_label}:\n`
 
 (* Emission of data *)
 
