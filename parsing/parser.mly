@@ -2571,11 +2571,11 @@ sig_type_extension:
 str_extension_constructors:
     extension_constructor_declaration(epsilon)            { [$1] }
   | extension_constructor_declaration(BAR)                { [$1] }
-  | extension_constructor_rebind                          { [$1] }
-  | bar_extension_constructor_rebind                      { [$1] }
+  | extension_constructor_rebind(epsilon)                 { [$1] }
+  | extension_constructor_rebind(BAR)                     { [$1] }
   | str_extension_constructors extension_constructor_declaration(BAR)
       { $2 :: $1 }
-  | str_extension_constructors bar_extension_constructor_rebind
+  | str_extension_constructors extension_constructor_rebind(BAR)
       { $2 :: $1 }
 ;
 sig_extension_constructors:
@@ -2593,15 +2593,14 @@ extension_constructor_declaration(opening):
       let info = symbol_info $endpos in
       Te.decl cid ~args ?res ~attrs ~loc:(make_loc $sloc) ~info }
 ;
-extension_constructor_rebind:
-  | mkrhs(constr_ident) EQUAL mkrhs(constr_longident) attributes
+extension_constructor_rebind(opening):
+  opening
+  cid = mkrhs(constr_ident)
+  EQUAL
+  lid = mkrhs(constr_longident)
+  attrs = attributes
       { let info = symbol_info $endpos in
-        Te.rebind $1 $3 ~attrs:$4 ~loc:(make_loc $sloc) ~info }
-;
-bar_extension_constructor_rebind:
-  | BAR mkrhs(constr_ident) EQUAL mkrhs(constr_longident) attributes
-      { let info = symbol_info $endpos in
-        Te.rebind $2 $4 ~attrs:$5 ~loc:(make_loc $sloc) ~info }
+        Te.rebind cid lid ~attrs ~loc:(make_loc $sloc) ~info }
 ;
 
 /* "with" constraints (additional type equations over signature components) */
