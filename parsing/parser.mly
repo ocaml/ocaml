@@ -2466,23 +2466,23 @@ type_variance:
   | PLUS                                        { Covariant }
   | MINUS                                       { Contravariant }
 ;
+
 constructor_declarations:
   | BAR                                                  { [  ] }
-  | constructor_declaration                              { [$1] }
-  | bar_constructor_declaration                          { [$1] }
-  | constructor_declarations bar_constructor_declaration { $2 :: $1 }
+  | constructor_declaration(epsilon)                     { [$1] }
+  | constructor_declaration(BAR)                         { [$1] }
+  | constructor_declarations constructor_declaration(BAR){ $2 :: $1 }
 ;
-constructor_declaration:
-  | mkrhs(constr_ident) generalized_constructor_arguments attributes
-    { let args,res = $2 in
+(* A constructor declaration begins with an opening symbol, which can
+   be either epsilon or BAR. *)
+constructor_declaration(opening):
+  opening
+  cid = mkrhs(constr_ident)
+  args_res = generalized_constructor_arguments
+  attrs = attributes
+    { let args, res = args_res in
       let info = symbol_info $endpos in
-      Type.constructor $1 ~args ?res ~attrs:$3 ~loc:(make_loc $sloc) ~info }
-;
-bar_constructor_declaration:
-  | BAR mkrhs(constr_ident) generalized_constructor_arguments attributes
-    { let args,res = $3 in
-      let info = symbol_info $endpos in
-      Type.constructor $2 ~args ?res ~attrs:$4 ~loc:(make_loc $sloc) ~info }
+      Type.constructor cid ~args ?res ~attrs ~loc:(make_loc $sloc) ~info }
 ;
 str_exception_declaration:
   | sig_exception_declaration                    { $1 }
@@ -3039,6 +3039,12 @@ toplevel_directive_argument_:
 ;
 
 /* Miscellaneous */
+
+(* The symbol epsilon can be used instead of an /* empty */ comment. *)
+%inline epsilon:
+  /* empty */
+    { () }
+;
 
 name_tag:
     BACKQUOTE ident                             { $2 }
