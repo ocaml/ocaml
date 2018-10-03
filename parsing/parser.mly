@@ -932,12 +932,10 @@ toplevel_phrase:
   | EOF                                  { raise End_of_file }
 ;
 %inline top_structure:
-  extra_str(
-    seq_expr post_item_attributes
-      { text_str $startpos($1) @ [mkstrexp $1 $2] }
-  | flattened_list(text_str(structure_item))
-      { $1 }
-  ) { $1 }
+  extra_str(text_str(seq_expr post_item_attributes { mkstrexp $1 $2 }))
+    { $1 }
+| extra_str(flattened_list(text_str(structure_item)))
+    { $1 }
 ;
 %inline text_str(symb): symb { text_str $startpos @ [$1] }
 
