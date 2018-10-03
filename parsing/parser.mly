@@ -3042,10 +3042,8 @@ toplevel_directive:
       mk_directive ~loc:$sloc dir arg }
 ;
 toplevel_directive_:
-    HASH mkrhs(ident)
-    { $2, None }
-  | HASH mkrhs(ident) toplevel_directive_argument
-    { $2, Some $3 }
+    HASH dir = mkrhs(ident) arg = ioption(toplevel_directive_argument)
+    { dir, arg }
 ;
 
 toplevel_directive_argument:
