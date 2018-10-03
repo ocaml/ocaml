@@ -2569,32 +2569,29 @@ sig_type_extension:
         , ext }
 ;
 str_extension_constructors:
-    extension_constructor_declaration                     { [$1] }
-  | bar_extension_constructor_declaration                 { [$1] }
+    extension_constructor_declaration(epsilon)            { [$1] }
+  | extension_constructor_declaration(BAR)                { [$1] }
   | extension_constructor_rebind                          { [$1] }
   | bar_extension_constructor_rebind                      { [$1] }
-  | str_extension_constructors bar_extension_constructor_declaration
+  | str_extension_constructors extension_constructor_declaration(BAR)
       { $2 :: $1 }
   | str_extension_constructors bar_extension_constructor_rebind
       { $2 :: $1 }
 ;
 sig_extension_constructors:
-    extension_constructor_declaration                     { [$1] }
-  | bar_extension_constructor_declaration                 { [$1] }
-  | sig_extension_constructors bar_extension_constructor_declaration
+    extension_constructor_declaration(epsilon)            { [$1] }
+  | extension_constructor_declaration(BAR)                { [$1] }
+  | sig_extension_constructors extension_constructor_declaration(BAR)
       { $2 :: $1 }
 ;
-extension_constructor_declaration:
-  | mkrhs(constr_ident) generalized_constructor_arguments attributes
-      { let args, res = $2 in
-        let info = symbol_info $endpos in
-        Te.decl $1 ~args ?res ~attrs:$3 ~loc:(make_loc $sloc) ~info }
-;
-bar_extension_constructor_declaration:
-  | BAR mkrhs(constr_ident) generalized_constructor_arguments attributes
-      { let args, res = $3 in
-        let info = symbol_info $endpos in
-        Te.decl $2 ~args ?res ~attrs:$4 ~loc:(make_loc $sloc) ~info }
+extension_constructor_declaration(opening):
+  opening
+  cid = mkrhs(constr_ident)
+  args_res = generalized_constructor_arguments
+  attrs = attributes
+    { let args, res = args_res in
+      let info = symbol_info $endpos in
+      Te.decl cid ~args ?res ~attrs ~loc:(make_loc $sloc) ~info }
 ;
 extension_constructor_rebind:
   | mkrhs(constr_ident) EQUAL mkrhs(constr_longident) attributes
