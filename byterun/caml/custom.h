@@ -35,7 +35,7 @@ struct custom_operations {
   void (*serialize)(value v,
                     /*out*/ uintnat * bsize_32 /*size in bytes*/,
                     /*out*/ uintnat * bsize_64 /*size in bytes*/);
-  value (*deserialize)(void);
+  uintnat (*deserialize)(void * dst);
   int (*compare_ext)(value v1, value v2);
   const struct custom_fixed_length* fixed_length;
 };
