@@ -25,8 +25,8 @@ type instruction =
     dbg: Debuginfo.t;
     live: Reg.Set.t;
     phantom_available_before: Backend_var.Set.t;
-    available_before: Reg_availability_set.t;
-    available_across: Reg_availability_set.t option;
+    mutable available_before: Reg_availability_set.t;
+    mutable available_across: Reg_availability_set.t option;
   }
 
 and instruction_desc =
