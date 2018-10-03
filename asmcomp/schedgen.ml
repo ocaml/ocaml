@@ -390,6 +390,9 @@ method schedule_fundecl f =
       fun_body = new_body;
       fun_fast = f.fun_fast;
       fun_dbg  = f.fun_dbg;
+      fun_human_name = f.fun_human_name;
+      fun_arity = f.fun_arity;
+      fun_module_path = f.fun_module_path;
       fun_spacetime_shape = f.fun_spacetime_shape;
       fun_phantom_lets = f.fun_phantom_lets;
     }

@@ -195,6 +195,8 @@ type fundecl =
     fun_body: expression;
     fun_codegen_options : codegen_option list;
     fun_dbg : Debuginfo.t;
+    fun_human_name : string;
+    fun_module_path : Path.t option;
   }
 
 type data_item =

@@ -17,6 +17,7 @@
 
 val compunit:
   ppf_dump:Format.formatter
+  -> unit_name:Ident.t
   -> Clambda.ulambda
     * Clambda.preallocated_block list
     * Clambda.preallocated_constant list

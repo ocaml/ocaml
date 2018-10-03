@@ -84,4 +84,9 @@ let fundecl ppf f =
       ""
     else
       " " ^ Debuginfo.to_string f.fun_dbg in
+  let path =
+    match f.fun_module_path with
+    | None -> ""
+    | Some path -> "(" ^ Path.name path ^ ")"
+  in
   fprintf ppf "@[<v 2>%a:%s@,%a@]" S.print f.fun_name dbg all_instr f.fun_body

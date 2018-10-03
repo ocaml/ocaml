@@ -824,6 +824,10 @@ let global_approx = ref([||] : value_approximation array)
 let function_nesting_depth = ref 0
 let excessive_function_nesting_depth = 5
 
+(* Maintain the current module path *)
+
+let current_module_path = ref (None : Path.t option)
+
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.
    The approximation environment [fenv] maps idents to approximations.
@@ -1134,7 +1138,12 @@ let rec close fenv cenv = function
   | Lassign(id, lam) ->
       let (ulam, _) = close fenv cenv lam in
       (Uassign(id, ulam), Value_unknown)
-  | Levent(lam, _) ->
+  | Levent(lam, ev) ->
+      begin match ev.lev_kind with
+      | Lev_module_definition path ->
+        current_module_path := Some (Path.Pident path)
+      | _ -> ()
+      end;
       close fenv cenv lam
   | Lifused _ ->
       assert false
@@ -1190,14 +1199,18 @@ and close_functions fenv cenv fun_defs =
     List.map
       (function
           (id, Lfunction{kind; params; body; loc}) ->
-            let label = Compilenv.make_symbol (Some (V.unique_name id)) in
+            let fun_human_name = V.unique_name id in
+            let fun_module_path = !current_module_path in
+            let label = Compilenv.make_symbol (Some fun_human_name) in
             let arity = List.length params in
             let fundesc =
               {fun_label = label;
                fun_arity = (if kind = Tupled then -arity else arity);
                fun_closed = initially_closed;
                fun_inline = None;
-               fun_float_const_prop = !Clflags.float_const_prop } in
+               fun_float_const_prop = !Clflags.float_const_prop;
+               fun_human_name;
+               fun_module_path;} in
             let dbg = Debuginfo.from_location loc in
             (id, params, body, fundesc, dbg)
         | (_, _) -> fatal_error "Closure.close_functions")
@@ -1242,6 +1255,8 @@ and close_functions fenv cenv fun_defs =
         body   = ubody;
         dbg;
         env = Some env_param;
+        human_name = fundesc.fun_human_name;
+        module_path = fundesc.fun_module_path;
       }
     in
     (* give more chance of function with default parameters (i.e.
@@ -1418,7 +1433,8 @@ let collect_exported_structured_constants a =
 
 let reset () =
   global_approx := [||];
-  function_nesting_depth := 0
+  function_nesting_depth := 0;
+  current_module_path := None
 
 (* The entry point *)
 

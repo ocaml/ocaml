@@ -48,6 +48,7 @@ let ignore_var_with_provenance (_ : VP.t) = ()
 let ignore_var_with_provenance_list (_ : VP.t list) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
+let ignore_path_option (_ : Path.t option) = ()
 
 (* CR-soon mshinwell: check we aren't traversing function bodies more than
    once (need to analyse exactly what the calls are from Cmmgen into this
@@ -93,8 +94,8 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
       ignore_debuginfo dbg
     | Uclosure (functions, captured_variables) ->
       List.iter loop captured_variables;
-      List.iter (fun (
-        { Clambda. label; arity; params; body; dbg; env; } as clos) ->
+      List.iter (fun ({ Clambda. label; arity; params; body;
+            dbg; human_name; module_path; env; } as clos) ->
           (match closure_environment_var clos with
            | None -> ()
            | Some env_var ->
@@ -105,6 +106,8 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
           ignore_var_with_provenance_list params;
           loop body;
           ignore_debuginfo dbg;
+          ignore_string human_name;
+          ignore_path_option module_path;
           ignore_var_option env)
         functions
     | Uoffset (expr, offset) ->
@@ -267,7 +270,8 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
     | Uclosure (functions, captured_variables) ->
       ignore_ulambda_list captured_variables;
       (* Start a new let stack for speed. *)
-      List.iter (fun { Clambda. label; arity; params; body; dbg; env; } ->
+      List.iter (fun { Clambda. label; arity; params; body;
+              dbg; human_name; module_path; env; } ->
           ignore_function_label label;
           ignore_int arity;
           ignore_var_with_provenance_list params;
@@ -275,6 +279,8 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
           loop body;
           let_stack := [];
           ignore_debuginfo dbg;
+          ignore_string human_name;
+          ignore_path_option module_path;
           ignore_var_option env)
         functions
     | Uoffset (expr, offset) ->

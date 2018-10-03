@@ -58,6 +58,9 @@ type fundecl =
     fun_body: instruction;
     fun_fast: bool;
     fun_dbg : Debuginfo.t;
+    fun_human_name : string;
+    fun_arity : int;
+    fun_module_path : Path.t option;
     fun_spacetime_shape : Mach.spacetime_shape option;
     fun_phantom_lets :
       (Backend_var.Provenance.t option * Mach.phantom_defining_expr)
@@ -419,5 +422,8 @@ let fundecl f =
     fun_fast = not (List.mem Cmm.Reduce_code_size f.Mach.fun_codegen_options);
     fun_dbg  = f.Mach.fun_dbg;
     fun_phantom_lets = f.Mach.fun_phantom_lets;
+    fun_human_name = f.Mach.fun_human_name;
+    fun_arity = Array.length f.Mach.fun_args;
+    fun_module_path = f.Mach.fun_module_path;
     fun_spacetime_shape = f.Mach.fun_spacetime_shape;
   }

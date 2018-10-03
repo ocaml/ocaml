@@ -75,6 +75,8 @@ and ufunction = {
   label  : function_label;
   arity  : int;
   params : Backend_var.With_provenance.t list;
+  human_name : string;
+  module_path : Path.t option;
   body   : ulambda;
   dbg    : Debuginfo.t;
   env    : Backend_var.t option;
@@ -90,6 +92,8 @@ and ulambda_switch =
 
 type function_description =
   { fun_label: function_label;          (* Label of direct entry point *)
+    fun_human_name: string;             (* Name used for the debugger *)
+    fun_module_path: Path.t option;     (* Path of enclosing module *)
     fun_arity: int;                     (* Number of arguments *)
     mutable fun_closed: bool;           (* True if environment not used *)
     mutable fun_inline: (Backend_var.With_provenance.t list * ulambda) option;

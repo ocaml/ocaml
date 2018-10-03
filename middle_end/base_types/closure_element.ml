@@ -24,3 +24,5 @@ let unwrap t = t
 
 let wrap_map t = t
 let unwrap_set t = t
+
+let base_name t = name t

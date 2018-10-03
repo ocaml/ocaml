@@ -132,6 +132,8 @@ type fundecl =
     fun_body: instruction;
     fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
+    fun_human_name : string;
+    fun_module_path : Path.t option;
     fun_spacetime_shape : spacetime_shape option;
     fun_phantom_lets :
       (Backend_var.Provenance.t option * phantom_defining_expr)
