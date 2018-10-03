@@ -2442,16 +2442,15 @@ type_subst_kind:
       { $1 }
 ;
 optional_type_parameters:
-    /*empty*/                                   { [] }
-  | optional_type_parameter                     { [$1] }
-  | LPAREN optional_type_parameter_list RPAREN  { $2 }
+    /* empty */
+      { [] }
+  | p = optional_type_parameter
+      { [p] }
+  | LPAREN ps = separated_nonempty_llist(COMMA, optional_type_parameter) RPAREN
+      { ps }
 ;
 optional_type_parameter:
     type_variance optional_type_variable        { $2, $1 }
-;
-%inline optional_type_parameter_list:
-  tys = separated_nonempty_llist(COMMA, optional_type_parameter)
-    { tys }
 ;
 optional_type_variable:
     mktyp(
