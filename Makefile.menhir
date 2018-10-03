@@ -145,3 +145,17 @@ depend-menhir:
 # define in Makefile, so it can only be invoked from the main Makefile
 
 include .depend.menhir
+
+## interpret-menhir
+
+# This rule runs Menhir in interactive mode.
+# The user can enter sentences, such as:
+#   implementation: TYPE LIDENT EQUAL LIDENT EOF
+# and see how Menhir interprets them.
+
+interpret-menhir:
+	@ echo "Please wait, I am building the LALR automaton..."
+	@ $(MENHIR) $(MENHIRFLAGS) parsing/parser.mly \
+	    --interpret \
+	    --interpret-show-cst \
+	    --trace \
