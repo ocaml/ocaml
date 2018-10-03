@@ -3037,13 +3037,8 @@ class_longident:
 /* Toplevel directives */
 
 toplevel_directive:
-  toplevel_directive_
-    { let (dir, arg) = $1 in
-      mk_directive ~loc:$sloc dir arg }
-;
-toplevel_directive_:
-    HASH dir = mkrhs(ident) arg = ioption(toplevel_directive_argument)
-    { dir, arg }
+  HASH dir = mkrhs(ident) arg = ioption(toplevel_directive_argument)
+    { mk_directive ~loc:$sloc dir arg }
 ;
 
 toplevel_directive_argument:
