@@ -739,6 +739,9 @@ The precedences must be listed from low to high.
     { mkrhs $1 $sloc }
 ;
 
+%inline text_str(symb): symb
+  { text_str $startpos @ [$1] }
+
 %inline op(symb): symb
    { mkoperator ~loc:$sloc $1 }
 
@@ -927,17 +930,22 @@ interface:
 ;
 
 toplevel_phrase:
-    top_structure SEMISEMI               { Ptop_def ($1) }
-  | toplevel_directive SEMISEMI          { $1 }
-  | EOF                                  { raise End_of_file }
-;
-%inline top_structure:
+  (* An expression, attributes, and a double semicolon. *)
   extra_str(text_str(seq_expr post_item_attributes { mkstrexp $1 $2 }))
+  SEMISEMI
+    { Ptop_def $1 }
+| (* A number of structure items, attributes, and a double semicolon. *)
+  extra_str(flattened_list(text_str(structure_item)))
+  SEMISEMI
+    { Ptop_def $1 }
+| (* A directive and a double semicolon. *)
+  toplevel_directive
+  SEMISEMI
     { $1 }
-| extra_str(flattened_list(text_str(structure_item)))
-    { $1 }
+| (* End of input. *)
+  EOF
+    { raise End_of_file }
 ;
-%inline text_str(symb): symb { text_str $startpos @ [$1] }
 
 use_file:
    extra_def(use_file_body) EOF          { $1 }
