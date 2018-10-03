@@ -170,11 +170,11 @@ let set_export_info (ulambda, prealloc, structured_constants, export) =
   Compilenv.set_export_info export;
   (ulambda, prealloc, structured_constants)
 
-let end_gen_implementation ?toplevel ~ppf_dump
+let end_gen_implementation ?toplevel ~ppf_dump ~unit_name
     (clambda:clambda_and_constants) =
   Emit.begin_assembly ();
   clambda
-  ++ Profile.record "cmm" (Cmmgen.compunit ~ppf_dump)
+  ++ Profile.record "cmm" (Cmmgen.compunit ~ppf_dump ~unit_name)
   ++ Profile.record "compile_phrases" (List.iter (compile_phrase ~ppf_dump))
   ++ (fun () -> ());
   (match toplevel with None -> () | Some f -> compile_genfuns ~ppf_dump f);
@@ -192,7 +192,7 @@ let end_gen_implementation ?toplevel ~ppf_dump
     );
   Emit.end_assembly ()
 
-let flambda_gen_implementation ?toplevel ~backend ~ppf_dump
+let flambda_gen_implementation ?toplevel ~backend ~ppf_dump ~unit_name
     (program:Flambda.program) =
   let export = Build_export_info.build_transient ~backend program in
   let (clambda, preallocated, constants) =
@@ -215,10 +215,10 @@ let flambda_gen_implementation ?toplevel ~backend ~ppf_dump
           definition })
       (Symbol.Map.bindings constants)
   in
-  end_gen_implementation ?toplevel ~ppf_dump
+  end_gen_implementation ?toplevel ~ppf_dump ~unit_name
     (clambda, preallocated, constants)
 
-let lambda_gen_implementation ?toplevel ~ppf_dump
+let lambda_gen_implementation ?toplevel ~ppf_dump ~unit_name
     (lambda:Lambda.program) =
   let clambda = Closure.intro lambda.main_module_block_size lambda.code in
   let preallocated_block =
@@ -233,9 +233,9 @@ let lambda_gen_implementation ?toplevel ~ppf_dump
     clambda, [preallocated_block], []
   in
   raw_clambda_dump_if ppf_dump clambda_and_constants;
-  end_gen_implementation ?toplevel ~ppf_dump clambda_and_constants
+  end_gen_implementation ?toplevel ~ppf_dump ~unit_name clambda_and_constants
 
-let compile_implementation_gen ?toplevel prefixname
+let compile_implementation_gen ?toplevel prefixname ~unit_name
     ~required_globals ~ppf_dump gen_implementation program =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
@@ -245,17 +245,17 @@ let compile_implementation_gen ?toplevel prefixname
   compile_unit prefixname asmfile !keep_asm_file
       (prefixname ^ ext_obj) (fun () ->
         Ident.Set.iter Compilenv.require_global required_globals;
-        gen_implementation ?toplevel ~ppf_dump program)
+        gen_implementation ?toplevel ~ppf_dump ~unit_name program)
 
-let compile_implementation_clambda ?toplevel prefixname
+let compile_implementation_clambda ?toplevel prefixname ~unit_name
     ~ppf_dump (program:Lambda.program) =
-  compile_implementation_gen ?toplevel prefixname
+  compile_implementation_gen ?toplevel prefixname ~unit_name
     ~required_globals:program.Lambda.required_globals
     ~ppf_dump lambda_gen_implementation program
 
-let compile_implementation_flambda ?toplevel prefixname
+let compile_implementation_flambda ?toplevel prefixname ~unit_name
     ~required_globals ~backend ~ppf_dump (program:Flambda.program) =
-  compile_implementation_gen ?toplevel prefixname
+  compile_implementation_gen ?toplevel prefixname ~unit_name
     ~required_globals ~ppf_dump (flambda_gen_implementation ~backend) program
 
 (* Error report *)

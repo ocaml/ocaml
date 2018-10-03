@@ -111,14 +111,16 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
           ~module_initializer:lam
       in
       Asmgen.compile_implementation_flambda
-        prefixname ~backend ~required_globals:Ident.Set.empty ~ppf_dump flam;
+        prefixname ~unit_name:module_ident ~backend
+        ~required_globals:Ident.Set.empty ~ppf_dump flam;
     end else begin
       let main_module_block_size, code =
         Translmod.transl_store_package
           components (Ident.create_persistent targetname) coercion in
       Asmgen.compile_implementation_clambda
-        prefixname ~ppf_dump { Lambda.code; main_module_block_size;
-                         module_ident; required_globals = Ident.Set.empty }
+        prefixname ~unit_name:module_ident ~ppf_dump
+          { Lambda.code; main_module_block_size;
+            module_ident; required_globals = Ident.Set.empty }
     end;
     let objfiles =
       List.map

@@ -416,6 +416,11 @@ Working version
 - GPR#2076: Add [Targetint.print].
   (Mark Shinwell)
 
+- GPR#2087: Add human name, module path and arity fields variously throughout
+  types in the backend used for transporting function information.  Populate
+  human name and module path fields in [Closure].
+  (Mark Shinwell)
+
 ### Bug fixes:
 
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the

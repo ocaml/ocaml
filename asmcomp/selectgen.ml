@@ -1223,6 +1223,8 @@ method emit_fundecl f =
     fun_body = body;
     fun_codegen_options = f.Cmm.fun_codegen_options;
     fun_dbg  = f.Cmm.fun_dbg;
+    fun_human_name = f.Cmm.fun_human_name;
+    fun_module_path = f.Cmm.fun_module_path;
     fun_spacetime_shape;
   }
 
