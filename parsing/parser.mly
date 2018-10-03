@@ -886,6 +886,26 @@ reversed_preceded_or_separated_nonempty_llist(delimiter, X):
   xs = rev(reversed_preceded_or_separated_nonempty_llist(delimiter, X))
     { xs }
 
+(* [bar_llist(X)] recognizes a nonempty list of [X]'s, separated with BARs,
+   with an optional leading BAR. We assume that [X] is itself parameterized
+   with an opening symbol, which can be [epsilon] or [BAR]. *)
+
+reversed_bar_llist(X):
+    (* An [X] without a leading BAR. *)
+    x = X(epsilon)
+      { [x] }
+  | (* An [X] with a leading BAR. *)
+    x = X(BAR)
+      { [x] }
+  | (* An initial list, followed with a BAR and an [X]. *)
+    xs = reversed_bar_llist(X)
+    x = X(BAR)
+      { x :: xs }
+
+%inline bar_llist(X):
+  xs = reversed_bar_llist(X)
+    { List.rev xs }
+
 /* Entry points */
 
 implementation:
@@ -2415,9 +2435,9 @@ constraints:
   | eq_symb PRIVATE core_type
       { (Ptype_abstract, Private, Some $3) }
   | eq_symb constructor_declarations
-      { (Ptype_variant(List.rev $2), Public, None) }
+      { (Ptype_variant $2, Public, None) }
   | eq_symb PRIVATE constructor_declarations
-      { (Ptype_variant(List.rev $3), Private, None) }
+      { (Ptype_variant $3, Private, None) }
   | eq_symb DOTDOT
       { (Ptype_open, Public, None) }
   | eq_symb PRIVATE DOTDOT
@@ -2425,7 +2445,7 @@ constraints:
   | eq_symb private_flag LBRACE label_declarations RBRACE
       { (Ptype_record $4, $2, None) }
   | eq_symb core_type EQUAL private_flag constructor_declarations
-      { (Ptype_variant(List.rev $5), $4, Some $2) }
+      { (Ptype_variant $5, $4, Some $2) }
   | eq_symb core_type EQUAL private_flag DOTDOT
       { (Ptype_open, $4, Some $2) }
   | eq_symb core_type EQUAL private_flag LBRACE label_declarations RBRACE
@@ -2467,11 +2487,14 @@ type_variance:
   | MINUS                                       { Contravariant }
 ;
 
+(* A sequence of constructor declarations is either a single BAR, which
+   means that the list is empty, or a nonempty BAR-separated list of
+   declarations, with an optional leading BAR. *)
 constructor_declarations:
-  | BAR                                                  { [  ] }
-  | constructor_declaration(epsilon)                     { [$1] }
-  | constructor_declaration(BAR)                         { [$1] }
-  | constructor_declarations constructor_declaration(BAR){ $2 :: $1 }
+  | BAR
+      { [] }
+  | cs = bar_llist(constructor_declaration)
+      { cs }
 ;
 (* A constructor declaration begins with an opening symbol, which can
    be either epsilon or BAR. *)
@@ -2555,7 +2578,7 @@ str_type_extension:
   PLUSEQ private_flag str_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
-        Te.mk $5 (List.rev $8) ~params:$4 ~priv:$7 ~attrs:(attrs@$9) ~docs
+        Te.mk $5 $8 ~params:$4 ~priv:$7 ~attrs:(attrs@$9) ~docs
         , ext }
 ;
 sig_type_extension:
@@ -2565,20 +2588,16 @@ sig_type_extension:
   PLUSEQ private_flag sig_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
-        Te.mk $5 (List.rev $8) ~params:$4 ~priv:$7 ~attrs:(attrs@$9) ~docs
+        Te.mk $5 $8 ~params:$4 ~priv:$7 ~attrs:(attrs@$9) ~docs
         , ext }
 ;
-str_extension_constructors:
-    extension_constructor(epsilon)            { [$1] }
-  | extension_constructor(BAR)                { [$1] }
-  | str_extension_constructors extension_constructor(BAR)
-      { $2 :: $1 }
+%inline str_extension_constructors:
+  cs = bar_llist(extension_constructor)
+    { cs }
 ;
-sig_extension_constructors:
-    extension_constructor_declaration(epsilon)            { [$1] }
-  | extension_constructor_declaration(BAR)                { [$1] }
-  | sig_extension_constructors extension_constructor_declaration(BAR)
-      { $2 :: $1 }
+%inline sig_extension_constructors:
+  cs = bar_llist(extension_constructor_declaration)
+    { cs }
 ;
 %inline extension_constructor(opening):
     extension_constructor_declaration(opening)

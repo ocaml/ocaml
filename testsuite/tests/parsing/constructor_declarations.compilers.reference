@@ -1,0 +1,4 @@
+File "constructor_declarations.ml", line 24, characters 2-3:
+24 |   | A of int
+       ^
+Error: Syntax error

@@ -2,6 +2,7 @@ anonymous_class_parameter.ml
 arrow_ambiguity.ml
 attributes.ml
 broken_invariants.ml
+constructor_declarations.ml
 docstrings.ml
 extended_indexoperators.ml
 extensions.ml
