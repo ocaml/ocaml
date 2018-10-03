@@ -1302,7 +1302,7 @@ class_declarations:
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_declaration:
-    CLASS ext_attributes virtual_flag class_type_parameters mkrhs(LIDENT)
+    CLASS ext_attributes virtual_flag formal_class_parameters mkrhs(LIDENT)
     class_fun_binding post_item_attributes
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
@@ -1311,7 +1311,7 @@ class_declaration:
         , ext }
 ;
 and_class_declaration:
-    AND attributes virtual_flag class_type_parameters mkrhs(LIDENT)
+    AND attributes virtual_flag formal_class_parameters mkrhs(LIDENT)
     class_fun_binding post_item_attributes
       { let docs = symbol_docs $sloc in
         let text = symbol_text $symbolstartpos in
@@ -1328,9 +1328,9 @@ class_fun_binding:
       { let (l,o,p) = $1 in Pcl_fun(l, o, p, $2) }
     ) { $1 }
 ;
-class_type_parameters:
-    /*empty*/                                   { [] }
-  | LBRACKET separated_nonempty_llist(COMMA, type_parameter) RBRACKET       { $2 }
+formal_class_parameters:
+  params = class_parameters(type_parameter)
+    { params }
 ;
 
 class_fun_def: mkclass(class_fun_def_desc) { $1 };
@@ -1501,11 +1501,15 @@ class_signature:
   | LET OPEN override_flag attributes mkrhs(mod_longident) IN class_signature
       { mkcty ~loc:$sloc ~attrs:$4 (Pcty_open($3, $5, $7)) }
 ;
-%inline actual_class_parameters:
+%inline class_parameters(parameter):
   | /* empty */
       { [] }
-  | LBRACKET tys = separated_nonempty_llist(COMMA, core_type) RBRACKET
-      { tys }
+  | LBRACKET params = separated_nonempty_llist(COMMA, parameter) RBRACKET
+      { params }
+;
+%inline actual_class_parameters:
+  tys = class_parameters(core_type)
+    { tys }
 ;
 class_sig_body:
     class_self_type extra_csig(class_sig_fields)
@@ -1568,7 +1572,7 @@ class_descriptions:
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_description:
-    CLASS ext_attributes virtual_flag class_type_parameters mkrhs(LIDENT)
+    CLASS ext_attributes virtual_flag formal_class_parameters mkrhs(LIDENT)
     COLON class_type post_item_attributes
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
@@ -1577,7 +1581,7 @@ class_description:
         , ext }
 ;
 and_class_description:
-    AND attributes virtual_flag class_type_parameters mkrhs(LIDENT)
+    AND attributes virtual_flag formal_class_parameters mkrhs(LIDENT)
     COLON class_type post_item_attributes
       { let docs = symbol_docs $sloc in
         let text = symbol_text $symbolstartpos in
@@ -1591,7 +1595,7 @@ class_type_declarations:
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_type_declaration:
-    CLASS TYPE ext_attributes virtual_flag class_type_parameters mkrhs(LIDENT)
+    CLASS TYPE ext_attributes virtual_flag formal_class_parameters mkrhs(LIDENT)
     EQUAL class_signature post_item_attributes
       { let (ext, attrs) = $3 in
         let docs = symbol_docs $sloc in
@@ -1600,7 +1604,7 @@ class_type_declaration:
         , ext }
 ;
 and_class_type_declaration:
-    AND attributes virtual_flag class_type_parameters mkrhs(LIDENT) EQUAL
+    AND attributes virtual_flag formal_class_parameters mkrhs(LIDENT) EQUAL
     class_signature post_item_attributes
       { let docs = symbol_docs $sloc in
         let text = symbol_text $symbolstartpos in
