@@ -2467,8 +2467,11 @@ type_variance:
   | PLUS                                        { Covariant }
   | MINUS                                       { Contravariant }
 ;
-type_variable:
-    mktyp(QUOTE ident { Ptyp_var $2 }) { $1 }
+%inline type_variable:
+  mktyp(
+    QUOTE tyvar = ident
+      { Ptyp_var tyvar }
+  ) { $1 }
 ;
 constructor_declarations:
   | BAR                                                  { [  ] }
