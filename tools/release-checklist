@@ -22,8 +22,8 @@ Warn Gabriel Scherer (to make a pass on Changes) and OCamlLabs
 ```
 export MAJOR=4
 export MINOR=07
-export BUGFIX=0
-export PLUSEXT=+rc2
+export BUGFIX=1
+export PLUSEXT=+rc1
 
 export BRANCH=$MAJOR.$MINOR
 export VERSION=$MAJOR.$MINOR.$BUGFIX$PLUSEXT
@@ -31,10 +31,10 @@ export VERSION=$MAJOR.$MINOR.$BUGFIX$PLUSEXT
 export REPO=http://github.com/ocaml/ocaml
 
 # these values are specific to caml.inria's host setup
-export ARCHIVE_HOST=<<archive machine>>
-export ARCHIVE_PATH=<<dist>>
-export WEB_HOST=<<online manual machine>>
-export WEB_PATH=<<www>
+export ARCHIVE_HOST="$OCAML_RELEASE_ARCHIVE_HOST"
+export ARCHIVE_PATH="$OCAML_RELEASE_ARCHIVE_PATH"
+export WEB_HOST="$OCAML_RELEASE_WEB_HOST"
+export WEB_PATH="$OCAML_RELEASE_WEB_PATH"
 export DIST=$ARCHIVE_PATH/ocaml/ocaml-$MAJOR.$MINOR
 ```
 
@@ -107,7 +107,7 @@ git tag -m "release $VERSION" $VERSION
 
 # for production releases, change the VERSION file into (N+1)+dev0; for example,
 #   4.08.0 => 4.08.1+dev0
-# for testing candidates, use N+dev(D+1) instead; for example,
+# for testing candidates, use N+dev(D+2) instead; for example,
 #   4.07.0+rc2 => 4.07.0+dev10-2018-06-26
 git commit -m "increment version number after tagging $VERSION" VERSION
 git push
@@ -229,11 +229,13 @@ cat new-md5s >> MD5SUM
 rm MD5SUM.old new-md5s
 
 # same thing for SHA512
-cp SHA512 SHA512.old
 cp SHA512SUM SHA512SUM.old
 sha512sum ocaml-$VERSION.tar.{xz,gz} > new-sha512s
 cat new-sha512s >> SHA512SUM
 rm SHA512SUM.old new-sha512s
+
+# clean up
+rm /tmp/env.sh
 ```
 
 
@@ -241,6 +243,7 @@ rm SHA512SUM.old new-sha512s
 
 ```
 ssh $ARCHIVE_HOST "mkdir -p $DIST/notes"
+cd ocaml-$VERSION
 scp INSTALL.adoc LICENSE README.adoc README.win32.adoc Changes \
    $ARCHIVE_HOST:$DIST/notes/
 ```
