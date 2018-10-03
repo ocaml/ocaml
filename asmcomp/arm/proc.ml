@@ -229,6 +229,13 @@ let loc_exn_bucket = phys_reg 0
 let int_dwarf_reg_numbers =
   [| 0; 1; 2; 3; 4; 5; 6; 7; 12 |]
 
+let float_dwarf_reg_numbers_legacy =
+  [| 64; 65; 66; 67; 68; 69; 70; 71;
+     72; 73; 74; 75; 76; 77; 78; 79;
+     80; 81; 82; 83; 84; 85; 86; 87;
+     88; 89; 90; 91; 92; 93; 94; 95;
+  |]
+
 let float_dwarf_reg_numbers =
   [| 256; 257; 258; 259; 260; 261; 262; 263;
      264; 265; 266; 267; 268; 269; 270; 271;
@@ -239,10 +246,14 @@ let float_dwarf_reg_numbers =
 let dwarf_register_numbers ~reg_class =
   match reg_class with
   | 0 -> int_dwarf_reg_numbers
-  | 1 | 2 ->
+  | 1 ->
     (* Section 3.1 note 4 says that the "new" VFPv3 register numberings
-       (as per [float_dwarf_reg_numbers]) should be used for VFPv2 as well. *)
-    float_dwarf_reg_numbers
+       (as per [float_dwarf_reg_numbers]) should be used for VFPv2 as well.
+       However we believe that for <= ARMv6 we should use the legacy VFPv2
+       numberings. *)
+    if !arch <= ARMv6 then float_dwarf_reg_numbers_legacy
+    else float_dwarf_reg_numbers
+  | 2 -> float_dwarf_reg_numbers
   | _ -> Misc.fatal_errorf "Bad register class %d" reg_class
 
 let stack_ptr_dwarf_register_number = 13

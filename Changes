@@ -412,7 +412,7 @@ Working version
 
 - GPR#2080: Add [Proc.dwarf_register_numbers] and
   [Proc.stack_ptr_dwarf_register_number].
-  (Mark Shinwell)
+  (Mark Shinwell, review by Bernhard Schommer)
 
 ### Bug fixes:
 
