@@ -775,6 +775,16 @@ The precedences must be listed from low to high.
   xs = XS
     { List.rev xs }
 
+(* [flattened_list(XS)] recognizes a list of [XS]s, where each [XS] produces
+   a list as its semantic value. The resulting list of lists is flattened. *)
+
+flattened_list(XS):
+  /* empty */
+    { [] }
+| xs = XS
+  ys = flattened_list(XS)
+    { xs @ ys }
+
 (* [reversed_nonempty_llist(X)] recognizes a nonempty list of [X]s, and produces
    an OCaml list in reverse order -- that is, the last element in the input text
    appears first in this list. Its definition is left-recursive. *)
@@ -925,17 +935,11 @@ toplevel_phrase:
   extra_str(
     seq_expr post_item_attributes
       { text_str $startpos($1) @ [mkstrexp $1 $2] }
-  | top_structure_tail_nodoc
+  | flattened_list(text_str(structure_item))
       { $1 }
   ) { $1 }
 ;
 %inline text_str(symb): symb { text_str $startpos @ [$1] }
-top_structure_tail_nodoc:
-    /* empty */
-      { [] }
-  | text_str(structure_item) top_structure_tail_nodoc
-      { $1 @ $2 }
-;
 
 use_file:
    extra_def(use_file_body) EOF          { $1 }
