@@ -202,9 +202,10 @@ static void int32_serialize(value v, uintnat * bsize_32,
   *bsize_32 = *bsize_64 = 4;
 }
 
-static value int32_deserialize()
+static uintnat int32_deserialize(void * dst)
 {
-  return caml_copy_int32(caml_deserialize_sint_4());
+  *((int32_t *) dst) = caml_deserialize_sint_4();
+  return 4;
 }
 
 static const struct custom_fixed_length int32_length = { 4, 4 };
@@ -393,9 +394,17 @@ static void int64_serialize(value v, uintnat * bsize_32,
   *bsize_32 = *bsize_64 = 8;
 }
 
-static value int64_deserialize()
+static uintnat int64_deserialize(void * dst)
 {
-  return caml_copy_int64(caml_deserialize_sint_8());
+#ifndef ARCH_ALIGN_INT64
+  *((int64_t *) dst) = caml_deserialize_sint_8();
+#else
+  union { int32_t i[2]; int64_t j; } buffer;
+  buffer.j = caml_deserialize_sint_8();
+  ((int32_t *) dst)[0] = buffer.i[0];
+  ((int32_t *) dst)[1] = buffer.i[1];
+#endif
+  return 8;
 }
 
 static const struct custom_fixed_length int64_length = { 8, 8 };
@@ -668,22 +677,23 @@ static void nativeint_serialize(value v, uintnat * bsize_32,
   *bsize_64 = 8;
 }
 
-static value nativeint_deserialize()
+static uintnat nativeint_deserialize(void * dst)
 {
   switch (caml_deserialize_uint_1()) {
   case 1:
-    return caml_copy_nativeint((intnat)caml_deserialize_sint_4());
-
+    *((intnat *) dst) = caml_deserialize_sint_4();
+    break;
   case 2:
 #ifdef ARCH_SIXTYFOUR
-    return caml_copy_nativeint((intnat)caml_deserialize_sint_8());
+    *((intnat *) dst) = caml_deserialize_sint_8();
 #else
     caml_deserialize_error("input_value: native integer value too large");
 #endif
-
+    break;
   default:
     caml_deserialize_error("input_value: ill-formed native integer");
   }
+  return sizeof(long);
 }
 
 static const struct custom_fixed_length nativeint_length = { 4, 8 };

@@ -540,40 +540,42 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
             ReadItems(dest, 1);
             continue;  /* with next iteration of main loop, skipping *dest = v */
 #endif
+
           case CODE_CUSTOM:
           case CODE_CUSTOM_LEN:
           case CODE_CUSTOM_FIXED: {
+            uintnat expected_size, size;
             ops = caml_find_custom_operations((char *) intern_src);
             if (ops == NULL) {
               intern_cleanup(&S);
               caml_failwith("input_value: unknown custom block identifier");
             }
-            if (code == CODE_CUSTOM_FIXED && ops->fixed_length == NULL) {
+            if (code != CODE_CUSTOM_LEN && ops->fixed_length == NULL) {
               intern_cleanup(&S);
               caml_failwith("input_value: expected a fixed-size custom block");
             }
             while (*intern_src++ != 0) /*nothing*/;  /*skip identifier*/
-            if (code == CODE_CUSTOM) {
-              /* deprecated */
-              v = ops->deserialize();
-            } else {
-              uintnat expected_size;
 #ifdef ARCH_SIXTYFOUR
-              if (code == CODE_CUSTOM_FIXED) {
-                expected_size = ops->fixed_length->bsize_64;
-              } else {
-                intern_src += 4;
-                expected_size = read64u();
-              }
+            if (code != CODE_CUSTOM_LEN) {
+              expected_size = ops->fixed_length->bsize_64;
+            } else {
+              intern_src += 4;
+              expected_size = read64u();
+            }
 #else
-              if (code == CODE_CUSTOM_FIXED) {
-                expected_size = ops->fixed_length->bsize_32;
-              } else {
-                expected_size = read32u();
-                intern_src += 8;
-              }
+            if (code != CODE_CUSTOM_LEN) {
+              expected_size = ops->fixed_length->bsize_32;
+            } else {
+              expected_size = read32u();
+              intern_src += 8;
+            }
 #endif
-              v = ops->deserialize();
+            v = caml_alloc_custom(ops, expected_size, 0, 0);
+            size = ops->deserialize(Data_custom_val(v));
+            if (size != expected_size) {
+              intern_cleanup(&S);
+              caml_failwith(
+                "input_value: incorrect length of serialized custom block");
             }
             if (use_intern_table) Store_field (intern_obj_table, obj_counter++, v);
             break;
