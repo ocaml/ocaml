@@ -631,6 +631,9 @@ Working version
   [Proc.stack_ptr_dwarf_register_number].
   (Mark Shinwell, review by Bernhard Schommer)
 
+- GPR#2088: Add [Clambda.usymbol_provenance].
+  (Mark Shinwell, review by Damien Doligez)
+
 - GPR#2152, GPR#2517: refactorize the fixpoint to compute type-system
   properties of mutually-recursive type declarations.
   (Gabriel Scherer and Rodolphe Lepigre, review by Armaël Guéneau)
@@ -641,8 +644,6 @@ Working version
 
 * GPR#2173: removed TypedtreeMap
   (Thomas Refis, review by Gabriel Scherer)
-
-### Bug fixes:
 
 - MPR#7867: Fix #mod_use raising an exception for filenames with no
   extension.

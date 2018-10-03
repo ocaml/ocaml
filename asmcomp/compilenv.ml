@@ -391,12 +391,19 @@ let clear_structured_constants () =
   structured_constants := structured_constants_empty
 
 let structured_constants () =
+  let provenance : Clambda.usymbol_provenance =
+    { original_idents = [];
+      module_path =
+        Path.Pident (Ident.create_persistent (current_unit_name ()));
+    }
+  in
   List.map
     (fun (symbol, definition) ->
        {
          Clambda.symbol;
          exported = Hashtbl.mem exported_constants symbol;
          definition;
+         provenance = Some provenance;
        })
     (!structured_constants).strcst_all
 
