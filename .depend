@@ -930,13 +930,19 @@ asmcomp/closure_offsets.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/closure_id.cmx asmcomp/closure_offsets.cmi
 asmcomp/closure_offsets.cmi : middle_end/base_types/var_within_closure.cmi \
     middle_end/flambda.cmi middle_end/base_types/closure_id.cmi
+<<<<<<< HEAD
 asmcomp/cmm.cmo : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
 <<<<<<< HEAD
     asmcomp/clambda.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
+=======
+asmcomp/cmm.cmo : utils/targetint.cmi bytecomp/lambda.cmi \
+    middle_end/debuginfo.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
+>>>>>>> f41f87b257... GPR#2086 (Available_filtering)
     asmcomp/arch.cmo asmcomp/cmm.cmi
-asmcomp/cmm.cmx : bytecomp/lambda.cmx middle_end/debuginfo.cmx \
-    asmcomp/clambda.cmx asmcomp/backend_var.cmx parsing/asttypes.cmi \
+asmcomp/cmm.cmx : utils/targetint.cmx bytecomp/lambda.cmx \
+    middle_end/debuginfo.cmx asmcomp/backend_var.cmx parsing/asttypes.cmi \
     asmcomp/arch.cmx asmcomp/cmm.cmi
+<<<<<<< HEAD
 asmcomp/cmm.cmi : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
     asmcomp/clambda.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi
 =======
@@ -964,6 +970,26 @@ asmcomp/cmmgen.cmx : asmcomp/un_anf.cmx typing/types.cmx bytecomp/switch.cmx \
     asmcomp/clambda.cmx asmcomp/backend_var.cmx asmcomp/backend_sym.cmx \
     parsing/asttypes.cmi asmcomp/arch.cmx asmcomp/afl_instrument.cmx \
     asmcomp/cmmgen.cmi
+=======
+asmcomp/cmm.cmi : utils/targetint.cmi bytecomp/lambda.cmi \
+    middle_end/debuginfo.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi
+asmcomp/cmmgen.cmo : asmcomp/un_anf.cmi typing/types.cmi utils/targetint.cmi \
+    bytecomp/switch.cmi asmcomp/strmatch.cmi asmcomp/proc.cmi \
+    bytecomp/printlambda.cmi typing/primitive.cmi utils/numbers.cmi \
+    utils/misc.cmi bytecomp/lambda.cmi middle_end/debuginfo.cmi \
+    utils/config.cmi asmcomp/compilenv.cmi asmcomp/cmx_format.cmi \
+    asmcomp/cmm.cmi utils/clflags.cmi asmcomp/clambda.cmi \
+    asmcomp/backend_var.cmi parsing/asttypes.cmi asmcomp/arch.cmo \
+    asmcomp/afl_instrument.cmi asmcomp/cmmgen.cmi
+asmcomp/cmmgen.cmx : asmcomp/un_anf.cmx typing/types.cmx utils/targetint.cmx \
+    bytecomp/switch.cmx asmcomp/strmatch.cmx asmcomp/proc.cmx \
+    bytecomp/printlambda.cmx typing/primitive.cmx utils/numbers.cmx \
+    utils/misc.cmx bytecomp/lambda.cmx middle_end/debuginfo.cmx \
+    utils/config.cmx asmcomp/compilenv.cmx asmcomp/cmx_format.cmi \
+    asmcomp/cmm.cmx utils/clflags.cmx asmcomp/clambda.cmx \
+    asmcomp/backend_var.cmx parsing/asttypes.cmi asmcomp/arch.cmx \
+    asmcomp/afl_instrument.cmx asmcomp/cmmgen.cmi
+>>>>>>> f41f87b257... GPR#2086 (Available_filtering)
 asmcomp/cmmgen.cmi : asmcomp/cmx_format.cmi asmcomp/cmm.cmi \
     asmcomp/clambda.cmi
 asmcomp/cmx_format.cmi : asmcomp/export_info.cmi asmcomp/clambda.cmi
@@ -1171,15 +1197,25 @@ asmcomp/liveness.cmx : asmcomp/reg.cmx asmcomp/proc.cmx \
     asmcomp/printmach.cmx utils/misc.cmx asmcomp/mach.cmx utils/config.cmx \
     asmcomp/cmm.cmx asmcomp/liveness.cmi
 asmcomp/liveness.cmi : asmcomp/mach.cmi
-asmcomp/mach.cmo : asmcomp/debug/reg_with_debug_info.cmi \
+asmcomp/mach.cmo : utils/targetint.cmi asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
+<<<<<<< HEAD
     asmcomp/backend_sym.cmi asmcomp/arch.cmo asmcomp/mach.cmi
 asmcomp/mach.cmx : asmcomp/debug/reg_with_debug_info.cmx \
     asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx \
     middle_end/debuginfo.cmx asmcomp/cmm.cmx asmcomp/backend_var.cmx \
     asmcomp/backend_sym.cmx asmcomp/arch.cmx asmcomp/mach.cmi
 asmcomp/mach.cmi : asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
+=======
+    asmcomp/arch.cmo asmcomp/mach.cmi
+asmcomp/mach.cmx : utils/targetint.cmx asmcomp/debug/reg_with_debug_info.cmx \
+    asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx \
+    middle_end/debuginfo.cmx asmcomp/cmm.cmx asmcomp/backend_var.cmx \
+    asmcomp/arch.cmx asmcomp/mach.cmi
+asmcomp/mach.cmi : utils/targetint.cmi \
+    asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
+>>>>>>> f41f87b257... GPR#2086 (Available_filtering)
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
     asmcomp/backend_sym.cmi asmcomp/arch.cmo
 asmcomp/printclambda.cmo : bytecomp/printlambda.cmi bytecomp/lambda.cmi \
@@ -1190,10 +1226,14 @@ asmcomp/printclambda.cmx : bytecomp/printlambda.cmx bytecomp/lambda.cmx \
     parsing/asttypes.cmi asmcomp/printclambda.cmi
 asmcomp/printclambda.cmi : asmcomp/clambda.cmi
 <<<<<<< HEAD
+<<<<<<< HEAD
 asmcomp/printcmm.cmo : asmcomp/printclambda.cmi bytecomp/lambda.cmi \
+=======
+asmcomp/printcmm.cmo : utils/targetint.cmi bytecomp/lambda.cmi \
+>>>>>>> f41f87b257... GPR#2086 (Available_filtering)
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
     parsing/asttypes.cmi asmcomp/printcmm.cmi
-asmcomp/printcmm.cmx : asmcomp/printclambda.cmx bytecomp/lambda.cmx \
+asmcomp/printcmm.cmx : utils/targetint.cmx bytecomp/lambda.cmx \
     middle_end/debuginfo.cmx asmcomp/cmm.cmx asmcomp/backend_var.cmx \
 =======
 asmcomp/printcmm.cmo : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
@@ -1211,6 +1251,7 @@ asmcomp/printlinear.cmx : asmcomp/printmach.cmx asmcomp/printcmm.cmx \
     asmcomp/mach.cmx asmcomp/linearize.cmx middle_end/debuginfo.cmx \
     asmcomp/backend_sym.cmx asmcomp/printlinear.cmi
 asmcomp/printlinear.cmi : asmcomp/linearize.cmi
+<<<<<<< HEAD
 asmcomp/printmach.cmo : asmcomp/debug/reg_availability_set.cmi \
 <<<<<<< HEAD
     asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/printcmm.cmi utils/misc.cmi \
@@ -1233,6 +1274,20 @@ asmcomp/printmach.cmx : asmcomp/debug/reg_availability_set.cmx \
     asmcomp/cmm.cmx utils/clflags.cmx asmcomp/backend_var.cmx \
     asmcomp/backend_sym.cmx asmcomp/arch.cmx asmcomp/printmach.cmi
 >>>>>>> 2ff9e4f7b7... GPR#2073: Add [Backend_sym] and asm_target/ dir.
+=======
+asmcomp/printmach.cmo : utils/targetint.cmi \
+    asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
+    asmcomp/printcmm.cmi utils/misc.cmi asmcomp/mach.cmi asmcomp/interval.cmi \
+    middle_end/debuginfo.cmi utils/config.cmi asmcomp/cmm.cmi \
+    utils/clflags.cmi asmcomp/backend_var.cmi asmcomp/arch.cmo \
+    asmcomp/printmach.cmi
+asmcomp/printmach.cmx : utils/targetint.cmx \
+    asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx asmcomp/proc.cmx \
+    asmcomp/printcmm.cmx utils/misc.cmx asmcomp/mach.cmx asmcomp/interval.cmx \
+    middle_end/debuginfo.cmx utils/config.cmx asmcomp/cmm.cmx \
+    utils/clflags.cmx asmcomp/backend_var.cmx asmcomp/arch.cmx \
+    asmcomp/printmach.cmi
+>>>>>>> f41f87b257... GPR#2086 (Available_filtering)
 asmcomp/printmach.cmi : asmcomp/reg.cmi asmcomp/mach.cmi
 asmcomp/proc.cmo : asmcomp/x86_proc.cmi asmcomp/reg.cmi utils/misc.cmi \
     asmcomp/mach.cmi utils/config.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
@@ -1268,12 +1323,12 @@ asmcomp/selectgen.cmo : bytecomp/simplif.cmi asmcomp/reg.cmi \
     asmcomp/proc.cmi utils/numbers.cmi utils/misc.cmi asmcomp/mach.cmi \
 <<<<<<< HEAD
     bytecomp/lambda.cmi typing/ident.cmi middle_end/debuginfo.cmi \
-    utils/config.cmi asmcomp/cmm.cmi asmcomp/clambda.cmi \
-    asmcomp/backend_var.cmi parsing/asttypes.cmi asmcomp/arch.cmo \
-    asmcomp/selectgen.cmi
+    utils/config.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
+    parsing/asttypes.cmi asmcomp/arch.cmo asmcomp/selectgen.cmi
 asmcomp/selectgen.cmx : bytecomp/simplif.cmx asmcomp/reg.cmx \
     asmcomp/proc.cmx utils/numbers.cmx utils/misc.cmx asmcomp/mach.cmx \
     bytecomp/lambda.cmx typing/ident.cmx middle_end/debuginfo.cmx \
+<<<<<<< HEAD
     utils/config.cmx asmcomp/cmm.cmx asmcomp/clambda.cmx \
     asmcomp/backend_var.cmx parsing/asttypes.cmi asmcomp/arch.cmx \
     asmcomp/selectgen.cmi
@@ -1287,6 +1342,10 @@ asmcomp/selectgen.cmx : bytecomp/simplif.cmx asmcomp/reg.cmx \
     asmcomp/cmm.cmx asmcomp/backend_var.cmx asmcomp/backend_sym.cmx \
     parsing/asttypes.cmi asmcomp/arch.cmx asmcomp/selectgen.cmi
 >>>>>>> 2ff9e4f7b7... GPR#2073: Add [Backend_sym] and asm_target/ dir.
+=======
+    utils/config.cmx asmcomp/cmm.cmx asmcomp/backend_var.cmx \
+    parsing/asttypes.cmi asmcomp/arch.cmx asmcomp/selectgen.cmi
+>>>>>>> f41f87b257... GPR#2086 (Available_filtering)
 asmcomp/selectgen.cmi : asmcomp/reg.cmi asmcomp/mach.cmi \
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
     asmcomp/arch.cmo
@@ -2412,8 +2471,30 @@ asmcomp/debug/asm_directives.cmx : utils/targetint.cmx \
     asmcomp/debug/asm_directives.cmi
 asmcomp/debug/asm_directives.cmi : utils/targetint.cmi \
     asmcomp/debug/target_system.cmi utils/numbers.cmi asmcomp/cmm.cmi
+<<<<<<< HEAD
 =======
 >>>>>>> 2ff9e4f7b7... GPR#2073: Add [Backend_sym] and asm_target/ dir.
+=======
+asmcomp/debug/available_filtering.cmo : \
+    asmcomp/debug/reg_availability_set.cmi asmcomp/linearize.cmi \
+    utils/clflags.cmi asmcomp/debug/available_filtering.cmi
+asmcomp/debug/available_filtering.cmx : \
+    asmcomp/debug/reg_availability_set.cmx asmcomp/linearize.cmx \
+    utils/clflags.cmx asmcomp/debug/available_filtering.cmi
+asmcomp/debug/available_filtering.cmi : asmcomp/linearize.cmi
+asmcomp/debug/available_ranges.cmo : asmcomp/debug/reg_with_debug_info.cmi \
+    asmcomp/reg.cmi asmcomp/proc.cmi utils/numbers.cmi utils/misc.cmi \
+    asmcomp/mach.cmi asmcomp/linearize.cmi typing/ident.cmi \
+    middle_end/debuginfo.cmi asmcomp/cmm.cmi utils/clflags.cmi \
+    asmcomp/backend_var.cmi asmcomp/debug/available_ranges.cmi
+asmcomp/debug/available_ranges.cmx : asmcomp/debug/reg_with_debug_info.cmx \
+    asmcomp/reg.cmx asmcomp/proc.cmx utils/numbers.cmx utils/misc.cmx \
+    asmcomp/mach.cmx asmcomp/linearize.cmx typing/ident.cmx \
+    middle_end/debuginfo.cmx asmcomp/cmm.cmx utils/clflags.cmx \
+    asmcomp/backend_var.cmx asmcomp/debug/available_ranges.cmi
+asmcomp/debug/available_ranges.cmi : asmcomp/reg.cmi utils/numbers.cmi \
+    asmcomp/mach.cmi asmcomp/linearize.cmi asmcomp/backend_var.cmi
+>>>>>>> f41f87b257... GPR#2086 (Available_filtering)
 asmcomp/debug/available_regs.cmo : asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi utils/clflags.cmi \
@@ -2486,7 +2567,7 @@ asmcomp/debug/dwarf_low/abbreviation_code.cmx : \
     asmcomp/debug/dwarf_low/dwarf_value.cmx \
     asmcomp/debug/dwarf_low/abbreviation_code.cmi
 asmcomp/debug/dwarf_low/abbreviation_code.cmi : \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo
 asmcomp/debug/dwarf_low/abbreviations_table.cmo : \
     asmcomp/debug/dwarf_low/dwarf_value.cmi \
     asmcomp/debug/dwarf_low/dwarf_attributes.cmi \
@@ -2499,7 +2580,7 @@ asmcomp/debug/dwarf_low/abbreviations_table.cmx : \
     asmcomp/debug/dwarf_low/abbreviations_table.cmi
 asmcomp/debug/dwarf_low/abbreviations_table.cmi : \
     asmcomp/debug/dwarf_low/dwarf_tag.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi \
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo \
     asmcomp/debug/dwarf_low/dwarf_attributes.cmi \
     asmcomp/debug/dwarf_low/child_determination.cmi \
     asmcomp/debug/dwarf_low/abbreviations_table_entry.cmi \
@@ -2520,7 +2601,7 @@ asmcomp/debug/dwarf_low/abbreviations_table_entry.cmx : \
     asmcomp/debug/dwarf_low/abbreviations_table_entry.cmi
 asmcomp/debug/dwarf_low/abbreviations_table_entry.cmi : \
     asmcomp/debug/dwarf_low/dwarf_tag.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi \
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo \
     asmcomp/debug/dwarf_low/dwarf_attributes.cmi \
     asmcomp/debug/dwarf_low/child_determination.cmi \
     asmcomp/debug/dwarf_low/abbreviation_code.cmi
@@ -2532,15 +2613,8 @@ asmcomp/debug/dwarf_low/aranges_table.cmx : utils/targetint.cmx \
     utils/numbers.cmx asmcomp/debug/dwarf_low/initial_length.cmx \
     asmcomp/debug/dwarf_low/dwarf_value.cmx asmcomp/arch.cmx \
     asmcomp/debug/dwarf_low/aranges_table.cmi
-asmcomp/debug/dwarf_low/aranges_table.cmi : middle_end/base_types/symbol.cmi \
-    asmcomp/linearize.cmi asmcomp/debug/dwarf_low/dwarf_emittable.cmi
-asmcomp/debug/dwarf_low/base_type_attribute_encoding.cmo : \
-    asmcomp/debug/dwarf_low/dwarf_value.cmi \
-    asmcomp/debug/dwarf_low/base_type_attribute_encoding.cmi
-asmcomp/debug/dwarf_low/base_type_attribute_encoding.cmx : \
-    asmcomp/debug/dwarf_low/dwarf_value.cmx \
-    asmcomp/debug/dwarf_low/base_type_attribute_encoding.cmi
-asmcomp/debug/dwarf_low/base_type_attribute_encoding.cmi :
+asmcomp/debug/dwarf_low/aranges_table.cmi : asmcomp/linearize.cmi \
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo
 asmcomp/debug/dwarf_low/child_determination.cmo : utils/numbers.cmi \
     asmcomp/debug/dwarf_low/dwarf_value.cmi \
     asmcomp/debug/dwarf_low/child_determination.cmi
@@ -2548,7 +2622,7 @@ asmcomp/debug/dwarf_low/child_determination.cmx : utils/numbers.cmx \
     asmcomp/debug/dwarf_low/dwarf_value.cmx \
     asmcomp/debug/dwarf_low/child_determination.cmi
 asmcomp/debug/dwarf_low/child_determination.cmi : \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo
 asmcomp/debug/dwarf_low/composite_location_description.cmo : \
     asmcomp/debug/dwarf_low/simple_location_description.cmi \
     asmcomp/debug/dwarf_low/dwarf_operator.cmi \
@@ -2559,22 +2633,24 @@ asmcomp/debug/dwarf_low/composite_location_description.cmx : \
     asmcomp/debug/dwarf_low/composite_location_description.cmi
 asmcomp/debug/dwarf_low/composite_location_description.cmi : \
     asmcomp/debug/dwarf_low/simple_location_description.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo
 asmcomp/debug/dwarf_low/debug_info_section.cmo : utils/numbers.cmi \
     asmcomp/linearize.cmi asmcomp/debug/dwarf_low/initial_length.cmi \
     asmcomp/debug/dwarf_low/dwarf_version.cmi \
     asmcomp/debug/dwarf_low/dwarf_value.cmi \
-    asmcomp/debug/dwarf_low/debugging_information_entry.cmi asmcomp/arch.cmo \
+    asmcomp/debug/dwarf_low/debugging_information_entry.cmi \
+    asmcomp/debug/asm_directives.cmi asmcomp/arch.cmo \
     asmcomp/debug/dwarf_low/debug_info_section.cmi
 asmcomp/debug/dwarf_low/debug_info_section.cmx : utils/numbers.cmx \
     asmcomp/linearize.cmx asmcomp/debug/dwarf_low/initial_length.cmx \
     asmcomp/debug/dwarf_low/dwarf_version.cmx \
     asmcomp/debug/dwarf_low/dwarf_value.cmx \
-    asmcomp/debug/dwarf_low/debugging_information_entry.cmx asmcomp/arch.cmx \
+    asmcomp/debug/dwarf_low/debugging_information_entry.cmx \
+    asmcomp/debug/asm_directives.cmx asmcomp/arch.cmx \
     asmcomp/debug/dwarf_low/debug_info_section.cmi
 asmcomp/debug/dwarf_low/debug_info_section.cmi : asmcomp/linearize.cmi \
     asmcomp/debug/dwarf_low/dwarf_version.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi \
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo \
     asmcomp/debug/dwarf_low/debugging_information_entry.cmi
 asmcomp/debug/dwarf_low/debug_loc_table.cmo : \
     asmcomp/debug/dwarf_low/location_list.cmi \
@@ -2588,21 +2664,20 @@ asmcomp/debug/dwarf_low/debug_loc_table.cmx : \
     asmcomp/debug/dwarf_low/debug_loc_table.cmi
 asmcomp/debug/dwarf_low/debug_loc_table.cmi : \
     asmcomp/debug/dwarf_low/location_list.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi \
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo \
     asmcomp/debug/dwarf_low/dwarf_attribute_values.cmi
 asmcomp/debug/dwarf_low/debugging_information_entry.cmo : \
-    middle_end/base_types/symbol.cmi asmcomp/linearize.cmi \
-    asmcomp/debug/dwarf_low/dwarf_attribute_values.cmi asmcomp/cmm.cmi \
+    asmcomp/linearize.cmi asmcomp/debug/dwarf_low/dwarf_attribute_values.cmi \
+    asmcomp/cmm.cmi asmcomp/debug/asm_directives.cmi \
     asmcomp/debug/dwarf_low/abbreviation_code.cmi \
     asmcomp/debug/dwarf_low/debugging_information_entry.cmi
 asmcomp/debug/dwarf_low/debugging_information_entry.cmx : \
-    middle_end/base_types/symbol.cmx asmcomp/linearize.cmx \
-    asmcomp/debug/dwarf_low/dwarf_attribute_values.cmx asmcomp/cmm.cmx \
+    asmcomp/linearize.cmx asmcomp/debug/dwarf_low/dwarf_attribute_values.cmx \
+    asmcomp/cmm.cmx asmcomp/debug/asm_directives.cmx \
     asmcomp/debug/dwarf_low/abbreviation_code.cmx \
     asmcomp/debug/dwarf_low/debugging_information_entry.cmi
 asmcomp/debug/dwarf_low/debugging_information_entry.cmi : \
-    middle_end/base_types/symbol.cmi asmcomp/linearize.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi \
+    asmcomp/linearize.cmi asmcomp/debug/dwarf_low/dwarf_emittable.cmo \
     asmcomp/debug/dwarf_low/dwarf_attribute_values.cmi \
     asmcomp/debug/dwarf_low/abbreviation_code.cmi
 asmcomp/debug/dwarf_low/dwarf_attribute_values.cmo : \
@@ -2611,6 +2686,7 @@ asmcomp/debug/dwarf_low/dwarf_attribute_values.cmo : \
     asmcomp/debug/dwarf_low/dwarf_value.cmi \
     asmcomp/debug/dwarf_low/dwarf_attributes.cmi \
     asmcomp/debug/dwarf_low/composite_location_description.cmi \
+    asmcomp/debug/asm_directives.cmi \
     asmcomp/debug/dwarf_low/dwarf_attribute_values.cmi
 asmcomp/debug/dwarf_low/dwarf_attribute_values.cmx : \
     asmcomp/debug/dwarf_low/single_location_description.cmx \
@@ -2618,12 +2694,12 @@ asmcomp/debug/dwarf_low/dwarf_attribute_values.cmx : \
     asmcomp/debug/dwarf_low/dwarf_value.cmx \
     asmcomp/debug/dwarf_low/dwarf_attributes.cmx \
     asmcomp/debug/dwarf_low/composite_location_description.cmx \
+    asmcomp/debug/asm_directives.cmx \
     asmcomp/debug/dwarf_low/dwarf_attribute_values.cmi
 asmcomp/debug/dwarf_low/dwarf_attribute_values.cmi : \
-    middle_end/base_types/symbol.cmi \
     asmcomp/debug/dwarf_low/single_location_description.cmi utils/numbers.cmi \
     asmcomp/linearize.cmi asmcomp/debug/dwarf_low/encoding_attribute.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi \
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo \
     asmcomp/debug/dwarf_low/dwarf_attributes.cmi \
     asmcomp/debug/dwarf_low/composite_location_description.cmi
 asmcomp/debug/dwarf_low/dwarf_attributes.cmo : utils/identifiable.cmi \
@@ -2633,8 +2709,9 @@ asmcomp/debug/dwarf_low/dwarf_attributes.cmx : utils/identifiable.cmx \
     asmcomp/debug/dwarf_low/dwarf_value.cmx \
     asmcomp/debug/dwarf_low/dwarf_attributes.cmi
 asmcomp/debug/dwarf_low/dwarf_attributes.cmi : utils/identifiable.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi
-asmcomp/debug/dwarf_low/dwarf_emittable.cmi :
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo
+asmcomp/debug/dwarf_low/dwarf_emittable.cmo :
+asmcomp/debug/dwarf_low/dwarf_emittable.cmx :
 asmcomp/debug/dwarf_low/dwarf_format.cmo : \
     asmcomp/debug/dwarf_low/dwarf_format.cmi
 asmcomp/debug/dwarf_low/dwarf_format.cmx : \
@@ -2647,22 +2724,15 @@ asmcomp/debug/dwarf_low/dwarf_int.cmx : \
     asmcomp/debug/dwarf_low/dwarf_format.cmx asmcomp/debug/asm_directives.cmx \
     asmcomp/debug/dwarf_low/dwarf_int.cmi
 asmcomp/debug/dwarf_low/dwarf_int.cmi : \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi
-asmcomp/debug/dwarf_low/dwarf_operator.cmo : \
-    middle_end/base_types/symbol.cmi utils/numbers.cmi utils/misc.cmi \
-    asmcomp/debug/dwarf_low/dwarf_version.cmi \
-    asmcomp/debug/dwarf_low/dwarf_value.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
-    asmcomp/debug/dwarf_low/dwarf_operator.cmi
-asmcomp/debug/dwarf_low/dwarf_operator.cmx : \
-    middle_end/base_types/symbol.cmx utils/numbers.cmx utils/misc.cmx \
-    asmcomp/debug/dwarf_low/dwarf_version.cmx \
-    asmcomp/debug/dwarf_low/dwarf_value.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
-    asmcomp/debug/dwarf_low/dwarf_operator.cmi
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo
+asmcomp/debug/dwarf_low/dwarf_operator.cmo : utils/numbers.cmi \
+    utils/misc.cmi asmcomp/debug/dwarf_low/dwarf_value.cmi asmcomp/cmm.cmi \
+    asmcomp/arch.cmo asmcomp/debug/dwarf_low/dwarf_operator.cmi
+asmcomp/debug/dwarf_low/dwarf_operator.cmx : utils/numbers.cmx \
+    utils/misc.cmx asmcomp/debug/dwarf_low/dwarf_value.cmx asmcomp/cmm.cmx \
+    asmcomp/arch.cmx asmcomp/debug/dwarf_low/dwarf_operator.cmi
 asmcomp/debug/dwarf_low/dwarf_operator.cmi : \
-    middle_end/base_types/symbol.cmi \
-    asmcomp/debug/dwarf_low/dwarf_version.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi asmcomp/cmm.cmi
-asmcomp/debug/dwarf_low/dwarf_register_number.cmi :
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo asmcomp/cmm.cmi
 asmcomp/debug/dwarf_low/dwarf_tag.cmo : utils/numbers.cmi \
     asmcomp/debug/dwarf_low/dwarf_value.cmi \
     asmcomp/debug/dwarf_low/child_determination.cmi \
@@ -2672,21 +2742,21 @@ asmcomp/debug/dwarf_low/dwarf_tag.cmx : utils/numbers.cmx \
     asmcomp/debug/dwarf_low/child_determination.cmx \
     asmcomp/debug/dwarf_low/dwarf_tag.cmi
 asmcomp/debug/dwarf_low/dwarf_tag.cmi : utils/numbers.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi \
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo \
     asmcomp/debug/dwarf_low/child_determination.cmi
 asmcomp/debug/dwarf_low/dwarf_value.cmo : utils/targetint.cmi \
-    middle_end/base_types/symbol.cmi utils/numbers.cmi utils/misc.cmi \
+    asmcomp/debug/target_system.cmi utils/numbers.cmi utils/misc.cmi \
     asmcomp/linearize.cmi asmcomp/debug/dwarf_low/dwarf_int.cmi \
     asmcomp/debug/dwarf_low/dwarf_format.cmi asmcomp/cmm.cmi \
-    asmcomp/debug/dwarf_low/dwarf_value.cmi
+    asmcomp/debug/asm_directives.cmi asmcomp/debug/dwarf_low/dwarf_value.cmi
 asmcomp/debug/dwarf_low/dwarf_value.cmx : utils/targetint.cmx \
-    middle_end/base_types/symbol.cmx utils/numbers.cmx utils/misc.cmx \
+    asmcomp/debug/target_system.cmx utils/numbers.cmx utils/misc.cmx \
     asmcomp/linearize.cmx asmcomp/debug/dwarf_low/dwarf_int.cmx \
     asmcomp/debug/dwarf_low/dwarf_format.cmx asmcomp/cmm.cmx \
-    asmcomp/debug/dwarf_low/dwarf_value.cmi
+    asmcomp/debug/asm_directives.cmx asmcomp/debug/dwarf_low/dwarf_value.cmi
 asmcomp/debug/dwarf_low/dwarf_value.cmi : utils/targetint.cmi \
-    middle_end/base_types/symbol.cmi utils/numbers.cmi asmcomp/linearize.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi asmcomp/cmm.cmi
+    utils/numbers.cmi asmcomp/linearize.cmi \
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo asmcomp/cmm.cmi
 asmcomp/debug/dwarf_low/dwarf_version.cmo : utils/numbers.cmi \
     asmcomp/debug/dwarf_low/dwarf_value.cmi \
     asmcomp/debug/dwarf_low/dwarf_version.cmi
@@ -2694,7 +2764,7 @@ asmcomp/debug/dwarf_low/dwarf_version.cmx : utils/numbers.cmx \
     asmcomp/debug/dwarf_low/dwarf_value.cmx \
     asmcomp/debug/dwarf_low/dwarf_version.cmi
 asmcomp/debug/dwarf_low/dwarf_version.cmi : \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo
 asmcomp/debug/dwarf_low/encoding_attribute.cmo : utils/numbers.cmi \
     asmcomp/debug/dwarf_low/dwarf_value.cmi \
     asmcomp/debug/dwarf_low/encoding_attribute.cmi
@@ -2712,32 +2782,33 @@ asmcomp/debug/dwarf_low/initial_length.cmx : utils/misc.cmx \
     asmcomp/debug/dwarf_low/dwarf_format.cmx \
     asmcomp/debug/dwarf_low/initial_length.cmi
 asmcomp/debug/dwarf_low/initial_length.cmi : \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo
 asmcomp/debug/dwarf_low/location_list.cmo : utils/targetint.cmi \
     asmcomp/debug/dwarf_low/location_list_entry.cmi asmcomp/linearize.cmi \
     asmcomp/debug/dwarf_low/dwarf_value.cmi asmcomp/cmm.cmi \
+    asmcomp/debug/asm_directives.cmi \
     asmcomp/debug/dwarf_low/location_list.cmi
 asmcomp/debug/dwarf_low/location_list.cmx : utils/targetint.cmx \
     asmcomp/debug/dwarf_low/location_list_entry.cmx asmcomp/linearize.cmx \
     asmcomp/debug/dwarf_low/dwarf_value.cmx asmcomp/cmm.cmx \
+    asmcomp/debug/asm_directives.cmx \
     asmcomp/debug/dwarf_low/location_list.cmi
 asmcomp/debug/dwarf_low/location_list.cmi : \
     asmcomp/debug/dwarf_low/location_list_entry.cmi asmcomp/linearize.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo
 asmcomp/debug/dwarf_low/location_list_entry.cmo : utils/targetint.cmi \
-    middle_end/base_types/symbol.cmi \
     asmcomp/debug/dwarf_low/single_location_description.cmi utils/numbers.cmi \
     asmcomp/linearize.cmi asmcomp/debug/dwarf_low/dwarf_value.cmi \
+    asmcomp/debug/asm_directives.cmi \
     asmcomp/debug/dwarf_low/location_list_entry.cmi
 asmcomp/debug/dwarf_low/location_list_entry.cmx : utils/targetint.cmx \
-    middle_end/base_types/symbol.cmx \
     asmcomp/debug/dwarf_low/single_location_description.cmx utils/numbers.cmx \
     asmcomp/linearize.cmx asmcomp/debug/dwarf_low/dwarf_value.cmx \
+    asmcomp/debug/asm_directives.cmx \
     asmcomp/debug/dwarf_low/location_list_entry.cmi
 asmcomp/debug/dwarf_low/location_list_entry.cmi : \
-    middle_end/base_types/symbol.cmi \
     asmcomp/debug/dwarf_low/single_location_description.cmi \
-    asmcomp/linearize.cmi asmcomp/debug/dwarf_low/dwarf_emittable.cmi
+    asmcomp/linearize.cmi asmcomp/debug/dwarf_low/dwarf_emittable.cmo
 asmcomp/debug/dwarf_low/simple_location_description.cmo : \
     asmcomp/debug/dwarf_low/dwarf_operator.cmi \
     asmcomp/debug/dwarf_low/simple_location_description.cmi
@@ -2745,9 +2816,8 @@ asmcomp/debug/dwarf_low/simple_location_description.cmx : \
     asmcomp/debug/dwarf_low/dwarf_operator.cmx \
     asmcomp/debug/dwarf_low/simple_location_description.cmi
 asmcomp/debug/dwarf_low/simple_location_description.cmi : \
-    middle_end/base_types/symbol.cmi asmcomp/linearize.cmi \
-    asmcomp/debug/dwarf_low/dwarf_version.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi asmcomp/cmm.cmi
+    asmcomp/debug/dwarf_low/dwarf_operator.cmi \
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo
 asmcomp/debug/dwarf_low/single_location_description.cmo : \
     asmcomp/debug/dwarf_low/simple_location_description.cmi \
     asmcomp/debug/dwarf_low/composite_location_description.cmi \
@@ -2758,7 +2828,7 @@ asmcomp/debug/dwarf_low/single_location_description.cmx : \
     asmcomp/debug/dwarf_low/single_location_description.cmi
 asmcomp/debug/dwarf_low/single_location_description.cmi : \
     asmcomp/debug/dwarf_low/simple_location_description.cmi \
-    asmcomp/debug/dwarf_low/dwarf_emittable.cmi \
+    asmcomp/debug/dwarf_low/dwarf_emittable.cmo \
     asmcomp/debug/dwarf_low/composite_location_description.cmi
 <<<<<<< HEAD
 >>>>>>> ca1fc017f2... GPR#2077 (Dwarf_low library)

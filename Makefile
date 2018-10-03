@@ -222,6 +222,9 @@ ASMCOMP=\
   asmcomp/debug/asm_directives.cmo \
   $(DWARF_LOW) \
   asmcomp/debug/available_ranges.cmo \
+  asmcomp/debug/available_filtering.cmo \
+  asmcomp/debug/name_laundry.cmo \
+  asmcomp/debug/dwarf.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
