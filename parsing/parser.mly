@@ -1179,8 +1179,8 @@ module_type:
   | module_type MINUSGREATER module_type
       %prec below_WITH
       { Pmty_functor(mknoloc "_", Some $1, $3) }
-  | module_type WITH with_constraints
-      { Pmty_with($1, List.rev $3) }
+  | module_type WITH separated_nonempty_llist(AND, with_constraint)
+      { Pmty_with($1, $3) }
 /*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
       { Pmty_alias $3 } */
   | extension
@@ -2626,10 +2626,6 @@ extension_constructor_rebind(opening):
 
 /* "with" constraints (additional type equations over signature components) */
 
-with_constraints:
-    with_constraint                             { [$1] }
-  | with_constraints AND with_constraint        { $3 :: $1 }
-;
 with_constraint:
     TYPE type_parameters mkrhs(label_longident) with_type_binder
     core_type_no_attr constraints
