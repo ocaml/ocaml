@@ -981,11 +981,9 @@ functor_arg_name:
   | UNDERSCORE { "_" }
 ;
 
-functor_args:
-    functor_args functor_arg
-      { $2 :: $1 }
-  | functor_arg
-      { [ $1 ] }
+%inline functor_args:
+  reversed_nonempty_llist(functor_arg)
+    { $1 }
 ;
 
 module_expr:
