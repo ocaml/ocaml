@@ -98,13 +98,20 @@ let rec regalloc ~ppf_dump round fd =
     Reg.reinit(); Liveness.fundecl newfd; regalloc ~ppf_dump (round + 1) newfd
   end else newfd
 
-let emit fundecl =
+let emit ~ppf_dump:_ dwarf fundecl =
   let end_of_function_label = Cmm.new_label () in
-  Emit.fundecl fundecl ~end_of_function_label
+  match dwarf with
+  | None -> Emit.fundecl fundecl ~end_of_function_label
+  | Some dwarf ->
+    let fundecl = Available_filtering.fundecl fundecl in
+    let available_ranges, fundecl = Available_ranges.create ~fundecl in
+    Emit.fundecl fundecl ~end_of_function_label;
+    Dwarf.dwarf_for_function_definition dwarf ~fundecl ~available_ranges
+          ~end_of_function_label
 
 let (++) x f = f x
 
-let compile_fundecl ~ppf_dump fd_cmm =
+let compile_fundecl ~ppf_dump dwarf fd_cmm =
   Proc.init ();
   Reg.reset();
   fd_cmm
@@ -129,22 +136,22 @@ let compile_fundecl ~ppf_dump fd_cmm =
   ++ pass_dump_linear_if ppf_dump dump_linear "Linearized code"
   ++ Profile.record ~accumulate:true "scheduling" Scheduling.fundecl
   ++ pass_dump_linear_if ppf_dump dump_scheduling "After instruction scheduling"
-  ++ Profile.record ~accumulate:true "emit" emit
+  ++ Profile.record ~accumulate:true "emit" (emit ~ppf_dump dwarf)
 
-let compile_phrase ~ppf_dump p =
+let compile_phrase ~ppf_dump ~dwarf p =
   if !dump_cmm then fprintf ppf_dump "%a@." Printcmm.phrase p;
   match p with
-  | Cfunction fd -> compile_fundecl ~ppf_dump fd
+  | Cfunction fd -> compile_fundecl ~ppf_dump dwarf fd
   | Cdata dl -> Emit.data dl
 
 
 (* For the native toplevel: generates generic functions unless
    they are already available in the process *)
-let compile_genfuns ~ppf_dump f =
+let compile_genfuns ~ppf_dump dwarf f =
   List.iter
     (function
        | (Cfunction {fun_name = name}) as ph when f name ->
-           compile_phrase ~ppf_dump ph
+           compile_phrase ~ppf_dump ~dwarf ph
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
@@ -174,15 +181,27 @@ let set_export_info (ulambda, prealloc, structured_constants, export) =
   Compilenv.set_export_info export;
   (ulambda, prealloc, structured_constants)
 
-let end_gen_implementation ?toplevel ~ppf_dump ~unit_name
+let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
     (clambda:clambda_and_constants) =
   Emit.begin_assembly ();
+  let dwarf =
+    if not !Clflags.debug_full then None
+    else begin
+      let dwarf = Dwarf.create ~prefix_name in
+      let _, toplevel_inconstants, toplevel_constants = clambda in
+      Dwarf.dwarf_for_toplevel_constants dwarf toplevel_constants;
+      Dwarf.dwarf_for_toplevel_inconstants dwarf toplevel_inconstants;
+      Some dwarf
+    end
+  in
   clambda
   ++ Profile.record "cmm" (Cmmgen.compunit ~ppf_dump ~unit_name)
   ++ Profile.record "compile_phrases"
-       (List.iter (compile_phrase ~ppf_dump dwarf))
+       (List.iter (compile_phrase ~ppf_dump ~dwarf))
   ++ (fun () -> ());
-  (match toplevel with None -> () | Some f -> compile_genfuns ~ppf_dump f);
+  (match toplevel with
+  | None -> ()
+  | Some f -> compile_genfuns ~ppf_dump dwarf f);
 
   (* We add explicit references to external primitive symbols.  This
      is to ensure that the object files that define these symbols,
@@ -190,15 +209,15 @@ let end_gen_implementation ?toplevel ~ppf_dump ~unit_name
      This is important if a module that uses such a symbol is later
      dynlinked. *)
 
-  compile_phrase ~ppf_dump
+  compile_phrase ~ppf_dump ~dwarf
     (Cmmgen.reference_symbols
        (List.filter (fun s -> s <> "" && s.[0] <> '%')
           (List.map Primitive.native_name !Translmod.primitive_declarations))
     );
-  Emit.end_assembly ()
+  Emit.end_assembly dwarf
 
-let flambda_gen_implementation ?toplevel ~backend ~ppf_dump ~unit_name
-    (program:Flambda.program) =
+let flambda_gen_implementation ?toplevel ~backend ~ppf_dump ~prefix_name
+    ~unit_name (program:Flambda.program) =
   let export = Build_export_info.build_transient ~backend program in
   let (clambda, preallocated, constants) =
     Profile.record_call "backend" (fun () ->
@@ -222,10 +241,10 @@ let flambda_gen_implementation ?toplevel ~backend ~ppf_dump ~unit_name
         })
       (Symbol.Map.bindings constants)
   in
-  end_gen_implementation ?toplevel ~ppf_dump ~unit_name
+  end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
     (clambda, preallocated, constants)
 
-let lambda_gen_implementation ?toplevel ~ppf_dump ~unit_name
+let lambda_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
     (lambda:Lambda.program) =
   let clambda = Closure.intro lambda.main_module_block_size lambda.code in
   let provenance : Clambda.usymbol_provenance =
@@ -247,7 +266,8 @@ let lambda_gen_implementation ?toplevel ~ppf_dump ~unit_name
     clambda, [preallocated_block], []
   in
   raw_clambda_dump_if ppf_dump clambda_and_constants;
-  end_gen_implementation ?toplevel ~ppf_dump ~unit_name clambda_and_constants
+  end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
+    clambda_and_constants
 
 let compile_implementation_gen ?toplevel prefixname ~unit_name
     ~required_globals ~ppf_dump gen_implementation program =
@@ -259,7 +279,8 @@ let compile_implementation_gen ?toplevel prefixname ~unit_name
   compile_unit prefixname asmfile !keep_asm_file
       (prefixname ^ ext_obj) (fun () ->
         Ident.Set.iter Compilenv.require_global required_globals;
-        gen_implementation ?toplevel ~ppf_dump ~unit_name program)
+        gen_implementation ?toplevel ~ppf_dump ~prefix_name:prefixname
+          ~unit_name program)
 
 let compile_implementation_clambda ?toplevel prefixname ~unit_name
     ~ppf_dump (program:Lambda.program) =

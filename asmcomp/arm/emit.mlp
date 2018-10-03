@@ -985,7 +985,7 @@ let begin_assembly() =
   `	.globl	{emit_symbol lbl_begin}\n`;
   `{emit_symbol lbl_begin}:\n`
 
-let end_assembly () =
+let end_assembly dwarf =
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
   `	.globl	{emit_symbol lbl_end}\n`;
@@ -1021,4 +1021,8 @@ let end_assembly () =
       (* Mark stack as non-executable *)
       `	.section	.note.GNU-stack,\"\",%progbits\n`
   | _ -> ()
+  end;
+  begin match dwarf with
+  | None -> ()
+  | Some dwarf -> Dwarf.emit dwarf
   end

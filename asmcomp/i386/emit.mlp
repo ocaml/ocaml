@@ -1032,7 +1032,7 @@ let begin_assembly() =
   if system = S_macosx then I.nop (); (* PR#4690 *)
   ()
 
-let end_assembly() =
+let end_assembly dwarf =
   if !float_constants <> [] then begin
     D.data ();
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
@@ -1082,7 +1082,10 @@ let end_assembly() =
     symbols_used := String.Set.empty;
     symbols_defined := String.Set.empty;
   end;
-
+  begin match dwarf with
+  | None -> ()
+  | Some dwarf -> Dwarf.emit dwarf
+  end;
   let asm =
     if !Emitaux.create_asm_file then
       Some

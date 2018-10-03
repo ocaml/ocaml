@@ -773,27 +773,38 @@ asmcomp/asmgen.cmo : asmcomp/un_anf.cmi bytecomp/translmod.cmi \
     asmcomp/selection.cmi asmcomp/scheduling.cmi asmcomp/reload.cmi \
     asmcomp/reg.cmi utils/profile.cmi asmcomp/proc.cmi asmcomp/printmach.cmi \
     asmcomp/printlinear.cmi asmcomp/printcmm.cmi asmcomp/printclambda.cmi \
-    typing/primitive.cmi utils/misc.cmi asmcomp/mach.cmi parsing/location.cmi \
-    asmcomp/liveness.cmi asmcomp/linscan.cmi \
+    typing/primitive.cmi typing/path.cmi utils/misc.cmi asmcomp/mach.cmi \
+    parsing/location.cmi asmcomp/liveness.cmi asmcomp/linscan.cmi \
     middle_end/base_types/linkage_name.cmi asmcomp/linearize.cmi \
     bytecomp/lambda.cmi asmcomp/interval.cmi asmcomp/interf.cmi \
     typing/ident.cmi asmcomp/flambda_to_clambda.cmi middle_end/flambda.cmi \
+<<<<<<< HEAD
     asmcomp/emitaux.cmi asmcomp/emit.cmi asmcomp/deadcode.cmi \
     utils/config.cmi asmcomp/compilenv.cmi asmcomp/comballoc.cmi \
     asmcomp/coloring.cmi asmcomp/cmmgen.cmi asmcomp/cmm.cmi \
     asmcomp/closure.cmi utils/clflags.cmi asmcomp/clambda.cmi asmcomp/CSE.cmo \
     asmcomp/build_export_info.cmi asmcomp/backend_sym.cmi \
     asmcomp/debug/available_regs.cmi asmcomp/asmgen.cmi
+=======
+    asmcomp/emitaux.cmi asmcomp/emit.cmi asmcomp/debug/dwarf.cmi \
+    asmcomp/deadcode.cmi utils/config.cmi asmcomp/compilenv.cmi \
+    asmcomp/comballoc.cmi asmcomp/coloring.cmi asmcomp/cmmgen.cmi \
+    asmcomp/cmm.cmi asmcomp/closure.cmi utils/clflags.cmi asmcomp/clambda.cmi \
+    asmcomp/CSE.cmo asmcomp/build_export_info.cmi \
+    asmcomp/debug/available_regs.cmi asmcomp/debug/available_ranges.cmi \
+    asmcomp/debug/available_filtering.cmi asmcomp/asmgen.cmi
+>>>>>>> ae2d0299c6... GPR#574 (Make OCaml native debugging awesome)
 asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     middle_end/base_types/symbol.cmx asmcomp/split.cmx asmcomp/spill.cmx \
     asmcomp/selection.cmx asmcomp/scheduling.cmx asmcomp/reload.cmx \
     asmcomp/reg.cmx utils/profile.cmx asmcomp/proc.cmx asmcomp/printmach.cmx \
     asmcomp/printlinear.cmx asmcomp/printcmm.cmx asmcomp/printclambda.cmx \
-    typing/primitive.cmx utils/misc.cmx asmcomp/mach.cmx parsing/location.cmx \
-    asmcomp/liveness.cmx asmcomp/linscan.cmx \
+    typing/primitive.cmx typing/path.cmx utils/misc.cmx asmcomp/mach.cmx \
+    parsing/location.cmx asmcomp/liveness.cmx asmcomp/linscan.cmx \
     middle_end/base_types/linkage_name.cmx asmcomp/linearize.cmx \
     bytecomp/lambda.cmx asmcomp/interval.cmx asmcomp/interf.cmx \
     typing/ident.cmx asmcomp/flambda_to_clambda.cmx middle_end/flambda.cmx \
+<<<<<<< HEAD
     asmcomp/emitaux.cmx asmcomp/emit.cmx asmcomp/deadcode.cmx \
     utils/config.cmx asmcomp/compilenv.cmx asmcomp/comballoc.cmx \
     asmcomp/coloring.cmx asmcomp/cmmgen.cmx asmcomp/cmm.cmx \
@@ -802,6 +813,17 @@ asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     asmcomp/debug/available_regs.cmx asmcomp/asmgen.cmi
 asmcomp/asmgen.cmi : bytecomp/lambda.cmi typing/ident.cmi \
     middle_end/flambda.cmi asmcomp/cmm.cmi asmcomp/backend_sym.cmi \
+=======
+    asmcomp/emitaux.cmx asmcomp/emit.cmx asmcomp/debug/dwarf.cmx \
+    asmcomp/deadcode.cmx utils/config.cmx asmcomp/compilenv.cmx \
+    asmcomp/comballoc.cmx asmcomp/coloring.cmx asmcomp/cmmgen.cmx \
+    asmcomp/cmm.cmx asmcomp/closure.cmx utils/clflags.cmx asmcomp/clambda.cmx \
+    asmcomp/CSE.cmx asmcomp/build_export_info.cmx \
+    asmcomp/debug/available_regs.cmx asmcomp/debug/available_ranges.cmx \
+    asmcomp/debug/available_filtering.cmx asmcomp/asmgen.cmi
+asmcomp/asmgen.cmi : bytecomp/lambda.cmi typing/ident.cmi \
+    middle_end/flambda.cmi asmcomp/debug/dwarf.cmi asmcomp/cmm.cmi \
+>>>>>>> ae2d0299c6... GPR#574 (Make OCaml native debugging awesome)
     middle_end/backend_intf.cmi
 asmcomp/asmlibrarian.cmo : utils/misc.cmi parsing/location.cmi \
     asmcomp/export_info.cmi utils/config.cmi asmcomp/compilenv.cmi \
@@ -814,6 +836,7 @@ asmcomp/asmlibrarian.cmx : utils/misc.cmx parsing/location.cmx \
 asmcomp/asmlibrarian.cmi :
 asmcomp/asmlink.cmo : bytecomp/runtimedef.cmi utils/profile.cmi \
     utils/misc.cmi parsing/location.cmi asmcomp/emitaux.cmi asmcomp/emit.cmi \
+<<<<<<< HEAD
     utils/consistbl.cmi utils/config.cmi asmcomp/compilenv.cmi \
     asmcomp/cmx_format.cmi asmcomp/cmmgen.cmi asmcomp/cmm.cmi \
     utils/clflags.cmi utils/ccomp.cmi asmcomp/backend_sym.cmi \
@@ -824,6 +847,18 @@ asmcomp/asmlink.cmx : bytecomp/runtimedef.cmx utils/profile.cmx \
     asmcomp/cmx_format.cmi asmcomp/cmmgen.cmx asmcomp/cmm.cmx \
     utils/clflags.cmx utils/ccomp.cmx asmcomp/backend_sym.cmx \
     asmcomp/asmgen.cmx asmcomp/asmlink.cmi
+=======
+    asmcomp/debug/dwarf.cmi utils/consistbl.cmi utils/config.cmi \
+    asmcomp/compilenv.cmi asmcomp/cmx_format.cmi asmcomp/cmmgen.cmi \
+    asmcomp/cmm.cmi utils/clflags.cmi utils/ccomp.cmi asmcomp/asmgen.cmi \
+    asmcomp/asmlink.cmi
+asmcomp/asmlink.cmx : bytecomp/runtimedef.cmx utils/profile.cmx \
+    utils/misc.cmx parsing/location.cmx asmcomp/emitaux.cmx asmcomp/emit.cmx \
+    asmcomp/debug/dwarf.cmx utils/consistbl.cmx utils/config.cmx \
+    asmcomp/compilenv.cmx asmcomp/cmx_format.cmi asmcomp/cmmgen.cmx \
+    asmcomp/cmm.cmx utils/clflags.cmx utils/ccomp.cmx asmcomp/asmgen.cmx \
+    asmcomp/asmlink.cmi
+>>>>>>> ae2d0299c6... GPR#574 (Make OCaml native debugging awesome)
 asmcomp/asmlink.cmi : asmcomp/cmx_format.cmi
 asmcomp/asmpackager.cmo : typing/typemod.cmi bytecomp/translmod.cmi \
     utils/profile.cmi utils/misc.cmi middle_end/middle_end.cmi \
@@ -899,22 +934,24 @@ asmcomp/build_export_info.cmx : middle_end/base_types/variable.cmx \
     asmcomp/build_export_info.cmi
 asmcomp/build_export_info.cmi : middle_end/flambda.cmi \
     asmcomp/export_info.cmi middle_end/backend_intf.cmi
-asmcomp/clambda.cmo : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
-    asmcomp/backend_var.cmi parsing/asttypes.cmi asmcomp/clambda.cmi
-asmcomp/clambda.cmx : bytecomp/lambda.cmx middle_end/debuginfo.cmx \
-    asmcomp/backend_var.cmx parsing/asttypes.cmi asmcomp/clambda.cmi
-asmcomp/clambda.cmi : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
-    asmcomp/backend_var.cmi parsing/asttypes.cmi
+asmcomp/clambda.cmo : typing/path.cmi bytecomp/lambda.cmi typing/ident.cmi \
+    middle_end/debuginfo.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
+    asmcomp/clambda.cmi
+asmcomp/clambda.cmx : typing/path.cmx bytecomp/lambda.cmx typing/ident.cmx \
+    middle_end/debuginfo.cmx asmcomp/backend_var.cmx parsing/asttypes.cmi \
+    asmcomp/clambda.cmi
+asmcomp/clambda.cmi : typing/path.cmi bytecomp/lambda.cmi typing/ident.cmi \
+    middle_end/debuginfo.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi
 asmcomp/closure.cmo : utils/warnings.cmi bytecomp/switch.cmi \
     bytecomp/simplif.cmi bytecomp/semantics_of_primitives.cmi \
-    typing/primitive.cmi utils/numbers.cmi utils/misc.cmi \
+    typing/primitive.cmi typing/path.cmi utils/numbers.cmi utils/misc.cmi \
     parsing/location.cmi bytecomp/lambda.cmi typing/ident.cmi typing/env.cmi \
     middle_end/debuginfo.cmi utils/config.cmi asmcomp/compilenv.cmi \
     utils/clflags.cmi asmcomp/clambda.cmi asmcomp/backend_var.cmi \
     parsing/asttypes.cmi asmcomp/arch.cmo asmcomp/closure.cmi
 asmcomp/closure.cmx : utils/warnings.cmx bytecomp/switch.cmx \
     bytecomp/simplif.cmx bytecomp/semantics_of_primitives.cmx \
-    typing/primitive.cmx utils/numbers.cmx utils/misc.cmx \
+    typing/primitive.cmx typing/path.cmx utils/numbers.cmx utils/misc.cmx \
     parsing/location.cmx bytecomp/lambda.cmx typing/ident.cmx typing/env.cmx \
     middle_end/debuginfo.cmx utils/config.cmx asmcomp/compilenv.cmx \
     utils/clflags.cmx asmcomp/clambda.cmx asmcomp/backend_var.cmx \
@@ -931,17 +968,22 @@ asmcomp/closure_offsets.cmx : middle_end/base_types/variable.cmx \
 asmcomp/closure_offsets.cmi : middle_end/base_types/var_within_closure.cmi \
     middle_end/flambda.cmi middle_end/base_types/closure_id.cmi
 <<<<<<< HEAD
+<<<<<<< HEAD
 asmcomp/cmm.cmo : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
 <<<<<<< HEAD
     asmcomp/clambda.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
 =======
 asmcomp/cmm.cmo : utils/targetint.cmi bytecomp/lambda.cmi \
+=======
+asmcomp/cmm.cmo : utils/targetint.cmi typing/path.cmi bytecomp/lambda.cmi \
+>>>>>>> ae2d0299c6... GPR#574 (Make OCaml native debugging awesome)
     middle_end/debuginfo.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
 >>>>>>> f41f87b257... GPR#2086 (Available_filtering)
     asmcomp/arch.cmo asmcomp/cmm.cmi
-asmcomp/cmm.cmx : utils/targetint.cmx bytecomp/lambda.cmx \
+asmcomp/cmm.cmx : utils/targetint.cmx typing/path.cmx bytecomp/lambda.cmx \
     middle_end/debuginfo.cmx asmcomp/backend_var.cmx parsing/asttypes.cmi \
     asmcomp/arch.cmx asmcomp/cmm.cmi
+<<<<<<< HEAD
 <<<<<<< HEAD
 asmcomp/cmm.cmi : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
     asmcomp/clambda.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi
@@ -972,17 +1014,21 @@ asmcomp/cmmgen.cmx : asmcomp/un_anf.cmx typing/types.cmx bytecomp/switch.cmx \
     asmcomp/cmmgen.cmi
 =======
 asmcomp/cmm.cmi : utils/targetint.cmi bytecomp/lambda.cmi \
+=======
+asmcomp/cmm.cmi : utils/targetint.cmi typing/path.cmi bytecomp/lambda.cmi \
+>>>>>>> ae2d0299c6... GPR#574 (Make OCaml native debugging awesome)
     middle_end/debuginfo.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi
 asmcomp/cmmgen.cmo : asmcomp/un_anf.cmi typing/types.cmi utils/targetint.cmi \
     bytecomp/switch.cmi asmcomp/strmatch.cmi asmcomp/proc.cmi \
-    bytecomp/printlambda.cmi typing/primitive.cmi utils/numbers.cmi \
-    utils/misc.cmi bytecomp/lambda.cmi middle_end/debuginfo.cmi \
-    utils/config.cmi asmcomp/compilenv.cmi asmcomp/cmx_format.cmi \
-    asmcomp/cmm.cmi utils/clflags.cmi asmcomp/clambda.cmi \
-    asmcomp/backend_var.cmi parsing/asttypes.cmi asmcomp/arch.cmo \
-    asmcomp/afl_instrument.cmi asmcomp/cmmgen.cmi
+    bytecomp/printlambda.cmi typing/primitive.cmi typing/path.cmi \
+    utils/numbers.cmi utils/misc.cmi bytecomp/lambda.cmi typing/ident.cmi \
+    middle_end/debuginfo.cmi utils/config.cmi asmcomp/compilenv.cmi \
+    asmcomp/cmx_format.cmi asmcomp/cmm.cmi utils/clflags.cmi \
+    asmcomp/clambda.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
+    asmcomp/arch.cmo asmcomp/afl_instrument.cmi asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmx : asmcomp/un_anf.cmx typing/types.cmx utils/targetint.cmx \
     bytecomp/switch.cmx asmcomp/strmatch.cmx asmcomp/proc.cmx \
+<<<<<<< HEAD
     bytecomp/printlambda.cmx typing/primitive.cmx utils/numbers.cmx \
     utils/misc.cmx bytecomp/lambda.cmx middle_end/debuginfo.cmx \
     utils/config.cmx asmcomp/compilenv.cmx asmcomp/cmx_format.cmi \
@@ -991,6 +1037,15 @@ asmcomp/cmmgen.cmx : asmcomp/un_anf.cmx typing/types.cmx utils/targetint.cmx \
     asmcomp/afl_instrument.cmx asmcomp/cmmgen.cmi
 >>>>>>> f41f87b257... GPR#2086 (Available_filtering)
 asmcomp/cmmgen.cmi : asmcomp/cmx_format.cmi asmcomp/cmm.cmi \
+=======
+    bytecomp/printlambda.cmx typing/primitive.cmx typing/path.cmx \
+    utils/numbers.cmx utils/misc.cmx bytecomp/lambda.cmx typing/ident.cmx \
+    middle_end/debuginfo.cmx utils/config.cmx asmcomp/compilenv.cmx \
+    asmcomp/cmx_format.cmi asmcomp/cmm.cmx utils/clflags.cmx \
+    asmcomp/clambda.cmx asmcomp/backend_var.cmx parsing/asttypes.cmi \
+    asmcomp/arch.cmx asmcomp/afl_instrument.cmx asmcomp/cmmgen.cmi
+asmcomp/cmmgen.cmi : typing/ident.cmi asmcomp/cmx_format.cmi asmcomp/cmm.cmi \
+>>>>>>> ae2d0299c6... GPR#574 (Make OCaml native debugging awesome)
     asmcomp/clambda.cmi
 asmcomp/cmx_format.cmi : asmcomp/export_info.cmi asmcomp/clambda.cmi
 asmcomp/coloring.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/coloring.cmi
@@ -1003,17 +1058,19 @@ asmcomp/comballoc.cmx : asmcomp/reg.cmx asmcomp/mach.cmx utils/config.cmx \
 asmcomp/comballoc.cmi : asmcomp/mach.cmi
 asmcomp/compilenv.cmo : utils/warnings.cmi middle_end/base_types/symbol.cmi \
     middle_end/simple_value_approx.cmi \
-    middle_end/base_types/set_of_closures_id.cmi utils/misc.cmi \
-    parsing/location.cmi middle_end/base_types/linkage_name.cmi \
-    typing/ident.cmi asmcomp/export_info.cmi typing/env.cmi utils/config.cmi \
+    middle_end/base_types/set_of_closures_id.cmi typing/path.cmi \
+    utils/misc.cmi parsing/location.cmi \
+    middle_end/base_types/linkage_name.cmi typing/ident.cmi \
+    asmcomp/export_info.cmi typing/env.cmi utils/config.cmi \
     middle_end/base_types/compilation_unit.cmi asmcomp/cmx_format.cmi \
     middle_end/base_types/closure_id.cmi utils/clflags.cmi \
     asmcomp/clambda.cmi asmcomp/compilenv.cmi
 asmcomp/compilenv.cmx : utils/warnings.cmx middle_end/base_types/symbol.cmx \
     middle_end/simple_value_approx.cmx \
-    middle_end/base_types/set_of_closures_id.cmx utils/misc.cmx \
-    parsing/location.cmx middle_end/base_types/linkage_name.cmx \
-    typing/ident.cmx asmcomp/export_info.cmx typing/env.cmx utils/config.cmx \
+    middle_end/base_types/set_of_closures_id.cmx typing/path.cmx \
+    utils/misc.cmx parsing/location.cmx \
+    middle_end/base_types/linkage_name.cmx typing/ident.cmx \
+    asmcomp/export_info.cmx typing/env.cmx utils/config.cmx \
     middle_end/base_types/compilation_unit.cmx asmcomp/cmx_format.cmi \
     middle_end/base_types/closure_id.cmx utils/clflags.cmx \
     asmcomp/clambda.cmx asmcomp/compilenv.cmi
@@ -1031,6 +1088,7 @@ asmcomp/deadcode.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
 asmcomp/deadcode.cmi : asmcomp/mach.cmi
 asmcomp/emit.cmo : asmcomp/x86_proc.cmi asmcomp/x86_masm.cmi \
     asmcomp/x86_gas.cmi asmcomp/x86_dsl.cmi asmcomp/x86_ast.cmi \
+<<<<<<< HEAD
     utils/targetint.cmi asmcomp/target_system.cmi asmcomp/reg.cmi \
     asmcomp/proc.cmi utils/numbers.cmi utils/misc.cmi asmcomp/mach.cmi \
     asmcomp/linearize.cmi asmcomp/emitaux.cmi middle_end/debuginfo.cmi \
@@ -1055,6 +1113,30 @@ asmcomp/emitaux.cmo : middle_end/debuginfo.cmi utils/config.cmi \
 asmcomp/emitaux.cmx : middle_end/debuginfo.cmx utils/config.cmx \
     asmcomp/cmm.cmx utils/clflags.cmx asmcomp/arch.cmx asmcomp/emitaux.cmi
 asmcomp/emitaux.cmi : middle_end/debuginfo.cmi
+=======
+    asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi asmcomp/mach.cmi \
+    asmcomp/linearize.cmi asmcomp/emitaux.cmi asmcomp/debug/dwarf.cmi \
+    middle_end/debuginfo.cmi utils/config.cmi asmcomp/compilenv.cmi \
+    asmcomp/cmm.cmi utils/clflags.cmi asmcomp/branch_relaxation.cmi \
+    asmcomp/arch.cmo asmcomp/emit.cmi
+asmcomp/emit.cmx : asmcomp/x86_proc.cmx asmcomp/x86_masm.cmx \
+    asmcomp/x86_gas.cmx asmcomp/x86_dsl.cmx asmcomp/x86_ast.cmi \
+    asmcomp/reg.cmx asmcomp/proc.cmx utils/misc.cmx asmcomp/mach.cmx \
+    asmcomp/linearize.cmx asmcomp/emitaux.cmx asmcomp/debug/dwarf.cmx \
+    middle_end/debuginfo.cmx utils/config.cmx asmcomp/compilenv.cmx \
+    asmcomp/cmm.cmx utils/clflags.cmx asmcomp/branch_relaxation.cmx \
+    asmcomp/arch.cmx asmcomp/emit.cmi
+asmcomp/emit.cmi : asmcomp/linearize.cmi asmcomp/debug/dwarf.cmi \
+    asmcomp/cmm.cmi
+asmcomp/emitaux.cmo : asmcomp/reg.cmi utils/misc.cmi asmcomp/linearize.cmi \
+    middle_end/debuginfo.cmi utils/config.cmi asmcomp/cmm.cmi \
+    utils/clflags.cmi asmcomp/arch.cmo asmcomp/emitaux.cmi
+asmcomp/emitaux.cmx : asmcomp/reg.cmx utils/misc.cmx asmcomp/linearize.cmx \
+    middle_end/debuginfo.cmx utils/config.cmx asmcomp/cmm.cmx \
+    utils/clflags.cmx asmcomp/arch.cmx asmcomp/emitaux.cmi
+asmcomp/emitaux.cmi : asmcomp/reg.cmi asmcomp/linearize.cmi \
+    middle_end/debuginfo.cmi
+>>>>>>> ae2d0299c6... GPR#574 (Make OCaml native debugging awesome)
 asmcomp/export_info.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
     middle_end/base_types/tag.cmi middle_end/base_types/symbol.cmi \
@@ -1164,16 +1246,16 @@ asmcomp/interval.cmi : asmcomp/reg.cmi asmcomp/mach.cmi
 <<<<<<< HEAD
 asmcomp/linearize.cmo : asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
-    utils/misc.cmi asmcomp/mach.cmi typing/ident.cmi middle_end/debuginfo.cmi \
-    utils/config.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
-    asmcomp/linearize.cmi
+    typing/path.cmi utils/misc.cmi asmcomp/mach.cmi typing/ident.cmi \
+    middle_end/debuginfo.cmi utils/config.cmi asmcomp/cmm.cmi \
+    asmcomp/backend_var.cmi asmcomp/linearize.cmi
 asmcomp/linearize.cmx : asmcomp/debug/reg_with_debug_info.cmx \
     asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx asmcomp/proc.cmx \
-    utils/misc.cmx asmcomp/mach.cmx typing/ident.cmx middle_end/debuginfo.cmx \
-    utils/config.cmx asmcomp/cmm.cmx asmcomp/backend_var.cmx \
-    asmcomp/linearize.cmi
+    typing/path.cmx utils/misc.cmx asmcomp/mach.cmx typing/ident.cmx \
+    middle_end/debuginfo.cmx utils/config.cmx asmcomp/cmm.cmx \
+    asmcomp/backend_var.cmx asmcomp/linearize.cmi
 asmcomp/linearize.cmi : asmcomp/debug/reg_availability_set.cmi \
-    asmcomp/reg.cmi asmcomp/mach.cmi typing/ident.cmi \
+    asmcomp/reg.cmi typing/path.cmi asmcomp/mach.cmi typing/ident.cmi \
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi
 =======
 asmcomp/linearize.cmo : asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
@@ -1198,7 +1280,7 @@ asmcomp/liveness.cmx : asmcomp/reg.cmx asmcomp/proc.cmx \
     asmcomp/cmm.cmx asmcomp/liveness.cmi
 asmcomp/liveness.cmi : asmcomp/mach.cmi
 asmcomp/mach.cmo : utils/targetint.cmi asmcomp/debug/reg_with_debug_info.cmi \
-    asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
+    asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi typing/path.cmi \
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
 <<<<<<< HEAD
     asmcomp/backend_sym.cmi asmcomp/arch.cmo asmcomp/mach.cmi
@@ -1210,12 +1292,16 @@ asmcomp/mach.cmi : asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
 =======
     asmcomp/arch.cmo asmcomp/mach.cmi
 asmcomp/mach.cmx : utils/targetint.cmx asmcomp/debug/reg_with_debug_info.cmx \
-    asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx \
+    asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx typing/path.cmx \
     middle_end/debuginfo.cmx asmcomp/cmm.cmx asmcomp/backend_var.cmx \
     asmcomp/arch.cmx asmcomp/mach.cmi
 asmcomp/mach.cmi : utils/targetint.cmi \
+<<<<<<< HEAD
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
 >>>>>>> f41f87b257... GPR#2086 (Available_filtering)
+=======
+    asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi typing/path.cmi \
+>>>>>>> ae2d0299c6... GPR#574 (Make OCaml native debugging awesome)
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
     asmcomp/backend_sym.cmi asmcomp/arch.cmo
 asmcomp/printclambda.cmo : bytecomp/printlambda.cmi bytecomp/lambda.cmi \
@@ -1245,11 +1331,19 @@ asmcomp/printcmm.cmx : bytecomp/lambda.cmx middle_end/debuginfo.cmx \
     parsing/asttypes.cmi asmcomp/printcmm.cmi
 asmcomp/printcmm.cmi : middle_end/debuginfo.cmi asmcomp/cmm.cmi
 asmcomp/printlinear.cmo : asmcomp/printmach.cmi asmcomp/printcmm.cmi \
+<<<<<<< HEAD
     asmcomp/mach.cmi asmcomp/linearize.cmi middle_end/debuginfo.cmi \
     asmcomp/backend_sym.cmi asmcomp/printlinear.cmi
 asmcomp/printlinear.cmx : asmcomp/printmach.cmx asmcomp/printcmm.cmx \
     asmcomp/mach.cmx asmcomp/linearize.cmx middle_end/debuginfo.cmx \
     asmcomp/backend_sym.cmx asmcomp/printlinear.cmi
+=======
+    typing/path.cmi asmcomp/mach.cmi asmcomp/linearize.cmi \
+    middle_end/debuginfo.cmi asmcomp/printlinear.cmi
+asmcomp/printlinear.cmx : asmcomp/printmach.cmx asmcomp/printcmm.cmx \
+    typing/path.cmx asmcomp/mach.cmx asmcomp/linearize.cmx \
+    middle_end/debuginfo.cmx asmcomp/printlinear.cmi
+>>>>>>> ae2d0299c6... GPR#574 (Make OCaml native debugging awesome)
 asmcomp/printlinear.cmi : asmcomp/linearize.cmi
 <<<<<<< HEAD
 asmcomp/printmach.cmo : asmcomp/debug/reg_availability_set.cmi \
@@ -1419,13 +1513,15 @@ asmcomp/traverse_for_exported_symbols.cmi : \
     asmcomp/export_info.cmi middle_end/base_types/export_id.cmi \
     middle_end/base_types/closure_id.cmi
 asmcomp/un_anf.cmo : bytecomp/semantics_of_primitives.cmi \
-    asmcomp/printclambda.cmi utils/misc.cmi bytecomp/lambda.cmi \
-    middle_end/debuginfo.cmi utils/clflags.cmi asmcomp/clambda.cmi \
-    asmcomp/backend_var.cmi parsing/asttypes.cmi asmcomp/un_anf.cmi
+    asmcomp/printclambda.cmi typing/path.cmi utils/misc.cmi \
+    bytecomp/lambda.cmi middle_end/debuginfo.cmi utils/clflags.cmi \
+    asmcomp/clambda.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
+    asmcomp/un_anf.cmi
 asmcomp/un_anf.cmx : bytecomp/semantics_of_primitives.cmx \
-    asmcomp/printclambda.cmx utils/misc.cmx bytecomp/lambda.cmx \
-    middle_end/debuginfo.cmx utils/clflags.cmx asmcomp/clambda.cmx \
-    asmcomp/backend_var.cmx parsing/asttypes.cmi asmcomp/un_anf.cmi
+    asmcomp/printclambda.cmx typing/path.cmx utils/misc.cmx \
+    bytecomp/lambda.cmx middle_end/debuginfo.cmx utils/clflags.cmx \
+    asmcomp/clambda.cmx asmcomp/backend_var.cmx parsing/asttypes.cmi \
+    asmcomp/un_anf.cmi
 asmcomp/un_anf.cmi : asmcomp/clambda.cmi
 asmcomp/x86_ast.cmi : asmcomp/asm_target/asm_symbol.cmi \
     asmcomp/asm_target/asm_label.cmi asmcomp/asm_target/asm_directives.cmi
@@ -2504,6 +2600,59 @@ asmcomp/debug/available_regs.cmx : asmcomp/debug/reg_with_debug_info.cmx \
     asmcomp/printmach.cmx utils/misc.cmx asmcomp/mach.cmx utils/clflags.cmx \
     asmcomp/backend_var.cmx asmcomp/debug/available_regs.cmi
 asmcomp/debug/available_regs.cmi : asmcomp/mach.cmi
+asmcomp/debug/dwarf.cmo : utils/targetint.cmi \
+    middle_end/base_types/symbol.cmi \
+    asmcomp/debug/dwarf_low/single_location_description.cmi \
+    asmcomp/debug/dwarf_high/simple_location_description_lang.cmi \
+    asmcomp/debug/dwarf_low/simple_location_description.cmi asmcomp/reg.cmi \
+    asmcomp/debug/dwarf_high/proto_die.cmi asmcomp/proc.cmi \
+    typing/printtyp.cmi asmcomp/printmach.cmi asmcomp/debug/name_laundry.cmi \
+    utils/misc.cmi asmcomp/debug/dwarf_low/location_list_entry.cmi \
+    asmcomp/debug/dwarf_low/location_list.cmi \
+    middle_end/base_types/linkage_name.cmi asmcomp/linearize.cmi \
+    typing/ident.cmi asmcomp/debug/dwarf_low/encoding_attribute.cmi \
+    asmcomp/debug/dwarf_high/dwarf_world.cmi \
+    asmcomp/debug/dwarf_low/dwarf_version.cmi \
+    asmcomp/debug/dwarf_low/dwarf_tag.cmi \
+    asmcomp/debug/dwarf_low/dwarf_format.cmi \
+    asmcomp/debug/dwarf_high/dwarf_attribute_helpers.cmi \
+    middle_end/debuginfo.cmi asmcomp/debug/dwarf_low/debug_loc_table.cmi \
+    utils/config.cmi \
+    asmcomp/debug/dwarf_low/composite_location_description.cmi \
+    middle_end/base_types/compilation_unit.cmi asmcomp/cmmgen.cmi \
+    asmcomp/cmm.cmi utils/clflags.cmi asmcomp/clambda.cmi \
+    asmcomp/backend_var.cmi asmcomp/debug/available_ranges.cmi \
+    asmcomp/debug/asm_directives.cmi asmcomp/arch.cmo asmcomp/debug/dwarf.cmi
+asmcomp/debug/dwarf.cmx : utils/targetint.cmx \
+    middle_end/base_types/symbol.cmx \
+    asmcomp/debug/dwarf_low/single_location_description.cmx \
+    asmcomp/debug/dwarf_high/simple_location_description_lang.cmx \
+    asmcomp/debug/dwarf_low/simple_location_description.cmx asmcomp/reg.cmx \
+    asmcomp/debug/dwarf_high/proto_die.cmx asmcomp/proc.cmx \
+    typing/printtyp.cmx asmcomp/printmach.cmx asmcomp/debug/name_laundry.cmx \
+    utils/misc.cmx asmcomp/debug/dwarf_low/location_list_entry.cmx \
+    asmcomp/debug/dwarf_low/location_list.cmx \
+    middle_end/base_types/linkage_name.cmx asmcomp/linearize.cmx \
+    typing/ident.cmx asmcomp/debug/dwarf_low/encoding_attribute.cmx \
+    asmcomp/debug/dwarf_high/dwarf_world.cmx \
+    asmcomp/debug/dwarf_low/dwarf_version.cmx \
+    asmcomp/debug/dwarf_low/dwarf_tag.cmx \
+    asmcomp/debug/dwarf_low/dwarf_format.cmx \
+    asmcomp/debug/dwarf_high/dwarf_attribute_helpers.cmx \
+    middle_end/debuginfo.cmx asmcomp/debug/dwarf_low/debug_loc_table.cmx \
+    utils/config.cmx \
+    asmcomp/debug/dwarf_low/composite_location_description.cmx \
+    middle_end/base_types/compilation_unit.cmx asmcomp/cmmgen.cmx \
+    asmcomp/cmm.cmx utils/clflags.cmx asmcomp/clambda.cmx \
+    asmcomp/backend_var.cmx asmcomp/debug/available_ranges.cmx \
+    asmcomp/debug/asm_directives.cmx asmcomp/arch.cmx asmcomp/debug/dwarf.cmi
+asmcomp/debug/dwarf.cmi : asmcomp/linearize.cmi asmcomp/clambda.cmi \
+    asmcomp/debug/available_ranges.cmi
+asmcomp/debug/name_laundry.cmo : asmcomp/backend_var.cmi \
+    asmcomp/debug/name_laundry.cmi
+asmcomp/debug/name_laundry.cmx : asmcomp/backend_var.cmx \
+    asmcomp/debug/name_laundry.cmi
+asmcomp/debug/name_laundry.cmi : asmcomp/backend_var.cmi
 asmcomp/debug/reg_availability_set.cmo : \
     asmcomp/debug/reg_with_debug_info.cmi asmcomp/backend_var.cmi \
     asmcomp/debug/reg_availability_set.cmi

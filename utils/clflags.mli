@@ -218,6 +218,20 @@ val color : Misc.Color.setting option ref
 
 val unboxed_types : bool ref
 
+type dwarf_version =
+  | Four
+  | Five
+
+val dwarf_version : dwarf_version ref
+val default_dwarf_version : dwarf_version
+
+type dwarf_format =
+  | Thirty_two
+  | Sixty_four
+
+val dwarf_format : dwarf_format ref
+val default_dwarf_format : dwarf_format
+
 module Compiler_pass : sig
   type t = Parsing | Typing
   val of_string : string -> t option

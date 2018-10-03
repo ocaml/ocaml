@@ -216,6 +216,9 @@ module type Optcomp_options = sig
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
   val _dinterval : unit -> unit
+  val _dwarf_format : int -> unit
+  val _dwarf_version : string -> unit
+  val _g_full : unit -> unit
 end;;
 
 module type Opttop_options = sig

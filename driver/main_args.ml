@@ -92,6 +92,26 @@ let mk_dtypes f =
   "-dtypes", Arg.Unit f, " (deprecated) same as -annot"
 ;;
 
+let mk_dwarf_format f =
+  let default =
+    match Clflags.default_dwarf_format with
+    | Clflags.Thirty_two -> 32
+    | Clflags.Sixty_four -> 64
+  in
+  "-dwarf-format", Arg.Int f,
+    Printf.sprintf "32|64  Set DWARF debug info format (default %d)" default
+;;
+
+let mk_dwarf_version f =
+  let default =
+    match Clflags.default_dwarf_version with
+    | Clflags.Four -> "4+gnu"
+    | Clflags.Five -> "5"
+  in
+  "-dwarf-version", Arg.String f,
+    Printf.sprintf "4+gnu|5  Set DWARF debug info version (default %s)" default
+;;
+
 let mk_for_pack_byt f =
   "-for-pack", Arg.String f,
   "<ident>  Generate code that can later be `packed' with\n\
@@ -110,6 +130,11 @@ let mk_g_byt f =
 
 let mk_g_opt f =
   "-g", Arg.Unit f, " Record debugging information for exception backtrace"
+;;
+
+let mk_g_full f =
+  "-g-full", Arg.Unit f,
+    " Generate full DWARF information for a platform debugger"
 ;;
 
 let mk_i f =
@@ -1015,6 +1040,9 @@ module type Optcomp_options = sig
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
   val _dinterval : unit -> unit
+  val _dwarf_format : int -> unit
+  val _dwarf_version : string -> unit
+  val _g_full : unit -> unit
 end;;
 
 module type Opttop_options = sig
@@ -1229,8 +1257,11 @@ struct
     mk_config F._config;
     mk_config_var F._config_var;
     mk_dtypes F._annot;
+    mk_dwarf_format F._dwarf_format;
+    mk_dwarf_version F._dwarf_version;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
+    mk_g_full F._g_full;
     mk_stop_after F._stop_after;
     mk_i F._i;
     mk_I F._I;

@@ -1183,7 +1183,7 @@ let begin_assembly() =
   declare_global_data lbl_begin;
   `{emit_symbol lbl_begin}:\n`
 
-let end_assembly() =
+let end_assembly dwarf =
   (* In profiling mode, for ELF64, emit the helper functions
      for register saving and restoring.  We put one copy of these
      functions in every generated file, instead of defining
@@ -1248,4 +1248,8 @@ let end_assembly() =
       emit_toctable();
       Hashtbl.clear tocref_entries
   end;
-  `	.section .note.GNU-stack,\"\",%progbits\n`
+  `	.section .note.GNU-stack,\"\",%progbits\n`;
+  begin match dwarf with
+  | None -> ()
+  | Some dwarf -> Dwarf.emit dwarf
+  end

@@ -205,13 +205,18 @@ let scan_file obj_name tolink = match read_file obj_name with
 
 let force_linking_of_startup ~ppf_dump =
   Asmgen.compile_phrase ~ppf_dump
+  Asmgen.compile_phrase ~ppf_dump ~dwarf:None
     (Cmm.Cdata ([Cmm.Csymbol_address Backend_sym.Names.caml_startup]))
 
 let make_startup_file ~ppf_dump units_list =
-  let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset "_startup";
   (* set the name of the "current" compunit *)
+  let dwarf =
+    if not !Clflags.debug_full then None
+    else Some (Dwarf.create ~prefix_name:"_startup")
+  in
+  let compile_phrase p = Asmgen.compile_phrase ~ppf_dump ~dwarf p in
   Emit.begin_assembly ();
   let name_list =
     List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
@@ -244,12 +249,16 @@ let make_startup_file ~ppf_dump units_list =
   end;
   if !Clflags.output_complete_object then
     force_linking_of_startup ~ppf_dump;
-  Emit.end_assembly ()
+  Emit.end_assembly dwarf
 
 let make_shared_startup_file ~ppf_dump units =
-  let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup";
   Compilenv.reset "_shared_startup";
+  let dwarf =
+    if not !Clflags.debug_full then None
+    else Some (Dwarf.create ~prefix_name:"_startup")
+  in
+  let compile_phrase p = Asmgen.compile_phrase ~ppf_dump ~dwarf p in
   Emit.begin_assembly ();
   List.iter compile_phrase
     (Cmmgen.generic_functions true (List.map fst units));
@@ -261,7 +270,7 @@ let make_shared_startup_file ~ppf_dump units =
     force_linking_of_startup ~ppf_dump;
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
-  Emit.end_assembly ()
+  Emit.end_assembly dwarf
 
 let call_linker_shared file_list output_name =
   if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")

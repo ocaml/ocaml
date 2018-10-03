@@ -1032,7 +1032,7 @@ let emit_spacetime_shapes () =
   D.int64 0L;
   D.comment "End of Spacetime shapes."
 
-let end_assembly() =
+let end_assembly dwarf =
   if !float_constants <> [] then begin
     D.switch_to_section Asm_section.Eight_byte_literals;
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
@@ -1085,7 +1085,10 @@ let end_assembly() =
     symbols_used := S.Set.empty;
     symbols_defined := S.Set.empty;
   end;
-
+  begin match dwarf with
+  | None -> ()
+  | Some dwarf -> Dwarf.emit dwarf
+  end;
   let asm =
     if !Emitaux.create_asm_file then
       Some

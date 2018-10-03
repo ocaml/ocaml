@@ -93,6 +93,8 @@ let wrap_expand f s =
   expand_position start (Array.length arr);
   arr
 
+
+
 module Options = Main_args.Make_opttop_options (struct
   let set r () = r := true
   let clear r () = r := false
@@ -103,6 +105,17 @@ module Options = Main_args.Make_opttop_options (struct
   let _init s = init_file := Some s
   let _noinit = set noinit
   let _clambda_checks () = clambda_checks := true
+  let _dwarf_format format =
+    match format with
+    | 32 -> dwarf_format := Thirty_two
+    | 64 -> dwarf_format := Sixty_four
+    | _ -> Compenv.fatal "Please specify `32' or '64' for -dwarf-format"
+  let _dwarf_version version =
+    match version with
+    | "4+gnu" -> dwarf_version := Four
+    | "5" -> dwarf_version := Five
+    | _ -> Compenv.fatal "Please specify `4+gnu' or '5' for -dwarf-version"
+  let _g_full = set debug_full
   let _inline spec =
     Float_arg_helper.parse spec
       "Syntax: -inline <n> | <round>=<n>[,...]"

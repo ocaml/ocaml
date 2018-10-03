@@ -49,7 +49,7 @@ and no_std_include = ref false          (* -nostdlib *)
 and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
-and debug_full = ref false              (* For full DWARF support *)
+and debug_full = ref false              (* -g-full *)
 and unsafe = ref false                  (* -unsafe *)
 and use_linscan = ref false             (* -linscan *)
 and link_everything = ref false         (* -linkall *)
@@ -376,6 +376,20 @@ let parse_color_setting = function
 let color = ref None ;; (* -color *)
 
 let unboxed_types = ref false
+
+type dwarf_version =
+  | Four
+  | Five
+
+let default_dwarf_version = Four
+let dwarf_version = ref default_dwarf_version
+
+type dwarf_format =
+  | Thirty_two
+  | Sixty_four
+
+let default_dwarf_format = Thirty_two
+let dwarf_format = ref default_dwarf_format
 
 (* This is used by the -stop-after option. *)
 module Compiler_pass = struct

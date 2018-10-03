@@ -735,7 +735,7 @@ let begin_assembly() =
   declare_global_data lbl_begin;
   `{emit_symbol lbl_begin}:\n`
 
-let end_assembly() =
+let end_assembly dwarf =
   (* Emit the end of the segments *)
   emit_string code_space;
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
@@ -768,4 +768,8 @@ let end_assembly() =
       efa_string = (fun s -> emit_bytes_directive "	.byte	" (s ^ "\000"))
      };
    (* Mark stack as non-executable *)
-   `	.section .note.GNU-stack,\"\",%progbits\n`
+   `	.section .note.GNU-stack,\"\",%progbits\n`;
+  begin match dwarf with
+  | None -> ()
+  | Some dwarf -> Dwarf.emit dwarf
+  end

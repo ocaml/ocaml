@@ -55,6 +55,7 @@ val compare: t -> t -> int
 val global: t -> bool
 val is_predef: t -> bool
 
+val stamp: t -> int
 val scope: t -> int
 
 val lowest_scope : int

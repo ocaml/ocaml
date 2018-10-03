@@ -209,6 +209,34 @@ executable file, where "ocamlrun" can find it and use it as
 described in section~\ref{s-ocamlrun-dllpath}.
 }%comp
 
+\nat{%
+\item["-dwarf-format" \var{format}]
+
+Sets the format of the DWARF debugging information emitted when using the
+"-g-full" option.  Valid values are "32" for 32-bit DWARF and "64" for
+64-bit DWARF.  These bit widths do not bear any relation to the target
+architecture; rather they refer to the maximum addressable distances within
+the DWARF information itself.  64-bit DWARF is unlikely to be necessary
+except when compiling large or particularly complex software systems.
+
+\begin{windows}
+The "-dwarf-format" option does not work under Windows.
+\end{windows}
+}%nat
+
+\nat{%
+\item["-dwarf-version" \var{version}]
+
+Sets the version of the DWARF debugging information standard to which object
+files will conform when using the "-g-full" option.  Valid values are either
+"4+gnu", for DWARF version 4 including GNU extensions for implicit pointers;
+and "5", for DWARF version 5.
+
+\begin{windows}
+The "-dwarf-version" option does not work under Windows.
+\end{windows}
+}%nat
+
 \notop{%
 \item["-for-pack" \var{module-path}]
 Generate an object file (\qcmo\nat{ and ".o"/".obj" files})
@@ -231,6 +259,25 @@ required in order to \comp{be able to debug the program with "ocamldebug"
 the program terminates on an uncaught exception (see
 section~\ref{ocamlrun-options}).
 }%notop
+
+\nat{%
+\item["-g-full"]
+Generate DWARF debugging information that can be used in a platform debugger to
+view module paths of functions in backtraces, values of local variables and
+values of parameters. When using Flambda support is also provided for viewing
+values of variables that have been optimised out and constants that have been
+lifted to toplevel.
+
+This option is experimental and may produce substantially larger object
+files and executables than usual.
+
+Platforms for which instruction scheduling is enabled will not accept
+this option unless the "-no-insn-sched" option is also specified.
+
+\begin{windows}
+The "-g-full" option does not work under Windows.
+\end{windows}
+}%nat
 
 \notop{%
 \item["-i"]
