@@ -212,7 +212,9 @@ let flambda_gen_implementation ?toplevel ~backend ~ppf_dump
     List.map (fun (symbol, definition) ->
         { Clambda.symbol = Linkage_name.to_string (Symbol.label symbol);
           exported = true;
-          definition })
+          definition;
+          provenance = None;
+        })
       (Symbol.Map.bindings constants)
   in
   end_gen_implementation ?toplevel ~ppf_dump
@@ -221,12 +223,19 @@ let flambda_gen_implementation ?toplevel ~backend ~ppf_dump
 let lambda_gen_implementation ?toplevel ~ppf_dump
     (lambda:Lambda.program) =
   let clambda = Closure.intro lambda.main_module_block_size lambda.code in
+  let provenance : Clambda.usymbol_provenance =
+    { original_idents = [];
+      module_path =
+        Path.Pident (Ident.create_persistent (Compilenv.current_unit_name ()));
+    }
+  in
   let preallocated_block =
     Clambda.{
       symbol = Compilenv.make_symbol None;
       exported = true;
       tag = 0;
       fields = List.init lambda.main_module_block_size (fun _ -> None);
+      provenance = Some provenance;
     }
   in
   let clambda_and_constants =
