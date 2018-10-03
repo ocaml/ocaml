@@ -890,9 +890,9 @@ let all_functions = ref []
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
+let fundecl fundecl ~end_of_function_label =
   let fun_name = S.create fundecl.fun_name in
-  function_name := Some fun_name;
+  function_name := fun_name;
   fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
   stack_offset := initial_stack_offset;
@@ -923,7 +923,9 @@ let fundecl fundecl =
       cfi_adjust_cfa_offset (-n);
     end;
   end;
-  cfi_endproc ()
+  cfi_endproc ();
+  _label (emit_label end_of_function_label);
+  D.size fun_name
 
 (* Emission of data *)
 

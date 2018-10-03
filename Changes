@@ -468,6 +468,9 @@ Working version
 - GPR#2084: Add [Dwarf_high] library.
   (Mark Shinwell)
 
+- GPR#2085: Add [end_of_function_label] to the interface of [Emit.fundecl].
+  (Mark Shinwell)
+
 - GPR#2086: Add [Available_filtering] pass.
   (Mark Shinwell)
 
