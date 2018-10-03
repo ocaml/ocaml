@@ -109,10 +109,6 @@ Working version
 - GPR#1966: Add Format semantic tags using extensible sum types.
   (Gabriel Radanne, review by Nicolás Ojeda Bär)
   
-- GPR#2079: Avoid page table lookup in Pervasives.compare with
-  no-naked-pointers
-  (Sam Goldman, review by Gabriel Scherer, David Allsopp, Stephen Dolan)
-
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
@@ -243,6 +239,10 @@ Working version
 - GPR#1900, MPR#7814: avoid exporting non-prefixed identifiers in the debug
   and instrumented runtimes.
   (Damien Doligez, report by Gabriel Scherer)
+
+- GPR#2079: Avoid page table lookup in Pervasives.compare with
+  no-naked-pointers
+  (Sam Goldman, review by Gabriel Scherer, David Allsopp, Stephen Dolan)
 
 ### Tools
 
