@@ -2569,13 +2569,9 @@ sig_type_extension:
         , ext }
 ;
 str_extension_constructors:
-    extension_constructor_declaration(epsilon)            { [$1] }
-  | extension_constructor_declaration(BAR)                { [$1] }
-  | extension_constructor_rebind(epsilon)                 { [$1] }
-  | extension_constructor_rebind(BAR)                     { [$1] }
-  | str_extension_constructors extension_constructor_declaration(BAR)
-      { $2 :: $1 }
-  | str_extension_constructors extension_constructor_rebind(BAR)
+    extension_constructor(epsilon)            { [$1] }
+  | extension_constructor(BAR)                { [$1] }
+  | str_extension_constructors extension_constructor(BAR)
       { $2 :: $1 }
 ;
 sig_extension_constructors:
@@ -2583,6 +2579,12 @@ sig_extension_constructors:
   | extension_constructor_declaration(BAR)                { [$1] }
   | sig_extension_constructors extension_constructor_declaration(BAR)
       { $2 :: $1 }
+;
+%inline extension_constructor(opening):
+    extension_constructor_declaration(opening)
+      { $1 }
+  | extension_constructor_rebind(opening)
+      { $1 }
 ;
 extension_constructor_declaration(opening):
   opening
