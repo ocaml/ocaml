@@ -490,6 +490,9 @@ Working version
 - MPR#7408, MPR#7846, GPR#2015: Check arity of primitives.
   (Hugo Heuzard, review by Nicolás Ojeda Bär)
 
+- MPR#7854, GPR#2062: fix an issue where the wrong locale may be used when using
+  the legacy ANSI encoding under Windows.
+  (Nicolás Ojeda Bär, report by Tiphaine Turpin)
 
 OCaml 4.07 maintenance branch
 -----------------------------
