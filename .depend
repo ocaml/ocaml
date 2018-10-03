@@ -715,14 +715,14 @@ bytecomp/translcore.cmi : typing/typedtree.cmi typing/path.cmi \
     parsing/asttypes.cmi
 bytecomp/translmod.cmo : typing/types.cmi typing/typedtree.cmi \
     bytecomp/translprim.cmi bytecomp/translobj.cmi bytecomp/translcore.cmi \
-    bytecomp/translclass.cmi bytecomp/translattribute.cmi typing/printtyp.cmi \
+    bytecomp/translclass.cmi bytecomp/translattribute.cmi \
     typing/primitive.cmi typing/predef.cmi typing/path.cmi typing/mtype.cmi \
     utils/misc.cmi parsing/longident.cmi parsing/location.cmi \
     bytecomp/lambda.cmi typing/ident.cmi typing/env.cmi typing/ctype.cmi \
     utils/clflags.cmi parsing/asttypes.cmi bytecomp/translmod.cmi
 bytecomp/translmod.cmx : typing/types.cmx typing/typedtree.cmx \
     bytecomp/translprim.cmx bytecomp/translobj.cmx bytecomp/translcore.cmx \
-    bytecomp/translclass.cmx bytecomp/translattribute.cmx typing/printtyp.cmx \
+    bytecomp/translclass.cmx bytecomp/translattribute.cmx \
     typing/primitive.cmx typing/predef.cmx typing/path.cmx typing/mtype.cmx \
     utils/misc.cmx parsing/longident.cmx parsing/location.cmx \
     bytecomp/lambda.cmx typing/ident.cmx typing/env.cmx typing/ctype.cmx \
@@ -1125,26 +1125,24 @@ asmcomp/liveness.cmx : asmcomp/reg.cmx asmcomp/proc.cmx \
     asmcomp/printmach.cmx utils/misc.cmx asmcomp/mach.cmx utils/config.cmx \
     asmcomp/cmm.cmx asmcomp/liveness.cmi
 asmcomp/liveness.cmi : asmcomp/mach.cmi
-asmcomp/mach.cmo : middle_end/base_types/symbol.cmi \
-    asmcomp/debug/reg_with_debug_info.cmi \
+asmcomp/mach.cmo : utils/targetint.cmi asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
     asmcomp/arch.cmo asmcomp/mach.cmi
-asmcomp/mach.cmx : middle_end/base_types/symbol.cmx \
-    asmcomp/debug/reg_with_debug_info.cmx \
+asmcomp/mach.cmx : utils/targetint.cmx asmcomp/debug/reg_with_debug_info.cmx \
     asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx \
     middle_end/debuginfo.cmx asmcomp/cmm.cmx asmcomp/backend_var.cmx \
     asmcomp/arch.cmx asmcomp/mach.cmi
-asmcomp/mach.cmi : middle_end/base_types/symbol.cmi \
+asmcomp/mach.cmi : utils/targetint.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
     asmcomp/arch.cmo
 asmcomp/printclambda.cmo : bytecomp/printlambda.cmi bytecomp/lambda.cmi \
-    asmcomp/clambda.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
-    asmcomp/printclambda.cmi
+    typing/ident.cmi asmcomp/clambda.cmi asmcomp/backend_var.cmi \
+    parsing/asttypes.cmi asmcomp/printclambda.cmi
 asmcomp/printclambda.cmx : bytecomp/printlambda.cmx bytecomp/lambda.cmx \
-    asmcomp/clambda.cmx asmcomp/backend_var.cmx parsing/asttypes.cmi \
-    asmcomp/printclambda.cmi
+    typing/ident.cmx asmcomp/clambda.cmx asmcomp/backend_var.cmx \
+    parsing/asttypes.cmi asmcomp/printclambda.cmi
 asmcomp/printclambda.cmi : asmcomp/clambda.cmi
 asmcomp/printcmm.cmo : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
@@ -1160,13 +1158,13 @@ asmcomp/printlinear.cmx : asmcomp/printmach.cmx asmcomp/printcmm.cmx \
     asmcomp/mach.cmx asmcomp/linearize.cmx middle_end/debuginfo.cmx \
     asmcomp/printlinear.cmi
 asmcomp/printlinear.cmi : asmcomp/linearize.cmi
-asmcomp/printmach.cmo : middle_end/base_types/symbol.cmi \
+asmcomp/printmach.cmo : utils/targetint.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printcmm.cmi utils/misc.cmi asmcomp/mach.cmi asmcomp/interval.cmi \
     middle_end/debuginfo.cmi utils/config.cmi asmcomp/cmm.cmi \
     utils/clflags.cmi asmcomp/backend_var.cmi asmcomp/arch.cmo \
     asmcomp/printmach.cmi
-asmcomp/printmach.cmx : middle_end/base_types/symbol.cmx \
+asmcomp/printmach.cmx : utils/targetint.cmx \
     asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx asmcomp/proc.cmx \
     asmcomp/printcmm.cmx utils/misc.cmx asmcomp/mach.cmx asmcomp/interval.cmx \
     middle_end/debuginfo.cmx utils/config.cmx asmcomp/cmm.cmx \
@@ -2308,6 +2306,13 @@ middle_end/base_types/variable.cmx : utils/misc.cmx \
 middle_end/base_types/variable.cmi : middle_end/internal_variable_names.cmi \
     utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
+asmcomp/debug/available_filtering.cmo : \
+    asmcomp/debug/reg_availability_set.cmi asmcomp/linearize.cmi \
+    utils/clflags.cmi asmcomp/debug/available_filtering.cmi
+asmcomp/debug/available_filtering.cmx : \
+    asmcomp/debug/reg_availability_set.cmx asmcomp/linearize.cmx \
+    utils/clflags.cmx asmcomp/debug/available_filtering.cmi
+asmcomp/debug/available_filtering.cmi : asmcomp/linearize.cmi
 asmcomp/debug/available_regs.cmo : asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi utils/clflags.cmi \
