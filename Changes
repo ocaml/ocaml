@@ -108,6 +108,10 @@ Working version
 
 - GPR#1966: Add Format semantic tags using extensible sum types.
   (Gabriel Radanne, review by Nicolás Ojeda Bär)
+  
+- GPR#2079: Avoid page table lookup in Pervasives.compare with
+  no-naked-pointers
+  (Sam Goldman, review by Gabriel Scherer, David Allsopp, Stephen Dolan)
 
 ### Other libraries:
 
