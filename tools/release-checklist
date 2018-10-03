@@ -14,12 +14,14 @@ release".
 
 ## A few days in advance
 
-Warn Gabriel Scherer (to make a pass on Changes) and OCamlLabs
-(for OPAM testing).
+Send a mail on caml-devel to warn Gabriel (to make a pass on Changes)
+and the OCamlLabs folks (for OPAM testing).
 
 ## 0: release environment setup
 
 ```
+rm -f /tmp/env-$USER.sh
+cat >/tmp/env-$USER.sh <<EOF
 export MAJOR=4
 export MINOR=07
 export BUGFIX=1
@@ -31,18 +33,22 @@ export VERSION=$MAJOR.$MINOR.$BUGFIX$PLUSEXT
 export REPO=http://github.com/ocaml/ocaml
 
 # these values are specific to caml.inria's host setup
+# they are defined in the release manager's .bashrc file
 export ARCHIVE_HOST="$OCAML_RELEASE_ARCHIVE_HOST"
 export ARCHIVE_PATH="$OCAML_RELEASE_ARCHIVE_PATH"
 export WEB_HOST="$OCAML_RELEASE_WEB_HOST"
 export WEB_PATH="$OCAML_RELEASE_WEB_PATH"
+
 export DIST=$ARCHIVE_PATH/ocaml/ocaml-$MAJOR.$MINOR
+EOF
+source /tmp/env-$USER.sh
 ```
 
 
 ## 1: check repository state
 
 ```
-git status  # check that the repo is in a clean state
+git status  # check that the local repo is in a clean state
 git pull
 ```
 
@@ -60,6 +66,7 @@ magic numbers.
 
 ```
 make distclean
+git clean -n -d -f -x  # Check that "make distclean" removed everything
 
 INSTDIR=/tmp/ocaml-${VERSION}
 rm -rf ${INSTDIR}
@@ -120,14 +127,15 @@ git push --tags
 Create OPAM switches for the new version, copying the particular
 switch configuration choices from the previous version.
 
-I use a semi-automated process, copying and batch-editing the compiler
-descriptions from the last release. The instructions below assume an
-opam1 repository organization, an opam2 repository will have
-a different layout.
+We currently use a semi-automated process, copying and batch-editing
+the compiler descriptions from the last release. The instructions
+below assume an opam1 repository organization, an opam2 repository
+will have a different layout.
 
 From a branch of the opam-repository, in `compilers/$MAJOR.$MINOR.$BUGFIX`:
 
 ```
+cd .../opam-repository/packages/ocaml-variants
 # copy foo+rc2+... switches into foo+rc3+...
 OLD_DIRS=*+rc2*
 VER="s/+rc2/+rc3/g"
@@ -171,6 +179,7 @@ git commit -m "OPAM switches for $VERSION"
 ## 7: build the release archives
 
 ```
+cd .../ocaml
 TMPDIR=/tmp/ocaml-release
 git checkout $VERSION
 git checkout-index -a -f --prefix=$TMPDIR/ocaml-$VERSION/
@@ -189,36 +198,18 @@ scp ocaml-$VERSION.tar.{xz,gz} $ARCHIVE_HOST:$DIST
 ```
 
 To update the checksum files on the remote host, we first upload the
-release environment as a script.
+release environment.
 
 
 ```
-rm /tmp/env.sh
-echo export MAJOR=$MAJOR >> /tmp/env.sh
-echo export MINOR=$MINOR >> /tmp/env.sh
-echo export BUGFIX=$BUGFIX >> /tmp/env.sh
-echo export PLUSEXT=$PLUSEXT >> /tmp/env.sh
-
-echo export BRANCH=$BRANCH >> /tmp/env.sh
-echo export VERSION=$VERSION >> /tmp/env.sh
-
-echo export REPO=$REPO >> /tmp/env.sh
-echo export DIST=$DIST >> /tmp/env.sh
-echo export ARCHIVE_HOST=$ARCHIVE_HOST >> /tmp/env.sh
-echo export WEB_HOST=$WEB_HOST >> /tmp/env.sh
-echo export WEB_PATH=$WEB_PATH >> /tmp/env.sh
-
-# check env.sh
-cat /tmp/env.sh
-
-scp /tmp/env.sh $ARCHIVE_HOST:/tmp
+scp /tmp/env-$USER.sh $ARCHIVE_HOST:/tmp/env-$USER.sh
 ```
 
 and then login there to update the checksums (MD5SUM, SHA512SUM)
 
 ```
 ssh $ARCHIVE_HOST
-source /tmp/env.sh
+source /tmp/env-$USER.sh
 cd $DIST
 
 cp MD5SUM MD5SUM.old

@@ -6,7 +6,10 @@ compiled files produced by the OCaml compiler. Different kind of files
 and we also change the magic number whenever we change the format of
 the corresponding file.
 
-This lets the compiler differenciates files that should be valid files
+Note that the `exec_magic_number` value is duplicated as `EXEC_MAGIC`
+in `runtime/caml/exec.h` and they must be kept in sync.
+
+This lets the compiler differentiate files that should be valid files
 of the kind it expects, and files that are passed by mistake, either
 that are not at all valid compiled files, or because they come from
 a different compiler version with an incompatible file format.
@@ -23,7 +26,7 @@ version of magic numbers -- so that they would work for as long as the
 underlying representation is compatible.
 
 However, it is more dangerous to forget to update a number than to
-update too often. If we update too often, at worst tool authors have
+update it too often. If we update too often, at worst tool authors have
 to update their codebase to support more numbers. If we don't update
 often enough, tools break with horrible parsing/deserialization errors
 and their authors can do nothing to prevent it.
