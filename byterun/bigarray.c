@@ -67,14 +67,15 @@ CAMLexport uintnat caml_ba_byte_size(struct caml_ba_array * b)
 
 /* Operation table for bigarrays */
 
-CAMLexport struct custom_operations caml_ba_ops = {
+CAMLexport const struct custom_operations caml_ba_ops = {
   "_bigarray",
   caml_ba_finalize,
   caml_ba_compare,
   caml_ba_hash,
   caml_ba_serialize,
   caml_ba_deserialize,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  custom_fixed_length_default
 };
 
 /* Allocation of a big array */

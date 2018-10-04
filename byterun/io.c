@@ -443,7 +443,8 @@ static const struct custom_operations channel_operations = {
   hash_channel,
   custom_serialize_default,
   custom_deserialize_default,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  custom_fixed_length_default
 };
 
 CAMLexport value caml_alloc_channel(struct channel *chan)
