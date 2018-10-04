@@ -53,6 +53,8 @@ val current_unit: unit -> Compilation_unit.t
 val current_unit_symbol: unit -> Symbol.t
         (* flambda-only *)
 
+val concat_symbol : string -> string -> string
+
 val make_symbol: ?unitname:string -> string option -> string
         (* [make_symbol ~unitname:u None] returns the asm symbol that
            corresponds to the compilation unit [u] (default: the current unit).

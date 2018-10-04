@@ -45,7 +45,7 @@ CAMLRUN ?= boot/ocamlrun
 include stdlib/StdlibModules
 
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims runtime/primitives
-CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
+CAMLOPT=$(CAMLRUN) ./ocamlopt -g-full -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
         -I middle_end/base_types -I asmcomp -I asmcomp/debug \
@@ -187,8 +187,6 @@ ASMCOMP=\
   asmcomp/asm_target/asm_section.cmo \
   asmcomp/asm_target/asm_directives.cmo \
   $(ARCH_SPECIFIC_ASMCOMP) \
-  asmcomp/arch.cmo \
-  asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/debug/reg_with_debug_info.cmo \
   asmcomp/debug/reg_availability_set.cmo \
   asmcomp/mach.cmo asmcomp/proc.cmo \
@@ -218,9 +216,8 @@ ASMCOMP=\
   asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/debug/available_regs.cmo \
-  asmcomp/debug/target_system.cmo \
-  asmcomp/debug/asm_directives.cmo \
   $(DWARF_LOW) \
+  $(DWARF_HIGH) \
   asmcomp/debug/available_ranges.cmo \
   asmcomp/debug/available_filtering.cmo \
   asmcomp/debug/name_laundry.cmo \
@@ -716,7 +713,8 @@ endif
 	    middle_end/base_types/*.cmi \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	    asmcomp/*.cmi \
+	    asmcomp/*.cmi asmcomp/debug/*.cmi \
+	    asmcomp/debug/dwarf_low/*.cmi asmcomp/debug/dwarf_high/*.cmi \
 	    "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
@@ -730,6 +728,12 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	    asmcomp/*.cmt asmcomp/*.cmti \
 	    asmcomp/*.mli \
+	    asmcomp/debug/*.cmt asmcomp/debug/*.cmti \
+	    asmcomp/debug/*.mli \
+	    asmcomp/debug/dwarf_low/*.cmt asmcomp/debug/dwarf_low/*.cmti \
+	    asmcomp/debug/dwarf_low/*.mli \
+	    asmcomp/debug/dwarf_high/*.cmt asmcomp/debug/dwarf_high/*.cmti \
+	    asmcomp/debug/dwarf_high/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \

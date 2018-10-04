@@ -42,7 +42,13 @@ type proto_dies_for_ident = {
 
 let dwarf_version = ref Dwarf_version.four
 
-let mangle_symbol symbol = Linkage_name.to_string (Symbol.label symbol)
+let mangle_symbol symbol =
+  let unit_name =
+    Linkage_name.to_string (Compilation_unit.get_linkage_name (
+      Symbol.compilation_unit symbol))
+  in
+  Compilenv.concat_symbol unit_name
+    (Linkage_name.to_string (Symbol.label symbol))
 
 let create ~prefix_name =
   begin match !Clflags.dwarf_format with

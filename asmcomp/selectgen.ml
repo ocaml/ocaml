@@ -1552,10 +1552,6 @@ let _ =
   Simplif.is_tail_native_heuristic := is_tail_call
 
 let reset () =
-<<<<<<< HEAD
-  current_function_name := "";
+  current_function_name := None;
   Ident.Tbl.clear phantom_lets;
   dead_phantom_lets := Ident.Set.empty
-=======
-  current_function_name := None
->>>>>>> 2ff9e4f7b7... GPR#2073: Add [Backend_sym] and asm_target/ dir.
