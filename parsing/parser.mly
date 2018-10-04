@@ -802,6 +802,13 @@ The precedences must be listed from low to high.
   xss = XSS
     { List.flatten xss }
 
+(* [append(XS, YS)] recognizes [XS YS], and appends (concatenates) the resulting
+   OCaml lists. *)
+
+%inline append(XS, YS):
+  xs = XS ys = YS
+    { xs @ ys }
+
 (* [reversed_nonempty_llist(X)] recognizes a nonempty list of [X]s, and produces
    an OCaml list in reverse order -- that is, the last element in the input text
    appears first in this list. Its definition is left-recursive. *)
@@ -1085,18 +1092,19 @@ paren_module_expr:
       { unclosed "(" $loc($1) ")" $loc($5) }
 ;
 
-structure: extra_str(structure_nodoc) { $1 }
+structure:
+  extra_str(append(
+    optional_structure_standalone_expression,
+    flatten(structure_element*)
+  ))
+  { $1 }
+;
 
 %inline optional_structure_standalone_expression:
   items = iloption(mark_rhs_docs(text_str(str_exp)))
     { items }
 ;
 
-structure_nodoc:
-    e = optional_structure_standalone_expression
-    items = flatten(structure_element*)
-      { e @ items }
-;
 %inline structure_element:
     text_str_SEMISEMI optional_structure_standalone_expression
       { $1 @ $2 }
