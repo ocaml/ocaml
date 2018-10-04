@@ -936,7 +936,10 @@ let report_error env ppf = function
   | Present_has_conjunction l ->
       fprintf ppf "The present constructor %s has a conjunctive type" l
   | Present_has_no_type l ->
-      fprintf ppf "The present constructor %s has no type" l
+      fprintf ppf
+        "The constructor `%s is missing from the upper bound@ \
+         of@ this@ polymorphic variant type.@ \
+         Upper and lower bounds are mismatched." l
   | Constructor_mismatch (ty, ty') ->
       wrap_printing_env ~error:true env (fun ()  ->
         Printtyp.reset_and_mark_loops_list [ty; ty'];
