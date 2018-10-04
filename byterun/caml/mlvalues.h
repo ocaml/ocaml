@@ -24,9 +24,9 @@
 
 /* Needed here for domain_state */
 typedef intnat value;
+typedef atomic_intnat atomic_value;
 typedef int32_t opcode_t;
 typedef opcode_t * code_t;
-typedef _Atomic value atomic_value;
 
 #include "domain_state.h"
 
