@@ -743,6 +743,10 @@ The precedences must be listed from low to high.
   { text_str $startpos @ [$1] }
 %inline text_str_SEMISEMI: SEMISEMI
   { text_str $startpos }
+%inline text_sig(symb): symb
+  { text_sig $startpos @ [$1] }
+%inline text_sig_SEMISEMI: SEMISEMI
+  { text_sig $startpos }
 
 (* Using this %inline definition means that we do not control precisely
    when [mark_rhs_docs] is called, but I don't think this matters. *)
@@ -1254,8 +1258,8 @@ module_type:
 signature: extra_sig(signature_nodoc) { $1 }
 signature_nodoc:
     /* empty */                    { [] }
-  | SEMISEMI signature_nodoc       { text_sig $startpos($1) @ $2 }
-  | signature_item signature_nodoc { text_sig $startpos($1) @ $1 :: $2 }
+  | text_sig_SEMISEMI signature_nodoc       { $1 @ $2 }
+  | text_sig(signature_item) signature_nodoc { $1 @ $2 }
 ;
 signature_item:
   | signature_item_with_ext
