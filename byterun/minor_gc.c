@@ -201,7 +201,7 @@ static void oldify_one (void* st_v, value v, value *p)
     result = alloc_shared(1, Cont_tag);
     *p = result;
     Op_val(result)[0] = Val_ptr(stk);
-    Hd_val (v) = 0;
+    *Hp_val (v) = 0;
     Op_val(v)[0] = result;
     if (stk != NULL)
       caml_scan_stack(&oldify_one, st, stk);
@@ -213,7 +213,7 @@ static void oldify_one (void* st_v, value v, value *p)
     *p = result + infix_offset;
     field0 = Op_val(v)[0];
     CAMLassert (!Is_debug_tag(field0));
-    Hd_val (v) = 0;            /* Set forward flag */
+    *Hp_val (v) = 0;           /* Set forward flag */
     Op_val(v)[0] = result;     /*  and forward pointer. */
     if (sz > 1){
       Op_val (result)[0] = field0;
@@ -233,7 +233,7 @@ static void oldify_one (void* st_v, value v, value *p)
       value curr = Op_val(v)[i];
       Op_val (result)[i] = curr;
     }
-    Hd_val (v) = 0;            /* Set forward flag */
+    *Hp_val (v) = 0;           /* Set forward flag */
     Op_val (v)[0] = result;    /*  and forward pointer. */
     CAMLassert (infix_offset == 0);
     *p = result;
@@ -254,7 +254,7 @@ static void oldify_one (void* st_v, value v, value *p)
       st->live_bytes += Bhsize_hd(hd);
       result = alloc_shared (1, Forward_tag);
       *p = result;
-      Hd_val (v) = 0;             /* Set (GC) forward flag */
+      *Hp_val (v) = 0;             /* Set (GC) forward flag */
       Op_val (v)[0] = result;      /*  and forward pointer. */
       p = Op_val (result);
       v = f;
@@ -453,7 +453,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
         value new_p = old_p;
         forward_pointer (st.promote_domain, new_p, &new_p);
         if (old_p != new_p)
-          caml_atomic_cas_raw (*r,old_p,new_p);
+          atomic_compare_exchange_strong((atomic_value*)*r, &old_p, new_p);
       }
     }
 
@@ -619,8 +619,10 @@ void caml_empty_minor_heap_domain (struct domain* domain)
           CAMLassert(Tag_val(vnew) == Infix_tag);
           v += offset;
         }
-        if (caml_atomic_cas_raw(*r,v,vnew)) ++rewrite_successes;
-        else ++rewrite_failures;
+        if (atomic_compare_exchange_strong((atomic_value*)*r, &v, vnew))
+          ++rewrite_successes;
+        else
+          ++rewrite_failures;
       }
     }
     CAMLassert (!caml_domain_alone() || rewrite_failures == 0);

@@ -84,7 +84,7 @@ struct ephe_cycle_info_t {
   atomic_uintnat num_domains_done;
   /* Number of domains that have marked their ephemerons in the current
    * ephemeron cycle. */
-} ephe_cycle_info = {{0}, {0}, {0}};
+} ephe_cycle_info;
   /* In the first major cycle, there is no ephemeron marking to be done. */
 
 /* ephe_cycle_info is always updated with the critical section protected by
@@ -95,15 +95,15 @@ static caml_plat_mutex ephe_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static void update_ephe_info_for_marking_done ()
 {
   caml_plat_lock(&ephe_lock);
-  ephe_cycle_info.ephe_cycle.val++;
-  ephe_cycle_info.num_domains_done.val = 0;
+  ephe_cycle_info.ephe_cycle++;
+  ephe_cycle_info.num_domains_done = 0;
   caml_plat_unlock(&ephe_lock);
 }
 
 void caml_ephe_todo_list_emptied ()
 {
   caml_plat_lock(&ephe_lock);
-  --ephe_cycle_info.num_domains_todo.val;
+  --ephe_cycle_info.num_domains_todo;
   caml_plat_unlock(&ephe_lock);
   atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
 }
@@ -111,7 +111,7 @@ void caml_ephe_todo_list_emptied ()
 void caml_ephe_todo_list_stolen ()
 {
   caml_plat_lock(&ephe_lock);
-  ++ephe_cycle_info.num_domains_todo.val;
+  ++ephe_cycle_info.num_domains_todo;
   caml_plat_unlock(&ephe_lock);
   atomic_fetch_add(&num_domains_to_ephe_sweep, 1);
 }
@@ -126,9 +126,9 @@ static void record_ephe_marking_done (uintnat ephe_cycle)
     return;
 
   caml_plat_lock(&ephe_lock);
-  if (ephe_cycle == ephe_cycle_info.ephe_cycle.val) {
+  if (ephe_cycle == ephe_cycle_info.ephe_cycle) {
     Caml_state->ephe_info->cycle = ephe_cycle;
-    ephe_cycle_info.num_domains_done.val++;
+    ephe_cycle_info.num_domains_done++;
   }
   caml_plat_unlock(&ephe_lock);
 }
@@ -515,13 +515,16 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
           mark_stack_push(stk, e);
           caml_darken_cont(v);
           e = stk->stack[--stk->count];
-        } else if (Tag_hd(hd) < No_scan_tag) {
-          mark_entry child = {v, 0, Wosize_hd(hd)};
-          Hd_val(v) = With_status_hd(hd, global.MARKED);
-          mark_stack_push(stk, e);
-          e = child;
         } else {
-          Hd_val(v) = With_status_hd(hd, global.MARKED);
+          atomic_store_explicit(
+             Hp_atomic_val(v),
+             With_status_hd(hd, global.MARKED),
+             memory_order_relaxed);
+          if (Tag_hd(hd) < No_scan_tag) {
+            mark_entry child = {v, 0, Wosize_hd(hd)};
+            mark_stack_push(stk, e);
+            e = child;
+          }
         }
       }
       budget -= Whsize_hd(hd);
@@ -551,20 +554,22 @@ static intnat mark(intnat budget) {
 void caml_darken_cont(value cont)
 {
   CAMLassert(Is_block(cont) && !Is_young(cont) && Tag_val(cont) == Cont_tag);
+  header_t hd = atomic_load_explicit(Hp_atomic_val(cont), memory_order_relaxed);
   SPIN_WAIT {
-    header_t hd = Hd_val(cont);
     CAMLassert(!Has_status_hd(hd, global.GARBAGE));
     if (Has_status_hd(hd, global.MARKED))
       break;
     if (Has_status_hd(hd, global.UNMARKED) &&
-        __sync_bool_compare_and_swap
-           (&Hd_val(cont), hd,
+        atomic_compare_exchange_strong(
+            Hp_atomic_val(cont), &hd,
             With_status_hd(hd, NOT_MARKABLE))) {
       value stk = Op_val(cont)[0];
       if (Ptr_val(stk) != NULL)
         caml_scan_stack(&caml_darken, 0, Ptr_val(stk));
-      // FIXME atomic store release here
-      Hd_val(cont) = With_status_hd(hd, global.MARKED);
+      atomic_store_explicit(
+        Hp_atomic_val(cont),
+        With_status_hd(hd, global.MARKED),
+        memory_order_release);
     }
   }
 }
@@ -585,12 +590,15 @@ void caml_darken(void* state, value v, value* ignored) {
     }
     if (Tag_hd(hd) == Cont_tag) {
       caml_darken_cont(v);
-    } else if (Tag_hd(hd) < No_scan_tag) {
-      mark_entry e = {v, 0, Wosize_val(v)};
-      Hd_val(v) = With_status_hd(hd, global.MARKED);
-      mark_stack_push(Caml_state->mark_stack, e);
     } else {
-      Hd_val(v) = With_status_hd(hd, global.MARKED);
+      atomic_store_explicit(
+         Hp_atomic_val(v),
+         With_status_hd(hd, global.MARKED),
+         memory_order_relaxed);
+      if (Tag_hd(hd) < No_scan_tag) {
+        mark_entry e = {v, 0, Wosize_val(v)};
+        mark_stack_push(Caml_state->mark_stack, e);
+      }
     }
   }
 }
@@ -754,9 +762,9 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   CAMLassert(domain == caml_domain_self());
   CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
              atomic_load_acq(&ephe_cycle_info.num_domains_done));
-  CAMLassert(num_domains_to_mark.val == 0);
-  CAMLassert(num_domains_to_sweep.val == 0);
-  CAMLassert(num_domains_to_ephe_sweep.val == 0);
+  CAMLassert(num_domains_to_mark == 0);
+  CAMLassert(num_domains_to_sweep == 0);
+  CAMLassert(num_domains_to_ephe_sweep == 0);
 
   caml_empty_minor_heap();
 
@@ -841,9 +849,9 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
       atomic_store_rel(&num_domains_to_mark, num_domains_in_stw);
 
       caml_gc_phase = Phase_sweep_and_mark_main;
-      ephe_cycle_info.num_domains_todo.val = num_domains_in_stw;
-      ephe_cycle_info.ephe_cycle.val = 0;
-      ephe_cycle_info.num_domains_done.val = 0;
+      ephe_cycle_info.num_domains_todo = num_domains_in_stw;
+      ephe_cycle_info.ephe_cycle = 0;
+      ephe_cycle_info.num_domains_done = 0;
       atomic_store_rel(&num_domains_to_ephe_sweep, num_domains_in_stw);
       atomic_store_rel(&num_domains_to_final_update_first, num_domains_in_stw);
       atomic_store_rel(&num_domains_to_final_update_last, num_domains_in_stw);
