@@ -26,12 +26,7 @@
 typedef intnat value;
 typedef int32_t opcode_t;
 typedef opcode_t * code_t;
-
-/* atomic_uintnat is declared as a struct type to prevent accidental
-   accesses that don't use the primitives of platform.h */
-typedef struct atomic_uintnat {
-  volatile uintnat val;
-} atomic_uintnat;
+typedef _Atomic value atomic_value;
 
 #include "domain_state.h"
 
@@ -134,9 +129,8 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
 #endif /* WITH_PROFINFO */
 
-#define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
-#define Hd_op(op) (Hd_val (op))                        /* Also an l-value. */
-#define Hd_bp(bp) (Hd_val (bp))                        /* Also an l-value. */
+#define Hd_val(val) (((header_t *) (val)) [-1] + 0)
+#define Hp_atomic_val(val) ((atomic_uintnat *)(val) - 1)
 #define Hd_hp(hp) (* ((header_t *) (hp)))              /* Also an l-value. */
 #define Hp_val(val) (((header_t *) (val)) - 1)
 #define Hp_op(op) (Hp_val (op))
@@ -197,6 +191,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 
 /* Pointer to the first field. */
 #define Op_val(x) ((value *) (x))
+#define Op_val_atomic(x) ((atomic_value *) (x))
 /* Fields are numbered from 0. */
 
 /* All values which are not blocks in the current domain's minor heap
@@ -446,7 +441,8 @@ static inline value Field(value x, int i) {
 
 static inline void caml_read_field(value x, int i, value* ret) {
   Assert (Hd_val(x));
-  value v = Op_val(x)[i];
+  /* See Note [MM] in memory.c */
+  value v = atomic_load_explicit(&Op_val_atomic(x)[i], memory_order_relaxed);
   //if (Is_young(v)) Assert(young_ptr < (char*)v);
   *ret = Is_foreign(v) ? caml_read_barrier(x, i) : v;
 }

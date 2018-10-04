@@ -61,10 +61,6 @@ CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 CAMLextern void caml_free_for_heap (char *mem);
 CAMLextern int caml_add_to_heap (char *mem);
 
-#ifdef CAML_INTERNALS
-int caml_atomic_cas_raw (value* p, value oldv, value newv);
-#endif
-
 CAMLextern int caml_huge_fallback_count; /* FIXME KC: Make per domain */
 
 
