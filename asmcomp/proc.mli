@@ -67,6 +67,15 @@ val op_is_pure: Mach.operation -> bool
 val num_stack_slots: int array
 val contains_calls: bool ref
 
+(** For a given register class, the DWARF register numbering for that class.
+    Given an allocated register with location [Reg n] and class [reg_class], the
+    returned array contains the corresponding DWARF register number at index
+    [n - first_available_register.(reg_class)]. *)
+val dwarf_register_numbers : reg_class:int -> int array
+
+(** The DWARF register number corresponding to the stack pointer. *)
+val stack_ptr_dwarf_register_number : int
+
 (* Calling the assembler *)
 val assemble_file: string -> string -> int
 
