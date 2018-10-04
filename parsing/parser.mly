@@ -995,8 +995,8 @@ use_file:
    extra_def(use_file_body) EOF          { $1 }
 ;
 use_file_body:
-    use_file_tail                        { $1 }
-  | text_def(top_def(str_exp)) use_file_tail
+  optional_use_file_standalone_expression
+  use_file_tail
       { $1 @ $2 }
 ;
 use_file_tail:
@@ -1009,6 +1009,13 @@ use_file_tail:
   | text_def(mark_rhs_docs(toplevel_directive)) use_file_tail
       { $1 @ $2 }
 ;
+(* An optional standalone expression is just an expression with attributes
+   (str_exp), with extra wrapping. *)
+%inline optional_use_file_standalone_expression:
+  items = iloption(text_def(top_def(str_exp)))
+    { items }
+;
+
 
 parse_core_type:
     core_type EOF { $1 }
