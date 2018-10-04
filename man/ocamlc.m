@@ -954,6 +954,9 @@ mutually recursive types.
 64
 \ \ -unsafe used with a preprocessor returning a syntax tree
 
+65
+\ \ Type declaration defining a new '()' constructor
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 

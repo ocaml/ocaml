@@ -13,11 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* When you change this, you need to update the documentation:
+(* When you change this, you need to update:
+   - the list 'description' at the bottom of this file
    - man/ocamlc.m
-   - man/ocamlopt.m
-   - manual/manual/cmds/comp.etex
-   - manual/manual/cmds/native.etex
 *)
 
 type loc = {
@@ -91,6 +89,7 @@ type t =
   | Constraint_on_gadt                      (* 62 *)
   | Erroneous_printed_signature of string   (* 63 *)
   | Unsafe_without_parsing                  (* 64 *)
+  | Redefining_unit of string               (* 65 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -164,9 +163,10 @@ let number = function
   | Constraint_on_gadt -> 62
   | Erroneous_printed_signature _ -> 63
   | Unsafe_without_parsing -> 64
+  | Redefining_unit _ -> 65
 ;;
 
-let last_warning_number = 64
+let last_warning_number = 65
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -536,6 +536,11 @@ let message = function
         all instances of erroneous printed interface."
   | Unsafe_without_parsing ->
      "option -unsafe used with a preprocessor returning a syntax tree"
+  | Redefining_unit name ->
+      Printf.sprintf
+        "This type declaration is defining a new '()' constructor\n\
+         which shadows the existing one.\n\
+         Hint: Did you mean 'type %s = unit'?" name
 ;;
 
 let sub_locs = function
@@ -655,6 +660,7 @@ let descriptions =
    62, "Type constraint on GADT type declaration";
    63, "Erroneous printed signature";
    64, "-unsafe used with a preprocessor returning a syntax tree";
+   65, "Type declaration defining a new '()' constructor";
   ]
 ;;
 

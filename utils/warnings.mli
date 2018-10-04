@@ -91,6 +91,7 @@ type t =
   | Constraint_on_gadt                      (* 62 *)
   | Erroneous_printed_signature of string   (* 63 *)
   | Unsafe_without_parsing                  (* 64 *)
+  | Redefining_unit of string               (* 65 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
