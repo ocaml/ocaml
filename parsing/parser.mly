@@ -926,22 +926,30 @@ interface:
     signature EOF                        { $1 }
 ;
 
+(* A toplevel phrase. *)
 toplevel_phrase:
-  (* An expression, attributes, and a double semicolon. *)
-  extra_str(text_str(seq_expr post_item_attributes { mkstrexp $1 $2 }))
+  (* An expression with attributes, ended by a double semicolon. *)
+  extra_str(text_str(str_exp))
   SEMISEMI
     { Ptop_def $1 }
-| (* A number of structure items, attributes, and a double semicolon. *)
+| (* A list of structure items, ended by a double semicolon. *)
   extra_str(flatten(text_str(structure_item)*))
   SEMISEMI
     { Ptop_def $1 }
-| (* A directive and a double semicolon. *)
+| (* A directive, ended by a double semicolon. *)
   toplevel_directive
   SEMISEMI
     { $1 }
 | (* End of input. *)
   EOF
     { raise End_of_file }
+;
+
+(* An expression with attributes, wrapped as a structure item. *)
+%inline str_exp:
+  e = seq_expr
+  attrs = post_item_attributes
+    { mkstrexp e attrs }
 ;
 
 use_file:
