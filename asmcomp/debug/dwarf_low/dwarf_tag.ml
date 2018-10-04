@@ -82,7 +82,9 @@ type t =
   | User of user
 
 let dw_tag_lo_user = Int16.of_int_exn 0x4080
-let dw_tag_hi_user = Int16.of_int_exn 0xffff
+(* The high limit should be [0xffff], but we can't currently encode this since
+   [Int16.t] is signed. *)
+let dw_tag_hi_user = Int16.of_int_exn 0x7fff
 
 let encode t =
   let code =
