@@ -787,16 +787,6 @@ The precedences must be listed from low to high.
 
 /* Generic definitions */
 
-(* [choose(X, Y)] recognizes [X | Y]. It is marked %inline, so n-ary choices
-   encoded in terms of binary applications of [choose] give rise to flat n-ary
-   choices, as desired. *)
-
-%inline choose(X, Y):
-  x = X
-    { x }
-| y = Y
-    { y }
-
 (* [iloption(X)] recognizes either nothing or [X]. Assuming [X] produces
    an OCaml list, it produces an OCaml list, too. *)
 
@@ -996,17 +986,7 @@ use_file:
 ;
 use_file_body:
   optional_use_file_standalone_expression
-  use_file_tail
-      { $1 @ $2 }
-;
-use_file_tail:
-    /* empty */
-      { [] }
-  | SEMISEMI optional_use_file_standalone_expression use_file_tail
-      { $2 @ $3 }
-  | text_def(top_def(structure_item)) use_file_tail
-      { $1 @ $2 }
-  | text_def(mark_rhs_docs(toplevel_directive)) use_file_tail
+  flatten(use_file_element*)
       { $1 @ $2 }
 ;
 (* An optional standalone expression is just an expression with attributes
@@ -1016,6 +996,12 @@ use_file_tail:
     { items }
 ;
 
+%inline use_file_element:
+    preceded(SEMISEMI, optional_use_file_standalone_expression)
+  | text_def(top_def(structure_item))
+  | text_def(mark_rhs_docs(toplevel_directive))
+      { $1 }
+;
 
 parse_core_type:
     core_type EOF { $1 }
@@ -1145,11 +1131,9 @@ structure:
    - a double semicolon followed with an optional standalone expression;
    - a structure item. *)
 %inline structure_element:
-  choose(
-    append(text_str_SEMISEMI, optional_structure_standalone_expression),
-    text_str(structure_item)
-  )
-  { $1 }
+    append(text_str_SEMISEMI, optional_structure_standalone_expression)
+  | text_str(structure_item)
+      { $1 }
 ;
 
 structure_item:
@@ -1283,11 +1267,9 @@ signature:
    - a double semicolon;
    - a signature item. *)
 %inline signature_element:
-  choose(
-    text_sig_SEMISEMI,
-    text_sig(signature_item)
-  )
-  { $1 }
+    text_sig_SEMISEMI
+  | text_sig(signature_item)
+      { $1 }
 ;
 
 signature_item:
