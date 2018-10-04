@@ -104,6 +104,7 @@ struct custom_operations * caml_final_custom_operations(final_fun fn)
   ops->serialize = custom_serialize_default;
   ops->deserialize = custom_deserialize_default;
   ops->compare_ext = custom_compare_ext_default;
+  ops->fixed_length = custom_fixed_length_default;
   l = caml_stat_alloc(sizeof(struct custom_operations_list));
   l->ops = ops;
   l->next = custom_ops_final_table;
@@ -111,10 +112,11 @@ struct custom_operations * caml_final_custom_operations(final_fun fn)
   return ops;
 }
 
-extern struct custom_operations caml_int32_ops,
-                                caml_nativeint_ops,
-                                caml_int64_ops,
-                                caml_ba_ops;
+extern const struct custom_operations
+  caml_int32_ops,
+  caml_nativeint_ops,
+  caml_int64_ops,
+  caml_ba_ops;
 
 void caml_init_custom_operations(void)
 {
