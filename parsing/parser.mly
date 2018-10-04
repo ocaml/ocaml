@@ -1097,14 +1097,15 @@ structure_nodoc:
     items = structure_tail_nodoc
       { e @ items }
 ;
-structure_tail_nodoc:
-    /* empty */
-       { [] }
-  | text_str_SEMISEMI optional_structure_standalone_expression
-    structure_tail_nodoc
-      { $1 @ $2 @ $3 }
-  | text_str(structure_item) structure_tail_nodoc
+%inline structure_element:
+    text_str_SEMISEMI optional_structure_standalone_expression
       { $1 @ $2 }
+  | text_str(structure_item)
+      { $1 }
+;
+%inline structure_tail_nodoc:
+  flatten(structure_element*)
+    { $1 }
 ;
 
 structure_item:
