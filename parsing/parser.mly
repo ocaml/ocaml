@@ -352,7 +352,7 @@ let mkpat_attrs ~loc d attrs =
 
 let wrap_class_attrs ~loc:_ body attrs =
   {body with pcl_attributes = attrs @ body.pcl_attributes}
-let wrap_mod_attrs ~loc:_ body attrs =
+let wrap_mod_attrs ~loc:_ attrs body =
   {body with pmod_attributes = attrs @ body.pmod_attributes}
 let wrap_mty_attrs ~loc:_ body attrs =
   {body with pmty_attributes = attrs @ body.pmty_attributes}
@@ -1063,70 +1063,81 @@ functor_arg_name:
 
 (* Module expressions. *)
 
+(* The syntax of module expressions is not properly stratified. The cases of
+   functors, functor applications, and attributes interact and cause conflicts,
+   which are resolved by precedence declarations. This is concise but fragile.
+   Perhaps in the future an explicit stratification could be used. *)
+
 module_expr:
-  | STRUCT attributes structure END
-      { mkmod ~loc:$sloc ~attrs:$2 (Pmod_structure($3)) }
+  | STRUCT attrs = attributes s = structure END
+      { mkmod ~loc:$sloc ~attrs (Pmod_structure s) }
   | STRUCT attributes structure error
       { unclosed "struct" $loc($1) "end" $loc($4) }
-  | FUNCTOR attributes functor_args MINUSGREATER module_expr
-      { let modexp =
-          List.fold_left
-            (fun acc (n, t) -> mkmod ~loc:$sloc (Pmod_functor(n, t, acc)))
-            $5 $3
-        in wrap_mod_attrs ~loc:$sloc modexp $2 }
-  | paren_module_expr
-      { $1 }
-  | module_expr attribute
-      { Mod.attr $1 $2 }
-  | mkmod(module_expr_)
-      { $1 }
-;
-%inline module_expr_:
-  | mkrhs(mod_longident)
-    { Pmod_ident $1 }
-  | module_expr paren_module_expr
-    { Pmod_apply($1, $2) }
-  | module_expr LPAREN RPAREN
-    { (* TODO review mkmod location *)
-      Pmod_apply($1, mkmod ~loc:$sloc (Pmod_structure [])) }
-  | extension
-    { Pmod_extension $1 }
+  | FUNCTOR attrs = attributes args = functor_args MINUSGREATER me = module_expr
+      { wrap_mod_attrs ~loc:$sloc attrs (
+          List.fold_left (fun acc (x, mty) ->
+            mkmod ~loc:$sloc (Pmod_functor (x, mty, acc))
+          ) me args
+        ) }
+  | me = paren_module_expr
+      { me }
+  | me = module_expr attr = attribute
+      { Mod.attr me attr }
+  | mkmod(
+      (* A module identifier. *)
+      x = mkrhs(mod_longident)
+        { Pmod_ident x }
+    | (* In a functor application, the actual argument must be parenthesized. *)
+      me1 = module_expr me2 = paren_module_expr
+        { Pmod_apply(me1, me2) }
+    | (* Application to unit is sugar for application to an empty structure. *)
+      me1 = module_expr LPAREN RPAREN
+        { (* TODO review mkmod location *)
+          Pmod_apply(me1, mkmod ~loc:$sloc (Pmod_structure [])) }
+    | (* An extension. *)
+      ex = extension
+        { Pmod_extension ex }
+    )
+    { $1 }
 ;
 
+(* A parenthesized module expression is a module expression that begins
+   and ends with parentheses. *)
+
 paren_module_expr:
-    mkmod(LPAREN module_expr COLON module_type RPAREN
-      { Pmod_constraint($2, $4) })
-      { $1 }
+    (* A module expression annotated with a module type. *)
+    LPAREN me = module_expr COLON mty = module_type RPAREN
+      { mkmod ~loc:$sloc (Pmod_constraint(me, mty)) }
   | LPAREN module_expr COLON module_type error
       { unclosed "(" $loc($1) ")" $loc($5) }
-  | LPAREN module_expr RPAREN
-      { $2 (* TODO consider reloc *) }
+  | (* A module expression within parentheses. *)
+    LPAREN me = module_expr RPAREN
+      { me (* TODO consider reloc *) }
   | LPAREN module_expr error
       { unclosed "(" $loc($1) ")" $loc($3) }
-  | LPAREN VAL attributes expr RPAREN
-      { mkmod ~loc:$sloc ~attrs:$3 (Pmod_unpack $4)}
-  | LPAREN VAL attributes expr COLON package_type RPAREN
-      { let constr_loc = ($startpos($4), $endpos($6)) in
-        mkmod ~loc:$sloc ~attrs:$3
-          (Pmod_unpack(
-               ghexp ~loc:constr_loc (Pexp_constraint($4, $6)))) }
-  | LPAREN VAL attributes expr COLON package_type COLONGREATER package_type
-    RPAREN
-      { let constr_loc = ($startpos($4), $endpos($8)) in
-        mkmod ~loc:$sloc ~attrs:$3
-          (Pmod_unpack(
-               ghexp ~loc:constr_loc (Pexp_coerce($4, Some $6, $8)))) }
-  | LPAREN VAL attributes expr COLONGREATER package_type RPAREN
-      { let constr_loc = ($startpos($4), $endpos($6)) in
-        mkmod ~loc:$sloc ~attrs:$3
-          (Pmod_unpack(
-               ghexp ~loc:constr_loc (Pexp_coerce($4, None, $6)))) }
+  | (* A core language expression that produces a first-class module.
+       This expression can be annotated in various ways. *)
+    LPAREN VAL attrs = attributes e = expr_colon_package_type RPAREN
+      { mkmod ~loc:$sloc ~attrs (Pmod_unpack e) }
   | LPAREN VAL attributes expr COLON error
       { unclosed "(" $loc($1) ")" $loc($6) }
   | LPAREN VAL attributes expr COLONGREATER error
       { unclosed "(" $loc($1) ")" $loc($6) }
   | LPAREN VAL attributes expr error
       { unclosed "(" $loc($1) ")" $loc($5) }
+;
+
+(* The various ways of annotating a core language expression that
+   produces a first-class module that we wish to unpack. *)
+%inline expr_colon_package_type:
+    e = expr
+      { e }
+  | e = expr COLON ty = package_type
+      { ghexp ~loc:$loc (Pexp_constraint (e, ty)) }
+  | e = expr COLON ty1 = package_type COLONGREATER ty2 = package_type
+      { ghexp ~loc:$loc (Pexp_coerce (e, Some ty1, ty2)) }
+  | e = expr COLONGREATER ty2 = package_type
+      { ghexp ~loc:$loc (Pexp_coerce (e, None, ty2)) }
 ;
 
 (* A structure, which appears between STRUCT and END (among other places),
