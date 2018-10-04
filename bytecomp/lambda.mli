@@ -163,8 +163,9 @@ type primitive =
   | Pint_as_pointer
   (* Atomic operations *)
   | Patomic_load
-  | Patomic_store
+  | Patomic_exchange
   | Patomic_cas
+  | Patomic_fetch_add
   (* Inhibition of optimisation *)
   | Popaque
 

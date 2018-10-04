@@ -191,7 +191,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 
 /* Pointer to the first field. */
 #define Op_val(x) ((value *) (x))
-#define Op_val_atomic(x) ((atomic_value *) (x))
+#define Op_atomic_val(x) ((atomic_value *) (x))
 /* Fields are numbered from 0. */
 
 /* All values which are not blocks in the current domain's minor heap
@@ -442,7 +442,7 @@ static inline value Field(value x, int i) {
 static inline void caml_read_field(value x, int i, value* ret) {
   Assert (Hd_val(x));
   /* See Note [MM] in memory.c */
-  value v = atomic_load_explicit(&Op_val_atomic(x)[i], memory_order_relaxed);
+  value v = atomic_load_explicit(&Op_atomic_val(x)[i], memory_order_relaxed);
   //if (Is_young(v)) Assert(young_ptr < (char*)v);
   *ret = Is_foreign(v) ? caml_read_barrier(x, i) : v;
 }

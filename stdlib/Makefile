@@ -48,8 +48,8 @@ OTHERS=list.cmo char.cmo uchar.cmo bytes.cmo string.cmo sys.cmo \
   filename.cmo complex.cmo \
   arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
   stringLabels.cmo moreLabels.cmo stdLabels.cmo \
-  spacetime.cmo camlinternalBigarray.cmo domain.cmo \
-	atomic.cmo
+  spacetime.cmo camlinternalBigarray.cmo \
+  atomic.cmo domain.cmo
 
 .PHONY: all
 all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
