@@ -1032,24 +1032,36 @@ parse_pattern:
 
 (* -------------------------------------------------------------------------- *)
 
-/* Module expressions */
-
-functor_arg:
-    mkrhs(LPAREN RPAREN {"*"})
-      { $1, None }
-  | LPAREN mkrhs(functor_arg_name) COLON module_type RPAREN
-      { $2, Some $4 }
-;
-
-functor_arg_name:
-    UIDENT     { $1 }
-  | UNDERSCORE { "_" }
-;
+(* Functor arguments appear in module expressions and module types. *)
 
 %inline functor_args:
   reversed_nonempty_llist(functor_arg)
     { $1 }
+    (* Produce a reversed list on purpose;
+       later processed using [fold_left]. *)
 ;
+
+functor_arg:
+    (* An anonymous and untyped argument. *)
+    x = mkrhs(LPAREN RPAREN {"*"})
+      { x, None }
+  | (* An argument accompanied with an explicit type. *)
+    LPAREN x = mkrhs(functor_arg_name) COLON mty = module_type RPAREN
+      { x, Some mty }
+;
+
+functor_arg_name:
+    (* A named argument. *)
+    x = UIDENT
+      { x }
+  | (* An anonymous argument. *)
+    UNDERSCORE
+      { "_" }
+;
+
+(* -------------------------------------------------------------------------- *)
+
+(* Module expressions. *)
 
 module_expr:
   | STRUCT attributes structure END
