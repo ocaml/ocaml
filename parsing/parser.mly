@@ -1094,7 +1094,7 @@ structure: extra_str(structure_nodoc) { $1 }
 
 structure_nodoc:
     e = optional_structure_standalone_expression
-    items = structure_tail_nodoc
+    items = flatten(structure_element*)
       { e @ items }
 ;
 %inline structure_element:
@@ -1102,10 +1102,6 @@ structure_nodoc:
       { $1 @ $2 }
   | text_str(structure_item)
       { $1 }
-;
-%inline structure_tail_nodoc:
-  flatten(structure_element*)
-    { $1 }
 ;
 
 structure_item:
