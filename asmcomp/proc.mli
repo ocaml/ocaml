@@ -67,7 +67,11 @@ val op_is_pure: Mach.operation -> bool
 (* Info for laying out the stack frame *)
 val num_stack_slots: int array
 val contains_calls: bool ref
+val initial_stack_offset : int
+val trap_frame_size_in_bytes : int
 val frame_required : unit -> bool
+val frame_size : stack_offset:int -> int
+val slot_offset : Reg.stack_location -> reg_class:int -> stack_offset:int -> int
 
 (* Function prologues *)
 val prologue_required : unit -> bool

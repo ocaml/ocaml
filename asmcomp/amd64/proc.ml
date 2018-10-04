@@ -377,11 +377,32 @@ let op_is_pure = function
 let num_stack_slots = [| 0; 0 |]
 let contains_calls = ref false
 
+let initial_stack_offset = 0
+let trap_frame_size_in_bytes = 16
+
 let frame_required () =
   fp || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
 
 let prologue_required () =
   !Clflags.gprofile || frame_required ()
+
+let frame_size ~stack_offset =                    (* includes return address *)
+  if frame_required() then begin
+    let sz =
+      (stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8
+       + (if fp then 8 else 0))
+    in Misc.align sz 16
+  end else
+    stack_offset + 8
+
+let slot_offset loc ~reg_class ~stack_offset =
+  match loc with
+  | Incoming n -> frame_size ~stack_offset + n
+  | Local n ->
+      if reg_class = 0
+      then stack_offset + n * 8
+      else stack_offset + (num_stack_slots.(0) + n) * 8
+  | Outgoing n -> n
 
 (* Calling the assembler *)
 

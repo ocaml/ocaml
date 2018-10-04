@@ -745,6 +745,9 @@ OCaml 4.08.0
 - GPR#2088: Add [Clambda.usymbol_provenance].
   (Mark Shinwell, review by Damien Doligez)
 
+- GPR#2090: Move stack frame layout calculations from [Emit] into [Proc].
+  (Mark Shinwell, review by Xavier Leroy)
+
 - GPR#2152, GPR#2517: refactorize the fixpoint to compute type-system
   properties of mutually-recursive type declarations.
   (Gabriel Scherer and Rodolphe Lepigre, review by Armaël Guéneau)
@@ -772,6 +775,8 @@ OCaml 4.08.0
 - GPR#2100: Fix Unix.getaddrinfo when called on strings containing
   null bytes; it would crash the GC later on.
   (Armaël Guéneau, report and fix by Joe, review by Sébastien Hinderer)
+
+### Bug fixes:
 
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the
   (Menhir-generated) parser encountered a syntax error in a certain
