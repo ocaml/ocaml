@@ -954,14 +954,18 @@ reversed_bar_llist(X):
   xs = reversed_bar_llist(X)
     { List.rev xs }
 
-/* Entry points */
+(* -------------------------------------------------------------------------- *)
+
+(* Entry points. *)
 
 implementation:
-    structure EOF                        { $1 }
+  structure EOF
+    { $1 }
 ;
 
 interface:
-    signature EOF                        { $1 }
+  signature EOF
+    { $1 }
 ;
 
 (* A toplevel phrase. *)
@@ -981,13 +985,6 @@ toplevel_phrase:
 | (* End of input. *)
   EOF
     { raise End_of_file }
-;
-
-(* An expression with attributes, wrapped as a structure item. *)
-%inline str_exp:
-  e = seq_expr
-  attrs = post_item_attributes
-    { mkstrexp e attrs }
 ;
 
 use_file:
@@ -1122,6 +1119,13 @@ structure:
 %inline optional_structure_standalone_expression:
   items = iloption(mark_rhs_docs(text_str(str_exp)))
     { items }
+;
+
+(* An expression with attributes, wrapped as a structure item. *)
+%inline str_exp:
+  e = seq_expr
+  attrs = post_item_attributes
+    { mkstrexp e attrs }
 ;
 
 (* A structure element is one of the following:
