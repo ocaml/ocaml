@@ -744,6 +744,12 @@ The precedences must be listed from low to high.
 %inline text_str_SEMISEMI: SEMISEMI
   { text_str $startpos }
 
+(* Using this %inline definition means that we do not control precisely
+   when [mark_rhs_docs] is called, but I don't think this matters. *)
+%inline mark_rhs_docs(symb): symb
+  { mark_rhs_docs $startpos $endpos;
+    $1 }
+
 %inline op(symb): symb
    { mkoperator ~loc:$sloc $1 }
 
@@ -969,9 +975,8 @@ use_file_tail:
       { $2 }
   | structure_item use_file_tail
       { text_def $startpos($1) @ Ptop_def[$1] :: $2 }
-  | toplevel_directive use_file_tail
-      { mark_rhs_docs $startpos($1) $endpos($1);
-        text_def $startpos($1) @ $1 :: $2 }
+  | mark_rhs_docs(toplevel_directive) use_file_tail
+      { text_def $startpos($1) @ $1 :: $2 }
 ;
 
 parse_core_type:
@@ -1074,11 +1079,11 @@ paren_module_expr:
 structure: extra_str(structure_nodoc) { $1 }
 
 structure_nodoc:
-    e = text_str(str_exp)
+    e = mark_rhs_docs(text_str(str_exp))
     items = structure_tail_nodoc
-      { mark_rhs_docs $startpos(e) $endpos(e);
-        e @ items }
-  | structure_tail_nodoc { $1 }
+      { e @ items }
+  | structure_tail_nodoc
+      { $1 }
 ;
 structure_tail_nodoc:
     /* empty */
