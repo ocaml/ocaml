@@ -336,8 +336,9 @@ let primitive ppf = function
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"
   | Patomic_load -> fprintf ppf "atomic_load"
-  | Patomic_store -> fprintf ppf "atomic_store"
+  | Patomic_exchange -> fprintf ppf "atomic_exchange"
   | Patomic_cas -> fprintf ppf "atomic_cas"
+  | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
   | Popaque -> fprintf ppf "opaque"
 
 let name_of_primitive = function
@@ -442,8 +443,9 @@ let name_of_primitive = function
   | Pbbswap _ -> "Pbbswap"
   | Pint_as_pointer -> "Pint_as_pointer"
   | Patomic_load -> "Patomic_load"
-  | Patomic_store -> "Patomic_store"
+  | Patomic_exchange -> "Patomic_exchange"
   | Patomic_cas -> "Patomic_cas"
+  | Patomic_fetch_add -> "Patomic_fetch_add"
   | Popaque -> "Popaque"
   | Presume -> "Presume"
   | Pperform -> "Pperform"

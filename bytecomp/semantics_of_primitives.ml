@@ -126,8 +126,9 @@ let for_primitive (prim : Lambda.primitive) =
   | Psetfloatfield _
   | Psetglobal _
   | Patomic_load
-  | Patomic_store
+  | Patomic_exchange
   | Patomic_cas
+  | Patomic_fetch_add
   | Parraysetu _
   | Parraysets _
   | Pbytessetu

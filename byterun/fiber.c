@@ -397,7 +397,7 @@ CAMLprim value caml_continuation_use (value cont)
     caml_darken_cont(cont);
     v = Op_val(cont)[0];
     if (v != Val_ptr(NULL) &&
-        atomic_compare_exchange_strong(Op_val_atomic(cont), &v, Val_ptr(NULL))) {
+        atomic_compare_exchange_strong(Op_atomic_val(cont), &v, Val_ptr(NULL))) {
       return v;
     } else {
       caml_invalid_argument("continuation already taken");
@@ -408,7 +408,7 @@ CAMLprim value caml_continuation_use (value cont)
 void caml_continuation_replace(value cont, struct stack_info* stk)
 {
   value n = Val_ptr(NULL);
-  int b = atomic_compare_exchange_strong(Op_val_atomic(cont), &n, Val_ptr(stk));
+  int b = atomic_compare_exchange_strong(Op_atomic_val(cont), &n, Val_ptr(stk));
   CAMLassert(b);
   (void)b; /* squash unused warning */
 }

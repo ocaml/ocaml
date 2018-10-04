@@ -174,7 +174,7 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
 #endif
   /* See Note [MM] above */
   atomic_thread_fence(memory_order_acquire);
-  atomic_store_explicit(&Op_val_atomic(obj)[field], val,
+  atomic_store_explicit(&Op_atomic_val(obj)[field], val,
                         memory_order_release);
 }
 
@@ -216,7 +216,7 @@ CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value 
     }
   } else {
     /* need a real CAS */
-    atomic_value* p = &Op_val_atomic(obj)[field];
+    atomic_value* p = &Op_atomic_val(obj)[field];
     if (atomic_compare_exchange_strong(p, &oldval, newval)) {
       write_barrier(obj, field, oldval, newval);
       return 1;
@@ -235,25 +235,27 @@ CAMLprim value caml_atomic_load (value ref)
     value v;
     /* See Note [MM] above */
     atomic_thread_fence(memory_order_acquire);
-    v = atomic_load(Op_val_atomic(ref));
+    v = atomic_load(Op_atomic_val(ref));
     if (Is_foreign(v))
       v = caml_read_barrier(ref, 0);
     return v;
   }
 }
 
-CAMLprim value caml_atomic_store (value ref, value v)
+/* stores are implemented as exchanges */
+CAMLprim value caml_atomic_exchange (value ref, value v)
 {
+  value ret;
   if (Is_young(ref)) {
+    ret = Op_val(ref)[0];
     Op_val(ref)[0] = v;
   } else {
-    value oldv;
     /* See Note [MM] above */
     atomic_thread_fence(memory_order_acquire);
-    oldv = atomic_exchange(Op_val_atomic(ref), v);
-    write_barrier(ref, 0, oldv, v);
+    ret = atomic_exchange(Op_atomic_val(ref), v);
+    write_barrier(ref, 0, ret, v);
   }
-  return Val_unit;
+  return ret;
 }
 
 CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
@@ -268,7 +270,7 @@ CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
       return Val_int(0);
     }
   } else {
-    atomic_value* p = &Op_val_atomic(ref)[0];
+    atomic_value* p = &Op_atomic_val(ref)[0];
     if (atomic_compare_exchange_strong(p, &oldv, newv)) {
       write_barrier(ref, 0, oldv, newv);
       return Val_int(1);
@@ -276,6 +278,22 @@ CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
       return Val_int(0);
     }
   }
+}
+
+CAMLprim value caml_atomic_fetch_add (value ref, value incr)
+{
+  value ret;
+  if (Is_young(ref)) {
+    value* p = Op_val(ref);
+    CAMLassert(Is_long(*p));
+    ret = *p;
+    *p = Val_long(Long_val(ret) + Long_val(incr));
+    /* no write barrier needed, integer write */
+  } else {
+    atomic_value *p = &Op_atomic_val(ref)[0];
+    ret = atomic_fetch_add(p, 2*Long_val(incr));
+  }
+  return ret;
 }
 
 CAMLexport void caml_set_fields (value obj, value v)
