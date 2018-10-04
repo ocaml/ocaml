@@ -1255,12 +1255,24 @@ module_type:
       { Pmty_extension $1 }
 ;
 
-signature: extra_sig(signature_nodoc) { $1 }
-signature_nodoc:
-    /* empty */                    { [] }
-  | text_sig_SEMISEMI signature_nodoc       { $1 @ $2 }
-  | text_sig(signature_item) signature_nodoc { $1 @ $2 }
+(* A signature, which appears between SIG and END (among other places),
+   is a list of signature elements. *)
+signature:
+  extra_sig(flatten(signature_element*))
+    { $1 }
 ;
+
+(* A signature element is one of the following:
+   - a double semicolon;
+   - a signature item. *)
+%inline signature_element:
+  choose(
+    text_sig_SEMISEMI,
+    text_sig(signature_item)
+  )
+  { $1 }
+;
+
 signature_item:
   | signature_item_with_ext
       { let item, ext = $1 in
