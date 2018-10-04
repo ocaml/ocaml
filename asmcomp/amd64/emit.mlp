@@ -75,26 +75,10 @@ let stack_offset = ref 0
 
 (* Layout of the stack frame *)
 
-let frame_required () =
-  fp || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
+let frame_size () = frame_size ~stack_offset:!stack_offset
 
-let frame_size () =                     (* includes return address *)
-  if frame_required() then begin
-    let sz =
-      (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8
-       + (if fp then 8 else 0))
-    in Misc.align sz 16
-  end else
-    !stack_offset + 8
-
-let slot_offset loc cl =
-  match loc with
-  | Incoming n -> frame_size() + n
-  | Local n ->
-      if cl = 0
-      then !stack_offset + n * 8
-      else !stack_offset + (num_stack_slots.(0) + n) * 8
-  | Outgoing n -> n
+let slot_offset loc reg_class =
+  slot_offset loc ~reg_class ~stack_offset:!stack_offset
 
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
@@ -874,13 +858,13 @@ let emit_instr fallthrough i =
       I.push r14;
       cfi_adjust_cfa_offset 8;
       I.mov rsp r14;
-      stack_offset := !stack_offset + 16
+      stack_offset := !stack_offset + trap_frame_size_in_bytes
   | Lpoptrap ->
       I.pop r14;
       cfi_adjust_cfa_offset (-8);
       I.add (int 8) rsp;
       cfi_adjust_cfa_offset (-8);
-      stack_offset := !stack_offset - 16
+      stack_offset := !stack_offset - trap_frame_size_in_bytes
   | Lraise k ->
       (* No Spacetime instrumentation is required for [caml_raise_exn] and
          [caml_reraise_exn].  The only function called that might affect the
@@ -911,7 +895,7 @@ let fundecl fundecl =
   function_name := Some fun_name;
   fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
-  stack_offset := 0;
+  stack_offset := initial_stack_offset;
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;

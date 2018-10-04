@@ -452,6 +452,9 @@ Working version
 - GPR#2076: Add [Targetint.print].
   (Mark Shinwell)
 
+- GPR#2077: Add [Dwarf_low] library.
+  (Mark Shinwell)
+
 - GPR#2080: Add [Proc.dwarf_register_numbers] and
   [Proc.stack_ptr_dwarf_register_number].
   (Mark Shinwell, review by Bernhard Schommer)
@@ -459,7 +462,7 @@ Working version
 - GPR#2081: Mark [Iname_for_debugger] as an impure operation.
   (Mark Shinwell)
 
-- GPR#2077: Add [Dwarf_low] library.
+- GPR#2090: Move stack frame layout calculations from [Emit] into [Proc].
   (Mark Shinwell)
 
 ### Bug fixes:
