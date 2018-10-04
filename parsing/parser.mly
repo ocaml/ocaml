@@ -779,6 +779,16 @@ The precedences must be listed from low to high.
 
 /* Generic definitions */
 
+(* [choose(X, Y)] recognizes [X | Y]. It is marked %inline, so n-ary choices
+   encoded in terms of binary applications of [choose] give rise to flat n-ary
+   choices, as desired. *)
+
+%inline choose(X, Y):
+  x = X
+    { x }
+| y = Y
+    { y }
+
 (* [iloption(X)] recognizes either nothing or [X]. Assuming [X] produces
    an OCaml list, it produces an OCaml list, too. *)
 
@@ -1092,6 +1102,9 @@ paren_module_expr:
       { unclosed "(" $loc($1) ")" $loc($5) }
 ;
 
+(* A structure, which appears between STRUCT and END (among other places),
+   begins with an optional standalone expression, and continues with a list
+   of structure elements. *)
 structure:
   extra_str(append(
     optional_structure_standalone_expression,
@@ -1100,16 +1113,22 @@ structure:
   { $1 }
 ;
 
+(* An optional standalone expression is just an expression with attributes
+   (str_exp), with extra wrapping. *)
 %inline optional_structure_standalone_expression:
   items = iloption(mark_rhs_docs(text_str(str_exp)))
     { items }
 ;
 
+(* A structure element is one of the following:
+   - a double semicolon followed with an optional standalone expression;
+   - a structure item. *)
 %inline structure_element:
-    text_str_SEMISEMI optional_structure_standalone_expression
-      { $1 @ $2 }
-  | text_str(structure_item)
-      { $1 }
+  choose(
+    append(text_str_SEMISEMI, optional_structure_standalone_expression),
+    text_str(structure_item)
+  )
+  { $1 }
 ;
 
 structure_item:
