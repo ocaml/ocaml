@@ -741,6 +741,8 @@ The precedences must be listed from low to high.
 
 %inline text_str(symb): symb
   { text_str $startpos @ [$1] }
+%inline text_str_SEMISEMI: SEMISEMI
+  { text_str $startpos }
 
 %inline op(symb): symb
    { mkoperator ~loc:$sloc $1 }
@@ -1079,7 +1081,7 @@ structure_nodoc:
 ;
 structure_tail_nodoc:
     /* empty */                         { [] }
-  | SEMISEMI structure_nodoc            { text_str $startpos($1) @ $2 }
+  | text_str_SEMISEMI structure_nodoc   { $1 @ $2 }
   | text_str(structure_item) structure_tail_nodoc { $1 @ $2 }
 ;
 
