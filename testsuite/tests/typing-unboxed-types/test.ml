@@ -88,7 +88,7 @@ Line 1, characters 0-56:
 1 | type t9 = K of { j : string; l : int } [@@ocaml.unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
-       its constructor has more than one argument.
+       its constructor has more than one field.
 |}];;
 
 (* let rec must be rejected *)

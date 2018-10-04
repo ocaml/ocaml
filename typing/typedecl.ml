@@ -360,47 +360,43 @@ let transl_declaration env sdecl id =
   in
   let raw_status = get_unboxed_from_attributes sdecl in
   if raw_status.unboxed && not raw_status.default then begin
+    let bad msg = raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute msg)) in
     match sdecl.ptype_kind with
-    | Ptype_abstract ->
-        raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
-                      "it is abstract"))
-    | Ptype_variant [{pcd_args = Pcstr_tuple []; _}] ->
-      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
-                    "its constructor has no argument"))
-    | Ptype_variant [{pcd_args = Pcstr_tuple [_]; _}] -> ()
-    | Ptype_variant [{pcd_args = Pcstr_tuple _; _}] ->
-      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
-                    "its constructor has more than one argument"))
-    | Ptype_variant [{pcd_args = Pcstr_record
-                        [{pld_mutable=Immutable; _}]; _}] -> ()
-    | Ptype_variant [{pcd_args = Pcstr_record [{pld_mutable=Mutable; _}]; _}] ->
-      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute "it is mutable"))
-    | Ptype_variant [{pcd_args = Pcstr_record _; _}] ->
-      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
-                    "its constructor has more than one argument"))
-    | Ptype_variant _ ->
-      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
-                    "it has more than one constructor"))
-    | Ptype_record [{pld_mutable=Immutable; _}] -> ()
-    | Ptype_record [{pld_mutable=Mutable; _}] ->
-      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
-                    "it is mutable"))
-    | Ptype_record _ ->
-      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
-                    "it has more than one field"))
-    | Ptype_open ->
-      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
-                    "extensible variant types cannot be unboxed"))
+    | Ptype_abstract    -> bad "it is abstract"
+    | Ptype_open        -> bad "extensible variant types cannot be unboxed"
+    | Ptype_record fields -> begin match fields with
+        | [] -> bad "it has no fields"
+        | _::_::_ -> bad "it has more than one field"
+        | [{pld_mutable = Mutable}] -> bad "it is mutable"
+        | [{pld_mutable = Immutable}] -> ()
+      end
+    | Ptype_variant constructors -> begin match constructors with
+        | [] -> bad "it has no constructor"
+        | (_::_::_) -> bad "it has more than one constructor"
+        | [c] -> begin match c.pcd_args with
+            | Pcstr_tuple [] ->
+                bad "its constructor has no argument"
+            | Pcstr_tuple (_::_::_) ->
+                bad "its constructor has more than one argument"
+            | Pcstr_tuple [_]  ->
+                ()
+            | Pcstr_record [] ->
+                bad "its constructor has no fields"
+            | Pcstr_record (_::_::_) ->
+                bad "its constructor has more than one field"
+            | Pcstr_record [{pld_mutable = Mutable}] ->
+                bad "it is mutable"
+            | Pcstr_record [{pld_mutable = Immutable}] ->
+                ()
+          end
+      end
   end;
   let unboxed_status =
     match sdecl.ptype_kind with
     | Ptype_variant [{pcd_args = Pcstr_tuple [_]; _}]
-      | Ptype_variant [{pcd_args = Pcstr_record
-                          [{pld_mutable = Immutable; _}]; _}]
-      | Ptype_record [{pld_mutable = Immutable; _}] ->
-    raw_status
-    | _ -> (* The type is not unboxable, mark it as boxed *)
-      unboxed_false_default_false
+    | Ptype_variant [{pcd_args = Pcstr_record [{pld_mutable=Immutable; _}]; _}]
+    | Ptype_record [{pld_mutable=Immutable; _}] -> raw_status
+    | _ -> unboxed_false_default_false (* Not unboxable, mark as boxed *)
   in
   let unbox = unboxed_status.unboxed in
   let (tkind, kind) =
