@@ -779,6 +779,15 @@ The precedences must be listed from low to high.
 
 /* Generic definitions */
 
+(* [iloption(X)] recognizes either nothing or [X]. Assuming [X] produces
+   an OCaml list, it produces an OCaml list, too. *)
+
+%inline iloption(X):
+  /* nothing */
+    { [] }
+| x = X
+    { x }
+
 (* [rev(XS)] recognizes the same language as [XS], and reverses the resulting
    OCaml list. *)
 
@@ -1078,12 +1087,15 @@ paren_module_expr:
 
 structure: extra_str(structure_nodoc) { $1 }
 
+%inline optional_structure_standalone_expression:
+  items = iloption(mark_rhs_docs(text_str(str_exp)))
+    { items }
+;
+
 structure_nodoc:
-    e = mark_rhs_docs(text_str(str_exp))
+    e = optional_structure_standalone_expression
     items = structure_tail_nodoc
       { e @ items }
-  | structure_tail_nodoc
-      { $1 }
 ;
 structure_tail_nodoc:
     /* empty */
