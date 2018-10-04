@@ -747,6 +747,10 @@ The precedences must be listed from low to high.
   { text_sig $startpos @ [$1] }
 %inline text_sig_SEMISEMI: SEMISEMI
   { text_sig $startpos }
+%inline text_def(symb): symb
+  { text_def $startpos @ [$1] }
+%inline top_def(symb): symb
+  { Ptop_def [$1] }
 
 (* Using this %inline definition means that we do not control precisely
    when [mark_rhs_docs] is called, but I don't think this matters. *)
@@ -992,18 +996,18 @@ use_file:
 ;
 use_file_body:
     use_file_tail                        { $1 }
-  | seq_expr post_item_attributes use_file_tail
-      { text_def $startpos($1) @ Ptop_def[mkstrexp $1 $2] :: $3 }
+  | text_def(top_def(str_exp)) use_file_tail
+      { $1 @ $2 }
 ;
 use_file_tail:
     /* empty */
       { [] }
   | SEMISEMI use_file_body
       { $2 }
-  | structure_item use_file_tail
-      { text_def $startpos($1) @ Ptop_def[$1] :: $2 }
-  | mark_rhs_docs(toplevel_directive) use_file_tail
-      { text_def $startpos($1) @ $1 :: $2 }
+  | text_def(top_def(structure_item)) use_file_tail
+      { $1 @ $2 }
+  | text_def(mark_rhs_docs(toplevel_directive)) use_file_tail
+      { $1 @ $2 }
 ;
 
 parse_core_type:
@@ -1017,6 +1021,8 @@ parse_expression:
 parse_pattern:
     pattern EOF { $1 }
 ;
+
+(* -------------------------------------------------------------------------- *)
 
 /* Module expressions */
 
