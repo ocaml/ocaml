@@ -1002,8 +1002,8 @@ use_file_body:
 use_file_tail:
     /* empty */
       { [] }
-  | SEMISEMI use_file_body
-      { $2 }
+  | SEMISEMI optional_use_file_standalone_expression use_file_tail
+      { $2 @ $3 }
   | text_def(top_def(structure_item)) use_file_tail
       { $1 @ $2 }
   | text_def(mark_rhs_docs(toplevel_directive)) use_file_tail
