@@ -778,15 +778,12 @@ The precedences must be listed from low to high.
   xs = XS
     { List.rev xs }
 
-(* [flattened_list(XS)] recognizes a list of [XS]s, where each [XS] produces
-   a list as its semantic value. The resulting list of lists is flattened. *)
+(* [flatten(XSS)] recognizes the same language as [XSS], and reverses the
+   resulting OCaml list of lists. *)
 
-flattened_list(XS):
-  /* empty */
-    { [] }
-| xs = XS
-  ys = flattened_list(XS)
-    { xs @ ys }
+%inline flatten(XSS):
+  xss = XSS
+    { List.flatten xss }
 
 (* [reversed_nonempty_llist(X)] recognizes a nonempty list of [X]s, and produces
    an OCaml list in reverse order -- that is, the last element in the input text
@@ -935,7 +932,7 @@ toplevel_phrase:
   SEMISEMI
     { Ptop_def $1 }
 | (* A number of structure items, attributes, and a double semicolon. *)
-  extra_str(flattened_list(text_str(structure_item)))
+  extra_str(flatten(text_str(structure_item)*))
   SEMISEMI
     { Ptop_def $1 }
 | (* A directive and a double semicolon. *)
