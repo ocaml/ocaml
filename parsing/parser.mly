@@ -952,11 +952,13 @@ reversed_bar_llist(X):
 
 (* Entry points. *)
 
+(* An .ml file. *)
 implementation:
   structure EOF
     { $1 }
 ;
 
+(* An .mli file. *)
 interface:
   signature EOF
     { $1 }
@@ -981,38 +983,51 @@ toplevel_phrase:
     { raise End_of_file }
 ;
 
+(* An .ml file that is read by #use. *)
 use_file:
-   extra_def(use_file_body) EOF          { $1 }
+  (* An optional standalone expression,
+     followed with a series of elements,
+     followed with EOF. *)
+  extra_def(append(
+    optional_use_file_standalone_expression,
+    flatten(use_file_element*)
+  ))
+  EOF
+    { $1 }
 ;
-use_file_body:
-  optional_use_file_standalone_expression
-  flatten(use_file_element*)
-      { $1 @ $2 }
-;
+
 (* An optional standalone expression is just an expression with attributes
    (str_exp), with extra wrapping. *)
 %inline optional_use_file_standalone_expression:
-  items = iloption(text_def(top_def(str_exp)))
-    { items }
+  iloption(text_def(top_def(str_exp)))
+    { $1 }
 ;
 
+(* An element in a #used file is one of the following:
+   - a double semicolon followed with an optional standalone expression;
+   - a structure item;
+   - a toplevel directive.
+ *)
 %inline use_file_element:
-    preceded(SEMISEMI, optional_use_file_standalone_expression)
-  | text_def(top_def(structure_item))
-  | text_def(mark_rhs_docs(toplevel_directive))
+  preceded(SEMISEMI, optional_use_file_standalone_expression)
+| text_def(top_def(structure_item))
+| text_def(mark_rhs_docs(toplevel_directive))
       { $1 }
 ;
 
 parse_core_type:
-    core_type EOF { $1 }
+  core_type EOF
+    { $1 }
 ;
 
 parse_expression:
-    seq_expr EOF { $1 }
+  seq_expr EOF
+    { $1 }
 ;
 
 parse_pattern:
-    pattern EOF { $1 }
+  pattern EOF
+    { $1 }
 ;
 
 (* -------------------------------------------------------------------------- *)
