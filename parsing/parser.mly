@@ -1072,6 +1072,7 @@ paren_module_expr:
 ;
 
 structure: extra_str(structure_nodoc) { $1 }
+
 structure_nodoc:
     e = text_str(str_exp)
     items = structure_tail_nodoc
@@ -1080,9 +1081,12 @@ structure_nodoc:
   | structure_tail_nodoc { $1 }
 ;
 structure_tail_nodoc:
-    /* empty */                         { [] }
-  | text_str_SEMISEMI structure_nodoc   { $1 @ $2 }
-  | text_str(structure_item) structure_tail_nodoc { $1 @ $2 }
+    /* empty */
+       { [] }
+  | text_str_SEMISEMI structure_nodoc
+      { $1 @ $2 }
+  | text_str(structure_item) structure_tail_nodoc
+      { $1 @ $2 }
 ;
 
 structure_item:
