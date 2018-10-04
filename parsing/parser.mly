@@ -1100,8 +1100,9 @@ structure_nodoc:
 structure_tail_nodoc:
     /* empty */
        { [] }
-  | text_str_SEMISEMI structure_nodoc
-      { $1 @ $2 }
+  | text_str_SEMISEMI optional_structure_standalone_expression
+    structure_tail_nodoc
+      { $1 @ $2 @ $3 }
   | text_str(structure_item) structure_tail_nodoc
       { $1 @ $2 }
 ;
