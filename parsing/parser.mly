@@ -1071,15 +1071,16 @@ paren_module_expr:
 
 structure: extra_str(structure_nodoc) { $1 }
 structure_nodoc:
-    seq_expr post_item_attributes structure_tail_nodoc
-      { mark_rhs_docs $startpos($1) $endpos($2);
-        text_str $startpos($1) @ mkstrexp $1 $2 :: $3 }
+    e = text_str(str_exp)
+    items = structure_tail_nodoc
+      { mark_rhs_docs $startpos(e) $endpos(e);
+        e @ items }
   | structure_tail_nodoc { $1 }
 ;
 structure_tail_nodoc:
     /* empty */                         { [] }
   | SEMISEMI structure_nodoc            { text_str $startpos($1) @ $2 }
-  | structure_item structure_tail_nodoc { text_str $startpos($1) @ $1 :: $2 }
+  | text_str(structure_item) structure_tail_nodoc { $1 @ $2 }
 ;
 
 structure_item:
