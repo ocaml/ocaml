@@ -1,1358 +1,1406 @@
 addrmap.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
- caml/config.h caml/domain.h caml/misc.h caml/mlvalues.h \
- caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
- caml/alloc.h caml/addrmap.h
+ caml/config.h caml/domain.h caml/misc.h caml/camlatomic.h \
+ caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/alloc.h caml/addrmap.h
 afl.$(O): afl.c caml/config.h caml/m.h caml/s.h caml/misc.h caml/config.h \
- caml/mlvalues.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/osdeps.h caml/memory.h caml/gc.h \
- caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h
+ caml/camlatomic.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/osdeps.h \
+ caml/memory.h caml/gc.h caml/mlvalues.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h
 alloc.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/major_gc.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/fiber.h caml/roots.h \
- caml/domain.h
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h \
+ caml/fiber.h caml/roots.h caml/domain.h
 array.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h caml/signals.h \
- caml/spacetime.h
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h \
+ caml/signals.h caml/spacetime.h
 backtrace.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/backtrace.h caml/exec.h \
+ caml/backtrace_prim.h caml/backtrace.h caml/fail.h
 backtrace_prim.$(O): backtrace_prim.c caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/config.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/alloc.h \
- caml/mlvalues.h caml/custom.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/instruct.h caml/intext.h caml/io.h caml/exec.h \
- caml/fix_code.h caml/memory.h caml/startup.h caml/exec.h \
+ caml/mlvalues.h caml/config.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/alloc.h caml/mlvalues.h caml/custom.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/instruct.h caml/intext.h caml/io.h \
+ caml/exec.h caml/fix_code.h caml/memory.h caml/startup.h caml/exec.h \
  caml/startup_aux.h caml/fiber.h caml/roots.h caml/sys.h caml/backtrace.h \
  caml/fail.h caml/backtrace_prim.h caml/backtrace.h
 bigarray.$(O): bigarray.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/bigarray.h caml/custom.h caml/fail.h \
- caml/intext.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/hash.h caml/memory.h caml/mlvalues.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/bigarray.h \
+ caml/custom.h caml/fail.h caml/intext.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/hash.h caml/memory.h caml/mlvalues.h
 callback.$(O): callback.c caml/callback.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/fail.h \
- caml/memory.h caml/mlvalues.h caml/platform.h caml/interp.h \
- caml/instruct.h caml/fix_code.h caml/fiber.h caml/roots.h
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/fail.h caml/memory.h caml/mlvalues.h caml/platform.h \
+ caml/fiber.h caml/roots.h caml/interp.h caml/instruct.h caml/fix_code.h
 compare.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h \
- caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h
+ caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h
 custom.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h
 debugger.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/debugger.h caml/misc.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/memory.h caml/alloc.h caml/osdeps.h caml/fail.h \
- caml/fix_code.h caml/instruct.h caml/intext.h caml/io.h caml/platform.h \
- caml/io.h caml/mlvalues.h caml/fiber.h caml/roots.h caml/sys.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/debugger.h caml/misc.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/osdeps.h caml/fail.h caml/fix_code.h caml/instruct.h caml/intext.h \
+ caml/io.h caml/platform.h caml/io.h caml/mlvalues.h caml/fiber.h \
+ caml/roots.h caml/sys.h
 domain.$(O): domain.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/domain.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/domain_state.h caml/platform.h caml/custom.h \
- caml/major_gc.h caml/shared_heap.h caml/roots.h caml/memory.h \
- caml/fail.h caml/globroots.h caml/signals.h caml/startup.h caml/exec.h \
- caml/startup_aux.h caml/fiber.h caml/callback.h caml/minor_gc.h \
- caml/eventlog.h caml/gc_ctrl.h caml/osdeps.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/domain.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/domain_state.h caml/platform.h \
+ caml/custom.h caml/major_gc.h caml/shared_heap.h caml/roots.h \
+ caml/memory.h caml/fail.h caml/globroots.h caml/signals.h caml/startup.h \
+ caml/exec.h caml/startup_aux.h caml/fiber.h caml/callback.h \
+ caml/minor_gc.h caml/eventlog.h caml/gc_ctrl.h caml/osdeps.h caml/weak.h \
+ caml/finalise.h
 dynlink.$(O): dynlink.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/dynlink.h \
- caml/fail.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/osdeps.h caml/prims.h caml/signals.h
-eventlog.$(O): eventlog.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/eventlog.h caml/domain.h caml/mlvalues.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/alloc.h caml/startup.h caml/exec.h caml/startup_aux.h caml/domain.h \
- caml/platform.h caml/shared_heap.h caml/roots.h
-extern.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/custom.h caml/fail.h \
- caml/gc.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/io.h caml/md5.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/reverse.h caml/addrmap.h
-fail.$(O): fail.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/io.h caml/platform.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/gc.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/printexc.h caml/signals.h caml/fiber.h caml/roots.h
-fiber.$(O): fiber.c caml/misc.h caml/config.h caml/m.h caml/s.h caml/fiber.h \
- caml/misc.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h \
- caml/gc_ctrl.h caml/instruct.h caml/fail.h caml/alloc.h caml/platform.h \
- caml/fix_code.h caml/minor_gc.h caml/major_gc.h caml/shared_heap.h \
- caml/memory.h caml/startup_aux.h
-finalise.$(O): finalise.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/fail.h caml/misc.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl
-fix_code.$(O): fix_code.c caml/config.h caml/m.h caml/s.h caml/debugger.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/fix_code.h \
- caml/instruct.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/md5.h caml/memory.h caml/misc.h caml/mlvalues.h \
- caml/reverse.h
-floats.$(O): floats.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/dynlink.h caml/fail.h caml/mlvalues.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h caml/reverse.h \
- caml/fiber.h caml/roots.h
+ caml/memory.h caml/alloc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/signals.h
+eventlog.$(O): eventlog.c caml/domain.h caml/config.h caml/m.h caml/s.h \
+ caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/eventlog.h caml/osdeps.h caml/platform.h \
+ caml/startup_aux.h
+eventlog2.$(O): eventlog2.c
+extern.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/custom.h caml/fail.h caml/gc.h caml/intext.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/io.h caml/md5.h \
+ caml/memory.h caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
+fail.$(O): fail.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/gc.h caml/memory.h \
+ caml/misc.h caml/mlvalues.h caml/printexc.h caml/signals.h caml/fiber.h \
+ caml/roots.h
+fiber.$(O): fiber.c caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/fiber.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/roots.h caml/gc_ctrl.h caml/instruct.h \
+ caml/fail.h caml/alloc.h caml/platform.h caml/fix_code.h caml/minor_gc.h \
+ caml/major_gc.h caml/shared_heap.h caml/memory.h caml/startup_aux.h
+finalise.$(O): finalise.c caml/callback.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/eventlog.h caml/fail.h caml/finalise.h caml/roots.h \
+ caml/memory.h caml/misc.h caml/roots.h caml/shared_heap.h
+fix_code.$(O): fix_code.c caml/config.h caml/m.h caml/s.h caml/debugger.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/fix_code.h caml/instruct.h caml/intext.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/md5.h caml/memory.h caml/misc.h \
+ caml/mlvalues.h caml/reverse.h
+floats.$(O): floats.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h \
+ caml/reverse.h caml/fiber.h caml/roots.h
 gc_ctrl.$(O): gc_ctrl.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/finalise.h caml/gc.h \
- caml/gc_ctrl.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/shared_heap.h caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/domain.h caml/alloc.h caml/misc.h caml/mlvalues.h \
- caml/fiber.h caml/domain.h caml/globroots.h caml/signals.h \
- caml/startup.h caml/exec.h caml/startup_aux.h caml/eventlog.h \
- caml/fail.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/finalise.h caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/gc.h \
+ caml/gc_ctrl.h caml/major_gc.h caml/minor_gc.h caml/shared_heap.h \
+ caml/misc.h caml/mlvalues.h caml/fiber.h caml/domain.h caml/globroots.h \
+ caml/signals.h caml/startup.h caml/exec.h caml/startup_aux.h \
+ caml/eventlog.h caml/fail.h
 globroots.$(O): globroots.c caml/memory.h caml/config.h caml/m.h caml/s.h \
- caml/gc.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/mlvalues.h caml/roots.h caml/globroots.h caml/roots.h \
- caml/callback.h caml/platform.h caml/alloc.h caml/shared_heap.h
+ caml/gc.h caml/mlvalues.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h caml/roots.h \
+ caml/globroots.h caml/roots.h caml/callback.h caml/platform.h \
+ caml/alloc.h caml/shared_heap.h
 hash.$(O): hash.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
- caml/misc.h caml/domain_state.h caml/domain_state.tbl \
+ caml/misc.h caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/custom.h caml/mlvalues.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/memory.h caml/alloc.h caml/hash.h caml/fail.h
 instrtrace.$(O): instrtrace.c
 intern.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
- caml/intext.h caml/io.h caml/platform.h caml/io.h caml/md5.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/callback.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/config.h caml/custom.h caml/fail.h \
+ caml/gc.h caml/intext.h caml/io.h caml/platform.h caml/io.h caml/md5.h \
  caml/memory.h caml/mlvalues.h caml/misc.h caml/reverse.h
 interp.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/backtrace.h caml/exec.h caml/callback.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/debugger.h caml/fail.h caml/fix_code.h \
- caml/instrtrace.h caml/instruct.h caml/interp.h caml/major_gc.h \
- caml/memory.h caml/misc.h caml/mlvalues.h caml/prims.h caml/signals.h \
- caml/fiber.h caml/roots.h caml/domain.h caml/globroots.h caml/startup.h \
- caml/startup_aux.h caml/startup_aux.h caml/jumptbl.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/backtrace.h \
+ caml/exec.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
+ caml/debugger.h caml/fail.h caml/fix_code.h caml/instrtrace.h \
+ caml/instruct.h caml/interp.h caml/major_gc.h caml/memory.h caml/misc.h \
+ caml/mlvalues.h caml/prims.h caml/signals.h caml/fiber.h caml/roots.h \
+ caml/domain.h caml/globroots.h caml/startup.h caml/startup_aux.h \
+ caml/startup_aux.h caml/jumptbl.h
 ints.$(O): ints.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/intext.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
+ caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/mlvalues.h
+io.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/mlvalues.h caml/osdeps.h \
+ caml/signals.h caml/sys.h
+lexing.$(O): lexing.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/mlvalues.h \
+ caml/fiber.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h
+main.$(O): main.c caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/sys.h \
+ caml/osdeps.h caml/memory.h caml/gc.h caml/mlvalues.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h
+major_gc.$(O): major_gc.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/domain.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/eventlog.h caml/fail.h \
+ caml/fiber.h caml/roots.h caml/finalise.h caml/globroots.h caml/memory.h \
+ caml/mlvalues.h caml/platform.h caml/roots.h caml/shared_heap.h \
+ caml/startup_aux.h caml/weak.h
+md5.$(O): md5.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/md5.h \
  caml/io.h caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h \
- caml/misc.h caml/mlvalues.h
-io.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/osdeps.h caml/signals.h caml/sys.h
-lexing.$(O): lexing.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/mlvalues.h caml/fiber.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/roots.h
-main.$(O): main.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/sys.h caml/osdeps.h caml/memory.h \
- caml/gc.h caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h
-major_gc.$(O): major_gc.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/mlvalues.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/fail.h caml/shared_heap.h caml/roots.h \
- caml/roots.h caml/globroots.h caml/domain.h caml/fiber.h caml/addrmap.h \
- caml/platform.h caml/startup_aux.h caml/eventlog.h
-md5.$(O): md5.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/md5.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/mlvalues.h \
- caml/io.h caml/reverse.h
+ caml/mlvalues.h caml/io.h caml/reverse.h
 memory.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
- caml/config.h caml/fail.h caml/misc.h caml/mlvalues.h \
+ caml/config.h caml/camlatomic.h caml/fail.h caml/misc.h caml/mlvalues.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
  caml/domain.h caml/memory.h caml/alloc.h caml/major_gc.h \
  caml/shared_heap.h caml/roots.h caml/domain.h caml/addrmap.h \
- caml/roots.h caml/alloc.h caml/fiber.h caml/platform.h
+ caml/roots.h caml/alloc.h caml/fiber.h caml/platform.h caml/eventlog.h
 meta.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/fail.h caml/fix_code.h \
- caml/interp.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/major_gc.h caml/memory.h caml/minor_gc.h caml/misc.h \
- caml/mlvalues.h caml/prims.h caml/fiber.h caml/roots.h \
- caml/startup_aux.h
-minor_gc.$(O): minor_gc.c caml/config.h caml/m.h caml/s.h caml/fail.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/finalise.h \
- caml/gc.h caml/gc_ctrl.h caml/major_gc.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/minor_gc.h caml/misc.h caml/mlvalues.h \
- caml/roots.h caml/signals.h caml/weak.h caml/domain.h caml/shared_heap.h \
- caml/roots.h caml/addrmap.h caml/fiber.h caml/eventlog.h
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/fail.h caml/fix_code.h caml/interp.h caml/intext.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/major_gc.h caml/memory.h \
+ caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/fiber.h \
+ caml/roots.h caml/startup_aux.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/exec.h
+minor_gc.$(O): minor_gc.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/custom.h caml/domain.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
+ caml/eventlog.h caml/fail.h caml/fiber.h caml/roots.h caml/finalise.h \
+ caml/gc.h caml/gc_ctrl.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
+ caml/misc.h caml/mlvalues.h caml/roots.h caml/shared_heap.h \
+ caml/signals.h caml/weak.h
 misc.$(O): misc.c caml/config.h caml/m.h caml/s.h caml/misc.h caml/config.h \
- caml/memory.h caml/gc.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/osdeps.h caml/version.h caml/domain.h caml/startup.h caml/exec.h \
- caml/startup_aux.h caml/startup_aux.h
-obj.$(O): obj.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/gc.h caml/interp.h \
- caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/minor_gc.h \
- caml/misc.h caml/mlvalues.h caml/prims.h caml/platform.h \
- caml/spacetime.h
-params.$(O): params.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/params.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/version.h caml/osdeps.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/prims.h \
- caml/dynlink.h caml/domain.h
-parsing.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/mlvalues.h \
+ caml/camlatomic.h caml/memory.h caml/gc.h caml/mlvalues.h caml/misc.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/alloc.h caml/startup.h caml/exec.h \
- caml/startup_aux.h
+ caml/memory.h caml/alloc.h caml/osdeps.h caml/version.h caml/domain.h \
+ caml/startup.h caml/exec.h caml/startup_aux.h caml/startup_aux.h
+obj.$(O): obj.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/gc.h \
+ caml/interp.h caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/platform.h \
+ caml/spacetime.h
+parsing.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
+ caml/config.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/alloc.h caml/startup.h \
+ caml/exec.h caml/startup_aux.h
 platform.$(O): platform.c caml/platform.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/fail.h
-prims.$(O): prims.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
- caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/prims.h
-printexc.$(O): printexc.c caml/backtrace.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/exec.h caml/callback.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/debugger.h caml/fail.h caml/misc.h caml/mlvalues.h \
- caml/printexc.h caml/memory.h
-roots.$(O): roots.c caml/finalise.h caml/globroots.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/roots.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
- caml/misc.h caml/mlvalues.h caml/roots.h caml/shared_heap.h caml/fiber.h
-shared_heap.$(O): shared_heap.c caml/platform.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
  caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/mlvalues.h caml/gc.h caml/fail.h caml/memory.h \
- caml/sizeclasses.h caml/addrmap.h caml/roots.h caml/globroots.h \
- caml/roots.h caml/shared_heap.h caml/startup_aux.h caml/fiber.h
+ caml/alloc.h caml/fail.h
+prims.$(O): prims.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
+ caml/misc.h caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/prims.h
+printexc.$(O): printexc.c caml/backtrace.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
+ caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/debugger.h caml/fail.h \
+ caml/misc.h caml/mlvalues.h caml/printexc.h caml/memory.h
+roots.$(O): roots.c caml/finalise.h caml/roots.h caml/misc.h caml/config.h \
+ caml/m.h caml/s.h caml/camlatomic.h caml/memory.h caml/gc.h \
+ caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/globroots.h \
+ caml/major_gc.h caml/memory.h caml/minor_gc.h caml/misc.h \
+ caml/mlvalues.h caml/roots.h caml/shared_heap.h caml/fiber.h
+shared_heap.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/fiber.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h \
+ caml/gc.h caml/globroots.h caml/memory.h caml/mlvalues.h caml/platform.h \
+ caml/roots.h caml/shared_heap.h caml/sizeclasses.h caml/startup_aux.h
 signals.$(O): signals.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/config.h caml/fail.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/roots.h caml/signals.h  \
- caml/sys.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/callback.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/config.h caml/fail.h caml/memory.h \
+ caml/misc.h caml/mlvalues.h caml/roots.h caml/signals.h caml/sys.h
 signals_byt.$(O): signals_byt.c caml/config.h caml/m.h caml/s.h \
  caml/memory.h caml/config.h caml/gc.h caml/mlvalues.h caml/misc.h \
- caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/osdeps.h caml/signals.h \
- 
+ caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/osdeps.h \
+ caml/signals.h
 spacetime.$(O): spacetime.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/mlvalues.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/mlvalues.h
 startup.$(O): startup.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/backtrace.h \
- caml/exec.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/custom.h \
- caml/debugger.h caml/domain_state.h caml/dynlink.h caml/eventlog.h \
- caml/exec.h caml/fail.h caml/fix_code.h caml/gc_ctrl.h caml/instrtrace.h \
- caml/interp.h caml/intext.h caml/io.h caml/platform.h caml/io.h \
- caml/memory.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/osdeps.h \
- caml/startup_aux.h caml/prims.h caml/printexc.h caml/reverse.h \
- caml/signals.h caml/fiber.h caml/roots.h caml/sys.h caml/startup.h \
- caml/startup_aux.h caml/version.h
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/backtrace.h caml/exec.h caml/callback.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/custom.h caml/debugger.h caml/domain_state.h \
+ caml/dynlink.h caml/eventlog.h caml/exec.h caml/fail.h caml/fix_code.h \
+ caml/gc_ctrl.h caml/instrtrace.h caml/interp.h caml/intext.h caml/io.h \
+ caml/platform.h caml/io.h caml/memory.h caml/minor_gc.h caml/misc.h \
+ caml/mlvalues.h caml/osdeps.h caml/startup_aux.h caml/prims.h \
+ caml/printexc.h caml/reverse.h caml/signals.h caml/fiber.h caml/roots.h \
+ caml/sys.h caml/startup.h caml/startup_aux.h caml/version.h
 startup_aux.$(O): startup_aux.c caml/backtrace.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/callback.h \
- caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/config.h caml/m.h caml/s.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/exec.h caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/callback.h caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
  caml/startup_aux.h caml/version.h
 str.$(O): str.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h
 sys.$(O): sys.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/debugger.h caml/fail.h caml/gc_ctrl.h \
- caml/io.h caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
- caml/mlvalues.h caml/osdeps.h caml/signals.h caml/fiber.h caml/roots.h \
- caml/sys.h caml/startup.h caml/exec.h caml/startup_aux.h caml/version.h \
- caml/callback.h caml/startup_aux.h
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
+ caml/fail.h caml/gc_ctrl.h caml/io.h caml/platform.h caml/memory.h \
+ caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/mlvalues.h caml/osdeps.h caml/signals.h caml/fiber.h \
+ caml/roots.h caml/sys.h caml/startup.h caml/exec.h caml/startup_aux.h \
+ caml/version.h caml/callback.h caml/startup_aux.h caml/major_gc.h
 terminfo.$(O): terminfo.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/mlvalues.h caml/memory.h
-unix.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/osdeps.h caml/signals.h caml/sys.h caml/io.h \
- caml/platform.h caml/alloc.h
-weak.$(O): weak.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/major_gc.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/weak.h
-win32.$(O): win32.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/address_class.h caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/misc.h \
- caml/osdeps.h caml/signals.h caml/sys.h caml/config.h
-addrmap.d.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
- caml/config.h caml/domain.h caml/misc.h caml/mlvalues.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
- caml/alloc.h caml/addrmap.h
-afl.d.$(O): afl.c caml/config.h caml/m.h caml/s.h caml/misc.h caml/config.h \
- caml/mlvalues.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/osdeps.h caml/memory.h caml/gc.h \
- caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h
-alloc.d.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/major_gc.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/fiber.h caml/roots.h \
- caml/domain.h
-array.d.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h caml/signals.h \
- caml/spacetime.h
+ caml/alloc.h caml/mlvalues.h caml/memory.h
+unix.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/misc.h caml/osdeps.h caml/signals.h \
+ caml/sys.h caml/io.h caml/platform.h caml/alloc.h
+weak.$(O): weak.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/domain.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/fail.h caml/major_gc.h caml/memory.h \
+ caml/mlvalues.h caml/shared_heap.h caml/roots.h caml/weak.h
+win32.$(O): win32.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/address_class.h \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/osdeps.h caml/signals.h \
+ caml/sys.h caml/config.h
+addrmap.d.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
+ caml/config.h caml/domain.h caml/misc.h caml/camlatomic.h \
+ caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/alloc.h caml/addrmap.h
+afl.d.$(O): afl.c caml/config.h caml/m.h caml/s.h caml/misc.h caml/config.h \
+ caml/camlatomic.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/osdeps.h \
+ caml/memory.h caml/gc.h caml/mlvalues.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h
+alloc.d.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h \
+ caml/fiber.h caml/roots.h caml/domain.h
+array.d.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h \
+ caml/signals.h caml/spacetime.h
 backtrace.d.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/backtrace.h caml/exec.h \
+ caml/backtrace_prim.h caml/backtrace.h caml/fail.h
 backtrace_prim.d.$(O): backtrace_prim.c caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/config.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/alloc.h \
- caml/mlvalues.h caml/custom.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/instruct.h caml/intext.h caml/io.h caml/exec.h \
- caml/fix_code.h caml/memory.h caml/startup.h caml/exec.h \
+ caml/mlvalues.h caml/config.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/alloc.h caml/mlvalues.h caml/custom.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/instruct.h caml/intext.h caml/io.h \
+ caml/exec.h caml/fix_code.h caml/memory.h caml/startup.h caml/exec.h \
  caml/startup_aux.h caml/fiber.h caml/roots.h caml/sys.h caml/backtrace.h \
  caml/fail.h caml/backtrace_prim.h caml/backtrace.h
 bigarray.d.$(O): bigarray.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/bigarray.h caml/custom.h caml/fail.h \
- caml/intext.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/hash.h caml/memory.h caml/mlvalues.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/bigarray.h \
+ caml/custom.h caml/fail.h caml/intext.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/hash.h caml/memory.h caml/mlvalues.h
 callback.d.$(O): callback.c caml/callback.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/fail.h \
- caml/memory.h caml/mlvalues.h caml/platform.h caml/interp.h \
- caml/instruct.h caml/fix_code.h caml/fiber.h caml/roots.h
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/fail.h caml/memory.h caml/mlvalues.h caml/platform.h \
+ caml/fiber.h caml/roots.h caml/interp.h caml/instruct.h caml/fix_code.h
 compare.d.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h \
- caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h
+ caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h
 custom.d.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h
 debugger.d.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/debugger.h caml/misc.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/memory.h caml/alloc.h caml/osdeps.h caml/fail.h \
- caml/fix_code.h caml/instruct.h caml/intext.h caml/io.h caml/platform.h \
- caml/io.h caml/mlvalues.h caml/fiber.h caml/roots.h caml/sys.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/debugger.h caml/misc.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/osdeps.h caml/fail.h caml/fix_code.h caml/instruct.h caml/intext.h \
+ caml/io.h caml/platform.h caml/io.h caml/mlvalues.h caml/fiber.h \
+ caml/roots.h caml/sys.h
 domain.d.$(O): domain.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/domain.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/domain_state.h caml/platform.h caml/custom.h \
- caml/major_gc.h caml/shared_heap.h caml/roots.h caml/memory.h \
- caml/fail.h caml/globroots.h caml/signals.h caml/startup.h caml/exec.h \
- caml/startup_aux.h caml/fiber.h caml/callback.h caml/minor_gc.h \
- caml/eventlog.h caml/gc_ctrl.h caml/osdeps.h caml/domain_state.tbl
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/domain.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/domain_state.h caml/platform.h \
+ caml/custom.h caml/major_gc.h caml/shared_heap.h caml/roots.h \
+ caml/memory.h caml/fail.h caml/globroots.h caml/signals.h caml/startup.h \
+ caml/exec.h caml/startup_aux.h caml/fiber.h caml/callback.h \
+ caml/minor_gc.h caml/eventlog.h caml/gc_ctrl.h caml/osdeps.h caml/weak.h \
+ caml/finalise.h caml/domain_state.tbl
 dynlink.d.$(O): dynlink.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/dynlink.h \
- caml/fail.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/osdeps.h caml/prims.h caml/signals.h
-eventlog.d.$(O): eventlog.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/eventlog.h caml/domain.h caml/mlvalues.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/alloc.h caml/startup.h caml/exec.h caml/startup_aux.h caml/domain.h \
- caml/platform.h caml/shared_heap.h caml/roots.h
-extern.d.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/custom.h caml/fail.h \
- caml/gc.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/io.h caml/md5.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/reverse.h caml/addrmap.h
-fail.d.$(O): fail.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/io.h caml/platform.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/gc.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/printexc.h caml/signals.h caml/fiber.h caml/roots.h
-fiber.d.$(O): fiber.c caml/misc.h caml/config.h caml/m.h caml/s.h caml/fiber.h \
- caml/misc.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h \
- caml/gc_ctrl.h caml/instruct.h caml/fail.h caml/alloc.h caml/platform.h \
- caml/fix_code.h caml/minor_gc.h caml/major_gc.h caml/shared_heap.h \
- caml/memory.h caml/startup_aux.h
-finalise.d.$(O): finalise.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/fail.h caml/misc.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl
-fix_code.d.$(O): fix_code.c caml/config.h caml/m.h caml/s.h caml/debugger.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/fix_code.h \
- caml/instruct.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/md5.h caml/memory.h caml/misc.h caml/mlvalues.h \
- caml/reverse.h
-floats.d.$(O): floats.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/dynlink.h caml/fail.h caml/mlvalues.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h caml/reverse.h \
- caml/fiber.h caml/roots.h
+ caml/memory.h caml/alloc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/signals.h
+eventlog.d.$(O): eventlog.c caml/domain.h caml/config.h caml/m.h caml/s.h \
+ caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/eventlog.h caml/osdeps.h caml/platform.h \
+ caml/startup_aux.h
+eventlog2.d.$(O): eventlog2.c
+extern.d.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/custom.h caml/fail.h caml/gc.h caml/intext.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/io.h caml/md5.h \
+ caml/memory.h caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
+fail.d.$(O): fail.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/gc.h caml/memory.h \
+ caml/misc.h caml/mlvalues.h caml/printexc.h caml/signals.h caml/fiber.h \
+ caml/roots.h
+fiber.d.$(O): fiber.c caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/fiber.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/roots.h caml/gc_ctrl.h caml/instruct.h \
+ caml/fail.h caml/alloc.h caml/platform.h caml/fix_code.h caml/minor_gc.h \
+ caml/major_gc.h caml/shared_heap.h caml/memory.h caml/startup_aux.h
+finalise.d.$(O): finalise.c caml/callback.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/eventlog.h caml/fail.h caml/finalise.h caml/roots.h \
+ caml/memory.h caml/misc.h caml/roots.h caml/shared_heap.h
+fix_code.d.$(O): fix_code.c caml/config.h caml/m.h caml/s.h caml/debugger.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/fix_code.h caml/instruct.h caml/intext.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/md5.h caml/memory.h caml/misc.h \
+ caml/mlvalues.h caml/reverse.h
+floats.d.$(O): floats.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h \
+ caml/reverse.h caml/fiber.h caml/roots.h
 gc_ctrl.d.$(O): gc_ctrl.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/finalise.h caml/gc.h \
- caml/gc_ctrl.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/shared_heap.h caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/domain.h caml/alloc.h caml/misc.h caml/mlvalues.h \
- caml/fiber.h caml/domain.h caml/globroots.h caml/signals.h \
- caml/startup.h caml/exec.h caml/startup_aux.h caml/eventlog.h \
- caml/fail.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/finalise.h caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/gc.h \
+ caml/gc_ctrl.h caml/major_gc.h caml/minor_gc.h caml/shared_heap.h \
+ caml/misc.h caml/mlvalues.h caml/fiber.h caml/domain.h caml/globroots.h \
+ caml/signals.h caml/startup.h caml/exec.h caml/startup_aux.h \
+ caml/eventlog.h caml/fail.h
 globroots.d.$(O): globroots.c caml/memory.h caml/config.h caml/m.h caml/s.h \
- caml/gc.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/mlvalues.h caml/roots.h caml/globroots.h caml/roots.h \
- caml/callback.h caml/platform.h caml/alloc.h caml/shared_heap.h
+ caml/gc.h caml/mlvalues.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h caml/roots.h \
+ caml/globroots.h caml/roots.h caml/callback.h caml/platform.h \
+ caml/alloc.h caml/shared_heap.h
 hash.d.$(O): hash.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
- caml/misc.h caml/domain_state.h caml/domain_state.tbl \
+ caml/misc.h caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/custom.h caml/mlvalues.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/memory.h caml/alloc.h caml/hash.h caml/fail.h
 instrtrace.d.$(O): instrtrace.c caml/instrtrace.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/instruct.h \
- caml/misc.h caml/mlvalues.h caml/opnames.h caml/prims.h caml/fiber.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/roots.h caml/domain.h caml/startup.h \
- caml/exec.h caml/startup_aux.h
+ caml/config.h caml/m.h caml/s.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/instruct.h caml/misc.h caml/mlvalues.h caml/opnames.h caml/prims.h \
+ caml/fiber.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h caml/domain.h \
+ caml/startup.h caml/exec.h caml/startup_aux.h
 intern.d.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
- caml/intext.h caml/io.h caml/platform.h caml/io.h caml/md5.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/callback.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/config.h caml/custom.h caml/fail.h \
+ caml/gc.h caml/intext.h caml/io.h caml/platform.h caml/io.h caml/md5.h \
  caml/memory.h caml/mlvalues.h caml/misc.h caml/reverse.h
 interp.d.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/backtrace.h caml/exec.h caml/callback.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/debugger.h caml/fail.h caml/fix_code.h \
- caml/instrtrace.h caml/instruct.h caml/interp.h caml/major_gc.h \
- caml/memory.h caml/misc.h caml/mlvalues.h caml/prims.h caml/signals.h \
- caml/fiber.h caml/roots.h caml/domain.h caml/globroots.h caml/startup.h \
- caml/startup_aux.h caml/startup_aux.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/backtrace.h \
+ caml/exec.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
+ caml/debugger.h caml/fail.h caml/fix_code.h caml/instrtrace.h \
+ caml/instruct.h caml/interp.h caml/major_gc.h caml/memory.h caml/misc.h \
+ caml/mlvalues.h caml/prims.h caml/signals.h caml/fiber.h caml/roots.h \
+ caml/domain.h caml/globroots.h caml/startup.h caml/startup_aux.h \
+ caml/startup_aux.h
 ints.d.$(O): ints.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/intext.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
+ caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/mlvalues.h
+io.d.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/mlvalues.h caml/osdeps.h \
+ caml/signals.h caml/sys.h
+lexing.d.$(O): lexing.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/mlvalues.h \
+ caml/fiber.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h
+main.d.$(O): main.c caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/sys.h \
+ caml/osdeps.h caml/memory.h caml/gc.h caml/mlvalues.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h
+major_gc.d.$(O): major_gc.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/domain.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/eventlog.h caml/fail.h \
+ caml/fiber.h caml/roots.h caml/finalise.h caml/globroots.h caml/memory.h \
+ caml/mlvalues.h caml/platform.h caml/roots.h caml/shared_heap.h \
+ caml/startup_aux.h caml/weak.h
+md5.d.$(O): md5.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/md5.h \
  caml/io.h caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h \
- caml/misc.h caml/mlvalues.h
-io.d.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/osdeps.h caml/signals.h caml/sys.h
-lexing.d.$(O): lexing.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/mlvalues.h caml/fiber.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/roots.h
-main.d.$(O): main.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/sys.h caml/osdeps.h caml/memory.h \
- caml/gc.h caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h
-major_gc.d.$(O): major_gc.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/mlvalues.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/fail.h caml/shared_heap.h caml/roots.h \
- caml/roots.h caml/globroots.h caml/domain.h caml/fiber.h caml/addrmap.h \
- caml/platform.h caml/startup_aux.h caml/eventlog.h
-md5.d.$(O): md5.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/md5.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/mlvalues.h \
- caml/io.h caml/reverse.h
+ caml/mlvalues.h caml/io.h caml/reverse.h
 memory.d.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
- caml/config.h caml/fail.h caml/misc.h caml/mlvalues.h \
+ caml/config.h caml/camlatomic.h caml/fail.h caml/misc.h caml/mlvalues.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
  caml/domain.h caml/memory.h caml/alloc.h caml/major_gc.h \
  caml/shared_heap.h caml/roots.h caml/domain.h caml/addrmap.h \
- caml/roots.h caml/alloc.h caml/fiber.h caml/platform.h
+ caml/roots.h caml/alloc.h caml/fiber.h caml/platform.h caml/eventlog.h
 meta.d.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/fail.h caml/fix_code.h \
- caml/interp.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/major_gc.h caml/memory.h caml/minor_gc.h caml/misc.h \
- caml/mlvalues.h caml/prims.h caml/fiber.h caml/roots.h \
- caml/startup_aux.h
-minor_gc.d.$(O): minor_gc.c caml/config.h caml/m.h caml/s.h caml/fail.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/finalise.h \
- caml/gc.h caml/gc_ctrl.h caml/major_gc.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/minor_gc.h caml/misc.h caml/mlvalues.h \
- caml/roots.h caml/signals.h caml/weak.h caml/domain.h caml/shared_heap.h \
- caml/roots.h caml/addrmap.h caml/fiber.h caml/eventlog.h
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/fail.h caml/fix_code.h caml/interp.h caml/intext.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/major_gc.h caml/memory.h \
+ caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/fiber.h \
+ caml/roots.h caml/startup_aux.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/exec.h
+minor_gc.d.$(O): minor_gc.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/custom.h caml/domain.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
+ caml/eventlog.h caml/fail.h caml/fiber.h caml/roots.h caml/finalise.h \
+ caml/gc.h caml/gc_ctrl.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
+ caml/misc.h caml/mlvalues.h caml/roots.h caml/shared_heap.h \
+ caml/signals.h caml/weak.h
 misc.d.$(O): misc.c caml/config.h caml/m.h caml/s.h caml/misc.h caml/config.h \
- caml/memory.h caml/gc.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/osdeps.h caml/version.h caml/domain.h caml/startup.h caml/exec.h \
- caml/startup_aux.h caml/startup_aux.h
-obj.d.$(O): obj.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/gc.h caml/interp.h \
- caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/minor_gc.h \
- caml/misc.h caml/mlvalues.h caml/prims.h caml/platform.h \
- caml/spacetime.h
-params.d.$(O): params.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/params.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/version.h caml/osdeps.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/prims.h \
- caml/dynlink.h caml/domain.h
-parsing.d.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/mlvalues.h \
+ caml/camlatomic.h caml/memory.h caml/gc.h caml/mlvalues.h caml/misc.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/alloc.h caml/startup.h caml/exec.h \
- caml/startup_aux.h
+ caml/memory.h caml/alloc.h caml/osdeps.h caml/version.h caml/domain.h \
+ caml/startup.h caml/exec.h caml/startup_aux.h caml/startup_aux.h
+obj.d.$(O): obj.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/gc.h \
+ caml/interp.h caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/platform.h \
+ caml/spacetime.h
+parsing.d.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
+ caml/config.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/alloc.h caml/startup.h \
+ caml/exec.h caml/startup_aux.h
 platform.d.$(O): platform.c caml/platform.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/fail.h
-prims.d.$(O): prims.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
- caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/prims.h
-printexc.d.$(O): printexc.c caml/backtrace.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/exec.h caml/callback.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/debugger.h caml/fail.h caml/misc.h caml/mlvalues.h \
- caml/printexc.h caml/memory.h
-roots.d.$(O): roots.c caml/finalise.h caml/globroots.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/roots.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
- caml/misc.h caml/mlvalues.h caml/roots.h caml/shared_heap.h caml/fiber.h
-shared_heap.d.$(O): shared_heap.c caml/platform.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
  caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/mlvalues.h caml/gc.h caml/fail.h caml/memory.h \
- caml/sizeclasses.h caml/addrmap.h caml/roots.h caml/globroots.h \
- caml/roots.h caml/shared_heap.h caml/startup_aux.h caml/fiber.h
+ caml/alloc.h caml/fail.h
+prims.d.$(O): prims.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
+ caml/misc.h caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/prims.h
+printexc.d.$(O): printexc.c caml/backtrace.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
+ caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/debugger.h caml/fail.h \
+ caml/misc.h caml/mlvalues.h caml/printexc.h caml/memory.h
+roots.d.$(O): roots.c caml/finalise.h caml/roots.h caml/misc.h caml/config.h \
+ caml/m.h caml/s.h caml/camlatomic.h caml/memory.h caml/gc.h \
+ caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/globroots.h \
+ caml/major_gc.h caml/memory.h caml/minor_gc.h caml/misc.h \
+ caml/mlvalues.h caml/roots.h caml/shared_heap.h caml/fiber.h
+shared_heap.d.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/fiber.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h \
+ caml/gc.h caml/globroots.h caml/memory.h caml/mlvalues.h caml/platform.h \
+ caml/roots.h caml/shared_heap.h caml/sizeclasses.h caml/startup_aux.h
 signals.d.$(O): signals.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/config.h caml/fail.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/roots.h caml/signals.h  \
- caml/sys.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/callback.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/config.h caml/fail.h caml/memory.h \
+ caml/misc.h caml/mlvalues.h caml/roots.h caml/signals.h caml/sys.h
 signals_byt.d.$(O): signals_byt.c caml/config.h caml/m.h caml/s.h \
  caml/memory.h caml/config.h caml/gc.h caml/mlvalues.h caml/misc.h \
- caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/osdeps.h caml/signals.h \
- 
+ caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/osdeps.h \
+ caml/signals.h
 spacetime.d.$(O): spacetime.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/mlvalues.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/mlvalues.h
 startup.d.$(O): startup.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/backtrace.h \
- caml/exec.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/custom.h \
- caml/debugger.h caml/domain_state.h caml/dynlink.h caml/eventlog.h \
- caml/exec.h caml/fail.h caml/fix_code.h caml/gc_ctrl.h caml/instrtrace.h \
- caml/interp.h caml/intext.h caml/io.h caml/platform.h caml/io.h \
- caml/memory.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/osdeps.h \
- caml/startup_aux.h caml/prims.h caml/printexc.h caml/reverse.h \
- caml/signals.h caml/fiber.h caml/roots.h caml/sys.h caml/startup.h \
- caml/startup_aux.h caml/version.h
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/backtrace.h caml/exec.h caml/callback.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/custom.h caml/debugger.h caml/domain_state.h \
+ caml/dynlink.h caml/eventlog.h caml/exec.h caml/fail.h caml/fix_code.h \
+ caml/gc_ctrl.h caml/instrtrace.h caml/interp.h caml/intext.h caml/io.h \
+ caml/platform.h caml/io.h caml/memory.h caml/minor_gc.h caml/misc.h \
+ caml/mlvalues.h caml/osdeps.h caml/startup_aux.h caml/prims.h \
+ caml/printexc.h caml/reverse.h caml/signals.h caml/fiber.h caml/roots.h \
+ caml/sys.h caml/startup.h caml/startup_aux.h caml/version.h
 startup_aux.d.$(O): startup_aux.c caml/backtrace.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/callback.h \
- caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/config.h caml/m.h caml/s.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/exec.h caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/callback.h caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
  caml/startup_aux.h caml/version.h
 str.d.$(O): str.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h
 sys.d.$(O): sys.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/debugger.h caml/fail.h caml/gc_ctrl.h \
- caml/io.h caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
- caml/mlvalues.h caml/osdeps.h caml/signals.h caml/fiber.h caml/roots.h \
- caml/sys.h caml/startup.h caml/exec.h caml/startup_aux.h caml/version.h \
- caml/callback.h caml/startup_aux.h
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
+ caml/fail.h caml/gc_ctrl.h caml/io.h caml/platform.h caml/memory.h \
+ caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/mlvalues.h caml/osdeps.h caml/signals.h caml/fiber.h \
+ caml/roots.h caml/sys.h caml/startup.h caml/exec.h caml/startup_aux.h \
+ caml/version.h caml/callback.h caml/startup_aux.h caml/major_gc.h
 terminfo.d.$(O): terminfo.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/mlvalues.h caml/memory.h
-unix.d.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/osdeps.h caml/signals.h caml/sys.h caml/io.h \
- caml/platform.h caml/alloc.h
-weak.d.$(O): weak.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/major_gc.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/weak.h
-win32.d.$(O): win32.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/address_class.h caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/misc.h \
- caml/osdeps.h caml/signals.h caml/sys.h caml/config.h
-addrmap.i.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
- caml/config.h caml/domain.h caml/misc.h caml/mlvalues.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
- caml/alloc.h caml/addrmap.h
-afl.i.$(O): afl.c caml/config.h caml/m.h caml/s.h caml/misc.h caml/config.h \
- caml/mlvalues.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/osdeps.h caml/memory.h caml/gc.h \
- caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h
-alloc.i.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/major_gc.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/fiber.h caml/roots.h \
- caml/domain.h
-array.i.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h caml/signals.h \
- caml/spacetime.h
+ caml/alloc.h caml/mlvalues.h caml/memory.h
+unix.d.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/misc.h caml/osdeps.h caml/signals.h \
+ caml/sys.h caml/io.h caml/platform.h caml/alloc.h
+weak.d.$(O): weak.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/domain.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/fail.h caml/major_gc.h caml/memory.h \
+ caml/mlvalues.h caml/shared_heap.h caml/roots.h caml/weak.h
+win32.d.$(O): win32.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/address_class.h \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/osdeps.h caml/signals.h \
+ caml/sys.h caml/config.h
+addrmap.i.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
+ caml/config.h caml/domain.h caml/misc.h caml/camlatomic.h \
+ caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/alloc.h caml/addrmap.h
+afl.i.$(O): afl.c caml/config.h caml/m.h caml/s.h caml/misc.h caml/config.h \
+ caml/camlatomic.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/osdeps.h \
+ caml/memory.h caml/gc.h caml/mlvalues.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h
+alloc.i.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h \
+ caml/fiber.h caml/roots.h caml/domain.h
+array.i.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h \
+ caml/signals.h caml/spacetime.h
 backtrace.i.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/backtrace.h caml/exec.h \
+ caml/backtrace_prim.h caml/backtrace.h caml/fail.h
 backtrace_prim.i.$(O): backtrace_prim.c caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/config.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/alloc.h \
- caml/mlvalues.h caml/custom.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/instruct.h caml/intext.h caml/io.h caml/exec.h \
- caml/fix_code.h caml/memory.h caml/startup.h caml/exec.h \
+ caml/mlvalues.h caml/config.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/alloc.h caml/mlvalues.h caml/custom.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/instruct.h caml/intext.h caml/io.h \
+ caml/exec.h caml/fix_code.h caml/memory.h caml/startup.h caml/exec.h \
  caml/startup_aux.h caml/fiber.h caml/roots.h caml/sys.h caml/backtrace.h \
  caml/fail.h caml/backtrace_prim.h caml/backtrace.h
 bigarray.i.$(O): bigarray.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/bigarray.h caml/custom.h caml/fail.h \
- caml/intext.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/hash.h caml/memory.h caml/mlvalues.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/bigarray.h \
+ caml/custom.h caml/fail.h caml/intext.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/hash.h caml/memory.h caml/mlvalues.h
 callback.i.$(O): callback.c caml/callback.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/fail.h \
- caml/memory.h caml/mlvalues.h caml/platform.h caml/interp.h \
- caml/instruct.h caml/fix_code.h caml/fiber.h caml/roots.h
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/fail.h caml/memory.h caml/mlvalues.h caml/platform.h \
+ caml/fiber.h caml/roots.h caml/interp.h caml/instruct.h caml/fix_code.h
 compare.i.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h \
- caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h
+ caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h
 custom.i.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h
 debugger.i.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/debugger.h caml/misc.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/memory.h caml/alloc.h caml/osdeps.h caml/fail.h \
- caml/fix_code.h caml/instruct.h caml/intext.h caml/io.h caml/platform.h \
- caml/io.h caml/mlvalues.h caml/fiber.h caml/roots.h caml/sys.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/debugger.h caml/misc.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/osdeps.h caml/fail.h caml/fix_code.h caml/instruct.h caml/intext.h \
+ caml/io.h caml/platform.h caml/io.h caml/mlvalues.h caml/fiber.h \
+ caml/roots.h caml/sys.h
 domain.i.$(O): domain.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/domain.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/domain_state.h caml/platform.h caml/custom.h \
- caml/major_gc.h caml/shared_heap.h caml/roots.h caml/memory.h \
- caml/fail.h caml/globroots.h caml/signals.h caml/startup.h caml/exec.h \
- caml/startup_aux.h caml/fiber.h caml/callback.h caml/minor_gc.h \
- caml/eventlog.h caml/gc_ctrl.h caml/osdeps.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/domain.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/domain_state.h caml/platform.h \
+ caml/custom.h caml/major_gc.h caml/shared_heap.h caml/roots.h \
+ caml/memory.h caml/fail.h caml/globroots.h caml/signals.h caml/startup.h \
+ caml/exec.h caml/startup_aux.h caml/fiber.h caml/callback.h \
+ caml/minor_gc.h caml/eventlog.h caml/gc_ctrl.h caml/osdeps.h caml/weak.h \
+ caml/finalise.h
 dynlink.i.$(O): dynlink.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/dynlink.h \
- caml/fail.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/osdeps.h caml/prims.h caml/signals.h
-eventlog.i.$(O): eventlog.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/eventlog.h caml/domain.h caml/mlvalues.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/alloc.h caml/startup.h caml/exec.h caml/startup_aux.h caml/domain.h \
- caml/platform.h caml/shared_heap.h caml/roots.h
-extern.i.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/custom.h caml/fail.h \
- caml/gc.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/io.h caml/md5.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/reverse.h caml/addrmap.h
-fail.i.$(O): fail.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/io.h caml/platform.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/gc.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/printexc.h caml/signals.h caml/fiber.h caml/roots.h
-fiber.i.$(O): fiber.c caml/misc.h caml/config.h caml/m.h caml/s.h caml/fiber.h \
- caml/misc.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h \
- caml/gc_ctrl.h caml/instruct.h caml/fail.h caml/alloc.h caml/platform.h \
- caml/fix_code.h caml/minor_gc.h caml/major_gc.h caml/shared_heap.h \
- caml/memory.h caml/startup_aux.h
-finalise.i.$(O): finalise.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/fail.h caml/misc.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl
-fix_code.i.$(O): fix_code.c caml/config.h caml/m.h caml/s.h caml/debugger.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/fix_code.h \
- caml/instruct.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/md5.h caml/memory.h caml/misc.h caml/mlvalues.h \
- caml/reverse.h
-floats.i.$(O): floats.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/dynlink.h caml/fail.h caml/mlvalues.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h caml/reverse.h \
- caml/fiber.h caml/roots.h
+ caml/memory.h caml/alloc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/signals.h
+eventlog.i.$(O): eventlog.c caml/domain.h caml/config.h caml/m.h caml/s.h \
+ caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/eventlog.h caml/osdeps.h caml/platform.h \
+ caml/startup_aux.h
+eventlog2.i.$(O): eventlog2.c
+extern.i.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/custom.h caml/fail.h caml/gc.h caml/intext.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/io.h caml/md5.h \
+ caml/memory.h caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
+fail.i.$(O): fail.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/gc.h caml/memory.h \
+ caml/misc.h caml/mlvalues.h caml/printexc.h caml/signals.h caml/fiber.h \
+ caml/roots.h
+fiber.i.$(O): fiber.c caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/fiber.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/roots.h caml/gc_ctrl.h caml/instruct.h \
+ caml/fail.h caml/alloc.h caml/platform.h caml/fix_code.h caml/minor_gc.h \
+ caml/major_gc.h caml/shared_heap.h caml/memory.h caml/startup_aux.h
+finalise.i.$(O): finalise.c caml/callback.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/eventlog.h caml/fail.h caml/finalise.h caml/roots.h \
+ caml/memory.h caml/misc.h caml/roots.h caml/shared_heap.h
+fix_code.i.$(O): fix_code.c caml/config.h caml/m.h caml/s.h caml/debugger.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/fix_code.h caml/instruct.h caml/intext.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/md5.h caml/memory.h caml/misc.h \
+ caml/mlvalues.h caml/reverse.h
+floats.i.$(O): floats.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h \
+ caml/reverse.h caml/fiber.h caml/roots.h
 gc_ctrl.i.$(O): gc_ctrl.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/finalise.h caml/gc.h \
- caml/gc_ctrl.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/shared_heap.h caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/domain.h caml/alloc.h caml/misc.h caml/mlvalues.h \
- caml/fiber.h caml/domain.h caml/globroots.h caml/signals.h \
- caml/startup.h caml/exec.h caml/startup_aux.h caml/eventlog.h \
- caml/fail.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/finalise.h caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/gc.h \
+ caml/gc_ctrl.h caml/major_gc.h caml/minor_gc.h caml/shared_heap.h \
+ caml/misc.h caml/mlvalues.h caml/fiber.h caml/domain.h caml/globroots.h \
+ caml/signals.h caml/startup.h caml/exec.h caml/startup_aux.h \
+ caml/eventlog.h caml/fail.h
 globroots.i.$(O): globroots.c caml/memory.h caml/config.h caml/m.h caml/s.h \
- caml/gc.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/mlvalues.h caml/roots.h caml/globroots.h caml/roots.h \
- caml/callback.h caml/platform.h caml/alloc.h caml/shared_heap.h
+ caml/gc.h caml/mlvalues.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h caml/roots.h \
+ caml/globroots.h caml/roots.h caml/callback.h caml/platform.h \
+ caml/alloc.h caml/shared_heap.h
 hash.i.$(O): hash.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
- caml/misc.h caml/domain_state.h caml/domain_state.tbl \
+ caml/misc.h caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/custom.h caml/mlvalues.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/memory.h caml/alloc.h caml/hash.h caml/fail.h
 instrtrace.i.$(O): instrtrace.c
 intern.i.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
- caml/intext.h caml/io.h caml/platform.h caml/io.h caml/md5.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/callback.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/config.h caml/custom.h caml/fail.h \
+ caml/gc.h caml/intext.h caml/io.h caml/platform.h caml/io.h caml/md5.h \
  caml/memory.h caml/mlvalues.h caml/misc.h caml/reverse.h
 interp.i.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/backtrace.h caml/exec.h caml/callback.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/debugger.h caml/fail.h caml/fix_code.h \
- caml/instrtrace.h caml/instruct.h caml/interp.h caml/major_gc.h \
- caml/memory.h caml/misc.h caml/mlvalues.h caml/prims.h caml/signals.h \
- caml/fiber.h caml/roots.h caml/domain.h caml/globroots.h caml/startup.h \
- caml/startup_aux.h caml/startup_aux.h caml/jumptbl.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/backtrace.h \
+ caml/exec.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
+ caml/debugger.h caml/fail.h caml/fix_code.h caml/instrtrace.h \
+ caml/instruct.h caml/interp.h caml/major_gc.h caml/memory.h caml/misc.h \
+ caml/mlvalues.h caml/prims.h caml/signals.h caml/fiber.h caml/roots.h \
+ caml/domain.h caml/globroots.h caml/startup.h caml/startup_aux.h \
+ caml/startup_aux.h caml/jumptbl.h
 ints.i.$(O): ints.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/intext.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
+ caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/mlvalues.h
+io.i.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/mlvalues.h caml/osdeps.h \
+ caml/signals.h caml/sys.h
+lexing.i.$(O): lexing.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/mlvalues.h \
+ caml/fiber.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h
+main.i.$(O): main.c caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/sys.h \
+ caml/osdeps.h caml/memory.h caml/gc.h caml/mlvalues.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h
+major_gc.i.$(O): major_gc.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/domain.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/eventlog.h caml/fail.h \
+ caml/fiber.h caml/roots.h caml/finalise.h caml/globroots.h caml/memory.h \
+ caml/mlvalues.h caml/platform.h caml/roots.h caml/shared_heap.h \
+ caml/startup_aux.h caml/weak.h
+md5.i.$(O): md5.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/md5.h \
  caml/io.h caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h \
- caml/misc.h caml/mlvalues.h
-io.i.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/osdeps.h caml/signals.h caml/sys.h
-lexing.i.$(O): lexing.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/mlvalues.h caml/fiber.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/roots.h
-main.i.$(O): main.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/sys.h caml/osdeps.h caml/memory.h \
- caml/gc.h caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h
-major_gc.i.$(O): major_gc.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/mlvalues.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/fail.h caml/shared_heap.h caml/roots.h \
- caml/roots.h caml/globroots.h caml/domain.h caml/fiber.h caml/addrmap.h \
- caml/platform.h caml/startup_aux.h caml/eventlog.h
-md5.i.$(O): md5.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/md5.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/mlvalues.h \
- caml/io.h caml/reverse.h
+ caml/mlvalues.h caml/io.h caml/reverse.h
 memory.i.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
- caml/config.h caml/fail.h caml/misc.h caml/mlvalues.h \
+ caml/config.h caml/camlatomic.h caml/fail.h caml/misc.h caml/mlvalues.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
  caml/domain.h caml/memory.h caml/alloc.h caml/major_gc.h \
  caml/shared_heap.h caml/roots.h caml/domain.h caml/addrmap.h \
- caml/roots.h caml/alloc.h caml/fiber.h caml/platform.h
+ caml/roots.h caml/alloc.h caml/fiber.h caml/platform.h caml/eventlog.h
 meta.i.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/fail.h caml/fix_code.h \
- caml/interp.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/major_gc.h caml/memory.h caml/minor_gc.h caml/misc.h \
- caml/mlvalues.h caml/prims.h caml/fiber.h caml/roots.h \
- caml/startup_aux.h
-minor_gc.i.$(O): minor_gc.c caml/config.h caml/m.h caml/s.h caml/fail.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/finalise.h \
- caml/gc.h caml/gc_ctrl.h caml/major_gc.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/minor_gc.h caml/misc.h caml/mlvalues.h \
- caml/roots.h caml/signals.h caml/weak.h caml/domain.h caml/shared_heap.h \
- caml/roots.h caml/addrmap.h caml/fiber.h caml/eventlog.h
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/fail.h caml/fix_code.h caml/interp.h caml/intext.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/major_gc.h caml/memory.h \
+ caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/fiber.h \
+ caml/roots.h caml/startup_aux.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/exec.h
+minor_gc.i.$(O): minor_gc.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/custom.h caml/domain.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
+ caml/eventlog.h caml/fail.h caml/fiber.h caml/roots.h caml/finalise.h \
+ caml/gc.h caml/gc_ctrl.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
+ caml/misc.h caml/mlvalues.h caml/roots.h caml/shared_heap.h \
+ caml/signals.h caml/weak.h
 misc.i.$(O): misc.c caml/config.h caml/m.h caml/s.h caml/misc.h caml/config.h \
- caml/memory.h caml/gc.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/osdeps.h caml/version.h caml/domain.h caml/startup.h caml/exec.h \
- caml/startup_aux.h caml/startup_aux.h
-obj.i.$(O): obj.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/gc.h caml/interp.h \
- caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/minor_gc.h \
- caml/misc.h caml/mlvalues.h caml/prims.h caml/platform.h \
- caml/spacetime.h
-params.i.$(O): params.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/params.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/version.h caml/osdeps.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/prims.h \
- caml/dynlink.h caml/domain.h
-parsing.i.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/mlvalues.h \
+ caml/camlatomic.h caml/memory.h caml/gc.h caml/mlvalues.h caml/misc.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/alloc.h caml/startup.h caml/exec.h \
- caml/startup_aux.h
+ caml/memory.h caml/alloc.h caml/osdeps.h caml/version.h caml/domain.h \
+ caml/startup.h caml/exec.h caml/startup_aux.h caml/startup_aux.h
+obj.i.$(O): obj.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/gc.h \
+ caml/interp.h caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/platform.h \
+ caml/spacetime.h
+parsing.i.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
+ caml/config.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/alloc.h caml/startup.h \
+ caml/exec.h caml/startup_aux.h
 platform.i.$(O): platform.c caml/platform.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/fail.h
-prims.i.$(O): prims.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
- caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/prims.h
-printexc.i.$(O): printexc.c caml/backtrace.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/exec.h caml/callback.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/debugger.h caml/fail.h caml/misc.h caml/mlvalues.h \
- caml/printexc.h caml/memory.h
-roots.i.$(O): roots.c caml/finalise.h caml/globroots.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/roots.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
- caml/misc.h caml/mlvalues.h caml/roots.h caml/shared_heap.h caml/fiber.h
-shared_heap.i.$(O): shared_heap.c caml/platform.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
  caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/mlvalues.h caml/gc.h caml/fail.h caml/memory.h \
- caml/sizeclasses.h caml/addrmap.h caml/roots.h caml/globroots.h \
- caml/roots.h caml/shared_heap.h caml/startup_aux.h caml/fiber.h
+ caml/alloc.h caml/fail.h
+prims.i.$(O): prims.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
+ caml/misc.h caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/prims.h
+printexc.i.$(O): printexc.c caml/backtrace.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
+ caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/debugger.h caml/fail.h \
+ caml/misc.h caml/mlvalues.h caml/printexc.h caml/memory.h
+roots.i.$(O): roots.c caml/finalise.h caml/roots.h caml/misc.h caml/config.h \
+ caml/m.h caml/s.h caml/camlatomic.h caml/memory.h caml/gc.h \
+ caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/globroots.h \
+ caml/major_gc.h caml/memory.h caml/minor_gc.h caml/misc.h \
+ caml/mlvalues.h caml/roots.h caml/shared_heap.h caml/fiber.h
+shared_heap.i.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/fiber.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h \
+ caml/gc.h caml/globroots.h caml/memory.h caml/mlvalues.h caml/platform.h \
+ caml/roots.h caml/shared_heap.h caml/sizeclasses.h caml/startup_aux.h
 signals.i.$(O): signals.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/config.h caml/fail.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/roots.h caml/signals.h  \
- caml/sys.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/callback.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/config.h caml/fail.h caml/memory.h \
+ caml/misc.h caml/mlvalues.h caml/roots.h caml/signals.h caml/sys.h
 signals_byt.i.$(O): signals_byt.c caml/config.h caml/m.h caml/s.h \
  caml/memory.h caml/config.h caml/gc.h caml/mlvalues.h caml/misc.h \
- caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/osdeps.h caml/signals.h \
- 
+ caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/osdeps.h \
+ caml/signals.h
 spacetime.i.$(O): spacetime.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/mlvalues.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/mlvalues.h
 startup.i.$(O): startup.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/backtrace.h \
- caml/exec.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/custom.h \
- caml/debugger.h caml/domain_state.h caml/dynlink.h caml/eventlog.h \
- caml/exec.h caml/fail.h caml/fix_code.h caml/gc_ctrl.h caml/instrtrace.h \
- caml/interp.h caml/intext.h caml/io.h caml/platform.h caml/io.h \
- caml/memory.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/osdeps.h \
- caml/startup_aux.h caml/prims.h caml/printexc.h caml/reverse.h \
- caml/signals.h caml/fiber.h caml/roots.h caml/sys.h caml/startup.h \
- caml/startup_aux.h caml/version.h
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/backtrace.h caml/exec.h caml/callback.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/custom.h caml/debugger.h caml/domain_state.h \
+ caml/dynlink.h caml/eventlog.h caml/exec.h caml/fail.h caml/fix_code.h \
+ caml/gc_ctrl.h caml/instrtrace.h caml/interp.h caml/intext.h caml/io.h \
+ caml/platform.h caml/io.h caml/memory.h caml/minor_gc.h caml/misc.h \
+ caml/mlvalues.h caml/osdeps.h caml/startup_aux.h caml/prims.h \
+ caml/printexc.h caml/reverse.h caml/signals.h caml/fiber.h caml/roots.h \
+ caml/sys.h caml/startup.h caml/startup_aux.h caml/version.h
 startup_aux.i.$(O): startup_aux.c caml/backtrace.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/callback.h \
- caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/config.h caml/m.h caml/s.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/exec.h caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/callback.h caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
  caml/startup_aux.h caml/version.h
 str.i.$(O): str.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h
 sys.i.$(O): sys.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/debugger.h caml/fail.h caml/gc_ctrl.h \
- caml/io.h caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
- caml/mlvalues.h caml/osdeps.h caml/signals.h caml/fiber.h caml/roots.h \
- caml/sys.h caml/startup.h caml/exec.h caml/startup_aux.h caml/version.h \
- caml/callback.h caml/startup_aux.h
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
+ caml/fail.h caml/gc_ctrl.h caml/io.h caml/platform.h caml/memory.h \
+ caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/mlvalues.h caml/osdeps.h caml/signals.h caml/fiber.h \
+ caml/roots.h caml/sys.h caml/startup.h caml/exec.h caml/startup_aux.h \
+ caml/version.h caml/callback.h caml/startup_aux.h caml/major_gc.h
 terminfo.i.$(O): terminfo.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/mlvalues.h caml/memory.h
-unix.i.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/osdeps.h caml/signals.h caml/sys.h caml/io.h \
- caml/platform.h caml/alloc.h
-weak.i.$(O): weak.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/major_gc.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/weak.h
-win32.i.$(O): win32.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/address_class.h caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/misc.h \
- caml/osdeps.h caml/signals.h caml/sys.h caml/config.h
-addrmap.pic.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
- caml/config.h caml/domain.h caml/misc.h caml/mlvalues.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
- caml/alloc.h caml/addrmap.h
-afl.pic.$(O): afl.c caml/config.h caml/m.h caml/s.h caml/misc.h caml/config.h \
- caml/mlvalues.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/osdeps.h caml/memory.h caml/gc.h \
- caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h
-alloc.pic.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/major_gc.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/fiber.h caml/roots.h \
- caml/domain.h
-array.pic.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h caml/signals.h \
- caml/spacetime.h
+ caml/alloc.h caml/mlvalues.h caml/memory.h
+unix.i.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/misc.h caml/osdeps.h caml/signals.h \
+ caml/sys.h caml/io.h caml/platform.h caml/alloc.h
+weak.i.$(O): weak.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/domain.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/fail.h caml/major_gc.h caml/memory.h \
+ caml/mlvalues.h caml/shared_heap.h caml/roots.h caml/weak.h
+win32.i.$(O): win32.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/address_class.h \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/osdeps.h caml/signals.h \
+ caml/sys.h caml/config.h
+addrmap.pic.$(O): addrmap.c caml/config.h caml/m.h caml/s.h caml/memory.h \
+ caml/config.h caml/domain.h caml/misc.h caml/camlatomic.h \
+ caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/alloc.h caml/addrmap.h
+afl.pic.$(O): afl.c caml/config.h caml/m.h caml/s.h caml/misc.h caml/config.h \
+ caml/camlatomic.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/osdeps.h \
+ caml/memory.h caml/gc.h caml/mlvalues.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h
+alloc.pic.$(O): alloc.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h \
+ caml/fiber.h caml/roots.h caml/domain.h
+array.pic.$(O): array.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h \
+ caml/signals.h caml/spacetime.h
 backtrace.pic.$(O): backtrace.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/backtrace.h caml/exec.h caml/backtrace_prim.h caml/backtrace.h \
- caml/fail.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/backtrace.h caml/exec.h \
+ caml/backtrace_prim.h caml/backtrace.h caml/fail.h
 backtrace_prim.pic.$(O): backtrace_prim.c caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/config.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/alloc.h \
- caml/mlvalues.h caml/custom.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/instruct.h caml/intext.h caml/io.h caml/exec.h \
- caml/fix_code.h caml/memory.h caml/startup.h caml/exec.h \
+ caml/mlvalues.h caml/config.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/alloc.h caml/mlvalues.h caml/custom.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/instruct.h caml/intext.h caml/io.h \
+ caml/exec.h caml/fix_code.h caml/memory.h caml/startup.h caml/exec.h \
  caml/startup_aux.h caml/fiber.h caml/roots.h caml/sys.h caml/backtrace.h \
  caml/fail.h caml/backtrace_prim.h caml/backtrace.h
 bigarray.pic.$(O): bigarray.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/bigarray.h caml/custom.h caml/fail.h \
- caml/intext.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/hash.h caml/memory.h caml/mlvalues.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/bigarray.h \
+ caml/custom.h caml/fail.h caml/intext.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/hash.h caml/memory.h caml/mlvalues.h
 callback.pic.$(O): callback.c caml/callback.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/fail.h \
- caml/memory.h caml/mlvalues.h caml/platform.h caml/interp.h \
- caml/instruct.h caml/fix_code.h caml/fiber.h caml/roots.h
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/fail.h caml/memory.h caml/mlvalues.h caml/platform.h \
+ caml/fiber.h caml/roots.h caml/interp.h caml/instruct.h caml/fix_code.h
 compare.pic.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h \
- caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h
+ caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h
 custom.pic.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h
 debugger.pic.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/debugger.h caml/misc.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/memory.h caml/alloc.h caml/osdeps.h caml/fail.h \
- caml/fix_code.h caml/instruct.h caml/intext.h caml/io.h caml/platform.h \
- caml/io.h caml/mlvalues.h caml/fiber.h caml/roots.h caml/sys.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/debugger.h caml/misc.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/osdeps.h caml/fail.h caml/fix_code.h caml/instruct.h caml/intext.h \
+ caml/io.h caml/platform.h caml/io.h caml/mlvalues.h caml/fiber.h \
+ caml/roots.h caml/sys.h
 domain.pic.$(O): domain.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/domain.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/domain_state.h caml/platform.h caml/custom.h \
- caml/major_gc.h caml/shared_heap.h caml/roots.h caml/memory.h \
- caml/fail.h caml/globroots.h caml/signals.h caml/startup.h caml/exec.h \
- caml/startup_aux.h caml/fiber.h caml/callback.h caml/minor_gc.h \
- caml/eventlog.h caml/gc_ctrl.h caml/osdeps.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/domain.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/domain_state.h caml/platform.h \
+ caml/custom.h caml/major_gc.h caml/shared_heap.h caml/roots.h \
+ caml/memory.h caml/fail.h caml/globroots.h caml/signals.h caml/startup.h \
+ caml/exec.h caml/startup_aux.h caml/fiber.h caml/callback.h \
+ caml/minor_gc.h caml/eventlog.h caml/gc_ctrl.h caml/osdeps.h caml/weak.h \
+ caml/finalise.h
 dynlink.pic.$(O): dynlink.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/dynlink.h \
- caml/fail.h caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/osdeps.h caml/prims.h caml/signals.h
-eventlog.pic.$(O): eventlog.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/eventlog.h caml/domain.h caml/mlvalues.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/alloc.h caml/startup.h caml/exec.h caml/startup_aux.h caml/domain.h \
- caml/platform.h caml/shared_heap.h caml/roots.h
-extern.pic.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/custom.h caml/fail.h \
- caml/gc.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/io.h caml/md5.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/reverse.h caml/addrmap.h
-fail.pic.$(O): fail.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/io.h caml/platform.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/gc.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/printexc.h caml/signals.h caml/fiber.h caml/roots.h
-fiber.pic.$(O): fiber.c caml/misc.h caml/config.h caml/m.h caml/s.h caml/fiber.h \
- caml/misc.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h \
- caml/gc_ctrl.h caml/instruct.h caml/fail.h caml/alloc.h caml/platform.h \
- caml/fix_code.h caml/minor_gc.h caml/major_gc.h caml/shared_heap.h \
- caml/memory.h caml/startup_aux.h
-finalise.pic.$(O): finalise.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/fail.h caml/misc.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl
-fix_code.pic.$(O): fix_code.c caml/config.h caml/m.h caml/s.h caml/debugger.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/fix_code.h \
- caml/instruct.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/md5.h caml/memory.h caml/misc.h caml/mlvalues.h \
- caml/reverse.h
-floats.pic.$(O): floats.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/dynlink.h caml/fail.h caml/mlvalues.h caml/memory.h caml/gc.h \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h caml/reverse.h \
- caml/fiber.h caml/roots.h
+ caml/memory.h caml/alloc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/signals.h
+eventlog.pic.$(O): eventlog.c caml/domain.h caml/config.h caml/m.h caml/s.h \
+ caml/mlvalues.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/eventlog.h caml/osdeps.h caml/platform.h \
+ caml/startup_aux.h
+eventlog2.pic.$(O): eventlog2.c
+extern.pic.$(O): extern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/custom.h caml/fail.h caml/gc.h caml/intext.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/io.h caml/md5.h \
+ caml/memory.h caml/misc.h caml/mlvalues.h caml/reverse.h caml/addrmap.h
+fail.pic.$(O): fail.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/gc.h caml/memory.h \
+ caml/misc.h caml/mlvalues.h caml/printexc.h caml/signals.h caml/fiber.h \
+ caml/roots.h
+fiber.pic.$(O): fiber.c caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/fiber.h caml/misc.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/roots.h caml/gc_ctrl.h caml/instruct.h \
+ caml/fail.h caml/alloc.h caml/platform.h caml/fix_code.h caml/minor_gc.h \
+ caml/major_gc.h caml/shared_heap.h caml/memory.h caml/startup_aux.h
+finalise.pic.$(O): finalise.c caml/callback.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/eventlog.h caml/fail.h caml/finalise.h caml/roots.h \
+ caml/memory.h caml/misc.h caml/roots.h caml/shared_heap.h
+fix_code.pic.$(O): fix_code.c caml/config.h caml/m.h caml/s.h caml/debugger.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/fix_code.h caml/instruct.h caml/intext.h caml/io.h caml/platform.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/md5.h caml/memory.h caml/misc.h \
+ caml/mlvalues.h caml/reverse.h
+floats.pic.$(O): floats.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h \
+ caml/reverse.h caml/fiber.h caml/roots.h
 gc_ctrl.pic.$(O): gc_ctrl.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/finalise.h caml/gc.h \
- caml/gc_ctrl.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/shared_heap.h caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/domain.h caml/alloc.h caml/misc.h caml/mlvalues.h \
- caml/fiber.h caml/domain.h caml/globroots.h caml/signals.h \
- caml/startup.h caml/exec.h caml/startup_aux.h caml/eventlog.h \
- caml/fail.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/finalise.h caml/roots.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/gc.h \
+ caml/gc_ctrl.h caml/major_gc.h caml/minor_gc.h caml/shared_heap.h \
+ caml/misc.h caml/mlvalues.h caml/fiber.h caml/domain.h caml/globroots.h \
+ caml/signals.h caml/startup.h caml/exec.h caml/startup_aux.h \
+ caml/eventlog.h caml/fail.h
 globroots.pic.$(O): globroots.c caml/memory.h caml/config.h caml/m.h caml/s.h \
- caml/gc.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/mlvalues.h caml/roots.h caml/globroots.h caml/roots.h \
- caml/callback.h caml/platform.h caml/alloc.h caml/shared_heap.h
+ caml/gc.h caml/mlvalues.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/misc.h caml/mlvalues.h caml/roots.h \
+ caml/globroots.h caml/roots.h caml/callback.h caml/platform.h \
+ caml/alloc.h caml/shared_heap.h
 hash.pic.$(O): hash.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
- caml/misc.h caml/domain_state.h caml/domain_state.tbl \
+ caml/misc.h caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/custom.h caml/mlvalues.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
  caml/memory.h caml/alloc.h caml/hash.h caml/fail.h
 instrtrace.pic.$(O): instrtrace.c
 intern.pic.$(O): intern.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/config.h caml/custom.h caml/fail.h caml/gc.h \
- caml/intext.h caml/io.h caml/platform.h caml/io.h caml/md5.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/callback.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/config.h caml/custom.h caml/fail.h \
+ caml/gc.h caml/intext.h caml/io.h caml/platform.h caml/io.h caml/md5.h \
  caml/memory.h caml/mlvalues.h caml/misc.h caml/reverse.h
 interp.pic.$(O): interp.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/backtrace.h caml/exec.h caml/callback.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/debugger.h caml/fail.h caml/fix_code.h \
- caml/instrtrace.h caml/instruct.h caml/interp.h caml/major_gc.h \
- caml/memory.h caml/misc.h caml/mlvalues.h caml/prims.h caml/signals.h \
- caml/fiber.h caml/roots.h caml/domain.h caml/globroots.h caml/startup.h \
- caml/startup_aux.h caml/startup_aux.h caml/jumptbl.h
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/backtrace.h \
+ caml/exec.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
+ caml/debugger.h caml/fail.h caml/fix_code.h caml/instrtrace.h \
+ caml/instruct.h caml/interp.h caml/major_gc.h caml/memory.h caml/misc.h \
+ caml/mlvalues.h caml/prims.h caml/signals.h caml/fiber.h caml/roots.h \
+ caml/domain.h caml/globroots.h caml/startup.h caml/startup_aux.h \
+ caml/startup_aux.h caml/jumptbl.h
 ints.pic.$(O): ints.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/intext.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
+ caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/mlvalues.h
+io.pic.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/mlvalues.h caml/osdeps.h \
+ caml/signals.h caml/sys.h
+lexing.pic.$(O): lexing.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/mlvalues.h \
+ caml/fiber.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h
+main.pic.$(O): main.c caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/sys.h \
+ caml/osdeps.h caml/memory.h caml/gc.h caml/mlvalues.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h
+major_gc.pic.$(O): major_gc.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/domain.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/eventlog.h caml/fail.h \
+ caml/fiber.h caml/roots.h caml/finalise.h caml/globroots.h caml/memory.h \
+ caml/mlvalues.h caml/platform.h caml/roots.h caml/shared_heap.h \
+ caml/startup_aux.h caml/weak.h
+md5.pic.$(O): md5.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/md5.h \
  caml/io.h caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h \
  caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h \
- caml/misc.h caml/mlvalues.h
-io.pic.$(O): io.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/custom.h caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/osdeps.h caml/signals.h caml/sys.h
-lexing.pic.$(O): lexing.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/mlvalues.h caml/fiber.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/roots.h
-main.pic.$(O): main.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/sys.h caml/osdeps.h caml/memory.h \
- caml/gc.h caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h
-major_gc.pic.$(O): major_gc.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/mlvalues.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/fail.h caml/shared_heap.h caml/roots.h \
- caml/roots.h caml/globroots.h caml/domain.h caml/fiber.h caml/addrmap.h \
- caml/platform.h caml/startup_aux.h caml/eventlog.h
-md5.pic.$(O): md5.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/md5.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/mlvalues.h \
- caml/io.h caml/reverse.h
+ caml/mlvalues.h caml/io.h caml/reverse.h
 memory.pic.$(O): memory.c caml/config.h caml/m.h caml/s.h caml/misc.h \
- caml/config.h caml/fail.h caml/misc.h caml/mlvalues.h \
+ caml/config.h caml/camlatomic.h caml/fail.h caml/misc.h caml/mlvalues.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
  caml/domain.h caml/memory.h caml/alloc.h caml/major_gc.h \
  caml/shared_heap.h caml/roots.h caml/domain.h caml/addrmap.h \
- caml/roots.h caml/alloc.h caml/fiber.h caml/platform.h
+ caml/roots.h caml/alloc.h caml/fiber.h caml/platform.h caml/eventlog.h
 meta.pic.$(O): meta.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/config.h caml/fail.h caml/fix_code.h \
- caml/interp.h caml/intext.h caml/io.h caml/platform.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/major_gc.h caml/memory.h caml/minor_gc.h caml/misc.h \
- caml/mlvalues.h caml/prims.h caml/fiber.h caml/roots.h \
- caml/startup_aux.h
-minor_gc.pic.$(O): minor_gc.c caml/config.h caml/m.h caml/s.h caml/fail.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/finalise.h \
- caml/gc.h caml/gc_ctrl.h caml/major_gc.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/minor_gc.h caml/misc.h caml/mlvalues.h \
- caml/roots.h caml/signals.h caml/weak.h caml/domain.h caml/shared_heap.h \
- caml/roots.h caml/addrmap.h caml/fiber.h caml/eventlog.h
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/fail.h caml/fix_code.h caml/interp.h caml/intext.h caml/io.h \
+ caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/major_gc.h caml/memory.h \
+ caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/fiber.h \
+ caml/roots.h caml/startup_aux.h caml/backtrace_prim.h caml/backtrace.h \
+ caml/exec.h
+minor_gc.pic.$(O): minor_gc.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/config.h \
+ caml/custom.h caml/domain.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
+ caml/eventlog.h caml/fail.h caml/fiber.h caml/roots.h caml/finalise.h \
+ caml/gc.h caml/gc_ctrl.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
+ caml/misc.h caml/mlvalues.h caml/roots.h caml/shared_heap.h \
+ caml/signals.h caml/weak.h
 misc.pic.$(O): misc.c caml/config.h caml/m.h caml/s.h caml/misc.h caml/config.h \
- caml/memory.h caml/gc.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/osdeps.h caml/version.h caml/domain.h caml/startup.h caml/exec.h \
- caml/startup_aux.h caml/startup_aux.h
-obj.pic.$(O): obj.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/gc.h caml/interp.h \
- caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/minor_gc.h \
- caml/misc.h caml/mlvalues.h caml/prims.h caml/platform.h \
- caml/spacetime.h
-params.pic.$(O): params.c caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/params.h caml/mlvalues.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/version.h caml/osdeps.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/prims.h \
- caml/dynlink.h caml/domain.h
-parsing.pic.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
- caml/config.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/mlvalues.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/alloc.h caml/startup.h caml/exec.h \
- caml/startup_aux.h
-platform.pic.$(O): platform.c caml/platform.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/fail.h
-prims.pic.$(O): prims.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
- caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/prims.h
-printexc.pic.$(O): printexc.c caml/backtrace.h caml/mlvalues.h caml/config.h \
- caml/m.h caml/s.h caml/misc.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/exec.h caml/callback.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/debugger.h caml/fail.h caml/misc.h caml/mlvalues.h \
- caml/printexc.h caml/memory.h
-roots.pic.$(O): roots.c caml/finalise.h caml/globroots.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/roots.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/alloc.h caml/major_gc.h caml/memory.h caml/minor_gc.h \
- caml/misc.h caml/mlvalues.h caml/roots.h caml/shared_heap.h caml/fiber.h
-shared_heap.pic.$(O): shared_heap.c caml/platform.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/mlvalues.h caml/gc.h caml/fail.h caml/memory.h \
- caml/sizeclasses.h caml/addrmap.h caml/roots.h caml/globroots.h \
- caml/roots.h caml/shared_heap.h caml/startup_aux.h caml/fiber.h
-signals.pic.$(O): signals.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/callback.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/alloc.h caml/config.h caml/fail.h caml/memory.h caml/misc.h \
- caml/mlvalues.h caml/roots.h caml/signals.h  \
- caml/sys.h
-signals_byt.pic.$(O): signals_byt.c caml/config.h caml/m.h caml/s.h \
- caml/memory.h caml/config.h caml/gc.h caml/mlvalues.h caml/misc.h \
+ caml/camlatomic.h caml/memory.h caml/gc.h caml/mlvalues.h caml/misc.h \
  caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
  caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/osdeps.h caml/signals.h \
- 
-spacetime.pic.$(O): spacetime.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/mlvalues.h
-startup.pic.$(O): startup.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/backtrace.h \
- caml/exec.h caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/custom.h \
- caml/debugger.h caml/domain_state.h caml/dynlink.h caml/eventlog.h \
- caml/exec.h caml/fail.h caml/fix_code.h caml/gc_ctrl.h caml/instrtrace.h \
- caml/interp.h caml/intext.h caml/io.h caml/platform.h caml/io.h \
- caml/memory.h caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/osdeps.h \
- caml/startup_aux.h caml/prims.h caml/printexc.h caml/reverse.h \
- caml/signals.h caml/fiber.h caml/roots.h caml/sys.h caml/startup.h \
- caml/startup_aux.h caml/version.h
-startup_aux.pic.$(O): startup_aux.c caml/backtrace.h caml/mlvalues.h \
- caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
+ caml/memory.h caml/alloc.h caml/osdeps.h caml/version.h caml/domain.h \
+ caml/startup.h caml/exec.h caml/startup_aux.h caml/startup_aux.h
+obj.pic.$(O): obj.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/gc.h \
+ caml/interp.h caml/major_gc.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/minor_gc.h caml/misc.h caml/mlvalues.h caml/prims.h caml/platform.h \
+ caml/spacetime.h
+parsing.pic.$(O): parsing.c caml/config.h caml/m.h caml/s.h caml/mlvalues.h \
+ caml/config.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/mlvalues.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/alloc.h caml/startup.h \
+ caml/exec.h caml/startup_aux.h
+platform.pic.$(O): platform.c caml/platform.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/fail.h
+prims.pic.$(O): prims.c caml/mlvalues.h caml/config.h caml/m.h caml/s.h \
+ caml/misc.h caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/prims.h
+printexc.pic.$(O): printexc.c caml/backtrace.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
  caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/callback.h \
- caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/callback.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/debugger.h caml/fail.h \
+ caml/misc.h caml/mlvalues.h caml/printexc.h caml/memory.h
+roots.pic.$(O): roots.c caml/finalise.h caml/roots.h caml/misc.h caml/config.h \
+ caml/m.h caml/s.h caml/camlatomic.h caml/memory.h caml/gc.h \
+ caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/alloc.h caml/globroots.h \
+ caml/major_gc.h caml/memory.h caml/minor_gc.h caml/misc.h \
+ caml/mlvalues.h caml/roots.h caml/shared_heap.h caml/fiber.h
+shared_heap.pic.$(O): shared_heap.c caml/addrmap.h caml/mlvalues.h caml/config.h \
+ caml/m.h caml/s.h caml/misc.h caml/camlatomic.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/custom.h \
+ caml/fail.h caml/fiber.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h caml/roots.h \
+ caml/gc.h caml/globroots.h caml/memory.h caml/mlvalues.h caml/platform.h \
+ caml/roots.h caml/shared_heap.h caml/sizeclasses.h caml/startup_aux.h
+signals.pic.$(O): signals.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/callback.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/config.h caml/fail.h caml/memory.h \
+ caml/misc.h caml/mlvalues.h caml/roots.h caml/signals.h caml/sys.h
+signals_byt.pic.$(O): signals_byt.c caml/config.h caml/m.h caml/s.h \
+ caml/memory.h caml/config.h caml/gc.h caml/mlvalues.h caml/misc.h \
+ caml/camlatomic.h caml/domain_state.h caml/domain_state.tbl \
+ caml/byte_domain_state.tbl caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/osdeps.h \
+ caml/signals.h
+spacetime.pic.$(O): spacetime.c caml/fail.h caml/misc.h caml/config.h caml/m.h \
+ caml/s.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/mlvalues.h
+startup.pic.$(O): startup.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/backtrace.h caml/exec.h caml/callback.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/custom.h caml/debugger.h caml/domain_state.h \
+ caml/dynlink.h caml/eventlog.h caml/exec.h caml/fail.h caml/fix_code.h \
+ caml/gc_ctrl.h caml/instrtrace.h caml/interp.h caml/intext.h caml/io.h \
+ caml/platform.h caml/io.h caml/memory.h caml/minor_gc.h caml/misc.h \
+ caml/mlvalues.h caml/osdeps.h caml/startup_aux.h caml/prims.h \
+ caml/printexc.h caml/reverse.h caml/signals.h caml/fiber.h caml/roots.h \
+ caml/sys.h caml/startup.h caml/startup_aux.h caml/version.h
+startup_aux.pic.$(O): startup_aux.c caml/backtrace.h caml/mlvalues.h \
+ caml/config.h caml/m.h caml/s.h caml/misc.h caml/camlatomic.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/exec.h caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h \
+ caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
+ caml/callback.h caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
  caml/startup_aux.h caml/version.h
 str.pic.$(O): str.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
- caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/memory.h caml/alloc.h caml/mlvalues.h caml/misc.h
 sys.pic.$(O): sys.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/debugger.h caml/fail.h caml/gc_ctrl.h \
- caml/io.h caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/alloc.h \
- caml/mlvalues.h caml/osdeps.h caml/signals.h caml/fiber.h caml/roots.h \
- caml/sys.h caml/startup.h caml/exec.h caml/startup_aux.h caml/version.h \
- caml/callback.h caml/startup_aux.h
-terminfo.pic.$(O): terminfo.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
- caml/misc.h caml/config.h caml/mlvalues.h caml/domain_state.h \
- caml/domain_state.tbl caml/byte_domain_state.tbl caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/mlvalues.h caml/memory.h
-unix.pic.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
- caml/config.h caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/memory.h caml/gc.h caml/major_gc.h \
- caml/minor_gc.h caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h \
- caml/misc.h caml/osdeps.h caml/signals.h caml/sys.h caml/io.h \
- caml/platform.h caml/alloc.h
-weak.pic.$(O): weak.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/fail.h caml/major_gc.h caml/memory.h \
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/debugger.h \
+ caml/fail.h caml/gc_ctrl.h caml/io.h caml/platform.h caml/memory.h \
  caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
- caml/memory.h caml/alloc.h caml/mlvalues.h caml/weak.h
+ caml/alloc.h caml/mlvalues.h caml/osdeps.h caml/signals.h caml/fiber.h \
+ caml/roots.h caml/sys.h caml/startup.h caml/exec.h caml/startup_aux.h \
+ caml/version.h caml/callback.h caml/startup_aux.h caml/major_gc.h
+terminfo.pic.$(O): terminfo.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
+ caml/misc.h caml/config.h caml/camlatomic.h caml/mlvalues.h \
+ caml/domain_state.h caml/domain_state.tbl caml/byte_domain_state.tbl \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/mlvalues.h caml/memory.h
+unix.pic.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
+ caml/config.h caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/memory.h caml/alloc.h caml/misc.h caml/osdeps.h caml/signals.h \
+ caml/sys.h caml/io.h caml/platform.h caml/alloc.h
+weak.pic.$(O): weak.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/domain.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
+ caml/domain.h caml/alloc.h caml/fail.h caml/major_gc.h caml/memory.h \
+ caml/mlvalues.h caml/shared_heap.h caml/roots.h caml/weak.h
 win32.pic.$(O): win32.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
- caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
- caml/byte_domain_state.tbl caml/address_class.h caml/fail.h caml/io.h \
- caml/platform.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
- caml/addrmap.h caml/domain.h caml/alloc.h caml/memory.h caml/misc.h \
- caml/osdeps.h caml/signals.h caml/sys.h caml/config.h
+ caml/camlatomic.h caml/mlvalues.h caml/domain_state.h \
+ caml/domain_state.tbl caml/byte_domain_state.tbl caml/address_class.h \
+ caml/fail.h caml/io.h caml/platform.h caml/memory.h caml/gc.h \
+ caml/major_gc.h caml/minor_gc.h caml/addrmap.h caml/domain.h \
+ caml/alloc.h caml/memory.h caml/misc.h caml/osdeps.h caml/signals.h \
+ caml/sys.h caml/config.h

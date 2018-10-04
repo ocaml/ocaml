@@ -27,7 +27,8 @@
 
 #include <stddef.h>
 #include <stdlib.h>
-#include <stdatomic.h>
+
+#include "camlatomic.h"
 
 /* Basic types and constants */
 
@@ -36,9 +37,6 @@ typedef size_t asize_t;
 #ifndef NULL
 #define NULL 0
 #endif
-
-/* Atomics */
-typedef _Atomic uintnat atomic_uintnat;
 
 #ifdef CAML_INTERNALS
 typedef char * addr;

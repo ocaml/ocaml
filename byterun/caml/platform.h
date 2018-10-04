@@ -6,7 +6,6 @@
 #define _GNU_SOURCE /* for PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP */
 #endif
 #include <pthread.h>
-#include <stdatomic.h>
 #include "mlvalues.h"
 #include "memory.h"
 
@@ -31,8 +30,6 @@ INLINE void cpu_relax() {
   #warning "cpu_relax() undefined for this architecture!"
 #endif
 }
-
-#define ATOMIC_UINTNAT_INIT(x) (x)
 
 INLINE uintnat atomic_load_acq(atomic_uintnat* p) {
   return atomic_load_explicit(p, memory_order_acquire);
@@ -76,17 +73,6 @@ INLINE uintnat atomic_fetch_add_verify_ge0(atomic_uintnat* p, uintnat v) {
   uintnat result = atomic_fetch_add(p,v);
   CAMLassert ((intnat)result > 0);
   return result;
-}
-
-/* atomically: if (*p == vold) { *p = vnew; return 1; } else { return 0; }
-   may spuriously return 0 even when *p == vold */
-INLINE int atomic_cas(atomic_uintnat* p, uintnat vold, uintnat vnew) {
-  return atomic_compare_exchange_weak(p, &vold, vnew);
-}
-
-/* atomically: if (*p == vold) { *p = vnew; } */
-INLINE void atomic_cas_strong(atomic_uintnat* p, uintnat vold, uintnat vnew) {
-  atomic_compare_exchange_strong(p, &vold, vnew);
 }
 
 

@@ -85,7 +85,7 @@ static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond = CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
 static dom_internal* stw_leader = 0;
 static struct dom_internal all_domains[Max_domains];
-static atomic_uintnat num_domains_running = {0};
+static atomic_uintnat num_domains_running;
 
 static uintnat minor_heaps_base;
 static __thread dom_internal* domain_self;
@@ -582,7 +582,8 @@ void caml_handle_gc_interrupt() {
     /* interrupt */
     caml_ev_begin("handle_interrupt");
     while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
-      atomic_cas(young_limit, INTERRUPT_MAGIC, domain_self->minor_heap_area);
+      uintnat i = INTERRUPT_MAGIC;
+      atomic_compare_exchange_strong(young_limit, &i, domain_self->minor_heap_area);
     }
     caml_ev_pause(EV_PAUSE_YIELD);
     caml_handle_incoming_interrupts();
