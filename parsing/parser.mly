@@ -362,6 +362,9 @@ let wrap_str_ext ~loc body ext =
   | None -> body
   | Some id -> ghstr ~loc (Pstr_extension ((id, PStr [body]), []))
 
+let wrap_mkstr_ext ~loc (item, ext) =
+  wrap_str_ext ~loc (mkstr ~loc item) ext
+
 let wrap_sig_ext ~loc body ext =
   match ext with
   | None -> body
@@ -1174,12 +1177,12 @@ structure:
       { $1 }
 ;
 
+(* A structure item. *)
 structure_item:
     let_bindings(ext)
       { val_of_let_bindings ~loc:$sloc $1 }
   | structure_item_with_ext
-      { let item, ext = $1 in
-        wrap_str_ext ~loc:$sloc (mkstr ~loc:$sloc item) ext }
+      { wrap_mkstr_ext ~loc:$sloc $1 }
   | item_extension post_item_attributes
       { let docs = symbol_docs $sloc in
         mkstr ~loc:$sloc (Pstr_extension ($1, (add_docs_attrs docs $2))) }
@@ -1254,6 +1257,8 @@ and_module_binding:
         let text = symbol_text $symbolstartpos in
         Mb.mk $3 $4 ~attrs:($2@$5) ~loc:(make_loc $sloc) ~text ~docs }
 ;
+
+(* -------------------------------------------------------------------------- *)
 
 /* Module types */
 
