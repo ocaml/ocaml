@@ -34,6 +34,96 @@
 #include "caml/platform.h"
 #include "caml/eventlog.h"
 
+/* Note [MM]: Enforcing the memory model.
+
+   Multicore OCaml implements the memory consistency model defined in
+
+     Bounding Data Races in Space and Time (PLDI '18)
+     Stephen Dolan, KC Sivaramakrishnan, Anil Madhavapeddy.
+
+   Unlike the C++ (also used in C11) memory model, this model gives
+   well-defined behaviour to data races, ensuring that they do not
+   affect unrelated computations. In C++, plain (non-atomic) accesses
+   have undefined semantics if they race, so it is necessary to use at
+   least relaxed atomics to implement all accesses.
+
+   However, simply using C++ relaxed atomics for non-atomic accesses
+   and C++ SC atomics for atomic ones is not enough, since the OCaml
+   memory model is stronger. The prototypical example where C++
+   exhibits a behaviour not allowed by OCaml is below. Assume that the
+   reference b and the atomic reference a are initially 0:
+
+       Thread 1            Thread 2
+       Atomic.set a 1;     let x = !b in
+       b := 1              let y = Atomic.get a in
+                           ...
+       Outcome: x = 1, y = 0
+
+   This outcome is not permitted by the OCaml memory model, as can be
+   seen from the operational model: if !b sees the write b := 1, then
+   the Atomic.set must have executed before the Atomic.get, and since
+   it is atomic the most recent set must be returned by the get,
+   yielding y = 1. In the equivalent axiomatic model, this would be a
+   violation of Causality.
+
+   If this example is naively translated to C++ (using atomic_{load,
+   store} for atomics, and atomic_{load, store}_explicit(...,
+   memory_order_relaxed) for nonatomics), then this outcome becomes
+   possible. The C++ model specifies that there is a total order on SC
+   accesses, but this total order is surprisingly weak. In this
+   example, we can have:
+
+       x = !b ...
+          [happens-before]
+       y = Atomic.get a
+          [SC-before]
+       Atomic.set a 1
+          [happens-before]
+       b := 1
+
+   Sadly, the composition of happens-before and SC-before does not add
+   up to anything useful, and the C++ model permits the read 'x = !b'
+   to read from the write 'b := 1' in this example, allowing the
+   outcome above.
+
+   To remedy this, we need to strengthen the relaxed accesses used for
+   non-atomic loads and stores. The most straightforward way to do
+   this is to use acquire loads and release stores instead of relaxed
+   for non-atomic accesses, which ensures that all reads-from edges
+   appear in the C++ synchronises-with relation, outlawing the outcome
+   above.
+
+   Using release stores for all writes also ensures publication safety
+   for newly-allocated objects, and isn't necessary for initialising
+   writes. The cost is free on x86, but requires a fence in
+   caml_modify_field on weakly-ordered architectures (ARM, Power).
+
+   However, instead of using acquire loads for all reads, an
+   optimisation is possible. (Optimising reads is more important than
+   optimising writes because reads are vastly more common). The OCaml
+   memory model does not require ordering between non-atomic reads,
+   which acquire loads provide. The acquire semantics are only
+   necessary between a non-atomic read and an atomic access or a
+   write, so we delay the acquire fence until one of those operations
+   occurs.
+
+   So, our non-atomic reads (Field/caml_read_field in mlvalues.h) are
+   implemented as relaxed loads, but non-atomic writes and atomic
+   operations (in this file, below) contain an odd-looking line:
+
+      atomic_thread_fence(memory_order_acquire)
+
+   which serves to upgrade previous relaxed loads to acquire loads.
+   This encodes the OCaml memory model in the primitives provided by
+   the C++ model.
+
+   On x86, all loads and all stores have acquire/release semantics by
+   default anyway, so all of these fences compile away to nothing
+   (They're still useful, though: they serve to inhibit an overeager C
+   compiler's optimisations). On ARMv8, actual hardware fences are
+   generated.
+*/
+
 /* The write barrier does not read or write the heap, it just
    modifies domain-local data structures. */
 static void write_barrier(value obj, int field, value old_val, value new_val)
@@ -82,7 +172,10 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
 #if defined(COLLECT_STATS) && defined(NATIVE_CODE)
   Caml_state->mutable_stores++;
 #endif
-  Op_val(obj)[field] = val;
+  /* See Note [MM] above */
+  atomic_thread_fence(memory_order_acquire);
+  atomic_store_explicit(&Op_atomic_val(obj)[field], val,
+                        memory_order_release);
 }
 
 CAMLexport void caml_initialize_field (value obj, int field, value val)
@@ -111,9 +204,9 @@ CAMLexport void caml_initialize_field (value obj, int field, value val)
 
 CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value newval)
 {
-  value* p = &Op_val(obj)[field];
   if (Is_young(obj) || caml_domain_alone()) {
     /* non-atomic CAS since only this thread can access the object */
+    value* p = &Op_val(obj)[field];
     if (*p == oldval) {
       *p = newval;
       write_barrier(obj, field, oldval, newval);
@@ -123,7 +216,8 @@ CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value 
     }
   } else {
     /* need a real CAS */
-    if (__sync_bool_compare_and_swap(p, oldval, newval)) {
+    atomic_value* p = &Op_atomic_val(obj)[field];
+    if (atomic_compare_exchange_strong(p, &oldval, newval)) {
       write_barrier(obj, field, oldval, newval);
       return 1;
     } else {
@@ -133,34 +227,41 @@ CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value 
 }
 
 
-/* FIXME: is __sync_synchronize a C11 SC fence? Is that enough? */
-
 CAMLprim value caml_atomic_load (value ref)
 {
-  if (Is_young(ref)) {
+  if (Is_young(ref) || caml_domain_alone()) {
     return Op_val(ref)[0];
   } else {
-    CAMLparam1(ref);
-    CAMLlocal1(v);
-    __sync_synchronize();
-    caml_read_field(ref, 0, &v);
-    __sync_synchronize();
-    CAMLreturn (v);
+    value v;
+    /* See Note [MM] above */
+    atomic_thread_fence(memory_order_acquire);
+    v = atomic_load(Op_atomic_val(ref));
+    if (Is_foreign(v))
+      v = caml_read_barrier(ref, 0);
+    return v;
   }
 }
 
-CAMLprim value caml_atomic_store (value ref, value v)
+/* stores are implemented as exchanges */
+CAMLprim value caml_atomic_exchange (value ref, value v)
 {
-  __sync_synchronize();
-  caml_modify_field(ref, 0, v);
-  __sync_synchronize();
-  return Val_unit;
+  value ret;
+  if (Is_young(ref) || caml_domain_alone()) {
+    ret = Op_val(ref)[0];
+    Op_val(ref)[0] = v;
+  } else {
+    /* See Note [MM] above */
+    atomic_thread_fence(memory_order_acquire);
+    ret = atomic_exchange(Op_atomic_val(ref), v);
+    write_barrier(ref, 0, ret, v);
+  }
+  return ret;
 }
 
 CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
 {
-  value* p = Op_val(ref);
   if (Is_young(ref) || caml_domain_alone()) {
+    value* p = Op_val(ref);
     if (*p == oldv) {
       *p = newv;
       write_barrier(ref, 0, oldv, newv);
@@ -169,24 +270,30 @@ CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
       return Val_int(0);
     }
   } else {
-    int r = __sync_bool_compare_and_swap(p, oldv, newv);
-    if (r) write_barrier(ref, 0, oldv, newv);
-    return Val_int(r);
+    atomic_value* p = &Op_atomic_val(ref)[0];
+    if (atomic_compare_exchange_strong(p, &oldv, newv)) {
+      write_barrier(ref, 0, oldv, newv);
+      return Val_int(1);
+    } else {
+      return Val_int(0);
+    }
   }
 }
 
-int caml_atomic_cas_raw (value* p, value oldv, value newv)
+CAMLprim value caml_atomic_fetch_add (value ref, value incr)
 {
-  if (caml_domain_alone()) {
-    if (*p == oldv) {
-      *p = newv;
-      return 1;
-    } else {
-      return 0;
-    }
+  value ret;
+  if (Is_young(ref) || caml_domain_alone()) {
+    value* p = Op_val(ref);
+    CAMLassert(Is_long(*p));
+    ret = *p;
+    *p = Val_long(Long_val(ret) + Long_val(incr));
+    /* no write barrier needed, integer write */
   } else {
-    return __sync_bool_compare_and_swap(p, oldv, newv);
+    atomic_value *p = &Op_atomic_val(ref)[0];
+    ret = atomic_fetch_add(p, 2*Long_val(incr));
   }
+  return ret;
 }
 
 CAMLexport void caml_set_fields (value obj, value v)

@@ -23,6 +23,7 @@ STDLIB_MODULES=\
   arg \
   array \
   arrayLabels \
+  atomic \
   buffer \
   bytes \
   bytesLabels \

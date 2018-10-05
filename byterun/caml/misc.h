@@ -28,6 +28,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include "camlatomic.h"
+
 /* Basic types and constants */
 
 typedef size_t asize_t;

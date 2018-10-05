@@ -1,3 +1,29 @@
+let test_fetch_add () =
+  let ndoms = 4 in
+  let count = 10000 in
+  let arr = Array.make (ndoms * count) (-1) in
+  let step = 1493 in
+  let r = Atomic.make 0 in
+  (* step is relatively prime to Array.length arr *)
+  let loop () =
+    let self = (Domain.self () :> int) in
+    for i = 1 to count do
+      let n = Atomic.fetch_and_add r step mod Array.length arr in
+      assert (arr.(n) == (-1));
+      arr.(n) <- self
+    done in
+  let _ = Array.init 4 (fun i ->
+      Domain.spawn loop)
+      |> Array.map Domain.join in
+  assert (Array.for_all (fun x -> x >= 0) arr)
+
+let () =
+  test_fetch_add ();
+  print_endline "ok"
+
+
+
+
 let test v =
   let open Atomic in
   assert (get v = 42);

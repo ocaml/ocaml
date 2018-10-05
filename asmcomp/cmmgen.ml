@@ -2397,8 +2397,11 @@ and transl_prim_2 env p arg1 arg2 dbg =
       tag_int (Cop(Ccmpi(transl_comparison cmp),
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
-  | Patomic_store ->
-     Cop (Cextcall ("caml_atomic_store", typ_int, true, None),
+  | Patomic_exchange ->
+     Cop (Cextcall ("caml_atomic_exchange", typ_val, true, None),
+          [transl env arg1; transl env arg2], dbg)
+  | Patomic_fetch_add ->
+     Cop (Cextcall ("caml_atomic_fetch_add", typ_int, true, None),
           [transl env arg1; transl env arg2], dbg)
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_2: %a" Printlambda.primitive prim
