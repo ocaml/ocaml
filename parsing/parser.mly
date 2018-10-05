@@ -2659,25 +2659,36 @@ constructor_declaration(opening):
       Type.constructor cid ~args ?res ~attrs ~loc:(make_loc $sloc) ~info }
 ;
 str_exception_declaration:
-  | sig_exception_declaration                    { $1 }
-  | EXCEPTION ext_attributes mkrhs(constr_ident)
-    EQUAL mkrhs(constr_longident) attributes post_item_attributes
-    { let (ext,attrs) = $2 in
-      let docs = symbol_docs $sloc in
-      Te.mk_exception ~attrs:$7
-        (Te.rebind $3 $5 ~attrs:(attrs @ $6) ~loc:(make_loc $sloc) ~docs)
-      , ext }
+  sig_exception_declaration
+    { $1 }
+| EXCEPTION
+  ext = ext
+  attrs1 = attributes
+  id = mkrhs(constr_ident)
+  EQUAL
+  lid = mkrhs(constr_longident)
+  attrs2 = attributes
+  attrs = post_item_attributes
+  { let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Te.mk_exception ~attrs
+      (Te.rebind id lid ~attrs:(attrs1 @ attrs2) ~loc ~docs)
+    , ext }
 ;
 sig_exception_declaration:
-  | EXCEPTION ext_attributes mkrhs(constr_ident)
-    generalized_constructor_arguments attributes post_item_attributes
-      { let args, res = $4 in
-        let (ext,attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Te.mk_exception ~attrs:$6
-          (Te.decl $3 ~args ?res
-                      ~attrs:(attrs @ $5) ~loc:(make_loc $sloc) ~docs)
-        , ext }
+  EXCEPTION
+  ext = ext
+  attrs1 = attributes
+  id = mkrhs(constr_ident)
+  args_res = generalized_constructor_arguments
+  attrs2 = attributes
+  attrs = post_item_attributes
+    { let args, res = args_res in
+      let loc = make_loc $sloc in
+      let docs = symbol_docs $sloc in
+      Te.mk_exception ~attrs
+        (Te.decl id ~args ?res ~attrs:(attrs1 @ attrs2) ~loc ~docs)
+      , ext }
 ;
 let_exception_declaration:
     mkrhs(constr_ident) generalized_constructor_arguments attributes
