@@ -52,10 +52,14 @@ let pstr_typext (te, ext) =
   (Pstr_typext te, ext)
 let pstr_primitive (vd, ext) =
   (Pstr_primitive vd, ext)
+let pstr_exception (te, ext) =
+  (Pstr_exception te, ext)
 let psig_typext (te, ext) =
   (Psig_typext te, ext)
 let psig_value (vd, ext) =
   (Psig_value vd, ext)
+let psig_exception (te, ext) =
+  (Psig_exception te, ext)
 
 let mkctf ~loc ?attrs ?docs d =
   Ctf.mk ~loc:(make_loc loc) ?attrs ?docs d
@@ -1208,7 +1212,7 @@ structure_item:
     | str_type_extension
         { pstr_typext $1 }
     | str_exception_declaration
-        { let (l, ext) = $1 in (Pstr_exception l, ext) }
+        { pstr_exception $1 }
     | module_binding
         { $1 }
     | rec_module_bindings
@@ -1356,7 +1360,7 @@ signature_item_with_ext:
   | sig_type_extension
       { psig_typext $1 }
   | sig_exception_declaration
-      { let (l, ext) = $1 in (Psig_exception l, ext) }
+      { psig_exception $1 }
   | module_declaration
       { let (body, ext) = $1 in (Psig_module body, ext) }
   | module_alias
