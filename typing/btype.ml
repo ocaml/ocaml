@@ -696,11 +696,15 @@ let link_type ty ty' =
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
 let set_level ty level =
-  if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
-  ty.level <- level
+  if level <> ty.level then begin
+    if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
+    ty.level <- level
+  end
 let set_scope ty scope =
-  if ty.id <= !last_snapshot then log_change (Cscope (ty, ty.scope));
-  ty.scope <- scope
+  if scope <> ty.scope then begin
+    if ty.id <= !last_snapshot then log_change (Cscope (ty, ty.scope));
+    ty.scope <- scope
+  end
 let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
 let set_name nm v =
