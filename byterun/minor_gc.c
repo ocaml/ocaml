@@ -452,8 +452,12 @@ CAMLexport value caml_promote(struct domain* domain, value root)
       if (Is_block(old_p) && is_in_interval(old_p,young_ptr,young_end)) {
         value new_p = old_p;
         forward_pointer (st.promote_domain, new_p, &new_p);
-        if (old_p != new_p)
-          atomic_compare_exchange_strong((atomic_value*)*r, &old_p, new_p);
+        if (old_p != new_p) {
+          if (caml_domain_alone())
+            **r = new_p;
+          else
+            atomic_compare_exchange_strong((atomic_value*)*r, &old_p, new_p);
+        }
       }
     }
 
@@ -619,10 +623,15 @@ void caml_empty_minor_heap_domain (struct domain* domain)
           CAMLassert(Tag_val(vnew) == Infix_tag);
           v += offset;
         }
-        if (atomic_compare_exchange_strong((atomic_value*)*r, &v, vnew))
+        if (caml_domain_alone()) {
+          **r = vnew;
           ++rewrite_successes;
-        else
-          ++rewrite_failures;
+        } else {
+          if (atomic_compare_exchange_strong((atomic_value*)*r, &v, vnew))
+            ++rewrite_successes;
+          else
+            ++rewrite_failures;
+        }
       }
     }
     CAMLassert (!caml_domain_alone() || rewrite_failures == 0);
