@@ -2487,10 +2487,6 @@ value_description:
 
 /* Primitive declarations */
 
-primitive_declaration_body:
-    STRING                                      { [fst $1] }
-  | STRING primitive_declaration_body           { fst $1 :: $2 }
-;
 primitive_declaration:
   EXTERNAL
   ext = ext
@@ -2499,7 +2495,7 @@ primitive_declaration:
   COLON
   ty = core_type
   EQUAL
-  prim = primitive_declaration_body
+  prim = raw_string+
   attrs2 = post_item_attributes
     { let attrs = attrs1 @ attrs2 in
       let loc = make_loc $sloc in
@@ -3193,6 +3189,11 @@ toplevel_directive_argument_:
 %inline epsilon:
   /* empty */
     { () }
+;
+
+%inline raw_string:
+  s = STRING
+    { fst s }
 ;
 
 name_tag:
