@@ -48,6 +48,11 @@ let mkstr ~loc d = Str.mk ~loc:(make_loc loc) d
 let mkclass ~loc ?attrs d = Cl.mk ~loc:(make_loc loc) ?attrs d
 let mkcty ~loc ?attrs d = Cty.mk ~loc:(make_loc loc) ?attrs d
 
+let pstr_typext (te, ext) =
+  (Pstr_typext te, ext)
+let psig_typext (te, ext) =
+  (Psig_typext te, ext)
+
 let mkctf ~loc ?attrs ?docs d =
   Ctf.mk ~loc:(make_loc loc) ?attrs ?docs d
 let mkcf ~loc ?attrs ?docs d =
@@ -1197,7 +1202,7 @@ structure_item:
     | type_declarations
         { let (nr, l, ext) = $1 in (Pstr_type (nr, List.rev l), ext) }
     | str_type_extension
-        { $1 }
+        { pstr_typext $1 }
     | str_exception_declaration
         { let (l, ext) = $1 in (Pstr_exception l, ext) }
     | module_binding
@@ -1345,7 +1350,7 @@ signature_item_with_ext:
       { let (l, ext) = $1 in
         (Psig_typesubst (List.rev l), ext) }
   | sig_type_extension
-      { $1 }
+      { psig_typext $1 }
   | sig_exception_declaration
       { let (l, ext) = $1 in (Psig_exception l, ext) }
   | module_declaration
@@ -2702,22 +2707,14 @@ label_declaration_semi:
 /* Type Extensions */
 
 %inline str_type_extension:
-  TYPE
-  ext = ext
-  attrs1 = attributes
-  no_nonrec_flag
-  params = type_parameters
-  tid = mkrhs(type_longident)
-  PLUSEQ
-  priv = private_flag
-  cs = bar_llist(extension_constructor)
-  attrs2 = post_item_attributes
-    { let docs = symbol_docs $sloc in
-      let attrs = attrs1 @ attrs2 in
-      let body = Te.mk tid cs ~params ~priv ~attrs ~docs in
-      Pstr_typext body, ext }
+  type_extension(extension_constructor)
+    { $1 }
 ;
 %inline sig_type_extension:
+  type_extension(extension_constructor_declaration)
+    { $1 }
+;
+%inline type_extension(declaration):
   TYPE
   ext = ext
   attrs1 = attributes
@@ -2726,12 +2723,12 @@ label_declaration_semi:
   tid = mkrhs(type_longident)
   PLUSEQ
   priv = private_flag
-  cs = bar_llist(extension_constructor_declaration)
+  cs = bar_llist(declaration)
   attrs2 = post_item_attributes
     { let docs = symbol_docs $sloc in
       let attrs = attrs1 @ attrs2 in
-      let body = Te.mk tid cs ~params ~priv ~attrs ~docs in
-      Psig_typext body, ext }
+      Te.mk tid cs ~params ~priv ~attrs ~docs,
+      ext }
 ;
 %inline extension_constructor(opening):
     extension_constructor_declaration(opening)
