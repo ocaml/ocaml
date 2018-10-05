@@ -21,6 +21,6 @@ ocamlc_byte_exit_status = "2"
 ** ocamlc.byte
 flags = "-w +32"
 module = "mpr7852.mli"
-ocamlc_byte_exit_status = "2"
+ocamlc_byte_exit_status = "0"
 ** check-ocamlc.byte-output
 *)
