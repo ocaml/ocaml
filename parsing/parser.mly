@@ -2710,7 +2710,7 @@ label_declaration_semi:
   tid = mkrhs(type_longident)
   PLUSEQ
   priv = private_flag
-  cs = str_extension_constructors
+  cs = bar_llist(extension_constructor)
   attrs2 = post_item_attributes
     { let docs = symbol_docs $sloc in
       let attrs = attrs1 @ attrs2 in
@@ -2726,20 +2726,12 @@ label_declaration_semi:
   tid = mkrhs(type_longident)
   PLUSEQ
   priv = private_flag
-  cs = sig_extension_constructors
+  cs = bar_llist(extension_constructor_declaration)
   attrs2 = post_item_attributes
     { let docs = symbol_docs $sloc in
       let attrs = attrs1 @ attrs2 in
       let body = Te.mk tid cs ~params ~priv ~attrs ~docs in
       Psig_typext body, ext }
-;
-%inline str_extension_constructors:
-  cs = bar_llist(extension_constructor)
-    { cs }
-;
-%inline sig_extension_constructors:
-  cs = bar_llist(extension_constructor_declaration)
-    { cs }
 ;
 %inline extension_constructor(opening):
     extension_constructor_declaration(opening)
