@@ -788,6 +788,9 @@ The precedences must be listed from low to high.
 %inline mkclass(symb): symb
     { mkclass ~loc:$sloc $1 }
 
+%inline wrap_mkstr_ext(symb): symb
+    { wrap_mkstr_ext ~loc:$sloc $1 }
+
 /* Generic definitions */
 
 (* [iloption(X)] recognizes either nothing or [X]. Assuming [X] produces
@@ -1181,39 +1184,38 @@ structure:
 structure_item:
     let_bindings(ext)
       { val_of_let_bindings ~loc:$sloc $1 }
-  | structure_item_with_ext
-      { wrap_mkstr_ext ~loc:$sloc $1 }
   | item_extension post_item_attributes
       { let docs = symbol_docs $sloc in
         mkstr ~loc:$sloc (Pstr_extension ($1, (add_docs_attrs docs $2))) }
   | floating_attribute
       { mkstr ~loc:$sloc (Pstr_attribute $1) }
-;
-structure_item_with_ext:
-  | primitive_declaration
-      { let (body, ext) = $1 in (Pstr_primitive body, ext) }
-  | value_description
-      { let (body, ext) = $1 in (Pstr_primitive body, ext) }
-  | type_declarations
-      { let (nr, l, ext ) = $1 in (Pstr_type (nr, List.rev l), ext) }
-  | str_type_extension
-      { let (l, ext) = $1 in (Pstr_typext l, ext) }
-  | str_exception_declaration
-      { let (l, ext) = $1 in (Pstr_exception l, ext) }
-  | module_binding
-      { let (body, ext) = $1 in (Pstr_module body, ext) }
-  | rec_module_bindings
-      { let (l, ext) = $1 in (Pstr_recmodule (List.rev l), ext) }
-  | module_type_declaration
-      { let (body, ext) = $1 in (Pstr_modtype body, ext) }
-  | open_statement
-      { let (body, ext) = $1 in (Pstr_open body, ext) }
-  | class_declarations
-      { let (l, ext) = $1 in (Pstr_class (List.rev l), ext) }
-  | class_type_declarations
-      { let (l, ext) = $1 in (Pstr_class_type (List.rev l), ext) }
-  | str_include_statement
-      { let (body, ext) = $1 in (Pstr_include body, ext) }
+  | wrap_mkstr_ext(
+      primitive_declaration
+        { let (body, ext) = $1 in (Pstr_primitive body, ext) }
+    | value_description
+        { let (body, ext) = $1 in (Pstr_primitive body, ext) }
+    | type_declarations
+        { let (nr, l, ext) = $1 in (Pstr_type (nr, List.rev l), ext) }
+    | str_type_extension
+        { let (l, ext) = $1 in (Pstr_typext l, ext) }
+    | str_exception_declaration
+        { let (l, ext) = $1 in (Pstr_exception l, ext) }
+    | module_binding
+        { let (body, ext) = $1 in (Pstr_module body, ext) }
+    | rec_module_bindings
+        { let (l, ext) = $1 in (Pstr_recmodule (List.rev l), ext) }
+    | module_type_declaration
+        { let (body, ext) = $1 in (Pstr_modtype body, ext) }
+    | open_statement
+        { let (body, ext) = $1 in (Pstr_open body, ext) }
+    | class_declarations
+        { let (l, ext) = $1 in (Pstr_class (List.rev l), ext) }
+    | class_type_declarations
+        { let (l, ext) = $1 in (Pstr_class_type (List.rev l), ext) }
+    | str_include_statement
+        { let (body, ext) = $1 in (Pstr_include body, ext) }
+    )
+    { $1 }
 ;
 
 str_include_statement:
