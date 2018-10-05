@@ -229,7 +229,7 @@ CAMLexport int caml_atomic_cas_field (value obj, int field, value oldval, value 
 
 CAMLprim value caml_atomic_load (value ref)
 {
-  if (Is_young(ref)) {
+  if (Is_young(ref) || caml_domain_alone()) {
     return Op_val(ref)[0];
   } else {
     value v;
@@ -246,7 +246,7 @@ CAMLprim value caml_atomic_load (value ref)
 CAMLprim value caml_atomic_exchange (value ref, value v)
 {
   value ret;
-  if (Is_young(ref)) {
+  if (Is_young(ref) || caml_domain_alone()) {
     ret = Op_val(ref)[0];
     Op_val(ref)[0] = v;
   } else {
@@ -260,7 +260,7 @@ CAMLprim value caml_atomic_exchange (value ref, value v)
 
 CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
 {
-  if (Is_young(ref)) {
+  if (Is_young(ref) || caml_domain_alone()) {
     value* p = Op_val(ref);
     if (*p == oldv) {
       *p = newv;
@@ -283,7 +283,7 @@ CAMLprim value caml_atomic_cas (value ref, value oldv, value newv)
 CAMLprim value caml_atomic_fetch_add (value ref, value incr)
 {
   value ret;
-  if (Is_young(ref)) {
+  if (Is_young(ref) || caml_domain_alone()) {
     value* p = Op_val(ref);
     CAMLassert(Is_long(*p));
     ret = *p;
