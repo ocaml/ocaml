@@ -1197,11 +1197,11 @@ structure_item:
     | type_declarations
         { let (nr, l, ext) = $1 in (Pstr_type (nr, List.rev l), ext) }
     | str_type_extension
-        { let (l, ext) = $1 in (Pstr_typext l, ext) }
+        { $1 }
     | str_exception_declaration
         { let (l, ext) = $1 in (Pstr_exception l, ext) }
     | module_binding
-        { let (body, ext) = $1 in (Pstr_module body, ext) }
+        { $1 }
     | rec_module_bindings
         { let (l, ext) = $1 in (Pstr_recmodule (List.rev l), ext) }
     | module_type_declaration
@@ -1234,11 +1234,17 @@ module_binding_body:
         { Pmod_functor(fst $1, snd $1, $2) }
   ) { $1 }
 ;
-module_binding:
-    MODULE ext_attributes mkrhs(UIDENT) module_binding_body post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Mb.mk $3 $4 ~attrs:(attrs@$5) ~loc:(make_loc $sloc) ~docs, ext }
+%inline module_binding:
+  MODULE
+  ext = ext attrs1 = attributes
+  uid = mkrhs(UIDENT)
+  body = module_binding_body
+  attrs2 = post_item_attributes
+    { let docs = symbol_docs $sloc in
+      let loc = make_loc $sloc in
+      let attrs = attrs1 @ attrs2 in
+      let body = Mb.mk uid body ~attrs ~loc ~docs in
+      Pstr_module body, ext }
 ;
 rec_module_bindings:
     rec_module_binding
@@ -1339,7 +1345,7 @@ signature_item_with_ext:
       { let (l, ext) = $1 in
         (Psig_typesubst (List.rev l), ext) }
   | sig_type_extension
-      { let (l, ext) = $1 in (Psig_typext l, ext) }
+      { $1 }
   | sig_exception_declaration
       { let (l, ext) = $1 in (Psig_exception l, ext) }
   | module_declaration
@@ -2695,25 +2701,37 @@ label_declaration_semi:
 
 /* Type Extensions */
 
-str_type_extension:
-  TYPE ext_attributes
+%inline str_type_extension:
+  TYPE
+  ext = ext
+  attrs1 = attributes
   no_nonrec_flag
-  type_parameters mkrhs(type_longident)
-  PLUSEQ private_flag str_extension_constructors post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Te.mk $5 $8 ~params:$4 ~priv:$7 ~attrs:(attrs@$9) ~docs
-        , ext }
+  params = type_parameters
+  tid = mkrhs(type_longident)
+  PLUSEQ
+  priv = private_flag
+  cs = str_extension_constructors
+  attrs2 = post_item_attributes
+    { let docs = symbol_docs $sloc in
+      let attrs = attrs1 @ attrs2 in
+      let body = Te.mk tid cs ~params ~priv ~attrs ~docs in
+      Pstr_typext body, ext }
 ;
-sig_type_extension:
-  TYPE ext_attributes
+%inline sig_type_extension:
+  TYPE
+  ext = ext
+  attrs1 = attributes
   no_nonrec_flag
-  type_parameters mkrhs(type_longident)
-  PLUSEQ private_flag sig_extension_constructors post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Te.mk $5 $8 ~params:$4 ~priv:$7 ~attrs:(attrs@$9) ~docs
-        , ext }
+  params = type_parameters
+  tid = mkrhs(type_longident)
+  PLUSEQ
+  priv = private_flag
+  cs = sig_extension_constructors
+  attrs2 = post_item_attributes
+    { let docs = symbol_docs $sloc in
+      let attrs = attrs1 @ attrs2 in
+      let body = Te.mk tid cs ~params ~priv ~attrs ~docs in
+      Psig_typext body, ext }
 ;
 %inline str_extension_constructors:
   cs = bar_llist(extension_constructor)
@@ -3348,7 +3366,7 @@ ext:
   | /* empty */     { None }
   | PERCENT attr_id { not_expecting $loc "extension" }
 ;
-ext_attributes:
+%inline ext_attributes: (* TODO should disappear? *)
   ext attributes    { $1, $2 }
 ;
 extension:
