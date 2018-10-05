@@ -1638,6 +1638,13 @@ if test -n "$with_debugger"; then
   fi
 fi
 
+# Check for C11 atomics
+
+if sh ./hasgot -i stdatomic.h; then
+  inf "stdatomic.h found."
+  echo "#define HAS_STDATOMIC_H" >> s.h
+fi
+
 # Determine if the POSIX threads library is supported
 
 systhread_support=false

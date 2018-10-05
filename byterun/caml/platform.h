@@ -9,14 +9,6 @@
 #include "mlvalues.h"
 #include "memory.h"
 
-/*
-FIXME: This file should use C11 atomics if they are available.
-
-#if __STDC_VERSION__ >= 201112L
-... stuff ...
-#endif
-*/
-
 #if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
 #define MAP_ANONYMOUS MAP_ANON
 #endif
@@ -29,65 +21,23 @@ FIXME: This file should use C11 atomics if they are available.
 
 /* Loads and stores with acquire and release semantics respectively */
 
+INLINE void cpu_relax() {
 #if defined(__x86_64__) || defined(__i386__)
-
-#if defined(__GNUC__)
-#define compiler_barrier() __asm__ __volatile__ ("" ::: "memory");
-#else
-#error "no compiler barrier defined for this compiler"
-#endif
-
-INLINE void cpu_relax() {
   asm volatile("pause" ::: "memory");
-}
-
-#define ATOMIC_UINTNAT_INIT(x) { (x) }
-
-/* On x86, all loads are acquire and all stores are release. So, only
-   compiler barriers are necessary in the following. */
-
-INLINE uintnat atomic_load_acq(atomic_uintnat* p) {
-  uintnat v = p->val;
-  compiler_barrier();
-  return v;
-}
-
-INLINE void atomic_store_rel(atomic_uintnat* p, uintnat v) {
-  compiler_barrier();
-  p->val = v;
-}
-
 #elif defined(__aarch64__)
-
-#if defined(__GNUC__)
-#define dmb() __asm__ __volatile__ ("dmb sy" ::: "memory");
-#else
-#error "no compiler barrier defined for this compiler"
-#endif
-
-#define ATOMIC_UINTNAT_INIT(x) { (x) }
-
-INLINE void cpu_relax() {
   asm volatile ("yield" ::: "memory");
+#else
+  #warning "cpu_relax() undefined for this architecture!"
+#endif
 }
 
 INLINE uintnat atomic_load_acq(atomic_uintnat* p) {
-  uintnat v;
-  dmb();
-  v = p->val;
-  dmb();
-  return v;
+  return atomic_load_explicit(p, memory_order_acquire);
 }
 
 INLINE void atomic_store_rel(atomic_uintnat* p, uintnat v) {
-  dmb();
-  p->val = v;
-  dmb();
+  atomic_store_explicit(p, v, memory_order_release);
 }
-
-#else
-#error "unsupported platform (i.e. not x86)"
-#endif
 
 /* Spin-wait loops */
 
@@ -119,33 +69,12 @@ INLINE uintnat atomic_load_wait_nonzero(atomic_uintnat* p) {
 
 /* Atomic read-modify-write instructions, with full fences */
 
-#if defined(__GNUC__)
-
-/* atomically: old = *p; *p += v; return old; */
-INLINE uintnat atomic_fetch_add(atomic_uintnat* p, uintnat v) {
-  return __sync_fetch_and_add(&p->val, v);
-}
-
 INLINE uintnat atomic_fetch_add_verify_ge0(atomic_uintnat* p, uintnat v) {
   uintnat result = atomic_fetch_add(p,v);
   CAMLassert ((intnat)result > 0);
   return result;
 }
 
-/* atomically: if (*p == vold) { *p = vnew; return 1; } else { return 0; }
-   may spuriously return 0 even when *p == vold */
-INLINE int atomic_cas(atomic_uintnat* p, uintnat vold, uintnat vnew) {
-  return __sync_bool_compare_and_swap(&p->val, vold, vnew);
-}
-
-/* atomically: if (*p == vold) { *p = vnew; } */
-INLINE void atomic_cas_strong(atomic_uintnat* p, uintnat vold, uintnat vnew) {
-  __sync_val_compare_and_swap(&p->val, vold, vnew);
-}
-
-#else
-#error "unsupported platform"
-#endif
 
 typedef pthread_mutex_t caml_plat_mutex;
 #define CAML_PLAT_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
