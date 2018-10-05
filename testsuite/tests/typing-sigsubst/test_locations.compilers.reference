@@ -66,3 +66,7 @@ Error: Signature mismatch:
        File "test_loc_modtype_type_subst.ml", line 1, characters 16-52:
          Expected declaration
        File "test_functor.ml", line 5, characters 2-23: Actual declaration
+File "mpr7852.mli", line 10, characters 2-22:
+Warning 32: unused value foo.
+File "mpr7852.mli", line 11, characters 2-22:
+Warning 32: unused value bar.
