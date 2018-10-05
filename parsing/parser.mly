@@ -2479,10 +2479,18 @@ opt_pattern_type_constraint:
 /* Value descriptions */
 
 value_description:
-    VAL ext_attributes mkrhs(val_ident) COLON core_type post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Val.mk $3 $5 ~attrs:(attrs@$6) ~loc:(make_loc $sloc) ~docs, ext }
+  VAL
+  ext = ext
+  attrs1 = attributes
+  id = mkrhs(val_ident)
+  COLON
+  ty = core_type
+  attrs2 = post_item_attributes
+    { let attrs = attrs1 @ attrs2 in
+      let loc = make_loc $sloc in
+      let docs = symbol_docs $sloc in
+      Val.mk id ty ~attrs ~loc ~docs,
+      ext }
 ;
 
 /* Primitive declarations */
