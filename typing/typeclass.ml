@@ -1290,7 +1290,7 @@ let temp_abbrev loc env id arity =
        type_manifest = Some ty;
        type_variance = Misc.replicate_list Variance.full arity;
        type_is_newtype = false;
-       type_expansion_scope = None;
+       type_expansion_scope = Btype.lowest_level;
        type_loc = loc;
        type_attributes = []; (* or keep attrs from the class decl? *)
        type_immediate = false;
@@ -1541,7 +1541,7 @@ let class_infos define_class kind
      type_manifest = Some obj_ty;
      type_variance = List.map (fun _ -> Variance.full) obj_params;
      type_is_newtype = false;
-     type_expansion_scope = None;
+     type_expansion_scope = Btype.lowest_level;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;
@@ -1561,7 +1561,7 @@ let class_infos define_class kind
      type_manifest = Some cl_ty;
      type_variance = List.map (fun _ -> Variance.full) cl_params;
      type_is_newtype = false;
-     type_expansion_scope = None;
+     type_expansion_scope = Btype.lowest_level;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;

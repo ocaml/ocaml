@@ -136,7 +136,7 @@ let reset_for_saving () = new_id := -1
 
 let newpersty desc =
   decr new_id;
-  { desc = desc; level = generic_level; scope = None; id = !new_id }
+  { desc; level = generic_level; scope = Btype.lowest_level; id = !new_id }
 
 (* ensure that all occurrences of 'Tvar None' are physically shared *)
 let tvar_none = Tvar None
@@ -305,7 +305,7 @@ let type_declaration s decl =
       type_private = decl.type_private;
       type_variance = decl.type_variance;
       type_is_newtype = false;
-      type_expansion_scope = None;
+      type_expansion_scope = Btype.lowest_level;
       type_loc = loc s decl.type_loc;
       type_attributes = attrs s decl.type_attributes;
       type_immediate = decl.type_immediate;
