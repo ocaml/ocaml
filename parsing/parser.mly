@@ -50,8 +50,12 @@ let mkcty ~loc ?attrs d = Cty.mk ~loc:(make_loc loc) ?attrs d
 
 let pstr_typext (te, ext) =
   (Pstr_typext te, ext)
+let pstr_primitive (vd, ext) =
+  (Pstr_primitive vd, ext)
 let psig_typext (te, ext) =
   (Psig_typext te, ext)
+let psig_value (vd, ext) =
+  (Psig_value vd, ext)
 
 let mkctf ~loc ?attrs ?docs d =
   Ctf.mk ~loc:(make_loc loc) ?attrs ?docs d
@@ -1196,9 +1200,9 @@ structure_item:
       { mkstr ~loc:$sloc (Pstr_attribute $1) }
   | wrap_mkstr_ext(
       primitive_declaration
-        { let (body, ext) = $1 in (Pstr_primitive body, ext) }
+        { pstr_primitive $1 }
     | value_description
-        { let (body, ext) = $1 in (Pstr_primitive body, ext) }
+        { pstr_primitive $1 }
     | type_declarations
         { let (nr, l, ext) = $1 in (Pstr_type (nr, List.rev l), ext) }
     | str_type_extension
@@ -1341,9 +1345,9 @@ signature_item:
 ;
 signature_item_with_ext:
     value_description
-      { let (body, ext) = $1 in (Psig_value body, ext) }
+      { psig_value $1 }
   | primitive_declaration
-      { let (body, ext) = $1 in (Psig_value body, ext) }
+      { psig_value $1 }
   | type_declarations
       { let (nr, l, ext) = $1 in (Psig_type (nr, List.rev l), ext) }
   | type_subst_declarations
@@ -2488,12 +2492,20 @@ primitive_declaration_body:
   | STRING primitive_declaration_body           { fst $1 :: $2 }
 ;
 primitive_declaration:
-    EXTERNAL ext_attributes mkrhs(val_ident) COLON core_type EQUAL
-    primitive_declaration_body post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Val.mk $3 $5 ~prim:$7 ~attrs:(attrs@$8) ~loc:(make_loc $sloc) ~docs
-        , ext }
+  EXTERNAL
+  ext = ext
+  attrs1 = attributes
+  id = mkrhs(val_ident)
+  COLON
+  ty = core_type
+  EQUAL
+  prim = primitive_declaration_body
+  attrs2 = post_item_attributes
+    { let attrs = attrs1 @ attrs2 in
+      let loc = make_loc $sloc in
+      let docs = symbol_docs $sloc in
+      Val.mk id ty ~prim ~attrs ~loc ~docs,
+      ext }
 ;
 
 /* Type declarations */
