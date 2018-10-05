@@ -908,14 +908,9 @@ $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt
 runtime/primitives:
 	$(MAKE) -C runtime primitives
 
-bytecomp/runtimedef.ml: runtime/primitives runtime/caml/fail.h
-	(echo 'let builtin_exceptions = [|'; \
-	 cat runtime/caml/fail.h | tr -d '\r' | \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p'; \
-	 echo '|]'; \
-	 echo 'let builtin_primitives = [|'; \
-	 sed -e 's/.*/  "&";/' runtime/primitives; \
-	 echo '|]') > $@
+bytecomp/runtimedef.ml: bytecomp/generate_runtimedef.sh runtime/caml/fail.h \
+    runtime/primitives
+	$^ > $@
 
 partialclean::
 	rm -f bytecomp/runtimedef.ml
