@@ -121,6 +121,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- PR#2091: Add a warning triggered by type declarations "type t = ()"
+  (Armaël Guéneau, report by linse, review by Florian Angeletti and Gabriel
+  Scherer)
+
 - PR#6416, GPR#1120: unique printed names for identifiers
   (Florian Angeletti, review by Jacques Garrigue)
 

@@ -1263,8 +1263,23 @@ let name_recursion sdecl id decl =
     else decl
   | _ -> decl
 
+(* Warn on definitions of type "type foo = ()" which redefine a different unit
+   type and are likely a mistake. *)
+let check_redefined_unit (td: Parsetree.type_declaration) =
+  let open Parsetree in
+  let is_unit_constructor cd = cd.pcd_name.txt = "()" in
+  match td with
+  | { ptype_name = { txt = name };
+      ptype_manifest = None;
+      ptype_kind = Ptype_variant [ cd ] }
+    when is_unit_constructor cd ->
+      Location.prerr_warning td.ptype_loc (Warnings.Redefining_unit name)
+  | _ ->
+      ()
+
 (* Translate a set of type declarations, mutually recursive or not *)
 let transl_type_decl env rec_flag sdecl_list =
+  List.iter check_redefined_unit sdecl_list;
   (* Add dummy types for fixed rows *)
   let fixed_types = List.filter is_fixed_type sdecl_list in
   let sdecl_list =
