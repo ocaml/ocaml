@@ -248,6 +248,10 @@ Working version
   no-naked-pointers
   (Sam Goldman, review by Gabriel Scherer, David Allsopp, Stephen Dolan)
 
+- GPR#2079: Avoid page table lookup in polymorphc hash with
+  no-naked-pointers
+  (Sam Goldman)
+
 ### Tools
 
 - MPR#7843, GPR#2013: ocamldoc, better handling of {{!label}text} in the latex

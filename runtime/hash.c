@@ -22,6 +22,7 @@
 
 #include "caml/mlvalues.h"
 #include "caml/custom.h"
+#include "caml/intext.h"
 #include "caml/memory.h"
 #include "caml/hash.h"
 
@@ -179,6 +180,12 @@ CAMLexport uint32_t caml_hash_mix_string(uint32_t h, value s)
 /* Maximal number of Forward_tag links followed in one step */
 #define MAX_FORWARD_DEREFERENCE 1000
 
+#ifdef NO_NAKED_POINTERS
+#define Is_opaque_pointer(v) (Is_in_code_area(v))
+#else
+#define Is_opaque_pointer(v) (!Is_in_value_area(v))
+#endif
+
 /* The generic hash function */
 
 CAMLprim value caml_hash(value count, value limit, value seed, value obj)
@@ -205,7 +212,13 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
       h = caml_hash_mix_intnat(h, v);
       num--;
     }
-    else if (Is_in_value_area(v)) {
+    else if (Is_opaque_pointer(v)) {
+      /* v is a pointer outside the heap, probably a code pointer.
+         Shall we count it?  Let's say yes by compatibility with old code. */
+      h = caml_hash_mix_intnat(h, v);
+      num--;
+    }
+    else {
       switch (Tag_val(v)) {
       case String_tag:
         h = caml_hash_mix_string(h, v);
@@ -236,7 +249,11 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
            Forward_tag links being followed */
         for (i = MAX_FORWARD_DEREFERENCE; i > 0; i--) {
           v = Forward_val(v);
-          if (Is_long(v) || !Is_in_value_area(v) || Tag_val(v) != Forward_tag)
+          if (Is_long(v)
+#ifndef NO_NAKED_POINTERS
+                || !Is_in_value_area(v)
+#endif
+                || Tag_val(v) != Forward_tag)
             goto again;
         }
         /* Give up on this object and move to the next */
@@ -264,11 +281,6 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         }
         break;
       }
-    } else {
-      /* v is a pointer outside the heap, probably a code pointer.
-         Shall we count it?  Let's say yes by compatibility with old code. */
-      h = caml_hash_mix_intnat(h, v);
-      num--;
     }
   }
   /* Final mixing of bits */

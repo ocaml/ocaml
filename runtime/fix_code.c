@@ -44,14 +44,16 @@ struct ext_table caml_code_fragments_table;
 
 void caml_init_code_fragments(void) {
   struct code_fragment * cf;
+  char * code_end = (char *) caml_start_code + caml_code_size;
   /* Register the code in the table of code fragments */
   cf = caml_stat_alloc(sizeof(struct code_fragment));
   cf->code_start = (char *) caml_start_code;
-  cf->code_end = (char *) caml_start_code + caml_code_size;
+  cf->code_end = code_end;
   caml_md5_block(cf->digest, caml_start_code, caml_code_size);
   cf->digest_computed = 1;
   caml_ext_table_init(&caml_code_fragments_table, 8);
   caml_ext_table_add(&caml_code_fragments_table, cf);
+  caml_page_table_add(In_code_area, (char *)caml_start_code, code_end);
 }
 
 void caml_load_code(int fd, asize_t len)

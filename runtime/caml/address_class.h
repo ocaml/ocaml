@@ -36,10 +36,14 @@
 #define Is_in_value_area(a)                                     \
   (Classify_addr(a) & (In_heap | In_young | In_static_data))
 
+#ifdef NATIVE_CODE
 #define Is_in_code_area(pc) \
  (    ((char *)(pc) >= caml_code_area_start && \
        (char *)(pc) <= caml_code_area_end)     \
    || (Classify_addr(pc) & In_code_area) )
+#else
+#define Is_in_code_area(pc) (Classify_addr(pc) & In_code_area)
+#endif
 
 #define Is_in_static_data(a) (Classify_addr(a) & In_static_data)
 
