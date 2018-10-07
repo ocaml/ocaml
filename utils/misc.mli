@@ -103,6 +103,10 @@ module Stdlib : sig
         out the [None] elements and returns the list of the arguments of
         the [Some] elements. *)
 
+    val find_map : ('a -> 'b option) -> 'a t -> 'b option
+    (** [find_map f l] returns the first evaluation of [f] that returns [Some],
+       or returns None if there is no such element. *)
+
     val some_if_all_elements_are_some : 'a option t -> 'a t option
     (** If all elements of the given list are [Some _] then [Some xs]
         is returned with the [xs] being the contents of those [Some]s, with
@@ -364,7 +368,31 @@ val delete_eol_spaces : string -> string
    line spaces removed. Intended to normalize the output of the
    toplevel for tests. *)
 
+val pp_two_columns :
+  ?sep:string -> ?max_lines:int ->
+  Format.formatter -> (string * string) list -> unit
+(** [pp_two_columns ?sep ?max_lines ppf l] prints the lines in [l] as two
+   columns separated by [sep] ("|" by default). [max_lines] can be used to
+   indicate a maximum number of lines to print -- an ellipsis gets inserted at
+   the middle if the input has too many lines.
 
+   Example:
+
+    {v pp_two_columns ~max_lines:3 Format.std_formatter [
+      "abc", "hello";
+      "def", "zzz";
+      "a"  , "bllbl";
+      "bb" , "dddddd";
+    ] v}
+
+    prints
+
+    {v
+    abc | hello
+    ...
+    bb  | dddddd
+    v}
+*)
 
 (** {1 Hook machinery}
 

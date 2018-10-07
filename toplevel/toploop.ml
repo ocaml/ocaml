@@ -383,7 +383,9 @@ let use_file ppf wrap_mod name =
     (* Skip initial #! line if any *)
     Lexer.skip_hash_bang lb;
     let success =
-      protect_refs [ R (Location.input_name, filename) ] (fun () ->
+      protect_refs [ R (Location.input_name, filename);
+                     R (Location.input_lexbuf, Some lb); ]
+        (fun () ->
         try
           List.iter
             (fun ph ->

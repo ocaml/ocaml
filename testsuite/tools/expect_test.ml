@@ -129,27 +129,9 @@ let split_chunks phrases =
   loop phrases [] []
 
 module Compiler_messages = struct
-  let printer (lb: Lexing.lexbuf) =
-    let pp_loc _ _ ppf loc =
-      (* We want to highlight locations even coming from a file, but the
-         toplevel printer will only highlight locations from the toplevel. *)
-      Format.fprintf ppf "@[<v>%a:@,%a@]"
-        Location.print_loc loc
-        (Location.highlight_dumb lb) [loc]
-    in
-    { (Location.dumb_toplevel_printer lb)
-      with pp_main_loc = pp_loc; pp_submsg_loc = pp_loc }
-
-  let expect_printer () =
-    match !Location.input_lexbuf with
-    | None -> Location.batch_mode_printer
-    | Some lb -> printer lb
-
   let capture ppf ~f =
     Misc.protect_refs
-      [ R (Location.formatter_for_warnings , ppf)
-      ; R (Location.report_printer         , expect_printer)
-      ]
+      [ R (Location.formatter_for_warnings, ppf) ]
       f
 end
 
