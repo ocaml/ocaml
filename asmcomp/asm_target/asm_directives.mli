@@ -23,43 +23,6 @@
 (* CR-someday mshinwell: Use this module throughout the backends as per
    the original GPR. *)
 
-(* CR-someday mshinwell: Throughout the backend change to using a new
-   type [Backend_sym.t] instead of [string] for symbols.  There should also
-   be another type that corresponds to symbol references, which may include
-   relocation information. *)
-
-(** Sections that hold DWARF debugging information. *)
-type dwarf_section =
-  | Debug_info
-  | Debug_abbrev
-  | Debug_aranges
-  | Debug_loc
-  | Debug_str
-  | Debug_line
-
-(** Sections for the POWER architecture only. *)
-type power_section =
-  | Function_descriptors
-  | Table_of_contents
-
-(** Sections for the IA32 architecture only. *)
-type ia32_section =
-  | Non_lazy_symbol_pointers
-  | Jump_table
-
-(** The linker may share constants in [Eight_byte_literals] and
-    [Sixteen_byte_literals] sections. *)
-type section =
-  | Text
-  | Data
-  | Read_only_data
-  | Eight_byte_literals
-  | Sixteen_byte_literals
-  | Jump_tables
-  | DWARF of dwarf_section
-  | POWER of power_section
-  | IA32 of ia32_section
-
 (** Emit subsequent directives to the given section.  If this function
     has not been called before on the particular section, a label
     declaration will be emitted after declaring the section.
@@ -68,7 +31,24 @@ type section =
     DWARF) to places that are currently at the start of these sections
     get relocated correctly when those places become not at the start
     (e.g. during linking). *)
-val switch_to_section : section -> unit
+val switch_to_section : Asm_section.t -> unit
+
+(** Emit subsequent directives to the given section, where the section must
+    not be one of those in type [section] (see above).  The section is
+    specified by the three components of a typical assembler section-switching
+    command.  This function is only intended to be used for target-specific
+    sections. *)
+val switch_to_section_raw
+   : names:string list
+  -> flags:string option
+  -> args:string list
+  -> unit
+
+(** Abbreviation for [switch_to_section Text]. *)
+val text : unit -> unit
+
+(** Abbreviation for [switch_to_section Data]. *)
+val data : unit -> unit
 
 (** Emit an 8-bit signed integer.  There is no padding or sign extension. *)
 val int8 : Numbers.Int8.t -> unit
@@ -112,7 +92,7 @@ val string : string -> unit
     not emit anything.  (See [emit_cached_strings], below.)
     If a string is supplied to this function that is already in the cache
     then the previously-assigned label is returned, not a new one. *)
-val cache_string : string -> Cmm.label
+val cache_string : string -> Asm_label.t
 
 (** Emit the sequence of:
       label definition:
@@ -157,7 +137,7 @@ val align : bytes:int -> unit
     blocks (e.g. functions) emitted immediately prior into the assembly stream.
     [size_of] may be specified when the symbol used for measurement differs
     from that whose size is being stated (e.g. on POWER with ELF ABI v1). *)
-val size : ?size_of_symbol:string -> symbol:string -> unit
+val size : ?size_of:Asm_symbol.t -> Asm_symbol.t -> unit
 
 (** Leave a gap in the object file. *)
 val space : bytes:int -> unit
@@ -166,38 +146,38 @@ val space : bytes:int -> unit
     emitting for MASM this will cause loads and stores to/from the symbol to
     be treated as if they are loading machine-width words (unless the
     instruction has an explicit width suffix). *)
-val define_data_symbol : symbol:string -> unit
+val define_data_symbol : Asm_symbol.t -> unit
 
 (** Define a function symbol at the current output position.  An exception
     will be raised if the current section is not a text section. *)
-val define_function_symbol : symbol:string -> unit
+val define_function_symbol : Asm_symbol.t -> unit
 
 (** Mark a symbol as global. *)
-val global : symbol:string -> unit
+val global : Asm_symbol.t -> unit
 
 (** Emit a machine-width reference to the given symbol. *)
-val symbol : string -> unit
+val symbol : Asm_symbol.t -> unit
 
 (** Mark a symbol as "private extern" (see assembler documentation for
     details). *)
-val private_extern : symbol:string -> unit
+val private_extern : Asm_symbol.t -> unit
 
 (** Marker inside the definition of a lazy symbol stub (see platform or
     assembler documentation for details). *)
-val indirect_symbol : symbol:string -> unit
+val indirect_symbol : Asm_symbol.t -> unit
 
 (** Define a label at the current position in the current section.
     The treatment for MASM when emitting into non-text sections is as for
     [define_symbol], above. *)
-val define_label : Cmm.label -> unit
+val define_label : Asm_label.t -> unit
 
 (** Emit a machine-width reference to the given label. *)
-val label : Cmm.label -> unit
+val label : Asm_label.t -> unit
 
 (** Emit a machine-width reference to the address formed by adding the
     given byte offset to the address of the given symbol. *)
 val symbol_plus_offset
-   : symbol:string
+   : Asm_symbol.t
   -> offset_in_bytes:Targetint.t
   -> unit
 
@@ -208,31 +188,31 @@ val symbol_plus_offset
     data between the points being measured. *)
 
 (** Emit a machine-width reference giving the displacement between two given
-    labels.  To obtain a positive result the symbol at the lower address
+    labels.  To obtain a positive result the symbol at the [lower] address
     should be the second argument, as for normal subtraction. *)
 val between_symbols
-   : upper:string
-  -> lower:string
+   : upper:Asm_symbol.t
+  -> lower:Asm_symbol.t
   -> unit
 
 (** Like [between_symbols], but for two labels, emitting a 32-bit-wide
     reference.  The behaviour upon overflow is unspecified. *)
-val between_labels_32bit : upper:Cmm.label -> lower:Cmm.label -> unit
+val between_labels_32bit : upper:Asm_label.t -> lower:Asm_label.t -> unit
 
 (** Emit a machine-width reference giving the displacement between the
-    lower symbol and the sum of the address of the upper label plus
+    lower symbol and the sum of the address of the [upper] label plus
     [offset_upper]. *)
 val between_symbol_and_label_offset
-   : upper:Cmm.label
-  -> lower:string
+   : upper:Asm_label.t
+  -> lower:Asm_symbol.t
   -> offset_upper:Targetint.t
   -> unit
 
 (** As for [between_symbol_and_label_offset], but with the types of the
     lower and upper bounds transposed. *)
 val between_symbol_and_label_offset'
-   : upper:string
-  -> lower:Cmm.label
+   : upper:Asm_symbol.t
+  -> lower:Asm_label.t
   -> offset_lower:Targetint.t
   -> unit
 
@@ -240,12 +220,12 @@ val between_symbol_and_label_offset'
     by subtracting the current assembly location from the sum of the address
     of the given label plus the given offset. *)
 val between_this_and_label_offset_32bit
-   : upper:Cmm.label
+   : upper:Asm_label.t
   -> offset_upper:Targetint.t
   -> unit
 
 val scaled_distance_between_this_and_label_offset
-   : upper:Cmm.label
+   : upper:Asm_label.t
   -> divide_by:int
   -> unit
 
@@ -253,30 +233,18 @@ val scaled_distance_between_this_and_label_offset
     address of [base] from the address of [label].  [width] specifies the
     size of the integer. *)
 val offset_into_section_label
-   : section:section
-  -> label:Cmm.label
+   : Asm_section.t
+  -> Asm_label.t
   -> width:Target_system.machine_width
   -> unit
 
 (** As for [offset_into_section_label], but using a symbol instead of
     a label as one end of the measurement. *)
 val offset_into_section_symbol
-   : section:section
-  -> symbol:string
+   : Asm_section.t
+  -> Asm_symbol.t
   -> width:Target_system.machine_width
   -> unit
-
-(** Retrieve the label that [switch_to_section] (below) will put at the start
-    of the given section.  This function may be called before
-    [switch_to_section] for the section concerned.
-
-    Aside: Why do we need labels at the start of sections rather than
-    just referencing sections directly?
-    They are necessary so that references (e.g. DW_FORM_ref_addr or
-    DW_FORM_sec_offset when emitting DWARF) to places that are currently
-    at the start of these sections get relocated correctly when those
-    places become not at the start (e.g. during linking). *)
-val label_for_section : section -> Cmm.label
 
 module Directive : sig
   module Constant : sig
@@ -317,7 +285,10 @@ module Directive : sig
   type comment = private string
 
   (** Internal representation of directives.  Only needed if writing a custom
-      assembler or printer instead of using [print], below. *)
+      assembler or printer instead of using [print], below.
+      Symbols that occur in values of type [t] are encoded as [string]s and
+      have had all necessary prefixing, mangling, escaping and suffixing
+      applied. *)
   type t = private
     | Align of { bytes : int; }
     | Bytes of string
@@ -351,15 +322,15 @@ module Directive : sig
 end
 
 (** To be called by the emitter at the very start of code generation.
+    [big_endian] should always be [Arch.big_endian].
     Calling the functions in this module will cause directives to be passed
     to the given [emit] function (a typical implementation of which will just
     call [Directive.print] on its parameter).
     This function switches to the text section. *)
-val initialize : emit:(Directive.t -> unit) -> unit
+val initialize
+   : big_endian:bool
+  -> emit:(Directive.t -> unit)
+  -> unit
 
 (** Reinitialize the emitter before compiling a different source file. *)
 val reset : unit -> unit
-
-(** The name mangling used for labels.  This may be useful e.g. when
-    emitting an instruction referencing a label. *)
-val string_of_label : Cmm.label -> string

@@ -4,13 +4,15 @@
 (*                                                                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
-(*   Copyright 2015--2017 Jane Street Group LLC                           *)
+(*   Copyright 2015--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
+
+open Backend_sym.Names
 
 module V = Backend_var
 module VP = Backend_var.With_provenance
@@ -23,7 +25,7 @@ let index_within_node = ref node_num_header_words
    arch.ml.) *)
 let spacetime_node = ref (lazy (Cmm.Cvar (V.create_local "dummy")))
 let spacetime_node_ident = ref (lazy (V.create_local "dummy"))
-let current_function_label = ref ""
+let current_function_label = ref None
 let direct_tail_call_point_indexes = ref []
 
 let reverse_shape = ref ([] : Mach.spacetime_shape)
@@ -54,7 +56,7 @@ let reset ~spacetime_node_ident:ident ~function_label =
   spacetime_node := lazy (Cmm.Cvar ident);
   spacetime_node_ident := lazy ident;
   direct_tail_call_point_indexes := [];
-  current_function_label := function_label;
+  current_function_label := Some function_label;
   reverse_shape := []
 
 let code_for_function_prologue ~function_name ~node_hole =
@@ -101,7 +103,7 @@ let code_for_function_prologue ~function_name ~node_hole =
           Cvar node,
           Clet (VP.create is_new_node,
             Clet (VP.create pc, Cconst_symbol function_name,
-              Cop (Cextcall ("caml_spacetime_allocate_node",
+              Cop (Cextcall (caml_spacetime_allocate_node,
                   [| Int |], false, None),
                 [Cconst_int (1 (* header *) + !index_within_node);
                 Cvar pc;
@@ -138,7 +140,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
        the latter table to be used for resolving a program counter at such
        a point to a location.
     *)
-    Cop (Cextcall ("caml_spacetime_generate_profinfo", [| Int |],
+    Cop (Cextcall (caml_spacetime_generate_profinfo, [| Int |],
         false, Some label),
       [Cvar address_of_profinfo;
        Cconst_int (index_within_node + 1)],
@@ -191,7 +193,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
             Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header], dbg))))))
 
 type callee =
-  | Direct of string
+  | Direct of Backend_sym.t
   | Indirect of Cmm.expression
 
 let code_for_call ~node ~callee ~is_tail ~label =
@@ -199,7 +201,11 @@ let code_for_call ~node ~callee ~is_tail ~label =
      graph. *)
   let is_self_recursive_call =
     match callee with
-    | Direct callee -> callee = !current_function_label
+    | Direct callee ->
+      begin match !current_function_label with
+      | None -> Misc.fatal_error "[current_function_label] not set"
+      | Some label -> Backend_sym.equal callee label
+      end
     | Indirect _ -> false
   in
   let is_tail = is_tail || is_self_recursive_call in
@@ -252,7 +258,7 @@ let code_for_call ~node ~callee ~is_tail ~label =
         if is_tail then node
         else Cconst_int 1  (* [Val_unit] *)
       in
-      Cop (Cextcall ("caml_spacetime_indirect_node_hole_ptr",
+      Cop (Cextcall (caml_spacetime_indirect_node_hole_ptr,
           [| Int |], false, None),
         [callee; Cvar place_within_node; caller_node],
         dbg))
@@ -369,7 +375,7 @@ class virtual instruction_selection = object (self)
       let label = Cmm.new_label () in
       let index =
         next_index_within_node
-          ~part_of_shape:(Mach.Direct_call_point { callee = "caml_call_gc"; })
+          ~part_of_shape:(Mach.Direct_call_point { callee = caml_call_gc; })
           ~label
       in
       Mach.Ialloc {
@@ -398,7 +404,7 @@ class virtual instruction_selection = object (self)
       let index =
         next_index_within_node
           ~part_of_shape:(
-            Mach.Direct_call_point { callee = "caml_ml_array_bound_error"; })
+            Mach.Direct_call_point { callee = caml_ml_array_bound_error; })
           ~label
       in
       Mach.Icheckbound {

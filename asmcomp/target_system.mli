@@ -76,6 +76,9 @@ val system : unit -> system
 (** The target object file format and ABI of the OCaml compiler. *)
 val object_file_format_and_abi : unit -> object_file_format_and_abi
 
+(** Whether the target system is a Linux platform. *)
+val linux : unit -> bool
+
 (** Whether the target system is a Windows platform. *)
 val windows : unit -> bool
 

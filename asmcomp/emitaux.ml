@@ -219,18 +219,6 @@ let emit_frames a =
   Hashtbl.iter emit_filename filenames;
   frame_descriptors := []
 
-(* Detection of functions that can be duplicated between a DLL and
-   the main program (PR#4690) *)
-
-let isprefix s1 s2 =
-  String.length s1 <= String.length s2
-  && String.sub s2 0 (String.length s1) = s1
-
-let is_generic_function name =
-  List.exists
-    (fun p -> isprefix p name)
-    ["caml_apply"; "caml_curry"; "caml_send"; "caml_tuplify"]
-
 (* CFI directives *)
 
 let is_cfi_enabled () =

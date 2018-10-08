@@ -68,7 +68,7 @@ val instr_cons_same_avail
 val invert_test: Mach.test -> Mach.test
 
 type fundecl =
-  { fun_name: string;
+  { fun_name: Backend_sym.t;
     fun_body: instruction;
     fun_fast: bool;
     fun_dbg : Debuginfo.t;

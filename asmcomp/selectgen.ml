@@ -22,6 +22,7 @@ open Reg
 open Mach
 
 module Int = Numbers.Int
+module S = Backend_sym
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
@@ -240,7 +241,12 @@ let join_array env rs ~bound_name =
       Some res
 
 (* Name of function being compiled *)
-let current_function_name = ref ""
+let current_function_name = ref None
+
+let current_function_is func =
+  match !current_function_name with
+  | None -> Misc.fatal_error "[current_function_name] not set"
+  | Some func' -> S.equal func func'
 
 (* All phantom lets seen in the current function *)
 let phantom_lets = V.Tbl.create 42
@@ -1287,7 +1293,7 @@ method emit_tail (env:environment) exp =
                 self#insert_moves env r1 loc_arg;
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
                 self#insert_debug env call dbg loc_arg [||];
-              end else if func = !current_function_name then begin
+              end else if current_function_is func then begin
                 let call = Iop (Itailcall_imm { func; label_after; }) in
                 let loc_arg' = Proc.loc_parameters r1 in
                 let spacetime_reg =
@@ -1470,6 +1476,7 @@ method initial_env () = env_empty
 method emit_fundecl f =
   Proc.contains_calls := false;
   current_function_name := f.Cmm.fun_name;
+  current_function_name := Some f.Cmm.fun_name;
   Ident.Tbl.clear phantom_lets;
   dead_phantom_lets := Ident.Set.empty;
   let num_regs_per_arg = Array.make (List.length f.Cmm.fun_args) 0 in
@@ -1543,6 +1550,10 @@ let _ =
   Simplif.is_tail_native_heuristic := is_tail_call
 
 let reset () =
+<<<<<<< HEAD
   current_function_name := "";
   Ident.Tbl.clear phantom_lets;
   dead_phantom_lets := Ident.Set.empty
+=======
+  current_function_name := None
+>>>>>>> 2ff9e4f7b7... GPR#2073: Add [Backend_sym] and asm_target/ dir.

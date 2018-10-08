@@ -26,7 +26,8 @@
 
 open X86_ast
 
-val sym: string -> arg
+val sym: ?reloc:string -> Asm_symbol.t -> arg
+val label: Asm_label.t -> arg
 val nat: nativeint -> arg
 val int: int -> arg
 val const_32: int32 -> constant
@@ -55,45 +56,26 @@ val st0: arg
 val st1: arg
 
 val mem32:
-  data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
+  data_type -> ?scale:int -> ?base:reg64 -> ?symbol_or_label:symbol_or_label ->
   int -> reg64 -> arg
 
 val mem64:
-  data_type -> ?scale:int -> ?base:reg64 -> ?sym:string ->
+  data_type -> ?scale:int -> ?base:reg64 -> ?symbol_or_label:symbol_or_label ->
   int -> reg64 -> arg
 
-val mem64_rip: data_type -> ?ofs:int -> string -> arg
+val mem64_rip
+   : ?reloc:string
+  -> data_type
+  -> ?ofs:int
+  -> symbol_or_label
+  -> arg
 
+module MASM : sig
+  (* MASM-specific directives.  For everything else, call [Asm_directives]. *)
 
-module D : sig
-  (** Directives *)
-
-  val align: int -> unit
-  val byte: constant -> unit
-  val bytes: string -> unit
-  val cfi_adjust_cfa_offset: int -> unit
-  val cfi_endproc: unit -> unit
-  val cfi_startproc: unit -> unit
-  val comment: string -> unit
-  val data: unit -> unit
-  val extrn: string -> data_type -> unit
-  val file: file_num:int -> file_name:string -> unit
-  val global: string -> unit
-  val indirect_symbol: string -> unit
-  val label: ?typ:data_type -> string -> unit
-  val loc: file_num:int -> line:int -> col:int -> unit
-  val long: constant -> unit
-  val mode386: unit -> unit
-  val model: string -> unit
-  val private_extern: string -> unit
-  val qword: constant -> unit
-  val section: string list -> string option -> string list -> unit
-  val setvar: string * constant -> unit
-  val size: string -> constant -> unit
-  val space: int -> unit
-  val text: unit -> unit
-  val type_: string -> string -> unit
-  val word: constant -> unit
+  val extrn : Asm_symbol.t -> data_type -> unit
+  val mode386 : unit -> unit
+  val model : string -> unit
 end
 
 module I : sig

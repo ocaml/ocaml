@@ -43,7 +43,7 @@ let string_of_datatype_ptr = function
   | NEAR -> "NEAR PTR "
   | PROC -> "PROC PTR "
 
-let arg_mem b {arch; typ; idx; scale; base; sym; displ} =
+let arg_mem b {arch; typ; idx; scale; base; symbol_or_label; displ} =
   let string_of_register =
     match arch with
     | X86 -> string_of_reg32
@@ -51,12 +51,13 @@ let arg_mem b {arch; typ; idx; scale; base; sym; displ} =
   in
   Buffer.add_string b (string_of_datatype_ptr typ);
   Buffer.add_char b '[';
-  begin match sym with
+  begin match symbol_or_label with
   | None -> ()
-  | Some s -> Buffer.add_string b s
+  | Some (Symbol sym) -> Buffer.add_string b (Asm_symbol.encode sym)
+  | Some (Label lbl) -> Buffer.add_string b (Asm_label.encode lbl)
   end;
   if scale <> 0 then begin
-    if sym <> None then Buffer.add_char b '+';
+    if symbol_or_label <> None then Buffer.add_char b '+';
     Buffer.add_string b (string_of_register idx);
     if scale <> 1 then bprintf b "*%d" scale;
   end;
@@ -86,25 +87,20 @@ let arg b = function
   (* We don't need to specify RIP on Win64, since EXTERN will provide
      the list of external symbols that need this addressing mode, and
      MASM will automatically use RIP addressing when needed. *)
-  | Mem64_RIP (typ, s, displ) ->
-      bprintf b "%s%s" (string_of_datatype_ptr typ) s;
-      if displ > 0 then bprintf b "+%d" displ
-      else if displ < 0 then bprintf b "%d" displ
+  | Mem64_RIP { typ; symbol_or_label; reloc; offset_in_bytes; } ->
+      begin match reloc with
+      | None -> ()
+      | Some _ -> Misc.fatal_error "[reloc] not supported by MASM emitter"
+      end;
+      let symbol_or_label =
+        match symbol_or_label with
+        | Symbol sym -> Asm_symbol.encode sym
+        | Label lbl -> Asm_label.encode lbl
+      in
+      bprintf b "%s%s" (string_of_datatype_ptr typ) symbol_or_label;
+      if offset_in_bytes > 0 then bprintf b "+%d" offset_in_bytes
+      else if offset_in_bytes < 0 then bprintf b "%d" offset_in_bytes
   | Mem addr -> arg_mem b addr
-
-let rec cst b = function
-  | ConstLabel _ | Const _ | ConstThis as c -> scst b c
-  | ConstAdd (c1, c2) -> bprintf b "%a + %a" scst c1 scst c2
-  | ConstSub (c1, c2) -> bprintf b "%a - %a" scst c1 scst c2
-
-and scst b = function
-  | ConstThis -> Buffer.add_string b "THIS BYTE"
-  | ConstLabel l -> Buffer.add_string b l
-  | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
-      Buffer.add_string b (Int64.to_string n)
-  | Const n -> bprintf b "0%LxH" n
-  | ConstAdd (c1, c2) -> bprintf b "(%a + %a)" scst c1 scst c2
-  | ConstSub (c1, c2) -> bprintf b "(%a - %a)" scst c1 scst c2
 
 let i0 b s = bprintf b "\t%s" s
 let i1 b s x = bprintf b "\t%s\t%a" s arg x
@@ -214,39 +210,14 @@ let print_instr b = function
 
 let print_line b = function
   | Ins instr -> print_instr b instr
-
-  | Align (_data,n) -> bprintf b "\tALIGN\t%d" n
-  | Byte n -> bprintf b "\tBYTE\t%a" cst n
-  | Bytes s -> buf_bytes_directive b "BYTE" s
-  | Comment s -> bprintf b " ; %s " s
-  | Global s -> bprintf b "\tPUBLIC\t%s" s
-  | Long n -> bprintf b "\tDWORD\t%a" cst n
-  | NewLabel (s, NONE) -> bprintf b "%s:" s
-  | NewLabel (s, ptr) -> bprintf b "%s LABEL %s" s (string_of_datatype ptr)
-  | Quad n -> bprintf b "\tQWORD\t%a" cst n
-  | Section ([".data"], None, []) -> bprintf b "\t.DATA"
-  | Section ([".text"], None, []) -> bprintf b "\t.CODE"
-  | Section _ -> assert false
-  | Space n -> bprintf b "\tBYTE\t%d DUP (?)" n
-  | Word n -> bprintf b "\tWORD\t%a" cst n
-
-  (* windows only *)
-  | External (s, ptr) -> bprintf b "\tEXTRN\t%s: %s" s (string_of_datatype ptr)
-  | Mode386 -> bprintf b "\t.386"
-  | Model name -> bprintf b "\t.MODEL %s" name (* name = FLAT *)
-
-  (* gas only *)
-  | Cfi_adjust_cfa_offset _
-  | Cfi_endproc
-  | Cfi_startproc
-  | File _
-  | Indirect_symbol _
-  | Loc _
-  | Private_extern _
-  | Set _
-  | Size _
-  | Type _
-    -> assert false
+  | Directive dir -> Asm_directives.Directive.print b dir
+  | MASM_directive dir ->
+    match dir with
+    | External (sym, ptr) ->
+      let sym = Asm_symbol.encode sym in
+      bprintf b "\tEXTRN\t%s: %s" sym (string_of_datatype ptr)
+    | Mode386 -> bprintf b "\t.386"
+    | Model name -> bprintf b "\t.MODEL %s" name (* name = FLAT *)
 
 let generate_asm oc lines =
   let b = Buffer.create 10000 in

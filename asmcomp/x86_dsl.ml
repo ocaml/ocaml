@@ -34,7 +34,8 @@
 open X86_ast
 open X86_proc
 
-let sym s = Sym s
+let sym ?reloc sym = Sym (Asm_symbol.encode ?reloc sym)
+let label lbl = Sym (Asm_label.encode lbl)
 
 let nat n = Imm (Int64.of_nativeint n)
 let int n = Imm (Int64.of_int n)
@@ -65,44 +66,27 @@ let esp = Reg32 RSP
 let st0 = Regf (ST 0)
 let st1 = Regf (ST 1)
 
-let mem32 typ ?(scale = 1) ?base ?sym displ idx =
+
+let mem32 typ ?(scale = 1) ?base ?symbol_or_label displ idx =
   assert(scale >= 0);
-  Mem {arch = X86; typ; idx; scale; base; sym; displ}
+  Mem {arch = X86; typ; idx; scale; base; symbol_or_label; displ}
 
-let mem64 typ ?(scale = 1) ?base ?sym displ idx =
+let mem64 typ ?(scale = 1) ?base ?symbol_or_label displ idx =
   assert(scale > 0);
-  Mem {arch = X64; typ; idx; scale; base; sym; displ}
+  Mem {arch = X64; typ; idx; scale; base; symbol_or_label; displ}
 
-let mem64_rip typ ?(ofs = 0) s =
-  Mem64_RIP (typ, s, ofs)
+let mem64_rip ?reloc typ ?(ofs = 0) symbol_or_label =
+  Mem64_RIP {
+    typ;
+    symbol_or_label;
+    reloc;
+    offset_in_bytes = ofs;
+  }
 
-module D = struct
-  let section segment flags args = directive (Section (segment, flags, args))
-  let align n = directive (Align (false, n))
-  let byte n = directive (Byte n)
-  let bytes s = directive (Bytes s)
-  let cfi_adjust_cfa_offset n = directive (Cfi_adjust_cfa_offset n)
-  let cfi_endproc () = directive Cfi_endproc
-  let cfi_startproc () = directive Cfi_startproc
-  let comment s = directive (Comment s)
-  let data () = section [ ".data" ] None []
-  let extrn s ptr = directive (External (s, ptr))
-  let file ~file_num ~file_name = directive (File (file_num, file_name))
-  let global s = directive (Global s)
-  let indirect_symbol s = directive (Indirect_symbol s)
-  let label ?(typ = NONE) s = directive (NewLabel (s, typ))
-  let loc ~file_num ~line ~col = directive (Loc (file_num, line, col))
-  let long cst = directive (Long cst)
-  let mode386 () = directive Mode386
-  let model name = directive (Model name)
-  let private_extern s = directive (Private_extern s)
-  let qword cst = directive (Quad cst)
-  let setvar (x, y) = directive (Set (x, y))
-  let size name cst = directive (Size (name, cst))
-  let space n = directive (Space n)
-  let text () = section [ ".text" ] None []
-  let type_ name typ = directive (Type (name, typ))
-  let word cst = directive (Word cst)
+module MASM = struct
+  let extrn sym ptr = directive (MASM_directive (External (sym, ptr)))
+  let mode386 () = directive (MASM_directive Mode386)
+  let model name = directive (MASM_directive (Model name))
 end
 
 module I = struct
