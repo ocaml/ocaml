@@ -144,9 +144,6 @@ Working version
   (Arthur Charguéraud and Armaël Guéneau, with help and advice
    from Gabriel Scherer, Frédéric Bour, Xavier Clerc and Leo White)
 
-- GPR#1737: Update locations during destructive substitutions.
-  (Thomas Refis, review by Gabriel Radanne)
-
 - GPR#1748: do not error when instantiating polymorphic fields in patterns.
   (Thomas Refis, review by Gabriel Scherer)
 
