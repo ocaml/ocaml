@@ -963,6 +963,14 @@ reversed_preceded_or_separated_nonempty_llist(delimiter, X):
    with an optional leading BAR. We assume that [X] is itself parameterized
    with an opening symbol, which can be [epsilon] or [BAR]. *)
 
+(* This construction may seem needlessly complicated: one might think that
+   using [preceded_or_separated_nonempty_llist(BAR, X)], where [X] is *not*
+   itself parameterized, would be sufficient. Indeed, this simpler approach
+   would recognize the same language. However, the two approaches differ in
+   the footprint of [X]. We want the start location of [X] to include [BAR]
+   when present. In the future, we might consider switching to the simpler
+   definition, at the cost of producing slightly different locations. TODO *)
+
 reversed_bar_llist(X):
     (* An [X] without a leading BAR. *)
     x = X(epsilon)
@@ -2671,7 +2679,8 @@ constructor_declarations:
       { cs }
 ;
 (* A constructor declaration begins with an opening symbol, which can
-   be either epsilon or BAR. *)
+   be either epsilon or BAR. Note that this opening symbol is included
+   in the footprint $sloc. *)
 constructor_declaration(opening):
   opening
   cid = mkrhs(constr_ident)
