@@ -9,7 +9,7 @@
 (rule
  (targets ocamltest_config.ml)
  (deps ../Makefile.config ../Makefile.common Makefile
-       ./ocamltest_config.ml.in)
+       ./ocamltest_config.ml.in ./getocamloptdefaultflags)
  (action (run make %{targets})))
 
 ;; FIXME: handle UNIX_OR_WIN32 or something similar
