@@ -836,6 +836,18 @@ The precedences must be listed from low to high.
   xs = XS ys = YS
     { xs @ ys }
 
+(* [llist(X)] recognizes a possibly empty list of [X]s. It is left-recursive. *)
+
+reversed_llist(X):
+  /* empty */
+    { [] }
+| xs = reversed_llist(X) x = X
+    { x :: xs }
+
+%inline llist(X):
+  xs = rev(reversed_llist(X))
+    { xs }
+
 (* [reversed_nonempty_llist(X)] recognizes a nonempty list of [X]s, and produces
    an OCaml list in reverse order -- that is, the last element in the input text
    appears first in this list. Its definition is left-recursive. *)
@@ -2541,7 +2553,7 @@ type_subst_declaration:
         let docs = symbol_docs $sloc in
         let (kind, priv, manifest) = kind_priv_man in
         let ty =
-          Type.mk name ~params ~cstrs:(List.rev cstrs) ~kind ~priv
+          Type.mk name ~params ~cstrs ~kind ~priv
             ?manifest ~attrs:(attrs @ post_attrs) ~loc:(make_loc $sloc) ~docs
         in
         (ty, ext) }
@@ -2553,22 +2565,29 @@ and_type_subst_declaration:
       { let docs = symbol_docs $sloc in
         let text = symbol_text $symbolstartpos in
         let (kind, priv, manifest) = kind_priv_man in
-        Type.mk name ~params ~cstrs:(List.rev cstrs)
+        Type.mk name ~params ~cstrs
           ~kind ~priv ?manifest
           ~attrs:(attrs @ post_attrs) ~loc:(make_loc $sloc) ~docs ~text }
 ;
 
 type_declaration:
-    TYPE ext_attributes nonrec_flag type_parameters mkrhs(LIDENT)
-    type_kind constraints post_item_attributes
-      { let (kind, priv, manifest) = $6 in
-        let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        let ty =
-          Type.mk $5 ~params:$4 ~cstrs:(List.rev $7) ~kind
-            ~priv ?manifest ~attrs:(attrs@$8) ~loc:(make_loc $sloc) ~docs
-        in
-        ($3, ty, ext) }
+  TYPE
+  ext = ext
+  attrs1 = attributes
+  nonrec_flag = nonrec_flag
+  params = type_parameters
+  id = mkrhs(LIDENT)
+  type_kind = type_kind
+  cstrs = constraints
+  attrs2 = post_item_attributes
+    { let (kind, priv, manifest) = type_kind in
+      let docs = symbol_docs $sloc in
+      let attrs = attrs1 @ attrs2 in
+      let loc = make_loc $sloc in
+      let ty =
+        Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs
+      in
+      nonrec_flag, ty, ext }
 ;
 and_type_declaration:
     AND attributes type_parameters mkrhs(LIDENT) type_kind constraints
@@ -2576,13 +2595,13 @@ and_type_declaration:
       { let (kind, priv, manifest) = $5 in
         let docs = symbol_docs $sloc in
         let text = symbol_text $symbolstartpos in
-        Type.mk $4 ~params:$3 ~cstrs:(List.rev $6)
+        Type.mk $4 ~params:$3 ~cstrs:$6
           ~kind ~priv ?manifest
           ~attrs:($2@$7) ~loc:(make_loc $sloc) ~docs ~text }
 ;
-constraints:
-        constraints CONSTRAINT constrain        { $3 :: $1 }
-      | /* empty */                             { [] }
+%inline constraints:
+  llist(preceded(CONSTRAINT, constrain))
+    { $1 }
 ;
 %inline nonempty_type_kind(eq_symb):
   | eq_symb core_type
@@ -2796,7 +2815,7 @@ with_constraint:
           ($3,
            (Type.mk lident
               ~params:$2
-              ~cstrs:(List.rev $6)
+              ~cstrs:$6
               ~manifest:$5
               ~priv:$4
               ~loc:(make_loc $sloc))) }
