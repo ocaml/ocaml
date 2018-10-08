@@ -1,3 +1,7 @@
+(env
+ (dev     (flags (:standard -w +a-4-9-41-42-44-45-48)))
+ (release (flags (:standard -w +a-4-9-41-42-44-45-48))))
+
 ;; Too annoying to get to work. Use (copy_files# ...) instead
 ; (include_subdirs unqualified)
 ; (ignored_subdirs (lex yacc testsuite ocamldoc ocamltest toplevel otherlibs))
@@ -15,7 +19,7 @@
 (library
  (name ocamlcommon)
  (wrapped false)
- (flags (:standard -nostdlib -w -9))
+ (flags (:standard -principal -nostdlib))
  (libraries stdlib)
  (modules_without_implementation
    annot asttypes cmo_format outcometree parsetree)
@@ -55,7 +59,7 @@
 (library
  (name ocamlbytecomp)
  (wrapped false)
- (flags (:standard -nostdlib -w -9))
+ (flags (:standard -principal -nostdlib))
  (libraries stdlib ocamlcommon)
  (modules
    bytegen printinstr emitcode bytelink bytelibrarian bytepackager errors
@@ -64,7 +68,7 @@
 (library
  (name ocamloptcomp)
  (wrapped false)
- (flags (:standard -nostdlib -w -9))
+ (flags (:standard -principal -nostdlib))
  (libraries stdlib ocamlcommon)
  (modules_without_implementation
    cmx_format x86_ast backend_intf inlining_decision_intf
@@ -120,7 +124,7 @@
 (executable
  (name main)
  (modes byte)
- (flags (:standard -nostdlib))
+ (flags (:standard -principal -nostdlib))
  (libraries ocamlbytecomp ocamlcommon runtime stdlib)
  (modules main))
 
@@ -134,7 +138,7 @@
 (executable
  (name optmain)
  (modes byte)
- (flags (:standard -nostdlib))
+ (flags (:standard -principal -nostdlib))
  (libraries ocamloptcomp ocamlcommon runtime stdlib)
  (modules optmain))
 

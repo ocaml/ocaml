@@ -1,27 +1,27 @@
 (library
  (name ocamltoplevel)
  (wrapped false)
- (flags (:standard -nostdlib -w -9))
+ (flags (:standard -principal -nostdlib))
  (libraries stdlib ocamlcommon ocamlbytecomp)
  (modules genprintval toploop trace topdirs topmain))
 
 (executable
  (name topstart)
  (modes byte)
- (flags (:standard -nostdlib))
+ (flags (:standard -principal -nostdlib))
  (libraries ocamlbytecomp ocamlcommon ocamltoplevel runtime stdlib)
  (modules topstart))
 
 (executable
  (name expunge)
  (modes byte)
- (flags (:standard -nostdlib))
+ (flags (:standard -principal -nostdlib))
  (libraries ocamlbytecomp ocamlcommon runtime stdlib)
  (modules expunge))
 
 (rule
  (targets ocaml.byte)
- (action (run %{ocaml_where}/expunge topstart.exe %{targets}
+ (action (run %{ocaml_where}/expunge %{dep:topstart.exe} %{targets}
                     ; FIXME: inlined $(STDLIB_MODULES) ... minus Labels ones ...
                     stdlib__Spacetime
                     stdlib__Arg

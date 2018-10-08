@@ -2,6 +2,7 @@
   (name dynlink)
   (wrapped false)
   (modules dynlink dynlinkaux)
+  ; the -33 is specific to the hackery done with dune.
   (flags (:standard -nostdlib -w -33))
   (libraries ocamlcommon stdlib))
 
