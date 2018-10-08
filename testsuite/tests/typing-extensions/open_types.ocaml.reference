@@ -9,24 +9,24 @@ module M_S : S
 type foo = ..
 type bar = foo
 Line 2, characters 0-22:
-  type bar += Bar of int (* Error: type is not open *)
-  ^^^^^^^^^^^^^^^^^^^^^^
+2 | type bar += Bar of int (* Error: type is not open *)
+    ^^^^^^^^^^^^^^^^^^^^^^
 Error: Type definition bar is not extensible
 Line 2, characters 0-19:
-  type baz = bar = .. (* Error: type kinds don't match *)
-  ^^^^^^^^^^^^^^^^^^^
+2 | type baz = bar = .. (* Error: type kinds don't match *)
+    ^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type bar
        Their kinds differ.
 type 'a foo = ..
 Line 2, characters 0-31:
-  type ('a, 'b) bar = 'a foo = .. (* Error: arrities do not match *)
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 | type ('a, 'b) bar = 'a foo = .. (* Error: arrities do not match *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type 'a foo
        They have different arities.
 type ('a, 'b) foo = ..
 Line 2, characters 0-37:
-  type ('a, 'b) bar = ('a, 'a) foo = .. (* Error: constraints do not match *)
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 | type ('a, 'b) bar = ('a, 'a) foo = .. (* Error: constraints do not match *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
          ('a, 'a) foo
        Their constraints differ.
@@ -34,14 +34,14 @@ module M : sig type foo = .. end
 module type S = sig type foo end
 module M_S : S
 Line 2, characters 0-19:
-  type M_S.foo += Foo (* ERROR: Cannot extend a type that isn't "open" *)
-  ^^^^^^^^^^^^^^^^^^^
+2 | type M_S.foo += Foo (* ERROR: Cannot extend a type that isn't "open" *)
+    ^^^^^^^^^^^^^^^^^^^
 Error: Type definition M_S.foo is not extensible
 module M : sig type foo end
 module type S = sig type foo = .. end
 Line 2, characters 14-15:
-  module M_S = (M : S) (* ERROR: Signatures are not compatible *)
-                ^
+2 | module M_S = (M : S) (* ERROR: Signatures are not compatible *)
+                  ^
 Error: Signature mismatch:
        Modules do not match: sig type foo = M.foo end is not included in S
        Type declarations do not match:
@@ -53,14 +53,14 @@ module M : sig type foo = .. end
 module type S = sig type foo = private .. end
 module M_S : S
 Line 2, characters 16-19:
-  type M_S.foo += Foo (* ERROR: Cannot extend a private extensible type *)
-                  ^^^
+2 | type M_S.foo += Foo (* ERROR: Cannot extend a private extensible type *)
+                    ^^^
 Error: Cannot extend private type definition M_S.foo
 module M : sig type foo = private .. end
 module type S = sig type foo = .. end
 Line 2, characters 14-15:
-  module M_S = (M : S) (* ERROR: Signatures are not compatible *)
-                ^
+2 | module M_S = (M : S) (* ERROR: Signatures are not compatible *)
+                  ^
 Error: Signature mismatch:
        Modules do not match:
          sig type foo = M.foo = private .. end
@@ -74,8 +74,8 @@ Error: Signature mismatch:
 module M : sig type +'a foo = .. type 'a bar = 'a foo = .. end
 module type S = sig type 'a foo = .. type 'a bar = 'a foo = .. end
 Line 2, characters 14-15:
-  module M_S = (M : S) (* ERROR: Signatures are not compatible *)
-                ^
+2 | module M_S = (M : S) (* ERROR: Signatures are not compatible *)
+                  ^
 Error: Signature mismatch:
        Modules do not match:
          sig type 'a foo = 'a M.foo = .. type 'a bar = 'a foo = .. end
@@ -88,8 +88,8 @@ Error: Signature mismatch:
        Their variances do not agree.
 type exn2 = exn = ..
 Line 6, characters 8-26:
-  let f = function Foo -> ()
-          ^^^^^^^^^^^^^^^^^^
+6 | let f = function Foo -> ()
+            ^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 *extension*
@@ -99,10 +99,10 @@ type foo = ..
 type foo += Foo
 val f : foo -> unit = <fun>
 Line 4, characters 8-60:
-  ........function
-    | [Foo] -> 1
-    | _::_::_ -> 3
-    | [] -> 2
+4 | ........function
+  |   | [Foo] -> 1
+  |   | _::_::_ -> 3
+7 |   | [] -> 2
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 *extension*::[]
@@ -112,8 +112,8 @@ val f : foo list -> int = <fun>
 type t = ..
 type t += IPair : (int * int) -> t
 Line 2, characters 8-62:
-  let f = function IPair (i, j) -> Format.sprintf "(%d, %d)" i j ;; (* warn *)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 | let f = function IPair (i, j) -> Format.sprintf "(%d, %d)" i j ;; (* warn *)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 *extension*

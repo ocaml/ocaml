@@ -35,8 +35,8 @@ let after_a =
 ;;
 [%%expect{|
 Line 3, characters 2-20:
-    { x with lbl = 4 }
-    ^^^^^^^^^^^^^^^^^^
+3 |   { x with lbl = 4 }
+      ^^^^^^^^^^^^^^^^^^
 Warning 23: all the fields are explicitly listed in this record:
 the 'with' clause is useless.
 val after_a : M.r = {M.lbl = 4}
@@ -50,8 +50,8 @@ let b =
 val b : unit = ()
 |}, Principal{|
 Line 3, characters 7-18:
-    x := { lbl = 4 }
-         ^^^^^^^^^^^
+3 |   x := { lbl = 4 }
+           ^^^^^^^^^^^
 Warning 18: this type-based record disambiguation is not principal.
 val b : unit = ()
 |}]
@@ -78,8 +78,8 @@ let e =
 ;;
 [%%expect{|
 Line 3, characters 24-27:
-    { x with contents = { lbl = 4 } }
-                          ^^^
+3 |   { x with contents = { lbl = 4 } }
+                            ^^^
 Error: Unbound record field lbl
 |}]
 
@@ -108,14 +108,14 @@ let h x =
 ;;
 [%%expect{|
 Line 4, characters 4-15:
-    | { lbl = _ } -> ()
-      ^^^^^^^^^^^
+4 |   | { lbl = _ } -> ()
+        ^^^^^^^^^^^
 Warning 11: this match case is unused.
 val h : M.r -> unit = <fun>
 |}, Principal{|
 Line 4, characters 6-9:
-    | { lbl = _ } -> ()
-        ^^^
+4 |   | { lbl = _ } -> ()
+          ^^^
 Error: Unbound record field lbl
 |}]
 
@@ -126,8 +126,8 @@ let i x =
 ;;
 [%%expect{|
 Line 3, characters 6-9:
-    | { lbl = _ } -> ()
-        ^^^
+3 |   | { lbl = _ } -> ()
+          ^^^
 Error: Unbound record field lbl
 |}]
 
@@ -138,8 +138,8 @@ let j x =
 ;;
 [%%expect{|
 Line 4, characters 4-15:
-    | { lbl = _ } -> ()
-      ^^^^^^^^^^^
+4 |   | { lbl = _ } -> ()
+        ^^^^^^^^^^^
 Warning 12: this sub-pattern is unused.
 val j : M.r -> unit = <fun>
 |}]
@@ -151,8 +151,8 @@ let k x =
 ;;
 [%%expect{|
 Line 3, characters 6-9:
-    | { lbl = _ }
-        ^^^
+3 |   | { lbl = _ }
+          ^^^
 Error: Unbound record field lbl
 |}]
 
@@ -170,8 +170,8 @@ let m x =
 ;;
 [%%expect{|
 Line 3, characters 19-22:
-    | { contents = { lbl = _ } } -> ()
-                     ^^^
+3 |   | { contents = { lbl = _ } } -> ()
+                       ^^^
 Error: Unbound record field lbl
 |}]
 
@@ -182,14 +182,14 @@ let n x =
 ;;
 [%%expect{|
 Line 4, characters 4-30:
-    | { contents = { lbl = _ } } -> ()
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+4 |   | { contents = { lbl = _ } } -> ()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 11: this match case is unused.
 val n : M.r ref -> unit = <fun>
 |}, Principal{|
 Line 4, characters 19-22:
-    | { contents = { lbl = _ } } -> ()
-                     ^^^
+4 |   | { contents = { lbl = _ } } -> ()
+                       ^^^
 Error: Unbound record field lbl
 |}]
 
@@ -200,8 +200,8 @@ let o x =
 ;;
 [%%expect{|
 Line 3, characters 19-22:
-    | { contents = { lbl = _ } } -> ()
-                     ^^^
+3 |   | { contents = { lbl = _ } } -> ()
+                       ^^^
 Error: Unbound record field lbl
 |}]
 
@@ -212,8 +212,8 @@ let p x =
 ;;
 [%%expect{|
 Line 4, characters 4-30:
-    | { contents = { lbl = _ } } -> ()
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+4 |   | { contents = { lbl = _ } } -> ()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 12: this sub-pattern is unused.
 val p : M.r ref -> unit = <fun>
 |}]
@@ -225,8 +225,8 @@ let q x =
 ;;
 [%%expect{|
 Line 3, characters 19-22:
-    | { contents = { lbl = _ } }
-                     ^^^
+3 |   | { contents = { lbl = _ } }
+                       ^^^
 Error: Unbound record field lbl
 |}]
 
@@ -248,8 +248,8 @@ let s arg =
 val s : M.r ref -> unit = <fun>
 |}, Principal{|
 Line 4, characters 9-20:
-      x := { lbl = 4 }
-           ^^^^^^^^^^^
+4 |     x := { lbl = 4 }
+             ^^^^^^^^^^^
 Warning 18: this type-based record disambiguation is not principal.
 val s : M.r ref -> unit = <fun>
 |}]
@@ -262,8 +262,8 @@ let t = function
 val t : M.r ref -> unit = <fun>
 |}, Principal{|
 Line 3, characters 9-20:
-      x := { lbl = 4 }
-           ^^^^^^^^^^^
+3 |     x := { lbl = 4 }
+             ^^^^^^^^^^^
 Warning 18: this type-based record disambiguation is not principal.
 val t : M.r ref -> unit = <fun>
 |}]
@@ -276,8 +276,8 @@ let u = function
 val u : M.r ref -> int = <fun>
 |}, Principal{|
 Line 3, characters 7-10:
-      !x.lbl
-         ^^^
+3 |     !x.lbl
+           ^^^
 Warning 18: this type-based field disambiguation is not principal.
 val u : M.r ref -> int = <fun>
 |}]
@@ -318,8 +318,8 @@ let b =
 val b : unit = ()
 |}, Principal{|
 Line 3, characters 7-8:
-    x := B
-         ^
+3 |   x := B
+           ^
 Warning 18: this type-based constructor disambiguation is not principal.
 val b : unit = ()
 |}]
@@ -338,8 +338,8 @@ let e =
 ;;
 [%%expect{|
 Line 3, characters 22-23:
-    { x with contents = B }
-                        ^
+3 |   { x with contents = B }
+                          ^
 Error: Unbound constructor B
 |}]
 
@@ -362,8 +362,8 @@ let h x =
 val h : M.t -> unit = <fun>
 |}, Principal{|
 Line 4, characters 4-5:
-    | B -> ()
-      ^
+4 |   | B -> ()
+        ^
 Error: Unbound constructor B
 |}]
 
@@ -374,8 +374,8 @@ let i x =
 ;;
 [%%expect{|
 Line 3, characters 4-5:
-    | A -> ()
-      ^
+3 |   | A -> ()
+        ^
 Error: Unbound constructor A
 |}]
 
@@ -395,8 +395,8 @@ let k x =
 ;;
 [%%expect{|
 Line 3, characters 4-5:
-    | A
-      ^
+3 |   | A
+        ^
 Error: Unbound constructor A
 |}]
 
@@ -414,8 +414,8 @@ let m x =
 ;;
 [%%expect{|
 Line 3, characters 18-19:
-    | { contents = (A | B) } -> ()
-                    ^
+3 |   | { contents = (A | B) } -> ()
+                      ^
 Error: Unbound constructor A
 |}]
 
@@ -426,14 +426,14 @@ let n x =
 ;;
 [%%expect{|
 Line 4, characters 4-20:
-    | { contents = A } -> ()
-      ^^^^^^^^^^^^^^^^
+4 |   | { contents = A } -> ()
+        ^^^^^^^^^^^^^^^^
 Warning 11: this match case is unused.
 val n : M.t ref -> unit = <fun>
 |}, Principal{|
 Line 4, characters 17-18:
-    | { contents = A } -> ()
-                   ^
+4 |   | { contents = A } -> ()
+                     ^
 Error: Unbound constructor A
 |}]
 
@@ -444,8 +444,8 @@ let o x =
 ;;
 [%%expect{|
 Line 3, characters 17-18:
-    | { contents = A } -> ()
-                   ^
+3 |   | { contents = A } -> ()
+                     ^
 Error: Unbound constructor A
 |}]
 
@@ -456,8 +456,8 @@ let p x =
 ;;
 [%%expect{|
 Line 4, characters 4-20:
-    | { contents = A } -> ()
-      ^^^^^^^^^^^^^^^^
+4 |   | { contents = A } -> ()
+        ^^^^^^^^^^^^^^^^
 Warning 12: this sub-pattern is unused.
 val p : M.t ref -> unit = <fun>
 |}]
@@ -469,8 +469,8 @@ let q x =
 ;;
 [%%expect{|
 Line 3, characters 17-18:
-    | { contents = A }
-                   ^
+3 |   | { contents = A }
+                     ^
 Error: Unbound constructor A
 |}]
 
@@ -483,8 +483,8 @@ let s arg =
 val s : M.t ref -> unit = <fun>
 |}, Principal{|
 Line 4, characters 9-10:
-      x := A
-           ^
+4 |     x := A
+             ^
 Warning 18: this type-based constructor disambiguation is not principal.
 val s : M.t ref -> unit = <fun>
 |}]
@@ -495,22 +495,22 @@ let t = function
 ;;
 [%%expect{|
 Line 1, characters 8-70:
-  ........function
-    | ({ contents = M.A } : M.t ref) as x ->
-      x := B
+1 | ........function
+  |   | ({ contents = M.A } : M.t ref) as x ->
+3 |     x := B
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {contents=B}
 val t : M.t ref -> unit = <fun>
 |}, Principal{|
 Line 3, characters 9-10:
-      x := B
-           ^
+3 |     x := B
+             ^
 Warning 18: this type-based constructor disambiguation is not principal.
 Line 1, characters 8-70:
-  ........function
-    | ({ contents = M.A } : M.t ref) as x ->
-      x := B
+1 | ........function
+  |   | ({ contents = M.A } : M.t ref) as x ->
+3 |     x := B
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {contents=B}

@@ -14,8 +14,8 @@ module type S = sig
 end;;
 [%%expect{|
 Line 2, characters 2-27:
-    class base : 'e -> ['e] t
-    ^^^^^^^^^^^^^^^^^^^^^^^^^
+2 |   class base : 'e -> ['e] t
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Some type variables are unbound in this type:
          class base : 'e -> ['e] t
        The method update has type 'e -> < update : 'a; .. > as 'a where 'e

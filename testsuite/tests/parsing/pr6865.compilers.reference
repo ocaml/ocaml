@@ -49,4 +49,6 @@
 ]
 
 File "pr6865.ml", line 9, characters 4-7:
+9 | let%foo x = 42
+        ^^^
 Error: Uninterpreted extension 'foo'.

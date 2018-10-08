@@ -69,8 +69,8 @@ module M : sig type -'a t = private int end =
 ;;
 [%%expect{|
 Line 2, characters 2-37:
-    struct type +'a t = private int end
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 |   struct type +'a t = private int end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type +'a t = private int end
@@ -92,8 +92,8 @@ module type B = A with type t = u;; (* fail *)
 module type A = sig type t = X of int end
 type u = X of bool
 Line 3, characters 23-33:
-  module type B = A with type t = u;; (* fail *)
-                         ^^^^^^^^^^
+3 | module type B = A with type t = u;; (* fail *)
+                           ^^^^^^^^^^
 Error: This variant or record definition does not match that of type u
        The types for field X are not equal.
 |}];;
@@ -104,8 +104,8 @@ Error: This variant or record definition does not match that of type u
 module type S = sig exception Foo of int  exception Foo of bool end;;
 [%%expect{|
 Line 1, characters 42-63:
-  module type S = sig exception Foo of int  exception Foo of bool end;;
-                                            ^^^^^^^^^^^^^^^^^^^^^
+1 | module type S = sig exception Foo of int  exception Foo of bool end;;
+                                              ^^^^^^^^^^^^^^^^^^^^^
 Error: Multiple definition of the extension constructor name Foo.
        Names must be unique in a given structure or signature.
 |}];;
@@ -117,8 +117,8 @@ F.x;; (* fail *)
 [%%expect{|
 module F : functor (X : sig  end) -> sig val x : int end
 Line 2, characters 0-3:
-  F.x;; (* fail *)
-  ^^^
+2 | F.x;; (* fail *)
+    ^^^
 Error: The module F is a functor, it cannot have any components
 |}];;
 
@@ -130,8 +130,8 @@ type t = ..
 module M : sig type t += E end = struct type t += E of int end;;
 [%%expect{|
 Line 1, characters 33-62:
-  module M : sig type t += E end = struct type t += E of int end;;
-                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | module M : sig type t += E end = struct type t += E of int end;;
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t += E of int end
@@ -147,8 +147,8 @@ Error: Signature mismatch:
 module M : sig type t += E of char end = struct type t += E of int end;;
 [%%expect{|
 Line 1, characters 41-70:
-  module M : sig type t += E of char end = struct type t += E of int end;;
-                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | module M : sig type t += E of char end = struct type t += E of int end;;
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t += E of int end
@@ -164,8 +164,8 @@ Error: Signature mismatch:
 module M : sig type t += C of int end = struct type t += E of int end;;
 [%%expect{|
 Line 1, characters 40-69:
-  module M : sig type t += C of int end = struct type t += E of int end;;
-                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | module M : sig type t += C of int end = struct type t += E of int end;;
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t += E of int end
@@ -181,9 +181,9 @@ end = struct
 end;;
 [%%expect{|
 Line 3, characters 6-37:
-  ......struct
-    type t += E of int
-  end..
+3 | ......struct
+  |   type t += E of int
+5 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type t += E of int end

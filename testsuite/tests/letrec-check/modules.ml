@@ -10,16 +10,16 @@ val x : unit = ()
 let rec x = let module M = struct let f = x let g = x () end in fun () -> ();;
 [%%expect{|
 Line 1, characters 12-76:
-  let rec x = let module M = struct let f = x let g = x () end in fun () -> ();;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let rec x = let module M = struct let f = x let g = x () end in fun () -> ();;
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
 let rec x = let module M = struct let f = x () let g = x end in fun () -> ();;
 [%%expect{|
 Line 1, characters 12-76:
-  let rec x = let module M = struct let f = x () let g = x end in fun () -> ();;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let rec x = let module M = struct let f = x () let g = x end in fun () -> ();;
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -27,8 +27,8 @@ let rec x = (let module M = struct let f = y 0 let g = () end in fun () -> ())
     and y = succ;;
 [%%expect{|
 Line 1, characters 12-78:
-  let rec x = (let module M = struct let f = y 0 let g = () end in fun () -> ())
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let rec x = (let module M = struct let f = y 0 let g = () end in fun () -> ())
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -38,9 +38,9 @@ let rec x =
   end in M.N.y;;
 [%%expect{|
 Line 2, characters 2-74:
-  ..let module M = struct
-      module N = struct let y = x end
-    end in M.N.y..
+2 | ..let module M = struct
+  |     module N = struct let y = x end
+4 |   end in M.N.y..
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -62,8 +62,8 @@ val x : unit -> unit = <fun>
 let rec x = let module M = struct let f = x () and g = x end in fun () -> ();;
 [%%expect{|
 Line 1, characters 12-76:
-  let rec x = let module M = struct let f = x () and g = x end in fun () -> ();;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let rec x = let module M = struct let f = x () and g = x end in fun () -> ();;
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -74,8 +74,8 @@ and y = let module M = struct let x = x end in (module M : T)
 [%%expect{|
 module type T = sig  end
 Line 2, characters 12-36:
-  let rec x = (module (val y : T) : T)
-              ^^^^^^^^^^^^^^^^^^^^^^^^
+2 | let rec x = (module (val y : T) : T)
+                ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -91,7 +91,7 @@ module type S = sig val y : float end
 module type T = sig val x : float val y : float end
 type t = T : (module S) -> t
 Line 5, characters 12-50:
-  let rec x = let module M = (val m) in T (module M)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | let rec x = let module M = (val m) in T (module M)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;

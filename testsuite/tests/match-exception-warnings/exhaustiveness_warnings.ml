@@ -17,10 +17,10 @@ let test_match_exhaustiveness () =
 
 [%%expect{|
 Line 8, characters 4-83:
-  ....match None with
-      | exception e -> ()
-      | Some false -> ()
-      | None -> ()
+ 8 | ....match None with
+   |     | exception e -> ()
+   |     | Some false -> ()
+11 |     | None -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
@@ -36,9 +36,9 @@ let test_match_exhaustiveness_nest1 () =
 
 [%%expect{|
 Line 2, characters 4-73:
-  ....match None with
-      | Some false -> ()
-      | None | exception _ -> ()
+2 | ....match None with
+  |     | Some false -> ()
+4 |     | None | exception _ -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
@@ -54,9 +54,9 @@ let test_match_exhaustiveness_nest2 () =
 
 [%%expect{|
 Line 2, characters 4-73:
-  ....match None with
-      | Some false | exception _ -> ()
-      | None -> ()
+2 | ....match None with
+  |     | Some false | exception _ -> ()
+4 |     | None -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
@@ -73,20 +73,20 @@ let test_match_exhaustiveness_full () =
 
 [%%expect{|
 Line 2, characters 4-111:
-  ....match None with
-      | exception e -> ()
-      | Some false | exception _ -> ()
-      | None | exception _ -> ()
+2 | ....match None with
+  |     | exception e -> ()
+  |     | Some false | exception _ -> ()
+5 |     | None | exception _ -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
 Line 4, characters 29-30:
-      | Some false | exception _ -> ()
-                               ^
+4 |     | Some false | exception _ -> ()
+                                 ^
 Warning 11: this match case is unused.
 Line 5, characters 23-24:
-      | None | exception _ -> ()
-                         ^
+5 |     | None | exception _ -> ()
+                           ^
 Warning 11: this match case is unused.
 val test_match_exhaustiveness_full : unit -> unit = <fun>
 |}]

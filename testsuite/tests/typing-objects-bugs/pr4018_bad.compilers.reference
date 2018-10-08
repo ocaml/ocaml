@@ -1,4 +1,6 @@
 File "pr4018_bad.ml", line 42, characters 11-17:
+42 | let f (x : entity entity_container) = ()
+                ^^^^^^
 Error: This type entity = < destroy_subject : id subject; entity_id : id >
        should be an instance of type
          < destroy_subject : < add_observer : 'a entity_container -> 'c; .. >

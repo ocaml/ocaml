@@ -1,4 +1,6 @@
 File "pr7414_bad.ml", line 52, characters 22-28:
+52 | module Ignore = Force(Choose)
+                           ^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          functor () -> sig module Choice : T val r : '_weak1 list ref ref end

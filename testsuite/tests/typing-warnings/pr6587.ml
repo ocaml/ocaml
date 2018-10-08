@@ -24,9 +24,9 @@ module B: sig val f: fpclass -> fpclass end =
     ;;
 [%%expect {|
 Line 2, characters 2-38:
-  ..struct
-      let f A = FP_normal
-    end
+2 | ..struct
+  |     let f A = FP_normal
+4 |   end
 Error: Signature mismatch:
        Modules do not match:
          sig val f : fpclass -> Stdlib.fpclass end

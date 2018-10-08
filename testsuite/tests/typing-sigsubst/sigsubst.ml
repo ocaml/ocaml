@@ -22,8 +22,8 @@ module type PrintableComparable = sig
 end
 [%%expect {|
 Line 3, characters 2-36:
-    include Comparable with type t = t
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |   include Comparable with type t = t
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Illegal shadowing of included type t/20 by t/24
        Line 2, characters 2-19:
          Type t/20 came from this include
@@ -48,10 +48,10 @@ module type S0 = sig
 end with type M.t = int
 [%%expect {|
 Line 1, characters 17-115:
-  .................sig
-    module rec M : sig type t = M2.t end
-    and M2 : sig type t = int end
-  end with type M.t = int
+1 | .................sig
+  |   module rec M : sig type t = M2.t end
+  |   and M2 : sig type t = int end
+4 | end with type M.t = int
 Error: In this `with' constraint, the new definition of M.t
        does not match its original definition in the constrained signature:
        Type declarations do not match:
@@ -163,11 +163,11 @@ end with type 'a t2 := 'a t * bool
 [%%expect {|
 type 'a t constraint 'a = 'b list
 Line 2, characters 16-142:
-  ................sig
-    type 'a t2 constraint 'a = 'b list
-    type 'a mylist = 'a list
-    val x : int mylist t2
-  end with type 'a t2 := 'a t * bool
+2 | ................sig
+  |   type 'a t2 constraint 'a = 'b list
+  |   type 'a mylist = 'a list
+  |   val x : int mylist t2
+6 | end with type 'a t2 := 'a t * bool
 Error: Destructive substitutions are not supported for constrained
        types (other than when replacing a type constructor with
        a type constructor with the same arguments).
@@ -212,8 +212,8 @@ end;;
 [%%expect {|
 type (_, _) eq = Refl : ('a, 'a) eq
 Line 11, characters 18-58:
-    module type T = S with type N.t = M.t with module N := N;;
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 |   module type T = S with type N.t = M.t with module N := N;;
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this `with' constraint, the new definition of N
        does not match its original definition in the constrained signature:
        Modules do not match:
@@ -268,10 +268,10 @@ module type S = sig
 end with type M.t := float
 [%%expect {|
 Line 1, characters 16-89:
-  ................sig
-    module M : sig type t end
-    module A = M
-  end with type M.t := float
+1 | ................sig
+  |   module M : sig type t end
+  |   module A = M
+4 | end with type M.t := float
 Error: This `with' constraint on M.t changes M, which is aliased
        in the constrained signature (as A).
 |}]
@@ -296,8 +296,8 @@ module type S =
 module type S2 = S with type M.t := float
 [%%expect {|
 Line 1, characters 17-41:
-  module type S2 = S with type M.t := float
-                   ^^^^^^^^^^^^^^^^^^^^^^^^
+1 | module type S2 = S with type M.t := float
+                     ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This `with' constraint on M.t makes the applicative functor
        type F(M).t ill-typed in the constrained signature:
        Modules do not match:
@@ -330,10 +330,10 @@ end with type M2.t := int
 [%%expect {|
 module Id : functor (X : sig type t end) -> sig type t = X.t end
 Line 2, characters 17-120:
-  .................sig
-    module rec M : sig type t = A of Id(M2).t end
-    and M2 : sig type t end
-  end with type M2.t := int
+2 | .................sig
+  |   module rec M : sig type t = A of Id(M2).t end
+  |   and M2 : sig type t end
+5 | end with type M2.t := int
 Error: This `with' constraint on M2.t makes the applicative functor
        type Id(M2).t ill-typed in the constrained signature:
        Modules do not match: sig  end is not included in sig type t end
@@ -373,16 +373,16 @@ module type S = sig
 end with module M.N := A
 [%%expect {|
 Line 1, characters 16-159:
-  ................sig
-    module M : sig
-      module N : sig
-        module P : sig
-          type t
-        end
-      end
-    end
-    module Alias = M
-  end with module M.N := A
+ 1 | ................sig
+   |   module M : sig
+   |     module N : sig
+   |       module P : sig
+   |         type t
+   |       end
+   |     end
+   |   end
+   |   module Alias = M
+10 | end with module M.N := A
 Error: This `with' constraint on M.N changes M, which is aliased
        in the constrained signature (as Alias).
 |}]

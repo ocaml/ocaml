@@ -979,4 +979,6 @@
 ]
 
 File "shortcut_ext_attr.ml", line 10, characters 6-9:
+10 |   let%foo[@foo] x = 3
+           ^^^
 Error: Uninterpreted extension 'foo'.

@@ -10,8 +10,8 @@ val f : x:(unit -> 'a) -> unit -> 'a = <fun>
 let rec x = f ~x;;
 [%%expect{|
 Line 1, characters 12-16:
-  let rec x = f ~x;;
-              ^^^^
+1 | let rec x = f ~x;;
+                ^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -27,7 +27,7 @@ and y =
 [%%expect {|
 val f : int -> y:int -> int = <fun>
 Line 6, characters 12-38:
-  let rec g = f ~y:(print_endline !y; 0)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+6 | let rec g = f ~y:(print_endline !y; 0)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}]

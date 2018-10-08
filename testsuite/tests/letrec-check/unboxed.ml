@@ -15,8 +15,8 @@ let rec x = {x = y} and y = 3L;;
 [%%expect{|
 type t = { x : int64; } [@@unboxed]
 Line 2, characters 12-19:
-  let rec x = {x = y} and y = 3L;;
-              ^^^^^^^
+2 | let rec x = {x = y} and y = 3L;;
+                ^^^^^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -25,8 +25,8 @@ let rec y = A y;;
 [%%expect{|
 type r = A of r [@@unboxed]
 Line 2, characters 12-15:
-  let rec y = A y;;
-              ^^^
+2 | let rec y = A y;;
+                ^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -60,11 +60,11 @@ let rec a =
 type a = { a : b; } [@@unboxed]
 and b = X of a | Y
 Line 5, characters 2-75:
-  ..{a=
-      (if Sys.opaque_identity true then
-         X a
-       else
-         Y)}..
+5 | ..{a=
+  |     (if Sys.opaque_identity true then
+  |        X a
+  |      else
+9 |        Y)}..
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -100,10 +100,10 @@ let rec d =
 type d = D of e [@@unboxed]
 and e = V of d | W
 Line 5, characters 2-72:
-  ..D
-      (if Sys.opaque_identity true then
-         V d
-       else
-         W)..
+5 | ..D
+  |     (if Sys.opaque_identity true then
+  |        V d
+  |      else
+9 |        W)..
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;

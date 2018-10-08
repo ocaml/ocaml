@@ -36,9 +36,9 @@ match { x = assert false } with
 ;;
 [%%expect{|
 Line 1, characters 0-70:
-  match { x = assert false } with
-  | { x = 3 } -> ()
-  | { x = None } -> ()
+1 | match { x = assert false } with
+  | | { x = 3 } -> ()
+3 | | { x = None } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=Some _}
@@ -51,9 +51,9 @@ match { x = assert false } with
 ;;
 [%%expect{|
 Line 1, characters 0-71:
-  match { x = assert false } with
-  | { x = None } -> ()
-  | { x = "" } -> ()
+1 | match { x = assert false } with
+  | | { x = None } -> ()
+3 | | { x = "" } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x="*"}
@@ -66,9 +66,9 @@ match { x = assert false } with
 ;;
 [%%expect{|
 Line 1, characters 0-71:
-  match { x = assert false } with
-  | { x = None } -> ()
-  | { x = `X } -> ()
+1 | match { x = assert false } with
+  | | { x = None } -> ()
+3 | | { x = `X } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=`AnyOtherTag}
@@ -81,9 +81,9 @@ match { x = assert false } with
 ;;
 [%%expect{|
 Line 1, characters 0-70:
-  match { x = assert false } with
-  | { x = [||] } -> ()
-  | { x = 3 } -> ()
+1 | match { x = assert false } with
+  | | { x = [||] } -> ()
+3 | | { x = 3 } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}
@@ -96,9 +96,9 @@ match { x = assert false } with
 ;;
 [%%expect{|
 Line 1, characters 0-68:
-  match { x = assert false } with
-  | { x = `X } -> ()
-  | { x = 3 } -> ()
+1 | match { x = assert false } with
+  | | { x = `X } -> ()
+3 | | { x = 3 } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}
@@ -111,9 +111,9 @@ match { x = assert false } with
 ;;
 [%%expect{|
 Line 1, characters 0-74:
-  match { x = assert false } with
-  | { x = `X "lol" } -> ()
-  | { x = 3 } -> ()
+1 | match { x = assert false } with
+  | | { x = `X "lol" } -> ()
+3 | | { x = 3 } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}
@@ -127,10 +127,10 @@ match { x = assert false } with
 ;;
 [%%expect{|
 Line 1, characters 0-95:
-  match { x = assert false } with
-  | { x = (2., "") } -> ()
-  | { x = None } -> ()
-  | { x = 3 } -> ()
+1 | match { x = assert false } with
+  | | { x = (2., "") } -> ()
+  | | { x = None } -> ()
+4 | | { x = 3 } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}

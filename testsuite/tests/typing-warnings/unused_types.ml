@@ -10,8 +10,8 @@ end
 ;;
 [%%expect {|
 Line 3, characters 2-19:
-    type unused = int
-    ^^^^^^^^^^^^^^^^^
+3 |   type unused = int
+      ^^^^^^^^^^^^^^^^^
 Warning 34: unused type unused.
 module Unused : sig  end
 |}]
@@ -24,8 +24,8 @@ end
 ;;
 [%%expect {|
 Line 4, characters 2-27:
-    type nonrec unused = used
-    ^^^^^^^^^^^^^^^^^^^^^^^^^
+4 |   type nonrec unused = used
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34: unused type unused.
 module Unused_nonrec : sig  end
 |}]
@@ -37,12 +37,12 @@ end
 ;;
 [%%expect {|
 Line 3, characters 2-27:
-    type unused = A of unused
-    ^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |   type unused = A of unused
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34: unused type unused.
 Line 3, characters 2-27:
-    type unused = A of unused
-    ^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |   type unused = A of unused
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 37: unused constructor A.
 module Unused_rec : sig  end
 |}]
@@ -54,8 +54,8 @@ end
 ;;
 [%%expect {|
 Line 3, characters 2-26:
-    exception Nobody_uses_me
-    ^^^^^^^^^^^^^^^^^^^^^^^^
+3 |   exception Nobody_uses_me
+      ^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 38: unused exception Nobody_uses_me
 module Unused_exception : sig  end
 |}]
@@ -69,8 +69,8 @@ end
 ;;
 [%%expect {|
 Line 5, characters 12-26:
-    type t += Nobody_uses_me
-              ^^^^^^^^^^^^^^
+5 |   type t += Nobody_uses_me
+                ^^^^^^^^^^^^^^
 Warning 38: unused extension constructor Nobody_uses_me
 module Unused_extension_constructor : sig type t = .. end
 |}]
@@ -86,8 +86,8 @@ end
 ;;
 [%%expect {|
 Line 4, characters 2-32:
-    exception Nobody_constructs_me
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+4 |   exception Nobody_constructs_me
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 38: exception Nobody_constructs_me is never used to build values.
 (However, this constructor appears in patterns.)
 module Unused_exception_outside_patterns : sig val falsity : exn -> bool end
@@ -106,8 +106,8 @@ end
 ;;
 [%%expect {|
 Line 6, characters 12-27:
-    type t += Noone_builds_me
-              ^^^^^^^^^^^^^^^
+6 |   type t += Noone_builds_me
+                ^^^^^^^^^^^^^^^
 Warning 38: extension constructor Noone_builds_me is never used to build values.
 (However, this constructor appears in patterns.)
 module Unused_extension_outside_patterns :
@@ -122,8 +122,8 @@ end
 ;;
 [%%expect {|
 Line 4, characters 2-23:
-    exception Private_exn
-    ^^^^^^^^^^^^^^^^^^^^^
+4 |   exception Private_exn
+      ^^^^^^^^^^^^^^^^^^^^^
 Warning 38: exception Private_exn is never used to build values.
 It is exported or rebound as a private extension.
 module Unused_private_exception : sig type exn += private Private_exn end
@@ -139,8 +139,8 @@ end
 ;;
 [%%expect {|
 Line 6, characters 12-23:
-    type t += Private_ext
-              ^^^^^^^^^^^
+6 |   type t += Private_ext
+                ^^^^^^^^^^^
 Warning 38: extension constructor Private_ext is never used to build values.
 It is exported or rebound as a private extension.
 module Unused_private_extension :
@@ -163,8 +163,8 @@ end = struct
 end;;
 [%%expect {|
 Line 3, characters 2-30:
-    type t = A [@@warning "-34"]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |   type t = A [@@warning "-34"]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 37: unused constructor A.
 module Unused_type_disable_warning : sig  end
 |}]
@@ -175,8 +175,8 @@ end = struct
 end;;
 [%%expect {|
 Line 3, characters 2-30:
-    type t = A [@@warning "-37"]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |   type t = A [@@warning "-37"]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34: unused type t.
 module Unused_constructor_disable_warning : sig  end
 |}]

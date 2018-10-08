@@ -11,9 +11,9 @@ end;;
 [%%expect{|
 type t = int
 Line 3, characters 0-31:
-  struct
-    type t = [`T of t]
-  end..
+3 | struct
+  |   type t = [`T of t]
+5 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type t = [ `T of t ] end

@@ -1,4 +1,6 @@
 File "pr4824a_bad.ml", line 10, characters 2-45:
+10 |   struct class c x = object val x = x end end
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        ...
        Class declarations do not match:
