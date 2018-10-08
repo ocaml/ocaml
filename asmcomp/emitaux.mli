@@ -59,8 +59,6 @@ type emit_frame_actions =
 
 val emit_frames: emit_frame_actions -> unit
 
-val is_generic_function: string -> bool
-
 val cfi_startproc : unit -> unit
 val cfi_endproc : unit -> unit
 val cfi_adjust_cfa_offset : int -> unit

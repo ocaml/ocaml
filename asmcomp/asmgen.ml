@@ -76,7 +76,7 @@ let raw_clambda_dump_if ppf
 
 let rec regalloc ~ppf_dump round fd =
   if round > 50 then
-    fatal_error(fd.Mach.fun_name ^
+    fatal_error(Backend_sym.to_string fd.Mach.fun_name ^
                 ": function too complex, cannot complete register allocation");
   dump_if ppf_dump dump_live "Liveness analysis" fd;
   if !use_linscan then begin

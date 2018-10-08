@@ -27,18 +27,21 @@ let opt_displ b displ =
   else if displ > 0 then bprintf b "+%d" displ
   else bprintf b "%d" displ
 
-let arg_mem b {arch; typ=_; idx; scale; base; sym; displ} =
+let arg_mem b {arch; typ=_; idx; scale; base; symbol_or_label; displ} =
   let string_of_register =
     match arch with
     | X86 -> string_of_reg32
     | X64 -> string_of_reg64
   in
-  begin match sym with
+  begin match symbol_or_label with
   | None ->
       if displ <> 0 || scale = 0 then
         Buffer.add_string b (string_of_int displ)
-  | Some s ->
-      Buffer.add_string b s;
+  | Some (Symbol sym) ->
+      Buffer.add_string b (Asm_symbol.encode sym);
+      opt_displ b displ
+  | Some (Label lbl) ->
+      Buffer.add_string b (Asm_label.encode lbl);
       opt_displ b displ
   end;
   if scale <> 0 then begin
@@ -63,24 +66,20 @@ let arg b = function
   | Reg64 x -> print_reg b string_of_reg64 x
   | Regf x  -> print_reg b string_of_registerf x
   | Mem addr -> arg_mem b addr
-  | Mem64_RIP (_, s, displ) -> bprintf b "%s%a(%%rip)" s opt_displ displ
-
-let rec cst b = function
-  | ConstLabel _ | Const _ | ConstThis as c -> scst b c
-  | ConstAdd (c1, c2) -> bprintf b "%a + %a" scst c1 scst c2
-  | ConstSub (c1, c2) -> bprintf b "%a - %a" scst c1 scst c2
-
-and scst b = function
-  | ConstThis -> Buffer.add_string b "."
-  | ConstLabel l -> Buffer.add_string b l
-  | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
-      Buffer.add_string b (Int64.to_string n)
-  | Const n -> bprintf b "0x%Lx" n
-  | ConstAdd (c1, c2) -> bprintf b "(%a + %a)" scst c1 scst c2
-  | ConstSub (c1, c2) -> bprintf b "(%a - %a)" scst c1 scst c2
+  | Mem64_RIP { typ = _; symbol_or_label; reloc; offset_in_bytes; } ->
+    let symbol_or_label =
+      match symbol_or_label with
+      | Symbol sym -> Asm_symbol.encode ?reloc sym
+      | Label lbl ->
+        match reloc with
+        | None -> Asm_label.encode lbl
+        | Some _ ->
+          Misc.fatal_error "Relocations not allowed on label references"
+    in
+    bprintf b "%s%a(%%rip)" symbol_or_label opt_displ offset_in_bytes
 
 let typeof = function
-  | Mem {typ; _} | Mem64_RIP (typ, _, _) -> typ
+  | Mem {typ; _} | Mem64_RIP { typ; _ } -> typ
   | Reg8L _ | Reg8H _ -> BYTE
   | Reg16 _ -> WORD
   | Reg32 _ -> DWORD
@@ -107,7 +106,8 @@ let i2_ss b s x y = bprintf b "\t%s%s%s\t%a, %a" s (suf x) (suf y) arg x arg y
 
 let i1_call_jmp b s = function
   (* this is the encoding of jump labels: don't use * *)
-  | Mem {arch=X86; idx=_;   scale=0; base=None; sym=Some _; _} as x ->
+  | Mem {arch=X86; idx=_;   scale=0; base=None;
+         symbol_or_label=Some (Label _); _} as x ->
       i1 b s x
   | Reg32 _ | Reg64 _ | Mem _  | Mem64_RIP _ as x ->
       bprintf b "\t%s\t*%a" s arg x
@@ -242,61 +242,8 @@ let print_instr b = function
 
 let print_line b = function
   | Ins instr -> print_instr b instr
-
-  | Align (_data,n) ->
-      (* MacOSX assembler interprets the integer n as a 2^n alignment *)
-      let n = if system = S_macosx then Misc.log2 n else n in
-      bprintf b "\t.align\t%d" n
-  | Byte n -> bprintf b "\t.byte\t%a" cst n
-  | Bytes s ->
-      if system = S_solaris then buf_bytes_directive b ".byte" s
-      else bprintf b "\t.ascii\t\"%s\"" (string_of_string_literal s)
-  | Comment s -> bprintf b "\t\t\t\t/* %s */" s
-  | Global s -> bprintf b "\t.globl\t%s" s;
-  | Long n -> bprintf b "\t.long\t%a" cst n
-  | NewLabel (s, _) -> bprintf b "%s:" s
-  | Quad n -> bprintf b "\t.quad\t%a" cst n
-  | Section ([".data" ], _, _) -> bprintf b "\t.data"
-  | Section ([".text" ], _, _) -> bprintf b "\t.text"
-  | Section (name, flags, args) ->
-      bprintf b "\t.section %s" (String.concat "," name);
-      begin match flags with
-      | None -> ()
-      | Some flags -> bprintf b ",%S" flags
-      end;
-      begin match args with
-      | [] -> ()
-      | _ -> bprintf b ",%s" (String.concat "," args)
-      end
-  | Space n ->
-      if system = S_solaris then bprintf b "\t.zero\t%d" n
-      else bprintf b "\t.space\t%d" n
-  | Word n ->
-      if system = S_solaris then bprintf b "\t.value\t%a" cst n
-      else bprintf b "\t.word\t%a" cst n
-
-  (* gas only *)
-  | Cfi_adjust_cfa_offset n -> bprintf b "\t.cfi_adjust_cfa_offset %d" n
-  | Cfi_endproc -> bprintf b "\t.cfi_endproc"
-  | Cfi_startproc -> bprintf b "\t.cfi_startproc"
-  | File (file_num, file_name) ->
-      bprintf b "\t.file\t%d\t\"%s\""
-        file_num (X86_proc.string_of_string_literal file_name)
-  | Indirect_symbol s -> bprintf b "\t.indirect_symbol %s" s
-  | Loc (file_num, line, col) ->
-      (* PR#7726: Location.none uses column -1, breaks LLVM assembler *)
-      if col >= 0 then bprintf b "\t.loc\t%d\t%d\t%d" file_num line col
-      else bprintf b "\t.loc\t%d\t%d" file_num line
-  | Private_extern s -> bprintf b "\t.private_extern %s" s
-  | Set (arg1, arg2) -> bprintf b "\t.set %s, %a" arg1 cst arg2
-  | Size (s, c) -> bprintf b "\t.size %s,%a" s cst c
-  | Type (s, typ) -> bprintf b "\t.type %s,%s" s typ
-
-  (* masm only *)
-  | External _
-  | Mode386
-  | Model _
-    -> assert false
+  | Directive dir -> Asm_directives.Directive.print b dir
+  | MASM_directive _ -> assert false
 
 let generate_asm oc lines =
   let b = Buffer.create 10000 in

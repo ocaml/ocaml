@@ -20,10 +20,12 @@ open Proc
 open Cmm
 open Mach
 
+module S = Backend_sym
+
 (* Auxiliary for recognizing addressing modes *)
 
 type addressing_expr =
-    Asymbol of string
+    Asymbol of S.t
   | Alinear of expression
   | Aadd of expression * expression
   | Ascale of expression * int
@@ -118,8 +120,11 @@ let pseudoregs_for_operation op arg res =
 (* If you update [inline_ops], you may need to update [is_simple_expr] and/or
    [effects_of], below. *)
 let inline_ops =
-  [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
-    "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
+  let open S.Names in
+  S.Set.of_list [
+    sqrt; caml_bswap16_direct; caml_direct_bswap Int32;
+    caml_direct_bswap Int64; caml_direct_bswap Nativeint;
+  ]
 
 (* The selector class *)
 
@@ -136,7 +141,7 @@ method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
 method! is_simple_expr e =
   match e with
   | Cop(Cextcall (fn, _, _, _), args, _)
-    when List.mem fn inline_ops ->
+    when S.Set.mem fn inline_ops ->
       (* inlined ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
   | _ ->
@@ -145,7 +150,7 @@ method! is_simple_expr e =
 method! effects_of e =
   match e with
   | Cop(Cextcall(fn, _, _, _), args, _)
-    when List.mem fn inline_ops ->
+    when S.Set.mem fn inline_ops ->
       Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
   | _ ->
       super#effects_of e
@@ -184,6 +189,7 @@ method! select_store is_assign addr exp =
       super#select_store is_assign addr exp
 
 method! select_operation op args dbg =
+  let open S.Names in
   match op with
   (* Recognize the LEA instruction *)
     Caddi | Caddv | Cadda | Csubi ->
@@ -201,7 +207,8 @@ method! select_operation op args dbg =
       self#select_floatarith true Imulf Ifloatmul args
   | Cdivf ->
       self#select_floatarith false Idivf Ifloatdiv args
-  | Cextcall("sqrt", _, false, _) ->
+  | Cextcall(callee, _, false, _)
+    when S.equal callee sqrt ->
      begin match args with
        [Cop(Cload ((Double|Double_u as chunk), _), [loc], _dbg)] ->
          let (addr, arg) = self#select_addressing chunk loc in
@@ -221,12 +228,17 @@ method! select_operation op args dbg =
       | _ ->
           super#select_operation op args dbg
       end
-  | Cextcall("caml_bswap16_direct", _, _, _) ->
+  | Cextcall(callee, _, _, _)
+    when S.equal callee caml_bswap16_direct ->
       (Ispecific (Ibswap 16), args)
-  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
+  | Cextcall(callee, _, _, _)
+    when S.equal callee (caml_direct_bswap Int32) ->
       (Ispecific (Ibswap 32), args)
-  | Cextcall("caml_int64_direct_bswap", _, _, _)
-  | Cextcall("caml_nativeint_direct_bswap", _, _, _) ->
+  | Cextcall(callee, _, _, _)
+    when S.equal callee (caml_direct_bswap Int64) ->
+      (Ispecific (Ibswap 64), args)
+  | Cextcall(callee, _, _, _)
+    when S.equal callee (caml_direct_bswap Nativeint) ->
       (Ispecific (Ibswap 64), args)
   (* AMD64 does not support immediate operands for multiply high signed *)
   | Cmulhi ->

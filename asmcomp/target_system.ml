@@ -136,6 +136,21 @@ let string_of_architecture arch =
   | POWER -> "POWER"
   | Z -> "Z"
 
+let linux () =
+  match system () with
+  | Linux -> true
+  | Windows _
+  | MacOS_like
+  | FreeBSD
+  | NetBSD
+  | OpenBSD
+  | Generic_BSD
+  | Solaris
+  | GNU
+  | Dragonfly
+  | BeOS
+  | Unknown -> false
+
 let windows () =
   match system () with
   | Windows _ -> true

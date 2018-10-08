@@ -16,14 +16,14 @@
 (* From lambda to assembly code *)
 
 val compile_implementation_flambda :
-    ?toplevel:(string -> bool) ->
+    ?toplevel:(Backend_sym.t -> bool) ->
     string ->
     required_globals:Ident.Set.t ->
     backend:(module Backend_intf.S) ->
     ppf_dump:Format.formatter -> Flambda.program -> unit
 
 val compile_implementation_clambda :
-    ?toplevel:(string -> bool) ->
+    ?toplevel:(Backend_sym.t -> bool) ->
     string ->
     ppf_dump:Format.formatter -> Lambda.program -> unit
 

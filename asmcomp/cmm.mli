@@ -108,7 +108,7 @@ type memory_chunk =
 
 and operation =
     Capply of machtype
-  | Cextcall of string * machtype * bool * label option
+  | Cextcall of Backend_sym.t * machtype * bool * label option
   | Cload of memory_chunk * Asttypes.mutable_flag
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
@@ -133,7 +133,7 @@ and expression =
     Cconst_int of int
   | Cconst_natint of nativeint
   | Cconst_float of float
-  | Cconst_symbol of string
+  | Cconst_symbol of Backend_sym.t
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
   | Cblockheader of nativeint * Debuginfo.t
@@ -159,7 +159,7 @@ type codegen_option =
   | No_CSE
 
 type fundecl =
-  { fun_name: string;
+  { fun_name: Backend_sym.t;
     fun_args: (Backend_var.With_provenance.t * machtype) list;
     fun_body: expression;
     fun_codegen_options : codegen_option list;
@@ -167,15 +167,15 @@ type fundecl =
   }
 
 type data_item =
-    Cdefine_symbol of string
-  | Cglobal_symbol of string
+    Cdefine_symbol of Backend_sym.t
+  | Cglobal_symbol of Backend_sym.t
   | Cint8 of int
   | Cint16 of int
   | Cint32 of nativeint
   | Cint of nativeint
   | Csingle of float
   | Cdouble of float
-  | Csymbol_address of string
+  | Csymbol_address of Backend_sym.t
   | Cstring of string
   | Cskip of int
   | Calign of int

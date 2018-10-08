@@ -79,7 +79,9 @@ let raise_kind fmt = function
 let operation d = function
   | Capply _ty -> "app" ^ Debuginfo.to_string d
   | Cextcall(lbl, _ty, _alloc, _) ->
-      Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
+      Printf.sprintf "extcall \"%s\"%s"
+        (Backend_sym.to_string lbl)
+        (Debuginfo.to_string d)
   | Cload (c, Asttypes.Immutable) -> Printf.sprintf "load %s" (chunk c)
   | Cload (c, Asttypes.Mutable) -> Printf.sprintf "load_mut %s" (chunk c)
   | Calloc -> "alloc" ^ Debuginfo.to_string d
@@ -127,7 +129,7 @@ let rec expr ppf = function
     fprintf ppf "block-hdr(%s)%s"
       (Nativeint.to_string n) (Debuginfo.to_string d)
   | Cconst_float n -> fprintf ppf "%F" n
-  | Cconst_symbol s -> fprintf ppf "\"%s\"" s
+  | Cconst_symbol s -> fprintf ppf "\"%a\"" Backend_sym.print s
   | Cconst_pointer n -> fprintf ppf "%ia" n
   | Cconst_natpointer n -> fprintf ppf "%sa" (Nativeint.to_string n)
   | Cvar id -> V.print ppf id
@@ -225,20 +227,20 @@ let fundecl ppf f =
        if !first then first := false else fprintf ppf "@ ";
        fprintf ppf "%a: %a" VP.print id machtype ty)
      cases in
-  fprintf ppf "@[<1>(function%s %s@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
-         (Debuginfo.to_string f.fun_dbg) f.fun_name
+  fprintf ppf "@[<1>(function%s %a@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
+         (Debuginfo.to_string f.fun_dbg) Backend_sym.print f.fun_name
          print_cases f.fun_args sequence f.fun_body
 
 let data_item ppf = function
-  | Cdefine_symbol s -> fprintf ppf "\"%s\":" s
-  | Cglobal_symbol s -> fprintf ppf "global \"%s\"" s
+  | Cdefine_symbol s -> fprintf ppf "\"%a\":" Backend_sym.print s
+  | Cglobal_symbol s -> fprintf ppf "global \"%a\"" Backend_sym.print s
   | Cint8 n -> fprintf ppf "byte %i" n
   | Cint16 n -> fprintf ppf "int16 %i" n
   | Cint32 n -> fprintf ppf "int32 %s" (Nativeint.to_string n)
   | Cint n -> fprintf ppf "int %s" (Nativeint.to_string n)
   | Csingle f -> fprintf ppf "single %F" f
   | Cdouble f -> fprintf ppf "double %F" f
-  | Csymbol_address s -> fprintf ppf "addr \"%s\"" s
+  | Csymbol_address s -> fprintf ppf "addr \"%a\"" Backend_sym.print s
   | Cstring s -> fprintf ppf "string \"%s\"" s
   | Cskip n -> fprintf ppf "skip %i" n
   | Calign n -> fprintf ppf "align %i" n

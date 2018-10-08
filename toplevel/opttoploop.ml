@@ -40,7 +40,7 @@ let global_symbol id =
   with _ -> fatal_error ("Opttoploop.global_symbol " ^ (Ident.unique_name id))
 
 let need_symbol sym =
-  try ignore (ndl_loadsym sym); false
+  try ignore (ndl_loadsym (Backend_sym.to_string sym)); false
   with _ -> true
 
 let dll_run dll entry =

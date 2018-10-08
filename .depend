@@ -354,8 +354,7 @@ typing/subst.cmo : typing/types.cmi typing/path.cmi parsing/parsetree.cmi \
 typing/subst.cmx : typing/types.cmx typing/path.cmx parsing/parsetree.cmi \
     utils/misc.cmx parsing/location.cmx typing/ident.cmx utils/clflags.cmx \
     typing/btype.cmx parsing/ast_mapper.cmx typing/subst.cmi
-typing/subst.cmi : typing/types.cmi typing/path.cmi parsing/location.cmi \
-    typing/ident.cmi
+typing/subst.cmi : typing/types.cmi typing/path.cmi typing/ident.cmi
 typing/tast_mapper.cmo : typing/typedtree.cmi typing/env.cmi \
     parsing/asttypes.cmi typing/tast_mapper.cmi
 typing/tast_mapper.cmx : typing/typedtree.cmx typing/env.cmx \
@@ -715,14 +714,14 @@ bytecomp/translcore.cmi : typing/typedtree.cmi typing/path.cmi \
     parsing/asttypes.cmi
 bytecomp/translmod.cmo : typing/types.cmi typing/typedtree.cmi \
     bytecomp/translprim.cmi bytecomp/translobj.cmi bytecomp/translcore.cmi \
-    bytecomp/translclass.cmi bytecomp/translattribute.cmi typing/printtyp.cmi \
+    bytecomp/translclass.cmi bytecomp/translattribute.cmi \
     typing/primitive.cmi typing/predef.cmi typing/path.cmi typing/mtype.cmi \
     utils/misc.cmi parsing/longident.cmi parsing/location.cmi \
     bytecomp/lambda.cmi typing/ident.cmi typing/env.cmi typing/ctype.cmi \
     utils/clflags.cmi parsing/asttypes.cmi bytecomp/translmod.cmi
 bytecomp/translmod.cmx : typing/types.cmx typing/typedtree.cmx \
     bytecomp/translprim.cmx bytecomp/translobj.cmx bytecomp/translcore.cmx \
-    bytecomp/translclass.cmx bytecomp/translattribute.cmx typing/printtyp.cmx \
+    bytecomp/translclass.cmx bytecomp/translattribute.cmx \
     typing/primitive.cmx typing/predef.cmx typing/path.cmx typing/mtype.cmx \
     utils/misc.cmx parsing/longident.cmx parsing/location.cmx \
     bytecomp/lambda.cmx typing/ident.cmx typing/env.cmx typing/ctype.cmx \
@@ -760,13 +759,15 @@ asmcomp/CSEgen.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
 asmcomp/CSEgen.cmi : asmcomp/mach.cmi
 asmcomp/afl_instrument.cmo : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi utils/clflags.cmi asmcomp/backend_var.cmi \
-    parsing/asttypes.cmi asmcomp/afl_instrument.cmi
+    asmcomp/backend_sym.cmi parsing/asttypes.cmi asmcomp/afl_instrument.cmi
 asmcomp/afl_instrument.cmx : bytecomp/lambda.cmx middle_end/debuginfo.cmx \
     asmcomp/cmm.cmx utils/clflags.cmx asmcomp/backend_var.cmx \
-    parsing/asttypes.cmi asmcomp/afl_instrument.cmi
+    asmcomp/backend_sym.cmx parsing/asttypes.cmi asmcomp/afl_instrument.cmi
 asmcomp/afl_instrument.cmi : asmcomp/cmm.cmi
-asmcomp/arch.cmo : utils/config.cmi utils/clflags.cmi
-asmcomp/arch.cmx : utils/config.cmx utils/clflags.cmx
+asmcomp/arch.cmo : utils/config.cmi utils/clflags.cmi \
+    asmcomp/backend_sym.cmi
+asmcomp/arch.cmx : utils/config.cmx utils/clflags.cmx \
+    asmcomp/backend_sym.cmx
 asmcomp/asmgen.cmo : asmcomp/un_anf.cmi bytecomp/translmod.cmi \
     middle_end/base_types/symbol.cmi asmcomp/split.cmi asmcomp/spill.cmi \
     asmcomp/selection.cmi asmcomp/scheduling.cmi asmcomp/reload.cmi \
@@ -781,8 +782,8 @@ asmcomp/asmgen.cmo : asmcomp/un_anf.cmi bytecomp/translmod.cmi \
     utils/config.cmi asmcomp/compilenv.cmi asmcomp/comballoc.cmi \
     asmcomp/coloring.cmi asmcomp/cmmgen.cmi asmcomp/cmm.cmi \
     asmcomp/closure.cmi utils/clflags.cmi asmcomp/clambda.cmi asmcomp/CSE.cmo \
-    asmcomp/build_export_info.cmi asmcomp/debug/available_regs.cmi \
-    asmcomp/asmgen.cmi
+    asmcomp/build_export_info.cmi asmcomp/backend_sym.cmi \
+    asmcomp/debug/available_regs.cmi asmcomp/asmgen.cmi
 asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     middle_end/base_types/symbol.cmx asmcomp/split.cmx asmcomp/spill.cmx \
     asmcomp/selection.cmx asmcomp/scheduling.cmx asmcomp/reload.cmx \
@@ -797,10 +798,11 @@ asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     utils/config.cmx asmcomp/compilenv.cmx asmcomp/comballoc.cmx \
     asmcomp/coloring.cmx asmcomp/cmmgen.cmx asmcomp/cmm.cmx \
     asmcomp/closure.cmx utils/clflags.cmx asmcomp/clambda.cmx asmcomp/CSE.cmx \
-    asmcomp/build_export_info.cmx asmcomp/debug/available_regs.cmx \
-    asmcomp/asmgen.cmi
+    asmcomp/build_export_info.cmx asmcomp/backend_sym.cmx \
+    asmcomp/debug/available_regs.cmx asmcomp/asmgen.cmi
 asmcomp/asmgen.cmi : bytecomp/lambda.cmi typing/ident.cmi \
-    middle_end/flambda.cmi asmcomp/cmm.cmi middle_end/backend_intf.cmi
+    middle_end/flambda.cmi asmcomp/cmm.cmi asmcomp/backend_sym.cmi \
+    middle_end/backend_intf.cmi
 asmcomp/asmlibrarian.cmo : utils/misc.cmi parsing/location.cmi \
     asmcomp/export_info.cmi utils/config.cmi asmcomp/compilenv.cmi \
     asmcomp/cmx_format.cmi utils/clflags.cmi asmcomp/clambda.cmi \
@@ -814,12 +816,14 @@ asmcomp/asmlink.cmo : bytecomp/runtimedef.cmi utils/profile.cmi \
     utils/misc.cmi parsing/location.cmi asmcomp/emitaux.cmi asmcomp/emit.cmi \
     utils/consistbl.cmi utils/config.cmi asmcomp/compilenv.cmi \
     asmcomp/cmx_format.cmi asmcomp/cmmgen.cmi asmcomp/cmm.cmi \
-    utils/clflags.cmi utils/ccomp.cmi asmcomp/asmgen.cmi asmcomp/asmlink.cmi
+    utils/clflags.cmi utils/ccomp.cmi asmcomp/backend_sym.cmi \
+    asmcomp/asmgen.cmi asmcomp/asmlink.cmi
 asmcomp/asmlink.cmx : bytecomp/runtimedef.cmx utils/profile.cmx \
     utils/misc.cmx parsing/location.cmx asmcomp/emitaux.cmx asmcomp/emit.cmx \
     utils/consistbl.cmx utils/config.cmx asmcomp/compilenv.cmx \
     asmcomp/cmx_format.cmi asmcomp/cmmgen.cmx asmcomp/cmm.cmx \
-    utils/clflags.cmx utils/ccomp.cmx asmcomp/asmgen.cmx asmcomp/asmlink.cmi
+    utils/clflags.cmx utils/ccomp.cmx asmcomp/backend_sym.cmx \
+    asmcomp/asmgen.cmx asmcomp/asmlink.cmi
 asmcomp/asmlink.cmi : asmcomp/cmx_format.cmi
 asmcomp/asmpackager.cmo : typing/typemod.cmi bytecomp/translmod.cmi \
     utils/profile.cmi utils/misc.cmi middle_end/middle_end.cmi \
@@ -838,10 +842,18 @@ asmcomp/asmpackager.cmx : typing/typemod.cmx bytecomp/translmod.cmx \
     utils/clflags.cmx utils/ccomp.cmx asmcomp/asmlink.cmx asmcomp/asmgen.cmx \
     asmcomp/asmpackager.cmi
 asmcomp/asmpackager.cmi : typing/env.cmi middle_end/backend_intf.cmi
-asmcomp/backend_var.cmo : typing/printtyp.cmi typing/path.cmi \
-    typing/ident.cmi middle_end/debuginfo.cmi asmcomp/backend_var.cmi
-asmcomp/backend_var.cmx : typing/printtyp.cmx typing/path.cmx \
-    typing/ident.cmx middle_end/debuginfo.cmx asmcomp/backend_var.cmi
+asmcomp/backend_sym.cmo : middle_end/base_types/symbol.cmi \
+    middle_end/base_types/linkage_name.cmi utils/identifiable.cmi \
+    middle_end/base_types/compilation_unit.cmi asmcomp/backend_sym.cmi
+asmcomp/backend_sym.cmx : middle_end/base_types/symbol.cmx \
+    middle_end/base_types/linkage_name.cmx utils/identifiable.cmx \
+    middle_end/base_types/compilation_unit.cmx asmcomp/backend_sym.cmi
+asmcomp/backend_sym.cmi : middle_end/base_types/symbol.cmi \
+    utils/identifiable.cmi
+asmcomp/backend_var.cmo : typing/path.cmi typing/ident.cmi \
+    middle_end/debuginfo.cmi asmcomp/backend_var.cmi
+asmcomp/backend_var.cmx : typing/path.cmx typing/ident.cmx \
+    middle_end/debuginfo.cmx asmcomp/backend_var.cmi
 asmcomp/backend_var.cmi : typing/path.cmi typing/ident.cmi \
     middle_end/debuginfo.cmi
 asmcomp/branch_relaxation.cmo : utils/misc.cmi asmcomp/mach.cmi \
@@ -893,14 +905,14 @@ asmcomp/clambda.cmi : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
 asmcomp/closure.cmo : utils/warnings.cmi bytecomp/switch.cmi \
     bytecomp/simplif.cmi bytecomp/semantics_of_primitives.cmi \
     typing/primitive.cmi utils/numbers.cmi utils/misc.cmi \
-    parsing/location.cmi bytecomp/lambda.cmi typing/env.cmi \
+    parsing/location.cmi bytecomp/lambda.cmi typing/ident.cmi typing/env.cmi \
     middle_end/debuginfo.cmi utils/config.cmi asmcomp/compilenv.cmi \
     utils/clflags.cmi asmcomp/clambda.cmi asmcomp/backend_var.cmi \
     parsing/asttypes.cmi asmcomp/arch.cmo asmcomp/closure.cmi
 asmcomp/closure.cmx : utils/warnings.cmx bytecomp/switch.cmx \
     bytecomp/simplif.cmx bytecomp/semantics_of_primitives.cmx \
     typing/primitive.cmx utils/numbers.cmx utils/misc.cmx \
-    parsing/location.cmx bytecomp/lambda.cmx typing/env.cmx \
+    parsing/location.cmx bytecomp/lambda.cmx typing/ident.cmx typing/env.cmx \
     middle_end/debuginfo.cmx utils/config.cmx asmcomp/compilenv.cmx \
     utils/clflags.cmx asmcomp/clambda.cmx asmcomp/backend_var.cmx \
     parsing/asttypes.cmi asmcomp/arch.cmx asmcomp/closure.cmi
@@ -916,27 +928,29 @@ asmcomp/closure_offsets.cmx : middle_end/base_types/variable.cmx \
 asmcomp/closure_offsets.cmi : middle_end/base_types/var_within_closure.cmi \
     middle_end/flambda.cmi middle_end/base_types/closure_id.cmi
 asmcomp/cmm.cmo : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
-    asmcomp/backend_var.cmi parsing/asttypes.cmi asmcomp/arch.cmo \
-    asmcomp/cmm.cmi
+    asmcomp/backend_var.cmi asmcomp/backend_sym.cmi parsing/asttypes.cmi \
+    asmcomp/arch.cmo asmcomp/cmm.cmi
 asmcomp/cmm.cmx : bytecomp/lambda.cmx middle_end/debuginfo.cmx \
-    asmcomp/backend_var.cmx parsing/asttypes.cmi asmcomp/arch.cmx \
-    asmcomp/cmm.cmi
+    asmcomp/backend_var.cmx asmcomp/backend_sym.cmx parsing/asttypes.cmi \
+    asmcomp/arch.cmx asmcomp/cmm.cmi
 asmcomp/cmm.cmi : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
-    asmcomp/backend_var.cmi parsing/asttypes.cmi
+    asmcomp/backend_var.cmi asmcomp/backend_sym.cmi parsing/asttypes.cmi
 asmcomp/cmmgen.cmo : asmcomp/un_anf.cmi typing/types.cmi bytecomp/switch.cmi \
     asmcomp/strmatch.cmi asmcomp/proc.cmi bytecomp/printlambda.cmi \
     typing/primitive.cmi utils/numbers.cmi utils/misc.cmi bytecomp/lambda.cmi \
     middle_end/debuginfo.cmi utils/config.cmi asmcomp/compilenv.cmi \
     asmcomp/cmx_format.cmi asmcomp/cmm.cmi utils/clflags.cmi \
-    asmcomp/clambda.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
-    asmcomp/arch.cmo asmcomp/afl_instrument.cmi asmcomp/cmmgen.cmi
+    asmcomp/clambda.cmi asmcomp/backend_var.cmi asmcomp/backend_sym.cmi \
+    parsing/asttypes.cmi asmcomp/arch.cmo asmcomp/afl_instrument.cmi \
+    asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmx : asmcomp/un_anf.cmx typing/types.cmx bytecomp/switch.cmx \
     asmcomp/strmatch.cmx asmcomp/proc.cmx bytecomp/printlambda.cmx \
     typing/primitive.cmx utils/numbers.cmx utils/misc.cmx bytecomp/lambda.cmx \
     middle_end/debuginfo.cmx utils/config.cmx asmcomp/compilenv.cmx \
     asmcomp/cmx_format.cmi asmcomp/cmm.cmx utils/clflags.cmx \
-    asmcomp/clambda.cmx asmcomp/backend_var.cmx parsing/asttypes.cmi \
-    asmcomp/arch.cmx asmcomp/afl_instrument.cmx asmcomp/cmmgen.cmi
+    asmcomp/clambda.cmx asmcomp/backend_var.cmx asmcomp/backend_sym.cmx \
+    parsing/asttypes.cmi asmcomp/arch.cmx asmcomp/afl_instrument.cmx \
+    asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmi : asmcomp/cmx_format.cmi asmcomp/cmm.cmi \
     asmcomp/clambda.cmi
 asmcomp/cmx_format.cmi : asmcomp/export_info.cmi asmcomp/clambda.cmi
@@ -978,16 +992,24 @@ asmcomp/deadcode.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
 asmcomp/deadcode.cmi : asmcomp/mach.cmi
 asmcomp/emit.cmo : asmcomp/x86_proc.cmi asmcomp/x86_masm.cmi \
     asmcomp/x86_gas.cmi asmcomp/x86_dsl.cmi asmcomp/x86_ast.cmi \
-    asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi asmcomp/mach.cmi \
+    utils/targetint.cmi asmcomp/target_system.cmi asmcomp/reg.cmi \
+    asmcomp/proc.cmi utils/numbers.cmi utils/misc.cmi asmcomp/mach.cmi \
     asmcomp/linearize.cmi asmcomp/emitaux.cmi middle_end/debuginfo.cmi \
-    utils/config.cmi asmcomp/compilenv.cmi asmcomp/cmm.cmi utils/clflags.cmi \
-    asmcomp/branch_relaxation.cmi asmcomp/arch.cmo asmcomp/emit.cmi
+    utils/config.cmi asmcomp/cmm.cmi utils/clflags.cmi \
+    asmcomp/branch_relaxation.cmi asmcomp/backend_sym.cmi \
+    asmcomp/asm_target/asm_symbol.cmi asmcomp/asm_target/asm_section.cmi \
+    asmcomp/asm_target/asm_label.cmi asmcomp/asm_target/asm_directives.cmi \
+    asmcomp/arch.cmo asmcomp/emit.cmi
 asmcomp/emit.cmx : asmcomp/x86_proc.cmx asmcomp/x86_masm.cmx \
     asmcomp/x86_gas.cmx asmcomp/x86_dsl.cmx asmcomp/x86_ast.cmi \
-    asmcomp/reg.cmx asmcomp/proc.cmx utils/misc.cmx asmcomp/mach.cmx \
+    utils/targetint.cmx asmcomp/target_system.cmx asmcomp/reg.cmx \
+    asmcomp/proc.cmx utils/numbers.cmx utils/misc.cmx asmcomp/mach.cmx \
     asmcomp/linearize.cmx asmcomp/emitaux.cmx middle_end/debuginfo.cmx \
-    utils/config.cmx asmcomp/compilenv.cmx asmcomp/cmm.cmx utils/clflags.cmx \
-    asmcomp/branch_relaxation.cmx asmcomp/arch.cmx asmcomp/emit.cmi
+    utils/config.cmx asmcomp/cmm.cmx utils/clflags.cmx \
+    asmcomp/branch_relaxation.cmx asmcomp/backend_sym.cmx \
+    asmcomp/asm_target/asm_symbol.cmx asmcomp/asm_target/asm_section.cmx \
+    asmcomp/asm_target/asm_label.cmx asmcomp/asm_target/asm_directives.cmx \
+    asmcomp/arch.cmx asmcomp/emit.cmi
 asmcomp/emit.cmi : asmcomp/linearize.cmi asmcomp/cmm.cmi
 asmcomp/emitaux.cmo : middle_end/debuginfo.cmi utils/config.cmi \
     asmcomp/cmm.cmi utils/clflags.cmi asmcomp/arch.cmo asmcomp/emitaux.cmi
@@ -1102,12 +1124,12 @@ asmcomp/interval.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/mach.cmx \
 asmcomp/interval.cmi : asmcomp/reg.cmi asmcomp/mach.cmi
 asmcomp/linearize.cmo : asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
     asmcomp/mach.cmi middle_end/debuginfo.cmi utils/config.cmi \
-    asmcomp/cmm.cmi asmcomp/linearize.cmi
+    asmcomp/cmm.cmi asmcomp/backend_sym.cmi asmcomp/linearize.cmi
 asmcomp/linearize.cmx : asmcomp/reg.cmx asmcomp/proc.cmx utils/misc.cmx \
     asmcomp/mach.cmx middle_end/debuginfo.cmx utils/config.cmx \
-    asmcomp/cmm.cmx asmcomp/linearize.cmi
+    asmcomp/cmm.cmx asmcomp/backend_sym.cmx asmcomp/linearize.cmi
 asmcomp/linearize.cmi : asmcomp/reg.cmi asmcomp/mach.cmi \
-    middle_end/debuginfo.cmi asmcomp/cmm.cmi
+    middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_sym.cmi
 asmcomp/linscan.cmo : asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/interval.cmi \
     asmcomp/linscan.cmi
 asmcomp/linscan.cmx : asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/interval.cmx \
@@ -1123,14 +1145,14 @@ asmcomp/liveness.cmi : asmcomp/mach.cmi
 asmcomp/mach.cmo : asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
-    asmcomp/arch.cmo asmcomp/mach.cmi
+    asmcomp/backend_sym.cmi asmcomp/arch.cmo asmcomp/mach.cmi
 asmcomp/mach.cmx : asmcomp/debug/reg_with_debug_info.cmx \
     asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx \
     middle_end/debuginfo.cmx asmcomp/cmm.cmx asmcomp/backend_var.cmx \
-    asmcomp/arch.cmx asmcomp/mach.cmi
+    asmcomp/backend_sym.cmx asmcomp/arch.cmx asmcomp/mach.cmi
 asmcomp/mach.cmi : asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
-    asmcomp/arch.cmo
+    asmcomp/backend_sym.cmi asmcomp/arch.cmo
 asmcomp/printclambda.cmo : bytecomp/printlambda.cmi bytecomp/lambda.cmi \
     asmcomp/clambda.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
     asmcomp/printclambda.cmi
@@ -1139,29 +1161,29 @@ asmcomp/printclambda.cmx : bytecomp/printlambda.cmx bytecomp/lambda.cmx \
     asmcomp/printclambda.cmi
 asmcomp/printclambda.cmi : asmcomp/clambda.cmi
 asmcomp/printcmm.cmo : bytecomp/lambda.cmi middle_end/debuginfo.cmi \
-    asmcomp/cmm.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
-    asmcomp/printcmm.cmi
+    asmcomp/cmm.cmi asmcomp/backend_var.cmi asmcomp/backend_sym.cmi \
+    parsing/asttypes.cmi asmcomp/printcmm.cmi
 asmcomp/printcmm.cmx : bytecomp/lambda.cmx middle_end/debuginfo.cmx \
-    asmcomp/cmm.cmx asmcomp/backend_var.cmx parsing/asttypes.cmi \
-    asmcomp/printcmm.cmi
+    asmcomp/cmm.cmx asmcomp/backend_var.cmx asmcomp/backend_sym.cmx \
+    parsing/asttypes.cmi asmcomp/printcmm.cmi
 asmcomp/printcmm.cmi : middle_end/debuginfo.cmi asmcomp/cmm.cmi
 asmcomp/printlinear.cmo : asmcomp/printmach.cmi asmcomp/printcmm.cmi \
     asmcomp/mach.cmi asmcomp/linearize.cmi middle_end/debuginfo.cmi \
-    asmcomp/printlinear.cmi
+    asmcomp/backend_sym.cmi asmcomp/printlinear.cmi
 asmcomp/printlinear.cmx : asmcomp/printmach.cmx asmcomp/printcmm.cmx \
     asmcomp/mach.cmx asmcomp/linearize.cmx middle_end/debuginfo.cmx \
-    asmcomp/printlinear.cmi
+    asmcomp/backend_sym.cmx asmcomp/printlinear.cmi
 asmcomp/printlinear.cmi : asmcomp/linearize.cmi
 asmcomp/printmach.cmo : asmcomp/debug/reg_availability_set.cmi \
     asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/printcmm.cmi asmcomp/mach.cmi \
     asmcomp/interval.cmi middle_end/debuginfo.cmi utils/config.cmi \
     asmcomp/cmm.cmi utils/clflags.cmi asmcomp/backend_var.cmi \
-    asmcomp/arch.cmo asmcomp/printmach.cmi
+    asmcomp/backend_sym.cmi asmcomp/arch.cmo asmcomp/printmach.cmi
 asmcomp/printmach.cmx : asmcomp/debug/reg_availability_set.cmx \
     asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/printcmm.cmx asmcomp/mach.cmx \
     asmcomp/interval.cmx middle_end/debuginfo.cmx utils/config.cmx \
     asmcomp/cmm.cmx utils/clflags.cmx asmcomp/backend_var.cmx \
-    asmcomp/arch.cmx asmcomp/printmach.cmi
+    asmcomp/backend_sym.cmx asmcomp/arch.cmx asmcomp/printmach.cmi
 asmcomp/printmach.cmi : asmcomp/reg.cmi asmcomp/mach.cmi
 asmcomp/proc.cmo : asmcomp/x86_proc.cmi asmcomp/reg.cmi utils/misc.cmi \
     asmcomp/mach.cmi utils/config.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
@@ -1196,33 +1218,35 @@ asmcomp/scheduling.cmi : asmcomp/linearize.cmi
 asmcomp/selectgen.cmo : bytecomp/simplif.cmi asmcomp/reg.cmi \
     asmcomp/proc.cmi utils/numbers.cmi utils/misc.cmi asmcomp/mach.cmi \
     bytecomp/lambda.cmi middle_end/debuginfo.cmi utils/config.cmi \
-    asmcomp/cmm.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
-    asmcomp/arch.cmo asmcomp/selectgen.cmi
+    asmcomp/cmm.cmi asmcomp/backend_var.cmi asmcomp/backend_sym.cmi \
+    parsing/asttypes.cmi asmcomp/arch.cmo asmcomp/selectgen.cmi
 asmcomp/selectgen.cmx : bytecomp/simplif.cmx asmcomp/reg.cmx \
     asmcomp/proc.cmx utils/numbers.cmx utils/misc.cmx asmcomp/mach.cmx \
     bytecomp/lambda.cmx middle_end/debuginfo.cmx utils/config.cmx \
-    asmcomp/cmm.cmx asmcomp/backend_var.cmx parsing/asttypes.cmi \
-    asmcomp/arch.cmx asmcomp/selectgen.cmi
+    asmcomp/cmm.cmx asmcomp/backend_var.cmx asmcomp/backend_sym.cmx \
+    parsing/asttypes.cmi asmcomp/arch.cmx asmcomp/selectgen.cmi
 asmcomp/selectgen.cmi : asmcomp/reg.cmi asmcomp/mach.cmi \
     middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/backend_var.cmi \
     asmcomp/arch.cmo
 asmcomp/selection.cmo : asmcomp/spacetime_profiling.cmi \
     asmcomp/selectgen.cmi asmcomp/proc.cmi asmcomp/mach.cmi utils/config.cmi \
-    asmcomp/cmm.cmi utils/clflags.cmi asmcomp/arch.cmo asmcomp/selection.cmi
+    asmcomp/cmm.cmi utils/clflags.cmi asmcomp/backend_sym.cmi \
+    asmcomp/arch.cmo asmcomp/selection.cmi
 asmcomp/selection.cmx : asmcomp/spacetime_profiling.cmx \
     asmcomp/selectgen.cmx asmcomp/proc.cmx asmcomp/mach.cmx utils/config.cmx \
-    asmcomp/cmm.cmx utils/clflags.cmx asmcomp/arch.cmx asmcomp/selection.cmi
+    asmcomp/cmm.cmx utils/clflags.cmx asmcomp/backend_sym.cmx \
+    asmcomp/arch.cmx asmcomp/selection.cmi
 asmcomp/selection.cmi : asmcomp/mach.cmi asmcomp/cmm.cmi
 asmcomp/spacetime_profiling.cmo : asmcomp/selectgen.cmi asmcomp/proc.cmi \
     utils/misc.cmi asmcomp/mach.cmi bytecomp/lambda.cmi \
     middle_end/debuginfo.cmi utils/config.cmi asmcomp/cmm.cmi \
-    asmcomp/backend_var.cmi parsing/asttypes.cmi asmcomp/arch.cmo \
-    asmcomp/spacetime_profiling.cmi
+    asmcomp/backend_var.cmi asmcomp/backend_sym.cmi parsing/asttypes.cmi \
+    asmcomp/arch.cmo asmcomp/spacetime_profiling.cmi
 asmcomp/spacetime_profiling.cmx : asmcomp/selectgen.cmx asmcomp/proc.cmx \
     utils/misc.cmx asmcomp/mach.cmx bytecomp/lambda.cmx \
     middle_end/debuginfo.cmx utils/config.cmx asmcomp/cmm.cmx \
-    asmcomp/backend_var.cmx parsing/asttypes.cmi asmcomp/arch.cmx \
-    asmcomp/spacetime_profiling.cmi
+    asmcomp/backend_var.cmx asmcomp/backend_sym.cmx parsing/asttypes.cmi \
+    asmcomp/arch.cmx asmcomp/spacetime_profiling.cmi
 asmcomp/spacetime_profiling.cmi : asmcomp/selectgen.cmi
 asmcomp/spill.cmo : asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
     asmcomp/mach.cmi asmcomp/cmm.cmi utils/clflags.cmi asmcomp/spill.cmi
@@ -1242,6 +1266,11 @@ asmcomp/strmatch.cmx : parsing/location.cmx bytecomp/lambda.cmx \
     parsing/asttypes.cmi asmcomp/arch.cmx asmcomp/strmatch.cmi
 asmcomp/strmatch.cmi : parsing/location.cmi middle_end/debuginfo.cmi \
     asmcomp/cmm.cmi
+asmcomp/target_system.cmo : utils/targetint.cmi utils/misc.cmi \
+    utils/config.cmi asmcomp/target_system.cmi
+asmcomp/target_system.cmx : utils/targetint.cmx utils/misc.cmx \
+    utils/config.cmx asmcomp/target_system.cmi
+asmcomp/target_system.cmi :
 asmcomp/traverse_for_exported_symbols.cmo : \
     middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
@@ -1277,20 +1306,32 @@ asmcomp/un_anf.cmx : bytecomp/semantics_of_primitives.cmx \
     middle_end/debuginfo.cmx utils/clflags.cmx asmcomp/clambda.cmx \
     asmcomp/backend_var.cmx parsing/asttypes.cmi asmcomp/un_anf.cmi
 asmcomp/un_anf.cmi : asmcomp/clambda.cmi
-asmcomp/x86_ast.cmi :
+asmcomp/x86_ast.cmi : asmcomp/asm_target/asm_symbol.cmi \
+    asmcomp/asm_target/asm_label.cmi asmcomp/asm_target/asm_directives.cmi
 asmcomp/x86_dsl.cmo : asmcomp/x86_proc.cmi asmcomp/x86_ast.cmi \
+    asmcomp/asm_target/asm_symbol.cmi asmcomp/asm_target/asm_label.cmi \
     asmcomp/x86_dsl.cmi
 asmcomp/x86_dsl.cmx : asmcomp/x86_proc.cmx asmcomp/x86_ast.cmi \
+    asmcomp/asm_target/asm_symbol.cmx asmcomp/asm_target/asm_label.cmx \
     asmcomp/x86_dsl.cmi
-asmcomp/x86_dsl.cmi : asmcomp/x86_ast.cmi
+asmcomp/x86_dsl.cmi : asmcomp/x86_ast.cmi asmcomp/asm_target/asm_symbol.cmi \
+    asmcomp/asm_target/asm_label.cmi
 asmcomp/x86_gas.cmo : asmcomp/x86_proc.cmi asmcomp/x86_ast.cmi \
-    utils/misc.cmi asmcomp/x86_gas.cmi
+    utils/misc.cmi asmcomp/asm_target/asm_symbol.cmi \
+    asmcomp/asm_target/asm_label.cmi asmcomp/asm_target/asm_directives.cmi \
+    asmcomp/x86_gas.cmi
 asmcomp/x86_gas.cmx : asmcomp/x86_proc.cmx asmcomp/x86_ast.cmi \
-    utils/misc.cmx asmcomp/x86_gas.cmi
+    utils/misc.cmx asmcomp/asm_target/asm_symbol.cmx \
+    asmcomp/asm_target/asm_label.cmx asmcomp/asm_target/asm_directives.cmx \
+    asmcomp/x86_gas.cmi
 asmcomp/x86_gas.cmi : asmcomp/x86_ast.cmi
 asmcomp/x86_masm.cmo : asmcomp/x86_proc.cmi asmcomp/x86_ast.cmi \
+    utils/misc.cmi asmcomp/asm_target/asm_symbol.cmi \
+    asmcomp/asm_target/asm_label.cmi asmcomp/asm_target/asm_directives.cmi \
     asmcomp/x86_masm.cmi
 asmcomp/x86_masm.cmx : asmcomp/x86_proc.cmx asmcomp/x86_ast.cmi \
+    utils/misc.cmx asmcomp/asm_target/asm_symbol.cmx \
+    asmcomp/asm_target/asm_label.cmx asmcomp/asm_target/asm_directives.cmx \
     asmcomp/x86_masm.cmi
 asmcomp/x86_masm.cmi : asmcomp/x86_ast.cmi
 asmcomp/x86_proc.cmo : asmcomp/x86_ast.cmi utils/misc.cmi utils/config.cmi \
@@ -2298,16 +2339,6 @@ middle_end/base_types/variable.cmx : utils/misc.cmx \
 middle_end/base_types/variable.cmi : middle_end/internal_variable_names.cmi \
     utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
-asmcomp/debug/asm_directives.cmo : utils/targetint.cmi \
-    asmcomp/debug/target_system.cmi utils/numbers.cmi utils/misc.cmi \
-    middle_end/base_types/linkage_name.cmi utils/config.cmi asmcomp/cmm.cmi \
-    utils/clflags.cmi asmcomp/arch.cmo asmcomp/debug/asm_directives.cmi
-asmcomp/debug/asm_directives.cmx : utils/targetint.cmx \
-    asmcomp/debug/target_system.cmx utils/numbers.cmx utils/misc.cmx \
-    middle_end/base_types/linkage_name.cmx utils/config.cmx asmcomp/cmm.cmx \
-    utils/clflags.cmx asmcomp/arch.cmx asmcomp/debug/asm_directives.cmi
-asmcomp/debug/asm_directives.cmi : utils/targetint.cmi \
-    asmcomp/debug/target_system.cmi utils/numbers.cmi asmcomp/cmm.cmi
 asmcomp/debug/available_regs.cmo : asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi utils/clflags.cmi \
@@ -2325,25 +2356,44 @@ asmcomp/debug/reg_availability_set.cmx : \
     asmcomp/debug/reg_availability_set.cmi
 asmcomp/debug/reg_availability_set.cmi : \
     asmcomp/debug/reg_with_debug_info.cmi asmcomp/reg.cmi
-<<<<<<< HEAD
 asmcomp/debug/reg_with_debug_info.cmo : asmcomp/reg.cmi \
     asmcomp/backend_var.cmi asmcomp/debug/reg_with_debug_info.cmi
 asmcomp/debug/reg_with_debug_info.cmx : asmcomp/reg.cmx \
     asmcomp/backend_var.cmx asmcomp/debug/reg_with_debug_info.cmi
 asmcomp/debug/reg_with_debug_info.cmi : asmcomp/reg.cmi \
     asmcomp/backend_var.cmi
-=======
-asmcomp/debug/reg_with_debug_info.cmo : asmcomp/reg.cmi typing/ident.cmi \
-    asmcomp/debug/reg_with_debug_info.cmi
-asmcomp/debug/reg_with_debug_info.cmx : asmcomp/reg.cmx typing/ident.cmx \
-    asmcomp/debug/reg_with_debug_info.cmi
-asmcomp/debug/reg_with_debug_info.cmi : asmcomp/reg.cmi typing/ident.cmi
-asmcomp/debug/target_system.cmo : utils/targetint.cmi utils/misc.cmi \
-    utils/config.cmi asmcomp/debug/target_system.cmi
-asmcomp/debug/target_system.cmx : utils/targetint.cmx utils/misc.cmx \
-    utils/config.cmx asmcomp/debug/target_system.cmi
-asmcomp/debug/target_system.cmi :
->>>>>>> 719c984c63... GPR#2073 (Asm_directives and Target_system)
+asmcomp/asm_target/asm_directives.cmo : utils/targetint.cmi \
+    asmcomp/target_system.cmi utils/numbers.cmi utils/misc.cmi \
+    utils/config.cmi utils/clflags.cmi asmcomp/asm_target/asm_symbol.cmi \
+    asmcomp/asm_target/asm_section.cmi asmcomp/asm_target/asm_label.cmi \
+    asmcomp/asm_target/asm_directives.cmi
+asmcomp/asm_target/asm_directives.cmx : utils/targetint.cmx \
+    asmcomp/target_system.cmx utils/numbers.cmx utils/misc.cmx \
+    utils/config.cmx utils/clflags.cmx asmcomp/asm_target/asm_symbol.cmx \
+    asmcomp/asm_target/asm_section.cmx asmcomp/asm_target/asm_label.cmx \
+    asmcomp/asm_target/asm_directives.cmi
+asmcomp/asm_target/asm_directives.cmi : utils/targetint.cmi \
+    asmcomp/target_system.cmi utils/numbers.cmi \
+    asmcomp/asm_target/asm_symbol.cmi asmcomp/asm_target/asm_section.cmi \
+    asmcomp/asm_target/asm_label.cmi
+asmcomp/asm_target/asm_label.cmo : asmcomp/target_system.cmi utils/misc.cmi \
+    asmcomp/asm_target/asm_label.cmi
+asmcomp/asm_target/asm_label.cmx : asmcomp/target_system.cmx utils/misc.cmx \
+    asmcomp/asm_target/asm_label.cmi
+asmcomp/asm_target/asm_label.cmi :
+asmcomp/asm_target/asm_section.cmo : asmcomp/target_system.cmi \
+    asmcomp/asm_target/asm_label.cmi asmcomp/asm_target/asm_section.cmi
+asmcomp/asm_target/asm_section.cmx : asmcomp/target_system.cmx \
+    asmcomp/asm_target/asm_label.cmx asmcomp/asm_target/asm_section.cmi
+asmcomp/asm_target/asm_section.cmi : asmcomp/asm_target/asm_label.cmi
+asmcomp/asm_target/asm_symbol.cmo : asmcomp/target_system.cmi \
+    utils/identifiable.cmi asmcomp/backend_sym.cmi \
+    asmcomp/asm_target/asm_symbol.cmi
+asmcomp/asm_target/asm_symbol.cmx : asmcomp/target_system.cmx \
+    utils/identifiable.cmx asmcomp/backend_sym.cmx \
+    asmcomp/asm_target/asm_symbol.cmi
+asmcomp/asm_target/asm_symbol.cmi : utils/identifiable.cmi \
+    asmcomp/backend_sym.cmi
 driver/compdynlink.cmi :
 driver/compenv.cmo : utils/warnings.cmi utils/profile.cmi utils/misc.cmi \
     parsing/location.cmi utils/config.cmi utils/clflags.cmi utils/ccomp.cmi \
@@ -2506,9 +2556,9 @@ toplevel/opttoploop.cmo : utils/warnings.cmi typing/types.cmi \
     asmcomp/import_approx.cmi typing/ident.cmi toplevel/genprintval.cmi \
     typing/env.cmi utils/config.cmi driver/compmisc.cmi asmcomp/compilenv.cmi \
     driver/compenv.cmi driver/compdynlink.cmi utils/clflags.cmi \
-    typing/btype.cmi middle_end/backend_intf.cmi parsing/asttypes.cmi \
-    parsing/ast_helper.cmi asmcomp/asmlink.cmi asmcomp/asmgen.cmi \
-    asmcomp/arch.cmo toplevel/opttoploop.cmi
+    typing/btype.cmi asmcomp/backend_sym.cmi middle_end/backend_intf.cmi \
+    parsing/asttypes.cmi parsing/ast_helper.cmi asmcomp/asmlink.cmi \
+    asmcomp/asmgen.cmi asmcomp/arch.cmo toplevel/opttoploop.cmi
 toplevel/opttoploop.cmx : utils/warnings.cmx typing/types.cmx \
     typing/typemod.cmx typing/typedtree.cmx typing/typecore.cmx \
     bytecomp/translmod.cmx bytecomp/simplif.cmx asmcomp/proc.cmx \
@@ -2521,9 +2571,9 @@ toplevel/opttoploop.cmx : utils/warnings.cmx typing/types.cmx \
     asmcomp/import_approx.cmx typing/ident.cmx toplevel/genprintval.cmx \
     typing/env.cmx utils/config.cmx driver/compmisc.cmx asmcomp/compilenv.cmx \
     driver/compenv.cmx driver/compdynlink.cmi utils/clflags.cmx \
-    typing/btype.cmx middle_end/backend_intf.cmi parsing/asttypes.cmi \
-    parsing/ast_helper.cmx asmcomp/asmlink.cmx asmcomp/asmgen.cmx \
-    asmcomp/arch.cmx toplevel/opttoploop.cmi
+    typing/btype.cmx asmcomp/backend_sym.cmx middle_end/backend_intf.cmi \
+    parsing/asttypes.cmi parsing/ast_helper.cmx asmcomp/asmlink.cmx \
+    asmcomp/asmgen.cmx asmcomp/arch.cmx toplevel/opttoploop.cmi
 toplevel/opttoploop.cmi : utils/warnings.cmi typing/types.cmi \
     typing/path.cmi parsing/parsetree.cmi typing/outcometree.cmi \
     parsing/longident.cmi parsing/location.cmi typing/env.cmi

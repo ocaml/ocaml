@@ -26,7 +26,7 @@ let command_line_options =
 open Format
 
 type addressing_mode =
-    Ibased of string * int              (* symbol + displ *)
+    Ibased of Backend_sym.t * int       (* symbol + displ *)
   | Iindexed of int                     (* reg + displ *)
   | Iindexed2 of int                    (* reg + reg + displ *)
   | Iscaled of int * int                (* reg * scale + displ *)
@@ -87,9 +87,9 @@ let num_args_addressing = function
 let print_addressing printreg addr ppf arg =
   match addr with
   | Ibased(s, 0) ->
-      fprintf ppf "\"%s\"" s
+      fprintf ppf "\"%a\"" Backend_sym.print s
   | Ibased(s, n) ->
-      fprintf ppf "\"%s\" + %i" s n
+      fprintf ppf "\"%a\" + %i" Backend_sym.print s n
   | Iindexed n ->
       let idx = if n <> 0 then Printf.sprintf " + %i" n else "" in
       fprintf ppf "%a%s" printreg arg.(0) idx

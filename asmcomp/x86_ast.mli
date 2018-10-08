@@ -61,6 +61,10 @@ type registerf = XMM of int | TOS | ST of int
 
 type arch = X64 | X86
 
+type symbol_or_label =
+  | Symbol of Asm_symbol.t
+  | Label of Asm_label.t
+
 type addr =
   {
     arch: arch;
@@ -68,7 +72,7 @@ type addr =
     idx: reg64;
     scale: int;
     base: reg64 option;
-    sym: string option;
+    symbol_or_label: symbol_or_label option;
     displ: int;
   }
   (** Addressing modes:
@@ -81,7 +85,7 @@ type arg =
   (** Operand is an immediate constant integer *)
 
   | Sym of  string
-  (** Address of a symbol (absolute address except for call/jmp target
+  (** Address of a symbol or label (absolute address except for call/jmp target
       where it is interpreted as a relative displacement *)
 
   | Reg8L of reg64
@@ -92,7 +96,12 @@ type arg =
   | Regf of registerf
 
   | Mem of addr
-  | Mem64_RIP of data_type * string * int
+  | Mem64_RIP of {
+      typ : data_type;
+      symbol_or_label : symbol_or_label;
+      reloc : string option;
+      offset_in_bytes : int;
+    }
 
 type instruction =
   | ADD of arg * arg
@@ -184,36 +193,14 @@ type instruction =
   | XOR of arg * arg
   | XORPD of arg * arg
 
-type asm_line =
-  | Ins of instruction
-
-  | Align of bool * int
-  | Byte of constant
-  | Bytes of string
-  | Comment of string
-  | Global of string
-  | Long of constant
-  | NewLabel of string * data_type
-  | Quad of constant
-  | Section of string list * string option * string list
-  | Space of int
-  | Word of constant
-
-  (* masm only (the gas emitter will fail on them) *)
-  | External of string * data_type
+type masm_directive =
+  | External of Asm_symbol.t * data_type
   | Mode386
   | Model of string
 
-  (* gas only (the masm emitter will fail on them) *)
-  | Cfi_adjust_cfa_offset of int
-  | Cfi_endproc
-  | Cfi_startproc
-  | File of int * string (* (file_num, file_name) *)
-  | Indirect_symbol of string
-  | Loc of int * int * int (* (file_num, line, col) *)
-  | Private_extern of string
-  | Set of string * constant
-  | Size of string * constant
-  | Type of string * string
+type asm_line =
+  | Ins of instruction
+  | Directive of Asm_directives.Directive.t
+  | MASM_directive of masm_directive
 
 type asm_program = asm_line list

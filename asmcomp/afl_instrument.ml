@@ -20,8 +20,8 @@ open Cmm
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
-let afl_area_ptr = Cconst_symbol "caml_afl_area_ptr"
-let afl_prev_loc = Cconst_symbol "caml_afl_prev_loc"
+let afl_area_ptr = Cconst_symbol Backend_sym.Names.caml_afl_area_ptr
+let afl_prev_loc = Cconst_symbol Backend_sym.Names.caml_afl_prev_loc
 let afl_map_size = 1 lsl 16
 
 let rec with_afl_logging b =
@@ -92,7 +92,7 @@ let instrument_initialiser c =
      calls *)
   with_afl_logging
     (Csequence
-       (Cop (Cextcall ("caml_setup_afl", typ_int, false, None),
+       (Cop (Cextcall (Backend_sym.Names.caml_setup_afl, typ_int, false, None),
              [Cconst_int 0],
              Debuginfo.none),
         c))
