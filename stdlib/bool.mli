@@ -56,9 +56,11 @@ val to_int : bool -> int
 val to_float : bool -> float
 (** [to_float b] is [0.] if [b] is [false] and [1.] if [b] is [true]. *)
 
+(*
 val of_string : string -> bool option
 (** [of_string s] is [Some true] if [s] is ["true"], [Some false] if [s]
     is ["false"] and [None] otherwise. *)
+*)
 
 val to_string : bool -> string
 (** [to_string b] is ["true"] if [b] is [true] and ["false"] if [b] is
