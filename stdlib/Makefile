@@ -42,6 +42,7 @@ P=stdlib__
 
 OBJS=camlinternalFormatBasics.cmo stdlib.cmo $(OTHERS)
 OTHERS= $(P)pervasives.cmo $(P)seq.cmo $(P)option.cmo $(P)result.cmo \
+  $(P)fun.cmo \
   $(P)bool.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo $(P)list.cmo \
   $(P)bytes.cmo $(P)string.cmo \
   $(P)marshal.cmo $(P)obj.cmo $(P)float.cmo $(P)array.cmo \

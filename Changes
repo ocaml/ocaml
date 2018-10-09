@@ -126,6 +126,10 @@ Working version
   min_max_num to module Float.
   (Christophe Troestler, review by Alain Frish, Xavier Clerc and Daniel Bünzli)
 
+- GPR#2097: Add infix operators %< and %> (function composition) under
+  Stdlib.Fun.Ops
+  (Many fine eyes)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking

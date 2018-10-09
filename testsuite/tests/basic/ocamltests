@@ -1,6 +1,7 @@
 arrays.ml
 bigints.ml
 boxedints.ml
+composition.ml
 constprop.ml
 divint.ml
 equality.ml
