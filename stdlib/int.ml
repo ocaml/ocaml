@@ -41,8 +41,10 @@ let compare : int -> int -> int = Stdlib.compare
 external to_float : int -> float = "%floatofint"
 external of_float : float -> int = "%intoffloat"
 
+(*
 external int_of_string : string -> int = "caml_int_of_string"
 let of_string s = try Some (int_of_string s) with Failure _ -> None
+*)
 
 external format_int : string -> int -> string = "caml_format_int"
 let to_string x = format_int "%d" x

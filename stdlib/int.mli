@@ -118,6 +118,7 @@ external of_float : float -> int = "%intoffloat"
     unspecified if the argument is [nan] or falls outside the range of
     representable integers. *)
 
+(*
 val of_string : string -> int option
 (** [of_string s] is [Some s] if [s] can be parsed to an integer
     in the range representable by the type [int] (note that this
@@ -137,6 +138,7 @@ val of_string : string -> int option
 
     The ['_'] (underscore) character can appear anywhere between two
     digits of the number. *)
+*)
 
 val to_string : int -> string
 (** [to_string x] is the written representation of [x] in decimal. *)
