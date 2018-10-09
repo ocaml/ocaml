@@ -1,3 +1,18 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Institut National de Recherche en Informatique et     *
+;*     en Automatique.                                                    *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
 ;; We're just reusing the stuff from boot/ here.
 ;; One could add a dune file in boot/menhir/ with the appropriate rules if we
 ;; want to regenerate the parser while building with dune, but it doesn't seem
