@@ -30,6 +30,9 @@ Working version
 
 ### Standard library:
 
+- GPR#2098: Remove Float.of_string[_opt]
+  (Daniel C. Bünzli)
+
 - GPR#1940: Add Option module and Format.pp_print_option
   (Many fine eyes)
 

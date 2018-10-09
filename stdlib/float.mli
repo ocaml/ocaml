@@ -89,6 +89,7 @@ external to_int : float -> int = "%intoffloat"
     The result is unspecified if the argument is [nan] or falls outside the
     range of representable integers. *)
 
+(*
 external of_string : string -> float = "caml_float_of_string"
 (** Convert the given string to a float.  The string is read in decimal
     (by default) or in hexadecimal (marked by [0x] or [0X]).
@@ -108,6 +109,7 @@ external of_string : string -> float = "caml_float_of_string"
 
 val of_string_opt: string -> float option
 (** Same as [of_string], but returns [None] instead of raising. *)
+*)
 
 val to_string : float -> string
 (** Return the string representation of a floating-point number. *)

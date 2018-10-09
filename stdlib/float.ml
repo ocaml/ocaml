@@ -31,8 +31,10 @@ let min_float = Stdlib.min_float
 let epsilon = Stdlib.epsilon_float
 external of_int : int -> float = "%floatofint"
 external to_int : float -> int = "%intoffloat"
+(*
 external of_string : string -> float = "caml_float_of_string"
 let of_string_opt = Stdlib.float_of_string_opt
+*)
 let to_string = Stdlib.string_of_float
 type fpclass = Stdlib.fpclass =
     FP_normal
