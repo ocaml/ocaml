@@ -23,4 +23,3 @@ echo '|]'
 echo 'let builtin_primitives = [|'
 sed -e 's/.*/  "&";/' "$2"
 echo '|]'
-

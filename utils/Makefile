@@ -81,4 +81,3 @@ config.ml: config.mlp $(ROOTDIR)/Makefile.config
 	    $(call SUBST,CC_HAS_DEBUG_PREFIX_MAP) \
 	    $(call SUBST,AS_HAS_DEBUG_PREFIX_MAP) \
 	    $< > $@
-
