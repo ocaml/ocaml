@@ -15,7 +15,6 @@
 (library
  (name str)
  (modes byte)
- (wrapped false)
  (flags (:standard -nostdlib))
  (libraries stdlib)
  (c_names strstubs))
