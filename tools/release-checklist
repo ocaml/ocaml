@@ -25,10 +25,10 @@ cat >/tmp/env-$USER.sh <<EOF
 export MAJOR=4
 export MINOR=07
 export BUGFIX=1
-export PLUSEXT=+rc1
+export PLUSEXT=
 
-export BRANCH=$MAJOR.$MINOR
-export VERSION=$MAJOR.$MINOR.$BUGFIX$PLUSEXT
+export BRANCH=\$MAJOR.\$MINOR
+export VERSION=\$MAJOR.\$MINOR.\$BUGFIX\$PLUSEXT
 
 export REPO=http://github.com/ocaml/ocaml
 
@@ -42,6 +42,7 @@ export WEB_PATH="$OCAML_RELEASE_WEB_PATH"
 export DIST=$ARCHIVE_PATH/ocaml/ocaml-$MAJOR.$MINOR
 EOF
 source /tmp/env-$USER.sh
+echo $VERSION
 ```
 
 
@@ -199,7 +200,7 @@ scp ocaml-$VERSION.tar.{xz,gz} $ARCHIVE_HOST:$DIST
 
 To update the checksum files on the remote host, we first upload the
 release environment.
-
+(note: this assumes the user name is the same on the two machines)
 
 ```
 scp /tmp/env-$USER.sh $ARCHIVE_HOST:/tmp/env-$USER.sh
@@ -226,7 +227,8 @@ cat new-sha512s >> SHA512SUM
 rm SHA512SUM.old new-sha512s
 
 # clean up
-rm /tmp/env.sh
+rm /tmp/env-$USER.sh
+exit
 ```
 
 
@@ -325,8 +327,9 @@ We have the pleasure of celebrating <event> by announcing the release of
 OCaml version $VERSION.
 This is mainly a bug-fix release, see the list of changes below.
 
-It is (or soon will be) available as an OPAM switch, or as a source
-download here: < http://caml.inria.fr/download.en.html >
+It is (or soon will be) available as a set of OPAM switches,
+and as a source download here:
+  https://caml.inria.fr/pub/distrib/ocaml-$BRANCH/
 
 Happy hacking,
 
@@ -349,7 +352,7 @@ We want to know about any show-stopping bugs, especially in the
 compilation and installation phases.
 
 This <release candidate/beta version> is available as source code at this
-address: < http://caml.inria.fr/pub/distrib/ocaml-$MAJOR.$MINOR/ >
+address: < http://caml.inria.fr/pub/distrib/ocaml-$BRANCH/ >
 
 Happy hacking,
 
@@ -363,16 +366,15 @@ Happy hacking,
 ```
 Dear OCaml users,
 
-The release of OCaml 4.05.0 will take place in a few weeks. We have
-created a beta version to help you adapt your software to the new
-features ahead of the release.
+The release of OCaml $BRANCH.$BUGFIX is approaching. We have created
+a beta version to help you adapt your software to the new features
+ahead of the release.
 
 The source code is available at this address:
 
-  https://github.com/ocaml/ocaml/archive/4.05.tar.gz
+  https://github.com/ocaml/ocaml/archive/$VERSION.tar.gz
 
-and the compiler is also available as the "4.05.0+beta1" and
-"4.05.0+beta1+flambda" OPAM switches.
+and the compiler is also available as a set of OPAM switches.
 
 We want to know about all bugs. Please report them here:
   http://caml.inria.fr/mantis/bug_report_page.php
