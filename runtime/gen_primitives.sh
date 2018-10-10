@@ -1,10 +1,13 @@
+#!/bin/bash
+
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
 #*                                                                        *
-#*                 Jeremie Dimino, Jane Street Europe                     *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
 #*                                                                        *
-#*   Copyright 2017 Jane Street Group LLC                                 *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
 #*                                                                        *
 #*   All rights reserved.  This file is distributed under the terms of    *
 #*   the GNU Lesser General Public License version 2.1, with the          *
@@ -12,22 +15,14 @@
 #*                                                                        *
 #**************************************************************************
 
-# This script adds the Stdlib__ prefixes to the module aliases in
-# stdlib.ml and stdlib.mli
-BEGIN { state=0 }
-NR == 1 { printf ("# 1 \"%s\"\n", FILENAME) }
-/\(\*MODULE_ALIASES\*\)\r?/ { state=1 }
-{ if (state==0)
-    print;
-  else if (state==1)
-    state=2;
-  else if ($1 == "module")
-  { if (ocamldoc!="true") printf("\n(** @canonical %s *)", $2);
-    first_letter=substr($4,1,1);
-    if (dune_wrapped!="true")
-      first_letter=tolower(first_letter);
-    printf("\nmodule %s = Stdlib__%s%s\n", $2, first_letter, substr($4,2));
-  }
-  else
-    print
-}
+# duplicated from $(ROOTDIR)/runtime/Makefile
+
+(
+  for prim in \
+      alloc array compare extern floats gc_ctrl hash intern interp ints io \
+      lexing md5 meta obj parsing signals str sys callback weak finalise \
+      stacks dynlink backtrace_byt backtrace spacetime_byt afl bigarray
+  do
+      sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" "$prim.c"
+  done
+) | LC_ALL=C sort | uniq

@@ -1,0 +1,25 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+(ocamllex  odoc_lexer odoc_ocamlhtml odoc_see_lexer odoc_text_lexer)
+(ocamlyacc odoc_parser odoc_text_parser)
+
+(executable
+ (name odoc)
+ (modes byte)
+ (flags (:standard -nostdlib -w -9-32))
+ (libraries dynlink ocamlcommon stdlib runtime str unix))
+
+(rule
+ (copy odoc.exe ocamldoc.byte))
