@@ -434,6 +434,10 @@ Working version
 
 ### Bug fixes:
 
+- GPR#2100: Fix Unix.getaddrinfo when called on strings containing
+  null bytes; it would crash the GC later on.
+  (Armaël Guéneau, report and fix by Joe, review by Sébastien Hinderer)
+
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the
   (Menhir-generated) parser encountered a syntax error in a certain
   specific state.
