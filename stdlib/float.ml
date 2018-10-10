@@ -208,7 +208,7 @@ module Array = struct
       | [] -> assert (i = len)
       | hd :: tl ->
         let hlen = length hd in
-        unsafe_blit hd 0 result 0 hlen;
+        unsafe_blit hd 0 result i hlen;
         loop tl (i + hlen)
     in
     loop l 0;
