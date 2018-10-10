@@ -16,6 +16,7 @@
 /* The parser definition */
 
 %{
+
 open Asttypes
 open Longident
 open Parsetree
@@ -1228,7 +1229,7 @@ structure_item:
     | value_description
         { pstr_primitive $1 }
     | type_declarations
-        { let (nr, l, ext) = $1 in (Pstr_type (nr, List.rev l), ext) }
+        { let (nr, ext), tys = $1 in (Pstr_type (nr, tys), ext) }
     | str_type_extension
         { pstr_typext $1 }
     | str_exception_declaration
@@ -1373,7 +1374,7 @@ signature_item_with_ext:
   | primitive_declaration
       { psig_value $1 }
   | type_declarations
-      { let (nr, l, ext) = $1 in (Psig_type (nr, List.rev l), ext) }
+      { let (nr, ext), tys = $1 in (Psig_type (nr, tys), ext) }
   | type_subst_declarations
       { let (l, ext) = $1 in
         (Psig_typesubst (List.rev l), ext) }
@@ -1701,7 +1702,7 @@ class_sig_body:
 class_self_type:
     LPAREN core_type RPAREN
       { $2 }
-  | mktyp(/* empty */ { Ptyp_any })
+  | mktyp((* empty *) { Ptyp_any })
       { $1 }
 ;
 class_sig_fields:
@@ -2536,13 +2537,16 @@ primitive_declaration:
       ext }
 ;
 
-/* Type declarations */
+(* Type declarations *)
+
+(* A set of type declarations begins with a [type_declaration] and continues
+   with a possibly empty list of [and_type_declaration]s. *)
 
 type_declarations:
-    type_declaration
-      { let (nonrec_flag, ty, ext) = $1 in (nonrec_flag, [ty], ext) }
-  | type_declarations and_type_declaration
-      { let (nonrec_flag, tys, ext) = $1 in (nonrec_flag, $2 :: tys, ext) }
+  head = type_declaration
+  tail = and_type_declaration*
+    { let extra, ty = head in
+      extra, ty :: tail }
 ;
 
 type_subst_declarations:
@@ -2578,6 +2582,10 @@ and_type_subst_declaration:
           ~attrs:(attrs @ post_attrs) ~loc:(make_loc $sloc) ~docs ~text }
 ;
 
+(* The definitions of [type_declaration] and [and_type_declaration] look very
+   similar, but are in reality sufficiently different that it is difficult to
+   share anything between them. *)
+
 type_declaration:
   TYPE
   ext = ext
@@ -2588,24 +2596,36 @@ type_declaration:
   type_kind = type_kind
   cstrs = constraints
   attrs2 = post_item_attributes
-    { let (kind, priv, manifest) = type_kind in
+    {
+      let (kind, priv, manifest) = type_kind in
       let docs = symbol_docs $sloc in
       let attrs = attrs1 @ attrs2 in
       let loc = make_loc $sloc in
       let ty =
         Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs
       in
-      nonrec_flag, ty, ext }
+      (nonrec_flag, ext), ty
+    }
 ;
 and_type_declaration:
-    AND attributes type_parameters mkrhs(LIDENT) type_kind constraints
-    post_item_attributes
-      { let (kind, priv, manifest) = $5 in
-        let docs = symbol_docs $sloc in
-        let text = symbol_text $symbolstartpos in
-        Type.mk $4 ~params:$3 ~cstrs:$6
-          ~kind ~priv ?manifest
-          ~attrs:($2@$7) ~loc:(make_loc $sloc) ~docs ~text }
+  AND
+  attrs1 = attributes
+  params = type_parameters
+  id = mkrhs(LIDENT)
+  type_kind = type_kind
+  cstrs = constraints
+  attrs2 = post_item_attributes
+    {
+      let (kind, priv, manifest) = type_kind in
+      let docs = symbol_docs $sloc in
+      let attrs = attrs1 @ attrs2 in
+      let loc = make_loc $sloc in
+      let text = symbol_text $symbolstartpos in
+      let ty =
+        Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs ~text
+      in
+      ty
+    }
 ;
 %inline constraints:
   llist(preceded(CONSTRAINT, constrain))
