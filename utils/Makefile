@@ -1,6 +1,23 @@
-# The configuration file
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
-include ../Makefile.config
+# The Makefile for generating the configuration file
+
+ROOTDIR = ..
+
+include $(ROOTDIR)/Makefile.config
 
 # SUBST generates the sed substitution for the variable *named* in $1
 # SUBST_QUOTE does the same, adding double-quotes around non-empty strings
@@ -11,14 +28,13 @@ SUBST=-e 's|%%$1%%|$(call SUBST_ESCAPE,$1,$2)|'
 SUBST_QUOTE2=-e 's|%%$1%%|$(if $2,"$2")|'
 SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$(call SUBST_ESCAPE,$1,$2))
 FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
-config.ml: config.mlp ../Makefile.config
+config.ml: config.mlp $(ROOTDIR)/Makefile.config
 	sed $(call SUBST,AFL_INSTRUMENT) \
 	    $(call SUBST,ARCH) \
 	    $(call SUBST,ARCMD) \
 	    $(call SUBST,ASM) \
 	    $(call SUBST,ASM_CFI_SUPPORTED) \
 	    $(call SUBST,BYTECCLIBS) \
-	    $(call SUBST,BYTERUN) \
 	    $(call SUBST,CC) \
 	    $(call SUBST,CCOMPTYPE) \
 	    $(call SUBST,CC_PROFILE) \
