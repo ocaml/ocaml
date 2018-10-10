@@ -163,6 +163,13 @@ val expand_directory: string -> string -> string
         (* [expand_directory alt file] eventually expands a [+] at the
            beginning of file into [alt] (an alternate root directory) *)
 
+val split_path_contents: ?sep:char -> string -> string list
+(* [split_path_contents ?sep s] interprets [s] as the value of a "PATH"-like
+   variable and returns the corresponding list of directories. [s] is split
+   using the platform-specific delimiter, or [~sep] if it is passed.
+
+   Returns the empty list if [s] is empty. *)
+
 val create_hashtable: int -> ('a * 'b) list -> ('a, 'b) Hashtbl.t
         (* Create a hashtable of the given size and fills it with the
            given bindings. *)

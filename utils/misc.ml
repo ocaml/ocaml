@@ -272,6 +272,15 @@ let expand_directory alt s =
                        (String.sub s 1 (String.length s - 1))
   else s
 
+let path_separator =
+  match Sys.os_type with
+  | "Win32" -> ';'
+  | _ -> ':'
+
+let split_path_contents ?(sep = path_separator) = function
+  | "" -> []
+  | s -> String.split_on_char sep s
+
 (* Hashtable functions *)
 
 let create_hashtable size init =

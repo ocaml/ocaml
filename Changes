@@ -213,6 +213,11 @@ Working version
 - GPR#2058: full explanation for unsafe cycles in recursive module definitions
   (Florian Angeletti, review by Gabriel Scherer, suggested by Ivan Gotovchits)
 
+- GPR#1841, MPR#7808: the environment variable OCAMLTOP_INCLUDE_PATH can now
+  specify a list of additional include directories for the ocaml toplevel.
+  (Nicolás Ojeda Bär, request by Daniel Bünzli, review by Daniel Bünzli and
+  Damien Doligez)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.
