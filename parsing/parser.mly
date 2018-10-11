@@ -967,6 +967,14 @@ reversed_bar_llist(X):
   xs = reversed_bar_llist(X)
     { List.rev xs }
 
+(* [xlist(A, B)] recognizes [AB*]. We assume that the semantic value for [A]
+   is a pair [x, b], while the semantic value for [B*] is a list [bs].
+   We return the pair [x, b :: bs]. *)
+
+%inline xlist(A, B):
+  a = A bs = B*
+    { let (x, b) = a in x, b :: bs }
+
 (* -------------------------------------------------------------------------- *)
 
 (* Entry points. *)
@@ -2522,10 +2530,8 @@ primitive_declaration:
    with a possibly empty list of [and_type_declaration]s. *)
 
 type_declarations:
-  head = type_declaration
-  tail = and_type_declaration*
-    { let extra, ty = head in
-      extra, ty :: tail }
+  xlist(type_declaration, and_type_declaration)
+    { $1 }
 ;
 
 type_subst_declarations:
