@@ -197,7 +197,7 @@ val between_symbols
 
 (** Like [between_symbols], but for two labels, emitting a 16-bit-wide
     reference.  The behaviour upon overflow is unspecified. *)
-val between_labels_16bit : upper:Cmm.label -> lower:Cmm.label -> unit
+val between_labels_16bit : upper:Asm_label.t -> lower:Asm_label.t -> unit
 
 (** Like [between_symbols], but for two labels, emitting a 32-bit-wide
     reference.  The behaviour upon overflow is unspecified. *)
@@ -205,7 +205,7 @@ val between_labels_32bit : upper:Asm_label.t -> lower:Asm_label.t -> unit
 
 (** Like [between_symbols], but for two labels, emitting a 64-bit-wide
     reference. *)
-val between_labels_64bit : upper:Cmm.label -> lower:Cmm.label -> unit
+val between_labels_64bit : upper:Asm_label.t -> lower:Asm_label.t -> unit
 
 (** Emit a machine-width reference giving the displacement between the
     lower symbol and the sum of the address of the [upper] label plus
