@@ -529,7 +529,7 @@ let reg_show_prim name to_sig doc =
 let () =
   reg_show_prim "show_val"
     (fun env loc id lid ->
-       let _, _path, desc = Typetexp.find_value env {Asttypes.loc;txt=lid} in
+       let _, _path, desc = Typetexp.find_value env loc lid in
        [ Sig_value (id, desc) ]
     )
     "Print the signature of the corresponding value."

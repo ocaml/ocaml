@@ -2174,7 +2174,7 @@ and type_expect_
   match sexp.pexp_desc with
   | Pexp_ident lid ->
       begin
-        let (lid, path, desc) = Typetexp.find_value env lid in
+        let (lid, path, desc) = Typetexp.find_value env lid.loc lid.txt in
         if !Clflags.annotations then begin
           let dloc = desc.Types.val_loc in
           let annot =
@@ -4493,6 +4493,7 @@ let type_expression env sexp =
   match sexp.pexp_desc with
     Pexp_ident lid ->
       (* Special case for keeping type variables when looking-up a variable *)
+      (* TODO: deal with redirect?  Or just match on exp rather than sexp *)
       let (_path, desc) = Env.lookup_value lid.txt env in
       {exp with exp_type = desc.val_type}
   | _ -> exp

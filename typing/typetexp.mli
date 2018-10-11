@@ -105,7 +105,7 @@ val find_all_labels:
     Env.t -> Location.t -> Longident.t ->
     (label_description * (unit -> unit)) list
 val find_value:
-    Env.t -> Longident.t Asttypes.loc -> Longident.t Asttypes.loc * Path.t * value_description
+    Env.t -> Location.t -> Longident.t -> Longident.t Asttypes.loc * Path.t * value_description
 val find_class:
     Env.t -> Location.t -> Longident.t -> Path.t * class_declaration
 val find_module:

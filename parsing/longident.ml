@@ -55,3 +55,8 @@ let rec redirection old_id new_id =
   | Ldot (m, _), Lident s -> Ldot (m, s)
   | Lapply (m1, m2), Lident _ -> Lapply (m1, redirection m2 new_id)
   | _ -> new_id
+
+let rec to_string = function
+  | Lident s -> s
+  | Ldot (m, s) -> Printf.sprintf "%s.%s" (to_string m) s
+  | Lapply (m1, m2) -> Printf.sprintf "%s(%s)" (to_string m1) (to_string m2)

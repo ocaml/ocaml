@@ -236,27 +236,43 @@ module Redirect = struct
     | Ident of string
     | Literal of string
     | Leq of expr * expr
+    | Lt of expr * expr
+    | Eq of expr * expr
     | And of expr * expr
+    | Or of expr * expr
 
   exception Error of Location.t * string
 
   open Longident
 
+  let rec expr sexp =
+    match sexp.pexp_desc with
+    | Pexp_ident {txt=Lident s} -> Ident s
+    | Pexp_constant (Pconst_string (s, _)) -> Literal s
+    | Pexp_apply ({pexp_desc=Pexp_ident {txt=Lident "="}},
+                  [Nolabel,e1; Nolabel,e2]) ->
+        Eq (expr e1, expr e2)
+    | Pexp_apply ({pexp_desc=Pexp_ident {txt=Lident "<="}},
+                  [Nolabel,e1; Nolabel,e2]) ->
+        Leq (expr e1, expr e2)
+    | Pexp_apply ({pexp_desc=Pexp_ident {txt=Lident "<"}},
+                  [Nolabel,e1; Nolabel,e2]) ->
+        Lt (expr e1, expr e2)
+    | Pexp_apply ({pexp_desc=Pexp_ident {txt=Lident "&&"}},
+                  [Nolabel,e1; Nolabel,e2]) ->
+        And (expr e1, expr e2)
+    | Pexp_apply ({pexp_desc=Pexp_ident {txt=Lident "||"}},
+                  [Nolabel,e1; Nolabel,e2]) ->
+        Or (expr e1, expr e2)
+    | _ -> raise (Error (sexp.pexp_loc, "invalid expression"))
+
   let parse loc = function
     | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_apply(condition, [Nolabel,{pexp_desc=Pexp_ident lid}])},_)}] ->
-        let rec expr = function
-          | {pexp_desc=Pexp_ident {txt=Lident s}} -> Ident s
-          | {pexp_desc=Pexp_constant (Pconst_string (s, _))} -> Literal s
-          | {pexp_desc=Pexp_apply ({pexp_desc=Pexp_ident {txt=Lident "<="}}, [Nolabel,e1; Nolabel,e2])} ->
-              Leq (expr e1, expr e2)
-          | {pexp_desc=Pexp_apply ({pexp_desc=Pexp_ident {txt=Lident "&&"}}, [Nolabel,e1; Nolabel,e2])} ->
-              And (expr e1, expr e2)
-          | e -> raise (Error (e.pexp_loc, "invalid expression"))
-        in
-        expr condition, lid
+        expr condition, lid.txt
     | _ -> raise (Error (loc, "invalid payload"))
 
   let version s =
+    (* TODO: better parsing of version strings *)
     try
       s
       |> String.trim
@@ -265,15 +281,47 @@ module Redirect = struct
     with Failure _ ->
       failwith (Printf.sprintf "Invalid version string %s" s)
 
+  type v =
+    | Bool of bool
+    | String of string
+    | Undef
+
   let rec eval = function
-    | And (e1, e2) -> eval e1 && eval e2
-    | Leq (Ident id, Literal s) ->
-        begin match Sys.getenv_opt (String.uppercase_ascii id) with
-        | None -> false
-        | Some v -> version v <= version s
+    | And (e1, e2) ->
+        Bool (eval_bool e1 && eval_bool e2)
+    | Or (e1, e2) ->
+        Bool (eval_bool e1 || eval_bool e2)
+    | Leq (e1, e2) ->
+        begin match eval e1, eval e2 with
+        | String v1, String v2 -> Bool (version v1 <= version v2)
+        | Undef, _ | _, Undef -> Bool false
+        | _ -> failwith "Invalid condition"
         end
-    | _ ->
-        failwith "Invalid condition"
+    | Lt (e1, e2) ->
+        begin match eval e1, eval e2 with
+        | String v1, String v2 -> Bool (version v1 < version v2)
+        | Undef, _ | _, Undef -> Bool false
+        | _ -> failwith "Invalid condition"
+        end
+    | Eq (e1, e2) ->
+        begin match eval e1, eval e2 with
+        | String v1, String v2 -> Bool (version v1 = version v2)
+        | Undef, _ | _, Undef -> Bool false
+        | _ -> failwith "Invalid condition"
+        end
+    | Ident id ->
+        begin match Sys.getenv_opt (String.uppercase_ascii id) with
+        | None -> Undef
+        | Some s -> String s
+        end
+    | Literal s ->
+        String s
+
+  and eval_bool e =
+    match eval e with
+    | Bool b -> b
+    | Undef | String "" -> false
+    | String _ -> true
 end
 
 
@@ -289,9 +337,8 @@ let rec redirect loc = function
           Location.prerr_warning loc (Warnings.Attribute_payload (txt, str));
           redirect loc tl
       | (condition, target) ->
-          if Redirect.eval condition then begin
-            Location.deprecated loc "this identifier has been redirected";
-            Some target
-          end else redirect loc tl
+          if Redirect.eval_bool condition
+          then Some target
+          else redirect loc tl
       end
   | _ :: tl -> redirect loc tl

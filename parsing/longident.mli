@@ -34,3 +34,5 @@ val parse: string -> t
     {!Format.asprintf} to convert to a string. *)
 
 val redirection: t -> t -> t
+
+val to_string: t -> string
