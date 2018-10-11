@@ -2174,7 +2174,7 @@ and type_expect_
   match sexp.pexp_desc with
   | Pexp_ident lid ->
       begin
-        let (path, desc) = Typetexp.find_value env lid.loc lid.txt in
+        let (lid, path, desc) = Typetexp.find_value env lid in
         if !Clflags.annotations then begin
           let dloc = desc.Types.val_loc in
           let annot =

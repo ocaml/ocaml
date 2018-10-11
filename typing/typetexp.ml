@@ -174,13 +174,17 @@ let find_class env loc lid =
   Builtin_attributes.check_deprecated loc decl.cty_attributes (Path.name path);
   r
 
-let find_value env loc lid =
+let rec find_value env ({loc;txt=lid} as lid0)  =
   Env.check_value_name (Longident.last lid) loc;
-  let (path, decl) as r =
+  let (path, decl) =
     find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
   in
-  Builtin_attributes.check_deprecated loc decl.val_attributes (Path.name path);
-  r
+  match Builtin_attributes.redirect decl.val_attributes with
+  | None ->
+      Builtin_attributes.check_deprecated loc decl.val_attributes (Path.name path);
+      lid0, path, decl
+  | Some new_lid ->
+      find_value env {loc; txt = Longident.redirection lid new_lid.txt}
 
 let lookup_module ?(load=false) env loc lid =
   find_component

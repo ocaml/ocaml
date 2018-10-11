@@ -80,3 +80,5 @@ val immediate: Parsetree.attributes -> bool
 
 val has_unboxed: Parsetree.attributes -> bool
 val has_boxed: Parsetree.attributes -> bool
+
+val redirect: Parsetree.attributes -> Longident.t Asttypes.loc option

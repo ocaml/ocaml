@@ -32,3 +32,5 @@ val parse: string -> t
 
 (** To print a longident, see {!Pprintast.longident}, using
     {!Format.asprintf} to convert to a string. *)
+
+val redirection: t -> t -> t

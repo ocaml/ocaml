@@ -229,3 +229,13 @@ let has_unboxed attr =
 
 let has_boxed attr =
   List.exists (check ["ocaml.boxed"; "boxed"]) attr
+
+
+let rec redirect = function
+  | [] -> None
+  | {
+      attr_name={txt="ocaml.redirect"|"redirect"};
+      attr_payload=PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_ident lid},_)}];
+    } :: _ ->
+      Some lid
+  | _ :: tl -> redirect tl

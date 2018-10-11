@@ -47,3 +47,11 @@ let parse s =
   | None -> Lident ""  (* should not happen, but don't put assert false
                           so as not to crash the toplevel (see Genprintval) *)
   | Some v -> v
+
+
+let rec redirection old_id new_id =
+  match old_id, new_id with
+  | Lident _, Lident _ -> new_id
+  | Ldot (m, _), Lident s -> Ldot (m, s)
+  | Lapply (m1, m2), Lident _ -> Lapply (m1, redirection m2 new_id)
+  | _ -> new_id
