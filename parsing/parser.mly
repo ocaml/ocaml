@@ -53,12 +53,16 @@ let pstr_typext (te, ext) =
   (Pstr_typext te, ext)
 let pstr_primitive (vd, ext) =
   (Pstr_primitive vd, ext)
+let pstr_type ((nr, ext), tys) =
+  (Pstr_type (nr, tys), ext)
 let pstr_exception (te, ext) =
   (Pstr_exception te, ext)
 let psig_typext (te, ext) =
   (Psig_typext te, ext)
 let psig_value (vd, ext) =
   (Psig_value vd, ext)
+let psig_type ((nr, ext), tys) =
+  (Psig_type (nr, tys), ext)
 let psig_exception (te, ext) =
   (Psig_exception te, ext)
 
@@ -1216,7 +1220,7 @@ structure_item:
     | value_description
         { pstr_primitive $1 }
     | type_declarations
-        { let (nr, ext), tys = $1 in (Pstr_type (nr, tys), ext) }
+        { pstr_type $1 }
     | str_type_extension
         { pstr_typext $1 }
     | str_exception_declaration
@@ -1361,7 +1365,7 @@ signature_item_with_ext:
   | primitive_declaration
       { psig_value $1 }
   | type_declarations
-      { let (nr, ext), tys = $1 in (Psig_type (nr, tys), ext) }
+      { psig_type $1 }
   | type_subst_declarations
       { let (l, ext) = $1 in
         (Psig_typesubst (List.rev l), ext) }
@@ -2529,7 +2533,7 @@ primitive_declaration:
 (* A set of type declarations begins with a [type_declaration] and continues
    with a possibly empty list of [and_type_declaration]s. *)
 
-type_declarations:
+%inline type_declarations:
   xlist(type_declaration, and_type_declaration)
     { $1 }
 ;
