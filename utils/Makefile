@@ -28,7 +28,7 @@ SUBST=-e 's|%%$1%%|$(call SUBST_ESCAPE,$1,$2)|'
 SUBST_QUOTE2=-e 's|%%$1%%|$(if $2,"$2")|'
 SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$(call SUBST_ESCAPE,$1,$2))
 FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
-config.ml: config.mlp $(ROOTDIR)/Makefile.config
+config.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile
 	sed $(call SUBST,AFL_INSTRUMENT) \
 	    $(call SUBST,ARCH) \
 	    $(call SUBST,ARCMD) \
