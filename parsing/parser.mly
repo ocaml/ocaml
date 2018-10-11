@@ -816,27 +816,6 @@ The precedences must be listed from low to high.
 | x = X
     { x }
 
-(* [rev(XS)] recognizes the same language as [XS], and reverses the resulting
-   OCaml list. *)
-
-%inline rev(XS):
-  xs = XS
-    { List.rev xs }
-
-(* [flatten(XSS)] recognizes the same language as [XSS], and reverses the
-   resulting OCaml list of lists. *)
-
-%inline flatten(XSS):
-  xss = XSS
-    { List.flatten xss }
-
-(* [append(XS, YS)] recognizes [XS YS], and appends (concatenates) the resulting
-   OCaml lists. *)
-
-%inline append(XS, YS):
-  xs = XS ys = YS
-    { xs @ ys }
-
 (* [llist(X)] recognizes a possibly empty list of [X]s. It is left-recursive. *)
 
 reversed_llist(X):
