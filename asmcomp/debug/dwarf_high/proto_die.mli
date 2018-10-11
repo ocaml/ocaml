@@ -27,7 +27,7 @@ type t
 
 (** For creation of proto-DIEs in a group, with references between them. *)
 (* CR-someday mshinwell: remove type equality *)
-type reference = Linearize.label
+type reference = Asm_label.t
 val create_reference : unit -> reference
 
 (* It is an error for [parent] to be [None] unless the [tag] is that for
@@ -55,7 +55,7 @@ val set_name : t -> Backend_sym.t -> unit
     attribute values. *)
 (* CR-someday mshinwell: ideally, attribute values could accept proto-DIE
    values directly, but there is a circularity. *)
-val reference : t -> Linearize.label
+val reference : t -> Asm_label.t
 
 (* [depth_first_fold] traverses a proto-DIE tree in a depth-first order
    convenient for DWARF information emission.  (Section 2.3, DWARF-4 spec.)
@@ -71,7 +71,7 @@ val depth_first_fold
   -> f:('a
     -> [ `DIE of Dwarf_tag.t * Child_determination.t
            * (Dwarf_attribute_values.Attribute_value.t list)
-           * Linearize.label * Backend_sym.t option (* optional name *)
+           * Asm_label.t * Backend_sym.t option (* optional name *)
        | `End_of_siblings
        ]
     -> 'a)

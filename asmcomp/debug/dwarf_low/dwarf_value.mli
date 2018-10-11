@@ -31,10 +31,10 @@ type t =
   | Indirect_string of string
   (* CR mshinwell: remove "Code" name. *)
   | Absolute_code_address of Targetint.t
-  | Code_address_from_label of Linearize.label
+  | Code_address_from_label of Asm_label.t
   | Code_address_from_symbol of Backend_sym.t
   | Code_address_from_label_symbol_diff of {
-      upper : Linearize.label;
+      upper : Asm_label.t;
       lower : Backend_sym.t;
       offset_upper : Targetint.t;
     }
@@ -56,26 +56,26 @@ type t =
       (DWARF-4 spec p.142.)  However the widths are the same in both cases,
       corresponding to the DWARF format.
   *)
-  | Offset_into_debug_info of Linearize.label
+  | Offset_into_debug_info of Asm_label.t
   | Offset_into_debug_info_from_symbol of Backend_sym.t
-  | Offset_into_debug_line of Linearize.label
+  | Offset_into_debug_line of Asm_label.t
   | Offset_into_debug_line_from_symbol of Backend_sym.t
-  | Offset_into_debug_loc of Linearize.label
+  | Offset_into_debug_loc of Asm_label.t
   (* CR mshinwell: Given that this one has to be Asm_label.t, since it comes
      from [Asm_section], then maybe everything in the DWARF parts should use
      [Asm_label.t]? *)
   | Offset_into_debug_abbrev of Asm_label.t
   | Distance_between_labels_16bit of {
-      upper : Linearize.label;
-      lower : Linearize.label;
+      upper : Asm_label.t;
+      lower : Asm_label.t;
     }
   | Distance_between_labels_32bit of {
-      upper : Linearize.label;
-      lower : Linearize.label;
+      upper : Asm_label.t;
+      lower : Asm_label.t;
     }
   | Distance_between_labels_64bit of {
-      upper : Linearize.label;
-      lower : Linearize.label;
+      upper : Asm_label.t;
+      lower : Asm_label.t;
     }
 
 val print : Format.formatter -> t -> unit

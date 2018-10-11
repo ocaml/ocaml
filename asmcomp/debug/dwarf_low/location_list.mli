@@ -24,5 +24,5 @@ val create
    : location_list_entries:Location_list_entry.t list
   -> t
 
-val label : t -> Linearize.label
+val label : t -> Asm_label.t
 val compare_increasing_vma : t -> t -> int

@@ -21,8 +21,8 @@ type t
 include Dwarf_emittable.S with type t := t
 
 val create_location_list_entry : start_of_code_symbol:Backend_sym.t
-  -> first_address_when_in_scope:Linearize.label
-  -> first_address_when_not_in_scope:Linearize.label
+  -> first_address_when_in_scope:Asm_label.t
+  -> first_address_when_not_in_scope:Asm_label.t
   -> first_address_when_not_in_scope_offset:int option
   -> single_location_description:Single_location_description.t
   -> t

@@ -20,7 +20,7 @@ include Dwarf_emittable.S with type t := t
 
 (** If [name] is provided, then a global symbol will be created at the
     same place as [label]. *)
-val create : label:Linearize.label
+val create : label:Asm_label.t
   -> name:Backend_sym.t option
   -> abbreviation_code:Abbreviation_code.t
   -> attribute_values:Dwarf_attribute_values.Attribute_value.t list
@@ -32,5 +32,5 @@ val is_null : t -> bool
 val abbreviation_code : t -> Abbreviation_code.t
 val attribute_values : t -> Dwarf_attribute_values.Attribute_value.t list
 
-val label : t -> Linearize.label
+val label : t -> Asm_label.t
 val symbol : t -> Backend_sym.t option

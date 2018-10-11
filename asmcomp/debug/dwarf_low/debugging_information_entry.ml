@@ -18,7 +18,7 @@ module A = Asm_directives
 module Attribute_value = Dwarf_attribute_values.Attribute_value
 
 type t = {
-  label : Linearize.label;
+  label : Asm_label.t;
   name : Backend_sym.t option;
   abbreviation_code : Abbreviation_code.t;
   attribute_values : Attribute_value.t list;

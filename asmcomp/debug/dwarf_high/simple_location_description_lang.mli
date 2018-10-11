@@ -62,8 +62,8 @@ module Lvalue : sig
   (** V is found in the location given by evaluating the location description
       (which must yield an lvalue) in the DIE at the given [die_label]. *)
   val location_from_another_die
-     : die_label:Linearize.label
-    -> compilation_unit_header_label:Linearize.label
+     : die_label:Asm_label.t
+    -> compilation_unit_header_label:Asm_label.t
     -> t
 end
 
@@ -99,15 +99,15 @@ module Rvalue : sig
       computations.  The type parameter statically ensures this. *)
   val implicit_pointer
      : offset_in_bytes:Targetint.t
-    -> die_label:Linearize.label
+    -> die_label:Asm_label.t
     -> Dwarf_version.t
     -> last t
 
   (** V is found in the location given by evaluating the location description
       (which must yield an rvalue) in the DIE at the given [die_label]. *)
   val location_from_another_die
-     : die_label:Linearize.label
-    -> compilation_unit_header_label:Linearize.label
+     : die_label:Asm_label.t
+    -> compilation_unit_header_label:Asm_label.t
     -> normal t
 end
 

@@ -20,7 +20,7 @@ module AV = Dwarf_attribute_values.Attribute_value
 module F = Dwarf_attributes.Form
 module V = Dwarf_attribute_values.Value
 
-type reference = Linearize.label
+type reference = Asm_label.t
 let create_reference () = Cmm.new_label ()
 
 type t = {
@@ -28,7 +28,7 @@ type t = {
   mutable children : t list;
   tag : Dwarf_tag.t;
   mutable attribute_values : AV.t list;
-  label : Linearize.label;
+  label : Asm_label.t;
   (* for references between DIEs within a single unit *)
   (* CR-someday mshinwell: consider combining [label] and [name] into one
      "how to reference this DIE" value. *)

@@ -139,16 +139,16 @@ type t =
   | DW_op_skip of { num_bytes_forward : Int16.t; }
   | DW_op_bra of { num_bytes_forward : Int16.t; }
   | DW_op_call2 of {
-      label : Linearize.label;
-      compilation_unit_header_label : Linearize.label;
+      label : Asm_label.t;
+      compilation_unit_header_label : Asm_label.t;
     }
   | DW_op_call4 of {
-      label : Linearize.label;
-      compilation_unit_header_label : Linearize.label;
+      label : Asm_label.t;
+      compilation_unit_header_label : Asm_label.t;
     }
   | DW_op_call_ref of {
-      label : Linearize.label;
-      compilation_unit_header_label : Linearize.label;
+      label : Asm_label.t;
+      compilation_unit_header_label : Asm_label.t;
     }
   | DW_op_nop
   | DW_op_reg0
@@ -192,11 +192,11 @@ type t =
       offset_in_bits : Targetint.t;
     }
   | DW_op_implicit_pointer of {
-      label : Linearize.label;
+      label : Asm_label.t;
       offset_in_bytes : Targetint.t;
     }
   | DW_op_GNU_implicit_pointer of {
-      label : Linearize.label;
+      label : Asm_label.t;
       offset_in_bytes : Targetint.t;
     }
 

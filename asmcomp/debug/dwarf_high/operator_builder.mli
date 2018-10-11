@@ -37,13 +37,13 @@ val add_unsigned_const : Targetint.t -> Dwarf_operator.t
 
 val implicit_pointer
    : offset_in_bytes:Targetint.t
-  -> die_label:Linearize.label
+  -> die_label:Asm_label.t
   -> Dwarf_version.t
   -> Dwarf_operator.t
 
 val call
-   : die_label:Linearize.label
-  -> compilation_unit_header_label:Linearize.label
+   : die_label:Asm_label.t
+  -> compilation_unit_header_label:Asm_label.t
   -> Dwarf_operator.t
 
 val conditional

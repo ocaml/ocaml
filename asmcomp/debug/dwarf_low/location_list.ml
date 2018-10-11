@@ -17,7 +17,7 @@
 module A = Asm_directives
 
 type t = {
-  name : Linearize.label;
+  name : Asm_label.t;
   entries : Location_list_entry.t list;
 }
 

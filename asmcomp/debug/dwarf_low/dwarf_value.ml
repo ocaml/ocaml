@@ -35,10 +35,10 @@ type t =
   | String of string
   | Indirect_string of string
   | Absolute_code_address of Targetint.t
-  | Code_address_from_label of Linearize.label
+  | Code_address_from_label of Asm_label.t
   | Code_address_from_symbol of Backend_sym.t
   | Code_address_from_label_symbol_diff of {
-      upper : Linearize.label;
+      upper : Asm_label.t;
       lower : Backend_sym.t;
       offset_upper : Targetint.t;
     }
@@ -47,23 +47,23 @@ type t =
       lower : Backend_sym.t;
     }
   | Code_address_from_symbol_plus_bytes of Backend_sym.t * Targetint.t
-  | Offset_into_debug_info of Linearize.label
+  | Offset_into_debug_info of Asm_label.t
   | Offset_into_debug_info_from_symbol of Backend_sym.t
-  | Offset_into_debug_line of Linearize.label
+  | Offset_into_debug_line of Asm_label.t
   | Offset_into_debug_line_from_symbol of Backend_sym.t
-  | Offset_into_debug_loc of Linearize.label
+  | Offset_into_debug_loc of Asm_label.t
   | Offset_into_debug_abbrev of Asm_label.t
   | Distance_between_labels_16bit of {
-      upper : Linearize.label;
-      lower : Linearize.label;
+      upper : Asm_label.t;
+      lower : Asm_label.t;
     }
   | Distance_between_labels_32bit of {
-      upper : Linearize.label;
-      lower : Linearize.label;
+      upper : Asm_label.t;
+      lower : Asm_label.t;
     }
   | Distance_between_labels_64bit of {
-      upper : Linearize.label;
-      lower : Linearize.label;
+      upper : Asm_label.t;
+      lower : Asm_label.t;
     }
 
 let print ppf t =

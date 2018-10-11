@@ -16,11 +16,11 @@
     require a knowledge of DWARF forms. *)
 
 val create_low_pc
-   : address_label:Linearize.label
+   : address_label:Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_high_pc
-   : address_label:Linearize.label
+   : address_label:Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_low_pc_from_symbol
@@ -44,7 +44,7 @@ val create_comp_dir
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_stmt_list
-   : debug_line_label:Linearize.label
+   : debug_line_label:Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_external
@@ -52,7 +52,7 @@ val create_external
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_location
-   : location_list_label:Linearize.label
+   : location_list_label:Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_type
