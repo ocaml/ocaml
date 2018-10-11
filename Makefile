@@ -44,7 +44,7 @@ endif
 CAMLRUN ?= boot/ocamlrun
 include stdlib/StdlibModules
 
-CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims runtime/primitives
+CAMLC=STDLIB=4.07 $(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims runtime/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
@@ -52,7 +52,7 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
         -I driver -I toplevel
 
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 \
-	  -warn-error A \
+	  -warn-error A-3 \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
 

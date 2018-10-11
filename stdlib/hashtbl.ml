@@ -412,8 +412,13 @@ module type S =
     val copy: 'a t -> 'a t
     val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
-    val find: 'a t -> key -> 'a
-    val find_opt: 'a t -> key -> 'a option
+
+    val find: 'a t -> key -> 'a option [@@ocaml.redirect (stdlib <= "4.07") find_exn] (** @since 4.08.0 *)
+
+    val find_opt: 'a t -> key -> 'a option  (** @since 4.05.0 *)
+
+    val find_exn: 'a t -> key -> 'a (** @since 4.08.0 *)
+
     val find_all: 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
@@ -440,8 +445,13 @@ module type SeededS =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
-    val find : 'a t -> key -> 'a
-    val find_opt: 'a t -> key -> 'a option
+
+    val find: 'a t -> key -> 'a option [@@ocaml.redirect (stdlib <= "4.07") find_exn] (** @since 4.08.0 *)
+
+    val find_opt: 'a t -> key -> 'a option  (** @since 4.05.0 *)
+
+    val find_exn: 'a t -> key -> 'a (** @since 4.08.0 *)
+
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
@@ -501,7 +511,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
       | Cons{key=k; data; next} ->
           if H.equal key k then data else find_rec key next
 
-    let find h key =
+    let find_exn h key =
       match h.data.(key_index h key) with
       | Empty -> raise Not_found
       | Cons{key=k1; data=d1; next=next1} ->
@@ -521,7 +531,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
       | Cons{key=k; data; next} ->
           if H.equal key k then Some data else find_rec_opt key next
 
-    let find_opt h key =
+    let find h key =
       match h.data.(key_index h key) with
       | Empty -> None
       | Cons{key=k1; data=d1; next=next1} ->
@@ -534,6 +544,8 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
               | Empty -> None
               | Cons{key=k3; data=d3; next=next3} ->
                   if H.equal key k3 then Some d3 else find_rec_opt key next3
+
+    let find_opt = find
 
     let find_all h key =
       let rec find_in_bucket = function

@@ -65,8 +65,13 @@ module Hashtbl : sig
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
-      val find : 'a t -> key -> 'a
-      val find_opt: 'a t -> key -> 'a option
+
+      val find: 'a t -> key -> 'a option [@@ocaml.redirect (stdlib <= 4.07) find_exn] (** @since 4.08.0 *)
+
+      val find_opt: 'a t -> key -> 'a option  (** @since 4.05.0 *)
+
+      val find_exn: 'a t -> key -> 'a (** @since 4.08.0 *)
+
       val find_all : 'a t -> key -> 'a list
       val replace : 'a t -> key:key -> data:'a -> unit
       val mem : 'a t -> key -> bool
@@ -95,8 +100,13 @@ module Hashtbl : sig
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
-      val find : 'a t -> key -> 'a
-      val find_opt : 'a t -> key -> 'a option
+
+      val find: 'a t -> key -> 'a option [@@ocaml.redirect (stdlib <= 4.07) find_exn] (** @since 4.08.0 *)
+
+      val find_opt: 'a t -> key -> 'a option  (** @since 4.05.0 *)
+
+      val find_exn: 'a t -> key -> 'a (** @since 4.08.0 *)
+
       val find_all : 'a t -> key -> 'a list
       val replace : 'a t -> key:key -> data:'a -> unit
       val mem : 'a t -> key -> bool

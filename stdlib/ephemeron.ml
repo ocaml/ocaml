@@ -200,7 +200,7 @@ module GenHashTable = struct
       | Cons(_, _, rest) ->
           find_rec key hkey rest
 
-    let find h key =
+    let find_exn h key =
       let hkey = H.hash h.seed key in
       (* TODO inline 3 iterations *)
       find_rec key hkey (h.data.(key_index h hkey))
@@ -225,10 +225,12 @@ module GenHashTable = struct
       | Cons(_, _, rest) ->
           find_rec_opt key hkey rest
 
-    let find_opt h key =
+    let find h key =
       let hkey = H.hash h.seed key in
       (* TODO inline 3 iterations *)
       find_rec_opt key hkey (h.data.(key_index h hkey))
+
+    let find_opt = find
 
     let find_all h key =
       let hkey = H.hash h.seed key in
