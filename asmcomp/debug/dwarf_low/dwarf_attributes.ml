@@ -83,6 +83,8 @@ module Form = struct
     | Exprloc : (Class.exprloc, exprloc) t
     | Flag_present : (Class.flag, flag_present) t
     | Ref_sig8 : (Class.reference, ref_sig8) t
+    (* [DW_FORM_indirect] is not currently supported because it cannot be
+       statically-typed in the manner we use here. *)
 
   let encode (type dwarf_class) (type form) (t : (dwarf_class, form) t) =
     let code =

@@ -31,6 +31,8 @@ end
 module Int8 : sig
   type t
 
+  val print : Format.formatter -> t -> unit
+
   val zero : t
   val one : t
 

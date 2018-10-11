@@ -644,9 +644,17 @@ let between_symbols ~upper ~lower =
   let expr = Sub (Symbol upper, Symbol lower) in
   const_machine_width (force_relocatable expr)
 
+let between_labels_16bit ~upper ~lower =
+  let expr = Sub (Label upper, Label lower) in
+  const (force_relocatable expr) Sixteen
+
 let between_labels_32bit ~upper ~lower =
   let expr = Sub (Label upper, Label lower) in
   const (force_relocatable expr) Thirty_two
+
+let between_labels_64bit ~upper ~lower =
+  let expr = Sub (Label upper, Label lower) in
+  const (force_relocatable expr) Sixty_four
 
 let between_symbol_and_label_offset ~upper ~lower ~offset_upper =
   let offset_upper = Targetint.to_int64 offset_upper in

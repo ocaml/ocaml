@@ -49,10 +49,62 @@ type t =
   | Offset_into_debug_line_from_symbol of string
   | Offset_into_debug_loc of Linearize.label
   | Offset_into_debug_abbrev of Linearize.label
+  | Distance_between_labels_16bit of {
+      upper : Linearize.label;
+      lower : Linearize.label;
+    }
   | Distance_between_labels_32bit of {
       upper : Linearize.label;
       lower : Linearize.label;
     }
+  | Distance_between_labels_64bit of {
+      upper : Linearize.label;
+      lower : Linearize.label;
+    }
+
+let print ppf t =
+  match t with
+  | Flag_true -> Format.pp_print_string ppf "true"
+  | Bool b -> Format.fprintf ppf "%b" b
+  | Int8 n -> Numbers.Int8.print ppf n
+  | Int16 n -> Numbers.Int16.print ppf n
+  | Int32 n -> Format.fprintf ppf "%ld" n
+  | Int64 n -> Format.fprintf ppf "%Ld" n
+  | Uleb128 n -> Format.fprintf ppf "(uleb128 %Ld)" n
+  | Sleb128 n -> Format.fprintf ppf "(sleb128 %Ld)" n
+  | String s -> Format.fprintf ppf "\"%S\"" s
+  | Indirect_string s -> Format.fprintf ppf "\"%S\" [indirect]" s
+  | Absolute_code_address addr ->
+    Format.fprintf ppf "0x%Lx" (Targetint.to_int64 addr)
+  | Code_address_from_label lbl -> Format.fprintf ppf "L%d" lbl
+  | Code_address_from_symbol sym -> Format.pp_print_string ppf sym
+  | Code_address_from_label_symbol_diff { upper; lower; offset_upper; } ->
+    Format.fprintf ppf "(L%d + %a) - %s"
+      upper
+      Targetint.print offset_upper
+      lower
+  | Code_address_from_symbol_diff { upper; lower; } ->
+    Format.fprintf ppf "%s - %s" upper lower
+  | Code_address_from_symbol_plus_bytes (sym, offset) ->
+    Format.fprintf ppf "%s + %a" sym Targetint.print offset
+  | Offset_into_debug_info lbl ->
+    Format.fprintf ppf "%d - .debug_info" lbl
+  | Offset_into_debug_info_from_symbol sym ->
+    Format.fprintf ppf "%s - .debug_info" sym
+  | Offset_into_debug_line lbl ->
+    Format.fprintf ppf "%d - .debug_line" lbl
+  | Offset_into_debug_line_from_symbol sym ->
+    Format.fprintf ppf "%s - .debug_line" sym
+  | Offset_into_debug_loc lbl ->
+    Format.fprintf ppf "%d - .debug_loc" lbl
+  | Offset_into_debug_abbrev lbl ->
+    Format.fprintf ppf "%d - .debug_abbrev" lbl
+  | Distance_between_labels_16bit { upper; lower; } ->
+    Format.fprintf ppf "L%d - L%d (16)" upper lower
+  | Distance_between_labels_32bit { upper; lower; } ->
+    Format.fprintf ppf "L%d - L%d (32)" upper lower
+  | Distance_between_labels_64bit { upper; lower; } ->
+    Format.fprintf ppf "L%d - L%d (64)" upper lower
 
 (* DWARF-4 standard section 7.6. *)
 let rec uleb128_size i =
@@ -96,7 +148,9 @@ let size t =
   | Offset_into_debug_info_from_symbol _
   | Offset_into_debug_loc _
   | Offset_into_debug_abbrev _ -> Dwarf_int.size (Dwarf_int.zero ())
+  | Distance_between_labels_16bit _ -> Dwarf_int.two ()
   | Distance_between_labels_32bit _ -> Dwarf_int.four ()
+  | Distance_between_labels_64bit _ -> Dwarf_int.eight ()
 
 let emit t =
   let width_for_ref_addr_or_sec_offset () : Target_system.machine_width =
@@ -147,7 +201,12 @@ let emit t =
   | Offset_into_debug_abbrev label ->
     A.offset_into_section_label ~section:(DWARF Debug_abbrev) ~label
       ~width:(width_for_ref_addr_or_sec_offset ())
-  | Distance_between_labels_32bit { upper; lower; } ->
+  | Distance_between_labels_16bit { upper; lower; } ->
     (* CR-someday mshinwell: This should really be checked for overflow, but
        seems hard... *)
+    A.between_labels_16bit ~upper ~lower
+  | Distance_between_labels_32bit { upper; lower; } ->
+    (* CR-someday mshinwell: Same comment as for the 16 bit case. *)
     A.between_labels_32bit ~upper ~lower
+  | Distance_between_labels_64bit { upper; lower; } ->
+    A.between_labels_64bit ~upper ~lower

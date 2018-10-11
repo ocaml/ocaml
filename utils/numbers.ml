@@ -36,6 +36,8 @@ end
 module Int8 = struct
   type t = int
 
+  let print ppf t = Format.pp_print_int ppf t
+
   let zero = 0
   let one = 1
 
