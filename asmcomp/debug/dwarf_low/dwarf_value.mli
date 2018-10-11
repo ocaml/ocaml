@@ -32,18 +32,18 @@ type t =
   (* CR mshinwell: remove "Code" name. *)
   | Absolute_code_address of Targetint.t
   | Code_address_from_label of Asm_label.t
-  | Code_address_from_symbol of Backend_sym.t
+  | Code_address_from_symbol of Asm_symbol.t
   | Code_address_from_label_symbol_diff of {
       upper : Asm_label.t;
-      lower : Backend_sym.t;
+      lower : Asm_symbol.t;
       offset_upper : Targetint.t;
     }
     (** The calculation is: (upper + offset_upper) - lower. *)
   | Code_address_from_symbol_diff of {
-      upper : Backend_sym.t;
-      lower : Backend_sym.t;
+      upper : Asm_symbol.t;
+      lower : Asm_symbol.t;
     }
-  | Code_address_from_symbol_plus_bytes of Backend_sym.t * Targetint.t
+  | Code_address_from_symbol_plus_bytes of Asm_symbol.t * Targetint.t
   (** N.B. The basic "offset" constructors here take labels rather than
       absolute addresses---this is important so that the references are
       relocated when multiple object files are linked together (and DWARF
@@ -57,9 +57,9 @@ type t =
       corresponding to the DWARF format.
   *)
   | Offset_into_debug_info of Asm_label.t
-  | Offset_into_debug_info_from_symbol of Backend_sym.t
+  | Offset_into_debug_info_from_symbol of Asm_symbol.t
   | Offset_into_debug_line of Asm_label.t
-  | Offset_into_debug_line_from_symbol of Backend_sym.t
+  | Offset_into_debug_line_from_symbol of Asm_symbol.t
   | Offset_into_debug_loc of Asm_label.t
   (* CR mshinwell: Given that this one has to be Asm_label.t, since it comes
      from [Asm_section], then maybe everything in the DWARF parts should use

@@ -39,6 +39,7 @@ module Available_subrange : sig
     -> start_pos:L.label
     -> end_pos:L.label
     -> end_pos_offset:int option
+    -> stack_offset:int
     -> t
 
   val create_phantom
@@ -68,26 +69,18 @@ end = struct
        epilogues, including returns in the middle of functions. *)
     end_pos : L.label;
     end_pos_offset : int option;
+    offset_from_stack_ptr_in_bytes;
   }
 
   let create ~(reg : Reg.t) ~(start_insn : Linearize.instruction)
-        ~start_pos ~end_pos ~end_pos_offset =
+        ~start_pos ~end_pos ~end_pos_offset ~stack_offset =
     match start_insn.desc with
-    | L.Lcapture_stack_offset _ | L.Llabel _ ->
-      begin match start_insn.desc with
-      | L.Lcapture_stack_offset _ ->
-        assert (Array.length start_insn.arg = 1);
-        (* CR mshinwell: review assertions, maybe less useful now *)
-        (*assert (reg.name = start_insn.arg.(0).Reg.name);*)
-        (* CR mshinwell: Why bother storing the start instruction when it's
-           a label? *)
-        assert (reg.loc = start_insn.arg.(0).Reg.loc)
-      | _ -> ()
-      end;
+    | L.Llabel _ ->
       { start_insn = Reg (reg, start_insn);
         start_pos;
         end_pos;
         end_pos_offset;
+        offset_from_stack_ptr_in_bytes;
       }
     | _ -> failwith "Available_subrange.create"
 
@@ -110,21 +103,7 @@ end = struct
     in
     convert_location t.start_insn
 
-  let offset_from_stack_ptr_in_bytes t =
-    let offset (start_insn : start_insn_or_phantom) =
-      match start_insn with
-      | Reg (_reg, insn) ->
-        begin match insn.L.desc with
-        | L.Lcapture_stack_offset offset -> Some !offset
-        | L.Llabel _ ->
-(* CR mshinwell: resurrect assertion *)
-(*          assert (not (Reg.assigned_to_stack reg)); *)
-          None
-        | _ -> assert false
-        end
-      | Phantom -> None
-    in
-    offset t.start_insn
+  let offset_from_stack_ptr_in_bytes t = t.offset_from_stack_ptr_in_bytes
 
   let rewrite_labels t ~env =
     { t with
@@ -277,7 +256,6 @@ module Make (S : sig
     module Set : Set.S with type elt := t
 
     val assert_valid : t -> unit
-    val needs_stack_offset_capture : t -> Reg.t option
   end
 
   val available_before : L.instruction -> Key.Set.t
@@ -357,7 +335,7 @@ end) = struct
     births, deaths
 
   let rec process_instruction t ~fundecl ~first_insn ~(insn : L.instruction)
-        ~prev_insn ~open_subrange_start_insns =
+        ~prev_insn ~open_subrange_start_insns ~stack_offset =
     let births, deaths = births_and_deaths ~insn ~prev_insn in
     let first_insn = ref first_insn in
     let prev_insn = ref prev_insn in
@@ -427,31 +405,6 @@ end) = struct
           open_subrange_start_insns)
       in
       KS.fold (fun key open_subrange_start_insns ->
-          (* We only need [Lcapture_stack_offset] in the case where the
-             register is assigned to the stack.  (It enables us to determine
-             what the stack offset will be at that point.) *)
-          let new_insn =
-            match S.Key.needs_stack_offset_capture key with
-            | None -> label_insn
-            | Some reg ->
-              let new_insn =
-                { L.
-                  (* CR-someday mshinwell: Instead of [int] it would be better
-                     if the ref held something like [int Set_once.t]. *)
-                  desc = L.Lcapture_stack_offset (ref 0);
-                  next = insn;
-                  arg = [| reg |];
-                  res = [| |];
-                  dbg = Debuginfo.none;
-                  live = Reg.Set.empty;
-                  available_before = insn.available_before;
-                  phantom_available_before = insn.phantom_available_before;
-                  available_across = None;
-                }
-              in
-              insert_insn ~new_insn;
-              new_insn
-          in
           used_label := true;
           KM.add key (label, new_insn) open_subrange_start_insns)
         births
@@ -465,14 +418,23 @@ end) = struct
     | L.Lend -> first_insn
     | L.Lprologue | L.Lop _ | L.Lreloadretaddr | L.Lreturn | L.Llabel _
     | L.Lbranch _ | L.Lcondbranch _ | L.Lcondbranch3 _ | L.Lswitch _
-    | L.Lsetuptrap _ | L.Lpushtrap | L.Lpoptrap | L.Lraise _
-    | L.Lcapture_stack_offset _ ->
+    | L.Lsetuptrap _ | L.Lpushtrap | L.Lpoptrap | L.Lraise _ ->
+      let stack_offset =
+        match insn.L.desc with
+        | Lop (Istackoffset delta) -> stack_offset + delta
+        | Lpushtrap -> stack_offset + Proc.trap_frame_size_in_bytes
+        | Lpoptrap -> stack_offset - Proc.trap_frame_size_in_bytes
+        | L.Lend | L.Lprologue | L.Lop _ | L.Lreloadretaddr | L.Lreturn
+        | L.Llabel _ | L.Lbranch _ | L.Lcondbranch _ | L.Lcondbranch3 _
+        | L.Lswitch _ | L.Lsetuptrap _ | L.Lraise _ -> stack_offset
+      in
       process_instruction t ~fundecl ~first_insn ~insn:insn.L.next
-        ~prev_insn:(Some insn) ~open_subrange_start_insns
+        ~prev_insn:(Some insn) ~open_subrange_start_insns ~stack_offset
 
   let process_instructions t ~fundecl ~first_insn =
+    let stack_offset = Proc.initial_stack_offset in
     process_instruction t ~fundecl ~first_insn ~insn:first_insn
-      ~prev_insn:None ~open_subrange_start_insns:KM.empty
+      ~prev_insn:None ~open_subrange_start_insns:KM.empty ~stack_offset
 end
 
 module Make_ranges = Make (struct
@@ -492,9 +454,6 @@ module Make_ranges = Make (struct
 
     module Map = RD.Map_distinguishing_names_and_locations
     module Set = RD.Set_distinguishing_names_and_locations
-
-    let needs_stack_offset_capture t =
-      if RD.assigned_to_stack t then Some (RD.reg t) else None
   end
 
   (* CR mshinwell: improve efficiency *)
@@ -559,10 +518,11 @@ module Make_ranges = Make (struct
         is_parameter)
 
   let create_subrange ~fundecl:_ ~key:reg ~start_pos ~start_insn ~end_pos
-        ~end_pos_offset =
+        ~end_pos_offset ~stack_offset =
     Available_subrange.create ~reg:(RD.reg reg)
       ~start_pos ~start_insn
       ~end_pos ~end_pos_offset
+      ~stack_offset
 end)
 
 module Make_phantom_ranges = Make (struct
@@ -570,7 +530,6 @@ module Make_phantom_ranges = Make (struct
     include Ident
 
     let assert_valid _t = ()
-    let needs_stack_offset_capture _ = None
   end
 
   let available_before (insn : L.instruction) = insn.phantom_available_before

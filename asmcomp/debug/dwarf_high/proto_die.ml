@@ -21,7 +21,7 @@ module F = Dwarf_attributes.Form
 module V = Dwarf_attribute_values.Value
 
 type reference = Asm_label.t
-let create_reference () = Cmm.new_label ()
+let create_reference () = Asm_label.create ()
 
 type t = {
   parent : t option;
@@ -32,7 +32,7 @@ type t = {
   (* for references between DIEs within a single unit *)
   (* CR-someday mshinwell: consider combining [label] and [name] into one
      "how to reference this DIE" value. *)
-  mutable name : Backend_sym.t option;
+  mutable name : Asm_symbol.t option;
   (* for references between DIEs across units *)
   mutable sort_priority : int;
 }
@@ -79,7 +79,7 @@ let create ?reference ~parent ~tag ~attribute_values () =
   in
   let reference =
     match reference with
-    | None -> Cmm.new_label ()
+    | None -> Asm_label.create ()
     | Some reference -> reference
   in
   let t =

@@ -24,11 +24,11 @@ val create_high_pc
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_low_pc_from_symbol
-   : symbol:Backend_sym.t
+   : symbol:Asm_symbol.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_high_pc_from_symbol
-   : symbol:Backend_sym.t
+   : symbol:Asm_symbol.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_producer
@@ -100,5 +100,5 @@ val create_composite_location_description
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_const_value_from_symbol
-   : symbol:Backend_sym.t
+   : symbol:Asm_symbol.t
   -> Dwarf_attribute_values.Attribute_value.t

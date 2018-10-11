@@ -28,17 +28,17 @@ module Value : sig
   val string : string -> Dwarf_attributes.Form.string t
   val indirect_string : string -> Dwarf_attributes.Form.strp t
   val code_address_from_label : Asm_label.t -> Dwarf_attributes.Form.addr t
-  val code_address_from_symbol : Backend_sym.t -> Dwarf_attributes.Form.addr t
+  val code_address_from_symbol : Asm_symbol.t -> Dwarf_attributes.Form.addr t
 
-  val symbol_32 : Backend_sym.t -> Dwarf_attributes.Form.data4 t
-  val symbol_64 : Backend_sym.t -> Dwarf_attributes.Form.data8 t
+  val symbol_32 : Asm_symbol.t -> Dwarf_attributes.Form.data4 t
+  val symbol_64 : Asm_symbol.t -> Dwarf_attributes.Form.data8 t
 
   val offset_into_debug_line
      : Asm_label.t
     -> Dwarf_attributes.Form.sec_offset t
 
   val offset_into_debug_line_from_symbol
-     : Backend_sym.t
+     : Asm_symbol.t
     -> Dwarf_attributes.Form.sec_offset t
 
   val offset_into_debug_info
@@ -46,7 +46,7 @@ module Value : sig
     -> Dwarf_attributes.Form.ref_addr t
 
   val offset_into_debug_info_from_symbol
-     : Backend_sym.t
+     : Asm_symbol.t
     -> Dwarf_attributes.Form.ref_addr t
 
   val offset_into_debug_loc

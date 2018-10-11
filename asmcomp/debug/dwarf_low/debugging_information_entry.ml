@@ -19,7 +19,7 @@ module Attribute_value = Dwarf_attribute_values.Attribute_value
 
 type t = {
   label : Asm_label.t;
-  name : Backend_sym.t option;
+  name : Asm_symbol.t option;
   abbreviation_code : Abbreviation_code.t;
   attribute_values : Attribute_value.t list;
 }
@@ -33,7 +33,7 @@ let create ~label ~name ~abbreviation_code ~attribute_values =
 
 let null =
   lazy (
-    { label = Cmm.new_label ();
+    { label = Asm_label.create ();
       name = None;
       abbreviation_code = Abbreviation_code.null ();
       attribute_values = [];
@@ -49,9 +49,9 @@ let emit t =
   if t.abbreviation_code <> Abbreviation_code.null () then begin
     begin match t.name with
     | None -> ()
-    | Some symbol -> A.define_data_symbol (Asm_symbol.create symbol)
+    | Some symbol -> A.define_data_symbol symbol
     end;
-    A.define_label (Asm_label.create_int t.label)
+    A.define_label t.label
   end;
   Abbreviation_code.emit t.abbreviation_code;
   List.iter (fun av -> Attribute_value.emit av) t.attribute_values

@@ -49,7 +49,7 @@ val create_ignore
 val set_sort_priority : t -> int -> unit
 
 (* CR-someday mshinwell: add a [name] argument to the creation functions *)
-val set_name : t -> Backend_sym.t -> unit
+val set_name : t -> Asm_symbol.t -> unit
 
 (* [reference t] returns a label that may be used when constructing other
     attribute values. *)
@@ -71,7 +71,7 @@ val depth_first_fold
   -> f:('a
     -> [ `DIE of Dwarf_tag.t * Child_determination.t
            * (Dwarf_attribute_values.Attribute_value.t list)
-           * Asm_label.t * Backend_sym.t option (* optional name *)
+           * Asm_label.t * Asm_symbol.t option (* optional name *)
        | `End_of_siblings
        ]
     -> 'a)

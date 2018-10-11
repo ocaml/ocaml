@@ -19,8 +19,8 @@
 
 val emit
    : compilation_unit_proto_die:Proto_die.t
-  -> start_of_code_symbol:string
-  -> end_of_code_symbol:string
+  -> start_of_code_symbol:Asm_symbol.t
+  -> end_of_code_symbol:Asm_symbol.t
   -> compilation_unit_header_label:Asm_label.t
   -> debug_loc_table:Debug_loc_table.t
   -> unit

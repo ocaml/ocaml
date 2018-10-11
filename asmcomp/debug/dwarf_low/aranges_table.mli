@@ -22,7 +22,7 @@ type t
 
 include Dwarf_emittable.S with type t := t
 
-val create : start_of_code_symbol:Backend_sym.t
-  -> end_of_code_symbol:Backend_sym.t
+val create : start_of_code_symbol:Asm_symbol.t
+  -> end_of_code_symbol:Asm_symbol.t
   -> debug_info_label:Asm_label.t
   -> t

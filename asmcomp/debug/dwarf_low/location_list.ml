@@ -28,7 +28,7 @@ let sort entries =
   List.sort Location_list_entry.compare_ascending_vma entries
 
 let create ~location_list_entries =
-  { name = Cmm.new_label ();
+  { name = Asm_label.create ();
     entries = sort location_list_entries;
   }
 
@@ -54,7 +54,7 @@ let compare_increasing_vma t1 t2 =
   | _ -> failwith "Location_list.compare on empty location list(s)"
 
 let emit t =
-  A.define_label (Asm_label.create_int t.name);
+  A.define_label t.name;
   List.iter (fun entry -> Location_list_entry.emit entry) t.entries;
   (* DWARF-4 spec, section 2.6.2. *)
   let end_marker = end_marker () in
