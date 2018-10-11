@@ -179,7 +179,7 @@ let rec find_value env ({loc;txt=lid} as lid0)  =
   let (path, decl) =
     find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
   in
-  match Builtin_attributes.redirect decl.val_attributes with
+  match Builtin_attributes.redirect loc decl.val_attributes with
   | None ->
       Builtin_attributes.check_deprecated loc decl.val_attributes (Path.name path);
       lid0, path, decl

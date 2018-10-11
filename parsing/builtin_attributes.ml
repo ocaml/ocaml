@@ -231,11 +231,67 @@ let has_boxed attr =
   List.exists (check ["ocaml.boxed"; "boxed"]) attr
 
 
-let rec redirect = function
+module Redirect = struct
+  type expr =
+    | Ident of string
+    | Literal of string
+    | Leq of expr * expr
+    | And of expr * expr
+
+  exception Error of Location.t * string
+
+  open Longident
+
+  let parse loc = function
+    | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_apply(condition, [Nolabel,{pexp_desc=Pexp_ident lid}])},_)}] ->
+        let rec expr = function
+          | {pexp_desc=Pexp_ident {txt=Lident s}} -> Ident s
+          | {pexp_desc=Pexp_constant (Pconst_string (s, _))} -> Literal s
+          | {pexp_desc=Pexp_apply ({pexp_desc=Pexp_ident {txt=Lident "<="}}, [Nolabel,e1; Nolabel,e2])} ->
+              Leq (expr e1, expr e2)
+          | {pexp_desc=Pexp_apply ({pexp_desc=Pexp_ident {txt=Lident "&&"}}, [Nolabel,e1; Nolabel,e2])} ->
+              And (expr e1, expr e2)
+          | e -> raise (Error (e.pexp_loc, "invalid expression"))
+        in
+        expr condition, lid
+    | _ -> raise (Error (loc, "invalid payload"))
+
+  let version s =
+    try
+      s
+      |> String.trim
+      |> String.split_on_char '.'
+      |> List.map int_of_string
+    with Failure _ ->
+      failwith (Printf.sprintf "Invalid version string %s" s)
+
+  let rec eval = function
+    | And (e1, e2) -> eval e1 && eval e2
+    | Leq (Ident id, Literal s) ->
+        begin match Sys.getenv_opt (String.uppercase_ascii id) with
+        | None -> false
+        | Some v -> version v <= version s
+        end
+    | _ ->
+        failwith "Invalid condition"
+end
+
+
+let rec redirect loc = function
   | [] -> None
   | {
-      attr_name={txt="ocaml.redirect"|"redirect"};
-      attr_payload=PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_ident lid},_)}];
-    } :: _ ->
-      Some lid
-  | _ :: tl -> redirect tl
+      attr_name={txt=("ocaml.redirect"|"redirect") as txt};
+      attr_payload;
+      attr_loc;
+    } :: tl ->
+      begin match Redirect.parse attr_loc attr_payload with
+      | exception (Redirect.Error (loc, str)) ->
+          Location.prerr_warning loc (Warnings.Attribute_payload (txt, str));
+          redirect loc tl
+      | (condition, target) ->
+          if Redirect.eval condition then begin
+            Location.deprecated loc "this identifier has been redirected";
+            Some target
+          end else redirect loc tl
+      end
+  | _ :: tl -> redirect loc tl
