@@ -51,7 +51,7 @@ module Available_subrange : sig
   val end_pos : t -> L.label
   val end_pos_offset : t -> int option
   val location : t -> unit location
-  val offset_from_stack_ptr_in_bytes : t -> int option
+  val offset_from_stack_ptr_in_bytes : t -> int
 
   val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t
 end = struct
@@ -69,18 +69,29 @@ end = struct
        epilogues, including returns in the middle of functions. *)
     end_pos : L.label;
     end_pos_offset : int option;
-    offset_from_stack_ptr_in_bytes;
+    offset_from_stack_ptr_in_bytes : int option;
   }
 
   let create ~(reg : Reg.t) ~(start_insn : Linearize.instruction)
         ~start_pos ~end_pos ~end_pos_offset ~stack_offset =
+    let offset_from_stack_ptr_in_bytes =
+      match reg.loc with
+      | Stack loc ->
+        let frame_size = Proc.frame_size ~stack_offset in
+        let slot_offset =
+          Proc.slot_offset loc ~reg_class:(Proc.register_class reg)
+            ~stack_offset
+        in
+        Some (frame_size - slot_offset)
+      | Reg _ | Unknown -> None
+    in
     match start_insn.desc with
     | L.Llabel _ ->
       { start_insn = Reg (reg, start_insn);
         start_pos;
         end_pos;
         end_pos_offset;
-        offset_from_stack_ptr_in_bytes;
+        offset_from_stack_ptr_in_bytes = offset_from_stack_ptr_in_bytes;
       }
     | _ -> failwith "Available_subrange.create"
 
@@ -89,6 +100,7 @@ end = struct
       start_pos;
       end_pos;
       end_pos_offset = None;
+      offset_from_stack_ptr_in_bytes = None;
     }
 
   let start_pos t = t.start_pos
@@ -103,7 +115,13 @@ end = struct
     in
     convert_location t.start_insn
 
-  let offset_from_stack_ptr_in_bytes t = t.offset_from_stack_ptr_in_bytes
+  let offset_from_stack_ptr_in_bytes t =
+    match t.offset_from_stack_ptr_in_bytes with
+    | Some offset -> offset
+    | None ->
+      Misc.fatal_error "No offset from stack pointer available (this is either \
+        a phantom available subrange or one whose corresponding register is \
+        not assigned to the stack)"
 
   let rewrite_labels t ~env =
     { t with
@@ -273,6 +291,7 @@ module Make (S : sig
     -> start_insn:L.instruction
     -> end_pos:L.label
     -> end_pos_offset:int option
+    -> stack_offset:int
     -> Available_subrange.t
 
   val end_pos_offset
@@ -381,7 +400,7 @@ end) = struct
           in
           let subrange =
             S.create_subrange ~fundecl ~key ~start_pos ~start_insn ~end_pos
-              ~end_pos_offset
+              ~end_pos_offset ~stack_offset
           in
           Available_range.add_subrange range ~subrange)
       deaths
@@ -406,7 +425,7 @@ end) = struct
       in
       KS.fold (fun key open_subrange_start_insns ->
           used_label := true;
-          KM.add key (label, new_insn) open_subrange_start_insns)
+          KM.add key (label, label_insn) open_subrange_start_insns)
         births
         open_subrange_start_insns
     in
@@ -552,7 +571,7 @@ module Make_phantom_ranges = Make (struct
       Some (key, Phantom (provenance, Some defining_expr), Local)
 
   let create_subrange ~fundecl:_ ~key:_ ~start_pos ~start_insn:_ ~end_pos
-        ~end_pos_offset:_ =
+        ~end_pos_offset:_ ~stack_offset:_ =
     (* Ranges for phantom variables are emitted as contiguous blocks
        which are designed to approximately indicate their scope.
        Some such phantom variables' values may ultimately be derived

@@ -187,6 +187,8 @@ ASMCOMP=\
   asmcomp/asm_target/asm_section.cmo \
   asmcomp/asm_target/asm_directives.cmo \
   $(ARCH_SPECIFIC_ASMCOMP) \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/debug/reg_with_debug_info.cmo \
   asmcomp/debug/reg_availability_set.cmo \
   asmcomp/mach.cmo asmcomp/proc.cmo \

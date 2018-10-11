@@ -204,7 +204,6 @@ let scan_file obj_name tolink = match read_file obj_name with
 (* Second pass: generate the startup file and link it with everything else *)
 
 let force_linking_of_startup ~ppf_dump =
-  Asmgen.compile_phrase ~ppf_dump
   Asmgen.compile_phrase ~ppf_dump ~dwarf:None
     (Cmm.Cdata ([Cmm.Csymbol_address Backend_sym.Names.caml_startup]))
 

@@ -49,9 +49,9 @@ module Available_subrange : sig
 
   val location : t -> unit location
 
-  (** [offset_from_stack_ptr_in_bytes] returns [Some] only when [location]
+  (** [offset_from_stack_ptr_in_bytes] must be called only when [location]
       is [Reg] and the contained register is assigned to the stack. *)
-  val offset_from_stack_ptr_in_bytes : t -> int option
+  val offset_from_stack_ptr_in_bytes : t -> int
 end
 
 type type_info = private

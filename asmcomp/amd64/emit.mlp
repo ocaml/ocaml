@@ -892,7 +892,7 @@ let all_functions = ref []
 
 let fundecl fundecl ~end_of_function_label =
   let fun_name = S.create fundecl.fun_name in
-  function_name := fun_name;
+  function_name := Some fun_name;
   fastcode_flag := fundecl.fun_fast;
   tailrec_entry_point := new_label();
   stack_offset := initial_stack_offset;
@@ -924,7 +924,7 @@ let fundecl fundecl ~end_of_function_label =
     end;
   end;
   cfi_endproc ();
-  _label (emit_label end_of_function_label);
+  D.define_label (Asm_label.create_int end_of_function_label);
   D.size fun_name
 
 (* Emission of data *)
@@ -956,8 +956,9 @@ let data l =
 
 let begin_assembly() =
   X86_proc.reset_asm_code ();
-  Asm_directives.initialize ~emit:(fun directive ->
-    X86_proc.directive (Asm_directive directive));
+  Asm_label.initialize ~new_label:Cmm.new_label;
+  Asm_directives.initialize ~big_endian:Arch.big_endian
+    ~emit:(fun directive -> X86_proc.directive (Directive directive));
   reset_debug_info();                   (* PR#5603 *)
   reset_imp_table();
   float_constants := [];

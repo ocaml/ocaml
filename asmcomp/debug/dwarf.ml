@@ -21,12 +21,12 @@ module SLDL = Simple_location_description_lang
 
 (* DWARF-related state for a single compilation unit. *)
 type t = {
-  compilation_unit_header_label : Linearize.label;
+  compilation_unit_header_label : Asm_label.t;
   compilation_unit_proto_die : Proto_die.t;
   value_type_proto_die : Proto_die.t;
   debug_loc_table : Debug_loc_table.t;
-  start_of_code_symbol : string;
-  end_of_code_symbol : string;
+  start_of_code_symbol : Asm_symbol.t;
+  end_of_code_symbol : Asm_symbol.t;
   output_path : string;
   mutable emitted : bool;
 }
@@ -47,8 +47,11 @@ let mangle_symbol symbol =
     Linkage_name.to_string (Compilation_unit.get_linkage_name (
       Symbol.compilation_unit symbol))
   in
-  Compilenv.concat_symbol unit_name
-    (Linkage_name.to_string (Symbol.label symbol))
+  let symbol =
+    Compilenv.concat_symbol unit_name
+      (Linkage_name.to_string (Symbol.label symbol))
+  in
+  Asm_symbol.of_external_name symbol
 
 let create ~prefix_name =
   begin match !Clflags.dwarf_format with
@@ -80,7 +83,7 @@ let create ~prefix_name =
       Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
         (Linkage_name.create "code_end"))
   in
-  let debug_line_label = Asm_directives.label_for_section (DWARF Debug_line) in
+  let debug_line_label = Asm_section.label (DWARF Debug_line) in
   let compilation_unit_proto_die =
     let attribute_values =
       let producer_name = Printf.sprintf "ocamlopt %s" Sys.ocaml_version in
@@ -109,7 +112,7 @@ let create ~prefix_name =
   in
   let debug_loc_table = Debug_loc_table.create () in
   { compilation_unit_proto_die;
-    compilation_unit_header_label = Cmm.new_label ();
+    compilation_unit_header_label = Asm_label.create ();
     value_type_proto_die;
     debug_loc_table;
     start_of_code_symbol;
@@ -341,30 +344,25 @@ let construct_value_description t ~parent ~fundecl
           Some location_description
         end
       | Reg.Stack _ ->
-        match
+        let offset_in_bytes_from_cfa =
           Available_subrange.offset_from_stack_ptr_in_bytes available_subrange
-        with
-        | None ->  (* emit.mlp should have set the offset *)
-          Misc.fatal_errorf "Register %a assigned to stack but without \
-              stack offset annotation"
+        in
+        if offset_in_bytes_from_cfa mod Arch.size_addr <> 0 then begin
+          Misc.fatal_errorf "Dwarf.location_list_entry: misaligned stack \
+              slot at offset %d (reg %a)"
+            offset_in_bytes_from_cfa
             Printmach.reg reg
-        | Some offset_in_bytes_from_cfa ->
-          if offset_in_bytes_from_cfa mod Arch.size_addr <> 0 then begin
-            Misc.fatal_errorf "Dwarf.location_list_entry: misaligned stack \
-                slot at offset %d (reg %a)"
-              offset_in_bytes_from_cfa
-              Printmach.reg reg
-          end;
-          (* CR-soon mshinwell: use [offset_in_bytes] instead *)
-          let offset_in_words =
-            Targetint.of_int_exn (offset_in_bytes_from_cfa / Arch.size_addr)
-          in
-          if not need_rvalue then
-            Some (Simple (SLDL.compile (SLDL.of_lvalue (
-              SLDL.Lvalue.in_stack_slot ~offset_in_words))))
-          else
-            Some (Simple (SLDL.compile (SLDL.of_rvalue (
-              SLDL.Rvalue.in_stack_slot ~offset_in_words))))
+        end;
+        (* CR-soon mshinwell: use [offset_in_bytes] instead *)
+        let offset_in_words =
+          Targetint.of_int_exn (offset_in_bytes_from_cfa / Arch.size_addr)
+        in
+        if not need_rvalue then
+          Some (Simple (SLDL.compile (SLDL.of_lvalue (
+            SLDL.Lvalue.in_stack_slot ~offset_in_words))))
+        else
+          Some (Simple (SLDL.compile (SLDL.of_rvalue (
+            SLDL.Rvalue.in_stack_slot ~offset_in_words))))
       end
     | Phantom ->
       assert (not need_rvalue);  (* See comments below. *)
@@ -394,8 +392,12 @@ let construct_value_description t ~parent ~fundecl
       match defining_expr with
       | Iphantom_const_int i -> rvalue (SLDL.Rvalue.signed_int_const i)
       | Iphantom_const_symbol symbol ->
+        (* CR mshinwell: [Iphantom_const_symbol]'s arg should be of type
+           [Backend_sym.t].  Same for the others. *)
+        let symbol = Asm_symbol.of_external_name symbol in
         lvalue (SLDL.Lvalue.const_symbol ~symbol)
       | Iphantom_read_symbol_field { sym; field; } ->
+        let sym = Asm_symbol.of_external_name sym in
         (* CR mshinwell: Fix [field] to be of type [Targetint.t] *)
         let field = Targetint.of_int field in
         rvalue (SLDL.Rvalue.read_symbol_field ~symbol:sym ~field)
@@ -533,12 +535,14 @@ let construct_value_description t ~parent ~fundecl
   match single_location_description with
   | None -> None
   | Some single_location_description ->
-    let start_of_code_symbol = fundecl.Linearize.fun_name in
+    let start_of_code_symbol =
+      Asm_symbol.create fundecl.Linearize.fun_name
+    in
     let first_address_when_in_scope =
-      Available_subrange.start_pos available_subrange
+      Asm_label.create_int (Available_subrange.start_pos available_subrange)
     in
     let first_address_when_not_in_scope =
-      Available_subrange.end_pos available_subrange
+      Asm_label.create_int (Available_subrange.end_pos available_subrange)
     in
     let first_address_when_not_in_scope_offset =
       Available_subrange.end_pos_offset available_subrange
@@ -582,7 +586,7 @@ let dwarf_for_variable t ~fundecl ~function_proto_die
        deltas in [Location_list_entry]), and the addresses were wrong in the
        final executable.  Oh well. *)
     let base_address_selection_entry =
-      let fun_symbol = fundecl.Linearize.fun_name in
+      let fun_symbol = Asm_symbol.create fundecl.Linearize.fun_name in
       Location_list_entry.create_base_address_selection_entry
         ~base_address_symbol:fun_symbol
     in
@@ -787,12 +791,13 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
 
 let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
       ~available_ranges ~end_of_function_label =
-  let symbol = fundecl.fun_name in
+  let symbol = Asm_symbol.create fundecl.fun_name in
   let start_of_function =
     DAH.create_low_pc_from_symbol ~symbol
   in
   let end_of_function =
-    DAH.create_high_pc ~address_label:end_of_function_label
+    DAH.create_high_pc
+      ~address_label:(Asm_label.create_int end_of_function_label)
   in
   let function_name =
     match fundecl.fun_module_path with
@@ -823,7 +828,7 @@ let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
   let type_proto_die =
     normal_type_for_var t
       ~parent:(Some t.compilation_unit_proto_die)
-      (`Unique_name fundecl.fun_name)
+      (`Unique_name function_name)  (* CR mshinwell: is this the right name? *)
       ~output_path:t.output_path
   in
   let function_proto_die =
