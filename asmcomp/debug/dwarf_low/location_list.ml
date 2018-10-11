@@ -54,7 +54,7 @@ let compare_increasing_vma t1 t2 =
   | _ -> failwith "Location_list.compare on empty location list(s)"
 
 let emit t =
-  A.define_label t.name;
+  A.define_label (Asm_label.create_int t.name);
   List.iter (fun entry -> Location_list_entry.emit entry) t.entries;
   (* DWARF-4 spec, section 2.6.2. *)
   let end_marker = end_marker () in

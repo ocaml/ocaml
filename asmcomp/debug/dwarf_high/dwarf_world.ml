@@ -24,12 +24,8 @@ let emit ~compilation_unit_proto_die ~start_of_code_symbol
   let assigned_abbrevs =
     Assign_abbrevs.run ~proto_die_root:compilation_unit_proto_die
   in
-  let debug_abbrev_label =
-    Asm_directives.label_for_section (DWARF Debug_abbrev)
-  in
-  let debug_info_label =
-    Asm_directives.label_for_section (DWARF Debug_info)
-  in
+  let debug_abbrev_label = Asm_section.label (DWARF Debug_abbrev) in
+  let debug_info_label = Asm_section.label (DWARF Debug_info) in
   let debug_info =
     Debug_info_section.create ~dies:assigned_abbrevs.dies
       ~debug_abbrev_label

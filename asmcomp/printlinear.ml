@@ -87,6 +87,7 @@ let fundecl ppf f =
   let path =
     match f.fun_module_path with
     | None -> ""
-    | Some path -> "(" ^ Path.name path ^ ")"
+    | Some path -> " (" ^ Path.name path ^ ")"
   in
-  fprintf ppf "@[<v 2>%a:%s@,%a@]" S.print f.fun_name dbg all_instr f.fun_body
+  fprintf ppf "@[<v 2>%a:%s%s@,%a@]" S.print f.fun_name dbg path
+    all_instr f.fun_body

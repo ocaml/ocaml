@@ -32,7 +32,7 @@ type t = {
   (* for references between DIEs within a single unit *)
   (* CR-someday mshinwell: consider combining [label] and [name] into one
      "how to reference this DIE" value. *)
-  mutable name : string option;
+  mutable name : Backend_sym.t option;
   (* for references between DIEs across units *)
   mutable sort_priority : int;
 }

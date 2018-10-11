@@ -18,6 +18,11 @@ type t =
   | Int of int
   | String of string
 
+let print ppf t =
+  match t with
+  | Int i -> Format.fprintf ppf "L%d" i
+  | String s -> Format.fprintf ppf "L%s" s
+
 let create_int label = Int label
 let create_string label = String label
 

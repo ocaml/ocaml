@@ -98,28 +98,28 @@ let address_of_stack_slot ~offset_in_bytes =
   (* Note that this isn't target-dependent.  The target dependent part
      is the calculation of the [offset_in_bytes]. *)
   [ O.DW_op_call_frame_cfa;
-    O.DW_op_consts offset_in_bytes;
+    O.DW_op_consts (Targetint.to_int64 offset_in_bytes);
     O.DW_op_minus;
   ]
 
 let contents_of_stack_slot ~offset_in_bytes =
   (* Same comment as per [address_of_stack_slot]. *)
   [ O.DW_op_call_frame_cfa;
-    O.DW_op_consts offset_in_bytes;
+    O.DW_op_consts (Targetint.to_int64 offset_in_bytes);
     O.DW_op_minus;
     O.DW_op_deref;
   ]
 
-let value_of_symbol ~symbol : O.t = DW_op_addr symbol
+let value_of_symbol ~symbol : O.t = DW_op_addr (Symbol symbol)
 
-let signed_int_const i : O.t = DW_op_consts i
+let signed_int_const i : O.t = DW_op_consts (Targetint.to_int64 i)
 
 let add_unsigned_const i : O.t =
   if Targetint.compare i Targetint.zero < 0 then begin
     Misc.fatal_error "[Operator_builder.add_unsigned_const] only takes \
       integers >= 0"
   end;
-  DW_op_plus_uconst i
+  DW_op_plus_uconst (Targetint.to_int64 i)
 
 let implicit_pointer ~offset_in_bytes ~die_label dwarf_version : O.t =
   if Dwarf_version.compare dwarf_version Dwarf_version.four < 0 then
@@ -175,16 +175,22 @@ let optimize_sequence ops =
         :: (DW_op_plus_uconst offset_in_bytes)
         :: ops
         when Targetint.equal offset_in_bytes' Targetint.zero ->
+      (* CR mshinwell: Looks like maybe there is a type mismatch here *)
+      let offset_in_bytes = Targetint.of_int64 offset_in_bytes in
       (O.DW_op_bregx { reg_number; offset_in_bytes; }) :: (optimize ops)
-    | DW_op_addr symbol :: DW_op_stack_value :: [] ->
-      [O.DW_op_implicit_value (Symbol symbol)]
+    | DW_op_addr addr :: DW_op_stack_value :: [] ->
+      [O.DW_op_implicit_value addr]
     | DW_op_consts i :: DW_op_stack_value :: [] ->
+      (* CR mshinwell: Same again here *)
+      let i = Targetint.of_int64 i in
       [O.DW_op_implicit_value (Int i)]
     | (DW_op_plus_uconst _) :: _ ->
       let rec total (ops : O.t list) =
         match ops with
         | [] -> Targetint.zero, []
         | (DW_op_plus_uconst i) :: ops ->
+          (* CR mshinwell: Same again here *)
+          let i = Targetint.of_int64 i in
           if Targetint.compare i Targetint.zero < 0 then begin
             Misc.fatal_error "Found [DW_op_plus_uconst] with negative argument"
           end;
@@ -194,7 +200,9 @@ let optimize_sequence ops =
       in
       let total, rest = total ops in
       if Targetint.compare total Targetint.zero = 0 then optimize rest
-      else (O.DW_op_plus_uconst total) :: (optimize rest)
+      else (* CR mshinwell: Same again here *)
+        let total = Targetint.to_int64 total in
+        (O.DW_op_plus_uconst total) :: (optimize rest)
     | DW_op_nop :: ops -> optimize ops
     | t::ops -> t :: (optimize ops)
   in

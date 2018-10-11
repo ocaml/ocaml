@@ -19,8 +19,8 @@ module DIE = Debugging_information_entry
 
 type t = {
   dies : DIE.t list;
-  debug_abbrev_label : Linearize.label;
-  compilation_unit_header_label : Linearize.label;
+  debug_abbrev_label : Asm_label.t;
+  compilation_unit_header_label : Asm_label.t;
 }
 
 let create ~dies ~debug_abbrev_label ~compilation_unit_header_label =

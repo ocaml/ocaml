@@ -18,7 +18,7 @@ module A = Asm_directives
 
 module Location_list_entry = struct
   type t = {
-    start_of_code_symbol : string;
+    start_of_code_symbol : Backend_sym.t;
     beginning_address_label : Linearize.label;
     ending_address_label : Linearize.label;
     ending_address_offset : int option;
@@ -84,7 +84,7 @@ module Location_list_entry = struct
 end
 
 module Base_address_selection_entry = struct
-  type t = string
+  type t = Backend_sym.t
 
   let create ~base_address_symbol = base_address_symbol
 

@@ -19,7 +19,7 @@ module Attribute_value = Dwarf_attribute_values.Attribute_value
 
 type t = {
   label : Linearize.label;
-  name : string option;
+  name : Backend_sym.t option;
   abbreviation_code : Abbreviation_code.t;
   attribute_values : Attribute_value.t list;
 }
@@ -49,9 +49,9 @@ let emit t =
   if t.abbreviation_code <> Abbreviation_code.null () then begin
     begin match t.name with
     | None -> ()
-    | Some symbol -> A.define_data_symbol ~symbol
+    | Some symbol -> A.define_data_symbol (Asm_symbol.create symbol)
     end;
-    A.define_label t.label
+    A.define_label (Asm_label.create_int t.label)
   end;
   Abbreviation_code.emit t.abbreviation_code;
   List.iter (fun av -> Attribute_value.emit av) t.attribute_values

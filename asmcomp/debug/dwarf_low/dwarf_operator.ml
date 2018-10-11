@@ -22,7 +22,7 @@ module V = Dwarf_value
 
 type implicit_value =
   | Int of Targetint.t
-  | Symbol of string
+  | Symbol of Backend_sym.t
 
 type t =
   | DW_op_lit0

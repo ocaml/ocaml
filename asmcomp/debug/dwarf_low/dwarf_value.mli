@@ -32,15 +32,18 @@ type t =
   (* CR mshinwell: remove "Code" name. *)
   | Absolute_code_address of Targetint.t
   | Code_address_from_label of Linearize.label
-  | Code_address_from_symbol of string
-  | Code_address_from_label_symbol_diff of
-      { upper : Linearize.label;
-        lower : string;
-        offset_upper : Targetint.t;
-      }
+  | Code_address_from_symbol of Backend_sym.t
+  | Code_address_from_label_symbol_diff of {
+      upper : Linearize.label;
+      lower : Backend_sym.t;
+      offset_upper : Targetint.t;
+    }
     (** The calculation is: (upper + offset_upper) - lower. *)
-  | Code_address_from_symbol_diff of { upper : string; lower : string; }
-  | Code_address_from_symbol_plus_bytes of string * Targetint.t
+  | Code_address_from_symbol_diff of {
+      upper : Backend_sym.t;
+      lower : Backend_sym.t;
+    }
+  | Code_address_from_symbol_plus_bytes of Backend_sym.t * Targetint.t
   (** N.B. The basic "offset" constructors here take labels rather than
       absolute addresses---this is important so that the references are
       relocated when multiple object files are linked together (and DWARF
@@ -54,11 +57,14 @@ type t =
       corresponding to the DWARF format.
   *)
   | Offset_into_debug_info of Linearize.label
-  | Offset_into_debug_info_from_symbol of string
+  | Offset_into_debug_info_from_symbol of Backend_sym.t
   | Offset_into_debug_line of Linearize.label
-  | Offset_into_debug_line_from_symbol of string
+  | Offset_into_debug_line_from_symbol of Backend_sym.t
   | Offset_into_debug_loc of Linearize.label
-  | Offset_into_debug_abbrev of Linearize.label
+  (* CR mshinwell: Given that this one has to be Asm_label.t, since it comes
+     from [Asm_section], then maybe everything in the DWARF parts should use
+     [Asm_label.t]? *)
+  | Offset_into_debug_abbrev of Asm_label.t
   | Distance_between_labels_16bit of {
       upper : Linearize.label;
       lower : Linearize.label;

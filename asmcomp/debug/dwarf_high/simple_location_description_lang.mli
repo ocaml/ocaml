@@ -54,10 +54,10 @@ module Lvalue : sig
   val in_stack_slot : offset_in_words:Targetint.t -> t
 
   (** V will be at the address of the given symbol. *)
-  val const_symbol : symbol:string -> t
+  val const_symbol : symbol:Backend_sym.t -> t
 
   (** V will be in the given field of the given symbol at time T. *)
-  val in_symbol_field : symbol:string -> field:Targetint.t -> t
+  val in_symbol_field : symbol:Backend_sym.t -> field:Targetint.t -> t
 
   (** V is found in the location given by evaluating the location description
       (which must yield an lvalue) in the DIE at the given [die_label]. *)
@@ -85,7 +85,7 @@ module Rvalue : sig
   val read_field : block:normal t -> field:Targetint.t -> normal t
 
   (** V will be in the given field of the given symbol at time T. *)
-  val read_symbol_field : symbol:string -> field:Targetint.t -> normal t
+  val read_symbol_field : symbol:Backend_sym.t -> field:Targetint.t -> normal t
 
   (** V will be at the given offset added to the value of the given simple
       location description at time T. *)

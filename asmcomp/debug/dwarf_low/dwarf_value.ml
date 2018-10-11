@@ -36,19 +36,23 @@ type t =
   | Indirect_string of string
   | Absolute_code_address of Targetint.t
   | Code_address_from_label of Linearize.label
-  | Code_address_from_symbol of string
-  | Code_address_from_label_symbol_diff of
-      { upper : Linearize.label; lower : string;
-        offset_upper : Targetint.t;
-      }
-  | Code_address_from_symbol_diff of { upper : string; lower : string; }
-  | Code_address_from_symbol_plus_bytes of string * Targetint.t
+  | Code_address_from_symbol of Backend_sym.t
+  | Code_address_from_label_symbol_diff of {
+      upper : Linearize.label;
+      lower : Backend_sym.t;
+      offset_upper : Targetint.t;
+    }
+  | Code_address_from_symbol_diff of {
+      upper : Backend_sym.t;
+      lower : Backend_sym.t;
+    }
+  | Code_address_from_symbol_plus_bytes of Backend_sym.t * Targetint.t
   | Offset_into_debug_info of Linearize.label
-  | Offset_into_debug_info_from_symbol of string
+  | Offset_into_debug_info_from_symbol of Backend_sym.t
   | Offset_into_debug_line of Linearize.label
-  | Offset_into_debug_line_from_symbol of string
+  | Offset_into_debug_line_from_symbol of Backend_sym.t
   | Offset_into_debug_loc of Linearize.label
-  | Offset_into_debug_abbrev of Linearize.label
+  | Offset_into_debug_abbrev of Asm_label.t
   | Distance_between_labels_16bit of {
       upper : Linearize.label;
       lower : Linearize.label;
@@ -77,28 +81,32 @@ let print ppf t =
   | Absolute_code_address addr ->
     Format.fprintf ppf "0x%Lx" (Targetint.to_int64 addr)
   | Code_address_from_label lbl -> Format.fprintf ppf "L%d" lbl
-  | Code_address_from_symbol sym -> Format.pp_print_string ppf sym
+  | Code_address_from_symbol sym -> Backend_sym.print ppf sym
   | Code_address_from_label_symbol_diff { upper; lower; offset_upper; } ->
-    Format.fprintf ppf "(L%d + %a) - %s"
+    Format.fprintf ppf "(L%d + %a) - %a"
       upper
       Targetint.print offset_upper
-      lower
+      Backend_sym.print lower
   | Code_address_from_symbol_diff { upper; lower; } ->
-    Format.fprintf ppf "%s - %s" upper lower
+    Format.fprintf ppf "%a - %a"
+      Backend_sym.print upper
+      Backend_sym.print lower
   | Code_address_from_symbol_plus_bytes (sym, offset) ->
-    Format.fprintf ppf "%s + %a" sym Targetint.print offset
+    Format.fprintf ppf "%a + %a"
+      Backend_sym.print sym
+      Targetint.print offset
   | Offset_into_debug_info lbl ->
     Format.fprintf ppf "%d - .debug_info" lbl
   | Offset_into_debug_info_from_symbol sym ->
-    Format.fprintf ppf "%s - .debug_info" sym
+    Format.fprintf ppf "%a - .debug_info" Backend_sym.print sym
   | Offset_into_debug_line lbl ->
     Format.fprintf ppf "%d - .debug_line" lbl
   | Offset_into_debug_line_from_symbol sym ->
-    Format.fprintf ppf "%s - .debug_line" sym
+    Format.fprintf ppf "%a - .debug_line" Backend_sym.print sym
   | Offset_into_debug_loc lbl ->
     Format.fprintf ppf "%d - .debug_loc" lbl
   | Offset_into_debug_abbrev lbl ->
-    Format.fprintf ppf "%d - .debug_abbrev" lbl
+    Format.fprintf ppf "%a - .debug_abbrev" Asm_label.print lbl
   | Distance_between_labels_16bit { upper; lower; } ->
     Format.fprintf ppf "L%d - L%d (16)" upper lower
   | Distance_between_labels_32bit { upper; lower; } ->
@@ -172,41 +180,57 @@ let emit t =
   | Indirect_string s ->
     (* "Indirect" strings are collected together into ".debug_str". *)
     let label = A.cache_string s in
-    A.offset_into_section_label ~section:(DWARF Debug_str) ~label
+    A.offset_into_section_label (DWARF Debug_str) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Absolute_code_address addr -> A.targetint addr
-  | Code_address_from_label label -> A.label label
-  | Code_address_from_symbol symbol -> A.symbol symbol
+  | Code_address_from_label label -> A.label (Asm_label.create_int label)
+  | Code_address_from_symbol symbol -> A.symbol (Asm_symbol.create symbol)
   | Code_address_from_label_symbol_diff { upper; lower; offset_upper; } ->
+    let upper = Asm_label.create_int upper in
+    let lower = Asm_symbol.create lower in
     A.between_symbol_and_label_offset ~upper ~lower ~offset_upper
   | Code_address_from_symbol_diff { upper; lower; } ->
+    let upper = Asm_symbol.create upper in
+    let lower = Asm_symbol.create lower in
     A.between_symbols ~upper ~lower
   | Code_address_from_symbol_plus_bytes (symbol, offset_in_bytes) ->
-    A.symbol_plus_offset ~symbol ~offset_in_bytes
+    let symbol = Asm_symbol.create symbol in
+    A.symbol_plus_offset symbol ~offset_in_bytes
   | Offset_into_debug_line label ->
-    A.offset_into_section_label ~section:(DWARF Debug_line) ~label
+    let label = Asm_label.create_int label in
+    A.offset_into_section_label (DWARF Debug_line) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_line_from_symbol symbol ->
-    A.offset_into_section_symbol ~section:(DWARF Debug_line) ~symbol
+    let symbol = Asm_symbol.create symbol in
+    A.offset_into_section_symbol (DWARF Debug_line) symbol
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_info label ->
-    A.offset_into_section_label ~section:(DWARF Debug_info) ~label
+    let label = Asm_label.create_int label in
+    A.offset_into_section_label (DWARF Debug_info) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_info_from_symbol symbol ->
-    A.offset_into_section_symbol ~section:(DWARF Debug_info) ~symbol
+    let symbol = Asm_symbol.create symbol in
+    A.offset_into_section_symbol (DWARF Debug_info) symbol
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_loc label ->
-    A.offset_into_section_label ~section:(DWARF Debug_loc) ~label
+    let label = Asm_label.create_int label in
+    A.offset_into_section_label (DWARF Debug_loc) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_abbrev label ->
-    A.offset_into_section_label ~section:(DWARF Debug_abbrev) ~label
+    A.offset_into_section_label (DWARF Debug_abbrev) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Distance_between_labels_16bit { upper; lower; } ->
+    let upper = Asm_label.create_int upper in
+    let lower = Asm_label.create_int lower in
     (* CR-someday mshinwell: This should really be checked for overflow, but
        seems hard... *)
     A.between_labels_16bit ~upper ~lower
   | Distance_between_labels_32bit { upper; lower; } ->
+    let upper = Asm_label.create_int upper in
+    let lower = Asm_label.create_int lower in
     (* CR-someday mshinwell: Same comment as for the 16 bit case. *)
     A.between_labels_32bit ~upper ~lower
   | Distance_between_labels_64bit { upper; lower; } ->
+    let upper = Asm_label.create_int upper in
+    let lower = Asm_label.create_int lower in
     A.between_labels_64bit ~upper ~lower

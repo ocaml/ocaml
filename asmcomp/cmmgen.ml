@@ -3296,29 +3296,31 @@ let send_function arity =
   in
   let body = Clet(VP.create clos', clos, body) in
   let cache = cache in
+  let fun_name = caml_send arity in
   let fun_args =
     [obj, typ_val; tag, typ_int; cache, typ_val]
     @ List.map (fun id -> (id, typ_val)) (List.tl args) in
   Cfunction
-   {fun_name = caml_send arity;
+   {fun_name;
     fun_args = List.map (fun (arg, ty) -> VP.create arg, ty) fun_args;
     fun_body = body;
     fun_codegen_options = [];
     fun_dbg  = Debuginfo.none;
-    fun_human_name = fun_name;
+    fun_human_name = S.to_string fun_name;
     fun_module_path = startup_path;
    }
 
 let apply_function arity =
+  let fun_name = caml_apply arity in
   let (args, clos, body) = apply_function_body arity in
   let all_args = args @ [clos] in
   Cfunction
-   {fun_name = caml_apply arity;
+   {fun_name;
     fun_args = List.map (fun arg -> (VP.create arg, typ_val)) all_args;
     fun_body = body;
     fun_codegen_options = [];
     fun_dbg  = Debuginfo.none;
-    fun_human_name = fun_name;
+    fun_human_name = S.to_string fun_name;
     fun_module_path = startup_path;
    }
 
@@ -3327,6 +3329,7 @@ let apply_function arity =
         (app clos.direct #0(arg) ... #N-1(arg) clos)) *)
 
 let tuplify_function arity =
+  let fun_name = caml_tuplify arity in
   let dbg = Debuginfo.none in
   let arg = V.create_local "arg" in
   let clos = V.create_local "clos" in
@@ -3336,7 +3339,7 @@ let tuplify_function arity =
     then []
     else get_field env (Cvar arg) i dbg :: access_components(i+1) in
   Cfunction
-   {fun_name = caml_tuplify arity;
+   {fun_name;
     fun_args = [VP.create arg, typ_val; VP.create clos, typ_val];
     fun_body =
       Cop(Capply typ_val,
@@ -3344,7 +3347,7 @@ let tuplify_function arity =
           dbg);
     fun_codegen_options = [];
     fun_dbg  = Debuginfo.none;
-    fun_human_name = fun_name;
+    fun_human_name = S.to_string fun_name;
     fun_module_path = startup_path;
    }
 
@@ -3410,7 +3413,7 @@ let final_curry_function arity =
     fun_body = curry_fun [] last_clos (arity-1);
     fun_codegen_options = [];
     fun_dbg  = Debuginfo.none;
-    fun_human_name = fun_name;
+    fun_human_name = S.to_string fun_name;
     fun_module_path = startup_path;
    }
 
@@ -3445,7 +3448,7 @@ let rec intermediate_curry_functions arity num =
                 dbg);
       fun_codegen_options = [];
       fun_dbg  = Debuginfo.none;
-      fun_human_name = name2;
+      fun_human_name = S.to_string fun_name;
       fun_module_path = startup_path;
      }
     ::
@@ -3481,7 +3484,7 @@ let rec intermediate_curry_functions arity num =
                   (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
                fun_codegen_options = [];
                fun_dbg  = Debuginfo.none;
-               fun_human_name = fun_name;
+               fun_human_name = S.to_string fun_name;
                fun_module_path = startup_path;
               }
           in

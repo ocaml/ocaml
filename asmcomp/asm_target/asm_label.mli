@@ -24,6 +24,9 @@
 
 type t
 
+(** Print a label to a formatter. *)
+val print : Format.formatter -> t -> unit
+
 (** Create a fresh integer-valued label (using the [new_label] function passed
     to [initialize], below). *)
 val create : unit -> t

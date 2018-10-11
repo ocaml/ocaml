@@ -29,7 +29,7 @@ val contents_of_stack_slot
    : offset_in_bytes:Targetint.t
   -> Dwarf_operator.t list
 
-val value_of_symbol : symbol:string -> Dwarf_operator.t
+val value_of_symbol : symbol:Backend_sym.t -> Dwarf_operator.t
 
 val signed_int_const : Targetint.t -> Dwarf_operator.t
 

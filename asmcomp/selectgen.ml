@@ -1475,7 +1475,6 @@ method initial_env () = env_empty
 
 method emit_fundecl f =
   Proc.contains_calls := false;
-  current_function_name := f.Cmm.fun_name;
   current_function_name := Some f.Cmm.fun_name;
   Ident.Tbl.clear phantom_lets;
   dead_phantom_lets := Ident.Set.empty;

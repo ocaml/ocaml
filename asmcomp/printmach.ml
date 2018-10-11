@@ -288,7 +288,6 @@ let fundecl ppf f =
     else
       " " ^ Debuginfo.to_string f.fun_dbg in
   fprintf ppf "@[<v 2>%a(%a)%s@,%a"
-    f.fun_name regs f.fun_args dbg instr f.fun_body;
     Backend_sym.print f.fun_name regs f.fun_args dbg instr f.fun_body;
   if not (Backend_var.Map.is_empty f.fun_phantom_lets) then begin
     fprintf ppf "@,With phantom lets:@,%a"
