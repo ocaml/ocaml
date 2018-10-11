@@ -527,13 +527,13 @@ external caml_string_set64 : bytes -> index:int -> Int64.t -> unit
 module Make (M : sig
   type param
   type result
-  val unit_result : result
+  val unit_result : unit -> result
   val opcode : param -> t -> result
   val value : param -> V.t -> result
   val (>>>) : param -> result -> (unit -> result) -> result
 end) = struct
   let run param t =
-    let unit_result = M.unit_result in
+    let unit_result = M.unit_result () in
     let opcode = M.opcode param in
     let value = M.value param in
     let (>>>) = M.(>>>) param in
@@ -753,7 +753,7 @@ end
 module Print = Make (struct
   type param = Format.formatter
   type result = unit
-  let unit_result = ()
+  let unit_result () = ()
 
   let opcode ppf t = Format.pp_print_string ppf (opcode_name t)
   let value ppf v = V.print ppf v
@@ -763,7 +763,7 @@ end)
 module Size = Make (struct
   type param = unit
   type result = I.t
-  let unit_result = I.zero ()
+  let unit_result () = I.zero ()
 
   let opcode () _ = I.one ()
   let value () v = V.size v
@@ -773,7 +773,7 @@ end)
 module Emit = Make (struct
   type param = unit
   type result = unit
-  let unit_result = ()
+  let unit_result () = ()
 
   let opcode () t = V.emit (V.Int8 (Int8.of_int_exn (opcode t)))
   let value () v = V.emit v
