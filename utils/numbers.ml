@@ -36,6 +36,8 @@ end
 module Int8 = struct
   type t = int
 
+  let print ppf t = Format.pp_print_int ppf t
+
   let zero = 0
   let one = 1
 
@@ -50,6 +52,8 @@ end
 
 module Int16 = struct
   type t = int
+
+  let print ppf t = Format.pp_print_int ppf t
 
   let of_int_exn i =
     if i < -(1 lsl 15) || i > ((1 lsl 15) - 1) then

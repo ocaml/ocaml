@@ -59,9 +59,19 @@ type t =
   | Offset_into_debug_line_from_symbol of string
   | Offset_into_debug_loc of Linearize.label
   | Offset_into_debug_abbrev of Linearize.label
+  | Distance_between_labels_16bit of {
+      upper : Linearize.label;
+      lower : Linearize.label;
+    }
   | Distance_between_labels_32bit of {
       upper : Linearize.label;
       lower : Linearize.label;
     }
+  | Distance_between_labels_64bit of {
+      upper : Linearize.label;
+      lower : Linearize.label;
+    }
+
+val print : Format.formatter -> t -> unit
 
 include Dwarf_emittable.S with type t := t

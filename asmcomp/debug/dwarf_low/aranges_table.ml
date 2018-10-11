@@ -34,9 +34,12 @@ let create ~start_of_code_symbol ~end_of_code_symbol
     V.Int8 (Int8.of_int_exn Arch.size_addr);
     V.Int8 Int8.zero;  (* flat address space *)
     (* end of header *)
+    (* segment selector omitted (since we selected "flat address space") *)
     V.Code_address_from_symbol start_of_code_symbol;
     V.Code_address_from_symbol_diff
       { upper = end_of_code_symbol; lower = start_of_code_symbol; };
+    (* The terminating entry is only two words since the segment selector
+       word is again absent. *)
     V.Absolute_code_address Targetint.zero;
     V.Absolute_code_address Targetint.zero;
   ]

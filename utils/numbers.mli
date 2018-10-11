@@ -31,6 +31,8 @@ end
 module Int8 : sig
   type t
 
+  val print : Format.formatter -> t -> unit
+
   val zero : t
   val one : t
 
@@ -40,6 +42,8 @@ end
 
 module Int16 : sig
   type t
+
+  val print : Format.formatter -> t -> unit
 
   val of_int_exn : int -> t
   val of_int64_exn : Int64.t -> t

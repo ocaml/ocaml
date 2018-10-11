@@ -215,9 +215,17 @@ val between_symbols
   -> lower:string
   -> unit
 
+(** Like [between_symbols], but for two labels, emitting a 16-bit-wide
+    reference.  The behaviour upon overflow is unspecified. *)
+val between_labels_16bit : upper:Cmm.label -> lower:Cmm.label -> unit
+
 (** Like [between_symbols], but for two labels, emitting a 32-bit-wide
     reference.  The behaviour upon overflow is unspecified. *)
 val between_labels_32bit : upper:Cmm.label -> lower:Cmm.label -> unit
+
+(** Like [between_symbols], but for two labels, emitting a 64-bit-wide
+    reference. *)
+val between_labels_64bit : upper:Cmm.label -> lower:Cmm.label -> unit
 
 (** Emit a machine-width reference giving the displacement between the
     lower symbol and the sum of the address of the upper label plus
