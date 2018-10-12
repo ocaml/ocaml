@@ -203,6 +203,8 @@ module Directive = struct
 
   let bprintf = Printf.bprintf
 
+  let emit_comments () = !Clflags.keep_asm_file
+
   let string_of_string_literal s =
     let buf = Buffer.create (String.length s + 2) in
     let last_was_escape = ref false in
@@ -239,9 +241,12 @@ module Directive = struct
     done
 
   let print_gas buf t =
-    let gas_comment_opt = function
-      | None -> ""
-      | Some comment -> Printf.sprintf "\t/* %s */" comment
+    let gas_comment_opt comment_opt =
+      if not (emit_comments ()) then ""
+      else
+        match comment_opt with
+        | None -> ""
+        | Some comment -> Printf.sprintf "\t/* %s */" comment
     in
     match t with
     | Align { bytes = n; } ->
@@ -283,7 +288,7 @@ module Directive = struct
       | _ -> bprintf buf "\t.ascii\t\"%s\"" (string_of_string_literal str)
       end;
       bprintf buf "%s" (gas_comment_opt comment)
-    | Comment s -> bprintf buf "\t\t\t\t/* %s */" s
+    | Comment s -> bprintf buf "\t\t\t/* %s */" s
     | Global s -> bprintf buf "\t.globl\t%s" s
     | New_label (s, _typ) -> bprintf buf "%s:" s
     | New_line -> ()
@@ -344,9 +349,12 @@ module Directive = struct
     let unsupported name =
       Misc.fatal_errorf "Unsupported asm directive [%s] for MASM" name
     in
-    let masm_comment_opt = function
-      | None -> ""
-      | Some comment -> Printf.sprintf "\t; %s" comment
+    let masm_comment_opt comment_opt =
+      if not (emit_comments ()) then ""
+      else
+        match comment_opt with
+        | None -> ""
+        | Some comment -> Printf.sprintf "\t; %s" comment
     in
     match t with
     | Align { bytes; } -> bprintf buf "\tALIGN\t%d" bytes

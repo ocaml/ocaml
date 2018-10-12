@@ -18,9 +18,12 @@ type t = Dwarf_value.t
 
 exception Bad_abbreviation_code of int
 
-let of_int i =
+let of_int i tag =
   if i < 1 then raise (Bad_abbreviation_code i);
-  Dwarf_value.uleb128 ~comment:"abbreviation code" (Int64.of_int i)
+  Dwarf_value.uleb128
+    ~comment:(Printf.sprintf "abbrev. code (abbrev. has tag %s)"
+      (Dwarf_tag.tag_name tag))
+    (Int64.of_int i)
 
 let null () =
   Dwarf_value.uleb128 ~comment:"null abbreviation code" 0L

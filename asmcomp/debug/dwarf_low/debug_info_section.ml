@@ -34,7 +34,9 @@ let dwarf_version = Dwarf_version.four
 (* CR-someday mshinwell: this used to have "label - section", but maybe zero
    will do. *)
 let debug_abbrev_offset t =
-  Dwarf_value.offset_into_debug_abbrev t.debug_abbrev_label
+  Dwarf_value.offset_into_debug_abbrev
+    ~comment:"abbrevs. for this comp. unit"
+    t.debug_abbrev_label
 
 (* CR-someday mshinwell: fix for cross compilation *)
 let address_width_in_bytes_on_target =
@@ -66,4 +68,7 @@ let emit t =
   Dwarf_version.emit dwarf_version;
   Dwarf_value.emit (debug_abbrev_offset t);
   Dwarf_value.emit address_width_in_bytes_on_target;
+  A.new_line ();
+  A.comment "Debugging information entries:";
+  A.new_line ();
   List.iter (fun die -> DIE.emit die) t.dies

@@ -76,19 +76,21 @@ val offset_into_debug_info : ?comment:string -> Asm_label.t -> t
 
 val offset_into_debug_info_from_symbol : ?comment:string -> Asm_symbol.t -> t
 
-val offset_into_debug_line : Asm_label.t -> t
+val offset_into_debug_line : ?comment:string -> Asm_label.t -> t
 
-val offset_into_debug_line_from_symbol : Asm_symbol.t -> t
+val offset_into_debug_line_from_symbol : ?comment:string -> Asm_symbol.t -> t
 
-val offset_into_debug_loc : Asm_label.t -> t
+val offset_into_debug_loc : ?comment:string -> Asm_label.t -> t
 
-val offset_into_debug_abbrev : Asm_label.t -> t
+val offset_into_debug_abbrev : ?comment:string -> Asm_label.t -> t
 
 val distance_between_labels_16bit : upper:Asm_label.t -> lower:Asm_label.t -> t
 
 val distance_between_labels_32bit : upper:Asm_label.t -> lower:Asm_label.t -> t
 
 val distance_between_labels_64bit : upper:Asm_label.t -> lower:Asm_label.t -> t
+
+val append_to_comment : t -> string -> t
 
 val print : Format.formatter -> t -> unit
 

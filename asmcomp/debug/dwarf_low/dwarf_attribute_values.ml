@@ -86,9 +86,15 @@ module Attribute_value = struct
       Dwarf_int.add (uleb128_size (Dwarf_int.to_int64 loc_desc_size))
         loc_desc_size
 
-  let emit ((_spec, value) : t) =
+  let emit ((spec, value) : t) =
     match value with
-    | Dwarf_value value -> Dwarf_value.emit value
+    | Dwarf_value value ->
+      let comment =
+        Format.asprintf "(%a)"
+          Dwarf_attributes.Attribute_specification.Sealed.print spec
+      in
+      let value = Dwarf_value.append_to_comment value comment in
+      Dwarf_value.emit value
     | Single_location_description loc_desc ->
       A.uleb128 ~comment:"size of single location desc."
         (Dwarf_int.to_int64 (Single_location_description.size loc_desc));

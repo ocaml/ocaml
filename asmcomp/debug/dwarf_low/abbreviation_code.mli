@@ -20,5 +20,5 @@ type t
 
 include Dwarf_emittable.S with type t := t
 
-val of_int : int -> t
+val of_int : int -> Dwarf_tag.t -> t
 val null : unit -> t

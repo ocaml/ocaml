@@ -466,19 +466,25 @@ module Attribute = struct
     Dwarf_value.emit (encode t)
 
   module Sealed = struct
-    type t = int
+    type t = {
+      code : int;
+      name : string;
+    }
 
     include Identifiable.Make (struct
       type nonrec t = t
       let compare = Stdlib.compare
       let equal (t1 : t) t2 = (t1 = t2)
       let hash _ = failwith "Sealed.hash unsupported"
-      let print _ _ = failwith "Sealed.print unsupported"
+      let print ppf { code = _; name; } = Format.pp_print_string ppf name
       let output _ = failwith "Sealed.output unsupported"
     end)
   end
 
-  let seal (t : _ t) : Sealed.t = code t
+  let seal (t : _ t) : Sealed.t =
+    { code = code t;
+      name = name t;
+    }
 end
 
 module Attribute_specification = struct
@@ -511,7 +517,12 @@ module Attribute_specification = struct
         compare t1 t2 = 0
 
       let hash _ = failwith "Sealed.hash unsupported"
-      let print _ _ = failwith "Sealed.print unsupported"
+
+      let print ppf (T1 (T (attr, form))) =
+        Format.fprintf ppf "%s : %s"
+          (Attribute.name attr)
+          (Form.name form)
+
       let output _ = failwith "Sealed.output unsupported"
     end)
 

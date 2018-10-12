@@ -64,7 +64,7 @@ let run ~proto_die_root =
               | Some abbrev_code -> abbrev_table, abbrev_code
               | None -> 
                 let abbreviation_code =
-                  Abbreviation_code.of_int !next_abbreviation_code
+                  Abbreviation_code.of_int !next_abbreviation_code tag
                 in
                 incr next_abbreviation_code;
                 let abbrev_table_entry =

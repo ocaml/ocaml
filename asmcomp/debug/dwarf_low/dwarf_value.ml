@@ -23,20 +23,20 @@ module A = Asm_directives
 module Int8 = Numbers.Int8
 module Int16 = Numbers.Int16
 
-type t =
-  | Flag_true of { comment : string option; }
-  | Bool of { b : bool; comment : string option; }
-  | Int8 of { i : Int8.t; comment : string option; }
-  | Int16 of { i : Int16.t; comment : string option; }
-  | Int32 of { i : Int32.t; comment : string option; }
-  | Int64 of { i : Int64.t; comment : string option; }
-  | Uleb128 of { i : Int64.t; comment : string option; }
-  | Sleb128 of { i : Int64.t; comment : string option; }
-  | String of { str : string; comment : string option; }
-  | Indirect_string of { str : string; comment : string option; }
-  | Absolute_address of { addr : Targetint.t; comment : string option; }
-  | Code_address_from_label of { lbl : Asm_label.t; comment : string option; }
-  | Code_address_from_symbol of { sym : Asm_symbol.t; comment : string option; }
+type value =
+  | Flag_true
+  | Bool of bool
+  | Int8 of Int8.t
+  | Int16 of Int16.t
+  | Int32 of Int32.t
+  | Int64 of Int64.t
+  | Uleb128 of Int64.t
+  | Sleb128 of Int64.t
+  | String of string
+  | Indirect_string of string
+  | Absolute_address of Targetint.t
+  | Code_address_from_label of Asm_label.t
+  | Code_address_from_symbol of Asm_symbol.t
   | Code_address_from_label_symbol_diff of {
       upper : Asm_label.t;
       lower : Asm_symbol.t;
@@ -50,14 +50,8 @@ type t =
       sym : Asm_symbol.t;
       offset_in_bytes : Targetint.t;
     }
-  | Offset_into_debug_info of {
-      lbl : Asm_label.t;
-      comment : string option;
-    }
-  | Offset_into_debug_info_from_symbol of {
-      sym : Asm_symbol.t;
-      comment : string option;
-    }
+  | Offset_into_debug_info of Asm_label.t
+  | Offset_into_debug_info_from_symbol of Asm_symbol.t
   | Offset_into_debug_line of Asm_label.t
   | Offset_into_debug_line_from_symbol of Asm_symbol.t
   | Offset_into_debug_loc of Asm_label.t
@@ -75,23 +69,28 @@ type t =
       lower : Asm_label.t;
     }
 
-let print ppf t =
-  match t with
-  | Flag_true { comment = _; } -> Format.pp_print_string ppf "true"
-  | Bool { b; comment = _; } -> Format.fprintf ppf "%b" b
-  | Int8 { i; comment = _; } -> Int8.print ppf i
-  | Int16 { i; comment = _; } -> Int16.print ppf i
-  | Int32 { i; comment = _; } -> Format.fprintf ppf "%ld" i
-  | Int64 { i; comment = _; } -> Format.fprintf ppf "%Ld" i
-  | Uleb128 { i; comment = _; } -> Format.fprintf ppf "(uleb128 %Ld)" i
-  | Sleb128 { i; comment = _; } -> Format.fprintf ppf "(sleb128 %Ld)" i
-  | String { str; comment = _; } -> Format.fprintf ppf "\"%S\"" str
-  | Indirect_string { str; comment = _; } ->
+type t = {
+  value : value;
+  comment : string option;
+}
+
+let print ppf { value; comment = _; } =
+  match value with
+  | Flag_true -> Format.pp_print_string ppf "true"
+  | Bool b -> Format.fprintf ppf "%b" b
+  | Int8 i -> Int8.print ppf i
+  | Int16 i -> Int16.print ppf i
+  | Int32 i -> Format.fprintf ppf "%ld" i
+  | Int64 i -> Format.fprintf ppf "%Ld" i
+  | Uleb128 i -> Format.fprintf ppf "(uleb128 %Ld)" i
+  | Sleb128 i -> Format.fprintf ppf "(sleb128 %Ld)" i
+  | String str -> Format.fprintf ppf "\"%S\"" str
+  | Indirect_string str ->
     Format.fprintf ppf "\"%S\" [indirect]" str
-  | Absolute_address { addr; comment = _; } ->
+  | Absolute_address addr ->
     Format.fprintf ppf "0x%Lx" (Targetint.to_int64 addr)
-  | Code_address_from_label { lbl; comment = _; } -> Asm_label.print ppf lbl
-  | Code_address_from_symbol { sym; comment = _; } -> Asm_symbol.print ppf sym
+  | Code_address_from_label lbl -> Asm_label.print ppf lbl
+  | Code_address_from_symbol sym -> Asm_symbol.print ppf sym
   | Code_address_from_label_symbol_diff { upper; lower; offset_upper; } ->
     Format.fprintf ppf "(%a + %a) - %a"
       Asm_label.print upper
@@ -105,9 +104,9 @@ let print ppf t =
     Format.fprintf ppf "%a + %a"
       Asm_symbol.print sym
       Targetint.print offset_in_bytes
-  | Offset_into_debug_info { lbl; comment = _; } ->
+  | Offset_into_debug_info lbl ->
     Format.fprintf ppf "%a - .debug_info" Asm_label.print lbl
-  | Offset_into_debug_info_from_symbol { sym; comment = _; } ->
+  | Offset_into_debug_info_from_symbol sym ->
     Format.fprintf ppf "%a - .debug_info" Asm_symbol.print sym
   | Offset_into_debug_line lbl ->
     Format.fprintf ppf "%a - .debug_line" Asm_label.print lbl
@@ -130,66 +129,105 @@ let print ppf t =
       Asm_label.print upper
       Asm_label.print lower
 
-let flag_true ?comment () = Flag_true { comment; }
+let flag_true ?comment () = { value = Flag_true; comment; }
 
-let bool ?comment b = Bool { b; comment; }
+let bool ?comment b = { value = Bool b; comment; }
 
-let int8 ?comment i = Int8 { i; comment; }
+let int8 ?comment i = { value = Int8 i; comment; }
 
-let int16 ?comment i = Int16 { i; comment; }
+let int16 ?comment i = { value = Int16 i; comment; }
 
-let int32 ?comment i = Int32 { i; comment; }
+let int32 ?comment i = { value = Int32 i; comment; }
 
-let int64 ?comment i = Int64 { i; comment; }
+let int64 ?comment i = { value = Int64 i; comment; }
 
-let uleb128 ?comment i = Uleb128 { i; comment; }
+let uleb128 ?comment i = { value = Uleb128 i; comment; }
 
-let sleb128 ?comment i = Sleb128 { i; comment; }
+let sleb128 ?comment i = { value = Sleb128 i; comment; }
 
-let string ?comment str = String { str; comment; }
+let string ?comment str = { value = String str; comment; }
 
-let indirect_string ?comment str = Indirect_string { str; comment; }
+let indirect_string ?comment str = { value = Indirect_string str; comment; }
 
-let absolute_address ?comment addr = Absolute_address { addr; comment; }
+let absolute_address ?comment addr = { value = Absolute_address addr; comment; }
 
 let code_address_from_label ?comment lbl =
-  Code_address_from_label { lbl; comment; }
+  { value = Code_address_from_label lbl;
+    comment;
+  }
 
 let code_address_from_symbol ?comment sym =
-  Code_address_from_symbol { sym; comment; }
+  { value = Code_address_from_symbol sym;
+    comment;
+  }
 
 let code_address_from_label_symbol_diff ~upper ~lower ~offset_upper =
-  Code_address_from_label_symbol_diff { upper; lower; offset_upper; }
+  { value = Code_address_from_label_symbol_diff { upper; lower; offset_upper; };
+    comment = None;
+  }
 
 let code_address_from_symbol_diff ~upper ~lower =
-  Code_address_from_symbol_diff { upper; lower; }
+  { value = Code_address_from_symbol_diff { upper; lower; };
+    comment = None;
+  }
 
 let code_address_from_symbol_plus_bytes sym offset_in_bytes =
-  Code_address_from_symbol_plus_bytes { sym; offset_in_bytes; }
+  { value = Code_address_from_symbol_plus_bytes { sym; offset_in_bytes; };
+    comment = None;
+  }
 
 let offset_into_debug_info ?comment lbl =
-  Offset_into_debug_info { lbl; comment; }
+  { value = Offset_into_debug_info lbl;
+    comment;
+  }
 
 let offset_into_debug_info_from_symbol ?comment sym =
-  Offset_into_debug_info_from_symbol { sym; comment; }
+  { value = Offset_into_debug_info_from_symbol sym;
+    comment;
+  }
 
-let offset_into_debug_line lbl = Offset_into_debug_line lbl
+let offset_into_debug_line ?comment lbl =
+  { value = Offset_into_debug_line lbl;
+    comment;
+  }
 
-let offset_into_debug_line_from_symbol sym =
-  Offset_into_debug_line_from_symbol sym
+let offset_into_debug_line_from_symbol ?comment sym =
+  { value = Offset_into_debug_line_from_symbol sym;
+    comment;
+  }
 
-let offset_into_debug_loc lbl = Offset_into_debug_loc lbl
+let offset_into_debug_loc ?comment lbl =
+  { value = Offset_into_debug_loc lbl;
+    comment;
+  }
 
-let offset_into_debug_abbrev lbl = Offset_into_debug_abbrev lbl
+let offset_into_debug_abbrev ?comment lbl =
+  { value = Offset_into_debug_abbrev lbl;
+    comment;
+  }
 
 let distance_between_labels_16bit ~upper ~lower =
-  Distance_between_labels_16bit { upper; lower; }
+  { value = Distance_between_labels_16bit { upper; lower; };
+    comment = None;
+  }
 
 let distance_between_labels_32bit ~upper ~lower =
-  Distance_between_labels_32bit { upper; lower; }
+  { value = Distance_between_labels_32bit { upper; lower; };
+    comment = None;
+  }
 
 let distance_between_labels_64bit ~upper ~lower =
-  Distance_between_labels_64bit { upper; lower; }
+  { value = Distance_between_labels_64bit { upper; lower; };
+    comment = None;
+  }
+
+let append_to_comment { value; comment; } to_append =
+  let comment =
+    match comment with
+    | None -> Some to_append
+    | Some comment -> Some (comment ^ " " ^ to_append)
+  in
+  { value; comment; }
 
 (* DWARF-4 standard section 7.6. *)
 let rec uleb128_size i =
@@ -203,16 +241,16 @@ let rec sleb128_size i =
   else
     Dwarf_int.succ (sleb128_size (Int64.shift_right i 7))
 
-let size t =
-  match t with
-  | Flag_true _ -> Dwarf_int.zero ()  (* see comment below *)
+let size { value; comment = _; } =
+  match value with
+  | Flag_true -> Dwarf_int.zero ()  (* see comment below *)
   | Bool _ -> Dwarf_int.one ()
   | Int8 _ -> Dwarf_int.one ()
   | Int16 _ -> Dwarf_int.two ()
   | Int32 _ -> Dwarf_int.four ()
   | Int64 _ -> Dwarf_int.eight ()
-  | Uleb128 { i; comment = _; } -> uleb128_size i
-  | Sleb128 { i; comment = _; } -> sleb128_size i
+  | Uleb128 i -> uleb128_size i
+  | Sleb128 i -> sleb128_size i
   | Absolute_address _
   | Code_address_from_label _
   | Code_address_from_symbol _
@@ -224,7 +262,7 @@ let size t =
     | 64 -> Dwarf_int.eight ()
     | bits -> Misc.fatal_errorf "Unsupported Targetint.size %d" bits
     end
-  | String { str; comment = _; } ->
+  | String str ->
     Dwarf_int.of_targetint_exn (Targetint.of_int (String.length str + 1))
   | Indirect_string _
   | Offset_into_debug_line _
@@ -237,36 +275,46 @@ let size t =
   | Distance_between_labels_32bit _ -> Dwarf_int.four ()
   | Distance_between_labels_64bit _ -> Dwarf_int.eight ()
 
-let emit t =
+let emit { value; comment; } =
   let width_for_ref_addr_or_sec_offset () : Target_system.machine_width =
     (* DWARF-4 specification p.142. *)
     match Dwarf_format.get () with
     | Thirty_two -> Thirty_two
     | Sixty_four -> Sixty_four
   in
-  match t with
-  | Flag_true { comment; } ->
+  match value with
+  | Flag_true ->
     (* See DWARF-4 specification p.148 *)
     begin match comment with
     | None -> ()
     | Some comment -> A.comment (comment ^ " (Flag_true elided)")
     end
-  | Bool { b; comment; } -> A.int8 ?comment (if b then Int8.one else Int8.zero)
-  | Int8 { i; comment; } -> A.int8 ?comment i
-  | Int16 { i; comment; } -> A.int16 ?comment i
-  | Int32 { i; comment; } -> A.int32 ?comment i
-  | Int64 { i; comment; } -> A.int64 ?comment i
-  | Uleb128 { i; comment; } -> A.uleb128 ?comment i
-  | Sleb128 { i; comment; } -> A.sleb128 ?comment i
-  | String { str; comment; } -> A.string ?comment str
-  | Indirect_string { str; comment; } ->
+  | Bool b -> A.int8 ?comment (if b then Int8.one else Int8.zero)
+  | Int8 i -> A.int8 ?comment i
+  | Int16 i -> A.int16 ?comment i
+  | Int32 i -> A.int32 ?comment i
+  | Int64 i -> A.int64 ?comment i
+  | Uleb128 i -> A.uleb128 ?comment i
+  | Sleb128 i -> A.sleb128 ?comment i
+  | String str -> A.string ?comment str
+  | Indirect_string str ->
     (* "Indirect" strings are collected together into ".debug_str". *)
     let label = A.cache_string ?comment str in
-    A.offset_into_section_label (DWARF Debug_str) label
-      ~width:(width_for_ref_addr_or_sec_offset ())
-  | Absolute_address { addr; comment; } -> A.targetint ?comment addr
-  | Code_address_from_label { lbl; comment; } -> A.label ?comment lbl
-  | Code_address_from_symbol { sym; comment; } -> A.symbol ?comment sym
+    A.offset_into_section_label ?comment (DWARF Debug_str) label
+      ~width:(width_for_ref_addr_or_sec_offset ());
+    let str_len = String.length str in
+    let max_str_len = 30 in
+    let abbrev =
+      if str_len <= max_str_len then
+        Printf.sprintf "  (.debug_str entry is %S)" str
+      else
+        let abbrev = (String.sub str 0 max_str_len) in
+        Printf.sprintf "  (.debug_str entry starts %S [...])" abbrev
+    in
+    A.comment abbrev
+  | Absolute_address addr -> A.targetint ?comment addr
+  | Code_address_from_label lbl -> A.label ?comment lbl
+  | Code_address_from_symbol sym -> A.symbol ?comment sym
   | Code_address_from_label_symbol_diff { upper; lower; offset_upper; } ->
     A.between_symbol_and_label_offset ~upper ~lower ~offset_upper
   | Code_address_from_symbol_diff { upper; lower; } ->
@@ -274,22 +322,22 @@ let emit t =
   | Code_address_from_symbol_plus_bytes { sym; offset_in_bytes; } ->
     A.symbol_plus_offset sym ~offset_in_bytes
   | Offset_into_debug_line label ->
-    A.offset_into_section_label (DWARF Debug_line) label
+    A.offset_into_section_label ?comment (DWARF Debug_line) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_line_from_symbol symbol ->
-    A.offset_into_section_symbol (DWARF Debug_line) symbol
+    A.offset_into_section_symbol ?comment (DWARF Debug_line) symbol
       ~width:(width_for_ref_addr_or_sec_offset ())
-  | Offset_into_debug_info { lbl; comment; } ->
+  | Offset_into_debug_info lbl ->
     A.offset_into_section_label ?comment (DWARF Debug_info) lbl
       ~width:(width_for_ref_addr_or_sec_offset ())
-  | Offset_into_debug_info_from_symbol { sym; comment; } ->
+  | Offset_into_debug_info_from_symbol sym ->
     A.offset_into_section_symbol ?comment (DWARF Debug_info) sym
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_loc label ->
-    A.offset_into_section_label (DWARF Debug_loc) label
+    A.offset_into_section_label ?comment (DWARF Debug_loc) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_abbrev label ->
-    A.offset_into_section_label (DWARF Debug_abbrev) label
+    A.offset_into_section_label ?comment (DWARF Debug_abbrev) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Distance_between_labels_16bit { upper; lower; } ->
     (* CR-someday mshinwell: This should really be checked for overflow, but

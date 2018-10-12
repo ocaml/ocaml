@@ -82,7 +82,7 @@ let create_encoding ~encoding =
 let reference_proto_die attribute proto_die =
   let spec = AS.create attribute F.Ref_addr in
   let label = Proto_die.reference proto_die in
-  AV.create spec (V.offset_into_debug_info ~comment:"reference to DIE" label)
+  AV.create spec (V.offset_into_debug_info ~comment:"ref. to DIE" label)
 
 let create_type ~proto_die = reference_proto_die A.Type proto_die
 let create_sibling ~proto_die = reference_proto_die A.Sibling proto_die
