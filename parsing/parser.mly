@@ -1449,7 +1449,7 @@ signature_item:
     | module_subst
         { let (body, ext) = $1 in (Psig_modsubst body, ext) }
     | rec_module_declarations
-        { let (l, ext) = $1 in (Psig_recmodule (List.rev l), ext) }
+        { let (ext, l) = $1 in (Psig_recmodule l, ext) }
     | module_type_declaration
         { let (body, ext) = $1 in (Psig_modtype body, ext) }
     | open_statement
@@ -1481,23 +1481,34 @@ signature_item:
 
 (* The body (right-hand side) of a module declaration. *)
 module_declaration_body:
-    COLON module_type
-      { $2 }
-  | mkmty(functor_arg module_declaration_body
-      { let (name,typ) = $1 in
-        Pmty_functor(name, typ, $2) })
-      { $1 }
+    COLON mty = module_type
+      { mty }
+  | mkmty(
+      arg = functor_arg body = module_declaration_body
+        { let (x, mty) = arg in
+          Pmty_functor(x, mty, body) }
+    )
+    { $1 }
 ;
 
-%inline module_expr_alias: mkrhs(mod_longident)
-  { Mty.alias ~loc:(make_loc $sloc) $1 };
-
-module_alias:
-    MODULE ext_attributes mkrhs(UIDENT)
-    EQUAL module_expr_alias post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Md.mk $3 $5 ~attrs:(attrs@$6) ~loc:(make_loc $sloc) ~docs, ext }
+(* A module alias declaration (in a signature). *)
+%inline module_alias:
+  MODULE
+  ext = ext attrs1 = attributes
+  uid = mkrhs(UIDENT)
+  EQUAL
+  body = module_expr_alias
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Md.mk uid body ~attrs ~loc ~docs, ext
+  }
+;
+%inline module_expr_alias:
+  id = mkrhs(mod_longident)
+    { Mty.alias ~loc:(make_loc $sloc) id }
 ;
 module_subst:
     MODULE ext_attributes mkrhs(UIDENT)
@@ -1508,24 +1519,41 @@ module_subst:
   | MODULE ext_attributes mkrhs(UIDENT) COLONEQUAL error
       { expecting $loc($5) "module path" }
 ;
-rec_module_declarations:
-    rec_module_declaration
-      { let (body, ext) = $1 in ([body], ext) }
-  | rec_module_declarations and_module_declaration
-      { let (l, ext) = $1 in ($2 :: l, ext) }
+
+%inline rec_module_declarations:
+  xlist(rec_module_declaration, and_module_declaration)
+    { $1 }
 ;
-rec_module_declaration:
-    MODULE ext_attributes REC mkrhs(UIDENT)
-    COLON module_type post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Md.mk $4 $6 ~attrs:(attrs@$7) ~loc:(make_loc $sloc) ~docs, ext }
+%inline rec_module_declaration:
+  MODULE
+  ext = ext
+  attrs1 = attributes
+  REC
+  uid = mkrhs(UIDENT)
+  COLON
+  mty = module_type
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    ext, Md.mk uid mty ~attrs ~loc ~docs
+  }
 ;
-and_module_declaration:
-    AND attributes mkrhs(UIDENT) COLON module_type post_item_attributes
-      { let docs = symbol_docs $sloc in
-        let text = symbol_text $symbolstartpos in
-        Md.mk $3 $5 ~attrs:($2@$6) ~loc:(make_loc $sloc) ~text ~docs }
+%inline and_module_declaration:
+  AND
+  attrs1 = attributes
+  uid = mkrhs(UIDENT)
+  COLON
+  mty = module_type
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let docs = symbol_docs $sloc in
+    let loc = make_loc $sloc in
+    let text = symbol_text $symbolstartpos in
+    Md.mk uid mty ~attrs ~loc ~text ~docs
+  }
 ;
 module_type_declaration_body:
     /* empty */               { None }
