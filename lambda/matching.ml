@@ -1766,7 +1766,7 @@ let get_mod_field modname field =
      | exception Not_found ->
          fatal_error ("Module " ^ modname ^ " unavailable.")
      | env -> (
-         match Env.lookup_value (Longident.Lident field) env with
+         match Env.find_value_by_name (Longident.Lident field) env with
          | exception Not_found ->
              fatal_error ("Primitive " ^ modname ^ "." ^ field ^ " not found.")
          | path, _ -> transl_value_path Location.none env path

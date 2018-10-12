@@ -34,6 +34,8 @@ let rec longident ppf = function
   | Ldot(p, s) -> fprintf ppf "%a.%s" longident p s
   | Lapply(p1, p2) -> fprintf ppf "%a(%a)" longident p1 longident p2
 
+let () = Env.print_longident := longident
+
 (* Print an identifier avoiding name collisions *)
 
 module Out_name = struct
@@ -79,16 +81,14 @@ module Namespace = struct
 
   let lookup =
     let to_lookup f lid =
-      fst @@ f ?loc:None ?mark:(Some false) (Lident lid) !printing_env in
+      fst @@ f (Lident lid) !printing_env
+    in
     function
-    | Type -> fun id ->
-      Env.lookup_type ?loc:None ~mark:false (Lident id) !printing_env
-    | Module -> fun id ->
-      Env.lookup_module ~load:true ~mark:false ?loc:None
-        (Lident id) !printing_env
-    | Module_type -> to_lookup Env.lookup_modtype
-    | Class -> to_lookup Env.lookup_class
-    | Class_type -> to_lookup Env.lookup_cltype
+    | Type -> to_lookup Env.find_type_by_name
+    | Module -> to_lookup Env.find_module_by_name
+    | Module_type -> to_lookup Env.find_modtype_by_name
+    | Class -> to_lookup Env.find_class_by_name
+    | Class_type -> to_lookup Env.find_cltype_by_name
     | Other -> fun _ -> raise Not_found
 
   let location namespace id =
@@ -330,8 +330,9 @@ let ident_stdlib = Ident.create_persistent "Stdlib"
 let non_shadowed_pervasive = function
   | Pdot(Pident id, s) as path ->
       Ident.same id ident_stdlib &&
-      (try Path.same path (Env.lookup_type (Lident s) !printing_env)
-       with Not_found -> true)
+      (match Env.find_type_by_name (Lident s) !printing_env with
+       | (path', _) -> Path.same path path'
+       | exception Not_found -> true)
   | _ -> false
 
 let find_double_underscore s =
@@ -374,12 +375,12 @@ let rec rewrite_double_underscore_paths env p =
            String.capitalize_ascii
              (String.sub name (i + 2) (String.length name - i - 2)))
       in
-      match Env.lookup_module ~load:true better_lid env with
+      match Env.find_module_by_name better_lid env with
       | exception Not_found -> p
-      | p' ->
-        if module_path_is_an_alias_of env p' ~alias_of:p then
-          p'
-        else
+      | p', _ ->
+          if module_path_is_an_alias_of env p' ~alias_of:p then
+            p'
+          else
           p
 
 let rewrite_double_underscore_paths env p =
@@ -411,6 +412,8 @@ let strings_of_paths namespace p =
   reset_naming_context ();
   let trees = List.map (tree_of_path namespace) p in
   List.map (Format.asprintf "%a" !Oprint.out_ident) trees
+
+let () = Env.print_path := path
 
 (* Print a recursive annotation *)
 
@@ -676,6 +679,14 @@ let wrap_printing_env ~error env f =
   if error then Env.without_cmis (wrap_printing_env env) f
   else wrap_printing_env env f
 
+let rec lid_of_path = function
+    Path.Pident id ->
+      Longident.Lident (Ident.name id)
+  | Path.Pdot (p1, s) ->
+      Longident.Ldot (lid_of_path p1, s)
+  | Path.Papply (p1, p2) ->
+      Longident.Lapply (lid_of_path p1, lid_of_path p2)
+
 let is_unambiguous path env =
   let l = Env.find_shadowed_types path env in
   List.exists (Path.same path) l || (* concrete paths are ok *)
@@ -689,7 +700,7 @@ let is_unambiguous path env =
       (* also allow repeatedly defining and opening (for toplevel) *)
       let id = lid_of_path p in
       List.for_all (fun p -> lid_of_path p = id) rem &&
-      Path.same p (Env.lookup_type id env)
+      Path.same p (fst (Env.find_type_by_name id env))
 
 let rec get_best_path r =
   match !r with

@@ -42,8 +42,7 @@ exception Already_bound
 
 type error =
     Unbound_type_variable of string
-  | Unbound_type_constructor of Longident.t
-  | Unbound_type_constructor_2 of Path.t
+  | Undefined_type_constructor of Path.t
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
   | Recursive_type
@@ -59,26 +58,8 @@ type error =
   | Cannot_quantify of string * type_expr
   | Multiple_constraints_on_type of Longident.t
   | Method_mismatch of string * type_expr * type_expr
-  | Unbound_value of Longident.t
-  | Unbound_constructor of Longident.t
-  | Unbound_label of Longident.t
-  | Unbound_module of Longident.t
-  | Unbound_class of Longident.t
-  | Unbound_modtype of Longident.t
-  | Unbound_cltype of Longident.t
-  | Ill_typed_functor_application
-      of Longident.t * Longident.t * Includemod.error list option
-  | Illegal_reference_to_recursive_module
-  | Wrong_use_of_module of Longident.t * [ `Structure_used_as_functor
-                                         | `Abstract_used_as_functor
-                                         | `Functor_used_as_structure
-                                         | `Abstract_used_as_structure
-                                         | `Generative_used_as_applicative
-                                         ]
-  | Cannot_scrape_alias of Longident.t * Path.t
   | Opened_object of Path.t option
   | Not_an_object of type_expr
-  | Unbound_value_missing_rec of Longident.t * Location.t
 
 exception Error of Location.t * Env.t * error
 
@@ -93,34 +74,3 @@ val create_package_mty:
     Location.t -> Env.t -> Parsetree.package_type ->
     (Longident.t Asttypes.loc * Parsetree.core_type) list *
       Parsetree.module_type
-
-val find_type:
-    Env.t -> Location.t -> Longident.t -> Path.t * type_declaration
-val find_constructor:
-    Env.t -> Location.t -> Longident.t -> constructor_description
-val find_all_constructors:
-    Env.t -> Location.t -> Longident.t ->
-    (constructor_description * (unit -> unit)) list
-val find_label:
-    Env.t -> Location.t -> Longident.t -> label_description
-val find_all_labels:
-    Env.t -> Location.t -> Longident.t ->
-    (label_description * (unit -> unit)) list
-val find_value:
-    Env.t -> Location.t -> Longident.t -> Path.t * value_description
-val find_class:
-    Env.t -> Location.t -> Longident.t -> Path.t * class_declaration
-val find_module:
-    Env.t -> Location.t -> Longident.t -> Path.t * module_declaration
-val lookup_module:
-    ?load:bool -> Env.t -> Location.t -> Longident.t -> Path.t
-val find_modtype:
-    Env.t -> Location.t -> Longident.t -> Path.t * modtype_declaration
-val find_class_type:
-    Env.t -> Location.t -> Longident.t -> Path.t * class_type_declaration
-
-val unbound_constructor_error: Env.t -> Longident.t Location.loc -> 'a
-val unbound_label_error: Env.t -> Longident.t Location.loc -> 'a
-
-(* To update location from typemod errors *)
-val typemod_update_location: (Location.t -> exn -> exn) ref

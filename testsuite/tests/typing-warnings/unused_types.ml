@@ -40,9 +40,9 @@ Line 3, characters 2-27:
 3 |   type unused = A of unused
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34: unused type unused.
-Line 3, characters 2-27:
+Line 3, characters 16-27:
 3 |   type unused = A of unused
-      ^^^^^^^^^^^^^^^^^^^^^^^^^
+                    ^^^^^^^^^^^
 Warning 37: unused constructor A.
 module Unused_rec : sig  end
 |}]
@@ -66,9 +66,9 @@ end = struct
 end
 ;;
 [%%expect {|
-Line 4, characters 2-12:
+Line 4, characters 11-12:
 4 |   type t = T
-      ^^^^^^^^^^
+               ^
 Warning 37: unused constructor T.
 module Unused_constructor : sig type t end
 |}]
@@ -83,9 +83,9 @@ end = struct
 end
 ;;
 [%%expect {|
-Line 5, characters 2-12:
+Line 5, characters 11-12:
 5 |   type t = T
-      ^^^^^^^^^^
+               ^
 Warning 37: constructor T is never used to build values.
 (However, this constructor appears in patterns.)
 module Unused_constructor_outside_patterns :
@@ -99,9 +99,9 @@ end = struct
 end
 ;;
 [%%expect {|
-Line 4, characters 2-12:
+Line 4, characters 11-12:
 4 |   type t = T
-      ^^^^^^^^^^
+               ^
 Warning 37: constructor T is never used to build values.
 Its type is exported as a private type.
 module Unused_constructor_exported_private : sig type t = private T end
@@ -117,11 +117,6 @@ end = struct
 end
 ;;
 [%%expect {|
-Line 5, characters 2-20:
-5 |   type t = private T
-      ^^^^^^^^^^^^^^^^^^
-Warning 37: constructor T is never used to build values.
-(However, this constructor appears in patterns.)
 module Used_private_constructor : sig type t val nothing : t -> unit end
 |}]
 
@@ -132,9 +127,9 @@ end = struct
 end
 ;;
 [%%expect {|
-Line 4, characters 2-20:
+Line 4, characters 19-20:
 4 |   type t = private T
-      ^^^^^^^^^^^^^^^^^^
+                       ^
 Warning 37: unused constructor T.
 module Unused_private_constructor : sig type t end
 |}]
@@ -285,11 +280,6 @@ end = struct
 end
 ;;
 [%%expect {|
-Line 6, characters 20-31:
-6 |   type t += private Private_ext
-                        ^^^^^^^^^^^
-Warning 38: extension constructor Private_ext is never used to build values.
-(However, this constructor appears in patterns.)
 module Used_private_extension : sig type t val nothing : t -> unit end
 |}]
 
@@ -337,9 +327,9 @@ end = struct
   type t = A [@@warning "-34"]
 end;;
 [%%expect {|
-Line 3, characters 2-30:
+Line 3, characters 11-12:
 3 |   type t = A [@@warning "-34"]
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+               ^
 Warning 37: unused constructor A.
 module Unused_type_disable_warning : sig  end
 |}]

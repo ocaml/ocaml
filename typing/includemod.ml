@@ -45,6 +45,7 @@ type pos =
 type error = pos list * Env.t * symptom
 
 exception Error of error list
+exception Apply_error of Location.t * Path.t * Path.t * error list
 
 type mark =
   | Mark_both
@@ -543,9 +544,15 @@ let check_modtype_inclusion ~loc env mty1 path1 mty2 =
            (Mtype.strengthen ~aliasable env mty1 path1) mty2)
 
 let () =
-  Env.check_modtype_inclusion := (fun ~loc a b c d ->
-    try (check_modtype_inclusion ~loc a b c d : unit)
-    with Error _ -> raise Not_found)
+  Env.check_functor_application :=
+    (fun ~errors ~loc env mty1 path1 mty2 path2 ->
+       try
+         check_modtype_inclusion ~loc env mty1 path1 mty2
+       with Error errs ->
+         if errors then
+           raise (Apply_error(loc, path1, path2, errs))
+         else
+           raise Not_found)
 
 (* Check that an implementation of a compilation unit meets its
    interface. *)
@@ -841,11 +848,17 @@ let report_error ppf errs =
   fprintf ppf "@[<v>%a%a%t@]" print_errs errs include_err err
     Printtyp.Conflicts.print_explanations
 
+let report_apply_error p1 p2 ppf errs =
+  fprintf ppf "@[The type of %a does not match %a's parameter@ %a@]"
+    Printtyp.path p1 Printtyp.path p2 report_error errs
+
 (* We could do a better job to split the individual error items
    as sub-messages of the main interface mismatch on the whole unit. *)
 let () =
   Location.register_error_of_exn
     (function
       | Error err -> Some (Location.error_of_printer_file report_error err)
+      | Apply_error(loc, p1, p2, err) ->
+          Some (Location.error_of_printer ~loc (report_apply_error p1 p2) err)
       | _ -> None
     )

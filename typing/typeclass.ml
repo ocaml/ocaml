@@ -257,22 +257,15 @@ let rc node =
 
 
 (* Enter a value in the method environment only *)
-let enter_met_env ?check loc lab kind ty val_env met_env par_env =
-  let (id, val_env) =
-    Env.enter_value lab
-      {val_type = ty;
-       val_kind = Val_unbound Val_unbound_instance_variable;
-       val_attributes = [];
-       Types.val_loc = loc} val_env
+let enter_met_env ?check loc lab kind unbound_kind ty val_env met_env par_env =
+  let val_env = Env.enter_unbound_value lab unbound_kind val_env in
+  let par_env = Env.enter_unbound_value lab unbound_kind par_env in
+  let (id, met_env) =
+    Env.enter_value ?check lab
+      {val_type = ty; val_kind = kind;
+       val_attributes = []; Types.val_loc = loc} met_env
   in
-  (id, val_env,
-   Env.add_value ?check id {val_type = ty; val_kind = kind;
-                            val_attributes = [];
-                            Types.val_loc = loc} met_env,
-   Env.add_value id {val_type = ty;
-                     val_kind = Val_unbound Val_unbound_instance_variable;
-                     val_attributes = [];
-                     Types.val_loc = loc} par_env)
+  (id, val_env, met_env, par_env)
 
 (* Enter an instance variable in the environment *)
 let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
@@ -294,7 +287,7 @@ let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
     match id with Some id -> (id, val_env, met_env, par_env)
     | None ->
         enter_met_env Location.none lab (Val_ivar (mut, cl_num))
-          ty val_env met_env par_env
+          Val_unbound_instance_variable ty val_env met_env par_env
   in
   vars := Vars.add lab (id, mut, virt, ty) !vars;
   result
@@ -536,7 +529,7 @@ and class_type_aux env scty =
   in
   match scty.pcty_desc with
     Pcty_constr (lid, styl) ->
-      let (path, decl) = Typetexp.find_class_type env scty.pcty_loc lid.txt in
+      let (path, decl) = Env.lookup_cltype ~loc:scty.pcty_loc lid.txt env in
       if Path.same decl.clty_path unbound_class then
         raise(Error(scty.pcty_loc, env, Unbound_class_type_2 lid.txt));
       let (params, clty) =
@@ -641,8 +634,8 @@ and class_field_aux self_loc cl_num self_type meths vars
         | Some {txt=name} ->
             let (_id, val_env, met_env, par_env) =
               enter_met_env ~check:(fun s -> Warnings.Unused_ancestor s)
-                sparent.pcl_loc name (Val_anc (inh_meths, cl_num)) self_type
-                val_env met_env par_env
+                sparent.pcl_loc name (Val_anc (inh_meths, cl_num))
+                Val_unbound_ancestor self_type val_env met_env par_env
             in
             (val_env, met_env, par_env,Some name)
       in
@@ -944,7 +937,7 @@ and class_expr cl_num val_env met_env scl =
 and class_expr_aux cl_num val_env met_env scl =
   match scl.pcl_desc with
     Pcl_constr (lid, styl) ->
-      let (path, decl) = Typetexp.find_class val_env scl.pcl_loc lid.txt in
+      let (path, decl) = Env.lookup_class ~loc:scl.pcl_loc lid.txt val_env in
       if Path.same decl.cty_path unbound_class then
         raise(Error(scl.pcl_loc, val_env, Unbound_class_2 lid.txt));
       let tyl = List.map
@@ -1136,14 +1129,14 @@ and class_expr_aux cl_num val_env met_env scl =
                   let ty' = extract_option_type val_env ty
                   and ty0' = extract_option_type val_env ty0 in
                   let arg = type_argument val_env sarg0 ty' ty0' in
-                  Some (option_some arg)
+                  Some (option_some val_env arg)
               with Not_found ->
                 sargs, more_sargs,
                 if Btype.is_optional l
                    && (List.mem_assoc Nolabel sargs
                        || List.mem_assoc Nolabel more_sargs)
                 then
-                  Some (option_none ty0 Location.none)
+                  Some (option_none val_env ty0 Location.none)
                 else None
             in
             let omitted = if arg = None then (l,ty0) :: omitted else omitted in
