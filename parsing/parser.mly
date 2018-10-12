@@ -1243,7 +1243,7 @@ structure_item:
     { $1 }
 ;
 
-include_statement(thing):
+%inline include_statement(thing):
   INCLUDE
   ext = ext
   attrs1 = attributes
