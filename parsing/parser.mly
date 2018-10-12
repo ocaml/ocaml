@@ -1286,10 +1286,13 @@ module_binding_body:
   ) { $1 }
 ;
 
+(* A group of recursive module bindings. *)
 %inline rec_module_bindings:
   xlist(rec_module_binding, and_module_binding)
     { $1 }
 ;
+
+(* The first binding in a group of recursive module bindings. *)
 %inline rec_module_binding:
   MODULE
   ext = ext
@@ -1306,6 +1309,8 @@ module_binding_body:
     Mb.mk uid body ~attrs ~loc ~docs
   }
 ;
+
+(* The following bindings in a group of recursive module bindings. *)
 %inline and_module_binding:
   AND
   attrs1 = attributes
@@ -1325,7 +1330,7 @@ module_binding_body:
 
 (* Shared material between structures and signatures. *)
 
-(* An include statement can appear in a structure or in a signature,
+(* An [include] statement can appear in a structure or in a signature,
    which is why this definition is parameterized. *)
 %inline include_statement(thing):
   INCLUDE
@@ -1341,6 +1346,7 @@ module_binding_body:
   }
 ;
 
+(* An [open] statement. *)
 open_statement:
   OPEN
   override = override_flag
