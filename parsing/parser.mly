@@ -782,6 +782,8 @@ The precedences must be listed from low to high.
   { text_def $startpos @ [$1] }
 %inline top_def(symb): symb
   { Ptop_def [$1] }
+%inline text_cstr(symb): symb
+  { text_cstr $startpos @ [$1] }
 
 (* Using this %inline definition means that we do not control precisely
    when [mark_rhs_docs] is called, but I don't think this matters. *)
@@ -1614,6 +1616,7 @@ module_subst:
     Ci.mk id body ~virt ~params ~attrs ~loc ~text ~docs
   }
 ;
+
 class_fun_binding:
     EQUAL class_expr
       { $2 }
@@ -1624,6 +1627,7 @@ class_fun_binding:
       { let (l,o,p) = $1 in Pcl_fun(l, o, p, $2) }
     ) { $1 }
 ;
+
 formal_class_parameters:
   params = class_parameters(type_parameter)
     { params }
@@ -1674,7 +1678,7 @@ class_simple_expr:
 ;
 class_structure:
   |  class_self_pattern extra_cstr(class_fields)
-       { Cstr.mk $1 (List.rev $2) }
+       { Cstr.mk $1 $2 }
 ;
 class_self_pattern:
     LPAREN pattern RPAREN
@@ -1685,11 +1689,9 @@ class_self_pattern:
   | /* empty */
       { ghpat ~loc:$sloc Ppat_any }
 ;
-class_fields:
-    /* empty */
-      { [] }
-  | class_fields class_field
-      { $2 :: List.rev (text_cstr $startpos($2)) @ $1 }
+%inline class_fields:
+  flatten(text_cstr(class_field)*)
+    { $1 }
 ;
 class_field:
   | INHERIT override_flag attributes class_expr parent_binder
