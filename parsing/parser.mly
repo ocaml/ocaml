@@ -1297,11 +1297,19 @@ rec_module_bindings:
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 rec_module_binding:
-    MODULE ext_attributes REC mkrhs(UIDENT)
-    module_binding_body post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Mb.mk $4 $5 ~attrs:(attrs@$6) ~loc:(make_loc $sloc) ~docs, ext }
+  MODULE
+  ext = ext
+  attrs1 = attributes
+  REC
+  uid = mkrhs(UIDENT)
+  body = module_binding_body
+  attrs2 = post_item_attributes
+  {
+    let loc = make_loc $sloc in
+    let attrs = attrs1 @ attrs2 in
+    let docs = symbol_docs $sloc in
+    Mb.mk uid body ~attrs ~loc ~docs, ext
+  }
 ;
 and_module_binding:
     AND attributes mkrhs(UIDENT) module_binding_body post_item_attributes
