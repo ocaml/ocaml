@@ -16,6 +16,8 @@
 
 module A = Asm_directives
 
+module Uint64 = Numbers.Uint64
+
 type t =
   | Thirty_two of Int32.t
   | Sixty_four of Int64.t
@@ -69,6 +71,11 @@ let to_int64 t =
   match t with
   | Thirty_two t -> Int64.of_int32 t
   | Sixty_four t -> t
+
+let to_uint64_exn t =
+  match t with
+  | Thirty_two t -> Uint64.of_int32_exn t
+  | Sixty_four t -> Uint64.of_int64_exn t
 
 (* CR-someday mshinwell: This should probably check for overflow. *)
 let add t1 t2 =

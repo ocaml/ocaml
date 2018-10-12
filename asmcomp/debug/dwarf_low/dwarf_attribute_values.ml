@@ -97,11 +97,12 @@ module Attribute_value = struct
       Dwarf_value.emit value
     | Single_location_description loc_desc ->
       A.uleb128 ~comment:"size of single location desc."
-        (Dwarf_int.to_int64 (Single_location_description.size loc_desc));
+        (Dwarf_int.to_uint64_exn (Single_location_description.size loc_desc));
       Single_location_description.emit loc_desc
     | Composite_location_description loc_desc ->
       A.uleb128 ~comment:"size of composite location desc."
-        (Dwarf_int.to_int64 (Composite_location_description.size loc_desc));
+        (Dwarf_int.to_uint64_exn
+          (Composite_location_description.size loc_desc));
       Composite_location_description.emit loc_desc
 
   let attribute_spec (spec, _value) = spec

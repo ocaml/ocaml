@@ -23,6 +23,8 @@
 module Int8 = Numbers.Int8
 module Int16 = Numbers.Int16
 
+module Uint64 = Numbers.Uint64
+
 module TS = Target_system
 
 let dwarf_supported () =
@@ -57,6 +59,7 @@ module Directive = struct
   module Constant = struct
     type t =
       | Signed_int of Int64.t
+      | Unsigned_int of Uint64.t
       | This
       | Named_thing of string
       | Add of t * t
@@ -65,7 +68,8 @@ module Directive = struct
 
     let rec print buf t =
       match t with
-      | Named_thing _ | Signed_int _ | This as c -> print_subterm buf c
+      | Named_thing _ | Signed_int _ | Unsigned_int _
+      | This as c -> print_subterm buf c
       | Add (c1, c2) ->
         bprintf buf "%a + %a" print_subterm c1 print_subterm c2
       | Sub (c1, c2) ->
@@ -90,6 +94,10 @@ module Directive = struct
           else
             bprintf buf "0%LxH" n
         end
+      | Unsigned_int n ->
+        (* We can use the printer for [Signed_int] since we always print
+           as an unsigned hex representation. *)
+        print_subterm buf (Signed_int (Uint64.to_int64 n))
       | Add (c1, c2) ->
         bprintf buf "(%a + %a)" print_subterm c1 print_subterm c2
       | Sub (c1, c2) ->
@@ -101,6 +109,9 @@ module Directive = struct
       let (>>=) = Misc.Stdlib.Option.(>>=) in
       match t with
       | Signed_int i -> Some i
+      | Unsigned_int _ ->
+        (* For the moment we don't evaluate arithmetic on unsigned ints. *)
+        None
       | This -> None
       | Named_thing _ -> None
       | Add (t1, t2) ->
@@ -413,6 +424,7 @@ end
    to plain [string]s for [Constant.t]). *)
 type proto_constant =
   | Signed_int of Int64.t
+  | Unsigned_int of Uint64.t
   | This
   | Label of Asm_label.t
   | Symbol of Asm_symbol.t
@@ -423,6 +435,7 @@ type proto_constant =
 let rec lower_proto_constant (cst : proto_constant) : Directive.Constant.t =
   match cst with
   | Signed_int n -> Signed_int n
+  | Unsigned_int n -> Unsigned_int n
   | This -> This
   | Label lbl -> Named_thing (Asm_label.encode lbl)
   | Symbol sym -> Named_thing (Asm_symbol.encode sym)
@@ -487,7 +500,7 @@ let sleb128 ?comment i =
   emit (Sleb128 { constant = Directive.Constant.Signed_int i; comment; })
 
 let uleb128 ?comment i =
-  emit (Uleb128 { constant = Directive.Constant.Signed_int i; comment; })
+  emit (Uleb128 { constant = Directive.Constant.Unsigned_int i; comment; })
 
 let direct_assignment var cst =
   emit (Direct_assignment (var, lower_proto_constant cst))
@@ -784,6 +797,18 @@ let int32 ?comment i =
 
 let int64 ?comment i =
   const ?comment (Signed_int i) Sixty_four
+
+let uint8 ?comment i =
+  const ?comment (Unsigned_int (Uint64.of_uint8 i)) Eight
+
+let uint16 ?comment i =
+  const ?comment (Unsigned_int (Uint64.of_uint16 i)) Sixteen
+
+let uint32 ?comment i =
+  const ?comment (Unsigned_int (Uint64.of_uint32 i)) Thirty_two
+
+let uint64 ?comment i =
+  const ?comment (Unsigned_int i) Sixty_four
 
 let targetint ?comment n =
   match Targetint.repr n with

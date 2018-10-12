@@ -17,6 +17,11 @@
 module Int8 = Numbers.Int8
 module Int16 = Numbers.Int16
 
+module Uint8 = Numbers.Uint8
+module Uint16 = Numbers.Uint16
+module Uint32 = Numbers.Uint32
+module Uint64 = Numbers.Uint64
+
 module I = Dwarf_int
 module V = Dwarf_value
 
@@ -58,15 +63,15 @@ type t =
   | DW_op_lit30
   | DW_op_lit31
   | DW_op_addr of implicit_value
-  | DW_op_const1u of Int8.t
-  | DW_op_const2u of Int16.t
-  | DW_op_const4u of Int32.t
-  | DW_op_const8u of Int64.t
+  | DW_op_const1u of Uint8.t
+  | DW_op_const2u of Uint16.t
+  | DW_op_const4u of Uint32.t
+  | DW_op_const8u of Uint64.t
   | DW_op_const1s of Int8.t
   | DW_op_const2s of Int16.t
   | DW_op_const4s of Int32.t
   | DW_op_const8s of Int64.t
-  | DW_op_constu of Int64.t
+  | DW_op_constu of Uint64.t
   | DW_op_consts of Int64.t
   | DW_op_fbreg of { offset_in_bytes : Targetint.t; }
   | DW_op_breg0 of { offset_in_bytes : Targetint.t; }
@@ -109,9 +114,9 @@ type t =
   | DW_op_swap
   | DW_op_rot
   | DW_op_deref
-  | DW_op_deref_size of Int8.t
+  | DW_op_deref_size of Uint8.t
   | DW_op_xderef
-  | DW_op_xderef_size of Int8.t
+  | DW_op_xderef_size of Uint8.t
   | DW_op_push_object_address
   | DW_op_form_tls_address
   | DW_op_call_frame_cfa
@@ -125,7 +130,7 @@ type t =
   | DW_op_not
   | DW_op_or
   | DW_op_plus
-  | DW_op_plus_uconst of Int64.t
+  | DW_op_plus_uconst of Uint64.t
   | DW_op_shl
   | DW_op_shr
   | DW_op_shra
@@ -136,8 +141,8 @@ type t =
   | DW_op_lt
   | DW_op_gt
   | DW_op_ne
-  | DW_op_skip of { num_bytes_forward : Int16.t; }
-  | DW_op_bra of { num_bytes_forward : Int16.t; }
+  | DW_op_skip of { num_bytes_forward : Uint16.t; }
+  | DW_op_bra of { num_bytes_forward : Uint16.t; }
   | DW_op_call2 of {
       label : Asm_label.t;
       compilation_unit_header_label : Asm_label.t;
@@ -574,10 +579,10 @@ end) = struct
     | DW_op_lit31 -> unit_result
     | DW_op_addr (Int addr) -> value (V.absolute_address addr)
     | DW_op_addr (Symbol sym) -> value (V.code_address_from_symbol sym)
-    | DW_op_const1u n -> value (V.int8 n)
-    | DW_op_const2u n -> value (V.int16 n)
-    | DW_op_const4u n -> value (V.int32 n)
-    | DW_op_const8u n -> value (V.int64 n)
+    | DW_op_const1u n -> value (V.uint8 n)
+    | DW_op_const2u n -> value (V.uint16 n)
+    | DW_op_const4u n -> value (V.uint32 n)
+    | DW_op_const8u n -> value (V.uint64 n)
     | DW_op_const1s n -> value (V.int8 n)
     | DW_op_const2s n -> value (V.int16 n)
     | DW_op_const4s n -> value (V.int32 n)
@@ -623,7 +628,8 @@ end) = struct
       value (V.sleb128 ~comment:"offset in bytes" offset_in_bytes)
     | DW_op_bregx { reg_number; offset_in_bytes; } ->
       let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
-      value (V.uleb128 ~comment:"DWARF reg number" (Int64.of_int reg_number))
+      value (V.uleb128 ~comment:"DWARF reg number"
+        (Uint64.of_int_exn reg_number))
       >>> fun () ->
       value (V.sleb128 ~comment:"offset in bytes" offset_in_bytes)
     | DW_op_dup
@@ -635,7 +641,7 @@ end) = struct
     | DW_op_deref
     | DW_op_deref_size _
     | DW_op_xderef -> unit_result
-    | DW_op_xderef_size n -> value (V.int8 ~comment:"size" n)
+    | DW_op_xderef_size n -> value (V.uint8 ~comment:"size" n)
     | DW_op_push_object_address
     | DW_op_form_tls_address
     | DW_op_call_frame_cfa
@@ -662,7 +668,7 @@ end) = struct
     | DW_op_ne -> unit_result
     | DW_op_skip { num_bytes_forward; }
     | DW_op_bra { num_bytes_forward; } ->
-      value (V.int16 ~comment:"num bytes forward" num_bytes_forward)
+      value (V.uint16 ~comment:"num bytes forward" num_bytes_forward)
     | DW_op_call2 { label; compilation_unit_header_label; } ->
       value (V.distance_between_labels_16bit
         ~upper:label ~lower:compilation_unit_header_label)
@@ -712,7 +718,8 @@ end) = struct
     | DW_op_reg30
     | DW_op_reg31 -> unit_result
     | DW_op_regx { reg_number; } ->
-      value (V.uleb128 ~comment:"DWARF reg number" (Int64.of_int reg_number))
+      value (V.uleb128 ~comment:"DWARF reg number"
+        (Uint64.of_int_exn reg_number))
     | DW_op_implicit_value (Int i) ->
       let buf =
         match Arch.size_int with
@@ -737,11 +744,11 @@ end) = struct
       value (V.code_address_from_symbol symbol)
     | DW_op_stack_value -> unit_result
     | DW_op_piece { size_in_bytes; } ->
-      let size_in_bytes = Targetint.to_int64 size_in_bytes in
+      let size_in_bytes = Targetint.to_uint64_exn size_in_bytes in
       value (V.uleb128 ~comment:"size in bytes" size_in_bytes)
     | DW_op_bit_piece { size_in_bits; offset_in_bits; } ->
-      let size_in_bits = Targetint.to_int64 size_in_bits in
-      let offset_in_bits = Targetint.to_int64 offset_in_bits in
+      let size_in_bits = Targetint.to_uint64_exn size_in_bits in
+      let offset_in_bits = Targetint.to_uint64_exn offset_in_bits in
       value (V.uleb128 ~comment:"size in bits" size_in_bits)
       >>> fun () ->
       value (V.uleb128 ~comment:"offset in bits" offset_in_bits)

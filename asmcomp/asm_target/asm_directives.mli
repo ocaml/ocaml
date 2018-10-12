@@ -64,13 +64,26 @@ val int32 : ?comment:string -> Int32.t -> unit
 (** Emit a 64-bit signed integer. *)
 val int64 : ?comment:string -> Int64.t -> unit
 
+(** Emit an 8-bit unsigned integer.  There is no padding. *)
+val uint8 : ?comment:string -> Numbers.Uint8.t -> unit
+
+(** Emit an 16-bit unsigned integer.  There is no padding. *)
+val uint16 : ?comment:string -> Numbers.Uint16.t -> unit
+
+(** Emit an 32-bit unsigned integer.  There is no padding. *)
+val uint32 : ?comment:string -> Numbers.Uint32.t -> unit
+
+(** Emit an 64-bit unsigned integer.  There is no padding. *)
+val uint64 : ?comment:string -> Numbers.Uint64.t -> unit
+
 (** Emit a signed integer whose width is that of an address on the target
     machine.  There is no padding or sign extension. *)
+(* CR-soon mshinwell: Target addresses should not be signed *)
 val targetint : ?comment:string -> Targetint.t -> unit
 
 (** Emit a 64-bit integer in unsigned LEB128 variable-length encoding
     (cf. DWARF debugging information standard). *)
-val uleb128 : ?comment:string -> Int64.t -> unit
+val uleb128 : ?comment:string -> Numbers.Uint64.t -> unit
 
 (** Emit a 64-bit integer in signed LEB128 variable-length encoding. *)
 val sleb128 : ?comment:string -> Int64.t -> unit
@@ -265,6 +278,7 @@ module Directive : sig
   module Constant : sig
     type t = private
       | Signed_int of Int64.t
+      | Unsigned_int of Numbers.Uint64.t
       | This
       | Named_thing of string
       (** [Named_thing] covers symbols, labels and variables. (Name mangling

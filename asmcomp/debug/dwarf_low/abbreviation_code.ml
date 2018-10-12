@@ -14,6 +14,8 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+module Uint64 = Numbers.Uint64
+
 type t = Dwarf_value.t
 
 exception Bad_abbreviation_code of int
@@ -23,10 +25,10 @@ let of_int i tag =
   Dwarf_value.uleb128
     ~comment:(Printf.sprintf "abbrev. code (abbrev. has tag %s)"
       (Dwarf_tag.tag_name tag))
-    (Int64.of_int i)
+    (Uint64.of_int_exn i)
 
 let null () =
-  Dwarf_value.uleb128 ~comment:"null abbreviation code" 0L
+  Dwarf_value.uleb128 ~comment:"null abbreviation code" Uint64.zero
 
 let emit t =
   Dwarf_value.emit t

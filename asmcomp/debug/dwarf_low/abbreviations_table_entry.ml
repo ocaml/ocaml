@@ -14,14 +14,15 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+module AS = Dwarf_attributes.Attribute_specification.Sealed
+module Uint64 = Numbers.Uint64
+
 type t = {
   abbreviation_code : Abbreviation_code.t;
   tag : Dwarf_tag.t;
   has_children : Child_determination.t;
   attribute_specs : Dwarf_attributes.Attribute_specification.Sealed.Set.t;
 }
-
-module AS = Dwarf_attributes.Attribute_specification.Sealed
 
 let create ~abbreviation_code ~tag ~has_children ~attribute_specs =
   { abbreviation_code;
@@ -40,8 +41,8 @@ let size t =
         t.attribute_specs
         (Dwarf_int.zero ())
     (* See below regarding the two zero words. *)
-    + Dwarf_value.size (Dwarf_value.uleb128 0L)
-    + Dwarf_value.size (Dwarf_value.uleb128 0L)
+    + Dwarf_value.size (Dwarf_value.uleb128 Uint64.zero)
+    + Dwarf_value.size (Dwarf_value.uleb128 Uint64.zero)
 
 let emit t =
   Abbreviation_code.emit t.abbreviation_code;
@@ -50,8 +51,10 @@ let emit t =
   AS.Set.iter (fun spec -> AS.emit spec) t.attribute_specs;
   (* DWARF-4 spec section 7.5.3: "The series of attribute specifications ends
      with an entry containing 0 for the name and 0 for the form." *)
-  Dwarf_value.emit (Dwarf_value.uleb128 ~comment:"terminator word 1" 0L);
-  Dwarf_value.emit (Dwarf_value.uleb128 ~comment:"terminator word 2" 0L)
+  Dwarf_value.emit (
+    Dwarf_value.uleb128 ~comment:"terminator word 1" Uint64.zero);
+  Dwarf_value.emit (
+    Dwarf_value.uleb128 ~comment:"terminator word 2" Uint64.zero)
 
 let tag t = t.tag
 let has_children t = t.has_children

@@ -23,6 +23,11 @@ module A = Asm_directives
 module Int8 = Numbers.Int8
 module Int16 = Numbers.Int16
 
+module Uint8 = Numbers.Uint8
+module Uint16 = Numbers.Uint16
+module Uint32 = Numbers.Uint32
+module Uint64 = Numbers.Uint64
+
 type value =
   | Flag_true
   | Bool of bool
@@ -30,7 +35,11 @@ type value =
   | Int16 of Int16.t
   | Int32 of Int32.t
   | Int64 of Int64.t
-  | Uleb128 of Int64.t
+  | Uint8 of Uint8.t
+  | Uint16 of Uint16.t
+  | Uint32 of Uint32.t
+  | Uint64 of Uint64.t
+  | Uleb128 of Uint64.t
   | Sleb128 of Int64.t
   | String of string
   | Indirect_string of string
@@ -82,7 +91,11 @@ let print ppf { value; comment = _; } =
   | Int16 i -> Int16.print ppf i
   | Int32 i -> Format.fprintf ppf "%ld" i
   | Int64 i -> Format.fprintf ppf "%Ld" i
-  | Uleb128 i -> Format.fprintf ppf "(uleb128 %Ld)" i
+  | Uint8 i -> Uint8.print ppf i
+  | Uint16 i -> Uint16.print ppf i
+  | Uint32 i -> Uint32.print ppf i
+  | Uint64 i -> Uint64.print ppf i
+  | Uleb128 i -> Format.fprintf ppf "(uleb128 %a)" Uint64.print i
   | Sleb128 i -> Format.fprintf ppf "(sleb128 %Ld)" i
   | String str -> Format.fprintf ppf "\"%S\"" str
   | Indirect_string str ->
@@ -140,6 +153,14 @@ let int16 ?comment i = { value = Int16 i; comment; }
 let int32 ?comment i = { value = Int32 i; comment; }
 
 let int64 ?comment i = { value = Int64 i; comment; }
+
+let uint8 ?comment i = { value = Uint8 i; comment; }
+
+let uint16 ?comment i = { value = Uint16 i; comment; }
+
+let uint32 ?comment i = { value = Uint32 i; comment; }
+
+let uint64 ?comment i = { value = Uint64 i; comment; }
 
 let uleb128 ?comment i = { value = Uleb128 i; comment; }
 
@@ -230,10 +251,17 @@ let append_to_comment { value; comment; } to_append =
   { value; comment; }
 
 (* DWARF-4 standard section 7.6. *)
-let rec uleb128_size i =
-  assert (Int64.compare i 0L >= 0);
-  if Int64.compare i 128L < 0 then Dwarf_int.one ()
-  else Dwarf_int.succ (uleb128_size (Int64.shift_right_logical i 7))
+let uleb128_size i =
+  let rec uleb128_size i =
+    if Int64.compare i 128L < 0 then Dwarf_int.one ()
+    else Dwarf_int.succ (uleb128_size (Int64.shift_right_logical i 7))
+  in
+  let i = Uint64.to_int64 i in
+  if Int64.compare i 0L < 0 then begin
+    Misc.fatal_errorf "Cannot compute ULEB128 encodings on unsigned numbers \
+      that don't fit in [Int64].t"
+  end;
+  uleb128_size i
 
 let rec sleb128_size i =
   if Int64.compare i (-64L) >= 0 && Int64.compare i 64L < 0 then
@@ -245,10 +273,10 @@ let size { value; comment = _; } =
   match value with
   | Flag_true -> Dwarf_int.zero ()  (* see comment below *)
   | Bool _ -> Dwarf_int.one ()
-  | Int8 _ -> Dwarf_int.one ()
-  | Int16 _ -> Dwarf_int.two ()
-  | Int32 _ -> Dwarf_int.four ()
-  | Int64 _ -> Dwarf_int.eight ()
+  | Int8 _ | Uint8 _ -> Dwarf_int.one ()
+  | Int16 _ | Uint16 _ -> Dwarf_int.two ()
+  | Int32 _ | Uint32 _ -> Dwarf_int.four ()
+  | Int64 _ | Uint64 _ -> Dwarf_int.eight ()
   | Uleb128 i -> uleb128_size i
   | Sleb128 i -> sleb128_size i
   | Absolute_address _
@@ -294,6 +322,10 @@ let emit { value; comment; } =
   | Int16 i -> A.int16 ?comment i
   | Int32 i -> A.int32 ?comment i
   | Int64 i -> A.int64 ?comment i
+  | Uint8 i -> A.uint8 ?comment i
+  | Uint16 i -> A.uint16 ?comment i
+  | Uint32 i -> A.uint32 ?comment i
+  | Uint64 i -> A.uint64 ?comment i
   | Uleb128 i -> A.uleb128 ?comment i
   | Sleb128 i -> A.sleb128 ?comment i
   | String str -> A.string ?comment str

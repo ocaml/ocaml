@@ -15,6 +15,7 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 module Int16 = Numbers.Int16
+module Uint64 = Numbers.Uint64
 
 type user = Int16.t
 
@@ -220,7 +221,7 @@ let encode t =
       assert (code >= dw_tag_lo_user && code <= dw_tag_hi_user);
       Int16.to_int code
   in
-  Dwarf_value.uleb128 ~comment:(tag_name t) (Int64.of_int code)
+  Dwarf_value.uleb128 ~comment:(tag_name t) (Uint64.of_int_exn code)
 
 let size t =
   Dwarf_value.size (encode t)

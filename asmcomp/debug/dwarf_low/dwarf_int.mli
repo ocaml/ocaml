@@ -48,6 +48,7 @@ val of_host_int_exn : int -> t
 val of_targetint_exn : Targetint.t -> t
 
 val to_int64 : t -> Int64.t
+val to_uint64_exn : t -> Numbers.Uint64.t
 
 val add : t -> t -> t
 val succ : t -> t

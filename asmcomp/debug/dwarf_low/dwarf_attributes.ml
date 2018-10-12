@@ -14,6 +14,8 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+module Uint64 = Numbers.Uint64
+
 module Class = struct
   type address = [ `address ]
   type block = [ `block ]
@@ -151,7 +153,7 @@ module Form = struct
       | Flag_present -> 0x19
       | Ref_sig8 -> 0x20
     in
-    Dwarf_value.uleb128 ~comment:(name t) (Int64.of_int code)
+    Dwarf_value.uleb128 ~comment:(name t) (Uint64.of_int_exn code)
 
   let size t =
     Dwarf_value.size (encode t)
@@ -457,7 +459,7 @@ module Attribute = struct
 (*    | User code -> code *)
 
   let encode t =
-    Dwarf_value.uleb128 ~comment:(name t) (Int64.of_int (code t))
+    Dwarf_value.uleb128 ~comment:(name t) (Uint64.of_int_exn (code t))
 
   let size t =
     Dwarf_value.size (encode t)

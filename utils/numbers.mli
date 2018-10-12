@@ -51,4 +51,55 @@ module Int16 : sig
   val to_int : t -> int
 end
 
+module Uint8 : sig
+  type t
+
+  val print : Format.formatter -> t -> unit
+
+  val zero : t
+  val one : t
+
+  val of_int_exn : int -> t
+  val to_int : t -> int
+end
+
+module Uint16 : sig
+  type t
+
+  val print : Format.formatter -> t -> unit
+
+  val of_int_exn : int -> t
+  val of_int64_exn : Int64.t -> t
+
+  val to_int : t -> int
+end
+
+module Uint32 : sig
+  type t
+
+  val print : Format.formatter -> t -> unit
+
+  val of_int32 : Int32.t -> t
+  val of_int64_exn : Int64.t -> t
+end
+
+module Uint64 : sig
+  type t
+
+  val print : Format.formatter -> t -> unit
+
+  val zero : t
+
+  val of_int_exn : int -> t
+
+  val of_uint8 : Uint8.t -> t
+  val of_uint16 : Uint16.t -> t
+  val of_uint32 : Uint32.t -> t
+
+  val of_int32_exn : Int32.t -> t
+  val of_int64_exn : Int64.t -> t
+
+  val to_int64 : t -> Int64.t
+end
+
 module Float : Identifiable.S with type t = float

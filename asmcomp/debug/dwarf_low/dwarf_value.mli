@@ -32,7 +32,15 @@ val int32 : ?comment:string -> Int32.t -> t
 
 val int64 : ?comment:string -> Int64.t -> t
 
-val uleb128 : ?comment:string -> Int64.t -> t
+val uint8 : ?comment:string -> Numbers.Uint8.t -> t
+
+val uint16 : ?comment:string -> Numbers.Uint16.t -> t
+
+val uint32 : ?comment:string -> Numbers.Uint32.t -> t
+
+val uint64 : ?comment:string -> Numbers.Uint64.t -> t
+
+val uleb128 : ?comment:string -> Numbers.Uint64.t -> t
 
 val sleb128 : ?comment:string -> Int64.t -> t
 

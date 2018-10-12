@@ -14,6 +14,8 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+module Uint64 = Numbers.Uint64
+
 type t = Abbreviations_table_entry.t list
 
 let create () = []
@@ -35,7 +37,7 @@ let find t ~tag ~has_children ~attribute_specs =
 let size t =
   let (+) = Dwarf_int.add in
   (* See below re. the zero word. *)
-  Dwarf_value.size (Dwarf_value.uleb128 0L)
+  Dwarf_value.size (Dwarf_value.uleb128 Uint64.zero)
     + List.fold_left
         (fun size entry -> size + Abbreviations_table_entry.size entry)
         (Dwarf_int.zero ())
@@ -50,4 +52,5 @@ let emit t =
      unit end with an entry consisting of a 0 byte for the abbreviation
      code." *)
   Dwarf_value.emit (
-    Dwarf_value.uleb128 ~comment:"End of abbrevs for compilation unit" 0L)
+    Dwarf_value.uleb128 ~comment:"End of abbrevs for compilation unit"
+      Uint64.zero)

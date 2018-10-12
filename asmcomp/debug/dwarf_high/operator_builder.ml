@@ -14,6 +14,8 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+module Uint64 = Numbers.Uint64
+
 module O = Dwarf_operator
 
 let dw_op_regx ~dwarf_reg_number : O.t =
@@ -119,7 +121,7 @@ let add_unsigned_const i : O.t =
     Misc.fatal_error "[Operator_builder.add_unsigned_const] only takes \
       integers >= 0"
   end;
-  DW_op_plus_uconst (Targetint.to_int64 i)
+  DW_op_plus_uconst (Targetint.to_uint64_exn i)
 
 let implicit_pointer ~offset_in_bytes ~die_label dwarf_version : O.t =
   if Dwarf_version.compare dwarf_version Dwarf_version.four < 0 then
@@ -145,7 +147,7 @@ let conditional ~if_zero ~if_nonzero =
   if nonzero_branch_size > max_branch_size then begin
     Misc.fatal_error "Dwarf_operator.conditional: nonzero branch too long"
   end;
-  let nonzero_branch_size = Numbers.Int16.of_int64_exn nonzero_branch_size in
+  let nonzero_branch_size = Numbers.Uint16.of_int64_exn nonzero_branch_size in
   let if_zero =
     if_zero @
       [O.DW_op_skip { num_bytes_forward = nonzero_branch_size; }]
@@ -160,7 +162,7 @@ let conditional ~if_zero ~if_nonzero =
   if zero_branch_size > max_branch_size then begin
     Misc.fatal_error "Dwarf_operator.conditional: zero branch too long"
   end;
-  let zero_branch_size = Numbers.Int16.of_int64_exn zero_branch_size in
+  let zero_branch_size = Numbers.Uint16.of_int64_exn zero_branch_size in
   (* The [DW_op_nop] is there in case no other operator follows (this is a
      branch target). *)
   O.DW_op_bra { num_bytes_forward = zero_branch_size; }
@@ -176,7 +178,9 @@ let optimize_sequence ops =
         :: ops
         when Targetint.equal offset_in_bytes' Targetint.zero ->
       (* CR mshinwell: Looks like maybe there is a type mismatch here *)
-      let offset_in_bytes = Targetint.of_int64 offset_in_bytes in
+      let offset_in_bytes =
+        Targetint.of_int64 (Uint64.to_int64 offset_in_bytes)
+      in
       (O.DW_op_bregx { reg_number; offset_in_bytes; }) :: (optimize ops)
     | DW_op_addr addr :: DW_op_stack_value :: [] ->
       [O.DW_op_implicit_value addr]
@@ -190,7 +194,7 @@ let optimize_sequence ops =
         | [] -> Targetint.zero, []
         | (DW_op_plus_uconst i) :: ops ->
           (* CR mshinwell: Same again here *)
-          let i = Targetint.of_int64 i in
+          let i = Targetint.of_int64 (Uint64.to_int64 i) in
           if Targetint.compare i Targetint.zero < 0 then begin
             Misc.fatal_error "Found [DW_op_plus_uconst] with negative argument"
           end;
@@ -201,7 +205,7 @@ let optimize_sequence ops =
       let total, rest = total ops in
       if Targetint.compare total Targetint.zero = 0 then optimize rest
       else (* CR mshinwell: Same again here *)
-        let total = Targetint.to_int64 total in
+        let total = Uint64.of_int64_exn (Targetint.to_int64 total) in
         (O.DW_op_plus_uconst total) :: (optimize rest)
     | DW_op_nop :: ops -> optimize ops
     | t::ops -> t :: (optimize ops)
