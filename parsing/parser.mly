@@ -1301,7 +1301,7 @@ module_binding_body:
     Mb.mk uid body ~attrs ~loc ~docs
   }
 ;
-and_module_binding:
+%inline and_module_binding:
   AND
   attrs1 = attributes
   uid = mkrhs(UIDENT)
