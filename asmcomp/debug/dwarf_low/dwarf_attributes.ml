@@ -86,6 +86,39 @@ module Form = struct
     (* [DW_FORM_indirect] is not currently supported because it cannot be
        statically-typed in the manner we use here. *)
 
+  let name (type dwarf_class) (type form) (t : (dwarf_class, form) t) =
+    let name =
+      match t with
+      | Addr -> "addr"
+      | Block -> "block"
+      | Block1 -> "block1"
+      | Block2 -> "block2"
+      | Block4 -> "block4"
+      | Data1 -> "data1"
+      | Data2 -> "data2"
+      | Data4 -> "data4"
+      | Data8 -> "data8"
+      | String -> "string"
+      | Flag -> "flag"
+      | Sdata -> "sdata"
+      | Strp -> "strp"
+      | Udata -> "udata"
+      | Ref_addr -> "ref_addr"
+      | Ref1 -> "ref1"
+      | Ref2 -> "ref2"
+      | Ref4 -> "ref4"
+      | Ref8 -> "ref8"
+      | Ref_udata -> "ref_udata"
+      | Sec_offset_lineptr -> "sec_offset_lineptr"
+      | Sec_offset_loclistptr -> "sec_offset_loclistptr"
+      | Sec_offset_macptr -> "sec_offset_macptr"
+      | Sec_offset_rangelistptr -> "sec_offset_rangelistptr"
+      | Exprloc -> "exprloc"
+      | Flag_present -> "flag_present"
+      | Ref_sig8 -> "ref_sig8"
+    in
+    "DW_FORM_" ^ name
+
   let encode (type dwarf_class) (type form) (t : (dwarf_class, form) t) =
     let code =
       (* DWARF-4 standard page 160 onwards. *)
@@ -118,7 +151,7 @@ module Form = struct
       | Flag_present -> 0x19
       | Ref_sig8 -> 0x20
     in
-    Dwarf_value.Uleb128 (Int64.of_int code)
+    Dwarf_value.uleb128 ~comment:(name t) (Int64.of_int code)
 
   let size t =
     Dwarf_value.size (encode t)
@@ -229,6 +262,104 @@ module Attribute = struct
   let hi_user = 0x3fff
 *)
 
+  let name (type dwarf_class) (t : dwarf_class t) =
+    let name =
+      match t with
+      | Sibling -> "sibling"
+      | Location -> "location"
+      | Name -> "name"
+      | Ordering -> "ordering"
+      | Byte_size -> "byte_size"
+      | Bit_offset -> "bit_offset"
+      | Bit_size -> "bit_size"
+      | Stmt_list -> "stmt_list"
+      | Low_pc -> "low_pc"
+      | High_pc -> "high_pc"
+      | Language -> "language"
+      | Discr -> "discr"
+      | Discr_value -> "discr_value"
+      | Visibility -> "visibility"
+      | Import -> "import"
+      | String_length -> "string_length"
+      | Common_reference -> "common_reference"
+      | Comp_dir -> "comp_dir"
+      | Const_value -> "const_value"
+      | Containing_type -> "containing_type"
+      | Default_value -> "default_value"
+      | Inline -> "inline"
+      | Is_optional -> "is_optional"
+      | Lower_bound -> "lower_bound"
+      | Producer -> "producer"
+      | Prototyped -> "prototyped"
+      | Return_addr -> "return_addr"
+      | Start_scope -> "start_scope"
+      | Bit_stride -> "bit_stride"
+      | Upper_bound -> "upper_bound"
+      | Abstract_origin -> "abstract_origin"
+      | Accessibility -> "accessibility"
+      | Address_class -> "address_class"
+      | Artificial -> "artificial"
+      | Base_types -> "base_types"
+      | Calling_convention -> "calling_convention"
+      | Count -> "count"
+      | Data_member_location -> "data_member_location"
+      | Decl_column -> "decl_column"
+      | Decl_file -> "decl_file"
+      | Decl_line -> "decl_line"
+      | Declaration -> "declaration"
+      | Discr_list -> "discr_list"
+      | Encoding -> "encoding"
+      | External -> "external"
+      | Frame_base -> "frame_base"
+      | Friend -> "friend"
+      | Identifier_case -> "identifier_case"
+      | Macro_info -> "macro_info"
+      | Namelist_item -> "namelist_item"
+      | Priority -> "priority"
+      | Segment -> "segment"
+      | Specification -> "specification"
+      | Static_link -> "static_link"
+      | Type -> "type"
+      | Use_location -> "use_location"
+      | Variable_parameter -> "variable_parameter"
+      | Virtuality -> "virtuality"
+      | Vtable_elem_location -> "vtable_elem_location"
+      | Allocated -> "allocated"
+      | Associated -> "associated"
+      | Data_location -> "data_location"
+      | Byte_stride -> "byte_stride"
+      | Entry_pc -> "entry_pc"
+      | Use_UTF8 -> "use_utf8"
+      | Extension -> "extension"
+      | Ranges -> "ranges"
+      | Trampoline -> "trampoline"
+      | Call_column -> "call_column"
+      | Call_file -> "call_file"
+      | Call_line -> "call_line"
+      | Description -> "description"
+      | Binary_scale -> "binary_scale"
+      | Decimal_scale -> "decimal_scale"
+      | Small -> "small"
+      | Decimal_sign -> "decimal_sign"
+      | Digit_count -> "digit_count"
+      | Picture_string -> "picture_string"
+      | Mutable -> "mutable"
+      | Threads_scaled -> "threads_scaled"
+      | Explicit -> "explicit"
+      | Object_pointer -> "object_pointer"
+      | Endianity -> "endianity"
+      | Elemental -> "elemental"
+      | Pure -> "pure"
+      | Recursive -> "recursive"
+      | Signature -> "signature"
+      | Main_subprogram -> "main_subprogram"
+      | Data_bit_offset -> "data_bit_offset"
+      | Const_expr -> "const_expr"
+      | Enum_class -> "enum_class"
+      | Linkage_name -> "linkage_name"
+    in
+    "DW_AT_" ^ name
+
   let code (type dwarf_class) (t : dwarf_class t) =
     match t with
     | Sibling -> 0x01
@@ -326,7 +457,7 @@ module Attribute = struct
 (*    | User code -> code *)
 
   let encode t =
-    Dwarf_value.Uleb128 (Int64.of_int (code t))
+    Dwarf_value.uleb128 ~comment:(name t) (Int64.of_int (code t))
 
   let size t =
     Dwarf_value.size (encode t)

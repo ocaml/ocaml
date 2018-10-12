@@ -42,11 +42,13 @@ module Value : sig
     -> Dwarf_attributes.Form.sec_offset t
 
   val offset_into_debug_info
-     : Asm_label.t
+     : ?comment:string
+    -> Asm_label.t
     -> Dwarf_attributes.Form.ref_addr t
 
   val offset_into_debug_info_from_symbol
-     : Asm_symbol.t
+     : ?comment:string
+    -> Asm_symbol.t
     -> Dwarf_attributes.Form.ref_addr t
 
   val offset_into_debug_loc

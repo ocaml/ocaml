@@ -956,7 +956,6 @@ let data l =
 
 let begin_assembly() =
   X86_proc.reset_asm_code ();
-  Asm_label.initialize ~new_label:Cmm.new_label;
   Asm_directives.initialize ~big_endian:Arch.big_endian
     ~emit:(fun directive -> X86_proc.directive (Directive directive));
   reset_debug_info();                   (* PR#5603 *)

@@ -45,11 +45,10 @@ module Location_list_entry = struct
     Numbers.Int16.of_int64_exn size
 
   let beginning_value t =
-    Dwarf_value.Code_address_from_label_symbol_diff
-      { upper = t.beginning_address_label;
-        lower = t.start_of_code_symbol;
-        offset_upper = Targetint.zero;
-      }
+    Dwarf_value.code_address_from_label_symbol_diff
+      ~upper:t.beginning_address_label
+      ~lower:t.start_of_code_symbol
+      ~offset_upper:Targetint.zero
 
   let ending_value t =
     let offset_upper =
@@ -62,16 +61,15 @@ module Location_list_entry = struct
         Targetint.zero
       | Some offset -> Targetint.of_int_exn offset
     in
-    Dwarf_value.Code_address_from_label_symbol_diff
-      { upper = t.ending_address_label;
-        lower = t.start_of_code_symbol;
-        offset_upper;
-      }
+    Dwarf_value.code_address_from_label_symbol_diff
+      ~upper:t.ending_address_label
+      ~lower:t.start_of_code_symbol
+      ~offset_upper
 
   let size t =
     let v1 = beginning_value t in
     let v2 = ending_value t in
-    let v3 = Dwarf_value.Int16 (expr_size t) in
+    let v3 = Dwarf_value.int16 (expr_size t) in
     let (+) = Dwarf_int.add in
     Dwarf_value.size v1 + Dwarf_value.size v2 + Dwarf_value.size v3
       + Single_location_description.size t.expr
@@ -79,7 +77,7 @@ module Location_list_entry = struct
   let emit t =
     Dwarf_value.emit (beginning_value t);
     Dwarf_value.emit (ending_value t);
-    A.int16 (expr_size t);
+    A.int16 ~comment:"expression size" (expr_size t);
     Single_location_description.emit t.expr
 end
 
@@ -89,8 +87,8 @@ module Base_address_selection_entry = struct
   let create ~base_address_symbol = base_address_symbol
 
   let to_dwarf_values t =
-    [Dwarf_value.Absolute_code_address Targetint.minus_one;  (* all "1"s *)
-     Dwarf_value.Code_address_from_symbol t;
+    [Dwarf_value.absolute_address Targetint.minus_one;  (* all "1"s *)
+     Dwarf_value.code_address_from_symbol t;
     ]
 
   let size t =

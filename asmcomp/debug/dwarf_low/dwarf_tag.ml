@@ -81,6 +81,73 @@ type t =
   | Template_alias
   | User of user
 
+let tag_name t =
+  let name =
+    match t with
+    | Array_type -> "array_type"
+    | Class_type -> "class_type"
+    | Entry_point -> "entry_point"
+    | Enumeration_type -> "enumeration_type"
+    | Formal_parameter -> "formal_parameter"
+    | Imported_declaration -> "imported_declaration"
+    | Label -> "label"
+    | Lexical_block -> "lexical_block"
+    | Member -> "member"
+    | Pointer_type -> "pointer_type"
+    | Reference_type -> "reference_type"
+    | Compile_unit -> "compile_unit"
+    | String_type -> "string_type"
+    | Structure_type -> "structure_type"
+    | Subroutine_type -> "subroutine_type"
+    | Typedef -> "typedef"
+    | Union_type -> "union_type"
+    | Unspecified_parameters -> "unspecified_parameters"
+    | Variant -> "variant"
+    | Common_block -> "common_block"
+    | Common_inclusion -> "common_inclusion"
+    | Inheritance -> "inheritance"
+    | Inlined_subroutine -> "inlined_subroutine"
+    | Module -> "module"
+    | Ptr_to_member_type -> "ptr_to_member_type"
+    | Set_type -> "set_type"
+    | Subrange_type -> "subrange_type"
+    | With_stmt -> "with_stmt"
+    | Access_declaration -> "access_declaration"
+    | Base_type -> "base_type"
+    | Catch_block -> "catch_block"
+    | Const_type -> "const_type"
+    | Constant -> "constant"
+    | Enumerator -> "enumerator"
+    | File_type -> "file_type"
+    | Friend -> "friend"
+    | Namelist -> "namelist"
+    | Namelist_item -> "namelist_item"
+    | Packed_type -> "packed_type"
+    | Subprogram -> "subprogram"
+    | Template_type_parameter -> "template_type_parameter"
+    | Template_value_parameter -> "template_value_parameter"
+    | Thrown_type -> "thrown_type"
+    | Try_block -> "try_block"
+    | Variant_part -> "variant_part"
+    | Variable -> "variable"
+    | Volatile_type -> "volatile_type"
+    | Dwarf_procedure -> "dwarf_procedure"
+    | Restrict_type -> "restrict_type"
+    | Interface_type -> "interface_type"
+    | Namespace -> "namespace"
+    | Imported_module -> "imported_module"
+    | Unspecified_type -> "unspecified_type"
+    | Partial_unit -> "partial_unit"
+    | Imported_unit -> "imported_unit"
+    | Condition -> "condition"
+    | Shared_type -> "shared_type"
+    | Type_unit -> "type_unit"
+    | Rvalue_reference_type -> "rvalue_reference_type"
+    | Template_alias -> "template_alias"
+    | User i -> Format.asprintf "user_%a" Int16.print i
+  in
+  "DW_TAG_" ^ name
+
 let dw_tag_lo_user = Int16.of_int_exn 0x4080
 (* The high limit should be [0xffff], but we can't currently encode this since
    [Int16.t] is signed. *)
@@ -153,7 +220,7 @@ let encode t =
       assert (code >= dw_tag_lo_user && code <= dw_tag_hi_user);
       Int16.to_int code
   in
-  Dwarf_value.Uleb128 (Int64.of_int code)
+  Dwarf_value.uleb128 ~comment:(tag_name t) (Int64.of_int code)
 
 let size t =
   Dwarf_value.size (encode t)

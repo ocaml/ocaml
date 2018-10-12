@@ -34,11 +34,12 @@ let dwarf_version = Dwarf_version.four
 (* CR-someday mshinwell: this used to have "label - section", but maybe zero
    will do. *)
 let debug_abbrev_offset t =
-  Dwarf_value.Offset_into_debug_abbrev t.debug_abbrev_label
+  Dwarf_value.offset_into_debug_abbrev t.debug_abbrev_label
 
 (* CR-someday mshinwell: fix for cross compilation *)
 let address_width_in_bytes_on_target =
-  Dwarf_value.Int8 (Numbers.Int8.of_int_exn Arch.size_addr)
+  Dwarf_value.int8 ~comment:"Arch.size_addr"
+    (Numbers.Int8.of_int_exn Arch.size_addr)
 
 let size_without_first_word t =
   let (+) = Dwarf_int.add in

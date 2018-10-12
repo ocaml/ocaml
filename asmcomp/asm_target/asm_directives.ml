@@ -188,6 +188,7 @@ module Directive = struct
     | Indirect_symbol of string
     | Loc of { file_num : int; line : int; col : int; }
     | New_label of string * thing_after_label
+    | New_line
     | Private_extern of string
     | Section of {
         names : string list;
@@ -195,10 +196,10 @@ module Directive = struct
         args : string list;
       }
     | Size of string * Constant.t
-    | Sleb128 of Constant.t
+    | Sleb128 of { constant : Constant.t; comment : string option; }
     | Space of { bytes : int; }
     | Type of string * string
-    | Uleb128 of Constant.t
+    | Uleb128 of { constant : Constant.t; comment : string option; }
 
   let bprintf = Printf.bprintf
 
@@ -284,6 +285,7 @@ module Directive = struct
     | Comment s -> bprintf buf "\t\t\t\t/* %s */" s
     | Global s -> bprintf buf "\t.globl\t%s" s
     | New_label (s, _typ) -> bprintf buf "%s:" s
+    | New_line -> ()
     | Section { names = [".data"]; _ } -> bprintf buf "\t.data"
     | Section { names = [".text"]; _ } -> bprintf buf "\t.text"
     | Section { names; flags; args; } ->
@@ -318,13 +320,17 @@ module Directive = struct
       else bprintf buf "\t.loc\t%d\t%d" file_num line
     | Private_extern s -> bprintf buf "\t.private_extern %s" s
     | Size (s, c) -> bprintf buf "\t.size %s,%a" s Constant.print c
-    | Sleb128 c -> bprintf buf "\t.sleb128 %a" Constant.print c
+    | Sleb128 { constant; comment; } ->
+      let comment = gas_comment_opt comment in
+      bprintf buf "\t.sleb128 %a%s" Constant.print constant comment
     | Type (s, typ) ->
       (* We use the "STT" forms when they are supported as they are
          unambiguous across platforms
          (cf. https://sourceware.org/binutils/docs/as/Type.html ). *)
       bprintf buf "\t.type %s %s" s typ
-    | Uleb128 c -> bprintf buf "\t.uleb128 %a" Constant.print c
+    | Uleb128 { constant; comment; } ->
+      let comment = gas_comment_opt comment in
+      bprintf buf "\t.uleb128 %a%s" Constant.print constant comment
     | Direct_assignment (var, const) ->
       begin match TS.assembler () with
       | MacOS -> bprintf buf "%s = %a" var Constant.print const
@@ -369,6 +375,7 @@ module Directive = struct
       | Thirty_two -> bprintf buf "%s LABEL DWORD" label
       | Sixty_four -> bprintf buf "%s LABEL QWORD" label
       end
+    | New_line -> ()
     | Cfi_adjust_cfa_offset _ -> unsupported "Cfi_adjust_cfa_offset"
     | Cfi_endproc -> unsupported "Cfi_endproc"
     | Cfi_offset _ -> unsupported "Cfi_offset"
@@ -465,8 +472,11 @@ let size symbol cst =
   emit (Size (Asm_symbol.encode symbol, (lower_proto_constant cst)))
 let type_ symbol ~type_ = emit (Type (Asm_symbol.encode symbol, type_))
 
-let sleb128 i = emit (Sleb128 (Directive.Constant.Signed_int i))
-let uleb128 i = emit (Uleb128 (Directive.Constant.Signed_int i))
+let sleb128 ?comment i =
+  emit (Sleb128 { constant = Directive.Constant.Signed_int i; comment; })
+
+let uleb128 ?comment i =
+  emit (Uleb128 { constant = Directive.Constant.Signed_int i; comment; })
 
 let direct_assignment var cst =
   emit (Direct_assignment (var, lower_proto_constant cst))
@@ -528,6 +538,8 @@ let define_label label_name =
   in
   emit (New_label (Asm_label.encode label_name, typ))
 
+let new_line () = emit New_line
+
 let sections_seen = ref []
 
 let switch_to_section section =
@@ -542,6 +554,9 @@ let switch_to_section section =
   let ({ names; flags; args; } : Asm_section.flags_for_section) =
     Asm_section.flags section ~first_occurrence
   in
+  if not first_occurrence then begin
+    new_line ()
+  end;
   emit (Section { names; flags; args; });
   if first_occurrence then begin
     define_label (Asm_section.label section)
@@ -681,7 +696,8 @@ let scaled_distance_between_this_and_label_offset ~upper ~divide_by =
   let expr = Div (Sub (Label upper, This), divide_by) in
   const_machine_width (force_relocatable expr)
 
-let offset_into_section_label section upper ~(width : TS.machine_width) =
+let offset_into_section_label ?comment section upper
+      ~(width : TS.machine_width) =
   let lower = Asm_section.label section in
   let expr : proto_constant =
     (* The meaning of a label reference depends on the assembler:
@@ -703,9 +719,18 @@ let offset_into_section_label section upper ~(width : TS.machine_width) =
     | Thirty_two -> Thirty_two
     | Sixty_four -> Sixty_four
   in
-  const expr width
+  let comment =
+    match comment with
+    | None ->
+      Format.asprintf "offset into %s" (Asm_section.to_string section)
+    | Some comment ->
+      Format.asprintf "%s (offset into %s)"
+        comment (Asm_section.to_string section)
+  in
+  const ~comment expr width
 
-let offset_into_section_symbol section upper ~(width : TS.machine_width) =
+let offset_into_section_symbol ?comment section upper
+      ~(width : TS.machine_width) =
   let lower = Asm_section.label section in
   let expr : proto_constant =
     (* The same thing as for [offset_into_section_label] applies here. *)
@@ -722,17 +747,32 @@ let offset_into_section_symbol section upper ~(width : TS.machine_width) =
     | Thirty_two -> Thirty_two
     | Sixty_four -> Sixty_four
   in
-  const expr width
+  let comment =
+    match comment with
+    | None ->
+      Format.asprintf "offset into %s" (Asm_section.to_string section)
+    | Some comment ->
+      Format.asprintf "%s (offset into %s)"
+        comment (Asm_section.to_string section)
+  in
+  const ~comment expr width
 
-let int8 i = const (Signed_int (Int64.of_int (Int8.to_int i))) Eight
-let int16 i = const (Signed_int (Int64.of_int (Int16.to_int i))) Sixteen
-let int32 i = const (Signed_int (Int64.of_int32 i)) Thirty_two
-let int64 i = const (Signed_int i) Sixty_four
+let int8 ?comment i =
+  const ?comment (Signed_int (Int64.of_int (Int8.to_int i))) Eight
 
-let targetint n =
+let int16 ?comment i =
+  const ?comment (Signed_int (Int64.of_int (Int16.to_int i))) Sixteen
+
+let int32 ?comment i =
+  const ?comment (Signed_int (Int64.of_int32 i)) Thirty_two
+
+let int64 ?comment i =
+  const ?comment (Signed_int i) Sixty_four
+
+let targetint ?comment n =
   match Targetint.repr n with
-  | Int32 n -> int32 n
-  | Int64 n -> int64 n
+  | Int32 n -> int32 ?comment n
+  | Int64 n -> int64 ?comment n
 
 let cache_string str =
   match List.assoc str !cached_strings with

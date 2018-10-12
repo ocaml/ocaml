@@ -26,15 +26,15 @@ module Int16 = Numbers.Int16
 type t =
   | Flag_true
   | Bool of bool
-  | Int8 of Int8.t
-  | Int16 of Int16.t
-  | Int32 of Int32.t
-  | Int64 of Int64.t
-  | Uleb128 of Int64.t
-  | Sleb128 of Int64.t
+  | Int8 of { i : Int8.t; comment : string option; }
+  | Int16 of { i : Int16.t; comment : string option; }
+  | Int32 of { i : Int32.t; comment : string option; }
+  | Int64 of { i : Int64.t; comment : string option; }
+  | Uleb128 of { i : Int64.t; comment : string option; }
+  | Sleb128 of { i : Int64.t; comment : string option; }
   | String of string
   | Indirect_string of string
-  | Absolute_code_address of Targetint.t
+  | Absolute_address of { addr : Targetint.t; comment : string option; }
   | Code_address_from_label of Asm_label.t
   | Code_address_from_symbol of Asm_symbol.t
   | Code_address_from_label_symbol_diff of {
@@ -46,9 +46,18 @@ type t =
       upper : Asm_symbol.t;
       lower : Asm_symbol.t;
     }
-  | Code_address_from_symbol_plus_bytes of Asm_symbol.t * Targetint.t
-  | Offset_into_debug_info of Asm_label.t
-  | Offset_into_debug_info_from_symbol of Asm_symbol.t
+  | Code_address_from_symbol_plus_bytes of {
+      sym : Asm_symbol.t;
+      offset_in_bytes : Targetint.t;
+    }
+  | Offset_into_debug_info of {
+      lbl : Asm_label.t;
+      comment : string option;
+    }
+  | Offset_into_debug_info_from_symbol of {
+      sym : Asm_symbol.t;
+      comment : string option;
+    }
   | Offset_into_debug_line of Asm_label.t
   | Offset_into_debug_line_from_symbol of Asm_symbol.t
   | Offset_into_debug_loc of Asm_label.t
@@ -70,15 +79,15 @@ let print ppf t =
   match t with
   | Flag_true -> Format.pp_print_string ppf "true"
   | Bool b -> Format.fprintf ppf "%b" b
-  | Int8 n -> Numbers.Int8.print ppf n
-  | Int16 n -> Numbers.Int16.print ppf n
-  | Int32 n -> Format.fprintf ppf "%ld" n
-  | Int64 n -> Format.fprintf ppf "%Ld" n
-  | Uleb128 n -> Format.fprintf ppf "(uleb128 %Ld)" n
-  | Sleb128 n -> Format.fprintf ppf "(sleb128 %Ld)" n
+  | Int8 { i; comment = _; } -> Int8.print ppf i
+  | Int16 { i; comment = _; } -> Int16.print ppf i
+  | Int32 { i; comment = _; } -> Format.fprintf ppf "%ld" i
+  | Int64 { i; comment = _; } -> Format.fprintf ppf "%Ld" i
+  | Uleb128 { i; comment = _; } -> Format.fprintf ppf "(uleb128 %Ld)" i
+  | Sleb128 { i; comment = _; } -> Format.fprintf ppf "(sleb128 %Ld)" i
   | String s -> Format.fprintf ppf "\"%S\"" s
   | Indirect_string s -> Format.fprintf ppf "\"%S\" [indirect]" s
-  | Absolute_code_address addr ->
+  | Absolute_address { addr; comment = _; } ->
     Format.fprintf ppf "0x%Lx" (Targetint.to_int64 addr)
   | Code_address_from_label lbl -> Asm_label.print ppf lbl
   | Code_address_from_symbol sym -> Asm_symbol.print ppf sym
@@ -91,13 +100,13 @@ let print ppf t =
     Format.fprintf ppf "%a - %a"
       Asm_symbol.print upper
       Asm_symbol.print lower
-  | Code_address_from_symbol_plus_bytes (sym, offset) ->
+  | Code_address_from_symbol_plus_bytes { sym; offset_in_bytes; } ->
     Format.fprintf ppf "%a + %a"
       Asm_symbol.print sym
-      Targetint.print offset
-  | Offset_into_debug_info lbl ->
+      Targetint.print offset_in_bytes
+  | Offset_into_debug_info { lbl; comment = _; } ->
     Format.fprintf ppf "%a - .debug_info" Asm_label.print lbl
-  | Offset_into_debug_info_from_symbol sym ->
+  | Offset_into_debug_info_from_symbol { sym; comment = _; } ->
     Format.fprintf ppf "%a - .debug_info" Asm_symbol.print sym
   | Offset_into_debug_line lbl ->
     Format.fprintf ppf "%a - .debug_line" Asm_label.print lbl
@@ -120,6 +129,65 @@ let print ppf t =
       Asm_label.print upper
       Asm_label.print lower
 
+let flag_true () = Flag_true
+
+let bool b = Bool b
+
+let int8 ?comment i = Int8 { i; comment; }
+
+let int16 ?comment i = Int16 { i; comment; }
+
+let int32 ?comment i = Int32 { i; comment; }
+
+let int64 ?comment i = Int64 { i; comment; }
+
+let uleb128 ?comment i = Uleb128 { i; comment; }
+
+let sleb128 ?comment i = Sleb128 { i; comment; }
+
+let string str = String str
+
+let indirect_string str = Indirect_string str
+
+let absolute_address ?comment addr = Absolute_address { addr; comment; }
+
+let code_address_from_label lbl = Code_address_from_label lbl
+
+let code_address_from_symbol sym = Code_address_from_symbol sym
+
+let code_address_from_label_symbol_diff ~upper ~lower ~offset_upper =
+  Code_address_from_label_symbol_diff { upper; lower; offset_upper; }
+
+let code_address_from_symbol_diff ~upper ~lower =
+  Code_address_from_symbol_diff { upper; lower; }
+
+let code_address_from_symbol_plus_bytes sym offset_in_bytes =
+  Code_address_from_symbol_plus_bytes { sym; offset_in_bytes; }
+
+let offset_into_debug_info ?comment lbl =
+  Offset_into_debug_info { lbl; comment; }
+
+let offset_into_debug_info_from_symbol ?comment sym =
+  Offset_into_debug_info_from_symbol { sym; comment; }
+
+let offset_into_debug_line lbl = Offset_into_debug_line lbl
+
+let offset_into_debug_line_from_symbol sym =
+  Offset_into_debug_line_from_symbol sym
+
+let offset_into_debug_loc lbl = Offset_into_debug_loc lbl
+
+let offset_into_debug_abbrev lbl = Offset_into_debug_abbrev lbl
+
+let distance_between_labels_16bit ~upper ~lower =
+  Distance_between_labels_16bit { upper; lower; }
+
+let distance_between_labels_32bit ~upper ~lower =
+  Distance_between_labels_32bit { upper; lower; }
+
+let distance_between_labels_64bit ~upper ~lower =
+  Distance_between_labels_64bit { upper; lower; }
+
 (* DWARF-4 standard section 7.6. *)
 let rec uleb128_size i =
   assert (Int64.compare i 0L >= 0);
@@ -140,9 +208,9 @@ let size t =
   | Int16 _ -> Dwarf_int.two ()
   | Int32 _ -> Dwarf_int.four ()
   | Int64 _ -> Dwarf_int.eight ()
-  | Uleb128 i -> uleb128_size i
-  | Sleb128 i -> sleb128_size i
-  | Absolute_code_address _
+  | Uleb128 { i; comment = _; } -> uleb128_size i
+  | Sleb128 { i; comment = _; } -> sleb128_size i
+  | Absolute_address _
   | Code_address_from_label _
   | Code_address_from_symbol _
   | Code_address_from_label_symbol_diff _
@@ -176,38 +244,38 @@ let emit t =
   match t with
   | Flag_true -> ()  (* DWARF-4 specification p.148 *)
   | Bool b -> A.int8 (if b then Int8.one else Int8.zero)
-  | Int8 i -> A.int8 i
-  | Int16 i -> A.int16 i
-  | Int32 i -> A.int32 i
-  | Int64 i -> A.int64 i
-  | Uleb128 i -> A.uleb128 i
-  | Sleb128 i -> A.sleb128 i
+  | Int8 { i; comment; } -> A.int8 ?comment i
+  | Int16 { i; comment; } -> A.int16 ?comment i
+  | Int32 { i; comment; } -> A.int32 ?comment i
+  | Int64 { i; comment; } -> A.int64 ?comment i
+  | Uleb128 { i; comment; } -> A.uleb128 ?comment i
+  | Sleb128 { i; comment; } -> A.sleb128 ?comment i
   | String str -> A.string str
   | Indirect_string s ->
     (* "Indirect" strings are collected together into ".debug_str". *)
     let label = A.cache_string s in
     A.offset_into_section_label (DWARF Debug_str) label
       ~width:(width_for_ref_addr_or_sec_offset ())
-  | Absolute_code_address addr -> A.targetint addr
+  | Absolute_address { addr; comment; } -> A.targetint ?comment addr
   | Code_address_from_label label -> A.label label
   | Code_address_from_symbol symbol -> A.symbol symbol
   | Code_address_from_label_symbol_diff { upper; lower; offset_upper; } ->
     A.between_symbol_and_label_offset ~upper ~lower ~offset_upper
   | Code_address_from_symbol_diff { upper; lower; } ->
     A.between_symbols ~upper ~lower
-  | Code_address_from_symbol_plus_bytes (symbol, offset_in_bytes) ->
-    A.symbol_plus_offset symbol ~offset_in_bytes
+  | Code_address_from_symbol_plus_bytes { sym; offset_in_bytes; } ->
+    A.symbol_plus_offset sym ~offset_in_bytes
   | Offset_into_debug_line label ->
     A.offset_into_section_label (DWARF Debug_line) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_line_from_symbol symbol ->
     A.offset_into_section_symbol (DWARF Debug_line) symbol
       ~width:(width_for_ref_addr_or_sec_offset ())
-  | Offset_into_debug_info label ->
-    A.offset_into_section_label (DWARF Debug_info) label
+  | Offset_into_debug_info { lbl; comment; } ->
+    A.offset_into_section_label ?comment (DWARF Debug_info) lbl
       ~width:(width_for_ref_addr_or_sec_offset ())
-  | Offset_into_debug_info_from_symbol symbol ->
-    A.offset_into_section_symbol (DWARF Debug_info) symbol
+  | Offset_into_debug_info_from_symbol { sym; comment; } ->
+    A.offset_into_section_symbol ?comment (DWARF Debug_info) sym
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_loc label ->
     A.offset_into_section_label (DWARF Debug_loc) label

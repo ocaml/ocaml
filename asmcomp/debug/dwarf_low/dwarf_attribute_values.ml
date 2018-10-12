@@ -27,36 +27,36 @@ module Value = struct
 
   module V = Dwarf_value
 
-  let flag_true = Dwarf_value V.Flag_true
-  let bool b = Dwarf_value (V.Bool b)
-  let int8 i = Dwarf_value (V.Int8 i)
-  let int16 i = Dwarf_value (V.Int16 i)
-  let int32 i = Dwarf_value (V.Int32 i)
-  let int64 i = Dwarf_value (V.Int64 i)
-  let string s = Dwarf_value (V.String s)
-  let indirect_string ptr = Dwarf_value (V.Indirect_string ptr)
+  let flag_true = Dwarf_value (V.flag_true ())
+  let bool b = Dwarf_value (V.bool b)
+  let int8 i = Dwarf_value (V.int8 i)
+  let int16 i = Dwarf_value (V.int16 i)
+  let int32 i = Dwarf_value (V.int32 i)
+  let int64 i = Dwarf_value (V.int64 i)
+  let string s = Dwarf_value (V.string s)
+  let indirect_string ptr = Dwarf_value (V.indirect_string ptr)
   let code_address_from_label lbl =
-    Dwarf_value (V.Code_address_from_label lbl)
+    Dwarf_value (V.code_address_from_label lbl)
   let code_address_from_symbol sym =
-    Dwarf_value (V.Code_address_from_symbol sym)
-  let offset_into_debug_line lbl = Dwarf_value (V.Offset_into_debug_line lbl)
+    Dwarf_value (V.code_address_from_symbol sym)
+  let offset_into_debug_line lbl = Dwarf_value (V.offset_into_debug_line lbl)
   let offset_into_debug_line_from_symbol sym =
-    Dwarf_value (V.Offset_into_debug_line_from_symbol sym)
-  let offset_into_debug_info lbl =
-    Dwarf_value (V.Offset_into_debug_info lbl)
-  let offset_into_debug_info_from_symbol sym =
-    Dwarf_value (V.Offset_into_debug_info_from_symbol sym)
-  let offset_into_debug_loc lbl = Dwarf_value (V.Offset_into_debug_loc lbl)
+    Dwarf_value (V.offset_into_debug_line_from_symbol sym)
+  let offset_into_debug_info ?comment lbl =
+    Dwarf_value (V.offset_into_debug_info ?comment lbl)
+  let offset_into_debug_info_from_symbol ?comment sym =
+    Dwarf_value (V.offset_into_debug_info_from_symbol ?comment sym)
+  let offset_into_debug_loc lbl = Dwarf_value (V.offset_into_debug_loc lbl)
   let single_location_description sld = Single_location_description sld
   let composite_location_description sld = Composite_location_description sld
   let encoding_attribute attr =
     Dwarf_value (Encoding_attribute.as_dwarf_value attr)
 
   let symbol_32 sym =
-    Dwarf_value (V.Code_address_from_symbol sym)
+    Dwarf_value (V.code_address_from_symbol sym)
 
   let symbol_64 sym =
-    Dwarf_value (V.Code_address_from_symbol sym)
+    Dwarf_value (V.code_address_from_symbol sym)
 end
 
 module Attribute_value = struct
@@ -89,12 +89,12 @@ module Attribute_value = struct
     match value with
     | Dwarf_value value -> Dwarf_value.emit value
     | Single_location_description loc_desc ->
-      A.uleb128 (Dwarf_int.to_int64 (
-        Single_location_description.size loc_desc));
+      A.uleb128 ~comment:"size of single location desc."
+        (Dwarf_int.to_int64 (Single_location_description.size loc_desc));
       Single_location_description.emit loc_desc
     | Composite_location_description loc_desc ->
-      A.uleb128 (Dwarf_int.to_int64 (
-        Composite_location_description.size loc_desc));
+      A.uleb128 ~comment:"size of composite location desc."
+        (Dwarf_int.to_int64 (Composite_location_description.size loc_desc));
       Composite_location_description.emit loc_desc
 
   let attribute_spec (spec, _value) = spec

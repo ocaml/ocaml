@@ -222,3 +222,5 @@ let ccatch (i, ids, e1, e2)=
 
 let reset () =
   label_counter := 99
+
+let () = Asm_label.initialize ~new_label

@@ -134,7 +134,7 @@ let mk_g_opt f =
 
 let mk_g_full f =
   "-g-full", Arg.Unit f,
-    " Generate full DWARF information for a platform debugger"
+    " Generate full DWARF information for a platform debugger (experimental)"
 ;;
 
 let mk_i f =

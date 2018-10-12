@@ -25,4 +25,5 @@ let encode = function
 let size _t = Dwarf_int.one ()
 
 let emit t =
-  Dwarf_value.emit (Dwarf_value.Int8 (Numbers.Int8.of_int_exn (encode t)))
+  Dwarf_value.emit (Dwarf_value.int8 ~comment:"Child determination"
+    (Numbers.Int8.of_int_exn (encode t)))

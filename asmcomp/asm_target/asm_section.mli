@@ -36,6 +36,8 @@ type t =
   | Jump_tables
   | DWARF of dwarf_section
 
+val to_string : t -> string
+
 val all_sections_in_order : t list
 
 (** Whether the section holds code. *)

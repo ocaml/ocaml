@@ -50,28 +50,30 @@ val text : unit -> unit
 (** Abbreviation for [switch_to_section Data]. *)
 val data : unit -> unit
 
-(** Emit an 8-bit signed integer.  There is no padding or sign extension. *)
-val int8 : Numbers.Int8.t -> unit
+(** Emit an 8-bit signed integer.  There is no padding or sign extension.
+    If the [comment] is specified it will be put on the same line as the
+    integer. *)
+val int8 : ?comment:string -> Numbers.Int8.t -> unit
 
 (** Emit a 16-bit signed integer.  There is no padding or sign extension. *)
-val int16 : Numbers.Int16.t -> unit
+val int16 : ?comment:string -> Numbers.Int16.t -> unit
 
 (** Emit a 32-bit signed integer.  There is no padding or sign extension. *)
-val int32 : Int32.t -> unit
+val int32 : ?comment:string -> Int32.t -> unit
 
 (** Emit a 64-bit signed integer. *)
-val int64 : Int64.t -> unit
+val int64 : ?comment:string -> Int64.t -> unit
 
 (** Emit a signed integer whose width is that of an address on the target
     machine.  There is no padding or sign extension. *)
-val targetint : Targetint.t -> unit
+val targetint : ?comment:string -> Targetint.t -> unit
 
 (** Emit a 64-bit integer in unsigned LEB128 variable-length encoding
     (cf. DWARF debugging information standard). *)
-val uleb128 : Int64.t -> unit
+val uleb128 : ?comment:string -> Int64.t -> unit
 
 (** Emit a 64-bit integer in signed LEB128 variable-length encoding. *)
-val sleb128 : Int64.t -> unit
+val sleb128 : ?comment:string -> Int64.t -> unit
 
 (** Emit a 32-bit-wide floating point number. *)
 val float32 : float -> unit
@@ -109,6 +111,9 @@ val file : file_num:int -> file_name:string -> unit
 
 (** Mark the source location of the current assembly position. *)
 val loc : file_num:int -> line:int -> col:int -> unit
+
+(** Emit a blank line. *)
+val new_line : unit -> unit
 
 (** Adjust the current frame address offset by the given number of bytes.
     This and other CFI functions will not emit anything in the case where
@@ -241,7 +246,8 @@ val scaled_distance_between_this_and_label_offset
     address of [base] from the address of [label].  [width] specifies the
     size of the integer. *)
 val offset_into_section_label
-   : Asm_section.t
+   : ?comment:string
+  -> Asm_section.t
   -> Asm_label.t
   -> width:Target_system.machine_width
   -> unit
@@ -249,7 +255,8 @@ val offset_into_section_label
 (** As for [offset_into_section_label], but using a symbol instead of
     a label as one end of the measurement. *)
 val offset_into_section_symbol
-   : Asm_section.t
+   : ?comment:string
+  -> Asm_section.t
   -> Asm_symbol.t
   -> width:Target_system.machine_width
   -> unit
@@ -312,6 +319,7 @@ module Directive : sig
     | Indirect_symbol of string
     | Loc of { file_num : int; line : int; col : int; }
     | New_label of string * thing_after_label
+    | New_line
     | Private_extern of string
     | Section of {
         names : string list;
@@ -319,10 +327,10 @@ module Directive : sig
         args : string list;
       }
     | Size of string * Constant.t
-    | Sleb128 of Constant.t
+    | Sleb128 of { constant : Constant.t; comment : string option; }
     | Space of { bytes : int; }
     | Type of string * string
-    | Uleb128 of Constant.t
+    | Uleb128 of { constant : Constant.t; comment : string option; }
 
   (** Translate the given directive to textual form.  This produces output
       suitable for either gas or MASM as appropriate. *)

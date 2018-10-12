@@ -33,7 +33,7 @@ let code t =
   | Dwarf_5 -> 5
 
 let encode t =
-  Dwarf_value.Int16 (Numbers.Int16.of_int_exn (code t))
+  Dwarf_value.int16 (Numbers.Int16.of_int_exn (code t))
 
 let size t =
   Dwarf_value.size (encode t)

@@ -40,8 +40,8 @@ let size t =
         t.attribute_specs
         (Dwarf_int.zero ())
     (* See below regarding the two zero words. *)
-    + Dwarf_value.size (Dwarf_value.Uleb128 0L)
-    + Dwarf_value.size (Dwarf_value.Uleb128 0L)
+    + Dwarf_value.size (Dwarf_value.uleb128 0L)
+    + Dwarf_value.size (Dwarf_value.uleb128 0L)
 
 let emit t =
   Abbreviation_code.emit t.abbreviation_code;
@@ -50,8 +50,8 @@ let emit t =
   AS.Set.iter (fun spec -> AS.emit spec) t.attribute_specs;
   (* DWARF-4 spec section 7.5.3: "The series of attribute specifications ends
      with an entry containing 0 for the name and 0 for the form." *)
-  Dwarf_value.emit (Dwarf_value.Uleb128 0L);
-  Dwarf_value.emit (Dwarf_value.Uleb128 0L)
+  Dwarf_value.emit (Dwarf_value.uleb128 ~comment:"terminator word 1" 0L);
+  Dwarf_value.emit (Dwarf_value.uleb128 ~comment:"terminator word 2" 0L)
 
 let tag t = t.tag
 let has_children t = t.has_children

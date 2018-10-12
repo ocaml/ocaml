@@ -20,10 +20,10 @@ exception Bad_abbreviation_code of int
 
 let of_int i =
   if i < 1 then raise (Bad_abbreviation_code i);
-  Dwarf_value.Uleb128 (Int64.of_int i)
+  Dwarf_value.uleb128 ~comment:"abbreviation code" (Int64.of_int i)
 
 let null () =
-  Dwarf_value.Uleb128 0L
+  Dwarf_value.uleb128 ~comment:"null abbreviation code" 0L
 
 let emit t =
   Dwarf_value.emit t

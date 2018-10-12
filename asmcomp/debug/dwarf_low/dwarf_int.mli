@@ -53,4 +53,4 @@ val add : t -> t -> t
 val succ : t -> t
 
 val size : t -> t
-val emit : t -> unit
+val emit : ?comment:string -> t -> unit

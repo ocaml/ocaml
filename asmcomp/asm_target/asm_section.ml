@@ -179,6 +179,10 @@ let flags t ~first_occurrence =
   in
   { names; flags; args; }
 
+let to_string t =
+  let { names; flags = _; args = _; } = flags t ~first_occurrence:true in
+  String.concat " " names
+
 let text_label () = Asm_label.create ()
 let data_label () = Asm_label.create ()
 let read_only_data_label () = Asm_label.create ()

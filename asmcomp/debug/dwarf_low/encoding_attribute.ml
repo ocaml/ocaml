@@ -19,10 +19,14 @@ type t =
 
 let signed = DW_ATE_signed
 
+let name t =
+  match t with
+  | DW_ATE_signed -> "DW_ATE_signed"
+
 let encode = function
   | DW_ATE_signed -> 0x05
 
 let size _t = 1
 
 let as_dwarf_value t =
-  Dwarf_value.Int8 (Numbers.Int8.of_int_exn (encode t))
+  Dwarf_value.int8 ~comment:(name t) (Numbers.Int8.of_int_exn (encode t))

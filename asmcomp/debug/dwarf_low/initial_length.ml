@@ -37,7 +37,8 @@ let emit t =
           32-bit DWARF"
         Dwarf_int.print t
     end;
-    Dwarf_int.emit t
+    Dwarf_int.emit ~comment:"32-bit initial length" t
   | Sixty_four ->
-    Dwarf_value.emit (Dwarf_value.Int32 sixty_four_bit_indicator);
-    Dwarf_int.emit t
+    Dwarf_value.emit (
+      Dwarf_value.int32 ~comment:"64-bit indicator" sixty_four_bit_indicator);
+    Dwarf_int.emit ~comment:"64-bit initial length" t

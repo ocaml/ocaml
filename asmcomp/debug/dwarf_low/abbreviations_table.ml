@@ -35,16 +35,19 @@ let find t ~tag ~has_children ~attribute_specs =
 let size t =
   let (+) = Dwarf_int.add in
   (* See below re. the zero word. *)
-  Dwarf_value.size (Dwarf_value.Uleb128 0L)
+  Dwarf_value.size (Dwarf_value.uleb128 0L)
     + List.fold_left
         (fun size entry -> size + Abbreviations_table_entry.size entry)
         (Dwarf_int.zero ())
         t
 
 let emit t =
-  List.iter (fun entry -> Abbreviations_table_entry.emit entry)
+  List.iter (fun entry ->
+      Asm_directives.new_line ();
+      Abbreviations_table_entry.emit entry)
     (List.rev t);
   (* DWARF-4 spec section 7.5.3: "The abbreviations for a given compilation
      unit end with an entry consisting of a 0 byte for the abbreviation
      code." *)
-  Dwarf_value.emit (Dwarf_value.Uleb128 0L)
+  Dwarf_value.emit (
+    Dwarf_value.uleb128 ~comment:"End of abbrevs for compilation unit" 0L)

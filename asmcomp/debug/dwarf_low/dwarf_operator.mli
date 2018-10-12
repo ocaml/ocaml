@@ -18,6 +18,7 @@ type implicit_value =
   | Int of Targetint.t
   | Symbol of Asm_symbol.t
 
+(* CR mshinwell: Remove "DW_op" prefix to be consistent *)
 type t =
   | DW_op_lit0
   | DW_op_lit1
