@@ -46,6 +46,7 @@ module Location_list_entry = struct
 
   let beginning_value t =
     Dwarf_value.code_address_from_label_symbol_diff
+      ~comment:"beginning address"
       ~upper:t.beginning_address_label
       ~lower:t.start_of_code_symbol
       ~offset_upper:Targetint.zero
@@ -62,6 +63,7 @@ module Location_list_entry = struct
       | Some offset -> Targetint.of_int_exn offset
     in
     Dwarf_value.code_address_from_label_symbol_diff
+      ~comment:"ending address"
       ~upper:t.ending_address_label
       ~lower:t.start_of_code_symbol
       ~offset_upper
@@ -87,8 +89,10 @@ module Base_address_selection_entry = struct
   let create ~base_address_symbol = base_address_symbol
 
   let to_dwarf_values t =
-    [Dwarf_value.absolute_address Targetint.minus_one;  (* all "1"s *)
-     Dwarf_value.code_address_from_symbol t;
+    [Dwarf_value.absolute_address
+       ~comment:"largest representable addr. offset"
+       Targetint.minus_one;  (* all "1"s *)
+     Dwarf_value.code_address_from_symbol ~comment:"base address" t;
     ]
 
   let size t =

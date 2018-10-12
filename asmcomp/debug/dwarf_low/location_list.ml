@@ -35,7 +35,7 @@ let create ~location_list_entries =
 let label t = t.name
 
 let end_marker () =
-  Dwarf_value.absolute_address Targetint.zero
+  Dwarf_value.absolute_address ~comment:"end marker" Targetint.zero
 
 let size t =
   let (+) = Dwarf_int.add in
@@ -55,7 +55,10 @@ let compare_increasing_vma t1 t2 =
 
 let emit t =
   A.define_label t.name;
-  List.iter (fun entry -> Location_list_entry.emit entry) t.entries;
+  List.iter (fun entry ->
+      A.comment "Location list entry:";
+      Location_list_entry.emit entry)
+    t.entries;
   (* DWARF-4 spec, section 2.6.2. *)
   let end_marker = end_marker () in
   Dwarf_value.emit end_marker;

@@ -229,7 +229,8 @@ val between_labels_64bit : upper:Asm_label.t -> lower:Asm_label.t -> unit
     lower symbol and the sum of the address of the [upper] label plus
     [offset_upper]. *)
 val between_symbol_and_label_offset
-   : upper:Asm_label.t
+   : ?comment:string
+  -> upper:Asm_label.t
   -> lower:Asm_symbol.t
   -> offset_upper:Targetint.t
   -> unit

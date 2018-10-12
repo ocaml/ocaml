@@ -182,9 +182,9 @@ let code_address_from_symbol ?comment sym =
     comment;
   }
 
-let code_address_from_label_symbol_diff ~upper ~lower ~offset_upper =
+let code_address_from_label_symbol_diff ?comment ~upper ~lower ~offset_upper =
   { value = Code_address_from_label_symbol_diff { upper; lower; offset_upper; };
-    comment = None;
+    comment;
   }
 
 let code_address_from_symbol_diff ~upper ~lower =
@@ -348,7 +348,7 @@ let emit { value; comment; } =
   | Code_address_from_label lbl -> A.label ?comment lbl
   | Code_address_from_symbol sym -> A.symbol ?comment sym
   | Code_address_from_label_symbol_diff { upper; lower; offset_upper; } ->
-    A.between_symbol_and_label_offset ~upper ~lower ~offset_upper
+    A.between_symbol_and_label_offset ?comment ~upper ~lower ~offset_upper
   | Code_address_from_symbol_diff { upper; lower; } ->
     A.between_symbols ~upper ~lower
   | Code_address_from_symbol_plus_bytes { sym; offset_in_bytes; } ->

@@ -56,7 +56,8 @@ val code_address_from_symbol : ?comment:string -> Asm_symbol.t -> t
 
 (** The calculation is: (upper + offset_upper) - lower. *)
 val code_address_from_label_symbol_diff
-   : upper:Asm_label.t
+   : ?comment:string
+  -> upper:Asm_label.t
   -> lower:Asm_symbol.t
   -> offset_upper:Targetint.t
   -> t
