@@ -1577,7 +1577,7 @@ module_subst:
 
 (* -------------------------------------------------------------------------- *)
 
-/* Class expressions */
+(* Class declarations. *)
 
 %inline class_declarations:
   xlist(class_declaration, and_class_declaration)
@@ -1633,13 +1633,10 @@ formal_class_parameters:
     { params }
 ;
 
-class_fun_def: mkclass(class_fun_def_desc) { $1 };
-class_fun_def_desc:
-    labeled_simple_pattern MINUSGREATER class_expr
-      { let (l,o,p) = $1 in Pcl_fun(l, o, p, $3) }
-  | labeled_simple_pattern class_fun_def
-      { let (l,o,p) = $1 in Pcl_fun(l, o, p, $2) }
-;
+(* -------------------------------------------------------------------------- *)
+
+(* Class expressions. *)
+
 class_expr:
     class_simple_expr
       { $1 }
@@ -1675,6 +1672,15 @@ class_simple_expr:
     ) { $1 }
   | OBJECT attributes class_structure END
     { mkclass ~loc:$sloc ~attrs:$2 (Pcl_structure $3) }
+;
+
+class_fun_def:
+  mkclass(
+    labeled_simple_pattern MINUSGREATER class_expr
+      { let (l,o,p) = $1 in Pcl_fun(l, o, p, $3) }
+  | labeled_simple_pattern class_fun_def
+      { let (l,o,p) = $1 in Pcl_fun(l, o, p, $2) }
+  ) { $1 }
 ;
 class_structure:
   |  class_self_pattern extra_cstr(class_fields)
