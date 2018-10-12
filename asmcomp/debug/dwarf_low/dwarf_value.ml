@@ -24,19 +24,19 @@ module Int8 = Numbers.Int8
 module Int16 = Numbers.Int16
 
 type t =
-  | Flag_true
-  | Bool of bool
+  | Flag_true of { comment : string option; }
+  | Bool of { b : bool; comment : string option; }
   | Int8 of { i : Int8.t; comment : string option; }
   | Int16 of { i : Int16.t; comment : string option; }
   | Int32 of { i : Int32.t; comment : string option; }
   | Int64 of { i : Int64.t; comment : string option; }
   | Uleb128 of { i : Int64.t; comment : string option; }
   | Sleb128 of { i : Int64.t; comment : string option; }
-  | String of string
-  | Indirect_string of string
+  | String of { str : string; comment : string option; }
+  | Indirect_string of { str : string; comment : string option; }
   | Absolute_address of { addr : Targetint.t; comment : string option; }
-  | Code_address_from_label of Asm_label.t
-  | Code_address_from_symbol of Asm_symbol.t
+  | Code_address_from_label of { lbl : Asm_label.t; comment : string option; }
+  | Code_address_from_symbol of { sym : Asm_symbol.t; comment : string option; }
   | Code_address_from_label_symbol_diff of {
       upper : Asm_label.t;
       lower : Asm_symbol.t;
@@ -77,20 +77,21 @@ type t =
 
 let print ppf t =
   match t with
-  | Flag_true -> Format.pp_print_string ppf "true"
-  | Bool b -> Format.fprintf ppf "%b" b
+  | Flag_true { comment = _; } -> Format.pp_print_string ppf "true"
+  | Bool { b; comment = _; } -> Format.fprintf ppf "%b" b
   | Int8 { i; comment = _; } -> Int8.print ppf i
   | Int16 { i; comment = _; } -> Int16.print ppf i
   | Int32 { i; comment = _; } -> Format.fprintf ppf "%ld" i
   | Int64 { i; comment = _; } -> Format.fprintf ppf "%Ld" i
   | Uleb128 { i; comment = _; } -> Format.fprintf ppf "(uleb128 %Ld)" i
   | Sleb128 { i; comment = _; } -> Format.fprintf ppf "(sleb128 %Ld)" i
-  | String s -> Format.fprintf ppf "\"%S\"" s
-  | Indirect_string s -> Format.fprintf ppf "\"%S\" [indirect]" s
+  | String { str; comment = _; } -> Format.fprintf ppf "\"%S\"" str
+  | Indirect_string { str; comment = _; } ->
+    Format.fprintf ppf "\"%S\" [indirect]" str
   | Absolute_address { addr; comment = _; } ->
     Format.fprintf ppf "0x%Lx" (Targetint.to_int64 addr)
-  | Code_address_from_label lbl -> Asm_label.print ppf lbl
-  | Code_address_from_symbol sym -> Asm_symbol.print ppf sym
+  | Code_address_from_label { lbl; comment = _; } -> Asm_label.print ppf lbl
+  | Code_address_from_symbol { sym; comment = _; } -> Asm_symbol.print ppf sym
   | Code_address_from_label_symbol_diff { upper; lower; offset_upper; } ->
     Format.fprintf ppf "(%a + %a) - %a"
       Asm_label.print upper
@@ -129,9 +130,9 @@ let print ppf t =
       Asm_label.print upper
       Asm_label.print lower
 
-let flag_true () = Flag_true
+let flag_true ?comment () = Flag_true { comment; }
 
-let bool b = Bool b
+let bool ?comment b = Bool { b; comment; }
 
 let int8 ?comment i = Int8 { i; comment; }
 
@@ -145,15 +146,17 @@ let uleb128 ?comment i = Uleb128 { i; comment; }
 
 let sleb128 ?comment i = Sleb128 { i; comment; }
 
-let string str = String str
+let string ?comment str = String { str; comment; }
 
-let indirect_string str = Indirect_string str
+let indirect_string ?comment str = Indirect_string { str; comment; }
 
 let absolute_address ?comment addr = Absolute_address { addr; comment; }
 
-let code_address_from_label lbl = Code_address_from_label lbl
+let code_address_from_label ?comment lbl =
+  Code_address_from_label { lbl; comment; }
 
-let code_address_from_symbol sym = Code_address_from_symbol sym
+let code_address_from_symbol ?comment sym =
+  Code_address_from_symbol { sym; comment; }
 
 let code_address_from_label_symbol_diff ~upper ~lower ~offset_upper =
   Code_address_from_label_symbol_diff { upper; lower; offset_upper; }
@@ -202,7 +205,7 @@ let rec sleb128_size i =
 
 let size t =
   match t with
-  | Flag_true -> Dwarf_int.zero ()  (* see comment below *)
+  | Flag_true _ -> Dwarf_int.zero ()  (* see comment below *)
   | Bool _ -> Dwarf_int.one ()
   | Int8 _ -> Dwarf_int.one ()
   | Int16 _ -> Dwarf_int.two ()
@@ -221,7 +224,7 @@ let size t =
     | 64 -> Dwarf_int.eight ()
     | bits -> Misc.fatal_errorf "Unsupported Targetint.size %d" bits
     end
-  | String str ->
+  | String { str; comment = _; } ->
     Dwarf_int.of_targetint_exn (Targetint.of_int (String.length str + 1))
   | Indirect_string _
   | Offset_into_debug_line _
@@ -242,23 +245,28 @@ let emit t =
     | Sixty_four -> Sixty_four
   in
   match t with
-  | Flag_true -> ()  (* DWARF-4 specification p.148 *)
-  | Bool b -> A.int8 (if b then Int8.one else Int8.zero)
+  | Flag_true { comment; } ->
+    (* See DWARF-4 specification p.148 *)
+    begin match comment with
+    | None -> ()
+    | Some comment -> A.comment (comment ^ " (Flag_true elided)")
+    end
+  | Bool { b; comment; } -> A.int8 ?comment (if b then Int8.one else Int8.zero)
   | Int8 { i; comment; } -> A.int8 ?comment i
   | Int16 { i; comment; } -> A.int16 ?comment i
   | Int32 { i; comment; } -> A.int32 ?comment i
   | Int64 { i; comment; } -> A.int64 ?comment i
   | Uleb128 { i; comment; } -> A.uleb128 ?comment i
   | Sleb128 { i; comment; } -> A.sleb128 ?comment i
-  | String str -> A.string str
-  | Indirect_string s ->
+  | String { str; comment; } -> A.string ?comment str
+  | Indirect_string { str; comment; } ->
     (* "Indirect" strings are collected together into ".debug_str". *)
-    let label = A.cache_string s in
+    let label = A.cache_string ?comment str in
     A.offset_into_section_label (DWARF Debug_str) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Absolute_address { addr; comment; } -> A.targetint ?comment addr
-  | Code_address_from_label label -> A.label label
-  | Code_address_from_symbol symbol -> A.symbol symbol
+  | Code_address_from_label { lbl; comment; } -> A.label ?comment lbl
+  | Code_address_from_symbol { sym; comment; } -> A.symbol ?comment sym
   | Code_address_from_label_symbol_diff { upper; lower; offset_upper; } ->
     A.between_symbol_and_label_offset ~upper ~lower ~offset_upper
   | Code_address_from_symbol_diff { upper; lower; } ->

@@ -87,14 +87,14 @@ val float64_from_bits : Int64.t -> unit
 
 (** Emit a string (directly into the current section).  This function
     does not write a terminating null. *)
-val string : string -> unit
+val string : ?comment:string -> string -> unit
 
 (** Cache a string for later emission.  The returned label may be used to
     obtain the address of the string in the section.  This function does
     not emit anything.  (See [emit_cached_strings], below.)
     If a string is supplied to this function that is already in the cache
     then the previously-assigned label is returned, not a new one. *)
-val cache_string : string -> Asm_label.t
+val cache_string : ?comment:string -> string -> Asm_label.t
 
 (** Emit the sequence of:
       label definition:
@@ -161,7 +161,7 @@ val define_function_symbol : Asm_symbol.t -> unit
 val global : Asm_symbol.t -> unit
 
 (** Emit a machine-width reference to the given symbol. *)
-val symbol : Asm_symbol.t -> unit
+val symbol : ?comment:string -> Asm_symbol.t -> unit
 
 (** Mark a symbol as "private extern" (see assembler documentation for
     details). *)
@@ -177,7 +177,7 @@ val indirect_symbol : Asm_symbol.t -> unit
 val define_label : Asm_label.t -> unit
 
 (** Emit a machine-width reference to the given label. *)
-val label : Asm_label.t -> unit
+val label : ?comment:string -> Asm_label.t -> unit
 
 (** Emit a machine-width reference to the address formed by adding the
     given byte offset to the address of the given symbol. *)
@@ -306,7 +306,7 @@ module Directive : sig
       applied. *)
   type t = private
     | Align of { bytes : int; }
-    | Bytes of string
+    | Bytes of { str : string; comment : string option; }
     | Cfi_adjust_cfa_offset of int
     | Cfi_endproc
     | Cfi_offset of { reg : int; offset : int; }

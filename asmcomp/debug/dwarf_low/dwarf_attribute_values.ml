@@ -27,18 +27,19 @@ module Value = struct
 
   module V = Dwarf_value
 
-  let flag_true = Dwarf_value (V.flag_true ())
-  let bool b = Dwarf_value (V.bool b)
-  let int8 i = Dwarf_value (V.int8 i)
-  let int16 i = Dwarf_value (V.int16 i)
-  let int32 i = Dwarf_value (V.int32 i)
-  let int64 i = Dwarf_value (V.int64 i)
-  let string s = Dwarf_value (V.string s)
-  let indirect_string ptr = Dwarf_value (V.indirect_string ptr)
-  let code_address_from_label lbl =
-    Dwarf_value (V.code_address_from_label lbl)
-  let code_address_from_symbol sym =
-    Dwarf_value (V.code_address_from_symbol sym)
+  let flag_true ?comment () = Dwarf_value (V.flag_true ?comment ())
+  let bool ?comment b = Dwarf_value (V.bool ?comment b)
+  let int8 ?comment i = Dwarf_value (V.int8 ?comment i)
+  let int16 ?comment i = Dwarf_value (V.int16 ?comment i)
+  let int32 ?comment i = Dwarf_value (V.int32 ?comment i)
+  let int64 ?comment i = Dwarf_value (V.int64 ?comment i)
+  let string ?comment s = Dwarf_value (V.string ?comment s)
+  let indirect_string ?comment ptr =
+    Dwarf_value (V.indirect_string ?comment ptr)
+  let code_address_from_label ?comment lbl =
+    Dwarf_value (V.code_address_from_label ?comment lbl)
+  let code_address_from_symbol ?comment sym =
+    Dwarf_value (V.code_address_from_symbol ?comment sym)
   let offset_into_debug_line lbl = Dwarf_value (V.offset_into_debug_line lbl)
   let offset_into_debug_line_from_symbol sym =
     Dwarf_value (V.offset_into_debug_line_from_symbol sym)

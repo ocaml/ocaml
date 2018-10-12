@@ -20,31 +20,35 @@ module V = Dwarf_attribute_values.Value
 
 let create_low_pc ~address_label =
   let spec = AS.create A.Low_pc F.Addr in
-  AV.create spec (V.code_address_from_label address_label)
+  AV.create spec (V.code_address_from_label
+    ~comment:"low PC value" address_label)
 
 let create_high_pc ~address_label =
   let spec = AS.create A.High_pc F.Addr in
-  AV.create spec (V.code_address_from_label address_label)
+  AV.create spec (V.code_address_from_label
+    ~comment:"high PC value" address_label)
 
 let create_low_pc_from_symbol ~symbol =
   let spec = AS.create A.Low_pc F.Addr in
-  AV.create spec (V.code_address_from_symbol symbol)
+  AV.create spec (V.code_address_from_symbol
+    ~comment:"low PC value" symbol)
 
 let create_high_pc_from_symbol ~symbol =
   let spec = AS.create A.High_pc F.Addr in
-  AV.create spec (V.code_address_from_symbol symbol)
+  AV.create spec (V.code_address_from_symbol
+    ~comment:"high PC value" symbol)
 
 let create_producer ~producer_name =
   let spec = AS.create A.Producer F.Strp in
-  AV.create spec (V.indirect_string producer_name)
+  AV.create spec (V.indirect_string ~comment:"producer name" producer_name)
 
 let create_name name =
   let spec = AS.create A.Name F.Strp in
-  AV.create spec (V.indirect_string name)
+  AV.create spec (V.indirect_string ~comment:"name" name)
 
 let create_comp_dir ~directory =
   let spec = AS.create A.Comp_dir F.Strp in
-  AV.create spec (V.indirect_string directory)
+  AV.create spec (V.indirect_string ~comment:"compilation directory" directory)
 
 let create_stmt_list ~debug_line_label =
   let spec = AS.create A.Stmt_list F.Sec_offset_lineptr in
@@ -54,10 +58,10 @@ let create_stmt_list ~debug_line_label =
 let create_external ~is_visible_externally =
   if is_visible_externally then
     let spec = AS.create A.External F.Flag_present in
-    AV.create spec V.flag_true
+    AV.create spec (V.flag_true ~comment:"visible externally" ())
   else
     let spec = AS.create A.External F.Flag in
-    AV.create spec (V.bool false)
+    AV.create spec (V.bool ~comment:"not visible externally" false)
 
 let create_location ~location_list_label =
   let spec = AS.create A.Location F.Sec_offset_loclistptr in
@@ -78,7 +82,7 @@ let create_encoding ~encoding =
 let reference_proto_die attribute proto_die =
   let spec = AS.create attribute F.Ref_addr in
   let label = Proto_die.reference proto_die in
-  AV.create spec (V.offset_into_debug_info label)
+  AV.create spec (V.offset_into_debug_info ~comment:"reference to DIE" label)
 
 let create_type ~proto_die = reference_proto_die A.Type proto_die
 let create_sibling ~proto_die = reference_proto_die A.Sibling proto_die
@@ -86,24 +90,26 @@ let create_import ~proto_die = reference_proto_die A.Import proto_die
 
 let create_type_from_reference ~proto_die_reference:label =
   let spec = AS.create A.Type F.Ref_addr in
-  AV.create spec (V.offset_into_debug_info label)
+  AV.create spec (V.offset_into_debug_info
+    ~comment:"reference to type DIE" label)
 
 (* CR-soon mshinwell: remove "_exn" prefix. *)
 let create_byte_size_exn ~byte_size =
   let spec = AS.create A.Byte_size F.Data8 in
-  AV.create spec (V.int64 (Int64.of_int byte_size))
+  AV.create spec (V.int64 ~comment:"byte size" (Int64.of_int byte_size))
 
 let create_bit_size bit_size =
   let spec = AS.create A.Bit_size F.Data8 in
-  AV.create spec (V.int64 bit_size)
+  AV.create spec (V.int64 ~comment:"bit size" bit_size)
 
 let create_data_member_location ~byte_offset =
   let spec = AS.create A.Data_member_location F.Data8 in
-  AV.create spec (V.int64 byte_offset)
+  AV.create spec (V.int64 ~comment:"data member location" byte_offset)
 
 let create_linkage_name ~linkage_name =
   let spec = AS.create A.Linkage_name F.Strp in
-  AV.create spec (V.indirect_string (Linkage_name.to_string linkage_name))
+  AV.create spec (V.indirect_string ~comment:"linkage name"
+    (Linkage_name.to_string linkage_name))
 
 let create_const_value_from_symbol ~symbol =
   match Targetint.size with

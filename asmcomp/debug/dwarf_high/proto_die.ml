@@ -42,7 +42,7 @@ type t = {
 let reference_proto_die attribute proto_die =
   let spec = AS.create attribute F.Ref_addr in
   let label = proto_die.label in
-  AV.create spec (V.offset_into_debug_info label)
+  AV.create spec (V.offset_into_debug_info ~comment:"reference to DIE" label)
 
 let create_sibling ~proto_die = reference_proto_die A.Sibling proto_die
 

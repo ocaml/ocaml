@@ -175,7 +175,7 @@ module Directive = struct
 
   type t =
     | Align of { bytes : int; }
-    | Bytes of string
+    | Bytes of { str : string; comment : string option; }
     | Cfi_adjust_cfa_offset of int
     | Cfi_endproc
     | Cfi_offset of { reg : int; offset : int; }
@@ -276,12 +276,13 @@ module Directive = struct
         directive
         Constant.print (Constant_with_width.constant constant)
         comment
-    | Bytes s ->
+    | Bytes { str; comment; } ->
       begin match TS.system (), TS.architecture () with
       | Solaris, _
-      | _, POWER -> buf_bytes_directive buf ~directive:".byte" s
-      | _ -> bprintf buf "\t.ascii\t\"%s\"" (string_of_string_literal s)
-      end
+      | _, POWER -> buf_bytes_directive buf ~directive:".byte" str
+      | _ -> bprintf buf "\t.ascii\t\"%s\"" (string_of_string_literal str)
+      end;
+      bprintf buf "%s" (gas_comment_opt comment)
     | Comment s -> bprintf buf "\t\t\t\t/* %s */" s
     | Global s -> bprintf buf "\t.globl\t%s" s
     | New_label (s, _typ) -> bprintf buf "%s:" s
@@ -349,7 +350,9 @@ module Directive = struct
     in
     match t with
     | Align { bytes; } -> bprintf buf "\tALIGN\t%d" bytes
-    | Bytes s -> buf_bytes_directive buf ~directive:"BYTE" s
+    | Bytes { str; comment; } ->
+      buf_bytes_directive buf ~directive:"BYTE" str;
+      bprintf buf "%s" (masm_comment_opt comment)
     | Comment s -> bprintf buf " ; %s " s
     | Const { constant; comment; } ->
       let directive =
@@ -463,7 +466,7 @@ let cfi_startproc () =
 let comment text = emit (Comment text)
 let loc ~file_num ~line ~col = emit_non_masm (Loc { file_num; line; col; })
 let space ~bytes = emit (Space { bytes; })
-let string str = emit (Bytes str)
+let string ?comment str = emit (Bytes { str; comment; })
 
 let global symbol = emit (Global (Asm_symbol.encode symbol))
 let indirect_symbol symbol = emit (Indirect_symbol (Asm_symbol.encode symbol))
@@ -529,7 +532,7 @@ let size ?size_of symbol =
     size size_of (Sub (This, Symbol symbol))
   | _ -> ()
 
-let label label_name = const_machine_width (Label label_name)
+let label ?comment label_name = const_machine_width ?comment (Label label_name)
 
 let define_label label_name =
   let typ : Directive.thing_after_label =
@@ -568,7 +571,12 @@ let switch_to_section_raw ~names ~flags ~args =
 let text () = switch_to_section Asm_section.Text
 let data () = switch_to_section Asm_section.Data
 
-let cached_strings = ref ([] : (string * Asm_label.t) list)
+type cached_string = {
+  str : string;
+  comment : string option;
+}
+
+let cached_strings = ref ([] : (cached_string * Asm_label.t) list)
 let temp_var_counter = ref 0
 
 let reset () =
@@ -625,7 +633,7 @@ let define_function_symbol symbol =
   | GAS_like, true | MacOS, _ | MASM, _ -> ()
   end
 
-let symbol sym = const_machine_width (Symbol sym)
+let symbol ?comment sym = const_machine_width ?comment (Symbol sym)
 
 let symbol_plus_offset symbol ~offset_in_bytes =
   let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
@@ -774,18 +782,19 @@ let targetint ?comment n =
   | Int32 n -> int32 ?comment n
   | Int64 n -> int64 ?comment n
 
-let cache_string str =
-  match List.assoc str !cached_strings with
+let cache_string ?comment str =
+  let cached : cached_string = { str; comment; } in
+  match List.assoc cached !cached_strings with
   | label -> label
   | exception Not_found ->
     let label = Asm_label.create () in
-    cached_strings := (str, label) :: !cached_strings;
+    cached_strings := (cached, label) :: !cached_strings;
     label
 
 let emit_cached_strings () =
-  List.iter (fun (str, label_name) ->
+  List.iter (fun ({ str; comment; }, label_name) ->
       define_label label_name;
-      string str;
+      string ?comment str;
       int8 Int8.zero)
     !cached_strings;
   cached_strings := []

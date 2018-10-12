@@ -20,9 +20,9 @@
 
 type t
 
-val flag_true : unit -> t
+val flag_true : ?comment:string -> unit -> t
 
-val bool : bool -> t
+val bool : ?comment:string -> bool -> t
 
 val int8 : ?comment:string -> Numbers.Int8.t -> t
 
@@ -36,15 +36,15 @@ val uleb128 : ?comment:string -> Int64.t -> t
 
 val sleb128 : ?comment:string -> Int64.t -> t
 
-val string : string -> t
+val string : ?comment:string -> string -> t
 
-val indirect_string : string -> t
+val indirect_string : ?comment:string -> string -> t
 
 val absolute_address : ?comment:string -> Targetint.t -> t
 
-val code_address_from_label : Asm_label.t -> t
+val code_address_from_label : ?comment:string -> Asm_label.t -> t
 
-val code_address_from_symbol : Asm_symbol.t -> t
+val code_address_from_symbol : ?comment:string -> Asm_symbol.t -> t
 
 (** The calculation is: (upper + offset_upper) - lower. *)
 val code_address_from_label_symbol_diff

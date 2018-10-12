@@ -19,16 +19,49 @@
 module Value : sig
   type 'form t
 
-  val flag_true : Dwarf_attributes.Form.flag_present t
-  val bool : bool -> Dwarf_attributes.Form.data1 t
-  val int8 : Numbers.Int8.t -> Dwarf_attributes.Form.data1 t
-  val int16 : Numbers.Int16.t -> Dwarf_attributes.Form.data2 t
-  val int32 : Int32.t -> Dwarf_attributes.Form.data4 t
-  val int64 : Int64.t -> Dwarf_attributes.Form.data8 t
-  val string : string -> Dwarf_attributes.Form.string t
-  val indirect_string : string -> Dwarf_attributes.Form.strp t
-  val code_address_from_label : Asm_label.t -> Dwarf_attributes.Form.addr t
-  val code_address_from_symbol : Asm_symbol.t -> Dwarf_attributes.Form.addr t
+  val flag_true
+     : ?comment:string
+    -> unit
+    -> Dwarf_attributes.Form.flag_present t
+
+  val bool : ?comment:string -> bool -> Dwarf_attributes.Form.data1 t
+
+  val int8
+     : ?comment:string
+    -> Numbers.Int8.t
+    -> Dwarf_attributes.Form.data1 t
+
+  val int16
+     : ?comment:string
+    -> Numbers.Int16.t
+    -> Dwarf_attributes.Form.data2 t
+
+  val int32
+     : ?comment:string
+    -> Int32.t
+    -> Dwarf_attributes.Form.data4 t
+
+  val int64
+     : ?comment:string
+    -> Int64.t
+    -> Dwarf_attributes.Form.data8 t
+
+  val string : ?comment:string -> string -> Dwarf_attributes.Form.string t
+
+  val indirect_string
+     : ?comment:string
+    -> string
+    -> Dwarf_attributes.Form.strp t
+
+  val code_address_from_label
+     : ?comment:string
+    -> Asm_label.t
+    -> Dwarf_attributes.Form.addr t
+
+  val code_address_from_symbol
+     : ?comment:string
+    -> Asm_symbol.t
+    -> Dwarf_attributes.Form.addr t
 
   val symbol_32 : Asm_symbol.t -> Dwarf_attributes.Form.data4 t
   val symbol_64 : Asm_symbol.t -> Dwarf_attributes.Form.data8 t
