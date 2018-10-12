@@ -1676,10 +1676,9 @@ class_simple_expr:
 
 class_fun_def:
   mkclass(
-    labeled_simple_pattern MINUSGREATER class_expr
-      { let (l,o,p) = $1 in Pcl_fun(l, o, p, $3) }
-  | labeled_simple_pattern class_fun_def
-      { let (l,o,p) = $1 in Pcl_fun(l, o, p, $2) }
+    labeled_simple_pattern MINUSGREATER e = class_expr
+  | labeled_simple_pattern e = class_fun_def
+      { let (l,o,p) = $1 in Pcl_fun(l, o, p, e) }
   ) { $1 }
 ;
 class_structure:
