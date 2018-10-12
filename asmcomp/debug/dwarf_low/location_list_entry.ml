@@ -80,6 +80,7 @@ module Location_list_entry = struct
     Dwarf_value.emit (beginning_value t);
     Dwarf_value.emit (ending_value t);
     A.int16 ~comment:"expression size" (expr_size t);
+    A.comment "Single location description (DWARF expression):";
     Single_location_description.emit t.expr
 end
 
@@ -133,8 +134,11 @@ let size = function
 let emit t =
   match t with
   | Location_list_entry entry ->
+    A.new_line ();
+    A.comment "Location list entry:";
     Location_list_entry.emit entry
   | Base_address_selection_entry entry ->
+    A.comment "Base address selection entry:";
     Base_address_selection_entry.emit entry
 
 let compare_ascending_vma t1 t2 =

@@ -701,11 +701,15 @@ let between_labels_64bit ~upper ~lower =
   const (force_relocatable expr) Sixty_four
 
 let between_symbol_and_label_offset ?comment ~upper ~lower ~offset_upper =
-  let offset_upper = Targetint.to_int64 offset_upper in
-  let expr =
-    Sub (Add (Label upper, Signed_int offset_upper), Symbol lower)
-  in
-  const_machine_width ?comment (force_relocatable expr)
+  if Targetint.compare offset_upper Targetint.zero = 0 then
+    let expr = Sub (Label upper, Symbol lower) in
+    const_machine_width ?comment (force_relocatable expr)
+  else
+    let offset_upper = Targetint.to_int64 offset_upper in
+    let expr =
+      Sub (Add (Label upper, Signed_int offset_upper), Symbol lower)
+    in
+    const_machine_width ?comment (force_relocatable expr)
 
 let between_symbol_and_label_offset' ~upper ~lower ~offset_lower =
   let offset_lower = Targetint.to_int64 offset_lower in
