@@ -1418,6 +1418,7 @@ signature:
       { $1 }
 ;
 
+(* A signature item. *)
 signature_item:
   | item_extension post_item_attributes
       { let docs = symbol_docs $sloc in
@@ -1462,6 +1463,23 @@ signature_item:
     )
     { $1 }
 ;
+
+(* A module declaration. *)
+%inline module_declaration:
+  MODULE
+  ext = ext attrs1 = attributes
+  uid = mkrhs(UIDENT)
+  body = module_declaration_body
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Md.mk uid body ~attrs ~loc ~docs, ext
+  }
+;
+
+(* The body (right-hand side) of a module declaration. *)
 module_declaration_body:
     COLON module_type
       { $2 }
@@ -1470,15 +1488,10 @@ module_declaration_body:
         Pmty_functor(name, typ, $2) })
       { $1 }
 ;
-module_declaration:
-    MODULE ext_attributes mkrhs(UIDENT)
-    module_declaration_body post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Md.mk $3 $4 ~attrs:(attrs@$5) ~loc:(make_loc $sloc) ~docs, ext }
-;
+
 %inline module_expr_alias: mkrhs(mod_longident)
   { Mty.alias ~loc:(make_loc $sloc) $1 };
+
 module_alias:
     MODULE ext_attributes mkrhs(UIDENT)
     EQUAL module_expr_alias post_item_attributes
