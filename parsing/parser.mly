@@ -796,6 +796,8 @@ The precedences must be listed from low to high.
     { mkpat ~loc:$sloc $1 }
 %inline mktyp(symb): symb
     { mktyp ~loc:$sloc $1 }
+%inline mkstr(symb): symb
+    { mkstr ~loc:$sloc $1 }
 %inline mksig(symb): symb
     { mksig ~loc:$sloc $1 }
 %inline mkmod(symb): symb
@@ -1214,11 +1216,13 @@ structure:
 structure_item:
     let_bindings(ext)
       { val_of_let_bindings ~loc:$sloc $1 }
-  | item_extension post_item_attributes
-      { let docs = symbol_docs $sloc in
-        mkstr ~loc:$sloc (Pstr_extension ($1, (add_docs_attrs docs $2))) }
-  | floating_attribute
-      { mkstr ~loc:$sloc (Pstr_attribute $1) }
+  | mkstr(
+      item_extension post_item_attributes
+        { let docs = symbol_docs $sloc in
+          Pstr_extension ($1, add_docs_attrs docs $2) }
+    | floating_attribute
+        { Pstr_attribute $1 }
+    )
   | wrap_mkstr_ext(
       primitive_declaration
         { pstr_primitive $1 }
