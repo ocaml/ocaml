@@ -1259,22 +1259,6 @@ structure_item:
     { $1 }
 ;
 
-(* An include statement can appear in a structure or in a signature,
-   which is why this definition is parameterized. *)
-%inline include_statement(thing):
-  INCLUDE
-  ext = ext
-  attrs1 = attributes
-  thing = thing
-  attrs2 = post_item_attributes
-  {
-    let attrs = attrs1 @ attrs2 in
-    let loc = make_loc $sloc in
-    let docs = symbol_docs $sloc in
-    Incl.mk thing ~attrs ~loc ~docs, ext
-  }
-;
-
 module_binding_body:
     EQUAL module_expr
       { $2 }
@@ -1329,6 +1313,41 @@ and_module_binding:
     let docs = symbol_docs $sloc in
     let text = symbol_text $symbolstartpos in
     Mb.mk uid body ~attrs ~loc ~text ~docs
+  }
+;
+
+(* -------------------------------------------------------------------------- *)
+
+(* Shared material between structures and signatures. *)
+
+(* An include statement can appear in a structure or in a signature,
+   which is why this definition is parameterized. *)
+%inline include_statement(thing):
+  INCLUDE
+  ext = ext
+  attrs1 = attributes
+  thing = thing
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Incl.mk thing ~attrs ~loc ~docs, ext
+  }
+;
+
+open_statement:
+  OPEN
+  override = override_flag
+  ext = ext
+  attrs1 = attributes
+  id = mkrhs(mod_longident)
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Opn.mk id ~override ~attrs ~loc ~docs, ext
   }
 ;
 
@@ -1431,20 +1450,6 @@ signature_item:
         { let (l, ext) = $1 in (Psig_class_type (List.rev l), ext) }
     )
     { $1 }
-;
-open_statement:
-  OPEN
-  override = override_flag
-  ext = ext
-  attrs1 = attributes
-  id = mkrhs(mod_longident)
-  attrs2 = post_item_attributes
-  {
-    let attrs = attrs1 @ attrs2 in
-    let loc = make_loc $sloc in
-    let docs = symbol_docs $sloc in
-    Opn.mk id ~override ~attrs ~loc ~docs, ext
-  }
 ;
 module_declaration_body:
     COLON module_type
