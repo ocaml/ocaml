@@ -1250,7 +1250,7 @@ structure_item:
     | open_statement
         { let (body, ext) = $1 in (Pstr_open body, ext) }
     | class_declarations
-        { let (l, ext) = $1 in (Pstr_class (List.rev l), ext) }
+        { let (ext, l) = $1 in (Pstr_class l, ext) }
     | class_type_declarations
         { let (l, ext) = $1 in (Pstr_class_type (List.rev l), ext) }
     | include_statement(module_expr)
@@ -1577,11 +1577,9 @@ module_subst:
 
 /* Class expressions */
 
-class_declarations:
-    class_declaration
-      { let (body, ext) = $1 in ([body], ext) }
-  | class_declarations and_class_declaration
-      { let (l, ext) = $1 in ($2 :: l, ext) }
+%inline class_declarations:
+  xlist(class_declaration, and_class_declaration)
+    { $1 }
 ;
 class_declaration:
   CLASS
@@ -1596,8 +1594,8 @@ class_declaration:
     let attrs = attrs1 @ attrs2 in
     let loc = make_loc $sloc in
     let docs = symbol_docs $sloc in
-    Ci.mk id body ~virt ~params ~attrs ~loc ~docs,
-    ext
+    ext,
+    Ci.mk id body ~virt ~params ~attrs ~loc ~docs
   }
 ;
 and_class_declaration:
