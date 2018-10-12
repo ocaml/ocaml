@@ -1237,18 +1237,26 @@ structure_item:
         { let (l, ext) = $1 in (Pstr_class (List.rev l), ext) }
     | class_type_declarations
         { let (l, ext) = $1 in (Pstr_class_type (List.rev l), ext) }
-    | str_include_statement
+    | include_statement(module_expr)
         { let (body, ext) = $1 in (Pstr_include body, ext) }
     )
     { $1 }
 ;
 
-str_include_statement:
-    INCLUDE ext_attributes module_expr post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Incl.mk $3 ~attrs:(attrs@$4) ~loc:(make_loc $sloc) ~docs, ext }
+include_statement(thing):
+  INCLUDE
+  ext = ext
+  attrs1 = attributes
+  thing = thing
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Incl.mk thing ~attrs ~loc ~docs, ext
+  }
 ;
+
 module_binding_body:
     EQUAL module_expr
       { $2 }
@@ -1385,7 +1393,7 @@ signature_item_with_ext:
       { let (body, ext) = $1 in (Psig_modtype body, ext) }
   | open_statement
       { let (body, ext) = $1 in (Psig_open body, ext) }
-  | sig_include_statement
+  | include_statement(module_type)
       { let (body, ext) = $1 in (Psig_include body, ext) }
   | class_descriptions
       { let (l, ext) = $1 in (Psig_class (List.rev l), ext) }
@@ -1398,12 +1406,6 @@ open_statement:
         let docs = symbol_docs $sloc in
         Opn.mk $4 ~override:$2 ~attrs:(attrs@$5) ~loc:(make_loc $sloc) ~docs
         , ext }
-;
-sig_include_statement:
-    INCLUDE ext_attributes module_type post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Incl.mk $3 ~attrs:(attrs@$4) ~loc:(make_loc $sloc) ~docs, ext }
 ;
 module_declaration_body:
     COLON module_type
