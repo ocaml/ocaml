@@ -1412,11 +1412,18 @@ signature_item_with_ext:
       { let (l, ext) = $1 in (Psig_class_type (List.rev l), ext) }
 ;
 open_statement:
-  | OPEN override_flag ext_attributes mkrhs(mod_longident) post_item_attributes
-      { let (ext, attrs) = $3 in
-        let docs = symbol_docs $sloc in
-        Opn.mk $4 ~override:$2 ~attrs:(attrs@$5) ~loc:(make_loc $sloc) ~docs
-        , ext }
+  OPEN
+  override = override_flag
+  ext = ext
+  attrs1 = attributes
+  id = mkrhs(mod_longident)
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Opn.mk id ~override ~attrs ~loc ~docs, ext
+  }
 ;
 module_declaration_body:
     COLON module_type
