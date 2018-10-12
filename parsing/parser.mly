@@ -1259,16 +1259,7 @@ structure_item:
     { $1 }
 ;
 
-module_binding_body:
-    EQUAL module_expr
-      { $2 }
-  | mkmod(
-      COLON module_type EQUAL module_expr
-        { Pmod_constraint($4, $2) }
-    | functor_arg module_binding_body
-        { Pmod_functor(fst $1, snd $1, $2) }
-  ) { $1 }
-;
+(* A single module binding. *)
 %inline module_binding:
   MODULE
   ext = ext attrs1 = attributes
@@ -1281,6 +1272,20 @@ module_binding_body:
       let body = Mb.mk uid body ~attrs ~loc ~docs in
       Pstr_module body, ext }
 ;
+
+(* The body (right-hand side) of a module binding. *)
+module_binding_body:
+    EQUAL me = module_expr
+      { me }
+  | mkmod(
+      COLON mty = module_type EQUAL me = module_expr
+        { Pmod_constraint(me, mty) }
+    | arg = functor_arg body = module_binding_body
+        { let (x, mty) = arg in
+          Pmod_functor(x, mty, body) }
+  ) { $1 }
+;
+
 %inline rec_module_bindings:
   xlist(rec_module_binding, and_module_binding)
     { $1 }
