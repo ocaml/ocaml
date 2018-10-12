@@ -59,6 +59,8 @@ let pstr_exception (te, ext) =
   (Pstr_exception te, ext)
 let pstr_include (body, ext) =
   (Pstr_include body, ext)
+let pstr_recmodule (ext, bindings) =
+  (Pstr_recmodule bindings, ext)
 
 let psig_typext (te, ext) =
   (Psig_typext te, ext)
@@ -1237,7 +1239,7 @@ structure_item:
     | module_binding
         { $1 }
     | rec_module_bindings
-        { let (l, ext) = $1 in (Pstr_recmodule (List.rev l), ext) }
+        { pstr_recmodule $1 }
     | module_type_declaration
         { let (body, ext) = $1 in (Pstr_modtype body, ext) }
     | open_statement
@@ -1290,11 +1292,9 @@ module_binding_body:
       let body = Mb.mk uid body ~attrs ~loc ~docs in
       Pstr_module body, ext }
 ;
-rec_module_bindings:
-    rec_module_binding
-      { let (b, ext) = $1 in ([b], ext) }
-  | rec_module_bindings and_module_binding
-      { let (l, ext) = $1 in ($2 :: l, ext) }
+%inline rec_module_bindings:
+  xlist(rec_module_binding, and_module_binding)
+    { $1 }
 ;
 rec_module_binding:
   MODULE
@@ -1308,7 +1308,8 @@ rec_module_binding:
     let loc = make_loc $sloc in
     let attrs = attrs1 @ attrs2 in
     let docs = symbol_docs $sloc in
-    Mb.mk uid body ~attrs ~loc ~docs, ext
+    ext,
+    Mb.mk uid body ~attrs ~loc ~docs
   }
 ;
 and_module_binding:
