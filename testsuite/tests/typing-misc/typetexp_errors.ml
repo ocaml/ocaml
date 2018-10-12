@@ -17,6 +17,9 @@ type mismatched = [< `A of int | `B of float > `B `C]
 Line 1, characters 18-53:
   type mismatched = [< `A of int | `B of float > `B `C]
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The constructor `C is missing from the upper bound of this
-       polymorphic variant type. Upper and lower bounds are mismatched.
+Error: The constructor C is missing from the upper bound (between '<'
+       and '>') of this polymorphic variant but is present in
+       its lower bound (after '>').
+       Hint: Either add `C in the upper bound, or remove it
+       from the lower bound.
 |}]
