@@ -137,12 +137,20 @@ Working version
   SUPPORTS_SHARED_LIBRARIES from Makefile.config.
   (David Allsopp, review by Gabriel Scherer and Mark Shinwell)
 
-- GPR#1733: change the perspective of the unexpected existential error message.
-  (Florian Angeletti, review by Gabriel Scherer and Jeremy Yallop)
-
 - GPR#1720: Improve error reporting for missing 'rec' in let-bindings.
   (Arthur Charguéraud and Armaël Guéneau, with help and advice
    from Gabriel Scherer, Frédéric Bour, Xavier Clerc and Leo White)
+
+- GPR#1733,1993,1998,2058,2094: Typing error message improvements
+    - GPR#1733, change the perspective of the unexpected existential error
+      message.
+    - GPR#1993, expanded error messages for universal quantification failure
+    - GPR#1998, more context for unbound type parameter error
+    - GPR#2058, full explanation for unsafe cycles in recursive module
+      definitions (suggestion by Ivan Gotovchits)
+    - GPR#2094, rewording for "constructor has no type" error
+  (Florian Angeletti, reviews by Jacques Garrique, Gabriel Radanne,
+   Gabriel Scherer and Jeremy Yallop)
 
 - GPR#1748: do not error when instantiating polymorphic fields in patterns.
   (Thomas Refis, review by Gabriel Scherer)
@@ -201,17 +209,9 @@ Working version
 * GPR#1979: Remove support for TERM=norepeat when displaying errors
   (Armaël Guéneau, review by Gabriel Scherer and Florian Angeletti)
 
-- GPR#1993: Expanded error messages for universal quantification failure
-  (Florian Angeletti, review by Jacques Garrigue)
-
-- GPR#1998: More context for unbound type parameter error
-  (Florian Angeletti, review by Gabriel Scherer)
 
 - GPR#1960: The parser keeps previous location when relocating ast node.
   (Hugo Heuzard, review by Jérémie Dimino)
-
-- GPR#2058: full explanation for unsafe cycles in recursive module definitions
-  (Florian Angeletti, review by Gabriel Scherer, suggested by Ivan Gotovchits)
 
 - GPR#1841, MPR#7808: the environment variable OCAMLTOP_INCLUDE_PATH can now
   specify a list of additional include directories for the ocaml toplevel.
