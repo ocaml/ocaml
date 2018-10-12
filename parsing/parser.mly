@@ -1312,10 +1312,18 @@ rec_module_binding:
   }
 ;
 and_module_binding:
-    AND attributes mkrhs(UIDENT) module_binding_body post_item_attributes
-      { let docs = symbol_docs $sloc in
-        let text = symbol_text $symbolstartpos in
-        Mb.mk $3 $4 ~attrs:($2@$5) ~loc:(make_loc $sloc) ~text ~docs }
+  AND
+  attrs1 = attributes
+  uid = mkrhs(UIDENT)
+  body = module_binding_body
+  attrs2 = post_item_attributes
+  {
+    let loc = make_loc $sloc in
+    let attrs = attrs1 @ attrs2 in
+    let docs = symbol_docs $sloc in
+    let text = symbol_text $symbolstartpos in
+    Mb.mk uid body ~attrs ~loc ~text ~docs
+  }
 ;
 
 (* -------------------------------------------------------------------------- *)
