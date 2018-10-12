@@ -379,7 +379,7 @@ let wrap_class_attrs ~loc:_ body attrs =
   {body with pcl_attributes = attrs @ body.pcl_attributes}
 let wrap_mod_attrs ~loc:_ attrs body =
   {body with pmod_attributes = attrs @ body.pmod_attributes}
-let wrap_mty_attrs ~loc:_ body attrs =
+let wrap_mty_attrs ~loc:_ attrs body =
   {body with pmty_attributes = attrs @ body.pmty_attributes}
 
 let wrap_str_ext ~loc body ext =
@@ -1332,17 +1332,18 @@ and_module_binding:
 /* Module types */
 
 module_type:
-  | SIG attributes signature END
-      { mkmty ~loc:$sloc ~attrs:$2 (Pmty_signature ($3)) }
+  | SIG attrs = attributes s = signature END
+      { mkmty ~loc:$sloc ~attrs (Pmty_signature s) }
   | SIG attributes signature error
       { unclosed "sig" $loc($1) "end" $loc($4) }
-  | FUNCTOR attributes functor_args MINUSGREATER module_type
+  | FUNCTOR attrs = attributes args = functor_args
+    MINUSGREATER mty = module_type
       %prec below_WITH
-      { let mty =
-          List.fold_left
-            (fun acc (n, t) -> mkmty ~loc:$sloc (Pmty_functor(n, t, acc)))
-            $5 $3
-        in wrap_mty_attrs ~loc:$sloc mty $2 }
+      { wrap_mty_attrs ~loc:$sloc attrs (
+          List.fold_left (fun acc (x, mty) ->
+            mkmty ~loc:$sloc (Pmty_functor (x, mty, acc))
+          ) mty args
+        ) }
   | MODULE TYPE OF attributes module_expr %prec below_LBRACKETAT
       { mkmty ~loc:$sloc ~attrs:$4 (Pmty_typeof $5) }
   | LPAREN module_type RPAREN
