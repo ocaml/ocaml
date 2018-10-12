@@ -1581,7 +1581,7 @@ module_subst:
   xlist(class_declaration, and_class_declaration)
     { $1 }
 ;
-class_declaration:
+%inline class_declaration:
   CLASS
   ext = ext
   attrs1 = attributes
@@ -1598,7 +1598,7 @@ class_declaration:
     Ci.mk id body ~virt ~params ~attrs ~loc ~docs
   }
 ;
-and_class_declaration:
+%inline and_class_declaration:
   AND
   attrs1 = attributes
   virt = virtual_flag
