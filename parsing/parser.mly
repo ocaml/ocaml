@@ -1285,7 +1285,7 @@ module_binding_body:
   xlist(rec_module_binding, and_module_binding)
     { $1 }
 ;
-rec_module_binding:
+%inline rec_module_binding:
   MODULE
   ext = ext
   attrs1 = attributes
