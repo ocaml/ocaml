@@ -1362,6 +1362,22 @@ open_statement:
   }
 ;
 
+(* A module type declaration. *)
+module_type_declaration:
+  MODULE TYPE
+  ext = ext
+  attrs1 = attributes
+  id = mkrhs(ident)
+  typ = preceded(EQUAL, module_type)?
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Mtd.mk id ?typ ~attrs ~loc ~docs, ext
+  }
+;
+
 (* -------------------------------------------------------------------------- *)
 
 /* Module types */
@@ -1520,6 +1536,7 @@ module_subst:
       { expecting $loc($5) "module path" }
 ;
 
+(* A group of recursive module declarations. *)
 %inline rec_module_declarations:
   xlist(rec_module_declaration, and_module_declaration)
     { $1 }
@@ -1555,17 +1572,9 @@ module_subst:
     Md.mk uid mty ~attrs ~loc ~text ~docs
   }
 ;
-module_type_declaration_body:
-    /* empty */               { None }
-  | EQUAL module_type         { Some $2 }
-;
-module_type_declaration:
-    MODULE TYPE ext_attributes mkrhs(ident) module_type_declaration_body
-    post_item_attributes
-      { let (ext, attrs) = $3 in
-        let docs = symbol_docs $sloc in
-        Mtd.mk $4 ?typ:$5 ~attrs:(attrs@$6) ~loc:(make_loc $sloc) ~docs, ext }
-;
+
+(* -------------------------------------------------------------------------- *)
+
 /* Class expressions */
 
 class_declarations:
