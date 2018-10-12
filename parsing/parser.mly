@@ -1351,23 +1351,21 @@ module_type:
       { unclosed "(" $loc($1) ")" $loc($3) }
   | module_type attribute
       { Mty.attr $1 $2 }
-  | mkmty(module_type_)
-      { $1 }
-;
-%inline module_type_:
-  | mkrhs(mty_longident)
-      { Pmty_ident $1 }
-  | module_type MINUSGREATER module_type
-      %prec below_WITH
-      { Pmty_functor(mknoloc "_", Some $1, $3) }
-  | module_type WITH separated_nonempty_llist(AND, with_constraint)
-      { Pmty_with($1, $3) }
+  | mkmty(
+      mkrhs(mty_longident)
+        { Pmty_ident $1 }
+    | module_type MINUSGREATER module_type
+        %prec below_WITH
+        { Pmty_functor(mknoloc "_", Some $1, $3) }
+    | module_type WITH separated_nonempty_llist(AND, with_constraint)
+        { Pmty_with($1, $3) }
 /*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
-      { Pmty_alias $3 } */
-  | extension
-      { Pmty_extension $1 }
+        { Pmty_alias $3 } */
+    | extension
+        { Pmty_extension $1 }
+    )
+    { $1 }
 ;
-
 (* A signature, which appears between SIG and END (among other places),
    is a list of signature elements. *)
 signature:
