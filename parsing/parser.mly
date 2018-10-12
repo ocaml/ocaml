@@ -1584,21 +1584,37 @@ class_declarations:
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_declaration:
-    CLASS ext_attributes virtual_flag formal_class_parameters mkrhs(LIDENT)
-    class_fun_binding post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Ci.mk $5 $6 ~virt:$3 ~params:$4
-                    ~attrs:(attrs@$7) ~loc:(make_loc $sloc) ~docs
-        , ext }
+  CLASS
+  ext = ext
+  attrs1 = attributes
+  virt = virtual_flag
+  params = formal_class_parameters
+  id = mkrhs(LIDENT)
+  body = class_fun_binding
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Ci.mk id body ~virt ~params ~attrs ~loc ~docs,
+    ext
+  }
 ;
 and_class_declaration:
-    AND attributes virtual_flag formal_class_parameters mkrhs(LIDENT)
-    class_fun_binding post_item_attributes
-      { let docs = symbol_docs $sloc in
-        let text = symbol_text $symbolstartpos in
-        Ci.mk $5 $6 ~virt:$3 ~params:$4
-                    ~attrs:($2@$7) ~loc:(make_loc $sloc) ~text ~docs }
+  AND
+  attrs1 = attributes
+  virt = virtual_flag
+  params = formal_class_parameters
+  id = mkrhs(LIDENT)
+  body = class_fun_binding
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    let text = symbol_text $symbolstartpos in
+    Ci.mk id body ~virt ~params ~attrs ~loc ~text ~docs
+  }
 ;
 class_fun_binding:
     EQUAL class_expr
