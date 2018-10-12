@@ -57,6 +57,9 @@ let pstr_type ((nr, ext), tys) =
   (Pstr_type (nr, tys), ext)
 let pstr_exception (te, ext) =
   (Pstr_exception te, ext)
+let pstr_include (body, ext) =
+  (Pstr_include body, ext)
+
 let psig_typext (te, ext) =
   (Psig_typext te, ext)
 let psig_value (vd, ext) =
@@ -65,6 +68,8 @@ let psig_type ((nr, ext), tys) =
   (Psig_type (nr, tys), ext)
 let psig_exception (te, ext) =
   (Psig_exception te, ext)
+let psig_include (body, ext) =
+  (Psig_include body, ext)
 
 let mkctf ~loc ?attrs ?docs d =
   Ctf.mk ~loc:(make_loc loc) ?attrs ?docs d
@@ -1238,11 +1243,13 @@ structure_item:
     | class_type_declarations
         { let (l, ext) = $1 in (Pstr_class_type (List.rev l), ext) }
     | include_statement(module_expr)
-        { let (body, ext) = $1 in (Pstr_include body, ext) }
+        { pstr_include $1 }
     )
     { $1 }
 ;
 
+(* An include statement can appear in a structure or in a signature,
+   which is why this definition is parameterized. *)
 %inline include_statement(thing):
   INCLUDE
   ext = ext
@@ -1394,7 +1401,7 @@ signature_item_with_ext:
   | open_statement
       { let (body, ext) = $1 in (Psig_open body, ext) }
   | include_statement(module_type)
-      { let (body, ext) = $1 in (Psig_include body, ext) }
+      { psig_include $1 }
   | class_descriptions
       { let (l, ext) = $1 in (Psig_class (List.rev l), ext) }
   | class_type_declarations
