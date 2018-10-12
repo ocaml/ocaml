@@ -51,6 +51,8 @@ module Int16 : sig
   val to_int : t -> int
 end
 
+(** Do not use polymorphic comparison on the unsigned integer types. *)
+
 module Uint8 : sig
   type t
 
