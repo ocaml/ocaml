@@ -395,6 +395,9 @@ let wrap_sig_ext ~loc body ext =
   | None -> body
   | Some id -> ghsig ~loc (Psig_extension ((id, PSig [body]), []))
 
+let wrap_mksig_ext ~loc (item, ext) =
+  wrap_sig_ext ~loc (mksig ~loc item) ext
+
 let text_str pos = Str.text (rhs_text pos)
 let text_sig pos = Sig.text (rhs_text pos)
 let text_cstr pos = Cf.text (rhs_text pos)
@@ -817,6 +820,8 @@ The precedences must be listed from low to high.
 
 %inline wrap_mkstr_ext(symb): symb
     { wrap_mkstr_ext ~loc:$sloc $1 }
+%inline wrap_mksig_ext(symb): symb
+    { wrap_mksig_ext ~loc:$sloc $1 }
 
 /* Generic definitions */
 
@@ -1384,48 +1389,48 @@ signature:
 ;
 
 signature_item:
-  | signature_item_with_ext
-      { let item, ext = $1 in
-        wrap_sig_ext ~loc:$sloc (mksig ~loc:$sloc item) ext }
   | item_extension post_item_attributes
       { let docs = symbol_docs $sloc in
         mksig ~loc:$sloc (Psig_extension ($1, (add_docs_attrs docs $2))) }
-  | mksig(floating_attribute
-      { Psig_attribute $1 })
-      { $1 }
-;
-signature_item_with_ext:
-    value_description
-      { psig_value $1 }
-  | primitive_declaration
-      { psig_value $1 }
-  | type_declarations
-      { psig_type $1 }
-  | type_subst_declarations
-      { let (l, ext) = $1 in
-        (Psig_typesubst (List.rev l), ext) }
-  | sig_type_extension
-      { psig_typext $1 }
-  | sig_exception_declaration
-      { psig_exception $1 }
-  | module_declaration
-      { let (body, ext) = $1 in (Psig_module body, ext) }
-  | module_alias
-      { let (body, ext) = $1 in (Psig_module body, ext) }
-  | module_subst
-      { let (body, ext) = $1 in (Psig_modsubst body, ext) }
-  | rec_module_declarations
-      { let (l, ext) = $1 in (Psig_recmodule (List.rev l), ext) }
-  | module_type_declaration
-      { let (body, ext) = $1 in (Psig_modtype body, ext) }
-  | open_statement
-      { let (body, ext) = $1 in (Psig_open body, ext) }
-  | include_statement(module_type)
-      { psig_include $1 }
-  | class_descriptions
-      { let (l, ext) = $1 in (Psig_class (List.rev l), ext) }
-  | class_type_declarations
-      { let (l, ext) = $1 in (Psig_class_type (List.rev l), ext) }
+  | mksig(
+      floating_attribute
+        { Psig_attribute $1 }
+    )
+    { $1 }
+  | wrap_mksig_ext(
+      value_description
+        { psig_value $1 }
+    | primitive_declaration
+        { psig_value $1 }
+    | type_declarations
+        { psig_type $1 }
+    | type_subst_declarations
+        { let (l, ext) = $1 in
+          (Psig_typesubst (List.rev l), ext) }
+    | sig_type_extension
+        { psig_typext $1 }
+    | sig_exception_declaration
+        { psig_exception $1 }
+    | module_declaration
+        { let (body, ext) = $1 in (Psig_module body, ext) }
+    | module_alias
+        { let (body, ext) = $1 in (Psig_module body, ext) }
+    | module_subst
+        { let (body, ext) = $1 in (Psig_modsubst body, ext) }
+    | rec_module_declarations
+        { let (l, ext) = $1 in (Psig_recmodule (List.rev l), ext) }
+    | module_type_declaration
+        { let (body, ext) = $1 in (Psig_modtype body, ext) }
+    | open_statement
+        { let (body, ext) = $1 in (Psig_open body, ext) }
+    | include_statement(module_type)
+        { psig_include $1 }
+    | class_descriptions
+        { let (l, ext) = $1 in (Psig_class (List.rev l), ext) }
+    | class_type_declarations
+        { let (l, ext) = $1 in (Psig_class_type (List.rev l), ext) }
+    )
+    { $1 }
 ;
 open_statement:
   OPEN
