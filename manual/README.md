@@ -142,6 +142,16 @@ In particular, toplevel examples must end with a double semi-colon `;;`,
 otherwise an error would be raised.
 The `verbatim` does not require a final `;;` and is intended to be
 a lighter mode for code examples.
+If you want to declare a signature instead of ocaml code,
+you must use the `{signature}` argument to the `caml_example` environment.
+```latex
+\begin{caml_example*}{signature}
+module A : sig
+  type t
+  val f: t -> t -> int
+end
+\end{caml_example*}
+```
 
 By default, `caml-tex` raises an error and stops if the output of one
 the `caml_example` environment contains an unexpected error or warning.
