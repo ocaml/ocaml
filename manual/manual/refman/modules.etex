@@ -196,16 +196,15 @@ the @"open"@ stops at the end of the structure expression.
 
 The expression @'include' module-expr@ in a structure re-exports in
 the current structure all definitions of the structure denoted by
-@module-expr@.  For instance, if the identifier "S" is bound to the
-module
+@module-expr@.  For instance, if you define a module "S" as below
 \begin{caml_example*}{verbatim}
 module S = struct type t = int  let x = 2 end
 \end{caml_example}
-the module expression
+defining the module "B" as
 \begin{caml_example*}{verbatim}
 module B = struct include S  let y = (x + 1 : t) end
 \end{caml_example}
-is equivalent to the module expression
+is equivalent to do
 \begin{caml_example*}{verbatim}
 module B = struct type t = S.t  let x = S.x  let y = (x + 1 : t) end
 \end{caml_example}
