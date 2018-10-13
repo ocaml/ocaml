@@ -23,6 +23,7 @@ open Parser
 type error =
   | Illegal_character of char
   | Illegal_escape of string * string option
+  | Reserved_sequence of string
   | Unterminated_comment of Location.t
   | Unterminated_string
   | Unterminated_string_in_comment of Location.t * Location.t
@@ -263,6 +264,8 @@ let prepare_error loc = function
         (fun ppf -> match explanation with
            | None -> ()
            | Some expl -> fprintf ppf ": %s" expl)
+  | Reserved_sequence s ->
+      Location.errorf ~loc "Reserved character sequence %s" s
   | Unterminated_comment _ ->
       Location.errorf ~loc "Comment not terminated"
   | Unterminated_string ->
@@ -343,6 +346,8 @@ rule token = parse
       { UNDERSCORE }
   | "~"
       { TILDE }
+  | ".~"
+      { error lexbuf (Reserved_sequence ".~") }
   | "~" (lowercase identchar * as name) ':'
       { check_label_name lexbuf name;
         LABEL name }
