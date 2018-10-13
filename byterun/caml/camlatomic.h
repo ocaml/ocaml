@@ -1,10 +1,16 @@
 #ifndef CAML_ATOMIC_H
 #define CAML_ATOMIC_H
 
+#ifndef CAML_NAME_SPACE
+#include "compatibility.h"
+#endif
+#include "config.h"
+#include "misc.h"
+
 /* On platforms supporting C11 atomics, this file just includes <stdatomic.h>.
 
    On other platforms, this file includes platform-specific stubs for
-   the subset of C11 atomics needed by the OCaml runtime 
+   the subset of C11 atomics needed by the OCaml runtime
  */
 
 #if defined(HAS_STDATOMIC_H)

@@ -34,9 +34,9 @@ camlinternalFormat.cmi : camlinternalFormatBasics.cmi buffer.cmi
 camlinternalFormatBasics.cmo : camlinternalFormatBasics.cmi
 camlinternalFormatBasics.cmx : camlinternalFormatBasics.cmi
 camlinternalFormatBasics.cmi :
-camlinternalLazy.cmo : obj.cmi camlinternalLazy.cmi
-camlinternalLazy.cmx : obj.cmx camlinternalLazy.cmi
-camlinternalLazy.cmi :
+camlinternalLazy.cmo : obj.cmi domain.cmi camlinternalLazy.cmi
+camlinternalLazy.cmx : obj.cmx domain.cmx camlinternalLazy.cmi
+camlinternalLazy.cmi : obj.cmi
 camlinternalMod.cmo : obj.cmi camlinternalOO.cmi array.cmi \
     camlinternalMod.cmi
 camlinternalMod.cmx : obj.cmx camlinternalOO.cmx array.cmx \
@@ -218,8 +218,8 @@ camlinternalFormat.p.cmx : sys.cmx string.cmx char.cmx \
     camlinternalFormatBasics.cmx bytes.cmx buffer.cmx camlinternalFormat.cmi
 camlinternalFormatBasics.cmo : camlinternalFormatBasics.cmi
 camlinternalFormatBasics.p.cmx : camlinternalFormatBasics.cmi
-camlinternalLazy.cmo : obj.cmi camlinternalLazy.cmi
-camlinternalLazy.p.cmx : obj.cmx camlinternalLazy.cmi
+camlinternalLazy.cmo : obj.cmi domain.cmi camlinternalLazy.cmi
+camlinternalLazy.p.cmx : obj.cmx domain.cmx camlinternalLazy.cmi
 camlinternalMod.cmo : obj.cmi camlinternalOO.cmi array.cmi \
     camlinternalMod.cmi
 camlinternalMod.p.cmx : obj.cmx camlinternalOO.cmx array.cmx \

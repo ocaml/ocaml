@@ -50,6 +50,7 @@
 type 'a t = 'a lazy_t
 
 exception Undefined = CamlinternalLazy.Undefined
+exception RacyLazy  = CamlinternalLazy.RacyLazy
 
 external make_forward : 'a -> 'a lazy_t = "caml_lazy_make_forward"
 
@@ -61,7 +62,8 @@ let force_val = CamlinternalLazy.force_val
 
 let from_fun (f : unit -> 'arg) =
   let x = Obj.new_block Obj.lazy_tag 1 in
-  Obj.set_field x 0 (Obj.repr f);
+  let wf = CamlinternalLazy.wrap_fun f x in
+  Obj.set_field x 0 (Obj.repr wf);
   (Obj.obj x : 'arg t)
 
 
