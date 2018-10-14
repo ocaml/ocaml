@@ -134,12 +134,6 @@ let f x = x
 \end{caml_example*}
 ```
 
-```latex
-\begin{caml_example*}{signature}
-val none : 'a option
-\end{caml_example*}
-```
-
 The {verbatim} or {toplevel} argument of the environment corresponds
 to the the mode of the example, three modes are available toplevel, verbatim and signature.
 The `toplevel` mode mimics the appearance and behavior of the toplevel.
@@ -149,6 +143,12 @@ The `verbatim` does not require a final `;;` and is intended to be
 a lighter mode for code examples.
 If you want to declare a signature instead of ocaml code,
 you must use the `{signature}` argument to the `caml_example` environment.
+
+```latex
+\begin{caml_example*}{signature}
+val none : 'a option
+\end{caml_example*}
+```
 
 By default, `caml-tex` raises an error and stops if the output of one
 the `caml_example` environment contains an unexpected error or warning.
