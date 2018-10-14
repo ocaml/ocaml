@@ -204,7 +204,7 @@ defining the module "B" as
 \begin{caml_example*}{verbatim}
 module B = struct include S  let y = (x + 1 : t) end
 \end{caml_example}
-is equivalent to do
+is equivalent to defining it as
 \begin{caml_example*}{verbatim}
 module B = struct type t = S.t  let x = S.x  let y = (x + 1 : t) end
 \end{caml_example}
