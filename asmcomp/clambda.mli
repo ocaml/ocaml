@@ -36,6 +36,25 @@ and uconstant =
   | Uconst_int of int
   | Uconst_ptr of int
 
+and uphantom_defining_expr =
+  | Uphantom_const of uconstant
+  (** The phantom-let-bound variable is a constant. *)
+  | Uphantom_var of Backend_var.t
+  (** The phantom-let-bound variable is an alias for another variable. *)
+  | Uphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
+  (** The phantom-let-bound-variable's value is defined by adding the given
+      number of words to the pointer contained in the given identifier. *)
+  | Uphantom_read_field of { var : Backend_var.t; field : int; }
+  (** The phantom-let-bound-variable's value is found by adding the given
+      number of words to the pointer contained in the given identifier, then
+      dereferencing. *)
+  | Uphantom_read_symbol_field of { sym : uconstant; field : int; }
+  (** As for [Uphantom_read_var_field], but with the pointer specified by
+      a symbol. *)
+  | Uphantom_block of { tag : int; fields : Backend_var.t list; }
+  (** The phantom-let-bound variable points at a block with the given
+      structure. *)
+
 and ulambda =
     Uvar of Backend_var.t
   | Uconst of uconstant
@@ -45,6 +64,8 @@ and ulambda =
   | Uoffset of ulambda * int
   | Ulet of mutable_flag * value_kind * Backend_var.With_provenance.t
       * ulambda * ulambda
+  | Uphantom_let of Backend_var.With_provenance.t
+      * uphantom_defining_expr option * ulambda
   | Uletrec of (Backend_var.With_provenance.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch * Debuginfo.t

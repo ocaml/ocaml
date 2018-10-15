@@ -36,6 +36,14 @@ and uconstant =
   | Uconst_int of int
   | Uconst_ptr of int
 
+and uphantom_defining_expr =
+  | Uphantom_const of uconstant
+  | Uphantom_var of Backend_var.t
+  | Uphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
+  | Uphantom_read_field of { var : Backend_var.t; field : int; }
+  | Uphantom_read_symbol_field of { sym : uconstant; field : int; }
+  | Uphantom_block of { tag : int; fields : Backend_var.t list; }
+
 and ulambda =
     Uvar of Backend_var.t
   | Uconst of uconstant
@@ -45,6 +53,8 @@ and ulambda =
   | Uoffset of ulambda * int
   | Ulet of mutable_flag * value_kind * Backend_var.With_provenance.t
       * ulambda * ulambda
+  | Uphantom_let of Backend_var.With_provenance.t
+      * uphantom_defining_expr option * ulambda
   | Uletrec of (Backend_var.With_provenance.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch * Debuginfo.t
