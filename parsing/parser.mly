@@ -1847,7 +1847,7 @@ class_sig_field:
       { Pctf_attribute $1 })
       { $1 }
 ;
-value_type:
+%inline value_type:
   flags = mutable_virtual_flags
   label = mkrhs(label)
   COLON
