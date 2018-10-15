@@ -977,16 +977,27 @@ let rec close fenv cenv = function
        Value_unknown)
   | Llet(str, kind, id, lam, body) ->
       let (ulam, alam) = close_named fenv cenv id lam in
+      let provenance =
+        match !current_module_path with
+        | None -> None
+        | Some module_path ->
+          let provenance =
+            V.Provenance.create ~module_path
+              ~location:Debuginfo.none
+              ~original_ident:id
+          in
+          Some provenance
+      in
       begin match (str, alam) with
         (Variable, _) ->
           let (ubody, abody) = close fenv cenv body in
-          (Ulet(Mutable, kind, VP.create id, ulam, ubody), abody)
+          (Ulet(Mutable, kind, VP.create ?provenance id, ulam, ubody), abody)
       | (_, Value_const _)
         when str = Alias || is_pure lam ->
           close (V.Map.add id alam fenv) cenv body
       | (_, _) ->
           let (ubody, abody) = close (V.Map.add id alam fenv) cenv body in
-          (Ulet(Immutable, kind, VP.create id, ulam, ubody), abody)
+          (Ulet(Immutable, kind, VP.create ?provenance id, ulam, ubody), abody)
       end
   | Lletrec(defs, body) ->
       if List.for_all
@@ -1016,7 +1027,19 @@ let rec close fenv cenv = function
         | (id, lam) :: rem ->
             let (udefs, fenv_body) = clos_defs rem in
             let (ulam, approx) = close_named fenv cenv id lam in
-            ((VP.create id, ulam) :: udefs, V.Map.add id approx fenv_body) in
+            let provenance =
+              match !current_module_path with
+              | None -> None
+              | Some module_path ->
+                let provenance =
+                  V.Provenance.create ~module_path
+                    ~location:Debuginfo.none
+                    ~original_ident:id
+                in
+                Some provenance
+            in
+            ((VP.create ?provenance id, ulam) :: udefs,
+              V.Map.add id approx fenv_body) in
         let (udefs, fenv_body) = clos_defs defs in
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
@@ -1106,12 +1129,38 @@ let rec close fenv cenv = function
   | Lstaticcatch(body, (i, vars), handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
-      let vars = List.map (fun var -> VP.create var) vars in
+      let vars =
+        List.map (fun var ->
+            let provenance =
+              match !current_module_path with
+              | None -> None
+              | Some module_path ->
+                let provenance =
+                  V.Provenance.create ~module_path
+                    ~location:Debuginfo.none
+                    ~original_ident:var
+                in
+                Some provenance
+            in
+            VP.create ?provenance var)
+          vars
+      in
       (Ucatch(i, vars, ubody, uhandler), Value_unknown)
   | Ltrywith(body, id, handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
-      (Utrywith(ubody, VP.create id, uhandler), Value_unknown)
+      let provenance =
+        match !current_module_path with
+        | None -> None
+        | Some module_path ->
+          let provenance =
+            V.Provenance.create ~module_path
+              ~location:Debuginfo.none
+              ~original_ident:id
+          in
+          Some provenance
+      in
+      (Utrywith(ubody, VP.create ?provenance id, uhandler), Value_unknown)
   | Lifthenelse(arg, ifso, ifnot) ->
       begin match close fenv cenv arg with
         (uarg, Value_const (Uconst_ptr n)) ->
@@ -1134,7 +1183,18 @@ let rec close fenv cenv = function
       let (ulo, _) = close fenv cenv lo in
       let (uhi, _) = close fenv cenv hi in
       let (ubody, _) = close fenv cenv body in
-      (Ufor(VP.create id, ulo, uhi, dir, ubody), Value_unknown)
+      let provenance =
+        match !current_module_path with
+        | None -> None
+        | Some module_path ->
+          let provenance =
+            V.Provenance.create ~module_path
+              ~location:Debuginfo.none
+              ~original_ident:id
+          in
+          Some provenance
+      in
+      (Ufor(VP.create ?provenance id, ulo, uhi, dir, ubody), Value_unknown)
   | Lassign(id, lam) ->
       let (ulam, _) = close fenv cenv lam in
       (Uassign(id, ulam), Value_unknown)
@@ -1199,9 +1259,8 @@ and close_functions fenv cenv fun_defs =
     List.map
       (function
           (id, Lfunction{kind; params; body; loc}) ->
-            let fun_human_name = V.unique_name id in
             let fun_module_path = !current_module_path in
-            let label = Compilenv.make_symbol (Some fun_human_name) in
+            let label = Compilenv.make_symbol (Some (V.unique_name id)) in
             let arity = List.length params in
             let fundesc =
               {fun_label = label;
@@ -1209,7 +1268,7 @@ and close_functions fenv cenv fun_defs =
                fun_closed = initially_closed;
                fun_inline = None;
                fun_float_const_prop = !Clflags.float_const_prop;
-               fun_human_name;
+               fun_human_name = V.name id;
                fun_module_path;} in
             let dbg = Debuginfo.from_location loc in
             (id, params, body, fundesc, dbg)
@@ -1236,7 +1295,7 @@ and close_functions fenv cenv fun_defs =
   let useless_env = ref initially_closed in
   (* Translate each function definition *)
   let clos_fundef (id, params, body, fundesc, dbg) env_pos =
-    let env_param = V.create_local "env" in
+    let env_param = V.create_local "*env*" in
     let cenv_fv =
       build_closure_env env_param (fv_pos - env_pos) fv in
     let cenv_body =
@@ -1247,11 +1306,30 @@ and close_functions fenv cenv fun_defs =
     let (ubody, approx) = close fenv_rec cenv_body body in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
     let fun_params = if !useless_env then params else params @ [env_param] in
+    let params =
+      List.map (fun ident ->
+          let provenance =
+            if ident == env_param then
+              None
+            else
+              match !current_module_path with
+              | None -> None
+              | Some module_path ->
+                let provenance =
+                  V.Provenance.create ~module_path
+                    ~location:dbg
+                    ~original_ident:ident
+                in
+                Some provenance
+          in
+          VP.create ?provenance ident)
+        fun_params
+    in
     let f =
       {
         label  = fundesc.fun_label;
         arity  = fundesc.fun_arity;
-        params = List.map (fun var -> VP.create var) fun_params;
+        params;
         body   = ubody;
         dbg;
         env = Some env_param;
@@ -1279,9 +1357,8 @@ and close_functions fenv cenv fun_defs =
       | Never_inline -> min_int
       | Unroll _ -> assert false
     in
-    let fun_params = List.map (fun var -> VP.create var) fun_params in
     if lambda_smaller ubody threshold
-    then fundesc.fun_inline <- Some(fun_params, ubody);
+    then fundesc.fun_inline <- Some(params, ubody);
 
     (f, (id, env_pos, Value_closure(fundesc, approx))) in
   (* Translate all function definitions. *)
@@ -1440,6 +1517,9 @@ let reset () =
 
 let intro size lam =
   reset ();
+  current_module_path :=
+    Some (Printtyp.rewrite_double_underscore_paths (Compmisc.initial_env ())
+      (Path.Pident (Ident.create_persistent (Compilenv.current_unit_name ()))));
   let id = Compilenv.make_symbol None in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);

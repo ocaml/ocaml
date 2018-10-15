@@ -2708,7 +2708,8 @@ and transl_let env str kind id exp body =
       Clet(id, transl env exp, transl env body)
   | Boxed (boxed_number, _false) ->
       let unboxed_id = V.create_local (VP.name id) in
-      Clet(VP.create unboxed_id, transl_unbox_number dbg env boxed_number exp,
+      Clet(VP.create ?provenance:(VP.provenance id) unboxed_id,
+           transl_unbox_number dbg env boxed_number exp,
            transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body)
 
 and make_catch ncatch body handler = match body with
@@ -3146,7 +3147,10 @@ let compunit ~ppf_dump ~unit_name (ulam, preallocated_blocks, constants) =
     else
       transl empty_env ulam in
   let fun_name = S.of_external_name (Compilenv.make_symbol (Some "entry")) in
-  let module_path = Path.Pident unit_name in
+  let module_path =
+    Printtyp.rewrite_double_underscore_paths (Compmisc.initial_env ())
+      (Path.Pident unit_name)
+  in
   let c1 = [Cfunction {fun_name;
                        fun_args = [];
                        fun_body = init_code;

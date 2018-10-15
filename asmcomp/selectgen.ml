@@ -918,7 +918,9 @@ method emit_expr (env:environment) exp ~bound_name =
           | op ->
               let r1 = self#emit_tuple env new_args in
               let rd = self#regs_for ty in
-              Some (self#insert_op_debug env op dbg r1 rd)
+              let result = self#insert_op_debug env op dbg r1 rd in
+              add_naming_op_for_bound_name rd;
+              Some result
       end
   | Csequence(e1, e2) ->
       begin match self#emit_expr env e1 ~bound_name:None with
