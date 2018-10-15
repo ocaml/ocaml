@@ -784,6 +784,8 @@ The precedences must be listed from low to high.
   { Ptop_def [$1] }
 %inline text_cstr(symb): symb
   { text_cstr $startpos @ [$1] }
+%inline text_csig(symb): symb
+  { text_csig $startpos @ [$1] }
 
 (* Using this %inline definition means that we do not control precisely
    when [mark_rhs_docs] is called, but I don't think this matters. *)
@@ -1811,7 +1813,7 @@ class_signature:
 ;
 class_sig_body:
     class_self_type extra_csig(class_sig_fields)
-      { Csig.mk $1 (List.rev $2) }
+      { Csig.mk $1 $2 }
 ;
 class_self_type:
     LPAREN core_type RPAREN
@@ -1819,11 +1821,9 @@ class_self_type:
   | mktyp((* empty *) { Ptyp_any })
       { $1 }
 ;
-class_sig_fields:
-    /* empty */
-    { [] }
-| class_sig_fields class_sig_field
-    { $2 :: List.rev (text_csig $startpos($2)) @ $1 }
+%inline class_sig_fields:
+  flatten(text_csig(class_sig_field)*)
+    { $1 }
 ;
 class_sig_field:
     INHERIT attributes class_signature post_item_attributes
