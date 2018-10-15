@@ -308,6 +308,9 @@ Working version
   literals to the main part of the manual.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- GPR#2105: Change verbatim to caml_example in documentation
+  (Maxime Flin, review by Florian Angeletti)
+
 ### Compiler distribution build system:
 
 - GPR#1776: add -no-install-bytecode-programs and related configure options to
