@@ -1699,10 +1699,11 @@ class_self_pattern:
     { $1 }
 ;
 class_field:
-  | INHERIT override_flag attributes class_expr parent_binder
+  | INHERIT override_flag attributes class_expr
+    self = preceded(AS, mkrhs(LIDENT))?
     post_item_attributes
       { let docs = symbol_docs $sloc in
-        mkcf ~loc:$sloc (Pcf_inherit ($2, $4, $5)) ~attrs:($3@$6) ~docs }
+        mkcf ~loc:$sloc (Pcf_inherit ($2, $4, self)) ~attrs:($3@$6) ~docs }
   | VAL value post_item_attributes
       { let v, attrs = $2 in
         let docs = symbol_docs $sloc in
@@ -1723,12 +1724,6 @@ class_field:
   | mkcf(floating_attribute
       { Pcf_attribute $1 })
       { $1 }
-;
-parent_binder:
-    AS mkrhs(LIDENT)
-          { Some $2 }
-  | /* empty */
-          { None }
 ;
 value:
     no_override_flag
