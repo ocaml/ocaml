@@ -99,13 +99,6 @@ static void st_thread_join(st_thread_id thr)
   WaitForSingleObject(thr, INFINITE);
 }
 
-/* Scheduling hints */
-
-static INLINE void st_thread_yield(void)
-{
-  Sleep(0);
-}
-
 /* Thread-specific state */
 
 typedef DWORD st_tlskey;
@@ -156,6 +149,15 @@ static INLINE void st_masterlock_release(st_masterlock * m)
 static INLINE int st_masterlock_waiters(st_masterlock * m)
 {
   return 1;                     /* info not maintained */
+}
+
+/* Scheduling hints */
+
+static INLINE void st_thread_yield(st_masterlock * m)
+{
+  LeaveCriticalSection(m);
+  Sleep(0);
+  EnterCriticalSection(m);
 }
 
 /* Mutexes */
