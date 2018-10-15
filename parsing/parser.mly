@@ -1848,12 +1848,14 @@ class_sig_field:
       { $1 }
 ;
 value_type:
-    VIRTUAL mutable_flag mkrhs(label) COLON core_type
-      { $3, $2, Virtual, $5 }
-  | MUTABLE virtual_flag mkrhs(label) COLON core_type
-      { $3, Mutable, $2, $5 }
-  | mkrhs(label) COLON core_type
-      { $1, Immutable, Concrete, $3 }
+  flags = mutable_virtual_flags
+  label = mkrhs(label)
+  COLON
+  ty = core_type
+  {
+    let mut, virt = flags in
+    label, mut, virt, ty
+  }
 ;
 constrain:
     core_type EQUAL core_type
@@ -3409,6 +3411,17 @@ mutable_flag:
 virtual_flag:
     /* empty */                                 { Concrete }
   | VIRTUAL                                     { Virtual }
+;
+mutable_virtual_flags:
+    /* empty */
+      { Immutable, Concrete }
+  | MUTABLE
+      { Mutable, Concrete }
+  | VIRTUAL
+      { Immutable, Virtual }
+  | MUTABLE VIRTUAL
+  | VIRTUAL MUTABLE
+      { Mutable, Virtual }
 ;
 private_virtual_flags:
     /* empty */  { Public, Concrete }
