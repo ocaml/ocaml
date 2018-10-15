@@ -1857,7 +1857,7 @@ class_sig_field:
     label, mut, virt, ty
   }
 ;
-constrain:
+%inline constrain:
     core_type EQUAL core_type
     { $1, $3, make_loc $sloc }
 ;
