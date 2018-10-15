@@ -174,23 +174,27 @@ let find_class env loc lid =
   Builtin_attributes.check_deprecated loc decl.cty_attributes (Path.name path);
   r
 
-let rec find_value env loc lid =
+
+let find_value env loc lid =
   Env.check_value_name (Longident.last lid) loc;
-  let (path, decl) =
-    find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
+  let get =
+    find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc
   in
-  match Builtin_attributes.redirect loc decl.val_attributes with
-  | None ->
-      Builtin_attributes.check_deprecated loc decl.val_attributes (Path.name path);
-      {loc; txt=lid}, path, decl
-  | Some new_lid ->
-      let new_lid = Longident.redirection lid new_lid in
-      Location.deprecated loc
-        (Printf.sprintf "automatic redirection %s => %s"
-           (Longident.to_string lid) (Longident.to_string new_lid)
-        );
-      find_value env loc new_lid
-      (* is recursive redirection the right thing to do? *)
+  let (path, decl) = get lid in
+  let (path, decl) =
+    match Builtin_attributes.redirect loc decl.val_attributes with
+    | None ->
+        (path, decl)
+    | Some new_lid ->
+        let new_lid = Longident.redirection lid new_lid in
+        Location.deprecated loc
+          (Printf.sprintf "automatic redirection %s => %s"
+             (Longident.to_string lid) (Longident.to_string new_lid)
+          );
+        get new_lid
+  in
+  Builtin_attributes.check_deprecated loc decl.val_attributes (Path.name path);
+  {loc; txt=lid}, path, decl
 
 let lookup_module ?(load=false) env loc lid =
   find_component
