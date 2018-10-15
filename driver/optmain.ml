@@ -66,7 +66,9 @@ module Options = Main_args.Make_optcomp_options (struct
     | _ -> fatal "Please specify `4+gnu' or '5' for -dwarf-version"
   let _for_pack s = for_package := Some s
   let _g = set debug
-  let _g_full = set debug_full
+  let _g_full () =
+    debug := true;
+    debug_full := true
   let _i () =
     print_types := true;
     compile_only := true;
