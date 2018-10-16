@@ -412,7 +412,8 @@ let rec linear i n =
                     (linear body (cons_instr_same_avail Lpoptrap n1))) in
       decr try_depth;
       instr_cons_same_avail (Lsetuptrap lbl_body) i.Mach.arg [| |]
-        (linear_in_scope handler (add_branch lbl_join n2))
+        (add_start_scope (
+          linear handler (add_branch lbl_join (add_end_scope n2))))
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
 
