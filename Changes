@@ -861,6 +861,10 @@ OCaml 4.07.0 (10 July 2018)
   mostly in Chapter 1.  This addresses the easier changes suggested in the PR.
   (Jim Fehrle, review by Florian Angeletti and David Allsopp)
 
+- MPR#7720, GPR#1596, precise the documentation of the maximum indentation limit
+  in Format.
+  (Florian Angeletti, review by Richard Bonichon and Pierre Weis)
+
 - GPR#1540: manual, decouple verbatim and toplevel style in code examples.
   (Florian Angeletti, review by Gabriel Scherer)
 
