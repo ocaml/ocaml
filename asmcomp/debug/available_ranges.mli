@@ -36,6 +36,16 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+module Scope : sig
+  type t
+
+  val start_pos : t -> Linearize.label
+  val end_pos : t -> Linearize.label
+  val parent : t -> t option
+
+  include Identifiable.S with type t := t
+end
+
 module Available_subrange : sig
   type t
 
@@ -66,6 +76,7 @@ type is_parameter = private
 module Available_range : sig
   type t
 
+  val scope : t -> Scope.t option
   val type_info : t -> type_info
   val is_parameter : t -> is_parameter
   val extremities : t -> Linearize.label * Linearize.label
@@ -114,5 +125,9 @@ val fold
     -> range:Available_range.t
     -> 'a)
   -> 'a
+
+(** It is guaranteed that the [parent]s of scopes will always occur before
+    such scopes in the returned list. *)
+val scopes : t -> Scope.t list
 
 val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t

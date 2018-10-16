@@ -69,6 +69,10 @@ let instr ppf i =
       fprintf ppf "pop trap"
   | Lraise k ->
       fprintf ppf "%a %a" Printcmm.raise_kind k reg i.arg.(0)
+  | Lstart_scope ->
+      fprintf ppf "start block scope"
+  | Lend_scope ->
+      fprintf ppf "end block scope"
   end;
   if not (Debuginfo.is_none i.dbg) then
     fprintf ppf " %s" (Debuginfo.to_string i.dbg)

@@ -878,6 +878,7 @@ let emit_instr fallthrough i =
           I.pop r14;
           I.ret ()
       end
+  | Lstart_scope | Lend_scope -> ()
 
 let rec emit_all fallthrough i =
   match i.desc with

@@ -557,7 +557,7 @@ let construct_value_description t ~parent ~fundecl
     in
     Some location_list_entry
 
-let dwarf_for_variable t ~fundecl ~function_proto_die ~lexical_block_proto_die
+let dwarf_for_variable t ~fundecl ~function_proto_die ~lexical_block_proto_dies
       ~proto_dies_for_vars ~need_rvalue
       (var : Backend_var.t) ~hidden ~ident_for_type ~name_is_unique
       ~location_is_unique ~range =
@@ -570,9 +570,19 @@ let dwarf_for_variable t ~fundecl ~function_proto_die ~lexical_block_proto_die
       function_proto_die
     | Local ->
       (* Local variables need to be children of "lexical blocks", which in turn
-         are children of the function.  We create a single lexical block per
-         function to avoid the debugger getting confused. *)
-      lexical_block_proto_die
+         are children of the function.  We generate lexical blocks in
+         [Available_ranges] to approximately correspond to source-level
+         scoping. *)
+      let scope = Available_range.scope range in
+      match scope with
+      | None -> function_proto_die
+
+      let module S = Available_range.Scope in
+      match S.Map.find scope lexical_block_proto_dies with
+      | exception Not_found ->
+        Misc.fatal_errorf "Cannot find lexical block DIE for %a"
+          Scope.print scope
+      | proto_die -> proto_die
   in
   (* Build a location list that identifies where the value of [ident] may be
      found at runtime, indexed by program counter range, and insert the list
@@ -752,7 +762,7 @@ let iterate_over_variable_like_things _t ~available_ranges ~f =
       f var ~hidden ~ident_for_type ~name_is_unique ~location_is_unique ~range)
 
 let dwarf_for_variables_and_parameters t ~function_proto_die
-      ~lexical_block_proto_die ~available_ranges
+      ~whole_function_lexical_block ~lexical_block_proto_dies ~available_ranges
       ~(fundecl : Linearize.fundecl) =
   let proto_dies_for_vars = Backend_var.Tbl.create 42 in
   iterate_over_variable_like_things t ~available_ranges
@@ -768,8 +778,8 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
      type "lvalue or rvalue". *)
   iterate_over_variable_like_things t ~available_ranges
     ~f:(dwarf_for_variable t ~fundecl ~function_proto_die
-      ~lexical_block_proto_die ~proto_dies_for_vars
-      ~need_rvalue:false);
+      ~whole_function_lexical_block ~lexical_block_proto_dies
+      ~proto_dies_for_vars ~need_rvalue:false);
   iterate_over_variable_like_things t ~available_ranges
     ~f:(fun var ~hidden ~ident_for_type ~name_is_unique ~location_is_unique
             ~range ->
@@ -780,8 +790,8 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
       (* CR-someday mshinwell: Make this test less messy *)
       if Backend_var.name var = "*closure_env*" then begin
         dwarf_for_variable t ~fundecl ~function_proto_die
-          ~lexical_block_proto_die ~proto_dies_for_vars
-          ~need_rvalue:true
+          ~whole_function_lexical_block ~lexical_block_proto_dies
+          ~proto_dies_for_vars ~need_rvalue:true
           var ~hidden ~ident_for_type ~name_is_unique ~location_is_unique
           ~range
       end)
@@ -840,19 +850,48 @@ let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
       ]
       ()
   in
-  let lexical_block_proto_die =
-    (* CR-someday mshinwell: Consider trying to improve this so that we don't
-       have all locals visible at once. *)
-    Proto_die.create ~parent:(Some function_proto_die)
+  let whole_function_lexical_block =
+    Proto_die.create ~parent:function_proto_die
       ~tag:Lexical_block
       ~attribute_values:[
         start_of_function;
         end_of_function;
       ]
-      ()
+  in
+  let lexical_block_proto_dies =
+    let module S = Available_ranges.Scope in
+    List.fold_left (fun scope lexical_block_proto_dies ->
+        let start_of_scope =
+          DAH.create_low_pc ~address_label:(S.start_pos scope)
+        in
+        let end_of_scope =
+          DAH.create_high_pc ~address_label:(S.end_pos scope)
+        in
+        let parent =
+          match S.parent scope with
+          | None -> Some function_proto_die
+          | Some scope ->
+            match S.Map.find scope lexical_block_proto_dies with
+            | exception Not_found ->
+              Misc.fatal_errorf "Cannot find parent for scope %a" S.print scope
+            | parent -> Some parent
+        in
+        let proto_die =
+          Proto_die.create ~parent
+            ~tag:Lexical_block
+            ~attribute_values:[
+              start_of_scope;
+              end_of_scope;
+            ]
+            ()
+        in
+        S.Map.add scope proto_die lexical_block_proto_dies)
+      (Available_ranges.scopes available_ranges)
+      S.Map.empty
   in
   dwarf_for_variables_and_parameters t ~function_proto_die
-    ~lexical_block_proto_die ~available_ranges ~fundecl
+    ~whole_function_lexical_block ~lexical_block_proto_dies
+    ~available_ranges ~fundecl
 
 let dwarf_for_toplevel_constant t ~vars ~module_path ~symbol =
   (* Give each variable the same definition for the moment. *)

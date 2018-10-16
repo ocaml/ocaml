@@ -44,6 +44,8 @@ and instruction_desc =
   | Lpushtrap
   | Lpoptrap
   | Lraise of Cmm.raise_kind
+  | Lstart_scope
+  | Lend_scope
 
 val has_fallthrough :  instruction_desc -> bool
 val end_instr: instruction

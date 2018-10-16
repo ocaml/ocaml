@@ -26,6 +26,58 @@ type is_parameter =
   | Local
   | Parameter of { index : int; }
 
+module Scope = struct
+  type t = {
+    id : int;
+    start_pos : Linearize.label;
+    mutable end_pos : Linearize.label option;
+    parent : t option;
+  }
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare t1 t2 = Stdlib.compare t1.id t2.id
+    let equal t1 t2 = (t1.id = t2.id)
+    let hash t = Hashtbl.hash t
+
+    let print ppf { id = _; start_pos; end_pos; parent = _; } =
+      match end_pos with
+      | None ->
+        Format.fprintf ppf "(open (start %d))" start_pos
+      | Some end_pos ->
+        Format.fprintf ppf "(open (start %d) (end %d))" start_pos end_pos
+
+    let output chan t =
+      print (Format.formatter_of_out_channel chan) t
+  end)
+
+  let next_id = ref 0
+
+  let create ~start_pos ~parent =
+    let id = !next_id in
+    incr next_id;
+    { id;
+      start_pos;
+      end_pos = None;
+      parent;
+    }
+
+  let close t ~end_pos =
+    match t.end_pos with
+    | Some _ -> Misc.fatal_errorf "Scope is already closed: %a" print t
+    | None -> t.end_pos <- Some end_pos
+
+  let start_pos t = t.start_pos
+
+  let end_pos t =
+    match t.end_pos with
+    | None -> Misc.fatal_errorf "Scope is not closed: %a" print t
+    | Some end_pos -> end_pos
+
+  let parent t = t.parent
+end
+
 module Available_subrange : sig
   type t
 
@@ -145,10 +197,12 @@ module Available_range : sig
   type t
 
   val create
-     : type_info:type_info
+     : Scope.t
+    -> type_info:type_info
     -> is_parameter:is_parameter
     -> t
 
+  val scope : t -> Scope.t
   val type_info : t -> type_info
   val is_parameter : t -> is_parameter
   val var_location : t -> Debuginfo.t
@@ -169,6 +223,7 @@ module Available_range : sig
   val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t
 end = struct
   type t = {
+    scope : Scope.t;
     mutable subranges : Available_subrange.t list;
     mutable min_pos : L.label option;
     mutable max_pos : L.label option;
@@ -177,17 +232,18 @@ end = struct
     var_location : Debuginfo.t;
   }
 
-  let create ~type_info ~is_parameter =
+  let create scope ~type_info ~is_parameter =
     let var_location =
       match type_info with
       | From_cmt_file None | Phantom (None, _) -> Debuginfo.none
       | From_cmt_file (Some provenance) | Phantom (Some provenance, _) ->
         Backend_var.Provenance.location provenance
     in
-    { subranges = []; min_pos = None; max_pos = None;
+    { scope; subranges = []; min_pos = None; max_pos = None;
       type_info; is_parameter; var_location;
     }
 
+  let scope t = t.scope
   let type_info t = t.type_info
   let is_parameter t = t.is_parameter
   let var_location t = t.var_location
@@ -244,6 +300,7 @@ end = struct
     let min_pos = Misc.Stdlib.Option.map (rewrite_label env) t.min_pos in
     let max_pos = Misc.Stdlib.Option.map (rewrite_label env) t.max_pos in
     { subranges; min_pos; max_pos;
+      scope = t.scope;
       type_info = t.type_info;
       is_parameter = t.is_parameter;
       var_location = t.var_location;
@@ -319,6 +376,14 @@ end) = struct
   module KM = S.Key.Map
   module KS = S.Key.Set
 
+  type scope_kind =
+    | From_let_or_otherwise
+    | From_linear_code
+
+  type new_scope =
+    | Start_new_scope of scope_kind
+    | Keep_existing_scope
+
   (* Imagine that the program counter is exactly at the start of [insn]; it has
      not yet been executed.  This function calculates which available subranges
      are to start at that point, and which are to stop.  [prev_insn] is the
@@ -329,7 +394,6 @@ end) = struct
        pointer changes, since we reference the stack slots as an offset from
        the CFA, not from the stack pointer.
 
-       We avoid generating ranges that overlap, since this confuses lldb.
        This pass may generate ranges that are the same as other ranges,
        but those are deduped in [Dwarf].
     *)
@@ -338,6 +402,10 @@ end) = struct
       | None -> S.available_before insn
       | Some prev_insn ->
         KS.diff (S.available_before insn) (S.available_before prev_insn)
+    in
+    let new_scope =
+      if KS.is_empty proto_births then Keep_existing_scope
+      else Start_new_scope From_let_or_otherwise
     in
     let proto_deaths =
       match prev_insn with
@@ -372,11 +440,33 @@ end) = struct
         else
           S.available_before prev_insn
     in
-    births, deaths
+    new_scope, births, deaths
 
   let rec process_instruction t ~fundecl ~first_insn ~(insn : L.instruction)
-        ~prev_insn ~open_subrange_start_insns ~stack_offset =
-    let births, deaths = births_and_deaths ~insn ~prev_insn in
+        ~prev_insn ~open_subrange_start_insns ~stack_offset
+        ~(scope_stack : (scope_kind * Scope.t) list) =
+    let new_scope_from_lets, births, deaths =
+      births_and_deaths ~insn ~prev_insn
+    in
+    let new_scope_from_blocks =
+      match insn.desc with
+      | Lstart_scope -> Start_new_scope From_linear_code
+      | _ -> Keep_existing_scope
+    in
+    let new_scope =
+      match scope_stack with
+      | [] -> Start_new_scope From_let_or_otherwise
+      | _::_ ->
+        match new_scope_from_lets, new_scope_from_blocks with
+        | Start_new_scope _, Start_new_scope _ ->
+          Start_new_scope From_linear_code
+        | Start_new_scope _, Keep_existing_scope ->
+          Start_new_scope From_let_or_otherwise
+        | Keep_existing_scope, Start_new_scope _ ->
+          Start_new_scope From_linear_code
+        | Keep_existing_scope, Keep_existing_scope ->
+          Keep_existing_scope
+    in
     let first_insn = ref first_insn in
     let prev_insn = ref prev_insn in
     let insert_insn ~new_insn =
@@ -390,6 +480,42 @@ end) = struct
         prev_insn.L.next <- new_insn
       end;
       prev_insn := Some new_insn
+    in
+    let scope, scope_stack =
+      match new_scope with
+      | Start_new_scope scope_kind ->
+        let start_pos = Cmm.new_label () in
+        let start_pos_insn =
+          { L.
+            desc = Llabel start_pos;
+            next = insn;
+            arg = [| |];
+            res = [| |];
+            dbg = insn.dbg;
+            live = insn.live;
+            available_before = insn.available_before;
+            phantom_available_before = insn.phantom_available_before;
+            available_across = None;
+          }
+        in
+        insert_insn ~new_insn:start_pos_insn;
+        begin match scope_stack with
+        | [] ->
+          let scope = Scope.create ~start_pos ~parent:None in
+          let scope_stack = [scope_kind, scope] in
+          scope, scope_stack
+        | (_kind, scope)::_ ->
+          let scope = Scope.create ~start_pos ~parent:(Some scope) in
+          let scope_stack = (scope_kind, scope)::scope_stack in
+          scope, scope_stack
+        end
+      | Keep_existing_scope ->
+        let scope =
+          match scope_stack with
+          | [] -> Misc.fatal_error "Keep_existing_scope without current scope"
+          | (_kind, scope)::_ -> scope
+        in
+        scope, scope_stack
     in
     (* Note that we can't reuse an existing label in the code since we rely
        on the ordering of range-related labels. *)
@@ -415,7 +541,9 @@ end) = struct
             match Backend_var.Tbl.find t.ranges var with
             | range -> range
             | exception Not_found ->
-              let range = Available_range.create ~type_info ~is_parameter in
+              let range =
+                Available_range.create scope ~type_info ~is_parameter
+              in
               Backend_var.Tbl.add t.ranges var range;
               range
           in
@@ -428,7 +556,7 @@ end) = struct
       ();
     let label_insn =
       { L.
-        desc = L.Llabel label;
+        desc = Llabel label;
         next = insn;
         arg = [| |];
         res = [| |];
@@ -454,27 +582,80 @@ end) = struct
       insert_insn ~new_insn:label_insn
     end;
     let first_insn = !first_insn in
-    match insn.L.desc with
-    | L.Lend -> first_insn
-    | L.Lprologue | L.Lop _ | L.Lreloadretaddr | L.Lreturn | L.Llabel _
-    | L.Lbranch _ | L.Lcondbranch _ | L.Lcondbranch3 _ | L.Lswitch _
-    | L.Lsetuptrap _ | L.Lpushtrap | L.Lpoptrap | L.Lraise _ ->
+    let insert_end_of_scope_label () =
+      let end_pos = Cmm.new_label () in
+      let end_pos_insn =
+        { L.
+          desc = Llabel end_pos;
+          next = insn;
+          arg = [| |];
+          res = [| |];
+          dbg = Debuginfo.none;
+          live = Reg.Set.empty;
+          available_before = insn.available_before;
+          phantom_available_before = insn.phantom_available_before;
+          available_across = None;
+        }
+      in
+      insert_insn ~new_insn:end_pos_insn;
+      end_pos
+    in
+    match insn.desc with
+    | Lend ->
+      let end_pos = insert_end_of_scope_label () in
+      List.iter (fun (kind, scope) ->
+          begin match kind with
+          | From_let_or_otherwise -> ()
+          | From_linear_code ->
+            Misc.fatal_error "Unmatched [Lstart_scope] / [Lend_scope]"
+          end;
+          Scope.close scope ~end_pos)
+        scope_stack;
+      first_insn
+    | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
+    | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
+    | Lsetuptrap _ | Lpushtrap | Lpoptrap | Lraise _
+    | Lstart_scope | Lend_scope ->
       let stack_offset =
-        match insn.L.desc with
+        match insn.desc with
         | Lop (Istackoffset delta) -> stack_offset + delta
         | Lpushtrap -> stack_offset + Proc.trap_frame_size_in_bytes
         | Lpoptrap -> stack_offset - Proc.trap_frame_size_in_bytes
-        | L.Lend | L.Lprologue | L.Lop _ | L.Lreloadretaddr | L.Lreturn
-        | L.Llabel _ | L.Lbranch _ | L.Lcondbranch _ | L.Lcondbranch3 _
-        | L.Lswitch _ | L.Lsetuptrap _ | L.Lraise _ -> stack_offset
+        | Lend | Lprologue | Lop _ | Lreloadretaddr | Lreturn
+        | Llabel _ | Lbranch _ | Lcondbranch _ | Lcondbranch3 _
+        | Lswitch _ | Lsetuptrap _ | Lraise _
+        | Lstart_scope | Lend_scope -> stack_offset
+      in
+      let scope_stack =
+        match insn.desc with
+        | Lend_scope ->
+          let end_pos = insert_end_of_scope_label () in
+          let rec close scope_stack =
+            match scope_stack with
+            | [] -> [], false
+            | (From_let_or_otherwise, scope)::scope_stack ->
+              Scope.close scope ~end_pos;
+              close scope_stack
+            | (From_linear_code, scope)::scope_stack ->
+              Scope.close scope ~end_pos;
+              scope_stack, true
+          in
+          let scope_stack, found_block_scope = close scope_stack in
+          if not found_block_scope then begin
+            Misc.fatal_error "Unmatched [Lstart_scope] / [Lend_scope]"
+          end;
+          scope_stack
+        | _ -> scope_stack
       in
       process_instruction t ~fundecl ~first_insn ~insn:insn.L.next
         ~prev_insn:(Some insn) ~open_subrange_start_insns ~stack_offset
+        ~scope_stack
 
   let process_instructions t ~fundecl ~first_insn =
     let stack_offset = Proc.initial_stack_offset in
     process_instruction t ~fundecl ~first_insn ~insn:first_insn
       ~prev_insn:None ~open_subrange_start_insns:KM.empty ~stack_offset
+      ~scope_stack:[]
 end
 
 module Make_ranges = Make (struct
@@ -651,7 +832,7 @@ let create ~fundecl =
   in
   List.iter (fun var ->
       let range =
-        Available_range.create ~type_info:(Phantom (None, None))
+        Available_range.create ~scope:None ~type_info:(Phantom (None, None))
           ~is_parameter:Local
       in
       Backend_var.Tbl.add t.ranges var range)
