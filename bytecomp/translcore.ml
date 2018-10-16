@@ -1060,7 +1060,8 @@ and transl_exp0 e =
       | `Identifier `Other ->
          transl_exp e
       | `Other ->
-         (* other cases compile to a lazy block holding a function *)
+         (* other cases compile to a lazy block holding a wrapped function. The
+          * implementation here is inlined version of Lazy.from_fun. *)
          let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
                              attr = default_function_attribute;
                              loc = e.exp_loc;
