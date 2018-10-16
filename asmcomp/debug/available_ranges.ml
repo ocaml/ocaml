@@ -36,12 +36,14 @@ module Scope = struct
     let equal t1 t2 = (t1.id = t2.id)
     let hash t = Hashtbl.hash t
 
-    let print ppf { id = _; start_pos; end_pos; parent = _; } =
+    let print ppf { id; start_pos; end_pos; parent = _; } =
       match end_pos with
       | None ->
-        Format.fprintf ppf "(open (start %d))" start_pos
+        Format.fprintf ppf "(open (id %d) (start %d))"
+          id start_pos
       | Some end_pos ->
-        Format.fprintf ppf "(open (start %d) (end %d))" start_pos end_pos
+        Format.fprintf ppf "(open (id %d) (start %d) (end %d))"
+          id start_pos end_pos
 
     let output chan t =
       print (Format.formatter_of_out_channel chan) t
@@ -311,7 +313,7 @@ let fold t ~init ~f =
     t.ranges
     init
 
-let scopes t = t.scopes
+let scopes t = List.rev t.scopes
 
 module Make (S : sig
   module Key : sig

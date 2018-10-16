@@ -874,10 +874,12 @@ let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
         let parent =
           match S.parent scope with
           | None -> Some function_proto_die
-          | Some scope ->
-            match S.Map.find scope lexical_block_proto_dies with
+          | Some parent ->
+            match S.Map.find parent lexical_block_proto_dies with
             | exception Not_found ->
-              Misc.fatal_errorf "Cannot find parent for scope %a" S.print scope
+              Misc.fatal_errorf "Cannot find DIE for parent %a of scope %a"
+                S.print parent
+                S.print scope
             | parent -> Some parent
         in
         let proto_die =
