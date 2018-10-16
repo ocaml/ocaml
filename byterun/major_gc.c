@@ -516,10 +516,21 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
           caml_darken_cont(v);
           e = stk->stack[--stk->count];
         } else {
-          atomic_store_explicit(
-             Hp_atomic_val(v),
-             With_status_hd(hd, global.MARKED),
-             memory_order_relaxed);
+again:
+          if (Tag_hd(hd) == Lazy_tag) {
+            if (!atomic_compare_exchange_strong(
+                  Hp_atomic_val(v), &hd,
+                  With_status_hd(hd, global.MARKED))) {
+              hd = Hd_val(v);
+              goto again;
+            }
+          }
+          else {
+            atomic_store_explicit(
+              Hp_atomic_val(v),
+              With_status_hd(hd, global.MARKED),
+              memory_order_relaxed);
+          }
           if (Tag_hd(hd) < No_scan_tag) {
             mark_entry child = {v, 0, Wosize_hd(hd)};
             mark_stack_push(stk, e);
