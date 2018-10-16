@@ -35,6 +35,10 @@ module Storer =
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
+(* Maintain the current module path *)
+
+let current_module_path = ref (None : Path.t option)
+
 let no_phantom_lets () =
   Misc.fatal_error "Closure does not support phantom let generation"
 
@@ -721,7 +725,22 @@ let rec bind_params_rec loc fpc subst params args body =
         bind_params_rec loc fpc (V.Map.add (VP.var p1) a1 subst)
           pl al body
       else begin
-        let p1' = VP.rename p1 in
+        let provenance =
+          match !current_module_path with
+          | None -> None
+          | Some module_path ->
+            match VP.provenance p1 with
+            | None -> None
+            | Some provenance ->
+              let original_ident = V.Provenance.original_ident provenance in
+              let provenance =
+                V.Provenance.create ~module_path
+                  ~location:(Debuginfo.from_location loc)
+                  ~original_ident
+              in
+              Some provenance
+        in
+        let p1' = VP.rename ?provenance p1 in
         let u1, u2 =
           match VP.name p1, a1 with
           | "*opt*", Uprim(Pmakeblock(0, Immutable, kind), [a], dbg) ->
@@ -823,10 +842,6 @@ let global_approx = ref([||] : value_approximation array)
 
 let function_nesting_depth = ref 0
 let excessive_function_nesting_depth = 5
-
-(* Maintain the current module path *)
-
-let current_module_path = ref (None : Path.t option)
 
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.

@@ -71,9 +71,9 @@ module With_provenance = struct
 
   let name t = name (var t)
 
-  let rename t =
+  let rename ?provenance t =
     let var = rename (var t) in
-    match provenance t with
+    match provenance with
     | None -> Without_provenance var
     | Some provenance -> With_provenance { var; provenance; }
 

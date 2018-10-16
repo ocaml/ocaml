@@ -557,11 +557,10 @@ let construct_value_description t ~parent ~fundecl
     in
     Some location_list_entry
 
-let dwarf_for_variable t ~fundecl ~function_proto_die
-      ~lexical_block_proto_die ~proto_dies_for_vars
-      ~need_rvalue
-      (var : Backend_var.t) ~(ident_for_type : Ident.t option) ~is_unique
-      ~range =
+let dwarf_for_variable t ~fundecl ~function_proto_die ~lexical_block_proto_die
+      ~proto_dies_for_vars ~need_rvalue
+      (var : Backend_var.t) ~hidden ~ident_for_type ~name_is_unique
+      ~location_is_unique ~range =
   let type_info = Available_range.type_info range in
   let is_parameter = Available_range.is_parameter range in
   let parent_proto_die : Proto_die.t =
@@ -612,59 +611,58 @@ let dwarf_for_variable t ~fundecl ~function_proto_die
   in
   let type_and_name_attributes =
     let reference = type_die_reference_for_var var ~proto_dies_for_vars in
-    let var, name_for_var =
-      match ident_for_type with
-      | None ->
-        `Var (Backend_var.create_persistent (Backend_var.name var)), None
-      | Some ident_for_type ->
-        let var = `Var ident_for_type in
-        (* If the unstamped name of [ident] is unambiguous within the
-           function, then use it; otherwise, equip the name with the location
-           of its definition together with any inlined-out frames. *)
-        (* CR-soon mshinwell: For the moment we are actually just going to
-           use the ident stamp instead of the location, since the location is
-           missing on various forms (e.g. "let") in [Lambda].  We should
-           fix this.  This code should be able to be used:
-             let provenance =
-               match type_info with
-               | From_cmt_file provenance
-               | Phantom (provenance, _) -> provenance
-             in
-             (* CR-soon mshinwell: Try to remove this option *)
-             begin match provenance with
-             | None -> var, Some (Ident.name ident_for_type)
-             | Some provenance ->
-               let name =
-                 Format.sprintf "%s[%a]"
-                   (Ident.name ident_for_type)
-                   Debuginfo.print_compact
-                   (Backend_var.Provenance.location provenance)
-               in
-               var, Some name
-             end
-           It might seem that parameters always have unique names, but they
-           don't, in the case of ones that weren't named in the source code.
-        *)
-        if is_unique then
-          var, Some (Ident.name ident_for_type)
-        else
-          var, Some (Ident.unique_name ident_for_type)
+    let name_for_var =
+      (* If the unstamped name of [ident] is unambiguous within the
+         function, then use it; otherwise, equip the name with the location
+         of its definition together with any inlined-out frames.
+         It might seem that parameters always have unique names, but they
+         don't, in the case of ones that weren't named in the source code. *)
+      (* CR-soon mshinwell: There are certain cases (e.g. let-bindings in
+         [Lambda]) which currently lack location information or (e.g.
+         inlined functions' parameters in [Closure]) where locations may
+         alias.  For these ones we disambiguate using the stamp. *)
+      if name_is_unique then
+        Backend_var.name var
+      else if not location_is_unique then
+        Backend_var.unique_name var
+      else
+        let provenance =
+          match type_info with
+          | From_cmt_file provenance
+          | Phantom (provenance, _) -> provenance
+        in
+        (* CR-soon mshinwell: Try to remove this option *)
+        match provenance with
+        | None -> Backend_var.unique_name var
+        | Some provenance ->
+          let location = Backend_var.Provenance.location provenance in
+          if Debuginfo.is_none location then
+            Backend_var.unique_name var
+          else
+            Format.asprintf "%s[%a]"
+              (Backend_var.name var)
+              Debuginfo.print_compact
+              (Backend_var.Provenance.location provenance)
     in
     (* CR-someday mshinwell: This should be tidied up.  It's only correct by
        virtue of the fact we do the closure-env ones second below. *)
+    let ident_for_type =
+      match ident_for_type with
+      | None -> `Var var
+      | Some ident_for_type -> `Var ident_for_type
+    in
     if not need_rvalue then begin
       construct_type_of_value_description t
         ~parent:(Some t.compilation_unit_proto_die)
-        var ~output_path:t.output_path
+        ident_for_type ~output_path:t.output_path
         ~type_info ~proto_dies_for_vars
         ~reference
     end;
-    let name_for_var =
-      match name_for_var with
-      | None -> []
-      | Some name -> [DAH.create_name name]
+    let name_attribute =
+      if hidden then []
+      else [DAH.create_name name_for_var]
     in
-    name_for_var @ [
+    name_attribute @ [
       DAH.create_type_from_reference ~proto_die_reference:reference;
     ]
   in
@@ -701,7 +699,7 @@ let dwarf_for_variable t ~fundecl ~function_proto_die
 let iterate_over_variable_like_things _t ~available_ranges ~f =
   Available_ranges.fold available_ranges
     ~init:()
-    ~f:(fun () ~var ~is_unique ~range ->
+    ~f:(fun () ~var ~name_is_unique ~location_is_unique ~range ->
       (* There are two variables in play here:
          1. [var] is the "real" variable that is used to cross-reference
              between DIEs;
@@ -715,51 +713,50 @@ let iterate_over_variable_like_things _t ~available_ranges ~f =
          variables, not parameters. *)
       (* CR mshinwell: Introduce some flag on Backend_var.t to mark identifiers
          that were generated internally (or vice-versa)? *)
-      let ident_for_type =
-        if Backend_var.name var = "*closure_env*"
+      let hidden =
+        Backend_var.name var = "*closure_env*"
           || Backend_var.name var = "*opt*"
           || Backend_var.name var = "*match*"
-        then begin
-          None
-        end else begin
-          let provenance =
-            match Available_range.type_info range with
-            | From_cmt_file provenance
-            | Phantom (provenance, _) -> provenance
-          in
-          match provenance with
-          | None ->
-            (* In this case the variable won't be given a name in the DWARF,
-               so as not to appear in the debugger; but we still need to emit
-               a DIE for it, as it may be referenced as part of some chain of
-               phantom lets. *)
-            None
-          | Some provenance ->
-            (* CR-soon mshinwell: See CR-soon above; we can't do this yet
-               because there is often missing location information. *)
-            (*
-            let location = Backend_var.Provenance.location provenance in
-            if location = Debuginfo.none
-              && match Available_range.is_parameter range with
-                 | Local -> true
-                 | _ -> false
-            then None
-            else
-            *)
-            let original_ident =
-              Backend_var.Provenance.original_ident provenance
-            in
-            Some original_ident
-        end
       in
-      f var ~ident_for_type ~is_unique ~range)
+      let ident_for_type =
+        let provenance =
+          match Available_range.type_info range with
+          | From_cmt_file provenance
+          | Phantom (provenance, _) -> provenance
+        in
+        match provenance with
+        | None ->
+          (* In this case the variable won't be given a name in the DWARF,
+             so as not to appear in the debugger; but we still need to emit
+             a DIE for it, as it may be referenced as part of some chain of
+             phantom lets. *)
+          None
+        | Some provenance ->
+          (* CR-soon mshinwell: See CR-soon above; we can't do this yet
+             because there is often missing location information. *)
+          (*
+          let location = Backend_var.Provenance.location provenance in
+          if location = Debuginfo.none
+            && match Available_range.is_parameter range with
+               | Local -> true
+               | _ -> false
+          then None
+          else
+          *)
+          let original_ident =
+            Backend_var.Provenance.original_ident provenance
+          in
+          Some original_ident
+      in
+      f var ~hidden ~ident_for_type ~name_is_unique ~location_is_unique ~range)
 
 let dwarf_for_variables_and_parameters t ~function_proto_die
       ~lexical_block_proto_die ~available_ranges
       ~(fundecl : Linearize.fundecl) =
   let proto_dies_for_vars = Backend_var.Tbl.create 42 in
   iterate_over_variable_like_things t ~available_ranges
-    ~f:(fun var ~ident_for_type:_ ~is_unique:_ ~range:_ ->
+    ~f:(fun var ~hidden:_ ~ident_for_type:_ ~name_is_unique:_
+            ~location_is_unique:_ ~range:_ ->
       let value_die_lvalue = Proto_die.create_reference () in
       let value_die_rvalue = Proto_die.create_reference () in
       let type_die = Proto_die.create_reference () in
@@ -773,7 +770,8 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
       ~lexical_block_proto_die ~proto_dies_for_vars
       ~need_rvalue:false);
   iterate_over_variable_like_things t ~available_ranges
-    ~f:(fun var ~ident_for_type ~is_unique ~range ->
+    ~f:(fun var ~hidden ~ident_for_type ~name_is_unique ~location_is_unique
+            ~range ->
       (* We only need DIEs that yield actually on the DWARF stack the locations
          of entities for closure arguments, since those are the only ones
          that may be involved with [Iphantom_read_var_field] and
@@ -783,7 +781,8 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
         dwarf_for_variable t ~fundecl ~function_proto_die
           ~lexical_block_proto_die ~proto_dies_for_vars
           ~need_rvalue:true
-          var ~ident_for_type ~is_unique ~range
+          var ~hidden ~ident_for_type ~name_is_unique ~location_is_unique
+          ~range
       end)
 
 let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)

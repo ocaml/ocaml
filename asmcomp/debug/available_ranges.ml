@@ -135,7 +135,7 @@ type type_info =
   | Phantom of
       Backend_var.Provenance.t option * Mach.phantom_defining_expr option
 
-let type_info_has_provenance = function
+let _type_info_has_provenance = function
   | From_cmt_file None -> false
   | From_cmt_file (Some _) -> true
   | Phantom (None, _) -> false
@@ -151,6 +151,7 @@ module Available_range : sig
 
   val type_info : t -> type_info
   val is_parameter : t -> is_parameter
+  val var_location : t -> Debuginfo.t
   val add_subrange : t -> subrange:Available_subrange.t -> unit
   val extremities : t -> L.label * L.label
 
@@ -173,15 +174,23 @@ end = struct
     mutable max_pos : L.label option;
     type_info : type_info;
     is_parameter : is_parameter;
+    var_location : Debuginfo.t;
   }
 
   let create ~type_info ~is_parameter =
+    let var_location =
+      match type_info with
+      | From_cmt_file None | Phantom (None, _) -> Debuginfo.none
+      | From_cmt_file (Some provenance) | Phantom (Some provenance, _) ->
+        Backend_var.Provenance.location provenance
+    in
     { subranges = []; min_pos = None; max_pos = None;
-      type_info; is_parameter;
+      type_info; is_parameter; var_location;
     }
 
   let type_info t = t.type_info
   let is_parameter t = t.is_parameter
+  let var_location t = t.var_location
 
   let add_subrange t ~subrange =
     let start_pos = Available_subrange.start_pos subrange in
@@ -237,6 +246,7 @@ end = struct
     { subranges; min_pos; max_pos;
       type_info = t.type_info;
       is_parameter = t.is_parameter;
+      var_location = t.var_location;
     }
 end
 
@@ -254,15 +264,22 @@ let fold t ~init ~f =
       (* CR-soon mshinwell: improve efficiency *)
       let with_same_name =
         List.filter (fun (var', range') ->
-            let has_provenance =
-              type_info_has_provenance (Available_range.type_info range')
-            in
-            has_provenance
-              && Backend_var.name var = Backend_var.name var')
+            Backend_var.name var = Backend_var.name var'
+              && Available_range.is_parameter range
+                = Available_range.is_parameter range')
           (Backend_var.Tbl.to_list t.ranges)
       in
-      let is_unique = List.length with_same_name <= 1 in
-      f acc ~var ~is_unique ~range)
+      let with_same_location =
+        List.filter (fun (_, range') ->
+            Available_range.var_location range
+                = Available_range.var_location range'
+              && Available_range.is_parameter range
+                = Available_range.is_parameter range')
+          (Backend_var.Tbl.to_list t.ranges)
+      in
+      let name_is_unique = List.length with_same_name <= 1 in
+      let location_is_unique = List.length with_same_location <= 1 in
+      f acc ~var ~name_is_unique ~location_is_unique ~range)
     t.ranges
     init
 
@@ -608,28 +625,29 @@ let create ~fundecl =
      ranges for any such variables.  We assume such variables are local
      variables. *)
   let variables_without_ranges =
-    fold t ~init:[] ~f:(fun acc ~var:_ ~is_unique:_ ~range ->
-      match Available_range.type_info range with
-      | From_cmt_file _ -> acc
-      | Phantom (_, defining_expr) ->
-        let vars =
-          match defining_expr with
-          | None -> []
-          | Some defining_expr ->
+    fold t ~init:[]
+      ~f:(fun acc ~var:_ ~name_is_unique:_ ~location_is_unique:_ ~range ->
+        match Available_range.type_info range with
+        | From_cmt_file _ -> acc
+        | Phantom (_, defining_expr) ->
+          let vars =
             match defining_expr with
-            | Iphantom_const_int _
-            | Iphantom_const_symbol _
-            | Iphantom_read_symbol_field _ -> []
-            | Iphantom_var var
-            | Iphantom_read_field { var; _ }
-            | Iphantom_offset_var { var; _ } -> [var]
-            | Iphantom_block { fields; _ } ->
-              Misc.Stdlib.List.filter_map (fun field -> field) fields
-        in
-        let without_ranges =
-          List.filter (fun var -> not (Backend_var.Tbl.mem t.ranges var)) vars
-        in
-        acc @ without_ranges)
+            | None -> []
+            | Some defining_expr ->
+              match defining_expr with
+              | Iphantom_const_int _
+              | Iphantom_const_symbol _
+              | Iphantom_read_symbol_field _ -> []
+              | Iphantom_var var
+              | Iphantom_read_field { var; _ }
+              | Iphantom_offset_var { var; _ } -> [var]
+              | Iphantom_block { fields; _ } ->
+                Misc.Stdlib.List.filter_map (fun field -> field) fields
+          in
+          let without_ranges =
+            List.filter (fun var -> not (Backend_var.Tbl.mem t.ranges var)) vars
+          in
+          acc @ without_ranges)
   in
   List.iter (fun var ->
       let range =

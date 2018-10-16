@@ -107,16 +107,12 @@ val classify_label
 val fold
    : t
   -> init:'a
-  (* CR mshinwell: fix [is_unique] stuff *)
   -> f:('a
     -> var:Backend_var.t
-    -> is_unique:bool
+    -> name_is_unique:bool
+    -> location_is_unique:bool
     -> range:Available_range.t
     -> 'a)
-    (** [is_unique] is [true] if there is no other variable with the
-        same (unstamped) name as [var] in [t].  (It follows that using the
-        unstamped name is sufficient to uniquely varify the variable amongst
-        a list of, say, local variables in a debugger.) *)
   -> 'a
 
 val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t

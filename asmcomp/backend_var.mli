@@ -50,5 +50,5 @@ module With_provenance : sig
 
   val name : t -> string
 
-  val rename : t -> t
+  val rename : ?provenance:Provenance.t -> t -> t
 end
