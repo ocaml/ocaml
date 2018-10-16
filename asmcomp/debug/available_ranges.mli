@@ -32,6 +32,10 @@
     An "available range" is then a set of available subranges that do not
     overlap in code space, again for a single variable (normal or phantom) and
     function.
+
+    Available ranges are associated with scopes.  These correspond to the
+    structure of let-expressions and blocks.  They are used to form DWARF
+    lexical blocks.
 *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]

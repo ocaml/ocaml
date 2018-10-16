@@ -352,6 +352,11 @@ end) = struct
   type scope_kind =
     | From_let_or_otherwise
     | From_linear_code
+    (* [From_linear_code] scopes must match up exactly with [Lstart_scope]
+       and [Lend_scope] pseudo-instructions in the linearised code.  All
+       other scopes (e.g. ones that kind of correspond to "let"s, deduced
+       from availability information) must be marked as
+       [From_let_or_otherwise]. *)
 
   type new_scope =
     | Start_new_scope of scope_kind
@@ -428,7 +433,11 @@ end) = struct
     in
     let new_scope =
       match scope_stack with
-      | [] -> Start_new_scope From_let_or_otherwise
+      | [] ->
+        begin match insn.desc with
+        | Lstart_scope -> Start_new_scope From_linear_code
+        | _ -> Start_new_scope From_let_or_otherwise
+        end
       | _::_ ->
         match new_scope_from_lets, new_scope_from_blocks with
         | Start_new_scope _, Start_new_scope _ ->
@@ -584,7 +593,7 @@ end) = struct
           begin match kind with
           | From_let_or_otherwise -> ()
           | From_linear_code ->
-            Misc.fatal_error "Unmatched [Lstart_scope] / [Lend_scope]"
+            Misc.fatal_error "Unmatched [Lstart_scope] / [Lend_scope] at Lend"
           end;
           Scope.close scope ~end_pos)
         scope_stack;

@@ -157,7 +157,9 @@ let copy_instr d i n =
 let rec get_label n = match n.desc with
     Lbranch lbl -> (lbl, n)
   | Llabel lbl -> (lbl, n)
-  | Lstart_scope -> get_label n.next
+  | Lstart_scope ->
+    let lbl, _n = get_label n.next in
+    lbl, n
   | Lend -> (-1, n)
   | _ ->
     let lbl = Cmm.new_label () in
@@ -181,8 +183,10 @@ let rec discard_dead_code n =
    as this may cause a stack imbalance later during assembler generation. *)
   | Lpoptrap | Lpushtrap -> n
   | Lop(Istackoffset _) -> n
-  (* Likewise for end-of-scope information. *)
-  | Lend_scope -> n
+  | Lstart_scope | Lend_scope ->
+    { n with
+      next = discard_dead_code n.next;
+    }
   | _ -> discard_dead_code n.next
 
 (*
@@ -224,6 +228,14 @@ let is_next_catch n = match !exit_label with
 
 let local_exit k =
   snd (find_exit_label_try_depth k) = !try_depth
+
+(* Scope delimiters for emitting debugging information *)
+
+let add_start_scope cont =
+  cons_instr_same_avail Lstart_scope cont
+
+let add_end_scope cont =
+  cons_instr_same_avail Lend_scope cont
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 
@@ -302,7 +314,8 @@ let rec linear i n =
           let (lbl_end, n2) = get_label n1 in
           let (lbl_else, nelse) = get_label (linear_in_scope ifnot n2) in
           copy_instr (Lcondbranch(invert_test test, lbl_else)) i
-            (linear_in_scope ifso (add_branch lbl_end nelse))
+            (add_start_scope (
+              linear ifso (add_branch lbl_end (add_end_scope nelse))))
       end
   | Iswitch(index, cases) ->
       let lbl_cases = Array.make (Array.length cases) 0 in
@@ -310,7 +323,9 @@ let rec linear i n =
       let n2 = ref (discard_dead_code n1) in
       for i = Array.length cases - 1 downto 0 do
         let (lbl_case, ncase) =
-                get_label(linear_in_scope cases.(i) (add_branch lbl_end !n2)) in
+          get_label (add_start_scope (
+            linear cases.(i) (add_branch lbl_end (add_end_scope !n2))))
+        in
         lbl_cases.(i) <- lbl_case;
         n2 := discard_dead_code ncase
       done;
@@ -337,12 +352,12 @@ let rec linear i n =
            of the loop, which branches to the top of the loop, must be the
            same as that of the first instruction of the loop (except for
            "available across" which is always empty). *)
-        cons_instr (Lbranch lbl_head) n1
+        cons_instr (Lbranch lbl_head) (add_end_scope n1)
           ~available_before:available_before_at_top
           ~phantom_available_before:phantom_available_before_at_top
           ~available_across:None
       in
-      let n2 = linear_in_scope body n1 in
+      let n2 = add_start_scope (linear body n1) in
       cons_instr_same_avail (Llabel lbl_head) n2
   | Icatch(_rec_flag, handlers, body) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
@@ -402,9 +417,7 @@ let rec linear i n =
       copy_instr (Lraise k) i (discard_dead_code n)
 
 and linear_in_scope insn cont =
-  let cont = cons_instr_same_avail Lend_scope cont in
-  let new_cont = linear insn cont in
-  cons_instr_same_avail Lstart_scope new_cont
+  add_start_scope (linear insn (add_end_scope cont))
 
 let add_prologue first_insn =
   (* The prologue needs to come after any [Iname_for_debugger] operations that
