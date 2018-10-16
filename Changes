@@ -285,6 +285,10 @@ Working version
   (Florian Angeletti, review by Daniel Bünzli, Perry E. Metzger
   and Gabriel Scherer)
 
+- MPR#7720, GPR#1596, precise the documentation
+  of the maximum indentation limit in Format.
+  (Florian Angeletti, review by Richard Bonichon and Pierre Weis)
+
 - MPR#7825: html manual split compilerlibs from stdlib in the html
   index of modules
   (Florian Angeletti, review by Perry E. Metzger and Gabriel Scherer)
@@ -860,10 +864,6 @@ OCaml 4.07.0 (10 July 2018)
 - MPR#7698, GPR#1545: improve wording in OCaml manual in several places,
   mostly in Chapter 1.  This addresses the easier changes suggested in the PR.
   (Jim Fehrle, review by Florian Angeletti and David Allsopp)
-
-- MPR#7720, GPR#1596, precise the documentation of the maximum indentation limit
-  in Format.
-  (Florian Angeletti, review by Richard Bonichon and Pierre Weis)
 
 - GPR#1540: manual, decouple verbatim and toplevel style in code examples.
   (Florian Angeletti, review by Gabriel Scherer)
