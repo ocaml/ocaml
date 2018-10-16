@@ -714,9 +714,10 @@ let iterate_over_variable_like_things _t ~available_ranges ~f =
       (* CR mshinwell: Introduce some flag on Backend_var.t to mark identifiers
          that were generated internally (or vice-versa)? *)
       let hidden =
-        Backend_var.name var = "*closure_env*"
-          || Backend_var.name var = "*opt*"
-          || Backend_var.name var = "*match*"
+        let name = Backend_var.name var in
+        String.length name >= 1
+          && String.get name 0 = '*'
+          && String.get name (String.length name -1) = '*'
       in
       let ident_for_type =
         let provenance =
