@@ -1822,34 +1822,38 @@ let explain_variant = function
   | Trace.Incompatible_types_for s ->
       Some(dprintf "@,Types for tag `%s are incompatible" s)
 
-let explain_escape = function
+let explain_escape intro ctx e =
+  let pre = match ctx with
+    | None -> ignore
+    | Some ctx ->  dprintf "@[%t@;<1 2>%a@]" intro type_expr ctx in
+  match e with
   | Trace.Univ Some u ->  Some(
-      dprintf "@,The universal variable '%s would escape its scope"
-        u)
+      dprintf "%t@,The universal variable '%s would escape its scope"
+        pre u)
   | Trace.Univ None ->
-      Some(dprintf "@,An universal variable would escape its scope")
+      Some(dprintf "%t@,An universal variable would escape its scope" pre)
   | Trace.Constructor p -> Some(
       dprintf
-        "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
-        path p
+        "%t@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
+        pre path p
     )
   | Trace.Module_type p -> Some(
       dprintf
-        "@,@[The module type@;<1 2>%a@ would escape its scope@]"
-        path p
+        "%t@,@[The module type@;<1 2>%a@ would escape its scope@]"
+        pre path p
     )
   | Trace.Equation (_,t) -> Some(
-      dprintf "@,@[<hov>This instance of %a is ambiguous:@ %s@]"
-        type_expr t
+      dprintf "%t @,@[<hov>This instance of %a is ambiguous:@ %s@]"
+        pre type_expr t
         "it would escape the scope of its equation"
     )
   | Trace.Self ->
-      Some (dprintf "@,Self type cannot escape its class")
+      Some (dprintf "%t@,Self type cannot escape its class" pre)
 
 
-let explanation env = function
+let explanation intro env = function
   | Trace.Diff { Trace.got = _, s; expected = _,t } -> explanation_diff env s t
-  | Trace.Escape e -> explain_escape e
+  | Trace.Escape {kind;context} -> explain_escape intro context kind
   | Trace.Incompatible_fields { name; _ } ->
         Some(dprintf "@,Types for method %s are incompatible" name)
   | Trace.Variant v -> explain_variant v
@@ -1858,11 +1862,11 @@ let explanation env = function
       Some(dprintf "@,@[<hov>The type variable %a occurs inside@ %a@]"
             type_expr x type_expr y)
 
-let rec mismatch env = function
+let rec mismatch intro env = function
     h :: rem ->
-      begin match mismatch env rem with
+      begin match mismatch intro env rem with
         Some _ as m -> m
-      | None -> explanation env h
+      | None -> explanation intro env h
       end
   | [] -> None
 
@@ -1907,7 +1911,7 @@ let warn_on_missing_defs env ppf = function
 let unification_error env tr txt1 ppf txt2 ty_expect_explanation =
   reset ();
   let tr = Trace.flatten (fun t t' -> t, hide_variant_name t') tr in
-  let mis = mismatch env tr in
+  let mis = mismatch txt1 env tr in
   match tr with
   | [] -> assert false
   | elt :: tr ->
@@ -1968,7 +1972,7 @@ let report_subtyping_error ppf env tr1 txt1 tr2 =
     let tr2 = Trace.flatten (fun t t' -> prepare_expansion (t, t')) tr2 in
     fprintf ppf "@[<v>%a" (trace true (tr2 = []) txt1) tr1;
     if tr2 = [] then fprintf ppf "@]" else
-    let mis = mismatch env tr2 in
+    let mis = mismatch (dprintf "Within this type") env tr2 in
     fprintf ppf "%a%t%t@]"
       (trace false (mis = None) "is not compatible with type") tr2
       (explain mis)

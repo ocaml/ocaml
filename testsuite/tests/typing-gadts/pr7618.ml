@@ -22,7 +22,7 @@ type ('a, 'b) eq = Refl : ('a, 'a) eq
 Line 4, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error:
+Error: This pattern matches values of type (a, b) eq * b list
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -35,7 +35,7 @@ let fails (type a b) (x : (a, b) eq) =
 Line 3, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error:
+Error: This pattern matches values of type (a, b) eq * b list
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]

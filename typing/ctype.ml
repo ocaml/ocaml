@@ -76,7 +76,7 @@ module Unification_trace = struct
   type 'a elt =
     | Diff of 'a diff
     | Variant of variant
-    | Escape of 'a escape
+    | Escape of {context:type_expr option; kind: 'a escape}
     | Incompatible_fields of {name:string; diff:type_expr diff }
     | Rec_occur of type_expr * type_expr
 
@@ -91,9 +91,9 @@ module Unification_trace = struct
 
   let map_elt f = function
     | Diff x -> Diff (map_diff f x)
-    | Escape (Equation x) -> Escape (Equation(f x))
+    | Escape {kind=Equation x; context} -> Escape {kind=Equation(f x); context}
     | Rec_occur (_,_)
-    | Escape (Univ _ | Self|Constructor _ | Module_type _ )
+    | Escape {kind=(Univ _ | Self|Constructor _ | Module_type _ ); _}
     | Variant _
     | Incompatible_fields _ as x -> x
   let map f = List.map (map_elt f)
@@ -116,7 +116,8 @@ module Unification_trace = struct
 
   exception Unify of t
 
-  let scope_escape x = Unify[Escape (Equation (short x))]
+  let escape kind =  Escape { kind; context = None}
+  let scope_escape x = Unify[escape (Equation (short x))]
   let rec_occur x y = Unify[Rec_occur(x, y)]
   let incompatible_fields name got expected =
     Incompatible_fields {name; diff={got; expected} }
@@ -758,8 +759,11 @@ let check_scope_escape level ty =
       iter_type_expr aux ty
     end
   in
+  try
     aux ty;
     unmark_type ty
+  with Unify [Trace.Escape x] ->
+    raise Trace.(Unify[Escape { x with context = Some ty }])
 
 let update_scope scope ty =
   let ty = repr ty in
@@ -786,7 +790,7 @@ let rec update_level env level expand ty =
           link_type ty (!forward_try_expand_once env ty);
           update_level env level expand ty
         with Cannot_expand ->
-          raise Trace.(Unify [Escape(Constructor p)])
+          raise Trace.(Unify [escape(Constructor p)])
         end
     | Tconstr(_, _ :: _, _) when expand ->
         begin try
@@ -798,7 +802,7 @@ let rec update_level env level expand ty =
         end
     | Tpackage (p, nl, tl) when level < Path.scope p ->
         let p' = normalize_package_path env p in
-        if Path.same p p' then raise Trace.(Unify [Escape (Module_type p)]);
+        if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
         log_type ty; ty.desc <- Tpackage (p', nl, tl);
         update_level env level expand ty
     | Tobject(_, ({contents=Some(p, _tl)} as nm))
@@ -817,7 +821,7 @@ let rec update_level env level expand ty =
         iter_type_expr (update_level env level expand) ty
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && (repr ty1).level > level ->
-        raise Trace.(Unify [Escape Self])
+        raise Trace.(Unify [escape Self])
     | _ ->
         set_level ty level;
         (* XXX what about abbreviations in Tconstr ? *)
@@ -1800,7 +1804,7 @@ let occur_univar env ty =
       match ty.desc with
         Tunivar u ->
           if not (TypeSet.mem ty bound) then
-            raise Trace.(Unify [Escape (Univ u)])
+            raise Trace.(Unify [escape (Univ u)])
       | Tpoly (ty, tyl) ->
           let bound = List.fold_right TypeSet.add (List.map repr tyl) bound in
           occur_rec bound  ty
@@ -1852,7 +1856,7 @@ let univars_escape env univar_pairs vl ty =
           if List.exists (fun t -> TypeSet.mem (repr t) family) tl then ()
           else occur t
       | Tunivar u ->
-          if TypeSet.mem t family then raise Trace.(Unify [Escape(Univ u)])
+          if TypeSet.mem t family then raise Trace.(Unify [escape(Univ u)])
       | Tconstr (_, [], _) -> ()
       | Tconstr (p, tl, _) ->
           begin try
@@ -2012,7 +2016,7 @@ let reify env t =
           let path, t = create_fresh_constr ty.level o in
           link_type ty t;
           if ty.level < fresh_constr_scope then
-            raise Trace.(Unify [Escape (Constructor path)])
+            raise Trace.(Unify [escape (Constructor path)])
       | Tvariant r ->
           let r = row_repr r in
           if not (static_row r) then begin
@@ -2025,7 +2029,7 @@ let reify env t =
                   {r with row_fields=[]; row_fixed=true; row_more = t} in
                 link_type m (newty2 m.level (Tvariant row));
                 if m.level < fresh_constr_scope then
-                  raise Trace.(Unify [Escape (Constructor path)])
+                  raise Trace.(Unify [escape (Constructor path)])
             | _ -> assert false
           end;
           iter_row iterator r

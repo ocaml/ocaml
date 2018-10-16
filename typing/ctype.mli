@@ -43,7 +43,7 @@ module Unification_trace: sig
   type 'a elt =
     | Diff of 'a diff
     | Variant of variant
-    | Escape of 'a escape
+    | Escape of {context: type_expr option; kind:'a escape}
     | Incompatible_fields of {name:string; diff: type_expr diff }
     | Rec_occur of type_expr * type_expr
 
