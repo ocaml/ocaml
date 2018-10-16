@@ -581,7 +581,13 @@ let rec substitute loc fpc sb rn ulam =
       Uclosure(defs, List.map (substitute loc fpc sb rn) env)
   | Uoffset(u, ofs) -> Uoffset(substitute loc fpc sb rn u, ofs)
   | Ulet(str, kind, id, u1, u2) ->
-      let id' = VP.rename id in
+      let provenance =
+        match VP.provenance id with
+        | None -> None
+        | Some provenance ->
+          Some (V.Provenance.add_inlined_frame provenance loc)
+      in
+      let id' = VP.rename ?provenance id in
       Ulet(str, kind, id', substitute loc fpc sb rn u1,
            substitute loc fpc
              (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2)
@@ -726,19 +732,10 @@ let rec bind_params_rec loc fpc subst params args body =
           pl al body
       else begin
         let provenance =
-          match !current_module_path with
+          match VP.provenance p1 with
           | None -> None
-          | Some module_path ->
-            match VP.provenance p1 with
-            | None -> None
-            | Some provenance ->
-              let original_ident = V.Provenance.original_ident provenance in
-              let provenance =
-                V.Provenance.create ~module_path
-                  ~location:(Debuginfo.from_location loc)
-                  ~original_ident
-              in
-              Some provenance
+          | Some provenance ->
+            Some (V.Provenance.add_inlined_frame provenance loc)
         in
         let p1' = VP.rename ?provenance p1 in
         let u1, u2 =

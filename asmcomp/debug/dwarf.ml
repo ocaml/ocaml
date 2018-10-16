@@ -635,7 +635,7 @@ let dwarf_for_variable t ~fundecl ~function_proto_die
       if name_is_unique then
         Backend_var.name var
       else if not location_is_unique then
-        Backend_var.unique_name var
+        Backend_var.unique_toplevel_name var
       else
         let provenance =
           match type_info with
@@ -644,11 +644,11 @@ let dwarf_for_variable t ~fundecl ~function_proto_die
         in
         (* CR-soon mshinwell: Try to remove this option *)
         match provenance with
-        | None -> Backend_var.unique_name var
+        | None -> Backend_var.unique_toplevel_name var
         | Some provenance ->
           let location = Backend_var.Provenance.location provenance in
           if Debuginfo.is_none location then
-            Backend_var.unique_name var
+            Backend_var.unique_toplevel_name var
           else
             Format.asprintf "%s[%a]"
               (Backend_var.name var)

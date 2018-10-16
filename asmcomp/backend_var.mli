@@ -34,6 +34,8 @@ module Provenance : sig
   val location : t -> Debuginfo.t
   val original_ident : t -> Ident.t
 
+  val add_inlined_frame : t -> Location.t -> t
+
   val print : Format.formatter -> t -> unit
 end
 

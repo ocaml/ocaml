@@ -384,6 +384,9 @@ end) = struct
         KS.diff (S.available_before insn) (S.available_before prev_insn)
     in
     let new_scope =
+      (* XXX This isn't quite right -- we shouldn't start a new scope unless
+         there is at least one variable becoming available that has not been
+         available before. *)
       if KS.is_empty proto_births then Keep_existing_scope
       else Start_new_scope From_let_or_otherwise
     in

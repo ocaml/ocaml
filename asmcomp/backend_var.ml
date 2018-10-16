@@ -28,7 +28,7 @@ module Provenance = struct
   let print ppf { module_path; location; original_ident; } =
     Format.fprintf ppf "@[<hov 1>(\
         @[<hov 1>(module_path@ %a)@]@ \
-        @[<hov 1>(location@ %a)@]@ \
+        @[<hov 1>(location@ (%a))@]@ \
         @[<hov 1>(original_ident@ %a)@]\
         )@]"
       Path.print module_path
@@ -44,6 +44,11 @@ module Provenance = struct
   let module_path t = t.module_path
   let location t = t.location
   let original_ident t = t.original_ident
+
+  let add_inlined_frame t loc =
+    { t with
+      location = Debuginfo.inline loc t.location;
+    }
 end
 
 module With_provenance = struct
