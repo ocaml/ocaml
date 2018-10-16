@@ -57,6 +57,9 @@ open Btype
 module Unification_trace = struct
 
   type position = First | Second
+  let swap_position = function
+    | First -> Second
+    | Second -> First
 
   type desc = { t: type_expr; expanded: type_expr option }
   type 'a diff = { got: 'a; expected: 'a}
@@ -73,9 +76,14 @@ module Unification_trace = struct
     | No_tags of position * (Asttypes.label * row_field) list
     | Incompatible_types_for of string
 
+  type obj =
+    | Missing_field of position * string
+    | Abstract_row of position
+
   type 'a elt =
     | Diff of 'a diff
     | Variant of variant
+    | Obj of obj
     | Escape of {context:type_expr option; kind: 'a escape}
     | Incompatible_fields of {name:string; diff:type_expr diff }
     | Rec_occur of type_expr * type_expr
@@ -94,7 +102,7 @@ module Unification_trace = struct
     | Escape {kind=Equation x; context} -> Escape {kind=Equation(f x); context}
     | Rec_occur (_,_)
     | Escape {kind=(Univ _ | Self|Constructor _ | Module_type _ ); _}
-    | Variant _
+    | Variant _ | Obj _
     | Incompatible_fields _ as x -> x
   let map f = List.map (map_elt f)
 
@@ -111,6 +119,8 @@ module Unification_trace = struct
     | Diff x -> Diff (swap_diff x)
     | Incompatible_fields {name;diff} ->
         Incompatible_fields { name; diff = swap_diff diff}
+    | Obj (Missing_field(pos,s)) -> Obj(Missing_field(swap_position pos,s))
+    | Obj (Abstract_row pos) -> Obj(Abstract_row (swap_position pos))
     | x -> x
   let swap x = List.map swap_elt x
 
@@ -2629,7 +2639,11 @@ and unify3 env t1 t1' t2 t2' =
               set_kind r Fabsent;
               if d2 = Tnil then unify env rem t2'
               else unify env (newty2 rem.level Tnil) rem
-          | _      -> raise (Unify [])
+          | _      ->
+              if d1 = Tnil then
+                raise (Unify Trace.[Obj(Missing_field (First, f))])
+              else
+                raise (Unify Trace.[Obj(Missing_field (Second, f))])
           end
       | (Tnil, Tnil) ->
           ()
@@ -2646,8 +2660,9 @@ and unify3 env t1 t1' t2 t2' =
             List.iter (reify env) (tl1 @ tl2);
             (* if !generate_equations then List.iter2 (mcomp !env) tl1 tl2 *)
           end
-      | (_, _) ->
-          raise (Unify [])
+      | (Tnil,  Tconstr _ ) -> raise (Unify Trace.[Obj(Abstract_row Second)])
+      | (Tconstr _,  Tnil ) -> raise (Unify Trace.[Obj(Abstract_row First)])
+      | (_, _) -> raise (Unify [])
       end;
       (* XXX Commentaires + changer "create_recursion"
          ||| Comments + change "create_recursion" *)

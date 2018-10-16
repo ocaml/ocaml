@@ -1790,19 +1790,6 @@ let explanation_diff env t3 t4 : (Format.formatter -> unit) option =
         fprintf ppf
           "@,@[Hint: Did you forget to wrap the expression using \
            `fun () ->'?@]")
-  | (Tnil|Tconstr _), Tfield (l, _, _, _) ->
-      Some (fun ppf ->
-        fprintf ppf
-          "@,@[The first object type has no method %s@]" l)
-  | Tfield (l, _, _, _), (Tnil|Tconstr _) ->
-      Some (fun ppf ->
-        fprintf ppf
-          "@,@[The second object type has no method %s@]" l)
-  | Tnil, Tconstr _ | Tconstr _, Tnil ->
-      Some (fun ppf ->
-        fprintf ppf
-          "@,@[The %s object type has an abstract row, it cannot be closed@]"
-          (if t4.desc = Tnil then "first" else "second"))
   | _ ->
       None
 
@@ -1851,12 +1838,23 @@ let explain_escape intro ctx e =
       Some (dprintf "%t@,Self type cannot escape its class" pre)
 
 
+let explain_object = function
+  | Trace.Missing_field (pos,f) ->
+      Some(dprintf "@,@[The %a object type has no method %s@]" print_pos pos f)
+  | Trace.Abstract_row pos -> Some(
+      dprintf
+        "@,@[The %a object type has an abstract row, it cannot be closed@]"
+        print_pos pos
+    )
+
+
 let explanation intro env = function
   | Trace.Diff { Trace.got = _, s; expected = _,t } -> explanation_diff env s t
   | Trace.Escape {kind;context} -> explain_escape intro context kind
   | Trace.Incompatible_fields { name; _ } ->
         Some(dprintf "@,Types for method %s are incompatible" name)
   | Trace.Variant v -> explain_variant v
+  | Trace.Obj o -> explain_object o
   | Trace.Rec_occur(x,y) ->
       mark_loops y;
       Some(dprintf "@,@[<hov>The type variable %a occurs inside@ %a@]"
@@ -1970,7 +1968,10 @@ let report_subtyping_error ppf env tr1 txt1 tr2 =
     reset ();
     let tr1 = Trace.flatten (fun t t' -> prepare_expansion (t, t')) tr1 in
     let tr2 = Trace.flatten (fun t t' -> prepare_expansion (t, t')) tr2 in
-    fprintf ppf "@[<v>%a" (trace true (tr2 = []) txt1) tr1;
+    let keep_first = match tr2 with
+      | Trace.[Obj _ | Variant _ | Escape _ ] | [] -> true
+      | _ -> false in
+    fprintf ppf "@[<v>%a" (trace true keep_first txt1) tr1;
     if tr2 = [] then fprintf ppf "@]" else
     let mis = mismatch (dprintf "Within this type") env tr2 in
     fprintf ppf "%a%t%t@]"

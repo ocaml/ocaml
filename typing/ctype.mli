@@ -40,9 +40,14 @@ module Unification_trace: sig
     | No_tags of position * (Asttypes.label * row_field) list
     | Incompatible_types_for of string
 
+  type obj =
+    | Missing_field of position * string
+    | Abstract_row of position
+
   type 'a elt =
     | Diff of 'a diff
     | Variant of variant
+    | Obj of obj
     | Escape of {context: type_expr option; kind:'a escape}
     | Incompatible_fields of {name:string; diff: type_expr diff }
     | Rec_occur of type_expr * type_expr
