@@ -93,6 +93,33 @@ type raise_kind =
 
 type rec_flag = Nonrecursive | Recursive
 
+type phantom_defining_expr =
+  (* CR-soon mshinwell: Convert this to [Targetint.OCaml.t] (or whatever the
+     representation of "target-width OCaml integers of type [int]"
+     becomes when merged). *)
+  | Cphantom_const_int of Targetint.t
+  (** The phantom-let-bound variable is a constant integer.
+      The argument must be the tagged representation of an integer within
+      the range of type [int] on the target.  (Analogously to [Cconst_int].) *)
+  | Cphantom_const_symbol of string
+  (** The phantom-let-bound variable is an alias for a symbol. *)
+  | Cphantom_var of Backend_var.t
+  (** The phantom-let-bound variable is an alias for another variable.  The
+      aliased variable must not be a bound by a phantom let. *)
+  | Cphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
+  (** The phantom-let-bound-variable's value is defined by adding the given
+      number of words to the pointer contained in the given identifier. *)
+  | Cphantom_read_field of { var : Backend_var.t; field : int; }
+  (** The phantom-let-bound-variable's value is found by adding the given
+      number of words to the pointer contained in the given identifier, then
+      dereferencing. *)
+  | Cphantom_read_symbol_field of { sym : string; field : int; }
+  (** As for [Uphantom_read_var_field], but with the pointer specified by
+      a symbol. *)
+  | Cphantom_block of { tag : int; fields : Backend_var.t list; }
+  (** The phantom-let-bound variable points at a block with the given
+      structure. *)
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -139,6 +166,8 @@ and expression =
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression
+  | Cphantom_let of Backend_var.With_provenance.t
+      * phantom_defining_expr option * expression
   | Cassign of Backend_var.t * expression
   | Ctuple of expression list
   | Cop of operation * expression list * Debuginfo.t

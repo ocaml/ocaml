@@ -298,6 +298,7 @@ method is_simple_expr = function
   | Cvar _ -> true
   | Ctuple el -> List.for_all self#is_simple_expr el
   | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
+  | Cphantom_let(_var, _defining_expr, body) -> self#is_simple_expr body
   | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
   | Cop(op, args, _) ->
       begin match op with
@@ -333,6 +334,7 @@ method effects_of exp =
   | Ctuple el -> EC.join_list_map el self#effects_of
   | Clet (_id, arg, body) ->
     EC.join (self#effects_of arg) (self#effects_of body)
+  | Cphantom_let (_var, _defining_expr, body) -> self#effects_of body
   | Csequence (e1, e2) ->
     EC.join (self#effects_of e1) (self#effects_of e2)
   | Cifthenelse (cond, ifso, ifnot) ->
@@ -670,6 +672,8 @@ method emit_expr (env:environment) exp =
         None -> None
       | Some r1 -> self#emit_expr (self#bind_let env v r1) e2
       end
+  | Cphantom_let (_var, _defining_expr, body) ->
+      self#emit_expr env body
   | Cassign(v, e1) ->
       let rv =
         try
@@ -1037,6 +1041,8 @@ method emit_tail (env:environment) exp =
         None -> ()
       | Some r1 -> self#emit_tail (self#bind_let env v r1) e2
       end
+  | Cphantom_let (_var, _defining_expr, body) ->
+      self#emit_tail env body
   | Cop((Capply ty) as op, args, dbg) ->
       begin match self#emit_parts_list env args with
         None -> ()

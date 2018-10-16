@@ -76,6 +76,29 @@ let raise_kind fmt = function
   | Raise_withtrace -> Format.fprintf fmt "raise_withtrace"
   | Raise_notrace -> Format.fprintf fmt "raise_notrace"
 
+let phantom_defining_expr ppf defining_expr =
+  match defining_expr with
+  | Cphantom_const_int i -> Targetint.print ppf i
+  | Cphantom_const_symbol sym -> Format.pp_print_string ppf sym
+  | Cphantom_var var -> V.print ppf var
+  | Cphantom_offset_var { var; offset_in_words; } ->
+    Format.fprintf ppf "%a+(%d)" V.print var offset_in_words
+  | Cphantom_read_field { var; field; } ->
+    Format.fprintf ppf "%a[%d]" V.print var field
+  | Cphantom_read_symbol_field { sym; field; } ->
+    Format.fprintf ppf "%s[%d]" sym field
+  | Cphantom_block { tag; fields; } ->
+    Format.fprintf ppf "[%d: " tag;
+    List.iter (fun field ->
+        Format.fprintf ppf "%a; " V.print field)
+      fields;
+    Format.fprintf ppf "]"
+
+let phantom_defining_expr_opt ppf defining_expr =
+  match defining_expr with
+  | None -> Format.pp_print_string ppf "()"
+  | Some defining_expr -> phantom_defining_expr ppf defining_expr
+
 let operation d = function
   | Capply _ty -> "app" ^ Debuginfo.to_string d
   | Cextcall(lbl, _ty, _alloc, _) ->
@@ -147,6 +170,25 @@ let rec expr ppf = function
      fprintf ppf
       "@[<2>(let@ @[<2>%a@ %a@]@ %a)@]"
       VP.print id expr def sequence body
+  | Cphantom_let(var, def, (Cphantom_let(_, _, _) as body)) ->
+      let print_binding var ppf def =
+        fprintf ppf "@[<2>%a@ %a@]" VP.print var
+          phantom_defining_expr_opt def
+      in
+      let rec in_part ppf = function
+        | Cphantom_let(var, def, body) ->
+            fprintf ppf "@ %a" (print_binding var) def;
+            in_part ppf body
+        | exp -> exp in
+      fprintf ppf "@[<2>(let?@ @[<1>(%a" (print_binding var) def;
+      let exp = in_part ppf body in
+      fprintf ppf ")@]@ %a)@]" sequence exp
+  | Cphantom_let(var, def, body) ->
+    fprintf ppf
+      "@[<2>(let?@ @[<2>%a@ %a@]@ %a)@]"
+      VP.print var
+      phantom_defining_expr_opt def
+      sequence body
   | Cassign(id, exp) ->
       fprintf ppf "@[<2>(assign @[<2>%a@ %a@])@]" V.print id expr exp
   | Ctuple el ->
