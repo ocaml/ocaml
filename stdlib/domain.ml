@@ -55,7 +55,7 @@ type 'a t =
 exception Retry
 let rec spin f =
   try f () with Retry ->
-     (* fixme: spin more gently *)     
+     (* fixme: spin more gently *)
      spin f
 
 let cas r vold vnew =
@@ -105,7 +105,7 @@ let join { domain ; state } =
   match res with
   | Ok x -> x
   | Error ex -> raise ex
-    
+
 
 let get_id { domain; _ } = domain
 

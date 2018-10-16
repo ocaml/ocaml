@@ -1060,12 +1060,29 @@ and transl_exp0 e =
       | `Identifier `Other ->
          transl_exp e
       | `Other ->
-         (* other cases compile to a lazy block holding a function *)
+         (* other cases compile to a lazy block holding a wrapped function. The
+          * implementation here is inlined version of Lazy.from_fun. *)
          let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
                              attr = default_function_attribute;
                              loc = e.exp_loc;
-                             body = transl_exp e} in
-          Lprim(Pmakeblock(Config.lazy_tag, Mutable, None), [fn], e.exp_loc)
+                             body = transl_exp e}
+         in
+         let lz = Ident.create "lz" in
+         let lzvar = Lvar lz in
+         let wfn = Ident.create "wfn" in
+         let wfnvar = Lvar wfn in
+         Llet(Strict, Pgenval, lz,
+              Lprim(Pmakeblock(Config.lazy_tag, Mutable, None), [lambda_unit], e.exp_loc),
+         Llet(Strict, Pgenval, wfn,
+              Lapply{ap_should_be_tailcall=false;
+                      ap_loc=e.exp_loc;
+                      ap_func=Lazy.force Matching.code_lazy_wrap_fun;
+                      ap_args=[fn;lzvar];
+                      ap_inlined=Default_inline;
+                      ap_specialised=Default_specialise},
+         Lsequence(
+           Lprim(Psetfield(0,Pointer,Assignment), [lzvar;wfnvar], e.exp_loc),
+           lzvar)))
       end
   | Texp_object (cs, meths) ->
       let cty = cs.cstr_type in

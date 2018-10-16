@@ -546,19 +546,17 @@ bytecomp/dll.cmo : utils/misc.cmi utils/config.cmi bytecomp/dll.cmi
 bytecomp/dll.cmx : utils/misc.cmx utils/config.cmx bytecomp/dll.cmi
 bytecomp/dll.cmi :
 bytecomp/emitcode.cmo : bytecomp/translmod.cmi typing/primitive.cmi \
-    bytecomp/opcodes.cmo utils/misc.cmi bytecomp/meta.cmi \
-    parsing/location.cmi bytecomp/lambda.cmi bytecomp/instruct.cmi \
-    typing/ident.cmi typing/env.cmi utils/config.cmi bytecomp/cmo_format.cmi \
-    utils/clflags.cmi typing/btype.cmi parsing/asttypes.cmi \
-    bytecomp/emitcode.cmi
+    bytecomp/opcodes.cmo utils/misc.cmi parsing/location.cmi \
+    bytecomp/lambda.cmi bytecomp/instruct.cmi typing/ident.cmi typing/env.cmi \
+    utils/config.cmi bytecomp/cmo_format.cmi utils/clflags.cmi \
+    typing/btype.cmi parsing/asttypes.cmi bytecomp/emitcode.cmi
 bytecomp/emitcode.cmx : bytecomp/translmod.cmx typing/primitive.cmx \
-    bytecomp/opcodes.cmx utils/misc.cmx bytecomp/meta.cmx \
-    parsing/location.cmx bytecomp/lambda.cmx bytecomp/instruct.cmx \
-    typing/ident.cmx typing/env.cmx utils/config.cmx bytecomp/cmo_format.cmi \
-    utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi \
-    bytecomp/emitcode.cmi
-bytecomp/emitcode.cmi : bytecomp/instruct.cmi typing/ident.cmi \
-    bytecomp/cmo_format.cmi
+    bytecomp/opcodes.cmx utils/misc.cmx parsing/location.cmx \
+    bytecomp/lambda.cmx bytecomp/instruct.cmx typing/ident.cmx typing/env.cmx \
+    utils/config.cmx bytecomp/cmo_format.cmi utils/clflags.cmx \
+    typing/btype.cmx parsing/asttypes.cmi bytecomp/emitcode.cmi
+bytecomp/emitcode.cmi : utils/misc.cmi bytecomp/instruct.cmi \
+    typing/ident.cmi bytecomp/cmo_format.cmi
 bytecomp/instruct.cmo : typing/types.cmi typing/subst.cmi \
     parsing/location.cmi bytecomp/lambda.cmi typing/ident.cmi typing/env.cmi \
     bytecomp/instruct.cmi
