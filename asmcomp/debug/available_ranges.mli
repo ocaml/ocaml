@@ -129,5 +129,3 @@ val fold
 (** It is guaranteed that the [parent]s of scopes will always occur before
     such scopes in the returned list. *)
 val scopes : t -> Scope.t list
-
-val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t

@@ -16,11 +16,6 @@
 
 module L = Linearize
 
-let rewrite_label env label =
-  match Numbers.Int.Map.find label env with
-  | exception Not_found -> label
-  | label -> label
-
 (* CR-soon mshinwell: pull this type forward so other passes can use it *)
 type is_parameter =
   | Local
@@ -104,8 +99,6 @@ module Available_subrange : sig
   val end_pos_offset : t -> int option
   val location : t -> unit location
   val offset_from_stack_ptr_in_bytes : t -> int
-
-  val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t
 end = struct
   type 'a location =
     | Reg of Reg.t * 'a
@@ -174,12 +167,6 @@ end = struct
       Misc.fatal_error "No offset from stack pointer available (this is either \
         a phantom available subrange or one whose corresponding register is \
         not assigned to the stack)"
-
-  let rewrite_labels t ~env =
-    { t with
-      start_pos = rewrite_label env t.start_pos;
-      end_pos = rewrite_label env t.end_pos;
-    }
 end
 
 type type_info =
@@ -197,12 +184,12 @@ module Available_range : sig
   type t
 
   val create
-     : Scope.t
+     : scope:Scope.t option
     -> type_info:type_info
     -> is_parameter:is_parameter
     -> t
 
-  val scope : t -> Scope.t
+  val scope : t -> Scope.t option
   val type_info : t -> type_info
   val is_parameter : t -> is_parameter
   val var_location : t -> Debuginfo.t
@@ -219,11 +206,9 @@ module Available_range : sig
     -> init:'a
     -> f:('a -> available_subrange:Available_subrange.t -> 'a)
     -> 'a
-
-  val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t
 end = struct
   type t = {
-    scope : Scope.t;
+    scope : Scope.t option;
     mutable subranges : Available_subrange.t list;
     mutable min_pos : L.label option;
     mutable max_pos : L.label option;
@@ -232,7 +217,7 @@ end = struct
     var_location : Debuginfo.t;
   }
 
-  let create scope ~type_info ~is_parameter =
+  let create ~scope ~type_info ~is_parameter =
     let var_location =
       match type_info with
       | From_cmt_file None | Phantom (None, _) -> Debuginfo.none
@@ -290,25 +275,11 @@ end = struct
     List.fold_left (fun acc available_subrange -> f acc ~available_subrange)
       init
       t.subranges
-
-  let rewrite_labels t ~env =
-    let subranges =
-      List.map (fun subrange ->
-          Available_subrange.rewrite_labels subrange ~env)
-        t.subranges
-    in
-    let min_pos = Misc.Stdlib.Option.map (rewrite_label env) t.min_pos in
-    let max_pos = Misc.Stdlib.Option.map (rewrite_label env) t.max_pos in
-    { subranges; min_pos; max_pos;
-      scope = t.scope;
-      type_info = t.type_info;
-      is_parameter = t.is_parameter;
-      var_location = t.var_location;
-    }
 end
 
 type t = {
   ranges : Available_range.t Backend_var.Tbl.t;
+  mutable scopes : Scope.t list;
 }
 
 let find t ~var =
@@ -339,6 +310,8 @@ let fold t ~init ~f =
       f acc ~var ~name_is_unique ~location_is_unique ~range)
     t.ranges
     init
+
+let scopes t = t.scopes
 
 module Make (S : sig
   module Key : sig
@@ -499,16 +472,19 @@ end) = struct
           }
         in
         insert_insn ~new_insn:start_pos_insn;
-        begin match scope_stack with
-        | [] ->
-          let scope = Scope.create ~start_pos ~parent:None in
-          let scope_stack = [scope_kind, scope] in
-          scope, scope_stack
-        | (_kind, scope)::_ ->
-          let scope = Scope.create ~start_pos ~parent:(Some scope) in
-          let scope_stack = (scope_kind, scope)::scope_stack in
-          scope, scope_stack
-        end
+        let scope, scope_stack =
+          match scope_stack with
+          | [] ->
+            let scope = Scope.create ~start_pos ~parent:None in
+            let scope_stack = [scope_kind, scope] in
+            scope, scope_stack
+          | (_kind, scope)::_ ->
+            let scope = Scope.create ~start_pos ~parent:(Some scope) in
+            let scope_stack = (scope_kind, scope)::scope_stack in
+            scope, scope_stack
+        in
+        t.scopes <- scope::t.scopes;
+        scope, scope_stack
       | Keep_existing_scope ->
         let scope =
           match scope_stack with
@@ -542,7 +518,8 @@ end) = struct
             | range -> range
             | exception Not_found ->
               let range =
-                Available_range.create scope ~type_info ~is_parameter
+                Available_range.create ~scope:(Some scope) ~type_info
+                  ~is_parameter
               in
               Backend_var.Tbl.add t.ranges var range;
               range
@@ -787,7 +764,11 @@ module Make_phantom_ranges = Make (struct
 end)
 
 let create ~fundecl =
-  let t = { ranges = Backend_var.Tbl.create 42; } in
+  let t = {
+    ranges = Backend_var.Tbl.create 42;
+    scopes = [];
+  }
+  in
   let first_insn =
     let first_insn = fundecl.L.fun_body in
     Make_ranges.process_instructions t ~fundecl ~first_insn
@@ -843,6 +824,7 @@ let create ~fundecl =
   if not !Clflags.debug then
     let t =
       { ranges = Backend_var.Tbl.create 1;
+        scopes = [];
       }
     in
     t, fundecl
@@ -870,10 +852,3 @@ let classify_label t label =
             result))
     t.ranges
     []
-
-let rewrite_labels t ~env =
-  let ranges =
-    Backend_var.Tbl.map t.ranges (fun range ->
-      Available_range.rewrite_labels range ~env)
-  in
-  { ranges; }

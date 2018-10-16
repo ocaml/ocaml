@@ -557,7 +557,8 @@ let construct_value_description t ~parent ~fundecl
     in
     Some location_list_entry
 
-let dwarf_for_variable t ~fundecl ~function_proto_die ~lexical_block_proto_dies
+let dwarf_for_variable t ~fundecl ~function_proto_die
+      ~whole_function_lexical_block ~lexical_block_proto_dies
       ~proto_dies_for_vars ~need_rvalue
       (var : Backend_var.t) ~hidden ~ident_for_type ~name_is_unique
       ~location_is_unique ~range =
@@ -575,14 +576,14 @@ let dwarf_for_variable t ~fundecl ~function_proto_die ~lexical_block_proto_dies
          scoping. *)
       let scope = Available_range.scope range in
       match scope with
-      | None -> function_proto_die
-
-      let module S = Available_range.Scope in
-      match S.Map.find scope lexical_block_proto_dies with
-      | exception Not_found ->
-        Misc.fatal_errorf "Cannot find lexical block DIE for %a"
-          Scope.print scope
-      | proto_die -> proto_die
+      | None -> whole_function_lexical_block
+      | Some scope ->
+        let module S = Available_ranges.Scope in
+        match S.Map.find scope lexical_block_proto_dies with
+        | exception Not_found ->
+          Misc.fatal_errorf "Cannot find lexical block DIE for %a"
+            S.print scope
+        | proto_die -> proto_die
   in
   (* Build a location list that identifies where the value of [ident] may be
      found at runtime, indexed by program counter range, and insert the list
@@ -851,21 +852,24 @@ let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
       ()
   in
   let whole_function_lexical_block =
-    Proto_die.create ~parent:function_proto_die
+    Proto_die.create ~parent:(Some function_proto_die)
       ~tag:Lexical_block
       ~attribute_values:[
         start_of_function;
         end_of_function;
       ]
+      ()
   in
   let lexical_block_proto_dies =
     let module S = Available_ranges.Scope in
-    List.fold_left (fun scope lexical_block_proto_dies ->
+    List.fold_left (fun lexical_block_proto_dies scope ->
         let start_of_scope =
-          DAH.create_low_pc ~address_label:(S.start_pos scope)
+          DAH.create_low_pc
+            ~address_label:(Asm_label.create_int (S.start_pos scope))
         in
         let end_of_scope =
-          DAH.create_high_pc ~address_label:(S.end_pos scope)
+          DAH.create_high_pc
+            ~address_label:(Asm_label.create_int (S.end_pos scope))
         in
         let parent =
           match S.parent scope with
@@ -886,8 +890,8 @@ let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
             ()
         in
         S.Map.add scope proto_die lexical_block_proto_dies)
-      (Available_ranges.scopes available_ranges)
       S.Map.empty
+      (Available_ranges.scopes available_ranges)
   in
   dwarf_for_variables_and_parameters t ~function_proto_die
     ~whole_function_lexical_block ~lexical_block_proto_dies
