@@ -218,7 +218,7 @@ module type Optcomp_options = sig
   val _dinterval : unit -> unit
   val _dwarf_format : int -> unit
   val _dwarf_version : string -> unit
-  val _g_full : unit -> unit
+  val _g_full : string -> unit
 end;;
 
 module type Opttop_options = sig

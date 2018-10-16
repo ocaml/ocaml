@@ -133,8 +133,9 @@ let mk_g_opt f =
 ;;
 
 let mk_g_full f =
-  "-g-full", Arg.Unit f,
-    " Generate full DWARF information for a platform debugger (experimental)"
+  "-g-full", Arg.String f,
+    "gdb|lldb Generate full DWARF information for a platform \
+     debugger (experimental)"
 ;;
 
 let mk_i f =
@@ -1042,7 +1043,7 @@ module type Optcomp_options = sig
   val _dinterval : unit -> unit
   val _dwarf_format : int -> unit
   val _dwarf_version : string -> unit
-  val _g_full : unit -> unit
+  val _g_full : string -> unit
 end;;
 
 module type Opttop_options = sig

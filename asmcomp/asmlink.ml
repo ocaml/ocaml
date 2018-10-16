@@ -212,8 +212,9 @@ let make_startup_file ~ppf_dump units_list =
   Compilenv.reset "_startup";
   (* set the name of the "current" compunit *)
   let dwarf =
-    if not !Clflags.debug_full then None
-    else Some (Dwarf.create ~prefix_name:"_startup")
+    match !Clflags.debug_full with
+    | None -> None
+    | Some _ -> Some (Dwarf.create ~prefix_name:"_startup")
   in
   let compile_phrase p = Asmgen.compile_phrase ~ppf_dump ~dwarf p in
   Emit.begin_assembly ();
@@ -254,8 +255,9 @@ let make_shared_startup_file ~ppf_dump units =
   Location.input_name := "caml_startup";
   Compilenv.reset "_shared_startup";
   let dwarf =
-    if not !Clflags.debug_full then None
-    else Some (Dwarf.create ~prefix_name:"_startup")
+    match !Clflags.debug_full with
+    | None -> None
+    | Some _ -> Some (Dwarf.create ~prefix_name:"_startup")
   in
   let compile_phrase p = Asmgen.compile_phrase ~ppf_dump ~dwarf p in
   Emit.begin_assembly ();

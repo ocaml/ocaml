@@ -66,9 +66,15 @@ module Options = Main_args.Make_optcomp_options (struct
     | _ -> fatal "Please specify `4+gnu' or '5' for -dwarf-version"
   let _for_pack s = for_package := Some s
   let _g = set debug
-  let _g_full () =
+  let _g_full debugger =
+    let debugger =
+      match String.lowercase_ascii debugger with
+      | "gdb" -> Gdb
+      | "lldb" -> Lldb
+      | _ -> fatal "Please specify `gdb' or `lldb' for -g-full"
+    in
     debug := true;
-    debug_full := true
+    debug_full := Some debugger
   let _i () =
     print_types := true;
     compile_only := true;

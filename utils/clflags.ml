@@ -38,6 +38,10 @@ module Float_arg_helper = Arg_helper.Make (struct
   end
 end)
 
+type debug_full =
+  | Gdb
+  | Lldb
+
 let objfiles = ref ([] : string list)   (* .cmo and .cma files *)
 and ccobjs = ref ([] : string list)     (* .o, .a, .so and -cclib -lxxx *)
 and dllibs = ref ([] : string list)     (* .so and -dllib -lxxx *)
@@ -49,7 +53,7 @@ and no_std_include = ref false          (* -nostdlib *)
 and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
-and debug_full = ref false              (* -g-full *)
+and debug_full = ref None               (* -g-full *)
 and unsafe = ref false                  (* -unsafe *)
 and use_linscan = ref false             (* -linscan *)
 and link_everything = ref false         (* -linkall *)

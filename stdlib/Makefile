@@ -32,7 +32,7 @@ else
 OPTCOMPFLAGS=
 endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
-CAMLOPT=$(CAMLRUN) $(OPTCOMPILER) -g-full
+CAMLOPT=$(CAMLRUN) $(OPTCOMPILER) -g-full gdb
 CAMLDEP=$(CAMLRUN) $(ROOTDIR)/tools/ocamldep
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime

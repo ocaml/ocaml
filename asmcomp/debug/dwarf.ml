@@ -615,47 +615,40 @@ let dwarf_for_variable t ~fundecl ~function_proto_die
     let var, name_for_var =
       match ident_for_type with
       | None ->
-        let name = "Foo.bar" in  (* CR mshinwell: fix Name_laundry *)
-        `Var (Backend_var.create_persistent name), None
+        `Var (Backend_var.create_persistent (Backend_var.name var)), None
       | Some ident_for_type ->
         let var = `Var ident_for_type in
-        match is_parameter with
-        | Local ->
-          (* If the unstamped name of [ident] is unambiguous within the
-             function, then use it; otherwise, equip the name with the location
-             of its definition together with any inlined-out frames. *)
-          if is_unique then
-            var, Some (Ident.name ident_for_type)
-          else
-            let provenance =
-              match type_info with
-              | From_cmt_file provenance
-              | Phantom (provenance, _) -> provenance
-            in
-            (* CR-soon mshinwell: Try to remove this option *)
-            begin match provenance with
-            | None -> var, Some (Ident.name ident_for_type)
-            | Some provenance ->
-              let location =
-                Format.asprintf "%a"
-                  Debuginfo.print_compact
-                  (Backend_var.Provenance.location provenance)
-              in
-              let name =
-                Format.sprintf "%s[%s]"
-                  (Ident.name ident_for_type)
-                  location
-              in
-              var, Some name
-            end
-        | Parameter _ ->
-          (* CR-someday mshinwell: This is actually only true for parameters
-             with names in the source code... *)
-          (* Parameters for a given function have unique names, so are never
-             equipped with locations.  (A parameter may have the same name as
-             a local, but in that case, the local will be equipped with its
-             location.) *)
+        (* If the unstamped name of [ident] is unambiguous within the
+           function, then use it; otherwise, equip the name with the location
+           of its definition together with any inlined-out frames. *)
+        (* CR-soon mshinwell: For the moment we are actually just going to
+           use the ident stamp instead of the location, since the location is
+           missing on various forms (e.g. "let") in [Lambda].  We should
+           fix this.  This code should be able to be used:
+             let provenance =
+               match type_info with
+               | From_cmt_file provenance
+               | Phantom (provenance, _) -> provenance
+             in
+             (* CR-soon mshinwell: Try to remove this option *)
+             begin match provenance with
+             | None -> var, Some (Ident.name ident_for_type)
+             | Some provenance ->
+               let name =
+                 Format.sprintf "%s[%a]"
+                   (Ident.name ident_for_type)
+                   Debuginfo.print_compact
+                   (Backend_var.Provenance.location provenance)
+               in
+               var, Some name
+             end
+           It might seem that parameters always have unique names, but they
+           don't, in the case of ones that weren't named in the source code.
+        *)
+        if is_unique then
           var, Some (Ident.name ident_for_type)
+        else
+          var, Some (Ident.unique_name ident_for_type)
     in
     (* CR-someday mshinwell: This should be tidied up.  It's only correct by
        virtue of the fact we do the closure-env ones second below. *)
@@ -742,6 +735,9 @@ let iterate_over_variable_like_things _t ~available_ranges ~f =
                phantom lets. *)
             None
           | Some provenance ->
+            (* CR-soon mshinwell: See CR-soon above; we can't do this yet
+               because there is often missing location information. *)
+            (*
             let location = Backend_var.Provenance.location provenance in
             if location = Debuginfo.none
               && match Available_range.is_parameter range with
@@ -749,10 +745,11 @@ let iterate_over_variable_like_things _t ~available_ranges ~f =
                  | _ -> false
             then None
             else
-              let original_ident =
-                Backend_var.Provenance.original_ident provenance
-              in
-              Some original_ident
+            *)
+            let original_ident =
+              Backend_var.Provenance.original_ident provenance
+            in
+            Some original_ident
         end
       in
       f var ~ident_for_type ~is_unique ~range)

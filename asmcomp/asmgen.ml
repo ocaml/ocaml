@@ -185,14 +185,14 @@ let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
     (clambda:clambda_and_constants) =
   Emit.begin_assembly ();
   let dwarf =
-    if not !Clflags.debug_full then None
-    else begin
+    match !Clflags.debug_full with
+    | None -> None
+    | Some _ ->
       let dwarf = Dwarf.create ~prefix_name in
       let _, toplevel_inconstants, toplevel_constants = clambda in
       Dwarf.dwarf_for_toplevel_constants dwarf toplevel_constants;
       Dwarf.dwarf_for_toplevel_inconstants dwarf toplevel_inconstants;
       Some dwarf
-    end
   in
   clambda
   ++ Profile.record "cmm" (Cmmgen.compunit ~ppf_dump ~unit_name)

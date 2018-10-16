@@ -35,5 +35,6 @@ let filter_inplace (decl : L.fundecl) =
   decl
 
 let fundecl (decl : L.fundecl) =
-  if not !Clflags.debug_full then decl
-  else filter_inplace decl
+  match !Clflags.debug_full with
+  | None -> decl
+  | Some _ -> filter_inplace decl

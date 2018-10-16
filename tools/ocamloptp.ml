@@ -29,6 +29,9 @@ let option_with_int opt arg =
 let option_with_float opt arg =
   compargs := (string_of_float arg) :: opt :: !compargs
 ;;
+let option_with_string opt arg =
+  compargs := arg :: opt :: !compargs
+;;
 
 let make_archive = ref false;;
 let with_impl = ref false;;
@@ -67,7 +70,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dwarf_version s = option_with_arg "-dwarf-version" s
   let _for_pack s = option_with_arg "-for-pack" s
   let _g = option "-g"
-  let _g_full = option "-g-full"
+  let _g_full = option_with_string "-g-full"
   let _stop_after = option_with_arg "-stop-after"
   let _i = option "-i"
   let _I s = option_with_arg "-I" s

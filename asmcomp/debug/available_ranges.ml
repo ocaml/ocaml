@@ -328,10 +328,14 @@ end) = struct
       | Some prev_insn ->
         KS.diff (S.available_before prev_insn) (S.available_before insn)
     in
-    (* CR mshinwell: add command line flag to restart ranges *)
-    let restart_ranges = false (*
-      KS.cardinal proto_births <> 0 || KS.cardinal proto_deaths <> 0
-*)
+    let restart_ranges =
+      match !Clflags.debug_full with
+      | Some Gdb -> false
+      | Some Lldb ->
+        (* Work at OCamlPro suggested that lldb requires ranges to be
+           completely restarted in the event of any change. *)
+        KS.cardinal proto_births <> 0 || KS.cardinal proto_deaths <> 0
+      | None -> Misc.fatal_error "Shouldn't be here without [debug_full]"
     in
     let births =
       match prev_insn with

@@ -462,9 +462,9 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
          debugger. *)
       (* CR-someday mshinwell: find out why some closure constructions were
          not leaving phantom lets behind after substitution. *)
-      if not !Clflags.debug_full then
-        body
-      else
+      match !Clflags.debug_full with
+      | None -> body
+      | Some _ ->
         match def with
         | Uconst const ->
           Uphantom_let (var, Some (Clambda.Uphantom_const const), body)
@@ -655,9 +655,9 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
     let is_used = V.Set.mem (VP.var var) var_info.used in
     let is_assigned = V.Set.mem (VP.var var) var_info.assigned in
     let maybe_for_debugger (body, moveable) : Clambda.ulambda * moveable =
-      if not !Clflags.debug_full then
-        body, moveable
-      else
+      match !Clflags.debug_full with
+      | None -> body, moveable
+      | Some _ ->
         match def with
         | Uconst const ->
           Uphantom_let (var, Some (Clambda.Uphantom_const const),

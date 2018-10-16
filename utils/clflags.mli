@@ -66,6 +66,11 @@ val o3_arguments : inlining_arguments
     The default is set if no round is provided. *)
 val use_inlining_arguments_set : ?round:int -> inlining_arguments -> unit
 
+type debug_full =
+  | Gdb
+  | Lldb
+
+
 val objfiles : string list ref
 val ccobjs : string list ref
 val dllibs : string list ref
@@ -76,7 +81,7 @@ val no_std_include : bool ref
 val print_types : bool ref
 val make_archive : bool ref
 val debug : bool ref
-val debug_full : bool ref
+val debug_full : debug_full option ref
 val unsafe : bool ref
 val use_linscan : bool ref
 val link_everything : bool ref
