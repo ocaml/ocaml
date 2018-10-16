@@ -148,6 +148,14 @@ let copy_instr d i n =
     available_across = i.Mach.available_across;
   }
 
+(* Scope delimiters for emitting debugging information *)
+
+let add_start_scope cont =
+  cons_instr_same_avail Lstart_scope cont
+
+let add_end_scope cont =
+  cons_instr_same_avail Lend_scope cont
+
 (*
    Label the beginning of the given instruction sequence.
    - If the sequence starts with a branch, jump over it.
@@ -158,8 +166,8 @@ let rec get_label n = match n.desc with
     Lbranch lbl -> (lbl, n)
   | Llabel lbl -> (lbl, n)
   | Lstart_scope ->
-    let lbl, _n = get_label n.next in
-    lbl, n
+    let lbl, n = get_label n.next in
+    lbl, add_start_scope n
   | Lend -> (-1, n)
   | _ ->
     let lbl = Cmm.new_label () in
@@ -228,14 +236,6 @@ let is_next_catch n = match !exit_label with
 
 let local_exit k =
   snd (find_exit_label_try_depth k) = !try_depth
-
-(* Scope delimiters for emitting debugging information *)
-
-let add_start_scope cont =
-  cons_instr_same_avail Lstart_scope cont
-
-let add_end_scope cont =
-  cons_instr_same_avail Lend_scope cont
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 
