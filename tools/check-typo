@@ -109,6 +109,12 @@ case "$1" in
     esac;;
 esac
 
+case "$1" in
+  --get-attrs)
+      get_attrs "$2"
+      exit 0;;
+esac
+
 usage () {
   echo "usage: check-typo {-<rule>} [--] {<file-or-dir>}" >&2
   exit 2
