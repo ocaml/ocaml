@@ -686,6 +686,7 @@ end) = struct
             match KM.find key already_have_scopes with
             | exception Not_found -> assert false  (* see above *)
             | (range, _scope_stack) ->
+(*
               Format.eprintf "[%a] Scope for %a: %a --> %a\n%!"
                 Backend_sym.print fundecl.L.fun_name
                 Backend_var.print (Available_range.var range)
@@ -693,6 +694,7 @@ end) = struct
                 (Available_range.scope range)
                 Scope.print
                 new_scope_for_used_but_now_out_of_scope;
+*)
               Available_range.set_scope range
                 (Some new_scope_for_used_but_now_out_of_scope))
           used_but_now_out_of_scope;
