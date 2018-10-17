@@ -26,7 +26,7 @@ module Scope = struct
     id : int;
     start_pos : Linearize.label;
     mutable end_pos : Linearize.label option;
-    parent : t option;
+    mutable parent : t option;
   }
 
   include Identifiable.Make (struct
@@ -60,6 +60,11 @@ module Scope = struct
       parent;
     }
 
+  let is_closed t =
+    match t.end_pos with
+    | None -> false
+    | Some _ -> true
+
   let close t ~end_pos =
     match t.end_pos with
     | Some _ -> Misc.fatal_errorf "Scope is already closed: %a" print t
@@ -73,6 +78,8 @@ module Scope = struct
     | Some end_pos -> end_pos
 
   let parent t = t.parent
+
+  let reparent t ~new_parent = t.parent <- new_parent
 end
 
 module Available_subrange : sig
@@ -198,6 +205,8 @@ module Available_range : sig
   val add_subrange : t -> subrange:Available_subrange.t -> unit
   val extremities : t -> L.label * L.label
 
+  val set_scope : t -> Scope.t -> unit
+
   val iter
      : t
     -> f:(available_subrange:Available_subrange.t -> unit)
@@ -210,7 +219,7 @@ module Available_range : sig
     -> 'a
 end = struct
   type t = {
-    scope : Scope.t option;
+    mutable scope : Scope.t option;
     mutable subranges : Available_subrange.t list;
     mutable min_pos : L.label option;
     mutable max_pos : L.label option;
@@ -234,6 +243,9 @@ end = struct
   let type_info t = t.type_info
   let is_parameter t = t.is_parameter
   let var_location t = t.var_location
+
+  let set_scope t scope =
+    t.scope <- scope
 
   let add_subrange t ~subrange =
     let start_pos = Available_subrange.start_pos subrange in
@@ -369,7 +381,7 @@ end) = struct
      are to start at that point, and which are to stop.  [prev_insn] is the
      instruction immediately prior to [insn], if such exists. *)
   let births_and_deaths ~(insn : L.instruction)
-        ~(prev_insn : L.instruction option) =
+        ~(prev_insn : L.instruction option) ~already_have_scopes =
     (* Available subranges are allowed to cross points at which the stack
        pointer changes, since we reference the stack slots as an offset from
        the CFA, not from the stack pointer.
@@ -384,10 +396,10 @@ end) = struct
         KS.diff (S.available_before insn) (S.available_before prev_insn)
     in
     let new_scope =
-      (* XXX This isn't quite right -- we shouldn't start a new scope unless
-         there is at least one variable becoming available that has not been
-         available before. *)
-      if KS.is_empty proto_births then Keep_existing_scope
+      let proto_births_without_scopes =
+        KS.diff proto_births (KM.keys already_have_scopes)
+      in
+      if KS.is_empty proto_births_without_scopes then Keep_existing_scope
       else Start_new_scope From_let_or_otherwise
     in
     let proto_deaths =
@@ -427,9 +439,10 @@ end) = struct
 
   let rec process_instruction t ~fundecl ~first_insn ~(insn : L.instruction)
         ~prev_insn ~open_subrange_start_insns ~stack_offset
-        ~(scope_stack : (scope_kind * Scope.t) list) =
+        ~(scope_stack : (scope_kind * Scope.t) list)
+        ~(already_have_scopes : Available_range.t KM.t) =
     let new_scope_from_lets, births, deaths =
-      births_and_deaths ~insn ~prev_insn
+      births_and_deaths ~insn ~prev_insn ~already_have_scopes
     in
     let new_scope_from_blocks =
       match insn.desc with
@@ -471,6 +484,10 @@ end) = struct
     let scope, scope_stack =
       match new_scope with
       | Start_new_scope scope_kind ->
+        (* The [start_pos] must always be a new label to ensure such labels
+           stay in order.  We rely on the order below when inserting new scopes
+           for keys which are still available but currently marked as out
+           of scope. *)
         let start_pos = Cmm.new_label () in
         let start_pos_insn =
           { L.
@@ -507,6 +524,66 @@ end) = struct
         in
         scope, scope_stack
     in
+    let available_but_now_out_of_scope =
+      let available_before = S.available_before insn in
+      KS.filter (fun key ->
+          match KM.find key already_have_scopes with
+          | exception Not_found -> false
+          | range ->
+            match Available_range.scope range with
+            | None -> false
+            | Some scope -> Scope.is_closed scope)
+        available_before
+    in
+    let scope, scope_stack =
+      if not (KS.is_empty available_but_now_out_of_scope) then begin
+        (* To make life easier, we only ever insert one new scope for keys that
+           are still available, but currently marked as out of scope.  (The
+           alternative would be one new scope for each distinct scope found
+           amongst such keys.) *)
+        let earliest_start_pos_for_available_but_now_out_of_scope =
+          KS.fold (fun _key range earliest_start_pos ->
+              let scope = Available_range.scope range in
+              match scope with
+              | None -> assert false  (* see above *)
+              | Some scope ->
+                (* This relies on the ordering noted in the comment above. *)
+                min (Scope.start_pos scope) earliest_start_pos)
+            available_but_now_out_of_scope
+            max_int
+        in
+        assert (earliest_start_pos_for_available_but_now_out_of_scope <> max_int);
+        let parent_scope_for_available_but_now_out_of_scope,
+            scope, scope_stack =
+          match new_scope with
+          | Start_new_scope ->
+            let parent =
+              match Scope.parent scope with
+              | Some parent -> parent
+              | None -> Misc.fatal_error "There should always be a parent scope"
+            in
+            Scope.reparent scope ~new_parent:new_scope;
+            let scope_stack =
+              match scope_stack with
+              | (kind, scope')::scope_stack ->
+                assert (scope == scope');
+                (kind, scope') :: (Let, new_scope) :: scope_stack
+              | _  -> Misc.fatal_error "Scope stack cannot be empty here"
+            in
+            Some parent, scope, scope_stack
+          | Keep_existing_scope ->
+            Scope.parent scope, new_scope, (Let, new_scope) :: scope_stack
+        in
+        let new_scope_for_available_but_now_out_of_scope =
+          Scope.create
+            ~start_pos:earliest_start_pos_for_available_but_now_out_of_scope
+            ~parent:parent_scope_for_available_but_now_out_of_scope
+        in
+        scope, scope_stack
+      end else begin
+        scope, scope_stack
+      end
+    in
     (* Note that we can't reuse an existing label in the code since we rely
        on the ordering of range-related labels. *)
     let label = Cmm.new_label () in
@@ -515,36 +592,42 @@ end) = struct
        a register occurring in both [births] and [deaths]; and we would
        like the register to have an open subrange from this point.  It
        follows that we should process deaths before births. *)
-    KS.fold (fun (key : S.Key.t) () ->
-        S.Key.assert_valid key;
-        let start_pos, start_insn =
-          try KM.find key open_subrange_start_insns
-          with Not_found -> assert false
-        in
-        let end_pos = label in
-        used_label := true;
-        let end_pos_offset = S.end_pos_offset ~prev_insn:!prev_insn ~key in
-        match S.range_info ~fundecl ~key ~start_insn with
-        | None -> ()
-        | Some (var, type_info, is_parameter) ->
-          let range =
-            match Backend_var.Tbl.find t.ranges var with
-            | range -> range
-            | exception Not_found ->
-              let range =
-                Available_range.create ~scope:(Some scope) ~type_info
-                  ~is_parameter
-              in
-              Backend_var.Tbl.add t.ranges var range;
-              range
+    let already_have_scopes =
+      KS.fold (fun (key : S.Key.t) already_have_scopes ->
+          S.Key.assert_valid key;
+          let start_pos, start_insn =
+            try KM.find key open_subrange_start_insns
+            with Not_found -> assert false
           in
-          let subrange =
-            S.create_subrange ~fundecl ~key ~start_pos ~start_insn ~end_pos
-              ~end_pos_offset ~stack_offset
-          in
-          Available_range.add_subrange range ~subrange)
-      deaths
-      ();
+          let end_pos = label in
+          used_label := true;
+          let end_pos_offset = S.end_pos_offset ~prev_insn:!prev_insn ~key in
+          match S.range_info ~fundecl ~key ~start_insn with
+          | None -> already_have_scopes
+          | Some (var, type_info, is_parameter) ->
+            let range, already_have_scopes =
+              match Backend_var.Tbl.find t.ranges var with
+              | range -> range
+              | exception Not_found ->
+                let range =
+                  Available_range.create ~scope:(Some scope) ~type_info
+                    ~is_parameter
+                in
+                Backend_var.Tbl.add t.ranges var range;
+                assert (not (KM.mem key already_have_scopes));
+                let already_have_scopes =
+                  KM.add key range already_have_scopes
+                in
+                range, already_have_scopes
+            in
+            let subrange =
+              S.create_subrange ~fundecl ~key ~start_pos ~start_insn ~end_pos
+                ~end_pos_offset ~stack_offset
+            in
+            Available_range.add_subrange range ~subrange)
+        deaths
+        already_have_scopes
+    in
     let label_insn =
       { L.
         desc = Llabel label;
@@ -640,13 +723,13 @@ end) = struct
       in
       process_instruction t ~fundecl ~first_insn ~insn:insn.L.next
         ~prev_insn:(Some insn) ~open_subrange_start_insns ~stack_offset
-        ~scope_stack
+        ~scope_stack ~already_have_scopes
 
   let process_instructions t ~fundecl ~first_insn =
     let stack_offset = Proc.initial_stack_offset in
     process_instruction t ~fundecl ~first_insn ~insn:first_insn
       ~prev_insn:None ~open_subrange_start_insns:KM.empty ~stack_offset
-      ~scope_stack:[]
+      ~scope_stack:[] ~already_have_scopes:KS.empty
 end
 
 module Make_ranges = Make (struct
