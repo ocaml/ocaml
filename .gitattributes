@@ -46,10 +46,10 @@ README*                  typo.missing-header
 /.merlin                 typo.missing-header
 /Changes                 typo.utf8 typo.missing-header
 /INSTALL                 typo.missing-header
-/LICENSE                 typo.long-line typo.very-long-line typo.missing-header
+/LICENSE                 typo.very-long-line typo.missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
-/tools/ci/appveyor/appveyor_build.cmd       typo.long-line typo.very-long-line typo.missing-header typo.non-ascii
+/tools/ci/appveyor/appveyor_build.cmd       typo.very-long-line typo.missing-header typo.non-ascii
 /tools/ci/appveyor/appveyor_build.sh        typo.non-ascii
 /tools/ci/inria/remove-sinh-primitive.patch typo.white-at-eol typo.missing-header typo.long-line
 /tools/release-checklist                    typo.missing-header
@@ -102,7 +102,7 @@ testsuite/tests/**/*.reference               typo.prune
 testsuite/tests/**/reference                 typo.prune
 
 # Expect tests with overly long lines of expected output
-testsuite/tests/parsing/docstrings.ml        typo.long-line typo.very-long-line
+testsuite/tests/parsing/docstrings.ml        typo.very-long-line
 testsuite/tests/typing-objects/Exemples.ml   typo.long-line
 testsuite/tests/typing-modules/firstclass.ml typo.long-line
 testsuite/tests/typing-gadts/test.ml         typo.long-line
@@ -112,7 +112,7 @@ testsuite/tests/typing-modules/pr7726.ml     typo.long-line
 tools/magic         typo.missing-header
 
 # TODO we should fix the long-line errors in yacc/*.c
-/yacc/*.[ch]         typo.long-line=may typo.very-long-line=may
+/yacc/*.[ch]         typo.very-long-line=may
 
 menhir-bench.bash typo.missing-header typo.utf8
 

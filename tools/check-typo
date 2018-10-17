@@ -216,6 +216,14 @@ EXIT_CODE=0
           }
         }
 
+        function err_if(guard, name, msg) {
+          if (is_err(guard)) {
+            err(name, msg);
+          } else {
+            ++ counts[name];
+          }
+        }
+
         function more_columns(str, limit,       c){
           c = 0;
           for (i = 1; i <= length(str); i++){
@@ -250,7 +258,7 @@ EXIT_CODE=0
           if (more_columns(t, 80)){
             RSTART=81;
             RLENGTH = 0;
-            err("long-line", "line is over 80 columns");
+            err_if("very-long-line", "long-line", "line is over 80 columns");
           }
           if (more_columns(t, 132)){
             RSTART=133;
@@ -290,7 +298,7 @@ EXIT_CODE=0
           if (length(t) > 80) {
             RSTART = 81;
             RLENGTH = 0;
-            err("long-line", "line is over 80 columns");
+            err_if("very-long-line", "long-line", "line is over 80 columns");
           }
         }
 
