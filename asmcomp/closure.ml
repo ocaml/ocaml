@@ -896,7 +896,7 @@ let rec close fenv cenv = function
       in
       make_const (transl cst)
   | Lfunction _ as funct ->
-      close_one_function fenv cenv (Ident.create_local "fun") funct
+      close_one_function fenv cenv (Ident.create_local "*fun*") funct
 
     (* We convert [f a] to [let a' = a in let f' = f in fun b c -> f' a' b c]
        when fun_arity > nargs *)
@@ -919,10 +919,10 @@ let rec close fenv cenv = function
       | ((ufunct, (Value_closure(fundesc, _) as fapprox)), uargs)
           when nargs < fundesc.fun_arity ->
         let first_args = List.map (fun arg ->
-          (V.create_local "arg", arg) ) uargs in
+          (V.create_local "*arg*", arg) ) uargs in
         let final_args =
           Array.to_list (Array.init (fundesc.fun_arity - nargs)
-                                    (fun _ -> V.create_local "arg")) in
+                                    (fun _ -> V.create_local "*arg*")) in
         let rec iter args body =
           match args with
               [] -> body
@@ -934,7 +934,7 @@ let rec close fenv cenv = function
           (List.map (fun (arg1, _arg2) -> Lvar arg1) first_args)
           @ (List.map (fun arg -> Lvar arg ) final_args)
         in
-        let funct_var = V.create_local "funct" in
+        let funct_var = V.create_local "*funct*" in
         let fenv = V.Map.add funct_var fapprox fenv in
         let (new_fun, approx) = close fenv cenv
           (Lfunction{
@@ -958,7 +958,7 @@ let rec close fenv cenv = function
 
       | ((ufunct, Value_closure(fundesc, _approx_res)), uargs)
         when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
-          let args = List.map (fun arg -> V.create_local "arg", arg) uargs in
+          let args = List.map (fun arg -> V.create_local "*arg*", arg) uargs in
           let (first_args, rem_args) = split_list fundesc.fun_arity args in
           let first_args = List.map (fun (id, _) -> Uvar id) first_args in
           let rem_args = List.map (fun (id, _) -> Uvar id) rem_args in
@@ -1018,7 +1018,7 @@ let rec close fenv cenv = function
       then begin
         (* Simple case: only function definitions *)
         let (clos, infos) = close_functions fenv cenv defs in
-        let clos_ident = V.create_local "clos" in
+        let clos_ident = V.create_local "*clos*" in
         let fenv_body =
           List.fold_right
             (fun (id, _pos, approx) fenv -> V.Map.add id approx fenv)

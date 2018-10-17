@@ -30,6 +30,12 @@ let canonicalise (insn : L.instruction) avail_set =
           | None -> true
           | Some provenance ->
             let dbg = Backend_var.Provenance.location provenance in
+(*
+Format.eprintf "%a: var=%a versus insn=%a\n%!"
+  Backend_var.print (Reg_with_debug_info.Debug_info.holds_value_of debug_info)
+  Debuginfo.print_compact dbg
+  Debuginfo.print_compact insn.dbg;
+*)
             match List.rev dbg, List.rev insn.dbg with
             | _::((_::_) as dbg_rev1), _::((_::_) as dbg_rev2) ->
               let in_inlined_body =
@@ -58,6 +64,9 @@ let filter_inplace (decl : L.fundecl) =
   decl
 
 let fundecl (decl : L.fundecl) =
+(*
+Format.eprintf "FUNCTION %a\n%!" Backend_sym.print decl.fun_name;
+*)
   match !Clflags.debug_full with
   | None -> decl
   | Some _ -> filter_inplace decl

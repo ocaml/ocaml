@@ -66,6 +66,7 @@ let add_unboxed_id id unboxed_id bn env =
 (* Local binding of complex expressions *)
 
 let bind name arg fn =
+  let name = "*" ^ name ^ "*" in
   match arg with
     Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
   | Cconst_pointer _ | Cconst_natpointer _
@@ -744,7 +745,7 @@ let float_array_set arr ofs newval dbg =
 
 let string_length exp dbg =
   bind "str" exp (fun str ->
-    let tmp_var = V.create_local "tmp" in
+    let tmp_var = V.create_local "*tmp*" in
     Clet(VP.create tmp_var,
          Cop(Csubi,
              [Cop(Clsl,
@@ -786,7 +787,7 @@ let make_alloc_generic set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
     Cop(Calloc, Cblockheader(block_header tag wordsize, dbg) :: args, dbg)
   else begin
-    let id = V.create_local "alloc" in
+    let id = V.create_local "*alloc*" in
     let rec fill_fields idx = function
       [] -> Cvar id
     | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int idx) e1 dbg,
@@ -3189,8 +3190,8 @@ CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
 
 let cache_public_method meths tag cache dbg =
   let raise_num = next_raise_count () in
-  let li = V.create_local "li" and hi = V.create_local "hi"
-  and mi = V.create_local "mi" and tagged = V.create_local "tagged" in
+  let li = V.create_local "*li*" and hi = V.create_local "*hi*"
+  and mi = V.create_local "*mi*" and tagged = V.create_local "*tagged*" in
   Clet (
   VP.create li, Cconst_int 3,
   Clet (
