@@ -16,7 +16,7 @@
 # Default behaviour, for if core.autocrlf isn't set
 * text=auto
 
-# Don't believe there's a way to wrap lines in .gitattributes files
+# It is not possible to wrap lines lines in .gitattributes files
 .gitattributes typo.long-line=may
 
 # Binary files
@@ -40,6 +40,7 @@
 *.md                     typo.missing-header
 README*                  typo.missing-header
 *.adoc                   typo.missing-header
+
 *.adoc                   typo.long-line=may
 
 /.mailmap                typo.long-line typo.missing-header typo.non-ascii
@@ -62,13 +63,12 @@ README*                  typo.missing-header
 Makefile*                typo.tab=may
 
 asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
-asmcomp/power/NOTES.md   typo.missing-header
 
 /config/gnu              typo.prune
 
 emacs/*.el               typo.long-line=may
 emacs/caml.el            typo.long-line=may typo.missing-header
-emacs/COPYING            typo.tab typo.non-printing typo.missing-header
+emacs/COPYING            typo.prune
 emacs/ocamltags.in       typo.non-printing
 
 /manual                  typo.prune
@@ -99,7 +99,6 @@ testsuite/typing                                        typo.missing-header
 
 # prune testsuite reference files
 testsuite/tests/**/*.reference               typo.prune
-testsuite/tests/**/reference                 typo.prune
 
 # Expect tests with overly long lines of expected output
 testsuite/tests/parsing/docstrings.ml        typo.very-long-line

@@ -101,8 +101,8 @@ get_attrs() {
 # Special case for recursive call from the find command (see IGNORE_DIRS).
 case "$1" in
   --check-prune)
-    case $2,"$(get_attrs "$2" | grep prune)" in
-      *,*prune*|.git,*)
+    case $2,"$(get_attrs "$2" | grep -xF prune)" in
+      *,prune|.git,*)
           echo "INFO: pruned directory $2 (typo.prune)" >&2
           exit 0;;
       *,*) exit 3;;
