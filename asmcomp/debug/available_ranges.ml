@@ -652,6 +652,21 @@ end) = struct
             ~start_pos:earliest_start_pos_for_used_but_now_out_of_scope
             ~parent:parent_scope_for_used_but_now_out_of_scope
         in
+        begin match parent_scope_for_used_but_now_out_of_scope with
+        | None ->
+          t.scopes <- t.scopes @ [new_scope_for_used_but_now_out_of_scope]
+        | Some parent ->
+          let scopes =
+            List.fold_right (fun scope scopes ->
+                if not (Scope.equal scope parent) then
+                  scope :: scopes
+                else
+                  new_scope_for_used_but_now_out_of_scope :: scope :: scopes)
+              t.scopes
+              []
+          in
+          t.scopes <- scopes
+        end;
         let scope_stack =
           remainder_of_current_stack
             @ (From_let_or_otherwise, new_scope_for_used_but_now_out_of_scope)
