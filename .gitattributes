@@ -56,6 +56,7 @@ README*                  typo.missing-header
 
 # ignore auto-generated .depend files
 .depend                  typo.prune
+/.depend.menhir          typo.prune
 
 # Makefiles may contain tabs
 Makefile*                typo.tab=may
@@ -110,7 +111,8 @@ testsuite/tests/typing-modules/pr7726.ml     typo.long-line
 
 tools/magic         typo.missing-header
 
-yacc/*.[ch]         typo.long-line typo.very-long-line=may
+# TODO we should fix the long-line errors in yacc/*.c
+/yacc/*.[ch]         typo.long-line=may typo.very-long-line=may
 
 menhir-bench.bash typo.missing-header typo.utf8
 
