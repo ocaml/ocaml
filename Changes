@@ -424,6 +424,9 @@ Working version
   for parser testing. See parsing/HACKING.adoc.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+- GPR#2047: a new type for unification traces
+  (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
+
 - GPR#2055: Add [Linearize.Lprologue].
   (Mark Shinwell, review by Pierre Chambart)
 
