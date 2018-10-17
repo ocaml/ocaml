@@ -987,7 +987,7 @@ method emit_expr (env:environment) exp ~bound_name =
             env ids_and_rs
         in
         let (r, s) =
-          self#emit_sequence new_env e2 ~bound_name:None ~at_start:(fun seq ->
+          self#emit_sequence new_env e2 ~bound_name ~at_start:(fun seq ->
             List.iter (fun ((var, _typ), r) ->
                 let provenance = VP.provenance var in
                 let var = VP.var var in
@@ -1245,7 +1245,7 @@ method private emit_return (env:environment) exp =
 method emit_tail (env:environment) exp =
   match exp with
     Clet(v, e1, e2) ->
-      begin match self#emit_expr env e1 ~bound_name:None with
+      begin match self#emit_expr env e1 ~bound_name:(Some v) with
         None -> ()
       | Some r1 -> self#emit_tail (self#bind_let env v r1) e2
       end

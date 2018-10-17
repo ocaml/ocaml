@@ -196,11 +196,13 @@ module Available_range : sig
      : scope:Scope.t option
     -> type_info:type_info
     -> is_parameter:is_parameter
+    -> var:Backend_var.t
     -> t
 
   val scope : t -> Scope.t option
   val type_info : t -> type_info
   val is_parameter : t -> is_parameter
+  val var : t -> Backend_var.t
   val var_location : t -> Debuginfo.t
   val add_subrange : t -> subrange:Available_subrange.t -> unit
   val extremities : t -> L.label * L.label
@@ -225,10 +227,11 @@ end = struct
     mutable max_pos : L.label option;
     type_info : type_info;
     is_parameter : is_parameter;
+    var : Backend_var.t;
     var_location : Debuginfo.t;
   }
 
-  let create ~scope ~type_info ~is_parameter =
+  let create ~scope ~type_info ~is_parameter ~var =
     let var_location =
       match type_info with
       | From_cmt_file None | Phantom (None, _) -> Debuginfo.none
@@ -236,12 +239,13 @@ end = struct
         Backend_var.Provenance.location provenance
     in
     { scope; subranges = []; min_pos = None; max_pos = None;
-      type_info; is_parameter; var_location;
+      type_info; is_parameter; var; var_location;
     }
 
   let scope t = t.scope
   let type_info t = t.type_info
   let is_parameter t = t.is_parameter
+  let var t = t.var
   let var_location t = t.var_location
 
   let set_scope t scope =
@@ -682,6 +686,13 @@ end) = struct
             match KM.find key already_have_scopes with
             | exception Not_found -> assert false  (* see above *)
             | (range, _scope_stack) ->
+              Format.eprintf "[%a] Scope for %a: %a --> %a\n%!"
+                Backend_sym.print fundecl.L.fun_name
+                Backend_var.print (Available_range.var range)
+                (Misc.Stdlib.Option.print Scope.print)
+                (Available_range.scope range)
+                Scope.print
+                new_scope_for_used_but_now_out_of_scope;
               Available_range.set_scope range
                 (Some new_scope_for_used_but_now_out_of_scope))
           used_but_now_out_of_scope;
@@ -717,7 +728,7 @@ end) = struct
               | exception Not_found ->
                 let range =
                   Available_range.create ~scope:(Some scope) ~type_info
-                    ~is_parameter
+                    ~is_parameter ~var
                 in
                 Backend_var.Tbl.add t.ranges var range;
                 assert (not (KM.mem key already_have_scopes));
@@ -1030,7 +1041,7 @@ let create ~fundecl =
   List.iter (fun var ->
       let range =
         Available_range.create ~scope:None ~type_info:(Phantom (None, None))
-          ~is_parameter:Local
+          ~is_parameter:Local ~var
       in
       Backend_var.Tbl.add t.ranges var range)
     variables_without_ranges;
