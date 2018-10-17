@@ -205,7 +205,7 @@ module Available_range : sig
   val add_subrange : t -> subrange:Available_subrange.t -> unit
   val extremities : t -> L.label * L.label
 
-  val set_scope : t -> Scope.t -> unit
+  val set_scope : t -> Scope.t option -> unit
 
   val iter
      : t
@@ -331,10 +331,10 @@ module Make (S : sig
   module Key : sig
     type t
 
+    val assert_valid : t -> unit
+
     module Map : Map.S with type key := t
     module Set : Set.S with type elt := t
-
-    val assert_valid : t -> unit
   end
 
   val used : L.instruction -> Key.Set.t
@@ -380,7 +380,12 @@ end) = struct
   (* Imagine that the program counter is exactly at the start of [insn]; it has
      not yet been executed.  This function calculates which available subranges
      are to start at that point, and which are to stop.  [prev_insn] is the
-     instruction immediately prior to [insn], if such exists. *)
+     instruction immediately prior to [insn], if such exists.
+
+     This function also calculates whether a new scope should be started based
+     on the availability information and which variables have previously been
+     assigned scopes.
+  *)
   let births_and_deaths ~(insn : L.instruction)
         ~(prev_insn : L.instruction option) ~already_have_scopes =
     (* Available subranges are allowed to cross points at which the stack
@@ -398,7 +403,8 @@ end) = struct
     in
     let new_scope =
       let proto_births_without_scopes =
-        KS.diff proto_births (KM.keys already_have_scopes)
+        KS.diff proto_births (KS.of_list (
+          List.map (fun (key, _data) -> key) (KM.bindings already_have_scopes)))
       in
       if KS.is_empty proto_births_without_scopes then Keep_existing_scope
       else Start_new_scope From_let_or_otherwise
@@ -451,7 +457,7 @@ end) = struct
      3. the remainder of the current stack, again in the usual order, from
         immediately after the point of divergence up to and including the
         current scope. *)
-  let closest_common_ancestor_rev ~(current_stack : scope_stack)
+  let closest_common_ancestor ~(current_stack : scope_stack)
         (stacks : scope_stack list) =
     let rec loop ~current_stack stacks ~stack_prefix =
       let found_discrepancy ~all_subsequent_scopes =
@@ -477,17 +483,18 @@ end) = struct
       if List.compare_lengths heads all_stacks <> 0 then
         found_discrepancy ~all_subsequent_scopes
       else
-        match Scope.Set.get_singleton scopes_at_heads with
-        | None -> found_discrepancy ~all_subsequent_scopes
-        | kind_and_scope ->
-          let current_stack = List.head tails in
-          let stacks = List.tail tails in
+        if Scope.Set.cardinal scopes_at_heads <> 1 then
+          found_discrepancy ~all_subsequent_scopes
+        else
+          let kind_and_scope = List.hd heads in
+          let current_stack = List.hd tails in
+          let stacks = List.tl tails in
           let stack_prefix = kind_and_scope :: stack_prefix in
           loop ~current_stack stacks ~stack_prefix
     in
     let current_stack = List.rev current_stack in
     let stacks = List.map (fun stack -> List.rev stack) stacks in
-    loop ~current_stack stacks
+    loop ~current_stack stacks ~stack_prefix:[]
 
   (* This function scans the Linearize code and does two things: firstly,
      creation of available ranges; secondly, inference of approximate
@@ -630,38 +637,38 @@ end) = struct
         in
         assert (earliest_start_pos_for_used_but_now_out_of_scope
           <> max_int);
-        let parent_scope_for_used_but_now_out_of_scope,
-            scope, scope_stack =
-          let common_prefix, all_subsequent_scopes,
-              remainder_of_current_stack =
-            closest_common_ancestor ~current_stack:scope_stack
-              all_stacks_for_used_but_now_out_of_scope
-          in
-          let parent =
-            match common_prefix with
-            | [] -> None
-            | innermost_scope::_ -> Some innermost_scope
-          in
-          List.iter (fun subsequent_scope ->
-              assert (not (Scope.equal scope subsequent_scope));
-              Scope.reparent subsequent_scope ~new_parent:new_scope)
-            all_subsequent_scopes;
-          let scope_stack =
-            remainder_of_current_stack
-              @ (Let, new_scope)
-              :: common_prefix
-          in
-          let scope = List.hd scope_stack in
-          parent, scope, scope_stack
+        let common_prefix, all_subsequent_scopes,
+            remainder_of_current_stack =
+          closest_common_ancestor ~current_stack:scope_stack
+            all_stacks_for_used_but_now_out_of_scope
+        in
+        let parent_scope_for_used_but_now_out_of_scope =
+          match common_prefix with
+          | [] -> None
+          | (_kind, innermost_scope)::_ -> Some innermost_scope
         in
         let new_scope_for_used_but_now_out_of_scope =
           Scope.create
             ~start_pos:earliest_start_pos_for_used_but_now_out_of_scope
             ~parent:parent_scope_for_used_but_now_out_of_scope
         in
-        KS.iter (fun _key range ->
-            Available_range.set_scope range
-              new_scope_for_used_but_now_out_of_scope)
+        let scope_stack =
+          remainder_of_current_stack
+            @ (From_let_or_otherwise, new_scope_for_used_but_now_out_of_scope)
+            :: common_prefix
+        in
+        let _kind, scope = List.hd scope_stack in
+        Scope.Set.iter (fun subsequent_scope ->
+            assert (not (Scope.equal scope subsequent_scope));
+            Scope.reparent subsequent_scope ~new_parent:(
+              Some new_scope_for_used_but_now_out_of_scope))
+          all_subsequent_scopes;
+        KS.iter (fun key ->
+            match KM.find key already_have_scopes with
+            | exception Not_found -> assert false  (* see above *)
+            | (range, _scope_stack) ->
+              Available_range.set_scope range
+                (Some new_scope_for_used_but_now_out_of_scope))
           used_but_now_out_of_scope;
         scope, scope_stack
       end else begin
@@ -691,7 +698,7 @@ end) = struct
           | Some (var, type_info, is_parameter) ->
             let range, already_have_scopes =
               match Backend_var.Tbl.find t.ranges var with
-              | range -> range
+              | range -> range, already_have_scopes
               | exception Not_found ->
                 let range =
                   Available_range.create ~scope:(Some scope) ~type_info
@@ -700,7 +707,7 @@ end) = struct
                 Backend_var.Tbl.add t.ranges var range;
                 assert (not (KM.mem key already_have_scopes));
                 let already_have_scopes =
-                  KM.add key range already_have_scopes
+                  KM.add key (range, scope_stack) already_have_scopes
                 in
                 range, already_have_scopes
             in
@@ -708,7 +715,8 @@ end) = struct
               S.create_subrange ~fundecl ~key ~start_pos ~start_insn ~end_pos
                 ~end_pos_offset ~stack_offset
             in
-            Available_range.add_subrange range ~subrange)
+            Available_range.add_subrange range ~subrange;
+            already_have_scopes)
         deaths
         already_have_scopes
     in
@@ -813,7 +821,7 @@ end) = struct
     let stack_offset = Proc.initial_stack_offset in
     process_instruction t ~fundecl ~first_insn ~insn:first_insn
       ~prev_insn:None ~open_subrange_start_insns:KM.empty ~stack_offset
-      ~scope_stack:[] ~already_have_scopes:KS.empty
+      ~scope_stack:[] ~already_have_scopes:KM.empty
 end
 
 module Make_ranges = Make (struct
@@ -848,7 +856,7 @@ module Make_ranges = Make (struct
           (Array.to_list insn.arg))
     in
     Key.Set.filter (fun rd ->
-        Numbers.Int.Set.mem stamps_of_used_regs (RD.reg rd).stamp)
+        Numbers.Int.Set.mem (RD.reg rd).stamp stamps_of_used_regs)
       (available_before insn)
 
   let end_pos_offset ~prev_insn ~key:reg =
