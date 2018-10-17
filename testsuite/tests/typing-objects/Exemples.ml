@@ -233,6 +233,7 @@ Error: Type
          point circle =
            < center : point; move : int -> unit; set_center : point -> unit >
        Type point is not a subtype of color_point
+       The first object type has no method color
 |}];;                 (* Fail *)
 fun x -> (x : color_point color_circle :> point circle);;
 [%%expect{|
@@ -247,6 +248,7 @@ Error: Type
          point circle =
            < center : point; move : int -> unit; set_center : point -> unit >
        Type point is not a subtype of color_point
+       The first object type has no method color
 |}];;
 
 class printable_point y = object (s)
@@ -544,6 +546,7 @@ Error: Type
        is not a subtype of
          int_comparable2 =
            < cmp : int_comparable2 -> int; set_x : int -> unit; x : int >
+       The first object type has no method set_x
 |}];;      (* Fail : 'a comp2 is not a subtype *)
 (new sorted_list ())#add c2;;
 [%%expect{|

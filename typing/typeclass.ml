@@ -48,8 +48,8 @@ type class_type_info = {
 }
 
 type error =
-    Unconsistent_constraint of (type_expr * type_expr) list
-  | Field_type_mismatch of string * string * (type_expr * type_expr) list
+    Unconsistent_constraint of Ctype.Unification_trace.t
+  | Field_type_mismatch of string * string * Ctype.Unification_trace.t
   | Structure_expected of class_type
   | Cannot_apply of class_type
   | Apply_wrong_label of arg_label
@@ -58,10 +58,10 @@ type error =
   | Unbound_class_2 of Longident.t
   | Unbound_class_type_2 of Longident.t
   | Abbrev_type_clash of type_expr * type_expr * type_expr
-  | Constructor_type_mismatch of string * (type_expr * type_expr) list
+  | Constructor_type_mismatch of string * Ctype.Unification_trace.t
   | Virtual_class of bool * bool * string list * string list
   | Parameter_arity_mismatch of Longident.t * int * int
-  | Parameter_mismatch of (type_expr * type_expr) list
+  | Parameter_mismatch of Ctype.Unification_trace.t
   | Bad_parameters of Ident.t * type_expr * type_expr
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
@@ -69,8 +69,8 @@ type error =
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
-      Ident.t * Types.class_declaration * (type_expr * type_expr) list
-  | Final_self_clash of (type_expr * type_expr) list
+      Ident.t * Types.class_declaration * Ctype.Unification_trace.t
+  | Final_self_clash of Ctype.Unification_trace.t
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
   | Duplicate of string * string
@@ -290,11 +290,11 @@ let inheritance self_type env ovf concr_meths warn_vals loc parent =
       begin try
         Ctype.unify env self_type cl_sig.csig_self
       with Ctype.Unify trace ->
+        let open Ctype.Unification_trace in
         match trace with
-          _::_::_::({desc = Tfield(n, _, _, _)}, _)::rem ->
+        | Diff _ :: Incompatible_fields {name = n; _ } :: rem ->
             raise(Error(loc, env, Field_type_mismatch ("method", n, rem)))
-        | _ ->
-            assert false
+        | _ -> assert false
       end;
 
       (* Overriding *)
@@ -863,10 +863,8 @@ and class_structure cl_num final val_env met_env loc
   if final then begin
     (* Unify private_self and a copy of self_type. self_type will not
        be modified after this point *)
-    begin try Ctype.close_object self_type
-    with Ctype.Unify [] ->
-      raise(Error(loc, val_env, Closing_self_type self_type))
-    end;
+    if not (Ctype.close_object self_type) then
+      raise(Error(loc, val_env, Closing_self_type self_type));
     let mets = virtual_methods {sign with csig_self = self_type} in
     let vals =
       Vars.fold
@@ -1409,9 +1407,8 @@ let class_infos define_class kind
   begin
     let ty = Ctype.self_type obj_type in
     Ctype.hide_private_methods ty;
-    begin try Ctype.close_object ty
-    with Ctype.Unify [] -> raise(Error(cl.pci_loc, env, Closing_self_type ty))
-    end;
+    if not (Ctype.close_object ty) then
+      raise(Error(cl.pci_loc, env, Closing_self_type ty));
     begin try
       List.iter2 (Ctype.unify env) obj_params obj_params'
     with Ctype.Unify _ ->

@@ -117,7 +117,6 @@ Line 3, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -132,7 +131,6 @@ Line 3, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -147,7 +145,6 @@ Line 3, characters 4-29:
     | Refl, [(_ : b) | (_ : a)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -162,7 +159,6 @@ Line 4, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -177,7 +173,6 @@ Line 4, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -192,7 +187,6 @@ Line 4, characters 4-29:
     | Refl, [(_ : b) | (_ : a)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
