@@ -257,9 +257,10 @@ external floor : float -> float = "caml_floor_float" "floor"
 external next_after : float -> float -> float
   = "caml_nextafter_float" "caml_nextafter" [@@unboxed] [@@noalloc]
 (** [next_after x y] returns the next representable floating-point
-   value following [x] in the direction of [y].  If [y] is less than
-   [x], it returns the largest representable number less than [x].  If
-   [x] equals [y], the function returns [y].  If [x] or [y] is
+   value following [x] in the direction of [y].  More precisely, if
+   [y] is greater (resp. less) than [x], it returns the smallest
+   (resp. largest) representable number greater (resp. less) than [x].
+   If [x] equals [y], the function returns [y].  If [x] or [y] is
    [nan], a [nan] is returned.
    Note that [next_after max_float infinity = infinity] and that
    [next_after 0. infinity] is the smallest denormalized positive number.
