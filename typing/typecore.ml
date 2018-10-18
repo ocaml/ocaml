@@ -4017,7 +4017,7 @@ and type_statement ?explanation env sexp =
 
 (* Typing of match cases *)
 and check_scope_escape loc env level ty =
-  try Ctype.check_scope_escape level ty
+  try Ctype.check_scope_escape env level ty
   with Unify trace ->
     raise(Error(loc, env, Pattern_type_clash(trace)))
 

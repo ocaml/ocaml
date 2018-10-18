@@ -759,19 +759,33 @@ let rec normalize_package_path env p =
           normalize_package_path env (Path.Pdot (p1', s, n))
       | _ -> p
 
-let check_scope_escape level ty =
-  let rec aux ty =
+let check_scope_escape env level ty =
+  let rec loop ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
       ty.level <- pivot_level - ty.level;
       if level < ty.scope then
         raise(Trace.scope_escape ty);
-      iter_type_expr aux ty
+      begin match ty.desc with
+      | Tconstr (p, _, _) when level < Path.scope p ->
+          begin match !forward_try_expand_once env ty with
+          | ty' -> aux ty'
+          | exception Cannot_expand ->
+              raise Trace.(Unify [escape (Constructor p)])
+          end
+      | Tpackage (p, nl, tl) when level < Path.scope p ->
+          let p' = normalize_package_path env p in
+          if Path.same p p' then raise Trace.(Unify [escape (Module_type p)]);
+          aux { ty with desc = Tpackage (p', nl, tl) }
+      | _ ->
+        iter_type_expr loop ty
+      end;
     end
-  in
-  try
-    aux ty;
+  and aux ty =
+    loop ty;
     unmark_type ty
+  in
+  try aux ty;
   with Unify [Trace.Escape x] ->
     raise Trace.(Unify[Escape { x with context = Some ty }])
 
