@@ -492,6 +492,8 @@ CAMLexport double caml_round(double f)
   if (isfinite(f) && f != 0.) {
     if (e >= 52 + 0x3ff) return f; /* f is an integer already */
     if (f > 0.0)
+      /* If we added 0.5 instead of its predecessor, then the
+         predecessor of 0.5 would be rounded to 1. instead of 0. */
       return floor(f + pred_one_half.d);
     else
       return ceil(f - pred_one_half.d);

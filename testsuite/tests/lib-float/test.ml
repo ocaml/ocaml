@@ -30,6 +30,7 @@ let () =
   assert(Float.round (-1.5) = -2.);
   assert(let x = 0x1.0000000000001p52 in (* x + 0.5 rounds to x +. 1. *)
          Float.round x = x);
+  assert(Float.round (Float.next_after 0.5 0.) = 0.);
 
   assert(Float.(round infinity = infinity));
   assert(Float.(round neg_infinity = neg_infinity));
