@@ -605,6 +605,25 @@ module Make_phantom_ranges = Make (struct
     Available_subrange.create_phantom ~start_pos ~end_pos
 end)
 
+module Make_lexical_block_ranges = Make (struct
+  module Key = struct
+    include Debuginfo.Block
+
+    let assert_valid _t = ()
+  end
+
+  let available_before (insn : L.instruction) = insn.phantom_available_before
+
+  let end_pos_offset ~prev_insn:_ ~key:_ = None
+
+  let range_info ~fundecl ~key ~start_insn:_ =
+    ...
+
+  let create_subrange ~fundecl:_ ~key:_ ~start_pos ~start_insn:_ ~end_pos
+        ~end_pos_offset:_ ~stack_offset:_ =
+    ...
+end)
+
 let create ~fundecl =
   let t = { ranges = Backend_var.Tbl.create 42; } in
   let first_insn =

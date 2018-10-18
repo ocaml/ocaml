@@ -266,11 +266,11 @@ let reset_debug_info () =
 let emit_debug_info_gen dbg file_emitter loc_emitter =
   if is_cfi_enabled () &&
     (!Clflags.debug || Config.with_frame_pointers) then begin
-    match List.rev dbg with
-    | [] -> ()
-    | { Debuginfo.dinfo_line = line;
-        dinfo_char_start = col;
-        dinfo_file = file_name; } :: _ ->
+    Debuginfo.iter_frames_innermost_first dbg ~f:(fun code_range ->
+      let module R = Debuginfo.Code_range in
+      let file_name = R.file code_range in
+      let line = R.line code_range in
+      let col = R.char_start code_range in
       if line > 0 then begin (* PR#6243 *)
         let file_num =
           try List.assoc file_name !file_pos_nums
@@ -281,7 +281,7 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
             file_pos_nums := (file_name,file_num) :: !file_pos_nums;
             file_num in
         loc_emitter ~file_num ~line ~col;
-      end
+      end)
   end
 
 let emit_debug_info dbg =

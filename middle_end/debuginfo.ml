@@ -3,9 +3,11 @@
 (*                                 OCaml                                  *)
 (*                                                                        *)
 (*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
+(*             Mark Shinwell and Leo White, Jane Street Europe            *)
 (*                                                                        *)
 (*   Copyright 2006 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
+(*   Copyright 2018 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,110 +15,353 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-30-40-41-42"]
+
 open! Int_replace_polymorphic_compare
-open Lexing
-open Location
 
-type item = {
-  dinfo_file: string;
-  dinfo_line: int;
-  dinfo_char_start: int;
-  dinfo_char_end: int;
-}
+module Option = Misc.Stdlib.Option
 
-type t = item list
-
-let none = []
-
-let is_none = function
-  | [] -> true
-  | _ :: _ -> false
-
-let to_string dbg =
-  match dbg with
-  | [] -> ""
-  | ds ->
-    let items =
-      List.map
-        (fun d ->
-           Printf.sprintf "%s:%d,%d-%d"
-             d.dinfo_file d.dinfo_line d.dinfo_char_start d.dinfo_char_end)
-        ds
-    in
-    "{" ^ String.concat ";" items ^ "}"
-
-let item_from_location loc =
-  { dinfo_file = loc.loc_start.pos_fname;
-    dinfo_line = loc.loc_start.pos_lnum;
-    dinfo_char_start = loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
-    dinfo_char_end =
-      if String.equal loc.loc_end.pos_fname loc.loc_start.pos_fname
-      then loc.loc_end.pos_cnum - loc.loc_start.pos_bol
-      else loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
+module Code_range = struct
+  type t = {
+    file : string;
+    line : int;
+    char_start : int;
+    char_end : int;
   }
 
-let from_location loc =
-  if loc == Location.none then [] else [item_from_location loc]
+  let create ~file ~line ~char_start ~char_end =
+    if line < 0 || char_start < 0 then begin
+      Misc.fatal_error "Bad line or starting char for \
+        [Debuginfo.Code_range.create]"
+    end;
+    { file;
+      line;
+      char_start;
+      char_end;
+    }
 
-let to_location = function
-  | [] -> Location.none
-  | d :: _ ->
-    let loc_start =
-      { pos_fname = d.dinfo_file;
-        pos_lnum = d.dinfo_line;
-        pos_bol = 0;
-        pos_cnum = d.dinfo_char_start;
-      } in
-    let loc_end = { loc_start with pos_cnum = d.dinfo_char_end; } in
-    { loc_ghost = false; loc_start; loc_end; }
+  let file t = t.file
+  let line t = t.line
+  let char_start t = t.char_start
+  let char_end t = t.char_end
 
-let inline loc t =
-  if loc == Location.none then t
-  else (item_from_location loc) :: t
+  let to_string t =
+    Printf.sprintf "%s:%d,%d-%d" t.file t.line t.char_start t.char_end
 
-let concat dbg1 dbg2 =
-  dbg1 @ dbg2
+  let of_location (loc : Location.t) =
+    { file = loc.loc_start.pos_fname;
+      line = loc.loc_start.pos_lnum;
+      char_start = loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
+      char_end =
+        if String.equal loc.loc_end.pos_fname loc.loc_start.pos_fname
+        then loc.loc_end.pos_cnum - loc.loc_start.pos_bol
+        else loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
+    }
 
-(* CR-someday afrisch: FWIW, the current compare function does not seem very
-   good, since it reverses the two lists. I don't know how long the lists are,
-   nor if the specific currently implemented ordering is useful in other
-   contexts, but if one wants to use Map, a more efficient comparison should
-   be considered. *)
-let compare dbg1 dbg2 =
-  let rec loop ds1 ds2 =
-    match ds1, ds2 with
-    | [], [] -> 0
-    | _ :: _, [] -> 1
-    | [], _ :: _ -> -1
-    | d1 :: ds1, d2 :: ds2 ->
-      let c = String.compare d1.dinfo_file d2.dinfo_file in
-      if c <> 0 then c else
-      let c = compare d1.dinfo_line d2.dinfo_line in
-      if c <> 0 then c else
-      let c = compare d1.dinfo_char_end d2.dinfo_char_end in
-      if c <> 0 then c else
-      let c = compare d1.dinfo_char_start d2.dinfo_char_start in
-      if c <> 0 then c else
-      loop ds1 ds2
-  in
-  loop (List.rev dbg1) (List.rev dbg2)
+  include Identifiable.Make (struct
+    type nonrec t = t
 
-let hash t =
-  List.fold_left (fun hash item -> Hashtbl.hash (hash, item)) 0 t
+    let print ppf { file; line; char_start; char_end; } =
+      Format.fprintf ppf "@[<hov 1>(@\
+          @[<hov 1>(file@ %s)@]@ \
+          @[<hov 1>(line@ %d)@]@ \
+          @[<hov 1>(char_start@ %d)@]@ \
+          @[<hov 1>(char_end@ %d)@])@]"
+        file
+        line
+        char_start
+        char_end
 
-let rec print_compact ppf t =
-  let print_item item =
+    let output chan t =
+      Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
+
+    let compare t1 t2 =
+      let c = String.compare t1.file t2.file in
+      if c <> 0 then c
+      else
+        let c = compare t1.line t2.line in
+        if c <> 0 then c
+        else
+          let c = compare t1.char_end t2.char_end in
+          if c <> 0 then c
+          else compare t1.char_start t2.char_start
+
+    let equal t1 t2 = (compare t1 t2 = 0)
+
+    let hash t = Hashtbl.hash t
+  end)
+
+  let print_compact ppf t =
     Format.fprintf ppf "%a:%i"
-      Location.print_filename item.dinfo_file
-      item.dinfo_line;
-    if item.dinfo_char_start >= 0 then begin
-      Format.fprintf ppf ",%i--%i" item.dinfo_char_start item.dinfo_char_end
+      Location.print_filename t.file
+      t.line;
+    if t.char_start >= 0 then begin
+      Format.fprintf ppf ",%i--%i" t.char_start t.char_end
     end
-  in
+
+  let to_location t =
+    let loc_start =
+      { pos_fname = t.file;
+        pos_lnum = t.line;
+        pos_bol = 0;
+        pos_cnum = t.char_start;
+      } in
+    let loc_end = { loc_start with pos_cnum = t.char_end; } in
+    { loc_ghost = false; loc_start; loc_end; }
+end
+
+module Block = struct
+  type t = {
+    id : int;
+    frame_location : Code_range.t option;
+    (* CR-someday mshinwell: We could perhaps have a link to the parent
+       _frame_, if such exists. *)
+    parent : t option;
+  }
+
+  let next_id = ref 0
+
+  let get_next_id () =
+    let id = !next_id in
+    incr next_id;
+    id
+
+  let create_lexical_scope ~parent =
+    { id = get_next_id ();
+      frame_location = None;
+      parent;
+    }
+
+  let create_non_inlined_frame range =
+    { id = get_next_id ();
+      frame_location = Some range;
+      parent = None;
+    }
+
+  let create_inlined_frame ~parent range =
+    { id = get_next_id ();
+      frame_location = Some range;
+      parent;
+    }
+
+  let create_and_reparent ~like:t ~new_parent =
+    { t with
+      id = get_next_id ();
+      parent = new_parent;
+    }
+
+  let rec graft t ~onto =
+    match t.parent with
+    | None ->
+      { t with
+        parent = onto;
+      }
+    | Some parent ->
+      { t with
+        parent = graft parent ~onto;
+      }
+
+  let parent t = t.parent
+
+  let rec frame_list_innermost_first t =
+    match t.parent with
+    | None ->
+      begin match t.frame_location with
+      | None -> []
+      | Some range -> [range]
+      end
+    | Some parent ->
+      begin match frame_location with
+      | None -> frame_list_innermost_first parent
+      | Some range -> range::(frame_list_innermost_first parent)
+      end
+
+  type frame_classification =
+    | No_frame
+    | Non_inlined_frame of Code_range.t
+    | Inlined_frame of Code_range.t
+
+  let frame_classification t =
+    match t.frame_location with
+    | None -> No_frame
+    | Some range ->
+      match t.parent with
+      | None -> Non_inlined_frame range
+      | Some _ -> Inlined_frame range
+
+  let rec iter_innermost_first t ~f =
+    f t;
+    match t.parent with
+    | None -> ()
+    | Some parent -> iter parent ~f
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare t1 t2 = compare t1.id t2.id
+    let equal t1 t2 = (t1.id = t2.id)
+    let hash t = Hashtbl.hash t.id
+
+    let print ppf { id; frame_location; parent; } =
+      Format.fprintf ppf "@[<hov 1>(@\
+          @[<hov 1>(id@ %d)@]@ \
+          @[<hov 1>(frame_location@ %a)@]@ \
+          @[<hov 1>(parent@ %s)@])@]"
+        id
+        (Option.print Code_range.print) frame_location
+        (match parent with
+          | None -> "()"
+          | Some parent -> string_of_int parent.id)
+
+    let output chan t =
+      Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
+  end)
+end
+
+module Current_block = struct
+  type t = Block.t option
+
+  let toplevel : t = None
+
+  let inline t ~at_call_site =
+    match at_call_site with
+    | None -> t
+    | Some at_call_site ->
+      match t with
+      | None -> Some at_call_site
+      | Some t -> Block.graft t ~onto:at_call_site
+end
+
+type t =
+  | Empty
+  | Non_empty of {
+      block : Block.t option;
+      position : Code_range.t;
+    }
+
+let none = Empty
+
+let is_none = function
+  | Empty -> true
+  | Non_empty -> false
+
+let to_string_frames_only_innermost_last t =
   match t with
-  | [] -> ()
-  | [item] -> print_item item
-  | item::t ->
-    print_item item;
-    Format.fprintf ppf ";";
-    print_compact ppf t
+  | Empty -> ""
+  | Non_empty { block; position; } ->
+    let frames =
+      match block with
+      | None -> []
+      | Some block ->
+        List.map (fun range -> Code_range.to_string range)
+          (Block.frame_list_innermost_first block)
+    in
+    let ranges_innermost_last =
+      List.rev ((Code_range.to_string position) :: frames)
+    in
+    "{" ^ String.concat ";" ranges_innermost_last ^ "}"
+
+let of_location loc ~scope =
+  if loc == Location.none then Empty
+  else
+    let position = Code_range.of_location loc in
+    Non_empty { block = scope; position; }
+
+let to_location t =
+  match t with
+  | Empty -> Location.none
+  | Non_empty { block = _; position; } -> Code_range.to_location position
+
+let innermost_block t =
+  match t with
+  | Empty -> None
+  | Non_empty { block; position = _; } -> block
+
+let position t =
+  match t with
+  | Empty -> None
+  | Non_empty { block = _; position; } -> Some position
+
+let iter_innermost_first t ~f =
+  match t with
+  | Empty -> ()
+  | Non_empty { block; position; } ->
+    f position;
+    match block with
+    | None -> ()
+    | Some block -> Block.iter_innermost_first block ~f
+
+let iter_frames_innermost_first t ~f =
+  iter t ~f:(fun block ->
+    match Block.frame_classification block with
+    | Lexical_scope -> ()
+    | Non_inlined_frame range | Inlined_frame range -> f range)
+
+include Identifiable.Make (struct
+  let rec print ppf t =
+    match t with
+    | [] -> ()
+    | [Frame frame] -> Frame.print frame
+    | [Block block] -> Block.print block
+    | (Frame frame)::t ->
+      Frame.print ppf frame;
+      Format.fprintf ppf ";";
+      print ppf t
+    | (Block block)::t ->
+      Frame.print ppf block;
+      Format.fprintf ppf ";";
+      print ppf t
+
+  let output chan t =
+    Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
+
+  let compare t1 t2 =
+    match t1, t2 with
+    | Empty, Empty -> 0
+    | Empty, Non_empty _ -> -1
+    | Non_empty _, Empty -> 1
+    | Non_empty { block = block1; position = position1; },
+      Non_empty { block = block2; position = position2; } ->
+      let c = Block.compare block1 block2 in
+      if c <> 0 then c
+      else Code_range.compare position1 position2
+
+  let hash t =
+    List.fold_left (fun hash item ->
+        let hash' =
+          match item with
+          | Frame frame -> Frame.hash frame
+          | Block block -> Block.hash block
+        in
+        Hashtbl.hash (hash, hash'))
+      0 t
+end)
+
+module Block_subst = struct
+  type t = Block.t Block.Map.t
+
+  let empty = Block.Map.empty
+
+  let rec find_or_add t old_block ~at_call_site =
+    match Block.Map.find old_block t with
+    | exception Not_found ->
+      let old_parent = Block.parent old_block in
+      let t, new_parent =
+        match old_parent with
+        | None -> t, at_call_site
+        | Some old_parent -> find_or_add t old_parent ~at_call_site
+      in
+      let new_block =
+        Block.create_and_reparent ~like:old_block ~new_parent
+      in
+      let t = Block.Map.add old_block new_block t in
+      t, new_block
+    | New_block -> t, new_block
+
+  let find_or_add t old_debuginfo ~at_call_site =
+    match old_debuginfo with
+    | Empty -> t, Empty
+    | Non_empty { block; position; } ->
+      let t, block = find_or_add_block t old_block ~at_call_site in
+      t, Non_empty { block; position; }
+end
