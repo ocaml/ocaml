@@ -16,71 +16,15 @@
 
 module L = Linearize
 
+let rewrite_label env label =
+  match Numbers.Int.Map.find label env with
+  | exception Not_found -> label
+  | label -> label
+
 (* CR-soon mshinwell: pull this type forward so other passes can use it *)
 type is_parameter =
   | Local
   | Parameter of { index : int; }
-
-module Scope = struct
-  type t = {
-    id : int;
-    start_pos : Linearize.label;
-    mutable end_pos : Linearize.label option;
-    mutable parent : t option;
-  }
-
-  include Identifiable.Make (struct
-    type nonrec t = t
-
-    let compare t1 t2 = Stdlib.compare t1.id t2.id
-    let equal t1 t2 = (t1.id = t2.id)
-    let hash t = Hashtbl.hash t
-
-    let print ppf { id; start_pos; end_pos; parent = _; } =
-      match end_pos with
-      | None ->
-        Format.fprintf ppf "(open (id %d) (start %d))"
-          id start_pos
-      | Some end_pos ->
-        Format.fprintf ppf "(open (id %d) (start %d) (end %d))"
-          id start_pos end_pos
-
-    let output chan t =
-      print (Format.formatter_of_out_channel chan) t
-  end)
-
-  let next_id = ref 0
-
-  let create ~start_pos ~parent =
-    let id = !next_id in
-    incr next_id;
-    { id;
-      start_pos;
-      end_pos = None;
-      parent;
-    }
-
-  let is_closed t =
-    match t.end_pos with
-    | None -> false
-    | Some _ -> true
-
-  let close t ~end_pos =
-    match t.end_pos with
-    | Some _ -> Misc.fatal_errorf "Scope is already closed: %a" print t
-    | None -> t.end_pos <- Some end_pos
-
-  let start_pos t = t.start_pos
-
-  let end_pos t =
-    match t.end_pos with
-    | None -> Misc.fatal_errorf "Scope is not closed: %a" print t
-    | Some end_pos -> end_pos
-
-  let parent t = t.parent
-
-  let reparent t ~new_parent = t.parent <- new_parent
-end
 
 module Available_subrange : sig
   type t
@@ -108,6 +52,8 @@ module Available_subrange : sig
   val end_pos_offset : t -> int option
   val location : t -> unit location
   val offset_from_stack_ptr_in_bytes : t -> int
+
+  val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t
 end = struct
   type 'a location =
     | Reg of Reg.t * 'a
@@ -176,6 +122,12 @@ end = struct
       Misc.fatal_error "No offset from stack pointer available (this is either \
         a phantom available subrange or one whose corresponding register is \
         not assigned to the stack)"
+
+  let rewrite_labels t ~env =
+    { t with
+      start_pos = rewrite_label env t.start_pos;
+      end_pos = rewrite_label env t.end_pos;
+    }
 end
 
 type type_info =
@@ -193,21 +145,15 @@ module Available_range : sig
   type t
 
   val create
-     : scope:Scope.t option
-    -> type_info:type_info
+     : type_info:type_info
     -> is_parameter:is_parameter
-    -> var:Backend_var.t
     -> t
 
-  val scope : t -> Scope.t option
   val type_info : t -> type_info
   val is_parameter : t -> is_parameter
-(*   val var : t -> Backend_var.t *)
   val var_location : t -> Debuginfo.t
   val add_subrange : t -> subrange:Available_subrange.t -> unit
   val extremities : t -> L.label * L.label
-
-  val set_scope : t -> Scope.t option -> unit
 
   val iter
      : t
@@ -219,37 +165,32 @@ module Available_range : sig
     -> init:'a
     -> f:('a -> available_subrange:Available_subrange.t -> 'a)
     -> 'a
+
+  val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t
 end = struct
   type t = {
-    mutable scope : Scope.t option;
     mutable subranges : Available_subrange.t list;
     mutable min_pos : L.label option;
     mutable max_pos : L.label option;
     type_info : type_info;
     is_parameter : is_parameter;
-    var : Backend_var.t;
     var_location : Debuginfo.t;
   }
 
-  let create ~scope ~type_info ~is_parameter ~var =
+  let create ~type_info ~is_parameter =
     let var_location =
       match type_info with
       | From_cmt_file None | Phantom (None, _) -> Debuginfo.none
       | From_cmt_file (Some provenance) | Phantom (Some provenance, _) ->
         Backend_var.Provenance.location provenance
     in
-    { scope; subranges = []; min_pos = None; max_pos = None;
-      type_info; is_parameter; var; var_location;
+    { subranges = []; min_pos = None; max_pos = None;
+      type_info; is_parameter; var_location;
     }
 
-  let scope t = t.scope
   let type_info t = t.type_info
   let is_parameter t = t.is_parameter
-(*  let var t = t.var *)
   let var_location t = t.var_location
-
-  let set_scope t scope =
-    t.scope <- scope
 
   let add_subrange t ~subrange =
     let start_pos = Available_subrange.start_pos subrange in
@@ -293,11 +234,24 @@ end = struct
     List.fold_left (fun acc available_subrange -> f acc ~available_subrange)
       init
       t.subranges
+
+  let rewrite_labels t ~env =
+    let subranges =
+      List.map (fun subrange ->
+          Available_subrange.rewrite_labels subrange ~env)
+        t.subranges
+    in
+    let min_pos = Misc.Stdlib.Option.map (rewrite_label env) t.min_pos in
+    let max_pos = Misc.Stdlib.Option.map (rewrite_label env) t.max_pos in
+    { subranges; min_pos; max_pos;
+      type_info = t.type_info;
+      is_parameter = t.is_parameter;
+      var_location = t.var_location;
+    }
 end
 
 type t = {
   ranges : Available_range.t Backend_var.Tbl.t;
-  mutable scopes : Scope.t list;
 }
 
 let find t ~var =
@@ -329,19 +283,16 @@ let fold t ~init ~f =
     t.ranges
     init
 
-let scopes t = List.rev t.scopes
-
 module Make (S : sig
   module Key : sig
     type t
 
-    val assert_valid : t -> unit
-
     module Map : Map.S with type key := t
     module Set : Set.S with type elt := t
+
+    val assert_valid : t -> unit
   end
 
-  val used : L.instruction -> Key.Set.t
   val available_before : L.instruction -> Key.Set.t
 
   val range_info
@@ -368,34 +319,17 @@ end) = struct
   module KM = S.Key.Map
   module KS = S.Key.Set
 
-  type scope_kind =
-    | From_let_or_otherwise
-    | From_linear_code
-    (* [From_linear_code] scopes must match up exactly with [Lstart_scope]
-       and [Lend_scope] pseudo-instructions in the linearised code.  All
-       other scopes (e.g. ones that kind of correspond to "let"s, deduced
-       from availability information) must be marked as
-       [From_let_or_otherwise]. *)
-
-  type new_scope =
-    | Start_new_scope of scope_kind
-    | Keep_existing_scope
-
   (* Imagine that the program counter is exactly at the start of [insn]; it has
      not yet been executed.  This function calculates which available subranges
      are to start at that point, and which are to stop.  [prev_insn] is the
-     instruction immediately prior to [insn], if such exists.
-
-     This function also calculates whether a new scope should be started based
-     on the availability information and which variables have previously been
-     assigned scopes.
-  *)
+     instruction immediately prior to [insn], if such exists. *)
   let births_and_deaths ~(insn : L.instruction)
-        ~(prev_insn : L.instruction option) ~already_have_scopes =
+        ~(prev_insn : L.instruction option) =
     (* Available subranges are allowed to cross points at which the stack
        pointer changes, since we reference the stack slots as an offset from
        the CFA, not from the stack pointer.
 
+       We avoid generating ranges that overlap, since this confuses lldb.
        This pass may generate ranges that are the same as other ranges,
        but those are deduped in [Dwarf].
     *)
@@ -404,14 +338,6 @@ end) = struct
       | None -> S.available_before insn
       | Some prev_insn ->
         KS.diff (S.available_before insn) (S.available_before prev_insn)
-    in
-    let new_scope =
-      let proto_births_without_scopes =
-        KS.diff proto_births (KS.of_list (
-          List.map (fun (key, _data) -> key) (KM.bindings already_have_scopes)))
-      in
-      if KS.is_empty proto_births_without_scopes then Keep_existing_scope
-      else Start_new_scope From_let_or_otherwise
     in
     let proto_deaths =
       match prev_insn with
@@ -446,98 +372,11 @@ end) = struct
         else
           S.available_before prev_insn
     in
-    new_scope, births, deaths
+    births, deaths
 
-  type scope_stack = (scope_kind * Scope.t) list
-
-  (* Given a distinguished [current_stack] and a list of other [stacks],
-     find the point---starting from the outermost scopes on the stacks---where
-     the stacks diverge.  The three values returned are:
-     1. the stack prefix (in the usual order, with the outermost scope at its
-        tail) that is common to all of the stacks;
-     2. the set of scopes (which may be empty) that occur immediately
-        inner to the point of divergence, but without including such a scope
-        from the [current_stack];
-     3. the remainder of the current stack, again in the usual order, from
-        immediately after the point of divergence up to and including the
-        current scope. *)
-  let closest_common_ancestor ~(current_stack : scope_stack)
-        (stacks : scope_stack list) =
-    let rec loop ~current_stack stacks ~stack_prefix =
-      let found_discrepancy ~all_subsequent_scopes =
-        stack_prefix, all_subsequent_scopes, List.rev current_stack
-      in
-      let all_stacks = current_stack :: stacks in
-      let heads_and_tails =
-        Misc.Stdlib.List.filter_map (fun stack ->
-            match stack with
-            | [] -> None
-            | head::tail -> Some (head, tail))
-          (current_stack :: stacks)
-      in
-      let heads, tails = List.split heads_and_tails in
-      let scopes_at_heads =
-        Scope.Set.of_list (List.map (fun (_kind, scope) -> scope) heads)
-      in
-      let all_subsequent_scopes =
-        match current_stack with
-        | [] -> scopes_at_heads
-        | (_kind, scope)::_ -> Scope.Set.remove scope scopes_at_heads
-      in
-      if List.compare_lengths heads all_stacks <> 0 then
-        found_discrepancy ~all_subsequent_scopes
-      else
-        if Scope.Set.cardinal scopes_at_heads <> 1 then
-          found_discrepancy ~all_subsequent_scopes
-        else
-          let kind_and_scope = List.hd heads in
-          let current_stack = List.hd tails in
-          let stacks = List.tl tails in
-          let stack_prefix = kind_and_scope :: stack_prefix in
-          loop ~current_stack stacks ~stack_prefix
-    in
-    let current_stack = List.rev current_stack in
-    let stacks = List.map (fun stack -> List.rev stack) stacks in
-    loop ~current_stack stacks ~stack_prefix:[]
-
-  (* This function scans the Linearize code and does two things: firstly,
-     creation of available ranges; secondly, inference of approximate
-     lexical scopes. *)
-  (* CR-someday mshinwell: The lexical scope inference should be altered to
-     use scope information propagated from the middle end. *)
   let rec process_instruction t ~fundecl ~first_insn ~(insn : L.instruction)
-        ~prev_insn ~open_subrange_start_insns ~stack_offset
-        ~(scope_stack : scope_stack)
-        ~(already_have_scopes : (Available_range.t * scope_stack) KM.t) =
-    let new_scope_from_lets, births, deaths =
-      births_and_deaths ~insn ~prev_insn ~already_have_scopes
-    in
-    let new_scope_from_blocks =
-      match insn.desc with
-      | Lstart_scope -> Start_new_scope From_linear_code
-      | _ -> Keep_existing_scope
-    in
-    let new_scope =
-      (* We must always favour [Start_new_scope] when it comes from the
-         Linearize code, since the start/end delimiters in that code are
-         checked against our scopes, to ensure valid scoping. *)
-      match scope_stack with
-      | [] ->
-        begin match insn.desc with
-        | Lstart_scope -> Start_new_scope From_linear_code
-        | _ -> Start_new_scope From_let_or_otherwise
-        end
-      | _::_ ->
-        match new_scope_from_lets, new_scope_from_blocks with
-        | Start_new_scope _, Start_new_scope _ ->
-          Start_new_scope From_linear_code
-        | Start_new_scope _, Keep_existing_scope ->
-          Start_new_scope From_let_or_otherwise
-        | Keep_existing_scope, Start_new_scope _ ->
-          Start_new_scope From_linear_code
-        | Keep_existing_scope, Keep_existing_scope ->
-          Keep_existing_scope
-    in
+        ~prev_insn ~open_subrange_start_insns ~stack_offset =
+    let births, deaths = births_and_deaths ~insn ~prev_insn in
     let first_insn = ref first_insn in
     let prev_insn = ref prev_insn in
     let insert_insn ~new_insn =
@@ -552,157 +391,6 @@ end) = struct
       end;
       prev_insn := Some new_insn
     in
-    let scope, scope_stack =
-      match new_scope with
-      | Start_new_scope scope_kind ->
-        (* The [start_pos] must always be a new label to ensure such labels
-           stay in order.  We rely on the order below when inserting new scopes
-           for keys which are still available but currently marked as out
-           of scope. *)
-        let start_pos = Cmm.new_label () in
-        let start_pos_insn =
-          { L.
-            desc = Llabel start_pos;
-            next = insn;
-            arg = [| |];
-            res = [| |];
-            dbg = insn.dbg;
-            live = insn.live;
-            available_before = insn.available_before;
-            phantom_available_before = insn.phantom_available_before;
-            available_across = None;
-          }
-        in
-        insert_insn ~new_insn:start_pos_insn;
-        let scope, scope_stack =
-          match scope_stack with
-          | [] ->
-            let scope = Scope.create ~start_pos ~parent:None in
-            let scope_stack = [scope_kind, scope] in
-            scope, scope_stack
-          | (_kind, scope)::_ ->
-            let scope = Scope.create ~start_pos ~parent:(Some scope) in
-            let scope_stack = (scope_kind, scope)::scope_stack in
-            scope, scope_stack
-        in
-        t.scopes <- scope::t.scopes;
-        scope, scope_stack
-      | Keep_existing_scope ->
-        let scope =
-          match scope_stack with
-          | [] -> Misc.fatal_error "Keep_existing_scope without current scope"
-          | (_kind, scope)::_ -> scope
-        in
-        scope, scope_stack
-    in
-    (* Variables which we see uses of, but which are now out of scope, have
-       their scopes corrected by inserting a new scope.  This helps to ensure
-       visibility in the debugger (for example where a register holding the
-       value of some variable is shared between the results of switch arms,
-       and as such is initially marked as going out of scope at the end of
-       such arms, even though the variable may be bound as an enclosing
-       "let" around the whole switch) and thus should be visible
-       subsequently. *)
-    let used_but_now_out_of_scope =
-      let used = S.used insn in
-      KS.filter (fun key ->
-          match KM.find key already_have_scopes with
-          | exception Not_found -> false
-          | (range, _scope_stack) ->
-            match Available_range.scope range with
-            | None -> false
-            | Some scope -> Scope.is_closed scope)
-        used
-    in
-    let scope, scope_stack =
-      if not (KS.is_empty used_but_now_out_of_scope) then begin
-        (* To make life easier, we only ever insert one new scope for keys that
-           are still available, but currently marked as out of scope.  (The
-           alternative would be one new scope for each distinct scope found
-           amongst such keys.) *)
-        let earliest_start_pos_for_used_but_now_out_of_scope,
-            all_stacks_for_used_but_now_out_of_scope =
-          KS.fold (fun key (earliest_start_pos, all_stacks) ->
-              match KM.find key already_have_scopes with
-              | exception Not_found -> assert false  (* see above *)
-              | (range, scope_stack) ->
-                let scope = Available_range.scope range in
-                match scope with
-                | None -> assert false  (* see above *)
-                | Some scope ->
-                  let earliest_start_pos =
-                    (* This relies on the ordering noted in the comment
-                       above. *)
-                    min (Scope.start_pos scope) earliest_start_pos
-                  in
-                  earliest_start_pos, scope_stack::all_stacks)
-            used_but_now_out_of_scope
-            (max_int, [])
-        in
-        assert (earliest_start_pos_for_used_but_now_out_of_scope
-          <> max_int);
-        let common_prefix, all_subsequent_scopes,
-            remainder_of_current_stack =
-          closest_common_ancestor ~current_stack:scope_stack
-            all_stacks_for_used_but_now_out_of_scope
-        in
-        let parent_scope_for_used_but_now_out_of_scope =
-          match common_prefix with
-          | [] -> None
-          | (_kind, innermost_scope)::_ -> Some innermost_scope
-        in
-        let new_scope_for_used_but_now_out_of_scope =
-          Scope.create
-            ~start_pos:earliest_start_pos_for_used_but_now_out_of_scope
-            ~parent:parent_scope_for_used_but_now_out_of_scope
-        in
-        begin match parent_scope_for_used_but_now_out_of_scope with
-        | None ->
-          t.scopes <- t.scopes @ [new_scope_for_used_but_now_out_of_scope]
-        | Some parent ->
-          let scopes =
-            List.fold_right (fun scope scopes ->
-                if not (Scope.equal scope parent) then
-                  scope :: scopes
-                else
-                  new_scope_for_used_but_now_out_of_scope :: scope :: scopes)
-              t.scopes
-              []
-          in
-          t.scopes <- scopes
-        end;
-        let scope_stack =
-          remainder_of_current_stack
-            @ (From_let_or_otherwise, new_scope_for_used_but_now_out_of_scope)
-            :: common_prefix
-        in
-        let _kind, scope = List.hd scope_stack in
-        Scope.Set.iter (fun subsequent_scope ->
-            assert (not (Scope.equal scope subsequent_scope));
-            Scope.reparent subsequent_scope ~new_parent:(
-              Some new_scope_for_used_but_now_out_of_scope))
-          all_subsequent_scopes;
-        KS.iter (fun key ->
-            match KM.find key already_have_scopes with
-            | exception Not_found -> assert false  (* see above *)
-            | (range, _scope_stack) ->
-(*
-              Format.eprintf "[%a] Scope for %a: %a --> %a\n%!"
-                Backend_sym.print fundecl.L.fun_name
-                Backend_var.print (Available_range.var range)
-                (Misc.Stdlib.Option.print Scope.print)
-                (Available_range.scope range)
-                Scope.print
-                new_scope_for_used_but_now_out_of_scope;
-*)
-              Available_range.set_scope range
-                (Some new_scope_for_used_but_now_out_of_scope))
-          used_but_now_out_of_scope;
-        scope, scope_stack
-      end else begin
-        scope, scope_stack
-      end
-    in
     (* Note that we can't reuse an existing label in the code since we rely
        on the ordering of range-related labels. *)
     let label = Cmm.new_label () in
@@ -711,50 +399,36 @@ end) = struct
        a register occurring in both [births] and [deaths]; and we would
        like the register to have an open subrange from this point.  It
        follows that we should process deaths before births. *)
-    let already_have_scopes =
-      KS.fold (fun (key : S.Key.t) already_have_scopes ->
-          S.Key.assert_valid key;
-          let start_pos, start_insn =
-            try KM.find key open_subrange_start_insns
-            with Not_found -> assert false
+    KS.fold (fun (key : S.Key.t) () ->
+        S.Key.assert_valid key;
+        let start_pos, start_insn =
+          try KM.find key open_subrange_start_insns
+          with Not_found -> assert false
+        in
+        let end_pos = label in
+        used_label := true;
+        let end_pos_offset = S.end_pos_offset ~prev_insn:!prev_insn ~key in
+        match S.range_info ~fundecl ~key ~start_insn with
+        | None -> ()
+        | Some (var, type_info, is_parameter) ->
+          let range =
+            match Backend_var.Tbl.find t.ranges var with
+            | range -> range
+            | exception Not_found ->
+              let range = Available_range.create ~type_info ~is_parameter in
+              Backend_var.Tbl.add t.ranges var range;
+              range
           in
-          let end_pos = label in
-          used_label := true;
-          let end_pos_offset = S.end_pos_offset ~prev_insn:!prev_insn ~key in
-          match S.range_info ~fundecl ~key ~start_insn with
-          | None -> already_have_scopes
-          | Some (var, type_info, is_parameter) ->
-            let range, already_have_scopes =
-              match Backend_var.Tbl.find t.ranges var with
-              | range ->
-                (* XXX [Scope.range] might not match [scope] here.  If it
-                   doesn't then we should do the closest-common-ancestor
-                   procedure, maybe? *)
-                range, already_have_scopes
-              | exception Not_found ->
-                let range =
-                  Available_range.create ~scope:(Some scope) ~type_info
-                    ~is_parameter ~var
-                in
-                Backend_var.Tbl.add t.ranges var range;
-                assert (not (KM.mem key already_have_scopes));
-                let already_have_scopes =
-                  KM.add key (range, scope_stack) already_have_scopes
-                in
-                range, already_have_scopes
-            in
-            let subrange =
-              S.create_subrange ~fundecl ~key ~start_pos ~start_insn ~end_pos
-                ~end_pos_offset ~stack_offset
-            in
-            Available_range.add_subrange range ~subrange;
-            already_have_scopes)
-        deaths
-        already_have_scopes
-    in
+          let subrange =
+            S.create_subrange ~fundecl ~key ~start_pos ~start_insn ~end_pos
+              ~end_pos_offset ~stack_offset
+          in
+          Available_range.add_subrange range ~subrange)
+      deaths
+      ();
     let label_insn =
       { L.
-        desc = Llabel label;
+        desc = L.Llabel label;
         next = insn;
         arg = [| |];
         res = [| |];
@@ -780,80 +454,27 @@ end) = struct
       insert_insn ~new_insn:label_insn
     end;
     let first_insn = !first_insn in
-    let insert_end_of_scope_label () =
-      let end_pos = Cmm.new_label () in
-      let end_pos_insn =
-        { L.
-          desc = Llabel end_pos;
-          next = insn;
-          arg = [| |];
-          res = [| |];
-          dbg = Debuginfo.none;
-          live = Reg.Set.empty;
-          available_before = insn.available_before;
-          phantom_available_before = insn.phantom_available_before;
-          available_across = None;
-        }
-      in
-      insert_insn ~new_insn:end_pos_insn;
-      end_pos
-    in
-    match insn.desc with
-    | Lend ->
-      let end_pos = insert_end_of_scope_label () in
-      List.iter (fun (kind, scope) ->
-          begin match kind with
-          | From_let_or_otherwise -> ()
-          | From_linear_code ->
-            Misc.fatal_error "Unmatched [Lstart_scope] / [Lend_scope] at Lend"
-          end;
-          Scope.close scope ~end_pos)
-        scope_stack;
-      first_insn
-    | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
-    | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
-    | Lsetuptrap _ | Lpushtrap | Lpoptrap | Lraise _
-    | Lstart_scope | Lend_scope ->
+    match insn.L.desc with
+    | L.Lend -> first_insn
+    | L.Lprologue | L.Lop _ | L.Lreloadretaddr | L.Lreturn | L.Llabel _
+    | L.Lbranch _ | L.Lcondbranch _ | L.Lcondbranch3 _ | L.Lswitch _
+    | L.Lsetuptrap _ | L.Lpushtrap | L.Lpoptrap | L.Lraise _ ->
       let stack_offset =
-        match insn.desc with
+        match insn.L.desc with
         | Lop (Istackoffset delta) -> stack_offset + delta
         | Lpushtrap -> stack_offset + Proc.trap_frame_size_in_bytes
         | Lpoptrap -> stack_offset - Proc.trap_frame_size_in_bytes
-        | Lend | Lprologue | Lop _ | Lreloadretaddr | Lreturn
-        | Llabel _ | Lbranch _ | Lcondbranch _ | Lcondbranch3 _
-        | Lswitch _ | Lsetuptrap _ | Lraise _
-        | Lstart_scope | Lend_scope -> stack_offset
-      in
-      let scope_stack =
-        match insn.desc with
-        | Lend_scope ->
-          let end_pos = insert_end_of_scope_label () in
-          let rec close scope_stack =
-            match scope_stack with
-            | [] -> [], false
-            | (From_let_or_otherwise, scope)::scope_stack ->
-              Scope.close scope ~end_pos;
-              close scope_stack
-            | (From_linear_code, scope)::scope_stack ->
-              Scope.close scope ~end_pos;
-              scope_stack, true
-          in
-          let scope_stack, found_block_scope = close scope_stack in
-          if not found_block_scope then begin
-            Misc.fatal_error "Unmatched [Lstart_scope] / [Lend_scope]"
-          end;
-          scope_stack
-        | _ -> scope_stack
+        | L.Lend | L.Lprologue | L.Lop _ | L.Lreloadretaddr | L.Lreturn
+        | L.Llabel _ | L.Lbranch _ | L.Lcondbranch _ | L.Lcondbranch3 _
+        | L.Lswitch _ | L.Lsetuptrap _ | L.Lraise _ -> stack_offset
       in
       process_instruction t ~fundecl ~first_insn ~insn:insn.L.next
         ~prev_insn:(Some insn) ~open_subrange_start_insns ~stack_offset
-        ~scope_stack ~already_have_scopes
 
   let process_instructions t ~fundecl ~first_insn =
     let stack_offset = Proc.initial_stack_offset in
     process_instruction t ~fundecl ~first_insn ~insn:first_insn
       ~prev_insn:None ~open_subrange_start_insns:KM.empty ~stack_offset
-      ~scope_stack:[] ~already_have_scopes:KM.empty
 end
 
 module Make_ranges = Make (struct
@@ -862,7 +483,7 @@ module Make_ranges = Make (struct
   (* By the time this pass has run, register stamps are irrelevant; indeed,
      there may be multiple registers with different stamps assigned to the
      same location.  As such, we quotient register sets by the equivalence
-     relation that identifies two registers iff they have the same name and
+     relation that varifies two registers iff they have the same name and
      location. *)
   module Key = struct
     type t = RD.t
@@ -880,16 +501,6 @@ module Make_ranges = Make (struct
     match insn.available_before with
     | Unreachable -> Key.Set.empty
     | Ok available_before -> Key.Set.of_list (RD.Set.elements available_before)
-
-  let used (insn : L.instruction) =
-    let stamps_of_used_regs =
-      Numbers.Int.Set.of_list (
-        List.map (fun (reg : Reg.t) -> reg.stamp)
-          (Array.to_list insn.arg))
-    in
-    Key.Set.filter (fun rd ->
-        Numbers.Int.Set.mem (RD.reg rd).stamp stamps_of_used_regs)
-      (available_before insn)
 
   let end_pos_offset ~prev_insn ~key:reg =
     (* If the range is for a register destroyed by a call and which
@@ -961,8 +572,6 @@ module Make_phantom_ranges = Make (struct
     let assert_valid _t = ()
   end
 
-  let used (_insn : L.instruction) = Key.Set.empty
-
   let available_before (insn : L.instruction) = insn.phantom_available_before
 
   let end_pos_offset ~prev_insn:_ ~key:_ = None
@@ -997,11 +606,7 @@ module Make_phantom_ranges = Make (struct
 end)
 
 let create ~fundecl =
-  let t = {
-    ranges = Backend_var.Tbl.create 42;
-    scopes = [];
-  }
-  in
+  let t = { ranges = Backend_var.Tbl.create 42; } in
   let first_insn =
     let first_insn = fundecl.L.fun_body in
     Make_ranges.process_instructions t ~fundecl ~first_insn
@@ -1046,8 +651,8 @@ let create ~fundecl =
   in
   List.iter (fun var ->
       let range =
-        Available_range.create ~scope:None ~type_info:(Phantom (None, None))
-          ~is_parameter:Local ~var
+        Available_range.create ~type_info:(Phantom (None, None))
+          ~is_parameter:Local
       in
       Backend_var.Tbl.add t.ranges var range)
     variables_without_ranges;
@@ -1057,7 +662,6 @@ let create ~fundecl =
   if not !Clflags.debug then
     let t =
       { ranges = Backend_var.Tbl.create 1;
-        scopes = [];
       }
     in
     t, fundecl
@@ -1085,3 +689,10 @@ let classify_label t label =
             result))
     t.ranges
     []
+
+let rewrite_labels t ~env =
+  let ranges =
+    Backend_var.Tbl.map t.ranges (fun range ->
+      Available_range.rewrite_labels range ~env)
+  in
+  { ranges; }
