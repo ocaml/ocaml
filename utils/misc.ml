@@ -546,6 +546,7 @@ let spellcheck env name =
          else if dist = best_dist then (head :: best_choice, dist)
          else acc
   in
+  let env = List.sort_uniq (fun s1 s2 -> String.compare s2 s1) env in
   fst (List.fold_left (compare name) ([], max_int) env)
 
 let did_you_mean ppf get_choices =
