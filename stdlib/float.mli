@@ -330,17 +330,17 @@ val min_max : float -> float -> float * float
 
    @since 4.08.0 *)
 
-val nanmin : t -> t -> t
-(** [nanmin x y] returns the minimum of [x] and [y] ignoring [nan] except
+val min_num : t -> t -> t
+(** [min_num x y] returns the minimum of [x] and [y] ignoring [nan] except
    if both [x] and [y] are [nan], in which case [nan] is returned.
-   Moreover [nanmin (-0.) (+0.) = -0.]
+   Moreover [min_num (-0.) (+0.) = -0.]
 
    @since 4.08.0  *)
 
-val nanmax : t -> t -> t
-(** [nanmax x y] returns the maximum of [x] and [y] ignoring [nan] except
+val max_num : t -> t -> t
+(** [max_num x y] returns the maximum of [x] and [y] ignoring [nan] except
    if both [x] and [y] are [nan], in which case [nan] is returned.
-   Moreover [nanmax (-0.) (+0.) = +0.]
+   Moreover [max_num (-0.) (+0.) = +0.]
 
    @since 4.08.0 *)
 

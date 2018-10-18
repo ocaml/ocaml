@@ -120,12 +120,12 @@ let[@inline] min_max (x: float) (y: float) =
   if is_nan x || is_nan y then (nan, nan)
   else if y > x || (not(sign_bit y) && sign_bit x) then (x, y) else (y, x)
 
-let[@inline] nanmin (x: float) (y: float) =
+let[@inline] min_num (x: float) (y: float) =
   if y > x || (not(sign_bit y) && sign_bit x) then
     if is_nan x then y else x
   else if is_nan y then x else y
 
-let[@inline] nanmax (x: float) (y: float) =
+let[@inline] max_num (x: float) (y: float) =
   if y > x || (not(sign_bit y) && sign_bit x) then
     if is_nan y then x else y
   else if is_nan x then y else x
