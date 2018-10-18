@@ -254,33 +254,33 @@ external floor : float -> float = "caml_floor_float" "floor"
     equal to [f].
     The result is returned as a float. *)
 
-external nextafter : float -> float -> float
+external next_after : float -> float -> float
   = "caml_nextafter_float" "caml_nextafter" [@@unboxed] [@@noalloc]
-(** [nextafter x y] returns the next representable floating-point
+(** [next_after x y] returns the next representable floating-point
    value following [x] in the direction of [y].  If [y] is less than
    [x], it returns the largest representable number less than [x].  If
    [x] equals [y], the function returns [y].  If [x] or [y] is
    [nan], a [nan] is returned.
-   Note that [nextafter max_float infinity = infinity] and that
-   [nextafter 0. infinity] is the smallest denormalized positive number.
+   Note that [next_after max_float infinity = infinity] and that
+   [next_after 0. infinity] is the smallest denormalized positive number.
    If [x] is the smallest denormalized positive number,
-   [nextafter x 0. = 0.]
+   [next_after x 0. = 0.]
 
    @since 4.08.0 *)
 
-external copysign : float -> float -> float
+external copy_sign : float -> float -> float
   = "caml_copysign_float" "caml_copysign"
 [@@unboxed] [@@noalloc]
-(** [copysign x y] returns a float whose absolute value is that of [x]
+(** [copy_sign x y] returns a float whose absolute value is that of [x]
     and whose sign is that of [y].  If [x] is [nan], returns [nan].
     If [y] is [nan], returns either [x] or [-. x], but it is not
     specified which. *)
 
-external signbit : (float [@unboxed]) -> bool
+external sign_bit : (float [@unboxed]) -> bool
   = "caml_signbit_float" "caml_signbit" [@@noalloc]
-(** [signbit x] returns [true] iff the sign bit of [x] is set.
-    For example [signbit 1.] and [signbit 0.] are [false] while
-    [signbit (-1.)] and [signbit (-0.)] are [true].
+(** [sign_bit x] returns [true] iff the sign bit of [x] is set.
+    For example [sign_bit 1.] and [signbit 0.] are [false] while
+    [sign_bit (-1.)] and [sign_bit (-0.)] are [true].
 
     @since 4.08.0 *)
 
@@ -324,8 +324,8 @@ val max : float -> float -> float
 
    @since 4.08.0 *)
 
-val minmax : float -> float -> float * float
-(** [minmax x y] returns [(x, y)] if [x <= y] and [(y, x)] otherwise.
+val min_max : float -> float -> float * float
+(** [min_max x y] returns [(x, y)] if [x <= y] and [(y, x)] otherwise.
    It returns [(nan, nan)] when [x] or [y] is [nan].
 
    @since 4.08.0 *)

@@ -35,21 +35,21 @@ let () =
   assert(Float.(round neg_infinity = neg_infinity));
   assert(Float.(is_nan(round nan)));
 
-  assert(Float.nextafter 0x1.FFFFFFFFFFFFFp-2 1. = 0.5);
-  assert(Float.nextafter 0x1.FFFFFFFFFFFFFp-2 0. = 0x1.FFFFFFFFFFFFEp-2);
-  assert(Float.(nextafter 0x1.FFFFFFFFFFFFFp-2 infinity = 0.5));
-  assert(Float.(nextafter 0x1.FFFFFFFFFFFFFp-2 neg_infinity
+  assert(Float.next_after 0x1.FFFFFFFFFFFFFp-2 1. = 0.5);
+  assert(Float.next_after 0x1.FFFFFFFFFFFFFp-2 0. = 0x1.FFFFFFFFFFFFEp-2);
+  assert(Float.(next_after 0x1.FFFFFFFFFFFFFp-2 infinity = 0.5));
+  assert(Float.(next_after 0x1.FFFFFFFFFFFFFp-2 neg_infinity
                 = 0x1.FFFFFFFFFFFFEp-2));
-  assert(Float.nextafter 1. 1. = 1.);
-  assert(Float.(is_nan(nextafter nan 1.)));
-  assert(Float.(is_nan(nextafter 3. nan)));
+  assert(Float.next_after 1. 1. = 1.);
+  assert(Float.(is_nan(next_after nan 1.)));
+  assert(Float.(is_nan(next_after 3. nan)));
 
-  assert(not(Float.signbit 1.));
-  assert(Float.signbit (-1.));
-  assert(not(Float.signbit 0.));
-  assert(Float.signbit (-0.));
-  assert(not(Float.signbit infinity));
-  assert(Float.signbit neg_infinity);
+  assert(not(Float.sign_bit 1.));
+  assert(Float.sign_bit (-1.));
+  assert(not(Float.sign_bit 0.));
+  assert(Float.sign_bit (-0.));
+  assert(not(Float.sign_bit infinity));
+  assert(Float.sign_bit neg_infinity);
 
   assert(Float.min 1. 2. = 1.);
   assert(Float.min 2. 1. = 1.);
@@ -67,15 +67,15 @@ let () =
   assert(1. /. Float.max (-0.) (+0.) = infinity);
   assert(1. /. Float.max (+0.) (-0.) = infinity);
 
-  assert(Float.minmax 1. 2. = (1., 2.));
-  assert(Float.minmax 2. 1. = (1., 2.));
+  assert(Float.min_max 1. 2. = (1., 2.));
+  assert(Float.min_max 2. 1. = (1., 2.));
   let is_nan2 (x, y) = Float.is_nan x && Float.is_nan y in
-  assert(Float.(is_nan2(minmax 1. nan)));
-  assert(Float.(is_nan2(minmax nan 2.)));
-  assert(Float.(is_nan2(minmax nan nan)));
-  assert(let x, y = Float.minmax (-0.) (+0.) in
+  assert(Float.(is_nan2(min_max 1. nan)));
+  assert(Float.(is_nan2(min_max nan 2.)));
+  assert(Float.(is_nan2(min_max nan nan)));
+  assert(let x, y = Float.min_max (-0.) (+0.) in
          1. /. x = neg_infinity && 1. /. y = infinity);
-  assert(let x, y = Float.minmax (+0.) (-0.) in
+  assert(let x, y = Float.min_max (+0.) (-0.) in
          1. /. x = neg_infinity && 1. /. y = infinity);
 
   assert(Float.nanmin 1. 2. = 1.);

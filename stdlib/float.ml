@@ -89,13 +89,13 @@ external floor : float -> float = "caml_floor_float" "floor"
 
 let is_integer x = x = trunc x && is_finite x
 
-external nextafter : float -> float -> float
+external next_after : float -> float -> float
   = "caml_nextafter_float" "caml_nextafter" [@@unboxed] [@@noalloc]
 
-external copysign : float -> float -> float
+external copy_sign : float -> float -> float
                   = "caml_copysign_float" "caml_copysign"
                   [@@unboxed] [@@noalloc]
-external signbit : (float [@unboxed]) -> bool
+external sign_bit : (float [@unboxed]) -> bool
   = "caml_signbit_float" "caml_signbit" [@@noalloc]
 
 external frexp : float -> float * int = "caml_frexp_float"
@@ -107,26 +107,26 @@ external compare : float -> float -> int = "%compare"
 let equal x y = compare x y = 0
 
 let[@inline] min (x: float) (y: float) =
-  if y > x || (not(signbit y) && signbit x) then
+  if y > x || (not(sign_bit y) && sign_bit x) then
     if is_nan y then y else x
   else if is_nan x then x else y
 
 let[@inline] max (x: float) (y: float) =
-  if y > x || (not(signbit y) && signbit x) then
+  if y > x || (not(sign_bit y) && sign_bit x) then
     if is_nan x then x else y
   else if is_nan y then y else x
 
-let[@inline] minmax (x: float) (y: float) =
+let[@inline] min_max (x: float) (y: float) =
   if is_nan x || is_nan y then (nan, nan)
-  else if y > x || (not(signbit y) && signbit x) then (x, y) else (y, x)
+  else if y > x || (not(sign_bit y) && sign_bit x) then (x, y) else (y, x)
 
 let[@inline] nanmin (x: float) (y: float) =
-  if y > x || (not(signbit y) && signbit x) then
+  if y > x || (not(sign_bit y) && sign_bit x) then
     if is_nan x then y else x
   else if is_nan y then x else y
 
 let[@inline] nanmax (x: float) (y: float) =
-  if y > x || (not(signbit y) && signbit x) then
+  if y > x || (not(sign_bit y) && sign_bit x) then
     if is_nan y then x else y
   else if is_nan x then y else x
 
