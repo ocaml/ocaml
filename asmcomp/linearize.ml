@@ -47,8 +47,6 @@ and instruction_desc =
   | Lpushtrap
   | Lpoptrap
   | Lraise of Cmm.raise_kind
-  | Lstart_scope
-  | Lend_scope
 
 let has_fallthrough = function
   | Lreturn | Lbranch _ | Lswitch _ | Lraise _
@@ -148,26 +146,15 @@ let copy_instr d i n =
     available_across = i.Mach.available_across;
   }
 
-(* Scope delimiters for emitting debugging information *)
-
-let add_start_scope cont =
-  cons_instr_same_avail Lstart_scope cont
-
-let add_end_scope cont =
-  cons_instr_same_avail Lend_scope cont
-
 (*
    Label the beginning of the given instruction sequence.
    - If the sequence starts with a branch, jump over it.
    - If the sequence is the end, (tail call position), just do nothing
 *)
 
-let rec get_label n = match n.desc with
+let get_label n = match n.desc with
     Lbranch lbl -> (lbl, n)
   | Llabel lbl -> (lbl, n)
-  | Lstart_scope ->
-    let lbl, n = get_label n.next in
-    lbl, add_start_scope n
   | Lend -> (-1, n)
   | _ ->
     let lbl = Cmm.new_label () in
@@ -191,10 +178,6 @@ let rec discard_dead_code n =
    as this may cause a stack imbalance later during assembler generation. *)
   | Lpoptrap | Lpushtrap -> n
   | Lop(Istackoffset _) -> n
-  | Lstart_scope | Lend_scope ->
-    { n with
-      next = discard_dead_code n.next;
-    }
   | _ -> discard_dead_code n.next
 
 (*
@@ -285,37 +268,35 @@ let rec linear i n =
          any sub-part of the linearised form of [i]. *)
       begin match (ifso.Mach.desc, ifnot.Mach.desc, n1.desc) with
         Iend, _, Lbranch lbl ->
-          copy_instr (Lcondbranch(test, lbl)) i (linear_in_scope ifnot n1)
+          copy_instr (Lcondbranch(test, lbl)) i (linear ifnot n1)
       | _, Iend, Lbranch lbl ->
-          copy_instr (Lcondbranch(invert_test test, lbl)) i
-            (linear_in_scope ifso n1)
+          copy_instr (Lcondbranch(invert_test test, lbl)) i (linear ifso n1)
       | Iexit nfail1, Iexit nfail2, _
             when is_next_catch nfail1 && local_exit nfail2 ->
           let lbl2 = find_exit_label nfail2 in
           copy_instr
-            (Lcondbranch (invert_test test, lbl2)) i (linear_in_scope ifso n1)
+            (Lcondbranch (invert_test test, lbl2)) i (linear ifso n1)
       | Iexit nfail, _, _ when local_exit nfail ->
-          let n2 = linear_in_scope ifnot n1
+          let n2 = linear ifnot n1
           and lbl = find_exit_label nfail in
           copy_instr (Lcondbranch(test, lbl)) i n2
       | _,  Iexit nfail, _ when local_exit nfail ->
-          let n2 = linear_in_scope ifso n1 in
+          let n2 = linear ifso n1 in
           let lbl = find_exit_label nfail in
           copy_instr (Lcondbranch(invert_test test, lbl)) i n2
       | Iend, _, _ ->
           let (lbl_end, n2) = get_label n1 in
-          copy_instr (Lcondbranch(test, lbl_end)) i (linear_in_scope ifnot n2)
+          copy_instr (Lcondbranch(test, lbl_end)) i (linear ifnot n2)
       | _,  Iend, _ ->
           let (lbl_end, n2) = get_label n1 in
           copy_instr (Lcondbranch(invert_test test, lbl_end)) i
-                     (linear_in_scope ifso n2)
+                     (linear ifso n2)
       | _, _, _ ->
         (* Should attempt branch prediction here *)
           let (lbl_end, n2) = get_label n1 in
-          let (lbl_else, nelse) = get_label (linear_in_scope ifnot n2) in
+          let (lbl_else, nelse) = get_label (linear ifnot n2) in
           copy_instr (Lcondbranch(invert_test test, lbl_else)) i
-            (add_start_scope (
-              linear ifso (add_branch lbl_end (add_end_scope nelse))))
+            (linear ifso (add_branch lbl_end nelse))
       end
   | Iswitch(index, cases) ->
       let lbl_cases = Array.make (Array.length cases) 0 in
@@ -323,9 +304,7 @@ let rec linear i n =
       let n2 = ref (discard_dead_code n1) in
       for i = Array.length cases - 1 downto 0 do
         let (lbl_case, ncase) =
-          get_label (add_start_scope (
-            linear cases.(i) (add_branch lbl_end (add_end_scope !n2))))
-        in
+                get_label(linear cases.(i) (add_branch lbl_end !n2)) in
         lbl_cases.(i) <- lbl_case;
         n2 := discard_dead_code ncase
       done;
@@ -352,12 +331,12 @@ let rec linear i n =
            of the loop, which branches to the top of the loop, must be the
            same as that of the first instruction of the loop (except for
            "available across" which is always empty). *)
-        cons_instr (Lbranch lbl_head) (add_end_scope n1)
+        cons_instr (Lbranch lbl_head) n1
           ~available_before:available_before_at_top
           ~phantom_available_before:phantom_available_before_at_top
           ~available_across:None
       in
-      let n2 = add_start_scope (linear body n1) in
+      let n2 = linear body n1 in
       cons_instr_same_avail (Llabel lbl_head) n2
   | Icatch(_rec_flag, handlers, body) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
@@ -377,9 +356,7 @@ let rec linear i n =
       let n2 = List.fold_left2 (fun n (_nfail, handler) lbl_handler ->
           match handler.Mach.desc with
           | Iend -> n
-          | _ ->
-            cons_instr_same_avail (Llabel lbl_handler)
-              (linear_in_scope handler n))
+          | _ -> cons_instr_same_avail (Llabel lbl_handler) (linear handler n))
           n1 handlers labels_at_entry_to_handlers
       in
       let n3 = linear body (add_branch lbl_end n2) in
@@ -412,13 +389,9 @@ let rec linear i n =
                     (linear body (cons_instr_same_avail Lpoptrap n1))) in
       decr try_depth;
       instr_cons_same_avail (Lsetuptrap lbl_body) i.Mach.arg [| |]
-        (add_start_scope (
-          linear handler (add_branch lbl_join (add_end_scope n2))))
+        (linear handler (add_branch lbl_join n2))
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
-
-and linear_in_scope insn cont =
-  add_start_scope (linear insn (add_end_scope cont))
 
 let add_prologue first_insn =
   (* The prologue needs to come after any [Iname_for_debugger] operations that
