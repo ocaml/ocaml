@@ -202,7 +202,7 @@ module Available_range : sig
   val scope : t -> Scope.t option
   val type_info : t -> type_info
   val is_parameter : t -> is_parameter
-  val var : t -> Backend_var.t
+(*   val var : t -> Backend_var.t *)
   val var_location : t -> Debuginfo.t
   val add_subrange : t -> subrange:Available_subrange.t -> unit
   val extremities : t -> L.label * L.label
@@ -245,7 +245,7 @@ end = struct
   let scope t = t.scope
   let type_info t = t.type_info
   let is_parameter t = t.is_parameter
-  let var t = t.var
+(*  let var t = t.var *)
   let var_location t = t.var_location
 
   let set_scope t scope =
@@ -726,7 +726,11 @@ end) = struct
           | Some (var, type_info, is_parameter) ->
             let range, already_have_scopes =
               match Backend_var.Tbl.find t.ranges var with
-              | range -> range, already_have_scopes
+              | range ->
+                (* XXX [Scope.range] might not match [scope] here.  If it
+                   doesn't then we should do the closest-common-ancestor
+                   procedure, maybe? *)
+                range, already_have_scopes
               | exception Not_found ->
                 let range =
                   Available_range.create ~scope:(Some scope) ~type_info
