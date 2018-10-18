@@ -20,6 +20,10 @@ Working version
   (Jeremy Yallop, review by Gabriel Scherer, Florian Angeletti, and
    Damien Doligez)
 
+- GPR#2110: Allow GADT constructors to introduce equations and existential types
+  under or-patterns.
+  (Thomas Refis and Leo White, review by Jacques Garrigue)
+
 ### Type system:
 
 - GPR#1826: allow expanding a type to a private abbreviation instead of
