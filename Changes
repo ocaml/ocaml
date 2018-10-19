@@ -15,6 +15,11 @@ Working version
 - GPR#1892: Allow shadowing of items coming from an include
   (Thomas Refis, review by Gabriel Radanne)
 
+* GPR#2106: .~ is now a reserved keyword, and is no longer available
+  for use in extended indexing operators
+  (Jeremy Yallop, review by Gabriel Scherer, Florian Angeletti, and
+   Damien Doligez)
+
 ### Type system:
 
 - GPR#1826: allow expanding a type to a private abbreviation instead of
