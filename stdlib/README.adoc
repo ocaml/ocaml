@@ -1,6 +1,112 @@
-= OCaml Stdlib
+= OCaml Stdlib design principles
 
-== Design principles
+== High-level goals
+
+The goal of the stdlib is to provide:
+
+* a reasonably small set of widely useful and general purpose features
+   which programmers can consider as being part of the language,
+   always available, with good properties such as stability,
+   portability;
+* simple definitions and abstractions that help third-party libraries
+  interact with each other.
+
+== Design requirement: backward compatibility
+
+Users obviously expect a high-degree of backward compatibility for the
+stdlib. Any breakage can impact (transitively) a large part of the
+ecosystem and complicate adoption of a new version of OCaml.
+
+Breaking changes should thus be accompanied by a reasonable migration
+story, probably multiple releases. Tools available here: deprecation
+attributes (to inform about pending breakages), OPAM to assess the
+consequences. Further rewriting tools should be consider to alleviate
+the constraint of backward compatibility while allowing smooth
+transition to a better design.
+
+== Design requirement: portability
+
+The stdlib should compile on all supported platforms. Some features
+could occasionally be stubbed out (if this is properly documented),
+but this should remain the exception and be properly justified.
+
+== Design goal: coherence of interfaces
+
+It's certainly a desirable property to have coherent designs in
+various parts of the library. This reduces efforts when designing an
+addition (less questions to ask ourselves) and of course, this helps
+users.
+
+When extending the stdlib, there is a tension between maintaining
+coherence with the existing style, even if it known to be imperfect,
+or aiming at a better, different style. The recommended way to address
+this tension is to move the entire stdlib towards the new style,
+accompanied, of course, with a nice migration story. This might imply
+to temporarily introduce solutions which are known to be imperfect or
+to add functions known to become deprecated in the medium term.
+
+== Code quality and documentation
+
+An indirect use of the stdlib (and also of the compiler code base, to
+some extent) is to serve as a model for OCaml programmers (and other
+library designers). So we should be especially careful with code
+quality and precise documentation (including deprecated/since tags and
+attributes); coherent coding style, also in the implementation (not
+just the interface).
+
+== General purpose
+
+There seems to be a consensus that the standard library should remain
+general purpose enough. Nobody suggest to include for instance support
+for various network protocols, mathematical libraries, etc.
+
+Perhaps a good step would be to recognize which part of the standard
+library is there for historical reasons only, but would not be
+accepted if they were proposed today. This is controversial, but
+making this explicit might be a good way to communicate our intents
+about the evolution of the stdlib. Here is my list: Complex, Stream,
+Genlex, Format, Scanf, Lexing, Parsing, and graph/num/regexp
+otherlibs. (Yes, I'd keep Printf. Undecided for Arg and Digest.) I
+believe all of these are either too domain specific or better managed
+as / already superseded by external projects.
+
+On the other hand, various features would be considered by many as
+being of general interest in 2018, at different degrees, and might
+thus deserve some lightweight support in the stdlib: some (limited)
+support for Unicode (e.g. Uchar, perhaps utf8<->latin1 conversion),
+simple encoding/escaping stuff (e.g. Base64), a few more
+datastructures (e.g. bitsets), perhaps even a definition of a JSON
+datatype/parser/printer. Opinions will necessarily vary here. Who will
+decide, and based on which criteria?
+
+== Criteria for extending stdlib
+
+The size in itself should not really be a direct criterion for
+accepting or rejecting a proposed addition to the stdlib, I'd say. We
+should rather focus on other criteria (which are affected by the size,
+but not only):
+
+- The efforts required to maintain it (taking backward compatibility
+  into account).
+- The code and API quality (including the documentation).
+- How general purpose the addition is.
+- The usefulness of extending the stdlib vs maintaining the addition
+  as an external project.
+- In particular, the risk than an external project can do something
+  clearly better (which would leave us in the uncomfortable situation
+  where we need to keep something in the stdlib for backward
+  compatibility while knowing it isn't a good solution to recommend).
+
+For instance, adding a small function to an existing opaque
+datastructure (Set, Map, Stack, Buffer) would generally induce a very
+small maintenance cost and it's not really possible to do that outside
+the stdlib (short of completely reimplementing the datastructure
+altogether). The argument is weaker for extending e.g. List or Array,
+since this can more easily be done outside stdlib. That said, if the
+addition is useful enough, there is no strong reason not to accept it.
+
+
+== More to discuss
 
 * When a module `M` has a main type it must be named `M.t`.
 * Functions should take the main type `t` as first argument (unless
