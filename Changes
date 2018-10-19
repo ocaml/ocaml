@@ -584,6 +584,11 @@ Working version
 
 ### Bug fixes:
 
+- GPR#2112: Fix Thread.yield unfairness with busy threads yielding to each
+  other.
+  (Andrew Hunter, review by Jacques-Henri Jourdan, Spiros Eliopoulos, Stephen
+  Weeks, & Mark Shinwell)
+
 - MPR#7867: Fix #mod_use raising an exception for filenames with no
   extension.
   (Geoff Gole)
