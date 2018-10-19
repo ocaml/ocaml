@@ -136,6 +136,11 @@ let[@inline] max_num (x: float) (y: float) =
     if is_nan y then x else y
   else if is_nan x then y else x
 
+let[@inline] min_max_num (x: float) (y: float) =
+  if is_nan x then (y,y)
+  else if is_nan y then (x,x)
+  else if y > x || (not(sign_bit y) && sign_bit x) then (x,y) else (y,x)
+
 external seeded_hash_param : int -> int -> int -> float -> int
                            = "caml_hash" [@@noalloc]
 let hash x = seeded_hash_param 10 100 0 x

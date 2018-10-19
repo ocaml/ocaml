@@ -92,6 +92,16 @@ let () =
   assert(Float.(is_nan(max_num nan nan)));
   assert(1. /. Float.max_num (-0.) (+0.) = infinity);
   assert(1. /. Float.max_num (+0.) (-0.) = infinity);
+
+  assert(Float.min_max_num 1. 2. = (1., 2.));
+  assert(Float.min_max_num 2. 1. = (1., 2.));
+  assert(Float.min_max_num 1. nan = (1., 1.));
+  assert(Float.min_max_num nan 1. = (1., 1.));
+  assert(Float.(is_nan2(min_max_num nan nan)));
+  assert(let x, y = Float.min_max_num (-0.) (+0.) in
+         1. /. x = neg_infinity && 1. /. y = infinity);
+  assert(let x, y = Float.min_max_num (+0.) (-0.) in
+         1. /. x = neg_infinity && 1. /. y = infinity);
 ;;
 
 let () = print_endline "OK"

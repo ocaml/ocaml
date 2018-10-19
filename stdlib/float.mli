@@ -355,16 +355,23 @@ val min_max : float -> float -> float * float
    @since 4.08.0 *)
 
 val min_num : t -> t -> t
-(** [min_num x y] returns the minimum of [x] and [y] ignoring [nan] except
-   if both [x] and [y] are [nan], in which case [nan] is returned.
+(** [min_num x y] returns the minimum of [x] and [y] treating [nan] as
+   missing values.  If both [x] and [y] are [nan], [nan] is returned.
    Moreover [min_num (-0.) (+0.) = -0.]
 
-   @since 4.08.0  *)
+   @since 4.08.0 *)
 
 val max_num : t -> t -> t
-(** [max_num x y] returns the maximum of [x] and [y] ignoring [nan] except
-   if both [x] and [y] are [nan], in which case [nan] is returned.
+(** [max_num x y] returns the maximum of [x] and [y] treating [nan] as
+   missing values.  If both [x] and [y] are [nan] [nan] is returned.
    Moreover [max_num (-0.) (+0.) = +0.]
+
+   @since 4.08.0 *)
+
+val min_max_num : float -> float -> float * float
+(** [min_max_num x y] is [(min_num x y, max_num x y)], just more
+   efficient.  Note that in particular [min_max_num x nan = (x, x)]
+   and [min_max_num nan y = (y, y)].
 
    @since 4.08.0 *)
 
