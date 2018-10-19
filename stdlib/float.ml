@@ -23,6 +23,9 @@ external rem : float -> float -> float = "caml_fmod_float" "fmod"
   [@@unboxed] [@@noalloc]
 external abs : float -> float = "%absfloat"
 
+let zero = 0.
+let one = 1.
+let minus_one = -1.
 let infinity = Stdlib.infinity
 let neg_infinity = Stdlib.neg_infinity
 let nan = Stdlib.nan

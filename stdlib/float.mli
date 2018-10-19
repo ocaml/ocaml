@@ -30,6 +30,18 @@
     @since 4.07.0
 *)
 
+val zero : float
+(** The floating point 0.
+   @since 4.08.0 *)
+
+val one : float
+(** The floating-point 1.
+   @since 4.08.0 *)
+
+val minus_one : float
+(** The floating-point -1.
+   @since 4.08.0 *)
+
 external neg : float -> float = "%negfloat"
 (** Unary negation. *)
 
