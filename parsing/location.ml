@@ -388,6 +388,31 @@ type input_line = {
   start_pos : int;
 }
 
+(* Takes a list of lines with possibly missing line numbers.
+
+   If the line numbers that are present are consistent with the number of lines
+   between them, then infer the intermediate line numbers.
+
+   This is not always the case, typically if lexer line directives are
+   involved... *)
+let infer_line_numbers
+    (lines: (int option * input_line) list):
+  (int option * input_line) list
+  =
+  let (_, offset, consistent) =
+    List.fold_left (fun (i, offset, consistent) (lnum, _) ->
+      match lnum, offset with
+      | None, _ -> (i+1, offset, consistent)
+      | Some n, None -> (i+1, Some (n - i), consistent)
+      | Some n, Some m -> (i+1, offset, consistent && n = m + i)
+    ) (0, None, true) lines
+  in
+  match offset, consistent with
+  | Some m, true ->
+      List.mapi (fun i (_, line) -> (Some (m + i), line)) lines
+  | _, _ ->
+      lines
+
 (* [get_lines] must return the lines to highlight, given starting and ending
    positions.
 
@@ -410,16 +435,20 @@ let highlight_quote ppf
   | Some ((leftmost, _), (rightmost, _)) ->
       let lines =
         get_lines ~start_pos:leftmost ~end_pos:rightmost
-        |> List.map (fun { text; start_pos } ->
+        |> List.map (fun ({ text; start_pos } as line) ->
           let end_pos = start_pos + String.length text - 1 in
           let line_nb =
             match ISet.find_bound_in iset ~range:(start_pos, end_pos) with
-            | None -> ""
-            | Some (p, _) -> string_of_int p.pos_lnum
+            | None -> None
+            | Some (p, _) -> Some p.pos_lnum
           in
-          (text, line_nb, start_pos)
-        )
-    in
+          (line_nb, line))
+        |> infer_line_numbers
+        |> List.map (fun (lnum, { text; start_pos }) ->
+          (text,
+           Misc.Stdlib.Option.value_default string_of_int ~default:"" lnum,
+           start_pos))
+      in
     Format.fprintf ppf "@[<v>";
     begin match lines with
     | [] | [("", _, _)] -> ()
