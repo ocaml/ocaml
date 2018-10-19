@@ -91,7 +91,6 @@ testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab
 testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=false
 testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
 testsuite/tests/tool-toplevel/strings.ml                typo.utf8
-testsuite/tests/typing-unboxed-types/test.ml.reference* typo.white-at-eof
 testsuite/tests/win-unicode/*.ml                        typo.utf8
 testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header

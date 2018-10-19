@@ -5,11 +5,11 @@
    *** flat-float-array
    **** check-ocamlc.byte-output
         compiler_reference =
-          "${test_source_directory}/module_coercion.compilers.reference.flat"
+          "${test_source_directory}/module_coercion.compilers.flat.reference"
    *** no-flat-float-array
    **** check-ocamlc.byte-output
        compiler_reference =
-         "${test_source_directory}/module_coercion.compilers.reference.no-flat"
+         "${test_source_directory}/module_coercion.compilers.no-flat.reference"
 *)
 
 module M = struct
