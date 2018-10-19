@@ -213,8 +213,18 @@ val set_dumped_pass : string -> bool -> unit
 
 val dump_into_file : bool ref
 
-val parse_color_setting : string -> Misc.Color.setting option
+(* Support for flags that can also be set from an environment variable *)
+type 'a env_reader = {
+  parse : string -> 'a option;
+  usage : string;
+  env_var : string;
+}
+
 val color : Misc.Color.setting option ref
+val color_reader : Misc.Color.setting env_reader
+
+val error_style : Misc.Error_style.setting option ref
+val error_style_reader : Misc.Error_style.setting env_reader
 
 val unboxed_types : bool ref
 

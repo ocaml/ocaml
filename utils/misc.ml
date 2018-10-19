@@ -430,6 +430,11 @@ let get_ref r =
   let v = !r in
   r := []; v
 
+let set_or_ignore f opt x =
+  match f x with
+  | None -> ()
+  | Some y -> opt := Some y
+
 let fst3 (x, _, _) = x
 let snd3 (_,x,_) = x
 let thd3 (_,_,x) = x
@@ -700,6 +705,12 @@ module Color = struct
             | None -> should_enable_color ())
       );
       ()
+end
+
+module Error_style = struct
+  type setting =
+    | Contextual
+    | Short
 end
 
 let normalise_eol s =

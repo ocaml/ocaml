@@ -657,6 +657,12 @@ let is_quotable_loc loc =
   && loc.loc_start.pos_fname = !input_name
   && loc.loc_end.pos_fname = !input_name
 
+let error_style () =
+  let open Misc.Error_style in
+  match !Clflags.error_style with
+  | Some Contextual | None -> Contextual
+  | Some Short -> Short
+
 let batch_mode_printer : report_printer =
   let pp_loc _self report ppf loc =
     let tag = match report.kind with
@@ -664,10 +670,14 @@ let batch_mode_printer : report_printer =
       | Report_warning _ -> "warning"
     in
     let highlight ppf loc =
-      if is_quotable_loc loc then
-        highlight_quote ppf
-          ~get_lines:lines_around_from_current_input
-          tag [loc]
+      match error_style () with
+      | Misc.Error_style.Contextual ->
+          if is_quotable_loc loc then
+            highlight_quote ppf
+              ~get_lines:lines_around_from_current_input
+              tag [loc]
+      | Misc.Error_style.Short ->
+          ()
     in
     Format.fprintf ppf "@[<v>%a:@ %a@]" print_loc loc highlight loc
   in

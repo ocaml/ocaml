@@ -57,19 +57,22 @@ let initial_env () =
     ~initially_opened_module
     ~open_implicit_modules:(List.rev !Clflags.open_modules)
 
-let read_color_env () =
+let set_from_env flag Clflags.{ parse; usage; env_var } =
   try
-    match Clflags.parse_color_setting (Sys.getenv "OCAML_COLOR") with
+    match parse (Sys.getenv env_var) with
     | None ->
         Location.prerr_warning Location.none
-          (Warnings.Bad_env_variable
-             ("OCAML_COLOR",
-              "expected \"auto\", \"always\" or \"never\""));
-    | Some x -> match !Clflags.color with
-      | None -> Clflags.color := Some x
+          (Warnings.Bad_env_variable (env_var, usage))
+    | Some x -> match !flag with
+      | None -> flag := Some x
       | Some _ -> ()
   with
     Not_found -> ()
+
+let read_clflags_from_env () =
+  set_from_env Clflags.color Clflags.color_reader;
+  set_from_env Clflags.error_style Clflags.error_style_reader;
+  ()
 
 let with_ppf_dump ~fileprefix f =
   let ppf_dump, finally =

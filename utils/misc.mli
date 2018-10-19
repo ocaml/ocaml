@@ -249,6 +249,9 @@ val get_ref: 'a list ref -> 'a list
         (* [get_ref lr] returns the content of the list reference [lr] and reset
            its content to the empty list. *)
 
+val set_or_ignore : ('a -> 'b option) -> 'b option ref -> 'a -> unit
+        (* [set_or_ignore f opt x] sets [opt] to [f x] if it returns [Some _],
+           or leaves it unmodified if it returns [None]. *)
 
 val fst3: 'a * 'b * 'c -> 'a
 val snd3: 'a * 'b * 'c -> 'b
@@ -356,6 +359,13 @@ module Color : sig
 
   val set_color_tag_handling : Format.formatter -> unit
   (* adds functions to support color tags to the given formatter. *)
+end
+
+(* See the -error-style option *)
+module Error_style : sig
+  type setting =
+    | Contextual
+    | Short
 end
 
 val normalise_eol : string -> string
