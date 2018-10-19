@@ -1,0 +1,102 @@
+= OCaml Stdlib
+
+== Design principles
+
+* When a module `M` has a main type it must be named `M.t`.
+* Functions should take the main type `t` as first argument (unless
+  there is a good reason for it, see next point).
+* If a functions takes another function as argument, that argument
+  should have the label `f` and not be last (to be able to omit the
+  label).
+* When a function may raise an exception as a non-exceptional
+  behavior, its name must have the suffix `_exn` to remind the user
+  that the exception should be handled.  Another function returning an
+  option instead must be provided.  Example:
+[source,ocaml]
+----
+val find : 'a t -> key -> 'a option
+val find_exn : 'a t -> key -> 'a
+----
+
+
+=== Collections
+
+* If a module `M` defines a collection of values, say `'a M.t`, it
+  must also define the following standard higher order functions:
+
+[source,ocaml]
+----
+val iter : f:('a -> unit) -> 'a t -> unit
+val iteri : f:(int -> 'a -> unit) -> 'a t -> unit
+val map : f:('a -> 'b) -> 'a t -> 'b t
+val mapi : f:(int -> 'a -> 'b) -> 'a t -> 'b t
+val fold : f:('a -> 'b -> 'a) -> init:'a -> 'b t -> 'a
+----
+
+The `iter`, `map` and `fold` function need not to specify the order in
+which arguments are passed to `f`.
+
+* Collections should be convertible to and from sequences by
+  providing:
+[source,ocaml]
+----
+val to_seq : 'a t -> 'a Seq.t
+val of_seq : 'a Seq.t -> 'a t
+----
+
+=== Arithmetic
+
+* When it makes sense, a module should provide _both_ standard infix
+  operators and named functions:
+
+[source,ocaml]
+----
+val neg : t -> t (* unary negation *)
+val add : t -> t -> t (* addition *)
+val sub : t -> t -> t (* subtraction *)
+val mul : t -> t -> t (* multiplication *)
+val div : t -> t -> t (* division *)
+val ( ~+ ) : t -> t (* identity *)
+val ( ~- ) : t -> t (* unary negation *)
+val ( + ) : t -> t -> t
+val ( - ) : t -> t -> t
+val ( * ) : t -> t -> t
+val ( / ) : t -> t -> t
+val ( ** ) : t -> int -> t (* exponentiation *)
+----
+
+The type of exponents of `( ** )` may be more general than `int`.
+
+
+=== Ordering
+
+* Unless it makes no sense, modules must provide a function
+[source,ocaml]
+----
+val compare : t -> t -> int
+----
+that defines a _total_ order on the main type `t`.  This is
+necessary to be able to build collections using `M.t` as the key.
+
+* If a (possibly partial) order makes sense for `M.t`, the following
+  order relations should be provided by the module:
+[source,ocaml]
+----
+val ( = ) : t -> t -> bool
+val ( <> ) : t -> t -> bool
+val ( < ) : t -> t -> bool
+val ( > ) : t -> t -> bool
+val ( <= ) : t -> t -> bool
+val ( >= ) : t -> t -> bool
+----
+The order given by these functions may differ from the one of
+`compare` _if_ the natural order on `M.t` is not total.
+
+- If a total order is provided, the module must also define:
+[source,ocaml]
+----
+val min : t -> t -> t
+val max : t -> t -> t
+----
+In case the order is partial, useful functions `min` and `max` can
+still usually be defined.
