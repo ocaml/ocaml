@@ -109,9 +109,11 @@ Working version
 - GPR#1966: Add Format semantic tags using extensible sum types.
   (Gabriel Radanne, review by Nicolás Ojeda Bär)
 
-- GPR#1794: Add functions is_finite, is_infinite, is_nan, is_integer,
-  trunc, round, nextafter, min, max, nanmin, nanmax to module Float.
-  (Christophe Troestler, review by Alain Frish and Xavier Clerc)
+- GPR#1794: Add constants zero, one, minus_one and functions succ,
+  pred, is_finite, is_infinite, is_nan, is_integer, trunc, round,
+  next_after, sign_bit, min, max, min_max, min_num, max_num,
+  min_max_num to module Float.
+  (Christophe Troestler, review by Alain Frish, Xavier Clerc and Daniel Bünzli)
 
 ### Other libraries:
 
