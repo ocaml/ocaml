@@ -1,4 +1,4 @@
-(* A very simple slave:
+(* A very simple worker:
    - read the string " Ping" on stdin,
    - then print the string "-pong" on stderr,
    - and send it back on stdout

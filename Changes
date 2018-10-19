@@ -372,6 +372,12 @@ Working version
   (François Bobot, help from Gabriel Scherer and Nicolás Ojeda Bär,
    review by Gabriel Scherer)
 
+- GPR#1148, GPR#1287, GPR#1288, GPR#1874: significant improvements
+  of the tools/check-typo script used over the files of the whole repository;
+  contributors are now expected to check that check-typo passes on their
+  pull requests; see CONTRIBUTING.md for more details.
+  (David Allsopp, review by Damien Doligez and Sébastien Hinderer)
+
 - GPR#1703, GPR#1944: Add the module Compile_common, which factorizes the common
   part in Compile and Optcompile. This also makes the pipeline more modular.
   (Gabriel Radanne, help from Gabriel Scherer and Valentin Gatien-Baron,
@@ -405,6 +411,9 @@ Working version
 
 - GPR#1903: parsetree, add locations to all nodes with attributes
   (Gabriel Scherer, review by Thomas Refis)
+
+- GPR#1910: improve the check-typo use of .gitattributes
+  (Gabriel Scherer, review by David Allsopp and Damien Doligez)
 
 - GPR#1938: always check ast invariants after preprocessing
   (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)

@@ -1,10 +1,10 @@
 (* TEST
    * flat-float-array
    ** toplevel
-   compiler_reference = "${test_source_directory}/test.ml.reference-flat"
+   compiler_reference = "${test_source_directory}/test.ml.flat.reference"
    * no-flat-float-array
    ** toplevel
-   compiler_reference = "${test_source_directory}/test.ml.reference-noflat"
+   compiler_reference = "${test_source_directory}/test.ml.no-flat.reference"
 *)
 
 (* Check the unboxing *)

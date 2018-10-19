@@ -16,8 +16,8 @@
 # Default behaviour, for if core.autocrlf isn't set
 * text=auto
 
-# Don't believe there's a way to wrap lines in .gitattributes
-.gitattributes ocaml-typo=long-line
+# It is not possible to wrap lines lines in .gitattributes files
+.gitattributes typo.long-line=may
 
 # Binary files
 /boot/ocamlc binary
@@ -37,75 +37,88 @@
 #/Changes                 merge=union
 
 # No header for text files (would be too obtrusive).
-*.md                     ocaml-typo=missing-header
-README*                  ocaml-typo=missing-header
-*.adoc                   ocaml-typo=missing-header,long-line,unused-prop
+*.md                     typo.missing-header
+README*                  typo.missing-header
+*.adoc                   typo.missing-header
 
-/.mailmap                ocaml-typo=long-line,missing-header,non-ascii
-/.merlin                 ocaml-typo=missing-header
-/Changes                 ocaml-typo=utf8,missing-header
-/INSTALL                 ocaml-typo=missing-header
-/LICENSE                 ocaml-typo=long-line,very-long-line,missing-header
+*.adoc                   typo.long-line=may
+
+/.mailmap                typo.long-line typo.missing-header typo.non-ascii
+/.merlin                 typo.missing-header
+/Changes                 typo.utf8 typo.missing-header
+/INSTALL                 typo.missing-header
+/LICENSE                 typo.very-long-line typo.missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
-/tools/ci/appveyor/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header,non-ascii text eol=crlf
-/tools/ci/appveyor/appveyor_build.sh       ocaml-typo=non-ascii
+/tools/ci/appveyor/appveyor_build.cmd       typo.very-long-line typo.missing-header typo.non-ascii
+/tools/ci/appveyor/appveyor_build.sh        typo.non-ascii
+/tools/ci/inria/remove-sinh-primitive.patch typo.white-at-eol typo.missing-header typo.long-line
+/tools/release-checklist                    typo.missing-header
 
-/tools/release-checklist                   ocaml-typo=missing-header
+# ignore auto-generated .depend files
+.depend                  typo.prune
+/.depend.menhir          typo.prune
 
-asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
-asmcomp/power/NOTES.md   ocaml-typo=missing-header
+# Makefiles may contain tabs
+Makefile*                typo.tab=may
 
-/config/gnu              ocaml-typo=prune
+asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
 
-emacs/*.el               ocaml-typo=long-line,unused-prop
-emacs/caml.el            ocaml-typo=long-line,unused-prop,missing-header
-emacs/COPYING            ocaml-typo=tab,non-printing,missing-header
-emacs/ocamltags.in       ocaml-typo=non-printing
+/config/gnu              typo.prune
 
-/manual                  ocaml-typo=prune
+emacs/*.el               typo.long-line=may
+emacs/caml.el            typo.long-line=may typo.missing-header
+emacs/COPYING            typo.prune
+emacs/ocamltags.in       typo.non-printing
 
-ocamldoc/Changes.txt     ocaml-typo=missing-header
-ocamldoc/ocamldoc.sty    ocaml-typo=missing-header
-ocamldoc/odoc_index.html ocaml-typo=missing-header
+/manual                  typo.prune
 
-otherlibs/win32unix/readlink.c    ocaml-typo=long-line
-otherlibs/win32unix/stat.c        ocaml-typo=long-line
-otherlibs/win32unix/symlink.c     ocaml-typo=long-line
+ocamldoc/**              typo.long-line=may
+ocamldoc/Changes.txt     typo.missing-header
+ocamldoc/ocamldoc.sty    typo.missing-header
+ocamldoc/odoc_index.html typo.missing-header
 
-runtime/i386.S            ocaml-typo=long-line
+otherlibs/win32unix/readlink.c    typo.long-line
+otherlibs/win32unix/stat.c        typo.long-line
+otherlibs/win32unix/symlink.c     typo.long-line
 
-stdlib/hashbang     ocaml-typo=white-at-eol,missing-lf
+runtime/i386.S      typo.long-line
 
-testsuite/tests/**                                      ocaml-typo=missing-header
-testsuite/tests/lib-bigarray-2/bigarrf.f                ocaml-typo=missing-header,tab
-testsuite/tests/lib-unix/win-stat/fakeclock.c           ocaml-typo=
-testsuite/tests/misc-unsafe/almabench.ml                ocaml-typo=missing-header,long-line
-testsuite/tests/tool-toplevel/strings.ml                ocaml-typo=utf8,missing-header
-testsuite/tests/typing-unboxed-types/test.ml.reference* ocaml-typo=white-at-eof,missing-header
-testsuite/tests/win-unicode/*.ml                        ocaml-typo=utf8,missing-header
-testsuite/tools/*.S                                     ocaml-typo=missing-header
-testsuite/tools/*.asm                                   ocaml-typo=missing-header
-testsuite/typing                                        ocaml-typo=missing-header
+stdlib/hashbang     typo.white-at-eol typo.missing-lf
+
+testsuite/tests/**                                      typo.missing-header
+testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab
+testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=false
+testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
+testsuite/tests/tool-toplevel/strings.ml                typo.utf8
+testsuite/tests/win-unicode/*.ml                        typo.utf8
+testsuite/tools/*.S                                     typo.missing-header
+testsuite/tools/*.asm                                   typo.missing-header
+testsuite/typing                                        typo.missing-header
+
+# prune testsuite reference files
+testsuite/tests/**/*.reference               typo.prune
 
 # Expect tests with overly long lines of expected output
-testsuite/tests/parsing/docstrings.ml        ocaml-typo=long-line,very-long-line,missing-header
-testsuite/tests/typing-objects/Exemples.ml   ocaml-typo=long-line,missing-header
-testsuite/tests/typing-modules/firstclass.ml ocaml-typo=long-line,missing-header
-testsuite/tests/typing-gadts/test.ml         ocaml-typo=long-line,missing-header
-testsuite/tests/typing-gadts/pr7160.ml       ocaml-typo=long-line,missing-header
+testsuite/tests/parsing/docstrings.ml        typo.very-long-line
+testsuite/tests/typing-objects/Exemples.ml   typo.long-line
+testsuite/tests/typing-modules/firstclass.ml typo.long-line
+testsuite/tests/typing-gadts/test.ml         typo.long-line
+testsuite/tests/typing-gadts/pr7160.ml       typo.long-line
+testsuite/tests/typing-modules/pr7726.ml     typo.long-line
 
-tools/magic         ocaml-typo=missing-header
+tools/magic         typo.missing-header
 
-yacc/*.[ch]   ocaml-typo=long-line,very-long-line,unused-prop
+# TODO we should fix the long-line errors in yacc/*.c
+/yacc/*.[ch]         typo.very-long-line=may
 
-menhir-bench.bash ocaml-typo=missing-header,utf8
+menhir-bench.bash typo.missing-header typo.utf8
 
 # bootstrap files produced by Menhir
-/boot/menhir/menhirLib.ml      ocaml-typo=long-line,missing-header,utf8,white-at-eol,unused-prop
-/boot/menhir/menhirLib.mli     ocaml-typo=long-line,missing-header,utf8,white-at-eol,unused-prop
-/boot/menhir/parser.ml  ocaml-typo=long-line,very-long-line,missing-header,white-at-eol,unused-prop
-/boot/menhir/parser.mli ocaml-typo=long-line,very-long-line,missing-header,white-at-eol,unused-prop
+/boot/menhir/** typo.long-line=may typo.very-long-line=may
+/boot/menhir/** typo.missing-header=may
+/boot/menhir/** typo.white-at-eol=may
+/boot/menhir/** typo.utf8=may
 
 # Line-ending specifications, for Windows interoperability
 *.sh text eol=lf
@@ -115,6 +128,8 @@ menhir-bench.bash ocaml-typo=missing-header,utf8
 # ocamltest hooks which are used in the testsuite
 *.check-program-output text eol=lf
 *.run text eol=lf
+
+/tools/ci/appveyor/appveyor_build.cmd text eol=crlf
 
 configure text eol=lf
 config/auto-aux/hasgot text eol=lf
@@ -130,7 +145,7 @@ ocamldoc/remove_DEBUG text eol=lf
 ocamltest/getocamloptdefaultflags text eol=lf
 stdlib/Compflags text eol=lf
 stdlib/sharpbang text eol=lf
-tools/ci/inria/remove-sinh-primitive.patch text eol=lf ocaml-typo=white-at-eol,missing-header,long-line
+tools/ci/inria/remove-sinh-primitive.patch text eol=lf
 tools/check-typo text eol=lf
 tools/ci-build text eol=lf
 tools/msvs-promote-path text eol=lf
