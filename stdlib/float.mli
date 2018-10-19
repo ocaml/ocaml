@@ -63,6 +63,18 @@ external rem : float -> float -> float = "caml_fmod_float" "fmod"
     value is [a -. n *. b], where [n] is the quotient [a /. b] rounded towards
     zero to an integer. *)
 
+val succ : float -> float
+(** [succ x] returns the floating point number right after [x] i.e.,
+   the smallest floating-point number greater than [x].  See also
+   {!next_after}.
+   @since 4.08.0 *)
+
+val pred : float -> float
+(** [pred x] returns the floating-point number right before [x] i.e.,
+   the greatest floating-point number smaller than [x].  See also
+   {!next_after}.
+   @since 4.08.0 *)
+
 external abs : float -> float = "%absfloat"
 (** [abs f] returns the absolute value of [f]. *)
 

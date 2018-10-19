@@ -95,6 +95,9 @@ let is_integer x = x = trunc x && is_finite x
 external next_after : float -> float -> float
   = "caml_nextafter_float" "caml_nextafter" [@@unboxed] [@@noalloc]
 
+let succ x = next_after x infinity
+let pred x = next_after x neg_infinity
+
 external copy_sign : float -> float -> float
                   = "caml_copysign_float" "caml_copysign"
                   [@@unboxed] [@@noalloc]
