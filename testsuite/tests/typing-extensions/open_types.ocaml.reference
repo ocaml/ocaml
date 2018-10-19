@@ -100,8 +100,8 @@ type foo += Foo
 val f : foo -> unit = <fun>
 Line 4, characters 8-60:
 4 | ........function
-  |   | [Foo] -> 1
-  |   | _::_::_ -> 3
+5 |   | [Foo] -> 1
+6 |   | _::_::_ -> 3
 7 |   | [] -> 2
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:

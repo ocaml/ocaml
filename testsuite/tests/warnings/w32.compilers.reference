@@ -48,13 +48,13 @@ File "w32.ml", line 59, characters 22-23:
 Warning 32: unused value k.
 File "w32.ml", line 52, characters 0-174:
 52 | module M = struct
-   |   [@@@warning "-32"]
-   |   let f x = x
-   |   let[@warning "+32"] g x = x
-   |   let[@warning "+32"] h x = x
-   |   and i x = x
-   |   let j x = x
-   |   and[@warning "+32"] k x = x
+53 |   [@@@warning "-32"]
+54 |   let f x = x
+55 |   let[@warning "+32"] g x = x
+56 |   let[@warning "+32"] h x = x
+57 |   and i x = x
+58 |   let j x = x
+59 |   and[@warning "+32"] k x = x
 60 | end
 Warning 60: unused module M.
 File "w32.ml", line 63, characters 18-29:

@@ -58,7 +58,7 @@ let check : type s . s t * s -> bool = function
 type _ t = IntLit : int t | BoolLit : bool t
 Line 5, characters 39-99:
 5 | .......................................function
-  |   | BoolLit, false -> false
+6 |   | BoolLit, false -> false
 7 |   | IntLit , 6 -> false
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -76,7 +76,7 @@ let check : type s . (s t, s) pair -> bool = function
 type ('a, 'b) pair = { fst : 'a; snd : 'b; }
 Line 3, characters 45-134:
 3 | .............................................function
-  |   | {fst = BoolLit; snd = false} -> false
+4 |   | {fst = BoolLit; snd = false} -> false
 5 |   | {fst = IntLit ; snd =  6} -> false
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:

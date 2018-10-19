@@ -33,7 +33,7 @@ end;;
 [%%expect{|
 Line 3, characters 4-45:
 3 | ....and d () = object
-  |   inherit ['a] c ()
+4 |   inherit ['a] c ()
 5 | end..
 Error: Some type variables are unbound in this type:
          class d : unit -> object method f : 'a -> unit end
@@ -90,7 +90,7 @@ end;;
 [%%expect{|
 Line 1, characters 0-48:
 1 | class x () = object
-  |   method virtual f : int
+2 |   method virtual f : int
 3 | end..
 Error: This class should be virtual. The following methods are undefined : f
 |}];;
@@ -118,8 +118,8 @@ end;;
 [%%expect{|
 Line 1, characters 0-78:
 1 | class ['a] c () = object
-  |   constraint 'a = int
-  |   method f x = (x : bool c)
+2 |   constraint 'a = int
+3 |   method f x = (x : bool c)
 4 | end..
 Error: The abbreviation c is used with parameters bool c
        which are incompatible with constraints int c
@@ -164,7 +164,7 @@ end;;
 [%%expect{|
 Line 1, characters 0-50:
 1 | class ['a] c () = object
-  |   method f = (x : 'a)
+2 |   method f = (x : 'a)
 3 | end..
 Error: The type of this class,
        class ['a] c :
@@ -620,8 +620,8 @@ end;;
 [%%expect{|
 Line 1, characters 0-153:
 1 | class virtual ['a] matrix (sz, init : int * 'a) = object
-  |   val m = Array.make_matrix sz sz init
-  |   method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
+2 |   val m = Array.make_matrix sz sz init
+3 |   method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
 4 | end..
 Error: The abbreviation 'a matrix expands to type < add : 'a matrix -> 'a >
        but is used with type < m : 'a array array; .. >
@@ -669,7 +669,7 @@ end);;
 [%%expect{|
 Line 1, characters 12-43:
 1 | ............struct
-  |   let f (x : #c) = x
+2 |   let f (x : #c) = x
 3 | end......
 Error: Signature mismatch:
        Modules do not match:

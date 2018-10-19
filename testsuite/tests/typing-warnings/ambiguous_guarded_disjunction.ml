@@ -367,7 +367,7 @@ Warning 41: A belongs to several types: t2 t
 The first one was selected. Please disambiguate if this is wrong.
 Line 1, characters 41-137:
 1 | .........................................function
-  |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
+2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
 3 |   | _ -> 2
 Warning 4: this pattern-matching is fragile.
 It will remain exhaustive when constructors are added to type t2.

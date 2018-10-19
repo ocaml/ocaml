@@ -110,8 +110,8 @@ end;;
 [%%expect{|
 Line 2, characters 57-107:
 2 | .........................................................struct
-  |   module Id = T'.T.Id
-  |   module Id2 = Id
+3 |   module Id = T'.T.Id
+4 |   module Id2 = Id
 5 | end..
 Error: Signature mismatch:
        Modules do not match:

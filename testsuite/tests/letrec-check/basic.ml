@@ -174,7 +174,7 @@ and y = x; ();;
 [%%expect{|
 Line 2, characters 2-52:
 2 | ..for i = 0 to 1 do
-  |     let z = y in ignore z
+3 |     let z = y in ignore z
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
@@ -187,7 +187,7 @@ and y = 10;;
 [%%expect{|
 Line 2, characters 2-33:
 2 | ..for i = 0 to y do
-  |     ()
+3 |     ()
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
@@ -200,7 +200,7 @@ and y = 0;;
 [%%expect{|
 Line 2, characters 2-34:
 2 | ..for i = y to 10 do
-  |     ()
+3 |     ()
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
@@ -213,7 +213,7 @@ and y = x; ();;
 [%%expect{|
 Line 2, characters 2-49:
 2 | ..while false do
-  |     let y = x in ignore y
+3 |     let y = x in ignore y
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
@@ -226,7 +226,7 @@ and y = false;;
 [%%expect{|
 Line 2, characters 2-26:
 2 | ..while y do
-  |     ()
+3 |     ()
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
@@ -239,7 +239,7 @@ and y = false;;
 [%%expect{|
 Line 2, characters 2-45:
 2 | ..while y do
-  |     let y = x in ignore y
+3 |     let y = x in ignore y
 4 |   done
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
@@ -322,7 +322,7 @@ and y = match x with
 [%%expect{|
 Line 2, characters 2-85:
 2 | ..match let _ = y in raise Not_found with
-  |     _ -> "x"
+3 |     _ -> "x"
 4 |   | exception Not_found -> "z"
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;

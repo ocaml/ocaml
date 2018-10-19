@@ -39,7 +39,7 @@ let rec x =
 [%%expect{|
 Line 2, characters 2-74:
 2 | ..let module M = struct
-  |     module N = struct let y = x end
+3 |     module N = struct let y = x end
 4 |   end in M.N.y..
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;

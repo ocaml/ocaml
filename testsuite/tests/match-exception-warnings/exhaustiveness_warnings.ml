@@ -18,8 +18,8 @@ let test_match_exhaustiveness () =
 [%%expect{|
 Line 8, characters 4-83:
  8 | ....match None with
-   |     | exception e -> ()
-   |     | Some false -> ()
+ 9 |     | exception e -> ()
+10 |     | Some false -> ()
 11 |     | None -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -37,7 +37,7 @@ let test_match_exhaustiveness_nest1 () =
 [%%expect{|
 Line 2, characters 4-73:
 2 | ....match None with
-  |     | Some false -> ()
+3 |     | Some false -> ()
 4 |     | None | exception _ -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -55,7 +55,7 @@ let test_match_exhaustiveness_nest2 () =
 [%%expect{|
 Line 2, characters 4-73:
 2 | ....match None with
-  |     | Some false | exception _ -> ()
+3 |     | Some false | exception _ -> ()
 4 |     | None -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -74,8 +74,8 @@ let test_match_exhaustiveness_full () =
 [%%expect{|
 Line 2, characters 4-111:
 2 | ....match None with
-  |     | exception e -> ()
-  |     | Some false | exception _ -> ()
+3 |     | exception e -> ()
+4 |     | Some false | exception _ -> ()
 5 |     | None | exception _ -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:

@@ -111,7 +111,7 @@ Here is an example of a case that is not matched:
 C1 _
 Line 24, characters 6-77:
 24 | ......function
-   |         | Foo _ , Foo _ -> true
+25 |         | Foo _ , Foo _ -> true
 26 |         | Bar _, Bar _ -> true
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -918,11 +918,11 @@ let f : type a. a ty -> a t -> int = fun x y ->
 [%%expect{|
 Line 2, characters 2-153:
 2 | ..match x, y with
-  |   | _, A z -> z
-  |   | _, B z -> if z then 1 else 2
-  |   | _, C z -> truncate z
-  |   | TE TC, D [|1.0|] -> 14
-  |   | TA, D 0 -> -1
+3 |   | _, A z -> z
+4 |   | _, B z -> if z then 1 else 2
+5 |   | _, C z -> truncate z
+6 |   | TE TC, D [|1.0|] -> 14
+7 |   | TA, D 0 -> -1
 8 |   | TA, D z -> z
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -982,11 +982,11 @@ let f : type a. a ty -> a t -> int = fun x y ->
 type ('a, 'b) pair = { left : 'a; right : 'b; }
 Line 4, characters 2-244:
  4 | ..match {left=x; right=y} with
-   |   | {left=_; right=A z} -> z
-   |   | {left=_; right=B z} -> if z then 1 else 2
-   |   | {left=_; right=C z} -> truncate z
-   |   | {left=TE TC; right=D [|1.0|]} -> 14
-   |   | {left=TA; right=D 0} -> -1
+ 5 |   | {left=_; right=A z} -> z
+ 6 |   | {left=_; right=B z} -> if z then 1 else 2
+ 7 |   | {left=_; right=C z} -> truncate z
+ 8 |   | {left=TE TC; right=D [|1.0|]} -> 14
+ 9 |   | {left=TA; right=D 0} -> -1
 10 |   | {left=TA; right=D z} -> z
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:

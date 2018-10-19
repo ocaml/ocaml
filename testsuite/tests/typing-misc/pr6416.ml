@@ -14,8 +14,8 @@ end;;
 [%%expect{|
 Line 5, characters 8-52:
 5 | ........struct
-  |     type t = B
-  |     let f B = ()
+6 |     type t = B
+7 |     let f B = ()
 8 |   end
 Error: Signature mismatch:
        Modules do not match:
@@ -69,8 +69,8 @@ end;;
 [%%expect{|
 Line 4, characters 4-70:
 4 | ....struct
-  |       module type s
-  |       module A(X:s) =struct end
+5 |       module type s
+6 |       module A(X:s) =struct end
 7 |     end
 Error: Signature mismatch:
        Modules do not match:
@@ -101,8 +101,8 @@ end;;
       [%%expect {|
 Line 4, characters 4-77:
 4 | ....struct
-  |       module T = struct type t end
-  |       type t = A of T.t
+5 |       module T = struct type t end
+6 |       type t = A of T.t
 7 |     end
 Error: Signature mismatch:
        Modules do not match:
@@ -189,8 +189,8 @@ end;;
 [%%expect{|
 Line 4, characters 2-105:
 4 | ..struct
-  |     class a = object method c = let module X = struct type t end in () end
-  |     class b = a
+5 |     class a = object method c = let module X = struct type t end in () end
+6 |     class b = a
 7 |   end
 Error: Signature mismatch:
        Modules do not match:
@@ -221,8 +221,8 @@ end;;
 [%%expect{|
 Line 4, characters 2-65:
 4 | ..struct
-  |     class type a = object end
-  |     class type b = a
+5 |     class type a = object end
+6 |     class type b = a
 7 |   end
 Error: Signature mismatch:
        Modules do not match:
@@ -268,12 +268,12 @@ end;;
 [%%expect{|
 Line 8, characters 6-141:
  8 | ......struct
-   |   type t
-   |   class type a = object method m:t end
-   |   module K = struct
-   |     type t
-   |     class type c = object inherit a end
-   |   end
+ 9 |   type t
+10 |   class type a = object method m:t end
+11 |   module K = struct
+12 |     type t
+13 |     class type c = object inherit a end
+14 |   end
 15 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -345,7 +345,7 @@ type t = C
 type t = D
 Line 5, characters 44-72:
 5 | ............................................struct
-  |   let f A B C = D
+6 |   let f A B C = D
 7 | end..
 Error: Signature mismatch:
        Modules do not match:

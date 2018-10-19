@@ -25,7 +25,7 @@ module B: sig val f: fpclass -> fpclass end =
 [%%expect {|
 Line 2, characters 2-38:
 2 | ..struct
-  |     let f A = FP_normal
+3 |     let f A = FP_normal
 4 |   end
 Error: Signature mismatch:
        Modules do not match:

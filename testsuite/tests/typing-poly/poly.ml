@@ -40,8 +40,8 @@ match px with
 [%%expect {|
 Line 1, characters 0-77:
 1 | match px with
-  | | {pv=[]} -> "OK"
-  | | {pv=5::_} -> "int"
+2 | | {pv=[]} -> "OK"
+3 | | {pv=5::_} -> "int"
 4 | | {pv=true::_} -> "bool"
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -57,8 +57,8 @@ match px with
 [%%expect {|
 Line 1, characters 0-77:
 1 | match px with
-  | | {pv=[]} -> "OK"
-  | | {pv=true::_} -> "bool"
+2 | | {pv=[]} -> "OK"
+3 | | {pv=true::_} -> "bool"
 4 | | {pv=5::_} -> "int"
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -546,8 +546,8 @@ end
 [%%expect {|
 Line 4, characters 12-79:
 4 | ............x =
-  |     match r with
-  |       None -> r <- Some x; x
+5 |     match r with
+6 |       None -> r <- Some x; x
 7 |     | Some y -> y
 Error: This method has type 'b -> 'b which is less general than 'a. 'a -> 'a
 |}];;

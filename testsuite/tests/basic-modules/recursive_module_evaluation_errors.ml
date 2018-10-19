@@ -65,8 +65,8 @@ and B: sig val value: unit end = struct let value = A.f () end
 [%%expect {|
 Line 4, characters 6-72:
 4 | ......struct
-  |   module F(X:sig end) = struct end
-  |   let f () = B.value
+5 |   module F(X:sig end) = struct end
+6 |   let f () = B.value
 7 | end
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: A -> B -> A.
@@ -95,8 +95,8 @@ end
 [%%expect {|
 Line 5, characters 8-62:
 5 | ........struct
-  |     module M = X.M
-  |     let f () = B.value
+6 |     module M = X.M
+7 |     let f () = B.value
 8 |   end
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: A -> B -> A.

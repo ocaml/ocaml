@@ -141,8 +141,8 @@ end;;
 [%%expect{|
 Line 4, characters 4-65:
 4 | ....object
-  |       inherit child1 self
-  |       inherit child2
+5 |       inherit child1 self
+6 |       inherit child2
 7 |     end
 Error: Cannot close type of object literal:
        < child : '_weak1; previous : 'a option; _.. > as 'a
@@ -164,11 +164,11 @@ end;;
 [%%expect{|
 Line 4, characters 4-129:
  4 | ....object
-   |       inherit child1 self
-   |       inherit child2
-   |
-   |       method previous = None
-   |       method child = assert false
+ 5 |       inherit child1 self
+ 6 |       inherit child2
+ 7 |
+ 8 |       method previous = None
+ 9 |       method child = assert false
 10 |     end
 Error: Cannot close type of object literal:
        < child : '_weak2; previous : 'a option; _.. > as 'a

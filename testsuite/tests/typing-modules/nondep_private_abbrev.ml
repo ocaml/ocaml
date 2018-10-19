@@ -101,7 +101,7 @@ end;;
 [%%expect{|
 Line 3, characters 6-29:
 3 | ......struct
-  |   type s = t
+4 |   type s = t
 5 | end..
 Error: Signature mismatch:
        Modules do not match:

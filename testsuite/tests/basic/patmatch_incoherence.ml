@@ -37,7 +37,7 @@ match { x = assert false } with
 [%%expect{|
 Line 1, characters 0-70:
 1 | match { x = assert false } with
-  | | { x = 3 } -> ()
+2 | | { x = 3 } -> ()
 3 | | { x = None } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -52,7 +52,7 @@ match { x = assert false } with
 [%%expect{|
 Line 1, characters 0-71:
 1 | match { x = assert false } with
-  | | { x = None } -> ()
+2 | | { x = None } -> ()
 3 | | { x = "" } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -67,7 +67,7 @@ match { x = assert false } with
 [%%expect{|
 Line 1, characters 0-71:
 1 | match { x = assert false } with
-  | | { x = None } -> ()
+2 | | { x = None } -> ()
 3 | | { x = `X } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -82,7 +82,7 @@ match { x = assert false } with
 [%%expect{|
 Line 1, characters 0-70:
 1 | match { x = assert false } with
-  | | { x = [||] } -> ()
+2 | | { x = [||] } -> ()
 3 | | { x = 3 } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -97,7 +97,7 @@ match { x = assert false } with
 [%%expect{|
 Line 1, characters 0-68:
 1 | match { x = assert false } with
-  | | { x = `X } -> ()
+2 | | { x = `X } -> ()
 3 | | { x = 3 } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -112,7 +112,7 @@ match { x = assert false } with
 [%%expect{|
 Line 1, characters 0-74:
 1 | match { x = assert false } with
-  | | { x = `X "lol" } -> ()
+2 | | { x = `X "lol" } -> ()
 3 | | { x = 3 } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -128,8 +128,8 @@ match { x = assert false } with
 [%%expect{|
 Line 1, characters 0-95:
 1 | match { x = assert false } with
-  | | { x = (2., "") } -> ()
-  | | { x = None } -> ()
+2 | | { x = (2., "") } -> ()
+3 | | { x = None } -> ()
 4 | | { x = 3 } -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:

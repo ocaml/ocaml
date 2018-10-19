@@ -496,7 +496,7 @@ let t = function
 [%%expect{|
 Line 1, characters 8-70:
 1 | ........function
-  |   | ({ contents = M.A } : M.t ref) as x ->
+2 |   | ({ contents = M.A } : M.t ref) as x ->
 3 |     x := B
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -509,7 +509,7 @@ Line 3, characters 9-10:
 Warning 18: this type-based constructor disambiguation is not principal.
 Line 1, characters 8-70:
 1 | ........function
-  |   | ({ contents = M.A } : M.t ref) as x ->
+2 |   | ({ contents = M.A } : M.t ref) as x ->
 3 |     x := B
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:

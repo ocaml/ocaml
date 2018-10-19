@@ -12,7 +12,7 @@ end;;
 type t = int
 Line 3, characters 0-31:
 3 | struct
-  |   type t = [`T of t]
+4 |   type t = [`T of t]
 5 | end..
 Error: Signature mismatch:
        Modules do not match:

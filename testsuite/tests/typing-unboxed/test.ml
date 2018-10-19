@@ -108,7 +108,7 @@ end;;
 [%%expect{|
 Line 3, characters 6-70:
 3 | ......struct
-  |   external f : int -> (int [@untagged]) = "f" "f_nat"
+4 |   external f : int -> (int [@untagged]) = "f" "f_nat"
 5 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -130,7 +130,7 @@ end;;
 [%%expect{|
 Line 3, characters 6-70:
 3 | ......struct
-  |   external f : (int [@untagged]) -> int = "f" "f_nat"
+4 |   external f : (int [@untagged]) -> int = "f" "f_nat"
 5 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -152,7 +152,7 @@ end;;
 [%%expect{|
 Line 3, characters 6-73:
 3 | ......struct
-  |   external f : float -> (float [@unboxed]) = "f" "f_nat"
+4 |   external f : float -> (float [@unboxed]) = "f" "f_nat"
 5 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -174,7 +174,7 @@ end;;
 [%%expect{|
 Line 3, characters 6-73:
 3 | ......struct
-  |   external f : (float [@unboxed]) -> float = "f" "f_nat"
+4 |   external f : (float [@unboxed]) -> float = "f" "f_nat"
 5 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -198,7 +198,7 @@ end;;
 [%%expect{|
 Line 3, characters 6-56:
 3 | ......struct
-  |   external f : int -> int = "f" "f_nat"
+4 |   external f : int -> int = "f" "f_nat"
 5 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -220,7 +220,7 @@ end;;
 [%%expect{|
 Line 3, characters 6-56:
 3 | ......struct
-  |   external f : int -> int = "a" "a_nat"
+4 |   external f : int -> int = "a" "a_nat"
 5 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -242,7 +242,7 @@ end;;
 [%%expect{|
 Line 3, characters 6-60:
 3 | ......struct
-  |   external f : float -> float = "f" "f_nat"
+4 |   external f : float -> float = "f" "f_nat"
 5 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -264,7 +264,7 @@ end;;
 [%%expect{|
 Line 3, characters 6-60:
 3 | ......struct
-  |   external f : float -> float = "a" "a_nat"
+4 |   external f : float -> float = "a" "a_nat"
 5 | end..
 Error: Signature mismatch:
        Modules do not match:

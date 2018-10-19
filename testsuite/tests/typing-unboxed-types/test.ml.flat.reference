@@ -41,7 +41,7 @@ Line 1, characters 12-15:
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 Line 5, characters 6-57:
 5 | ......struct
-  |   type t = A of string [@@ocaml.unboxed]
+6 |   type t = A of string [@@ocaml.unboxed]
 7 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -56,7 +56,7 @@ Error: Signature mismatch:
        the first declaration uses unboxed representation.
 Line 4, characters 6-39:
 4 | ......struct
-  |   type t = A of string
+5 |   type t = A of string
 6 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -71,7 +71,7 @@ Error: Signature mismatch:
        the second declaration uses unboxed representation.
 Line 4, characters 6-60:
 4 | ......struct
-  |   type t = { f : string } [@@ocaml.unboxed]
+5 |   type t = { f : string } [@@ocaml.unboxed]
 6 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -86,7 +86,7 @@ Error: Signature mismatch:
        the first declaration uses unboxed representation.
 Line 4, characters 6-42:
 4 | ......struct
-  |   type t = { f : string }
+5 |   type t = { f : string }
 6 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -101,7 +101,7 @@ Error: Signature mismatch:
        the second declaration uses unboxed representation.
 Line 4, characters 6-65:
 4 | ......struct
-  |   type t = A of { f : string } [@@ocaml.unboxed]
+5 |   type t = A of { f : string } [@@ocaml.unboxed]
 6 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -116,7 +116,7 @@ Error: Signature mismatch:
        the first declaration uses unboxed representation.
 Line 4, characters 6-47:
 4 | ......struct
-  |   type t = A of { f : string }
+5 |   type t = A of { f : string }
 6 | end..
 Error: Signature mismatch:
        Modules do not match:
@@ -151,8 +151,8 @@ Error: This type cannot be unboxed because
        You should annotate it with [@@ocaml.boxed].
 Line 7, characters 6-86:
  7 | ......struct
-   |   type t = A of float [@@ocaml.unboxed]
-   |   type u = { f1 : t; f2 : t }
+ 8 |   type t = A of float [@@ocaml.unboxed]
+ 9 |   type u = { f1 : t; f2 : t }
 10 | end..
 Error: Signature mismatch:
        ...

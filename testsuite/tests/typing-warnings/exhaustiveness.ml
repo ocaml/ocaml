@@ -10,7 +10,7 @@ let f = function
 [%%expect {|
 Line 1, characters 8-60:
 1 | ........function
-  |     None, None -> 1
+2 |     None, None -> 1
 3 |   | Some _, Some _ -> 2..
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
@@ -360,8 +360,8 @@ let f = function
 [%%expect {|
 Line 1, characters 8-88:
 1 | ........function
-  |   | None -> ()
-  |   | Some x when x > 0 -> ()
+2 |   | None -> ()
+3 |   | Some x when x > 0 -> ()
 4 |   | Some x when x <= 0 -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
