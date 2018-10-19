@@ -45,6 +45,18 @@ let () =
   assert(Float.(is_nan(next_after nan 1.)));
   assert(Float.(is_nan(next_after 3. nan)));
 
+  assert(Float.(succ 0x1.FFFFFFFFFFFFFp-2 = 0.5));
+  assert(Float.(pred 0.5 = 0x1.FFFFFFFFFFFFFp-2));
+  assert(Float.(succ 0. > 0.));
+  assert(Float.(pred 0. < 0.));
+  assert(Float.(succ max_float = infinity));
+  assert(Float.(pred (-. max_float) = neg_infinity));
+  assert(Float.(succ 0. < min_float));
+  assert(Float.(succ infinity = infinity));
+  assert(Float.(pred neg_infinity = neg_infinity));
+  assert(Float.(is_nan(succ nan)));
+  assert(Float.(is_nan(pred nan)));
+
   assert(not(Float.sign_bit 1.));
   assert(Float.sign_bit (-1.));
   assert(not(Float.sign_bit 0.));
