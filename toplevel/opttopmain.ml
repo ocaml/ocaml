@@ -72,6 +72,7 @@ let file_argument name =
     let newargs = Array.sub !argv !Arg.current
                               (Array.length !argv - !Arg.current)
       in
+      Compmisc.read_clflags_from_env ();
       if prepare ppf && Opttoploop.run_script ppf name newargs
       then exit 0
       else exit 2
@@ -241,6 +242,8 @@ module Options = Main_args.Make_opttop_options (struct
   let _safe_string = clear unsafe_string
   let _unsafe_string = set unsafe_string
   let _open s = open_modules := s :: !open_modules
+  let _color = Misc.set_or_ignore color_reader.parse color
+  let _error_style = Misc.set_or_ignore error_style_reader.parse error_style
 
   let _args = wrap_expand Arg.read_arg
   let _args0 = wrap_expand Arg.read_arg0
@@ -266,6 +269,7 @@ let main () =
     | Arg.Bad msg -> Format.fprintf Format.err_formatter "%s%!" msg; exit 2
     | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg; exit 0
   end;
+  Compmisc.read_clflags_from_env ();
   if not (prepare Format.err_formatter) then exit 2;
   Compmisc.init_path true;
   Opttoploop.loop Format.std_formatter

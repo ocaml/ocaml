@@ -323,4 +323,6 @@
 ]
 
 File "extensions.ml", line 9, characters 3-6:
+9 | [%%foo let x = 1 in x]
+       ^^^
 Error: Uninterpreted extension 'foo'.

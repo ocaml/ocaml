@@ -105,9 +105,6 @@ val print_locs: formatter -> t list -> unit
 val highlight_terminfo:
   Lexing.lexbuf -> formatter -> t list -> unit
 
-val highlight_dumb:
-  Lexing.lexbuf -> formatter -> t list -> unit
-
 
 (** {1 Reporting errors and warnings} *)
 
@@ -158,7 +155,6 @@ type report_printer = {
 val batch_mode_printer: report_printer
 
 val terminfo_toplevel_printer: Lexing.lexbuf -> report_printer
-val dumb_toplevel_printer: Lexing.lexbuf -> report_printer
 
 val best_toplevel_printer: unit -> report_printer
 (** Detects the terminal capabilities and selects an adequate printer *)

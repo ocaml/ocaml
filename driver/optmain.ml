@@ -198,13 +198,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
-  let _color option =
-    begin match parse_color_setting option with
-          | None -> ()
-          | Some setting -> color := Some setting
-    end
+  let _color = Misc.set_or_ignore color_reader.parse color
+  let _error_style = Misc.set_or_ignore error_style_reader.parse error_style
   let _where () = print_standard_library ()
-
   let _nopervasives = set nopervasives
   let _match_context_rows n = match_context_rows := n
   let _dump_into_file = set dump_into_file
@@ -263,7 +259,7 @@ let main () =
        "<options> Compute dependencies \
         (use 'ocamlopt -depend -help' for details)"];
     Clflags.parse_arguments anonymous usage;
-    Compmisc.read_color_env ();
+    Compmisc.read_clflags_from_env ();
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";
     begin try

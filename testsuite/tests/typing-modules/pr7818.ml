@@ -109,10 +109,10 @@ module Make2 (T' : S) : sig module Id : sig end module Id2 = Id end
 end;;
 [%%expect{|
 Line 2, characters 57-107:
-  .........................................................struct
-    module Id = T'.T.Id
-    module Id2 = Id
-  end..
+2 | .........................................................struct
+3 |   module Id = T'.T.Id
+4 |   module Id2 = Id
+5 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig module Id : sig  end module Id2 = Id end
@@ -149,8 +149,8 @@ M.Id.x;;
 [%%expect{|
 module M : sig module Id : sig  end module Id2 = Id end
 Line 3, characters 0-6:
-  M.Id.x;;
-  ^^^^^^
+3 | M.Id.x;;
+    ^^^^^^
 Error: Unbound value M.Id.x
 |}]
 

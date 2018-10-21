@@ -123,6 +123,14 @@ module Stdlib = struct
       in
       aux [] l
 
+    let rec find_map f = function
+      | x :: xs ->
+          begin match f x with
+          | None -> find_map f xs
+          | Some _ as y -> y
+          end
+      | [] -> None
+
     let map2_prefix f l1 l2 =
       let rec aux acc l1 l2 =
         match l1, l2 with
@@ -422,6 +430,11 @@ let get_ref r =
   let v = !r in
   r := []; v
 
+let set_or_ignore f opt x =
+  match f x with
+  | None -> ()
+  | Some y -> opt := Some y
+
 let fst3 (x, _, _) = x
 let snd3 (_,x,_) = x
 let thd3 (_,_,x) = x
@@ -694,6 +707,12 @@ module Color = struct
       ()
 end
 
+module Error_style = struct
+  type setting =
+    | Contextual
+    | Short
+end
+
 let normalise_eol s =
   let b = Buffer.create 80 in
     for i = 0 to String.length s - 1 do
@@ -732,6 +751,27 @@ let delete_eol_spaces src =
   in
   let stop = loop 0 0 in
   Bytes.sub_string dst 0 stop
+
+let pp_two_columns ?(sep = "|") ?max_lines ppf (lines: (string * string) list) =
+  let left_column_size =
+    List.fold_left (fun acc (s, _) -> max acc (String.length s)) 0 lines in
+  let lines_nb = List.length lines in
+  let ellipsed_first, ellipsed_last =
+    match max_lines with
+    | Some max_lines when lines_nb > max_lines ->
+        let printed_lines = max_lines - 1 in (* the ellipsis uses one line *)
+        let lines_before = printed_lines / 2 + printed_lines mod 2 in
+        let lines_after = printed_lines / 2 in
+        (lines_before, lines_nb - lines_after - 1)
+    | _ -> (-1, -1)
+  in
+  Format.fprintf ppf "@[<v>";
+  List.iteri (fun k (line_l, line_r) ->
+    if k = ellipsed_first then Format.fprintf ppf "...@,";
+    if ellipsed_first <= k && k <= ellipsed_last then ()
+    else Format.fprintf ppf "%*s %s %s@," left_column_size line_l sep line_r
+  ) lines;
+  Format.fprintf ppf "@]"
 
 type hook_info = {
   sourcefile : string;

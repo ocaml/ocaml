@@ -368,12 +368,34 @@ let set_dumped_pass s enabled =
 
 let dump_into_file = ref false (* -dump-into-file *)
 
-let parse_color_setting = function
-  | "auto" -> Some Misc.Color.Auto
-  | "always" -> Some Misc.Color.Always
-  | "never" -> Some Misc.Color.Never
-  | _ -> None
-let color = ref None ;; (* -color *)
+type 'a env_reader = {
+  parse : string -> 'a option;
+  usage : string;
+  env_var : string;
+}
+
+let color = ref None (* -color *)
+
+let color_reader = {
+  parse = (function
+    | "auto" -> Some Misc.Color.Auto
+    | "always" -> Some Misc.Color.Always
+    | "never" -> Some Misc.Color.Never
+    | _ -> None);
+  usage = "expected \"auto\", \"always\" or \"never\"";
+  env_var = "OCAML_COLOR";
+}
+
+let error_style = ref None (* -error-style *)
+
+let error_style_reader = {
+  parse = (function
+    | "contextual" -> Some Misc.Error_style.Contextual
+    | "short" -> Some Misc.Error_style.Short
+    | _ -> None);
+  usage = "expected \"contextual\" or \"short\"";
+  env_var = "OCAML_ERROR_STYLE";
+}
 
 let unboxed_types = ref false
 

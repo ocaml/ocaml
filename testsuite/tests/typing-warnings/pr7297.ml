@@ -12,8 +12,8 @@ Printexc.record_backtrace false;;
 let () = raise Exit; () ;; (* warn *)
 [%%expect {|
 Line 1, characters 9-19:
-  let () = raise Exit; () ;; (* warn *)
-           ^^^^^^^^^^
+1 | let () = raise Exit; () ;; (* warn *)
+             ^^^^^^^^^^
 Warning 21: this statement never returns (or has an unsound type.)
 Exception: Stdlib.Exit.
 |}]

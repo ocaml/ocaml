@@ -98,8 +98,8 @@ end
 ;;
 [%%expect{|
 Line 4, characters 2-11:
-    include S
-    ^^^^^^^^^
+4 |   include S
+      ^^^^^^^^^
 Error: Illegal shadowing of included type t/144 by t/161
        Line 2, characters 2-11:
          Type t/144 came from this include
@@ -138,8 +138,8 @@ end
 ;;
 [%%expect{|
 Line 4, characters 2-11:
-    include S
-    ^^^^^^^^^
+4 |   include S
+      ^^^^^^^^^
 Error: Illegal shadowing of included module M/232 by M/249
        Line 2, characters 2-11:
          Module M/232 came from this include
@@ -179,8 +179,8 @@ end
 ;;
 [%%expect{|
 Line 4, characters 2-11:
-    include S
-    ^^^^^^^^^
+4 |   include S
+      ^^^^^^^^^
 Error: Illegal shadowing of included module type T/317 by T/335
        Line 2, characters 2-11:
          Module type T/317 came from this include
@@ -196,8 +196,8 @@ end
 ;;
 [%%expect{|
 Line 4, characters 2-11:
-    include S
-    ^^^^^^^^^
+4 |   include S
+      ^^^^^^^^^
 Error: Illegal shadowing of included type ext/353 by ext/370
        Line 2, characters 2-11:
          Type ext/353 came from this include

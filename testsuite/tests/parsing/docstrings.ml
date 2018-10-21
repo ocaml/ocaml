@@ -295,8 +295,8 @@ module Manual :
                                                        " The comment for module type my_module_type. "]
   end ;;
 Line 128, characters 12-14:
-      inherit cl
-              ^^
+128 |     inherit cl
+                  ^^
 Error: Unbound class cl
 |}]
 

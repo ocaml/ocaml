@@ -1,4 +1,6 @@
 File "pr5673_bad.ml", line 31, characters 22-23:
+31 | let f (x : refer1) = (x : refer2)
+                           ^
 Error: This expression has type
          refer1 = < poly : 'a 'b 'c. ('b, 'c) #Classdef.cl2 as 'a >
        but an expression was expected of type

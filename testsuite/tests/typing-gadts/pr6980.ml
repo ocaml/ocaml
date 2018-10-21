@@ -22,8 +22,8 @@ and 'a second = Second : [< `Bar | `Baz | `Foo > `Bar ] s second
 type aux = Aux : ([< `Bar | `Foo ] as 'a) t second * ('a -> int) -> aux
 val it : [< `Bar | `Foo > `Bar ] = `Bar
 Line 11, characters 27-29:
-  let g (Aux(Second, f)) = f it;;
-                             ^^
+11 | let g (Aux(Second, f)) = f it;;
+                                ^^
 Error: This expression has type [< `Bar | `Foo > `Bar ]
        but an expression was expected of type [< `Bar | `Foo ]
        Types for tag `Bar are incompatible
