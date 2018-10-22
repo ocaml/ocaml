@@ -2642,16 +2642,12 @@ lbl_pattern_list:
       { let (fields, closed) = $3 in $1 :: fields, closed }
 ;
 lbl_pattern:
-    mkrhs(label_longident) opt_pattern_type_constraint EQUAL pattern
+    mkrhs(label_longident) preceded(COLON, core_type)? EQUAL pattern
      { ($1, mkpat_opt_constraint ~loc:$sloc $4 $2) }
-  | mkrhs(label_longident) opt_pattern_type_constraint
+  | mkrhs(label_longident) preceded(COLON, core_type)?
      { let label = {$1 with txt = Longident.last $1.txt} in
        ($1, mkpat_opt_constraint ~loc:$sloc
               (pat_of_label ~loc:$sloc label) $2) }
-;
-opt_pattern_type_constraint:
-    COLON core_type { Some $2 }
-  | /* empty */ { None }
 ;
 
 /* Value descriptions */
