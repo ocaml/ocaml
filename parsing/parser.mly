@@ -1477,7 +1477,7 @@ signature_item:
     | include_statement(module_type)
         { psig_include $1 }
     | class_descriptions
-        { let (l, ext) = $1 in (Psig_class (List.rev l), ext) }
+        { let (ext, l) = $1 in (Psig_class l, ext) }
     | class_type_declarations
         { let (l, ext) = $1 in (Psig_class_type (List.rev l), ext) }
     )
@@ -1865,28 +1865,45 @@ constrain_field:
   core_type EQUAL core_type
     { $1, $3 }
 ;
-class_descriptions:
-    class_description
-      { let (body, ext) = $1 in ([body],ext) }
-  | class_descriptions and_class_description
-      { let (l, ext) = $1 in ($2 :: l, ext) }
+(* A group of class descriptions. *)
+%inline class_descriptions:
+  xlist(class_description, and_class_description)
+    { $1 }
 ;
-class_description:
-    CLASS ext_attributes virtual_flag formal_class_parameters mkrhs(LIDENT)
-    COLON class_type post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Ci.mk $5 $7 ~virt:$3 ~params:$4
-                    ~attrs:(attrs @ $8) ~loc:(make_loc $sloc) ~docs
-        , ext }
+%inline class_description:
+  CLASS
+  ext = ext
+  attrs1 = attributes
+  virt = virtual_flag
+  params = formal_class_parameters
+  id = mkrhs(LIDENT)
+  COLON
+  cty = class_type
+  attrs2 = post_item_attributes
+    {
+      let attrs = attrs1 @ attrs2 in
+      let loc = make_loc $sloc in
+      let docs = symbol_docs $sloc in
+      ext,
+      Ci.mk id cty ~virt ~params ~attrs ~loc ~docs
+    }
 ;
-and_class_description:
-    AND attributes virtual_flag formal_class_parameters mkrhs(LIDENT)
-    COLON class_type post_item_attributes
-      { let docs = symbol_docs $sloc in
-        let text = symbol_text $symbolstartpos in
-        Ci.mk $5 $7 ~virt:$3 ~params:$4
-                    ~attrs:($2@$8) ~loc:(make_loc $sloc) ~text ~docs }
+%inline and_class_description:
+  AND
+  attrs1 = attributes
+  virt = virtual_flag
+  params = formal_class_parameters
+  id = mkrhs(LIDENT)
+  COLON
+  cty = class_type
+  attrs2 = post_item_attributes
+    {
+      let attrs = attrs1 @ attrs2 in
+      let loc = make_loc $sloc in
+      let docs = symbol_docs $sloc in
+      let text = symbol_text $symbolstartpos in
+      Ci.mk id cty ~virt ~params ~attrs ~loc ~text ~docs
+    }
 ;
 class_type_declarations:
     class_type_declaration
