@@ -2449,9 +2449,9 @@ record_expr:
     { xs }
 ;
 lbl_expr:
-    mkrhs(label_longident) opt_type_constraint EQUAL expr
+    mkrhs(label_longident) type_constraint? EQUAL expr
       { ($1, mkexp_opt_constraint ~loc:$sloc $4 $2) }
-  | mkrhs(label_longident) opt_type_constraint
+  | mkrhs(label_longident) type_constraint?
       { ($1,
          mkexp_opt_constraint ~loc:$sloc
            (exp_of_longident ~loc:$sloc $1) $2) }
@@ -2476,10 +2476,6 @@ type_constraint:
   | COLONGREATER core_type                      { (None, Some $2) }
   | COLON error                                 { syntax_error() }
   | COLONGREATER error                          { syntax_error() }
-;
-opt_type_constraint:
-    type_constraint { Some $1 }
-  | /* empty */ { None }
 ;
 
 /* Patterns */
