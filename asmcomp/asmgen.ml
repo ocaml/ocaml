@@ -104,10 +104,15 @@ let emit ~ppf_dump:_ dwarf fundecl =
   | None -> Emit.fundecl fundecl ~end_of_function_label
   | Some dwarf ->
     let fundecl = Available_filtering.fundecl fundecl in
-    let available_ranges, fundecl = Available_ranges.create ~fundecl in
+    let available_ranges_regs, fundecl =
+      Available_ranges.Regs.create ~fundecl
+    in
+    let available_ranges_lexical_blocks, fundecl =
+      Available_ranges.Lexical_blocks.create ~fundecl
+    in
     Emit.fundecl fundecl ~end_of_function_label;
-    Dwarf.dwarf_for_function_definition dwarf ~fundecl ~available_ranges
-          ~end_of_function_label
+    Dwarf.dwarf_for_function_definition dwarf ~fundecl ~available_ranges_regs
+          ~available_ranges_lexical_blocks ~end_of_function_label
 
 let (++) x f = f x
 
@@ -133,6 +138,8 @@ let compile_fundecl ~ppf_dump dwarf fd_cmm =
   ++ Profile.record ~accumulate:true "regalloc" (regalloc ~ppf_dump 1)
   ++ Profile.record ~accumulate:true "available_regs" Available_regs.fundecl
   ++ pass_dump_if ppf_dump dump_avail "After availability analysis"
+  ++ Profile.record ~accumulate:true "propagate_debuginfo"
+       Propagate_debuginfo.fundecl
   ++ Profile.record ~accumulate:true "linearize" Linearize.fundecl
   ++ pass_dump_linear_if ppf_dump dump_linear "Linearized code"
   ++ Profile.record ~accumulate:true "scheduling" Scheduling.fundecl

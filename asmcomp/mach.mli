@@ -94,7 +94,7 @@ type instruction =
     next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
-    dbg: Debuginfo.t;
+    mutable dbg: Debuginfo.t;
     phantom_available_before: Backend_var.Set.t;
     mutable live: Reg.Set.t;
     mutable available_before: Reg_availability_set.t;

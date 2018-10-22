@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2013--2018 Jane Street Group LLC                           *)
+(*   Copyright 2018 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -12,30 +12,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** A value of type [t] holds all state necessary to emit DWARF debugging
-    information for a single compilation unit. *)
-type t
+[@@@ocaml.warning "+a-4-30-40-41-42"]
 
-val create : prefix_name:string -> t
+(** Propagate debuginfo values from one instruction to the next to avoid
+    holes in debugging information.  Whilst such holes are unproblematic for
+    location generation, they cause problems for lexical block generation,
+    with the potential to cause a poor user experience in the debugger. *)
 
-(** For dealing with [Let_symbol] bindings. *)
-val dwarf_for_toplevel_constants
-   : t
-  -> Clambda.preallocated_constant list
-  -> unit
-
-(** For dealing with [Initialize_symbol] bindings. *)
-val dwarf_for_toplevel_inconstants
-   : t
-  -> Clambda.preallocated_block list
-  -> unit
-
-val dwarf_for_function_definition
-   : t
-  -> fundecl:Linearize.fundecl
-  -> available_ranges_regs:Available_ranges.Regs.t
-  -> available_ranges_lexical_blocks:Available_ranges.Lexical_blocks.t
-  -> end_of_function_label:Linearize.label
-  -> unit
-
-val emit : t -> unit
+val fundecl : Mach.fundecl -> Mach.fundecl

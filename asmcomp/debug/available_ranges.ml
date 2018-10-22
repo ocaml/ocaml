@@ -16,272 +16,103 @@
 
 module L = Linearize
 
-let rewrite_label env label =
-  match Numbers.Int.Map.find label env with
-  | exception Not_found -> label
-  | label -> label
+module Available_subrange_info_for_regs = struct
+  type t =
 
-(* CR-soon mshinwell: pull this type forward so other passes can use it *)
-type is_parameter =
-  | Local
-  | Parameter of { index : int; }
+  type type_info =
+    | From_cmt_file of Backend_var.Provenance.t option
+    | Phantom of
+        Backend_var.Provenance.t option * Mach.phantom_defining_expr option
 
-module Available_subrange : sig
-  type t
+  type is_parameter =
+    | Local
+    | Parameter of { index : int; }
 
-  type 'a location =
-    | Reg of Reg.t * 'a
-    | Phantom
+  let type_info t =
 
-  val create
-     : reg:Reg.t
-    -> start_insn:L.instruction
-    -> start_pos:L.label
-    -> end_pos:L.label
-    -> end_pos_offset:int option
-    -> stack_offset:int
-    -> t
+  let is_parameter t =
 
-  val create_phantom
-     : start_pos:Linearize.label
-    -> end_pos:Linearize.label
-    -> t
-
-  val start_pos : t -> L.label
-  val end_pos : t -> L.label
-  val end_pos_offset : t -> int option
-  val location : t -> unit location
-  val offset_from_stack_ptr_in_bytes : t -> int
-
-  val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t
-end = struct
-  type 'a location =
-    | Reg of Reg.t * 'a
-    | Phantom
-
-  type start_insn_or_phantom = L.instruction location
-
-  type t = {
-    (* CR-soon mshinwell: find a better name for [start_insn] *)
-    start_insn : start_insn_or_phantom;
-    start_pos : L.label;
-    (* CR mshinwell: we need to check exactly what happens with function
-       epilogues, including returns in the middle of functions. *)
-    end_pos : L.label;
-    end_pos_offset : int option;
-    offset_from_stack_ptr_in_bytes : int option;
-  }
-
-  let create ~(reg : Reg.t) ~(start_insn : Linearize.instruction)
-        ~start_pos ~end_pos ~end_pos_offset ~stack_offset =
-    let offset_from_stack_ptr_in_bytes =
-      match reg.loc with
-      | Stack loc ->
-        let frame_size = Proc.frame_size ~stack_offset in
-        let slot_offset =
-          Proc.slot_offset loc ~reg_class:(Proc.register_class reg)
-            ~stack_offset
-        in
-        Some (frame_size - slot_offset)
-      | Reg _ | Unknown -> None
-    in
-    match start_insn.desc with
-    | L.Llabel _ ->
-      { start_insn = Reg (reg, start_insn);
-        start_pos;
-        end_pos;
-        end_pos_offset;
-        offset_from_stack_ptr_in_bytes = offset_from_stack_ptr_in_bytes;
-      }
-    | _ -> failwith "Available_subrange.create"
-
-  let create_phantom ~start_pos ~end_pos =
-    { start_insn = Phantom;
-      start_pos;
-      end_pos;
-      end_pos_offset = None;
-      offset_from_stack_ptr_in_bytes = None;
-    }
-
-  let start_pos t = t.start_pos
-  let end_pos t = t.end_pos
-  let end_pos_offset t = t.end_pos_offset
-
-  let location t : unit location =
-    let convert_location (start_insn : start_insn_or_phantom) : unit location =
-      match start_insn with
-      | Reg (reg, _insn) -> Reg (reg, ())
-      | Phantom -> Phantom
-    in
-    convert_location t.start_insn
-
-  let offset_from_stack_ptr_in_bytes t =
-    match t.offset_from_stack_ptr_in_bytes with
-    | Some offset -> offset
-    | None ->
-      Misc.fatal_error "No offset from stack pointer available (this is either \
-        a phantom available subrange or one whose corresponding register is \
-        not assigned to the stack)"
-
-  let rewrite_labels t ~env =
-    { t with
-      start_pos = rewrite_label env t.start_pos;
-      end_pos = rewrite_label env t.end_pos;
-    }
 end
 
-type type_info =
-  | From_cmt_file of Backend_var.Provenance.t option
-  | Phantom of
-      Backend_var.Provenance.t option * Mach.phantom_defining_expr option
+module Available_subrange_info_for_blocks = struct
+  type t = unit
+end
 
-let _type_info_has_provenance = function
-  | From_cmt_file None -> false
-  | From_cmt_file (Some _) -> true
-  | Phantom (None, _) -> false
-  | Phantom (Some _, _) -> true
+module Available_range_info_for_regs = struct
+  type t =
 
-module Available_range : sig
+  type 'a location =
+    | Reg of Reg.t * 'a
+    | Phantom
+
+  let lexical_scope t =
+
+  let location t =
+
+  let offset_from_stack_ptr_in_bytes t =
+
+end
+
+type range_uniqueness_for_regs = {
+  name_is_unique : bool;
+  location_is_unique : bool;
+}
+
+module Available_range_info_for_blocks = struct
+  type t = unit
+end
+
+module type S = sig
+  type subrange_info
+  type range_info
+  type range_uniqueness
+  type range_index
+
+  module Available_subrange : sig
+    type t
+
+    val info : t -> subrange_info
+
+    val start_pos : t -> Linearize.label
+    val end_pos : t -> Linearize.label
+    val end_pos_offset : t -> int option
+  end
+
+  module Available_range : sig
+    type t
+
+    val info : t -> range_info
+
+    val extremities : t -> Linearize.label * Linearize.label
+
+    val iter
+       : t
+      -> f:(available_subrange:Available_subrange.t -> unit)
+      -> unit
+
+    val fold
+       : t
+      -> init:'a
+      -> f:('a -> available_subrange:Available_subrange.t -> 'a)
+      -> 'a
+  end
+
   type t
 
-  val create
-     : type_info:type_info
-    -> is_parameter:is_parameter
-    -> t
+  val create : Linearize.fundecl -> t * Linearize.fundecl
 
-  val type_info : t -> type_info
-  val is_parameter : t -> is_parameter
-  val var_location : t -> Debuginfo.t
-  val add_subrange : t -> subrange:Available_subrange.t -> unit
-  val extremities : t -> L.label * L.label
-
-  val iter
-     : t
-    -> f:(available_subrange:Available_subrange.t -> unit)
-    -> unit
+  val find : t -> range_index -> Available_range.t option
 
   val fold
      : t
     -> init:'a
-    -> f:('a -> available_subrange:Available_subrange.t -> 'a)
+    -> f:('a
+      -> range_index
+      -> range_uniqueness
+      -> Available_range.t
+      -> 'a)
     -> 'a
-
-  val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t
-end = struct
-  type t = {
-    mutable subranges : Available_subrange.t list;
-    mutable min_pos : L.label option;
-    mutable max_pos : L.label option;
-    type_info : type_info;
-    is_parameter : is_parameter;
-    var_location : Debuginfo.t;
-  }
-
-  let create ~type_info ~is_parameter =
-    let var_location =
-      match type_info with
-      | From_cmt_file None | Phantom (None, _) -> Debuginfo.none
-      | From_cmt_file (Some provenance) | Phantom (Some provenance, _) ->
-        Backend_var.Provenance.location provenance
-    in
-    { subranges = []; min_pos = None; max_pos = None;
-      type_info; is_parameter; var_location;
-    }
-
-  let type_info t = t.type_info
-  let is_parameter t = t.is_parameter
-  let var_location t = t.var_location
-
-  let add_subrange t ~subrange =
-    let start_pos = Available_subrange.start_pos subrange in
-    let end_pos = Available_subrange.end_pos subrange in
-    (* This is dubious, but should be correct by virtue of the way label
-       counters are allocated (see linearize.ml) and the fact that, below,
-       we go through the code from lowest (code) address to highest.  As
-       such the label with the highest integer value should be the one with
-       the highest address, and vice-versa.  (Note that we also exploit the
-       ordering when constructing location lists, to ensure that they are
-       sorted in increasing program counter order by start address.
-       However by that stage [Coalesce_labels] has run.) *)
-    assert (compare start_pos end_pos <= 0);
-    begin
-      match t.min_pos with
-      | None -> t.min_pos <- Some start_pos
-      | Some min_pos ->
-        if compare start_pos min_pos < 0 then t.min_pos <- Some start_pos
-    end;
-    begin
-      match t.max_pos with
-      | None -> t.max_pos <- Some end_pos
-      | Some max_pos ->
-        if compare (`At_label end_pos) (`At_label max_pos) > 0 then
-          t.max_pos <- Some end_pos
-    end;
-    t.subranges <- subrange::t.subranges
-
-  let extremities t =
-    (* We ignore any [end_pos_offsets] here; should be ok. *)
-    match t.min_pos, t.max_pos with
-    | Some min, Some max -> min, max
-    | Some _, None | None, Some _ -> assert false
-    | None, None -> failwith "Available_ranges.extremities on empty range"
-
-  let iter t ~f =
-    List.iter (fun available_subrange -> f ~available_subrange)
-      t.subranges
-
-  let fold t ~init ~f =
-    List.fold_left (fun acc available_subrange -> f acc ~available_subrange)
-      init
-      t.subranges
-
-  let rewrite_labels t ~env =
-    let subranges =
-      List.map (fun subrange ->
-          Available_subrange.rewrite_labels subrange ~env)
-        t.subranges
-    in
-    let min_pos = Misc.Stdlib.Option.map (rewrite_label env) t.min_pos in
-    let max_pos = Misc.Stdlib.Option.map (rewrite_label env) t.max_pos in
-    { subranges; min_pos; max_pos;
-      type_info = t.type_info;
-      is_parameter = t.is_parameter;
-      var_location = t.var_location;
-    }
 end
-
-type t = {
-  ranges : Available_range.t Backend_var.Tbl.t;
-}
-
-let find t ~var =
-  match Backend_var.Tbl.find t.ranges var with
-  | exception Not_found -> None
-  | range -> Some range
-
-let fold t ~init ~f =
-  Backend_var.Tbl.fold (fun var range acc ->
-      (* CR-soon mshinwell: improve efficiency *)
-      let with_same_name =
-        List.filter (fun (var', range') ->
-            Backend_var.name var = Backend_var.name var'
-              && Available_range.is_parameter range
-                = Available_range.is_parameter range')
-          (Backend_var.Tbl.to_list t.ranges)
-      in
-      let with_same_location =
-        List.filter (fun (_, range') ->
-            Available_range.var_location range
-                = Available_range.var_location range'
-              && Available_range.is_parameter range
-                = Available_range.is_parameter range')
-          (Backend_var.Tbl.to_list t.ranges)
-      in
-      let name_is_unique = List.length with_same_name <= 1 in
-      let location_is_unique = List.length with_same_location <= 1 in
-      f acc ~var ~name_is_unique ~location_is_unique ~range)
-    t.ranges
-    init
 
 module Make (S : sig
   module Key : sig
@@ -292,6 +123,8 @@ module Make (S : sig
 
     val assert_valid : t -> unit
   end
+
+  module Index : Identifiable.S
 
   val available_before : L.instruction -> Key.Set.t
 
@@ -315,7 +148,229 @@ module Make (S : sig
      : prev_insn:L.instruction option
     -> key:Key.t
     -> int option
+
+  val maybe_restart_ranges : bool
 end) = struct
+  (* CR-soon mshinwell: pull this type forward so other passes can use it *)
+  type is_parameter =
+    | Local
+    | Parameter of { index : int; }
+
+  module Available_subrange : sig
+    type t
+
+    type 'a location =
+      | Reg of Reg.t * 'a
+      | Phantom
+
+    val create
+       : reg:Reg.t
+      -> start_insn:L.instruction
+      -> start_pos:L.label
+      -> end_pos:L.label
+      -> end_pos_offset:int option
+      -> stack_offset:int
+      -> t
+
+    val create_phantom
+       : start_pos:Linearize.label
+      -> end_pos:Linearize.label
+      -> t
+
+    val start_pos : t -> L.label
+    val end_pos : t -> L.label
+    val end_pos_offset : t -> int option
+    val location : t -> unit location
+    val offset_from_stack_ptr_in_bytes : t -> int
+  end = struct
+    type 'a location =
+      | Reg of Reg.t * 'a
+      | Phantom
+
+    type start_insn_or_phantom = L.instruction location
+
+    type t = {
+      (* CR-soon mshinwell: find a better name for [start_insn] *)
+      start_insn : start_insn_or_phantom;
+      start_pos : L.label;
+      (* CR mshinwell: we need to check exactly what happens with function
+         epilogues, including returns in the middle of functions. *)
+      end_pos : L.label;
+      end_pos_offset : int option;
+      offset_from_stack_ptr_in_bytes : int option;
+    }
+
+(*
+      let offset_from_stack_ptr_in_bytes =
+        match reg.loc with
+        | Stack loc ->
+          let frame_size = Proc.frame_size ~stack_offset in
+          let slot_offset =
+            Proc.slot_offset loc ~reg_class:(Proc.register_class reg)
+              ~stack_offset
+          in
+          Some (frame_size - slot_offset)
+        | Reg _ | Unknown -> None
+      in
+*)
+
+    let create ~(reg : Reg.t) ~(start_insn : Linearize.instruction)
+          ~start_pos ~end_pos ~end_pos_offset ~stack_offset =
+      match start_insn.desc with
+      | Llabel _ ->
+        { start_insn = Reg (reg, start_insn);
+          start_pos;
+          end_pos;
+          end_pos_offset;
+          offset_from_stack_ptr_in_bytes = offset_from_stack_ptr_in_bytes;
+        }
+      | _ -> failwith "Available_subrange.create"
+
+    let create_phantom ~start_pos ~end_pos =
+      { start_insn = Phantom;
+        start_pos;
+        end_pos;
+        end_pos_offset = None;
+        offset_from_stack_ptr_in_bytes = None;
+      }
+
+    let start_pos t = t.start_pos
+    let end_pos t = t.end_pos
+    let end_pos_offset t = t.end_pos_offset
+
+    let location t : unit location =
+      let convert_location (start_insn : start_insn_or_phantom) : unit location =
+        match start_insn with
+        | Reg (reg, _insn) -> Reg (reg, ())
+        | Phantom -> Phantom
+      in
+      convert_location t.start_insn
+
+    let offset_from_stack_ptr_in_bytes t =
+      match t.offset_from_stack_ptr_in_bytes with
+      | Some offset -> offset
+      | None ->
+        Misc.fatal_error "No offset from stack pointer available (this is either \
+          a phantom available subrange or one whose corresponding register is \
+          not assigned to the stack)"
+  end
+
+  module Available_range : sig
+    type t
+
+    val create : S.range_info -> t
+
+    val info : t -> S.range_info
+
+    val add_subrange : t -> subrange:Available_subrange.t -> unit
+    val extremities : t -> L.label * L.label
+
+    val iter
+       : t
+      -> f:(available_subrange:Available_subrange.t -> unit)
+      -> unit
+
+    val fold
+       : t
+      -> init:'a
+      -> f:('a -> available_subrange:Available_subrange.t -> 'a)
+      -> 'a
+  end = struct
+    type t = {
+      mutable subranges : Available_subrange.t list;
+      mutable min_pos : L.label option;
+      mutable max_pos : L.label option;
+      type_info : type_info;
+      is_parameter : is_parameter;
+      var_location : Debuginfo.t;
+    }
+
+    let create range_info =
+      { subranges = [];
+        min_pos = None;
+        max_pos = None;
+        range_info;
+      }
+
+    let range_info t = t.range_info
+
+    let add_subrange t ~subrange =
+      let start_pos = Available_subrange.start_pos subrange in
+      let end_pos = Available_subrange.end_pos subrange in
+      (* This is dubious, but should be correct by virtue of the way label
+         counters are allocated (see linearize.ml) and the fact that, below,
+         we go through the code from lowest (code) address to highest.  As
+         such the label with the highest integer value should be the one with
+         the highest address, and vice-versa.  (Note that we also exploit the
+         ordering when constructing location lists, to ensure that they are
+         sorted in increasing program counter order by start address.
+         However by that stage [Coalesce_labels] has run.) *)
+      assert (compare start_pos end_pos <= 0);
+      begin
+        match t.min_pos with
+        | None -> t.min_pos <- Some start_pos
+        | Some min_pos ->
+          if compare start_pos min_pos < 0 then t.min_pos <- Some start_pos
+      end;
+      begin
+        match t.max_pos with
+        | None -> t.max_pos <- Some end_pos
+        | Some max_pos ->
+          if compare (`At_label end_pos) (`At_label max_pos) > 0 then
+            t.max_pos <- Some end_pos
+      end;
+      t.subranges <- subrange::t.subranges
+
+    let extremities t =
+      (* We ignore any [end_pos_offsets] here; should be ok. *)
+      match t.min_pos, t.max_pos with
+      | Some min, Some max -> min, max
+      | Some _, None | None, Some _ -> assert false
+      | None, None -> failwith "Available_ranges.extremities on empty range"
+
+    let iter t ~f =
+      List.iter (fun available_subrange -> f ~available_subrange)
+        t.subranges
+
+    let fold t ~init ~f =
+      List.fold_left (fun acc available_subrange -> f acc ~available_subrange)
+        init
+        t.subranges
+  end
+
+  type t = {
+    ranges : Available_range.t Backend_var.Tbl.t;
+  }
+
+  let find t ~var =
+    match Backend_var.Tbl.find t.ranges var with
+    | exception Not_found -> None
+    | range -> Some range
+
+  let fold t ~init ~f =
+    Backend_var.Tbl.fold (fun var range acc ->
+        (* CR-soon mshinwell: improve efficiency *)
+        let with_same_name =
+          List.filter (fun (var', range') ->
+              Backend_var.name var = Backend_var.name var'
+                && Available_range.is_parameter range
+                  = Available_range.is_parameter range')
+            (Backend_var.Tbl.to_list t.ranges)
+        in
+        let with_same_location =
+          List.filter (fun (_, range') ->
+              Available_range.var_location range
+                  = Available_range.var_location range'
+                && Available_range.is_parameter range
+                  = Available_range.is_parameter range')
+            (Backend_var.Tbl.to_list t.ranges)
+        in
+        let name_is_unique = List.length with_same_name <= 1 in
+        let location_is_unique = List.length with_same_location <= 1 in
+        f acc ~var ~name_is_unique ~location_is_unique ~range)
+      t.ranges
+      init
+
   module KM = S.Key.Map
   module KS = S.Key.Set
 
@@ -325,7 +380,9 @@ end) = struct
      instruction immediately prior to [insn], if such exists. *)
   let births_and_deaths ~(insn : L.instruction)
         ~(prev_insn : L.instruction option) =
-    (* Available subranges are allowed to cross points at which the stack
+    (* Notes for register available ranges (not relevant for lexical blocks):
+
+       Available subranges are allowed to cross points at which the stack
        pointer changes, since we reference the stack slots as an offset from
        the CFA, not from the stack pointer.
 
@@ -346,13 +403,15 @@ end) = struct
         KS.diff (S.available_before prev_insn) (S.available_before insn)
     in
     let restart_ranges =
-      match !Clflags.debug_full with
-      | Some Gdb -> false
-      | Some Lldb ->
-        (* Work at OCamlPro suggested that lldb requires ranges to be
-           completely restarted in the event of any change. *)
-        KS.cardinal proto_births <> 0 || KS.cardinal proto_deaths <> 0
-      | None -> Misc.fatal_error "Shouldn't be here without [debug_full]"
+      if not S.maybe_restart_ranges then false
+      else
+        match !Clflags.debug_full with
+        | Some Gdb -> false
+        | Some Lldb ->
+          (* Work at OCamlPro suggested that lldb requires ranges to be
+             completely restarted in the event of any change. *)
+          KS.cardinal proto_births <> 0 || KS.cardinal proto_deaths <> 0
+        | None -> Misc.fatal_error "Shouldn't be here without [debug_full]"
     in
     let births =
       match prev_insn with
@@ -375,19 +434,20 @@ end) = struct
     births, deaths
 
   let rec process_instruction t ~fundecl ~first_insn ~(insn : L.instruction)
-        ~prev_insn ~open_subrange_start_insns ~stack_offset =
+        ~(prev_insn : L.instruction) ~open_subrange_start_insns
+        ~stack_offset =
     let births, deaths = births_and_deaths ~insn ~prev_insn in
     let first_insn = ref first_insn in
     let prev_insn = ref prev_insn in
     let insert_insn ~new_insn =
-      assert (new_insn.L.next == insn);
+      assert (new_insn.next == insn);
       (* (Note that by virtue of [Lprologue], we can insert labels prior
          to the first assembly instruction of the function.) *)
       begin match !prev_insn with
       | None -> first_insn := new_insn
       | Some prev_insn ->
         assert (prev_insn.L.next == insn);
-        prev_insn.L.next <- new_insn
+        prev_insn.next <- new_insn
       end;
       prev_insn := Some new_insn
     in
@@ -410,13 +470,13 @@ end) = struct
         let end_pos_offset = S.end_pos_offset ~prev_insn:!prev_insn ~key in
         match S.range_info ~fundecl ~key ~start_insn with
         | None -> ()
-        | Some (var, type_info, is_parameter) ->
+        | Some (index, range_info) ->
           let range =
-            match Backend_var.Tbl.find t.ranges var with
+            match Index.Tbl.find t.ranges index with
             | range -> range
             | exception Not_found ->
-              let range = Available_range.create ~type_info ~is_parameter in
-              Backend_var.Tbl.add t.ranges var range;
+              let range = Available_range.create range_info ->
+              Index.Tbl.add t.ranges index range;
               range
           in
           let subrange =
@@ -426,9 +486,8 @@ end) = struct
           Available_range.add_subrange range ~subrange)
       deaths
       ();
-    let label_insn =
-      { L.
-        desc = L.Llabel label;
+    let label_insn : L.instruction =
+      { desc = Llabel label;
         next = insn;
         arg = [| |];
         res = [| |];
@@ -454,30 +513,48 @@ end) = struct
       insert_insn ~new_insn:label_insn
     end;
     let first_insn = !first_insn in
-    match insn.L.desc with
-    | L.Lend -> first_insn
-    | L.Lprologue | L.Lop _ | L.Lreloadretaddr | L.Lreturn | L.Llabel _
-    | L.Lbranch _ | L.Lcondbranch _ | L.Lcondbranch3 _ | L.Lswitch _
-    | L.Lsetuptrap _ | L.Lpushtrap | L.Lpoptrap | L.Lraise _ ->
+    match insn.desc with
+    | Lend -> first_insn
+    | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
+    | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
+    | Lsetuptrap _ | Lpushtrap | Lpoptrap | Lraise _ ->
       let stack_offset =
-        match insn.L.desc with
+        match insn.desc with
         | Lop (Istackoffset delta) -> stack_offset + delta
         | Lpushtrap -> stack_offset + Proc.trap_frame_size_in_bytes
         | Lpoptrap -> stack_offset - Proc.trap_frame_size_in_bytes
-        | L.Lend | L.Lprologue | L.Lop _ | L.Lreloadretaddr | L.Lreturn
-        | L.Llabel _ | L.Lbranch _ | L.Lcondbranch _ | L.Lcondbranch3 _
-        | L.Lswitch _ | L.Lsetuptrap _ | L.Lraise _ -> stack_offset
+        | Lend | Lprologue | Lop _ | Lreloadretaddr | Lreturn
+        | Llabel _ | Lbranch _ | Lcondbranch _ | Lcondbranch3 _
+        | Lswitch _ | Lsetuptrap _ | Lraise _ -> stack_offset
       in
-      process_instruction t ~fundecl ~first_insn ~insn:insn.L.next
+      process_instruction t ~fundecl ~first_insn ~insn:insn.next
         ~prev_insn:(Some insn) ~open_subrange_start_insns ~stack_offset
 
   let process_instructions t ~fundecl ~first_insn =
     let stack_offset = Proc.initial_stack_offset in
     process_instruction t ~fundecl ~first_insn ~insn:first_insn
       ~prev_insn:None ~open_subrange_start_insns:KM.empty ~stack_offset
+
+  let create ~(fundecl : L.fundecl) =
+    let t = { ranges = S.Index.Tbl.create 42; } in
+    let first_insn =
+      Make_ranges.process_instructions t ~fundecl
+        ~first_insn:fundecl.fun_body
+    in
+    t, { fundecl with fun_body = first_insn; }
+
+  let create ~fundecl =
+    if not !Clflags.debug then
+      let t =
+        { ranges = Index.Tbl.create 1;
+        }
+      in
+      t, fundecl
+    else
+      create ~fundecl
 end
 
-module Make_ranges = Make (struct
+module Regs = Make (struct
   module RD = Reg_with_debug_info
 
   (* By the time this pass has run, register stamps are irrelevant; indeed,
@@ -554,8 +631,21 @@ module Make_ranges = Make (struct
         | Some index -> Parameter { index; }
       in
       let var = RD.Debug_info.holds_value_of debug_info in
-      Some (var, From_cmt_file (RD.Debug_info.provenance debug_info),
-        is_parameter)
+      let provenance = RD.Debug_info.provenance debug_info in
+      let type_info = From_cmt_file provenance in
+      (* CR mshinwell: naming etc. *)
+      let var_location =
+        match provenance with
+        | None -> Debuginfo.none
+        | Some provenance -> Backend_var.Provenance.location provenance
+      in
+      let range_info =
+        { type_info;
+          is_parameter;
+          var_location;
+        }
+      in
+      Some (var, range_info)
 
   let create_subrange ~fundecl:_ ~key:reg ~start_pos ~start_insn ~end_pos
         ~end_pos_offset ~stack_offset =
@@ -565,7 +655,7 @@ module Make_ranges = Make (struct
       ~stack_offset
 end)
 
-module Make_phantom_ranges = Make (struct
+module Phantom_vars0 = Make (struct
   module Key = struct
     include Ident
 
@@ -576,8 +666,8 @@ module Make_phantom_ranges = Make (struct
 
   let end_pos_offset ~prev_insn:_ ~key:_ = None
 
-  let range_info ~fundecl ~key ~start_insn:_ =
-    match Backend_var.Map.find key fundecl.L.fun_phantom_lets with
+  let range_info ~(fundecl : L.fundecl) ~key ~start_insn:_ =
+    match Backend_var.Map.find key fundecl.fun_phantom_lets with
     | exception Not_found ->
       Misc.fatal_errorf "Available_ranges.Make_phantom_ranges.create_range: \
           phantom variable occurs in [phantom_available_before] but not in \
@@ -605,7 +695,60 @@ module Make_phantom_ranges = Make (struct
     Available_subrange.create_phantom ~start_pos ~end_pos
 end)
 
-module Make_lexical_block_ranges = Make (struct
+module Phantom_vars = struct
+  include Phantom_vars0
+
+  let post_process t =
+    (* It is unfortunately the case that variables can be named in the defining
+       expressions of phantom ranges without actually having any available range
+       themselves.  This might be caused by, for example, a "name for debugger"
+       operation on a register assigned to %rax immediately before an allocation
+       on x86-64 (which clobbers %rax).  The register is explicitly removed from
+       the availability sets by [Available_regs], and the name never appears on
+       any available range.
+       To prevent this situation from causing problems later on, we add empty
+       ranges for any such variables.  We assume such variables are local
+       variables. *)
+    let variables_without_ranges =
+      fold t ~init:[]
+        ~f:(fun acc ~var:_ ~name_is_unique:_ ~location_is_unique:_ ~range ->
+          match Available_range.type_info range with
+          | From_cmt_file _ -> acc
+          | Phantom (_, defining_expr) ->
+            let vars =
+              match defining_expr with
+              | None -> []
+              | Some defining_expr ->
+                match defining_expr with
+                | Iphantom_const_int _
+                | Iphantom_const_symbol _
+                | Iphantom_read_symbol_field _ -> []
+                | Iphantom_var var
+                | Iphantom_read_field { var; _ }
+                | Iphantom_offset_var { var; _ } -> [var]
+                | Iphantom_block { fields; _ } ->
+                  Misc.Stdlib.List.filter_map (fun field -> field) fields
+            in
+            let without_ranges =
+              List.filter (fun var -> not (Backend_var.Tbl.mem t.ranges var)) vars
+            in
+            acc @ without_ranges)
+    in
+    List.iter (fun var ->
+        let range =
+          Available_range.create ~type_info:(Phantom (None, None))
+            ~is_parameter:Local
+        in
+        add ranges var range)
+      variables_without_ranges
+
+  let create fundecl =
+    let t, fundecl = create fundecl in
+    post_process t;
+    t, fundecl
+end
+
+module Lexical_blocks = Make (struct
   module Key = struct
     include Debuginfo.Block
 
@@ -623,95 +766,3 @@ module Make_lexical_block_ranges = Make (struct
         ~end_pos_offset:_ ~stack_offset:_ =
     ...
 end)
-
-let create ~fundecl =
-  let t = { ranges = Backend_var.Tbl.create 42; } in
-  let first_insn =
-    let first_insn = fundecl.L.fun_body in
-    Make_ranges.process_instructions t ~fundecl ~first_insn
-  in
-  let first_insn =
-    Make_phantom_ranges.process_instructions t ~fundecl ~first_insn
-  in
-  (* It is unfortunately the case that variables can be named in the defining
-     expressions of phantom ranges without actually having any available range
-     themselves.  This might be caused by, for example, a "name for debugger"
-     operation on a register assigned to %rax immediately before an allocation
-     on x86-64 (which clobbers %rax).  The register is explicitly removed from
-     the availability sets by [Available_regs], and the name never appears on
-     any available range.
-     To prevent this situation from causing problems later on, we add empty
-     ranges for any such variables.  We assume such variables are local
-     variables. *)
-  let variables_without_ranges =
-    fold t ~init:[]
-      ~f:(fun acc ~var:_ ~name_is_unique:_ ~location_is_unique:_ ~range ->
-        match Available_range.type_info range with
-        | From_cmt_file _ -> acc
-        | Phantom (_, defining_expr) ->
-          let vars =
-            match defining_expr with
-            | None -> []
-            | Some defining_expr ->
-              match defining_expr with
-              | Iphantom_const_int _
-              | Iphantom_const_symbol _
-              | Iphantom_read_symbol_field _ -> []
-              | Iphantom_var var
-              | Iphantom_read_field { var; _ }
-              | Iphantom_offset_var { var; _ } -> [var]
-              | Iphantom_block { fields; _ } ->
-                Misc.Stdlib.List.filter_map (fun field -> field) fields
-          in
-          let without_ranges =
-            List.filter (fun var -> not (Backend_var.Tbl.mem t.ranges var)) vars
-          in
-          acc @ without_ranges)
-  in
-  List.iter (fun var ->
-      let range =
-        Available_range.create ~type_info:(Phantom (None, None))
-          ~is_parameter:Local
-      in
-      Backend_var.Tbl.add t.ranges var range)
-    variables_without_ranges;
-  t, { fundecl with L.fun_body = first_insn; }
-
-let create ~fundecl =
-  if not !Clflags.debug then
-    let t =
-      { ranges = Backend_var.Tbl.create 1;
-      }
-    in
-    t, fundecl
-  else
-    create ~fundecl
-
-type label_classification =
-  | Start of {
-      end_pos : Linearize.label;
-      location : unit Available_subrange.location;
-    }
-  | End
-
-let classify_label t label =
-  Backend_var.Tbl.fold (fun var range result ->
-      Available_range.fold range ~init:result
-        ~f:(fun result ~available_subrange:subrange ->
-          if Available_subrange.start_pos subrange = label then
-            let location = Available_subrange.location subrange in
-            let end_pos = Available_subrange.end_pos subrange in
-            (Start { end_pos; location; }, var, subrange) :: result
-          else if Available_subrange.end_pos subrange = label then
-            (End, var, subrange) :: result
-          else
-            result))
-    t.ranges
-    []
-
-let rewrite_labels t ~env =
-  let ranges =
-    Backend_var.Tbl.map t.ranges (fun range ->
-      Available_range.rewrite_labels range ~env)
-  in
-  { ranges; }
