@@ -557,11 +557,75 @@ let construct_value_description t ~parent ~fundecl
     in
     Some location_list_entry
 
+type var_uniqueness = {
+  name_is_unique : bool;
+  location_is_unique : bool;
+}
+
+let calculate_var_uniqueness ~available_ranges_regs
+      ~available_ranges_phantom_vars =
+  let module AR = Available_ranges in
+  let module String = Misc.Stdlib.String in
+  let by_name = String.Tbl.create 42 in
+  let by_debuginfo = Debuginfo.Tbl.create 42 in
+  let update_uniqueness var dbg =
+    let name = Backend_var.name var in
+    begin match String.Tbl.find by_name name with
+    | exception Not_found ->
+      String.Tbl.add by_name name (Backend_var.Set.singleton var)
+    | vars ->
+      String.Tbl.replace by_name name (Backend_var.Set.add var vars)
+    end;
+    begin match Debuginfo.Tbl.find by_name name with
+    | exception Not_found ->
+      Debuginfo.Tbl.add by_name name (Backend_var.Set.singleton var)
+    | vars ->
+      Debuginfo.Tbl.replace by_name name (Backend_var.Set.add var vars)
+    end
+  in
+  let result = Backend_var.Tbl.create 42 in
+  AR.Regs.iter available_ranges_regs
+    ~f:(fun var range ->
+      let range_info = AR.Regs.Available_range.info range in
+      let dbg = AR.Regs.Available_range_info_for_regs.debuginfo range_info in
+      update_uniqueness var dbg;
+      Backend_var.Tbl.replace result var
+        { name_is_unique = false;
+          location_is_unique = false;
+        });
+  AR.Phantom_vars.iter available_ranges_phantom_vars
+    ~f:(fun var range ->
+      let range_info = AR.Phantom_vars.Available_range.info range in
+      let dbg = AR.Regs.Available_range_info_for_regs.debuginfo range_info in
+      update_uniqueness var dbg;
+      Backend_var.Tbl.replace result var
+        { name_is_unique = false;
+          location_is_unique = false;
+        });
+  String.Tbl.iter by_name (fun _name vars ->
+    match Backend_var.Set.get_singleton vars with
+    | None -> ()
+    | Some var ->
+      let var_uniqueness = Backend_var.Tbl.find result var in
+      Backend_var.Tbl.replace result var
+        { var_uniqueness with
+          name_is_unique = true;
+        });
+  Debuginfo.Tbl.iter by_name (fun _name vars ->
+    match Backend_var.Set.get_singleton vars with
+    | None -> ()
+    | Some var ->
+      let var_uniqueness = Backend_var.Tbl.find result var in
+      Backend_var.Tbl.replace result var
+        { var_uniqueness with
+          location_is_unique = true;
+        });
+  result
+
 let dwarf_for_variable t ~fundecl ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
-      ~proto_dies_for_vars ~need_rvalue
-      (var : Backend_var.t) ~hidden ~ident_for_type ~name_is_unique
-      ~location_is_unique ~range =
+      ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue
+      (var : Backend_var.t) ~hidden ~ident_for_type ~range =
   let type_info = Available_range.type_info range in
   let is_parameter = Available_range.is_parameter range in
   let parent_proto_die : Proto_die.t =
@@ -623,6 +687,14 @@ let dwarf_for_variable t ~fundecl ~function_proto_die
   in
   let type_and_name_attributes =
     let reference = type_die_reference_for_var var ~proto_dies_for_vars in
+    let name_is_unique, location_is_unique =
+      match Backend_var.Tbl.find var uniqueness_by_var with
+      | exception Not_found ->
+        Misc.fatal_errorf "No uniqueness information for %a"
+          Backend_var.print var
+      | { name_is_unique; location_is_unique; } ->
+        name_is_unique, location_is_unique
+    in
     let name_for_var =
       (* If the unstamped name of [ident] is unambiguous within the
          function, then use it; otherwise, equip the name with the location
@@ -633,10 +705,8 @@ let dwarf_for_variable t ~fundecl ~function_proto_die
          [Lambda]) which currently lack location information or (e.g.
          inlined functions' parameters in [Closure]) where locations may
          alias.  For these ones we disambiguate using the stamp. *)
-      if name_is_unique then
-        Backend_var.name var
-      else if not location_is_unique then
-        Backend_var.unique_toplevel_name var
+      if name_is_unique then Backend_var.name var
+      else if not location_is_unique then Backend_var.unique_toplevel_name var
       else
         let provenance =
           match type_info with
@@ -709,70 +779,68 @@ let dwarf_for_variable t ~fundecl ~function_proto_die
    two cases are handled by the explicit addition of phantom lets way back
    in [Flambda_to_clambda].)  Phantom identifiers are also covered. *)
 let iterate_over_variable_like_things _t ~available_ranges ~f =
-  Available_ranges.fold available_ranges
-    ~init:()
-    ~f:(fun () var (unique : Available_ranges.range_uniqueness_for_regs)
-            range ->
-      (* There are two variables in play here:
-         1. [var] is the "real" variable that is used to cross-reference
-             between DIEs;
-         2. [ident_for_type], if it is [Some], is the corresponding
-            identifier with the stamp as in the typed tree.  This is the
-            one used for lookup in .cmt files.
-         We cannot conflate these since the multiple [vars] that might
-         be associated with a given [ident_for_type] (due to inlining) may
-         not all have the same value. *)
-      (* CR-soon mshinwell: Default arguments currently appear as local
-         variables, not parameters. *)
-      (* CR mshinwell: Introduce some flag on Backend_var.t to mark identifiers
-         that were generated internally (or vice-versa)? *)
-      let hidden =
-        let name = Backend_var.name var in
-        String.length name >= 1
-          && String.get name 0 = '*'
-          && String.get name (String.length name -1) = '*'
+  Available_ranges.iter available_ranges ~f:(fun var range ->
+    (* There are two variables in play here:
+       1. [var] is the "real" variable that is used to cross-reference
+           between DIEs;
+       2. [ident_for_type], if it is [Some], is the corresponding
+          identifier with the stamp as in the typed tree.  This is the
+          one used for lookup in .cmt files.
+       We cannot conflate these since the multiple [vars] that might
+       be associated with a given [ident_for_type] (due to inlining) may
+       not all have the same value. *)
+    (* CR-soon mshinwell: Default arguments currently appear as local
+       variables, not parameters. *)
+    (* CR mshinwell: Introduce some flag on Backend_var.t to mark identifiers
+       that were generated internally (or vice-versa)? *)
+    let hidden =
+      let name = Backend_var.name var in
+      String.length name >= 1
+        && String.get name 0 = '*'
+        && String.get name (String.length name -1) = '*'
+    in
+    let ident_for_type =
+      let provenance =
+        match Available_range.type_info range with
+        | From_cmt_file provenance
+        | Phantom (provenance, _) -> provenance
       in
-      let ident_for_type =
-        let provenance =
-          match Available_range.type_info range with
-          | From_cmt_file provenance
-          | Phantom (provenance, _) -> provenance
+      match provenance with
+      | None ->
+        (* In this case the variable won't be given a name in the DWARF,
+           so as not to appear in the debugger; but we still need to emit
+           a DIE for it, as it may be referenced as part of some chain of
+           phantom lets. *)
+        None
+      | Some provenance ->
+        (* CR-soon mshinwell: See CR-soon above; we can't do this yet
+           because there is often missing location information. *)
+        (*
+        let location = Backend_var.Provenance.location provenance in
+        if location = Debuginfo.none
+          && match Available_range.is_parameter range with
+             | Local -> true
+             | _ -> false
+        then None
+        else
+        *)
+        let original_ident =
+          Backend_var.Provenance.original_ident provenance
         in
-        match provenance with
-        | None ->
-          (* In this case the variable won't be given a name in the DWARF,
-             so as not to appear in the debugger; but we still need to emit
-             a DIE for it, as it may be referenced as part of some chain of
-             phantom lets. *)
-          None
-        | Some provenance ->
-          (* CR-soon mshinwell: See CR-soon above; we can't do this yet
-             because there is often missing location information. *)
-          (*
-          let location = Backend_var.Provenance.location provenance in
-          if location = Debuginfo.none
-            && match Available_range.is_parameter range with
-               | Local -> true
-               | _ -> false
-          then None
-          else
-          *)
-          let original_ident =
-            Backend_var.Provenance.original_ident provenance
-          in
-          Some original_ident
-      in
-      let name_is_unique = unique.name_is_unique in
-      let location_is_unique = unique.location_is_unique in
-      f var ~hidden ~ident_for_type ~name_is_unique ~location_is_unique ~range)
+        Some original_ident
+    in
+    f var ~hidden ~ident_for_type ~range)
 
 let dwarf_for_variables_and_parameters t ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies available_ranges
       ~(fundecl : Linearize.fundecl) =
   let proto_dies_for_vars = Backend_var.Tbl.create 42 in
+  let uniqueness_by_var =
+    calculate_var_uniqueness ~available_ranges_regs
+      ~available_ranges_phantom_vars
+  in
   iterate_over_variable_like_things t ~available_ranges
-    ~f:(fun var ~hidden:_ ~ident_for_type:_ ~name_is_unique:_
-            ~location_is_unique:_ ~range:_ ->
+    ~f:(fun var ~hidden:_ ~ident_for_type:_ ~range:_ ->
       let value_die_lvalue = Proto_die.create_reference () in
       let value_die_rvalue = Proto_die.create_reference () in
       let type_die = Proto_die.create_reference () in
@@ -784,10 +852,9 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
   iterate_over_variable_like_things t ~available_ranges
     ~f:(dwarf_for_variable t ~fundecl ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
-      ~proto_dies_for_vars ~need_rvalue:false);
+      ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:false);
   iterate_over_variable_like_things t ~available_ranges
-    ~f:(fun var ~hidden ~ident_for_type ~name_is_unique ~location_is_unique
-            ~range ->
+    ~f:(fun var ~hidden ~ident_for_type ~range ->
       (* We only need DIEs that yield actually on the DWARF stack the locations
          of entities for closure arguments, since those are the only ones
          that may be involved with [Iphantom_read_var_field] and
@@ -796,9 +863,8 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
       if Backend_var.name var = "*closure_env*" then begin
         dwarf_for_variable t ~fundecl ~function_proto_die
           ~whole_function_lexical_block ~lexical_block_proto_dies
-          ~proto_dies_for_vars ~need_rvalue:true
-          var ~hidden ~ident_for_type ~name_is_unique ~location_is_unique
-          ~range
+          ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true
+          var ~hidden ~ident_for_type ~range
       end)
 
 let create_lexical_block_proto_dies available_ranges ~function_proto_die

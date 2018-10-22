@@ -77,7 +77,9 @@ module Available_range_info_for_regs : sig
     | Reg of Reg.t * 'a
     | Phantom
 
-  val lexical_scope : t -> Debuginfo.Block.t
+  val debuginfo : t -> Debuginfo.t
+
+  val lexical_scope : t -> Debuginfo.Block.t option
 
   val location : t -> unit location
 
@@ -86,11 +88,6 @@ module Available_range_info_for_regs : sig
   val offset_from_stack_ptr_in_bytes : t -> int
 end
 
-type range_uniqueness_for_regs = private {
-  name_is_unique : bool;
-  location_is_unique : bool;
-}
-
 module Available_range_info_for_blocks : sig
   type t
 end
@@ -98,7 +95,6 @@ end
 module type S = sig
   type subrange_info
   type range_info
-  type range_uniqueness
   type range_index
 
   module Available_subrange : sig
@@ -131,6 +127,7 @@ module type S = sig
   end
 
   type t
+  type t = available_ranges
 
   (** [create fundecl] may change [fundecl].  It may change the first
       instruction, even, which is why a new declaration is returned. *)
@@ -138,14 +135,15 @@ module type S = sig
 
   val find : t -> range_index -> Available_range.t option
 
+  val iter
+     : t
+    -> f:(range_index -> Available_range.t -> unit)
+    -> unit
+
   val fold
      : t
     -> init:'a
-    -> f:('a
-      -> range_index
-      -> range_uniqueness
-      -> Available_range.t
-      -> 'a)
+    -> f:('a -> range_index -> Available_range.t -> 'a)
     -> 'a
 end
 
@@ -153,16 +151,13 @@ module Regs : S
   with type subrange_info := Available_subrange_info_for_regs.t
   with type range_info := Available_range_info_for_regs.t
   with type range_index := Backend_var.t
-  with type range_uniqueness := range_uniqueness_for_regs
 
 module Phantom_vars : S
   with type subrange_info := Available_subrange_info_for_regs.t
   with type range_info := Available_range_info_for_regs.t
   with type range_index := Backend_var.t
-  with type range_uniqueness := range_uniqueness_for_regs
 
 module Lexical_blocks : S
   with type subrange_info := Available_subrange_info_for_blocks.t
   with type range_info := Available_range_info_for_blocks.t
   with type range_index := Debuginfo.Block.t
-  with type range_uniqueness := unit

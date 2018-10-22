@@ -535,15 +535,7 @@ end) = struct
     process_instruction t ~fundecl ~first_insn ~insn:first_insn
       ~prev_insn:None ~open_subrange_start_insns:KM.empty ~stack_offset
 
-  let create ~(fundecl : L.fundecl) =
-    let t = { ranges = S.Index.Tbl.create 42; } in
-    let first_insn =
-      Make_ranges.process_instructions t ~fundecl
-        ~first_insn:fundecl.fun_body
-    in
-    t, { fundecl with fun_body = first_insn; }
-
-  let create ~fundecl =
+  let create (fundecl : L.fundecl) =
     if not !Clflags.debug then
       let t =
         { ranges = Index.Tbl.create 1;
@@ -551,7 +543,12 @@ end) = struct
       in
       t, fundecl
     else
-      create ~fundecl
+      let t = { ranges = S.Index.Tbl.create 42; } in
+      let first_insn =
+        Make_ranges.process_instructions t ~fundecl
+          ~first_insn:fundecl.fun_body
+      in
+      t, { fundecl with fun_body = first_insn; }
 end
 
 module Regs = Make (struct
@@ -730,7 +727,8 @@ module Phantom_vars = struct
                   Misc.Stdlib.List.filter_map (fun field -> field) fields
             in
             let without_ranges =
-              List.filter (fun var -> not (Backend_var.Tbl.mem t.ranges var)) vars
+              List.filter (fun var -> not (Backend_var.Tbl.mem t.ranges var))
+                vars
             in
             acc @ without_ranges)
     in
