@@ -2375,13 +2375,25 @@ let_bindings(EXT):
 ;
 let_binding(EXT):
   LET
-  ext = EXT attr = attributes rec_flag
-  let_binding_body post_item_attributes
-      { mklbs ~loc:$sloc ext $4 (mklb ~loc:$sloc true $5 (attr@$6)) }
+  ext = EXT
+  attrs1 = attributes
+  rec_flag = rec_flag
+  body = let_binding_body
+  attrs2 = post_item_attributes
+    {
+      let attrs = attrs1 @ attrs2 in
+      mklbs ~loc:$sloc ext rec_flag (mklb ~loc:$sloc true body attrs)
+    }
 ;
 and_let_binding:
-    AND attributes let_binding_body post_item_attributes
-      { mklb ~loc:$sloc false $3 ($2@$4) }
+  AND
+  attrs1 = attributes
+  body = let_binding_body
+  attrs2 = post_item_attributes
+    {
+      let attrs = attrs1 @ attrs2 in
+      mklb ~loc:$sloc false body attrs
+    }
 ;
 fun_binding:
     strict_binding
