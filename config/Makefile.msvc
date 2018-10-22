@@ -153,8 +153,6 @@ MKEXE_ANSI=$(FLEXLINK) -exe
 
 ### How to build a static library
 MKLIB=link -lib -nologo -out:$(1) $(2)
-#ml let mklib out files opts =
-#ml   Printf.sprintf "link -lib -nologo -out:%s %s %s" out opts files;;
 MKSHAREDLIBRPATH=
 
 ### Canonicalize the name of a system library

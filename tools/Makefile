@@ -154,8 +154,7 @@ ocamlmklibconfig.ml: $(ROOTDIR)/Makefile.config Makefile
          echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
          echo 'let default_rpath = "$(RPATH)"'; \
          echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \
-         echo 'let toolpref = "$(TOOLPREF)"'; \
-         sed -n -e 's/^#ml //p' $(ROOTDIR)/Makefile.config) \
+         echo 'let toolpref = "$(TOOLPREF)"';) \
         > ocamlmklibconfig.ml
 
 beforedepend:: ocamlmklibconfig.ml

@@ -158,9 +158,6 @@ MKEXE_ANSI=$(FLEXLINK) -exe
 
 ### How to build a static library
 MKLIB=rm -f $(1) && $(TOOLPREF)ar rcs $(1) $(2)
-#ml let mklib out files opts =
-#ml   Printf.sprintf "%sar rcs %s %s %s"
-#ml                  toolpref opts out files;;
 
 ### Canonicalize the name of a system library
 SYSLIB=-l$(1)
