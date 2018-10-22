@@ -162,7 +162,6 @@ MKSHAREDLIBRPATH=
 
 ### Canonicalize the name of a system library
 SYSLIB=$(1).lib
-#ml let syslib x = x ^ ".lib";;
 
 ### The ranlib command
 RANLIB=echo

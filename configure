@@ -1984,7 +1984,6 @@ config MKSHAREDLIBRPATH "$mksharedlibrpath"
 config NATDYNLINKOPTS "$natdynlinkopts"
 cat >> ${conffile} <<EOF
 SYSLIB=-l\$(1)
-#ml let syslib x = "-l"^x;;
 
 ### How to build a static library
 MKLIB=rm -f \$(1) && ${TOOLPREF}ar rc \$(1) \$(2) && ${TOOLPREF}ranlib \$(1)

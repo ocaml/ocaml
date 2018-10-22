@@ -164,7 +164,6 @@ MKLIB=rm -f $(1) && $(TOOLPREF)ar rcs $(1) $(2)
 
 ### Canonicalize the name of a system library
 SYSLIB=-l$(1)
-#ml let syslib x = "-l"^x;;
 
 ### The ranlib command
 RANLIB=$(TOOLPREF)ranlib

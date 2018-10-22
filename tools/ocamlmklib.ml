@@ -16,6 +16,9 @@
 open Printf
 open Ocamlmklibconfig
 
+let syslib x =
+  if Config.ccomp_type = "msvc" then x ^ ".lib" else "-l" ^ x
+
 (* PR#4783: under Windows, don't use absolute paths because we do
    not know where the binary distribution will be installed. *)
 let compiler_path name =
