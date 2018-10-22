@@ -2494,7 +2494,7 @@ pattern:
         { Ppat_alias($1, $3) }
     | pattern AS error
         { expecting $loc($3) "identifier" }
-    | pattern_comma_list  %prec below_COMMA
+    | pattern_comma_list(pattern) %prec below_COMMA
         { Ppat_tuple(List.rev $1) }
     | pattern COLONCOLON error
         { expecting $loc($3) "pattern" }
@@ -2517,7 +2517,7 @@ pattern_no_exn:
         { Ppat_alias($1, $3) }
     | pattern_no_exn AS error
         { expecting $loc($3) "identifier" }
-    | pattern_no_exn_comma_list  %prec below_COMMA
+    | pattern_comma_list(pattern_no_exn) %prec below_COMMA
         { Ppat_tuple(List.rev $1) }
     | pattern_no_exn COLONCOLON error
         { expecting $loc($3) "pattern" }
@@ -2620,15 +2620,10 @@ simple_delimited_pattern:
       { unclosed "[|" $loc($1) "|]" $loc($3) }
   ) { $1 }
 
-pattern_comma_list:
-    pattern_comma_list COMMA pattern            { $3 :: $1 }
-  | pattern COMMA pattern                       { [$3; $1] }
-  | pattern COMMA error                         { expecting $loc($3) "pattern" }
-;
-pattern_no_exn_comma_list:
-    pattern_no_exn_comma_list COMMA pattern     { $3 :: $1 }
-  | pattern_no_exn COMMA pattern                { [$3; $1] }
-  | pattern_no_exn COMMA error                  { expecting $loc($3) "pattern" }
+pattern_comma_list(self):
+    pattern_comma_list(self) COMMA pattern      { $3 :: $1 }
+  | self COMMA pattern                          { [$3; $1] }
+  | self COMMA error                            { expecting $loc($3) "pattern" }
 ;
 %inline pattern_semi_list:
   ps = separated_or_terminated_nonempty_list(SEMI, pattern)
