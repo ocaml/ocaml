@@ -2012,12 +2012,12 @@ expr:
     simple_expr %prec below_HASH
       { $1 }
   | expr_attrs
-    { let desc, attrs = $1 in
-      mkexp_attrs ~loc:$sloc desc attrs }
+      { let desc, attrs = $1 in
+        mkexp_attrs ~loc:$sloc desc attrs }
   | mkexp(expr_)
-    { $1 }
+      { $1 }
   | let_bindings(ext) IN seq_expr
-    { expr_of_let_bindings ~loc:$sloc $1 $3 }
+      { expr_of_let_bindings ~loc:$sloc $1 $3 }
   | expr COLONCOLON expr
       { mkexp_cons ~loc:$sloc $loc($2) (ghexp ~loc:$sloc (Pexp_tuple[$1;$3])) }
   | mkrhs(label) LESSMINUS expr
