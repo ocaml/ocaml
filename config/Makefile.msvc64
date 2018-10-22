@@ -203,7 +203,6 @@ WITH_OCAMLDOC=ocamldoc
 OTHERLIBRARIES=win32unix systhreads str win32graph dynlink bigarray
 
 ############# for the testsuite makefiles
-#ml let topdir = "" and wintopdir = "";;
 OTOPDIR=$(WINTOPDIR)
 CTOPDIR=$(WINTOPDIR)
 CYGPATH=cygpath -m

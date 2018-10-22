@@ -198,7 +198,6 @@ INSTALL_BYTECODE_PROGRAMS=true
 OTHERLIBRARIES=win32unix str win32graph dynlink bigarray systhreads
 
 ############# for the testsuite makefiles
-#ml let topdir = "" and wintopdir = "";;
 OTOPDIR=$(WINTOPDIR)
 CTOPDIR=$(TOPDIR)
 CYGPATH=cygpath -m
