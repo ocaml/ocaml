@@ -72,7 +72,7 @@ emacs/COPYING            typo.prune
 emacs/ocamltags.in       typo.non-printing
 
 /manual                  typo.prune
-/manual/manual/cmds/unified-options.etex typo.missing-header
+/manual/**               typo.prune
 
 ocamldoc/**              typo.long-line=may
 ocamldoc/Changes.txt     typo.missing-header
