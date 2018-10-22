@@ -2489,22 +2489,20 @@ pattern:
       { Pat.attr $1 $2 }
   | pattern_gen
       { $1 }
-  | mkpat(pattern_)
-      { $1 }
-;
-%inline pattern_:
-  | pattern AS mkrhs(val_ident)
-      { Ppat_alias($1, $3) }
-  | pattern AS error
-      { expecting $loc($3) "identifier" }
-  | pattern_comma_list  %prec below_COMMA
-      { Ppat_tuple(List.rev $1) }
-  | pattern COLONCOLON error
-      { expecting $loc($3) "pattern" }
-  | pattern BAR pattern
-      { Ppat_or($1, $3) }
-  | pattern BAR error
-      { expecting $loc($3) "pattern" }
+  | mkpat(
+      pattern AS mkrhs(val_ident)
+        { Ppat_alias($1, $3) }
+    | pattern AS error
+        { expecting $loc($3) "identifier" }
+    | pattern_comma_list  %prec below_COMMA
+        { Ppat_tuple(List.rev $1) }
+    | pattern COLONCOLON error
+        { expecting $loc($3) "pattern" }
+    | pattern BAR pattern
+        { Ppat_or($1, $3) }
+    | pattern BAR error
+        { expecting $loc($3) "pattern" }
+  ) { $1 }
 ;
 
 pattern_no_exn:
