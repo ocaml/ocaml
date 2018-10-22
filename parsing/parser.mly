@@ -1978,12 +1978,10 @@ labeled_simple_pattern:
 ;
 
 pattern_var:
-    mkpat(pattern_var_)
-      { $1 }
-;
-pattern_var_:
-    mkrhs(LIDENT)     { Ppat_var $1 }
-  | UNDERSCORE        { Ppat_any }
+  mkpat(
+      mkrhs(LIDENT)     { Ppat_var $1 }
+    | UNDERSCORE        { Ppat_any }
+  ) { $1 }
 ;
 
 opt_default:
