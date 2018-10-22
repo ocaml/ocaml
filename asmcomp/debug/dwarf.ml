@@ -781,6 +781,8 @@ let dwarf_for_variable t ~fundecl ~function_proto_die
    two cases are handled by the explicit addition of phantom lets way back
    in [Flambda_to_clambda].)  Phantom identifiers are also covered. *)
 let iterate_over_variable_like_things _t ~available_ranges ~f =
+  (* XXX This needs to iterate over two forms of ranges (normal and
+     phantom) *)
   Available_ranges.iter available_ranges ~f:(fun var range ->
     (* There are two variables in play here:
        1. [var] is the "real" variable that is used to cross-reference

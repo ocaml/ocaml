@@ -16,7 +16,7 @@
 
 module L = Linearize
 
-module Subrange_state_for_regs : sig
+module Subrange_state : sig
   include Subrange_state_intf
 
   val reg : t -> Reg.t
@@ -47,11 +47,15 @@ end = struct
     }
 end
 
-module Subrange_info_for_regs
-  : Subrange_info_intf
-    with type subrange_state = Subrange_state_for_regs.t =
+module Subrange_info : sig
+  include Subrange_info_intf
+    with type subrange_state = Subrange_state.t
+
+  val offset_from_stack_ptr_in_bytes : t -> int
 struct
   type t = {
+    reg : Reg.t;
+    start_insn : L.instruction;
     offset_from_stack_ptr_in_bytes : int option;
   }
 
@@ -64,8 +68,8 @@ struct
     | Local
     | Parameter of { index : int; }
 
-  let create ~subrange_state =
-    let reg = Subrange_state_for_regs.
+  let create ~reg (* XXX *) ~start_insn ~subrange_state =
+    let reg = Subrange_state.??? in
     let offset_from_stack_ptr_in_bytes =
       match reg.loc with
       | Stack loc ->
@@ -77,7 +81,9 @@ struct
         Some (frame_size - slot_offset)
       | Reg _ | Unknown -> None
     in
-    { offset_from_stack_ptr_in_bytes;
+    { reg : reg;
+      start_insn : start_insn;
+      offset_from_stack_ptr_in_bytes;
     }
 
   let type_info t =
@@ -86,10 +92,15 @@ struct
   let is_parameter t =
     ...
 
-  let offset_from_stack_ptr_in_bytes t = t.offset_from_stack_ptr_in_bytes
+  let offset_from_stack_ptr_in_bytes t =
+    match t.offset_from_stack_ptr_in_bytes with
+    | Some offset -> offset
+    | None ->
+      Misc.fatal_error "No offset from stack pointer available (register \
+        not assigned to the stack)"
 end
 
-module Range_info_for_regs = struct
+module Range_info = struct
   type t =
 
   type 'a location =
@@ -210,11 +221,11 @@ module Regs = Calculate_ranges.Make (struct
       Some (var, range_info)
 
   let create_subrange ~fundecl:_ ~key:reg ~start_pos ~start_insn ~end_pos
-        ~end_pos_offset ~stack_offset =
+        ~end_pos_offset ~subrange_state =
     Subrange.create ~reg:(RD.reg reg)
       ~start_pos ~start_insn
       ~end_pos ~end_pos_offset
-      ~stack_offset
+      ~subrange_state
 end)
 
 include Regs

@@ -55,6 +55,7 @@ module Make (S : sig
 
   val maybe_restart_ranges : bool
 end) = struct
+  module Subrange_info = S.Subrange_info
   module Subrange_state = S.Subrange_state
 
   module Available_subrange : sig
@@ -83,54 +84,32 @@ end) = struct
     val end_pos_offset : t -> int option
     val location : t -> unit location
   end = struct
-    type 'a location =
-      | Reg of Reg.t * 'a
-      | Phantom
-
-    type start_insn_or_phantom = L.instruction location
-
     type t = {
-      (* CR-soon mshinwell: find a better name for [start_insn] *)
-      start_insn : start_insn_or_phantom;
       start_pos : L.label;
       (* CR mshinwell: we need to check exactly what happens with function
          epilogues, including returns in the middle of functions. *)
       end_pos : L.label;
       end_pos_offset : int option;
-      offset_from_stack_ptr_in_bytes : int option;
+      subrange_info : Subrange_info.t;
     }
 
     let create ~(reg : Reg.t) ~(start_insn : Linearize.instruction)
-          ~start_pos ~end_pos ~end_pos_offset ~stack_offset =
+          ~start_pos ~end_pos ~end_pos_offset ~subrange_state =
+      let subrange_info = (* XXX Reg.t seems wrong here, might not have it *)
+        Subrange_info.create ~reg ~start_insn ...
+      in
       match start_insn.desc with
       | Llabel _ ->
-        { start_insn = Reg (reg, start_insn);
-          start_pos;
+        { start_pos;
           end_pos;
           end_pos_offset;
-          offset_from_stack_ptr_in_bytes = offset_from_stack_ptr_in_bytes;
+          subrange_info;
         }
       | _ -> failwith "Available_subrange.create"
-
-    let create_phantom ~start_pos ~end_pos =
-      { start_insn = Phantom;
-        start_pos;
-        end_pos;
-        end_pos_offset = None;
-        offset_from_stack_ptr_in_bytes = None;
-      }
 
     let start_pos t = t.start_pos
     let end_pos t = t.end_pos
     let end_pos_offset t = t.end_pos_offset
-
-    let offset_from_stack_ptr_in_bytes t =
-      match t.offset_from_stack_ptr_in_bytes with
-      | Some offset -> offset
-      | None ->
-        Misc.fatal_error "No offset from stack pointer available (this is \
-          either a phantom available subrange or one whose corresponding \
-          register is not assigned to the stack)"
   end
 
   module Available_range : sig

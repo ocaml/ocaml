@@ -16,6 +16,42 @@
 
 module L = Linearize
 
+module Subrange_state : sig
+  include Subrange_state_intf
+
+  val reg : t -> Reg.t
+
+  val stack_offset : t -> int
+end = struct
+  type t =
+
+  let create ... =
+
+  let advance_over_instruction t (insn : L.instruction) =
+end
+
+module Subrange_info : sig
+  include Subrange_info_intf
+    with type subrange_state = Subrange_state.t
+
+struct
+  type t =
+
+(* For subrange creation: *)
+    let create_phantom ~start_pos ~end_pos =
+      { start_insn = Phantom;
+        start_pos;
+        end_pos;
+        end_pos_offset = None;
+        offset_from_stack_ptr_in_bytes = None;
+      }
+end
+
+module Range_info = struct
+  type t =
+
+end
+
 module Phantom_vars0 = Calculate_ranges.Make (struct
   module Key = struct
     include Ident
