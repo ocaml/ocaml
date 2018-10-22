@@ -2373,7 +2373,7 @@ let_bindings(EXT):
     let_binding(EXT)                            { $1 }
   | let_bindings(EXT) and_let_binding           { addlb $1 $2 }
 ;
-let_binding(EXT):
+%inline let_binding(EXT):
   LET
   ext = EXT
   attrs1 = attributes
