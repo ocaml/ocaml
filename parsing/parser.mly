@@ -1683,7 +1683,7 @@ class_fun_def:
       { let (l,o,p) = $1 in Pcl_fun(l, o, p, e) }
   ) { $1 }
 ;
-class_structure:
+%inline class_structure:
   |  class_self_pattern extra_cstr(class_fields)
        { Cstr.mk $1 $2 }
 ;
