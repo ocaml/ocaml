@@ -2512,22 +2512,20 @@ pattern_no_exn:
       { Pat.attr $1 $2 }
   | pattern_gen
       { $1 }
-  | mkpat(pattern_no_exn_)
-      { $1 }
-;
-%inline pattern_no_exn_:
-  | pattern_no_exn AS mkrhs(val_ident)
-      { Ppat_alias($1, $3) }
-  | pattern_no_exn AS error
-      { expecting $loc($3) "identifier" }
-  | pattern_no_exn_comma_list  %prec below_COMMA
-      { Ppat_tuple(List.rev $1) }
-  | pattern_no_exn COLONCOLON error
-      { expecting $loc($3) "pattern" }
-  | pattern_no_exn BAR pattern
-      { Ppat_or($1, $3) }
-  | pattern_no_exn BAR error
-      { expecting $loc($3) "pattern" }
+  | mkpat(
+      pattern_no_exn AS mkrhs(val_ident)
+        { Ppat_alias($1, $3) }
+    | pattern_no_exn AS error
+        { expecting $loc($3) "identifier" }
+    | pattern_no_exn_comma_list  %prec below_COMMA
+        { Ppat_tuple(List.rev $1) }
+    | pattern_no_exn COLONCOLON error
+        { expecting $loc($3) "pattern" }
+    | pattern_no_exn BAR pattern
+        { Ppat_or($1, $3) }
+    | pattern_no_exn BAR error
+        { expecting $loc($3) "pattern" }
+  ) { $1 }
 ;
 
 pattern_gen:
