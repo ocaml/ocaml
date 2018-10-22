@@ -1984,9 +1984,9 @@ pattern_var:
   ) { $1 }
 ;
 
-opt_default:
-    /* empty */                         { None }
-  | EQUAL seq_expr                      { Some $2 }
+%inline opt_default:
+  preceded(EQUAL, seq_expr)?
+    { $1 }
 ;
 label_let_pattern:
     x = label_var
