@@ -1989,11 +1989,12 @@ opt_default:
   | EQUAL seq_expr                      { Some $2 }
 ;
 label_let_pattern:
-    label_var
-      { $1 }
-  | label_var COLON core_type
-      { let (lab, pat) = $1 in
-        (lab, mkpat ~loc:$sloc (Ppat_constraint(pat, $3))) }
+    x = label_var
+      { x }
+  | x = label_var COLON cty = core_type
+      { let lab, pat = x in
+        lab,
+        mkpat ~loc:$sloc (Ppat_constraint (pat, cty)) }
 ;
 %inline label_var:
     mkrhs(LIDENT)
