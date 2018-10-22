@@ -810,13 +810,13 @@ class man =
     (** Print groff string for a module comment.*)
     method man_of_module_comment b text =
       bs b "\n.PP\n";
-      self#man_of_text b [Code ("=== "^(Odoc_misc.string_of_text text)^" ===")];
+      self#man_of_text b text;
       bs b "\n.PP\n"
 
     (** Print groff string for a class comment.*)
     method man_of_class_comment b text =
       bs b "\n.PP\n";
-      self#man_of_text b [Code ("=== "^(Odoc_misc.string_of_text text)^" ===")];
+      self#man_of_text b text;
       bs b "\n.PP\n"
 
     method man_of_recfield b modname f =
