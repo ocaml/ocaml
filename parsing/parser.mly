@@ -2321,7 +2321,7 @@ label_expr:
   | OPTLABEL simple_expr %prec below_HASH
       { (Optional $1, $2) }
 ;
-label_ident:
+%inline label_ident:
     LIDENT
       { ($1, mkexp ~loc:$sloc (Pexp_ident(mkrhs (Lident $1) $sloc))) }
 ;
