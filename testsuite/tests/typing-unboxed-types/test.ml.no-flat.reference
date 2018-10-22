@@ -5,44 +5,44 @@ type t2 = { f : string; } [@@unboxed]
 type t3 = B of { g : string; } [@@unboxed]
 - : bool = true
 Line 3, characters 0-29:
-  type t4 = C [@@ocaml.unboxed];;  (* no argument *)
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 | type t4 = C [@@ocaml.unboxed];;  (* no argument *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because its constructor has no argument.
 Line 1, characters 0-45:
-  type t5 = D of int * string [@@ocaml.unboxed];; (* more than one argument *)
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | type t5 = D of int * string [@@ocaml.unboxed];; (* more than one argument *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        its constructor has more than one argument.
 Line 1, characters 0-33:
-  type t5 = E | F [@@ocaml.unboxed];;          (* more than one constructor *)
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | type t5 = E | F [@@ocaml.unboxed];;          (* more than one constructor *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because it has more than one constructor.
 Line 1, characters 0-40:
-  type t6 = G of int | H [@@ocaml.unboxed];;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | type t6 = G of int | H [@@ocaml.unboxed];;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because it has more than one constructor.
 Line 1, characters 0-51:
-  type t7 = I of string | J of bool [@@ocaml.unboxed];;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | type t7 = I of string | J of bool [@@ocaml.unboxed];;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because it has more than one constructor.
 Line 2, characters 0-49:
-  type t8 = { h : bool; i : int } [@@ocaml.unboxed];;  (* more than one field *)
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2 | type t8 = { h : bool; i : int } [@@ocaml.unboxed];;  (* more than one field *)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because it has more than one field.
 Line 1, characters 0-56:
-  type t9 = K of { j : string; l : int } [@@ocaml.unboxed];;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | type t9 = K of { j : string; l : int } [@@ocaml.unboxed];;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        its constructor has more than one argument.
 type t10 = A of t10 [@@unboxed]
 Line 1, characters 12-15:
-  let rec x = A x;;
-              ^^^
+1 | let rec x = A x;;
+                ^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 Line 5, characters 6-57:
-  ......struct
-    type t = A of string [@@ocaml.unboxed]
-  end..
+5 | ......struct
+6 |   type t = A of string [@@ocaml.unboxed]
+7 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type t = A of string [@@unboxed] end
@@ -55,9 +55,9 @@ Error: Signature mismatch:
        Their internal representations differ:
        the first declaration uses unboxed representation.
 Line 4, characters 6-39:
-  ......struct
-    type t = A of string
-  end..
+4 | ......struct
+5 |   type t = A of string
+6 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type t = A of string end
@@ -70,9 +70,9 @@ Error: Signature mismatch:
        Their internal representations differ:
        the second declaration uses unboxed representation.
 Line 4, characters 6-60:
-  ......struct
-    type t = { f : string } [@@ocaml.unboxed]
-  end..
+4 | ......struct
+5 |   type t = { f : string } [@@ocaml.unboxed]
+6 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type t = { f : string; } [@@unboxed] end
@@ -85,9 +85,9 @@ Error: Signature mismatch:
        Their internal representations differ:
        the first declaration uses unboxed representation.
 Line 4, characters 6-42:
-  ......struct
-    type t = { f : string }
-  end..
+4 | ......struct
+5 |   type t = { f : string }
+6 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type t = { f : string; } end
@@ -100,9 +100,9 @@ Error: Signature mismatch:
        Their internal representations differ:
        the second declaration uses unboxed representation.
 Line 4, characters 6-65:
-  ......struct
-    type t = A of { f : string } [@@ocaml.unboxed]
-  end..
+4 | ......struct
+5 |   type t = A of { f : string } [@@ocaml.unboxed]
+6 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type t = A of { f : string; } [@@unboxed] end
@@ -115,9 +115,9 @@ Error: Signature mismatch:
        Their internal representations differ:
        the first declaration uses unboxed representation.
 Line 4, characters 6-47:
-  ......struct
-    type t = A of { f : string }
-  end..
+4 | ......struct
+5 |   type t = A of { f : string }
+6 | end..
 Error: Signature mismatch:
        Modules do not match:
          sig type t = A of { f : string; } end
@@ -140,10 +140,10 @@ type 'a abs
 type t16 = A : 'a abs -> t16 [@@unboxed]
 type t18 = A : 'a list abs -> t18 [@@unboxed]
 Line 7, characters 6-86:
-  ......struct
-    type t = A of float [@@ocaml.unboxed]
-    type u = { f1 : t; f2 : t }
-  end..
+ 7 | ......struct
+ 8 |   type t = A of float [@@ocaml.unboxed]
+ 9 |   type u = { f1 : t; f2 : t }
+10 | end..
 Error: Signature mismatch:
        ...
        Type declarations do not match:
