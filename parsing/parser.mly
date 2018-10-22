@@ -2086,15 +2086,16 @@ expr:
       { unclosed "object" $loc($1) "end" $loc($4) }
 ;
 %inline expr_:
-  | expr_op { $1 }
+  | expr_op
+      { $1 }
   | simple_expr nonempty_llist(labeled_simple_expr)
-    { Pexp_apply($1, $2) }
+      { Pexp_apply($1, $2) }
   | expr_comma_list %prec below_COMMA
-    { Pexp_tuple($1) }
+      { Pexp_tuple($1) }
   | mkrhs(constr_longident) simple_expr %prec below_HASH
-    { Pexp_construct($1, Some $2) }
+      { Pexp_construct($1, Some $2) }
   | name_tag simple_expr %prec below_HASH
-    { Pexp_variant($1, Some $2) }
+      { Pexp_variant($1, Some $2) }
 ;
 %inline expr_op:
   | expr op(INFIXOP0) expr
