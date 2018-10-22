@@ -37,7 +37,7 @@ module Available_range_info_for_blocks = struct
   type t = unit
 end
 
-module Lexical_blocks = Make (struct
+module Lexical_block_ranges = Compute_ranges.Make (struct
   module Key = struct
     include Debuginfo.Block
 
@@ -57,3 +57,5 @@ module Lexical_blocks = Make (struct
         ~end_pos_offset:_ subrange_info =
     ...
 end)
+
+include Lexical_block_ranges
