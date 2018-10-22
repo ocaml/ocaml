@@ -1811,7 +1811,7 @@ class_signature:
   tys = class_parameters(core_type)
     { tys }
 ;
-class_sig_body:
+%inline class_sig_body:
     class_self_type extra_csig(class_sig_fields)
       { Csig.mk $1 $2 }
 ;
