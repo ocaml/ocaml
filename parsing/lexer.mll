@@ -23,6 +23,7 @@ open Parser
 type error =
   | Illegal_character of char
   | Illegal_escape of string * string option
+  | Reserved_sequence of string * string option
   | Unterminated_comment of Location.t
   | Unterminated_string
   | Unterminated_string_in_comment of Location.t * Location.t
@@ -263,6 +264,12 @@ let prepare_error loc = function
         (fun ppf -> match explanation with
            | None -> ()
            | Some expl -> fprintf ppf ": %s" expl)
+  | Reserved_sequence (s, explanation) ->
+      Location.errorf ~loc
+        "Reserved character sequence: %s%t" s
+        (fun ppf -> match explanation with
+           | None -> ()
+           | Some expl -> fprintf ppf " %s" expl)
   | Unterminated_comment _ ->
       Location.errorf ~loc "Comment not terminated"
   | Unterminated_string ->
@@ -305,7 +312,7 @@ let identchar_latin1 =
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let dotsymbolchar =
-  ['!' '$' '%' '&' '*' '+' '-' '/' ':' '=' '>' '?' '@' '^' '|' '~']
+  ['!' '$' '%' '&' '*' '+' '-' '/' ':' '=' '>' '?' '@' '^' '|']
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
 let hex_digit =
@@ -343,6 +350,9 @@ rule token = parse
       { UNDERSCORE }
   | "~"
       { TILDE }
+  | ".~"
+      { error lexbuf
+          (Reserved_sequence (".~", Some "is reserved for use in MetaOCaml")) }
   | "~" (lowercase identchar * as name) ':'
       { check_label_name lexbuf name;
         LABEL name }

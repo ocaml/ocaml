@@ -30,6 +30,7 @@ let rec skip_phrase lexbuf =
   | _ -> skip_phrase lexbuf
   | exception (Lexer.Error (Lexer.Unterminated_comment _, _)
               | Lexer.Error (Lexer.Unterminated_string, _)
+              | Lexer.Error (Lexer.Reserved_sequence _, _)
               | Lexer.Error (Lexer.Unterminated_string_in_comment _, _)
               | Lexer.Error (Lexer.Illegal_character _, _)) ->
       skip_phrase lexbuf
