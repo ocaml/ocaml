@@ -16,104 +16,6 @@
 
 module L = Linearize
 
-module Available_subrange_info_for_regs = struct
-  type t =
-
-  type type_info =
-    | From_cmt_file of Backend_var.Provenance.t option
-    | Phantom of
-        Backend_var.Provenance.t option * Mach.phantom_defining_expr option
-
-  type is_parameter =
-    | Local
-    | Parameter of { index : int; }
-
-  let type_info t =
-
-  let is_parameter t =
-
-end
-
-module Available_subrange_info_for_blocks = struct
-  type t = unit
-end
-
-module Available_range_info_for_regs = struct
-  type t =
-
-  type 'a location =
-    | Reg of Reg.t * 'a
-    | Phantom
-
-  let lexical_scope t =
-
-  let location t =
-
-  let offset_from_stack_ptr_in_bytes t =
-
-end
-
-type range_uniqueness_for_regs = {
-  name_is_unique : bool;
-  location_is_unique : bool;
-}
-
-module Available_range_info_for_blocks = struct
-  type t = unit
-end
-
-module type S = sig
-  type subrange_info
-  type range_info
-  type range_uniqueness
-  type range_index
-
-  module Available_subrange : sig
-    type t
-
-    val info : t -> subrange_info
-
-    val start_pos : t -> Linearize.label
-    val end_pos : t -> Linearize.label
-    val end_pos_offset : t -> int option
-  end
-
-  module Available_range : sig
-    type t
-
-    val info : t -> range_info
-
-    val extremities : t -> Linearize.label * Linearize.label
-
-    val iter
-       : t
-      -> f:(available_subrange:Available_subrange.t -> unit)
-      -> unit
-
-    val fold
-       : t
-      -> init:'a
-      -> f:('a -> available_subrange:Available_subrange.t -> 'a)
-      -> 'a
-  end
-
-  type t
-
-  val create : Linearize.fundecl -> t * Linearize.fundecl
-
-  val find : t -> range_index -> Available_range.t option
-
-  val fold
-     : t
-    -> init:'a
-    -> f:('a
-      -> range_index
-      -> range_uniqueness
-      -> Available_range.t
-      -> 'a)
-    -> 'a
-end
-
 module Make (S : sig
   module Key : sig
     type t
@@ -125,6 +27,8 @@ module Make (S : sig
   end
 
   module Index : Identifiable.S
+
+  module Subrange_state : Subrange_state_intf
 
   val available_before : L.instruction -> Key.Set.t
 
@@ -141,7 +45,7 @@ module Make (S : sig
     -> start_insn:L.instruction
     -> end_pos:L.label
     -> end_pos_offset:int option
-    -> stack_offset:int
+    -> Subrange_state.t
     -> Available_subrange.t
 
   val end_pos_offset
@@ -151,10 +55,7 @@ module Make (S : sig
 
   val maybe_restart_ranges : bool
 end) = struct
-  (* CR-soon mshinwell: pull this type forward so other passes can use it *)
-  type is_parameter =
-    | Local
-    | Parameter of { index : int; }
+  module Subrange_state = S.Subrange_state
 
   module Available_subrange : sig
     type t
@@ -169,7 +70,7 @@ end) = struct
       -> start_pos:L.label
       -> end_pos:L.label
       -> end_pos_offset:int option
-      -> stack_offset:int
+      -> subrange_state:Subrange_state.t
       -> t
 
     val create_phantom
@@ -181,7 +82,6 @@ end) = struct
     val end_pos : t -> L.label
     val end_pos_offset : t -> int option
     val location : t -> unit location
-    val offset_from_stack_ptr_in_bytes : t -> int
   end = struct
     type 'a location =
       | Reg of Reg.t * 'a
@@ -199,20 +99,6 @@ end) = struct
       end_pos_offset : int option;
       offset_from_stack_ptr_in_bytes : int option;
     }
-
-(*
-      let offset_from_stack_ptr_in_bytes =
-        match reg.loc with
-        | Stack loc ->
-          let frame_size = Proc.frame_size ~stack_offset in
-          let slot_offset =
-            Proc.slot_offset loc ~reg_class:(Proc.register_class reg)
-              ~stack_offset
-          in
-          Some (frame_size - slot_offset)
-        | Reg _ | Unknown -> None
-      in
-*)
 
     let create ~(reg : Reg.t) ~(start_insn : Linearize.instruction)
           ~start_pos ~end_pos ~end_pos_offset ~stack_offset =
@@ -238,21 +124,13 @@ end) = struct
     let end_pos t = t.end_pos
     let end_pos_offset t = t.end_pos_offset
 
-    let location t : unit location =
-      let convert_location (start_insn : start_insn_or_phantom) : unit location =
-        match start_insn with
-        | Reg (reg, _insn) -> Reg (reg, ())
-        | Phantom -> Phantom
-      in
-      convert_location t.start_insn
-
     let offset_from_stack_ptr_in_bytes t =
       match t.offset_from_stack_ptr_in_bytes with
       | Some offset -> offset
       | None ->
-        Misc.fatal_error "No offset from stack pointer available (this is either \
-          a phantom available subrange or one whose corresponding register is \
-          not assigned to the stack)"
+        Misc.fatal_error "No offset from stack pointer available (this is \
+          either a phantom available subrange or one whose corresponding \
+          register is not assigned to the stack)"
   end
 
   module Available_range : sig
@@ -347,27 +225,12 @@ end) = struct
     | exception Not_found -> None
     | range -> Some range
 
+  let iter t ~f =
+    Backend_var.Tbl.iter (fun var range -> f var range)
+      t.ranges
+
   let fold t ~init ~f =
-    Backend_var.Tbl.fold (fun var range acc ->
-        (* CR-soon mshinwell: improve efficiency *)
-        let with_same_name =
-          List.filter (fun (var', range') ->
-              Backend_var.name var = Backend_var.name var'
-                && Available_range.is_parameter range
-                  = Available_range.is_parameter range')
-            (Backend_var.Tbl.to_list t.ranges)
-        in
-        let with_same_location =
-          List.filter (fun (_, range') ->
-              Available_range.var_location range
-                  = Available_range.var_location range'
-                && Available_range.is_parameter range
-                  = Available_range.is_parameter range')
-            (Backend_var.Tbl.to_list t.ranges)
-        in
-        let name_is_unique = List.length with_same_name <= 1 in
-        let location_is_unique = List.length with_same_location <= 1 in
-        f acc ~var ~name_is_unique ~location_is_unique ~range)
+    Backend_var.Tbl.fold (fun var range acc -> f acc var range)
       t.ranges
       init
 
@@ -435,7 +298,7 @@ end) = struct
 
   let rec process_instruction t ~fundecl ~first_insn ~(insn : L.instruction)
         ~(prev_insn : L.instruction) ~open_subrange_start_insns
-        ~stack_offset =
+        ~subrange_state =
     let births, deaths = births_and_deaths ~insn ~prev_insn in
     let first_insn = ref first_insn in
     let prev_insn = ref prev_insn in
@@ -475,13 +338,13 @@ end) = struct
             match Index.Tbl.find t.ranges index with
             | range -> range
             | exception Not_found ->
-              let range = Available_range.create range_info ->
+              let range = Available_range.create range_info in
               Index.Tbl.add t.ranges index range;
               range
           in
           let subrange =
             S.create_subrange ~fundecl ~key ~start_pos ~start_insn ~end_pos
-              ~end_pos_offset ~stack_offset
+              ~end_pos_offset ~subrange_state
           in
           Available_range.add_subrange range ~subrange)
       deaths
@@ -518,22 +381,16 @@ end) = struct
     | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
     | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
     | Lsetuptrap _ | Lpushtrap | Lpoptrap | Lraise _ ->
-      let stack_offset =
-        match insn.desc with
-        | Lop (Istackoffset delta) -> stack_offset + delta
-        | Lpushtrap -> stack_offset + Proc.trap_frame_size_in_bytes
-        | Lpoptrap -> stack_offset - Proc.trap_frame_size_in_bytes
-        | Lend | Lprologue | Lop _ | Lreloadretaddr | Lreturn
-        | Llabel _ | Lbranch _ | Lcondbranch _ | Lcondbranch3 _
-        | Lswitch _ | Lsetuptrap _ | Lraise _ -> stack_offset
+      let subrange_state =
+        Subrange_state.advance_over_instruction subrange_state insn
       in
       process_instruction t ~fundecl ~first_insn ~insn:insn.next
-        ~prev_insn:(Some insn) ~open_subrange_start_insns ~stack_offset
+        ~prev_insn:(Some insn) ~open_subrange_start_insns ~subrange_state
 
   let process_instructions t ~fundecl ~first_insn =
-    let stack_offset = Proc.initial_stack_offset in
+    let subrange_state = Subrange_state.create () in
     process_instruction t ~fundecl ~first_insn ~insn:first_insn
-      ~prev_insn:None ~open_subrange_start_insns:KM.empty ~stack_offset
+      ~prev_insn:None ~open_subrange_start_insns:KM.empty ~subrange_state
 
   let create (fundecl : L.fundecl) =
     if not !Clflags.debug then
@@ -550,217 +407,3 @@ end) = struct
       in
       t, { fundecl with fun_body = first_insn; }
 end
-
-module Regs = Make (struct
-  module RD = Reg_with_debug_info
-
-  (* By the time this pass has run, register stamps are irrelevant; indeed,
-     there may be multiple registers with different stamps assigned to the
-     same location.  As such, we quotient register sets by the equivalence
-     relation that varifies two registers iff they have the same name and
-     location. *)
-  module Key = struct
-    type t = RD.t
-
-    (* CR mshinwell: check this *)
-    let assert_valid (_t : t) = ()
-     (*  assert (t.name <> None);  (* cf. [Available_filtering] *) *)
-
-    module Map = RD.Map_distinguishing_names_and_locations
-    module Set = RD.Set_distinguishing_names_and_locations
-  end
-
-  (* CR mshinwell: improve efficiency *)
-  let available_before (insn : L.instruction) =
-    match insn.available_before with
-    | Unreachable -> Key.Set.empty
-    | Ok available_before -> Key.Set.of_list (RD.Set.elements available_before)
-
-  let end_pos_offset ~prev_insn ~key:reg =
-    (* If the range is for a register destroyed by a call and which
-       ends immediately after a call instruction, move the end of the
-       range back very slightly.  The effect is that the register is seen
-       in the debugger as available when standing on the call instruction
-       but unavailable when we are in the callee (and move to the previous
-       frame). *)
-    (* CR-someday mshinwell: I wonder if this should be more
-       conservative for Iextcall.  If the C callee is compiled with
-       debug info then it should describe where any callee-save
-       registers have been saved, so when we step back to the OCaml frame
-       in the debugger, the unwinding procedure should get register
-       values correct.  (I think.)  However if it weren't compiled with
-       debug info, this wouldn't happen, and when looking back up into
-       the OCaml frame I suspect registers would be wrong.  This may
-       not be a great problem once libmonda is hardened, although it
-       is possible for this to be subtle and misleading (e.g. an integer
-       value being 1 instead of 2 or something.) *)
-    match prev_insn with
-    | None -> None
-    | Some prev_insn ->
-      match prev_insn.L.desc with
-      | Lop ((Icall_ind _ | Icall_imm _ | Iextcall _) as op) ->
-        let destroyed_locations =
-          Array.map (fun (reg : Reg.t) -> reg.loc)
-            (Proc.destroyed_at_oper (Mach.Iop op))
-        in
-        let holds_immediate = RD.holds_non_pointer reg in
-        let on_stack = RD.assigned_to_stack reg in
-        let live_across = Reg.Set.mem (RD.reg reg) prev_insn.L.live in
-        let remains_available =
-          live_across
-            || (holds_immediate && on_stack)
-        in
-        if Array.mem (RD.location reg) destroyed_locations
-            || not remains_available
-        then
-          Some (-1)
-        else
-          None
-      | _ -> None
-
-  let range_info ~fundecl:_ ~key:reg ~start_insn:_ =
-    match RD.debug_info reg with
-    | None -> None
-    | Some debug_info ->
-      let is_parameter =
-        match RD.Debug_info.which_parameter debug_info with
-        | None -> Local
-        | Some index -> Parameter { index; }
-      in
-      let var = RD.Debug_info.holds_value_of debug_info in
-      let provenance = RD.Debug_info.provenance debug_info in
-      let type_info = From_cmt_file provenance in
-      (* CR mshinwell: naming etc. *)
-      let var_location =
-        match provenance with
-        | None -> Debuginfo.none
-        | Some provenance -> Backend_var.Provenance.location provenance
-      in
-      let range_info =
-        { type_info;
-          is_parameter;
-          var_location;
-        }
-      in
-      Some (var, range_info)
-
-  let create_subrange ~fundecl:_ ~key:reg ~start_pos ~start_insn ~end_pos
-        ~end_pos_offset ~stack_offset =
-    Available_subrange.create ~reg:(RD.reg reg)
-      ~start_pos ~start_insn
-      ~end_pos ~end_pos_offset
-      ~stack_offset
-end)
-
-module Phantom_vars0 = Make (struct
-  module Key = struct
-    include Ident
-
-    let assert_valid _t = ()
-  end
-
-  let available_before (insn : L.instruction) = insn.phantom_available_before
-
-  let end_pos_offset ~prev_insn:_ ~key:_ = None
-
-  let range_info ~(fundecl : L.fundecl) ~key ~start_insn:_ =
-    match Backend_var.Map.find key fundecl.fun_phantom_lets with
-    | exception Not_found ->
-      Misc.fatal_errorf "Available_ranges.Make_phantom_ranges.create_range: \
-          phantom variable occurs in [phantom_available_before] but not in \
-          [fun_phantom_lets]: %a"
-        Key.print key
-    | provenance, defining_expr ->
-      (* CR-someday mshinwell: Presumably the "Local" only changes to indicate
-         a parameter when we can represent the inlined frames properly in
-         DWARF.  (Otherwise the function into which an inlining occurs ends up
-         having more parameters than it should in the debugger.)
-      *)
-      Some (key, Phantom (provenance, Some defining_expr), Local)
-
-  let create_subrange ~fundecl:_ ~key:_ ~start_pos ~start_insn:_ ~end_pos
-        ~end_pos_offset:_ ~stack_offset:_ =
-    (* Ranges for phantom variables are emitted as contiguous blocks
-       which are designed to approximately indicate their scope.
-       Some such phantom variables' values may ultimately be derived
-       from the values of normal variables (e.g. "Read_var_field") and
-       thus will be unavailable when those normal variables are
-       unavailable.  This effective intersecting of available ranges
-       is handled automatically in the debugger since we emit DWARF that
-       explains properly how the phantom variables relate to other
-       (normal or phantom) ones. *)
-    Available_subrange.create_phantom ~start_pos ~end_pos
-end)
-
-module Phantom_vars = struct
-  include Phantom_vars0
-
-  let post_process t =
-    (* It is unfortunately the case that variables can be named in the defining
-       expressions of phantom ranges without actually having any available range
-       themselves.  This might be caused by, for example, a "name for debugger"
-       operation on a register assigned to %rax immediately before an allocation
-       on x86-64 (which clobbers %rax).  The register is explicitly removed from
-       the availability sets by [Available_regs], and the name never appears on
-       any available range.
-       To prevent this situation from causing problems later on, we add empty
-       ranges for any such variables.  We assume such variables are local
-       variables. *)
-    let variables_without_ranges =
-      fold t ~init:[]
-        ~f:(fun acc ~var:_ ~name_is_unique:_ ~location_is_unique:_ ~range ->
-          match Available_range.type_info range with
-          | From_cmt_file _ -> acc
-          | Phantom (_, defining_expr) ->
-            let vars =
-              match defining_expr with
-              | None -> []
-              | Some defining_expr ->
-                match defining_expr with
-                | Iphantom_const_int _
-                | Iphantom_const_symbol _
-                | Iphantom_read_symbol_field _ -> []
-                | Iphantom_var var
-                | Iphantom_read_field { var; _ }
-                | Iphantom_offset_var { var; _ } -> [var]
-                | Iphantom_block { fields; _ } ->
-                  Misc.Stdlib.List.filter_map (fun field -> field) fields
-            in
-            let without_ranges =
-              List.filter (fun var -> not (Backend_var.Tbl.mem t.ranges var))
-                vars
-            in
-            acc @ without_ranges)
-    in
-    List.iter (fun var ->
-        let range =
-          Available_range.create ~type_info:(Phantom (None, None))
-            ~is_parameter:Local
-        in
-        add ranges var range)
-      variables_without_ranges
-
-  let create fundecl =
-    let t, fundecl = create fundecl in
-    post_process t;
-    t, fundecl
-end
-
-module Lexical_blocks = Make (struct
-  module Key = struct
-    include Debuginfo.Block
-
-    let assert_valid _t = ()
-  end
-
-  let available_before (insn : L.instruction) = insn.phantom_available_before
-
-  let end_pos_offset ~prev_insn:_ ~key:_ = None
-
-  let range_info ~fundecl ~key ~start_insn:_ =
-    ...
-
-  let create_subrange ~fundecl:_ ~key:_ ~start_pos ~start_insn:_ ~end_pos
-        ~end_pos_offset:_ ~stack_offset:_ =
-    ...
-end)

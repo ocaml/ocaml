@@ -602,24 +602,26 @@ let calculate_var_uniqueness ~available_ranges_regs
         { name_is_unique = false;
           location_is_unique = false;
         });
-  String.Tbl.iter by_name (fun _name vars ->
-    match Backend_var.Set.get_singleton vars with
-    | None -> ()
-    | Some var ->
-      let var_uniqueness = Backend_var.Tbl.find result var in
-      Backend_var.Tbl.replace result var
-        { var_uniqueness with
-          name_is_unique = true;
-        });
-  Debuginfo.Tbl.iter by_name (fun _name vars ->
-    match Backend_var.Set.get_singleton vars with
-    | None -> ()
-    | Some var ->
-      let var_uniqueness = Backend_var.Tbl.find result var in
-      Backend_var.Tbl.replace result var
-        { var_uniqueness with
-          location_is_unique = true;
-        });
+  String.Tbl.iter (fun _name vars ->
+      match Backend_var.Set.get_singleton vars with
+      | None -> ()
+      | Some var ->
+        let var_uniqueness = Backend_var.Tbl.find result var in
+        Backend_var.Tbl.replace result var
+          { var_uniqueness with
+            name_is_unique = true;
+          })
+    by_name;
+  Debuginfo.Tbl.iter (fun _name vars ->
+      match Backend_var.Set.get_singleton vars with
+      | None -> ()
+      | Some var ->
+        let var_uniqueness = Backend_var.Tbl.find result var in
+        Backend_var.Tbl.replace result var
+          { var_uniqueness with
+            location_is_unique = true;
+          })
+    by_debuginfo;
   result
 
 let dwarf_for_variable t ~fundecl ~function_proto_die
