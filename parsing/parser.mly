@@ -2480,50 +2480,56 @@ type_constraint:
 
 /* Patterns */
 
+(* Whereas [pattern] is an arbitrary pattern, [pattern_no_exn] is a pattern
+   that does not begin with the [EXCEPTION] keyword. Thus, [pattern_no_exn]
+   is the intersection of the context-free language [pattern] with the
+   regular language [^EXCEPTION .*].
+
+   Ideally, we would like to use [pattern] everywhere and check in a later
+   phase that EXCEPTION patterns are used only where they are allowed (there
+   is code in typing/typecore.ml to this end). Unfortunately, in the
+   definition of [let_binding_body], we cannot allow [pattern]. That would
+   create a shift/reduce conflict: upon seeing LET EXCEPTION ..., the parser
+   wouldn't know whether this is the beginning of a LET EXCEPTION construct or
+   the beginning of a LET construct whose pattern happens to begin with
+   EXCEPTION. The conflict is avoided there by using [pattern_no_exn] in the
+   definition of [let_binding_body].
+
+   In order to avoid duplication between the definitions of [pattern] and
+   [pattern_no_exn], we create a parameterized definition [pattern_(self)]
+   and instantiate it twice. *)
+
 pattern:
-  | pattern COLONCOLON pattern
-      { mkpat_cons ~loc:$sloc $loc($2) (ghpat ~loc:$sloc (Ppat_tuple[$1;$3])) }
+    pattern_(pattern)
+      { $1 }
   | EXCEPTION ext_attributes pattern %prec prec_constr_appl
       { mkpat_attrs ~loc:$sloc (Ppat_exception $3) $2}
-  | pattern attribute
-      { Pat.attr $1 $2 }
-  | pattern_gen
-      { $1 }
-  | mkpat(
-      pattern AS mkrhs(val_ident)
-        { Ppat_alias($1, $3) }
-    | pattern AS error
-        { expecting $loc($3) "identifier" }
-    | pattern_comma_list(pattern) %prec below_COMMA
-        { Ppat_tuple(List.rev $1) }
-    | pattern COLONCOLON error
-        { expecting $loc($3) "pattern" }
-    | pattern BAR pattern
-        { Ppat_or($1, $3) }
-    | pattern BAR error
-        { expecting $loc($3) "pattern" }
-  ) { $1 }
 ;
 
 pattern_no_exn:
-  | pattern_no_exn COLONCOLON pattern
+    pattern_(pattern_no_exn)
+      { $1 }
+;
+
+%inline pattern_(self):
+  | self COLONCOLON pattern
       { mkpat_cons ~loc:$sloc $loc($2) (ghpat ~loc:$sloc (Ppat_tuple[$1;$3])) }
-  | pattern_no_exn attribute
+  | self attribute
       { Pat.attr $1 $2 }
   | pattern_gen
       { $1 }
   | mkpat(
-      pattern_no_exn AS mkrhs(val_ident)
+      self AS mkrhs(val_ident)
         { Ppat_alias($1, $3) }
-    | pattern_no_exn AS error
+    | self AS error
         { expecting $loc($3) "identifier" }
-    | pattern_comma_list(pattern_no_exn) %prec below_COMMA
+    | pattern_comma_list(self) %prec below_COMMA
         { Ppat_tuple(List.rev $1) }
-    | pattern_no_exn COLONCOLON error
+    | self COLONCOLON error
         { expecting $loc($3) "pattern" }
-    | pattern_no_exn BAR pattern
+    | self BAR pattern
         { Ppat_or($1, $3) }
-    | pattern_no_exn BAR error
+    | self BAR error
         { expecting $loc($3) "pattern" }
   ) { $1 }
 ;
