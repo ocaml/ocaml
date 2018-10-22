@@ -1995,7 +1995,7 @@ label_let_pattern:
       { let (lab, pat) = $1 in
         (lab, mkpat ~loc:$sloc (Ppat_constraint(pat, $3))) }
 ;
-label_var:
+%inline label_var:
     mkrhs(LIDENT)
       { ($1.Location.txt, mkpat ~loc:$sloc (Ppat_var $1)) }
 ;
