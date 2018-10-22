@@ -1256,7 +1256,7 @@ structure_item:
     | class_declarations
         { let (ext, l) = $1 in (Pstr_class l, ext) }
     | class_type_declarations
-        { let (l, ext) = $1 in (Pstr_class_type (List.rev l), ext) }
+        { let (ext, l) = $1 in (Pstr_class_type l, ext) }
     | include_statement(module_expr)
         { pstr_include $1 }
     )
@@ -1479,7 +1479,7 @@ signature_item:
     | class_descriptions
         { let (ext, l) = $1 in (Psig_class l, ext) }
     | class_type_declarations
-        { let (l, ext) = $1 in (Psig_class_type (List.rev l), ext) }
+        { let (ext, l) = $1 in (Psig_class_type l, ext) }
     )
     { $1 }
 ;
@@ -1906,27 +1906,43 @@ constrain_field:
     }
 ;
 class_type_declarations:
-    class_type_declaration
-      { let (body, ext) = $1 in ([body],ext) }
-  | class_type_declarations and_class_type_declaration
-      { let (l, ext) = $1 in ($2 :: l, ext) }
+  xlist(class_type_declaration, and_class_type_declaration)
+    { $1 }
 ;
-class_type_declaration:
-    CLASS TYPE ext_attributes virtual_flag formal_class_parameters mkrhs(LIDENT)
-    EQUAL class_signature post_item_attributes
-      { let (ext, attrs) = $3 in
-        let docs = symbol_docs $sloc in
-        Ci.mk $6 $8 ~virt:$4 ~params:$5
-                    ~attrs:(attrs@$9) ~loc:(make_loc $sloc) ~docs
-        , ext }
+%inline class_type_declaration:
+  CLASS TYPE
+  ext = ext
+  attrs1 = attributes
+  virt = virtual_flag
+  params = formal_class_parameters
+  id = mkrhs(LIDENT)
+  EQUAL
+  csig = class_signature
+  attrs2 = post_item_attributes
+    {
+      let attrs = attrs1 @ attrs2 in
+      let loc = make_loc $sloc in
+      let docs = symbol_docs $sloc in
+      ext,
+      Ci.mk id csig ~virt ~params ~attrs ~loc ~docs
+    }
 ;
-and_class_type_declaration:
-    AND attributes virtual_flag formal_class_parameters mkrhs(LIDENT) EQUAL
-    class_signature post_item_attributes
-      { let docs = symbol_docs $sloc in
-        let text = symbol_text $symbolstartpos in
-        Ci.mk $5 $7 ~virt:$3 ~params:$4
-                    ~attrs:($2@$8) ~loc:(make_loc $sloc) ~text ~docs }
+%inline and_class_type_declaration:
+  AND
+  attrs1 = attributes
+  virt = virtual_flag
+  params = formal_class_parameters
+  id = mkrhs(LIDENT)
+  EQUAL
+  csig = class_signature
+  attrs2 = post_item_attributes
+    {
+      let attrs = attrs1 @ attrs2 in
+      let loc = make_loc $sloc in
+      let docs = symbol_docs $sloc in
+      let text = symbol_text $symbolstartpos in
+      Ci.mk id csig ~virt ~params ~attrs ~loc ~text ~docs
+    }
 ;
 
 /* Core expressions */
