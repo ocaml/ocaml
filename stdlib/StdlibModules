@@ -45,6 +45,7 @@ STDLIB_MODULES=\
   $(P)gc \
   $(P)genlex \
   $(P)hashtbl \
+  $(P)int \
   $(P)int32 \
   $(P)int64 \
   $(P)lazy \

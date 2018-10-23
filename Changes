@@ -35,6 +35,9 @@ Working version
 
 ### Standard library:
 
+- GPR#2011: Add Int module.
+  (Many fine eyes)
+
 - GPR#1940: Add Option module and Format.pp_print_option
   (Many fine eyes)
 
