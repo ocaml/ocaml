@@ -319,7 +319,8 @@ class man =
           self#man_of_text2 b t;
           bs b "\n.sp\n"
       | Odoc_info.Title (_, _, t) ->
-          self#man_of_text2 b [Odoc_info.Code (Odoc_info.string_of_text t)]
+          let txt = Odoc_info.string_of_text t in
+          bp b ".SS %s\n" txt
       | Odoc_info.Latex _ ->
           (* don't care about LaTeX stuff in HTML. *)
           ()
