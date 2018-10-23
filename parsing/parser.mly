@@ -2638,7 +2638,7 @@ pattern_comma_list(self):
 lbl_pattern_list:
     lbl_pattern { [$1], Closed }
   | lbl_pattern SEMI { [$1], Closed }
-  | lbl_pattern SEMI UNDERSCORE opt_semi { [$1], Open }
+  | lbl_pattern SEMI UNDERSCORE SEMI? { [$1], Open }
   | lbl_pattern SEMI lbl_pattern_list
       { let (fields, closed) = $3 in $1 :: fields, closed }
 ;
@@ -3160,13 +3160,13 @@ atomic_type:
         { Ptyp_variant($3, Closed, None) }
     | LBRACKET row_field BAR row_field_list RBRACKET
         { Ptyp_variant($2 :: $4, Closed, None) }
-    | LBRACKETGREATER opt_bar row_field_list RBRACKET
+    | LBRACKETGREATER BAR? row_field_list RBRACKET
         { Ptyp_variant($3, Open, None) }
     | LBRACKETGREATER RBRACKET
         { Ptyp_variant([], Open, None) }
-    | LBRACKETLESS opt_bar row_field_list RBRACKET
+    | LBRACKETLESS BAR? row_field_list RBRACKET
         { Ptyp_variant($3, Closed, Some []) }
-    | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
+    | LBRACKETLESS BAR? row_field_list GREATER name_tag_list RBRACKET
         { Ptyp_variant($3, Closed, Some $5) }
     | extension
         { Ptyp_extension $1 }
@@ -3484,14 +3484,6 @@ virtual_with_private_flag:
 %inline override_flag:
     /* empty */                                 { Fresh }
   | BANG                                        { Override }
-;
-opt_bar:
-    /* empty */                                 { () }
-  | BAR                                         { () }
-;
-opt_semi:
-  | /* empty */                                 { () }
-  | SEMI                                        { () }
 ;
 subtractive:
   | MINUS                                       { "-" }
