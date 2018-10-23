@@ -16,32 +16,29 @@
 
 module L = Linearize
 
-module Available_subrange_state_for_blocks : Subrange_state_intf = struct
-  type t = unit
+include Compute_ranges.Make (struct
+  module Key = Debuginfo.Block
+  module Index = Debuginfo.Block
 
-  let create () = ()
+  module Available_subrange_state_for_blocks : Subrange_state_intf = struct
+    type t = unit
 
-  let advance_over_instruction () _insn = ()
-end
+    let create () = ()
 
-module Available_subrange_info_for_blocks
-  : Subrange_info_intf
-    with type subrange_state = Available_subrange_state_for_blocks.t =
-struct
-  type t = unit
+    let advance_over_instruction () _insn = ()
+  end
 
-  let create ~subrange_state:_ = ()
-end
+  module Available_subrange_info_for_blocks
+    : Subrange_info_intf
+      with type subrange_state = Available_subrange_state_for_blocks.t =
+  struct
+    type t = unit
 
-module Available_range_info_for_blocks = struct
-  type t = unit
-end
+    let create ~subrange_state:_ = ()
+  end
 
-module Lexical_block_ranges = Compute_ranges.Make (struct
-  module Key = struct
-    include Debuginfo.Block
-
-    let assert_valid _t = ()
+  module Available_range_info_for_blocks = struct
+    type t = unit
   end
 
   let available_before (insn : L.instruction) =
@@ -49,13 +46,7 @@ module Lexical_block_ranges = Compute_ranges.Make (struct
     | None -> Debuginfo.Block.Set.empty
     | Some block -> Debuginfo.Block.Set.singleton block
 
-  let end_pos_offset ~prev_insn:_ ~key:_ = None
+  let range_continues_for_this_many_bytes ~current_insn:_ _key = None
 
-  let range_info ~fundecl:_ ~key:block ~start_insn:_ = Some (block, ())
-
-  let create_subrange ~fundecl:_ ~key:_ ~start_pos ~start_insn:_ ~end_pos
-        ~end_pos_offset:_ subrange_info =
-    ...
+  let maybe_restart_ranges ~proto_births:_ ~proto_deaths:_ = false
 end)
-
-include Lexical_block_ranges

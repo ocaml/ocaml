@@ -137,46 +137,117 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   module KM = S.Key.Map
   module KS = S.Key.Set
 
-  (* Imagine that the program counter is exactly at the start of [insn]; it has
-     not yet been executed.  This function calculates which available subranges
-     are to start at that point, and which are to stop.  [prev_insn] is the
-     instruction immediately prior to [insn], if such exists. *)
-  let births_and_deaths ~(insn : L.instruction)
-        ~(prev_insn : L.instruction option) =
-    let proto_births =
-      match prev_insn with
-      | None -> S.available_before insn
-      | Some prev_insn ->
-        KS.diff (S.available_before insn) (S.available_before prev_insn)
+  (* The output of this pass satisfies the DWARF specification (e.g. DWARF-4
+     spec. section 2.6.2, page 30) in the sense that starting addresses of
+     ranges are treated as inclusive and ending addresses as exclusive.
+
+     Imagine that, for a given [key], the program counter (PC) is exactly at the
+     start of [insn]; that instruction has not yet been executed.  Assume
+     a immediately-previous instruction exists called [prev_insn].  Intuitively,
+     this function calculates which available subranges are to start and stop at
+     that point, but these notions are subtle.
+
+     There are eight cases, referenced in the code below.
+
+     1. First four cases: [key] is currently unavailable, i.e. it is not a
+     member of [prev_insn.available_across].
+
+     (a) [key] is not in [S.available_before insn] and neither is it in
+         [S.available_across insn].  There is nothing to do.
+
+     (b) [key] is not in [S.available_before insn] but it is in
+         [S.available_across insn].  This cannot happen---see the
+         comment at the top of available_regs.ml.
+
+     (c) [key] is in [S.available_before insn] but it is not in
+         [S.available_across insn].  A new range is created with the starting
+         position being the first machine instruction of [insn] and the ending
+         position being the next machine address after that.
+
+     (d) [key] is in [S.available_across insn], which means (as for (b) above)
+         it is in [S.available_before insn]. A new range is created with the
+         starting position being the first machine instruction of [insn] and
+         left open.
+
+     2. Second four cases: [key] is already available, i.e. a member of
+     [S.available_across prev_insn].
+
+     (a) [key] is not in [S.available_before insn] and neither is it in
+         [S.available_across insn].  The range endpoint is given as the address
+         of the first machine instruction of [insn].  Since endpoint bounds are
+         exclusive (see above) then [key] will not be shown as available when
+         the debugger is standing on [insn].
+
+     (b) [key] is not in [S.available_before insn] but it is in
+         [S.available_across insn].  This cannot happen---see the
+         comment at the top of available_regs.ml.
+
+     (c) [key] is in [S.available_before insn] but it is not in
+         [S.available_across insn].  This will only happen for operation
+         (i.e. [Lop]) instructions, for example calls, or allocations.  To give
+         a good user experience it is necessary to show availability when
+         the debugger is standing on the very first instruction of the
+         operation but not thereafter.  As such we terminate the range one
+         byte beyond the first machine instruction of [insn].
+
+     (d) [key] is in [S.available_across insn], which means (as for (b) above)
+         it is in [S.available_before insn].  The existing range remains open.
+  *)
+
+  let opt_available_across insn_opt =
+    match insn_opt with
+    | None -> KS.empty
+    | Some insn -> insn.available_across
+
+  type action =
+    | Open_one_byte_range_at 
+    | Open_range
+    | Close_range
+    | Close_range_one_byte_after
+
+  let actions_at_instruction ~(insn : L.instruction)
+        ~(prev_insn : L.instruction option) : (Key.t * action) list =
+    assert (KS.subset (S.available_across insn) (S.available_before insn));
+    let case_1c =
+      KS.diff (S.available_before insn)
+        (KS.union (S.available_across prev_insn) (S.available_across insn))
     in
-    let proto_deaths =
-      match prev_insn with
-      | None -> KS.empty
-      | Some prev_insn ->
-        KS.diff (S.available_before prev_insn) (S.available_before insn)
+    let case_1d =
+      KS.diff (KS.inter (S.available_before insn) (S.available_across insn))
+        (S.available_across prev_insn)
     in
-    let restart_ranges = S.restart_ranges ~proto_births ~proto_deaths in
-    let births =
-      match prev_insn with
-      | None -> S.available_before insn
-      | Some _prev_insn ->
-        if not restart_ranges then proto_births
-        else S.available_before insn
+    let case_2a =
+      KS.diff (S.available_across prev_insn)
+        (KS.union (S.available_before insn) (S.available_across insn))
     in
-    let deaths =
-      match prev_insn with
-      | None -> KS.empty
-      | Some prev_insn ->
-        if not restart_ranges then proto_deaths
-        else S.available_before prev_insn
+    let case_2c =
+      KS.diff
+        (KS.inter (S.available_across prev_insn) (S.available_before insn))
+        (S.available_across insn)
     in
-    births, deaths
+    let handle case action result =
+      KS.fold (fun key result -> (key, action) :: result) case result
+    in
+    let actions =
+      []
+      |> handle case_1c Open_one_byte_range
+      |> handle case_1d Open_range
+      |> handle case_2a Close_range
+      |> handle case_2c Close_range_one_byte_after
+    in
+    let eligible_for_restart =
+      if S.must_restart_ranges_upon_any_change () then
+        KS.inter (S.available_across prev_insn) (S.available_before insn)
+      else
+        KS.empty
+    in
+    actions, eligible_for_restart
 
   let rec process_instruction t (fundecl : L.fundecl)
         ~(first_insn : L.instruction) ~(insn : L.instruction)
         ~(prev_insn : L.instruction)
         ~open_subrange_start_insns ~subrange_state =
-    let births, deaths = births_and_deaths ~insn ~prev_insn in
+    let actions = actions_at_instruction ~insn ~prev_insn in
     let first_insn = ref first_insn in
     let prev_insn = ref prev_insn in
     let insert_insn ~new_insn =
@@ -195,10 +266,12 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
        the ordering of range-related labels. *)
     let label = Cmm.new_label () in
     let used_label = ref false in
-    (* As a result of the code above to restart subranges, we may have a key
-       occurring in both [births] and [deaths]; and we would like the key to
-       have an open subrange from this point. It follows that we should process
-       deaths before births. *)
+
+  type action =
+    | Open_one_byte_range_at 
+    | Open_range
+    | Close_range
+    | Close_range_one_byte_after
     KS.fold (fun (key : S.Key.t) () ->
         let start_pos, start_insn =
           try KM.find key open_subrange_start_insns

@@ -94,6 +94,10 @@ include Calculate_ranges.Make (struct
         offset_from_stack_ptr_in_bytes;
       }
 
+    (* Available subranges are allowed to cross points at which the stack
+       pointer changes, since we reference the stack slots as an offset from the
+       CFA, not from the stack pointer. *)
+
     let offset_from_stack_ptr_in_bytes t =
       match t.offset_from_stack_ptr_in_bytes with
       | Some offset -> offset
@@ -137,70 +141,26 @@ include Calculate_ranges.Make (struct
     let is_parameter t = t.is_parameter
   end
 
-  let available_before (insn : L.instruction) =
-    match insn.available_before with
+  let availability_set_to_key_set avail =
+    match avail with
     | Unreachable -> Key.Set.empty
     | Ok available_before ->
       RD.Set.fold (fun reg result -> Key.Set.add reg result)
         available_before
         Key.Set.empty
 
-  let end_pos_offset ~prev_insn reg =
-    (* If the range is for a register destroyed by a call and which
-       ends immediately after a call instruction, move the end of the
-       range back very slightly.  The effect is that the register is seen
-       in the debugger as available when standing on the call instruction
-       but unavailable when we are in the callee (and move to the previous
-       frame). *)
-    (* CR-someday mshinwell: I wonder if this should be more
-       conservative for Iextcall.  If the C callee is compiled with
-       debug info then it should describe where any callee-save
-       registers have been saved, so when we step back to the OCaml frame
-       in the debugger, the unwinding procedure should get register
-       values correct.  (I think.)  However if it weren't compiled with
-       debug info, this wouldn't happen, and when looking back up into
-       the OCaml frame I suspect registers would be wrong.  This may
-       not be a great problem once libmonda is hardened, although it
-       is possible for this to be subtle and misleading (e.g. an integer
-       value being 1 instead of 2 or something.) *)
-    match prev_insn with
-    | None -> None
-    | Some prev_insn ->
-      match prev_insn.L.desc with
-      | Lop ((Icall_ind _ | Icall_imm _ | Iextcall _) as op) ->
-        let destroyed_locations =
-          Array.map (fun (reg : Reg.t) -> reg.loc)
-            (Proc.destroyed_at_oper (Iop op))
-        in
-        let holds_immediate = RD.holds_non_pointer reg in
-        let on_stack = RD.assigned_to_stack reg in
-        let live_across = Reg.Set.mem (RD.reg reg) prev_insn.L.live in
-        let remains_available =
-          live_across
-            || (holds_immediate && on_stack)
-        in
-        if Array.mem (RD.location reg) destroyed_locations
-            || not remains_available
-        then
-          Some (-1)
-        else
-          None
-      | _ -> None
+  let available_before (insn : L.instruction) =
+    availability_set_to_key_set insn.available_before
 
-  let maybe_restart_ranges ~proto_births ~proto_deaths =
-    (* Available subranges are allowed to cross points at which the stack
-       pointer changes, since we reference the stack slots as an offset from the
-       CFA, not from the stack pointer.
+  let available_across (insn : L.instruction) =
+    availability_set_to_key_set insn.available_across
 
-       We avoid generating ranges that overlap, since this confuses lldb.  This
-       pass may generate ranges that are the same as other ranges, but those
-       are deduped in [Dwarf].
-    *)
+  let must_restart_ranges_upon_any_change () =
     match !Clflags.debug_full with
     | Some Gdb -> false
     | Some Lldb ->
       (* Work at OCamlPro suggested that lldb requires ranges to be
          completely restarted in the event of any change. *)
-      RD.Set.cardinal proto_births <> 0 || RD.Set.cardinal proto_deaths <> 0
+      true
     | None -> Misc.fatal_error "Shouldn't be here without [debug_full]"
 end)

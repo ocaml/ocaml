@@ -61,7 +61,7 @@ module Phantom_vars0 = Calculate_ranges.Make (struct
 
   let available_before (insn : L.instruction) = insn.phantom_available_before
 
-  let end_pos_offset ~prev_insn:_ ~key:_ = None
+  let range_continues_for_this_many_bytes ~current_insn:_ _key = None
 
   let range_info ~(fundecl : L.fundecl) ~key ~start_insn:_ =
     match Backend_var.Map.find key fundecl.fun_phantom_lets with

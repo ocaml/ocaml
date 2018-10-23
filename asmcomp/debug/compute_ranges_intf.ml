@@ -60,15 +60,9 @@ module type S_functor = sig
 
   val available_before : L.instruction -> Key.Set.t
 
-  val end_pos_offset
-     : prev_insn:L.instruction option
-    -> Key.t
-    -> int option
+  val available_across : L.instruction -> Key.Set.t
 
-  val maybe_restart_ranges
-     : proto_births:Key.Set.t
-    -> proto_deaths:Key.Set.t
-    -> bool
+  val must_restart_ranges_upon_any_change : unit -> bool
 end
 
 module type S = sig
