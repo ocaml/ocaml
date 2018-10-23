@@ -188,7 +188,7 @@ MAKE_OCAMLRUN = $(MKEXE) -o $(1) $(2)
 endif
 else
 LIBS = $(BYTECCLIBS)
-MAKE_OCAMLRUN = $(MKEXE) $(OC_LDFLAGS) -o $(1) $(2)
+MAKE_OCAMLRUN = $(MKEXE) -o $(1) $(2)
 endif
 
 # Build, install and clean targets
