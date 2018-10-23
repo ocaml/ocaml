@@ -335,6 +335,10 @@ let exp_of_label ~loc lbl =
 let pat_of_label ~loc lbl =
   mkpat ~loc (Ppat_var lbl)
 
+(* [loc_last] could be defined as [Location.map Longident.last]. *)
+let loc_last (id : Longident.t Location.loc) : string Location.loc =
+  { id with txt = Longident.last id.txt }
+
 let mk_newtypes ~loc newtypes exp =
   let mkexp = mkexp ~loc in
   List.fold_right (fun newtype exp -> mkexp (Pexp_newtype (newtype, exp)))
@@ -2662,7 +2666,7 @@ lbl_pattern:
     mkrhs(label_longident) preceded(COLON, core_type)? EQUAL pattern
      { ($1, mkpat_opt_constraint ~loc:$sloc $4 $2) }
   | mkrhs(label_longident) preceded(COLON, core_type)?
-     { let label = {$1 with txt = Longident.last $1.txt} in
+     { let label = loc_last $1 in
        ($1, mkpat_opt_constraint ~loc:$sloc
               (pat_of_label ~loc:$sloc label) $2) }
 ;
@@ -3003,7 +3007,7 @@ extension_constructor_rebind(opening):
 with_constraint:
     TYPE type_parameters mkrhs(label_longident) with_type_binder
     core_type_no_attr constraints
-      { let lident = Location.{ $3 with txt = Longident.last $3.txt } in
+      { let lident = loc_last $3 in
         Pwith_type
           ($3,
            (Type.mk lident
@@ -3016,7 +3020,7 @@ with_constraint:
        functor applications in type path */
   | TYPE type_parameters mkrhs(label_longident)
     COLONEQUAL core_type_no_attr
-      { let lident = Location.{ $3 with txt = Longident.last $3.txt } in
+      { let lident = loc_last $3 in
         Pwith_typesubst
          ($3,
            (Type.mk lident
