@@ -2663,12 +2663,15 @@ pattern_comma_list(self):
       fields, closed }
 ;
 lbl_pattern:
-    mkrhs(label_longident) preceded(COLON, core_type)? EQUAL pattern
-     { ($1, mkpat_opt_constraint ~loc:$sloc $4 $2) }
-  | mkrhs(label_longident) preceded(COLON, core_type)?
-     { let label = loc_last $1 in
-       ($1, mkpat_opt_constraint ~loc:$sloc
-              (pat_of_label ~loc:$sloc label) $2) }
+  label = mkrhs(label_longident)
+  octy = preceded(COLON, core_type)?
+  EQUAL
+  pat = pattern
+     { label, mkpat_opt_constraint ~loc:$sloc pat octy }
+| label = mkrhs(label_longident)
+  octy = preceded(COLON, core_type)?
+     { let pat = pat_of_label ~loc:$sloc (loc_last label) in
+       label, mkpat_opt_constraint ~loc:$sloc pat octy }
 ;
 
 /* Value descriptions */
