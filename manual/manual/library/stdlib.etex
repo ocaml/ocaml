@@ -40,6 +40,7 @@ Here is a short listing, by theme, of the standard library modules.
 "List" & p.~\pageref{List} & list operations \\
 "StdLabels" & p.~\pageref{StdLabels} & labelized versions of
 the above 4 modules \\
+"Bool" & p.~\pageref{Bool} & boolean values \\
 "Char" & p.~\pageref{Char} & character operations \\
 "Uchar" & p.~\pageref{Uchar} & Unicode characters \\
 "Int" & p.~\pageref{Int} & integer values \\
@@ -106,6 +107,7 @@ be called from C \\
 \item \ahref{libref/Array.html}{Module \texttt{Array}: array operations}
 \item \ahref{libref/ArrayLabels.html}{Module \texttt{ArrayLabels}: array operations (with labels)}
 \item \ahref{libref/Bigarray.html}{Module \texttt{Bigarray}: large, multi-dimensional, numerical arrays}
+\item \ahref{libref/Bool.html}{Module \texttt{Bool}: boolean values}
 \item \ahref{libref/Buffer.html}{Module \texttt{Buffer}: extensible buffers}
 \item \ahref{libref/Bytes.html}{Module \texttt{Bytes}: byte sequences}
 \item \ahref{libref/BytesLabels.html}{Module \texttt{BytesLabels}: byte sequences (with labels)}
@@ -157,6 +159,7 @@ be called from C \\
 \input{Array.tex}
 \input{ArrayLabels.tex}
 \input{Bigarray.tex}
+\input{Bool.tex}
 \input{Buffer.tex}
 \input{Bytes.tex}
 \input{BytesLabels.tex}

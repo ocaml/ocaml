@@ -35,6 +35,9 @@ Working version
 
 ### Standard library:
 
+- GPR#2010: Add Bool module.
+  (Many fine eyes)
+
 - GPR#2011: Add Int module.
   (Many fine eyes)
 
