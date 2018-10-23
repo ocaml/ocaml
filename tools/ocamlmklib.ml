@@ -21,17 +21,15 @@ let syslib x =
 
 let mklib out files opts =
   if Config.ccomp_type = "msvc"
-  then
-    let machine =
-      if Config.architecture="amd64"
-      then "-machine:AMD64 "
-      else ""
-    in
-    Printf.sprintf "link -lib -nologo %s-out:%s %s %s"
-                   machine out opts files
-  else
-    Printf.sprintf "%s rcs %s %s %s && %s %s"
-                   Config.ar out opts files Config.ranlib out
+  then let machine =
+    if Config.architecture="amd64"
+    then "-machine:AMD64 "
+    else ""
+  in
+  Printf.sprintf "link -lib -nologo %s-out:%s %s %s"
+                 machine out opts files
+  else Printf.sprintf "%s rcs %s %s %s && %s %s"
+                      Config.ar out opts files Config.ranlib out
 
 (* PR#4783: under Windows, don't use absolute paths because we do
    not know where the binary distribution will be installed. *)
