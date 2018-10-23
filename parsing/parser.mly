@@ -997,6 +997,21 @@ reversed_bar_llist(X):
   a = A bs = B*
     { let (x, b) = a in x, b :: bs }
 
+(* [listx(delimiter, X, Y)] recognizes a nonempty list of [X]s, optionally
+   followed with a [Y], separated-or-terminated with [delimiter]s. The
+   semantic value is a pair of a list of [X]s and an optional [Y]. *)
+
+listx(delimiter, X, Y):
+| x = X ioption(delimiter)
+    { [x], None }
+| x = X delimiter y = Y delimiter?
+    { [x], Some y }
+| x = X
+  delimiter
+  tail = listx(delimiter, X, Y)
+    { let xs, y = tail in
+      x :: xs, y }
+
 (* -------------------------------------------------------------------------- *)
 
 (* Entry points. *)
@@ -2635,12 +2650,13 @@ pattern_comma_list(self):
   ps = separated_or_terminated_nonempty_list(SEMI, pattern)
     { ps }
 ;
-lbl_pattern_list:
-    lbl_pattern { [$1], Closed }
-  | lbl_pattern SEMI { [$1], Closed }
-  | lbl_pattern SEMI UNDERSCORE SEMI? { [$1], Open }
-  | lbl_pattern SEMI lbl_pattern_list
-      { let (fields, closed) = $3 in $1 :: fields, closed }
+(* A label-pattern list is a nonempty list of label-pattern pairs, optionally
+   followed with an UNDERSCORE, separated-or-terminated with semicolons. *)
+%inline lbl_pattern_list:
+  listx(SEMI, lbl_pattern, UNDERSCORE)
+    { let fields, closed = $1 in
+      let closed = match closed with Some () -> Open | None -> Closed in
+      fields, closed }
 ;
 lbl_pattern:
     mkrhs(label_longident) preceded(COLON, core_type)? EQUAL pattern
