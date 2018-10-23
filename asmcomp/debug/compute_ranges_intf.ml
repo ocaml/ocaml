@@ -16,26 +16,57 @@
 
 module L = Linearize
 
-module type Subrange_state_intf = sig
+module type S_subrange_state =
   type t
 
   val create : unit -> t
   val advance_over_instruction : t -> L.instruction -> t
 end
 
-module type Subrange_info_intf = sig
+module type S_subrange_info =
   type t
   type subrange_state
 
   val create : subrange_state -> t
 end
 
+module type S_range_info =
+  type t
+  type key
+
+  val create : L.fundecl -> key -> start_insn:L.instruction -> t
+end
+
+module type S_functor = sig
+  module Index : Identifiable.S
+
+  module Key : Identifiable.S
+
+  module Subrange_state : Compute_ranges_intf.S_subrange_state
+
+  module Subrange_info : Compute_ranges_intf.S_subrange_info
+    with type subrange_state := Subrange_state.t
+
+  module Range_info : Compute_ranges_intf.S_range_info
+    with type key := Key.t
+
+  val available_before : L.instruction -> Key.Set.t
+
+  val end_pos_offset
+     : prev_insn:L.instruction option
+    -> key:Key.t
+    -> int option
+
+  val maybe_restart_ranges
+     : proto_births:Key.Set.t
+    -> proto_deaths:Key.Set.t
+    -> bool
+end
+
 module type S = sig
   type subrange_info
-  type subrange_state
   type range_info
-  type range_uniqueness
-  type range_index
+  type index
 
   module Available_subrange : sig
     type t
@@ -70,15 +101,9 @@ module type S = sig
 
   val create : Linearize.fundecl -> t * Linearize.fundecl
 
-  val find : t -> range_index -> Available_range.t option
+  val find : t -> index -> Available_range.t option
 
-  val fold
-     : t
-    -> init:'a
-    -> f:('a
-      -> range_index
-      -> range_uniqueness
-      -> Available_range.t
-      -> 'a)
-    -> 'a
+  val iter : t -> f:(index -> Available_range.t -> unit) -> unit
+
+  val fold : t -> init:'a -> f:('a -> index -> Available_range.t -> 'a) -> 'a
 end

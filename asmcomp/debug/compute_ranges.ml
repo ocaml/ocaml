@@ -14,76 +14,18 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+open Int_replace_polymorphic_compare
+
 module L = Linearize
 
-module Make (S : sig
-  module Key : sig
-    type t
-
-    module Map : Map.S with type key := t
-    module Set : Set.S with type elt := t
-
-    val assert_valid : t -> unit
-  end
-
-  module Index : Identifiable.S
-
-  module Subrange_state : Subrange_state_intf
-
-  val available_before : L.instruction -> Key.Set.t
-
-  val range_info
-     : fundecl:L.fundecl
-    -> key:Key.t
-    -> start_insn:L.instruction
-    -> (Backend_var.t * type_info * is_parameter) option
-
-  val create_subrange
-     : fundecl:L.fundecl
-    -> key:Key.t
-    -> start_pos:L.label
-    -> start_insn:L.instruction
-    -> end_pos:L.label
-    -> end_pos_offset:int option
-    -> Subrange_state.t
-    -> Available_subrange.t
-
-  val end_pos_offset
-     : prev_insn:L.instruction option
-    -> key:Key.t
-    -> int option
-
-  val maybe_restart_ranges : bool
-end) = struct
-  module Subrange_info = S.Subrange_info
+module Make (S : Compute_ranges_intf.S_functor) = struct
+  module Index = S.Index
+  module Key = S.Key
   module Subrange_state = S.Subrange_state
+  module Subrange_info = S.Subrange_info
+  module Range_info = S.Range_info
 
-  module Available_subrange : sig
-    type t
-
-    type 'a location =
-      | Reg of Reg.t * 'a
-      | Phantom
-
-    val create
-       : reg:Reg.t
-      -> start_insn:L.instruction
-      -> start_pos:L.label
-      -> end_pos:L.label
-      -> end_pos_offset:int option
-      -> subrange_state:Subrange_state.t
-      -> t
-
-    val create_phantom
-       : start_pos:Linearize.label
-      -> end_pos:Linearize.label
-      -> t
-
-    val start_pos : t -> L.label
-    val end_pos : t -> L.label
-    val end_pos_offset : t -> int option
-    val location : t -> unit location
-  end = struct
+  module Available_subrange = struct
     type t = {
       start_pos : L.label;
       (* CR mshinwell: we need to check exactly what happens with function
@@ -93,11 +35,8 @@ end) = struct
       subrange_info : Subrange_info.t;
     }
 
-    let create ~(reg : Reg.t) ~(start_insn : Linearize.instruction)
-          ~start_pos ~end_pos ~end_pos_offset ~subrange_state =
-      let subrange_info = (* XXX Reg.t seems wrong here, might not have it *)
-        Subrange_info.create ~reg ~start_insn ...
-      in
+    let create ~(start_insn : Linearize.instruction) ~start_pos ~end_pos
+          ~end_pos_offset ~subrange_info =
       match start_insn.desc with
       | Llabel _ ->
         { start_pos;
@@ -105,41 +44,21 @@ end) = struct
           end_pos_offset;
           subrange_info;
         }
-      | _ -> failwith "Available_subrange.create"
+      | _ ->
+        Misc.fatal_errorf "Available_subrange.create: bad [start_insn]: %a"
+          Printlinear.instruction start_insn
 
     let start_pos t = t.start_pos
     let end_pos t = t.end_pos
     let end_pos_offset t = t.end_pos_offset
   end
 
-  module Available_range : sig
-    type t
-
-    val create : S.range_info -> t
-
-    val info : t -> S.range_info
-
-    val add_subrange : t -> subrange:Available_subrange.t -> unit
-    val extremities : t -> L.label * L.label
-
-    val iter
-       : t
-      -> f:(available_subrange:Available_subrange.t -> unit)
-      -> unit
-
-    val fold
-       : t
-      -> init:'a
-      -> f:('a -> available_subrange:Available_subrange.t -> 'a)
-      -> 'a
-  end = struct
+  module Available_range = struct
     type t = {
       mutable subranges : Available_subrange.t list;
       mutable min_pos : L.label option;
       mutable max_pos : L.label option;
-      type_info : type_info;
-      is_parameter : is_parameter;
-      var_location : Debuginfo.t;
+      range_info : Range_info.t;
     }
 
     let create range_info =
@@ -154,36 +73,38 @@ end) = struct
     let add_subrange t ~subrange =
       let start_pos = Available_subrange.start_pos subrange in
       let end_pos = Available_subrange.end_pos subrange in
-      (* This is dubious, but should be correct by virtue of the way label
-         counters are allocated (see linearize.ml) and the fact that, below,
+      (* This may seem dubious, but is correct by virtue of the way label
+         counters are allocated (see [Linearize]) and the fact that, below,
          we go through the code from lowest (code) address to highest.  As
          such the label with the highest integer value should be the one with
          the highest address, and vice-versa.  (Note that we also exploit the
          ordering when constructing location lists, to ensure that they are
-         sorted in increasing program counter order by start address.
-         However by that stage [Coalesce_labels] has run.) *)
+         sorted in increasing program counter order by start address.) *)
       assert (compare start_pos end_pos <= 0);
-      begin
-        match t.min_pos with
-        | None -> t.min_pos <- Some start_pos
-        | Some min_pos ->
-          if compare start_pos min_pos < 0 then t.min_pos <- Some start_pos
+      begin match t.min_pos with
+      | None -> t.min_pos <- Some start_pos
+      | Some min_pos ->
+        if compare start_pos min_pos < 0 then begin
+          t.min_pos <- Some start_pos
+        end
       end;
       begin
         match t.max_pos with
         | None -> t.max_pos <- Some end_pos
         | Some max_pos ->
-          if compare (`At_label end_pos) (`At_label max_pos) > 0 then
+          if compare end_pos max_pos > 0 then begin
             t.max_pos <- Some end_pos
+          end
       end;
       t.subranges <- subrange::t.subranges
 
     let extremities t =
-      (* We ignore any [end_pos_offsets] here; should be ok. *)
+      (* We ignore any [end_pos_offset]s here; should be ok. *)
       match t.min_pos, t.max_pos with
       | Some min, Some max -> min, max
       | Some _, None | None, Some _ -> assert false
-      | None, None -> failwith "Available_ranges.extremities on empty range"
+      | None, None ->
+        Misc.fatal_error "Available_ranges.extremities on empty range"
 
     let iter t ~f =
       List.iter (fun available_subrange -> f ~available_subrange)
@@ -196,20 +117,20 @@ end) = struct
   end
 
   type t = {
-    ranges : Available_range.t Backend_var.Tbl.t;
+    ranges : Available_range.t Index.Tbl.t;
   }
 
   let find t ~var =
-    match Backend_var.Tbl.find t.ranges var with
+    match Index.Tbl.find t.ranges var with
     | exception Not_found -> None
     | range -> Some range
 
   let iter t ~f =
-    Backend_var.Tbl.iter (fun var range -> f var range)
+    Index.Tbl.iter (fun var range -> f var range)
       t.ranges
 
   let fold t ~init ~f =
-    Backend_var.Tbl.fold (fun var range acc -> f acc var range)
+    Index.Tbl.fold (fun var range acc -> f acc var range)
       t.ranges
       init
 
@@ -222,16 +143,6 @@ end) = struct
      instruction immediately prior to [insn], if such exists. *)
   let births_and_deaths ~(insn : L.instruction)
         ~(prev_insn : L.instruction option) =
-    (* Notes for register available ranges (not relevant for lexical blocks):
-
-       Available subranges are allowed to cross points at which the stack
-       pointer changes, since we reference the stack slots as an offset from
-       the CFA, not from the stack pointer.
-
-       We avoid generating ranges that overlap, since this confuses lldb.
-       This pass may generate ranges that are the same as other ranges,
-       but those are deduped in [Dwarf].
-    *)
     let proto_births =
       match prev_insn with
       | None -> S.available_before insn
@@ -244,47 +155,34 @@ end) = struct
       | Some prev_insn ->
         KS.diff (S.available_before prev_insn) (S.available_before insn)
     in
-    let restart_ranges =
-      if not S.maybe_restart_ranges then false
-      else
-        match !Clflags.debug_full with
-        | Some Gdb -> false
-        | Some Lldb ->
-          (* Work at OCamlPro suggested that lldb requires ranges to be
-             completely restarted in the event of any change. *)
-          KS.cardinal proto_births <> 0 || KS.cardinal proto_deaths <> 0
-        | None -> Misc.fatal_error "Shouldn't be here without [debug_full]"
-    in
+    let restart_ranges = S.restart_ranges ~proto_births ~proto_deaths in
     let births =
       match prev_insn with
       | None -> S.available_before insn
       | Some _prev_insn ->
-        if not restart_ranges then
-          proto_births
-        else
-          S.available_before insn
+        if not restart_ranges then proto_births
+        else S.available_before insn
     in
     let deaths =
       match prev_insn with
       | None -> KS.empty
       | Some prev_insn ->
-        if not restart_ranges then
-          proto_deaths
-        else
-          S.available_before prev_insn
+        if not restart_ranges then proto_deaths
+        else S.available_before prev_insn
     in
     births, deaths
 
-  let rec process_instruction t ~fundecl ~first_insn ~(insn : L.instruction)
-        ~(prev_insn : L.instruction) ~open_subrange_start_insns
-        ~subrange_state =
+  let rec process_instruction t (fundecl : L.fundecl)
+        ~(first_insn : L.instruction) ~(insn : L.instruction)
+        ~(prev_insn : L.instruction)
+        ~open_subrange_start_insns ~subrange_state =
     let births, deaths = births_and_deaths ~insn ~prev_insn in
     let first_insn = ref first_insn in
     let prev_insn = ref prev_insn in
     let insert_insn ~new_insn =
       assert (new_insn.next == insn);
-      (* (Note that by virtue of [Lprologue], we can insert labels prior
-         to the first assembly instruction of the function.) *)
+      (* (Note that by virtue of [Lprologue], we can insert labels prior to the
+         first assembly instruction of the function.) *)
       begin match !prev_insn with
       | None -> first_insn := new_insn
       | Some prev_insn ->
@@ -293,16 +191,15 @@ end) = struct
       end;
       prev_insn := Some new_insn
     in
-    (* Note that we can't reuse an existing label in the code since we rely
-       on the ordering of range-related labels. *)
+    (* Note that we can't reuse an existing label in the code since we rely on
+       the ordering of range-related labels. *)
     let label = Cmm.new_label () in
     let used_label = ref false in
-    (* As a result of the code above to restart subranges, we may have
-       a register occurring in both [births] and [deaths]; and we would
-       like the register to have an open subrange from this point.  It
-       follows that we should process deaths before births. *)
+    (* As a result of the code above to restart subranges, we may have a key
+       occurring in both [births] and [deaths]; and we would like the key to
+       have an open subrange from this point. It follows that we should process
+       deaths before births. *)
     KS.fold (fun (key : S.Key.t) () ->
-        S.Key.assert_valid key;
         let start_pos, start_insn =
           try KM.find key open_subrange_start_insns
           with Not_found -> assert false
@@ -310,7 +207,7 @@ end) = struct
         let end_pos = label in
         used_label := true;
         let end_pos_offset = S.end_pos_offset ~prev_insn:!prev_insn ~key in
-        match S.range_info ~fundecl ~key ~start_insn with
+        match Range_info.create fundecl key ~start_insn with
         | None -> ()
         | Some (index, range_info) ->
           let range =
@@ -321,9 +218,10 @@ end) = struct
               Index.Tbl.add t.ranges index range;
               range
           in
+          let subrange_info = Subrange_info.create subrange_state in
           let subrange =
             S.create_subrange ~fundecl ~key ~start_pos ~start_insn ~end_pos
-              ~end_pos_offset ~subrange_state
+              ~end_pos_offset ~subrange_info
           in
           Available_range.add_subrange range ~subrange)
       deaths
@@ -333,16 +231,16 @@ end) = struct
         next = insn;
         arg = [| |];
         res = [| |];
-        dbg = Debuginfo.none;
-        live = Reg.Set.empty;
+        dbg = insn.dbg;
+        live = insn.live;
         available_before = insn.available_before;
         phantom_available_before = insn.phantom_available_before;
-        available_across = None;
+        available_across = insn.available_before;
       }
     in
     let open_subrange_start_insns =
       let open_subrange_start_insns =
-        (KM.filter (fun reg _start_insn -> not (KS.mem reg deaths))
+        (KM.filter (fun key _start_insn -> not (KS.mem key deaths))
           open_subrange_start_insns)
       in
       KS.fold (fun key open_subrange_start_insns ->
@@ -381,7 +279,7 @@ end) = struct
     else
       let t = { ranges = S.Index.Tbl.create 42; } in
       let first_insn =
-        Make_ranges.process_instructions t ~fundecl
+        Make_ranges.process_instructions t fundecl
           ~first_insn:fundecl.fun_body
       in
       t, { fundecl with fun_body = first_insn; }

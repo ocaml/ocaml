@@ -59,15 +59,6 @@ struct
     offset_from_stack_ptr_in_bytes : int option;
   }
 
-  type type_info =
-    | From_cmt_file of Backend_var.Provenance.t option
-    | Phantom of
-        Backend_var.Provenance.t option * Mach.phantom_defining_expr option
-
-  type is_parameter =
-    | Local
-    | Parameter of { index : int; }
-
   let create ~reg (* XXX *) ~start_insn ~subrange_state =
     let reg = Subrange_state.??? in
     let offset_from_stack_ptr_in_bytes =
@@ -86,26 +77,16 @@ struct
       offset_from_stack_ptr_in_bytes;
     }
 
-  let type_info t =
-    ...
-
-  let is_parameter t =
-    ...
-
   let offset_from_stack_ptr_in_bytes t =
     match t.offset_from_stack_ptr_in_bytes with
     | Some offset -> offset
     | None ->
       Misc.fatal_error "No offset from stack pointer available (register \
         not assigned to the stack)"
-end
 
-module Range_info = struct
-  type t =
-
+(*
   type 'a location =
     | Reg of Reg.t * 'a
-    | Phantom
 
   let lexical_scope t =
 
@@ -114,12 +95,51 @@ module Range_info = struct
         : unit location =
       match start_insn with
       | Reg (reg, _insn) -> Reg (reg, ())
-      | Phantom -> Phantom
     in
     convert_location t.start_insn
 
   let offset_from_stack_ptr_in_bytes t =
+*)
+end
 
+module Range_info = struct
+  type is_parameter =
+    | Local
+    | Parameter of { index : int; }
+
+  type t = {
+    provenance : Backend_var.Provenance.t option;
+    is_parameter : is_parameter;
+  }
+
+  let create _fundecl ~key:reg ~start_insn:_ =
+    match RD.debug_info reg with
+    | None -> None
+    | Some debug_info ->
+      let is_parameter =
+        match RD.Debug_info.which_parameter debug_info with
+        | None -> Local
+        | Some index -> Parameter { index; }
+      in
+      let var = RD.Debug_info.holds_value_of debug_info in
+      let provenance = RD.Debug_info.provenance debug_info in
+      let type_info = From_cmt_file provenance in
+      (* CR mshinwell: naming etc. *)
+      let var_location =
+        match provenance with
+        | None -> Debuginfo.none
+        | Some provenance -> Backend_var.Provenance.location provenance
+      in
+      let range_info =
+        { type_info;
+          is_parameter;
+          var_location;
+        }
+      in
+      Some (var, range_info)
+
+  let provenance t = t.provenance
+  let is_parameter t = t.is_parameter
 end
 
 module Regs = Calculate_ranges.Make (struct
@@ -130,27 +150,13 @@ module Regs = Calculate_ranges.Make (struct
      same location.  As such, we quotient register sets by the equivalence
      relation that varifies two registers iff they have the same name and
      location. *)
-  module Key = struct
-    type t = RD.t
-
-    (* CR mshinwell: check this *)
-    let assert_valid (_t : t) = ()
-     (*  assert (t.name <> None);  (* cf. [Filtering] *) *)
-
-    module Map = RD.Map_distinguishing_names_and_locations
-    module Set = RD.Set_distinguishing_names_and_locations
-  end
-
-  (* CR-soon mshinwell: pull this type forward so other passes can use it *)
-  type is_parameter =
-    | Local
-    | Parameter of { index : int; }
+  module Key = RD
 
   (* CR mshinwell: improve efficiency *)
   let available_before (insn : L.instruction) =
     match insn.available_before with
-    | Unreachable -> Key.Set.empty
-    | Ok available_before -> Key.Set.of_list (RD.Set.elements available_before)
+    | Unreachable -> RD.Set.empty
+    | Ok available_before -> RD.Set.of_list (RD.Set.elements available_before)
 
   let end_pos_offset ~prev_insn ~key:reg =
     (* If the range is for a register destroyed by a call and which
@@ -194,38 +200,29 @@ module Regs = Calculate_ranges.Make (struct
           None
       | _ -> None
 
-  let range_info ~fundecl:_ ~key:reg ~start_insn:_ =
-    match RD.debug_info reg with
-    | None -> None
-    | Some debug_info ->
-      let is_parameter =
-        match RD.Debug_info.which_parameter debug_info with
-        | None -> Local
-        | Some index -> Parameter { index; }
-      in
-      let var = RD.Debug_info.holds_value_of debug_info in
-      let provenance = RD.Debug_info.provenance debug_info in
-      let type_info = From_cmt_file provenance in
-      (* CR mshinwell: naming etc. *)
-      let var_location =
-        match provenance with
-        | None -> Debuginfo.none
-        | Some provenance -> Backend_var.Provenance.location provenance
-      in
-      let range_info =
-        { type_info;
-          is_parameter;
-          var_location;
-        }
-      in
-      Some (var, range_info)
-
   let create_subrange ~fundecl:_ ~key:reg ~start_pos ~start_insn ~end_pos
         ~end_pos_offset ~subrange_state =
     Subrange.create ~reg:(RD.reg reg)
       ~start_pos ~start_insn
       ~end_pos ~end_pos_offset
       ~subrange_state
+
+  let maybe_restart_ranges ~proto_births ~proto_deaths =
+    (* Available subranges are allowed to cross points at which the stack
+       pointer changes, since we reference the stack slots as an offset from the
+       CFA, not from the stack pointer.
+
+       We avoid generating ranges that overlap, since this confuses lldb.  This
+       pass may generate ranges that are the same as other ranges, but those
+       are deduped in [Dwarf].
+    *)
+    match !Clflags.debug_full with
+    | Some Gdb -> false
+    | Some Lldb ->
+      (* Work at OCamlPro suggested that lldb requires ranges to be
+         completely restarted in the event of any change. *)
+      RD.Set.cardinal proto_births <> 0 || RD.Set.cardinal proto_deaths <> 0
+    | None -> Misc.fatal_error "Shouldn't be here without [debug_full]"
 end)
 
 include Regs
