@@ -26,20 +26,24 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   module Range_info = S.Range_info
 
   module Available_subrange = struct
+    (* CR mshinwell: we need to check exactly what happens with function
+       epilogues, including returns in the middle of functions. *)
     type t = {
       start_pos : L.label;
-      (* CR mshinwell: we need to check exactly what happens with function
-         epilogues, including returns in the middle of functions. *)
+      start_pos_offset : int;
       end_pos : L.label;
-      end_pos_offset : int option;
+      end_pos_offset : int;
       subrange_info : Subrange_info.t;
     }
 
-    let create ~(start_insn : Linearize.instruction) ~start_pos ~end_pos
-          ~end_pos_offset ~subrange_info =
+    let create ~(start_insn : Linearize.instruction)
+          ~start_pos ~start_pos_offset
+          ~end_pos ~end_pos_offset
+          ~subrange_info =
       match start_insn.desc with
       | Llabel _ ->
         { start_pos;
+          start_pos_offset;
           end_pos;
           end_pos_offset;
           subrange_info;
@@ -49,6 +53,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
           Printlinear.instruction start_insn
 
     let start_pos t = t.start_pos
+    let start_pos_offset t = t.start_pos_offset
     let end_pos t = t.end_pos
     let end_pos_offset t = t.end_pos_offset
   end
@@ -200,7 +205,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     | Some insn -> insn.available_across
 
   type action =
-    | Open_one_byte_range_at 
+    | Open_one_byte_range
     | Open_range
     | Close_range
     | Close_range_one_byte_after
@@ -266,20 +271,13 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
        the ordering of range-related labels. *)
     let label = Cmm.new_label () in
     let used_label = ref false in
+    let open_range ... =
 
-  type action =
-    | Open_one_byte_range_at 
-    | Open_range
-    | Close_range
-    | Close_range_one_byte_after
-    KS.fold (fun (key : S.Key.t) () ->
-        let start_pos, start_insn =
-          try KM.find key open_subrange_start_insns
-          with Not_found -> assert false
-        in
-        let end_pos = label in
-        used_label := true;
-        let end_pos_offset = S.end_pos_offset ~prev_insn:!prev_insn ~key in
+    in
+    let close_range key ~open_subrange_start_insns ~end_pos_offset =
+      match KM.find key open_subrange_start_insns with
+      | exception Not_found -> ()
+      | start_pos, start_pos_offset, start_insn ->
         match Range_info.create fundecl key ~start_insn with
         | None -> ()
         | Some (index, range_info) ->
@@ -293,12 +291,28 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
           in
           let subrange_info = Subrange_info.create key subrange_state in
           let subrange =
-            S.create_subrange ~fundecl ~key ~start_pos ~start_insn ~end_pos
-              ~end_pos_offset ~subrange_info
+            S.create_subrange ~fundecl ~key ~start_insn
+              ~start_pos ~start_pos_offset
+              ~end_pos ~end_pos_offset
+              ~subrange_info
           in
-          Available_range.add_subrange range ~subrange)
-      deaths
-      ();
+          Available_range.add_subrange range ~subrange
+    in
+    List.fold_left (fun open_subrange_start_insns (key, (action : action)) ->
+        match action with
+        | Open_one_byte_range ->
+          open_range key;
+          close_range key ~end_pos_offset:1
+        | Open_range -> open_range key
+        | Close_range -> close_range key ~end_pos_offset:0
+        | Close_range_one_byte_after -> close_range key ~end_pos_offset:1)
+      open_subrange_start_insns
+      actions;
+(*
+        let end_pos = label in
+        used_label := true;
+        let end_pos_offset = S.end_pos_offset ~prev_insn:!prev_insn ~key in
+*)
     let label_insn : L.instruction =
       { desc = Llabel label;
         next = insn;
