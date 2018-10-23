@@ -2662,16 +2662,20 @@ pattern_comma_list(self):
       let closed = match closed with Some () -> Open | None -> Closed in
       fields, closed }
 ;
-lbl_pattern:
+%inline lbl_pattern:
   label = mkrhs(label_longident)
   octy = preceded(COLON, core_type)?
-  EQUAL
-  pat = pattern
-     { label, mkpat_opt_constraint ~loc:$sloc pat octy }
-| label = mkrhs(label_longident)
-  octy = preceded(COLON, core_type)?
-     { let pat = pat_of_label ~loc:$sloc (loc_last label) in
-       label, mkpat_opt_constraint ~loc:$sloc pat octy }
+  opat = preceded(EQUAL, pattern)?
+    { let pat =
+        match opat with
+        | None ->
+            (* No pattern; this is a pun. Desugar it. *)
+            pat_of_label ~loc:$sloc (loc_last label)
+        | Some pat ->
+            pat
+      in
+      label, mkpat_opt_constraint ~loc:$sloc pat octy
+    }
 ;
 
 /* Value descriptions */
