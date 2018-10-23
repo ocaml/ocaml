@@ -762,7 +762,6 @@ esac
 # Shared library support
 
 shared_libraries_supported=false
-dl_needs_underscore=false
 sharedlib_cflags=''
 mksharedlib='shared-libs-not-available'
 rpath=''
@@ -783,7 +782,6 @@ if $with_sharedlibs; then
       mksharedlib="$cc -shared -flat_namespace -undefined suppress \
                    -Wl,-no_compact_unwind"
       common_cflags="$dl_defs $common_cflags"
-      dl_needs_underscore=false
       shared_libraries_supported=true;;
     *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
@@ -1396,9 +1394,6 @@ fi
 if $shared_libraries_supported; then
   inf "Dynamic loading of shared libraries is supported."
   echo "#define SUPPORT_DYNAMIC_LINKING" >> s.h
-  if $dl_needs_underscore; then
-    echo '#define DL_NEEDS_UNDERSCORE' >>s.h
-  fi
 fi
 
 if sh ./hasgot -i sys/types.h -i sys/mman.h && sh ./hasgot mmap munmap; then
