@@ -91,18 +91,7 @@ module Phantom_vars0 = Calculate_ranges.Make (struct
       in
       Some (var, range_info)
 
-  let create_subrange ~fundecl:_ ~key:_ ~start_pos ~start_insn:_ ~end_pos
-        ~end_pos_offset:_ ~stack_offset:_ =
-    (* Ranges for phantom variables are emitted as contiguous blocks
-       which are designed to approximately indicate their scope.
-       Some such phantom variables' values may ultimately be derived
-       from the values of normal variables (e.g. "Read_var_field") and
-       thus will be unavailable when those normal variables are
-       unavailable.  This effective intersecting of available ranges
-       is handled automatically in the debugger since we emit DWARF that
-       explains properly how the phantom variables relate to other
-       (normal or phantom) ones. *)
-    Available_subrange.create_phantom ~start_pos ~end_pos
+  let maybe_restart_ranges ~proto_births:_ ~proto_deaths:_ = false
 end)
 
 include Phantom_vars0

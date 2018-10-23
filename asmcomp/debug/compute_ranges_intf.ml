@@ -25,16 +25,22 @@ end
 
 module type S_subrange_info =
   type t
+  type key
   type subrange_state
 
-  val create : subrange_state -> t
+  val create : key -> subrange_state -> t
 end
 
 module type S_range_info =
   type t
   type key
+  type index
 
-  val create : L.fundecl -> key -> start_insn:L.instruction -> t
+  val create
+     : L.fundecl
+    -> key
+    -> start_insn:L.instruction
+    -> (index * t) option
 end
 
 module type S_functor = sig
@@ -45,16 +51,18 @@ module type S_functor = sig
   module Subrange_state : Compute_ranges_intf.S_subrange_state
 
   module Subrange_info : Compute_ranges_intf.S_subrange_info
+    with type key := Key.t
     with type subrange_state := Subrange_state.t
 
   module Range_info : Compute_ranges_intf.S_range_info
     with type key := Key.t
+    with type index := Index.t
 
   val available_before : L.instruction -> Key.Set.t
 
   val end_pos_offset
      : prev_insn:L.instruction option
-    -> key:Key.t
+    -> Key.t
     -> int option
 
   val maybe_restart_ranges

@@ -32,33 +32,20 @@
 module Subrange_info : sig
   type t
 
-  type type_info = private
-    | From_cmt_file of Backend_var.Provenance.t option
+  (** [offset_from_stack_ptr_in_bytes] must be called only when the
+      corresponding register is assigned to the stack. *)
+  val offset_from_stack_ptr_in_bytes : t -> int
+end
 
+module Range_info : sig
   type is_parameter = private
     | Local
     | Parameter of { index : int; }
 
-  val type_info : t -> type_info
-  val is_parameter : t -> is_parameter
-end
-
-module Range_info : sig
   type t
 
-  type 'a location = private
-    | Reg of Reg.t * 'a
-    | Phantom
-
-  val debuginfo : t -> Debuginfo.t
-
-  val lexical_scope : t -> Debuginfo.Block.t option
-
-  val location : t -> unit location
-
-  (** [offset_from_stack_ptr_in_bytes] must be called only when the
-      corresponding register is assigned to the stack. *)
-  val offset_from_stack_ptr_in_bytes : t -> int
+  val provenance : t -> Backend_var.Provenance.t option
+  val is_parameter : t -> is_parameter
 end
 
 include Compute_ranges.S

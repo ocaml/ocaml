@@ -218,7 +218,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
               Index.Tbl.add t.ranges index range;
               range
           in
-          let subrange_info = Subrange_info.create subrange_state in
+          let subrange_info = Subrange_info.create key subrange_state in
           let subrange =
             S.create_subrange ~fundecl ~key ~start_pos ~start_insn ~end_pos
               ~end_pos_offset ~subrange_info

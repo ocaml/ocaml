@@ -16,149 +16,136 @@
 
 module L = Linearize
 
-module Subrange_state : sig
-  include Subrange_state_intf
-
-  val reg : t -> Reg.t
-
-  val stack_offset : t -> int
-end = struct
-  type t = {
-    reg : Reg.t;
-    stack_offset : int;
-  }
-
-  let create ... =
-    { reg = ...;
-      stack_offset = Proc.initial_stack_offset;
-    }
-
-  let advance_over_instruction t (insn : L.instruction) =
-    let stack_offset =
-      match insn.desc with
-      | Lop (Istackoffset delta) -> t.stack_offset + delta
-      | Lpushtrap -> t.stack_offset + Proc.trap_frame_size_in_bytes
-      | Lpoptrap -> t.stack_offset - Proc.trap_frame_size_in_bytes
-      | Lend | Lprologue | Lop _ | Lreloadretaddr | Lreturn
-      | Llabel _ | Lbranch _ | Lcondbranch _ | Lcondbranch3 _
-      | Lswitch _ | Lsetuptrap _ | Lraise _ -> t.stack_offset
-    in
-    { stack_offset;
-    }
-end
-
-module Subrange_info : sig
-  include Subrange_info_intf
-    with type subrange_state = Subrange_state.t
-
-  val offset_from_stack_ptr_in_bytes : t -> int
-struct
-  type t = {
-    reg : Reg.t;
-    start_insn : L.instruction;
-    offset_from_stack_ptr_in_bytes : int option;
-  }
-
-  let create ~reg (* XXX *) ~start_insn ~subrange_state =
-    let reg = Subrange_state.??? in
-    let offset_from_stack_ptr_in_bytes =
-      match reg.loc with
-      | Stack loc ->
-        let frame_size = Proc.frame_size ~stack_offset in
-        let slot_offset =
-          Proc.slot_offset loc ~reg_class:(Proc.register_class reg)
-            ~stack_offset
-        in
-        Some (frame_size - slot_offset)
-      | Reg _ | Unknown -> None
-    in
-    { reg : reg;
-      start_insn : start_insn;
-      offset_from_stack_ptr_in_bytes;
-    }
-
-  let offset_from_stack_ptr_in_bytes t =
-    match t.offset_from_stack_ptr_in_bytes with
-    | Some offset -> offset
-    | None ->
-      Misc.fatal_error "No offset from stack pointer available (register \
-        not assigned to the stack)"
-
-(*
-  type 'a location =
-    | Reg of Reg.t * 'a
-
-  let lexical_scope t =
-
-  let location t : unit location =
-    let convert_location (start_insn : start_insn_or_phantom)
-        : unit location =
-      match start_insn with
-      | Reg (reg, _insn) -> Reg (reg, ())
-    in
-    convert_location t.start_insn
-
-  let offset_from_stack_ptr_in_bytes t =
-*)
-end
-
-module Range_info = struct
-  type is_parameter =
-    | Local
-    | Parameter of { index : int; }
-
-  type t = {
-    provenance : Backend_var.Provenance.t option;
-    is_parameter : is_parameter;
-  }
-
-  let create _fundecl ~key:reg ~start_insn:_ =
-    match RD.debug_info reg with
-    | None -> None
-    | Some debug_info ->
-      let is_parameter =
-        match RD.Debug_info.which_parameter debug_info with
-        | None -> Local
-        | Some index -> Parameter { index; }
-      in
-      let var = RD.Debug_info.holds_value_of debug_info in
-      let provenance = RD.Debug_info.provenance debug_info in
-      let type_info = From_cmt_file provenance in
-      (* CR mshinwell: naming etc. *)
-      let var_location =
-        match provenance with
-        | None -> Debuginfo.none
-        | Some provenance -> Backend_var.Provenance.location provenance
-      in
-      let range_info =
-        { type_info;
-          is_parameter;
-          var_location;
-        }
-      in
-      Some (var, range_info)
-
-  let provenance t = t.provenance
-  let is_parameter t = t.is_parameter
-end
-
-module Regs = Calculate_ranges.Make (struct
+include Calculate_ranges.Make (struct
   module RD = Reg_with_debug_info
 
   (* By the time this pass has run, register stamps are irrelevant; indeed,
      there may be multiple registers with different stamps assigned to the
      same location.  As such, we quotient register sets by the equivalence
-     relation that varifies two registers iff they have the same name and
+     relation that identifies two registers iff they have the same name and
      location. *)
-  module Key = RD
+  module Key = struct
+    include RD
 
-  (* CR mshinwell: improve efficiency *)
+    module Set = RD.Set_distinguishing_names_and_locations
+    module Map = RD.Map_distinguishing_names_and_locations
+  end
+
+  module Index = Backend_var
+
+  module Subrange_state : sig
+    include Compute_ranges_intf.S_subrange_state
+
+    val stack_offset : t -> int
+  end = struct
+    type t = {
+      stack_offset : int;
+    }
+
+    let create () =
+      { stack_offset = Proc.initial_stack_offset;
+      }
+
+    let advance_over_instruction t (insn : L.instruction) =
+      let stack_offset =
+        match insn.desc with
+        | Lop (Istackoffset delta) -> t.stack_offset + delta
+        | Lpushtrap -> t.stack_offset + Proc.trap_frame_size_in_bytes
+        | Lpoptrap -> t.stack_offset - Proc.trap_frame_size_in_bytes
+        | Lend | Lprologue | Lop _ | Lreloadretaddr | Lreturn
+        | Llabel _ | Lbranch _ | Lcondbranch _ | Lcondbranch3 _
+        | Lswitch _ | Lsetuptrap _ | Lraise _ -> t.stack_offset
+      in
+      { stack_offset;
+      }
+
+    let stack_offset t = t.stack_offset
+  end
+
+  module Subrange_info : sig
+    include Compute_ranges_intf.S_subrange_info
+      with type key := Key.t
+      with type subrange_state := Subrange_state.t
+
+    val offset_from_stack_ptr_in_bytes : t -> int
+  struct
+    type t = {
+      reg : Reg.t;
+      start_insn : L.instruction;
+      offset_from_stack_ptr_in_bytes : int option;
+    }
+
+    let create reg ~start_insn ~subrange_state =
+      let reg = RD.reg reg in
+      let stack_offset = Subrange_state.stack_offset subrange_state in
+      let offset_from_stack_ptr_in_bytes =
+        match reg.loc with
+        | Stack loc ->
+          let frame_size = Proc.frame_size ~stack_offset in
+          let slot_offset =
+            Proc.slot_offset loc ~reg_class:(Proc.register_class reg)
+              ~stack_offset
+          in
+          Some (frame_size - slot_offset)
+        | Reg _ | Unknown -> None
+      in
+      { reg;
+        start_insn;
+        offset_from_stack_ptr_in_bytes;
+      }
+
+    let offset_from_stack_ptr_in_bytes t =
+      match t.offset_from_stack_ptr_in_bytes with
+      | Some offset -> offset
+      | None ->
+        Misc.fatal_error "No offset from stack pointer available (register \
+          not assigned to the stack)"
+  end
+
+  module Range_info : Compute_ranges_intf.S_range_info
+    with type key := Key.t
+    with type index := Index.t
+  = struct
+    type is_parameter =
+      | Local
+      | Parameter of { index : int; }
+
+    type t = {
+      provenance : Backend_var.Provenance.t option;
+      is_parameter : is_parameter;
+    }
+
+    let create _fundecl reg ~start_insn:_ =
+      match RD.debug_info reg with
+      | None -> None
+      | Some debug_info ->
+        let var = RD.Debug_info.holds_value_of debug_info in
+        let provenance = RD.Debug_info.provenance debug_info in
+        let is_parameter =
+          match RD.Debug_info.which_parameter debug_info with
+          | None -> Local
+          | Some index -> Parameter { index; }
+        in
+        let range_info =
+          { provenance;
+            is_parameter;
+          }
+        in
+        Some (var, range_info)
+
+    let provenance t = t.provenance
+    let is_parameter t = t.is_parameter
+  end
+
   let available_before (insn : L.instruction) =
     match insn.available_before with
-    | Unreachable -> RD.Set.empty
-    | Ok available_before -> RD.Set.of_list (RD.Set.elements available_before)
+    | Unreachable -> Key.Set.empty
+    | Ok available_before ->
+      RD.Set.fold (fun reg result -> Key.Set.add reg result)
+        available_before
+        Key.Set.empty
 
-  let end_pos_offset ~prev_insn ~key:reg =
+  let end_pos_offset ~prev_insn reg =
     (* If the range is for a register destroyed by a call and which
        ends immediately after a call instruction, move the end of the
        range back very slightly.  The effect is that the register is seen
@@ -200,13 +187,6 @@ module Regs = Calculate_ranges.Make (struct
           None
       | _ -> None
 
-  let create_subrange ~fundecl:_ ~key:reg ~start_pos ~start_insn ~end_pos
-        ~end_pos_offset ~subrange_state =
-    Subrange.create ~reg:(RD.reg reg)
-      ~start_pos ~start_insn
-      ~end_pos ~end_pos_offset
-      ~subrange_state
-
   let maybe_restart_ranges ~proto_births ~proto_deaths =
     (* Available subranges are allowed to cross points at which the stack
        pointer changes, since we reference the stack slots as an offset from the
@@ -224,5 +204,3 @@ module Regs = Calculate_ranges.Make (struct
       RD.Set.cardinal proto_births <> 0 || RD.Set.cardinal proto_deaths <> 0
     | None -> Misc.fatal_error "Shouldn't be here without [debug_full]"
 end)
-
-include Regs
