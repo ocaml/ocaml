@@ -553,27 +553,38 @@ let find_action idxs acts tag =
     (* Can this happen? *)
     None
 
-let subst_debuginfo ~at_call_site ~block_subst loc dbg =
+let subst_debuginfo ~at_call_site ~block_subst dbg =
   if !Clflags.debug then
-    Debuginfo.Block_subst.
-    Debuginfo.inline loc dbg
+    Debuginfo.Block_subst.find_or_add block_subst dbg ~at_call_site
   else
     block_subst, dbg
 
-let rec substitute ~at_call_site ~block_subst loc fpc sb rn ulam =
+let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
   match ulam with
     Uvar v ->
       begin try V.Map.find v sb with Not_found -> ulam end
   | Uconst _ -> ulam
   | Udirect_apply(lbl, args, dbg) ->
-      let dbg = subst_debuginfo ~at_call_site ~block_subst loc dbg in
-      Udirect_apply(lbl, List.map (substitute ~at_call_site ~block_subst loc fpc sb rn) args,
-        dbg)
+      let block_subst, dbg =
+        subst_debuginfo ~at_call_site ~block_subst dbg
+      in
+      let block_subst, args =
+        substitute_list ~at_call_site ~block_subst fpc sb rn args
+      in
+      let term = Udirect_apply (lbl, args, dbg) in
+      block_subst, term
   | Ugeneric_apply(fn, args, dbg) ->
-      let dbg = subst_debuginfo ~at_call_site ~block_subst loc dbg in
-      Ugeneric_apply(substitute ~at_call_site ~block_subst loc fpc sb rn fn,
-                     List.map (substitute ~at_call_site ~block_subst loc fpc sb rn) args,
-                     dbg)
+      let block_subst, dbg =
+        subst_debuginfo ~at_call_site ~block_subst dbg
+      in
+      let block_subst, callee =
+        substitute ~at_call_site ~block_subst fpc sb rn fn
+      in
+      let block_subst, args =
+        substitute ~at_call_site ~block_subst fpc sb rn args
+      in
+      let term = Ugeneric_apply (callee, args, dbg) in
+      block_subst, term
   | Uclosure(defs, env) ->
       (* Question: should we rename function labels as well?  Otherwise,
          there is a risk that function labels are not globally unique.
@@ -583,19 +594,41 @@ let rec substitute ~at_call_site ~block_subst loc fpc sb rn ulam =
          - When we substitute offsets for idents bound by let rec
            in [close], case [Lletrec], we discard the original
            let rec body and use only the substituted term. *)
-      Uclosure(defs, List.map (substitute ~at_call_site ~block_subst loc fpc sb rn) env)
-  | Uoffset(u, ofs) -> Uoffset(substitute ~at_call_site ~block_subst loc fpc sb rn u, ofs)
+      let block_subst, env =
+        substitute_list ~at_call_site ~block_subst fpc sb rn env
+      in
+      let term = Uclosure (defs, env) in
+      block_subst, term
+  | Uoffset(u, ofs) ->
+      let block_subst, block =
+        substitute ~at_call_site ~block_subst fpc sb rn u
+      in
+      let term = Uoffset (block_subst, ofs) in
+      block_subst, term
   | Ulet(str, kind, id, u1, u2) ->
-      let provenance =
+      let block_subst, provenance =
         match VP.provenance id with
-        | None -> None
+        | None -> block_subst, None
         | Some provenance ->
-          Some (V.Provenance.add_inlined_frame provenance loc)
+          let block_subst, dbg =
+            subst_debuginfo ~at_call_site ~block_subst
+              (VP.Provenance.debuginfo provenance)
+          in
+          let provenance =
+            VP.Provenance.replace_debuginfo provenance dbg
+          in
+          block_subst, Some provenance
       in
       let id' = VP.rename ?provenance id in
-      Ulet(str, kind, id', substitute ~at_call_site ~block_subst loc fpc sb rn u1,
-           substitute ~at_call_site ~block_subst loc fpc
-             (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2)
+      let block_subst, defining_expr =
+        substitute ~at_call_site ~block_subst fpc sb rn u1
+      in
+      let block_subst, body =
+         substitute ~at_call_site ~block_subst fpc
+           (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2
+      in
+      let term = Ulet (str, kind, id', defining_expr, body) in
+      block_subst, term
   | Uphantom_let _ -> no_phantom_lets ()
   | Uletrec(bindings, body) ->
       let bindings1 =
@@ -607,20 +640,32 @@ let rec substitute ~at_call_site ~block_subst loc fpc sb rn ulam =
             V.Map.add id (Uvar (VP.var id')) s)
           bindings1 sb
       in
-      Uletrec(
-        List.map
-           (fun (_id, id', rhs) ->
-             (id', substitute ~at_call_site ~block_subst loc fpc sb' rn rhs))
-           bindings1,
-        substitute ~at_call_site ~block_subst loc fpc sb' rn body)
+      let block_subst, bindings_rev =
+        List.fold_left (fun (block_subst, bindings_rev) (_id, id', rhs) ->
+            let block_subst, defining_expr =
+              substitute ~at_call_site ~block_subst fpc sb' rn rhs
+            in
+            block_subst, (id', defining_expr) :: bindings_rev)
+          (block_subst, [])
+          bindings1
+      in
+      let block_subst, body =
+        substitute ~at_call_site ~block_subst fpc sb' rn body
+      in
+      let term = Uletrec (List.rev bindings_rev, body) in
+      block_subst, term
   | Uprim(p, args, dbg) ->
-      let sargs = List.map (substitute ~at_call_site ~block_subst loc fpc sb rn) args in
-      let dbg = subst_debuginfo ~at_call_site ~block_subst loc dbg in
+      let block_subst, sargs =
+        substitute_list ~at_call_site ~block_subst fpc sb rn args
+      in
+      let block_subst, dbg = subst_debuginfo ~at_call_site ~block_subst dbg in
       let (res, _) =
         simplif_prim fpc p (sargs, List.map approx_ulam sargs) dbg in
-      res
+      block_subst, res
   | Uswitch(arg, sw, dbg) ->
-      let sarg = substitute ~at_call_site ~block_subst loc fpc sb rn arg in
+      let block_subst, sarg =
+        substitute ~at_call_site ~block_subst fpc sb rn arg
+      in
       let action =
         (* Unfortunately, we cannot easily deal with the
            case of a constructed block (makeblock) bound to a local
@@ -636,25 +681,48 @@ let rec substitute ~at_call_site ~block_subst loc fpc sb rn ulam =
         | _ -> None
       in
       begin match action with
-      | Some u -> substitute ~at_call_site ~block_subst loc fpc sb rn u
+      | Some u -> substitute ~at_call_site ~block_subst fpc sb rn u
       | None ->
-          Uswitch(sarg,
-                  { sw with
-                    us_actions_consts =
-                      Array.map (substitute ~at_call_site ~block_subst loc fpc sb rn)
-                        sw.us_actions_consts;
-                    us_actions_blocks =
-                      Array.map (substitute ~at_call_site ~block_subst loc fpc sb rn)
-                        sw.us_actions_blocks;
-                  },
-                  dbg)
+          let block_subst, us_actions_consts =
+            substitute_array ~at_call_site ~block_subst fpc sb rn
+              sw.us_actions_consts
+          in
+          let block_subst, us_actions_blocks =
+            substitute_array ~at_call_site ~block_subst fpc sb rn
+              sw.us_actions_blocks
+          in
+          let term =
+            Uswitch (sarg,
+              { sw with
+                us_actions_consts;
+                us_actions_blocks;
+              },
+              dbg)
+          in
+          block_subst, term
       end
-  | Ustringswitch(arg,sw,d) ->
-      Ustringswitch
-        (substitute ~at_call_site ~block_subst loc fpc sb rn arg,
-         List.map (fun (s,act) -> s,substitute ~at_call_site ~block_subst loc fpc sb rn act)
-           sw,
-         Misc.may_map (substitute ~at_call_site ~block_subst loc fpc sb rn) d)
+  | Ustringswitch (arg, cases, default) ->
+      let block_subst, arg =
+        substitute ~at_call_site ~block_subst fpc sb rn arg
+      in
+      let block_subst, cases =
+        let strs, actions = List.split cases in
+        let block_subst, actions =
+          substitute_list ~at_call_site ~block_subst fpc sb rn actions
+        in
+        block_subst, List.combine strs actions
+      in
+      let block_subst, default =
+        match default with
+        | None -> block_subst, None
+        | Some default ->
+          let block_subst, default =
+            substitute ~at_call_site ~block_subst fpc sb rn default
+          in
+          block_subst, Some default
+      in
+      let term = Ustringswitch (arg, cases, default) in
+      block_subst, term
   | Ustaticfail (nfail, args) ->
       let nfail =
         match rn with
@@ -664,9 +732,13 @@ let rec substitute ~at_call_site ~block_subst loc fpc sb rn ulam =
           with Not_found ->
             fatal_errorf "Closure.split_list: invalid nfail (%d)" nfail
           end
-        | None -> nfail in
-      Ustaticfail (nfail,
-        List.map (substitute ~at_call_site ~block_subst loc fpc sb rn) args)
+        | None -> nfail
+      in
+      let block_subst, args =
+        substitute_list ~at_call_site ~block_subst fpc sb rn args
+      in
+      let term = Ustaticfail (nfail, args) in
+      block_subst, term
   | Ucatch(nfail, ids, u1, u2) ->
       let nfail, rn =
         match rn with
@@ -680,55 +752,124 @@ let rec substitute ~at_call_site ~block_subst loc fpc sb rn ulam =
           (fun id id' s -> V.Map.add (VP.var id) (Uvar (VP.var id')) s)
           ids ids' sb
       in
-      Ucatch(nfail, ids', substitute ~at_call_site ~block_subst loc fpc sb rn u1,
-                          substitute ~at_call_site ~block_subst loc fpc sb' rn u2)
+      let block_subst, u1 =
+        substitute ~at_call_site ~block_subst fpc sb rn u1
+      in
+      let block_subst, u2 =
+        substitute ~at_call_site ~block_subst fpc sb' rn u2
+      in
+      let term = Ucatch (nfail, ids', u1, u2) in
+      block_subst, term
   | Utrywith(u1, id, u2) ->
       let id' = VP.rename id in
-      Utrywith(substitute ~at_call_site ~block_subst loc fpc sb rn u1, id',
-               substitute ~at_call_site ~block_subst loc fpc
-                 (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2)
+      let block_subst, u1 =
+        substitute ~at_call_site ~block_subst fpc sb rn u1
+      in
+      let block_subst, u2 =
+        substitute ~at_call_site ~block_subst fpc
+          (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2
+      in
+      let term = Utrywith (u1, id', u2) in
+      block_subst, term
   | Uifthenelse(u1, u2, u3) ->
-      begin match substitute ~at_call_site ~block_subst loc fpc sb rn u1 with
+      let block_subst, u1 =
+        substitute ~at_call_site ~block_subst fpc sb rn u1
+      in
+      begin match u1 with
         Uconst (Uconst_ptr n) ->
           if n <> 0 then
-            substitute ~at_call_site ~block_subst loc fpc sb rn u2
+            substitute ~at_call_site ~block_subst fpc sb rn u2
           else
-            substitute ~at_call_site ~block_subst loc fpc sb rn u3
+            substitute ~at_call_site ~block_subst fpc sb rn u3
       | Uprim(Pmakeblock _, _, _) ->
-          substitute ~at_call_site ~block_subst loc fpc sb rn u2
+          substitute ~at_call_site ~block_subst fpc sb rn u2
       | su1 ->
-          Uifthenelse(su1, substitute ~at_call_site ~block_subst loc fpc sb rn u2,
-                           substitute ~at_call_site ~block_subst loc fpc sb rn u3)
+          let block_subst, u2 =
+            substitute ~at_call_site ~block_subst fpc sb rn u2
+          in
+          let block_subst, u3 =
+            substitute ~at_call_site ~block_subst fpc sb rn u3
+          in
+          let term = Uifthenelse (su1, u2, u3) in
+          block_subst, term
       end
   | Usequence(u1, u2) ->
-      Usequence(substitute ~at_call_site ~block_subst loc fpc sb rn u1,
-        substitute ~at_call_site ~block_subst loc fpc sb rn u2)
+      let block_subst, u1 =
+        substitute ~at_call_site ~block_subst fpc sb rn u1
+      in
+      let block_subst, u2 =
+        substitute ~at_call_site ~block_subst fpc sb rn u2
+      in
+      let term = Usequence (u1, u2) in
+      block_subst, term
   | Uwhile(u1, u2) ->
-      Uwhile(substitute ~at_call_site ~block_subst loc fpc sb rn u1,
-        substitute ~at_call_site ~block_subst loc fpc sb rn u2)
+      let block_subst, u1 =
+        substitute ~at_call_site ~block_subst fpc sb rn u1
+      in
+      let block_subst, u2 =
+        substitute ~at_call_site ~block_subst fpc sb rn u2
+      in
+      let term = Uwhile (u1, u2) in
+      block_subst, term
   | Ufor(id, u1, u2, dir, u3) ->
       let id' = VP.rename id in
-      Ufor(id', substitute ~at_call_site ~block_subst loc fpc sb rn u1,
-           substitute ~at_call_site ~block_subst loc fpc sb rn u2, dir,
-           substitute ~at_call_site ~block_subst loc fpc
-           (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u3)
+      let block_subst, u1 =
+        substitute ~at_call_site ~block_subst fpc sb rn u1
+      in
+      let block_subst, u2 =
+        substitute ~at_call_site ~block_subst fpc sb rn u2
+      in
+      let block_subst, u3 =
+        substitute ~at_call_site ~block_subst fpc
+          (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u3
+      in
+      let term = Ufor (id', u1, u2, dir, u3) in
+      block_subst, term
   | Uassign(id, u) ->
       let id' =
         try
           match V.Map.find id sb with Uvar i -> i | _ -> assert false
         with Not_found ->
           id in
-      Uassign(id', substitute ~at_call_site ~block_subst loc fpc sb rn u)
+      let block_subst, u =
+        substitute ~at_call_site ~block_subst fpc sb rn u
+      in
+      let term = Uassign (id', u) in
+      block_subst, term
   | Usend(k, u1, u2, ul, dbg) ->
-      let dbg = subst_debuginfo ~at_call_site ~block_subst loc dbg in
-      Usend(k, substitute ~at_call_site ~block_subst loc fpc sb rn u1,
-            substitute ~at_call_site ~block_subst loc fpc sb rn u2,
-            List.map (substitute ~at_call_site ~block_subst loc fpc sb rn) ul, dbg)
+      let block_subst, dbg = subst_debuginfo ~at_call_site ~block_subst dbg in
+      let block_subst, u1 =
+        substitute ~at_call_site ~block_subst fpc sb rn u1
+      in
+      let block_subst, u2 =
+        substitute ~at_call_site ~block_subst fpc sb rn u2
+      in
+      let block_subst, ul =
+        substitute_list ~at_call_site ~block_subst fpc sb rn ul
+      in
+      let term = Usend (k, u1, u2, ul, dbg) in
+      block_subst, term
   | Uunreachable ->
-      Uunreachable
+      block_subst, Uunreachable
 
-and substitute_list ~at_call_site ~block_subst loc fpc sb rn ulam =
+and substitute_list ~at_call_site ~block_subst loc fpc sb rn terms =
+  let block_subst, terms_rev =
+    List.fold_left (fun (block_subst, terms_rev) term ->
+        let block_subst, term =
+          substitute ~at_call_site ~block_subst loc fpc sb rn term
+        in
+        block_subst, term::terms_rev)
+      (block_subst, [])
+      terms
+  in
+  block_subst, List.rev terms_rev
 
+and substitute_array ~at_call_site ~block_subst loc fpc sb rn terms =
+  let block_subst, terms =
+    substitute_list ~at_call_site ~block_subst loc fpc sb rn
+      (Array.to_list terms)
+  in
+  block_subst, Array.of_list terms
 
 (* Perform an inline expansion *)
 
@@ -743,7 +884,7 @@ let no_effects = function
 let rec bind_params_rec ~at_call_site loc fpc subst params args body =
   match (params, args) with
     ([], []) ->
-    let term, _block_subst =
+    let _block_subst, term =
       substitute ~at_call_site loc fpc subst (Some Int.Map.empty) body
     in
     term
@@ -932,7 +1073,7 @@ let rec close ~scope fenv cenv = function
          [Uprim(Pmakeblock _, uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
           let app =
-            direct_apply ~loc ~scope ~attribute fundesc funct ufunct uargs in
+            direct_apply ~scope ~loc ~attribute fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when nargs = fundesc.fun_arity ->
