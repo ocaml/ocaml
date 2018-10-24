@@ -60,9 +60,9 @@ external div : float -> float -> float = "%divfloat"
 external fma : float -> float -> float -> float =
   "caml_fma_float" "caml_fma" [@@unboxed] [@@noalloc]
 (** A fused multiply-add [fma x y z] computes [x * y + z] with a
-   single rounding. If no hardware support is provided,
-   double-rounding issue may happen with software emulation fallback.
-   @since 4.09.0 *)
+   single rounding. Can be not fully IEEE compliant if a software
+   emulation is use in place of the hardware instruction. @since
+   4.09.0 *)
 
 external rem : float -> float -> float = "caml_fmod_float" "fmod"
 [@@unboxed] [@@noalloc]
