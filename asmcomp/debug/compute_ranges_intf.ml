@@ -94,11 +94,6 @@ module type S = sig
 
     val extremities : t -> Linearize.label * Linearize.label
 
-    val iter
-       : t
-      -> f:(Subrange.t -> unit)
-      -> unit
-
     val fold
        : t
       -> init:'a
@@ -109,8 +104,6 @@ module type S = sig
   type t
 
   val create : Linearize.fundecl -> t * Linearize.fundecl
-
-  val find : t -> index -> Range.t option
 
   val iter : t -> f:(index -> Range.t -> unit) -> unit
 

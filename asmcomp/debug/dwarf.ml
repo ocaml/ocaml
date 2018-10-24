@@ -615,6 +615,9 @@ let location_list_entry t ~parent ~(fundecl : L.fundecl)
   match single_location_description with
   | None -> None
   | Some single_location_description ->
+    let start_pos = AR.Subrange.start_pos subrange in
+    let end_pos = AR.Subrange.end_pos subrange in
+    let end_pos_offset = AR.Subrange.end_pos_offset subrange in
     let location_list_entry =
       Location_list_entry.create_location_list_entry
         ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name)

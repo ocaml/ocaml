@@ -122,15 +122,6 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     ranges : Range.t Index.Tbl.t;
   }
 
-  let find t ~var =
-    match Index.Tbl.find t.ranges var with
-    | exception Not_found -> None
-    | range -> Some range
-
-  let iter t ~f =
-    Index.Tbl.iter (fun var range -> f var range)
-      t.ranges
-
   let fold t ~init ~f =
     Index.Tbl.fold (fun var range acc -> f acc var range)
       t.ranges
@@ -339,6 +330,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let subrange_state = Subrange_state.create () in
     process_instruction t ~fundecl ~first_insn ~insn:first_insn
       ~prev_insn:None ~open_subranges:KM.empty ~subrange_state
+
+  let all_indexes t = Index.Tbl.keys t.ranges
 
   let create (fundecl : L.fundecl) =
     if not !Clflags.debug then
