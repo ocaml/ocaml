@@ -1,0 +1,64 @@
+TODO for the OCaml typechecker implementation
+=============================================
+
+There is a consensus that the current implementation of the OCaml
+typechecker is overly complex and fragile.  A big rewriting "from
+scratch" might be possible or desirable at some point, or not, but
+incremental cleanup steps are certainly accessible and could bring the
+current implementation in a better shape at a relatively small cost
+and in a reasonnably distant future.
+
+This file collects specific cleanup ideas which have been discussed
+amongst maintainers.  Having the list committed in the repo allows for
+everyone to get an idea of planned tasks, refine them through Pull
+Requests, suggest more cleanups, or even start working on specific
+tasks (ideally after discussing it first with maintainers).
+
+- Make the level generator be part of `Env.t` instead of being global.
+
+- Introduce an abstraction boundary between "the type algebra" and
+  "the type checker" (at first between Ctype and Typecore) so that the
+  type checker is forced to go through a propoer API to access/mutate
+  type nodes.  This would make it impossible to "forget" a call
+  to `repr` and will allow further changes on the internal representation.
+
+- Tidy up Typeclass (use records instead of 14-tuples, avoid
+  "#"-encoding, etc).
+
+- Collect all global state of the type checker in a single place,
+  possibly a single reference to a persistent data structure
+  (e.g. maps instead of hashtables).
+
+- Get rid of Tsubst.  With the unique ids on each type node, copying
+  can be implemented rather efficiently with a map.
+
+- Document row_desc, get rid of row_bound.
+
+- Implement union-find with more a asbtract/persistent datastructure
+  (be careful about memory leaks with the naive approach of representing
+  links with a persistent heap).
+
+- Make the logic for record/constructor disambiguation more readable.
+
+- Tidy up destructive substitution.
+
+- Well-formedness for module signature.
+
+- Get rid of syntactic encodings (generating Parsetree fragments
+  during type-checking, cf optional arguments or classes).
+
+- Track "string literals" in the type-checker, which often acts as
+  magic "internal" names which should be avoided.
+
+- Get rid of -annot.
+
+- Warning settings (+other context) as part of `Env.t`.
+
+- Parse attributes understood (e.g. the deprecated attribute) by the
+  compiler into a structured representation during type-checking.
+
+- Introduce a notion of syntactic "path-like location" to point to
+  allow pointing to AST fragments, and use that to implement "unused"
+  warnings in a less invasive and less imperative way.
+
+- Deprecated -nolabels, or even get rid of it?
