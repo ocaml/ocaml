@@ -1465,18 +1465,20 @@ struct
 
   type act = expression
 
+  type location = Debuginfo.t
+
   let make_const i =  Cconst_int i
-  (* CR mshinwell: fix debuginfo *)
+  (* To avoid changing [Switch] we rely on [Propagate_debuginfo] to change
+     these [Debuginfo.none]s into something better. *)
   let make_prim p args = Cop (p,args, Debuginfo.none)
   let make_offset arg n = add_const arg n Debuginfo.none
   let make_isout h arg = Cop (Ccmpa Clt, [h ; arg], Debuginfo.none)
   let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
   let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
-  let make_switch loc arg cases actions =
-    make_switch arg cases actions (Debuginfo.from_location loc)
+  let make_switch dbg arg cases actions = make_switch arg cases actions dbg
   let bind arg body = bind "switcher" arg body
 
-  let make_catch handler = match handler with
+  let make_catch _dbg handler = match handler with
   | Cexit (i,[]) -> i,fun e -> e
   | _ ->
       let i = next_raise_count () in
@@ -1527,6 +1529,7 @@ module StoreExp =
     (struct
       type t = expression
       type key = int
+      type location = Debuginfo.t
       let make_key = function
         | Cexit (i,[]) -> Some i
         | _ -> None
@@ -1908,7 +1911,6 @@ let rec transl env e =
 
   (* Control structures *)
   | Uswitch(arg, s, dbg) ->
-      let loc = Debuginfo.to_location dbg in
       (* As in the bytecode interpreter, only matching against constants
          can be checked *)
       if Array.length s.us_index_blocks = 0 then

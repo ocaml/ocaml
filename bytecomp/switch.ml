@@ -117,6 +117,8 @@ sig
   val gtint : primitive
   type act
 
+  type location
+
   val bind : act -> (act -> act) -> act
   val make_const : int -> act
   val make_offset : act -> int -> act
@@ -124,7 +126,7 @@ sig
   val make_isout : act -> act -> act
   val make_isin : act -> act -> act
   val make_if : act -> act -> act -> act
-  val make_switch : Location.t -> act -> int array -> act array -> act
+  val make_switch : location -> act -> int array -> act array -> act
   val make_catch : act -> int * (act -> act)
   val make_exit : int -> act
 end
