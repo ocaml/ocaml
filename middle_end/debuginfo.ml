@@ -219,17 +219,36 @@ module Block = struct
 end
 
 module Current_block = struct
-  type t = Block.t option
+  type t =
+    | Toplevel
+    | Block of Block.t
 
-  let toplevel : t = None
+  let toplevel = Toplevel
+
+  type to_block = t
+
+  let to_block t = t
 
   let inline t ~at_call_site =
     match at_call_site with
-    | None -> t
-    | Some at_call_site ->
+    | Toplevel -> t
+    | Block at_call_site ->
       match t with
-      | None -> Some at_call_site
-      | Some t -> Block.graft t ~onto:at_call_site
+      | Toplevel -> Block at_call_site
+      | Block t -> Block.graft t ~onto:at_call_site
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare t1 t2 = Misc.Stdlib.Option.compare Block.compare t1 t2
+    let equal t1 t2 = (compare t1 t2 = 0)
+    let hash t = Hashtbl.hash t
+
+    let print ppf t = Misc.Stdlib.Option.print Block.print ppf t
+
+    let output chan t =
+      Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
+  end)
 end
 
 type t =

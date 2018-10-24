@@ -514,7 +514,6 @@ let phantom_var_location_description ~provenance ~defining_expr ~need_rvalue
     begin match die_location_of_variable_rvalue t var ~proto_dies_for_vars with
     | None -> None
     | Some block ->
-      in
       let field = Targetint.of_int_exn field in
       (* CR mshinwell: Ditch [SLDL.compile]. *)
       let read_field =
@@ -647,21 +646,20 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
          lexical block information to avoid large numbers of variables, many
          of which may be out of scope, being visible in the debugger at the
          same time. *)
-      let block =
-        match provenance with
-        | None -> None
-        | Some provenance ->
-          let dbg = Backend_var.Provenance.debuginfo provenance in
-          let block = Debuginfo.innermost_block dbg in
-          match Debuginfo.Current_block.to_block block with
-          | Toplevel -> whole_function_lexical_block
-          | Block block ->
-            let module B = Debuginfo.Block in
-            match B.Map.find block lexical_block_proto_dies with
-            | exception Not_found ->
-              Misc.fatal_errorf "Cannot find lexical block DIE for %a"
-                B.print block
-            | proto_die -> proto_die
+      match provenance with
+      | None -> None
+      | Some provenance ->
+        let dbg = Backend_var.Provenance.debuginfo provenance in
+        let block = Debuginfo.innermost_block dbg in
+        match Debuginfo.Current_block.to_block block with
+        | Toplevel -> whole_function_lexical_block
+        | Block block ->
+          let module B = Debuginfo.Block in
+          match B.Map.find block lexical_block_proto_dies with
+          | exception Not_found ->
+            Misc.fatal_errorf "Cannot find lexical block DIE for %a"
+              B.print block
+          | proto_die -> proto_die
   in
   (* Build a location list that identifies where the value of [ident] may be
      found at runtime, indexed by program counter range, and insert the list
@@ -673,7 +671,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
        However, we tried this (and emitted plain label addresses rather than
        deltas in [Location_list_entry]), and the addresses were wrong in the
        final executable.  Oh well. *)
-    let location_list_entries var =
+    let location_list_entries =
       AR.Range.fold ~init:[]
         ~f:(fun location_list_entries subrange ->
           let location_list_entry =
@@ -761,12 +759,14 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
     | Local -> Variable
   in
   let reference =
-    let proto_dies = proto_dies_for_variable var ~proto_dies_for_vars in
-    if need_rvalue then proto_dies.value_die_rvalue
-    else proto_dies.value_die_lvalue
+    match proto_dies_for_variable var ~proto_dies_for_vars with
+    | None -> None
+    | Some reference ->
+      if need_rvalue then Some proto_dies.value_die_rvalue
+      else Some proto_dies.value_die_lvalue
   in
   let proto_die =
-    Proto_die.create ~reference
+    Proto_die.create ?reference
       ~parent:(Some parent_proto_die)
       ~tag
       ~attribute_values:(type_and_name_attributes @ [
@@ -774,17 +774,16 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
       ])
       ()
   in
-  begin match is_parameter with
+  match is_parameter with
   | Local -> ()
   | Parameter { index; } ->
     (* Ensure that parameters appear in the correct order in the debugger. *)
     Proto_die.set_sort_priority proto_die index
-  end
 
 (* This function covers local variables, parameters, variables in closures
    and other "fun_var"s in the current mutually-recursive set.  (The last
    two cases are handled by the explicit addition of phantom lets way back
-   in [Flambda_to_clambda].)  Phantom identifiers are also covered. *)
+   in [Flambda_to_clambda].)  Phantom variables are also covered. *)
 let iterate_over_variable_like_things _t ~available_ranges_all_vars ~f =
   let module AR = Available_ranges_all_vars in
   AR.iter available_ranges_vars ~f:(fun var range ->

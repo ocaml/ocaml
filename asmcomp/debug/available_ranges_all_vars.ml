@@ -17,7 +17,7 @@
 module ARV = Available_ranges_vars
 module ARPV = Available_ranges_phantom_vars
 
-module Subrange_info : sig
+module Subrange_info = struct
   type t =
     | Non_phantom of {
         reg : Reg.t;
@@ -26,7 +26,7 @@ module Subrange_info : sig
     | Phantom of Mach.phantom_defining_expr
 end
 
-module Range_info : sig
+module Range_info = struct
   type t =
     | Var of ARV.Range_info.t
     | Phantom_var of ARPV.Range_info.t
@@ -47,7 +47,7 @@ type t = {
   available_ranges_phantom_vars : Available_ranges_phantom_vars.t;
 }
 
-module Subrange : sig
+module Subrange = struct
   type t =
     | Var of ARV.Subrange.t
     | Phantom_var of Mach.phantom_defining_expr * ARPV.Subrange.t

@@ -772,10 +772,11 @@ asmcomp/arch.cmx : utils/config.cmx utils/clflags.cmx \
 asmcomp/asmgen.cmo : asmcomp/un_anf.cmi bytecomp/translmod.cmi \
     middle_end/base_types/symbol.cmi asmcomp/split.cmi asmcomp/spill.cmi \
     asmcomp/selection.cmi asmcomp/scheduling.cmi asmcomp/reload.cmi \
-    asmcomp/reg.cmi utils/profile.cmi asmcomp/proc.cmi asmcomp/printmach.cmi \
-    asmcomp/printlinear.cmi asmcomp/printcmm.cmi asmcomp/printclambda.cmi \
-    typing/primitive.cmi typing/path.cmi utils/misc.cmi asmcomp/mach.cmi \
-    parsing/location.cmi asmcomp/liveness.cmi asmcomp/linscan.cmi \
+    asmcomp/reg.cmi asmcomp/debug/propagate_debuginfo.cmi utils/profile.cmi \
+    asmcomp/proc.cmi asmcomp/printmach.cmi asmcomp/printlinear.cmi \
+    asmcomp/printcmm.cmi asmcomp/printclambda.cmi typing/primitive.cmi \
+    typing/path.cmi utils/misc.cmi asmcomp/mach.cmi parsing/location.cmi \
+    asmcomp/liveness.cmi asmcomp/linscan.cmi \
     middle_end/base_types/linkage_name.cmi asmcomp/linearize.cmi \
     bytecomp/lambda.cmi asmcomp/interval.cmi asmcomp/interf.cmi \
     typing/ident.cmi asmcomp/flambda_to_clambda.cmi middle_end/flambda.cmi \
@@ -784,15 +785,17 @@ asmcomp/asmgen.cmo : asmcomp/un_anf.cmi bytecomp/translmod.cmi \
     asmcomp/comballoc.cmi asmcomp/coloring.cmi asmcomp/cmmgen.cmi \
     asmcomp/cmm.cmi asmcomp/closure.cmi utils/clflags.cmi asmcomp/clambda.cmi \
     asmcomp/CSE.cmo asmcomp/build_export_info.cmi asmcomp/backend_sym.cmi \
-    asmcomp/debug/available_regs.cmi asmcomp/debug/available_ranges.cmi \
+    asmcomp/debug/available_regs.cmi asmcomp/debug/available_ranges_vars.cmi \
+    asmcomp/debug/available_ranges_phantom_vars.cmi \
     asmcomp/debug/available_filtering.cmi asmcomp/asmgen.cmi
 asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     middle_end/base_types/symbol.cmx asmcomp/split.cmx asmcomp/spill.cmx \
     asmcomp/selection.cmx asmcomp/scheduling.cmx asmcomp/reload.cmx \
-    asmcomp/reg.cmx utils/profile.cmx asmcomp/proc.cmx asmcomp/printmach.cmx \
-    asmcomp/printlinear.cmx asmcomp/printcmm.cmx asmcomp/printclambda.cmx \
-    typing/primitive.cmx typing/path.cmx utils/misc.cmx asmcomp/mach.cmx \
-    parsing/location.cmx asmcomp/liveness.cmx asmcomp/linscan.cmx \
+    asmcomp/reg.cmx asmcomp/debug/propagate_debuginfo.cmx utils/profile.cmx \
+    asmcomp/proc.cmx asmcomp/printmach.cmx asmcomp/printlinear.cmx \
+    asmcomp/printcmm.cmx asmcomp/printclambda.cmx typing/primitive.cmx \
+    typing/path.cmx utils/misc.cmx asmcomp/mach.cmx parsing/location.cmx \
+    asmcomp/liveness.cmx asmcomp/linscan.cmx \
     middle_end/base_types/linkage_name.cmx asmcomp/linearize.cmx \
     bytecomp/lambda.cmx asmcomp/interval.cmx asmcomp/interf.cmx \
     typing/ident.cmx asmcomp/flambda_to_clambda.cmx middle_end/flambda.cmx \
@@ -801,7 +804,8 @@ asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     asmcomp/comballoc.cmx asmcomp/coloring.cmx asmcomp/cmmgen.cmx \
     asmcomp/cmm.cmx asmcomp/closure.cmx utils/clflags.cmx asmcomp/clambda.cmx \
     asmcomp/CSE.cmx asmcomp/build_export_info.cmx asmcomp/backend_sym.cmx \
-    asmcomp/debug/available_regs.cmx asmcomp/debug/available_ranges.cmx \
+    asmcomp/debug/available_regs.cmx asmcomp/debug/available_ranges_vars.cmx \
+    asmcomp/debug/available_ranges_phantom_vars.cmx \
     asmcomp/debug/available_filtering.cmx asmcomp/asmgen.cmi
 asmcomp/asmgen.cmi : bytecomp/lambda.cmi typing/ident.cmi \
     middle_end/flambda.cmi asmcomp/debug/dwarf.cmi asmcomp/cmm.cmi \
@@ -857,8 +861,8 @@ asmcomp/backend_var.cmo : typing/path.cmi typing/ident.cmi \
     middle_end/debuginfo.cmi asmcomp/backend_var.cmi
 asmcomp/backend_var.cmx : typing/path.cmx typing/ident.cmx \
     middle_end/debuginfo.cmx asmcomp/backend_var.cmi
-asmcomp/backend_var.cmi : typing/path.cmi typing/ident.cmi \
-    middle_end/debuginfo.cmi
+asmcomp/backend_var.cmi : typing/path.cmi parsing/location.cmi \
+    typing/ident.cmi middle_end/debuginfo.cmi
 asmcomp/branch_relaxation.cmo : utils/misc.cmi asmcomp/mach.cmi \
     asmcomp/linearize.cmi asmcomp/cmm.cmi asmcomp/branch_relaxation_intf.cmo \
     asmcomp/branch_relaxation.cmi
@@ -909,18 +913,20 @@ asmcomp/clambda.cmi : typing/path.cmi bytecomp/lambda.cmi typing/ident.cmi \
     middle_end/debuginfo.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi
 asmcomp/closure.cmo : utils/warnings.cmi bytecomp/switch.cmi \
     bytecomp/simplif.cmi bytecomp/semantics_of_primitives.cmi \
-    typing/primitive.cmi typing/path.cmi utils/numbers.cmi utils/misc.cmi \
-    parsing/location.cmi bytecomp/lambda.cmi typing/ident.cmi typing/env.cmi \
-    middle_end/debuginfo.cmi utils/config.cmi asmcomp/compilenv.cmi \
-    utils/clflags.cmi asmcomp/clambda.cmi asmcomp/backend_var.cmi \
-    parsing/asttypes.cmi asmcomp/arch.cmo asmcomp/closure.cmi
+    typing/printtyp.cmi typing/primitive.cmi typing/path.cmi \
+    utils/numbers.cmi utils/misc.cmi parsing/location.cmi bytecomp/lambda.cmi \
+    typing/ident.cmi typing/env.cmi middle_end/debuginfo.cmi utils/config.cmi \
+    driver/compmisc.cmi asmcomp/compilenv.cmi utils/clflags.cmi \
+    asmcomp/clambda.cmi asmcomp/backend_var.cmi parsing/asttypes.cmi \
+    asmcomp/arch.cmo asmcomp/closure.cmi
 asmcomp/closure.cmx : utils/warnings.cmx bytecomp/switch.cmx \
     bytecomp/simplif.cmx bytecomp/semantics_of_primitives.cmx \
-    typing/primitive.cmx typing/path.cmx utils/numbers.cmx utils/misc.cmx \
-    parsing/location.cmx bytecomp/lambda.cmx typing/ident.cmx typing/env.cmx \
-    middle_end/debuginfo.cmx utils/config.cmx asmcomp/compilenv.cmx \
-    utils/clflags.cmx asmcomp/clambda.cmx asmcomp/backend_var.cmx \
-    parsing/asttypes.cmi asmcomp/arch.cmx asmcomp/closure.cmi
+    typing/printtyp.cmx typing/primitive.cmx typing/path.cmx \
+    utils/numbers.cmx utils/misc.cmx parsing/location.cmx bytecomp/lambda.cmx \
+    typing/ident.cmx typing/env.cmx middle_end/debuginfo.cmx utils/config.cmx \
+    driver/compmisc.cmx asmcomp/compilenv.cmx utils/clflags.cmx \
+    asmcomp/clambda.cmx asmcomp/backend_var.cmx parsing/asttypes.cmi \
+    asmcomp/arch.cmx asmcomp/closure.cmi
 asmcomp/closure.cmi : bytecomp/lambda.cmi asmcomp/clambda.cmi
 asmcomp/closure_offsets.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi utils/misc.cmi \
@@ -945,22 +951,22 @@ asmcomp/cmm.cmi : utils/targetint.cmi typing/path.cmi bytecomp/lambda.cmi \
     parsing/asttypes.cmi
 asmcomp/cmmgen.cmo : asmcomp/un_anf.cmi typing/types.cmi utils/targetint.cmi \
     bytecomp/switch.cmi asmcomp/strmatch.cmi asmcomp/proc.cmi \
-    bytecomp/printlambda.cmi typing/primitive.cmi typing/path.cmi \
-    utils/numbers.cmi utils/misc.cmi bytecomp/lambda.cmi typing/ident.cmi \
-    middle_end/debuginfo.cmi utils/config.cmi asmcomp/compilenv.cmi \
-    asmcomp/cmx_format.cmi asmcomp/cmm.cmi utils/clflags.cmi \
-    asmcomp/clambda.cmi asmcomp/backend_var.cmi asmcomp/backend_sym.cmi \
-    parsing/asttypes.cmi asmcomp/arch.cmo asmcomp/afl_instrument.cmi \
-    asmcomp/cmmgen.cmi
+    typing/printtyp.cmi bytecomp/printlambda.cmi typing/primitive.cmi \
+    typing/path.cmi utils/numbers.cmi utils/misc.cmi bytecomp/lambda.cmi \
+    typing/ident.cmi middle_end/debuginfo.cmi utils/config.cmi \
+    driver/compmisc.cmi asmcomp/compilenv.cmi asmcomp/cmx_format.cmi \
+    asmcomp/cmm.cmi utils/clflags.cmi asmcomp/clambda.cmi \
+    asmcomp/backend_var.cmi asmcomp/backend_sym.cmi parsing/asttypes.cmi \
+    asmcomp/arch.cmo asmcomp/afl_instrument.cmi asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmx : asmcomp/un_anf.cmx typing/types.cmx utils/targetint.cmx \
     bytecomp/switch.cmx asmcomp/strmatch.cmx asmcomp/proc.cmx \
-    bytecomp/printlambda.cmx typing/primitive.cmx typing/path.cmx \
-    utils/numbers.cmx utils/misc.cmx bytecomp/lambda.cmx typing/ident.cmx \
-    middle_end/debuginfo.cmx utils/config.cmx asmcomp/compilenv.cmx \
-    asmcomp/cmx_format.cmi asmcomp/cmm.cmx utils/clflags.cmx \
-    asmcomp/clambda.cmx asmcomp/backend_var.cmx asmcomp/backend_sym.cmx \
-    parsing/asttypes.cmi asmcomp/arch.cmx asmcomp/afl_instrument.cmx \
-    asmcomp/cmmgen.cmi
+    typing/printtyp.cmx bytecomp/printlambda.cmx typing/primitive.cmx \
+    typing/path.cmx utils/numbers.cmx utils/misc.cmx bytecomp/lambda.cmx \
+    typing/ident.cmx middle_end/debuginfo.cmx utils/config.cmx \
+    driver/compmisc.cmx asmcomp/compilenv.cmx asmcomp/cmx_format.cmi \
+    asmcomp/cmm.cmx utils/clflags.cmx asmcomp/clambda.cmx \
+    asmcomp/backend_var.cmx asmcomp/backend_sym.cmx parsing/asttypes.cmi \
+    asmcomp/arch.cmx asmcomp/afl_instrument.cmx asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmi : typing/ident.cmi asmcomp/cmx_format.cmi asmcomp/cmm.cmi \
     asmcomp/clambda.cmi
 asmcomp/cmx_format.cmi : asmcomp/export_info.cmi asmcomp/clambda.cmi
@@ -1469,11 +1475,13 @@ middle_end/closure_conversion_aux.cmi : middle_end/base_types/variable.cmi \
     middle_end/base_types/static_exception.cmi \
     middle_end/base_types/mutable_variable.cmi parsing/location.cmi \
     bytecomp/lambda.cmi typing/ident.cmi
-middle_end/debuginfo.cmo : parsing/location.cmi \
-    middle_end/int_replace_polymorphic_compare.cmi middle_end/debuginfo.cmi
-middle_end/debuginfo.cmx : parsing/location.cmx \
-    middle_end/int_replace_polymorphic_compare.cmx middle_end/debuginfo.cmi
-middle_end/debuginfo.cmi : parsing/location.cmi
+middle_end/debuginfo.cmo : utils/misc.cmi parsing/location.cmi \
+    middle_end/int_replace_polymorphic_compare.cmi utils/identifiable.cmi \
+    middle_end/debuginfo.cmi
+middle_end/debuginfo.cmx : utils/misc.cmx parsing/location.cmx \
+    middle_end/int_replace_polymorphic_compare.cmx utils/identifiable.cmx \
+    middle_end/debuginfo.cmi
+middle_end/debuginfo.cmi : parsing/location.cmi utils/identifiable.cmi
 middle_end/effect_analysis.cmo : bytecomp/semantics_of_primitives.cmi \
     utils/misc.cmi bytecomp/lambda.cmi \
     middle_end/int_replace_polymorphic_compare.cmi middle_end/flambda.cmi \
@@ -2366,24 +2374,55 @@ middle_end/base_types/variable.cmi : middle_end/internal_variable_names.cmi \
     utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
 asmcomp/debug/available_filtering.cmo : \
-    asmcomp/debug/reg_availability_set.cmi asmcomp/linearize.cmi \
-    utils/clflags.cmi asmcomp/debug/available_filtering.cmi
+    asmcomp/debug/reg_with_debug_info.cmi \
+    asmcomp/debug/reg_availability_set.cmi utils/misc.cmi \
+    asmcomp/linearize.cmi utils/clflags.cmi asmcomp/backend_var.cmi \
+    asmcomp/debug/available_filtering.cmi
 asmcomp/debug/available_filtering.cmx : \
-    asmcomp/debug/reg_availability_set.cmx asmcomp/linearize.cmx \
-    utils/clflags.cmx asmcomp/debug/available_filtering.cmi
+    asmcomp/debug/reg_with_debug_info.cmx \
+    asmcomp/debug/reg_availability_set.cmx utils/misc.cmx \
+    asmcomp/linearize.cmx utils/clflags.cmx asmcomp/backend_var.cmx \
+    asmcomp/debug/available_filtering.cmi
 asmcomp/debug/available_filtering.cmi : asmcomp/linearize.cmi
-asmcomp/debug/available_ranges.cmo : asmcomp/debug/reg_with_debug_info.cmi \
-    asmcomp/reg.cmi asmcomp/proc.cmi utils/numbers.cmi utils/misc.cmi \
-    asmcomp/mach.cmi asmcomp/linearize.cmi typing/ident.cmi \
-    middle_end/debuginfo.cmi asmcomp/cmm.cmi utils/clflags.cmi \
-    asmcomp/backend_var.cmi asmcomp/debug/available_ranges.cmi
-asmcomp/debug/available_ranges.cmx : asmcomp/debug/reg_with_debug_info.cmx \
-    asmcomp/reg.cmx asmcomp/proc.cmx utils/numbers.cmx utils/misc.cmx \
-    asmcomp/mach.cmx asmcomp/linearize.cmx typing/ident.cmx \
-    middle_end/debuginfo.cmx asmcomp/cmm.cmx utils/clflags.cmx \
-    asmcomp/backend_var.cmx asmcomp/debug/available_ranges.cmi
-asmcomp/debug/available_ranges.cmi : asmcomp/reg.cmi utils/numbers.cmi \
-    asmcomp/mach.cmi asmcomp/linearize.cmi asmcomp/backend_var.cmi
+asmcomp/debug/available_ranges_all_vars.cmo : asmcomp/reg.cmi utils/misc.cmi \
+    asmcomp/mach.cmi asmcomp/backend_var.cmi \
+    asmcomp/debug/available_ranges_vars.cmi \
+    asmcomp/debug/available_ranges_phantom_vars.cmi \
+    asmcomp/debug/available_ranges_all_vars.cmi
+asmcomp/debug/available_ranges_all_vars.cmx : asmcomp/reg.cmx utils/misc.cmx \
+    asmcomp/mach.cmx asmcomp/backend_var.cmx \
+    asmcomp/debug/available_ranges_vars.cmx \
+    asmcomp/debug/available_ranges_phantom_vars.cmx \
+    asmcomp/debug/available_ranges_all_vars.cmi
+asmcomp/debug/available_ranges_all_vars.cmi : asmcomp/reg.cmi \
+    asmcomp/mach.cmi asmcomp/debug/is_parameter.cmi \
+    asmcomp/debug/compute_ranges.cmi asmcomp/backend_var.cmi \
+    asmcomp/debug/available_ranges_vars.cmi \
+    asmcomp/debug/available_ranges_phantom_vars.cmi
+asmcomp/debug/available_ranges_phantom_vars.cmo : utils/misc.cmi \
+    asmcomp/mach.cmi asmcomp/linearize.cmi \
+    asmcomp/debug/compute_ranges_intf.cmo utils/clflags.cmi \
+    asmcomp/backend_var.cmi asmcomp/debug/available_ranges_phantom_vars.cmi
+asmcomp/debug/available_ranges_phantom_vars.cmx : utils/misc.cmx \
+    asmcomp/mach.cmx asmcomp/linearize.cmx \
+    asmcomp/debug/compute_ranges_intf.cmx utils/clflags.cmx \
+    asmcomp/backend_var.cmx asmcomp/debug/available_ranges_phantom_vars.cmi
+asmcomp/debug/available_ranges_phantom_vars.cmi : \
+    asmcomp/debug/is_parameter.cmi asmcomp/debug/compute_ranges.cmi \
+    asmcomp/backend_var.cmi
+asmcomp/debug/available_ranges_vars.cmo : \
+    asmcomp/debug/reg_with_debug_info.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
+    utils/misc.cmi asmcomp/linearize.cmi asmcomp/debug/is_parameter.cmi \
+    asmcomp/debug/compute_ranges_intf.cmo utils/clflags.cmi \
+    asmcomp/backend_var.cmi asmcomp/debug/available_ranges_vars.cmi
+asmcomp/debug/available_ranges_vars.cmx : \
+    asmcomp/debug/reg_with_debug_info.cmx asmcomp/reg.cmx asmcomp/proc.cmx \
+    utils/misc.cmx asmcomp/linearize.cmx asmcomp/debug/is_parameter.cmx \
+    asmcomp/debug/compute_ranges_intf.cmx utils/clflags.cmx \
+    asmcomp/backend_var.cmx asmcomp/debug/available_ranges_vars.cmi
+asmcomp/debug/available_ranges_vars.cmi : asmcomp/reg.cmi \
+    asmcomp/debug/is_parameter.cmi middle_end/debuginfo.cmi \
+    asmcomp/debug/compute_ranges.cmi asmcomp/backend_var.cmi
 asmcomp/debug/available_regs.cmo : asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi utils/clflags.cmi \
@@ -2393,6 +2432,20 @@ asmcomp/debug/available_regs.cmx : asmcomp/debug/reg_with_debug_info.cmx \
     asmcomp/printmach.cmx utils/misc.cmx asmcomp/mach.cmx utils/clflags.cmx \
     asmcomp/backend_var.cmx asmcomp/debug/available_regs.cmi
 asmcomp/debug/available_regs.cmi : asmcomp/mach.cmi
+asmcomp/debug/compute_ranges.cmo : asmcomp/printlinear.cmi utils/misc.cmi \
+    asmcomp/linearize.cmi middle_end/int_replace_polymorphic_compare.cmi \
+    asmcomp/debug/compute_ranges_intf.cmo asmcomp/cmm.cmi utils/clflags.cmi \
+    asmcomp/debug/compute_ranges.cmi
+asmcomp/debug/compute_ranges.cmx : asmcomp/printlinear.cmx utils/misc.cmx \
+    asmcomp/linearize.cmx middle_end/int_replace_polymorphic_compare.cmx \
+    asmcomp/debug/compute_ranges_intf.cmx asmcomp/cmm.cmx utils/clflags.cmx \
+    asmcomp/debug/compute_ranges.cmi
+asmcomp/debug/compute_ranges.cmi : asmcomp/debug/compute_ranges_intf.cmo \
+    asmcomp/debug/compute_ranges.cmi
+asmcomp/debug/compute_ranges_intf.cmo : asmcomp/linearize.cmi \
+    utils/identifiable.cmi asmcomp/debug/compute_ranges_intf.cmo
+asmcomp/debug/compute_ranges_intf.cmx : asmcomp/linearize.cmx \
+    utils/identifiable.cmx asmcomp/debug/compute_ranges_intf.cmx
 asmcomp/debug/dwarf.cmo : utils/targetint.cmi \
     middle_end/base_types/symbol.cmi \
     asmcomp/debug/dwarf_low/single_location_description.cmi \
@@ -2403,7 +2456,8 @@ asmcomp/debug/dwarf.cmo : utils/targetint.cmi \
     utils/misc.cmi asmcomp/debug/dwarf_low/location_list_entry.cmi \
     asmcomp/debug/dwarf_low/location_list.cmi \
     middle_end/base_types/linkage_name.cmi asmcomp/linearize.cmi \
-    typing/ident.cmi asmcomp/debug/dwarf_low/encoding_attribute.cmi \
+    asmcomp/debug/lexical_block_ranges.cmi \
+    asmcomp/debug/dwarf_low/encoding_attribute.cmi \
     asmcomp/debug/dwarf_high/dwarf_world.cmi \
     asmcomp/debug/dwarf_low/dwarf_version.cmi \
     asmcomp/debug/dwarf_low/dwarf_tag.cmi \
@@ -2414,7 +2468,7 @@ asmcomp/debug/dwarf.cmo : utils/targetint.cmi \
     asmcomp/debug/dwarf_low/composite_location_description.cmi \
     asmcomp/compilenv.cmi middle_end/base_types/compilation_unit.cmi \
     asmcomp/cmmgen.cmi utils/clflags.cmi asmcomp/clambda.cmi \
-    asmcomp/backend_var.cmi asmcomp/debug/available_ranges.cmi \
+    asmcomp/backend_var.cmi asmcomp/debug/available_ranges_all_vars.cmi \
     asmcomp/asm_target/asm_symbol.cmi asmcomp/asm_target/asm_section.cmi \
     asmcomp/asm_target/asm_label.cmi asmcomp/arch.cmo asmcomp/debug/dwarf.cmi
 asmcomp/debug/dwarf.cmx : utils/targetint.cmx \
@@ -2427,7 +2481,8 @@ asmcomp/debug/dwarf.cmx : utils/targetint.cmx \
     utils/misc.cmx asmcomp/debug/dwarf_low/location_list_entry.cmx \
     asmcomp/debug/dwarf_low/location_list.cmx \
     middle_end/base_types/linkage_name.cmx asmcomp/linearize.cmx \
-    typing/ident.cmx asmcomp/debug/dwarf_low/encoding_attribute.cmx \
+    asmcomp/debug/lexical_block_ranges.cmx \
+    asmcomp/debug/dwarf_low/encoding_attribute.cmx \
     asmcomp/debug/dwarf_high/dwarf_world.cmx \
     asmcomp/debug/dwarf_low/dwarf_version.cmx \
     asmcomp/debug/dwarf_low/dwarf_tag.cmx \
@@ -2438,16 +2493,33 @@ asmcomp/debug/dwarf.cmx : utils/targetint.cmx \
     asmcomp/debug/dwarf_low/composite_location_description.cmx \
     asmcomp/compilenv.cmx middle_end/base_types/compilation_unit.cmx \
     asmcomp/cmmgen.cmx utils/clflags.cmx asmcomp/clambda.cmx \
-    asmcomp/backend_var.cmx asmcomp/debug/available_ranges.cmx \
+    asmcomp/backend_var.cmx asmcomp/debug/available_ranges_all_vars.cmx \
     asmcomp/asm_target/asm_symbol.cmx asmcomp/asm_target/asm_section.cmx \
     asmcomp/asm_target/asm_label.cmx asmcomp/arch.cmx asmcomp/debug/dwarf.cmi
-asmcomp/debug/dwarf.cmi : asmcomp/linearize.cmi asmcomp/clambda.cmi \
-    asmcomp/debug/available_ranges.cmi
+asmcomp/debug/dwarf.cmi : asmcomp/linearize.cmi asmcomp/clambda.cmi
+asmcomp/debug/is_parameter.cmo : asmcomp/debug/is_parameter.cmi
+asmcomp/debug/is_parameter.cmx : asmcomp/debug/is_parameter.cmi
+asmcomp/debug/is_parameter.cmi :
+asmcomp/debug/lexical_block_ranges.cmo : asmcomp/linearize.cmi \
+    middle_end/debuginfo.cmi asmcomp/debug/compute_ranges_intf.cmo \
+    asmcomp/debug/compute_ranges.cmi asmcomp/debug/lexical_block_ranges.cmi
+asmcomp/debug/lexical_block_ranges.cmx : asmcomp/linearize.cmx \
+    middle_end/debuginfo.cmx asmcomp/debug/compute_ranges_intf.cmx \
+    asmcomp/debug/compute_ranges.cmx asmcomp/debug/lexical_block_ranges.cmi
+asmcomp/debug/lexical_block_ranges.cmi : asmcomp/linearize.cmi \
+    middle_end/debuginfo.cmi asmcomp/debug/compute_ranges.cmi
 asmcomp/debug/name_laundry.cmo : asmcomp/backend_var.cmi \
     asmcomp/debug/name_laundry.cmi
 asmcomp/debug/name_laundry.cmx : asmcomp/backend_var.cmx \
     asmcomp/debug/name_laundry.cmi
 asmcomp/debug/name_laundry.cmi : asmcomp/backend_var.cmi
+asmcomp/debug/propagate_debuginfo.cmo : asmcomp/mach.cmi \
+    middle_end/debuginfo.cmi utils/clflags.cmi \
+    asmcomp/debug/propagate_debuginfo.cmi
+asmcomp/debug/propagate_debuginfo.cmx : asmcomp/mach.cmx \
+    middle_end/debuginfo.cmx utils/clflags.cmx \
+    asmcomp/debug/propagate_debuginfo.cmi
+asmcomp/debug/propagate_debuginfo.cmi : asmcomp/mach.cmi
 asmcomp/debug/reg_availability_set.cmo : \
     asmcomp/debug/reg_with_debug_info.cmi asmcomp/backend_var.cmi \
     asmcomp/debug/reg_availability_set.cmi

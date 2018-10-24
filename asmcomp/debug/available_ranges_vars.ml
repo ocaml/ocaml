@@ -68,7 +68,7 @@ include Calculate_ranges.Make (struct
       with type subrange_state := Subrange_state.t
 
     val offset_from_cfa_in_bytes : t -> int
-  struct
+  end = struct
     type t = {
       reg : Reg.t;
       start_insn : L.instruction;

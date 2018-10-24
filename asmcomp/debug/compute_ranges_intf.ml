@@ -16,14 +16,14 @@
 
 module L = Linearize
 
-module type S_subrange_state =
+module type S_subrange_state = sig
   type t
 
   val create : unit -> t
   val advance_over_instruction : t -> L.instruction -> t
 end
 
-module type S_subrange_info =
+module type S_subrange_info = sig
   type t
   type key
   type subrange_state
@@ -31,7 +31,7 @@ module type S_subrange_info =
   val create : key -> subrange_state -> t
 end
 
-module type S_range_info =
+module type S_range_info = sig
   type t
   type key
   type index

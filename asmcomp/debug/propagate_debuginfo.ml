@@ -14,7 +14,7 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-let module M = Mach
+module M = Mach
 
 let rec propagate (instr : M.instruction) dbg =
   if Debuginfo.is_none instr.dbg then begin

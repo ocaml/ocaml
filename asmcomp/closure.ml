@@ -1210,7 +1210,7 @@ let rec close ~scope fenv cenv = function
               | Some module_path ->
                 let provenance =
                   V.Provenance.create ~module_path
-                    ~location:(Debuginfo.of_location Debuginfo.none
+                    ~location:(Debuginfo.of_location Debuginfo.none ~scope)
                     ~original_ident:id
                 in
                 Some provenance
