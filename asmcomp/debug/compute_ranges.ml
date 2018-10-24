@@ -240,7 +240,6 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         ~(first_insn : L.instruction) ~(insn : L.instruction)
         ~(prev_insn : L.instruction)
         ~open_subranges ~subrange_state =
-    let actions = actions_at_instruction ~insn ~prev_insn in
     let first_insn = ref first_insn in
     let prev_insn = ref prev_insn in
     let insert_insn ~new_insn =
@@ -300,6 +299,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
           Range.add_subrange range ~subrange;
           open_subranges
     in
+    let actions = actions_at_instruction ~insn ~prev_insn in
     List.fold_left (fun open_subranges (key, (action : action)) ->
         match action with
         | Open_one_byte_range ->

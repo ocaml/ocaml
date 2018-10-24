@@ -59,6 +59,8 @@ module Current_block : sig
 
   val to_block : t -> to_block
 
+  val add_scope : t -> t
+
   val inline : t -> at_call_site:t -> t
 
   include Identifiable.S with type t := t
@@ -75,7 +77,7 @@ val is_none : t -> bool
 
 val to_string_frames_only_innermost_last : t -> string
 
-val from_location : Location.t -> scope:Current_block.t -> t
+val of_location : Location.t -> scope:Current_block.t -> t
 
 val to_location : t -> Location.t
 
