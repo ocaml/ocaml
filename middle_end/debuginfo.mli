@@ -25,6 +25,8 @@ module Code_range : sig
   val char_start : t -> int
   val char_end : t -> int
 
+  val print_compact : Format.formatter -> t -> unit
+
   include Identifiable.S with type t := t
 end
 
@@ -34,16 +36,14 @@ end
 module Block : sig
   type t
 
-  val create_lexical_scope : parent:t -> t
-
   val create_non_inlined_frame : Code_range.t -> t
 
   type frame_classification = private
-    | No_frame
+    | Lexical_scope_only
     | Non_inlined_frame of Code_range.t
     | Inlined_frame of Code_range.t
 
-  val frame_classification : t -> Frame_classification.t
+  val frame_classification : t -> frame_classification
 
   include Identifiable.S with type t := t
 end
@@ -85,24 +85,31 @@ val innermost_block : t -> Current_block.t
 
 val position : t -> Code_range.t option
 
-val iter_innermost_first : t -> f:(Block.t -> unit) -> unit
+val iter_position_and_blocks_innermost_first
+   : t
+  -> f_position:(Code_range.t -> unit)
+  -> f_blocks:(Block.t -> unit)
+  -> unit
 
-val iter_frames_innermost_first : t -> f:(Code_range.t -> unit) -> unit
+val iter_position_and_frames_innermost_first
+   : t
+  -> f:(Code_range.t -> unit)
+  -> unit
 
 module Block_subst : sig
   type t
 
   val empty : t
 
-  val find_or_add
-     : t
-    -> debuginfo
-    -> at_call_site:Current_block.t
-    -> t * debuginfo
-
   val find_or_add_block
      : t
     -> Block.t
     -> at_call_site:Current_block.t
     -> t * Block.t
+
+  val find_or_add
+     : t
+    -> debuginfo
+    -> at_call_site:Current_block.t
+    -> t * debuginfo
 end

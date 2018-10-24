@@ -99,13 +99,14 @@ module Code_range = struct
       Format.fprintf ppf ",%i--%i" t.char_start t.char_end
     end
 
-  let to_location t =
-    let loc_start =
+  let to_location t : Location.t =
+    let loc_start : Lexing.position =
       { pos_fname = t.file;
         pos_lnum = t.line;
         pos_bol = 0;
         pos_cnum = t.char_start;
-      } in
+      }
+    in
     let loc_end = { loc_start with pos_cnum = t.char_end; } in
     { loc_ghost = false; loc_start; loc_end; }
 end
@@ -150,7 +151,7 @@ module Block = struct
       parent = new_parent;
     }
 
-  let rec graft t ~onto =
+  let rec graft t ~(onto : t option) : t =
     match t.parent with
     | None ->
       { t with
@@ -158,7 +159,7 @@ module Block = struct
       }
     | Some parent ->
       { t with
-        parent = graft parent ~onto;
+        parent = Some (graft parent ~onto);
       }
 
   let parent t = t.parent
@@ -171,19 +172,19 @@ module Block = struct
       | Some range -> [range]
       end
     | Some parent ->
-      begin match frame_location with
+      begin match t.frame_location with
       | None -> frame_list_innermost_first parent
       | Some range -> range::(frame_list_innermost_first parent)
       end
 
   type frame_classification =
-    | No_frame
+    | Lexical_scope_only
     | Non_inlined_frame of Code_range.t
     | Inlined_frame of Code_range.t
 
   let frame_classification t =
     match t.frame_location with
-    | None -> No_frame
+    | None -> Lexical_scope_only
     | Some range ->
       match t.parent with
       | None -> Non_inlined_frame range
@@ -193,7 +194,7 @@ module Block = struct
     f t;
     match t.parent with
     | None -> ()
-    | Some parent -> iter parent ~f
+    | Some parent -> iter_innermost_first parent ~f
 
   include Identifiable.Make (struct
     type nonrec t = t
@@ -219,28 +220,40 @@ module Block = struct
 end
 
 module Current_block = struct
-  type t =
+  type t = Block.t option
+
+  let toplevel = None
+
+  type to_block =
     | Toplevel
     | Block of Block.t
 
-  let toplevel = Toplevel
+  let to_block t =
+    match t with
+    | None -> Toplevel
+    | Some block -> Block block
 
-  type to_block = t
+  let add_scope t =
+    Some (Block.create_lexical_scope ~parent:t)
 
-  let to_block t = t
-
-  let inline t ~at_call_site =
+  let inline t ~(at_call_site : t) : t =
     match at_call_site with
-    | Toplevel -> t
-    | Block at_call_site ->
+    | None -> t
+    | Some at_call_site ->
       match t with
-      | Toplevel -> Block at_call_site
-      | Block t -> Block.graft t ~onto:at_call_site
+      | None -> Some at_call_site
+      | Some t -> Some (Block.graft t ~onto:(Some at_call_site))
 
   include Identifiable.Make (struct
     type nonrec t = t
 
-    let compare t1 t2 = Misc.Stdlib.Option.compare Block.compare t1 t2
+    let compare t1 t2 =
+      match t1, t2 with
+      | None, None -> 0
+      | None, Some _ -> -1
+      | Some _, None -> 1
+      | Some block1, Some block2 -> Block.compare block1 block2
+
     let equal t1 t2 = (compare t1 t2 = 0)
     let hash t = Hashtbl.hash t
 
@@ -258,11 +271,13 @@ type t =
       position : Code_range.t;
     }
 
+type debuginfo = t
+
 let none = Empty
 
 let is_none = function
   | Empty -> true
-  | Non_empty -> false
+  | Non_empty _ -> false
 
 let to_string_frames_only_innermost_last t =
   match t with
@@ -301,35 +316,35 @@ let position t =
   | Empty -> None
   | Non_empty { block = _; position; } -> Some position
 
-let iter_innermost_first t ~f =
+let iter_position_and_blocks_innermost_first t ~f_position ~f_blocks =
   match t with
   | Empty -> ()
   | Non_empty { block; position; } ->
-    f position;
+    f_position position;
     match block with
     | None -> ()
-    | Some block -> Block.iter_innermost_first block ~f
+    | Some block -> Block.iter_innermost_first block ~f:f_blocks
 
-let iter_frames_innermost_first t ~f =
-  iter t ~f:(fun block ->
-    match Block.frame_classification block with
-    | Lexical_scope -> ()
-    | Non_inlined_frame range | Inlined_frame range -> f range)
+let iter_position_and_frames_innermost_first t ~f =
+  iter_position_and_blocks_innermost_first t
+    ~f_position:f
+    ~f_blocks:(fun block ->
+      match Block.frame_classification block with
+      | Lexical_scope_only -> ()
+      | Non_inlined_frame range | Inlined_frame range -> f range)
 
 include Identifiable.Make (struct
-  let rec print ppf t =
+  type nonrec t = t
+
+  let print ppf t =
     match t with
-    | [] -> ()
-    | [Frame frame] -> Frame.print frame
-    | [Block block] -> Block.print block
-    | (Frame frame)::t ->
-      Frame.print ppf frame;
-      Format.fprintf ppf ";";
-      print ppf t
-    | (Block block)::t ->
-      Frame.print ppf block;
-      Format.fprintf ppf ";";
-      print ppf t
+    | Empty -> Format.pp_print_string ppf "Empty"
+    | Non_empty { block; position; } ->
+      Format.fprintf ppf "@[<hov 1>(@\
+          @[<hov 1>(position@ %a)@]@ \
+          @[<hov 1>(block@ %a)@])@]"
+        Code_range.print position
+        (Misc.Stdlib.Option.print Block.print) block
 
   let output chan t =
     Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
@@ -341,19 +356,20 @@ include Identifiable.Make (struct
     | Non_empty _, Empty -> 1
     | Non_empty { block = block1; position = position1; },
       Non_empty { block = block2; position = position2; } ->
-      let c = Block.compare block1 block2 in
+      let c = 
+        match block1, block2 with
+        | None, None -> 0
+        | None, Some _ -> -1
+        | Some _, None -> 1
+        | Some block1, Some block2 ->
+          Block.compare block1 block2
+      in
       if c <> 0 then c
       else Code_range.compare position1 position2
 
-  let hash t =
-    List.fold_left (fun hash item ->
-        let hash' =
-          match item with
-          | Frame frame -> Frame.hash frame
-          | Block block -> Block.hash block
-        in
-        Hashtbl.hash (hash, hash'))
-      0 t
+  let equal t1 t2 = (compare t1 t2 = 0)
+
+  let hash t = Hashtbl.hash t
 end)
 
 module Block_subst = struct
@@ -361,26 +377,34 @@ module Block_subst = struct
 
   let empty = Block.Map.empty
 
-  let rec find_or_add t old_block ~at_call_site =
+  let rec find_or_add_block t (old_block : Block.t)
+        ~(at_call_site : Current_block.t)
+        : t * Block.t =
     match Block.Map.find old_block t with
     | exception Not_found ->
       let old_parent = Block.parent old_block in
       let t, new_parent =
         match old_parent with
         | None -> t, at_call_site
-        | Some old_parent -> find_or_add t old_parent ~at_call_site
+        | Some old_parent ->
+          let t, block = find_or_add_block t old_parent ~at_call_site in
+          t, Some block
       in
       let new_block =
         Block.create_and_reparent ~like:old_block ~new_parent
       in
       let t = Block.Map.add old_block new_block t in
       t, new_block
-    | New_block -> t, new_block
+    | new_block -> t, new_block
 
   let find_or_add t old_debuginfo ~at_call_site =
     match old_debuginfo with
     | Empty -> t, Empty
     | Non_empty { block; position; } ->
-      let t, block = find_or_add_block t old_block ~at_call_site in
-      t, Non_empty { block; position; }
+      match block with
+      | None ->
+        t, Non_empty { block = at_call_site; position; }
+      | Some block ->
+        let t, block = find_or_add_block t block ~at_call_site in
+        t, Non_empty { block = Some block; position; }
 end
