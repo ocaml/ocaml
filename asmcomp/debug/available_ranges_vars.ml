@@ -67,18 +67,18 @@ include Calculate_ranges.Make (struct
       with type key := Key.t
       with type subrange_state := Subrange_state.t
 
-    val offset_from_stack_ptr_in_bytes : t -> int
+    val offset_from_cfa_in_bytes : t -> int
   struct
     type t = {
       reg : Reg.t;
       start_insn : L.instruction;
-      offset_from_stack_ptr_in_bytes : int option;
+      offset_from_cfa_in_bytes : int option;
     }
 
     let create reg ~start_insn ~subrange_state =
       let reg = RD.reg reg in
       let stack_offset = Subrange_state.stack_offset subrange_state in
-      let offset_from_stack_ptr_in_bytes =
+      let offset_from_cfa_in_bytes =
         match reg.loc with
         | Stack loc ->
           let frame_size = Proc.frame_size ~stack_offset in
@@ -91,19 +91,14 @@ include Calculate_ranges.Make (struct
       in
       { reg;
         start_insn;
-        offset_from_stack_ptr_in_bytes;
+        offset_from_cfa_in_bytes;
       }
 
     (* Available subranges are allowed to cross points at which the stack
        pointer changes, since we reference the stack slots as an offset from the
        CFA, not from the stack pointer. *)
 
-    let offset_from_stack_ptr_in_bytes t =
-      match t.offset_from_stack_ptr_in_bytes with
-      | Some offset -> offset
-      | None ->
-        Misc.fatal_error "No offset from stack pointer available (register \
-          not assigned to the stack)"
+    let offset_from_cfa_in_bytes t = t.offset_from_cfa_in_bytes
   end
 
   module Range_info :
@@ -111,13 +106,9 @@ include Calculate_ranges.Make (struct
       with type key := Key.t
       with type index := Index.t
   = struct
-    type is_parameter =
-      | Local
-      | Parameter of { index : int; }
-
     type t = {
       provenance : Backend_var.Provenance.t option;
-      is_parameter : is_parameter;
+      is_parameter : Is_parameter.t;
     }
 
     let create _fundecl reg ~start_insn:_ =
@@ -126,7 +117,7 @@ include Calculate_ranges.Make (struct
       | Some debug_info ->
         let var = RD.Debug_info.holds_value_of debug_info in
         let provenance = RD.Debug_info.provenance debug_info in
-        let is_parameter =
+        let is_parameter : Is_parameter.t =
           match RD.Debug_info.which_parameter debug_info with
           | None -> Local
           | Some index -> Parameter { index; }

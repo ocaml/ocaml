@@ -53,7 +53,11 @@ module Current_block : sig
 
   val toplevel : t
 
-  val is_toplevel : t -> bool
+  type to_block =
+    | Toplevel
+    | Block of Block.t
+
+  val to_block : t -> to_block
 
   val inline : t -> at_call_site:t -> t
 

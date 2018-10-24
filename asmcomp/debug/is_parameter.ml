@@ -14,27 +14,6 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-(** Like [Available_ranges_vars], but with phantom variables associated to
-    subranges, rather than normal (non-phantom) variables.
-
-    Phantom variables correspond to variables that once bound computations that
-    have now been optimised out.
-*)
-
-module Subrange_info : sig
-  type t
-end
-
-module Range_info : sig
-  type t
-
-  val provenance : t -> Backend_var.Provenance.t option
-  val is_parameter : t -> Is_parameter.t
-  val defining_expr : t -> phantom_defining_expr
-end
-
-include Compute_ranges.S
-  with module Index := Backend_var
-  with module Key := Backend_var
-  with module Subrange_info := Subrange_info
-  with module Range_info := Range_info
+type is_parameter =
+  | Local
+  | Parameter of { index : int; }

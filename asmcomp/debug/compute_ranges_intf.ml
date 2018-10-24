@@ -77,7 +77,7 @@ module type S = sig
     with type key := Key.t
     with type index := Index.t
 
-  module Available_subrange : sig
+  module Subrange : sig
     type t
 
     val info : t -> subrange_info
@@ -87,7 +87,7 @@ module type S = sig
     val end_pos_offset : t -> int option
   end
 
-  module Available_range : sig
+  module Range : sig
     type t
 
     val info : t -> range_info
@@ -96,13 +96,13 @@ module type S = sig
 
     val iter
        : t
-      -> f:(Available_subrange.t -> unit)
+      -> f:(Subrange.t -> unit)
       -> unit
 
     val fold
        : t
       -> init:'a
-      -> f:('a -> Available_subrange.t -> 'a)
+      -> f:('a -> Subrange.t -> 'a)
       -> 'a
   end
 
@@ -110,9 +110,9 @@ module type S = sig
 
   val create : Linearize.fundecl -> t * Linearize.fundecl
 
-  val find : t -> index -> Available_range.t option
+  val find : t -> index -> Range.t option
 
-  val iter : t -> f:(index -> Available_range.t -> unit) -> unit
+  val iter : t -> f:(index -> Range.t -> unit) -> unit
 
-  val fold : t -> init:'a -> f:('a -> index -> Available_range.t -> 'a) -> 'a
+  val fold : t -> init:'a -> f:('a -> index -> Range.t -> 'a) -> 'a
 end

@@ -32,21 +32,16 @@
 module Subrange_info : sig
   type t
 
-  (** [offset_from_stack_ptr_in_bytes] must be called only when the
-      corresponding register is assigned to the stack. *)
-  val offset_from_stack_ptr_in_bytes : t -> int
+  val reg : t -> Reg.t
+  val offset_from_cfa_in_bytes : t -> int option
 end
 
 module Range_info : sig
-  type is_parameter = private
-    | Local
-    | Parameter of { index : int; }
-
   type t
 
   val provenance : t -> Backend_var.Provenance.t option
   val debuginfo : t -> Debuginfo.t
-  val is_parameter : t -> is_parameter
+  val is_parameter : t -> Is_parameter.t
 end
 
 include Compute_ranges.S

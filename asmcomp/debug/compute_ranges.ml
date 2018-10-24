@@ -25,7 +25,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   module Subrange_info = S.Subrange_info
   module Range_info = S.Range_info
 
-  module Available_subrange = struct
+  module Subrange = struct
     (* CR mshinwell: we need to check exactly what happens with function
        epilogues, including returns in the middle of functions. *)
     type t = {
@@ -49,7 +49,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
           subrange_info;
         }
       | _ ->
-        Misc.fatal_errorf "Available_subrange.create: bad [start_insn]: %a"
+        Misc.fatal_errorf "Subrange.create: bad [start_insn]: %a"
           Printlinear.instruction start_insn
 
     let start_pos t = t.start_pos
@@ -58,9 +58,9 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let end_pos_offset t = t.end_pos_offset
   end
 
-  module Available_range = struct
+  module Range = struct
     type t = {
-      mutable subranges : Available_subrange.t list;
+      mutable subranges : Subrange.t list;
       mutable min_pos : L.label option;
       mutable max_pos : L.label option;
       range_info : Range_info.t;
@@ -76,8 +76,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let range_info t = t.range_info
 
     let add_subrange t ~subrange =
-      let start_pos = Available_subrange.start_pos subrange in
-      let end_pos = Available_subrange.end_pos subrange in
+      let start_pos = Subrange.start_pos subrange in
+      let end_pos = Subrange.end_pos subrange in
       (* This may seem dubious, but is correct by virtue of the way label
          counters are allocated (see [Linearize]) and the fact that, below,
          we go through the code from lowest (code) address to highest.  As
@@ -109,7 +109,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       | Some min, Some max -> min, max
       | Some _, None | None, Some _ -> assert false
       | None, None ->
-        Misc.fatal_error "Available_ranges.extremities on empty range"
+        Misc.fatal_error "Ranges.extremities on empty range"
 
     let iter t ~f =
       List.iter f t.subranges
@@ -119,7 +119,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   end
 
   type t = {
-    ranges : Available_range.t Index.Tbl.t;
+    ranges : Range.t Index.Tbl.t;
   }
 
   let find t ~var =
@@ -295,7 +295,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
             match Index.Tbl.find t.ranges index with
             | range -> range
             | exception Not_found ->
-              let range = Available_range.create range_info in
+              let range = Range.create range_info in
               Index.Tbl.add t.ranges index range;
               range
           in
@@ -306,7 +306,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
               ~end_pos ~end_pos_offset
               ~subrange_info
           in
-          Available_range.add_subrange range ~subrange;
+          Range.add_subrange range ~subrange;
           open_subranges
     in
     List.fold_left (fun open_subranges (key, (action : action)) ->
