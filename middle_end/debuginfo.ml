@@ -139,12 +139,6 @@ module Block = struct
       parent = None;
     }
 
-  let create_inlined_frame ~parent range =
-    { id = get_next_id ();
-      frame_location = Some range;
-      parent;
-    }
-
   let create_and_reparent ~like:t ~new_parent =
     { t with
       id = get_next_id ();
@@ -338,7 +332,7 @@ include Identifiable.Make (struct
 
   let print ppf t =
     match t with
-    | Empty -> Format.pp_print_string ppf "Empty"
+    | Empty -> Format.pp_print_string ppf "no-debug-info"
     | Non_empty { block; position; } ->
       Format.fprintf ppf "@[<hov 1>(@\
           @[<hov 1>(position@ %a)@]@ \

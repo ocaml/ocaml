@@ -406,8 +406,11 @@ module Env = struct
   let set_inline_debuginfo t ~dbg =
     { t with inlined_debuginfo = dbg }
 
-  let add_inlined_debuginfo t ~dbg =
-    Debuginfo.concat t.inlined_debuginfo dbg
+  let add_inlined_debuginfo _t ~dbg = dbg
+    (* CR mshinwell for pchambart: Fix this
+       Used to say:
+         Debuginfo.concat t.inlined_debuginfo dbg
+    *)
 end
 
 let initial_inlining_threshold ~round : Inlining_cost.Threshold.t =

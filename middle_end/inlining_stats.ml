@@ -197,10 +197,10 @@ module Inlining_report = struct
     Place_map.iter (fun (dbg, cl, _) v ->
        match v with
        | Closure t ->
-         Format.fprintf ppf "@[<h>%a Definition of %a%s@]@."
+         Format.fprintf ppf "@[<h>%a Definition of %a (%a)@]@."
            print_stars (depth + 1)
            Closure_id.print cl
-           (Debuginfo.to_string dbg);
+           Debuginfo.print dbg;
          print ppf ~depth:(depth + 1) t;
          if depth = 0 then Format.pp_print_newline ppf ()
        | Call c ->
@@ -209,10 +209,10 @@ module Inlining_report = struct
            Misc.fatal_error "Inlining_report.print: missing call decision"
          | Some decision ->
            Format.pp_open_vbox ppf (depth + 2);
-           Format.fprintf ppf "@[<h>%a Application of %a%s@]@;@;@[%a@]"
+           Format.fprintf ppf "@[<h>%a Application of %a (%a)@]@;@;@[%a@]"
              print_stars (depth + 1)
              Closure_id.print cl
-             (Debuginfo.to_string dbg)
+             Debuginfo.print dbg
              Inlining_stats_types.Decision.summary decision;
            Format.pp_close_box ppf ();
            Format.pp_print_newline ppf ();

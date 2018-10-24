@@ -205,8 +205,8 @@ let rec lam ppf (flam : t) =
       | Unroll i -> fprintf ppf "<unroll %i>" i
       | Default_inline -> ()
     in
-    fprintf ppf "@[<2>(apply%a%a<%s>@ %a%a)@]" direct () inline ()
-      (Debuginfo.to_string dbg)
+    fprintf ppf "@[<2>(apply%a%a<%a>@ %a%a)@]" direct () inline ()
+      Debuginfo.print dbg
       Variable.print func Variable.print_list args
   | Assign { being_assigned; new_value; } ->
     fprintf ppf "@[<2>(assign@ %a@ %a)@]"
@@ -348,8 +348,8 @@ and print_named ppf (named : named) =
   | Set_of_closures (set_of_closures) ->
     print_set_of_closures ppf set_of_closures
   | Prim(prim, args, dbg) ->
-    fprintf ppf "@[<2>(%a<%s>%a)@]" Printlambda.primitive prim
-      (Debuginfo.to_string dbg)
+    fprintf ppf "@[<2>(%a<%a>%a)@]" Printlambda.primitive prim
+      Debuginfo.print dbg
       Variable.print_list args
   | Expr expr ->
     fprintf ppf "*%a" lam expr
