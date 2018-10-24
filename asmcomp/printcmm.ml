@@ -100,14 +100,14 @@ let phantom_defining_expr_opt ppf defining_expr =
   | Some defining_expr -> phantom_defining_expr ppf defining_expr
 
 let operation d = function
-  | Capply _ty -> "app" ^ Debuginfo.to_string d
+  | Capply _ty -> Format.asprintf "app %a" Debuginfo.print d
   | Cextcall(lbl, _ty, _alloc, _) ->
-      Printf.sprintf "extcall \"%s\"%s"
-        (Backend_sym.to_string lbl)
-        (Debuginfo.to_string d)
+      Format.asprintf "extcall \"%a\" %a"
+        Backend_sym.print lbl
+        Debuginfo.print d
   | Cload (c, Asttypes.Immutable) -> Printf.sprintf "load %s" (chunk c)
   | Cload (c, Asttypes.Mutable) -> Printf.sprintf "load_mut %s" (chunk c)
-  | Calloc -> "alloc" ^ Debuginfo.to_string d
+  | Calloc -> Format.asprintf "alloc %a" Debuginfo.print d
   | Cstore (c, init) ->
     let init =
       match init with
@@ -141,16 +141,16 @@ let operation d = function
   | Cfloatofint -> "floatofint"
   | Cintoffloat -> "intoffloat"
   | Ccmpf c -> Printf.sprintf "%sf" (float_comparison c)
-  | Craise k -> Format.asprintf "%a%s" raise_kind k (Debuginfo.to_string d)
-  | Ccheckbound -> "checkbound" ^ Debuginfo.to_string d
+  | Craise k -> Format.asprintf "%a %a" raise_kind k Debuginfo.print d
+  | Ccheckbound -> Format.asprintf "checkbound %a" Debuginfo.print d
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
   | Cconst_natint n ->
     fprintf ppf "%s" (Nativeint.to_string n)
   | Cblockheader(n, d) ->
-    fprintf ppf "block-hdr(%s)%s"
-      (Nativeint.to_string n) (Debuginfo.to_string d)
+    fprintf ppf "block-hdr(%s) %a"
+      (Nativeint.to_string n) Debuginfo.print d
   | Cconst_float n -> fprintf ppf "%F" n
   | Cconst_symbol s -> fprintf ppf "\"%a\"" Backend_sym.print s
   | Cconst_pointer n -> fprintf ppf "%ia" n
@@ -269,8 +269,8 @@ let fundecl ppf f =
        if !first then first := false else fprintf ppf "@ ";
        fprintf ppf "%a: %a" VP.print id machtype ty)
      cases in
-  fprintf ppf "@[<1>(function%s %a@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
-         (Debuginfo.to_string f.fun_dbg) Backend_sym.print f.fun_name
+  fprintf ppf "@[<1>(function %a %a@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
+         Debuginfo.print f.fun_dbg Backend_sym.print f.fun_name
          print_cases f.fun_args sequence f.fun_body
 
 let data_item ppf = function

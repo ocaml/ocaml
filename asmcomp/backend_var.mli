@@ -26,15 +26,13 @@ module Provenance : sig
 
   val create
      : module_path:Path.t
-    -> location:Debuginfo.t
+    -> debuginfo:Debuginfo.t
     -> original_ident:Ident.t
     -> t
 
   val module_path : t -> Path.t
-  val location : t -> Debuginfo.t
+  val debuginfo : t -> Debuginfo.t
   val original_ident : t -> Ident.t
-
-  val add_inlined_frame : t -> Location.t -> t
 
   val print : Format.formatter -> t -> unit
 end

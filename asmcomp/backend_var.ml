@@ -21,34 +21,29 @@ type backend_var = t
 module Provenance = struct
   type t = {
     module_path : Path.t;
-    location : Debuginfo.t;
+    debuginfo : Debuginfo.t;
     original_ident : Ident.t;
   }
 
-  let print ppf { module_path; location; original_ident; } =
+  let print ppf { module_path; debuginfo; original_ident; } =
     Format.fprintf ppf "@[<hov 1>(\
         @[<hov 1>(module_path@ %a)@]@ \
-        @[<hov 1>(location@ (%a))@]@ \
+        @[<hov 1>(debuginfo@ %a)@]@ \
         @[<hov 1>(original_ident@ %a)@]\
         )@]"
       Path.print module_path
-      Debuginfo.print_compact location
+      Debuginfo.print debuginfo
       Ident.print original_ident
 
-  let create ~module_path ~location ~original_ident =
+  let create ~module_path ~debuginfo ~original_ident =
     { module_path;
-      location;
+      debuginfo;
       original_ident;
     }
 
   let module_path t = t.module_path
-  let location t = t.location
+  let debuginfo t = t.debuginfo
   let original_ident t = t.original_ident
-
-  let add_inlined_frame t loc =
-    { t with
-      location = Debuginfo.inline loc t.location;
-    }
 end
 
 module With_provenance = struct
