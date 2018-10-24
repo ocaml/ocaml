@@ -62,3 +62,7 @@ tasks (ideally after discussing it first with maintainers).
   warnings in a less invasive and less imperative way.
 
 - Deprecated -nolabels, or even get rid of it?
+
+- Using e.g. bisect_ppx, monitor coverage of the typechecker
+  implementation while running the testsuite, and expand the testsuite
+  and/or kill dead code in the typechecker to increase coverage ratio.
