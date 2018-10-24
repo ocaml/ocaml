@@ -30,6 +30,7 @@ module Range_info : sig
 end
 
 include Compute_ranges.S
-  with type subrange_info := Subrange_info.t
-  with type range_info := Range_info.t
-  with type index := Debuginfo.Block.t
+  with module Index := Debuginfo.Current_block
+  with module Key := Debuginfo.Current_block
+  with module Subrange_info := Subrange_info
+  with module Range_info := Range_info

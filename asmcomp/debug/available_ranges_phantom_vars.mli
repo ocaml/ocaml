@@ -23,28 +23,22 @@
 
 module Subrange_info : sig
   type t
+end
 
-  type type_info = private
-    | Phantom of
-        Backend_var.Provenance.t option * Mach.phantom_defining_expr option
-
+module Range_info : sig
   type is_parameter = private
     | Local
     | Parameter of { index : int; }
 
-  val type_info : t -> type_info
+  type t
+
+  val provenance : t -> Backend_var.Provenance.t option
+  val debuginfo : t -> Debuginfo.t
   val is_parameter : t -> is_parameter
 end
 
-module Range_info : sig
-  type t
-
-  val debuginfo : t -> Debuginfo.t
-
-  val lexical_scope : t -> Debuginfo.Block.t option
-end
-
 include Compute_ranges.S
-  with type subrange_info := Subrange_info.t
-  with type range_info := Range_info.t
-  with type index := Backend_var.t
+  with module Index := Backend_var
+  with module Key := Backend_var
+  with module Subrange_info := Subrange_info
+  with module Range_info := Range_info

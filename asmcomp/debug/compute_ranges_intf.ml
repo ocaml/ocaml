@@ -66,9 +66,16 @@ module type S_functor = sig
 end
 
 module type S = sig
-  type subrange_info
-  type range_info
-  type index
+  module Index : Identifiable.S
+
+  module Key : Identifiable.S
+
+  module Subrange_info : Compute_ranges_intf.S_subrange_info
+    with type key := Key.t
+
+  module Range_info : Compute_ranges_intf.S_range_info
+    with type key := Key.t
+    with type index := Index.t
 
   module Available_subrange : sig
     type t
@@ -89,13 +96,13 @@ module type S = sig
 
     val iter
        : t
-      -> f:(available_subrange:Available_subrange.t -> unit)
+      -> f:(Available_subrange.t -> unit)
       -> unit
 
     val fold
        : t
       -> init:'a
-      -> f:('a -> available_subrange:Available_subrange.t -> 'a)
+      -> f:('a -> Available_subrange.t -> 'a)
       -> 'a
   end
 

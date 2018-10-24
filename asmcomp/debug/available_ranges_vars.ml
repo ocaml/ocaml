@@ -106,9 +106,10 @@ include Calculate_ranges.Make (struct
           not assigned to the stack)"
   end
 
-  module Range_info : Compute_ranges_intf.S_range_info
-    with type key := Key.t
-    with type index := Index.t
+  module Range_info :
+    Compute_ranges_intf.S_range_info
+      with type key := Key.t
+      with type index := Index.t
   = struct
     type is_parameter =
       | Local
@@ -130,12 +131,12 @@ include Calculate_ranges.Make (struct
           | None -> Local
           | Some index -> Parameter { index; }
         in
-        let range_info =
+        let t =
           { provenance;
             is_parameter;
           }
         in
-        Some (var, range_info)
+        Some (var, t)
 
     let provenance t = t.provenance
     let is_parameter t = t.is_parameter

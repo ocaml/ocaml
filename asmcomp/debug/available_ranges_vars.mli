@@ -45,10 +45,12 @@ module Range_info : sig
   type t
 
   val provenance : t -> Backend_var.Provenance.t option
+  val debuginfo : t -> Debuginfo.t
   val is_parameter : t -> is_parameter
 end
 
 include Compute_ranges.S
-  with type subrange_info := Subrange_info.t
-  with type range_info := Range_info.t
-  with type index := Backend_var.t
+  with module Index := Backend_var
+  with module Key := Backend_var
+  with module Subrange_info := Subrange_info
+  with module Range_info := Range_info

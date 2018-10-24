@@ -17,36 +17,44 @@
 module L = Linearize
 
 include Compute_ranges.Make (struct
-  module Key = Debuginfo.Block
-  module Index = Debuginfo.Block
+  module Key = Debuginfo.Current_block
+  module Index = Debuginfo.Current_block
 
-  module Available_subrange_state_for_blocks : Subrange_state_intf = struct
+  module Subrange_state :
+    Compute_ranges_intf.S_subrange_state
+  = struct
     type t = unit
 
     let create () = ()
-
-    let advance_over_instruction () _insn = ()
   end
 
-  module Available_subrange_info_for_blocks
-    : Subrange_info_intf
-      with type subrange_state = Available_subrange_state_for_blocks.t =
-  struct
+  module Subrange_info :
+    Compute_ranges_intf.S_subrange_info
+      with type key := Key.t
+      with type subrange_state := Subrange_state.t
+  = struct
     type t = unit
 
-    let create ~subrange_state:_ = ()
+    let create _var ~start_insn:_ ~subrange_state:_ = ()
   end
 
-  module Available_range_info_for_blocks = struct
+  module Range_info :
+    Compute_ranges_intf.S_range_info
+      with type key := Key.t
+      with type index := Index.t
+  = struct
     type t = unit
+
+    let create _fundecl block ~start_insn:_ = Some (block, ())
   end
 
   let available_before (insn : L.instruction) =
-    match Debuginfo.innermost_block insn.dbg with
-    | None -> Debuginfo.Block.Set.empty
-    | Some block -> Debuginfo.Block.Set.singleton block
+    Debuginfo.innermost_block insn.dbg
 
-  let range_continues_for_this_many_bytes ~current_insn:_ _key = None
+  let available_across insn =
+    (* Block scoping never changes during the execution of a [Linearize]
+       instruction. *)
+    available_before insn
 
-  let maybe_restart_ranges ~proto_births:_ ~proto_deaths:_ = false
+  let must_restart_ranges_upon_any_change () = false
 end)

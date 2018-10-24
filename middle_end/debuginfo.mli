@@ -28,6 +28,9 @@ module Code_range : sig
   include Identifiable.S with type t := t
 end
 
+(* CR-someday mshinwell: Consider introducing the notion of a "function
+   block". *)
+
 module Block : sig
   type t
 
@@ -50,7 +53,11 @@ module Current_block : sig
 
   val toplevel : t
 
+  val is_toplevel : t -> bool
+
   val inline : t -> at_call_site:t -> t
+
+  include Identifiable.S with type t := t
 end
 
 type t
@@ -68,7 +75,7 @@ val from_location : Location.t -> scope:Current_block.t -> t
 
 val to_location : t -> Location.t
 
-val innermost_block : t -> Block.t option
+val innermost_block : t -> Current_block.t
 
 val position : t -> Code_range.t option
 

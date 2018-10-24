@@ -104,15 +104,19 @@ let emit ~ppf_dump:_ dwarf fundecl =
   | None -> Emit.fundecl fundecl ~end_of_function_label
   | Some dwarf ->
     let fundecl = Available_filtering.fundecl fundecl in
-    let available_ranges_regs, fundecl =
-      Available_ranges.Regs.create ~fundecl
+    let available_ranges_vars, fundecl =
+      Available_ranges_vars.create ~fundecl
+    in
+    let available_ranges_phantom_vars, fundecl =
+      Available_ranges_phantom_vars.create ~fundecl
     in
     let available_ranges_lexical_blocks, fundecl =
       Available_ranges.Lexical_blocks.create ~fundecl
     in
     Emit.fundecl fundecl ~end_of_function_label;
-    Dwarf.dwarf_for_function_definition dwarf ~fundecl ~available_ranges_regs
-          ~available_ranges_lexical_blocks ~end_of_function_label
+    Dwarf.dwarf_for_function_definition dwarf ~fundecl
+      ~available_ranges_vars ~available_ranges_phantom_vars
+      ~available_ranges_lexical_blocks ~end_of_function_label
 
 let (++) x f = f x
 
