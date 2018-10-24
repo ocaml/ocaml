@@ -60,7 +60,7 @@ external div : float -> float -> float = "%divfloat"
 external fma : float -> float -> float -> float =
   "caml_fma_float" "caml_fma" [@@unboxed] [@@noalloc]
 (** A fused multiply-add [fma x y z] computes [x * y + z] with a
-   single rounding. Deprecated if no hardware FMA support is provided,
+   single rounding. If no hardware support is provided,
    double-rounding issue may happen with software emulation fallback.
    @since 4.09.0 *)
 
