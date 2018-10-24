@@ -335,6 +335,9 @@ Working version
 - GPR#2105: Change verbatim to caml_example in documentation
   (Maxime Flin, review by Florian Angeletti)
 
+- GPR#2114: ocamldoc, improved manpages for documentation inside modules
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Compiler distribution build system:
 
 - GPR#1776: add -no-install-bytecode-programs and related configure options to
