@@ -34,6 +34,8 @@ module Provenance : sig
   val debuginfo : t -> Debuginfo.t
   val original_ident : t -> Ident.t
 
+  val replace_debuginfo : t -> Debuginfo.t -> t
+
   val print : Format.formatter -> t -> unit
 end
 

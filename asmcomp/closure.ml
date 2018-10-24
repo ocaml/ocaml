@@ -562,8 +562,11 @@ let subst_debuginfo ~at_call_site ~block_subst dbg =
 let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
   match ulam with
     Uvar v ->
-      begin try V.Map.find v sb with Not_found -> ulam end
-  | Uconst _ -> ulam
+      let ulam =
+        begin try V.Map.find v sb with Not_found -> ulam end
+      in
+      block_subst, ulam
+  | Uconst _ -> block_subst, ulam
   | Udirect_apply(lbl, args, dbg) ->
       let block_subst, dbg =
         subst_debuginfo ~at_call_site ~block_subst dbg
@@ -581,7 +584,7 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
         substitute ~at_call_site ~block_subst fpc sb rn fn
       in
       let block_subst, args =
-        substitute ~at_call_site ~block_subst fpc sb rn args
+        substitute_list ~at_call_site ~block_subst fpc sb rn args
       in
       let term = Ugeneric_apply (callee, args, dbg) in
       block_subst, term
@@ -603,7 +606,7 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
       let block_subst, block =
         substitute ~at_call_site ~block_subst fpc sb rn u
       in
-      let term = Uoffset (block_subst, ofs) in
+      let term = Uoffset (block, ofs) in
       block_subst, term
   | Ulet(str, kind, id, u1, u2) ->
       let block_subst, provenance =
@@ -612,10 +615,10 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
         | Some provenance ->
           let block_subst, dbg =
             subst_debuginfo ~at_call_site ~block_subst
-              (VP.Provenance.debuginfo provenance)
+              (V.Provenance.debuginfo provenance)
           in
           let provenance =
-            VP.Provenance.replace_debuginfo provenance dbg
+            V.Provenance.replace_debuginfo provenance dbg
           in
           block_subst, Some provenance
       in
@@ -852,11 +855,11 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
   | Uunreachable ->
       block_subst, Uunreachable
 
-and substitute_list ~at_call_site ~block_subst loc fpc sb rn terms =
+and substitute_list ~at_call_site ~block_subst fpc sb rn terms =
   let block_subst, terms_rev =
     List.fold_left (fun (block_subst, terms_rev) term ->
         let block_subst, term =
-          substitute ~at_call_site ~block_subst loc fpc sb rn term
+          substitute ~at_call_site ~block_subst fpc sb rn term
         in
         block_subst, term::terms_rev)
       (block_subst, [])
@@ -864,9 +867,9 @@ and substitute_list ~at_call_site ~block_subst loc fpc sb rn terms =
   in
   block_subst, List.rev terms_rev
 
-and substitute_array ~at_call_site ~block_subst loc fpc sb rn terms =
+and substitute_array ~at_call_site ~block_subst fpc sb rn terms =
   let block_subst, terms =
-    substitute_list ~at_call_site ~block_subst loc fpc sb rn
+    substitute_list ~at_call_site ~block_subst fpc sb rn
       (Array.to_list terms)
   in
   block_subst, Array.of_list terms
@@ -881,23 +884,27 @@ let no_effects = function
   | Uclosure _ -> true
   | u -> is_pure_clambda u
 
-let rec bind_params_rec ~at_call_site loc fpc subst params args body =
+let rec bind_params_rec ~block_subst ~at_call_site fpc subst params args body =
   match (params, args) with
     ([], []) ->
     let _block_subst, term =
-      substitute ~at_call_site loc fpc subst (Some Int.Map.empty) body
+      substitute ~block_subst ~at_call_site fpc subst (Some Int.Map.empty) body
     in
     term
   | (p1 :: pl, a1 :: al) ->
       if is_simple_argument a1 then
-        bind_params_rec loc fpc (V.Map.add (VP.var p1) a1 subst)
-          pl al body
+        bind_params_rec ~block_subst ~at_call_site fpc
+          (V.Map.add (VP.var p1) a1 subst) pl al body
       else begin
-        let provenance =
+        let block_subst, provenance =
           match VP.provenance p1 with
-          | None -> None
+          | None -> block_subst, None
           | Some provenance ->
-            Some (V.Provenance.add_inlined_frame provenance loc)
+            let block_subst, dbg = 
+              subst_debuginfo ~at_call_site ~block_subst
+                (V.Provenance.debuginfo provenance)
+            in
+            block_subst, Some (V.Provenance.replace_debuginfo provenance dbg)
         in
         let p1' = VP.rename ?provenance p1 in
         let u1, u2 =
@@ -908,8 +915,9 @@ let rec bind_params_rec ~at_call_site loc fpc subst params args body =
               a1, Uvar (VP.var p1')
         in
         let body' =
-          bind_params_rec loc fpc (V.Map.add (VP.var p1) u2 subst)
-            pl al body in
+          bind_params_rec ~block_subst ~at_call_site fpc
+            (V.Map.add (VP.var p1) u2 subst) pl al body
+        in
         if occurs_var (VP.var p1) body then
           Ulet(Immutable, Pgenval, p1', u1, body')
         else if no_effects a1 then body'
@@ -917,10 +925,11 @@ let rec bind_params_rec ~at_call_site loc fpc subst params args body =
       end
   | (_, _) -> assert false
 
-let bind_params ~at_call_site loc fpc params args body =
+let bind_params ~at_call_site fpc params args body =
+  let block_subst = Debuginfo.Block_subst.empty in
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
-  bind_params_rec ~at_call_site loc fpc V.Map.empty
+  bind_params_rec ~block_subst ~at_call_site fpc V.Map.empty
     (List.rev params) (List.rev args) body
 
 (* Check if a lambda term is ``pure'',
@@ -943,15 +952,15 @@ let warning_if_forced_inline ~loc ~attribute warning =
 let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute =
   let app_args =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
+  let dbg = Debuginfo.of_location loc ~scope in
   let app =
     match fundesc.fun_inline, attribute with
     | _, Never_inline | None, _ ->
-      let dbg = Debuginfo.of_location loc ~scope in
         warning_if_forced_inline ~loc ~attribute
           "Function information unavailable";
         Udirect_apply(fundesc.fun_label, app_args, dbg)
     | Some(params, body), _  ->
-        bind_params ~at_call_site:scope loc fundesc.fun_float_const_prop
+        bind_params ~at_call_site:scope fundesc.fun_float_const_prop
           params app_args body
   in
   (* If ufunct can contain side-effects or function definitions,
@@ -1068,7 +1077,10 @@ let rec close ~scope fenv cenv = function
   | Lapply{ap_func = funct; ap_args = args; ap_loc = loc;
         ap_inlined = attribute} ->
       let nargs = List.length args in
-      begin match (close ~scope fenv cenv funct, close_list fenv cenv args) with
+      begin match
+        close ~scope fenv cenv funct,
+        close_list ~scope fenv cenv args
+      with
         ((ufunct, Value_closure(fundesc, approx_res)),
          [Uprim(Pmakeblock _, uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
@@ -1150,30 +1162,33 @@ let rec close ~scope fenv cenv = function
       let (umet, _) = close ~scope fenv cenv met in
       let (uobj, _) = close ~scope fenv cenv obj in
       let dbg = Debuginfo.of_location loc ~scope in
-      (Usend(kind, umet, uobj, close_list fenv cenv args, dbg),
+      (Usend(kind, umet, uobj, close_list ~scope fenv cenv args, dbg),
        Value_unknown)
   | Llet(str, kind, id, lam, body) ->
-      let (ulam, alam) = close_named fenv cenv id lam in
+      let (ulam, alam) = close_named ~scope fenv cenv id lam in
+      let body_scope = CB.add_scope scope in
       let provenance =
         match !current_module_path with
         | None -> None
         | Some module_path ->
           let provenance =
             V.Provenance.create ~module_path
-              ~location:(Debuginfo.of_location Location.none ~scope)
+              ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
               ~original_ident:id
           in
           Some provenance
       in
       begin match (str, alam) with
         (Variable, _) ->
-          let (ubody, abody) = close ~scope fenv cenv body in
+          let (ubody, abody) = close ~scope:body_scope fenv cenv body in
           (Ulet(Mutable, kind, VP.create ?provenance id, ulam, ubody), abody)
       | (_, Value_const _)
         when str = Alias || is_pure lam ->
-          close (V.Map.add id alam fenv) cenv body
+          close ~scope:body_scope (V.Map.add id alam fenv) cenv body
       | (_, _) ->
-          let (ubody, abody) = close (V.Map.add id alam fenv) cenv body in
+          let (ubody, abody) =
+            close ~scope:body_scope (V.Map.add id alam fenv) cenv body
+          in
           (Ulet(Immutable, kind, VP.create ?provenance id, ulam, ubody), abody)
       end
   | Lletrec(defs, body) ->
@@ -1194,23 +1209,30 @@ let rec close ~scope fenv cenv = function
             (fun (id, pos, _approx) sb ->
               V.Map.add id (Uoffset(Uvar clos_ident, pos)) sb)
             infos V.Map.empty in
-        (Ulet(Immutable, Pgenval, VP.create clos_ident, clos,
-              substitute Location.none !Clflags.float_const_prop sb None ubody),
-         approx)
+        let _block_subst, ubody =
+          substitute ~at_call_site:scope
+            ~block_subst:Debuginfo.Block_subst.empty
+            !Clflags.float_const_prop sb None ubody
+        in
+        (Ulet(Immutable, Pgenval, VP.create clos_ident, clos, ubody), approx)
       end else begin
+        let new_scope = CB.add_scope scope in
         (* General case: recursive definition of values *)
         let rec clos_defs = function
           [] -> ([], fenv)
         | (id, lam) :: rem ->
             let (udefs, fenv_body) = clos_defs rem in
-            let (ulam, approx) = close_named fenv cenv id lam in
+            let (ulam, approx) =
+              close_named ~scope:new_scope fenv cenv id lam
+            in
             let provenance =
               match !current_module_path with
               | None -> None
               | Some module_path ->
                 let provenance =
                   V.Provenance.create ~module_path
-                    ~location:(Debuginfo.of_location Debuginfo.none ~scope)
+                    ~debuginfo:(Debuginfo.of_location Location.none
+                       ~scope:new_scope)
                     ~original_ident:id
                 in
                 Some provenance
@@ -1218,7 +1240,7 @@ let rec close ~scope fenv cenv = function
             ((VP.create ?provenance id, ulam) :: udefs,
               V.Map.add id approx fenv_body) in
         let (udefs, fenv_body) = clos_defs defs in
-        let (ubody, approx) = close ~scope fenv_body cenv body in
+        let (ubody, approx) = close ~scope:new_scope fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
       end
   | Lprim(Pdirapply,[funct;arg], loc)
@@ -1302,9 +1324,10 @@ let rec close ~scope fenv cenv = function
             ud) d in
       Ustringswitch (uarg,usw,ud),Value_unknown
   | Lstaticraise (i, args) ->
-      (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
+      (Ustaticfail (i, close_list ~scope fenv cenv args), Value_unknown)
   | Lstaticcatch(body, (i, vars), handler) ->
-      let (ubody, _) = close_new_scope ~scope fenv cenv body in
+      let body_scope = CB.add_scope scope in
+      let (ubody, _) = close ~scope:body_scope fenv cenv body in
       let (uhandler, _) = close_new_scope ~scope fenv cenv handler in
       let vars =
         List.map (fun var ->
@@ -1314,7 +1337,8 @@ let rec close ~scope fenv cenv = function
               | Some module_path ->
                 let provenance =
                   V.Provenance.create ~module_path
-                    ~location:Debuginfo.none
+                    ~debuginfo:(Debuginfo.of_location Location.none
+                      ~scope:body_scope)
                     ~original_ident:var
                 in
                 Some provenance
@@ -1325,14 +1349,16 @@ let rec close ~scope fenv cenv = function
       (Ucatch(i, vars, ubody, uhandler), Value_unknown)
   | Ltrywith(body, id, handler) ->
       let (ubody, _) = close_new_scope ~scope fenv cenv body in
-      let (uhandler, _) = close_new_scope ~scope fenv cenv handler in
+      let handler_scope = CB.add_scope scope in
+      let (uhandler, _) = close ~scope:handler_scope fenv cenv handler in
       let provenance =
         match !current_module_path with
         | None -> None
         | Some module_path ->
           let provenance =
             V.Provenance.create ~module_path
-              ~location:(Debuginfo.of_location Location.none ~scope)
+              ~debuginfo:(Debuginfo.of_location Location.none
+                ~scope:handler_scope)
               ~original_ident:id
           in
           Some provenance
@@ -1359,14 +1385,15 @@ let rec close ~scope fenv cenv = function
   | Lfor(id, lo, hi, dir, body) ->
       let (ulo, _) = close ~scope fenv cenv lo in
       let (uhi, _) = close ~scope fenv cenv hi in
-      let (ubody, _) = close_new_scope ~scope fenv cenv body in
+      let body_scope = CB.add_scope scope in
+      let (ubody, _) = close_new_scope ~scope:body_scope fenv cenv body in
       let provenance =
         match !current_module_path with
         | None -> None
         | Some module_path ->
           let provenance =
             V.Provenance.create ~module_path
-              ~location:(Debuginfo.of_location Location.none ~scope)
+              ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
               ~original_ident:id
           in
           Some provenance
@@ -1484,7 +1511,8 @@ and close_functions fenv cenv fun_defs =
         (fun (id, _params, _body, _fundesc, _dbg) pos env ->
           V.Map.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
-    let (ubody, approx) = close ~scope:CB.toplevel fenv_rec cenv_body body in
+    let scope = CB.toplevel in
+    let (ubody, approx) = close ~scope fenv_rec cenv_body body in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
     let fun_params = if !useless_env then params else params @ [env_param] in
     let params =
@@ -1498,7 +1526,7 @@ and close_functions fenv cenv fun_defs =
               | Some module_path ->
                 let provenance =
                   V.Provenance.create ~module_path
-                    ~location:dbg
+                    ~debuginfo:dbg
                     ~original_ident:ident
                 in
                 Some provenance
@@ -1706,7 +1734,8 @@ let intro size lam =
   let id = Compilenv.make_symbol None in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);
-  let (ulam, _approx) = close V.Map.empty V.Map.empty lam in
+  let scope = CB.toplevel in
+  let (ulam, _approx) = close ~scope V.Map.empty V.Map.empty lam in
   let opaque =
     !Clflags.opaque
     || Env.is_imported_opaque (Compilenv.current_unit_name ())

@@ -44,6 +44,9 @@ module Provenance = struct
   let module_path t = t.module_path
   let debuginfo t = t.debuginfo
   let original_ident t = t.original_ident
+
+  let replace_debuginfo t debuginfo =
+    { t with debuginfo; }
 end
 
 module With_provenance = struct
