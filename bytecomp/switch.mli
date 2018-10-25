@@ -83,18 +83,18 @@ module type S =
         adding one integer, etc. *)
     val bind : act -> (act -> act) -> act
     val make_const : int -> act
-    val make_offset : act -> int -> act
-    val make_prim : primitive -> act list -> act
-    val make_isout : act -> act -> act
-    val make_isin : act -> act -> act
-    val make_if : act -> act -> act -> act
+    val make_offset : location -> act -> int -> act
+    val make_prim : location -> primitive -> act list -> act
+    val make_isout : location -> act -> act -> act
+    val make_isin : location -> act -> act -> act
+    val make_if : location -> act -> act -> act -> act
    (* construct an actual switch :
       make_switch arg cases acts
       NB:  cases is in the value form *)
-    val make_switch :
-        location -> act -> int array -> act array -> act
+    val make_switch : location -> act -> int array
+      -> (location * act) array -> act
    (* Build last minute sharing of action stuff *)
-   val make_catch : act -> int * (act -> act)
+   val make_catch : location -> act -> int * (act -> act)
    val make_exit : int -> act
 
   end
@@ -119,13 +119,14 @@ module Make :
           (int * int) ->
            Arg.act ->
            (int * int * int) array ->
-           (Arg.act, _) t_store ->
+           (Arg.location * Arg.act, _) t_store ->
            Arg.act
 
 (* Output test sequence, sharing tracked *)
      val test_sequence :
+           Arg.location ->
            Arg.act ->
            (int * int * int) array ->
-           (Arg.act, _) t_store ->
+           (Arg.location * Arg.act, _) t_store ->
            Arg.act
     end

@@ -531,18 +531,18 @@ let rec lam ppf = function
       let switch ppf sw =
         let spc = ref false in
         List.iter
-         (fun (n, l) ->
+         (fun (n, l, _loc) ->
            if !spc then fprintf ppf "@ " else spc := true;
            fprintf ppf "@[<hv 1>case int %i:@ %a@]" n lam l)
          sw.sw_consts;
         List.iter
-          (fun (n, l) ->
+          (fun (n, l, _loc) ->
             if !spc then fprintf ppf "@ " else spc := true;
             fprintf ppf "@[<hv 1>case tag %i:@ %a@]" n lam l)
           sw.sw_blocks ;
         begin match sw.sw_failaction with
         | None  -> ()
-        | Some l ->
+        | Some (l, _loc) ->
             if !spc then fprintf ppf "@ " else spc := true;
             fprintf ppf "@[<hv 1>default:@ %a@]" lam l
         end in
@@ -554,12 +554,12 @@ let rec lam ppf = function
       let switch ppf cases =
         let spc = ref false in
         List.iter
-         (fun (s, l) ->
+         (fun (s, l, _loc) ->
            if !spc then fprintf ppf "@ " else spc := true;
            fprintf ppf "@[<hv 1>case \"%s\":@ %a@]" (String.escaped s) lam l)
           cases;
         begin match default with
-        | Some default ->
+        | Some (default, _loc) ->
             if !spc then fprintf ppf "@ " else spc := true;
             fprintf ppf "@[<hv 1>default:@ %a@]" lam default
         | None -> ()

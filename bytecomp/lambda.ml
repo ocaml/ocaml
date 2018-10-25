@@ -275,7 +275,8 @@ type lambda =
   | Lprim of primitive * lambda list * Location.t
   | Lswitch of lambda * lambda_switch * Location.t
   | Lstringswitch of
-      lambda * (string * lambda) list * lambda option * Location.t
+      lambda * (string * lambda * Location.t) list
+        * (lambda * Location.t) option * Location.t
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda * Location.t
   | Ltrywith of lambda * Ident.t * lambda * Location.t
@@ -305,10 +306,10 @@ and lambda_apply =
 
 and lambda_switch =
   { sw_numconsts: int;
-    sw_consts: (int * lambda) list;
+    sw_consts: (int * lambda * Location.t) list;
     sw_numblocks: int;
-    sw_blocks: (int * lambda) list;
-    sw_failaction : lambda option}
+    sw_blocks: (int * lambda * Location.t) list;
+    sw_failaction : (lambda * Location.t) option}
 
 and lambda_event =
   { lev_loc: Location.t;
@@ -391,8 +392,8 @@ let make_key e =
     | Lstringswitch (e,sw,d,_) ->
         Lstringswitch
           (tr_rec env e,
-           List.map (fun (s,e) -> s,tr_rec env e) sw,
-           tr_opt env d,
+           List.map (fun (s,e,loc) -> s,tr_rec env e,loc) sw,
+           tr_default env d,
           Location.none)
     | Lstaticraise (i,es) ->
         Lstaticraise (i,tr_recs env es)
@@ -420,14 +421,17 @@ let make_key e =
 
   and tr_sw env sw =
     { sw with
-      sw_consts = List.map (fun (i,e) -> i,tr_rec env e) sw.sw_consts ;
-      sw_blocks = List.map (fun (i,e) -> i,tr_rec env e) sw.sw_blocks ;
-      sw_failaction = tr_opt env sw.sw_failaction ; }
+      sw_consts = List.map (fun (i,e,loc) -> i,tr_rec env e,loc) sw.sw_consts ;
+      sw_blocks = List.map (fun (i,e,loc) -> i,tr_rec env e,loc) sw.sw_blocks ;
+      sw_failaction = tr_default env sw.sw_failaction;
+    }
 
-  and tr_opt env = function
+  and tr_default env = function
     | None -> None
-    | Some e -> Some (tr_rec env e) in
-
+    | Some (failaction, loc) ->
+      let failaction = tr_rec env failaction in
+      Some (failaction, loc)
+  in
   try
     Some (tr_rec Ident.empty e)
   with Not_simple -> None
@@ -452,9 +456,9 @@ let name_lambda_list args fn =
   name_list [] args
 
 
-let iter_opt f = function
+let iter_default f = function
   | None -> ()
-  | Some e -> f e
+  | Some (e, _loc) -> f e
 
 let iter_head_constructor f = function
     Lvar _
@@ -472,13 +476,13 @@ let iter_head_constructor f = function
       List.iter f args
   | Lswitch(arg, sw,_) ->
       f arg;
-      List.iter (fun (_key, case) -> f case) sw.sw_consts;
-      List.iter (fun (_key, case) -> f case) sw.sw_blocks;
-      iter_opt f sw.sw_failaction
+      List.iter (fun (_key, case, _loc) -> f case) sw.sw_consts;
+      List.iter (fun (_key, case, _loc) -> f case) sw.sw_blocks;
+      iter_default f sw.sw_failaction
   | Lstringswitch (arg,cases,default,_) ->
       f arg ;
-      List.iter (fun (_,act) -> f act) cases ;
-      iter_opt f default
+      List.iter (fun (_,act, _loc) -> f act) cases ;
+      iter_default f default
   | Lstaticraise (_,args) ->
       List.iter f args
   | Lstaticcatch(e1, _, e2, _) ->
@@ -523,21 +527,22 @@ let rec free_variables = function
       let set =
         free_variables_list
           (free_variables_list (free_variables arg)
-             (List.map snd sw.sw_consts))
-          (List.map snd sw.sw_blocks)
+             (List.map (fun (_, const, _) -> const) sw.sw_consts))
+          (List.map (fun (_, block, _) -> block) sw.sw_blocks)
       in
       begin match sw.sw_failaction with
       | None -> set
-      | Some failaction -> Ident.Set.union set (free_variables failaction)
+      | Some (failaction, _loc) ->
+        Ident.Set.union set (free_variables failaction)
       end
   | Lstringswitch (arg,cases,default,_) ->
       let set =
         free_variables_list (free_variables arg)
-          (List.map snd cases)
+          (List.map (fun (_, str, _) -> str) cases)
       in
       begin match default with
       | None -> set
-      | Some default -> Ident.Set.union set (free_variables default)
+      | Some (default, _loc) -> Ident.Set.union set (free_variables default)
       end
   | Lstaticraise (_,args) ->
       free_variables_list Ident.Set.empty args
@@ -672,11 +677,12 @@ let subst update_env s lam =
         Lswitch(subst s arg,
                 {sw with sw_consts = List.map (subst_case s) sw.sw_consts;
                         sw_blocks = List.map (subst_case s) sw.sw_blocks;
-                        sw_failaction = subst_opt s sw.sw_failaction; },
+                        sw_failaction = subst_default s sw.sw_failaction; },
                 loc)
     | Lstringswitch (arg,cases,default,loc) ->
         Lstringswitch
-          (subst s arg,List.map (subst_strcase s) cases,subst_opt s default,loc)
+          (subst s arg,List.map (subst_strcase s) cases,
+            subst_default s default,loc)
     | Lstaticraise (i,args) ->  Lstaticraise (i, subst_list s args)
     | Lstaticcatch(body, (id, params), handler, loc) ->
         Lstaticcatch(subst s body, (id, params),
@@ -707,11 +713,11 @@ let subst update_env s lam =
     | Lifused (v, e) -> Lifused (v, subst s e)
   and subst_list s l = List.map (subst s) l
   and subst_decl s (id, exp) = (id, subst s exp)
-  and subst_case s (key, case) = (key, subst s case)
-  and subst_strcase s (key, case) = (key, subst s case)
-  and subst_opt s = function
+  and subst_case s (key, case, loc) = (key, subst s case, loc)
+  and subst_strcase s (key, case, loc) = (key, subst s case, loc)
+  and subst_default s = function
     | None -> None
-    | Some e -> Some (subst s e)
+    | Some (e, loc) -> Some (subst s e, loc)
   in
   subst s lam
 
@@ -749,17 +755,19 @@ let rec map f lam =
     | Lswitch (e, sw, loc) ->
         Lswitch (map f e,
           { sw_numconsts = sw.sw_numconsts;
-            sw_consts = List.map (fun (n, e) -> (n, map f e)) sw.sw_consts;
+            sw_consts =
+              List.map (fun (n, e, loc) -> (n, map f e, loc)) sw.sw_consts;
             sw_numblocks = sw.sw_numblocks;
-            sw_blocks = List.map (fun (n, e) -> (n, map f e)) sw.sw_blocks;
-            sw_failaction = Misc.may_map (map f) sw.sw_failaction;
+            sw_blocks =
+              List.map (fun (n, e, loc) -> (n, map f e, loc)) sw.sw_blocks;
+            sw_failaction = map_default f sw.sw_failaction;
           },
           loc)
     | Lstringswitch (e, sw, default, loc) ->
         Lstringswitch (
           map f e,
-          List.map (fun (s, e) -> (s, map f e)) sw,
-          Misc.may_map (map f) default,
+          List.map (fun (s, e, loc) -> (s, map f e, loc)) sw,
+          map_default f default,
           loc)
     | Lstaticraise (i, args) ->
         Lstaticraise (i, List.map (map f) args)
@@ -785,6 +793,10 @@ let rec map f lam =
         Lifused (v, map f e)
   in
   f lam
+
+and map_default f = function
+  | None -> None
+  | Some (failaction, loc) -> Some (map f failaction, loc)
 
 (* To let-bind expressions to variables *)
 

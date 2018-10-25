@@ -258,7 +258,8 @@ type lambda =
 (* switch on strings, clauses are sorted by string order,
    strings are pairwise distinct *)
   | Lstringswitch of
-      lambda * (string * lambda) list * lambda option * Location.t
+      lambda * (string * lambda * Location.t) list
+        * (lambda * Location.t) option * Location.t
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda * Location.t
   | Ltrywith of lambda * Ident.t * lambda * Location.t
@@ -287,11 +288,11 @@ and lambda_apply =
     ap_specialised : specialise_attribute; }
 
 and lambda_switch =
-  { sw_numconsts: int;                  (* Number of integer cases *)
-    sw_consts: (int * lambda) list;     (* Integer cases *)
-    sw_numblocks: int;                  (* Number of tag block cases *)
-    sw_blocks: (int * lambda) list;     (* Tag block cases *)
-    sw_failaction : lambda option}      (* Action to take if failure *)
+  { sw_numconsts: int;                           (* Number of integer cases *)
+    sw_consts: (int * lambda * Location.t) list; (* Integer cases *)
+    sw_numblocks: int;                           (* Number of tag block cases *)
+    sw_blocks: (int * lambda * Location.t) list; (* Tag block cases *)
+    sw_failaction : (lambda * Location.t) option}(* Action to take if failure *)
 and lambda_event =
   { lev_loc: Location.t;
     lev_kind: lambda_event_kind;

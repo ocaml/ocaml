@@ -472,21 +472,21 @@ let pretty_precompiled_res first nexts =
 module StoreExp =
   Switch.Store
     (struct
-      type t = lambda
+      type t = lambda * Location.t
       type key = lambda
       let compare_key = Stdlib.compare
-      let make_key = Lambda.make_key
+      let make_key (lam, _loc) = Lambda.make_key lam
     end)
 
 
 let make_exit i = Lstaticraise (i,[])
 
 (* Introduce a catch, if worth it *)
-let make_catch d k = match d with
+let make_catch d k loc = match d with
 | Lstaticraise (_,[]) -> k d
 | _ ->
     let e = next_raise_count () in
-    Lstaticcatch (k (make_exit e),(e,[]),d)
+    Lstaticcatch (k (make_exit e),(e,[]),d,loc)
 
 (* Introduce a catch, if worth it, delayed version *)
 let rec as_simple_exit = function
@@ -495,7 +495,7 @@ let rec as_simple_exit = function
   | _ -> None
 
 
-let make_catch_delayed handler = match as_simple_exit handler with
+let make_catch_delayed handler loc = match as_simple_exit handler with
 | Some i -> i,(fun act -> act)
 | None ->
     let i = next_raise_count () in
@@ -506,7 +506,7 @@ let make_catch_delayed handler = match as_simple_exit handler with
     (fun body -> match body with
     | Lstaticraise (j,_) ->
         if i=j then handler else body
-    | _ -> Lstaticcatch (body,(i,[]),handler))
+    | _ -> Lstaticcatch (body,(i,[]),handler,loc))
 
 
 let raw_action l =
@@ -1534,7 +1534,9 @@ let inline_lazy_force_cond arg loc =
                        ap_inlined=Default_inline;
                        ap_specialised=Default_specialise},
                 (* ... arg *)
-                  varg))))
+                  varg,
+                  loc),
+              loc)))
 
 let inline_lazy_force_switch arg loc =
   let idarg = Ident.create_local "lzarg" in
@@ -1548,15 +1550,16 @@ let inline_lazy_force_switch arg loc =
              { sw_numconsts = 0; sw_consts = [];
                sw_numblocks = 256;  (* PR#6033 - tag ranges from 0 to 255 *)
                sw_blocks =
-                 [ (Obj.forward_tag, Lprim(Pfield 0, [varg], loc));
+                 [ (Obj.forward_tag, Lprim(Pfield 0, [varg], loc), loc);
                    (Obj.lazy_tag,
                     Lapply{ap_should_be_tailcall=false;
                            ap_loc=loc;
                            ap_func=force_fun;
                            ap_args=[varg];
                            ap_inlined=Default_inline;
-                           ap_specialised=Default_specialise}) ];
-               sw_failaction = Some varg }, loc ))))
+                           ap_specialised=Default_specialise},
+                    loc) ];
+               sw_failaction = Some (varg, loc) }, loc )), loc))
 
 let inline_lazy_force arg loc =
   if !Clflags.afl_instrument then
@@ -1778,7 +1781,7 @@ let make_string_test_sequence loc arg sw d =
             (Lprim
                (prim_string_notequal,
                 [arg; Lconst (Const_immstring s)], loc),
-             k,lam))
+             k,lam,loc))
         sw d)
 
 let rec split k xs = match xs with
@@ -1794,7 +1797,8 @@ let zero_lam  = Lconst (Const_base (Const_int 0))
 let tree_way_test loc arg lt eq gt =
   Lifthenelse
     (Lprim (Pintcomp Clt,[arg;zero_lam], loc),lt,
-     Lifthenelse(Lprim (Pintcomp Clt,[zero_lam;arg], loc),gt,eq))
+     Lifthenelse(Lprim (Pintcomp Clt,[zero_lam;arg], loc),gt,eq,loc),
+     loc)
 
 (* Dichotomic tree *)
 
@@ -1824,7 +1828,7 @@ let expand_stringswitch loc arg sw d = match d with
     bind_sw arg
       (fun arg ->
         make_catch e
-          (fun d -> do_make_string_test_tree loc arg sw 1 (Some d)))
+          (fun d -> do_make_string_test_tree loc arg sw 1 (Some d)) loc)
 
 (**********************)
 (* Generic test trees *)
@@ -1836,9 +1840,9 @@ let expand_stringswitch loc arg sw d = match d with
 let handle_shared () =
   let hs = ref (fun x -> x) in
   let handle_shared act = match act with
-  | Switch.Single act -> act
-  | Switch.Shared act ->
-      let i,h = make_catch_delayed act in
+  | Switch.Single (act, _loc) -> act
+  | Switch.Shared (act, loc) ->
+      let i,h = make_catch_delayed act loc in
       let ohs = !hs in
       hs := (fun act -> h (ohs act)) ;
       make_exit i in
@@ -1894,7 +1898,8 @@ let rec do_tests_fail loc fail tst arg = function
       Lifthenelse
         (Lprim (tst, [arg ; Lconst (Const_base c)], loc),
          do_tests_fail loc fail tst arg rem,
-         act)
+         act,
+         loc)
 
 let rec do_tests_nofail loc tst arg = function
   | [] -> fatal_error "Matching.do_tests_nofail"
@@ -1903,7 +1908,8 @@ let rec do_tests_nofail loc tst arg = function
       Lifthenelse
         (Lprim (tst, [arg ; Lconst (Const_base c)], loc),
          do_tests_nofail loc tst arg rem,
-         act)
+         act,
+         loc)
 
 let make_test_sequence loc fail tst lt_tst arg const_lambda_list =
   let const_lambda_list = sort_lambda_list const_lambda_list in
@@ -1923,7 +1929,7 @@ let make_test_sequence loc fail tst lt_tst arg const_lambda_list =
     Lifthenelse(Lprim(lt_tst,
                       [arg; Lconst(Const_base (fst(List.hd list2)))],
                       loc),
-                make_test_sequence list1, make_test_sequence list2)
+                make_test_sequence list1, make_test_sequence list2, loc)
   in
   hs (make_test_sequence const_lambda_list)
 
@@ -1938,13 +1944,13 @@ module SArg = struct
   let geint = Pintcomp Cge
   let gtint = Pintcomp Cgt
 
-  type act = Lambda.lambda
+  type act = Lambda.lambda * Location.t
   type location = Location.t
 
-  let make_prim p args = Lprim (p,args,Location.none)
-  let make_offset arg n = match n with
+  let make_prim loc p args = Lprim (p,args,loc)
+  let make_offset loc arg n = match n with
   | 0 -> arg
-  | _ -> Lprim (Poffsetint n,[arg],Location.none)
+  | _ -> Lprim (Poffsetint n,[arg],loc)
 
   let bind arg body =
     let newvar,newarg = match arg with
@@ -1954,13 +1960,14 @@ module SArg = struct
         newvar,Lvar newvar in
     bind Alias newvar arg (body newarg)
   let make_const i = Lconst (Const_base (Const_int i))
-  let make_isout h arg = Lprim (Pisout, [h ; arg],Location.none)
-  let make_isin h arg = Lprim (Pnot,[make_isout h arg],Location.none)
-  let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
+  let make_isout loc h arg = Lprim (Pisout, [h ; arg], loc)
+  let make_isin loc h arg = Lprim (Pnot,[make_isout h arg], loc)
+  let make_if loc cond ifso ifnot = Lifthenelse (cond, ifso, ifnot, loc)
   let make_switch loc arg cases acts =
     let l = ref [] in
     for i = Array.length cases-1 downto 0 do
-      l := (i,acts.(cases.(i))) ::  !l
+      let act, loc = acts.(cases.(i)) in
+      l := (i, act, loc) ::  !l
     done ;
     Lswitch(arg,
             {sw_numconsts = Array.length cases ; sw_consts = !l ;
@@ -1972,14 +1979,14 @@ module SArg = struct
 end
 
 (* Action sharing for Lswitch argument *)
-let share_actions_sw sw =
+let share_actions_sw sw loc =
 (* Attempt sharing on all actions *)
   let store = StoreExp.mk_store () in
   let fail = match sw.sw_failaction with
   | None -> None
-  | Some fail ->
+  | Some (fail, fail_loc) ->
       (* Fail is translated to exit, whatever happens *)
-      Some (store.Switch.act_store_shared () fail) in
+      Some (store.Switch.act_store_shared () (fail, loc)) in
   let consts =
     List.map
       (fun (i,e) -> i,store.Switch.act_store () e)
