@@ -1223,6 +1223,104 @@ val at_exit : (unit -> unit) -> unit
    The functions are called in 'last in, first out' order: the
    function most recently added with [at_exit] is called first. *)
 
+(** {1:precedence Appendix: operator precedence and associativity }
+
+  The following table list the precedence of all operator classes
+from the highest to the lowest precedence. Few other syntactic constructions
+are also listed as references.
+
+{%latex:
+\begin{tabular}{cc}
+\hline
+Operator class                                       & Associativity \\
+\hline
+$!\ldots \textasciitilde\ldots$                               &  --   \\
+$.\cdots()$ $.\cdots[]$ $.\cdots\\{\\}$                       &  --   \\
+\#\ldots                                                      & left  \\
+function application                                          & left  \\
+- -.                                                          &  --   \\
+$**\ldots$ lsl lsr asr                                        & right \\
+$*\ldots$ /\ldots \%\ldots  mod land lor lxor                 & left  \\
++\ldots -\ldots                                               & left  \\
+::                                                            & right \\
+@\ldots \textasciicircum\ldots                                & right \\
+=\ldots <\ldots >\ldots |\ldots \&\ldots \$\ldots !=          & left  \\
+\& \&\&                                                       & right \\
+or ||                                                         & right \\
+,                                                             &  --   \\
+<- :=                                                         & right \\
+if                                                            &  --   \\
+;                                                             & right \\
+\hline
+\end{tabular}
+%}
+
+{%html:
+<table align=center border=1>
+<thead><tr><th>Operator class</th><th>Associativity </th></tr></thead>
+<tr><td><code class=code>!&#X2026 ~&#X2026</code>     </td><td>&#X2013</td></tr>
+<tr><td><code class=code>.&#X2026() .&#X2026[] .&#X2026{} </code>
+                                                      </td><td>&#X2013</td></tr>
+<tr><td><code class=code>#&#X2026</code>              </td><td> left </td></tr>
+<tr><td><code class=code>function application</code>  </td><td> left </td></tr>
+<tr><td><code class=code>- -.</code>                  </td><td>&#X2013</td></tr>
+<tr><td><code class=code>**&#X2026 lsl lsr asr </code></td><td> right </td></tr>
+<tr><td><code class=code>*&#X2026  /&#X2026 %&#X2026 mod land lor lxor</code>
+                                                      </td><td> left  </td></tr>
+<tr><td><code class=code>+&#X2026 -&#X2026</code>     </td><td> left  </td></tr>
+<tr><td><code class=code>::</code>                    </td><td> right </td></tr>
+<tr><td><code class=code>@&#X2026 ^&#X2026            </td><td> right </td></tr>
+<tr><td><code class=code>=&#X2026 &lt;&#X2026
+>&#X2026 |&#X2026 &amp;&#X2026 $&#X2026 !=</code>     </td><td> left  </td></tr>
+<tr><td><code class=code>&amp; &amp;&amp;</code>      </td><td> right </td></tr>
+<tr><td><code class=code>or || </code>                </td><td> right </td></tr>
+<tr><td><code class=code>,</code>                     </td><td>&#X2013</td></tr>
+<tr><td><code class=code><- :=</code>                 </td><td> right </td></tr>
+<tr><td><code class=code>if</code>                    </td><td>&#X2013</td></tr>
+<tr><td><code class=code>;</code>                     </td><td> right </td></tr>
+</table>
+%}
+
+{%man:
+.IP Associativity
+Operator class
+.IP -
+!.. ~..
+.IP -
+\&.() .[] .{}
+.IP left
+#..
+.IP left
+function application
+.IP -
+- -.
+.IP right
+**.. lsl lsr asr
+.IP left
+*..  /.. %.. mod land lor lxor
+.IP left
++.. -..
+.IP right
+::
+.IP right
+@.. ^..
+.IP left
+=.. <.. >.. |.. &.. $.. !=
+.IP right
+& &&
+.IP right
+or ||
+.IP -
+,
+.IP right
+<- :=
+.IP -
+if
+.IP right
+;
+%}
+
+*)
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
