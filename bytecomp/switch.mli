@@ -115,7 +115,7 @@ module Make :
     sig
 (* Standard entry point, sharing is tracked *)
       val zyva :
-          S.location ->
+          Arg.location ->
           (int * int) ->
            Arg.act ->
            (int * int * int) array ->

@@ -145,7 +145,9 @@ include Calculate_ranges.Make (struct
     availability_set_to_key_set insn.available_before
 
   let available_across (insn : L.instruction) =
-    availability_set_to_key_set insn.available_across
+    match insn.available_across with
+    | None -> available_before insn
+    | Some across -> availability_set_to_key_set across
 
   let must_restart_ranges_upon_any_change () =
     match !Clflags.debug_full with

@@ -71,7 +71,7 @@ let instr ppf i =
       fprintf ppf "%a %a" Printcmm.raise_kind k reg i.arg.(0)
   end;
   if not (Debuginfo.is_none i.dbg) then
-    fprintf ppf " %s" (Debuginfo.to_string i.dbg)
+    fprintf ppf " %a" Debuginfo.print i.dbg
 
 let rec all_instr ppf i =
   match i.desc with
@@ -83,7 +83,7 @@ let fundecl ppf f =
     if Debuginfo.is_none f.fun_dbg then
       ""
     else
-      " " ^ Debuginfo.to_string f.fun_dbg in
+      Format.asprintf " %a" Debuginfo.print f.fun_dbg in
   let path =
     match f.fun_module_path with
     | None -> ""

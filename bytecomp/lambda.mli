@@ -260,12 +260,12 @@ type lambda =
   | Lstringswitch of
       lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
-  | Lstaticcatch of lambda * (int * Ident.t list) * lambda
-  | Ltrywith of lambda * Ident.t * lambda
-  | Lifthenelse of lambda * lambda * lambda
+  | Lstaticcatch of lambda * (int * Ident.t list) * lambda * Location.t
+  | Ltrywith of lambda * Ident.t * lambda * Location.t
+  | Lifthenelse of lambda * lambda * lambda * Location.t
   | Lsequence of lambda * lambda
-  | Lwhile of lambda * lambda
-  | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
+  | Lwhile of lambda * lambda * Location.t
+  | Lfor of Ident.t * lambda * lambda * direction_flag * lambda * Location.t
   | Lassign of Ident.t * lambda
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event

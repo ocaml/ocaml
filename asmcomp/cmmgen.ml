@@ -1478,7 +1478,7 @@ struct
   let make_switch dbg arg cases actions = make_switch arg cases actions dbg
   let bind arg body = bind "switcher" arg body
 
-  let make_catch _dbg handler = match handler with
+  let make_catch handler = match handler with
   | Cexit (i,[]) -> i,fun e -> e
   | _ ->
       let i = next_raise_count () in
@@ -1529,7 +1529,6 @@ module StoreExp =
     (struct
       type t = expression
       type key = int
-      type location = Debuginfo.t
       let make_key = function
         | Cexit (i,[]) -> Some i
         | _ -> None
@@ -1920,15 +1919,15 @@ let rec transl env e =
           (Array.map (transl env) s.us_actions_consts)
           dbg
       else if Array.length s.us_index_consts = 0 then
-        transl_switch loc env (get_tag (transl env arg) dbg)
+        transl_switch dbg env (get_tag (transl env arg) dbg)
           s.us_index_blocks s.us_actions_blocks
       else
         bind "switch" (transl env arg) (fun arg ->
           Cifthenelse(
           Cop(Cand, [arg; Cconst_int 1], dbg),
-          transl_switch loc env
+          transl_switch dbg env
             (untag_int arg dbg) s.us_index_consts s.us_actions_consts,
-          transl_switch loc env
+          transl_switch dbg env
             (get_tag arg dbg) s.us_index_blocks s.us_actions_blocks))
   | Ustringswitch(arg,sw,d) ->
       let dbg = Debuginfo.none in

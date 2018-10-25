@@ -20,9 +20,9 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 module Make (S : Compute_ranges_intf.S_functor)
-  : Compute_ranges.S
-      with type index := S.Index.t
-      with type key := S.Key.t
-      with type subrange_state := S.Subrange_state.t
-      with type subrange_info := S.Subrange_info.t
-      with type range_info := S.Range_info.t
+  : Compute_ranges_intf.S
+      with module Index := S.Index
+      with module Key := S.Key
+      with module Subrange_state := S.Subrange_state
+      with module Subrange_info := S.Subrange_info
+      with module Range_info := S.Range_info

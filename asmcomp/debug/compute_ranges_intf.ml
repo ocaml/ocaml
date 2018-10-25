@@ -48,13 +48,13 @@ module type S_functor = sig
 
   module Key : Identifiable.S
 
-  module Subrange_state : Compute_ranges_intf.S_subrange_state
+  module Subrange_state : S_subrange_state
 
-  module Subrange_info : Compute_ranges_intf.S_subrange_info
+  module Subrange_info : S_subrange_info
     with type key := Key.t
     with type subrange_state := Subrange_state.t
 
-  module Range_info : Compute_ranges_intf.S_range_info
+  module Range_info : S_range_info
     with type key := Key.t
     with type index := Index.t
 
@@ -70,17 +70,20 @@ module type S = sig
 
   module Key : Identifiable.S
 
-  module Subrange_info : Compute_ranges_intf.S_subrange_info
-    with type key := Key.t
+  module Subrange_state : S_subrange_state
 
-  module Range_info : Compute_ranges_intf.S_range_info
+  module Subrange_info : S_subrange_info
+    with type key := Key.t
+    with type subrange_state := Subrange_state.t
+
+  module Range_info : S_range_info
     with type key := Key.t
     with type index := Index.t
 
   module Subrange : sig
     type t
 
-    val info : t -> subrange_info
+    val info : t -> Subrange_info.t
 
     val start_pos : t -> Linearize.label
     val end_pos : t -> Linearize.label
@@ -90,7 +93,7 @@ module type S = sig
   module Range : sig
     type t
 
-    val info : t -> range_info
+    val info : t -> Range_info.t
 
     val extremities : t -> Linearize.label * Linearize.label
 
@@ -105,7 +108,7 @@ module type S = sig
 
   val create : Linearize.fundecl -> t * Linearize.fundecl
 
-  val iter : t -> f:(index -> Range.t -> unit) -> unit
+  val iter : t -> f:(Index.t -> Range.t -> unit) -> unit
 
-  val fold : t -> init:'a -> f:('a -> index -> Range.t -> 'a) -> 'a
+  val fold : t -> init:'a -> f:('a -> Index.t -> Range.t -> 'a) -> 'a
 end

@@ -570,7 +570,7 @@ let rec lam ppf = function
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(exit@ %d%a)@]" i lams ls;
-  | Lstaticcatch(lbody, (i, vars), lhandler) ->
+  | Lstaticcatch(lbody, (i, vars), lhandler, _) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
         lam lbody i
         (fun ppf vars -> match vars with
@@ -581,16 +581,16 @@ let rec lam ppf = function
                 vars)
         vars
         lam lhandler
-  | Ltrywith(lbody, param, lhandler) ->
+  | Ltrywith(lbody, param, lhandler, _) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Ident.print param lam lhandler
-  | Lifthenelse(lcond, lif, lelse) ->
+  | Lifthenelse(lcond, lif, lelse, _) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
   | Lsequence(l1, l2) ->
       fprintf ppf "@[<2>(seq@ %a@ %a)@]" lam l1 sequence l2
-  | Lwhile(lcond, lbody) ->
+  | Lwhile(lcond, lbody, _) ->
       fprintf ppf "@[<2>(while@ %a@ %a)@]" lam lcond lam lbody
-  | Lfor(param, lo, hi, dir, body) ->
+  | Lfor(param, lo, hi, dir, body, _) ->
       fprintf ppf "@[<2>(for %a@ %a@ %s@ %a@ %a)@]"
        Ident.print param lam lo
        (match dir with Upto -> "to" | Downto -> "downto")

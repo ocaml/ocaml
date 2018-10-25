@@ -14,7 +14,7 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-open Int_replace_polymorphic_compare
+open! Int_replace_polymorphic_compare
 
 module L = Linearize
 
@@ -30,30 +30,27 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
        epilogues, including returns in the middle of functions. *)
     type t = {
       start_pos : L.label;
-      start_pos_offset : int;
       end_pos : L.label;
       end_pos_offset : int;
       subrange_info : Subrange_info.t;
     }
 
     let create ~(start_insn : Linearize.instruction)
-          ~start_pos ~start_pos_offset
+          ~start_pos
           ~end_pos ~end_pos_offset
           ~subrange_info =
       match start_insn.desc with
       | Llabel _ ->
         { start_pos;
-          start_pos_offset;
           end_pos;
           end_pos_offset;
           subrange_info;
         }
       | _ ->
         Misc.fatal_errorf "Subrange.create: bad [start_insn]: %a"
-          Printlinear.instruction start_insn
+          Printlinear.instr start_insn
 
     let start_pos t = t.start_pos
-    let start_pos_offset t = t.start_pos_offset
     let end_pos t = t.end_pos
     let end_pos_offset t = t.end_pos_offset
   end
@@ -199,23 +196,23 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     | Close_range_one_byte_after
 
   let actions_at_instruction ~(insn : L.instruction)
-        ~(prev_insn : L.instruction option) : (Key.t * action) list =
+        ~(prev_insn : L.instruction option) =
     assert (KS.subset (S.available_across insn) (S.available_before insn));
     let case_1c =
       KS.diff (S.available_before insn)
-        (KS.union (S.available_across prev_insn) (S.available_across insn))
+        (KS.union (opt_available_across prev_insn) (S.available_across insn))
     in
     let case_1d =
       KS.diff (KS.inter (S.available_before insn) (S.available_across insn))
-        (S.available_across prev_insn)
+        (opt_available_across prev_insn)
     in
     let case_2a =
-      KS.diff (S.available_across prev_insn)
+      KS.diff (opt_available_across prev_insn)
         (KS.union (S.available_before insn) (S.available_across insn))
     in
     let case_2c =
       KS.diff
-        (KS.inter (S.available_across prev_insn) (S.available_before insn))
+        (KS.inter (opt_available_across prev_insn) (S.available_before insn))
         (S.available_across insn)
     in
     let handle case action result =
@@ -228,21 +225,21 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       |> handle case_2a Close_range
       |> handle case_2c Close_range_one_byte_after
     in
-    let eligible_for_restart =
+    let must_restart =
       if S.must_restart_ranges_upon_any_change () then
-        KS.inter (S.available_across prev_insn) (S.available_before insn)
+        KS.inter (opt_available_across prev_insn) (S.available_before insn)
       else
         KS.empty
     in
-    actions, eligible_for_restart
+    actions, must_restart
 
   let rec process_instruction t (fundecl : L.fundecl)
         ~(first_insn : L.instruction) ~(insn : L.instruction)
-        ~(prev_insn : L.instruction)
+        ~(prev_insn : L.instruction option)
         ~open_subranges ~subrange_state =
     let first_insn = ref first_insn in
     let prev_insn = ref prev_insn in
-    let insert_insn ~new_insn =
+    let insert_insn ~(new_insn : L.instruction) =
       assert (new_insn.next == insn);
       (* (Note that by virtue of [Lprologue], we can insert labels prior to the
          first assembly instruction of the function.) *)
@@ -266,11 +263,12 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         live = insn.live;
         available_before = insn.available_before;
         phantom_available_before = insn.phantom_available_before;
-        available_across = insn.available_before;
+        available_across = None;
       }
     in
     let used_label = ref false in
-    let open_range ~open_subranges =
+    let open_range key ~open_subranges =
+      used_label := true;
       KM.add key (label, label_insn) open_subranges
     in
     let close_range key ~end_pos_offset ~open_subranges =
@@ -289,21 +287,28 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
               Index.Tbl.add t.ranges index range;
               range
           in
+          used_label := true;
           let subrange_info = Subrange_info.create key subrange_state in
           let subrange =
-            S.create_subrange ~fundecl ~key ~start_insn
-              ~start_pos ~start_pos_offset
-              ~end_pos ~end_pos_offset
+            Subrange.create ~start_insn
+              ~start_pos ~end_pos:label ~end_pos_offset
               ~subrange_info
           in
           Range.add_subrange range ~subrange;
           open_subranges
     in
-    let actions = actions_at_instruction ~insn ~prev_insn in
+    let actions, must_restart =
+      actions_at_instruction ~insn ~prev_insn:!prev_insn
+    in
+    List.fold_left (fun open_subranges key ->
+        let open_subranges = close_range key ~open_subranges in
+        open_range key ~open_subranges)
+      open_subranges
+      must_restart;
     List.fold_left (fun open_subranges (key, (action : action)) ->
         match action with
         | Open_one_byte_range ->
-          let open_subranges = open_range key in
+          let open_subranges = open_range key ~open_subranges in
           close_range key ~end_pos_offset:1 ~open_subranges
         | Open_range -> open_range key ~open_subranges
         | Close_range -> close_range key ~end_pos_offset:0 ~open_subranges

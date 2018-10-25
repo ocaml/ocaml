@@ -236,7 +236,7 @@ let rec instr ppf i =
       fprintf ppf "%a %a" Printcmm.raise_kind k reg i.arg.(0)
   end;
   if not (Debuginfo.is_none i.dbg) then
-    fprintf ppf "%s" (Debuginfo.to_string i.dbg);
+    fprintf ppf "%a" Debuginfo.print i.dbg;
   begin match i.next.desc with
     Iend -> ()
   | _ -> fprintf ppf "@,%a" instr i.next
@@ -286,7 +286,7 @@ let fundecl ppf f =
     if Debuginfo.is_none f.fun_dbg then
       ""
     else
-      " " ^ Debuginfo.to_string f.fun_dbg in
+      Format.asprintf " %a" Debuginfo.print f.fun_dbg in
   fprintf ppf "@[<v 2>%a(%a)%s@,%a"
     Backend_sym.print f.fun_name regs f.fun_args dbg instr f.fun_body;
   if not (Backend_var.Map.is_empty f.fun_phantom_lets) then begin

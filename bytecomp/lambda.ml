@@ -277,12 +277,12 @@ type lambda =
   | Lstringswitch of
       lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
-  | Lstaticcatch of lambda * (int * Ident.t list) * lambda
-  | Ltrywith of lambda * Ident.t * lambda
-  | Lifthenelse of lambda * lambda * lambda
+  | Lstaticcatch of lambda * (int * Ident.t list) * lambda * Location.t
+  | Ltrywith of lambda * Ident.t * lambda * Location.t
+  | Lifthenelse of lambda * lambda * lambda * Location.t
   | Lsequence of lambda * lambda
-  | Lwhile of lambda * lambda
-  | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
+  | Lwhile of lambda * lambda * Location.t
+  | Lfor of Ident.t * lambda * lambda * direction_flag * lambda * Location.t
   | Lassign of Ident.t * lambda
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
@@ -396,12 +396,12 @@ let make_key e =
           Location.none)
     | Lstaticraise (i,es) ->
         Lstaticraise (i,tr_recs env es)
-    | Lstaticcatch (e1,xs,e2) ->
-        Lstaticcatch (tr_rec env e1,xs,tr_rec env e2)
-    | Ltrywith (e1,x,e2) ->
-        Ltrywith (tr_rec env e1,x,tr_rec env e2)
-    | Lifthenelse (cond,ifso,ifnot) ->
-        Lifthenelse (tr_rec env cond,tr_rec env ifso,tr_rec env ifnot)
+    | Lstaticcatch (e1,xs,e2,loc) ->
+        Lstaticcatch (tr_rec env e1,xs,tr_rec env e2,loc)
+    | Ltrywith (e1,x,e2,loc) ->
+        Ltrywith (tr_rec env e1,x,tr_rec env e2,loc)
+    | Lifthenelse (cond,ifso,ifnot,loc) ->
+        Lifthenelse (tr_rec env cond,tr_rec env ifso,tr_rec env ifnot,loc)
     | Lsequence (e1,e2) ->
         Lsequence (tr_rec env e1,tr_rec env e2)
     | Lassign (x,e) ->
@@ -481,17 +481,17 @@ let iter_head_constructor f = function
       iter_opt f default
   | Lstaticraise (_,args) ->
       List.iter f args
-  | Lstaticcatch(e1, _, e2) ->
+  | Lstaticcatch(e1, _, e2, _) ->
       f e1; f e2
-  | Ltrywith(e1, _, e2) ->
+  | Ltrywith(e1, _, e2, _) ->
       f e1; f e2
-  | Lifthenelse(e1, e2, e3) ->
+  | Lifthenelse(e1, e2, e3, _) ->
       f e1; f e2; f e3
   | Lsequence(e1, e2) ->
       f e1; f e2
-  | Lwhile(e1, e2) ->
+  | Lwhile(e1, e2, _) ->
       f e1; f e2
-  | Lfor(_v, e1, e2, _dir, e3) ->
+  | Lfor(_v, e1, e2, _dir, e3, _) ->
       f e1; f e2; f e3
   | Lassign(_, e) ->
       f e
@@ -541,27 +541,27 @@ let rec free_variables = function
       end
   | Lstaticraise (_,args) ->
       free_variables_list Ident.Set.empty args
-  | Lstaticcatch(body, (_, params), handler) ->
+  | Lstaticcatch(body, (_, params), handler, _) ->
       Ident.Set.union
         (Ident.Set.diff
            (free_variables handler)
            (Ident.Set.of_list params))
         (free_variables body)
-  | Ltrywith(body, param, handler) ->
+  | Ltrywith(body, param, handler, _) ->
       Ident.Set.union
         (Ident.Set.remove
            param
            (free_variables handler))
         (free_variables body)
-  | Lifthenelse(e1, e2, e3) ->
+  | Lifthenelse(e1, e2, e3, _) ->
       Ident.Set.union
         (Ident.Set.union (free_variables e1) (free_variables e2))
         (free_variables e3)
   | Lsequence(e1, e2) ->
       Ident.Set.union (free_variables e1) (free_variables e2)
-  | Lwhile(e1, e2) ->
+  | Lwhile(e1, e2, _) ->
       Ident.Set.union (free_variables e1) (free_variables e2)
-  | Lfor(v, lo, hi, _dir, body) ->
+  | Lfor(v, lo, hi, _dir, body, _) ->
       let set = Ident.Set.union (free_variables lo) (free_variables hi) in
       Ident.Set.union set (Ident.Set.remove v (free_variables body))
   | Lassign(id, e) ->
@@ -591,14 +591,14 @@ let next_raise_count () =
 let staticfail = Lstaticraise (0,[])
 
 let rec is_guarded = function
-  | Lifthenelse(_cond, _body, Lstaticraise (0,[])) -> true
+  | Lifthenelse(_cond, _body, Lstaticraise (0,[]), _) -> true
   | Llet(_str, _k, _id, _lam, body) -> is_guarded body
   | Levent(lam, _ev) -> is_guarded lam
   | _ -> false
 
 let rec patch_guarded patch = function
-  | Lifthenelse (cond, body, Lstaticraise (0,[])) ->
-      Lifthenelse (cond, body, patch)
+  | Lifthenelse (cond, body, Lstaticraise (0,[]), loc) ->
+      Lifthenelse (cond, body, patch, loc)
   | Llet(str, k, id, lam, body) ->
       Llet (str, k, id, lam, patch_guarded patch body)
   | Levent(lam, ev) ->
@@ -678,17 +678,18 @@ let subst update_env s lam =
         Lstringswitch
           (subst s arg,List.map (subst_strcase s) cases,subst_opt s default,loc)
     | Lstaticraise (i,args) ->  Lstaticraise (i, subst_list s args)
-    | Lstaticcatch(body, (id, params), handler) ->
+    | Lstaticcatch(body, (id, params), handler, loc) ->
         Lstaticcatch(subst s body, (id, params),
-                    subst (remove_list params s) handler)
-    | Ltrywith(body, exn, handler) ->
-        Ltrywith(subst s body, exn, subst (Ident.Map.remove exn s) handler)
-    | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst s e1, subst s e2, subst s e3)
+                    subst (remove_list params s) handler, loc)
+    | Ltrywith(body, exn, handler, loc) ->
+        Ltrywith(subst s body, exn, subst (Ident.Map.remove exn s) handler, loc)
+    | Lifthenelse(e1, e2, e3, loc) ->
+        Lifthenelse(subst s e1, subst s e2, subst s e3, loc)
     | Lsequence(e1, e2) -> Lsequence(subst s e1, subst s e2)
-    | Lwhile(e1, e2) -> Lwhile(subst s e1, subst s e2)
-    | Lfor(v, lo, hi, dir, body) ->
+    | Lwhile(e1, e2, loc) -> Lwhile(subst s e1, subst s e2, loc)
+    | Lfor(v, lo, hi, dir, body, loc) ->
         Lfor(v, subst s lo, subst s hi, dir,
-          subst (Ident.Map.remove v s) body)
+          subst (Ident.Map.remove v s) body, loc)
     | Lassign(id, e) ->
         assert(not (Ident.Map.mem id s));
         Lassign(id, subst s e)
@@ -762,18 +763,18 @@ let rec map f lam =
           loc)
     | Lstaticraise (i, args) ->
         Lstaticraise (i, List.map (map f) args)
-    | Lstaticcatch (body, id, handler) ->
-        Lstaticcatch (map f body, id, map f handler)
-    | Ltrywith (e1, v, e2) ->
-        Ltrywith (map f e1, v, map f e2)
-    | Lifthenelse (e1, e2, e3) ->
-        Lifthenelse (map f e1, map f e2, map f e3)
+    | Lstaticcatch (body, id, handler, loc) ->
+        Lstaticcatch (map f body, id, map f handler, loc)
+    | Ltrywith (e1, v, e2, loc) ->
+        Ltrywith (map f e1, v, map f e2, loc)
+    | Lifthenelse (e1, e2, e3, loc) ->
+        Lifthenelse (map f e1, map f e2, map f e3, loc)
     | Lsequence (e1, e2) ->
         Lsequence (map f e1, map f e2)
-    | Lwhile (e1, e2) ->
-        Lwhile (map f e1, map f e2)
-    | Lfor (v, e1, e2, dir, e3) ->
-        Lfor (v, map f e1, map f e2, dir, map f e3)
+    | Lwhile (e1, e2, loc) ->
+        Lwhile (map f e1, map f e2, loc)
+    | Lfor (v, e1, e2, dir, e3, loc) ->
+        Lfor (v, map f e1, map f e2, dir, map f e3, loc)
     | Lassign (v, e) ->
         Lassign (v, map f e)
     | Lsend (k, m, o, el, loc) ->
