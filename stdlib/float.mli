@@ -59,10 +59,10 @@ external div : float -> float -> float = "%divfloat"
 
 external fma : float -> float -> float -> float =
   "caml_fma_float" "caml_fma" [@@unboxed] [@@noalloc]
-(** A fused multiply-add [fma x y z] computes [x * y + z] with a
-   single rounding. Can be not fully IEEE compliant if a software
-   emulation is use in place of the hardware instruction. @since
-   4.09.0 *)
+(** [fma x y z] returns [x * y + z], with a best effort for computing
+    this expression with a single rounding, using either hardware
+    instructions (providing full IEEE compliance) or a software emulation.
+    @since 4.09.0 *)
 
 external rem : float -> float -> float = "caml_fmod_float" "fmod"
 [@@unboxed] [@@noalloc]
