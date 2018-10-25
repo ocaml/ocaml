@@ -18,7 +18,7 @@ tasks (ideally after discussing it first with maintainers).
 
 - Introduce an abstraction boundary between "the type algebra" and
   "the type checker" (at first between Ctype and Typecore) so that the
-  type checker is forced to go through a propoer API to access/mutate
+  type checker is forced to go through a proper API to access/mutate
   type nodes.  This would make it impossible to "forget" a call
   to `repr` and will allow further changes on the internal representation.
 
@@ -34,7 +34,7 @@ tasks (ideally after discussing it first with maintainers).
 
 - Document row_desc, get rid of row_bound.
 
-- Implement union-find with more a asbtract/persistent datastructure
+- Implement union-find with a more abstract/persistent datastructure
   (be careful about memory leaks with the naive approach of representing
   links with a persistent heap).
 
@@ -42,17 +42,15 @@ tasks (ideally after discussing it first with maintainers).
 
 - Tidy up destructive substitution.
 
-- Well-formedness for module signature.
-
 - Get rid of syntactic encodings (generating Parsetree fragments
   during type-checking, cf optional arguments or classes).
 
-- Track "string literals" in the type-checker, which often acts as
+- Track "string literals" in the type-checker, which often act as
   magic "internal" names which should be avoided.
 
 - Get rid of -annot.
 
-- Warning settings (+other context) as part of `Env.t`.
+- Consider storing warning settings (+other context) as part of `Env.t`?
 
 - Parse attributes understood (e.g. the deprecated attribute) by the
   compiler into a structured representation during type-checking.
@@ -61,7 +59,7 @@ tasks (ideally after discussing it first with maintainers).
   allow pointing to AST fragments, and use that to implement "unused"
   warnings in a less invasive and less imperative way.
 
-- Deprecated -nolabels, or even get rid of it?
+- Deprecate -nolabels, or even get rid of it?
 
 - Using e.g. bisect_ppx, monitor coverage of the typechecker
   implementation while running the testsuite, and expand the testsuite
