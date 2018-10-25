@@ -16,9 +16,16 @@ let fma_test l x y z r =
   then success l
   else error l x y z r c
 
-(* tests 254, 257--259, 264--265, 267--268, and 272--273 are disabled
-   because of unresolved double-rounding issue in FMA emulation
-   fallback *)
+(* test case description:
+
+  (string * float * float * float * float list)
+   |        |       |       |       |
+   id       |       |       |       IEEE compliant result in head,
+            |       |       |       or, accepted fma emulation approximation
+            |       |       |       results in tail (if any)
+            |       |       |
+            x       y       z   -> operands as in fma x y z
+ *)
 let _ =
   let cases = [
       ("001", 0x1p+0, 0x2p+0, 0x3p+0, [0x5p+0]);
