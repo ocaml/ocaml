@@ -60,9 +60,11 @@ external div : float -> float -> float = "%divfloat"
 external fma : float -> float -> float -> float =
   "caml_fma_float" "caml_fma" [@@unboxed] [@@noalloc]
 (** [fma x y z] returns [x * y + z], with a best effort for computing
-    this expression with a single rounding, using either hardware
-    instructions (providing full IEEE compliance) or a software emulation.
-    @since 4.09.0 *)
+   this expression with a single rounding, using either hardware
+   instructions (providing full IEEE compliance) or a software
+   emulation.  Note: since software emulation of the fma is costly,
+   make sure that you are using hardware fma support if performance
+   matters.  @since 4.08.0 *)
 
 external rem : float -> float -> float = "caml_fmod_float" "fmod"
 [@@unboxed] [@@noalloc]

@@ -127,7 +127,8 @@ Working version
   (Christophe Troestler, review by Alain Frish, Xavier Clerc and Daniel Bünzli)
 
 - GPR#1354: Add fma support to Float module.
-  (Laurent Thévenoux)
+  (Laurent Thévenoux, review by Alain Frish, Jacques-Henri Jourdan,
+  Xavier Leroy)
 
 ### Other libraries:
 
