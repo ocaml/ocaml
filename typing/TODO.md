@@ -24,7 +24,7 @@ everyone to get an idea of planned tasks, refine them through Pull
 Requests, suggest more cleanups, or even start working on specific
 tasks (ideally after discussing it first with maintainers).
 
-Not all ideas have been thorougly discussed, and there might not be a
+Not all ideas have been thoroughly discussed, and there might not be a
 consensus for all of them.
 
 - Make the level generator be part of `Env.t` instead of being global.
