@@ -8,11 +8,24 @@ incremental cleanup steps are certainly accessible and could bring the
 current implementation in a better shape at a relatively small cost
 and in a reasonnably distant future.
 
+Goals of the cleanup:
+
+ - Make the implementation more maintainable and less fragile.
+
+ - Allow new contributors, or people involved in bigger rewriting
+   projects, to get familiar with the code base more easily.
+
+ - Pave the way for future extensions or bigger structural changes to
+   the implementation.
+
 This file collects specific cleanup ideas which have been discussed
 amongst maintainers.  Having the list committed in the repo allows for
 everyone to get an idea of planned tasks, refine them through Pull
 Requests, suggest more cleanups, or even start working on specific
 tasks (ideally after discussing it first with maintainers).
+
+Not all ideas have been thorougly discussed, and there might not be a
+consensus for all of them.
 
 - Make the level generator be part of `Env.t` instead of being global.
 
