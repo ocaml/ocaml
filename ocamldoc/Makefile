@@ -222,6 +222,12 @@ manpages: stdlib_man/Stdlib.3o
 .PHONY: html_doc
 html_doc: stdlib_html/Stdlib.html
 
+.PHONY: pdf_doc
+pdf_doc: stdlib_latex/stdlib.pdf
+
+.PHONY: texi_doc
+texi_doc: stdlib_texi/stdlib.texi
+
 .PHONY: dot
 dot: ocamldoc.dot
 
@@ -411,6 +417,28 @@ stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL_MLIS)
 	-t "OCaml library" \
 	-text $(SRC)/manual/manual/library/compiler_libs.mld \
 	$(DOC_ALL_MLIS)
+
+stdlib_texi/stdlib.texi: $(OCAMLDOC) $(DOC_ALL_MLIS)
+	$(MKDIR) stdlib_texi
+	$(OCAMLDOC_RUN) -texi -o stdlib_texi/stdlib.texi -nostdlib \
+	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
+	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
+	-t "OCaml library" \
+	-text $(SRC)/manual/manual/library/compiler_libs.mld \
+	$(DOC_ALL_MLIS)
+
+stdlib_latex/stdlib.tex: $(OCAMLDOC) $(DOC_ALL_MLIS)
+	$(MKDIR) stdlib_latex
+	$(OCAMLDOC_RUN) -latex -o stdlib_latex/stdlib.tex -nostdlib \
+	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
+	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
+	-t "OCaml library" \
+	-text $(SRC)/manual/manual/library/compiler_libs.mld \
+	$(DOC_ALL_MLIS)
+
+stdlib_latex/stdlib.pdf: stdlib_latex/stdlib.tex
+	cd stdlib_latex && pdflatex stdlib && pdflatex stdlib
+
 
 .PHONY: autotest_stdlib
 autotest_stdlib:
