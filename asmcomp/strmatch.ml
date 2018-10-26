@@ -25,7 +25,7 @@ module type I = sig
   val string_block_length : Cmm.expression -> Cmm.expression
   val transl_switch :
       Debuginfo.t -> Cmm.expression -> int -> int ->
-        (int * Cmm.expression) list -> Cmm.expression ->
+        (int * (Debuginfo.t * Cmm.expression)) list -> Cmm.expression ->
           Cmm.expression
 end
 
@@ -280,21 +280,31 @@ module Make(I:I) = struct
   as match_on_cell can be called in two different contexts :
   from do_compile_pats and top_compile below.
  *)
-    let match_oncell dbg compile_rec str default idx env =
+    let match_oncell compile_rec str default idx env =
       let id = gen_cell_id () in
+      let dbg =
+        match env with
+        | (_key, (_, (dbg, _)) :: _)::_ -> dbg
+        | _ -> Debuginfo.none
+      in
       let rec comp_rec env =
         let len = List.length env in
         if len <= 3 then
           List.fold_right
             (fun (key,cases) ifnot ->
+              let dbg =
+                match cases with
+                | (_, (dbg, _))::_ -> dbg
+                | _ -> Debuginfo.none
+              in
               mk_eq dbg id key
                 (compile_rec str default cases)
               ifnot)
-            env default
+            env (snd default)
         else
           let lt,midkey,ge = split_env len env in
           mk_lt dbg id midkey (comp_rec lt) (comp_rec ge) in
-      mk_let_cell dbg (VP.create id) str idx (comp_rec env)
+      dbg, mk_let_cell dbg (VP.create id) str idx (comp_rec env)
 
 (*
   Recursive 'list of cells' compile function:
@@ -302,7 +312,7 @@ module Make(I:I) = struct
   - notice: patterns (and idx) all have the same length
  *)
 
-    let rec do_compile_pats dbg idxs str default cases =
+    let rec do_compile_pats idxs str default cases =
       if debug_this_module then begin
         pp_match stderr "COMPILE" idxs cases
       end ;
@@ -310,15 +320,18 @@ module Make(I:I) = struct
       | [] ->
           begin match cases with
           | [] -> default
-          | (_,e)::_ -> e
+          | (_,(dbg, e))::_ -> dbg, e
           end
       | _::_ ->
           let idxs,cases = best_first idxs cases in
           begin match idxs with
           | [] -> assert false
           | idx::idxs ->
-              match_oncell dbg
-                (do_compile_pats dbg idxs) str default idx (by_cell cases)
+              match_oncell
+                (fun str default cases ->
+                  let _dbg, expr = do_compile_pats idxs str default cases in
+                  expr)
+                str default idx (by_cell cases)
           end
 
 
@@ -327,7 +340,8 @@ module Make(I:I) = struct
     module DivideInt = Divide(IntArg)
 
 
-    let by_size cases =
+    let by_size
+          (cases : (DivideNative.OMap.key list * ('a * Cmm.expression)) list) =
       DivideInt.divide
         (List.map
            (fun (ps,_ as case) -> List.length ps,case)
@@ -339,19 +353,22 @@ module Make(I:I) = struct
   In that latter case pattern len is string length-1 and is corrected.
  *)
 
-    let compile_by_size dbg from_ind str default cases =
+    let compile_by_size dbg from_ind str default
+          (cases : (DivideNative.OMap.key list * ('a * Cmm.expression)) list) =
       let size_cases =
         List.map
           (fun (len,cases) ->
             let len = len+from_ind in
-            let act =
-              do_compile_pats dbg
+            let dbg, act =
+              do_compile_pats
                 (interval from_ind len)
                 str default  cases in
-            (len,act))
+            (len,(dbg, act)))
           (by_size cases) in
       let id = gen_size_id () in
-      let switch = I.transl_switch dbg (Cvar id) 1 max_int size_cases default in
+      let switch =
+        I.transl_switch dbg (Cvar id) 1 max_int size_cases (snd default)
+      in
       mk_let_size (VP.create id) str switch
 
 (*
@@ -359,7 +376,8 @@ module Make(I:I) = struct
   either on size or on first cell, using the
   'least discriminant' heuristics.
  *)
-    let top_compile debuginfo str default cases =
+    let top_compile debuginfo str default
+          (cases : (DivideNative.OMap.key list * ('a * Cmm.expression)) list) =
       let a_len = count_arities_length cases
       and a_fst = count_arities_first cases in
       if a_len <= a_fst then begin
@@ -369,7 +387,7 @@ module Make(I:I) = struct
         if debug_this_module then pp_cases stderr "FIRST COL" cases ;
         let compile_size_rest str default cases =
           compile_by_size debuginfo 1 str default cases in
-        match_oncell debuginfo compile_size_rest str default 0 (by_cell cases)
+        snd (match_oncell compile_size_rest str default 0 (by_cell cases))
       end
 
 (* Module entry point *)
@@ -383,13 +401,14 @@ module Make(I:I) = struct
     let compile dbg str default cases =
 (* We do not attempt to really optimise default=None *)
       let cases,default = match cases,default with
-      | (_,e)::cases,None
-      | cases,Some e -> cases,e
+      | (_,(_loc, e))::cases,None
+      | cases,Some (_loc, e) -> cases, e
       | [],None -> assert false in
       let cases =
         List.rev_map
-          (fun (s,act) -> pat_of_string s,act)
+          (fun (s,(loc,act)) -> pat_of_string s, (loc, act))
           cases in
-      catch dbg default (fun default -> top_compile dbg str default cases)
+      catch dbg default (fun default ->
+        top_compile dbg str (dbg, default) cases)
 
   end

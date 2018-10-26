@@ -1504,7 +1504,9 @@ struct
   let make_isin dbg h arg = Cop (Ccmpa Cge, [h ; arg], dbg)
   let make_if dbg cond ifso ifnot =
     Cifthenelse (cond, dbg, ifso, dbg, ifnot, dbg)
-  let make_switch dbg arg cases actions = make_switch arg cases actions dbg
+  let make_switch dbg arg cases actions =
+    let actions = Array.map (fun (dbg, act) -> act, dbg) actions in
+    make_switch arg cases actions dbg
   let bind arg body = bind "switcher" arg body
 
   let make_catch dbg handler = match handler with
@@ -1556,9 +1558,10 @@ module StoreExpForSwitch =
 module StoreExp =
   Switch.Store
     (struct
-      type t = expression
+      type t = Debuginfo.t * expression
       type key = int
-      let make_key = function
+      let make_key (_dbg, expr) =
+        match expr with
         | Cexit (i,[]) -> Some i
         | _ -> None
       let compare_key = Stdlib.compare
@@ -1714,16 +1717,20 @@ let rec is_unboxed_number ~strict env e =
   | Ulet (_, _, _, _, e) | Uletrec (_, e) | Usequence (_, e) ->
       is_unboxed_number ~strict env e
   | Uswitch (_, switch, _dbg) ->
+      let join acc (expr, _dbg) = join acc expr in
       let k = Array.fold_left join No_result switch.us_actions_consts in
       Array.fold_left join k switch.us_actions_blocks
   | Ustringswitch (_, actions, default_opt) ->
-      let k = List.fold_left (fun k (_, e) -> join k e) No_result actions in
+      let k =
+        List.fold_left (fun k (_, e, _dbg) -> join k e) No_result actions
+      in
       begin match default_opt with
         None -> k
-      | Some default -> join k default
+      | Some (default, _) -> join k default
       end
   | Ustaticfail _ -> No_result
-  | Uifthenelse (_, e1, e2) | Ucatch (_, _, e1, e2) | Utrywith (e1, _, e2) ->
+  | Uifthenelse (_, _, e1, _, e2, _) | Ucatch (_, _, e1, e2, _)
+  | Utrywith (e1, _, e2, _) ->
       join (is_unboxed_number ~strict env e1) e2
   | _ -> No_unboxing
 
