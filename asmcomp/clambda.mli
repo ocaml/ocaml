@@ -75,7 +75,8 @@ and ulambda =
   | Ucatch of int * Backend_var.With_provenance.t list * ulambda * ulambda
       * Debuginfo.t
   | Utrywith of ulambda * Backend_var.With_provenance.t * ulambda * Debuginfo.t
-  | Uifthenelse of ulambda * ulambda * ulambda * Debuginfo.t
+  | Uifthenelse of ulambda * Debuginfo.t * ulambda * Debuginfo.t
+      * ulambda * Debuginfo.t
   | Usequence of ulambda * ulambda
   | Uwhile of ulambda * ulambda * Debuginfo.t
   | Ufor of Backend_var.With_provenance.t * ulambda * ulambda

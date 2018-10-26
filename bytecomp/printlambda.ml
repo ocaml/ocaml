@@ -584,7 +584,7 @@ let rec lam ppf = function
   | Ltrywith(lbody, param, lhandler, _) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Ident.print param lam lhandler
-  | Lifthenelse(lcond, lif, lelse, _) ->
+  | Lifthenelse(lcond, _ifso_loc, lif, _ifnot_loc, lelse, _loc) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
   | Lsequence(l1, l2) ->
       fprintf ppf "@[<2>(seq@ %a@ %a)@]" lam l1 sequence l2

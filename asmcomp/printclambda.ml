@@ -207,7 +207,7 @@ and lam ppf = function
   | Utrywith(lbody, param, lhandler, _) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody VP.print param lam lhandler
-  | Uifthenelse(lcond, lif, lelse, _) ->
+  | Uifthenelse(lcond, _, lif, _, lelse, _) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
   | Usequence(l1, l2) ->
       fprintf ppf "@[<2>(seq@ %a@ %a)@]" lam l1 sequence l2

@@ -757,7 +757,7 @@ let rec comp_expr env exp sz cont =
       let l = comp_expr env body (sz+4) body_cont in
       try_blocks := List.tl !try_blocks;
       Kpushtrap lbl_handler :: l
-  | Lifthenelse(cond, ifso, ifnot, _loc) ->
+  | Lifthenelse(cond, _ifso_loc, ifso, _ifnot_loc, ifnot, _loc) ->
       comp_binary_test env cond ifso ifnot sz cont
   | Lsequence(exp1, exp2) ->
       comp_expr env exp1 sz (comp_expr env exp2 sz cont)

@@ -280,7 +280,8 @@ type lambda =
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda * Location.t
   | Ltrywith of lambda * Ident.t * lambda * Location.t
-  | Lifthenelse of lambda * lambda * lambda * Location.t
+  | Lifthenelse of
+      lambda * Location.t * lambda * Location.t * lambda * Location.t
   | Lsequence of lambda * lambda
   | Lwhile of lambda * lambda * Location.t
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda * Location.t
@@ -401,8 +402,9 @@ let make_key e =
         Lstaticcatch (tr_rec env e1,xs,tr_rec env e2,loc)
     | Ltrywith (e1,x,e2,loc) ->
         Ltrywith (tr_rec env e1,x,tr_rec env e2,loc)
-    | Lifthenelse (cond,ifso,ifnot,loc) ->
-        Lifthenelse (tr_rec env cond,tr_rec env ifso,tr_rec env ifnot,loc)
+    | Lifthenelse (cond,ifso_loc,ifso,ifnot_loc,ifnot,loc) ->
+        Lifthenelse (tr_rec env cond,ifso_loc,tr_rec env ifso,
+          ifnot_loc,tr_rec env ifnot,loc)
     | Lsequence (e1,e2) ->
         Lsequence (tr_rec env e1,tr_rec env e2)
     | Lassign (x,e) ->
@@ -489,7 +491,7 @@ let iter_head_constructor f = function
       f e1; f e2
   | Ltrywith(e1, _, e2, _) ->
       f e1; f e2
-  | Lifthenelse(e1, e2, e3, _) ->
+  | Lifthenelse(e1, _, e2, _, e3, _) ->
       f e1; f e2; f e3
   | Lsequence(e1, e2) ->
       f e1; f e2
@@ -558,7 +560,7 @@ let rec free_variables = function
            param
            (free_variables handler))
         (free_variables body)
-  | Lifthenelse(e1, e2, e3, _) ->
+  | Lifthenelse(e1, _, e2, _, e3, _) ->
       Ident.Set.union
         (Ident.Set.union (free_variables e1) (free_variables e2))
         (free_variables e3)
@@ -596,14 +598,15 @@ let next_raise_count () =
 let staticfail = Lstaticraise (0,[])
 
 let rec is_guarded = function
-  | Lifthenelse(_cond, _body, Lstaticraise (0,[]), _) -> true
+  | Lifthenelse(_cond, _ifso_loc, _body, _ifnot_loc, Lstaticraise (0,[]), _) ->
+      true
   | Llet(_str, _k, _id, _lam, body) -> is_guarded body
   | Levent(lam, _ev) -> is_guarded lam
   | _ -> false
 
 let rec patch_guarded patch = function
-  | Lifthenelse (cond, body, Lstaticraise (0,[]), loc) ->
-      Lifthenelse (cond, body, patch, loc)
+  | Lifthenelse (cond, ifso_loc, body, ifnot_loc, Lstaticraise (0,[]), loc) ->
+      Lifthenelse (cond, ifso_loc, body, ifnot_loc, patch, loc)
   | Llet(str, k, id, lam, body) ->
       Llet (str, k, id, lam, patch_guarded patch body)
   | Levent(lam, ev) ->
@@ -689,8 +692,9 @@ let subst update_env s lam =
                     subst (remove_list params s) handler, loc)
     | Ltrywith(body, exn, handler, loc) ->
         Ltrywith(subst s body, exn, subst (Ident.Map.remove exn s) handler, loc)
-    | Lifthenelse(e1, e2, e3, loc) ->
-        Lifthenelse(subst s e1, subst s e2, subst s e3, loc)
+    | Lifthenelse(e1, ifso_loc, e2, ifnot_loc, e3, loc) ->
+        Lifthenelse(subst s e1, ifso_loc, subst s e2, ifnot_loc,
+          subst s e3, loc)
     | Lsequence(e1, e2) -> Lsequence(subst s e1, subst s e2)
     | Lwhile(e1, e2, loc) -> Lwhile(subst s e1, subst s e2, loc)
     | Lfor(v, lo, hi, dir, body, loc) ->
@@ -775,8 +779,8 @@ let rec map f lam =
         Lstaticcatch (map f body, id, map f handler, loc)
     | Ltrywith (e1, v, e2, loc) ->
         Ltrywith (map f e1, v, map f e2, loc)
-    | Lifthenelse (e1, e2, e3, loc) ->
-        Lifthenelse (map f e1, map f e2, map f e3, loc)
+    | Lifthenelse (e1, ifso_loc, e2, ifnot_loc, e3, loc) ->
+        Lifthenelse (map f e1, ifso_loc, map f e2, ifnot_loc, map f e3, loc)
     | Lsequence (e1, e2) ->
         Lsequence (map f e1, map f e2)
     | Lwhile (e1, e2, loc) ->

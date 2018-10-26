@@ -263,7 +263,9 @@ type lambda =
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda * Location.t
   | Ltrywith of lambda * Ident.t * lambda * Location.t
-  | Lifthenelse of lambda * lambda * lambda * Location.t
+  | Lifthenelse of
+      lambda * Location.t * lambda * Location.t * lambda * Location.t
+    (** [Lifthenelse scrutinee ifso_loc ifso ifnot_loc ifnot overall_loc] *)
   | Lsequence of lambda * lambda
   | Lwhile of lambda * lambda * Location.t
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda * Location.t

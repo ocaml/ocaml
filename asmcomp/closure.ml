@@ -95,7 +95,7 @@ let occurs_var var u =
     | Ustaticfail (_, args) -> List.exists occurs args
     | Ucatch(_, _, body, hdlr, _) -> occurs body || occurs hdlr
     | Utrywith(body, _exn, hdlr, _) -> occurs body || occurs hdlr
-    | Uifthenelse(cond, ifso, ifnot, _) ->
+    | Uifthenelse(cond, _, ifso, _, ifnot, _) ->
         occurs cond || occurs ifso || occurs ifnot
     | Usequence(u1, u2) -> occurs u1 || occurs u2
     | Uwhile(cond, body, _) -> occurs cond || occurs body
@@ -196,7 +196,7 @@ let lambda_smaller lam threshold =
         incr size; lambda_size body; lambda_size handler
     | Utrywith(body, _id, handler, _) ->
         size := !size + 8; lambda_size body; lambda_size handler
-    | Uifthenelse(cond, ifso, ifnot, _) ->
+    | Uifthenelse(cond, _, ifso, _, ifnot, _) ->
         size := !size + 2;
         lambda_size cond; lambda_size ifso; lambda_size ifnot
     | Usequence(lam1, lam2) ->
@@ -778,7 +778,7 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
       in
       let term = Utrywith (u1, id', u2, loc) in
       block_subst, term
-  | Uifthenelse(u1, u2, u3, loc) ->
+  | Uifthenelse(u1, ifso_loc, u2, ifnot_loc, u3, loc) ->
       let block_subst, u1 =
         substitute ~at_call_site ~block_subst fpc sb rn u1
       in
@@ -797,7 +797,7 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
           let block_subst, u3 =
             substitute ~at_call_site ~block_subst fpc sb rn u3
           in
-          let term = Uifthenelse (su1, u2, u3, loc) in
+          let term = Uifthenelse (su1, ifso_loc, u2, ifnot_loc, u3, loc) in
           block_subst, term
       end
   | Usequence(u1, u2) ->
@@ -1379,16 +1379,21 @@ let rec close ~scope fenv cenv = function
       in
       let dbg = Debuginfo.of_location loc ~scope in
       (Utrywith(ubody, VP.create ?provenance id, uhandler, dbg), Value_unknown)
-  | Lifthenelse(arg, ifso, ifnot, loc) ->
+  | Lifthenelse(arg, ifso_loc, ifso, ifnot_loc, ifnot, loc) ->
       begin match close ~scope fenv cenv arg with
         (uarg, Value_const (Uconst_ptr n)) ->
           sequence_constant_expr arg uarg
             (close ~scope fenv cenv (if n = 0 then ifnot else ifso))
       | (uarg, _ ) ->
           let dbg = Debuginfo.of_location loc ~scope in
-          let (uifso, _) = close_new_scope ~scope fenv cenv ifso in
-          let (uifnot, _) = close_new_scope ~scope fenv cenv ifnot in
-          (Uifthenelse(uarg, uifso, uifnot, dbg), Value_unknown)
+          let ifso_scope = CB.add_scope scope in
+          let ifso_dbg = Debuginfo.of_location ifso_loc ~scope:ifso_scope in
+          let ifnot_scope = CB.add_scope scope in
+          let ifnot_dbg = Debuginfo.of_location ifnot_loc ~scope:ifnot_scope in
+          let (uifso, _) = close ~scope:ifso_scope fenv cenv ifso in
+          let (uifnot, _) = close ~scope:ifnot_scope fenv cenv ifnot in
+          (Uifthenelse(uarg, ifso_dbg, uifso, ifnot_dbg, uifnot, dbg),
+            Value_unknown)
       end
   | Lsequence(lam1, lam2) ->
       let (ulam1, _) = close ~scope fenv cenv lam1 in
@@ -1399,7 +1404,7 @@ let rec close ~scope fenv cenv = function
       let body_scope = CB.add_scope scope in
       let (ubody, _) = close ~scope:body_scope fenv cenv body in
       let dbg = Debuginfo.of_location loc ~scope:body_scope in
-      (Uwhile(ucond, ubody, loc), Value_unknown)
+      (Uwhile(ucond, ubody, dbg), Value_unknown)
   | Lfor(id, lo, hi, dir, body, loc) ->
       let (ulo, _) = close ~scope fenv cenv lo in
       let (uhi, _) = close ~scope fenv cenv hi in
@@ -1417,7 +1422,7 @@ let rec close ~scope fenv cenv = function
           in
           Some provenance
       in
-      (Ufor(VP.create ?provenance id, ulo, uhi, dir, ubody, loc), Value_unknown)
+      (Ufor(VP.create ?provenance id, ulo, uhi, dir, ubody, dbg), Value_unknown)
   | Lassign(id, lam) ->
       let (ulam, _) = close ~scope fenv cenv lam in
       (Uassign(id, ulam), Value_unknown)
@@ -1657,10 +1662,12 @@ and close_switch ~scope fenv cenv cases num_keys default =
         | Single (loc, lam)
         | Shared (loc, (Lstaticraise (_,[]) as lam)) ->
             let scope = CB.add_scope scope in
+            let dbg = Debuginfo.of_location ~scope loc in
             let ulam,_ = close_new_scope ~scope fenv cenv lam in
-            ulam, loc
+            ulam, dbg
         | Shared (loc, lam) ->
             let scope = CB.add_scope scope in
+            let dbg = Debuginfo.of_location ~scope loc in
             let ulam,_ = close_new_scope ~scope fenv cenv lam in
             let i = next_raise_count () in
 (*
@@ -1672,8 +1679,8 @@ and close_switch ~scope fenv cenv cases num_keys default =
                 (string_of_lambda lam) ;
 *)
             let ohs = !hs in
-            hs := (fun e -> Ucatch (i,[],ohs e,ulam,loc)) ;
-            Ustaticfail (i,[]), loc)
+            hs := (fun e -> Ucatch (i,[],ohs e,ulam,dbg)) ;
+            Ustaticfail (i,[]), dbg)
       acts in
   match actions with
   | [| |] -> [| |], [| |], !hs (* May happen when default is None *)
@@ -1731,7 +1738,7 @@ let collect_exported_structured_constants a =
     | Utrywith (u1, _, u2, _)
     | Usequence (u1, u2)
     | Uwhile (u1, u2, _)  -> ulam u1; ulam u2
-    | Uifthenelse (u1, u2, u3, _)
+    | Uifthenelse (u1, _, u2, _, u3, _)
     | Ufor (_, u1, u2, _, u3, _) -> ulam u1; ulam u2; ulam u3
     | Uassign (_, u) -> ulam u
     | Usend (_, u1, u2, ul, _) -> ulam u1; ulam u2; List.iter ulam ul
