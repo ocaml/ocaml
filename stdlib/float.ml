@@ -21,6 +21,8 @@ external mul : float -> float -> float = "%mulfloat"
 external div : float -> float -> float = "%divfloat"
 external rem : float -> float -> float = "caml_fmod_float" "fmod"
   [@@unboxed] [@@noalloc]
+external fma : float -> float -> float -> float = "caml_fma_float" "caml_fma"
+  [@@unboxed] [@@noalloc]
 external abs : float -> float = "%absfloat"
 
 let zero = 0.

@@ -126,6 +126,10 @@ Working version
   min_max_num to module Float.
   (Christophe Troestler, review by Alain Frish, Xavier Clerc and Daniel Bünzli)
 
+- GPR#1354: Add fma support to Float module.
+  (Laurent Thévenoux, review by Alain Frisch, Jacques-Henri Jourdan,
+  Xavier Leroy)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
