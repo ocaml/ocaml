@@ -1264,10 +1264,14 @@ val at_exit : (unit -> unit) -> unit
    The functions are called in 'last in, first out' order: the
    function most recently added with [at_exit] is called first. *)
 
-(** {1:precedence Appendix: precedence level and associativity of operators }
-
-  The following table list the precedence level of all operator classes
-from the highest to the lowest precedence. Few other syntactic constructions
+(** {1:precedence Appendix: precedence level and associativity of operators } *)
+(*
+  Note, the tables below should be kept in sync with the one in
+  manual/manual/refman/expr.etex .
+*)
+(**
+  The following table lists the precedence level of all operator classes
+from the highest to the lowest precedence. A few other syntactic constructions
 are also listed as references.
 
 {%latex:
