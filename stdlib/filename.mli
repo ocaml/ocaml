@@ -169,7 +169,7 @@ val set_temp_dir_name : string -> unit
 *)
 
 val temp_dir_name : string
-  [@@ocaml.deprecated "Use Filename.get_temp_dir_name instead"]
+  [@@ocaml.deprecated "use Filename.get_temp_dir_name"]
 (** The name of the initial temporary directory:
     Under Unix, the value of the [TMPDIR] environment variable, or "/tmp"
     if the variable is not set.

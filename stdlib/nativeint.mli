@@ -228,7 +228,7 @@ val equal: t -> t -> bool
 (** {1 Deprecated functions} *)
 
 external format : string -> nativeint -> string = "caml_nativeint_format"
-[@@ocaml.deprecated "Use Printf.sprintf with a %nx format"]
+[@@ocaml.deprecated "use Printf.sprintf with a %nx format"]
 (** [Nativeint.format fmt n] return the string representation of the
    native integer [n] in the format specified by [fmt].
    [fmt] is a [Printf]-style format consisting of exactly

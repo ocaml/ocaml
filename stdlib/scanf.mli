@@ -196,7 +196,7 @@ val name_of_input : in_channel -> string
 *)
 
 val stdib : in_channel
-  [@@ocaml.deprecated "Use Scanf.Scanning.stdin instead."]
+  [@@ocaml.deprecated "use Scanf.Scanning.stdin"]
 (** A deprecated alias for {!Scanning.stdin}, the scanning buffer reading from
     {!Stdlib.stdin}.
 *)
@@ -538,7 +538,7 @@ val unescaped : string -> string
 (** {1 Deprecated} *)
 
 val fscanf : Stdlib.in_channel -> ('a, 'b, 'c, 'd) scanner
-  [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.bscanf."]
+  [@@ocaml.deprecated "use Scanning.from_channel then Scanf.bscanf"]
 (** @deprecated [Scanf.fscanf] is error prone and deprecated since 4.03.0.
 
     This function violates the following invariant of the {!Scanf} module:
@@ -555,5 +555,5 @@ val fscanf : Stdlib.in_channel -> ('a, 'b, 'c, 'd) scanner
 val kfscanf :
   Stdlib.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
     ('a, 'b, 'c, 'd) scanner
-  [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.kscanf."]
+  [@@ocaml.deprecated "use Scanning.from_channel then Scanf.kscanf"]
 (** @deprecated [Scanf.kfscanf] is error prone and deprecated since 4.03.0. *)

@@ -224,7 +224,7 @@ external ( && ) : bool -> bool -> bool = "%sequand"
 *)
 
 external ( & ) : bool -> bool -> bool = "%sequand"
-  [@@ocaml.deprecated "Use (&&) instead."]
+  [@@ocaml.deprecated "use (&&)"]
 (** @deprecated {!Stdlib.( && )} should be used instead.
     Right-associative operator, see {!Ocaml_operators} for more information.
 *)
@@ -237,7 +237,7 @@ external ( || ) : bool -> bool -> bool = "%sequor"
 *)
 
 external ( or ) : bool -> bool -> bool = "%sequor"
-  [@@ocaml.deprecated "Use (||) instead."]
+  [@@ocaml.deprecated "use (||)"]
 (** @deprecated {!Stdlib.( || )} should be used instead.
     Right-associative operator, see {!Ocaml_operators} for more information.
 *)
@@ -1367,7 +1367,7 @@ module Oo           = Oo
 module Option       = Option
 module Parsing      = Parsing
 module Pervasives   = Pervasives
-[@@deprecated "Use Stdlib instead.\n\
+[@@deprecated "use the Stdlib module\n\
 \n\
 If you need to stay compatible with OCaml < 4.07, you can use the \n\
 stdlib-shims library: https://github.com/ocaml/stdlib-shims"]

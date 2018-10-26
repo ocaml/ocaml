@@ -219,6 +219,6 @@ val equal: t -> t -> bool
 (** {1 Deprecated functions} *)
 
 external format : string -> int32 -> string = "caml_int32_format"
-[@@ocaml.deprecated "Use Printf.sprintf with a %l... format"]
+[@@ocaml.deprecated "use Printf.sprintf with a %l... format"]
 (** @deprecated Do not use this function.  Instead,
    use {!Printf.sprintf} with a [%l...] format. *)

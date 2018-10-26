@@ -24,7 +24,7 @@ module Genarray : sig
     Unix.file_descr -> ?pos:int64 -> ('a, 'b) kind -> 'c layout ->
     bool -> int array -> ('a, 'b, 'c) t
   [@@ocaml.deprecated "\
-Use Unix.map_file instead.\n\
+use Unix.map_file\n\
 Note that Bigarray.Genarray.map_file raises Sys_error while\n\
 Unix.map_file raises Unix_error."]
 end
@@ -34,7 +34,7 @@ module Array1 : sig
   val map_file: Unix.file_descr -> ?pos:int64 -> ('a, 'b) kind -> 'c layout ->
     bool -> int -> ('a, 'b, 'c) t
   [@@ocaml.deprecated "\
-Use [array1_of_genarray (Unix.map_file ...)] instead.\n\
+use [array1_of_genarray (Unix.map_file ...)]\n\
 Note that Bigarray.Array1.map_file raises Sys_error while\n\
 Unix.map_file raises Unix_error."]
 end
@@ -44,7 +44,7 @@ module Array2 : sig
   val map_file: Unix.file_descr -> ?pos:int64 -> ('a, 'b) kind -> 'c layout ->
                 bool -> int -> int -> ('a, 'b, 'c) t
   [@@ocaml.deprecated "\
-Use [array2_of_genarray (Unix.map_file ...)] instead.\n\
+use [array2_of_genarray (Unix.map_file ...)]\n\
 Note that Bigarray.Array2.map_file raises Sys_error while\n\
 Unix.map_file raises Unix_error."]
 end
@@ -54,7 +54,7 @@ module Array3 : sig
   val map_file: Unix.file_descr -> ?pos:int64 -> ('a, 'b) kind -> 'c layout ->
              bool -> int -> int -> int -> ('a, 'b, 'c) t
   [@@ocaml.deprecated "\
-Use [array3_of_genarray (Unix.map_file ...)] instead.\n\
+use [array3_of_genarray (Unix.map_file ...)]\n\
 Note that Bigarray.Array3.map_file raises Sys_error while\n\
 Unix.map_file raises Unix_error."]
 end

@@ -80,7 +80,7 @@ val double_tag : int
 val double_array_tag : int
 val custom_tag : int
 val final_tag : int
-  [@@ocaml.deprecated "Replaced by custom_tag."]
+  [@@ocaml.deprecated "replaced by custom_tag"]
 
 val int_tag : int
 val out_of_heap_tag : int
@@ -104,9 +104,9 @@ val [@inline always] extension_id : extension_constructor -> int
     instead. *)
 
 val marshal : t -> bytes
-  [@@ocaml.deprecated "Use Marshal.to_bytes instead."]
+  [@@ocaml.deprecated "use Marshal.to_bytes"]
 val unmarshal : bytes -> int -> t * int
-  [@@ocaml.deprecated "Use Marshal.from_bytes and Marshal.total_size instead."]
+  [@@ocaml.deprecated "use Marshal.from_bytes and Marshal.total_size"]
 
 module Ephemeron: sig
   (** Ephemeron with arbitrary arity and untyped *)

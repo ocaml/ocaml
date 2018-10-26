@@ -25,7 +25,7 @@ external get : string -> int -> char = "%string_safe_get"
    Raise [Invalid_argument] if [n] not a valid index in [s]. *)
 
 external set : bytes -> int -> char -> unit = "%string_safe_set"
-  [@@ocaml.deprecated "Use BytesLabels.set instead."]
+  [@@ocaml.deprecated "use BytesLabels.set"]
 (** [String.set s n c] modifies byte sequence [s] in place,
    replacing the byte at index [n] with [c].
    You can also write [s.[n] <- c] instead of [String.set s n c].
@@ -35,7 +35,7 @@ external set : bytes -> int -> char -> unit = "%string_safe_set"
    @deprecated This is a deprecated alias of {!BytesLabels.set}. *)
 
 external create : int -> bytes = "caml_create_string"
-  [@@ocaml.deprecated "Use BytesLabels.create instead."]
+  [@@ocaml.deprecated "use BytesLabels.create"]
 (** [String.create n] returns a fresh byte sequence of length [n].
    The sequence is uninitialized and contains arbitrary bytes.
 
@@ -68,7 +68,7 @@ val sub : string -> pos:int -> len:int -> string
    designate a valid substring of [s]. *)
 
 val fill : bytes -> pos:int -> len:int -> char -> unit
-  [@@ocaml.deprecated "Use BytesLabels.fill instead."]
+  [@@ocaml.deprecated "use BytesLabels.fill"]
 (** [String.fill s start len c] modifies byte sequence [s] in place,
    replacing [len] bytes by [c], starting at [start].
 
@@ -215,27 +215,27 @@ val rcontains_from : string -> int -> char -> bool
    position in [s]. *)
 
 val uppercase : string -> string
-  [@@ocaml.deprecated "Use String.uppercase_ascii instead."]
+  [@@ocaml.deprecated "use String.uppercase_ascii"]
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, including accented letters of the ISO
    Latin-1 (8859-1) character set.
    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val lowercase : string -> string
-  [@@ocaml.deprecated "Use String.lowercase_ascii instead."]
+  [@@ocaml.deprecated "use String.lowercase_ascii"]
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, including accented letters of the ISO
    Latin-1 (8859-1) character set.
    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val capitalize : string -> string
-  [@@ocaml.deprecated "Use String.capitalize_ascii instead."]
+  [@@ocaml.deprecated "use String.capitalize_ascii"]
 (** Return a copy of the argument, with the first character set to uppercase,
    using the ISO Latin-1 (8859-1) character set..
    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val uncapitalize : string -> string
-  [@@ocaml.deprecated "Use String.uncapitalize_ascii instead."]
+  [@@ocaml.deprecated "use String.uncapitalize_ascii"]
 (** Return a copy of the argument, with the first character set to lowercase,
    using the ISO Latin-1 (8859-1) character set..
    @deprecated Functions operating on Latin-1 character set are deprecated. *)

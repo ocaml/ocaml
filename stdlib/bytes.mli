@@ -261,27 +261,27 @@ val rcontains_from : bytes -> int -> char -> bool
     position in [s]. *)
 
 val uppercase : bytes -> bytes
-  [@@ocaml.deprecated "Use Bytes.uppercase_ascii instead."]
+  [@@ocaml.deprecated "use Bytes.uppercase_ascii"]
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, including accented letters of the ISO
    Latin-1 (8859-1) character set.
    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val lowercase : bytes -> bytes
-  [@@ocaml.deprecated "Use Bytes.lowercase_ascii instead."]
+  [@@ocaml.deprecated "use Bytes.lowercase_ascii"]
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, including accented letters of the ISO
    Latin-1 (8859-1) character set.
    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val capitalize : bytes -> bytes
-  [@@ocaml.deprecated "Use Bytes.capitalize_ascii instead."]
+  [@@ocaml.deprecated "use Bytes.capitalize_ascii"]
 (** Return a copy of the argument, with the first character set to uppercase,
    using the ISO Latin-1 (8859-1) character set..
    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val uncapitalize : bytes -> bytes
-  [@@ocaml.deprecated "Use Bytes.uncapitalize_ascii instead."]
+  [@@ocaml.deprecated "use Bytes.uncapitalize_ascii"]
 (** Return a copy of the argument, with the first character set to lowercase,
    using the ISO Latin-1 (8859-1) character set..
    @deprecated Functions operating on Latin-1 character set are deprecated. *)

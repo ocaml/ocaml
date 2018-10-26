@@ -1272,7 +1272,7 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
 (** {1 Deprecated} *)
 
 val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a
-  [@@ocaml.deprecated]
+  [@@ocaml.deprecated "use Format.formatter_of_buffer and Format.fprintf"]
 (** @deprecated This function is error prone. Do not use it.
   This function is neither compositional nor incremental, since it flushes
   the pretty-printer queue at each call.
@@ -1283,7 +1283,7 @@ val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a
 *)
 
 val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
-  [@@ocaml.deprecated "Use Format.ksprintf instead."]
+  [@@ocaml.deprecated "use Format.ksprintf"]
 (** @deprecated An alias for [ksprintf]. *)
 
 val set_all_formatter_output_functions :
@@ -1292,7 +1292,7 @@ val set_all_formatter_output_functions :
   newline:(unit -> unit) ->
   spaces:(int -> unit) ->
   unit
-[@@ocaml.deprecated "Use Format.set_formatter_out_functions instead."]
+[@@ocaml.deprecated "use Format.set_formatter_out_functions"]
 (** @deprecated Subsumed by [set_formatter_out_functions]. *)
 
 val get_all_formatter_output_functions :
@@ -1301,38 +1301,38 @@ val get_all_formatter_output_functions :
   (unit -> unit) *
   (unit -> unit) *
   (int -> unit)
-[@@ocaml.deprecated "Use Format.get_formatter_out_functions instead."]
+[@@ocaml.deprecated "use Format.get_formatter_out_functions"]
 (** @deprecated Subsumed by [get_formatter_out_functions]. *)
 
 val pp_set_all_formatter_output_functions :
   formatter -> out:(string -> int -> int -> unit) -> flush:(unit -> unit) ->
   newline:(unit -> unit) -> spaces:(int -> unit) -> unit
-[@@ocaml.deprecated "Use Format.pp_set_formatter_out_functions instead."]
+[@@ocaml.deprecated "use Format.pp_set_formatter_out_functions"]
 (** @deprecated Subsumed by [pp_set_formatter_out_functions]. *)
 
 val pp_get_all_formatter_output_functions :
   formatter -> unit ->
   (string -> int -> int -> unit) * (unit -> unit) * (unit -> unit) *
   (int -> unit)
-[@@ocaml.deprecated "Use Format.pp_get_formatter_out_functions instead."]
+[@@ocaml.deprecated "use Format.pp_get_formatter_out_functions"]
 (** @deprecated Subsumed by [pp_get_formatter_out_functions]. *)
 
 (** {2 String tags} *)
 
 val pp_open_tag : formatter -> tag -> unit
-[@@ocaml.deprecated "Use Format.pp_open_stag."]
+[@@ocaml.deprecated "use Format.pp_open_stag"]
 (** @deprecated Subsumed by {!pp_open_stag}. *)
 
 val open_tag : tag -> unit
-[@@ocaml.deprecated "Use Format.open_stag."]
+[@@ocaml.deprecated "use Format.open_stag"]
 (** @deprecated Subsumed by {!open_stag}. *)
 
 val pp_close_tag : formatter -> unit -> unit
-[@@ocaml.deprecated "Use Format.pp_close_stag."]
+[@@ocaml.deprecated "use Format.pp_close_stag"]
 (** @deprecated Subsumed by {!pp_close_stag}. *)
 
 val close_tag : unit -> unit
-[@@ocaml.deprecated "Use Format.close_stag."]
+[@@ocaml.deprecated "use Format.close_stag"]
 (** @deprecated Subsumed by {!close_stag}. *)
 
 type formatter_tag_functions = {
@@ -1341,30 +1341,28 @@ type formatter_tag_functions = {
   print_open_tag : tag -> unit;
   print_close_tag : tag -> unit;
 }
-[@@ocaml.deprecated "Use formatter_stag_functions."]
+[@@ocaml.deprecated "use Format.formatter_stag_functions"]
 (** @deprecated Subsumed by {!formatter_stag_functions}. *)
 
 val pp_set_formatter_tag_functions :
   formatter -> formatter_tag_functions -> unit
-[@@ocaml.deprecated
-  "This function will erase non-string tag formatting functions. \
-   Use Format.pp_set_formatter_stag_functions."]
+[@@ocaml.deprecated "use Format.pp_set_formatter_stag_functions"]
 [@@warning "-3"]
 (** This function will erase non-string tag formatting functions.
     @deprecated Subsumed by {!pp_set_formatter_stag_functions}. *)
 
 val set_formatter_tag_functions : formatter_tag_functions -> unit
-[@@ocaml.deprecated "Use Format.set_formatter_stag_functions."]
+[@@ocaml.deprecated "use Format.set_formatter_stag_functions"]
 [@@warning "-3"]
 (** @deprecated Subsumed by {!set_formatter_stag_functions}. *)
 
 val pp_get_formatter_tag_functions :
   formatter -> unit -> formatter_tag_functions
-[@@ocaml.deprecated "Use Format.pp_get_formatter_stag_functions."]
+[@@ocaml.deprecated "use Format.pp_get_formatter_stag_functions"]
 [@@warning "-3"]
 (** @deprecated Subsumed by {!pp_get_formatter_stag_functions}. *)
 
 val get_formatter_tag_functions : unit -> formatter_tag_functions
-[@@ocaml.deprecated "Use Format.get_formatter_stag_functions."]
+[@@ocaml.deprecated "use Format.get_formatter_stag_functions"]
 [@@warning "-3"]
 (** @deprecated Subsumed by {!get_formatter_stag_functions}. *)

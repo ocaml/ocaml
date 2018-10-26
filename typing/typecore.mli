@@ -182,7 +182,7 @@ exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
 val report_error: Env.t -> formatter -> error -> unit
-[@@ocaml.deprecated "Use Location.error_of_exn and Location.print_report"]
+[@@ocaml.deprecated "use Location.error_of_exn and Location.print_report"]
  (** @deprecated.  Use {!Location.error_of_exn}, {!Location.print_report}. *)
 
 (* Forward declaration, to be filled in by Typemod.type_module *)

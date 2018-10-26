@@ -33,10 +33,10 @@ external ( != ) : 'a -> 'a -> bool = "%noteq"
 external not : bool -> bool = "%boolnot"
 external ( && ) : bool -> bool -> bool = "%sequand"
 external ( & ) : bool -> bool -> bool = "%sequand"
-  [@@ocaml.deprecated "Use (&&) instead."]
+  [@@ocaml.deprecated "use (&&)"]
 external ( || ) : bool -> bool -> bool = "%sequor"
 external ( or ) : bool -> bool -> bool = "%sequor"
-  [@@ocaml.deprecated "Use (||) instead."]
+  [@@ocaml.deprecated "use (||)"]
 external __LOC__ : string = "%loc_LOC"
 external __FILE__ : string = "%loc_FILE"
 external __LINE__ : int = "%loc_LINE"
