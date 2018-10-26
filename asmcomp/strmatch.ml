@@ -33,7 +33,7 @@ module Make(I:I) = struct
 
 (* Debug *)
 
-  let dbg = false
+  let debug_this_module = false
 
   let mask =
     let open Nativeint in
@@ -84,7 +84,7 @@ module Make(I:I) = struct
     let size = I.string_block_length str in
     Clet(id, size, body)
 
-  let mk_cmp_gen dbg cmp_op id nat ifso ifnot =
+  let mk_cmp_gen cmp_op dbg id nat ifso ifnot =
     let test =
       Cop (Ccmpi cmp_op, [ Cvar id; Cconst_natpointer nat ], dbg)
     in
@@ -212,7 +212,7 @@ module Make(I:I) = struct
         List.map
           (fun (ps,act) -> swap_list k ps,act)
           cases in
-      if dbg then begin
+      if debug_this_module then begin
         pp_match stderr "SWAP" idxs cases
       end ;
       idxs,cases
@@ -280,21 +280,21 @@ module Make(I:I) = struct
   as match_on_cell can be called in two different contexts :
   from do_compile_pats and top_compile below.
  *)
-    let match_oncell compile_rec str default idx env =
+    let match_oncell dbg compile_rec str default idx env =
       let id = gen_cell_id () in
       let rec comp_rec env =
         let len = List.length env in
         if len <= 3 then
           List.fold_right
             (fun (key,cases) ifnot ->
-              mk_eq id key
+              mk_eq dbg id key
                 (compile_rec str default cases)
               ifnot)
             env default
         else
           let lt,midkey,ge = split_env len env in
-          mk_lt id midkey (comp_rec lt) (comp_rec ge) in
-      mk_let_cell (VP.create id) str idx (comp_rec env)
+          mk_lt dbg id midkey (comp_rec lt) (comp_rec ge) in
+      mk_let_cell dbg (VP.create id) str idx (comp_rec env)
 
 (*
   Recursive 'list of cells' compile function:
@@ -302,8 +302,8 @@ module Make(I:I) = struct
   - notice: patterns (and idx) all have the same length
  *)
 
-    let rec do_compile_pats idxs str default cases =
-      if dbg then begin
+    let rec do_compile_pats dbg idxs str default cases =
+      if debug_this_module then begin
         pp_match stderr "COMPILE" idxs cases
       end ;
       match idxs with
@@ -317,8 +317,8 @@ module Make(I:I) = struct
           begin match idxs with
           | [] -> assert false
           | idx::idxs ->
-              match_oncell
-                (do_compile_pats idxs) str default idx (by_cell cases)
+              match_oncell dbg
+                (do_compile_pats dbg idxs) str default idx (by_cell cases)
           end
 
 
@@ -345,7 +345,7 @@ module Make(I:I) = struct
           (fun (len,cases) ->
             let len = len+from_ind in
             let act =
-              do_compile_pats
+              do_compile_pats dbg
                 (interval from_ind len)
                 str default  cases in
             (len,act))
@@ -363,22 +363,22 @@ module Make(I:I) = struct
       let a_len = count_arities_length cases
       and a_fst = count_arities_first cases in
       if a_len <= a_fst then begin
-        if dbg then pp_cases stderr "SIZE" cases ;
+        if debug_this_module then pp_cases stderr "SIZE" cases ;
         compile_by_size debuginfo 0 str default cases
       end else begin
-        if dbg then pp_cases stderr "FIRST COL" cases ;
+        if debug_this_module then pp_cases stderr "FIRST COL" cases ;
         let compile_size_rest str default cases =
           compile_by_size debuginfo 1 str default cases in
-        match_oncell compile_size_rest str default 0 (by_cell cases)
+        match_oncell debuginfo compile_size_rest str default 0 (by_cell cases)
       end
 
 (* Module entry point *)
 
-    let catch arg k = match arg with
+    let catch dbg arg k = match arg with
     | Cexit (_e,[]) ->  k arg
     | _ ->
         let e =  next_raise_count () in
-        ccatch (e,[],k (Cexit (e,[])),arg)
+        ccatch (e,[],k (Cexit (e,[])),arg,dbg)
 
     let compile dbg str default cases =
 (* We do not attempt to really optimise default=None *)
@@ -390,6 +390,6 @@ module Make(I:I) = struct
         List.rev_map
           (fun (s,act) -> pat_of_string s,act)
           cases in
-      catch default (fun default -> top_compile dbg str default cases)
+      catch dbg default (fun default -> top_compile dbg str default cases)
 
   end

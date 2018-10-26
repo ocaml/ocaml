@@ -87,6 +87,10 @@ module type S =
     val make_prim : location -> primitive -> act list -> act
     val make_isout : location -> act -> act -> act
     val make_isin : location -> act -> act -> act
+    (* CR mshinwell: [location] should be supplied 3 times:
+       1. For the overall construction
+       2. For the true branch
+       3. For the false branch *)
     val make_if : location -> act -> act -> act -> act
    (* construct an actual switch :
       make_switch arg cases acts

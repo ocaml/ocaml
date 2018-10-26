@@ -295,12 +295,12 @@ let invert_then_else = function
   | Then_false_else_true -> Then_true_else_false
   | Unknown -> Unknown
 
-let mk_if_then_else cond ifso ifnot =
+let mk_if_then_else cond ifso_dbg ifso ifnot_dbg ifnot dbg =
   match cond with
   | Cconst_int 0 -> ifnot
   | Cconst_int 1 -> ifso
   | _ ->
-    Cifthenelse(cond, ifso, ifnot)
+    Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg)
 
 let mk_not dbg cmm =
   match cmm with
@@ -468,8 +468,11 @@ let rec div_int c1 c2 is_safe dbg =
       bind "divisor" c2 (fun c2 ->
         bind "dividend" c1 (fun c1 ->
           Cifthenelse(c2,
+                      dbg,
                       Cop(Cdivi, [c1; c2], dbg),
-                      raise_symbol dbg caml_exn_Division_by_zero)))
+                      dbg,
+                      raise_symbol dbg caml_exn_Division_by_zero,
+                      dbg)))
 
 let mod_int c1 c2 is_safe dbg =
   match (c1, c2) with
@@ -505,8 +508,11 @@ let mod_int c1 c2 is_safe dbg =
       bind "divisor" c2 (fun c2 ->
         bind "dividend" c1 (fun c1 ->
           Cifthenelse(c2,
+                      dbg,
                       Cop(Cmodi, [c1; c2], dbg),
-                      raise_symbol dbg caml_exn_Division_by_zero)))
+                      dbg,
+                      raise_symbol dbg caml_exn_Division_by_zero,
+                      dbg)))
 
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
@@ -523,8 +529,13 @@ let safe_divmod_bi mkop is_safe mkm1 c1 c2 bi dbg =
     if Arch.division_crashes_on_overflow
     && (size_int = 4 || bi <> Pint32)
     && not (is_different_from (-1) c2)
-    then Cifthenelse(Cop(Ccmpi Cne, [c2; Cconst_int(-1)], dbg), c, mkm1 c1 dbg)
-    else c))
+    then
+      Cifthenelse(Cop(Ccmpi Cne, [c2; Cconst_int(-1)], dbg),
+        dbg, c,
+        dbg, mkm1 c1 dbg,
+        dbg)
+    else
+      c))
 
 let safe_div_bi is_safe =
   safe_divmod_bi div_int is_safe
@@ -551,7 +562,7 @@ let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c], dbg)
 
 let map_ccatch f rec_flag handlers body =
   let handlers = List.map
-      (fun (n, ids, handler) -> (n, ids, f handler))
+      (fun (n, ids, handler, dbg) -> (n, ids, f handler, dbg))
       handlers in
   Ccatch(rec_flag, handlers, f body)
 
@@ -559,14 +570,19 @@ let rec unbox_float dbg cmm =
   match cmm with
   | Cop(Calloc, [_header; c], _) -> c
   | Clet(id, exp, body) -> Clet(id, exp, unbox_float dbg body)
-  | Cifthenelse(cond, e1, e2) ->
-      Cifthenelse(cond, unbox_float dbg e1, unbox_float dbg e2)
+  | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
+      Cifthenelse(cond,
+        ifso_dbg, unbox_float dbg e1,
+        ifnot_dbg, unbox_float dbg e2,
+        dbg)
   | Csequence(e1, e2) -> Csequence(e1, unbox_float dbg e2)
   | Cswitch(e, tbl, el, dbg') ->
-    Cswitch(e, tbl, Array.map (unbox_float dbg) el, dbg')
+    Cswitch(e, tbl,
+      Array.map (fun (expr, dbg) -> unbox_float dbg expr, dbg) el, dbg')
   | Ccatch(rec_flag, handlers, body) ->
     map_ccatch (unbox_float dbg) rec_flag handlers body
-  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2)
+  | Ctrywith(e1, id, e2, dbg) ->
+      Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2, dbg)
   | c -> Cop(Cload (Double_u, Immutable), [c], dbg)
 
 (* Complex *)
@@ -587,14 +603,19 @@ let rec remove_unit = function
   | Csequence(c, Cconst_pointer 1) -> c
   | Csequence(c1, c2) ->
       Csequence(c1, remove_unit c2)
-  | Cifthenelse(cond, ifso, ifnot) ->
-      Cifthenelse(cond, remove_unit ifso, remove_unit ifnot)
+  | Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
+      Cifthenelse(cond,
+        ifso_dbg, remove_unit ifso,
+        ifnot_dbg,
+        remove_unit ifnot, dbg)
   | Cswitch(sel, index, cases, dbg) ->
-      Cswitch(sel, index, Array.map remove_unit cases, dbg)
+      Cswitch(sel, index,
+        Array.map (fun (case, dbg) -> remove_unit case, dbg) cases,
+        dbg)
   | Ccatch(rec_flag, handlers, body) ->
       map_ccatch remove_unit rec_flag handlers body
-  | Ctrywith(body, exn, handler) ->
-      Ctrywith(remove_unit body, exn, remove_unit handler)
+  | Ctrywith(body, exn, handler, dbg) ->
+      Ctrywith(remove_unit body, exn, remove_unit handler, dbg)
   | Clet(id, c1, c2) ->
       Clet(id, c1, remove_unit c2)
   | Cop(Capply _mty, args, dbg) ->
@@ -987,15 +1008,21 @@ let rec unbox_int bi arg dbg =
   | Cop(Calloc, [_hdr; _ops; contents], _dbg) ->
       contents
   | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body dbg)
-  | Cifthenelse(cond, e1, e2) ->
-      Cifthenelse(cond, unbox_int bi e1 dbg, unbox_int bi e2 dbg)
+  | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
+      Cifthenelse(cond,
+        ifso_dbg, unbox_int bi e1 ifso_dbg,
+        ifnot_dbg, unbox_int bi e2 ifnot_dbg,
+        dbg)
   | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2 dbg)
   | Cswitch(e, tbl, el, dbg') ->
-      Cswitch(e, tbl, Array.map (fun e -> unbox_int bi e dbg) el, dbg')
+      Cswitch(e, tbl,
+        Array.map (fun (e, dbg) -> unbox_int bi e dbg, dbg) el,
+        dbg')
   | Ccatch(rec_flag, handlers, body) ->
       map_ccatch (fun e -> unbox_int bi e dbg) rec_flag handlers body
-  | Ctrywith(e1, id, e2) ->
-      Ctrywith(unbox_int bi e1 dbg, id, unbox_int bi e2 dbg)
+  | Ctrywith(e1, id, e2, handler_dbg) ->
+      Ctrywith(unbox_int bi e1 dbg, id,
+        unbox_int bi e2 handler_dbg, handler_dbg)
   | _ ->
       if size_int = 4 && bi = Pint64 then
         split_int64_for_32bit_target arg dbg
@@ -1435,8 +1462,9 @@ let make_switch arg cases actions dbg =
     | Cconst_natpointer n -> (Nativeint.(to_int (logand n one) = 1))
     | Cconst_symbol _ -> true
     | _ -> false in
-  if Array.for_all is_const actions then
-    let to_data_item = function
+  if Array.for_all (fun (expr, _dbg) -> is_const expr) actions then
+    let to_data_item (expr, _dbg) =
+      match expr with
       | Cconst_int n
       | Cconst_pointer n -> Cint (Nativeint.of_int n)
       | Cconst_natint n
@@ -1474,7 +1502,8 @@ struct
   let make_offset dbg arg n = add_const arg n dbg
   let make_isout dbg h arg = Cop (Ccmpa Clt, [h ; arg], dbg)
   let make_isin dbg h arg = Cop (Ccmpa Cge, [h ; arg], dbg)
-  let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
+  let make_if dbg cond ifso ifnot =
+    Cifthenelse (cond, dbg, ifso, dbg, ifnot, dbg)
   let make_switch dbg arg cases actions = make_switch arg cases actions dbg
   let bind arg body = bind "switcher" arg body
 
