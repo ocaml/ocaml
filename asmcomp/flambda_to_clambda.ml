@@ -304,7 +304,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
       Misc.may_map (fun flam -> to_clambda t env flam, Debuginfo.none) def
     in
     (* CR mshinwell for pchambart: Fix locations *)
-    Ustringswitch (arg, sw, def)
+    Ustringswitch (arg, sw, def, Debuginfo.none)
   | Static_raise (static_exn, args) ->
     Ustaticfail (Static_exception.to_int static_exn,
       List.map (subst_var env) args)

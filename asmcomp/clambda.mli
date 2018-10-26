@@ -70,7 +70,7 @@ and ulambda =
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch * Debuginfo.t
   | Ustringswitch of ulambda * (string * ulambda * Debuginfo.t) list
-      * (ulambda * Debuginfo.t) option
+      * (ulambda * Debuginfo.t) option * Debuginfo.t
   | Ustaticfail of int * ulambda list
   | Ucatch of int * Backend_var.With_provenance.t list * ulambda * ulambda
       * Debuginfo.t

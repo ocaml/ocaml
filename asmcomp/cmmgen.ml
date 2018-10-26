@@ -1572,11 +1572,11 @@ module SwitcherBlocks = Switch.Make(SArgBlocks)
 (* Int switcher, arg in [low..high],
    cases is list of individual cases, and is sorted by first component *)
 
-let transl_int_switch loc arg low high cases default = match cases with
+let transl_int_switch dbg arg low high cases default = match cases with
 | [] -> assert false
 | _::_ ->
     let store = StoreExp.mk_store () in
-    assert (store.Switch.act_store () default = 0) ;
+    assert (store.Switch.act_store () (dbg, default) = 0) ;
     let cases =
       List.map
         (fun (i,act) -> i,store.Switch.act_store () act)
@@ -1612,7 +1612,7 @@ let transl_int_switch loc arg low high cases default = match cases with
     bind "switcher" arg
       (fun a ->
         SwitcherBlocks.zyva
-          loc
+          dbg
           (low,high)
           a
           (Array.of_list inters) store)
@@ -1720,7 +1720,7 @@ let rec is_unboxed_number ~strict env e =
       let join acc (expr, _dbg) = join acc expr in
       let k = Array.fold_left join No_result switch.us_actions_consts in
       Array.fold_left join k switch.us_actions_blocks
-  | Ustringswitch (_, actions, default_opt) ->
+  | Ustringswitch (_, actions, default_opt, _) ->
       let k =
         List.fold_left (fun k (_, e, _dbg) -> join k e) No_result actions
       in
@@ -1952,7 +1952,8 @@ let rec transl env e =
         make_switch
           (untag_int (transl env arg) dbg)
           s.us_index_consts
-          (Array.map (transl env) s.us_actions_consts)
+          (Array.map (fun (act, dbg) -> transl env act, dbg)
+            s.us_actions_consts)
           dbg
       else if Array.length s.us_index_consts = 0 then
         transl_switch dbg env (get_tag (transl env arg) dbg)
@@ -1961,46 +1962,48 @@ let rec transl env e =
         bind "switch" (transl env arg) (fun arg ->
           Cifthenelse(
           Cop(Cand, [arg; Cconst_int 1], dbg),
+          dbg,
           transl_switch dbg env
             (untag_int arg dbg) s.us_index_consts s.us_actions_consts,
+          dbg,
           transl_switch dbg env
-            (get_tag arg dbg) s.us_index_blocks s.us_actions_blocks))
-  | Ustringswitch(arg,sw,d) ->
-      let dbg = Debuginfo.none in
+            (get_tag arg dbg) s.us_index_blocks s.us_actions_blocks,
+          dbg))
+  | Ustringswitch(arg,sw,d,dbg) ->
       bind "switch" (transl env arg)
         (fun arg ->
-          strmatch_compile dbg arg (Misc.may_map (transl env) d)
-            (List.map (fun (s,act) -> s,transl env act) sw))
+          strmatch_compile dbg arg
+            (Misc.may_map (fun (expr, dbg) -> dbg, transl env expr) d)
+            (List.map (fun (s, act, dbg) -> s, (dbg, transl env act)) sw))
   | Ustaticfail (nfail, args) ->
       Cexit (nfail, List.map (transl env) args)
-  | Ucatch(nfail, [], body, handler) ->
-      make_catch nfail (transl env body) (transl env handler)
-  | Ucatch(nfail, ids, body, handler) ->
+  | Ucatch(nfail, [], body, handler, dbg) ->
+      make_catch nfail (transl env body) (transl env handler) dbg
+  | Ucatch(nfail, ids, body, handler, dbg) ->
       (* CR-someday mshinwell: consider how we can do better than
          [typ_val] when appropriate. *)
       let ids_with_types =
         List.map (fun i -> (i, Cmm.typ_val)) ids in
-      ccatch(nfail, ids_with_types, transl env body, transl env handler)
-  | Utrywith(body, exn, handler) ->
-      Ctrywith(transl env body, exn, transl env handler)
-  | Uifthenelse(cond, ifso, ifnot) ->
-      let dbg = Debuginfo.none in
+      ccatch(nfail, ids_with_types, transl env body, transl env handler, dbg)
+  | Utrywith(body, exn, handler, dbg) ->
+      Ctrywith(transl env body, exn, transl env handler, dbg)
+  | Uifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
       transl_if env cond dbg Unknown
-        (transl env ifso) (transl env ifnot)
+        ifso_dbg (transl env ifso)
+        ifnot_dbg (transl env ifnot)
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl env exp1), transl env exp2)
-  | Uwhile(cond, body) ->
-      let dbg = Debuginfo.none in
+  | Uwhile(cond, body, dbg) ->
       let raise_num = next_raise_count () in
       return_unit
         (ccatch
            (raise_num, [],
             Cloop(transl_if env cond dbg Unknown
-                    (remove_unit(transl env body))
-                    (Cexit (raise_num,[]))),
-            Ctuple []))
-  | Ufor(id, low, high, dir, body) ->
-      let dbg = Debuginfo.none in
+                    dbg (remove_unit(transl env body))
+                    dbg (Cexit (raise_num,[])), dbg),
+            Ctuple [],
+            dbg))
+  | Ufor(id, low, high, dir, body, dbg) ->
       let tst = match dir with Upto -> Cgt   | Downto -> Clt in
       let inc = match dir with Upto -> Caddi | Downto -> Csubi in
       let raise_num = next_raise_count () in
@@ -2013,7 +2016,9 @@ let rec transl env e =
                 (raise_num, [],
                  Cifthenelse
                    (Cop(Ccmpi tst, [Cvar (VP.var id); high], dbg),
+                    dbg,
                     Cexit (raise_num, []),
+                    dbg,
                     Cloop
                       (Csequence
                          (remove_unit(transl env body),
@@ -2025,8 +2030,13 @@ let rec transl env e =
                              Cifthenelse
                                (Cop(Ccmpi Ceq, [Cvar (VP.var id_prev); high],
                                   dbg),
-                                Cexit (raise_num,[]), Ctuple [])))))),
-                 Ctuple []))))
+                                dbg, Cexit (raise_num,[]),
+                                dbg, Ctuple [],
+                                dbg)))),
+                      dbg),
+                   dbg),
+                 Ctuple [],
+                 dbg))))
   | Uassign(id, exp) ->
       let dbg = Debuginfo.none in
       begin match is_unboxed_id id env with
@@ -2165,8 +2175,11 @@ and transl_prim_1 env p arg dbg =
             else
               bind "header" hdr (fun hdr ->
                 Cifthenelse(is_addr_array_hdr hdr dbg,
+                            dbg,
                             Cop(Clsr, [hdr; Cconst_int wordsize_shift], dbg),
-                            Cop(Clsr, [hdr; Cconst_int numfloat_shift], dbg)))
+                            dbg,
+                            Cop(Clsr, [hdr; Cconst_int numfloat_shift], dbg),
+                            dbg))
           in
           Cop(Cor, [len; Cconst_int 1], dbg)
       | Paddrarray | Pintarray ->
@@ -2177,7 +2190,7 @@ and transl_prim_1 env p arg dbg =
   (* Boolean operations *)
   | Pnot ->
       transl_if env arg dbg Then_false_else_true
-        (Cconst_pointer 1) (Cconst_pointer 3)
+        dbg (Cconst_pointer 1) dbg (Cconst_pointer 3)
   (* Test integer/block *)
   | Pisint ->
       tag_int(Cop(Cand, [transl env arg; Cconst_int 1], dbg)) dbg
@@ -2407,8 +2420,11 @@ and transl_prim_2 env p arg1 arg2 dbg =
           bind "arr" (transl env arg1) (fun arr ->
             bind "index" (transl env arg2) (fun idx ->
               Cifthenelse(is_addr_array_ptr arr dbg,
+                          dbg,
                           addr_array_ref arr idx dbg,
-                          float_array_ref dbg arr idx)))
+                          dbg,
+                          float_array_ref dbg arr idx,
+                          dbg)))
       | Paddrarray ->
           addr_array_ref (transl env arg1) (transl env arg2) dbg
       | Pintarray ->
@@ -2426,14 +2442,20 @@ and transl_prim_2 env p arg1 arg2 dbg =
             if wordsize_shift = numfloat_shift then
               Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
                         Cifthenelse(is_addr_array_hdr hdr dbg,
+                                    dbg,
                                     addr_array_ref arr idx dbg,
-                                    float_array_ref dbg arr idx))
+                                    dbg,
+                                    float_array_ref dbg arr idx,
+                                    dbg))
             else
               Cifthenelse(is_addr_array_hdr hdr dbg,
+                dbg,
                 Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
                           addr_array_ref arr idx dbg),
+                dbg,
                 Csequence(make_checkbound dbg [float_array_length hdr dbg; idx],
-                          float_array_ref dbg arr idx)))))
+                          float_array_ref dbg arr idx),
+                dbg))))
       | Paddrarray ->
           bind "index" (transl env arg2) (fun idx ->
           bind "arr" (transl env arg1) (fun arr ->
@@ -2554,9 +2576,12 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
             bind "index" (transl env arg2) (fun index ->
               bind "arr" (transl env arg1) (fun arr ->
                 Cifthenelse(is_addr_array_ptr arr dbg,
+                            dbg,
                             addr_array_set arr index newval dbg,
+                            dbg,
                             float_array_set arr index (unbox_float dbg newval)
-                              dbg))))
+                              dbg,
+                            dbg))))
       | Paddrarray ->
           addr_array_set (transl env arg1) (transl env arg2) (transl env arg3)
             dbg
@@ -2578,17 +2603,23 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
             if wordsize_shift = numfloat_shift then
               Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
                         Cifthenelse(is_addr_array_hdr hdr dbg,
+                                    dbg,
                                     addr_array_set arr idx newval dbg,
+                                    dbg,
                                     float_array_set arr idx
                                                     (unbox_float dbg newval)
-                                                    dbg))
+                                                    dbg,
+                                    dbg))
             else
               Cifthenelse(is_addr_array_hdr hdr dbg,
+                dbg,
                 Csequence(make_checkbound dbg [addr_array_length hdr dbg; idx],
                           addr_array_set arr idx newval dbg),
+                dbg,
                 Csequence(make_checkbound dbg [float_array_length hdr dbg; idx],
                           float_array_set arr idx
-                                          (unbox_float dbg newval) dbg))))))
+                                          (unbox_float dbg newval) dbg),
+                dbg)))))
       | Paddrarray ->
           bind "newval" (transl env arg3) (fun newval ->
           bind "index" (transl env arg2) (fun idx ->
@@ -2750,16 +2781,16 @@ and transl_let env str kind id exp body =
            transl_unbox_number dbg env boxed_number exp,
            transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body)
 
-and make_catch ncatch body handler = match body with
+and make_catch ncatch body handler dbg = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
-| _ ->  ccatch (ncatch, [], body, handler)
+| _ ->  ccatch (ncatch, [], body, handler, dbg)
 
 and is_shareable_cont exp =
   match exp with
   | Cexit (_,[]) -> true
   | _ -> false
 
-and make_shareable_cont mk exp =
+and make_shareable_cont dbg mk exp =
   if is_shareable_cont exp then mk exp
   else begin
     let nfail = next_raise_count () in
@@ -2767,14 +2798,15 @@ and make_shareable_cont mk exp =
       nfail
       (mk (Cexit (nfail,[])))
       exp
+      dbg
   end
 
 and transl_if env cond dbg approx then_ else_ =
   match cond with
   | Uconst (Uconst_ptr 0) -> else_
   | Uconst (Uconst_ptr 1) -> then_
-  | Uifthenelse (arg1, arg2, Uconst (Uconst_ptr 0)) ->
-      let dbg' = Debuginfo.none in
+  | Uifthenelse (arg1, ifso_dbg, arg2, _ifnot_dbg, Uconst (Uconst_ptr 0),
+                 dbg) ->
       transl_sequand env arg1 dbg' arg2 dbg approx then_ else_
   | Uprim(Psequand, [arg1; arg2], dbg') ->
       transl_sequand env arg1 dbg' arg2 dbg approx then_ else_
@@ -2786,9 +2818,9 @@ and transl_if env cond dbg approx then_ else_ =
   | Uprim(Pnot, [arg], _) ->
       transl_if env arg dbg (invert_then_else approx) else_ then_
   | Uifthenelse (Uconst (Uconst_ptr 1), ifso, _) ->
-      transl_if env ifso dbg approx then_ else_
+      transl_if env ifso ifso_dbg approx then_ else_
   | Uifthenelse (Uconst (Uconst_ptr 0), _, ifnot) ->
-      transl_if env ifnot dbg approx then_ else_
+      transl_if env ifnot ifnot_dbg approx then_ else_
   | Uifthenelse (cond, ifso, ifnot) ->
       make_shareable_cont
         (fun shareable_then ->
@@ -2809,7 +2841,7 @@ and transl_if env cond dbg approx then_ else_ =
       | Then_false_else_true ->
           mk_not dbg (transl env cond)
       | Unknown ->
-          mk_if_then_else (test_bool dbg (transl env cond)) then_ else_
+          mk_if_then_else (test_bool dbg (transl env cond)) dbg then_ dbg else_
     end
 
 and transl_sequand env arg1 dbg1 arg2 dbg2 approx then_ else_ =

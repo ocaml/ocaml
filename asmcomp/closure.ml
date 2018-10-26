@@ -88,7 +88,7 @@ let occurs_var var u =
         occurs arg ||
         occurs_array_fst s.us_actions_consts ||
         occurs_array_fst s.us_actions_blocks
-    | Ustringswitch(arg,sw,d) ->
+    | Ustringswitch(arg,sw,d,_) ->
         occurs arg ||
         List.exists (fun (_,e,_) -> occurs e) sw ||
         (match d with None -> false | Some (d, _) -> occurs d)
@@ -182,7 +182,7 @@ let lambda_smaller lam threshold =
         lambda_size lam;
         lambda_array_size cases.us_actions_consts ;
         lambda_array_size cases.us_actions_blocks
-    | Ustringswitch (lam,sw,d) ->
+    | Ustringswitch (lam,sw,d,_) ->
         lambda_size lam ;
        (* as ifthenelse *)
         List.iter
@@ -705,7 +705,7 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
           in
           block_subst, term
       end
-  | Ustringswitch (arg, cases, default) ->
+  | Ustringswitch (arg, cases, default, dbg) ->
       let block_subst, arg =
         substitute ~at_call_site ~block_subst fpc sb rn arg
       in
@@ -728,7 +728,7 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
           in
           block_subst, Some (default, loc)
       in
-      let term = Ustringswitch (arg, cases, default) in
+      let term = Ustringswitch (arg, cases, default, dbg) in
       block_subst, term
   | Ustaticfail (nfail, args) ->
       let nfail =
@@ -1320,22 +1320,25 @@ let rec close ~scope fenv cenv = function
             Ucatch (i,[],ubody,uhandler, fail_dbg),Value_unknown
           else fn fail
       end
-  | Lstringswitch(arg,sw,d,_) ->
+  | Lstringswitch(arg,sw,d,loc) ->
       let uarg,_ = close ~scope fenv cenv arg in
       let usw =
         List.map
           (fun (s,act,loc) ->
-            let uact,_ = close_new_scope ~scope fenv cenv act in
+            let scope = CB.add_scope scope in
+            let uact,_ = close ~scope fenv cenv act in
             let dbg = Debuginfo.of_location loc ~scope in
             s,uact,dbg)
           sw in
       let ud =
         Misc.may_map
           (fun (d, loc) ->
-            let ud,_ = close_new_scope ~scope fenv cenv d in
+            let scope = CB.add_scope scope in
+            let ud,_ = close ~scope fenv cenv d in
             let dbg = Debuginfo.of_location loc ~scope in
             ud, dbg) d in
-      Ustringswitch (uarg,usw,ud),Value_unknown
+      let dbg = Debuginfo.of_location loc ~scope in
+      Ustringswitch (uarg,usw,ud,dbg),Value_unknown
   | Lstaticraise (i, args) ->
       (Ustaticfail (i, close_list ~scope fenv cenv args), Value_unknown)
   | Lstaticcatch(body, (i, vars), handler, loc) ->
@@ -1729,7 +1732,7 @@ let collect_exported_structured_constants a =
         ulam u;
         Array.iter (fun (act, _) -> ulam act) sl.us_actions_consts;
         Array.iter (fun (act, _) -> ulam act) sl.us_actions_blocks
-    | Ustringswitch (u,sw,d) ->
+    | Ustringswitch (u,sw,d,_) ->
         ulam u ;
         List.iter (fun (_,act,_) -> ulam act) sw ;
         Misc.may (fun (default, _) -> ulam default) d

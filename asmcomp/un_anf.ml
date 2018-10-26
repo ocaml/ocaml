@@ -138,7 +138,7 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
       Array.iter (fun (ulam, _) -> loop ulam) us_actions_consts;
       Array.iter (fun (ulam, _) -> loop ulam) us_actions_blocks;
       ignore_debuginfo dbg
-    | Ustringswitch (cond, branches, default) ->
+    | Ustringswitch (cond, branches, default, _dbg) ->
       loop cond;
       List.iter (fun (str, branch, _) ->
           ignore_string str;
@@ -340,7 +340,7 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
         us_actions_blocks;
       ignore_debuginfo dbg;
       let_stack := []
-    | Ustringswitch (cond, branches, default) ->
+    | Ustringswitch (cond, branches, default, _dbg) ->
       examine_argument_list [cond];
       List.iter (fun (str, branch, _) ->
           ignore_string str;
@@ -502,7 +502,7 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
       }
     in
     Uswitch (cond, sw, dbg)
-  | Ustringswitch (cond, branches, default) ->
+  | Ustringswitch (cond, branches, default, dbg) ->
     let cond = substitute_let_moveable is_let_moveable env cond in
     let branches =
       List.map (fun (s, branch, dbg) ->
@@ -514,7 +514,7 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
           substitute_let_moveable is_let_moveable env ulam, dbg)
         default
     in
-    Ustringswitch (cond, branches, default)
+    Ustringswitch (cond, branches, default, dbg)
   | Ustaticfail (n, args) ->
     let args = substitute_let_moveable_list is_let_moveable env args in
     Ustaticfail (n, args)
@@ -729,7 +729,7 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
       }
     in
     Uswitch (cond, sw, dbg), Fixed
-  | Ustringswitch (cond, branches, default) ->
+  | Ustringswitch (cond, branches, default, dbg) ->
     let cond = un_anf var_info env cond in
     let branches =
       List.map (fun (s, branch, dbg) -> s, un_anf var_info env branch, dbg)
@@ -739,7 +739,7 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
       Misc.may_map (fun (default, dbg) -> un_anf var_info env default, dbg)
         default
     in
-    Ustringswitch (cond, branches, default), Fixed
+    Ustringswitch (cond, branches, default, dbg), Fixed
   | Ustaticfail (n, args) ->
     let args = un_anf_list var_info env args in
     Ustaticfail (n, args), Fixed

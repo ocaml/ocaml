@@ -172,7 +172,7 @@ and lam ppf = function
       fprintf ppf
        "@[<v 0>@[<2>(switch@ %a@ @]%a)@]"
         lam larg switch sw
-  | Ustringswitch(larg,sw,d) ->
+  | Ustringswitch(larg,sw,d,_) ->
       let switch ppf sw =
         let spc = ref false in
         List.iter
