@@ -2801,7 +2801,7 @@ and make_shareable_cont dbg mk exp =
       dbg
   end
 
-and transl_if env cond dbg approx then_ else_ =
+and transl_if env cond dbg approx ifso_dbg then_ ifnot_dbg else_ =
   match cond with
   | Uconst (Uconst_ptr 0) -> else_
   | Uconst (Uconst_ptr 1) -> then_
@@ -2810,27 +2810,29 @@ and transl_if env cond dbg approx then_ else_ =
       transl_sequand env arg1 dbg' arg2 dbg approx then_ else_
   | Uprim(Psequand, [arg1; arg2], dbg') ->
       transl_sequand env arg1 dbg' arg2 dbg approx then_ else_
-  | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2) ->
-      let dbg' = Debuginfo.none in
+  | Uifthenelse (arg1, _ifso_dbg', Uconst (Uconst_ptr 1),
+        ifnot_dbg', arg2, dbg') ->
       transl_sequor env arg1 dbg' arg2 dbg approx then_ else_
   | Uprim(Psequor, [arg1; arg2], dbg') ->
       transl_sequor env arg1 dbg' arg2 dbg approx then_ else_
   | Uprim(Pnot, [arg], _) ->
-      transl_if env arg dbg (invert_then_else approx) else_ then_
-  | Uifthenelse (Uconst (Uconst_ptr 1), ifso, _) ->
-      transl_if env ifso ifso_dbg approx then_ else_
-  | Uifthenelse (Uconst (Uconst_ptr 0), _, ifnot) ->
-      transl_if env ifnot ifnot_dbg approx then_ else_
-  | Uifthenelse (cond, ifso, ifnot) ->
+      transl_if env arg dbg (invert_then_else approx)
+        ifnot_dbg else_
+        ifso_dbg then_
+  | Uifthenelse (Uconst (Uconst_ptr 1), ifso_dbg', ifso, _, _, _) ->
+      transl_if env ifso ifso_dbg approx ifso_dbg then_ ifnot_dbg else_
+  | Uifthenelse (Uconst (Uconst_ptr 0), _, ifnot_dbg', ifnot, _) ->
+      transl_if env ifnot ifnot_dbg approx ifso_dbg then_ ifnot_dbg else_
+  | Uifthenelse (cond, ifso_dbg', ifso, ifnot_dbg', ifnot, dbg') ->
       make_shareable_cont
         (fun shareable_then ->
            make_shareable_cont
              (fun shareable_else ->
                 mk_if_then_else
                   (test_bool dbg (transl env cond))
-                  (transl_if env ifso dbg approx
+                  (transl_if env ifso ifso_dbg' approx
                      shareable_then shareable_else)
-                  (transl_if env ifnot dbg approx
+                  (transl_if env ifnot ifnot_dbg' approx
                      shareable_then shareable_else))
              else_)
         then_
