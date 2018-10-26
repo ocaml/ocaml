@@ -1264,6 +1264,79 @@ val at_exit : (unit -> unit) -> unit
    The functions are called in 'last in, first out' order: the
    function most recently added with [at_exit] is called first. *)
 
+(**/**)
+
+(* The following is for system use only. Do not call directly. *)
+
+val valid_float_lexem : string -> string
+
+val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
+
+val do_at_exit : unit -> unit
+
+(**/**)
+
+(** {1 Standard library modules } *)
+
+(*MODULE_ALIASES*)
+module Arg          = Arg
+module Array        = Array
+module ArrayLabels  = ArrayLabels
+module Bigarray     = Bigarray
+module Bool         = Bool
+module Buffer       = Buffer
+module Bytes        = Bytes
+module BytesLabels  = BytesLabels
+module Callback     = Callback
+module Char         = Char
+module Complex      = Complex
+module Digest       = Digest
+module Ephemeron    = Ephemeron
+module Filename     = Filename
+module Float        = Float
+module Format       = Format
+module Gc           = Gc
+module Genlex       = Genlex
+module Hashtbl      = Hashtbl
+module Int          = Int
+module Int32        = Int32
+module Int64        = Int64
+module Lazy         = Lazy
+module Lexing       = Lexing
+module List         = List
+module ListLabels   = ListLabels
+module Map          = Map
+module Marshal      = Marshal
+module MoreLabels   = MoreLabels
+module Nativeint    = Nativeint
+module Obj          = Obj
+module Oo           = Oo
+module Option       = Option
+module Parsing      = Parsing
+module Pervasives   = Pervasives
+[@@deprecated "Use Stdlib instead.\n\
+\n\
+If you need to stay compatible with OCaml < 4.07, you can use the \n\
+stdlib-shims library: https://github.com/ocaml/stdlib-shims"]
+module Printexc     = Printexc
+module Printf       = Printf
+module Queue        = Queue
+module Random       = Random
+module Result       = Result
+module Scanf        = Scanf
+module Seq          = Seq
+module Set          = Set
+module Spacetime    = Spacetime
+module Stack        = Stack
+module StdLabels    = StdLabels
+module Stream       = Stream
+module String       = String
+module StringLabels = StringLabels
+module Sys          = Sys
+module Uchar        = Uchar
+module Weak         = Weak
+
+
 (** {1:precedence Appendix: precedence level and associativity of operators } *)
 (*
   Note, the tables below should be kept in sync with the one in
@@ -1366,72 +1439,3 @@ if
 %}
 
 *)
-(**/**)
-
-(* The following is for system use only. Do not call directly. *)
-
-val valid_float_lexem : string -> string
-
-val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
-
-val do_at_exit : unit -> unit
-
-(**/**)
-
-(*MODULE_ALIASES*)
-module Arg          = Arg
-module Array        = Array
-module ArrayLabels  = ArrayLabels
-module Bigarray     = Bigarray
-module Bool         = Bool
-module Buffer       = Buffer
-module Bytes        = Bytes
-module BytesLabels  = BytesLabels
-module Callback     = Callback
-module Char         = Char
-module Complex      = Complex
-module Digest       = Digest
-module Ephemeron    = Ephemeron
-module Filename     = Filename
-module Float        = Float
-module Format       = Format
-module Gc           = Gc
-module Genlex       = Genlex
-module Hashtbl      = Hashtbl
-module Int          = Int
-module Int32        = Int32
-module Int64        = Int64
-module Lazy         = Lazy
-module Lexing       = Lexing
-module List         = List
-module ListLabels   = ListLabels
-module Map          = Map
-module Marshal      = Marshal
-module MoreLabels   = MoreLabels
-module Nativeint    = Nativeint
-module Obj          = Obj
-module Oo           = Oo
-module Option       = Option
-module Parsing      = Parsing
-module Pervasives   = Pervasives
-[@@deprecated "Use Stdlib instead.\n\
-\n\
-If you need to stay compatible with OCaml < 4.07, you can use the \n\
-stdlib-shims library: https://github.com/ocaml/stdlib-shims"]
-module Printexc     = Printexc
-module Printf       = Printf
-module Queue        = Queue
-module Random       = Random
-module Result       = Result
-module Scanf        = Scanf
-module Seq          = Seq
-module Set          = Set
-module Spacetime    = Spacetime
-module Stack        = Stack
-module StdLabels    = StdLabels
-module Stream       = Stream
-module String       = String
-module StringLabels = StringLabels
-module Sys          = Sys
-module Uchar        = Uchar
-module Weak         = Weak
