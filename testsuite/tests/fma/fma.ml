@@ -374,26 +374,30 @@ let _ =
       ("253", 0x4.000008p-128, ~-.0x4.000008p-28, ~-.0x8p+100, [~-.0x8p+100]);
       ("254", 0x2.fep+12, 0x1.0000000000001p+0, 0x1.ffep-48,
        [0x2.fe00000000002p+12; 0x1.7f00000000002p+13]);
-      ("255", 0x1.fffp+0, 0x1.0000000000001p+0, ~-.0x1.fffp+0, [0x1.fffp-52]);
+      ("255", 0x1.fffp+0, 0x1.0000000000001p+0, ~-.0x1.fffp+0,
+       [0x1.fffp-52; 0x1p-51]);
       ("256", 0x1.0000002p+0, 0xf.fffffep-4, 0x1p-300, [0x1p+0]);
       ("257", 0x1.0000002p+0, 0xf.fffffep-4, ~-.0x1p-300,
        [0xf.ffffffffffff8p-4; 0x1p+0]);
       ("258", 0xe.f56df7797f768p+1020, 0x3.7ab6fbbcbfbb4p-1024,
-       ~-.0x3.40bf1803497f6p+0, [0x8.4c4b43de4ed2p-56; 0x1.095f287bc9da4p-53]);
+       ~-.0x3.40bf1803497f6p+0,
+       [0x8.4c4b43de4ed2p-56; 0x1.095f287bc9da4p-53; 0x1.098p-53]);
       ("259", 0x1.deadbeef2feedp+900, 0x3.7ab6fbbcbfbb4p-1024,
        ~-.0x6.817e300692fecp-124,
-       [0x1.0989687bc9da4p-176; 0x1.095f287bc9da4p-176]);
+       [0x1.0989687bc9da4p-176; 0x1.095f287bc9da4p-176; 0x1.098p-176]);
       ("260", 0xf.ffffffffffff8p+1020, 0x1.001p+0,
-       ~-.0xf.ffffffffffff8p+1020, [0xf.ffffffffffff8p+1008]);
+       ~-.0xf.ffffffffffff8p+1020, [0xf.ffffffffffff8p+1008; 0x1p+1012]);
       ("261", ~-.0xf.ffffffffffff8p+1020, 0x1.fffffffffffffp+0,
        0xf.ffffffffffff8p+1020, [~-.0xf.fffffffffffe8p+1020]);
       ("262", 0xf.ffffffffffff8p+1020, 0x2p+0, ~-.0xf.ffffffffffff8p+1020,
        [0xf.ffffffffffff8p+1020]);
       ("263", 0x5.a827999fcef3p-540, 0x5.a827999fcef3p-540, 0x0p+0, [0x0p+0]);
       ("264", 0x3.bd5b7dde5fddap-496, 0x3.bd5b7dde5fddap-496,
-       ~-.0xd.fc352bc352bap-992, [0x1.0989687cp-1044; 0x0.000004277ca1fp-1022]);
+       ~-.0xd.fc352bc352bap-992,
+       [0x1.0989687cp-1044; 0x0.000004277ca1fp-1022; 0x0.00000428p-1022]);
       ("265", 0x3.bd5b7dde5fddap-504, 0x3.bd5b7dde5fddap-504,
-       ~-.0xd.fc352bc352bap-1008, [0x1.0988p-1060; 0x0.0000000004278p-1022]);
+       ~-.0xd.fc352bc352bap-1008,
+       [0x1.0988p-1060; 0x0.0000000004278p-1022; 0x0.000000000428p-1022]);
       ("266", 0x8p-540, 0x4p-540, 0x4p-1076, [0x8p-1076]);
       ("267", 0x1.7fffff8p-968, 0x4p-108, 0x4p-1048,
        [0x4.0000004p-1048; 0x0.0000010000002p-1022]);
@@ -443,13 +447,13 @@ let _ =
       ("296", 0x4p-1076, 0x4p-1076, ~-.0x4p-1076, [~-.0x4p-1076]);
       ("297", 0x4p-1076, ~-.0x4p-1076, ~-.0x4p-1076, [~-.0x4p-1076]);
       ("298", 0xf.ffffffffffff8p-4, 0xf.ffffffffffff8p-4,
-       ~-.0xf.ffffffffffffp-4, [0x4p-108]);
+       ~-.0xf.ffffffffffffp-4, [0x4p-108; 0x0p+0]);
       ("299", 0xf.ffffffffffff8p-4, ~-.0xf.ffffffffffff8p-4,
-       0xf.ffffffffffffp-4, [~-.0x4p-108]);
+       0xf.ffffffffffffp-4, [~-.0x4p-108; 0x0p+0]);
       ("300", ~-.0xf.ffffffffffff8p-4, 0xf.ffffffffffff8p-4,
-       0xf.ffffffffffffp-4, [~-.0x4p-108]);
+       0xf.ffffffffffffp-4, [~-.0x4p-108; 0x0p+0]);
       ("301", ~-.0xf.ffffffffffff8p-4, ~-.0xf.ffffffffffff8p-4,
-       ~-.0xf.ffffffffffffp-4, [0x4p-108]);
+       ~-.0xf.ffffffffffffp-4, [0x4p-108; 0x0p+0]);
       ("302", 0x4.0000000000004p-1024, 0x2.0000000000002p-56, 0x8p+1020,
        [0x8p+1020]);
       ("303", 0x4.0000000000004p-1024, ~-.0x2.0000000000002p-56, 0x8p+1020,
