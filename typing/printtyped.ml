@@ -675,6 +675,9 @@ and signature_item i ppf x =
   | Tsig_type (rf, l) ->
       line i ppf "Tsig_type %a\n" fmt_rec_flag rf;
       list i type_declaration ppf l;
+  | Tsig_typesubst l ->
+      line i ppf "Tsig_typesubst\n";
+      list i type_declaration ppf l;
   | Tsig_typext e ->
       line i ppf "Tsig_typext\n";
       type_extension i ppf e;
@@ -685,6 +688,10 @@ and signature_item i ppf x =
       line i ppf "Tsig_module \"%a\"\n" fmt_ident md.md_id;
       attributes i ppf md.md_attributes;
       module_type i ppf md.md_type
+  | Tsig_modsubst ms ->
+      line i ppf "Tsig_modsubst \"%a\" = %a\n"
+        fmt_ident ms.ms_id fmt_path ms.ms_manifest;
+      attributes i ppf ms.ms_attributes;
   | Tsig_recmodule decls ->
       line i ppf "Tsig_recmodule\n";
       list i module_declaration ppf decls;

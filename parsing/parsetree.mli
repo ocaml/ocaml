@@ -719,13 +719,18 @@ and signature_item_desc =
           external x: T = "s1" ... "sn"
          *)
   | Psig_type of rec_flag * type_declaration list
-        (* type t1 = ... and ... and tn = ... *)
+        (* type t1 = ... and ... and tn  = ... *)
+  | Psig_typesubst of type_declaration list
+        (* type t1 := ... and ... and tn := ...  *)
   | Psig_typext of type_extension
         (* type t1 += ... *)
   | Psig_exception of type_exception
         (* exception C of T *)
   | Psig_module of module_declaration
-        (* module X : MT *)
+        (* module X = M
+           module X : MT *)
+  | Psig_modsubst of module_substitution
+        (* module X := M *)
   | Psig_recmodule of module_declaration list
         (* module rec X1 : MT1 and ... and Xn : MTn *)
   | Psig_modtype of module_type_declaration
@@ -752,6 +757,14 @@ and module_declaration =
      pmd_loc: Location.t;
     }
 (* S : MT *)
+
+and module_substitution =
+    {
+     pms_name: string loc;
+     pms_manifest: Longident.t loc;
+     pms_attributes: attributes; (* ... [@@id1] [@@id2] *)
+     pms_loc: Location.t;
+    }
 
 and module_type_declaration =
     {

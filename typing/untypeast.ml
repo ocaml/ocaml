@@ -46,6 +46,7 @@ type mapper = {
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> T.module_binding -> module_binding;
   module_declaration: mapper -> T.module_declaration -> module_declaration;
+  module_substitution: mapper -> T.module_substitution -> module_substitution;
   module_expr: mapper -> T.module_expr -> module_expr;
   module_type: mapper -> T.module_type -> module_type;
   module_type_declaration:
@@ -500,12 +501,16 @@ let signature_item sub item =
         Psig_value (sub.value_description sub v)
     | Tsig_type (rec_flag, list) ->
         Psig_type (rec_flag, List.map (sub.type_declaration sub) list)
+    | Tsig_typesubst list ->
+        Psig_typesubst (List.map (sub.type_declaration sub) list)
     | Tsig_typext tyext ->
         Psig_typext (sub.type_extension sub tyext)
     | Tsig_exception ext ->
         Psig_exception (sub.type_exception sub ext)
     | Tsig_module md ->
         Psig_module (sub.module_declaration sub md)
+    | Tsig_modsubst ms ->
+        Psig_modsubst (sub.module_substitution sub ms)
     | Tsig_recmodule list ->
         Psig_recmodule (List.map (sub.module_declaration sub) list)
     | Tsig_modtype mtd ->
@@ -529,6 +534,13 @@ let module_declaration sub md =
   Md.mk ~loc ~attrs
     (map_loc sub md.md_name)
     (sub.module_type sub md.md_type)
+
+let module_substitution sub ms =
+  let loc = sub.location sub ms.ms_loc in
+  let attrs = sub.attributes sub ms.ms_attributes in
+  Ms.mk ~loc ~attrs
+    (map_loc sub ms.ms_name)
+    (map_loc sub ms.ms_txt)
 
 let include_infos f sub incl =
   let loc = sub.location sub incl.incl_loc in
@@ -812,6 +824,7 @@ let default_mapper =
     pat = pattern;
     expr = expression;
     module_declaration = module_declaration;
+    module_substitution = module_substitution;
     module_type_declaration = module_type_declaration;
     module_binding = module_binding;
     package_type = package_type ;

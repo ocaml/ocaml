@@ -349,7 +349,8 @@ and add_sig_item (bv, m) item =
   match item.psig_desc with
     Psig_value vd ->
       add_type bv vd.pval_type; (bv, m)
-  | Psig_type (_, dcls) ->
+  | Psig_type (_, dcls)
+  | Psig_typesubst dcls->
       List.iter (add_type_declaration bv) dcls; (bv, m)
   | Psig_typext te ->
       add_type_extension bv te; (bv, m)
@@ -358,6 +359,10 @@ and add_sig_item (bv, m) item =
   | Psig_module pmd ->
       let m' = add_modtype_binding bv pmd.pmd_type in
       let add = String.Map.add pmd.pmd_name.txt m' in
+      (add bv, add m)
+  | Psig_modsubst pms ->
+      let m' = add_module_alias bv pms.pms_manifest in
+      let add = String.Map.add pms.pms_name.txt m' in
       (add bv, add m)
   | Psig_recmodule decls ->
       let add =

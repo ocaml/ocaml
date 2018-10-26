@@ -423,9 +423,11 @@ and signature_item =
 and signature_item_desc =
     Tsig_value of value_description
   | Tsig_type of rec_flag * type_declaration list
+  | Tsig_typesubst of type_declaration list
   | Tsig_typext of type_extension
   | Tsig_exception of type_exception
   | Tsig_module of module_declaration
+  | Tsig_modsubst of module_substitution
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
   | Tsig_open of open_description
@@ -441,6 +443,16 @@ and module_declaration =
      md_type: module_type;
      md_attributes: attributes;
      md_loc: Location.t;
+    }
+
+and module_substitution =
+    {
+     ms_id: Ident.t;
+     ms_name: string loc;
+     ms_manifest: Path.t;
+     ms_txt: Longident.t loc;
+     ms_attributes: attributes;
+     ms_loc: Location.t;
     }
 
 and module_type_declaration =

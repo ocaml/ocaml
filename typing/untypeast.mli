@@ -47,6 +47,8 @@ type mapper = {
   module_binding: mapper -> Typedtree.module_binding -> module_binding;
   module_declaration:
     mapper -> Typedtree.module_declaration -> module_declaration;
+  module_substitution:
+    mapper -> Typedtree.module_substitution -> module_substitution;
   module_expr: mapper -> Typedtree.module_expr -> module_expr;
   module_type: mapper -> Typedtree.module_type -> module_type;
   module_type_declaration:
