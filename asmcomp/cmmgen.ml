@@ -1470,15 +1470,15 @@ struct
   let make_const i =  Cconst_int i
   (* To avoid changing [Switch] we rely on [Propagate_debuginfo] to change
      these [Debuginfo.none]s into something better. *)
-  let make_prim p args = Cop (p,args, Debuginfo.none)
-  let make_offset arg n = add_const arg n Debuginfo.none
-  let make_isout h arg = Cop (Ccmpa Clt, [h ; arg], Debuginfo.none)
-  let make_isin h arg = Cop (Ccmpa Cge, [h ; arg], Debuginfo.none)
+  let make_prim dbg p args = Cop (p,args, dbg)
+  let make_offset dbg arg n = add_const arg n dbg
+  let make_isout dbg h arg = Cop (Ccmpa Clt, [h ; arg], dbg)
+  let make_isin dbg h arg = Cop (Ccmpa Cge, [h ; arg], dbg)
   let make_if cond ifso ifnot = Cifthenelse (cond, ifso, ifnot)
   let make_switch dbg arg cases actions = make_switch arg cases actions dbg
   let bind arg body = bind "switcher" arg body
 
-  let make_catch handler = match handler with
+  let make_catch dbg handler = match handler with
   | Cexit (i,[]) -> i,fun e -> e
   | _ ->
       let i = next_raise_count () in
@@ -1492,7 +1492,7 @@ struct
       | Cexit (j,_) ->
           if i=j then handler
           else body
-      | _ ->  ccatch (i,[],body,handler))
+      | _ ->  ccatch (i,[],body,handler,dbg))
 
   let make_exit i = Cexit (i,[])
 

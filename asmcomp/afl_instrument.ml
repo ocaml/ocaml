@@ -57,14 +57,19 @@ let rec with_afl_logging b =
 
 and instrument = function
   (* these cases add logging, as they may be targets of conditional branches *)
-  | Cifthenelse (cond, t, f) ->
-     Cifthenelse (instrument cond, with_afl_logging t, with_afl_logging f)
-  | Cloop e ->
-     Cloop (with_afl_logging e)
-  | Ctrywith (e, ex, handler) ->
-     Ctrywith (instrument e, ex, with_afl_logging handler)
+  | Cifthenelse (cond, ifso_dbg, t, ifnot_dbg, f, dbg) ->
+     Cifthenelse (instrument cond,
+       ifso_dbg, with_afl_logging t,
+       ifnot_dbg, with_afl_logging f,
+       dbg)
+  | Cloop (e, dbg) ->
+     Cloop (with_afl_logging e, dbg)
+  | Ctrywith (e, ex, handler, handler_dbg) ->
+     Ctrywith (instrument e, ex, with_afl_logging handler, handler_dbg)
   | Cswitch (e, cases, handlers, dbg) ->
-     Cswitch (instrument e, cases, Array.map with_afl_logging handlers, dbg)
+     Cswitch (instrument e, cases,
+       Array.map (fun (expr, dbg) -> with_afl_logging expr, dbg) handlers,
+       dbg)
 
   (* these cases add no logging, but instrument subexpressions *)
   | Clet (v, e, body) -> Clet (v, instrument e, instrument body)
@@ -76,7 +81,9 @@ and instrument = function
   | Csequence (e1, e2) -> Csequence (instrument e1, instrument e2)
   | Ccatch (isrec, cases, body) ->
      Ccatch (isrec,
-             List.map (fun (nfail, ids, e) -> nfail, ids, instrument e) cases,
+             List.map (fun (nfail, ids, e, dbg) ->
+                 nfail, ids, instrument e, dbg)
+               cases,
              instrument body)
   | Cexit (ex, args) -> Cexit (ex, List.map instrument args)
 

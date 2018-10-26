@@ -152,10 +152,8 @@ and operation =
   | Craise of raise_kind
   | Ccheckbound
 
-(** Not all cmm expressions currently have [Debuginfo.t] values attached to
-    them.  The ones that do are those that are likely to generate code that
-    can fairly robustly be mapped back to a source location.  In the future
-    it might be the case that more [Debuginfo.t] annotations are desirable. *)
+(** Every basic block should have a corresponding [Debuginfo.t] for its
+    beginning. *)
 and expression =
     Cconst_int of int
   | Cconst_natint of nativeint
@@ -172,16 +170,19 @@ and expression =
   | Ctuple of expression list
   | Cop of operation * expression list * Debuginfo.t
   | Csequence of expression * expression
-  | Cifthenelse of expression * expression * expression
-  | Cswitch of expression * int array * expression array * Debuginfo.t
-  | Cloop of expression
+  | Cifthenelse of expression * Debuginfo.t * expression
+      * Debuginfo.t * expression * Debuginfo.t
+  | Cswitch of expression * int array * (expression * Debuginfo.t) array
+      * Debuginfo.t
+  | Cloop of expression * Debuginfo.t
   | Ccatch of
       rec_flag
         * (int * (Backend_var.With_provenance.t * machtype) list
-          * expression) list
+          * expression * Debuginfo.t) list
         * expression
   | Cexit of int * expression list
   | Ctrywith of expression * Backend_var.With_provenance.t * expression
+      * Debuginfo.t
 
 type codegen_option =
   | Reduce_code_size
@@ -217,7 +218,7 @@ type phrase =
 
 val ccatch :
      int * (Backend_var.With_provenance.t * machtype) list
-       * expression * expression
+       * expression * expression * Debuginfo.t
   -> expression
 
 val reset : unit -> unit

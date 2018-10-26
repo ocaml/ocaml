@@ -73,8 +73,7 @@ module Make(I:I) = struct
   let gen_cell_id () = V.create_local "cell"
   let gen_size_id () = V.create_local "size"
 
-  let mk_let_cell id str ind body =
-    let dbg = Debuginfo.none in
+  let mk_let_cell dbg id str ind body =
     let cell =
       Cop(Cload (Word_int, Asttypes.Mutable),
         [Cop(Cadda,[str;Cconst_int(Arch.size_int*ind)], dbg)],
@@ -85,12 +84,11 @@ module Make(I:I) = struct
     let size = I.string_block_length str in
     Clet(id, size, body)
 
-  let mk_cmp_gen cmp_op id nat ifso ifnot =
-    let dbg = Debuginfo.none in
+  let mk_cmp_gen dbg cmp_op id nat ifso ifnot =
     let test =
       Cop (Ccmpi cmp_op, [ Cvar id; Cconst_natpointer nat ], dbg)
     in
-    Cifthenelse (test, ifso, ifnot)
+    Cifthenelse (test, dbg, ifso, dbg, ifnot, dbg)
 
   let mk_lt = mk_cmp_gen Clt
   let mk_eq = mk_cmp_gen Ceq

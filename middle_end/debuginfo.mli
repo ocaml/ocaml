@@ -71,6 +71,8 @@ type debuginfo = t
 
 include Identifiable.S with type t := t
 
+(* CR-soon mshinwell: Remove [none] and [is_none]. *)
+
 val none : t
 
 val is_none : t -> bool

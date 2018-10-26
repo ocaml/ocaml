@@ -174,16 +174,19 @@ type expression =
   | Ctuple of expression list
   | Cop of operation * expression list * Debuginfo.t
   | Csequence of expression * expression
-  | Cifthenelse of expression * expression * expression
-  | Cswitch of expression * int array * expression array * Debuginfo.t
-  | Cloop of expression
+  | Cifthenelse of expression * Debuginfo.t * expression
+      * Debuginfo.t * expression * Debuginfo.t
+  | Cswitch of expression * int array * (expression * Debuginfo.t) array
+      * Debuginfo.t
+  | Cloop of expression * Debuginfo.t
   | Ccatch of
       rec_flag
         * (int * (Backend_var.With_provenance.t * machtype) list
-          * expression) list
+          * expression * Debuginfo.t) list
         * expression
   | Cexit of int * expression list
   | Ctrywith of expression * Backend_var.With_provenance.t * expression
+      * Debuginfo.t
 
 type codegen_option =
   | Reduce_code_size
@@ -217,8 +220,8 @@ type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
 
-let ccatch (i, ids, e1, e2)=
-  Ccatch(Nonrecursive, [i, ids, e2], e1)
+let ccatch (i, ids, e1, e2, loc) =
+  Ccatch(Nonrecursive, [i, ids, e2, loc], e1)
 
 let reset () =
   label_counter := 99
