@@ -21,7 +21,7 @@
    (block the calling thread, if required, but do not block all threads
    in the process).  *)
 
-[@@@ocaml.deprecated "Use the Unix module"]
+[@@@ocaml.deprecated "use the Unix module"]
 
 (** {1 Process handling} *)
 

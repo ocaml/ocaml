@@ -98,13 +98,13 @@ val is_val : 'a t -> bool
     @since 4.00.0 *)
 
 val lazy_from_fun : (unit -> 'a) -> 'a t
-  [@@ocaml.deprecated "Use Lazy.from_fun instead."]
-(** @deprecated synonym for [from_fun]. *)
+  [@@ocaml.deprecated "use Lazy.from_fun"]
+(** @deprecated alias of [from_fun]. *)
 
 val lazy_from_val : 'a -> 'a t
-  [@@ocaml.deprecated "Use Lazy.from_val instead."]
-(** @deprecated synonym for [from_val]. *)
+  [@@ocaml.deprecated "use Lazy.from_val"]
+(** @deprecated alias of [from_val]. *)
 
 val lazy_is_val : 'a t -> bool
-  [@@ocaml.deprecated "Use Lazy.is_val instead."]
-(** @deprecated synonym for [is_val]. *)
+  [@@ocaml.deprecated "use Lazy.is_val"]
+(** @deprecated alias of [is_val]. *)

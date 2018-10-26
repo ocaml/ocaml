@@ -62,7 +62,7 @@ external make : int -> 'a -> 'a array = "caml_make_vect"
    size is only [Sys.max_array_length / 2].*)
 
 external create : int -> 'a -> 'a array = "caml_make_vect"
-  [@@ocaml.deprecated "Use Array.make instead."]
+  [@@ocaml.deprecated "use Array.make"]
 (** @deprecated [create] is an alias for {!make}. *)
 
 val init : int -> f:(int -> 'a) -> 'a array
@@ -89,7 +89,7 @@ val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
    size is only [Sys.max_array_length / 2]. *)
 
 val create_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
-  [@@ocaml.deprecated "Use Array.make_matrix instead."]
+  [@@ocaml.deprecated "use Array.make_matrix"]
 (** @deprecated [create_matrix] is an alias for {!make_matrix}. *)
 
 val append : 'a array -> 'a array -> 'a array
@@ -218,7 +218,7 @@ external create_float: int -> float array = "caml_make_float_vect"
     @since 4.03 *)
 
 val make_float: int -> float array
-  [@@ocaml.deprecated "Use Array.create_float instead."]
+  [@@ocaml.deprecated "use Array.create_float"]
 (** @deprecated {!make_float} is an alias for
     {!create_float}. *)
 
