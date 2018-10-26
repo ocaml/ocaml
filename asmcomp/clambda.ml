@@ -58,17 +58,17 @@ and ulambda =
   | Uletrec of (Backend_var.With_provenance.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch * Debuginfo.t
-  | Ustringswitch of ulambda * (string * ulambda * Location.t) list
-      * (ulambda * Location.t) option
+  | Ustringswitch of ulambda * (string * ulambda * Debuginfo.t) list
+      * (ulambda * Debuginfo.t) option
   | Ustaticfail of int * ulambda list
   | Ucatch of int * Backend_var.With_provenance.t list * ulambda * ulambda
-      * Location.t
-  | Utrywith of ulambda * Backend_var.With_provenance.t * ulambda * Location.t
-  | Uifthenelse of ulambda * ulambda * ulambda * Location.t
+      * Debuginfo.t
+  | Utrywith of ulambda * Backend_var.With_provenance.t * ulambda * Debuginfo.t
+  | Uifthenelse of ulambda * ulambda * ulambda * Debuginfo.t
   | Usequence of ulambda * ulambda
-  | Uwhile of ulambda * ulambda * Location.t
+  | Uwhile of ulambda * ulambda * Debuginfo.t
   | Ufor of Backend_var.With_provenance.t * ulambda * ulambda
-      * direction_flag * ulambda * Location.t
+      * direction_flag * ulambda * Debuginfo.t
   | Uassign of Backend_var.t * ulambda
   | Usend of meth_kind * ulambda * ulambda * ulambda list * Debuginfo.t
   | Uunreachable
@@ -86,9 +86,9 @@ and ufunction = {
 
 and ulambda_switch =
   { us_index_consts: int array;
-    us_actions_consts: (ulambda * Location.t) array;
+    us_actions_consts: (ulambda * Debuginfo.t) array;
     us_index_blocks: int array;
-    us_actions_blocks: (ulambda * Location.t) array}
+    us_actions_blocks: (ulambda * Debuginfo.t) array}
 
 (* Description of known functions *)
 

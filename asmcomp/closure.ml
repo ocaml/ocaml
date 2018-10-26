@@ -1316,7 +1316,8 @@ let rec close ~scope fenv cenv = function
             let i = next_raise_count () in
             let ubody,_ = fn (Some (Lstaticraise (i,[]), fail_loc))
             and uhandler,_ = close_new_scope ~scope fenv cenv lamfail in
-            Ucatch (i,[],ubody,uhandler, fail_loc),Value_unknown
+            let fail_dbg = Debuginfo.of_location fail_loc ~scope in
+            Ucatch (i,[],ubody,uhandler, fail_dbg),Value_unknown
           else fn fail
       end
   | Lstringswitch(arg,sw,d,_) ->
@@ -1325,13 +1326,15 @@ let rec close ~scope fenv cenv = function
         List.map
           (fun (s,act,loc) ->
             let uact,_ = close_new_scope ~scope fenv cenv act in
-            s,uact,loc)
+            let dbg = Debuginfo.of_location loc ~scope in
+            s,uact,dbg)
           sw in
       let ud =
         Misc.may_map
           (fun (d, loc) ->
             let ud,_ = close_new_scope ~scope fenv cenv d in
-            ud, loc) d in
+            let dbg = Debuginfo.of_location loc ~scope in
+            ud, dbg) d in
       Ustringswitch (uarg,usw,ud),Value_unknown
   | Lstaticraise (i, args) ->
       (Ustaticfail (i, close_list ~scope fenv cenv args), Value_unknown)
@@ -1356,7 +1359,8 @@ let rec close ~scope fenv cenv = function
             VP.create ?provenance var)
           vars
       in
-      (Ucatch(i, vars, ubody, uhandler, loc), Value_unknown)
+      let dbg = Debuginfo.of_location loc ~scope in
+      (Ucatch(i, vars, ubody, uhandler, dbg), Value_unknown)
   | Ltrywith(body, id, handler, loc) ->
       let (ubody, _) = close_new_scope ~scope fenv cenv body in
       let handler_scope = CB.add_scope scope in
@@ -1373,16 +1377,18 @@ let rec close ~scope fenv cenv = function
           in
           Some provenance
       in
-      (Utrywith(ubody, VP.create ?provenance id, uhandler, loc), Value_unknown)
+      let dbg = Debuginfo.of_location loc ~scope in
+      (Utrywith(ubody, VP.create ?provenance id, uhandler, dbg), Value_unknown)
   | Lifthenelse(arg, ifso, ifnot, loc) ->
       begin match close ~scope fenv cenv arg with
         (uarg, Value_const (Uconst_ptr n)) ->
           sequence_constant_expr arg uarg
             (close ~scope fenv cenv (if n = 0 then ifnot else ifso))
       | (uarg, _ ) ->
+          let dbg = Debuginfo.of_location loc ~scope in
           let (uifso, _) = close_new_scope ~scope fenv cenv ifso in
           let (uifnot, _) = close_new_scope ~scope fenv cenv ifnot in
-          (Uifthenelse(uarg, uifso, uifnot, loc), Value_unknown)
+          (Uifthenelse(uarg, uifso, uifnot, dbg), Value_unknown)
       end
   | Lsequence(lam1, lam2) ->
       let (ulam1, _) = close ~scope fenv cenv lam1 in
@@ -1390,13 +1396,16 @@ let rec close ~scope fenv cenv = function
       (Usequence(ulam1, ulam2), approx)
   | Lwhile(cond, body, loc) ->
       let (ucond, _) = close ~scope fenv cenv cond in
-      let (ubody, _) = close_new_scope ~scope fenv cenv body in
+      let body_scope = CB.add_scope scope in
+      let (ubody, _) = close ~scope:body_scope fenv cenv body in
+      let dbg = Debuginfo.of_location loc ~scope:body_scope in
       (Uwhile(ucond, ubody, loc), Value_unknown)
   | Lfor(id, lo, hi, dir, body, loc) ->
       let (ulo, _) = close ~scope fenv cenv lo in
       let (uhi, _) = close ~scope fenv cenv hi in
       let body_scope = CB.add_scope scope in
       let (ubody, _) = close_new_scope ~scope:body_scope fenv cenv body in
+      let dbg = Debuginfo.of_location loc ~scope:body_scope in
       let provenance =
         match !current_module_path with
         | None -> None
