@@ -130,6 +130,9 @@ Working version
   (Laurent Thévenoux, review by Alain Frisch, Jacques-Henri Jourdan,
   Xavier Leroy)
 
+- GPR#2119: clarify the documentation of Set.diff
+  (Gabriel Scherer, suggestion by John Skaller)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
