@@ -1,4 +1,5 @@
-(* TEST *)
+(* TEST
+ *)
 
 (* Test the types nativeint, int32, int64 *)
 
@@ -53,7 +54,7 @@ module type TESTSIG = sig
     val minus_one: t
     val min_int: t
     val max_int: t
-    val format : string -> t -> string
+    val format : string -> t -> string [@@ocaml.deprecated]
     val to_string: t -> string
     val of_string: string -> t
   end
@@ -118,7 +119,8 @@ struct
        5, "1073741824"; 6, "2147483647"; 7, "-2147483648"];
     List.iter (fun (n, s) -> test n (format "0x%X" (of_string s)) s)
       [8, "0x0"; 9, "0x123"; 10, "0xABCDEF"; 11, "0x12345678";
-       12, "0x7FFFFFFF"; 13, "0x80000000"; 14, "0xFFFFFFFF"];
+       12, "0x7FFFFFFF"; 13, "0x80000000"; 14, "0xFFFFFFFF"]
+      [@ocaml.warning "-3"];
     test 15 (to_string max_int) "2147483647";
     test 16 (to_string min_int) "-2147483648";
     test 17 (to_string zero) "0";
@@ -376,7 +378,8 @@ struct
     List.iter (fun (n, s) -> test n ("0x" ^ format "%X" (of_string s)) s)
       [8, "0x0"; 9, "0x123"; 10, "0xABCDEF"; 11, "0x1234567812345678";
        12, "0x7FFFFFFFFFFFFFFF"; 13, "0x8000000000000000";
-       14, "0xFFFFFFFFFFFFFFFF"];
+       14, "0xFFFFFFFFFFFFFFFF"]
+      [@ocaml.warning "-3"];
     test 15 (to_string max_int) "9223372036854775807";
     test 16 (to_string min_int) "-9223372036854775808";
     test 17 (to_string zero) "0";

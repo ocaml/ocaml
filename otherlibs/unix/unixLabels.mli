@@ -1188,7 +1188,7 @@ type socket_bool_option =
 type socket_int_option =
     SO_SNDBUF    (** Size of send buffer *)
   | SO_RCVBUF    (** Size of received buffer *)
-  | SO_ERROR     (** Deprecated.  Use {!Unix.getsockopt_error} instead. *)
+  | SO_ERROR [@ocaml.deprecated "use Unix.getsockopt_error"] (** Deprecated. *)
   | SO_TYPE      (** Report the socket type *)
   | SO_RCVLOWAT  (** Minimum number of bytes to process for input operations *)
   | SO_SNDLOWAT  (** Minimum number of bytes to process for output operations *)

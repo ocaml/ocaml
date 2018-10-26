@@ -172,4 +172,5 @@ val kbprintf : (Buffer.t -> 'd) -> Buffer.t ->
 (** Deprecated *)
 
 val kprintf : (string -> 'b) -> ('a, unit, string, 'b) format4 -> 'a
-(** A deprecated synonym for [ksprintf]. *)
+[@@ocaml.deprecated "Use Printf.ksprintf"]
+(** @deprecated alias of [ksprintf]. *)

@@ -15,6 +15,8 @@
 
 (** Lightweight threads. *)
 
+[@@@ocaml.deprecated "use systhreads, LWT or async"]
+
 type t
 (** The type of thread handles. *)
 

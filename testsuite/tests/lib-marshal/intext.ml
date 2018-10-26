@@ -629,4 +629,4 @@ let main() =
     print_newline()
   end
 
-let _ = Printexc.catch main (); exit 0
+let _ = main ()

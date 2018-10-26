@@ -27,7 +27,7 @@ OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib \
       -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
 MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
-COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string
+COMPFLAGS=-w -3+33..39 -warn-error A -bin-annot -g -safe-string
 
 C_OBJS=scheduler.o
 

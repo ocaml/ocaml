@@ -17,7 +17,7 @@ type path = string
 type path_prefix = string
 type error_message = string
 
-let errorf fmt = Printf.kprintf (fun err -> Error err) fmt
+let errorf fmt = Printf.ksprintf (fun err -> Error err) fmt
 
 let encode_prefix str =
   let buf = Buffer.create (String.length str) in
