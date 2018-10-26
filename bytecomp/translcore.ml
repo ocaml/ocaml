@@ -278,8 +278,11 @@ and transl_exp0 e =
       transl_match e arg pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
       let id = Typecore.name_cases "exn" pat_expr_list in
-      Ltrywith(transl_exp body, id,
-               Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
+      let loc = e.exp_loc in
+      let handler =
+        Matching.for_trywith loc (Lvar id) (transl_cases_try pat_expr_list)
+      in
+      Ltrywith(transl_exp body, id, handler, loc)
   | Texp_tuple el ->
       let ll, shape = transl_list_with_shape el in
       begin try
@@ -398,18 +401,21 @@ and transl_exp0 e =
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp cond,
                   event_before ifso (transl_exp ifso),
-                  event_before ifnot (transl_exp ifnot))
+                  event_before ifnot (transl_exp ifnot),
+                  e.exp_loc)
   | Texp_ifthenelse(cond, ifso, None) ->
       Lifthenelse(transl_exp cond,
                   event_before ifso (transl_exp ifso),
-                  lambda_unit)
+                  lambda_unit,
+                  e.exp_loc)
   | Texp_sequence(expr1, expr2) ->
       Lsequence(transl_exp expr1, event_before expr2 (transl_exp expr2))
   | Texp_while(cond, body) ->
-      Lwhile(transl_exp cond, event_before body (transl_exp body))
+      Lwhile(transl_exp cond, event_before body (transl_exp body),
+        e.exp_loc)
   | Texp_for(param, _, low, high, dir, body) ->
       Lfor(param, transl_exp low, transl_exp high, dir,
-           event_before body (transl_exp body))
+           event_before body (transl_exp body), e.exp_loc)
   | Texp_send(_, _, Some exp) -> transl_exp exp
   | Texp_send(expr, met, None) ->
       let obj = transl_exp expr in
@@ -471,7 +477,8 @@ and transl_exp0 e =
   | Texp_assert (cond) ->
       if !Clflags.noassert
       then lambda_unit
-      else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e)
+      else
+        Lifthenelse (transl_exp cond, lambda_unit, assert_failed e, e.exp_loc)
   | Texp_lazy e ->
       (* when e needs no computation (constants, identifiers, ...), we
          optimize the translation just as Lazy.lazy_from_val would
@@ -532,15 +539,15 @@ and transl_list_with_shape expr_list =
   in
   List.split (List.map transl_with_shape expr_list)
 
-and transl_guard guard rhs =
+and transl_guard loc guard rhs =
   let expr = event_before rhs (transl_exp rhs) in
   match guard with
   | None -> expr
   | Some cond ->
-      event_before cond (Lifthenelse(transl_exp cond, expr, staticfail))
+      event_before cond (Lifthenelse(transl_exp cond, expr, staticfail, loc))
 
 and transl_case {c_lhs; c_guard; c_rhs} =
-  c_lhs, transl_guard c_guard c_rhs
+  c_lhs, transl_guard c_lhs.pat_loc c_guard c_rhs
 
 and transl_cases cases =
   let cases =
@@ -550,7 +557,7 @@ and transl_cases cases =
 and transl_case_try {c_lhs; c_guard; c_rhs} =
   iter_exn_names Translprim.add_exception_ident c_lhs;
   Misc.try_finally
-    (fun () -> c_lhs, transl_guard c_guard c_rhs)
+    (fun () -> c_lhs, transl_guard c_lhs.pat_loc c_guard c_rhs)
     ~always:(fun () ->
         iter_exn_names Translprim.remove_exception_ident c_lhs)
 
@@ -563,7 +570,13 @@ and transl_tupled_cases patl_expr_list =
   let patl_expr_list =
     List.filter (fun (_,_,e) -> e.exp_desc <> Texp_unreachable)
       patl_expr_list in
-  List.map (fun (patl, guard, expr) -> (patl, transl_guard guard expr))
+  List.map (fun (patl, guard, expr) ->
+      let loc =
+        match patl with
+        | pat::_ -> pat.pat_loc
+        | [] -> Location.none
+      in
+      (patl, transl_guard loc guard expr))
     patl_expr_list
 
 and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
@@ -850,14 +863,15 @@ and transl_match e arg pat_expr_list partial =
     let x, y, z = List.fold_left rewrite_case ([], [], []) pat_expr_list in
     List.rev x, List.rev y, List.rev z
   in
-  let static_catch body val_ids handler =
+  let static_catch loc body val_ids handler =
     let id = Typecore.name_pattern "exn" (List.map fst exn_cases) in
     let static_exception_id = next_raise_count () in
     Lstaticcatch
       (Ltrywith (Lstaticraise (static_exception_id, body), id,
-                 Matching.for_trywith (Lvar id) exn_cases),
+                 Matching.for_trywith loc (Lvar id) exn_cases, loc),
        (static_exception_id, val_ids),
-       handler)
+       handler,
+       loc)
   in
   let classic =
     match arg, exn_cases with
@@ -867,18 +881,18 @@ and transl_match e arg pat_expr_list partial =
     | {exp_desc = Texp_tuple argl}, _ :: _ ->
       let val_ids = List.map (fun _ -> Typecore.name_pattern "val" []) argl in
       let lvars = List.map (fun id -> Lvar id) val_ids in
-      static_catch (transl_list argl) val_ids
+      static_catch e.exp_loc (transl_list argl) val_ids
         (Matching.for_multiple_match e.exp_loc lvars val_cases partial)
     | arg, [] ->
       assert (static_handlers = []);
       Matching.for_function e.exp_loc None (transl_exp arg) val_cases partial
     | arg, _ :: _ ->
       let val_id = Typecore.name_cases "val" pat_expr_list in
-      static_catch [transl_exp arg] [val_id]
+      static_catch e.exp_loc [transl_exp arg] [val_id]
         (Matching.for_function e.exp_loc None (Lvar val_id) val_cases partial)
   in
   List.fold_left (fun body (static_exception_id, val_ids, handler) ->
-    Lstaticcatch (body, (static_exception_id, val_ids), handler)
+    Lstaticcatch (body, (static_exception_id, val_ids), handler, e.exp_loc)
   ) classic static_handlers
 
 

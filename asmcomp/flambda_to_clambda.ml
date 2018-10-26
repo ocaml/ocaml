@@ -299,8 +299,11 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     end
   | String_switch (arg, sw, def) ->
     let arg = subst_var env arg in
-    let sw = List.map (fun (s, e) -> s, to_clambda t env e) sw in
-    let def = Misc.may_map (to_clambda t env) def in
+    let sw = List.map (fun (s, e) -> s, to_clambda t env e, Location.none) sw in
+    let def =
+      Misc.may_map (fun flam -> to_clambda t env flam, Location.none) def
+    in
+    (* CR mshinwell for pchambart: Fix locations *)
     Ustringswitch (arg, sw, def)
   | Static_raise (static_exn, args) ->
     Ustaticfail (Static_exception.to_int static_exn,
@@ -313,20 +316,21 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
         vars (env, [])
     in
     Ucatch (Static_exception.to_int static_exn, ids,
-      to_clambda t env body, to_clambda t env_handler handler)
+      to_clambda t env body, to_clambda t env_handler handler,
+      Location.none)
   | Try_with (body, var, handler) ->
     let id, env_handler = Env.add_fresh_ident env var in
     Utrywith (to_clambda t env body, VP.create id,
-      to_clambda t env_handler handler)
+      to_clambda t env_handler handler, Location.none)
   | If_then_else (arg, ifso, ifnot) ->
     Uifthenelse (subst_var env arg, to_clambda t env ifso,
-      to_clambda t env ifnot)
+      to_clambda t env ifnot, Location.none)
   | While (cond, body) ->
-    Uwhile (to_clambda t env cond, to_clambda t env body)
+    Uwhile (to_clambda t env cond, to_clambda t env body, Location.none)
   | For { bound_var; from_value; to_value; direction; body } ->
     let id, env_body = Env.add_fresh_ident env bound_var in
     Ufor (VP.create id, subst_var env from_value, subst_var env to_value,
-      direction, to_clambda t env_body body)
+      direction, to_clambda t env_body body, Location.none)
   | Assign { being_assigned; new_value } ->
     let id =
       try Env.ident_for_mutable_var_exn env being_assigned
@@ -428,7 +432,10 @@ and to_clambda_switch t env cases num_keys default =
          if act >= 0 then action := act else index.(i) <- !action)
       index
   end;
-  let actions = Array.map (to_clambda t env) (store.act_get ()) in
+  let actions =
+    Array.map (fun flam -> to_clambda t env flam, Location.none)
+      (store.act_get ())
+  in
   match actions with
   | [| |] -> [| |], [| |]  (* May happen when [default] is [None]. *)
   | _ -> index, actions

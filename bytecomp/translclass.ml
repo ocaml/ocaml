@@ -641,11 +641,11 @@ let free_methods l =
         fv := Ident.Set.remove id !fv
     | Lletrec(decl, _body) ->
         List.iter (fun (id, _exp) -> fv := Ident.Set.remove id !fv) decl
-    | Lstaticcatch(_e1, (_,vars), _e2) ->
+    | Lstaticcatch(_e1, (_,vars), _e2, _loc) ->
         List.iter (fun id -> fv := Ident.Set.remove id !fv) vars
-    | Ltrywith(_e1, exn, _e2) ->
+    | Ltrywith(_e1, exn, _e2, _loc) ->
         fv := Ident.Set.remove exn !fv
-    | Lfor(v, _e1, _e2, _dir, _e3) ->
+    | Lfor(v, _e1, _e2, _dir, _e3, _loc) ->
         fv := Ident.Set.remove v !fv
     | Lassign _
     | Lvar _ | Lconst _ | Lapply _
@@ -881,7 +881,8 @@ let transl_class ids cl_id pub_meths cl vflag =
          so that the program's behaviour does not change between runs *)
       lupdate_cache
     else
-      Lifthenelse(lfield cached 0, lambda_unit, lupdate_cache) in
+      Lifthenelse(lfield cached 0, lambda_unit, lupdate_cache, Location.none)
+  in
   llets (
   lcache (
   Lsequence(lcheck_cache,

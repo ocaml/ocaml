@@ -904,13 +904,13 @@ let rebuild_nexts arg nexts k =
 *)
 
 
-let rec split_or loc argo cls args def =
+let rec split_or (loc : Location.t) argo cls args def =
 
   let cls = simplify_cases args cls in
 
   let rec do_split before ors no = function
     | [] ->
-        cons_next loc
+        cons_next
           (List.rev before) (List.rev ors) (List.rev no)
     | ((p::ps,act) as cl)::rem ->
         if up_ok cl no then
@@ -946,7 +946,7 @@ let rec split_or loc argo cls args def =
 (* Ultra-naive splitting, close to semantics, used for extension,
    as potential rebind prevents any kind of optimisation *)
 
-and split_naive (loc : Location.t) cls args def k =
+and split_naive loc cls args def k =
 
   let rec split_exc cstr0 yes = function
     | [] ->
@@ -1162,8 +1162,8 @@ and precompile_or loc argo cls ors args def k = match ors with
       top_default=def},
     k
 
-let split_precompile argo pm =
-  let {me=next}, nexts = split_or argo pm.cases pm.args pm.default  in
+let split_precompile loc argo pm =
+  let {me=next}, nexts = split_or loc argo pm.cases pm.args pm.default  in
   if dbg && (nexts <> [] || (match next with PmOr _ -> true | _ -> false))
   then begin
     Format.eprintf "** SPLIT **\n" ;
@@ -1767,18 +1767,18 @@ let bind_sw arg k = match arg with
 
 (* Sequential equality tests *)
 
-let make_string_test_sequence loc arg sw d =
-  let d,sw = match d with
+let make_string_test_sequence arg sw d =
+  let d, sw = match d with
   | None ->
       begin match sw with
-      | (_,d)::sw -> d,sw
+      | (_,d,_loc)::sw -> d, sw
       | [] -> assert false
       end
   | Some d -> d,sw in
   bind_sw arg
     (fun arg ->
       List.fold_right
-        (fun (s,lam) k ->
+        (fun (s,lam,loc) k ->
           Lifthenelse
             (Lprim
                (prim_string_notequal,
@@ -1805,32 +1805,33 @@ let tree_way_test loc arg lt eq gt =
 (* Dichotomic tree *)
 
 
-let rec do_make_string_test_tree loc arg sw delta d =
+let rec do_make_string_test_tree arg
+      (sw : (string * lambda * Location.t) list) delta d =
   let len = List.length sw in
   if len <= strings_test_threshold+delta then
-    make_string_test_sequence loc arg sw d
+    make_string_test_sequence arg sw d
   else
-    let lt,(s,act),gt = split len sw in
+    let lt,(s,act,loc),gt = split len sw in
     bind_sw
       (Lprim
          (prim_string_compare,
           [arg; Lconst (Const_immstring s)], loc))
       (fun r ->
         tree_way_test loc r
-          (do_make_string_test_tree loc arg lt delta d)
+          (do_make_string_test_tree arg lt delta d)
           act
-          (do_make_string_test_tree loc arg gt delta d))
+          (do_make_string_test_tree arg gt delta d))
 
 (* Entry point *)
-let expand_stringswitch loc arg sw d = match d with
+let expand_stringswitch arg sw d = match d with
 | None ->
     bind_sw arg
-      (fun arg -> do_make_string_test_tree loc arg sw 0 None)
-| Some e ->
+      (fun arg -> do_make_string_test_tree arg sw 0 None)
+| Some (e, default_loc) ->
     bind_sw arg
       (fun arg ->
         make_catch e
-          (fun d -> do_make_string_test_tree loc arg sw 1 (Some d)) loc)
+          (fun d -> do_make_string_test_tree arg sw 1 (Some d)) default_loc)
 
 (**********************)
 (* Generic test trees *)
@@ -1925,7 +1926,7 @@ let make_test_sequence loc fail tst lt_tst arg const_lambda_list =
       split_sequence const_lambda_list
     else match fail with
     | None -> do_tests_nofail tst arg const_lambda_list
-    | Some (fail_loc, fail) -> do_tests_fail fail tst arg const_lambda_list
+    | Some (_fail_loc, fail) -> do_tests_fail fail tst arg const_lambda_list
 
   and split_sequence const_lambda_list =
     let list1, list2 =
@@ -1983,7 +1984,7 @@ module SArg = struct
 end
 
 (* Action sharing for Lswitch argument *)
-let share_actions_sw loc sw =
+let share_actions_sw _loc sw =
 (* Attempt sharing on all actions *)
   let store = StoreExp.mk_store () in
   let fail = match sw.sw_failaction with
@@ -2657,14 +2658,17 @@ let compile_orhandlers loc compile_fun lambda1 total1 ctx to_catch =
 let compile_test loc compile_fun partial divide combine ctx to_match =
   let division = divide ctx to_match in
   let c_div = compile_list compile_fun division in
-  match c_div with
-  | [],_,_ ->
-     begin match mk_failaction_neg loc partial ctx to_match.default with
-     | None,_ -> raise Unused
-     | Some l,total -> l,total
-     end
-  | _ ->
-      combine ctx to_match.default c_div
+  let (_loc, lam), total =
+    match c_div with
+    | [],_,_ ->
+       begin match mk_failaction_neg loc partial ctx to_match.default with
+       | None,_ -> raise Unused
+       | Some l,total -> l,total
+       end
+    | _ ->
+        combine ctx to_match.default c_div
+  in
+  lam, total
 
 (* Attempt to avoid some useless bindings by lowering them *)
 
@@ -2794,7 +2798,7 @@ let rec compile_match loc repr partial ctx m = match m with
 | { args = (arg, str)::argl } ->
     let v,newarg = arg_to_var arg m.cases in
     let first_match,rem =
-      split_precompile (Some v)
+      split_precompile loc (Some v)
         { m with args = (newarg, Alias) :: argl } in
     let (lam, total) =
       comp_match_handlers loc
@@ -2868,7 +2872,8 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
     lam, jumps_map ctx_rshift total
 | PmOr {body=body ; handlers=handlers; loc} ->
     let lam, total = compile_match loc repr partial ctx body in
-    compile_orhandlers (compile_match loc repr partial) lam total ctx handlers
+    compile_orhandlers loc (compile_match loc repr partial)
+      lam total ctx handlers
 
 and compile_no_test loc divide up_ctx repr partial ctx to_match =
   let {pm=this_match ; ctx=this_ctx } = divide ctx to_match in
@@ -2970,14 +2975,14 @@ let check_partial = check_partial is_mutable is_lazy
 
 let start_ctx n = [{left=[] ; right = omegas n}]
 
-let check_total total lambda i handler_fun =
+let check_total loc total lambda i handler_fun =
   if jumps_is_empty total then
     lambda
   else begin
-    Lstaticcatch(lambda, (i,[]), handler_fun())
+    Lstaticcatch(lambda, (i,[]), handler_fun(), loc)
   end
 
-let compile_matching repr handler_fun arg pat_act_list partial =
+let compile_matching loc repr handler_fun arg pat_act_list partial =
   let partial = check_partial pat_act_list partial in
   match partial with
   | Partial ->
@@ -2987,8 +2992,8 @@ let compile_matching repr handler_fun arg pat_act_list partial =
           args = [arg, Strict] ;
           default = [[[omega]],raise_num]} in
       begin try
-        let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
-        check_total total lambda raise_num handler_fun
+        let (lambda, total) = compile_match loc repr partial (start_ctx 1) pm in
+        check_total loc total lambda raise_num handler_fun
       with
       | Unused -> assert false (* ; handler_fun() *)
       end
@@ -2997,7 +3002,7 @@ let compile_matching repr handler_fun arg pat_act_list partial =
         { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
           args = [arg, Strict] ;
           default = []} in
-      let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
+      let (lambda, total) = compile_match loc repr partial (start_ctx 1) pm in
       assert (jumps_is_empty total) ;
       lambda
 
@@ -3012,16 +3017,16 @@ let partial_function loc () =
                Const_base(Const_int char)]))], loc)], loc)
 
 let for_function loc repr param pat_act_list partial =
-  compile_matching repr (partial_function loc) param pat_act_list partial
+  compile_matching loc repr (partial_function loc) param pat_act_list partial
 
 (* In the following two cases, exhaustiveness info is not available! *)
-let for_trywith param pat_act_list =
-  compile_matching None
+let for_trywith loc param pat_act_list =
+  compile_matching loc None
     (fun () -> Lprim(Praise Raise_reraise, [param], Location.none))
     param pat_act_list Partial
 
 let simple_for_let loc param pat body =
-  compile_matching None (partial_function loc) param [pat, body] Partial
+  compile_matching loc None (partial_function loc) param [pat, body] Partial
 
 
 (* Optimize binding of immediate tuples
@@ -3075,13 +3080,14 @@ let simple_for_let loc param pat body =
 let rec map_return f = function
   | Llet (str, k, id, l1, l2) -> Llet (str, k, id, l1, map_return f l2)
   | Lletrec (l1, l2) -> Lletrec (l1, map_return f l2)
-  | Lifthenelse (lcond, lthen, lelse) ->
-      Lifthenelse (lcond, map_return f lthen, map_return f lelse)
+  | Lifthenelse (lcond, lthen, lelse, loc) ->
+      Lifthenelse (lcond, map_return f lthen, map_return f lelse, loc)
   | Lsequence (l1, l2) -> Lsequence (l1, map_return f l2)
   | Levent (l, ev) -> Levent (map_return f l, ev)
-  | Ltrywith (l1, id, l2) -> Ltrywith (map_return f l1, id, map_return f l2)
-  | Lstaticcatch (l1, b, l2) ->
-      Lstaticcatch (map_return f l1, b, map_return f l2)
+  | Ltrywith (l1, id, l2, loc) ->
+      Ltrywith (map_return f l1, id, map_return f l2, loc)
+  | Lstaticcatch (l1, b, l2, loc) ->
+      Lstaticcatch (map_return f l1, b, map_return f l2, loc)
   | Lstaticraise _ | Lprim(Praise _, _, _) as l -> l
   | l -> f l
 
@@ -3149,7 +3155,7 @@ let for_let loc param pat body =
       let nraise = next_raise_count () in
       let catch_ids = pat_bound_idents pat in
       let bind = map_return (assign_pat opt nraise catch_ids loc pat) param in
-      if !opt then Lstaticcatch(bind, (nraise, catch_ids), body)
+      if !opt then Lstaticcatch(bind, (nraise, catch_ids), body, loc)
       else simple_for_let loc param pat body
 
 (* Handling of tupled functions and matchings *)
@@ -3165,9 +3171,9 @@ let for_tupled_function loc paraml pats_act_list partial =
       default = [omegas,raise_num]
     } in
   try
-    let (lambda, total) = compile_match None partial
+    let (lambda, total) = compile_match loc None partial
         (start_ctx (List.length paraml)) pm in
-    check_total total lambda raise_num (partial_function loc)
+    check_total loc total lambda raise_num (partial_function loc)
   with
   | Unused -> partial_function loc ()
 
@@ -3213,14 +3219,16 @@ let flatten_pm size args pm =
 
 let flatten_precompiled size args  pmh = match pmh with
 | Pm pm -> Pm (flatten_pm size args pm)
-| PmOr {body=b ; handlers=hs ; or_matrix=m} ->
+| PmOr {body=b ; handlers=hs ; or_matrix=m; loc} ->
     PmOr
       {body=flatten_pm size args b ;
        handlers=
          List.map
           (fun (mat,i,vars,pm) -> flatten_matrix size mat,i,vars,pm)
           hs ;
-       or_matrix=flatten_matrix size m ;}
+       or_matrix=flatten_matrix size m ;
+       loc;
+      }
 | PmVar _ -> assert false
 
 (*
@@ -3228,11 +3236,11 @@ let flatten_precompiled size args  pmh = match pmh with
    Hence it needs a fourth argument, which it ignores
 *)
 
-let compile_flattened repr partial ctx _ pmh = match pmh with
-| Pm pm -> compile_match repr partial ctx pm
-| PmOr {body=b ; handlers=hs} ->
-    let lam, total = compile_match repr partial ctx b in
-    compile_orhandlers (compile_match repr partial) lam total ctx hs
+let compile_flattened loc repr partial ctx _ pmh = match pmh with
+| Pm pm -> compile_match loc repr partial ctx pm
+| PmOr {body=b ; handlers=hs; loc} ->
+    let lam, total = compile_match loc repr partial ctx b in
+    compile_orhandlers loc (compile_match loc repr partial) lam total ctx hs
 | PmVar _ -> assert false
 
 let do_for_multiple_match loc paraml pat_act_list partial =
@@ -3255,7 +3263,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
   try
     try
 (* Once for checking that compilation is possible *)
-      let next, nexts = split_precompile None pm1 in
+      let next, nexts = split_precompile loc None pm1 in
 
       let size = List.length paraml
       and idl = List.map (fun _ -> Ident.create_local "*match*") paraml in
@@ -3268,21 +3276,21 @@ let do_for_multiple_match loc paraml pat_act_list partial =
           nexts in
 
       let lam, total =
-        comp_match_handlers
-          (compile_flattened repr)
+        comp_match_handlers loc
+          (compile_flattened loc repr)
           partial (start_ctx size) () flat_next flat_nexts in
       List.fold_right2 (bind Strict) idl paraml
         (match partial with
         | Partial ->
-            check_total total lam raise_num (partial_function loc)
+            check_total loc total lam raise_num (partial_function loc)
         | Total ->
             assert (jumps_is_empty total) ;
             lam)
     with Cannot_flatten ->
-      let (lambda, total) = compile_match None partial (start_ctx 1) pm1 in
+      let (lambda, total) = compile_match loc None partial (start_ctx 1) pm1 in
       begin match partial with
       | Partial ->
-          check_total total lambda raise_num (partial_function loc)
+          check_total loc total lambda raise_num (partial_function loc)
       | Total ->
           assert (jumps_is_empty total) ;
           lambda
