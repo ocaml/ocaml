@@ -1,3 +1,23 @@
+OCaml 4.07.1 (4 October 2018)
+-----------------------------
+
+This release consists mostly of bug fixes. The most salient bugs were
+
+- MPR#7820, GPR#1897: a bug in Array.of_seq (new in 4.07)
+  (Thierry Martinez, review by Nicolás Ojeda Bär)
+
+- MPR#7815, GPR#1896: crash in the major GC with the first-fit policy
+  (Stephen Dolan and Damien Doligez, report by Joris Giovannangeli)
+
+- MPR#7821, GPR#1908: the compiler loads more cmi, which breaks some builds
+  (Jérémie Dimino, review by Gabriel Scherer)
+
+- MPR#7833, GPR#1946: typechecking failure (regression) on large GADT matchings
+  (Thomas Refis, report by Jerome Simeon, review by Jacques Garrigue)
+
+See the detailed list of fixes at (Changes#4.07.1).
+
+
 OCaml 4.07.0 (10 July 2018):
 ----------------------------
 
