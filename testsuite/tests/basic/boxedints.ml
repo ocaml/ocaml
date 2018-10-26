@@ -1,4 +1,5 @@
-(* TEST *)
+(* TEST
+ *)
 
 (* Test the types nativeint, int32, int64 *)
 
@@ -53,12 +54,12 @@ module type TESTSIG = sig
     val minus_one: t
     val min_int: t
     val max_int: t
-    val format : string -> t -> string
     val to_string: t -> string
     val of_string: string -> t
   end
   val testcomp: t -> t -> bool*bool*bool*bool*bool*bool*int*int
   val skip_float_tests: bool
+  val format: (t -> 'a, 'b, 'a) format
 end
 
 module Test32(M: TESTSIG) =
@@ -116,7 +117,7 @@ struct
     List.iter (fun (n, s) -> test n (to_string (of_string s)) s)
       [1, "0"; 2, "123"; 3, "-456"; 4, "1234567890";
        5, "1073741824"; 6, "2147483647"; 7, "-2147483648"];
-    List.iter (fun (n, s) -> test n (format "0x%X" (of_string s)) s)
+    List.iter (fun (n, s) -> test n (Printf.sprintf M.format (of_string s)) s)
       [8, "0x0"; 9, "0x123"; 10, "0xABCDEF"; 11, "0x12345678";
        12, "0x7FFFFFFF"; 13, "0x80000000"; 14, "0xFFFFFFFF"];
     test 15 (to_string max_int) "2147483647";
@@ -373,7 +374,7 @@ struct
        5, "1234567890123456789";
        6, "9223372036854775807";
        7, "-9223372036854775808"];
-    List.iter (fun (n, s) -> test n ("0x" ^ format "%X" (of_string s)) s)
+    List.iter (fun (n, s) -> test n (Printf.sprintf M.format (of_string s)) s)
       [8, "0x0"; 9, "0x123"; 10, "0xABCDEF"; 11, "0x1234567812345678";
        12, "0x7FFFFFFFFFFFFFFF"; 13, "0x8000000000000000";
        14, "0xFFFFFFFFFFFFFFFF"];
@@ -583,17 +584,23 @@ let testcomp_nativeint (a : nativeint) (b : nativeint) =
   (a = b, a <> b, a < b, a > b, a <= b, a >= b, compare a b,
    Nativeint.unsigned_compare a b)
 
+let format_int32 : (int32 -> 'a, 'b, 'a) format = "0x%lX"
+let format_int64 : (int64 -> 'a, 'b, 'a) format = "0x%LX"
+let format_nativeint : (nativeint -> 'a, 'b, 'a) format = "0x%nX"
+
 let _ =
   testing_function "-------- Int32 --------";
   let module A = Test32(struct type t = int32
                                module Ops = Int32
                                let testcomp = testcomp_int32
-                               let skip_float_tests = false end) in
+                               let skip_float_tests = false
+                               let format = format_int32 end) in
   print_newline(); testing_function "-------- Int64 --------";
   let module B = Test64(struct type t = int64
                                module Ops = Int64
                                let testcomp = testcomp_int64
-                               let skip_float_tests = false end) in
+                               let skip_float_tests = false
+                               let format = format_int64 end) in
   print_newline(); testing_function "-------- Nativeint --------";
   begin match Sys.word_size with
     32 ->
@@ -601,14 +608,16 @@ let _ =
         Test32(struct type t = nativeint
                       module Ops = Nativeint
                       let testcomp = testcomp_nativeint
-                      let skip_float_tests = true end)
+                      let skip_float_tests = true
+                      let format = format_nativeint end)
       in ()
   | 64 ->
       let module C =
         Test64(struct type t = nativeint
                       module Ops = Nativeint
                       let testcomp = testcomp_nativeint
-                      let skip_float_tests = true end)
+                      let skip_float_tests = true
+                      let format = format_nativeint end)
       in ()
   | _ ->
       assert false
