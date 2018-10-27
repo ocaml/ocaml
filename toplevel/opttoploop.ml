@@ -162,7 +162,8 @@ let input_name = Location.input_name
 
 let parse_mod_use_file name lb =
   let modname =
-    String.capitalize_ascii (Filename.chop_extension (Filename.basename name))
+    String.capitalize_ascii
+      (Filename.remove_extension (Filename.basename name))
   in
   let items =
     List.concat
