@@ -1828,7 +1828,7 @@ OCaml 4.06.0 (3 Nov 2017):
   (Hannes Mehnert)
 
 - GPR#1386: provide configure-time options to fine-tune the safe-string
-  options and default settings changed by GPR#1525.
+  options and default settings changed by GPR#1252.
 
   The previous configure option -safe-string is now
   renamed -force-safe-string.

@@ -46,6 +46,7 @@ README*                  typo.missing-header
 /.mailmap                typo.long-line typo.missing-header typo.non-ascii
 /.merlin                 typo.missing-header
 /Changes                 typo.utf8 typo.missing-header
+/News                    typo.utf8 typo.missing-header
 /INSTALL                 typo.missing-header
 /LICENSE                 typo.very-long-line typo.missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
@@ -153,6 +154,7 @@ tools/ocaml-objcopy-macosx text eol=lf
 tools/ocamlmktop.tpl text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
+tools/markdown-add-pr-links.sh text eol=lf
 
 # These two are cat scripts, so may not actually require this
 config/auto-aux/sharpbang text eol=lf
