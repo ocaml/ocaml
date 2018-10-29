@@ -100,7 +100,9 @@ let code_for_function_prologue ~function_name ~node_hole =
         Cop (Cand, [Cvar node; Cconst_int 1], dbg),
         Cifthenelse (
           Cop (Ccmpi Cne, [Cvar must_allocate_node; Cconst_int 1], dbg),
+          dbg,
           Cvar node,
+          dbg,
           Clet (VP.create is_new_node,
             Clet (VP.create pc, Cconst_symbol function_name,
               Cop (Cextcall (caml_spacetime_allocate_node,
@@ -116,8 +118,12 @@ let code_for_function_prologue ~function_name ~node_hole =
                 else
                   Cifthenelse (
                     Cop (Ccmpi Ceq, [Cvar is_new_node; Cconst_int 0], dbg),
+                    dbg,
                     Cvar new_node,
-                    initialize_direct_tail_call_points_and_return_node))))))
+                    dbg,
+                    initialize_direct_tail_call_points_and_return_node,
+                    dbg))),
+          dbg)))
 
 let code_for_blockheader ~value's_header ~node ~dbg =
   let num_words = Nativeint.shift_right_logical value's_header 10 in
@@ -160,8 +166,11 @@ let code_for_blockheader ~value's_header ~node ~dbg =
       Clet (VP.create profinfo,
         Cifthenelse (
           Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_int 1 (* () *)], dbg),
+          dbg,
           Cvar existing_profinfo,
-          generate_new_profinfo),
+          dbg,
+          generate_new_profinfo,
+          dbg),
         Clet (VP.create existing_count,
           Cop (Cload (Word_int, Asttypes.Mutable), [
             Cop (Caddi,

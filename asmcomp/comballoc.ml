@@ -44,7 +44,8 @@ let rec combine i allocstate =
           if ofs + sz < Config.max_young_wosize * Arch.size_addr then begin
             let (newnext, newsz) =
               combine i.next (Pending_alloc(reg, ofs + sz)) in
-            (instr_cons (Iop(Iintop_imm(Iadd, ofs))) [| reg |] i.res newnext,
+            (instr_cons_debug (Iop(Iintop_imm(Iadd, ofs))) [| reg |] i.res
+              i.dbg newnext,
              newsz)
           end else begin
             let (newnext, newsz) =
@@ -66,29 +67,31 @@ let rec combine i allocstate =
       let newifso = combine_restart ifso in
       let newifnot = combine_restart ifnot in
       let newnext = combine_restart i.next in
-      (instr_cons (Iifthenelse(test, newifso, newifnot)) i.arg i.res newnext,
+      (instr_cons_debug (Iifthenelse(test, newifso, newifnot)) i.arg i.res
+         i.dbg newnext,
        allocated_size allocstate)
   | Iswitch(table, cases) ->
       let newcases = Array.map combine_restart cases in
       let newnext = combine_restart i.next in
-      (instr_cons (Iswitch(table, newcases)) i.arg i.res newnext,
+      (instr_cons_debug (Iswitch(table, newcases)) i.arg i.res i.dbg newnext,
        allocated_size allocstate)
   | Iloop(body) ->
       let newbody = combine_restart body in
-      (instr_cons (Iloop(newbody)) i.arg i.res i.next,
+      (instr_cons_debug (Iloop(newbody)) i.arg i.res i.dbg i.next,
        allocated_size allocstate)
   | Icatch(rec_flag, handlers, body) ->
       let (newbody, sz) = combine body allocstate in
       let newhandlers =
         List.map (fun (io, handler) -> io, combine_restart handler) handlers in
       let newnext = combine_restart i.next in
-      (instr_cons (Icatch(rec_flag, newhandlers, newbody))
-         i.arg i.res newnext, sz)
+      (instr_cons_debug (Icatch(rec_flag, newhandlers, newbody))
+         i.arg i.res i.dbg newnext, sz)
   | Itrywith(body, handler) ->
       let (newbody, sz) = combine body allocstate in
       let newhandler = combine_restart handler in
       let newnext = combine_restart i.next in
-      (instr_cons (Itrywith(newbody, newhandler)) i.arg i.res newnext, sz)
+      (instr_cons_debug (Itrywith(newbody, newhandler)) i.arg i.res i.dbg
+        newnext, sz)
 
 and combine_restart i =
   let (newi, _) = combine i No_alloc in newi

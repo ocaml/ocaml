@@ -22,7 +22,7 @@ open Mach
 let insert_move src dst next =
   if src.loc = dst.loc
   then next
-  else instr_cons (Iop Imove) [|src|] [|dst|] next
+  else instr_cons_debug (Iop Imove) [|src|] [|dst|] next.dbg next
 
 let insert_moves src dst next =
   let rec insmoves i =
@@ -102,27 +102,34 @@ method private reload i =
   | Iifthenelse(tst, ifso, ifnot) ->
       let newarg = self#reload_test tst i.arg in
       insert_moves i.arg newarg
-        (instr_cons
+        (instr_cons_debug
           (Iifthenelse(tst, self#reload ifso, self#reload ifnot)) newarg [||]
+          i.dbg
           (self#reload i.next))
   | Iswitch(index, cases) ->
       let newarg = self#makeregs i.arg in
       insert_moves i.arg newarg
-        (instr_cons (Iswitch(index, Array.map (self#reload) cases)) newarg [||]
+        (instr_cons_debug
+          (Iswitch(index, Array.map (self#reload) cases)) newarg [||]
+          i.dbg
           (self#reload i.next))
   | Iloop body ->
-      instr_cons (Iloop(self#reload body)) [||] [||] (self#reload i.next)
+      instr_cons_debug (Iloop(self#reload body)) [||] [||]
+        i.dbg (self#reload i.next)
   | Icatch(rec_flag, handlers, body) ->
       let new_handlers = List.map
           (fun (nfail, handler) -> nfail, self#reload handler)
           handlers in
-      instr_cons
+      instr_cons_debug
         (Icatch(rec_flag, new_handlers, self#reload body)) [||] [||]
+        i.dbg
         (self#reload i.next)
-  | Iexit i ->
-      instr_cons (Iexit i) [||] [||] dummy_instr
+  | Iexit k ->
+      instr_cons_debug (Iexit k) [||] [||] i.dbg dummy_instr
   | Itrywith(body, handler) ->
-      instr_cons (Itrywith(self#reload body, self#reload handler)) [||] [||]
+      instr_cons_debug
+        (Itrywith(self#reload body, self#reload handler)) [||] [||]
+        i.dbg
         (self#reload i.next)
 
 method fundecl f =

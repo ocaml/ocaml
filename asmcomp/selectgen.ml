@@ -388,7 +388,7 @@ method effects_of exp =
   | Cphantom_let (_var, _defining_expr, body) -> self#effects_of body
   | Csequence (e1, e2) ->
     EC.join (self#effects_of e1) (self#effects_of e2)
-  | Cifthenelse (cond, ifso, ifnot) ->
+  | Cifthenelse (cond, _ifso_dbg, ifso, _ifnot_dbg, ifnot, _dbg) ->
     EC.join (self#effects_of cond)
       (EC.join (self#effects_of ifso) (self#effects_of ifnot))
   | Cop (op, args, _) ->
@@ -664,13 +664,15 @@ method regs_for tys = Reg.createv tys
 (* Buffering of instruction sequences *)
 
 val mutable instr_seq = dummy_instr
+val mutable current_dbg = Debuginfo.none
 
 method insert_debug env desc dbg arg res =
   instr_seq <- instr_cons_debug desc arg res dbg
-    ~phantom_available_before:env.phantom_vars instr_seq
+    ~phantom_available_before:env.phantom_vars instr_seq;
+  current_dbg <- dbg
 
 method insert env desc arg res =
-  instr_seq <- instr_cons desc arg res
+  instr_seq <- instr_cons_debug desc arg res current_dbg
     ~phantom_available_before:env.phantom_vars instr_seq
 
 method extract_core ~end_instr =
@@ -830,8 +832,9 @@ method emit_expr (env:environment) exp ~bound_name =
           self#insert_debug env (Iraise k) dbg rd [||];
           None
       end
-  | Cop(Ccmpf _, _, _) ->
-      self#emit_expr env (Cifthenelse(exp, Cconst_int 1, Cconst_int 0))
+  | Cop(Ccmpf _, _, dbg) ->
+      self#emit_expr env
+        (Cifthenelse(exp, dbg, Cconst_int 1, dbg, Cconst_int 0, dbg))
         ~bound_name
   | Cop(op, args, dbg) ->
       begin match self#emit_parts_list env args with
@@ -927,24 +930,31 @@ method emit_expr (env:environment) exp ~bound_name =
         None -> None
       | Some _ -> self#emit_expr env e2 ~bound_name
       end
-  | Cifthenelse(econd, eif, eelse) ->
+  | Cifthenelse(econd, ifso_dbg, eif, ifnot_dbg, eelse, dbg) ->
+      current_dbg <- dbg;
       let (cond, earg) = self#select_condition econd in
       begin match self#emit_expr env earg ~bound_name:None with
         None -> None
       | Some rarg ->
-          let (rif, sif) = self#emit_sequence env eif ~bound_name in
-          let (relse, selse) = self#emit_sequence env eelse ~bound_name in
+          let (rif, sif) =
+            self#emit_sequence env ifso_dbg eif ~bound_name
+          in
+          let (relse, selse) =
+            self#emit_sequence env ifnot_dbg eelse ~bound_name
+          in
           let r = join env rif sif relse selse ~bound_name in
           self#insert env (Iifthenelse(cond, sif#extract, selse#extract))
                       rarg [||];
           r
       end
-  | Cswitch(esel, index, ecases, _dbg) ->
+  | Cswitch(esel, index, ecases, dbg) ->
+      current_dbg <- dbg;
       begin match self#emit_expr env esel ~bound_name:None with
         None -> None
       | Some rsel ->
           let rscases =
-            Array.map (fun case -> self#emit_sequence env case ~bound_name)
+            Array.map (fun (case, case_dbg) ->
+                self#emit_sequence env case_dbg case ~bound_name)
               ecases
           in
           let r = join_array env rscases ~bound_name in
@@ -953,33 +963,37 @@ method emit_expr (env:environment) exp ~bound_name =
                       rsel [||];
           r
       end
-  | Cloop(ebody) ->
-      let (_rarg, sbody) = self#emit_sequence env ebody ~bound_name:None in
+  | Cloop(ebody, dbg) ->
+      let (_rarg, sbody) =
+        self#emit_sequence env dbg ebody ~bound_name:None
+      in
       self#insert env (Iloop(sbody#extract)) [||] [||];
       Some [||]
   | Ccatch(_, [], e1) ->
       self#emit_expr env e1 ~bound_name
   | Ccatch(rec_flag, handlers, body) ->
       let handlers =
-        List.map (fun (nfail, ids, e2) ->
+        List.map (fun (nfail, ids, e2, dbg) ->
             let rs =
               List.map
                 (fun (id, typ) ->
                   let r = self#regs_for typ in name_regs id r; r)
                 ids in
-            (nfail, ids, rs, e2))
+            (nfail, ids, rs, e2, dbg))
           handlers
       in
       let env =
         (* Since the handlers may be recursive, and called from the body,
            the same environment is used for translating both the handlers and
            the body. *)
-        List.fold_left (fun env (nfail, _ids, rs, _e2) ->
+        List.fold_left (fun env (nfail, _ids, rs, _e2, _dbg) ->
             env_add_static_exception nfail rs env)
           env handlers
       in
-      let (r_body, s_body) = self#emit_sequence env body ~bound_name in
-      let translate_one_handler (nfail, ids, rs, e2) =
+      let (r_body, s_body) =
+        self#emit_sequence env current_dbg body ~bound_name
+      in
+      let translate_one_handler (nfail, ids, rs, e2, dbg) =
         assert(List.length ids = List.length rs);
         let ids_and_rs = List.combine ids rs in
         let new_env =
@@ -987,7 +1001,7 @@ method emit_expr (env:environment) exp ~bound_name =
             env ids_and_rs
         in
         let (r, s) =
-          self#emit_sequence new_env e2 ~bound_name ~at_start:(fun seq ->
+          self#emit_sequence new_env dbg e2 ~bound_name ~at_start:(fun seq ->
             List.iter (fun ((var, _typ), r) ->
                 let provenance = VP.provenance var in
                 let var = VP.var var in
@@ -999,7 +1013,7 @@ method emit_expr (env:environment) exp ~bound_name =
                     is_assignment = false;
                   }
                 in
-                seq#insert_debug env (Iop naming_op) Debuginfo.none r [| |])
+                seq#insert_debug env (Iop naming_op) dbg r [| |])
               ids_and_rs)
         in
         (nfail, (r, s))
@@ -1008,7 +1022,8 @@ method emit_expr (env:environment) exp ~bound_name =
       let a = Array.of_list ((r_body, s_body) :: List.map snd l) in
       let r = join_array env a ~bound_name in
       let aux (nfail, (_r, s)) = (nfail, s#extract) in
-      self#insert env (Icatch (rec_flag, List.map aux l, s_body#extract)) [||] [||];
+      self#insert env (Icatch (rec_flag, List.map aux l, s_body#extract))
+        [||] [||];
       r
   | Cexit (nfail,args) ->
       begin match self#emit_parts_list env args with
@@ -1031,11 +1046,11 @@ method emit_expr (env:environment) exp ~bound_name =
           self#insert env (Iexit nfail) [||] [||];
           None
       end
-  | Ctrywith(e1, v, e2) ->
-      let (r1, s1) = self#emit_sequence env e1 ~bound_name in
+  | Ctrywith(e1, v, e2, dbg) ->
+      let (r1, s1) = self#emit_sequence env current_dbg e1 ~bound_name in
       let rv = self#regs_for typ_val in
       let (r2, s2) =
-        self#emit_sequence (env_add v rv env) e2 ~bound_name
+        self#emit_sequence (env_add v rv env) dbg e2 ~bound_name
           ~at_start:(fun seq ->
             let provenance = VP.provenance v in
             let var = VP.var v in
@@ -1047,20 +1062,20 @@ method emit_expr (env:environment) exp ~bound_name =
                 is_assignment = false;
               }
             in
-            seq#insert_debug env (Iop naming_op) Debuginfo.none rv [| |])
+            seq#insert_debug env (Iop naming_op) dbg rv [| |])
       in
       let r = join env r1 s1 r2 s2 ~bound_name in
       let s2 = s2#extract in
       self#insert env
         (Itrywith(s1#extract,
-                  instr_cons (Iop Imove) [|Proc.loc_exn_bucket|] rv
+                  instr_cons_debug (Iop Imove) [|Proc.loc_exn_bucket|] rv
                     ~phantom_available_before:s2.phantom_available_before
-                    s2))
+                    dbg s2))
         [||] [||];
       r
 
-method private emit_sequence ?at_start (env:environment) exp ~bound_name =
-  let s = {< instr_seq = dummy_instr >} in
+method private emit_sequence ?at_start (env:environment) dbg exp ~bound_name =
+  let s = {< instr_seq = dummy_instr; current_dbg = dbg; >} in
   begin match at_start with
   | None -> ()
   | Some f -> f s
@@ -1323,41 +1338,46 @@ method emit_tail (env:environment) exp =
         None -> ()
       | Some _ -> self#emit_tail env e2
       end
-  | Cifthenelse(econd, eif, eelse) ->
+  | Cifthenelse(econd, ifso_dbg, eif, ifnot_dbg, eelse, dbg) ->
+      current_dbg <- dbg;
       let (cond, earg) = self#select_condition econd in
       begin match self#emit_expr env earg ~bound_name:None with
         None -> ()
       | Some rarg ->
-          self#insert env (Iifthenelse(cond, self#emit_tail_sequence env eif,
-                                         self#emit_tail_sequence env eelse))
-                      rarg [||]
+          self#insert env (
+            Iifthenelse (cond,
+              self#emit_tail_sequence env ifso_dbg eif,
+              self#emit_tail_sequence env ifnot_dbg eelse))
+            rarg [||]
       end
   | Cswitch(esel, index, ecases, _dbg) ->
       begin match self#emit_expr env esel ~bound_name:None with
         None -> ()
       | Some rsel ->
           self#insert env
-            (Iswitch(index, Array.map (self#emit_tail_sequence env) ecases))
+            (Iswitch(index, Array.map (fun (case, dbg) ->
+                self#emit_tail_sequence env dbg case)
+              ecases))
             rsel [||]
       end
   | Ccatch(_, [], e1) ->
       self#emit_tail env e1
   | Ccatch(rec_flag, handlers, e1) ->
       let handlers =
-        List.map (fun (nfail, ids, e2) ->
+        List.map (fun (nfail, ids, e2, dbg) ->
             let rs =
               List.map
                 (fun (id, typ) ->
                   let r = self#regs_for typ in name_regs id r; r)
                 ids in
-            (nfail, ids, rs, e2))
+            (nfail, ids, rs, e2, dbg))
           handlers in
       let env =
-        List.fold_left (fun env (nfail, _ids, rs, _e2) ->
+        List.fold_left (fun env (nfail, _ids, rs, _e2, _dbg) ->
             env_add_static_exception nfail rs env)
           env handlers in
-      let s_body = self#emit_tail_sequence env e1 in
-      let aux (nfail, ids, rs, e2) =
+      let s_body = self#emit_tail_sequence env current_dbg e1 in
+      let aux (nfail, ids, rs, e2, dbg) =
         assert(List.length ids = List.length rs);
         let ids_and_rs = List.combine ids rs in
         let new_env =
@@ -1365,7 +1385,7 @@ method emit_tail (env:environment) exp =
             (fun env ((id, _typ),r) -> env_add id r env)
             env ids_and_rs in
         let seq =
-          self#emit_tail_sequence new_env e2 ~at_start:(fun seq ->
+          self#emit_tail_sequence new_env dbg e2 ~at_start:(fun seq ->
             List.iter (fun ((var, _typ), r) ->
                 let provenance = VP.provenance var in
                 let var = VP.var var in
@@ -1377,17 +1397,20 @@ method emit_tail (env:environment) exp =
                     is_assignment = false;
                   }
                 in
-                seq#insert_debug env (Iop naming_op) Debuginfo.none r [| |])
+                seq#insert_debug env (Iop naming_op) dbg r [| |])
               ids_and_rs)
         in
         nfail, seq
       in
-      self#insert env (Icatch(rec_flag, List.map aux handlers, s_body)) [||] [||]
-  | Ctrywith(e1, v, e2) ->
-      let (opt_r1, s1) = self#emit_sequence env e1 ~bound_name:None in
+      self#insert env (Icatch (rec_flag, List.map aux handlers, s_body))
+        [||] [||]
+  | Ctrywith(e1, v, e2, dbg) ->
+      let (opt_r1, s1) =
+        self#emit_sequence env current_dbg e1 ~bound_name:None
+      in
       let rv = self#regs_for typ_val in
       let s2 =
-        self#emit_tail_sequence (env_add v rv env) e2
+        self#emit_tail_sequence (env_add v rv env) dbg e2
           ~at_start:(fun seq ->
             let provenance = VP.provenance v in
             let var = VP.var v in
@@ -1403,8 +1426,9 @@ method emit_tail (env:environment) exp =
       in
       self#insert env
         (Itrywith(s1#extract,
-                  instr_cons (Iop Imove) [|Proc.loc_exn_bucket|] rv s2
-                    ~phantom_available_before:s2.phantom_available_before))
+                  instr_cons_debug (Iop Imove) [|Proc.loc_exn_bucket|] rv
+                    ~phantom_available_before:s2.phantom_available_before
+                    dbg s2))
         [||] [||];
       begin match opt_r1 with
         None -> ()
@@ -1416,8 +1440,8 @@ method emit_tail (env:environment) exp =
   | _ ->
       self#emit_return env exp
 
-method private emit_tail_sequence ?at_start env exp =
-  let s = {< instr_seq = dummy_instr >} in
+method private emit_tail_sequence ?at_start env dbg exp =
+  let s = {< instr_seq = dummy_instr; current_dbg = dbg; >} in
   begin match at_start with
   | None -> ()
   | Some f -> f s
