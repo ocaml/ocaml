@@ -45,6 +45,8 @@ module Block : sig
 
   val frame_classification : t -> frame_classification
 
+  val parent : t -> t option
+
   include Identifiable.S with type t := t
 end
 

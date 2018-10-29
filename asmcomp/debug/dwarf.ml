@@ -14,7 +14,9 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+module ARV = Available_ranges_all_vars
 module DAH = Dwarf_attribute_helpers
+module L = Linearize
 module SLDL = Simple_location_description_lang
 
 type t = {
@@ -28,7 +30,7 @@ type t = {
   mutable emitted : bool;
 }
 
-type proto_dies_for_ident = {
+type proto_dies_for_var = {
   value_die_lvalue : Proto_die.reference;
   value_die_rvalue : Proto_die.reference;
   type_die : Proto_die.reference;
@@ -123,9 +125,7 @@ type var_uniqueness = {
   location_is_unique : bool;
 }
 
-let calculate_var_uniqueness ~available_ranges_vars
-      ~available_ranges_phantom_vars =
-  let module ARV = Available_ranges_all_vars in
+let calculate_var_uniqueness ~available_ranges_vars =
   let module String = Misc.Stdlib.String in
   let by_name = String.Tbl.create 42 in
   let by_debuginfo = Debuginfo.Tbl.create 42 in
@@ -206,7 +206,7 @@ let normal_type_for_var _t ~parent var ~output_path =
 let type_die_reference_for_var var ~proto_dies_for_vars =
   match proto_dies_for_variable var ~proto_dies_for_vars with
   | None -> None
-  | Some type_die -> type_die
+  | Some dies -> Some dies.type_die
 
 (* Build a new DWARF type for [var].  Each variable has its
    own type, which is basically its stamped name, and is nothing to do with
@@ -221,7 +221,7 @@ let type_die_reference_for_var var ~proto_dies_for_vars =
    It is arguably more robust, too.
 *)
 let construct_type_of_value_description t ~parent var ~output_path
-      ~(type_info : Ranges.type_info)
+      ~(phantom_defining_expr : ARV.Range_info.phantom_defining_expr)
       ~proto_dies_for_vars ~reference =
   (* CR-soon mshinwell: share code with [normal_type_for_var], above *)
   let var =
@@ -247,35 +247,36 @@ let construct_type_of_value_description t ~parent var ~output_path
     in
     ()
   in
-  match type_info with
-  | From_cmt_file _ -> normal_case ()
-  | Phantom (_provenance, defining_expr) ->
+  match phantom_defining_expr with
+  | Non_phantom -> normal_case ()
+  | Phantom defining_expr ->
     match defining_expr with
-    | None -> normal_case ()
-    | Some (Iphantom_const_int _)
-    | Some (Iphantom_const_symbol _)
-    | Some (Iphantom_read_symbol_field _) -> normal_case ()
-    | Some (Iphantom_var var) ->
-      begin match type_die_reference_for_var var ~proto_dies_for_vars with
-      | None ->
-        (* This (and other similar cases below) guard against the case where
-           a variable referenced in the defining expression of a phantom
-           variable doesn't have any available range. *)
-        DAH.create_type ~proto_die:t.value_type_proto_die
-      | Some target_type ->
-        let _proto_die : Proto_die.t =
-          Proto_die.create ~reference
-            ~parent
-            ~tag:Typedef
-            ~attribute_values:[
-              DAH.create_name name;
-              DAH.create_type_from_reference ~proto_die_reference:target_type;
-            ]
-            ()
-        in
-        ()
-      end
-    | Some (Iphantom_read_field { var = _; field = _; }) ->
+    | Iphantom_const_int _
+    | Iphantom_const_symbol _
+    | Iphantom_read_symbol_field _ -> normal_case ()
+    | Iphantom_var var ->
+      let type_attribute_value =
+        match type_die_reference_for_var var ~proto_dies_for_vars with
+        | None ->
+          (* This (and other similar cases below) guard against the case where
+             a variable referenced in the defining expression of a phantom
+             variable doesn't have any available range. *)
+          DAH.create_type ~proto_die:t.value_type_proto_die
+        | Some target_type ->
+          DAH.create_type_from_reference ~proto_die_reference:target_type
+      in
+      let _proto_die : Proto_die.t =
+        Proto_die.create ~reference
+          ~parent
+          ~tag:Typedef
+          ~attribute_values:[
+            DAH.create_name name;
+            type_attribute_value;
+          ]
+          ()
+      in
+      ()
+    | Iphantom_read_field { var = _; field = _; } ->
       (* We cannot dereference an implicit pointer when evaluating a DWARF
          location expression, which means we must restrict ourselves to 
          projections from non-phantom identifiers.  This is ensured at the
@@ -283,12 +284,12 @@ let construct_type_of_value_description t ~parent var ~output_path
          [Flambda_to_clambda] only generates [Uphantom_read_var_field] on
          the (non-phantom) environment parameter. *)
       normal_case ()
-    | Some (Iphantom_offset_var { var = _; offset_in_words = _; }) ->
+    | Iphantom_offset_var { var = _; offset_in_words = _; } ->
       (* The same applies here as for [Iphantom_read_var_field] above, but we
          never generate this for phantom identifiers at present (it is only
          used for offsetting a closure environment variable). *)
       normal_case ()
-    | Some (Iphantom_block { tag = _; fields; }) ->
+    | Iphantom_block { tag = _; fields; } ->
       (* The block will be described as a composite location expression
          pointed at by an implicit pointer.  The corresponding type is
          a pointer type whose target type is a structure type; the members of
@@ -432,7 +433,9 @@ let var_location_description (reg : Reg.t) ~offset_from_cfa_in_bytes
         Some (Simple (SLDL.compile (SLDL.of_rvalue (
           SLDL.Rvalue.in_stack_slot ~offset_in_words))))
 
-let phantom_var_location_description ~provenance ~defining_expr ~need_rvalue
+let phantom_var_location_description t ~provenance
+      ~(defining_expr : Mach.phantom_defining_expr) ~need_rvalue
+      ~proto_dies_for_vars ~parent
       : location_description option =
   let module SLD = Simple_location_description in
   assert (not need_rvalue);  (* See comments below. *)
@@ -582,13 +585,13 @@ let phantom_var_location_description ~provenance ~defining_expr ~need_rvalue
 let location_list_entry t ~parent ~(fundecl : L.fundecl)
       ~subrange ~proto_dies_for_vars ~provenance ~need_rvalue
       : Location_list_entry.t option =
-  let module AR = Available_ranges_all_vars in
   let location_description =
-    match AR.Subrange.subrange_info subrange with
+    match ARV.Subrange.info subrange with
     | Non_phantom { reg; offset_from_cfa_in_bytes; } ->
       var_location_description reg ~offset_from_cfa_in_bytes ~need_rvalue
     | Phantom defining_expr ->
-      phantom_var_location_description ~provenance ~defining_expr ~need_rvalue
+      phantom_var_location_description t ~provenance ~defining_expr
+        ~need_rvalue ~proto_dies_for_vars ~parent
   in
   let single_location_description =
     match location_description with
@@ -602,15 +605,15 @@ let location_list_entry t ~parent ~(fundecl : L.fundecl)
   match single_location_description with
   | None -> None
   | Some single_location_description ->
-    let start_pos = AR.Subrange.start_pos subrange in
-    let end_pos = AR.Subrange.end_pos subrange in
-    let end_pos_offset = AR.Subrange.end_pos_offset subrange in
+    let start_pos = ARV.Subrange.start_pos subrange in
+    let end_pos = ARV.Subrange.end_pos subrange in
+    let end_pos_offset = ARV.Subrange.end_pos_offset subrange in
     let location_list_entry =
       Location_list_entry.create_location_list_entry
         ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name)
         ~first_address_when_in_scope:(Asm_label.create_int start_pos)
         ~first_address_when_not_in_scope:(Asm_label.create_int end_pos)
-        ~first_address_when_not_in_scope_offset:end_pos_offset
+        ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
         ~single_location_description
     in
     Some location_list_entry
@@ -619,10 +622,10 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue
       (var : Backend_var.t) ~hidden ~ident_for_type ~range =
-  let module AR = Available_ranges_all_vars in
-  let range_info = AR.Range.range_info range in
-  let provenance = AR.Range_info.provenance range_info in
-  let is_parameter = AR.Range_info.is_parameter range in
+  let range_info = ARV.Range.info range in
+  let provenance = ARV.Range_info.provenance range_info in
+  let is_parameter = ARV.Range_info.is_parameter range_info in
+  let phantom_defining_expr = ARV.Range_info.phantom_defining_expr range_info in
   let parent_proto_die : Proto_die.t =
     match is_parameter with
     | Parameter _index ->
@@ -635,7 +638,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
          of which may be out of scope, being visible in the debugger at the
          same time. *)
       match provenance with
-      | None -> None
+      | None -> whole_function_lexical_block
       | Some provenance ->
         let dbg = Backend_var.Provenance.debuginfo provenance in
         let block = Debuginfo.innermost_block dbg in
@@ -660,7 +663,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
        deltas in [Location_list_entry]), and the addresses were wrong in the
        final executable.  Oh well. *)
     let location_list_entries =
-      AR.Range.fold ~init:[]
+      ARV.Range.fold range ~init:[]
         ~f:(fun location_list_entries subrange ->
           let location_list_entry =
             location_list_entry t ~parent:(Some function_proto_die)
@@ -687,7 +690,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
     | None -> []
     | Some reference ->
       let name_is_unique, location_is_unique =
-        match Backend_var.Tbl.find var uniqueness_by_var with
+        match Backend_var.Tbl.find uniqueness_by_var var with
         | exception Not_found ->
           Misc.fatal_errorf "No uniqueness information for %a"
             Backend_var.print var
@@ -710,14 +713,13 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
           match provenance with
           | None -> Backend_var.unique_toplevel_name var
           | Some provenance ->
-            let location = Backend_var.Provenance.location provenance in
-            if Debuginfo.is_none location then
+            let dbg = Backend_var.Provenance.debuginfo provenance in
+            if Debuginfo.is_none dbg then
               Backend_var.unique_toplevel_name var
             else
-              Format.asprintf "%s[%a]"
+              Printf.sprintf "%s[%s]"
                 (Backend_var.name var)
-                Debuginfo.print_compact
-                (Backend_var.Provenance.location provenance)
+                (Debuginfo.to_string_frames_only_innermost_last dbg)
       in
       (* CR-someday mshinwell: This should be tidied up.  It's only correct by
          virtue of the fact we do the closure-env ones second below. *)
@@ -730,7 +732,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
         construct_type_of_value_description t
           ~parent:(Some t.compilation_unit_proto_die)
           ident_for_type ~output_path:t.output_path
-          ~type_info ~proto_dies_for_vars
+          ~phantom_defining_expr ~proto_dies_for_vars
           ~reference
       end;
       let name_attribute =
@@ -749,7 +751,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
   let reference =
     match proto_dies_for_variable var ~proto_dies_for_vars with
     | None -> None
-    | Some reference ->
+    | Some proto_dies ->
       if need_rvalue then Some proto_dies.value_die_rvalue
       else Some proto_dies.value_die_lvalue
   in
@@ -772,11 +774,10 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
    and other "fun_var"s in the current mutually-recursive set.  (The last
    two cases are handled by the explicit addition of phantom lets way back
    in [Flambda_to_clambda].)  Phantom variables are also covered. *)
-let iterate_over_variable_like_things _t ~available_ranges_all_vars ~f =
-  let module AR = Available_ranges_all_vars in
-  AR.iter available_ranges_vars ~f:(fun var range ->
-    let range_info = AR.Range.range_info range in
-    let provenance = AR.Range_info.provenance range_info in
+let iterate_over_variable_like_things _t ~available_ranges_vars ~f =
+  ARV.iter available_ranges_vars ~f:(fun var range ->
+    let range_info = ARV.Range.info range in
+    let provenance = ARV.Range_info.provenance range_info in
     (* There are two variables in play here:
        1. [var] is the "real" variable that is used to cross-reference
            between DIEs;
@@ -825,12 +826,12 @@ let iterate_over_variable_like_things _t ~available_ranges_all_vars ~f =
 
 let dwarf_for_variables_and_parameters t ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
-      ~available_ranges_all_vars ~(fundecl : Linearize.fundecl) =
+      ~available_ranges_vars ~(fundecl : Linearize.fundecl) =
   let proto_dies_for_vars = Backend_var.Tbl.create 42 in
   let uniqueness_by_var =
-    calculate_var_uniqueness ~available_ranges_all_vars
+    calculate_var_uniqueness ~available_ranges_vars
   in
-  iterate_over_variable_like_things t ~available_ranges_all_vars
+  iterate_over_variable_like_things t ~available_ranges_vars
     ~f:(fun var ~hidden:_ ~ident_for_type:_ ~range:_ ->
       let value_die_lvalue = Proto_die.create_reference () in
       let value_die_rvalue = Proto_die.create_reference () in
@@ -840,11 +841,11 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
         { value_die_lvalue; value_die_rvalue; type_die; });
   (* CR-someday mshinwell: Consider changing [need_rvalue] to use a variant
      type "lvalue or rvalue". *)
-  iterate_over_variable_like_things t ~available_ranges_all_vars
+  iterate_over_variable_like_things t ~available_ranges_vars
     ~f:(dwarf_for_variable t ~fundecl ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:false);
-  iterate_over_variable_like_things t ~available_ranges_all_vars
+  iterate_over_variable_like_things t ~available_ranges_vars
     ~f:(fun var ~hidden ~ident_for_type ~range ->
       (* We only need DIEs that yield actually on the DWARF stack the locations
          of entities for closure arguments, since those are the only ones
@@ -967,13 +968,13 @@ let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
     create_lexical_block_proto_dies available_ranges_lexical_blocks
       ~function_proto_die ~start_of_function ~end_of_function
   in
-  let available_ranges_all_vars =
-    Available_ranges_all_vars.create ~available_ranges_vars
+  let available_ranges_vars =
+    Available_ranges_vars.create ~available_ranges_vars
       ~available_ranges_phantom_vars
   in
   dwarf_for_variables_and_parameters t ~function_proto_die
     ~whole_function_lexical_block ~lexical_block_proto_dies
-    ~available_ranges_all_vars ~fundecl
+    ~available_ranges_vars ~fundecl
 
 let dwarf_for_toplevel_constant t ~vars ~module_path ~symbol =
   (* Give each variable the same definition for the moment. *)

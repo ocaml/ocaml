@@ -49,6 +49,16 @@ module Range_info = struct
     match t with
     | Var range_info -> ARV.Range_info.is_parameter range_info
     | Phantom_var range_info -> ARPV.Range_info.is_parameter range_info
+
+  type phantom_defining_expr =
+    | Non_phantom
+    | Phantom of Mach.phantom_defining_expr
+
+  let phantom_defining_expr (t : t) : phantom_defining_expr =
+    match t with
+    | Var _ -> Non_phantom
+    | Phantom_var range_info ->
+      Phantom (ARPV.Range_info.defining_expr range_info)
 end
 
 type t = {

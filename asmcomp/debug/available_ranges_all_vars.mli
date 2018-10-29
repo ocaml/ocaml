@@ -42,6 +42,12 @@ module Range_info : sig
   val provenance : t -> Backend_var.Provenance.t option
   val debuginfo : t -> Debuginfo.t
   val is_parameter : t -> Is_parameter.t
+
+  type phantom_defining_expr = private
+    | Non_phantom
+    | Phantom of Mach.phantom_defining_expr
+
+  val phantom_defining_expr : t -> phantom_defining_expr
 end
 
 module Range : sig
