@@ -1538,10 +1538,10 @@ end
 module StoreExpForSwitch =
   Switch.CtxStore
     (struct
-      type t = expression
+      type t = Debuginfo.t * expression
       type key = int option * int
       type context = int
-      let make_key index expr =
+      let make_key index (_dbg, expr) =
         let continuation =
           match expr with
           | Cexit (i,[]) -> Some i
@@ -2932,11 +2932,13 @@ and transl_sequor env (approx : then_else)
            else_dbg else_))
     then_
 
-and transl_switch loc env arg index cases = match Array.length cases with
+and transl_switch dbg env arg index cases = match Array.length cases with
 | 0 -> fatal_error "Cmmgen.transl_switch"
-| 1 -> transl env cases.(0)
+| 1 ->
+    let case, _dbg = cases.(0) in
+    transl env case
 | _ ->
-    let cases = Array.map (transl env) cases in
+    let cases = Array.map (fun (case, dbg) -> dbg, transl env case) cases in
     let store = StoreExpForSwitch.mk_store () in
     let index =
       Array.map
@@ -2960,12 +2962,14 @@ and transl_switch loc env arg index cases = match Array.length cases with
     done ;
     inters := (0, !this_high, !this_act) :: !inters ;
     match !inters with
-    | [_] -> cases.(0)
+    | [_] ->
+        let _dbg, case = cases.(0) in
+        case
     | inters ->
         bind "switcher" arg
           (fun a ->
             SwitcherBlocks.zyva
-              loc
+              dbg
               (0,n_index-1)
               a
               (Array.of_list inters) store)
@@ -3357,12 +3361,17 @@ let cache_public_method meths tag cache dbg =
                           [meths; lsl_const (Cvar mi) log2_size_addr dbg],
                           dbg)],
                      dbg)], dbg),
-           Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2], dbg)),
-           Cassign(li, Cvar mi)),
+          dbg, Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2], dbg)),
+          dbg, Cassign(li, Cvar mi),
+          dbg),
         Cifthenelse
-          (Cop(Ccmpi Cge, [Cvar li; Cvar hi], dbg), Cexit (raise_num, []),
-           Ctuple [])))),
-     Ctuple []),
+          (Cop(Ccmpi Cge, [Cvar li; Cvar hi], dbg),
+           dbg, Cexit (raise_num, []),
+           dbg, Ctuple [],
+           dbg))),
+       dbg),
+     Ctuple [],
+     dbg),
   Clet (
     VP.create tagged,
       Cop(Cadda, [lsl_const (Cvar li) log2_size_addr dbg;
@@ -3404,10 +3413,13 @@ let apply_function_body arity =
    if arity = 1 then app_fun clos 0 else
    Cifthenelse(
    Cop(Ccmpi Ceq, [get_field env (Cvar clos) 1 dbg; int_const arity], dbg),
+   dbg,
    Cop(Capply typ_val,
        get_field env (Cvar clos) 2 dbg :: List.map (fun s -> Cvar s) all_args,
        dbg),
-   app_fun clos 0))
+   dbg,
+   app_fun clos 0,
+   dbg))
 
 let send_function arity =
   let dbg = Debuginfo.none in
@@ -3433,8 +3445,11 @@ let send_function arity =
     Clet (
     VP.create real,
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag], dbg),
+                dbg,
                 cache_public_method (Cvar meths) tag cache dbg,
-                cached_pos),
+                dbg,
+                cached_pos,
+                dbg),
     Cop(Cload (Word_val, Mutable),
       [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths], dbg);
        Cconst_int(2*size_addr-1)], dbg)], dbg))))
