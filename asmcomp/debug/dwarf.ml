@@ -871,8 +871,9 @@ let create_lexical_block_proto_dies available_ranges ~function_proto_die
       ()
   in
   let lexical_block_proto_dies =
+    let module B = Debuginfo.Block in
+    let module CB = Debuginfo.Current_block in
     let module LB = Lexical_block_ranges in
-    let module B = Debuginfo.Current_block in
     LB.fold available_ranges
       ~init:B.Map.empty
       ~f:(fun lexical_block_proto_dies block _unique range ->
@@ -886,7 +887,7 @@ let create_lexical_block_proto_dies available_ranges ~function_proto_die
             ~address_label:(Asm_label.create_int end_pos)
         in
         let parent =
-          match B.parent block with
+          match CB.parent block with
           | None -> Some function_proto_die
           | Some parent ->
             match B.Map.find parent lexical_block_proto_dies with

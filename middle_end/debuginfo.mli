@@ -45,8 +45,6 @@ module Block : sig
 
   val frame_classification : t -> frame_classification
 
-  val parent : t -> t option
-
   include Identifiable.S with type t := t
 end
 
@@ -64,6 +62,8 @@ module Current_block : sig
   val add_scope : t -> t
 
   val inline : t -> at_call_site:t -> t
+
+  val parent : t -> Block.t option
 
   include Identifiable.S with type t := t
 end
