@@ -29,9 +29,17 @@
     overlap in code space, again for a single variable and function.
 *)
 
+module Subrange_state : sig
+  type t
+
+  val create : unit -> t
+  val advance_over_instruction : t -> Linearize.instruction -> t
+end
+
 module Subrange_info : sig
   type t
 
+  val create : Reg_with_debug_info.t -> Subrange_state.t -> t
   val reg : t -> Reg.t
   val offset_from_cfa_in_bytes : t -> int option
 end
@@ -39,13 +47,20 @@ end
 module Range_info : sig
   type t
 
+  val create
+     : Linearize.fundecl
+    -> Reg_with_debug_info.t
+    -> start_insn:Linearize.instruction
+    -> (Backend_var.t * t) option
+
   val provenance : t -> Backend_var.Provenance.t option
   val debuginfo : t -> Debuginfo.t
   val is_parameter : t -> Is_parameter.t
 end
 
-include Compute_ranges.S
+include Compute_ranges_intf.S
   with module Index := Backend_var
-  with module Key := Backend_var
+  with module Key := Reg_with_debug_info.Distinguishing_names_and_locations
+  with module Subrange_state := Subrange_state
   with module Subrange_info := Subrange_info
   with module Range_info := Range_info

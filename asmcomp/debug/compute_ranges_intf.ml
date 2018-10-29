@@ -46,7 +46,11 @@ end
 module type S_functor = sig
   module Index : Identifiable.S
 
-  module Key : Identifiable.S
+  module Key : sig
+    type t
+    module Set : Set.S with type elt = t
+    module Map : Map.S with type key = t
+  end
 
   module Subrange_state : S_subrange_state
 
@@ -68,7 +72,11 @@ end
 module type S = sig
   module Index : Identifiable.S
 
-  module Key : Identifiable.S
+  module Key : sig
+    type t
+    module Set : Set.S with type elt = t
+    module Map : Map.S with type key = t
+  end
 
   module Subrange_state : S_subrange_state
 
@@ -87,7 +95,7 @@ module type S = sig
 
     val start_pos : t -> Linearize.label
     val end_pos : t -> Linearize.label
-    val end_pos_offset : t -> int option
+    val end_pos_offset : t -> int
   end
 
   module Range : sig

@@ -2420,8 +2420,9 @@ asmcomp/debug/available_ranges_vars.cmx : \
     asmcomp/debug/compute_ranges_intf.cmx utils/clflags.cmx \
     asmcomp/backend_var.cmx asmcomp/debug/available_ranges_vars.cmi
 asmcomp/debug/available_ranges_vars.cmi : asmcomp/reg.cmi \
-    asmcomp/debug/is_parameter.cmi middle_end/debuginfo.cmi \
-    asmcomp/debug/compute_ranges.cmi asmcomp/backend_var.cmi
+    asmcomp/linearize.cmi asmcomp/debug/is_parameter.cmi \
+    middle_end/debuginfo.cmi asmcomp/debug/compute_ranges_intf.cmo \
+    asmcomp/backend_var.cmi
 asmcomp/debug/available_regs.cmo : asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi utils/clflags.cmi \

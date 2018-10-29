@@ -20,7 +20,6 @@ module L = Linearize
 
 module Make (S : Compute_ranges_intf.S_functor) = struct
   module Index = S.Index
-  module Key = S.Key
   module Subrange_state = S.Subrange_state
   module Subrange_info = S.Subrange_info
   module Range_info = S.Range_info
@@ -53,6 +52,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let start_pos t = t.start_pos
     let end_pos t = t.end_pos
     let end_pos_offset t = t.end_pos_offset
+    let info t = t.subrange_info
   end
 
   module Range = struct
@@ -70,7 +70,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         range_info;
       }
 
-    let range_info t = t.range_info
+    let info t = t.range_info
 
     let add_subrange t ~subrange =
       let start_pos = Subrange.start_pos subrange in
@@ -108,9 +108,6 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       | None, None ->
         Misc.fatal_error "Ranges.extremities on empty range"
 
-    let iter t ~f =
-      List.iter f t.subranges
-
     let fold t ~init ~f =
       List.fold_left f init t.subranges
   end
@@ -118,6 +115,10 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   type t = {
     ranges : Range.t Index.Tbl.t;
   }
+
+  let iter t ~f =
+    Index.Tbl.iter (fun var range -> f var range)
+      t.ranges
 
   let fold t ~init ~f =
     Index.Tbl.fold (fun var range acc -> f acc var range)
@@ -300,22 +301,28 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let actions, must_restart =
       actions_at_instruction ~insn ~prev_insn:!prev_insn
     in
-    List.fold_left (fun open_subranges key ->
-        let open_subranges = close_range key ~open_subranges in
-        open_range key ~open_subranges)
-      open_subranges
-      must_restart;
-    List.fold_left (fun open_subranges (key, (action : action)) ->
-        match action with
-        | Open_one_byte_range ->
-          let open_subranges = open_range key ~open_subranges in
-          close_range key ~end_pos_offset:1 ~open_subranges
-        | Open_range -> open_range key ~open_subranges
-        | Close_range -> close_range key ~end_pos_offset:0 ~open_subranges
-        | Close_range_one_byte_after ->
-          close_range key ~end_pos_offset:1 ~open_subranges)
-      open_subranges
-      actions;
+    let open_subranges =
+      KS.fold (fun key open_subranges ->
+          let open_subranges =
+            close_range key ~end_pos_offset:0 ~open_subranges
+          in
+          open_range key ~open_subranges)
+        must_restart
+        open_subranges
+    in
+    let open_subranges =
+      List.fold_left (fun open_subranges (key, (action : action)) ->
+          match action with
+          | Open_one_byte_range ->
+            let open_subranges = open_range key ~open_subranges in
+            close_range key ~end_pos_offset:1 ~open_subranges
+          | Open_range -> open_range key ~open_subranges
+          | Close_range -> close_range key ~end_pos_offset:0 ~open_subranges
+          | Close_range_one_byte_after ->
+            close_range key ~end_pos_offset:1 ~open_subranges)
+        open_subranges
+        actions
+    in
     begin if !used_label then
       insert_insn ~new_insn:label_insn
     end;
@@ -328,15 +335,13 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       let subrange_state =
         Subrange_state.advance_over_instruction subrange_state insn
       in
-      process_instruction t ~fundecl ~first_insn ~insn:insn.next
+      process_instruction t fundecl ~first_insn ~insn:insn.next
         ~prev_insn:(Some insn) ~open_subranges ~subrange_state
 
-  let process_instructions t ~fundecl ~first_insn =
+  let process_instructions t fundecl ~first_insn =
     let subrange_state = Subrange_state.create () in
-    process_instruction t ~fundecl ~first_insn ~insn:first_insn
+    process_instruction t fundecl ~first_insn ~insn:first_insn
       ~prev_insn:None ~open_subranges:KM.empty ~subrange_state
-
-  let all_indexes t = Index.Tbl.keys t.ranges
 
   let create (fundecl : L.fundecl) =
     if not !Clflags.debug then
@@ -346,10 +351,13 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       in
       t, fundecl
     else
-      let t = { ranges = S.Index.Tbl.create 42; } in
+      let t = { ranges = Index.Tbl.create 42; } in
       let first_insn =
-        Make_ranges.process_instructions t fundecl
+        process_instructions t fundecl
           ~first_insn:fundecl.fun_body
       in
-      t, { fundecl with fun_body = first_insn; }
+      let fundecl : L.fundecl =
+        { fundecl with fun_body = first_insn; }
+      in
+      t, fundecl
 end

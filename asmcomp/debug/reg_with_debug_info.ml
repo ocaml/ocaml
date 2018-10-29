@@ -50,11 +50,38 @@ module Debug_info = struct
     end
 end
 
+module type T = sig
+  type t
+  type reg_with_debug_info = t
+
+  val create
+     : reg:Reg.t
+    -> holds_value_of:Backend_var.t
+    -> part_of_value:int
+    -> num_parts_of_value:int
+    -> which_parameter:int option
+    -> provenance:Backend_var.Provenance.t option
+    -> t
+  val create_with_debug_info : reg:Reg.t -> debug_info:Debug_info.t option -> t
+  val create_without_debug_info : reg:Reg.t -> t
+  val create_copying_debug_info : reg:Reg.t -> debug_info_from:t -> t
+  val reg : t -> Reg.t
+  val location : t -> Reg.location
+  val debug_info : t -> Debug_info.t option
+  val at_same_location : t -> Reg.t -> register_class:(Reg.t -> int) -> bool
+  val holds_pointer : t -> bool
+  val holds_non_pointer : t -> bool
+  val assigned_to_stack : t -> bool
+  val clear_debug_info : t -> t
+end
+
 module T = struct
   type t = {
     reg : Reg.t;
     debug_info : Debug_info.t option;
   }
+
+  type reg_with_debug_info = t
 
   module Order = struct
     type t = Reg.t
@@ -63,75 +90,73 @@ module T = struct
 
   let compare t1 t2 =
     Order.compare t1.reg t2.reg
+
+  let create ~reg ~holds_value_of ~part_of_value ~num_parts_of_value
+        ~which_parameter ~provenance =
+    assert (num_parts_of_value >= 1);
+    assert (part_of_value >= 0 && part_of_value < num_parts_of_value);
+    assert (match which_parameter with None -> true | Some index -> index >= 0);
+    let debug_info : Debug_info.t =
+      { holds_value_of;
+        part_of_value;
+        num_parts_of_value;
+        which_parameter;
+        provenance;
+      }
+    in
+    { reg;
+      debug_info = Some debug_info;
+    }
+
+  let create_with_debug_info ~reg ~debug_info =
+    { reg;
+      debug_info;
+    }
+
+  let create_without_debug_info ~reg =
+    { reg;
+      debug_info = None;
+    }
+
+  let create_copying_debug_info ~reg ~debug_info_from =
+    { reg;
+      debug_info = debug_info_from.debug_info;
+    }
+
+  let reg t = t.reg
+  let location t = t.reg.loc
+
+  let holds_pointer t =
+    match t.reg.typ with
+    | Addr | Val -> true
+    | Int | Float -> false
+
+  let holds_non_pointer t = not (holds_pointer t)
+
+  let assigned_to_stack t =
+    match t.reg.loc with
+    | Stack _ -> true
+    | Reg _ | Unknown -> false
+
+  let regs_at_same_location (reg1 : Reg.t) (reg2 : Reg.t) ~register_class =
+    (* We need to check the register classes too: two locations both saying
+       "stack offset N" might actually be different physical locations, for
+       example if one is of class "Int" and another "Float" on amd64.
+       [register_class] will be [Proc.register_class], but cannot be here,
+       due to a circular dependency. *)
+    reg1.loc = reg2.loc
+      && register_class reg1 = register_class reg2
+
+  let at_same_location t (reg : Reg.t) ~register_class =
+    regs_at_same_location t.reg reg ~register_class
+
+  let debug_info t = t.debug_info
+
+  let clear_debug_info t =
+    { t with debug_info = None; }
 end
 
 include T
-
-type reg_with_debug_info = t
-
-let create ~reg ~holds_value_of ~part_of_value ~num_parts_of_value
-      ~which_parameter ~provenance =
-  assert (num_parts_of_value >= 1);
-  assert (part_of_value >= 0 && part_of_value < num_parts_of_value);
-  assert (match which_parameter with None -> true | Some index -> index >= 0);
-  let debug_info : Debug_info.t =
-    { holds_value_of;
-      part_of_value;
-      num_parts_of_value;
-      which_parameter;
-      provenance;
-    }
-  in
-  { reg;
-    debug_info = Some debug_info;
-  }
-
-let create_with_debug_info ~reg ~debug_info =
-  { reg;
-    debug_info;
-  }
-
-let create_without_debug_info ~reg =
-  { reg;
-    debug_info = None;
-  }
-
-let create_copying_debug_info ~reg ~debug_info_from =
-  { reg;
-    debug_info = debug_info_from.debug_info;
-  }
-
-let reg t = t.reg
-let location t = t.reg.loc
-
-let holds_pointer t =
-  match t.reg.typ with
-  | Addr | Val -> true
-  | Int | Float -> false
-
-let holds_non_pointer t = not (holds_pointer t)
-
-let assigned_to_stack t =
-  match t.reg.loc with
-  | Stack _ -> true
-  | Reg _ | Unknown -> false
-
-let regs_at_same_location (reg1 : Reg.t) (reg2 : Reg.t) ~register_class =
-  (* We need to check the register classes too: two locations both saying
-     "stack offset N" might actually be different physical locations, for
-     example if one is of class "Int" and another "Float" on amd64.
-     [register_class] will be [Proc.register_class], but cannot be here,
-     due to a circular dependency. *)
-  reg1.loc = reg2.loc
-    && register_class reg1 = register_class reg2
-
-let at_same_location t (reg : Reg.t) ~register_class =
-  regs_at_same_location t.reg reg ~register_class
-
-let debug_info t = t.debug_info
-
-let clear_debug_info t =
-  { t with debug_info = None; }
 
 module Order_distinguishing_names_and_locations = struct
   type nonrec t = t
@@ -147,11 +172,12 @@ module Order_distinguishing_names_and_locations = struct
       else Stdlib.compare t1.reg.loc t2.reg.loc
 end
 
-module Set_distinguishing_names_and_locations =
-  Set.Make (Order_distinguishing_names_and_locations)
+module Distinguishing_names_and_locations = struct
+  include T
 
-module Map_distinguishing_names_and_locations =
-  Map.Make (Order_distinguishing_names_and_locations)
+  module Set = Set.Make (Order_distinguishing_names_and_locations)
+  module Map = Map.Make (Order_distinguishing_names_and_locations)
+end
 
 module Set = struct
   include Set.Make (T)

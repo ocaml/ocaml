@@ -14,6 +14,6 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type is_parameter =
+type t =
   | Local
   | Parameter of { index : int; }

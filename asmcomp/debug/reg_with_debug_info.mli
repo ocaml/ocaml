@@ -33,50 +33,57 @@ module Debug_info : sig
   val provenance : t -> Backend_var.Provenance.t option
 end
 
-type t
+module type T = sig
+  type t
 
-type reg_with_debug_info = t
+  type reg_with_debug_info = t
 
-val create
-   : reg:Reg.t
-  -> holds_value_of:Backend_var.t
-  -> part_of_value:int
-  -> num_parts_of_value:int
-  -> which_parameter:int option
-  -> provenance:Backend_var.Provenance.t option
-  -> t
+  val create
+     : reg:Reg.t
+    -> holds_value_of:Backend_var.t
+    -> part_of_value:int
+    -> num_parts_of_value:int
+    -> which_parameter:int option
+    -> provenance:Backend_var.Provenance.t option
+    -> t
 
-val create_with_debug_info : reg:Reg.t -> debug_info:Debug_info.t option -> t
+  val create_with_debug_info : reg:Reg.t -> debug_info:Debug_info.t option -> t
 
-val create_without_debug_info : reg:Reg.t -> t
+  val create_without_debug_info : reg:Reg.t -> t
 
-val create_copying_debug_info : reg:Reg.t -> debug_info_from:t -> t
+  val create_copying_debug_info : reg:Reg.t -> debug_info_from:t -> t
 
-val reg : t -> Reg.t
-val location : t -> Reg.location
-val debug_info : t -> Debug_info.t option
+  val reg : t -> Reg.t
+  val location : t -> Reg.location
+  val debug_info : t -> Debug_info.t option
 
-val at_same_location : t -> Reg.t -> register_class:(Reg.t -> int) -> bool
-(** [at_same_location t reg] holds iff the register [t] corresponds to
-    the same (physical or pseudoregister) location as the register [reg],
-    which is not equipped with debugging information.
-    [register_class] should be [Proc.register_class].
-*)
+  val at_same_location : t -> Reg.t -> register_class:(Reg.t -> int) -> bool
+  (** [at_same_location t reg] holds iff the register [t] corresponds to
+      the same (physical or pseudoregister) location as the register [reg],
+      which is not equipped with debugging information.
+      [register_class] should be [Proc.register_class].
+  *)
 
-val holds_pointer : t -> bool
-val holds_non_pointer : t -> bool
+  val holds_pointer : t -> bool
+  val holds_non_pointer : t -> bool
 
-val assigned_to_stack : t -> bool
-(** [assigned_to_stack t] holds iff the location of [t] is a hard stack
-    slot. *)
+  val assigned_to_stack : t -> bool
+  (** [assigned_to_stack t] holds iff the location of [t] is a hard stack
+      slot. *)
 
-val clear_debug_info : t -> t
+  val clear_debug_info : t -> t
+end
 
-module Set_distinguishing_names_and_locations
-  : Set.S with type elt = t
+include T
 
-module Map_distinguishing_names_and_locations
-  : Map.S with type key = t
+module Distinguishing_names_and_locations : sig
+  include T
+    with type t = reg_with_debug_info
+    with type reg_with_debug_info = reg_with_debug_info
+
+  module Set : Set.S with type elt = t
+  module Map : Map.S with type key = t
+end
 
 module Set : sig
   include Set.S with type elt = t

@@ -16,7 +16,7 @@
 
 module L = Linearize
 
-include Calculate_ranges.Make (struct
+include Compute_ranges.Make (struct
   module RD = Reg_with_debug_info
 
   (* By the time this pass has run, register stamps are irrelevant; indeed,
@@ -24,12 +24,7 @@ include Calculate_ranges.Make (struct
      same location.  As such, we quotient register sets by the equivalence
      relation that identifies two registers iff they have the same name and
      location. *)
-  module Key = struct
-    include RD
-
-    module Set = RD.Set_distinguishing_names_and_locations
-    module Map = RD.Map_distinguishing_names_and_locations
-  end
+  module Key = RD.Distinguishing_names_and_locations
 
   module Index = Backend_var
 
@@ -67,15 +62,14 @@ include Calculate_ranges.Make (struct
       with type key := Key.t
       with type subrange_state := Subrange_state.t
 
-    val offset_from_cfa_in_bytes : t -> int
+    val offset_from_cfa_in_bytes : t -> int option
   end = struct
     type t = {
       reg : Reg.t;
-      start_insn : L.instruction;
       offset_from_cfa_in_bytes : int option;
     }
 
-    let create reg ~start_insn ~subrange_state =
+    let create reg subrange_state =
       let reg = RD.reg reg in
       let stack_offset = Subrange_state.stack_offset subrange_state in
       let offset_from_cfa_in_bytes =
@@ -90,7 +84,6 @@ include Calculate_ranges.Make (struct
         | Reg _ | Unknown -> None
       in
       { reg;
-        start_insn;
         offset_from_cfa_in_bytes;
       }
 
@@ -133,7 +126,7 @@ include Calculate_ranges.Make (struct
     let is_parameter t = t.is_parameter
   end
 
-  let availability_set_to_key_set avail =
+  let availability_set_to_key_set (avail : Reg_availability_set.t) =
     match avail with
     | Unreachable -> Key.Set.empty
     | Ok available_before ->
