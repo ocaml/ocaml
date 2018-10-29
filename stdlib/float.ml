@@ -247,9 +247,11 @@ module Array = struct
     in
     fill 0 l
 
+  (* duplicated from array.ml *)
   let iter f a =
     for i = 0 to length a - 1 do f (unsafe_get a i) done
 
+  (* duplicated from array.ml *)
   let iter2 f a b =
     if length a <> length b then
       invalid_arg "Float.Array.iter2: arrays must have the same length"
@@ -277,6 +279,7 @@ module Array = struct
       r
     end
 
+  (* duplicated from array.ml *)
   let iteri f a =
     for i = 0 to length a - 1 do f i (unsafe_get a i) done
 

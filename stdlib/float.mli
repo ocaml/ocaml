@@ -399,15 +399,15 @@ module Array : sig
   val get : t -> int -> float
   (** [get a n] returns the element number [n] of floatarray [a].
 
-      Raise [Invalid_argument "index out of bounds"]
-      if [n] is outside the range 0 to [(length a - 1)]. *)
+      Raise [Invalid_argument] if [n] is outside the range 0 to
+      [(length a - 1)]. *)
 
   val set : t -> int -> float -> unit
   (** [set a n x] modifies floatarray [a] in place, replacing element
       number [n] with [x].
 
-      Raise [Invalid_argument "index out of bounds"]
-      if [n] is outside the range 0 to [(length a - 1)]. *)
+      Raise [Invalid_argument] if [n] is outside the range 0 to
+      [(length a - 1)]. *)
 
   val make : int -> float -> t
   (** [make n x] returns a fresh floatarray of length [n], initialized with [x].
@@ -420,8 +420,6 @@ module Array : sig
 
       Raise [Invalid_argument] if [n < 0] or [n > Sys.max_floatarray_length]. *)
 
-  (* create_float *)
-
   val init : int -> (int -> float) -> t
   (** [init n f] returns a fresh floatarray of length [n],
      with element number [i] initialized to the result of [f i].
@@ -429,8 +427,6 @@ module Array : sig
      applied to the integers [0] to [n-1].
 
      Raise [Invalid_argument] if [n < 0] or [n > Sys.max_floatarray_length]. *)
-
-  (* make_matrix *)
 
   val append : t -> t -> t
   (** [append v1 v2] returns a fresh floatarray containing the
@@ -483,7 +479,7 @@ module Array : sig
       Raise [Invalid_argument] if the length of [l] is greater than
       [Sys.max_floatarray_length].*)
 
-  (* CR doligez: Should we insert subtitles as in [array.mli] ? *)
+  (** {2 Iterators} *)
 
   val iter : (float -> unit) -> t -> unit
   (** [iter f a] applies function [f] in turn to all
@@ -514,6 +510,8 @@ module Array : sig
       [f a.(0) (f a.(1) ( ... (f a.(n-1) x) ...))],
       where [n] is the length of the floatarray [a]. *)
 
+  (** {2 Iterators on two arrays} *)
+
   val iter2 : (float -> float -> unit) -> t -> t -> unit
   (** [Array.iter2 f a b] applies function [f] to all the elements of [a]
       and [b].
@@ -524,6 +522,8 @@ module Array : sig
       and [b], and builds a floatarray with the results returned by [f]:
       [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
       Raise [Invalid_argument] if the floatarrays are not the same size. *)
+
+  (** {2 Array scanning} *)
 
   val for_all : (float -> bool) -> t -> bool
   (** [for_all p [|a1; ...; an|]] checks if all elements of the floatarray
@@ -542,6 +542,8 @@ module Array : sig
   val memq : float -> t -> bool
   (** Same as {!mem}, but uses float equality instead of generic
       equality to compare elements. *)
+
+  (** {2 Sorting} *)
 
   val sort : (float -> float -> int) -> t -> unit
   (** Sort a floatarray in increasing order according to a comparison
@@ -581,6 +583,8 @@ module Array : sig
   (** Same as {!sort} or {!stable_sort}, whichever is faster
       on typical input. *)
 
+  (** {2 Iterators} *)
+
   val to_seq : t -> float Seq.t
   (** Iterate on the floatarray, in increasing order. Modifications of the
       floatarray during iteration will be reflected in the iterator. *)
@@ -603,7 +607,9 @@ module Array : sig
   (** [map_from_array f a] applies function [f] to all the elements of [a],
       and builds a floatarray with the results returned by [f]. *)
 
-  (* for internal use only *)
+  (** {2 Undocumented functions} *)
+
+  (* These functions are for system use only. Do not call directly. *)
   external unsafe_get : t -> int -> float = "%floatarray_unsafe_get"
   external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 end
@@ -646,7 +652,7 @@ module ArrayLabels : sig
   val map_to_array : f:(float -> 'a) -> t -> 'a array
   val map_from_array : f:('a -> float) -> 'a array -> t
 
-  (* for internal use only *)
+  (* These functions are for system use only. Do not call directly. *)
   external unsafe_get : t -> int -> float = "%floatarray_unsafe_get"
   external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 end
