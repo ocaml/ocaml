@@ -2,6 +2,7 @@ aliases.ml
 applicative_functor_type.ml
 firstclass.ml
 generative.ml
+nondep.ml
 nondep_private_abbrev.ml
 pr5911.ml
 pr6394.ml
