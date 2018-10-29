@@ -31,6 +31,10 @@ module Range_info = struct
     | Var of ARV.Range_info.t
     | Phantom_var of ARPV.Range_info.t
 
+  let create_var info = Var info
+
+  let create_phantom_var info = Phantom_var info
+
   let provenance t =
     match t with
     | Var range_info -> ARV.Range_info.provenance range_info
@@ -54,12 +58,13 @@ module Subrange = struct
 
   let create_var subrange = Var subrange
 
-  let create_phantom_var subrange = Phantom_var subrange
+  let create_phantom_var defining_expr subrange =
+    Phantom_var (defining_expr, subrange)
 
-  let info t =
+  let info t : Subrange_info.t =
     match t with
     | Var subrange ->
-      let subrange_info = ARV.Subrange.subrange_info subrange in
+      let subrange_info = ARV.Subrange.info subrange in
       Non_phantom {
         reg = ARV.Subrange_info.reg subrange_info;
         offset_from_cfa_in_bytes =
@@ -71,17 +76,17 @@ module Subrange = struct
   let start_pos t =
     match t with
     | Var subrange -> ARV.Subrange.start_pos subrange
-    | Phantom_var subrange -> ARPV.Subrange.start_pos subrange
+    | Phantom_var (_, subrange) -> ARPV.Subrange.start_pos subrange
 
   let end_pos t =
     match t with
     | Var subrange -> ARV.Subrange.end_pos subrange
-    | Phantom_var subrange -> ARPV.Subrange.end_pos subrange
+    | Phantom_var (_, subrange) -> ARPV.Subrange.end_pos subrange
 
   let end_pos_offset t =
     match t with
     | Var subrange -> ARV.Subrange.end_pos_offset subrange
-    | Phantom_var subrange -> ARPV.Subrange.end_pos_offset subrange
+    | Phantom_var (_, subrange) -> ARPV.Subrange.end_pos_offset subrange
 end
 
 module Range = struct
@@ -95,9 +100,9 @@ module Range = struct
   let info t =
     match t with
     | Var range ->
-      Range_info.create_var (ARV.Range.range_info range)
+      Range_info.create_var (ARV.Range.info range)
     | Phantom_var range ->
-      Range_info.create_phantom_var (ARPV.Range.range_info range)
+      Range_info.create_phantom_var (ARPV.Range.info range)
 
   let extremities t =
     match t with
@@ -106,8 +111,15 @@ module Range = struct
 
   let fold t ~init ~f =
     match t with
-    | Var range -> ARV.Range.fold range ~init ~f
-    | Phantom_var range -> ARPV.Range.fold range ~init ~f
+    | Var range ->
+      ARV.Range.fold range ~init ~f:(fun acc subrange ->
+        f acc (Subrange.create_var subrange))
+    | Phantom_var range ->
+      let defining_expr =
+        ARPV.Range_info.defining_expr (ARPV.Range.info range)
+      in
+      ARPV.Range.fold range ~init ~f:(fun acc subrange ->
+        f acc (Subrange.create_phantom_var defining_expr subrange))
 end
 
 let create ~available_ranges_vars ~available_ranges_phantom_vars =
@@ -115,7 +127,7 @@ let create ~available_ranges_vars ~available_ranges_phantom_vars =
   let phantom_vars = ARPV.all_indexes available_ranges_phantom_vars in
   if not (Backend_var.Set.is_empty (Backend_var.Set.inter vars phantom_vars))
   then begin
-    Misc.fatal_error "Available_ranges_all_vars.create: sets not disjoint:@ \
+    Misc.fatal_errorf "Available_ranges_all_vars.create: sets not disjoint:@ \
         non-phantom = {%a},@ phantom = {%a}"
       Backend_var.Set.print vars
       Backend_var.Set.print phantom_vars
@@ -133,9 +145,11 @@ let iter t ~f =
     f index range)
 
 let fold t ~init ~f =
-  ARV.fold t.available_ranges_vars ~init ~f:(fun index range ->
-    let range = Range.create_var range in
-    f index range);
-  ARPV.fold t.available_ranges_phantom_vars ~init ~f:(fun index range ->
+  let init =
+    ARV.fold t.available_ranges_vars ~init ~f:(fun acc index range ->
+      let range = Range.create_var range in
+      f acc index range)
+  in
+  ARPV.fold t.available_ranges_phantom_vars ~init ~f:(fun acc index range ->
     let range = Range.create_phantom_var range in
-    f index range)
+    f acc index range)

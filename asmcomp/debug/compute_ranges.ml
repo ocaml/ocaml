@@ -19,7 +19,6 @@ open! Int_replace_polymorphic_compare
 module L = Linearize
 
 module Make (S : Compute_ranges_intf.S_functor) = struct
-  module Index = S.Index
   module Subrange_state = S.Subrange_state
   module Subrange_info = S.Subrange_info
   module Range_info = S.Range_info
@@ -113,15 +112,15 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   end
 
   type t = {
-    ranges : Range.t Index.Tbl.t;
+    ranges : Range.t S.Index.Tbl.t;
   }
 
   let iter t ~f =
-    Index.Tbl.iter (fun var range -> f var range)
+    S.Index.Tbl.iter (fun var range -> f var range)
       t.ranges
 
   let fold t ~init ~f =
-    Index.Tbl.fold (fun var range acc -> f acc var range)
+    S.Index.Tbl.fold (fun var range acc -> f acc var range)
       t.ranges
       init
 
@@ -281,11 +280,11 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         | None -> open_subranges
         | Some (index, range_info) ->
           let range =
-            match Index.Tbl.find t.ranges index with
+            match S.Index.Tbl.find t.ranges index with
             | range -> range
             | exception Not_found ->
               let range = Range.create range_info in
-              Index.Tbl.add t.ranges index range;
+              S.Index.Tbl.add t.ranges index range;
               range
           in
           used_label := true;
@@ -343,15 +342,18 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     process_instruction t fundecl ~first_insn ~insn:first_insn
       ~prev_insn:None ~open_subranges:KM.empty ~subrange_state
 
+  let all_indexes t =
+    S.Index.Set.of_list (List.map fst (S.Index.Tbl.to_list t.ranges))
+
   let create (fundecl : L.fundecl) =
     if not !Clflags.debug then
       let t =
-        { ranges = Index.Tbl.create 1;
+        { ranges = S.Index.Tbl.create 1;
         }
       in
       t, fundecl
     else
-      let t = { ranges = Index.Tbl.create 42; } in
+      let t = { ranges = S.Index.Tbl.create 42; } in
       let first_insn =
         process_instructions t fundecl
           ~first_insn:fundecl.fun_body

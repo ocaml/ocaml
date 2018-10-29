@@ -33,8 +33,8 @@ val dwarf_for_toplevel_inconstants
 val dwarf_for_function_definition
    : t
   -> fundecl:Linearize.fundecl
-  -> available_ranges_regs:Available_ranges.Regs.t
-  -> available_ranges_lexical_blocks:Available_ranges.Lexical_blocks.t
+  -> available_ranges_vars:Available_ranges_all_vars.t
+  -> available_ranges_lexical_blocks:Lexical_block_ranges.t
   -> end_of_function_label:Linearize.label
   -> unit
 

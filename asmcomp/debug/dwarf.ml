@@ -14,8 +14,6 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module Subrange = Ranges.Subrange
-module Range = Ranges.Range
 module DAH = Dwarf_attribute_helpers
 module SLDL = Simple_location_description_lang
 
@@ -127,8 +125,7 @@ type var_uniqueness = {
 
 let calculate_var_uniqueness ~available_ranges_vars
       ~available_ranges_phantom_vars =
-  let module ARV = Ranges_vars in
-  let module ARPV = Ranges_phantom_vars in
+  let module ARV = Available_ranges_all_vars in
   let module String = Misc.Stdlib.String in
   let by_name = String.Tbl.create 42 in
   let by_debuginfo = Debuginfo.Tbl.create 42 in
@@ -152,15 +149,6 @@ let calculate_var_uniqueness ~available_ranges_vars
     ~f:(fun var range ->
       let range_info = ARV.Range.range_info range in
       let dbg = ARV.Range_info.debuginfo range_info in
-      update_uniqueness var dbg;
-      Backend_var.Tbl.replace result var
-        { name_is_unique = false;
-          location_is_unique = false;
-        });
-  ARPV.iter available_ranges_phantom_vars
-    ~f:(fun var range ->
-      let range_info = ARPV.Range.range_info range in
-      let dbg = ARPV.Range_info.debuginfo range_info in
       update_uniqueness var dbg;
       Backend_var.Tbl.replace result var
         { name_is_unique = false;

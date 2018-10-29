@@ -26,6 +26,16 @@ module Subrange_info : sig
     | Phantom of Mach.phantom_defining_expr
 end
 
+module Subrange : sig
+  type t
+
+  val info : t -> Subrange_info.t
+
+  val start_pos : t -> Linearize.label
+  val end_pos : t -> Linearize.label
+  val end_pos_offset : t -> int
+end
+
 module Range_info : sig
   type t
 
@@ -33,13 +43,27 @@ module Range_info : sig
   val is_parameter : t -> Is_parameter.t
 end
 
-include Compute_ranges.S
-  with module Index := Backend_var
-  with module Key := Backend_var
-  with module Subrange_info := Subrange_info
-  with module Range_info := Range_info
+module Range : sig
+  type t
+
+  val info : t -> Range_info.t
+
+  val extremities : t -> Linearize.label * Linearize.label
+
+  val fold
+     : t
+    -> init:'a
+    -> f:('a -> Subrange.t -> 'a)
+    -> 'a
+end
+
+type t
 
 val create
    : available_ranges_vars:Available_ranges_vars.t
   -> available_ranges_phantom_vars:Available_ranges_phantom_vars.t
   -> t
+
+val iter : t -> f:(Backend_var.t -> Range.t -> unit) -> unit
+
+val fold : t -> init:'a -> f:('a -> Backend_var.t -> Range.t -> 'a) -> 'a

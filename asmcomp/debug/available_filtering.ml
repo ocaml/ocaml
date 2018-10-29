@@ -16,7 +16,7 @@
 
 module L = Linearize
 
-let canonicalise (insn : L.instruction) avail_set =
+let canonicalise (_insn : L.instruction) avail_set =
   let avail_set = Reg_availability_set.canonicalise avail_set in
   (* Don't show variables and parameters of inlined functions except when in
      the inlined body. *)
@@ -29,7 +29,9 @@ let canonicalise (insn : L.instruction) avail_set =
           match Reg_with_debug_info.Debug_info.provenance debug_info with
           | None -> true
           | Some provenance ->
-            let dbg = Backend_var.Provenance.location provenance in
+            let _dbg = Backend_var.Provenance.debuginfo provenance in
+            true
+(* CR mshinwell: Reinstate this.
 (*
 Format.eprintf "%a: var=%a versus insn=%a\n%!"
   Backend_var.print (Reg_with_debug_info.Debug_info.holds_value_of debug_info)
@@ -44,7 +46,7 @@ Format.eprintf "%a: var=%a versus insn=%a\n%!"
                   dbg_rev2
               in
               not in_inlined_body
-            | _, _ -> true)
+            | _, _ -> true *)  )
       avail_set)
 
 let filter_inplace (decl : L.fundecl) =

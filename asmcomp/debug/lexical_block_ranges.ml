@@ -16,7 +16,7 @@
 
 module L = Linearize
 
-include Compute_ranges.Make (struct
+module Lexical_blocks = struct
   module Key = Debuginfo.Current_block
   module Index = Debuginfo.Current_block
 
@@ -26,6 +26,7 @@ include Compute_ranges.Make (struct
     type t = unit
 
     let create () = ()
+    let advance_over_instruction () _ = ()
   end
 
   module Subrange_info :
@@ -35,7 +36,7 @@ include Compute_ranges.Make (struct
   = struct
     type t = unit
 
-    let create _var ~start_insn:_ ~subrange_state:_ = ()
+    let create _var _subrange_state = ()
   end
 
   module Range_info :
@@ -49,7 +50,7 @@ include Compute_ranges.Make (struct
   end
 
   let available_before (insn : L.instruction) =
-    Debuginfo.innermost_block insn.dbg
+    Debuginfo.Current_block.Set.singleton (Debuginfo.innermost_block insn.dbg)
 
   let available_across insn =
     (* Block scoping never changes during the execution of a [Linearize]
@@ -57,4 +58,10 @@ include Compute_ranges.Make (struct
     available_before insn
 
   let must_restart_ranges_upon_any_change () = false
-end)
+end
+
+module Subrange_state = Lexical_blocks.Subrange_state
+module Subrange_info = Lexical_blocks.Subrange_info
+module Range_info = Lexical_blocks.Range_info
+
+include Compute_ranges.Make (Lexical_blocks)

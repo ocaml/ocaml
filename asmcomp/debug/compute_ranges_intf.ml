@@ -119,4 +119,6 @@ module type S = sig
   val iter : t -> f:(Index.t -> Range.t -> unit) -> unit
 
   val fold : t -> init:'a -> f:('a -> Index.t -> Range.t -> 'a) -> 'a
+
+  val all_indexes : t -> Index.Set.t
 end

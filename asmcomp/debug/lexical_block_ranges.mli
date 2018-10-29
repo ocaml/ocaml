@@ -21,16 +21,32 @@
 
 module L = Linearize
 
+module Subrange_state : sig
+  type t
+
+  val create : unit -> t
+  val advance_over_instruction : t -> Linearize.instruction -> t
+end
+
 module Subrange_info : sig
   type t
+
+  val create : Debuginfo.Current_block.t -> Subrange_state.t -> t
 end
 
 module Range_info : sig
   type t
+
+  val create
+     : Linearize.fundecl
+    -> Debuginfo.Current_block.t
+    -> start_insn:Linearize.instruction
+    -> (Debuginfo.Current_block.t * t) option
 end
 
-include Compute_ranges.S
+include Compute_ranges_intf.S
   with module Index := Debuginfo.Current_block
   with module Key := Debuginfo.Current_block
+  with module Subrange_state := Subrange_state
   with module Subrange_info := Subrange_info
   with module Range_info := Range_info
