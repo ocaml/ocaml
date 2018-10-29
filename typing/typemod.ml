@@ -1621,7 +1621,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
                   "the signature of this functor application" mty_res;
                 let nondep_mty =
                   try Mtype.nondep_supertype env [param] mty_res
-                  with Not_found ->
+                  with Ctype.Nondep_cannot_erase _ ->
                     raise(Error(smod.pmod_loc, env,
                                 Cannot_eliminate_dependency mty_functor))
                 in
@@ -2259,7 +2259,7 @@ let report_error ppf = function
   | Cannot_eliminate_dependency mty ->
       fprintf ppf
         "@[This functor has type@ %a@ \
-           The parameter cannot be eliminated in the result type.@  \
+           The parameter cannot be eliminated in the result type.@ \
            Please bind the argument to a module identifier.@]" modtype mty
   | Signature_expected -> fprintf ppf "This module type is not a signature"
   | Structure_expected mty ->
