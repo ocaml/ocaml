@@ -197,7 +197,13 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
 
   let actions_at_instruction ~(insn : L.instruction)
         ~(prev_insn : L.instruction option) =
-    assert (KS.subset (S.available_across insn) (S.available_before insn));
+    if not (KS.subset (S.available_across insn) (S.available_before insn)) then
+    begin
+      Clflags.dump_avail := true;
+      Misc.fatal_errorf "[available_across] is not a subset of \
+          [available_before] for instruction@ %a"
+        Printlinear.instr insn
+    end;
     let case_1c =
       KS.diff (S.available_before insn)
         (KS.union (opt_available_across prev_insn) (S.available_across insn))

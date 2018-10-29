@@ -62,7 +62,7 @@ module Code_range = struct
     type nonrec t = t
 
     let print ppf { file; line; char_start; char_end; } =
-      Format.fprintf ppf "@[<hov 1>(@\
+      Format.fprintf ppf "@[<hov 1>(\
           @[<hov 1>(file@ %s)@]@ \
           @[<hov 1>(line@ %d)@]@ \
           @[<hov 1>(char_start@ %d)@]@ \
@@ -198,7 +198,7 @@ module Block = struct
     let hash t = Hashtbl.hash t.id
 
     let print ppf { id; frame_location; parent; } =
-      Format.fprintf ppf "@[<hov 1>(@\
+      Format.fprintf ppf "@[<hov 1>(\
           @[<hov 1>(id@ %d)@]@ \
           @[<hov 1>(frame_location@ %a)@]@ \
           @[<hov 1>(parent@ %s)@])@]"
@@ -334,7 +334,7 @@ include Identifiable.Make (struct
     match t with
     | Empty -> Format.pp_print_string ppf "no-debug-info"
     | Non_empty { block; position; } ->
-      Format.fprintf ppf "@[<hov 1>(@\
+      Format.fprintf ppf "@[<hov 1>(\
           @[<hov 1>(position@ %a)@]@ \
           @[<hov 1>(block@ %a)@])@]"
         Code_range.print position

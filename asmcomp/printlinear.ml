@@ -70,6 +70,16 @@ let instr ppf i =
   | Lraise k ->
       fprintf ppf "%a %a" Printcmm.raise_kind k reg i.arg.(0)
   end;
+  if !Clflags.dump_avail then begin
+    let print_reg = Printmach.reg in
+    fprintf ppf " (available_before@ %a)@ \
+        (phantom_available_before@ %a)@ \
+        (available_across@ %a)"
+      (Reg_availability_set.print ~print_reg) i.available_before
+      Backend_var.Set.print i.phantom_available_before
+      (Misc.Stdlib.Option.print (Reg_availability_set.print ~print_reg))
+      i.available_across
+  end;
   if not (Debuginfo.is_none i.dbg) then
     fprintf ppf " %a" Debuginfo.print i.dbg
 
