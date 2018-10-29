@@ -20,6 +20,10 @@ Working version
   (Jeremy Yallop, review by Gabriel Scherer, Florian Angeletti, and
    Damien Doligez)
 
+- GPR#2122: Introduce local substitutions in signatures: "type t := type_expr"
+  and "module M := Extended(Module).Path"
+  (Thomas Refis, with help and review from Leo White, and Alain Frisch)
+
 ### Type system:
 
 - GPR#1826: allow expanding a type to a private abbreviation instead of
