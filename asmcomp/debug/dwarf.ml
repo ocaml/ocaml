@@ -648,8 +648,11 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
           let module B = Debuginfo.Block in
           match B.Map.find block lexical_block_proto_dies with
           | exception Not_found ->
+(* XXX Think about whether there is a valid case that hits this.
             Misc.fatal_errorf "Cannot find lexical block DIE for %a"
               B.print block
+*)
+            whole_function_lexical_block
           | proto_die -> proto_die
   in
   (* Build a location list that identifies where the value of [ident] may be
