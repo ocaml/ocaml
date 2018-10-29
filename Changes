@@ -133,6 +133,9 @@ Working version
 - GPR#2119: clarify the documentation of Set.diff
   (Gabriel Scherer, suggestion by John Skaller)
 
+- MPR#7812, GPR#xxxx: Add Filename.chop_suffix_opt
+  (Alain Frisch, suggested by whitequark)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
