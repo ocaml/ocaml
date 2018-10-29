@@ -184,28 +184,28 @@ val add_int8 : t -> int -> unit
 (** Add the binary representation of the least significant 8-bits of
     the integer in binary form.
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 val add_int16_ne : t -> int -> unit
 (** Add the binary representation of the least significant 16-bits of
     the integer in binary form, using the machine native endianness.
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 val add_int32_ne : t -> int32 -> unit
 (** Add the binary representation of the 32-bit integer, in binary
     form, using the machine native endianness.
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 val add_int64_ne  : t -> int64 -> unit
 (** Add the binary representation of the 64-bit integer, in binary
     form, using the machine native endianness.
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 

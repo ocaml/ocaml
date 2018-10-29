@@ -465,13 +465,23 @@ val of_seq : char Seq.t -> t
 
 (** {6 Binary storage of integers} *)
 
+(** All following functions raise [Invalid_argument] if the space
+    needed at index [i] to decode or encode the integer is not
+    available. *)
+
 val get_uint8 : bytes -> int -> int
 (** [get_uint8 s n] reads an 8-bit unsigned integer from the byte
-    sequence [s] starting at index [n], in binary form. *)
+    sequence [s] starting at index [n], in binary form.
+
+    @since NEXT_VERSION
+ *)
 
 val get_int8 : bytes -> int -> int
 (** [get_int8 s n] reads an 8-bit signed integer from the byte
-    sequence [s] starting at index [n], in binary form. *)
+    sequence [s] starting at index [n], in binary form.
+
+    @since NEXT_VERSION
+*)
 
 val get_uint16_ne : bytes -> int -> int
 (** [get_uint16_ne s n] reads a 16-bit unsigned integer from the byte
@@ -482,7 +492,7 @@ val get_uint16_ne : bytes -> int -> int
     Raise [Invalid_argument] if [n] or [n+1] is not a valid index in
     [s].
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 val get_int16_ne : bytes -> int -> int
@@ -494,7 +504,7 @@ val get_int16_ne : bytes -> int -> int
     Raise [Invalid_argument] if [n] or [n+1] is not a valid index in
     [s].
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 val get_int32_ne : bytes -> int -> int32
@@ -505,7 +515,7 @@ val get_int32_ne : bytes -> int -> int32
     Raise [Invalid_argument] if [n] or [n+3] is not a valid index in
     [s].
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 
@@ -517,7 +527,7 @@ val get_int64_ne : bytes -> int -> int64
     Raise [Invalid_argument] if [n] or [n+7] is not a valid index in
     [s].
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 val set_int8 : bytes -> int -> int -> unit
@@ -527,7 +537,7 @@ val set_int8 : bytes -> int -> int -> unit
     Raise [Invalid_argument] if [n] is not a valid index in
     [s].
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 
@@ -539,7 +549,7 @@ val set_int16_ne : bytes -> int -> int -> unit
     Raise [Invalid_argument] if [n] or [n+1] is not a valid index in
     [s].
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 val set_int32_ne : bytes -> int -> int32 -> unit
@@ -550,7 +560,7 @@ val set_int32_ne : bytes -> int -> int32 -> unit
     Raise [Invalid_argument] if [n] or [n+3] is not a valid index in
     [s].
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 val set_int64_ne : bytes -> int -> int64 -> unit
@@ -561,7 +571,7 @@ val set_int64_ne : bytes -> int -> int64 -> unit
     Raise [Invalid_argument] if [n] or [n+7] is not a valid index in
     [s].
 
-    @since XXX
+    @since NEXT_VERSION
 *)
 
 
