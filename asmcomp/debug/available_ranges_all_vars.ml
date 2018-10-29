@@ -40,6 +40,11 @@ module Range_info = struct
     | Var range_info -> ARV.Range_info.provenance range_info
     | Phantom_var range_info -> ARPV.Range_info.provenance range_info
 
+  let debuginfo t =
+    match provenance t with
+    | None -> Debuginfo.none
+    | Some provenance -> Backend_var.Provenance.debuginfo provenance
+
   let is_parameter t =
     match t with
     | Var range_info -> ARV.Range_info.is_parameter range_info

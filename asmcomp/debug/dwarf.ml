@@ -137,17 +137,17 @@ let calculate_var_uniqueness ~available_ranges_vars
     | vars ->
       String.Tbl.replace by_name name (Backend_var.Set.add var vars)
     end;
-    begin match Debuginfo.Tbl.find by_name name with
+    begin match Debuginfo.Tbl.find by_debuginfo dbg with
     | exception Not_found ->
-      Debuginfo.Tbl.add by_name name (Backend_var.Set.singleton var)
+      Debuginfo.Tbl.add by_debuginfo dbg (Backend_var.Set.singleton var)
     | vars ->
-      Debuginfo.Tbl.replace by_name name (Backend_var.Set.add var vars)
+      Debuginfo.Tbl.replace by_debuginfo dbg (Backend_var.Set.add var vars)
     end
   in
   let result = Backend_var.Tbl.create 42 in
-  ARV.iter available_ranges_regs
+  ARV.iter available_ranges_vars
     ~f:(fun var range ->
-      let range_info = ARV.Range.range_info range in
+      let range_info = ARV.Range.info range in
       let dbg = ARV.Range_info.debuginfo range_info in
       update_uniqueness var dbg;
       Backend_var.Tbl.replace result var
@@ -164,7 +164,7 @@ let calculate_var_uniqueness ~available_ranges_vars
             name_is_unique = true;
           })
     by_name;
-  Debuginfo.Tbl.iter (fun _name vars ->
+  Debuginfo.Tbl.iter (fun _dbg vars ->
       match Backend_var.Set.get_singleton vars with
       | None -> ()
       | Some var ->

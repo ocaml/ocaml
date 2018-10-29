@@ -103,7 +103,6 @@ module Vars = struct
       with type index := Index.t
 
     val provenance : t -> Backend_var.Provenance.t option
-    val debuginfo : t -> Debuginfo.t
     val is_parameter : t -> Is_parameter.t
   end = struct
     type t = {
@@ -130,11 +129,6 @@ module Vars = struct
         Some (var, t)
 
     let provenance t = t.provenance
-
-    let debuginfo t =
-      match provenance t with
-      | None -> Debuginfo.none
-      | Some provenance -> Backend_var.Provenance.debuginfo provenance
 
     let is_parameter t = t.is_parameter
   end

@@ -54,7 +54,6 @@ module Range_info : sig
     -> (Backend_var.t * t) option
 
   val provenance : t -> Backend_var.Provenance.t option
-  val debuginfo : t -> Debuginfo.t
   val is_parameter : t -> Is_parameter.t
 end
 
