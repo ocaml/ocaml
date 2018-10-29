@@ -31,6 +31,8 @@ val canonicalise : t -> t
 
 val equal : t -> t -> bool
 
+val subset : t -> t -> bool
+
 val print
    : print_reg:(Format.formatter -> Reg.t -> unit)
   -> Format.formatter

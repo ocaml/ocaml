@@ -342,6 +342,17 @@ let rec available_regs (instr : M.instruction)
         None, unreachable
   in
   instr.available_across <- avail_across;
+  begin match instr.available_across with
+  | None -> ()
+  | Some available_across ->
+    if not (RAS.subset available_across instr.available_before) then begin
+      Misc.fatal_errorf "[available_across] %a not a subset of \
+         [available_before] %a:@ %a"
+        (RAS.print ~print_reg:Printmach.reg) available_across
+        (RAS.print ~print_reg:Printmach.reg) instr.available_before
+        Printmach.instr ({ instr with M. next = M.end_instr (); })
+    end
+  end;
   match instr.desc with
   | Iend -> avail_after
   | _ -> available_regs instr.next ~avail_before:avail_after

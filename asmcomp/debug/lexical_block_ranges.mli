@@ -31,7 +31,7 @@ end
 module Subrange_info : sig
   type t
 
-  val create : Debuginfo.Current_block.t -> Subrange_state.t -> t
+  val create : Debuginfo.Block.t -> Subrange_state.t -> t
 end
 
 module Range_info : sig
@@ -39,14 +39,14 @@ module Range_info : sig
 
   val create
      : Linearize.fundecl
-    -> Debuginfo.Current_block.t
+    -> Debuginfo.Block.t
     -> start_insn:Linearize.instruction
-    -> (Debuginfo.Current_block.t * t) option
+    -> (Debuginfo.Block.t * t) option
 end
 
 include Compute_ranges_intf.S
-  with module Index := Debuginfo.Current_block
-  with module Key := Debuginfo.Current_block
+  with module Index := Debuginfo.Block
+  with module Key := Debuginfo.Block
   with module Subrange_state := Subrange_state
   with module Subrange_info := Subrange_info
   with module Range_info := Range_info

@@ -71,6 +71,9 @@ let equal t1 t2 =
   | Unreachable, Ok _ | Ok _, Unreachable -> false
   | Ok regs1, Ok regs2 -> RD.Set.equal regs1 regs2
 
+let subset t1 t2 =
+  equal (inter t1 t2) t1
+
 let canonicalise availability =
   match availability with
   | Unreachable -> Unreachable

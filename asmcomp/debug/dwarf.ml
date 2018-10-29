@@ -860,7 +860,10 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
       end)
 
 let create_lexical_block_proto_dies available_ranges ~function_proto_die
-      ~start_of_function ~end_of_function =
+      ~start_of_function ~end_of_function
+      : Proto_die.t * (Proto_die.t Debuginfo.Block.Map.t) =
+  let module B = Debuginfo.Block in
+  let module LB = Lexical_block_ranges in
   let whole_function_lexical_block =
     Proto_die.create ~parent:(Some function_proto_die)
       ~tag:Lexical_block
@@ -870,49 +873,63 @@ let create_lexical_block_proto_dies available_ranges ~function_proto_die
       ]
       ()
   in
-  let lexical_block_proto_dies =
-    let module B = Debuginfo.Block in
-    let module CB = Debuginfo.Current_block in
-    let module LB = Lexical_block_ranges in
+  let ranges_by_block =
     LB.fold available_ranges
       ~init:B.Map.empty
-      ~f:(fun lexical_block_proto_dies block range ->
-        let start_pos, end_pos = LB.Range.extremities range in
-        let start_of_scope =
-          DAH.create_low_pc
-            ~address_label:(Asm_label.create_int start_pos)
+      ~f:(fun ranges_by_block block range ->
+        let rec create_up_to_root block ranges_by_block =
+          let start_pos, end_pos = LB.Range.extremities range in
+          let start_of_scope =
+            DAH.create_low_pc
+              ~address_label:(Asm_label.create_int start_pos)
+          in
+          let end_of_scope =
+            DAH.create_high_pc
+              ~address_label:(Asm_label.create_int end_pos)
+          in
+          let ranges_by_block =
+            B.Map.add block (start_of_scope, end_of_scope) ranges_by_block
+          in
+          match B.parent block with
+          | None -> ranges_by_block
+          | Some parent -> create_up_to_root parent ranges_by_block
         in
-        let end_of_scope =
-          DAH.create_high_pc
-            ~address_label:(Asm_label.create_int end_pos)
+        create_up_to_root block ranges_by_block)
+  in
+  let lexical_block_proto_dies =
+    LB.fold available_ranges
+      ~init:B.Map.empty
+      ~f:(fun lexical_block_proto_dies block _range ->
+        let rec create_up_to_root block lexical_block_proto_dies =
+          match B.Map.find block lexical_block_proto_dies with
+          | proto_die -> proto_die, lexical_block_proto_dies
+          | exception Not_found ->
+            let start_of_scope, end_of_scope =
+              B.Map.find block ranges_by_block
+            in
+            let parent, lexical_block_proto_dies =
+              match B.parent block with
+              | None -> function_proto_die, lexical_block_proto_dies
+              | Some parent -> create_up_to_root parent lexical_block_proto_dies
+            in
+            let proto_die =
+              Proto_die.create ~parent:(Some parent)
+                ~tag:Lexical_block
+                ~attribute_values:[
+                  start_of_scope;
+                  end_of_scope;
+                ]
+                ()
+            in
+            let lexical_block_proto_dies =
+              B.Map.add block proto_die lexical_block_proto_dies
+            in
+            proto_die, lexical_block_proto_dies
         in
-        let parent =
-          match CB.to_block block with
-          | Toplevel -> Some function_proto_die
-          | Block block ->
-            match B.parent block with
-            | None -> Some function_proto_die
-            | Some parent ->
-              match B.Map.find parent lexical_block_proto_dies with
-              | exception Not_found ->
-                Misc.fatal_errorf "Cannot find DIE for parent %a of scope %a"
-                  B.print parent
-                  B.print block
-              | parent -> Some parent
+        let _proto_die, lexical_block_proto_dies =
+          create_up_to_root block lexical_block_proto_dies
         in
-        let proto_die =
-          Proto_die.create ~parent
-            ~tag:Lexical_block
-            ~attribute_values:[
-              start_of_scope;
-              end_of_scope;
-            ]
-            ()
-        in
-        match CB.to_block block with
-        | Toplevel -> lexical_block_proto_dies
-        | Block block ->
-          B.Map.add block proto_die lexical_block_proto_dies)
+        lexical_block_proto_dies)
   in
   whole_function_lexical_block, lexical_block_proto_dies
 

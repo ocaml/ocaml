@@ -17,8 +17,8 @@
 module L = Linearize
 
 module Lexical_blocks = struct
-  module Key = Debuginfo.Current_block
-  module Index = Debuginfo.Current_block
+  module Key = Debuginfo.Block
+  module Index = Debuginfo.Block
 
   module Subrange_state :
     Compute_ranges_intf.S_subrange_state
@@ -50,7 +50,10 @@ module Lexical_blocks = struct
   end
 
   let available_before (insn : L.instruction) =
-    Debuginfo.Current_block.Set.singleton (Debuginfo.innermost_block insn.dbg)
+    let innermost = Debuginfo.innermost_block insn.dbg in
+    match Debuginfo.Current_block.to_block innermost with
+    | Toplevel -> Debuginfo.Block.Set.empty
+    | Block block -> Debuginfo.Block.Set.singleton block
 
   let available_across insn =
     (* Block scoping never changes during the execution of a [Linearize]
