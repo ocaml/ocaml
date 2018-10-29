@@ -21,20 +21,36 @@
     have now been optimised out.
 *)
 
+module Subrange_state : sig
+  type t
+
+  val create : unit -> t
+  val advance_over_instruction : t -> Linearize.instruction -> t
+end
+
 module Subrange_info : sig
   type t
+
+  val create : Backend_var.t -> Subrange_state.t -> t
 end
 
 module Range_info : sig
   type t
 
+  val create
+     : Linearize.fundecl
+    -> Backend_var.t
+    -> start_insn:Linearize.instruction
+    -> (Backend_var.t * t) option
+
   val provenance : t -> Backend_var.Provenance.t option
   val is_parameter : t -> Is_parameter.t
-  val defining_expr : t -> phantom_defining_expr
+  val defining_expr : t -> Mach.phantom_defining_expr
 end
 
-include Compute_ranges.S
+include Compute_ranges_intf.S
   with module Index := Backend_var
   with module Key := Backend_var
+  with module Subrange_state := Subrange_state
   with module Subrange_info := Subrange_info
   with module Range_info := Range_info

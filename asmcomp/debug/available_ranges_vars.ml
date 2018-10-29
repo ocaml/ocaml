@@ -16,7 +16,7 @@
 
 module L = Linearize
 
-include Compute_ranges.Make (struct
+module Vars = struct
   module RD = Reg_with_debug_info
 
   (* By the time this pass has run, register stamps are irrelevant; indeed,
@@ -62,6 +62,7 @@ include Compute_ranges.Make (struct
       with type key := Key.t
       with type subrange_state := Subrange_state.t
 
+    val reg : t -> Reg.t
     val offset_from_cfa_in_bytes : t -> int option
   end = struct
     type t = {
@@ -87,6 +88,8 @@ include Compute_ranges.Make (struct
         offset_from_cfa_in_bytes;
       }
 
+    let reg t = t.reg
+
     (* Available subranges are allowed to cross points at which the stack
        pointer changes, since we reference the stack slots as an offset from the
        CFA, not from the stack pointer. *)
@@ -94,11 +97,15 @@ include Compute_ranges.Make (struct
     let offset_from_cfa_in_bytes t = t.offset_from_cfa_in_bytes
   end
 
-  module Range_info :
-    Compute_ranges_intf.S_range_info
+  module Range_info : sig
+    include Compute_ranges_intf.S_range_info
       with type key := Key.t
       with type index := Index.t
-  = struct
+
+    val provenance : t -> Backend_var.Provenance.t option
+    val debuginfo : t -> Debuginfo.t
+    val is_parameter : t -> Is_parameter.t
+  end = struct
     type t = {
       provenance : Backend_var.Provenance.t option;
       is_parameter : Is_parameter.t;
@@ -123,6 +130,12 @@ include Compute_ranges.Make (struct
         Some (var, t)
 
     let provenance t = t.provenance
+
+    let debuginfo t =
+      match provenance t with
+      | None -> Debuginfo.none
+      | Some provenance -> Backend_var.Provenance.debuginfo provenance
+
     let is_parameter t = t.is_parameter
   end
 
@@ -150,4 +163,10 @@ include Compute_ranges.Make (struct
          completely restarted in the event of any change. *)
       true
     | None -> Misc.fatal_error "Shouldn't be here without [debug_full]"
-end)
+end
+
+module Subrange_state = Vars.Subrange_state
+module Subrange_info = Vars.Subrange_info
+module Range_info = Vars.Range_info
+
+include Compute_ranges.Make (Vars)

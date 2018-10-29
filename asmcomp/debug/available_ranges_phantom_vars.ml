@@ -16,7 +16,7 @@
 
 module L = Linearize
 
-include Calculate_ranges.Make (struct
+module Phantom_vars = struct
   module Key = Backend_var
   module Index = Backend_var
 
@@ -26,6 +26,7 @@ include Calculate_ranges.Make (struct
     type t = unit
 
     let create () = ()
+    let advance_over_instruction _ _ = ()
   end
 
   module Subrange_info :
@@ -35,21 +36,21 @@ include Calculate_ranges.Make (struct
   = struct
     type t = unit
 
-    let create _var ~start_insn:_ ~subrange_state:_ = ()
+    let create _var _subrange_state = ()
   end
 
-  module Range_info :
-    Compute_ranges_intf.S_range_info
+  module Range_info : sig
+    include Compute_ranges_intf.S_range_info
       with type key := Key.t
       with type index := Index.t
-  = struct
-    type is_parameter =
-      | Local
-      | Parameter of { index : int; }
 
+    val provenance : t -> Backend_var.Provenance.t option
+    val is_parameter : t -> Is_parameter.t
+    val defining_expr : t -> Mach.phantom_defining_expr
+  end = struct
     type t = {
       provenance : Backend_var.Provenance.t option;
-      is_parameter : is_parameter;
+      is_parameter : Is_parameter.t;
       defining_expr : Mach.phantom_defining_expr;
     }
 
@@ -70,6 +71,10 @@ include Calculate_ranges.Make (struct
           }
         in
         Some (var, t)
+
+    let provenance t = t.provenance
+    let is_parameter t = t.is_parameter
+    let defining_expr t = t.defining_expr
   end
 
   let available_before (insn : L.instruction) = insn.phantom_available_before
@@ -85,4 +90,10 @@ include Calculate_ranges.Make (struct
     | Some Gdb -> false
     | Some Lldb -> true
     | None -> Misc.fatal_error "Shouldn't be here without [debug_full]"
-end)
+end
+
+module Subrange_state = Phantom_vars.Subrange_state
+module Subrange_info = Phantom_vars.Subrange_info
+module Range_info = Phantom_vars.Range_info
+
+include Compute_ranges.Make (Phantom_vars)
