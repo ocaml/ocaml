@@ -53,7 +53,7 @@ val chop_suffix : string -> string -> string
 
 val chop_suffix_opt: suffix:string -> string -> string option
 (** [chop_suffix_opt ~suffix filename] removes the suffix from
-    the [filename] if possible, or return [None] if the
+    the [filename] if possible, or returns [None] if the
     filename does not end with the suffix.
 
     @since NEXT_VERSION
