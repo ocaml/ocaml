@@ -155,22 +155,34 @@ let emit_frames a =
     end)
   in
   let debuginfos = Label_table.create 7 in
-  let rec label_debuginfos rs rdbg =
-    let key = (rs, rdbg) in
+  let (* rec *) label_debuginfos rs dbg =
+    let key = (rs, dbg) in
     try fst (Label_table.find debuginfos key)
     with Not_found ->
       let lbl = Cmm.new_label () in
+      Label_table.add debuginfos key (lbl, None);
+      lbl
+(* XXX Resurrect this
+      let block =
+        Debuginfo.Current_block.to_block (Debuginfo.innermost_block dbg)
+      in
+      match block with
+      | Toplevel -> assert false
+      | Block block ->
+        match Debuginfo.Block.parent block with
+        | None -> None
+        | Some block ->
+          let dbg = Debuginfo.create block ~position:
+
       let next =
-        match rdbg with
+        match dbg with
         | [] -> assert false
         | _ :: [] -> None
-        | _ :: ((_ :: _) as rdbg') -> Some (label_debuginfos false rdbg')
-      in
-      Label_table.add debuginfos key (lbl, next);
-      lbl
+        | _ :: ((_ :: _) as dbg') -> Some (label_debuginfos false dbg')
+      in *)
   in
-  let emit_debuginfo_label rs rdbg =
-    a.efa_data_label (label_debuginfos rs rdbg)
+  let emit_debuginfo_label rs dbg =
+    a.efa_data_label (label_debuginfos rs dbg)
   in
   let emit_frame fd =
     a.efa_code_label fd.fd_lbl;
@@ -180,38 +192,41 @@ let emit_frames a =
     a.efa_16 (List.length fd.fd_live_offset);
     List.iter a.efa_16 fd.fd_live_offset;
     a.efa_align Arch.size_addr;
-    match List.rev fd.fd_debuginfo with
-    | [] -> ()
-    | _ :: _ as rdbg -> emit_debuginfo_label fd.fd_raise rdbg
+    if not (Debuginfo.is_none fd.fd_debuginfo) then begin
+      emit_debuginfo_label fd.fd_raise fd.fd_debuginfo
+    end
   in
   let emit_filename name lbl =
     a.efa_def_label lbl;
     a.efa_string name;
     a.efa_align Arch.size_addr
   in
-  let pack_info fd_raise d =
-    let line = min 0xFFFFF d.Debuginfo.dinfo_line
-    and char_start = min 0xFF d.Debuginfo.dinfo_char_start
-    and char_end = min 0x3FF d.Debuginfo.dinfo_char_end
+  let pack_info fd_raise code_range =
+    let line = min 0xFFFFF (Debuginfo.Code_range.line code_range)
+    and char_start = min 0xFF (Debuginfo.Code_range.char_start code_range)
+    and char_end = min 0x3FF (Debuginfo.Code_range.char_end code_range)
     and kind = if fd_raise then 1 else 0 in
     Int64.(add (shift_left (of_int line) 44)
              (add (shift_left (of_int char_start) 36)
                 (add (shift_left (of_int char_end) 26)
                    (of_int kind))))
   in
-  let emit_debuginfo (rs, rdbg) (lbl,next) =
-    let d = List.hd rdbg in
-    a.efa_align Arch.size_addr;
-    a.efa_def_label lbl;
-    let info = pack_info rs d in
-    a.efa_label_rel
-      (label_filename d.Debuginfo.dinfo_file)
-      (Int64.to_int32 info);
-    a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
-    begin match next with
-    | Some next -> a.efa_data_label next
-    | None -> a.efa_word 0
-    end
+  let emit_debuginfo (rs, dbg) (lbl,next) =
+    let code_range = Debuginfo.position dbg in
+    match code_range with
+    | None -> () (* XXX *)
+    | Some code_range ->
+      a.efa_align Arch.size_addr;
+      a.efa_def_label lbl;
+      let info = pack_info rs code_range in
+      a.efa_label_rel
+        (label_filename (Debuginfo.Code_range.file code_range))
+        (Int64.to_int32 info);
+      a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
+      begin match next with
+      | Some next -> a.efa_data_label next
+      | None -> a.efa_word 0
+      end
   in
   a.efa_word (List.length !frame_descriptors);
   List.iter emit_frame !frame_descriptors;
@@ -266,7 +281,7 @@ let reset_debug_info () =
 let emit_debug_info_gen dbg file_emitter loc_emitter =
   if is_cfi_enabled () &&
     (!Clflags.debug || Config.with_frame_pointers) then begin
-    Debuginfo.iter_frames_innermost_first dbg ~f:(fun code_range ->
+    Debuginfo.iter_position_and_frames_innermost_first dbg ~f:(fun code_range ->
       let module R = Debuginfo.Code_range in
       let file_name = R.file code_range in
       let line = R.line code_range in

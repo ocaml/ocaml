@@ -433,7 +433,7 @@ let var_location_description (reg : Reg.t) ~offset_from_cfa_in_bytes
         Some (Simple (SLDL.compile (SLDL.of_rvalue (
           SLDL.Rvalue.in_stack_slot ~offset_in_words))))
 
-let phantom_var_location_description t ~provenance
+let phantom_var_location_description t
       ~(defining_expr : Mach.phantom_defining_expr) ~need_rvalue
       ~proto_dies_for_vars ~parent
       : location_description option =
@@ -583,14 +583,14 @@ let phantom_var_location_description t ~provenance
       (!dwarf_version))
 
 let location_list_entry t ~parent ~(fundecl : L.fundecl)
-      ~subrange ~proto_dies_for_vars ~provenance ~need_rvalue
+      ~subrange ~proto_dies_for_vars ~need_rvalue
       : Location_list_entry.t option =
   let location_description =
     match ARV.Subrange.info subrange with
     | Non_phantom { reg; offset_from_cfa_in_bytes; } ->
       var_location_description reg ~offset_from_cfa_in_bytes ~need_rvalue
     | Phantom defining_expr ->
-      phantom_var_location_description t ~provenance ~defining_expr
+      phantom_var_location_description t ~defining_expr
         ~need_rvalue ~proto_dies_for_vars ~parent
   in
   let single_location_description =
@@ -667,7 +667,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
         ~f:(fun location_list_entries subrange ->
           let location_list_entry =
             location_list_entry t ~parent:(Some function_proto_die)
-              ~fundecl ~subrange ~proto_dies_for_vars ~provenance ~need_rvalue
+              ~fundecl ~subrange ~proto_dies_for_vars ~need_rvalue
           in
           match location_list_entry with
           | None -> location_list_entries
@@ -876,7 +876,7 @@ let create_lexical_block_proto_dies available_ranges ~function_proto_die
     let module LB = Lexical_block_ranges in
     LB.fold available_ranges
       ~init:B.Map.empty
-      ~f:(fun lexical_block_proto_dies block _unique range ->
+      ~f:(fun lexical_block_proto_dies block range ->
         let start_pos, end_pos = LB.Range.extremities range in
         let start_of_scope =
           DAH.create_low_pc
@@ -887,15 +887,18 @@ let create_lexical_block_proto_dies available_ranges ~function_proto_die
             ~address_label:(Asm_label.create_int end_pos)
         in
         let parent =
-          match CB.parent block with
-          | None -> Some function_proto_die
-          | Some parent ->
-            match B.Map.find parent lexical_block_proto_dies with
-            | exception Not_found ->
-              Misc.fatal_errorf "Cannot find DIE for parent %a of scope %a"
-                B.print parent
-                B.print scope
-            | parent -> Some parent
+          match CB.to_block block with
+          | Toplevel -> Some function_proto_die
+          | Block block ->
+            match B.parent block with
+            | None -> Some function_proto_die
+            | Some parent ->
+              match B.Map.find parent lexical_block_proto_dies with
+              | exception Not_found ->
+                Misc.fatal_errorf "Cannot find DIE for parent %a of scope %a"
+                  B.print parent
+                  B.print block
+              | parent -> Some parent
         in
         let proto_die =
           Proto_die.create ~parent
@@ -906,13 +909,16 @@ let create_lexical_block_proto_dies available_ranges ~function_proto_die
             ]
             ()
         in
-        B.Map.add block proto_die lexical_block_proto_dies)
+        match CB.to_block block with
+        | Toplevel -> lexical_block_proto_dies
+        | Block block ->
+          B.Map.add block proto_die lexical_block_proto_dies)
   in
   whole_function_lexical_block, lexical_block_proto_dies
 
 let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
-      ~available_ranges_vars ~available_ranges_phantom_vars
-      ~available_ranges_blocks ~end_of_function_label =
+      ~available_ranges_vars ~available_ranges_lexical_blocks
+      ~end_of_function_label =
   let symbol = Asm_symbol.create fundecl.fun_name in
   let start_of_function =
     DAH.create_low_pc_from_symbol ~symbol
@@ -968,10 +974,6 @@ let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
   let whole_function_lexical_block, lexical_block_proto_dies =
     create_lexical_block_proto_dies available_ranges_lexical_blocks
       ~function_proto_die ~start_of_function ~end_of_function
-  in
-  let available_ranges_vars =
-    Available_ranges_vars.create ~available_ranges_vars
-      ~available_ranges_phantom_vars
   in
   dwarf_for_variables_and_parameters t ~function_proto_die
     ~whole_function_lexical_block ~lexical_block_proto_dies

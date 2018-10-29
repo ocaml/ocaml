@@ -238,11 +238,6 @@ module Current_block = struct
       | None -> Some at_call_site
       | Some t -> Some (Block.graft t ~onto:(Some at_call_site))
 
-  let parent t =
-    match t with
-    | None -> None
-    | Some block -> Block.parent block
-
   include Identifiable.Make (struct
     type nonrec t = t
 
