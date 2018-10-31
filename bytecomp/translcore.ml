@@ -544,16 +544,16 @@ and transl_list_with_shape expr_list =
   in
   List.split (List.map transl_with_shape expr_list)
 
-and transl_guard loc guard rhs =
+and transl_guard loc guard rhs rhs_loc =
   let expr = event_before rhs (transl_exp rhs) in
   match guard with
   | None -> expr
   | Some cond ->
       event_before cond (
-        Lifthenelse(transl_exp cond, loc, expr, loc, staticfail, loc))
+        Lifthenelse(transl_exp cond, rhs_loc, expr, loc, staticfail, loc))
 
 and transl_case {c_lhs; c_guard; c_rhs} =
-  c_lhs, transl_guard c_lhs.pat_loc c_guard c_rhs
+  c_lhs, transl_guard c_lhs.pat_loc c_guard c_rhs c_rhs.exp_loc, c_rhs.exp_loc
 
 and transl_cases cases =
   let cases =
@@ -563,7 +563,9 @@ and transl_cases cases =
 and transl_case_try {c_lhs; c_guard; c_rhs} =
   iter_exn_names Translprim.add_exception_ident c_lhs;
   Misc.try_finally
-    (fun () -> c_lhs, transl_guard c_lhs.pat_loc c_guard c_rhs)
+    (fun () ->
+      c_lhs, transl_guard c_lhs.pat_loc c_guard c_rhs c_rhs.exp_loc,
+        c_rhs.exp_loc)
     ~always:(fun () ->
         iter_exn_names Translprim.remove_exception_ident c_lhs)
 
@@ -572,18 +574,18 @@ and transl_cases_try cases =
     List.filter (fun c -> c.c_rhs.exp_desc <> Texp_unreachable) cases in
   List.map transl_case_try cases
 
-and transl_tupled_cases patl_expr_list =
-  let patl_expr_list =
-    List.filter (fun (_,_,e) -> e.exp_desc <> Texp_unreachable)
-      patl_expr_list in
-  List.map (fun (patl, guard, expr) ->
+and transl_tupled_cases pats_act_list =
+  let pats_act_list =
+    List.filter (fun (_, _, e, _act_loc) -> e.exp_desc <> Texp_unreachable)
+      pats_act_list in
+  List.map (fun (patl, guard, act, act_loc) ->
       let loc =
         match patl with
         | pat::_ -> pat.pat_loc
         | [] -> Location.none
       in
-      (patl, transl_guard loc guard expr))
-    patl_expr_list
+      (patl, transl_guard loc guard act act_loc, act_loc))
+    pats_act_list
 
 and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
       ?(specialised = Default_specialise) lam sargs loc =
@@ -657,14 +659,15 @@ and transl_function loc untuplify_fn repr partial param cases =
       let ((_, params), body) =
         transl_function exp.exp_loc false repr partial' param' cases in
       ((Curried, param :: params),
-       Matching.for_function loc None (Lvar param) [pat, body] partial)
+       Matching.for_function loc None (Lvar param) [pat, body, loc] partial)
   | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
       begin try
         let size = List.length pl in
         let pats_expr_list =
           List.map
             (fun {c_lhs; c_guard; c_rhs} ->
-              (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
+              (Matching.flatten_pattern size c_lhs, c_guard, c_rhs,
+                c_rhs.exp_loc))
             cases in
         let params = List.map (fun _ -> Ident.create_local "param") pl in
         ((Tupled, params),
@@ -701,7 +704,8 @@ and transl_let rec_flag pat_expr_list =
             Translattribute.add_specialise_attribute lam vb_loc attr
           in
           let mk_body = transl rem in
-          fun body -> Matching.for_let pat.pat_loc lam pat (mk_body body)
+          fun body ->
+            Matching.for_let pat.pat_loc lam pat (mk_body body) expr.exp_loc
       in transl pat_expr_list
   | Recursive ->
       let idlist =
@@ -861,8 +865,8 @@ and transl_match e arg pat_expr_list partial =
             ~always:(fun () ->
                 iter_exn_names Translprim.remove_exception_ident pe)
         in
-        (pv, static_raise vids) :: val_cases,
-        (pe, static_raise ids) :: exn_cases,
+        (pv, static_raise vids, pv.pat_loc) :: val_cases,
+        (pe, static_raise ids, pe.pat_loc) :: exn_cases,
         (lbl, ids, rhs) :: static_handlers
   in
   let val_cases, exn_cases, static_handlers =
@@ -870,7 +874,9 @@ and transl_match e arg pat_expr_list partial =
     List.rev x, List.rev y, List.rev z
   in
   let static_catch loc body val_ids handler =
-    let id = Typecore.name_pattern "exn" (List.map fst exn_cases) in
+    let id =
+      Typecore.name_pattern "exn" (List.map (fun (pat, _, _) -> pat) exn_cases)
+    in
     let static_exception_id = next_raise_count () in
     Lstaticcatch
       (Ltrywith (Lstaticraise (static_exception_id, body), id,

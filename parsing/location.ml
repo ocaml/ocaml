@@ -231,7 +231,6 @@ let print_locs ppf locs =
     print_loc ppf locs
 
 let print_for_debug ppf t =
-  setup_colors ();
   if is_none t then
     Format.fprintf ppf "<none>"
   else

@@ -684,6 +684,8 @@ and sequence ppf = function
 
 let structured_constant = struct_const
 
-let lambda = lam
+let lambda ppf term =
+  Misc.Color.setup !Clflags.color;
+  lam ppf term
 
 let program ppf { code } = lambda ppf code

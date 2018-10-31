@@ -177,7 +177,9 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
                     attr = default_function_attribute;
                     loc = pat.pat_loc;
                     body = Matching.for_function
-                             pat.pat_loc None (Lvar param) [pat, rem] partial}
+                             pat.pat_loc None (Lvar param)
+                             (* CR mshinwell: [pat.pat_loc] may not be right *)
+                             [pat, rem, pat.pat_loc] partial}
        in
        begin match obj_init with
          Lfunction {kind = Curried; params; body = rem} -> build params rem
@@ -428,7 +430,9 @@ let rec transl_class_rebind obj_init cl vf =
                    attr = default_function_attribute;
                    loc = pat.pat_loc;
                    body = Matching.for_function
-                            pat.pat_loc None (Lvar param) [pat, rem] partial}
+                            pat.pat_loc None (Lvar param)
+                            (* CR mshinwell: pat.pat_loc may not be right *)
+                            [pat, rem, pat.pat_loc] partial}
       in
       (path,
        match obj_init with
