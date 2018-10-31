@@ -20,6 +20,8 @@ module Code_range : sig
 
   val create : file:string -> line:int -> char_start:int -> char_end:int -> t
 
+  val none : t
+
   val file : t -> string
   val line : t -> int
   val char_start : t -> int
