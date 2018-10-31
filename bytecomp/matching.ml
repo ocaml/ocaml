@@ -2449,7 +2449,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
           | (1, 1, [0, (loc1, act1)], [0, (loc2, act2)]) ->
            (* Typically, match on lists, will avoid isint primitive in that
               case *)
-              Lifthenelse(arg, loc1, act2, loc2, act1, loc)
+              Lifthenelse(arg, loc2, act2, loc1, act1, loc)
           | (n,0,_,[])  -> (* The type defines constant constructors only *)
               call_switcher loc fail_opt arg 0 (n-1) consts
           | (n, _, _, _) ->
