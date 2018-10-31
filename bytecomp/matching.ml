@@ -2912,8 +2912,8 @@ match pmh with
 and compile_no_test loc divide up_ctx repr partial ctx to_match
       : (Location.t * lambda) * jumps =
   let {pm=this_match ; ctx=this_ctx } = divide ctx to_match in
-  let loc_and_lam, total = compile_match loc repr partial this_ctx this_match in
-  loc_and_lam, jumps_map up_ctx total
+  let (_loc, lam), total = compile_match loc repr partial this_ctx this_match in
+  (loc, lam), jumps_map up_ctx total
 
 
 
