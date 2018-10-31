@@ -85,7 +85,11 @@ let create ~prefix_name =
   let debug_line_label = Asm_section.label (DWARF Debug_line) in
   let compilation_unit_proto_die =
     let attribute_values =
-      let producer_name = Printf.sprintf "ocamlopt %s" Sys.ocaml_version in
+      let producer_name =
+        Printf.sprintf "ocamlopt %s %s"
+          Config.cmt_magic_number
+          Sys.ocaml_version
+      in
       [ DAH.create_producer ~producer_name;
         DAH.create_name output_path;
         DAH.create_comp_dir ~directory;
@@ -798,7 +802,7 @@ let iterate_over_variable_like_things _t ~available_ranges_vars ~f =
       let name = Backend_var.name var in
       String.length name >= 1
         && String.get name 0 = '*'
-        && String.get name (String.length name -1) = '*'
+        && String.get name (String.length name - 1) = '*'
     in
     let ident_for_type =
       match provenance with
