@@ -131,7 +131,7 @@ let rec push_defaults loc bindings cases partial =
               Texp_ident (Path.Pident param, mknoloc (Longident.Lident name),
                           {val_type = pat.pat_type; val_kind = Val_reg;
                            val_attributes = [];
-                           Types.val_loc = Location.none;
+                           Types.val_loc = loc;
                           })},
              cases, partial) }
       in
@@ -449,14 +449,14 @@ and transl_exp0 e =
       let cpy = Ident.create_local "copy" in
       Llet(Strict, Pgenval, cpy,
            Lapply{ap_should_be_tailcall=false;
-                  ap_loc=Location.none;
+                  ap_loc=e.exp_loc;
                   ap_func=Translobj.oo_prim "copy";
                   ap_args=[transl_normal_path path_self];
                   ap_inlined=Default_inline;
                   ap_specialised=Default_specialise},
            List.fold_right
              (fun (path, _, expr) rem ->
-                Lsequence(transl_setinstvar Location.none
+                Lsequence(transl_setinstvar e.exp_loc
                             (Lvar cpy) path expr, rem))
              modifs
              (Lvar cpy))
@@ -582,7 +582,7 @@ and transl_tupled_cases pats_act_list =
       let loc =
         match patl with
         | pat::_ -> pat.pat_loc
-        | [] -> Location.none
+        | [] -> act_loc
       in
       (patl, transl_guard loc guard act act_loc, act_loc))
     pats_act_list

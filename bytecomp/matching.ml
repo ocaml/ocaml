@@ -1339,7 +1339,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
         | None, Some r2 -> r2
         | Some (a1::_), Some (a2::_) ->
             {a1 with
-             pat_loc = Location.none ;
+             pat_loc = q.pat_loc;
              pat_desc = Tpat_or (a1, a2, None)}::
             rem
         | _, _ -> assert false
@@ -1503,9 +1503,10 @@ let get_mod_field modname field =
       with Not_found ->
         fatal_error ("Primitive "^modname^"."^field^" not found.")
       in
+      let loc = Location.in_file !Location.input_name in
       Lprim(Pfield p,
-            [Lprim(Pgetglobal mod_ident, [], Location.none)],
-            Location.none)
+            [Lprim(Pgetglobal mod_ident, [], loc)],
+            loc)
     with Not_found -> fatal_error ("Module "^modname^" unavailable.")
   )
 
@@ -1602,18 +1603,18 @@ let inline_lazy_force arg loc =
          tables (~ 250 elts); conditionals are better *)
       inline_lazy_force_cond arg loc
 
-let make_lazy_matching def = function
+let make_lazy_matching loc def = function
     [] -> fatal_error "Matching.make_lazy_matching"
   | (arg,_mut) :: argl ->
       { cases = [];
         args =
-          (inline_lazy_force arg Location.none, Strict) :: argl;
+          (inline_lazy_force arg loc, Strict) :: argl;
         default = make_default matcher_lazy def }
 
 let divide_lazy p ctx pm =
   divide_line
     (filter_ctx p)
-    make_lazy_matching
+    (make_lazy_matching p.pat_loc)
     get_arg_lazy
     p ctx pm
 
@@ -3065,7 +3066,7 @@ let for_function loc repr param (pat_act_list : pat_act_list) partial =
 (* In the following two cases, exhaustiveness info is not available! *)
 let for_trywith loc param (pat_act_list : pat_act_list) =
   compile_matching loc None
-    (fun () -> Lprim(Praise Raise_reraise, [param], Location.none))
+    (fun () -> Lprim(Praise Raise_reraise, [param], loc))
     param pat_act_list Partial
 
 let simple_for_let loc param pat body body_loc =
