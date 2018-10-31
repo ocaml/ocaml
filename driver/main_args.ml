@@ -677,6 +677,10 @@ let mk_dlambda f =
   "-dlambda", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dlambda_loc f =
+  "-dlambda-loc", Arg.Unit f, " As per `-dlambda' except also prints locations"
+;;
+
 let mk_drawclambda f =
   "-drawclambda", Arg.Unit f, " (undocumented)"
 ;;
@@ -882,6 +886,7 @@ module type Common_options = sig
   val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
   val _dlambda : unit -> unit
+  val _dlambda_loc : unit -> unit
 
   val anonymous : string -> unit
 end
@@ -1168,6 +1173,7 @@ struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
+    mk_dlambda_loc F._dlambda_loc;
     mk_dinstr F._dinstr;
     mk_dcamlprimc F._dcamlprimc;
     mk_dtimings F._dtimings;
@@ -1230,6 +1236,7 @@ struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
+    mk_dlambda_loc F._dlambda_loc;
     mk_dinstr F._dinstr;
 
     mk_args F._args;
@@ -1353,6 +1360,7 @@ struct
     mk_dtypedtree F._dtypedtree;
     mk_drawlambda F._drawlambda;
     mk_dlambda F._dlambda;
+    mk_dlambda_loc F._dlambda_loc;
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
     mk_dflambda F._dflambda;

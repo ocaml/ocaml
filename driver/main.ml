@@ -131,6 +131,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dtypedtree = set dump_typedtree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
+  let _dlambda_loc () = dump_lambda := true; dump_lambda_loc := true
   let _dinstr = set dump_instr
   let _dcamlprimc = set keep_camlprimc_file
   let _dtimings () = profile_columns := [ `Time ]

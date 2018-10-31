@@ -23,7 +23,12 @@ let in_file name =
   { loc_start = loc; loc_end = loc; loc_ghost = true }
 ;;
 
-let none = in_file "_none_";;
+let none_file = "_none_"
+
+let none = in_file none_file
+
+let is_none { loc_start = { pos_fname; _ }; _ } =
+  String.equal pos_fname none_file
 
 let curr lexbuf = {
   loc_start = lexbuf.lex_start_p;
@@ -80,7 +85,7 @@ let mknoloc txt = mkloc txt none
 (******************************************************************************)
 (* Input info *)
 
-let input_name = ref "_none_"
+let input_name = ref none_file
 let input_lexbuf = ref (None : lexbuf option)
 
 (******************************************************************************)
@@ -224,6 +229,17 @@ let print_loc ppf loc =
 let print_locs ppf locs =
   Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ",@ ")
     print_loc ppf locs
+
+let print_for_debug ppf t =
+  setup_colors ();
+  if is_none t then
+    Format.fprintf ppf "<none>"
+  else
+    Format.fprintf ppf "%s:%d,%d--%d"
+      t.loc_start.pos_fname
+      t.loc_start.pos_lnum
+      (t.loc_start.pos_cnum - t.loc_start.pos_bol)
+      (t.loc_end.pos_cnum - t.loc_start.pos_bol)
 
 (******************************************************************************)
 (* Toplevel: highlighting and quoting locations *)

@@ -163,6 +163,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dtypedtree = option "-dtypedtree"
   let _drawlambda = option "-drawlambda"
   let _dlambda = option "-dlambda"
+  let _dlambda_loc = option "-dlambda-loc"
   let _drawclambda = option "-drawclambda"
   let _dclambda = option "-dclambda"
   let _drawflambda = option "-drawflambda"

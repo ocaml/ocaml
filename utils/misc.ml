@@ -620,12 +620,14 @@ module Color = struct
     error: style list;
     warning: style list;
     loc: style list;
+    debug_loc: style list;
   }
 
   let default_styles = {
     warning = [Bold; FG Magenta];
     error = [Bold; FG Red];
     loc = [Bold];
+    debug_loc = [FG Yellow];
   }
 
   let cur_styles = ref default_styles
@@ -638,6 +640,7 @@ module Color = struct
     | Format.String_tag "error" -> (!cur_styles).error
     | Format.String_tag "warning" -> (!cur_styles).warning
     | Format.String_tag "loc" -> (!cur_styles).loc
+    | Format.String_tag "debug_loc" -> (!cur_styles).debug_loc
     | _ -> raise Not_found
 
   let color_enabled = ref true
