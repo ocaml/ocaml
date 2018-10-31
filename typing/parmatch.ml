@@ -24,17 +24,17 @@ open Typedtree
 (* Utilities for building patterns   *)
 (*************************************)
 
-let make_pat desc ty tenv =
-  {pat_desc = desc; pat_loc = Location.none; pat_extra = [];
+let make_pat loc desc ty tenv =
+  {pat_desc = desc; pat_loc = loc; pat_extra = [];
    pat_type = ty ; pat_env = tenv;
    pat_attributes = [];
   }
 
-let omega = make_pat Tpat_any Ctype.none Env.empty
+let omega = make_pat Location.none Tpat_any Ctype.none Env.empty
 
 let extra_pat =
-  make_pat
-    (Tpat_var (Ident.create_local "+", mknoloc "+"))
+  make_pat Location.none
+    (Tpat_var (Ident.create_local "*+*", mknoloc "+"))
     Ctype.none Env.empty
 
 let rec omegas i =
@@ -42,7 +42,8 @@ let rec omegas i =
 
 let omega_list l = List.map (fun _ -> omega) l
 
-let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty
+let zero =
+  make_pat Location.none (Tpat_constant (Const_int 0)) Ctype.none Env.empty
 
 (*******************)
 (* Coherence check *)
@@ -423,26 +424,26 @@ let rec simple_match_args p1 p2 = match p2.pat_desc with
 
 let rec normalize_pat q = match q.pat_desc with
   | Tpat_any | Tpat_constant _ -> q
-  | Tpat_var _ -> make_pat Tpat_any q.pat_type q.pat_env
+  | Tpat_var _ -> make_pat q.pat_loc Tpat_any q.pat_type q.pat_env
   | Tpat_alias (p,_,_) -> normalize_pat p
   | Tpat_tuple (args) ->
-      make_pat (Tpat_tuple (omega_list args)) q.pat_type q.pat_env
+      make_pat q.pat_loc (Tpat_tuple (omega_list args)) q.pat_type q.pat_env
   | Tpat_construct  (lid, c,args) ->
-      make_pat
+      make_pat q.pat_loc
         (Tpat_construct (lid, c,omega_list args))
         q.pat_type q.pat_env
   | Tpat_variant (l, arg, row) ->
-      make_pat (Tpat_variant (l, may_map (fun _ -> omega) arg, row))
+      make_pat q.pat_loc (Tpat_variant (l, may_map (fun _ -> omega) arg, row))
         q.pat_type q.pat_env
   | Tpat_array (args) ->
-      make_pat (Tpat_array (omega_list args))  q.pat_type q.pat_env
+      make_pat q.pat_loc (Tpat_array (omega_list args))  q.pat_type q.pat_env
   | Tpat_record (largs, closed) ->
-      make_pat
+      make_pat q.pat_loc
         (Tpat_record (List.map (fun (lid,lbl,_) ->
                                  lid, lbl,omega) largs, closed))
         q.pat_type q.pat_env
   | Tpat_lazy _ ->
-      make_pat (Tpat_lazy omega) q.pat_type q.pat_env
+      make_pat q.pat_loc (Tpat_lazy omega) q.pat_type q.pat_env
   | Tpat_or _
   | Tpat_exception _ -> fatal_error "Parmatch.normalize_pat"
 
@@ -499,7 +500,8 @@ let discr_pat q pss =
             largs (record_arg acc)
         in
         let new_acc =
-          make_pat (Tpat_record (new_omegas, closed)) head.pat_type head.pat_env
+          make_pat head.pat_loc (Tpat_record (new_omegas, closed))
+            head.pat_type head.pat_env
         in
         refine_pat new_acc rows
       | _ -> acc
@@ -528,10 +530,10 @@ let rec read_args xs r = match xs,r with
 let do_set_args erase_mutable q r = match q with
 | {pat_desc = Tpat_tuple omegas} ->
     let args,rest = read_args omegas r in
-    make_pat (Tpat_tuple args) q.pat_type q.pat_env::rest
+    make_pat q.pat_loc (Tpat_tuple args) q.pat_type q.pat_env::rest
 | {pat_desc = Tpat_record (omegas,closed)} ->
     let args,rest = read_args omegas r in
-    make_pat
+    make_pat q.pat_loc
       (Tpat_record
          (List.map2 (fun (lid, lbl,_) arg ->
            if
@@ -547,7 +549,7 @@ let do_set_args erase_mutable q r = match q with
     rest
 | {pat_desc = Tpat_construct (lid, c,omegas)} ->
     let args,rest = read_args omegas r in
-    make_pat
+    make_pat q.pat_loc
       (Tpat_construct (lid, c,args))
       q.pat_type q.pat_env::
     rest
@@ -558,18 +560,18 @@ let do_set_args erase_mutable q r = match q with
       | None, r -> None, r
       | _ -> assert false
     in
-    make_pat
+    make_pat q.pat_loc
       (Tpat_variant (l, arg, row)) q.pat_type q.pat_env::
     rest
 | {pat_desc = Tpat_lazy _omega} ->
     begin match r with
       arg::rest ->
-        make_pat (Tpat_lazy arg) q.pat_type q.pat_env::rest
+        make_pat q.pat_loc (Tpat_lazy arg) q.pat_type q.pat_env::rest
     | _ -> fatal_error "Parmatch.do_set_args (lazy)"
     end
 | {pat_desc = Tpat_array omegas} ->
     let args,rest = read_args omegas r in
-    make_pat
+    make_pat q.pat_loc
       (Tpat_array args) q.pat_type q.pat_env::
     rest
 | {pat_desc=Tpat_constant _|Tpat_any} ->
@@ -879,7 +881,7 @@ let pat_of_constr ex_pat cstr =
    Tpat_construct (mknoloc (Longident.Lident "?pat_of_constr?"),
                    cstr, omegas cstr.cstr_arity)}
 
-let orify x y = make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
+let orify x y = make_pat x.pat_loc (Tpat_or (x, y, None)) x.pat_type x.pat_env
 
 let rec orify_many = function
 | [] -> assert false
@@ -899,7 +901,8 @@ let pats_of_type ?(always=false) env ty =
       | Type_variant cl when always || List.length cl = 1 ||
         List.for_all (fun cd -> cd.Types.cd_res <> None) cl ->
           let cstrs = fst (Env.find_type_descrs path env) in
-          List.map (pat_of_constr (make_pat Tpat_any ty env)) cstrs
+          List.map (pat_of_constr (make_pat Location.none Tpat_any ty env))
+            cstrs
       | Type_record _ ->
           let labels = snd (Env.find_type_descrs path env) in
           let fields =
@@ -907,12 +910,12 @@ let pats_of_type ?(always=false) env ty =
               mknoloc (Longident.Lident "?pat_of_label?"), ld, omega)
               labels
           in
-          [make_pat (Tpat_record (fields, Closed)) ty env]
+          [make_pat Location.none (Tpat_record (fields, Closed)) ty env]
       | _ -> [omega]
       with Not_found -> [omega]
       end
   | Ttuple tl ->
-      [make_pat (Tpat_tuple (omegas (List.length tl))) ty env]
+      [make_pat Location.none (Tpat_tuple (omegas (List.length tl))) ty env]
   | _ -> [omega]
 
 let rec get_variant_constructors env ty =
@@ -961,7 +964,7 @@ let build_other_constant proj make first next p env =
   let rec try_const i =
     if List.mem i all
     then try_const (next i)
-    else make_pat (make i) p.pat_type p.pat_env
+    else make_pat p.pat_loc (make i) p.pat_type p.pat_env
   in try_const first
 
 (*
@@ -972,9 +975,11 @@ let build_other_constant proj make first next p env =
 let some_private_tag = "<some private tag>"
 
 let build_other ext env = match env with
-| ({pat_desc = Tpat_construct (lid, {cstr_tag=Cstr_extension _},_)},_) :: _ ->
+| ({pat_desc = Tpat_construct (lid, {cstr_tag=Cstr_extension _},_);
+    pat_loc;
+   },_) :: _ ->
         (* let c = {c with cstr_name = "*extension*"} in *) (* PR#7330 *)
-        make_pat (Tpat_var (Ident.create_local "*extension*",
+        make_pat pat_loc (Tpat_var (Ident.create_local "*extension*",
                             {lid with txt="*extension*"})) Ctype.none Env.empty
 | ({pat_desc = Tpat_construct _} as p,_) :: _ ->
     begin match ext with
@@ -996,7 +1001,7 @@ let build_other ext env = match env with
     let row = row_of_pat p in
     let make_other_pat tag const =
       let arg = if const then None else Some omega in
-      make_pat (Tpat_variant(tag, arg, r)) p.pat_type p.pat_env in
+      make_pat p.pat_loc (Tpat_variant(tag, arg, r)) p.pat_type p.pat_env in
     begin match
       List.fold_left
         (fun others (tag,f) ->
@@ -1018,7 +1023,8 @@ let build_other ext env = match env with
     | pat::other_pats ->
         List.fold_left
           (fun p_res pat ->
-            make_pat (Tpat_or (pat, p_res, None)) p.pat_type p.pat_env)
+            make_pat p.pat_loc (Tpat_or (pat, p_res, None))
+              p.pat_type p.pat_env)
           pat other_pats
     end
 | ({pat_desc = Tpat_constant(Const_char _)} as p,_) :: _ ->
@@ -1036,7 +1042,8 @@ let build_other ext env = match env with
         if List.mem ci all_chars then
           find_other (i+1) imax
         else
-          make_pat (Tpat_constant (Const_char ci)) p.pat_type p.pat_env in
+          make_pat p.pat_loc (Tpat_constant (Const_char ci))
+            p.pat_type p.pat_env in
     let rec try_chars = function
       | [] -> omega
       | (c1,c2) :: rest ->
@@ -1092,7 +1099,7 @@ let build_other ext env = match env with
     let rec try_arrays l =
       if List.mem l all_lengths then try_arrays (l+1)
       else
-        make_pat
+        make_pat p.pat_loc
           (Tpat_array (omegas l))
           p.pat_type p.pat_env in
     try_arrays 0
@@ -1758,28 +1765,29 @@ let rec lub p q = match p.pat_desc,q.pat_desc with
 | Tpat_constant c1, Tpat_constant c2 when const_compare c1 c2 = 0 -> p
 | Tpat_tuple ps, Tpat_tuple qs ->
     let rs = lubs ps qs in
-    make_pat (Tpat_tuple rs) p.pat_type p.pat_env
+    make_pat p.pat_loc (Tpat_tuple rs) p.pat_type p.pat_env
 | Tpat_lazy p, Tpat_lazy q ->
     let r = lub p q in
-    make_pat (Tpat_lazy r) p.pat_type p.pat_env
+    make_pat p.pat_loc (Tpat_lazy r) p.pat_type p.pat_env
 | Tpat_construct (lid, c1,ps1), Tpat_construct (_,c2,ps2)
       when  Types.equal_tag c1.cstr_tag c2.cstr_tag  ->
         let rs = lubs ps1 ps2 in
-        make_pat (Tpat_construct (lid, c1,rs))
+        make_pat p.pat_loc (Tpat_construct (lid, c1,rs))
           p.pat_type p.pat_env
 | Tpat_variant(l1,Some p1,row), Tpat_variant(l2,Some p2,_)
           when  l1=l2 ->
             let r=lub p1 p2 in
-            make_pat (Tpat_variant (l1,Some r,row)) p.pat_type p.pat_env
+            make_pat p.pat_loc (Tpat_variant (l1,Some r,row))
+              p.pat_type p.pat_env
 | Tpat_variant (l1,None,_row), Tpat_variant(l2,None,_)
               when l1 = l2 -> p
 | Tpat_record (l1,closed),Tpat_record (l2,_) ->
     let rs = record_lubs l1 l2 in
-    make_pat (Tpat_record (rs, closed)) p.pat_type p.pat_env
+    make_pat p.pat_loc (Tpat_record (rs, closed)) p.pat_type p.pat_env
 | Tpat_array ps, Tpat_array qs
       when List.length ps = List.length qs ->
         let rs = lubs ps qs in
-        make_pat (Tpat_array rs) p.pat_type p.pat_env
+        make_pat p.pat_loc (Tpat_array rs) p.pat_type p.pat_env
 | _,_  ->
     raise Empty
 

@@ -88,7 +88,7 @@ let rec apply_coercion loc strict restr arg =
       Translprim.transl_primitive pc_loc pc_desc pc_env pc_type None
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
-        (fun _ -> apply_coercion loc Alias cc (transl_normal_path path))
+        (fun _ -> apply_coercion loc Alias cc (transl_normal_path ~loc path))
 
 and apply_coercion_field loc get_field (pos, cc) =
   apply_coercion loc Alias cc (get_field pos)
@@ -190,8 +190,9 @@ let record_primitive = function
 (* Utilities for compiling "module rec" definitions *)
 
 let mod_prim name =
+  let loc = Location.in_file !Location.input_name in
   try
-    transl_normal_path
+    transl_normal_path ~loc
       (fst (Env.lookup_value (Ldot (Lident "CamlinternalMod", name))
                              Env.empty))
   with Not_found ->

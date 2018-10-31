@@ -21,8 +21,9 @@ open Lambda
 (* Get oo primitives identifiers *)
 
 let oo_prim name =
+  let loc = Location.in_file !Location.input_name in
   try
-    transl_normal_path
+    transl_normal_path ~loc
       (fst (Env.lookup_value (Ldot (Lident "CamlinternalOO", name)) Env.empty))
   with Not_found ->
     fatal_error ("Primitive " ^ name ^ " not found.")

@@ -615,29 +615,30 @@ let rec patch_guarded patch = function
 
 (* Translate an access path *)
 
-let rec transl_normal_path = function
+let rec transl_normal_path ~loc = function
     Pident id ->
       if Ident.global id
-      then Lprim(Pgetglobal id, [], Location.none)
+      then Lprim(Pgetglobal id, [], loc)
       else Lvar id
   | Pdot(p, _s, pos) ->
-      Lprim(Pfield pos, [transl_normal_path p], Location.none)
+      Lprim(Pfield pos, [transl_normal_path ~loc p], loc)
   | Papply _ ->
       fatal_error "Lambda.transl_path"
 
 (* Translation of identifiers *)
 
-let transl_module_path ?(loc=Location.none) env path =
-  transl_normal_path (Env.normalize_path (Some loc) env path)
+let transl_module_path ~loc env path =
+  transl_normal_path ~loc (Env.normalize_path (Some loc) env path)
 
-let transl_value_path ?(loc=Location.none) env path =
-  transl_normal_path (Env.normalize_path_prefix (Some loc) env path)
+let transl_value_path ~loc env path =
+  transl_normal_path ~loc (Env.normalize_path_prefix (Some loc) env path)
 
 let transl_class_path = transl_value_path
 let transl_extension_path = transl_value_path
 
 (* compatibility alias, deprecated in the .mli *)
-let transl_path = transl_value_path
+let transl_path ?(loc = Location.none) env path =
+  transl_value_path ~loc env path
 
 (* Compile a sequence of expressions *)
 

@@ -341,14 +341,16 @@ val iter_head_constructor: (lambda -> unit) -> lambda -> unit
 
 val free_variables: lambda -> Ident.Set.t
 
-val transl_normal_path: Path.t -> lambda   (* Path.t is already normal *)
+val transl_normal_path: loc:Location.t -> Path.t -> lambda
+  (* Path.t is already normal *)
+
 val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
 [@@ocaml.deprecated "use transl_{module,value,extension,class}_path instead"]
 
-val transl_module_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
-val transl_value_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
-val transl_extension_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
-val transl_class_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
+val transl_module_path: loc:Location.t -> Env.t -> Path.t -> lambda
+val transl_value_path: loc:Location.t -> Env.t -> Path.t -> lambda
+val transl_extension_path: loc:Location.t -> Env.t -> Path.t -> lambda
+val transl_class_path: loc:Location.t -> Env.t -> Path.t -> lambda
 
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 

@@ -2406,7 +2406,9 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
               let tests =
                 List.fold_right
                   (fun (path, (loc, act)) rem ->
-                     let ext = transl_extension_path ex_pat.pat_env path in
+                     let ext =
+                       transl_extension_path ~loc ex_pat.pat_env path
+                     in
                      Lifthenelse(Lprim(Pintcomp Ceq, [Lvar tag; ext], loc),
                                  loc, act, loc, rem, loc))
                   nonconsts
@@ -2419,7 +2421,9 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
       let expr =
         List.fold_right
           (fun (path, (loc, act)) rem ->
-             let ext = transl_extension_path ex_pat.pat_env path in
+             let ext =
+               transl_extension_path ~loc ex_pat.pat_env path
+             in
              Lifthenelse(Lprim(Pintcomp Ceq, [arg; ext], loc),
                          loc, act, loc, rem, loc))
           consts
@@ -3054,7 +3058,7 @@ let compile_matching loc repr handler_fun arg (pat_act_list : pat_act_list)
 let partial_function loc () =
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lprim(Praise Raise_regular, [Lprim(Pmakeblock(0, Immutable, None),
-          [transl_normal_path Predef.path_match_failure;
+          [transl_normal_path ~loc Predef.path_match_failure;
            Lconst(Const_block(0,
               [Const_base(Const_string (fname, None));
                Const_base(Const_int line);
