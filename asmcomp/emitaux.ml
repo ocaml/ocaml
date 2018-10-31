@@ -271,6 +271,9 @@ let file_pos_nums =
 (* Number of files *)
 let file_pos_num_cnt = ref 1
 
+(* Most recent position emitted, to avoid duplicate ".loc" directives. *)
+let prev_code_range = ref Debuginfo.Code_range.none
+
 (* Reset debug state at beginning of asm file *)
 let reset_debug_info () =
   file_pos_nums := [];
@@ -295,7 +298,11 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
             file_emitter ~file_num ~file_name;
             file_pos_nums := (file_name,file_num) :: !file_pos_nums;
             file_num in
-        loc_emitter ~file_num ~line ~col;
+        if not (Debuginfo.Code_range.equal code_range !prev_code_range)
+        then begin
+          loc_emitter ~file_num ~line ~col;
+          prev_code_range := code_range
+        end
       end)
   end
 
