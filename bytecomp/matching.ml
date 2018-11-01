@@ -1450,7 +1450,7 @@ let divide_variant row ctx {cases = cl; args = al; default=def} =
   let row = Btype.row_repr row in
   let rec divide (pats_act_list : pats_act_list) =
     match pats_act_list with
-    | ({pat_desc = Tpat_variant(lab, pato, _)} as p:: patl, action,
+    | ({pat_desc = Tpat_variant(lab, pato, _); pat_loc} as p:: patl, action,
           action_loc) :: rem ->
         let variants = divide rem in
         if try Btype.row_field_repr (List.assoc lab row.row_fields) = Rabsent
@@ -1462,10 +1462,12 @@ let divide_variant row ctx {cases = cl; args = al; default=def} =
           match pato with
             None ->
               add (make_variant_matching_constant p lab def ctx) variants
-                (=) (Cstr_constant tag) (patl, action, action_loc) al
+                (=) (pat_loc, Cstr_constant tag)
+                (patl, action, action_loc) al
           | Some pat ->
               add (make_variant_matching_nonconst p lab def ctx) variants
-                (=) (Cstr_block tag) (pat :: patl, action, action_loc) al
+                (=) (pat_loc, Cstr_block tag)
+                (pat :: patl, action, action_loc) al
         end
     | _ -> []
   in
@@ -1746,7 +1748,7 @@ let divide_record all_labels p ctx pm =
 (* Matching against an array pattern *)
 
 let get_key_array = function
-  | {pat_desc=Tpat_array patl} -> List.length patl
+  | {pat_desc=Tpat_array patl; pat_loc} -> pat_loc, List.length patl
   | _ -> assert false
 
 let get_args_array p rem = match p with
@@ -1762,7 +1764,7 @@ let matcher_array len p rem = match p.pat_desc with
 let make_array_matching kind p def ctx = function
   | [] -> fatal_error "Matching.make_array_matching"
   | ((arg, _mut, _arg_loc) :: argl) ->
-      let len = get_key_array p in
+      let _pat_loc, len = get_key_array p in
       let rec make_args pos =
         if pos >= len
         then argl
