@@ -868,7 +868,7 @@ let rec pkey chan  = function
              (fun arg -> Arg.make_switch loc arg tbl acts))
 
 
-  let make_clusters loc ({cases=cases ; actions=actions} as s) n_clusters k =
+  let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k =
     let len = Array.length cases in
     let r : cases =
       Array.make n_clusters
@@ -881,9 +881,9 @@ let rec pkey chan  = function
     and t = Hashtbl.create 17
     and index = ref 0
     and bidon = ref (Array.length actions) in
-    let get_index act =
+    let get_index loc act =
       try
-        let i, _ = Hashtbl.find t act in
+        let i, _loc, _ = Hashtbl.find t act in
         i
       with
       | Not_found ->
@@ -891,13 +891,13 @@ let rec pkey chan  = function
           incr index ;
           Hashtbl.add
             t act
-            (i, (fun _ctx -> snd actions.(act))) ;
+            (i, loc, (fun _ctx -> snd actions.(act))) ;
           i
-    and add_index act =
+    and add_index loc act =
       let i = !index in
       incr index ;
       incr bidon ;
-      Hashtbl.add t !bidon (i, act) ;
+      Hashtbl.add t !bidon (i, loc, act) ;
       i in
 
     let rec zyva j ir =
@@ -916,7 +916,7 @@ let rec pkey chan  = function
             low;
             high_plus_one_loc;
             high;
-            action_index = get_index action_index;
+            action_index = get_index low_loc action_index;
           }
         else (* assert i < j *)
           let { low_loc; low; _ } = cases.(i)
@@ -926,14 +926,14 @@ let rec pkey chan  = function
             low;
             high_plus_one_loc;
             high;
-            action_index = add_index (make_switch loc s i j) 
+            action_index = add_index low_loc (make_switch low_loc s i j) 
           }
       end ;
       if i > 0 then zyva (i-1) (ir-1) in
 
     zyva (len-1) (n_clusters-1) ;
-    let acts = Array.make !index (loc, fun _ -> assert false) in
-    Hashtbl.iter (fun _ (i, act) -> acts.(i) <- loc, act) t ;
+    let acts = Array.make !index (Arg.no_location, fun _ -> assert false) in
+    Hashtbl.iter (fun _ (i, loc, act) -> acts.(i) <- loc, act) t;
     {cases = r ; actions = acts}
   ;;
 
@@ -951,7 +951,7 @@ let rec pkey chan  = function
   prerr_endline "" ;
 *)
     let n_clusters,k = comp_clusters s in
-    let clusters = make_clusters loc s n_clusters k in
+    let clusters = make_clusters s n_clusters k in
     c_test {arg=arg ; off=0; loc} clusters
 
   let abstract_shared actions =
