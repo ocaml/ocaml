@@ -776,7 +776,7 @@ let rec pkey chan  = function
   let particular_case cases i j =
     j-i = 2 &&
     (let { low = l1; action_index = act1; _ } = cases.(i)
-     and { low = l2; action_index =_act2; _ } = cases.(i+1)
+     and { low = l2; _ } = cases.(i+1)
      and { low = l3; high = h3; action_index = act3; _ } = cases.(i+2) in
      l1+1=l2 && l2+1=l3 && l3=h3 &&
      act1 <> act3)
@@ -926,7 +926,7 @@ let rec pkey chan  = function
             low;
             high_plus_one_loc;
             high;
-            action_index = add_index (make_switch loc s i j;) 
+            action_index = add_index (make_switch loc s i j) 
           }
       end ;
       if i > 0 then zyva (i-1) (ir-1) in

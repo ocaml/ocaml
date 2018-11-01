@@ -1312,6 +1312,10 @@ let get_key_constr = function
   | {pat_desc=Tpat_construct (_, cstr,_); pat_loc; _} -> pat_loc, cstr.cstr_tag
   | _ -> assert false
 
+let equal_key_constr (_pat_loc1, (tag1 : Types.constructor_tag))
+      (_pat_loc2, (tag2 : Types.constructor_tag)) =
+  tag1 = tag2
+
 let get_key_constr_no_location pat =
   let _loc, tag = get_key_constr pat in
   tag
@@ -1400,10 +1404,14 @@ let make_constr_matching p def ctx = function
 let divide_constructor ctx pm =
   divide
     make_constr_matching
-    (=) get_key_constr get_args_constr
+    equal_key_constr get_key_constr get_args_constr
     ctx pm
 
 (* Matching against a variant *)
+
+let equal_key_variant (_pat_loc1, (tag1 : Types.constructor_tag))
+      (_pat_loc2, (tag2 : Types.constructor_tag)) =
+  tag1 = tag2
 
 let rec matcher_variant_const lab p rem = match p.pat_desc with
 | Tpat_or (p1, p2, _) ->
@@ -1462,11 +1470,11 @@ let divide_variant row ctx {cases = cl; args = al; default=def} =
           match pato with
             None ->
               add (make_variant_matching_constant p lab def ctx) variants
-                (=) (pat_loc, Cstr_constant tag)
+                equal_key_variant (pat_loc, Cstr_constant tag)
                 (patl, action, action_loc) al
           | Some pat ->
               add (make_variant_matching_nonconst p lab def ctx) variants
-                (=) (pat_loc, Cstr_block tag)
+                equal_key_variant (pat_loc, Cstr_block tag)
                 (pat :: patl, action, action_loc) al
         end
     | _ -> []
@@ -1751,6 +1759,9 @@ let get_key_array = function
   | {pat_desc=Tpat_array patl; pat_loc} -> pat_loc, List.length patl
   | _ -> assert false
 
+let equal_key_array (_pat_loc1, (len1 : int)) (_pat_loc2, (len2 : int)) =
+  len1 = len2
+
 let get_args_array p rem = match p with
 | {pat_desc=Tpat_array patl} -> patl@rem
 | _ -> assert false
@@ -1782,7 +1793,7 @@ let make_array_matching kind p def ctx = function
 let divide_array kind ctx pm =
   divide
     (make_array_matching kind)
-    (=) get_key_array get_args_array ctx pm
+    equal_key_array get_key_array get_args_array ctx pm
 
 
 (*
