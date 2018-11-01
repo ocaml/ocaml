@@ -78,6 +78,7 @@ module type S =
     type act
 
     type location
+    val no_location : location
 
     (* Various constructors, for making a binder,
         adding one integer, etc. *)
@@ -87,11 +88,7 @@ module type S =
     val make_prim : location -> primitive -> act list -> act
     val make_isout : location -> act -> act -> act
     val make_isin : location -> act -> act -> act
-    (* CR mshinwell: [location] should be supplied 3 times:
-       1. For the overall construction
-       2. For the true branch
-       3. For the false branch *)
-    val make_if : location -> act -> act -> act -> act
+    val make_if : location -> act -> location -> act -> location -> act -> act
    (* construct an actual switch :
       make_switch arg cases acts
       NB:  cases is in the value form *)
@@ -117,12 +114,26 @@ module type S =
 module Make :
   functor (Arg : S) ->
     sig
+      (** The locations in type [case] may not exactly correspond to
+          [low] and [high + 1], in the case where those values do not
+          coincide with constants being matched against, but are treated as if
+          they did. *)
+      type case = {
+        low_loc : Arg.location;
+        low : int;
+        high_plus_one_loc : Arg.location;
+        high : int;
+        action_index : int;
+      }
+
+      type cases = case array
+
 (* Standard entry point, sharing is tracked *)
       val zyva :
           Arg.location ->
           (int * int) ->
            Arg.act ->
-           (int * int * int) array ->
+           cases ->
            (Arg.location * Arg.act, _) t_store ->
            Arg.act
 
@@ -130,7 +141,7 @@ module Make :
      val test_sequence :
            Arg.location ->
            Arg.act ->
-           (int * int * int) array ->
+           cases ->
            (Arg.location * Arg.act, _) t_store ->
            Arg.act
     end

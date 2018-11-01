@@ -118,6 +118,7 @@ sig
   type act
 
   type location
+  val no_location : location
 
   val bind : act -> (act -> act) -> act
   val make_const : int -> act
@@ -125,7 +126,7 @@ sig
   val make_prim : location -> primitive -> act list -> act
   val make_isout : location -> act -> act -> act
   val make_isin : location -> act -> act -> act
-  val make_if : location -> act -> act -> act -> act
+  val make_if : location -> act -> location -> act -> location -> act -> act
   val make_switch : location -> act -> int array
     -> (location * act) array -> act
   val make_catch : location -> act -> int * (act -> act)
@@ -154,12 +155,21 @@ end
 *)
 module Make (Arg : S) =
 struct
+  type case = {
+    low_loc : Arg.location;
+    low : int;
+    high_plus_one_loc : Arg.location;
+    high : int;
+    action_index : int;
+  }
+
+  type cases = case array
 
   type 'a inter =
-    {cases : (int * int * int) array ;
+    {cases : cases;
      actions : (Arg.location * 'a) array}
 
-  type 'a t_ctx =  {off : int ; arg : 'a; loc : Arg.location}
+  type 'a t_ctx =  {off : int ; arg : 'a; loc : Arg.location; }
 
   let cut = ref 8
   and more_cut = ref 16
@@ -183,12 +193,8 @@ let prerr_inter i = Printf.fprintf stderr
         "cases=%a" pcases i.cases
 *)
 
-  let get_act cases i =
-    let _,_,r = cases.(i) in
-    r
-  and get_low cases i =
-    let r,_,_ = cases.(i) in
-    r
+  let get_act cases i = cases.(i).action_index
+  and get_low cases i = cases.(i).low
 
   type ctests = {
     mutable n : int ;
@@ -240,79 +246,123 @@ let pret chan = function
 *)
 
   let coupe cases i =
-    let l,_,_ = cases.(i) in
-    l,
+    get_low cases i,
     Array.sub cases 0 i,
     Array.sub cases i (Array.length cases-i)
 
 
-  let case_append c1 c2 =
+  let case_append (c1 : cases) (c2 : cases) =
     let len1 = Array.length c1
     and len2 = Array.length c2 in
     match len1,len2 with
     | 0,_ -> c2
     | _,0 -> c1
     | _,_ ->
-        let l1,h1,act1 = c1.(Array.length c1-1)
-        and l2,h2,act2 = c2.(0) in
-        if act1 = act2 then
+        let {
+          low_loc = l1_loc;
+          low = l1;
+          high_plus_one_loc = h1_plus_one_loc;
+          high = h1;
+          action_index = act1;
+        } = c1.(Array.length c1-1)
+        and {
+          low_loc = l2_loc;
+          low = l2;
+          high_plus_one_loc = h2_plus_one_loc;
+          high = h2;
+          action_index = act2;
+        } = c2.(0)
+        in
+        if act1 = act2 then begin
           let r = Array.make (len1+len2-1) c1.(0) in
           for i = 0 to len1-2 do
             r.(i) <- c1.(i)
           done ;
-
-          let l =
+          let l_loc, l =
             if len1-2 >= 0 then begin
-              let _,h,_ = r.(len1-2) in
+              let {
+                low_loc = _;
+                low = _;
+                high_plus_one_loc = h_plus_one_loc;
+                high = h;
+                action_index = _;
+              } = r.(len1-2)
+              in
               if h+1 < l1 then
-                h+1
+                h_plus_one_loc, h+1
               else
-                l1
+                l1_loc, l1
             end else
-              l1
-          and h =
+              l1_loc, l1
+          and h_plus_one_loc, h =
             if 1 < len2-1 then begin
-              let l,_,_ = c2.(1) in
+              let {
+                low_loc = l_loc;
+                low = l;
+                high_plus_one_loc = _;
+                high = _;
+                action_index = _;
+              } = c2.(1) in
               if h2+1 < l then
-                l-1
+                l_loc, l-1
               else
-                h2
+                h2_plus_one_loc, h2
             end else
-              h2 in
-          r.(len1-1) <- (l,h,act1) ;
+              h2_plus_one_loc, h2
+          in
+          r.(len1-1) <- {
+            low_loc = l_loc;
+            low = l;
+            high_plus_one_loc = h_plus_one_loc;
+            high = h;
+            action_index = act1;
+          };
           for i=1 to len2-1  do
             r.(len1-1+i) <- c2.(i)
           done ;
           r
-        else if h1 > l1 then
+        end else if h1 > l1 then begin
           let r = Array.make (len1+len2) c1.(0) in
           for i = 0 to len1-2 do
             r.(i) <- c1.(i)
           done ;
-          r.(len1-1) <- (l1,l2-1,act1) ;
+          r.(len1-1) <- {
+            low_loc = l1_loc;
+            low = l1;
+            high_plus_one_loc = l2_loc;
+            high = l2 - 1;
+            action_index = act1;
+          };
           for i=0 to len2-1  do
             r.(len1+i) <- c2.(i)
           done ;
           r
-        else if h2 > l2 then
+        end else if h2 > l2 then begin
           let r = Array.make (len1+len2) c1.(0) in
           for i = 0 to len1-1 do
             r.(i) <- c1.(i)
           done ;
-          r.(len1) <- (h1+1,h2,act2) ;
+          r.(len1) <- {
+            low_loc = h1_plus_one_loc;
+            low = h1 + 1;
+            high_plus_one_loc = h2_plus_one_loc;
+            high = h2;
+            action_index = act2;
+          };
           for i=1 to len2-1  do
             r.(len1+i) <- c2.(i)
           done ;
           r
-        else
+        end else begin
           Array.append c1 c2
+        end
 
 
-  let coupe_inter i j cases =
+  let coupe_inter i j (cases : cases) =
     let lcases = Array.length cases in
-    let low,_,_ = cases.(i)
-    and _,high,_ = cases.(j) in
-    low,high,
+    let { low_loc; low; _ } = cases.(i)
+    and { high; _ } = cases.(j) in
+    low_loc,low,high,
     Array.sub cases i (j-i+1),
     case_append (Array.sub cases 0 i) (Array.sub cases (j+1) (lcases-(j+1)))
 
@@ -358,13 +408,15 @@ let rec pkey chan  = function
       if i < 0 then
         []
       else
-        let l,h,act = cases.(i) in
+        let { low = l; high = h; action_index = act; _ } = cases.(i) in
         if pl = h+1 then
           make_one l h act::make_rec (i-1) l
         else
           Kempty::make_one l h act::make_rec (i-1) l in
 
-    let l,h,act = cases.(Array.length cases-1) in
+    let { low = l; high = h; action_index = act; _ } =
+      cases.(Array.length cases-1)
+    in
     make_one l h act::make_rec (Array.length cases-2) l
 
 
@@ -441,10 +493,12 @@ let rec pkey chan  = function
 
     and inter,cinter =
       if !ok_inter then begin
-        let _,_,act0 = cases.(0)
-        and _,_,act1 = cases.(lcases-1) in
+        let { action_index = act0; _ } = cases.(0)
+        and { action_index = act1; _ } = cases.(lcases-1) in
         if act0 = act1 then begin
-          let low, high, inside, outside = coupe_inter 1 (lcases-2) cases in
+          let _low_loc, low, high, inside, outside =
+            coupe_inter 1 (lcases-2) cases
+          in
           let _,(cmi,cinside) = opt_count false inside
           and _,(cmo,coutside) = opt_count false outside
           and cmij = {n=1 ; ni=(if low=high then 0 else 1)}
@@ -500,7 +554,7 @@ let rec pkey chan  = function
         let rlow = ref (-1) and rhigh = ref (-1)
         and best_cost= ref (too_much,too_much) in
         for i=1 to lcases-2 do
-          let low, high, inside, outside = coupe_inter i i cases in
+          let _low_loc, low, high, inside, outside = coupe_inter i i cases in
           if low=high then begin
             let _,(cmi,cinside) = opt_count false inside
             and _,(cmo,coutside) = opt_count false outside
@@ -525,7 +579,7 @@ let rec pkey chan  = function
         and best_cost= ref (too_much,too_much) in
         for i=1 to lcases-2 do
           for j=i to lcases-2 do
-            let low, high, inside, outside = coupe_inter i j cases in
+            let _low_loc, low, high, inside, outside = coupe_inter i j cases in
             let _,(cmi,cinside) = opt_count false inside
             and _,(cmo,coutside) = opt_count false outside
             and cmij = {n=1 ; ni=(if low=high then 0 else 1)}
@@ -550,61 +604,70 @@ let rec pkey chan  = function
     end ;
     !r, !rc
 
-  let make_if_test loc test arg i ifso ifnot =
+  let make_if_test loc test arg i ifso_loc ifso ifnot_loc ifnot =
     Arg.make_if loc
       (Arg.make_prim loc test [arg ; Arg.make_const i])
-      ifso ifnot
+      ifso_loc ifso ifnot_loc ifnot
 
-  let make_if_lt loc arg i  ifso ifnot = match i with
+  let make_if_lt loc arg i ifso_loc ifso ifnot_loc ifnot = match i with
     | 1 ->
-        make_if_test loc Arg.leint arg 0 ifso ifnot
+        make_if_test loc Arg.leint arg 0 ifso_loc ifso ifnot_loc ifnot
     | _ ->
-        make_if_test loc Arg.ltint arg i ifso ifnot
+        make_if_test loc Arg.ltint arg i ifso_loc ifso ifnot_loc ifnot
 
-  and make_if_ge loc arg i  ifso ifnot = match i with
+  and make_if_ge loc arg i ifso_loc ifso ifnot_loc ifnot = match i with
     | 1 ->
-        make_if_test loc Arg.gtint arg 0 ifso ifnot
+        make_if_test loc Arg.gtint arg 0 ifso_loc ifso ifnot_loc ifnot
     | _ ->
-        make_if_test loc Arg.geint arg i ifso ifnot
+        make_if_test loc Arg.geint arg i ifso_loc ifso ifnot_loc ifnot
 
-  and make_if_eq loc arg i ifso ifnot =
-    make_if_test loc Arg.eqint arg i ifso ifnot
+  and make_if_eq loc arg i ifso_loc ifso ifnot_loc ifnot =
+    make_if_test loc Arg.eqint arg i ifso_loc ifso ifnot_loc ifnot
 
-  and make_if_ne loc arg i ifso ifnot =
-    make_if_test loc Arg.neint arg i ifso ifnot
+  and make_if_ne loc arg i ifso_loc ifso ifnot_loc ifnot =
+    make_if_test loc Arg.neint arg i ifso_loc ifso ifnot_loc ifnot
 
-  let do_make_if_out loc h arg ifso ifno =
-    Arg.make_if loc (Arg.make_isout loc h arg) ifso ifno
+  let do_make_if_out loc h arg (ifso_loc, ifso) (ifnot_loc, ifnot) =
+    Arg.make_if loc (Arg.make_isout loc h arg) ifso_loc ifso ifnot_loc ifnot
 
   let make_if_out loc ctx l d mk_ifso mk_ifno = match l with
     | 0 ->
         do_make_if_out loc
-          (Arg.make_const d) ctx.arg (mk_ifso loc ctx) (mk_ifno loc ctx)
+          (Arg.make_const d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
     | _ ->
         Arg.bind
           (Arg.make_offset loc ctx.arg (-l))
           (fun arg ->
-             let ctx = {off= (-l+ctx.off) ; arg=arg; loc} in
+             let ctx = {off= (-l+ctx.off) ; arg=arg; loc; } in
              do_make_if_out loc
-               (Arg.make_const d) arg (mk_ifso loc ctx) (mk_ifno loc ctx))
+               (Arg.make_const d) arg (mk_ifso ctx) (mk_ifno ctx))
 
-  let do_make_if_in loc h arg ifso ifno =
-    Arg.make_if loc (Arg.make_isin loc h arg) ifso ifno
+  let do_make_if_in loc h arg ifso_loc ifso ifnot_loc ifnot =
+    Arg.make_if loc (Arg.make_isin loc h arg) ifso_loc ifso ifnot_loc ifnot
 
-  let make_if_in loc ctx l d mk_ifso mk_ifno = match l with
+  let make_if_in loc ctx l d mk_ifso mk_ifnot = match l with
     | 0 ->
+        let ifso_loc, ifso = mk_ifso ctx in
+        let ifnot_loc, ifnot = mk_ifnot ctx in
         do_make_if_in loc
-          (Arg.make_const d) ctx.arg (mk_ifso loc ctx) (mk_ifno loc ctx)
+          (Arg.make_const d) ctx.arg ifso_loc ifso ifnot_loc ifnot
     | _ ->
         Arg.bind
           (Arg.make_offset loc ctx.arg (-l))
           (fun arg ->
-             let ctx = {off= (-l+ctx.off) ; arg=arg; loc} in
+             let ctx = {off= (-l+ctx.off) ; arg=arg; loc; } in
+             let ifso_loc, ifso = mk_ifso ctx in
+             let ifnot_loc, ifnot = mk_ifnot ctx in
              do_make_if_in loc
-               (Arg.make_const d) arg (mk_ifso loc ctx) (mk_ifno loc ctx))
+               (Arg.make_const d) arg ifso_loc ifso ifnot_loc ifnot)
+
+  let loc_of_first_case (cases : cases) =
+    if Array.length cases < 1 then Arg.no_location
+    else
+      let { low_loc; _ } = cases.(0) in
+      low_loc
 
   let rec c_test ctx ({cases=cases ; actions=actions} as s) =
-    let loc = ctx.loc in
     let lcases = Array.length cases in
     assert(lcases > 0) ;
     if lcases = 1 then
@@ -624,59 +687,81 @@ let rec pkey chan  = function
           let _loc, action = actions.(get_act cases 0) in
           action ctx
       | Inter (i,j) ->
-          let low,high,inside, outside = coupe_inter i j cases in
+          let _low_loc,low,high,inside, outside = coupe_inter i j cases in
           let _,(cinside,_) = opt_count false inside
           and _,(coutside,_) = opt_count false outside in
           (* Costs are retrieved to put the code with more remaining tests
              in the privileged (positive) branch of ``if'' *)
           if low=high then begin
             if less_tests coutside cinside then
-              make_if_eq loc
+              make_if_eq ctx.loc
                 ctx.arg
                 (low+ctx.off)
+                (loc_of_first_case inside)
                 (c_test ctx {s with cases=inside})
+                (loc_of_first_case outside)
                 (c_test ctx {s with cases=outside})
             else
-              make_if_ne loc
+              make_if_ne ctx.loc
                 ctx.arg
                 (low+ctx.off)
+                (loc_of_first_case outside)
                 (c_test ctx {s with cases=outside})
+                (loc_of_first_case inside)
                 (c_test ctx {s with cases=inside})
           end else begin
             if less_tests coutside cinside then
-              make_if_in loc
+              make_if_in ctx.loc
                 ctx
                 (low+ctx.off)
                 (high-low)
-                (fun _loc ctx -> c_test ctx {s with cases=inside})
-                (fun _loc ctx -> c_test ctx {s with cases=outside})
+                (fun ctx ->
+                  loc_of_first_case inside,
+                    c_test ctx {s with cases=inside})
+                (fun ctx ->
+                  loc_of_first_case outside,
+                    c_test ctx {s with cases=outside})
             else
-              make_if_out loc
+              make_if_out ctx.loc
                 ctx
                 (low+ctx.off)
                 (high-low)
-                (fun _loc ctx -> c_test ctx {s with cases=outside})
-                (fun _loc ctx -> c_test ctx {s with cases=inside})
+                (fun ctx ->
+                  loc_of_first_case outside,
+                    c_test ctx {s with cases=outside})
+                (fun ctx ->
+                  loc_of_first_case inside,
+                    c_test ctx {s with cases=inside})
           end
       | Sep i ->
           let lim,left,right = coupe cases i in
           let _,(cleft,_) = opt_count false left
           and _,(cright,_) = opt_count false right in
+          let left_loc = loc_of_first_case left in
+          let right_loc = loc_of_first_case right in
           let left = {s with cases=left}
           and right = {s with cases=right} in
-
           if i=1 && (lim+ctx.off)=1 && get_low cases 0+ctx.off=0 then
-            make_if_ne loc
+            make_if_ne ctx.loc
               ctx.arg 0
-              (c_test ctx right) (c_test ctx left)
+              right_loc
+              (c_test ctx right)
+              left_loc
+              (c_test ctx left)
           else if less_tests cright cleft then
-            make_if_lt loc
+            make_if_lt ctx.loc
               ctx.arg (lim+ctx.off)
-              (c_test ctx left) (c_test ctx right)
+              left_loc
+              (c_test ctx left)
+              right_loc
+              (c_test ctx right)
           else
-            make_if_ge loc
+            make_if_ge ctx.loc
               ctx.arg (lim+ctx.off)
-              (c_test ctx right) (c_test ctx left)
+              right_loc
+              (c_test ctx right)
+              left_loc
+              (c_test ctx left)
 
     end
 
@@ -690,9 +775,9 @@ let rec pkey chan  = function
   (* Particular case 0, 1, 2 *)
   let particular_case cases i j =
     j-i = 2 &&
-    (let l1,_h1,act1 = cases.(i)
-     and  l2,_h2,_act2 = cases.(i+1)
-     and  l3,h3,act3 = cases.(i+2) in
+    (let { low = l1; action_index = act1; _ } = cases.(i)
+     and { low = l2; action_index =_act2; _ } = cases.(i+1)
+     and { low = l3; high = h3; action_index = act3; _ } = cases.(i+2) in
      l1+1=l2 && l2+1=l3 && l3=h3 &&
      act1 <> act3)
 
@@ -709,8 +794,8 @@ let rec pkey chan  = function
   let dense {cases} i j =
     if i=j then true
     else
-      let l,_,_ = cases.(i)
-      and _,h,_ = cases.(j) in
+      let { low = l; _ } = cases.(i)
+      and { high = h; _ } = cases.(j) in
       let ntests =  approx_count cases i j in
 (*
   (ntests+1) >= theta * (h-l+1)
@@ -748,8 +833,8 @@ let rec pkey chan  = function
 
   (* Assume j > i *)
   let make_switch loc {cases=cases ; actions=actions} i j =
-    let ll,_,_ = cases.(i)
-    and _,hh,_ = cases.(j) in
+    let { low = ll; _ } = cases.(i)
+    and { high = hh; _ } = cases.(j) in
     let tbl = Array.make (hh-ll+1) 0
     and t = Hashtbl.create 17
     and index = ref 0 in
@@ -764,7 +849,7 @@ let rec pkey chan  = function
           i in
 
     for k=i to j do
-      let l,h,act = cases.(k) in
+      let { low = l; high = h; action_index = act; } = cases.(k) in
       let index = get_index act in
       for kk=l-ll to h-ll do
         tbl.(kk) <- index
@@ -785,7 +870,14 @@ let rec pkey chan  = function
 
   let make_clusters loc ({cases=cases ; actions=actions} as s) n_clusters k =
     let len = Array.length cases in
-    let r = Array.make n_clusters (0,0,0)
+    let r : cases =
+      Array.make n_clusters
+        { low_loc = Arg.no_location;
+          low = 0;
+          high_plus_one_loc = Arg.no_location;
+          high = 0;
+          action_index = 0;
+        }
     and t = Hashtbl.create 17
     and index = ref 0
     and bidon = ref (Array.length actions) in
@@ -811,12 +903,31 @@ let rec pkey chan  = function
     let rec zyva j ir =
       let i = k.(j) in
       begin if i=j then
-          let l,h,act = cases.(i) in
-          r.(ir) <- (l,h,get_index act)
+          let {
+            low_loc;
+            low;
+            high_plus_one_loc;
+            high;
+            action_index;
+          } = cases.(i)
+          in
+          r.(ir) <- {
+            low_loc;
+            low;
+            high_plus_one_loc;
+            high;
+            action_index = get_index action_index;
+          }
         else (* assert i < j *)
-          let l,_,_ = cases.(i)
-          and _,h,_ = cases.(j) in
-          r.(ir) <- (l,h,add_index (make_switch loc s i j))
+          let { low_loc; low; _ } = cases.(i)
+          and { high; high_plus_one_loc; _ } = cases.(j) in
+          r.(ir) <- {
+            low_loc;
+            low;
+            high_plus_one_loc;
+            high;
+            action_index = add_index (make_switch loc s i j;) 
+          }
       end ;
       if i > 0 then zyva (i-1) (ir-1) in
 

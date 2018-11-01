@@ -30,7 +30,9 @@ let make_pat loc desc ty tenv =
    pat_attributes = [];
   }
 
-let omega = make_pat Location.none Tpat_any Ctype.none Env.empty
+let omega_with_location loc = make_pat loc Tpat_any Ctype.none Env.empty
+
+let omega = omega_with_location Location.none
 
 let extra_pat =
   make_pat Location.none
@@ -41,6 +43,9 @@ let rec omegas i =
   if i <= 0 then [] else omega :: omegas (i-1)
 
 let omega_list l = List.map (fun _ -> omega) l
+
+let omega_list_with_locations l =
+  List.map (fun pat -> omega_with_location pat.pat_loc) l
 
 let zero =
   make_pat Location.none (Tpat_constant (Const_int 0)) Ctype.none Env.empty
@@ -407,12 +412,14 @@ let rec simple_match_args p1 p2 = match p2.pat_desc with
 | Tpat_lazy arg -> [arg]
 | (Tpat_any | Tpat_var(_)) ->
     begin match p1.pat_desc with
-      Tpat_construct(_, _,args) -> omega_list args
-    | Tpat_variant(_, Some _, _) -> [omega]
-    | Tpat_tuple(args) -> omega_list args
-    | Tpat_record(args,_) ->  omega_list args
-    | Tpat_array(args) ->  omega_list args
-    | Tpat_lazy _ -> [omega]
+      Tpat_construct(_, _,args) -> omega_list_with_locations args
+    | Tpat_variant(_, Some pat, _) -> [omega_with_location pat.pat_loc]
+    | Tpat_tuple(args) -> omega_list_with_locations args
+    | Tpat_record(args,_) ->
+      let args = List.map (fun (_loc, _label_descr, pat) -> pat) args in
+      omega_list_with_locations args
+    | Tpat_array(args) ->  omega_list_with_locations args
+    | Tpat_lazy pat -> [omega_with_location pat.pat_loc]
     | _ -> []
     end
 | _ -> []
@@ -427,23 +434,28 @@ let rec normalize_pat q = match q.pat_desc with
   | Tpat_var _ -> make_pat q.pat_loc Tpat_any q.pat_type q.pat_env
   | Tpat_alias (p,_,_) -> normalize_pat p
   | Tpat_tuple (args) ->
-      make_pat q.pat_loc (Tpat_tuple (omega_list args)) q.pat_type q.pat_env
-  | Tpat_construct  (lid, c,args) ->
+      make_pat q.pat_loc (Tpat_tuple (omega_list_with_locations args))
+        q.pat_type q.pat_env
+  | Tpat_construct (lid, c, args) ->
       make_pat q.pat_loc
-        (Tpat_construct (lid, c,omega_list args))
+        (Tpat_construct (lid, c, omega_list_with_locations args))
         q.pat_type q.pat_env
   | Tpat_variant (l, arg, row) ->
-      make_pat q.pat_loc (Tpat_variant (l, may_map (fun _ -> omega) arg, row))
+      make_pat q.pat_loc
+        (Tpat_variant (
+          l, may_map (fun arg -> omega_with_location arg.pat_loc) arg, row))
         q.pat_type q.pat_env
   | Tpat_array (args) ->
-      make_pat q.pat_loc (Tpat_array (omega_list args))  q.pat_type q.pat_env
+      make_pat q.pat_loc (Tpat_array (omega_list_with_locations args))
+        q.pat_type q.pat_env
   | Tpat_record (largs, closed) ->
       make_pat q.pat_loc
-        (Tpat_record (List.map (fun (lid,lbl,_) ->
-                                 lid, lbl,omega) largs, closed))
+        (Tpat_record (List.map (fun (lid,lbl,pat) ->
+           lid, lbl, omega_with_location pat.pat_loc) largs, closed))
         q.pat_type q.pat_env
-  | Tpat_lazy _ ->
-      make_pat q.pat_loc (Tpat_lazy omega) q.pat_type q.pat_env
+  | Tpat_lazy pat ->
+      make_pat q.pat_loc (Tpat_lazy (omega_with_location pat.pat_loc))
+        q.pat_type q.pat_env
   | Tpat_or _
   | Tpat_exception _ -> fatal_error "Parmatch.normalize_pat"
 
@@ -878,7 +890,7 @@ let complete_tags nconsts nconstrs tags =
 (* build a pattern from a constructor description *)
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
-   Tpat_construct (mknoloc (Longident.Lident "?pat_of_constr?"),
+   Tpat_construct (mknoloc (Longident.Lident "*pat_of_constr*"),
                    cstr, omegas cstr.cstr_arity)}
 
 let orify x y = make_pat x.pat_loc (Tpat_or (x, y, None)) x.pat_type x.pat_env
@@ -907,7 +919,7 @@ let pats_of_type ?(always=false) env ty =
           let labels = snd (Env.find_type_descrs path env) in
           let fields =
             List.map (fun ld ->
-              mknoloc (Longident.Lident "?pat_of_label?"), ld, omega)
+              mknoloc (Longident.Lident "*pat_of_label*"), ld, omega)
               labels
           in
           [make_pat Location.none (Tpat_record (fields, Closed)) ty env]
