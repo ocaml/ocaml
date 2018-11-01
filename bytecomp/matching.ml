@@ -2018,7 +2018,8 @@ let make_test_sequence loc fail tst lt_tst arg
       split_sequence const_lambda_list
     else match fail with
     | None -> do_tests_nofail tst arg const_lambda_list
-    | Some (_fail_loc, fail) -> do_tests_fail fail tst arg const_lambda_list
+    | Some (_fail_loc, fail) ->
+      do_tests_fail fail tst arg const_lambda_list
 
   and split_sequence const_lambda_list =
     let list1, list2 =
@@ -2884,13 +2885,13 @@ let compile_orhandlers _loc compile_fun (loc1, lambda1) total1 ctx to_catch =
   do_rec loc1 lambda1 total1 to_catch
 
 
-let compile_test loc compile_fun partial divide combine ctx to_match
+let compile_test ~fail_loc compile_fun partial divide combine ctx to_match
       : (Location.t * lambda) * jumps =
   let division = divide ctx to_match in
   let c_div = compile_list compile_fun division in
   match c_div with
   | [],_,_ ->
-     begin match mk_failaction_neg loc partial ctx to_match.default with
+     begin match mk_failaction_neg fail_loc partial ctx to_match.default with
      | None,_ -> raise Unused
      | Some l,total -> l,total
      end
