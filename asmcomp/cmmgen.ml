@@ -1494,6 +1494,7 @@ struct
   type act = expression
 
   type location = Debuginfo.t
+  let no_location = Debuginfo.none
 
   let make_const i =  Cconst_int i
   (* To avoid changing [Switch] we rely on [Propagate_debuginfo] to change
@@ -1502,8 +1503,8 @@ struct
   let make_offset dbg arg n = add_const arg n dbg
   let make_isout dbg h arg = Cop (Ccmpa Clt, [h ; arg], dbg)
   let make_isin dbg h arg = Cop (Ccmpa Cge, [h ; arg], dbg)
-  let make_if dbg cond ifso ifnot =
-    Cifthenelse (cond, dbg, ifso, dbg, ifnot, dbg)
+  let make_if dbg cond ifso_dbg ifso ifnot_dbg ifnot =
+    Cifthenelse (cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg)
   let make_switch dbg arg cases actions =
     let actions = Array.map (fun (dbg, act) -> act, dbg) actions in
     make_switch arg cases actions dbg
@@ -1578,35 +1579,91 @@ let transl_int_switch dbg arg low high cases default = match cases with
     let store = StoreExp.mk_store () in
     assert (store.Switch.act_store () (dbg, default) = 0) ;
     let cases =
-      List.map
-        (fun (i,act) -> i,store.Switch.act_store () act)
-        cases in
+      List.map (fun (i, act) ->
+          (dbg, i), store.Switch.act_store () act)
+        cases
+    in
     let rec inters plow phigh pact = function
       | [] ->
-          if phigh = high then [plow,phigh,pact]
-          else [(plow,phigh,pact); (phigh+1,high,0) ]
-      | (i,act)::rem ->
+          let case =
+            { SwitcherBlocks.
+              low_loc = dbg;
+              low = plow;
+              high_plus_one_loc = dbg;
+              high = phigh;
+              action_index = pact;
+            }
+          in
+          if phigh = high then [case]
+          else
+            let next_case =
+              { SwitcherBlocks.
+                low_loc = dbg;
+                low = phigh + 1;
+                high_plus_one_loc = dbg;
+                high = high;
+                action_index = 0;
+              }
+            in
+            [case; next_case]
+      | ((_i_dbg, i), act)::rem ->
           if i = phigh+1 then
             if pact = act then
               inters plow i pact rem
             else
-              (plow,phigh,pact)::inters i i act rem
+              let case =
+                { SwitcherBlocks.
+                  low_loc = dbg;
+                  low = plow;
+                  high_plus_one_loc = dbg;
+                  high = phigh;
+                  action_index = pact;
+                }
+              in
+              case :: inters i i act rem
           else (* insert default *)
             if pact = 0 then
               if act = 0 then
                 inters plow i 0 rem
               else
-                (plow,i-1,pact)::
-                inters i i act rem
+                let case =
+                  { SwitcherBlocks.
+                    low_loc = dbg;
+                    low = plow;
+                    high_plus_one_loc = dbg;
+                    high = i - 1;
+                    action_index = pact;
+                  }
+                in
+                case :: inters i i act rem
             else (* pact <> 0 *)
-              (plow,phigh,pact)::
+              let case =
+                { SwitcherBlocks.
+                  low_loc = dbg;
+                  low = plow;
+                  high_plus_one_loc = dbg;
+                  high = phigh;
+                  action_index = pact;
+                }
+              in
+              case ::
               begin
                 if act = 0 then inters (phigh+1) i 0 rem
-                else (phigh+1,i-1,0)::inters i i act rem
+                else
+                  let case =
+                    { SwitcherBlocks.
+                      low_loc = dbg;
+                      low = phigh + 1;
+                      high_plus_one_loc = dbg;
+                      high = i - 1;
+                      action_index = 0;
+                    }
+                  in
+                  case :: inters i i act rem
               end in
     let inters = match cases with
     | [] -> assert false
-    | (k0,act0)::rem ->
+    | ((_, k0), act0)::rem ->
         if k0 = low then inters k0 k0 act0 rem
         else inters low (k0-1) 0 cases in
     bind "switcher" arg
@@ -2954,13 +3011,31 @@ and transl_switch dbg env arg index cases = match Array.length cases with
       if act = !this_act then
         decr this_low
       else begin
-        inters := (!this_low, !this_high, !this_act) :: !inters ;
+        let case =
+          { SwitcherBlocks.
+            low_loc = dbg;
+            low = !this_low;
+            high_plus_one_loc = dbg;
+            high = !this_high;
+            action_index = !this_act;
+          }
+        in
+        inters := case :: !inters ;
         this_high := i ;
         this_low := i ;
         this_act := act
       end
     done ;
-    inters := (0, !this_high, !this_act) :: !inters ;
+    let case =
+      { SwitcherBlocks.
+        low_loc = dbg;
+        low = 0;
+        high_plus_one_loc = dbg;
+        high = !this_high;
+        action_index = !this_act;
+      }
+    in
+    inters := case :: !inters ;
     match !inters with
     | [_] ->
         let _dbg, case = cases.(0) in
