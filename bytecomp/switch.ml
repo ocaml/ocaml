@@ -13,7 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-
 type 'a shared = Shared of 'a | Single of 'a
 
 type ('a, 'ctx) t_store =
@@ -849,7 +848,7 @@ let rec pkey chan  = function
           i in
 
     for k=i to j do
-      let { low = l; high = h; action_index = act; } = cases.(k) in
+      let { low = l; high = h; action_index = act; _ } = cases.(k) in
       let index = get_index act in
       for kk=l-ll to h-ll do
         tbl.(kk) <- index

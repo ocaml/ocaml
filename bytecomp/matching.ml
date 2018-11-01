@@ -2153,7 +2153,7 @@ let rec last def = function
   | [(_loc, x),_] -> x
   | _::rem -> last def rem
 
-let get_edges low high l = match l with
+let get_edges low high l : int * int = match l with
 | [] -> low, high
 | ((_loc, x),_)::_ -> x, last high l
 
@@ -2344,7 +2344,7 @@ let as_interval_nofail l =
           case :: i_rec i_loc i i_plus_one_loc i act_index rem
   in
   let inters = match l with
-  | ((i_loc, i), act)::rem ->
+  | (((i_loc : Location.t), (i : int)), act)::rem ->
       let act_index =
         (* In case there is some hole and that a switch is emitted,
            action 0 will be used as the action of unreachable
@@ -2361,31 +2361,25 @@ let as_interval_nofail l =
 
   Array.of_list inters, store
 
-
-let sort_int_lambda_list l =
+let sort_int_lambda_list
+      (l : ((Location.t * int) * (Location.t * lambda)) list) =
   List.sort
-    (fun (i1,_) (i2,_) ->
+    (fun ((_loc1, (i1 : int)), _) ((_loc2, (i2 : int)), _) ->
       if i1 < i2 then -1
       else if i2 < i1 then 1
       else 0)
     l
 
-let sort_int_lambda_list_with_locations l =
-  List.sort
-    (fun ((_loc1, i1),_) ((_loc2, i2),_) ->
-      if i1 < i2 then -1
-      else if i2 < i1 then 1
-      else 0)
-    l
-
-let as_interval fail low_loc low high_plus_one_loc high l =
+let as_interval fail low_loc low high_plus_one_loc high
+      (l : ((Location.t * int) * (Location.t * lambda)) list) =
   let l = sort_int_lambda_list l in
   get_edges low high l,
   (match fail with
   | None -> as_interval_nofail l
   | Some act -> as_interval_canfail act low_loc low high_plus_one_loc high l)
 
-let call_switcher loc fail arg low high int_lambda_list =
+let call_switcher loc fail arg low high
+      (int_lambda_list : ((Location.t * int) * (Location.t * lambda)) list) =
   let low_loc = first_location_in int_lambda_list in
   let edges, (cases, actions) =
     as_interval fail low_loc low Location.none high int_lambda_list in
@@ -2567,7 +2561,7 @@ let split_cases tag_lambda_list =
         | Cstr_unboxed    -> (consts, ((pat_loc, 0), act) :: nonconsts)
         | Cstr_extension _ -> assert false in
   let const, nonconst = split_rec tag_lambda_list in
-  sort_int_lambda_list_with_locations const,
+  sort_int_lambda_list const,
   sort_int_lambda_list nonconst
 
 let split_extension_cases tag_lambda_list =
