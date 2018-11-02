@@ -6,11 +6,6 @@ let test_not () =
   assert (Bool.not true = false);
   ()
 
-let test_negate () =
-  assert (Bool.negate (Bool.equal true) true = false);
-  assert (Bool.negate (Bool.equal true) false = true);
-  ()
-
 let test_and () =
   let wit = ref 0 in
   assert (Bool.( && ) (incr wit; false) (incr wit; false) = false);
@@ -76,7 +71,6 @@ let test_to_string () =
 
 let tests () =
   test_not ();
-  test_negate ();
   test_and ();
   test_or ();
   test_equal ();

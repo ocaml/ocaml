@@ -26,5 +26,8 @@ val const : 'a -> (_ -> 'a)
 
 val flip : ('a -> 'b -> 'c) -> ('b -> 'a -> 'c)
 (** [flip f] reverses the argument order of the binary function
-    [f]. For any arguments [x] and [y], [(flip f) x y] is [f y
-    x]. *)
+    [f]. For any arguments [x] and [y], [(flip f) x y] is [f y x]. *)
+
+val negate : ('a -> bool) -> ('a -> bool)
+(** [negate p] is the negation of the predicate function [p]. For any
+    argument [x], [(negate p) x] is [not (p x)]. *)
