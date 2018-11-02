@@ -1723,7 +1723,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
           (Env.add_required_global (Path.head path); md)
         else match (Env.find_module path env).md_type with
         | Mty_alias p1 when not alias ->
-            let p1 = Env.normalize_path (Some smod.pmod_loc) env p1 in
+            let p1 = Env.normalize_module_path (Some smod.pmod_loc) env p1 in
             let mty = Includemod.expand_module_alias env [] p1 in
             { md with
               mod_desc =

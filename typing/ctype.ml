@@ -756,7 +756,7 @@ let rec normalize_package_path env p =
       match p with
         Path.Pdot (p1, s) ->
           (* For module aliases *)
-          let p1' = Env.normalize_path None env p1 in
+          let p1' = Env.normalize_module_path None env p1 in
           if Path.same p1 p1' then p else
           normalize_package_path env (Path.Pdot (p1', s))
       | _ -> p
@@ -1511,7 +1511,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
           match find_type_expansion path env with
           | exception Not_found ->
             (* another way to expand is to normalize the path itself *)
-            let path' = Env.normalize_path None env path in
+            let path' = Env.normalize_type_path None env path in
             if Path.same path path' then raise Cannot_expand
             else newty2 level (Tconstr (path', args, abbrev))
           | (params, body, lv) ->
