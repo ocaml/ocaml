@@ -181,7 +181,10 @@ let rec core_type i ppf x =
       core_type i ppf ct;
   | Ptyp_poly (sl, ct) ->
       line i ppf "Ptyp_poly%a\n"
-        (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x.txt)) sl;
+        (fun ppf ->
+           List.iter (fun x -> fprintf ppf " %a" Syntaxerr.print_tyvar x.txt)
+        )
+        sl;
       core_type i ppf ct;
   | Ptyp_package (s, l) ->
       line i ppf "Ptyp_package %a\n" fmt_longident_loc s;

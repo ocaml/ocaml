@@ -28,6 +28,14 @@ type error =
 exception Error of error
 exception Escape_error
 
+let print_tyvar ppf s =
+  if String.length s >= 2 && s.[1] = '\'' then
+    (* without the space, this would be parsed as
+       a character literal *)
+    Format.fprintf ppf "' %s" s
+  else
+    Format.fprintf ppf "'%s" s
+
 let prepare_error err =
   match err with
   | Unclosed(opening_loc, opening, closing_loc, closing) ->
@@ -49,9 +57,9 @@ let prepare_error err =
          are not supported when the option -no-app-func is set."
   | Variable_in_scope (loc, var) ->
       Location.errorf ~loc
-        "In this scoped type, variable '%s \
+        "In this scoped type, variable %a \
          is reserved for the local type %s."
-        var var
+        print_tyvar var var
   | Other loc ->
       Location.errorf ~loc "Syntax error"
   | Ill_formed_ast (loc, s) ->
