@@ -243,8 +243,9 @@ let private_flag f = function
 let iter_loc f ctxt {txt; loc = _} = f ctxt txt
 
 let constant_string f s = pp f "%S" s
-let tyvar f str = pp f "'%s" str
-let tyvar_loc f str = pp f "'%s" str.txt
+
+let tyvar = Syntaxerr.print_tyvar
+let tyvar_loc f str = tyvar f str.txt
 let string_quot f x = pp f "`%s" x
 
 (* c ['a,'b] *)
@@ -270,7 +271,7 @@ and core_type ctxt f x =
         pp f "@[<2>%a@;->@;%a@]" (* FIXME remove parens later *)
           (type_with_label ctxt) (l,ct1) (core_type ctxt) ct2
     | Ptyp_alias (ct, s) ->
-        pp f "@[<2>%a@;as@;'%s@]" (core_type1 ctxt) ct s
+        pp f "@[<2>%a@;as@;%a@]" (core_type1 ctxt) ct tyvar s
     | Ptyp_poly ([], ct) ->
         core_type ctxt f ct
     | Ptyp_poly (sl, ct) ->

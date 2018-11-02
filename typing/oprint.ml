@@ -238,13 +238,15 @@ let rec print_list pr sep ppf =
 let pr_present =
   print_list (fun ppf s -> fprintf ppf "`%s" s) (fun ppf -> fprintf ppf "@ ")
 
+let pr_var = Syntaxerr.print_tyvar
+
 let pr_vars =
-  print_list (fun ppf s -> fprintf ppf "'%s" s) (fun ppf -> fprintf ppf "@ ")
+  print_list pr_var (fun ppf -> fprintf ppf "@ ")
 
 let rec print_out_type ppf =
   function
   | Otyp_alias (ty, s) ->
-      fprintf ppf "@[%a@ as '%s@]" print_out_type ty s
+      fprintf ppf "@[%a@ as %a@]" print_out_type ty pr_var s
   | Otyp_poly (sl, ty) ->
       fprintf ppf "@[<hov 2>%a.@ %a@]"
         pr_vars sl
@@ -281,7 +283,7 @@ and print_simple_out_type ppf =
   | Otyp_object (fields, rest) ->
       fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields
   | Otyp_stuff s -> pp_print_string ppf s
-  | Otyp_var (ng, s) -> fprintf ppf "'%s%s" (if ng then "_" else "") s
+  | Otyp_var (ng, s) -> pr_var ppf (if ng then "_" ^ s else s)
   | Otyp_variant (non_gen, row_fields, closed, tags) ->
       let print_present ppf =
         function
@@ -378,10 +380,13 @@ let out_type = ref print_out_type
 
 (* Class types *)
 
+let print_type_parameter ppf s =
+  if s = "_" then fprintf ppf "_" else Syntaxerr.print_tyvar ppf s
+
 let type_parameter ppf (ty, (co, cn)) =
-  fprintf ppf "%s%s"
+  fprintf ppf "%s%a"
     (if not cn then "+" else if not co then "-" else "")
-    (if ty = "_" then ty else "'"^ty)
+    print_type_parameter ty
 
 let print_out_class_params ppf =
   function
@@ -646,10 +651,6 @@ and print_out_constr ppf (name, tyl,ret_type_opt) =
 
 and print_out_extension_constructor ppf ext =
   let print_extended_type ppf =
-    let print_type_parameter ppf ty =
-      fprintf ppf "%s"
-        (if ty = "_" then ty else "'"^ty)
-    in
       match ext.oext_type_params with
         [] -> fprintf ppf "%s" ext.oext_type_name
       | [ty_param] ->
@@ -670,10 +671,6 @@ and print_out_extension_constructor ppf ext =
 
 and print_out_type_extension ppf te =
   let print_extended_type ppf =
-    let print_type_parameter ppf ty =
-      fprintf ppf "%s"
-        (if ty = "_" then ty else "'"^ty)
-    in
     match te.otyext_params with
       [] -> fprintf ppf "%s" te.otyext_name
     | [param] ->

@@ -7355,3 +7355,12 @@ module Indexop = struct
 end
 
 type t = |
+
+
+(* GPR#2034 *)
+
+let x = `  Foo
+let x = ` (* wait for it *) Bar
+type (+' a, -' a', ' a'b', 'ab', ' abcd', ' (* ! *) x) t =
+  ' a * ' a' * ' a'b' * 'ab' * ' abcd' * ' (* !! *) x
+  as ' a'

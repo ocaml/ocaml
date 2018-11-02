@@ -597,6 +597,9 @@ Working version
   as a preventative measure for boxed int unboxing.
   (Thomas Refis, Mark Shinwell, Leo White)
 
+- GPR#2130: fix printing of type variables with a quote in their name
+  (Alain Frisch, review by Armaël Guéneau and Gabriel Scherer,
+  report by Hugo Heuzard)
 
 OCaml 4.07.1 (4 October 2018)
 -----------------------------

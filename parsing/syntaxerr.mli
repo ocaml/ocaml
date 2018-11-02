@@ -40,3 +40,6 @@ val report_error: formatter -> error -> unit
 
 val location_of_error: error -> Location.t
 val ill_formed_ast: Location.t -> string -> 'a
+
+
+val print_tyvar: Format.formatter -> string -> unit

@@ -43,3 +43,11 @@ let f x = (x :> G.t);;
 module G = M.N
 val f : [< G.t ] -> G.t = <fun>
 |}]
+
+
+(* GPR#2034 *)
+
+type (+' a', -' a'b, 'cd') t = ' a'b -> ' a'  * 'cd';;
+[%%expect{|
+type (' a', ' a'b, 'cd') t = ' a'b -> ' a' * 'cd'
+|}];;
