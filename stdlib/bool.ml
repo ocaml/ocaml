@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type t = bool
+type t = bool = false | true
 
 external not : bool -> bool = "%boolnot"
 external ( && ) : bool -> bool -> bool = "%sequand"
