@@ -66,7 +66,7 @@ module Unification_trace = struct
 
   type 'a escape =
     | Constructor of Path.t
-    | Univ of string option
+    | Univ of type_expr (* keeping a type_expr to track renaming in printtyp *)
     | Self
     | Module_type of Path.t
     | Equation of 'a
@@ -1826,9 +1826,9 @@ let occur_univar env ty =
         true
     then
       match ty.desc with
-        Tunivar u ->
+        Tunivar _ ->
           if not (TypeSet.mem ty bound) then
-            raise Trace.(Unify [escape (Univ u)])
+            raise Trace.(Unify [escape (Univ ty)])
       | Tpoly (ty, tyl) ->
           let bound = List.fold_right TypeSet.add (List.map repr tyl) bound in
           occur_rec bound  ty
@@ -1879,8 +1879,8 @@ let univars_escape env univar_pairs vl ty =
         Tpoly (t, tl) ->
           if List.exists (fun t -> TypeSet.mem (repr t) family) tl then ()
           else occur t
-      | Tunivar u ->
-          if TypeSet.mem t family then raise Trace.(Unify [escape(Univ u)])
+      | Tunivar _ ->
+          if TypeSet.mem t family then raise Trace.(Unify [escape(Univ t)])
       | Tconstr (_, [], _) -> ()
       | Tconstr (p, tl, _) ->
           begin try
