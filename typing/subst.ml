@@ -300,6 +300,7 @@ let type_declaration' copy_scope s decl =
       end;
     type_private = decl.type_private;
     type_variance = decl.type_variance;
+    type_separability = decl.type_separability;
     type_is_newtype = false;
     type_expansion_scope = Btype.lowest_level;
     type_loc = loc s decl.type_loc;

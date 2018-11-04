@@ -103,17 +103,19 @@ let enter_type rec_flag env sdecl id =
         Btype.is_row_name (Ident.name id)
     | Asttypes.Recursive -> true
   in
+  let arity = List.length sdecl.ptype_params in
   if not needed then env else
   let decl =
     { type_params =
         List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
-      type_arity = List.length sdecl.ptype_params;
+      type_arity = arity;
       type_kind = Type_abstract;
       type_private = sdecl.ptype_private;
       type_manifest =
         begin match sdecl.ptype_manifest with None -> None
         | Some _ -> Some(Ctype.newvar ()) end;
       type_variance = List.map (fun _ -> Variance.full) sdecl.ptype_params;
+      type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
       type_loc = sdecl.ptype_loc;
@@ -485,13 +487,15 @@ let transl_declaration env sdecl id =
         let cty = transl_simple_type env no_row sty in
         Some cty, Some cty.ctyp_type
     in
+    let arity = List.length params in
     let decl =
       { type_params = params;
-        type_arity = List.length params;
+        type_arity = arity;
         type_kind = kind;
         type_private = sdecl.ptype_private;
         type_manifest = man;
         type_variance = List.map (fun _ -> Variance.full) params;
+        type_separability = Types.Separability.default_signature ~arity;
         type_is_newtype = false;
         type_expansion_scope = Btype.lowest_level;
         type_loc = sdecl.ptype_loc;
@@ -823,8 +827,6 @@ let check_abbrev_recursion env id_loc_list to_check tdecl =
   let id = tdecl.typ_id in
   check_recursion env (List.assoc id id_loc_list) (Path.Pident id) decl to_check
 
-(* Check multiple declarations of labels/constructors *)
-
 let check_duplicates sdecl_list =
   let labels = Hashtbl.create 7 and constrs = Hashtbl.create 7 in
   List.iter
@@ -1008,6 +1010,7 @@ let transl_type_decl env rec_flag sdecl_list =
       |> name_recursion_decls sdecl_list
       |> Typedecl_variance.update_decls env sdecl_list
       |> Typedecl_immediacy.update_decls env
+    (* TODO: also update separability *)
     with
     | Typedecl_variance.Error (loc, err) -> raise (Error (loc, Variance err))
     | Typedecl_immediacy.Error (loc, err) -> raise (Error (loc, Immediacy err))
@@ -1492,13 +1495,15 @@ let transl_with_constraint env id row_path orig_decl sdecl =
     else
       Type_abstract, unboxed_false_default_false
   in
+  let arity = List.length params in
   let decl =
     { type_params = params;
-      type_arity = List.length params;
+      type_arity = arity;
       type_kind;
       type_private = priv;
       type_manifest = man;
       type_variance = [];
+      type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
       type_loc = sdecl.ptype_loc;
@@ -1551,6 +1556,7 @@ let abstract_type_decl arity =
       type_private = Public;
       type_manifest = None;
       type_variance = replicate_list Variance.full arity;
+      type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
       type_expansion_scope = Btype.lowest_level;
       type_loc = Location.none;

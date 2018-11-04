@@ -171,6 +171,7 @@ type type_declaration =
     type_private: private_flag;
     type_manifest: type_expr option;
     type_variance: Variance.t list;
+    type_separability: Separability.t list;
     type_is_newtype: bool;
     type_expansion_scope: int;
     type_loc: Location.t;
