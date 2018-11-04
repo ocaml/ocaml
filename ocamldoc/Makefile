@@ -400,40 +400,41 @@ SRC=$(ROOTDIR)
 
 include Makefile.docfiles
 
-stdlib_man/Stdlib.3o: $(OCAMLDOC) $(DOC_ALL_MLIS)
+stdlib_man/Stdlib.3o: $(OCAMLDOC) $(DOC_ALL)
 	$(MKDIR) stdlib_man
 	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" -man-mini \
-	-text $(SRC)/manual/manual/library/compiler_libs.mld \
+	$(DOC_ALL_TEXT:%=-text %) \
 	$(DOC_ALL_MLIS)
 
-stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL_MLIS)
+stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL)
 	$(MKDIR) stdlib_html
 	$(OCAMLDOC_RUN) -html -d stdlib_html -nostdlib \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" \
-	-text $(SRC)/manual/manual/library/compiler_libs.mld \
+	$(DOC_ALL_TEXT:%=-text %) \
 	$(DOC_ALL_MLIS)
 
-stdlib_texi/stdlib.texi: $(OCAMLDOC) $(DOC_ALL_MLIS)
+stdlib_texi/stdlib.texi: $(OCAMLDOC) $(DOC_ALL)
 	$(MKDIR) stdlib_texi
 	$(OCAMLDOC_RUN) -texi -o stdlib_texi/stdlib.texi -nostdlib \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" \
-	-text $(SRC)/manual/manual/library/compiler_libs.mld \
+	$(DOC_ALL_TEXT:%=-text %) \
 	$(DOC_ALL_MLIS)
 
-stdlib_latex/stdlib.tex: $(OCAMLDOC) $(DOC_ALL_MLIS)
+
+stdlib_latex/stdlib.tex: $(OCAMLDOC) $(DOC_ALL)
 	$(MKDIR) stdlib_latex
 	$(OCAMLDOC_RUN) -latex -o stdlib_latex/stdlib.tex -nostdlib \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" \
-	-text $(SRC)/manual/manual/library/compiler_libs.mld \
+	$(DOC_ALL_TEXT:%=-text %) \
 	$(DOC_ALL_MLIS)
 
 stdlib_latex/stdlib.pdf: stdlib_latex/stdlib.tex
