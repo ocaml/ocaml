@@ -40,6 +40,7 @@
 *.md                     typo.missing-header
 README*                  typo.missing-header
 *.adoc                   typo.missing-header
+stdlib/*.mld             typo.missing-header
 
 *.adoc                   typo.long-line=may
 
