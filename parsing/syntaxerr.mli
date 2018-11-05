@@ -20,8 +20,6 @@
 
 *)
 
-open Format
-
 type error =
     Unclosed of Location.t * string * Location.t * string
   | Expecting of Location.t * string
@@ -35,11 +33,5 @@ type error =
 exception Error of error
 exception Escape_error
 
-val report_error: formatter -> error -> unit
- (** @deprecated Use {!Location.error_of_exn}, {!Location.print_report}. *)
-
 val location_of_error: error -> Location.t
 val ill_formed_ast: Location.t -> string -> 'a
-
-
-val print_tyvar: Format.formatter -> string -> unit
