@@ -4,6 +4,7 @@ firstclass.ml
 generative.ml
 nondep.ml
 nondep_private_abbrev.ml
+normalize_path.ml
 pr5911.ml
 pr6394.ml
 pr7207.ml
