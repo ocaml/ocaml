@@ -1,0 +1,33 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+(library
+ (name unix)
+ (wrapped false)
+ (modes byte)
+ (flags (:standard -nostdlib -nolabels))
+ (c_flags (-I %{project_root}/runtime))
+ (libraries stdlib)
+ (c_names
+   accept access addrofstr alarm bind channels chdir chmod chown chroot close
+   fsync closedir connect cst2constr cstringv dup dup2 envir errmsg execv execve
+   execvp exit fchmod fchown fcntl fork ftruncate getaddrinfo getcwd getegid
+   geteuid getgid getgr getgroups gethost gethostname getlogin getnameinfo
+   getpeername getpid getppid getproto getpw gettimeofday getserv getsockname
+   getuid gmtime initgroups isatty itimer kill link listen lockf lseek mkdir
+   mkfifo mmap mmap_ba nice open opendir pipe putenv read readdir readlink
+   rename rewinddir rmdir select sendrecv setgid setgroups setsid setuid
+   shutdown signals sleep socket socketaddr socketpair sockopt stat strofaddr
+   symlink termios time times truncate umask unixsupport unlink utimes wait
+   write))

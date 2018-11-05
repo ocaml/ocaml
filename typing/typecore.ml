@@ -51,13 +51,13 @@ type existential_restriction =
 
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
-  | Label_mismatch of Longident.t * (type_expr * type_expr) list
-  | Pattern_type_clash of (type_expr * type_expr) list
-  | Or_pattern_type_clash of Ident.t * (type_expr * type_expr) list
+  | Label_mismatch of Longident.t * Ctype.Unification_trace.t
+  | Pattern_type_clash of Ctype.Unification_trace.t
+  | Or_pattern_type_clash of Ident.t * Ctype.Unification_trace.t
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of
-      (type_expr * type_expr) list * type_forcing_context option
+      Ctype.Unification_trace.t * type_forcing_context option
   | Apply_non_function of type_expr
   | Apply_wrong_label of arg_label * type_expr
   | Label_multiply_defined of string
@@ -75,18 +75,18 @@ type error =
   | Private_label of Longident.t * type_expr
   | Unbound_instance_variable of string * string list
   | Instance_variable_not_mutable of bool * string
-  | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
+  | Not_subtype of Ctype.Unification_trace.t * Ctype.Unification_trace.t
   | Outside_class
   | Value_multiply_overridden of string
   | Coercion_failure of
-      type_expr * type_expr * (type_expr * type_expr) list * bool
+      type_expr * type_expr * Ctype.Unification_trace.t * bool
   | Too_many_arguments of bool * type_expr * type_forcing_context option
   | Abstract_wrong_label of arg_label * type_expr * type_forcing_context option
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
-  | Less_general of string * (type_expr * type_expr) list
+  | Less_general of string * Ctype.Unification_trace.t
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
@@ -491,7 +491,7 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty
   if List.exists (fun {pv_id; _} -> Ident.name pv_id = name.txt)
       !pattern_variables
   then raise(Error(loc, Env.empty, Multiply_bound_variable name.txt));
-  let id = Ident.create name.txt in
+  let id = Ident.create_local name.txt in
   pattern_variables :=
     {pv_id = id;
      pv_type = ty;
@@ -1122,8 +1122,10 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
   | Ppat_var name ->
       let ty = instance expected_ty in
       let id = (* PR#7330 *)
-        if name.txt = "*extension*" then Ident.create name.txt else
-        enter_variable loc name ty sp.ppat_attributes
+        if name.txt = "*extension*" then
+          Ident.create_local name.txt
+        else
+          enter_variable loc name ty sp.ppat_attributes
       in
       rp k {
         pat_desc = Tpat_var (id, name);
@@ -1622,7 +1624,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
          let check s =
            if pv_as_var then Warnings.Unused_var s
            else Warnings.Unused_var_strict s in
-         let id' = Ident.create (Ident.name pv_id) in
+         let id' = Ident.create_local (Ident.name pv_id) in
          ((id', pv_id, pv_type)::pv,
           Env.add_value id' {val_type = pv_type;
                              val_kind = Val_ivar (Immutable, cl_num);
@@ -1937,7 +1939,7 @@ let check_univars env expans kind exp ty_expected vars =
   let ty = newgenty (Tpoly(repr exp.exp_type, vars'))
   and ty_expected = repr ty_expected in
   raise (Error (exp.exp_loc, env,
-                Less_general(kind, [ty, ty; ty_expected, ty_expected])))
+                Less_general(kind, [Unification_trace.diff ty ty_expected])))
 
 (* Check that a type is not a function *)
 let check_application_result env statement exp =
@@ -2110,7 +2112,7 @@ let proper_exp_loc exp =
 (* To find reasonable names for let-bound and lambda-bound idents *)
 
 let rec name_pattern default = function
-    [] -> Ident.create default
+    [] -> Ident.create_local default
   | p :: rem ->
     match p.pat_desc with
       Tpat_var (id, _) -> id
@@ -2478,8 +2480,10 @@ and type_expect_
         let get_path ty =
           try
             let (p0, p,_) = extract_concrete_record env ty in
-            (* XXX level may be wrong *)
-            Some (p0, p, ty.level = generic_level || not !Clflags.principal)
+            let principal =
+              (repr ty).level = generic_level || not !Clflags.principal
+            in
+            Some (p0, p, principal)
           with Not_found -> None
         in
         match get_path ty_expected with
@@ -2690,7 +2694,7 @@ and type_expect_
           (mk_expected ~explanation:For_loop_stop_index Predef.type_int) in
       let id, new_env =
         match param.ppat_desc with
-        | Ppat_any -> Ident.create "_for", env
+        | Ppat_any -> Ident.create_local "_for", env
         | Ppat_var {txt} ->
             Env.enter_value txt {val_type = instance Predef.type_int;
                                  val_attributes = [];
@@ -3008,12 +3012,11 @@ and type_expect_
       let ty = newvar() in
       (* remember original level *)
       begin_def ();
-      Ident.set_current_time ty.level;
       let context = Typetexp.narrow () in
       let modl = !type_module env smodl in
       Mtype.lower_nongen ty.level modl.mod_type;
-      let (id, new_env) = Env.enter_module name.txt modl.mod_type env in
-      Ctype.init_def(Ident.current_time());
+      let scope = create_scope () in
+      let (id, new_env) = Env.enter_module ~scope name.txt modl.mod_type env in
       Typetexp.widen context;
       (* ideally, we should catch Expr_type_clash errors
          in type_expect triggered by escaping identifiers from the local module
@@ -3134,16 +3137,15 @@ and type_expect_
         type_manifest = None;
         type_variance = [];
         type_is_newtype = true;
-        type_expansion_scope = None;
+        type_expansion_scope = Btype.lowest_level;
         type_loc = loc;
         type_attributes = [];
         type_immediate = false;
         type_unboxed = unboxed_false_default_false;
       }
       in
-      Ident.set_current_time ty.level;
-      let (id, new_env) = Env.enter_type name decl env in
-      Ctype.init_def(Ident.current_time());
+      let scope = create_scope () in
+      let (id, new_env) = Env.enter_type ~scope name decl env in
 
       let body = type_exp new_env sbody in
       (* Replace every instance of this type constructor in the resulting
@@ -3659,7 +3661,7 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
       if args = [] then texp else
       (* eta-expand to avoid side effects *)
       let var_pair name ty =
-        let id = Ident.create name in
+        let id = Ident.create_local name in
         {pat_desc = Tpat_var (id, mknoloc name); pat_type = ty;pat_extra=[];
          pat_attributes = [];
          pat_loc = Location.none; pat_env = env},
@@ -3911,7 +3913,10 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
   let opath =
     try
       let (p0, p,_) = extract_concrete_variant env ty_expected in
-      Some(p0, p, ty_expected.level = generic_level || not !Clflags.principal)
+      let principal =
+        (repr ty_expected).level = generic_level || not !Clflags.principal
+      in
+      Some(p0, p, principal)
     with Not_found -> None
   in
   let constrs = Typetexp.find_all_constructors env lid.loc lid.txt in
@@ -4012,7 +4017,7 @@ and type_statement ?explanation env sexp =
 
 (* Typing of match cases *)
 and check_scope_escape loc env level ty =
-  try Ctype.check_scope_escape level ty
+  try Ctype.check_scope_escape env level ty
   with Unify trace ->
     raise(Error(loc, env, Pattern_type_clash(trace)))
 
@@ -4039,16 +4044,9 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
     | _ -> true
   in
   let outer_level = get_current_level () in
-  let init_env () =
-    (* raise level for existentials *)
-    begin_def ();
-    Ident.set_current_time (get_current_level ());
-    let lev = Ident.current_time () in
-    Ctype.init_def (lev+1000);                 (* up to 1000 existentials *)
-    lev
-  in
   let lev =
-    if may_contain_gadts then init_env () else get_current_level ()
+    if may_contain_gadts then begin_def ();
+    get_current_level ()
   in
   let take_partial_instance =
     if !Clflags.principal || erase_either
@@ -4186,11 +4184,7 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
     let ty_res' = instance ty_res in
     List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
   end;
-  let do_init = does_contain_gadt || needs_exhaust_check in
-  let lev =
-    (* if [may_contain_gadt] then [init_env] was already called, no need to do
-       it again. *)
-    if do_init && not may_contain_gadts then init_env () else lev in
+  let do_init = may_contain_gadts || needs_exhaust_check in
   let ty_arg_check =
     if do_init then
       (* Hack: use for_saving to copy variables too *)
@@ -4206,25 +4200,23 @@ and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
     else
       Partial
   in
-  let unused_check do_init =
-    let lev =
-      if do_init then init_env () else get_current_level ()
-    in
+  let unused_check delayed =
     List.iter (fun { typed_pat; branch_env; _ } ->
       check_absent_variant branch_env typed_pat
     ) half_typed_cases;
+    if delayed then (begin_def (); init_def lev);
     check_unused ~lev env ty_arg_check val_cases ;
     check_unused ~lev env Predef.type_exn exn_cases ;
-    if do_init then end_def ();
+    if delayed then end_def ();
     Parmatch.check_ambiguous_bindings val_cases ;
     Parmatch.check_ambiguous_bindings exn_cases
   in
-  if contains_polyvars || do_init then
-    add_delayed_check (fun () -> unused_check do_init)
+  if contains_polyvars then
+    add_delayed_check (fun () -> unused_check true)
   else
+    (* Check for unused cases, do not delay because of gadts *)
     unused_check false;
-  (* Check for unused cases, do not delay because of gadts *)
-  if do_init then begin
+  if may_contain_gadts then begin
     end_def ();
     (* Ensure that existential types do not escape *)
     unify_exp_types loc env (instance ty_res) (newvar ()) ;
@@ -4426,8 +4418,7 @@ and type_let
               type_expect exp_env sexp (mk_expected pat.pat_type)))
       spat_sexp_list pat_slot_list in
   current_slot := None;
-  if is_recursive && not !rec_needed
-  && Warnings.is_active Warnings.Unused_rec_flag then begin
+  if is_recursive && not !rec_needed then begin
     let {pvb_pat; pvb_attributes} = List.hd spat_sexp_list in
     (* See PR#6677 *)
     Builtin_attributes.warning_scope ~ppwarning:false pvb_attributes

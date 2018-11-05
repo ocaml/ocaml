@@ -1666,7 +1666,7 @@ let simplify_program env r (program : Flambda.program) =
 let add_predef_exns_to_environment ~env ~backend =
   let module Backend = (val backend : Backend_intf.S) in
   List.fold_left (fun env predef_exn ->
-      assert (Ident.is_predef_exn predef_exn);
+      assert (Ident.is_predef predef_exn);
       let symbol = Backend.symbol_for_global' predef_exn in
       let name = Ident.name predef_exn in
       let approx =

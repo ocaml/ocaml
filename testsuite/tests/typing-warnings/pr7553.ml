@@ -21,8 +21,8 @@ module rec C : sig
 end = C;;
 [%%expect {|
 Line 2, characters 2-8:
-    open A
-    ^^^^^^
+2 |   open A
+      ^^^^^^
 Warning 33: unused open A.
 module rec C : sig  end
 |}]
@@ -37,14 +37,14 @@ module rec D : sig
 end = D;;
 [%%expect {|
 Line 5, characters 10-14:
-        let None = None
-            ^^^^
+5 |       let None = None
+              ^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some _
 Line 4, characters 6-12:
-        open A
-        ^^^^^^
+4 |       open A
+          ^^^^^^
 Warning 33: unused open A.
 module rec D : sig module M : sig module X : sig  end end end
 |}]

@@ -456,31 +456,12 @@ have caml-electric-indent on, which see.")
 
 ;; Other internal variables
 
-(defvar caml-last-noncomment-pos nil
-  "Caches last buffer position determined not inside a caml comment.")
-(make-variable-buffer-local 'caml-last-noncomment-pos)
-
-;;last-noncomment-pos can be a simple position, because we nil it
-;;anyway whenever buffer changes upstream. last-comment-start and -end
-;;have to be markers, because we preserve them when the changes' end
-;;doesn't overlap with the comment's start.
-
-(defvar caml-last-comment-start nil
-  "A marker caching last determined caml comment start.")
-(make-variable-buffer-local 'caml-last-comment-start)
-
-(defvar caml-last-comment-end nil
-  "A marker caching last determined caml comment end.")
-(make-variable-buffer-local 'caml-last-comment-end)
-
-(make-variable-buffer-local 'before-change-function)
-
 (defvar caml-imenu-shown nil
   "True if we have computed definition list.")
 (make-variable-buffer-local 'caml-imenu-shown)
 
 (defconst caml-imenu-search-regexp
-  (concat "\\<in\\>\\|"
+  (concat "\\_<in\\_>\\|"
           "^[ \t]*\\(let\\|class\\|type\\|m\\(odule\\|ethod\\)"
           "\\|functor\\|and\\|val\\)[ \t]+"
           "\\(\\('[a-zA-Z0-9]+\\|([^)]+)"
@@ -531,11 +512,6 @@ have caml-electric-indent on, which see.")
   ;itz Fri Sep 25 13:23:49 PDT 1998
   (make-local-variable 'add-log-current-defun-function)
   (setq add-log-current-defun-function 'caml-current-defun)
-  ;itz 03-25-96
-  (setq before-change-function 'caml-before-change-function)
-  (setq caml-last-noncomment-pos nil)
-  (setq caml-last-comment-start (make-marker))
-  (setq caml-last-comment-end (make-marker))
   ;garrigue 27-11-96
   (setq case-fold-search nil)
   ;garrigue july 97
@@ -959,8 +935,8 @@ whole string."
 ;didn't seem right to me.
 
 (defconst caml-phrase-start-keywords
-  (concat "\\<\\(class\\|ex\\(ternal\\|ception\\)\\|functor"
-          "\\|let\\|module\\|open\\|type\\|val\\)\\>")
+  (concat "\\_<\\(class\\|ex\\(ternal\\|ception\\)\\|functor"
+          "\\|let\\|module\\|open\\|type\\|val\\)\\_>")
   "Keywords starting phrases in files")
 
 ;; a phrase starts when a toplevel keyword is at the beginning of a line
@@ -1058,22 +1034,6 @@ to the end.
 (defun caml-overlap (b1 e1 b2 e2)
   (<= (max b1 b2) (min e1 e2)))
 
-;this clears the last comment cache if necessary
-(defun caml-before-change-function (begin end)
-  (if (and caml-last-noncomment-pos
-           (> caml-last-noncomment-pos begin))
-      (setq caml-last-noncomment-pos nil))
-  (if (and (marker-position caml-last-comment-start)
-           (marker-position caml-last-comment-end)
-           (caml-overlap begin end
-                         caml-last-comment-start
-                         caml-last-comment-end))
-      (prog2
-          (set-marker caml-last-comment-start nil)
-          (set-marker caml-last-comment-end nil)))
-  (let ((orig-function (default-value 'before-change-function)))
-    (if orig-function (funcall orig-function begin end))))
-
 (defun caml-in-literal-p ()
   "Returns non-nil if point is inside a caml literal."
   (let* ((start-literal (concat "[\"" caml-quote-char "]"))
@@ -1137,67 +1097,17 @@ to the end.
 (defun caml-in-comment-p ()
   "Returns non-nil if point is inside a caml comment.
 Returns nil for the parenthesis opening a comment."
-  ;;we look for comments differently than literals. there are two
-  ;;reasons for this. first, caml has nested comments and it is not so
-  ;;clear that parse-partial-sexp supports them; second, if proper
-  ;;style is used, literals are never split across lines, so we don't
-  ;;have to worry about bogus phrase breaks inside literals, while we
-  ;;have to account for that possibility in comments.
-  (if caml-last-comment-start
-      (save-excursion
-        (let* ((cached-pos caml-last-noncomment-pos)
-               (cached-begin (marker-position caml-last-comment-start))
-               (cached-end (marker-position caml-last-comment-end)))
-          (cond
-           ((and cached-begin cached-end
-                 (< cached-begin (point)) (< (point) cached-end)) t)
-           ((and cached-pos (= cached-pos (point))) nil)
-           ((and cached-pos (> cached-pos (point))
-                 (< (abs (- cached-pos (point))) caml-lookback-limit))
-            (let (end found (here (point)))
-                                        ; go back to somewhere sure
-              (goto-char cached-pos)
-              (while (> (point) here)
-                                        ; look for the end of a comment
-                (while (and (if (search-backward comment-end (1- here) 'move)
-                                (setq end (match-end 0))
-                              (setq end nil))
-                            (caml-in-literal-p)))
-                (if end (setq found (caml-backward-comment))))
-              (if (and found (= (point) here)) (setq end nil))
-              (if (not end)
-                  (setq caml-last-noncomment-pos here)
-                (set-marker caml-last-comment-start (point))
-                (set-marker caml-last-comment-end end))
-              end))
-           (t
-            (let (begin found (here (point)))
-            ;; go back to somewhere sure (or far enough)
-              (goto-char
-               (if cached-pos cached-pos (- (point) caml-lookback-limit)))
-              (while (< (point) here)
-                ;; look for the beginning of a comment
-                (while (and (if (search-forward comment-start (1+ here) 'move)
-                                (setq begin (match-beginning 0))
-                              (setq begin nil))
-                            (caml-in-literal-p)))
-                (if begin (setq found (caml-forward-comment))))
-              (if (and found (= (point) here)) (setq begin nil))
-              (if (not begin)
-                  (setq caml-last-noncomment-pos here)
-                (set-marker caml-last-comment-start begin)
-                (set-marker caml-last-comment-end (point)))
-              begin)))))))
+  (nth 4 (syntax-ppss)))
 
 ;; Various constants and regexps
 
 (defconst caml-before-expr-prefix
-  (concat "\\<\\(asr\\|begin\\|class\\|do\\(wnto\\)?\\|else"
+  (concat "\\_<\\(asr\\|begin\\|class\\|do\\(wnto\\)?\\|else"
           "\\|i\\(f\\|n\\(herit\\|itializer\\)?\\)"
           "\\|f\\(or\\|un\\(ct\\(ion\\|or\\)\\)?\\)"
           "\\|l\\(and\\|or\\|s[lr]\\|xor\\)\\|m\\(atch\\|od\\)"
           "\\|o[fr]\\|parser\\|s\\(ig\\|truct\\)\\|t\\(hen\\|o\\|ry\\)"
-          "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\>\\|:begin\\>"
+          "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\_>\\|:begin\\_>"
           "\\|[=<>@^|&+-*/$%][!$%*+-./:<=>?@^|~]*\\|:[:=]\\|[[({,;]")
 
   "Keywords that may appear immediately before an expression.
@@ -1205,8 +1115,8 @@ Used to distinguish it from toplevel let construct.")
 
 (defconst caml-matching-kw-regexp
   (concat
-   "\\<\\(and\\|do\\(ne\\|wnto\\)?\\|e\\(lse\\|nd\\)\\|in\\|t\\(hen\\|o\\)"
-   "\\|with\\)\\>\\|[^[|]|")
+   "\\_<\\(and\\|do\\(ne\\|wnto\\)?\\|e\\(lse\\|nd\\)\\|in\\|t\\(hen\\|o\\)"
+   "\\|with\\)\\_>\\|[^[|]|")
   "Regexp used in caml mode for skipping back over nested blocks.")
 
 (defconst caml-matching-kw-alist
@@ -1360,17 +1270,17 @@ the line where the governing keyword occurs.")
 
 (aset caml-kwop-regexps 0
       (concat
-       "\\<\\(begin\\|object\\|for\\|s\\(ig\\|truct\\)\\|while\\)\\>"
+       "\\_<\\(begin\\|object\\|for\\|s\\(ig\\|truct\\)\\|while\\)\\_>"
        "\\|:begin\\>\\|[[({]\\|;;"))
 (aset caml-kwop-regexps 1
-      (concat (aref caml-kwop-regexps 0) "\\|\\<\\(class\\|module\\)\\>"))
+      (concat (aref caml-kwop-regexps 0) "\\|\\_<\\(class\\|module\\)\\_>"))
 (aset caml-kwop-regexps 2
       (concat
        (aref caml-kwop-regexps 1)
-       "\\|\\<\\(fun\\(ction\\)?\\|initializer\\|let\\|m\\(atch\\|ethod\\)"
-       "\\|parser\\|try\\|val\\)\\>\\|->"))
+       "\\|\\_<\\(fun\\(ction\\)?\\|initializer\\|let\\|m\\(atch\\|ethod\\)"
+       "\\|parser\\|try\\|val\\)\\_>\\|->"))
 (aset caml-kwop-regexps 3
-      (concat (aref caml-kwop-regexps 2) "\\|\\<if\\|when\\>"))
+      (concat (aref caml-kwop-regexps 2) "\\|\\_<if\\|when\\_>"))
 (aset caml-kwop-regexps 4
       (concat (aref caml-kwop-regexps 3) "\\|:=\\|<-"))
 (aset caml-kwop-regexps 5
@@ -1380,17 +1290,17 @@ the line where the governing keyword occurs.")
 (aset caml-kwop-regexps 7
       (concat
        (aref caml-kwop-regexps 0)
-       "\\|\\<\\(constraint\\|exception\\|in\\(herit\\|clude\\)"
-       "\\|o\\(f\\|pen\\)\\|type\\|val\\)\\>"))
+       "\\|\\_<\\(constraint\\|exception\\|in\\(herit\\|clude\\)"
+       "\\|o\\(f\\|pen\\)\\|type\\|val\\)\\_>"))
 (aset caml-kwop-regexps 8
       (concat (aref caml-kwop-regexps 6)
-       "\\|\\<\\(constraint\\|exception\\|in\\(herit\\|clude\\)"
-       "\\|o\\(f\\|pen\\)\\|type\\)\\>"))
+              "\\|\\_<\\(constraint\\|exception\\|in\\(herit\\|clude\\)"
+              "\\|o\\(f\\|pen\\)\\|type\\)\\>"))
 
 (defun caml-find-done-match ()
   (let ((unbalanced 1) (kwop t))
     (while (and (not (= 0 unbalanced)) kwop)
-      (setq kwop (caml-find-kwop "\\<\\(done\\|for\\|while\\)\\>"))
+      (setq kwop (caml-find-kwop "\\_<\\(done\\|for\\|while\\)\\_>"))
       (cond
        ((not kwop))
        ((string= kwop "done") (setq unbalanced (1+ unbalanced)))
@@ -1402,7 +1312,7 @@ the line where the governing keyword occurs.")
     (while (and (not (= 0 unbalanced)) kwop)
       (setq kwop
             (caml-find-kwop
-             "\\<\\(end\\|begin\\|object\\|s\\(ig\\|truct\\)\\)\\>\\|:begin\\>\\|;;"))
+             "\\_<\\(end\\|begin\\|object\\|s\\(ig\\|truct\\)\\)\\_>\\|:begin\\_>\\|;;"))
       (cond
        ((not kwop))
        ((string= kwop ";;") (setq kwop nil) (forward-line 1))
@@ -1414,7 +1324,7 @@ the line where the governing keyword occurs.")
 (defun caml-find-in-match ()
   (let ((unbalanced 1) (kwop t))
     (while (and (not (= 0 unbalanced)) kwop)
-      (setq kwop (caml-find-kwop "\\<\\(in\\|let\\|end\\)\\>"))
+      (setq kwop (caml-find-kwop "\\_<\\(in\\|let\\|end\\)\\_>"))
       (cond
        ((not kwop))
        ((string= kwop "end") (caml-find-end-match))
@@ -1426,8 +1336,8 @@ the line where the governing keyword occurs.")
   (let ((unbalanced 1) (kwop t))
     (while (and (not (= 0 unbalanced)) kwop)
       (setq kwop
-        (caml-find-kwop
-         "\\<\\(with\\|try\\|m\\(atch\\|odule\\)\\|functor\\)\\>\\|[{}()]"))
+            (caml-find-kwop
+             "\\_<\\(with\\|try\\|m\\(atch\\|odule\\)\\|functor\\)\\_>\\|[{}()]"))
       (cond
        ((not kwop))
        ((caml-at-sexp-close-p)
@@ -1461,7 +1371,7 @@ the line where the governing keyword occurs.")
     (while (not done)
       (setq kwop
             (caml-find-kwop
-             "\\<\\(e\\(nd\\|lse\\)\\|done\\|then\\|if\\|with\\)\\>\\|[])};]"))
+             "\\_<\\(e\\(nd\\|lse\\)\\|done\\|then\\|if\\|with\\)\\_>\\|[])};]"))
       (cond
        ((not kwop) (setq done t))
        ((caml-at-sexp-close-p)
@@ -1478,8 +1388,8 @@ the line where the governing keyword occurs.")
 (defun caml-find-pipe-match ()
   (let ((done nil) (kwop)
         (re (concat
-             "\\<\\(try\\|match\\|with\\|function\\|parser\\|type"
-             "\\|e\\(nd\\|lse\\)\\|done\\|then\\|in\\)\\>"
+             "\\_<\\(try\\|match\\|with\\|function\\|parser\\|type"
+             "\\|e\\(nd\\|lse\\)\\|done\\|then\\|in\\)\\_>"
              "\\|[^[|]|\\|[])}]")))
     (while (not done)
       (setq kwop (caml-find-kwop re))
@@ -1495,7 +1405,7 @@ the line where the governing keyword occurs.")
         (setq kwop (caml-find-with-match))
         (setq done t))
        ((string= kwop "parser")
-        (if (re-search-backward "\\<with\\>" (- (point) 5) t)
+        (if (re-search-backward "\\_<with\\_>" (- (point) 5) t)
             (setq kwop (caml-find-with-match)))
         (setq done t))
        ((string= kwop "done") (caml-find-done-match))
@@ -1510,7 +1420,7 @@ the line where the governing keyword occurs.")
   (let ((done nil) (kwop))
     (while (not done)
       (setq kwop (caml-find-kwop
-                  "\\<\\(object\\|exception\\|let\\|type\\|end\\|in\\)\\>"))
+                  "\\_<\\(object\\|exception\\|let\\|type\\|end\\|in\\)\\_>"))
       (cond
        ((not kwop) (setq done t))
        ((string= kwop "end") (caml-find-end-match))
@@ -1558,7 +1468,7 @@ the line where the governing keyword occurs.")
                (setq kwop "let-in")
                (setq done t))))
        ((and (string= kwop "parser") (>= prio 2)
-             (re-search-backward "\\<with\\>" (- (point) 5) t))
+             (re-search-backward "\\_<with\\_>" (- (point) 5) t))
         (setq kwop (caml-find-with-match))
         (setq done t))
        ((setq matching-fun (cdr-safe (assoc kwop caml-matching-kw-alist)))
@@ -1626,7 +1536,7 @@ Does not preserve point."
            (t
             (let ((pos (point)))
               (back-to-indentation)
-;             (if (looking-at "\\<let\\>") (goto-char pos))
+;             (if (looking-at "\\_<let\\_>") (goto-char pos))
               (- (symbol-value (nth 3 kwop-info))
                  (if (looking-at "|") caml-|-extra-indent 0))))))
          (extra (if in-expr caml-apply-extra-indent 0)))
@@ -1634,8 +1544,8 @@ Does not preserve point."
 
 (defconst caml-leading-kwops-regexp
   (concat
-   "\\<\\(and\\|do\\(ne\\|wnto\\)?\\|e\\(lse\\|nd\\)\\|in"
-   "\\|t\\(hen\\|o\\)\\|with\\)\\>\\|[]|})]")
+   "\\_<\\(and\\|do\\(ne\\|wnto\\)?\\|e\\(lse\\|nd\\)\\|in"
+   "\\|t\\(hen\\|o\\)\\|with\\)\\_>\\|[]|})]")
 
   "Regexp matching caml keywords which need special indentation.")
 

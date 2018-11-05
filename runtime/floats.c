@@ -70,6 +70,9 @@
 #ifndef isfinite
 #define isfinite _finite
 #endif
+#ifndef nextafter
+#define nextafter _nextafter
+#endif
 #endif
 
 #ifdef ARCH_ALIGN_DOUBLE
@@ -461,9 +464,280 @@ CAMLprim value caml_exp_float(value f)
   return caml_copy_double(exp(Double_val(f)));
 }
 
+CAMLexport double caml_trunc(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return trunc(x);
+#else
+  return (x >= 0.0)? floor(x) : ceil(x);
+#endif
+}
+
+CAMLprim value caml_trunc_float(value f)
+{
+  return caml_copy_double(caml_trunc(Double_val(f)));
+}
+
+CAMLexport double caml_round(double f)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return round(f);
+#else
+  union { uint64_t i; double d; } u, pred_one_half; /* predecessor of 0.5 */
+  int e;  /* exponent */
+  u.d = f;
+  e = (u.i >> 52) & 0x7ff; /* - 0x3ff for the actual exponent */
+  pred_one_half.i = 0x3FDFFFFFFFFFFFFF; /* 0x1.FFFFFFFFFFFFFp-2 */
+
+  if (isfinite(f) && f != 0.) {
+    if (e >= 52 + 0x3ff) return f; /* f is an integer already */
+    if (f > 0.0)
+      /* If we added 0.5 instead of its predecessor, then the
+         predecessor of 0.5 would be rounded to 1. instead of 0. */
+      return floor(f + pred_one_half.d);
+    else
+      return ceil(f - pred_one_half.d);
+  }
+  else
+    return f;
+#endif
+}
+
+CAMLprim value caml_round_float(value f)
+{
+  return caml_copy_double(caml_round(Double_val(f)));
+}
+
 CAMLprim value caml_floor_float(value f)
 {
   return caml_copy_double(floor(Double_val(f)));
+}
+
+CAMLexport double caml_nextafter(double x, double y)
+{
+  return nextafter(x, y);
+}
+
+CAMLprim value caml_nextafter_float(value x, value y)
+{
+  return caml_copy_double(caml_nextafter(Double_val(x), Double_val(y)));
+}
+
+#ifndef HAS_C99_FLOAT_OPS
+union double_as_int64 { double d; uint64_t i; };
+#define IEEE754_DOUBLE_BIAS 0x3ff
+#define IEEE_EXPONENT(N) (((N) >> 52) & 0x7ff)
+#define IEEE_NEGATIVE(N) ((N) >> 63)
+//C99 hexa float literals cannot be used, use pow() instead.
+#define FL53    (pow(2,53)) //0x1p53
+#define FLM53   (pow(2,-53)) //0x1p-53
+#define FL54    (pow(2,54)) //0x1p54
+#define FLM54   (pow(2,-54)) //0x1p-54
+#define FL108   (pow(2,108)) //0x1p108
+#define FLM108  (pow(2,-108)) //0x1p-108
+#define FLM1074 (pow(2,-1074)) //0x1p-1074
+#endif
+
+CAMLexport double caml_fma(double x, double y, double z)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return fma(x, y, z);
+#else // Emulation of FMA, from S. Boldo and G. Melquiond, "Emulation
+      // of a FMA and Correctly Rounded Sums: Proved Algorithms Using
+      // Rounding to Odd," in IEEE Transactions on Computers, vol. 57,
+      // no. 4, pp. 462-471, April 2008. Special cases implementation
+      // comes from glibc's IEEE754 FMA emulation.
+      // Only valid for double precision and round-to-nearest mode.
+
+  union double_as_int64 u, v, w;
+  union double_as_int64 ora;
+  double mh, ml, xh, xl, yh, yl, t;
+  double ah, al;
+  double orah, oral;
+  double t1, t2;
+  double tiny;
+  int neg, adjust = 0;
+  u.d = x;
+  v.d = y;
+  w.d = z;
+
+  if ( IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i) >= 0x7FF +
+       IEEE754_DOUBLE_BIAS - DBL_MANT_DIG
+       || IEEE_EXPONENT(u.i) >= 0x7ff - DBL_MANT_DIG
+       || IEEE_EXPONENT(v.i) >= 0x7ff - DBL_MANT_DIG
+       || IEEE_EXPONENT(w.i) >= 0x7ff - DBL_MANT_DIG
+       || IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i) <=
+         IEEE754_DOUBLE_BIAS + DBL_MANT_DIG )
+    {
+      /* If z is Inf, but x and y are finite, the result should be z
+       * rather than NaN. */
+      if (IEEE_EXPONENT(w.i) == 0x7ff &&
+          IEEE_EXPONENT(u.i) != 0x7ff &&
+          IEEE_EXPONENT(v.i) != 0x7ff)
+              return (z + x) + y;
+      /* If z is zero and x and y are nonzero, compute the result as
+         x * y to avoid the wrong sign of a zero result if x * y
+         underflows to 0. */
+      if (z == 0 && x != 0 && y != 0)
+        return x * y;
+      /* If x or y or z is Inf/NaN, or if x * y is zero, compute as
+         x * y + z.  */
+      if (IEEE_EXPONENT(u.i) == 0x7ff
+          || IEEE_EXPONENT(v.i) == 0x7ff
+          || IEEE_EXPONENT(w.i) == 0x7ff
+          || x == 0
+          || y == 0)
+        return x * y + z;
+      /* If fma will certainly overflow, compute as x * y. */
+      if ((IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i))
+          > 0x7ff + IEEE754_DOUBLE_BIAS)
+        return x * y;
+      /* If x * y is less than 1/4 of DBL_TRUE_MIN, neither the result
+         nor whether there is underflow depends on its exact value,
+         only on its sign. */
+      if (IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i)
+          < IEEE754_DOUBLE_BIAS - DBL_MANT_DIG - 2)
+        {
+          neg = IEEE_NEGATIVE(u.i) ^ IEEE_NEGATIVE(v.i) ;
+          tiny = neg ? -FLM1074 : FLM1074;
+          if (IEEE_EXPONENT(w.i) >= 3)
+            return tiny + z;
+          /* Scaling up, adding TINY and scaling down produces the
+             correct result, because in round-to-nearest mode adding
+             TINY has no effect and in other modes double rounding is
+             harmless. But it may not produce required underflow
+             exceptions. */
+          v.d = z * FL54 + tiny;
+          return v.d * FLM54;
+        }
+      if (IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i)
+          >= 0x7ff + IEEE754_DOUBLE_BIAS - DBL_MANT_DIG)
+        {
+          /* Compute 1p-53 times smaller result and multiply at the
+             end.  */
+          if (IEEE_EXPONENT(u.i) > IEEE_EXPONENT(v.i))
+            x *= FLM53;
+          else
+            y *= FLM53;
+          /* If x + y exponent is very large and z exponent is very small,
+             it doesn't matter if we don't adjust it.  */
+          if (IEEE_EXPONENT(w.i) > DBL_MANT_DIG)
+            z *= FLM53;
+          adjust = 1;
+        }
+      else if (IEEE_EXPONENT(w.i) >= 0x7ff - DBL_MANT_DIG)
+        {
+          /* Similarly. If z exponent is very large and x and y
+             exponents are very small, adjust them up to avoid
+             spurious underflows, rather than down.  */
+          if (IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i)
+              <= IEEE754_DOUBLE_BIAS + 2 * DBL_MANT_DIG)
+            {
+              if (IEEE_EXPONENT(u.i) > IEEE_EXPONENT(v.i))
+                x *= FL108;
+              else
+                y *= FL108;
+            }
+          else if (IEEE_EXPONENT(u.i) > IEEE_EXPONENT(v.i))
+            {
+              if (IEEE_EXPONENT(u.i) > DBL_MANT_DIG)
+                x *= FLM53;
+            }
+          else if (IEEE_EXPONENT(v.i) > DBL_MANT_DIG)
+            y *= FLM53;
+          z *= FLM53;
+          adjust = 1;
+        }
+      else if (IEEE_EXPONENT(u.i) >= 0x7ff - DBL_MANT_DIG)
+        {
+          x *= FLM53;
+          y *= FL53;
+        }
+      else if (IEEE_EXPONENT(v.i) >= 0x7ff - DBL_MANT_DIG)
+        {
+          y *= FLM53;
+          x *= FL53;
+        }
+      else /* if (IEEE_EXPONENT(u.i) + IEEE_EXPONENT(v.i) <=
+              IEEE754_DOUBLE_BIAS + DBL_MANT_DIG) */
+        {
+          if (IEEE_EXPONENT(u.i) > IEEE_EXPONENT(v.i))
+            x *= FL108;
+          else
+            y *= FL108;
+          if (IEEE_EXPONENT(w.i) <= 4 * DBL_MANT_DIG + 6)
+            {
+              z *= FL108;
+              adjust = -1;
+            }
+        }
+    }
+
+  /* Ensure correct sign of exact 0 + 0.  */
+  if ((x == 0 || y == 0) && z == 0)
+    return x * y + z;
+
+  // Error-free multiplication: mh + ml = x * y
+  mh = x * y;
+  t = x * 134217729.0;
+  xh = t - (t - x);
+  xl = x - xh;
+  t = y * 134217729.0;
+  yh = t - (t - y);
+  yl = y - yh;
+  ml = xl * yl - (((mh - xh * yh) - xl * yh) - xh * yl);
+  // Error-free addition: ah + al = z + mh
+  ah = z + mh;
+  t = ah - z;
+  al = (z - (ah - t)) + (mh - t);
+
+  /* If the result is an exact zero, ensure it has the correct sign. */
+  if (ah == 0 && ml == 0)
+    return z + mh;
+
+  // Normalize ah, al, ml.
+  t1 = al + ml;
+  t = t1 - al;
+  t2 = (al - (t1 - t)) + (ml - t);
+  al = t1;
+  ml = t2;
+  t1 = ah + al;
+  t = t1 - ah;
+  t2 = (ah - (t1 - t)) + (al - t);
+  ah = t1;
+  al = t2;
+
+  // Odd-rounded addition: ora = al + ml.
+  orah = al + ml;
+  oral = (al - orah) + ml;
+
+  if ( oral != 0.0 )
+    {
+      ora.d = orah;
+      if ( !(ora.i & 1) )
+        {
+          if ( (oral > 0.0) ^ (orah < 0.0) )
+            ora.i++;
+          else
+            ora.i--;
+          orah = ora.d;
+        }
+    }
+
+  // Rounded addition: ra = ah + orah.
+  if ( adjust > 0 )
+    return (ah + orah) * FL53;
+  else if ( adjust < 0 )
+    return (ah + orah) * FLM108;
+  else
+    return ah + orah;
+#endif
+}
+
+CAMLprim value caml_fma_float(value f1, value f2, value f3)
+{
+  return caml_copy_double(caml_fma(Double_val(f1),
+                                   Double_val(f2), Double_val(f3)));
 }
 
 CAMLprim value caml_fmod_float(value f1, value f2)
@@ -674,6 +948,22 @@ CAMLexport double caml_copysign(double x, double y)
 CAMLprim value caml_copysign_float(value f, value g)
 {
   return caml_copy_double(caml_copysign(Double_val(f), Double_val(g)));
+}
+
+CAMLprim value caml_signbit(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return Val_bool(signbit(x));
+#else
+  union double_as_two_int32 ux;
+  ux.d = x;
+  return Val_bool(ux.i.h >> 31);
+#endif
+}
+
+CAMLprim value caml_signbit_float(value f)
+{
+  return caml_signbit(Double_val(f));
 }
 
 #ifdef LACKS_SANE_NAN

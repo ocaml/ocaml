@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Documentation comments *)
+(** Documentation comments
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 (** (Re)Initialise all docstring state *)
 val init : unit -> unit

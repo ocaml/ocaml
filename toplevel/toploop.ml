@@ -123,7 +123,8 @@ let input_name = Location.input_name
 
 let parse_mod_use_file name lb =
   let modname =
-    String.capitalize_ascii (Filename.chop_extension (Filename.basename name))
+    String.capitalize_ascii
+      (Filename.remove_extension (Filename.basename name))
   in
   let items =
     List.concat
@@ -383,7 +384,9 @@ let use_file ppf wrap_mod name =
     (* Skip initial #! line if any *)
     Lexer.skip_hash_bang lb;
     let success =
-      protect_refs [ R (Location.input_name, filename) ] (fun () ->
+      protect_refs [ R (Location.input_name, filename);
+                     R (Location.input_lexbuf, Some lb); ]
+        (fun () ->
         try
           List.iter
             (fun ph ->

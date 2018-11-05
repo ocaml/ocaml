@@ -103,6 +103,7 @@ module type Compiler_options = sig
   val _verbose : unit -> unit
   val _where : unit -> unit
   val _color : string -> unit
+  val _error_style : string -> unit
 
   val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
@@ -124,6 +125,8 @@ module type Toplevel_options = sig
   val _stdin : unit -> unit
   val _args: string -> string array
   val _args0: string -> string array
+  val _color : string -> unit
+  val _error_style : string -> unit
 
 end
 ;;

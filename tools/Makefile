@@ -16,7 +16,7 @@
 MAKEFLAGS := -r -R
 ROOTDIR = ..
 
-include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
 ifeq ($(SYSTEM),unix)
@@ -149,13 +149,12 @@ $(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
 	         build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo,)
 
 
-ocamlmklibconfig.ml: $(ROOTDIR)/config/Makefile Makefile
+ocamlmklibconfig.ml: $(ROOTDIR)/Makefile.config Makefile
 	(echo 'let bindir = "$(BINDIR)"'; \
          echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
          echo 'let default_rpath = "$(RPATH)"'; \
          echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \
-         echo 'let toolpref = "$(TOOLPREF)"'; \
-         sed -n -e 's/^#ml //p' $(ROOTDIR)/config/Makefile) \
+         echo 'let toolpref = "$(TOOLPREF)"';) \
         > ocamlmklibconfig.ml
 
 beforedepend:: ocamlmklibconfig.ml
@@ -327,6 +326,7 @@ objinfo_helper$(EXE): objinfo_helper.c $(ROOTDIR)/runtime/caml/s.h
 OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
+        $(ROOTDIR)/asmcomp/backend_var.cmo \
         $(ROOTDIR)/asmcomp/printclambda.cmo \
         $(ROOTDIR)/asmcomp/export_info.cmo \
         objinfo.cmo
@@ -347,6 +347,7 @@ $(call byte_and_opt,primreq,$(primreq),)
 LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cmxa \
+        $(ROOTDIR)/asmcomp/backend_var.cmx \
         $(ROOTDIR)/asmcomp/printclambda.cmx \
         $(ROOTDIR)/asmcomp/export_info.cmx \
 	$(ROOTDIR)/otherlibs/str/str.cmxa \

@@ -16,10 +16,23 @@
 #ifndef CAML_CONFIG_H
 #define CAML_CONFIG_H
 
-/* <include m.h> */
-/* <include s.h> */
-/* <private> */
 #include "m.h"
+
+/* If supported, tell gcc that we can use 32-bit code addresses for
+ * threaded code, unless we are compiled for a shared library (-fPIC option) */
+#ifdef HAS_ARCH_CODE32
+#ifndef __PIC__
+#  define ARCH_CODE32
+#endif /* __PIC__ */
+#endif /* HAS_ARCH_CODE32 */
+
+/* Microsoft introduced the LL integer literal suffix in Visual C++ .NET 2003 */
+#if defined(_MSC_VER) && _MSC_VER < 1400
+#define INT64_LITERAL(s) s ## i64
+#else
+#define INT64_LITERAL(s) s ## LL
+#endif
+
 #include "s.h"
 #ifdef BOOTSTRAPPING_FLEXLINK
 #undef SUPPORT_DYNAMIC_LINKING

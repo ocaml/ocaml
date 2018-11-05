@@ -12,14 +12,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module V = Backend_var
+module VP = Backend_var.With_provenance
+
 let node_num_header_words = 2 (* [Node_num_header_words] in the runtime. *)
 let index_within_node = ref node_num_header_words
-(* The [lazy]s are to ensure that we don't create [Ident.t]s at toplevel
+(* The [lazy]s are to ensure that we don't create [V.t]s at toplevel
    when not using Spacetime profiling.  (This could cause stamps to differ
    between bytecode and native .cmis when no .mli is present, e.g.
    arch.ml.) *)
-let spacetime_node = ref (lazy (Cmm.Cvar (Ident.create "dummy")))
-let spacetime_node_ident = ref (lazy (Ident.create "dummy"))
+let spacetime_node = ref (lazy (Cmm.Cvar (V.create_local "dummy")))
+let spacetime_node_ident = ref (lazy (V.create_local "dummy"))
 let current_function_label = ref ""
 let direct_tail_call_point_indexes = ref []
 
@@ -55,15 +58,15 @@ let reset ~spacetime_node_ident:ident ~function_label =
   reverse_shape := []
 
 let code_for_function_prologue ~function_name ~node_hole =
-  let node = Ident.create "node" in
-  let new_node = Ident.create "new_node" in
-  let must_allocate_node = Ident.create "must_allocate_node" in
-  let is_new_node = Ident.create "is_new_node" in
+  let node = V.create_local "node" in
+  let new_node = V.create_local "new_node" in
+  let must_allocate_node = V.create_local "must_allocate_node" in
+  let is_new_node = V.create_local "is_new_node" in
   let no_tail_calls = List.length !direct_tail_call_point_indexes < 1 in
   let dbg = Debuginfo.none in
   let open Cmm in
   let initialize_direct_tail_call_points_and_return_node =
-    let new_node_encoded = Ident.create "new_node_encoded" in
+    let new_node_encoded = V.create_local "new_node_encoded" in
     (* The callee node pointers within direct tail call points must initially
        point back at the start of the current node and be marked as per
        [Encode_tail_caller_node] in the runtime. *)
@@ -83,42 +86,43 @@ let code_for_function_prologue ~function_name ~node_hole =
     match indexes with
     | [] -> body
     | _ ->
-      Clet (new_node_encoded,
+      Clet (VP.create new_node_encoded,
         (* Cf. [Encode_tail_caller_node] in the runtime. *)
         Cop (Cor, [Cvar new_node; Cconst_int 1], dbg),
         body)
   in
-  let pc = Ident.create "pc" in
-  Clet (node, Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
-    Clet (must_allocate_node,
-      Cop (Cand, [Cvar node; Cconst_int 1], dbg),
-      Cifthenelse (
-        Cop (Ccmpi Cne, [Cvar must_allocate_node; Cconst_int 1], dbg),
-        Cvar node,
-        Clet (is_new_node,
-          Clet (pc, Cconst_symbol function_name,
-            Cop (Cextcall ("caml_spacetime_allocate_node",
-                [| Int |], false, None),
-              [Cconst_int (1 (* header *) + !index_within_node);
-               Cvar pc;
-               Cvar node_hole;
-              ],
-              dbg)),
-            Clet (new_node,
-              Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
-              if no_tail_calls then Cvar new_node
-              else
-                Cifthenelse (
-                  Cop (Ccmpi Ceq, [Cvar is_new_node; Cconst_int 0], dbg),
-                  Cvar new_node,
-                  initialize_direct_tail_call_points_and_return_node))))))
+  let pc = V.create_local "pc" in
+  Clet (VP.create node,
+    Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
+      Clet (VP.create must_allocate_node,
+        Cop (Cand, [Cvar node; Cconst_int 1], dbg),
+        Cifthenelse (
+          Cop (Ccmpi Cne, [Cvar must_allocate_node; Cconst_int 1], dbg),
+          Cvar node,
+          Clet (VP.create is_new_node,
+            Clet (VP.create pc, Cconst_symbol function_name,
+              Cop (Cextcall ("caml_spacetime_allocate_node",
+                  [| Int |], false, None),
+                [Cconst_int (1 (* header *) + !index_within_node);
+                Cvar pc;
+                Cvar node_hole;
+                ],
+                dbg)),
+              Clet (VP.create new_node,
+                Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
+                if no_tail_calls then Cvar new_node
+                else
+                  Cifthenelse (
+                    Cop (Ccmpi Ceq, [Cvar is_new_node; Cconst_int 0], dbg),
+                    Cvar new_node,
+                    initialize_direct_tail_call_points_and_return_node))))))
 
 let code_for_blockheader ~value's_header ~node ~dbg =
   let num_words = Nativeint.shift_right_logical value's_header 10 in
-  let existing_profinfo = Ident.create "existing_profinfo" in
-  let existing_count = Ident.create "existing_count" in
-  let profinfo = Ident.create "profinfo" in
-  let address_of_profinfo = Ident.create "address_of_profinfo" in
+  let existing_profinfo = V.create_local "existing_profinfo" in
+  let existing_count = V.create_local "existing_count" in
+  let profinfo = V.create_local "profinfo" in
+  let address_of_profinfo = V.create_local "address_of_profinfo" in
   let label = Cmm.new_label () in
   let index_within_node =
     next_index_within_node ~part_of_shape:Mach.Allocation_point ~label
@@ -143,20 +147,20 @@ let code_for_blockheader ~value's_header ~node ~dbg =
   (* Check if we have already allocated a profinfo value for this allocation
      point with the current backtrace.  If so, use that value; if not,
      allocate a new one. *)
-  Clet (address_of_profinfo,
+  Clet (VP.create address_of_profinfo,
     Cop (Caddi, [
       Cvar node;
       Cconst_int offset_into_node;
     ], dbg),
-    Clet (existing_profinfo,
+    Clet (VP.create existing_profinfo,
         Cop (Cload (Word_int, Asttypes.Mutable), [Cvar address_of_profinfo],
           dbg),
-      Clet (profinfo,
+      Clet (VP.create profinfo,
         Cifthenelse (
           Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_int 1 (* () *)], dbg),
           Cvar existing_profinfo,
           generate_new_profinfo),
-        Clet (existing_count,
+        Clet (VP.create existing_count,
           Cop (Cload (Word_int, Asttypes.Mutable), [
             Cop (Caddi,
               [Cvar address_of_profinfo; Cconst_int Arch.size_addr], dbg)
@@ -216,10 +220,10 @@ let code_for_call ~node ~callee ~is_tail ~label =
         index_within_node::!direct_tail_call_point_indexes
     | Direct _ | Indirect _ -> ()
   end;
-  let place_within_node = Ident.create "place_within_node" in
+  let place_within_node = V.create_local "place_within_node" in
   let dbg = Debuginfo.none in
   let open Cmm in
-  Clet (place_within_node,
+  Clet (VP.create place_within_node,
     Cop (Caddi, [node; Cconst_int (index_within_node * Arch.size_addr)], dbg),
     (* The following code returns the address that is to be moved into the
        (hard) node hole pointer register immediately before the call.
@@ -227,11 +231,11 @@ let code_for_call ~node ~callee ~is_tail ~label =
     match callee with
     | Direct _callee ->
       if Config.enable_call_counts then begin
-        let count_addr = Ident.create "call_count_addr" in
-        let count = Ident.create "call_count" in
-        Clet (count_addr,
+        let count_addr = V.create_local "call_count_addr" in
+        let count = V.create_local "call_count" in
+        Clet (VP.create count_addr,
           Cop (Caddi, [Cvar place_within_node; Cconst_int Arch.size_addr], dbg),
-          Clet (count,
+          Clet (VP.create count,
             Cop (Cload (Word_int, Asttypes.Mutable), [Cvar count_addr], dbg),
             Csequence (
               Cop (Cstore (Word_int, Lambda.Assignment),
@@ -276,8 +280,8 @@ class virtual instruction_selection = object (self)
       ~label_after =
     (* [callee] is a pseudoregister, so we have to bind it in the environment
        and reference the variable to which it is bound. *)
-    let callee_ident = Ident.create "callee" in
-    let env = Selectgen.env_add callee_ident [| callee |] env in
+    let callee_ident = V.create_local "callee" in
+    let env = Selectgen.env_add (VP.create callee_ident) [| callee |] env in
     let instrumentation =
       code_for_call
         ~node:(Lazy.force !spacetime_node)
@@ -357,7 +361,7 @@ class virtual instruction_selection = object (self)
       super#emit_blockheader env n dbg
     end
 
-  method! select_allocation words =
+  method! select_allocation bytes =
     if self#can_instrument () then begin
       (* Leave space for a direct call point.  We cannot easily insert any
          instrumentation code, so the fields are filled in instead by
@@ -369,12 +373,12 @@ class virtual instruction_selection = object (self)
           ~label
       in
       Mach.Ialloc {
-        words;
+        bytes;
         label_after_call_gc = Some label;
         spacetime_index = index;
       }
     end else begin
-      super#select_allocation words
+      super#select_allocation bytes
     end
 
   method! select_allocation_args env =
@@ -416,7 +420,7 @@ class virtual instruction_selection = object (self)
   method! initial_env () =
     let env = super#initial_env () in
     if Config.spacetime then
-      Selectgen.env_add (Lazy.force !spacetime_node_ident)
+      Selectgen.env_add (VP.create (Lazy.force !spacetime_node_ident))
         (self#regs_for Cmm.typ_int) env
     else
       env
@@ -424,7 +428,7 @@ class virtual instruction_selection = object (self)
   method! emit_fundecl f =
     if Config.spacetime then begin
       disable_instrumentation <- false;
-      let node = Ident.create "spacetime_node" in
+      let node = V.create_local "spacetime_node" in
       reset ~spacetime_node_ident:node ~function_label:f.Cmm.fun_name
     end;
     super#emit_fundecl f

@@ -16,6 +16,9 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
+module V = Backend_var
+module VP = Backend_var.With_provenance
+
 type 'a for_one_or_more_units = {
   fun_offset_table : int Closure_id.Map.t;
   fv_offset_table : int Var_within_closure.Map.t;
@@ -109,11 +112,11 @@ module Env : sig
   val add_subst : t -> Variable.t -> Clambda.ulambda -> t
   val find_subst_exn : t -> Variable.t -> Clambda.ulambda
 
-  val add_fresh_ident : t -> Variable.t -> Ident.t * t
-  val ident_for_var_exn : t -> Variable.t -> Ident.t
+  val add_fresh_ident : t -> Variable.t -> V.t * t
+  val ident_for_var_exn : t -> Variable.t -> V.t
 
-  val add_fresh_mutable_ident : t -> Mutable_variable.t -> Ident.t * t
-  val ident_for_mutable_var_exn : t -> Mutable_variable.t -> Ident.t
+  val add_fresh_mutable_ident : t -> Mutable_variable.t -> V.t * t
+  val ident_for_mutable_var_exn : t -> Mutable_variable.t -> V.t
 
   val add_allocated_const : t -> Symbol.t -> Allocated_const.t -> t
   val allocated_const_for_symbol : t -> Symbol.t -> Allocated_const.t option
@@ -122,8 +125,8 @@ module Env : sig
 end = struct
   type t =
     { subst : Clambda.ulambda Variable.Map.t;
-      var : Ident.t Variable.Map.t;
-      mutable_var : Ident.t Mutable_variable.Map.t;
+      var : V.t Variable.Map.t;
+      mutable_var : V.t Mutable_variable.Map.t;
       toplevel : bool;
       allocated_constant_for_symbol : Allocated_const.t Symbol.Map.t;
     }
@@ -144,14 +147,14 @@ end = struct
   let ident_for_var_exn t id = Variable.Map.find id t.var
 
   let add_fresh_ident t var =
-    let id = Ident.create (Variable.name var) in
+    let id = V.create_local (Variable.name var) in
     id, { t with var = Variable.Map.add var id t.var }
 
   let ident_for_mutable_var_exn t mut_var =
     Mutable_variable.Map.find mut_var t.mutable_var
 
   let add_fresh_mutable_ident t mut_var =
-    let id = Ident.create (Mutable_variable.name mut_var) in
+    let id = V.create_local (Mutable_variable.name mut_var) in
     let mutable_var = Mutable_variable.Map.add mut_var id t.mutable_var in
     id, { t with mutable_var; }
 
@@ -224,12 +227,13 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
   | Let { var; defining_expr; body; _ } ->
     (* TODO: synthesize proper value_kind *)
     let id, env_body = Env.add_fresh_ident env var in
-    Ulet (Immutable, Pgenval, id, to_clambda_named t env var defining_expr,
+    Ulet (Immutable, Pgenval, VP.create id,
+      to_clambda_named t env var defining_expr,
       to_clambda t env_body body)
   | Let_mutable { var = mut_var; initial_value = var; body; contents_kind } ->
     let id, env_body = Env.add_fresh_mutable_ident env mut_var in
     let def = subst_var env var in
-    Ulet (Mutable, contents_kind, id, def, to_clambda t env_body body)
+    Ulet (Mutable, contents_kind, VP.create id, def, to_clambda t env_body body)
   | Let_rec (defs, body) ->
     let env, defs =
       List.fold_right (fun (var, def) (env, defs) ->
@@ -238,7 +242,9 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
         defs (env, [])
     in
     let defs =
-      List.map (fun (id, var, def) -> id, to_clambda_named t env var def) defs
+      List.map (fun (id, var, def) ->
+          VP.create id, to_clambda_named t env var def)
+        defs
     in
     Uletrec (defs, to_clambda t env body)
   | Apply { func; args; kind = Direct direct_func; dbg = dbg } ->
@@ -303,14 +309,15 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     let env_handler, ids =
       List.fold_right (fun var (env, ids) ->
           let id, env = Env.add_fresh_ident env var in
-          env, id :: ids)
+          env, VP.create id :: ids)
         vars (env, [])
     in
     Ucatch (Static_exception.to_int static_exn, ids,
       to_clambda t env body, to_clambda t env_handler handler)
   | Try_with (body, var, handler) ->
     let id, env_handler = Env.add_fresh_ident env var in
-    Utrywith (to_clambda t env body, id, to_clambda t env_handler handler)
+    Utrywith (to_clambda t env body, VP.create id,
+      to_clambda t env_handler handler)
   | If_then_else (arg, ifso, ifnot) ->
     Uifthenelse (subst_var env arg, to_clambda t env ifso,
       to_clambda t env ifnot)
@@ -318,7 +325,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     Uwhile (to_clambda t env cond, to_clambda t env body)
   | For { bound_var; from_value; to_value; direction; body } ->
     let id, env_body = Env.add_fresh_ident env bound_var in
-    Ufor (id, subst_var env from_value, subst_var env to_value,
+    Ufor (VP.create id, subst_var env from_value, subst_var env to_value,
       direction, to_clambda t env_body body)
   | Assign { being_assigned; new_value } ->
     let id =
@@ -466,7 +473,7 @@ and to_clambda_set_of_closures t env
       (({ function_decls; free_vars } : Flambda.set_of_closures)
         as set_of_closures) : Clambda.ulambda =
   let all_functions = Variable.Map.bindings function_decls.funs in
-  let env_var = Ident.create "env" in
+  let env_var = V.create_local "env" in
   let to_clambda_function
         (closure_id, (function_decl : Flambda.function_declaration))
         : Clambda.ufunction =
@@ -520,7 +527,7 @@ and to_clambda_set_of_closures t env
     in
     { label = Compilenv.function_label closure_id;
       arity = Flambda_utils.function_arity function_decl;
-      params = params @ [env_var];
+      params = List.map (fun var -> VP.create var) (params @ [env_var]);
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
       env = Some env_var;
@@ -560,7 +567,7 @@ and to_clambda_closed_set_of_closures t env symbol
     in
     { label = Compilenv.function_label (Closure_id.wrap id);
       arity = Flambda_utils.function_arity function_decl;
-      params;
+      params = List.map (fun var -> VP.create var) params;
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
       env = None;

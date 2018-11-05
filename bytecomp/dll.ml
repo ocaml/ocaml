@@ -132,32 +132,15 @@ let ld_conf_contents () =
 
 (* Split the CAML_LD_LIBRARY_PATH environment variable and return
    the corresponding list of directories.  *)
-
-let split str sep =
-  let rec split_rec pos =
-    if pos >= String.length str then [] else begin
-      try
-        let newpos = String.index_from str pos sep in
-        String.sub str pos (newpos - pos) ::
-        split_rec (newpos + 1)
-      with Not_found ->
-        [String.sub str pos (String.length str - pos)]
-    end in
-  split_rec 0
-
 let ld_library_path_contents () =
-  let path_separator =
-    match Sys.os_type with
-    | "Unix" | "Cygwin" -> ':'
-    | "Win32" -> ';'
-    | _ -> assert false in
-  try
-    split (Sys.getenv "CAML_LD_LIBRARY_PATH") path_separator
-  with Not_found ->
-    []
+  match Sys.getenv "CAML_LD_LIBRARY_PATH" with
+  | exception Not_found ->
+      []
+  | s ->
+      Misc.split_path_contents s
 
 let split_dll_path path =
-  split path '\000'
+  Misc.split_path_contents ~sep:'\000' path
 
 (* Initialization for separate compilation *)
 

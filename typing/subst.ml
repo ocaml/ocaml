@@ -29,7 +29,6 @@ type t =
     modules: Path.t Path.Map.t;
     modtypes: module_type Ident.Map.t;
     for_saving: bool;
-    loc: Location.t option;
   }
 
 let identity =
@@ -37,7 +36,6 @@ let identity =
     modules = Path.Map.empty;
     modtypes = Ident.Map.empty;
     for_saving = false;
-    loc = None;
   }
 
 let add_type_path id p s = { s with types = Path.Map.add id (Path p) s.types }
@@ -53,13 +51,8 @@ let add_modtype id ty s = { s with modtypes = Ident.Map.add id ty s.modtypes }
 
 let for_saving s = { s with for_saving = true }
 
-let change_locs s loc = { s with loc = Some loc }
-
 let loc s x =
-  match s.loc with
-  | Some l -> l
-  | None ->
-    if s.for_saving && not !Clflags.keep_locs then Location.none else x
+  if s.for_saving && not !Clflags.keep_locs then Location.none else x
 
 let remove_loc =
   let open Ast_mapper in
@@ -136,7 +129,7 @@ let reset_for_saving () = new_id := -1
 
 let newpersty desc =
   decr new_id;
-  { desc = desc; level = generic_level; scope = None; id = !new_id }
+  { desc; level = generic_level; scope = Btype.lowest_level; id = !new_id }
 
 (* ensure that all occurrences of 'Tvar None' are physically shared *)
 let tvar_none = Tvar None
@@ -305,7 +298,7 @@ let type_declaration s decl =
       type_private = decl.type_private;
       type_variance = decl.type_variance;
       type_is_newtype = false;
-      type_expansion_scope = None;
+      type_expansion_scope = Btype.lowest_level;
       type_loc = loc s decl.type_loc;
       type_attributes = attrs s decl.type_attributes;
       type_immediate = decl.type_immediate;
@@ -392,25 +385,46 @@ let extension_constructor s ext =
     cleanup_types ();
     ext
 
-let rec rename_bound_idents s idents = function
-    [] -> (List.rev idents, s)
-  | Sig_type(id, _, _) :: sg ->
+let rec rename_bound_idents s sg = function
+    [] -> sg, s
+  | Sig_type(id, td, rs) :: rest ->
       let id' = Ident.rename id in
-      rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
-  | Sig_module(id, _, _) :: sg ->
+      rename_bound_idents
+        (add_type id (Pident id') s)
+        (Sig_type(id', td, rs) :: sg)
+        rest
+  | Sig_module(id, md, rs) :: rest ->
       let id' = Ident.rename id in
-      rename_bound_idents (add_module id (Pident id') s) (id' :: idents) sg
-  | Sig_modtype(id, _) :: sg ->
+      rename_bound_idents
+        (add_module id (Pident id') s)
+        (Sig_module (id', md, rs) :: sg)
+        rest
+  | Sig_modtype(id, mtd) :: rest ->
       let id' = Ident.rename id in
-      rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
-                          (id' :: idents) sg
-  | (Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
+      rename_bound_idents
+        (add_modtype id (Mty_ident(Pident id')) s)
+        (Sig_modtype(id', mtd) :: sg)
+        rest
+  | Sig_class(id, cd, rs) :: rest ->
       (* cheat and pretend they are types cf. PR#6650 *)
       let id' = Ident.rename id in
-      rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
-  | (Sig_value(id, _) | Sig_typext(id, _, _)) :: sg ->
+      rename_bound_idents
+        (add_type id (Pident id') s)
+        (Sig_class(id', cd, rs) :: sg)
+        rest
+  | Sig_class_type(id, ctd, rs) :: rest ->
+      (* cheat and pretend they are types cf. PR#6650 *)
       let id' = Ident.rename id in
-      rename_bound_idents s (id' :: idents) sg
+      rename_bound_idents
+        (add_type id (Pident id') s)
+        (Sig_class_type(id', ctd, rs) :: sg)
+        rest
+  | Sig_value(id, vd) :: rest ->
+      let id' = Ident.rename id in
+      rename_bound_idents s (Sig_value(id', vd) :: sg) rest
+  | Sig_typext(id, ec, es) :: rest ->
+      let id' = Ident.rename id in
+      rename_bound_idents s (Sig_typext(id',ec,es) :: sg) rest
 
 let rec modtype s = function
     Mty_ident p as mty ->
@@ -435,26 +449,27 @@ and signature s sg =
   (* Components of signature may be mutually recursive (e.g. type declarations
      or class and type declarations), so first build global renaming
      substitution... *)
-  let (new_idents, s') = rename_bound_idents s [] sg in
+  let (sg', s') = rename_bound_idents s [] sg in
   (* ... then apply it to each signature component in turn *)
-  List.map2 (signature_component s') sg new_idents
+  List.rev_map (signature_item s') sg'
 
-and signature_component s comp newid =
+
+and signature_item s comp =
   match comp with
-    Sig_value(_id, d) ->
-      Sig_value(newid, value_description s d)
-  | Sig_type(_id, d, rs) ->
-      Sig_type(newid, type_declaration s d, rs)
-  | Sig_typext(_id, ext, es) ->
-      Sig_typext(newid, extension_constructor s ext, es)
-  | Sig_module(_id, d, rs) ->
-      Sig_module(newid, module_declaration s d, rs)
-  | Sig_modtype(_id, d) ->
-      Sig_modtype(newid, modtype_declaration s d)
-  | Sig_class(_id, d, rs) ->
-      Sig_class(newid, class_declaration s d, rs)
-  | Sig_class_type(_id, d, rs) ->
-      Sig_class_type(newid, cltype_declaration s d, rs)
+    Sig_value(id, d) ->
+      Sig_value(id, value_description s d)
+  | Sig_type(id, d, rs) ->
+      Sig_type(id, type_declaration s d, rs)
+  | Sig_typext(id, ext, es) ->
+      Sig_typext(id, extension_constructor s ext, es)
+  | Sig_module(id, d, rs) ->
+      Sig_module(id, module_declaration s d, rs)
+  | Sig_modtype(id, d) ->
+      Sig_modtype(id, modtype_declaration s d)
+  | Sig_class(id, d, rs) ->
+      Sig_class(id, class_declaration s d, rs)
+  | Sig_class_type(id, d, rs) ->
+      Sig_class_type(id, cltype_declaration s d, rs)
 
 and module_declaration s decl =
   {
@@ -470,6 +485,7 @@ and modtype_declaration s decl  =
     mtd_loc = loc s decl.mtd_loc;
   }
 
+
 (* For every binding k |-> d of m1, add k |-> f d to m2
    and return resulting merged map. *)
 
@@ -478,11 +494,6 @@ let merge_tbls f m1 m2 =
 
 let merge_path_maps f m1 m2 =
   Path.Map.fold (fun k d accu -> Path.Map.add k (f d) accu) m1 m2
-
-let keep_latest_loc l1 l2 =
-  match l2 with
-  | None -> l1
-  | Some _ -> l2
 
 let type_replacement s = function
   | Path p -> Path (type_path s p)
@@ -499,5 +510,4 @@ let compose s1 s2 =
     modules = merge_path_maps (module_path s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
     for_saving = s1.for_saving || s2.for_saving;
-    loc = keep_latest_loc s1.loc s2.loc;
   }

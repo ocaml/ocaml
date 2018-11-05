@@ -21,6 +21,8 @@ open Reg
 open Mach
 open Interval
 
+module V = Backend_var
+
 let reg ppf r =
   if not (Reg.anonymous r) then
     fprintf ppf "%s" (Reg.name r)
@@ -141,7 +143,7 @@ let operation op arg ppf res =
        (Array.sub arg 1 (Array.length arg - 1))
        reg arg.(0)
        (if is_assign then "(assign)" else "(init)")
-  | Ialloc { words = n; _ } ->
+  | Ialloc { bytes = n; _ } ->
     fprintf ppf "alloc %i" n;
     if Config.spacetime then begin
       fprintf ppf "(spacetime node = %a)" reg arg.(0)
@@ -158,7 +160,7 @@ let operation op arg ppf res =
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
   | Iname_for_debugger { ident; which_parameter; } ->
     fprintf ppf "name_for_debugger %a%s=%a"
-      Ident.print ident
+      V.print ident
       (match which_parameter with
         | None -> ""
         | Some index -> sprintf "[P%d]" index)

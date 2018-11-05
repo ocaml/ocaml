@@ -33,7 +33,7 @@
 % }
 % These macros can be also used to add information that are only relevant to
 % some tools or differ slightly from one tool to another. For instance, we
-%  define the following macro for the pairs cma/cmxa cmo/cmxo and ocamlc/ocamlopt
+% define the following macro for the pairs cma/cmxa cmo/cmxo and ocamlc/ocamlopt
 %
 \def\cma{\comp{.cma}\nat{.cmxa}}
 \def\cmo{\comp{.cmo}\nat{.cmx}}
@@ -75,7 +75,8 @@ Read additional newline-terminated command line arguments from \var{filename}.
 \top{It is not possible to pass a \var{scriptfile} via file to the toplevel.
 }%top
 \item["-args0" \var{filename}]
- Read additional null character terminated command line arguments from \var{filename}.
+ Read additional null character terminated command line arguments from
+ \var{filename}.
 \top{It is not possible to pass a \var{scriptfile} via file to the toplevel.
 }%top
 
@@ -126,7 +127,8 @@ directory \var{dir}.\comp{(See the "-custom" option.)}
 Enable or disable colors in compiler messages (especially warnings and errors).
 The following modes are supported:
 \begin{description}
-  \item["auto"] use heuristics to enable colors only if the output supports them (an ANSI-compatible tty terminal);
+  \item["auto"] use heuristics to enable colors only if the output supports them
+   (an ANSI-compatible tty terminal);
   \item["always"] enable colors unconditionally;
   \item["never"] disable color output.
 \end{description}
@@ -136,6 +138,21 @@ not empty or "dumb", and that 'isatty(stderr)' holds.
 
 The environment variable "OCAML_COLOR" is considered if "-color" is not
 provided. Its values are auto/always/never as above.
+}%notop
+
+\notop{%
+\item["-error-style" \var{mode}]
+Control the way error messages and warnings are printed.
+The following modes are supported:
+\begin{description}
+  \item["short"] only print the error and its location;
+  \item["contextual"] like "short", but also display the source code snippet
+   corresponding to the location of the error.
+  \end{description}
+The default setting is "contextual".
+
+The environment variable "OCAML_ERROR_STYLE" is considered if "-error-style" is
+not provided. Its values are short/contextual as above.
 }%notop
 
 \comp{%
@@ -475,8 +492,8 @@ This is useful to wrap OCaml code as a C library,
 callable from any C program. See chapter~\ref{c:intf-c},
 section~\ref{s:embedded-code}. The name of the output object file
 must be set with the "-o" option.
-This option can also be used to produce a \comp{C source file (".c" extension) or
-a} compiled shared/dynamic library (".so" extension, ".dll" under Windows).
+This option can also be used to produce a \comp{C source file (".c" extension)
+or a} compiled shared/dynamic library (".so" extension, ".dll" under Windows).
 }%notop
 
 \nat{%
@@ -557,10 +574,10 @@ of the program.
 \item["-plugin" \var{plugin}]
 Dynamically load the code of the given \var{plugin}
 (a ".cmo", ".cma" or ".cmxs" file) in the compiler. \var{plugin} must exist in
-the same kind of code as the compiler ({\machine \ocamlx.byte} must load bytecode
-plugins, while {\machine \ocamlx.opt} must load native code plugins), and
-extension adaptation is done automatically for ".cma" files (to ".cmxs" files
-if the compiler is compiled in native code).
+the same kind of code as the compiler ({\machine \ocamlx.byte} must load
+bytecode plugins, while {\machine \ocamlx.opt} must load native code plugins),
+and extension adaptation is done automatically for ".cma" files (to ".cmxs"
+files if the compiler is compiled in native code).
 }%notop
 
 \notop{%
@@ -575,7 +592,8 @@ errors, the intermediate file is deleted afterwards.
 After parsing, pipe the abstract syntax tree through the preprocessor
 \var{command}. The module "Ast_mapper", described in
 \ifouthtml
-chapter~\ref{c:parsinglib}: \ahref{libref/Ast\_mapper.html}{ \texttt{Ast_mapper} }
+chapter~\ref{c:parsinglib}:
+\ahref{libref/Ast\_mapper.html}{ \texttt{Ast_mapper} }
 \else section~\ref{Ast-underscoremapper}\fi,
 implements the external interface of a preprocessor.
 
@@ -707,8 +725,9 @@ Useful to debug C library problems.
 
 \comp{%
 \item["-vmthread"]
-Compile or link multithreaded programs, in combination with the
-VM-level "threads" library described in chapter~\ref{c:threads}.
+Deprecated since OCaml 4.08.0. Compile or link multithreaded programs,
+in combination with the VM-level "threads" library described in
+chapter~\ref{c:threads}.
 }%comp
 
 \notop{%

@@ -17,8 +17,8 @@ external cmp : 'a -> 'b = "%compare"
 [%%expect
 {|
 Line 1, characters 0-36:
-  external cmp : 'a -> 'b = "%compare"
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | external cmp : 'a -> 'b = "%compare"
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Wrong arity for builtin primitive "%compare"
 |}]
 
@@ -27,7 +27,7 @@ external apply : 'a -> 'b = "%apply"
 [%%expect
 {|
 Line 1, characters 0-36:
-  external apply : 'a -> 'b = "%apply"
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | external apply : 'a -> 'b = "%apply"
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Wrong arity for builtin primitive "%apply"
 |}]

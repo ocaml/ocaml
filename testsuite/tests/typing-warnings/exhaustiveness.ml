@@ -9,9 +9,9 @@ let f = function
   | Some _, Some _ -> 2;;
 [%%expect {|
 Line 1, characters 8-60:
-  ........function
-      None, None -> 1
-    | Some _, Some _ -> 2..
+1 | ........function
+2 |     None, None -> 1
+3 |   | Some _, Some _ -> 2..
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 ((Some _, None)|(None, Some _))
@@ -39,14 +39,14 @@ let f : type a b c d e f g.
 ;;
 [%%expect {|
 Line 4, characters 1-82:
-  .function A, A, A, A, A, A, A, _, U, U -> 1
-     | _, _, _, _, _, _, _, G, _, _ -> 1
+4 | .function A, A, A, A, A, A, A, _, U, U -> 1
+5 |    | _, _, _, _, _, _, _, G, _, _ -> 1
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (A, A, A, A, A, A, B, (E|F), _, _)
 Line 5, characters 5-33:
-     | _, _, _, _, _, _, _, G, _, _ -> 1
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 |    | _, _, _, _, _, _, _, G, _, _ -> 1
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 56: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 val f :
@@ -58,13 +58,13 @@ val f :
 let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
 [%%expect {|
 Line 1, characters 20-48:
-  let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 4: this pattern-matching is fragile.
 It will remain exhaustive when constructors are added to type t.
 Line 1, characters 42-43:
-  let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
-                                            ^
+1 | let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
+                                              ^
 Warning 56: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 val f : int t -> int = <fun>
@@ -73,8 +73,8 @@ val f : int t -> int = <fun>
 let f (x : unit t option) = match x with None -> 1 | _ -> 2 ;; (* warn? *)
 [%%expect {|
 Line 1, characters 53-54:
-  let f (x : unit t option) = match x with None -> 1 | _ -> 2 ;; (* warn? *)
-                                                       ^
+1 | let f (x : unit t option) = match x with None -> 1 | _ -> 2 ;; (* warn? *)
+                                                         ^
 Warning 56: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 val f : unit t option -> int = <fun>
@@ -83,8 +83,8 @@ val f : unit t option -> int = <fun>
 let f (x : unit t option) = match x with None -> 1 | Some _ -> 2 ;; (* warn *)
 [%%expect {|
 Line 1, characters 53-59:
-  let f (x : unit t option) = match x with None -> 1 | Some _ -> 2 ;; (* warn *)
-                                                       ^^^^^^
+1 | let f (x : unit t option) = match x with None -> 1 | Some _ -> 2 ;; (* warn *)
+                                                         ^^^^^^
 Warning 56: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
 val f : unit t option -> int = <fun>
@@ -98,8 +98,8 @@ val f : int t option -> int = <fun>
 let f (x : int t option) = match x with None -> 1;; (* warn *)
 [%%expect {|
 Line 1, characters 27-49:
-  let f (x : int t option) = match x with None -> 1;; (* warn *)
-                             ^^^^^^^^^^^^^^^^^^^^^^
+1 | let f (x : int t option) = match x with None -> 1;; (* warn *)
+                               ^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some A
@@ -118,8 +118,8 @@ type 'a pair = { left : 'a; right : 'a; }
 let f : (int t box pair * bool) option -> unit = function None -> ();;
 [%%expect {|
 Line 1, characters 49-68:
-  let f : (int t box pair * bool) option -> unit = function None -> ();;
-                                                   ^^^^^^^^^^^^^^^^^^^
+1 | let f : (int t box pair * bool) option -> unit = function None -> ();;
+                                                     ^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some ({left=Box A; right=Box A}, _)
@@ -134,8 +134,8 @@ val f : (string t box pair * bool) option -> unit = <fun>
 let f = function {left=Box 0; _ } -> ();;
 [%%expect {|
 Line 1, characters 8-39:
-  let f = function {left=Box 0; _ } -> ();;
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let f = function {left=Box 0; _ } -> ();;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {left=Box 1; _ }
@@ -145,8 +145,8 @@ val f : int box pair -> unit = <fun>
 let f = function {left=Box 0;right=Box 1} -> ();;
 [%%expect {|
 Line 1, characters 8-47:
-  let f = function {left=Box 0;right=Box 1} -> ();;
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let f = function {left=Box 0;right=Box 1} -> ();;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {left=Box 0; right=Box 0}
@@ -202,8 +202,8 @@ let f : (A.a, A.b) cmp -> unit = function Any -> ()
 ;;
 [%%expect {|
 Line 1, characters 33-51:
-  let f : (A.a, A.b) cmp -> unit = function Any -> ()
-                                   ^^^^^^^^^^^^^^^^^^
+1 | let f : (A.a, A.b) cmp -> unit = function Any -> ()
+                                     ^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
@@ -255,8 +255,8 @@ let harder : (zero succ, zero succ, zero succ) plus option -> bool =
 ;;
 [%%expect {|
 Line 2, characters 2-24:
-    function None -> false
-    ^^^^^^^^^^^^^^^^^^^^^^
+2 |   function None -> false
+      ^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some (PlusS _)
@@ -298,8 +298,8 @@ val f : bool t -> 'a = <fun>
 let f () = match None with _ -> .;; (* error *)
 [%%expect {|
 Line 1, characters 27-28:
-  let f () = match None with _ -> .;; (* error *)
-                             ^
+1 | let f () = match None with _ -> .;; (* error *)
+                               ^
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it: _
 |}]
@@ -307,8 +307,8 @@ Error: This match case could not be refuted.
 let g () = match None with _ -> () | exception _ -> .;; (* error *)
 [%%expect {|
 Line 1, characters 47-48:
-  let g () = match None with _ -> () | exception _ -> .;; (* error *)
-                                                 ^
+1 | let g () = match None with _ -> () | exception _ -> .;; (* error *)
+                                                   ^
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it: _
 |}]
@@ -316,8 +316,8 @@ Error: This match case could not be refuted.
 let h () = match None with _ -> .  | exception _ -> .;; (* error *)
 [%%expect {|
 Line 1, characters 27-28:
-  let h () = match None with _ -> .  | exception _ -> .;; (* error *)
-                             ^
+1 | let h () = match None with _ -> .  | exception _ -> .;; (* error *)
+                               ^
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it: _
 |}]
@@ -332,8 +332,8 @@ val f : 'a option -> unit = <fun>
 let f x y = match 1 with 1 when x = y -> 1;;
 [%%expect {|
 Line 1, characters 12-42:
-  let f x y = match 1 with 1 when x = y -> 1;;
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let f x y = match 1 with 1 when x = y -> 1;;
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 All clauses in this pattern-matching are guarded.
 val f : 'a -> 'a -> int = <fun>
@@ -343,8 +343,8 @@ val f : 'a -> 'a -> int = <fun>
 let f = function {contents=_}, 0 -> 0;;
 [%%expect {|
 Line 1, characters 8-37:
-  let f = function {contents=_}, 0 -> 0;;
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1 | let f = function {contents=_}, 0 -> 0;;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (_, 1)
@@ -359,10 +359,10 @@ let f = function
 ;;
 [%%expect {|
 Line 1, characters 8-88:
-  ........function
-    | None -> ()
-    | Some x when x > 0 -> ()
-    | Some x when x <= 0 -> ()
+1 | ........function
+2 |   | None -> ()
+3 |   | Some x when x > 0 -> ()
+4 |   | Some x when x <= 0 -> ()
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some _

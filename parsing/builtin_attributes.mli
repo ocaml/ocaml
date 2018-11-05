@@ -13,19 +13,23 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Support for some of the builtin attributes:
+(** Support for some of the builtin attributes
 
-   ocaml.deprecated
-   ocaml.alert
-   ocaml.error
-   ocaml.ppwarning
-   ocaml.warning
-   ocaml.warnerror
-   ocaml.explicit_arity (for camlp4/camlp5)
-   ocaml.warn_on_literal_pattern
-   ocaml.deprecated_mutable
-   ocaml.immediate
-   ocaml.boxed / ocaml.unboxed
+    - ocaml.deprecated
+    - ocaml.alert
+    - ocaml.error
+    - ocaml.ppwarning
+    - ocaml.warning
+    - ocaml.warnerror
+    - ocaml.explicit_arity (for camlp4/camlp5)
+    - ocaml.warn_on_literal_pattern
+    - ocaml.deprecated_mutable
+    - ocaml.immediate
+    - ocaml.boxed / ocaml.unboxed
+
+    {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
 *)
 
 

@@ -419,11 +419,16 @@ module BR = Branch_relaxation.Make (struct
 
   let offset_pc_at_branch = 0
 
+  let prologue_size () =
+    (if frame_size () > 0 then 2 else 0)
+      + (if !contains_calls then 1 else 0)
+
   let epilogue_size () =
     if !contains_calls then 3 else 2
 
   let instr_size = function
     | Lend -> 0
+    | Lprologue -> prologue_size ()
     | Lop (Imove | Ispill | Ireload) -> 1
     | Lop (Iconst_int n) ->
       num_instructions_for_intconst n
@@ -440,15 +445,15 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Iload (size, addr)) | Lop (Istore (size, addr, _)) ->
       let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
       based + begin match size with Single -> 2 | _ -> 1 end
-    | Lop (Ialloc {words = num_words}) when !fastcode_flag ->
-      if num_words <= 0xFFF then 4 else 5
-    | Lop (Ispecific (Ifar_alloc {words = num_words})) when !fastcode_flag ->
-      if num_words <= 0xFFF then 5 else 6
-    | Lop (Ialloc { words = num_words; _ })
-    | Lop (Ispecific (Ifar_alloc { words = num_words; _ })) ->
-      begin match num_words with
+    | Lop (Ialloc {bytes = num_bytes}) when !fastcode_flag ->
+      if num_bytes <= 0xFFF then 4 else 5
+    | Lop (Ispecific (Ifar_alloc {bytes = num_bytes})) when !fastcode_flag ->
+      if num_bytes <= 0xFFF then 5 else 6
+    | Lop (Ialloc { bytes = num_bytes; _ })
+    | Lop (Ispecific (Ifar_alloc { bytes = num_bytes; _ })) ->
+      begin match num_bytes with
       | 16 | 24 | 32 -> 1
-      | _ -> 1 + num_instructions_for_intconst (Nativeint.of_int num_words)
+      | _ -> 1 + num_instructions_for_intconst (Nativeint.of_int num_bytes)
       end
     | Lop (Iintop (Icomp _)) -> 2
     | Lop (Iintop_imm (Icomp _, _)) -> 2
@@ -498,8 +503,8 @@ module BR = Branch_relaxation.Make (struct
       | Cmm.Raise_notrace -> 4
       end
 
-  let relax_allocation ~num_words ~label_after_call_gc =
-    Lop (Ispecific (Ifar_alloc { words = num_words; label_after_call_gc; }))
+  let relax_allocation ~num_bytes ~label_after_call_gc =
+    Lop (Ispecific (Ifar_alloc { bytes = num_bytes; label_after_call_gc; }))
 
   let relax_intop_checkbound ~label_after_error =
     Lop (Ispecific (Ifar_intop_checkbound { label_after_error; }))
@@ -554,12 +559,33 @@ let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
     `{emit_label lbl_frame}:	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`
   end
 
+(* Emission of the profiling prelude *)
+
+let emit_profile() = ()   (* TODO *)
+(*
+  match Config.system with
+    "linux_eabi" | "linux_eabihf" | "netbsd" ->
+      `	push	\{lr}\n`;
+      `	{emit_call "__gnu_mcount_nc"}\n`
+  | _ -> ()
+*)
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
     emit_debug_info i.dbg;
     match i.desc with
     | Lend -> ()
+    | Lprologue ->
+      if !Clflags.gprofile then emit_profile();
+      let n = frame_size() in
+      if n > 0 then
+        emit_stack_adjustment (-n);
+      if !contains_calls then begin
+        cfi_offset ~reg:30 (* return address *) ~offset:(-8);
+        `	str	x30, [sp, #{emit_int (n-8)}]\n`
+      end;
+      `{emit_label !tailrec_entry_point}:\n`;
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
@@ -662,9 +688,9 @@ let emit_instr i =
         | Word_int | Word_val | Double | Double_u ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         end
-    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
+    | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
         assembly_code_for_allocation i ~n ~far:false ?label_after_call_gc
-    | Lop(Ispecific (Ifar_alloc { words = n; label_after_call_gc; })) ->
+    | Lop(Ispecific (Ifar_alloc { bytes = n; label_after_call_gc; })) ->
         assembly_code_for_allocation i ~n ~far:true ?label_after_call_gc
     | Lop(Iintop(Icomp cmp)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
@@ -879,17 +905,6 @@ let emit_instr i =
 let rec emit_all i =
   if i.desc = Lend then () else (emit_instr i; emit_all i.next)
 
-(* Emission of the profiling prelude *)
-
-let emit_profile() = ()   (* TODO *)
-(*
-  match Config.system with
-    "linux_eabi" | "linux_eabihf" | "netbsd" ->
-      `	push	\{lr}\n`;
-      `	{emit_call "__gnu_mcount_nc"}\n`
-  | _ -> ()
-*)
-
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -907,15 +922,6 @@ let fundecl fundecl =
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc();
-  if !Clflags.gprofile then emit_profile();
-  let n = frame_size() in
-  if n > 0 then
-    emit_stack_adjustment (-n);
-  if !contains_calls then begin
-    cfi_offset ~reg:30 (* return address *) ~offset:(-8);
-    `	str	x30, [sp, #{emit_int (n-8)}]\n`
-  end;
-  `{emit_label !tailrec_entry_point}:\n`;
   let num_call_gc, num_check_bound =
     num_call_gc_and_check_bound_points fundecl.fun_body
   in

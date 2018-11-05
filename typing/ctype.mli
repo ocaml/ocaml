@@ -18,10 +18,60 @@
 open Asttypes
 open Types
 
-exception Unify of (type_expr * type_expr) list
+module Unification_trace: sig
+  (** Unification traces are used to explain unification errrors
+      when printing error messages *)
+
+  type position = First | Second
+  type desc = { t: type_expr; expanded: type_expr option }
+  type 'a diff = { got: 'a; expected: 'a}
+
+   (** Scope escape related errors *)
+    type 'a escape =
+    | Constructor of Path.t
+    | Univ of string option
+    | Self
+    | Module_type of Path.t
+    | Equation of 'a
+
+   (** Errors for polymorphic variants *)
+  type variant =
+    | No_intersection
+    | No_tags of position * (Asttypes.label * row_field) list
+    | Incompatible_types_for of string
+
+  type obj =
+    | Missing_field of position * string
+    | Abstract_row of position
+
+  type 'a elt =
+    | Diff of 'a diff
+    | Variant of variant
+    | Obj of obj
+    | Escape of {context: type_expr option; kind:'a escape}
+    | Incompatible_fields of {name:string; diff: type_expr diff }
+    | Rec_occur of type_expr * type_expr
+
+  type t = desc elt list
+
+  val diff: type_expr -> type_expr -> desc elt
+
+  (** [map_diff f {expected;got}] is [{expected=f expected; got=f got}] *)
+  val map_diff: ('a -> 'b) -> 'a diff -> 'b diff
+
+  (** [flatten f trace] flattens all elements of type {!desc} in
+      [trace] to either [f x.t expanded] if [x.expanded=Some expanded]
+      or [f x.t x.t] otherwise *)
+  val flatten: (type_expr -> type_expr -> 'a) -> t -> 'a elt list
+
+  (** Switch [expected] and [got] *)
+  val swap: t -> t
+
+end
+
+exception Unify of Unification_trace.t
 exception Tags of label * label
-exception Subtype of
-        (type_expr * type_expr) list * (type_expr * type_expr) list
+exception Subtype of Unification_trace.t * Unification_trace.t
 exception Cannot_expand
 exception Cannot_apply
 
@@ -43,6 +93,8 @@ type levels =
       saved_level: (int * int) list; }
 val save_levels: unit -> levels
 val set_levels: levels -> unit
+
+val create_scope : unit -> int
 
 val newty: type_desc -> type_expr
 val newvar: ?name:string -> unit -> type_expr
@@ -71,7 +123,7 @@ val associate_fields:
         (string * field_kind * type_expr) list *
         (string * field_kind * type_expr) list
 val opened_object: type_expr -> bool
-val close_object: type_expr -> unit
+val close_object: type_expr -> bool
 val row_variable: type_expr -> type_expr
         (* Return the row variable of an open object type *)
 val set_object_name:
@@ -104,8 +156,8 @@ val limited_generalize: type_expr -> type_expr -> unit
         (* Only generalize some part of the type
            Make the remaining of the type non-generalizable *)
 
-val check_scope_escape : int -> type_expr -> unit
-        (* [check_scope_escape lvl ty] ensures that [ty] could be raised
+val check_scope_escape : Env.t -> int -> type_expr -> unit
+        (* [check_scope_escape env lvl ty] ensures that [ty] could be raised
            to the level [lvl] without any scope escape.
            Raises [Unify] otherwise *)
 
@@ -130,6 +182,8 @@ val instance_parameterized_type_2:
         type_expr list -> type_expr list -> type_expr ->
         type_expr list * type_expr list * type_expr
 val instance_declaration: type_declaration -> type_declaration
+val generic_instance_declaration: type_declaration -> type_declaration
+        (* Same as instance_declaration, but new nodes at generic_level *)
 val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
 val instance_poly:
@@ -200,11 +254,11 @@ val reify_univars : Types.type_expr -> Types.type_expr
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
-  | CM_Type_parameter_mismatch of Env.t * (type_expr * type_expr) list
+  | CM_Type_parameter_mismatch of Env.t * Unification_trace.t
   | CM_Class_type_mismatch of Env.t * class_type * class_type
-  | CM_Parameter_mismatch of Env.t * (type_expr * type_expr) list
-  | CM_Val_type_mismatch of string * Env.t * (type_expr * type_expr) list
-  | CM_Meth_type_mismatch of string * Env.t * (type_expr * type_expr) list
+  | CM_Parameter_mismatch of Env.t * Unification_trace.t
+  | CM_Val_type_mismatch of string * Env.t * Unification_trace.t
+  | CM_Meth_type_mismatch of string * Env.t * Unification_trace.t
   | CM_Non_mutable_value of string
   | CM_Non_concrete_value of string
   | CM_Missing_value of string

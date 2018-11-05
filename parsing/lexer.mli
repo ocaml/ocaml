@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* The lexical analyzer *)
+(** The lexical analyzer
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 val init : unit -> unit
 val token: Lexing.lexbuf -> Parser.token
@@ -21,7 +26,8 @@ val skip_hash_bang: Lexing.lexbuf -> unit
 
 type error =
   | Illegal_character of char
-  | Illegal_escape of string
+  | Illegal_escape of string * string option
+  | Reserved_sequence of string * string option
   | Unterminated_comment of Location.t
   | Unterminated_string
   | Unterminated_string_in_comment of Location.t * Location.t

@@ -28,9 +28,6 @@ WITH_OCAMLDOC=ocamldoc
 ### Where to install the binaries
 BINDIR=$(PREFIX)/bin
 
-### Standard runtime system
-BYTERUN=ocamlrun
-
 ### Where to install the standard library
 LIBDIR=$(PREFIX)/lib/ocaml
 
@@ -161,13 +158,9 @@ MKEXE_ANSI=$(FLEXLINK) -exe
 
 ### How to build a static library
 MKLIB=rm -f $(1) && $(TOOLPREF)ar rcs $(1) $(2)
-#ml let mklib out files opts =
-#ml   Printf.sprintf "%sar rcs %s %s %s"
-#ml                  toolpref opts out files;;
 
 ### Canonicalize the name of a system library
 SYSLIB=-l$(1)
-#ml let syslib x = "-l"^x;;
 
 ### The ranlib command
 RANLIB=$(TOOLPREF)ranlib
@@ -201,7 +194,6 @@ INSTALL_BYTECODE_PROGRAMS=true
 OTHERLIBRARIES=win32unix str win32graph dynlink bigarray systhreads
 
 ############# for the testsuite makefiles
-#ml let topdir = "" and wintopdir = "";;
 OTOPDIR=$(WINTOPDIR)
 CTOPDIR=$(TOPDIR)
 CYGPATH=cygpath -m

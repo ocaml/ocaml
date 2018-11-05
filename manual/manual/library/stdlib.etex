@@ -40,8 +40,10 @@ Here is a short listing, by theme, of the standard library modules.
 "List" & p.~\pageref{List} & list operations \\
 "StdLabels" & p.~\pageref{StdLabels} & labelized versions of
 the above 4 modules \\
+"Bool" & p.~\pageref{Bool} & boolean values \\
 "Char" & p.~\pageref{Char} & character operations \\
 "Uchar" & p.~\pageref{Uchar} & Unicode characters \\
+"Int" & p.~\pageref{Int} & integer values \\
 "Option" & p.~\pageref{Option} & option values \\
 "Result" & p.~\pageref{Result} & result values \\
 "Hashtbl" & p.~\pageref{Hashtbl} & hash tables and hash functions \\
@@ -105,6 +107,7 @@ be called from C \\
 \item \ahref{libref/Array.html}{Module \texttt{Array}: array operations}
 \item \ahref{libref/ArrayLabels.html}{Module \texttt{ArrayLabels}: array operations (with labels)}
 \item \ahref{libref/Bigarray.html}{Module \texttt{Bigarray}: large, multi-dimensional, numerical arrays}
+\item \ahref{libref/Bool.html}{Module \texttt{Bool}: boolean values}
 \item \ahref{libref/Buffer.html}{Module \texttt{Buffer}: extensible buffers}
 \item \ahref{libref/Bytes.html}{Module \texttt{Bytes}: byte sequences}
 \item \ahref{libref/BytesLabels.html}{Module \texttt{BytesLabels}: byte sequences (with labels)}
@@ -119,6 +122,7 @@ be called from C \\
 \item \ahref{libref/Gc.html}{Module \texttt{Gc}: memory management control and statistics; finalized values}
 \item \ahref{libref/Genlex.html}{Module \texttt{Genlex}: a generic lexical analyzer}
 \item \ahref{libref/Hashtbl.html}{Module \texttt{Hashtbl}: hash tables and hash functions}
+\item \ahref{libref/Int}{Module \texttt{Int}: integers}
 \item \ahref{libref/Int32.html}{Module \texttt{Int32}: 32-bit integers}
 \item \ahref{libref/Int64.html}{Module \texttt{Int64}: 64-bit integers}
 \item \ahref{libref/Lazy.html}{Module \texttt{Lazy}: deferred computations}
@@ -155,6 +159,7 @@ be called from C \\
 \input{Array.tex}
 \input{ArrayLabels.tex}
 \input{Bigarray.tex}
+\input{Bool.tex}
 \input{Buffer.tex}
 \input{Bytes.tex}
 \input{BytesLabels.tex}
@@ -169,6 +174,7 @@ be called from C \\
 \input{Gc.tex}
 \input{Genlex.tex}
 \input{Hashtbl.tex}
+\input{Int.tex}
 \input{Int32.tex}
 \input{Int64.tex}
 \input{Lazy.tex}

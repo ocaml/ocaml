@@ -132,7 +132,10 @@ static intnat do_compare_val(struct compare_stack* stk,
       if (Is_long(v2))
         return Long_val(v1) - Long_val(v2);
       /* Subtraction above cannot overflow and cannot result in UNORDERED */
-      if (Is_in_value_area(v2)) {
+#ifndef NO_NAKED_POINTERS
+      if (!Is_in_value_area(v2))
+        return LESS;
+#endif
         switch (Tag_val(v2)) {
         case Forward_tag:
           v2 = Forward_val(v2);
@@ -149,11 +152,13 @@ static intnat do_compare_val(struct compare_stack* stk,
         }
         default: /*fallthrough*/;
         }
-      }
       return LESS;                /* v1 long < v2 block */
     }
     if (Is_long(v2)) {
-      if (Is_in_value_area(v1)) {
+#ifndef NO_NAKED_POINTERS
+      if (!Is_in_value_area(v1))
+        return GREATER;
+#endif
         switch (Tag_val(v1)) {
         case Forward_tag:
           v1 = Forward_val(v1);
@@ -170,9 +175,9 @@ static intnat do_compare_val(struct compare_stack* stk,
         }
         default: /*fallthrough*/;
         }
-      }
       return GREATER;            /* v1 block > v2 long */
     }
+#ifndef NO_NAKED_POINTERS
     /* If one of the objects is outside the heap (but is not an atom),
        use address comparison. Since both addresses are 2-aligned,
        shift lsb off to avoid overflow in subtraction. */
@@ -181,6 +186,7 @@ static intnat do_compare_val(struct compare_stack* stk,
       return (v1 >> 1) - (v2 >> 1);
       /* Subtraction above cannot result in UNORDERED */
     }
+#endif
     t1 = Tag_val(v1);
     t2 = Tag_val(v2);
     if (t1 == Forward_tag) { v1 = Forward_val (v1); continue; }

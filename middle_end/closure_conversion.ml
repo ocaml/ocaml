@@ -424,7 +424,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim (Psetfield (_, _, _), [Lprim (Pgetglobal _, [], _); _], _) ->
     Misc.fatal_errorf "[Psetfield (Pgetglobal ...)] is \
         forbidden upon entry to the middle end"
-  | Lprim (Pgetglobal id, [], _) when Ident.is_predef_exn id ->
+  | Lprim (Pgetglobal id, [], _) when Ident.is_predef id ->
     let symbol = t.symbol_for_global' id in
     t.imported_symbols <- Symbol.Set.add symbol t.imported_symbols;
     name_expr (Symbol symbol) ~name:Names.predef_exn

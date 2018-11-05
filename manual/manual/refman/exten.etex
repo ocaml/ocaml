@@ -6,6 +6,7 @@ that are implemented in OCaml, but not described in the
 OCaml reference manual.
 
 
+%HEVEA\cutdef{section}
 \section{Recursive definitions of values} \label{s:letrecvalues}
 
 (Introduced in Objective Caml 1.00)
@@ -2321,7 +2322,6 @@ type t = |
 let f (x: t) = match x with _ -> .
 \end{caml_example*}
 
-
 \section{Alerts \label{s:alerts} }
 (Introduced in 4.08)
 
@@ -2406,3 +2406,5 @@ is equivalent to:
 val x: int
   [@@@ocaml.alert deprecated "Please do something else"]
 \end{verbatim}
+
+%HEVEA\cutend

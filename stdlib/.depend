@@ -12,6 +12,9 @@ stdlib__arrayLabels.cmi : stdlib__seq.cmi
 stdlib__bigarray.cmo : stdlib__sys.cmi stdlib__complex.cmi stdlib__array.cmi stdlib__bigarray.cmi
 stdlib__bigarray.cmx : stdlib__sys.cmx stdlib__complex.cmx stdlib__array.cmx stdlib__bigarray.cmi
 stdlib__bigarray.cmi : stdlib__complex.cmi
+stdlib__bool.cmo : stdlib.cmi stdlib__bool.cmi
+stdlib__bool.cmx : stdlib.cmx stdlib__bool.cmi
+stdlib__bool.cmi :
 stdlib__buffer.cmo : stdlib__uchar.cmi stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib__char.cmi stdlib__bytes.cmi \
     stdlib__buffer.cmi
 stdlib__buffer.cmx : stdlib__uchar.cmx stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__char.cmx stdlib__bytes.cmx \
@@ -87,6 +90,9 @@ stdlib__hashtbl.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib_
 stdlib__hashtbl.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__random.cmx stdlib__obj.cmx stdlib__lazy.cmx \
     stdlib__array.cmx stdlib__hashtbl.cmi
 stdlib__hashtbl.cmi : stdlib__seq.cmi
+stdlib__int.cmo : stdlib.cmi stdlib__int.cmi
+stdlib__int.cmx : stdlib.cmx stdlib__int.cmi
+stdlib__int.cmi :
 stdlib__int32.cmo : stdlib.cmi stdlib__int32.cmi
 stdlib__int32.cmx : stdlib.cmx stdlib__int32.cmi
 stdlib__int32.cmi :
@@ -210,6 +216,8 @@ stdlib__arrayLabels.cmo : stdlib__array.cmi stdlib__arrayLabels.cmi
 stdlib__arrayLabels.p.cmx : stdlib__array.cmx stdlib__arrayLabels.cmi
 stdlib__bigarray.cmo : stdlib__sys.cmi stdlib__complex.cmi stdlib__array.cmi stdlib__bigarray.cmi
 stdlib__bigarray.p.cmx : stdlib__sys.cmx stdlib__complex.cmx stdlib__array.cmx stdlib__bigarray.cmi
+stdlib__bool.cmo : stdlib.cmi stdlib__bool.cmi
+stdlib__bool.p.cmx : stdlib.cmx stdlib__bool.cmi
 stdlib__buffer.cmo : stdlib__uchar.cmi stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib__char.cmi stdlib__bytes.cmi \
     stdlib__buffer.cmi
 stdlib__buffer.p.cmx : stdlib__uchar.cmx stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__char.cmx stdlib__bytes.cmx \
@@ -266,6 +274,8 @@ stdlib__hashtbl.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib_
     stdlib__array.cmi stdlib__hashtbl.cmi
 stdlib__hashtbl.p.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__random.cmx stdlib__obj.cmx stdlib__lazy.cmx \
     stdlib__array.cmx stdlib__hashtbl.cmi
+stdlib__int.cmo : stdlib.cmi stdlib__int.cmi
+stdlib__int.p.cmx : stdlib.cmx stdlib__int.cmi
 stdlib__int32.cmo : stdlib.cmi stdlib__int32.cmi
 stdlib__int32.p.cmx : stdlib.cmx stdlib__int32.cmi
 stdlib__int64.cmo : stdlib.cmi stdlib__int64.cmi

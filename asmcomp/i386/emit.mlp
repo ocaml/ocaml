@@ -471,10 +471,37 @@ let tailrec_entry_point = ref 0
 let external_symbols_direct = ref String.Set.empty
 let external_symbols_indirect = ref String.Set.empty
 
+(* Emission of the profiling prelude *)
+
+let call_mcount mcount =
+  I.push eax;
+  I.mov esp ebp;
+  I.push ecx;
+  I.push edx;
+  I.call (sym mcount);
+  I.pop edx;
+  I.pop ecx;
+  I.pop eax
+
+let emit_profile () =
+  match system with
+  | S_linux_elf | S_gnu -> call_mcount "mcount"
+  | S_bsd_elf -> call_mcount ".mcount"
+  | S_macosx -> call_mcount "Lmcount$stub"
+  | _ -> () (*unsupported yet*)
+
 let emit_instr fallthrough i =
   emit_debug_info i.dbg;
   match i.desc with
   | Lend -> ()
+  | Lprologue ->
+    if !Clflags.gprofile then emit_profile();
+    let n = frame_size() - 4 in
+    if n > 0 then  begin
+      I.sub (int n) esp;
+      cfi_adjust_cfa_offset n;
+    end;
+    def_label !tailrec_entry_point
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then begin
@@ -603,7 +630,7 @@ let emit_instr fallthrough i =
             I.fstp (addressing addr REAL8 i 1)
           end
       end
-  | Lop(Ialloc { words = n; label_after_call_gc; }) ->
+  | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
@@ -915,25 +942,6 @@ let emit_external_symbols () =
     I.hlt (); I.hlt (); I.hlt () ; I.hlt () ; I.hlt ()
   end
 
-(* Emission of the profiling prelude *)
-
-let call_mcount mcount =
-  I.push eax;
-  I.mov esp ebp;
-  I.push ecx;
-  I.push edx;
-  I.call (sym mcount);
-  I.pop edx;
-  I.pop ecx;
-  I.pop eax
-
-let emit_profile () =
-  match system with
-  | S_linux_elf | S_gnu -> call_mcount "mcount"
-  | S_bsd_elf -> call_mcount ".mcount"
-  | S_macosx -> call_mcount "Lmcount$stub"
-  | _ -> () (*unsupported yet*)
-
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -957,13 +965,6 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
-  if !Clflags.gprofile then emit_profile();
-  let n = frame_size() - 4 in
-  if n > 0 then  begin
-    I.sub (int n) esp;
-    cfi_adjust_cfa_offset n;
-  end;
-  def_label !tailrec_entry_point;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();

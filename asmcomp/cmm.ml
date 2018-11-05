@@ -116,6 +116,15 @@ type raise_kind =
 
 type rec_flag = Nonrecursive | Recursive
 
+type phantom_defining_expr =
+  | Cphantom_const_int of Targetint.t
+  | Cphantom_const_symbol of string
+  | Cphantom_var of Backend_var.t
+  | Cphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
+  | Cphantom_read_field of { var : Backend_var.t; field : int; }
+  | Cphantom_read_symbol_field of { sym : string; field : int; }
+  | Cphantom_block of { tag : int; fields : Backend_var.t list; }
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -157,9 +166,11 @@ type expression =
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
   | Cblockheader of nativeint * Debuginfo.t
-  | Cvar of Ident.t
-  | Clet of Ident.t * expression * expression
-  | Cassign of Ident.t * expression
+  | Cvar of Backend_var.t
+  | Clet of Backend_var.With_provenance.t * expression * expression
+  | Cphantom_let of Backend_var.With_provenance.t
+      * phantom_defining_expr option * expression
+  | Cassign of Backend_var.t * expression
   | Ctuple of expression list
   | Cop of operation * expression list * Debuginfo.t
   | Csequence of expression * expression
@@ -167,10 +178,12 @@ type expression =
   | Cswitch of expression * int array * expression array * Debuginfo.t
   | Cloop of expression
   | Ccatch of
-      rec_flag * (int * (Ident.t * machtype) list * expression) list
-      * expression
+      rec_flag
+        * (int * (Backend_var.With_provenance.t * machtype) list
+          * expression) list
+        * expression
   | Cexit of int * expression list
-  | Ctrywith of expression * Ident.t * expression
+  | Ctrywith of expression * Backend_var.With_provenance.t * expression
 
 type codegen_option =
   | Reduce_code_size
@@ -178,7 +191,7 @@ type codegen_option =
 
 type fundecl =
   { fun_name: string;
-    fun_args: (Ident.t * machtype) list;
+    fun_args: (Backend_var.With_provenance.t * machtype) list;
     fun_body: expression;
     fun_codegen_options : codegen_option list;
     fun_dbg : Debuginfo.t;

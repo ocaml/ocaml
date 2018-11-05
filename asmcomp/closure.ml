@@ -32,6 +32,12 @@ module Storer =
       let compare_key = Stdlib.compare
     end)
 
+module V = Backend_var
+module VP = Backend_var.With_provenance
+
+let no_phantom_lets () =
+  Misc.fatal_error "Closure does not support phantom let generation"
+
 (* Auxiliaries for compiling functions *)
 
 let rec split_list n l =
@@ -42,10 +48,11 @@ let rec split_list n l =
   end
 
 let rec build_closure_env env_param pos = function
-    [] -> Ident.Map.empty
+    [] -> V.Map.empty
   | id :: rem ->
-      Ident.Map.add id (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none))
-              (build_closure_env env_param (pos+1) rem)
+      V.Map.add id
+        (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none))
+          (build_closure_env env_param (pos+1) rem)
 
 (* Auxiliary for accessing globals.  We change the name of the global
    to the name of the corresponding asm symbol.  This is done here
@@ -53,7 +60,7 @@ let rec build_closure_env env_param pos = function
    contain the right names if the -for-pack option is active. *)
 
 let getglobal dbg id =
-  Uprim(Pgetglobal (Ident.create_persistent (Compilenv.symbol_for_global id)),
+  Uprim(Pgetglobal (V.create_persistent (Compilenv.symbol_for_global id)),
         [], dbg)
 
 (* Check if a variable occurs in a [clambda] term. *)
@@ -67,6 +74,7 @@ let occurs_var var u =
     | Uclosure(_fundecls, clos) -> List.exists occurs clos
     | Uoffset(u, _ofs) -> occurs u
     | Ulet(_str, _kind, _id, def, body) -> occurs def || occurs body
+    | Uphantom_let _ -> no_phantom_lets ()
     | Uletrec(decls, body) ->
         List.exists (fun (_id, u) -> occurs u) decls || occurs body
     | Uprim(_p, args, _) -> List.exists occurs args
@@ -155,6 +163,7 @@ let lambda_smaller lam threshold =
         incr size; lambda_size lam
     | Ulet(_str, _kind, _id, lam, body) ->
         lambda_size lam; lambda_size body
+    | Uphantom_let _ -> no_phantom_lets ()
     | Uletrec _ ->
         raise Exit (* usually too large *)
     | Uprim(prim, args, _) ->
@@ -547,7 +556,7 @@ let subst_debuginfo loc dbg =
 let rec substitute loc fpc sb rn ulam =
   match ulam with
     Uvar v ->
-      begin try Ident.Map.find v sb with Not_found -> ulam end
+      begin try V.Map.find v sb with Not_found -> ulam end
   | Uconst _ -> ulam
   | Udirect_apply(lbl, args, dbg) ->
       let dbg = subst_debuginfo loc dbg in
@@ -568,16 +577,21 @@ let rec substitute loc fpc sb rn ulam =
       Uclosure(defs, List.map (substitute loc fpc sb rn) env)
   | Uoffset(u, ofs) -> Uoffset(substitute loc fpc sb rn u, ofs)
   | Ulet(str, kind, id, u1, u2) ->
-      let id' = Ident.rename id in
+      let id' = VP.rename id in
       Ulet(str, kind, id', substitute loc fpc sb rn u1,
-           substitute loc fpc (Ident.Map.add id (Uvar id') sb) rn u2)
+           substitute loc fpc
+             (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2)
+  | Uphantom_let _ -> no_phantom_lets ()
   | Uletrec(bindings, body) ->
       let bindings1 =
-        List.map (fun (id, rhs) -> (id, Ident.rename id, rhs)) bindings in
+        List.map (fun (id, rhs) ->
+          (VP.var id, VP.rename id, rhs)) bindings
+      in
       let sb' =
-        List.fold_right
-          (fun (id, id', _) s -> Ident.Map.add id (Uvar id') s)
-          bindings1 sb in
+        List.fold_right (fun (id, id', _) s ->
+            V.Map.add id (Uvar (VP.var id')) s)
+          bindings1 sb
+      in
       Uletrec(
         List.map
            (fun (_id, id', rhs) -> (id', substitute loc fpc sb' rn rhs))
@@ -640,18 +654,19 @@ let rec substitute loc fpc sb rn ulam =
           let new_nfail = next_raise_count () in
           new_nfail, Some (Int.Map.add nfail new_nfail rn)
         | None -> nfail, rn in
-      let ids' = List.map Ident.rename ids in
+      let ids' = List.map VP.rename ids in
       let sb' =
         List.fold_right2
-          (fun id id' s -> Ident.Map.add id (Uvar id') s)
+          (fun id id' s -> V.Map.add (VP.var id) (Uvar (VP.var id')) s)
           ids ids' sb
       in
       Ucatch(nfail, ids', substitute loc fpc sb rn u1,
                           substitute loc fpc sb' rn u2)
   | Utrywith(u1, id, u2) ->
-      let id' = Ident.rename id in
+      let id' = VP.rename id in
       Utrywith(substitute loc fpc sb rn u1, id',
-               substitute loc fpc (Ident.Map.add id (Uvar id') sb) rn u2)
+               substitute loc fpc
+                 (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2)
   | Uifthenelse(u1, u2, u3) ->
       begin match substitute loc fpc sb rn u1 with
         Uconst (Uconst_ptr n) ->
@@ -670,13 +685,14 @@ let rec substitute loc fpc sb rn ulam =
   | Uwhile(u1, u2) ->
       Uwhile(substitute loc fpc sb rn u1, substitute loc fpc sb rn u2)
   | Ufor(id, u1, u2, dir, u3) ->
-      let id' = Ident.rename id in
+      let id' = VP.rename id in
       Ufor(id', substitute loc fpc sb rn u1, substitute loc fpc sb rn u2, dir,
-           substitute loc fpc (Ident.Map.add id (Uvar id') sb) rn u3)
+           substitute loc fpc
+           (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u3)
   | Uassign(id, u) ->
       let id' =
         try
-          match Ident.Map.find id sb with Uvar i -> i | _ -> assert false
+          match V.Map.find id sb with Uvar i -> i | _ -> assert false
         with Not_found ->
           id in
       Uassign(id', substitute loc fpc sb rn u)
@@ -702,19 +718,22 @@ let rec bind_params_rec loc fpc subst params args body =
     ([], []) -> substitute loc fpc subst (Some Int.Map.empty) body
   | (p1 :: pl, a1 :: al) ->
       if is_simple_argument a1 then
-        bind_params_rec loc fpc (Ident.Map.add p1 a1 subst) pl al body
+        bind_params_rec loc fpc (V.Map.add (VP.var p1) a1 subst)
+          pl al body
       else begin
-        let p1' = Ident.rename p1 in
+        let p1' = VP.rename p1 in
         let u1, u2 =
-          match Ident.name p1, a1 with
+          match VP.name p1, a1 with
           | "*opt*", Uprim(Pmakeblock(0, Immutable, kind), [a], dbg) ->
-              a, Uprim(Pmakeblock(0, Immutable, kind), [Uvar p1'], dbg)
+              a, Uprim(Pmakeblock(0, Immutable, kind), [Uvar (VP.var p1')], dbg)
           | _ ->
-              a1, Uvar p1'
+              a1, Uvar (VP.var p1')
         in
         let body' =
-          bind_params_rec loc fpc (Ident.Map.add p1 u2 subst) pl al body in
-        if occurs_var p1 body then Ulet(Immutable, Pgenval, p1', u1, body')
+          bind_params_rec loc fpc (V.Map.add (VP.var p1) u2 subst)
+            pl al body in
+        if occurs_var (VP.var p1) body then
+          Ulet(Immutable, Pgenval, p1', u1, body')
         else if no_effects a1 then body'
         else Usequence(a1, body')
       end
@@ -723,7 +742,7 @@ let rec bind_params_rec loc fpc subst params args body =
 let bind_params loc fpc params args body =
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
-  bind_params_rec loc fpc Ident.Map.empty (List.rev params) (List.rev args) body
+  bind_params_rec loc fpc V.Map.empty (List.rev params) (List.rev args) body
 
 (* Check if a lambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
@@ -784,7 +803,7 @@ let check_constant_result lam ulam approx =
       | Uprim(Pfield _, [Uprim(Pgetglobal _, _, _)], _) -> (ulam, approx)
       | _ ->
           let glb =
-            Uprim(Pgetglobal (Ident.create_persistent id), [], Debuginfo.none)
+            Uprim(Pgetglobal (V.create_persistent id), [], Debuginfo.none)
           in
           Uprim(Pfield i, [glb], Debuginfo.none), approx
       end
@@ -815,11 +834,11 @@ let excessive_function_nesting_depth = 5
 exception NotClosed
 
 let close_approx_var fenv cenv id =
-  let approx = try Ident.Map.find id fenv with Not_found -> Value_unknown in
+  let approx = try V.Map.find id fenv with Not_found -> Value_unknown in
   match approx with
     Value_const c -> make_const c
   | approx ->
-      let subst = try Ident.Map.find id cenv with Not_found -> Uvar id in
+      let subst = try V.Map.find id cenv with Not_found -> Uvar id in
       (subst, approx)
 
 let close_var fenv cenv id =
@@ -861,7 +880,7 @@ let rec close fenv cenv = function
       in
       make_const (transl cst)
   | Lfunction _ as funct ->
-      close_one_function fenv cenv (Ident.create "fun") funct
+      close_one_function fenv cenv (Ident.create_local "fun") funct
 
     (* We convert [f a] to [let a' = a in let f' = f in fun b c -> f' a' b c]
        when fun_arity > nargs *)
@@ -884,23 +903,23 @@ let rec close fenv cenv = function
       | ((ufunct, (Value_closure(fundesc, _) as fapprox)), uargs)
           when nargs < fundesc.fun_arity ->
         let first_args = List.map (fun arg ->
-          (Ident.create "arg", arg) ) uargs in
+          (V.create_local "arg", arg) ) uargs in
         let final_args =
           Array.to_list (Array.init (fundesc.fun_arity - nargs)
-                                    (fun _ -> Ident.create "arg")) in
+                                    (fun _ -> V.create_local "arg")) in
         let rec iter args body =
           match args with
               [] -> body
             | (arg1, arg2) :: args ->
               iter args
-                (Ulet (Immutable, Pgenval, arg1, arg2, body))
+                (Ulet (Immutable, Pgenval, VP.create arg1, arg2, body))
         in
         let internal_args =
           (List.map (fun (arg1, _arg2) -> Lvar arg1) first_args)
           @ (List.map (fun arg -> Lvar arg ) final_args)
         in
-        let funct_var = Ident.create "funct" in
-        let fenv = Ident.Map.add funct_var fapprox fenv in
+        let funct_var = V.create_local "funct" in
+        let fenv = V.Map.add funct_var fapprox fenv in
         let (new_fun, approx) = close fenv cenv
           (Lfunction{
                kind = Curried;
@@ -916,14 +935,14 @@ let rec close fenv cenv = function
         in
         let new_fun =
           iter first_args
-            (Ulet (Immutable, Pgenval, funct_var, ufunct, new_fun))
+            (Ulet (Immutable, Pgenval, VP.create funct_var, ufunct, new_fun))
         in
         warning_if_forced_inline ~loc ~attribute "Partial application";
         (new_fun, approx)
 
       | ((ufunct, Value_closure(fundesc, _approx_res)), uargs)
         when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
-          let args = List.map (fun arg -> Ident.create "arg", arg) uargs in
+          let args = List.map (fun arg -> V.create_local "arg", arg) uargs in
           let (first_args, rem_args) = split_list fundesc.fun_arity args in
           let first_args = List.map (fun (id, _) -> Uvar id) first_args in
           let rem_args = List.map (fun (id, _) -> Uvar id) rem_args in
@@ -936,7 +955,7 @@ let rec close fenv cenv = function
           in
           let result =
             List.fold_left (fun body (id, defining_expr) ->
-                Ulet (Immutable, Pgenval, id, defining_expr, body))
+                Ulet (Immutable, Pgenval, VP.create id, defining_expr, body))
               body
               args
           in
@@ -957,13 +976,13 @@ let rec close fenv cenv = function
       begin match (str, alam) with
         (Variable, _) ->
           let (ubody, abody) = close fenv cenv body in
-          (Ulet(Mutable, kind, id, ulam, ubody), abody)
+          (Ulet(Mutable, kind, VP.create id, ulam, ubody), abody)
       | (_, Value_const _)
         when str = Alias || is_pure lam ->
-          close (Ident.Map.add id alam fenv) cenv body
+          close (V.Map.add id alam fenv) cenv body
       | (_, _) ->
-          let (ubody, abody) = close (Ident.Map.add id alam fenv) cenv body in
-          (Ulet(Immutable, kind, id, ulam, ubody), abody)
+          let (ubody, abody) = close (V.Map.add id alam fenv) cenv body in
+          (Ulet(Immutable, kind, VP.create id, ulam, ubody), abody)
       end
   | Lletrec(defs, body) ->
       if List.for_all
@@ -972,18 +991,18 @@ let rec close fenv cenv = function
       then begin
         (* Simple case: only function definitions *)
         let (clos, infos) = close_functions fenv cenv defs in
-        let clos_ident = Ident.create "clos" in
+        let clos_ident = V.create_local "clos" in
         let fenv_body =
           List.fold_right
-            (fun (id, _pos, approx) fenv -> Ident.Map.add id approx fenv)
+            (fun (id, _pos, approx) fenv -> V.Map.add id approx fenv)
             infos fenv in
         let (ubody, approx) = close fenv_body cenv body in
         let sb =
           List.fold_right
             (fun (id, pos, _approx) sb ->
-              Ident.Map.add id (Uoffset(Uvar clos_ident, pos)) sb)
-            infos Ident.Map.empty in
-        (Ulet(Immutable, Pgenval, clos_ident, clos,
+              V.Map.add id (Uoffset(Uvar clos_ident, pos)) sb)
+            infos V.Map.empty in
+        (Ulet(Immutable, Pgenval, VP.create clos_ident, clos,
               substitute Location.none !Clflags.float_const_prop sb None ubody),
          approx)
       end else begin
@@ -993,7 +1012,7 @@ let rec close fenv cenv = function
         | (id, lam) :: rem ->
             let (udefs, fenv_body) = clos_defs rem in
             let (ulam, approx) = close_named fenv cenv id lam in
-            ((id, ulam) :: udefs, Ident.Map.add id approx fenv_body) in
+            ((VP.create id, ulam) :: udefs, V.Map.add id approx fenv_body) in
         let (udefs, fenv_body) = clos_defs defs in
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
@@ -1083,11 +1102,12 @@ let rec close fenv cenv = function
   | Lstaticcatch(body, (i, vars), handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
+      let vars = List.map (fun var -> VP.create var) vars in
       (Ucatch(i, vars, ubody, uhandler), Value_unknown)
   | Ltrywith(body, id, handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
-      (Utrywith(ubody, id, uhandler), Value_unknown)
+      (Utrywith(ubody, VP.create id, uhandler), Value_unknown)
   | Lifthenelse(arg, ifso, ifnot) ->
       begin match close fenv cenv arg with
         (uarg, Value_const (Uconst_ptr n)) ->
@@ -1110,7 +1130,7 @@ let rec close fenv cenv = function
       let (ulo, _) = close fenv cenv lo in
       let (uhi, _) = close fenv cenv hi in
       let (ubody, _) = close fenv cenv body in
-      (Ufor(id, ulo, uhi, dir, ubody), Value_unknown)
+      (Ufor(VP.create id, ulo, uhi, dir, ubody), Value_unknown)
   | Lassign(id, lam) ->
       let (ulam, _) = close fenv cenv lam in
       (Uassign(id, ulam), Value_unknown)
@@ -1162,7 +1182,7 @@ and close_functions fenv cenv fun_defs =
     !function_nesting_depth < excessive_function_nesting_depth in
   (* Determine the free variables of the functions *)
   let fv =
-    Ident.Set.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
+    V.Set.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
   (* Build the function descriptors for the functions.
      Initially all functions are assumed not to need their environment
      parameter. *)
@@ -1170,7 +1190,7 @@ and close_functions fenv cenv fun_defs =
     List.map
       (function
           (id, Lfunction{kind; params; body; loc}) ->
-            let label = Compilenv.make_symbol (Some (Ident.unique_name id)) in
+            let label = Compilenv.make_symbol (Some (V.unique_name id)) in
             let arity = List.length params in
             let fundesc =
               {fun_label = label;
@@ -1186,7 +1206,7 @@ and close_functions fenv cenv fun_defs =
   let fenv_rec =
     List.fold_right
       (fun (id, _params, _body, fundesc, _dbg) fenv ->
-        Ident.Map.add id (Value_closure(fundesc, Value_unknown)) fenv)
+        V.Map.add id (Value_closure(fundesc, Value_unknown)) fenv)
       uncurried_defs fenv in
   (* Determine the offsets of each function's closure in the shared block *)
   let env_pos = ref (-1) in
@@ -1203,13 +1223,13 @@ and close_functions fenv cenv fun_defs =
   let useless_env = ref initially_closed in
   (* Translate each function definition *)
   let clos_fundef (id, params, body, fundesc, dbg) env_pos =
-    let env_param = Ident.create "env" in
+    let env_param = V.create_local "env" in
     let cenv_fv =
       build_closure_env env_param (fv_pos - env_pos) fv in
     let cenv_body =
       List.fold_right2
         (fun (id, _params, _body, _fundesc, _dbg) pos env ->
-          Ident.Map.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
+          V.Map.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
     let (ubody, approx) = close fenv_rec cenv_body body in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
@@ -1218,7 +1238,7 @@ and close_functions fenv cenv fun_defs =
       {
         label  = fundesc.fun_label;
         arity  = fundesc.fun_arity;
-        params = fun_params;
+        params = List.map (fun var -> VP.create var) fun_params;
         body   = ubody;
         dbg;
         env = Some env_param;
@@ -1228,7 +1248,7 @@ and close_functions fenv cenv fun_defs =
        their wrapper functions) to be inlined *)
     let n =
       List.fold_left
-        (fun n id -> n + if Ident.name id = "*opt*" then 8 else 1)
+        (fun n id -> n + if V.name id = "*opt*" then 8 else 1)
         0
         fun_params
     in
@@ -1244,6 +1264,7 @@ and close_functions fenv cenv fun_defs =
       | Never_inline -> min_int
       | Unroll _ -> assert false
     in
+    let fun_params = List.map (fun var -> VP.create var) fun_params in
     if lambda_smaller ubody threshold
     then fundesc.fun_inline <- Some(fun_params, ubody);
 
@@ -1371,6 +1392,7 @@ let collect_exported_structured_constants a =
         List.iter ulam ul
     | Uoffset(u, _) -> ulam u
     | Ulet (_str, _kind, _, u1, u2) -> ulam u1; ulam u2
+    | Uphantom_let _ -> no_phantom_lets ()
     | Uletrec (l, u) -> List.iter (fun (_, u) -> ulam u) l; ulam u
     | Uprim (_, ul, _) -> List.iter ulam ul
     | Uswitch (u, sl, _dbg) ->
@@ -1405,7 +1427,7 @@ let intro size lam =
   let id = Compilenv.make_symbol None in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);
-  let (ulam, _approx) = close Ident.Map.empty Ident.Map.empty lam in
+  let (ulam, _approx) = close V.Map.empty V.Map.empty lam in
   let opaque =
     !Clflags.opaque
     || Env.is_imported_opaque (Compilenv.current_unit_name ())

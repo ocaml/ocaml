@@ -20,10 +20,9 @@ let ok (type a b) (x : (a, b) eq) =
 [%%expect{|
 type ('a, 'b) eq = Refl : ('a, 'a) eq
 Line 4, characters 4-29:
-    | Refl, [(_ : a) | (_ : b)] -> []
-      ^^^^^^^^^^^^^^^^^^^^^^^^^
+4 |   | Refl, [(_ : a) | (_ : b)] -> []
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -34,10 +33,9 @@ let fails (type a b) (x : (a, b) eq) =
 ;;
 [%%expect{|
 Line 3, characters 4-29:
-    | Refl, [(_ : a) | (_ : b)] -> []
-      ^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |   | Refl, [(_ : a) | (_ : b)] -> []
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
        it would escape the scope of its equation
 |}]
@@ -46,8 +44,8 @@ Error: This pattern matches values of type (a, b) eq * b list
 let x = match [] with ["1"] -> 1 | [1.0] -> 2 | [1] -> 3 | _ -> 4;;
 [%%expect{|
 Line 1, characters 35-40:
-  let x = match [] with ["1"] -> 1 | [1.0] -> 2 | [1] -> 3 | _ -> 4;;
-                                     ^^^^^
+1 | let x = match [] with ["1"] -> 1 | [1.0] -> 2 | [1] -> 3 | _ -> 4;;
+                                       ^^^^^
 Error: This pattern matches values of type float list
        but a pattern was expected which matches values of type string list
        Type float is not compatible with type string

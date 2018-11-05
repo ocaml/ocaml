@@ -18,6 +18,9 @@ open Format
 open Asttypes
 open Clambda
 
+module V = Backend_var
+module VP = Backend_var.With_provenance
+
 let mutable_flag = function
   | Mutable-> "[mut]"
   | Immutable -> ""
@@ -50,7 +53,7 @@ let rec structured_constant ppf = function
   | Uconst_string s -> fprintf ppf "%S" s
   | Uconst_closure(clos, sym, fv) ->
       let idents ppf =
-        List.iter (fprintf ppf "@ %a" Ident.print)in
+        List.iter (fprintf ppf "@ %a" VP.print) in
       let one_fun ppf f =
         fprintf ppf "(fun@ %s@ %d@ @[<2>%a@]@ @[<2>%a@])"
           f.label f.arity idents f.params lam f.body in
@@ -60,6 +63,25 @@ let rec structured_constant ppf = function
         List.iter (fun sc -> fprintf ppf "@ %a" uconstant sc) scl in
       fprintf ppf "@[<2>(const_closure%a %s@ %a)@]" funs clos sym sconsts fv
 
+and phantom_defining_expr ppf = function
+  | Uphantom_const const -> uconstant ppf const
+  | Uphantom_var var -> Ident.print ppf var
+  | Uphantom_offset_var { var; offset_in_words; } ->
+    Format.fprintf ppf "%a+(%d)" Backend_var.print var offset_in_words
+  | Uphantom_read_field { var; field; } ->
+    Format.fprintf ppf "%a[%d]" Backend_var.print var field
+  | Uphantom_read_symbol_field { sym; field; } ->
+    Format.fprintf ppf "%s[%d]" sym field
+  | Uphantom_block { tag; fields; } ->
+    Format.fprintf ppf "[%d: " tag;
+    List.iter (fun field ->
+        Format.fprintf ppf "%a; " Backend_var.print field)
+      fields;
+    Format.fprintf ppf "]"
+
+and phantom_defining_expr_opt ppf = function
+  | None -> Format.fprintf ppf "DEAD"
+  | Some expr -> phantom_defining_expr ppf expr
 
 and uconstant ppf = function
   | Uconst_ref (s, Some c) ->
@@ -70,7 +92,7 @@ and uconstant ppf = function
 
 and lam ppf = function
   | Uvar id ->
-      Ident.print ppf id
+      V.print ppf id
   | Uconst c -> uconstant ppf c
   | Udirect_apply(f, largs, _) ->
       let lams ppf largs =
@@ -82,7 +104,7 @@ and lam ppf = function
       fprintf ppf "@[<2>(apply@ %a%a)@]" lam lfun lams largs
   | Uclosure(clos, fv) ->
       let idents ppf =
-        List.iter (fprintf ppf "@ %a" Ident.print)in
+        List.iter (fprintf ppf "@ %a" VP.print) in
       let one_fun ppf f =
         fprintf ppf "@[<2>(fun@ %s@ %d @[<2>%a@]@ @[<2>%a@]@])"
           f.label f.arity idents f.params lam f.body in
@@ -96,11 +118,26 @@ and lam ppf = function
       let rec letbody ul = match ul with
         | Ulet(mut, kind, id, arg, body) ->
             fprintf ppf "@ @[<2>%a%s%s@ %a@]"
-              Ident.print id (mutable_flag mut) (value_kind kind) lam arg;
+              VP.print id
+              (mutable_flag mut) (value_kind kind) lam arg;
             letbody body
         | _ -> ul in
       fprintf ppf "@[<2>(let@ @[<hv 1>(@[<2>%a%s%s@ %a@]"
-        Ident.print id (mutable_flag mut) (value_kind kind) lam arg;
+        VP.print id (mutable_flag mut)
+          (value_kind kind) lam arg;
+      let expr = letbody body in
+      fprintf ppf ")@]@ %a)@]" lam expr
+  | Uphantom_let (id, defining_expr, body) ->
+      let rec letbody ul = match ul with
+        | Uphantom_let (id, defining_expr, body) ->
+            fprintf ppf "@ @[<2>%a@ %a@]"
+              Backend_var.With_provenance.print id
+              phantom_defining_expr_opt defining_expr;
+            letbody body
+        | _ -> ul in
+      fprintf ppf "@[<2>(phantom_let@ @[<hv 1>(@[<2>%a@ %a@]"
+        Backend_var.With_provenance.print id
+        phantom_defining_expr_opt defining_expr;
       let expr = letbody body in
       fprintf ppf ")@]@ %a)@]" lam expr
   | Uletrec(id_arg_list, body) ->
@@ -109,7 +146,9 @@ and lam ppf = function
         List.iter
           (fun (id, l) ->
             if !spc then fprintf ppf "@ " else spc := true;
-            fprintf ppf "@[<2>%a@ %a@]" Ident.print id lam l)
+            fprintf ppf "@[<2>%a@ %a@]"
+              VP.print id
+              lam l)
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
@@ -161,13 +200,13 @@ and lam ppf = function
           | [] -> ()
           | _ ->
               List.iter
-                (fun x -> fprintf ppf " %a" Ident.print x)
+                (fun x -> fprintf ppf " %a" VP.print x)
                 vars)
         vars
         lam lhandler
   | Utrywith(lbody, param, lhandler) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
-        lam lbody Ident.print param lam lhandler
+        lam lbody VP.print param lam lhandler
   | Uifthenelse(lcond, lif, lelse) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
   | Usequence(l1, l2) ->
@@ -176,11 +215,11 @@ and lam ppf = function
       fprintf ppf "@[<2>(while@ %a@ %a)@]" lam lcond lam lbody
   | Ufor(param, lo, hi, dir, body) ->
       fprintf ppf "@[<2>(for %a@ %a@ %s@ %a@ %a)@]"
-       Ident.print param lam lo
+       VP.print param lam lo
        (match dir with Upto -> "to" | Downto -> "downto")
        lam hi lam body
   | Uassign(id, expr) ->
-      fprintf ppf "@[<2>(assign@ %a@ %a)@]" Ident.print id lam expr
+      fprintf ppf "@[<2>(assign@ %a@ %a)@]" V.print id lam expr
   | Usend (k, met, obj, largs, _) ->
       let args ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in

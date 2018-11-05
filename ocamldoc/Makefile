@@ -15,7 +15,7 @@
 
 ROOTDIR = ..
 
-include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
@@ -399,14 +399,18 @@ stdlib_man/Stdlib.3o: $(OCAMLDOC) $(DOC_ALL_MLIS)
 	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-t "OCaml library" -man-mini $(DOC_ALL_MLIS)
+	-t "OCaml library" -man-mini \
+	-text $(SRC)/manual/manual/library/compiler_libs.mld \
+	$(DOC_ALL_MLIS)
 
 stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL_MLIS)
 	$(MKDIR) stdlib_html
 	$(OCAMLDOC_RUN) -html -d stdlib_html -nostdlib \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
-	-t "OCaml library" $(DOC_ALL_MLIS)
+	-t "OCaml library" \
+	-text $(SRC)/manual/manual/library/compiler_libs.mld \
+	$(DOC_ALL_MLIS)
 
 .PHONY: autotest_stdlib
 autotest_stdlib:

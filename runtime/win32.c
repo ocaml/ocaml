@@ -846,9 +846,9 @@ CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen,
                           windows_unicode_strict ? MB_ERR_INVALID_CHARS : 0,
                           s, slen, out, outlen);
     if (retcode == 0 && windows_unicode_fallback != 0)
-      retcode = MultiByteToWideChar(CP_THREAD_ACP, 0, s, slen, out, outlen);
+      retcode = MultiByteToWideChar(CP_ACP, 0, s, slen, out, outlen);
   } else {
-    retcode = MultiByteToWideChar(CP_THREAD_ACP, 0, s, slen, out, outlen);
+    retcode = MultiByteToWideChar(CP_ACP, 0, s, slen, out, outlen);
   }
 
   if (retcode == 0)
@@ -879,7 +879,7 @@ CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen,
                           s, slen, out, outlen, NULL, NULL);
   else
     retcode =
-      WideCharToMultiByte(CP_THREAD_ACP, 0, s, slen, out, outlen, NULL, NULL);
+      WideCharToMultiByte(CP_ACP, 0, s, slen, out, outlen, NULL, NULL);
 
   if (retcode == 0)
     caml_win32_sys_error(GetLastError());

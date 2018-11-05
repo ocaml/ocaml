@@ -24,7 +24,7 @@ val same: t -> t -> bool
 val compare: t -> t -> int
 val find_free_opt: Ident.t list -> t -> Ident.t option
 val exists_free: Ident.t list -> t -> bool
-val binding_time: t -> int
+val scope: t -> int
 val flatten : t -> [ `Contains_apply | `Ok of Ident.t * string list ]
 
 val nopos: int
@@ -32,6 +32,8 @@ val nopos: int
 val name: ?paren:(string -> bool) -> t -> string
     (* [paren] tells whether a path suffix needs parentheses *)
 val head: t -> Ident.t
+
+val print: Format.formatter -> t -> unit
 
 val heads: t -> Ident.t list
 

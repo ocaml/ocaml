@@ -1,0 +1,98 @@
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                     Thomas Refis, Jane Street Europe                   *
+;*                                                                        *
+;*   Copyright 2018 Jane Street Group LLC                                 *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU Lesser General Public License version 2.1, with the          *
+;*   special exception on linking described in the file LICENSE.          *
+;*                                                                        *
+;**************************************************************************
+
+(library
+ (name ocamltoplevel)
+ (wrapped false)
+ (flags (:standard -principal -nostdlib))
+ (libraries stdlib ocamlcommon ocamlbytecomp)
+ (modules genprintval toploop trace topdirs topmain))
+
+(executable
+ (name topstart)
+ (modes byte)
+ (flags (:standard -principal -nostdlib))
+ (libraries ocamlbytecomp ocamlcommon ocamltoplevel runtime stdlib)
+ (modules topstart))
+
+(executable
+ (name expunge)
+ (modes byte)
+ (flags (:standard -principal -nostdlib))
+ (libraries ocamlbytecomp ocamlcommon runtime stdlib)
+ (modules expunge))
+
+(rule
+ (targets ocaml.byte)
+ (action (run %{ocaml_where}/expunge %{dep:topstart.exe} %{targets}
+                    ; FIXME: inlined $(STDLIB_MODULES) ... minus Labels ones ...
+                    stdlib__Spacetime
+                    stdlib__Arg
+                    stdlib__Array
+                    ; stdlib__ArrayLabels
+                    stdlib__Bigarray
+                    stdlib__Buffer
+                    stdlib__Bytes
+                    ; stdlib__BytesLabels
+                    stdlib__Callback
+                    camlinternalFormat
+                    camlinternalFormatBasics
+                    camlinternalLazy
+                    camlinternalMod
+                    camlinternalOO
+                    stdlib__Char
+                    stdlib__Complex
+                    stdlib__Digest
+                    stdlib__Ephemeron
+                    stdlib__Filename
+                    stdlib__Float
+                    stdlib__Format
+                    stdlib__Gc
+                    stdlib__Genlex
+                    stdlib__Hashtbl
+                    stdlib__Int32
+                    stdlib__Int64
+                    stdlib__Lazy
+                    stdlib__Lexing
+                    stdlib__List
+                    ; stdlib__ListLabels
+                    stdlib__Map
+                    stdlib__Marshal
+                    ; stdlib__MoreLabels
+                    stdlib__Nativeint
+                    stdlib__Obj
+                    stdlib__Oo
+                    stdlib__Option
+                    stdlib__Parsing
+                    stdlib__Pervasives
+                    stdlib__Printexc
+                    stdlib__Printf
+                    stdlib__Queue
+                    stdlib__Random
+                    stdlib__Result
+                    stdlib__Scanf
+                    stdlib__Seq
+                    stdlib__Set
+                    stdlib__Stack
+                    ; stdlib__StdLabels
+                    stdlib
+                    stdlib__Stream
+                    stdlib__String
+                    ; stdlib__StringLabels
+                    stdlib__Sys
+                    stdlib__Uchar
+                    stdlib__Weak
+                    ; the rest
+                    outcometree topdirs toploop
+ )))

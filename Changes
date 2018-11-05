@@ -18,6 +18,11 @@ Working version
 - GPR#1892: Allow shadowing of items coming from an include
   (Thomas Refis, review by Gabriel Radanne)
 
+* GPR#2106: .~ is now a reserved keyword, and is no longer available
+  for use in extended indexing operators
+  (Jeremy Yallop, review by Gabriel Scherer, Florian Angeletti, and
+   Damien Doligez)
+
 ### Type system:
 
 - GPR#1826: allow expanding a type to a private abbreviation instead of
@@ -27,7 +32,17 @@ Working version
 - GPR#1909: unsharing pattern types
   (Thomas Refis, with help from Leo White, review by Jacques Garrigue)
 
+- GPR#1942: simplification of the static check for recursive definitions
+  (Alban Reynaud and Gabriel Scherer,
+   review by Jeremy Yallop and Armaël Guéneau)
+
 ### Standard library:
+
+- GPR#2010: Add Bool module.
+  (Many fine eyes)
+
+- GPR#2011: Add Int module.
+  (Many fine eyes)
 
 - GPR#1940: Add Option module and Format.pp_print_option
   (Many fine eyes)
@@ -108,6 +123,19 @@ Working version
 - GPR#1966: Add Format semantic tags using extensible sum types.
   (Gabriel Radanne, review by Nicolás Ojeda Bär)
 
+- GPR#1794: Add constants zero, one, minus_one and functions succ,
+  pred, is_finite, is_infinite, is_nan, is_integer, trunc, round,
+  next_after, sign_bit, min, max, min_max, min_num, max_num,
+  min_max_num to module Float.
+  (Christophe Troestler, review by Alain Frish, Xavier Clerc and Daniel Bünzli)
+
+- GPR#1354: Add fma support to Float module.
+  (Laurent Thévenoux, review by Alain Frisch, Jacques-Henri Jourdan,
+  Xavier Leroy)
+
+- GPR#2119: clarify the documentation of Set.diff
+  (Gabriel Scherer, suggestion by John Skaller)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
@@ -115,7 +143,17 @@ Working version
   (Christopher Zimmermann, review by Xavier Leroy, Damien Doligez, David
    Allsopp, David Sheets)
 
+- GPR#2038: Deprecate vm threads
+  (Jérémie Dimino)
+
 ### Compiler user-interface and warnings:
+
+- PR#2096: Add source highlighting for errors & warnings in batch mode
+  (Armaël Guéneau, review by Gabriel Scherer and Jérémie Dimino)
+
+- PR#2091: Add a warning triggered by type declarations "type t = ()"
+  (Armaël Guéneau, report by linse, review by Florian Angeletti and Gabriel
+  Scherer)
 
 - PR#6416, GPR#1120: unique printed names for identifiers
   (Florian Angeletti, review by Jacques Garrigue)
@@ -125,15 +163,24 @@ Working version
   (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,
    request by Adrien Nader)
 
-- GPR#1733: change the perspective of the unexpected existential error message.
-  (Florian Angeletti, review by Gabriel Scherer and Jeremy Yallop)
+- GPR#1691: add shared_libraries to ocamlc -config exporting
+  SUPPORTS_SHARED_LIBRARIES from Makefile.config.
+  (David Allsopp, review by Gabriel Scherer and Mark Shinwell)
 
 - GPR#1720: Improve error reporting for missing 'rec' in let-bindings.
   (Arthur Charguéraud and Armaël Guéneau, with help and advice
    from Gabriel Scherer, Frédéric Bour, Xavier Clerc and Leo White)
 
-- GPR#1737: Update locations during destructive substitutions.
-  (Thomas Refis, review by Gabriel Radanne)
+- GPR#1733,1993,1998,2058,2094: Typing error message improvements
+    - GPR#1733, change the perspective of the unexpected existential error
+      message.
+    - GPR#1993, expanded error messages for universal quantification failure
+    - GPR#1998, more context for unbound type parameter error
+    - GPR#2058, full explanation for unsafe cycles in recursive module
+      definitions (suggestion by Ivan Gotovchits)
+    - GPR#2094, rewording for "constructor has no type" error
+  (Florian Angeletti, reviews by Jacques Garrique, Gabriel Radanne,
+   Gabriel Scherer and Jeremy Yallop)
 
 - GPR#1748: do not error when instantiating polymorphic fields in patterns.
   (Thomas Refis, review by Gabriel Scherer)
@@ -192,14 +239,16 @@ Working version
 * GPR#1979: Remove support for TERM=norepeat when displaying errors
   (Armaël Guéneau, review by Gabriel Scherer and Florian Angeletti)
 
-- GPR#1993: Expanded error messages for universal quantification failure
-  (Florian Angeletti, review by Jacques Garrigue)
-
-- GPR#1998: More context for unbound type parameter error
-  (Florian Angeletti, review by Gabriel Scherer)
-
 - GPR#1960: The parser keeps previous location when relocating ast node.
   (Hugo Heuzard, review by Jérémie Dimino)
+
+- GPR#1841, MPR#7808: the environment variable OCAMLTOP_INCLUDE_PATH can now
+  specify a list of additional include directories for the ocaml toplevel.
+  (Nicolás Ojeda Bär, request by Daniel Bünzli, review by Daniel Bünzli and
+  Damien Doligez)
+
+- MPR#7864, GPR#2109: remove duplicates from spelling suggestions.
+  (Nicolás Ojeda Bär, review by Armaël Guéneau)
 
 ### Code generation and optimizations:
 
@@ -229,11 +278,23 @@ Working version
   and instrumented runtimes.
   (Damien Doligez, report by Gabriel Scherer)
 
+- GPR#2079: Avoid page table lookup in Pervasives.compare with
+  no-naked-pointers
+  (Sam Goldman, review by Gabriel Scherer, David Allsopp, Stephen Dolan)
+
 ### Tools
 
 - MPR#7843, GPR#2013: ocamldoc, better handling of {{!label}text} in the latex
   backend.
   (Florian Angeletti, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
+- MPR#7844, GPR#2040: Emacs, use built-in detection of comments,
+  fixes an imenu crash.
+  (Wilfred Hughes, review by Christophe Troestler)
+
+- MPR#7850: Emacs, use symbol boundaries in regular expressions,
+  fixes an imenu crash.
+  (Wilfred Hughes, review by Christophe Troestler)
 
 - GPR#1711: the new 'open' flag in OCAMLRUNPARAM takes a comma-separated list of
   modules to open as if they had been passed via the command line -open flag.
@@ -246,7 +307,19 @@ Working version
 - GPR#2000: ocamdoc, extended support for "include module type of ..."
   (Florian Angeletti, review by Jérémie Dimino)
 
+- GPR#2045: ocamlmklib now supports options -args and -args0 to provide extra
+  command-line arguments in a file.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer and Daniel Bünzli)
+
 ### Manual and documentation:
+
+- MPR#7546, GPR#2020: preambles and introduction for compiler-libs.
+  (Florian Angeletti, review by Daniel Bünzli, Perry E. Metzger
+  and Gabriel Scherer)
+
+- MPR#7720, GPR#1596, precise the documentation
+  of the maximum indentation limit in Format.
+  (Florian Angeletti, review by Richard Bonichon and Pierre Weis)
 
 - MPR#7825: html manual split compilerlibs from stdlib in the html
   index of modules
@@ -269,6 +342,12 @@ Working version
 
 - GPR#2007: move the documentation for 32-bit, 64-bit and native integer
   literals to the main part of the manual.
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- GPR#2105: Change verbatim to caml_example in documentation
+  (Maxime Flin, review by Florian Angeletti)
+
+- GPR#2114: ocamldoc, improved manpages for documentation inside modules
   (Florian Angeletti, review by Gabriel Scherer)
 
 ### Compiler distribution build system:
@@ -308,6 +387,13 @@ Working version
   (Sébastien Hinderer, review by Xavier Leroy, Damien Doligez, Gabriel
   Scherer and Armaël Guéneau)
 
+* GPR#2059: stop defining OCAML_STDLIB_DIR in s.h.
+  (Sébastien Hinderer, review by David Allsopp and Damien Doligez)
+
+* GPR#2066: remove the standard_runtime configuration variable.
+  (Sébastien Hinderer, review by Xavier Leroy, Stephen Dolan and
+  Damien Doligez)
+
 ### Internal/compiler-libs changes:
 
 - GPR#292: use Menhir as the parser generator for the OCaml parser.
@@ -320,6 +406,12 @@ Working version
   blocks destroying backtrace information.
   (François Bobot, help from Gabriel Scherer and Nicolás Ojeda Bär,
    review by Gabriel Scherer)
+
+- GPR#1148, GPR#1287, GPR#1288, GPR#1874: significant improvements
+  of the tools/check-typo script used over the files of the whole repository;
+  contributors are now expected to check that check-typo passes on their
+  pull requests; see CONTRIBUTING.md for more details.
+  (David Allsopp, review by Damien Doligez and Sébastien Hinderer)
 
 - GPR#1703, GPR#1944: Add the module Compile_common, which factorizes the common
   part in Compile and Optcompile. This also makes the pipeline more modular.
@@ -341,6 +433,10 @@ Working version
 - GPR#1833: allow non-val payloads in CMM Ccatch handlers
   (Simon Fowler, review by Xavier Clerc)
 
+- GPR#1866: document the release process
+  (Damien Doligez and Gabriel Scherer, review by Sébastien Hinderer,
+   Perry E. Metzger, Xavier Leroy and David Allsopp)
+
 - GPR#1886: move the Location.absname reference to Clflags.absname
   (Armaël Guéneau, review by Jérémie Dimino)
 
@@ -350,6 +446,9 @@ Working version
 
 - GPR#1903: parsetree, add locations to all nodes with attributes
   (Gabriel Scherer, review by Thomas Refis)
+
+- GPR#1910: improve the check-typo use of .gitattributes
+  (Gabriel Scherer, review by David Allsopp and Damien Doligez)
 
 - GPR#1938: always check ast invariants after preprocessing
   (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)
@@ -362,6 +461,9 @@ Working version
   `Location.report_error` is removed, use `Location.print_report` instead
   (Armaël Guéneau, review by Thomas Refis)
 
+- MPR#7835, GPR#1980: separate scope from stamp in idents
+  (Thomas Refis, review by Leo White)
+
 - GPR#1996: expose Pprintast.longident to help compiler-libs users print
   Longident.t values.
   (Gabriel Scherer, review by Florian Angeletti and Thomas Refis)
@@ -370,7 +472,50 @@ Working version
   for parser testing. See parsing/HACKING.adoc.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+- GPR#2047: a new type for unification traces
+  (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
+
+- GPR#2055: Add [Linearize.Lprologue].
+  (Mark Shinwell, review by Pierre Chambart)
+
+- GPR#2056: Use [Backend_var] rather than [Ident] from [Clambda] onwards;
+  use [Backend_var.With_provenance] for variables in binding position.
+  (Mark Shinwell, review by Pierre Chambart)
+
+- GPR#2060: "Phantom let" support for the Clambda language.
+  (Mark Shinwell, review by Vincent Laviron)
+
+- GPR#2065: Add [Proc.destroyed_at_reloadretaddr].
+  (Mark Shinwell, review by Damien Doligez)
+
+- GPR#2060: "Phantom let" support for the Clambda language.
+  (Mark Shinwell, review by Vincent Laviron)
+
+- GPR#2070: "Phantom let" support for the Cmm language.
+  (Mark Shinwell, review by Vincent Laviron)
+
+- GPR#2072: Always associate a scope to a type
+  (Thomas Refis, review by Jacques Garrigue and Leo White)
+
+- GPR#2074: Correct naming of record field inside [Ialloc] terms.
+  (Mark Shinwell, review by Jérémie Dimino)
+
+- GPR#2076: Add [Targetint.print].
+  (Mark Shinwell)
+
+- GPR#2080: Add [Proc.dwarf_register_numbers] and
+  [Proc.stack_ptr_dwarf_register_number].
+  (Mark Shinwell, review by Bernhard Schommer)
+
 ### Bug fixes:
+
+- MPR#7867: Fix #mod_use raising an exception for filenames with no
+  extension.
+  (Geoff Gole)
+
+- GPR#2100: Fix Unix.getaddrinfo when called on strings containing
+  null bytes; it would crash the GC later on.
+  (Armaël Guéneau, report and fix by Joe, review by Sébastien Hinderer)
 
 - MPR#7847, GPR#2019: Fix an infinite loop that could occur when the
   (Menhir-generated) parser encountered a syntax error in a certain
@@ -419,7 +564,11 @@ Working version
   (Florian Angeletti, report by Valentin Gatien-Baron,
   review by Gabriel Scherer)
 
-- MPR#7828: correct the conditions that generate warning 61,
+- GPR#1912: Allow quoted strings, octal/unicode escape sequences and identifiers
+  containing apostrophes in ocamllex actions and comments.
+  (Pieter Goetschalckx, review by Damien Doligez)
+
+- MPR#7828, GPR#1935: correct the conditions that generate warning 61,
   Unboxable_type_in_prim_decl
   (Stefan Muenzel)
 
@@ -440,13 +589,21 @@ Working version
 - MPR#7408, MPR#7846, GPR#2015: Check arity of primitives.
   (Hugo Heuzard, review by Nicolás Ojeda Bär)
 
-OCaml 4.07 maintenance branch
+- MPR#7854, GPR#2062: fix an issue where the wrong locale may be used when using
+  the legacy ANSI encoding under Windows.
+  (Nicolás Ojeda Bär, report by Tiphaine Turpin)
+
+OCaml 4.07.1 (4 October 2018)
 -----------------------------
 
 ### Bug fixes:
 
 - MPR#7815, GPR#1896: major GC crash with first-fit policy
   (Stephen Dolan and Damien Doligez, report by Joris Giovannangeli)
+
+* MPR#7818, GPR#2051: Remove local aliases in functor argument types,
+  to prevent the aliasing of their target.
+  (Jacques Garrigue, report by mandrykin, review by Leo White)
 
 - MPR#7820, GPR#1897: Fix Array.of_seq. This function used to apply a circular
   permutation of one cell to the right on the sequence.
@@ -706,6 +863,11 @@ OCaml 4.07.0 (10 July 2018)
 
 - GPR#1753: avoid potential off-by-one overflow in debugger socket path length.
   (Anil Madhavapeddy)
+
+* GPR#1683: Change Marshal format to make Custom_tag objects store their
+  length. Old versions of OCaml will no longer be able to parse new marshalled
+  files containing custom blocks, but old files will still parse.
+  (Stephen Dolan)
 
 ### Tools:
 
@@ -1671,7 +1833,7 @@ OCaml 4.06.0 (3 Nov 2017):
   (Hannes Mehnert)
 
 - GPR#1386: provide configure-time options to fine-tune the safe-string
-  options and default settings changed by GPR#1525.
+  options and default settings changed by GPR#1252.
 
   The previous configure option -safe-string is now
   renamed -force-safe-string.

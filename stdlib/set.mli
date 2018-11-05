@@ -103,7 +103,8 @@ module type S =
         @since 4.08.0 *)
 
     val diff: t -> t -> t
-    (** Set difference. *)
+    (** Set difference: [diff s1 s2] contains the elements of [s1]
+       that are not in [s2]. *)
 
     val compare: t -> t -> int
     (** Total ordering between sets. Can be used as the ordering function

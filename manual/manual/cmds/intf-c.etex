@@ -1214,7 +1214,8 @@ static struct custom_operations curses_window_ops = {
   custom_hash_default,
   custom_serialize_default,
   custom_deserialize_default,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  custom_fixed_length_default
 };
 
 /* Accessing the WINDOW * part of an OCaml custom block */
@@ -1592,7 +1593,7 @@ With "ocamlopt", you should do:
 \paragraph{Warning:} On some ports, special options are required on the final
 linking phase that links together the object file produced by the
 "-output-obj" option and the remainder of the program.  Those options
-are shown in the configuration file "config/Makefile" generated during
+are shown in the configuration file "Makefile.config" generated during
 compilation of OCaml, as the variable "OC_LDFLAGS".
 \begin{itemize}
 \item Windows with the MSVC compiler: the object file produced by
@@ -1807,7 +1808,7 @@ the same hash value.
 The "hash" field can be set to "custom_hash_default", in which case
 the custom block is ignored during hash computation.
 
-\item "void (*serialize)(value v, uintnat * wsize_32, uintnat * wsize_64)" \\
+\item "void (*serialize)(value v, uintnat * bsize_32, uintnat * bsize_64)" \\
 The "serialize" field contains a pointer to a C function that is
 called whenever the custom block needs to be serialized (marshaled)
 using the OCaml functions "output_value" or "Marshal.to_...".
@@ -1817,7 +1818,7 @@ then call the user-provided "serialize" function.  That function is
 responsible for writing the data contained in the custom block, using
 the "serialize_..." functions defined in "<caml/intext.h>" and listed
 below.  The user-provided "serialize" function must then store in its
-"wsize_32" and "wsize_64" parameters the sizes in bytes of the data
+"bsize_32" and "bsize_64" parameters the sizes in bytes of the data
 part of the custom block on a 32-bit architecture and on a 64-bit
 architecture, respectively.
 
@@ -1843,6 +1844,15 @@ The "deserialize" field can be set to "custom_deserialize_default"
 to indicate that deserialization is not supported.  In this case,
 do not register the "struct custom_operations" with the deserializer
 using "register_custom_operations" (see below).
+
+\item "const struct custom_fixed_length* fixed_length" \\
+Normally, space in the serialized output is reserved to write the
+"bsize_32" and "bsize_64" fields returned by "serialize". However, for
+very short custom blocks, this space can be larger than the data
+itself! As a space optimisation, if "serialize" always returns the
+same values for "bsize_32" and "bsize_64", then these values may be
+specified in the "fixed_length" structure, and do not consume space in
+the serialized output.
 \end{itemize}
 
 Note: the "finalize", "compare", "hash", "serialize" and "deserialize"

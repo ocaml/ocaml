@@ -17,7 +17,7 @@
 
 ROOTDIR = .
 
-include config/Makefile
+include Makefile.config
 include Makefile.common
 
 # For users who don't read the INSTALL file
@@ -146,6 +146,7 @@ endif
 ASMCOMP=\
   $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/arch.cmo \
+  asmcomp/backend_var.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/debug/reg_with_debug_info.cmo \
   asmcomp/debug/reg_availability_set.cmo \
@@ -297,68 +298,8 @@ endif
 
 # The configuration file
 
-# SUBST generates the sed substitution for the variable *named* in $1
-# SUBST_QUOTE does the same, adding double-quotes around non-empty strings
-#   (see FLEXDLL_DIR which must empty if FLEXDLL_DIR is empty but an OCaml
-#    string otherwise)
-SUBST_ESCAPE=$(subst ",\\",$(subst \,\\,$(if $2,$2,$($1))))
-SUBST=-e 's|%%$1%%|$(call SUBST_ESCAPE,$1,$2)|'
-SUBST_QUOTE2=-e 's|%%$1%%|$(if $2,"$2")|'
-SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$(call SUBST_ESCAPE,$1,$2))
-FLEXLINK_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
-utils/config.ml: utils/config.mlp config/Makefile Makefile
-	sed $(call SUBST,AFL_INSTRUMENT) \
-	    $(call SUBST,ARCH) \
-	    $(call SUBST,ARCMD) \
-	    $(call SUBST,ASM) \
-	    $(call SUBST,ASM_CFI_SUPPORTED) \
-	    $(call SUBST,BYTECCLIBS) \
-	    $(call SUBST,BYTERUN) \
-	    $(call SUBST,CC) \
-	    $(call SUBST,CCOMPTYPE) \
-	    $(call SUBST,CC_PROFILE) \
-	    $(call SUBST,OUTPUTOBJ) \
-	    $(call SUBST,EXT_ASM) \
-	    $(call SUBST,EXT_DLL) \
-	    $(call SUBST,EXE) \
-	    $(call SUBST,EXT_LIB) \
-	    $(call SUBST,EXT_OBJ) \
-	    $(call SUBST,FLAMBDA) \
-	    $(call SUBST,WITH_FLAMBDA_INVARIANTS) \
-	    $(call SUBST,FLEXLINK_FLAGS) \
-	    $(call SUBST_QUOTE,FLEXDLL_DIR) \
-	    $(call SUBST,HOST) \
-	    $(call SUBST,LIBDIR) \
-	    $(call SUBST,LIBUNWIND_AVAILABLE) \
-	    $(call SUBST,LIBUNWIND_LINK_FLAGS) \
-	    $(call SUBST,MKDLL) \
-	    $(call SUBST,MKEXE) \
-	    $(call SUBST,FLEXLINK_LDFLAGS) \
-	    $(call SUBST,MKMAINDLL) \
-	    $(call SUBST,MODEL) \
-	    $(call SUBST,NATIVECCLIBS) \
-	    $(call SUBST,OCAMLC_CFLAGS) \
-	    $(call SUBST,OCAMLC_CPPFLAGS) \
-	    $(call SUBST,OCAMLOPT_CFLAGS) \
-	    $(call SUBST,OCAMLOPT_CPPFLAGS) \
-	    $(call SUBST,PACKLD) \
-	    $(call SUBST,PROFILING) \
-	    $(call SUBST,PROFINFO_WIDTH) \
-	    $(call SUBST,RANLIBCMD) \
-	    $(call SUBST,FORCE_SAFE_STRING) \
-	    $(call SUBST,DEFAULT_SAFE_STRING) \
-	    $(call SUBST,WINDOWS_UNICODE) \
-	    $(call SUBST,SYSTEM) \
-	    $(call SUBST,SYSTHREAD_SUPPORT) \
-	    $(call SUBST,TARGET) \
-	    $(call SUBST,WITH_FRAME_POINTERS) \
-	    $(call SUBST,WITH_PROFINFO) \
-	    $(call SUBST,WITH_SPACETIME) \
-	    $(call SUBST,ENABLE_CALL_COUNTS) \
-	    $(call SUBST,FLAT_FLOAT_ARRAY) \
-	    $(call SUBST,CC_HAS_DEBUG_PREFIX_MAP) \
-	    $(call SUBST,AS_HAS_DEBUG_PREFIX_MAP) \
-	    $< > $@
+utils/config.ml: utils/config.mlp Makefile.config utils/Makefile Makefile
+	$(MAKE) -C utils config.ml
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 .PHONY: reconfigure
@@ -522,7 +463,7 @@ flexdll/Makefile:
 .PHONY: flexdll
 flexdll: flexdll/Makefile flexlink
 	$(MAKE) -C flexdll \
-	     OCAML_CONFIG_FILE=../config/Makefile \
+	     OCAML_CONFIG_FILE=../Makefile.config \
              MSVC_DETECT=0 CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false support
 
 # Bootstrapping flexlink - leaves a bytecode image of flexlink.exe in flexdll/
@@ -532,7 +473,7 @@ flexlink: flexdll/Makefile
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	$(MAKE) -C stdlib COMPILER=../boot/ocamlc stdlib.cma std_exit.cmo
 	cd stdlib && cp stdlib.cma std_exit.cmo *.cmi ../boot
-	$(MAKE) -C flexdll MSVC_DETECT=0 OCAML_CONFIG_FILE=../config/Makefile \
+	$(MAKE) -C flexdll MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
 	  CHAINS=$(FLEXDLL_CHAIN) NATDYNLINK=false \
 	  OCAMLOPT="../boot/ocamlrun ../boot/ocamlc -I ../boot" \
 	  flexlink.exe
@@ -544,7 +485,7 @@ flexlink.opt:
 	cd flexdll && \
 	mv flexlink.exe flexlink && \
 	($(MAKE) OCAML_FLEXLINK="../boot/ocamlrun ./flexlink" MSVC_DETECT=0 \
-	           OCAML_CONFIG_FILE=../config/Makefile \
+	           OCAML_CONFIG_FILE=../Makefile.config \
 	           OCAMLOPT="../ocamlopt.opt -I ../stdlib" flexlink.exe || \
 	 (mv flexlink flexlink.exe && false)) && \
 	mv flexlink.exe flexlink.opt && \
@@ -641,7 +582,7 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 	  $(MAKE) install-flexdll; \
 	fi
 endif
-	$(INSTALL_DATA) config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
+	$(INSTALL_DATA) Makefile.config "$(INSTALL_LIBDIR)/Makefile.config"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	if test -f ocamlopt; then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
@@ -907,14 +848,9 @@ $(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt
 runtime/primitives:
 	$(MAKE) -C runtime primitives
 
-bytecomp/runtimedef.ml: runtime/primitives runtime/caml/fail.h
-	(echo 'let builtin_exceptions = [|'; \
-	 cat runtime/caml/fail.h | tr -d '\r' | \
-	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p'; \
-	 echo '|]'; \
-	 echo 'let builtin_primitives = [|'; \
-	 sed -e 's/.*/  "&";/' runtime/primitives; \
-	 echo '|]') > $@
+bytecomp/runtimedef.ml: bytecomp/generate_runtimedef.sh runtime/caml/fail.h \
+    runtime/primitives
+	$^ > $@
 
 partialclean::
 	rm -f bytecomp/runtimedef.ml
@@ -1310,9 +1246,7 @@ beforedepend:: bytecomp/opcodes.ml
 
 # Testing the parser -- see parsing/HACKING.adoc
 
-SOURCE_FILES=$(shell \
-  git ls-files '*.ml' '*.mli' \
-| grep -v '^experimental/')
+SOURCE_FILES=$(shell git ls-files '*.ml' '*.mli')
 
 AST_FILES=$(addsuffix .ast,$(SOURCE_FILES))
 
@@ -1375,7 +1309,7 @@ depend: beforedepend
 distclean: clean
 	rm -f boot/ocamlrun boot/ocamlrun$(EXE) boot/camlheader \
 	boot/*.cm* boot/libcamlrun.$(A)
-	rm -f config/Makefile runtime/caml/m.h runtime/caml/s.h
+	rm -f Makefile.config runtime/caml/m.h runtime/caml/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
 	rm -f testsuite/_log*

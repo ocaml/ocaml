@@ -396,12 +396,44 @@ let emit_set_condition cmp rd =
     end
   end
 
+(* Emission of the profiling prelude *)
+
+let emit_profile() =
+  match Config.system with
+    "linux_eabi" | "linux_eabihf" | "netbsd" ->
+      `	push	\{lr}\n`;
+      `	{emit_call "__gnu_mcount_nc"}\n`;
+      2
+  | _ -> 0
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
     emit_debug_info i.dbg;
     match i.desc with
-      Lend -> 0
+    | Lend -> 0
+    | Lprologue ->
+      let num_instrs0 =
+        if !Clflags.gprofile then emit_profile()
+        else 0
+      in
+      let n = frame_size() in
+      let num_instrs1 =
+        if n > 0 then begin
+          let num_instrs = emit_stack_adjustment (-n) in
+          if !contains_calls then begin
+            cfi_offset ~reg:14 (* lr *) ~offset:(-4);
+            `	str	lr, [sp, #{emit_int(n - 4)}]\n`;
+            num_instrs + 1
+          end else begin
+            num_instrs
+          end
+        end else begin
+          0
+        end
+      in
+      `{emit_label !tailrec_entry_point}:\n`;
+      num_instrs0 + num_instrs1
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc = dst.loc then 0 else begin
@@ -568,7 +600,7 @@ let emit_instr i =
           | Double_u -> "fstd"
           | _ (* 32-bit quantities *) -> "str" in
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 1}\n`; 1
-    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
+    | Lop(Ialloc { bytes = n; label_after_call_gc; }) ->
         let lbl_frame =
           record_frame_label i.live false i.dbg ?label:label_after_call_gc
         in
@@ -868,16 +900,6 @@ let rec emit_all ninstr fallthrough i =
     emit_all (ninstr' + n) (has_fallthrough i.desc) i.next
   end
 
-
-(* Emission of the profiling prelude *)
-
-let emit_profile() =
-  match Config.system with
-    "linux_eabi" | "linux_eabihf" | "netbsd" ->
-      `	push	\{lr}\n`;
-      `	{emit_call "__gnu_mcount_nc"}\n`
-  | _ -> ()
-
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -901,16 +923,6 @@ let fundecl fundecl =
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc();
-  if !Clflags.gprofile then emit_profile();
-  let n = frame_size() in
-  if n > 0 then begin
-    ignore(emit_stack_adjustment (-n));
-    if !contains_calls then begin
-      cfi_offset ~reg:14 (* lr *) ~offset:(-4);
-      `	str	lr, [sp, #{emit_int(n - 4)}]\n`
-    end
-  end;
-  `{emit_label !tailrec_entry_point}:\n`;
   emit_all 0 true fundecl.fun_body;
   emit_literals();
   List.iter emit_call_gc !call_gc_sites;

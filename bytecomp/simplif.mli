@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Lambda simplification and lambda plugin hooks *)
+(** Lambda simplification and lambda plugin hooks
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 (* Elimination of useless Llet(Alias) bindings.
    Transformation of let-bound references into variables.

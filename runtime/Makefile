@@ -13,8 +13,10 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
-include ../Makefile.common
+ROOTDIR = ..
+
+include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
 
 # Lists of source files
 
@@ -136,6 +138,9 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 # pre-Visual Studio 2013 compilers where \x is a non-standard alias for \u.
 OCAML_STDLIB_DIR = $(shell echo $(LIBDIR)| iconv -t JAVA | sed -e 's/\\u/\\x/g')
 OC_CPPFLAGS += -DOCAML_STDLIB_DIR='L"$(OCAML_STDLIB_DIR)"'
+else # Unix
+OCAML_STDLIB_DIR = $(LIBDIR)
+OC_CPPFLAGS += -DOCAML_STDLIB_DIR='"$(OCAML_STDLIB_DIR)"'
 endif
 
 OC_CPPFLAGS += $(IFLEXDIR)
@@ -167,7 +172,7 @@ OC_PROF_CFLAGS=-pg
 OC_PROF_CPPFLAGS=-DPROFILING
 endif
 
-ASPPFLAGS = -DSYS_$(SYSTEM) -I../runtime
+ASPPFLAGS = -DSYS_$(SYSTEM) -I$(ROOTDIR)/runtime
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ASPPFLAGS += -DMODEL_$(MODEL)
 endif
@@ -183,7 +188,7 @@ MAKE_OCAMLRUN = $(MKEXE) -o $(1) $(2)
 endif
 else
 LIBS = $(BYTECCLIBS)
-MAKE_OCAMLRUN = $(MKEXE) $(OC_LDFLAGS) -o $(1) $(2)
+MAKE_OCAMLRUN = $(MKEXE) -o $(1) $(2)
 endif
 
 # Build, install and clean targets
@@ -224,7 +229,7 @@ distclean: clean
 
 # Generated non-object files
 
-ld.conf: ../config/Makefile
+ld.conf: $(ROOTDIR)/Makefile.config
 	echo "$(STUBLIBDIR)" > $@
 	echo "$(LIBDIR)" >> $@
 
@@ -277,8 +282,8 @@ caml/jumptbl.h : caml/instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
 	       -e '/^}/q' > $@
 
-caml/version.h : ../VERSION ../tools/make-version-header.sh
-	../tools/make-version-header.sh ../VERSION > caml/version.h
+caml/version.h : $(ROOTDIR)/tools/make-version-header.sh $(ROOTDIR)/VERSION
+	$^ > $@
 
 # Libraries and programs
 

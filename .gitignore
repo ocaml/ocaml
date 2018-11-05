@@ -34,6 +34,8 @@
 _ocamltest
 _ocamltestd
 *.odoc
+.merlin
+_build
 
 # local to root directory
 
@@ -47,6 +49,7 @@ _ocamltestd
 
 # specific files and patterns in sub-directories
 
+/Makefile.config
 /asmcomp/emit.ml
 /asmcomp/arch.ml
 /asmcomp/proc.ml
@@ -61,8 +64,6 @@ _ocamltestd
 /bytecomp/runtimedef.ml
 /bytecomp/opcodes.ml
 
-/config/Makefile
-
 /debugger/lexer.ml
 /debugger/parser.ml
 /debugger/parser.mli
@@ -73,9 +74,6 @@ _ocamltestd
 
 /emacs/ocamltags
 /emacs/*.elc
-
-/experimental/garrigue/*.out
-/experimental/garrigue/*.out2
 
 /lex/parser.ml
 /lex/parser.mli

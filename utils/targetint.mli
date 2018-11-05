@@ -23,6 +23,10 @@
    pointer type in the C compiler.  All arithmetic operations over
    are taken modulo 2{^32} or 2{^64} depending
    on the word size of the target architecture.
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
 *)
 
 type t
@@ -186,3 +190,6 @@ type repr =
 
 val repr : t -> repr
 (** The concrete representation of a native integer. *)
+
+val print : Format.formatter -> t -> unit
+(** Print a target integer to a formatter. *)

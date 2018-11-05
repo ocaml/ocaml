@@ -75,6 +75,7 @@ let file_argument name =
                               (Array.length !argv - !current)
       in
       Compenv.readenv ppf Before_link;
+      Compmisc.read_clflags_from_env ();
       if prepare ppf && Toploop.run_script ppf name newargs
       then exit 0
       else exit 2
@@ -150,6 +151,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let _dtimings () = profile_columns := [ `Time ]
   let _dprofile () = profile_columns := Profile.all_columns
   let _dinstr = set dump_instr
+  let _color = Misc.set_or_ignore color_reader.parse color
+  let _error_style = Misc.set_or_ignore error_style_reader.parse error_style
 
   let _args = wrap_expand Arg.read_arg
   let _args0 = wrap_expand Arg.read_arg0
@@ -157,6 +160,13 @@ module Options = Main_args.Make_bytetop_options (struct
   let anonymous s = file_argument s
 end);;
 
+let () =
+  let extra_paths =
+    match Sys.getenv "OCAMLTOP_INCLUDE_PATH" with
+    | exception Not_found -> []
+    | s -> Misc.split_path_contents s
+  in
+  Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
 
 let main () =
   let ppf = Format.err_formatter in
@@ -170,6 +180,7 @@ let main () =
     | Arg.Help msg -> Printf.printf "%s" msg; exit 0
   end;
   Compenv.readenv ppf Before_link;
+  Compmisc.read_clflags_from_env ();
   if not (prepare ppf) then exit 2;
   Compmisc.init_path false;
   Toploop.loop Format.std_formatter

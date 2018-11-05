@@ -35,8 +35,8 @@ type error =
   | Cycle_in_def of string * type_expr
   | Definition_mismatch of type_expr * Includecore.type_mismatch option
   | Constraint_failed of type_expr * type_expr
-  | Inconsistent_constraint of Env.t * (type_expr * type_expr) list
-  | Type_clash of Env.t * (type_expr * type_expr) list
+  | Inconsistent_constraint of Env.t * Ctype.Unification_trace.t
+  | Type_clash of Env.t * Ctype.Unification_trace.t
   | Parameters_differ of Path.t * type_expr * type_expr
   | Null_arity_external
   | Missing_native_external
@@ -44,7 +44,7 @@ type error =
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
   | Extension_mismatch of Path.t * Includecore.type_mismatch
-  | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
+  | Rebind_wrong_type of Longident.t * Env.t * Ctype.Unification_trace.t
   | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
   | Bad_variance of int * (bool * bool * bool) * (bool * bool * bool)
@@ -111,7 +111,7 @@ let enter_type rec_flag env sdecl id =
         | Some _ -> Some(Ctype.newvar ()) end;
       type_variance = List.map (fun _ -> Variance.full) sdecl.ptype_params;
       type_is_newtype = false;
-      type_expansion_scope = None;
+      type_expansion_scope = Btype.lowest_level;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = false;
@@ -235,7 +235,8 @@ let transl_labels env closed lbls =
       (fun () ->
          let arg = Ast_helper.Typ.force_poly arg in
          let cty = transl_simple_type env closed arg in
-         {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
+         {ld_id = Ident.create_local name.txt;
+          ld_name = name; ld_mutable = mut;
           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
       )
   in
@@ -447,7 +448,7 @@ let transl_declaration env sdecl id =
            > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
         let make_cstr scstr =
-          let name = Ident.create scstr.pcd_name.txt in
+          let name = Ident.create_local scstr.pcd_name.txt in
           let targs, tret_type, args, ret_type, cstr_params =
             make_constructor env (Path.Pident id) params
                              scstr.pcd_args scstr.pcd_res
@@ -519,7 +520,7 @@ let transl_declaration env sdecl id =
         type_manifest = man;
         type_variance = List.map (fun _ -> Variance.full) params;
         type_is_newtype = false;
-        type_expansion_scope = None;
+        type_expansion_scope = Btype.lowest_level;
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
         type_immediate = false;
@@ -774,7 +775,7 @@ let check_well_founded_decl env loc path decl to_check =
   let it =
     {type_iterators with
      it_type_expr = (fun _ -> check_well_founded env loc path to_check)} in
-  it.it_type_declaration it (Ctype.instance_declaration decl)
+  it.it_type_declaration it (Ctype.generic_instance_declaration decl)
 
 (* Check for ill-defined abbrevs *)
 
@@ -1262,8 +1263,23 @@ let name_recursion sdecl id decl =
     else decl
   | _ -> decl
 
+(* Warn on definitions of type "type foo = ()" which redefine a different unit
+   type and are likely a mistake. *)
+let check_redefined_unit (td: Parsetree.type_declaration) =
+  let open Parsetree in
+  let is_unit_constructor cd = cd.pcd_name.txt = "()" in
+  match td with
+  | { ptype_name = { txt = name };
+      ptype_manifest = None;
+      ptype_kind = Ptype_variant [ cd ] }
+    when is_unit_constructor cd ->
+      Location.prerr_warning td.ptype_loc (Warnings.Redefining_unit name)
+  | _ ->
+      ()
+
 (* Translate a set of type declarations, mutually recursive or not *)
 let transl_type_decl env rec_flag sdecl_list =
+  List.iter check_redefined_unit sdecl_list;
   (* Add dummy types for fixed rows *)
   let fixed_types = List.filter is_fixed_type sdecl_list in
   let sdecl_list =
@@ -1278,16 +1294,11 @@ let transl_type_decl env rec_flag sdecl_list =
   in
 
   (* Create identifiers. *)
+  let scope = Ctype.create_scope () in
   let id_list =
-    List.map (fun sdecl -> Ident.create sdecl.ptype_name.txt) sdecl_list
+    List.map (fun sdecl -> Ident.create_scoped ~scope sdecl.ptype_name.txt)
+      sdecl_list
   in
-  (*
-     Since we've introduced fresh idents, make sure the definition
-     level is at least the binding time of these events. Otherwise,
-     passing one of the recursively-defined type constrs as argument
-     to an abbreviation may fail.
-  *)
-  Ctype.init_def(Ident.current_time());
   Ctype.begin_def();
   (* Enter types. *)
   let temp_env =
@@ -1408,7 +1419,8 @@ let transl_type_decl env rec_flag sdecl_list =
 
 let transl_extension_constructor env type_path type_params
                                  typext_params priv sext =
-  let id = Ident.create sext.pext_name.txt in
+  let scope = Ctype.create_scope () in
+  let id = Ident.create_scoped ~scope sext.pext_name.txt in
   let args, ret_type, kind =
     match sext.pext_kind with
       Pext_decl(sargs, sret_type) ->
@@ -1875,7 +1887,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_manifest = man;
       type_variance = [];
       type_is_newtype = false;
-      type_expansion_scope = None;
+      type_expansion_scope = Btype.lowest_level;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = false;
@@ -1924,7 +1936,7 @@ let abstract_type_decl arity =
       type_manifest = None;
       type_variance = replicate_list Variance.full arity;
       type_is_newtype = false;
-      type_expansion_scope = None;
+      type_expansion_scope = Btype.lowest_level;
       type_loc = Location.none;
       type_attributes = [];
       type_immediate = false;
@@ -1935,9 +1947,10 @@ let abstract_type_decl arity =
   decl
 
 let approx_type_decl sdecl_list =
+  let scope = Ctype.create_scope () in
   List.map
     (fun sdecl ->
-      (Ident.create sdecl.ptype_name.txt,
+      (Ident.create_scoped ~scope sdecl.ptype_name.txt,
        abstract_type_decl (List.length sdecl.ptype_params)))
     sdecl_list
 

@@ -318,9 +318,9 @@ val finalise_last : (unit -> unit) -> 'a -> unit
     first time. So contrary to {!finalise} the value will never be
     reachable again or used again. In particular every weak pointer
     and ephemeron that contained this value as key or data is unset
-    before running the finalisation function. Moreover the
-    finalisation function attached with `GC.finalise` are always
-    called before the finalisation function attached with `GC.finalise_last`.
+    before running the finalisation function. Moreover the finalisation
+    functions attached with {!finalise} are always called before the
+    finalisation functions attached with {!finalise_last}.
 
     @since 4.04
 *)

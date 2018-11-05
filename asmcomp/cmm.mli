@@ -93,6 +93,33 @@ type raise_kind =
 
 type rec_flag = Nonrecursive | Recursive
 
+type phantom_defining_expr =
+  (* CR-soon mshinwell: Convert this to [Targetint.OCaml.t] (or whatever the
+     representation of "target-width OCaml integers of type [int]"
+     becomes when merged). *)
+  | Cphantom_const_int of Targetint.t
+  (** The phantom-let-bound variable is a constant integer.
+      The argument must be the tagged representation of an integer within
+      the range of type [int] on the target.  (Analogously to [Cconst_int].) *)
+  | Cphantom_const_symbol of string
+  (** The phantom-let-bound variable is an alias for a symbol. *)
+  | Cphantom_var of Backend_var.t
+  (** The phantom-let-bound variable is an alias for another variable.  The
+      aliased variable must not be a bound by a phantom let. *)
+  | Cphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
+  (** The phantom-let-bound-variable's value is defined by adding the given
+      number of words to the pointer contained in the given identifier. *)
+  | Cphantom_read_field of { var : Backend_var.t; field : int; }
+  (** The phantom-let-bound-variable's value is found by adding the given
+      number of words to the pointer contained in the given identifier, then
+      dereferencing. *)
+  | Cphantom_read_symbol_field of { sym : string; field : int; }
+  (** As for [Uphantom_read_var_field], but with the pointer specified by
+      a symbol. *)
+  | Cphantom_block of { tag : int; fields : Backend_var.t list; }
+  (** The phantom-let-bound variable points at a block with the given
+      structure. *)
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -137,9 +164,11 @@ and expression =
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
   | Cblockheader of nativeint * Debuginfo.t
-  | Cvar of Ident.t
-  | Clet of Ident.t * expression * expression
-  | Cassign of Ident.t * expression
+  | Cvar of Backend_var.t
+  | Clet of Backend_var.With_provenance.t * expression * expression
+  | Cphantom_let of Backend_var.With_provenance.t
+      * phantom_defining_expr option * expression
+  | Cassign of Backend_var.t * expression
   | Ctuple of expression list
   | Cop of operation * expression list * Debuginfo.t
   | Csequence of expression * expression
@@ -147,10 +176,12 @@ and expression =
   | Cswitch of expression * int array * expression array * Debuginfo.t
   | Cloop of expression
   | Ccatch of
-      rec_flag * (int * (Ident.t * machtype) list * expression) list
-      * expression
+      rec_flag
+        * (int * (Backend_var.With_provenance.t * machtype) list
+          * expression) list
+        * expression
   | Cexit of int * expression list
-  | Ctrywith of expression * Ident.t * expression
+  | Ctrywith of expression * Backend_var.With_provenance.t * expression
 
 type codegen_option =
   | Reduce_code_size
@@ -158,7 +189,7 @@ type codegen_option =
 
 type fundecl =
   { fun_name: string;
-    fun_args: (Ident.t * machtype) list;
+    fun_args: (Backend_var.With_provenance.t * machtype) list;
     fun_body: expression;
     fun_codegen_options : codegen_option list;
     fun_dbg : Debuginfo.t;
@@ -183,6 +214,8 @@ type phrase =
   | Cdata of data_item list
 
 val ccatch :
-  int * (Ident.t * machtype) list * expression * expression -> expression
+     int * (Backend_var.With_provenance.t * machtype) list
+       * expression * expression
+  -> expression
 
 val reset : unit -> unit

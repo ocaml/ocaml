@@ -115,11 +115,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _w = (Warnings.parse_options false)
   let _warn_error = (Warnings.parse_options true)
   let _warn_help = Warnings.help_warnings
-  let _color option =
-    begin match parse_color_setting option with
-          | None -> ()
-          | Some setting -> color := Some setting
-    end
+  let _color = Misc.set_or_ignore color_reader.parse color
+  let _error_style = Misc.set_or_ignore error_style_reader.parse error_style
   let _where = print_standard_library
   let _verbose = set verbose
   let _nopervasives = set nopervasives
@@ -143,6 +140,12 @@ module Options = Main_args.Make_bytecomp_options (struct
   let anonymous = anonymous
 end)
 
+let vmthread_deprecated_message = "\
+The -vmthread argument of ocamlc is deprecated\n\
+since OCaml 4.08.0.  Please switch to system threads, which have the\n\
+same API. Lightweight threads with VM-level scheduling are provided by\n\
+third-party libraries such as Lwt, but with a different API."
+
 let main () =
   Clflags.add_arguments __LOC__ Options.list;
   Clflags.add_arguments __LOC__
@@ -151,7 +154,9 @@ let main () =
   try
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
-    Compmisc.read_color_env ();
+    Compmisc.read_clflags_from_env ();
+    if !Clflags.use_vmthreads then
+      Location.deprecated Location.none vmthread_deprecated_message;
     begin try
       Compenv.process_deferred_actions
         (ppf,

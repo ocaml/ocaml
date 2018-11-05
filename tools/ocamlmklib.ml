@@ -16,6 +16,21 @@
 open Printf
 open Ocamlmklibconfig
 
+let syslib x =
+  if Config.ccomp_type = "msvc" then x ^ ".lib" else "-l" ^ x
+
+let mklib out files opts =
+  if Config.ccomp_type = "msvc"
+  then let machine =
+    if Config.architecture="amd64"
+    then "-machine:AMD64 "
+    else ""
+  in
+  Printf.sprintf "link -lib -nologo %s-out:%s %s %s"
+                 machine out opts files
+  else Printf.sprintf "%s rcs %s %s %s && %s %s"
+                      Config.ar out opts files Config.ranlib out
+
 (* PR#4783: under Windows, don't use absolute paths because we do
    not know where the binary distribution will be installed. *)
 let compiler_path name =
@@ -64,14 +79,25 @@ let print_version_num () =
 ;;
 
 let parse_arguments argv =
-  let i = ref 1 in
-  let next_arg () =
-    if !i + 1 >= Array.length argv
-    then raise (Bad_argument("Option " ^ argv.(!i) ^ " expects one argument"));
-    incr i; argv.(!i) in
-  while !i < Array.length argv do
-    let s = argv.(!i) in
-    if ends_with s ".cmo" || ends_with s ".cma" then
+  let args = Stack.create () in
+  let push_args ~first arr =
+    for i = Array.length arr - 1 downto first do
+      Stack.push arr.(i) args
+    done
+  in
+  let next_arg s =
+    if Stack.is_empty args
+    then raise (Bad_argument("Option " ^ s ^ " expects one argument"));
+    Stack.pop args
+  in
+  push_args ~first:1 argv;
+  while not (Stack.is_empty args) do
+    let s = Stack.pop args in
+    if s = "-args" then
+      push_args ~first:0 (Arg.read_arg (next_arg s))
+    else if s = "-args0" then
+      push_args ~first:0 (Arg.read_arg0 (next_arg s))
+    else if ends_with s ".cmo" || ends_with s ".cma" then
       bytecode_objs := s :: !bytecode_objs
     else if ends_with s ".cmx" || ends_with s ".cmxa" then
       native_objs := s :: !native_objs
@@ -83,13 +109,13 @@ let parse_arguments argv =
     then
       c_objs := s :: !c_objs
     else if s = "-cclib" then
-      caml_libs := next_arg () :: "-cclib" :: !caml_libs
+      caml_libs := next_arg s :: "-cclib" :: !caml_libs
     else if s = "-ccopt" then
-      caml_opts := next_arg () :: "-ccopt" :: !caml_opts
+      caml_opts := next_arg s :: "-ccopt" :: !caml_opts
     else if s = "-custom" then
       dynlink := false
     else if s = "-I" then
-      caml_opts := next_arg () :: "-I" :: !caml_opts
+      caml_opts := next_arg s :: "-I" :: !caml_opts
     else if s = "-failsafe" then
       failsafe := true
     else if s = "-g" then
@@ -97,7 +123,7 @@ let parse_arguments argv =
     else if s = "-h" || s = "-help" || s = "--help" then
       raise (Bad_argument "")
     else if s = "-ldopt" then
-      ld_opts := next_arg () :: !ld_opts
+      ld_opts := next_arg s :: !ld_opts
     else if s = "-linkall" then
       caml_opts := s :: !caml_opts
     else if starts_with s "-l" then
@@ -113,23 +139,23 @@ let parse_arguments argv =
       let l = chop_prefix s "-L" in
       if not (Filename.is_relative l) then rpath := l :: !rpath)
     else if s = "-ocamlcflags" then
-      ocamlc_opts := next_arg () :: !ocamlc_opts
+      ocamlc_opts := next_arg s :: !ocamlc_opts
     else if s = "-ocamlc" then
-      ocamlc := next_arg ()
+      ocamlc := next_arg s
     else if s = "-ocamlopt" then
-      ocamlopt := next_arg ()
+      ocamlopt := next_arg s
     else if s = "-ocamloptflags" then
-      ocamlopt_opts := next_arg () :: !ocamlopt_opts
+      ocamlopt_opts := next_arg s :: !ocamlopt_opts
     else if s = "-o" then
-      output := next_arg()
+      output := next_arg s
     else if s = "-oc" then
-      output_c := next_arg()
+      output_c := next_arg s
     else if s = "-dllpath" || s = "-R" || s = "-rpath" then
-      rpath := next_arg() :: !rpath
+      rpath := next_arg s :: !rpath
     else if starts_with s "-R" then
       rpath := chop_prefix s "-R" :: !rpath
     else if s = "-Wl,-rpath" then
-     (let a = next_arg() in
+     (let a = next_arg s in
       if starts_with a "-Wl,"
       then rpath := chop_prefix a "-Wl," :: !rpath
       else raise (Bad_argument("Option -Wl,-rpath expects a -Wl, argument")))
@@ -146,12 +172,11 @@ let parse_arguments argv =
     else if starts_with s "-F" then
       c_opts := s :: !c_opts
     else if s = "-framework" then
-      (let a = next_arg() in c_opts := a :: s :: !c_opts)
+      (let a = next_arg s in c_opts := a :: s :: !c_opts)
     else if starts_with s "-" then
       prerr_endline ("Unknown option " ^ s)
     else
-      raise (Bad_argument("Don't know what to do with " ^ s));
-    incr i
+      raise (Bad_argument("Don't know what to do with " ^ s))
   done;
   List.iter
     (fun r -> r := List.rev !r)
@@ -166,6 +191,10 @@ let usage = "\
 Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib|\
                              .dll|.dylib files>\
 \nOptions are:\
+\n  -args <file>   Read additional newline-terminated command line arguments\
+\n                 from <file>\
+\n  -args0 <file>  Read additional null character terminated command line\
+\n                 arguments from <file>\
 \n  -cclib <lib>   C library passed to ocamlc -a or ocamlopt -a only\
 \n  -ccopt <opt>   C option passed to ocamlc -a or ocamlopt -a only\
 \n  -custom        Disable dynamic loading\

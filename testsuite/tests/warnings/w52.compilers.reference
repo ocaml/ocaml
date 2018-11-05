@@ -1,12 +1,18 @@
 File "w52.ml", line 12, characters 38-43:
+12 | let () = try () with Invalid_argument "Any" -> ();;
+                                           ^^^^^
 Warning 52: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
 and may change in future versions. (See manual section 9.5)
 File "w52.ml", line 20, characters 7-17:
+20 | | Warn "anything" -> ()
+            ^^^^^^^^^^
 Warning 52: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
 and may change in future versions. (See manual section 9.5)
 File "w52.ml", line 25, characters 8-10:
+25 | | Warn' 0n -> ()
+             ^^
 Warning 52: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
 and may change in future versions. (See manual section 9.5)

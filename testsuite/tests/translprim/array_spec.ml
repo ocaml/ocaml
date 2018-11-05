@@ -5,11 +5,11 @@
    *** flat-float-array
    **** check-ocamlc.byte-output
         compiler_reference =
-          "${test_source_directory}/array_spec.compilers.reference.flat"
+          "${test_source_directory}/array_spec.compilers.flat.reference"
    *** no-flat-float-array
    **** check-ocamlc.byte-output
        compiler_reference =
-         "${test_source_directory}/array_spec.compilers.reference.no-flat"
+         "${test_source_directory}/array_spec.compilers.no-flat.reference"
 *)
 
 external len : 'a array -> int = "%array_length"
