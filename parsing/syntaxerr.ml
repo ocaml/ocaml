@@ -28,57 +28,6 @@ type error =
 exception Error of error
 exception Escape_error
 
-let print_tyvar ppf s =
-  if String.length s >= 2 && s.[1] = '\'' then
-    (* without the space, this would be parsed as
-       a character literal *)
-    Format.fprintf ppf "' %s" s
-  else
-    Format.fprintf ppf "'%s" s
-
-let prepare_error err =
-  match err with
-  | Unclosed(opening_loc, opening, closing_loc, closing) ->
-      Location.errorf
-        ~loc:closing_loc
-        ~sub:[
-          Location.msg ~loc:opening_loc
-            "This '%s' might be unmatched" opening
-        ]
-        "Syntax error: '%s' expected" closing
-
-  | Expecting (loc, nonterm) ->
-      Location.errorf ~loc "Syntax error: %s expected." nonterm
-  | Not_expecting (loc, nonterm) ->
-      Location.errorf ~loc "Syntax error: %s not expected." nonterm
-  | Applicative_path loc ->
-      Location.errorf ~loc
-        "Syntax error: applicative paths of the form F(X).t \
-         are not supported when the option -no-app-func is set."
-  | Variable_in_scope (loc, var) ->
-      Location.errorf ~loc
-        "In this scoped type, variable %a \
-         is reserved for the local type %s."
-        print_tyvar var var
-  | Other loc ->
-      Location.errorf ~loc "Syntax error"
-  | Ill_formed_ast (loc, s) ->
-      Location.errorf ~loc
-        "broken invariant in parsetree: %s" s
-  | Invalid_package_type (loc, s) ->
-      Location.errorf ~loc "invalid package type: %s" s
-
-let () =
-  Location.register_error_of_exn
-    (function
-      | Error err -> Some (prepare_error err)
-      | _ -> None
-    )
-
-
-let report_error ppf err =
-  Location.print_report ppf (prepare_error err)
-
 let location_of_error = function
   | Unclosed(l,_,_,_)
   | Applicative_path l

@@ -238,7 +238,7 @@ let rec print_list pr sep ppf =
 let pr_present =
   print_list (fun ppf s -> fprintf ppf "`%s" s) (fun ppf -> fprintf ppf "@ ")
 
-let pr_var = Syntaxerr.print_tyvar
+let pr_var = Pprintast.tyvar
 
 let pr_vars =
   print_list pr_var (fun ppf -> fprintf ppf "@ ")
@@ -381,7 +381,7 @@ let out_type = ref print_out_type
 (* Class types *)
 
 let print_type_parameter ppf s =
-  if s = "_" then fprintf ppf "_" else Syntaxerr.print_tyvar ppf s
+  if s = "_" then fprintf ppf "_" else pr_var ppf s
 
 let type_parameter ppf (ty, (co, cn)) =
   fprintf ppf "%s%a"

@@ -914,7 +914,7 @@ let report_error env ppf = function
         but is here applied to %i argument(s)@]"
       longident lid expected provided
   | Bound_type_variable name ->
-    fprintf ppf "Already bound type parameter %a" Syntaxerr.print_tyvar name
+    fprintf ppf "Already bound type parameter %a" Pprintast.tyvar name
   | Recursive_type ->
     fprintf ppf "This type is recursive"
   | Unbound_row_variable lid ->
@@ -971,7 +971,7 @@ let report_error env ppf = function
   | Cannot_quantify (name, v) ->
       fprintf ppf
         "@[<hov>The universal type variable %a cannot be generalized:@ "
-        Syntaxerr.print_tyvar name;
+        Pprintast.tyvar name;
       if Btype.is_Tvar v then
         fprintf ppf "it escapes its scope"
       else if Btype.is_Tunivar v then
