@@ -547,7 +547,8 @@ let map_ccatch f rec_flag handlers body =
 
 let rec unbox_float dbg cmm =
   match cmm with
-  | Cop(Calloc, [_header; c], _) -> c
+  | Cop(Calloc, [Cblockheader (header, _); c], _) when header = float_header ->
+      c
   | Clet(id, exp, body) -> Clet(id, exp, unbox_float dbg body)
   | Cifthenelse(cond, e1, e2) ->
       Cifthenelse(cond, unbox_float dbg e1, unbox_float dbg e2)
@@ -929,11 +930,15 @@ let box_int_constant bi n =
   | Pint32 -> Uconst_int32 (Nativeint.to_int32 n)
   | Pint64 -> Uconst_int64 (Int64.of_nativeint n)
 
+let caml_nativeint_ops = "caml_nativeint_ops"
+let caml_int32_ops = "caml_int32_ops"
+let caml_int64_ops = "caml_int64_ops"
+
 let operations_boxed_int bi =
   match bi with
-    Pnativeint -> "caml_nativeint_ops"
-  | Pint32 -> "caml_int32_ops"
-  | Pint64 -> "caml_int64_ops"
+    Pnativeint -> caml_nativeint_ops
+  | Pint32 -> caml_int32_ops
+  | Pint64 -> caml_int64_ops
 
 let alloc_header_boxed_int bi =
   match bi with
@@ -963,18 +968,34 @@ let split_int64_for_32bit_target arg dbg =
     Ctuple [Cop (Cload (Thirtytwo_unsigned, Mutable), [first], dbg);
             Cop (Cload (Thirtytwo_unsigned, Mutable), [second], dbg)])
 
+let alloc_matches_boxed_int bi ~hdr ~ops =
+  match bi, hdr, ops with
+  | Pnativeint, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
+      Nativeint.equal hdr boxedintnat_header
+        && String.equal sym caml_nativeint_ops
+  | Pint32, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
+      Nativeint.equal hdr boxedint32_header
+        && String.equal sym caml_int32_ops
+  | Pint64, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
+      Nativeint.equal hdr boxedint64_header
+        && String.equal sym caml_int64_ops
+  | (Pnativeint | Pint32 | Pint64), _, _ -> false
+
 let rec unbox_int bi arg dbg =
   match arg with
-    Cop(Calloc, [_hdr; _ops; Cop(Clsl, [contents; Cconst_int 32], dbg')], _dbg)
-    when bi = Pint32 && size_int = 8 && big_endian ->
+    Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32], dbg')], _dbg)
+    when bi = Pint32 && size_int = 8 && big_endian
+      && alloc_matches_boxed_int bi ~hdr ~ops ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg'); Cconst_int 32],
         dbg)
-  | Cop(Calloc, [_hdr; _ops; contents], _dbg)
-    when bi = Pint32 && size_int = 8 && not big_endian ->
+  | Cop(Calloc, [hdr; ops; contents], _dbg)
+    when bi = Pint32 && size_int = 8 && not big_endian
+      && alloc_matches_boxed_int bi ~hdr ~ops ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg); Cconst_int 32], dbg)
-  | Cop(Calloc, [_hdr; _ops; contents], _dbg) ->
+  | Cop(Calloc, [hdr; ops; contents], _dbg)
+    when alloc_matches_boxed_int bi ~hdr ~ops ->
       contents
   | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body dbg)
   | Cifthenelse(cond, e1, e2) ->
