@@ -195,6 +195,8 @@ let warning_attribute ?(ppwarning = true) =
         end
     | k ->
         match kind_and_message k with
+        | Some ("all", _) ->
+            warn_payload loc txt "The alert name 'all' is reserved"
         | Some _ -> ()
         | None -> warn_payload loc txt "Invalid payload"
   in
