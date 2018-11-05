@@ -2343,7 +2343,8 @@ component is referenced).
 The "ocaml.alert" or "alert" attribute serves two purposes: (i) to
 mark component with an alert to be triggerred when the component is
 referenced, and (ii) to control which alert names are enabled.  In the
-first form, the attribute takes an identifier followed by a message.
+first form, the attribute takes an identifier possibly
+followed by a message.
 Here is an example of a value declaration marked with an alert:
 
 \begin{verbatim}
