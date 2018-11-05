@@ -338,6 +338,11 @@ Working version
 - GPR#2114: ocamldoc, improved manpages for documentation inside modules
   (Florian Angeletti, review by Gabriel Scherer)
 
+- GPR#2117: stdlib documentation, duplicate the operator precedence table
+  from the manual inside a separate "OCaml_operators" module.
+  (Florian Angeletti, review by Daniel Bünzli, Perry E. Metzger
+  and Gabriel Scherer)
+
 ### Compiler distribution build system:
 
 - GPR#1776: add -no-install-bytecode-programs and related configure options to
