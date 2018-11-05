@@ -2377,7 +2377,7 @@ Here are some examples:
 \begin{verbatim}
 
 (* Disable all alerts, reenables just unix (as a soft alert) and window
-   (and a fatal-error), for the rest of the current structure *)
+   (as a fatal-error), for the rest of the current structure *)
 
 [@@@alert "-all--all+unix@window"]
  ...
