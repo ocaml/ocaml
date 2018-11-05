@@ -49,7 +49,7 @@ static value alloc_custom_gen (struct custom_operations * ops,
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
     if (ops->finalize != NULL || mem != 0) {
-      if (mem > mem_minor){
+      if (mem > mem_minor) {
         caml_adjust_gc_speed (mem - mem_minor, max_major);
       }
       /* The remaining [mem_minor] will be counted if the block survives a
