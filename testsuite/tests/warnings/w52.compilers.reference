@@ -4,15 +4,33 @@ File "w52.ml", line 12, characters 38-43:
 Warning 52: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
 and may change in future versions. (See manual section 9.5)
-File "w52.ml", line 20, characters 7-17:
-20 | | Warn "anything" -> ()
+File "w52.ml", line 14, characters 35-46:
+14 | let () = try () with Match_failure ("Any",_,_) -> ();;
+                                        ^^^^^^^^^^^
+Warning 52: Code should not depend on the actual values of
+this constructor's arguments. They are only for information
+and may change in future versions. (See manual section 9.5)
+File "w52.ml", line 16, characters 35-42:
+16 | let () = try () with Match_failure (_,0,_) -> ();;
+                                        ^^^^^^^
+Warning 52: Code should not depend on the actual values of
+this constructor's arguments. They are only for information
+and may change in future versions. (See manual section 9.5)
+File "w52.ml", line 25, characters 7-17:
+25 | | Warn "anything" -> ()
             ^^^^^^^^^^
 Warning 52: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
 and may change in future versions. (See manual section 9.5)
-File "w52.ml", line 25, characters 8-10:
-25 | | Warn' 0n -> ()
+File "w52.ml", line 30, characters 8-10:
+30 | | Warn' 0n -> ()
              ^^
+Warning 52: Code should not depend on the actual values of
+this constructor's arguments. They are only for information
+and may change in future versions. (See manual section 9.5)
+File "w52.ml", line 46, characters 7-34:
+46 | | Deep (_ :: _ :: ("deep",_) :: _) -> ()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 52: Code should not depend on the actual values of
 this constructor's arguments. They are only for information
 and may change in future versions. (See manual section 9.5)
