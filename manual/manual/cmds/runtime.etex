@@ -157,7 +157,7 @@ The following environment variables are also consulted:
   "caml_shutdown" in section~\ref{s:embedded-code}). The option also enables
   pooling (as in "caml_startup_pooled"). This mode can be used to detect
   leaks with a third-party memory debugger.
-  % FIXME missing: H, w, W
+  % FIXME missing: H, t, w, W see MPR#7870
   \item[M] ("custom_major_ratio") Target ratio of floating garbage to
   major heap size for out-of-heap memory held by custom values
   (e.g. bigarrays) located in the major heap. The GC speed is adjusted
@@ -173,10 +173,11 @@ The following environment variables are also consulted:
   100. Note: this only applies to values allocated with
   "caml_alloc_custom_mem".
   \item[n] ("custom_minor_max_size") Maximum amount of out-of-heap
-  memory for custom values allocated in the minor heap. When a custom
+  memory for each custom value allocated in the minor heap. When a custom
   value is allocated on the minor heap and holds more than this many
   bytes, only this value is counted against "custom_minor_ratio" and
-  the rest is directly counted against "custom_major_ratio". Note:
+  the rest is directly counted against "custom_major_ratio".
+  Default: 8192 bytes. Note:
   this only applies to values allocated with "caml_alloc_custom_mem".
   \end{options}
   The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,

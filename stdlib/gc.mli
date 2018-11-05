@@ -151,27 +151,39 @@ type control =
         Default: 1. @since 4.03.0 *)
 
     custom_major_ratio : int;
-    (** A percentage relative to the major heap size. This parameter
-        controls the major GC speed as a function of memory allocated
-        outside the heap and retained by custom values located in the
-        major heap. The GC will speed up as needed to (try to) limit
-        the amount of floating garbage to this much memory. The
-        default value keeps the out-of-heap floating garbage about the
-        same size as the in-heap overhead.
-        Default: 44. @since 4.08.0 *)
+
+    (** Target ratio of floating garbage to major heap size for
+        out-of-heap memory held by custom values located in the major
+        heap. The GC speed is adjusted to try to use this much memory
+        for dead values that are not yet collected. Expressed as a
+        percentage of major heap size. The default value keeps the
+        out-of-heap floating garbage about the same size as the
+        in-heap overhead.
+        Note: this only applies to values allocated with
+        [caml_alloc_custom_mem] (e.g. bigarrays).
+        Default: 44.
+        @since 4.08.0 *)
 
     custom_minor_ratio : int;
-    (** A percentage relative to the minor heap size. This parameter
-        forces a minor collection when the memory allocated outside
-        the heap and retained by custom values located in the minor
-        heap grows larger than the specified amount.
-        Default: 100. @since 4.08.0 *)
+    (** Bound on floating garbage for out-of-heap memory held by
+        custom values in the minor heap. A minor GC is triggered when
+        this much memory is held by custom values located in the minor
+        heap. Expressed as a percentage of minor heap size.
+        Note: this only applies to values allocated with
+        [caml_alloc_custom_mem] (e.g. bigarrays).
+        Default: 100.
+        @since 4.08.0 *)
 
     custom_minor_max_size : int;
-    (** Custom values larger than this parameter will not count
-        against [custom_minor_ratio] but directly against
-        [custom_major_ratio] (because they are presumably long-lived).
-        Default: 8192. @since 4.08.0 *)
+    (** Maximum amount of out-of-heap memory for each custom value
+        allocated in the minor heap. When a custom value is allocated
+        on the minor heap and holds more than this many bytes, only
+        this value is counted against [custom_minor_ratio] and the
+        rest is directly counted against [custom_major_ratio].
+        Note: this only applies to values allocated with
+        [caml_alloc_custom_mem] (e.g. bigarrays).
+        Default: 8192 bytes.
+        @since 4.08.0 *)
   }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the

@@ -125,7 +125,7 @@ last six correspond to the fields of the
 record documented in
 .IR "The OCaml user's manual",
 chapter "Standard Library", section "Gc".
-\" FIXME missing: c, H, w, W
+\" FIXME missing: c, H, t, w, W see MPR#7870
 .TP
 .B b
 Trigger the printing of a stack backtrace
@@ -174,32 +174,36 @@ Target ratio of floating garbage to
 major heap size for out-of-heap memory held by custom values
 located in the major heap. The GC speed is adjusted
 to try to use this much memory for dead values that are not yet
-collected. Expressed as a percentage of major heap size. Default:
-30. Note: this only applies to values allocated with
+collected. Expressed as a percentage of major heap size.
+The default value keeps the out-of-heap floating garbage about the
+same size as the in-heap overhead.
+Note: this only applies to values allocated with
 .B caml_alloc_custom_mem
 (e.g. bigarrays).
+Default: 44.
 .TP
 .BR m \ (custom_minor_ratio)
 Bound on floating garbage for out-of-heap memory
 held by custom values in the minor heap. A minor GC is triggered
 when this much memory is held by custom values located in the minor
-heap. Expressed as a percentage of minor heap size. Default:
-100. Note: this only applies to values allocated with
+heap. Expressed as a percentage of minor heap size.
+Note: this only applies to values allocated with
 .B caml_alloc_custom_mem
 (e.g. bigarrays).
+ Default: 100.
 .TP
 .BR n \ (custom_minor_max_size)
 Maximum amount of out-of-heap
-memory for custom values allocated in the minor heap. When a custom
-value is allocated   on the minor heap and holds more than this many
+memory for each custom value allocated in the minor heap. When a custom
+value is allocated on the minor heap and holds more than this many
 bytes, only this value is counted against
 .B custom_minor_ratio
 and the rest is directly counted against
 .BR custom_major_ratio .
-Note:
-this only applies to values allocated with
+Note: this only applies to values allocated with
 .B caml_alloc_custom_mem
 (e.g. bigarrays).
+Default: 8192 bytes.
 .TP
 .BR v \ (verbose)
 What GC messages to print to stderr.  This is a sum of values selected
