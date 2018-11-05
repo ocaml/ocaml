@@ -151,7 +151,6 @@ type control =
         Default: 1. @since 4.03.0 *)
 
     custom_major_ratio : int;
-
     (** Target ratio of floating garbage to major heap size for
         out-of-heap memory held by custom values located in the major
         heap. The GC speed is adjusted to try to use this much memory
