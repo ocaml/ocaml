@@ -15,6 +15,9 @@ stdlib__bigarray.cmi : stdlib__complex.cmi
 stdlib__bool.cmo : stdlib.cmi stdlib__bool.cmi
 stdlib__bool.cmx : stdlib.cmx stdlib__bool.cmi
 stdlib__bool.cmi :
+stdlib__unit.cmo : stdlib.cmi stdlib__unit.cmi
+stdlib__unit.cmx : stdlib.cmx stdlib__unit.cmi
+stdlib__unit.cmi :
 stdlib__buffer.cmo : stdlib__uchar.cmi stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib__char.cmi stdlib__bytes.cmi \
     stdlib__buffer.cmi
 stdlib__buffer.cmx : stdlib__uchar.cmx stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__char.cmx stdlib__bytes.cmx \

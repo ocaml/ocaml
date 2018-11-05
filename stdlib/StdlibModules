@@ -79,4 +79,5 @@ STDLIB_MODULES=\
   $(P)stringLabels \
   $(P)sys \
   $(P)uchar \
+  $(P)unit \
   $(P)weak

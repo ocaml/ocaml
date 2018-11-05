@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* type 'a option = None | Some of 'a *)
-
 (* Exceptions *)
 
 external register_named_value : string -> 'a -> unit

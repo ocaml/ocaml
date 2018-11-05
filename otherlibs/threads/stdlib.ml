@@ -17,8 +17,6 @@
    been redefined to not block the whole process, but only the calling
    thread. *)
 
-(* type 'a option = None | Some of 'a *)
-
 (* Exceptions *)
 
 external register_named_value : string -> 'a -> unit
