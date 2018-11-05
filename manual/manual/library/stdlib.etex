@@ -214,5 +214,5 @@ be called from C \\
 \input{Uchar.tex}
 \input{Unit.tex}
 \input{Weak.tex}
-\input{OCamloperators.tex}
+\input{Ocamloperators.tex}
 \fi
