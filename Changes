@@ -236,7 +236,6 @@ Working version
 * GPR#1979: Remove support for TERM=norepeat when displaying errors
   (Armaël Guéneau, review by Gabriel Scherer and Florian Angeletti)
 
-
 - GPR#1960: The parser keeps previous location when relocating ast node.
   (Hugo Heuzard, review by Jérémie Dimino)
 
@@ -244,6 +243,9 @@ Working version
   specify a list of additional include directories for the ocaml toplevel.
   (Nicolás Ojeda Bär, request by Daniel Bünzli, review by Daniel Bünzli and
   Damien Doligez)
+
+- MPR#7864, GPR#2109: remove duplicates from spelling suggestions.
+  (Nicolás Ojeda Bär, review by Armaël Guéneau)
 
 ### Code generation and optimizations:
 
