@@ -145,6 +145,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- GPR#2133: Warn on literal patterns found anywhere in a constructor's
+  arguments.
+  (Jeremy Yallop, review by Gabriel Scherer)
+
 - PR#2096: Add source highlighting for errors & warnings in batch mode
   (Armaël Guéneau, review by Gabriel Scherer and Jérémie Dimino)
 
