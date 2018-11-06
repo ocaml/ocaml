@@ -1057,25 +1057,17 @@ partialclean::
 
 .PHONY: otherlibraries
 otherlibraries: ocamltools
-	for i in $(OTHERLIBRARIES); do \
-	  ($(MAKE) -C otherlibs/$$i all) || exit $$?; \
-	done
+	$(MAKE) -C otherlibs all
 
 .PHONY: otherlibrariesopt
 otherlibrariesopt:
-	for i in $(OTHERLIBRARIES); do \
-	  ($(MAKE) -C otherlibs/$$i allopt) || exit $$?; \
-	done
+	$(MAKE) -C otherlibs allopt
 
 partialclean::
-	for i in $(OTHERLIBRARIES); do \
-	  ($(MAKE) -C otherlibs/$$i partialclean); \
-	done
+	$(MAKE) -C otherlibs partialclean
 
 clean::
-	for i in $(OTHERLIBRARIES); do \
-	  ($(MAKE) -C otherlibs/$$i clean); \
-	done
+	$(MAKE) -C otherlibs clean
 
 # The replay debugger
 
