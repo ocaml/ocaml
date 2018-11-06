@@ -211,4 +211,5 @@ be called from C \\
 \input{Sys.tex}
 \input{Uchar.tex}
 \input{Weak.tex}
+\input{OCamloperators.tex}
 \fi

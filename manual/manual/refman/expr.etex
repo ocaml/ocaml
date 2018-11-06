@@ -126,6 +126,8 @@ The table below shows the relative precedences and associativity of
 operators and non-closed constructions. The constructions with higher
 precedence come first. For infix and prefix symbols, we write
 ``"*"\ldots'' to mean ``any symbol starting with "*"''.
+% Note that this table is duplicated in stdlib/ocaml_operators.mld,
+% these tables should be kept in sync with the one below.
 \ikwd{or\@\texttt{or}}%
 \ikwd{if\@\texttt{if}}%
 \ikwd{fun\@\texttt{fun}}%
@@ -143,7 +145,7 @@ precedence come first. For infix and prefix symbols, we write
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
 \entree{".   .(   .[   .{" (see section~\ref{s:bigarray-access})}{--}
-\entree{"#"\ldots}{--}
+\entree{"#"\ldots}{left}
 \entree{function application, constructor application, tag
         application, "assert",
         "lazy"}{left}
