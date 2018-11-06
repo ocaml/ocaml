@@ -196,6 +196,16 @@ module Backtrace : sig
       debug information enabled ([ocamlc -g]) *)
 end with type exn := t
 
+external raise: t -> 'a = "%raise"
+
+external reraise: t -> 'a = "%reraise"
+
+external raise_notrace: t -> 'a = "%raise_notrace"
+
+external raise_with_backtrace: t -> Backtrace.t -> 'a = "%raise_with_backtrace"
+(** Reraise the exception using the given raw backtrace for the origin of the
+    exception. *)
+
 (** {1 Current call stack} *)
 
 val current_callstack: int -> Backtrace.t
@@ -203,10 +213,6 @@ val current_callstack: int -> Backtrace.t
     the current program point (for the current thread), with at most [n]
     entries.  (Note: this function is not related to exceptions at all, despite
     being part of the {!Exn} module.) *)
-
-external raise_with_backtrace: t -> Backtrace.t -> 'a = "%raise_with_backtrace"
-(** Reraise the exception using the given raw backtrace for the origin of the
-    exception. *)
 
 val register_printer: (t -> string option) -> unit
 (** [register_printer fn] registers [fn] as an exception printer.  The printer
