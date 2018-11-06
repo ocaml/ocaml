@@ -25,28 +25,6 @@ type t = exn = ..
 val to_string: t -> string
 (** [to_string e] returns a string representation of the exception [e]. *)
 
-val print_if_exn: ('a -> 'b) -> 'a -> 'b
-(** [print fn x] applies [fn] to [x] and returns the result.  If the evaluation
-    of [fn x] raises any exception, the name of the exception is printed on
-    standard error output, and the exception is raised again.  The typical use
-    is to catch and report exceptions that escape a function application. *)
-
-val print_current_backtrace: out_channel -> unit
-(** [print_backtrace oc] prints an exception backtrace on the output channel
-    [oc].  The backtrace lists the program locations where the most-recently
-    raised exception was raised and where it was propagated through function
-    calls.
-
-    If the call is not inside an exception handler, the returned
-    backtrace is unspecified. If the call is after some
-    exception-catching code (before in the handler, or in a when-guard
-    during the matching of the exception handler), the backtrace may
-    correspond to a later exception than the handled one. *)
-
-val string_of_current_backtrace: unit -> string
-(** Returns a string containing the same exception backtrace that {!print}
-    would print. Same restriction usage than {!print}. *)
-
 module Backtrace : sig
   (** {1 Raw backtraces} *)
 
@@ -78,9 +56,6 @@ module Backtrace : sig
   (** Returns the same exception backtrace that {!print_current_backtrace} would
       print, but in a raw format. Same restriction usage than
       {!print_current_backtrace}. *)
-
-  val print: out_channel -> t -> unit
-  (** Print a raw backtrace in the same format {!print_backtrace} uses. *)
 
   val to_string: t -> string
   (** Return a string from a raw backtrace, in the same format {!Backtrace.get}
