@@ -90,6 +90,29 @@ typedef char * addr;
 #error "How do I align values on this platform?"
 #endif
 
+
+/* CAMLunused is preserved for compatibility reasons.
+   Instead of the legacy GCC/Clang-only
+     CAMLunused foo;
+   you should prefer
+     CAMLunused_start foo CAMLunused_end;
+   which supports both GCC/Clang and MSVC.
+*/
+#if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
+  #define CAMLunused_start __attribute__ ((unused))
+  #define CAMLunused_end
+  #define CAMLunused __attribute__ ((unused))
+#elif _MSC_VER >= 1500
+  #define CAMLunused_start  __pragma( warning (push) )           \
+    __pragma( warning (disable:4189 ) )
+  #define CAMLunused_end __pragma( warning (pop))
+  #define CAMLunused
+#else
+  #define CAMLunused_start
+  #define CAMLunused_end
+  #define CAMLunused
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -118,7 +141,7 @@ CAMLextern int caml_failed_assert (char *, char *, int);
 #endif
 
 #define CAML_STATIC_ASSERT_3(b, l) \
-  typedef char static_assertion_failure_line_##l[(b) ? 1 : -1]
+  typedef CAMLunused_start char static_assertion_failure_line_##l[(b) ? 1 : -1] CAMLunused_end
 #define CAML_STATIC_ASSERT_2(b, l) CAML_STATIC_ASSERT_3(b, l)
 #define CAML_STATIC_ASSERT(b) CAML_STATIC_ASSERT_2(b, __LINE__)
 

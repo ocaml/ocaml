@@ -256,6 +256,8 @@ static int caml_thread_try_leave_blocking_section(void)
 
 static caml_thread_t caml_thread_new_info(void)
 {
+  caml_failwith("unimplemented");
+#if 0
   caml_thread_t th;
 #ifndef NATIVE_CODE
   struct stack_info* stack;
@@ -301,6 +303,7 @@ static caml_thread_t caml_thread_new_info(void)
   th->backtrace_pos = 0;
   th->backtrace_buffer = NULL;
   return th;
+#endif
 }
 
 /* Allocate a thread descriptor block. */

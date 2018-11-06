@@ -8,17 +8,22 @@
 #include "memory.h"
 #include "roots.h"
 
+struct stack_info;
+
+struct stack_handler {
+  value handle_value;
+  value handle_exn;
+  value handle_effect;
+  struct stack_info* parent;
+};
+
 struct stack_info {
 #ifdef NATIVE_CODE
   void* sp;
 #else
   value* sp;
 #endif
-  value handle_value;
-  value handle_exn;
-  value handle_effect;
-  struct stack_info* parent;
-  uintnat wosize;
+  struct stack_handler* handler;
   uintnat magic;
 };
 
@@ -29,13 +34,15 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value))
 /* 16-byte align-down Stack_high because certain architectures like arm64
  * demand 16-byte alignment. Leaves a word unused at the bottom of the stack if
  * the Op_val(stk) + Wosize_val(stk) is not 16-byte aligned. */
-#define Stack_high(stk) ((value*)(((uintnat)stk + sizeof(value) * stk->wosize) & (-1uLL << 4)))
+//#define Stack_high(stk) ((value*)(((uintnat)stk + sizeof(value) * stk->wosize) & (-1uLL << 4)))
 
-#define Stack_handle_value(stk) (stk)->handle_value
-#define Stack_handle_exception(stk) (stk)->handle_exn
-#define Stack_handle_effect(stk) (stk)->handle_effect
+#define Stack_high(stk) (value*)stk->handler
+
+#define Stack_handle_value(stk) (stk)->handler->handle_value
+#define Stack_handle_exception(stk) (stk)->handler->handle_exn
+#define Stack_handle_effect(stk) (stk)->handler->handle_effect
 #define Stack_parent_offset 5
-#define Stack_parent(stk) (stk)->parent
+#define Stack_parent(stk) (stk)->handler->parent
 
 #ifdef NATIVE_CODE
 

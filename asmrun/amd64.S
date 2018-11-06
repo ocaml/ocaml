@@ -316,13 +316,15 @@
 #define C_ARG_4 %rcx
 #endif
 
-/* Stack-local variables */
+/* struct stack_info */
+#define Stack_sp(REG)             (REG)
+#define Stack_handler            8
 
-#define Stack_sp(REG)               (REG)
-#define Stack_handle_value(REG)     8(REG)
-#define Stack_handle_exception(REG) 16(REG)
-#define Stack_handle_effect(REG)    24(REG)
-#define Stack_parent                32
+/* struct stack_handler */
+#define Handler_value(REG)       0(REG)
+#define Handler_exception(REG)   8(REG)
+#define Handler_effect(REG)     16(REG)
+#define Handler_parent          24
 
 /******************************************************************************/
 /* text section
@@ -1039,8 +1041,9 @@ CFI_STARTPROC
     /* In handler. %rax has exception */
         mov     %rax, %rbx
         movq	Caml_state(current_stack), %rsi
-        movq    Stack_handle_exception(%rsi), %r12  /* exception handler */
-        movq    Stack_parent(%rsi), %rdi            /* parent stack. Never NULL here. */
+        movq    Stack_handler(%rsi), %rsi
+        movq    Handler_exception(%rsi), %r12
+        movq    Handler_parent(%rsi), %rdi            /* parent stack. Never NULL here. */
     /* Switch stacks */
         SWITCH_OCAML_STACKS_AND_FREE
     /* Invoke exception handler */
@@ -1056,8 +1059,9 @@ LBL(111):
     /* In handler. %rax has value */
         mov     %rax, %rbx
         movq	Caml_state(current_stack), %rsi
-        movq    Stack_handle_value(%rsi), %r12    /* value handler */
-        movq    Stack_parent(%rsi), %rdi          /* parent stack. Never NULL here. */
+        movq    Stack_handler(%rsi), %rsi
+        movq    Handler_value(%rsi), %r12
+        movq    Handler_parent(%rsi), %rdi          /* parent stack. Never NULL here. */
     /* Reset stack. First pop off fiber exn handler. */
         popq    %r10; CFI_ADJUST(-8)
         popq    %r10; CFI_ADJUST(-8)
@@ -1076,14 +1080,15 @@ CFI_STARTPROC
         %rbx: freshly allocated continuation */
         mov     %rax, %r12                      /* r8,r9,r12,r13 are preserved across C call */
         mov     %rbx, %r13
-        movq	Caml_state(current_stack), %rbx   /* Second argument */
-        movq    Stack_parent(%rbx), %rdi        /* Parent stack. */
+        movq	Caml_state(current_stack), %rbx /* Second argument */
+        leaq    1(%rbx), %r8                    /* %r8 := Val_ptr(%rbx) */
+        movq    Stack_handler(%rbx), %rbx
+        movq    Handler_parent(%rbx), %rdi      /* Parent stack. */
         cmpq    $0, %rdi                        /* Parent is NULL? */
         je      LBL(112)
-        leaq    1(%rbx), %r8                    /* %r8 := Val_ptr(%rbx) */
-        movq    $0, Stack_parent(%rbx)          /* Set parent stack of performer to NULL */
+        movq    $0, Handler_parent(%rbx)        /* Set parent stack of performer to NULL */
         movq    %r8, 0(%r13)                    /* Initialise continuation */
-        movq    Stack_handle_effect(%rbx), %r9  /* effect handler */
+        movq    Handler_effect(%rbx), %r9       /* effect handler */
     /* Switch stacks */
         SWITCH_OCAML_STACKS
     /* Invoke effect handler */
@@ -1106,15 +1111,16 @@ CFI_STARTPROC
         %rdi: continuation tail */
         movq    %rax, %r12                      /* r8,r9,r12,r13 are preserved across C call */
         movq    %rbx, %r13
-        movq    %rdi, %r8
         movq	Caml_state(current_stack), %rbx
-        movq    Stack_parent(%rbx), %rdi         /* Parent stack */   
+        movq    (Stack_handler-1)(%rdi), %rdi
+        movq    %rbx, Handler_parent(%rdi)       /* Append to cont_tail in Stack_parent(Ptr_val(r8)) */
+        leaq    1(%rbx), %r8                     /* %r8 := Val_ptr(%rbx) */
+        movq    Stack_handler(%rbx), %rbx
+        movq    Handler_parent(%rbx), %rdi       /* Parent stack */
         cmpq    $0, %rdi                         /* Parent is Null? */
         je      LBL(113)
-        movq    %rbx, (Stack_parent-1)(%r8)      /* Append to cont_tail in Stack_parent(Ptr_val(r8)) */
-        leaq    1(%rbx), %r8                     /* %r8 := Val_ptr(%rbx) */
-        movq    $0, Stack_parent(%rbx)           /* Set parent stack of performer to NULL */
-        movq    Stack_handle_effect(%rbx), %r9   /* effect handler */
+        movq    $0, Handler_parent(%rbx)         /* Set parent stack of performer to NULL */
+        movq    Handler_effect(%rbx), %r9        /* effect handler */
     /* Switch stacks */
         SWITCH_OCAML_STACKS
     /* Invoke effect handler */
@@ -1126,7 +1132,6 @@ CFI_STARTPROC
         jmp     *%rcx
 LBL(113):
     /* switch back to original performer before raising Unhandled */
-        movq    %rbx, (Stack_parent-1)(%r8)
         movq    0(%r13), %rdi                     /* load performer stack from continuation */
         subq    $1, %rdi                          /* rdi := Ptr_val(rdi) */
         SWITCH_OCAML_STACKS
@@ -1142,12 +1147,13 @@ CFI_STARTPROC
         movq    %rdi, %r12      /* Save arg (callee-saved) */
         movq    %rax, %rdi
     /* Find end of list of stacks and add current */
-1:      cmpq    $0, Stack_parent(%rax)
+1:      movq    Stack_handler(%rax), %rcx
+        cmpq    $0, Handler_parent(%rcx)
         je      2f
-        movq    Stack_parent(%rax), %rax
+        movq    Handler_parent(%rcx), %rax
         jmp     1b
-2:      movq	Caml_state(current_stack), %rcx
-        movq    %rcx, Stack_parent(%rax)
+2:      movq	Caml_state(current_stack), %rax
+        movq    %rax, Handler_parent(%rcx)
     /* %rdi has new stack */
         SWITCH_OCAML_STACKS
     /* Return value is 1 if switching to a fresh stack. */
