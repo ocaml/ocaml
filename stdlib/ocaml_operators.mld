@@ -13,7 +13,7 @@ are also listed as references.
 \hline
 Operator class                                       & Associativity \\
 \hline
-$!\ldots \textasciitilde\ldots$                               &  --   \\
+$!\ldots$ $\tilde{}\ldots$                                    &  --   \\
 $.\cdots()$ $.\cdots[]$ $.\cdots\\{\\}$                       &  --   \\
 \#\ldots                                                      & left  \\
 function application                                          & left  \\
