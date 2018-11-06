@@ -79,10 +79,6 @@ CAMLexport struct custom_operations caml_ba_ops = {
 
 /* Allocation of a big array */
 
-#define CAML_BA_MAX_MEMORY (1024*1024*1024)
-/* 1 Gb -- after allocating that much, it's probably worth speeding
-   up the major GC */
-
 /* [caml_ba_alloc] will allocate a new bigarray object in the heap.
    If [data] is NULL, the memory for the contents is also allocated
    (with [malloc]) by [caml_ba_alloc].
@@ -117,7 +113,7 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
     flags |= CAML_BA_MANAGED;
   }
   asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
-  res = caml_alloc_custom(&caml_ba_ops, asize, size, CAML_BA_MAX_MEMORY);
+  res = caml_alloc_custom_mem(&caml_ba_ops, asize, size);
   b = Caml_ba_array_val(res);
   b->data = data;
   b->num_dims = num_dims;

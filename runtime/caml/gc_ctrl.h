@@ -42,9 +42,13 @@ uintnat caml_normalize_heap_increment (uintnat);
   percent_fr: cf. space_overhead in gc.mli
   percent_m : cf. max_overhead in gc.mli
   window    : cf. window_size in gc.mli
+  custom_maj: cf. custom_major_ratio in gc.mli
+  custom_min: cf. custom_minor_ratio in gc.mli
+  custom_sz : cf. custom_minor_max_size in gc.mli
 */
 void caml_init_gc (uintnat minor_size, uintnat major_size, uintnat major_incr,
-                   uintnat percent_fr, uintnat percent_m, uintnat window);
+                   uintnat percent_fr, uintnat percent_m, uintnat window,
+                   uintnat custom_maj, uintnat custom_min, uintnat custom_bsz);
 
 
 CAMLextern value caml_gc_stat(value v);

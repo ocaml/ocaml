@@ -461,8 +461,8 @@ CAMLexport value caml_alloc_channel(struct channel *chan)
 {
   value res;
   chan->refcount++;             /* prevent finalization during next alloc */
-  res = caml_alloc_custom(&channel_operations, sizeof(struct channel *),
-                          1, 1000);
+  res = caml_alloc_custom_mem(&channel_operations, sizeof(struct channel *),
+                              sizeof(struct channel));
   Channel(res) = chan;
   return res;
 }
