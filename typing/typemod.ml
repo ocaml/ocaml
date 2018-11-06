@@ -1113,8 +1113,7 @@ and transl_signature env sg =
             let sg, newenv = Env.enter_signature ~scope
                        (extract_sig env smty.pmty_loc mty) env in
             List.iter
-              (fun i -> check_sig_item names item.psig_loc i to_be_removed)
-              (List.rev sg);
+              (fun i -> check_sig_item names item.psig_loc i to_be_removed) sg;
             let incl =
               { incl_mod = tmty;
                 incl_type = sg;
@@ -1949,8 +1948,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg, new_env = Env.enter_signature ~scope
             (extract_sig_open env smodl.pmod_loc modl.mod_type) env in
-        List.iter (fun item -> check_sig_item names loc item to_be_removed)
-          (List.rev sg);
+        List.iter (fun item -> check_sig_item names loc item to_be_removed) sg;
         let incl =
           { incl_mod = modl;
             incl_type = sg;
