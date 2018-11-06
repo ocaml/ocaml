@@ -91,7 +91,7 @@ static inline int Must_be_Marked_during_mark(value x)
 }
 #endif
 
-/* [len] is a value that represents a number of words (fields) */
+/* [len] is a number of words (fields) */
 CAMLexport value caml_ephemeron_create (mlsize_t len)
 {
   mlsize_t size, i;
@@ -545,7 +545,7 @@ CAMLprim value caml_ephe_blit_key (value ars, value ofs,
 {
   if (Long_val(len) == 0) return Val_unit;
 
-  caml_ephemeron_blit_key(ars, Long_val(ofs), ard, Long_val(ofd), Long_val(len));
+  caml_ephemeron_blit_key(ars,Long_val(ofs),ard,Long_val(ofd),Long_val(len));
   return Val_unit;
 }
 
