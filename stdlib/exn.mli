@@ -46,15 +46,6 @@ val string_of_current_backtrace: unit -> string
 (** Returns a string containing the same exception backtrace that {!print}
     would print. Same restriction usage than {!print}. *)
 
-val record_backtrace: bool -> unit
-(** [record b] turns recording of exception backtraces on (if [b = true]) or
-    off (if [b = false]).  Initially, backtraces are not recorded, unless the
-    [b] flag is given to the program through the [OCAMLRUNPARAM] variable. *)
-
-val record_status: unit -> bool
-(** Returns [true] if exception backtraces are currently recorded, [false] if
-    not. *)
-
 module Backtrace : sig
   (** {1 Raw backtraces} *)
 
@@ -71,6 +62,16 @@ module Backtrace : sig
 
       Raw backtraces cannot be marshalled. If you need marshalling, you should
       use the array returned by the {!slots} function. *)
+
+  val set_recording_status: bool -> unit
+  (** [set_recording_status b] turns recording of exception backtraces on (if [b
+      = true]) or off (if [b = false]).  Initially, backtraces are not recorded,
+      unless the [b] flag is given to the program through the [OCAMLRUNPARAM]
+      variable. *)
+
+  val get_recording_status: unit -> bool
+  (** Returns [true] if exception backtraces are currently recorded, [false] if
+      not. *)
 
   val current: unit -> t
   (** Returns the same exception backtrace that {!print_current_backtrace} would
