@@ -171,7 +171,7 @@ Working version
   (Arthur Charguéraud and Armaël Guéneau, with help and advice
    from Gabriel Scherer, Frédéric Bour, Xavier Clerc and Leo White)
 
-- GPR#1733,1993,1998,2058,2094: Typing error message improvements
+- GPR#1733,1993,1998,2058,2094,2140: Typing error message improvements
     - GPR#1733, change the perspective of the unexpected existential error
       message.
     - GPR#1993, expanded error messages for universal quantification failure
@@ -179,6 +179,8 @@ Working version
     - GPR#2058, full explanation for unsafe cycles in recursive module
       definitions (suggestion by Ivan Gotovchits)
     - GPR#2094, rewording for "constructor has no type" error
+    - MPR#7565, GPR#2140, more context for universal variable escape
+      in method type
   (Florian Angeletti, reviews by Jacques Garrique, Gabriel Radanne,
    Gabriel Scherer and Jeremy Yallop)
 
