@@ -1,21 +1,22 @@
 run_unix.$(O): run_unix.c run.h ../byterun/caml/misc.h \
-  ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
-  run_common.h
+ ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
+ run_common.h
 run_stubs.$(O): run_stubs.c run.h ../byterun/caml/misc.h \
-  ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
-  ../byterun/caml/mlvalues.h ../byterun/caml/memory.h \
-  ../byterun/caml/gc.h ../byterun/caml/major_gc.h \
-  ../byterun/caml/freelist.h ../byterun/caml/minor_gc.h \
-  ../byterun/caml/address_class.h ../byterun/caml/io.h \
-  ../byterun/caml/osdeps.h
+ ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
+ ../byterun/caml/mlvalues.h ../byterun/caml/misc.h \
+ ../byterun/caml/memory.h ../byterun/caml/gc.h ../byterun/caml/mlvalues.h \
+ ../byterun/caml/major_gc.h ../byterun/caml/freelist.h \
+ ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
+ ../byterun/caml/io.h ../byterun/caml/osdeps.h ../byterun/caml/memory.h
 ocamltest_stdlib_stubs.$(O): ocamltest_stdlib_stubs.c \
-  ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
-  ../byterun/caml/mlvalues.h ../byterun/caml/misc.h \
-  ../byterun/caml/memory.h ../byterun/caml/gc.h \
-  ../byterun/caml/major_gc.h ../byterun/caml/freelist.h \
-  ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
-  ../byterun/caml/alloc.h ../byterun/caml/signals.h \
-  ../byterun/caml/osdeps.h
+ ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
+ ../byterun/caml/mlvalues.h ../byterun/caml/config.h \
+ ../byterun/caml/misc.h ../byterun/caml/memory.h ../byterun/caml/gc.h \
+ ../byterun/caml/mlvalues.h ../byterun/caml/major_gc.h \
+ ../byterun/caml/freelist.h ../byterun/caml/minor_gc.h \
+ ../byterun/caml/address_class.h ../byterun/caml/alloc.h \
+ ../byterun/caml/signals.h ../byterun/caml/osdeps.h \
+ ../byterun/caml/memory.h
 actions.cmo : result.cmi environments.cmi actions.cmi
 actions.cmx : result.cmx environments.cmx actions.cmi
 actions.cmi : result.cmi environments.cmi
