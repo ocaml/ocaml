@@ -20,6 +20,7 @@
     @since 4.08 *)
 
 type t = exn = ..
+(** The type for exceptions. *)
 
 val to_string: t -> string
 (** [to_string e] returns a string representation of the exception [e]. *)
