@@ -1814,11 +1814,9 @@ let explain_escape intro ctx e =
     | None -> ignore
     | Some ctx ->  dprintf "@[%t@;<1 2>%a@]" intro type_expr ctx in
   match e with
-  | Trace.Univ Some u ->  Some(
-      dprintf "%t@,The universal variable '%s would escape its scope"
-        pre u)
-  | Trace.Univ None ->
-      Some(dprintf "%t@,An universal variable would escape its scope" pre)
+  | Trace.Univ u ->  Some(
+      dprintf "%t@,The universal variable %a would escape its scope"
+        pre type_expr u)
   | Trace.Constructor p -> Some(
       dprintf
         "%t@,@[The type constructor@;<1 2>%a@ would escape its scope@]"

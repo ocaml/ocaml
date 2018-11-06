@@ -26,3 +26,17 @@ Line 1, characters 21-33:
 Error: The universal type variable 'a cannot be generalized:
        it escapes its scope.
 |}]
+
+
+(** Check that renaming universal type variable is properly tracked
+    in printtyp *)
+
+let f (x:<a:'a; b:'a. 'a>) (y:<a:'a;b:'a>) = x = y
+[%%expect {|
+Line 4, characters 49-50:
+4 | let f (x:<a:'a; b:'a. 'a>) (y:<a:'a;b:'a>) = x = y
+                                                     ^
+Error: This expression has type < a : 'a; b : 'a >
+       but an expression was expected of type < a : 'a; b : 'a0. 'a0 >
+       The universal variable 'a0 would escape its scope
+|}]

@@ -29,7 +29,9 @@ module Unification_trace: sig
    (** Scope escape related errors *)
     type 'a escape =
     | Constructor of Path.t
-    | Univ of string option
+    | Univ of type_expr
+    (** The type_expr argument of [Univ] is always a [Tunivar _],
+        we keep a [type_expr] to track renaming in {!Printtyp} *)
     | Self
     | Module_type of Path.t
     | Equation of 'a
