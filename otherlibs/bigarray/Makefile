@@ -19,7 +19,7 @@ EXTRACAMLFLAGS=-I ../$(UNIXLIB)
 COBJS=mmap_ba.$(O) mmap.$(O)
 CAMLOBJS=bigarray.cmo
 
-include ../Makefile
+include ../Makefile.otherlibs.common
 
 ifeq "$(SYSTEM)" "mingw"
 LDOPTS=-ldopt "-link -static-libgcc"
