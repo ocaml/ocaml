@@ -25,9 +25,6 @@ type t = bool
 val not : bool -> bool
 (** [not b] is the boolean negation of [b]. *)
 
-val negate : ('a -> bool) -> ('a -> bool)
-(** [negate p v] is [not (p v)]. *)
-
 external ( && ) : bool -> bool -> bool = "%sequand"
 (** [e0 && e1] is the lazy boolean conjunction of expressions [e0] and [e1].
     If [e0] evaluates to [false], [e1] is not evaluated. Right-associative

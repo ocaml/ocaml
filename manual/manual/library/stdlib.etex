@@ -99,6 +99,10 @@ be called from C \\
 "Spacetime" & p.~\pageref{Spacetime} & memory profiler \\
 "Sys" & p.~\pageref{Sys} & system interface \\
 \end{tabular}
+\subsubsection{Misc:}
+\begin{tabular}{lll}
+"Fun" & p.~\pageref{Fun} & function values \\
+\end{tabular}
 \end{latexonly}
 
 \ifouthtml
@@ -119,6 +123,7 @@ be called from C \\
 \item \ahref{libref/Filename.html}{Module \texttt{Filename}: operations on file names}
 \item \ahref{libref/Float.html}{Module \texttt{Float}: Floating-point numbers}
 \item \ahref{libref/Format.html}{Module \texttt{Format}: pretty printing}
+\item \ahref{libref/Fun.html}{Module \texttt{Fun}: function values}
 \item \ahref{libref/Gc.html}{Module \texttt{Gc}: memory management control and statistics; finalized values}
 \item \ahref{libref/Genlex.html}{Module \texttt{Genlex}: a generic lexical analyzer}
 \item \ahref{libref/Hashtbl.html}{Module \texttt{Hashtbl}: hash tables and hash functions}
@@ -171,6 +176,7 @@ be called from C \\
 \input{Filename.tex}
 \input{Float.tex}
 \input{Format.tex}
+\input{Fun.tex}
 \input{Gc.tex}
 \input{Genlex.tex}
 \input{Hashtbl.tex}
