@@ -50,7 +50,7 @@ EXTRACFLAGS=-I../unix
 HEADERS=unixsupport.h socketaddr.h
 
 
-include ../Makefile
+include ../Makefile.otherlibs.common
 
 ifeq "$(SYSTEM)" "mingw"
 LDOPTS=-ldopt "-link -static-libgcc" $(addprefix -ldopt ,$(WIN32_LIBS))

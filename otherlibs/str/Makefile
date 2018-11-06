@@ -20,7 +20,7 @@ COBJS=strstubs.$(O)
 CLIBNAME=camlstr
 CAMLOBJS=str.cmo
 
-include ../Makefile
+include ../Makefile.otherlibs.common
 str.cmo: str.cmi
 str.cmx: str.cmi
 

@@ -44,7 +44,7 @@ CAMLOBJS=unix.cmo unixLabels.cmo
 
 HEADERS=unixsupport.h socketaddr.h
 
-include ../Makefile
+include ../Makefile.otherlibs.common
 
 .PHONY: depend
 depend:
