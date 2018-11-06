@@ -20,6 +20,37 @@
 #include "frame_descriptors.h"
 #endif
 
+/* allocate a stack with at least "wosize" usable words of stack */
+static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value hexn, value heff)
+{
+  struct stack_info* stack;
+  struct stack_handler* hand;
+
+  CAML_STATIC_ASSERT(sizeof(struct stack_info) % sizeof(value) == 0);
+  CAML_STATIC_ASSERT(sizeof(struct stack_handler) % sizeof(value) == 0);
+
+  stack = caml_stat_alloc(sizeof(struct stack_info) +
+                          sizeof(value) * wosize +
+                          8 /* for alignment */ +
+                          sizeof(struct stack_handler));
+  if (stack == NULL)
+    return NULL;
+
+  /* Ensure 16-byte alignment because some architectures require it */
+  hand = (struct stack_handler*)
+    (((uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize + 8)
+     & ((uintnat)-1 << 4));
+  hand->handle_value = hval;
+  hand->handle_exn = hexn;
+  hand->handle_effect = heff;
+  hand->parent = NULL;
+  stack->handler = hand;
+  stack->sp = (value*)hand;
+  stack->magic = 42;
+  CAMLassert(Stack_high(stack) - Stack_base(stack) == wosize ||
+             Stack_high(stack) - Stack_base(stack) == wosize + 1);
+  return stack;
+}
 
 #ifdef NATIVE_CODE
 
@@ -29,20 +60,12 @@ extern void caml_fiber_val_handler (value) Noreturn;
 #define INIT_FIBER_USED (3 + sizeof(struct caml_context) / sizeof(value))
 
 value caml_alloc_stack (value hval, value hexn, value heff) {
-  CAMLparam3(hval, hexn, heff);
-  struct stack_info* stack;
+  struct stack_info* stack = alloc_stack_noexc(caml_fiber_wsz, hval, hexn, heff);
   char* sp;
   char* trapsp;
   struct caml_context *ctxt;
 
-  stack = caml_stat_alloc(sizeof(value) * caml_fiber_wsz);
-  stack->wosize = caml_fiber_wsz;
-  stack->magic = 42;
-  Stack_handle_value(stack) = hval;
-  Stack_handle_exception(stack) = hexn;
-  Stack_handle_effect(stack) = heff;
-  Stack_parent(stack) = NULL;
-
+  if (!stack) caml_raise_out_of_memory();
   sp = (char*)Stack_high(stack);
   /* Fiber exception handler that returns to parent */
   sp -= sizeof(value);
@@ -66,7 +89,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
 
   caml_gc_log ("Allocate stack=%p of %lu words", stack, caml_fiber_wsz);
 
-  CAMLreturn (Val_ptr(stack));
+  return Val_ptr(stack);
 }
 
 void caml_get_stack_sp_pc (struct stack_info* stack, char** sp /* out */, uintnat* pc /* out */)
@@ -184,26 +207,19 @@ caml_root caml_global_data;
 
 CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
 {
-  CAMLparam3(hval, hexn, heff);
-  struct stack_info* stack;
+  struct stack_info* stack = alloc_stack_noexc(caml_fiber_wsz, hval, hexn, heff);
   value* sp;
 
-  stack = caml_stat_alloc(sizeof(value) * caml_fiber_wsz);
-  stack->wosize = caml_fiber_wsz;
-  stack->magic = 42;
-  sp = Stack_high(stack);
+  if (!stack) caml_raise_out_of_memory();
 
+  sp = Stack_high(stack);
   // ?
   sp -= 1;
   sp[0] = Val_long(1); /* trapsp ?? */
 
   stack->sp = sp;
-  Stack_handle_value(stack) = hval;
-  Stack_handle_exception(stack) = hexn;
-  Stack_handle_effect(stack) = heff;
-  Stack_parent(stack) = NULL;
 
-  CAMLreturn (Val_ptr(stack));
+  return Val_ptr(stack);
 }
 
 CAMLprim value caml_ensure_stack_capacity(value required_space)
@@ -298,18 +314,15 @@ int caml_try_realloc_stack(asize_t required_space)
                  (uintnat) size * sizeof(value));
   }
 
-  new_stack = caml_stat_alloc_noexc(sizeof(value) * (Stack_ctx_words + size));
+  new_stack = alloc_stack_noexc(size,
+                                Stack_handle_value(old_stack),
+                                Stack_handle_exception(old_stack),
+                                Stack_handle_effect(old_stack));
   if (!new_stack) return 0;
-  new_stack->wosize = Stack_ctx_words + size;
-  new_stack->magic = 42;
   memcpy(Stack_high(new_stack) - stack_used,
          Stack_high(old_stack) - stack_used,
          stack_used * sizeof(value));
-
   new_stack->sp = Stack_high(new_stack) - stack_used;
-  Stack_handle_value(new_stack) = Stack_handle_value(old_stack);
-  Stack_handle_exception(new_stack) = Stack_handle_exception(old_stack);
-  Stack_handle_effect(new_stack) = Stack_handle_effect(old_stack);
   Stack_parent(new_stack) = Stack_parent(old_stack);
 #ifdef NATIVE_CODE
   Stack_debugger_slot(new_stack) =
@@ -325,32 +338,19 @@ int caml_try_realloc_stack(asize_t required_space)
   return 1;
 }
 
-static void caml_init_stack (struct stack_info* stack)
-{
-  stack->sp = Stack_high(stack);
-  Stack_handle_value(stack) = Val_long(0);
-  Stack_handle_exception(stack) = Val_long(0);
-  Stack_handle_effect(stack) = Val_long(0);
-  Stack_parent(stack) = NULL;
-}
-
 struct stack_info* caml_alloc_main_stack (uintnat init_size)
 {
-  struct stack_info* stk;
-
-  /* Create a stack for the main program. */
-  stk = caml_stat_alloc(sizeof(value) * init_size);
-  stk->wosize = init_size;
-  stk->magic = 42;
-  caml_init_stack (stk);
-
+  struct stack_info* stk =
+    alloc_stack_noexc(init_size, Val_unit, Val_unit,  Val_unit);
+  if (!stk) caml_raise_out_of_memory();
   return stk;
 }
 
 void caml_free_stack (struct stack_info* stack)
 {
+  CAMLassert(stack->magic == 42);
 #ifdef DEBUG
-  memset(stack, 0x42, sizeof(value) * stack->wosize);
+  memset(stack, 0x42, (char*)stack->handler - (char*)stack);
 #endif
   caml_stat_free(stack);
 }
@@ -368,12 +368,14 @@ CAMLprim value caml_clone_continuation (value cont)
   do {
     CAMLnoalloc;
     stack_used = Stack_high(source) - (value*)source->sp;
-    target = caml_stat_alloc(sizeof(value) * source->wosize);
-    *target = *source;
+    target = alloc_stack_noexc(Stack_high(source) - Stack_base(source),
+                               Stack_handle_value(source),
+                               Stack_handle_exception(source),
+                               Stack_handle_effect(source));
+    if (!target) caml_raise_out_of_memory();
     memcpy(Stack_high(target) - stack_used, Stack_high(source) - stack_used,
            stack_used * sizeof(value));
     target->sp = Stack_high(target) - stack_used;
-
     *link = target;
     link = &Stack_parent(target);
     source = Stack_parent(source);
