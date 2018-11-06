@@ -31,13 +31,7 @@ module Backtrace : sig
   type exn
 
   type t
-  (** The abstract type [t] stores a backtrace in a low-level format, instead of
-      directly exposing them as a string as the {!string_of_current_backtrace}
-      function does.
-
-      This allows delaying the formatting of backtraces to when they are
-      actually printed, which may be useful if you record more
-      backtraces than you print.
+  (** The abstract type [t] stores a backtrace.
 
       Raw backtraces cannot be marshalled. If you need marshalling, you should
       use the array returned by the {!slots} function. *)
@@ -53,13 +47,19 @@ module Backtrace : sig
       not. *)
 
   val current: unit -> t
-  (** Returns the same exception backtrace that {!print_current_backtrace} would
-      print, but in a raw format. Same restriction usage than
-      {!print_current_backtrace}. *)
+  (** Returns a backtrace containing the program locations where the
+      most-recently raised exception was raised and where it was propagated
+      through function calls.
+
+      If the call is not inside an exception handler, the returned backtrace is
+      unspecified. If the call is after some exception-catching code (before in
+      the handler, or in a when-guard during the matching of the exception
+      handler), the backtrace may correspond to a later exception than the
+      handled one. *)
 
   val to_string: t -> string
-  (** Return a string from a raw backtrace, in the same format {!Backtrace.get}
-      uses. *)
+  (** Return a string from a backtrace, listing the program locations contained
+      in the backtrace. *)
 
   val length: t -> int
   (** [length bckt] returns the number of slots in the backtrace [bckt].  *)
@@ -163,8 +163,7 @@ module Backtrace : sig
       contain useful information.
 
       In the return array, the slot at index [0] corresponds to the most recent
-      function call, raise, or primitive {!string_of_current_backtrace} call in
-      the trace.
+      function call, raise, or primitive {!current} call in the trace.
 
       Some possible reasons for returning [None] are as follow:
       - none of the slots in the trace come from modules compiled with
