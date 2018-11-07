@@ -66,11 +66,17 @@ Makefile*                typo.tab=may
 
 asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
 
+# The build-aux directory contains bundled files so do not check it
+build-aux                typo.prune
+
 /config/gnu              typo.prune
 /config/gnu/**           typo.prune
 
 /manual                  typo.prune
 /manual/**               typo.prune
+
+# configure is generated so do not check it
+configure                typo.prune
 
 emacs/*.el               typo.long-line=may
 emacs/caml.el            typo.long-line=may typo.missing-header
@@ -123,6 +129,7 @@ menhir-bench.bash typo.missing-header typo.utf8
 *.sh text eol=lf
 *.sh.in text eol=lf
 *.awk text eol=lf
+*.m4 text eol=lf
 
 # ocamltest hooks which are used in the testsuite
 *.check-program-output text eol=lf
@@ -131,6 +138,13 @@ menhir-bench.bash typo.missing-header typo.utf8
 /tools/ci/appveyor/appveyor_build.cmd text eol=crlf
 
 configure text eol=lf
+configure.ac text eol=lf
+autogen text eol=lf
+build-aux/compile text eol=lf
+build-aux/config.guess text eol=lf
+build-aux/config.sub text eol=lf
+build-aux/install text eol=lf
+build-aux/missing text eol=lf
 config/auto-aux/hasgot text eol=lf
 config/auto-aux/hasgot2 text eol=lf
 config/auto-aux/runtest text eol=lf
@@ -157,6 +171,8 @@ tools/ocamlmktop.tpl text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
 tools/markdown-add-pr-links.sh text eol=lf
+runtime/caml/m.h.in text eol=lf
+runtime/caml/s.h.in text eol=lf
 
 # These two are cat scripts, so may not actually require this
 config/auto-aux/sharpbang text eol=lf
