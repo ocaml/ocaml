@@ -30,12 +30,6 @@ struct stack_info {
 CAML_STATIC_ASSERT(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value));
 #define Stack_base(stk) ((value*)(stk + 1))
 #define Stack_threshold_ptr(stk) (Stack_base(stk) + Stack_threshold / sizeof(value))
-
-/* 16-byte align-down Stack_high because certain architectures like arm64
- * demand 16-byte alignment. Leaves a word unused at the bottom of the stack if
- * the Op_val(stk) + Wosize_val(stk) is not 16-byte aligned. */
-//#define Stack_high(stk) ((value*)(((uintnat)stk + sizeof(value) * stk->wosize) & (-1uLL << 4)))
-
 #define Stack_high(stk) (value*)stk->handler
 
 #define Stack_handle_value(stk) (stk)->handler->handle_value
@@ -44,18 +38,12 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value))
 #define Stack_parent_offset 5
 #define Stack_parent(stk) (stk)->handler->parent
 
-#ifdef NATIVE_CODE
-
 /* Stack layout for native code. Stack grows downwards.
  *
+ * +------------------------+
+ * |  struct stack_handler  |
  * +------------------------+ <--- Stack_high
- * | caml_fiber_exn_handler |
- * +------------------------+
- * |    debugger_slot       |
- * +------------------------+
- * | caml_fiber_val_handler |
- * +------------------------+
- * |      caml_handler      |
+ * |     caml_runstack      |
  * +------------------------+
  * |                        |
  * .      OCaml frames      . <--- sp
@@ -65,31 +53,12 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value))
  * .      Slop space        .
  * |                        |
  * +------------------------+ <--- Stack_base
- * |        parent          |
- * +------------------------+
- * |  handle effect closure |
- * +------------------------+
- * |   handle exn closure   |
- * +------------------------+
- * |   handle val closure   |
- * +------------------------+
- * |      dirty domain      |
- * +------------------------+
- * | Offset of sp from high |
- * +------------------------+ <--- stack object
+ * |   struct stack_info    |
+ * +------------------------+ <--- Caml_state->current_stack
  * |      HEADER WORD       |
  * +------------------------+
  */
 
-
-/* Slot for debugger. This is the previous trap frame offset of the outermost
- * trap frame (which by definition does not have a previous trap frame). The
- * value in this slot is the offset (in bytes) to Stack_parent slot, which is
- * accessed in DWARF. */
-#define Stack_debugger_slot(stk) (*(value*)(Stack_high(stk) - 2))
-#define Stack_debugger_slot_offset_to_parent_slot(stk) \
-  (sizeof(value) * ((Stack_high(stk) - (value*)stk) - 2 - Stack_parent_offset))
-#endif
 
 /* The table of global identifiers */
 extern caml_root caml_global_data;
