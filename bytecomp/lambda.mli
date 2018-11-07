@@ -75,6 +75,7 @@ type primitive =
   (* Force lazy values *)
   | Plazyforce
   (* Context switches *)
+  | Prunstack
   | Pperform
   | Presume
   | Preperform

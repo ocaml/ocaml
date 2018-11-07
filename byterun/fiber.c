@@ -186,21 +186,6 @@ void caml_update_gc_regs_slot (value* gc_regs)
   ctxt->gc_regs = gc_regs;
 }
 
-/* Returns 1 if the target stack is a fresh stack to which control is switching
- * to. */
-int caml_switch_stack(struct stack_info* stk, int should_free)
-{
-  struct stack_info* old = Caml_state->current_stack;
-  Caml_state->current_stack = stk;
-  CAMLassert(Stack_base(stk) < (value*)stk->sp &&
-             stk->sp <= Stack_high(stk));
-  if (should_free)
-    caml_free_stack(old);
-  if (stk->sp == Stack_high(stk) - INIT_FIBER_USED)
-    return 1;
-  return 0;
-}
-
 #else /* End NATIVE_CODE, begin BYTE_CODE */
 
 caml_root caml_global_data;
@@ -266,15 +251,6 @@ void caml_scan_stack(scanning_action f, void* fdata, struct stack_info* stack)
   for (sp = low; sp < high; sp++) {
     f(fdata, *sp, sp);
   }
-}
-
-struct stack_info* caml_switch_stack(struct stack_info* stk)
-{
-  struct stack_info* old = Caml_state->current_stack;
-  Caml_state->current_stack = stk;
-  CAMLassert(Stack_base(stk) < (value*)stk->sp &&
-             stk->sp <= Stack_high(stk));
-  return old;
 }
 
 #endif /* end BYTE_CODE */
