@@ -21,6 +21,7 @@
 *.obj
 *.lib
 *.dll
+*.la
 *.cm[ioxat]
 *.cmx[as]
 *.cmti
@@ -39,7 +40,14 @@ _build
 
 # local to root directory
 
+/Makefile.common
+/Makefile.config
+/autom4te.cache
 /ocamlc
+/config.cache
+/config.log
+/config.status
+/libtool
 /ocamlc.opt
 /expunge
 /ocaml
@@ -49,7 +57,6 @@ _build
 
 # specific files and patterns in sub-directories
 
-/Makefile.config
 /asmcomp/emit.ml
 /asmcomp/arch.ml
 /asmcomp/proc.ml

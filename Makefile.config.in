@@ -1,0 +1,289 @@
+# @configure_input@
+
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# The configuration Makefile
+
+## The EMPTY variable, used in other definitions
+EMPTY=
+
+## Arguments passed to the configure script
+
+CONFIGURE_ARGS=@CONFIGURE_ARGS@
+
+## Top build directory
+
+TOP_BUILDDIR = @top_builddir@
+
+## Installation directories
+
+prefix=@prefix@
+
+exec_prefix=@exec_prefix@
+
+### Where to install the binaries
+BINDIR=@bindir@
+
+datarootdir=@datarootdir@
+
+### Where to install the standard library
+LIBDIR=@libdir@
+
+### Where to install the stub code for the standard library
+STUBLIBDIR=@libdir@/stublibs
+
+### Where to install the man pages
+# Man pages for commands go in $(MANDIR)/man$(PROGRAMS_MAN_SECTION)
+# Man pages for the library go in $(MANDIR)/man/man$(LIBRARIES_MAN_SECTION)
+MANDIR=@mandir@
+PROGRAMS_MAN_SECTION=@programs_man_section@
+LIBRARIES_MAN_SECTION=@libraries_man_section@
+
+### Do #! scripts work on your system?
+### Beware: on some systems (e.g. SunOS 4), this will work only if
+### the string "#!$(BINDIR)/ocamlrun" is less than 32 characters long.
+### In doubt, set HASHBANGSCRIPTS to false.
+HASHBANGSCRIPTS=@hashbangscripts@
+
+### Path to the libtool script
+LIBTOOL = $(TOP_BUILDDIR)/libtool
+
+### Which C compiler to use
+TOOLPREF=@ac_tool_prefix@
+CC=@CC@
+
+CC_HAS_DEBUG_PREFIX_MAP=@cc_has_debug_prefix_map@
+AS_HAS_DEBUG_PREFIX_MAP=@as_has_debug_prefix_map@
+
+### Additional link-time options
+# To support dynamic loading of shared libraries (they need to look at
+# our own symbols):
+OC_LDFLAGS=@oc_ldflags@
+
+### How to invoke the C preprocessor
+CPP=@CPP@
+
+### How to invoke ranlib
+RANLIB=@RANLIB@
+RANLIBCMD=@RANLIBCMD@
+
+### How to invoke ar
+ARCMD=@AR@
+
+### Extension of object files
+O=@OBJEXT@
+EXT_OBJ=.@OBJEXT@
+
+### How to tell the C compiler to output an object file
+OUTPUTOBJ=@outputobj@
+
+### Extension of static libraries
+A=@libext@
+EXT_LIB=.@libext@
+
+### Extension of assembler files
+S=@S@
+EXT_ASM=.@S@
+
+### Extension for shared libraries
+SO=@SO@
+EXT_DLL=.@SO@
+
+SHAREDLIB_CFLAGS=@sharedlib_cflags@
+
+# Compile-time option to $(CC) to add a directory to be searched
+# at run-time for shared libraries
+RPATH=@rpath@
+
+############# Configuration for the native-code compiler
+
+### Name of architecture for the native-code compiler
+### Currently supported:
+###
+### i386        Intel Pentium PCs under Linux, *BSD*, NextStep
+### power       Macintosh under Mac OS X and Linux
+### arm         ARM under Linux
+###
+### Set ARCH=none if your machine is not supported
+ARCH=@arch@
+
+# Whether the architecture has 64 bits
+ARCH64=@arch64@
+
+### Name of architecture model for the native-code compiler.
+### Some architectures come in several slightly different flavors
+### that share a common code generator. This variable tailors the
+### behavior of the code generator to the particular flavor used.
+### Currently needed only if ARCH=power; leave MODEL=default for
+### other architectures.
+### If ARCH=power: set MODEL=ppc
+### For other architectures: leave MODEL=default
+###
+MODEL=@model@
+
+### Name of operating system family for the native-code compiler.
+SYSTEM=@system@
+
+### Command and flags to use for assembling ocamlopt-generated code
+ASM=@AS@
+
+### Command and flags to use for assembling .S files (often with preprocessing)
+ASPP=@ASPP@
+
+### Set to "true" to install ".byte" executables (ocamlc.byte, etc.)
+INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
+
+### Extra flags to use for assembling .S files in profiling mode
+ASPPPROFFLAGS=@asppprofflags@
+
+### true if profiling with gprof is supported, false otherwise
+PROFILING=@profiling@
+
+### Option to give to the C compiler for profiling
+CC_PROFILE=@cc_profile@
+
+############# Configuration for the contributed libraries
+
+### Which libraries to compile and install
+# Currently available:
+#       unix            Unix system calls
+#       str             Regular expressions and high-level string processing
+#       threads         Lightweight concurrent processes
+#       systhreads      Same as threads, requires POSIX threads
+#       graph           Portable drawing primitives for X11
+#       dynlink         Dynamic linking of bytecode
+#       bigarray        Large, multidimensional numerical arrays
+OTHERLIBRARIES=@otherlibraries@
+
+### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
+# Needed for the "systhreads" package
+PTHREAD_LINK=@pthread_link@
+PTHREAD_CAML_LINK=$(addprefix -cclib ,$(PTHREAD_LINK))
+
+### -I options for finding the X11/*.h includes
+# Needed for the "graph" package
+X11_INCDDIR=@x_includes@
+X11_INCLUDES=$(addprefix -I,$(X11_INCDDIR))
+
+### Link-time options to ocamlc or ocamlopt for linking with X11 libraries
+# Needed for the "graph" package
+X11_LINK=@x_libraries@
+
+UNIX_OR_WIN32=@unix_or_win32@
+UNIXLIB=@unixlib@
+GRAPHLIB=@graphlib@
+LIBBFD_LINK=@libbfd_link@
+LIBBFD_INCLUDE=@libbfd_include@
+INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
+
+OC_CFLAGS=@oc_cflags@
+OC_CPPFLAGS=@oc_cppflags@
+OCAMLC_CFLAGS=@ocamlc_cflags@
+
+OCAMLC_CPPFLAGS=@ocamlc_cppflags@
+BYTECCLIBS=@bytecclibs@
+EXE=@exeext@
+OUTPUTEXE=@outputexe@
+SUPPORTS_SHARED_LIBRARIES=@supports_shared_libraries@
+MKSHAREDLIBRPATH=@mksharedlibrpath@
+DYNLINKOPTS=@dllibs@
+NATDYNLINK=@natdynlink@
+NATDYNLINKOPTS=@natdynlinkopts@
+SYSLIB=@syslib@
+MKLIB=@mklib@
+OCAMLOPT_CFLAGS=@ocamlopt_cflags@
+OCAMLOPT_CPPFLAGS=@ocamlopt_cppflags@
+NATIVECCLIBS=@nativecclibs@
+SYSTHREAD_SUPPORT=@systhread_support@
+PACKLD=@PACKLD@
+IFLEXDIR=@iflexdir@
+EXTRALIBS=@extralibs@
+CCOMPTYPE=@ccomptype@
+TOOLCHAIN=@toolchain@
+CMXS=@cmxs@
+
+# On Windows, MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
+#   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
+# or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
+
+MKEXE=@mkexe@
+MKDLL=@mksharedlib@
+MKMAINDLL=@mkmaindll@
+
+MKEXEDEBUGFLAG=@mkexedebugflag@
+RUNTIMED=@debug_runtime@
+RUNTIMEI=@instrumented_runtime@
+WITH_DEBUGGER=@with_debugger@
+WITH_OCAMLDOC=@ocamldoc@
+ASM_CFI_SUPPORTED=@asm_cfi_supported@
+WITH_FRAME_POINTERS=@frame_pointers@
+WITH_SPACETIME=@spacetime@
+ENABLE_CALL_COUNTS=@call_counts@
+WITH_PROFINFO=@profinfo@
+PROFINFO_WIDTH=@profinfo_width@
+LIBUNWIND_AVAILABLE=@libunwind_available@
+LIBUNWIND_INCLUDE_FLAGS=@libunwind_include_flags@
+LIBUNWIND_LINK_FLAGS=@libunwind_link_flags@
+WITH_FPIC=@fpic@
+TARGET=@target@
+HOST=@host@
+FLAMBDA=@flambda@
+WITH_FLAMBDA_INVARIANTS=@flambda_invariants@
+FORCE_SAFE_STRING=@force_safe_string@
+DEFAULT_SAFE_STRING=@default_safe_string@
+WINDOWS_UNICODE=@windows_unicode@
+AFL_INSTRUMENT=@afl@
+MAX_TESTSUITE_DIR_RETRIES=@max_testsuite_dir_retries@
+FLAT_FLOAT_ARRAY=@flat_float_array@
+AWK=@AWK@
+
+# The following variables were defined only in the config/Makefile.* files.
+# They were not defined by the configure script used on Unix systems,
+# so we also make sure to provide them only under Windows
+# User code should absolutely not rely on their presence because
+# in the future their definition may be moved to a more private part of
+# the compiler's build system
+ifeq "$(UNIX_OR_WIN32)" "win32"
+  DISTRIB=$(prefix)
+  OTOPDIR=$(WINTOPDIR)
+  CTOPDIR=$(WINTOPDIR)
+  CYGPATH=cygpath -m
+  DIFF=/usr/bin/diff -q --strip-trailing-cr
+  FIND=/usr/bin/find
+  SORT=/usr/bin/sort
+  SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
+  FLEXLINK_CMD=flexlink
+  MKEXE_ANSI=$(FLEXLINK) -exe
+  FLEXDLL_CHAIN=@flexdll_chain@
+  # FLEXLINK_FLAGS must be safe to insert in an OCaml string
+  #   (see ocamlmklibconfig.ml in tools/Makefile)
+  FLEXLINK_FLAGS=@flexlink_flags@
+  FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
+
+  ### Native command to build ocamlrun.exe
+
+  ifeq "$(TOOLCHAIN)" "mingw"
+    MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OC_LDFLAGS) $(OUTPUTEXE)$(1) $(2)
+  endif # ifeq "$(TOOLCHAIN)" "mingw"
+
+  ifeq "$(TOOLCHAIN)" "msvc"
+    MERGEMANIFESTEXE=test ! -f $(1).manifest \
+	           || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
+	           && rm -f $(1).manifest
+    MKEXE_BOOT=$(CC) $(OC_CFLAGS) $(OUTPUTEXE)$(1) $(2) \
+      /link /subsystem:console $(OC_LDFLAGS) && ($(MERGEMANIFESTEXE))
+  endif # ifeq "$(TOOLCHAIN)" "msvc"
+endif # ifeq "$(UNIX_OR_WIN32)" "win32"
