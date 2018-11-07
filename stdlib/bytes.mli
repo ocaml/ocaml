@@ -475,7 +475,7 @@ val of_seq : char Seq.t -> t
     Little-endian (resp. big-endian) encoding means that least
     (resp. most) significant bytes are stored first.  Big-endian is
     also known as network byte order.  Native-endian encoding is
-    either little-endian or big-endian depending on the platform.
+    either little-endian or big-endian depending on {!Sys.big_endian}.
 
     32-bit and 64-bit integers are directly represented using
     [int32] and [int64] types, which can be interpreted either
