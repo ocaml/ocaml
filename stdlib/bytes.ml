@@ -38,16 +38,6 @@ external unsafe_blit : bytes -> int -> bytes -> int -> int -> unit
 external unsafe_blit_string : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
 
-external get_uint16_ne : bytes -> int -> int = "%caml_bytes_get16"
-external get_int32_ne : bytes -> int -> int32 = "%caml_bytes_get32"
-external get_int64_ne : bytes -> int -> int64 = "%caml_bytes_get64"
-external set_int16_ne : bytes -> int -> int -> unit = "%caml_bytes_set16"
-external set_int32_ne : bytes -> int -> int32 -> unit = "%caml_bytes_set32"
-external set_int64_ne : bytes -> int -> int64 -> unit = "%caml_bytes_set64"
-external swap16 : int -> int = "%bswap16"
-external swap32 : int32 -> int32 = "%bswap_int32"
-external swap64 : int64 -> int64 = "%bswap_int64"
-
 let make n c =
   let s = create n in
   unsafe_fill s 0 n c;
@@ -379,6 +369,17 @@ let of_seq i =
     i;
   sub !buf 0 !n
 
+(** {6 Binary encoding/decoding of integers} *)
+
+external get_uint16_ne : bytes -> int -> int = "%caml_bytes_get16"
+external get_int32_ne : bytes -> int -> int32 = "%caml_bytes_get32"
+external get_int64_ne : bytes -> int -> int64 = "%caml_bytes_get64"
+external set_int16_ne : bytes -> int -> int -> unit = "%caml_bytes_set16"
+external set_int32_ne : bytes -> int -> int32 -> unit = "%caml_bytes_set32"
+external set_int64_ne : bytes -> int -> int64 -> unit = "%caml_bytes_set64"
+external swap16 : int -> int = "%bswap16"
+external swap32 : int32 -> int32 = "%bswap_int32"
+external swap64 : int64 -> int64 = "%bswap_int64"
 
 let get_uint8 b i =
   Char.code (get b i)
@@ -445,3 +446,8 @@ let set_int64_le b i x =
 let set_int64_be b i x =
   if not Sys.big_endian then set_int64_ne b i (swap64 x)
   else set_int64_ne b i x
+
+let set_uint8 = set_int8
+let set_uint16_ne = set_int16_ne
+let set_uint16_be = set_int16_be
+let set_uint16_le = set_int16_le
