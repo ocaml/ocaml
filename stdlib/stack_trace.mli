@@ -13,39 +13,41 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Call stacks.
+(** Stack traces.
 
-    Facilities for getting the current call stack, printing and inspecting them.
+    Facilities for getting the current stack trace, printing and inspecting
+    them.
 
     @since 4.08 *)
 
 type t
-(** The abstract type [t] stores a callstack.
+(** The type of stack traces.
 
-    Callstacks cannot be marshalled. If you need marshalling, you should use the
-    array returned by the {!slots} function. *)
+    Stack traces cannot be marshalled. If you need marshalling, you should use
+    the array returned by the {!slots} function. *)
 
 val current: int -> t
-(** [current n] returns a description of the top of the callstack on the current
-    program point (for the current thread), with at most [n] entries. *)
+(** [current n] returns a description of the stack trace on the current program
+    point (for the current thread), with at most [n] entries. *)
 
 val to_string: t -> string
-(** Return a string from a callstack, listing the program locations contained in
-    the callstack. *)
+(** Return a string listing the program locations contained in the stack
+    trace. *)
 
 val length: t -> int
-(** [length c] returns the number of slots in the callstack [c].  *)
+(** [length st] returns the number of (non-inlined) slots in the stack trace
+    [st]. *)
 
 module Slot : sig
-  (** {1 Manipulation of callstack information}
+  (** {1 Manipulation of stack trace information}
 
-      These functions are used to traverse the slots of a callstack and extract
-      information from them in a programmer-friendly format. *)
+      These functions are used to traverse the slots of a stack trace and
+      extract information from them in a programmer-friendly format. *)
 
-  type callstack
+  type stack_trace
 
   type t
-  (** The abstract type [t] represents a single slot of a callstack. *)
+  (** The abstract type [t] represents a single slot of a stack trace. *)
 
   val is_raise: t -> bool
   (** [is_raise slot] is [true] when [slot] refers to a raising point in the
@@ -60,7 +62,7 @@ module Slot : sig
       line_number: int;
       start_char: int;
       end_char: int }
-  (** The type of location information found in callstacks. [start_char] and
+  (** The type of location information found in stack traces. [start_char] and
       [end_char] are positions relative to the beginning of the line. *)
 
   val location: t -> location option
@@ -78,14 +80,14 @@ module Slot : sig
       callstack: the [0]-th element is pretty-printed differently than the
       others.
 
-      Whole-callstack printing functions also skip some uninformative slots; in
+      Whole-stack trace printing functions also skip some uninformative slots; in
       that case, [format pos slot] returns [None]. *)
 
   module Raw : sig
-    (** {1 Raw callstack slots} *)
+    (** {1 Raw stack trace slots} *)
 
     type t
-    (** This type allows direct access to raw callstack slots, without any
+    (** This type allows direct access to raw stack trace slots, without any
         conversion in an OCaml-usable data-structure. Being process-specific,
         they must absolutely not be marshalled, and are unsafe to use for this
         reason (marshalling them may not fail, but un-marshalling and using the
@@ -96,18 +98,18 @@ module Slot : sig
         converse is not necessarily true in presence of inlining, for
         example). *)
 
-    val get: callstack -> int -> t
-    (** [get c pos] returns the slot in position [pos] in the callstack [c]. *)
+    val get: stack_trace -> int -> t
+    (** [get st pos] returns the slot in position [pos] in the stack trace [st]. *)
 
     val next: t -> t option
-    (** [next slot] returns the next slot inlined, if any.
+    (** [next slot] returns the next inlined slot, if any.
 
         Sample code to iterate over all frames (inlined and non-inlined):
         {[
           (* Iterate over inlined frames *)
           let rec iter_callstack_slot f slot =
             f slot;
-            match Raw.next slot with
+            match Slot.Raw.next slot with
             | None -> ()
             | Some slot' -> iter_callstack_slot f slot'
 
@@ -121,12 +123,11 @@ module Slot : sig
   end
 
   val of_raw: Raw.t -> t
-  (** Extracts the user-friendly callstack slot from a low-level raw callstack
-      slot. *)
-end with type callstack := t
+  (** Extracts the user-friendly strack trace slot from a low-level raw slot. *)
+end with type stack_trace := t
 
 val slots: t -> Slot.t array option
-(** Returns the slots of a callstack, or [None] if none of them contain useful
+(** Returns the slots of a stack trace, or [None] if none of them contain useful
     information.
 
     In the return array, the slot at index [0] corresponds to the most recent

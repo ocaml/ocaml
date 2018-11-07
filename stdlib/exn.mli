@@ -35,16 +35,16 @@ val tracing: unit -> bool
 (** Returns [true] if exception traces are currently recorded, [false] if
     not. *)
 
-val last_trace: unit -> Callstack.t
-(** Returns a trace containing the program locations where the most-recently
-    raised exception was raised and where it was propagated through function
-    calls.
+val last_trace: unit -> Stack_trace.t
+(** Returns a stack trace containing the program locations where the
+    most-recently raised exception was raised and where it was propagated
+    through function calls.
 
     If the call is not inside an exception handler, the returned trace is
     unspecified. If the call is after some exception-catching code (before in
     the handler, or in a when-guard during the matching of the exception
-    handler), the backtrace may correspond to a later exception than the handled
-    one. *)
+    handler), the stack trace may correspond to a later exception than the
+    handled one. *)
 
 external raise: t -> 'a = "%raise"
 
@@ -52,7 +52,7 @@ external reraise: t -> 'a = "%reraise"
 
 external raise_notrace: t -> 'a = "%raise_notrace"
 
-external raise_with_trace: t -> Callstack.t -> 'a = "%raise_with_backtrace"
+external raise_with_trace: t -> Stack_trace.t -> 'a = "%raise_with_backtrace"
 (** Reraise the exception using the given trace for the origin of the
     exception. *)
 
@@ -67,17 +67,17 @@ val register_printer: (t -> string option) -> unit
     the reverse order of their registrations, until a printer returns a [Some s]
     value (if no such printer exists, the runtime will use a generic printer).
 
-    When using this mechanism, one should be aware that an exception backtrace
+    When using this mechanism, one should be aware that an exception stack trace
     is attached to the thread that saw it raised, rather than to the exception
     itself. Practically, it means that the code related to [fn] should not use
-    the backtrace if it has itself raised an exception before. *)
+    the stack trace if it has itself raised an exception before. *)
 
 (** {1 Uncaught exceptions} *)
 
-val set_uncaught_exception_handler: (t -> Callstack.t -> unit) -> unit
+val set_uncaught_exception_handler: (t -> Stack_trace.t -> unit) -> unit
 (** [Printexc.set_uncaught_exception_handler fn] registers [fn] as the handler
-    for uncaught exceptions. The default handler prints the exception and
-    backtrace on standard error output.
+    for uncaught exceptions. The default handler prints the exception and the
+    stack trace on standard error output.
 
     Note that when [fn] is called all the functions registered with
     {!Stdlib.at_exit} have already been called. Because of this you must
@@ -87,7 +87,7 @@ val set_uncaught_exception_handler: (t -> Callstack.t -> unit) -> unit
     are not passed to this function as they are caught by the toplevel itself.
 
     If [fn] raises an exception, both the exceptions passed to [fn] and raised
-    by [fn] will be printed with their respective backtrace. *)
+    by [fn] will be printed with their respective stack traces. *)
 
 (** {1 Exception slots} *)
 
