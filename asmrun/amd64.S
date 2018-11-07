@@ -196,25 +196,6 @@
         POP_EXN_HANDLER(%r10); \
         popq    %r10; CFI_ADJUST(-8)
 
-/* Switch between OCaml stacks and free the current one.
- * arguments : target stack (%rdi)
- * preserves : %rbx, %r12, %r13 */
-#define SWITCH_OCAML_STACKS_AND_FREE \
-    /* Switch from OCaml to C */ \
-        SWITCH_OCAML_TO_C(%r10); \
-        ENTER_FUNCTION; \
-    /* switch stacks and free old one */ \
-        PREPARE_FOR_C_CALL; \
-        movq    Caml_state(current_stack), %rax ; \
-        movq    %rdi, Caml_state(current_stack) ; \
-        movq    %rax, %rdi ; \
-        call    GCALL(caml_free_stack); \
-        CLEANUP_AFTER_C_CALL; \
-    /* Load ocaml stack and restore global variables */ \
-        LEAVE_FUNCTION; \
-        SWITCH_C_TO_OCAML(%r10)
-
-
 /******************************************************************************/
 /* Save and restore all callee-save registers on stack.
    Keep the stack 16-aligned. */
@@ -1039,44 +1020,6 @@ CFI_ENDPROC
 /* Fibers */
 /******************************************************************************/
 
-FUNCTION(G(caml_fiber_exn_handler))
-CFI_STARTPROC
-    /* In handler. %rax has exception */
-        mov     %rax, %rbx
-        movq	Caml_state(current_stack), %rsi
-        movq    Stack_handler(%rsi), %rsi
-        movq    Handler_exception(%rsi), %r12
-        movq    Handler_parent(%rsi), %rdi            /* parent stack. Never NULL here. */
-    /* Switch stacks */
-        SWITCH_OCAML_STACKS_AND_FREE
-    /* Invoke exception handler */
-        movq    %rbx, %rax        /* First argument */
-        movq    %r12, %rbx        /* Second argument */
-        movq    (%rbx), %rsi
-        jmp     *%rsi
-CFI_ENDPROC
-
-FUNCTION(G(caml_fiber_val_handler))
-CFI_STARTPROC
-LBL(111):
-    /* In handler. %rax has value */
-        mov     %rax, %rbx
-        movq	Caml_state(current_stack), %rsi
-        movq    Stack_handler(%rsi), %rsi
-        movq    Handler_value(%rsi), %r12
-        movq    Handler_parent(%rsi), %rdi          /* parent stack. Never NULL here. */
-    /* Reset stack. First pop off fiber exn handler. */
-        popq    %r10; CFI_ADJUST(-8)
-        popq    %r10; CFI_ADJUST(-8)
-    /* Switch stacks */
-        SWITCH_OCAML_STACKS_AND_FREE
-    /* Invoke value handler */
-        movq    %rbx, %rax        /* First argument */
-        movq    %r12, %rbx        /* Second argument */
-        movq    (%rbx), %rsi
-        jmp     *%rsi
-CFI_ENDPROC
-
 FUNCTION(G(caml_perform))
 CFI_STARTPROC
     /*  %rax: effect to perform
@@ -1164,25 +1107,58 @@ CFI_STARTPROC
         jmp     *%rsi
 CFI_ENDPROC
 
+/* Run a function on a new stack,
+   then invoke either the value or exception handler */
 FUNCTION(G(caml_runstack))
 CFI_STARTPROC
     /* %rax -> stack, %rbx -> fun, %rdi -> arg */
         andq    $-2, %rax       /* %rax = Ptr_val(%rax) */
         movq    %rdi, %r12      /* Save arg (callee-saved) */
         movq    %rax, %rdi
-    /* Find end of list of stacks and add current */
-1:      movq    Stack_handler(%rax), %rcx
-        cmpq    $0, Handler_parent(%rcx)
-        je      2f
-        movq    Handler_parent(%rcx), %rax
-        jmp     1b
-2:      movq	Caml_state(current_stack), %rax
+    /* Build caml_context at the bottom of the stack */
+        pushq   $0
+        PUSH_EXN_HANDLER(%r10)
+    /* Switch stacks and set parent */
+        movq	Caml_state(current_stack), %rax
+        movq    %rsp, Stack_sp(%rax)
+        movq    Stack_handler(%rdi), %rcx
         movq    %rax, Handler_parent(%rcx)
-    /* %rdi has new stack */
-        SWITCH_OCAML_STACKS
-        movq    %r12, %rax    /* first argument */
-        movq    (%rbx), %rsi  /* closure in %rbx (second argument) */
-        jmp      LBL(caml_handler)
+        movq    %rdi, Caml_state(current_stack)
+        movq    Stack_sp(%rdi), %rsp
+    /* Assert stack_sp == handler (i.e. stack is empty) */
+        cmp %rsp, %rcx; je 1f; int3; 1:
+    /* match f x with
+       | x -> handler.handle_value x
+       | exception e -> handler.handle_exn e */
+        leaq    LBL(fiber_exn_handler)(%rip), %r10
+        pushq   %r10
+        pushq   $0 /* dummy previous trap frame */
+        movq    %rsp, Caml_state(exn_handler)
+        movq    %r12, %rax /* first argument */
+        call    (%rbx) /* closure in %rbx (second argument) */
+LBL(frame_runstack):
+        addq    $16, %rsp /* pop exn handler */
+        movq    Handler_value(%rsp), %rbx
+1:  /* Switch back to parent stack and free current */
+        movq    Caml_state(current_stack), %rdi
+        movq    Handler_parent(%rsp), %rsi
+        movq    %rsi, Caml_state(current_stack)
+        movq    Stack_sp(%rsi), %r10
+        movq    %rax, %r12 /* save %rax across C call */
+        movq    Caml_state(system_sp), %rsp
+        pushq   %r10
+        call    GCALL(caml_free_stack)
+        popq    %r10
+        movq    %r10, %rsp
+        movq    %r12, %rax
+    /* Pop the caml_context from the bottom of the stack */
+        POP_EXN_HANDLER(%r10)
+        popq    %r10
+    /* Invoke handle_value (or handle_exn) */
+        jmp     *(%rbx)
+LBL(fiber_exn_handler):
+        movq    Handler_exception(%rsp), %rbx
+        jmp     1b
 CFI_ENDPROC
 
 
@@ -1214,17 +1190,13 @@ G(caml_system__code_end):
         .globl  G(caml_system__frametable)
         .align  EIGHT_ALIGN
 G(caml_system__frametable):
-        .quad   4           /* three descriptors */
+        .quad   3           /* three descriptors */
         .quad   LBL(108)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
-        .quad   LBL(111)    /* return address into fiber_val_handler */
+        .quad   LBL(frame_runstack)    /* return address into fiber_val_handler */
         .value  -1          /* negative frame size => use callback link */
-        .value  0           /* no roots here */
-        .align  EIGHT_ALIGN
-        .quad   LBL(118)    /* return address into caml_handler */
-        .value  8           /* frame size = 8 */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
         .quad   LBL(119)    /* return address into caml_enter_caml */
