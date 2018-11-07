@@ -60,7 +60,7 @@ let rename = function
 
 let unique_name = function
   | Local { name; stamp }
-  | Scoped { name; stamp } -> name ^ "_" ^ string_of_int stamp
+  | Scoped { name; stamp } -> name ^ "_" ^ Int.to_string stamp
   | Global name ->
       (* we're adding a fake stamp, because someone could have named his unit
          [Foo_123] and since we're using unique_name to produce symbol names,
@@ -73,7 +73,7 @@ let unique_name = function
 
 let unique_toplevel_name = function
   | Local { name; stamp }
-  | Scoped { name; stamp } -> name ^ "/" ^ string_of_int stamp
+  | Scoped { name; stamp } -> name ^ "/" ^ Int.to_string stamp
   | Global name
   | Predef { name; _ } -> name
 

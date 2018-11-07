@@ -97,7 +97,7 @@ let intop = function
         begin
           match label_after_error with
           | None -> ""
-          | Some lbl -> string_of_int lbl
+          | Some lbl -> Int.to_string lbl
         end
         spacetime_index
 

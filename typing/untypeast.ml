@@ -106,7 +106,7 @@ let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
 (** Try a name [$name$0], check if it's free, if not, increment and repeat. *)
 let fresh_name s env =
   let rec aux i =
-    let name = s ^ string_of_int i in
+    let name = s ^ Int.to_string i in
     try
       let _ = Env.lookup_value (Lident name) env in
       name
@@ -120,7 +120,7 @@ let fresh_name s env =
 let constant = function
   | Const_char c -> Pconst_char c
   | Const_string (s,d) -> Pconst_string (s,d)
-  | Const_int i -> Pconst_integer (string_of_int i, None)
+  | Const_int i -> Pconst_integer (Int.to_string i, None)
   | Const_int32 i -> Pconst_integer (Int32.to_string i, Some 'l')
   | Const_int64 i -> Pconst_integer (Int64.to_string i, Some 'L')
   | Const_nativeint i -> Pconst_integer (Nativeint.to_string i, Some 'n')

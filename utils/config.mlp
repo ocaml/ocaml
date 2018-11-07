@@ -239,7 +239,7 @@ let config_var x =
   | Some v ->
       let s = match v with
         | String s -> s
-        | Int n -> string_of_int n
+        | Int n -> Int.to_string n
         | Bool b -> string_of_bool b
       in
       Some s

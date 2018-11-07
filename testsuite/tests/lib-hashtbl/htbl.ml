@@ -234,7 +234,7 @@ let list_data data =
       hd :: tl
     end in
   for i = 0 to Array.length d - 1 do
-    d.(i) <- (mklist (Random.int 16), string_of_int i)
+    d.(i) <- (mklist (Random.int 16), Int.to_string i)
   done;
   d
 

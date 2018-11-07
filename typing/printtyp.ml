@@ -704,12 +704,12 @@ let rec new_name () =
     if !name_counter < 26
     then String.make 1 (Char.chr(97 + !name_counter))
     else String.make 1 (Char.chr(97 + !name_counter mod 26)) ^
-           string_of_int(!name_counter / 26) in
+           Int.to_string(!name_counter / 26) in
   incr name_counter;
   if name_is_already_used name then new_name () else name
 
 let rec new_weak_name ty () =
-  let name = "weak" ^ string_of_int !weak_counter in
+  let name = "weak" ^ Int.to_string !weak_counter in
   incr weak_counter;
   if name_is_already_used name then new_weak_name ty ()
   else begin
@@ -732,7 +732,7 @@ let name_of_type name_generator t =
           let current_name = ref name in
           let i = ref 0 in
           while List.exists (fun (_, name') -> !current_name = name') !names do
-            current_name := name ^ (string_of_int !i);
+            current_name := name ^ (Int.to_string !i);
             i := !i + 1;
           done;
           !current_name
@@ -873,7 +873,7 @@ let rec tree_of_typexp sch ty =
     match ty.desc with
     | Tvar _ ->
         (*let lev =
-          if is_non_gen sch ty then "/" ^ string_of_int ty.level else "" in*)
+          if is_non_gen sch ty then "/" ^ Int.to_string ty.level else "" in*)
         let non_gen = is_non_gen sch ty in
         let name_gen = if non_gen then new_weak_name ty else new_name in
         Otyp_var (non_gen, name_of_type name_gen ty)

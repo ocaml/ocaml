@@ -15,7 +15,7 @@ end
 module Int = struct
   type t = int
   let x = 0
-  let show x = string_of_int x
+  let show x = Int.to_string x
 end
 
 module String = struct

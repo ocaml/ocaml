@@ -160,8 +160,8 @@ let load_symbol_addr s arg =
 
 let emit_label lbl =
   match system with
-  | S_macosx | S_win64 -> "L" ^ string_of_int lbl
-  | _ -> ".L" ^ string_of_int lbl
+  | S_macosx | S_win64 -> "L" ^ Int.to_string lbl
+  | _ -> ".L" ^ Int.to_string lbl
 
 let label s = sym (emit_label s)
 

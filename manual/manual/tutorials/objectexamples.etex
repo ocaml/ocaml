@@ -652,7 +652,7 @@ does not work in practice.
 let l = new intlist [1; 2; 3];;
 l#fold (fun x y -> x+y) 0;;
 l;;
-l#fold (fun s x -> s ^ string_of_int x ^ " ") "" [@@expect error];;
+l#fold (fun s x -> s ^ Int.to_string x ^ " ") "" [@@expect error];;
 \end{caml_example}
 Our iterator works, as shows its first use for summation. However,
 since objects themselves are not polymorphic (only their constructors
@@ -672,7 +672,7 @@ class intlist (l : int list) =
   end;;
 let l = new intlist [1; 2; 3];;
 l#fold (fun x y -> x+y) 0;;
-l#fold (fun s x -> s ^ string_of_int x ^ " ") "";;
+l#fold (fun s x -> s ^ Int.to_string x ^ " ") "";;
 \end{caml_example}
 As you can see in the class type shown by the compiler, while
 polymorphic method types must be fully explicit in class definitions

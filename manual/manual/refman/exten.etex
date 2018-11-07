@@ -724,7 +724,7 @@ open Typ
 let rec to_string: 'a. 'a Typ.typ -> 'a -> string =
   fun (type s) t x ->
     match t with
-    | Int eq -> string_of_int (TypEq.apply eq x)
+    | Int eq -> Int.to_string (TypEq.apply eq x)
     | String eq -> Printf.sprintf "%S" (TypEq.apply eq x)
     | Pair p ->
         let module P = (val p : PAIR with type t = s) in
@@ -1201,7 +1201,7 @@ type _ typ =
 let rec to_string: type t. t typ -> t -> string =
   fun t x ->
   match t with
-  | Int -> string_of_int x
+  | Int -> Int.to_string x
   | String -> Printf.sprintf "%S" x
   | Pair(t1,t2) ->
       let (x1, x2) = x in
@@ -1872,7 +1872,7 @@ to handle unknown variant constructors:
 \begin{caml_example*}{verbatim}
 let to_string = function
   | Expr.Str s -> s
-  | Expr.Int i -> string_of_int i
+  | Expr.Int i -> Int.to_string i
   | Expr.Float f -> string_of_float f
   | _ -> "?"
 \end{caml_example*}
