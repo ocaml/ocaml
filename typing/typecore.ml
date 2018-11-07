@@ -1063,6 +1063,33 @@ let all_idents_cases half_typed_cases =
     half_typed_cases;
   Hashtbl.fold (fun x () rest -> x :: rest) idents []
 
+let rec has_literal_pattern p = match p.ppat_desc with
+  | Ppat_constant _
+  | Ppat_interval _ ->
+     true
+  | Ppat_any
+  | Ppat_variant (_, None)
+  | Ppat_construct (_, None)
+  | Ppat_type _
+  | Ppat_var _
+  | Ppat_unpack _
+  | Ppat_extension _ ->
+     false
+  | Ppat_exception p
+  | Ppat_variant (_, Some p)
+  | Ppat_construct (_, Some p)
+  | Ppat_constraint (p, _)
+  | Ppat_alias (p, _)
+  | Ppat_lazy p
+  | Ppat_open (_, p) ->
+     has_literal_pattern p
+  | Ppat_tuple ps
+  | Ppat_array ps ->
+     List.exists has_literal_pattern ps
+  | Ppat_record (ps, _) ->
+     List.exists (fun (_,p) -> has_literal_pattern p) ps
+  | Ppat_or (p, q) ->
+     has_literal_pattern p || has_literal_pattern q
 
 exception Need_backtrack
 
@@ -1273,14 +1300,12 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
                                      Warnings.Wildcard_arg_to_constant_constr;
             replicate_list sp constr.cstr_arity
         | Some sp -> [sp] in
-      begin match sargs with
-      | [{ppat_desc = Ppat_constant _} as sp]
-        when Builtin_attributes.warn_on_literal_pattern
-            constr.cstr_attributes ->
-          Location.prerr_warning sp.ppat_loc
-            Warnings.Fragile_literal_pattern
-      | _ -> ()
-      end;
+      if Builtin_attributes.warn_on_literal_pattern constr.cstr_attributes then
+        begin match List.filter has_literal_pattern sargs with
+        | sp :: _ ->
+           Location.prerr_warning sp.ppat_loc Warnings.Fragile_literal_pattern
+        | _ -> ()
+        end;
       if List.length sargs <> constr.cstr_arity then
         raise(Error(loc, !env, Constructor_arity_mismatch(lid.txt,
                                      constr.cstr_arity, List.length sargs)));
