@@ -470,65 +470,94 @@ val of_seq : char Seq.t -> t
     available. *)
 
 val get_uint8 : bytes -> int -> int
-(** [get_uint8 s n] reads an 8-bit unsigned integer from the byte
-    sequence [s] starting at index [n], in binary form.
-
-    @since NEXT_VERSION
- *)
+(** [get_uint8 b i] is [b]'s unsigned 8-bit integer starting at byte index [i].
+    @since NEXT_RELEASE
+*)
 
 val get_int8 : bytes -> int -> int
-(** [get_int8 s n] reads an 8-bit signed integer from the byte
-    sequence [s] starting at index [n], in binary form.
-
-    @since NEXT_VERSION
+(** [get_int8 b i] is [b]'s signed 8-bit integer starting at byte index [i].
+    @since NEXT_RELEASE
 *)
 
 val get_uint16_ne : bytes -> int -> int
-(** [get_uint16_ne s n] reads a 16-bit unsigned integer from the byte
-    sequence [s] starting at index [n], in binary form, using the
-    machine native endianness. The result is an integer between 0 and
-    65535.
-
-    Raise [Invalid_argument] if [n] or [n+1] is not a valid index in
-    [s].
-
-    @since NEXT_VERSION
+(** [get_uint16_ne b i] is [b]'s native-endian unsigned 16-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
 *)
+
+val get_uint16_be : bytes -> int -> int
+(** [get_uint16_be b i] is [b]'s big-endian unsigned 16-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
+*)
+
+
+val get_uint16_le : bytes -> int -> int
+(** [get_uint16_le b i] is [b]'s little-endian unsigned 16-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
+*)
+
 
 val get_int16_ne : bytes -> int -> int
-(** [get_int16_ne s n] reads a 16-bit signed integer from the byte
-    sequence [s] starting at index [n], in binary form, using the
-    machine native endianness.  The result is sign-extended to an
-    integer between -32768 and 32767.
-
-    Raise [Invalid_argument] if [n] or [n+1] is not a valid index in
-    [s].
-
-    @since NEXT_VERSION
+(** [get_int16_ne b i] is [b]'s native-endian signed 16-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
 *)
 
+val get_int16_be : bytes -> int -> int
+(** [get_int16_be b i] is [b]'s big-endian signed 16-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
+*)
+
+
+val get_int16_le : bytes -> int -> int
+(** [get_int16_le b i] is [b]'s little-endian signed 16-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
+*)
+
+
 val get_int32_ne : bytes -> int -> int32
-(** [get_int32_ne s n] reads a 32-bit integer from the byte sequence
-    [s] starting at index [n], in binary form, using the machine
-    native endianness.
+(** [get_int32_ne b i] is [b]'s native-endian 32-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
+*)
 
-    Raise [Invalid_argument] if [n] or [n+3] is not a valid index in
-    [s].
+val get_int32_be : bytes -> int -> int32
+(** [get_int32_be b i] is [b]'s big-endian 32-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
+*)
 
-    @since NEXT_VERSION
+val get_int32_le : bytes -> int -> int32
+(** [get_int32_le b i] is [b]'s little-endian 32-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
 *)
 
 
 val get_int64_ne : bytes -> int -> int64
-(** [get_int64_ne s n] reads a 64-bit integer from the byte sequence
-    [s] starting at index [n], in binary form, using the machine
-    native endianness.
-
-    Raise [Invalid_argument] if [n] or [n+7] is not a valid index in
-    [s].
-
-    @since NEXT_VERSION
+(** [get_int64_ne b i] is [b]'s native-endian 64-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
 *)
+
+val get_int64_be : bytes -> int -> int64
+(** [get_int64_be b i] is [b]'s big-endian 64-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
+*)
+
+
+val get_int64_le : bytes -> int -> int64
+(** [get_int64_le b i] is [b]'s little-endian 64-bit integer
+    starting at byte index [i].
+    @since NEXT_RELEASE
+*)
+
+
 
 val set_int8 : bytes -> int -> int -> unit
 (** [set_int8 s n x] writes the least significant 8-bits of [x]
@@ -575,14 +604,6 @@ val set_int64_ne : bytes -> int -> int64 -> unit
 *)
 
 
-val get_int16_be : bytes -> int -> int
-val get_int16_le : bytes -> int -> int
-val get_uint16_be : bytes -> int -> int
-val get_uint16_le : bytes -> int -> int
-val get_int32_be : bytes -> int -> int32
-val get_int32_le : bytes -> int -> int32
-val get_int64_be : bytes -> int -> int64
-val get_int64_le : bytes -> int -> int64
 val set_int16_be : bytes -> int -> int -> unit
 val set_int16_le : bytes -> int -> int -> unit
 val set_int32_be : bytes -> int -> int32 -> unit
