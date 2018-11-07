@@ -580,85 +580,85 @@ val get_int64_le : bytes -> int -> int64
 val set_uint8 : bytes -> int -> int -> unit
 (** [set_uint8 b i v] sets [b]'s unsigned 8-bit integer starting at byte index
     [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_int8 : bytes -> int -> int -> unit
 (** [set_int8 b i v] sets [b]'s signed 8-bit integer starting at byte index
     [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_uint16_ne : bytes -> int -> int -> unit
 (** [set_uint16_ne b i v] sets [b]'s native-endian unsigned 16-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_uint16_be : bytes -> int -> int -> unit
 (** [set_uint16_be b i v] sets [b]'s big-endian unsigned 16-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_uint16_le : bytes -> int -> int -> unit
 (** [set_uint16_le b i v] sets [b]'s little-endian unsigned 16-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_int16_ne : bytes -> int -> int -> unit
 (** [set_int16_ne b i v] sets [b]'s native-endian signed 16-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_int16_be : bytes -> int -> int -> unit
 (** [set_int16_be b i v] sets [b]'s big-endian signed 16-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_int16_le : bytes -> int -> int -> unit
 (** [set_int16_le b i v] sets [b]'s little-endian signed 16-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_int32_ne : bytes -> int -> int32 -> unit
 (** [set_int32_ne b i v] sets [b]'s native-endian 32-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_int32_be : bytes -> int -> int32 -> unit
 (** [set_int32_be b i v] sets [b]'s big-endian 32-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_int32_le : bytes -> int -> int32 -> unit
 (** [set_int32_le b i v] sets [b]'s little-endian 32-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_int64_ne : bytes -> int -> int64 -> unit
 (** [set_int64_ne b i v] sets [b]'s native-endian 64-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_int64_be : bytes -> int -> int64 -> unit
 (** [set_int64_be b i v] sets [b]'s big-endian 64-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 val set_int64_le : bytes -> int -> int64 -> unit
 (** [set_int64_le b i v] sets [b]'s little-endian 64-bit integer
     starting at byte index [i] to [v].
-    @since NEXT_VERSION
+    @since NEXT_RELEASE
 *)
 
 

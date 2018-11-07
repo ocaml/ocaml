@@ -300,6 +300,7 @@ let of_seq i =
   add_seq b i;
   b
 
+(** {6 Binary encoding of integers} *)
 
 external unsafe_set_int16 : bytes -> int -> int -> unit = "%caml_bytes_set16u"
 external unsafe_set_int32 : bytes -> int -> int32 -> unit = "%caml_bytes_set32u"
@@ -351,3 +352,8 @@ let add_int64_le b x =
 
 let add_int64_be b x =
   add_int64_ne b (if Sys.big_endian then x else swap64 x)
+
+let add_uint8 = add_int8
+let add_uint16_ne = add_int16_ne
+let add_uint16_le = add_int16_le
+let add_uint16_be = add_int16_be

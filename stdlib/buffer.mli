@@ -178,40 +178,107 @@ val of_seq : char Seq.t -> t
 (** Create a buffer from the generator
     @since 4.07 *)
 
-(** {6 Binary storage of numbers} *)
+(** {6 Binary encoding of integers} *)
+
+(** The functions in this section encode integers stored
+    in binary form into a buffer.
+
+    Little-endian (resp. big-endian) encoding means that least
+    (resp. most) significant bytes are stored first.  Big-endian is
+    also known as network byte order.  Native-endian encoding is
+    either little-endian or big-endian depending on {!Sys.big_endian}.
+
+    32-bit and 64-bit integers are directly represented using
+    [int32] and [int64] types, which can be interpreted either
+    as signed or unsigned numbers.
+
+    8-bit and 16-bit integers are represented using the [int] type,
+    which has more bits than the binary encoding.  Functions that
+    encode these values truncate their inputs to their least
+    significant bytes.  Signed and unsigned variants are synonyms of
+    each other.
+    *)
+
+val add_uint8 : t -> int -> unit
+(** [add_uint8 b i] appends a binary unsigned XX-bit integer [i] to
+    [b].
+    @since NEXT_RELEASE
+*)
 
 val add_int8 : t -> int -> unit
-(** Add the binary representation of the least significant 8-bits of
-    the integer in binary form.
+(** [add_int8 b i] appends a binary signed XX-bit integer [i] to
+    [b].
+    @since NEXT_RELEASE
+*)
 
-    @since NEXT_VERSION
+val add_uint16_ne : t -> int -> unit
+(** [add_uint16_ne b i] appends a binary native-endian unsigned 16-bit
+    integer [i] to [b].
+    @since NEXT_RELEASE
+*)
+
+val add_uint16_be : t -> int -> unit
+(** [add_uint16_be b i] appends a binary big-endian unsigned 16-bit
+    integer [i] to [b].
+    @since NEXT_RELEASE
+*)
+
+val add_uint16_le : t -> int -> unit
+(** [add_uint16_le b i] appends a binary little-endian unsigned 16-bit
+    integer [i] to [b].
+    @since NEXT_RELEASE
 *)
 
 val add_int16_ne : t -> int -> unit
-(** Add the binary representation of the least significant 16-bits of
-    the integer in binary form, using the machine native endianness.
+(** [add_int16_ne b i] appends a binary native-endian signed 16-bit
+    integer [i] to [b].
+    @since NEXT_RELEASE
+*)
 
-    @since NEXT_VERSION
+val add_int16_be : t -> int -> unit
+(** [add_int16_be b i] appends a binary big-endian signed 16-bit
+    integer [i] to [b].
+    @since NEXT_RELEASE
+*)
+
+val add_int16_le : t -> int -> unit
+(** [add_int16_le b i] appends a binary little-endian signed 16-bit
+    integer [i] to [b].
+    @since NEXT_RELEASE
 *)
 
 val add_int32_ne : t -> int32 -> unit
-(** Add the binary representation of the 32-bit integer, in binary
-    form, using the machine native endianness.
+(** [add_int32_ne b i] appends a binary native-endian 32-bit integer
+    [i] to [b].
+    @since NEXT_RELEASE
+*)
 
-    @since NEXT_VERSION
+val add_int32_be : t -> int32 -> unit
+(** [add_int32_be b i] appends a binary big-endian 32-bit integer
+    [i] to [b].
+    @since NEXT_RELEASE
+*)
+
+val add_int32_le : t -> int32 -> unit
+(** [add_int32_le b i] appends a binary little-endian 32-bit integer
+    [i] to [b].
+    @since NEXT_RELEASE
 *)
 
 val add_int64_ne  : t -> int64 -> unit
-(** Add the binary representation of the 64-bit integer, in binary
-    form, using the machine native endianness.
-
-    @since NEXT_VERSION
+(** [add_int64_ne b i] appends a binary native-endian 64-bit integer
+    [i] to [b].
+    @since NEXT_RELEASE
 *)
 
-
-val add_int16_le : t -> int -> unit
-val add_int16_be : t -> int -> unit
-val add_int32_le : t -> int32 -> unit
-val add_int32_be : t -> int32 -> unit
-val add_int64_le : t -> int64 -> unit
 val add_int64_be : t -> int64 -> unit
+(** [add_int64_be b i] appends a binary big-endian 64-bit integer
+    [i] to [b].
+    @since NEXT_RELEASE
+*)
+
+val add_int64_le : t -> int64 -> unit
+(** [add_int64_ne b i] appends a binary little-endian 64-bit integer
+    [i] to [b].
+    @since NEXT_RELEASE
+*)
