@@ -301,7 +301,7 @@
 #endif
 
 /* struct stack_info */
-#define Stack_sp(REG)             (REG)
+#define Stack_sp                 0
 #define Stack_handler            8
 
 /* struct stack_handler */
@@ -329,6 +329,10 @@ G(caml_system__code_begin):
 #define DW_CFA_val_expression     0x16
 #define DW_CFA_expression         0x10
 #define DW_CFA_def_cfa_expression 0x0f
+#define DW_CFA_restore            0x03
+#define DW_CFA_val_offset         0x14
+#define DW_REG_rsp                7
+#define DW_REG_retaddr            16
 #define DW_OP_breg3               0x73  /* rbx */
 #define DW_OP_breg7               0x77  /* rsp */
 #define DW_OP_breg13              0x7d  /* r13 */
@@ -336,6 +340,7 @@ G(caml_system__code_begin):
 #define DW_OP_deref               0x06
 #define DW_OP_const1u             0x08
 #define DW_OP_plus                0x22
+#define DW_OP_plus_uconst         0x23
 #define DW_OP_minus               0x1c
 #define DW_OP_shl                 0x24
 #define DW_OP_shr                 0x25
@@ -396,34 +401,6 @@ CFI_STARTPROC
         call    *%r12
 LBL(119):
         addq    $8, %rsp; CFI_ADJUST(-8)
-        ret
-CFI_ENDPROC
-
-FUNCTION(G(caml_handler))
-CFI_STARTPROC
-LBL(caml_handler):
-        .cfi_signal_frame
-        .cfi_escape DW_CFA_val_expression, 0x7, 37, \
-            /* DWARF_stack = [cfa] */ \
-          DW_OP_breg7, 0x8, DW_OP_deref, \
-            /* DWARF_stack = [offset; cfa] */ \
-          DW_OP_minus, DW_OP_deref, \
-            /* DWARF_stack = [parent stack] */ \
-          DW_OP_dup, DW_OP_dup, \
-            /* DWARF stack = [stack; stack; stack] */ \
-          DW_OP_const1u, 0x08, DW_OP_minus, DW_OP_deref, \
-            /* DWARF_stack = [Hd_val(stack); stack; stack] */ \
-          DW_OP_const1u, 0x0a, DW_OP_shr, DW_OP_const1u, 0x03, DW_OP_shl, DW_OP_plus, \
-            /* DWARF_stack = [Stack_high(stack) || Stack_high(stack) + 8; stack] */ \
-          DW_OP_const8u, 0xf0,0xff,0xff,0xff,0xff,0xff,0xff,0xff, DW_OP_and, \
-            /* DWARF_stack = [Stack_high(stack); stack] */ \
-          DW_OP_swap, DW_OP_deref, DW_OP_const1u, 0x03, DW_OP_shl, DW_OP_plus, \
-            /* DWARF_stack = [Sp(stack)] */ \
-          DW_OP_const1u, 0x10, DW_OP_plus \
-            /* DWARF_stack = [rsp of last frame] */
-        call *%rsi
-LBL(118):
-        movq  $0, 16(%rsp)
         ret
 CFI_ENDPROC
 
@@ -1111,12 +1088,13 @@ CFI_ENDPROC
    then invoke either the value or exception handler */
 FUNCTION(G(caml_runstack))
 CFI_STARTPROC
+        .cfi_signal_frame
     /* %rax -> stack, %rbx -> fun, %rdi -> arg */
         andq    $-2, %rax       /* %rax = Ptr_val(%rax) */
         movq    %rdi, %r12      /* Save arg (callee-saved) */
         movq    %rax, %rdi
     /* Build caml_context at the bottom of the stack */
-        pushq   $0
+        pushq   $0 ; CFI_ADJUST(8);
         PUSH_EXN_HANDLER(%r10)
     /* Switch stacks and set parent */
         movq	Caml_state(current_stack), %rax
@@ -1125,19 +1103,27 @@ CFI_STARTPROC
         movq    %rax, Handler_parent(%rcx)
         movq    %rdi, Caml_state(current_stack)
         movq    Stack_sp(%rdi), %rsp
-    /* Assert stack_sp == handler (i.e. stack is empty) */
-        cmp %rsp, %rcx; je 1f; int3; 1:
+        .cfi_remember_state
+        .cfi_def_cfa_offset 0 /* cfa = %rsp, points to struct stack_handler */
+        .cfi_escape DW_CFA_val_expression, DW_REG_rsp, 3+3+2 , \
+          DW_OP_plus_uconst, Handler_parent, DW_OP_deref, \
+          DW_OP_plus_uconst, Stack_sp, DW_OP_deref, \
+          DW_OP_plus_uconst, 16 /* sizeof caml_context */ + 8 /* ret addr */
+        .cfi_escape DW_CFA_expression, DW_REG_retaddr, 3+3+2, \
+          DW_OP_plus_uconst, Handler_parent, DW_OP_deref, \
+          DW_OP_plus_uconst, Stack_sp, DW_OP_deref,\
+          DW_OP_plus_uconst, 16 /* sizeof caml_context */
     /* match f x with
        | x -> handler.handle_value x
        | exception e -> handler.handle_exn e */
         leaq    LBL(fiber_exn_handler)(%rip), %r10
-        pushq   %r10
-        pushq   $0 /* dummy previous trap frame */
+        pushq   %r10; CFI_ADJUST(8);
+        pushq   $0; CFI_ADJUST(8); /* dummy previous trap frame */
         movq    %rsp, Caml_state(exn_handler)
         movq    %r12, %rax /* first argument */
-        call    (%rbx) /* closure in %rbx (second argument) */
+        callq   *(%rbx) /* closure in %rbx (second argument) */
 LBL(frame_runstack):
-        addq    $16, %rsp /* pop exn handler */
+        addq    $16, %rsp; CFI_ADJUST(-16) /* pop exn handler */
         movq    Handler_value(%rsp), %rbx
 1:  /* Switch back to parent stack and free current */
         movq    Caml_state(current_stack), %rdi
@@ -1150,10 +1136,11 @@ LBL(frame_runstack):
         call    GCALL(caml_free_stack)
         popq    %r10
         movq    %r10, %rsp
+        .cfi_restore_state
         movq    %r12, %rax
     /* Pop the caml_context from the bottom of the stack */
         POP_EXN_HANDLER(%r10)
-        popq    %r10
+        popq    %r10; CFI_ADJUST(-8)
     /* Invoke handle_value (or handle_exn) */
         jmp     *(%rbx)
 LBL(fiber_exn_handler):

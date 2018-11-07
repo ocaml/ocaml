@@ -276,8 +276,6 @@ int caml_try_realloc_stack(asize_t required_space)
   new_stack->sp = Stack_high(new_stack) - stack_used;
   Stack_parent(new_stack) = Stack_parent(old_stack);
 #ifdef NATIVE_CODE
-  Stack_debugger_slot(new_stack) =
-    Stack_debugger_slot_offset_to_parent_slot(new_stack);
   CAMLassert(Stack_base(old_stack) < (value*)Caml_state->exn_handler &&
              (value*)Caml_state->exn_handler <= Stack_high(old_stack));
   Caml_state->exn_handler =
