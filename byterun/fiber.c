@@ -57,35 +57,10 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
 extern void caml_fiber_exn_handler (value) Noreturn;
 extern void caml_fiber_val_handler (value) Noreturn;
 
-#define INIT_FIBER_USED (3 + sizeof(struct caml_context) / sizeof(value))
-
 value caml_alloc_stack (value hval, value hexn, value heff) {
   struct stack_info* stack = alloc_stack_noexc(caml_fiber_wsz, hval, hexn, heff);
-  char* sp;
-  char* trapsp;
-  struct caml_context *ctxt;
 
   if (!stack) caml_raise_out_of_memory();
-  sp = (char*)Stack_high(stack);
-  /* Fiber exception handler that returns to parent */
-  sp -= sizeof(value);
-  *(value**)sp = (value*)caml_fiber_exn_handler;
-  /* No previous exception frame. Infact, this is the debugger slot. Initialize it. */
-  sp -= sizeof(value);
-  Stack_debugger_slot(stack) = Stack_debugger_slot_offset_to_parent_slot(stack);
-  trapsp = sp;
-
-  /* Value handler that returns to parent */
-  sp -= sizeof(value);
-  *(value**)sp = (value*)caml_fiber_val_handler;
-
-  /* Build a context */
-  sp -= sizeof(struct caml_context);
-  ctxt = (struct caml_context*)sp;
-  ctxt->exception_ptr_offset = trapsp - ((char*)&ctxt->exception_ptr_offset);
-  ctxt->gc_regs = NULL;
-
-  stack->sp = Stack_high(stack) - INIT_FIBER_USED;
 
   caml_gc_log ("Allocate stack=%p of %lu words", stack, caml_fiber_wsz);
 
@@ -324,6 +299,7 @@ struct stack_info* caml_alloc_main_stack (uintnat init_size)
 
 void caml_free_stack (struct stack_info* stack)
 {
+  CAMLnoalloc;
   CAMLassert(stack->magic == 42);
 #ifdef DEBUG
   memset(stack, 0x42, (char*)stack->handler - (char*)stack);
