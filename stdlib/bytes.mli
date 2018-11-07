@@ -578,7 +578,7 @@ val get_int64_le : bytes -> int -> int64
 *)
 
 val set_uint8 : bytes -> int -> int -> unit
-(** [set_int8 b i v] sets [b]'s unsigned 8-bit integer starting at byte index
+(** [set_uint8 b i v] sets [b]'s unsigned 8-bit integer starting at byte index
     [i] to [v].
     @since NEXT_VERSION
 *)
