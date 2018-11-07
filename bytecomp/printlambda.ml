@@ -188,6 +188,7 @@ let primitive ppf = function
       fprintf ppf "setfloatfield%s %i" init n
   | Pduprecord (rep, size) -> fprintf ppf "duprecord %a %i" record_rep rep size
   | Plazyforce -> fprintf ppf "force"
+  | Prunstack -> fprintf ppf "runstack"
   | Pperform -> fprintf ppf "perform"
   | Presume -> fprintf ppf "resume"
   | Preperform -> fprintf ppf "reperform"
@@ -447,6 +448,7 @@ let name_of_primitive = function
   | Patomic_cas -> "Patomic_cas"
   | Patomic_fetch_add -> "Patomic_fetch_add"
   | Popaque -> "Popaque"
+  | Prunstack -> "Prunstack"
   | Presume -> "Presume"
   | Pperform -> "Pperform"
   | Preperform -> "Preperform"

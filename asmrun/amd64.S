@@ -183,17 +183,18 @@
  * arguments : target stack (%rdi)
  * preserves : %rbx, %r8, %r9, %r12, %r13 */
 #define SWITCH_OCAML_STACKS \
-    /* Switch from OCaml to C */ \
-        SWITCH_OCAML_TO_C(%r10); \
-        ENTER_FUNCTION; \
-    /* Call switch stack */ \
-        PREPARE_FOR_C_CALL; \
-        movq    $0, %rsi; \
-        call    GCALL(caml_switch_stack); \
-        CLEANUP_AFTER_C_CALL; \
-    /* Load ocaml stack and restore global variables */ \
-        LEAVE_FUNCTION; \
-        SWITCH_C_TO_OCAML(%r10)
+    /* Build caml_context at the bottom of the stack */ \
+        pushq   $0 ; CFI_ADJUST(8); \
+        PUSH_EXN_HANDLER(%r10); \
+    /* Save OCaml SP in the stack slot */ \
+        movq	Caml_state(current_stack), %r10; \
+        movq    %rsp, Stack_sp(%r10); \
+        movq    %rdi, Caml_state(current_stack) ; \
+        movq    Stack_sp(%rdi), %rsp; \
+        .cfi_def_cfa_offset 24 ; /* FIXME */ \
+    /* Pop the caml_context from the bottom of stack */ \
+        POP_EXN_HANDLER(%r10); \
+        popq    %r10; CFI_ADJUST(-8)
 
 /* Switch between OCaml stacks and free the current one.
  * arguments : target stack (%rdi)
@@ -202,10 +203,12 @@
     /* Switch from OCaml to C */ \
         SWITCH_OCAML_TO_C(%r10); \
         ENTER_FUNCTION; \
-    /* Call switch stack */ \
+    /* switch stacks and free old one */ \
         PREPARE_FOR_C_CALL; \
-        movq    $1, %rsi; \
-        call    GCALL(caml_switch_stack); \
+        movq    Caml_state(current_stack), %rax ; \
+        movq    %rdi, Caml_state(current_stack) ; \
+        movq    %rax, %rdi ; \
+        call    GCALL(caml_free_stack); \
         CLEANUP_AFTER_C_CALL; \
     /* Load ocaml stack and restore global variables */ \
         LEAVE_FUNCTION; \
@@ -1156,12 +1159,30 @@ CFI_STARTPROC
         movq    %rax, Handler_parent(%rcx)
     /* %rdi has new stack */
         SWITCH_OCAML_STACKS
-    /* Return value is 1 if switching to a fresh stack. */
-        cmpq    $1, %rax
         movq    %r12, %rax    /* first argument */
         movq    (%rbx), %rsi  /* closure in %rbx (second argument) */
-        je      LBL(caml_handler)
         jmp     *%rsi
+CFI_ENDPROC
+
+FUNCTION(G(caml_runstack))
+CFI_STARTPROC
+    /* %rax -> stack, %rbx -> fun, %rdi -> arg */
+        andq    $-2, %rax       /* %rax = Ptr_val(%rax) */
+        movq    %rdi, %r12      /* Save arg (callee-saved) */
+        movq    %rax, %rdi
+    /* Find end of list of stacks and add current */
+1:      movq    Stack_handler(%rax), %rcx
+        cmpq    $0, Handler_parent(%rcx)
+        je      2f
+        movq    Handler_parent(%rcx), %rax
+        jmp     1b
+2:      movq	Caml_state(current_stack), %rax
+        movq    %rax, Handler_parent(%rcx)
+    /* %rdi has new stack */
+        SWITCH_OCAML_STACKS
+        movq    %r12, %rax    /* first argument */
+        movq    (%rbx), %rsi  /* closure in %rbx (second argument) */
+        jmp      LBL(caml_handler)
 CFI_ENDPROC
 
 

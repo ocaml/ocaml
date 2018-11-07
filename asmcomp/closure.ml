@@ -1028,6 +1028,10 @@ let rec close fenv cenv = function
       let args = close_list fenv cenv args in
       let dbg = Debuginfo.from_location loc in
       (Udirect_apply ("caml_resume", args, dbg), Value_unknown)
+  | Lprim(Prunstack, args, loc) ->
+      let args = close_list fenv cenv args in
+      let dbg = Debuginfo.from_location loc in
+      (Udirect_apply ("caml_runstack", args, dbg), Value_unknown)
   | Lprim(Preperform, args, loc) ->
       let args = close_list fenv cenv args in
       let dbg = Debuginfo.from_location loc in
