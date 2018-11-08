@@ -56,10 +56,10 @@ extern void caml_raise_exception (caml_domain_state* state, value bucket) Noretu
 
 void caml_raise(value v)
 {
-  if (Caml_state->system_sp == 0)
+  if (Caml_state->c_stack == 0)
     caml_fatal_uncaught_exception(v);
 
-  char* exception_pointer = Caml_state->system_sp;
+  char* exception_pointer = (char*)Caml_state->c_stack;
   while (CAML_LOCAL_ROOTS != NULL &&
          (char *) CAML_LOCAL_ROOTS < exception_pointer) {
     Assert(CAML_LOCAL_ROOTS != NULL);

@@ -598,41 +598,32 @@ let emit_instr fallthrough i =
         load_symbol_addr func rax;
         emit_call "caml_c_call_stack_args";
         record_frame i.live false i.dbg ~label:label_after;
-        (* caml_c_call preserves the old value of %r15, but this may no longer
-           be the correct minor heap pointer, so we reload young_ptr *)
         if Config.stats then begin
           I.inc (domain_field Domainstate.Domain_extcall_alloc_stackargs)
         end;
-        I.mov (domain_field Domainstate.Domain_young_ptr) r15;
       end else if alloc then begin
         load_symbol_addr func rax;
         emit_call "caml_c_call";
         record_frame i.live false i.dbg ~label:label_after;
-        (* caml_c_call preserves the old value of %r15, but this may no longer
-           be the correct minor heap pointer, so we reload young_ptr *)
         if Config.stats then begin
           I.inc (domain_field Domainstate.Domain_extcall_alloc)
         end;
-        I.mov (domain_field Domainstate.Domain_young_ptr) r15;
       end else begin
-        I.mov rsp r10;
+        I.mov rsp rbp;
         if Config.stats then begin
           I.inc (domain_field Domainstate.Domain_extcall_noalloc);
         end;
         cfi_remember_state ();
-        I.mov (domain_field Domainstate.Domain_system_sp) rsp;
-        cfi_def_cfa_offset 8;
-        I.push r10;
-        cfi_adjust_cfa_offset 8;
+        I.mov (domain_field Domainstate.Domain_c_stack) rsp;
+        (* FIXME: CFI *)
+        (* cfi_def_cfa_offset 8; *)
         emit_call func;
         (* FIXME KC:
         if Config.spacetime then begin
           record_frame Reg.Set.empty false i.dbg ~label:label_after
         end
         *)
-        I.pop r10;
-        cfi_adjust_cfa_offset (-8);
-        I.mov r10 rsp;
+        I.mov rbp rsp;
         cfi_restore_state ();
       end
   | Lop(Istackoffset n) ->
@@ -978,7 +969,7 @@ let emit_profile () =
     if not fp then I.lea (mem64 NONE (-8) RSP) rbp;
     I.mov rsp r10;
     cfi_remember_state ();
-    I.mov (domain_field Domainstate.Domain_system_sp) rsp;
+    I.mov (domain_field Domainstate.Domain_c_stack) rsp;
     cfi_def_cfa_offset 8;
     I.push r10;
     cfi_adjust_cfa_offset 8;

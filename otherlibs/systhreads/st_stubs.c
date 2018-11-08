@@ -169,6 +169,7 @@ static void caml_thread_scan_roots(scanning_action action, void* fdata, struct d
 
 static inline void caml_thread_save_runtime_state(void)
 {
+#if 0
   /* Save the stack-related global variables in the thread descriptor
      of the current thread */
   curr_thread->current_stack = Caml_state->current_stack;
@@ -190,10 +191,12 @@ static inline void caml_thread_save_runtime_state(void)
   curr_thread->backtrace_pos = Caml_state->backtrace_pos;
   curr_thread->backtrace_buffer = Caml_state->backtrace_buffer;
   curr_thread->backtrace_last_exn = Caml_state->backtrace_last_exn;
+#endif
 }
 
 static inline void caml_thread_restore_runtime_state(void)
 {
+#if 0
   /* Update curr_thread to point to the thread descriptor corresponding
      to the thread currently executing */
   curr_thread = st_tls_get(thread_descriptor_key);
@@ -216,6 +219,7 @@ static inline void caml_thread_restore_runtime_state(void)
   Caml_state->backtrace_pos = curr_thread->backtrace_pos;
   Caml_state->backtrace_buffer = curr_thread->backtrace_buffer;
   Caml_state->backtrace_last_exn = curr_thread->backtrace_last_exn;
+#endif
 }
 
 /* Hooks for caml_enter_blocking_section and caml_leave_blocking_section */
