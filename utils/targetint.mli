@@ -60,7 +60,7 @@ val div : t -> t -> t
 
 val unsigned_div : t -> t -> t
 (** Same as {!div}, except that arguments and result are interpreted as {e
-    unsigned} 32-bit integers. *)
+    unsigned} integers. *)
 
 val rem : t -> t -> t
 (** Integer remainder.  If [y] is not zero, the result

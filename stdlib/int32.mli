@@ -124,7 +124,8 @@ external shift_right_logical : int32 -> int -> int32 = "%int32_lsr"
 
 external of_int : int -> int32 = "%int32_of_int"
 (** Convert the given integer (type [int]) to a 32-bit integer
-    (type [int32]). *)
+    (type [int32]). On 64-bit platforms, the argument is taken
+    modulo 2{^32}. *)
 
 external to_int : int32 -> int = "%int32_to_int"
 (** Convert the given 32-bit integer (type [int32]) to an
