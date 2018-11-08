@@ -94,10 +94,12 @@ indentation and line breaking \\
 "Arg" & p.~\pageref{Arg} & parsing of command line arguments \\
 "Callback" & p.~\pageref{Callback} & registering OCaml functions to
 be called from C \\
+"Exn" & p.~\pageref{Exn} & operations on exceptions \\
 "Filename" & p.~\pageref{Filename} & operations on file names \\
 "Gc" & p.~\pageref{Gc} & memory management control and statistics \\
 "Printexc" & p.~\pageref{Printexc} & a catch-all exception handler \\
 "Spacetime" & p.~\pageref{Spacetime} & memory profiler \\
+"Stack_trace" & p.~\pageref{Stack_trace} & stack traces \\
 "Sys" & p.~\pageref{Sys} & system interface \\
 \end{tabular}
 \subsubsection{Misc:}
@@ -121,6 +123,7 @@ be called from C \\
 \item \ahref{libref/Complex.html}{Module \texttt{Complex}: Complex numbers}
 \item \ahref{libref/Digest.html}{Module \texttt{Digest}: MD5 message digest}
 \item \ahref{libref/Ephemeron.html}{Module \texttt{Ephemeron}: Ephemerons and weak hash table}
+\item \ahref{libref/Exn.html}{Module \texttt{Exn}: operations on exceptions}
 \item \ahref{libref/Filename.html}{Module \texttt{Filename}: operations on file names}
 \item \ahref{libref/Float.html}{Module \texttt{Float}: Floating-point numbers}
 \item \ahref{libref/Format.html}{Module \texttt{Format}: pretty printing}
@@ -152,6 +155,7 @@ be called from C \\
 \item \ahref{libref/Set.html}{Module \texttt{Set}: sets over ordered types}
 \item \ahref{libref/Spacetime.html}{Module \texttt{Spacetime}: memory profiler}
 \item \ahref{libref/Stack.html}{Module \texttt{Stack}: last-in first-out stacks}
+\item \ahref{libref/Stack_trace.html}{Module \texttt{Stack_trace}: Stack traces}
 \item \ahref{libref/StdLabels.html}{Module \texttt{StdLabels}: Include modules \texttt{Array}, \texttt{List} and \texttt{String} with labels}
 \item \ahref{libref/Stream.html}{Module \texttt{Stream}: streams and parsers}
 \item \ahref{libref/String.html}{Module \texttt{String}: string operations}
@@ -175,6 +179,7 @@ be called from C \\
 \input{Complex.tex}
 \input{Digest.tex}
 \input{Ephemeron.tex}
+\input{Exn.tex}
 \input{Filename.tex}
 \input{Float.tex}
 \input{Format.tex}
@@ -206,6 +211,7 @@ be called from C \\
 \input{Set.tex}
 \input{Spacetime.tex}
 \input{Stack.tex}
+\input{Stack_trace.tex}
 \input{StdLabels.tex}
 \input{Stream.tex}
 \input{String.tex}
