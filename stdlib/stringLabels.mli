@@ -288,7 +288,7 @@ val split_on_char: sep:char -> string -> string list
     @since 4.05.0
 *)
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 val to_seq : t -> char Seq.t
 (** Iterate on the string, in increasing index order. Modifications of the

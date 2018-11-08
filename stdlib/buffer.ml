@@ -273,7 +273,7 @@ let truncate b len =
     else
       b.position <- len
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 let to_seq b =
   let rec aux i () =

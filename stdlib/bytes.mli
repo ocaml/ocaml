@@ -319,7 +319,7 @@ val equal: t -> t -> bool
 (** The equality function for byte sequences.
     @since 4.03.0 *)
 
-(** {3 Unsafe conversions (for advanced users)}
+(** {1:unsafe Unsafe conversions (for advanced users)}
 
     This section describes unsafe, low-level conversion functions
     between [bytes] and [string]. They do not copy the internal data;
@@ -448,7 +448,7 @@ let s = Bytes.of_string "hello"
     [string] type for this purpose.
 *)
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 val to_seq : t -> char Seq.t
 (** Iterate on the string, in increasing index order. Modifications of the

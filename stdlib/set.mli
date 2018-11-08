@@ -264,7 +264,7 @@ module type S =
         except perhaps for lists with many duplicated elements.
         @since 4.02.0 *)
 
-    (** {6 Iterators} *)
+    (** {1 Iterators} *)
 
     val to_seq_from : elt -> t -> elt Seq.t
     (** [to_seq_from x s] iterates on a subset of the elements of [s]

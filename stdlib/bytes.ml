@@ -330,7 +330,7 @@ let lowercase s = map Char.lowercase s
 let capitalize s = apply1 Char.uppercase s
 let uncapitalize s = apply1 Char.lowercase s
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 let to_seq s =
   let rec aux i () =
