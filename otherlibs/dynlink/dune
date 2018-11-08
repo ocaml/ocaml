@@ -15,7 +15,7 @@
 (library
   (name dynlink)
   (wrapped false)
-  (modules dynlink dynlinkaux)
+  (modules dynlink dynlinkaux dynlink_common dynlink_types)
   ; the -33 is specific to the hackery done with dune.
   (flags (:standard -nostdlib -w -33))
   (libraries ocamlcommon stdlib))

@@ -60,7 +60,6 @@ let f x = print_string "This is Main.f\n"; x
 let () = Registry.register f
 
 let _ =
-  Dynlink.init ();
   Dynlink.allow_unsafe_modules true;
   for i = 1 to Array.length Sys.argv - 1 do
     let name = Sys.argv.(i) in

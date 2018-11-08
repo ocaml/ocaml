@@ -207,6 +207,28 @@ let force_linking_of_startup ~ppf_dump =
   Asmgen.compile_phrase ~ppf_dump
     (Cmm.Cdata ([Cmm.Csymbol_address "caml_startup"]))
 
+let make_globals_map units_list =
+  let units = Hashtbl.create 17 in
+  List.iter (fun (unit, _, _) ->
+      List.iter (fun (name, intf_crc) ->
+          match Hashtbl.find units name, intf_crc with
+          | exception Not_found -> Hashtbl.add units name intf_crc
+          | None, (Some _ as intf_crc) -> Hashtbl.replace units name intf_crc
+          | Some _, _ -> ()
+          | _, None -> ())
+        unit.ui_imports_cmi)
+    units_list;
+  let defined =
+    List.map (fun (unit, _, impl_crc) ->
+        let intf_crc = Hashtbl.find units unit.ui_name in
+        Hashtbl.remove units unit.ui_name;
+        (unit.ui_name, intf_crc, Some impl_crc, unit.ui_defines))
+      units_list
+  in
+  Hashtbl.fold (fun name intf acc ->
+      (name, intf, None, []) :: acc)
+    units defined
+
 let make_startup_file ~ppf_dump units_list =
   let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
@@ -222,19 +244,7 @@ let make_startup_file ~ppf_dump units_list =
     (fun i name -> compile_phrase (Cmmgen.predef_exception i name))
     Runtimedef.builtin_exceptions;
   compile_phrase (Cmmgen.global_table name_list);
-  compile_phrase
-    (Cmmgen.globals_map
-       (List.map
-          (fun (unit,_,crc) ->
-               let intf_crc =
-                 try
-                   match List.assoc unit.ui_name unit.ui_imports_cmi with
-                     None -> assert false
-                   | Some crc -> crc
-                 with Not_found -> assert false
-               in
-                 (unit.ui_name, intf_crc, crc, unit.ui_defines))
-          units_list));
+  compile_phrase (Cmmgen.globals_map (make_globals_map units_list));
   compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
   compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
   let all_names = "_startup" :: "_system" :: name_list in

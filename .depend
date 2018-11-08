@@ -2325,6 +2325,12 @@ asmcomp/debug/reg_with_debug_info.cmx : asmcomp/reg.cmx \
 asmcomp/debug/reg_with_debug_info.cmi : asmcomp/reg.cmi \
     asmcomp/backend_var.cmi
 driver/compdynlink.cmi :
+driver/compdynlink_common.cmi : driver/compdynlink_platform_intf.cmo
+driver/compdynlink_platform_intf.cmo : driver/compdynlink_types.cmi
+driver/compdynlink_platform_intf.cmx : driver/compdynlink_types.cmx
+driver/compdynlink_types.cmo : driver/compdynlink_types.cmi
+driver/compdynlink_types.cmx : driver/compdynlink_types.cmi
+driver/compdynlink_types.cmi :
 driver/compenv.cmo : utils/warnings.cmi utils/profile.cmi utils/misc.cmi \
     parsing/location.cmi utils/config.cmi utils/clflags.cmi utils/ccomp.cmi \
     driver/compenv.cmi
@@ -2485,10 +2491,10 @@ toplevel/opttoploop.cmo : utils/warnings.cmi typing/types.cmi \
     parsing/lexer.cmi bytecomp/lambda.cmi typing/includemod.cmi \
     asmcomp/import_approx.cmi typing/ident.cmi toplevel/genprintval.cmi \
     typing/env.cmi utils/config.cmi driver/compmisc.cmi asmcomp/compilenv.cmi \
-    driver/compenv.cmi driver/compdynlink.cmi utils/clflags.cmi \
-    typing/btype.cmi middle_end/backend_intf.cmi parsing/asttypes.cmi \
-    parsing/ast_helper.cmi asmcomp/asmlink.cmi asmcomp/asmgen.cmi \
-    asmcomp/arch.cmo toplevel/opttoploop.cmi
+    driver/compenv.cmi utils/clflags.cmi typing/btype.cmi \
+    middle_end/backend_intf.cmi parsing/asttypes.cmi parsing/ast_helper.cmi \
+    asmcomp/asmlink.cmi asmcomp/asmgen.cmi asmcomp/arch.cmo \
+    toplevel/opttoploop.cmi
 toplevel/opttoploop.cmx : utils/warnings.cmx typing/types.cmx \
     typing/typemod.cmx typing/typedtree.cmx typing/typecore.cmx \
     bytecomp/translmod.cmx bytecomp/simplif.cmx asmcomp/proc.cmx \
@@ -2500,10 +2506,10 @@ toplevel/opttoploop.cmx : utils/warnings.cmx typing/types.cmx \
     parsing/lexer.cmx bytecomp/lambda.cmx typing/includemod.cmx \
     asmcomp/import_approx.cmx typing/ident.cmx toplevel/genprintval.cmx \
     typing/env.cmx utils/config.cmx driver/compmisc.cmx asmcomp/compilenv.cmx \
-    driver/compenv.cmx driver/compdynlink.cmi utils/clflags.cmx \
-    typing/btype.cmx middle_end/backend_intf.cmi parsing/asttypes.cmi \
-    parsing/ast_helper.cmx asmcomp/asmlink.cmx asmcomp/asmgen.cmx \
-    asmcomp/arch.cmx toplevel/opttoploop.cmi
+    driver/compenv.cmx utils/clflags.cmx typing/btype.cmx \
+    middle_end/backend_intf.cmi parsing/asttypes.cmi parsing/ast_helper.cmx \
+    asmcomp/asmlink.cmx asmcomp/asmgen.cmx asmcomp/arch.cmx \
+    toplevel/opttoploop.cmi
 toplevel/opttoploop.cmi : utils/warnings.cmi typing/types.cmi \
     typing/path.cmi parsing/parsetree.cmi typing/outcometree.cmi \
     parsing/longident.cmi parsing/location.cmi typing/env.cmi
@@ -2589,8 +2595,16 @@ toplevel/trace.cmx : typing/types.cmx toplevel/toploop.cmx \
     parsing/asttypes.cmi toplevel/trace.cmi
 toplevel/trace.cmi : typing/types.cmi typing/path.cmi parsing/longident.cmi \
     typing/env.cmi
-driver/compdynlink.cmx : asmcomp/cmx_format.cmi driver/compdynlink.cmi
-driver/compdynlink.cmo : bytecomp/symtable.cmi bytecomp/opcodes.cmo \
-    utils/misc.cmi bytecomp/meta.cmi bytecomp/dll.cmi utils/consistbl.cmi \
-    utils/config.cmi bytecomp/cmo_format.cmi typing/cmi_format.cmi \
+driver/compdynlink.cmx : driver/compdynlink_types.cmx \
+    driver/compdynlink_common.cmi asmcomp/cmx_format.cmi \
     driver/compdynlink.cmi
+driver/compdynlink.cmo : bytecomp/symtable.cmi bytecomp/opcodes.cmo \
+    utils/misc.cmi bytecomp/meta.cmi typing/ident.cmi bytecomp/dll.cmi \
+    utils/config.cmi driver/compdynlink_types.cmi \
+    driver/compdynlink_common.cmi bytecomp/cmo_format.cmi \
+    driver/compdynlink.cmi
+driver/compdynlink_common.cmx : driver/compdynlink_types.cmx \
+    driver/compdynlink_platform_intf.cmx driver/compdynlink_common.cmi
+driver/compdynlink_common.cmo : driver/compdynlink_types.cmi \
+    driver/compdynlink_platform_intf.cmo driver/compdynlink_common.cmi
+driver/compdynlink_platform_intf.cmx : driver/compdynlink_types.cmx
