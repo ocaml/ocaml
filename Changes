@@ -683,6 +683,9 @@ Working version
   (Alain Frisch, review by Armaël Guéneau and Gabriel Scherer,
   report by Hugo Heuzard)
 
+- GPR#2131: fix wrong calls to Env.normalize_path on non-module paths
+  (Alain Frisch, review by Jacques Garrigue)
+
 
 OCaml 4.07.1 (4 October 2018)
 -----------------------------
