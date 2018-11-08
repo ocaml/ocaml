@@ -122,7 +122,7 @@ external get_raw_backtrace_next_slot :
   raw_backtrace_slot -> raw_backtrace_slot option
   = "caml_raw_backtrace_next_slot"
 
-external get_callstack: int -> raw_backtrace = "caml_get_current_callstack"
+external current: int -> raw_backtrace = "caml_get_current_callstack"
 
 module Slot = struct
   type t = backtrace_slot
@@ -157,5 +157,4 @@ module Slot = struct
 end
 
 let length = raw_backtrace_length
-let current = get_callstack
 let slots = backtrace_slots
