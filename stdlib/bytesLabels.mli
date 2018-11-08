@@ -308,10 +308,10 @@ val of_seq : char Seq.t -> t
 (** Create a string from the generator
     @since 4.07 *)
 
-(** {6 Binary encoding/decoding of integers} *)
+(** {1 Binary encoding/decoding of integers} *)
 
-(** The functions in this section decode or encode integers stored
-    in binary form in byte sequences.
+(** The functions in this section binary encode and decode integers to
+    and from byte sequences.
 
     All following functions raise [Invalid_argument] if the space
     needed at index [i] to decode or encode the integer is not
@@ -322,22 +322,19 @@ val of_seq : char Seq.t -> t
     also known as network byte order.  Native-endian encoding is
     either little-endian or big-endian depending on {!Sys.big_endian}.
 
-    32-bit and 64-bit integers are directly represented using
-    [int32] and [int64] types, which can be interpreted either
-    as signed or unsigned numbers.
+    32-bit and 64-bit integers are represented by the [int32] and
+    [int64] types, which can be interpreted either as signed or
+    unsigned numbers.
 
-    8-bit and 16-bit integers are represented using the [int] type,
+    8-bit and 16-bit integers are represented by the [int] type,
     which has more bits than the binary encoding.  These extra bits
-    are handled as follows:
-
-    Functions that decode signed (resp. unsigned) 8-bit or 16-bit
-    integers represented as [int] values sign-extend
-    (resp. zero-extend) their result.
-
-    Functions that encode 8-bit or 16-bit integers represented as
+    are handled as follows: {ul
+    {- Functions that decode signed (resp. unsigned) 8-bit or 16-bit
+    integers represented by [int] values sign-extend
+    (resp. zero-extend) their result.}
+    {- Functions that encode 8-bit or 16-bit integers represented by
     [int] values truncate their input to their least significant
-    bytes.  Signed and unsigned variants are synonyms of each other
-    provided to preserve symmetry with decoding functions.
+    bytes.}}
 *)
 
 val get_uint8 : bytes -> int -> int

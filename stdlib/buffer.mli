@@ -178,35 +178,34 @@ val of_seq : char Seq.t -> t
 (** Create a buffer from the generator
     @since 4.07 *)
 
-(** {6 Binary encoding of integers} *)
+(** {1 Binary encoding of integers} *)
 
-(** The functions in this section encode integers stored
-    in binary form into a buffer.
+(** The functions in this section append binary encodings of integers
+    to buffers.
 
     Little-endian (resp. big-endian) encoding means that least
     (resp. most) significant bytes are stored first.  Big-endian is
     also known as network byte order.  Native-endian encoding is
     either little-endian or big-endian depending on {!Sys.big_endian}.
 
-    32-bit and 64-bit integers are directly represented using
-    [int32] and [int64] types, which can be interpreted either
-    as signed or unsigned numbers.
+    32-bit and 64-bit integers are represented by the [int32] and
+    [int64] types, which can be interpreted either as signed or
+    unsigned numbers.
 
-    8-bit and 16-bit integers are represented using the [int] type,
+    8-bit and 16-bit integers are represented by the [int] type,
     which has more bits than the binary encoding.  Functions that
     encode these values truncate their inputs to their least
-    significant bytes.  Signed and unsigned variants are synonyms of
-    each other.
-    *)
+    significant bytes.
+*)
 
 val add_uint8 : t -> int -> unit
-(** [add_uint8 b i] appends a binary unsigned XX-bit integer [i] to
+(** [add_uint8 b i] appends a binary unsigned 8-bit integer [i] to
     [b].
     @since NEXT_RELEASE
 *)
 
 val add_int8 : t -> int -> unit
-(** [add_int8 b i] appends a binary signed XX-bit integer [i] to
+(** [add_int8 b i] appends a binary signed 8-bit integer [i] to
     [b].
     @since NEXT_RELEASE
 *)
