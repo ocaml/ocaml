@@ -3077,20 +3077,20 @@ match pmh with
         (divide_record lbl.lbl_all (normalize_pat pat))
         ctx_combine repr partial ctx pm
   | Tpat_constant cst ->
-      compile_test pat.pat_loc
+      compile_test ~fail_loc:pat.pat_loc
         (compile_match pat.pat_loc repr partial) partial
         divide_constant
         (combine_constant pat.pat_loc arg cst partial)
         ctx pm
   | Tpat_construct (_, cstr, _) ->
-      compile_test pat.pat_loc
+      compile_test ~fail_loc:pat.pat_loc
         (compile_match pat.pat_loc repr partial) partial
         divide_constructor
         (combine_constructor pat.pat_loc arg pat cstr partial)
         ctx pm
   | Tpat_array _ ->
       let kind = Typeopt.array_pattern_kind pat in
-      compile_test pat.pat_loc
+      compile_test ~fail_loc:pat.pat_loc
         (compile_match pat.pat_loc repr partial) partial
         (divide_array kind) (combine_array pat.pat_loc arg kind partial)
         ctx pm
@@ -3099,7 +3099,7 @@ match pmh with
         (divide_lazy (normalize_pat pat))
         ctx_combine repr partial ctx pm
   | Tpat_variant(_, _, row) ->
-      compile_test pat.pat_loc
+      compile_test ~fail_loc:pat.pat_loc
         (compile_match pat.pat_loc repr partial) partial
         (divide_variant !row)
         (combine_variant pat.pat_loc !row arg partial)
