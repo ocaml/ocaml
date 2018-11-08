@@ -84,7 +84,7 @@ COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
 
 OBJS=$(COBJS) $(ASMOBJS)
 
-DOBJS=$(COBJS:.$(O)=.d.$(O)) $(ASMOBJS)
+DOBJS=$(COBJS:.$(O)=.d.$(O)) $(ASMOBJS:.$(O)=.d.$(O))
 IOBJS=$(COBJS:.$(O)=.i.$(O)) $(ASMOBJS)
 POBJS=$(COBJS:.$(O)=.p.$(O)) $(ASMOBJS:.$(O)=.p.$(O))
 PICOBJS=$(COBJS:.$(O)=.pic.$(O)) $(ASMOBJS:.$(O)=.pic.$(O))
@@ -158,6 +158,9 @@ $(LINKEDFILES): %.c: ../byterun/%.c
           echo "unhappy with the preprocessor. Check your assembler, or";\
           echo "try producing $*.o by hand.";\
           exit 2; }
+
+%.d.$(O): %.S
+	$(ASPP) $(ASPPFLAGS) -DDEBUG -o $@ $<
 
 %.p.o: %.S
 	$(ASPP) $(ASPPFLAGS) $(ASPPPROFFLAGS) -o $@ $<

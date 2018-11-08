@@ -33,4 +33,4 @@ tests/unwind/unwind_test
 
 # GC bug in callbacks (#211)
 tests/callback/nested_fiber.byte
-tests/callback/nested_fiber.native
+tests/callback/test7.native

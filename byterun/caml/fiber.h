@@ -35,7 +35,6 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value))
 #define Stack_handle_value(stk) (stk)->handler->handle_value
 #define Stack_handle_exception(stk) (stk)->handler->handle_exn
 #define Stack_handle_effect(stk) (stk)->handler->handle_effect
-#define Stack_parent_offset 5
 #define Stack_parent(stk) (stk)->handler->parent
 
 /* Stack layout for native code. Stack grows downwards.
@@ -59,6 +58,11 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value))
  * +------------------------+
  */
 
+struct c_stack_link {
+  struct stack_info* stack;
+  void* sp;
+  struct c_stack_link* prev;
+};
 
 /* The table of global identifiers */
 extern caml_root caml_global_data;

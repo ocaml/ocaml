@@ -282,6 +282,33 @@ int caml_try_realloc_stack(asize_t required_space)
     Stack_high(new_stack) - (Stack_high(old_stack) - (value*)Caml_state->exn_handler);
 #endif
 
+  /* Update stack pointers in Caml_state->c_stack */
+  {
+    struct c_stack_link* link;
+    struct stack_info* cb = NULL;
+    for (link = Caml_state->c_stack; link; link = link->prev) {
+#ifdef DEBUG
+    /* Verify that all callback frames on this C stack belong to the
+       same fiber */
+      if (link->stack == NULL) {
+        /* only possible for the first link, if it has not done any C calls yet */
+        /* FIXME: at the moment, this is possible due to a couple of odd ways of entering C code
+           (via GC, etc.) */
+        //CAMLassert(link == Caml_state->c_stack);
+      } else if (cb == NULL) {
+        /* first non-NULL stack */
+        cb = link->stack;
+      } else {
+        CAMLassert(link->stack == cb);
+      }
+#endif
+      if (link->stack == old_stack) {
+        link->stack = new_stack;
+        link->sp = (void*)((char*)Stack_high(new_stack) - ((char*)Stack_high(old_stack) - (char*)link->sp));
+      }
+    }
+  }
+
   caml_free_stack(old_stack);
   Caml_state->current_stack = new_stack;
   return 1;

@@ -96,6 +96,13 @@
 
 #endif
 
+#ifdef DEBUG
+#define CHECK_STACK_ALIGNMENT \
+        test $0xf, %rsp; jz 9f; int3; 9:
+#else
+#define CHECK_STACK_ALIGNMENT
+#endif
+
 /******************************************************************************/
 /* Access to the current domain state block. */
 /******************************************************************************/
@@ -144,8 +151,8 @@
         movq	Caml_state(current_stack), REG; \
         movq    %rsp, Stack_sp(REG); \
     /* Switch to system stack */ \
-        movq	Caml_state(system_sp), REG; \
-        movq    %rsp, 16(REG); /* For DWARF CFI. See OFFXXX. */ \
+        movq	Caml_state(c_stack), REG; \
+        movq    %rsp, Cstack_sp(REG); \
         movq    REG, %rsp; \
         .cfi_def_cfa_offset 8 /* SYSCFAXXX */
 
@@ -258,11 +265,9 @@
         pushq   %r12; CFI_ADJUST(8); CFI_OFFSET(r12, -32); \
         pushq   %r13; CFI_ADJUST(8); CFI_OFFSET(r13, -40); \
         pushq   %r14; CFI_ADJUST(8); CFI_OFFSET(r14, -48); \
-        pushq   %r15; CFI_ADJUST(8); CFI_OFFSET(r15, -56); \
-        subq    $8, %rsp; CFI_ADJUST(8)
+        pushq   %r15; CFI_ADJUST(8); CFI_OFFSET(r15, -56)
 
 #define POP_CALLEE_SAVE_REGS \
-        addq    $8, %rsp; CFI_ADJUST(-8); \
         popq    %r15; CFI_ADJUST(-8); CFI_SAME_VALUE(r15); \
         popq    %r14; CFI_ADJUST(-8); CFI_SAME_VALUE(r14); \
         popq    %r13; CFI_ADJUST(-8); CFI_SAME_VALUE(r13); \
@@ -310,6 +315,11 @@
 #define Handler_effect(REG)     16(REG)
 #define Handler_parent          24
 
+/* struct c_stack_link */
+#define Cstack_stack             0
+#define Cstack_sp                8
+#define Cstack_prev             16
+
 /******************************************************************************/
 /* text section
 /******************************************************************************/
@@ -333,6 +343,7 @@ G(caml_system__code_begin):
 #define DW_CFA_val_offset         0x14
 #define DW_REG_rsp                7
 #define DW_REG_retaddr            16
+#define DW_OP_breg                0x70
 #define DW_OP_breg3               0x73  /* rbx */
 #define DW_OP_breg7               0x77  /* rsp */
 #define DW_OP_breg13              0x7d  /* r13 */
@@ -370,6 +381,7 @@ CFI_STARTPROC
           DW_OP_plus, DW_OP_const1u, 0x10, DW_OP_plus \
             /* DWARF_stack = [desired rsp] */
         ENTER_FUNCTION
+        CHECK_STACK_ALIGNMENT
         call    *%rax
         LEAVE_FUNCTION
         ret
@@ -389,20 +401,6 @@ CFI_ENDPROC
         nop; \
         .cfi_restore_state; \
         addq    $48, %rsp; CFI_ADJUST(-48)
-
-FUNCTION(G(caml_enter_caml))
-CFI_STARTPROC
-        .cfi_signal_frame
-        pushq   %r13; CFI_ADJUST(8)
-        .cfi_escape DW_CFA_val_expression, 0x7, 4, \
-            /* DWARF_stack = [cfa] */ \
-          DW_OP_const1u, 0x10, DW_OP_minus, DW_OP_deref \
-            /* DWARF_stack = [caml_system_sp] */
-        call    *%r12
-LBL(119):
-        addq    $8, %rsp; CFI_ADJUST(-8)
-        ret
-CFI_ENDPROC
 
 /******************************************************************************/
 /* Allocation */
@@ -493,17 +491,8 @@ CFI_STARTPROC
         SWITCH_C_TO_OCAML(%rax)
         ret
 LBL(do_gc):
-#ifdef WITH_FRAME_POINTERS
-        ENTER_FUNCTION
-#else
-        pushq   %rbp; CFI_ADJUST(8);
-#endif
+
         SAVE_ALL_REGS_AND_CALL(caml_garbage_collection)
-#ifdef WITH_FRAME_POINTERS
-        LEAVE_FUNCTION;
-#else
-        popq    %rbp; CFI_ADJUST(-8)
-#endif
 
     /* Return to caller */
         ret
@@ -513,7 +502,6 @@ FUNCTION(G(caml_call_realloc_stack))
 CFI_STARTPROC
         movq    8(%rsp), %r11 /* argument */
         SWITCH_OCAML_TO_C_NO_CTXT(%r10)
-        ENTER_FUNCTION
     /* Save the registers that might be used as arguments. (see proc.ml) */
         pushq   %r13; CFI_ADJUST (8)
         pushq   %r12; CFI_ADJUST (8)
@@ -571,7 +559,6 @@ CFI_STARTPROC
         popq    %r9; CFI_ADJUST(-8)
         popq    %r12; CFI_ADJUST(-8)
         popq    %r13; CFI_ADJUST(-8)
-        LEAVE_FUNCTION
         SWITCH_C_TO_OCAML_NO_CTXT(%r10, 0) /* FIXME CFA */
     /* Return to caller */
         ret
@@ -582,7 +569,7 @@ FUNCTION(G(caml_call_read_barrier))
 CFI_STARTPROC
         /* Save %r10, and use it as a temp to switch stacks. */
         pushq   %r10; CFI_ADJUST(8)
-        movq	Caml_state(system_sp), %r10
+        movq	Caml_state(c_stack), %r10
         popq    -8(%r10); CFI_ADJUST(-8)
         SWITCH_OCAML_TO_C(%r10)
         movq    -8(%rsp), %r10
@@ -633,9 +620,11 @@ CFI_STARTPROC
         movsd   %xmm14, 14*8(%rsp);
         movsd   %xmm15, 15*8(%rsp);
     /* Call the read barrier */
+        sub     $8, %rsp /* align */
         PREPARE_FOR_C_CALL;
         LEA_VAR(caml_read_barrier, %rax);
         CAML_CALL_ENTER_C;
+        add     $8, %rsp /* align */
     /* Result is in %rax */
         CLEANUP_AFTER_C_CALL;
     /* Restore caml_young_ptr */
@@ -745,7 +734,7 @@ LBL(103):
         movq    (%rsp), %rax
         addq    %rax, %r15
         /* Save desired size on system stack */
-        movq	Caml_state(system_sp), %rax
+        movq	Caml_state(c_stack), %rax
         popq    -8(%rax); CFI_ADJUST(-8)
         SWITCH_OCAML_TO_C(%rax)
         subq    $16, %rsp; CFI_ADJUST(16)
@@ -753,7 +742,7 @@ LBL(103):
         call    LBL(do_gc)
         LEAVE_FUNCTION
         SWITCH_C_TO_OCAML(%rax)
-        movq	Caml_state(system_sp), %rax
+        movq	Caml_state(c_stack), %rax
         movq    -8(%rax), %rax
         jmp     LBL(caml_allocN)
 CFI_ENDPROC
@@ -769,13 +758,15 @@ LBL(caml_c_call):
         C arguments         : %rdi, %rsi, %rdx, %rcx, %r8, and %r9
         C function          : %rax */
     /* Switch from OCaml to C */
+        movq    Caml_state(current_stack), %r11
         SWITCH_OCAML_TO_C(%r10)
-        ENTER_FUNCTION
+        movq    %r11, Cstack_stack(%rsp)
     /* Make the alloc ptr available to the C code */
         movq	%r15, Caml_state(young_ptr)
     /* Call the function (address in %rax) */
         PREPARE_FOR_C_CALL
         .cfi_remember_state
+        CHECK_STACK_ALIGNMENT
         call    GCALL(caml_enter_c)
         .cfi_def_cfa_offset 8
         nop
@@ -783,9 +774,12 @@ LBL(caml_c_call):
         CLEANUP_AFTER_C_CALL
     /* Prepare for return to OCaml */
         movq	Caml_state(young_ptr), %r15
+        /* assert */
+        movq    Cstack_sp(%rsp), %r11
+        addq    $16, %r11 /* skip context */
     /* Load ocaml stack and restore global variables */
-        LEAVE_FUNCTION
         SWITCH_C_TO_OCAML(%r10)
+        cmpq    %r11, %rsp; je 1f; int3; 1:
     /* Return to OCaml caller */
         ret
 CFI_ENDPROC
@@ -797,8 +791,9 @@ CFI_STARTPROC
         C function          : %rax
         C stack args        : begin=%r13 end=%r12 */
     /* Switch from OCaml to C */
+        movq    Caml_state(current_stack), %r11        
         SWITCH_OCAML_TO_C(%r10)
-        ENTER_FUNCTION
+        movq    %r11, Cstack_stack(%rsp)
     /* Make the alloc ptr available to the C code */
         movq	%r15, Caml_state(young_ptr)
     /* Copy arguments from OCaml to C stack */
@@ -811,12 +806,12 @@ LBL(105):
 LBL(106):
     /* Call the function (address in %rax) */
         PREPARE_FOR_C_CALL
+        CHECK_STACK_ALIGNMENT
         call    *%rax
         CLEANUP_AFTER_C_CALL
     /* Prepare for return to OCaml */
         movq	Caml_state(young_ptr), %r15
     /* Load ocaml stack and restore global variables */
-        LEAVE_FUNCTION
         SWITCH_C_TO_OCAML(%r10)
     /* Return to OCaml caller */
         ret
@@ -828,6 +823,7 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_start_program))
 CFI_STARTPROC
+        .cfi_signal_frame
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
     /* Load Caml_state into r14 (was passed as an argument from C) */
@@ -840,46 +836,48 @@ CFI_STARTPROC
         movq    $0, %rsi  /* dummy */
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
-        pushq   $0   ; CFI_ADJUST(8) // alignment word
     /* Load young_ptr into %r15 */
         movq    Caml_state(young_ptr), %r15
-    /* Build context on system stack for DWARF CFI */
-        leaq	Caml_state(current_stack), %r13
-        pushq   %r13; CFI_ADJUST(8)
-        pushq   $0 ; CFI_ADJUST(8) /* will be filled in at SWITCH_OCAML_TO_C. See OFFXXX. */
-    /* System stack is captured unaligned. Hence, any OCaml to C calls
-     * are expected to explicitly align stack using ENTER_FUNCTION and such. */
-        movq	%rsp, Caml_state(system_sp)
-    /* Switch from C to OCaml stack. CFA offset -8 refers to OCAMLCFAXXX. */
-        SWITCH_C_TO_OCAML_NO_CTXT(%r10,-8)
-    /* Setup alloc ptr */
-        movq	Caml_state(young_ptr), %r15
-    /* Build a handler for exceptions raised in OCaml */
-        lea     LBL(109)(%rip), %r13
-        pushq   %r13; CFI_ADJUST(8)
-    /* dummy prev trap. Important that this is 0 for indicating CFI last frame.
-     * See OCAMLCFAXXX. */
-        pushq   $0 ; CFI_ADJUST(8)
-        movq	%rsp, Caml_state(exn_handler)
-    /* Call the OCaml code */
+    /* Build struct c_stack_link on the C stack */
+        subq    $24 /* sizeof struct c_stack_link */, %rsp; CFI_ADJUST(24)
+        movq    $0, Cstack_stack(%rsp)
+        movq    $0, Cstack_sp(%rsp)
+        movq    Caml_state(c_stack), %r10
+        movq    %r10, Cstack_prev(%rsp)
+        movq    %rsp, Caml_state(c_stack)
+        CHECK_STACK_ALIGNMENT
+    /* Load the OCaml stack. */
+        movq    Caml_state(current_stack), %r11
+        movq    Stack_sp(%r11), %r10
+    /* Build a handler for exceptions raised in OCaml on the OCaml stack.
+       There is no previous exception handler. Instead, we use the prev
+       slot to store the C stack pointer, to allow DWARF backtraces */
+        subq    $16, %r10
+        lea     LBL(109)(%rip), %r11
+        movq    %r11, 8(%r10)
+        movq    %rsp, 0(%r10)
+        movq    %r10, Caml_state(exn_handler)
+    /* Switch stacks and call the OCaml code */
+        movq    %r10, %rsp
         .cfi_remember_state
-        movq	Caml_state(system_sp), %r13
-        call    GCALL(caml_enter_caml)
+        .cfi_escape DW_CFA_def_cfa_expression, 3 + 2, \
+          DW_OP_breg + DW_REG_rsp, 0, DW_OP_deref,\
+          DW_OP_plus_uconst, \
+             24 /* struct c_stack_link */ + 6*8 /* callee save regs */ + 8 /* ret addr */
+        call    *%r12
 LBL(108):
-        .cfi_def_cfa_offset 120
-        nop
-        .cfi_restore_state
-    /* Pop the OCaml exception handler */
-        POP_EXN_HANDLER(%r11)
-        popq    %r12; CFI_ADJUST(-8)   /* dummy register */
-LBL(110):
-    /* Update alloc ptr */
+        leaq    16(%rsp), %r10 /* pop exn handler */
+1:  /* Update alloc ptr */
         movq	%r15, Caml_state(young_ptr)
     /* Return to C stack. */
-        SWITCH_OCAML_TO_C_NO_CTXT(%r10)
-    /* Pop the C exception handler and DWARF cfi info. */
-        addq    $16, %rsp; CFI_ADJUST(-32)
-        popq %r10            ; CFI_ADJUST(-8) // alignment word
+        movq    Caml_state(current_stack), %r11
+        movq    %r10, Stack_sp(%r11)
+        movq    Caml_state(c_stack), %rsp
+        .cfi_restore_state
+    /* Pop the struct c_stack_link */
+        movq    Cstack_prev(%rsp), %r10
+        movq    %r10, Caml_state(c_stack)
+        addq    $24, %rsp; CFI_ADJUST(-24)
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS
     /* Return to caller. */
@@ -888,7 +886,8 @@ LBL(109):
     /* Exception handler*/
     /* Mark the bucket as an exception result and return it */
         orq     $2, %rax
-        jmp     LBL(110)
+        movq    %rsp, %r10 /* exn handler already popped here */
+        jmp     1b
 CFI_ENDPROC
 
 /******************************************************************************/
@@ -909,7 +908,7 @@ LBL(116):
 LBL(117):
         movq    %rsp, %r10        /* Save OCaml stack pointer */
         movq    %rax, %r12        /* Save exception bucket */
-        movq	Caml_state(system_sp), %rsp
+        movq	Caml_state(c_stack), %rsp
         movq    %rax, C_ARG_1     /* arg 1: exception bucket */
         movq    (%r10), C_ARG_2   /* arg 2: pc of raise */
         leaq    8(%r10), C_ARG_3  /* arg 3: sp at raise */
@@ -1096,46 +1095,41 @@ CFI_STARTPROC
     /* Build caml_context at the bottom of the stack */
         pushq   $0 ; CFI_ADJUST(8);
         PUSH_EXN_HANDLER(%r10)
-    /* Switch stacks and set parent */
+    /* Load new stack pointer into %r11 and set parent */
         movq	Caml_state(current_stack), %rax
         movq    %rsp, Stack_sp(%rax)
         movq    Stack_handler(%rdi), %rcx
         movq    %rax, Handler_parent(%rcx)
         movq    %rdi, Caml_state(current_stack)
-        movq    Stack_sp(%rdi), %rsp
-        .cfi_remember_state
-        .cfi_def_cfa_offset 0 /* cfa = %rsp, points to struct stack_handler */
-        .cfi_escape DW_CFA_val_expression, DW_REG_rsp, 3+3+2 , \
-          DW_OP_plus_uconst, Handler_parent, DW_OP_deref, \
-          DW_OP_plus_uconst, Stack_sp, DW_OP_deref, \
-          DW_OP_plus_uconst, 16 /* sizeof caml_context */ + 8 /* ret addr */
-        .cfi_escape DW_CFA_expression, DW_REG_retaddr, 3+3+2, \
-          DW_OP_plus_uconst, Handler_parent, DW_OP_deref, \
-          DW_OP_plus_uconst, Stack_sp, DW_OP_deref,\
-          DW_OP_plus_uconst, 16 /* sizeof caml_context */
-    /* match f x with
-       | x -> handler.handle_value x
-       | exception e -> handler.handle_exn e */
+        movq    Stack_sp(%rdi), %r11
+    /* Create an exception handler on the target stack */
+        subq    $16, %r11
         leaq    LBL(fiber_exn_handler)(%rip), %r10
-        pushq   %r10; CFI_ADJUST(8);
-        pushq   $0; CFI_ADJUST(8); /* dummy previous trap frame */
-        movq    %rsp, Caml_state(exn_handler)
+        movq    %r10, 8(%r11)
+        movq    $0, 0(%r11) /* dummy previous trap frame */
+        movq    %r11, Caml_state(exn_handler)
+    /* Switch to the new stack */
+        movq    %r11, %rsp
+        .cfi_remember_state
+        .cfi_escape DW_CFA_def_cfa_expression, 3+3+2, \
+          DW_OP_breg + DW_REG_rsp, 16 /* exn */ + Handler_parent, DW_OP_deref,\
+          DW_OP_plus_uconst, Stack_sp, DW_OP_deref,\
+          DW_OP_plus_uconst, 16 /* sizeof caml_context */ + 8 /* ret addr */
         movq    %r12, %rax /* first argument */
         callq   *(%rbx) /* closure in %rbx (second argument) */
 LBL(frame_runstack):
-        addq    $16, %rsp; CFI_ADJUST(-16) /* pop exn handler */
-        movq    Handler_value(%rsp), %rbx
+        leaq    16(%rsp), %r11 /* SP with exn handler popped */
+        movq    Handler_value(%r11), %rbx
 1:  /* Switch back to parent stack and free current */
+        movq    Handler_parent(%r11), %r10
         movq    Caml_state(current_stack), %rdi
-        movq    Handler_parent(%rsp), %rsi
-        movq    %rsi, Caml_state(current_stack)
-        movq    Stack_sp(%rsi), %r10
+        movq    %r10, Caml_state(current_stack)
+        movq    Stack_sp(%r10), %r13 /* saved across C call */
         movq    %rax, %r12 /* save %rax across C call */
-        movq    Caml_state(system_sp), %rsp
-        pushq   %r10
+        movq    Caml_state(c_stack), %rsp
+        /* FIXME: CFI here */
         call    GCALL(caml_free_stack)
-        popq    %r10
-        movq    %r10, %rsp
+        movq    %r13, %rsp
         .cfi_restore_state
         movq    %r12, %rax
     /* Pop the caml_context from the bottom of the stack */
@@ -1144,6 +1138,7 @@ LBL(frame_runstack):
     /* Invoke handle_value (or handle_exn) */
         jmp     *(%rbx)
 LBL(fiber_exn_handler):
+        movq    %rsp, %r11
         movq    Handler_exception(%rsp), %rbx
         jmp     1b
 CFI_ENDPROC
@@ -1177,17 +1172,13 @@ G(caml_system__code_end):
         .globl  G(caml_system__frametable)
         .align  EIGHT_ALIGN
 G(caml_system__frametable):
-        .quad   3           /* three descriptors */
+        .quad   2           /* three descriptors */
         .quad   LBL(108)    /* return address into callback */
         .value  -1          /* negative frame size => use callback link */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
         .quad   LBL(frame_runstack)    /* return address into fiber_val_handler */
         .value  -1          /* negative frame size => use callback link */
-        .value  0           /* no roots here */
-        .align  EIGHT_ALIGN
-        .quad   LBL(119)    /* return address into caml_enter_caml */
-        .value  16          /* frame size = 16 */
         .value  0           /* no roots here */
         .align  EIGHT_ALIGN
 
