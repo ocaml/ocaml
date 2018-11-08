@@ -15,8 +15,6 @@
 
 open Printf
 
-type t = exn = ..
-
 let to_string = Exn.to_string
 
 let print fct arg =

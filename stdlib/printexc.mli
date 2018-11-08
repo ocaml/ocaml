@@ -15,9 +15,6 @@
 
 (** Facilities for printing exceptions and inspecting current call stack. *)
 
-type t = exn = ..
-(** The type of exception values. *)
-
 val to_string: exn -> string
 (** [Printexc.to_string e] returns a string representation of
    the exception [e]. *)
