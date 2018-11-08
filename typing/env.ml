@@ -2157,8 +2157,13 @@ let open_signature
     ?(used_slot = ref false)
     ?(loc = Location.none) ?(toplevel = false)
     ovf root env =
+  let unused =
+    match ovf with
+    | Asttypes.Fresh -> Warnings.Unused_open (Path.name root)
+    | Asttypes.Override -> Warnings.Unused_open_bang (Path.name root)
+  in
   let warn_unused =
-    Warnings.is_active (Warnings.Unused_open "")
+    Warnings.is_active unused
   and warn_shadow_id =
     Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
   and warn_shadow_lc =
@@ -2173,7 +2178,7 @@ let open_signature
         (fun () ->
            if not !used then begin
              used := true;
-             Location.prerr_warning loc (Warnings.Unused_open (Path.name root))
+             Location.prerr_warning loc unused
            end
         );
     let shadowed = ref [] in
