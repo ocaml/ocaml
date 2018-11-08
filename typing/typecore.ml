@@ -1106,7 +1106,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       if explode > 0 then
         let (sp, constrs, labels) =
           try
-            Parmatch.ppat_of_type !env expected_ty
+            Parmatch.ppat_of_type loc !env expected_ty
           with Parmatch.Empty -> raise (Error (loc, !env, Empty_pattern))
         in
         if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else

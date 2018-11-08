@@ -65,10 +65,11 @@ let string_of_lam lam =
   Format.flush_str_formatter ()
 
 let all_record_args lbls = match lbls with
-| (_,{lbl_all=lbl_all},_)::_ ->
+| (_,{lbl_all=lbl_all},pat)::_ ->
+    let loc = pat.pat_loc in
     let t =
       Array.map
-        (fun lbl -> mknoloc (Longident.Lident "?temp?"), lbl,omega)
+        (fun lbl -> mkloc (Longident.Lident "?temp?") loc, lbl, omega loc)
         lbl_all in
     List.iter
       (fun ((_, lbl,_) as x) ->  t.(lbl.lbl_pos) <- x)
@@ -78,7 +79,15 @@ let all_record_args lbls = match lbls with
 
 type matrix = pattern list list
 
-let add_omega_column pss = List.map (fun ps -> omega::ps) pss
+let add_omega_column pss =
+  List.map (fun ps ->
+      let loc =
+        match ps with
+        | [] -> Location.none
+        | p::_ -> p.pat_loc
+      in
+      omega loc::ps)
+    pss
 
 type ctx = {left:pattern list ; right:pattern list}
 
@@ -97,7 +106,7 @@ let lshift {left=left ; right=right} = match right with
 | _ ->  assert false
 
 let lforget {left=left ; right=right} = match right with
-| _::xs -> {left=omega::left ; right=xs}
+| x::xs -> {left=omega x.pat_loc::left ; right=xs}
 |  _ -> assert false
 
 let rec small_enough n = function
@@ -159,7 +168,7 @@ let filter_matrix matcher pss =
         | Tpat_alias (p,_,_) ->
             filter_rec ((p::ps)::rem)
         | Tpat_var _ ->
-            filter_rec ((omega::ps)::rem)
+            filter_rec ((omega p.pat_loc::ps)::rem)
         | _ ->
             begin
               let rem = filter_rec rem in
@@ -263,7 +272,7 @@ let filter_ctx q ctx =
         | Tpat_alias (p,_,_) ->
             filter_rec ({l with right=p::ps}::rem)
         | Tpat_var _ ->
-            filter_rec ({l with right=omega::ps}::rem)
+            filter_rec ({l with right=omega p.pat_loc::ps}::rem)
         | _ ->
             begin let rem = filter_rec rem in
             try
@@ -604,7 +613,8 @@ let simplify_cases (args : args) cls : pats_act_list = match args with
       | ((pat :: patl, action, action_loc) as cl) :: rem ->
           begin match pat.pat_desc with
           | Tpat_var (id, _) ->
-              (omega :: patl, bind Alias id arg action, action_loc) ::
+              (omega pat.pat_loc:: patl,
+                bind Alias id arg action, action_loc) ::
               simplify rem
           | Tpat_any ->
               cl :: simplify rem
@@ -612,7 +622,7 @@ let simplify_cases (args : args) cls : pats_act_list = match args with
               simplify ((p :: patl, bind Alias id arg action,
                 action_loc) :: rem)
           | Tpat_record ([],_) ->
-              (omega :: patl, action, action_loc)::
+              (omega pat.pat_loc :: patl, action, action_loc)::
               simplify rem
           | Tpat_record (lbls, closed) ->
               let all_lbls = all_record_args lbls in
@@ -646,7 +656,7 @@ let rec what_is_cases (cases : pats_act_list) = match cases with
     _act, _act_loc_)::_
   -> assert false (* applies to simplified matchings only *)
 | (p::_, _act, _act_loc)::_ -> p
-| [] -> omega
+| [] -> omega Location.none
 | _ -> assert false
 
 
@@ -719,7 +729,8 @@ let rec explode_or_pat arg patl mk_action rem vars aliases pat : pats_act_list =
       explode_or_pat arg patl mk_action rem vars (id::aliases) p
   | {pat_desc = Tpat_var (x, _); pat_loc; _} ->
       let env = mk_alpha_env arg (x::aliases) vars in
-      (omega::patl, mk_action pat_loc (List.map snd env), pat_loc)::rem
+      (omega pat.pat_loc::patl,
+        mk_action pat_loc (List.map snd env), pat_loc)::rem
   | p ->
       let env = mk_alpha_env arg aliases vars in
       (alpha_pat env p::patl, mk_action p.pat_loc (List.map snd env),
@@ -1362,7 +1373,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
         end
     | Tpat_construct (_, cstr', [arg])
       when Types.may_equal_constr cstr cstr' -> arg::rem
-    | Tpat_any -> omega::rem
+    | Tpat_any -> omega q.pat_loc::rem
     | _ -> raise NoMatch in
     matcher_rec
 | _ ->
@@ -1370,7 +1381,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
     | Tpat_or (_,_,_) -> raise OrPat
     | Tpat_construct (_,cstr',args)
       when  Types.may_equal_constr cstr cstr' -> args @ rem
-    | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
+    | Tpat_any -> Parmatch.omegas q.pat_loc cstr.cstr_arity @ rem
     | _        -> raise NoMatch
 
 let make_constr_matching p def ctx = function
@@ -1438,7 +1449,7 @@ let make_variant_matching_constant p lab def ctx = function
 let matcher_variant_nonconst lab p rem = match p.pat_desc with
 | Tpat_or (_,_,_) -> raise OrPat
 | Tpat_variant (lab1,Some arg,_) when lab1=lab -> arg::rem
-| Tpat_any -> omega::rem
+| Tpat_any -> omega p.pat_loc::rem
 | _   -> raise NoMatch
 
 
@@ -1497,20 +1508,20 @@ let make_var_matching def = function
         args = argl ;
         default= make_default get_args_var def}
 
-let divide_var ctx pm =
-  divide_line ctx_lshift make_var_matching get_args_var omega ctx pm
+let divide_var loc ctx pm =
+  divide_line ctx_lshift make_var_matching get_args_var (omega loc) ctx pm
 
 (* Matching and forcing a lazy value *)
 
 let get_arg_lazy p rem = match p with
-| {pat_desc = Tpat_any} -> omega :: rem
+| {pat_desc = Tpat_any} -> omega p.pat_loc :: rem
 | {pat_desc = Tpat_lazy arg} -> arg :: rem
 | _ ->  assert false
 
 let matcher_lazy p rem = match p.pat_desc with
 | Tpat_or (_,_,_)     -> raise OrPat
 | Tpat_any
-| Tpat_var _          -> omega :: rem
+| Tpat_var _          -> omega p.pat_loc :: rem
 | Tpat_lazy arg       -> arg :: rem
 | _                   -> raise NoMatch
 
@@ -1653,7 +1664,7 @@ let divide_lazy p ctx pm =
 
 
 let get_args_tuple arity p rem = match p with
-| {pat_desc = Tpat_any} -> omegas arity @ rem
+| {pat_desc = Tpat_any} -> omegas p.pat_loc arity @ rem
 | {pat_desc = Tpat_tuple args} ->
     args @ rem
 | _ ->  assert false
@@ -1661,7 +1672,7 @@ let get_args_tuple arity p rem = match p with
 let matcher_tuple arity p rem = match p.pat_desc with
 | Tpat_or (_,_,_)     -> raise OrPat
 | Tpat_any
-| Tpat_var _ -> omegas arity @ rem
+| Tpat_var _ -> omegas p.pat_loc arity @ rem
 | Tpat_tuple args when List.length args = arity -> args @ rem
 | _ ->  raise NoMatch
 
@@ -1698,7 +1709,12 @@ let divide_tuple arity p ctx pm =
 
 
 let record_matching_line num_fields lbl_pat_list =
-  let patv = Array.make num_fields omega in
+  let loc =
+    match lbl_pat_list with
+    | [] -> Location.none
+    | (_, _, pat)::_ -> pat.pat_loc
+  in
+  let patv = Array.make num_fields (omega loc) in
   List.iter (fun (_, lbl, pat) -> patv.(lbl.lbl_pos) <- pat) lbl_pat_list;
   Array.to_list patv
 
@@ -1769,7 +1785,7 @@ let get_args_array p rem = match p with
 let matcher_array len p rem = match p.pat_desc with
 | Tpat_or (_,_,_) -> raise OrPat
 | Tpat_array args when List.length args=len -> args @ rem
-| Tpat_any -> Parmatch.omegas len @ rem
+| Tpat_any -> Parmatch.omegas p.pat_loc len @ rem
 | _ -> raise NoMatch
 
 let make_array_matching kind p def ctx = function
@@ -3067,11 +3083,11 @@ match pmh with
   begin match pat.pat_desc with
   | Tpat_any ->
       compile_no_test pat.pat_loc
-        divide_var ctx_rshift repr partial ctx pm
+        (divide_var pat.pat_loc) ctx_rshift repr partial ctx pm
   | Tpat_tuple patl ->
       compile_no_test pat.pat_loc
-        (divide_tuple (List.length patl) (normalize_pat pat)) ctx_combine
-        repr partial ctx pm
+        (divide_tuple (List.length patl) (normalize_pat pat))
+        ctx_combine repr partial ctx pm
   | Tpat_record ((_, lbl,_)::_,_) ->
       compile_no_test pat.pat_loc
         (divide_record lbl.lbl_all (normalize_pat pat))
@@ -3217,7 +3233,7 @@ let check_partial (pat_act_list : pat_act_list) =
 
 (* have toplevel handler when appropriate *)
 
-let start_ctx n = [{left=[] ; right = omegas n}]
+let start_ctx loc n = [{left=[] ; right = omegas loc n}]
 
 let check_total loc total lambda i handler_fun =
   if jumps_is_empty total then
@@ -3240,10 +3256,10 @@ let compile_matching loc repr handler_fun arg (pat_act_list : pat_act_list)
       let pm =
         { cases;
           args = [arg, Strict, loc] ;
-          default = [[[omega]],raise_num]} in
+          default = [[[omega loc]],raise_num]} in
       begin try
         let ((loc, lambda), total) =
-          compile_match loc repr partial (start_ctx 1) pm
+          compile_match loc repr partial (start_ctx loc 1) pm
         in
         check_total loc total lambda raise_num handler_fun
       with
@@ -3256,7 +3272,7 @@ let compile_matching loc repr handler_fun arg (pat_act_list : pat_act_list)
           args = [arg, Strict, loc] ;
           default = []} in
       let ((_loc, lambda), total) =
-        compile_match loc repr partial (start_ctx 1) pm
+        compile_match loc repr partial (start_ctx loc 1) pm
       in
       assert (jumps_is_empty total) ;
       lambda
@@ -3434,7 +3450,7 @@ let for_let loc param pat body body_loc =
 let for_tupled_function loc paraml (pats_act_list : pats_act_list) partial =
   let partial = check_partial_list pats_act_list partial in
   let raise_num = next_raise_count () in
-  let omegas = [List.map (fun _ -> omega) paraml] in
+  let omegas = [List.map (fun _ -> omega loc) paraml] in
   let pm =
     { cases = pats_act_list;
       args = List.map (fun id -> (Lvar id, Strict, loc)) paraml ;
@@ -3443,7 +3459,7 @@ let for_tupled_function loc paraml (pats_act_list : pats_act_list) partial =
   try
     let ((loc, lambda), total) =
       compile_match loc None partial
-        (start_ctx (List.length paraml)) pm
+        (start_ctx loc (List.length paraml)) pm
     in
     check_total loc total lambda raise_num (partial_function loc)
   with
@@ -3453,11 +3469,11 @@ let for_tupled_function loc paraml (pats_act_list : pats_act_list) partial =
 
 let flatten_pattern size p = match p.pat_desc with
 | Tpat_tuple args -> args
-| Tpat_any -> omegas size
+| Tpat_any -> omegas p.pat_loc size
 | _ -> raise Cannot_flatten
 
 let rec flatten_pat_line size p k = match p.pat_desc with
-| Tpat_any ->  omegas size::k
+| Tpat_any ->  omegas p.pat_loc size::k
 | Tpat_tuple args -> args::k
 | Tpat_or (p1,p2,_) ->  flatten_pat_line size p1 (flatten_pat_line size p2 k)
 | Tpat_alias (p,_,_) -> (* Note: if this 'as' pat is here, then this is a
@@ -3527,7 +3543,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
         { cases;
           args = [Lprim(Pmakeblock(0, Immutable, None), paraml, loc), Strict,
                   loc];
-          default = [[[omega]],raise_num] }
+          default = [[[omega loc]],raise_num] }
     | _ ->
         let cases = pats_act_list_of_pat_act_list pat_act_list in
         -1,
@@ -3554,7 +3570,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
       let (loc, lam), total =
         comp_match_handlers loc
           (compile_flattened loc repr)
-          partial (start_ctx size) () flat_next flat_nexts in
+          partial (start_ctx loc size) () flat_next flat_nexts in
       List.fold_right2 (bind Strict) idl paraml
         (match partial with
         | Partial ->
@@ -3564,7 +3580,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
             lam)
     with Cannot_flatten ->
       let ((loc, lambda), total) =
-        compile_match loc None partial (start_ctx 1) pm1
+        compile_match loc None partial (start_ctx loc 1) pm1
       in
       begin match partial with
       | Partial ->
