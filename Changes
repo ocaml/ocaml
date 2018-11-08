@@ -163,6 +163,9 @@ Working version
 - GPR#2145: Deprecate the mutability of Gc.control record fields
   (Damien Doligez, review by Alain Frisch)
 
+- GPR#2137: Add Exn and Stack_trace modules.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
