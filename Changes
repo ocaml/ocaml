@@ -139,6 +139,10 @@ Working version
 - MPR#7812, GPR#2125: Add Filename.chop_suffix_opt
   (Alain Frisch, review by Nicolás Ojeda Bär, suggestion by whitequark)
 
+- GPR#1864: Extend Bytes and Buffer with functions to read/write
+  binary representations of numbers
+  (Alain Frisch and Daniel Bünzli)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking

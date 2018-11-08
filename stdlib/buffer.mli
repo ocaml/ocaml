@@ -201,83 +201,83 @@ val of_seq : char Seq.t -> t
 val add_uint8 : t -> int -> unit
 (** [add_uint8 b i] appends a binary unsigned 8-bit integer [i] to
     [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_int8 : t -> int -> unit
 (** [add_int8 b i] appends a binary signed 8-bit integer [i] to
     [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_uint16_ne : t -> int -> unit
 (** [add_uint16_ne b i] appends a binary native-endian unsigned 16-bit
     integer [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_uint16_be : t -> int -> unit
 (** [add_uint16_be b i] appends a binary big-endian unsigned 16-bit
     integer [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_uint16_le : t -> int -> unit
 (** [add_uint16_le b i] appends a binary little-endian unsigned 16-bit
     integer [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_int16_ne : t -> int -> unit
 (** [add_int16_ne b i] appends a binary native-endian signed 16-bit
     integer [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_int16_be : t -> int -> unit
 (** [add_int16_be b i] appends a binary big-endian signed 16-bit
     integer [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_int16_le : t -> int -> unit
 (** [add_int16_le b i] appends a binary little-endian signed 16-bit
     integer [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_int32_ne : t -> int32 -> unit
 (** [add_int32_ne b i] appends a binary native-endian 32-bit integer
     [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_int32_be : t -> int32 -> unit
 (** [add_int32_be b i] appends a binary big-endian 32-bit integer
     [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_int32_le : t -> int32 -> unit
 (** [add_int32_le b i] appends a binary little-endian 32-bit integer
     [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_int64_ne  : t -> int64 -> unit
 (** [add_int64_ne b i] appends a binary native-endian 64-bit integer
     [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_int64_be : t -> int64 -> unit
 (** [add_int64_be b i] appends a binary big-endian 64-bit integer
     [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
 
 val add_int64_le : t -> int64 -> unit
 (** [add_int64_ne b i] appends a binary little-endian 64-bit integer
     [i] to [b].
-    @since NEXT_RELEASE
+    @since 4.08
 *)
