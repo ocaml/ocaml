@@ -3660,18 +3660,19 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
       unify_exp env {texp with exp_type = ty_fun} ty_expected;
       if args = [] then texp else
       (* eta-expand to avoid side effects *)
+      let loc = texp.exp_loc in
       let var_pair name ty =
         let id = Ident.create_local name in
-        {pat_desc = Tpat_var (id, mknoloc name); pat_type = ty;pat_extra=[];
+        {pat_desc = Tpat_var (id, mkloc name loc); pat_type = ty;pat_extra=[];
          pat_attributes = [];
-         pat_loc = Location.none; pat_env = env},
-        {exp_type = ty; exp_loc = Location.none; exp_env = env;
+         pat_loc = loc; pat_env = env},
+        {exp_type = ty; exp_loc = loc; exp_env = env;
          exp_extra = []; exp_attributes = [];
          exp_desc =
-         Texp_ident(Path.Pident id, mknoloc (Longident.Lident name),
+         Texp_ident(Path.Pident id, mkloc (Longident.Lident name) loc,
                     {val_type = ty; val_kind = Val_reg;
                      val_attributes = [];
-                     Types.val_loc = Location.none})}
+                     Types.val_loc = loc})}
       in
       let eta_pat, eta_var = var_pair "eta" ty_arg in
       let func texp =
