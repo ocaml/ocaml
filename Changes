@@ -619,7 +619,8 @@ Working version
   (Alain Frisch, review by Armaël Guéneau and Gabriel Scherer,
   report by Hugo Heuzard)
 
-- MPR#6638, GPR #1110: "unused open" warning incorrectly suppressed by "open!"
+- MPR#6638, GPR #1110: "unused open" warning incorrectly suppressed by "open!";
+  introduced a dedicated warning to reporting unused "open!" statements
   (Alain Frisch, report by dwang)
 
 
