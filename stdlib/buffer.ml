@@ -302,6 +302,7 @@ let of_seq i =
 
 (** {6 Binary encoding of integers} *)
 
+external unsafe_set_int8 : bytes -> int -> int -> unit = "%bytes_unsafe_set"
 external unsafe_set_int16 : bytes -> int -> int -> unit = "%caml_bytes_set16u"
 external unsafe_set_int32 : bytes -> int -> int32 -> unit = "%caml_bytes_set32u"
 external unsafe_set_int64 : bytes -> int -> int64 -> unit = "%caml_bytes_set64u"
@@ -313,7 +314,7 @@ external swap64 : int64 -> int64 = "%bswap_int64"
 let add_int8 b x =
   let new_position = b.position + 1 in
   if new_position > b.length then resize b 1;
-  Bytes.unsafe_set b.buffer b.position (Char.unsafe_chr x);
+  unsafe_set_int8 b.buffer b.position x;
   b.position <- new_position
 
 let add_int16_ne b x =

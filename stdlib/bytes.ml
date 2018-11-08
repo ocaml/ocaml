@@ -371,18 +371,17 @@ let of_seq i =
 
 (** {6 Binary encoding/decoding of integers} *)
 
+external get_uint8 : bytes -> int -> int = "%bytes_safe_get"
 external get_uint16_ne : bytes -> int -> int = "%caml_bytes_get16"
 external get_int32_ne : bytes -> int -> int32 = "%caml_bytes_get32"
 external get_int64_ne : bytes -> int -> int64 = "%caml_bytes_get64"
+external set_int8 : bytes -> int -> int -> unit = "%bytes_safe_set"
 external set_int16_ne : bytes -> int -> int -> unit = "%caml_bytes_set16"
 external set_int32_ne : bytes -> int -> int32 -> unit = "%caml_bytes_set32"
 external set_int64_ne : bytes -> int -> int64 -> unit = "%caml_bytes_set64"
 external swap16 : int -> int = "%bswap16"
 external swap32 : int32 -> int32 = "%bswap_int32"
 external swap64 : int64 -> int64 = "%bswap_int64"
-
-let get_uint8 b i =
-  Char.code (get b i)
 
 let get_int8 b i =
   ((get_uint8 b i) lsl (Sys.int_size - 8)) asr (Sys.int_size - 8)
@@ -419,9 +418,6 @@ let get_int64_le b i =
 let get_int64_be b i =
   if not Sys.big_endian then swap64 (get_int64_ne b i)
   else get_int64_ne b i
-
-let set_int8 b i x =
-  set b i (Char.unsafe_chr x)
 
 let set_int16_le b i x =
   if Sys.big_endian then set_int16_ne b i (swap16 x)
