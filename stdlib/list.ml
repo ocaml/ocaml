@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* An alias for the type of lists. *)
+type 'a t = 'a list = [] | (::) of 'a * 'a list
+
 (* List operations *)
 
 let rec length_aux len = function

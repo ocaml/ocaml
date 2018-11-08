@@ -86,9 +86,19 @@ val int_tag : int
 val out_of_heap_tag : int
 val unaligned_tag : int   (* should never happen @since 3.11.0 *)
 
+module Extension_constructor :
+sig
+  type t = extension_constructor
+  val of_val : 'a -> t
+  val [@inline always] name : t -> string
+  val [@inline always] id : t -> int
+end
 val extension_constructor : 'a -> extension_constructor
+  [@@ocaml.deprecated "use Obj.Extension_constructor.of_val"]
 val [@inline always] extension_name : extension_constructor -> string
+  [@@ocaml.deprecated "use Obj.Extension_constructor.name"]
 val [@inline always] extension_id : extension_constructor -> int
+  [@@ocaml.deprecated "use Obj.Extension_constructor.id"]
 
 (** The following two functions are deprecated.  Use module {!Marshal}
     instead. *)

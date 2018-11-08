@@ -40,6 +40,7 @@ Here is a short listing, by theme, of the standard library modules.
 "List" & p.~\pageref{List} & list operations \\
 "StdLabels" & p.~\pageref{StdLabels} & labelized versions of
 the above 4 modules \\
+"Unit" & p.~\pageref{Unit} & unit values \\
 "Bool" & p.~\pageref{Bool} & boolean values \\
 "Char" & p.~\pageref{Char} & character operations \\
 "Uchar" & p.~\pageref{Uchar} & Unicode characters \\
@@ -157,6 +158,7 @@ be called from C \\
 \item \ahref{libref/StringLabels.html}{Module \texttt{StringLabels}: string operations (with labels)}
 \item \ahref{libref/Sys.html}{Module \texttt{Sys}: system interface}
 \item \ahref{libref/Uchar.html}{Module \texttt{Uchar}: Unicode characters}
+\item \ahref{libref/Unit.html}{Module \texttt{Unit}: unit values}
 \item \ahref{libref/Weak.html}{Module \texttt{Weak}: arrays of weak pointers}
 \end{links}
 \else
@@ -210,6 +212,7 @@ be called from C \\
 \input{StringLabels.tex}
 \input{Sys.tex}
 \input{Uchar.tex}
+\input{Unit.tex}
 \input{Weak.tex}
 \input{OCamloperators.tex}
 \fi

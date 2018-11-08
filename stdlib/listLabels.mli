@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type 'a t = 'a list = [] | (::) of 'a * 'a list
+(** An alias for the type of lists. *)
+
 (** List operations.
 
    Some functions are flagged as not tail-recursive.  A tail-recursive

@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* An alias for the type of arrays. *)
+type 'a t = 'a array
+
 (* Array operations *)
 
 external length : 'a array -> int = "%array_length"

@@ -67,24 +67,32 @@ let int_tag = 1000
 let out_of_heap_tag = 1001
 let unaligned_tag = 1002
 
-let extension_constructor x =
-  let x = repr x in
-  let slot =
-    if (is_block x) && (tag x) <> object_tag && (size x) >= 1 then field x 0
-    else x
-  in
-  let name =
-    if (is_block slot) && (tag slot) = object_tag then field slot 0
-    else invalid_arg "Obj.extension_constructor"
-  in
-    if (tag name) = string_tag then (obj slot : extension_constructor)
-    else invalid_arg "Obj.extension_constructor"
+module Extension_constructor =
+struct
+  type t = extension_constructor
+  let of_val x =
+    let x = repr x in
+    let slot =
+      if (is_block x) && (tag x) <> object_tag && (size x) >= 1 then field x 0
+      else x
+    in
+    let name =
+      if (is_block slot) && (tag slot) = object_tag then field slot 0
+      else invalid_arg "Obj.extension_constructor"
+    in
+      if (tag name) = string_tag then (obj slot : t)
+      else invalid_arg "Obj.extension_constructor"
 
-let [@inline always] extension_name (slot : extension_constructor) =
-  (obj (field (repr slot) 0) : string)
+  let [@inline always] name (slot : t) =
+    (obj (field (repr slot) 0) : string)
 
-let [@inline always] extension_id (slot : extension_constructor) =
-  (obj (field (repr slot) 1) : int)
+  let [@inline always] id (slot : t) =
+    (obj (field (repr slot) 1) : int)
+end
+
+let extension_constructor = Extension_constructor.of_val
+let extension_name = Extension_constructor.name
+let extension_id = Extension_constructor.id
 
 module Ephemeron = struct
   type obj_t = t

@@ -13,21 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type t = bool = false | true
+type t = unit = ()
 
-external not : bool -> bool = "%boolnot"
-external ( && ) : bool -> bool -> bool = "%sequand"
-external ( || ) : bool -> bool -> bool = "%sequor"
-let equal : bool -> bool -> bool = ( = )
-let compare : bool -> bool -> int = Stdlib.compare
-let to_int = function false -> 0 | true -> 1
-let to_float = function false -> 0. | true -> 1.
-
-(*
-let of_string = function
-| "false" -> Some false
-| "true" -> Some true
-| _ -> None
-*)
-
-let to_string = function false -> "false" | true -> "true"
+let equal () () = true
+let compare () () = 0
+let to_string () = "()"

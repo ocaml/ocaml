@@ -53,6 +53,74 @@ val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
 
     @since 4.08.0 *)
 
+exception Match_failure of (string * int * int)
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised when none of the cases of a pattern-matching
+   apply. The arguments are the location of the match keyword in the
+   source code (file name, line number, column number). *)
+
+exception Assert_failure of (string * int * int)
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised when an assertion fails. The arguments are the
+   location of the assert keyword in the source code (file name, line
+   number, column number). *)
+
+exception Invalid_argument of string
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised by library functions to signal that the given
+   arguments do not make sense. The string gives some information to
+   the programmer. As a general rule, this exception should not be
+   caught, it denotes a programming error and the code should be
+   modified not to trigger it. *)
+
+exception Failure of string
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised by library functions to signal that they are
+   undefined on the given arguments. The string is meant to give some
+   information to the programmer; you must not pattern match on the
+   string literal because it may change in future versions (use
+   Failure _ instead). *)
+
+exception Not_found
+(** Exception raised by search functions when the desired object could
+   not be found. *)
+
+exception Out_of_memory
+(** Exception raised by the garbage collector when there is
+   insufficient memory to complete the computation. *)
+
+exception Stack_overflow
+(** Exception raised by the bytecode interpreter when the evaluation
+   stack reaches its maximal size. This often indicates infinite or
+   excessively deep recursion in the user's program. (Not fully
+   implemented by the native-code compiler.) *)
+
+exception Sys_error of string
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised by the input/output functions to report an
+   operating system error. The string is meant to give some
+   information to the programmer; you must not pattern match on the
+   string literal because it may change in future versions (use
+   Sys_error _ instead). *)
+
+exception End_of_file
+(** Exception raised by input functions to signal that the end of file
+   has been reached. *)
+
+exception Division_by_zero
+(** Exception raised by integer division and remainder operations when
+   their second argument is zero. *)
+
+exception Sys_blocked_io
+(** A special case of Sys_error raised when no I/O is possible on a
+   non-blocking I/O channel. *)
+
+exception Undefined_recursive_module of (string * int * int)
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised when an ill-founded recursive module definition
+   is evaluated. The arguments are the location of the definition in
+   the source code (file name, line number, column number). *)
+
 (** {1 Comparisons} *)
 
 external ( = ) : 'a -> 'a -> bool = "%equal"
@@ -1089,7 +1157,6 @@ module LargeFile :
   positions and sizes by 64-bit integers (type [int64]) instead of
   regular integers (type [int]), these alternate functions allow
   operating on files whose sizes are greater than [max_int]. *)
-
 
 (** {1 References} *)
 
