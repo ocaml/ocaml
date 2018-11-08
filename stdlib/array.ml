@@ -303,7 +303,7 @@ let stable_sort cmp a =
 
 let fast_sort = stable_sort
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 let to_seq a =
   let rec aux i () =

@@ -224,7 +224,7 @@ let capitalize s =
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 let to_seq s = bos s |> B.to_seq
 
