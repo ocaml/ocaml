@@ -40,6 +40,7 @@ STDLIB_MODULES=\
   $(P)complex \
   $(P)digest \
   $(P)ephemeron \
+  $(P)exn \
   $(P)filename \
   $(P)float \
   $(P)format \
@@ -72,6 +73,7 @@ STDLIB_MODULES=\
   $(P)seq \
   $(P)set \
   $(P)stack \
+  $(P)stack_trace \
   $(P)stdLabels \
   stdlib \
   $(P)stream \

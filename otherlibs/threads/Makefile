@@ -49,7 +49,8 @@ LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo stdlib.cmo $(LIB)/$(P)bool.cmo \
   $(LIB)/$(P)set.cmo $(LIB)/$(P)map.cmo $(LIB)/$(P)stack.cmo \
   $(LIB)/$(P)queue.cmo $(LIB)/camlinternalLazy.cmo $(LIB)/$(P)lazy.cmo \
   $(LIB)/$(P)stream.cmo $(LIB)/$(P)buffer.cmo $(LIB)/camlinternalFormat.cmo \
-  $(LIB)/$(P)printf.cmo $(LIB)/$(P)arg.cmo $(LIB)/$(P)printexc.cmo \
+  $(LIB)/$(P)printf.cmo $(LIB)/$(P)arg.cmo \
+  $(LIB)/$(P)stack_trace.cmo $(LIB)/$(P)exn.cmo $(LIB)/$(P)printexc.cmo \
   $(LIB)/$(P)gc.cmo $(LIB)/$(P)digest.cmo \
   $(LIB)/$(P)random.cmo $(LIB)/$(P)hashtbl.cmo $(LIB)/$(P)format.cmo \
   $(LIB)/$(P)scanf.cmo $(LIB)/$(P)callback.cmo $(LIB)/camlinternalOO.cmo \
