@@ -64,6 +64,9 @@ stdlib__ephemeron.cmo : stdlib__sys.cmi stdlib__seq.cmi stdlib__random.cmi stdli
 stdlib__ephemeron.cmx : stdlib__sys.cmx stdlib__seq.cmx stdlib__random.cmx stdlib__obj.cmx stdlib__lazy.cmx stdlib__hashtbl.cmx \
     stdlib__array.cmx stdlib__ephemeron.cmi
 stdlib__ephemeron.cmi : stdlib__hashtbl.cmi
+stdlib__exn.cmo : stdlib.cmi stdlib__stack_trace.cmi stdlib__printf.cmi stdlib__obj.cmi stdlib__exn.cmi
+stdlib__exn.cmx : stdlib.cmx stdlib__stack_trace.cmx stdlib__printf.cmx stdlib__obj.cmx stdlib__exn.cmi
+stdlib__exn.cmi : stdlib__stack_trace.cmi
 stdlib__filename.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__random.cmi stdlib__printf.cmi stdlib__lazy.cmi stdlib__buffer.cmi \
     stdlib__filename.cmi
 stdlib__filename.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__random.cmx stdlib__printf.cmx stdlib__lazy.cmx stdlib__buffer.cmx \
@@ -140,10 +143,8 @@ stdlib__parsing.cmx : stdlib__obj.cmx stdlib__lexing.cmx stdlib__array.cmx stdli
 stdlib__parsing.cmi : stdlib__obj.cmi stdlib__lexing.cmi
 stdlib__pervasives.cmo : camlinternalFormatBasics.cmi
 stdlib__pervasives.cmx : camlinternalFormatBasics.cmx
-stdlib__printexc.cmo : stdlib.cmi stdlib__printf.cmi stdlib__obj.cmi stdlib__buffer.cmi stdlib__array.cmi \
-    stdlib__printexc.cmi
-stdlib__printexc.cmx : stdlib.cmx stdlib__printf.cmx stdlib__obj.cmx stdlib__buffer.cmx stdlib__array.cmx \
-    stdlib__printexc.cmi
+stdlib__printexc.cmo : stdlib__stack_trace.cmi stdlib__printf.cmi stdlib__exn.cmi stdlib__printexc.cmi
+stdlib__printexc.cmx : stdlib__stack_trace.cmx stdlib__printf.cmx stdlib__exn.cmx stdlib__printexc.cmi
 stdlib__printexc.cmi :
 stdlib__printf.cmo : camlinternalFormatBasics.cmi camlinternalFormat.cmi stdlib__buffer.cmi \
     stdlib__printf.cmi
@@ -180,6 +181,9 @@ stdlib__spacetime.cmi :
 stdlib__stack.cmo : stdlib__seq.cmi stdlib__list.cmi stdlib__stack.cmi
 stdlib__stack.cmx : stdlib__seq.cmx stdlib__list.cmx stdlib__stack.cmi
 stdlib__stack.cmi : stdlib__seq.cmi
+stdlib__stack_trace.cmo : stdlib__printf.cmi stdlib__buffer.cmi stdlib__array.cmi stdlib__stack_trace.cmi
+stdlib__stack_trace.cmx : stdlib__printf.cmx stdlib__buffer.cmx stdlib__array.cmx stdlib__stack_trace.cmi
+stdlib__stack_trace.cmi :
 stdlib__stdLabels.cmo : stdlib__stringLabels.cmi stdlib__listLabels.cmi stdlib__bytesLabels.cmi \
     stdlib__arrayLabels.cmi stdlib__stdLabels.cmi
 stdlib__stdLabels.cmx : stdlib__stringLabels.cmx stdlib__listLabels.cmx stdlib__bytesLabels.cmx \
@@ -260,6 +264,8 @@ stdlib__ephemeron.cmo : stdlib__sys.cmi stdlib__seq.cmi stdlib__random.cmi stdli
     stdlib__array.cmi stdlib__ephemeron.cmi
 stdlib__ephemeron.p.cmx : stdlib__sys.cmx stdlib__seq.cmx stdlib__random.cmx stdlib__obj.cmx stdlib__lazy.cmx stdlib__hashtbl.cmx \
     stdlib__array.cmx stdlib__ephemeron.cmi
+stdlib__exn.cmo : stdlib.cmi stdlib__stack_trace.cmi stdlib__printf.cmi stdlib__obj.cmi stdlib__exn.cmi
+stdlib__exn.p.cmx : stdlib.cmx stdlib__stack_trace.cmx stdlib__printf.cmx stdlib__obj.cmx stdlib__exn.cmi
 stdlib__filename.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__random.cmi stdlib__printf.cmi stdlib__lazy.cmi stdlib__buffer.cmi \
     stdlib__filename.cmi
 stdlib__filename.p.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__random.cmx stdlib__printf.cmx stdlib__lazy.cmx stdlib__buffer.cmx \
@@ -314,10 +320,8 @@ stdlib__parsing.cmo : stdlib__obj.cmi stdlib__lexing.cmi stdlib__array.cmi stdli
 stdlib__parsing.p.cmx : stdlib__obj.cmx stdlib__lexing.cmx stdlib__array.cmx stdlib__parsing.cmi
 stdlib__pervasives.cmo : camlinternalFormatBasics.cmi
 stdlib__pervasives.p.cmx : camlinternalFormatBasics.cmx
-stdlib__printexc.cmo : stdlib.cmi stdlib__printf.cmi stdlib__obj.cmi stdlib__buffer.cmi stdlib__array.cmi \
-    stdlib__printexc.cmi
-stdlib__printexc.p.cmx : stdlib.cmx stdlib__printf.cmx stdlib__obj.cmx stdlib__buffer.cmx stdlib__array.cmx \
-    stdlib__printexc.cmi
+stdlib__printexc.cmo : stdlib__stack_trace.cmi stdlib__printf.cmi stdlib__exn.cmi stdlib__printexc.cmi
+stdlib__printexc.p.cmx : stdlib__stack_trace.cmx stdlib__printf.cmx stdlib__exn.cmx stdlib__printexc.cmi
 stdlib__printf.cmo : camlinternalFormatBasics.cmi camlinternalFormat.cmi stdlib__buffer.cmi \
     stdlib__printf.cmi
 stdlib__printf.p.cmx : camlinternalFormatBasics.cmx camlinternalFormat.cmx stdlib__buffer.cmx \
@@ -344,6 +348,8 @@ stdlib__spacetime.cmo : stdlib__gc.cmi stdlib__spacetime.cmi
 stdlib__spacetime.p.cmx : stdlib__gc.cmx stdlib__spacetime.cmi
 stdlib__stack.cmo : stdlib__seq.cmi stdlib__list.cmi stdlib__stack.cmi
 stdlib__stack.p.cmx : stdlib__seq.cmx stdlib__list.cmx stdlib__stack.cmi
+stdlib__stack_trace.cmo : stdlib__printf.cmi stdlib__buffer.cmi stdlib__array.cmi stdlib__stack_trace.cmi
+stdlib__stack_trace.p.cmx : stdlib__printf.cmx stdlib__buffer.cmx stdlib__array.cmx stdlib__stack_trace.cmi
 stdlib__stdLabels.cmo : stdlib__stringLabels.cmi stdlib__listLabels.cmi stdlib__bytesLabels.cmi \
     stdlib__arrayLabels.cmi stdlib__stdLabels.cmi
 stdlib__stdLabels.p.cmx : stdlib__stringLabels.cmx stdlib__listLabels.cmx stdlib__bytesLabels.cmx \
