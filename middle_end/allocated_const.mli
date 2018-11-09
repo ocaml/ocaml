@@ -25,7 +25,7 @@ type t =
   | Int32 of int32
   | Int64 of int64
   | Nativeint of nativeint
-  (* CR-someday mshinwell: consider using "float array" (or "floatarray") *)
+  (* CR-someday mshinwell: consider using "floatarray" *)
   | Float_array of float list
   | Immutable_float_array of float list
   | String of string
