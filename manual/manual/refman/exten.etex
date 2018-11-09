@@ -796,6 +796,9 @@ it to represent sets internally in a different way.
 \ikwd{type\@\texttt{type}}
 \label{s:signature-substitution}
 
+\subsection{Destructive substitutions}
+\label{ss:destructive-substitution}
+
 (Introduced in OCaml 3.12, generalized in 4.06)
 
 \begin{syntax}
@@ -848,6 +851,51 @@ same type.
 \begin{caml_example}{verbatim}
 module type ComparableInt = Comparable with type t = int ;;
 module type CompareInt = ComparableInt with type t := int
+\end{caml_example}
+
+\subsection{Local substitution declarations}
+\label{ss:local-substitution}
+
+(Introduced in OCaml 4.08)
+
+\begin{syntax}
+specification:
+          ...
+        | 'type' type-subst { 'and' type-subst }
+        | 'module' module-name ':=' extended-module-path
+;
+
+type-subst:
+          [type-params] typeconstr-name ':=' typexpr { type-constraint }
+\end{syntax}
+
+
+Local substitions behave like destructive substitutions (@'with' ... ':=' ...@)
+but instead of being applied to a whole signature after the fact, they are
+introduced during the specification of the signature, and will apply to all the
+items that follow.
+
+This provides a convenient way to introduce local names for types and modules
+when defining a signature:
+
+\begin{caml_example}{verbatim}
+module type S = sig
+  type t
+  module Sub : sig
+    type outer := t
+    type t
+    val to_outer : t -> outer
+  end
+end
+\end{caml_example}
+
+Note that, unlike type declarations, type substitution declarations are not
+recursive, so substitutions like the following are rejected:
+
+\begin{caml_example}{toplevel}
+module type S = sig
+  type 'a poly_list := [ `Cons of 'a * 'a poly_list | `Nil ]
+end [@@expect error];;
 \end{caml_example}
 
 \section{Type-level module aliases}
