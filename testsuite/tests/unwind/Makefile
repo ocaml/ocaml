@@ -39,7 +39,7 @@ LIBUNWIND_OPTS = $(patsubst %, -cclib %, $(shell pkg-config --libs libunwind))
 endif
 
 run_tests: unwind_test
-	@./unwind_test >/dev/null 2>&1 && echo " => passed" || echo " => failed"
+	@./unwind_test | diff -u unwind_test.reference - && echo " => passed" || echo " => failed"
 
 unwind_test: mylib.mli driver.ml mylib.ml stack_walker.c
 	@$(OCAMLOPT) -g -c -opaque mylib.mli
