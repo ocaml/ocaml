@@ -35,12 +35,25 @@ value ml_perform_stack_walk(value unused) {
             int result = unw_get_proc_name(&cursor, procname, sizeof(procname),
                                            &ip_offset);
             if (result != 0) error();
-            printf("%s\n", procname);
+            if (strlen(procname) > 4 &&
+                !memcmp(procname, "caml", 4) &&
+                'A' <= procname[4] && procname[4] <= 'Z' &&
+                strstr(procname+4, "__")) {
+              /* mangled OCaml name, unmangle and print */
+              const char* mangled = procname + 4;
+              const char* mod_end = strstr(mangled, "__");
+              const char* id_begin = strchr(mod_end + 2, '_');
+              if (!id_begin) id_begin = mangled + strlen(mangled);
+              printf("%.*s.%.*s\n", mod_end - mangled, mangled, id_begin - (mod_end + 2), mod_end + 2);
+            } else {
+              printf("%s\n", procname);
+            }
+            if (!strcmp(procname, "main")) break;
         }
 
         {
             int result = unw_step(&cursor);
-            if (result == 0) break;
+            if (result == 0) error(); /* didn't make it to main() */
             if (result < 0) error();
         }
     }
