@@ -80,8 +80,8 @@ module Slot : sig
       callstack: the [0]-th element is pretty-printed differently than the
       others.
 
-      Whole-stack trace printing functions also skip some uninformative slots; in
-      that case, [format pos slot] returns [None]. *)
+      Whole-stack trace printing functions also skip some uninformative slots;
+      in that case, [format pos slot] returns [None]. *)
 
   module Raw : sig
     (** {1 Raw stack trace slots} *)
@@ -99,7 +99,8 @@ module Slot : sig
         example). *)
 
     val get: stack_trace -> int -> t
-    (** [get st pos] returns the slot in position [pos] in the stack trace [st]. *)
+    (** [get st pos] returns the slot in position [pos] in the stack trace
+        [st]. *)
 
     val next: t -> t option
     (** [next slot] returns the next inlined slot, if any.
