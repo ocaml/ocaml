@@ -266,6 +266,11 @@ Working version
 - MPR#7864, GPR#2109: remove duplicates from spelling suggestions.
   (Nicolás Ojeda Bär, review by Armaël Guéneau)
 
+- MPR#6638, GPR#1110: introduced a dedicated warning to report
+  unused "open!" statements
+  (Alain Frisch, report by dwang, review by and design from Leo White)
+
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.
@@ -627,6 +632,7 @@ Working version
 - GPR#2130: fix printing of type variables with a quote in their name
   (Alain Frisch, review by Armaël Guéneau and Gabriel Scherer,
   report by Hugo Heuzard)
+
 
 OCaml 4.07.1 (4 October 2018)
 -----------------------------

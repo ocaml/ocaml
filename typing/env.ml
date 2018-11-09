@@ -2157,23 +2157,35 @@ let open_signature
     ?(used_slot = ref false)
     ?(loc = Location.none) ?(toplevel = false)
     ovf root env =
-  if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost
-     && (Warnings.is_active (Warnings.Unused_open "")
-         || Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
-         || Warnings.is_active (Warnings.Open_shadow_label_constructor ("","")))
+  let unused =
+    match ovf with
+    | Asttypes.Fresh -> Warnings.Unused_open (Path.name root)
+    | Asttypes.Override -> Warnings.Unused_open_bang (Path.name root)
+  in
+  let warn_unused =
+    Warnings.is_active unused
+  and warn_shadow_id =
+    Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
+  and warn_shadow_lc =
+    Warnings.is_active (Warnings.Open_shadow_label_constructor ("",""))
+  in
+  if not toplevel && not loc.Location.loc_ghost
+     && (warn_unused || warn_shadow_id || warn_shadow_lc)
   then begin
     let used = used_slot in
-    !add_delayed_check_forward
-      (fun () ->
-         if not !used then begin
-           used := true;
-           Location.prerr_warning loc (Warnings.Unused_open (Path.name root))
-         end
-      );
+    if warn_unused then
+      !add_delayed_check_forward
+        (fun () ->
+           if not !used then begin
+             used := true;
+             Location.prerr_warning loc unused
+           end
+        );
     let shadowed = ref [] in
     let slot s b =
       begin match check_shadowing env b with
-      | Some kind when not (List.mem (kind, s) !shadowed) ->
+      | Some kind when
+          ovf = Asttypes.Fresh && not (List.mem (kind, s) !shadowed) ->
           shadowed := (kind, s) :: !shadowed;
           let w =
             match kind with
