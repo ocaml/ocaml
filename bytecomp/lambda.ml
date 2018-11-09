@@ -728,68 +728,98 @@ let rename idmap lam =
   let s = Ident.Map.map (fun new_id -> Lvar new_id) idmap in
   subst update_env s lam
 
-let rec map f lam =
-  let lam =
-    match lam with
-    | Lvar _ -> lam
-    | Lconst _ -> lam
-    | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall;
-          ap_inlined; ap_specialised } ->
-        Lapply {
-          ap_func = map f ap_func;
-          ap_args = List.map (map f) ap_args;
-          ap_loc;
-          ap_should_be_tailcall;
-          ap_inlined;
-          ap_specialised;
-        }
-    | Lfunction { kind; params; return; body; attr; loc; } ->
-        Lfunction { kind; params; return; body = map f body; attr; loc; }
-    | Llet (str, k, v, e1, e2) ->
-        Llet (str, k, v, map f e1, map f e2)
-    | Lletrec (idel, e2) ->
-        Lletrec (List.map (fun (v, e) -> (v, map f e)) idel, map f e2)
-    | Lprim (p, el, loc) ->
-        Lprim (p, List.map (map f) el, loc)
-    | Lswitch (e, sw, loc) ->
-        Lswitch (map f e,
-          { sw_numconsts = sw.sw_numconsts;
-            sw_consts = List.map (fun (n, e) -> (n, map f e)) sw.sw_consts;
-            sw_numblocks = sw.sw_numblocks;
-            sw_blocks = List.map (fun (n, e) -> (n, map f e)) sw.sw_blocks;
-            sw_failaction = Misc.may_map (map f) sw.sw_failaction;
-          },
-          loc)
-    | Lstringswitch (e, sw, default, loc) ->
-        Lstringswitch (
-          map f e,
-          List.map (fun (s, e) -> (s, map f e)) sw,
-          Misc.may_map (map f) default,
-          loc)
-    | Lstaticraise (i, args) ->
-        Lstaticraise (i, List.map (map f) args)
-    | Lstaticcatch (body, id, handler) ->
-        Lstaticcatch (map f body, id, map f handler)
-    | Ltrywith (e1, v, e2) ->
-        Ltrywith (map f e1, v, map f e2)
-    | Lifthenelse (e1, e2, e3) ->
-        Lifthenelse (map f e1, map f e2, map f e3)
-    | Lsequence (e1, e2) ->
-        Lsequence (map f e1, map f e2)
-    | Lwhile (e1, e2) ->
-        Lwhile (map f e1, map f e2)
-    | Lfor (v, e1, e2, dir, e3) ->
-        Lfor (v, map f e1, map f e2, dir, map f e3)
-    | Lassign (v, e) ->
-        Lassign (v, map f e)
-    | Lsend (k, m, o, el, loc) ->
-        Lsend (k, map f m, map f o, List.map (map f) el, loc)
-    | Levent (l, ev) ->
-        Levent (map f l, ev)
-    | Lifused (v, e) ->
-        Lifused (v, map f e)
-  in
-  f lam
+let shallow_map f = function
+  | Lvar _
+  | Lconst _ as lam -> lam
+  | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall;
+             ap_inlined; ap_specialised } ->
+      Lapply {
+        ap_func = f ap_func;
+        ap_args = List.map f ap_args;
+        ap_loc;
+        ap_should_be_tailcall;
+        ap_inlined;
+        ap_specialised;
+      }
+  | Lfunction { kind; params; body; attr; loc; } ->
+      Lfunction { kind; params; body = f body; attr; loc; }
+  | Llet (str, k, v, e1, e2) ->
+      Llet (str, k, v, f e1, f e2)
+  | Lletrec (idel, e2) ->
+      Lletrec (List.map (fun (v, e) -> (v, f e)) idel, f e2)
+  | Lprim (p, el, loc) ->
+      Lprim (p, List.map f el, loc)
+  | Lswitch (e, sw, loc) ->
+      Lswitch (f e,
+               { sw_numconsts = sw.sw_numconsts;
+                 sw_consts = List.map (fun (n, e) -> (n, f e)) sw.sw_consts;
+                 sw_numblocks = sw.sw_numblocks;
+                 sw_blocks = List.map (fun (n, e) -> (n, f e)) sw.sw_blocks;
+                 sw_failaction = Misc.may_map f sw.sw_failaction;
+               },
+               loc)
+  | Lstringswitch (e, sw, default, loc) ->
+      Lstringswitch (
+        f e,
+        List.map (fun (s, e) -> (s, f e)) sw,
+        Misc.may_map f default,
+        loc)
+  | Lstaticraise (i, args) ->
+      Lstaticraise (i, List.map f args)
+  | Lstaticcatch (body, id, handler) ->
+      Lstaticcatch (f body, id, f handler)
+  | Ltrywith (e1, v, e2) ->
+      Ltrywith (f e1, v, f e2)
+  | Lifthenelse (e1, e2, e3) ->
+      Lifthenelse (f e1, f e2, f e3)
+  | Lsequence (e1, e2) ->
+      Lsequence (f e1, f e2)
+  | Lwhile (e1, e2) ->
+      Lwhile (f e1, f e2)
+  | Lfor (v, e1, e2, dir, e3) ->
+      Lfor (v, f e1, f e2, dir, f e3)
+  | Lassign (v, e) ->
+      Lassign (v, f e)
+  | Lsend (k, m, o, el, loc) ->
+      Lsend (k, f m, f o, List.map f el, loc)
+  | Levent (l, ev) ->
+      Levent (f l, ev)
+  | Lifused (v, e) ->
+      Lifused (v, f e)
+
+let map f =
+  let rec g lam = f (shallow_map g lam) in
+  g
+
+let iter_tail f = function
+  | Lstaticcatch (l1, _, l2)
+  | Lifthenelse (_, l1, l2) ->
+      f l1; f l2
+  | Lswitch (_, sw, _) ->
+      List.iter (fun (_, l) -> f l) sw.sw_consts;
+      List.iter (fun (_, l) -> f l) sw.sw_blocks;
+      begin match sw.sw_failaction with
+      | Some l -> f l
+      | None -> ()
+      end
+  | Lstringswitch (_, sw, d, _) ->
+      List.iter (fun (_, e) -> f e) sw;
+      begin match d with None -> () | Some x -> f x end
+  | Lprim (Pidentity, [l], _)
+  | Lprim (Psequand, [_; l], _)
+  | Lprim (Psequor, [_; l], _)
+  | Ltrywith (_, _, l)
+  | Llet (_, _, _, _, l)
+  | Lletrec (_, l)
+  | Lsequence (_, l)
+  | Levent (l, _)
+  | Lifused(_, l) ->
+      f l
+  | Lvar _ | Lconst _
+  | Lapply _ | Lfunction _ | Lstaticraise _
+  | Lprim _
+  | Lwhile _ | Lfor _ | Lassign _ | Lsend _ ->
+      ()
 
 (* To let-bind expressions to variables *)
 

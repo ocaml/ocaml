@@ -362,6 +362,15 @@ val rename : Ident.t Ident.Map.t -> lambda -> lambda
     idents. *)
 
 val map : (lambda -> lambda) -> lambda -> lambda
+  (** Bottom-up rewriting, applying the function on
+      each node from the leaves to the root. *)
+
+val shallow_map  : (lambda -> lambda) -> lambda -> lambda
+  (** Rewrite each immediate sub-term with the function. *)
+
+val iter_tail : (lambda -> unit) -> lambda -> unit
+  (** Apply the callback to each immediate sub-term in tail position. *)
+
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 val bind_with_value_kind:
   let_kind -> (Ident.t * value_kind) -> lambda -> lambda -> lambda
