@@ -341,6 +341,7 @@ G(caml_system__code_begin):
 #define DW_CFA_def_cfa_expression 0x0f
 #define DW_CFA_restore            0x03
 #define DW_CFA_val_offset         0x14
+#define DW_REG_rbp                6
 #define DW_REG_rsp                7
 #define DW_REG_retaddr            16
 #define DW_OP_breg                0x70
@@ -788,6 +789,7 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_c_call_stack_args))
 CFI_STARTPROC
+        .cfi_signal_frame
     /* Arguments:
         C arguments         : %rdi, %rsi, %rdx, %rcx, %r8, and %r9
         C function          : %rax
@@ -796,6 +798,12 @@ CFI_STARTPROC
         movq    Caml_state(current_stack), %r11
         SWITCH_OCAML_TO_C(%r10)
         movq    %r11, Cstack_stack(%rsp)
+    /* we use %rbp (otherwise unused) to enable backtraces */
+        movq    %rsp, %rbp
+        .cfi_remember_state
+        .cfi_escape DW_CFA_def_cfa_expression, 5, \
+          DW_OP_breg + DW_REG_rbp, Cstack_sp, DW_OP_deref, \
+          DW_OP_plus_uconst, 16 /* caml_context */ + 8 /* ret addr */
     /* Make the alloc ptr available to the C code */
         movq	%r15, Caml_state(young_ptr)
     /* Copy arguments from OCaml to C stack */
