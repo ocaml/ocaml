@@ -753,6 +753,7 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_c_call))
 CFI_STARTPROC
+        .cfi_signal_frame
 LBL(caml_c_call):
     /* Arguments:
         C arguments         : %rdi, %rsi, %rdx, %rcx, %r8, and %r9
@@ -761,16 +762,16 @@ LBL(caml_c_call):
         movq    Caml_state(current_stack), %r11
         SWITCH_OCAML_TO_C(%r10)
         movq    %r11, Cstack_stack(%rsp)
+        .cfi_remember_state
+        .cfi_escape DW_CFA_def_cfa_expression, 5, \
+          DW_OP_breg + DW_REG_rsp, Cstack_sp, DW_OP_deref, \
+          DW_OP_plus_uconst, 16 /* caml_context */ + 8 /* ret addr */
     /* Make the alloc ptr available to the C code */
         movq	%r15, Caml_state(young_ptr)
     /* Call the function (address in %rax) */
         PREPARE_FOR_C_CALL
-        .cfi_remember_state
         CHECK_STACK_ALIGNMENT
-        call    GCALL(caml_enter_c)
-        .cfi_def_cfa_offset 8
-        nop
-        .cfi_restore_state
+        call    *%rax
         CLEANUP_AFTER_C_CALL
     /* Prepare for return to OCaml */
         movq	Caml_state(young_ptr), %r15
@@ -779,6 +780,7 @@ LBL(caml_c_call):
         addq    $16, %r11 /* skip context */
     /* Load ocaml stack and restore global variables */
         SWITCH_C_TO_OCAML(%r10)
+        .cfi_restore_state
         cmpq    %r11, %rsp; je 1f; int3; 1:
     /* Return to OCaml caller */
         ret
@@ -791,7 +793,7 @@ CFI_STARTPROC
         C function          : %rax
         C stack args        : begin=%r13 end=%r12 */
     /* Switch from OCaml to C */
-        movq    Caml_state(current_stack), %r11        
+        movq    Caml_state(current_stack), %r11
         SWITCH_OCAML_TO_C(%r10)
         movq    %r11, Cstack_stack(%rsp)
     /* Make the alloc ptr available to the C code */
