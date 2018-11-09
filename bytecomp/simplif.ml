@@ -711,10 +711,88 @@ module Hooks = Misc.MakeHooks(struct
     type t = lambda
   end)
 
+(* Simplify local let-bound functions:
+
+      - If there is a single occurrence as a fully-applied function
+        call, inline the function.
+
+      - If all occurrences are fully-applied function calls in tail
+        position, replace the function by a staticcatch handler.
+*)
+
+let simplify_local_functions lam =
+  let tail_refs id nargs lam =
+    let res = ref 0 in
+    let rec aux = function
+      | Lapply {ap_func = Lvar v; ap_args; _}
+        when v = id && List.length ap_args = nargs ->
+          incr res
+      | lam ->
+          iter_tail aux lam
+    in
+    aux lam;
+    !res
+  in
+  let rec subst id slot = function
+    | Lapply {ap_func=Lvar v; ap_args; _} when v = id ->
+        Lstaticraise (slot, ap_args)
+    | lam ->
+        Lambda.shallow_map (subst id slot) lam
+  in
+  let rec inline id params fbody = function
+    | Lapply {ap_func=Lvar v; ap_args; _}
+      when v = id && List.length ap_args = List.length params ->
+        beta_reduce params fbody ap_args
+    | Lvar v when v = id ->
+        raise Exit
+    | lam ->
+        Lambda.shallow_map (inline id params fbody) lam
+  in
+  let occ = Hashtbl.create 16 in
+  let rec aux = function
+    | Lvar id as lam ->
+        (try incr (Hashtbl.find occ id) with Not_found -> ());
+        lam
+    | Llet
+        (
+          str, kind, id,
+          Lfunction ({kind=Curried; params; body} as lf),
+          cont
+        ) ->
+        let r = ref 0 in
+        Hashtbl.add occ id r;
+        let cont = aux cont in
+        let body = aux body in
+        Hashtbl.remove occ id;
+        let default =
+          Llet
+            (
+              str, kind, id,
+              Lfunction {lf with kind=Curried; params; body},
+              cont
+            )
+        in
+        if !r = 1 then
+          try inline id params body cont
+          with Exit -> default
+        else if !r = tail_refs id (List.length params) cont then
+          let slot = next_raise_count () in
+          Lstaticcatch (subst id slot cont, (slot, params), body)
+        else
+          default
+    | lam ->
+        Lambda.shallow_map aux lam
+  in
+  aux lam
+
 (* The entry point:
    simplification + emission of tailcall annotations, if needed. *)
 
 let simplify_lambda sourcefile lam =
+  (* Disable optimisations for bytecode compilation with -g flag *)
+  let optimize = !Clflags.native_code || not !Clflags.debug in
+  let lam = if optimize then simplify_local_functions lam else lam in
+
   let res = simplify_lets (simplify_exits lam) in
   let res = Hooks.apply_hooks { Misc.sourcefile } res in
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
