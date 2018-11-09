@@ -337,7 +337,7 @@ let error_message = function
   | Cannot_open_dll reason ->
       "error loading shared library: " ^ reason
   | Inconsistent_implementation name ->
-    "implementation mismatch on " ^ name
+      "implementation mismatch on " ^ name
   | May_contain_flat_float_arrays name ->
       name ^ " has been produced by a compiler with support for " ^
       "flat float arrays."

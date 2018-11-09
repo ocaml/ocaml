@@ -82,9 +82,9 @@ let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 let afl_instrument = %%AFL_INSTRUMENT%%
 
 let exec_magic_number = "Caml1999X011"
-and cmi_magic_number = "Caml1999I023"
-and cmo_magic_number = "Caml1999O023"
-and cma_magic_number = "Caml1999A023"
+and cmi_magic_number = "Caml1999I022"
+and cmo_magic_number = "Caml1999O022"
+and cma_magic_number = "Caml1999A022"
 and cmx_magic_number =
   if flambda then
     "Caml1999y023"
