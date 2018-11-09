@@ -991,7 +991,7 @@ clean::
 # (that the parser files rely on) in boot/.
 
 # The rules below do not depend on Menhir being available,
-# they just build the parser from the boot/.
+# they just build the parser from boot/.
 
 # See Makefile.menhir for the rules to rebuild the parser and update
 # boot/, which require Menhir. The targets in Makefile.menhir
