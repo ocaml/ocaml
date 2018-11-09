@@ -299,3 +299,61 @@ let of_seq i =
   let b = create 32 in
   add_seq b i;
   b
+
+(** {6 Binary encoding of integers} *)
+
+external unsafe_set_int8 : bytes -> int -> int -> unit = "%bytes_unsafe_set"
+external unsafe_set_int16 : bytes -> int -> int -> unit = "%caml_bytes_set16u"
+external unsafe_set_int32 : bytes -> int -> int32 -> unit = "%caml_bytes_set32u"
+external unsafe_set_int64 : bytes -> int -> int64 -> unit = "%caml_bytes_set64u"
+external swap16 : int -> int = "%bswap16"
+external swap32 : int32 -> int32 = "%bswap_int32"
+external swap64 : int64 -> int64 = "%bswap_int64"
+
+
+let add_int8 b x =
+  let new_position = b.position + 1 in
+  if new_position > b.length then resize b 1;
+  unsafe_set_int8 b.buffer b.position x;
+  b.position <- new_position
+
+let add_int16_ne b x =
+  let new_position = b.position + 2 in
+  if new_position > b.length then resize b 2;
+  unsafe_set_int16 b.buffer b.position x;
+  b.position <- new_position
+
+let add_int32_ne b x =
+  let new_position = b.position + 4 in
+  if new_position > b.length then resize b 4;
+  unsafe_set_int32 b.buffer b.position x;
+  b.position <- new_position
+
+let add_int64_ne b x =
+  let new_position = b.position + 8 in
+  if new_position > b.length then resize b 8;
+  unsafe_set_int64 b.buffer b.position x;
+  b.position <- new_position
+
+let add_int16_le b x =
+  add_int16_ne b (if Sys.big_endian then swap16 x else x)
+
+let add_int16_be b x =
+  add_int16_ne b (if Sys.big_endian then x else swap16 x)
+
+let add_int32_le b x =
+  add_int32_ne b (if Sys.big_endian then swap32 x else x)
+
+let add_int32_be b x =
+  add_int32_ne b (if Sys.big_endian then x else swap32 x)
+
+let add_int64_le b x =
+  add_int64_ne b (if Sys.big_endian then swap64 x else x)
+
+let add_int64_be b x =
+  add_int64_ne b (if Sys.big_endian then x else swap64 x)
+
+let add_uint8 = add_int8
+let add_uint16_ne = add_int16_ne
+let add_uint16_le = add_int16_le
+let add_uint16_be = add_int16_be
