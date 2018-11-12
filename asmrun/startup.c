@@ -132,6 +132,7 @@ value caml_startup_common(char_os **argv, int pooling)
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
     return Val_unit;
   }
+  caml_maybe_expand_stack();
   return caml_start_program(Caml_state);
 }
 
