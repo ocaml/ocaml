@@ -836,10 +836,8 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
             100.0 * (double)(caml_stat_space_overhead.heap_words_last_cycle
                             - live_words_last_cycle) / live_words_last_cycle;
 
-          if (caml_stat_space_overhead.l == NULL) {
-            caml_stat_space_overhead.l =
-              (struct buf_list_t*)caml_stat_alloc_noexc(sizeof(struct buf_list_t));
-          } else if (caml_stat_space_overhead.index == BUFFER_SIZE) {
+          if (caml_stat_space_overhead.l == NULL ||
+              caml_stat_space_overhead.index == BUFFER_SIZE) {
             struct buf_list_t *l =
               (struct buf_list_t*)caml_stat_alloc_noexc(sizeof(struct buf_list_t));
             l->next = caml_stat_space_overhead.l;
