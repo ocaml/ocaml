@@ -292,6 +292,10 @@ Working version
   sign-extension operations.
   (LemonBoy, review by Alain Frisch and Xavier Leroy)
 
+- MPR#7246, GPR#2146: make a few int64 primitives use [@@unboxed]
+  stubs on 32bits
+  (Jérémie Dimino)
+
 ### Runtime system:
 
 - MPR#7750, GPR#1738: add a function (caml_custom_alloc_mem) and three
