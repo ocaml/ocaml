@@ -160,6 +160,9 @@ Working version
   and unsigned_to_int to modules Int32, Int64, Nativeint.
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Alain Frisch and Max Mouratov)
 
+- GPR#2145: Deprecate the mutability of Gc.control record fields
+  (Damien Doligez, review by Alain Frisch)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
