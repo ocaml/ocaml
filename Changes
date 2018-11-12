@@ -300,6 +300,9 @@ Working version
   bigarrays and I/O channels.
   (Damien Doligez, review by Alain Frisch)
 
+- MPR#7676, GPR#2144: Remove old GC heuristic
+  (Damien Doligez, report and review by Alain Frisch)
+
 - GPR#1793: add the -m and -M command-line options to ocamlrun.
   (Sébastien Hinderer, review by Xavier Clerc and Damien Doligez)
 
@@ -320,9 +323,6 @@ Working version
 - GPR#2079: Avoid page table lookup in Pervasives.compare with
   no-naked-pointers
   (Sam Goldman, review by Gabriel Scherer, David Allsopp, Stephen Dolan)
-
-- GPR#2144, MPR#7676: Remove old GC heuristic
-  (Damien Doligez, report and review by Alain Frisch)
 
 ### Tools
 
