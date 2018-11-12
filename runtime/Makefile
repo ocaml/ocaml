@@ -255,7 +255,8 @@ ld.conf: $(ROOTDIR)/Makefile.config
 primitives : $(PRIMS)
 	sed -n -e "s/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" $(PRIMS) \
 	  | LC_ALL=C sort | uniq > primitives
-	sed -n -e "s/^CAMLprim_int64_[0-9](\([a-z0-9_][a-z0-9_]*\)).*/caml_int64_\1\ncaml_int64_\1_native/p" ints.c \
+	sed -n -e "s/^CAMLprim_int64_[0-9](\([a-z0-9_][a-z0-9_]*\)).*/\
+	caml_int64_\1\ncaml_int64_\1_native/p" ints.c \
 	  | LC_ALL=C sort | uniq >> primitives
 
 prims.c : primitives
