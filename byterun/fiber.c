@@ -54,9 +54,6 @@ static struct stack_info* alloc_stack_noexc(mlsize_t wosize, value hval, value h
 
 #ifdef NATIVE_CODE
 
-extern void caml_fiber_exn_handler (value) Noreturn;
-extern void caml_fiber_val_handler (value) Noreturn;
-
 value caml_alloc_stack (value hval, value hexn, value heff) {
   struct stack_info* stack = alloc_stack_noexc(caml_fiber_wsz, hval, hexn, heff);
 
@@ -152,13 +149,14 @@ void caml_maybe_expand_stack ()
   if (stack_available < stack_needed)
     if (!caml_try_realloc_stack (stack_needed))
       caml_raise_stack_overflow();
-}
 
-void caml_update_gc_regs_slot (value* gc_regs)
-{
-  struct caml_context *ctxt;
-  ctxt = (struct caml_context*) Caml_state->current_stack->sp;
-  ctxt->gc_regs = gc_regs;
+  if (Caml_state->gc_regs_buckets == NULL) {
+    /* ensure there is at least one gc_regs bucket available before
+       running any OCaml code */
+    value* bucket = caml_stat_alloc(sizeof(value) * Wosize_gc_regs);
+    bucket[0] = 0; /* no next bucket */
+    Caml_state->gc_regs_buckets = bucket;
+  }
 }
 
 #else /* End NATIVE_CODE, begin BYTE_CODE */
