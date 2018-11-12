@@ -289,6 +289,9 @@
 #  define STACK_PROBE_SIZE $32768
 #endif
 
+#define C_call(target) \
+  PREPARE_FOR_C_CALL; CHECK_STACK_ALIGNMENT; call target; CLEANUP_AFTER_C_CALL
+
 /******************************************************************************/
 /* Registers holding arguments of C functions. */
 /******************************************************************************/
@@ -423,9 +426,7 @@ CFI_ENDPROC
         pushq   %rax; CFI_ADJUST (8);                                          \
     /* Update in OCaml stack's context, the pointer to gc_regs */              \
         movq    %rsp, C_ARG_1;                                                 \
-        PREPARE_FOR_C_CALL;                                                    \
-        call    GCALL(caml_update_gc_regs_slot);                               \
-        CLEANUP_AFTER_C_CALL;                                                  \
+        C_call  (GCALL(caml_update_gc_regs_slot));                             \
     /* Save caml_young_ptr */                                                  \
         movq	%r15, Caml_state(young_ptr);                                    \
     /* Save floating-point registers */                                        \
@@ -527,9 +528,7 @@ CFI_STARTPROC
         movsd   %xmm9, 9*8(%rsp)
 
         movq    %r11, C_ARG_1
-        PREPARE_FOR_C_CALL
-        call    GCALL(caml_try_realloc_stack)
-        CLEANUP_AFTER_C_CALL
+        C_call  (GCALL(caml_try_realloc_stack))
         cmpq    $0, %rax
         jnz     1f
         LEA_VAR(caml_exn_Stack_overflow, %rax)
@@ -594,9 +593,7 @@ CFI_STARTPROC
         pushq   %rax; CFI_ADJUST (8);
     /* Update in OCaml stack's context, the pointer to gc_regs */
         movq    %rsp, C_ARG_1;
-        PREPARE_FOR_C_CALL;
-        call    GCALL(caml_update_gc_regs_slot);
-        CLEANUP_AFTER_C_CALL;
+        C_call  (GCALL(caml_update_gc_regs_slot));
     /* Set up arguments for caml_read_barrier */
         movq    (%rsp), C_ARG_1;        /* rax = base */
         movq    32(%rsp), C_ARG_2;      /* rdx = offset */
@@ -770,10 +767,7 @@ LBL(caml_c_call):
     /* Make the alloc ptr available to the C code */
         movq	%r15, Caml_state(young_ptr)
     /* Call the function (address in %rax) */
-        PREPARE_FOR_C_CALL
-        CHECK_STACK_ALIGNMENT
-        call    *%rax
-        CLEANUP_AFTER_C_CALL
+        C_call  (*%rax)
     /* Prepare for return to OCaml */
         movq	Caml_state(young_ptr), %r15
         /* assert */
@@ -815,10 +809,7 @@ LBL(105):
         jmp     LBL(105)
 LBL(106):
     /* Call the function (address in %rax) */
-        PREPARE_FOR_C_CALL
-        CHECK_STACK_ALIGNMENT
-        call    *%rax
-        CLEANUP_AFTER_C_CALL
+        C_call  (*%rax)
     /* Prepare for return to OCaml */
         movq	Caml_state(young_ptr), %r15
     /* Load ocaml stack and restore global variables */
@@ -925,9 +916,7 @@ LBL(117):
         movq	Caml_state(exn_handler), C_ARG_4
                                   /* arg 4: sp of handler */
         ENTER_FUNCTION
-        PREPARE_FOR_C_CALL
-        call    GCALL(caml_stash_backtrace)
-        CLEANUP_AFTER_C_CALL
+        C_call  (GCALL(caml_stash_backtrace))
         LEAVE_FUNCTION
         movq    %r12, %rax        /* Recover exception bucket */
         RESTORE_EXN_HANDLER_OCAML
