@@ -530,6 +530,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
             unify_vars rem1 rem2
           else begin
             begin try
+              unify_var env (newvar ()) t1;
               unify env t1 t2
             with
             | Unify trace ->
@@ -1093,6 +1094,11 @@ let rec has_literal_pattern p = match p.ppat_desc with
 
 exception Need_backtrack
 
+let check_scope_escape loc env level ty =
+  try Ctype.check_scope_escape env level ty
+  with Unify trace ->
+    raise(Error(loc, env, Pattern_type_clash(trace)))
+
 (* type_pat propagates the expected type as well as maps for
    constructors and labels.
    Unification may update the typing environment. *)
@@ -1316,8 +1322,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       in
       let expected_ty = instance expected_ty in
       (* PR#7214: do not use gadt unification for toplevel lets *)
-      if not constr.cstr_generalized || mode = Inside_or
-         || no_existentials <> None
+      if not constr.cstr_generalized || no_existentials <> None
       then unify_pat_types loc !env ty_res expected_ty
       else unify_pat_types_gadt loc env ty_res expected_ty;
       end_def ();
@@ -1443,19 +1448,37 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         if mode = Split_or || mode = Splitting_or then raise Need_backtrack;
         let initial_pattern_variables = !pattern_variables in
         let initial_module_variables = !module_variables in
+        let equation_level = !gadt_equations_level in
+        let outter_lev = get_current_level () in
+        (* introduce a new scope *)
+        begin_def ();
+        let lev = get_current_level () in
+        gadt_equations_level := Some lev;
+        let env1 = ref !env in
         let p1 =
           try Some (type_pat ~exception_allowed ~mode:Inside_or sp1 expected_ty
-                      (fun x -> x))
+                      ~env:env1 (fun x -> x))
           with Need_backtrack -> None in
         let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
         module_variables := initial_module_variables;
+        let env2 = ref !env in
         let p2 =
           try Some (type_pat ~exception_allowed ~mode:Inside_or sp2 expected_ty
-                      (fun x -> x))
+                      ~env:env2 (fun x -> x))
           with Need_backtrack -> None in
+        end_def ();
+        gadt_equations_level := equation_level;
         let p2_variables = !pattern_variables in
+        (* Make sure no variable with an ambiguous type gets added to the
+           environment. *)
+        List.iter (fun { pv_type; pv_loc; _ } ->
+          check_scope_escape pv_loc !env1 outter_lev pv_type
+        ) p1_variables;
+        List.iter (fun { pv_type; pv_loc; _ } ->
+          check_scope_escape pv_loc !env2 outter_lev pv_type
+        ) p2_variables;
         match p1, p2 with
           None, None -> raise Need_backtrack
         | Some p, None | None, Some p -> p (* no variables in this case *)
@@ -4041,11 +4064,6 @@ and type_statement ?explanation env sexp =
   end
 
 (* Typing of match cases *)
-and check_scope_escape loc env level ty =
-  try Ctype.check_scope_escape env level ty
-  with Unify trace ->
-    raise(Error(loc, env, Pattern_type_clash(trace)))
-
 and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
       loc caselist =
   (* ty_arg is _fully_ generalized *)
