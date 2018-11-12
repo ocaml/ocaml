@@ -121,6 +121,9 @@ let read filename =
            None, Some (input_cmt ic)
          else if magic_number = Config.cmi_magic_number then
            let cmi = Cmi_format.input_cmi ic in
+           if List.mem Flat_float_array cmi.cmi_flags
+           && not Config.flat_float_array then
+             raise Cmi_format.(Error (May_contain_flat_float_arrays filename));
            let cmt = try
                let magic_number = read_magic_number ic in
                if magic_number = Config.cmt_magic_number then

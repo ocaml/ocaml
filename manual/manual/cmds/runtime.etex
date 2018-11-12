@@ -44,6 +44,10 @@ to always give ".exe" names to bytecode executables, e.g. compile
 with "ocamlc -o myprog.exe ..." rather than "ocamlc -o myprog ...".
 \end{windows}
 
+Note: an `ocamlrun` command built without support for flat float arrays should
+not be used to execute a bytecode executable produced by a compiler with
+support for flat float arrays, as it could result in a ``segmentation fault''.
+
 \section{Options} \label{ocamlrun-options}
 
 The following command-line options are recognized by "ocamlrun".

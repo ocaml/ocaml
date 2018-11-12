@@ -217,7 +217,7 @@ let descr_of_allocated_constant (c : Allocated_const.t) : Export_info.descr =
     Value_string v_string
   | Immutable_float_array fs ->
     Value_float_array {
-      contents = Contents (Array.map (fun x -> Some x) (Array.of_list fs));
+      contents = Contents (Array.of_list (List.map (fun x -> Some x) fs));
       size = List.length fs;
     }
   | Float_array fs ->

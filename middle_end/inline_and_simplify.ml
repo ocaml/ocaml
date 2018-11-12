@@ -188,7 +188,7 @@ let approx_for_allocated_const (const : Allocated_const.t) =
   | Float_array a -> A.value_mutable_float_array ~size:(List.length a)
   | Immutable_float_array a ->
       A.value_immutable_float_array
-        (Array.map A.value_float (Array.of_list a))
+        (Array.of_list (List.map A.value_float a))
 
 type filtered_switch_branches =
   | Must_be_taken of Flambda.t

@@ -132,6 +132,7 @@ type error =
   | File_not_found of string
   | Cannot_open_dll of string
   | Inconsistent_implementation of string
+  | May_contain_flat_float_arrays of string
 
 exception Error of error
 (** Errors in dynamic linking are reported by raising the [Error]

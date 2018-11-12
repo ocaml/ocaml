@@ -43,6 +43,13 @@
    extensible variant values does not work either.  Most other uses such
    as Printexc.to_string, will still work as expected.
 
+   Values of the [float array] type cannot be safely encoded by a program
+   compiled with support for flat float arrays and then decoded by a
+   program with no support for flat float arrays. However, values of the
+   [floatarray] type can be safely encoded/decoded independently of the
+   compilers used to build the encoding/decoding programs. (Note: it is
+   actually sufficient to use [floatarray] on the decoding end.)
+
    The representation of marshaled values is not human-readable,
    and uses bytes that are not printable characters. Therefore,
    input and output channels used in conjunction with [Marshal.to_channel]

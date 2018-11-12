@@ -937,8 +937,10 @@ let potentially_taken_block_switch_branch t tag =
     Must_be_taken
   | Value_float _ when tag = Obj.double_tag ->
     Must_be_taken
-  | Value_float_array _ when tag = Obj.double_array_tag ->
+  | Value_float_array _ when Config.flat_float_array && tag = Obj.double_array_tag ->
     Must_be_taken
+  | Value_float_array _ when not Config.flat_float_array && tag = 0 ->
+    Can_be_taken
   | Value_string _ when tag = Obj.string_tag ->
     Must_be_taken
   | (Value_closure _ | Value_set_of_closures _)

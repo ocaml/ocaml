@@ -32,6 +32,7 @@ type error =
   | File_exists of string
   | Cannot_open_dll of string
   | Required_module_unavailable of string
+  | May_contain_flat_float_arrays of string
 
 exception Error of error
 
