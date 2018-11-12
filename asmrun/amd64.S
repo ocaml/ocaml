@@ -915,9 +915,7 @@ LBL(117):
         leaq    8(%r10), C_ARG_3  /* arg 3: sp at raise */
         movq	Caml_state(exn_handler), C_ARG_4
                                   /* arg 4: sp of handler */
-        ENTER_FUNCTION
         C_call  (GCALL(caml_stash_backtrace))
-        LEAVE_FUNCTION
         movq    %r12, %rax        /* Recover exception bucket */
         RESTORE_EXN_HANDLER_OCAML
         ret
