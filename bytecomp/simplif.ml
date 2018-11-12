@@ -713,77 +713,55 @@ module Hooks = Misc.MakeHooks(struct
 
 (* Simplify local let-bound functions:
 
-      - If there is a single occurrence as a fully-applied function
-        call, inline the function.
-
       - If all occurrences are fully-applied function calls in tail
         position, replace the function by a staticcatch handler.
 *)
 
 let simplify_local_functions lam =
-  let tail_refs id nargs lam =
-    let res = ref 0 in
-    let rec aux = function
-      | Lapply {ap_func = Lvar v; ap_args; _}
-        when v = id && List.length ap_args = nargs ->
-          incr res
-      | lam ->
-          iter_tail aux lam
-    in
-    aux lam;
-    !res
-  in
-  let rec subst id slot = function
-    | Lapply {ap_func=Lvar v; ap_args; _} when v = id ->
-        Lstaticraise (slot, ap_args)
+  let tbl = Hashtbl.create 16 in
+  let static = Hashtbl.create 16 in
+  let depth = ref 0 in
+  let rec tail = function
+    | Llet (_str, _kind, id, Lfunction lf, cont) ->
+        let r = (!depth, List.length lf.params) in
+        Hashtbl.add tbl id r;
+        tail cont;
+        if Hashtbl.mem tbl id then begin
+          Hashtbl.add static id (next_raise_count ());
+          tail lf.body
+        end
+        else non_tail lf.body
+    | Lapply {ap_func = Lvar id; ap_args; _} ->
+        begin match Hashtbl.find_opt tbl id with
+        | Some (d, n) when n <> List.length ap_args || d <> !depth ->
+            Hashtbl.remove tbl id
+        | _ ->
+            ()
+        end;
+        List.iter non_tail ap_args
+    | Lvar id ->
+        Hashtbl.remove tbl id
     | lam ->
-        Lambda.shallow_map (subst id slot) lam
+        Lambda.shallow_iter ~tail ~non_tail lam
+  and non_tail lam =
+    incr depth;
+    tail lam;
+    decr depth
   in
-  let rec inline id params fbody = function
-    | Lapply {ap_func=Lvar v; ap_args; _}
-      when v = id && List.length ap_args = List.length params ->
-        beta_reduce params fbody ap_args
-    | Lvar v when v = id ->
-        raise Exit
+  tail lam;
+  let rec rewrite = function
+    | Llet (_, _, id, Lfunction lf, cont) when Hashtbl.mem static id ->
+        Lstaticcatch (rewrite cont, (Hashtbl.find static id, lf.params),
+                      rewrite lf.body)
+    | Lapply {ap_func = Lvar id; ap_args; _} when Hashtbl.mem static id ->
+        Lstaticraise (Hashtbl.find static id, List.map rewrite ap_args)
     | lam ->
-        Lambda.shallow_map (inline id params fbody) lam
+        Lambda.shallow_map rewrite lam
   in
-  let occ = Hashtbl.create 16 in
-  let rec aux = function
-    | Lvar id as lam ->
-        (try incr (Hashtbl.find occ id) with Not_found -> ());
-        lam
-    | Llet
-        (
-          str, kind, id,
-          Lfunction ({kind=Curried; params; body} as lf),
-          cont
-        ) ->
-        let r = ref 0 in
-        Hashtbl.add occ id r;
-        let cont = aux cont in
-        let body = aux body in
-        Hashtbl.remove occ id;
-        let default =
-          Llet
-            (
-              str, kind, id,
-              Lfunction {lf with kind=Curried; params; body},
-              cont
-            )
-        in
-        if !r = 1 then
-          try inline id params body cont
-          with Exit -> default
-        else if !r = tail_refs id (List.length params) cont then
-          let slot = next_raise_count () in
-          Lstaticcatch (subst id slot cont, (slot, params), body)
-        else
-          default
-    | lam ->
-        Lambda.shallow_map aux lam
-  in
-  aux lam
+  if Hashtbl.length static = 0 then
+    lam
+  else
+    rewrite lam
 
 (* The entry point:
    simplification + emission of tailcall annotations, if needed. *)

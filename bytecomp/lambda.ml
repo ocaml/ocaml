@@ -456,7 +456,7 @@ let iter_opt f = function
   | None -> ()
   | Some e -> f e
 
-let iter_head_constructor f = function
+let shallow_iter ~tail ~non_tail:f = function
     Lvar _
   | Lconst _ -> ()
   | Lapply{ap_func = fn; ap_args = args} ->
@@ -464,31 +464,37 @@ let iter_head_constructor f = function
   | Lfunction{body} ->
       f body
   | Llet(_str, _k, _id, arg, body) ->
-      f arg; f body
+      f arg; tail body
   | Lletrec(decl, body) ->
-      f body;
+      tail body;
       List.iter (fun (_id, exp) -> f exp) decl
+  | Lprim (Pidentity, [l], _) ->
+      tail l
+  | Lprim (Psequand, [l1; l2], _)
+  | Lprim (Psequor, [l1; l2], _) ->
+      f l1;
+      tail l2
   | Lprim(_p, args, _loc) ->
       List.iter f args
   | Lswitch(arg, sw,_) ->
       f arg;
-      List.iter (fun (_key, case) -> f case) sw.sw_consts;
-      List.iter (fun (_key, case) -> f case) sw.sw_blocks;
-      iter_opt f sw.sw_failaction
+      List.iter (fun (_key, case) -> tail case) sw.sw_consts;
+      List.iter (fun (_key, case) -> tail case) sw.sw_blocks;
+      iter_opt tail sw.sw_failaction
   | Lstringswitch (arg,cases,default,_) ->
       f arg ;
-      List.iter (fun (_,act) -> f act) cases ;
-      iter_opt f default
+      List.iter (fun (_,act) -> tail act) cases ;
+      iter_opt tail default
   | Lstaticraise (_,args) ->
       List.iter f args
   | Lstaticcatch(e1, _, e2) ->
-      f e1; f e2
+      tail e1; tail e2
   | Ltrywith(e1, _, e2) ->
-      f e1; f e2
+      f e1; tail e2
   | Lifthenelse(e1, e2, e3) ->
-      f e1; f e2; f e3
+      f e1; tail e2; tail e3
   | Lsequence(e1, e2) ->
-      f e1; f e2
+      f e1; tail e2
   | Lwhile(e1, e2) ->
       f e1; f e2
   | Lfor(_v, e1, e2, _dir, e3) ->
@@ -497,10 +503,13 @@ let iter_head_constructor f = function
       f e
   | Lsend (_k, met, obj, args, _) ->
       List.iter f (met::obj::args)
-  | Levent (lam, _evt) ->
-      f lam
+  | Levent (e, _evt) ->
+      tail e
   | Lifused (_v, e) ->
-      f e
+      tail e
+
+let iter_head_constructor f l =
+  shallow_iter ~tail:f ~non_tail:f l
 
 let rec free_variables = function
   | Lvar id -> Ident.Set.singleton id
@@ -790,36 +799,6 @@ let shallow_map f = function
 let map f =
   let rec g lam = f (shallow_map g lam) in
   g
-
-let iter_tail f = function
-  | Lstaticcatch (l1, _, l2)
-  | Lifthenelse (_, l1, l2) ->
-      f l1; f l2
-  | Lswitch (_, sw, _) ->
-      List.iter (fun (_, l) -> f l) sw.sw_consts;
-      List.iter (fun (_, l) -> f l) sw.sw_blocks;
-      begin match sw.sw_failaction with
-      | Some l -> f l
-      | None -> ()
-      end
-  | Lstringswitch (_, sw, d, _) ->
-      List.iter (fun (_, e) -> f e) sw;
-      begin match d with None -> () | Some x -> f x end
-  | Lprim (Pidentity, [l], _)
-  | Lprim (Psequand, [_; l], _)
-  | Lprim (Psequor, [_; l], _)
-  | Ltrywith (_, _, l)
-  | Llet (_, _, _, _, l)
-  | Lletrec (_, l)
-  | Lsequence (_, l)
-  | Levent (l, _)
-  | Lifused(_, l) ->
-      f l
-  | Lvar _ | Lconst _
-  | Lapply _ | Lfunction _ | Lstaticraise _
-  | Lprim _
-  | Lwhile _ | Lfor _ | Lassign _ | Lsend _ ->
-      ()
 
 (* To let-bind expressions to variables *)
 
