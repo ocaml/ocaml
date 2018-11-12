@@ -445,12 +445,15 @@ module MakeMap(Map : MapArgument) = struct
             Tsig_value (map_value_description vd)
         | Tsig_type (rf, list) ->
             Tsig_type (rf, List.map map_type_declaration list)
+        | Tsig_typesubst list ->
+            Tsig_typesubst (List.map map_type_declaration list)
         | Tsig_typext tyext ->
             Tsig_typext (map_type_extension tyext)
         | Tsig_exception ext ->
             Tsig_exception (map_type_exception ext)
         | Tsig_module md ->
             Tsig_module {md with md_type = map_module_type md.md_type}
+        | Tsig_modsubst _ as x -> x
         | Tsig_recmodule list ->
             Tsig_recmodule
                 (List.map

@@ -252,9 +252,11 @@ module Sig = struct
 
   let value ?loc a = mk ?loc (Psig_value a)
   let type_ ?loc rec_flag a = mk ?loc (Psig_type (rec_flag, a))
+  let type_subst ?loc a = mk ?loc (Psig_typesubst a)
   let type_extension ?loc a = mk ?loc (Psig_typext a)
   let exception_ ?loc a = mk ?loc (Psig_exception a)
   let module_ ?loc a = mk ?loc (Psig_module a)
+  let mod_subst ?loc a = mk ?loc (Psig_modsubst a)
   let rec_module ?loc a = mk ?loc (Psig_recmodule a)
   let modtype ?loc a = mk ?loc (Psig_modtype a)
   let open_ ?loc a = mk ?loc (Psig_open a)
@@ -405,6 +407,18 @@ module Md = struct
      pmd_attributes =
        add_text_attrs text (add_docs_attrs docs attrs);
      pmd_loc = loc;
+    }
+end
+
+module Ms = struct
+  let mk ?(loc = !default_loc) ?(attrs = [])
+        ?(docs = empty_docs) ?(text = []) name syn =
+    {
+     pms_name = name;
+     pms_manifest = syn;
+     pms_attributes =
+       add_text_attrs text (add_docs_attrs docs attrs);
+     pms_loc = loc;
     }
 end
 
