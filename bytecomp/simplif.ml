@@ -711,54 +711,102 @@ module Hooks = Misc.MakeHooks(struct
     type t = lambda
   end)
 
-(* Simplify local let-bound functions:
+(* Simplify local let-bound functions: if all occurrences are
+   fully-applied function calls in the same "tail scope", replace the
+   function by a staticcatch handler (on that scope).
 
-      - If all occurrences are fully-applied function calls in tail
-        position, replace the function by a staticcatch handler.
+   This handles as a special case functions used exactly once (in any
+   scope) for a full application.
 *)
 
+type slot =
+  {
+    nargs: int;
+    mutable scope: lambda option;
+  }
+
+module LamTbl = Hashtbl.Make(struct
+    type t = lambda
+    let equal = (==)
+    let hash = Hashtbl.hash
+  end)
+
 let simplify_local_functions lam =
-  let tbl = Hashtbl.create 16 in
-  let static = Hashtbl.create 16 in
-  let depth = ref 0 in
+  let slots = Hashtbl.create 16 in
+  let static_id = Hashtbl.create 16 in (* function id -> static id *)
+  let static = LamTbl.create 16 in (* scope -> static function on that scope *)
+  (* We keep track of the current "tail scope", identified
+     by the outermost lambda for which the the current lambda
+     is in tail position. *)
+  let current_scope = ref lam in
   let rec tail = function
     | Llet (_str, _kind, id, Lfunction lf, cont) ->
-        let r = (!depth, List.length lf.params) in
-        Hashtbl.add tbl id r;
+        let r = {nargs=List.length lf.params; scope=None} in
+        Hashtbl.add slots id r;
         tail cont;
-        if Hashtbl.mem tbl id then begin
-          Hashtbl.add static id (next_raise_count ());
-          tail lf.body
+        begin match Hashtbl.find_opt slots id with
+        | Some {scope = Some scope; _} ->
+            let st = next_raise_count () in
+            let sc =
+              (* Do not move higher than current lambda *)
+              if scope == !current_scope then cont
+              else scope
+            in
+            Hashtbl.add static_id id st;
+            LamTbl.add static sc (st, lf);
+            (* The body of the function will become an handler
+               in that "scope". *)
+            with_scope ~scope lf.body
+        | _ ->
+            (* note: if scope = None, the function is unused *)
+            non_tail lf.body
         end
-        else non_tail lf.body
     | Lapply {ap_func = Lvar id; ap_args; _} ->
-        begin match Hashtbl.find_opt tbl id with
-        | Some (d, n) when n <> List.length ap_args || d <> !depth ->
-            Hashtbl.remove tbl id
+        begin match Hashtbl.find_opt slots id with
+        | Some {nargs; _} when nargs <> List.length ap_args ->
+            (* Wrong arity *)
+            Hashtbl.remove slots id
+        | Some {scope = Some scope; _} when scope != !current_scope ->
+            (* Different "tail scope" *)
+            Hashtbl.remove slots id
+        | Some ({scope = None; _} as slot) ->
+            (* First use of the function: remember the current tail scope *)
+            slot.scope <- Some !current_scope
         | _ ->
             ()
         end;
         List.iter non_tail ap_args
     | Lvar id ->
-        Hashtbl.remove tbl id
+        Hashtbl.remove slots id
     | lam ->
         Lambda.shallow_iter ~tail ~non_tail lam
   and non_tail lam =
-    incr depth;
+    with_scope ~scope:lam lam
+  and with_scope ~scope lam =
+    let old_scope = !current_scope in
+    current_scope := scope;
     tail lam;
-    decr depth
+    current_scope := old_scope
   in
   tail lam;
-  let rec rewrite = function
-    | Llet (_, _, id, Lfunction lf, cont) when Hashtbl.mem static id ->
-        Lstaticcatch (rewrite cont, (Hashtbl.find static id, lf.params),
-                      rewrite lf.body)
-    | Lapply {ap_func = Lvar id; ap_args; _} when Hashtbl.mem static id ->
-        Lstaticraise (Hashtbl.find static id, List.map rewrite ap_args)
-    | lam ->
-        Lambda.shallow_map rewrite lam
+  let rec rewrite lam0 =
+    let lam =
+      match lam0 with
+      | Llet (_, _, id, _, cont) when Hashtbl.mem static_id id ->
+          rewrite cont
+      | Lapply {ap_func = Lvar id; ap_args; _} when Hashtbl.mem static_id id ->
+          Lstaticraise (Hashtbl.find static_id id, List.map rewrite ap_args)
+      | lam ->
+          Lambda.shallow_map rewrite lam
+    in
+    List.fold_right
+      (fun (st, lf) lam ->
+         Lstaticcatch (lam, (st, lf.params), rewrite lf.body)
+      )
+      (LamTbl.find_all static lam0)
+      lam
   in
-  if Hashtbl.length static = 0 then
+  if LamTbl.length static = 0 then
     lam
   else
     rewrite lam

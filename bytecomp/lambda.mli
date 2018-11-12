@@ -333,14 +333,17 @@ val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 
 val iter_head_constructor: (lambda -> unit) -> lambda -> unit
-(** [iter_head_constructor f lam] apply [f] or [tail] to only the first level of
+(** [iter_head_constructor f lam] apply [f] to only the first level of
     sub expressions of [lam]. It does not recursively traverse the
     expression.
 *)
 
-val shallow_iter: tail:(lambda -> unit) -> non_tail:(lambda -> unit) -> lambda -> unit
-(** Same as [iter_head_constructor], but use a different callback for sub-terms which
-    are in tail position or not. *)
+val shallow_iter:
+  tail:(lambda -> unit) ->
+  non_tail:(lambda -> unit) ->
+  lambda -> unit
+(** Same as [iter_head_constructor], but use a different callback for
+    sub-terms which are in tail position or not. *)
 
 
 val free_variables: lambda -> Ident.Set.t
