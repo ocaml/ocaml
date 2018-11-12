@@ -308,19 +308,19 @@ typing/printpat.cmx : typing/types.cmx typing/typedtree.cmx typing/ident.cmx \
     parsing/asttypes.cmi typing/printpat.cmi
 typing/printpat.cmi : typing/typedtree.cmi parsing/asttypes.cmi
 typing/printtyp.cmo : utils/warnings.cmi typing/types.cmi \
-    typing/primitive.cmi typing/predef.cmi parsing/pprintast.cmi \
-    typing/path.cmi parsing/parsetree.cmi typing/outcometree.cmi \
-    typing/oprint.cmi utils/misc.cmi parsing/longident.cmi \
-    parsing/location.cmi typing/ident.cmi typing/env.cmi typing/ctype.cmi \
-    utils/clflags.cmi parsing/builtin_attributes.cmi typing/btype.cmi \
-    parsing/asttypes.cmi typing/printtyp.cmi
+    typing/primitive.cmi typing/predef.cmi typing/path.cmi \
+    parsing/parsetree.cmi typing/outcometree.cmi typing/oprint.cmi \
+    utils/misc.cmi parsing/longident.cmi parsing/location.cmi \
+    typing/ident.cmi typing/env.cmi typing/ctype.cmi utils/clflags.cmi \
+    parsing/builtin_attributes.cmi typing/btype.cmi parsing/asttypes.cmi \
+    typing/printtyp.cmi
 typing/printtyp.cmx : utils/warnings.cmx typing/types.cmx \
-    typing/primitive.cmx typing/predef.cmx parsing/pprintast.cmx \
-    typing/path.cmx parsing/parsetree.cmi typing/outcometree.cmi \
-    typing/oprint.cmx utils/misc.cmx parsing/longident.cmx \
-    parsing/location.cmx typing/ident.cmx typing/env.cmx typing/ctype.cmx \
-    utils/clflags.cmx parsing/builtin_attributes.cmx typing/btype.cmx \
-    parsing/asttypes.cmi typing/printtyp.cmi
+    typing/primitive.cmx typing/predef.cmx typing/path.cmx \
+    parsing/parsetree.cmi typing/outcometree.cmi typing/oprint.cmx \
+    utils/misc.cmx parsing/longident.cmx parsing/location.cmx \
+    typing/ident.cmx typing/env.cmx typing/ctype.cmx utils/clflags.cmx \
+    parsing/builtin_attributes.cmx typing/btype.cmx parsing/asttypes.cmi \
+    typing/printtyp.cmi
 typing/printtyp.cmi : typing/types.cmi typing/path.cmi \
     typing/outcometree.cmi parsing/longident.cmi parsing/location.cmi \
     typing/ident.cmi typing/env.cmi typing/ctype.cmi parsing/asttypes.cmi

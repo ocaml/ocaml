@@ -20,6 +20,10 @@ Working version
   (Jeremy Yallop, review by Gabriel Scherer, Florian Angeletti, and
    Damien Doligez)
 
+- GPR#2110: Allow GADT constructors to introduce equations and existential types
+  under or-patterns.
+  (Thomas Refis and Leo White, review by Jacques Garrigue)
+
 - GPR#2122: Introduce local substitutions in signatures: "type t := type_expr"
   and "module M := Extended(Module).Path"
   (Thomas Refis, with help and review from Leo White, and Alain Frisch)
@@ -151,6 +155,10 @@ Working version
 - GPR#1864: Extend Bytes and Buffer with functions to read/write
   binary representations of numbers
   (Alain Frisch and Daniel Bünzli)
+
+- GPR#1458: Add unsigned operations unsigned_div, unsigned_rem, unsigned_compare
+  and unsigned_to_int to modules Int32, Int64, Nativeint.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Alain Frisch and Max Mouratov)
 
 ### Other libraries:
 

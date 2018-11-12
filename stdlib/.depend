@@ -15,9 +15,6 @@ stdlib__bigarray.cmi : stdlib__complex.cmi
 stdlib__bool.cmo : stdlib.cmi stdlib__bool.cmi
 stdlib__bool.cmx : stdlib.cmx stdlib__bool.cmi
 stdlib__bool.cmi :
-stdlib__unit.cmo : stdlib.cmi stdlib__unit.cmi
-stdlib__unit.cmx : stdlib.cmx stdlib__unit.cmi
-stdlib__unit.cmi :
 stdlib__buffer.cmo : stdlib__uchar.cmi stdlib__sys.cmi stdlib__string.cmi stdlib__seq.cmi stdlib__char.cmi stdlib__bytes.cmi \
     stdlib__buffer.cmi
 stdlib__buffer.cmx : stdlib__uchar.cmx stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdlib__char.cmx stdlib__bytes.cmx \
@@ -99,8 +96,8 @@ stdlib__hashtbl.cmi : stdlib__seq.cmi
 stdlib__int.cmo : stdlib.cmi stdlib__int.cmi
 stdlib__int.cmx : stdlib.cmx stdlib__int.cmi
 stdlib__int.cmi :
-stdlib__int32.cmo : stdlib.cmi stdlib__int32.cmi
-stdlib__int32.cmx : stdlib.cmx stdlib__int32.cmi
+stdlib__int32.cmo : stdlib__sys.cmi stdlib.cmi stdlib__int32.cmi
+stdlib__int32.cmx : stdlib__sys.cmx stdlib.cmx stdlib__int32.cmi
 stdlib__int32.cmi :
 stdlib__int64.cmo : stdlib.cmi stdlib__int64.cmi
 stdlib__int64.cmx : stdlib.cmx stdlib__int64.cmi
@@ -206,6 +203,9 @@ stdlib__sys.cmi :
 stdlib__uchar.cmo : stdlib.cmi stdlib__char.cmi stdlib__uchar.cmi
 stdlib__uchar.cmx : stdlib.cmx stdlib__char.cmx stdlib__uchar.cmi
 stdlib__uchar.cmi :
+stdlib__unit.cmo : stdlib__unit.cmi
+stdlib__unit.cmx : stdlib__unit.cmi
+stdlib__unit.cmi :
 stdlib__weak.cmo : stdlib__sys.cmi stdlib__obj.cmi stdlib__hashtbl.cmi stdlib__array.cmi stdlib__weak.cmi
 stdlib__weak.cmx : stdlib__sys.cmx stdlib__obj.cmx stdlib__hashtbl.cmx stdlib__array.cmx stdlib__weak.cmi
 stdlib__weak.cmi : stdlib__hashtbl.cmi
@@ -284,8 +284,8 @@ stdlib__hashtbl.p.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__seq.cmx stdli
     stdlib__array.cmx stdlib__hashtbl.cmi
 stdlib__int.cmo : stdlib.cmi stdlib__int.cmi
 stdlib__int.p.cmx : stdlib.cmx stdlib__int.cmi
-stdlib__int32.cmo : stdlib.cmi stdlib__int32.cmi
-stdlib__int32.p.cmx : stdlib.cmx stdlib__int32.cmi
+stdlib__int32.cmo : stdlib__sys.cmi stdlib.cmi stdlib__int32.cmi
+stdlib__int32.p.cmx : stdlib__sys.cmx stdlib.cmx stdlib__int32.cmi
 stdlib__int64.cmo : stdlib.cmi stdlib__int64.cmi
 stdlib__int64.p.cmx : stdlib.cmx stdlib__int64.cmi
 stdlib__lazy.cmo : stdlib__obj.cmi camlinternalLazy.cmi stdlib__lazy.cmi
@@ -360,6 +360,8 @@ stdlib__sys.cmo : stdlib__sys.cmi
 stdlib__sys.p.cmx : stdlib__sys.cmi
 stdlib__uchar.cmo : stdlib.cmi stdlib__char.cmi stdlib__uchar.cmi
 stdlib__uchar.p.cmx : stdlib.cmx stdlib__char.cmx stdlib__uchar.cmi
+stdlib__unit.cmo : stdlib__unit.cmi
+stdlib__unit.p.cmx : stdlib__unit.cmi
 stdlib__weak.cmo : stdlib__sys.cmi stdlib__obj.cmi stdlib__hashtbl.cmi stdlib__array.cmi stdlib__weak.cmi
 stdlib__weak.p.cmx : stdlib__sys.cmx stdlib__obj.cmx stdlib__hashtbl.cmx stdlib__array.cmx stdlib__weak.cmi
 stdlib.cmo : camlinternalFormatBasics.cmi stdlib.cmi
