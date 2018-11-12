@@ -294,10 +294,10 @@ Working version
 
 ### Runtime system:
 
-- MPR#7750, GPR#1738: add a function (caml_custom_alloc_mem) and three
-  GC parameters to give the user better control of the out-of-heap
-  memory retained by custom values; use the function to allocate
-  bigarrays and I/O channels.
+- MPR#7198, MPR#7750, GPR#1738: add a function (caml_custom_alloc_mem)
+  and three GC parameters to give the user better control of the
+  out-of-heap memory retained by custom values; use the function to
+  allocate bigarrays and I/O channels.
   (Damien Doligez, review by Alain Frisch)
 
 - GPR#1793: add the -m and -M command-line options to ocamlrun.
