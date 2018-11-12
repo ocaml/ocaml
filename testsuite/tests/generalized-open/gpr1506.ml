@@ -12,7 +12,7 @@ module M = struct
     type t = B of t * t' | C
 end
 [%%expect{|
-module M : sig type t = B of t * t | C end
+module M : sig type t = B of t/1 * t/2 | C end
 |}]
 
 (* test *)
@@ -45,6 +45,8 @@ end
 val run : unit -> 'a = <fun>
 |}];;
 
+(* It was decided to not allow this anymore. *)
+(*
 module type S = sig
   open struct
     open struct
@@ -64,15 +66,16 @@ end
 [%%expect{|
 module M : S
 |}];;
+*)
 
 module M = struct
   module M (F: sig end) (X: sig end) = struct end
   open M(struct end)
 end
 [%%expect{|
-Line _, characters 7-20:
-    open M(struct end)
-         ^^^^^^^^^^^^^
+Line 3, characters 7-20:
+3 |   open M(struct end)
+           ^^^^^^^^^^^^^
 Error: This module is not a structure; it has type
        functor (X : sig  end) -> sig  end
 |}]
@@ -94,10 +97,12 @@ let () =
 
 include struct open struct type t = T end let x = T end
 [%%expect{|
-Line _, characters 15-41:
-  include struct open struct type t = T end let x = T end
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The module identifier M#8 cannot be eliminated from val x : M#8.t
+Line 1, characters 15-41:
+1 | include struct open struct type t = T end let x = T end
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The type t/66 introduced by this open appears in the signature
+       Line 1, characters 46-47:
+         The value x has no valid type if t/66 is hidden
 |}];;
 
 module A = struct
@@ -110,7 +115,14 @@ module A = struct
   end
 end
 [%%expect{|
-module A : sig  end
+Line 3, characters 4-56:
+3 | ....open struct
+4 |       type t = T
+5 |       let x = T
+6 |     end
+Error: The type t/72 introduced by this open appears in the signature
+       Line 7, characters 8-9:
+         The value y has no valid type if t/72 is hidden
 |}];;
 
 module A = struct
@@ -123,17 +135,17 @@ module A = struct
   let g = y
 end
 [%%expect{|
-Line _, characters 2-74:
-  ..open struct
-      open struct
-        type t = T
-      end
-      let y = T
-    end
-Error: The module identifier M#11 cannot be eliminated from val g :
-                                                              M#11.M#12.t
+Line 3, characters 4-40:
+3 | ....open struct
+4 |       type t = T
+5 |     end
+Error: The type t/78 introduced by this open appears in the signature
+       Line 6, characters 8-9:
+         The value y has no valid type if t/78 is hidden
 |}]
 
+(* It was decided to not allow this anymore. *)
+(*
 module type S = sig open struct type t = T end val x : t end
 [%%expect{|
 Line _, characters 20-46:
@@ -141,8 +153,11 @@ Line _, characters 20-46:
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The module identifier M#13 cannot be eliminated from val x : M#13.t
 |}];;
+*)
 
 
+(* It was decided to not allow this anymore. *)
+(*
 module type S = sig
   open struct
     type t = int
@@ -156,20 +171,31 @@ end
 [%%expect{|
 module type S = sig val y : int end
 |}]
+*)
 
+(* It was decided to not allow this anymore. *)
+(*
 module type S = sig open struct assert false end end;;
 [%%expect{|
 module type S = sig  end
 |}];;
+*)
 
+(* It was decided to not allow this anymore. *)
+(*
 module type S = sig open struct type t = int end val x : t end;;
 [%%expect{|
 module type S = sig val x : int end
 |}];;
+*)
 
 module type S = sig
+  (* It was decided to not allow this anymore. *)
+  (*
   open struct type t = int end
   type s = t
+  *)
+  type s = int
 end
 [%%expect{|
 module type S = sig type s = int end
@@ -248,9 +274,24 @@ end
 [%%expect{|
 |}]
 
+(* It was decided to not allow parts of this example anymore, see below for a
+   slightly simpler version. *)
+(*
 module N = struct
   open (functor
     (N: sig open struct type t = int end val x : t end) ->
+    (struct let y = N.x end))(struct let x = 1 end)
+
+  let () =
+    assert(y = 1)
+end
+[%%expect{|
+module N : sig  end
+|}]
+*)
+module N = struct
+  open (functor
+    (N: sig val x : int end) ->
     (struct let y = N.x end))(struct let x = 1 end)
 
   let () =
@@ -263,7 +304,11 @@ module N : sig  end
 module M = struct
   open struct
     open struct
-      module type S = sig open struct type t = int end val x : t end
+      module type S = sig
+        (* It was decided to not allow this anymore *)
+        (* open struct type t = int end val x : t *)
+        val x : int
+      end
       module M : S = struct let x = 1 end
     end
   end
@@ -272,6 +317,8 @@ end
 module M : sig  end
 |}]
 
+(* It was decided to not allow this anymore *)
+(*
 module N = struct
   open struct
     module type S = sig open struct type t = T end val x : t end
@@ -283,6 +330,7 @@ Line _, characters 24-50:
                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The module identifier M#32 cannot be eliminated from val x : M#32.t
 |}]
+*)
 
 let x = let open struct open struct let y = 1 end let x = y + 1 end in x
 [%%expect{|
@@ -301,12 +349,11 @@ val y : int = 2
 let x = let open struct type t = T end in T
 
 [%%expect{|
-Line _, characters 42-43:
-  let x = let open struct type t = T end in T
-                                            ^
-Error: This expression has type M#36.t but an expression was expected of type
-         'a
-       The type constructor M#36.t would escape its scope
+Line 1, characters 42-43:
+1 | let x = let open struct type t = T end in T
+                                              ^
+Error: This expression has type t but an expression was expected of type 'a
+       The type constructor t would escape its scope
 |}]
 
 module type Print = sig
@@ -334,9 +381,9 @@ val print_list_of_int : Print_int.t list -> unit = <fun>
 let f () = let open functor(X: sig end) -> struct end in ();;
 
 [%%expect{|
-Line _, characters 20-53:
-  let f () = let open functor(X: sig end) -> struct end in ();;
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 1, characters 20-53:
+1 | let f () = let open functor(X: sig end) -> struct end in ();;
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This module is not a structure; it has type
        functor (X : sig  end) -> sig  end
 |}]
