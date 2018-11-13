@@ -213,143 +213,112 @@ let simplify_exits lam =
 
   let subst = Hashtbl.create 17 in
 
-  let rec simplif_with_loc loc lam =
-    match lam with
-    | (Lvar _|Lconst _) as l -> loc, l
-    | Lapply ap ->
-        loc, Lapply{ap with ap_func = simplif ap.ap_func;
-                       ap_args = List.map simplif ap.ap_args}
-    | Lfunction{kind; params; body = l; attr; loc} ->
-        loc, Lfunction{kind; params; body = simplif l; attr; loc}
-    | Llet(str, kind, v, l1, l2) ->
-        loc, Llet(str, kind, v, simplif l1, simplif l2)
-    | Lletrec(bindings, body) ->
-        loc, Lletrec (
-          List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
-    | Lprim(p, ll, loc) -> begin
-      let ll = List.map simplif ll in
-      match p, ll with
-          (* Simplify %revapply, for n-ary functions with n > 1 *)
-        | Prevapply, [x; Lapply ap]
-        | Prevapply, [x; Levent (Lapply ap,_)] ->
-          loc, Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-        | Prevapply, [x; f] -> loc, Lapply {ap_should_be_tailcall=false;
-                                            ap_loc=loc;
-                                            ap_func=f;
-                                            ap_args=[x];
-                                            ap_inlined=Default_inline;
-                                            ap_specialised=Default_specialise}
+  let rec simplif = function
+  | (Lvar _|Lconst _) as l -> l
+  | Lapply ap ->
+      Lapply{ap with ap_func = simplif ap.ap_func;
+                     ap_args = List.map simplif ap.ap_args}
+  | Lfunction{kind; params; body = l; attr; loc} ->
+     Lfunction{kind; params; body = simplif l; attr; loc}
+  | Llet(str, kind, v, l1, l2) -> Llet(str, kind, v, simplif l1, simplif l2)
+  | Lletrec(bindings, body) ->
+      Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
+  | Lprim(p, ll, loc) -> begin
+    let ll = List.map simplif ll in
+    match p, ll with
+        (* Simplify %revapply, for n-ary functions with n > 1 *)
+      | Prevapply, [x; Lapply ap]
+      | Prevapply, [x; Levent (Lapply ap,_)] ->
+        Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
+      | Prevapply, [x; f] -> Lapply {ap_should_be_tailcall=false;
+                                     ap_loc=loc;
+                                     ap_func=f;
+                                     ap_args=[x];
+                                     ap_inlined=Default_inline;
+                                     ap_specialised=Default_specialise}
 
-          (* Simplify %apply, for n-ary functions with n > 1 *)
-        | Pdirapply, [Lapply ap; x]
-        | Pdirapply, [Levent (Lapply ap,_); x] ->
-          loc, Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
-        | Pdirapply, [f; x] -> loc, Lapply {ap_should_be_tailcall=false;
-                                            ap_loc=loc;
-                                            ap_func=f;
-                                            ap_args=[x];
-                                            ap_inlined=Default_inline;
-                                            ap_specialised=Default_specialise}
+        (* Simplify %apply, for n-ary functions with n > 1 *)
+      | Pdirapply, [Lapply ap; x]
+      | Pdirapply, [Levent (Lapply ap,_); x] ->
+        Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
+      | Pdirapply, [f; x] -> Lapply {ap_should_be_tailcall=false;
+                                     ap_loc=loc;
+                                     ap_func=f;
+                                     ap_args=[x];
+                                     ap_inlined=Default_inline;
+                                     ap_specialised=Default_specialise}
 
-        | _ -> loc, Lprim(p, ll, loc)
-       end
-    | Lswitch(l, sw, cond_loc) ->
-        let cond_loc, new_l = simplif_with_loc cond_loc l
-        and new_consts = List.map simplif_switch_arm sw.sw_consts
-        and new_blocks = List.map simplif_switch_arm sw.sw_blocks
-        and new_fail = Misc.may_map simplif_switch_default sw.sw_failaction
-        in
-        cond_loc, Lswitch
-          (new_l,
-           {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
-                    sw_failaction = new_fail},
-           cond_loc)
-    | Lstringswitch(l,sw,d,cond_loc) ->
-        let cond_loc, l = simplif_with_loc cond_loc l in
-        cond_loc, Lstringswitch
-          (l,
-           List.map simplif_string_switch_arm sw,
-           Misc.may_map simplif_switch_default d,
-           cond_loc)
-    | Lstaticraise (i,[]) as l ->
-        begin try
-          let _, loc, handler = Hashtbl.find subst i in
-          loc, handler
-        with
-        | Not_found -> loc, l
-        end
-    | Lstaticraise (i,ls) ->
-        let ls = List.map simplif ls in
-        begin try
-          let xs, loc, handler = Hashtbl.find subst i in
-          let ys = List.map Ident.rename xs in
-          let env = List.fold_right2 Ident.Map.add xs ys Ident.Map.empty in
-          let lam =
-            List.fold_right2
-              (fun y l r -> Llet (Alias, Pgenval, y, l, r))
-              ys ls (Lambda.rename env handler)
-          in
-          loc, lam
-        with
-        | Not_found -> loc, Lstaticraise (i,ls)
-        end
-    | Lstaticcatch (l1,(i,[]),(Lstaticraise (_j,[]) as l2),handler_loc) ->
-        let handler_loc, l2 = simplif_with_loc handler_loc l2 in
-        Hashtbl.add subst i ([], handler_loc, l2) ;
-        simplif_with_loc loc l1
-    | Lstaticcatch (l1,(i,xs),l2,handler_loc) ->
-        let {count; max_depth} = get_exit i in
-        if count = 0 then
-          (* Discard staticcatch: not matching exit *)
-          simplif_with_loc loc l1
-        else if count = 1 && max_depth <= !try_depth then begin
-          (* Inline handler if there is a single occurrence and it is not
-             nested within an inner try..with *)
-          assert(max_depth = !try_depth);
-          let handler_loc, l2 = simplif_with_loc handler_loc l2 in
-          Hashtbl.add subst i (xs, handler_loc, l2);
-          simplif_with_loc loc l1
-        end else
-          let handler_loc, l2 = simplif_with_loc handler_loc l2 in
-          let loc, l1 = simplif_with_loc loc l1 in
-          loc, Lstaticcatch (l1, (i,xs), l2, handler_loc)
-    | Ltrywith(l1, v, l2, handler_loc) ->
-        incr try_depth;
-        let body_loc, l1 = simplif_with_loc loc l1 in
-        decr try_depth;
-        let handler_loc, l2 = simplif_with_loc handler_loc l2 in
-        body_loc, Ltrywith(l1, v, l2, handler_loc)
-    | Lifthenelse(l1, ifso_loc, l2, ifnot_loc, l3, cond_loc) ->
-        let cond_loc, l1 = simplif_with_loc cond_loc l1 in
-        let ifso_loc, l2 = simplif_with_loc ifso_loc l2 in
-        let ifnot_loc, l3 = simplif_with_loc ifnot_loc l3 in
-        cond_loc, Lifthenelse(l1, ifso_loc, l2, ifnot_loc, l3, cond_loc)
-    | Lsequence(l1, l2) ->
-        let loc, l1 = simplif_with_loc loc l1 in
-        loc, Lsequence(l1, simplif l2)
-    | Lwhile(l1, l2, loc) ->
-        let loc, l1 = simplif_with_loc loc l1 in
-        loc, Lwhile(l1, simplif l2, loc)
-    | Lfor(v, l1, l2, dir, l3, loc) ->
-        let loc, l1 = simplif_with_loc loc l1 in
-        loc, Lfor(v, l1, simplif l2, dir, simplif l3, loc)
-    | Lassign(v, l) -> loc, Lassign(v, simplif l)
-    | Lsend(k, m, o, ll, loc) ->
-        loc, Lsend(k, simplif m, simplif o, List.map simplif ll, loc)
-    | Levent(l, ev) -> loc, Levent(simplif l, ev)
-    | Lifused(v, l) -> loc, Lifused (v,simplif l)
-  and simplif lam =
-    let _loc, lam = simplif_with_loc Location.none lam in
-    lam
-  and simplif_switch_arm (i, l, loc) =
-    let loc, l = simplif_with_loc loc l in
-    i, l, loc
-  and simplif_string_switch_arm (s, l, loc) =
-    let loc, l = simplif_with_loc loc l in
-    s, l, loc
-  and simplif_switch_default (lam, loc) =
-    let loc, lam = simplif_with_loc loc lam in
-    lam, loc
+      | _ -> Lprim(p, ll, loc)
+     end
+  | Lswitch(l, sw, loc) ->
+      let new_l = simplif l
+      and new_consts = 
+        List.map (fun (n, e, loc) -> (n, simplif e, loc)) sw.sw_consts
+      and new_blocks =
+        List.map (fun (n, e, loc) -> (n, simplif e, loc)) sw.sw_blocks
+      and new_fail =
+        Misc.may_map (fun (lam, loc) -> simplif lam, loc) sw.sw_failaction
+      in
+      Lswitch
+        (new_l,
+         {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
+                  sw_failaction = new_fail},
+         loc)
+  | Lstringswitch(l,sw,d,loc) ->
+      Lstringswitch
+        (simplif l,List.map (fun (s,l,loc) -> s,simplif l,loc) sw,
+         Misc.may_map (fun (lam, loc) -> simplif lam, loc) d,loc)
+  | Lstaticraise (i,[]) as l ->
+      begin try
+        let _,handler =  Hashtbl.find subst i in
+        handler
+      with
+      | Not_found -> l
+      end
+  | Lstaticraise (i,ls) ->
+      let ls = List.map simplif ls in
+      begin try
+        let xs,handler =  Hashtbl.find subst i in
+        let ys = List.map Ident.rename xs in
+        let env = List.fold_right2 Ident.Map.add xs ys Ident.Map.empty in
+        List.fold_right2
+          (fun y l r -> Llet (Alias, Pgenval, y, l, r))
+          ys ls (Lambda.rename env handler)
+      with
+      | Not_found -> Lstaticraise (i,ls)
+      end
+  | Lstaticcatch (l1,(i,[]),(Lstaticraise (_j,[]) as l2),_) ->
+      Hashtbl.add subst i ([],simplif l2) ;
+      simplif l1
+  | Lstaticcatch (l1,(i,xs),l2,loc) ->
+      let {count; max_depth} = get_exit i in
+      if count = 0 then
+        (* Discard staticcatch: not matching exit *)
+        simplif l1
+      else if count = 1 && max_depth <= !try_depth then begin
+        (* Inline handler if there is a single occurrence and it is not
+           nested within an inner try..with *)
+        assert(max_depth = !try_depth);
+        Hashtbl.add subst i (xs,simplif l2);
+        simplif l1
+      end else
+        Lstaticcatch (simplif l1, (i,xs), simplif l2, loc)
+  | Ltrywith(l1, v, l2, loc) ->
+      incr try_depth;
+      let l1 = simplif l1 in
+      decr try_depth;
+      Ltrywith(l1, v, simplif l2, loc)
+  | Lifthenelse(l1, ifso_loc, l2, ifnot_loc, l3, loc) ->
+      Lifthenelse(simplif l1, ifso_loc, simplif l2, ifnot_loc, simplif l3, loc)
+  | Lsequence(l1, l2) -> Lsequence(simplif l1, simplif l2)
+  | Lwhile(l1, l2, loc) -> Lwhile(simplif l1, simplif l2, loc)
+  | Lfor(v, l1, l2, dir, l3, loc) ->
+      Lfor(v, simplif l1, simplif l2, dir, simplif l3, loc)
+  | Lassign(v, l) -> Lassign(v, simplif l)
+  | Lsend(k, m, o, ll, loc) ->
+      Lsend(k, simplif m, simplif o, List.map simplif ll, loc)
+  | Levent(l, ev) -> Levent(simplif l, ev)
+  | Lifused(v, l) -> Lifused (v,simplif l)
   in
   simplif lam
 
