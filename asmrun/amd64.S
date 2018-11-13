@@ -79,23 +79,6 @@
 #define CFI_SAME_VALUE(r)
 #endif
 
-#ifdef WITH_FRAME_POINTERS
-
-#define ENTER_FUNCTION \
-        pushq   %rbp; CFI_ADJUST(8); \
-        movq    %rsp, %rbp
-#define LEAVE_FUNCTION \
-        popq    %rbp; CFI_ADJUST(-8);
-
-#else
-
-#define ENTER_FUNCTION \
-        subq    $8, %rsp; CFI_ADJUST (8);
-#define LEAVE_FUNCTION \
-        addq    $8, %rsp; CFI_ADJUST (-8);
-
-#endif
-
 #ifdef DEBUG
 #define CHECK_STACK_ALIGNMENT \
         test $0xf, %rsp; jz 9f; int3; 9:
