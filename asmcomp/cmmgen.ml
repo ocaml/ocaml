@@ -1376,6 +1376,14 @@ let check_bound unsafe dbg a1 a2 k =
 let default_prim name =
   Primitive.simple ~name ~arity:0(*ignored*) ~alloc:true
 
+let int64_native_prim name arity ~alloc =
+  let u64 = Unboxed_integer Pint64 in
+  let rec make_args = function 0 -> [] | n -> u64 :: make_args (n - 1) in
+  Primitive.make ~name ~native_name:(name ^ "_native")
+    ~alloc
+    ~native_repr_args:(make_args arity)
+    ~native_repr_res:u64
+
 let simplif_primitive_32bits = function
     Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
   | Pintofbint Pint64 -> Pccall (default_prim "caml_int64_to_int")
@@ -1385,15 +1393,24 @@ let simplif_primitive_32bits = function
       Pccall (default_prim "caml_int64_of_nativeint")
   | Pcvtbint(Pint64, Pnativeint) ->
       Pccall (default_prim "caml_int64_to_nativeint")
-  | Pnegbint Pint64 -> Pccall (default_prim "caml_int64_neg")
-  | Paddbint Pint64 -> Pccall (default_prim "caml_int64_add")
-  | Psubbint Pint64 -> Pccall (default_prim "caml_int64_sub")
-  | Pmulbint Pint64 -> Pccall (default_prim "caml_int64_mul")
-  | Pdivbint {size=Pint64} -> Pccall (default_prim "caml_int64_div")
-  | Pmodbint {size=Pint64} -> Pccall (default_prim "caml_int64_mod")
-  | Pandbint Pint64 -> Pccall (default_prim "caml_int64_and")
-  | Porbint Pint64 ->  Pccall (default_prim "caml_int64_or")
-  | Pxorbint Pint64 -> Pccall (default_prim "caml_int64_xor")
+  | Pnegbint Pint64 -> Pccall (int64_native_prim "caml_int64_neg" 1
+                                 ~alloc:false)
+  | Paddbint Pint64 -> Pccall (int64_native_prim "caml_int64_add" 2
+                                 ~alloc:false)
+  | Psubbint Pint64 -> Pccall (int64_native_prim "caml_int64_sub" 2
+                                 ~alloc:false)
+  | Pmulbint Pint64 -> Pccall (int64_native_prim "caml_int64_mul" 2
+                                 ~alloc:false)
+  | Pdivbint {size=Pint64} -> Pccall (int64_native_prim "caml_int64_div" 2
+                                        ~alloc:true)
+  | Pmodbint {size=Pint64} -> Pccall (int64_native_prim "caml_int64_mod" 2
+                                        ~alloc:true)
+  | Pandbint Pint64 -> Pccall (int64_native_prim "caml_int64_and" 2
+                                 ~alloc:false)
+  | Porbint Pint64 ->  Pccall (int64_native_prim "caml_int64_or" 2
+                                 ~alloc:false)
+  | Pxorbint Pint64 -> Pccall (int64_native_prim "caml_int64_xor" 2
+                                 ~alloc:false)
   | Plslbint Pint64 -> Pccall (default_prim "caml_int64_shift_left")
   | Plsrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right_unsigned")
   | Pasrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right")
