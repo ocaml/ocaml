@@ -116,9 +116,11 @@ module Vars = struct
       | Some debug_info ->
         let var = RD.Debug_info.holds_value_of debug_info in
         let provenance = RD.Debug_info.provenance debug_info in
+(*
         Format.eprintf "Reg being created with var %a, provenance %a\n%!"
           Backend_var.print var
           (Misc.Stdlib.Option.print Backend_var.Provenance.print) provenance;
+*)
         let is_parameter : Is_parameter.t =
           match RD.Debug_info.which_parameter debug_info with
           | None -> Local

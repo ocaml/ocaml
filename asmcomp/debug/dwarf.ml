@@ -646,18 +646,23 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
       | Some provenance ->
         let dbg = Backend_var.Provenance.debuginfo provenance in
         let block = Debuginfo.innermost_block dbg in
+(*
         Format.eprintf "Variable %a (dbg %a) defined in block %a\n%!"
           Backend_var.print var
           Debuginfo.print dbg
           Debuginfo.Current_block.print block;
+*)
         match Debuginfo.Current_block.to_block block with
         | Toplevel -> whole_function_lexical_block
         | Block block ->
           let module B = Debuginfo.Block in
           match B.Map.find block lexical_block_proto_dies with
           | exception Not_found ->
+            whole_function_lexical_block
+(* XXX Find out what's going on here
             Misc.fatal_errorf "Cannot find lexical block DIE for %a"
               B.print block
+*)
           | proto_die -> proto_die
   in
   (* Build a location list that identifies where the value of [ident] may be
