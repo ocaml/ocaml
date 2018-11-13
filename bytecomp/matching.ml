@@ -650,13 +650,13 @@ let simplify_cases (args : args) cls : pats_act_list = match args with
 (* Once matchings are simplified one can easily find
    their nature *)
 
-let rec what_is_cases (cases : pats_act_list) = match cases with
-| ({pat_desc=Tpat_any} :: _, _act, _act_loc) :: rem -> what_is_cases rem
+let rec what_is_cases loc (cases : pats_act_list) = match cases with
+| ({pat_desc=Tpat_any} :: _, _act, _act_loc) :: rem -> what_is_cases loc rem
 | (({pat_desc=(Tpat_var _|Tpat_or (_,_,_)|Tpat_alias (_,_,_))}::_),
     _act, _act_loc_)::_
   -> assert false (* applies to simplified matchings only *)
 | (p::_, _act, _act_loc)::_ -> p
-| [] -> omega Location.none
+| [] -> omega loc
 | _ -> assert false
 
 
@@ -1027,8 +1027,8 @@ and split_naive loc cls args def k =
         split_noexc [cl] rem
   | _ -> assert false
 
-and split_constr (cls : pats_act_list) args def k =
-  let ex_pat = what_is_cases cls in
+and split_constr loc (cls : pats_act_list) args def k =
+  let ex_pat = what_is_cases loc cls in
   let loc = ex_pat.pat_loc in
   match ex_pat.pat_desc with
   | Tpat_any -> precompile_var loc args cls def k
@@ -1140,7 +1140,7 @@ and dont_precompile_var args cls def k =
     top_default=def},k
 
 and precompile_or loc argo cls ors args def k = match ors with
-| [] -> split_constr cls args def k
+| [] -> split_constr loc cls args def k
 | _  ->
     let rec do_cases (pats_act_list : pats_act_list) : pats_act_list * _ =
       match pats_act_list with
@@ -3055,7 +3055,7 @@ let rec compile_match loc repr partial ctx m = match m with
         { m with args = (newarg, Alias, loc) :: argl } in
     let ((action_loc, action), total) =
       comp_match_handlers loc
-        ((if dbg then do_compile_matching_pr else do_compile_matching) repr)
+        ((if dbg then do_compile_matching_pr else do_compile_matching) loc repr)
         partial ctx newarg first_match rem in
     let action = bind_check str v arg action in
     (action_loc, action), total
@@ -3064,22 +3064,22 @@ let rec compile_match loc repr partial ctx m = match m with
 
 (* verbose version of do_compile_matching, for debug *)
 
-and do_compile_matching_pr repr partial ctx arg x =
+and do_compile_matching_pr loc repr partial ctx arg x =
   Format.eprintf "COMPILE: %s\nMATCH\n"
     (match partial with Partial -> "Partial" | Total -> "Total") ;
   pretty_precompiled x ;
   Format.eprintf "CTX\n" ;
   pretty_ctx ctx ;
-  let (_, jumps) as r =  do_compile_matching repr partial ctx arg x in
+  let (_, jumps) as r =  do_compile_matching loc repr partial ctx arg x in
   Format.eprintf "JUMPS\n" ;
   pretty_jumps jumps ;
   r
 
-and do_compile_matching repr partial ctx arg pmh :
+and do_compile_matching loc repr partial ctx arg pmh :
       (Location.t * lambda) * jumps =
 match pmh with
 | Pm pm ->
-  let pat = what_is_cases pm.cases in
+  let pat = what_is_cases loc pm.cases in
   begin match pat.pat_desc with
   | Tpat_any ->
       compile_no_test pat.pat_loc
@@ -3124,7 +3124,7 @@ match pmh with
   end
 | PmVar {inside=pmh ; var_arg=arg} ->
     let loc_and_lam, total =
-      do_compile_matching repr partial (ctx_lshift ctx) arg pmh
+      do_compile_matching loc repr partial (ctx_lshift ctx) arg pmh
     in
     loc_and_lam, jumps_map ctx_rshift total
 | PmOr {body=body ; handlers=handlers; loc} ->
