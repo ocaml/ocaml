@@ -273,7 +273,7 @@ let simplify_exits lam =
            cond_loc)
     | Lstaticraise (i,[]) as l ->
         begin try
-          let _, loc, handler =  Hashtbl.find subst i in
+          let _, loc, handler = Hashtbl.find subst i in
           loc, handler
         with
         | Not_found -> loc, l
@@ -295,13 +295,13 @@ let simplify_exits lam =
         end
     | Lstaticcatch (l1,(i,[]),(Lstaticraise (_j,[]) as l2),handler_loc) ->
         let handler_loc, l2 = simplif_with_loc handler_loc l2 in
-        Hashtbl.add subst i ([], handler_loc, simplif l2) ;
+        Hashtbl.add subst i ([], handler_loc, l2) ;
         simplif_with_loc loc l1
     | Lstaticcatch (l1,(i,xs),l2,handler_loc) ->
         let {count; max_depth} = get_exit i in
         if count = 0 then
           (* Discard staticcatch: not matching exit *)
-          loc, simplif l1
+          simplif_with_loc loc l1
         else if count = 1 && max_depth <= !try_depth then begin
           (* Inline handler if there is a single occurrence and it is not
              nested within an inner try..with *)
@@ -332,7 +332,7 @@ let simplify_exits lam =
         loc, Lwhile(l1, simplif l2, loc)
     | Lfor(v, l1, l2, dir, l3, loc) ->
         let loc, l1 = simplif_with_loc loc l1 in
-        loc, Lfor(v, simplif l1, simplif l2, dir, simplif l3, loc)
+        loc, Lfor(v, l1, simplif l2, dir, simplif l3, loc)
     | Lassign(v, l) -> loc, Lassign(v, simplif l)
     | Lsend(k, m, o, ll, loc) ->
         loc, Lsend(k, simplif m, simplif o, List.map simplif ll, loc)
