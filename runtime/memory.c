@@ -618,12 +618,6 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
     caml_extra_heap_resources = 1.0;
     caml_request_major_slice ();
   }
-  if (caml_extra_heap_resources
-           > (double) caml_minor_heap_wsz / 2.0
-             / (double) caml_stat_heap_wsz) {
-    CAML_INSTR_INT ("request_major/adjust_gc_speed_2@", 1);
-    caml_request_major_slice ();
-  }
 }
 
 /* You must use [caml_initialize] to store the initial value in a field of
