@@ -59,13 +59,12 @@ let reset ~spacetime_node_ident:ident ~function_label =
   current_function_label := Some function_label;
   reverse_shape := []
 
-let code_for_function_prologue ~function_name ~node_hole =
+let code_for_function_prologue ~function_name ~fun_dbg:dbg ~node_hole =
   let node = V.create_local "node" in
   let new_node = V.create_local "new_node" in
   let must_allocate_node = V.create_local "must_allocate_node" in
   let is_new_node = V.create_local "is_new_node" in
   let no_tail_calls = List.length !direct_tail_call_point_indexes < 1 in
-  let dbg = Debuginfo.none in
   let open Cmm in
   let initialize_direct_tail_call_points_and_return_node =
     let new_node_encoded = V.create_local "new_node_encoded" in
@@ -205,7 +204,7 @@ type callee =
   | Direct of Backend_sym.t
   | Indirect of Cmm.expression
 
-let code_for_call ~node ~callee ~is_tail ~label =
+let code_for_call ~node ~callee ~is_tail ~label dbg =
   (* We treat self recursive calls as tail calls to avoid blow-ups in the
      graph. *)
   let is_self_recursive_call =
@@ -236,7 +235,6 @@ let code_for_call ~node ~callee ~is_tail ~label =
     | Direct _ | Indirect _ -> ()
   end;
   let place_within_node = V.create_local "place_within_node" in
-  let dbg = Debuginfo.none in
   let open Cmm in
   Clet (VP.create place_within_node,
     Cop (Caddi, [node; Cconst_int (index_within_node * Arch.size_addr)], dbg),
@@ -279,20 +277,21 @@ class virtual instruction_selection = object (self)
      instrumentation... *)
   val mutable disable_instrumentation = false
 
-  method private instrument_direct_call ~env ~func ~is_tail ~label_after =
+  method private instrument_direct_call ~env ~func ~is_tail ~label_after dbg =
     let instrumentation =
       code_for_call
         ~node:(Lazy.force !spacetime_node)
         ~callee:(Direct func)
         ~is_tail
         ~label:label_after
+        dbg
     in
     match self#emit_expr env instrumentation ~bound_name:None with
     | None -> assert false
     | Some reg -> Some reg
 
   method private instrument_indirect_call ~env ~callee ~is_tail
-      ~label_after =
+      ~label_after dbg =
     (* [callee] is a pseudoregister, so we have to bind it in the environment
        and reference the variable to which it is bound. *)
     let callee_ident = V.create_local "callee" in
@@ -303,6 +302,7 @@ class virtual instruction_selection = object (self)
         ~callee:(Indirect (Cmm.Cvar callee_ident))
         ~is_tail
         ~label:label_after
+        dbg
     in
     match self#emit_expr env instrumentation ~bound_name:None with
     | None -> assert false
@@ -311,29 +311,29 @@ class virtual instruction_selection = object (self)
   method private can_instrument () =
     Config.spacetime && not disable_instrumentation
 
-  method! about_to_emit_call env desc arg =
+  method! about_to_emit_call env desc arg dbg =
     if not (self#can_instrument ()) then None
     else
       let module M = Mach in
       match desc with
       | M.Iop (M.Icall_imm { func; label_after; }) ->
         assert (Array.length arg = 0);
-        self#instrument_direct_call ~env ~func ~is_tail:false ~label_after
+        self#instrument_direct_call ~env ~func ~is_tail:false ~label_after dbg
       | M.Iop (M.Icall_ind { label_after; }) ->
         assert (Array.length arg = 1);
-        self#instrument_indirect_call ~env ~callee:arg.(0)
+        self#instrument_indirect_call ~env ~callee:arg.(0) dbg
           ~is_tail:false ~label_after
       | M.Iop (M.Itailcall_imm { func; label_after; }) ->
         assert (Array.length arg = 0);
-        self#instrument_direct_call ~env ~func ~is_tail:true ~label_after
+        self#instrument_direct_call ~env ~func ~is_tail:true ~label_after dbg
       | M.Iop (M.Itailcall_ind { label_after; }) ->
         assert (Array.length arg = 1);
         self#instrument_indirect_call ~env ~callee:arg.(0)
-          ~is_tail:true ~label_after
+          ~is_tail:true ~label_after dbg
       | M.Iop (M.Iextcall { func; alloc = true; label_after; }) ->
         (* N.B. No need to instrument "noalloc" external calls. *)
         assert (Array.length arg = 0);
-        self#instrument_direct_call ~env ~func ~is_tail:false ~label_after
+        self#instrument_direct_call ~env ~func ~is_tail:false ~label_after dbg
       | _ -> None
 
   method private instrument_blockheader ~env ~value's_header ~dbg =
@@ -344,13 +344,14 @@ class virtual instruction_selection = object (self)
     in
     self#emit_expr env instrumentation ~bound_name:None
 
-  method private emit_prologue f ~node_hole ~env =
+  method private emit_prologue f ~node_hole ~env ~fun_dbg =
     (* We don't need the prologue unless we inserted some instrumentation.
        This corresponds to adding the prologue if the function contains one
        or more call or allocation points. *)
     if something_was_instrumented () then begin
       let prologue_cmm =
         code_for_function_prologue ~function_name:f.Cmm.fun_name ~node_hole
+          ~fun_dbg
       in
       disable_instrumentation <- true;
       let node_temp_reg =
@@ -449,10 +450,10 @@ class virtual instruction_selection = object (self)
     super#emit_fundecl f
 
   method! insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
-        ~spacetime_node_hole ~env =
+        ~spacetime_node_hole ~env ~fun_dbg =
     let fun_spacetime_shape =
       super#insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
-        ~spacetime_node_hole ~env
+        ~spacetime_node_hole ~env ~fun_dbg
     in
     (* CR-soon mshinwell: add check to make sure the node size doesn't exceed
        the chunk size of the allocator *)
@@ -464,7 +465,7 @@ class virtual instruction_selection = object (self)
         | Some (node_hole, reg) -> node_hole, reg
       in
       self#insert_moves env [| Proc.loc_spacetime_node_hole |] node_hole_reg;
-      self#emit_prologue f ~node_hole ~env;
+      self#emit_prologue f ~node_hole ~env ~fun_dbg;
       match !reverse_shape with
       | [] -> None
       (* N.B. We do not reverse the shape list, since the function that

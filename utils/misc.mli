@@ -340,6 +340,7 @@ module Color : sig
     warning: style list;
     loc: style list;
     debug_loc: style list;
+    debug_avail: style list;
   }
 
   val default_styles: styles

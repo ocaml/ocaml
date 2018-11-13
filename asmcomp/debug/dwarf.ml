@@ -646,17 +646,18 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
       | Some provenance ->
         let dbg = Backend_var.Provenance.debuginfo provenance in
         let block = Debuginfo.innermost_block dbg in
+        Format.eprintf "Variable %a (dbg %a) defined in block %a\n%!"
+          Backend_var.print var
+          Debuginfo.print dbg
+          Debuginfo.Current_block.print block;
         match Debuginfo.Current_block.to_block block with
         | Toplevel -> whole_function_lexical_block
         | Block block ->
           let module B = Debuginfo.Block in
           match B.Map.find block lexical_block_proto_dies with
           | exception Not_found ->
-(* XXX Think about whether there is a valid case that hits this.
             Misc.fatal_errorf "Cannot find lexical block DIE for %a"
               B.print block
-*)
-            whole_function_lexical_block
           | proto_die -> proto_die
   in
   (* Build a location list that identifies where the value of [ident] may be
@@ -866,7 +867,7 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
           var ~hidden ~ident_for_type ~range
       end)
 
-let create_lexical_block_proto_dies available_ranges ~function_proto_die
+let create_lexical_block_proto_dies lexical_block_ranges ~function_proto_die
       ~start_of_function ~end_of_function
       : Proto_die.t * (Proto_die.t Debuginfo.Block.Map.t) =
   let module B = Debuginfo.Block in
@@ -881,7 +882,7 @@ let create_lexical_block_proto_dies available_ranges ~function_proto_die
       ()
   in
   let ranges_by_block =
-    LB.fold available_ranges
+    LB.fold lexical_block_ranges
       ~init:B.Map.empty
       ~f:(fun ranges_by_block block range ->
         let rec create_up_to_root block ranges_by_block =
@@ -904,7 +905,7 @@ let create_lexical_block_proto_dies available_ranges ~function_proto_die
         create_up_to_root block ranges_by_block)
   in
   let lexical_block_proto_dies =
-    LB.fold available_ranges
+    LB.fold lexical_block_ranges
       ~init:B.Map.empty
       ~f:(fun lexical_block_proto_dies block _range ->
         let rec create_up_to_root block lexical_block_proto_dies =

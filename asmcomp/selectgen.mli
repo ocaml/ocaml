@@ -213,6 +213,7 @@ class virtual selector_generic : object
      : environment
     -> Mach.instruction_desc
     -> Reg.t array
+    -> Debuginfo.t
     -> Reg.t array option
   method initial_env : unit -> environment
   method insert_prologue
@@ -222,7 +223,9 @@ class virtual selector_generic : object
     -> num_regs_per_arg:int array
     -> spacetime_node_hole:(Backend_var.t * Reg.t array) option
     -> env:environment
+    -> fun_dbg:Debuginfo.t
     -> Mach.spacetime_shape option
+  method get_current_dbg : unit -> Debuginfo.t
 
   val mutable instr_seq : Mach.instruction
 

@@ -120,7 +120,7 @@ let instr_cons_same_avail d a r n =
 let cons_instr d n ~available_before ~phantom_available_before
       ~available_across =
   { desc = d; next = n; arg = [||]; res = [||];
-    dbg = Debuginfo.none; live = Reg.Set.empty;
+    dbg = n.dbg; live = Reg.Set.empty;
     available_before;
     phantom_available_before;
     available_across;

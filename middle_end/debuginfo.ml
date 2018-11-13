@@ -51,14 +51,17 @@ module Code_range = struct
     Printf.sprintf "%s:%d,%d-%d" t.file t.line t.char_start t.char_end
 
   let of_location (loc : Location.t) =
-    { file = loc.loc_start.pos_fname;
-      line = loc.loc_start.pos_lnum;
-      char_start = loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
-      char_end =
-        if String.equal loc.loc_end.pos_fname loc.loc_start.pos_fname
-        then loc.loc_end.pos_cnum - loc.loc_start.pos_bol
-        else loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
-    }
+    if Location.is_none loc then
+      none
+    else
+      { file = loc.loc_start.pos_fname;
+        line = loc.loc_start.pos_lnum;
+        char_start = loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
+        char_end =
+          if String.equal loc.loc_end.pos_fname loc.loc_start.pos_fname
+          then loc.loc_end.pos_cnum - loc.loc_start.pos_bol
+          else loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
+      }
 
   include Identifiable.Make (struct
     type nonrec t = t
@@ -292,10 +295,8 @@ let to_string_frames_only_innermost_last t =
     "{" ^ String.concat ";" ranges_innermost_last ^ "}"
 
 let of_location loc ~scope =
-  if loc == Location.none then Empty
-  else
-    let position = Code_range.of_location loc in
-    Non_empty { block = scope; position; }
+  let position = Code_range.of_location loc in
+  Non_empty { block = scope; position; }
 
 let to_location t =
   match t with

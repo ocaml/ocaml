@@ -156,7 +156,7 @@ let maybe_emit_naming_op env ~bound_name seq regs =
         is_assignment = false;
       }
     in
-    seq#insert_debug env (Iop naming_op) Debuginfo.none regs [| |]
+    seq#insert_debug env (Iop naming_op) (seq#get_current_dbg ()) regs [| |]
 
 (* "Join" two instruction sequences, making sure they return their results
    in the same registers.
@@ -666,6 +666,8 @@ method regs_for tys = Reg.createv tys
 val mutable instr_seq = dummy_instr
 val mutable current_dbg = Debuginfo.none
 
+method get_current_dbg () = current_dbg
+
 method insert_debug env desc dbg arg res =
   instr_seq <- instr_cons_debug desc arg res dbg
     ~phantom_available_before:env.phantom_vars instr_seq;
@@ -737,13 +739,13 @@ method insert_op_debug env op dbg rs rd =
   rd
 
 method insert_op env op rs rd =
-  self#insert_op_debug env op Debuginfo.none rs rd
+  self#insert_op_debug env op current_dbg rs rd
 
 method emit_blockheader env n _dbg =
   let r = self#regs_for typ_int in
   Some(self#insert_op env (Iconst_int n) [||] r)
 
-method about_to_emit_call _env _insn _arg = None
+method about_to_emit_call _env _insn _arg _dbg = None
 
 (* Prior to a function call, update the Spacetime node hole pointer hard
    register. *)
@@ -812,7 +814,7 @@ method emit_expr (env:environment) exp ~bound_name =
             is_assignment = true;
           }
         in
-        self#insert_debug env (Iop naming_op) Debuginfo.none r1 [| |];
+        self#insert_debug env (Iop naming_op) current_dbg r1 [| |];
         self#adjust_types r1 rv; self#insert_moves env r1 rv; Some [||]
       end
   | Ctuple [] ->
@@ -854,7 +856,7 @@ method emit_expr (env:environment) exp ~bound_name =
                   is_assignment = false;
                 }
               in
-              self#insert_debug env (Iop naming_op) Debuginfo.none regs [| |]
+              self#insert_debug env (Iop naming_op) current_dbg regs [| |]
           in
           let ty = oper_result_type op in
           let (new_op, new_args) = self#select_operation op simple_args dbg in
@@ -866,7 +868,7 @@ method emit_expr (env:environment) exp ~bound_name =
               let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
               let loc_res = Proc.loc_results rd in
               let spacetime_reg =
-                self#about_to_emit_call env (Iop new_op) [| r1.(0) |]
+                self#about_to_emit_call env (Iop new_op) [| r1.(0) |] dbg
               in
               self#insert_move_args env rarg loc_arg stack_ofs;
               self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -886,7 +888,7 @@ method emit_expr (env:environment) exp ~bound_name =
               let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
               let loc_res = Proc.loc_results rd in
               let spacetime_reg =
-                self#about_to_emit_call env (Iop new_op) [| |]
+                self#about_to_emit_call env (Iop new_op) [| |] dbg
               in
               self#insert_move_args env r1 loc_arg stack_ofs;
               self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -896,7 +898,7 @@ method emit_expr (env:environment) exp ~bound_name =
               Some rd
           | Iextcall _ ->
               let spacetime_reg =
-                self#about_to_emit_call env (Iop new_op) [| |]
+                self#about_to_emit_call env (Iop new_op) [| |] dbg
               in
               let (loc_arg, stack_ofs) = self#emit_extcall_args env new_args in
               self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -1103,7 +1105,7 @@ method private bind_let (env:environment) v r1 =
       is_assignment = false;
     }
   in
-  self#insert_debug env (Iop naming_op) Debuginfo.none r1 [| |];
+  self#insert_debug env (Iop naming_op) current_dbg r1 [| |];
   result
 
 (* The following two functions, [emit_parts] and [emit_parts_list], force
@@ -1280,7 +1282,7 @@ method emit_tail (env:environment) exp =
               if stack_ofs = 0 then begin
                 let call = Iop (Itailcall_ind { label_after; }) in
                 let spacetime_reg =
-                  self#about_to_emit_call env call [| r1.(0) |]
+                  self#about_to_emit_call env call [| r1.(0) |] dbg
                 in
                 self#insert_moves env rarg loc_arg;
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -1290,7 +1292,7 @@ method emit_tail (env:environment) exp =
                 let rd = self#regs_for ty in
                 let loc_res = Proc.loc_results rd in
                 let spacetime_reg =
-                  self#about_to_emit_call env (Iop new_op) [| r1.(0) |]
+                  self#about_to_emit_call env (Iop new_op) [| r1.(0) |] dbg
                 in
                 self#insert_move_args env rarg loc_arg stack_ofs;
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -1305,7 +1307,7 @@ method emit_tail (env:environment) exp =
               if stack_ofs = 0 then begin
                 let call = Iop (Itailcall_imm { func; label_after; }) in
                 let spacetime_reg =
-                  self#about_to_emit_call env call [| |]
+                  self#about_to_emit_call env call [| |] dbg
                 in
                 self#insert_moves env r1 loc_arg;
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -1314,7 +1316,7 @@ method emit_tail (env:environment) exp =
                 let call = Iop (Itailcall_imm { func; label_after; }) in
                 let loc_arg' = Proc.loc_parameters r1 in
                 let spacetime_reg =
-                  self#about_to_emit_call env call [| |]
+                  self#about_to_emit_call env call [| |] dbg
                 in
                 self#insert_moves env r1 loc_arg';
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -1323,7 +1325,7 @@ method emit_tail (env:environment) exp =
                 let rd = self#regs_for ty in
                 let loc_res = Proc.loc_results rd in
                 let spacetime_reg =
-                  self#about_to_emit_call env (Iop new_op) [| |]
+                  self#about_to_emit_call env (Iop new_op) [| |] dbg
                 in
                 self#insert_move_args env r1 loc_arg stack_ofs;
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
@@ -1422,7 +1424,7 @@ method emit_tail (env:environment) exp =
                 is_assignment = false;
               }
             in
-            seq#insert_debug env (Iop naming_op) Debuginfo.none rv [| |])
+            seq#insert_debug env (Iop naming_op) current_dbg rv [| |])
       in
       self#insert env
         (Itrywith(s1#extract,
@@ -1452,7 +1454,7 @@ method private emit_tail_sequence ?at_start env dbg exp =
 (* Insertion of the function prologue *)
 
 method insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
-      ~spacetime_node_hole:_ ~env =
+      ~spacetime_node_hole:_ ~env ~fun_dbg =
   let loc_arg_index = ref 0 in
   List.iteri (fun param_index (var, _ty) ->
       let provenance = VP.provenance var in
@@ -1471,8 +1473,7 @@ method insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
           loc_arg.(!loc_arg_index + index))
       in
       loc_arg_index := !loc_arg_index + num_regs_for_arg;
-      self#insert_debug env (Iop naming_op) Debuginfo.none
-        hard_regs_for_arg [| |])
+      self#insert_debug env (Iop naming_op) fun_dbg hard_regs_for_arg [| |])
     f.Cmm.fun_args;
   self#insert_moves env loc_arg rarg;
   None
@@ -1499,7 +1500,7 @@ method private extract_phantom_lets expr =
 
 method initial_env () = env_empty
 
-method emit_fundecl f =
+method emit_fundecl (f : Cmm.fundecl) =
   Proc.contains_calls := false;
   current_function_name := Some f.Cmm.fun_name;
   Ident.Tbl.clear phantom_lets;
@@ -1544,7 +1545,7 @@ method emit_fundecl f =
   instr_seq <- dummy_instr;
   let fun_spacetime_shape =
     self#insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
-      ~spacetime_node_hole ~env
+      ~spacetime_node_hole ~env ~fun_dbg:f.fun_dbg
   in
   let body = self#extract_core ~end_instr:body in
   instr_iter (fun instr -> self#mark_instr instr.Mach.desc) body;
