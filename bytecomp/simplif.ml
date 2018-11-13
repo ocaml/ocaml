@@ -739,8 +739,22 @@ let simplify_local_functions lam =
      by the outermost lambda for which the the current lambda
      is in tail position. *)
   let current_scope = ref lam in
+  let check_static lf =
+    if lf.attr.local = Always_local then
+      Location.prerr_warning lf.loc
+        (Warnings.Inlining_impossible
+           "This function cannot be compiled into a static continuation")
+  in
+  let enabled = function
+    | {local = Always_local; _}
+    | {local = Default_local; inline = (Never_inline | Default_inline); _}
+      -> true
+    | {local = Default_local; inline = (Always_inline | Unroll _); _}
+    | {local = Never_local; _}
+      -> false
+  in
   let rec tail = function
-    | Llet (_str, _kind, id, Lfunction lf, cont) ->
+    | Llet (_str, _kind, id, Lfunction lf, cont) when enabled lf.attr ->
         let r = {nargs=List.length lf.params; scope=None} in
         Hashtbl.add slots id r;
         tail cont;
@@ -758,6 +772,7 @@ let simplify_local_functions lam =
                in that "scope". *)
             with_scope ~scope lf.body
         | _ ->
+            check_static lf;
             (* note: if scope = None, the function is unused *)
             non_tail lf.body
         end
@@ -778,6 +793,9 @@ let simplify_local_functions lam =
         List.iter non_tail ap_args
     | Lvar id ->
         Hashtbl.remove slots id
+    | Lfunction lf as lam ->
+        check_static lf;
+        Lambda.shallow_iter ~tail ~non_tail lam
     | lam ->
         Lambda.shallow_iter ~tail ~non_tail lam
   and non_tail lam =
@@ -815,12 +833,15 @@ let simplify_local_functions lam =
    simplification + emission of tailcall annotations, if needed. *)
 
 let simplify_lambda sourcefile lam =
-  (* Disable optimisations for bytecode compilation with -g flag *)
-  let optimize = !Clflags.native_code || not !Clflags.debug in
-  let lam = if optimize then simplify_local_functions lam else lam in
-
-  let res = simplify_lets (simplify_exits lam) in
-  let res = Hooks.apply_hooks { Misc.sourcefile } res in
+  let lam =
+    lam
+    |> (if !Clflags.native_code || not !Clflags.debug
+        then simplify_local_functions else Fun.id
+       )
+    |> simplify_exits
+    |> simplify_lets
+    |> Hooks.apply_hooks { Misc.sourcefile }
+  in
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
-    then emit_tail_infos true res;
-  res
+    then emit_tail_infos true lam;
+  lam

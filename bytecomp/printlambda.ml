@@ -445,7 +445,7 @@ let name_of_primitive = function
   | Pint_as_pointer -> "Pint_as_pointer"
   | Popaque -> "Popaque"
 
-let function_attribute ppf { inline; specialise; is_a_functor; stub } =
+let function_attribute ppf { inline; specialise; local; is_a_functor; stub } =
   if is_a_functor then
     fprintf ppf "is_a_functor@ ";
   if stub then
@@ -460,6 +460,11 @@ let function_attribute ppf { inline; specialise; is_a_functor; stub } =
   | Default_specialise -> ()
   | Always_specialise -> fprintf ppf "always_specialise@ "
   | Never_specialise -> fprintf ppf "never_specialise@ "
+  end;
+  begin match local with
+  | Default_local -> ()
+  | Always_local -> fprintf ppf "always_local@ "
+  | Never_local -> fprintf ppf "never_local@ "
   end
 
 let apply_tailcall_attribute ppf tailcall =

@@ -219,6 +219,11 @@ val equal_specialise_attribute
   -> specialise_attribute
   -> bool
 
+type local_attribute =
+  | Always_local (* [@local] or [@local always] *)
+  | Never_local (* [@local never] *)
+  | Default_local (* [@local maybe] or no [@local] attribute *)
+
 type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
@@ -242,6 +247,7 @@ type shared_code = (int * int) list     (* stack size -> code label *)
 type function_attribute = {
   inline : inline_attribute;
   specialise : specialise_attribute;
+  local: local_attribute;
   is_a_functor: bool;
   stub: bool;
 }

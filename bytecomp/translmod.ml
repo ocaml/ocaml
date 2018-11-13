@@ -461,6 +461,7 @@ let rec compile_functor mexp coercion root_path loc =
     attr = {
       inline = inline_attribute;
       specialise = Default_specialise;
+      local = Default_local;
       is_a_functor = true;
       stub = false;
     };

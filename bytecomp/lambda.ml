@@ -221,7 +221,8 @@ let equal_inline_attribute x y =
   match x, y with
   | Always_inline, Always_inline
   | Never_inline, Never_inline
-  | Default_inline, Default_inline ->
+  | Default_inline, Default_inline
+    ->
     true
   | Unroll u, Unroll v ->
     u = v
@@ -242,6 +243,11 @@ let equal_specialise_attribute x y =
   | (Always_specialise | Never_specialise | Default_specialise), _ ->
     false
 
+type local_attribute =
+  | Always_local (* [@local] or [@local always] *)
+  | Never_local (* [@local never] *)
+  | Default_local (* [@local maybe] or no [@local] attribute *)
+
 type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
@@ -260,6 +266,7 @@ type shared_code = (int * int) list
 type function_attribute = {
   inline : inline_attribute;
   specialise : specialise_attribute;
+  local: local_attribute;
   is_a_functor: bool;
   stub: bool;
 }
@@ -336,6 +343,7 @@ let lambda_unit = Lconst const_unit
 let default_function_attribute = {
   inline = Default_inline;
   specialise = Default_specialise;
+  local = Default_local;
   is_a_functor = false;
   stub = false;
 }
