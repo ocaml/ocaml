@@ -99,8 +99,10 @@
 #ifdef DEBUG
 #define CHECK_STACK_ALIGNMENT \
         test $0xf, %rsp; jz 9f; int3; 9:
+#define IF_DEBUG(...) __VA_ARGS__
 #else
 #define CHECK_STACK_ALIGNMENT
+#define IF_DEBUG(...)
 #endif
 
 /******************************************************************************/
@@ -129,86 +131,88 @@
 #endif
 
 /* Push the current exception handler.
-   (Stored as an offset, to survive stack reallocations). Clobbers REG */
-#define PUSH_EXN_HANDLER(REG) \
-        movq	Caml_state(exn_handler), REG; \
-        pushq   REG; CFI_ADJUST(8); \
+   (Stored as an offset, to survive stack reallocations). Clobbers %r11 */
+#define PUSH_EXN_HANDLER \
+        movq	Caml_state(exn_handler), %r11; \
+        pushq   %r11; CFI_ADJUST(8); \
         subq    %rsp, 0(%rsp)
 
-/* Pop the current exception handler. Undoes PUSH_EXN_HANDLER. Clobbers REG. */
-#define POP_EXN_HANDLER(REG) \
-        leaq	Caml_state(exn_handler), REG; \
+/* Pop the current exception handler. Undoes PUSH_EXN_HANDLER. Clobbers %r11. */
+#define POP_EXN_HANDLER \
+        leaq	Caml_state(exn_handler), %r11; \
         addq    %rsp, 0(%rsp); \
-        popq    (REG); CFI_ADJUST(-8)
+        popq    (%r11); CFI_ADJUST(-8)
 
 /******************************************************************************/
 /* Stack switching operations */
 /******************************************************************************/
 
-/* Switch from OCaml to C stack. Clobbers REG.
+/* Switch from OCaml to C stack. Clobbers %r10, %r11.
  * PUSHED is the number of bytes already pushed by this function.
  * It is used to compute the backtrace. */
-#define SWITCH_OCAML_TO_C_NO_CTXT(REG, PUSHED) \
-    /* Save OCaml SP in the stack slot */ \
-        movq	Caml_state(current_stack), REG; \
-        movq    %rsp, Stack_sp(REG); \
-    /* Switch to system stack */ \
-        movq	Caml_state(c_stack), REG; \
-        movq    %rsp, Cstack_sp(REG); \
-        movq    REG, %rsp; \
-        .cfi_remember_state; \
-        .cfi_escape DW_CFA_def_cfa_expression, 5, \
+#define SWITCH_OCAML_TO_C_NO_CTXT(PUSHED)                  \
+    /* Fill in Caml_state->current_stack->sp */            \
+        movq	Caml_state(current_stack), %r10;           \
+        movq    %rsp, Stack_sp(%r10);                      \
+    /* Fill in Caml_state->c_stack */                      \
+        movq	Caml_state(c_stack), %r11;                 \
+        movq    %rsp, Cstack_sp(%r11);                     \
+        movq    %r10, Cstack_stack(%r11);                  \
+    /* Switch to C stack */                                \
+        movq    %r11, %rsp;                                \
+        .cfi_remember_state;                               \
+        .cfi_escape DW_CFA_def_cfa_expression, 5,          \
           DW_OP_breg + DW_REG_rsp, Cstack_sp, DW_OP_deref, \
           DW_OP_plus_uconst, (PUSHED) + 8 /* retaddr */
 
 /* Switch from OCaml to C stack. Also builds a context at
- * the bottom of the OCaml stack. Clobbers REG.
+ * the bottom of the OCaml stack. Clobbers %r10, %r11.
  * PUSHED is the number of bytes already pushed by this function.
  * It is used to compute the backtrace. */
-#define SWITCH_OCAML_TO_C(REG, PUSHED) \
+#define SWITCH_OCAML_TO_C(PUSHED) \
     /* Build caml_context at the bottom of the stack */ \
         pushq   $0 ; CFI_ADJUST(8); \
-        PUSH_EXN_HANDLER(REG); \
-        SWITCH_OCAML_TO_C_NO_CTXT(REG, (PUSHED) + 16)
+        PUSH_EXN_HANDLER; \
+        SWITCH_OCAML_TO_C_NO_CTXT((PUSHED) + 16)
 
-/* Switch from C to OCaml stack.  Clobbers REG. */
-#define SWITCH_C_TO_OCAML_NO_CTXT(REG) \
-    /* Switch to OCaml stack */ \
-        movq	Caml_state(current_stack), REG; \
-    /* REG is Stack_sp(caml_current_stack) */ \
-        movq    Stack_sp(REG), %rsp; \
+/* Switch from C to OCaml stack.  Clobbers %r11. */
+#define SWITCH_C_TO_OCAML_NO_CTXT \
+    /* Assert that %rsp == Caml_state->c_stack &&
+        Caml_state->c_stack->sp == Caml_state->current_stack->sp */ \
+        IF_DEBUG(cmpq %rsp, Caml_state(c_stack); je 8f; int3; 8:\
+                 movq Caml_state(current_stack), %r11; movq Stack_sp(%r11), %r11; \
+                 cmpq %r11, Cstack_sp(%rsp); je 8f; int3; 8:) \
+        movq    Cstack_sp(%rsp), %rsp; \
         .cfi_restore_state
 
 /* Switch from C to OCaml stack. Also pops the context
- * from the bottom of the OCaml stack. Clobbers REG. */
-#define SWITCH_C_TO_OCAML(REG) \
-        SWITCH_C_TO_OCAML_NO_CTXT(REG); \
+ * from the bottom of the OCaml stack. Clobbers %r11. */
+#define SWITCH_C_TO_OCAML \
+        SWITCH_C_TO_OCAML_NO_CTXT; \
     /* Pop the caml_context from the bottom of stack */ \
-        POP_EXN_HANDLER(REG); \
-        popq    REG; CFI_ADJUST(-8); \
+        POP_EXN_HANDLER; \
+        popq    %r11; CFI_ADJUST(-8); \
 
 /* Load Caml_state->exn_handler into %rsp and restores prior exn_handler. Clobbers %r11. */
 #define RESTORE_EXN_HANDLER_OCAML \
         movq	Caml_state(exn_handler), %rsp; \
         .cfi_def_cfa_offset 16; \
-        POP_EXN_HANDLER(%r11)
+        POP_EXN_HANDLER
 
-/* Switch between OCaml stacks.
- * arguments : target stack (%rdi)
- * preserves : %rbx, %r8, %r9, %r12, %r13 */
+/* Switch between OCaml stacks. Clobbers %r11. Expects target stack in %r10. */
 #define SWITCH_OCAML_STACKS \
     /* Build caml_context at the bottom of the stack */ \
         pushq   $0 ; CFI_ADJUST(8); \
-        PUSH_EXN_HANDLER(%r10); \
+        PUSH_EXN_HANDLER; \
     /* Save OCaml SP in the stack slot */ \
-        movq	Caml_state(current_stack), %r10; \
-        movq    %rsp, Stack_sp(%r10); \
-        movq    %rdi, Caml_state(current_stack) ; \
-        movq    Stack_sp(%rdi), %rsp; \
+        movq	Caml_state(current_stack), %r11; \
+        movq    %rsp, Stack_sp(%r11); \
+        movq    %r10, Caml_state(current_stack) ; \
+        movq    Stack_sp(%r10), %rsp; \
         .cfi_def_cfa_offset 24 ; /* FIXME */ \
     /* Pop the caml_context from the bottom of stack */ \
-        POP_EXN_HANDLER(%r10); \
-        popq    %r10; CFI_ADJUST(-8)
+        POP_EXN_HANDLER; \
+        popq    %r11; CFI_ADJUST(-8)
 
 /******************************************************************************/
 /* Save and restore all callee-save registers on stack.
@@ -455,32 +459,14 @@ G(caml_system__code_begin):
         movsd   (15+13)*8(%r15),%xmm15;                \
         movq    Caml_state(young_ptr), %r15
 
-#define ENTER_GC                                 \
-        SAVE_ALL_REGS;                           \
-        pushq   %r15;                            \
-        PUSH_EXN_HANDLER(%r11);                  \
-        SWITCH_OCAML_TO_C_NO_CTXT(%r11, 16);     \
-        C_call (GCALL(caml_garbage_collection)); \
-        SWITCH_C_TO_OCAML_NO_CTXT(%r11);         \
-        POP_EXN_HANDLER(%r11);                   \
-        popq    %r15;                            \
-        RESTORE_ALL_REGS
-
-FUNCTION(G(caml_call_gc))
-CFI_STARTPROC
-        .cfi_signal_frame
-        ENTER_GC
-        ret
-CFI_ENDPROC
-
 FUNCTION(G(caml_call_realloc_stack))
 CFI_STARTPROC
         .cfi_signal_frame
         SAVE_ALL_REGS
         movq    8(%rsp), C_ARG_1 /* argument */
-        SWITCH_OCAML_TO_C_NO_CTXT(%r11, 0)
+        SWITCH_OCAML_TO_C_NO_CTXT(0)
         C_call  (GCALL(caml_try_realloc_stack))
-        SWITCH_C_TO_OCAML_NO_CTXT(%r11)
+        SWITCH_C_TO_OCAML_NO_CTXT
         cmpq    $0, %rax
         jz      1f
         RESTORE_ALL_REGS
@@ -498,19 +484,25 @@ CFI_STARTPROC
         SAVE_ALL_REGS
      /* Build a caml_context */
         pushq   %r15
-        PUSH_EXN_HANDLER(%r11)
-        SWITCH_OCAML_TO_C_NO_CTXT(%r11, 16)
+        PUSH_EXN_HANDLER
+        SWITCH_OCAML_TO_C_NO_CTXT(16)
         movq    %rax, C_ARG_1
         movq    %rdx, C_ARG_2
         C_call (GCALL(caml_read_barrier))
-        SWITCH_C_TO_OCAML_NO_CTXT(%r11)
-        POP_EXN_HANDLER(%r11)
+        SWITCH_C_TO_OCAML_NO_CTXT
+        POP_EXN_HANDLER
         popq    %r15
     /* Preserve the current value of %rax */
         pushq   %rax
         RESTORE_ALL_REGS
         popq    %rax
         ret
+CFI_ENDPROC
+
+FUNCTION(G(caml_call_gc))
+CFI_STARTPROC
+        movq    $0, %rax
+        jmp     LBL(call_gc_and_retry_alloc)
 CFI_ENDPROC
 
 FUNCTION(G(caml_alloc1))
@@ -551,17 +543,23 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_allocN))
 CFI_STARTPROC
+        .cfi_signal_frame
 LBL(caml_allocN):
         subq    %rax, %r15
         cmpq	Caml_state(young_limit), %r15
         jb      LBL(call_gc_and_retry_alloc)
         ret
-CFI_ENDPROC
-CFI_STARTPROC
-        .cfi_signal_frame
 LBL(call_gc_and_retry_alloc):
         addq    %rax, %r15
-        ENTER_GC
+        SAVE_ALL_REGS
+        pushq   %r15
+        PUSH_EXN_HANDLER
+        SWITCH_OCAML_TO_C_NO_CTXT(16)
+        C_call (GCALL(caml_garbage_collection))
+        SWITCH_C_TO_OCAML_NO_CTXT
+        POP_EXN_HANDLER
+        popq    %r15
+        RESTORE_ALL_REGS
         jmp     LBL(caml_allocN)
 CFI_ENDPROC
 
@@ -577,21 +575,15 @@ LBL(caml_c_call):
         C arguments         : %rdi, %rsi, %rdx, %rcx, %r8, and %r9
         C function          : %rax */
     /* Switch from OCaml to C */
-        movq    Caml_state(current_stack), %r11
-        SWITCH_OCAML_TO_C(%r10, 0)
-        movq    %r11, Cstack_stack(%rsp)
+        SWITCH_OCAML_TO_C(0)
     /* Make the alloc ptr available to the C code */
         movq	%r15, Caml_state(young_ptr)
     /* Call the function (address in %rax) */
         C_call  (*%rax)
     /* Prepare for return to OCaml */
         movq	Caml_state(young_ptr), %r15
-        /* assert */
-        movq    Cstack_sp(%rsp), %r11
-        addq    $16, %r11 /* skip context */
     /* Load ocaml stack and restore global variables */
-        SWITCH_C_TO_OCAML(%r10)
-        cmpq    %r11, %rsp; je 1f; int3; 1:
+        SWITCH_C_TO_OCAML
     /* Return to OCaml caller */
         ret
 CFI_ENDPROC
@@ -604,9 +596,7 @@ CFI_STARTPROC
         C function          : %rax
         C stack args        : begin=%r13 end=%r12 */
     /* Switch from OCaml to C */
-        movq    Caml_state(current_stack), %r11
-        SWITCH_OCAML_TO_C(%r10, 0)
-        movq    %r11, Cstack_stack(%rsp)
+        SWITCH_OCAML_TO_C(0)
     /* we use %rbp (otherwise unused) to enable backtraces */
         movq    %rsp, %rbp
         .cfi_escape DW_CFA_def_cfa_expression, 5, \
@@ -624,10 +614,12 @@ LBL(105):
 LBL(106):
     /* Call the function (address in %rax) */
         C_call  (*%rax)
+    /* Pop arguments back off the stack */
+        movq    Caml_state(c_stack), %rsp
     /* Prepare for return to OCaml */
         movq	Caml_state(young_ptr), %r15
     /* Load ocaml stack and restore global variables */
-        SWITCH_C_TO_OCAML(%r10)
+        SWITCH_C_TO_OCAML
     /* Return to OCaml caller */
         ret
 CFI_ENDPROC
@@ -751,10 +743,12 @@ CFI_STARTPROC
         movq    C_ARG_2, %rax
     /* Load young_ptr into %r15 */
         movq    Caml_state(young_ptr), %r15
-    /* Load ocaml stack and restore global variables */
-        .cfi_remember_state
-        SWITCH_C_TO_OCAML(%r10)
-    /* Raise the exception in OCaml */
+    /* Discard the C stack pointer and reset to ocaml stack */
+        movq    Caml_state(current_stack), %r10
+        movq    Stack_sp(%r10), %rsp         /* FIXME: CFI */
+    /* Pop the caml_context and raise exn in OCaml */
+        POP_EXN_HANDLER
+        popq    %r10
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 
@@ -812,27 +806,26 @@ FUNCTION(G(caml_perform))
 CFI_STARTPROC
     /*  %rax: effect to perform
         %rbx: freshly allocated continuation */
-        mov     %rax, %r12                      /* r8,r9,r12,r13 are preserved across C call */
-        mov     %rbx, %r13
-        movq	Caml_state(current_stack), %rbx /* Second argument */
-        leaq    1(%rbx), %r8                    /* %r8 := Val_ptr(%rbx) */
-        movq    Stack_handler(%rbx), %rbx
-        movq    Handler_parent(%rbx), %rdi      /* Parent stack. */
-        cmpq    $0, %rdi                        /* Parent is NULL? */
+        movq	Caml_state(current_stack), %rsi /* %rsi := old stack */
+        leaq    1(%rsi), %rdi                   /* %rdi (cont_tail) := Val_ptr(old stack) */
+        movq    %rdi, 0(%rbx)                   /* Initialise continuation */
+LBL(do_perform):
+    /*  %rsi: old stack
+        %rdi: cont_tail */
+        movq    Stack_handler(%rsi), %r11       /* %r11 := old stack -> handler */
+        movq    Handler_parent(%r11), %r10      /* %r10 := parent stack */
+        cmpq    $0, %r10                        /* parent is NULL? */
         je      LBL(112)
-        movq    $0, Handler_parent(%rbx)        /* Set parent stack of performer to NULL */
-        movq    %r8, 0(%r13)                    /* Initialise continuation */
-        movq    Handler_effect(%rbx), %r9       /* effect handler */
-    /* Switch stacks */
+        movq    $0, Handler_parent(%r11)        /* Set parent stack of performer to NULL */
+        movq    Handler_effect(%r11), %rsi      /* %rsi := effect handler */
         SWITCH_OCAML_STACKS
-    /* Invoke effect handler */
-        movq    %r12, %rax        /* Arg 1: effect */
-        movq    %r13, %rbx        /* Arg 2: continuation */
-        movq    %r8, %rdi         /* Arg 3: cont_tail */
-        movq    %r9, %rsi         /* Effect handler */
-        LEA_VAR(caml_apply3, %rcx)
-        jmp     *%rcx
+        jmp     GCALL(caml_apply3)
 LBL(112):
+    /* switch back to original performer before raising Unhandled
+        (no-op unless this is a reperform) */
+        movq    0(%rbx), %r10                     /* load performer stack from continuation */
+        subq    $1, %r10                          /* r10 := Ptr_val(r10) */
+        SWITCH_OCAML_STACKS
     /* No parent stack. Raise Unhandled. */
         LEA_VAR(caml_exn_Unhandled, %rax)
         jmp LBL(caml_raise_exn)
@@ -843,56 +836,28 @@ CFI_STARTPROC
     /*  %rax: effect to reperform
         %rbx: continuation
         %rdi: continuation tail */
-        movq    %rax, %r12                      /* r8,r9,r12,r13 are preserved across C call */
-        movq    %rbx, %r13
-        movq	Caml_state(current_stack), %rbx
-        movq    (Stack_handler-1)(%rdi), %rdi
-        movq    %rbx, Handler_parent(%rdi)       /* Append to cont_tail in Stack_parent(Ptr_val(r8)) */
-        leaq    1(%rbx), %r8                     /* %r8 := Val_ptr(%rbx) */
-        movq    Stack_handler(%rbx), %rbx
-        movq    Handler_parent(%rbx), %rdi       /* Parent stack */
-        cmpq    $0, %rdi                         /* Parent is Null? */
-        je      LBL(113)
-        movq    $0, Handler_parent(%rbx)         /* Set parent stack of performer to NULL */
-        movq    Handler_effect(%rbx), %r9        /* effect handler */
-    /* Switch stacks */
-        SWITCH_OCAML_STACKS
-    /* Invoke effect handler */
-        movq    %r12, %rax        /* Arg 1: effect */
-        movq    %r13, %rbx        /* Arg 2: continuation */
-        movq    %r8, %rdi         /* Arg 3: cont_tail */
-        movq    %r9, %rsi         /* Effect handler */
-        LEA_VAR(caml_apply3, %rcx)
-        jmp     *%rcx
-LBL(113):
-    /* switch back to original performer before raising Unhandled */
-        movq    0(%r13), %rdi                     /* load performer stack from continuation */
-        subq    $1, %rdi                          /* rdi := Ptr_val(rdi) */
-        SWITCH_OCAML_STACKS
-    /* No parent stack. Raise Unhandled. */
-        LEA_VAR(caml_exn_Unhandled, %rax)
-        jmp LBL(caml_raise_exn)
+        movq	Caml_state(current_stack), %rsi  /* %rsi := old stack */
+        movq    (Stack_handler-1)(%rdi), %r10
+        movq    %rsi, Handler_parent(%r10)       /* Append to cont_tail */
+        leaq    1(%rsi), %rdi                    /* %rdi (cont_tail) := Val_ptr(old stack) */
+        jmp     LBL(do_perform)
 CFI_ENDPROC
 
 FUNCTION(G(caml_resume))
 CFI_STARTPROC
     /* %rax -> stack, %rbx -> fun, %rdi -> arg */
-        andq    $-2, %rax       /* %rax = Ptr_val(%rax) */
-        movq    %rdi, %r12      /* Save arg (callee-saved) */
-        movq    %rax, %rdi
+        leaq    -1(%rax), %r10  /* %r10 (new stack) = Ptr_val(%rax) */
+        movq    %rdi, %rax      /* %rax := argument to function in %rbx */
     /* Find end of list of stacks and add current */
-1:      movq    Stack_handler(%rax), %rcx
-        cmpq    $0, Handler_parent(%rcx)
-        je      2f
-        movq    Handler_parent(%rcx), %rax
-        jmp     1b
-2:      movq	Caml_state(current_stack), %rax
-        movq    %rax, Handler_parent(%rcx)
-    /* %rdi has new stack */
+        movq    %r10, %rsi
+1:      movq    Stack_handler(%rsi), %rcx
+        movq    Handler_parent(%rcx), %rsi
+        testq   %rsi, %rsi
+        jnz     1b
+        movq	Caml_state(current_stack), %r11
+        movq    %r11, Handler_parent(%rcx)
         SWITCH_OCAML_STACKS
-        movq    %r12, %rax    /* first argument */
-        movq    (%rbx), %rsi  /* closure in %rbx (second argument) */
-        jmp     *%rsi
+        jmp     *(%rbx)
 CFI_ENDPROC
 
 /* Run a function on a new stack,
@@ -906,7 +871,7 @@ CFI_STARTPROC
         movq    %rax, %rdi
     /* Build caml_context at the bottom of the stack */
         pushq   $0 ; CFI_ADJUST(8);
-        PUSH_EXN_HANDLER(%r10)
+        PUSH_EXN_HANDLER
     /* Load new stack pointer into %r11 and set parent */
         movq	Caml_state(current_stack), %rax
         movq    %rsp, Stack_sp(%rax)
@@ -945,7 +910,7 @@ LBL(frame_runstack):
         .cfi_restore_state
         movq    %r12, %rax
     /* Pop the caml_context from the bottom of the stack */
-        POP_EXN_HANDLER(%r10)
+        POP_EXN_HANDLER
         popq    %r10; CFI_ADJUST(-8)
     /* Invoke handle_value (or handle_exn) */
         jmp     *(%rbx)
@@ -955,7 +920,6 @@ LBL(fiber_exn_handler):
         jmp     1b
 CFI_ENDPROC
 
-
 FUNCTION(G(caml_ml_array_bound_error))
 CFI_STARTPROC
         LEA_VAR(caml_array_bound_error, %rax)
@@ -964,10 +928,8 @@ CFI_ENDPROC
 
 FUNCTION(G(caml_assert_stack_invariants))
 CFI_STARTPROC
-/*        test    $0xf, %rsp */
-/*        jz      1f */
-/*        int3 */
-1:      movq	Caml_state(current_stack), %r11
+/*      CHECK_STACK_ALIGNMENT */
+        movq	Caml_state(current_stack), %r11
         movq    %rsp, %r10
         subq    %r11, %r10      /* %r10: number of bytes left on stack */
         /* can be two words over: the return addresses */
