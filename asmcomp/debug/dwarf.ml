@@ -929,6 +929,7 @@ let create_lexical_block_proto_dies lexical_block_ranges ~function_proto_die
               Proto_die.create ~parent:(Some parent)
                 ~tag:Lexical_block
                 ~attribute_values:[
+(* XXX This is missing the location list or similar! *)
                   start_of_scope;
                   end_of_scope;
                 ]
