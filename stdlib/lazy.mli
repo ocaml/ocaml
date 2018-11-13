@@ -96,3 +96,5 @@ val lazy_from_val : 'a -> 'a t
 val lazy_is_val : 'a t -> bool
   [@@ocaml.deprecated "Use Lazy.is_val instead."]
 (** @deprecated synonym for [is_val]. *)
+
+module Internal = CamlinternalLazy

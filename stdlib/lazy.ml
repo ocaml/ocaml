@@ -83,3 +83,5 @@ let lazy_from_fun = from_fun
 let lazy_from_val = from_val
 
 let lazy_is_val = is_val
+
+module Internal = CamlinternalLazy
