@@ -23,6 +23,11 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   module Subrange_info = S.Subrange_info
   module Range_info = S.Range_info
 
+  let rewrite_label env label =
+    match Numbers.Int.Map.find label env with
+    | exception Not_found -> label
+    | label -> label
+
   module Subrange = struct
     (* CR mshinwell: we need to check exactly what happens with function
        epilogues, including returns in the middle of functions. *)
@@ -52,6 +57,12 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let end_pos t = t.end_pos
     let end_pos_offset t = t.end_pos_offset
     let info t = t.subrange_info
+
+    let rewrite_labels t ~env =
+      { t with
+        start_pos = rewrite_label env t.start_pos;
+        end_pos = rewrite_label env t.end_pos;
+      }
   end
 
   module Range = struct
@@ -109,6 +120,20 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
 
     let fold t ~init ~f =
       List.fold_left f init t.subranges
+
+    let rewrite_labels t ~env =
+      let subranges =
+        List.map (fun subrange ->
+            Subrange.rewrite_labels subrange ~env)
+          t.subranges
+      in
+      let min_pos = Misc.Stdlib.Option.map (rewrite_label env) t.min_pos in
+      let max_pos = Misc.Stdlib.Option.map (rewrite_label env) t.max_pos in
+      { t with
+        subranges;
+        min_pos;
+        max_pos;
+      }
   end
 
   type t = {
@@ -368,4 +393,11 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         { fundecl with fun_body = first_insn; }
       in
       t, fundecl
+
+  let rewrite_labels t ~env =
+    let ranges =
+      S.Index.Tbl.map t.ranges (fun range ->
+        Range.rewrite_labels range ~env)
+    in
+    { ranges; }
 end

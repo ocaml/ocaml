@@ -230,6 +230,7 @@ ASMCOMP=\
   asmcomp/debug/lexical_block_ranges.cmo \
   asmcomp/debug/available_filtering.cmo \
   asmcomp/debug/name_laundry.cmo \
+  asmcomp/debug/coalesce_labels.cmo \
   asmcomp/debug/dwarf.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \

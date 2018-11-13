@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2013--2018 Jane Street Group LLC                           *)
+(*   Copyright 2016--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -12,30 +12,16 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** A value of type [t] holds all state necessary to emit DWARF debugging
-    information for a single compilation unit. *)
-type t
+(** Coalesce labels that point at the same source location. This avoids
+    generating DWARF information that appears to reference different ranges of
+    code but actually points at the same place. In particular, generating
+    duplicate lexical blocks at the same position causes some of their local
+    variables to become hidden in gdb. This pass also produces tidier assembly
+    output.
+*)
 
-val create : prefix_name:string -> t
+[@@@ocaml.warning "+a-4-30-40-41-42"]
 
-(** For dealing with [Let_symbol] bindings. *)
-val dwarf_for_toplevel_constants
-   : t
-  -> Clambda.preallocated_constant list
-  -> unit
-
-(** For dealing with [Initialize_symbol] bindings. *)
-val dwarf_for_toplevel_inconstants
-   : t
-  -> Clambda.preallocated_block list
-  -> unit
-
-val dwarf_for_function_definition
-   : t
-  -> fundecl:Linearize.fundecl
-  -> available_ranges_vars:Available_ranges_all_vars.t
-  -> lexical_block_ranges:Lexical_block_ranges.t
-  -> end_of_function_label:Linearize.label
-  -> unit
-
-val emit : t -> unit
+val fundecl
+   : Linearize.fundecl
+  -> int Numbers.Int.Map.t * Linearize.fundecl

@@ -334,7 +334,7 @@ include Identifiable.Make (struct
 
   let print ppf t =
     match t with
-    | Empty -> Format.pp_print_string ppf "no-debug-info"
+    | Empty -> Format.pp_print_string ppf "()"
     | Non_empty { block; position; } ->
       Format.fprintf ppf "@[<hov 1>(\
           @[<hov 1>(position@ %a)@]@ \

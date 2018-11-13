@@ -121,4 +121,7 @@ module type S = sig
   val fold : t -> init:'a -> f:('a -> Index.t -> Range.t -> 'a) -> 'a
 
   val all_indexes : t -> Index.Set.t
+
+  (** The [env] should come from [Coalesce_labels.fundecl]. *)
+  val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t
 end

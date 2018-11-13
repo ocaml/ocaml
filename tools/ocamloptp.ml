@@ -166,6 +166,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dlambda_loc = option "-dlambda-loc"
   let _drawclambda = option "-drawclambda"
   let _dclambda = option "-dclambda"
+  let _dclambda_dbg = option "-dclambda-dbg"
   let _drawflambda = option "-drawflambda"
   let _dflambda = option "-dflambda"
   let _dflambda_invariants = option "-dflambda-invariants"

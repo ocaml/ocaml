@@ -35,6 +35,23 @@ let value_kind =
   | Pboxedintval Pint32 -> ":int32"
   | Pboxedintval Pint64 -> ":int64"
 
+let print_dbg ppf dbg =
+  if !Clflags.dump_clambda_dbg then begin
+    fprintf ppf "@ @{<debug_loc>%a@}@ " Debuginfo.print dbg
+  end
+
+(*
+let print_dbg_opening ppf dbg =
+  if !Clflags.dump_clambda_dbg then begin
+    fprintf ppf "@ @{<debug_loc>(%a@}" Debuginfo.print dbg
+  end
+
+let print_dbg_closing ppf () =
+  if !Clflags.dump_clambda_dbg then begin
+    fprintf ppf "@{<debug_loc>)@}"
+  end
+*)
+
 let rec structured_constant ppf = function
   | Uconst_float x -> fprintf ppf "%F" x
   | Uconst_int32 x -> fprintf ppf "%ldl" x
@@ -152,11 +169,14 @@ and lam ppf = function
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
-  | Uprim(prim, largs, _) ->
+  | Uprim(prim, largs, dbg) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim lams largs
-  | Uswitch(larg, sw, _dbg) ->
+      fprintf ppf "@[<2>(%a%a%a)@]"
+        Printlambda.primitive prim
+        print_dbg dbg
+        lams largs
+  | Uswitch(larg, sw, dbg) ->
       let print_case tag index i ppf =
         for j = 0 to Array.length index - 1 do
           if index.(j) = i then fprintf ppf "case %s %i:" tag j
@@ -170,9 +190,10 @@ and lam ppf = function
         print_cases "int" sw.us_index_consts sw.us_actions_consts ppf ;
         print_cases "tag" sw.us_index_blocks sw.us_actions_blocks ppf  in
       fprintf ppf
-       "@[<v 0>@[<2>(switch@ %a@ @]%a)@]"
+       "@[<v 0>@[<2>(switch%a@ %a@ @]%a)@]"
+        print_dbg dbg
         lam larg switch sw
-  | Ustringswitch(larg,sw,d,_) ->
+  | Ustringswitch(larg,sw,d,dbg) ->
       let switch ppf sw =
         let spc = ref false in
         List.iter
@@ -188,13 +209,16 @@ and lam ppf = function
         | None -> ()
         end in
       fprintf ppf
-        "@[<1>(switch %a@ @[<v 0>%a@])@]" lam larg switch sw
+        "@[<1>(switch%a %a@ @[<v 0>%a@])@]"
+          print_dbg dbg
+          lam larg
+          switch sw
   | Ustaticfail (i, ls)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(exit@ %d%a)@]" i lams ls;
-  | Ucatch(i, vars, lbody, lhandler, _) ->
-      fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
+  | Ucatch(i, vars, lbody, lhandler, handler_dbg) ->
+      fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a%a)@ %a)@]"
         lam lbody i
         (fun ppf vars -> match vars with
           | [] -> ()
@@ -203,18 +227,29 @@ and lam ppf = function
                 (fun x -> fprintf ppf " %a" VP.print x)
                 vars)
         vars
+        print_dbg handler_dbg
         lam lhandler
-  | Utrywith(lbody, param, lhandler, _) ->
-      fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
-        lam lbody VP.print param lam lhandler
-  | Uifthenelse(lcond, _, lif, _, lelse, _) ->
-      fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
+  | Utrywith(lbody, param, lhandler, handler_dbg) ->
+      fprintf ppf "@[<2>(try@ %a@;<1 -1>with%a %a@ %a)@]"
+        lam lbody
+        VP.print param
+        print_dbg handler_dbg
+        lam lhandler
+  | Uifthenelse(lcond, ifso_dbg, lif, ifnot_dbg, lelse, cond_dbg) ->
+      fprintf ppf "@[<2>(if%a@ %a@ %a%a@ %a%a)@]"
+        print_dbg cond_dbg
+        lam lcond
+        print_dbg ifso_dbg
+        lam lif
+        print_dbg ifnot_dbg
+        lam lelse
   | Usequence(l1, l2) ->
       fprintf ppf "@[<2>(seq@ %a@ %a)@]" lam l1 sequence l2
-  | Uwhile(lcond, lbody, _) ->
-      fprintf ppf "@[<2>(while@ %a@ %a)@]" lam lcond lam lbody
-  | Ufor(param, lo, hi, dir, body, _) ->
-      fprintf ppf "@[<2>(for %a@ %a@ %s@ %a@ %a)@]"
+  | Uwhile(lcond, lbody, dbg) ->
+      fprintf ppf "@[<2>(while%a@ %a@ %a)@]" print_dbg dbg lam lcond lam lbody
+  | Ufor(param, lo, hi, dir, body, dbg) ->
+      fprintf ppf "@[<2>(for%a %a@ %a@ %s@ %a@ %a)@]"
+       print_dbg dbg
        VP.print param lam lo
        (match dir with Upto -> "to" | Downto -> "downto")
        lam hi lam body
@@ -237,6 +272,7 @@ and sequence ppf ulam = match ulam with
   | _ -> lam ppf ulam
 
 let clambda ppf ulam =
+  Misc.Color.setup !Clflags.color;
   fprintf ppf "%a@." lam ulam
 
 

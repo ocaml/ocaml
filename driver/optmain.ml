@@ -237,6 +237,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dlambda_loc () = dump_lambda := true; dump_lambda_loc := true
   let _drawclambda = set dump_rawclambda
   let _dclambda = set dump_clambda
+  let _dclambda_dbg () = dump_clambda := true; dump_clambda_dbg := true
   let _drawflambda = set dump_rawflambda
   let _dflambda = set dump_flambda
   let _dflambda_let stamp = dump_flambda_let := Some stamp

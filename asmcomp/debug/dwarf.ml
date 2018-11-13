@@ -941,7 +941,7 @@ let create_lexical_block_proto_dies available_ranges ~function_proto_die
   whole_function_lexical_block, lexical_block_proto_dies
 
 let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
-      ~available_ranges_vars ~available_ranges_lexical_blocks
+      ~available_ranges_vars ~lexical_block_ranges
       ~end_of_function_label =
   let symbol = Asm_symbol.create fundecl.fun_name in
   let start_of_function =
@@ -996,7 +996,7 @@ let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
       ()
   in
   let whole_function_lexical_block, lexical_block_proto_dies =
-    create_lexical_block_proto_dies available_ranges_lexical_blocks
+    create_lexical_block_proto_dies lexical_block_ranges
       ~function_proto_die ~start_of_function ~end_of_function
   in
   dwarf_for_variables_and_parameters t ~function_proto_die

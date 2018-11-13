@@ -689,6 +689,11 @@ let mk_dclambda f =
   "-dclambda", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_dclambda_dbg f =
+  "-dclambda-dbg", Arg.Unit f,
+    " As per `-dclambda' except also prints debug info"
+;;
+
 let mk_dflambda f =
   "-dflambda", Arg.Unit f, " Print Flambda terms"
 ;;
@@ -1014,6 +1019,7 @@ module type Optcommon_options = sig
   val _dflambda_verbose : unit -> unit
   val _drawclambda : unit -> unit
   val _dclambda : unit -> unit
+  val _dclambda_dbg : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
@@ -1363,6 +1369,7 @@ struct
     mk_dlambda_loc F._dlambda_loc;
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
+    mk_dclambda_dbg F._dclambda_dbg;
     mk_dflambda F._dflambda;
     mk_drawflambda F._drawflambda;
     mk_dflambda_invariants F._dflambda_invariants;
@@ -1468,6 +1475,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_drawlambda F._drawlambda;
     mk_drawclambda F._drawclambda;
     mk_dclambda F._dclambda;
+    mk_dclambda_dbg F._dclambda_dbg;
     mk_drawflambda F._drawflambda;
     mk_dflambda F._dflambda;
     mk_dcmm F._dcmm;

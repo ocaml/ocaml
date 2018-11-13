@@ -110,16 +110,29 @@ let emit ~ppf_dump:_ dwarf fundecl =
     let available_ranges_phantom_vars, fundecl =
       Available_ranges_phantom_vars.create fundecl
     in
+    let lexical_block_ranges, fundecl =
+      Lexical_block_ranges.create fundecl
+    in
+    let label_env, fundecl = Coalesce_labels.fundecl fundecl in
+    let available_ranges_vars =
+      Available_ranges_vars.rewrite_labels available_ranges_vars
+        ~env:label_env
+    in
+    let available_ranges_phantom_vars =
+      Available_ranges_phantom_vars.rewrite_labels available_ranges_phantom_vars
+        ~env:label_env
+    in
+    let lexical_block_ranges =
+      Lexical_block_ranges.rewrite_labels lexical_block_ranges
+        ~env:label_env
+    in
     let available_ranges_vars =
       Available_ranges_all_vars.create ~available_ranges_vars
         ~available_ranges_phantom_vars
     in
-    let available_ranges_lexical_blocks, fundecl =
-      Lexical_block_ranges.create fundecl
-    in
     Emit.fundecl fundecl ~end_of_function_label;
     Dwarf.dwarf_for_function_definition dwarf ~fundecl
-      ~available_ranges_vars ~available_ranges_lexical_blocks
+      ~available_ranges_vars ~lexical_block_ranges
       ~end_of_function_label
 
 let (++) x f = f x
