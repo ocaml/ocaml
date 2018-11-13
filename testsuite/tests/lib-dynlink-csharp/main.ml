@@ -94,7 +94,6 @@ let _ = Stdlib.Bigarray.float32
 let () =
   ignore (Hashtbl.hash 42.0);
   print_endline "Main is running.";
-  Dynlink.init ();
   Dynlink.allow_unsafe_modules true;
   let plugin_name = Dynlink.adapt_filename "plugin.cmo" in
   load plugin_name;
