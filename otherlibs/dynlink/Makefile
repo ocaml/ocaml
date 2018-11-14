@@ -64,15 +64,23 @@ dynlink.cma: $(OBJS)
 dynlink.cmxa: $(NATOBJS)
 	$(OCAMLOPT) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a -o $@ $^
 
-dynlink_platform_intf.cmi: dynlink_platform_intf.cmo
+# Since there is no .mli for [Dynlink_platform_intf], we need to be
+# careful that compilation of the .cmx file does not write the .cmi file again,
+# which would cause rebuilding of ocamlopt.  The easiest way to do this seems
+# to be to copy the .ml file, which is a valid .mli, to the .mli.
+dynlink_platform_intf.mli: dynlink_platform_intf.ml
+	cp $< $@
+dynlink_platform_intf.cmi: dynlink_platform_intf.mli \
+    dynlink_types.cmi
+	$(OCAMLC) $(COMPFLAGS) -c $<
 
 dynlink_platform_intf.cmo: dynlink_platform_intf.ml \
-    dynlink_types.cmi \
+    dynlink_platform_intf.cmi \
     dynlink_types.cmo
 	$(OCAMLC) $(COMPFLAGS) -c dynlink_platform_intf.ml
 
 dynlink_platform_intf.cmx: dynlink_platform_intf.ml \
-    dynlink_types.cmi \
+    dynlink_platform_intf.cmi \
     dynlink_types.cmx
 	$(OCAMLOPT) $(COMPFLAGS) -c dynlink_platform_intf.ml
 
@@ -91,19 +99,13 @@ dynlink_common.cmi: dynlink_common.mli \
 	$(OCAMLC) $(COMPFLAGS) -c dynlink_common.mli
 
 dynlink_common.cmo: dynlink_common.ml \
-    dynlink_platform_intf.cmi \
-    dynlink_platform_intf.cmo \
-    dynlink_types.cmi \
-    dynlink_types.cmo \
-    dynlink_common.cmi
+    dynlink_common.cmi \
+    dynlink_platform_intf.cmo
 	$(OCAMLC) $(COMPFLAGS) -c dynlink_common.ml
 
 dynlink_common.cmx: dynlink_common.ml \
-    dynlink_platform_intf.cmi \
-    dynlink_platform_intf.cmx \
-    dynlink_types.cmi \
-    dynlink_types.cmx \
-    dynlink_common.cmi
+    dynlink_common.cmi \
+    dynlink_platform_intf.cmx
 	$(OCAMLOPT) $(COMPFLAGS) -c dynlink_common.ml
 
 dynlink.cmi: dynlink.mli
