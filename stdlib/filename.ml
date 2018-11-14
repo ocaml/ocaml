@@ -219,7 +219,7 @@ Quoting commands for execution by cmd.exe is difficult.
     Buffer.contents b
   let quote_cmd_filename f =
     if String.contains f '\"' || String.contains f '%' then
-      invalid_arg ("Filename.quote_command: bad file name " ^ f)
+      failwith ("Filename.quote_command: bad file name " ^ f)
     else if String.contains f ' ' then
       "\"" ^ f ^ "\""
     else

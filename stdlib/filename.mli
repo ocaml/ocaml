@@ -215,4 +215,6 @@ val quote_command :
     if any are quoted using {!Filename.quote}, then concatenated.
     Under Win32, additional quoting is performed as required by the
     [cmd.exe] shell that is called by {!Sys.command}.
+
+    Raise [Failure] if the command cannot be escaped on the current platform.
 *)
