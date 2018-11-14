@@ -104,7 +104,7 @@ stdlib__int64.cmx : stdlib.cmx stdlib__int64.cmi
 stdlib__int64.cmi :
 stdlib__lazy.cmo : stdlib__obj.cmi camlinternalLazy.cmi stdlib__lazy.cmi
 stdlib__lazy.cmx : stdlib__obj.cmx camlinternalLazy.cmx stdlib__lazy.cmi
-stdlib__lazy.cmi :
+stdlib__lazy.cmi : camlinternalLazy.cmi
 stdlib__lexing.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__bytes.cmi stdlib__array.cmi stdlib__lexing.cmi
 stdlib__lexing.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__bytes.cmx stdlib__array.cmx stdlib__lexing.cmi
 stdlib__lexing.cmi :
