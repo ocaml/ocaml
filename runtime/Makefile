@@ -252,12 +252,9 @@ ld.conf: $(ROOTDIR)/Makefile.config
 # see http://pubs.opengroup.org/onlinepubs/9699919799/utilities/sort.html:
 # "using sort to process pathnames, it is recommended that LC_ALL .. set to C"
 
+
 primitives : $(PRIMS)
-	sed -n -e "s/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" $(PRIMS) \
-	  | LC_ALL=C sort | uniq > primitives
-	sed -n -e "s/^CAMLprim_int64_[0-9](\([a-z0-9_][a-z0-9_]*\)).*/\
-	caml_int64_\1\ncaml_int64_\1_native/p" ints.c \
-	  | LC_ALL=C sort | uniq >> primitives
+	./gen_primitives.sh >$@
 
 prims.c : primitives
 	(echo '#define CAML_INTERNALS'; \
