@@ -18,15 +18,14 @@
 open Mach
 
 type allocation_state =
-    No_alloc                            (* no allocation is pending *)
-  | Pending_alloc of Reg.t * int        (* an allocation is pending *)
-(* The arguments of Pending_alloc(reg, totalsz) are:
-     reg      the register holding the result of the last allocation
-     totalsz  the amount to be allocated in this block *)
+    No_alloc
+  | Pending_alloc of
+    { reg: Reg.t;    (* register holding the result of the last allocation *)
+      totalsz: int } (* amount to be allocated in this block *)
 
 let allocated_size = function
     No_alloc -> 0
-  | Pending_alloc(_, ofs) -> ofs
+  | Pending_alloc {totalsz; _} -> totalsz
 
 let rec combine i allocstate =
   match i.desc with
@@ -34,23 +33,27 @@ let rec combine i allocstate =
       (i, allocated_size allocstate)
   | Iop(Ialloc { bytes = sz; _ }) ->
       begin match allocstate with
-      | Pending_alloc(reg, totalsz)
+      | Pending_alloc {reg; totalsz}
           when totalsz + sz < Config.max_young_wosize * Arch.size_addr ->
-         let (newnext, newsz) =
-              combine i.next (Pending_alloc(i.res.(0), totalsz + sz)) in
-            (instr_cons_debug (Iop(Iintop_imm(Iadd, -sz)))
-               [| reg |] i.res i.dbg newnext,
-             newsz)
-      | _ ->
-         let (newnext, newsz) = combine i.next (Pending_alloc(i.res.(0), sz)) in
-         let newnext =
-           if newsz = sz then newnext
-           else instr_cons_debug (Iop(Iintop_imm(Iadd, newsz - sz))) i.res
-                i.res i.dbg newnext
+         let (next, totalsz) =
+           combine i.next
+             (Pending_alloc { reg = i.res.(0); totalsz = totalsz + sz }) in
+         (instr_cons_debug (Iop(Iintop_imm(Iadd, -sz)))
+            [| reg |] i.res i.dbg next,
+          totalsz)
+      | No_alloc | Pending_alloc _ ->
+         let (next, totalsz) =
+           combine i.next
+             (Pending_alloc { reg = i.res.(0); totalsz = sz }) in
+         let next =
+           let offset = totalsz - sz in
+           if offset = 0 then next
+           else instr_cons_debug (Iop(Iintop_imm(Iadd, offset))) i.res
+                i.res i.dbg next
          in
-         (instr_cons_debug (Iop(Ialloc {bytes = newsz; spacetime_index = 0;
+         (instr_cons_debug (Iop(Ialloc {bytes = totalsz; spacetime_index = 0;
                                         label_after_call_gc = None; }))
-          i.arg i.res i.dbg newnext, allocated_size allocstate)
+          i.arg i.res i.dbg next, allocated_size allocstate)
       end
   | Iop(Icall_ind _ | Icall_imm _ | Iextcall _ |
         Itailcall_ind _ | Itailcall_imm _) ->
