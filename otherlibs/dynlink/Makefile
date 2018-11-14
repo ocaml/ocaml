@@ -37,39 +37,22 @@ else
 OPTCOMPFLAGS=
 endif
 
-OBJS=dynlinkaux.cmo dynlink_types.cmo \
-  dynlink_platform_intf.cmo dynlink_common.cmo dynlink.cmo
+OBJS=dynlink_types.cmo dynlink_platform_intf.cmo dynlink_common.cmo dynlink.cmo
 NATOBJS=dynlink_types.cmx dynlink_platform_intf.cmx \
   dynlink_common.cmx dynlink.cmx
 
 COMPILEROBJS = $(addprefix $(ROOTDIR)/,\
-  utils/config.cmo utils/build_path_prefix_map.cmo \
-  utils/misc.cmo \
-  utils/identifiable.cmo utils/numbers.cmo \
-  utils/arg_helper.cmo utils/clflags.cmo \
-  utils/consistbl.cmo \
+  utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
+  utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
+  utils/clflags.cmo utils/consistbl.cmo \
   utils/terminfo.cmo utils/warnings.cmo \
   parsing/location.cmo parsing/longident.cmo \
-  parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
-  parsing/ast_helper.cmo \
-  parsing/pprintast.cmo \
-  parsing/camlinternalMenhirLib.cmo parsing/parser.cmo \
-  parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
-  parsing/ast_mapper.cmo parsing/ast_iterator.cmo \
-  parsing/attr_helper.cmo \
-  parsing/builtin_attributes.cmo parsing/ast_invariants.cmo \
-  parsing/depend.cmo \
-  typing/ident.cmo typing/path.cmo \
-  typing/primitive.cmo typing/types.cmo \
-  typing/btype.cmo typing/oprint.cmo \
-  typing/subst.cmo typing/predef.cmo \
-  typing/datarepr.cmo typing/cmi_format.cmo typing/env.cmo \
-  bytecomp/lambda.cmo bytecomp/instruct.cmo \
-  bytecomp/opcodes.cmo \
-  bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
-  bytecomp/dll.cmo bytecomp/meta.cmo \
-  bytecomp/symtable.cmo)
+  parsing/ast_helper.cmo parsing/ast_mapper.cmo parsing/ast_iterator.cmo \
+  parsing/attr_helper.cmo parsing/builtin_attributes.cmo \
+  typing/ident.cmo typing/path.cmo typing/primitive.cmo typing/types.cmo \
+  typing/btype.cmo typing/subst.cmo typing/predef.cmo \
+  typing/datarepr.cmo typing/cmi_format.cmo)
 
 all: dynlink.cma extract_crc
 
@@ -80,9 +63,6 @@ dynlink.cma: $(OBJS)
 
 dynlink.cmxa: $(NATOBJS)
 	$(OCAMLOPT) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a -o $@ $^
-
-dynlinkaux.cmo: $(COMPILEROBJS)
-	$(OCAMLC) $(COMPFLAGS) -pack -o $@ $^
 
 dynlink_platform_intf.cmi: dynlink_platform_intf.cmo
 
@@ -125,8 +105,6 @@ dynlink_common.cmx: dynlink_common.ml \
     dynlink_types.cmx \
     dynlink_common.cmi
 	$(OCAMLOPT) $(COMPFLAGS) -c dynlink_common.ml
-
-dynlinkaux.cmi: dynlinkaux.cmo
 
 dynlink.cmi: dynlink.mli
 	$(OCAMLC) -c $(COMPFLAGS) dynlink.mli

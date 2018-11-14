@@ -1172,8 +1172,7 @@ endif
 DYNLINK_DIR=otherlibs/dynlink
 
 driver/compdynlink.mlbyte: $(DYNLINK_DIR)/dynlink.ml driver/compdynlink.mli
-	grep -v 'REMOVE_ME for ../../debugger/dynlink.ml' \
-          $(DYNLINK_DIR)/dynlink.ml | \
+	cat $(DYNLINK_DIR)/dynlink.ml | \
           sed 's/Dynlink_/Compdynlink_/g' \
           > driver/compdynlink.mlbyte
 
