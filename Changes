@@ -886,6 +886,13 @@ OCaml 4.07.0 (10 July 2018)
 
 ### Runtime system:
 
+- GPR#515 GPR#676 MPR#7173: Add a public C API for weak arrays and
+  ephemerons. Update the documentation for a 4.03 change: finalisation
+  functions are now run before the erasure of the corresponding
+  values.
+  (François Bobot and Jacques-Henri Jourdan, review by Mark Shinwell,
+   Damien Doligez and Frédéric Bour)
+
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
   only dllbigarray.dll and libbigarray.a. Allows the use of C++ libraries which
   raise exceptions.
@@ -3491,6 +3498,9 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#6910, GPR#224: marshaling (output_value, input_value, et al)
   now support marshaled data bigger than 4 Gb.
   (Xavier Leroy)
+
+* GPR#22: The undocumented layout of weak arrays has been changed. Finalisation
+  functions are now run before the erasure of the corresponding values.
 
 * GPR#226: select higher levels of optimization for GCC >= 3.4 and Clang
   when compiling the run-time system and C stub code.
