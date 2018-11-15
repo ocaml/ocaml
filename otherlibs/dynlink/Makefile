@@ -37,7 +37,8 @@ else
 OPTCOMPFLAGS=
 endif
 
-OBJS=dynlink_types.cmo dynlink_platform_intf.cmo dynlink_common.cmo dynlink.cmo
+OBJS=dynlink_compilerlibs.cmo dynlink_types.cmo \
+  dynlink_platform_intf.cmo dynlink_common.cmo dynlink.cmo
 NATOBJS=dynlink_types.cmx dynlink_platform_intf.cmx \
   dynlink_common.cmx dynlink.cmx
 
@@ -52,7 +53,10 @@ COMPILEROBJS = $(addprefix $(ROOTDIR)/,\
   parsing/attr_helper.cmo parsing/builtin_attributes.cmo \
   typing/ident.cmo typing/path.cmo typing/primitive.cmo typing/types.cmo \
   typing/btype.cmo typing/subst.cmo typing/predef.cmo \
-  typing/datarepr.cmo typing/cmi_format.cmo)
+  typing/datarepr.cmo typing/cmi_format.cmo typing/env.cmo \
+  bytecomp/lambda.cmo bytecomp/instruct.cmo \
+  bytecomp/opcodes.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
+  bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo)
 
 all: dynlink.cma extract_crc
 
@@ -63,6 +67,14 @@ dynlink.cma: $(OBJS)
 
 dynlink.cmxa: $(NATOBJS)
 	$(OCAMLOPT) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a -o $@ $^
+
+dynlink_compilerlibs.cmo: $(COMPILEROBJS)
+	$(OCAMLC) $(COMPFLAGS) -pack -o $@ $^
+
+# This rule is ok since there is no corresponding rule for native code
+# compilation (otherwise we would fall foul of the problem in the next
+# comment).
+dynlink_compilerlibs.cmi: dynlink_compilerlibs.cmo
 
 # Since there is no .mli for [Dynlink_platform_intf], we need to be
 # careful that compilation of the .cmx file does not write the .cmi file again,
@@ -108,11 +120,12 @@ dynlink_common.cmx: dynlink_common.ml \
     dynlink_platform_intf.cmx
 	$(OCAMLOPT) $(COMPFLAGS) -c dynlink_common.ml
 
-dynlink.cmi: dynlink.mli
+dynlink.cmi: dynlink.mli dynlink_compilerlibs.cmi
 	$(OCAMLC) -c $(COMPFLAGS) dynlink.mli
 
 dynlink.cmo: dynlink.cmi dynlink_common.cmi \
-      dynlink_types.cmo dynlink_common.cmo dynlink.ml
+      dynlink_types.cmo dynlink_common.cmo dynlink.ml \
+      dynlink_compilerlibs.cmo
 	$(OCAMLC) -c $(COMPFLAGS) -impl dynlink.ml
 
 dynlink.cmx: dynlink.cmi dynlink_common.cmi \

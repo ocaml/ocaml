@@ -1172,19 +1172,15 @@ endif
 DYNLINK_DIR=otherlibs/dynlink
 
 driver/compdynlink.mlbyte: $(DYNLINK_DIR)/dynlink.ml driver/compdynlink.mli
-	cat $(DYNLINK_DIR)/dynlink.ml | \
+	grep -v 'REMOVE_ME for ../../debugger/dynlink.ml' \
+          $(DYNLINK_DIR)/dynlink.ml | \
           sed 's/Dynlink_/Compdynlink_/g' \
           > driver/compdynlink.mlbyte
 
-driver/compdynlink_common.mlbyte: $(DYNLINK_DIR)/dynlink_common.ml
+driver/compdynlink_common.ml: $(DYNLINK_DIR)/dynlink_common.ml
 	cat $(DYNLINK_DIR)/dynlink_common.ml | \
           sed 's/Dynlink_/Compdynlink_/g' \
-          > driver/compdynlink_common.mlbyte
-
-driver/compdynlink_common.mlopt: $(DYNLINK_DIR)/dynlink_common.ml
-	cat $(DYNLINK_DIR)/dynlink_common.ml | \
-            sed 's/Dynlink_/Compdynlink_/g' \
-	    > driver/compdynlink_common.mlopt
+          > driver/compdynlink_common.ml
 
 driver/compdynlink_common.mli: $(DYNLINK_DIR)/dynlink_common.mli
 	cat $(DYNLINK_DIR)/dynlink_common.mli | \
@@ -1251,15 +1247,15 @@ driver/compdynlink_common.cmi: driver/compdynlink_common.mli \
     driver/compdynlink_platform_intf.cmi
 	$(CAMLC) $(COMPFLAGS) -c $<
 
-driver/compdynlink_common.cmo: driver/compdynlink_common.mlbyte \
+driver/compdynlink_common.cmo: driver/compdynlink_common.ml \
     driver/compdynlink_common.cmi \
     driver/compdynlink_platform_intf.cmo
-	$(CAMLC) $(COMPFLAGS) -c -impl $<
+	$(CAMLC) $(COMPFLAGS) -c $<
 
-driver/compdynlink_common.cmx: driver/compdynlink_common.mlopt \
+driver/compdynlink_common.cmx: driver/compdynlink_common.ml \
     driver/compdynlink_common.cmi \
     driver/compdynlink_platform_intf.cmx
-	$(CAMLOPT) $(COMPFLAGS) -c -impl $<
+	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 driver/compdynlink.cmo: driver/compdynlink.mlbyte driver/compdynlink.cmi \
     driver/compdynlink_common.cmi driver/compdynlink_common.cmo
@@ -1275,8 +1271,7 @@ beforedepend:: driver/compdynlink.mlbyte \
                driver/compdynlink_types.ml \
                driver/compdynlink_types.mli \
                driver/compdynlink.mli \
-               driver/compdynlink_common.mlbyte \
-               driver/compdynlink_common.mlopt \
+               driver/compdynlink_common.ml \
                driver/compdynlink_common.mli
 partialclean::
 	rm -f driver/compdynlink.mlbyte
