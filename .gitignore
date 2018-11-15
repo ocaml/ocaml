@@ -71,6 +71,7 @@ _build
 /driver/compdynlink.mlopt
 /driver/compdynlink.mlbyte
 /driver/compdynlink.mli
+/driver/compdynlink_common.ml
 /driver/compdynlink_common.mli
 /driver/compdynlink_platform_intf.ml
 /driver/compdynlink_platform_intf.mli
