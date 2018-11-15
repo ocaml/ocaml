@@ -22,8 +22,18 @@
 type t = exn = ..
 (** The type for exceptions. *)
 
+val id: t -> int
+(** [id exn] returns an integer which uniquely identifies the constructor used
+    to create the exception value [exn] (in the current runtime).  *)
+
+val name: t -> string
+(** [name exn] returns the internal name of the constructor used to create the
+    exception value [exn].  *)
+
 val to_string: t -> string
 (** [to_string e] returns a string representation of the exception [e]. *)
+
+(** {1:tracing Tracing} *)
 
 val set_tracing: bool -> unit
 (** [set_recording_status b] turns recording of exception traces on (if [b
@@ -46,6 +56,8 @@ val last_trace: unit -> Stack_trace.t
     handler), the stack trace may correspond to a later exception than the
     handled one. *)
 
+(** {1:raising Raising} *)
+
 external raise: t -> 'a = "%raise"
 
 external reraise: t -> 'a = "%reraise"
@@ -55,6 +67,8 @@ external raise_notrace: t -> 'a = "%raise_notrace"
 external raise_with_trace: t -> Stack_trace.t -> 'a = "%raise_with_backtrace"
 (** Reraise the exception using the given trace for the origin of the
     exception. *)
+
+(** {1 Custom printers} *)
 
 val register_printer: (t -> string option) -> unit
 (** [register_printer fn] registers [fn] as an exception printer.  The printer
@@ -88,13 +102,3 @@ val set_uncaught_exception_handler: (t -> Stack_trace.t -> unit) -> unit
 
     If [fn] raises an exception, both the exceptions passed to [fn] and raised
     by [fn] will be printed with their respective stack traces. *)
-
-(** {1 Exception slots} *)
-
-val id: t -> int
-(** [id exn] returns an integer which uniquely identifies the constructor used
-    to create the exception value [exn] (in the current runtime).  *)
-
-val name: t -> string
-(** [name exn] returns the internal name of the constructor used to create the
-    exception value [exn].  *)
