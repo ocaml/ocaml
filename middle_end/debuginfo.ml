@@ -219,6 +219,11 @@ module Block = struct
 
   let print_id ppf { id; _ } =
     Format.fprintf ppf "block %d" id
+
+  let rec block_and_all_parents t =
+    match t.parent with
+    | None -> Set.singleton t
+    | Some parent -> Set.add t (block_and_all_parents parent)
 end
 
 module Current_block = struct

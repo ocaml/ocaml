@@ -53,7 +53,7 @@ module Lexical_blocks = struct
     let innermost = Debuginfo.innermost_block insn.dbg in
     match Debuginfo.Current_block.to_block innermost with
     | Toplevel -> Debuginfo.Block.Set.empty
-    | Block block -> Debuginfo.Block.Set.singleton block
+    | Block block -> Debuginfo.Block.block_and_all_parents block
 
   let available_across insn =
     (* Block scoping never changes during the execution of a [Linearize]
