@@ -71,6 +71,12 @@ _build
 /driver/compdynlink.mlopt
 /driver/compdynlink.mlbyte
 /driver/compdynlink.mli
+/driver/compdynlink_common.ml
+/driver/compdynlink_common.mli
+/driver/compdynlink_platform_intf.ml
+/driver/compdynlink_platform_intf.mli
+/driver/compdynlink_types.ml
+/driver/compdynlink_types.mli
 
 /emacs/ocamltags
 /emacs/*.elc
@@ -114,6 +120,7 @@ _build
 /ocamltest/tsl_parser.mli
 
 /otherlibs/dynlink/extract_crc
+/otherlibs/dynlink/dynlink_platform_intf.mli
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/stdlib.mli
 /otherlibs/threads/unix.mli

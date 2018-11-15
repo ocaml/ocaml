@@ -176,6 +176,10 @@ Working version
 - GPR#2038: Deprecate vm threads
   (Jérémie Dimino)
 
+* PR#4208, PR#4229, PR#4839, PR#6462, PR#6957, PR#6950, GPR#1063: Make
+  (nat)dynlink sound
+  (Mark Shinwell, Leo White, Nicolás Ojeda Bär, Pierre Chambart)
+
 ### Compiler user-interface and warnings:
 
 - GPR#2133: Warn on literal patterns found anywhere in a constructor's

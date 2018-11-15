@@ -51,8 +51,9 @@ typing_modules := $(addprefix typing/,\
 bytecomp_modules := $(addprefix bytecomp/,\
   runtimedef bytesections dll meta symtable opcodes)
 
-other_compiler_modules := \
-  driver/compdynlink toplevel/genprintval
+other_compiler_modules := driver/compdynlink_types \
+  driver/compdynlink_platform_intf \
+  driver/compdynlink_common driver/compdynlink toplevel/genprintval
 
 compiler_modules := $(addprefix $(ROOTDIR)/,\
   $(utils_modules) $(parsing_modules) $(typing_modules) \

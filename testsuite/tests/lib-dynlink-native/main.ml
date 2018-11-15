@@ -215,7 +215,6 @@ let () =
   Api.add_cb (fun () -> print_endline "Callback from main")
 
 let ()  =
-  Dynlink.init ();
   Dynlink.allow_unsafe_modules true;
   for i = 1 to Array.length Sys.argv - 1 do
     let name = Sys.argv.(i) in

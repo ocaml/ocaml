@@ -214,6 +214,10 @@ module Stdlib = struct
     include String
     module Set = Set.Make(String)
     module Map = Map.Make(String)
+    module Tbl = Hashtbl.Make(struct
+      include String
+      let hash = Hashtbl.hash
+    end)
   end
 
   external compare : 'a -> 'a -> int = "%compare"
