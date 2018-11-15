@@ -895,9 +895,9 @@ let create_range_list_entry ~start_of_code_symbol ~all_range_list_entries
           let range_list_entry =
             Range_list_entry.create_range_list_entry
               ~start_of_code_symbol
-              ~first_address_when_in_scope: (Asm_label.create_int start_pos)
-              ~first_address_when_not_in_scope: (Asm_label.create_int end_pos)
-              ~first_address_when_not_in_scope_offset: (Some end_pos_offset)
+              ~first_address_when_in_scope:(Asm_label.create_int start_pos)
+              ~first_address_when_not_in_scope:(Asm_label.create_int end_pos)
+              ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
           in
           let all_range_list_entries =
             Int.Triple.Map.add (start_pos, end_pos, end_pos_offset)
@@ -925,11 +925,12 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
       ()
   in
   let start_of_code_symbol = Asm_symbol.create fundecl.fun_name in
-  let lexical_block_proto_dies, _range_list_entries =
+  let lexical_block_proto_dies, _all_range_list_entries =
     LB.fold lexical_block_ranges
       ~init:(B.Map.empty, Int.Triple.Map.empty)
       ~f:(fun (lexical_block_proto_dies, all_range_list_entries) block range ->
-        let rec create_up_to_root block lexical_block_proto_dies =
+        let rec create_up_to_root block lexical_block_proto_dies
+              all_range_list_entries =
           match B.Map.find block lexical_block_proto_dies with
           | proto_die ->
             proto_die, lexical_block_proto_dies, all_range_list_entries
@@ -941,6 +942,7 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
                   all_range_list_entries
               | Some parent ->
                 create_up_to_root parent lexical_block_proto_dies
+                  all_range_list_entries
             in
             let range_list_attribute_value, all_range_list_entries =
               let range_list_entries, all_range_list_entries =
@@ -975,6 +977,7 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
         in
         let _proto_die, lexical_block_proto_dies, all_range_list_entries =
           create_up_to_root block lexical_block_proto_dies
+            all_range_list_entries
         in
         lexical_block_proto_dies, all_range_list_entries)
   in
