@@ -50,6 +50,8 @@ module Block : sig
   val parent : t -> t option
 
   include Identifiable.S with type t := t
+
+  val print_id : Format.formatter -> t -> unit
 end
 
 module Current_block : sig

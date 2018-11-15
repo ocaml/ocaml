@@ -216,6 +216,9 @@ module Block = struct
     let output chan t =
       Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
   end)
+
+  let print_id ppf { id; _ } =
+    Format.fprintf ppf "block %d" id
 end
 
 module Current_block = struct
