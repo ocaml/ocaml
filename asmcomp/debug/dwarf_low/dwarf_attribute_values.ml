@@ -48,6 +48,8 @@ module Value = struct
   let offset_into_debug_info_from_symbol ?comment sym =
     Dwarf_value (V.offset_into_debug_info_from_symbol ?comment sym)
   let offset_into_debug_loc lbl = Dwarf_value (V.offset_into_debug_loc lbl)
+  let offset_into_debug_ranges lbl =
+    Dwarf_value (V.offset_into_debug_ranges lbl)
   let single_location_description sld = Single_location_description sld
   let composite_location_description sld = Composite_location_description sld
   let encoding_attribute attr =
@@ -68,7 +70,7 @@ module Attribute_value = struct
     let attr_spec = Dwarf_attributes.Attribute_specification.seal attr_spec in
     attr_spec, value
 
-  (* CR mshinwell: as per CR above.  This shouldn't be here *)
+  (* CR-someday mshinwell: as per CR above.  This shouldn't be here *)
   let rec uleb128_size i =
     assert (Int64.compare i 0L >= 0);
     if Int64.compare i 128L < 0 then Dwarf_int.one ()

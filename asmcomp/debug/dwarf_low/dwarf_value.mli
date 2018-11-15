@@ -91,6 +91,8 @@ val offset_into_debug_line_from_symbol : ?comment:string -> Asm_symbol.t -> t
 
 val offset_into_debug_loc : ?comment:string -> Asm_label.t -> t
 
+val offset_into_debug_ranges : ?comment:string -> Asm_label.t -> t
+
 val offset_into_debug_abbrev : ?comment:string -> Asm_label.t -> t
 
 val distance_between_labels_16bit : upper:Asm_label.t -> lower:Asm_label.t -> t

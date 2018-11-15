@@ -18,7 +18,7 @@ module A = Asm_directives
 
 let emit ~compilation_unit_proto_die ~start_of_code_symbol
       ~end_of_code_symbol ~compilation_unit_header_label
-      ~debug_loc_table =
+      ~debug_loc_table ~debug_ranges_table =
   (* CR-soon mshinwell: the [compilation_unit_die] member of the record
      returned from [Assign_abbrevs.run] is now unused *)
   let assigned_abbrevs =
@@ -44,6 +44,8 @@ let emit ~compilation_unit_proto_die ~start_of_code_symbol
   Aranges_table.emit aranges_table;
   A.switch_to_section (DWARF Debug_loc);
   Debug_loc_table.emit debug_loc_table;
+  A.switch_to_section (DWARF Debug_ranges);
+  Debug_ranges_table.emit debug_ranges_table;
   A.switch_to_section (DWARF Debug_line);
   A.switch_to_section (DWARF Debug_str);
   A.emit_cached_strings ()

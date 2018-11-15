@@ -55,6 +55,11 @@ let create_stmt_list ~debug_line_label =
   (* DWARF-4 standard section 3.1.1.4. *)
   AV.create spec (V.offset_into_debug_line debug_line_label)
 
+let create_range_list ~debug_ranges_label =
+  let spec = AS.create A.Ranges F.Sec_offset_rangelistptr in
+  (* DWARF-4 standard section 2.17.3. *)
+  AV.create spec (V.offset_into_debug_ranges debug_ranges_label)
+
 let create_external ~is_visible_externally =
   if is_visible_externally then
     let spec = AS.create A.External F.Flag_present in

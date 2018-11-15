@@ -64,6 +64,7 @@ type value =
   | Offset_into_debug_line of Asm_label.t
   | Offset_into_debug_line_from_symbol of Asm_symbol.t
   | Offset_into_debug_loc of Asm_label.t
+  | Offset_into_debug_ranges of Asm_label.t
   | Offset_into_debug_abbrev of Asm_label.t
   | Distance_between_labels_16bit of {
       upper : Asm_label.t;
@@ -127,6 +128,8 @@ let print ppf { value; comment = _; } =
     Format.fprintf ppf "%a - .debug_line" Asm_symbol.print sym
   | Offset_into_debug_loc lbl ->
     Format.fprintf ppf "%a - .debug_loc" Asm_label.print lbl
+  | Offset_into_debug_ranges lbl ->
+    Format.fprintf ppf "%a - .debug_ranges" Asm_label.print lbl
   | Offset_into_debug_abbrev lbl ->
     Format.fprintf ppf "%a - .debug_abbrev" Asm_label.print lbl
   | Distance_between_labels_16bit { upper; lower; } ->
@@ -222,6 +225,11 @@ let offset_into_debug_loc ?comment lbl =
     comment;
   }
 
+let offset_into_debug_ranges ?comment lbl =
+  { value = Offset_into_debug_ranges lbl;
+    comment;
+  }
+
 let offset_into_debug_abbrev ?comment lbl =
   { value = Offset_into_debug_abbrev lbl;
     comment;
@@ -298,6 +306,7 @@ let size { value; comment = _; } =
   | Offset_into_debug_info _
   | Offset_into_debug_info_from_symbol _
   | Offset_into_debug_loc _
+  | Offset_into_debug_ranges _
   | Offset_into_debug_abbrev _ -> Dwarf_int.size (Dwarf_int.zero ())
   | Distance_between_labels_16bit _ -> Dwarf_int.two ()
   | Distance_between_labels_32bit _ -> Dwarf_int.four ()
@@ -367,6 +376,9 @@ let emit { value; comment; } =
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_loc label ->
     A.offset_into_section_label ?comment (DWARF Debug_loc) label
+      ~width:(width_for_ref_addr_or_sec_offset ())
+  | Offset_into_debug_ranges label ->
+    A.offset_into_section_label ?comment (DWARF Debug_ranges) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_abbrev label ->
     A.offset_into_section_label ?comment (DWARF Debug_abbrev) label

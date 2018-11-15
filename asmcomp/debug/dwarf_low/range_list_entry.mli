@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2016--2018 Jane Street Group LLC                           *)
+(*   Copyright 2013--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -12,16 +12,20 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Helper for emitting the various DWARF sections required for full
-    debugging information. *)
+(** DWARF range list entries. *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-val emit
-   : compilation_unit_proto_die:Proto_die.t
-  -> start_of_code_symbol:Asm_symbol.t
-  -> end_of_code_symbol:Asm_symbol.t
-  -> compilation_unit_header_label:Asm_label.t
-  -> debug_loc_table:Debug_loc_table.t
-  -> debug_ranges_table:Debug_ranges_table.t
-  -> unit
+type t
+
+include Dwarf_emittable.S with type t := t
+
+val create_range_list_entry : start_of_code_symbol:Asm_symbol.t
+  -> first_address_when_in_scope:Asm_label.t
+  -> first_address_when_not_in_scope:Asm_label.t
+  -> first_address_when_not_in_scope_offset:int option
+  -> t
+
+val create_base_address_selection_entry : base_address_symbol:Asm_symbol.t -> t
+
+val compare_ascending_vma : t -> t -> int

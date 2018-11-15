@@ -22,6 +22,7 @@ type dwarf_section =
   | Debug_abbrev
   | Debug_aranges
   | Debug_loc
+  | Debug_ranges
   | Debug_str
   | Debug_line
 

@@ -88,6 +88,10 @@ module Value : sig
      : Asm_label.t
     -> Dwarf_attributes.Form.sec_offset t
 
+  val offset_into_debug_ranges
+     : Asm_label.t
+    -> Dwarf_attributes.Form.sec_offset t
+
   val single_location_description
      : Single_location_description.t
     -> Dwarf_attributes.Form.exprloc t

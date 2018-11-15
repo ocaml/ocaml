@@ -16,33 +16,23 @@
 
 module A = Asm_directives
 
-module Location_list_entry = struct
+module Range_list_entry = struct
   type t = {
     start_of_code_symbol : Asm_symbol.t;
     beginning_address_label : Asm_label.t;
     ending_address_label : Asm_label.t;
     ending_address_offset : int option;
-    expr : Single_location_description.t;
   }
 
   let create ~start_of_code_symbol
              ~first_address_when_in_scope
              ~first_address_when_not_in_scope
-             ~first_address_when_not_in_scope_offset
-             ~single_location_description =
+             ~first_address_when_not_in_scope_offset =
     { start_of_code_symbol;
       beginning_address_label = first_address_when_in_scope;
       ending_address_label = first_address_when_not_in_scope;
       ending_address_offset = first_address_when_not_in_scope_offset;
-      expr = single_location_description;
     }
-
-  let expr_size t =
-    let size = Single_location_description.size t.expr in
-    let size = Dwarf_int.to_int64 size in
-    (* CR-someday mshinwell: maybe this size should be unsigned? *)
-    assert (Int64.compare size 0xffffL < 0);
-    Numbers.Int16.of_int64_exn size
 
   let beginning_value t =
     Dwarf_value.code_address_from_label_symbol_diff
@@ -55,10 +45,7 @@ module Location_list_entry = struct
     let offset_upper =
       match t.ending_address_offset with
       | None ->
-        (* It seems as if this should be "-1", but actually not.
-           DWARF-4 spec p.30 (point 2):
-           "...the first address past the end of the address range over
-            which the location is valid." *)
+        (* See note in location_list_entry.ml. *)
         Targetint.zero
       | Some offset -> Targetint.of_int_exn offset
     in
@@ -71,17 +58,12 @@ module Location_list_entry = struct
   let size t =
     let v1 = beginning_value t in
     let v2 = ending_value t in
-    let v3 = Dwarf_value.int16 (expr_size t) in
     let (+) = Dwarf_int.add in
-    Dwarf_value.size v1 + Dwarf_value.size v2 + Dwarf_value.size v3
-      + Single_location_description.size t.expr
+    Dwarf_value.size v1 + Dwarf_value.size v2
 
   let emit t =
     Dwarf_value.emit (beginning_value t);
-    Dwarf_value.emit (ending_value t);
-    A.int16 ~comment:"expression size" (expr_size t);
-    A.comment "Single location description (DWARF expression):";
-    Single_location_description.emit t.expr
+    Dwarf_value.emit (ending_value t)
 end
 
 module Base_address_selection_entry = struct
@@ -106,37 +88,35 @@ module Base_address_selection_entry = struct
 end
 
 type t =
-  | Location_list_entry of Location_list_entry.t
+  | Range_list_entry of Range_list_entry.t
   | Base_address_selection_entry of Base_address_selection_entry.t
 
-let create_location_list_entry ~start_of_code_symbol
+let create_range_list_entry ~start_of_code_symbol
       ~first_address_when_in_scope
       ~first_address_when_not_in_scope
-      ~first_address_when_not_in_scope_offset
-      ~single_location_description =
-  Location_list_entry (
-    Location_list_entry.create ~start_of_code_symbol
+      ~first_address_when_not_in_scope_offset =
+  Range_list_entry (
+    Range_list_entry.create ~start_of_code_symbol
       ~first_address_when_in_scope
       ~first_address_when_not_in_scope
-      ~first_address_when_not_in_scope_offset
-      ~single_location_description)
+      ~first_address_when_not_in_scope_offset)
 
 let create_base_address_selection_entry ~base_address_symbol =
   Base_address_selection_entry (
     Base_address_selection_entry.create ~base_address_symbol)
 
 let size = function
-  | Location_list_entry entry ->
-    Location_list_entry.size entry
+  | Range_list_entry entry ->
+    Range_list_entry.size entry
   | Base_address_selection_entry entry ->
     Base_address_selection_entry.size entry
 
 let emit t =
   match t with
-  | Location_list_entry entry ->
+  | Range_list_entry entry ->
     A.new_line ();
-    A.comment "Location list entry:";
-    Location_list_entry.emit entry
+    A.comment "Range list entry:";
+    Range_list_entry.emit entry
   | Base_address_selection_entry entry ->
     A.comment "Base address selection entry:";
     Base_address_selection_entry.emit entry
@@ -145,8 +125,8 @@ let compare_ascending_vma t1 t2 =
   (* This relies on a certain ordering on labels.  See [Compute_ranges]. *)
   match t1, t2 with
   | Base_address_selection_entry _, Base_address_selection_entry _ ->
-    failwith "Location_list_entry.compare_ascending_vma: unsupported"
-  | Base_address_selection_entry _, Location_list_entry _ -> -1
-  | Location_list_entry _, Base_address_selection_entry _ -> 1
-  | Location_list_entry entry1, Location_list_entry entry2 ->
+    failwith "Range_list_entry.compare_ascending_vma: unsupported"
+  | Base_address_selection_entry _, Range_list_entry _ -> -1
+  | Range_list_entry _, Base_address_selection_entry _ -> 1
+  | Range_list_entry entry1, Range_list_entry entry2 ->
     compare entry1.beginning_address_label entry2.beginning_address_label

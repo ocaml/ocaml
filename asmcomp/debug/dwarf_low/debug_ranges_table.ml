@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2016--2018 Jane Street Group LLC                           *)
+(*   Copyright 2014--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -12,16 +12,31 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Helper for emitting the various DWARF sections required for full
-    debugging information. *)
-
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-val emit
-   : compilation_unit_proto_die:Proto_die.t
-  -> start_of_code_symbol:Asm_symbol.t
-  -> end_of_code_symbol:Asm_symbol.t
-  -> compilation_unit_header_label:Asm_label.t
-  -> debug_loc_table:Debug_loc_table.t
-  -> debug_ranges_table:Debug_ranges_table.t
-  -> unit
+type t = Range_list.t list ref
+
+let create () = ((ref []) : t)
+
+let insert t ~range_list =
+  let attribute_referencing_the_new_list =
+    let spec =
+      Dwarf_attributes.Attribute_specification.create
+        Dwarf_attributes.Attribute.Ranges
+        Dwarf_attributes.Form.Sec_offset_rangelistptr
+    in
+    Dwarf_attribute_values.Attribute_value.create spec
+      (Dwarf_attribute_values.Value.offset_into_debug_ranges
+        (Range_list.label range_list))
+  in
+  t := range_list :: !t;
+  attribute_referencing_the_new_list
+
+let size t =
+  List.fold_left (fun size range_list ->
+      Dwarf_int.add size (Range_list.size range_list))
+    (Dwarf_int.zero ())
+    !t
+
+let emit t =
+  List.iter (fun range_list -> Range_list.emit range_list) !t
