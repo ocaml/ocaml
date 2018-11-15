@@ -19,14 +19,15 @@
 
 (** {1:bools Booleans} *)
 
-type t = bool
-(** The type for boolean values. *)
+type t = bool = false | true
+(** The type of booleans (truth values).
+
+    The constructors [false] and [true] are included here so that they have
+    paths, but they are not intended to be used in user-defined data types.
+ *)
 
 val not : bool -> bool
 (** [not b] is the boolean negation of [b]. *)
-
-val negate : ('a -> bool) -> ('a -> bool)
-(** [negate p v] is [not (p v)]. *)
 
 external ( && ) : bool -> bool -> bool = "%sequand"
 (** [e0 && e1] is the lazy boolean conjunction of expressions [e0] and [e1].

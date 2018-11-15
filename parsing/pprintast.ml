@@ -243,8 +243,16 @@ let private_flag f = function
 let iter_loc f ctxt {txt; loc = _} = f ctxt txt
 
 let constant_string f s = pp f "%S" s
-let tyvar f str = pp f "'%s" str
-let tyvar_loc f str = pp f "'%s" str.txt
+
+let tyvar ppf s =
+  if String.length s >= 2 && s.[1] = '\'' then
+    (* without the space, this would be parsed as
+       a character literal *)
+    Format.fprintf ppf "' %s" s
+  else
+    Format.fprintf ppf "'%s" s
+
+let tyvar_loc f str = tyvar f str.txt
 let string_quot f x = pp f "`%s" x
 
 (* c ['a,'b] *)
@@ -270,7 +278,7 @@ and core_type ctxt f x =
         pp f "@[<2>%a@;->@;%a@]" (* FIXME remove parens later *)
           (type_with_label ctxt) (l,ct1) (core_type ctxt) ct2
     | Ptyp_alias (ct, s) ->
-        pp f "@[<2>%a@;as@;'%s@]" (core_type1 ctxt) ct s
+        pp f "@[<2>%a@;as@;%a@]" (core_type1 ctxt) ct tyvar s
     | Ptyp_poly ([], ct) ->
         core_type ctxt f ct
     | Ptyp_poly (sl, ct) ->
@@ -1033,7 +1041,9 @@ and signature ctxt f x =  list ~sep:"@\n" (signature_item ctxt) f x
 and signature_item ctxt f x : unit =
   match x.psig_desc with
   | Psig_type (rf, l) ->
-      type_def_list ctxt f (rf, l)
+      type_def_list ctxt f (rf, true, l)
+  | Psig_typesubst l ->
+      type_def_list ctxt f (Nonrecursive, false, l)
   | Psig_value vd ->
       let intro = if vd.pval_prim = [] then "val" else "external" in
       pp f "@[<2>%s@ %a@ :@ %a@]%a" intro
@@ -1070,6 +1080,10 @@ and signature_item ctxt f x : unit =
         pmd.pmd_name.txt
         (module_type ctxt) pmd.pmd_type
         (item_attributes ctxt) pmd.pmd_attributes
+  | Psig_modsubst pms ->
+      pp f "@[<hov>module@ %s@ :=@ %a@]%a" pms.pms_name.txt
+        longident_loc pms.pms_manifest
+        (item_attributes ctxt) pms.pms_attributes
   | Psig_open od ->
       pp f "@[<hov2>open%s@ %a@]%a"
         (override od.popen_override)
@@ -1242,7 +1256,7 @@ and structure_item ctxt f x =
         (expression ctxt) e
         (item_attributes ctxt) attrs
   | Pstr_type (_, []) -> assert false
-  | Pstr_type (rf, l)  -> type_def_list ctxt f (rf, l)
+  | Pstr_type (rf, l)  -> type_def_list ctxt f (rf, true, l)
   | Pstr_value (rf, l) ->
       (* pp f "@[<hov2>let %a%a@]"  rec_flag rf bindings l *)
       pp f "@[<2>%a@]" (bindings ctxt) (rf,l)
@@ -1364,12 +1378,13 @@ and type_params ctxt f = function
   | [] -> ()
   | l -> pp f "%a " (list (type_param ctxt) ~first:"(" ~last:")" ~sep:",@;") l
 
-and type_def_list ctxt f (rf, l) =
+and type_def_list ctxt f (rf, exported, l) =
   let type_decl kwd rf f x =
     let eq =
       if (x.ptype_kind = Ptype_abstract)
          && (x.ptype_manifest = None) then ""
-      else " ="
+      else if exported then " ="
+      else " :="
     in
     pp f "@[<2>%s %a%a%s%s%a@]%a" kwd
       nonrec_flag rf

@@ -530,6 +530,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
             unify_vars rem1 rem2
           else begin
             begin try
+              unify_var env (newvar ()) t1;
               unify env t1 t2
             with
             | Unify trace ->
@@ -1063,8 +1064,40 @@ let all_idents_cases half_typed_cases =
     half_typed_cases;
   Hashtbl.fold (fun x () rest -> x :: rest) idents []
 
+let rec has_literal_pattern p = match p.ppat_desc with
+  | Ppat_constant _
+  | Ppat_interval _ ->
+     true
+  | Ppat_any
+  | Ppat_variant (_, None)
+  | Ppat_construct (_, None)
+  | Ppat_type _
+  | Ppat_var _
+  | Ppat_unpack _
+  | Ppat_extension _ ->
+     false
+  | Ppat_exception p
+  | Ppat_variant (_, Some p)
+  | Ppat_construct (_, Some p)
+  | Ppat_constraint (p, _)
+  | Ppat_alias (p, _)
+  | Ppat_lazy p
+  | Ppat_open (_, p) ->
+     has_literal_pattern p
+  | Ppat_tuple ps
+  | Ppat_array ps ->
+     List.exists has_literal_pattern ps
+  | Ppat_record (ps, _) ->
+     List.exists (fun (_,p) -> has_literal_pattern p) ps
+  | Ppat_or (p, q) ->
+     has_literal_pattern p || has_literal_pattern q
 
 exception Need_backtrack
+
+let check_scope_escape loc env level ty =
+  try Ctype.check_scope_escape env level ty
+  with Unify trace ->
+    raise(Error(loc, env, Pattern_type_clash(trace)))
 
 (* type_pat propagates the expected type as well as maps for
    constructors and labels.
@@ -1273,14 +1306,12 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
                                      Warnings.Wildcard_arg_to_constant_constr;
             replicate_list sp constr.cstr_arity
         | Some sp -> [sp] in
-      begin match sargs with
-      | [{ppat_desc = Ppat_constant _} as sp]
-        when Builtin_attributes.warn_on_literal_pattern
-            constr.cstr_attributes ->
-          Location.prerr_warning sp.ppat_loc
-            Warnings.Fragile_literal_pattern
-      | _ -> ()
-      end;
+      if Builtin_attributes.warn_on_literal_pattern constr.cstr_attributes then
+        begin match List.filter has_literal_pattern sargs with
+        | sp :: _ ->
+           Location.prerr_warning sp.ppat_loc Warnings.Fragile_literal_pattern
+        | _ -> ()
+        end;
       if List.length sargs <> constr.cstr_arity then
         raise(Error(loc, !env, Constructor_arity_mismatch(lid.txt,
                                      constr.cstr_arity, List.length sargs)));
@@ -1291,8 +1322,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       in
       let expected_ty = instance expected_ty in
       (* PR#7214: do not use gadt unification for toplevel lets *)
-      if not constr.cstr_generalized || mode = Inside_or
-         || no_existentials <> None
+      if not constr.cstr_generalized || no_existentials <> None
       then unify_pat_types loc !env ty_res expected_ty
       else unify_pat_types_gadt loc env ty_res expected_ty;
       end_def ();
@@ -1418,19 +1448,37 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
         if mode = Split_or || mode = Splitting_or then raise Need_backtrack;
         let initial_pattern_variables = !pattern_variables in
         let initial_module_variables = !module_variables in
+        let equation_level = !gadt_equations_level in
+        let outter_lev = get_current_level () in
+        (* introduce a new scope *)
+        begin_def ();
+        let lev = get_current_level () in
+        gadt_equations_level := Some lev;
+        let env1 = ref !env in
         let p1 =
           try Some (type_pat ~exception_allowed ~mode:Inside_or sp1 expected_ty
-                      (fun x -> x))
+                      ~env:env1 (fun x -> x))
           with Need_backtrack -> None in
         let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
         module_variables := initial_module_variables;
+        let env2 = ref !env in
         let p2 =
           try Some (type_pat ~exception_allowed ~mode:Inside_or sp2 expected_ty
-                      (fun x -> x))
+                      ~env:env2 (fun x -> x))
           with Need_backtrack -> None in
+        end_def ();
+        gadt_equations_level := equation_level;
         let p2_variables = !pattern_variables in
+        (* Make sure no variable with an ambiguous type gets added to the
+           environment. *)
+        List.iter (fun { pv_type; pv_loc; _ } ->
+          check_scope_escape pv_loc !env1 outter_lev pv_type
+        ) p1_variables;
+        List.iter (fun { pv_type; pv_loc; _ } ->
+          check_scope_escape pv_loc !env2 outter_lev pv_type
+        ) p2_variables;
         match p1, p2 with
           None, None -> raise Need_backtrack
         | Some p, None | None, Some p -> p (* no variables in this case *)
@@ -3333,7 +3381,7 @@ and type_format loc str env =
           | _ :: _ :: _ -> Some (mk_exp_loc (Pexp_tuple args)) in
         mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg)) in
       let mk_cst cst = mk_exp_loc (Pexp_constant cst) in
-      let mk_int n = mk_cst (Pconst_integer (string_of_int n, None))
+      let mk_int n = mk_cst (Pconst_integer (Int.to_string n, None))
       and mk_string str = mk_cst (Pconst_string (str, None))
       and mk_char chr = mk_cst (Pconst_char chr) in
       let rec mk_formatting_lit fmting = match fmting with
@@ -4016,11 +4064,6 @@ and type_statement ?explanation env sexp =
   end
 
 (* Typing of match cases *)
-and check_scope_escape loc env level ty =
-  try Ctype.check_scope_escape env level ty
-  with Unify trace ->
-    raise(Error(loc, env, Pattern_type_clash(trace)))
-
 and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
       loc caselist =
   (* ty_arg is _fully_ generalized *)

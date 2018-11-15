@@ -144,9 +144,10 @@ let run test init =
   Stack.clear env.varephe_false;
   Gc.full_major ();
   let res = Hashtbl.fold (fun _ v acc -> acc && check_var v) env.vars true in
-  is_true test "check" res
+  is_true test "check" res;
+  env (* Keep env.varephe_true alive. *)
 
 let () =
   for i = 0 to nb_test do
-    run ("test"^(string_of_int i)) i;
+    ignore (run ("test"^(Int.to_string i)) i);
   done

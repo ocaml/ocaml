@@ -53,6 +53,74 @@ val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
 
     @since 4.08.0 *)
 
+exception Match_failure of (string * int * int)
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised when none of the cases of a pattern-matching
+   apply. The arguments are the location of the match keyword in the
+   source code (file name, line number, column number). *)
+
+exception Assert_failure of (string * int * int)
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised when an assertion fails. The arguments are the
+   location of the assert keyword in the source code (file name, line
+   number, column number). *)
+
+exception Invalid_argument of string
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised by library functions to signal that the given
+   arguments do not make sense. The string gives some information to
+   the programmer. As a general rule, this exception should not be
+   caught, it denotes a programming error and the code should be
+   modified not to trigger it. *)
+
+exception Failure of string
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised by library functions to signal that they are
+   undefined on the given arguments. The string is meant to give some
+   information to the programmer; you must not pattern match on the
+   string literal because it may change in future versions (use
+   Failure _ instead). *)
+
+exception Not_found
+(** Exception raised by search functions when the desired object could
+   not be found. *)
+
+exception Out_of_memory
+(** Exception raised by the garbage collector when there is
+   insufficient memory to complete the computation. *)
+
+exception Stack_overflow
+(** Exception raised by the bytecode interpreter when the evaluation
+   stack reaches its maximal size. This often indicates infinite or
+   excessively deep recursion in the user's program. (Not fully
+   implemented by the native-code compiler.) *)
+
+exception Sys_error of string
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised by the input/output functions to report an
+   operating system error. The string is meant to give some
+   information to the programmer; you must not pattern match on the
+   string literal because it may change in future versions (use
+   Sys_error _ instead). *)
+
+exception End_of_file
+(** Exception raised by input functions to signal that the end of file
+   has been reached. *)
+
+exception Division_by_zero
+(** Exception raised by integer division and remainder operations when
+   their second argument is zero. *)
+
+exception Sys_blocked_io
+(** A special case of Sys_error raised when no I/O is possible on a
+   non-blocking I/O channel. *)
+
+exception Undefined_recursive_module of (string * int * int)
+  [@ocaml.warn_on_literal_pattern]
+(** Exception raised when an ill-founded recursive module definition
+   is evaluated. The arguments are the location of the definition in
+   the source code (file name, line number, column number). *)
+
 (** {1 Comparisons} *)
 
 external ( = ) : 'a -> 'a -> bool = "%equal"
@@ -62,23 +130,27 @@ external ( = ) : 'a -> 'a -> bool = "%equal"
    even if the two mutable objects are not the same physical object.
    Equality between functional values raises [Invalid_argument].
    Equality between cyclic data structures may not terminate.
-   Left-associative operator at precedence level 4/11. *)
+   Left-associative operator, see {!Ocaml_operators} for more information. *)
 
 external ( <> ) : 'a -> 'a -> bool = "%notequal"
 (** Negation of {!Stdlib.( = )}.
-    Left-associative operator at precedence level 4/11. *)
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( < ) : 'a -> 'a -> bool = "%lessthan"
 (** See {!Stdlib.( >= )}.
-    Left-associative operator at precedence level 4/11. *)
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( > ) : 'a -> 'a -> bool = "%greaterthan"
 (** See {!Stdlib.( >= )}.
-    Left-associative operator at precedence level 4/11. *)
+    Left-associative operator,  see {!Ocaml_operators} for more information.
+*)
 
 external ( <= ) : 'a -> 'a -> bool = "%lessequal"
 (** See {!Stdlib.( >= )}.
-    Left-associative operator at precedence level 4/11. *)
+    Left-associative operator,  see {!Ocaml_operators} for more information.
+*)
 
 external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
 (** Structural ordering functions. These functions coincide with
@@ -89,7 +161,8 @@ external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
    of [( = )], mutable structures are compared by contents.
    Comparison between functional values raises [Invalid_argument].
    Comparison between cyclic structures may not terminate.
-   Left-associative operator at precedence level 4/11. *)
+   Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external compare : 'a -> 'a -> int = "%compare"
 (** [compare x y] returns [0] if [x] is equal to [y],
@@ -129,11 +202,13 @@ external ( == ) : 'a -> 'a -> bool = "%eq"
    On non-mutable types, the behavior of [( == )] is
    implementation-dependent; however, it is guaranteed that
    [e1 == e2] implies [compare e1 e2 = 0].
-   Left-associative operator at precedence level 4/11. *)
+   Left-associative operator,  see {!Ocaml_operators} for more information.
+*)
 
 external ( != ) : 'a -> 'a -> bool = "%noteq"
 (** Negation of {!Stdlib.( == )}.
-    Left-associative operator at precedence level 4/11. *)
+    Left-associative operator,  see {!Ocaml_operators} for more information.
+*)
 
 
 (** {1 Boolean operations} *)
@@ -145,24 +220,27 @@ external ( && ) : bool -> bool -> bool = "%sequand"
 (** The boolean 'and'. Evaluation is sequential, left-to-right:
    in [e1 && e2], [e1] is evaluated first, and if it returns [false],
    [e2] is not evaluated at all.
-   Right-associative operator at precedence level 3/11. *)
+   Right-associative operator,  see {!Ocaml_operators} for more information.
+*)
 
 external ( & ) : bool -> bool -> bool = "%sequand"
   [@@ocaml.deprecated "Use (&&) instead."]
 (** @deprecated {!Stdlib.( && )} should be used instead.
-    Right-associative operator at precedence level 3/11. *)
+    Right-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( || ) : bool -> bool -> bool = "%sequor"
 (** The boolean 'or'. Evaluation is sequential, left-to-right:
    in [e1 || e2], [e1] is evaluated first, and if it returns [true],
    [e2] is not evaluated at all.
-   Right-associative operator at precedence level 2/11.
+   Right-associative operator,  see {!Ocaml_operators} for more information.
 *)
 
 external ( or ) : bool -> bool -> bool = "%sequor"
   [@@ocaml.deprecated "Use (||) instead."]
 (** @deprecated {!Stdlib.( || )} should be used instead.
-    Right-associative operator at precedence level 2/11. *)
+    Right-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 (** {1 Debugging} *)
 
@@ -230,15 +308,15 @@ external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 (** Reverse-application operator: [x |> f |> g] is exactly equivalent
  to [g (f (x))].
- Left-associative operator at precedence level 4/11.
-   @since 4.01
- *)
+ Left-associative operator, see {!Ocaml_operators} for more information.
+ @since 4.01
+*)
 
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 (** Application operator: [g @@ f @@ x] is exactly equivalent to
  [g (f (x))].
- Right-associative operator at precedence level 5/11.
-   @since 4.01
+ Right-associative operator, see {!Ocaml_operators} for more information.
+ @since 4.01
 *)
 
 (** {1 Integer arithmetic} *)
@@ -249,13 +327,13 @@ external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
 external ( ~- ) : int -> int = "%negint"
 (** Unary negation. You can also write [- e] instead of [~- e].
-    Unary operator at precedence level 9/11 for [- e]
-    and 11/11 for [~- e]. *)
+    Unary operator, see {!Ocaml_operators} for more information.
+*)
+
 
 external ( ~+ ) : int -> int = "%identity"
 (** Unary addition. You can also write [+ e] instead of [~+ e].
-    Unary operator at precedence level 9/11 for [+ e]
-    and 11/11 for [~+ e].
+    Unary operator, see {!Ocaml_operators} for more information.
     @since 3.12.0
 *)
 
@@ -267,15 +345,18 @@ external pred : int -> int = "%predint"
 
 external ( + ) : int -> int -> int = "%addint"
 (** Integer addition.
-    Left-associative operator at precedence level 6/11. *)
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( - ) : int -> int -> int = "%subint"
 (** Integer subtraction.
-    Left-associative operator at precedence level 6/11. *)
+    Left-associative operator, , see {!Ocaml_operators} for more information.
+*)
 
 external ( * ) : int -> int -> int = "%mulint"
 (** Integer multiplication.
-    Left-associative operator at precedence level 7/11. *)
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( / ) : int -> int -> int = "%divint"
 (** Integer division.
@@ -284,7 +365,8 @@ external ( / ) : int -> int -> int = "%divint"
    More precisely, if [x >= 0] and [y > 0], [x / y] is the greatest integer
    less than or equal to the real quotient of [x] by [y].  Moreover,
    [(- x) / y = x / (- y) = - (x / y)].
-   Left-associative operator at precedence level 7/11. *)
+   Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( mod ) : int -> int -> int = "%modint"
 (** Integer remainder.  If [y] is not zero, the result
@@ -294,7 +376,8 @@ external ( mod ) : int -> int -> int = "%modint"
    If [y = 0], [x mod y] raises [Division_by_zero].
    Note that [x mod y] is negative only if [x < 0].
    Raise [Division_by_zero] if [y] is zero.
-   Left-associative operator at precedence level 7/11. *)
+   Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 val abs : int -> int
 (** Return the absolute value of the argument.  Note that this may be
@@ -311,15 +394,18 @@ val min_int : int
 
 external ( land ) : int -> int -> int = "%andint"
 (** Bitwise logical and.
-    Left-associative operator at precedence level 7/11. *)
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( lor ) : int -> int -> int = "%orint"
 (** Bitwise logical or.
-    Left-associative operator at precedence level 7/11. *)
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( lxor ) : int -> int -> int = "%xorint"
 (** Bitwise logical exclusive or.
-    Left-associative operator at precedence level 7/11. *)
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 val lnot : int -> int
 (** Bitwise logical negation. *)
@@ -327,21 +413,23 @@ val lnot : int -> int
 external ( lsl ) : int -> int -> int = "%lslint"
 (** [n lsl m] shifts [n] to the left by [m] bits.
     The result is unspecified if [m < 0] or [m > Sys.int_size].
-    Right-associative operator at precedence level 8/11. *)
+    Right-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( lsr ) : int -> int -> int = "%lsrint"
 (** [n lsr m] shifts [n] to the right by [m] bits.
     This is a logical shift: zeroes are inserted regardless of
     the sign of [n].
     The result is unspecified if [m < 0] or [m > Sys.int_size].
-    Right-associative operator at precedence level 8/11. *)
+    Right-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( asr ) : int -> int -> int = "%asrint"
 (** [n asr m] shifts [n] to the right by [m] bits.
     This is an arithmetic shift: the sign bit of [n] is replicated.
     The result is unspecified if [m < 0] or [m > Sys.int_size].
-    Right-associative operator at precedence level 8/11. *)
-
+    Right-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 (** {1 Floating-point arithmetic}
 
@@ -359,36 +447,40 @@ external ( asr ) : int -> int -> int = "%asrint"
 
 external ( ~-. ) : float -> float = "%negfloat"
 (** Unary negation. You can also write [-. e] instead of [~-. e].
-    Unary operator at precedence level 9/11 for [-. e]
-    and 11/11 for [~-. e]. *)
+    Unary operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( ~+. ) : float -> float = "%identity"
 (** Unary addition. You can also write [+. e] instead of [~+. e].
-    Unary operator at precedence level 9/11 for [+. e]
-    and 11/11 for [~+. e].
+    Unary operator, see {!Ocaml_operators} for more information.
     @since 3.12.0
 *)
 
 external ( +. ) : float -> float -> float = "%addfloat"
 (** Floating-point addition.
-    Left-associative operator at precedence level 6/11. *)
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( -. ) : float -> float -> float = "%subfloat"
 (** Floating-point subtraction.
-    Left-associative operator at precedence level 6/11. *)
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( *. ) : float -> float -> float = "%mulfloat"
 (** Floating-point multiplication.
-    Left-associative operator at precedence level 7/11. *)
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( /. ) : float -> float -> float = "%divfloat"
 (** Floating-point division.
-    Left-associative operator at precedence level 7/11. *)
+    Left-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( ** ) : float -> float -> float = "caml_power_float" "pow"
   [@@unboxed] [@@noalloc]
 (** Exponentiation.
-    Right-associative operator at precedence level 8/11. *)
+    Right-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external sqrt : float -> float = "caml_sqrt_float" "sqrt"
   [@@unboxed] [@@noalloc]
@@ -576,8 +668,8 @@ external classify_float : (float [@unboxed]) -> fpclass =
 
 val ( ^ ) : string -> string -> string
 (** String concatenation.
-    Right-associative operator at precedence level 5/11. *)
-
+    Right-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 (** {1 Character operations}
 
@@ -697,8 +789,8 @@ external snd : 'a * 'b -> 'b = "%field1"
 
 val ( @ ) : 'a list -> 'a list -> 'a list
 (** List concatenation.  Not tail-recursive (length of the first argument).
-    Right-associative operator at precedence level 5/11. *)
-
+  Right-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 (** {1 Input/output}
     Note: all input/output functions can raise [Sys_error] when the system
@@ -1066,7 +1158,6 @@ module LargeFile :
   regular integers (type [int]), these alternate functions allow
   operating on files whose sizes are greater than [max_int]. *)
 
-
 (** {1 References} *)
 
 type 'a ref = { mutable contents : 'a }
@@ -1079,12 +1170,14 @@ external ref : 'a -> 'a ref = "%makemutable"
 external ( ! ) : 'a ref -> 'a = "%field0"
 (** [!r] returns the current contents of reference [r].
    Equivalent to [fun r -> r.contents].
-   Unary operator at precedence level 11/11.*)
+   Unary operator, see {!Ocaml_operators} for more information.
+*)
 
 external ( := ) : 'a ref -> 'a -> unit = "%setfield0"
 (** [r := a] stores the value of [a] in reference [r].
    Equivalent to [fun r v -> r.contents <- v].
-   Right-associative operator at precedence level 1/11. *)
+   Right-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 external incr : int ref -> unit = "%incr"
 (** Increment the integer contained in the given reference.
@@ -1198,8 +1291,8 @@ val ( ^^ ) :
   [f2]: in case of formatted output, it accepts arguments from [f1], then
   arguments from [f2]; in case of formatted input, it returns results from
   [f1], then results from [f2].
-  Right-associative operator at precedence level 5/11. *)
-
+  Right-associative operator, see {!Ocaml_operators} for more information.
+*)
 
 (** {1 Program termination} *)
 
@@ -1235,6 +1328,8 @@ val do_at_exit : unit -> unit
 
 (**/**)
 
+(** {1 Standard library modules } *)
+
 (*MODULE_ALIASES*)
 module Arg          = Arg
 module Array        = Array
@@ -1252,6 +1347,7 @@ module Ephemeron    = Ephemeron
 module Filename     = Filename
 module Float        = Float
 module Format       = Format
+module Fun          = Fun
 module Gc           = Gc
 module Genlex       = Genlex
 module Hashtbl      = Hashtbl

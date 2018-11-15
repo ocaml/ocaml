@@ -24,7 +24,7 @@ let option_with_arg opt arg =
   compargs := (Filename.quote arg) :: opt :: !compargs
 ;;
 let option_with_int opt arg =
-  compargs := (string_of_int arg) :: opt :: !compargs
+  compargs := (Int.to_string arg) :: opt :: !compargs
 ;;
 let option_with_float opt arg =
   compargs := (string_of_float arg) :: opt :: !compargs

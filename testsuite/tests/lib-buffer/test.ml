@@ -195,3 +195,64 @@ let add_utf_16le_uchar : unit =
   test_spec_map
     "add_utf_16le_uchar: test against spec" map Buffer.add_utf_16le_uchar
 ;;
+
+
+
+
+let () =
+  let b = Buffer.create 64 in
+  Buffer.add_int8 b 0xff;
+  Buffer.add_int8 b 0x01;
+  Buffer.add_int16_be b 0x0123;
+  Buffer.add_int16_le b 0x0123;
+  Buffer.add_int32_be b 0x01234567l;
+  Buffer.add_int32_le b 0x01234567l;
+  Buffer.add_int64_be b 0x0123456789abcdefL;
+  Buffer.add_int64_le b 0x0123456789abcdefL;
+  assert (Buffer.contents b =
+          "\xff\x01" ^
+          "\x01\x23\x23\x01" ^
+          "\x01\x23\x45\x67" ^
+          "\x67\x45\x23\x01" ^
+          "\x01\x23\x45\x67\x89\xab\xcd\xef" ^
+          "\xef\xcd\xab\x89\x67\x45\x23\x01"
+         );
+  Buffer.clear b;
+  Buffer.add_int16_ne b 0x0123;
+  Buffer.add_int32_ne b 0x01234567l;
+  Buffer.add_int64_ne b 0x0123456789abcdefL;
+  let s = Buffer.contents b in
+  if Sys.big_endian then
+    assert (s = "\x01\x23\x01\x23\x45\x67\x01\x23\x45\x67\x89\xab\xcd\xef")
+  else
+    assert (s = "\x23\x01\x67\x45\x23\x01\xef\xcd\xab\x89\x67\x45\x23\x01");
+
+  for i = 1 to 20 do
+    let b = Buffer.create i in
+    for j = 1 to 100 do
+      Buffer.add_int8 b 1
+    done;
+    assert(Buffer.length b = 100);
+  done;
+  for i = 1 to 20 do
+    let b = Buffer.create i in
+    for j = 1 to 100 do
+      Buffer.add_int16_ne b 1
+    done;
+    assert(Buffer.length b = 200);
+  done;
+  for i = 1 to 20 do
+    let b = Buffer.create i in
+    for j = 1 to 100 do
+      Buffer.add_int32_ne b 1l
+    done;
+    assert(Buffer.length b = 400);
+  done;
+  for i = 1 to 20 do
+    let b = Buffer.create i in
+    for j = 1 to 100 do
+      Buffer.add_int64_ne b 1L
+    done;
+    assert(Buffer.length b = 800);
+  done
+;;

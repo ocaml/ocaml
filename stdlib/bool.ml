@@ -13,10 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type t = bool
+type t = bool = false | true
 
 external not : bool -> bool = "%boolnot"
-let negate sat v = not (sat v)
 external ( && ) : bool -> bool -> bool = "%sequand"
 external ( || ) : bool -> bool -> bool = "%sequor"
 let equal : bool -> bool -> bool = ( = )

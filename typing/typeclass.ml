@@ -1747,7 +1747,7 @@ let type_classes define_class approx kind env cls =
 let class_num = ref 0
 let class_declaration env sexpr =
   incr class_num;
-  let expr = class_expr (string_of_int !class_num) env env sexpr in
+  let expr = class_expr (Int.to_string !class_num) env env sexpr in
   (expr, expr.cl_type)
 
 let class_description env sexpr =
@@ -1815,7 +1815,7 @@ and unify_parents_struct env ty st =
 let type_object env loc s =
   incr class_num;
   let (desc, sign) =
-    class_structure (string_of_int !class_num) true env env loc s in
+    class_structure (Int.to_string !class_num) true env env loc s in
   let sty = Ctype.expand_head env sign.csig_self in
   Ctype.hide_private_methods sty;
   let (fields, _) = Ctype.flatten_fields (Ctype.object_fields sty) in

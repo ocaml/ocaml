@@ -446,7 +446,7 @@ let highlight_quote ppf
         |> infer_line_numbers
         |> List.map (fun (lnum, { text; start_pos }) ->
           (text,
-           Misc.Stdlib.Option.value_default string_of_int ~default:"" lnum,
+           Misc.Stdlib.Option.value_default Int.to_string ~default:"" lnum,
            start_pos))
       in
     Format.fprintf ppf "@[<v>";

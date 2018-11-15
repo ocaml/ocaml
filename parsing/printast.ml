@@ -181,7 +181,10 @@ let rec core_type i ppf x =
       core_type i ppf ct;
   | Ptyp_poly (sl, ct) ->
       line i ppf "Ptyp_poly%a\n"
-        (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x.txt)) sl;
+        (fun ppf ->
+           List.iter (fun x -> fprintf ppf " %a" Pprintast.tyvar x.txt)
+        )
+        sl;
       core_type i ppf ct;
   | Ptyp_package (s, l) ->
       line i ppf "Ptyp_package %a\n" fmt_longident_loc s;
@@ -681,6 +684,9 @@ and signature_item i ppf x =
   | Psig_type (rf, l) ->
       line i ppf "Psig_type %a\n" fmt_rec_flag rf;
       list i type_declaration ppf l;
+  | Psig_typesubst l ->
+      line i ppf "Psig_typesubst\n";
+      list i type_declaration ppf l;
   | Psig_typext te ->
       line i ppf "Psig_typext\n";
       type_extension i ppf te
@@ -691,6 +697,11 @@ and signature_item i ppf x =
       line i ppf "Psig_module %a\n" fmt_string_loc pmd.pmd_name;
       attributes i ppf pmd.pmd_attributes;
       module_type i ppf pmd.pmd_type
+  | Psig_modsubst pms ->
+      line i ppf "Psig_modsubst %a = %a\n"
+        fmt_string_loc pms.pms_name
+        fmt_longident_loc pms.pms_manifest;
+      attributes i ppf pms.pms_attributes;
   | Psig_recmodule decls ->
       line i ppf "Psig_recmodule\n";
       list i module_declaration ppf decls;

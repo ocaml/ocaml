@@ -67,41 +67,87 @@ let int_tag = 1000
 let out_of_heap_tag = 1001
 let unaligned_tag = 1002
 
-let extension_constructor x =
-  let x = repr x in
-  let slot =
-    if (is_block x) && (tag x) <> object_tag && (size x) >= 1 then field x 0
-    else x
-  in
-  let name =
-    if (is_block slot) && (tag slot) = object_tag then field slot 0
-    else invalid_arg "Obj.extension_constructor"
-  in
-    if (tag name) = string_tag then (obj slot : extension_constructor)
-    else invalid_arg "Obj.extension_constructor"
+module Extension_constructor =
+struct
+  type t = extension_constructor
+  let of_val x =
+    let x = repr x in
+    let slot =
+      if (is_block x) && (tag x) <> object_tag && (size x) >= 1 then field x 0
+      else x
+    in
+    let name =
+      if (is_block slot) && (tag slot) = object_tag then field slot 0
+      else invalid_arg "Obj.extension_constructor"
+    in
+      if (tag name) = string_tag then (obj slot : t)
+      else invalid_arg "Obj.extension_constructor"
 
-let [@inline always] extension_name (slot : extension_constructor) =
-  (obj (field (repr slot) 0) : string)
+  let [@inline always] name (slot : t) =
+    (obj (field (repr slot) 0) : string)
 
-let [@inline always] extension_id (slot : extension_constructor) =
-  (obj (field (repr slot) 1) : int)
+  let [@inline always] id (slot : t) =
+    (obj (field (repr slot) 1) : int)
+end
+
+let extension_constructor = Extension_constructor.of_val
+let extension_name = Extension_constructor.name
+let extension_id = Extension_constructor.id
 
 module Ephemeron = struct
   type obj_t = t
 
   type t (** ephemeron *)
 
-  external create: int -> t = "caml_ephe_create"
+   (** To change in sync with weak.h *)
+  let additional_values = 2
+  let max_ephe_length = Sys.max_array_length - additional_values
 
-  let length x = size(repr x) - 2
+  external create : int -> t = "caml_ephe_create";;
+  let create l =
+    if not (0 <= l && l <= max_ephe_length) then
+      invalid_arg "Obj.Ephemeron.create";
+    create l
+
+  let length x = size(repr x) - additional_values
+
+  let raise_if_invalid_offset e o msg =
+    if not (0 <= o && o < length e) then
+      invalid_arg msg
 
   external get_key: t -> int -> obj_t option = "caml_ephe_get_key"
+  let get_key e o =
+    raise_if_invalid_offset e o "Obj.Ephemeron.get_key";
+    get_key e o
+
   external get_key_copy: t -> int -> obj_t option = "caml_ephe_get_key_copy"
+  let get_key_copy e o =
+    raise_if_invalid_offset e o "Obj.Ephemeron.get_key_copy";
+    get_key_copy e o
+
   external set_key: t -> int -> obj_t -> unit = "caml_ephe_set_key"
+  let set_key e o x =
+    raise_if_invalid_offset e o "Obj.Ephemeron.set_key";
+    set_key e o x
+
   external unset_key: t -> int -> unit = "caml_ephe_unset_key"
+  let unset_key e o =
+    raise_if_invalid_offset e o "Obj.Ephemeron.unset_key";
+    unset_key e o
+
   external check_key: t -> int -> bool = "caml_ephe_check_key"
+  let check_key e o =
+    raise_if_invalid_offset e o "Obj.Ephemeron.check_key";
+    check_key e o
+
   external blit_key : t -> int -> t -> int -> int -> unit
     = "caml_ephe_blit_key"
+
+  let blit_key e1 o1 e2 o2 l =
+    if l < 0 || o1 < 0 || o1 > length e1 - l
+       || o2 < 0 || o2 > length e2 - l
+    then invalid_arg "Obj.Ephemeron.blit_key"
+    else if l <> 0 then blit_key e1 o1 e2 o2 l
 
   external get_data: t -> obj_t option = "caml_ephe_get_data"
   external get_data_copy: t -> obj_t option = "caml_ephe_get_data_copy"
@@ -109,6 +155,5 @@ module Ephemeron = struct
   external unset_data: t -> unit = "caml_ephe_unset_data"
   external check_data: t -> bool = "caml_ephe_check_data"
   external blit_data : t -> t -> unit = "caml_ephe_blit_data"
-
 
 end

@@ -14,7 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
 open! Int_replace_polymorphic_compare
 
 module Env = struct
@@ -65,7 +65,7 @@ module Env = struct
     try Numbers.Int.Map.find st_exn t.static_exceptions
     with Not_found ->
       Misc.fatal_error ("Closure_conversion.Env.find_static_exception: exn "
-        ^ string_of_int st_exn)
+        ^ Int.to_string st_exn)
 
   let add_global t pos symbol =
     { t with globals = Numbers.Int.Map.add pos symbol t.globals }
@@ -74,7 +74,7 @@ module Env = struct
     try Numbers.Int.Map.find pos t.globals
     with Not_found ->
       Misc.fatal_error ("Closure_conversion.Env.find_global: global "
-        ^ string_of_int pos)
+        ^ Int.to_string pos)
 
   let at_toplevel t = t.at_toplevel
 

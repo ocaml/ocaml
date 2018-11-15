@@ -90,6 +90,7 @@ type t =
   | Erroneous_printed_signature of string   (* 63 *)
   | Unsafe_without_parsing                  (* 64 *)
   | Redefining_unit of string               (* 65 *)
+  | Unused_open_bang of string              (* 66 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -166,9 +167,10 @@ let number = function
   | Erroneous_printed_signature _ -> 63
   | Unsafe_without_parsing -> 64
   | Redefining_unit _ -> 65
+  | Unused_open_bang _ -> 66
 ;;
 
-let last_warning_number = 65
+let last_warning_number = 66
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -389,7 +391,7 @@ let parse_options errflag s =
   current := {(!current) with error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60";;
+let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60-66";;
 let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
@@ -481,6 +483,7 @@ let message = function
         file1 file2 modname
   | Unused_value_declaration v -> "unused value " ^ v ^ "."
   | Unused_open s -> "unused open " ^ s ^ "."
+  | Unused_open_bang s -> "unused open! " ^ s ^ "."
   | Unused_type_declaration s -> "unused type " ^ s ^ "."
   | Unused_for_index s -> "unused for-loop index " ^ s ^ "."
   | Unused_ancestor s -> "unused ancestor variable " ^ s ^ "."
@@ -764,6 +767,7 @@ let descriptions =
    63, "Erroneous printed signature";
    64, "-unsafe used with a preprocessor returning a syntax tree";
    65, "Type declaration defining a new '()' constructor";
+   66, "Unused open! statement";
   ]
 ;;
 
@@ -779,7 +783,7 @@ let help_warnings () =
     | l ->
         Printf.printf "  %c warnings %s.\n"
           (Char.uppercase_ascii c)
-          (String.concat ", " (List.map string_of_int l))
+          (String.concat ", " (List.map Int.to_string l))
   done;
   exit 0
 ;;

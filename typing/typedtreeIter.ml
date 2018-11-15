@@ -387,12 +387,15 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_value_description vd
         | Tsig_type (rf, list) ->
             iter_type_declarations rf list
+        | Tsig_typesubst list ->
+            iter_type_declarations Nonrecursive list
         | Tsig_exception ext ->
             iter_type_exception ext
         | Tsig_typext tyext ->
             iter_type_extension tyext
         | Tsig_module md ->
             iter_module_type md.md_type
+        | Tsig_modsubst _ -> ()
         | Tsig_recmodule list ->
             List.iter (fun md -> iter_module_type md.md_type) list
         | Tsig_modtype mtd ->

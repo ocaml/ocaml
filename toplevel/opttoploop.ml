@@ -298,9 +298,9 @@ let execute_phrase print_outcome ppf phr =
             [ Ast_helper.Str.value ~loc Asttypes.Nonrecursive [vb] ], true
         | _ -> sstr, false
       in
-      let (str, sg, info, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
+      let (str, sg, names, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
-      let sg' = Typemod.simplify_signature newenv info sg in
+      let sg' = Typemod.Signature_names.simplify newenv names sg in
       (* Why is this done? *)
       ignore (Includemod.signatures oldenv sg sg');
       Typecore.force_delayed_checks ();

@@ -43,6 +43,7 @@ STDLIB_MODULES=\
   $(P)filename \
   $(P)float \
   $(P)format \
+  $(P)fun \
   $(P)gc \
   $(P)genlex \
   $(P)hashtbl \
@@ -78,4 +79,5 @@ STDLIB_MODULES=\
   $(P)stringLabels \
   $(P)sys \
   $(P)uchar \
+  $(P)unit \
   $(P)weak

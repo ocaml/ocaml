@@ -23,6 +23,14 @@ Working version
   (Jeremy Yallop, review by Gabriel Scherer, Florian Angeletti, and
    Damien Doligez)
 
+- GPR#2110: Allow GADT constructors to introduce equations and existential types
+  under or-patterns.
+  (Thomas Refis and Leo White, review by Jacques Garrigue)
+
+- GPR#2122: Introduce local substitutions in signatures: "type t := type_expr"
+  and "module M := Extended(Module).Path"
+  (Thomas Refis, with help and review from Leo White, and Alain Frisch)
+
 ### Type system:
 
 - GPR#1826: allow expanding a type to a private abbreviation instead of
@@ -37,6 +45,9 @@ Working version
    review by Jeremy Yallop and Armaël Guéneau)
 
 ### Standard library:
+
+- GPR#2128: Add Fun module.
+  (Many fine eyes)
 
 - GPR#2010: Add Bool module.
   (Many fine eyes)
@@ -53,6 +64,11 @@ Working version
 - MPR#2533, GPR#1839, GPR#1949: added Unix.fsync
   (Francois Berenger, Nicolás Ojeda Bär, review by Daniel Bünzli, David Allsopp
   and ygrek)
+
+- MPR#5072, MPR#6655, GPR#1876: add aliases in Stdlib for built-in types
+  and exceptions.
+  (Jeremy Yallop, reports by Pierre Letouzey and David Sheets,
+   review by Valentin Gatien-Baron, Gabriel Scherer and Alain Frisch)
 
 - MPR#6701, GPR#1185, GPR#1803: make float_of_string and string_of_float
   locale-independent.
@@ -136,6 +152,20 @@ Working version
 - GPR#2119: clarify the documentation of Set.diff
   (Gabriel Scherer, suggestion by John Skaller)
 
+- MPR#7812, GPR#2125: Add Filename.chop_suffix_opt
+  (Alain Frisch, review by Nicolás Ojeda Bär, suggestion by whitequark)
+
+- GPR#1864: Extend Bytes and Buffer with functions to read/write
+  binary representations of numbers
+  (Alain Frisch and Daniel Bünzli)
+
+- GPR#1458: Add unsigned operations unsigned_div, unsigned_rem, unsigned_compare
+  and unsigned_to_int to modules Int32, Int64, Nativeint.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Alain Frisch and Max Mouratov)
+
+- GPR#2145: Deprecate the mutability of Gc.control record fields
+  (Damien Doligez, review by Alain Frisch)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
@@ -147,6 +177,10 @@ Working version
   (Jérémie Dimino)
 
 ### Compiler user-interface and warnings:
+
+- GPR#2133: Warn on literal patterns found anywhere in a constructor's
+  arguments.
+  (Jeremy Yallop, review by Gabriel Scherer)
 
 - PR#2096: Add source highlighting for errors & warnings in batch mode
   (Armaël Guéneau, review by Gabriel Scherer and Jérémie Dimino)
@@ -250,6 +284,11 @@ Working version
 - MPR#7864, GPR#2109: remove duplicates from spelling suggestions.
   (Nicolás Ojeda Bär, review by Armaël Guéneau)
 
+- MPR#6638, GPR#1110: introduced a dedicated warning to report
+  unused "open!" statements
+  (Alain Frisch, report by dwang, review by and design from Leo White)
+
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values.
@@ -259,7 +298,23 @@ Working version
   sign-extension operations.
   (LemonBoy, review by Alain Frisch and Xavier Leroy)
 
+- MPR#7246, GPR#2146: make a few int64 primitives use [@@unboxed]
+  stubs on 32bits
+  (Jérémie Dimino)
+
+- GPR#1917: comballoc: ensure object allocation order is preserved
+  (Stephen Dolan)
+
 ### Runtime system:
+
+- MPR#7198, MPR#7750, GPR#1738: add a function (caml_custom_alloc_mem)
+  and three GC parameters to give the user better control of the
+  out-of-heap memory retained by custom values; use the function to
+  allocate bigarrays and I/O channels.
+  (Damien Doligez, review by Alain Frisch)
+
+- MPR#7676, GPR#2144: Remove old GC heuristic
+  (Damien Doligez, report and review by Alain Frisch)
 
 - GPR#1793: add the -m and -M command-line options to ocamlrun.
   (Sébastien Hinderer, review by Xavier Clerc and Damien Doligez)
@@ -349,6 +404,11 @@ Working version
 
 - GPR#2114: ocamldoc, improved manpages for documentation inside modules
   (Florian Angeletti, review by Gabriel Scherer)
+
+- GPR#2117: stdlib documentation, duplicate the operator precedence table
+  from the manual inside a separate "OCaml_operators" module.
+  (Florian Angeletti, review by Daniel Bünzli, Perry E. Metzger
+  and Gabriel Scherer)
 
 ### Compiler distribution build system:
 
@@ -593,6 +653,15 @@ Working version
   the legacy ANSI encoding under Windows.
   (Nicolás Ojeda Bär, report by Tiphaine Turpin)
 
+- GPR#2083: Fix excessively aggressive float unboxing and introduce similar fix
+  as a preventative measure for boxed int unboxing.
+  (Thomas Refis, Mark Shinwell, Leo White)
+
+- GPR#2130: fix printing of type variables with a quote in their name
+  (Alain Frisch, review by Armaël Guéneau and Gabriel Scherer,
+  report by Hugo Heuzard)
+
+
 OCaml 4.07.1 (4 October 2018)
 -----------------------------
 
@@ -822,6 +891,13 @@ OCaml 4.07.0 (10 July 2018)
   (Jérémie Dimino, review by Sébastien Hinderer and Xavier Leroy)
 
 ### Runtime system:
+
+- GPR#515 GPR#676 MPR#7173: Add a public C API for weak arrays and
+  ephemerons. Update the documentation for a 4.03 change: finalisation
+  functions are now run before the erasure of the corresponding
+  values.
+  (François Bobot and Jacques-Henri Jourdan, review by Mark Shinwell,
+   Damien Doligez and Frédéric Bour)
 
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
   only dllbigarray.dll and libbigarray.a. Allows the use of C++ libraries which
@@ -3428,6 +3504,9 @@ OCaml 4.03.0 (25 Apr 2016):
 - PR#6910, GPR#224: marshaling (output_value, input_value, et al)
   now support marshaled data bigger than 4 Gb.
   (Xavier Leroy)
+
+* GPR#22: The undocumented layout of weak arrays has been changed. Finalisation
+  functions are now run before the erasure of the corresponding values.
 
 * GPR#226: select higher levels of optimization for GCC >= 3.4 and Clang
   when compiling the run-time system and C stub code.

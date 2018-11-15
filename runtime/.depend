@@ -49,8 +49,8 @@ compare_b.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/misc.h \
  caml/mlvalues.h
 custom_b.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/gc_ctrl.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
  caml/address_class.h caml/mlvalues.h caml/signals.h
 debugger_b.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/config.h caml/debugger.h caml/misc.h \
@@ -337,8 +337,8 @@ compare_bd.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h 
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/misc.h \
  caml/mlvalues.h
 custom_bd.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/gc_ctrl.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
  caml/address_class.h caml/mlvalues.h caml/signals.h
 debugger_bd.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/config.h caml/debugger.h caml/misc.h \
@@ -628,8 +628,8 @@ compare_bi.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h 
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/misc.h \
  caml/mlvalues.h
 custom_bi.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/gc_ctrl.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
  caml/address_class.h caml/mlvalues.h caml/signals.h
 debugger_bi.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/config.h caml/debugger.h caml/misc.h \
@@ -916,8 +916,8 @@ compare_bpic.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/misc.h \
  caml/mlvalues.h
 custom_bpic.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/gc_ctrl.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
  caml/address_class.h caml/mlvalues.h caml/signals.h
 debugger_bpic.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/config.h caml/debugger.h caml/misc.h \
@@ -1203,8 +1203,8 @@ compare_n.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h \
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/misc.h \
  caml/mlvalues.h
 custom_n.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/gc_ctrl.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
  caml/address_class.h caml/mlvalues.h caml/signals.h
 debugger_n.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/config.h caml/debugger.h caml/misc.h \
@@ -1488,8 +1488,8 @@ compare_nd.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h 
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/misc.h \
  caml/mlvalues.h
 custom_nd.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/gc_ctrl.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
  caml/address_class.h caml/mlvalues.h caml/signals.h
 debugger_nd.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/config.h caml/debugger.h caml/misc.h \
@@ -1776,8 +1776,8 @@ compare_ni.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h 
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/misc.h \
  caml/mlvalues.h
 custom_ni.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/gc_ctrl.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
  caml/address_class.h caml/mlvalues.h caml/signals.h
 debugger_ni.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/config.h caml/debugger.h caml/misc.h \
@@ -2061,8 +2061,8 @@ compare_np.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.h 
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/misc.h \
  caml/mlvalues.h
 custom_np.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/gc_ctrl.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
  caml/address_class.h caml/mlvalues.h caml/signals.h
 debugger_np.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/config.h caml/debugger.h caml/misc.h \
@@ -2346,8 +2346,8 @@ compare_npic.$(O): compare.c caml/custom.h caml/mlvalues.h caml/config.h caml/m.
  caml/freelist.h caml/minor_gc.h caml/address_class.h caml/misc.h \
  caml/mlvalues.h
 custom_npic.$(O): custom.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
- caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/memory.h \
- caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
+ caml/s.h caml/mlvalues.h caml/custom.h caml/fail.h caml/gc_ctrl.h \
+ caml/memory.h caml/gc.h caml/major_gc.h caml/freelist.h caml/minor_gc.h \
  caml/address_class.h caml/mlvalues.h caml/signals.h
 debugger_npic.$(O): debugger.c caml/alloc.h caml/misc.h caml/config.h caml/m.h \
  caml/s.h caml/mlvalues.h caml/config.h caml/debugger.h caml/misc.h \

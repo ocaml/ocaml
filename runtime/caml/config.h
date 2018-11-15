@@ -222,4 +222,17 @@ typedef uint64_t uintnat;
 /* Maximum size of the major GC slice smoothing window. */
 #define Max_major_window 50
 
+/* Default setting for the ratio of custom garbage to major heap size.
+   Documented in gc.mli */
+#define Custom_major_ratio_def 44
+
+/* Default setting for the ratio of custom garbage to minor heap size.
+   Documented in gc.mli */
+#define Custom_minor_ratio_def 100
+
+/* Default setting for maximum size of custom objects counted as garbage
+   in the minor heap.
+   Documented in gc.mli */
+#define Custom_minor_max_bsz_def 8192
+
 #endif /* CAML_CONFIG_H */

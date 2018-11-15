@@ -92,6 +92,7 @@ type t =
   | Erroneous_printed_signature of string   (* 63 *)
   | Unsafe_without_parsing                  (* 64 *)
   | Redefining_unit of string               (* 65 *)
+  | Unused_open_bang of string              (* 66 *)
 ;;
 
 type alert = {kind:string; message:string; def:loc; use:loc}

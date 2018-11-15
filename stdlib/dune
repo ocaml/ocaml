@@ -22,10 +22,10 @@
  (flags (:standard -w -9))
  ;; We're listing the modules here to avoid building the Labels ones.
  (modules
-  spacetime
   arg
   array
   bigarray
+  bool
   buffer
   bytes
   callback
@@ -41,9 +41,11 @@
   filename
   float
   format
+  fun
   gc
   genlex
   hashtbl
+  int
   int32
   int64
   lazy
@@ -65,6 +67,7 @@
   scanf
   seq
   set
+  spacetime
   stack
   stdlib
   stream

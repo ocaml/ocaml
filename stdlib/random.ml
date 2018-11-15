@@ -38,7 +38,7 @@ module State = struct
 
 
   let full_init s seed =
-    let combine accu x = Digest.string (accu ^ string_of_int x) in
+    let combine accu x = Digest.string (accu ^ Int.to_string x) in
     let extract d =
       Char.code d.[0] + (Char.code d.[1] lsl 8) + (Char.code d.[2] lsl 16)
       + (Char.code d.[3] lsl 24)

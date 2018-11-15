@@ -42,7 +42,7 @@ utils_modules := $(addprefix utils/,\
 
 parsing_modules := $(addprefix parsing/,\
   location longident docstrings syntaxerr ast_helper ast_mapper ast_iterator \
-  attr_helper builtin_attributes)
+  attr_helper builtin_attributes pprintast)
 
 typing_modules := $(addprefix typing/,\
   ident path types btype primitive typedtree subst predef datarepr \

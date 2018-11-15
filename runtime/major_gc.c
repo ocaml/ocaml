@@ -64,6 +64,7 @@ uintnat caml_fl_wsz_at_phase_change = 0;
 extern char *caml_fl_merge;  /* Defined in freelist.c. */
 
 static char *markhp, *chunk, *limit;
+static double p_backlog = 0.0; /* backlog for the gc speedup parameter */
 
 int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
 
@@ -694,7 +695,12 @@ void caml_major_collection_slice (intnat howmuch)
   }
   if (p < dp) p = dp;
   if (p < caml_extra_heap_resources) p = caml_extra_heap_resources;
-  if (p > 0.3) p = 0.3;
+  p += p_backlog;
+  p_backlog = 0.0;
+  if (p > 0.3){
+    p_backlog = p - 0.3;
+    p = 0.3;
+  }
   CAML_INSTR_INT ("major/work/extra#",
                   (uintnat) (caml_extra_heap_resources * 1000000));
 
@@ -709,6 +715,9 @@ void caml_major_collection_slice (intnat howmuch)
   caml_gc_message (0x40, "raw work-to-do = %"
                          ARCH_INTNAT_PRINTF_FORMAT "du\n",
                    (intnat) (p * 1000000));
+  caml_gc_message (0x40, "work backlog = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "du\n",
+                   (intnat) (p_backlog * 1000000));
 
   for (i = 0; i < caml_major_window; i++){
     caml_major_ring[i] += p / caml_major_window;
@@ -829,7 +838,10 @@ void caml_major_collection_slice (intnat howmuch)
 */
 void caml_finish_major_cycle (void)
 {
-  if (caml_gc_phase == Phase_idle) start_cycle ();
+  if (caml_gc_phase == Phase_idle){
+    p_backlog = 0.0; /* full major GC cycle, the backlog becomes irrelevant */
+    start_cycle ();
+  }
   while (caml_gc_phase == Phase_mark) mark_slice (LONG_MAX);
   while (caml_gc_phase == Phase_clean) clean_slice (LONG_MAX);
   CAMLassert (caml_gc_phase == Phase_sweep);

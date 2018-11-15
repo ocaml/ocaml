@@ -117,7 +117,7 @@ let name t =
     in
     match t.part with
     | None -> with_spilled
-    | Some part -> with_spilled ^ "#" ^ string_of_int part
+    | Some part -> with_spilled ^ "#" ^ Int.to_string part
 
 let first_virtual_reg_stamp = ref (-1)
 

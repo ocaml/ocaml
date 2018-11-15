@@ -16,13 +16,6 @@
 /* The parser definition */
 
 %{
-module Pervasives = Stdlib
-(* In 4.08+dev, 'Pervasives' is deprecated in favor of Stdlib. We need
-   to disable the deprecation warning not because of any OCaml code
-   below, but because Menhir generates code using Pervasives (in the
-   interpretation of $symbolstartpos). Yes, this is ugly, but right now
-   we don't see an easier way.  *)
-
 open Asttypes
 open Longident
 open Parsetree
@@ -201,6 +194,24 @@ let expecting loc nonterm =
 
 let not_expecting loc nonterm =
     raise Syntaxerr.(Error(Not_expecting(make_loc loc, nonterm)))
+
+(* This is somewhat hackish: we don't want to allow "type nonrec t := ...",
+   because the definition is nonrecursive by default. Simply removing
+   "nonrec_flag" from the rule results in a shift/reduce conflict:
+       "TYPE . UNDERSCORE"
+   can either be a shift in the type_subst_declaration rule, or a reduce of
+   nonrec_flag in the type_declaration rule.
+
+   To avoid it we could either %inline the nonrec_flag rule, but "meh", or we
+   could add nonrec_flag to the type_subst_declaration rule, and explicitely
+   check if it was passed. In which case we raise a proper error. *)
+let check_nonrec_absent loc nonrec_flag =
+  match nonrec_flag with
+  | Recursive ->
+    () (* nothing to do, this happens when "nonrec" is absent from the source *)
+  | Nonrecursive ->
+    let err = {|"nonrec", type substitutions are non recursive by default|} in
+    raise Syntaxerr.(Error(Not_expecting(loc, err)))
 
 let dotop_fun ~loc dotop =
   (* We could use ghexp here, but sticking to mkexp for parser.mly
@@ -1176,6 +1187,9 @@ signature_item_with_ext:
       { let (body, ext) = $1 in (Psig_value body, ext) }
   | type_declarations
       { let (nr, l, ext) = $1 in (Psig_type (nr, List.rev l), ext) }
+  | type_subst_declarations
+      { let (l, ext) = $1 in
+        (Psig_typesubst (List.rev l), ext) }
   | sig_type_extension
       { let (l, ext) = $1 in (Psig_typext l, ext) }
   | sig_exception_declaration
@@ -1184,6 +1198,8 @@ signature_item_with_ext:
       { let (body, ext) = $1 in (Psig_module body, ext) }
   | module_alias
       { let (body, ext) = $1 in (Psig_module body, ext) }
+  | module_subst
+      { let (body, ext) = $1 in (Psig_modsubst body, ext) }
   | rec_module_declarations
       { let (l, ext) = $1 in (Psig_recmodule (List.rev l), ext) }
   | module_type_declaration
@@ -1233,6 +1249,15 @@ module_alias:
       { let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
         Md.mk $3 $5 ~attrs:(attrs@$6) ~loc:(make_loc $sloc) ~docs, ext }
+;
+module_subst:
+    MODULE ext_attributes mkrhs(UIDENT)
+    COLONEQUAL mkrhs(mod_ext_longident) post_item_attributes
+      { let (ext, attrs) = $2 in
+        let docs = symbol_docs $sloc in
+        Ms.mk $3 $5 ~attrs:(attrs@$6) ~loc:(make_loc $sloc) ~docs, ext }
+  | MODULE ext_attributes mkrhs(UIDENT) COLONEQUAL error
+      { expecting $loc($5) "module path" }
 ;
 rec_module_declarations:
     rec_module_declaration
@@ -2319,6 +2344,39 @@ type_declarations:
       { let (nonrec_flag, tys, ext) = $1 in (nonrec_flag, $2 :: tys, ext) }
 ;
 
+type_subst_declarations:
+    type_subst_declaration
+      { let (ty, ext) = $1 in ([ty], ext) }
+  | type_subst_declarations and_type_subst_declaration
+      { let (tys, ext) = $1 in ($2 :: tys, ext) }
+;
+
+type_subst_declaration:
+    TYPE ext_attributes nrf=nonrec_flag params=optional_type_parameters
+    name=mkrhs(LIDENT) kind_priv_man=type_subst_kind cstrs=constraints
+    post_attrs=post_item_attributes
+      { check_nonrec_absent (make_loc $loc(nrf)) nrf;
+        let (ext, attrs) = $2 in
+        let docs = symbol_docs $sloc in
+        let (kind, priv, manifest) = kind_priv_man in
+        let ty =
+          Type.mk name ~params ~cstrs:(List.rev cstrs) ~kind ~priv
+            ?manifest ~attrs:(attrs @ post_attrs) ~loc:(make_loc $sloc) ~docs
+        in
+        (ty, ext) }
+;
+and_type_subst_declaration:
+    AND attrs=attributes params=optional_type_parameters name=mkrhs(LIDENT)
+    kind_priv_man=type_subst_kind cstrs=constraints
+    post_attrs=post_item_attributes
+      { let docs = symbol_docs $sloc in
+        let text = symbol_text $symbolstartpos in
+        let (kind, priv, manifest) = kind_priv_man in
+        Type.mk name ~params ~cstrs:(List.rev cstrs)
+          ~kind ~priv ?manifest
+          ~attrs:(attrs @ post_attrs) ~loc:(make_loc $sloc) ~docs ~text }
+;
+
 type_declaration:
     TYPE ext_attributes nonrec_flag optional_type_parameters mkrhs(LIDENT)
     type_kind constraints post_item_attributes
@@ -2345,29 +2403,37 @@ constraints:
         constraints CONSTRAINT constrain        { $3 :: $1 }
       | /* empty */                             { [] }
 ;
+%inline nonempty_type_kind(eq_symb):
+  | eq_symb core_type
+      { (Ptype_abstract, Public, Some $2) }
+  | eq_symb PRIVATE core_type
+      { (Ptype_abstract, Private, Some $3) }
+  | eq_symb constructor_declarations
+      { (Ptype_variant(List.rev $2), Public, None) }
+  | eq_symb PRIVATE constructor_declarations
+      { (Ptype_variant(List.rev $3), Private, None) }
+  | eq_symb DOTDOT
+      { (Ptype_open, Public, None) }
+  | eq_symb PRIVATE DOTDOT
+      { (Ptype_open, Private, None) }
+  | eq_symb private_flag LBRACE label_declarations RBRACE
+      { (Ptype_record $4, $2, None) }
+  | eq_symb core_type EQUAL private_flag constructor_declarations
+      { (Ptype_variant(List.rev $5), $4, Some $2) }
+  | eq_symb core_type EQUAL private_flag DOTDOT
+      { (Ptype_open, $4, Some $2) }
+  | eq_symb core_type EQUAL private_flag LBRACE label_declarations RBRACE
+      { (Ptype_record $6, $4, Some $2) }
+
 type_kind:
     /*empty*/
       { (Ptype_abstract, Public, None) }
-  | EQUAL core_type
-      { (Ptype_abstract, Public, Some $2) }
-  | EQUAL PRIVATE core_type
-      { (Ptype_abstract, Private, Some $3) }
-  | EQUAL constructor_declarations
-      { (Ptype_variant(List.rev $2), Public, None) }
-  | EQUAL PRIVATE constructor_declarations
-      { (Ptype_variant(List.rev $3), Private, None) }
-  | EQUAL DOTDOT
-      { (Ptype_open, Public, None) }
-  | EQUAL PRIVATE DOTDOT
-      { (Ptype_open, Private, None) }
-  | EQUAL private_flag LBRACE label_declarations RBRACE
-      { (Ptype_record $4, $2, None) }
-  | EQUAL core_type EQUAL private_flag constructor_declarations
-      { (Ptype_variant(List.rev $5), $4, Some $2) }
-  | EQUAL core_type EQUAL private_flag DOTDOT
-      { (Ptype_open, $4, Some $2) }
-  | EQUAL core_type EQUAL private_flag LBRACE label_declarations RBRACE
-      { (Ptype_record $6, $4, Some $2) }
+  | nonempty_type_kind(EQUAL)
+      { $1 }
+;
+type_subst_kind:
+    nonempty_type_kind(COLONEQUAL)
+      { $1 }
 ;
 optional_type_parameters:
     /*empty*/                                   { [] }
@@ -2897,6 +2963,8 @@ mod_ext_longident:
   | mod_ext_longident DOT UIDENT                { Ldot($1, $3) }
   | mod_ext_longident LPAREN mod_ext_longident RPAREN
       { lapply ~loc:$sloc $1 $3 }
+  | mod_ext_longident LPAREN error
+      { expecting $loc($3) "module path" }
 ;
 mty_longident:
     ident                                       { Lident $1 }

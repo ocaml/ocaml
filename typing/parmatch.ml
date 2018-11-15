@@ -1871,7 +1871,7 @@ module Conv = struct
   let fresh name =
     let current = !name_counter in
     name_counter := !name_counter + 1;
-    "#$" ^ name ^ string_of_int current
+    "#$" ^ name ^ Int.to_string current
 
   let conv typed =
     let constrs = Hashtbl.create 7 in

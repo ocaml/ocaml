@@ -275,9 +275,11 @@ module Sig:
 
     val value: ?loc:loc -> value_description -> signature_item
     val type_: ?loc:loc -> rec_flag -> type_declaration list -> signature_item
+    val type_subst: ?loc:loc -> type_declaration list -> signature_item
     val type_extension: ?loc:loc -> type_extension -> signature_item
     val exception_: ?loc:loc -> type_exception -> signature_item
     val module_: ?loc:loc -> module_declaration -> signature_item
+    val mod_subst: ?loc:loc -> module_substitution -> signature_item
     val rec_module: ?loc:loc -> module_declaration list -> signature_item
     val modtype: ?loc:loc -> module_type_declaration -> signature_item
     val open_: ?loc:loc -> open_description -> signature_item
@@ -317,6 +319,13 @@ module Md:
   sig
     val mk: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> ?text:text ->
       str -> module_type -> module_declaration
+  end
+
+(** Module substitutions *)
+module Ms:
+  sig
+    val mk: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> ?text:text ->
+      str -> lid -> module_substitution
   end
 
 (** Module type declarations *)

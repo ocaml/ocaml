@@ -695,7 +695,7 @@ let instr_frame ppf lexbuf =
       show_current_frame ppf true
     with
     | Not_found ->
-        error ("No frame number " ^ string_of_int frame_number ^ ".")
+        error ("No frame number " ^ Int.to_string frame_number ^ ".")
 
 let instr_backtrace ppf lexbuf =
   let number =
@@ -983,7 +983,7 @@ let info_events _ppf lexbuf =
            (match ev.ev_repr with
               Event_none        -> ""
             | Event_parent _    -> "(repr)"
-            | Event_child repr  -> string_of_int !repr))
+            | Event_child repr  -> Int.to_string !repr))
       (events_in_module mdle)
 
 (** User-defined printers **)

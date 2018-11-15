@@ -51,7 +51,7 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
         -I middle_end/base_types -I asmcomp -I asmcomp/debug \
         -I driver -I toplevel
 
-COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 \
+COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48-66 \
 	  -warn-error A \
           -bin-annot -safe-string -strict-formats $(INCLUDES)
 LINKFLAGS=
@@ -80,9 +80,9 @@ UTILS=utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
   parsing/ast_helper.cmo \
+  parsing/pprintast.cmo \
   parsing/camlinternalMenhirLib.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
-  parsing/pprintast.cmo \
   parsing/ast_mapper.cmo parsing/ast_iterator.cmo parsing/attr_helper.cmo \
   parsing/builtin_attributes.cmo parsing/ast_invariants.cmo parsing/depend.cmo
 
@@ -991,7 +991,7 @@ clean::
 # (that the parser files rely on) in boot/.
 
 # The rules below do not depend on Menhir being available,
-# they just build the parser from the boot/.
+# they just build the parser from boot/.
 
 # See Makefile.menhir for the rules to rebuild the parser and update
 # boot/, which require Menhir. The targets in Makefile.menhir
@@ -1057,25 +1057,17 @@ partialclean::
 
 .PHONY: otherlibraries
 otherlibraries: ocamltools
-	for i in $(OTHERLIBRARIES); do \
-	  ($(MAKE) -C otherlibs/$$i all) || exit $$?; \
-	done
+	$(MAKE) -C otherlibs all
 
 .PHONY: otherlibrariesopt
 otherlibrariesopt:
-	for i in $(OTHERLIBRARIES); do \
-	  ($(MAKE) -C otherlibs/$$i allopt) || exit $$?; \
-	done
+	$(MAKE) -C otherlibs allopt
 
 partialclean::
-	for i in $(OTHERLIBRARIES); do \
-	  ($(MAKE) -C otherlibs/$$i partialclean); \
-	done
+	$(MAKE) -C otherlibs partialclean
 
 clean::
-	for i in $(OTHERLIBRARIES); do \
-	  ($(MAKE) -C otherlibs/$$i clean); \
-	done
+	$(MAKE) -C otherlibs clean
 
 # The replay debugger
 

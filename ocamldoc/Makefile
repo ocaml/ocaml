@@ -222,6 +222,12 @@ manpages: stdlib_man/Stdlib.3o
 .PHONY: html_doc
 html_doc: stdlib_html/Stdlib.html
 
+.PHONY: pdf_doc
+pdf_doc: stdlib_latex/stdlib.pdf
+
+.PHONY: texi_doc
+texi_doc: stdlib_texi/stdlib.texi
+
 .PHONY: dot
 dot: ocamldoc.dot
 
@@ -394,23 +400,46 @@ SRC=$(ROOTDIR)
 
 include Makefile.docfiles
 
-stdlib_man/Stdlib.3o: $(OCAMLDOC) $(DOC_ALL_MLIS)
+stdlib_man/Stdlib.3o: $(OCAMLDOC) $(DOC_ALL)
 	$(MKDIR) stdlib_man
 	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" -man-mini \
-	-text $(SRC)/manual/manual/library/compiler_libs.mld \
+	$(DOC_ALL_TEXT:%=-text %) \
 	$(DOC_ALL_MLIS)
 
-stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL_MLIS)
+stdlib_html/Stdlib.html: $(OCAMLDOC) $(DOC_ALL)
 	$(MKDIR) stdlib_html
 	$(OCAMLDOC_RUN) -html -d stdlib_html -nostdlib \
 	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
 	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
 	-t "OCaml library" \
-	-text $(SRC)/manual/manual/library/compiler_libs.mld \
+	$(DOC_ALL_TEXT:%=-text %) \
 	$(DOC_ALL_MLIS)
+
+stdlib_texi/stdlib.texi: $(OCAMLDOC) $(DOC_ALL)
+	$(MKDIR) stdlib_texi
+	$(OCAMLDOC_RUN) -texi -o stdlib_texi/stdlib.texi -nostdlib \
+	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
+	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
+	-t "OCaml library" \
+	$(DOC_ALL_TEXT:%=-text %) \
+	$(DOC_ALL_MLIS)
+
+
+stdlib_latex/stdlib.tex: $(OCAMLDOC) $(DOC_ALL)
+	$(MKDIR) stdlib_latex
+	$(OCAMLDOC_RUN) -latex -o stdlib_latex/stdlib.tex -nostdlib \
+	-hide Stdlib -lib Stdlib $(DOC_ALL_INCLUDES) \
+	-pp "$(AWK) -v ocamldoc=true -f $(SRC)/stdlib/expand_module_aliases.awk" \
+	-t "OCaml library" \
+	$(DOC_ALL_TEXT:%=-text %) \
+	$(DOC_ALL_MLIS)
+
+stdlib_latex/stdlib.pdf: stdlib_latex/stdlib.tex
+	cd stdlib_latex && pdflatex stdlib && pdflatex stdlib
+
 
 .PHONY: autotest_stdlib
 autotest_stdlib:
@@ -469,7 +498,7 @@ clean:
 	rm -f odoc_parser.output odoc_text_parser.output
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
-	rm -rf stdlib_man stdlib_html
+	rm -rf stdlib_man stdlib_html stdlib_texi stdlib_latex
 	rm -f generators/*.cm[taiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
 
 .PHONY: depend

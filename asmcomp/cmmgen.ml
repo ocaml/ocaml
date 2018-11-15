@@ -547,7 +547,8 @@ let map_ccatch f rec_flag handlers body =
 
 let rec unbox_float dbg cmm =
   match cmm with
-  | Cop(Calloc, [_header; c], _) -> c
+  | Cop(Calloc, [Cblockheader (header, _); c], _) when header = float_header ->
+      c
   | Clet(id, exp, body) -> Clet(id, exp, unbox_float dbg body)
   | Cifthenelse(cond, e1, e2) ->
       Cifthenelse(cond, unbox_float dbg e1, unbox_float dbg e2)
@@ -767,7 +768,7 @@ let call_cached_method obj tag cache pos args dbg =
   let cache = array_indexing log2_size_addr cache pos dbg in
   Compilenv.need_send_fun arity;
   Cop(Capply typ_val,
-      Cconst_symbol("caml_send" ^ string_of_int arity) ::
+      Cconst_symbol("caml_send" ^ Int.to_string arity) ::
         obj :: tag :: cache :: args,
       dbg)
 
@@ -875,12 +876,12 @@ let rec expr_size env = function
 (* Record application and currying functions *)
 
 let apply_function n =
-  Compilenv.need_apply_fun n; "caml_apply" ^ string_of_int n
+  Compilenv.need_apply_fun n; "caml_apply" ^ Int.to_string n
 let curry_function n =
   Compilenv.need_curry_fun n;
   if n >= 0
-  then "caml_curry" ^ string_of_int n
-  else "caml_tuplify" ^ string_of_int (-n)
+  then "caml_curry" ^ Int.to_string n
+  else "caml_tuplify" ^ Int.to_string (-n)
 
 (* Comparisons *)
 
@@ -929,11 +930,15 @@ let box_int_constant bi n =
   | Pint32 -> Uconst_int32 (Nativeint.to_int32 n)
   | Pint64 -> Uconst_int64 (Int64.of_nativeint n)
 
+let caml_nativeint_ops = "caml_nativeint_ops"
+let caml_int32_ops = "caml_int32_ops"
+let caml_int64_ops = "caml_int64_ops"
+
 let operations_boxed_int bi =
   match bi with
-    Pnativeint -> "caml_nativeint_ops"
-  | Pint32 -> "caml_int32_ops"
-  | Pint64 -> "caml_int64_ops"
+    Pnativeint -> caml_nativeint_ops
+  | Pint32 -> caml_int32_ops
+  | Pint64 -> caml_int64_ops
 
 let alloc_header_boxed_int bi =
   match bi with
@@ -963,18 +968,34 @@ let split_int64_for_32bit_target arg dbg =
     Ctuple [Cop (Cload (Thirtytwo_unsigned, Mutable), [first], dbg);
             Cop (Cload (Thirtytwo_unsigned, Mutable), [second], dbg)])
 
+let alloc_matches_boxed_int bi ~hdr ~ops =
+  match bi, hdr, ops with
+  | Pnativeint, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
+      Nativeint.equal hdr boxedintnat_header
+        && String.equal sym caml_nativeint_ops
+  | Pint32, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
+      Nativeint.equal hdr boxedint32_header
+        && String.equal sym caml_int32_ops
+  | Pint64, Cblockheader (hdr, _dbg), Cconst_symbol sym ->
+      Nativeint.equal hdr boxedint64_header
+        && String.equal sym caml_int64_ops
+  | (Pnativeint | Pint32 | Pint64), _, _ -> false
+
 let rec unbox_int bi arg dbg =
   match arg with
-    Cop(Calloc, [_hdr; _ops; Cop(Clsl, [contents; Cconst_int 32], dbg')], _dbg)
-    when bi = Pint32 && size_int = 8 && big_endian ->
+    Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32], dbg')], _dbg)
+    when bi = Pint32 && size_int = 8 && big_endian
+      && alloc_matches_boxed_int bi ~hdr ~ops ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg'); Cconst_int 32],
         dbg)
-  | Cop(Calloc, [_hdr; _ops; contents], _dbg)
-    when bi = Pint32 && size_int = 8 && not big_endian ->
+  | Cop(Calloc, [hdr; ops; contents], _dbg)
+    when bi = Pint32 && size_int = 8 && not big_endian
+      && alloc_matches_boxed_int bi ~hdr ~ops ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg); Cconst_int 32], dbg)
-  | Cop(Calloc, [_hdr; _ops; contents], _dbg) ->
+  | Cop(Calloc, [hdr; ops; contents], _dbg)
+    when alloc_matches_boxed_int bi ~hdr ~ops ->
       contents
   | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body dbg)
   | Cifthenelse(cond, e1, e2) ->
@@ -1355,6 +1376,14 @@ let check_bound unsafe dbg a1 a2 k =
 let default_prim name =
   Primitive.simple ~name ~arity:0(*ignored*) ~alloc:true
 
+let int64_native_prim name arity ~alloc =
+  let u64 = Unboxed_integer Pint64 in
+  let rec make_args = function 0 -> [] | n -> u64 :: make_args (n - 1) in
+  Primitive.make ~name ~native_name:(name ^ "_native")
+    ~alloc
+    ~native_repr_args:(make_args arity)
+    ~native_repr_res:u64
+
 let simplif_primitive_32bits = function
     Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
   | Pintofbint Pint64 -> Pccall (default_prim "caml_int64_to_int")
@@ -1364,15 +1393,24 @@ let simplif_primitive_32bits = function
       Pccall (default_prim "caml_int64_of_nativeint")
   | Pcvtbint(Pint64, Pnativeint) ->
       Pccall (default_prim "caml_int64_to_nativeint")
-  | Pnegbint Pint64 -> Pccall (default_prim "caml_int64_neg")
-  | Paddbint Pint64 -> Pccall (default_prim "caml_int64_add")
-  | Psubbint Pint64 -> Pccall (default_prim "caml_int64_sub")
-  | Pmulbint Pint64 -> Pccall (default_prim "caml_int64_mul")
-  | Pdivbint {size=Pint64} -> Pccall (default_prim "caml_int64_div")
-  | Pmodbint {size=Pint64} -> Pccall (default_prim "caml_int64_mod")
-  | Pandbint Pint64 -> Pccall (default_prim "caml_int64_and")
-  | Porbint Pint64 ->  Pccall (default_prim "caml_int64_or")
-  | Pxorbint Pint64 -> Pccall (default_prim "caml_int64_xor")
+  | Pnegbint Pint64 -> Pccall (int64_native_prim "caml_int64_neg" 1
+                                 ~alloc:false)
+  | Paddbint Pint64 -> Pccall (int64_native_prim "caml_int64_add" 2
+                                 ~alloc:false)
+  | Psubbint Pint64 -> Pccall (int64_native_prim "caml_int64_sub" 2
+                                 ~alloc:false)
+  | Pmulbint Pint64 -> Pccall (int64_native_prim "caml_int64_mul" 2
+                                 ~alloc:false)
+  | Pdivbint {size=Pint64} -> Pccall (int64_native_prim "caml_int64_div" 2
+                                        ~alloc:true)
+  | Pmodbint {size=Pint64} -> Pccall (int64_native_prim "caml_int64_mod" 2
+                                        ~alloc:true)
+  | Pandbint Pint64 -> Pccall (int64_native_prim "caml_int64_and" 2
+                                 ~alloc:false)
+  | Porbint Pint64 ->  Pccall (int64_native_prim "caml_int64_or" 2
+                                 ~alloc:false)
+  | Pxorbint Pint64 -> Pccall (int64_native_prim "caml_int64_xor" 2
+                                 ~alloc:false)
   | Plslbint Pint64 -> Pccall (default_prim "caml_int64_shift_left")
   | Plsrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right_unsigned")
   | Pasrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right")
@@ -1383,9 +1421,9 @@ let simplif_primitive_32bits = function
   | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
   | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "caml_greaterequal")
   | Pbigarrayref(_unsafe, n, Pbigarray_int64, _layout) ->
-      Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_get_" ^ Int.to_string n))
   | Pbigarrayset(_unsafe, n, Pbigarray_int64, _layout) ->
-      Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_set_" ^ Int.to_string n))
   | Pstring_load_64(_) -> Pccall (default_prim "caml_string_get64")
   | Pbytes_load_64(_) -> Pccall (default_prim "caml_bytes_get64")
   | Pbytes_set_64(_) -> Pccall (default_prim "caml_bytes_set64")
@@ -1399,13 +1437,13 @@ let simplif_primitive p =
   | Pduprecord _ ->
       Pccall (default_prim "caml_obj_dup")
   | Pbigarrayref(_unsafe, n, Pbigarray_unknown, _layout) ->
-      Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_get_" ^ Int.to_string n))
   | Pbigarrayset(_unsafe, n, Pbigarray_unknown, _layout) ->
-      Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_set_" ^ Int.to_string n))
   | Pbigarrayref(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
-      Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_get_" ^ Int.to_string n))
   | Pbigarrayset(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
-      Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_set_" ^ Int.to_string n))
   | p ->
       if size_int = 8 then p else simplif_primitive_32bits p
 
@@ -3272,7 +3310,7 @@ let send_function arity =
   let fun_args =
     [obj, typ_val; tag, typ_int; cache, typ_val]
     @ List.map (fun id -> (id, typ_val)) (List.tl args) in
-  let fun_name = "caml_send" ^ string_of_int arity in
+  let fun_name = "caml_send" ^ Int.to_string arity in
   Cfunction
    {fun_name;
     fun_args = List.map (fun (arg, ty) -> VP.create arg, ty) fun_args;
@@ -3283,7 +3321,7 @@ let send_function arity =
 let apply_function arity =
   let (args, clos, body) = apply_function_body arity in
   let all_args = args @ [clos] in
-  let fun_name = "caml_apply" ^ string_of_int arity in
+  let fun_name = "caml_apply" ^ Int.to_string arity in
   Cfunction
    {fun_name;
     fun_args = List.map (fun arg -> (VP.create arg, typ_val)) all_args;
@@ -3305,7 +3343,7 @@ let tuplify_function arity =
     if i >= arity
     then []
     else get_field env (Cvar arg) i dbg :: access_components(i+1) in
-  let fun_name = "caml_tuplify" ^ string_of_int arity in
+  let fun_name = "caml_tuplify" ^ Int.to_string arity in
   Cfunction
    {fun_name;
     fun_args = [VP.create arg, typ_val; VP.create clos, typ_val];
@@ -3373,8 +3411,8 @@ let final_curry_function arity =
                          newclos (n-1))
     end in
   Cfunction
-   {fun_name = "caml_curry" ^ string_of_int arity ^
-               "_" ^ string_of_int (arity-1);
+   {fun_name = "caml_curry" ^ Int.to_string arity ^
+               "_" ^ Int.to_string (arity-1);
     fun_args = [VP.create last_arg, typ_val; VP.create last_clos, typ_val];
     fun_body = curry_fun [] last_clos (arity-1);
     fun_codegen_options = [];
@@ -3386,8 +3424,8 @@ let rec intermediate_curry_functions arity num =
   if num = arity - 1 then
     [final_curry_function arity]
   else begin
-    let name1 = "caml_curry" ^ string_of_int arity in
-    let name2 = if num = 0 then name1 else name1 ^ "_" ^ string_of_int num in
+    let name1 = "caml_curry" ^ Int.to_string arity in
+    let name2 = if num = 0 then name1 else name1 ^ "_" ^ Int.to_string num in
     let arg = V.create_local "arg" and clos = V.create_local "clos" in
     Cfunction
      {fun_name = name2;
@@ -3396,15 +3434,15 @@ let rec intermediate_curry_functions arity num =
          if arity - num > 2 && arity <= max_arity_optimized then
            Cop(Calloc,
                [alloc_closure_header 5 Debuginfo.none;
-                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
+                Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1));
                 int_const (arity - num - 1);
-                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1) ^ "_app");
+                Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1) ^ "_app");
                 Cvar arg; Cvar clos],
                dbg)
          else
            Cop(Calloc,
                 [alloc_closure_header 4 Debuginfo.none;
-                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
+                 Cconst_symbol(name1 ^ "_" ^ Int.to_string (num+1));
                  int_const 1; Cvar arg; Cvar clos],
                 dbg);
       fun_codegen_options = [];
@@ -3435,7 +3473,7 @@ let rec intermediate_curry_functions arity num =
           in
           let cf =
             Cfunction
-              {fun_name = name1 ^ "_" ^ string_of_int (num+1) ^ "_app";
+              {fun_name = name1 ^ "_" ^ Int.to_string (num+1) ^ "_app";
                fun_args;
                fun_body = iter (num+1)
                   (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;

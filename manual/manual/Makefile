@@ -49,12 +49,13 @@ html: htmlman/libref/style.css htmlman/compilerlibref/style.css etex-files
 	    manual.hva -e macros.tex ../manual.tex \
 	  && $(HACHA) -tocter manual.html
 
-htmlman/libref/style.css: style.css $(STDLIB_MLIS)
+htmlman/libref/style.css: style.css $(STDLIB_MLIS) $(DOC_STDLIB_TEXT)
 	mkdir -p htmlman/libref
 	$(OCAMLDOC) -colorize-code -sort -html \
 	  -d htmlman/libref \
 	  $(DOC_STDLIB_INCLUDES) \
-	  $(STDLIB_MLIS)
+          $(DOC_STDLIB_TEXT:%=-text %) \
+          $(STDLIB_MLIS)
 	cp style.css $@
 
 COMPILERLIBS_MODULES=$(shell echo $(basename $(notdir $(COMPILERLIBS_MLIS))) \

@@ -1864,7 +1864,8 @@ functions, and do not use "CAMLreturn" to return the result.
 
 \subsection{Allocating custom blocks}
 
-Custom blocks must be allocated via the "caml_alloc_custom" function:
+Custom blocks must be allocated via "caml_alloc_custom" or
+"caml_alloc_custom_mem":
 \begin{center}
 "caml_alloc_custom("\var{ops}", "\var{size}", "\var{used}", "\var{max}")"
 \end{center}
@@ -1915,6 +1916,18 @@ or if the previous discussion made little sense to you, just take
 $\var{used} = 0$ and $\var{max} = 1$.  But if you later find that the
 finalization functions are not called ``often enough'', consider
 increasing the $\var{used} / \var{max}$ ratio.
+
+\begin{center}
+"caml_alloc_custom_mem("\var{ops}", "\var{size}", "\var{used}")"
+\end{center}
+Use this function when your custom block holds only out-of-heap memory
+(memory allocated with "malloc" or "caml_stat_alloc") and no other
+resources. "used" should be the number of bytes of out-of-heap
+memory that are held by your custom block. This function works like
+"caml_alloc_custom" except that the "max" parameter is under the
+control of the user (via the "custom_major_ratio",
+"custom_minor_ratio", and "custom_minor_max_size" parameters) and
+proportional to the heap sizes.
 
 \subsection{Accessing custom blocks}
 

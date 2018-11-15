@@ -48,6 +48,7 @@ type iterator = {
   location: iterator -> Location.t -> unit;
   module_binding: iterator -> module_binding -> unit;
   module_declaration: iterator -> module_declaration -> unit;
+  module_substitution: iterator -> module_substitution -> unit;
   module_expr: iterator -> module_expr -> unit;
   module_type: iterator -> module_type -> unit;
   module_type_declaration: iterator -> module_type_declaration -> unit;
@@ -264,10 +265,13 @@ module MT = struct
     sub.location sub loc;
     match desc with
     | Psig_value vd -> sub.value_description sub vd
-    | Psig_type (_rf, l) -> List.iter (sub.type_declaration sub) l
+    | Psig_type (_, l)
+    | Psig_typesubst l ->
+      List.iter (sub.type_declaration sub) l
     | Psig_typext te -> sub.type_extension sub te
     | Psig_exception ed -> sub.type_exception sub ed
     | Psig_module x -> sub.module_declaration sub x
+    | Psig_modsubst x -> sub.module_substitution sub x
     | Psig_recmodule l ->
         List.iter (sub.module_declaration sub) l
     | Psig_modtype x -> sub.module_type_declaration sub x
@@ -543,6 +547,14 @@ let default_iterator =
          this.module_type this pmd_type;
          this.location this pmd_loc;
          this.attributes this pmd_attributes;
+      );
+
+    module_substitution =
+      (fun this {pms_name; pms_manifest; pms_attributes; pms_loc} ->
+         iter_loc this pms_name;
+         iter_loc this pms_manifest;
+         this.location this pms_loc;
+         this.attributes this pms_attributes;
       );
 
     module_type_declaration =

@@ -53,6 +53,7 @@ type mapper = {
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> module_binding -> module_binding;
   module_declaration: mapper -> module_declaration -> module_declaration;
+  module_substitution: mapper -> module_substitution -> module_substitution;
   module_expr: mapper -> module_expr -> module_expr;
   module_type: mapper -> module_type -> module_type;
   module_type_declaration: mapper -> module_type_declaration
@@ -282,10 +283,14 @@ module MT = struct
     let loc = sub.location sub loc in
     match desc with
     | Psig_value vd -> value ~loc (sub.value_description sub vd)
-    | Psig_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
+    | Psig_type (rf, l) ->
+        type_ ~loc rf (List.map (sub.type_declaration sub) l)
+    | Psig_typesubst l ->
+        type_subst ~loc (List.map (sub.type_declaration sub) l)
     | Psig_typext te -> type_extension ~loc (sub.type_extension sub te)
     | Psig_exception ed -> exception_ ~loc (sub.type_exception sub ed)
     | Psig_module x -> module_ ~loc (sub.module_declaration sub x)
+    | Psig_modsubst x -> mod_subst ~loc (sub.module_substitution sub x)
     | Psig_recmodule l ->
         rec_module ~loc (List.map (sub.module_declaration sub) l)
     | Psig_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
@@ -580,6 +585,15 @@ let default_mapper =
            (this.module_type this pmd_type)
            ~attrs:(this.attributes this pmd_attributes)
            ~loc:(this.location this pmd_loc)
+      );
+
+    module_substitution =
+      (fun this {pms_name; pms_manifest; pms_attributes; pms_loc} ->
+         Ms.mk
+           (map_loc this pms_name)
+           (map_loc this pms_manifest)
+           ~attrs:(this.attributes this pms_attributes)
+           ~loc:(this.location this pms_loc)
       );
 
     module_type_declaration =

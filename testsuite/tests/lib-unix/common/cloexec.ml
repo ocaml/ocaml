@@ -54,7 +54,7 @@ all_modules= "cloexec.ml"
 
 let string_of_fd (fd: Unix.file_descr) : string =
   match Sys.os_type with
-  | "Unix" | "Cygwin" ->  string_of_int (Obj.magic fd : int)
+  | "Unix" | "Cygwin" ->  Int.to_string (Obj.magic fd : int)
   | "Win32" ->
       if Sys.word_size = 32 then
         Int32.to_string (Obj.magic fd : int32)
