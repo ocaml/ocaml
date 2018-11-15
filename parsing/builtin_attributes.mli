@@ -16,6 +16,7 @@
 (** Support for some of the builtin attributes
 
     - ocaml.deprecated
+    - ocaml.alert
     - ocaml.error
     - ocaml.ppwarning
     - ocaml.warning
@@ -32,13 +33,13 @@
 *)
 
 
-val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
-val check_deprecated_inclusion:
+val check_alerts: Location.t -> Parsetree.attributes -> string -> unit
+val check_alerts_inclusion:
   def:Location.t -> use:Location.t -> Location.t -> Parsetree.attributes ->
   Parsetree.attributes -> string -> unit
-val deprecated_of_attrs: Parsetree.attributes -> string option
-val deprecated_of_sig: Parsetree.signature -> string option
-val deprecated_of_str: Parsetree.structure -> string option
+val alerts_of_attrs: Parsetree.attributes -> string Misc.Stdlib.String.Map.t
+val alerts_of_sig: Parsetree.signature -> string Misc.Stdlib.String.Map.t
+val alerts_of_str: Parsetree.structure -> string Misc.Stdlib.String.Map.t
 
 val check_deprecated_mutable:
     Location.t -> Parsetree.attributes -> string -> unit
@@ -46,7 +47,7 @@ val check_deprecated_mutable_inclusion:
   def:Location.t -> use:Location.t -> Location.t -> Parsetree.attributes ->
   Parsetree.attributes -> string -> unit
 
-val check_no_deprecated : Parsetree.attributes -> unit
+val check_no_alert: Parsetree.attributes -> unit
 
 val error_of_extension: Parsetree.extension -> Location.error
 

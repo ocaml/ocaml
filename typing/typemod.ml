@@ -2291,9 +2291,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
              declarations like "let x = true;; let x = 1;;", because in this
              case, the inferred signature contains only the last declaration. *)
           if not !Clflags.dont_write_files then begin
-            let deprecated = Builtin_attributes.deprecated_of_str ast in
+            let alerts = Builtin_attributes.alerts_of_str ast in
             let cmi =
-              Env.save_signature ~deprecated
+              Env.save_signature ~alerts
                 simple_sg modulename (outputprefix ^ ".cmi")
             in
             Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
@@ -2376,7 +2376,7 @@ let package_units initial_env objfiles cmifile modulename =
     (* Write packaged signature *)
     if not !Clflags.dont_write_files then begin
       let cmi =
-        Env.save_signature_with_imports ~deprecated:None
+        Env.save_signature_with_imports ~alerts:Misc.Stdlib.String.Map.empty
           sg modulename
           (prefix ^ ".cmi") imports
       in

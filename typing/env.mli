@@ -92,7 +92,7 @@ val has_local_constraints: t -> bool
 
 (* Lookup by long identifiers *)
 
-(* ?loc is used to report 'deprecated module' warnings *)
+(* ?loc is used to report 'deprecated module' warnings and other alerts *)
 
 val lookup_value:
   ?loc:Location.t -> ?mark:bool ->
@@ -220,11 +220,11 @@ val get_unit_name: unit -> string
 val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature:
-  deprecated:string option -> signature -> string -> string ->
+  alerts:string Misc.Stdlib.String.Map.t -> signature -> string -> string ->
   Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-  deprecated:string option ->
+  alerts:string Misc.Stdlib.String.Map.t ->
   signature -> string -> string -> (string * Digest.t option) list
   -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name,

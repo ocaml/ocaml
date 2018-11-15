@@ -17,6 +17,17 @@ let mk_a f =
   "-a", Arg.Unit f, " Build a library"
 ;;
 
+let mk_alert f =
+  "-alert", Arg.String f,
+  Printf.sprintf
+    "<list>  Enable or disable alerts according to <list>:\n\
+    \        +<alertname>  enable alert <alertname>\n\
+    \        -<alertname>  disable alert <alertname>\n\
+    \        ++<alertname> treat <alertname> as fatal error\n\
+    \        --<alertname> treat <alertname> as non-fatal\n\
+    \        @<alertname>  enable <alertname> and treat it as fatal error\n\
+    \    <alertname> can be 'all' to refer to all alert names";;
+
 let mk_absname f =
   "-absname", Arg.Unit f, " Show absolute filenames in error messages"
 ;;
@@ -832,6 +843,7 @@ let mk__ f =
 
 module type Common_options = sig
   val _absname : unit -> unit
+  val _alert : string -> unit
   val _I : string -> unit
   val _labels : unit -> unit
   val _alias_deps : unit -> unit
@@ -1066,6 +1078,7 @@ module Make_bytecomp_options (F : Bytecomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_alert F._alert;
     mk_absname F._absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
@@ -1173,6 +1186,7 @@ module Make_bytetop_options (F : Bytetop_options) =
 struct
   let list = [
     mk_absname F._absname;
+    mk_alert F._alert;
     mk_I F._I;
     mk_init F._init;
     mk_labels F._labels;
@@ -1233,6 +1247,7 @@ module Make_optcomp_options (F : Optcomp_options) =
 struct
   let list = [
     mk_a F._a;
+    mk_alert F._alert;
     mk_absname F._absname;
     mk_afl_instrument F._afl_instrument;
     mk_afl_inst_ratio F._afl_inst_ratio;
@@ -1381,6 +1396,7 @@ end;;
 module Make_opttop_options (F : Opttop_options) = struct
   let list = [
     mk_absname F._absname;
+    mk_alert F._alert;
     mk_compact F._compact;
     mk_I F._I;
     mk_init F._init;
@@ -1478,6 +1494,7 @@ module Make_ocamldoc_options (F : Ocamldoc_options) =
 struct
   let list = [
     mk_absname F._absname;
+    mk_alert F._alert;
     mk_I F._I;
     mk_impl F._impl;
     mk_intf F._intf;

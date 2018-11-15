@@ -21,7 +21,7 @@ let class_types env cty1 cty2 =
   Ctype.match_class_types env cty1 cty2
 
 let class_type_declarations ~loc env cty1 cty2 =
-  Builtin_attributes.check_deprecated_inclusion
+  Builtin_attributes.check_alerts_inclusion
     ~def:cty1.clty_loc
     ~use:cty2.clty_loc
     loc

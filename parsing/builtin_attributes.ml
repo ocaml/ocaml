@@ -66,35 +66,64 @@ let error_of_extension ext =
   | ({txt; loc}, _) ->
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
+let kind_and_message = function
+  | PStr[
+      {pstr_desc=
+         Pstr_eval
+           ({pexp_desc=Pexp_apply
+                 ({pexp_desc=Pexp_ident{txt=Longident.Lident id}},
+                  [Nolabel,{pexp_desc=Pexp_constant (Pconst_string(s,_))}])
+            },_)}] ->
+      Some (id, s)
+  | PStr[
+      {pstr_desc=
+         Pstr_eval
+           ({pexp_desc=Pexp_ident{txt=Longident.Lident id}},_)}] ->
+      Some (id, "")
+  | _ -> None
+
 let cat s1 s2 =
   if s2 = "" then s1 else s1 ^ "\n" ^ s2
 
-let deprecated_attr x =
-  match x with
-  | {attr_name = {txt = "ocaml.deprecated"|"deprecated"; _};_} -> Some x
+let alert_attr x =
+  match x.attr_name.txt with
+  | "ocaml.deprecated"|"deprecated" ->
+      Some (x, "deprecated", string_of_opt_payload x.attr_payload)
+  | "ocaml.alert"|"alert" ->
+      begin match kind_and_message x.attr_payload with
+      | Some (kind, message) -> Some (x, kind, message)
+      | None -> None (* note: bad payloads detected by warning_attribute *)
+      end
   | _ -> None
 
-let rec deprecated_attrs = function
-  | [] -> None
-  | hd :: tl ->
-    match deprecated_attr hd with
-    | Some x -> Some x
-    | None -> deprecated_attrs tl
+let alert_attrs l =
+  Misc.Stdlib.List.filter_map alert_attr l
 
-let deprecated_of_attrs l =
-  match deprecated_attrs l with
-  | None -> None
-  | Some a -> Some (string_of_opt_payload a.attr_payload)
+let alerts_of_attrs l =
+  List.fold_left
+    (fun acc (_, kind, message) ->
+       let upd = function
+         | None | Some "" -> Some message
+         | Some s -> Some (cat s message)
+       in
+       Misc.Stdlib.String.Map.update kind upd acc
+    )
+    Misc.Stdlib.String.Map.empty
+    (alert_attrs l)
 
-let check_deprecated loc attrs s =
-  match deprecated_of_attrs attrs with
-  | None -> ()
-  | Some txt -> Location.deprecated loc (cat s txt)
+let check_alerts loc attrs s =
+  Misc.Stdlib.String.Map.iter
+    (fun kind message -> Location.alert loc ~kind (cat s message))
+    (alerts_of_attrs attrs)
 
-let check_deprecated_inclusion ~def ~use loc attrs1 attrs2 s =
-  match deprecated_of_attrs attrs1, deprecated_of_attrs attrs2 with
-  | None, _ | Some _, Some _ -> ()
-  | Some txt, None -> Location.deprecated ~def ~use loc (cat s txt)
+let check_alerts_inclusion ~def ~use loc attrs1 attrs2 s =
+  let m2 = alerts_of_attrs attrs2 in
+  Misc.Stdlib.String.Map.iter
+    (fun kind msg ->
+       if not (Misc.Stdlib.String.Map.mem kind m2) then
+         Location.alert ~def ~use ~kind loc (cat s msg)
+    )
+    (alerts_of_attrs attrs1)
 
 let rec deprecated_mutable_of_attrs = function
   | [] -> None
@@ -118,44 +147,58 @@ let check_deprecated_mutable_inclusion ~def ~use loc attrs1 attrs2 s =
       Location.deprecated ~def ~use loc
         (Printf.sprintf "mutating field %s" (cat s txt))
 
-let rec deprecated_of_sig = function
+let rec attrs_of_sig = function
   | {psig_desc = Psig_attribute a} :: tl ->
-      begin match deprecated_of_attrs [a] with
-      | None -> deprecated_of_sig tl
-      | Some _ as r -> r
-      end
-  | _ -> None
+      a :: attrs_of_sig tl
+  | _ ->
+      []
 
+let alerts_of_sig sg = alerts_of_attrs (attrs_of_sig sg)
 
-let rec deprecated_of_str = function
+let rec attrs_of_str = function
   | {pstr_desc = Pstr_attribute a} :: tl ->
-      begin match deprecated_of_attrs [a] with
-      | None -> deprecated_of_str tl
-      | Some _ as r -> r
-      end
-  | _ -> None
+      a :: attrs_of_str tl
+  | _ ->
+      []
 
+let alerts_of_str str = alerts_of_attrs (attrs_of_str str)
 
-let check_no_deprecated attrs =
-  match deprecated_attrs attrs with
-  | None -> ()
-  | Some {attr_name = {txt;_};attr_loc} ->
-    Location.prerr_warning attr_loc (Warnings.Misplaced_attribute txt)
+let check_no_alert attrs =
+  List.iter
+    (fun (a, _, _) ->
+       Location.prerr_warning a.attr_loc
+         (Warnings.Misplaced_attribute a.attr_name.txt)
+    )
+    (alert_attrs attrs)
+
+let warn_payload loc txt msg =
+  Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg))
 
 let warning_attribute ?(ppwarning = true) =
   let process loc txt errflag payload =
     match string_of_payload payload with
     | Some s ->
         begin try Warnings.parse_options errflag s
-        with Arg.Bad _ ->
-          Location.prerr_warning loc
-            (Warnings.Attribute_payload
-               (txt, "Ill-formed list of warnings"))
+        with Arg.Bad msg -> warn_payload loc txt msg
         end
     | None ->
-        Location.prerr_warning loc
-          (Warnings.Attribute_payload
-             (txt, "A single string literal is expected"))
+        warn_payload loc txt "A single string literal is expected"
+  in
+  let process_alert loc txt = function
+    | PStr[{pstr_desc=
+              Pstr_eval(
+                {pexp_desc=Pexp_constant(Pconst_string(s,_))},
+                _)
+           }] ->
+        begin try Warnings.parse_alert_option s
+        with Arg.Bad msg -> warn_payload loc txt msg
+        end
+    | k ->
+        match kind_and_message k with
+        | Some ("all", _) ->
+            warn_payload loc txt "The alert name 'all' is reserved"
+        | Some _ -> ()
+        | None -> warn_payload loc txt "Invalid payload"
   in
   function
   | {attr_name = {txt = ("ocaml.warning"|"warning") as txt; _};
@@ -178,6 +221,11 @@ let warning_attribute ?(ppwarning = true) =
        ];
     } when ppwarning ->
      Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
+  | {attr_name = {txt = ("ocaml.alert"|"alert") as txt; _};
+     attr_loc;
+     attr_payload;
+     } ->
+      process_alert attr_loc txt attr_payload
   | _ ->
      ()
 

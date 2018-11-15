@@ -598,8 +598,10 @@ let msg ?(loc = none) fmt =
 
 type report_kind =
   | Report_error
-  | Report_warning of int
-  | Report_warning_as_error of int
+  | Report_warning of string
+  | Report_warning_as_error of string
+  | Report_alert of string
+  | Report_alert_as_error of string
 
 type report = {
   kind : report_kind;
@@ -666,8 +668,11 @@ let error_style () =
 let batch_mode_printer : report_printer =
   let pp_loc _self report ppf loc =
     let tag = match report.kind with
-      | Report_error | Report_warning_as_error _ -> "error"
+      | Report_warning_as_error _
+      | Report_alert_as_error _
+      | Report_error -> "error"
       | Report_warning _ -> "warning"
+      | Report_alert _ -> "alert"
     in
     let highlight ppf loc =
       match error_style () with
@@ -695,9 +700,12 @@ let batch_mode_printer : report_printer =
   in
   let pp_report_kind _self _ ppf = function
     | Report_error -> Format.fprintf ppf "@{<error>Error@}"
-    | Report_warning w -> Format.fprintf ppf "@{<warning>Warning@} %d" w
+    | Report_warning w -> Format.fprintf ppf "@{<warning>Warning@} %s" w
     | Report_warning_as_error w ->
-        Format.fprintf ppf "@{<error>Error@} (warning %d)" w
+        Format.fprintf ppf "@{<error>Error@} (warning %s)" w
+    | Report_alert w -> Format.fprintf ppf "@{<warning>Alert@} %s" w
+    | Report_alert_as_error w ->
+        Format.fprintf ppf "@{<error>Error@} (alert %s)" w
   in
   let pp_main_loc self report ppf loc =
     pp_loc self report ppf loc
@@ -790,19 +798,26 @@ let error_of_printer_file print x =
 (* Reporting warnings: generating a report from a warning number using the
    information in [Warnings] + convenience functions. *)
 
-let default_warning_reporter (loc: t) (w: Warnings.t): report option =
-  match Warnings.report w with
+let default_warning_alert_reporter report mk (loc: t) w : report option =
+  match report w with
   | `Inactive -> None
-  | `Active { Warnings.number; message; is_error; sub_locs } ->
+  | `Active { Warnings.id; message; is_error; sub_locs } ->
       let msg_of_str str = fun ppf -> Format.pp_print_string ppf str in
-      let kind =
-        if is_error then Report_warning_as_error number
-        else Report_warning number in
+      let kind = mk is_error id in
       let main = { loc; txt = msg_of_str message } in
       let sub = List.map (fun (loc, sub_message) ->
         { loc; txt = msg_of_str sub_message }
       ) sub_locs in
       Some { kind; main; sub }
+
+
+let default_warning_reporter =
+  default_warning_alert_reporter
+    Warnings.report
+    (fun is_error id ->
+       if is_error then Report_warning_as_error id
+       else Report_warning id
+    )
 
 let warning_reporter = ref default_warning_reporter
 let report_warning loc w = !warning_reporter loc w
@@ -816,8 +831,29 @@ let print_warning loc ppf w =
 
 let prerr_warning loc w = print_warning loc !formatter_for_warnings w
 
-let deprecated ?(def = none) ?(use = none) loc msg =
-  prerr_warning loc (Warnings.Deprecated (msg, def, use))
+let default_alert_reporter =
+  default_warning_alert_reporter
+    Warnings.report_alert
+    (fun is_error id ->
+       if is_error then Report_alert_as_error id
+       else Report_alert id
+    )
+
+let alert_reporter = ref default_alert_reporter
+let report_alert loc w = !alert_reporter loc w
+
+let print_alert loc ppf w =
+  match report_alert loc w with
+  | None -> ()
+  | Some report -> print_report ppf report
+
+let prerr_alert loc w = print_alert loc !formatter_for_warnings w
+
+let alert ?(def = none) ?(use = none) ~kind loc message =
+  prerr_alert loc {Warnings.kind; message; def; use}
+
+let deprecated ?def ?use loc message =
+  alert ?def ?use ~kind:"deprecated" loc message
 
 (******************************************************************************)
 (* Reporting errors on exceptions *)

@@ -27,7 +27,7 @@ exception Dont_match
 let value_descriptions ~loc env name
     (vd1 : Types.value_description)
     (vd2 : Types.value_description) =
-  Builtin_attributes.check_deprecated_inclusion
+  Builtin_attributes.check_alerts_inclusion
     ~def:vd1.val_loc
     ~use:vd2.val_loc
     loc
@@ -196,7 +196,7 @@ and compare_variants ~loc env params1 params2 n
       if Ident.name cd1.cd_id <> Ident.name cd2.cd_id then
         Some (Field_names (n, cd1.cd_id, cd2.cd_id))
       else begin
-        Builtin_attributes.check_deprecated_inclusion
+        Builtin_attributes.check_alerts_inclusion
           ~def:cd1.cd_loc
           ~use:cd2.cd_loc
           loc
@@ -250,7 +250,7 @@ and compare_records ~loc env params1 params2 n
       end
 
 let type_declarations ?(equality = false) ~loc env ~mark name decl1 id decl2 =
-  Builtin_attributes.check_deprecated_inclusion
+  Builtin_attributes.check_alerts_inclusion
     ~def:decl1.type_loc
     ~use:decl2.type_loc
     loc

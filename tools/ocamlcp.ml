@@ -48,6 +48,7 @@ let incompatible o =
 module Options = Main_args.Make_bytecomp_options (struct
   let _a () = make_archive := true; option "-a" ()
   let _absname = option "-absname"
+  let _alert = option_with_arg "-alert"
   let _annot = option "-annot"
   let _binannot = option "-bin-annot"
   let _c = option "-c"

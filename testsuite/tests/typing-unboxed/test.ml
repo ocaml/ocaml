@@ -36,7 +36,7 @@ module M :
 |}]
 
 module Global_attributes = struct
-  [@@@ocaml.warning "-3"]
+  [@@@ocaml.alert "-deprecated"]
 
   external a : float -> float = "a" "noalloc" "a_nat" "float"
   external b : float -> float = "b" "noalloc" "b_nat"
@@ -72,21 +72,21 @@ end;;
 Line 3, characters 2-61:
 3 |   external a : float -> float = "a" "noalloc" "a_nat" "float"
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used
+Alert deprecated: [@@unboxed] + [@@noalloc] should be used
 instead of "float"
 Line 4, characters 2-53:
 4 |   external b : float -> float = "b" "noalloc" "b_nat"
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 3: deprecated: [@@noalloc] should be used instead of "noalloc"
+Alert deprecated: [@@noalloc] should be used instead of "noalloc"
 Line 5, characters 2-51:
 5 |   external c : float -> float = "c" "c_nat" "float"
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 3: deprecated: [@@unboxed] + [@@noalloc] should be used
+Alert deprecated: [@@unboxed] + [@@noalloc] should be used
 instead of "float"
 Line 6, characters 2-45:
 6 |   external d : float -> float = "d" "noalloc"
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 3: deprecated: [@@noalloc] should be used instead of "noalloc"
+Alert deprecated: [@@noalloc] should be used instead of "noalloc"
 module Old_style_warning :
   sig
     external a : float -> float = "a" "a_nat" [@@unboxed] [@@noalloc]

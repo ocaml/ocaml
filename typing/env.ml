@@ -469,7 +469,7 @@ type t = {
 
 and module_components =
   {
-    deprecated: string option;
+    alerts: string Misc.Stdlib.String.Map.t;
     loc: Location.t;
     comps:
       (t * Subst.t * Path.t * Types.module_type, module_components_repr option)
@@ -594,8 +594,9 @@ let without_cmis f x =
 (* Forward declarations *)
 
 let components_of_module' =
-  ref ((fun ~deprecated:_ ~loc:_ _env _sub _path _mty -> assert false) :
-         deprecated:string option -> loc:Location.t -> t -> Subst.t ->
+  ref ((fun ~alerts:_ ~loc:_ _env _sub _path _mty -> assert false) :
+         alerts:string Misc.Stdlib.String.Map.t -> loc:Location.t -> t ->
+       Subst.t ->
        Path.t -> module_type ->
        module_components)
 let components_of_module_maker' =
@@ -696,7 +697,7 @@ let save_pers_struct crc ps =
   List.iter
     (function
         | Rectypes -> ()
-        | Deprecated _ -> ()
+        | Alerts _ -> ()
         | Unsafe_string -> ()
         | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
@@ -720,12 +721,13 @@ let acknowledge_pers_struct check modname
   let sign = cmi.cmi_sign in
   let crcs = cmi.cmi_crcs in
   let flags = cmi.cmi_flags in
-  let deprecated =
-    List.fold_left (fun acc -> function Deprecated s -> Some s | _ -> acc) None
+  let alerts =
+    List.fold_left (fun acc -> function Alerts s -> s | _ -> acc)
+      Misc.Stdlib.String.Map.empty
       flags
   in
   let comps =
-      !components_of_module' ~deprecated ~loc:Location.none
+      !components_of_module' ~alerts ~loc:Location.none
         empty Subst.identity
                              (Pident(Ident.create_persistent name))
                              (Mty_signature sign)
@@ -748,7 +750,7 @@ let acknowledge_pers_struct check modname
         | Unsafe_string ->
             if Config.safe_string then
               error (Depend_on_unsafe_string_unit (ps.ps_name, !current_unit));
-        | Deprecated _ -> ()
+        | Alerts _ -> ()
         | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
   if check then check_consistency ps;
@@ -1105,11 +1107,16 @@ let rec is_functor_arg path env =
 
 exception Recmodule
 
-let report_deprecated ?loc p deprecated =
-  match loc, deprecated with
-  | Some loc, Some txt ->
-      let txt = if txt = "" then "" else "\n" ^ txt in
-      Location.deprecated loc (Printf.sprintf "module %s%s" (Path.name p) txt)
+let report_alerts ?loc p alerts =
+  match loc with
+  | Some loc ->
+      Misc.Stdlib.String.Map.iter
+        (fun kind message ->
+           let message = if message = "" then "" else "\n" ^ message in
+           Location.alert ~kind loc
+             (Printf.sprintf "module %s%s" (Path.name p) message)
+        )
+        alerts
   | _ -> ()
 
 let mark_module_used name loc =
@@ -1157,7 +1164,7 @@ and lookup_module_descr ?loc ~mark lid env =
   Format.printf "USE module %s at %a@." (Path.last p)
     Location.print comps.loc;
 *)
-  report_deprecated ?loc p comps.deprecated;
+  report_alerts ?loc p comps.alerts;
   res
 
 and lookup_module ~load ?loc ~mark lid env : Path.t =
@@ -1175,8 +1182,8 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
           raise Recmodule
         | _ -> ()
         end;
-        report_deprecated ?loc p
-          (Builtin_attributes.deprecated_of_attrs md_attributes);
+        report_alerts ?loc p
+          (Builtin_attributes.alerts_of_attrs md_attributes);
         p
       with Not_found ->
         if s = !current_unit then raise Not_found;
@@ -1187,7 +1194,7 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
           check_pers_struct ~loc s
         else begin
           let ps = find_pers_struct s in
-          report_deprecated ?loc p ps.ps_comps.deprecated
+          report_alerts ?loc p ps.ps_comps.alerts
         end;
         p
       end
@@ -1199,7 +1206,7 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
           let (comps, _) = NameMap.find s c.comp_components in
           if mark then mark_module_used s comps.loc;
           let p = Pdot(p, s, pos) in
-          report_deprecated ?loc p comps.deprecated;
+          report_alerts ?loc p comps.alerts;
           p
       | Functor_comps _ ->
           raise Not_found
@@ -1647,9 +1654,9 @@ let add_to_tbl id decl tbl =
     try NameMap.find id tbl with Not_found -> [] in
   NameMap.add id (decl :: decls) tbl
 
-let rec components_of_module ~deprecated ~loc env sub path mty =
+let rec components_of_module ~alerts ~loc env sub path mty =
   {
-    deprecated;
+    alerts;
     loc;
     comps = EnvLazy.create (env, sub, path, mty)
   }
@@ -1708,11 +1715,11 @@ and components_of_module_maker (env, sub, path, mty) =
             let md' = EnvLazy.create (sub, md) in
             c.comp_modules <-
               NameMap.add (Ident.name id) (md', !pos) c.comp_modules;
-            let deprecated =
-              Builtin_attributes.deprecated_of_attrs md.md_attributes
+            let alerts =
+              Builtin_attributes.alerts_of_attrs md.md_attributes
             in
             let comps =
-              components_of_module ~deprecated ~loc:md.md_loc !env sub path
+              components_of_module ~alerts ~loc:md.md_loc !env sub path
                 md.md_type
             in
             c.comp_components <-
@@ -1871,12 +1878,12 @@ and store_module ~check id md env =
     check_usage loc id (fun s -> Warnings.Unused_module s)
       module_declarations;
 
-  let deprecated = Builtin_attributes.deprecated_of_attrs md.md_attributes in
+  let alerts = Builtin_attributes.alerts_of_attrs md.md_attributes in
   { env with
     modules = IdTbl.add id (EnvLazy.create (Subst.identity, md)) env.modules;
     components =
       IdTbl.add id
-        (components_of_module ~deprecated ~loc:md.md_loc
+        (components_of_module ~alerts ~loc:md.md_loc
            env Subst.identity (Pident id) md.md_type)
         env.components;
     summary = Env_module(env.summary, id, md) }
@@ -1907,9 +1914,12 @@ let components_of_functor_appl f env p1 p2 =
     let mty = Subst.modtype sub f.fcomp_res in
     !check_well_formed_module env Location.(in_file !input_name)
       ("the signature of " ^ Path.name p) mty;
-    let comps = components_of_module ~deprecated:None ~loc:Location.none
+    let comps =
+      components_of_module ~alerts:Misc.Stdlib.String.Map.empty
+        ~loc:Location.none
         (*???*)
-        env Subst.identity p mty in
+        env Subst.identity p mty
+    in
     Hashtbl.add f.fcomp_cache p2 comps;
     comps
 
@@ -2233,7 +2243,7 @@ let is_imported_opaque s =
 
 (* Save a signature to a file *)
 
-let save_signature_with_imports ~deprecated sg modname filename imports =
+let save_signature_with_imports ~alerts sg modname filename imports =
   (*prerr_endline filename;
   List.iter (fun (name, crc) -> prerr_endline name) imports;*)
   Btype.cleanup_abbrev ();
@@ -2244,7 +2254,7 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
       if !Clflags.opaque then [Cmi_format.Opaque] else [];
       (if !Clflags.unsafe_string then [Cmi_format.Unsafe_string] else []);
-      (match deprecated with Some s -> [Deprecated s] | None -> []);
+      [Alerts alerts];
     ]
   in
   Misc.try_finally (fun () ->
@@ -2261,7 +2271,7 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       (* Enter signature in persistent table so that imported_unit()
          will also return its crc *)
       let comps =
-        components_of_module ~deprecated ~loc:Location.none
+        components_of_module ~alerts ~loc:Location.none
           empty Subst.identity
           (Pident(Ident.create_persistent modname)) (Mty_signature sg) in
       let ps =
@@ -2277,8 +2287,8 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
     )
     ~exceptionally:(fun () -> remove_file filename)
 
-let save_signature ~deprecated sg modname filename =
-  save_signature_with_imports ~deprecated sg modname filename (imports())
+let save_signature ~alerts sg modname filename =
+  save_signature_with_imports ~alerts sg modname filename (imports())
 
 (* Folding on environments *)
 

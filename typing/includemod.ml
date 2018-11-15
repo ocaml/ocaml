@@ -470,7 +470,7 @@ and signature_components ~loc old_env ~mark env cxt subst paired =
       assert false
 
 and module_declarations ~loc env ~mark cxt subst id1 md1 md2 =
-  Builtin_attributes.check_deprecated_inclusion
+  Builtin_attributes.check_alerts_inclusion
     ~def:md1.md_loc
     ~use:md2.md_loc
     loc
@@ -485,7 +485,7 @@ and module_declarations ~loc env ~mark cxt subst id1 md1 md2 =
 (* Inclusion between module type specifications *)
 
 and modtype_infos ~loc env ~mark cxt subst id info1 info2 =
-  Builtin_attributes.check_deprecated_inclusion
+  Builtin_attributes.check_alerts_inclusion
     ~def:info1.mtd_loc
     ~use:info2.mtd_loc
     loc

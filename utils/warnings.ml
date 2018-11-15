@@ -27,7 +27,7 @@ type loc = {
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated of string * loc * loc        (*  3 *)
+(*| Deprecated --> alert "deprecated" *)    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -99,10 +99,12 @@ type t =
    do NOT reuse one of the holes.
 *)
 
+type alert = {kind:string; message:string; def:loc; use:loc}
+
+
 let number = function
   | Comment_start -> 1
   | Comment_not_end -> 2
-  | Deprecated _ -> 3
   | Fragile_match _ -> 4
   | Partial_application -> 5
   | Labels_omitted _ -> 6
@@ -209,6 +211,8 @@ type state =
   {
     active: bool array;
     error: bool array;
+    alerts: (Misc.Stdlib.String.Set.t * bool); (* false:set complement *)
+    alert_errors: (Misc.Stdlib.String.Set.t * bool); (* false:set complement *)
   }
 
 let current =
@@ -216,6 +220,8 @@ let current =
     {
       active = Array.make (last_warning_number + 1) true;
       error = Array.make (last_warning_number + 1) false;
+      alerts = (Misc.Stdlib.String.Set.empty, false); (* all enabled *)
+      alert_errors = (Misc.Stdlib.String.Set.empty, true); (* all soft *)
     }
 
 let disabled = ref false
@@ -227,8 +233,21 @@ let backup () = !current
 
 let restore x = current := x
 
-let is_active x = not !disabled && (!current).active.(number x);;
-let is_error x = not !disabled && (!current).error.(number x);;
+let is_active x =
+  not !disabled && (!current).active.(number x)
+
+let is_error x =
+  not !disabled && (!current).error.(number x)
+
+let alert_is_active {kind; _} =
+  not !disabled &&
+  let (set, pos) = (!current).alerts in
+  Misc.Stdlib.String.Set.mem kind set = pos
+
+let alert_is_error {kind; _} =
+  not !disabled &&
+  let (set, pos) = (!current).alert_errors in
+  Misc.Stdlib.String.Set.mem kind set = pos
 
 let mk_lazy f =
   let state = backup () in
@@ -245,10 +264,79 @@ let mk_lazy f =
         raise exn
     )
 
-let parse_opt error active flags s =
-  let set i = flags.(i) <- true in
-  let clear i = flags.(i) <- false in
-  let set_all i = active.(i) <- true; error.(i) <- true in
+let set_alert ~error ~enable s =
+  let upd =
+    match s with
+    | "all" ->
+        (Misc.Stdlib.String.Set.empty, not enable)
+    | s ->
+        let (set, pos) =
+          if error then (!current).alert_errors else (!current).alerts
+        in
+        let f =
+          if enable = pos
+          then Misc.Stdlib.String.Set.add
+          else Misc.Stdlib.String.Set.remove
+        in
+        (f s set, pos)
+  in
+  if error then
+    current := {(!current) with alert_errors=upd}
+  else
+    current := {(!current) with alerts=upd}
+
+let parse_alert_option s =
+  let n = String.length s in
+  let id_char = function
+    | 'a'..'z' | 'A'..'Z' | '_' | '\'' | '0'..'9' -> true
+    | _ -> false
+  in
+  let rec parse_id i =
+    if i < n && id_char s.[i] then parse_id (i + 1) else i
+  in
+  let rec scan i =
+    if i = n then ()
+    else if i + 1 = n then raise (Arg.Bad "Ill-formed list of alert settings")
+    else match s.[i], s.[i+1] with
+      | '+', '+' -> id (set_alert ~error:true ~enable:true) (i + 2)
+      | '+', _ -> id (set_alert ~error:false ~enable:true) (i + 1)
+      | '-', '-' -> id (set_alert ~error:true ~enable:false) (i + 2)
+      | '-', _ -> id (set_alert ~error:false ~enable:false) (i + 1)
+      | '@', _ ->
+          id (fun s ->
+              set_alert ~error:true ~enable:true s;
+              set_alert ~error:false ~enable:true s)
+            (i + 1)
+      | _ -> raise (Arg.Bad "Ill-formed list of alert settings")
+  and id f i =
+    let j = parse_id i in
+    if j = i then raise (Arg.Bad "Ill-formed list of alert settings");
+    let id = String.sub s i (j - i) in
+    f id;
+    scan j
+  in
+  scan 0
+
+let parse_opt error active errflag s =
+  let flags = if errflag then error else active in
+  let set i =
+    if i = 3 then set_alert ~error:errflag ~enable:true "deprecated"
+    else flags.(i) <- true
+  in
+  let clear i =
+    if i = 3 then set_alert ~error:errflag ~enable:false "deprecated"
+    else flags.(i) <- false
+  in
+  let set_all i =
+    if i = 3 then begin
+      set_alert ~error:false ~enable:true "deprecated";
+      set_alert ~error:true ~enable:true "deprecated"
+    end
+    else begin
+      active.(i) <- true;
+      error.(i) <- true
+    end
+  in
   let error () = raise (Arg.Bad "Ill-formed list of warnings") in
   let rec get_num n i =
     if i >= String.length s then i, n
@@ -299,8 +387,8 @@ let parse_opt error active flags s =
 let parse_options errflag s =
   let error = Array.copy (!current).error in
   let active = Array.copy (!current).active in
-  parse_opt error active (if errflag then error else active) s;
-  current := {error; active}
+  parse_opt error active errflag s;
+  current := {(!current) with error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60-66";;
@@ -320,14 +408,6 @@ let message = function
       "this `(*' is the start of a comment.\n\
        Hint: Did you forget spaces when writing the infix operator `( * )'?"
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated (s, _, _) ->
-      (* Reduce \r\n to \n:
-           - Prevents any \r characters being printed on Unix when processing
-             Windows sources
-           - Prevents \r\r\n being generated on Windows, which affects the
-             testsuite
-       *)
-       "deprecated: " ^ Misc.normalise_eol s
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
@@ -546,19 +626,10 @@ let message = function
          Hint: Did you mean 'type %s = unit'?" name
 ;;
 
-let sub_locs = function
-  | Deprecated (_, def, use) ->
-      if not def.loc_ghost && not use.loc_ghost then [
-        def, "Definition";
-        use, "Expected signature";
-      ]
-      else []
-  | _ -> []
-
 let nerrors = ref 0;;
 
 type reporting_information =
-  { number : int
+  { id : string
   ; message : string
   ; is_error : bool
   ; sub_locs : (loc * string) list;
@@ -569,10 +640,42 @@ let report w =
   | false -> `Inactive
   | true ->
      if is_error w then incr nerrors;
-     `Active { number = number w; message = message w; is_error = is_error w;
-               sub_locs = sub_locs w;
-             }
-;;
+     `Active
+       { id = string_of_int (number w);
+         message = message w;
+         is_error = is_error w;
+         sub_locs = [];
+       }
+
+let report_alert (alert : alert) =
+  match alert_is_active alert with
+  | false -> `Inactive
+  | true ->
+      let is_error = alert_is_error alert in
+      if is_error then incr nerrors;
+      let message = Misc.normalise_eol alert.message in
+       (* Reduce \r\n to \n:
+           - Prevents any \r characters being printed on Unix when processing
+             Windows sources
+           - Prevents \r\r\n being generated on Windows, which affects the
+             testsuite
+       *)
+      let sub_locs =
+        if not alert.def.loc_ghost && not alert.use.loc_ghost then
+          [
+            alert.def, "Definition";
+            alert.use, "Expected signature";
+          ]
+        else
+          []
+      in
+      `Active
+        {
+          id = alert.kind;
+          message;
+          is_error;
+          sub_locs;
+        }
 
 exception Errors;;
 
@@ -590,7 +693,7 @@ let descriptions =
   [
     1, "Suspicious-looking start-of-comment mark.";
     2, "Suspicious-looking end-of-comment mark.";
-    3, "Deprecated feature.";
+    3, "Deprecated synonym for the 'deprecated' alert";
     4, "Fragile pattern matching: matching that will remain complete even\n\
    \    if additional constructors are added to one of the variant types\n\
    \    matched.";
