@@ -69,10 +69,10 @@ module Frame : sig
   (** [location frame] returns the location information of the frame,
       if available, and [None] otherwise.
 
-      Some possible reasons for failing to return a location are as follow:
+      Some possible reasons for failing to return a location are as follows:
       - the frame corresponds to a compiler-inserted raise
       - the frame corresponds to a part of the program that has not been
-      compiled with debug information ([-g]) *)
+        compiled with debug information ([-g]) *)
 
   val format: int -> t -> string option
   (** [format pos frame] returns the string representation of [frame] as
