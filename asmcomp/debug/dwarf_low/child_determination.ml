@@ -25,5 +25,10 @@ let encode = function
 let size _t = Dwarf_int.one ()
 
 let emit t =
-  Dwarf_value.emit (Dwarf_value.int8 ~comment:"Child determination"
+  let comment =
+    match t with
+    | Yes -> "Has children"
+    | No -> "No children"
+  in
+  Dwarf_value.emit (Dwarf_value.int8 ~comment
     (Numbers.Int8.of_int_exn (encode t)))
