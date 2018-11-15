@@ -971,8 +971,7 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
             proto_die, lexical_block_proto_dies, all_summaries
         in
         let _proto_die, lexical_block_proto_dies, all_summaries =
-          create_up_to_root block lexical_block_proto_dies
-            all_summaries
+          create_up_to_root block lexical_block_proto_dies all_summaries
         in
         lexical_block_proto_dies, all_summaries)
   in
