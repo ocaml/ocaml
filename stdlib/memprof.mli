@@ -40,8 +40,8 @@ type alloc_kind =
 
 type sample_info = {
     n_samples: int;
-    (** The number of samples in this block. Always > 1, it is sampled
-        according to a Poisosn process, and in average equal to the
+    (** The number of samples in this block. Always >= 1, it is sampled
+        according to a Poisson process, and in average equal to the
         size of the block (including the header) multiplied by lambda
         (the sampling rate). *)
     kind: alloc_kind;
