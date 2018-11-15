@@ -59,10 +59,14 @@ val last_trace: unit -> Stack_trace.t
 (** {1:raising Raising} *)
 
 external raise: t -> 'a = "%raise"
+(** Raise the given exception. *)
 
 external reraise: t -> 'a = "%reraise"
+(** Raise the given exception, but appending its trace to that of the of the
+    most recent raise. *)
 
 external raise_notrace: t -> 'a = "%raise_notrace"
+(** Raise the given exception, but without recording a trace. *)
 
 external raise_with_trace: t -> Stack_trace.t -> 'a = "%raise_with_backtrace"
 (** Reraise the exception using the given trace for the origin of the
