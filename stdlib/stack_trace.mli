@@ -26,9 +26,10 @@ type t
     Stack traces cannot be marshalled. If you need marshalling, you should use
     the array returned by the {!frames} function. *)
 
-val current: int -> t
-(** [current n] returns a description of the stack trace on the current program
-    point (for the current thread), with at most [n] entries. *)
+val current: ?limit:int -> unit -> t
+(** [current ~current n] returns a description of the stack trace on the current
+    program point (for the current thread). [current] is the maximum number of
+    frames to include in the trace, defaults to {!Stdlib.max_int}. *)
 
 val to_string: t -> string
 (** Return a string listing the program locations contained in the stack
