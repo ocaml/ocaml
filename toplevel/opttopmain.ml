@@ -115,7 +115,15 @@ module Options = Main_args.Make_opttop_options (struct
     | "4+gnu" -> dwarf_version := Four
     | "5" -> dwarf_version := Five
     | _ -> Compenv.fatal "Please specify `4+gnu' or '5' for -dwarf-version"
-  let _g_full = set debug_full
+  let _g_full debugger =
+    let debugger =
+      match String.lowercase_ascii debugger with
+      | "gdb" -> Gdb
+      | "lldb" -> Lldb
+      | _ -> Compenv.fatal "Please specify `gdb' or `lldb' for -g-full"
+    in
+    debug := true;
+    debug_full := Some debugger
   let _inline spec =
     Float_arg_helper.parse spec
       "Syntax: -inline <n> | <round>=<n>[,...]"
@@ -181,6 +189,8 @@ module Options = Main_args.Make_opttop_options (struct
   let _unbox_closures_factor f = unbox_closures_factor := f
   let _drawclambda = set dump_rawclambda
   let _dclambda = set dump_clambda
+  let _dlambda_loc () = dump_lambda := true; dump_lambda_loc := true
+  let _dclambda_dbg () = dump_clambda := true; dump_clambda_dbg := true
   let _drawflambda = set dump_rawflambda
   let _dflambda = set dump_flambda
   let _dflambda_let stamp = dump_flambda_let := Some stamp
