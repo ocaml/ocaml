@@ -16,7 +16,9 @@
 
 module ARV = Available_ranges_all_vars
 module DAH = Dwarf_attribute_helpers
+module Int = Numbers.Int
 module L = Linearize
+module LB = Lexical_block_ranges
 module SLDL = Simple_location_description_lang
 
 type t = {
@@ -875,11 +877,44 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
           var ~hidden ~ident_for_type ~range
       end)
 
+let create_range_list_entry ~start_of_code_symbol ~all_range_list_entries
+      range =
+  LB.Range.fold range ~init:([], all_range_list_entries)
+    ~f:(fun (range_list_entries, all_range_list_entries) subrange ->
+      let range_list_entry, all_range_list_entries =
+        let start_pos = LB.Subrange.start_pos subrange in
+        let end_pos = LB.Subrange.end_pos subrange in
+        let end_pos_offset =
+          LB.Subrange.end_pos_offset subrange
+        in
+        match
+          Int.Triple.Map.find (start_pos, end_pos, end_pos_offset)
+            all_range_list_entries
+        with
+        | exception Not_found ->
+          let range_list_entry =
+            Range_list_entry.create_range_list_entry
+              ~start_of_code_symbol
+              ~first_address_when_in_scope: (Asm_label.create_int start_pos)
+              ~first_address_when_not_in_scope: (Asm_label.create_int end_pos)
+              ~first_address_when_not_in_scope_offset: (Some end_pos_offset)
+          in
+          let all_range_list_entries =
+            Int.Triple.Map.add (start_pos, end_pos, end_pos_offset)
+              range_list_entry
+              all_range_list_entries
+          in
+          range_list_entry, all_range_list_entries
+        | range_list_entry ->
+          range_list_entry, all_range_list_entries
+      in
+      let range_list_entries = range_list_entry::range_list_entries in
+      range_list_entries, all_range_list_entries)
+
 let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
       (fundecl : L.fundecl) ~start_of_function ~end_of_function
       : Proto_die.t * (Proto_die.t Debuginfo.Block.Map.t) =
   let module B = Debuginfo.Block in
-  let module LB = Lexical_block_ranges in
   let whole_function_lexical_block =
     Proto_die.create ~parent:(Some function_proto_die)
       ~tag:Lexical_block
@@ -890,39 +925,27 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
       ()
   in
   let start_of_code_symbol = Asm_symbol.create fundecl.fun_name in
-  let lexical_block_proto_dies =
+  let lexical_block_proto_dies, _range_list_entries =
     LB.fold lexical_block_ranges
-      ~init:B.Map.empty
-      ~f:(fun lexical_block_proto_dies block range ->
+      ~init:(B.Map.empty, Int.Triple.Map.empty)
+      ~f:(fun (lexical_block_proto_dies, all_range_list_entries) block range ->
         let rec create_up_to_root block lexical_block_proto_dies =
           match B.Map.find block lexical_block_proto_dies with
-          | proto_die -> proto_die, lexical_block_proto_dies
+          | proto_die ->
+            proto_die, lexical_block_proto_dies, all_range_list_entries
           | exception Not_found ->
-            let parent, lexical_block_proto_dies =
+            let parent, lexical_block_proto_dies, all_range_list_entries =
               match B.parent block with
-              | None -> function_proto_die, lexical_block_proto_dies
-              | Some parent -> create_up_to_root parent lexical_block_proto_dies
+              | None ->
+                function_proto_die, lexical_block_proto_dies,
+                  all_range_list_entries
+              | Some parent ->
+                create_up_to_root parent lexical_block_proto_dies
             in
-            let range_list_attribute_value =
-              let range_list_entries =
-                LB.Range.fold range ~init:[]
-                  ~f:(fun range_list_entries subrange ->
-                    let range_list_entry =
-                      let start_pos = LB.Subrange.start_pos subrange in
-                      let end_pos = LB.Subrange.end_pos subrange in
-                      let end_pos_offset =
-                        LB.Subrange.end_pos_offset subrange
-                      in
-                      Range_list_entry.create_range_list_entry
-                        ~start_of_code_symbol
-                        ~first_address_when_in_scope:
-                          (Asm_label.create_int start_pos)
-                        ~first_address_when_not_in_scope:
-                          (Asm_label.create_int end_pos)
-                        ~first_address_when_not_in_scope_offset:
-                          (Some end_pos_offset)
-                    in
-                    range_list_entry::range_list_entries)
+            let range_list_attribute_value, all_range_list_entries =
+              let range_list_entries, all_range_list_entries =
+                create_range_list_entry ~start_of_code_symbol
+                  ~all_range_list_entries range
               in
               let base_address_selection_entry =
                 Range_list_entry.create_base_address_selection_entry
@@ -932,7 +955,10 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
                 base_address_selection_entry :: range_list_entries
               in
               let range_list = Range_list.create ~range_list_entries in
-              Debug_ranges_table.insert t.debug_ranges_table ~range_list
+              let range_list_attribute_value =
+                Debug_ranges_table.insert t.debug_ranges_table ~range_list
+              in
+              range_list_attribute_value, all_range_list_entries
             in
             let proto_die =
               Proto_die.create ~parent:(Some parent)
@@ -945,12 +971,12 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
             let lexical_block_proto_dies =
               B.Map.add block proto_die lexical_block_proto_dies
             in
-            proto_die, lexical_block_proto_dies
+            proto_die, lexical_block_proto_dies, all_range_list_entries
         in
-        let _proto_die, lexical_block_proto_dies =
+        let _proto_die, lexical_block_proto_dies, all_range_list_entries =
           create_up_to_root block lexical_block_proto_dies
         in
-        lexical_block_proto_dies)
+        lexical_block_proto_dies, all_range_list_entries)
   in
   whole_function_lexical_block, lexical_block_proto_dies
 

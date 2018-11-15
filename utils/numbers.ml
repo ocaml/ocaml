@@ -31,6 +31,20 @@ module Int = struct
 
   let rec zero_to_n n =
     if n < 0 then Set.empty else Set.add n (zero_to_n (n-1))
+
+  module Triple = struct
+    type t = int * int * int
+
+    include Identifiable.Make (struct
+      type nonrec t = t
+
+      let compare = Stdlib.compare
+      let output oc (x, y, z) = Printf.fprintf oc "(%i, %i, %i)" x y z
+      let hash = Hashtbl.hash
+      let equal t1 t2 = (compare t1 t2 = 0)
+      let print ppf (x, y, z) = Format.fprintf ppf "(%i, %i, %i)" x y z
+    end)
+  end
 end
 
 module Int8 = struct

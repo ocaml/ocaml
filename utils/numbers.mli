@@ -26,6 +26,8 @@ module Int : sig
 
   (** [zero_to_n n] is the set of numbers \{0, ..., n\} (inclusive). *)
   val zero_to_n : int -> Set.t
+
+  module Triple : Identifiable.S with type t = int * int * int
 end
 
 module Int8 : sig
