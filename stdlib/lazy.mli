@@ -15,7 +15,7 @@
 
 (** Deferred computations. *)
 
-type 'a t = 'a lazy_t
+type 'a t = 'a CamlinternalLazy.t
 (** A value of type ['a Lazy.t] is a deferred computation, called
    a suspension, that has a result of type ['a].  The special
    expression syntax [lazy (expr)] makes a suspension of the
@@ -96,5 +96,3 @@ val lazy_from_val : 'a -> 'a t
 val lazy_is_val : 'a t -> bool
   [@@ocaml.deprecated "Use Lazy.is_val instead."]
 (** @deprecated synonym for [is_val]. *)
-
-module Internal = CamlinternalLazy
