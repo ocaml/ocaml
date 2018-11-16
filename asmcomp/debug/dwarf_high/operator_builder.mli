@@ -47,7 +47,8 @@ val call
   -> Dwarf_operator.t
 
 val conditional
-   : if_zero:Dwarf_operator.t list
+   : ?at_join:Dwarf_operator.t list
+  -> if_zero:Dwarf_operator.t list
   -> if_nonzero:Dwarf_operator.t list
   -> Dwarf_operator.t list
 

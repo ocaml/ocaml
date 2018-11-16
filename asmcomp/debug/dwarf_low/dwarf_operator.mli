@@ -133,8 +133,8 @@ type t =
   | DW_op_lt
   | DW_op_gt
   | DW_op_ne
-  | DW_op_skip of { num_bytes_forward : Numbers.Uint16.t; }
-  | DW_op_bra of { num_bytes_forward : Numbers.Uint16.t; }
+  | DW_op_skip of { num_bytes_forward : Numbers.Int16.t; }
+  | DW_op_bra of { num_bytes_forward : Numbers.Int16.t; }
   | DW_op_call2 of {
       label : Asm_label.t;
       compilation_unit_header_label : Asm_label.t;

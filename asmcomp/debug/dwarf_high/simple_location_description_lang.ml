@@ -86,6 +86,9 @@ module Rvalue = struct
           OB.add_unsigned_const offset_in_bytes;
           O.DW_op_deref;
         ]
+        ~at_join:[
+          O.DW_op_stack_value;
+        ]
 
   let read_symbol_field ~symbol ~field =
     read_field ~block:(Lvalue.const_symbol ~symbol) ~field
@@ -105,6 +108,9 @@ module Rvalue = struct
           O.DW_op_swap;
           O.DW_op_drop;
           OB.add_unsigned_const offset_in_bytes;
+        ]
+        ~at_join:[
+          O.DW_op_stack_value;
         ]
 
   let implicit_pointer ~offset_in_bytes ~die_label dwarf_version =

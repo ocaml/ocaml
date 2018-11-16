@@ -141,8 +141,8 @@ type t =
   | DW_op_lt
   | DW_op_gt
   | DW_op_ne
-  | DW_op_skip of { num_bytes_forward : Uint16.t; }
-  | DW_op_bra of { num_bytes_forward : Uint16.t; }
+  | DW_op_skip of { num_bytes_forward : Int16.t; }
+  | DW_op_bra of { num_bytes_forward : Int16.t; }
   | DW_op_call2 of {
       label : Asm_label.t;
       compilation_unit_header_label : Asm_label.t;
@@ -666,9 +666,12 @@ end) = struct
     | DW_op_lt
     | DW_op_gt
     | DW_op_ne -> unit_result
-    | DW_op_skip { num_bytes_forward; }
+    | DW_op_skip { num_bytes_forward; } ->
+      value (V.int16 ~comment:"num bytes to jump forward/backward"
+        num_bytes_forward)
     | DW_op_bra { num_bytes_forward; } ->
-      value (V.uint16 ~comment:"num bytes forward" num_bytes_forward)
+      value (V.int16 ~comment:"num bytes forward/backward, if TOS non-zero"
+        num_bytes_forward)
     | DW_op_call2 { label; compilation_unit_header_label; } ->
       value (V.distance_between_labels_16bit
         ~upper:label ~lower:compilation_unit_header_label)

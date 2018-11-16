@@ -6,7 +6,7 @@
 (*                                                                        *)
 (*   Copyright 2014--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
-(*   All righops reserved.  This file is distributed under the terms of    *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
@@ -134,7 +134,7 @@ let implicit_pointer ~offset_in_bytes ~die_label dwarf_version : O.t =
 let call ~die_label ~compilation_unit_header_label : O.t =
   DW_op_call4 { label = die_label; compilation_unit_header_label; }
 
-let conditional ~if_zero ~if_nonzero =
+let conditional ?(at_join = [O.DW_op_nop]) ~if_zero ~if_nonzero =
   let nonzero_branch_size =
     List.fold_left (fun nonzero_branch_size op ->
         Dwarf_int.add (O.size op) nonzero_branch_size)
@@ -147,7 +147,7 @@ let conditional ~if_zero ~if_nonzero =
   if nonzero_branch_size > max_branch_size then begin
     Misc.fatal_error "Dwarf_operator.conditional: nonzero branch too long"
   end;
-  let nonzero_branch_size = Numbers.Uint16.of_int64_exn nonzero_branch_size in
+  let nonzero_branch_size = Numbers.Int16.of_int64_exn nonzero_branch_size in
   let if_zero =
     if_zero @
       [O.DW_op_skip { num_bytes_forward = nonzero_branch_size; }]
@@ -162,17 +162,16 @@ let conditional ~if_zero ~if_nonzero =
   if zero_branch_size > max_branch_size then begin
     Misc.fatal_error "Dwarf_operator.conditional: zero branch too long"
   end;
-  let zero_branch_size = Numbers.Uint16.of_int64_exn zero_branch_size in
-  (* The [DW_op_nop] is there in case no other operator follows (this is a
-     branch target). *)
+  let zero_branch_size = Numbers.Int16.of_int64_exn zero_branch_size in
   O.DW_op_bra { num_bytes_forward = zero_branch_size; }
-    :: if_zero @ if_nonzero @ [O.DW_op_nop]
+    :: if_zero @ if_nonzero @ at_join
 
 let optimize_sequence ops =
   let rec optimize (ops : O.t list) =
     match ops with
     | [] -> []
     | DW_op_deref :: DW_op_stack_value :: [] -> []
+(* CR mshinwell: Think carefully about whether this is correct
     | (DW_op_bregx { reg_number; offset_in_bytes = offset_in_bytes'; })
         :: (DW_op_plus_uconst offset_in_bytes)
         :: ops
@@ -182,6 +181,7 @@ let optimize_sequence ops =
         Targetint.of_int64 (Uint64.to_int64 offset_in_bytes)
       in
       (O.DW_op_bregx { reg_number; offset_in_bytes; }) :: (optimize ops)
+*)
     | DW_op_addr addr :: DW_op_stack_value :: [] ->
       [O.DW_op_implicit_value addr]
     | DW_op_consts i :: DW_op_stack_value :: [] ->
