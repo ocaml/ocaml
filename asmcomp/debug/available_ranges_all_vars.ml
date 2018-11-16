@@ -143,9 +143,10 @@ let create ~available_ranges_vars ~available_ranges_phantom_vars =
   if not (Backend_var.Set.is_empty (Backend_var.Set.inter vars phantom_vars))
   then begin
     Misc.fatal_errorf "Available_ranges_all_vars.create: sets not disjoint:@ \
-        non-phantom = {%a},@ phantom = {%a}"
+        non-phantom = {%a},@ phantom = {%a},@ inter = {%a}"
       Backend_var.Set.print vars
       Backend_var.Set.print phantom_vars
+      Backend_var.Set.print (Backend_var.Set.inter vars phantom_vars)
   end;
   { available_ranges_vars;
     available_ranges_phantom_vars;
