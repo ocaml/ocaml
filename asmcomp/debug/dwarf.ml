@@ -451,11 +451,10 @@ let var_location_description (reg : Reg.t) ~offset_from_cfa_in_bytes
           SLDL.Rvalue.in_stack_slot ~offset_in_words))))
 
 let phantom_var_location_description t
-      ~(defining_expr : Mach.phantom_defining_expr) ~need_rvalue
+      ~(defining_expr : Mach.phantom_defining_expr) ~need_rvalue:_
       ~proto_dies_for_vars ~parent
       : location_description option =
   let module SLD = Simple_location_description in
-  assert (not need_rvalue);  (* See comments below. *)
   let lvalue lvalue = Some (Simple (SLDL.compile (SLDL.of_lvalue lvalue))) in
   let rvalue rvalue = Some (Simple (SLDL.compile (SLDL.of_rvalue rvalue))) in
   let arch_size_addr = Targetint.of_int_exn Arch.size_addr in
