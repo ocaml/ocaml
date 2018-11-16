@@ -778,18 +778,14 @@ asmcomp/asmgen.cmo : asmcomp/un_anf.cmi bytecomp/translmod.cmi \
     typing/path.cmi utils/misc.cmi asmcomp/mach.cmi parsing/location.cmi \
     asmcomp/liveness.cmi asmcomp/linscan.cmi \
     middle_end/base_types/linkage_name.cmi asmcomp/linearize.cmi \
-    asmcomp/debug/lexical_block_ranges.cmi bytecomp/lambda.cmi \
-    asmcomp/interval.cmi asmcomp/interf.cmi typing/ident.cmi \
-    asmcomp/flambda_to_clambda.cmi middle_end/flambda.cmi asmcomp/emitaux.cmi \
-    asmcomp/emit.cmi asmcomp/debug/dwarf.cmi asmcomp/deadcode.cmi \
-    utils/config.cmi asmcomp/compilenv.cmi asmcomp/comballoc.cmi \
-    asmcomp/coloring.cmi asmcomp/debug/coalesce_labels.cmi asmcomp/cmmgen.cmi \
+    bytecomp/lambda.cmi asmcomp/interval.cmi asmcomp/interf.cmi \
+    typing/ident.cmi asmcomp/flambda_to_clambda.cmi middle_end/flambda.cmi \
+    asmcomp/emitaux.cmi asmcomp/emit.cmi asmcomp/debug/dwarf.cmi \
+    asmcomp/deadcode.cmi utils/config.cmi asmcomp/compilenv.cmi \
+    asmcomp/comballoc.cmi asmcomp/coloring.cmi asmcomp/cmmgen.cmi \
     asmcomp/cmm.cmi asmcomp/closure.cmi utils/clflags.cmi asmcomp/clambda.cmi \
     asmcomp/CSE.cmo asmcomp/build_export_info.cmi asmcomp/backend_sym.cmi \
-    asmcomp/debug/available_regs.cmi asmcomp/debug/available_ranges_vars.cmi \
-    asmcomp/debug/available_ranges_phantom_vars.cmi \
-    asmcomp/debug/available_ranges_all_vars.cmi \
-    asmcomp/debug/available_filtering.cmi asmcomp/asmgen.cmi
+    asmcomp/debug/available_regs.cmi asmcomp/asmgen.cmi
 asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     middle_end/base_types/symbol.cmx asmcomp/split.cmx asmcomp/spill.cmx \
     asmcomp/selection.cmx asmcomp/scheduling.cmx asmcomp/reload.cmx \
@@ -799,18 +795,14 @@ asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     typing/path.cmx utils/misc.cmx asmcomp/mach.cmx parsing/location.cmx \
     asmcomp/liveness.cmx asmcomp/linscan.cmx \
     middle_end/base_types/linkage_name.cmx asmcomp/linearize.cmx \
-    asmcomp/debug/lexical_block_ranges.cmx bytecomp/lambda.cmx \
-    asmcomp/interval.cmx asmcomp/interf.cmx typing/ident.cmx \
-    asmcomp/flambda_to_clambda.cmx middle_end/flambda.cmx asmcomp/emitaux.cmx \
-    asmcomp/emit.cmx asmcomp/debug/dwarf.cmx asmcomp/deadcode.cmx \
-    utils/config.cmx asmcomp/compilenv.cmx asmcomp/comballoc.cmx \
-    asmcomp/coloring.cmx asmcomp/debug/coalesce_labels.cmx asmcomp/cmmgen.cmx \
+    bytecomp/lambda.cmx asmcomp/interval.cmx asmcomp/interf.cmx \
+    typing/ident.cmx asmcomp/flambda_to_clambda.cmx middle_end/flambda.cmx \
+    asmcomp/emitaux.cmx asmcomp/emit.cmx asmcomp/debug/dwarf.cmx \
+    asmcomp/deadcode.cmx utils/config.cmx asmcomp/compilenv.cmx \
+    asmcomp/comballoc.cmx asmcomp/coloring.cmx asmcomp/cmmgen.cmx \
     asmcomp/cmm.cmx asmcomp/closure.cmx utils/clflags.cmx asmcomp/clambda.cmx \
     asmcomp/CSE.cmx asmcomp/build_export_info.cmx asmcomp/backend_sym.cmx \
-    asmcomp/debug/available_regs.cmx asmcomp/debug/available_ranges_vars.cmx \
-    asmcomp/debug/available_ranges_phantom_vars.cmx \
-    asmcomp/debug/available_ranges_all_vars.cmx \
-    asmcomp/debug/available_filtering.cmx asmcomp/asmgen.cmi
+    asmcomp/debug/available_regs.cmx asmcomp/asmgen.cmi
 asmcomp/asmgen.cmi : bytecomp/lambda.cmi typing/ident.cmi \
     middle_end/flambda.cmi asmcomp/debug/dwarf.cmi asmcomp/cmm.cmi \
     asmcomp/backend_sym.cmi middle_end/backend_intf.cmi
@@ -2472,12 +2464,12 @@ asmcomp/debug/dwarf.cmo : utils/targetint.cmi \
     asmcomp/debug/dwarf_low/range_list_entry.cmi \
     asmcomp/debug/dwarf_low/range_list.cmi \
     asmcomp/debug/dwarf_high/proto_die.cmi asmcomp/proc.cmi \
-    typing/printtyp.cmi asmcomp/printmach.cmi asmcomp/debug/name_laundry.cmi \
-    utils/misc.cmi asmcomp/mach.cmi \
+    typing/printtyp.cmi asmcomp/printmach.cmi utils/numbers.cmi \
+    asmcomp/debug/name_laundry.cmi utils/misc.cmi asmcomp/mach.cmi \
     asmcomp/debug/dwarf_low/location_list_entry.cmi \
     asmcomp/debug/dwarf_low/location_list.cmi \
     middle_end/base_types/linkage_name.cmi asmcomp/linearize.cmi \
-    asmcomp/debug/lexical_block_ranges.cmi \
+    asmcomp/debug/lexical_block_ranges.cmi utils/identifiable.cmi \
     asmcomp/debug/dwarf_low/encoding_attribute.cmi \
     asmcomp/debug/dwarf_high/dwarf_world.cmi \
     asmcomp/debug/dwarf_low/dwarf_version.cmi \
@@ -2488,10 +2480,14 @@ asmcomp/debug/dwarf.cmo : utils/targetint.cmi \
     asmcomp/debug/dwarf_low/debug_loc_table.cmi utils/config.cmi \
     asmcomp/debug/dwarf_low/composite_location_description.cmi \
     asmcomp/compilenv.cmi middle_end/base_types/compilation_unit.cmi \
-    asmcomp/cmmgen.cmi utils/clflags.cmi asmcomp/clambda.cmi \
-    asmcomp/backend_var.cmi asmcomp/debug/available_ranges_all_vars.cmi \
-    asmcomp/asm_target/asm_symbol.cmi asmcomp/asm_target/asm_section.cmi \
-    asmcomp/asm_target/asm_label.cmi asmcomp/arch.cmo asmcomp/debug/dwarf.cmi
+    asmcomp/debug/coalesce_labels.cmi asmcomp/cmmgen.cmi utils/clflags.cmi \
+    asmcomp/clambda.cmi asmcomp/backend_var.cmi \
+    asmcomp/debug/available_ranges_vars.cmi \
+    asmcomp/debug/available_ranges_phantom_vars.cmi \
+    asmcomp/debug/available_ranges_all_vars.cmi \
+    asmcomp/debug/available_filtering.cmi asmcomp/asm_target/asm_symbol.cmi \
+    asmcomp/asm_target/asm_section.cmi asmcomp/asm_target/asm_label.cmi \
+    asmcomp/arch.cmo asmcomp/debug/dwarf.cmi
 asmcomp/debug/dwarf.cmx : utils/targetint.cmx \
     middle_end/base_types/symbol.cmx \
     asmcomp/debug/dwarf_low/single_location_description.cmx \
@@ -2500,12 +2496,12 @@ asmcomp/debug/dwarf.cmx : utils/targetint.cmx \
     asmcomp/debug/dwarf_low/range_list_entry.cmx \
     asmcomp/debug/dwarf_low/range_list.cmx \
     asmcomp/debug/dwarf_high/proto_die.cmx asmcomp/proc.cmx \
-    typing/printtyp.cmx asmcomp/printmach.cmx asmcomp/debug/name_laundry.cmx \
-    utils/misc.cmx asmcomp/mach.cmx \
+    typing/printtyp.cmx asmcomp/printmach.cmx utils/numbers.cmx \
+    asmcomp/debug/name_laundry.cmx utils/misc.cmx asmcomp/mach.cmx \
     asmcomp/debug/dwarf_low/location_list_entry.cmx \
     asmcomp/debug/dwarf_low/location_list.cmx \
     middle_end/base_types/linkage_name.cmx asmcomp/linearize.cmx \
-    asmcomp/debug/lexical_block_ranges.cmx \
+    asmcomp/debug/lexical_block_ranges.cmx utils/identifiable.cmx \
     asmcomp/debug/dwarf_low/encoding_attribute.cmx \
     asmcomp/debug/dwarf_high/dwarf_world.cmx \
     asmcomp/debug/dwarf_low/dwarf_version.cmx \
@@ -2516,13 +2512,15 @@ asmcomp/debug/dwarf.cmx : utils/targetint.cmx \
     asmcomp/debug/dwarf_low/debug_loc_table.cmx utils/config.cmx \
     asmcomp/debug/dwarf_low/composite_location_description.cmx \
     asmcomp/compilenv.cmx middle_end/base_types/compilation_unit.cmx \
-    asmcomp/cmmgen.cmx utils/clflags.cmx asmcomp/clambda.cmx \
-    asmcomp/backend_var.cmx asmcomp/debug/available_ranges_all_vars.cmx \
-    asmcomp/asm_target/asm_symbol.cmx asmcomp/asm_target/asm_section.cmx \
-    asmcomp/asm_target/asm_label.cmx asmcomp/arch.cmx asmcomp/debug/dwarf.cmi
-asmcomp/debug/dwarf.cmi : asmcomp/linearize.cmi \
-    asmcomp/debug/lexical_block_ranges.cmi asmcomp/clambda.cmi \
-    asmcomp/debug/available_ranges_all_vars.cmi
+    asmcomp/debug/coalesce_labels.cmx asmcomp/cmmgen.cmx utils/clflags.cmx \
+    asmcomp/clambda.cmx asmcomp/backend_var.cmx \
+    asmcomp/debug/available_ranges_vars.cmx \
+    asmcomp/debug/available_ranges_phantom_vars.cmx \
+    asmcomp/debug/available_ranges_all_vars.cmx \
+    asmcomp/debug/available_filtering.cmx asmcomp/asm_target/asm_symbol.cmx \
+    asmcomp/asm_target/asm_section.cmx asmcomp/asm_target/asm_label.cmx \
+    asmcomp/arch.cmx asmcomp/debug/dwarf.cmi
+asmcomp/debug/dwarf.cmi : asmcomp/linearize.cmi asmcomp/clambda.cmi
 asmcomp/debug/is_parameter.cmo : asmcomp/debug/is_parameter.cmi
 asmcomp/debug/is_parameter.cmx : asmcomp/debug/is_parameter.cmi
 asmcomp/debug/is_parameter.cmi :
@@ -2555,9 +2553,11 @@ asmcomp/debug/reg_availability_set.cmx : \
 asmcomp/debug/reg_availability_set.cmi : \
     asmcomp/debug/reg_with_debug_info.cmi asmcomp/reg.cmi
 asmcomp/debug/reg_with_debug_info.cmo : asmcomp/reg.cmi \
-    asmcomp/backend_var.cmi asmcomp/debug/reg_with_debug_info.cmi
+    middle_end/debuginfo.cmi asmcomp/backend_var.cmi \
+    asmcomp/debug/reg_with_debug_info.cmi
 asmcomp/debug/reg_with_debug_info.cmx : asmcomp/reg.cmx \
-    asmcomp/backend_var.cmx asmcomp/debug/reg_with_debug_info.cmi
+    middle_end/debuginfo.cmx asmcomp/backend_var.cmx \
+    asmcomp/debug/reg_with_debug_info.cmi
 asmcomp/debug/reg_with_debug_info.cmi : asmcomp/reg.cmi \
     asmcomp/backend_var.cmi
 asmcomp/asm_target/asm_directives.cmo : utils/targetint.cmi \

@@ -30,6 +30,12 @@ module Code_range : sig
   val print_compact : Format.formatter -> t -> unit
 
   include Identifiable.S with type t := t
+
+  module Option : sig
+    type nonrec t = t option
+
+    include Identifiable.S with type t := t
+  end
 end
 
 (* CR-someday mshinwell: Consider introducing the notion of a "function

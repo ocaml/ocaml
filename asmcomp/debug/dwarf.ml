@@ -131,14 +131,14 @@ let create ~prefix_name =
 
 type var_uniqueness = {
   name_is_unique : bool;
-  location_is_unique : bool;
+  position_is_unique : bool;
 }
 
 let calculate_var_uniqueness ~available_ranges_vars =
   let module String = Misc.Stdlib.String in
   let by_name = String.Tbl.create 42 in
-  let by_debuginfo = Debuginfo.Tbl.create 42 in
-  let update_uniqueness var dbg =
+  let by_position = Debuginfo.Code_range.Option.Tbl.create 42 in
+  let update_uniqueness var pos =
     let name = Backend_var.name var in
     begin match String.Tbl.find by_name name with
     | exception Not_found ->
@@ -146,11 +146,13 @@ let calculate_var_uniqueness ~available_ranges_vars =
     | vars ->
       String.Tbl.replace by_name name (Backend_var.Set.add var vars)
     end;
-    begin match Debuginfo.Tbl.find by_debuginfo dbg with
+    begin match Debuginfo.Code_range.Option.Tbl.find by_position pos with
     | exception Not_found ->
-      Debuginfo.Tbl.add by_debuginfo dbg (Backend_var.Set.singleton var)
+      Debuginfo.Code_range.Option.Tbl.add by_position pos
+        (Backend_var.Set.singleton var)
     | vars ->
-      Debuginfo.Tbl.replace by_debuginfo dbg (Backend_var.Set.add var vars)
+      Debuginfo.Code_range.Option.Tbl.replace by_position pos
+        (Backend_var.Set.add var vars)
     end
   in
   let result = Backend_var.Tbl.create 42 in
@@ -158,10 +160,11 @@ let calculate_var_uniqueness ~available_ranges_vars =
     ~f:(fun var range ->
       let range_info = ARV.Range.info range in
       let dbg = ARV.Range_info.debuginfo range_info in
-      update_uniqueness var dbg;
+      let pos = Debuginfo.position dbg in
+      update_uniqueness var pos;
       Backend_var.Tbl.replace result var
         { name_is_unique = false;
-          location_is_unique = false;
+          position_is_unique = false;
         });
   String.Tbl.iter (fun _name vars ->
       match Backend_var.Set.get_singleton vars with
@@ -173,16 +176,16 @@ let calculate_var_uniqueness ~available_ranges_vars =
             name_is_unique = true;
           })
     by_name;
-  Debuginfo.Tbl.iter (fun _dbg vars ->
+  Debuginfo.Code_range.Option.Tbl.iter (fun _pos vars ->
       match Backend_var.Set.get_singleton vars with
       | None -> ()
       | Some var ->
         let var_uniqueness = Backend_var.Tbl.find result var in
         Backend_var.Tbl.replace result var
           { var_uniqueness with
-            location_is_unique = true;
+            position_is_unique = true;
           })
-    by_debuginfo;
+    by_position;
   result
 
 let proto_dies_for_variable var ~proto_dies_for_vars =
@@ -651,23 +654,16 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
       | Some provenance ->
         let dbg = Backend_var.Provenance.debuginfo provenance in
         let block = Debuginfo.innermost_block dbg in
-(*
-        Format.eprintf "Variable %a (dbg %a) defined in block %a\n%!"
-          Backend_var.print var
-          Debuginfo.print dbg
-          Debuginfo.Current_block.print block;
-*)
         match Debuginfo.Current_block.to_block block with
         | Toplevel -> whole_function_lexical_block
         | Block block ->
           let module B = Debuginfo.Block in
           match B.Map.find block lexical_block_proto_dies with
           | exception Not_found ->
+            (* There are no instructions marked with the block in which
+               [var] was defined.  Put the variable in the whole-function
+               lexical scope. *)
             whole_function_lexical_block
-(* XXX Find out what's going on here
-            Misc.fatal_errorf "Cannot find lexical block DIE for %a"
-              B.print block
-*)
           | proto_die -> proto_die
   in
   (* Build a location list that identifies where the value of [ident] may be
@@ -707,13 +703,13 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
     match type_die_reference_for_var var ~proto_dies_for_vars with
     | None -> []
     | Some reference ->
-      let name_is_unique, location_is_unique =
+      let name_is_unique, position_is_unique =
         match Backend_var.Tbl.find uniqueness_by_var var with
         | exception Not_found ->
           Misc.fatal_errorf "No uniqueness information for %a"
             Backend_var.print var
-        | { name_is_unique; location_is_unique; } ->
-          name_is_unique, location_is_unique
+        | { name_is_unique; position_is_unique; } ->
+          name_is_unique, position_is_unique
       in
       let name_for_var =
         (* If the unstamped name of [ident] is unambiguous within the
@@ -726,18 +722,18 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
            inlined functions' parameters in [Closure]) where locations may
            alias.  For these ones we disambiguate using the stamp. *)
         if name_is_unique then Backend_var.name var
-        else if not location_is_unique then Backend_var.unique_toplevel_name var
+        else if not position_is_unique then Backend_var.unique_toplevel_name var
         else
           match provenance with
           | None -> Backend_var.unique_toplevel_name var
           | Some provenance ->
             let dbg = Backend_var.Provenance.debuginfo provenance in
-            if Debuginfo.is_none dbg then
-              Backend_var.unique_toplevel_name var
-            else
-              Printf.sprintf "%s[%s]"
+            match Debuginfo.position dbg with
+            | None -> Backend_var.unique_toplevel_name var
+            | Some position ->
+              Format.asprintf "%s[%a]"
                 (Backend_var.name var)
-                (Debuginfo.to_string_frames_only_innermost_last dbg)
+                Debuginfo.Code_range.print position
       in
       (* CR-someday mshinwell: This should be tidied up.  It's only correct by
          virtue of the fact we do the closure-env ones second below. *)
@@ -844,7 +840,7 @@ let iterate_over_variable_like_things _t ~available_ranges_vars ~f =
 
 let dwarf_for_variables_and_parameters t ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
-      ~available_ranges_vars ~(fundecl : Linearize.fundecl) =
+      ~available_ranges_vars ~(fundecl : L.fundecl) =
   let proto_dies_for_vars = Backend_var.Tbl.create 42 in
   let uniqueness_by_var =
     calculate_var_uniqueness ~available_ranges_vars
@@ -979,9 +975,42 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
   in
   whole_function_lexical_block, lexical_block_proto_dies
 
-let dwarf_for_function_definition t ~(fundecl : Linearize.fundecl)
-      ~available_ranges_vars ~lexical_block_ranges
-      ~end_of_function_label =
+let passes_for_fundecl (fundecl : L.fundecl) =
+  let fundecl = Available_filtering.fundecl fundecl in
+  let available_ranges_vars, fundecl =
+    Available_ranges_vars.create fundecl
+  in
+  let available_ranges_phantom_vars, fundecl =
+    Available_ranges_phantom_vars.create fundecl
+  in
+  let lexical_block_ranges, fundecl =
+    Lexical_block_ranges.create fundecl
+  in
+  let label_env, fundecl = Coalesce_labels.fundecl fundecl in
+  let available_ranges_vars =
+    Available_ranges_vars.rewrite_labels available_ranges_vars
+      ~env:label_env
+  in
+  let available_ranges_phantom_vars =
+    Available_ranges_phantom_vars.rewrite_labels available_ranges_phantom_vars
+      ~env:label_env
+  in
+  let lexical_block_ranges =
+    Lexical_block_ranges.rewrite_labels lexical_block_ranges
+      ~env:label_env
+  in
+  let available_ranges_vars =
+    Available_ranges_all_vars.create ~available_ranges_vars
+      ~available_ranges_phantom_vars
+  in
+  available_ranges_vars, lexical_block_ranges, fundecl
+
+let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
+      (fundecl : L.fundecl) =
+  let available_ranges_vars, lexical_block_ranges, fundecl =
+    passes_for_fundecl fundecl
+  in
+  emit fundecl ~end_of_function_label;
   let symbol = Asm_symbol.create fundecl.fun_name in
   let start_of_function =
     DAH.create_low_pc_from_symbol ~symbol

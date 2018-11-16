@@ -114,6 +114,33 @@ module Code_range = struct
     in
     let loc_end = { loc_start with pos_cnum = t.char_end; } in
     { loc_ghost = false; loc_start; loc_end; }
+
+  module Option = struct
+    type nonrec t = t option
+
+    include Identifiable.Make (struct
+      type nonrec t = t
+
+      let compare t1 t2 =
+        match t1, t2 with
+        | None, None -> 0
+        | None, Some _ -> -1
+        | Some _, None -> 1
+        | Some range1, Some range2 -> compare range1 range2
+
+      let equal t1 t2 = (compare t1 t2 = 0)
+
+      let hash t =
+        match t with
+        | None -> 0
+        | Some range -> Hashtbl.hash (1, hash range)
+
+      let print ppf t = Misc.Stdlib.Option.print print ppf t
+
+      let output chan t =
+        Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
+    end)
+  end
 end
 
 module Block = struct

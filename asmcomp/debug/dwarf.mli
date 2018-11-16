@@ -12,10 +12,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** A value of type [t] holds all state necessary to emit DWARF debugging
-    information for a single compilation unit. *)
 type t
 
+(** Create a value of type [t], which holds all state necessary to emit
+    DWARF debugging information for a single compilation unit. *)
 val create : prefix_name:string -> t
 
 (** For dealing with [Let_symbol] bindings. *)
@@ -30,12 +30,16 @@ val dwarf_for_toplevel_inconstants
   -> Clambda.preallocated_block list
   -> unit
 
-val dwarf_for_function_definition
+(** Prepare a function definition for DWARF emission, emit the function using
+    the given emitter, and then generate corresponding DWARF. *)
+val dwarf_for_fundecl_and_emit
    : t
-  -> fundecl:Linearize.fundecl
-  -> available_ranges_vars:Available_ranges_all_vars.t
-  -> lexical_block_ranges:Lexical_block_ranges.t
+  -> emit:(Linearize.fundecl -> end_of_function_label:Linearize.label -> unit)
   -> end_of_function_label:Linearize.label
+  -> Linearize.fundecl
   -> unit
 
+(** Write the DWARF information to the assembly file.  This should only be
+    called once all (in)constants and function declarations have been passed
+    to the above functions. *)
 val emit : t -> unit
