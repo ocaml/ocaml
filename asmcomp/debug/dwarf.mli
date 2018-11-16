@@ -12,6 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Generation of DWARF debugging information for OCaml compilation units. *)
+
 type t
 
 (** Create a value of type [t], which holds all state necessary to emit
