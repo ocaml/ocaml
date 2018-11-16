@@ -57,16 +57,23 @@ end
 module Rvalue = struct
   type 'a t = 'a rvalue
 
-  let signed_int_const i = [OB.signed_int_const i]
+  let signed_int_const i = [
+    OB.signed_int_const i;
+    O.DW_op_stack_value;
+  ]
 
-  let in_register ~dwarf_reg_number =
-    [OB.contents_of_register ~dwarf_reg_number]
+  let in_register ~dwarf_reg_number = [
+    OB.contents_of_register ~dwarf_reg_number;
+    O.DW_op_stack_value;
+  ]
 
   let in_stack_slot ~offset_in_words = 
     let offset_in_bytes =
       Targetint.mul offset_in_words Targetint.size_in_bytes_as_targetint
     in
-    OB.contents_of_stack_slot ~offset_in_bytes
+    (OB.contents_of_stack_slot ~offset_in_bytes) @ [
+      O.DW_op_stack_value;
+    ]
 
   let read_field ~block ~field =
     let offset_in_bytes =
@@ -113,6 +120,7 @@ module Rvalue = struct
           O.DW_op_stack_value;
         ]
 
+  (* CR mshinwell: Check if this needs DW_op_stack_value (suspect not). *)
   let implicit_pointer ~offset_in_bytes ~die_label dwarf_version =
     [OB.implicit_pointer ~offset_in_bytes ~die_label dwarf_version]
 
