@@ -598,7 +598,7 @@ method select_condition = function
 
 (* Lowering of phantom lets *)
 
-method private lower_phantom_let
+method private lower_phantom_let var_being_defined
       ~(provenance : V.Provenance.t option)
       ~(defining_expr : Cmm.phantom_defining_expr option) =
   match defining_expr with
@@ -614,6 +614,7 @@ method private lower_phantom_let
       | Cphantom_const_symbol sym -> Some (Mach.Iphantom_const_symbol sym)
       | Cphantom_var var ->
         if V.Set.mem var !dead_phantom_lets then None
+        else if String.equal (V.name var) (V.name var_being_defined) then None
         else Some (Mach.Iphantom_var var)
       | Cphantom_offset_var { var; offset_in_words; } ->
         if V.Set.mem var !dead_phantom_lets then
@@ -645,7 +646,7 @@ method private env_for_phantom_let env var ~defining_expr =
      2. The defining expressions are recorded separately. *)
   let provenance = VP.provenance var in
   let var = VP.var var in
-  match self#lower_phantom_let ~provenance ~defining_expr with
+  match self#lower_phantom_let var ~provenance ~defining_expr with
   | None ->
     dead_phantom_lets := V.Set.add var !dead_phantom_lets;
     env
