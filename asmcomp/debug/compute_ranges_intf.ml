@@ -120,6 +120,8 @@ module type S = sig
 
   val fold : t -> init:'a -> f:('a -> Index.t -> Range.t -> 'a) -> 'a
 
+  val find : t -> Index.t -> Range.t
+
   val all_indexes : t -> Index.Set.t
 
   (** The [env] should come from [Coalesce_labels.fundecl]. *)

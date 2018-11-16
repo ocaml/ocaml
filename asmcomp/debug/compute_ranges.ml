@@ -140,15 +140,6 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     ranges : Range.t S.Index.Tbl.t;
   }
 
-  let iter t ~f =
-    S.Index.Tbl.iter (fun var range -> f var range)
-      t.ranges
-
-  let fold t ~init ~f =
-    S.Index.Tbl.fold (fun var range acc -> f acc var range)
-      t.ranges
-      init
-
   module KM = S.Key.Map
   module KS = S.Key.Set
 
@@ -215,10 +206,10 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     | Some insn -> S.available_across insn
 
   type action =
-    | Open_one_byte_range
-    | Open_range
-    | Close_range
-    | Close_range_one_byte_after
+    | Open_one_byte_subrange
+    | Open_subrange
+    | Close_subrange
+    | Close_subrange_one_byte_after
 
   let actions_at_instruction ~(insn : L.instruction)
         ~(prev_insn : L.instruction option) =
@@ -251,10 +242,10 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     in
     let actions =
       []
-      |> handle case_1c Open_one_byte_range
-      |> handle case_1d Open_range
-      |> handle case_2a Close_range
-      |> handle case_2c Close_range_one_byte_after
+      |> handle case_1c Open_one_byte_subrange
+      |> handle case_1d Open_subrange
+      |> handle case_2a Close_subrange
+      |> handle case_2c Close_subrange_one_byte_after
     in
     let must_restart =
       if S.must_restart_ranges_upon_any_change () then
@@ -298,11 +289,11 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       }
     in
     let used_label = ref false in
-    let open_range key ~open_subranges =
+    let open_subrange key ~open_subranges =
       used_label := true;
       KM.add key (label, label_insn) open_subranges
     in
-    let close_range key ~end_pos_offset ~open_subranges =
+    let close_subrange key ~end_pos_offset ~open_subranges =
       match KM.find key open_subranges with
       | exception Not_found -> open_subranges
       | start_pos, start_insn ->
@@ -334,22 +325,23 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let open_subranges =
       KS.fold (fun key open_subranges ->
           let open_subranges =
-            close_range key ~end_pos_offset:0 ~open_subranges
+            close_subrange key ~end_pos_offset:0 ~open_subranges
           in
-          open_range key ~open_subranges)
+          open_subrange key ~open_subranges)
         must_restart
         open_subranges
     in
     let open_subranges =
       List.fold_left (fun open_subranges (key, (action : action)) ->
           match action with
-          | Open_one_byte_range ->
-            let open_subranges = open_range key ~open_subranges in
-            close_range key ~end_pos_offset:1 ~open_subranges
-          | Open_range -> open_range key ~open_subranges
-          | Close_range -> close_range key ~end_pos_offset:0 ~open_subranges
-          | Close_range_one_byte_after ->
-            close_range key ~end_pos_offset:1 ~open_subranges)
+          | Open_one_byte_subrange ->
+            let open_subranges = open_subrange key ~open_subranges in
+            close_subrange key ~end_pos_offset:1 ~open_subranges
+          | Open_subrange -> open_subrange key ~open_subranges
+          | Close_subrange ->
+            close_subrange key ~end_pos_offset:0 ~open_subranges
+          | Close_subrange_one_byte_after ->
+            close_subrange key ~end_pos_offset:1 ~open_subranges)
         open_subranges
         actions
     in
@@ -358,7 +350,15 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     end;
     let first_insn = !first_insn in
     match insn.desc with
-    | Lend -> first_insn
+    | Lend ->
+      let open_subranges =
+        KM.fold (fun key _ open_subranges ->
+            close_subrange key ~end_pos_offset:0 ~open_subranges)
+          open_subranges
+          open_subranges
+      in
+      assert (KM.is_empty open_subranges);
+      first_insn
     | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
     | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
     | Lsetuptrap _ | Lpushtrap | Lpoptrap | Lraise _ ->
@@ -393,6 +393,17 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         { fundecl with fun_body = first_insn; }
       in
       t, fundecl
+
+  let iter t ~f =
+    S.Index.Tbl.iter (fun index range -> f index range)
+      t.ranges
+
+  let fold t ~init ~f =
+    S.Index.Tbl.fold (fun index range acc -> f acc index range)
+      t.ranges
+      init
+
+  let find t index = S.Index.Tbl.find t.ranges index
 
   let rewrite_labels t ~env =
     let ranges =

@@ -915,10 +915,10 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
       ()
   in
   let start_of_code_symbol = Asm_symbol.create fundecl.fun_name in
+  let all_blocks = LB.all_indexes lexical_block_ranges in
   let lexical_block_proto_dies, _all_summaries =
-    LB.fold lexical_block_ranges
-      ~init:(B.Map.empty, All_summaries.Map.empty)
-      ~f:(fun (lexical_block_proto_dies, all_summaries) block range ->
+    B.Set.fold (fun block (lexical_block_proto_dies, all_summaries) ->
+        let range = LB.find lexical_block_ranges block in
         let rec create_up_to_root block lexical_block_proto_dies all_summaries =
           match B.Map.find block lexical_block_proto_dies with
           | proto_die ->
@@ -974,6 +974,8 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
           create_up_to_root block lexical_block_proto_dies all_summaries
         in
         lexical_block_proto_dies, all_summaries)
+      all_blocks
+      (B.Map.empty, All_summaries.Map.empty)
   in
   whole_function_lexical_block, lexical_block_proto_dies
 
