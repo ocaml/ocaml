@@ -194,7 +194,7 @@ let nan =
 let max_float =
   float_of_bits 0x7F_EF_FF_FF_FF_FF_FF_FFL
 let min_float =
-  float_of_bits 0x00_10_00_00_00_00_00_00L
+  0x1p-1023
 let epsilon_float =
   float_of_bits 0x3C_B0_00_00_00_00_00_00L
 
