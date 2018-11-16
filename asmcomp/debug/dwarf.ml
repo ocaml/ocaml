@@ -754,7 +754,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
           ~reference
       end;
       let name_attribute =
-        if hidden then []
+        if hidden || need_rvalue then []
         else [DAH.create_name name_for_var]
       in
       name_attribute @ [
