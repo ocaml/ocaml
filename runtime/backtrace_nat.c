@@ -153,6 +153,11 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
   CAMLreturn(trace);
 }
 
+CAMLprim value caml_get_current_callstack_opt(value limit, value unit)
+{
+  value lim = (limit == Val_int(0)) ? Val_long((uintnat)(-1) >> 2) : Field(limit, 0);
+  return caml_get_current_callstack(lim);
+}
 
 debuginfo caml_debuginfo_extract(backtrace_slot slot)
 {

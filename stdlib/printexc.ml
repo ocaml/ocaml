@@ -79,10 +79,11 @@ let get_raw_backtrace_next_slot = Stack_trace.Frame.Raw.next
    returns the *string* corresponding to the global current backtrace *)
 let get_backtrace () = Stack_trace.to_string (Exn.last_trace ())
 
+external get_callstack : int -> raw_backtrace = "caml_get_current_callstack"
+
 let record_backtrace = Exn.set_tracing
 let backtrace_status = Exn.tracing
 let register_printer = Exn.register_printer
-let get_callstack limit = Stack_trace.current ~limit ()
 let exn_slot_id = Exn.id
 let exn_slot_name = Exn.name
 let set_uncaught_exception_handler = Exn.set_uncaught_exception_handler

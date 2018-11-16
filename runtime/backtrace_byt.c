@@ -320,6 +320,12 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
   CAMLreturn(trace);
 }
 
+CAMLprim value caml_get_current_callstack_opt(value limit, value unit)
+{
+  value lim = (limit == Val_int(0)) ? Val_long((uintnat)(-1) >> 2) : Field(limit, 0);
+  return caml_get_current_callstack(lim);
+}
+
 /* Read the debugging info contained in the current bytecode executable. */
 
 static void read_main_debug_info(struct debug_info *di)
