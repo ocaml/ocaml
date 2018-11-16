@@ -1111,17 +1111,17 @@ let rec normalize_module_path lax env = function
       path (* fast path (avoids lookup) *)
   | Pdot (p, s) as path ->
       let p' = normalize_module_path lax env p in
-      if p == p' then normalize_module_path0 lax env path
-      else normalize_module_path0 lax env (Pdot(p', s))
+      if p == p' then expand_module_path lax env path
+      else expand_module_path lax env (Pdot(p', s))
   | Papply (p1, p2) as path ->
       let p1' = normalize_module_path lax env p1 in
       let p2' = normalize_module_path true env p2 in
-      if p1 == p1' && p2 == p2' then normalize_module_path0 lax env path
-      else normalize_module_path0 lax env (Papply(p1', p2'))
+      if p1 == p1' && p2 == p2' then expand_module_path lax env path
+      else expand_module_path lax env (Papply(p1', p2'))
   | Pident _ as path ->
-      normalize_module_path0 lax env path
+      expand_module_path lax env path
 
-and normalize_module_path0 lax env path =
+and expand_module_path lax env path =
   try match find_module ~alias:true path env with
     {md_type=Mty_alias path1} ->
       let path' = normalize_module_path lax env path1 in
@@ -1154,13 +1154,15 @@ let normalize_path_prefix oloc env path =
       assert false
 
 let is_uident s =
-  assert (s <> "");
   match s.[0] with
   | 'A'..'Z' -> true
   | _ -> false
 
 let normalize_type_path oloc env path =
-  (* Inlined version of Path.constructor_typath *)
+  (* Inlined version of Path.is_constructor_typath:
+     constructor type paths (i.e. path pointing to an inline
+     record argument of a constructpr) are built as a regular
+     type path followed by a capitalized constructor name. *)
   match path with
   | Pident _ ->
       path
