@@ -1066,7 +1066,7 @@ and case : Typedtree.case -> mode -> Env.t * mode =
        (remove_pat c_lhs env), Mode.compose m (pattern c_lhs env))
 
 (* p : m -| G
-   with output m and output G
+   with output m and input G
 
    m is the mode under which the scrutinee of p is placed.
 *)
