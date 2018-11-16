@@ -197,6 +197,9 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
            initial_value = var;
            body;
            contents_kind = block_kind })
+  | Lphantom_let (_id, _defining_expr, body) ->
+    (* CR mshinwell for pchambart: Add code here! *)
+    close t env body
   | Lfunction { kind; params; body; attr; loc; } ->
     let name = Names.anon_fn_with_loc loc in
     let closure_bound_var = Variable.create name in

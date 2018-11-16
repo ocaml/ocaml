@@ -41,9 +41,6 @@ module VP = Backend_var.With_provenance
 
 let current_module_path = ref (None : Path.t option)
 
-let no_phantom_lets () =
-  Misc.fatal_error "Closure does not support phantom let generation"
-
 (* Auxiliaries for compiling functions *)
 
 let rec split_list n l =
@@ -80,7 +77,7 @@ let occurs_var var u =
     | Uclosure(_fundecls, clos) -> List.exists occurs clos
     | Uoffset(u, _ofs) -> occurs u
     | Ulet(_str, _kind, _id, def, body) -> occurs def || occurs body
-    | Uphantom_let _ -> no_phantom_lets ()
+    | Uphantom_let (_var, _defining_expr, body) -> occurs body
     | Uletrec(decls, body) ->
         List.exists (fun (_id, u) -> occurs u) decls || occurs body
     | Uprim(_p, args, _) -> List.exists occurs args
@@ -170,7 +167,8 @@ let lambda_smaller lam threshold =
         incr size; lambda_size lam
     | Ulet(_str, _kind, _id, lam, body) ->
         lambda_size lam; lambda_size body
-    | Uphantom_let _ -> no_phantom_lets ()
+    | Uphantom_let (_id, _defining_expr, body) ->
+        lambda_size body
     | Uletrec _ ->
         raise Exit (* usually too large *)
     | Uprim(prim, args, _) ->
@@ -633,7 +631,56 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
       in
       let term = Ulet (str, kind, id', defining_expr, body) in
       block_subst, term
-  | Uphantom_let _ -> no_phantom_lets ()
+  | Uphantom_let (id, defining_expr, body) ->
+      let bad_substitution () =
+        Misc.fatal_error "Unexpected form of substitution"
+      in
+      let defining_expr =
+        match defining_expr with
+          | None -> None
+          | Some defining_expr ->
+              let defining_expr =
+                match defining_expr with
+                | Uphantom_var var ->
+                    begin match V.Map.find var sb with
+                    | exception Not_found -> defining_expr
+                    | Uvar var -> Uphantom_var var
+                    | Uoffset (Uvar var, offset_in_words) ->
+                        Uphantom_offset_var { var; offset_in_words; }
+                    | _ -> bad_substitution ()
+                    end
+                | Uphantom_read_field { var; field; } ->
+                    begin match V.Map.find var sb with
+                    | exception Not_found -> defining_expr
+                    | Uvar var -> Uphantom_read_field { var; field; }
+                    | Uoffset (Uvar var, offset_in_words) ->
+                        let field = field + offset_in_words in
+                        Uphantom_read_field { var; field; }
+                    | _ -> bad_substitution ()
+                    end
+                | Uphantom_offset_var { var; offset_in_words; } ->
+                    begin match V.Map.find var sb with
+                    | exception Not_found -> defining_expr
+                    | Uvar var -> Uphantom_offset_var { var; offset_in_words; }
+                    | Uoffset (Uvar var, offset_in_words') ->
+                        let offset_in_words =
+                          offset_in_words + offset_in_words'
+                        in
+                        Uphantom_offset_var { var; offset_in_words; }
+                    | _ -> bad_substitution ()
+                    end
+                | Uphantom_const _
+                | Uphantom_read_symbol_field _ -> defining_expr
+                | Uphantom_block _ ->
+                    Misc.fatal_error "[Closure] cannot handle [Uphantom_block]"
+              in
+              Some defining_expr
+      in
+      let block_subst, body =
+        substitute ~at_call_site ~block_subst fpc sb rn body
+      in
+      let term = Uphantom_let (id, defining_expr, body) in
+      block_subst, term
   | Uletrec(bindings, body) ->
       let bindings1 =
         List.map (fun (id, rhs) ->
@@ -1201,6 +1248,29 @@ let rec close ~scope fenv cenv = function
           in
           (Ulet(Immutable, kind, VP.create ?provenance id, ulam, ubody), abody)
       end
+  | Lphantom_let (id, defining_expr, body) ->
+      let body_scope = CB.add_scope scope in
+      let provenance =
+        match !current_module_path with
+        | None -> None
+        | Some module_path ->
+          let provenance =
+            V.Provenance.create ~module_path
+              ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
+              ~original_ident:id
+          in
+          Some provenance
+      in
+      let var = VP.create ?provenance id in
+      let defining_expr =
+        match defining_expr with
+        | Lphantom_dead -> None
+        | Lphantom_var var -> Some (Uphantom_var var)
+        | Lphantom_read_field { var; field; } ->
+            Some (Uphantom_read_field { var; field; })
+      in
+      let body, body_approx = close ~scope:body_scope fenv cenv body in
+      Uphantom_let (var, defining_expr, body), body_approx
   | Lletrec(defs, body) ->
       if List.for_all
            (function (_id, Lfunction _) -> true | _ -> false)
@@ -1725,7 +1795,7 @@ let collect_exported_structured_constants a =
         List.iter ulam ul
     | Uoffset(u, _) -> ulam u
     | Ulet (_str, _kind, _, u1, u2) -> ulam u1; ulam u2
-    | Uphantom_let _ -> no_phantom_lets ()
+    | Uphantom_let (_id, _defining_expr, body) -> ulam body
     | Uletrec (l, u) -> List.iter (fun (_, u) -> ulam u) l; ulam u
     | Uprim (_, ul, _) -> List.iter ulam ul
     | Uswitch (u, sl, _dbg) ->

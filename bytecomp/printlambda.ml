@@ -486,6 +486,15 @@ let print_loc_closing ppf () =
     fprintf ppf "@{<debug_loc>)@}"
   end
 
+let print_phantom_defining_expr ppf defining_expr =
+  match defining_expr with
+  | Lphantom_dead -> fprintf ppf "<dead>"
+  | Lphantom_var id -> Ident.print ppf id
+  | Lphantom_read_field { var; field; } ->
+    fprintf ppf "%a.(%d)"
+      Ident.print var
+      field
+
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
@@ -542,6 +551,11 @@ let rec lam ppf = function
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
+  | Lphantom_let (id, defining_expr, body) ->
+      fprintf ppf "@[<2>(phantom_let@ %a = %a@ %a)@]"
+        Ident.print id
+        print_phantom_defining_expr defining_expr
+        lam body
   | Lprim(prim, largs, loc) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in

@@ -86,9 +86,9 @@ and phantom_defining_expr ppf = function
   | Uphantom_offset_var { var; offset_in_words; } ->
     Format.fprintf ppf "%a+(%d)" Backend_var.print var offset_in_words
   | Uphantom_read_field { var; field; } ->
-    Format.fprintf ppf "%a[%d]" Backend_var.print var field
+    Format.fprintf ppf "%a.(%d)" Backend_var.print var field
   | Uphantom_read_symbol_field { sym; field; } ->
-    Format.fprintf ppf "%s[%d]" sym field
+    Format.fprintf ppf "%s.(%d)" sym field
   | Uphantom_block { tag; fields; } ->
     Format.fprintf ppf "[%d: " tag;
     List.iter (fun field ->

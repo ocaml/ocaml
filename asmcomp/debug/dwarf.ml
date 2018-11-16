@@ -33,7 +33,10 @@ type t = {
   mutable emitted : bool;
 }
 
+type is_variable_phantom = Non_phantom | Phantom
+
 type proto_dies_for_var = {
+  is_variable_phantom : is_variable_phantom;
   value_die_lvalue : Proto_die.reference;
   value_die_rvalue : Proto_die.reference;
   type_die : Proto_die.reference;
@@ -291,10 +294,7 @@ let construct_type_of_value_description t ~parent var ~output_path
     | Iphantom_read_field { var = _; field = _; } ->
       (* We cannot dereference an implicit pointer when evaluating a DWARF
          location expression, which means we must restrict ourselves to 
-         projections from non-phantom identifiers.  This is ensured at the
-         moment by the commented-out code in [Flambda_utils] and the fact that
-         [Flambda_to_clambda] only generates [Uphantom_read_var_field] on
-         the (non-phantom) environment parameter. *)
+         projections from non-phantom identifiers. *)
       normal_case ()
     | Iphantom_offset_var { var = _; offset_in_words = _; } ->
       (* The same applies here as for [Iphantom_read_var_field] above, but we
@@ -357,6 +357,11 @@ let construct_type_of_value_description t ~parent var ~output_path
           ()
       in
       ()
+
+let is_variable_phantom var ~proto_dies_for_vars =
+  match proto_dies_for_variable var ~proto_dies_for_vars with
+  | None -> None
+  | Some { is_variable_phantom; _ } -> Some is_variable_phantom
 
 let die_location_of_variable_lvalue t var ~proto_dies_for_vars =
   (* We may need to reference the locations of other values in order to
@@ -457,13 +462,13 @@ let phantom_var_location_description t
   match defining_expr with
   | Iphantom_const_int i -> rvalue (SLDL.Rvalue.signed_int_const i)
   | Iphantom_const_symbol symbol ->
-    (* CR mshinwell: [Iphantom_const_symbol]'s arg should be of type
+    (* CR-soon mshinwell: [Iphantom_const_symbol]'s arg should be of type
        [Backend_sym.t].  Same for the others. *)
     let symbol = Asm_symbol.of_external_name symbol in
     lvalue (SLDL.Lvalue.const_symbol ~symbol)
   | Iphantom_read_symbol_field { sym; field; } ->
     let sym = Asm_symbol.of_external_name sym in
-    (* CR mshinwell: Fix [field] to be of type [Targetint.t] *)
+    (* CR-soon mshinwell: Fix [field] to be of type [Targetint.t] *)
     let field = Targetint.of_int field in
     rvalue (SLDL.Rvalue.read_symbol_field ~symbol:sym ~field)
   | Iphantom_var var ->
@@ -496,7 +501,7 @@ let phantom_var_location_description t
       Some (Composite composite)
     end
   | Iphantom_read_field { var; field; } ->
-    (* CR mshinwell: Clarify the following (maybe in SLDL directly):
+    (* CR-soon mshinwell: Clarify the following (maybe in SLDL directly):
        "lvalue" == "no DW_op_stack_value" *)
     (* Reminder: see CR in flambda_utils.ml regarding these constructions *)
     (* We need to use a location expression that when evaluated will
@@ -508,26 +513,26 @@ let phantom_var_location_description t
        way of looking at this is that we need to get the DWARF operator
        sequence without [DW_op_stack_value], either implicitly or
        explicitly, at the end.) *)
-    (* CR-someday mshinwell: When we fix the CR in flambda_utils.ml and
-       generate [Iphantom_read_var_field] and [Iphantom_offset_var] for
-       more than just closure parameters, we should think carefully as
-       to whether the existing approach is reasonable (having separate
-       DIEs for the rvalues and lvalues).  Maybe one of those DIEs should
-       call the other. *)
-    begin match die_location_of_variable_rvalue t var ~proto_dies_for_vars with
-    | None -> None
-    | Some block ->
-      let field = Targetint.of_int_exn field in
-      (* CR mshinwell: Ditch [SLDL.compile]. *)
-      let read_field =
-        SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.read_field ~block ~field))
-      in
-      let composite =
-        Composite_location_description.
-          pieces_of_simple_location_descriptions
-            [read_field, arch_size_addr]
-      in
-      Some (Composite composite)
+    begin match is_variable_phantom var ~proto_dies_for_vars with
+    | None | Some Phantom ->
+      (* For the moment, show this field access as unavailable, since we
+         cannot "DW_OP_deref" a value built up with implicit pointers. *)
+      None
+    | Some Non_phantom ->
+      match die_location_of_variable_rvalue t var ~proto_dies_for_vars with
+      | None -> None
+      | Some block ->
+        let field = Targetint.of_int_exn field in
+        (* CR-soon mshinwell: Ditch [SLDL.compile]. *)
+        let read_field =
+          SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.read_field ~block ~field))
+        in
+        let composite =
+          Composite_location_description.
+            pieces_of_simple_location_descriptions
+              [read_field, arch_size_addr]
+        in
+        Some (Composite composite)
     end
   | Iphantom_offset_var { var; offset_in_words; } ->
     begin match die_location_of_variable_lvalue t var ~proto_dies_for_vars with
@@ -552,7 +557,7 @@ let phantom_var_location_description t
        References between such blocks do not use normal pointers in the
        target's address space---instead they use "implicit pointers"
        (requires GNU DWARF extensions prior to DWARF-5). *)
-    (* CR mshinwell: use a cache to dedup the CLDs *)
+    (* CR-someday mshinwell: use a cache to dedup the CLDs *)
     let header =
       SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.signed_int_const (
         Targetint.of_int64 (Int64.of_nativeint (
@@ -633,7 +638,7 @@ let location_list_entry t ~parent ~(fundecl : L.fundecl)
 let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue
-      (var : Backend_var.t) ~hidden ~ident_for_type ~range =
+      (var : Backend_var.t) ~phantom:_ ~hidden ~ident_for_type ~range =
   let range_info = ARV.Range.info range in
   let provenance = ARV.Range_info.provenance range_info in
   let is_parameter = ARV.Range_info.is_parameter range_info in
@@ -792,6 +797,11 @@ let iterate_over_variable_like_things _t ~available_ranges_vars ~f =
   ARV.iter available_ranges_vars ~f:(fun var range ->
     let range_info = ARV.Range.info range in
     let provenance = ARV.Range_info.provenance range_info in
+    let phantom : is_variable_phantom =
+      match ARV.Range_info.phantom_defining_expr range_info with
+      | Non_phantom -> Non_phantom
+      | Phantom _ -> Phantom
+    in
     (* There are two variables in play here:
        1. [var] is the "real" variable that is used to cross-reference
            between DIEs;
@@ -803,8 +813,8 @@ let iterate_over_variable_like_things _t ~available_ranges_vars ~f =
        not all have the same value. *)
     (* CR-soon mshinwell: Default arguments currently appear as local
        variables, not parameters. *)
-    (* CR mshinwell: Introduce some flag on Backend_var.t to mark identifiers
-       that were generated internally (or vice-versa)? *)
+    (* CR-someday mshinwell: Introduce some flag on Backend_var.t to mark
+       identifiers that were generated internally (or vice-versa)? *)
     let hidden =
       let name = Backend_var.name var in
       String.length name >= 1
@@ -836,7 +846,7 @@ let iterate_over_variable_like_things _t ~available_ranges_vars ~f =
         in
         Some original_ident
     in
-    f var ~hidden ~ident_for_type ~range)
+    f var ~phantom ~hidden ~ident_for_type ~range)
 
 let dwarf_for_variables_and_parameters t ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
@@ -846,32 +856,29 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
     calculate_var_uniqueness ~available_ranges_vars
   in
   iterate_over_variable_like_things t ~available_ranges_vars
-    ~f:(fun var ~hidden:_ ~ident_for_type:_ ~range:_ ->
+    ~f:(fun var ~phantom ~hidden:_ ~ident_for_type:_ ~range:_ ->
       let value_die_lvalue = Proto_die.create_reference () in
       let value_die_rvalue = Proto_die.create_reference () in
       let type_die = Proto_die.create_reference () in
       assert (not (Backend_var.Tbl.mem proto_dies_for_vars var));
       Backend_var.Tbl.add proto_dies_for_vars var
-        { value_die_lvalue; value_die_rvalue; type_die; });
+        { is_variable_phantom = phantom;
+          value_die_lvalue;
+          value_die_rvalue;
+          type_die;
+        });
   (* CR-someday mshinwell: Consider changing [need_rvalue] to use a variant
      type "lvalue or rvalue". *)
   iterate_over_variable_like_things t ~available_ranges_vars
     ~f:(dwarf_for_variable t ~fundecl ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:false);
+  (* CR-soon mshinwell: We should work out how to save space by not having
+     all "rvalue" DIEs. *)
   iterate_over_variable_like_things t ~available_ranges_vars
-    ~f:(fun var ~hidden ~ident_for_type ~range ->
-      (* We only need DIEs that yield actually on the DWARF stack the locations
-         of entities for closure arguments, since those are the only ones
-         that may be involved with [Iphantom_read_var_field] and
-         [Iphantom_var] constructions.  (See comments above.) *)
-      (* CR-someday mshinwell: Make this test less messy *)
-      if Backend_var.name var = "*closure_env*" then begin
-        dwarf_for_variable t ~fundecl ~function_proto_die
-          ~whole_function_lexical_block ~lexical_block_proto_dies
-          ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true
-          var ~hidden ~ident_for_type ~range
-      end)
+    ~f:(dwarf_for_variable t ~fundecl ~function_proto_die
+      ~whole_function_lexical_block ~lexical_block_proto_dies
+      ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true)
 
 let create_range_list_entries_and_summarise ~start_of_code_symbol range =
   LB.Range.fold range ~init:([], Int.Triple.Set.empty)
@@ -1048,7 +1055,7 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
   let type_proto_die =
     normal_type_for_var t
       ~parent:(Some t.compilation_unit_proto_die)
-      (Unique_name function_name)  (* CR mshinwell: is this the right name? *)
+      (Unique_name function_name)
       ~output_path:t.output_path
   in
   let function_proto_die =
@@ -1164,8 +1171,8 @@ let dwarf_for_toplevel_inconstant t var ~module_path ~symbol =
 
 let dwarf_for_toplevel_inconstants t inconstants =
   List.iter (fun (inconstant : Clambda.preallocated_block) ->
-      (* CR mshinwell: Should we be discarding toplevel things that don't have
-         provenance?  Maybe not -- think. *)
+      (* CR-soon mshinwell: Should we be discarding toplevel things that don't
+         have provenance?  Maybe not -- think. *)
       match inconstant.provenance with
       | None -> ()
       | Some provenance ->

@@ -36,6 +36,8 @@ let rec eliminate_ref id = function
       else lam
   | Llet(str, kind, v, e1, e2) ->
       Llet(str, kind, v, eliminate_ref id e1, eliminate_ref id e2)
+  | Lphantom_let(v, e1, e2) ->
+      Lphantom_let(v, e1, eliminate_ref id e2)
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
@@ -135,6 +137,8 @@ let simplify_exits lam =
   | Lfunction {body} -> count body
   | Llet(_str, _kind, _v, l1, l2) ->
       count l2; count l1
+  | Lphantom_let(_v, _l1, l2) ->
+      count l2
   | Lletrec(bindings, body) ->
       List.iter (fun (_v, l) -> count l) bindings;
       count body
@@ -221,6 +225,8 @@ let simplify_exits lam =
   | Lfunction{kind; params; body = l; attr; loc} ->
      Lfunction{kind; params; body = simplif l; attr; loc}
   | Llet(str, kind, v, l1, l2) -> Llet(str, kind, v, simplif l1, simplif l2)
+  | Lphantom_let(v, l1, l2) ->
+      Lphantom_let(v, l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll, loc) -> begin
@@ -404,6 +410,8 @@ let simplify_lets lam =
       count (bind_var bv v) l2;
       (* If v is unused, l1 will be removed, so don't count its variables *)
       if str = Strict || count_var v > 0 then count bv l1
+  | Lphantom_let(_v, _l1, l2) ->
+      count bv l2
   | Lletrec(bindings, body) ->
       List.iter (fun (_v, l) -> count bv l) bindings;
       count bv body
@@ -469,6 +477,13 @@ let simplify_lets lam =
   | Lvar w when optimize && Ident.same v w -> e1
   | _ -> Llet (str, kind,v,e1,e2) in
 
+  let phantomise lam =
+    match lam with
+    | Lvar var -> Some (Lphantom_var var)
+    | Lprim (Pfield field, [Lvar var], _loc) ->
+        Some (Lphantom_read_field { var; field; })
+    | _ -> None
+  in
 
   let rec simplif = function
     Lvar v as l ->
@@ -497,7 +512,10 @@ let simplify_lets lam =
       end
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
-      simplif l2
+      begin match !Clflags.debug_full with
+      | None -> simplif l2
+      | Some _ -> Lphantom_let (v, Lphantom_var w, simplif l2)
+      end
   | Llet(Strict, kind, v,
          Lprim(Pmakeblock(0, Mutable, kind_ref) as prim, [linit], loc), lbody)
     when optimize ->
@@ -515,16 +533,20 @@ let simplify_lets lam =
       end
   | Llet(Alias, kind, v, l1, l2) ->
       begin match count_var v with
-        0 -> simplif l2
-      | 1 when optimize -> Hashtbl.add subst v (simplif l1); simplif l2
+        0 -> deleting_let v l1 l2
+      | 1 when optimize ->
+          Hashtbl.add subst v (simplif l1);
+          deleting_let v l1 l2
       | _ -> Llet(Alias, kind, v, simplif l1, simplif l2)
       end
   | Llet(StrictOpt, kind, v, l1, l2) ->
       begin match count_var v with
-        0 -> simplif l2
+        0 -> deleting_let v l1 l2
       | _ -> mklet StrictOpt kind v (simplif l1) (simplif l2)
       end
   | Llet(str, kind, v, l1, l2) -> mklet str kind v (simplif l1) (simplif l2)
+  | Lphantom_let(v, l1, l2) ->
+      Lphantom_let(v, l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll, loc) -> Lprim(p, List.map simplif ll, loc)
@@ -567,6 +589,14 @@ let simplify_lets lam =
   | Levent(l, ev) -> Levent(simplif l, ev)
   | Lifused(v, l) ->
       if count_var v > 0 then simplif l else lambda_unit
+  and deleting_let v l1 l2 =
+    match !Clflags.debug_full with
+    | None -> simplif l2
+    | Some _ ->
+        match phantomise (simplif l1) with
+        | None -> simplif l2
+        | Some defining_expr ->
+            Lphantom_let (v, defining_expr, simplif l2)
   in
   simplif lam
 
@@ -598,6 +628,8 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos true lam
   | Llet (_str, _k, _, lam, body) ->
       emit_tail_infos false lam;
+      emit_tail_infos is_tail body
+  | Lphantom_let (_, _defining_expr, body) ->
       emit_tail_infos is_tail body
   | Lletrec (bindings, body) ->
       List.iter (fun (_, lam) -> emit_tail_infos false lam) bindings;

@@ -644,6 +644,7 @@ let free_methods l =
         List.iter (fun param -> fv := Ident.Set.remove param !fv) params
     | Llet(_str, _k, id, _arg, _body) ->
         fv := Ident.Set.remove id !fv
+    | Lphantom_let _ -> ()
     | Lletrec(decl, _body) ->
         List.iter (fun (id, _exp) -> fv := Ident.Set.remove id !fv) decl
     | Lstaticcatch(_e1, (_,vars), _e2, _loc) ->

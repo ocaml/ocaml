@@ -246,12 +246,18 @@ type function_attribute = {
   stub: bool;
 }
 
+type phantom_defining_expr =
+  | Lphantom_dead
+  | Lphantom_var of Ident.t
+  | Lphantom_read_field of { var : Ident.t; field : int; }
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
   | Lapply of lambda_apply
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
+  | Lphantom_let of Ident.t * phantom_defining_expr * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t
   | Lswitch of lambda * lambda_switch * Location.t

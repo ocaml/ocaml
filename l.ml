@@ -11,6 +11,10 @@ let f m x =
       (z, y) ->
     2 + z * y
 
+let test1 f x =
+  let a, b, c = f x in
+  a + b * c
+
 let () = ignore (Sys.opaque_identity (f 1 2))
 
 (*

@@ -49,7 +49,7 @@ type test =
 type phantom_defining_expr =
   | Iphantom_const_int of Targetint.t
   | Iphantom_const_symbol of string
-  | Iphantom_var of Backend_var.t  (** Must not be a phantom identifier. *)
+  | Iphantom_var of Backend_var.t
   | Iphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
   | Iphantom_read_field of { var : Backend_var.t; field : int; }
   | Iphantom_read_symbol_field of { sym : string; field : int; }
