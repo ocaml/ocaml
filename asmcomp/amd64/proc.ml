@@ -273,15 +273,18 @@ let regs_are_volatile _rs = false
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =
+  (* C calling conventions preserve rbp, but it is clobbered
+     by the code sequence used for C calls in emit.mlp, so it
+     is marked as destroyed. *)
   if win64 then
-    (* Win64: rbx, rbp, rsi, rdi, r12-r15, xmm6-xmm15 preserved *)
+    (* Win64: rbx, rsi, rdi, r12-r15, xmm6-xmm15 preserved *)
     Array.of_list(List.map phys_reg
-      [0;4;5;6;7;10;11;
+      [0;4;5;6;7;10;11;12;
        100;101;102;103;104;105])
   else
-    (* Unix: rbp, rbx, r12-r15 preserved *)
+    (* Unix: rbx, r12-r15 preserved *)
     Array.of_list(List.map phys_reg
-      [0;2;3;4;5;6;7;10;11;
+      [0;2;3;4;5;6;7;10;11;12;
        100;101;102;103;104;105;106;107;
        108;109;110;111;112;113;114;115])
 

@@ -538,13 +538,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
     do_return:
       if (sp == Stack_high(domain_state->current_stack)) {
         /* return to parent stack */
-        struct stack_info* parent_stack =
-          Stack_parent(domain_state->current_stack);
-        value hval = Stack_handle_value(domain_state->current_stack);
+        struct stack_info* old_stack = domain_state->current_stack;
+        struct stack_info* parent_stack = Stack_parent(old_stack);
+        value hval = Stack_handle_value(old_stack);
         Assert(parent_stack != NULL);
 
-        domain_state->current_stack->sp = sp;
-        struct stack_info* old_stack = caml_switch_stack(parent_stack);
+        old_stack->sp = sp;
+        domain_state->current_stack = parent_stack;
         sp = domain_state->current_stack->sp;
         caml_free_stack(old_stack);
 
@@ -960,11 +960,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
           caml_decr_callback_depth ();
           return Make_exception_result(accu);
         } else {
-          struct stack_info* parent_stack =
-            Stack_parent(domain_state->current_stack);
-          value hexn = Stack_handle_exception(domain_state->current_stack);
-          domain_state->current_stack->sp = sp;
-          struct stack_info* old_stack = caml_switch_stack(parent_stack);
+          struct stack_info* old_stack = domain_state->current_stack;
+          struct stack_info* parent_stack = Stack_parent(old_stack);
+          value hexn = Stack_handle_exception(old_stack);
+          old_stack->sp = sp;
+          domain_state->current_stack = parent_stack;
           sp = domain_state->current_stack->sp;
           caml_free_stack(old_stack);
 
@@ -1282,7 +1282,7 @@ do_resume: {
       Stack_parent(stk) = Caml_state->current_stack;
 
       domain_state->current_stack->sp = sp;
-      caml_switch_stack(Ptr_val(accu));
+      domain_state->current_stack = Ptr_val(accu);
       sp = domain_state->current_stack->sp;
 
       domain_state->trap_sp_off = Long_val(sp[0]);
@@ -1305,8 +1305,8 @@ do_resume: {
 
     Instruct(PERFORM): {
       value cont;
-      struct stack_info* parent_stack =
-        Stack_parent(domain_state->current_stack);
+      struct stack_info* old_stack = domain_state->current_stack;
+      struct stack_info* parent_stack = Stack_parent(old_stack);
 
       if (parent_stack == NULL) {
         accu = Field_imm(caml_read_root(caml_global_data), UNHANDLED_EXN);
@@ -1321,9 +1321,9 @@ do_resume: {
       sp[2] = env;
       sp[3] = Val_long(extra_args);
 
-      domain_state->current_stack->sp = sp;
-      struct stack_info* old_stack = caml_switch_stack(parent_stack);
-      sp = domain_state->current_stack->sp;
+      old_stack->sp = sp;
+      domain_state->current_stack = parent_stack;
+      sp = parent_stack->sp;
       Stack_parent(old_stack) = NULL;
       Init_field(cont, 0, Val_ptr(old_stack));
 
@@ -1344,7 +1344,7 @@ do_resume: {
       value eff = accu;
       value cont = sp[0];
       struct stack_info* cont_tail = Ptr_val(sp[1]);
-      struct stack_info* self;
+      struct stack_info* self = domain_state->current_stack;
       struct stack_info* parent = Stack_parent(domain_state->current_stack);
 
       sp = sp + *pc - 2;
@@ -1358,9 +1358,9 @@ do_resume: {
         goto do_resume;
       }
 
-      domain_state->current_stack->sp = sp;
-      self = caml_switch_stack(parent);
-      sp = domain_state->current_stack->sp;
+      self->sp = sp;
+      domain_state->current_stack = parent;
+      sp = parent->sp;
 
       CAMLassert(Stack_parent(cont_tail) == NULL);
       Stack_parent(self) = NULL;

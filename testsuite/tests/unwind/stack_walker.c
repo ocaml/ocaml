@@ -3,6 +3,7 @@
 #include <string.h>
 #include <caml/callback.h>
 #include <caml/mlvalues.h>
+#define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
 value ml_func_with_10_params_native(value x1, value x2, value x3, value x4,
@@ -12,10 +13,11 @@ value ml_func_with_10_params_native(value x1, value x2, value x3, value x4,
 }
 
 void error() {
-    exit(1);
+  printf("<error>\n");
+  exit(1);
 }
 
-void perform_stack_walk() {
+value ml_perform_stack_walk(value unused) {
     unw_context_t ctxt;
     unw_getcontext(&ctxt);
 
@@ -25,7 +27,6 @@ void perform_stack_walk() {
         if (result != 0) error();
     }
 
-    int reached_main = 0;
 
     for (;;) {
         {
@@ -34,26 +35,28 @@ void perform_stack_walk() {
             int result = unw_get_proc_name(&cursor, procname, sizeof(procname),
                                            &ip_offset);
             if (result != 0) error();
-            if (strcmp(procname, "main") == 0)
-                reached_main = 1;
-            //printf("%s + %lld\n", procname, (long long int)ip_offset);
+            if (strlen(procname) > 4 &&
+                !memcmp(procname, "caml", 4) &&
+                'A' <= procname[4] && procname[4] <= 'Z' &&
+                strstr(procname+4, "__")) {
+              /* mangled OCaml name, unmangle and print */
+              const char* mangled = procname + 4;
+              const char* mod_end = strstr(mangled, "__");
+              const char* id_begin = strchr(mod_end + 2, '_');
+              if (!id_begin) id_begin = mangled + strlen(mangled);
+              printf("%.*s.%.*s\n", mod_end - mangled, mangled, id_begin - (mod_end + 2), mod_end + 2);
+            } else {
+              printf("%s\n", procname);
+            }
+            if (!strcmp(procname, "main")) break;
         }
 
         {
             int result = unw_step(&cursor);
-            if (result == 0) break;
+            if (result == 0) error(); /* didn't make it to main() */
             if (result < 0) error();
         }
     }
 
-    //printf("Reached end of stack.\n");
-    if (!reached_main) {
-        //printf("Failure: Did not reach main.\n");
-        error();
-    }
-}
-
-value ml_perform_stack_walk() {
-    perform_stack_walk();
     return Val_unit;
 }
