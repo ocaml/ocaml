@@ -632,49 +632,44 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
       let term = Ulet (str, kind, id', defining_expr, body) in
       block_subst, term
   | Uphantom_let (id, defining_expr, body) ->
-      let bad_substitution () =
-        Misc.fatal_error "Unexpected form of substitution"
-      in
       let defining_expr =
         match defining_expr with
           | None -> None
           | Some defining_expr ->
-              let defining_expr =
-                match defining_expr with
-                | Uphantom_var var ->
-                    begin match V.Map.find var sb with
-                    | exception Not_found -> defining_expr
-                    | Uvar var -> Uphantom_var var
-                    | Uoffset (Uvar var, offset_in_words) ->
-                        Uphantom_offset_var { var; offset_in_words; }
-                    | _ -> bad_substitution ()
-                    end
-                | Uphantom_read_field { var; field; } ->
-                    begin match V.Map.find var sb with
-                    | exception Not_found -> defining_expr
-                    | Uvar var -> Uphantom_read_field { var; field; }
-                    | Uoffset (Uvar var, offset_in_words) ->
-                        let field = field + offset_in_words in
-                        Uphantom_read_field { var; field; }
-                    | _ -> bad_substitution ()
-                    end
-                | Uphantom_offset_var { var; offset_in_words; } ->
-                    begin match V.Map.find var sb with
-                    | exception Not_found -> defining_expr
-                    | Uvar var -> Uphantom_offset_var { var; offset_in_words; }
-                    | Uoffset (Uvar var, offset_in_words') ->
-                        let offset_in_words =
-                          offset_in_words + offset_in_words'
-                        in
-                        Uphantom_offset_var { var; offset_in_words; }
-                    | _ -> bad_substitution ()
-                    end
-                | Uphantom_const _
-                | Uphantom_read_symbol_field _ -> defining_expr
-                | Uphantom_block _ ->
-                    Misc.fatal_error "[Closure] cannot handle [Uphantom_block]"
-              in
-              Some defining_expr
+              match defining_expr with
+              | Uphantom_var var ->
+                  begin match V.Map.find var sb with
+                  | exception Not_found -> Some defining_expr
+                  | Uvar var -> Some (Uphantom_var var)
+                  | Uoffset (Uvar var, offset_in_words) ->
+                      Some (Uphantom_offset_var { var; offset_in_words; })
+                  | _ -> None
+                  end
+              | Uphantom_read_field { var; field; } ->
+                  begin match V.Map.find var sb with
+                  | exception Not_found -> Some defining_expr
+                  | Uvar var -> Some (Uphantom_read_field { var; field; })
+                  | Uoffset (Uvar var, offset_in_words) ->
+                      let field = field + offset_in_words in
+                      Some (Uphantom_read_field { var; field; })
+                  | _ -> None
+                  end
+              | Uphantom_offset_var { var; offset_in_words; } ->
+                  begin match V.Map.find var sb with
+                  | exception Not_found -> Some defining_expr
+                  | Uvar var ->
+                      Some (Uphantom_offset_var { var; offset_in_words; })
+                  | Uoffset (Uvar var, offset_in_words') ->
+                      let offset_in_words =
+                        offset_in_words + offset_in_words'
+                      in
+                      Some (Uphantom_offset_var { var; offset_in_words; })
+                  | _ -> None
+                  end
+              | Uphantom_const _
+              | Uphantom_read_symbol_field _ -> Some defining_expr
+              | Uphantom_block _ ->
+                  Misc.fatal_error "[Closure] cannot handle [Uphantom_block]"
       in
       let block_subst, body =
         substitute ~at_call_site ~block_subst fpc sb rn body
