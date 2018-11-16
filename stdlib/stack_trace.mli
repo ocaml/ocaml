@@ -129,14 +129,14 @@ module Frame : sig
       frame. *)
 end with type stack_trace := t
 
-val frames: t -> Frame.t array option
-(** Returns the frames of a stack trace, or [None] if none of them contain
-    useful information.
+val frames: t -> Frame.t array
+(** Returns the frames of a stack trace. The returned array may be empty of non
+    of them contains useful information.
 
     In the return array, the frame at index [0] corresponds to the most recent
     function call or raise.
 
-    Some possible reasons for returning [None] are as follow:
+    Some possible reasons for returning an empty array are as follow:
     - none of the frames in the trace come from modules compiled with
       debug information ([-g])
     - the program is a bytecode program that has not been linked with

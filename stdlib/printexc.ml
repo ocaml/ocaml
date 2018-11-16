@@ -61,7 +61,8 @@ type location = Stack_trace.Frame.location = {
   end_char : int;
 }
 
-let backtrace_slots = Stack_trace.frames
+let backtrace_slots bt =
+  match Stack_trace.frames bt with [||] -> None | a -> Some a
 
 module Slot = struct
   type t = Stack_trace.Frame.t

@@ -158,4 +158,4 @@ module Frame = struct
 end
 
 let length = raw_backtrace_length
-let frames = backtrace_slots
+let frames bt = match backtrace_slots bt with Some a -> a | None -> [||]
