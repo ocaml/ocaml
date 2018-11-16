@@ -47,7 +47,7 @@
    rules for the [lazy] keyword.
 *)
 
-type 'a t = 'a lazy_t
+type 'a t = 'a CamlinternalLazy.t
 
 exception Undefined = CamlinternalLazy.Undefined
 exception RacyLazy  = CamlinternalLazy.RacyLazy
@@ -83,5 +83,3 @@ let lazy_from_fun = from_fun
 let lazy_from_val = from_val
 
 let lazy_is_val = is_val
-
-module Internal = CamlinternalLazy

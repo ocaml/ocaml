@@ -34,13 +34,13 @@ camlinternalFormat.cmi : camlinternalFormatBasics.cmi buffer.cmi
 camlinternalFormatBasics.cmo : camlinternalFormatBasics.cmi
 camlinternalFormatBasics.cmx : camlinternalFormatBasics.cmi
 camlinternalFormatBasics.cmi :
-camlinternalLazy.cmo : obj.cmi domain.cmi camlinternalLazy.cmi
-camlinternalLazy.cmx : obj.cmx domain.cmx camlinternalLazy.cmi
+camlinternalLazy.cmo : obj.cmi camlinternalLazy.cmi
+camlinternalLazy.cmx : obj.cmx camlinternalLazy.cmi
 camlinternalLazy.cmi : obj.cmi
-camlinternalMod.cmo : obj.cmi camlinternalOO.cmi array.cmi \
-    camlinternalMod.cmi
-camlinternalMod.cmx : obj.cmx camlinternalOO.cmx array.cmx \
-    camlinternalMod.cmi
+camlinternalMod.cmo : obj.cmi camlinternalOO.cmi camlinternalLazy.cmi \
+    array.cmi camlinternalMod.cmi
+camlinternalMod.cmx : obj.cmx camlinternalOO.cmx camlinternalLazy.cmx \
+    array.cmx camlinternalMod.cmi
 camlinternalMod.cmi : obj.cmi
 camlinternalOO.cmo : sys.cmi string.cmi obj.cmi map.cmi list.cmi char.cmi \
     array.cmi camlinternalOO.cmi
@@ -218,12 +218,12 @@ camlinternalFormat.p.cmx : sys.cmx string.cmx char.cmx \
     camlinternalFormatBasics.cmx bytes.cmx buffer.cmx camlinternalFormat.cmi
 camlinternalFormatBasics.cmo : camlinternalFormatBasics.cmi
 camlinternalFormatBasics.p.cmx : camlinternalFormatBasics.cmi
-camlinternalLazy.cmo : obj.cmi domain.cmi camlinternalLazy.cmi
-camlinternalLazy.p.cmx : obj.cmx domain.cmx camlinternalLazy.cmi
-camlinternalMod.cmo : obj.cmi camlinternalOO.cmi array.cmi \
-    camlinternalMod.cmi
-camlinternalMod.p.cmx : obj.cmx camlinternalOO.cmx array.cmx \
-    camlinternalMod.cmi
+camlinternalLazy.cmo : obj.cmi camlinternalLazy.cmi
+camlinternalLazy.p.cmx : obj.cmx camlinternalLazy.cmi
+camlinternalMod.cmo : obj.cmi camlinternalOO.cmi camlinternalLazy.cmi \
+    array.cmi camlinternalMod.cmi
+camlinternalMod.p.cmx : obj.cmx camlinternalOO.cmx camlinternalLazy.cmx \
+    array.cmx camlinternalMod.cmi
 camlinternalOO.cmo : sys.cmi string.cmi obj.cmi map.cmi list.cmi char.cmi \
     array.cmi camlinternalOO.cmi
 camlinternalOO.p.cmx : sys.cmx string.cmx obj.cmx map.cmx list.cmx char.cmx \
