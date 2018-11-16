@@ -123,7 +123,8 @@ module Options = Main_args.Make_opttop_options (struct
       | _ -> Compenv.fatal "Please specify `gdb' or `lldb' for -g-full"
     in
     debug := true;
-    debug_full := Some debugger
+    debug_full := Some debugger;
+    binary_annotations := true
   let _inline spec =
     Float_arg_helper.parse spec
       "Syntax: -inline <n> | <round>=<n>[,...]"

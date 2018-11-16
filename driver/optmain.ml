@@ -74,7 +74,8 @@ module Options = Main_args.Make_optcomp_options (struct
       | _ -> fatal "Please specify `gdb' or `lldb' for -g-full"
     in
     debug := true;
-    debug_full := Some debugger
+    debug_full := Some debugger;
+    binary_annotations := true
   let _i () =
     print_types := true;
     compile_only := true;
