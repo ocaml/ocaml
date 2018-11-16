@@ -221,7 +221,6 @@ ASMCOMP=\
   asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/debug/available_regs.cmo \
-  asmcomp/debug/propagate_debuginfo.cmo \
   $(DWARF_LOW) \
   $(DWARF_HIGH) \
   asmcomp/debug/compute_ranges_intf.cmo \

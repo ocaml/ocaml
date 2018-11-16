@@ -142,8 +142,16 @@ let end_instr () =
     available_across = None;
   }
 
-let instr_cons_debug ?(phantom_available_before = Backend_var.Set.empty)
-      d a r dbg n =
+type phantom_available_before =
+  | Take_from of instruction
+  | Exactly of Backend_var.Set.t
+
+let instr_cons_debug ~phantom_available_before d a r dbg n =
+  let phantom_available_before =
+    match phantom_available_before with
+    | Take_from insn -> insn.phantom_available_before
+    | Exactly avail -> avail
+  in
   { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty;
     phantom_available_before;
     available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;

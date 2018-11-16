@@ -203,11 +203,13 @@ let kill_addr_regs n =
 
 let insert_single_move dbg i src dst =
   instr_cons_debug (Iop Imove) [|src|] [|dst|] dbg i
+    ~phantom_available_before:(Take_from i)
 
 let insert_move dbg srcs dsts i =
   match Array.length srcs with
   | 0 -> i
   | 1 -> instr_cons_debug (Iop Imove) srcs dsts dbg i
+           ~phantom_available_before:(Take_from i)
   | _ -> (* Parallel move: first copy srcs into tmps one by one,
             then copy tmps into dsts one by one *)
          let tmps = Reg.createv_like srcs in

@@ -39,45 +39,51 @@ let rec combine i allocstate =
             combine i.next (Pending_alloc(i.res.(0), sz)) in
           (instr_cons_debug (Iop(Ialloc {bytes = newsz; spacetime_index = 0;
               label_after_call_gc = None; }))
-            i.arg i.res i.dbg newnext, 0)
+            i.arg i.res i.dbg newnext
+            ~phantom_available_before:(Take_from i), 0)
       | Pending_alloc(reg, ofs) ->
           if ofs + sz < Config.max_young_wosize * Arch.size_addr then begin
             let (newnext, newsz) =
               combine i.next (Pending_alloc(reg, ofs + sz)) in
             (instr_cons_debug (Iop(Iintop_imm(Iadd, ofs))) [| reg |] i.res
-              i.dbg newnext,
+              i.dbg newnext ~phantom_available_before:(Take_from i),
              newsz)
           end else begin
             let (newnext, newsz) =
               combine i.next (Pending_alloc(i.res.(0), sz)) in
             (instr_cons_debug (Iop(Ialloc { bytes = newsz; spacetime_index = 0;
                 label_after_call_gc = None; }))
-              i.arg i.res i.dbg newnext, ofs)
+              i.arg i.res i.dbg newnext
+              ~phantom_available_before:(Take_from i), ofs)
           end
       end
   | Iop(Icall_ind _ | Icall_imm _ | Iextcall _ |
         Itailcall_ind _ | Itailcall_imm _) ->
       let newnext = combine_restart i.next in
-      (instr_cons_debug i.desc i.arg i.res i.dbg newnext,
+      (instr_cons_debug i.desc i.arg i.res i.dbg newnext
+         ~phantom_available_before:(Take_from i),
        allocated_size allocstate)
   | Iop _ ->
       let (newnext, sz) = combine i.next allocstate in
-      (instr_cons_debug i.desc i.arg i.res i.dbg newnext, sz)
+      (instr_cons_debug i.desc i.arg i.res i.dbg newnext
+        ~phantom_available_before:(Take_from i), sz)
   | Iifthenelse(test, ifso, ifnot) ->
       let newifso = combine_restart ifso in
       let newifnot = combine_restart ifnot in
       let newnext = combine_restart i.next in
       (instr_cons_debug (Iifthenelse(test, newifso, newifnot)) i.arg i.res
-         i.dbg newnext,
+         i.dbg newnext ~phantom_available_before:(Take_from i),
        allocated_size allocstate)
   | Iswitch(table, cases) ->
       let newcases = Array.map combine_restart cases in
       let newnext = combine_restart i.next in
-      (instr_cons_debug (Iswitch(table, newcases)) i.arg i.res i.dbg newnext,
+      (instr_cons_debug (Iswitch(table, newcases)) i.arg i.res i.dbg newnext
+         ~phantom_available_before:(Take_from i),
        allocated_size allocstate)
   | Iloop(body) ->
       let newbody = combine_restart body in
-      (instr_cons_debug (Iloop(newbody)) i.arg i.res i.dbg i.next,
+      (instr_cons_debug (Iloop(newbody)) i.arg i.res i.dbg i.next
+        ~phantom_available_before:(Take_from i),
        allocated_size allocstate)
   | Icatch(rec_flag, handlers, body) ->
       let (newbody, sz) = combine body allocstate in
@@ -85,13 +91,13 @@ let rec combine i allocstate =
         List.map (fun (io, handler) -> io, combine_restart handler) handlers in
       let newnext = combine_restart i.next in
       (instr_cons_debug (Icatch(rec_flag, newhandlers, newbody))
-         i.arg i.res i.dbg newnext, sz)
+         i.arg i.res i.dbg newnext ~phantom_available_before:(Take_from i), sz)
   | Itrywith(body, handler) ->
       let (newbody, sz) = combine body allocstate in
       let newhandler = combine_restart handler in
       let newnext = combine_restart i.next in
       (instr_cons_debug (Itrywith(newbody, newhandler)) i.arg i.res i.dbg
-        newnext, sz)
+        newnext ~phantom_available_before:(Take_from i), sz)
 
 and combine_restart i =
   let (newi, _) = combine i No_alloc in newi

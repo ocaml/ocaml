@@ -140,9 +140,13 @@ type fundecl =
         Backend_var.Map.t;
   }
 
+type phantom_available_before =
+  | Take_from of instruction
+  | Exactly of Backend_var.Set.t
+
 val dummy_instr: instruction
 val end_instr: unit -> instruction
-val instr_cons_debug: ?phantom_available_before:Backend_var.Set.t
+val instr_cons_debug: phantom_available_before:phantom_available_before
       -> instruction_desc -> Reg.t array -> Reg.t array -> Debuginfo.t ->
         instruction -> instruction
 val instr_iter: (instruction -> unit) -> instruction -> unit

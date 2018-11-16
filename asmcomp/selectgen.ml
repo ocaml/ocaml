@@ -670,12 +670,12 @@ method get_current_dbg () = current_dbg
 
 method insert_debug env desc dbg arg res =
   instr_seq <- instr_cons_debug desc arg res dbg
-    ~phantom_available_before:env.phantom_vars instr_seq;
+    ~phantom_available_before:(Exactly env.phantom_vars) instr_seq;
   current_dbg <- dbg
 
 method insert env desc arg res =
   instr_seq <- instr_cons_debug desc arg res current_dbg
-    ~phantom_available_before:env.phantom_vars instr_seq
+    ~phantom_available_before:(Exactly env.phantom_vars) instr_seq
 
 method extract_core ~end_instr =
   let rec extract res i =
@@ -1071,7 +1071,7 @@ method emit_expr (env:environment) exp ~bound_name =
       self#insert env
         (Itrywith(s1#extract,
                   instr_cons_debug (Iop Imove) [|Proc.loc_exn_bucket|] rv
-                    ~phantom_available_before:s2.phantom_available_before
+                    ~phantom_available_before:(Take_from s2)
                     dbg s2))
         [||] [||];
       r
@@ -1429,7 +1429,7 @@ method emit_tail (env:environment) exp =
       self#insert env
         (Itrywith(s1#extract,
                   instr_cons_debug (Iop Imove) [|Proc.loc_exn_bucket|] rv
-                    ~phantom_available_before:s2.phantom_available_before
+                    ~phantom_available_before:(Take_from s2)
                     dbg s2))
         [||] [||];
       begin match opt_r1 with

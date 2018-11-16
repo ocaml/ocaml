@@ -132,8 +132,6 @@ let compile_fundecl ~ppf_dump dwarf fd_cmm =
   ++ Profile.record ~accumulate:true "regalloc" (regalloc ~ppf_dump 1)
   ++ Profile.record ~accumulate:true "available_regs" Available_regs.fundecl
   ++ pass_dump_if ppf_dump dump_avail "After availability analysis"
-  ++ Profile.record ~accumulate:true "propagate_debuginfo"
-       Propagate_debuginfo.fundecl
   ++ Profile.record ~accumulate:true "linearize" Linearize.fundecl
   ++ pass_dump_linear_if ppf_dump dump_linear "Linearized code"
   ++ Profile.record ~accumulate:true "scheduling" Scheduling.fundecl

@@ -84,9 +84,9 @@ let phantom_defining_expr ppf defining_expr =
   | Cphantom_offset_var { var; offset_in_words; } ->
     Format.fprintf ppf "%a+(%d)" V.print var offset_in_words
   | Cphantom_read_field { var; field; } ->
-    Format.fprintf ppf "%a[%d]" V.print var field
+    Format.fprintf ppf "%a.(%d)" V.print var field
   | Cphantom_read_symbol_field { sym; field; } ->
-    Format.fprintf ppf "%s[%d]" sym field
+    Format.fprintf ppf "%s.(%d)" sym field
   | Cphantom_block { tag; fields; } ->
     Format.fprintf ppf "[%d: " tag;
     List.iter (fun field ->
@@ -182,12 +182,12 @@ let rec expr ppf = function
             fprintf ppf "@ %a" (print_binding var) def;
             in_part ppf body
         | exp -> exp in
-      fprintf ppf "@[<2>(let?@ @[<1>(%a" (print_binding var) def;
+      fprintf ppf "@[<2>(phantom_let@ @[<1>(%a" (print_binding var) def;
       let exp = in_part ppf body in
       fprintf ppf ")@]@ %a)@]" sequence exp
   | Cphantom_let(var, def, body) ->
     fprintf ppf
-      "@[<2>(let?@ @[<2>%a@ %a@]@ %a)@]"
+      "@[<2>(phantom_let@ @[<2>%a@ %a@]@ %a)@]"
       VP.print var
       phantom_defining_expr_opt def
       sequence body
