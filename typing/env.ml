@@ -1168,9 +1168,11 @@ let normalize_type_path oloc env path =
       path
   | Pdot(p, s) ->
       let p2 =
-        if is_uident s then
+        if is_uident s && not (is_uident (Path.last p)) then
+          (* Cstr M.t.C *)
           normalize_path_prefix oloc env p
         else
+          (* Regular M.t, Ext M.C *)
           normalize_module_path oloc env p
       in
       if p == p2 then path else Pdot (p2, s)
