@@ -24,6 +24,7 @@ open Reg
 open Mach
 open Linearize
 open Emitaux
+module String = Misc.Stdlib.String
 
 open X86_ast
 open X86_proc
@@ -77,11 +78,11 @@ let slot_offset loc cl =
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
-let symbols_defined = ref StringSet.empty
-let symbols_used = ref StringSet.empty
+let symbols_defined = ref String.Set.empty
+let symbols_used = ref String.Set.empty
 
-let add_def_symbol s = symbols_defined := StringSet.add s !symbols_defined
-let add_used_symbol s = symbols_used := StringSet.add s !symbols_used
+let add_def_symbol s = symbols_defined := String.Set.add s !symbols_defined
+let add_used_symbol s = symbols_used := String.Set.add s !symbols_used
 
 let trap_frame_size = Misc.align 8 stack_alignment
 
@@ -358,7 +359,7 @@ let is_tos = function { loc = Reg _; typ = Float } -> true | _ -> false
 
 (* Emit the code for a floating-point comparison *)
 
-let emit_float_test cmp neg arg lbl =
+let emit_float_test cmp arg lbl =
   let actual_cmp =
     match (is_tos arg.(0), is_tos arg.(1)) with
     | (true, true) ->
@@ -372,7 +373,7 @@ let emit_float_test cmp neg arg lbl =
     | (false, true) ->
         (* second arg on top of FP stack *)
         I.fcomp (reg arg.(0));
-        Cmm.swap_comparison cmp
+        Cmm.swap_float_comparison cmp
     | (false, false) ->
         I.fld     (reg arg.(0));
         I.fcomp   (reg arg.(1));
@@ -380,49 +381,44 @@ let emit_float_test cmp neg arg lbl =
   in
   I.fnstsw ax;
   match actual_cmp with
-  | Ceq ->
-      if neg then begin
-        I.and_ (int 68) ah;
-        I.xor (int 64) ah;
-        I.jne lbl
-      end else begin
-        I.and_ (int 69) ah;
-        I.cmp (int 64) ah;
-        I.je lbl
-      end
-  | Cne ->
-      if neg then begin
-        I.and_ (int 69) ah;
-        I.cmp (int 64) ah;
-        I.je lbl
-      end else begin
-        I.and_ (int 68) ah;
-        I.xor (int 64) ah;
-        I.jne lbl
-      end
-  | Cle ->
+  | CFeq ->
+      I.and_ (int 69) ah;
+      I.cmp (int 64) ah;
+      I.je lbl
+  | CFneq ->
+      I.and_ (int 68) ah;
+      I.xor (int 64) ah;
+      I.jne lbl
+  | CFle ->
       I.and_ (int 69) ah;
       I.dec ah;
       I.cmp (int 64) ah;
-      if neg
-      then I.jae lbl
-      else I.jb lbl
-  | Cge ->
+      I.jb lbl
+  | CFnle ->
+      I.and_ (int 69) ah;
+      I.dec ah;
+      I.cmp (int 64) ah;
+      I.jae lbl
+  | CFge ->
       I.and_ (int 5) ah;
-      if neg
-      then I.jne lbl
-      else I.je lbl
-  | Clt ->
+      I.je lbl
+  | CFnge ->
+      I.and_ (int 5) ah;
+      I.jne lbl
+  | CFlt ->
       I.and_ (int 69) ah;
       I.cmp (int 1) ah;
-      if neg
-      then I.jne lbl
-      else I.je lbl
-  | Cgt ->
+      I.je lbl
+  | CFnlt ->
       I.and_ (int 69) ah;
-      if neg
-      then I.jne lbl
-      else I.je lbl
+      I.cmp (int 1) ah;
+      I.jne lbl
+  | CFgt ->
+      I.and_ (int 69) ah;
+      I.je lbl
+  | CFngt ->
+      I.and_ (int 69) ah;
+      I.jne lbl
 
 (* Emit a Ifloatspecial instruction *)
 
@@ -474,13 +470,40 @@ let function_name = ref ""
 (* Entry point for tail recursive calls *)
 let tailrec_entry_point = ref 0
 (* Record references to external C functions (for MacOSX) *)
-let external_symbols_direct = ref StringSet.empty
-let external_symbols_indirect = ref StringSet.empty
+let external_symbols_direct = ref String.Set.empty
+let external_symbols_indirect = ref String.Set.empty
+
+(* Emission of the profiling prelude *)
+
+let call_mcount mcount =
+  I.push eax;
+  I.mov esp ebp;
+  I.push ecx;
+  I.push edx;
+  I.call (sym mcount);
+  I.pop edx;
+  I.pop ecx;
+  I.pop eax
+
+let emit_profile () =
+  match system with
+  | S_linux_elf | S_gnu -> call_mcount "mcount"
+  | S_bsd_elf -> call_mcount ".mcount"
+  | S_macosx -> call_mcount "Lmcount$stub"
+  | _ -> () (*unsupported yet*)
 
 let emit_instr fallthrough i =
   emit_debug_info i.dbg;
   match i.desc with
   | Lend -> ()
+  | Lprologue ->
+    if !Clflags.gprofile then emit_profile();
+    let n = frame_size() - 4 in
+    if n > 0 then  begin
+      I.sub (int n) esp;
+      cfi_adjust_cfa_offset n;
+    end;
+    def_label !tailrec_entry_point
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then begin
@@ -547,7 +570,7 @@ let emit_instr fallthrough i =
           I.mov (immsym func) eax
         else begin
           external_symbols_indirect :=
-            StringSet.add func !external_symbols_indirect;
+            String.Set.add func !external_symbols_indirect;
           I.mov (mem_sym DWORD (Printf.sprintf "L%s$non_lazy_ptr"
                               (emit_symbol func))) eax
         end;
@@ -558,7 +581,7 @@ let emit_instr fallthrough i =
           emit_call func
         else begin
           external_symbols_direct :=
-            StringSet.add func !external_symbols_direct;
+            String.Set.add func !external_symbols_direct;
           I.call (sym (Printf.sprintf "L%s$stub" (emit_symbol func)))
         end
       end
@@ -609,7 +632,7 @@ let emit_instr fallthrough i =
             I.fstp (addressing addr REAL8 i 1)
           end
       end
-  | Lop(Ialloc { words = n; blocks = dbg; label_after_call_gc; }) ->
+  | Lop(Ialloc { bytes = n; allocs = dbg; label_after_call_gc; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
         def_label lbl_redo;
@@ -827,8 +850,8 @@ let emit_instr fallthrough i =
       | Iinttest_imm(cmp, n) ->
           I.cmp (int n) (reg i.arg.(0));
           I.j (cond cmp) lbl
-      | Ifloattest(cmp, neg) ->
-          emit_float_test cmp neg i.arg lbl
+      | Ifloattest cmp ->
+          emit_float_test cmp i.arg lbl
       | Ioddtest ->
           I.test (int 1) (reg i.arg.(0));
           I.jne lbl
@@ -909,36 +932,17 @@ let emit_external_symbol_indirect s =
 
 let emit_external_symbols () =
   D.section [ "__IMPORT"; "__pointers"] None ["non_lazy_symbol_pointers" ];
-  StringSet.iter emit_external_symbol_indirect !external_symbols_indirect;
-  external_symbols_indirect := StringSet.empty;
+  String.Set.iter emit_external_symbol_indirect !external_symbols_indirect;
+  external_symbols_indirect := String.Set.empty;
   D.section [ "__IMPORT"; "__jump_table"] None
     [ "symbol_stubs"; "self_modifying_code+pure_instructions"; "5" ];
-  StringSet.iter emit_external_symbol_direct !external_symbols_direct;
-  external_symbols_direct := StringSet.empty;
+  String.Set.iter emit_external_symbol_direct !external_symbols_direct;
+  external_symbols_direct := String.Set.empty;
   if !Clflags.gprofile then begin
     _label "Lmcount$stub";
     D.indirect_symbol "mcount";
     I.hlt (); I.hlt (); I.hlt () ; I.hlt () ; I.hlt ()
   end
-
-(* Emission of the profiling prelude *)
-
-let call_mcount mcount =
-  I.push eax;
-  I.mov esp ebp;
-  I.push ecx;
-  I.push edx;
-  I.call (sym mcount);
-  I.pop edx;
-  I.pop ecx;
-  I.pop eax
-
-let emit_profile () =
-  match system with
-  | S_linux_elf | S_gnu -> call_mcount "mcount"
-  | S_bsd_elf -> call_mcount ".mcount"
-  | S_macosx -> call_mcount "Lmcount$stub"
-  | _ -> () (*unsupported yet*)
 
 (* Emission of a function declaration *)
 
@@ -963,13 +967,6 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
-  if !Clflags.gprofile then emit_profile();
-  let n = frame_size() - 4 in
-  if n > 0 then  begin
-    I.sub (int n) esp;
-    cfi_adjust_cfa_offset n;
-  end;
-  def_label !tailrec_entry_point;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
@@ -1078,13 +1075,13 @@ let end_assembly() =
 
   if system = S_win32 then begin
     D.comment "External functions";
-    StringSet.iter
+    String.Set.iter
       (fun s ->
-         if not (StringSet.mem s !symbols_defined) then
+         if not (String.Set.mem s !symbols_defined) then
            D.extrn (emit_symbol s) PROC)
       !symbols_used;
-    symbols_used := StringSet.empty;
-    symbols_defined := StringSet.empty;
+    symbols_used := String.Set.empty;
+    symbols_defined := String.Set.empty;
   end;
 
   let asm =

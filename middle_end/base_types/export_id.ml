@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 module Id : Id_types.Id = Id_types.Id (struct end)
 module Unit_id = Id_types.UnitId (Id) (Compilation_unit)

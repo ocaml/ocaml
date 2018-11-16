@@ -40,15 +40,23 @@ let rec compare p1 p2 =
   | ((Pident _ | Pdot _), (Pdot _ | Papply _)) -> -1
   | ((Pdot _ | Papply _), (Pident _ | Pdot _)) -> 1
 
-let rec isfree id = function
-    Pident id' -> Ident.same id id'
-  | Pdot(p, _s, _pos) -> isfree id p
-  | Papply(p1, p2) -> isfree id p1 || isfree id p2
+let rec find_free_opt ids = function
+    Pident id -> List.find_opt (Ident.same id) ids
+  | Pdot(p, _s, _pos) -> find_free_opt ids p
+  | Papply(p1, p2) ->
+      match find_free_opt ids p1 with
+      | None -> find_free_opt ids p2
+      | Some _ as res -> res
 
-let rec binding_time = function
-    Pident id -> Ident.binding_time id
-  | Pdot(p, _s, _pos) -> binding_time p
-  | Papply(p1, p2) -> max (binding_time p1) (binding_time p2)
+let exists_free ids p =
+  match find_free_opt ids p with
+  | None -> false
+  | _ -> true
+
+let rec scope = function
+    Pident id -> Ident.scope id
+  | Pdot(p, _s, _pos) -> scope p
+  | Papply(p1, p2) -> max (scope p1) (scope p2)
 
 let kfalse _ = false
 
@@ -57,6 +65,11 @@ let rec name ?(paren=kfalse) = function
   | Pdot(p, s, _pos) ->
       name ~paren p ^ if paren s then ".( " ^ s ^ " )" else "." ^ s
   | Papply(p1, p2) -> name ~paren p1 ^ "(" ^ name ~paren p2 ^ ")"
+
+let rec print ppf = function
+  | Pident id -> Ident.print_with_scope ppf id
+  | Pdot(p, s, _pos) -> Format.fprintf ppf "%a.%s" print p s
+  | Papply(p1, p2) -> Format.fprintf ppf "%a(%a)" print p1 print p2
 
 let rec head = function
     Pident id -> id
@@ -107,3 +120,10 @@ let is_constructor_typath p =
   match constructor_typath p with
   | Regular _ -> false
   | _ -> true
+
+module T = struct
+  type nonrec t = t
+  let compare = compare
+end
+module Set = Set.Make(T)
+module Map = Map.Make(T)

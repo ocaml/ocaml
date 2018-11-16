@@ -1,3 +1,6 @@
+(* TEST
+   include testing
+*)
 
 let check f n =
   assert (

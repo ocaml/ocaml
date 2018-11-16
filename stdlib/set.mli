@@ -30,8 +30,8 @@
        struct
          type t = int * int
          let compare (x0,y0) (x1,y1) =
-           match Pervasives.compare x0 x1 with
-               0 -> Pervasives.compare y0 y1
+           match Stdlib.compare x0 x1 with
+               0 -> Stdlib.compare y0 y1
              | c -> c
        end
 
@@ -56,7 +56,7 @@ module type OrderedType =
           [f e1 e2] is strictly negative if [e1] is smaller than [e2],
           and [f e1 e2] is strictly positive if [e1] is greater than [e2].
           Example: a suitable ordering function is the generic structural
-          comparison function {!Pervasives.compare}. *)
+          comparison function {!Stdlib.compare}. *)
   end
 (** Input signature of the functor {!Set.Make}. *)
 
@@ -98,8 +98,13 @@ module type S =
     val inter: t -> t -> t
     (** Set intersection. *)
 
+    val disjoint: t -> t -> bool
+    (** Test if two sets are disjoint.
+        @since 4.08.0 *)
+
     val diff: t -> t -> t
-    (** Set difference. *)
+    (** Set difference: [diff s1 s2] contains the elements of [s1]
+       that are not in [s2]. *)
 
     val compare: t -> t -> int
     (** Total ordering between sets. Can be used as the ordering function
@@ -258,6 +263,25 @@ module type S =
         This is usually more efficient than folding [add] over the list,
         except perhaps for lists with many duplicated elements.
         @since 4.02.0 *)
+
+    (** {1 Iterators} *)
+
+    val to_seq_from : elt -> t -> elt Seq.t
+    (** [to_seq_from x s] iterates on a subset of the elements of [s]
+        in ascending order, from [x] or above.
+        @since 4.07 *)
+
+    val to_seq : t -> elt Seq.t
+    (** Iterate on the whole set, in ascending order
+        @since 4.07 *)
+
+    val add_seq : elt Seq.t -> t -> t
+    (** Add the given elements to the set, in order.
+        @since 4.07 *)
+
+    val of_seq : elt Seq.t -> t
+    (** Build a set from the given bindings
+        @since 4.07 *)
   end
 (** Output signature of the functor {!Set.Make}. *)
 

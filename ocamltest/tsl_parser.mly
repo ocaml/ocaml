@@ -35,9 +35,9 @@ let mkenvstmt envstmt =
 %token TSL_BEGIN_OCAML_STYLE TSL_END_OCAML_STYLE
 %token COMA
 %token <int> TEST_DEPTH
-%token EQUAL
+%token EQUAL PLUSEQUAL
 /* %token COLON */
-%token INCLUDE WITH
+%token INCLUDE SET WITH
 %token <string> IDENTIFIER
 %token <string> STRING
 
@@ -71,7 +71,12 @@ opt_environment_modifiers:
 
 env_item:
 | identifier EQUAL string
-  { mkenvstmt (Assignment ($1, $3)) }
+    { mkenvstmt (Assignment (false, $1, $3)) }
+| identifier PLUSEQUAL string
+    { mkenvstmt (Append ($1, $3)) }
+| SET identifier EQUAL string
+    { mkenvstmt (Assignment (true, $2, $4)) }
+
 | INCLUDE identifier
   { mkenvstmt (Include $2) }
 

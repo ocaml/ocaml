@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* %n, %l, %N and %L have a scanf-specific semantics, but are supposed
    to be interpreted by Printf and Format as %u, despite this
    interpretation being mildly deprecated *)

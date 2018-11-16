@@ -40,8 +40,10 @@
 #include "caml/spacetime.h"
 #endif
 
+#ifndef NATIVE_CODE
 /* Initial size of bytecode stack when a thread is created (4 Ko) */
 #define Thread_stack_size (Stack_size / 4)
+#endif
 
 /* Max computation time before rescheduling, in milliseconds */
 #define Thread_timeout 50
@@ -86,19 +88,19 @@ struct caml_thread_struct {
   value* spacetime_finaliser_trie_root;
 #endif
 #else
-  value * stack_low;            /* The execution stack for this thread */
+  value * stack_low;         /* The execution stack for this thread */
   value * stack_high;
   value * stack_threshold;
-  value * sp;                   /* Saved value of caml_extern_sp for this thread */
-  value * trapsp;               /* Saved value of caml_trapsp for this thread */
+  value * sp;                /* Saved value of caml_extern_sp for this thread */
+  value * trapsp;            /* Saved value of caml_trapsp for this thread */
   struct caml__roots_block * local_roots; /* Saved value of caml_local_roots */
   struct longjmp_buffer * external_raise; /* Saved caml_external_raise */
 #endif
-  int backtrace_pos;            /* Saved caml_backtrace_pos */
-  backtrace_slot * backtrace_buffer;    /* Saved caml_backtrace_buffer */
-  value backtrace_last_exn;     /* Saved caml_backtrace_last_exn (root) */
+  int backtrace_pos;         /* Saved caml_backtrace_pos */
+  backtrace_slot * backtrace_buffer; /* Saved caml_backtrace_buffer */
+  value backtrace_last_exn;  /* Saved caml_backtrace_last_exn (root) */
 #ifdef WITH_STATMEMPROF
-  int memprof_suspended;        /* Saved caml_memprof_suspended */
+  int memprof_suspended;     /* Saved caml_memprof_suspended */
 #endif
 };
 
@@ -561,6 +563,8 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
 #ifdef NATIVE_CODE
   struct longjmp_buffer termination_buf;
   char tos;
+  /* Record top of stack (approximative) */
+  th->top_of_stack = &tos;
 #endif
 
   /* Associate the thread descriptor with the thread */
@@ -568,8 +572,6 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   /* Acquire the global mutex */
   caml_leave_blocking_section();
 #ifdef NATIVE_CODE
-  /* Record top of stack (approximative) */
-  th->top_of_stack = &tos;
   /* Setup termination handler (for caml_thread_exit) */
   if (sigsetjmp(termination_buf.buf, 0) == 0) {
     th->exit_buf = &termination_buf;
@@ -687,7 +689,8 @@ CAMLexport int caml_c_thread_unregister(void)
 
 CAMLprim value caml_thread_self(value unit)         /* ML */
 {
-  if (curr_thread == NULL) caml_invalid_argument("Thread.self: not initialized");
+  if (curr_thread == NULL)
+    caml_invalid_argument("Thread.self: not initialized");
   return curr_thread->descr;
 }
 
@@ -717,7 +720,8 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 {
   struct longjmp_buffer * exit_buf = NULL;
 
-  if (curr_thread == NULL) caml_invalid_argument("Thread.exit: not initialized");
+  if (curr_thread == NULL)
+    caml_invalid_argument("Thread.exit: not initialized");
 
   /* In native code, we cannot call pthread_exit here because on some
      systems this raises a C++ exception, and ocamlopt-generated stack
@@ -788,7 +792,9 @@ static struct custom_operations caml_mutex_ops = {
   caml_mutex_compare,
   caml_mutex_hash,
   custom_serialize_default,
-  custom_deserialize_default
+  custom_deserialize_default,
+  custom_compare_ext_default,
+  custom_fixed_length_default
 };
 
 CAMLprim value caml_mutex_new(value unit)        /* ML */
@@ -867,7 +873,8 @@ static struct custom_operations caml_condition_ops = {
   caml_condition_hash,
   custom_serialize_default,
   custom_deserialize_default,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  custom_fixed_length_default
 };
 
 CAMLprim value caml_condition_new(value unit)        /* ML */
@@ -933,7 +940,8 @@ static struct custom_operations caml_threadstatus_ops = {
   custom_hash_default,
   custom_serialize_default,
   custom_deserialize_default,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  custom_fixed_length_default
 };
 
 static value caml_threadstatus_new (void)

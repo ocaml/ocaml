@@ -1,5 +1,5 @@
 \chapter{The compiler front-end} \label{c:parsinglib}\cutname{parsing.html}
-\pdfchapterfold{-1}{The compiler front-end}
+\label{Compiler-underscorelibs} % redirect references to compiler_libs.mld here
 
 This chapter describes the OCaml front-end, which declares the abstract
 syntax tree used by the compiler, provides a way to parse, print
@@ -29,16 +29,16 @@ type\\*"#load \"compiler-libs/ocamlcommon.cma\";;".
 
 \ifouthtml
 \begin{links}
-\item \ahref{libref/Ast\_helper.html}{Module \texttt{Ast_helper}: helper functions for AST construction}
-\item \ahref{libref/Ast\_mapper.html}{Module \texttt{Ast_mapper}: -ppx rewriter interface}
-\item \ahref{libref/Asttypes.html}{Module \texttt{Asttypes}: auxiliary types used by Parsetree}
-% \item \ahref{libref/Lexer.html}{Module \texttt{Lexer}: OCaml syntax lexing}
-\item \ahref{libref/Location.html}{Module \texttt{Location}: source code locations}
-\item \ahref{libref/Longident.html}{Module \texttt{Longident}: long identifiers}
-\item \ahref{libref/Parse.html}{Module \texttt{Parse}: OCaml syntax parsing}
-\item \ahref{libref/Parsetree.html}{Module \texttt{Parsetree}: OCaml syntax tree}
-\item \ahref{libref/Pprintast.html}{Module \texttt{Pprintast}: OCaml syntax printing}
-% \item \ahref{libref/Printast.html}{Module \texttt{Printast}: AST printing}
+\item \ahref{compilerlibref/Ast\_helper.html}{Module \texttt{Ast_helper}: helper functions for AST construction}
+\item \ahref{compilerlibref/Ast\_mapper.html}{Module \texttt{Ast_mapper}: -ppx rewriter interface}
+\item \ahref{compilerlibref/Asttypes.html}{Module \texttt{Asttypes}: auxiliary types used by Parsetree}
+% \item \ahref{compilerlibref/Lexer.html}{Module \texttt{Lexer}: OCaml syntax lexing}
+\item \ahref{compilerlibref/Location.html}{Module \texttt{Location}: source code locations}
+\item \ahref{compilerlibref/Longident.html}{Module \texttt{Longident}: long identifiers}
+\item \ahref{compilerlibref/Parse.html}{Module \texttt{Parse}: OCaml syntax parsing}
+\item \ahref{compilerlibref/Parsetree.html}{Module \texttt{Parsetree}: OCaml syntax tree}
+\item \ahref{compilerlibref/Pprintast.html}{Module \texttt{Pprintast}: OCaml syntax printing}
+% \item \ahref{compilerlibref/Printast.html}{Module \texttt{Printast}: AST printing}
 \end{links}
 
 \else
@@ -60,11 +60,11 @@ type\\*"#load \"compiler-libs/ocamlcommon.cma\";;".
 \ifouthtml
 The following modules provides hooks for compiler plugins:
 \begin{links}
-\item \ahref{libref/Pparse.html}{Module \texttt{Pparse}: OCaml parser driver}
-\item \ahref{libref/Typemod.html}{Module \texttt{Typemod}:
+\item \ahref{compilerlibref/Pparse.html}{Module \texttt{Pparse}: OCaml parser driver}
+\item \ahref{compilerlibref/Typemod.html}{Module \texttt{Typemod}:
 OCaml module type checking}
-\item \ahref{libref/Simplif.html}{Module \texttt{Simplif}: Lambda simplification}
-\item \ahref{libref/Clflags.html}{Module \texttt{Clflags}: command line flags}
+\item \ahref{compilerlibref/Simplif.html}{Module \texttt{Simplif}: Lambda simplification}
+\item \ahref{compilerlibref/Clflags.html}{Module \texttt{Clflags}: command line flags}
 \end{links}
 \else
 \input{Pparse.tex}

@@ -1,3 +1,8 @@
+(* TEST
+   * toplevel
+   * toplevel with principal
+*)
+
 module Foobar : sig
   type t = private int
 end = struct
@@ -115,4 +120,3 @@ type 'a t = private 'a constraint 'a = < x : int; .. >;;
 (* PR#7437 *)
 type t = [` Closed ];;
 type nonrec t = private [> t];;
-

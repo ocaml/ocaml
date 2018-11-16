@@ -14,40 +14,39 @@
 #**************************************************************************
 
 # The lexer generator
-include ../config/Makefile
-CAMLRUN ?= ../boot/ocamlrun
-CAMLYACC ?= ../boot/ocamlyacc
 
-ROOTDIR=..
+ROOTDIR = ..
 
-ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
-export OCAML_FLEXLINK:=
-else
-export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
-endif
+include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
 
-CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot \
-      -use-prims ../byterun/primitives
-CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
-          -safe-string -strict-sequence -strict-formats -bin-annot
-LINKFLAGS=
-YACCFLAGS=-v
-CAMLLEX=$(CAMLRUN) ../boot/ocamllex
-CAMLDEP=$(CAMLRUN) ../tools/ocamldep
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
+
+CAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc -strict-sequence -nostdlib \
+        -I $(ROOTDIR)/boot -use-prims $(ROOTDIR)/runtime/primitives
+CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
+COMPFLAGS = $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
+            -safe-string -strict-sequence -strict-formats -bin-annot
+LINKFLAGS =
+YACCFLAGS = -v
+CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
+CAMLDEP = $(CAMLRUN) $(ROOTDIR)/tools/ocamldep
 
 
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
      compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
 
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 all: ocamllex
 allopt: ocamllex.opt
+opt.opt: allopt
 
 ocamllex: $(OBJS)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o ocamllex $(OBJS)
 
 ocamllex.opt: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -o ocamllex.opt $(OBJS:.cmo=.cmx)
+	$(CAMLOPT_CMD) -o ocamllex.opt $(OBJS:.cmo=.cmx)
 
 clean::
 	rm -f ocamllex ocamllex.opt

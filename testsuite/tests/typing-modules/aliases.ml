@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module C = Char;;
 C.chr 66;;
 
@@ -283,6 +287,7 @@ module StringSet :
     val remove : elt -> t -> t
     val union : t -> t -> t
     val inter : t -> t -> t
+    val disjoint : t -> t -> bool
     val diff : t -> t -> t
     val compare : t -> t -> int
     val equal : t -> t -> bool
@@ -310,6 +315,10 @@ module StringSet :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val of_list : elt list -> t
+    val to_seq_from : elt -> t -> elt Seq.t
+    val to_seq : t -> elt Seq.t
+    val add_seq : elt Seq.t -> t -> t
+    val of_seq : elt Seq.t -> t
   end
 module SSet :
   sig
@@ -323,6 +332,7 @@ module SSet :
     val remove : elt -> t -> t
     val union : t -> t -> t
     val inter : t -> t -> t
+    val disjoint : t -> t -> bool
     val diff : t -> t -> t
     val compare : t -> t -> int
     val equal : t -> t -> bool
@@ -350,6 +360,10 @@ module SSet :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val of_list : elt list -> t
+    val to_seq_from : elt -> t -> elt Seq.t
+    val to_seq : t -> elt Seq.t
+    val add_seq : elt Seq.t -> t -> t
+    val of_seq : elt Seq.t -> t
   end
 val f : StringSet.t -> SSet.t = <fun>
 |}];;
@@ -395,6 +409,7 @@ module A :
         val remove : elt -> t -> t
         val union : t -> t -> t
         val inter : t -> t -> t
+        val disjoint : t -> t -> bool
         val diff : t -> t -> t
         val compare : t -> t -> int
         val equal : t -> t -> bool
@@ -422,6 +437,10 @@ module A :
         val find_last : (elt -> bool) -> t -> elt
         val find_last_opt : (elt -> bool) -> t -> elt option
         val of_list : elt list -> t
+        val to_seq_from : elt -> t -> elt Seq.t
+        val to_seq : t -> elt Seq.t
+        val add_seq : elt Seq.t -> t -> t
+        val of_seq : elt Seq.t -> t
       end
     val empty : S.t
   end
@@ -462,7 +481,7 @@ module A2 = struct end
 module L1 = struct module X = A1 end
 module L2 = struct module X = A2 end;;
 
-module F (L : (module type of L1)) = struct end;;
+module F (L : (module type of L1 [@remove_aliases])) = struct end;;
 
 module F1 = F(L1);; (* ok *)
 module F2 = F(L2);; (* should succeed too *)
@@ -486,7 +505,7 @@ module M = struct
   module I = Int
   type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(I).t) eq
 end;;
-module type S = module type of M;; (* keep alias *)
+module type S = module type of M [@remove_aliases];; (* keep alias *)
 
 module Int2 = struct type t = int let compare x y = compare y x end;;
 module type S' = sig
@@ -507,6 +526,7 @@ module SInt :
     val remove : elt -> t -> t
     val union : t -> t -> t
     val inter : t -> t -> t
+    val disjoint : t -> t -> bool
     val diff : t -> t -> t
     val compare : t -> t -> int
     val equal : t -> t -> bool
@@ -534,6 +554,10 @@ module SInt :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val of_list : elt list -> t
+    val to_seq_from : elt -> t -> elt Seq.t
+    val to_seq : t -> elt Seq.t
+    val add_seq : elt Seq.t -> t -> t
+    val of_seq : elt Seq.t -> t
   end
 type (_, _) eq = Eq : ('a, 'a) eq
 type wrap = W of (SInt.t, SInt.t) eq
@@ -548,7 +572,9 @@ module type S =
     type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(I).t) eq
   end
 module Int2 : sig type t = int val compare : 'a -> 'a -> int end
-Line _, characters 10-30:
+Line 15, characters 10-30:
+15 |   include S with module I := I
+               ^^^^^^^^^^^^^^^^^^^^
 Error: In this `with' constraint, the new definition of I
        does not match its original definition in the constrained signature:
        Modules do not match: (module Int2) is not included in (module Int)
@@ -575,7 +601,7 @@ module M = struct
     type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(P.I).t) eq
   end
 end;;
-module type S = module type of M ;;
+module type S = module type of M [@remove_aliases];;
 [%%expect{|
 module M :
   sig
@@ -600,7 +626,7 @@ module M = struct
     type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(N.I).t) eq
   end
 end;;
-module type S = module type of M ;;
+module type S = module type of M [@remove_aliases];;
 [%%expect{|
 module M :
   sig
@@ -639,7 +665,7 @@ module rec Bad : A = Bad;;
 [%%expect{|
 module type Alias = sig module N : sig  end module M = N end
 module F : functor (X : sig  end) -> sig type t end
-Line _:
+Line 1:
 Error: Module type declarations do not match:
          module type A = sig module M = F(List) end
        does not match
@@ -751,4 +777,25 @@ R.M.f 3;;
 [%%expect{|
 module rec R : sig module M = M end
 - : int = 3
+|}];;
+
+module M = struct type t end
+module type S = sig module N = M val x : N.t end
+module type T = S with module N := M;;
+[%%expect{|
+module M : sig type t end
+module type S = sig module N = M val x : N.t end
+module type T = sig val x : M.t end
+|}];;
+
+
+module X = struct module N = struct end end
+module Y : sig
+  module type S = sig module N = X.N end
+end = struct
+  module type S = module type of struct include X end
+end;;
+[%%expect{|
+module X : sig module N : sig  end end
+module Y : sig module type S = sig module N = X.N end end
 |}];;

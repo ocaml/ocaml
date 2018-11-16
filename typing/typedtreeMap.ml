@@ -20,6 +20,7 @@ module type MapArgument = sig
   val enter_value_description : value_description -> value_description
   val enter_type_declaration : type_declaration -> type_declaration
   val enter_type_extension : type_extension -> type_extension
+  val enter_type_exception : type_exception -> type_exception
   val enter_extension_constructor :
     extension_constructor -> extension_constructor
   val enter_pattern : pattern -> pattern
@@ -44,11 +45,14 @@ module type MapArgument = sig
   val enter_class_structure : class_structure -> class_structure
   val enter_class_field : class_field -> class_field
   val enter_structure_item : structure_item -> structure_item
+  val enter_row_field : row_field -> row_field
+  val enter_object_field : object_field -> object_field
 
   val leave_structure : structure -> structure
   val leave_value_description : value_description -> value_description
   val leave_type_declaration : type_declaration -> type_declaration
   val leave_type_extension : type_extension -> type_extension
+  val leave_type_exception : type_exception -> type_exception
   val leave_extension_constructor :
     extension_constructor -> extension_constructor
   val leave_pattern : pattern -> pattern
@@ -73,6 +77,8 @@ module type MapArgument = sig
   val leave_class_structure : class_structure -> class_structure
   val leave_class_field : class_field -> class_field
   val leave_structure_item : structure_item -> structure_item
+  val leave_row_field : row_field -> row_field
+  val leave_object_field : object_field -> object_field
 
 end
 
@@ -121,7 +127,7 @@ module MakeMap(Map : MapArgument) = struct
         | Tstr_typext tyext ->
           Tstr_typext (map_type_extension tyext)
         | Tstr_exception ext ->
-          Tstr_exception (map_extension_constructor ext)
+          Tstr_exception (map_type_exception ext)
         | Tstr_module x ->
           Tstr_module (map_module_binding x)
         | Tstr_recmodule list ->
@@ -212,6 +218,14 @@ module MakeMap(Map : MapArgument) = struct
     Map.leave_type_extension { tyext with tyext_params = tyext_params;
       tyext_constructors = tyext_constructors }
 
+  and map_type_exception tyexn =
+    let tyexn = Map.enter_type_exception tyexn in
+    let tyexn_constructor =
+      map_extension_constructor tyexn.tyexn_constructor
+    in
+    Map.leave_type_exception
+      { tyexn with tyexn_constructor = tyexn_constructor }
+
   and map_extension_constructor ext =
     let ext = Map.enter_extension_constructor ext in
     let ext_kind = match ext.ext_kind with
@@ -247,6 +261,7 @@ module MakeMap(Map : MapArgument) = struct
         | Tpat_or (p1, p2, rowo) ->
           Tpat_or (map_pattern p1, map_pattern p2, rowo)
         | Tpat_lazy p -> Tpat_lazy (map_pattern p)
+        | Tpat_exception p -> Tpat_exception (map_pattern p)
         | Tpat_constant _
         | Tpat_any
         | Tpat_var _ -> pat.pat_desc
@@ -283,11 +298,10 @@ module MakeMap(Map : MapArgument) = struct
                         in
                         (label, expo)
                       ) list )
-        | Texp_match (exp, list1, list2, partial) ->
+        | Texp_match (exp, list, partial) ->
           Texp_match (
             map_expression exp,
-            map_cases list1,
-            map_cases list2,
+            map_cases list,
             partial
           )
         | Texp_try (exp, list) ->
@@ -431,12 +445,15 @@ module MakeMap(Map : MapArgument) = struct
             Tsig_value (map_value_description vd)
         | Tsig_type (rf, list) ->
             Tsig_type (rf, List.map map_type_declaration list)
+        | Tsig_typesubst list ->
+            Tsig_typesubst (List.map map_type_declaration list)
         | Tsig_typext tyext ->
             Tsig_typext (map_type_extension tyext)
         | Tsig_exception ext ->
-            Tsig_exception (map_extension_constructor ext)
+            Tsig_exception (map_type_exception ext)
         | Tsig_module md ->
             Tsig_module {md with md_type = map_module_type md.md_type}
+        | Tsig_modsubst _ as x -> x
         | Tsig_recmodule list ->
             Tsig_recmodule
                 (List.map
@@ -546,8 +563,8 @@ module MakeMap(Map : MapArgument) = struct
         | Tcl_structure clstr -> Tcl_structure (map_class_structure clstr)
         | Tcl_fun (label, pat, priv, cl, partial) ->
           Tcl_fun (label, map_pattern pat,
-                   List.map (fun (id, name, exp) ->
-                     (id, name, map_expression exp)) priv,
+                   List.map (fun (id, exp) ->
+                     (id, map_expression exp)) priv,
                    map_class_expr cl, partial)
 
         | Tcl_apply (cl, args) ->
@@ -557,8 +574,8 @@ module MakeMap(Map : MapArgument) = struct
                      ) args)
         | Tcl_let (rec_flag, bindings, ivars, cl) ->
           Tcl_let (rec_flag, map_bindings bindings,
-                   List.map (fun (id, name, exp) ->
-                     (id, name, map_expression exp)) ivars,
+                   List.map (fun (id, exp) ->
+                     (id, map_expression exp)) ivars,
                    map_class_expr cl)
 
         | Tcl_constraint (cl, Some clty, vals, meths, concrs) ->
@@ -639,17 +656,23 @@ module MakeMap(Map : MapArgument) = struct
     let cstr_fields = List.map map_class_field cs.cstr_fields in
     Map.leave_class_structure { cs with cstr_self; cstr_fields }
 
-  and map_row_field rf =
-    match rf with
-        Ttag (label, attrs, bool, list) ->
-          Ttag (label, attrs, bool, List.map map_core_type list)
+  and map_row_field field =
+    let { rf_desc; rf_loc; rf_attributes; } = Map.enter_row_field field in
+    let rf_desc = match rf_desc with
+      | Ttag (label, bool, list) ->
+          Ttag (label, bool, List.map map_core_type list)
       | Tinherit ct -> Tinherit (map_core_type ct)
+    in
+    Map.leave_row_field { rf_desc; rf_loc; rf_attributes; }
 
-  and map_object_field ofield =
-    match ofield with
-        OTtag (label, attrs, ct) ->
-          OTtag (label, attrs, map_core_type ct)
+  and map_object_field field =
+    let { of_desc; of_loc; of_attributes; } = Map.enter_object_field field in
+    let of_desc = match of_desc with
+      | OTtag (label, ct) ->
+          OTtag (label, map_core_type ct)
       | OTinherit ct -> OTinherit (map_core_type ct)
+    in
+    Map.leave_object_field { of_desc; of_loc; of_attributes; }
 
   and map_class_field cf =
     let cf = Map.enter_class_field cf in
@@ -680,6 +703,7 @@ module DefaultMapArgument = struct
   let enter_value_description t = t
   let enter_type_declaration t = t
   let enter_type_extension t = t
+  let enter_type_exception t = t
   let enter_extension_constructor t = t
   let enter_pattern t = t
   let enter_expression t = t
@@ -701,12 +725,15 @@ module DefaultMapArgument = struct
   let enter_class_structure t = t
   let enter_class_field t = t
   let enter_structure_item t = t
+  let enter_row_field t = t
+  let enter_object_field t = t
 
 
   let leave_structure t = t
   let leave_value_description t = t
   let leave_type_declaration t = t
   let leave_type_extension t = t
+  let leave_type_exception t = t
   let leave_extension_constructor t = t
   let leave_pattern t = t
   let leave_expression t = t
@@ -728,5 +755,7 @@ module DefaultMapArgument = struct
   let leave_class_structure t = t
   let leave_class_field t = t
   let leave_structure_item t = t
+  let leave_row_field t = t
+  let leave_object_field t = t
 
 end

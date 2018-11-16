@@ -151,8 +151,8 @@ module Info_retriever =
             (n, acc)
         | (n2, Some i) ->
             print_DEBUG ("all_special: avant String.sub new_s="^s2);
-            print_DEBUG ("n2="^(string_of_int n2)) ;
-            print_DEBUG ("len(s2)="^(string_of_int (String.length s2))) ;
+            print_DEBUG ("n2="^(Int.to_string n2)) ;
+            print_DEBUG ("len(s2)="^(Int.to_string (String.length s2))) ;
             let new_s = String.sub s2 n2 ((String.length s2) - n2) in
             print_DEBUG ("all_special: apres String.sub new_s="^new_s);
             iter (acc @ [i]) (n + n2) new_s

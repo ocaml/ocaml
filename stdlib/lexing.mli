@@ -65,34 +65,59 @@ type lexbuf =
    The lexer buffer holds the current state of the scanner, plus
    a function to refill the buffer from the input.
 
-   At each token, the lexing engine will copy [lex_curr_p] to
-   [lex_start_p], then change the [pos_cnum] field
-   of [lex_curr_p] by updating it with the number of characters read
-   since the start of the [lexbuf].  The other fields are left
-   unchanged by the lexing engine.  In order to keep them
-   accurate, they must be initialised before the first use of the
-   lexbuf, and updated by the relevant lexer actions (i.e. at each
-   end of line -- see also [new_line]).
- *)
+   Lexers can optionally maintain the [lex_curr_p] and [lex_start_p]
+   position fields.  This "position tracking" mode is the default, and
+   it corresponds to passing [~with_position:true] to functions that
+   create lexer buffers. In this mode, the lexing engine and lexer
+   actions are co-responsible for properly updating the position
+   fields, as described in the next paragraph.  When the mode is
+   explicitly disabled (with [~with_position:false]), the lexing
+   engine will not touch the position fields and the lexer actions
+   should be careful not to do it either; the [lex_curr_p] and
+   [lex_start_p] field will then always hold the [dummy_pos] invalid
+   position.  Not tracking positions avoids allocations and memory
+   writes and can significantly improve the performance of the lexer
+   in contexts where [lex_start_p] and [lex_curr_p] are not needed.
 
-val from_channel : in_channel -> lexbuf
+   Position tracking mode works as follows.  At each token, the lexing
+   engine will copy [lex_curr_p] to [lex_start_p], then change the
+   [pos_cnum] field of [lex_curr_p] by updating it with the number of
+   characters read since the start of the [lexbuf].  The other fields
+   are left unchanged by the lexing engine.  In order to keep them
+   accurate, they must be initialised before the first use of the
+   lexbuf, and updated by the relevant lexer actions (i.e. at each end
+   of line -- see also [new_line]).
+*)
+
+val from_channel : ?with_positions:bool -> in_channel -> lexbuf
 (** Create a lexer buffer on the given input channel.
    [Lexing.from_channel inchan] returns a lexer buffer which reads
    from the input channel [inchan], at the current reading position. *)
 
-val from_string : string -> lexbuf
+val from_string : ?with_positions:bool -> string -> lexbuf
 (** Create a lexer buffer which reads from
    the given string. Reading starts from the first character in
    the string. An end-of-input condition is generated when the
    end of the string is reached. *)
 
-val from_function : (bytes -> int -> int) -> lexbuf
+val from_function : ?with_positions:bool -> (bytes -> int -> int) -> lexbuf
 (** Create a lexer buffer with the given function as its reading method.
    When the scanner needs more characters, it will call the given
    function, giving it a byte sequence [s] and a byte
    count [n]. The function should put [n] bytes or fewer in [s],
    starting at index 0, and return the number of bytes
    provided. A return value of 0 means end of input. *)
+
+val with_positions : lexbuf -> bool
+(** Tell whether the lexer buffer keeps track of position fields
+    [lex_curr_p] / [lex_start_p], as determined by the corresponding
+    optional argument for functions that create lexer buffers
+    (whose default value is [true]).
+
+    When [with_positions] is [false], lexer actions should not
+    modify position fields.  Doing it nevertheless could
+    re-enable the [with_position] mode and degrade performances.
+*)
 
 
 (** {1 Functions for lexer semantic actions} *)
@@ -127,16 +152,19 @@ val lexeme_end : lexbuf -> int
 
 val lexeme_start_p : lexbuf -> position
 (** Like [lexeme_start], but return a complete [position] instead
-    of an offset. *)
+    of an offset.  When position tracking is disabled, the function
+    returns [dummy_pos]. *)
 
 val lexeme_end_p : lexbuf -> position
 (** Like [lexeme_end], but return a complete [position] instead
-    of an offset. *)
+    of an offset.  When position tracking is disabled, the function
+    returns [dummy_pos]. *)
 
 val new_line : lexbuf -> unit
 (** Update the [lex_curr_p] field of the lexbuf to reflect the start
     of a new line.  You can call this function in the semantic action
-    of the rule that matches the end-of-line character.
+    of the rule that matches the end-of-line character.  The function
+    does nothing when position tracking is disabled.
     @since 3.11.0
 *)
 

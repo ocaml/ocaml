@@ -1,3 +1,11 @@
+(* TEST
+   include unix
+   modules = "callbackprim.c"
+   * libunix
+   ** bytecode
+   ** native
+*)
+
 (**************************************************************************)
 
 external mycallback1 : ('a -> 'b) -> 'a -> 'b = "mycallback1"

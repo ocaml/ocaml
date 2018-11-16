@@ -28,6 +28,12 @@ environment:
     CYG_CACHE: C:/cygwin64/var/cache/setup
     FLEXDLL_VERSION: 0.37
     OCAMLRUNPARAM: v=0,b
+  matrix:
+    - PORT: mingw32
+    - PORT: msvc64
+
+matrix:
+  fast_finish: true
 
 cache:
   - C:\cygwin64\var\cache\setup
@@ -35,10 +41,10 @@ cache:
 install:
 # This is a hangover from monitoring effects of MPR#7452
   - wmic cpu get name
-  - call "%APPVEYOR_BUILD_FOLDER%\appveyor_build.cmd" install
+  - call "%APPVEYOR_BUILD_FOLDER%\tools\ci\appveyor\appveyor_build.cmd" install
 
 build_script:
-  - call "%APPVEYOR_BUILD_FOLDER%\appveyor_build.cmd" build
+  - call "%APPVEYOR_BUILD_FOLDER%\tools\ci\appveyor\appveyor_build.cmd" build
 
 test_script:
-  - call "%APPVEYOR_BUILD_FOLDER%\appveyor_build.cmd" test
+  - call "%APPVEYOR_BUILD_FOLDER%\tools\ci\appveyor\appveyor_build.cmd" test

@@ -1,3 +1,13 @@
+(* TEST
+
+flags = "-w A"
+
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+compile_only = "true"
+*** check-ocamlc.byte-output
+
+*)
 
 let h x = x [@inline] (* rejected *)
 let h x = x [@ocaml.inline] (* rejected *)
@@ -29,3 +39,5 @@ module F = (A [@inlined])(struct end) (* accepted *)
 module F' = (A [@ocaml.inlined])(struct end) (* accepted *)
 module G = (A [@inline])(struct end) (* rejected *)
 module G' = (A [@ocaml.inline])(struct end) (* rejected *)
+
+module H = Set.Make [@inlined] (Int32) (* GPR#1808 *)

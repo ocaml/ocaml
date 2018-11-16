@@ -1,0 +1,10 @@
+File "b_bad.ml", line 13, characters 29-66:
+13 | .............................function
+14 |     A.X s -> print_endline s
+Error (warning 8): this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Y
+File "b_bad.ml", line 18, characters 11-14:
+18 | let () = f A.y
+                ^^^
+Error: Unbound value A.y

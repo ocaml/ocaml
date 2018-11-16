@@ -163,11 +163,11 @@ let rec core_type i ppf x =
   | Ptyp_object (l, c) ->
       line i ppf "Ptyp_object %a\n" fmt_closed_flag c;
       let i = i + 1 in
-      List.iter (
-        function
-          | Otag (l, attrs, t) ->
+      List.iter (fun field ->
+        match field.pof_desc with
+          | Otag (l, t) ->
             line i ppf "method %s\n" l.txt;
-            attributes i ppf attrs;
+            attributes i ppf field.pof_attributes;
             core_type (i + 1) ppf t
           | Oinherit ct ->
               line i ppf "Oinherit\n";
@@ -181,7 +181,10 @@ let rec core_type i ppf x =
       core_type i ppf ct;
   | Ptyp_poly (sl, ct) ->
       line i ppf "Ptyp_poly%a\n"
-        (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x.txt)) sl;
+        (fun ppf ->
+           List.iter (fun x -> fprintf ppf " %a" Pprintast.tyvar x.txt)
+        )
+        sl;
       core_type i ppf ct;
   | Ptyp_package (s, l) ->
       line i ppf "Ptyp_package %a\n" fmt_longident_loc s;
@@ -404,14 +407,16 @@ and type_declaration i ppf x =
   line i ppf "ptype_manifest =\n";
   option (i+1) core_type ppf x.ptype_manifest
 
+and attribute i ppf k a =
+  line i ppf "%s \"%s\"\n" k a.attr_name.txt;
+  payload i ppf a.attr_payload;
+
 and attributes i ppf l =
   let i = i + 1 in
-  List.iter
-    (fun (s, arg) ->
-      line i ppf "attribute \"%s\"\n" s.txt;
-      payload (i + 1) ppf arg;
-    )
-    l
+  List.iter (fun a ->
+    line i ppf "attribute \"%s\"\n" a.attr_name.txt;
+    payload (i + 1) ppf a.attr_payload;
+  ) l;
 
 and payload i ppf = function
   | PStr x -> structure i ppf x
@@ -447,6 +452,14 @@ and type_extension i ppf x =
   line i ppf "ptyext_constructors =\n";
   list (i+1) extension_constructor ppf x.ptyext_constructors;
   line i ppf "ptyext_private = %a\n" fmt_private_flag x.ptyext_private;
+
+and type_exception i ppf x =
+  line i ppf "type_exception\n";
+  attributes i ppf x.ptyexn_attributes;
+  let i = i+1 in
+  line i ppf "ptyext_constructor =\n";
+  let i = i+1 in
+  extension_constructor i ppf x.ptyexn_constructor
 
 and extension_constructor i ppf x =
   line i ppf "extension_constructor %a\n" fmt_location x.pext_loc;
@@ -515,9 +528,8 @@ and class_type_field i ppf x =
       line i ppf "Pctf_constraint\n";
       core_type (i+1) ppf ct1;
       core_type (i+1) ppf ct2;
-  | Pctf_attribute (s, arg) ->
-      line i ppf "Pctf_attribute \"%s\"\n" s.txt;
-      payload i ppf arg
+  | Pctf_attribute a ->
+      attribute i ppf "Pctf_attribute" a
   | Pctf_extension (s, arg) ->
       line i ppf "Pctf_extension \"%s\"\n" s.txt;
      payload i ppf arg
@@ -610,9 +622,8 @@ and class_field i ppf x =
   | Pcf_initializer (e) ->
       line i ppf "Pcf_initializer\n";
       expression (i+1) ppf e;
-  | Pcf_attribute (s, arg) ->
-      line i ppf "Pcf_attribute \"%s\"\n" s.txt;
-      payload i ppf arg
+  | Pcf_attribute a ->
+      attribute i ppf "Pcf_attribute" a
   | Pcf_extension (s, arg) ->
       line i ppf "Pcf_extension \"%s\"\n" s.txt;
       payload i ppf arg
@@ -673,16 +684,24 @@ and signature_item i ppf x =
   | Psig_type (rf, l) ->
       line i ppf "Psig_type %a\n" fmt_rec_flag rf;
       list i type_declaration ppf l;
+  | Psig_typesubst l ->
+      line i ppf "Psig_typesubst\n";
+      list i type_declaration ppf l;
   | Psig_typext te ->
       line i ppf "Psig_typext\n";
       type_extension i ppf te
-  | Psig_exception ext ->
+  | Psig_exception te ->
       line i ppf "Psig_exception\n";
-      extension_constructor i ppf ext;
+      type_exception i ppf te
   | Psig_module pmd ->
       line i ppf "Psig_module %a\n" fmt_string_loc pmd.pmd_name;
       attributes i ppf pmd.pmd_attributes;
       module_type i ppf pmd.pmd_type
+  | Psig_modsubst pms ->
+      line i ppf "Psig_modsubst %a = %a\n"
+        fmt_string_loc pms.pms_name
+        fmt_longident_loc pms.pms_manifest;
+      attributes i ppf pms.pms_attributes;
   | Psig_recmodule decls ->
       line i ppf "Psig_recmodule\n";
       list i module_declaration ppf decls;
@@ -709,9 +728,8 @@ and signature_item i ppf x =
       line i ppf "Psig_extension \"%s\"\n" s.txt;
       attributes i ppf attrs;
       payload i ppf arg
-  | Psig_attribute (s, arg) ->
-      line i ppf "Psig_attribute \"%s\"\n" s.txt;
-      payload i ppf arg
+  | Psig_attribute a ->
+      attribute i ppf "Psig_attribute" a
 
 and modtype_declaration i ppf = function
   | None -> line i ppf "#abstract"
@@ -784,9 +802,9 @@ and structure_item i ppf x =
   | Pstr_typext te ->
       line i ppf "Pstr_typext\n";
       type_extension i ppf te
-  | Pstr_exception ext ->
+  | Pstr_exception te ->
       line i ppf "Pstr_exception\n";
-      extension_constructor i ppf ext;
+      type_exception i ppf te
   | Pstr_module x ->
       line i ppf "Pstr_module\n";
       module_binding i ppf x
@@ -816,9 +834,8 @@ and structure_item i ppf x =
       line i ppf "Pstr_extension \"%s\"\n" s.txt;
       attributes i ppf attrs;
       payload i ppf arg
-  | Pstr_attribute (s, arg) ->
-      line i ppf "Pstr_attribute \"%s\"\n" s.txt;
-      payload i ppf arg
+  | Pstr_attribute a ->
+      attribute i ppf "Pstr_attribute" a
 
 and module_declaration i ppf pmd =
   string_loc i ppf pmd.pmd_name;
@@ -887,10 +904,10 @@ and label_x_expression i ppf (l,e) =
   expression (i+1) ppf e;
 
 and label_x_bool_x_core_type_list i ppf x =
-  match x with
-    Rtag (l, attrs, b, ctl) ->
+  match x.prf_desc with
+    Rtag (l, b, ctl) ->
       line i ppf "Rtag \"%s\" %s\n" l.txt (string_of_bool b);
-      attributes (i+1) ppf attrs;
+      attributes (i+1) ppf x.prf_attributes;
       list (i+1) core_type ppf ctl
   | Rinherit (ct) ->
       line i ppf "Rinherit\n";
@@ -902,13 +919,14 @@ let rec toplevel_phrase i ppf x =
   | Ptop_def (s) ->
       line i ppf "Ptop_def\n";
       structure (i+1) ppf s;
-  | Ptop_dir (s, da) ->
-      line i ppf "Ptop_dir \"%s\"\n" s;
-      directive_argument i ppf da;
+  | Ptop_dir {pdir_name; pdir_arg; _} ->
+      line i ppf "Ptop_dir \"%s\"\n" pdir_name.txt;
+      match pdir_arg with
+      | None -> ()
+      | Some da -> directive_argument i ppf da;
 
 and directive_argument i ppf x =
-  match x with
-  | Pdir_none -> line i ppf "Pdir_none\n"
+  match x.pdira_desc with
   | Pdir_string (s) -> line i ppf "Pdir_string \"%s\"\n" s;
   | Pdir_int (n, None) -> line i ppf "Pdir_int %s\n" n;
   | Pdir_int (n, Some m) -> line i ppf "Pdir_int %s%c\n" n m;

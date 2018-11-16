@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (** Test that the right message errors are emitted by Arg *)
 
 
@@ -21,7 +24,8 @@ let tests = [
 ; [], ignore, ["-help" ]
 
 (** wrong argument type *)
-; ["-int", Arg.Int ignore, "wrong argument type" ], ignore, ["-int"; "not_an_int" ]
+; ["-int", Arg.Int ignore, "wrong argument type" ], ignore,
+  ["-int"; "not_an_int" ]
 
 (** unknown option *)
 ; [], ignore, [ "-an-unknown-option" ]
@@ -34,6 +38,12 @@ let tests = [
    Arg.Unit (fun () -> raise @@ Arg.Bad("User-raised error bis")),
    "user raised error"]
 , ignore, [ "-error" ]
+
+(* bad keyword in various places*)
+; [ "-rest", Arg.Rest ignore, "help"], ignore, [ "-rest=1" ]
+; [ "-tuple", Arg.Tuple [Arg.Int print_int; Arg.Int print_int ], "help" ]
+  , ignore, [ "-tuple=1" ]
+; [ "-unit", Arg.Unit ignore, "" ], ignore, [ "-unit=1" ]
 ]
 
 let () =

@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 type t = {
   id : Ident.t;
@@ -58,12 +59,16 @@ let create (id : Ident.t) linkage_name =
   if not (Ident.persistent id) then begin
     Misc.fatal_error "Compilation_unit.create with non-persistent Ident.t"
   end;
-  { id; linkage_name; hash = Hashtbl.hash id.name }
+  { id; linkage_name; hash = Hashtbl.hash (Ident.name id); }
 
 let get_persistent_ident cu = cu.id
 let get_linkage_name cu = cu.linkage_name
 
 let current = ref None
+let is_current arg =
+  match !current with
+  | None -> Misc.fatal_error "Current compilation unit is not set!"
+  | Some cur -> equal cur arg
 let set_current t = current := Some t
 let get_current () = !current
 let get_current_exn () =

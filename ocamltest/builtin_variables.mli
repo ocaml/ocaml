@@ -19,52 +19,33 @@
 
 val arguments : Variables.t
 
-val c_preprocessor : Variables.t
+val cwd : Variables.t
 
-val compiler_directory_suffix : Variables.t
+val commandline : Variables.t
 
-val compiler_reference : Variables.t
-
-val compiler_reference2 : Variables.t
-
-val compiler_reference_suffix : Variables.t
-
-val compiler_output : Variables.t
-
-val compiler_output2 : Variables.t
+val exit_status : Variables.t
 
 val files : Variables.t
 
-val flags : Variables.t
+val make : Variables.t
 
-val libraries : Variables.t
+val ocamltest_response : Variables.t
 
-val modules : Variables.t
-
-val ocamlc_flags : Variables.t
-val ocamlc_default_flags : Variables.t
-
-val ocamlopt_flags : Variables.t
-val ocamlopt_default_flags : Variables.t
-
-val ocaml_byte_exit_status : Variables.t
-
-val ocamlc_byte_exit_status : Variables.t
-
-val ocamlopt_byte_exit_status : Variables.t
-
-val ocaml_opt_exit_status : Variables.t
-
-val ocamlc_opt_exit_status : Variables.t
-
-val ocamlopt_opt_exit_status : Variables.t
+val ocamltest_log : Variables.t
 
 val output : Variables.t
 
 val program : Variables.t
 val program2 : Variables.t
 
+val promote : Variables.t
+
+val reason : Variables.t
+
 val reference : Variables.t
+
+val skip_header_lines : Variables.t
+val skip_header_bytes : Variables.t
 
 val script : Variables.t
 
@@ -73,7 +54,14 @@ val stdout : Variables.t
 val stderr : Variables.t
 
 val test_build_directory : Variables.t
+val test_build_directory_prefix : Variables.t
 
 val test_file : Variables.t
 
 val test_source_directory : Variables.t
+
+val test_pass : Variables.t
+
+val test_skip : Variables.t
+
+val test_fail : Variables.t

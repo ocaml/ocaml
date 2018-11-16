@@ -27,13 +27,6 @@ type compile_time_constant =
   | Ostype_cygwin
   | Backend_type
 
-type loc_kind =
-  | Loc_FILE
-  | Loc_LINE
-  | Loc_MODULE
-  | Loc_LOC
-  | Loc_POS
-
 type immediate_or_pointer =
   | Immediate
   | Pointer
@@ -59,7 +52,6 @@ type primitive =
   | Pignore
   | Prevapply
   | Pdirapply
-  | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
@@ -72,8 +64,6 @@ type primitive =
   | Pfloatfield of int
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
-  (* Force lazy values *)
-  | Plazyforce
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
@@ -85,14 +75,14 @@ type primitive =
   | Pdivint of is_safe | Pmodint of is_safe
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
-  | Pintcomp of comparison
+  | Pintcomp of integer_comparison
   | Poffsetint of int
   | Poffsetref of int
   (* Float operations *)
   | Pintoffloat | Pfloatofint
   | Pnegfloat | Pabsfloat
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
-  | Pfloatcomp of comparison
+  | Pfloatcomp of float_comparison
   (* String operations *)
   | Pstringlength | Pstringrefu  | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
@@ -111,8 +101,6 @@ type primitive =
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
-  (* Bitvect operations *)
-  | Pbittest
   (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
@@ -129,7 +117,7 @@ type primitive =
   | Plslbint of boxed_integer
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
-  | Pbintcomp of boxed_integer * comparison
+  | Pbintcomp of boxed_integer * integer_comparison
   (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
   | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
   | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
@@ -139,9 +127,12 @@ type primitive =
   | Pstring_load_16 of bool
   | Pstring_load_32 of bool
   | Pstring_load_64 of bool
-  | Pstring_set_16 of bool
-  | Pstring_set_32 of bool
-  | Pstring_set_64 of bool
+  | Pbytes_load_16 of bool
+  | Pbytes_load_32 of bool
+  | Pbytes_load_64 of bool
+  | Pbytes_set_16 of bool
+  | Pbytes_set_32 of bool
+  | Pbytes_set_64 of bool
   (* load/set 16,32,64 bits from a
      (char, int8_unsigned_elt, c_layout) Bigarray.Array1.t : (unsafe) *)
   | Pbigstring_load_16 of bool
@@ -160,8 +151,11 @@ type primitive =
   (* Inhibition of optimisation *)
   | Popaque
 
-and comparison =
-    Ceq | Cneq | Clt | Cgt | Cle | Cge
+and integer_comparison =
+    Ceq | Cne | Clt | Cgt | Cle | Cge
+
+and float_comparison =
+    CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge
 
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
@@ -194,6 +188,12 @@ and raise_kind =
   | Raise_reraise
   | Raise_notrace
 
+val equal_primitive : primitive -> primitive -> bool
+
+val equal_value_kind : value_kind -> value_kind -> bool
+
+val equal_boxed_integer : boxed_integer -> boxed_integer -> bool
+
 type structured_constant =
     Const_base of constant
   | Const_pointer of int
@@ -207,10 +207,17 @@ type inline_attribute =
   | Unroll of int (* [@unroll x] *)
   | Default_inline (* no [@inline] attribute *)
 
+val equal_inline_attribute : inline_attribute -> inline_attribute -> bool
+
 type specialise_attribute =
   | Always_specialise (* [@specialise] or [@specialise always] *)
   | Never_specialise (* [@specialise never] *)
   | Default_specialise (* no [@specialise] attribute *)
+
+val equal_specialise_attribute
+   : specialise_attribute
+  -> specialise_attribute
+  -> bool
 
 type function_kind = Curried | Tupled
 
@@ -227,6 +234,8 @@ type let_kind = Strict | Alias | StrictOpt | Variable
  *)
 
 type meth_kind = Self | Public | Cached
+
+val equal_meth_kind : meth_kind -> meth_kind -> bool
 
 type shared_code = (int * int) list     (* stack size -> code label *)
 
@@ -287,7 +296,7 @@ and lambda_event =
   { lev_loc: Location.t;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
-    lev_env: Env.summary }
+    lev_env: Env.t }
 
 and lambda_event_kind =
     Lev_before
@@ -322,10 +331,12 @@ val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 
-val iter: (lambda -> unit) -> lambda -> unit
-module IdentSet: Set.S with type elt = Ident.t
-val free_variables: lambda -> IdentSet.t
-val free_methods: lambda -> IdentSet.t
+val iter_head_constructor: (lambda -> unit) -> lambda -> unit
+(** [iter_head_constructor f lam] apply [f] to only the first level of
+    sub expressions of [lam]. It does not recursively traverse the
+    expression. *)
+
+val free_variables: lambda -> Ident.Set.t
 
 val transl_normal_path: Path.t -> lambda   (* Path.t is already normal *)
 val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
@@ -338,12 +349,29 @@ val transl_class_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
 
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
-val subst_lambda: lambda Ident.tbl -> lambda -> lambda
+val subst: (Ident.t -> Types.value_description -> Env.t -> Env.t) ->
+  lambda Ident.Map.t -> lambda -> lambda
+(** [subst env_update_fun s lt] applies a substitution [s] to the lambda-term
+    [lt].
+
+    Assumes that the image of the substitution is out of reach
+    of the bound variables of the lambda-term (no capture).
+
+    [env_update_fun] is used to refresh the environment contained in debug
+    events.  *)
+
+val rename : Ident.t Ident.Map.t -> lambda -> lambda
+(** A version of [subst] specialized for the case where we're just renaming
+    idents. *)
+
 val map : (lambda -> lambda) -> lambda -> lambda
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 
-val commute_comparison : comparison -> comparison
-val negate_comparison : comparison -> comparison
+val negate_integer_comparison : integer_comparison -> integer_comparison
+val swap_integer_comparison : integer_comparison -> integer_comparison
+
+val negate_float_comparison : float_comparison -> float_comparison
+val swap_float_comparison : float_comparison -> float_comparison
 
 val default_function_attribute : function_attribute
 val default_stub_attribute : function_attribute
@@ -354,11 +382,6 @@ val default_stub_attribute : function_attribute
 
 (* Get a new static failure ident *)
 val next_raise_count : unit -> int
-val next_negative_raise_count : unit -> int
-  (* Negative raise counts are used to compile 'match ... with
-     exception x -> ...'.  This disabled some simplifications
-     performed by the Simplif module that assume that static raises
-     are in tail position in their handler. *)
 
 val staticfail : lambda (* Anticipated static failure *)
 
@@ -367,7 +390,6 @@ val is_guarded: lambda -> bool
 val patch_guarded : lambda -> lambda -> lambda
 
 val raise_kind: raise_kind -> string
-val lam_of_loc : loc_kind -> Location.t -> lambda
 
 val merge_inline_attributes
    : inline_attribute

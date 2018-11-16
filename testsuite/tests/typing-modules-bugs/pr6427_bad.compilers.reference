@@ -1,0 +1,5 @@
+File "pr6427_bad.ml", line 12, characters 13-65:
+12 |   module X = (val if !flag then (module A) else (module B) : S.T)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression creates fresh types.
+       It is not allowed inside applicative functors.

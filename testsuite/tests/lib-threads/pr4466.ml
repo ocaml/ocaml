@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 open Printf
 
 (* Regression test for PR#4466: select timeout with simultaneous read
@@ -11,21 +17,16 @@ open Printf
        (the one connected to the echo server)
 *)
 
-let serve_connection s =
+let server sock =
+  let (s, _) = Unix.accept sock in
   let buf = Bytes.make 1024 '>' in
-  while true do
+  for i = 1 to 3 do
     let n = Unix.recv s buf 2 (Bytes.length buf - 2) [] in
     if n = 0 then begin
       Unix.close s; Thread.exit ()
     end else begin
       ignore (Unix.send s buf 0 (n + 2) [])
     end
-  done
-
-let server sock =
-  while true do
-    let (s, _) = Unix.accept sock in
-    ignore(Thread.create serve_connection s)
   done
 
 let reader s =
@@ -49,7 +50,7 @@ let _ =
   Unix.bind serv addr;
   let addr = Unix.getsockname serv in
   Unix.listen serv 5;
-  ignore (Thread.create server serv);
+  let tserv = Thread.create server serv in
   Thread.delay 0.2;
   let client =
     Unix.socket (Unix.domain_of_sockaddr addr) Unix.SOCK_STREAM 0 in
@@ -68,4 +69,6 @@ let _ =
   let a = Thread.create reader client in
   Thread.delay 0.1;
   writer client "3333";
-  Thread.join a
+  Thread.join a;
+  (* Cleanup before exiting *)
+  Thread.join tserv

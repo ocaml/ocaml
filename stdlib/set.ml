@@ -33,6 +33,7 @@ module type S =
     val remove: elt -> t -> t
     val union: t -> t -> t
     val inter: t -> t -> t
+    val disjoint: t -> t -> bool
     val diff: t -> t -> t
     val compare: t -> t -> int
     val equal: t -> t -> bool
@@ -60,6 +61,10 @@ module type S =
     val find_last: (elt -> bool) -> t -> elt
     val find_last_opt: (elt -> bool) -> t -> elt option
     val of_list: elt list -> t
+    val to_seq_from : elt -> t -> elt Seq.t
+    val to_seq : t -> elt Seq.t
+    val add_seq : elt Seq.t -> t -> t
+    val of_seq : elt Seq.t -> t
   end
 
 module Make(Ord: OrderedType) =
@@ -283,6 +288,38 @@ module Make(Ord: OrderedType) =
               concat (inter l1 l2) (inter r1 r2)
           | (l2, true, r2) ->
               join (inter l1 l2) v1 (inter r1 r2)
+
+    (* Same as split, but compute the left and right subtrees
+       only if the pivot element is not in the set.  The right subtree
+       is computed on demand. *)
+
+    type split_bis =
+      | Found
+      | NotFound of t * (unit -> t)
+
+    let rec split_bis x = function
+        Empty ->
+          NotFound (Empty, (fun () -> Empty))
+      | Node{l; v; r; _} ->
+          let c = Ord.compare x v in
+          if c = 0 then Found
+          else if c < 0 then
+            match split_bis x l with
+            | Found -> Found
+            | NotFound (ll, rl) -> NotFound (ll, (fun () -> join (rl ()) v r))
+          else
+            match split_bis x r with
+            | Found -> Found
+            | NotFound (lr, rr) -> NotFound (join l v lr, rr)
+
+    let rec disjoint s1 s2 =
+      match (s1, s2) with
+        (Empty, _) | (_, Empty) -> true
+      | (Node{l=l1; v=v1; r=r1}, t2) ->
+          if s1 == s2 then false
+          else match split_bis v1 t2 with
+              NotFound(l2, r2) -> disjoint l1 l2 && disjoint r1 (r2 ())
+            | Found -> false
 
     let rec diff s1 s2 =
       match (s1, s2) with
@@ -523,4 +560,27 @@ module Make(Ord: OrderedType) =
       | [x0; x1; x2; x3] -> add x3 (add x2 (add x1 (singleton x0)))
       | [x0; x1; x2; x3; x4] -> add x4 (add x3 (add x2 (add x1 (singleton x0))))
       | _ -> of_sorted_list (List.sort_uniq Ord.compare l)
+
+    let add_seq i m =
+      Seq.fold_left (fun s x -> add x s) m i
+
+    let of_seq i = add_seq i empty
+
+    let rec seq_of_enum_ c () = match c with
+      | End -> Seq.Nil
+      | More (x, t, rest) -> Seq.Cons (x, seq_of_enum_ (cons_enum t rest))
+
+    let to_seq c = seq_of_enum_ (cons_enum c End)
+
+    let to_seq_from low s =
+      let rec aux low s c = match s with
+        | Empty -> c
+        | Node {l; r; v; _} ->
+            begin match Ord.compare v low with
+              | 0 -> More (v, r, c)
+              | n when n<0 -> aux low r c
+              | _ -> aux low l (More (v, r, c))
+            end
+      in
+      seq_of_enum_ (aux low s End)
   end

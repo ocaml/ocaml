@@ -22,6 +22,7 @@ open Asttypes
 type type_expr =
   { mutable desc: type_desc;
     mutable level: int;
+    mutable scope: int;
     id: int }
 
 and type_desc =
@@ -79,9 +80,7 @@ end
 
 (* Maps of methods and instance variables *)
 
-module OrderedString =
-  struct type t = string let compare (x:t) y = compare x y end
-module Meths = Map.Make(OrderedString)
+module Meths = Misc.Stdlib.String.Map
 module Vars = Meths
 
 (* Value descriptions *)
@@ -104,7 +103,11 @@ and value_kind =
                                         (* Self *)
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)
-  | Val_unbound                         (* Unbound variable *)
+  | Val_unbound of value_unbound_reason (* Unbound variable *)
+
+and value_unbound_reason =
+  | Val_unbound_instance_variable
+  | Val_unbound_ghost_recursive
 
 (* Variance *)
 
@@ -145,7 +148,8 @@ type type_declaration =
     type_private: private_flag;
     type_manifest: type_expr option;
     type_variance: Variance.t list;
-    type_newtype_level: (int * int) option;
+    type_is_newtype: bool;
+    type_expansion_scope: int;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
     type_immediate: bool;
@@ -214,7 +218,7 @@ and type_transparence =
 
 (* Type expressions for the class language *)
 
-module Concr = Set.Make(OrderedString)
+module Concr = Misc.Stdlib.String.Set
 
 type class_type =
     Cty_constr of Path.t * type_expr list * class_type
@@ -322,14 +326,18 @@ and constructor_tag =
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 
-let equal_tag t1 t2 = 
+let equal_tag t1 t2 =
   match (t1, t2) with
   | Cstr_constant i1, Cstr_constant i2 -> i2 = i1
   | Cstr_block i1, Cstr_block i2 -> i2 = i1
   | Cstr_unboxed, Cstr_unboxed -> true
-  | Cstr_extension (path1, b1), Cstr_extension (path2, b2) -> 
+  | Cstr_extension (path1, b1), Cstr_extension (path2, b2) ->
       Path.same path1 path2 && b1 = b2
   | (Cstr_constant _|Cstr_block _|Cstr_unboxed|Cstr_extension _), _ -> false
+
+let may_equal_constr c1 c2 = match c1.cstr_tag,c2.cstr_tag with
+| Cstr_extension _,Cstr_extension _ -> c1.cstr_arity = c2.cstr_arity
+| tag1,tag2 -> equal_tag tag1 tag2
 
 type label_description =
   { lbl_name: string;                   (* Short name *)

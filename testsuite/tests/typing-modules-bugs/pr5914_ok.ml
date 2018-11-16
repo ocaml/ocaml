@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 type 't a = [ `A ]
 type 't wrap = 't constraint 't = [> 't wrap a ]
 type t = t a wrap

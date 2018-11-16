@@ -83,19 +83,24 @@ CAMLprim value caml_run_command(value caml_settings)
   command_settings settings;
 
   CAMLparam1(caml_settings);
-  settings.program = caml_stat_strdup_to_os(String_val(Field(caml_settings, 0)));
+  settings.program =
+    caml_stat_strdup_to_os(String_val(Field(caml_settings, 0)));
   settings.argv = cstringvect(Field(caml_settings, 1));
-  /* settings.envp = cstringvect(Field(caml_settings, 2)); */
-  settings.stdin_filename = caml_stat_strdup_to_os(String_val(Field(caml_settings, 2)));
-  settings.stdout_filename = caml_stat_strdup_to_os(String_val(Field(caml_settings, 4)));
-  settings.stderr_filename = caml_stat_strdup_to_os(String_val(Field(caml_settings, 4)));
-  settings.append = Bool_val(Field(caml_settings, 5));
-  settings.timeout = Int_val(Field(caml_settings, 6));
+  settings.envp = cstringvect(Field(caml_settings, 2));
+  settings.stdin_filename =
+    caml_stat_strdup_to_os(String_val(Field(caml_settings, 3)));
+  settings.stdout_filename =
+    caml_stat_strdup_to_os(String_val(Field(caml_settings, 4)));
+  settings.stderr_filename =
+    caml_stat_strdup_to_os(String_val(Field(caml_settings, 5)));
+  settings.append = Bool_val(Field(caml_settings, 6));
+  settings.timeout = Int_val(Field(caml_settings, 7));
   settings.logger = logToChannel;
-  settings.loggerData = Channel(Field(caml_settings, 7));
+  settings.loggerData = Channel(Field(caml_settings, 8));
   res = run_command(&settings);
   caml_stat_free(settings.program);
   free_cstringvect(settings.argv);
+  free_cstringvect(settings.envp);
   caml_stat_free(settings.stdin_filename);
   caml_stat_free(settings.stdout_filename);
   caml_stat_free(settings.stderr_filename);

@@ -20,10 +20,11 @@
   (* Ensure that record patterns don't miss any field. *)
 *)
 
-
 open Parsetree
 open Ast_helper
 open Location
+
+module String = Misc.Stdlib.String
 
 type mapper = {
   attribute: mapper -> attribute -> attribute;
@@ -52,6 +53,7 @@ type mapper = {
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> module_binding -> module_binding;
   module_declaration: mapper -> module_declaration -> module_declaration;
+  module_substitution: mapper -> module_substitution -> module_substitution;
   module_expr: mapper -> module_expr -> module_expr;
   module_type: mapper -> module_type -> module_type;
   module_type_declaration: mapper -> module_type_declaration
@@ -66,6 +68,7 @@ type mapper = {
   typ: mapper -> core_type -> core_type;
   type_declaration: mapper -> type_declaration -> type_declaration;
   type_extension: mapper -> type_extension -> type_extension;
+  type_exception: mapper -> type_exception -> type_exception;
   type_kind: mapper -> type_kind -> type_kind;
   value_binding: mapper -> value_binding -> value_binding;
   value_description: mapper -> value_description -> value_description;
@@ -83,16 +86,31 @@ let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
 module T = struct
   (* Type expressions for the core language *)
 
-  let row_field sub = function
-    | Rtag (l, attrs, b, tl) ->
-        Rtag (map_loc sub l, sub.attributes sub attrs,
-              b, List.map (sub.typ sub) tl)
-    | Rinherit t -> Rinherit (sub.typ sub t)
+  let row_field sub {
+      prf_desc;
+      prf_loc;
+      prf_attributes;
+    } =
+    let loc = sub.location sub prf_loc in
+    let attrs = sub.attributes sub prf_attributes in
+    let desc = match prf_desc with
+      | Rtag (l, b, tl) -> Rtag (map_loc sub l, b, List.map (sub.typ sub) tl)
+      | Rinherit t -> Rinherit (sub.typ sub t)
+    in
+    Rf.mk ~loc ~attrs desc
 
-  let object_field sub = function
-    | Otag (l, attrs, t) ->
-        Otag (map_loc sub l, sub.attributes sub attrs, sub.typ sub t)
-    | Oinherit t -> Oinherit (sub.typ sub t)
+  let object_field sub {
+      pof_desc;
+      pof_loc;
+      pof_attributes;
+    } =
+    let loc = sub.location sub pof_loc in
+    let attrs = sub.attributes sub pof_attributes in
+    let desc = match pof_desc with
+      | Otag (l, t) -> Otag (map_loc sub l, sub.typ sub t)
+      | Oinherit t -> Oinherit (sub.typ sub t)
+    in
+    Of.mk ~loc ~attrs desc
 
   let map sub {ptyp_desc = desc; ptyp_loc = loc; ptyp_attributes = attrs} =
     let open Typ in
@@ -127,7 +145,9 @@ module T = struct
        ptype_manifest;
        ptype_attributes;
        ptype_loc} =
-    Type.mk (map_loc sub ptype_name)
+    let loc = sub.location sub ptype_loc in
+    let attrs = sub.attributes sub ptype_attributes in
+    Type.mk ~loc ~attrs (map_loc sub ptype_name)
       ~params:(List.map (map_fst (sub.typ sub)) ptype_params)
       ~priv:ptype_private
       ~cstrs:(List.map
@@ -135,8 +155,6 @@ module T = struct
                 ptype_cstrs)
       ~kind:(sub.type_kind sub ptype_kind)
       ?manifest:(map_opt (sub.typ sub) ptype_manifest)
-      ~loc:(sub.location sub ptype_loc)
-      ~attrs:(sub.attributes sub ptype_attributes)
 
   let map_type_kind sub = function
     | Ptype_abstract -> Ptype_abstract
@@ -154,13 +172,22 @@ module T = struct
       {ptyext_path; ptyext_params;
        ptyext_constructors;
        ptyext_private;
+       ptyext_loc;
        ptyext_attributes} =
-    Te.mk
+    let loc = sub.location sub ptyext_loc in
+    let attrs = sub.attributes sub ptyext_attributes in
+    Te.mk ~loc ~attrs
       (map_loc sub ptyext_path)
       (List.map (sub.extension_constructor sub) ptyext_constructors)
       ~params:(List.map (map_fst (sub.typ sub)) ptyext_params)
       ~priv:ptyext_private
-      ~attrs:(sub.attributes sub ptyext_attributes)
+
+  let map_type_exception sub
+      {ptyexn_constructor; ptyexn_loc; ptyexn_attributes} =
+    let loc = sub.location sub ptyexn_loc in
+    let attrs = sub.attributes sub ptyexn_attributes in
+    Te.mk_exception ~loc ~attrs
+      (sub.extension_constructor sub ptyexn_constructor)
 
   let map_extension_constructor_kind sub = function
       Pext_decl(ctl, cto) ->
@@ -173,11 +200,11 @@ module T = struct
        pext_kind;
        pext_loc;
        pext_attributes} =
-    Te.constructor
+    let loc = sub.location sub pext_loc in
+    let attrs = sub.attributes sub pext_attributes in
+    Te.constructor ~loc ~attrs
       (map_loc sub pext_name)
       (map_extension_constructor_kind sub pext_kind)
-      ~loc:(sub.location sub pext_loc)
-      ~attrs:(sub.attributes sub pext_attributes)
 
 end
 
@@ -256,10 +283,14 @@ module MT = struct
     let loc = sub.location sub loc in
     match desc with
     | Psig_value vd -> value ~loc (sub.value_description sub vd)
-    | Psig_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
+    | Psig_type (rf, l) ->
+        type_ ~loc rf (List.map (sub.type_declaration sub) l)
+    | Psig_typesubst l ->
+        type_subst ~loc (List.map (sub.type_declaration sub) l)
     | Psig_typext te -> type_extension ~loc (sub.type_extension sub te)
-    | Psig_exception ed -> exception_ ~loc (sub.extension_constructor sub ed)
+    | Psig_exception ed -> exception_ ~loc (sub.type_exception sub ed)
     | Psig_module x -> module_ ~loc (sub.module_declaration sub x)
+    | Psig_modsubst x -> mod_subst ~loc (sub.module_substitution sub x)
     | Psig_recmodule l ->
         rec_module ~loc (List.map (sub.module_declaration sub) l)
     | Psig_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
@@ -269,7 +300,8 @@ module MT = struct
     | Psig_class_type l ->
         class_type ~loc (List.map (sub.class_type_declaration sub) l)
     | Psig_extension (x, attrs) ->
-        extension ~loc (sub.extension sub x) ~attrs:(sub.attributes sub attrs)
+        let attrs = sub.attributes sub attrs in
+        extension ~loc ~attrs (sub.extension sub x)
     | Psig_attribute x -> attribute ~loc (sub.attribute sub x)
 end
 
@@ -301,12 +333,13 @@ module M = struct
     let loc = sub.location sub loc in
     match desc with
     | Pstr_eval (x, attrs) ->
-        eval ~loc ~attrs:(sub.attributes sub attrs) (sub.expr sub x)
+        let attrs = sub.attributes sub attrs in
+        eval ~loc ~attrs (sub.expr sub x)
     | Pstr_value (r, vbs) -> value ~loc r (List.map (sub.value_binding sub) vbs)
     | Pstr_primitive vd -> primitive ~loc (sub.value_description sub vd)
     | Pstr_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
     | Pstr_typext te -> type_extension ~loc (sub.type_extension sub te)
-    | Pstr_exception ed -> exception_ ~loc (sub.extension_constructor sub ed)
+    | Pstr_exception ed -> exception_ ~loc (sub.type_exception sub ed)
     | Pstr_module x -> module_ ~loc (sub.module_binding sub x)
     | Pstr_recmodule l -> rec_module ~loc (List.map (sub.module_binding sub) l)
     | Pstr_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
@@ -316,7 +349,8 @@ module M = struct
         class_type ~loc (List.map (sub.class_type_declaration sub) l)
     | Pstr_include x -> include_ ~loc (sub.include_declaration sub x)
     | Pstr_extension (x, attrs) ->
-        extension ~loc (sub.extension sub x) ~attrs:(sub.attributes sub attrs)
+        let attrs = sub.attributes sub attrs in
+        extension ~loc ~attrs (sub.extension sub x)
     | Pstr_attribute x -> attribute ~loc (sub.attribute sub x)
 end
 
@@ -490,13 +524,13 @@ module CE = struct
 
   let class_infos sub f {pci_virt; pci_params = pl; pci_name; pci_expr;
                          pci_loc; pci_attributes} =
-    Ci.mk
+    let loc = sub.location sub pci_loc in
+    let attrs = sub.attributes sub pci_attributes in
+    Ci.mk ~loc ~attrs
      ~virt:pci_virt
      ~params:(List.map (map_fst (sub.typ sub)) pl)
       (map_loc sub pci_name)
       (f pci_expr)
-      ~loc:(sub.location sub pci_loc)
-      ~attrs:(sub.attributes sub pci_attributes)
 end
 
 (* Now, a generic AST mapper, to be extended to cover all kinds and
@@ -528,6 +562,7 @@ let default_mapper =
     type_kind = T.map_type_kind;
     typ = T.map;
     type_extension = T.map_type_extension;
+    type_exception = T.map_type_exception;
     extension_constructor = T.map_extension_constructor;
     value_description =
       (fun this {pval_name; pval_type; pval_prim; pval_loc;
@@ -550,6 +585,15 @@ let default_mapper =
            (this.module_type this pmd_type)
            ~attrs:(this.attributes this pmd_attributes)
            ~loc:(this.location this pmd_loc)
+      );
+
+    module_substitution =
+      (fun this {pms_name; pms_manifest; pms_attributes; pms_loc} ->
+         Ms.mk
+           (map_loc this pms_name)
+           (map_loc this pms_manifest)
+           ~attrs:(this.attributes this pms_attributes)
+           ~loc:(this.location this pms_loc)
       );
 
     module_type_declaration =
@@ -638,7 +682,13 @@ let default_mapper =
     location = (fun _this l -> l);
 
     extension = (fun this (s, e) -> (map_loc this s, this.payload this e));
-    attribute = (fun this (s, e) -> (map_loc this s, this.payload this e));
+    attribute = (fun this a ->
+      {
+        attr_name = map_loc this a.attr_name;
+        attr_payload = this.payload this a.attr_payload;
+        attr_loc = this.location this a.attr_loc
+      }
+    );
     attributes = (fun this l -> List.map (this.attribute this) l);
     payload =
       (fun this -> function
@@ -649,29 +699,31 @@ let default_mapper =
       );
   }
 
-let rec extension_of_error {loc; msg; if_highlight; sub} =
-  { loc; txt = "ocaml.error" },
-  PStr ([Str.eval (Exp.constant (Pconst_string (msg, None)));
-         Str.eval (Exp.constant (Pconst_string (if_highlight, None)))] @
-        (List.map (fun ext -> Str.extension (extension_of_error ext)) sub))
+let extension_of_error {kind; main; sub} =
+  if kind <> Location.Report_error then
+    raise (Invalid_argument "extension_of_error: expected kind Report_error");
+  let str_of_pp pp_msg = Format.asprintf "%t" pp_msg in
+  let extension_of_sub sub =
+    { loc = sub.loc; txt = "ocaml.error" },
+    PStr ([Str.eval (Exp.constant (Pconst_string (str_of_pp sub.txt, None)))])
+  in
+  { loc = main.loc; txt = "ocaml.error" },
+  PStr (Str.eval (Exp.constant (Pconst_string (str_of_pp main.txt, None))) ::
+        List.map (fun msg -> Str.extension (extension_of_sub msg)) sub)
 
 let attribute_of_warning loc s =
-  { loc; txt = "ocaml.ppwarning" },
-  PStr ([Str.eval ~loc (Exp.constant (Pconst_string (s, None)))])
+  Attr.mk
+    {loc; txt = "ocaml.ppwarning" }
+    (PStr ([Str.eval ~loc (Exp.constant (Pconst_string (s, None)))]))
 
-module StringMap = Map.Make(struct
-    type t = string
-    let compare = compare
-end)
-
-let cookies = ref StringMap.empty
+let cookies = ref String.Map.empty
 
 let get_cookie k =
-  try Some (StringMap.find k !cookies)
+  try Some (String.Map.find k !cookies)
   with Not_found -> None
 
 let set_cookie k v =
-  cookies := StringMap.add k v !cookies
+  cookies := String.Map.add k v !cookies
 
 let tool_name_ref = ref "_none_"
 
@@ -710,11 +762,14 @@ module PpxContext = struct
   let get_cookies () =
     lid "cookies",
     make_list (make_pair make_string (fun x -> x))
-      (StringMap.bindings !cookies)
+      (String.Map.bindings !cookies)
 
   let mk fields =
-    { txt = "ocaml.ppx.context"; loc = Location.none },
-    Parsetree.PStr [Str.eval (Exp.record fields None)]
+    {
+      attr_name = { txt = "ocaml.ppx.context"; loc = Location.none };
+      attr_payload = Parsetree.PStr [Str.eval (Exp.record fields None)];
+      attr_loc = Location.none
+    }
 
   let make ~tool_name () =
     let fields =
@@ -727,6 +782,11 @@ module PpxContext = struct
         lid "debug",        make_bool !Clflags.debug;
         lid "use_threads",  make_bool !Clflags.use_threads;
         lid "use_vmthreads", make_bool !Clflags.use_vmthreads;
+        lid "recursive_types", make_bool !Clflags.recursive_types;
+        lid "principal", make_bool !Clflags.principal;
+        lid "transparent_modules", make_bool !Clflags.transparent_modules;
+        lid "unboxed_types", make_bool !Clflags.unboxed_types;
+        lid "unsafe_string", make_bool !Clflags.unsafe_string;
         get_cookies ()
       ]
     in
@@ -797,11 +857,21 @@ module PpxContext = struct
           Clflags.use_threads := get_bool payload
       | "use_vmthreads" ->
           Clflags.use_vmthreads := get_bool payload
+      | "recursive_types" ->
+          Clflags.recursive_types := get_bool payload
+      | "principal" ->
+          Clflags.principal := get_bool payload
+      | "transparent_modules" ->
+          Clflags.transparent_modules := get_bool payload
+      | "unboxed_types" ->
+          Clflags.unboxed_types := get_bool payload
+      | "unsafe_string" ->
+          Clflags.unsafe_string := get_bool payload
       | "cookies" ->
           let l = get_list (get_pair get_string (fun x -> x)) payload in
           cookies :=
             List.fold_left
-              (fun s (k, v) -> StringMap.add k v s) StringMap.empty
+              (fun s (k, v) -> String.Map.add k v s) String.Map.empty
               l
       | _ ->
           ()
@@ -822,7 +892,8 @@ let ppx_context = PpxContext.make
 let extension_of_exn exn =
   match error_of_exn exn with
   | Some (`Ok error) -> extension_of_error error
-  | Some `Already_displayed -> { loc = Location.none; txt = "ocaml.error" }, PStr []
+  | Some `Already_displayed ->
+      { loc = Location.none; txt = "ocaml.error" }, PStr []
   | None -> raise exn
 
 
@@ -830,7 +901,8 @@ let apply_lazy ~source ~target mapper =
   let implem ast =
     let fields, ast =
       match ast with
-      | {pstr_desc = Pstr_attribute ({txt = "ocaml.ppx.context"}, x)} :: l ->
+      | {pstr_desc = Pstr_attribute ({attr_name = {txt = "ocaml.ppx.context"};
+                                      attr_payload = x})} :: l ->
           PpxContext.get_fields x, l
       | _ -> [], ast
     in
@@ -849,7 +921,9 @@ let apply_lazy ~source ~target mapper =
   let iface ast =
     let fields, ast =
       match ast with
-      | {psig_desc = Psig_attribute ({txt = "ocaml.ppx.context"}, x)} :: l ->
+      | {psig_desc = Psig_attribute ({attr_name = {txt = "ocaml.ppx.context"};
+                                      attr_payload = x;
+                                      attr_loc = _})} :: l ->
           PpxContext.get_fields x, l
       | _ -> [], ast
     in
@@ -893,7 +967,10 @@ let apply_lazy ~source ~target mapper =
   else fail ()
 
 let drop_ppx_context_str ~restore = function
-  | {pstr_desc = Pstr_attribute({Location.txt = "ocaml.ppx.context"}, a)}
+  | {pstr_desc = Pstr_attribute
+                   {attr_name = {Location.txt = "ocaml.ppx.context"};
+                    attr_payload = a;
+                    attr_loc = _}}
     :: items ->
       if restore then
         PpxContext.restore (PpxContext.get_fields a);
@@ -901,7 +978,10 @@ let drop_ppx_context_str ~restore = function
   | items -> items
 
 let drop_ppx_context_sig ~restore = function
-  | {psig_desc = Psig_attribute({Location.txt = "ocaml.ppx.context"}, a)}
+  | {psig_desc = Psig_attribute
+                   {attr_name = {Location.txt = "ocaml.ppx.context"};
+                    attr_payload = a;
+                    attr_loc = _}}
     :: items ->
       if restore then
         PpxContext.restore (PpxContext.get_fields a);

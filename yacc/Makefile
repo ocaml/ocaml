@@ -15,11 +15,19 @@
 
 # Makefile for the parser generator.
 
-include ../config/Makefile
+ROOTDIR = ..
 
-OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
-  mkpar.$(O) output.$(O) reader.$(O) \
-  skeleton.$(O) symtab.$(O) verbose.$(O) warshall.$(O)
+include $(ROOTDIR)/Makefile.config
+
+OC_CPPFLAGS += -I$(ROOTDIR)/runtime
+
+ocamlyacc_SOURCES := $(addsuffix .c,\
+  closure error lalr lr0 main mkpar output reader skeleton symtab verbose \
+  warshall)
+
+ocamlyacc_OBJECTS := $(ocamlyacc_SOURCES:.c=.$(O))
+
+generated_files := ocamlyacc$(EXE) $(ocamlyacc_OBJECTS)  version.h
 
 all: ocamlyacc$(EXE)
 
@@ -27,14 +35,14 @@ ifeq ($(TOOLCHAIN),cc)
 MKEXE_ANSI=$(MKEXE)
 endif
 
-ocamlyacc$(EXE): $(OBJS)
-	$(MKEXE_ANSI) -o ocamlyacc$(EXE) $(OBJS) $(EXTRALIBS)
+ocamlyacc$(EXE): $(ocamlyacc_OBJECTS)
+	$(MKEXE_ANSI) -o $@ $^ $(EXTRALIBS)
 
-version.h : ../VERSION
-	echo "#define OCAML_VERSION \"`sed -e 1q $^ | tr -d '\r'`\"" > $@
+version.h : $(ROOTDIR)/VERSION
+	echo "#define OCAML_VERSION \"`sed -e 1q $< | tr -d '\r'`\"" > $@
 
 clean:
-	rm -f *.$(O) ocamlyacc$(EXE) *~ version.h
+	rm -f $(generated_files)
 
 depend:
 
@@ -55,4 +63,4 @@ warshall.$(O): defs.h
 # also works for .obj files.
 
 %.$(O): %.c
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<

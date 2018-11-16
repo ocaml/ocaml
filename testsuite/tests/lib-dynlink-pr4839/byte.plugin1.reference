@@ -1,0 +1,3 @@
+API
+zero=0
+fact (zero+5) = 120

@@ -103,6 +103,7 @@ type int32
 \index{int32@\verb`int32`}
 \begin{ocamldocdescription}
  The type of signed 32-bit integers.
+ Literals for 32-bit integers are suffixed by l.
  See the "Int32"[\moduleref{Int32}] module.
 \end{ocamldocdescription}
 
@@ -112,6 +113,7 @@ type int64
 \index{int64@\verb`int64`}
 \begin{ocamldocdescription}
  The type of signed 64-bit integers.
+ Literals for 64-bit integers are suffixed by L.
  See the "Int64"[\moduleref{Int64}] module.
 \end{ocamldocdescription}
 
@@ -122,6 +124,7 @@ type nativeint
 \begin{ocamldocdescription}
  The type of signed, platform-native integers (32 bits on 32-bit
  processors, 64 bits on 64-bit processors).
+ Literals for native integers are suffixed by n.
  See the "Nativeint"[\moduleref{Nativeint}] module.
 \end{ocamldocdescription}
 

@@ -86,8 +86,8 @@ module Make (T : Branch_relaxation_intf.S) = struct
           fixup did_fix (pc + T.instr_size instr.desc) instr.next
         else
           match instr.desc with
-          | Lop (Ialloc { words = num_words; label_after_call_gc; }) ->
-            instr.desc <- T.relax_allocation ~num_words ~label_after_call_gc;
+          | Lop (Ialloc { bytes = num_bytes; label_after_call_gc; }) ->
+            instr.desc <- T.relax_allocation ~num_bytes ~label_after_call_gc;
             fixup true (pc + T.instr_size instr.desc) instr.next
           | Lop (Iintop (Icheckbound { label_after_error; })) ->
             instr.desc <- T.relax_intop_checkbound ~label_after_error;

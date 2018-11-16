@@ -88,7 +88,7 @@ module Scanning : sig
 type in_channel
 (** The notion of input channel for the {!Scanf} module:
    those channels provide all the machinery necessary to read from any source
-   of characters, including a {!Pervasives.in_channel} value.
+   of characters, including a {!Stdlib.in_channel} value.
    A Scanf.Scanning.in_channel value is also called a {i formatted input
    channel} or equivalently a {i scanning buffer}.
    The type {!Scanning.scanbuf} below is an alias for [Scanning.in_channel].
@@ -110,10 +110,10 @@ type scanbuf = in_channel
 val stdin : in_channel
 (** The standard input notion for the {!Scanf} module.
     [Scanning.stdin] is the {!Scanning.in_channel} formatted input channel
-    attached to {!Pervasives.stdin}.
+    attached to {!Stdlib.stdin}.
 
     Note: in the interactive system, when input is read from
-    {!Pervasives.stdin}, the newline character that triggers evaluation is
+    {!Stdlib.stdin}, the newline character that triggers evaluation is
     part of the input; thus, the scanning specifications must properly skip
     this additional newline character (for instance, simply add a ['\n'] as
     the last character of the format string).
@@ -144,7 +144,7 @@ val open_in_bin : file_name -> in_channel
 *)
 
 val close_in : in_channel -> unit
-(** Closes the {!Pervasives.in_channel} associated with the given
+(** Closes the {!Stdlib.in_channel} associated with the given
   {!Scanning.in_channel} formatted input channel.
   @since 3.12.0
 *)
@@ -172,9 +172,9 @@ val from_function : (unit -> char) -> in_channel
     end-of-input condition by raising the exception [End_of_file].
 *)
 
-val from_channel : Pervasives.in_channel -> in_channel
+val from_channel : Stdlib.in_channel -> in_channel
 (** [Scanning.from_channel ic] returns a {!Scanning.in_channel} formatted
-    input channel which reads from the regular {!Pervasives.in_channel} input
+    input channel which reads from the regular {!Stdlib.in_channel} input
     channel [ic] argument.
     Reading starts at current reading position of [ic].
 *)
@@ -198,7 +198,7 @@ val name_of_input : in_channel -> string
 val stdib : in_channel
   [@@ocaml.deprecated "Use Scanf.Scanning.stdin instead."]
 (** A deprecated alias for {!Scanning.stdin}, the scanning buffer reading from
-    {!Pervasives.stdin}.
+    {!Stdlib.stdin}.
 *)
 
 end
@@ -218,7 +218,7 @@ type ('a, 'b, 'c, 'd) scanner =
     For instance, the {!Scanf.scanf} function below has type
     [('a, 'b, 'c, 'd) scanner], since it is a formatted input function that
     reads from {!Scanning.stdin}: [scanf fmt f] applies [f] to the arguments
-    specified by [fmt], reading those arguments from {!Pervasives.stdin} as
+    specified by [fmt], reading those arguments from {!Stdlib.stdin} as
     expected.
 
     If the format [fmt] has some [%r] indications, the corresponding
@@ -471,7 +471,7 @@ val sscanf : string -> ('a, 'b, 'c, 'd) scanner
 
 val scanf : ('a, 'b, 'c, 'd) scanner
 (** Same as {!Scanf.bscanf}, but reads from the predefined formatted input
-    channel {!Scanf.Scanning.stdin} that is connected to {!Pervasives.stdin}.
+    channel {!Scanf.Scanning.stdin} that is connected to {!Stdlib.stdin}.
 *)
 
 val kscanf :
@@ -531,13 +531,13 @@ val unescaped : string -> string
     in the argument.
     Raise {!Scan_failure} if [s] is not properly escaped (i.e. [s] has invalid
     escape sequences or special characters that are not properly escaped).
-    For instance, [String.unescaped "\""] will fail.
+    For instance, [Scanf.unescaped "\""] will fail.
     @since 4.00.0
 *)
 
 (** {1 Deprecated} *)
 
-val fscanf : Pervasives.in_channel -> ('a, 'b, 'c, 'd) scanner
+val fscanf : Stdlib.in_channel -> ('a, 'b, 'c, 'd) scanner
   [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.bscanf."]
 (** @deprecated [Scanf.fscanf] is error prone and deprecated since 4.03.0.
 
@@ -546,14 +546,14 @@ val fscanf : Pervasives.in_channel -> ('a, 'b, 'c, 'd) scanner
     must read from a user defined {!Scanning.in_channel} formatted input
     channel.
 
-    If you need to read from a {!Pervasives.in_channel} input channel
+    If you need to read from a {!Stdlib.in_channel} input channel
     [ic], simply define a {!Scanning.in_channel} formatted input channel as in
     [let ib = Scanning.from_channel ic],
     then use [Scanf.bscanf ib] as usual.
 *)
 
 val kfscanf :
-  Pervasives.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
+  Stdlib.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
     ('a, 'b, 'c, 'd) scanner
   [@@ocaml.deprecated "Use Scanning.from_channel then Scanf.kscanf."]
 (** @deprecated [Scanf.kfscanf] is error prone and deprecated since 4.03.0. *)

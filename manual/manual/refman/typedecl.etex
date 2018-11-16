@@ -1,6 +1,5 @@
 \section{Type and exception definitions}
 %HEVEA\cutname{typedecl.html}%
-\pdfsection{Type and exception definitions}
 
 \subsection{Type definitions}
 \label{s:type-defs}
@@ -31,6 +30,7 @@ type-equation:
 type-representation:
           '=' ['|'] constr-decl { '|' constr-decl }
         | '=' record-decl
+        | '=' '|'
 ;
 type-params:
           type-param

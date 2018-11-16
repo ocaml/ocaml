@@ -33,7 +33,7 @@ DIFF=diff -q
 SORT=sort
 SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 
-# The variables above may be overridden by .../config/Makefile
+# The variables above may be overridden by .../Makefile.config
 # OTOPDIR is either TOPDIR or WINTOPDIR, whichever is appropriate for
 #   arguments given to the OCaml compiler.
 # CTOPDIR is either TOPDIR or WINTOPDIR, whichever is appropriate for
@@ -48,7 +48,7 @@ SET_LD_PATH=CAML_LD_LIBRARY_PATH="$(LD_PATH)"
 #   variable. Note that for Windows we add Unix-syntax directory names in
 #   PATH, and Cygwin will translate it to Windows syntax.
 
-include $(TOPDIR)/config/Makefile
+include $(TOPDIR)/Makefile.config
 
 ifneq ($(USE_RUNTIME),)
 #Check USE_RUNTIME value
@@ -57,12 +57,12 @@ $(error If set, USE_RUNTIME must be equal to "d" (debug runtime) \
         or "i" (instrumented runtime))
 endif
 
-RUNTIME_VARIANT=-I $(OTOPDIR)/asmrun -I $(OTOPDIR)/byterun \
+RUNTIME_VARIANT=-I $(OTOPDIR)/runtime \
                 -runtime-variant $(USE_RUNTIME)
 export OCAMLRUNPARAM?=v=0
 endif
 
-OCAMLRUN=$(TOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE)
+OCAMLRUN=$(TOPDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE)
 
 OCFLAGS=-nostdlib -I $(OTOPDIR)/stdlib $(COMPFLAGS)
 OCOPTFLAGS=
@@ -74,7 +74,6 @@ else
 endif
 
 OCAML=$(OCAMLRUN) $(OTOPDIR)/ocaml $(OCFLAGS) -noinit
-EXPECT_TEST=$(OCAMLRUN) $(OTOPDIR)/testsuite/tools/expect_test$(EXE)
 ifeq "$(FLEXLINK)" ""
   FLEXLINK_PREFIX=
 else
@@ -93,9 +92,9 @@ OCAMLOPT=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/ocamlopt $(OCFLAGS) \
 OCAMLDOC=$(OCAMLRUN) $(OTOPDIR)/ocamldoc/ocamldoc
 OCAMLLEX=$(OCAMLRUN) $(OTOPDIR)/lex/ocamllex
 OCAMLMKLIB=$(FLEXLINK_PREFIX)$(OCAMLRUN) $(OTOPDIR)/tools/ocamlmklib \
-           -ocamlc "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
+           -ocamlc "$(OTOPDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE) \
                     $(OTOPDIR)/ocamlc $(OCFLAGS) $(RUNTIME_VARIANT)" \
-           -ocamlopt "$(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE) \
+           -ocamlopt "$(OTOPDIR)/runtime/ocamlrun$(USE_RUNTIME)$(EXE) \
                       $(OTOPDIR)/ocamlopt $(OCFLAGS) $(RUNTIME_VARIANT)"
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 DUMPOBJ=$(OCAMLRUN) $(OTOPDIR)/tools/dumpobj

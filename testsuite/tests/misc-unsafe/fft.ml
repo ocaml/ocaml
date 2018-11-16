@@ -1,3 +1,7 @@
+(* TEST
+   flags += " -unsafe "
+*)
+
 let pi = 3.14159265358979323846
 
 let tpi = 2.0 *. pi

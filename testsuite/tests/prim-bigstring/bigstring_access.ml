@@ -1,3 +1,5 @@
+(* TEST
+*)
 
 open Bigarray
 type bigstring = (char, int8_unsigned_elt, c_layout) Array1.t

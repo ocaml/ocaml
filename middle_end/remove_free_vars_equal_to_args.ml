@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 let pass_name = "remove-free-vars-equal-to-args"
 let () = Pass_wrapper.register ~pass_name
@@ -48,14 +49,8 @@ let rewrite_one_function_decl ~(function_decl : Flambda.function_declaration)
         params_for_equal_free_vars
         function_decl.body
     in
-    Flambda.create_function_declaration
-      ~params:function_decl.params
-      ~body:body
-      ~stub:function_decl.stub
-      ~dbg:function_decl.dbg
-      ~inline:function_decl.inline
-      ~specialise:function_decl.specialise
-      ~is_a_functor:function_decl.is_a_functor
+    Flambda.update_function_declaration function_decl
+      ~params:function_decl.params ~body:body
 
 let rewrite_one_set_of_closures (set_of_closures : Flambda.set_of_closures) =
   let back_free_vars =
@@ -97,8 +92,8 @@ let rewrite_one_set_of_closures (set_of_closures : Flambda.set_of_closures) =
     in
     Some set_of_closures
 
-let run set_of_closures =
-  Pass_wrapper.with_dump ~pass_name ~input:set_of_closures
+let run ~ppf_dump set_of_closures =
+  Pass_wrapper.with_dump ~ppf_dump ~pass_name ~input:set_of_closures
     ~print_input:Flambda.print_set_of_closures
     ~print_output:Flambda.print_set_of_closures
     ~f:(fun () -> rewrite_one_set_of_closures set_of_closures)

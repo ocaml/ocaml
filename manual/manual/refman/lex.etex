@@ -1,5 +1,4 @@
 \section{Lexical conventions}
-\pdfsection{Lexical conventions}
 %HEVEA\cutname{lex.html}
 \subsubsection*{Blanks}
 
@@ -55,6 +54,12 @@ integer-literal:
                             { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
         | ["-"] ("0o"||"0O") ("0"\ldots"7") { "0"\ldots"7"||"_" }
         | ["-"] ("0b"||"0B") ("0"\ldots"1") { "0"\ldots"1"||"_" }
+;
+int32-literal: integer-literal 'l'
+;
+int64-literal: integer-literal 'L'
+;
+nativeint-literal: integer-literal 'n'
 \end{syntax}
 
 An integer literal is a sequence of one or more digits, optionally
@@ -66,6 +71,9 @@ preceded by a minus sign. By default, integer literals are in decimal
 \entree{"0b", "0B"}{binary (radix 2)}
 \end{tableau}
 (The initial @"0"@ is the digit zero; the @"O"@ for octal is the letter O.)
+An integer literal can be followed by one of the letters "l", "L" or "n"
+to indicate that this integer has type "int32", "int64" or "nativeint"
+respectively, instead of the default type "int" for integer literals.
 The interpretation of integer literals that fall outside the range of
 representable integer values is undefined.
 
@@ -147,6 +155,11 @@ The two single quotes enclose either one character different from
 \begin{syntax}
 string-literal:
           '"' { string-character } '"'
+       |  '{' quoted-string-id '|'  { any-char } '|' quoted-string-id '}'
+;
+quoted-string-id:
+     { 'a'...'z' || '_' }
+;
 ;
 string-character:
           regular-string-char
@@ -170,6 +183,18 @@ To allow splitting long string literals across lines, the sequence
 "\\"\var{newline}~\var{spaces-or-tabs} (a backslash at the end of a line
 followed by any number of spaces and horizontal tabulations at the
 beginning of the next line) is ignored inside string literals.
+
+Quoted string literals provide an alternative lexical syntax for
+string literals. They are useful to represent strings of arbitrary content
+without escaping. Quoted strings are delimited by a matching pair
+of @'{' quoted-string-id '|'@ and @'|' quoted-string-id '}'@ with
+the same @quoted-string-id@ on both sides. Quoted strings do not interpret
+any character in a special way but requires that the
+sequence @'|' quoted-string-id '}'@ does not occur in the string itself.
+The identifier @quoted-string-id@ is a (possibly empty) sequence of
+lowercase letters and underscores that can be freely chosen to avoid
+such issue (e.g. "{|hello|}", "{ext|hello {|world|}|ext}", ...).
+
 
 The current implementation places practically no restrictions on the
 length of string literals.
@@ -255,9 +280,9 @@ The following character sequences are also keywords:
 %
 \begin{alltt}
 "    !=    #     &     &&    '     (     )     *     +     ,     -"
-"    -.    ->    .     ..    :     ::    :=    :>    ;     ;;    <"
-"    <-    =     >     >]    >}    ?     [     [<    [>    [|    ]"
-"    _     `     {     {<    |     |]    ||    }     ~"
+"    -.    ->    .     ..    .~    :     ::    :=    :>    ;     ;;"
+"    <     <-    =     >     >]    >}    ?     [     [<    [>    [|"
+"    ]     _     `     {     {<    |     |]    ||    }     ~"
 \end{alltt}
 %
 Note that the following identifiers are keywords of the Camlp4

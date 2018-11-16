@@ -24,6 +24,7 @@
 #define _POSIX_PTHREAD_SEMANTICS
 #endif
 #include <signal.h>
+#include <time.h>
 #include <sys/time.h>
 #ifdef __linux__
 #include <unistd.h>
@@ -75,6 +76,10 @@ static INLINE void st_thread_cleanup(void)
 
 /* Thread termination */
 
+CAMLnoreturn_start
+static void st_thread_exit(void)
+CAMLnoreturn_end;
+
 static void st_thread_exit(void)
 {
   pthread_exit(NULL);
@@ -88,10 +93,16 @@ static void st_thread_join(st_thread_id thr)
 
 /* Scheduling hints */
 
-static void INLINE st_thread_yield(void)
+static INLINE void st_thread_yield(void)
 {
-#ifndef __linux__
+#ifdef __linux__
   /* sched_yield() doesn't do what we want in Linux 2.6 and up (PR#2663) */
+  /* but not doing anything here would actually disable preemption (PR#7669) */
+  struct timespec t;
+  t.tv_sec = 0;
+  t.tv_nsec = 1;
+  nanosleep(&t, NULL);
+#else
   sched_yield();
 #endif
 }
@@ -255,7 +266,8 @@ static int st_event_create(st_event * res)
   rc = pthread_mutex_init(&e->lock, NULL);
   if (rc != 0) { caml_stat_free(e); return rc; }
   rc = pthread_cond_init(&e->triggered, NULL);
-  if (rc != 0) { pthread_mutex_destroy(&e->lock); caml_stat_free(e); return rc; }
+  if (rc != 0)
+  { pthread_mutex_destroy(&e->lock); caml_stat_free(e); return rc; }
   e->status = 0;
   *res = e;
   return 0;

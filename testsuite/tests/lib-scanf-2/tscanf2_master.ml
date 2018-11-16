@@ -1,21 +1,78 @@
+(* TEST
+
+include unix
+modules = "tscanf2_io.ml"
+files = "tscanf2_worker.ml"
+reference = "${test_source_directory}/tscanf2.reference"
+
+(* The bytcode test *)
+
+* setup-ocamlc.byte-build-env
+
+program = "${test_build_directory}/master.byte"
+
+** ocamlc.byte (* Compiles the master *)
+
+*** ocamlc.byte (* Compiles the worker *)
+
+all_modules = "tscanf2_io.cmo tscanf2_worker.ml"
+
+program = "${test_build_directory}/worker.byte"
+
+**** check-ocamlc.byte-output
+
+***** run
+
+program = "${test_build_directory}/master.byte"
+
+arguments = "${test_build_directory}/worker.byte"
+
+****** check-program-output
+
+(* The native test *)
+
+* setup-ocamlopt.byte-build-env
+
+program = "${test_build_directory}/master.opt"
+
+** ocamlopt.byte (* Compiles the master *)
+
+*** ocamlopt.byte (* Compiles the worker *)
+
+all_modules = "tscanf2_io.cmx tscanf2_worker.ml"
+
+program = "${test_build_directory}/worker.opt"
+
+**** check-ocamlopt.byte-output
+
+***** run
+
+program = "${test_build_directory}/master.opt"
+
+arguments = "${test_build_directory}/worker.opt"
+
+****** check-program-output
+
+*)
+
 (* A very simple master:
-   - first launch a slave process,
+   - first launch a worker process,
    - then repeat a random number of times:
      + print the string " Ping" on stderr,
-     + send it to the slave,
+     + send it to the worker,
      + and wait for its answer "-pong",
-   - finally send the string "stop" to the slave
+   - finally send the string "stop" to the worker
      and wait for its answer "OK, bye!"
      and die.
 
    Use the communication module Tscanf2_io.
 
-   Usage: test_master <slave_name> *)
+   Usage: test_master <worker_name> *)
 
 open Tscanf2_io;;
 
-let slave = Sys.argv.(1);;
-let ic, oc = Unix.open_process slave;;
+let worker = Sys.argv.(1);;
+let ic, oc = Unix.open_process worker;;
 let ib = Scanf.Scanning.from_channel ic;;
 let ob = Buffer.create 1024;;
 

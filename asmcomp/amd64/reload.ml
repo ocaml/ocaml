@@ -107,13 +107,13 @@ method! reload_test tst arg =
       if stackp arg.(0) && stackp arg.(1)
       then [| self#makereg arg.(0); arg.(1) |]
       else arg
-  | Ifloattest((Clt|Cle), _) ->
+  | Ifloattest (CFlt | CFnlt | CFle | CFnle) ->
       (* Cf. emit.mlp: we swap arguments in this case *)
       (* First argument can be on stack, second must be in register *)
       if stackp arg.(1)
       then [| arg.(0); self#makereg arg.(1) |]
       else arg
-  | Ifloattest((Ceq|Cne|Cgt|Cge), _) ->
+  | Ifloattest (CFeq | CFneq | CFgt | CFngt | CFge | CFnge) ->
       (* Second argument can be on stack, first must be in register *)
       if stackp arg.(0)
       then [| self#makereg arg.(0); arg.(1) |]

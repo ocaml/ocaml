@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 (* test.ml *)
 class alfa = object(_:'self)
   method x: 'a. ('a, out_channel, unit) format -> 'a = Printf.printf

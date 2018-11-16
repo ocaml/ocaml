@@ -257,6 +257,43 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0
 
+(* For ELF32 see:
+   "System V Application Binary Interface PowerPC Processor Supplement"
+   http://refspecs.linux-foundation.org/elf/elfspec_ppc.pdf
+
+   For ELF64v1 see:
+   "64-bit PowerPC ELF Application Binary Interface Supplement 1.9"
+   http://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi.html
+
+   For ELF64v2 see:
+   "64-Bit ELF V2 ABI Specification -- Power Architecture"
+   http://openpowerfoundation.org/wp-content/uploads/resources/leabi/
+     content/dbdoclet.50655239___RefHeading___Toc377640569.html
+
+   All of these specifications seem to agree on the numberings we need.
+*)
+
+let int_dwarf_reg_numbers =
+  [| 3; 4; 5; 6; 7; 8; 9; 10;
+     14; 15; 16; 17; 18; 19; 20; 21;
+     22; 23; 24; 25; 26; 27; 28;
+  |]
+
+let float_dwarf_reg_numbers =
+  [| 33; 34; 35; 36; 37; 38; 39;
+     40; 41; 42; 43; 44; 45; 46; 47;
+     48; 49; 50; 51; 52; 53; 54; 55;
+     56; 57; 58; 59; 60; 61; 62; 63;
+  |]
+
+let dwarf_register_numbers ~reg_class =
+  match reg_class with
+  | 0 -> int_dwarf_reg_numbers
+  | 1 -> float_dwarf_reg_numbers
+  | _ -> Misc.fatal_errorf "Bad register class %d" reg_class
+
+let stack_ptr_dwarf_register_number = 1
+
 (* Volatile registers: none *)
 
 let regs_are_volatile _rs = false
@@ -275,6 +312,8 @@ let destroyed_at_oper = function
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
+
+let destroyed_at_reloadretaddr = [| phys_reg 11 |]
 
 (* Maximal register pressure *)
 
@@ -305,7 +344,8 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command (Config.asm ^ " -o " ^
-                 Filename.quote outfile ^ " " ^ Filename.quote infile)
+  Ccomp.command (Config.asm ^ " " ^
+                 (String.concat " " (Misc.debug_prefix_map_flags ())) ^
+                 " -o " ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 let init () = ()

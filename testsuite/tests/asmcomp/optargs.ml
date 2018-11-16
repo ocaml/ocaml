@@ -1,3 +1,9 @@
+(* TEST
+   flags = "-g"
+   compare_programs = "false"
+   * native
+*)
+
 (* Check the effectiveness of inlining the wrapper which fills in
    default values for optional arguments.
 

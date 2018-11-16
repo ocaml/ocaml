@@ -16,9 +16,7 @@
 (* Environment handling *)
 
 open Types
-
-module PathMap : Map.S with type key = Path.t
-                        and type 'a t = 'a Map.Make(Path).t
+open Misc.Stdlib
 
 type summary =
     Env_empty
@@ -29,9 +27,11 @@ type summary =
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
-  | Env_open of summary * Path.t
+  | Env_open of summary * String.Set.t * Path.t
+  (** The string set argument of [Env_open] represents a list of module names
+      to skip, i.e. that won't be imported in the toplevel namespace. *)
   | Env_functor_arg of summary * Ident.t
-  | Env_constraints of summary * type_declaration PathMap.t
+  | Env_constraints of summary * type_declaration Path.Map.t
   | Env_copy_types of summary * string list
 
 type t
@@ -69,9 +69,9 @@ val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> class_type_declaration
 
 val find_type_expansion:
-    Path.t -> t -> type_expr list * type_expr * int option
+    Path.t -> t -> type_expr list * type_expr * int
 val find_type_expansion_opt:
-    Path.t -> t -> type_expr list * type_expr * int option
+    Path.t -> t -> type_expr list * type_expr * int
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
@@ -89,43 +89,47 @@ val get_required_globals: unit -> Ident.t list
 val add_required_global: Ident.t -> unit
 
 val has_local_constraints: t -> bool
-val add_gadt_instance_level: int -> t -> t
-val gadt_instance_level: t -> type_expr -> int option
-val add_gadt_instances: t -> int -> type_expr list -> unit
-val add_gadt_instance_chain: t -> int -> type_expr -> unit
 
 (* Lookup by long identifiers *)
 
-(* ?loc is used to report 'deprecated module' warnings *)
+(* ?loc is used to report 'deprecated module' warnings and other alerts *)
 
 val lookup_value:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * value_description
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * value_description
 val lookup_constructor:
-  ?loc:Location.t -> Longident.t -> t -> constructor_description
+  ?loc:Location.t -> ?mark:bool -> Longident.t -> t -> constructor_description
 val lookup_all_constructors:
-  ?loc:Location.t ->
+  ?loc:Location.t -> ?mark:bool ->
   Longident.t -> t -> (constructor_description * (unit -> unit)) list
 val lookup_label:
-  ?loc:Location.t -> Longident.t -> t -> label_description
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> label_description
 val lookup_all_labels:
-  ?loc:Location.t ->
+  ?loc:Location.t -> ?mark:bool ->
   Longident.t -> t -> (label_description * (unit -> unit)) list
 val lookup_type:
-  ?loc:Location.t -> Longident.t -> t -> Path.t
+  ?loc:Location.t -> ?mark:bool -> Longident.t -> t -> Path.t
   (* Since 4.04, this function no longer returns [type_description].
      To obtain it, you should either call [Env.find_type], or replace
      it by [Typetexp.find_type] *)
 val lookup_module:
-  load:bool -> ?loc:Location.t -> Longident.t -> t -> Path.t
+  load:bool -> ?loc:Location.t -> ?mark:bool -> Longident.t -> t -> Path.t
 val lookup_modtype:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * modtype_declaration
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * modtype_declaration
 val lookup_class:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * class_declaration
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * class_declaration
 val lookup_cltype:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * class_type_declaration
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * class_type_declaration
 
-val copy_types: string list -> t -> t
-  (* Used only in Typecore.duplicate_ident_types. *)
+type copy_of_types
+val make_copy_of_types: string list -> t -> copy_of_types
+val do_copy_types: copy_of_types -> t -> t
+(** [do_copy_types copy env] will raise a fatal error if the values in
+    [env] are different from the env passed to [make_copy_of_types]. *)
 
 exception Recmodule
   (* Raise by lookup_module when the identifier refers
@@ -144,7 +148,6 @@ val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
-val add_local_constraint: Path.t -> type_declaration -> int -> t -> t
 val add_local_type: Path.t -> type_declaration -> t -> t
 
 (* Insertion of all fields of a signature. *)
@@ -157,8 +160,26 @@ val add_signature: signature -> t -> t
    not a structure. *)
 val open_signature:
     ?used_slot:bool ref ->
-    ?loc:Location.t -> ?toplevel:bool -> Asttypes.override_flag -> Path.t ->
+    ?loc:Location.t -> ?toplevel:bool ->
+    Asttypes.override_flag -> Path.t ->
       t -> t option
+
+(* Similar to [open_signature], except that modules from the load path
+   have precedence over sub-modules of the opened module.
+
+   For instance, if opening a module [M] with a sub-module [X]:
+   - if the load path contains a [x.cmi] file, then resolving [X] in the
+     new environment yields the same result as resolving [X] in the
+     old environment
+   - otherwise, in the new environment [X] resolves to [M.X]
+*)
+val open_signature_of_initially_opened_module:
+    Path.t -> t -> t option
+
+(* Similar to [open_signature] except that sub-modules of the opened modules
+   that are in [hidden_submodules] are not added to the environment. *)
+val open_signature_from_env_summary:
+    Path.t -> t -> hidden_submodules:String.Set.t -> t option
 
 val open_pers_signature: string -> t -> t
 
@@ -167,14 +188,22 @@ val open_pers_signature: string -> t -> t
 val enter_value:
     ?check:(string -> Warnings.t) ->
     string -> value_description -> t -> Ident.t * t
-val enter_type: string -> type_declaration -> t -> Ident.t * t
-val enter_extension: string -> extension_constructor -> t -> Ident.t * t
-val enter_module: ?arg:bool -> string -> module_type -> t -> Ident.t * t
+val enter_type: scope:int -> string -> type_declaration -> t -> Ident.t * t
+val enter_extension:
+  scope:int -> string -> extension_constructor -> t -> Ident.t * t
+val enter_module:
+  scope:int -> ?arg:bool -> string -> module_type -> t -> Ident.t * t
 val enter_module_declaration:
     ?arg:bool -> Ident.t -> module_declaration -> t -> t
-val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
-val enter_class: string -> class_declaration -> t -> Ident.t * t
-val enter_cltype: string -> class_type_declaration -> t -> Ident.t * t
+val enter_modtype:
+  scope:int -> string -> modtype_declaration -> t -> Ident.t * t
+val enter_class: scope:int -> string -> class_declaration -> t -> Ident.t * t
+val enter_cltype:
+  scope:int -> string -> class_type_declaration -> t -> Ident.t * t
+
+(* Same as [add_signature] but refreshes (new stamp) and rescopes bound idents
+   in the process. *)
+val enter_signature: scope:int -> signature -> t -> signature * t
 
 (* Initialize the cache of in-core module interfaces. *)
 val reset_cache: unit -> unit
@@ -191,10 +220,11 @@ val get_unit_name: unit -> string
 val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature:
-  deprecated:string option -> signature -> string -> string -> Cmi_format.cmi_infos
+  alerts:string Misc.Stdlib.String.Map.t -> signature -> string -> string ->
+  Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-  deprecated:string option ->
+  alerts:string Misc.Stdlib.String.Map.t ->
   signature -> string -> string -> (string * Digest.t option) list
   -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name,
@@ -245,20 +275,19 @@ open Format
 val report_error: formatter -> error -> unit
 
 
-val mark_value_used: t -> string -> value_description -> unit
-val mark_module_used: t -> string -> Location.t -> unit
-val mark_type_used: t -> string -> type_declaration -> unit
+val mark_value_used: string -> value_description -> unit
+val mark_module_used: string -> Location.t -> unit
+val mark_type_used: string -> type_declaration -> unit
 
 type constructor_usage = Positive | Pattern | Privatize
 val mark_constructor_used:
-    constructor_usage -> t -> string -> type_declaration -> string -> unit
+    constructor_usage -> string -> type_declaration -> string -> unit
 val mark_constructor:
     constructor_usage -> t -> string -> constructor_description -> unit
 val mark_extension_used:
-    constructor_usage -> t -> extension_constructor -> string -> unit
+    constructor_usage -> extension_constructor -> string -> unit
 
 val in_signature: bool -> t -> t
-val implicit_coercion: t -> t
 
 val is_in_signature: t -> bool
 
@@ -270,6 +299,9 @@ val set_type_used_callback:
 (* Forward declaration to break mutual recursion with Includemod. *)
 val check_modtype_inclusion:
       (loc:Location.t -> t -> module_type -> Path.t -> module_type -> unit) ref
+(* Forward declaration to break mutual recursion with Typemod. *)
+val check_well_formed_module:
+    (t -> Location.t -> string -> module_type -> unit) ref
 (* Forward declaration to break mutual recursion with Typecore. *)
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (* Forward declaration to break mutual recursion with Mtype. *)

@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 module A = Simple_value_approx
 module C = Inlining_cost
@@ -78,6 +79,30 @@ let phys_different (approxs:A.t list) =
   | [a1; a2] ->
     structurally_different a1 a2
 
+let is_empty = function
+  | [] -> true
+  | _ :: _ -> false
+
+let is_pisint = function
+  | Lambda.Pisint -> true
+  | _ -> false
+
+let is_pstring_length = function
+  | Lambda.Pstringlength -> true
+  | _ -> false
+
+let is_pbytes_length = function
+  | Lambda.Pbyteslength -> true
+  | _ -> false
+
+let is_pstringrefs = function
+  | Lambda.Pstringrefs -> true
+  | _ -> false
+
+let is_pbytesrefs = function
+  | Lambda.Pbytesrefs -> true
+  | _ -> false
+
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
@@ -100,7 +125,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         S.const_ptr_expr (Flambda.Expr (Var arg)) 0
       | _ -> S.const_ptr_expr expr 0
     end
-  | Pmakearray(_, _) when approxs = [] ->
+  | Pmakearray(_, _) when is_empty approxs ->
     Prim (Pmakeblock(0, Asttypes.Immutable, Some []), [], dbg),
     A.value_block (Tag.create_exn 0) [||], C.Benefit.zero
   | Pmakearray (Pfloatarray, Mutable) ->
@@ -115,7 +140,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       expr, approx, C.Benefit.zero
   | Pintcomp Ceq when phys_equal approxs ->
     S.const_bool_expr expr true
-  | Pintcomp Cneq when phys_equal approxs ->
+  | Pintcomp Cne when phys_equal approxs ->
     S.const_bool_expr expr false
     (* N.B. Having [not (phys_equal approxs)] would not on its own tell us
        anything about whether the two values concerned are unequal.  To judge
@@ -140,7 +165,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
        invalid. *)
   | Pintcomp Ceq when phys_different approxs ->
     S.const_bool_expr expr false
-  | Pintcomp Cneq when phys_different approxs ->
+  | Pintcomp Cne when phys_different approxs ->
     S.const_bool_expr expr true
     (* If two values are structurally different we are certain they can never
        be shared*)
@@ -174,13 +199,13 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Plslint when shift_precond -> S.const_int_expr expr (x lsl y)
       | Plsrint when shift_precond -> S.const_int_expr expr (x lsr y)
       | Pasrint when shift_precond -> S.const_int_expr expr (x asr y)
-      | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
+      | Pintcomp cmp -> S.const_integer_comparison_expr expr cmp x y
       | Pisout -> S.const_bool_expr expr (y > x || y < 0)
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_char x; Value_char y] ->
       begin match p with
-      | Pintcomp cmp -> S.const_comparison_expr expr cmp x y
+      | Pintcomp cmp -> S.const_integer_comparison_expr expr cmp x y
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_constptr x] ->
@@ -199,9 +224,12 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         | Max_wosize ->
           (* CR-someday mshinwell: this function should maybe not live here. *)
           S.const_int_expr expr ((1 lsl ((8*size_int) - 10)) - 1)
-        | Ostype_unix -> S.const_bool_expr expr (Sys.os_type = "Unix")
-        | Ostype_win32 -> S.const_bool_expr expr (Sys.os_type = "Win32")
-        | Ostype_cygwin -> S.const_bool_expr expr (Sys.os_type = "Cygwin")
+        | Ostype_unix ->
+          S.const_bool_expr expr (String.equal Sys.os_type "Unix")
+        | Ostype_win32 ->
+          S.const_bool_expr expr (String.equal Sys.os_type "Win32")
+        | Ostype_cygwin ->
+          S.const_bool_expr expr (String.equal Sys.os_type "Cygwin")
         | Backend_type ->
           S.const_ptr_expr expr 0 (* tag 0 is the same as Native *)
         end
@@ -220,7 +248,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Psubfloat -> S.const_float_expr expr (n1 -. n2)
       | Pmulfloat -> S.const_float_expr expr (n1 *. n2)
       | Pdivfloat -> S.const_float_expr expr (n1 /. n2)
-      | Pfloatcomp c  -> S.const_comparison_expr expr c n1 n2
+      | Pfloatcomp c  -> S.const_float_comparison_expr expr c n1 n2
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [A.Value_boxed_int(A.Nativeint, n)] ->
@@ -245,10 +273,10 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
     | [A.Value_boxed_int(A.Int64, n1); Value_int n2] ->
       I.Simplify_boxed_int64.simplify_binop_int p Int64 expr n1 n2
         ~size_int
-    | [Value_block _] when p = Lambda.Pisint ->
+    | [Value_block _] when is_pisint p ->
       S.const_bool_expr expr false
     | [Value_string { size }]
-      when (p = Lambda.Pstringlength || p = Lambda.Pbyteslength) ->
+      when (is_pstring_length p || is_pbytes_length p) ->
       S.const_int_expr expr size
     | [Value_string { size; contents = Some s };
        (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
@@ -262,14 +290,14 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         end
     | [Value_string { size; contents = None };
        (Value_int x | Value_constptr x)]
-      when x >= 0 && x < size && p = Lambda.Pstringrefs ->
+      when x >= 0 && x < size && is_pstringrefs p ->
         Flambda.Prim (Pstringrefu, args, dbg),
           A.value_unknown Other,
           (* we improved it, but there is no way to account for that: *)
           C.Benefit.zero
     | [Value_string { size; contents = None };
        (Value_int x | Value_constptr x)]
-      when x >= 0 && x < size && p = Lambda.Pbytesrefs ->
+      when x >= 0 && x < size && is_pbytesrefs p ->
         Flambda.Prim (Pbytesrefu, args, dbg),
           A.value_unknown Other,
           (* we improved it, but there is no way to account for that: *)

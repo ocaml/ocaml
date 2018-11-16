@@ -1,0 +1,6 @@
+File "unclosed_paren_module_expr2.ml", line 9, characters 0-0:
+Error: Syntax error: ')' expected
+File "unclosed_paren_module_expr2.ml", line 8, characters 11-12:
+8 | module M = (struct end
+               ^
+  This '(' might be unmatched

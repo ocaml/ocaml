@@ -1,3 +1,7 @@
+(* TEST
+   modules = "intextaux.c"
+*)
+
 (* Test for output_value / input_value *)
 
 let max_data_depth = 500000
@@ -574,6 +578,19 @@ let test_end_of_file_regression () =
     with _ -> false
   )
 
+external init_buggy_custom_ops : unit -> unit =
+  "init_buggy_custom_ops"
+let () = init_buggy_custom_ops ()
+type buggy
+external value_with_buggy_serialiser : unit -> buggy =
+  "value_with_buggy_serialiser"
+let test_buggy_serialisers () =
+  let x = value_with_buggy_serialiser () in
+  let s = Marshal.to_string x [] in
+  match Marshal.from_string s 0 with
+  | exception (Failure _) -> ()
+  | _ ->
+     failwith "Marshalling should not have succeeded with a bad serialiser!"
 
 let main() =
   if Array.length Sys.argv <= 2 then begin
@@ -588,6 +605,7 @@ let main() =
     test_infix ();
     test_mutual_rec_regression ();
     test_end_of_file_regression ();
+    test_buggy_serialisers ();
     Sys.remove "intext.data";
   end else
   if Sys.argv.(1) = "make" then begin

@@ -1,0 +1,1 @@
+${program} | ${SORT} > ${output} 2>&1

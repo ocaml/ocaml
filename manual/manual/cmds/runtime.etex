@@ -1,5 +1,4 @@
 \chapter{The runtime system (ocamlrun)} \label{c:runtime}
-\pdfchapter{The runtime system (ocamlrun)}
 %HEVEA\cutname{runtime.html}
 
 The "ocamlrun" command executes bytecode files produced by the
@@ -63,6 +62,11 @@ in the "OCAMLRUNPARAM" environment variable (see below).
 Search the directory \var{dir} for dynamically-loaded libraries,
 in addition to the standard search path (see
 section~\ref{s-ocamlrun-dllpath}).
+\item["-m"]
+Print the magic number of the bytecode executable given as argument
+and exit.
+\item["-M"]
+Print the magic number expected by this version of the runtime and exit.
 \item["-p"]
 Print the names of the primitives known to this version of
 "ocamlrun" and exit.
@@ -153,6 +157,28 @@ The following environment variables are also consulted:
   "caml_shutdown" in section~\ref{s:embedded-code}). The option also enables
   pooling (as in "caml_startup_pooled"). This mode can be used to detect
   leaks with a third-party memory debugger.
+  % FIXME missing: H, t, w, W see MPR#7870
+  \item[M] ("custom_major_ratio") Target ratio of floating garbage to
+  major heap size for out-of-heap memory held by custom values
+  (e.g. bigarrays) located in the major heap. The GC speed is adjusted
+  to try to use this much memory for dead values that are not yet
+  collected. Expressed as a percentage of major heap size. Default:
+  44. Note: this only applies to values allocated with
+  "caml_alloc_custom_mem".
+  \item[m] ("custom_minor_ratio") Bound on floating garbage for
+  out-of-heap memory
+  held by custom values in the minor heap. A minor GC is triggered
+  when this much memory is held by custom values located in the minor
+  heap. Expressed as a percentage of minor heap size. Default:
+  100. Note: this only applies to values allocated with
+  "caml_alloc_custom_mem".
+  \item[n] ("custom_minor_max_size") Maximum amount of out-of-heap
+  memory for each custom value allocated in the minor heap. When a custom
+  value is allocated on the minor heap and holds more than this many
+  bytes, only this value is counted against "custom_minor_ratio" and
+  the rest is directly counted against "custom_major_ratio".
+  Default: 8192 bytes. Note:
+  this only applies to values allocated with "caml_alloc_custom_mem".
   \end{options}
   The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
   $2^{20}$, and $2^{30}$ respectively.

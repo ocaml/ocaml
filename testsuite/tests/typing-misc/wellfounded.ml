@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* PR#6768 *)
 
 type _ prod = Prod : ('a * 'y) prod;;
@@ -11,6 +15,8 @@ let f : type t. t prod -> _ = function Prod ->
 ;;
 [%%expect{|
 type _ prod = Prod : ('a * 'y) prod
-Line _, characters 6-20:
+Line 6, characters 6-20:
+6 |       type d = d * d
+          ^^^^^^^^^^^^^^
 Error: The type abbreviation d is cyclic
 |}];;

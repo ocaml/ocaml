@@ -15,6 +15,9 @@
 
 (** Facilities for printing exceptions and inspecting current call stack. *)
 
+type t = exn = ..
+(** The type of exception values. *)
+
 val to_string: exn -> string
 (** [Printexc.to_string e] returns a string representation of
    the exception [e]. *)
@@ -159,7 +162,7 @@ val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
     backtrace on standard error output.
 
     Note that when [fn] is called all the functions registered with
-    {!Pervasives.at_exit} have already been called. Because of this you must
+    {!Stdlib.at_exit} have already been called. Because of this you must
     make sure any output channel [fn] writes on is flushed.
 
     Also note that exceptions raised by user code in the interactive toplevel

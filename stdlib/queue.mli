@@ -43,12 +43,22 @@ val take : 'a t -> 'a
 (** [take q] removes and returns the first element in queue [q],
    or raises {!Empty} if the queue is empty. *)
 
+val take_opt : 'a t -> 'a option
+(** [take_opt q] removes and returns the first element in queue [q],
+   or returns [None] if the queue is empty.
+   @since 4.08 *)
+
 val pop : 'a t -> 'a
 (** [pop] is a synonym for [take]. *)
 
 val peek : 'a t -> 'a
 (** [peek q] returns the first element in queue [q], without removing
    it from the queue, or raises {!Empty} if the queue is empty. *)
+
+val peek_opt : 'a t -> 'a option
+(** [peek_opt q] returns the first element in queue [q], without removing
+   it from the queue, or returns [None] if the queue is empty.
+   @since 4.08 *)
 
 val top : 'a t -> 'a
 (** [top] is a synonym for [peek]. *)
@@ -80,3 +90,19 @@ val transfer : 'a t -> 'a t -> unit
    the queue [q2], then clears [q1]. It is equivalent to the
    sequence [iter (fun x -> add x q2) q1; clear q1], but runs
    in constant time. *)
+
+(** {1 Iterators} *)
+
+val to_seq : 'a t -> 'a Seq.t
+(** Iterate on the queue, in front-to-back order.
+    The behavior is not defined if the queue is modified
+    during the iteration.
+    @since 4.07 *)
+
+val add_seq : 'a t -> 'a Seq.t -> unit
+(** Add the elements from the generator to the end of the queue
+    @since 4.07 *)
+
+val of_seq : 'a Seq.t -> 'a t
+(** Create an array from the generator
+    @since 4.07 *)

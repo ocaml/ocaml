@@ -13,11 +13,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Compiling C files and building C libraries *)
+(** Compiling C files and building C libraries
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 val command: string -> int
 val run_command: string -> unit
-val compile_file: ?output:string -> ?opt:string -> string -> int
+val compile_file:
+  ?output:string -> ?opt:string -> ?stable_name:string -> string -> int
 val create_archive: string -> string list -> int
 val expand_libname: string -> string
 val quote_files: string list -> string

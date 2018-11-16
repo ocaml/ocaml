@@ -1,3 +1,11 @@
+(* TEST
+include tool-ocaml-lib
+flags = "-w a"
+ocaml_script_as_argument = "true"
+* setup-ocaml-build-env
+** ocaml
+*)
+
 open Lib;;
 ignore (Gc.stat ());
 let x = Array.make 20 "" in

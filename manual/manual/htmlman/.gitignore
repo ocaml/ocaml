@@ -1,8 +1,10 @@
 *.html
 *.haux
 *.hind
+compilerlibref
 libref
 manual.hmanual
 manual.hmanual.kwd
 manual.css
 *.htoc
+*.svg

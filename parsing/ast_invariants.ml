@@ -19,7 +19,6 @@ open Ast_iterator
 let err = Syntaxerr.ill_formed_ast
 
 let empty_record loc = err loc "Records cannot be empty."
-let empty_variant loc = err loc "Variant types cannot be empty."
 let invalid_tuple loc = err loc "Tuples must have at least 2 components."
 let no_args loc = err loc "Function application with no argument."
 let empty_let loc = err loc "Let with no bindings."
@@ -41,7 +40,6 @@ let iterator =
     let loc = td.ptype_loc in
     match td.ptype_kind with
     | Ptype_record [] -> empty_record loc
-    | Ptype_variant [] -> empty_variant loc
     | _ -> ()
   in
   let typ self ty =
@@ -147,6 +145,30 @@ let iterator =
     | Psig_type (_, []) -> empty_type loc
     | _ -> ()
   in
+  let row_field self field =
+    super.row_field self field;
+    let loc = field.prf_loc in
+    match field.prf_desc with
+    | Rtag _ -> ()
+    | Rinherit _ ->
+      if field.prf_attributes = []
+      then ()
+      else err loc
+          "In variant types, attaching attributes to inherited \
+           subtypes is not allowed."
+  in
+  let object_field self field =
+    super.object_field self field;
+    let loc = field.pof_loc in
+    match field.pof_desc with
+    | Otag _ -> ()
+    | Oinherit _ ->
+      if field.pof_attributes = []
+      then ()
+      else err loc
+          "In object types, attaching attributes to inherited \
+           subtypes is not allowed."
+  in
   { super with
     type_declaration
   ; typ
@@ -160,6 +182,8 @@ let iterator =
   ; with_constraint
   ; structure_item
   ; signature_item
+  ; row_field
+  ; object_field
   }
 
 let structure st = iterator.structure iterator st

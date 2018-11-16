@@ -22,6 +22,8 @@ open Primitive
 open Types
 open Typetexp
 
+module String = Misc.Stdlib.String
+
 type native_repr_kind = Unboxed | Untagged
 
 type error =
@@ -31,18 +33,18 @@ type error =
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Cycle_in_def of string * type_expr
-  | Definition_mismatch of type_expr * Includecore.type_mismatch list
+  | Definition_mismatch of type_expr * Includecore.type_mismatch option
   | Constraint_failed of type_expr * type_expr
-  | Inconsistent_constraint of Env.t * (type_expr * type_expr) list
-  | Type_clash of Env.t * (type_expr * type_expr) list
+  | Inconsistent_constraint of Env.t * Ctype.Unification_trace.t
+  | Type_clash of Env.t * Ctype.Unification_trace.t
   | Parameters_differ of Path.t * type_expr * type_expr
   | Null_arity_external
   | Missing_native_external
   | Unbound_type_var of type_expr * type_declaration
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
-  | Extension_mismatch of Path.t * Includecore.type_mismatch list
-  | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
+  | Extension_mismatch of Path.t * Includecore.type_mismatch
+  | Rebind_wrong_type of Longident.t * Env.t * Ctype.Unification_trace.t
   | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
   | Bad_variance of int * (bool * bool * bool) * (bool * bool * bool)
@@ -79,6 +81,10 @@ let get_unboxed_from_attributes sdecl =
 
 (* Enter all declared types in the environment as abstract types *)
 
+let add_type ~check id decl env =
+  Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
+    (fun () -> Env.add_type ~check id decl env)
+
 let enter_type rec_flag env sdecl id =
   let needed =
     match rec_flag with
@@ -104,14 +110,15 @@ let enter_type rec_flag env sdecl id =
         begin match sdecl.ptype_manifest with None -> None
         | Some _ -> Some(Ctype.newvar ()) end;
       type_variance = List.map (fun _ -> Variance.full) sdecl.ptype_params;
-      type_newtype_level = None;
+      type_is_newtype = false;
+      type_expansion_scope = Btype.lowest_level;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = false;
       type_unboxed = unboxed_false_default_false;
     }
   in
-  Env.add_type ~check:true id decl env
+  add_type ~check:true id decl env
 
 let update_type temp_env env id loc =
   let path = Path.Pident id in
@@ -132,14 +139,17 @@ let rec get_unboxed_type_representation env ty fuel =
   | Tconstr (p, args, _) ->
     begin match Env.find_type p env with
     | exception Not_found -> Some ty
+    | {type_immediate = true; _} -> Some Predef.type_int
     | {type_unboxed = {unboxed = false}} -> Some ty
     | {type_params; type_kind =
          Type_record ([{ld_type = ty2; _}], _)
        | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
        | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]}
 
-         -> get_unboxed_type_representation env
-             (Ctype.apply env type_params ty2 args) (fuel - 1)
+      ->
+        let ty2 = match ty2.desc with Tpoly (t, _) -> t | _ -> ty2 in
+        get_unboxed_type_representation env
+          (Ctype.apply env type_params ty2 args) (fuel - 1)
     | {type_kind=Type_abstract} -> None
           (* This case can occur when checking a recursive unboxed type
              declaration. *)
@@ -201,12 +211,6 @@ let set_fixed_row env loc p decl =
 
 (* Translate one type declaration *)
 
-module StringSet =
-  Set.Make(struct
-    type t = string
-    let compare (x:t) y = compare x y
-  end)
-
 let make_params env params =
   let make_param (sty, v) =
     try
@@ -218,12 +222,12 @@ let make_params env params =
 
 let transl_labels env closed lbls =
   assert (lbls <> []);
-  let all_labels = ref StringSet.empty in
+  let all_labels = ref String.Set.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
-       if StringSet.mem name !all_labels then
+       if String.Set.mem name !all_labels then
          raise(Error(loc, Duplicate_label name));
-       all_labels := StringSet.add name !all_labels)
+       all_labels := String.Set.add name !all_labels)
     lbls;
   let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
           pld_attributes=attrs} =
@@ -231,7 +235,8 @@ let transl_labels env closed lbls =
       (fun () ->
          let arg = Ast_helper.Typ.force_poly arg in
          let cty = transl_simple_type env closed arg in
-         {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
+         {ld_id = Ident.create_local name.txt;
+          ld_name = name; ld_mutable = mut;
           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
       )
   in
@@ -425,26 +430,25 @@ let transl_declaration env sdecl id =
     match sdecl.ptype_kind with
       | Ptype_abstract -> Ttype_abstract, Type_abstract
       | Ptype_variant scstrs ->
-        assert (scstrs <> []);
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
           match cstrs with
             [] -> ()
           | (_,_,loc)::_ ->
               Location.prerr_warning loc Warnings.Constraint_on_gadt
         end;
-        let all_constrs = ref StringSet.empty in
+        let all_constrs = ref String.Set.empty in
         List.iter
           (fun {pcd_name = {txt = name}} ->
-            if StringSet.mem name !all_constrs then
+            if String.Set.mem name !all_constrs then
               raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
-            all_constrs := StringSet.add name !all_constrs)
+            all_constrs := String.Set.add name !all_constrs)
           scstrs;
         if List.length
             (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
            > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
         let make_cstr scstr =
-          let name = Ident.create scstr.pcd_name.txt in
+          let name = Ident.create_local scstr.pcd_name.txt in
           let targs, tret_type, args, ret_type, cstr_params =
             make_constructor env (Path.Pident id) params
                              scstr.pcd_args scstr.pcd_res
@@ -515,7 +519,8 @@ let transl_declaration env sdecl id =
         type_private = sdecl.ptype_private;
         type_manifest = man;
         type_variance = List.map (fun _ -> Variance.full) params;
-        type_newtype_level = None;
+        type_is_newtype = false;
+        type_expansion_scope = Btype.lowest_level;
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
         type_immediate = false;
@@ -594,8 +599,6 @@ let rec check_constraints_rec env loc visited ty =
       Btype.iter_type_expr (check_constraints_rec env loc visited) ty
   end
 
-module SMap = Map.Make(String)
-
 let check_constraints_labels env visited l pl =
   let rec get_loc name = function
       [] -> assert false
@@ -620,14 +623,14 @@ let check_constraints env sdecl (_, decl) =
       let pl = find_pl sdecl.ptype_kind in
       let pl_index =
         let foldf acc x =
-          SMap.add x.pcd_name.txt x acc
+          String.Map.add x.pcd_name.txt x acc
         in
-        List.fold_left foldf SMap.empty pl
+        List.fold_left foldf String.Map.empty pl
       in
       List.iter
         (fun {Types.cd_id=name; cd_args; cd_res} ->
           let {pcd_args; pcd_res; _} =
-            try SMap.find (Ident.name name) pl_index
+            try String.Map.find (Ident.name name) pl_index
             with Not_found -> assert false in
           begin match cd_args, pcd_args with
           | Cstr_tuple tyl, Pcstr_tuple styl ->
@@ -678,23 +681,24 @@ let check_coherence env loc id decl =
             let decl' = Env.find_type path env in
             let err =
               if List.length args <> List.length decl.type_params
-              then [Includecore.Arity]
+              then Some Includecore.Arity
               else if not (Ctype.equal env false args decl.type_params)
-              then [Includecore.Constraint]
+              then Some Includecore.Constraint
               else
                 Includecore.type_declarations ~loc ~equality:true env
+                  ~mark:true
                   (Path.last path)
                   decl'
                   id
                   (Subst.type_declaration
                      (Subst.add_type id path Subst.identity) decl)
             in
-            if err <> [] then
+            if err <> None then
               raise(Error(loc, Definition_mismatch (ty, err)))
           with Not_found ->
             raise(Error(loc, Unavailable_type_constructor path))
           end
-      | _ -> raise(Error(loc, Definition_mismatch (ty, [])))
+      | _ -> raise(Error(loc, Definition_mismatch (ty, None)))
       end
   | _ -> ()
 
@@ -771,7 +775,7 @@ let check_well_founded_decl env loc path decl to_check =
   let it =
     {type_iterators with
      it_type_expr = (fun _ -> check_well_founded env loc path to_check)} in
-  it.it_type_declaration it (Ctype.instance_declaration decl)
+  it.it_type_declaration it (Ctype.generic_instance_declaration decl)
 
 (* Check for ill-defined abbrevs *)
 
@@ -1141,7 +1145,7 @@ let rec compute_properties_fixpoint env decls required variances immediacies =
   in
   let new_env =
     List.fold_right
-      (fun (id, decl) env -> Env.add_type ~check:true id decl env)
+      (fun (id, decl) env -> add_type ~check:true id decl env)
       new_decls env
   in
   let new_variances =
@@ -1259,8 +1263,23 @@ let name_recursion sdecl id decl =
     else decl
   | _ -> decl
 
+(* Warn on definitions of type "type foo = ()" which redefine a different unit
+   type and are likely a mistake. *)
+let check_redefined_unit (td: Parsetree.type_declaration) =
+  let open Parsetree in
+  let is_unit_constructor cd = cd.pcd_name.txt = "()" in
+  match td with
+  | { ptype_name = { txt = name };
+      ptype_manifest = None;
+      ptype_kind = Ptype_variant [ cd ] }
+    when is_unit_constructor cd ->
+      Location.prerr_warning td.ptype_loc (Warnings.Redefining_unit name)
+  | _ ->
+      ()
+
 (* Translate a set of type declarations, mutually recursive or not *)
 let transl_type_decl env rec_flag sdecl_list =
+  List.iter check_redefined_unit sdecl_list;
   (* Add dummy types for fixed rows *)
   let fixed_types = List.filter is_fixed_type sdecl_list in
   let sdecl_list =
@@ -1275,16 +1294,11 @@ let transl_type_decl env rec_flag sdecl_list =
   in
 
   (* Create identifiers. *)
+  let scope = Ctype.create_scope () in
   let id_list =
-    List.map (fun sdecl -> Ident.create sdecl.ptype_name.txt) sdecl_list
+    List.map (fun sdecl -> Ident.create_scoped ~scope sdecl.ptype_name.txt)
+      sdecl_list
   in
-  (*
-     Since we've introduced fresh idents, make sure the definition
-     level is at least the binding time of these events. Otherwise,
-     passing one of the recursively-defined type constrs as argument
-     to an abbreviation may fail.
-  *)
-  Ctype.init_def(Ident.current_time());
   Ctype.begin_def();
   (* Enter types. *)
   let temp_env =
@@ -1306,7 +1320,7 @@ let transl_type_decl env rec_flag sdecl_list =
              match !current_slot with
              | Some slot -> slot := (name, td) :: !slot
              | None ->
-                 List.iter (fun (name, d) -> Env.mark_type_used env name d)
+                 List.iter (fun (name, d) -> Env.mark_type_used name d)
                    (get_ref slot);
                  old_callback ()
           );
@@ -1330,7 +1344,7 @@ let transl_type_decl env rec_flag sdecl_list =
   (* Build the final env. *)
   let newenv =
     List.fold_right
-      (fun (id, decl) env -> Env.add_type ~check:true id decl env)
+      (fun (id, decl) env -> add_type ~check:true id decl env)
       decls env
   in
   (* Update stubs *)
@@ -1405,7 +1419,8 @@ let transl_type_decl env rec_flag sdecl_list =
 
 let transl_extension_constructor env type_path type_params
                                  typext_params priv sext =
-  let id = Ident.create sext.pext_name.txt in
+  let scope = Ctype.create_scope () in
+  let id = Ident.create_scoped ~scope sext.pext_name.txt in
   let args, ret_type, kind =
     match sext.pext_kind with
       Pext_decl(sargs, sret_type) ->
@@ -1424,7 +1439,7 @@ let transl_extension_constructor env type_path type_params
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
         let res, ret_type =
           if cdescr.cstr_generalized then
-            let params = Ctype.instance_list env type_params in
+            let params = Ctype.instance_list type_params in
             let res = Ctype.newconstr type_path params in
             let ret_type = Some (Ctype.newconstr type_path params) in
               res, ret_type
@@ -1560,20 +1575,22 @@ let transl_type_extension extend env loc styext =
   in
   let err =
     if type_decl.type_arity <> List.length styext.ptyext_params then
-      [Includecore.Arity]
+      Some Includecore.Arity
     else
       if List.for_all2
            (fun (c1, n1, _) (c2, n2, _) -> (not c2 || c1) && (not n2 || n1))
            type_variance
            (add_injectivity (List.map snd styext.ptyext_params))
-      then [] else [Includecore.Variance]
+      then None else Some Includecore.Variance
   in
-  if err <> [] then
-    raise (Error(loc, Extension_mismatch (type_path, err)));
+  begin match err with
+  | None -> ()
+  | Some err -> raise (Error(loc, Extension_mismatch (type_path, err)))
+  end;
   let ttype_params = make_params env styext.ptyext_params in
   let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
   List.iter2 (Ctype.unify_var env)
-    (Ctype.instance_list env type_decl.type_params)
+    (Ctype.instance_list type_decl.type_params)
     type_params;
   let constructors =
     List.map (transl_extension_constructor env type_path
@@ -1615,6 +1632,7 @@ let transl_type_extension extend env loc styext =
       tyext_params = ttype_params;
       tyext_constructors = constructors;
       tyext_private = styext.ptyext_private;
+      tyext_loc = styext.ptyext_loc;
       tyext_attributes = styext.ptyext_attributes; }
   in
     (tyext, newenv)
@@ -1641,7 +1659,20 @@ let transl_exception env sext =
   | None -> ()
   end;
   let newenv = Env.add_extension ~check:true ext.ext_id ext.ext_type env in
-    ext, newenv
+  ext, newenv
+
+let transl_type_exception env t =
+  Builtin_attributes.check_no_alert t.ptyexn_attributes;
+  let contructor, newenv =
+    Builtin_attributes.warning_scope t.ptyexn_attributes
+      (fun () ->
+         transl_exception env t.ptyexn_constructor
+      )
+  in
+  {tyexn_constructor = contructor;
+   tyexn_loc = t.ptyexn_loc;
+   tyexn_attributes = t.ptyexn_attributes}, newenv
+
 
 type native_repr_attribute =
   | Native_repr_attr_absent
@@ -1724,15 +1755,25 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
 
 
 let check_unboxable env loc ty =
-  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
-  try match ty.desc with
-  | Tconstr (p, _, _) ->
-    let tydecl = Env.find_type p env in
-    if tydecl.type_unboxed.unboxed then
-      Location.prerr_warning loc
-        (Warnings.Unboxable_type_in_prim_decl (Path.name p))
-  | _ -> ()
-  with Not_found -> ()
+  let check_type acc ty : Path.Set.t =
+    let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
+    try match ty.desc with
+      | Tconstr (p, _, _) ->
+        let tydecl = Env.find_type p env in
+        if tydecl.type_unboxed.default then
+          Path.Set.add p acc
+        else acc
+      | _ -> acc
+    with Not_found -> acc
+  in
+  let all_unboxable_types = Btype.fold_type_expr check_type Path.Set.empty ty in
+  Path.Set.fold
+    (fun p () ->
+       Location.prerr_warning loc
+         (Warnings.Unboxable_type_in_prim_decl (Path.name p))
+    )
+    all_unboxable_types
+    ()
 
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
@@ -1768,7 +1809,7 @@ let transl_value_decl env loc valdecl =
       && prim.prim_arity > 5
       && prim.prim_native_name = ""
       then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
-      Btype.iter_type_expr (check_unboxable env loc) ty;
+      check_unboxable env loc ty;
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
   in
@@ -1795,7 +1836,7 @@ let transl_value_decl env loc valdecl =
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
 let transl_with_constraint env id row_path orig_decl sdecl =
-  Env.mark_type_used env (Ident.name id) orig_decl;
+  Env.mark_type_used (Ident.name id) orig_decl;
   reset_type_variables();
   Ctype.begin_def();
   let tparams = make_params env sdecl.ptype_params in
@@ -1845,7 +1886,8 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_private = priv;
       type_manifest = man;
       type_variance = [];
-      type_newtype_level = None;
+      type_is_newtype = false;
+      type_expansion_scope = Btype.lowest_level;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
       type_immediate = false;
@@ -1893,7 +1935,8 @@ let abstract_type_decl arity =
       type_private = Public;
       type_manifest = None;
       type_variance = replicate_list Variance.full arity;
-      type_newtype_level = None;
+      type_is_newtype = false;
+      type_expansion_scope = Btype.lowest_level;
       type_loc = Location.none;
       type_attributes = [];
       type_immediate = false;
@@ -1904,9 +1947,10 @@ let abstract_type_decl arity =
   decl
 
 let approx_type_decl sdecl_list =
+  let scope = Ctype.create_scope () in
   List.map
     (fun sdecl ->
-      (Ident.create sdecl.ptype_name.txt,
+      (Ident.create_scoped ~scope sdecl.ptype_name.txt,
        abstract_type_decl (List.length sdecl.ptype_params)))
     sdecl_list
 
@@ -1916,8 +1960,7 @@ let approx_type_decl sdecl_list =
 let check_recmod_typedecl env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
-  let to_check path =
-    List.exists (fun id -> Path.isfree id path) recmod_ids in
+  let to_check path = Path.exists_free recmod_ids path in
   check_well_founded_decl env loc path decl to_check;
   check_recursion env loc path decl to_check
 
@@ -1984,25 +2027,35 @@ let report_error ppf = function
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[<v>The definition of %s contains a cycle:@ %a@]"
         s Printtyp.type_expr ty
-  | Definition_mismatch (ty, errs) ->
+  | Definition_mismatch (ty, None) ->
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@]"
+        "This variant or record definition" "does not match that of type"
+        Printtyp.type_expr ty
+  | Definition_mismatch (ty, Some err) ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
         "This variant or record definition" "does not match that of type"
         Printtyp.type_expr ty
         (Includecore.report_type_mismatch "the original" "this" "definition")
-        errs
+        err
   | Constraint_failed (ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
+      Printtyp.Naming_context.reset ();
       fprintf ppf "@[%s@ @[<hv>Type@ %a@ should be an instance of@ %a@]@]"
         "Constraints are not satisfied in this type."
-        Printtyp.type_expr ty Printtyp.type_expr ty'
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty)
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty')
   | Parameters_differ (path, ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
+      Printtyp.Naming_context.reset ();
       fprintf ppf
         "@[<hv>In the definition of %s, type@ %a@ should be@ %a@]"
-        (Path.name path) Printtyp.type_expr ty Printtyp.type_expr ty'
+        (Path.name path)
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty)
+        !Oprint.out_type (Printtyp.tree_of_typexp false ty')
   | Inconsistent_constraint (env, trace) ->
       fprintf ppf "The type constraints are not consistent.@.";
       Printtyp.report_unification_error ppf env trace
@@ -2031,7 +2084,7 @@ let report_error ppf = function
             )
             "case" (fun ppf c ->
                 fprintf ppf
-                  "%s of %a" (Ident.name c.Types.cd_id)
+                  "%a of %a" Printtyp.ident c.Types.cd_id
                   Printtyp.constructor_arguments c.Types.cd_args)
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
@@ -2053,13 +2106,13 @@ let report_error ppf = function
         "Type definition"
         Printtyp.path path
         "is not extensible"
-  | Extension_mismatch (path, errs) ->
+  | Extension_mismatch (path, err) ->
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%s@]%a@]"
         "This extension" "does not match the definition of type"
         (Path.name path)
         (Includecore.report_type_mismatch
            "the type" "this extension" "definition")
-        errs
+        err
   | Rebind_wrong_type (lid, env, trace) ->
       Printtyp.report_unification_error ppf env trace
         (function ppf ->
@@ -2129,15 +2182,16 @@ let report_error ppf = function
   | Multiple_native_repr_attributes ->
       fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
   | Cannot_unbox_or_untag_type Unboxed ->
-      fprintf ppf "Don't know how to unbox this type. Only float, int32, \
-                   int64 and nativeint can be unboxed"
+      fprintf ppf "@[Don't know how to unbox this type.@ \
+                    Only float, int32, int64 and nativeint can be unboxed.@]"
   | Cannot_unbox_or_untag_type Untagged ->
-      fprintf ppf "Don't know how to untag this type. Only int \
-                   can be untagged"
+      fprintf ppf "@[Don't know how to untag this type.@ \
+                   Only int can be untagged.@]"
   | Deep_unbox_or_untag_attribute kind ->
       fprintf ppf
-        "The attribute '%s' should be attached to a direct argument or \
-         result of the primitive, it should not occur deeply into its type"
+        "@[The attribute '%s' should be attached to@ \
+           a direct argument or result of the primitive,@ \
+           it should not occur deeply into its type.@]"
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
   | Bad_immediate_attribute ->
       fprintf ppf "@[%s@ %s@]"
@@ -2159,7 +2213,7 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, err) ->
-        Some (Location.error_of_printer loc report_error err)
+        Some (Location.error_of_printer ~loc report_error err)
       | _ ->
         None
     )

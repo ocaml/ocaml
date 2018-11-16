@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type ('env, 'a) var =
  | Zero : ('a * 'env, 'a) var
  | Succ : ('env, 'a) var -> ('b * 'env, 'a) var
@@ -22,7 +26,9 @@ type ('env, 'a) typ =
     Tint : ('env, int) typ
   | Tbool : ('env, bool) typ
   | Tvar : ('env, 'a) var -> ('env, 'a) typ
-Line _, characters 5-6:
+Line 15, characters 5-6:
+15 |    | _ -> .   (* error *)
+          ^
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it: (Tint, Tvar Zero)
 |}];;

@@ -261,8 +261,10 @@ let index_from s i c =
 (* duplicated in string.ml *)
 let index_from_opt s i c =
   let l = length s in
-  if i < 0 || i > l then invalid_arg "String.index_from_opt / Bytes.index_from_opt" else
-  index_rec_opt s l i c
+  if i < 0 || i > l then
+    invalid_arg "String.index_from_opt / Bytes.index_from_opt"
+  else
+    index_rec_opt s l i c
 
 (* duplicated in string.ml *)
 let rec rindex_rec s i c =
@@ -317,7 +319,7 @@ let rcontains_from s i c =
 
 type t = bytes
 
-let compare (x: t) (y: t) = Pervasives.compare x y
+let compare (x: t) (y: t) = Stdlib.compare x y
 external equal : t -> t -> bool = "caml_bytes_equal"
 
 (* Deprecated functions implemented via other deprecated functions *)
@@ -327,3 +329,121 @@ let lowercase s = map Char.lowercase s
 
 let capitalize s = apply1 Char.uppercase s
 let uncapitalize s = apply1 Char.lowercase s
+
+(** {1 Iterators} *)
+
+let to_seq s =
+  let rec aux i () =
+    if i = length s then Seq.Nil
+    else
+      let x = get s i in
+      Seq.Cons (x, aux (i+1))
+  in
+  aux 0
+
+let to_seqi s =
+  let rec aux i () =
+    if i = length s then Seq.Nil
+    else
+      let x = get s i in
+      Seq.Cons ((i,x), aux (i+1))
+  in
+  aux 0
+
+let of_seq i =
+  let n = ref 0 in
+  let buf = ref (make 256 '\000') in
+  let resize () =
+    (* resize *)
+    let new_len = min (2 * length !buf) Sys.max_string_length in
+    if length !buf = new_len then failwith "Bytes.of_seq: cannot grow bytes";
+    let new_buf = make new_len '\000' in
+    blit !buf 0 new_buf 0 !n;
+    buf := new_buf
+  in
+  Seq.iter
+    (fun c ->
+       if !n = length !buf then resize();
+       set !buf !n c;
+       incr n)
+    i;
+  sub !buf 0 !n
+
+(** {6 Binary encoding/decoding of integers} *)
+
+external get_uint8 : bytes -> int -> int = "%bytes_safe_get"
+external get_uint16_ne : bytes -> int -> int = "%caml_bytes_get16"
+external get_int32_ne : bytes -> int -> int32 = "%caml_bytes_get32"
+external get_int64_ne : bytes -> int -> int64 = "%caml_bytes_get64"
+external set_int8 : bytes -> int -> int -> unit = "%bytes_safe_set"
+external set_int16_ne : bytes -> int -> int -> unit = "%caml_bytes_set16"
+external set_int32_ne : bytes -> int -> int32 -> unit = "%caml_bytes_set32"
+external set_int64_ne : bytes -> int -> int64 -> unit = "%caml_bytes_set64"
+external swap16 : int -> int = "%bswap16"
+external swap32 : int32 -> int32 = "%bswap_int32"
+external swap64 : int64 -> int64 = "%bswap_int64"
+
+let get_int8 b i =
+  ((get_uint8 b i) lsl (Sys.int_size - 8)) asr (Sys.int_size - 8)
+
+let get_uint16_le b i =
+  if Sys.big_endian then swap16 (get_uint16_ne b i)
+  else get_uint16_ne b i
+
+let get_uint16_be b i =
+  if not Sys.big_endian then swap16 (get_uint16_ne b i)
+  else get_uint16_ne b i
+
+let get_int16_ne b i =
+  ((get_uint16_ne b i) lsl (Sys.int_size - 16)) asr (Sys.int_size - 16)
+
+let get_int16_le b i =
+  ((get_uint16_le b i) lsl (Sys.int_size - 16)) asr (Sys.int_size - 16)
+
+let get_int16_be b i =
+  ((get_uint16_be b i) lsl (Sys.int_size - 16)) asr (Sys.int_size - 16)
+
+let get_int32_le b i =
+  if Sys.big_endian then swap32 (get_int32_ne b i)
+  else get_int32_ne b i
+
+let get_int32_be b i =
+  if not Sys.big_endian then swap32 (get_int32_ne b i)
+  else get_int32_ne b i
+
+let get_int64_le b i =
+  if Sys.big_endian then swap64 (get_int64_ne b i)
+  else get_int64_ne b i
+
+let get_int64_be b i =
+  if not Sys.big_endian then swap64 (get_int64_ne b i)
+  else get_int64_ne b i
+
+let set_int16_le b i x =
+  if Sys.big_endian then set_int16_ne b i (swap16 x)
+  else set_int16_ne b i x
+
+let set_int16_be b i x =
+  if not Sys.big_endian then set_int16_ne b i (swap16 x)
+  else set_int16_ne b i x
+
+let set_int32_le b i x =
+  if Sys.big_endian then set_int32_ne b i (swap32 x)
+  else set_int32_ne b i x
+
+let set_int32_be b i x =
+  if not Sys.big_endian then set_int32_ne b i (swap32 x)
+  else set_int32_ne b i x
+
+let set_int64_le b i x =
+  if Sys.big_endian then set_int64_ne b i (swap64 x)
+  else set_int64_ne b i x
+
+let set_int64_be b i x =
+  if not Sys.big_endian then set_int64_ne b i (swap64 x)
+  else set_int64_ne b i x
+
+let set_uint8 = set_int8
+let set_uint16_ne = set_int16_ne
+let set_uint16_be = set_int16_be
+let set_uint16_le = set_int16_le

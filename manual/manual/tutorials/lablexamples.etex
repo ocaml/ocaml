@@ -1,5 +1,4 @@
 \chapter{Labels and variants} \label{c:labl-examples}
-\pdfchapterfold{-2}{Tutorial: Labels and variants}
 %HEVEA\cutname{lablexamples.html}
 {\it (Chapter written by Jacques Garrigue)}
 
@@ -9,7 +8,6 @@
 OCaml 3: labels, and polymorphic variants.
 
 \section{Labels}
-\pdfsection{Labels}
 
 If you have a look at modules ending in "Labels" in the standard
 library, you will see that function types have annotations you did not
@@ -119,8 +117,9 @@ non-optional argument. The criterion for deciding whether an optional
 argument has been omitted is the non-labeled application of an
 argument appearing after this optional argument in the function type.
 Note that if that argument is labeled, you will only be able to
-eliminate optional arguments through the special case for total
-applications.
+eliminate optional arguments by totally applying the function,
+omitting all optional arguments and omitting all labels for all
+remaining arguments.
 
 \begin{caml_example}{toplevel}
 let test ?(x = 0) ?(y = 0) () ?(z = 0) () = (x, y, z);;
@@ -312,7 +311,6 @@ is only used when a more detailed specification is needed.
 
 
 \section{Polymorphic variants}
-\pdfsection{Polymorphic variants}
 
 Variants as presented in section~\ref{s:tut-recvariants} are a
 powerful tool to build data structures and algorithms. However they

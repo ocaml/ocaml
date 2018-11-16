@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 (* Simple approximation of the space cost of a primitive. *)
 
@@ -53,7 +54,6 @@ let prim_size (prim : Lambda.primitive) args =
   | Parrayrefs _ -> 8
   | Parraysets Pgenarray -> 22
   | Parraysets _ -> 10
-  | Pbittest -> 3
   | Pbigarrayref (_, ndims, _, _) -> 4 + ndims * 6
   | Pbigarrayset (_, ndims, _, _) -> 4 + ndims * 6
   | Psequand | Psequor ->
@@ -177,6 +177,14 @@ module Threshold = struct
     | Can_inline_if_no_larger_than i1, Can_inline_if_no_larger_than i2 ->
       Can_inline_if_no_larger_than (min i1 i2)
 
+  let equal t1 t2 =
+    match t1, t2 with
+    | Never_inline, Never_inline -> true
+    | Can_inline_if_no_larger_than i1, Can_inline_if_no_larger_than i2 ->
+      i1 = i2
+    | (Never_inline | Can_inline_if_no_larger_than _), _ ->
+      false
+
 end
 
 let can_try_inlining lam inlining_threshold ~number_of_arguments
@@ -202,7 +210,9 @@ let can_try_inlining lam inlining_threshold ~number_of_arguments
         (inlining_threshold - size + bonus)
 
 let lambda_smaller lam ~than =
-  lambda_smaller' lam ~than <> None
+  match lambda_smaller' lam ~than with
+  | Some _ -> true
+  | None -> false
 
 let can_inline lam inlining_threshold ~bonus =
   match inlining_threshold with
@@ -422,9 +432,14 @@ module Whether_sufficient_benefit = struct
       new_size; evaluated_benefit; estimate = true;
     }
 
+  let is_nan f =
+    match Float.classify_float f with
+    | FP_nan -> true
+    | FP_normal | FP_subnormal | FP_zero | FP_infinite -> false
+
   let correct_branch_factor f =
-    f = f (* is not nan *)
-    && f >= 0.
+    (not (is_nan f))
+    && (Float.compare f 0. >= 0)
 
   let estimated_benefit t =
     if t.toplevel && t.lifting && t.branch_depth = 0 then begin
@@ -449,9 +464,9 @@ module Whether_sufficient_benefit = struct
             Clflags.Float_arg_helper.get ~key:t.round
               !Clflags.inline_branch_factor
           in
-          if not (factor = factor) (* nan *) then
+          if is_nan factor then
             Clflags.default_inline_branch_factor
-          else if factor < 0. then
+          else if Float.compare factor 0. < 0 then
             0.
           else
             factor
@@ -466,7 +481,9 @@ module Whether_sufficient_benefit = struct
     end
 
   let evaluate t =
-    float t.new_size -. estimated_benefit t <= float t.original_size
+    Float.compare
+      (float t.new_size -. estimated_benefit t)
+      (float t.original_size) <= 0
 
   let to_string t =
     let lifting = t.toplevel && t.lifting && t.branch_depth = 0 in

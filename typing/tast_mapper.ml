@@ -40,6 +40,7 @@ type mapper =
     module_binding: mapper -> module_binding -> module_binding;
     module_coercion: mapper -> module_coercion -> module_coercion;
     module_declaration: mapper -> module_declaration -> module_declaration;
+    module_substitution: mapper -> module_substitution -> module_substitution;
     module_expr: mapper -> module_expr -> module_expr;
     module_type: mapper -> module_type -> module_type;
     module_type_declaration:
@@ -54,9 +55,10 @@ type mapper =
     structure_item: mapper -> structure_item -> structure_item;
     typ: mapper -> core_type -> core_type;
     type_declaration: mapper -> type_declaration -> type_declaration;
-    type_declarations: mapper -> (rec_flag * type_declaration list) ->
-      (rec_flag * type_declaration list);
+    type_declarations: mapper -> (rec_flag * type_declaration list)
+      -> (rec_flag * type_declaration list);
     type_extension: mapper -> type_extension -> type_extension;
+    type_exception: mapper -> type_exception -> type_exception;
     type_kind: mapper -> type_kind -> type_kind;
     value_binding: mapper -> value_binding -> value_binding;
     value_bindings: mapper -> (rec_flag * value_binding list) ->
@@ -69,6 +71,7 @@ let id x = x
 let tuple2 f1 f2 (x, y) = (f1 x, f2 y)
 let tuple3 f1 f2 f3 (x, y, z) = (f1 x, f2 y, f3 z)
 let opt f = function None -> None | Some x -> Some (f x)
+
 
 let structure sub {str_items; str_type; str_final_env} =
   {
@@ -91,6 +94,8 @@ let module_declaration sub x =
   let md_type = sub.module_type sub x.md_type in
   {x with md_type}
 
+let module_substitution _ x = x
+
 let include_infos f x = {x with incl_mod = f x.incl_mod}
 
 let class_type_declaration sub x =
@@ -112,7 +117,7 @@ let structure_item sub {str_desc; str_loc; str_env} =
         let (rec_flag, list) = sub.type_declarations sub (rec_flag, list) in
         Tstr_type (rec_flag, list)
     | Tstr_typext te -> Tstr_typext (sub.type_extension sub te)
-    | Tstr_exception ext -> Tstr_exception (sub.extension_constructor sub ext)
+    | Tstr_exception ext -> Tstr_exception (sub.type_exception sub ext)
     | Tstr_module mb -> Tstr_module (sub.module_binding sub mb)
     | Tstr_recmodule list ->
         Tstr_recmodule (List.map (sub.module_binding sub) list)
@@ -174,6 +179,12 @@ let type_extension sub x =
   in
   {x with tyext_constructors; tyext_params}
 
+let type_exception sub x =
+  let tyexn_constructor =
+    sub.extension_constructor sub x.tyexn_constructor
+  in
+  {x with tyexn_constructor}
+
 let extension_constructor sub x =
   let ext_kind =
     match x.ext_kind with
@@ -208,6 +219,7 @@ let pat sub x =
         Tpat_or (sub.pat sub p1, sub.pat sub p2, rd)
     | Tpat_alias (p, id, s) -> Tpat_alias (sub.pat sub p, id, s)
     | Tpat_lazy p -> Tpat_lazy (sub.pat sub p)
+    | Tpat_exception p -> Tpat_exception (sub.pat sub p)
   in
   {x with pat_extra; pat_desc; pat_env}
 
@@ -239,11 +251,10 @@ let expr sub x =
           sub.expr sub exp,
           List.map (tuple2 id (opt (sub.expr sub))) list
         )
-    | Texp_match (exp, cases, exn_cases, p) ->
+    | Texp_match (exp, cases, p) ->
         Texp_match (
           sub.expr sub exp,
           sub.cases sub cases,
-          sub.cases sub exn_cases,
           p
         )
     | Texp_try (exp, cases) ->
@@ -371,12 +382,17 @@ let signature_item sub x =
     | Tsig_type (rec_flag, list) ->
         let (rec_flag, list) = sub.type_declarations sub (rec_flag, list) in
         Tsig_type (rec_flag, list)
+    | Tsig_typesubst list ->
+        let (_, list) = sub.type_declarations sub (Nonrecursive, list) in
+        Tsig_typesubst list
     | Tsig_typext te ->
         Tsig_typext (sub.type_extension sub te)
     | Tsig_exception ext ->
-        Tsig_exception (sub.extension_constructor sub ext)
+        Tsig_exception (sub.type_exception sub ext)
     | Tsig_module x ->
         Tsig_module (sub.module_declaration sub x)
+    | Tsig_modsubst x ->
+        Tsig_modsubst (sub.module_substitution sub x)
     | Tsig_recmodule list ->
         Tsig_recmodule (List.map (sub.module_declaration sub) list)
     | Tsig_modtype x ->
@@ -501,7 +517,7 @@ let class_expr sub x =
         Tcl_fun (
           label,
           sub.pat sub pat,
-          List.map (tuple3 id id (sub.expr sub)) priv,
+          List.map (tuple2 id (sub.expr sub)) priv,
           sub.class_expr sub cl,
           partial
         )
@@ -517,7 +533,7 @@ let class_expr sub x =
         Tcl_let (
           rec_flag,
           value_bindings,
-          List.map (tuple3 id id (sub.expr sub)) ivars,
+          List.map (tuple2 id (sub.expr sub)) ivars,
           sub.class_expr sub cl
         )
     | Tcl_ident (path, lid, tyl) ->
@@ -604,15 +620,21 @@ let class_structure sub x =
   let cstr_fields = List.map (sub.class_field sub) x.cstr_fields in
   {x with cstr_self; cstr_fields}
 
-let row_field sub = function
-  | Ttag (label, attrs, b, list) ->
-      Ttag (label, attrs, b, List.map (sub.typ sub) list)
-  | Tinherit ct -> Tinherit (sub.typ sub ct)
+let row_field sub x =
+  let rf_desc = match x.rf_desc with
+    | Ttag (label, b, list) ->
+        Ttag (label, b, List.map (sub.typ sub) list)
+    | Tinherit ct -> Tinherit (sub.typ sub ct)
+  in
+  { x with rf_desc; }
 
-let object_field sub = function
-  | OTtag (label, attrs, ct) ->
-      OTtag (label, attrs, (sub.typ sub ct))
-  | OTinherit ct -> OTinherit (sub.typ sub ct)
+let object_field sub x =
+  let of_desc = match x.of_desc with
+    | OTtag (label, ct) ->
+        OTtag (label, (sub.typ sub ct))
+    | OTinherit ct -> OTinherit (sub.typ sub ct)
+  in
+  { x with of_desc; }
 
 let class_field_kind sub = function
   | Tcfk_virtual ct -> Tcfk_virtual (sub.typ sub ct)
@@ -677,6 +699,7 @@ let default =
     module_binding;
     module_coercion;
     module_declaration;
+    module_substitution;
     module_expr;
     module_type;
     module_type_declaration;
@@ -692,6 +715,7 @@ let default =
     type_declaration;
     type_declarations;
     type_extension;
+    type_exception;
     type_kind;
     value_binding;
     value_bindings;

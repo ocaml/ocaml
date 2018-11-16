@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 open Printf
 
 (* Regression test for PR#5325: simultaneous read and write on socket
@@ -9,25 +15,14 @@ open Printf
        and copies to standard output
      - main program executes [writer], which writes to the same socket
        (the one connected to the echo server)
-     - thread [timeout] causes a failure if nothing happens in 10 seconds.
 *)
 
-let serve_connection s =
+let server sock =
+  let (s, _) = Unix.accept sock in
   let buf = Bytes.make 1024 '>' in
   let n = Unix.read s buf 2 (Bytes.length buf - 2) in
   ignore (Unix.write s buf 0 (n + 2));
   Unix.close s
-
-let server sock =
-  while true do
-    let (s, _) = Unix.accept sock in
-    ignore(Thread.create serve_connection s)
-  done
-
-let timeout () =
-  Thread.delay 10.0;
-  printf "Time out, exiting...\n%!";
-  exit 2
 
 let reader s =
   let buf = Bytes.make 1024 ' ' in
@@ -46,8 +41,7 @@ let _ =
   Unix.bind serv addr;
   let addr = Unix.getsockname serv in
   Unix.listen serv 5;
-  ignore (Thread.create server serv);
-  ignore (Thread.create timeout ());
+  let tserv = Thread.create server serv in
   Thread.delay 0.5;
   let client =
     Unix.socket (Unix.domain_of_sockaddr addr) Unix.SOCK_STREAM 0 in
@@ -55,4 +49,5 @@ let _ =
   let rd = Thread.create reader client in
   Thread.delay 0.5;
   writer client "Client data\n";
-  Thread.join rd
+  Thread.join rd;
+  Thread.join tserv

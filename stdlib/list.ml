@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* An alias for the type of lists. *)
+type 'a t = 'a list = [] | (::) of 'a * 'a list
+
 (* List operations *)
 
 let rec length_aux len = function
@@ -66,9 +69,16 @@ let rec init_aux i n f =
     let r = f i in
     r :: init_aux (i+1) n f
 
+let rev_init_threshold =
+  match Sys.backend_type with
+  | Sys.Native | Sys.Bytecode -> 10_000
+  (* We don't know the size of the stack, better be safe and assume it's
+     small. *)
+  | Sys.Other _ -> 50
+
 let init len f =
   if len < 0 then invalid_arg "List.init" else
-  if len > 10_000 then rev (init_tailrec_aux [] 0 len f)
+  if len > rev_init_threshold then rev (init_tailrec_aux [] 0 len f)
   else init_aux 0 len f
 
 let rec flatten = function
@@ -483,3 +493,24 @@ let rec compare_length_with l n =
     if n <= 0 then 1 else
       compare_length_with l (n-1)
 ;;
+
+(** {1 Iterators} *)
+
+let to_seq l =
+  let rec aux l () = match l with
+    | [] -> Seq.Nil
+    | x :: tail -> Seq.Cons (x, aux tail)
+  in
+  aux l
+
+let of_seq seq =
+  let rec direct depth seq : _ list =
+    if depth=0
+    then
+      Seq.fold_left (fun acc x -> x::acc) [] seq
+      |> rev (* tailrec *)
+    else match seq() with
+      | Seq.Nil -> []
+      | Seq.Cons (x, next) -> x :: direct (depth-1) next
+  in
+  direct 500 seq

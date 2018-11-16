@@ -14,13 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
-
-let rename_var var =
-  Mutable_variable.create
-    (Variable.unique_name var)
-  (* Variable.rename var *)
-  (*   ~current_compilation_unit:(Compilation_unit.get_current_exn ()) *)
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 let variables_not_used_as_local_reference (tree:Flambda.t) =
   let set = ref Variable.Set.empty in
@@ -118,7 +113,7 @@ let eliminate_ref_of_expr flam =
   else
     let convertible_variables =
       Variable.Map.mapi (fun v size ->
-          Array.init size (fun _ -> rename_var v))
+          Array.init size (fun _ -> Mutable_variable.create_from_variable v))
         convertible_variables
     in
     let convertible_variable v = Variable.Map.mem v convertible_variables in
@@ -172,8 +167,10 @@ let eliminate_ref_of_expr flam =
          | Some (var,size) ->
            if size = 1
            then begin
-             let mut = Variable.create "read_mutable" in
-             let new_value = Variable.create "offseted" in
+             let mut_name = Internal_variable_names.read_mutable in
+             let mut = Variable.create mut_name in
+             let new_value_name = Internal_variable_names.offsetted in
+             let new_value = Variable.create new_value_name in
              let expr =
                Flambda.create_let mut (Read_mutable var)
                  (Flambda.create_let new_value

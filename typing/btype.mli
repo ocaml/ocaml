@@ -90,8 +90,10 @@ val is_constr_row: allow_ident:bool -> type_expr -> bool
 
 val iter_type_expr: (type_expr -> unit) -> type_expr -> unit
         (* Iteration on types *)
+val fold_type_expr: ('a -> type_expr -> 'a) -> 'a -> type_expr -> 'a
 val iter_row: (type_expr -> unit) -> row_desc -> unit
         (* Iteration on types in a row *)
+val fold_row: ('a -> type_expr -> 'a) -> 'a -> row_desc -> 'a
 val iter_abbrev: (type_expr -> unit) -> abbrev_memo -> unit
         (* Iteration on types in an abbreviation list *)
 
@@ -198,6 +200,7 @@ val link_type: type_expr -> type_expr -> unit
         (* Set the desc field of [t1] to [Tlink t2], logging the old
            value if there is an active snapshot *)
 val set_level: type_expr -> int -> unit
+val set_scope: type_expr -> int -> unit
 val set_name:
     (Path.t * type_expr list) option ref ->
     (Path.t * type_expr list) option -> unit

@@ -56,6 +56,7 @@ and pattern_desc =
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * row_desc option
   | Tpat_lazy of pattern
+  | Tpat_exception of pattern
 
 and expression =
   { exp_desc: expression_desc;
@@ -80,7 +81,7 @@ and expression_desc =
   | Texp_function of { arg_label : arg_label; param : Ident.t;
       cases : case list; partial : partial; }
   | Texp_apply of expression * (arg_label * expression option) list
-  | Texp_match of expression * case list * case list * partial
+  | Texp_match of expression * case list * partial
   | Texp_try of expression * case list
   | Texp_tuple of expression list
   | Texp_construct of
@@ -145,11 +146,11 @@ and class_expr_desc =
     Tcl_ident of Path.t * Longident.t loc * core_type list
   | Tcl_structure of class_structure
   | Tcl_fun of
-      arg_label * pattern * (Ident.t * string loc * expression) list
+      arg_label * pattern * (Ident.t * expression) list
       * class_expr * partial
   | Tcl_apply of class_expr * (arg_label * expression option) list
   | Tcl_let of rec_flag * value_binding list *
-                  (Ident.t * string loc * expression) list * class_expr
+                  (Ident.t * expression) list * class_expr
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
     (* Visible instance variables, methods and concrete methods *)
@@ -226,7 +227,7 @@ and structure_item_desc =
   | Tstr_primitive of value_description
   | Tstr_type of rec_flag * type_declaration list
   | Tstr_typext of type_extension
-  | Tstr_exception of extension_constructor
+  | Tstr_exception of type_exception
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
@@ -300,9 +301,11 @@ and signature_item =
 and signature_item_desc =
     Tsig_value of value_description
   | Tsig_type of rec_flag * type_declaration list
+  | Tsig_typesubst of type_declaration list
   | Tsig_typext of type_extension
-  | Tsig_exception of extension_constructor
+  | Tsig_exception of type_exception
   | Tsig_module of module_declaration
+  | Tsig_modsubst of module_substitution
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
   | Tsig_open of open_description
@@ -318,6 +321,16 @@ and module_declaration =
      md_type: module_type;
      md_attributes: attribute list;
      md_loc: Location.t;
+    }
+
+and module_substitution =
+    {
+     ms_id: Ident.t;
+     ms_name: string loc;
+     ms_manifest: Path.t;
+     ms_txt: Longident.t loc;
+     ms_attributes: attributes;
+     ms_loc: Location.t;
     }
 
 and module_type_declaration =
@@ -385,12 +398,24 @@ and package_type = {
   pack_txt : Longident.t loc;
 }
 
-and row_field =
-    Ttag of string loc * attributes * bool * core_type list
+and row_field = {
+  rf_desc : row_field_desc;
+  rf_loc : Location.t;
+  rf_attributes : attributes;
+}
+
+and row_field_desc =
+    Ttag of string loc * bool * core_type list
   | Tinherit of core_type
 
-and object_field =
-  | OTtag of string loc * attributes * core_type
+and object_field = {
+  of_desc : object_field_desc;
+  of_loc : Location.t;
+  of_attributes : attributes;
+}
+
+and object_field_desc =
+  | OTtag of string loc * core_type
   | OTinherit of core_type
 
 and value_description =
@@ -453,7 +478,15 @@ and type_extension =
     tyext_params: (core_type * variance) list;
     tyext_constructors: extension_constructor list;
     tyext_private: private_flag;
+    tyext_loc: Location.t;
     tyext_attributes: attribute list;
+  }
+
+and type_exception =
+  {
+    tyexn_constructor: extension_constructor;
+    tyexn_loc: Location.t;
+    tyexn_attributes: attribute list;
   }
 
 and extension_constructor =
@@ -540,6 +573,7 @@ let iter_pattern_desc f = function
   | Tpat_array patl -> List.iter f patl
   | Tpat_or(p1, p2, _) -> f p1; f p2
   | Tpat_lazy p -> f p
+  | Tpat_exception p -> f p
   | Tpat_any
   | Tpat_var _
   | Tpat_constant _ -> ()
@@ -557,6 +591,7 @@ let map_pattern_desc f d =
   | Tpat_array pats ->
       Tpat_array (List.map f pats)
   | Tpat_lazy p1 -> Tpat_lazy (f p1)
+  | Tpat_exception p1 -> Tpat_exception (f p1)
   | Tpat_variant (x1, Some p1, x2) ->
       Tpat_variant (x1, Some (f p1), x2)
   | Tpat_or (p1,p2,path) ->
@@ -580,12 +615,15 @@ let rec bound_idents pat =
       bound_idents p1
   | d -> iter_pattern_desc bound_idents d
 
-let pat_bound_idents pat =
+let pat_bound_idents_with_loc pat =
   idents := [];
   bound_idents pat;
   let res = !idents in
   idents := [];
-  List.map fst res
+  res
+
+let pat_bound_idents pat =
+  List.map fst (pat_bound_idents_with_loc pat)
 
 let rev_let_bound_idents_with_loc bindings =
   idents := [];
@@ -617,3 +655,31 @@ let rec alpha_pat env p = match p.pat_desc with
 
 let mkloc = Location.mkloc
 let mknoloc = Location.mknoloc
+
+let split_pattern pat =
+  let combine_pattern_desc_opts ~into p1 p2 =
+    match p1, p2 with
+    | None, None -> None
+    | Some p, None
+    | None, Some p ->
+        Some p
+    | Some p1, Some p2 ->
+        (* The third parameter of [Tpat_or] is [Some _] only for "#typ"
+           patterns, which we do *not* expand. Hence we can put [None] here. *)
+        Some { into with pat_desc = Tpat_or (p1, p2, None) }
+  in
+  let rec split_pattern pat =
+    match pat.pat_desc with
+    | Tpat_or (p1, p2, None) ->
+        let vals1, exns1 = split_pattern p1 in
+        let vals2, exns2 = split_pattern p2 in
+        combine_pattern_desc_opts ~into:pat vals1 vals2,
+        (* We could change the pattern type for exception patterns to
+           [Predef.exn], but it doesn't really matter. *)
+        combine_pattern_desc_opts ~into:pat exns1 exns2
+    | Tpat_exception p ->
+        None, Some p
+    | _ ->
+        Some pat, None
+  in
+  split_pattern pat

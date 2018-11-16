@@ -281,9 +281,9 @@ let buffer_contents buf =
 
 (* Convert an integer conversion to char. *)
 let char_of_iconv iconv = match iconv with
-  | Int_d | Int_pd | Int_sd -> 'd' | Int_i | Int_pi | Int_si -> 'i'
-  | Int_x | Int_Cx -> 'x' | Int_X | Int_CX -> 'X' | Int_o | Int_Co -> 'o'
-  | Int_u -> 'u'
+  | Int_d | Int_pd | Int_sd | Int_Cd -> 'd' | Int_i | Int_pi | Int_si
+  | Int_Ci -> 'i' | Int_x | Int_Cx -> 'x' | Int_X | Int_CX -> 'X' | Int_o
+  | Int_Co -> 'o' | Int_u | Int_Cu -> 'u'
 
 (* Convert a float conversion to char. *)
 let char_of_fconv fconv = match fconv with
@@ -376,7 +376,7 @@ let bprint_ignored_flag buf ign_flag =
 
 let bprint_pad_opt buf pad_opt = match pad_opt with
   | None -> ()
-  | Some width -> buffer_add_string buf (string_of_int width)
+  | Some width -> buffer_add_string buf (Int.to_string width)
 
 (***)
 
@@ -386,7 +386,7 @@ fun buf pad -> match pad with
   | No_padding -> ()
   | Lit_padding (padty, n) ->
     bprint_padty buf padty;
-    buffer_add_string buf (string_of_int n);
+    buffer_add_string buf (Int.to_string n);
   | Arg_padding padty ->
     bprint_padty buf padty;
     buffer_add_char buf '*'
@@ -397,7 +397,7 @@ let bprint_precision : type a b . buffer -> (a, b) precision -> unit =
   | No_precision -> ()
   | Lit_precision n ->
     buffer_add_char buf '.';
-    buffer_add_string buf (string_of_int n);
+    buffer_add_string buf (Int.to_string n);
   | Arg_precision ->
     buffer_add_string buf ".*"
 
@@ -407,7 +407,8 @@ let bprint_precision : type a b . buffer -> (a, b) precision -> unit =
 let bprint_iconv_flag buf iconv = match iconv with
   | Int_pd | Int_pi -> buffer_add_char buf '+'
   | Int_sd | Int_si -> buffer_add_char buf ' '
-  | Int_Cx | Int_CX | Int_Co -> buffer_add_char buf '#'
+  | Int_Cx | Int_CX | Int_Co | Int_Cd | Int_Ci | Int_Cu ->
+      buffer_add_char buf '#'
   | Int_d | Int_i | Int_x | Int_X | Int_o | Int_u -> ()
 
 (* Print an complete int format in a buffer (ex: "%3.*d"). *)
@@ -885,7 +886,8 @@ fun fmtty -> match fmtty with
 
   | Char rest                  -> Char_ty (fmtty_of_fmt rest)
   | Caml_char rest             -> Char_ty (fmtty_of_fmt rest)
-  | Bool (pad, rest)           -> fmtty_of_padding_fmtty pad (Bool_ty (fmtty_of_fmt rest))
+  | Bool (pad, rest)           ->
+      fmtty_of_padding_fmtty pad (Bool_ty (fmtty_of_fmt rest))
   | Alpha rest                 -> Alpha_ty (fmtty_of_fmt rest)
   | Theta rest                 -> Theta_ty (fmtty_of_fmt rest)
   | Custom (arity, _, rest)    -> fmtty_of_custom arity (fmtty_of_fmt rest)
@@ -1373,36 +1375,36 @@ let string_to_caml_string str =
 (* Generate the format_int/int32/nativeint/int64 first argument
    from an int_conv. *)
 let format_of_iconv = function
-  | Int_d -> "%d" | Int_pd -> "%+d" | Int_sd -> "% d"
-  | Int_i -> "%i" | Int_pi -> "%+i" | Int_si -> "% i"
+  | Int_d | Int_Cd -> "%d" | Int_pd -> "%+d" | Int_sd -> "% d"
+  | Int_i | Int_Ci -> "%i" | Int_pi -> "%+i" | Int_si -> "% i"
   | Int_x -> "%x" | Int_Cx -> "%#x"
   | Int_X -> "%X" | Int_CX -> "%#X"
   | Int_o -> "%o" | Int_Co -> "%#o"
-  | Int_u -> "%u"
+  | Int_u | Int_Cu -> "%u"
 
 let format_of_iconvL = function
-  | Int_d -> "%Ld" | Int_pd -> "%+Ld" | Int_sd -> "% Ld"
-  | Int_i -> "%Li" | Int_pi -> "%+Li" | Int_si -> "% Li"
+  | Int_d | Int_Cd -> "%Ld" | Int_pd -> "%+Ld" | Int_sd -> "% Ld"
+  | Int_i | Int_Ci -> "%Li" | Int_pi -> "%+Li" | Int_si -> "% Li"
   | Int_x -> "%Lx" | Int_Cx -> "%#Lx"
   | Int_X -> "%LX" | Int_CX -> "%#LX"
   | Int_o -> "%Lo" | Int_Co -> "%#Lo"
-  | Int_u -> "%Lu"
+  | Int_u | Int_Cu -> "%Lu"
 
 let format_of_iconvl = function
-  | Int_d -> "%ld" | Int_pd -> "%+ld" | Int_sd -> "% ld"
-  | Int_i -> "%li" | Int_pi -> "%+li" | Int_si -> "% li"
+  | Int_d | Int_Cd -> "%ld" | Int_pd -> "%+ld" | Int_sd -> "% ld"
+  | Int_i | Int_Ci -> "%li" | Int_pi -> "%+li" | Int_si -> "% li"
   | Int_x -> "%lx" | Int_Cx -> "%#lx"
   | Int_X -> "%lX" | Int_CX -> "%#lX"
   | Int_o -> "%lo" | Int_Co -> "%#lo"
-  | Int_u -> "%lu"
+  | Int_u | Int_Cu -> "%lu"
 
 let format_of_iconvn = function
-  | Int_d -> "%nd" | Int_pd -> "%+nd" | Int_sd -> "% nd"
-  | Int_i -> "%ni" | Int_pi -> "%+ni" | Int_si -> "% ni"
+  | Int_d | Int_Cd -> "%nd" | Int_pd -> "%+nd" | Int_sd -> "% nd"
+  | Int_i | Int_Ci -> "%ni" | Int_pi -> "%+ni" | Int_si -> "% ni"
   | Int_x -> "%nx" | Int_Cx -> "%#nx"
   | Int_X -> "%nX" | Int_CX -> "%#nX"
   | Int_o -> "%no" | Int_Co -> "%#no"
-  | Int_u -> "%nu"
+  | Int_u | Int_Cu -> "%nu"
 
 (* Generate the format_float first argument form a float_conv. *)
 let format_of_fconv fconv prec =
@@ -1413,15 +1415,44 @@ let format_of_fconv fconv prec =
     buffer_add_char buf '%';
     bprint_fconv_flag buf fconv;
     buffer_add_char buf '.';
-    buffer_add_string buf (string_of_int prec);
+    buffer_add_string buf (Int.to_string prec);
     buffer_add_char buf symb;
     buffer_contents buf
 
+let transform_int_alt iconv s =
+  match iconv with
+  | Int_Cd | Int_Ci | Int_Cu ->
+    let digits =
+      let n = ref 0 in
+      for i = 0 to String.length s - 1 do
+        match String.unsafe_get s i with
+        | '0'..'9' -> incr n
+        | _ -> ()
+      done;
+      !n
+    in
+    let buf = Bytes.create (String.length s + (digits - 1) / 3) in
+    let pos = ref 0 in
+    let put c = Bytes.set buf !pos c; incr pos in
+    let left = ref ((digits - 1) mod 3 + 1) in
+    for i = 0 to String.length s - 1 do
+      match String.unsafe_get s i with
+      | '0'..'9' as c ->
+          if !left = 0 then (put '_'; left := 3); decr left; put c
+      | c -> put c
+    done;
+    Bytes.unsafe_to_string buf
+  | _ -> s
+
 (* Convert an integer to a string according to a conversion. *)
-let convert_int iconv n = format_int (format_of_iconv iconv) n
-let convert_int32 iconv n = format_int32 (format_of_iconvl iconv) n
-let convert_nativeint iconv n = format_nativeint (format_of_iconvn iconv) n
-let convert_int64 iconv n = format_int64 (format_of_iconvL iconv) n
+let convert_int iconv n =
+  transform_int_alt iconv (format_int (format_of_iconv iconv) n)
+let convert_int32 iconv n =
+  transform_int_alt iconv (format_int32 (format_of_iconvl iconv) n)
+let convert_nativeint iconv n =
+  transform_int_alt iconv (format_nativeint (format_of_iconvn iconv) n)
+let convert_int64 iconv n =
+  transform_int_alt iconv (format_int64 (format_of_iconvL iconv) n)
 
 (* Convert a float to string. *)
 (* Fix special case of "OCaml float format". *)
@@ -1480,39 +1511,39 @@ let string_of_fmtty fmtty =
      acc: rev list of printing entities (string, char, flush, formatting, ...).
      fmt: the format. *)
 let rec make_printf : type a b c d e f .
-    (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
+    ((b, c) acc -> f) -> (b, c) acc ->
     (a, b, c, d, e, f) fmt -> a =
-fun k o acc fmt -> match fmt with
+fun k acc fmt -> match fmt with
   | Char rest ->
     fun c ->
       let new_acc = Acc_data_char (acc, c) in
-      make_printf k o new_acc rest
+      make_printf k new_acc rest
   | Caml_char rest ->
     fun c ->
       let new_acc = Acc_data_string (acc, format_caml_char c) in
-      make_printf k o new_acc rest
+      make_printf k new_acc rest
   | String (pad, rest) ->
-    make_padding k o acc rest pad (fun str -> str)
+    make_padding k acc rest pad (fun str -> str)
   | Caml_string (pad, rest) ->
-    make_padding k o acc rest pad string_to_caml_string
+    make_padding k acc rest pad string_to_caml_string
   | Int (iconv, pad, prec, rest) ->
-    make_int_padding_precision k o acc rest pad prec convert_int iconv
+    make_int_padding_precision k acc rest pad prec convert_int iconv
   | Int32 (iconv, pad, prec, rest) ->
-    make_int_padding_precision k o acc rest pad prec convert_int32 iconv
+    make_int_padding_precision k acc rest pad prec convert_int32 iconv
   | Nativeint (iconv, pad, prec, rest) ->
-    make_int_padding_precision k o acc rest pad prec convert_nativeint iconv
+    make_int_padding_precision k acc rest pad prec convert_nativeint iconv
   | Int64 (iconv, pad, prec, rest) ->
-    make_int_padding_precision k o acc rest pad prec convert_int64 iconv
+    make_int_padding_precision k acc rest pad prec convert_int64 iconv
   | Float (fconv, pad, prec, rest) ->
-    make_float_padding_precision k o acc rest pad prec fconv
+    make_float_padding_precision k acc rest pad prec fconv
   | Bool (pad, rest) ->
-    make_padding k o acc rest pad string_of_bool
+    make_padding k acc rest pad string_of_bool
   | Alpha rest ->
-    fun f x -> make_printf k o (Acc_delay (acc, fun o -> f o x)) rest
+    fun f x -> make_printf k (Acc_delay (acc, fun o -> f o x)) rest
   | Theta rest ->
-    fun f -> make_printf k o (Acc_delay (acc, f)) rest
+    fun f -> make_printf k (Acc_delay (acc, f)) rest
   | Custom (arity, f, rest) ->
-    make_custom k o acc rest arity (f ())
+    make_custom k acc rest arity (f ())
   | Reader _ ->
     (* This case is impossible, by typing of formats. *)
     (* Indeed, since printf and co. take a format4 as argument, the 'd and 'e
@@ -1524,234 +1555,234 @@ fun k o acc fmt -> match fmt with
        itself recursively on the sub-format associated to %{...%}. *)
     assert false
   | Flush rest ->
-    make_printf k o (Acc_flush acc) rest
+    make_printf k (Acc_flush acc) rest
 
   | String_literal (str, rest) ->
-    make_printf k o (Acc_string_literal (acc, str)) rest
+    make_printf k (Acc_string_literal (acc, str)) rest
   | Char_literal (chr, rest) ->
-    make_printf k o (Acc_char_literal (acc, chr)) rest
+    make_printf k (Acc_char_literal (acc, chr)) rest
 
   | Format_arg (_, sub_fmtty, rest) ->
     let ty = string_of_fmtty sub_fmtty in
     (fun str ->
       ignore str;
-      make_printf k o (Acc_data_string (acc, ty)) rest)
+      make_printf k (Acc_data_string (acc, ty)) rest)
   | Format_subst (_, fmtty, rest) ->
-    fun (Format (fmt, _)) -> make_printf k o acc
+    fun (Format (fmt, _)) -> make_printf k acc
       (concat_fmt (recast fmt fmtty) rest)
 
   | Scan_char_set (_, _, rest) ->
     let new_acc = Acc_invalid_arg (acc, "Printf: bad conversion %[") in
-    fun _ -> make_printf k o new_acc rest
+    fun _ -> make_printf k new_acc rest
   | Scan_get_counter (_, rest) ->
     (* This case should be refused for Printf. *)
     (* Accepted for backward compatibility. *)
     (* Interpret %l, %n and %L as %u. *)
     fun n ->
       let new_acc = Acc_data_string (acc, format_int "%u" n) in
-      make_printf k o new_acc rest
+      make_printf k new_acc rest
   | Scan_next_char rest ->
     fun c ->
       let new_acc = Acc_data_char (acc, c) in
-      make_printf k o new_acc rest
+      make_printf k new_acc rest
   | Ignored_param (ign, rest) ->
-    make_ignored_param k o acc ign rest
+    make_ignored_param k acc ign rest
 
   | Formatting_lit (fmting_lit, rest) ->
-    make_printf k o (Acc_formatting_lit (acc, fmting_lit)) rest
+    make_printf k (Acc_formatting_lit (acc, fmting_lit)) rest
   | Formatting_gen (Open_tag (Format (fmt', _)), rest) ->
-    let k' koc kacc =
-      make_printf k koc (Acc_formatting_gen (acc, Acc_open_tag kacc)) rest in
-    make_printf k' o End_of_acc fmt'
+    let k' kacc =
+      make_printf k (Acc_formatting_gen (acc, Acc_open_tag kacc)) rest in
+    make_printf k' End_of_acc fmt'
   | Formatting_gen (Open_box (Format (fmt', _)), rest) ->
-    let k' koc kacc =
-      make_printf k koc (Acc_formatting_gen (acc, Acc_open_box kacc)) rest in
-    make_printf k' o End_of_acc fmt'
+    let k' kacc =
+      make_printf k (Acc_formatting_gen (acc, Acc_open_box kacc)) rest in
+    make_printf k' End_of_acc fmt'
 
   | End_of_format ->
-    k o acc
+    k acc
 
 (* Delay the error (Invalid_argument "Printf: bad conversion %_"). *)
 (* Generate functions to take remaining arguments (after the "%_"). *)
 and make_ignored_param : type x y a b c d e f .
-    (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
+    ((b, c) acc -> f) -> (b, c) acc ->
     (a, b, c, d, y, x) ignored ->
     (x, b, c, y, e, f) fmt -> a =
-fun k o acc ign fmt -> match ign with
-  | Ignored_char                    -> make_invalid_arg k o acc fmt
-  | Ignored_caml_char               -> make_invalid_arg k o acc fmt
-  | Ignored_string _                -> make_invalid_arg k o acc fmt
-  | Ignored_caml_string _           -> make_invalid_arg k o acc fmt
-  | Ignored_int (_, _)              -> make_invalid_arg k o acc fmt
-  | Ignored_int32 (_, _)            -> make_invalid_arg k o acc fmt
-  | Ignored_nativeint (_, _)        -> make_invalid_arg k o acc fmt
-  | Ignored_int64 (_, _)            -> make_invalid_arg k o acc fmt
-  | Ignored_float (_, _)            -> make_invalid_arg k o acc fmt
-  | Ignored_bool _                  -> make_invalid_arg k o acc fmt
-  | Ignored_format_arg _            -> make_invalid_arg k o acc fmt
-  | Ignored_format_subst (_, fmtty) -> make_from_fmtty k o acc fmtty fmt
+fun k acc ign fmt -> match ign with
+  | Ignored_char                    -> make_invalid_arg k acc fmt
+  | Ignored_caml_char               -> make_invalid_arg k acc fmt
+  | Ignored_string _                -> make_invalid_arg k acc fmt
+  | Ignored_caml_string _           -> make_invalid_arg k acc fmt
+  | Ignored_int (_, _)              -> make_invalid_arg k acc fmt
+  | Ignored_int32 (_, _)            -> make_invalid_arg k acc fmt
+  | Ignored_nativeint (_, _)        -> make_invalid_arg k acc fmt
+  | Ignored_int64 (_, _)            -> make_invalid_arg k acc fmt
+  | Ignored_float (_, _)            -> make_invalid_arg k acc fmt
+  | Ignored_bool _                  -> make_invalid_arg k acc fmt
+  | Ignored_format_arg _            -> make_invalid_arg k acc fmt
+  | Ignored_format_subst (_, fmtty) -> make_from_fmtty k acc fmtty fmt
   | Ignored_reader                  -> assert false
-  | Ignored_scan_char_set _         -> make_invalid_arg k o acc fmt
-  | Ignored_scan_get_counter _      -> make_invalid_arg k o acc fmt
-  | Ignored_scan_next_char          -> make_invalid_arg k o acc fmt
+  | Ignored_scan_char_set _         -> make_invalid_arg k acc fmt
+  | Ignored_scan_get_counter _      -> make_invalid_arg k acc fmt
+  | Ignored_scan_next_char          -> make_invalid_arg k acc fmt
 
 
 (* Special case of printf "%_(". *)
 and make_from_fmtty : type x y a b c d e f .
-    (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
+    ((b, c) acc -> f) -> (b, c) acc ->
     (a, b, c, d, y, x) fmtty ->
     (x, b, c, y, e, f) fmt -> a =
-fun k o acc fmtty fmt -> match fmtty with
-  | Char_ty rest            -> fun _ -> make_from_fmtty k o acc rest fmt
-  | String_ty rest          -> fun _ -> make_from_fmtty k o acc rest fmt
-  | Int_ty rest             -> fun _ -> make_from_fmtty k o acc rest fmt
-  | Int32_ty rest           -> fun _ -> make_from_fmtty k o acc rest fmt
-  | Nativeint_ty rest       -> fun _ -> make_from_fmtty k o acc rest fmt
-  | Int64_ty rest           -> fun _ -> make_from_fmtty k o acc rest fmt
-  | Float_ty rest           -> fun _ -> make_from_fmtty k o acc rest fmt
-  | Bool_ty rest            -> fun _ -> make_from_fmtty k o acc rest fmt
-  | Alpha_ty rest           -> fun _ _ -> make_from_fmtty k o acc rest fmt
-  | Theta_ty rest           -> fun _ -> make_from_fmtty k o acc rest fmt
-  | Any_ty rest             -> fun _ -> make_from_fmtty k o acc rest fmt
+fun k acc fmtty fmt -> match fmtty with
+  | Char_ty rest            -> fun _ -> make_from_fmtty k acc rest fmt
+  | String_ty rest          -> fun _ -> make_from_fmtty k acc rest fmt
+  | Int_ty rest             -> fun _ -> make_from_fmtty k acc rest fmt
+  | Int32_ty rest           -> fun _ -> make_from_fmtty k acc rest fmt
+  | Nativeint_ty rest       -> fun _ -> make_from_fmtty k acc rest fmt
+  | Int64_ty rest           -> fun _ -> make_from_fmtty k acc rest fmt
+  | Float_ty rest           -> fun _ -> make_from_fmtty k acc rest fmt
+  | Bool_ty rest            -> fun _ -> make_from_fmtty k acc rest fmt
+  | Alpha_ty rest           -> fun _ _ -> make_from_fmtty k acc rest fmt
+  | Theta_ty rest           -> fun _ -> make_from_fmtty k acc rest fmt
+  | Any_ty rest             -> fun _ -> make_from_fmtty k acc rest fmt
   | Reader_ty _             -> assert false
   | Ignored_reader_ty _     -> assert false
-  | Format_arg_ty (_, rest) -> fun _ -> make_from_fmtty k o acc rest fmt
-  | End_of_fmtty            -> make_invalid_arg k o acc fmt
+  | Format_arg_ty (_, rest) -> fun _ -> make_from_fmtty k acc rest fmt
+  | End_of_fmtty            -> make_invalid_arg k acc fmt
   | Format_subst_ty (ty1, ty2, rest) ->
     let ty = trans (symm ty1) ty2 in
-    fun _ -> make_from_fmtty k o acc (concat_fmtty ty rest) fmt
+    fun _ -> make_from_fmtty k acc (concat_fmtty ty rest) fmt
 
 (* Insert an Acc_invalid_arg in the accumulator and continue to generate
    closures to get the remaining arguments. *)
 and make_invalid_arg : type a b c d e f .
-    (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
+    ((b, c) acc -> f) -> (b, c) acc ->
     (a, b, c, d, e, f) fmt -> a =
-fun k o acc fmt ->
-  make_printf k o (Acc_invalid_arg (acc, "Printf: bad conversion %_")) fmt
+fun k acc fmt ->
+  make_printf k (Acc_invalid_arg (acc, "Printf: bad conversion %_")) fmt
 
 (* Fix padding, take it as an extra integer argument if needed. *)
 and make_padding : type x z a b c d e f .
-    (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
+    ((b, c) acc -> f) -> (b, c) acc ->
     (a, b, c, d, e, f) fmt ->
     (x, z -> a) padding -> (z -> string) -> x =
-  fun k o acc fmt pad trans -> match pad with
+  fun k acc fmt pad trans -> match pad with
   | No_padding ->
     fun x ->
       let new_acc = Acc_data_string (acc, trans x) in
-      make_printf k o new_acc fmt
+      make_printf k new_acc fmt
   | Lit_padding (padty, width) ->
     fun x ->
       let new_acc = Acc_data_string (acc, fix_padding padty width (trans x)) in
-      make_printf k o new_acc fmt
+      make_printf k new_acc fmt
   | Arg_padding padty ->
     fun w x ->
       let new_acc = Acc_data_string (acc, fix_padding padty w (trans x)) in
-      make_printf k o new_acc fmt
+      make_printf k new_acc fmt
 
 (* Fix padding and precision for int, int32, nativeint or int64. *)
 (* Take one or two extra integer arguments if needed. *)
 and make_int_padding_precision : type x y z a b c d e f .
-    (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
+    ((b, c) acc -> f) -> (b, c) acc ->
     (a, b, c, d, e, f) fmt ->
     (x, y) padding -> (y, z -> a) precision -> (int_conv -> z -> string) ->
     int_conv -> x =
-  fun k o acc fmt pad prec trans iconv -> match pad, prec with
+  fun k acc fmt pad prec trans iconv -> match pad, prec with
   | No_padding, No_precision ->
     fun x ->
       let str = trans iconv x in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | No_padding, Lit_precision p ->
     fun x ->
       let str = fix_int_precision p (trans iconv x) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | No_padding, Arg_precision ->
     fun p x ->
       let str = fix_int_precision p (trans iconv x) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | Lit_padding (padty, w), No_precision ->
     fun x ->
       let str = fix_padding padty w (trans iconv x) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | Lit_padding (padty, w), Lit_precision p ->
     fun x ->
       let str = fix_padding padty w (fix_int_precision p (trans iconv x)) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | Lit_padding (padty, w), Arg_precision ->
     fun p x ->
       let str = fix_padding padty w (fix_int_precision p (trans iconv x)) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | Arg_padding padty, No_precision ->
     fun w x ->
       let str = fix_padding padty w (trans iconv x) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | Arg_padding padty, Lit_precision p ->
     fun w x ->
       let str = fix_padding padty w (fix_int_precision p (trans iconv x)) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | Arg_padding padty, Arg_precision ->
     fun w p x ->
       let str = fix_padding padty w (fix_int_precision p (trans iconv x)) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
 
 (* Convert a float, fix padding and precision if needed. *)
 (* Take the float argument and one or two extra integer arguments if needed. *)
 and make_float_padding_precision : type x y a b c d e f .
-    (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
+    ((b, c) acc -> f) -> (b, c) acc ->
     (a, b, c, d, e, f) fmt ->
     (x, y) padding -> (y, float -> a) precision -> float_conv -> x =
-  fun k o acc fmt pad prec fconv -> match pad, prec with
+  fun k acc fmt pad prec fconv -> match pad, prec with
   | No_padding, No_precision ->
     fun x ->
       let str = convert_float fconv default_float_precision x in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | No_padding, Lit_precision p ->
     fun x ->
       let str = convert_float fconv p x in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | No_padding, Arg_precision ->
     fun p x ->
       let str = convert_float fconv p x in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | Lit_padding (padty, w), No_precision ->
     fun x ->
       let str = convert_float fconv default_float_precision x in
       let str' = fix_padding padty w str in
-      make_printf k o (Acc_data_string (acc, str')) fmt
+      make_printf k (Acc_data_string (acc, str')) fmt
   | Lit_padding (padty, w), Lit_precision p ->
     fun x ->
       let str = fix_padding padty w (convert_float fconv p x) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | Lit_padding (padty, w), Arg_precision ->
     fun p x ->
       let str = fix_padding padty w (convert_float fconv p x) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | Arg_padding padty, No_precision ->
     fun w x ->
       let str = convert_float fconv default_float_precision x in
       let str' = fix_padding padty w str in
-      make_printf k o (Acc_data_string (acc, str')) fmt
+      make_printf k (Acc_data_string (acc, str')) fmt
   | Arg_padding padty, Lit_precision p ->
     fun w x ->
       let str = fix_padding padty w (convert_float fconv p x) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
   | Arg_padding padty, Arg_precision ->
     fun w p x ->
       let str = fix_padding padty w (convert_float fconv p x) in
-      make_printf k o (Acc_data_string (acc, str)) fmt
+      make_printf k (Acc_data_string (acc, str)) fmt
 and make_custom : type x y a b c d e f .
-  (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
+  ((b, c) acc -> f) -> (b, c) acc ->
   (a, b, c, d, e, f) fmt ->
   (a, x, y) custom_arity -> x -> y =
-  fun k o acc rest arity f -> match arity with
-  | Custom_zero -> make_printf k o (Acc_data_string (acc, f)) rest
+  fun k acc rest arity f -> match arity with
+  | Custom_zero -> make_printf k (Acc_data_string (acc, f)) rest
   | Custom_succ arity ->
     fun x ->
-      make_custom k o acc rest arity (f x)
+      make_custom k acc rest arity (f x)
 
 let const x _ = x
 
-let rec make_iprintf : type a b c d e f.
-  (b -> f) -> b -> (a, b, c, d, e, f) fmt -> a =
+let rec make_iprintf : type a b c d e f state.
+  (state -> f) -> state -> (a, b, c, d, e, f) fmt -> a =
   fun k o fmt -> match fmt with
     | Char rest ->
         const (make_iprintf k o rest)
@@ -1814,7 +1845,7 @@ let rec make_iprintf : type a b c d e f.
     | Scan_next_char rest ->
         const (make_iprintf k o rest)
     | Ignored_param (ign, rest) ->
-        make_ignored_param (fun x _ -> k x) o (End_of_acc) ign rest
+        make_ignored_param (fun _ -> k o) (End_of_acc) ign rest
     | Formatting_lit (_, rest) ->
         make_iprintf k o rest
     | Formatting_gen (Open_tag (Format (fmt', _)), rest) ->
@@ -1824,8 +1855,8 @@ let rec make_iprintf : type a b c d e f.
     | End_of_format ->
         k o
 and fn_of_padding_precision :
-  type x y z a b c d e f.
-  (b -> f) -> b -> (a, b, c, d, e, f) fmt ->
+  type x y z a b c d e f state.
+  (state -> f) -> state -> (a, b, c, d, e, f) fmt ->
   (x, y) padding -> (y, z -> a) precision -> x =
   fun k o fmt pad prec -> match pad, prec with
     | No_padding   , No_precision    ->
@@ -1846,8 +1877,9 @@ and fn_of_padding_precision :
         const (const (make_iprintf k o fmt))
     | Arg_padding _, Arg_precision   ->
         const (const (const (make_iprintf k o fmt)))
-and fn_of_custom_arity : type x y a b c d e f .
-  (b -> f) -> b -> (a, b, c, d, e, f) fmt -> (a, x, y) custom_arity -> y =
+and fn_of_custom_arity : type x y a b c d e f state.
+  (state -> f) ->
+  state -> (a, b, c, d, e, f) fmt -> (a, x, y) custom_arity -> y =
   fun k o fmt -> function
     | Custom_zero ->
         make_iprintf k o fmt
@@ -1924,8 +1956,8 @@ let rec strput_acc b acc = match acc with
 (* Raise [Failure] with a pretty-printed error message. *)
 let failwith_message (Format (fmt, _)) =
   let buf = Buffer.create 256 in
-  let k () acc = strput_acc buf acc; failwith (Buffer.contents buf) in
-  make_printf k () End_of_acc fmt
+  let k acc = strput_acc buf acc; failwith (Buffer.contents buf) in
+  make_printf k End_of_acc fmt
 
 (******************************************************************************)
                             (* Formatting tools *)
@@ -2883,6 +2915,9 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | false, false, false, 'o' -> Int_o
     | false,  true, false, 'o' -> Int_Co
     | false, false, false, 'u' -> Int_u
+    | false,  true, false, 'd' -> Int_Cd
+    | false,  true, false, 'i' -> Int_Ci
+    | false,  true, false, 'u' -> Int_Cu
     | _, true, _, 'x' when legacy_behavior -> Int_Cx
     | _, true, _, 'X' when legacy_behavior -> Int_CX
     | _, true, _, 'o' when legacy_behavior -> Int_Co

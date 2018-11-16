@@ -1,6 +1,8 @@
 \documentclass[11pt]{book}
-\usepackage[latin1]{inputenc}
-%HEVEA\@def@charset{US-ASCII}%
+\usepackage{ae}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+% HEVEA\@def@charset{UTF-8}%
 \usepackage{alltt}
 \usepackage{fullpage}
 \usepackage{syntaxdef}
@@ -10,13 +12,21 @@
 \usepackage{caml-sl}
 \usepackage{ocamldoc}
 \usepackage{xspace}
-\newif\ifplaintext
-\plaintextfalse
-%\newif\ifpdf
-%\pdffalse
+
 \input{macros.tex}
 
-\usepackage{hyperref}
+% Add meta tag to the generated head tag
+\ifouthtml
+\let\oldmeta=\@meta
+\renewcommand{\@meta}{
+\oldmeta
+\begin{rawhtml}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+\end{rawhtml}
+}
+\fi
+
+\usepackage[colorlinks,linkcolor=blue]{hyperref}
 %\makeatletter \def\@wrindex#1#2{\xdef \@indexfile{\csname #1@idxfile\endcsname}\@@wrindex#2||\\}\makeatother
 \def\th{^{\hbox{\scriptsize th}}}
 

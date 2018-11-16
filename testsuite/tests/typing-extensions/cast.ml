@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* Ignore OCAMLRUNPARAM=b to be reproducible *)
 Printexc.record_backtrace false;;
 

@@ -55,7 +55,7 @@ let add_ccobjs l =
     lib_dllibs := !lib_dllibs @ l.lib_dllibs
   end
 
-let copy_object_file ppf oc name =
+let copy_object_file oc name =
   let file_name =
     try
       find_in_path !load_path name
@@ -68,7 +68,7 @@ let copy_object_file ppf oc name =
       let compunit_pos = input_binary_int ic in
       seek_in ic compunit_pos;
       let compunit = (input_value ic : compilation_unit) in
-      Bytelink.check_consistency ppf file_name compunit;
+      Bytelink.check_consistency file_name compunit;
       copy_compunit ic oc compunit;
       close_in ic;
       [compunit]
@@ -77,7 +77,7 @@ let copy_object_file ppf oc name =
       let toc_pos = input_binary_int ic in
       seek_in ic toc_pos;
       let toc = (input_value ic : library) in
-      List.iter (Bytelink.check_consistency ppf file_name) toc.lib_units;
+      List.iter (Bytelink.check_consistency file_name) toc.lib_units;
       add_ccobjs toc;
       List.iter (copy_compunit ic oc) toc.lib_units;
       close_in ic;
@@ -88,31 +88,30 @@ let copy_object_file ppf oc name =
     End_of_file -> close_in ic; raise(Error(Not_an_object_file file_name))
   | x -> close_in ic; raise x
 
-let create_archive ppf file_list lib_name =
+let create_archive file_list lib_name =
   let outchan = open_out_bin lib_name in
-  try
-    output_string outchan cma_magic_number;
-    let ofs_pos_toc = pos_out outchan in
-    output_binary_int outchan 0;
-    let units =
-      List.flatten(List.map (copy_object_file ppf outchan) file_list) in
-    let toc =
-      { lib_units = units;
-        lib_custom = !Clflags.custom_runtime;
-        lib_ccobjs = !Clflags.ccobjs @ !lib_ccobjs;
-        lib_ccopts = !Clflags.all_ccopts @ !lib_ccopts;
-        lib_dllibs = !Clflags.dllibs @ !lib_dllibs } in
-    let pos_toc = pos_out outchan in
-    Emitcode.marshal_to_channel_with_possibly_32bit_compat
-      ~filename:lib_name ~kind:"bytecode library"
-      outchan toc;
-    seek_out outchan ofs_pos_toc;
-    output_binary_int outchan pos_toc;
-    close_out outchan
-  with x ->
-    close_out outchan;
-    remove_file lib_name;
-    raise x
+  Misc.try_finally
+    ~always:(fun () -> close_out outchan)
+    ~exceptionally:(fun () -> remove_file lib_name)
+    (fun () ->
+       output_string outchan cma_magic_number;
+       let ofs_pos_toc = pos_out outchan in
+       output_binary_int outchan 0;
+       let units =
+         List.flatten(List.map (copy_object_file outchan) file_list) in
+       let toc =
+         { lib_units = units;
+           lib_custom = !Clflags.custom_runtime;
+           lib_ccobjs = !Clflags.ccobjs @ !lib_ccobjs;
+           lib_ccopts = !Clflags.all_ccopts @ !lib_ccopts;
+           lib_dllibs = !Clflags.dllibs @ !lib_dllibs } in
+       let pos_toc = pos_out outchan in
+       Emitcode.marshal_to_channel_with_possibly_32bit_compat
+         ~filename:lib_name ~kind:"bytecode library"
+         outchan toc;
+       seek_out outchan ofs_pos_toc;
+       output_binary_int outchan pos_toc;
+    )
 
 open Format
 

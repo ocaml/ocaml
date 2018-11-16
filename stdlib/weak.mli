@@ -22,15 +22,17 @@ type 'a t
 (** The type of arrays of weak pointers (weak arrays).  A weak
    pointer is a value that the garbage collector may erase whenever
    the value is not used any more (through normal pointers) by the
-   program.  Note that finalisation functions are run after the
-   weak pointers are erased.
+   program.  Note that finalisation functions are run before the
+   weak pointers are erased, because the finalisation functions
+   can make values alive again (before 4.03 the finalisation
+   functions were run after).
 
    A weak pointer is said to be full if it points to a value,
    empty if the value was erased by the GC.
 
    Notes:
    - Integers are not allocated and cannot be stored in weak arrays.
-   - Weak arrays cannot be marshaled using {!Pervasives.output_value}
+   - Weak arrays cannot be marshaled using {!Stdlib.output_value}
      nor the functions of the {!Marshal} module.
 *)
 
@@ -38,7 +40,8 @@ type 'a t
 val create : int -> 'a t
 (** [Weak.create n] returns a new weak array of length [n].
    All the pointers are initially empty.  Raise [Invalid_argument]
-   if [n] is negative or greater than {!Sys.max_array_length}[-1].*)
+   if [n] is not comprised between zero and
+   {!Obj.Ephemeron.max_ephe_length} (limits included).*)
 
 val length : 'a t -> int
 (** [Weak.length ar] returns the length (number of elements) of
@@ -114,7 +117,7 @@ module type S = sig
   type t
     (** The type of tables that contain elements of type [data].
         Note that weak hash sets cannot be marshaled using
-        {!Pervasives.output_value} or the functions of the {!Marshal}
+        {!Stdlib.output_value} or the functions of the {!Marshal}
         module. *)
 
   val create : int -> t

@@ -23,7 +23,7 @@
 
 ;; User modifiable variables
 
-;; Whether you want the output buffer to be diplayed when you send a phrase
+;; Whether you want the output buffer to be displayed when you send a phrase
 
 (defvar caml-display-when-eval t
   "*If true, display the inferior caml buffer when evaluating expressions.")
@@ -205,7 +205,7 @@ Input and output via buffer `*inferior-caml*'."
     (goto-char loc)))
 
 
-;;; orgininal inf-caml.el ended here
+;;; original inf-caml.el ended here
 
 ;; as eval-phrase, but ignores errors.
 
@@ -225,16 +225,16 @@ should lies."
     beg))
 
 (defvar caml-previous-output nil
-  "tells the beginning of output in the shell-output buffer, so that the
-output can be retreived later, asynchronously.")
+  "Tells the beginning of output in the shell-output buffer, so that the
+output can be retrieved later, asynchronously.")
 
-;; enriched version of eval-phrase, to repport errors.
+;; enriched version of eval-phrase, to report errors.
 
 (defun inferior-caml-eval-phrase (arg &optional min max)
   "Send the phrase containing the point to the CAML process.
 With prefix-arg send as many phrases as its numeric value,
-If an error occurs during evalutaion, stop at this phrase and
-repport the error.
+If an error occurs during evaluation, stop at this phrase and
+report the error.
 
 Return nil if noerror and position of error if any.
 

@@ -1,3 +1,9 @@
+(* TEST
+   plugins="odoc_test.ml"
+   * ocamldoc
+    flags="-I ${ocamlsrcdir}/ocamldoc"
+*)
+
 (** Testing display of inline record.
 
    @test_types_display

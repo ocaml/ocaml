@@ -171,7 +171,8 @@ let rec rename i sub =
       let previous_exit_subst = !exit_subst in
       exit_subst := new_subst @ !exit_subst;
       let (new_body, sub_body) = rename body sub in
-      let res = List.map2 (fun (_, handler) (_, new_subst) -> rename handler !new_subst)
+      let res =
+        List.map2 (fun (_, handler) (_, new_subst) -> rename handler !new_subst)
           handlers new_subst in
       exit_subst := previous_exit_subst;
       let merged_subst =
@@ -221,7 +222,7 @@ let fundecl f =
   { fun_name = f.fun_name;
     fun_args = new_args;
     fun_body = new_body;
-    fun_fast = f.fun_fast;
+    fun_codegen_options = f.fun_codegen_options;
     fun_dbg  = f.fun_dbg;
     fun_spacetime_shape = f.fun_spacetime_shape;
   }

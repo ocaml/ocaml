@@ -157,37 +157,37 @@ has excellent documentation.
 
 === Complete file listing
 
+  BOOTSTRAP.adoc::        instructions for bootstrapping
   Changes::               what's new with each release
-  configure::             configure script
   CONTRIBUTING.md::       how to contribute to OCaml
   HACKING.adoc::          this file
   INSTALL.adoc::          instructions for installation
   LICENSE::               license and copyright notice
   Makefile::              main Makefile
-  Makefile.nt::           Windows Makefile (deprecated)
+  Makefile.common::       common Makefile definitions
   Makefile.tools::        used by manual/ and testsuite/ Makefiles
   README.adoc::           general information on the compiler distribution
   README.win32.adoc::     general information on the Windows ports of OCaml
   VERSION::               version string
   asmcomp/::              native-code compiler and linker
-  asmrun/::               native-code runtime library
   boot/::                 bootstrap compiler
   bytecomp/::             bytecode compiler and linker
-  byterun/::              bytecode interpreter and runtime system
   compilerlibs/::         the OCaml compiler as a library
   config/::               configuration files
+  configure::             configure script
   debugger/::             source-level replay debugger
   driver/::               driver code for the compilers
   emacs/::                editing mode and debugger interface for GNU Emacs
-  experimental/::         experiments not built by default
   flexdll/::              git submodule -- see link:README.win32.adoc[]
   lex/::                  lexer generator
   man/::                  man pages
   manual/::               system to generate the manual
   middle_end/::           the flambda optimisation phase
   ocamldoc/::             documentation generator
+  ocamltest/::            test driver
   otherlibs/::            several additional libraries
   parsing/::              syntax analysis -- see link:parsing/HACKING.adoc[]
+  runtime/::              bytecode interpreter and runtime systems
   stdlib/::               standard library
   testsuite/::            tests -- see link:testsuite/HACKING.adoc[]
   tools/::                various utilities
@@ -224,19 +224,19 @@ installation, the following targets may be of use:
 === Bootstrapping
 
 The OCaml compiler is bootstrapped. This means that
-previously-compiled bytecode versions of the compiler, dependency
-generator and lexer are included in the repository under the
+previously-compiled bytecode versions of the compiler and lexer are
+included in the repository under the
 link:boot/[] directory. These bytecode images are used once the
 bytecode runtime (which is written in C) has been built to compile the
 standard library and then to build a fresh compiler. Details can be
-found in link:INSTALL.adoc#bootstrap[INSTALL.adoc].
+found in link:BOOTSTRAP.adoc[].
 
 === Continuous integration
 
 ==== Github's CI: Travis and AppVeyor
 
 The script that is run on Travis continuous integration servers is
-link:.travis-ci.sh[]; its configuration can be found as
+link:tools/ci/travis/travis-ci.sh[]; its configuration can be found as
 a Travis configuration file in link:.travis.yml[].
 
 For example, if you want to reproduce the default build on your
@@ -244,7 +244,7 @@ machine, you can use the configuration values and run command taken from
 link:.travis.yml[]:
 
 ----
-CI_KIND=build XARCH=x64 bash -ex .travis-ci.sh
+CI_KIND=build XARCH=x64 bash -ex tools/ci/travis/travis-ci.sh
 ----
 
 The scripts support two other kinds of tests (values of the
@@ -274,11 +274,11 @@ You do not need to be an INRIA employee to open an account on this
 jenkins service; anyone can create an account there to access build
 logs and manually restart builds. If you
 would like to do this but have trouble doing it, please email
-ocaml-ci-admin@inria.fr
+ocaml-ci-admin@inria.fr.
 
 To be notified by email of build failures, you can subscribe to the
 ocaml-ci-notifications@inria.fr mailing list by visiting
-https://sympa.inria.fr/sympa/info/ocaml-ci-notifications[its web page]
+https://sympa.inria.fr/sympa/info/ocaml-ci-notifications[its web page.]
 
 ==== Running INRIA's CI on a publicly available git branch
 
@@ -306,5 +306,26 @@ OCaml's GitHub repository and then push "mybranch" to your fork.
 
 7. You should receive a bunch of e-mails with the build logs for each
 slave and each tested configuration (with and without flambda) attached.
+
+==== Changing what the CI does
+
+INRIA's CI "main" and "precheck" jobs run the script
+tools/ci-build. In particular, when running the CI on a publicly
+available branch via the "precheck" job as explained in the previous
+section, you can edit this script to change what the CI will test.
+
+For instance, parallel builds are only tested for the "trunk"
+branch. In order to use "precheck" to test parallel build on a custom
+branch, add this at the beginning of tools/ci-build:
+
+----
+OCAML_JOBS=10
+----
+
+=== The `caml-commits` mailing list
+
+If you would like to receive email notifications of all commits made to the main
+git repository, you can subscribe to the caml-commits@inria.fr mailing list by
+visiting https://sympa.inria.fr/sympa/info/caml-commits[its web page.]
 
 Happy Hacking!

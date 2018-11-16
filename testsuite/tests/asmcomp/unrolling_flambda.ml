@@ -1,3 +1,7 @@
+(* TEST
+   * flambda
+   ** native
+*)
 
 let rec f x =
   if x > 0 then f (x - 1)

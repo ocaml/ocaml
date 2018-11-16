@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type tag = [`TagA | `TagB | `TagC];;
 
 type 'a poly =
@@ -35,7 +39,9 @@ val intB : [< `TagB ] -> int = <fun>
 val intAorB : [< `TagA of int | `TagB ] -> int = <fun>
 type _ wrapPoly =
     WrapPoly : 'a poly -> ([< `TagA of int | `TagB ] as 'a) wrapPoly
-Line _, characters 23-27:
+Line 25, characters 23-27:
+25 |     | WrapPoly ATag -> intA
+                            ^^^^
 Error: This expression has type ([< `TagA of 'b ] as 'a) -> 'b
        but an expression was expected of type a -> int
        Type [< `TagA of 'b ] as 'a is not compatible with type
@@ -46,6 +52,8 @@ Error: This expression has type ([< `TagA of 'b ] as 'a) -> 'b
 let _ =  example6 (WrapPoly AandBTags) `TagB (* This causes a seg fault *)
 ;;
 [%%expect{|
-Line _, characters 9-17:
+Line 1, characters 9-17:
+1 | let _ =  example6 (WrapPoly AandBTags) `TagB (* This causes a seg fault *)
+             ^^^^^^^^
 Error: Unbound value example6
 |}];;

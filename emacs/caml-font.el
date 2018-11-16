@@ -30,11 +30,6 @@
     (set-face-foreground 'caml-font-doccomment-face "Red")
     'caml-font-doccomment-face))
 
-(unless (facep 'font-lock-preprocessor-face)
-  (defvar font-lock-preprocessor-face
-    (copy-face 'font-lock-builtin-face
-               'font-lock-preprocessor-face)))
-
 (defconst caml-font-lock-keywords
   `(
 ;modules and constructors
@@ -62,7 +57,7 @@
                            "when" "while" "with")
                          'words))
     . font-lock-constant-face)
-   ("\\<raise\\|failwith\\|invalid_arg\\>"
+   ("\\<\\(raise\\|failwith\\|invalid_arg\\)\\>"
     . font-lock-comment-face)
 ;labels (and open)
    ("\\(\\([~?]\\|\\<\\)[a-z][a-zA-Z0-9_']*:\\)[^:=]"

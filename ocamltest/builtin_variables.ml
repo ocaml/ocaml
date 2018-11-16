@@ -22,104 +22,111 @@
   should be similar. Is there a way to enforce this?
 *)
 
-open Variables (* Should not be necessary with a ppx *)
-
-let arguments = make ("arguments",
+let arguments = Variables.make ("arguments",
   "Arguments passed to executed programs and scripts")
 
-let c_preprocessor = make ("c_preprocessor",
-  "Command to use to invoke the C preprocessor")
+let cwd = Variables.make ("cwd",
+  "Used to change current working directory, but not updated")
 
-let compiler_directory_suffix = make ("compiler_directory_suffix",
-  "Suffix to add to the directory where the test will be compiled")
+let commandline = Variables.make ("commandline",
+  "Specify the commandline of a tool")
 
-let compiler_reference = make ("compiler_reference",
-  "Reference file for compiler output for ocamlc.byte and ocamlopt.byte")
+let exit_status = Variables.make ("exit_status",
+  "Expected program exit status")
 
-let compiler_reference2 = make ("compiler_reference2",
-  "Reference file for compiler output for ocamlc.opt and ocamlopt.opt")
-
-let compiler_reference_suffix = make ("compiler_reference_suffix",
-  "Suffix to add to the file name containing the reference for compiler output")
-
-let compiler_output = make ("compiler_output",
-  "Where to log output of bytecode compilers")
-
-let compiler_output2 = make ("compiler_output2",
-  "Where to log output of native compilers")
-
-let ocamlc_flags = make ("ocamlc_flags",
-  "Flags passed to ocamlc.byte and ocamlc.opt")
-
-let ocamlc_default_flags = make ("ocamlc_default_flags",
-  "Flags passed by default to ocamlc.byte and ocamlc.opt")
-
-let files = make ("files",
+let files = Variables.make ("files",
   "Files used by the tests")
 
-let flags = make ("flags",
-  "Flags passed to all the compilers")
+let make = Variables.make ("MAKE",
+  "Command used to invoke make")
 
-let libraries = make ("libraries",
-  "Libraries the program should be linked with")
+let ocamltest_response = Variables.make ("ocamltest_response",
+  "File used by hooks to send back information.")
 
-let modules = make ("modules",
-  "Other modules of the test")
+let ocamltest_log = Variables.make ("ocamltest_log",
+  "Path to log file for the current test")
 
-let ocamlopt_flags = make ("ocamlopt_flags",
-  "Flags passed to ocamlopt.byte and ocamlopt.opt")
-
-let ocamlopt_default_flags = make ("ocamlopt_default_flags",
-  "Flags passed by default to ocamlopt.byte and ocamlopt.opt")
-
-let ocaml_byte_exit_status = make ("ocaml_byte_exit_status",
-  "Expected exit status of ocaml.byte")
-
-let ocamlc_byte_exit_status = make ("ocamlc_byte_exit_status",
-  "Expected exit status of ocac.byte")
-
-let ocamlopt_byte_exit_status = make ("ocamlopt_byte_exit_status",
-  "Expected exit status of ocamlopt.byte")
-
-let ocaml_opt_exit_status = make ("ocaml_opt_exit_status",
-  "Expected exit status of ocaml.opt")
-
-let ocamlc_opt_exit_status = make ("ocamlc_opt_exit_status",
-  "Expected exit status of ocac.opt")
-
-let ocamlopt_opt_exit_status = make ("ocamlopt_opt_exit_status",
-  "Expected exit status of ocamlopt.opt")
-
-let output = make ("output",
+let output = Variables.make ("output",
   "Where the output of executing the program is saved")
 
-let program = make ("program",
+let program = Variables.make ("program",
   "Name of program produced by ocamlc.byte and ocamlopt.byte")
-let program2 = make ("program2",
+let program2 = Variables.make ("program2",
   "Name of program produced by ocamlc.opt and ocamlopt.opt")
 
-let reference = make ("reference",
+let promote = Variables.make ("promote",
+  "Set to \"true\" to overwrite reference files with the test output")
+
+let reason = Variables.make ("reason",
+  "Let a test report why it passed/skipped/failed.")
+
+let reference = Variables.make ("reference",
   "Path of file to which program output should be compared")
 
-let script = make ("script",
+let skip_header_lines =
+  Variables.make ( "skip_header_lines",
+         "The number of lines to skip when comparing program output \
+          with the reference file")
+
+let skip_header_bytes =
+  Variables.make ( "skip_header_bytes",
+         "The number of bytes to skip when comparing program output \
+          with the reference file")
+
+let script = Variables.make ("script",
   "External script to run")
 
-let stdin = make ("stdin", "Default standard input")
-let stdout = make ("stdout", "Default standard output")
-let stderr = make ("stderr", "Default standard error")
+let stdin = Variables.make ("stdin", "Default standard input")
+let stdout = Variables.make ("stdout", "Default standard output")
+let stderr = Variables.make ("stderr", "Default standard error")
 
-let test_build_directory = make ("test_build_directory",
+let test_build_directory = Variables.make ("test_build_directory",
   "Directory for files produced during a test")
 
-let test_file = make ("test_file",
+let test_build_directory_prefix = Variables.make ("test_build_directory_prefix",
+  "Directory under which all test directories should be created")
+
+let test_file = Variables.make ("test_file",
   "Name of file containing the specification of which tests to run")
 
-let test_source_directory = make ("test_source_directory",
+let test_source_directory = Variables.make ("test_source_directory",
   "Directory containing the test source files")
 
-let _ = List.iter register_variable
+let test_pass = Variables.make ("TEST_PASS",
+  "Exit code to let a script report success")
+
+let test_skip = Variables.make ("TEST_SKIP",
+  "Exit code to let a script report skipping")
+
+let test_fail = Variables.make ("TEST_FAIL",
+  "Exit code to let a script report failure")
+
+
+
+let _ = List.iter Variables.register_variable
   [
-    c_preprocessor;
-    ocamlc_default_flags;
-    ocamlopt_default_flags
+    arguments;
+    cwd;
+    commandline;
+    exit_status;
+    files;
+    make;
+    ocamltest_response;
+    ocamltest_log;
+    output;
+    program; program2;
+    reason;
+    reference;
+    skip_header_lines;
+    skip_header_bytes;
+    script;
+    stdin;
+    stdout;
+    stderr;
+    test_build_directory;
+    test_file;
+    test_source_directory;
+    test_pass;
+    test_skip;
+    test_fail;
   ]

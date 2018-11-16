@@ -1,9 +1,65 @@
+(* TEST
+
+include dynlink
+
+ld_library_path += "${test_build_directory}"
+
+files = "plug1.ml plug2.ml registry.ml stub1.c stub2.c"
+
+* shared-libraries
+** setup-ocamlc.byte-build-env
+*** ocamlc.byte
+compile_only = "true"
+all_modules = "registry.ml stub1.c stub2.c plug1.ml plug2.ml main.ml"
+**** ocamlmklib
+program = "plug1"
+modules = "stub1.${objext}"
+***** ocamlmklib
+program = "plug2"
+modules = "stub2.${objext}"
+****** ocamlmklib
+program = "plug1"
+modules = "plug1.cmo"
+******* ocamlmklib
+program = "plug2"
+modules = "plug2.cmo"
+
+compile_only = "false"
+
+******** ocamlc.byte
+program = "${test_build_directory}/main.exe"
+all_modules = "registry.cmo main.cmo"
+********* run
+arguments = "plug1.cma plug2.cma"
+output = "main.output"
+********** check-program-output
+
+******** ocamlc.byte
+program = "${test_build_directory}/static.exe"
+flags = "-linkall"
+all_modules = "registry.cmo plug1.cma plug2.cma"
+********* run
+output = "static.output"
+********** check-program-output
+reference = "${test_source_directory}/static.reference"
+
+******** ocamlc.byte
+program = "${test_build_directory}/custom.exe"
+flags = "-custom -linkall -I ."
+all_modules = "registry.cmo plug2.cma plug1.cma"
+use_runtime = "false"
+********* run
+output = "custom.output"
+********** check-program-output
+reference = "${test_source_directory}/custom.reference"
+
+*)
+
 let f x = print_string "This is Main.f\n"; x
 
 let () = Registry.register f
 
 let _ =
-  Dynlink.init ();
   Dynlink.allow_unsafe_modules true;
   for i = 1 to Array.length Sys.argv - 1 do
     let name = Sys.argv.(i) in

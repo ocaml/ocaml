@@ -14,13 +14,22 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
-let name_expr (named : Flambda.named) ~name : Flambda.t =
+let name_expr ~name (named : Flambda.named) : Flambda.t =
   let var =
     Variable.create
       ~current_compilation_unit:(Compilation_unit.get_current_exn ())
       name
+  in
+  Flambda.create_let var named (Var var)
+
+let name_expr_from_var ~var (named : Flambda.named) : Flambda.t =
+  let var =
+    Variable.rename
+      ~current_compilation_unit:(Compilation_unit.get_current_exn ())
+      var
   in
   Flambda.create_let var named (Var var)
 
@@ -69,15 +78,13 @@ let description_of_toplevel_node (expr : Flambda.t) =
   | While _ -> "while"
   | For _ -> "for"
 
-let compare_const (c1 : Flambda.const) (c2 : Flambda.const) =
-  match c1, c2 with
-  | Int v1, Int v2 -> compare v1 v2
-  | Char v1, Char v2 -> compare v1 v2
-  | Const_pointer v1, Const_pointer v2 -> compare v1 v2
-  | Int _, _ -> -1
-  | _, Int _ -> 1
-  | Char _, _ -> -1
-  | _, Char _ -> 1
+let equal_direction_flag
+      (x : Asttypes.direction_flag)
+      (y : Asttypes.direction_flag) =
+  match x, y with
+  | Upto, Upto -> true
+  | Downto, Downto -> true
+  | (Upto | Downto), _ -> false
 
 let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   l1 == l2 || (* it is ok for the string case: if they are physically the same,
@@ -86,7 +93,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | Var v1 , Var v2  -> Variable.equal v1 v2
   | Var _, _ | _, Var _ -> false
   | Apply a1 , Apply a2  ->
-    a1.kind = a2.kind
+    Flambda.equal_call_kind a1.kind a2.kind
       && Variable.equal a1.func a2.func
       && Misc.Stdlib.List.equal Variable.equal a1.args a2.args
   | Apply _, _ | _, Apply _ -> false
@@ -100,7 +107,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
     ->
     Mutable_variable.equal mv1 mv2
       && Variable.equal v1 v2
-      && ck1 = ck2
+      && Lambda.equal_value_kind ck1 ck2
       && same b1 b2
   | Let_mutable _, _ | _, Let_mutable _ -> false
   | Let_rec (bl1, a1), Let_rec (bl2, a2) ->
@@ -112,7 +119,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | String_switch (a1, s1, d1), String_switch (a2, s2, d2) ->
     Variable.equal a1 a2
       && Misc.Stdlib.List.equal
-        (fun (s1, e1) (s2, e2) -> s1 = s2 && same e1 e2) s1 s2
+        (fun (s1, e1) (s2, e2) -> String.equal s1 s2 && same e1 e2) s1 s2
       && Misc.Stdlib.Option.equal same d1 d2
   | String_switch _, _ | _, String_switch _ -> false
   | Static_raise (e1, a1), Static_raise (e2, a2) ->
@@ -140,7 +147,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
     Variable.equal bound_var1 bound_var2
       && Variable.equal from_value1 from_value2
       && Variable.equal to_value1 to_value2
-      && direction1 = direction2
+      && equal_direction_flag direction1 direction2
       && same body1 body2
   | For _, _ | _, For _ -> false
   | Assign { being_assigned = being_assigned1; new_value = new_value1; },
@@ -150,7 +157,7 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   | Assign _, _ | _, Assign _ -> false
   | Send { kind = kind1; meth = meth1; obj = obj1; args = args1; dbg = _; },
     Send { kind = kind2; meth = meth2; obj = obj2; args = args2; dbg = _; } ->
-    kind1 = kind2
+    Lambda.equal_meth_kind kind1 kind2
       && Variable.equal meth1 meth2
       && Variable.equal obj1 obj2
       && Misc.Stdlib.List.equal Variable.equal args1 args2
@@ -161,7 +168,7 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   match named1, named2 with
   | Symbol s1 , Symbol s2  -> Symbol.equal s1 s2
   | Symbol _, _ | _, Symbol _ -> false
-  | Const c1, Const c2 -> compare_const c1 c2 = 0
+  | Const c1, Const c2 -> Flambda.compare_const c1 c2 = 0
   | Const _, _ | _, Const _ -> false
   | Allocated_const c1, Allocated_const c2 ->
     Allocated_const.compare c1 c2 = 0
@@ -185,7 +192,8 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
   | Move_within_set_of_closures _, _ | _, Move_within_set_of_closures _ ->
     false
   | Prim (p1, al1, _), Prim (p2, al2, _) ->
-    p1 = p2 && Misc.Stdlib.List.equal Variable.equal al1 al2
+    Lambda.equal_primitive p1 p2
+      && Misc.Stdlib.List.equal Variable.equal al1 al2
   | Prim _, _ | _, Prim _ -> false
   | Expr e1, Expr e2 -> same e1 e2
 
@@ -218,8 +226,8 @@ and samebinding (v1, n1) (v2, n2) =
 
 and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
   let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
-  fs1.numconsts = fs2.numconsts
-    && fs1.numblocks = fs2.numblocks
+  Numbers.Int.Set.equal fs1.numconsts fs2.numconsts
+    && Numbers.Int.Set.equal fs1.numblocks fs2.numblocks
     && Misc.Stdlib.List.equal samecase fs1.consts fs2.consts
     && Misc.Stdlib.List.equal samecase fs1.blocks fs2.blocks
     && Misc.Stdlib.Option.equal same fs1.failaction fs2.failaction
@@ -313,12 +321,14 @@ let toplevel_substitution sb tree =
 (* CR-someday mshinwell: Fix [Flambda_iterators] so this can be implemented
    properly. *)
 let toplevel_substitution_named sb named =
-  let expr = name_expr named ~name:"toplevel_substitution_named" in
+  let name = Internal_variable_names.toplevel_substitution_named in
+  let expr = name_expr named ~name in
   match toplevel_substitution sb expr with
   | Let let_expr -> let_expr.defining_expr
   | _ -> assert false
 
-let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
+let make_closure_declaration
+      ~is_classic_mode ~id ~body ~params ~stub : Flambda.t =
   let free_variables = Flambda.free_variables body in
   let param_set = Parameter.Set.vars params in
   if not (Variable.Set.subset param_set free_variables) then begin
@@ -339,6 +349,7 @@ let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
     Flambda.create_function_declaration ~params:(List.map subst_param params)
       ~body ~stub ~dbg:Debuginfo.none ~inline:Default_inline
       ~specialise:Default_specialise ~is_a_functor:false
+      ~closure_origin:(Closure_origin.create (Closure_id.wrap id))
   in
   assert (Variable.Set.equal (Variable.Set.map subst free_variables)
     function_declaration.free_variables);
@@ -357,12 +368,13 @@ let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
   in
   let compilation_unit = Compilation_unit.get_current_exn () in
   let set_of_closures_var =
-    Variable.create "set_of_closures"
+    Variable.create Internal_variable_names.set_of_closures
       ~current_compilation_unit:compilation_unit
   in
   let set_of_closures =
     let function_decls =
       Flambda.create_function_declarations
+        ~is_classic_mode
         ~funs:(Variable.Map.singleton id function_declaration)
     in
     Flambda.create_set_of_closures ~function_decls ~free_vars
@@ -376,7 +388,7 @@ let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
       }
   in
   let project_closure_var =
-    Variable.create "project_closure"
+    Variable.create Internal_variable_names.project_closure
       ~current_compilation_unit:compilation_unit
   in
   Flambda.create_let set_of_closures_var (Set_of_closures set_of_closures)
@@ -466,7 +478,8 @@ let make_closure_map program =
     { function_decls } ->
     Variable.Map.iter (fun var _ ->
         let closure_id = Closure_id.wrap var in
-        map := Closure_id.Map.add closure_id function_decls !map)
+        let set_of_closures_id = function_decls.set_of_closures_id in
+        map := Closure_id.Map.add closure_id set_of_closures_id !map)
       function_decls.funs
   in
   Flambda_iterators.iter_on_set_of_closures_of_program
@@ -474,16 +487,18 @@ let make_closure_map program =
     ~f:add_set_of_closures;
   !map
 
-let make_closure_map' input =
-  let map = ref Closure_id.Map.empty in
-  let add_set_of_closures _ (function_decls : Flambda.function_declarations) =
-    Variable.Map.iter (fun var _ ->
-        let closure_id = Closure_id.wrap var in
-        map := Closure_id.Map.add closure_id function_decls !map)
-      function_decls.funs
-  in
-  Set_of_closures_id.Map.iter add_set_of_closures input;
-  !map
+let all_lifted_constant_closures program =
+  List.fold_left (fun unchanged flambda ->
+      match flambda with
+      | (_, Flambda.Set_of_closures { function_decls = { funs } }) ->
+        Variable.Map.fold
+          (fun key (_ : Flambda.function_declaration) acc ->
+             Closure_id.Set.add (Closure_id.wrap key) acc)
+          funs
+          unchanged
+      | _ -> unchanged)
+    Closure_id.Set.empty
+    (all_lifted_constants program)
 
 let all_lifted_constant_sets_of_closures program =
   let set = ref Set_of_closures_id.Set.empty in
@@ -511,34 +526,6 @@ let all_sets_of_closures_map program =
           set_of_closures !r);
   !r
 
-let all_function_decls_indexed_by_set_of_closures_id program =
-  Set_of_closures_id.Map.map
-    (fun { Flambda. function_decls; _ } -> function_decls)
-    (all_sets_of_closures_map program)
-
-let all_function_decls_indexed_by_closure_id program =
-  let aux_fun function_decls fun_var _ map =
-    let closure_id = Closure_id.wrap fun_var in
-    Closure_id.Map.add closure_id function_decls map
-  in
-  let aux _ ({ function_decls; _ } : Flambda.set_of_closures) map =
-    Variable.Map.fold (aux_fun function_decls) function_decls.funs map
-  in
-  Set_of_closures_id.Map.fold aux (all_sets_of_closures_map program)
-    Closure_id.Map.empty
-
-let make_variable_symbol var =
-  Symbol.create (Compilation_unit.get_current_exn ())
-    (Linkage_name.create
-       (Variable.unique_name (Variable.rename var)))
-
-let make_variables_symbol vars =
-  let name =
-    String.concat "_and_"
-      (List.map (fun var -> Variable.unique_name (Variable.rename var)) vars)
-  in
-  Symbol.create (Compilation_unit.get_current_exn ()) (Linkage_name.create name)
-
 let substitute_read_symbol_field_for_variables
     (substitution : (Symbol.t * int list) Variable.Map.t)
     (expr : Flambda.t) =
@@ -549,8 +536,10 @@ let substitute_read_symbol_field_for_variables
       | [] -> Symbol symbol
       | [i] -> Read_symbol_field (symbol, i)
       | h :: t ->
-          let block = Variable.create "symbol_field_block" in
-          let field = Variable.create "get_symbol_field" in
+          let block_name = Internal_variable_names.symbol_field_block in
+          let block = Variable.create block_name in
+          let field_name = Internal_variable_names.get_symbol_field in
+          let field = Variable.create field_name in
           Expr (
             Flambda.create_let block (make_named t)
               (Flambda.create_let field
@@ -808,14 +797,14 @@ module Switch_storer = Switch.Store (struct
       | Symbol s1, Symbol s2 -> Symbol.compare s1 s2
       | Symbol _, (Const _ | Expr _ | Prim _) -> -1
       | (Const _ | Expr _ | Prim _), Symbol _ ->  1
-      | Const c1, Const c2 -> compare c1 c2
+      | Const c1, Const c2 -> Flambda.compare_const c1 c2
       | Const _, (Expr _ | Prim _) -> -1
       | (Expr _ | Prim _), Const _ ->  1
       | Expr e1, Expr e2 -> compare_expr env e1 e2
       | Expr _, Prim _ -> -1
       | Prim _, Expr _ ->  1
       | Prim (prim1, args1), Prim (prim2, args2) ->
-        let comp_prim = Pervasives.compare prim1 prim2 in
+        let comp_prim = Stdlib.compare prim1 prim2 in
         if comp_prim <> 0 then comp_prim
         else Misc.Stdlib.List.compare (compare_var env) args1 args2
     in
@@ -823,13 +812,12 @@ module Switch_storer = Switch.Store (struct
 end)
 
 let fun_vars_referenced_in_decls
-      (function_decls : Flambda.function_declarations) ~backend =
+      (function_decls : Flambda.function_declarations) ~closure_symbol =
   let fun_vars = Variable.Map.keys function_decls.funs in
   let symbols_to_fun_vars =
-    let module Backend = (val backend : Backend_intf.S) in
     Variable.Set.fold (fun fun_var symbols_to_fun_vars ->
         let closure_id = Closure_id.wrap fun_var in
-        let symbol = Backend.closure_symbol closure_id in
+        let symbol = closure_symbol closure_id in
         Symbol.Map.add symbol fun_var symbols_to_fun_vars)
       fun_vars
       Symbol.Map.empty
@@ -851,10 +839,10 @@ let fun_vars_referenced_in_decls
       Variable.Set.union from_symbols from_variables)
     function_decls.funs
 
-let closures_required_by_entry_point ~(entry_point : Closure_id.t) ~backend
-    (function_decls : Flambda.function_declarations) =
+let closures_required_by_entry_point ~(entry_point : Closure_id.t)
+      ~closure_symbol (function_decls : Flambda.function_declarations) =
   let dependencies =
-    fun_vars_referenced_in_decls function_decls ~backend
+    fun_vars_referenced_in_decls function_decls ~closure_symbol
   in
   let set = ref Variable.Set.empty in
   let queue = Queue.create () in

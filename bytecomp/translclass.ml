@@ -96,7 +96,7 @@ let bind_super tbl (vals, meths) cl_init =
        meths cl_init)
 
 let create_object cl obj init =
-  let obj' = Ident.create "self" in
+  let obj' = Ident.create_local "self" in
   let (inh_init, obj_init, has_init) = init obj' in
   if obj_init = lambda_unit then
     (inh_init,
@@ -117,7 +117,7 @@ let name_pattern default p =
   match p.pat_desc with
   | Tpat_var (id, _) -> id
   | Tpat_alias(_, id, _) -> id
-  | _ -> Ident.create default
+  | _ -> Ident.create_local default
 
 let normalize_cl_path cl path =
   Env.normalize_path (Some cl.cl_loc) cl.cl_env path
@@ -125,7 +125,7 @@ let normalize_cl_path cl path =
 let rec build_object_init cl_table obj params inh_init obj_init cl =
   match cl.cl_desc with
     Tcl_ident ( path, _, _) ->
-      let obj_init = Ident.create "obj_init" in
+      let obj_init = Ident.create_local "obj_init" in
       let envs, inh_init = inh_init in
       let env =
         match envs with None -> []
@@ -167,7 +167,6 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
            params obj_init,
          has_init))
   | Tcl_fun (_, pat, vals, cl, partial) ->
-      let vals = List.map (fun (id, _, e) -> id,e) vals in
       let (inh_init, obj_init) =
         build_object_init cl_table obj (vals @ params) inh_init obj_init cl
       in
@@ -190,7 +189,6 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
       in
       (inh_init, transl_apply obj_init oexprs Location.none)
   | Tcl_let (rec_flag, defs, vals, cl) ->
-      let vals = List.map (fun (id, _, e) -> id,e) vals in
       let (inh_init, obj_init) =
         build_object_init cl_table obj (vals @ params) inh_init obj_init cl
       in
@@ -202,11 +200,10 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
 let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
   match cl.cl_desc with
     Tcl_let (_rec_flag, _defs, vals, cl) ->
-      let vals = List.map (fun (id, _, e) -> id,e) vals in
       build_object_init_0 cl_table (vals@params) cl copy_env subst_env top ids
   | _ ->
-      let self = Ident.create "self" in
-      let env = Ident.create "env" in
+      let self = Ident.create_local "self" in
+      let env = Ident.create_local "env" in
       let obj = if ids = [] then lambda_unit else Lvar self in
       let envs = if top then None else Some env in
       let ((_,inh_init), obj_init) =
@@ -226,7 +223,7 @@ let bind_methods tbl meths vals cl_init =
   let len = List.length methl and nvals = List.length vals in
   if len < 2 && nvals = 0 then Meths.fold (bind_method tbl) meths cl_init else
   if len = 0 && nvals < 2 then transl_vals tbl true Strict vals cl_init else
-  let ids = Ident.create "ids" in
+  let ids = Ident.create_local "ids" in
   let i = ref (len + nvals) in
   let getter, names =
     if nvals = 0 then "get_method_labels", [] else
@@ -262,7 +259,7 @@ let rec index a = function
   | b :: l ->
       if b = a then 0 else 1 + index a l
 
-let bind_id_as_val (id, _, _) = ("", id)
+let bind_id_as_val (id, _) = ("", id)
 
 let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
   match cl.cl_desc with
@@ -306,7 +303,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
                 let met_code =
                   if !Clflags.native_code && List.length met_code = 1 then
                     (* Force correct naming of method for profiles *)
-                    let met = Ident.create ("method_" ^ name.txt) in
+                    let met = Ident.create_local ("method_" ^ name.txt) in
                     [Llet(Strict, Pgenval, met, List.hd met_code, Lvar met)]
                   else met_code
                 in
@@ -354,7 +351,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
         Tcl_ident (path, _, _), (obj_init, path')::inh_init ->
           assert (Path.same (normalize_cl_path cl path) path');
           let lpath = transl_normal_path path' in
-          let inh = Ident.create "inh"
+          let inh = Ident.create_local "inh"
           and ofs = List.length vals + 1
           and valids, methids = super in
           let cl_init =
@@ -402,8 +399,8 @@ let rec build_class_lets cl =
 let rec get_class_meths cl =
   match cl.cl_desc with
     Tcl_structure cl ->
-      Meths.fold (fun _ -> IdentSet.add) cl.cstr_meths IdentSet.empty
-  | Tcl_ident _ -> IdentSet.empty
+      Meths.fold (fun _ -> Ident.Set.add) cl.cstr_meths Ident.Set.empty
+  | Tcl_ident _ -> Ident.Set.empty
   | Tcl_fun (_, _, _, cl, _)
   | Tcl_let (_, _, _, cl)
   | Tcl_apply (cl, _)
@@ -467,8 +464,8 @@ let rec transl_class_rebind_0 self obj_init cl vf =
 
 let transl_class_rebind cl vf =
   try
-    let obj_init = Ident.create "obj_init"
-    and self = Ident.create "self" in
+    let obj_init = Ident.create_local "obj_init"
+    and self = Ident.create_local "self" in
     let obj_init0 =
       lapply {ap_should_be_tailcall=false;
               ap_loc=Location.none;
@@ -481,11 +478,11 @@ let transl_class_rebind cl vf =
     let id = (obj_init' = lfunction [self] obj_init0) in
     if id then transl_normal_path path else
 
-    let cla = Ident.create "class"
-    and new_init = Ident.create "new_init"
-    and env_init = Ident.create "env_init"
-    and table = Ident.create "table"
-    and envs = Ident.create "envs" in
+    let cla = Ident.create_local "class"
+    and new_init = Ident.create_local "new_init"
+    and env_init = Ident.create_local "env_init"
+    and table = Ident.create_local "table"
+    and envs = Ident.create_local "envs" in
     Llet(
     Strict, Pgenval, new_init, lfunction [obj_init] obj_init',
     Llet(
@@ -518,7 +515,7 @@ let const_path local = function
   | Lconst _ -> true
   | Lfunction {kind = Curried; body} ->
       let fv = free_variables body in
-      List.for_all (fun x -> not (IdentSet.mem x fv)) local
+      List.for_all (fun x -> not (Ident.Set.mem x fv)) local
   | p -> module_path p
 
 let rec builtin_meths self env env2 body =
@@ -630,48 +627,76 @@ let prerr_ids msg ids =
   prerr_endline (String.concat " " (msg :: names))
 *)
 
+let free_methods l =
+  let fv = ref Ident.Set.empty in
+  let rec free l =
+    Lambda.iter_head_constructor free l;
+    match l with
+    | Lsend(Self, Lvar meth, _, _, _) ->
+        fv := Ident.Set.add meth !fv
+    | Lsend _ -> ()
+    | Lfunction{params} ->
+        List.iter (fun param -> fv := Ident.Set.remove param !fv) params
+    | Llet(_str, _k, id, _arg, _body) ->
+        fv := Ident.Set.remove id !fv
+    | Lletrec(decl, _body) ->
+        List.iter (fun (id, _exp) -> fv := Ident.Set.remove id !fv) decl
+    | Lstaticcatch(_e1, (_,vars), _e2) ->
+        List.iter (fun id -> fv := Ident.Set.remove id !fv) vars
+    | Ltrywith(_e1, exn, _e2) ->
+        fv := Ident.Set.remove exn !fv
+    | Lfor(v, _e1, _e2, _dir, _e3) ->
+        fv := Ident.Set.remove v !fv
+    | Lassign _
+    | Lvar _ | Lconst _ | Lapply _
+    | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
+    | Lifthenelse _ | Lsequence _ | Lwhile _
+    | Levent _ | Lifused _ -> ()
+  in free l; !fv
+
 let transl_class ids cl_id pub_meths cl vflag =
   (* First check if it is not only a rebind *)
   let rebind = transl_class_rebind cl vflag in
   if rebind <> lambda_unit then rebind else
 
   (* Prepare for heavy environment handling *)
-  let tables = Ident.create (Ident.name cl_id ^ "_tables") in
+  let tables = Ident.create_local (Ident.name cl_id ^ "_tables") in
   let (top_env, req) = oo_add_class tables in
   let top = not req in
   let cl_env, llets = build_class_lets cl in
   let new_ids = if top then [] else Env.diff top_env cl_env in
-  let env2 = Ident.create "env" in
+  let env2 = Ident.create_local "env" in
   let meth_ids = get_class_meths cl in
   let subst env lam i0 new_ids' =
     let fv = free_variables lam in
-    (* prerr_ids "cl_id =" [cl_id]; prerr_ids "fv =" (IdentSet.elements fv); *)
-    let fv = List.fold_right IdentSet.remove !new_ids' fv in
+    (* prerr_ids "cl_id =" [cl_id]; prerr_ids "fv =" (Ident.Set.elements fv); *)
+    let fv = List.fold_right Ident.Set.remove !new_ids' fv in
     (* We need to handle method ids specially, as they do not appear
        in the typing environment (PR#3576, PR#4560) *)
     (* very hacky: we add and remove free method ids on the fly,
        depending on the visit order... *)
     method_ids :=
-      IdentSet.diff (IdentSet.union (free_methods lam) !method_ids) meth_ids;
-    (* prerr_ids "meth_ids =" (IdentSet.elements meth_ids);
-       prerr_ids "method_ids =" (IdentSet.elements !method_ids); *)
-    let new_ids = List.fold_right IdentSet.add new_ids !method_ids in
-    let fv = IdentSet.inter fv new_ids in
-    new_ids' := !new_ids' @ IdentSet.elements fv;
+      Ident.Set.diff (Ident.Set.union (free_methods lam) !method_ids) meth_ids;
+    (* prerr_ids "meth_ids =" (Ident.Set.elements meth_ids);
+       prerr_ids "method_ids =" (Ident.Set.elements !method_ids); *)
+    let new_ids = List.fold_right Ident.Set.add new_ids !method_ids in
+    let fv = Ident.Set.inter fv new_ids in
+    new_ids' := !new_ids' @ Ident.Set.elements fv;
     (* prerr_ids "new_ids' =" !new_ids'; *)
     let i = ref (i0-1) in
     List.fold_left
       (fun subst id ->
-        incr i; Ident.add id (lfield env !i)  subst)
-      Ident.empty !new_ids'
+        incr i; Ident.Map.add id (lfield env !i)  subst)
+      Ident.Map.empty !new_ids'
   in
   let new_ids_meths = ref [] in
+  let no_env_update _ _ env = env in
   let msubst arr = function
       Lfunction {kind = Curried; params = self :: args; body} ->
-        let env = Ident.create "env" in
+        let env = Ident.create_local "env" in
         let body' =
           if new_ids = [] then body else
-          subst_lambda (subst env body 0 new_ids_meths) body in
+          Lambda.subst no_env_update (subst env body 0 new_ids_meths) body in
         begin try
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
@@ -679,7 +704,7 @@ let transl_class ids cl_id pub_meths cl vflag =
           builtin_meths [self] env env2 (lfunction args body')
         with Not_found ->
           [lfunction (self :: args)
-             (if not (IdentSet.mem env (free_variables body')) then body' else
+             (if not (Ident.Set.mem env (free_variables body')) then body' else
               Llet(Alias, Pgenval, env,
                    Lprim(Pfield_computed,
                          [Lvar self; Lvar env2],
@@ -689,7 +714,7 @@ let transl_class ids cl_id pub_meths cl vflag =
       | _ -> assert false
   in
   let new_ids_init = ref [] in
-  let env1 = Ident.create "env" and env1' = Ident.create "env'" in
+  let env1 = Ident.create_local "env" and env1' = Ident.create_local "env'" in
   let copy_env self =
     if top then lambda_unit else
     Lifused(env2, Lprim(Psetfield_computed (Pointer, Assignment),
@@ -698,7 +723,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   and subst_env envs l lam =
     if top then lam else
     (* must be called only once! *)
-    let lam = subst_lambda (subst env1 lam 1 new_ids_init) lam in
+    let lam = Lambda.subst no_env_update (subst env1 lam 1 new_ids_init) lam in
     Llet(Alias, Pgenval, env1, (if l = [] then Lvar envs else lfield envs 0),
     Llet(Alias, Pgenval, env1',
          (if !new_ids_init = [] then Lvar env1 else lfield env1 0),
@@ -706,7 +731,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   in
 
   (* Now we start compiling the class *)
-  let cla = Ident.create "class" in
+  let cla = Ident.create_local "class" in
   let (inh_init, obj_init) =
     build_object_init_0 cla [] cl copy_env subst_env top ids in
   let inh_init' = List.rev inh_init in
@@ -714,10 +739,10 @@ let transl_class ids cl_id pub_meths cl vflag =
     build_class_init cla true ([],[]) inh_init' obj_init msubst top cl
   in
   assert (inh_init' = []);
-  let table = Ident.create "table"
-  and class_init = Ident.create (Ident.name cl_id ^ "_init")
-  and env_init = Ident.create "env_init"
-  and obj_init = Ident.create "obj_init" in
+  let table = Ident.create_local "table"
+  and class_init = Ident.create_local (Ident.name cl_id ^ "_init")
+  and env_init = Ident.create_local "env_init"
+  and obj_init = Ident.create_local "obj_init" in
   let pub_meths =
     List.sort
       (fun s s' -> compare (Btype.hash_variant s) (Btype.hash_variant s'))
@@ -748,7 +773,7 @@ let transl_class ids cl_id pub_meths cl vflag =
                                    params = [cla]; body = cl_init}) in
     Llet(Strict, Pgenval, class_init, cl_init, lam (free_variables cl_init))
   and lbody fv =
-    if List.for_all (fun id -> not (IdentSet.mem id fv)) ids then
+    if List.for_all (fun id -> not (Ident.Set.mem id fv)) ids then
       mkappl (oo_prim "make_class",[transl_meth_list pub_meths;
                                     Lvar class_init])
     else
@@ -775,8 +800,8 @@ let transl_class ids cl_id pub_meths cl vflag =
   if top then llets (lbody_virt lambda_unit) else
 
   (* Now for the hard stuff: prepare for table caching *)
-  let envs = Ident.create "envs"
-  and cached = Ident.create "cached" in
+  let envs = Ident.create_local "envs"
+  and cached = Ident.create_local "cached" in
   let lenvs =
     if !new_ids_meths = [] && !new_ids_init = [] && inh_init = []
     then lambda_unit
@@ -901,7 +926,7 @@ let () =
   Location.register_error_of_exn
     (function
       | Error (loc, err) ->
-        Some (Location.error_of_printer loc report_error err)
+        Some (Location.error_of_printer ~loc report_error err)
       | _ ->
         None
     )

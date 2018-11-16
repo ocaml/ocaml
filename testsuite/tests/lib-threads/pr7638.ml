@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 (* MPR#7638 repro case *)
 
 let crashme v =

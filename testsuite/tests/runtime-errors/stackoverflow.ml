@@ -1,3 +1,28 @@
+(* TEST
+
+flags = "-w a"
+
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** run
+**** check-program-output
+
+* libwin32unix
+** setup-ocamlopt.byte-build-env
+*** ocamlopt.byte
+**** run
+***** check-program-output
+
+* libunix
+** script
+script = "sh ${test_source_directory}/has-stackoverflow-detection.sh"
+*** setup-ocamlopt.byte-build-env
+**** ocamlopt.byte
+***** run
+****** check-program-output
+
+*)
+
 let rec f x =
   if not (x = 0 || x = 10000 || x = 20000)
   then 1 + f (x + 1)

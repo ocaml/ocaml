@@ -112,7 +112,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
  *)
 
 external to_bytes :
-  'a -> extern_flags list -> bytes = "caml_output_value_to_string"
+  'a -> extern_flags list -> bytes = "caml_output_value_to_bytes"
 (** [Marshal.to_bytes v flags] returns a byte sequence containing
    the representation of [v].
    The [flags] argument has the same meaning as for

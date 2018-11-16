@@ -16,11 +16,13 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
+module A = Simple_value_approx
+
 let rename_id_state = Export_id.Tbl.create 100
 let rename_set_of_closures_id_state = Set_of_closures_id.Tbl.create 10
 let imported_function_declarations_table =
   (Set_of_closures_id.Tbl.create 10
-   : Flambda.function_declarations Set_of_closures_id.Tbl.t)
+   : A.function_declarations Set_of_closures_id.Tbl.t)
 
 (* Rename export identifiers' compilation units to denote that they now
    live within a pack. *)
@@ -82,6 +84,7 @@ let import_set_of_closures units pack
     bound_vars =
       Var_within_closure.Map.map (import_approx_for_pack units pack)
         set_of_closures.bound_vars;
+    free_vars = set_of_closures.free_vars;
     results =
       Closure_id.Map.map (import_approx_for_pack units pack)
         set_of_closures.results;
@@ -111,6 +114,7 @@ let import_descr_for_pack units pack (descr : Export_info.descr)
     }
   | Value_set_of_closures set_of_closures ->
     Value_set_of_closures (import_set_of_closures units pack set_of_closures)
+  | Value_unknown_descr -> Value_unknown_descr
 
 let rec import_code_for_pack units pack expr =
   Flambda_iterators.map_named (function
@@ -124,7 +128,7 @@ let rec import_code_for_pack units pack expr =
             ~specialised_args:set_of_closures.specialised_args
             ~direct_call_surrogates:set_of_closures.direct_call_surrogates
             ~function_decls:
-              (import_function_declarations_for_pack units pack
+              (import_function_declarations_for_pack_aux units pack
                  set_of_closures.function_decls)
         in
         Set_of_closures set_of_closures
@@ -134,13 +138,15 @@ let rec import_code_for_pack units pack expr =
 and import_function_declarations_for_pack_aux units pack
       (function_decls : Flambda.function_declarations) =
   let funs =
-    Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+    Variable.Map.map
+      (fun (function_decl : Flambda.function_declaration) ->
         Flambda.create_function_declaration ~params:function_decl.params
           ~body:(import_code_for_pack units pack function_decl.body)
           ~stub:function_decl.stub ~dbg:function_decl.dbg
           ~inline:function_decl.inline
           ~specialise:function_decl.specialise
-          ~is_a_functor:function_decl.is_a_functor)
+          ~is_a_functor:function_decl.is_a_functor
+          ~closure_origin:function_decl.closure_origin)
       function_decls.funs
   in
   Flambda.import_function_declarations_for_pack
@@ -148,8 +154,22 @@ and import_function_declarations_for_pack_aux units pack
     (import_set_of_closures_id_for_pack units pack)
     (import_set_of_closures_origin_for_pack units pack)
 
-and import_function_declarations_for_pack units pack
-    (function_decls:Flambda.function_declarations) =
+let import_function_declarations_for_pack_aux units pack
+      (function_decls : A.function_declarations) : A.function_declarations =
+  let funs =
+    Variable.Map.map
+      (fun (function_decl : A.function_declaration) ->
+         A.update_function_declaration_body function_decl
+           (fun body -> import_code_for_pack units pack body))
+      function_decls.funs
+  in
+  A.import_function_declarations_for_pack
+    (A.update_function_declarations function_decls ~funs)
+    (import_set_of_closures_id_for_pack units pack)
+    (import_set_of_closures_origin_for_pack units pack)
+
+let import_function_declarations_approx_for_pack units pack
+      (function_decls: A.function_declarations) =
   let original_set_of_closures_id = function_decls.set_of_closures_id in
   try
     Set_of_closures_id.Tbl.find imported_function_declarations_table
@@ -183,7 +203,7 @@ let import_for_pack ~pack_units ~pack (exp : Export_info.t) =
     import_set_of_closures_id_for_pack pack_units pack
   in
   let import_function_declarations =
-    import_function_declarations_for_pack pack_units pack
+    import_function_declarations_approx_for_pack pack_units pack
   in
   let sets_of_closures =
     Set_of_closures_id.Map.map_keys import_set_of_closures_id
@@ -192,18 +212,18 @@ let import_for_pack ~pack_units ~pack (exp : Export_info.t) =
          exp.sets_of_closures)
   in
   Export_info.create ~sets_of_closures
-    ~closures:(Flambda_utils.make_closure_map' sets_of_closures)
     ~offset_fun:exp.offset_fun
     ~offset_fv:exp.offset_fv
     ~values:(import_eidmap import_descr exp.values)
     ~symbol_id:(Symbol.Map.map_keys import_sym
       (Symbol.Map.map import_eid exp.symbol_id))
-    ~constant_sets_of_closures:
-      (Set_of_closures_id.Set.map import_set_of_closures_id
-         exp.constant_sets_of_closures)
+    ~constant_closures:exp.constant_closures
     ~invariant_params:
       (Set_of_closures_id.Map.map_keys import_set_of_closures_id
          exp.invariant_params)
+    ~recursive:
+      (Set_of_closures_id.Map.map_keys import_set_of_closures_id
+         exp.recursive)
 
 let clear_import_state () =
   Set_of_closures_id.Tbl.clear imported_function_declarations_table;

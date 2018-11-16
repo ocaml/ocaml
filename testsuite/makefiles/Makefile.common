@@ -16,6 +16,8 @@
 TOPDIR=$(BASEDIR)/..
 include $(TOPDIR)/Makefile.tools
 
+codegen := $(OTOPDIR)/testsuite/tools/codegen
+
 .PHONY: defaultpromote
 defaultpromote:
 	@for file in *.reference; do \
@@ -61,12 +63,10 @@ defaultclean:
 	@$(OCAMLLEX) -q $< > /dev/null
 
 .cmm.s:
-	@$(OCAMLRUN) ./codegen -S $*.cmm
+	@$(OCAMLRUN) $(codegen) -S $*.cmm
 
 .cmm.obj:
-	@$(OCAMLRUN) ./codegen $*.cmm \
-	| grep -v "_caml_\(young_ptr\|young_limit\|extra_params\
-	\|allocN\|raise_exn\|reraise_exn\)" > $*.s
+	@$(OCAMLRUN) $(codegen) $*.cmm > $*.s
 	@set -o pipefail ; \
 	$(ASM) $*.obj $*.s | tail -n +2
 
@@ -78,7 +78,7 @@ defaultclean:
 	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.s
 
 .c.o:
-	@$(CC) $(CFLAGS) -c -I$(CTOPDIR)/byterun $*.c -o $*.$(O)
+	@$(CC) $(OC_CFLAGS) -c -I$(CTOPDIR)/runtime $*.c -o $*.$(O)
 
 .f.o:
-	@$(FORTRAN_COMPILER) -c -I$(CTOPDIR)/byterun $*.f -o $*.$(O)
+	@$(FORTRAN_COMPILER) -c -I$(CTOPDIR)/runtime $*.f -o $*.$(O)

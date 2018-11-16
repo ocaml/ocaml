@@ -1,0 +1,33 @@
+Line 6, characters 9-10:
+6 |   | 3 as 3 -> ()
+             ^
+Error: Syntax error: identifier expected.
+Line 3, characters 9-11:
+3 |   | 3 :: -> ()
+             ^^
+Error: Syntax error: pattern expected.
+Line 3, characters 8-10:
+3 |   | 3 | -> ()
+            ^^
+Error: Syntax error: pattern expected.
+Line 3, characters 11-13:
+3 |   | List.( -> ()
+               ^^
+Error: Syntax error: pattern expected.
+Line 3, characters 9-10:
+3 |   | (3 : 3) -> ()
+             ^
+Error: Syntax error: type expected.
+Line 3, characters 7-8:
+3 |   | (3,) -> ()
+           ^
+Error: Syntax error: pattern expected.
+Line 3, characters 6-8:
+3 |   | ( -> ()
+          ^^
+Error: Syntax error: operator expected.
+Line 3, characters 12-14:
+3 |   | (module -> ()
+                ^^
+Error: Syntax error: module-expr expected.
+

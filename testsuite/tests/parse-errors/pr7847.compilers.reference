@@ -1,0 +1,4 @@
+File "pr7847.ml", line 10, characters 30-31:
+10 | external x : unit -> (int,int)`A.t = "x"
+                                   ^
+Error: Syntax error

@@ -99,7 +99,10 @@ let rec junk_data : type v. v cell -> unit = fun s ->
   match s.data with
     Scons (_, d) -> s.count <- (succ s.count); s.data <- d
   | Sgen ({curr = Some _} as g) -> s.count <- (succ s.count); g.curr <- None
-  | Sbuffio b -> s.count <- (succ s.count); b.ind <- succ b.ind
+  | Sbuffio b ->
+      if b.ind >= b.len then fill_buff b;
+      if b.len == 0 then s.data <- Sempty
+      else (s.count <- (succ s.count); b.ind <- succ b.ind)
   | _ ->
       match peek_data s with
         None -> ()

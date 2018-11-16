@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* Typed names *)
 
 module Msg : sig
@@ -69,7 +73,7 @@ end = struct
   let ik =
     { tag = Int;
       label = "int";
-      write = string_of_int;
+      write = Int.to_string;
       read = int_of_string }
 
   let () = Hashtbl.add readTbl "int" (K ik)

@@ -1,0 +1,6 @@
+File "unclosed_paren_module_expr4.ml", line 9, characters 0-0:
+Error: Syntax error: ')' expected
+File "unclosed_paren_module_expr4.ml", line 8, characters 11-12:
+8 | module M = (val 3 :>
+               ^
+  This '(' might be unmatched

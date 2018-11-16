@@ -35,27 +35,9 @@
 # which lists the rules that should be disabled for this file.
 # The rule names are the ones shown above in parentheses.
 
-# Built-in exceptions:
+# Built-in exception:
 # - Any file git identifies as binary
 #   is automatically exempt from all the rules.
-# - Any file whose name matches one of the following patterns is
-#   automatically exempt from all rules
-#     *.reference
-#     *.opt_reference
-#     */reference
-#     */.depend*
-# - Any file whose name begins with "Makefile" is automatically exempt
-#   from the "tabs" rule.
-# - Any file whose name matches one of the following patterns is
-#   automatically exempt from the "missing-header" rule.
-#     *.mlpack
-#     *.mllib
-#     *.mltop
-#     *.odocl
-#     *.clib
-# - Any file whose name matches the following pattern is automatically
-#   exempt from the "long-line" rule (but not from "very-long-line").
-#   */ocamldoc/*
 
 # ASCII characters are bytes from 0 to 127.  Any other byte is
 # flagged as a non-ASCII character.
@@ -81,16 +63,56 @@
 # You can ignore a rule by giving the option -<rule> on the command
 # line (before any file names).
 
+# Files which include the utf8 rule will be validated using grep and line-length
+# computations will take UTF-8 sequences into account. As a special case, UTF-8
+# sequences are always allowed in the copyright headers.
+
 # First prevent i18n from messing up everything.
 export LC_ALL=C
+
+OCAML_CT_CAT=${OCAML_CT_CAT:-cat}
+OCAML_CT_LS_FILES=${OCAML_CT_LS_FILES:-git ls-files}
+OCAML_CT_HEAD=${OCAML_CT_HEAD:-HEAD}
+OCAML_CT_AWK=${OCAML_CT_AWK:-awk}
+if [ -z "${OCAML_CT_GIT_INDEX+x}" ] ; then
+  OCAML_CT_GIT_INDEX=
+else
+  OCAML_CT_GIT_INDEX="GIT_INDEX_FILE=$OCAML_CT_GIT_INDEX"
+fi
+
+# The output of processing the attributes should be whitespace-separated with
+# - the "typo." prefix dropped
+# - unset/false keys not present
+# - set/true keys present
+# - "may" keys present, suffixed by a question mark
+#
+# for example,
+#   typo.long-line: set
+#   typo.missing-header: may
+#   typo.very-long-line: false
+# should result in "long-line missing-header?"
+get_attrs() {
+  env $OCAML_CT_GIT_INDEX git check-attr --all $OCAML_CT_CA_FLAG "$1" \
+  | grep -o " typo\\..*$" | sed "s/ typo\\.//g" \
+  | grep -v ": unset" | grep -v ": false" \
+  | sed "s/: set//g" | sed "s/: true//g" | sed "s/: may/?/g"
+}
 
 # Special case for recursive call from the find command (see IGNORE_DIRS).
 case "$1" in
   --check-prune)
-    case `git check-attr ocaml-typo "$2" 2>/dev/null` in
-      *prune*) echo "INFO: pruned directory $2 (ocaml-typo=prune)" >&2; exit 0;;
-      *) exit 3;;
+    case $2,"$(get_attrs "$2" | grep -xF prune)" in
+      *,prune|.git,*)
+          echo "INFO: pruned directory $2 (typo.prune)" >&2
+          exit 0;;
+      *,*) exit 3;;
     esac;;
+esac
+
+case "$1" in
+  --get-attrs)
+      get_attrs "$2"
+      exit 0;;
 esac
 
 usage () {
@@ -103,7 +125,7 @@ userrules=''
 while : ; do
   case "$1" in
     -help|--help) usage;;
-    -*) userrules="${1#-},$userrules"; shift;;
+    -*) userrules="${1#-} $userrules"; shift;;
     --) shift; break;;
     *) break;;
   esac
@@ -113,24 +135,30 @@ IGNORE_DIRS="
   -name .git -prune -o
   -type d -exec $0 --check-prune {} ; -prune -o
 "
+# `-type d`: simple files (not directories) are not pruned during the
+# "find" invocation but below (look for " prune ") for performance
+# reasons: most files outside pruned directories are not pruned, so it
+# is faster to optimistically run check-typo on them (and maybe get
+# out in the middle) than to first check then run.
 
+EXIT_CODE=0
 ( case $# in
     0) find . $IGNORE_DIRS -type f -print;;
     *) for i in "$@"; do find "$i" $IGNORE_DIRS -type f -print; done;;
   esac
 ) | (
   while read f; do
-    case `git ls-files "$f" 2>&1` in
-      "") is_svn=false;;
-      *) is_svn=true;;
+    case `$OCAML_CT_LS_FILES "$f" 2>&1` in
+      "") path_in_index=false;;
+      *) path_in_index=true;;
     esac
     case "$*" in
       *$f*) is_cmd_line=true;;
       *) is_cmd_line=false;;
     esac
-    if $is_svn || $is_cmd_line; then :; else continue; fi
-    svnrules=''
-    if $is_svn; then
+    if $path_in_index || $is_cmd_line; then :; else continue; fi
+    attr_rules=''
+    if $path_in_index; then
       # Below is a git plumbing command to detect whether git regards a
       # particular file as binary. This takes into account .gitattributes, but
       # also works if the file has been automatically detected as binary by git.
@@ -143,39 +171,62 @@ IGNORE_DIRS="
       #    the documentation for the --numstat option. Commands designated as
       #    "plumbing" commands in git have stable output intended for parsing)
       EMPTY=`git hash-object -t tree /dev/null`
-      git diff-tree --numstat $EMPTY HEAD -- "$f" | grep -q "^-[[:blank:]]-" \
-        && continue
-      svnrules=`git check-attr ocaml-typo "$f" | sed -e 's/.*: //'`
-      case $svnrules in unspecified) svnrules= ;; esac
+      git diff-tree --numstat $EMPTY $OCAML_CT_HEAD -- "$f" \
+        | grep -q "^-[[:blank:]]-" && continue
+      attr_rules=$(get_attrs "$f")
     fi
     rules="$userrules"
-    add_hd(){ rules="missing-header,$rules"; }
-    case "$f" in
-      Makefile*|*/Makefile*) rules="tab,$rules";;
-      *.mlpack|*.mllib|*.mltop|*.odocl|*.itarget|*.clib) add_hd;;
-      *.reference|*.opt_reference|*/reference|*/.depend*) continue;;
-    esac
-    case "$f" in
-      ocamldoc/*|*/ocamldoc/*) rules="long-line,$rules";;
-    esac
 
-    (cat "$f" | tr -d '\r'; echo) \
-    | awk -v rules="$rules" -v svnrules="$svnrules" -v file="$f" \
+    # remove newlines, ensure spaces at boundary
+    rules=" $(echo $rules) "
+    attr_rules=" $(echo $attr_rules) "
+
+    if test -n "$(echo "$rules $attr_rules" | grep " prune ")"
+    then
+        continue
+    fi
+    if test -n "$(echo "$rules $attr_rules" | grep " utf8 ")"
+    then
+        # grep -a is used to force the file to be considered as text and -x
+        # requires the entire line to match. This specifically detects the
+        # presence of lines containing malformed UTF-8. It may be tested using
+        # https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
+        if $OCAML_CT_CAT "$OCAML_CT_PREFIX$f" \
+             | LC_ALL=en_US.UTF8 grep -qaxv '.*' ; then
+          echo "File \"$f\" is not correctly encoded in UTF-8"
+          exit 2
+        fi
+    fi
+    if ! \
+    ($OCAML_CT_CAT "$OCAML_CT_PREFIX$f" | tr -d '\r'; echo) \
+    | $OCAML_CT_AWK -v rules="$rules" -v attr_rules="$attr_rules" -v file="$f" \
       '
         function is_err(name) {
-          return (("," rules svnrules ",") !~ ("[, ]" name "[, ]"));
+          return ((rules attr_rules) !~ (" " name "[\\? ]"));
+        }
+
+        function report_err(name, msg) {
+          printf ("%s:%d.%d:", file, NR, RSTART + RLENGTH);
+          printf (" [%s] %s\n", name, msg);
+          got_errors = 1;
         }
 
         function err(name, msg) {
           ++ counts[name];
-          if (is_err(name) && counts[name] <= 10){
-            printf ("%s:%d.%d:", file, NR, RSTART + RLENGTH);
-            printf (" [%s] %s\n", name, msg);
-            got_errors = 1;
+          if (is_err(name) && counts[name] <= 10) {
+            report_err(name, msg);
             if (counts[name] == 10){
               printf ("WARNING: too many [%s] in this file.", name);
               printf ("  Others will not be reported.\n");
             }
+          }
+        }
+
+        function err_if(guard, name, msg) {
+          if (is_err(guard)) {
+            err(name, msg);
+          } else {
+            ++ counts[name];
           }
         }
 
@@ -191,16 +242,31 @@ IGNORE_DIRS="
           return c > limit;
         }
 
+        function utf8_decode(str) {
+          if (is_err("utf8")) {
+            return str;
+          } else {
+            # This script assumes that the UTF-8 has been externally validated
+            t = str;
+            gsub(/[\300-\367][\200-\277]+/, "?", t);
+            if (t != str) {
+              ++ counts["utf8"];
+            }
+            return t;
+          }
+        }
+
         BEGIN { state = "(first line)"; }
 
         match($0, /\t/) {
           err("tab", "TAB character(s)");
-          if (more_columns($0, 80)){
+          t = utf8_decode($0);
+          if (more_columns(t, 80)){
             RSTART=81;
             RLENGTH = 0;
-            err("long-line", "line is over 80 columns");
+            err_if("very-long-line", "long-line", "line is over 80 columns");
           }
-          if (more_columns($0, 132)){
+          if (more_columns(t, 132)){
             RSTART=133;
             RLENGTH = 0;
             err("very-long-line", "line is over 132 columns");
@@ -209,10 +275,14 @@ IGNORE_DIRS="
 
         match($0, /[\200-\377]/) \
         && state != "authors" && state != "copyright" {
-          err("non-ascii", "non-ASCII character(s)");
-          if (header_utf8 && !is_err("non-ascii")) {
-            err("non-ascii-utf8", \
-                "non-ASCII character(s) AND UTF-8 encountered");
+          if (is_err("utf8")) {
+            err("non-ascii", "non-ASCII character(s)");
+            if (header_utf8 && !is_err("non-ascii")) {
+              err("non-ascii-utf8", \
+                  "non-ASCII character(s) AND UTF-8 encountered");
+            }
+          } else {
+            ++ counts["utf8"];
           }
         }
 
@@ -229,19 +299,22 @@ IGNORE_DIRS="
         }
 
         $0 !~ /\t/ && length($0) > 80 {
-          t = $0;
-          sub(/https?:[A-Za-z0-9._~:/?#\[\]@!$&\047()*+,;=%-]{73,}$/, "", t);
+          t = utf8_decode($0);
+          sub(/https?:[A-Za-z0-9._~:\/?#\[\]@!$&\047()*+,;=%-]{73,}$/, "", t);
           if (length(t) > 80) {
             RSTART = 81;
             RLENGTH = 0;
-            err("long-line", "line is over 80 columns");
+            err_if("very-long-line", "long-line", "line is over 80 columns");
           }
         }
 
         $0 !~ /\t/ && length($0) > 132 {
           RSTART = 133;
           RLENGTH = 0;
-          err("very-long-line", "line is over 132 columns");
+          t = utf8_decode($0);
+          if (length(t) > 132) {
+            err("very-long-line", "line is over 132 columns");
+          }
         }
 
         # Record that the header contained UTF-8 sequences
@@ -313,18 +386,24 @@ IGNORE_DIRS="
               counts["missing-header"] = 1;
             }
           }
-          split(svnrules, r, "[, ]");
+          split(attr_rules, r, "[? ]");
           for (i in r){
             name = r[i];
             if (name != "" && !counts[name]){
               NR = 1;
               RSTART = 1;
               RLENGTH = 0;
-              err("unused-prop", sprintf("unused [%s] in ocaml-typo", name));
+              if (attr_rules !~ (" " name "\\? ")) {
+                report_err(name,
+                  sprintf("attribute is unused", name));
+              }
             }
           }
           exit got_errors;
         }
-      '
+      ' ; then
+        EXIT_CODE=1
+      fi
   done
+  exit $EXIT_CODE
 )

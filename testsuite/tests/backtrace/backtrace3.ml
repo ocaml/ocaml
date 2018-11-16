@@ -1,3 +1,12 @@
+(* TEST
+   flags = "-g"
+   ocamlrunparam += ",b=1"
+   * bytecode
+     reference = "${test_source_directory}/backtrace3.byte.reference"
+   * native
+     reference = "${test_source_directory}/backtrace3.opt.reference"
+     compare_programs = "false"
+*)
 
 (* A test for stack backtraces *)
 
@@ -21,7 +30,24 @@ let g msg =
   | exception (Error "c") ->
       (* according to the current re-raise policy (a static condition),
          this does not re-raise *)
-      raise (Error "c")
+      print_string "c"; print_newline(); raise (Error "c")
+  | exception (Error "d" as exn as _exn2) ->
+      (* this should Re-raise, appending to the current backtrace *)
+      print_string "d"; print_newline(); raise exn
+  | exception (Error "e" as _exn as exn2) ->
+      (* this should Re-raise, appending to the current backtrace *)
+      print_string "e"; print_newline(); raise exn2
+  | exception (exn as exn2) ->
+      match exn with
+      | Error "f" ->
+          (* this should Re-raise, appending to the current backtrace *)
+          print_string "f"; print_newline(); raise exn
+      | Error "g" ->
+          (* this should Re-raise, appending to the current backtrace *)
+          print_string "g"; print_newline(); raise exn2
+      | x ->
+          (* this should *not* Re-raise *)
+          raise x
 
 let run args =
   try
@@ -36,4 +62,8 @@ let _ =
   run [| "b" |];
   run [| "c" |];
   run [| "d" |];
+  run [| "e" |];
+  run [| "f" |];
+  run [| "g" |];
+  run [| "h" |];
   run [| |]

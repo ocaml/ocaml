@@ -1,3 +1,14 @@
+(* TEST
+
+flags = "-w A"
+
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+compile_only = "true"
+*** check-ocamlc.byte-output
+
+*)
+
 (** Test unused opens, in particular in presence of
      pattern open *)
 
@@ -12,5 +23,5 @@ let h R.{x} = R.{x}
 open N (* used open *)
 let i (A|B) = B
 
-open! M (* open! also deactivates unused open warning *)
+open! M (* useless open! *)
 open M (* useless open *)

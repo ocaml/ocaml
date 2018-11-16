@@ -13,7 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Driver for the parser, external preprocessors and ast plugin hooks *)
+(** Driver for the parser, external preprocessors and ast plugin hooks
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 open Format
 
@@ -33,7 +38,7 @@ type 'a ast_kind =
 val read_ast : 'a ast_kind -> string -> 'a
 val write_ast : 'a ast_kind -> string -> 'a -> unit
 
-val file : formatter -> tool_name:string -> string ->
+val file : tool_name:string -> string ->
   (Lexing.lexbuf -> 'a) -> 'a ast_kind -> 'a
 
 val apply_rewriters: ?restore:bool -> tool_name:string ->
@@ -52,9 +57,9 @@ val report_error : formatter -> error -> unit
 
 
 val parse_implementation:
-  formatter -> tool_name:string -> string -> Parsetree.structure
+  tool_name:string -> string -> Parsetree.structure
 val parse_interface:
-  formatter -> tool_name:string -> string -> Parsetree.signature
+  tool_name:string -> string -> Parsetree.signature
 
 (* [call_external_preprocessor sourcefile pp] *)
 val call_external_preprocessor : string -> string -> string

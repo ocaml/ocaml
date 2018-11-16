@@ -1,3 +1,5 @@
+(* TEST *)
+
 let () =
   assert(Sys.getenv_opt "FOOBAR_UNLIKELY_TO_EXIST_42" = None);
 
@@ -110,5 +112,23 @@ let () =
   assert (W.find_opt w r = None);
   W.add w r;
   assert (W.find_opt w r = Some r);
+
+  let stack = Stack.create () in
+  Stack.push 41 stack;
+  Stack.push 42 stack;
+  assert(Stack.top_opt stack = Some 42);
+  assert(Stack.pop_opt stack = Some 42);
+  assert(Stack.pop_opt stack = Some 41);
+  assert(Stack.pop_opt stack = None);
+  assert(Stack.top_opt stack = None);
+
+  let queue = Queue.create () in
+  Queue.add 41 queue;
+  Queue.add 42 queue;
+  assert(Queue.peek_opt queue = Some 41);
+  assert(Queue.take_opt queue = Some 41);
+  assert(Queue.take_opt queue = Some 42);
+  assert(Queue.take_opt queue = None);
+  assert(Queue.peek_opt queue = None);
 
   ()

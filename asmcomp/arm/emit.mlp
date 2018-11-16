@@ -167,8 +167,8 @@ let emit_call_bound_error bd =
 (* Negate a comparison *)
 
 let negate_integer_comparison = function
-    Isigned cmp   -> Isigned(negate_comparison cmp)
-  | Iunsigned cmp -> Iunsigned(negate_comparison cmp)
+  | Isigned cmp   -> Isigned(negate_integer_comparison cmp)
+  | Iunsigned cmp -> Iunsigned(negate_integer_comparison cmp)
 
 (* Names of various instructions *)
 
@@ -369,12 +369,73 @@ let emit_load_symbol_addr dst s =
     1
   end
 
+(* Emit instructions that set [rd] to 1 if integer condition [cmp] holds
+   and set [rd] to 0 otherwise. *)
+
+let emit_set_condition cmp rd =
+  let compthen = name_for_comparison cmp in
+  let compelse = name_for_comparison (negate_integer_comparison cmp) in
+  if !arch < ARMv8 || not !thumb then begin
+    `	ite	{emit_string compthen}\n`;
+    `	mov{emit_string	compthen}	{emit_reg rd}, #1\n`;
+    `	mov{emit_string compelse}	{emit_reg rd}, #0\n`;
+    3
+  end else begin
+    (* T32 mode in ARMv8 deprecates general ITE blocks
+       and favors IT blocks containing only one 16-bit instruction.
+       mov <reg>, #<imm> is 16 bits if <reg> is R0...R7
+                                   and <imm> fits in 8 bits. *)
+    let temp =
+      match rd.loc with
+      | Reg r when r < 8 -> rd  (* can assign rd directly *)
+      | _ -> phys_reg 3  (* use r3 as temporary *) in
+    `	it	{emit_string compthen}\n`;
+    `	mov{emit_string	compthen}	{emit_reg temp}, #1\n`;
+    `	it	{emit_string compelse}\n`;
+    `	mov{emit_string compelse}	{emit_reg temp}, #0\n`;
+    if temp.loc = rd.loc then 4 else begin
+      `	movs	{emit_reg rd}, {emit_reg temp}\n`; 5
+    end
+  end
+
+(* Emission of the profiling prelude *)
+
+let emit_profile() =
+  match Config.system with
+    "linux_eabi" | "linux_eabihf" | "netbsd" ->
+      `	push	\{lr}\n`;
+      `	{emit_call "__gnu_mcount_nc"}\n`;
+      2
+  | _ -> 0
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr i =
     emit_debug_info i.dbg;
     match i.desc with
-      Lend -> 0
+    | Lend -> 0
+    | Lprologue ->
+      let num_instrs0 =
+        if !Clflags.gprofile then emit_profile()
+        else 0
+      in
+      let n = frame_size() in
+      let num_instrs1 =
+        if n > 0 then begin
+          let num_instrs = emit_stack_adjustment (-n) in
+          if !contains_calls then begin
+            cfi_offset ~reg:14 (* lr *) ~offset:(-4);
+            `	str	lr, [sp, #{emit_int(n - 4)}]\n`;
+            num_instrs + 1
+          end else begin
+            num_instrs
+          end
+        end else begin
+          0
+        end
+      in
+      `{emit_label !tailrec_entry_point}:\n`;
+      num_instrs0 + num_instrs1
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc = dst.loc then 0 else begin
@@ -541,7 +602,7 @@ let emit_instr i =
           | Double_u -> "fstd"
           | _ (* 32-bit quantities *) -> "str" in
         `	{emit_string instr}	{emit_reg r}, {emit_addressing addr i.arg 1}\n`; 1
-    | Lop(Ialloc { words = n; blocks = dbg; label_after_call_gc; }) ->
+    | Lop(Ialloc { bytes = n; allocs = dbg; label_after_call_gc; }) ->
         let lbl_frame =
           record_frame_label i.live false (Dbg_alloc dbg) ?label:label_after_call_gc
         in
@@ -574,19 +635,11 @@ let emit_instr i =
           1 + ninstr
         end
     | Lop(Iintop(Icomp cmp)) ->
-        let compthen = name_for_comparison cmp in
-        let compelse = name_for_comparison (negate_integer_comparison cmp) in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-        `	ite	{emit_string compthen}\n`;
-        `	mov{emit_string	compthen}	{emit_reg i.res.(0)}, #1\n`;
-        `	mov{emit_string compelse}	{emit_reg i.res.(0)}, #0\n`; 4
+        1 + emit_set_condition cmp i.res.(0)
     | Lop(Iintop_imm(Icomp cmp, n)) ->
-        let compthen = name_for_comparison cmp in
-        let compelse = name_for_comparison (negate_integer_comparison cmp) in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
-        `	ite	{emit_string compthen}\n`;
-        `	mov{emit_string	compthen}	{emit_reg i.res.(0)}, #1\n`;
-        `	mov{emit_string compelse}	{emit_reg i.res.(0)}, #0\n`; 4
+        1 + emit_set_condition cmp i.res.(0)
     | Lop(Iintop (Icheckbound { label_after_error; } )) ->
         let lbl = bound_error_label ?label:label_after_error i.dbg in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
@@ -707,18 +760,20 @@ let emit_instr i =
             `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
             let comp = name_for_comparison cmp in
             `	b{emit_string comp}	{emit_label lbl}\n`; 2
-        | Ifloattest(cmp, neg) ->
-            let comp = (match (cmp, neg) with
-                          (Ceq, false) | (Cne, true) -> "eq"
-                        | (Cne, false) | (Ceq, true) -> "ne"
-                        | (Clt, false) -> "cc"
-                        | (Clt, true)  -> "cs"
-                        | (Cle, false) -> "ls"
-                        | (Cle, true)  -> "hi"
-                        | (Cgt, false) -> "gt"
-                        | (Cgt, true)  -> "le"
-                        | (Cge, false) -> "ge"
-                        | (Cge, true)  -> "lt") in
+        | Ifloattest cmp ->
+            let comp =
+              match cmp with
+              | CFeq -> "eq"
+              | CFneq -> "ne"
+              | CFlt -> "cc"
+              | CFnlt -> "cs"
+              | CFle -> "ls"
+              | CFnle -> "hi"
+              | CFgt -> "gt"
+              | CFngt -> "le"
+              | CFge -> "ge"
+              | CFnge -> "lt"
+            in
             `	fcmpd	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             `	fmstat\n`;
             `	b{emit_string comp}	{emit_label lbl}\n`; 3
@@ -847,16 +902,6 @@ let rec emit_all ninstr fallthrough i =
     emit_all (ninstr' + n) (has_fallthrough i.desc) i.next
   end
 
-
-(* Emission of the profiling prelude *)
-
-let emit_profile() =
-  match Config.system with
-    "linux_eabi" | "linux_eabihf" | "netbsd" ->
-      `	push	\{lr}\n`;
-      `	{emit_call "__gnu_mcount_nc"}\n`
-  | _ -> ()
-
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -880,16 +925,6 @@ let fundecl fundecl =
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc();
-  if !Clflags.gprofile then emit_profile();
-  let n = frame_size() in
-  if n > 0 then begin
-    ignore(emit_stack_adjustment (-n));
-    if !contains_calls then begin
-      cfi_offset ~reg:14 (* lr *) ~offset:(-4);
-      `	str	lr, [sp, #{emit_int(n - 4)}]\n`
-    end
-  end;
-  `{emit_label !tailrec_entry_point}:\n`;
   emit_all 0 true fundecl.fun_body;
   emit_literals();
   List.iter emit_call_gc !call_gc_sites;
@@ -931,6 +966,7 @@ let begin_assembly() =
   | ARMv6   -> `	.arch	armv6\n`
   | ARMv6T2 -> `	.arch	armv6t2\n`
   | ARMv7   -> `	.arch	armv7-a\n`
+  | ARMv8   -> `	.arch	armv8-a\n`
   end;
   begin match !fpu with
     Soft      -> `	.fpu	softvfp\n`

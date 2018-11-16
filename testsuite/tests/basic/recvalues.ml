@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* Recursive value definitions *)
 
 let _ =

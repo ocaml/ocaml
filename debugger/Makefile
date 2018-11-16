@@ -13,90 +13,70 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
-UNIXDIR=../otherlibs/$(UNIXLIB)
-CAMLRUN ?= ../boot/ocamlrun
-CAMLYACC ?= ../boot/ocamlyacc
+ROOTDIR = ..
 
-CAMLC=$(CAMLRUN) ../ocamlc -nostdlib -I ../stdlib
+include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
+
+UNIXDIR=$(ROOTDIR)/otherlibs/$(UNIXLIB)
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
+
+CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
           -safe-string -strict-sequence -strict-formats
 LINKFLAGS=-linkall -I $(UNIXDIR)
 YACCFLAGS=
-CAMLLEX=$(CAMLRUN) ../boot/ocamllex
-CAMLDEP=$(CAMLRUN) ../tools/ocamldep
+CAMLLEX=$(CAMLRUN) $(ROOTDIR)/boot/ocamllex
+CAMLDEP=$(CAMLRUN) $(ROOTDIR)/tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 
-INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
+DIRECTORIES=$(UNIXDIR) $(addprefix $(ROOTDIR)/,\
+  utils parsing typing bytecomp toplevel driver)
 
-INCLUDES=\
-  -I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../toplevel \
-  -I ../driver -I $(UNIXDIR)
+INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
-OTHEROBJS=\
-  $(UNIXDIR)/unix.cma \
-  ../utils/config.cmo ../utils/tbl.cmo ../utils/misc.cmo \
-  ../utils/identifiable.cmo ../utils/numbers.cmo \
-  ../utils/arg_helper.cmo ../utils/clflags.cmo \
-  ../utils/consistbl.cmo ../utils/warnings.cmo \
-  ../utils/terminfo.cmo \
-  ../parsing/location.cmo ../parsing/longident.cmo ../parsing/docstrings.cmo \
-  ../parsing/syntaxerr.cmo \
-  ../parsing/ast_helper.cmo ../parsing/ast_mapper.cmo \
-  ../parsing/ast_iterator.cmo ../parsing/attr_helper.cmo \
-  ../parsing/builtin_attributes.cmo \
-  ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
-  ../typing/btype.cmo ../typing/primitive.cmo ../typing/typedtree.cmo \
-  ../typing/subst.cmo ../typing/predef.cmo \
-  ../typing/datarepr.cmo ../typing/cmi_format.cmo ../typing/env.cmo \
-  ../typing/oprint.cmo \
-  ../typing/ctype.cmo ../typing/printtyp.cmo ../typing/mtype.cmo \
-  ../typing/envaux.cmo \
-  ../bytecomp/runtimedef.cmo ../bytecomp/bytesections.cmo \
-  ../bytecomp/dll.cmo ../bytecomp/meta.cmo ../bytecomp/symtable.cmo \
-  ../bytecomp/opcodes.cmo ../driver/compdynlink.cmo \
-  ../toplevel/genprintval.cmo
+utils_modules := $(addprefix utils/,\
+  config build_path_prefix_map misc identifiable numbers arg_helper clflags \
+  consistbl warnings terminfo)
 
+parsing_modules := $(addprefix parsing/,\
+  location longident docstrings syntaxerr ast_helper ast_mapper ast_iterator \
+  attr_helper builtin_attributes pprintast)
 
-OBJS=\
-	int64ops.cmo \
-	primitives.cmo \
-	unix_tools.cmo \
-	debugger_config.cmo \
-	parameters.cmo \
-	lexer.cmo \
-	input_handling.cmo \
-	question.cmo \
-	debugcom.cmo \
-	exec.cmo \
-	source.cmo \
-	pos.cmo \
-	checkpoints.cmo \
-	events.cmo \
-	program_loading.cmo \
-	symbols.cmo \
-	breakpoints.cmo \
-	trap_barrier.cmo \
-	history.cmo \
-	printval.cmo \
-	show_source.cmo \
-	time_travel.cmo \
-	program_management.cmo \
-	frames.cmo \
-	eval.cmo \
-	show_information.cmo \
-	loadprinter.cmo \
-	parser.cmo \
-	command_line.cmo \
-	main.cmo
+typing_modules := $(addprefix typing/,\
+  ident path types btype primitive typedtree subst predef datarepr \
+  cmi_format env oprint ctype printtyp mtype envaux)
+
+bytecomp_modules := $(addprefix bytecomp/,\
+  runtimedef bytesections dll meta symtable opcodes)
+
+other_compiler_modules := driver/compdynlink_types \
+  driver/compdynlink_platform_intf \
+  driver/compdynlink_common driver/compdynlink toplevel/genprintval
+
+compiler_modules := $(addprefix $(ROOTDIR)/,\
+  $(utils_modules) $(parsing_modules) $(typing_modules) \
+  $(bytecomp_modules) $(other_compiler_modules))
+
+debugger_modules := \
+  int64ops primitives unix_tools debugger_config parameters lexer \
+  input_handling question debugcom exec source pos checkpoints events \
+  program_loading symbols breakpoints trap_barrier history printval \
+  show_source time_travel program_management frames eval \
+  show_information loadprinter parser command_line main
+
+all_modules := $(compiler_modules) $(debugger_modules)
+
+all_objects := $(addsuffix .cmo,$(all_modules))
 
 all: ocamldebug$(EXE)
 
-ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
-	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
+ocamldebug$(EXE): $(UNIXDIR)/unix.cma $(all_objects)
+	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:
-	cp ocamldebug$(EXE) "$(INSTALL_BINDIR)/ocamldebug$(EXE)"
+	$(INSTALL_PROG) ocamldebug$(EXE) "$(INSTALL_BINDIR)/ocamldebug$(EXE)"
 
 clean::
 	rm -f ocamldebug$(EXE)

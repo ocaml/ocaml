@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* Tests for matchings on integers and characters *)
 
 (* Dense integer switch *)
@@ -1633,3 +1635,242 @@ end
 let () = GPR234HList.test ()
 
 let () = printf "GPR#234=Ok\n%!"
+
+module MPR7761 = struct
+
+  let zyva msg c r =
+    if r <> c then begin
+      Printf.printf "'%c' pas bon pour %s (should be '%c')\n%!"r  msg c
+    end else
+      Printf.printf "%s -> '%c'\n%!" msg r
+
+  module A = struct
+    type t = ..
+    type t +=
+      | A
+      | B
+
+    let f x y = match x, y with
+    | (A | B), A -> 'a'
+    | (A | B), B -> 'b'
+    | _, _ -> '_'
+
+    let () =
+      zyva "f A A" 'a' (f A A) ;
+      zyva "f A B" 'b' (f A B) ;
+      printf "PR#7661-A=Ok\n%!"
+  end
+
+  module B = struct
+    type t = ..
+    type t +=
+      | A
+      | B
+
+    type t += C
+    type t += D
+
+    let f x y = match x, y with
+    | B, C       -> 'x'
+    | (A | B), A -> 'a'
+    | (A | B), B -> 'b'
+    | (C | D), (A|B|C) -> 'c'
+    | _, _ -> '_'
+
+    let g x y = match x, y with
+    | Some B, C       -> 'x'
+    | (Some A | Some B), A -> 'a'
+    | (Some A | Some B), B -> 'b'
+    | (Some C | Some D), (A|B|C) -> 'c'
+    | _, _ -> '_'
+
+    let () =
+      zyva "f B C" 'x' (f B C) ;
+      zyva "f A A" 'a' (f A A) ;
+      zyva "f B A" 'a' (f B A) ;
+      zyva "f A B" 'b' (f A B) ;
+      zyva "f B B" 'b' (f B B) ;
+      zyva "f C B" 'c' (f C B) ;
+      zyva "f D B" 'c' (f D B) ;
+      zyva "f C A" 'c' (f C A) ;
+      zyva "f D A" 'c' (f D A) ;
+      zyva "f C C" 'c' (f C C) ;
+      zyva "f D C" 'c' (f D C) ;
+      zyva "f A D" '_' (f A D) ;
+      zyva "f C D" '_' (f C D) ;
+(***************)
+      zyva "g (Some B) C" 'x' (g (Some B) C) ;
+      zyva "g (Some A) A" 'a' (g (Some A) A) ;
+      zyva "g (Some B) A" 'a' (g (Some B) A) ;
+      zyva "g (Some A) B" 'b' (g (Some A) B) ;
+      zyva "g (Some B) B" 'b' (g (Some B) B) ;
+      zyva "g (Some C) B" 'c' (g (Some C) B) ;
+      zyva "g (Some D) B" 'c' (g (Some D) B) ;
+      zyva "g (Some C) A" 'c' (g (Some C) A) ;
+      zyva "g (Some D) A" 'c' (g (Some D) A) ;
+      zyva "g (Some C) C" 'c' (g (Some C) C) ;
+      zyva "g (Some D) C" 'c' (g (Some D) C) ;
+      zyva "g (Some A) D" '_' (g (Some A) D) ;
+      zyva "g (Some C) D" '_' (g (Some C) D) ;
+(***************)
+      printf "PR#7661-B=Ok\n%!"
+  end
+
+  module C = struct
+    type t = ..
+    type t +=
+      | A
+      | B
+
+    type t += C
+    type t += D=A
+
+    let f x y = match x, y with
+    | B, C       -> 'x'
+    | (A | B), A -> 'a'
+    | (A | B), B -> 'b'
+    | (C | D), (A|B|C) -> 'c'
+    | _, _ -> '_'
+
+    let g x y = match x, y with
+    | Some B, C       -> 'x'
+    | (Some A | Some B), A -> 'a'
+    | (Some A | Some B), B -> 'b'
+    | (Some C | Some D), (A|B|C) -> 'c'
+    | _, _ -> '_'
+
+    let () =
+      zyva "f B C" 'x' (f B C) ;
+      zyva "f A A" 'a' (f A A) ;
+      zyva "f B A" 'a' (f B A) ;
+      zyva "f A B" 'b' (f A B) ;
+      zyva "f B B" 'b' (f B B) ;
+      zyva "f C B" 'c' (f C B) ;
+      zyva "f D B" 'b' (f D B) ;
+      zyva "f C A" 'c' (f C A) ;
+      zyva "f D A" 'a' (f D A) ;
+      zyva "f C C" 'c' (f C C) ;
+      zyva "f D C" 'c' (f D C) ;
+      zyva "f A D" 'a' (f A D) ;
+      zyva "f B D" 'a' (f B D) ;
+      zyva "f C D" 'c' (f C D) ;
+      zyva "f D D" 'a' (f D D) ;
+(***************)
+      zyva "g (Some B) C" 'x' (g (Some B) C) ;
+      zyva "g (Some A) A" 'a' (g (Some A) A) ;
+      zyva "g (Some B) A" 'a' (g (Some B) A) ;
+      zyva "g (Some A) B" 'b' (g (Some A) B) ;
+      zyva "g (Some B) B" 'b' (g (Some B) B) ;
+      zyva "g (Some C) B" 'c' (g (Some C) B) ;
+      zyva "g (Some D) B" 'b' (g (Some D) B) ;
+      zyva "g (Some C) A" 'c' (g (Some C) A) ;
+      zyva "g (Some D) A" 'a' (g (Some D) A) ;
+      zyva "g (Some C) C" 'c' (g (Some C) C) ;
+      zyva "g (Some D) C" 'c' (g (Some D) C) ;
+      zyva "g (Some A) D" 'a' (g (Some A) D) ;
+      zyva "g (Some B) D" 'a' (g (Some B) D) ;
+      zyva "g (Some C) D" 'c' (g (Some C) D) ;
+      zyva "g (Some D) D" 'a' (g (Some D) D) ;
+(***************)
+      printf "PR#7661-C=Ok\n%!"
+  end
+
+  module D = struct
+    type t = ..
+    type t += A | B of int
+    type t += C=A
+
+    let f x y = match x,y with
+    | true,A -> 'a'
+    | _,B _  -> 'b'
+    | false,A -> 'c'
+    | _,_ -> '_'
+
+    let g x y = match x,y with
+    | true,A -> 'a'
+    | _,C  -> 'b'
+    | false,A -> 'c'
+    | _,_ -> '_'
+
+    let () =
+      zyva "f true A" 'a' (f true A) ;
+      zyva "f true (B 0)" 'b' (f true (B 0)) ;
+      zyva "f false A" 'c' (f false A) ;
+      zyva "g true A" 'a' (g true A) ;
+      zyva "g false A" 'b' (g false A) ;
+      zyva "g true (B 0)" '_' (g true (B 0)) ;
+(***************)
+      printf "PR#7661-D=Ok\n%!"
+  end
+
+  module E = struct
+
+    module type S = sig
+      type t = ..
+      type t += A|B|C
+      type u = X|Y|Z
+
+      val fAYX : char
+      val gAYX : char
+      val fAZY : char
+      val gAZY : char
+    end
+
+    module Z(T:S) : sig end = struct
+
+      open T
+
+      let f x y z = match x,y,z with
+      | A,X,_ -> '1'
+      | _,X,X -> '2'
+      | B,_,X -> '3'
+      | C,_,X -> '4'
+      | C,_,Y -> '5'
+      | _,_,_ -> '_'
+
+      let g x y z = match x,y,z with
+      | A,X,_     -> '1'
+      | _,X,X     -> '2'
+      | (B|C),_,X -> '3'
+      | C,_,Y     -> '5'
+      | _,_,_     -> '_'
+
+      let () =
+        zyva "f A Y X" fAYX  (f A Y X) ;
+        zyva "g A Y X" gAYX  (g A Y X) ;
+        zyva "f A Z Y" fAZY  (f A Z Y) ;
+        zyva "g A Z Y" gAZY  (g A Z Y) ;
+        ()
+    end
+
+    module A =
+      Z
+        (struct
+          type t = ..
+          type t += A|B
+          type t += C=A
+          type u = X|Y|Z
+
+          let fAYX = '4'
+          and gAYX = '3'
+          and fAZY = '5'
+          and gAZY = '5'
+        end)
+
+    module B =
+      Z
+        (struct
+          type t = ..
+          type t += A|B
+          type t += C
+          type u = X|Y|Z
+
+          let fAYX = '_'
+          and gAYX = '_'
+          and fAZY = '_'
+          and gAZY = '_'
+        end)
+
+    let () = printf "PR#7661-E=Ok\n%!"
+  end
+end

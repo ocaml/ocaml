@@ -16,6 +16,7 @@
 
 (****************** Tools for Unix *************************************)
 
+module Real_stdlib = Stdlib
 open Misc
 open Unix
 
@@ -58,7 +59,7 @@ let report_error = function
 (* Return the full path if found. *)
 (* Raise `Not_found' otherwise. *)
 let search_in_path name =
-  Printf.fprintf Pervasives.stderr "search_in_path [%s]\n%!" name;
+  Printf.fprintf Real_stdlib.stderr "search_in_path [%s]\n%!" name;
   let check name =
     try access name [X_OK]; name with Unix_error _ -> raise Not_found
   in

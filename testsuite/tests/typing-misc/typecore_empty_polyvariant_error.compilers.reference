@@ -1,0 +1,6 @@
+type t = [  ]
+Line 1, characters 31-32:
+1 | let f: 'a. t -> 'a = function #t -> . ;;
+                                   ^
+Error: The type t is not a variant type
+

@@ -1,3 +1,12 @@
+(* TEST
+   flags = "-g"
+   ocamlrunparam += ",b=1"
+   * bytecode
+     reference = "${test_source_directory}/backtrace_slots.byte.reference"
+   * native
+     reference = "${test_source_directory}/backtrace_slots.opt.reference"
+     compare_programs = "false"
+*)
 
 (* A test for stack backtraces *)
 
@@ -16,7 +25,7 @@ let get_backtrace () =
   Array.iteri (fun i slot -> Hashtbl.add table slot i) raw_slots;
   let module S = Set.Make(struct
     type t = Printexc.raw_backtrace_slot
-    let compare = Pervasives.compare
+    let compare = Stdlib.compare
   end) in
   let slots = Array.fold_right S.add raw_slots S.empty in
   Array.iteri (fun i slot ->

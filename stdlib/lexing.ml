@@ -63,7 +63,7 @@ external c_new_engine : lex_tables -> int -> lexbuf -> int
 
 let engine tbl state buf =
   let result = c_engine tbl state buf in
-  if result >= 0 then begin
+  if result >= 0 && buf.lex_curr_p != dummy_pos then begin
     buf.lex_start_p <- buf.lex_curr_p;
     buf.lex_curr_p <- {buf.lex_curr_p
                        with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
@@ -73,7 +73,7 @@ let engine tbl state buf =
 
 let new_engine tbl state buf =
   let result = c_new_engine tbl state buf in
-  if result >= 0 then begin
+  if result >= 0 && buf.lex_curr_p != dummy_pos then begin
     buf.lex_start_p <- buf.lex_curr_p;
     buf.lex_curr_p <- {buf.lex_curr_p
                        with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
@@ -145,7 +145,7 @@ let zero_pos = {
   pos_cnum = 0;
 }
 
-let from_function f =
+let from_function ?(with_positions = true) f =
   { refill_buff = lex_refill f (Bytes.create 512);
     lex_buffer = Bytes.create 1024;
     lex_buffer_len = 0;
@@ -156,14 +156,14 @@ let from_function f =
     lex_last_action = 0;
     lex_mem = [||];
     lex_eof_reached = false;
-    lex_start_p = zero_pos;
-    lex_curr_p = zero_pos;
+    lex_start_p = if with_positions then zero_pos else dummy_pos;
+    lex_curr_p = if with_positions then zero_pos else dummy_pos;
   }
 
-let from_channel ic =
-  from_function (fun buf n -> input ic buf 0 n)
+let from_channel ?with_positions ic =
+  from_function ?with_positions (fun buf n -> input ic buf 0 n)
 
-let from_string s =
+let from_string ?(with_positions = true) s =
   { refill_buff = (fun lexbuf -> lexbuf.lex_eof_reached <- true);
     lex_buffer = Bytes.of_string s; (* have to make a copy for compatibility
                                        with unsafe-string mode *)
@@ -175,9 +175,11 @@ let from_string s =
     lex_last_action = 0;
     lex_mem = [||];
     lex_eof_reached = true;
-    lex_start_p = zero_pos;
-    lex_curr_p = zero_pos;
+    lex_start_p = if with_positions then zero_pos else dummy_pos;
+    lex_curr_p = if with_positions then zero_pos else dummy_pos;
   }
+
+let with_positions lexbuf = lexbuf.lex_curr_p != dummy_pos
 
 let lexeme lexbuf =
   let len = lexbuf.lex_curr_pos - lexbuf.lex_start_pos in
@@ -215,10 +217,12 @@ let lexeme_end_p lexbuf = lexbuf.lex_curr_p
 
 let new_line lexbuf =
   let lcp = lexbuf.lex_curr_p in
-  lexbuf.lex_curr_p <- { lcp with
-    pos_lnum = lcp.pos_lnum + 1;
-    pos_bol = lcp.pos_cnum;
-  }
+  if lcp != dummy_pos then
+    lexbuf.lex_curr_p <-
+      { lcp with
+        pos_lnum = lcp.pos_lnum + 1;
+        pos_bol = lcp.pos_cnum;
+      }
 
 
 
@@ -227,5 +231,7 @@ let new_line lexbuf =
 let flush_input lb =
   lb.lex_curr_pos <- 0;
   lb.lex_abs_pos <- 0;
-  lb.lex_curr_p <- {lb.lex_curr_p with pos_cnum = 0};
+  let lcp = lb.lex_curr_p in
+  if lcp != dummy_pos then
+    lb.lex_curr_p <- {zero_pos with pos_fname = lcp.pos_fname};
   lb.lex_buffer_len <- 0;

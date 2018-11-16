@@ -14,9 +14,11 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
+module V = Backend_var
+
 module Debug_info = struct
   type t = {
-    holds_value_of : Ident.t;
+    holds_value_of : V.t;
     part_of_value : int;
     num_parts_of_value : int;
     which_parameter : int option;
@@ -24,10 +26,10 @@ module Debug_info = struct
   }
 
   let compare t1 t2 =
-    let c = Ident.compare t1.holds_value_of t2.holds_value_of in
+    let c = V.compare t1.holds_value_of t2.holds_value_of in
     if c <> 0 then c
     else
-      Pervasives.compare
+      Stdlib.compare
         (t1.part_of_value, t1.num_parts_of_value, t1.which_parameter)
         (t2.part_of_value, t2.num_parts_of_value, t2.which_parameter)
 
@@ -38,7 +40,7 @@ module Debug_info = struct
   let provenance t = t.provenance
 
   let print ppf t =
-    Format.fprintf ppf "%a" Ident.print t.holds_value_of;
+    Format.fprintf ppf "%a" V.print t.holds_value_of;
     if not (t.part_of_value = 0 && t.num_parts_of_value = 1) then begin
       Format.fprintf ppf "(%d/%d)" t.part_of_value t.num_parts_of_value
     end;
@@ -140,9 +142,9 @@ module Order_distinguishing_names_and_locations = struct
     | None, Some _ -> -1
     | Some _, None -> 1
     | Some di1, Some di2 ->
-      let c = Ident.compare di1.holds_value_of di2.holds_value_of in
+      let c = V.compare di1.holds_value_of di2.holds_value_of in
       if c <> 0 then c
-      else Pervasives.compare t1.reg.loc t2.reg.loc
+      else Stdlib.compare t1.reg.loc t2.reg.loc
 end
 
 module Set_distinguishing_names_and_locations =

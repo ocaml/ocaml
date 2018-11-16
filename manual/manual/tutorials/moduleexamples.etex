@@ -1,11 +1,9 @@
 \chapter{The module system} \label{c:moduleexamples}
-\pdfchapterfold{-5}{Tutorial: The module system}
 %HEVEA\cutname{moduleexamples.html}
 
 This chapter introduces the module system of OCaml.
 
 \section{Structures}
-\pdfsection{Structures}
 
 A primary motivation for modules is to package together related
 definitions (such as the definitions of a data type and associated
@@ -121,7 +119,6 @@ an exception when the priority queue is empty.
 \end{caml_example}
 
 \section{Signatures}
-\pdfsection{Signatures}
 
 Signatures are interfaces for structures. A signature specifies
 which components of a structure are accessible from the outside, and
@@ -176,21 +173,13 @@ module type PRIOQUEUE_WITH_OPT =
 
 
 \section{Functors}
-\pdfsection{Functors}
 
-Functors are ``functions'' from structures to structures. They are used to
-express parameterized structures: a structure \var{A} parameterized by a
-structure \var{B} is simply a functor \var{F} with a formal parameter
-\var{B} (along with the expected signature for \var{B}) which returns
-the actual structure \var{A} itself. The functor \var{F} can then be
-applied to one or several implementations \nth{B}{1} \ldots \nth{B}{n}
-of \var{B}, yielding the corresponding structures
-\nth{A}{1} \ldots \nth{A}{n}.
+Functors are ``functions'' from modules to modules. Functors let you create
+parameterized modules and then provide other modules as parameter(s) to get
+a specific implementation.  For instance, a "Set" module implementing sets
+as sorted lists could be parameterized to work with any module that provides
+an element type and a comparison function "compare" (such as "OrderedString"):
 
-For instance, here is a structure implementing sets as sorted lists,
-parameterized by a structure providing the type of the set elements
-and an ordering function over this type (used to keep the sets
-sorted):
 \begin{caml_example}{toplevel}
 type comparison = Less | Equal | Greater;;
 module type ORDERED_TYPE =
@@ -235,7 +224,6 @@ StringSet.member "bar" (StringSet.add "foo" StringSet.empty);;
 \end{caml_example}
 
 \section{Functors and type abstraction}
-\pdfsection{Functors and type abstraction}
 
 As in the "PrioQueue" example, it would be good style to hide the
 actual implementation of the type "set", so that users of the
@@ -325,7 +313,6 @@ operations from "AbstractStringSet" to values of type
 lists that violate the invariants of "NoCaseStringSet".
 
 \section{Modules and separate compilation}
-\pdfsection{Modules and separate compilation}
 
 All examples of modules so far have been given in the context of the
 interactive system. However, modules are most useful for large,

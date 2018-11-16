@@ -23,8 +23,12 @@ val transl_type_decl:
     Typedtree.type_declaration list * Env.t
 
 val transl_exception:
+    Env.t -> Parsetree.extension_constructor ->
+    Typedtree.extension_constructor * Env.t
+
+val transl_type_exception:
     Env.t ->
-    Parsetree.extension_constructor -> Typedtree.extension_constructor * Env.t
+    Parsetree.type_exception -> Typedtree.type_exception * Env.t
 
 val transl_type_extension:
     bool -> Env.t -> Location.t -> Parsetree.type_extension ->
@@ -72,18 +76,18 @@ type error =
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Cycle_in_def of string * type_expr
-  | Definition_mismatch of type_expr * Includecore.type_mismatch list
+  | Definition_mismatch of type_expr * Includecore.type_mismatch option
   | Constraint_failed of type_expr * type_expr
-  | Inconsistent_constraint of Env.t * (type_expr * type_expr) list
-  | Type_clash of Env.t * (type_expr * type_expr) list
+  | Inconsistent_constraint of Env.t * Ctype.Unification_trace.t
+  | Type_clash of Env.t * Ctype.Unification_trace.t
   | Parameters_differ of Path.t * type_expr * type_expr
   | Null_arity_external
   | Missing_native_external
   | Unbound_type_var of type_expr * type_declaration
   | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
-  | Extension_mismatch of Path.t * Includecore.type_mismatch list
-  | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
+  | Extension_mismatch of Path.t * Includecore.type_mismatch
+  | Rebind_wrong_type of Longident.t * Env.t * Ctype.Unification_trace.t
   | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
   | Bad_variance of int * (bool*bool*bool) * (bool*bool*bool)

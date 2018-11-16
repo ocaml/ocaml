@@ -58,21 +58,13 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 #elif defined(HAS_UTIME)
 
 #include <sys/types.h>
-#ifndef _WIN32
 #include <utime.h>
-#else
-#include <sys/utime.h>
-#endif
 
 CAMLprim value unix_utimes(value path, value atime, value mtime)
 {
   CAMLparam3(path, atime, mtime);
-#ifdef _WIN32
-  struct _utimbuf times, * t;
-#else
   struct utimbuf times, * t;
-#endif
-  char_os * p;
+  char * p;
   int ret;
   double at, mt;
   caml_unix_check_path(path, "utimes");
@@ -85,9 +77,9 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
     times.modtime = mt;
     t = &times;
   }
-  p = caml_stat_strdup_to_os(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
-  ret = utime_os(p, t);
+  ret = utime(p, t);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) uerror("utimes", path);

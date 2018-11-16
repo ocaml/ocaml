@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* Full fledge version, using objects to structure code *)
 
 open StdLabels
@@ -73,7 +75,7 @@ let lambda_ops (ops : ('a,'a) #ops Lazy.t) =
               ~f:(fun ~key ~data acc ->
                 if Names.mem s used then data::acc else acc) in
           if List.exists used_expr ~f:(fun t -> Names.mem s (!!free t)) then
-            let name = s ^ string_of_int (next_id ()) in
+            let name = s ^ Int.to_string (next_id ()) in
             `Abs(name,
                  !!subst ~sub:(Subst.add ~key:s ~data:(`Var name) sub) t)
           else

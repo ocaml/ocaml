@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type 'a t = 'a array
+(** An alias for the type of arrays. *)
+
 (** Array operations. *)
 
 external length : 'a array -> int = "%array_length"
@@ -158,7 +161,7 @@ val fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
    where [n] is the length of the array [a]. *)
 
 
-(** {6 Iterators on two arrays} *)
+(** {1 Iterators on two arrays} *)
 
 
 val iter2 : f:('a -> 'b -> unit) -> 'a array -> 'b array -> unit
@@ -175,7 +178,7 @@ val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    @since 4.05.0 *)
 
 
-(** {6 Array scanning} *)
+(** {1 Array scanning} *)
 
 
 val exists : f:('a -> bool) -> 'a array -> bool
@@ -219,7 +222,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a array -> unit
    function.  The comparison function must return 0 if its arguments
    compare as equal, a positive integer if the first is greater,
    and a negative integer if the first is smaller (see below for a
-   complete specification).  For example, {!Pervasives.compare} is
+   complete specification).  For example, {!Stdlib.compare} is
    a suitable comparison function, provided there are no floating-point
    NaN values in the data.  After calling [Array.sort], the
    array is sorted in place in increasing order.
@@ -255,6 +258,20 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
     faster on typical input.
 *)
 
+
+(** {1 Iterators} *)
+
+val to_seq : 'a array -> 'a Seq.t
+(** Iterate on the array, in increasing order
+    @since 4.07 *)
+
+val to_seqi : 'a array -> (int * 'a) Seq.t
+(** Iterate on the array, in increasing order, yielding indices along elements
+    @since 4.07 *)
+
+val of_seq : 'a Seq.t -> 'a array
+(** Create an array from the generator
+    @since 4.07 *)
 
 (**/**)
 

@@ -1,0 +1,29 @@
+#!/bin/sh
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Sebastien Hinderer, projet Gallium, INRIA Paris             *
+#*                                                                        *
+#*   Copyright 2017 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+# Commands to run for the 'other-configs' job on Inria's CI
+
+# Stop on error
+set -e
+
+mainjob=./tools/ci/inria/main
+main="${mainjob} -j8"
+
+${main} -conf -no-native-compiler -no-native
+${main} -conf -no-naked-pointers
+${main} -conf -no-flat-float-array
+${main} -conf -flambda -conf -no-naked-pointers
+OCAMLRUNPARAM="c=1" ${main}

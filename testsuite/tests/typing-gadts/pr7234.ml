@@ -1,10 +1,16 @@
+(* TEST
+   * expect
+*)
+
 type (_, _) eq = Eq : ('a, 'a) eq | Neq : int -> ('a, 'b) eq;;
 type 'a t;;
 let f (type a) (Neq n : (a, a t) eq) = n;;   (* warn! *)
 [%%expect{|
 type (_, _) eq = Eq : ('a, 'a) eq | Neq : int -> ('a, 'b) eq
 type 'a t
-Line _, characters 15-40:
+Line 3, characters 15-40:
+3 | let f (type a) (Neq n : (a, a t) eq) = n;;   (* warn! *)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
@@ -15,7 +21,9 @@ module F (T : sig type _ t end) = struct
  let f (type a) (Neq n : (a, a T.t) eq) = n  (* warn! *)
 end;;
 [%%expect{|
-Line _, characters 16-43:
+Line 2, characters 16-43:
+2 |  let f (type a) (Neq n : (a, a T.t) eq) = n  (* warn! *)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq

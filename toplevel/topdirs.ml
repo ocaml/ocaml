@@ -124,10 +124,10 @@ let load_compunit ic filename ppf compunit =
   check_consistency ppf filename compunit;
   seek_in ic compunit.cu_pos;
   let code_size = compunit.cu_codesize + 8 in
-  let code = Meta.static_alloc code_size in
-  unsafe_really_input ic code 0 compunit.cu_codesize;
-  Bytes.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-  String.unsafe_blit "\000\000\000\001\000\000\000" 0
+  let code = LongString.create code_size in
+  LongString.input_bytes_into code ic compunit.cu_codesize;
+  LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
+  LongString.blit_string "\000\000\000\001\000\000\000" 0
                      code (compunit.cu_codesize + 1) 7;
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code compunit.cu_reloc;
@@ -138,10 +138,10 @@ let load_compunit ic filename ppf compunit =
       seek_in ic compunit.cu_debug;
       [| input_value ic |]
     end in
-  Meta.add_debug_info code code_size events;
   begin try
     may_trace := true;
-    ignore((Meta.reify_bytecode code code_size) ());
+    let _bytecode, closure = Meta.reify_bytecode code events None in
+    ignore (closure ());
     may_trace := false;
   with exn ->
     record_backtrace ();
@@ -159,13 +159,9 @@ let rec load_file recursive ppf name =
   | None -> fprintf ppf "Cannot find file %s.@." name; false
   | Some filename ->
       let ic = open_in_bin filename in
-      try
-        let success = really_load_file recursive ppf name filename ic in
-        close_in ic;
-        success
-      with exn ->
-        close_in ic;
-        raise exn
+      Misc.try_finally
+        ~always:(fun () -> close_in ic)
+        (fun () -> really_load_file recursive ppf name filename ic)
 
 and really_load_file recursive ppf name filename ic =
   let buffer = really_input_string ic (String.length Config.cmo_magic_number) in
@@ -294,7 +290,7 @@ let match_simple_printer_type desc printer_type =
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
     (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance_def desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
   (ty_arg, None)
@@ -312,7 +308,7 @@ let match_generic_printer_type desc path args printer_type =
       ty_args (Ctype.newconstr printer_type [ty_target]) in
   Ctype.unify !toplevel_env
     ty_expected
-    (Ctype.instance_def desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_expected;
   if not (Ctype.all_distinct_vars !toplevel_env args) then
@@ -322,7 +318,6 @@ let match_generic_printer_type desc path args printer_type =
 let match_printer_type ppf desc =
   let printer_type_new = printer_type ppf "printer_type_new" in
   let printer_type_old = printer_type ppf "printer_type_old" in
-  Ctype.init_def(Ident.current_time());
   try
     (match_simple_printer_type desc printer_type_new, false)
   with Ctype.Unify _ ->
@@ -484,9 +479,13 @@ let trim_signature = function
         (List.map
            (function
                Sig_module (id, md, rs) ->
+                 let attribute =
+                   Ast_helper.Attr.mk
+                     (Location.mknoloc "...")
+                     (Parsetree.PStr [])
+                 in
                  Sig_module (id, {md with md_attributes =
-                                    (Location.mknoloc "...", Parsetree.PStr [])
-                                    :: md.md_attributes},
+                                            attribute :: md.md_attributes},
                              rs)
              (*| Sig_modtype (id, Modtype_manifest mty) ->
                  Sig_modtype (id, Modtype_manifest (trim_modtype mty))*)
@@ -508,7 +507,7 @@ let show_prim to_sig ppf lid =
     in
     let id = Ident.create_persistent s in
     let sg = to_sig env loc id lid in
-    Printtyp.wrap_printing_env env
+    Printtyp.wrap_printing_env ~error:false env
       (fun () -> fprintf ppf "@[%a@]@." Printtyp.signature sg)
   with
   | Not_found ->

@@ -370,7 +370,7 @@ type stats = Unix.stats =
     st_nlink : int;             (** Number of links *)
     st_uid : int;               (** User id of the owner *)
     st_gid : int;               (** Group ID of the file's group *)
-    st_rdev : int;              (** Device minor number *)
+    st_rdev : int;              (** Device ID (if special file) *)
     st_size : int;              (** Size in bytes *)
     st_atime : float;           (** Last access time *)
     st_mtime : float;           (** Last modification time *)
@@ -408,7 +408,7 @@ module LargeFile :
         st_nlink : int;             (** Number of links *)
         st_uid : int;               (** User id of the owner *)
         st_gid : int;               (** Group ID of the file's group *)
-        st_rdev : int;              (** Device minor number *)
+        st_rdev : int;              (** Device ID (if special file) *)
         st_size : int64;            (** Size in bytes *)
         st_atime : float;           (** Last access time *)
         st_mtime : float;           (** Last modification time *)
@@ -433,9 +433,9 @@ module LargeFile :
 (** {1 Mapping files into memory} *)
 
 val map_file :
-  file_descr -> ?pos:int64 -> kind:('a, 'b) CamlinternalBigarray.kind ->
-  layout:'c CamlinternalBigarray.layout -> shared:bool -> dims:int array ->
-  ('a, 'b, 'c) CamlinternalBigarray.genarray
+  file_descr -> ?pos:int64 -> kind:('a, 'b) Stdlib.Bigarray.kind ->
+  layout:'c Stdlib.Bigarray.layout -> shared:bool -> dims:int array ->
+  ('a, 'b, 'c) Stdlib.Bigarray.Genarray.t
 (** Memory mapping of a file as a big array.
   [map_file fd kind layout shared dims]
   returns a big array of kind [kind], layout [layout],
@@ -492,9 +492,19 @@ val unlink : string -> unit
 val rename : src:string -> dst:string -> unit
 (** [rename old new] changes the name of a file from [old] to [new]. *)
 
-val link : src:string -> dst:string -> unit
-(** [link source dest] creates a hard link named [dest] to the file
-   named [source]. *)
+val link : ?follow:bool -> src:string -> dst:string -> unit
+(** [link ?follow source dest] creates a hard link named [dest] to the file
+   named [source].
+
+   @param follow indicates whether a [source] symlink is followed or a
+   hardlink to [source] itself will be created. On {e Unix} systems this is
+   done using the [linkat(2)] function. If [?follow] is not provided, then the
+   [link(2)] function is used whose behaviour is OS-dependent, but more widely
+   available.
+
+   @raise ENOSYS On {e Unix} if [~follow:_] is requested, but linkat is
+                 unavailable.
+   @raise ENOSYS On {e Windows} if [~follow:false] is requested. *)
 
 
 (** {1 File permissions and ownership} *)
@@ -650,7 +660,7 @@ val open_process_out : string -> out_channel
    the command to a pipe.  Data written to the returned output channel
    is sent to the standard input of the command.
    Warning: writes on output channels are buffered, hence be careful
-   to call {!Pervasives.flush} at the right times to ensure
+   to call {!Stdlib.flush} at the right times to ensure
    correct synchronization. *)
 
 val open_process : string -> in_channel * out_channel
@@ -665,6 +675,42 @@ val open_process_full :
    the environment passed to the command.  The result is a triple
    of channels connected respectively to the standard output, standard input,
    and standard error of the command. *)
+
+val open_process_args_in : string -> string array -> in_channel
+(** High-level pipe and process management. The first argument specifies the
+   command to run, and the second argument specifies the argument array passed
+   to the command.  This function runs the command in parallel with the program.
+   The standard output of the command is redirected to a pipe, which can be read
+   via the returned input channel.
+
+    @since 4.08.0 *)
+
+val open_process_args_out : string -> string array -> out_channel
+(** Same as {!Unix.open_process_args_in}, but redirect the standard input of the
+   command to a pipe.  Data written to the returned output channel is sent to
+   the standard input of the command.  Warning: writes on output channels are
+   buffered, hence be careful to call {!Stdlib.flush} at the right times to
+   ensure correct synchronization.
+
+    @since 4.08.0 *)
+
+val open_process_args : string -> string array -> in_channel * out_channel
+(** Same as {!Unix.open_process_args_out}, but redirects both the standard input
+   and standard output of the command to pipes connected to the two returned
+   channels.  The input channel is connected to the output of the command, and
+   the output channel to the input of the command.
+
+    @since 4.08.0 *)
+
+val open_process_args_full :
+  string -> string array -> string array ->
+    in_channel * out_channel * in_channel
+(** Similar to {!Unix.open_process_args}, but the third argument specifies the
+   environment passed to the command.  The result is a triple of channels
+   connected respectively to the standard output, standard input, and standard
+   error of the command.
+
+    @since 4.08.0 *)
 
 val close_process_in : in_channel -> process_status
 (** Close channels opened by {!UnixLabels.open_process_in},
@@ -956,19 +1002,19 @@ val getlogin : unit -> string
 
 val getpwnam : string -> passwd_entry
 (** Find an entry in [passwd] with the given name, or raise
-   [Not_found]. *)
+   [Not_found] if the matching entry is not found. *)
 
 val getgrnam : string -> group_entry
 (** Find an entry in [group] with the given name, or raise
-   [Not_found]. *)
+   [Not_found] if the matching entry is not found. *)
 
 val getpwuid : int -> passwd_entry
 (** Find an entry in [passwd] with the given user id, or raise
-   [Not_found]. *)
+   [Not_found] if the matching entry is not found. *)
 
 val getgrgid : int -> group_entry
 (** Find an entry in [group] with the given group id, or raise
-   [Not_found]. *)
+   [Not_found] if the matching entry is not found. *)
 
 
 (** {1 Internet addresses} *)
@@ -1206,7 +1252,7 @@ val getsockopt_error : file_descr -> error option
 val open_connection : sockaddr -> in_channel * out_channel
 (** Connect to a server at the given address.
    Return a pair of buffered channels connected to the server.
-   Remember to call {!Pervasives.flush} on the output channel at the right
+   Remember to call {!Stdlib.flush} on the output channel at the right
    times to ensure correct synchronization. *)
 
 val shutdown_connection : in_channel -> unit

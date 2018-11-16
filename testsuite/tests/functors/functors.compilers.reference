@@ -1,0 +1,51 @@
+(setglobal Functors!
+  (let
+    (O =
+       (module-defn(O) functors.ml(12):184-279
+         (function X is_a_functor always_inline
+           (let
+             (cow = (function x (apply (field 0 X) x))
+              sheep = (function x (+ 1 (apply cow x))))
+             (makeblock 0 cow sheep))))
+     F =
+       (module-defn(F) functors.ml(17):281-392
+         (function X Y is_a_functor always_inline
+           (let
+             (cow = (function x (apply (field 0 Y) (apply (field 0 X) x)))
+              sheep = (function x (+ 1 (apply cow x))))
+             (makeblock 0 cow sheep))))
+     F1 =
+       (module-defn(F1) functors.ml(31):516-632
+         (function X Y is_a_functor always_inline
+           (let
+             (cow = (function x (apply (field 0 Y) (apply (field 0 X) x)))
+              sheep = (function x (+ 1 (apply cow x))))
+             (makeblock 0 sheep))))
+     F2 =
+       (module-defn(F2) functors.ml(36):634-784
+         (function X Y is_a_functor always_inline
+           (let
+             (X =a (makeblock 0 (field 1 X))
+              Y =a (makeblock 0 (field 1 Y))
+              cow = (function x (apply (field 0 Y) (apply (field 0 X) x)))
+              sheep = (function x (+ 1 (apply cow x))))
+             (makeblock 0 sheep))))
+     M =
+       (module-defn(M) functors.ml(41):786-970
+         (let
+           (F =
+              (module-defn(F) functors.ml(44):849-966
+                (function X Y is_a_functor always_inline
+                  (let
+                    (cow =
+                       (function x (apply (field 0 Y) (apply (field 0 X) x)))
+                     sheep = (function x (+ 1 (apply cow x))))
+                    (makeblock 0 cow sheep)))))
+           (makeblock 0
+             (function funarg funarg is_a_functor stub
+               (let
+                 (let =
+                    (apply F (makeblock 0 (field 1 funarg))
+                      (makeblock 0 (field 1 funarg))))
+                 (makeblock 0 (field 1 let))))))))
+    (makeblock 0 O F F1 F2 M)))

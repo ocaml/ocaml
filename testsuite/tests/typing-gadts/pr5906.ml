@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type _ constant =
   | Int: int -> int constant
   | Bool: bool -> bool constant
@@ -23,7 +27,12 @@ type (_, _, _) binop =
     Eq : ('a, 'a, bool) binop
   | Leq : ('a, 'a, bool) binop
   | Add : (int, int, int) binop
-Line _, characters 2-195:
+Line 12, characters 2-195:
+12 | ..match bop, x, y with
+13 |   | Eq, Bool x, Bool y -> Bool (if x then y else not y)
+14 |   | Leq, Int x, Int y -> Bool (x <= y)
+15 |   | Leq, Bool x, Bool y -> Bool (x <= y)
+16 |   | Add, Int x, Int y -> Int (x + y)
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (Eq, Int _, _)

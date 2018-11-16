@@ -1,3 +1,9 @@
+(* TEST
+   modules = "is_in_static_data.c is_static_flambda_dep.ml"
+   * flambda
+   ** native
+*)
+
 (* Data that should be statically allocated by the compiler (flambda only) *)
 
 external is_in_static_data : 'a -> bool = "caml_is_in_static_data"
@@ -61,9 +67,9 @@ let i () =
 
 let () = (i [@inlined never]) ()
 
-module type P = module type of Pervasives
+module type P = module type of Stdlib
 (* Top-level modules should be static *)
-let () = assert(is_in_static_data (module Pervasives:P))
+let () = assert(is_in_static_data (module Stdlib:P))
 
 (* Not constant let rec to test extraction to initialize_symbol *)
 let r = ref 0
@@ -185,7 +191,7 @@ module Int = struct
   type t = int
   let compare (a:int) b = compare a b
 end
-module IntMap = (Map.Make [@inlined])(Int)
+module IntMap = Map.Make (Int)
 
 let () =
   let f () =

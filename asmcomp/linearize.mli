@@ -26,7 +26,8 @@ type instruction =
     live: Reg.Set.t }
 
 and instruction_desc =
-    Lend
+  | Lprologue
+  | Lend
   | Lop of Mach.operation
   | Lreloadretaddr
   | Lreturn

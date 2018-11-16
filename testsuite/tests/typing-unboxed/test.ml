@@ -1,4 +1,7 @@
-
+(* TEST
+   flags = "-strict-sequence"
+   * expect
+*)
 external a : (int [@untagged]) -> unit = "a" "a_nat"
 external b : (int32 [@unboxed]) -> unit = "b" "b_nat"
 external c : (int64 [@unboxed]) -> unit = "c" "c_nat"
@@ -17,8 +20,23 @@ end = struct
   external b : (int [@untagged]) -> int = "b" "b_nat"
 end;;
 
+[%%expect{|
+external a : (int [@untagged]) -> unit = "a" "a_nat"
+external b : (int32 [@unboxed]) -> unit = "b" "b_nat"
+external c : (int64 [@unboxed]) -> unit = "c" "c_nat"
+external d : (nativeint [@unboxed]) -> unit = "d" "d_nat"
+external e : (float [@unboxed]) -> unit = "e" "e_nat"
+type t = private int
+external f : (t [@untagged]) -> unit = "f" "f_nat"
+module M :
+  sig
+    external a : int -> (int [@untagged]) = "a" "a_nat"
+    external b : (int [@untagged]) -> int = "b" "b_nat"
+  end
+|}]
+
 module Global_attributes = struct
-  [@@@ocaml.warning "-3"]
+  [@@@ocaml.alert "-deprecated"]
 
   external a : float -> float = "a" "noalloc" "a_nat" "float"
   external b : float -> float = "b" "noalloc" "b_nat"
@@ -34,6 +52,14 @@ module Global_attributes = struct
   external i : int -> int = "i" "i_nat" [@@untagged] [@@noalloc]
 end;;
 
+[%%expect{|
+Line 11, characters 2-71:
+11 |   external f : (int32 [@unboxed]) -> (int32 [@unboxed]) = "f" "noalloc"
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: [@The native code version of the primitive is mandatory
+       when attributes [@untagged] or [@unboxed] are present.
+|}]
+
 module Old_style_warning = struct
   [@@@ocaml.warning "+3"]
   external a : float -> float = "a" "noalloc" "a_nat" "float"
@@ -41,7 +67,35 @@ module Old_style_warning = struct
   external c : float -> float = "c" "c_nat" "float"
   external d : float -> float = "d" "noalloc"
   external e : float -> float = "c" "float"
-end
+end;;
+[%%expect{|
+Line 3, characters 2-61:
+3 |   external a : float -> float = "a" "noalloc" "a_nat" "float"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Alert deprecated: [@@unboxed] + [@@noalloc] should be used
+instead of "float"
+Line 4, characters 2-53:
+4 |   external b : float -> float = "b" "noalloc" "b_nat"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Alert deprecated: [@@noalloc] should be used instead of "noalloc"
+Line 5, characters 2-51:
+5 |   external c : float -> float = "c" "c_nat" "float"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Alert deprecated: [@@unboxed] + [@@noalloc] should be used
+instead of "float"
+Line 6, characters 2-45:
+6 |   external d : float -> float = "d" "noalloc"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Alert deprecated: [@@noalloc] should be used instead of "noalloc"
+module Old_style_warning :
+  sig
+    external a : float -> float = "a" "a_nat" [@@unboxed] [@@noalloc]
+    external b : float -> float = "b" "b_nat" [@@noalloc]
+    external c : float -> float = "c" "c_nat" [@@unboxed] [@@noalloc]
+    external d : float -> float = "d" [@@noalloc]
+    external e : float -> float = "c" "float"
+  end
+|}]
 
 (* Bad: attributes not reported in the interface *)
 
@@ -51,11 +105,43 @@ end = struct
   external f : int -> (int [@untagged]) = "f" "f_nat"
 end;;
 
+[%%expect{|
+Line 3, characters 6-70:
+3 | ......struct
+4 |   external f : int -> (int [@untagged]) = "f" "f_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : int -> (int [@untagged]) = "f" "f_nat" end
+       is not included in
+         sig external f : int -> int = "f" "f_nat" end
+       Values do not match:
+         external f : int -> (int [@untagged]) = "f" "f_nat"
+       is not included in
+         external f : int -> int = "f" "f_nat"
+|}]
+
 module Bad2 : sig
   external f : int -> int = "a" "a_nat"
 end = struct
   external f : (int [@untagged]) -> int = "f" "f_nat"
 end;;
+
+[%%expect{|
+Line 3, characters 6-70:
+3 | ......struct
+4 |   external f : (int [@untagged]) -> int = "f" "f_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : (int [@untagged]) -> int = "f" "f_nat" end
+       is not included in
+         sig external f : int -> int = "a" "a_nat" end
+       Values do not match:
+         external f : (int [@untagged]) -> int = "f" "f_nat"
+       is not included in
+         external f : int -> int = "a" "a_nat"
+|}]
 
 module Bad3 : sig
   external f : float -> float = "f" "f_nat"
@@ -63,11 +149,43 @@ end = struct
   external f : float -> (float [@unboxed]) = "f" "f_nat"
 end;;
 
+[%%expect{|
+Line 3, characters 6-73:
+3 | ......struct
+4 |   external f : float -> (float [@unboxed]) = "f" "f_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : float -> (float [@unboxed]) = "f" "f_nat" end
+       is not included in
+         sig external f : float -> float = "f" "f_nat" end
+       Values do not match:
+         external f : float -> (float [@unboxed]) = "f" "f_nat"
+       is not included in
+         external f : float -> float = "f" "f_nat"
+|}]
+
 module Bad4 : sig
   external f : float -> float = "a" "a_nat"
 end = struct
   external f : (float [@unboxed]) -> float = "f" "f_nat"
 end;;
+
+[%%expect{|
+Line 3, characters 6-73:
+3 | ......struct
+4 |   external f : (float [@unboxed]) -> float = "f" "f_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : (float [@unboxed]) -> float = "f" "f_nat" end
+       is not included in
+         sig external f : float -> float = "a" "a_nat" end
+       Values do not match:
+         external f : (float [@unboxed]) -> float = "f" "f_nat"
+       is not included in
+         external f : float -> float = "a" "a_nat"
+|}]
 
 (* Bad: attributes in the interface but not in the implementation *)
 
@@ -77,11 +195,43 @@ end = struct
   external f : int -> int = "f" "f_nat"
 end;;
 
+[%%expect{|
+Line 3, characters 6-56:
+3 | ......struct
+4 |   external f : int -> int = "f" "f_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : int -> int = "f" "f_nat" end
+       is not included in
+         sig external f : int -> (int [@untagged]) = "f" "f_nat" end
+       Values do not match:
+         external f : int -> int = "f" "f_nat"
+       is not included in
+         external f : int -> (int [@untagged]) = "f" "f_nat"
+|}]
+
 module Bad6 : sig
   external f : (int [@untagged]) -> int = "f" "f_nat"
 end = struct
   external f : int -> int = "a" "a_nat"
 end;;
+
+[%%expect{|
+Line 3, characters 6-56:
+3 | ......struct
+4 |   external f : int -> int = "a" "a_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : int -> int = "a" "a_nat" end
+       is not included in
+         sig external f : (int [@untagged]) -> int = "f" "f_nat" end
+       Values do not match:
+         external f : int -> int = "a" "a_nat"
+       is not included in
+         external f : (int [@untagged]) -> int = "f" "f_nat"
+|}]
 
 module Bad7 : sig
   external f : float -> (float [@unboxed]) = "f" "f_nat"
@@ -89,41 +239,220 @@ end = struct
   external f : float -> float = "f" "f_nat"
 end;;
 
+[%%expect{|
+Line 3, characters 6-60:
+3 | ......struct
+4 |   external f : float -> float = "f" "f_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : float -> float = "f" "f_nat" end
+       is not included in
+         sig external f : float -> (float [@unboxed]) = "f" "f_nat" end
+       Values do not match:
+         external f : float -> float = "f" "f_nat"
+       is not included in
+         external f : float -> (float [@unboxed]) = "f" "f_nat"
+|}]
+
 module Bad8 : sig
   external f : (float [@unboxed]) -> float = "f" "f_nat"
 end = struct
   external f : float -> float = "a" "a_nat"
 end;;
 
+[%%expect{|
+Line 3, characters 6-60:
+3 | ......struct
+4 |   external f : float -> float = "a" "a_nat"
+5 | end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig external f : float -> float = "a" "a_nat" end
+       is not included in
+         sig external f : (float [@unboxed]) -> float = "f" "f_nat" end
+       Values do not match:
+         external f : float -> float = "a" "a_nat"
+       is not included in
+         external f : (float [@unboxed]) -> float = "f" "f_nat"
+|}]
+
 (* Bad: unboxed or untagged with the wrong type *)
 
 external g : (float [@untagged]) -> float = "g" "g_nat";;
+[%%expect{|
+Line 1, characters 14-19:
+1 | external g : (float [@untagged]) -> float = "g" "g_nat";;
+                  ^^^^^
+Error: Don't know how to untag this type. Only int can be untagged.
+|}]
 external h : (int [@unboxed]) -> float = "h" "h_nat";;
+[%%expect{|
+Line 1, characters 14-17:
+1 | external h : (int [@unboxed]) -> float = "h" "h_nat";;
+                  ^^^
+Error: Don't know how to unbox this type.
+       Only float, int32, int64 and nativeint can be unboxed.
+|}]
 
 (* Bad: unboxing the function type *)
 external i : int -> float [@unboxed] = "i" "i_nat";;
+[%%expect{|
+Line 1, characters 13-25:
+1 | external i : int -> float [@unboxed] = "i" "i_nat";;
+                 ^^^^^^^^^^^^
+Error: Don't know how to unbox this type.
+       Only float, int32, int64 and nativeint can be unboxed.
+|}]
 
 (* Bad: unboxing a "deep" sub-type. *)
 external j : int -> (float [@unboxed]) * float = "j" "j_nat";;
+[%%expect{|
+Line 1, characters 21-26:
+1 | external j : int -> (float [@unboxed]) * float = "j" "j_nat";;
+                         ^^^^^
+Error: The attribute '@unboxed' should be attached to
+       a direct argument or result of the primitive,
+       it should not occur deeply into its type.
+|}]
 
 (* This should be rejected, but it is quite complicated to do
    in the current state of things *)
 
 external k : int -> (float [@unboxd]) = "k" "k_nat";;
+[%%expect{|
+external k : int -> float = "k" "k_nat"
+|}]
 
 (* Bad: old style annotations + new style attributes *)
 
 external l : float -> float = "l" "l_nat" "float" [@@unboxed];;
+[%%expect{|
+Line 1, characters 0-61:
+1 | external l : float -> float = "l" "l_nat" "float" [@@unboxed];;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged].
+|}]
 external m : (float [@unboxed]) -> float = "m" "m_nat" "float";;
+[%%expect{|
+Line 1, characters 0-62:
+1 | external m : (float [@unboxed]) -> float = "m" "m_nat" "float";;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged].
+|}]
 external n : float -> float = "n" "noalloc" [@@noalloc];;
+[%%expect{|
+Line 1, characters 0-55:
+1 | external n : float -> float = "n" "noalloc" [@@noalloc];;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Cannot use "noalloc" in conjunction with [@@noalloc].
+|}]
 
 (* Warnings: unboxed / untagged without any native implementation *)
 external o : (float[@unboxed]) -> float = "o";;
+[%%expect{|
+Line 1, characters 0-45:
+1 | external o : (float[@unboxed]) -> float = "o";;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: [@The native code version of the primitive is mandatory
+       when attributes [@untagged] or [@unboxed] are present.
+|}]
 external p : float -> (float[@unboxed]) = "p";;
+[%%expect{|
+Line 1, characters 0-45:
+1 | external p : float -> (float[@unboxed]) = "p";;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: [@The native code version of the primitive is mandatory
+       when attributes [@untagged] or [@unboxed] are present.
+|}]
 external q : (int[@untagged]) -> float = "q";;
+[%%expect{|
+Line 1, characters 0-44:
+1 | external q : (int[@untagged]) -> float = "q";;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: [@The native code version of the primitive is mandatory
+       when attributes [@untagged] or [@unboxed] are present.
+|}]
 external r : int -> (int[@untagged]) = "r";;
+[%%expect{|
+Line 1, characters 0-42:
+1 | external r : int -> (int[@untagged]) = "r";;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: [@The native code version of the primitive is mandatory
+       when attributes [@untagged] or [@unboxed] are present.
+|}]
 external s : int -> int = "s" [@@untagged];;
+[%%expect{|
+Line 1, characters 0-42:
+1 | external s : int -> int = "s" [@@untagged];;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: [@The native code version of the primitive is mandatory
+       when attributes [@untagged] or [@unboxed] are present.
+|}]
 external t : float -> float = "t" [@@unboxed];;
+[%%expect{|
+Line 1, characters 0-45:
+1 | external t : float -> float = "t" [@@unboxed];;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: [@The native code version of the primitive is mandatory
+       when attributes [@untagged] or [@unboxed] are present.
+|}]
 
 (* PR#7424 *)
 type 'a b = B of 'a b b [@@unboxed];;
+[%%expect{|
+type 'a b = B of 'a b b [@@unboxed]
+|}]
+
+
+(* MPR#7828 *)
+type i = I of int
+external id : i -> i = "%identity";;
+[%%expect{|
+type i = I of int
+Line 2, characters 0-34:
+2 | external id : i -> i = "%identity";;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 61: This primitive declaration uses type i, which is unannotated and
+unboxable. The representation of such types may change in future
+versions. You should annotate the declaration of i with [@@boxed]
+or [@@unboxed].
+external id : i -> i = "%identity"
+|}];;
+
+type i = I of int
+type j = J of int
+external id : i -> j = "%identity";;
+[%%expect{|
+type i = I of int
+type j = J of int
+Line 3, characters 0-34:
+3 | external id : i -> j = "%identity";;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 61: This primitive declaration uses type i, which is unannotated and
+unboxable. The representation of such types may change in future
+versions. You should annotate the declaration of i with [@@boxed]
+or [@@unboxed].
+Line 3, characters 0-34:
+3 | external id : i -> j = "%identity";;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 61: This primitive declaration uses type j, which is unannotated and
+unboxable. The representation of such types may change in future
+versions. You should annotate the declaration of j with [@@boxed]
+or [@@unboxed].
+external id : i -> j = "%identity"
+|}];;
+
+type ib = I of int [@@boxed]
+external idb : ib -> ib = "%identity";;
+[%%expect{|
+type ib = I of int
+external idb : ib -> ib = "%identity"
+|}];;
+
+type iub = I of int [@@unboxed]
+external idub : iub -> iub = "%identity";;
+[%%expect{|
+type iub = I of int [@@unboxed]
+external idub : iub -> iub = "%identity"
+|}];;

@@ -46,6 +46,9 @@ let () =
   the constant [42], can be compiled using
   [ocamlc -o ppx_test -I +compiler-libs ocamlcommon.cma ppx_test.ml].
 
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
   *)
 
 open Parsetree
@@ -79,6 +82,7 @@ type mapper = {
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> module_binding -> module_binding;
   module_declaration: mapper -> module_declaration -> module_declaration;
+  module_substitution: mapper -> module_substitution -> module_substitution;
   module_expr: mapper -> module_expr -> module_expr;
   module_type: mapper -> module_type -> module_type;
   module_type_declaration: mapper -> module_type_declaration
@@ -93,6 +97,7 @@ type mapper = {
   typ: mapper -> core_type -> core_type;
   type_declaration: mapper -> type_declaration -> type_declaration;
   type_extension: mapper -> type_extension -> type_extension;
+  type_exception: mapper -> type_exception -> type_exception;
   type_kind: mapper -> type_kind -> type_kind;
   value_binding: mapper -> value_binding -> value_binding;
   value_description: mapper -> value_description -> value_description;

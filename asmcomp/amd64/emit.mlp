@@ -16,7 +16,6 @@
 
 (* Emission of Intel x86_64 assembly code *)
 
-open Misc
 open Cmm
 open Arch
 open Proc
@@ -28,6 +27,7 @@ open Emitaux
 open X86_ast
 open X86_proc
 open X86_dsl
+module String = Misc.Stdlib.String
 
 (* [Branch_relaxation] is not used in this file, but is required by
    emit.mlp files for certain other targets; the reference here ensures
@@ -103,11 +103,11 @@ let emit_symbol s = string_of_symbol symbol_prefix s
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
-let symbols_defined = ref StringSet.empty
-let symbols_used = ref StringSet.empty
+let symbols_defined = ref String.Set.empty
+let symbols_used = ref String.Set.empty
 
-let add_def_symbol s = symbols_defined := StringSet.add s !symbols_defined
-let add_used_symbol s = symbols_used := StringSet.add s !symbols_used
+let add_def_symbol s = symbols_defined := String.Set.add s !symbols_defined
+let add_used_symbol s = symbols_used := String.Set.add s !symbols_used
 
 let imp_table = Hashtbl.create 16
 
@@ -160,8 +160,8 @@ let load_symbol_addr s arg =
 
 let emit_label lbl =
   match system with
-  | S_macosx | S_win64 -> "L" ^ string_of_int lbl
-  | _ -> ".L" ^ string_of_int lbl
+  | S_macosx | S_win64 -> "L" ^ Int.to_string lbl
+  | _ -> ".L" ^ Int.to_string lbl
 
 let label s = sym (emit_label s)
 
@@ -387,7 +387,7 @@ let output_test_zero arg =
 
 (* Output a floating-point compare and branch *)
 
-let emit_float_test cmp neg i lbl =
+let emit_float_test cmp i lbl =
   (* Effect of comisd on flags and conditional branches:
                      ZF PF CF  cond. branches taken
         unordered     1  1  1  je, jb, jbe, jp
@@ -397,33 +397,41 @@ let emit_float_test cmp neg i lbl =
      If FP traps are on (they are off by default),
      comisd traps on QNaN and SNaN but ucomisd traps on SNaN only.
   *)
-  match (cmp, neg) with
-  | (Ceq, false) | (Cne, true) ->
+  match cmp with
+  | CFeq ->
       let next = new_label() in
       I.ucomisd (arg i 1) (arg i 0);
       I.jp (label next);          (* skip if unordered *)
       I.je lbl;                   (* branch taken if x=y *)
       def_label next
-  | (Cne, false) | (Ceq, true) ->
+  | CFneq ->
       I.ucomisd (arg i 1) (arg i 0);
       I.jp lbl;                   (* branch taken if unordered *)
       I.jne lbl                   (* branch taken if x<y or x>y *)
-  | (Clt, _) ->
+  | CFlt ->
       I.comisd (arg i 0) (arg i 1);
-      if not neg then I.ja lbl    (* branch taken if y>x i.e. x<y *)
-      else            I.jbe lbl   (* taken if unordered or y<=x i.e. !(x<y) *)
-  | (Cle, _) ->
+      I.ja lbl                    (* branch taken if y>x i.e. x<y *)
+  | CFnlt ->
+      I.comisd (arg i 0) (arg i 1);
+      I.jbe lbl                   (* taken if unordered or y<=x i.e. !(x<y) *)
+  | CFle ->
       I.comisd (arg i 0) (arg i 1);(* swap compare *)
-      if not neg then I.jae lbl   (* branch taken if y>=x i.e. x<=y *)
-      else            I.jb lbl    (* taken if unordered or y<x i.e. !(x<=y) *)
-  | (Cgt, _) ->
+      I.jae lbl                    (* branch taken if y>=x i.e. x<=y *)
+  | CFnle ->
+      I.comisd (arg i 0) (arg i 1);(* swap compare *)
+      I.jb lbl                     (* taken if unordered or y<x i.e. !(x<=y) *)
+  | CFgt ->
       I.comisd (arg i 1) (arg i 0);
-      if not neg then I.ja lbl    (* branch taken if x>y *)
-      else            I.jbe lbl   (* taken if unordered or x<=y i.e. !(x>y) *)
-  | (Cge, _) ->
+      I.ja lbl                     (* branch taken if x>y *)
+  | CFngt ->
+      I.comisd (arg i 1) (arg i 0);
+      I.jbe lbl                    (* taken if unordered or x<=y i.e. !(x>y) *)
+  | CFge ->
       I.comisd (arg i 1) (arg i 0);(* swap compare *)
-      if not neg then I.jae lbl   (* branch taken if x>=y *)
-      else            I.jb lbl    (* taken if unordered or x<y i.e. !(x>=y) *)
+      I.jae lbl                    (* branch taken if x>=y *)
+  | CFnge ->
+      I.comisd (arg i 1) (arg i 0);(* swap compare *)
+      I.jb lbl                     (* taken if unordered or x<y i.e. !(x>=y) *)
 
 (* Deallocate the stack frame before a return or tail call *)
 
@@ -467,6 +475,22 @@ let emit_global_label s =
   D.global lbl;
   _label lbl
 
+(* Emission of the profiling prelude *)
+
+let emit_profile () =
+  if system = S_gnu || system = S_linux then begin
+    (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
+       and rbx, rbp, r12-r15 like all C functions.  This includes
+       all the registers used for argument passing, so we don't
+       need to preserve other regs.  We do need to initialize rbp
+       like mcount expects it, though. *)
+    I.push r10;
+    if not fp then I.mov rsp rbp;
+    (* No Spacetime instrumentation needed: [mcount] cannot call anything
+       OCaml-related. *)
+    emit_call "mcount";
+    I.pop r10
+  end
 
 (* Output the assembly code for an instruction *)
 
@@ -480,6 +504,22 @@ let emit_instr fallthrough i =
   emit_debug_info i.dbg;
   match i.desc with
   | Lend -> ()
+  | Lprologue ->
+    if fp then begin
+      I.push rbp;
+      cfi_adjust_cfa_offset 8;
+      I.mov rsp rbp;
+    end;
+    if !Clflags.gprofile then emit_profile();
+    if frame_required() then begin
+      let n = frame_size() - 8 - (if fp then 8 else 0) in
+      if n <> 0
+      then begin
+        I.sub (int n) rsp;
+        cfi_adjust_cfa_offset n;
+      end;
+    end;
+    def_label !tailrec_entry_point
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
@@ -604,7 +644,7 @@ let emit_instr fallthrough i =
       | Double | Double_u ->
           I.movsd (arg i 0) (addressing addr REAL8 i 1)
       end
-  | Lop(Ialloc { words = n; blocks = dbg;
+  | Lop(Ialloc { bytes = n; allocs = dbg;
                  label_after_call_gc; spacetime_index; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
@@ -740,6 +780,8 @@ let emit_instr fallthrough i =
       I.sqrtsd (arg i 0) (res i 0)
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)
+  | Lop(Ispecific(Isextend32)) ->
+      I.movsxd (arg32 i 0) (res i 0)
   | Lop (Iname_for_debugger _) -> ()
   | Lreloadretaddr ->
       ()
@@ -770,8 +812,8 @@ let emit_instr fallthrough i =
       | Iinttest_imm(cmp, n) ->
           I.cmp (int n) (arg i 0);
           I.j (cond cmp) lbl
-      | Ifloattest(cmp, neg) ->
-          emit_float_test cmp neg i lbl
+      | Ifloattest cmp ->
+          emit_float_test cmp i lbl
       | Ioddtest ->
           I.test (int 1) (arg8 i 0);
           I.jne lbl
@@ -858,23 +900,6 @@ let rec emit_all fallthrough i =
       emit_instr fallthrough i;
       emit_all (Linearize.has_fallthrough i.desc) i.next
 
-(* Emission of the profiling prelude *)
-
-let emit_profile () =
-  if system = S_gnu || system = S_linux then begin
-    (* mcount preserves rax, rcx, rdx, rsi, rdi, r8, r9 explicitly
-       and rbx, rbp, r12-r15 like all C functions.  This includes
-       all the registers used for argument passing, so we don't
-       need to preserve other regs.  We do need to initialize rbp
-       like mcount expects it, though. *)
-    I.push r10;
-    if not fp then I.mov rsp rbp;
-    (* No Spacetime instrumentation needed: [mcount] cannot call anything
-       OCaml-related. *)
-    emit_call "mcount";
-    I.pop r10
-  end
-
 let all_functions = ref []
 
 (* Emission of a function declaration *)
@@ -901,21 +926,6 @@ let fundecl fundecl =
   D.label (emit_symbol fundecl.fun_name);
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc ();
-  if fp then begin
-    I.push rbp;
-    cfi_adjust_cfa_offset 8;
-    I.mov rsp rbp;
-  end;
-  if !Clflags.gprofile then emit_profile();
-  if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
-    if n <> 0
-    then begin
-      I.sub (int n) rsp;
-      cfi_adjust_cfa_offset n;
-    end;
-  end;
-  def_label !tailrec_entry_point;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
@@ -1104,13 +1114,13 @@ let end_assembly() =
 
   if system = S_win64 then begin
     D.comment "External functions";
-    StringSet.iter
+    String.Set.iter
       (fun s ->
-         if not (StringSet.mem s !symbols_defined) then
+         if not (String.Set.mem s !symbols_defined) then
            D.extrn (emit_symbol s) NEAR)
       !symbols_used;
-    symbols_used := StringSet.empty;
-    symbols_defined := StringSet.empty;
+    symbols_used := String.Set.empty;
+    symbols_defined := String.Set.empty;
   end;
 
   let asm =

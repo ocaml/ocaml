@@ -58,6 +58,7 @@ open Asttypes
 type type_expr =
   { mutable desc: type_desc;
     mutable level: int;
+    mutable scope: int;
     id: int }
 
 and type_desc =
@@ -134,7 +135,7 @@ and type_desc =
     [< `X | `Y > `X ]  (row_closed = true)
 
     type t = [> `X ] as 'a      (row_more = Tvar a)
-    type t = private [> `X ]    (row_more = Tconstr (t#row, [], ref Mnil)
+    type t = private [> `X ]    (row_more = Tconstr (t#row, [], ref Mnil))
 
     And for:
 
@@ -259,7 +260,11 @@ and value_kind =
                                         (* Self *)
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)
-  | Val_unbound                         (* Unbound variable *)
+  | Val_unbound of value_unbound_reason (* Unbound variable *)
+
+and value_unbound_reason =
+  | Val_unbound_instance_variable
+  | Val_unbound_ghost_recursive
 
 (* Variance *)
 
@@ -290,8 +295,8 @@ type type_declaration =
     type_manifest: type_expr option;
     type_variance: Variance.t list;
     (* covariant, contravariant, weakly contravariant, injective *)
-    type_newtype_level: (int * int) option;
-    (* definition level * expansion level *)
+    type_is_newtype: bool;
+    type_expansion_scope: int;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
     type_immediate: bool; (* true iff type should not be a pointer *)
@@ -473,7 +478,12 @@ and constructor_tag =
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 
+(* Constructors are the same *)
 val equal_tag :  constructor_tag -> constructor_tag -> bool
+
+(* Constructors may be the same, given potential rebinding *)
+val may_equal_constr :
+    constructor_description ->  constructor_description -> bool
 
 type label_description =
   { lbl_name: string;                   (* Short name *)

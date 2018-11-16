@@ -285,6 +285,9 @@ and set_of_closures = private {
 }
 
 and function_declarations = private {
+  is_classic_mode: bool;
+  (** Indicates whether this [function_declarations] was compiled
+      with -Oclassic. *)
   set_of_closures_id : Set_of_closures_id.t;
   (** An identifier (unique across all Flambda trees currently in memory)
       of the set of closures associated with this set of function
@@ -300,6 +303,7 @@ and function_declarations = private {
 }
 
 and function_declaration = private {
+  closure_origin: Closure_origin.t;
   params : Parameter.t list;
   body : t;
   (* CR-soon mshinwell: inconsistent naming free_variables/free_vars here and
@@ -553,18 +557,55 @@ val create_function_declaration
   -> inline:Lambda.inline_attribute
   -> specialise:Lambda.specialise_attribute
   -> is_a_functor:bool
+  -> closure_origin:Closure_origin.t
+  -> function_declaration
+
+(** Create a function declaration based on another function declaration *)
+val update_function_declaration
+  : function_declaration
+  -> params:Parameter.t list
+  -> body:t
   -> function_declaration
 
 (** Create a set of function declarations given the individual declarations. *)
 val create_function_declarations
-   : funs:function_declaration Variable.Map.t
+   : is_classic_mode:bool
+  -> funs:function_declaration Variable.Map.t
   -> function_declarations
+
+(** Create a set of function declarations with a given set of closures
+    origin. *)
+val create_function_declarations_with_origin
+   : is_classic_mode:bool
+  -> funs:function_declaration Variable.Map.t
+  -> set_of_closures_origin:Set_of_closures_origin.t
+  -> function_declarations
+
+(** Change only the code of a function declaration. *)
+val update_body_of_function_declaration
+   : function_declaration
+  -> body:expr
+  -> function_declaration
+
+(** Change only the code and parameters of a function declaration. *)
+(* CR-soon mshinwell: rename this to match new update function above *)
+val update_function_decl's_params_and_body
+   : function_declaration
+  -> params:Parameter.t list
+  -> body:expr
+  -> function_declaration
 
 (** Create a set of function declarations based on another set of function
     declarations. *)
 val update_function_declarations
    : function_declarations
   -> funs:function_declaration Variable.Map.t
+  -> function_declarations
+
+val create_function_declarations_with_closures_origin
+   : is_classic_mode: bool
+  -> funs:function_declaration Variable.Map.t
+  -> set_of_closures_origin:Set_of_closures_origin.t
   -> function_declarations
 
 val import_function_declarations_for_pack
@@ -647,10 +688,20 @@ val print_specialised_to
   -> specialised_to
   -> unit
 
+val equal_call_kind
+   : call_kind
+  -> call_kind
+  -> bool
+
 val equal_specialised_to
    : specialised_to
   -> specialised_to
   -> bool
+
+val compare_const
+   : const
+  -> const
+  -> int
 
 val compare_project_var : project_var -> project_var -> int
 

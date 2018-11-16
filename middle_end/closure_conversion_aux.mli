@@ -74,7 +74,7 @@ module Function_decls : sig
     val loc : t -> Location.t
 
     (* Like [all_free_idents], but for just one function. *)
-    val free_idents : t -> Lambda.IdentSet.t
+    val free_idents : t -> Ident.Set.t
   end
 
   type t
@@ -84,7 +84,7 @@ module Function_decls : sig
 
   (* All identifiers free in the given function declarations after the binding
      of parameters and function identifiers has been performed. *)
-  val all_free_idents : t -> Lambda.IdentSet.t
+  val all_free_idents : t -> Ident.Set.t
 
   (* A map from identifiers to their corresponding [Variable.t]s whose domain
      is the set of all identifiers free in the bodies of the declarations that

@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 let apply_on_subexpressions f f_named (flam : Flambda.t) =
   match flam with
@@ -409,14 +410,8 @@ let map_general ~toplevel f f_named tree =
                   func_decl
                 end else begin
                   done_something := true;
-                  Flambda.create_function_declaration
-                    ~params:func_decl.params
-                    ~body:new_body
-                    ~stub:func_decl.stub
-                    ~dbg:func_decl.dbg
-                    ~inline:func_decl.inline
-                    ~specialise:func_decl.specialise
-                    ~is_a_functor:func_decl.is_a_functor
+                  Flambda.update_function_declaration func_decl
+                    ~params:func_decl.params ~body:new_body
                 end)
               function_decls.funs
           in
@@ -499,14 +494,8 @@ let map_symbols_on_set_of_closures
         if not (body == func_decl.body) then begin
           done_something := true;
         end;
-        Flambda.create_function_declaration
-          ~params:func_decl.params
-          ~body
-          ~stub:func_decl.stub
-          ~dbg:func_decl.dbg
-          ~inline:func_decl.inline
-          ~specialise:func_decl.specialise
-          ~is_a_functor:func_decl.is_a_functor)
+        Flambda.update_function_declaration func_decl
+          ~params:func_decl.params ~body)
       function_decls.funs
   in
   if not !done_something then
@@ -593,13 +582,8 @@ let map_function_bodies (set_of_closures : Flambda.set_of_closures) ~f =
           function_decl
         else begin
           done_something := true;
-          Flambda.create_function_declaration ~body:new_body
-            ~params:function_decl.params
-            ~stub:function_decl.stub
-            ~dbg:function_decl.dbg
-            ~inline:function_decl.inline
-            ~specialise:function_decl.specialise
-            ~is_a_functor:function_decl.is_a_functor
+          Flambda.update_function_declaration function_decl
+            ~body:new_body ~params:function_decl.params
         end)
       set_of_closures.function_decls.funs
   in
@@ -629,13 +613,8 @@ let map_sets_of_closures_of_program (program : Flambda.program)
                 function_decl
               else begin
                 done_something := true;
-                Flambda.create_function_declaration ~body
-                  ~params:function_decl.params
-                  ~stub:function_decl.stub
-                  ~dbg:function_decl.dbg
-                  ~inline:function_decl.inline
-                  ~specialise:function_decl.specialise
-                  ~is_a_functor:function_decl.is_a_functor
+                Flambda.update_function_declaration function_decl
+                  ~body ~params:function_decl.params
               end)
             set_of_closures.function_decls.funs
         in
@@ -730,13 +709,8 @@ let map_exprs_at_toplevel_of_program (program : Flambda.program)
               function_decl
             else begin
               done_something := true;
-              Flambda.create_function_declaration ~body
-                ~params:function_decl.params
-                ~stub:function_decl.stub
-                ~dbg:function_decl.dbg
-                ~inline:function_decl.inline
-                ~specialise:function_decl.specialise
-                ~is_a_functor:function_decl.is_a_functor
+              Flambda.update_function_declaration function_decl
+                ~body ~params:function_decl.params
             end)
           set_of_closures.function_decls.funs
       in

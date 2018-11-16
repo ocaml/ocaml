@@ -28,11 +28,13 @@ let print_lident ppf = function
 
 let rec print_ident ppf =
   function
-    Oide_ident s -> print_lident ppf s
+    Oide_ident s -> print_lident ppf s.printed_name
   | Oide_dot (id, s) ->
       print_ident ppf id; pp_print_char ppf '.'; print_lident ppf s
   | Oide_apply (id1, id2) ->
       fprintf ppf "%a(%a)" print_ident id1 print_ident id2
+
+let out_ident = ref print_ident
 
 let parenthesized_ident name =
   (List.mem name ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"])
@@ -79,7 +81,8 @@ let parenthesize_if_neg ppf fmt v isneg =
   if isneg then pp_print_char ppf ')'
 
 let escape_string s =
-  (* Escape only C0 control characters (bytes <= 0x1F), DEL(0x7F), '\\' and '"' *)
+  (* Escape only C0 control characters (bytes <= 0x1F), DEL(0x7F), '\\'
+     and '"' *)
    let n = ref 0 in
   for i = 0 to String.length s - 1 do
     n := !n +
@@ -151,7 +154,9 @@ let print_out_value ppf tree =
     | Oval_int32 i -> parenthesize_if_neg ppf "%lil" i (i < 0l)
     | Oval_int64 i -> parenthesize_if_neg ppf "%LiL" i (i < 0L)
     | Oval_nativeint i -> parenthesize_if_neg ppf "%nin" i (i < 0n)
-    | Oval_float f -> parenthesize_if_neg ppf "%s" (float_repres f) (f < 0.0)
+    | Oval_float f ->
+        parenthesize_if_neg ppf "%s" (float_repres f)
+                                     (f < 0.0 || 1. /. f = neg_infinity)
     | Oval_string (_,_, Ostr_bytes) as tree ->
       pp_print_char ppf '(';
       print_simple_tree ppf tree;
@@ -233,13 +238,15 @@ let rec print_list pr sep ppf =
 let pr_present =
   print_list (fun ppf s -> fprintf ppf "`%s" s) (fun ppf -> fprintf ppf "@ ")
 
+let pr_var = Pprintast.tyvar
+
 let pr_vars =
-  print_list (fun ppf s -> fprintf ppf "'%s" s) (fun ppf -> fprintf ppf "@ ")
+  print_list pr_var (fun ppf -> fprintf ppf "@ ")
 
 let rec print_out_type ppf =
   function
   | Otyp_alias (ty, s) ->
-      fprintf ppf "@[%a@ as '%s@]" print_out_type ty s
+      fprintf ppf "@[%a@ as %a@]" print_out_type ty pr_var s
   | Otyp_poly (sl, ty) ->
       fprintf ppf "@[<hov 2>%a.@ %a@]"
         pr_vars sl
@@ -276,7 +283,7 @@ and print_simple_out_type ppf =
   | Otyp_object (fields, rest) ->
       fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields
   | Otyp_stuff s -> pp_print_string ppf s
-  | Otyp_var (ng, s) -> fprintf ppf "'%s%s" (if ng then "_" else "") s
+  | Otyp_var (ng, s) -> pr_var ppf (if ng then "_" ^ s else s)
   | Otyp_variant (non_gen, row_fields, closed, tags) ->
       let print_present ppf =
         function
@@ -291,7 +298,8 @@ and print_simple_out_type ppf =
         | Ovar_typ typ ->
            print_simple_out_type ppf typ
       in
-      fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a ]@]" (if non_gen then "_" else "")
+      fprintf ppf "%s@[<hov>[%s@[<hv>@[<hv>%a@]%a@]@ ]@]"
+        (if non_gen then "_" else "")
         (if closed then if tags = None then " " else "< "
          else if tags = None then "> " else "? ")
         print_fields row_fields
@@ -306,7 +314,7 @@ and print_simple_out_type ppf =
   | Otyp_sum _ | Otyp_manifest (_, _) -> ()
   | Otyp_record lbls -> print_record_decl ppf lbls
   | Otyp_module (p, n, tyl) ->
-      fprintf ppf "@[<1>(module %s" p;
+      fprintf ppf "@[<1>(module %a" print_ident p;
       let first = ref true in
       List.iter2
         (fun s t ->
@@ -372,10 +380,13 @@ let out_type = ref print_out_type
 
 (* Class types *)
 
+let print_type_parameter ppf s =
+  if s = "_" then fprintf ppf "_" else pr_var ppf s
+
 let type_parameter ppf (ty, (co, cn)) =
-  fprintf ppf "%s%s"
+  fprintf ppf "%s%a"
     (if not cn then "+" else if not co then "-" else "")
-    (if ty = "_" then ty else "'"^ty)
+    print_type_parameter ty
 
 let print_out_class_params ppf =
   function
@@ -592,9 +603,12 @@ and print_out_type_decl kwd ppf td =
         print_private td.otype_private
         print_record_decl lbls
   | Otyp_sum constrs ->
+      let variants fmt constrs =
+        if constrs = [] then fprintf fmt "|" else
+        fprintf fmt "%a" (print_list print_out_constr
+          (fun ppf -> fprintf ppf "@ | ")) constrs in
       fprintf ppf " =%a@;<1 2>%a"
-        print_private td.otype_private
-        (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
+        print_private td.otype_private variants constrs
   | Otyp_open ->
       fprintf ppf " =%a .."
         print_private td.otype_private
@@ -637,10 +651,6 @@ and print_out_constr ppf (name, tyl,ret_type_opt) =
 
 and print_out_extension_constructor ppf ext =
   let print_extended_type ppf =
-    let print_type_parameter ppf ty =
-      fprintf ppf "%s"
-        (if ty = "_" then ty else "'"^ty)
-    in
       match ext.oext_type_params with
         [] -> fprintf ppf "%s" ext.oext_type_name
       | [ty_param] ->
@@ -661,10 +671,6 @@ and print_out_extension_constructor ppf ext =
 
 and print_out_type_extension ppf te =
   let print_extended_type ppf =
-    let print_type_parameter ppf ty =
-      fprintf ppf "%s"
-        (if ty = "_" then ty else "'"^ty)
-    in
     match te.otyext_params with
       [] -> fprintf ppf "%s" te.otyext_name
     | [param] ->

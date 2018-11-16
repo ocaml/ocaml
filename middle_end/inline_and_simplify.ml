@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 module A = Simple_value_approx
 module B = Inlining_cost.Benefit
@@ -119,7 +120,9 @@ let simplify_free_variables_named env vars ~f : Flambda.named * R.t =
         in
         let body =
           match body with
-          | Is_named body -> Flambda_utils.name_expr body ~name:"simplify_fv"
+          | Is_named body ->
+            let name = Internal_variable_names.simplify_fv in
+            Flambda_utils.name_expr body ~name
           | Is_expr body -> body
         in
         Is_expr (W.create_let_reusing_defining_expr var named body), r
@@ -357,13 +360,17 @@ let simplify_move_within_set_of_closures env r
             | Some _ | None ->
               match set_of_closures_symbol with
               | Some set_of_closures_symbol ->
-                let set_of_closures_var = Variable.create "symbol" in
+                let set_of_closures_var =
+                  Variable.create Internal_variable_names.symbol
+                in
                 let project_closure : Flambda.project_closure =
                   { set_of_closures = set_of_closures_var;
                     closure_id = move_to;
                   }
                 in
-                let project_closure_var = Variable.create "project_closure" in
+                let project_closure_var =
+                  Variable.create Internal_variable_names.project_closure
+                in
                 let let1 =
                   Flambda.create_let project_closure_var
                     (Project_closure project_closure)
@@ -598,34 +605,17 @@ and simplify_set_of_closures original_env r
         ~inline_inside:
           (Inlining_decision.should_inline_inside_declaration function_decl)
         ~dbg:function_decl.dbg
-        ~f:(fun body_env -> simplify body_env r function_decl.body)
-    in
-    let inline : Lambda.inline_attribute =
-      match function_decl.inline with
-      | Default_inline ->
-        if !Clflags.classic_inlining && not function_decl.stub then
-          (* In classic-inlining mode, the inlining decision is taken at
-             definition site (here). If the function is small enough
-             (below the -inline threshold) it will always be inlined. *)
-          let inlining_threshold =
-            Inline_and_simplify_aux.initial_inlining_threshold
-              ~round:(E.round env)
-          in
-          if Inlining_cost.can_inline body inlining_threshold ~bonus:0
-          then
-            Always_inline
-          else
-            Default_inline
-        else
-          Default_inline
-      | inline ->
-        inline
+        ~f:(fun body_env ->
+          assert (E.inside_set_of_closures_declaration
+            function_decls.set_of_closures_origin body_env);
+          simplify body_env r function_decl.body)
     in
     let function_decl =
       Flambda.create_function_declaration ~params:function_decl.params
         ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
-        ~inline ~specialise:function_decl.specialise
+        ~inline:function_decl.inline ~specialise:function_decl.specialise
         ~is_a_functor:function_decl.is_a_functor
+        ~closure_origin:function_decl.closure_origin
     in
     let used_params' = Flambda.used_params function_decl in
     Variable.Map.add fun_var function_decl funs,
@@ -642,11 +632,25 @@ and simplify_set_of_closures original_env r
     lazy (Invariant_params.invariant_params_in_recursion function_decls
       ~backend:(E.backend env))
   in
+  let recursive =
+    lazy (Find_recursive_functions.in_function_declarations function_decls
+      ~backend:(E.backend env))
+  in
+  let keep_body =
+    Inline_and_simplify_aux.keep_body_check
+      ~is_classic_mode:function_decls.is_classic_mode ~recursive
+  in
+  let function_decls_approx =
+    A.function_declarations_approx ~keep_body function_decls
+  in
   let value_set_of_closures =
-    A.create_value_set_of_closures ~function_decls
+    A.create_value_set_of_closures
+      ~function_decls:function_decls_approx
       ~bound_vars:internal_value_set_of_closures.bound_vars
       ~invariant_params
+      ~recursive
       ~specialised_args:internal_value_set_of_closures.specialised_args
+      ~free_vars:internal_value_set_of_closures.free_vars
       ~freshening:internal_value_set_of_closures.freshening
       ~direct_call_surrogates:
         internal_value_set_of_closures.direct_call_surrogates
@@ -702,9 +706,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
                 | surrogate -> find_transitively surrogate
               in
               let surrogate = find_transitively surrogate in
-              let surrogate_var =
-                Variable.rename lhs_of_application ~append:"_surrogate"
-              in
+              let surrogate_var = Variable.rename lhs_of_application in
               let move_to_surrogate : Projection.move_within_set_of_closures =
                 { closure = lhs_of_application;
                   start_from = closure_id_being_applied;
@@ -727,8 +729,9 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
           let function_decls = value_set_of_closures.function_decls in
           let function_decl =
             try
-              Flambda_utils.find_declaration closure_id_being_applied
-                function_decls
+              Variable.Map.find
+                (Closure_id.unwrap closure_id_being_applied)
+                function_decls.funs
             with
             | Not_found ->
               Misc.fatal_errorf "When handling application expression, \
@@ -742,7 +745,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
             | Direct _ -> r
           in
           let nargs = List.length args in
-          let arity = Flambda_utils.function_arity function_decl in
+          let arity = A.function_arity function_decl in
           let result, r =
             if nargs = arity then
               simplify_full_application env r ~function_decls
@@ -780,7 +783,7 @@ and simplify_full_application env r ~function_decls ~lhs_of_application
 and simplify_partial_application env r ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~args ~dbg
       ~inline_requested ~specialise_requested =
-  let arity = Flambda_utils.function_arity function_decl in
+  let arity = A.function_arity function_decl in
   assert (arity > List.length args);
   (* For simplicity, we disallow [@inline] attributes on partial
      applications.  The user may always write an explicit wrapper instead
@@ -807,7 +810,7 @@ and simplify_partial_application env r ~lhs_of_application
   | Default_specialise -> ()
   end;
   let freshened_params =
-    List.map (fun p -> Parameter.rename p) function_decl.Flambda.params
+    List.map (fun p -> Parameter.rename p) function_decl.A.params
   in
   let applied_args, remaining_args =
     Misc.Stdlib.List.map2_prefix (fun arg id' -> id', arg)
@@ -826,10 +829,10 @@ and simplify_partial_application env r ~lhs_of_application
     in
     let closure_variable =
       Variable.rename
-        ~append:"_partial_fun"
         (Closure_id.unwrap closure_id_being_applied)
     in
     Flambda_utils.make_closure_declaration ~id:closure_variable
+      ~is_classic_mode:false
       ~body
       ~params:remaining_args
       ~stub:true
@@ -845,7 +848,7 @@ and simplify_partial_application env r ~lhs_of_application
 and simplify_over_application env r ~args ~args_approxs ~function_decls
       ~lhs_of_application ~closure_id_being_applied ~function_decl
       ~value_set_of_closures ~dbg ~inline_requested ~specialise_requested =
-  let arity = Flambda_utils.function_arity function_decl in
+  let arity = A.function_arity function_decl in
   assert (arity < List.length args);
   assert (List.length args = List.length args_approxs);
   let full_app_args, remaining_args =
@@ -860,7 +863,7 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
       ~args:full_app_args ~args_approxs:full_app_approxs ~dbg
       ~inline_requested ~specialise_requested
   in
-  let func_var = Variable.create "full_apply" in
+  let func_var = Variable.create Internal_variable_names.full_apply in
   let expr : Flambda.t =
     Flambda.create_let func_var (Expr expr)
       (Apply { func = func_var; args = remaining_args; kind = Indirect; dbg;
@@ -934,7 +937,8 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
        the [Unbox_closures] output, this also prevents applying
        [Unbox_closures] over and over.) *)
     let set_of_closures =
-      match Remove_free_vars_equal_to_args.run set_of_closures with
+      let ppf_dump = Inline_and_simplify_aux.Env.ppf_dump env in
+      match Remove_free_vars_equal_to_args.run ~ppf_dump set_of_closures with
       | None -> set_of_closures
       | Some set_of_closures -> set_of_closures
     in
@@ -971,7 +975,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           | Some set_of_closures ->
             let expr =
               Flambda_utils.name_expr (Set_of_closures set_of_closures)
-                ~name:"remove_unused_arguments"
+                ~name:Internal_variable_names.remove_unused_arguments
             in
             simplify env r expr ~pass_name:"Remove_unused_arguments"
           | None ->
@@ -1359,7 +1363,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
         String_switch (arg, sw, def), ret r (A.value_unknown Other)
       | Some arg_string ->
         let branch =
-          match List.find (fun (str, _) -> str = arg_string) sw with
+          match List.find (fun (str, _) -> String.equal str arg_string) sw with
           | (_, branch) -> branch
           | exception Not_found ->
             match def with
@@ -1384,7 +1388,7 @@ and simplify_list env r l =
     else h' :: t', approxs, r
 
 and duplicate_function ~env ~(set_of_closures : Flambda.set_of_closures)
-      ~fun_var =
+      ~fun_var ~new_fun_var =
   let function_decl =
     match Variable.Map.find fun_var set_of_closures.function_decls.funs with
     | exception Not_found ->
@@ -1417,6 +1421,8 @@ and duplicate_function ~env ~(set_of_closures : Flambda.set_of_closures)
       ~inline_inside:false
       ~dbg:function_decl.dbg
       ~f:(fun body_env ->
+        assert (E.inside_set_of_closures_declaration
+          function_decls.set_of_closures_origin body_env);
         simplify body_env (R.create ()) function_decl.body)
   in
   let function_decl =
@@ -1424,6 +1430,7 @@ and duplicate_function ~env ~(set_of_closures : Flambda.set_of_closures)
       ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
       ~inline:function_decl.inline ~specialise:function_decl.specialise
       ~is_a_functor:function_decl.is_a_functor
+      ~closure_origin:(Closure_origin.create (Closure_id.wrap new_fun_var))
   in
   function_decl, specialised_args
 
@@ -1450,18 +1457,31 @@ let constant_defining_value_approx
     (* At toplevel, there is no freshening currently happening (this
        cannot be the body of a currently inlined function), so we can
        keep the original set_of_closures in the approximation. *)
-    assert(E.freshening env = Freshening.empty);
+    assert(Freshening.is_empty (E.freshening env));
     assert(Variable.Map.is_empty free_vars);
     assert(Variable.Map.is_empty specialised_args);
     let invariant_params =
       lazy (Invariant_params.invariant_params_in_recursion function_decls
         ~backend:(E.backend env))
     in
+    let recursive =
+      lazy (Find_recursive_functions.in_function_declarations function_decls
+        ~backend:(E.backend env))
+    in
     let value_set_of_closures =
+      let keep_body =
+        Inline_and_simplify_aux.keep_body_check
+          ~is_classic_mode:function_decls.is_classic_mode ~recursive
+      in
+      let function_decls =
+        A.function_declarations_approx ~keep_body function_decls
+      in
       A.create_value_set_of_closures ~function_decls
         ~bound_vars:Var_within_closure.Map.empty
         ~invariant_params
+        ~recursive
         ~specialised_args:Variable.Map.empty
+        ~free_vars:Variable.Map.empty
         ~freshening:Freshening.Project_var.empty
         ~direct_call_surrogates:Closure_id.Map.empty
     in
@@ -1491,29 +1511,29 @@ let constant_defining_value_approx
     end
 
 (* See documentation on [Let_rec_symbol] in flambda.mli. *)
-let define_let_rec_symbol_approx env defs =
+let define_let_rec_symbol_approx orig_env defs =
   (* First declare an empty version of the symbols *)
-  let env =
-    List.fold_left (fun env (symbol, _) ->
-        E.add_symbol env symbol (A.value_unresolved (Symbol symbol)))
-      env defs
+  let init_env =
+    List.fold_left (fun building_env (symbol, _) ->
+        E.add_symbol building_env symbol (A.value_unresolved (Symbol symbol)))
+      orig_env defs
   in
-  let rec loop times env =
+  let rec loop times lookup_env =
     if times <= 0 then
-      env
+      lookup_env
     else
       let env =
-        List.fold_left (fun newenv (symbol, constant_defining_value) ->
+        List.fold_left (fun building_env (symbol, constant_defining_value) ->
             let approx =
-              constant_defining_value_approx env constant_defining_value
+              constant_defining_value_approx lookup_env constant_defining_value
             in
             let approx = A.augment_with_symbol approx symbol in
-            E.redefine_symbol newenv symbol approx)
-          env defs
+            E.add_symbol building_env symbol approx)
+          orig_env defs
       in
       loop (times-1) env
   in
-  loop 2 env
+  loop 2 init_env
 
 let simplify_constant_defining_value
     env r symbol
@@ -1573,19 +1593,32 @@ let rec simplify_program_body env r (program : Flambda.program_body)
   : Flambda.program_body * R.t =
   match program with
   | Let_rec_symbol (defs, program) ->
-    let env = define_let_rec_symbol_approx env defs in
-    let env, r, defs =
-      List.fold_left (fun (newenv, r, defs) (symbol, def) ->
-          let r, def, approx =
-            simplify_constant_defining_value env r symbol def
-          in
-          let approx = A.augment_with_symbol approx symbol in
-          let newenv = E.redefine_symbol newenv symbol approx in
-          (newenv, r, (symbol, def) :: defs))
+    let set_of_closures_defs, other_defs =
+      List.partition
+        (function
+          | (_, Flambda.Set_of_closures _) -> true
+          | _ -> false)
+        defs in
+    let process_defs ~lookup_env ~env r defs =
+      List.fold_left (fun (building_env, r, defs) (symbol, def) ->
+        let r, def, approx =
+          simplify_constant_defining_value lookup_env r symbol def
+        in
+        let approx = A.augment_with_symbol approx symbol in
+        let building_env = E.add_symbol building_env symbol approx in
+        (building_env, r, (symbol, def) :: defs))
         (env, r, []) defs
     in
+    let env, r, set_of_closures_defs =
+      let lookup_env = define_let_rec_symbol_approx env defs in
+      process_defs ~lookup_env ~env r set_of_closures_defs
+    in
+    let env, r, other_defs =
+      let lookup_env = define_let_rec_symbol_approx env other_defs in
+      process_defs ~lookup_env ~env r other_defs
+    in
     let program, r = simplify_program_body env r program in
-    Let_rec_symbol (defs, program), r
+    Let_rec_symbol (set_of_closures_defs @ other_defs, program), r
   | Let_symbol (symbol, constant_defining_value, program) ->
     let r, constant_defining_value, approx =
       simplify_constant_defining_value env r symbol constant_defining_value
@@ -1633,7 +1666,7 @@ let simplify_program env r (program : Flambda.program) =
 let add_predef_exns_to_environment ~env ~backend =
   let module Backend = (val backend : Backend_intf.S) in
   List.fold_left (fun env predef_exn ->
-      assert (Ident.is_predef_exn predef_exn);
+      assert (Ident.is_predef predef_exn);
       let symbol = Backend.symbol_for_global' predef_exn in
       let name = Ident.name predef_exn in
       let approx =
@@ -1646,13 +1679,13 @@ let add_predef_exns_to_environment ~env ~backend =
     env
     Predef.all_predef_exns
 
-let run ~never_inline ~backend ~prefixname ~round program =
+let run ~never_inline ~backend ~prefixname ~round ~ppf_dump program =
   let r = R.create () in
   let report = !Clflags.inlining_report in
   if never_inline then Clflags.inlining_report := false;
   let initial_env =
     add_predef_exns_to_environment
-      ~env:(E.create ~never_inline ~backend ~round)
+      ~env:(E.create ~never_inline ~backend ~round ~ppf_dump)
       ~backend
   in
   let result, r = simplify_program initial_env r program in

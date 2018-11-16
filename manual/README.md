@@ -6,8 +6,6 @@ Prerequisites
 
 - Any prerequisites required to build OCaml from sources.
 
-- The Unix editor 'ed', no longer installed by default on some systems.
-
 - A LaTeX installation.
 
 - The HeVeA LaTeX-to-HTML convertor (available in OPAM):
@@ -39,9 +37,7 @@ In the manual:
 
 - The Info manual is in directory `infoman`.
 
-- The DVI manual is in directory `texstuff` as file `manual.dvi`.
-
-- The PDF manual is in directory `texstuff` as file `pdfmanual.pdf`.
+- The PDF manual is in directory `texstuff` as file `manual.pdf`.
 
 Source files
 ------------
@@ -117,8 +113,9 @@ of `unified-options.etex` contains the relevant information.
 Latex extensions
 ----------------
 
-###Caml environments
-The tool `tool/caml-tex2` is used to generate the latex code for the examples
+### Caml environments
+
+The tool `tools/caml-tex` is used to generate the latex code for the examples
 in the introduction and language extension parts of the manual. It implements
 two pseudo-environments: `caml_example` and `caml_eval`.
 
@@ -137,19 +134,26 @@ let f x = x
 \end{caml_example*}
 ```
 
-The `{verbatim}` or `{toplevel}` argument of the environment corresponds
-to the the mode of the example, two modes are available `toplevel` and
-`verbatim`.
+The {verbatim} or {toplevel} argument of the environment corresponds
+to the the mode of the example, three modes are available toplevel, verbatim and signature.
 The `toplevel` mode mimics the appearance and behavior of the toplevel.
 In particular, toplevel examples must end with a double semi-colon `;;`,
 otherwise an error would be raised.
 The `verbatim` does not require a final `;;` and is intended to be
 a lighter mode for code examples.
+If you want to declare a signature instead of ocaml code,
+you must use the `{signature}` argument to the `caml_example` environment.
 
-By default, `caml_tex2` raises an error and stops if the output of one
+```latex
+\begin{caml_example*}{signature}
+val none : 'a option
+\end{caml_example*}
+```
+
+By default, `caml-tex` raises an error and stops if the output of one
 the `caml_example` environment contains an unexpected error or warning.
 If such an error or warning is, in fact, expected, it is necessary to
-indicate the expected output status to `caml_tex2` by adding either
+indicate the expected output status to `caml-tex` by adding either
 an option to the `caml_example` environment:
 ```latex
 \begin{caml_example}{toplevel}[error]
@@ -170,9 +174,31 @@ let f None = None [@@expect warning 8];;
 \end{caml_example}
 ```
 
-The `caml_eval` environment is a companion environment to `caml_example`
-and can be used to evaluate OCaml expressions in the toplevel without
-printing anything:
+It is also possible to elide a code fragment by annotating it with
+an `[@ellipsis]` attribute
+
+```latex
+\begin{caml_example}{toplevel}
+let f: type a. a list -> int = List.length[@ellipsis] ;;
+\end{caml_example}
+```
+For module components, it might be easier to hide them by using
+`[@@@ellipsis.start]` and `[@@@ellipsis.stop]`:
+```latex
+\begin{caml_example*}{verbatim}
+module M = struct
+  [@@@ellipsis.start]
+  type t = T
+  let x = 0
+  [@@@ellipsis.stop]
+ end
+\end{caml_example*}
+```
+
+Another possibility to avoid displaying distracting code is to use
+the `caml_eval` environment. This environment is a companion environment
+to `caml_example` and can be used to evaluate OCaml expressions in the
+toplevel without printing anything:
 ```latex
 \begin{caml_eval}
 let pi = 4. *. atan 1.;;
@@ -184,13 +210,15 @@ let f x = x +. pi;;
 Beware that the detection code for these pseudo-environments is quite brittle
 and the environments must start and end at the beginning of the line.
 
-###Quoting
+### Quoting
+
 The tool `tools/texquote2` provides support for verbatim-like quotes using
 `\"` delimiters. More precisely, outside of caml environments and verbatim
 environments, `texquote2` translates double quotes `"text"` to
 `\machine{escaped_text}`.
 
-###BNF grammar notation
+### BNF grammar notation
+
 The tool `tools/transf` provides support for BNF grammar notations and special
 quotes for non-terminal. When transf is used, the environment `syntax` can
 be used to describe grammars using BNF notation:
@@ -219,3 +247,9 @@ when this extension is used `@` characters must be escaped as `\@`.
 This extension is used mainly in the language reference part of the manual.
 and a more complete description of the notation used is available in the
 first subsection of `refman/refman.etex`.
+
+Consistency tests
+-----------------
+
+The `tests` folder contains consistency tests that checks that the manual
+and the rest of the compiler sources stay synced.

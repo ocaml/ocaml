@@ -17,7 +17,23 @@
 
 let arch = "@@ARCH@@"
 
-let unix = @@UNIX@@
+let afl_instrument = @@AFL_INSTRUMENT@@
+
+let asm = "@@ASM@@"
+
+let cc = "@@CC@@"
+
+let cflags = "@@CFLAGS@@"
+
+let ccomptype = "@@CCOMPTYPE@@"
+
+let shared_libraries = @@SHARED_LIBRARIES@@
+
+let libunix = @@UNIX@@
+
+let objext = "@@OBJEXT@@"
+
+let system = "@@SYSTEM@@"
 
 let c_preprocessor = "@@CPP@@"
 
@@ -25,7 +41,34 @@ let ocamlsrcdir = "@@OCAMLSRCDIR@@"
 
 let flambda = @@FLAMBDA@@
 
+let spacetime = @@SPACETIME@@
+
 let ocamlc_default_flags = "@@OCAMLCDEFAULTFLAGS@@"
 let ocamlopt_default_flags = "@@OCAMLOPTDEFAULTFLAGS@@"
 
 let safe_string = @@FORCE_SAFE_STRING@@
+
+let flat_float_array = @@FLAT_FLOAT_ARRAY@@
+
+let ocamldoc = @@OCAMLDOC@@
+
+let ocamldebug = @@OCAMLDEBUG@@
+
+let native_dynlink = @@NATIVE_DYNLINK@@
+
+let shared_library_cflags = "@@SHARED_LIBRARY_CFLAGS@@"
+
+let sharedobjext = "@@SHAREDOBJEXT@@"
+
+let csc = "@@CSC@@"
+
+let csc_flags = "@@CSCFLAGS@@"
+
+let mkdll = "@@MKDLL@@"
+let mkexe = "@@MKEXE@@"
+
+let bytecc_libs = "@@BYTECCLIBS@@"
+
+let nativecc_libs = "@@NATIVECCLIBS@@"
+
+let windows_unicode = @@WINDOWS_UNICODE@@ != 0

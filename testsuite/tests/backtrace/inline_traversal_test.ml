@@ -1,3 +1,17 @@
+(* TEST
+   flags = "-g"
+   ocamlrunparam += ",b=1"
+   * bytecode
+     reference = "${test_source_directory}/inline_traversal_test.byte.reference"
+   * native
+     reference = "${test_source_directory}/inline_traversal_test.opt.reference"
+     compare_programs = "false"
+   * native
+     ocamlopt_flags = "-O3"
+     compiler_directory_suffix = ".O3"
+     reference = "${test_source_directory}/inline_traversal_test.opt.reference"
+     compare_programs = "false"
+*)
 
 (* A test for inlined stack backtraces *)
 
@@ -26,7 +40,7 @@ let () =
       let location = match Slot.location x with
         | None -> "<unknown>"
         | Some {filename; line_number; _} ->
-            filename ^ ":" ^ string_of_int line_number
+            filename ^ ":" ^ Int.to_string line_number
       in
       Printf.printf "- %s%s%s\n"
         location

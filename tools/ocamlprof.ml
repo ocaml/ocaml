@@ -139,7 +139,7 @@ let final_rewrite add_function =
   List.iter add_function !to_insert;
   copy (in_channel_length !inchan);
   if !instr_mode then begin
-    let len = string_of_int !prof_counter in
+    let len = Int.to_string !prof_counter in
     if String.length len > 9 then raise (Profiler "too many counters");
     seek_out !outchan (!pos_len - String.length len);
     output_string !outchan len
@@ -507,11 +507,11 @@ let main () =
        "-vnum", Arg.Unit print_version_num,
                 "        Print version number and exit";
         "-args", Arg.Expand Arg.read_arg,
-                "<file> Read additional newline separated command line arguments \n\
-                \      from <file>";
+            "<file> Read additional newline separated command line arguments \n\
+            \      from <file>";
        "-args0", Arg.Expand Arg.read_arg0,
-               "<file> Read additional NUL separated command line arguments from \n\
-               \      <file>"
+           "<file> Read additional NUL separated command line arguments from \n\
+           \      <file>"
     ] process_anon_file usage;
     exit 0
   with

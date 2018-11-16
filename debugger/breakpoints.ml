@@ -170,9 +170,11 @@ let rec new_breakpoint =
            incr breakpoint_number;
            insert_position event.ev_pos;
            breakpoints := (!breakpoint_number, event) :: !breakpoints);
-      printf "Breakpoint %d at %d: %s" !breakpoint_number event.ev_pos
-             (Pos.get_desc event);
-      print_newline ()
+      if !Parameters.breakpoint then begin
+        printf "Breakpoint %d at %d: %s" !breakpoint_number event.ev_pos
+               (Pos.get_desc event);
+        print_newline ()
+      end
 
 (* Remove a breakpoint from lists. *)
 let remove_breakpoint number =
@@ -183,13 +185,15 @@ let remove_breakpoint number =
         (function () ->
            breakpoints := List.remove_assoc number !breakpoints;
            remove_position pos;
-           printf "Removed breakpoint %d at %d: %s" number ev.ev_pos
-                  (Pos.get_desc ev);
-           print_newline ()
+           if !Parameters.breakpoint then begin
+             printf "Removed breakpoint %d at %d: %s" number ev.ev_pos
+                    (Pos.get_desc ev);
+             print_newline ()
+           end
         )
   with
     Not_found ->
-      prerr_endline ("No breakpoint number " ^ (string_of_int number) ^ ".");
+      prerr_endline ("No breakpoint number " ^ (Int.to_string number) ^ ".");
       raise Not_found
 
 let remove_all_breakpoints () =

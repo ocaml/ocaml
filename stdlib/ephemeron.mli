@@ -56,7 +56,7 @@
 
     Notes:
     - All the types defined in this module cannot be marshaled
-    using {!Pervasives.output_value} or the functions of the
+    using {!Stdlib.output_value} or the functions of the
     {!Marshal} module.
 
     Ephemerons are defined in a language agnostic way in this paper:

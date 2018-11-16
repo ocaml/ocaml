@@ -36,19 +36,15 @@ let backend = (module Backend : Backend_intf.S)
 
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
-let show_config () =
-  Config.print_config stdout;
-  exit 0;
-;;
-
 module Options = Main_args.Make_optcomp_options (struct
   let set r () = r := true
   let clear r () = r := false
 
   let _a = set make_archive
-  let _absname = set Location.absname
+  let _absname = set Clflags.absname
   let _afl_instrument = set afl_instrument
   let _afl_inst_ratio n = afl_inst_ratio := n
+  let _alert = Warnings.parse_alert_option
   let _annot = set annotations
   let _binannot = set binary_annotations
   let _c = set compile_only
@@ -57,10 +53,26 @@ module Options = Main_args.Make_optcomp_options (struct
   let _ccopt s = first_ccopts := s :: !first_ccopts
   let _clambda_checks () = clambda_checks := true
   let _compact = clear optimize_for_speed
-  let _config () = show_config ()
+  let _config = Misc.show_config_and_exit
+  let _config_var = Misc.show_config_variable_and_exit
   let _for_pack s = for_package := Some s
   let _g = set debug
-  let _i () = print_types := true; compile_only := true
+  let _i () =
+    print_types := true;
+    compile_only := true;
+    stop_after := Some Compiler_pass.Typing;
+    ()
+  let _stop_after pass =
+    let module P = Compiler_pass in
+    begin match P.of_string pass with
+    | None -> () (* this should not occur as we use Arg.Symbol *)
+    | Some pass ->
+        stop_after := Some pass;
+        begin match pass with
+        | P.Parsing | P.Typing ->
+            compile_only := true
+        end;
+    end
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
   let _inline spec =
@@ -178,7 +190,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _unbox_closures_factor f = unbox_closures_factor := f
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = clear unboxed_types
-  let _unsafe = set fast
+  let _unsafe = set unsafe
   let _unsafe_string = set unsafe_string
   let _v () = print_version_and_library "native-code compiler"
   let _version () = print_version_string ()
@@ -187,14 +199,14 @@ module Options = Main_args.Make_optcomp_options (struct
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
-  let _color option =
-    begin match parse_color_setting option with
-          | None -> ()
-          | Some setting -> color := Some setting
-    end
+  let _color = Misc.set_or_ignore color_reader.parse color
+  let _error_style = Misc.set_or_ignore error_style_reader.parse error_style
   let _where () = print_standard_library ()
-
   let _nopervasives = set nopervasives
+  let _match_context_rows n = match_context_rows := n
+  let _dump_into_file = set dump_into_file
+  let _dno_unique_ids = clear unique_ids
+  let _dunique_ids = set unique_ids
   let _dsource = set dump_source
   let _dparsetree = set dump_parsetree
   let _dtypedtree = set dump_typedtree
@@ -208,6 +220,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dflambda_verbose () =
     set dump_flambda ();
     set dump_flambda_verbose ()
+  let _dflambda_invariants = set flambda_invariant_checks
   let _dflambda_no_invariants = clear flambda_invariant_checks
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
@@ -244,9 +257,10 @@ let main () =
     Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
     Clflags.add_arguments __LOC__
       ["-depend", Arg.Unit Makedepend.main_from_option,
-       "<options> Compute dependencies (use 'ocamlopt -depend -help' for details)"];
+       "<options> Compute dependencies \
+        (use 'ocamlopt -depend -help' for details)"];
     Clflags.parse_arguments anonymous usage;
-    Compmisc.read_color_env ppf;
+    Compmisc.read_clflags_from_env ();
     if !gprofile && not Config.profiling then
       fatal "Profiling with \"gprof\" is not supported on this platform.";
     begin try
@@ -269,24 +283,29 @@ let main () =
                      [make_package; make_archive; shared;
                       compile_only; output_c_object]) > 1
     then
-      fatal "Please specify at most one of -pack, -a, -shared, -c, -output-obj";
+      fatal "Please specify at most one of -pack, -a, -shared, -c, \
+             -output-obj";
     if !make_archive then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmlibrarian.create_archive (get_objfiles ~with_ocamlparam:false) target;
+      Asmlibrarian.create_archive
+        (get_objfiles ~with_ocamlparam:false) target;
       Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmpackager.package_files ppf (Compmisc.initial_env ())
-        (get_objfiles ~with_ocamlparam:false) target ~backend;
+      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+        Asmpackager.package_files ~ppf_dump (Compmisc.initial_env ())
+          (get_objfiles ~with_ocamlparam:false) target ~backend);
       Warnings.check_fatal ();
     end
     else if !shared then begin
       Compmisc.init_path true;
       let target = extract_output !output_name in
-      Asmlink.link_shared ppf (get_objfiles ~with_ocamlparam:false) target;
+      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+        Asmlink.link_shared ~ppf_dump
+          (get_objfiles ~with_ocamlparam:false) target);
       Warnings.check_fatal ();
     end
     else if not !compile_only && !objfiles <> [] then begin
@@ -306,7 +325,8 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path true;
-      Asmlink.link ppf (get_objfiles ~with_ocamlparam:true) target;
+      Compmisc.with_ppf_dump ~fileprefix:target (fun ppf_dump ->
+        Asmlink.link ~ppf_dump (get_objfiles ~with_ocamlparam:true) target);
       Warnings.check_fatal ();
     end;
   with x ->

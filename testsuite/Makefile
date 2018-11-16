@@ -21,6 +21,18 @@ FIND=find
 TOPDIR := ..
 include $(TOPDIR)/Makefile.tools
 
+OCAMLTESTDIR_CYGPATH=$(shell $(CYGPATH) $(BASEDIR)/$(DIR)/_ocamltest)
+
+failstamp := failure.stamp
+
+TESTLOG ?= _log
+
+ocamltest_directory := ../ocamltest
+
+ocamltest_program := $(or \
+  $(wildcard $(ocamltest_directory)/ocamltest.opt$(EXE)),\
+  $(wildcard $(ocamltest_directory)/ocamltest$(EXE)))
+
 ifeq "$(UNIX_OR_WIN32)" "unix"
   ifeq "$(SYSTEM)" "cygwin"
     find := /usr/bin/find
@@ -31,24 +43,23 @@ else # Windows
   find := /usr/bin/find
   FLEXDLL_SUBMODULE_PRESENT := $(wildcard ../flexdll/Makefile)
   ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
-    FLEXLINK_PREFIX=
+    FLEXLINK_ENV =
   else
-    ROOT:=$(shell cd .. && pwd| cygpath -m -f -)
-    EMPTY=
-    FLEXLINK_PREFIX:=OCAML_FLEXLINK="$(ROOT)/boot/ocamlrun \
-                                     $(ROOT)/flexdll/flexlink.exe" $(EMPTY)
+    ROOT := $(shell cd .. && pwd| cygpath -m -f -)
+    FLEXLINK_ENV = \
+      OCAML_FLEXLINK="$(ROOT)/boot/ocamlrun $(ROOT)/flexdll/flexlink.exe"
   endif
 endif
 
-failstamp := failure.stamp
+ifeq "$(FLEXLINK_ENV)" ""
+  ocamltest := MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
+else
+  MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
+                                   $(FLEXLINK_FLAGS)
 
-ocamltest_directory := ../ocamltest
-
-ocamltest_program := $(or \
-  $(wildcard $(ocamltest_directory)/ocamltest.opt$(EXE)),\
-  $(wildcard $(ocamltest_directory)/ocamltest$(EXE)))
-
-ocamltest := $(FLEXLINK_PREFIX) $(ocamltest_program)
+  ocamltest := $(FLEXLINK_ENV) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
+                               $(ocamltest_program)
+endif
 
 .PHONY: default
 default:
@@ -74,27 +85,27 @@ default:
 
 .PHONY: all
 all:
-	@rm -f _log
+	@rm -f $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) legacy-without-report
 	@$(MAKE) $(NO_PRINT) new-without-report
 	@$(MAKE) $(NO_PRINT) report
 
 .PHONY: legacy
 legacy:
-	@rm -f _log
+	@rm -f $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) legacy-without-report
 	@$(MAKE) $(NO_PRINT) report
 
 .PHONY: legacy-without-report
 legacy-without-report: lib tools
 	@for dir in tests/*; do \
-	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
-	done 2>&1 | tee -a _log
+	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir LEGACY=y; \
+	done 2>&1 | tee -a $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) retries
 
 .PHONY: new
 new:
-	@rm -f _log
+	@rm -f $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) new-without-report
 	@$(MAKE) $(NO_PRINT) report
 
@@ -104,19 +115,16 @@ new-without-report: lib tools
 	@(for file in `$(find) tests -name ocamltests`; do \
 	  dir=`dirname $$file`; \
 	  echo Running tests from \'$$dir\' ... ; \
-	  (IFS=$$(printf "\r\n"); while read testfile; do \
-	    TERM=dumb \
-	      $(ocamltest) $$dir/$$testfile || \
-	      touch $(failstamp); \
-	  done < $$file) || touch $(failstamp); \
-	done || touch $(failstamp)) 2>&1 | tee -a _log
+	  $(MAKE) exec-ocamltest DIR=$$dir \
+	    OCAMLTESTENV="" OCAMLTESTFLAGS=""; \
+	done || touch $(failstamp)) 2>&1 | tee -a $(TESTLOG)
 	@if [ -f $(failstamp) ]; then rm $(failstamp); exit 1; fi
 
 .PHONY: all-%
 all-%: lib tools
 	@for dir in tests/$**; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
-	done 2>&1 | tee _log
+	done 2>&1 | tee $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 
@@ -157,7 +165,7 @@ parallel-%: lib tools
 	@for dir in tests/$**; do echo $$dir; done \
 	 | parallel --gnu --no-notice --keep-order \
 	     "$(MAKE) $(NO_PRINT) exec-one DIR={} 2>&1" \
-	 | tee _log
+	 | tee $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 
@@ -172,7 +180,7 @@ list: lib tools
 	fi
 	@while read LINE; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE; \
-	done <$(FILE) 2>&1 | tee _log
+	done <$(FILE) 2>&1 | tee $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 
@@ -187,6 +195,7 @@ one: lib tools
 	  exit 1; \
 	fi
 	@$(MAKE) $(NO_PRINT) exec-one DIR=$(DIR)
+	@if [ -f $(failstamp) ]; then rm $(failstamp); exit 1; fi
 
 .PHONY: exec-one
 exec-one:
@@ -200,7 +209,23 @@ exec-one:
 	  echo "Running tests from '$$DIR' ..."; \
 	  cd $(DIR) && \
 	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) || echo '=> unexpected error'; \
+	elif [ -f $(DIR)/ocamltests ] && [ -z $(LEGACY) ] ; then \
+	  echo "Running tests from '$$DIR' ..."; \
+	  $(MAKE) exec-ocamltest DIR=$(DIR) \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)" \
+	    OCAMLTESTFLAGS=""; \
 	fi
+
+.PHONY: exec-ocamltest
+exec-ocamltest:
+	@if [ -z "$(DIR)" ]; then exit 1; fi
+	@if [ ! -d "$(DIR)" ]; then exit 1; fi
+	@file=$(DIR)/ocamltests; \
+	(IFS=$$(printf "\r\n"); while read testfile; do \
+	   TERM=dumb $(OCAMLTESTENV) \
+	     $(ocamltest) $(OCAMLTESTFLAGS) $(DIR)/$$testfile || \
+	   touch $(failstamp); \
+	done < $$file) || touch $(failstamp)
 
 .PHONY: clean-one
 clean-one:
@@ -224,7 +249,13 @@ promote:
 	  echo "Directory '$(DIR)' does not exist."; \
 	  exit 1; \
 	fi
-	@cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote
+	@if [ -f $(DIR)/ocamltests ]; then \
+	  $(MAKE) exec-ocamltest DIR=$(DIR) \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)" \
+	    OCAMLTESTFLAGS="-promote"; \
+	else \
+	  cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote; \
+	fi
 
 .PHONY: lib
 lib:
@@ -246,16 +277,16 @@ clean:
 
 .PHONY: report
 report:
-	@if [ ! -f _log ]; then echo "No '_log' file."; exit 1; fi
-	@awk -f makefiles/summarize.awk <_log
+	@if [ ! -f $(TESTLOG) ]; then echo "No $(TESTLOG) file."; exit 1; fi
+	@awk -f makefiles/summarize.awk < $(TESTLOG)
 
 .PHONY: retry-list
 retry-list:
 	@while read LINE; do \
 	  if [ -n "$$LINE" ] ; then \
-	    echo re-ran $$LINE>>_log; \
+	    echo re-ran $$LINE>> $(TESTLOG); \
 	    $(MAKE) $(NO_PRINT) clean-one DIR=$$LINE; \
-	    $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE 2>&1 | tee -a _log ; \
+	    $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE 2>&1 | tee -a $(TESTLOG) ; \
 	  fi \
 	done <_retries;
 	@$(MAKE) $(NO_PRINT) retries
@@ -263,7 +294,7 @@ retry-list:
 .PHONY: retries
 retries:
 	@awk -v retries=1 -v max_retries=$(MAX_TESTSUITE_DIR_RETRIES) \
-	     -f makefiles/summarize.awk <_log >_retries
+	     -f makefiles/summarize.awk < $(TESTLOG) > _retries
 	@test `cat _retries | wc -l` -eq 0 || $(MAKE) $(NO_PRINT) retry-list
 	@rm -f _retries
 

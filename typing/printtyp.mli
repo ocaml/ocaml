@@ -24,12 +24,59 @@ val ident: formatter -> Ident.t -> unit
 val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
 val string_of_path: Path.t -> string
+
+module Out_name: sig
+  val create: string -> out_name
+  val print: out_name -> string
+end
+
+type namespace =
+  | Type
+  | Module
+  | Module_type
+  | Class
+  | Class_type
+  | Other (** Other bypasses the unique name for identifier mechanism *)
+
+val strings_of_paths: namespace -> Path.t list -> string list
+    (** Print a list of paths, using the same naming context to
+        avoid name collisions *)
+
 val raw_type_expr: formatter -> type_expr -> unit
 val string_of_label: Asttypes.arg_label -> string
 
-val wrap_printing_env: Env.t -> (unit -> 'a) -> 'a
+val wrap_printing_env: error:bool -> Env.t -> (unit -> 'a) -> 'a
     (* Call the function using the environment for type path shortening *)
     (* This affects all the printing functions below *)
+    (* Also, if [~error:true], then disable the loading of cmis *)
+
+module Naming_context: sig
+  val enable: bool -> unit
+  (** When contextual names are enabled, the mapping between identifiers
+      and names is ensured to be one-to-one. *)
+
+  val reset: unit -> unit
+  (** Reset the naming context *)
+end
+
+(** The [Conflicts] module keeps track of conflicts arising when attributing
+    names to identifiers and provides functions that can print explanations
+    for these conflict in error messages *)
+module Conflicts: sig
+  val exists: unit -> bool
+  (** [exists()] returns true if the current naming context renamed
+        an identifier to avoid a name collision *)
+
+  type explanation =
+    { kind: namespace;
+      name:string; location:Location.t}
+
+  val take: unit -> explanation list
+  val pp: Format.formatter -> explanation list -> unit
+  val print: Format.formatter -> unit
+  val reset: unit -> unit
+end
+
 
 val reset: unit -> unit
 val mark_loops: type_expr -> unit
@@ -58,6 +105,7 @@ val tree_of_module:
     Ident.t -> ?ellipsis:bool -> module_type -> rec_status -> out_sig_item
 val modtype: formatter -> module_type -> unit
 val signature: formatter -> signature -> unit
+val tree_of_modtype: module_type -> out_module_type
 val tree_of_modtype_declaration:
     Ident.t -> modtype_declaration -> out_sig_item
 val tree_of_signature: Types.signature -> out_sig_item list
@@ -73,14 +121,17 @@ val cltype_declaration: Ident.t -> formatter -> class_type_declaration -> unit
 val type_expansion: type_expr -> Format.formatter -> type_expr -> unit
 val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
 val trace:
-    bool -> bool-> string -> formatter -> (type_expr * type_expr) list -> unit
+  bool -> bool-> string -> formatter
+  -> (type_expr * type_expr) Ctype.Unification_trace.elt list -> unit
 val report_unification_error:
-    formatter -> Env.t -> ?unif:bool -> (type_expr * type_expr) list ->
+    formatter -> Env.t ->
+    Ctype.Unification_trace.t ->
+    ?type_expected_explanation:(formatter -> unit) ->
     (formatter -> unit) -> (formatter -> unit) ->
     unit
 val report_subtyping_error:
-    formatter -> Env.t -> (type_expr * type_expr) list ->
-    string -> (type_expr * type_expr) list -> unit
+    formatter -> Env.t -> Ctype.Unification_trace.t -> string
+    -> Ctype.Unification_trace.t -> unit
 val report_ambiguous_type_error:
     formatter -> Env.t -> (Path.t * Path.t) -> (Path.t * Path.t) list ->
     (formatter -> unit) -> (formatter -> unit) -> (formatter -> unit) -> unit
@@ -88,3 +139,11 @@ val report_ambiguous_type_error:
 (* for toploop *)
 val print_items: (Env.t -> signature_item -> 'a option) ->
   Env.t -> signature_item list -> (out_sig_item * 'a option) list
+
+(* Simple heuristic to rewrite Foo__bar.* as Foo.Bar.* when Foo.Bar is an alias
+   for Foo__bar. This pattern is used by the stdlib. *)
+val rewrite_double_underscore_paths: Env.t -> Path.t -> Path.t
+
+(** [printed_signature sourcefile ppf sg] print the signature [sg] of
+    [sourcefile] with potential warnings for name collisions *)
+val printed_signature: string -> formatter -> signature -> unit

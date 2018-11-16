@@ -1,3 +1,8 @@
+(* TEST
+   flags = " -short-paths "
+   * toplevel
+*)
+
 module Core = struct
   module Int = struct
     module T = struct

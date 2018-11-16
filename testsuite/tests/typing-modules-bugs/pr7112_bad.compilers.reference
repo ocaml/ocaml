@@ -1,0 +1,5 @@
+File "pr7112_bad.ml", line 13, characters 30-31:
+13 | module G (X : F(N).S) : A.S = X
+                                   ^
+Error: Signature mismatch:
+       Modules do not match: F(N).S is not included in A.S

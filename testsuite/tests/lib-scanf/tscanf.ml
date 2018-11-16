@@ -1,3 +1,7 @@
+(* TEST
+   include testing
+*)
+
 (*
 
 A testbed file for the module Scanf.
@@ -1231,7 +1235,7 @@ let next_char ob () =
 
 let send_string ob s =
   Buffer.add_string ob s; Buffer.add_char ob '\n';;
-let send_int ob i = send_string ob (string_of_int i);;
+let send_int ob i = send_string ob (Int.to_string i);;
 
 let rec reader =
   let count = ref 0 in
@@ -1534,4 +1538,20 @@ let test60 () =
   sscanf "abc" "%1s%s" (fun s1 s2 -> s1 = "a" && s2 = "bc")
 ;;
 
-test (test60 ());
+test (test60 ())
+;;
+
+let test61 () =
+  let test fmt =
+    format_from_string (string_of_format fmt) fmt = fmt
+  in
+  test "%s/%a" &&
+  test "\\ " &&
+  test "\\x" &&
+  test "\\x25s" &&
+  test "\\\"%s" &&
+  test "\\"
+;;
+
+test (test61 ())
+;;

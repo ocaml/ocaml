@@ -25,10 +25,10 @@ LDOPTS=-ldopt "$(X11_LINK)"
 
 EXTRACFLAGS=$(X11_INCLUDES)
 
-include ../Makefile
+include ../Makefile.otherlibs.common
 
 depend:
-	$(CC) -MM $(CPPFLAGS) *.c | sed -e 's, /[^ ]*\.h,,g' > .depend
+	$(CC) -MM $(OC_CPPFLAGS) *.c | sed -e 's, /[^ ]*\.h,,g' > .depend
 	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
 
 include .depend

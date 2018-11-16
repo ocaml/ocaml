@@ -21,6 +21,8 @@ open Reg
 open Mach
 open Interval
 
+module V = Backend_var
+
 let reg ppf r =
   if not (Reg.anonymous r) then
     fprintf ppf "%s" (Reg.name r)
@@ -68,11 +70,11 @@ let regsetaddr ppf s =
     s
 
 let intcomp = function
-  | Isigned c -> Printf.sprintf " %ss " (Printcmm.comparison c)
-  | Iunsigned c -> Printf.sprintf " %su " (Printcmm.comparison c)
+  | Isigned c -> Printf.sprintf " %ss " (Printcmm.integer_comparison c)
+  | Iunsigned c -> Printf.sprintf " %su " (Printcmm.integer_comparison c)
 
 let floatcomp c =
-    Printf.sprintf " %sf " (Printcmm.comparison c)
+    Printf.sprintf " %sf " (Printcmm.float_comparison c)
 
 let intop = function
   | Iadd -> " + "
@@ -95,7 +97,7 @@ let intop = function
         begin
           match label_after_error with
           | None -> ""
-          | Some lbl -> string_of_int lbl
+          | Some lbl -> Int.to_string lbl
         end
         spacetime_index
 
@@ -105,9 +107,8 @@ let test tst ppf arg =
   | Ifalsetest -> fprintf ppf "not %a" reg arg.(0)
   | Iinttest cmp -> fprintf ppf "%a%s%a" reg arg.(0) (intcomp cmp) reg arg.(1)
   | Iinttest_imm(cmp, n) -> fprintf ppf "%a%s%i" reg arg.(0) (intcomp cmp) n
-  | Ifloattest(cmp, neg) ->
-      fprintf ppf "%s%a%s%a"
-       (if neg then "not " else "")
+  | Ifloattest cmp ->
+      fprintf ppf "%a%s%a"
        reg arg.(0) (floatcomp cmp) reg arg.(1)
   | Ieventest -> fprintf ppf "%a & 1 == 0" reg arg.(0)
   | Ioddtest -> fprintf ppf "%a & 1 == 1" reg arg.(0)
@@ -142,7 +143,7 @@ let operation op arg ppf res =
        (Array.sub arg 1 (Array.length arg - 1))
        reg arg.(0)
        (if is_assign then "(assign)" else "(init)")
-  | Ialloc { words = n; _ } ->
+  | Ialloc { bytes = n; _ } ->
     fprintf ppf "alloc %i" n;
     if Config.spacetime then begin
       fprintf ppf "(spacetime node = %a)" reg arg.(0)
@@ -159,7 +160,7 @@ let operation op arg ppf res =
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
   | Iname_for_debugger { ident; which_parameter; } ->
     fprintf ppf "name_for_debugger %a%s=%a"
-      Ident.print ident
+      V.print ident
       (match which_parameter with
         | None -> ""
         | Some index -> sprintf "[P%d]" index)

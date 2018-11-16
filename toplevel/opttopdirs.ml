@@ -72,7 +72,7 @@ let load_file ppf name0 =
       if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
       then
         let cmxs = Filename.temp_file "caml" ".cmxs" in
-        Asmlink.link_shared ppf [name] cmxs;
+        Asmlink.link_shared ~ppf_dump:ppf [name] cmxs;
         cmxs,true
       else
         name,false
@@ -117,12 +117,11 @@ let match_printer_type ppf desc typename =
     with Not_found ->
       fprintf ppf "Cannot find type Topdirs.%s.@." typename;
       raise Exit in
-  Ctype.init_def(Ident.current_time());
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify !toplevel_env
     (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance_def desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
   ty_arg

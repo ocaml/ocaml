@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 module S = struct
   include Stack
 

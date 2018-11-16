@@ -17,25 +17,20 @@
    Usage: expunge <source file> <dest file> <names of modules to keep> *)
 
 open Misc
-
-module StringSet =
-  Set.Make(struct
-    type t = string
-    let compare = compare
-  end)
+module String = Misc.Stdlib.String
 
 let is_exn =
   let h = Hashtbl.create 64 in
   Array.iter (fun n -> Hashtbl.add h n ()) Runtimedef.builtin_exceptions;
   Hashtbl.mem h
 
-let to_keep = ref StringSet.empty
+let to_keep = ref String.Set.empty
 
 let negate = Sys.argv.(3) = "-v"
 
 let keep =
-  if negate then fun name -> is_exn name || not (StringSet.mem name !to_keep)
-  else fun name -> is_exn name || (StringSet.mem name !to_keep)
+  if negate then fun name -> is_exn name || not (String.Set.mem name !to_keep)
+  else fun name -> is_exn name || (String.Set.mem name !to_keep)
 
 let expunge_map tbl =
   Symtable.filter_global_map (fun id -> keep (Ident.name id)) tbl
@@ -47,7 +42,7 @@ let main () =
   let input_name = Sys.argv.(1) in
   let output_name = Sys.argv.(2) in
   for i = (if negate then 4 else 3) to Array.length Sys.argv - 1 do
-    to_keep := StringSet.add (String.capitalize_ascii Sys.argv.(i)) !to_keep
+    to_keep := String.Set.add (String.capitalize_ascii Sys.argv.(i)) !to_keep
   done;
   let ic = open_in_bin input_name in
   Bytesections.read_toc ic;

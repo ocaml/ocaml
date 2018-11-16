@@ -13,11 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* When you change this, you need to update the documentation:
+(* When you change this, you need to update:
+   - the list 'description' at the bottom of this file
    - man/ocamlc.m
-   - man/ocamlopt.m
-   - manual/manual/cmds/comp.etex
-   - manual/manual/cmds/native.etex
 *)
 
 type loc = {
@@ -29,7 +27,7 @@ type loc = {
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated of string * loc * loc        (*  3 *)
+(*| Deprecated --> alert "deprecated" *)    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -67,7 +65,7 @@ type t =
   | Unused_extension of string * bool * bool * bool (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
-  | Ambiguous_name of string list * string list *  bool    (* 41 *)
+  | Ambiguous_name of string list * string list *  bool * string (* 41 *)
   | Disambiguated_name of string            (* 42 *)
   | Nonoptional_label of string             (* 43 *)
   | Open_shadow_identifier of string * string (* 44 *)
@@ -89,6 +87,10 @@ type t =
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
   | Constraint_on_gadt                      (* 62 *)
+  | Erroneous_printed_signature of string   (* 63 *)
+  | Unsafe_without_parsing                  (* 64 *)
+  | Redefining_unit of string               (* 65 *)
+  | Unused_open_bang of string              (* 66 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -97,10 +99,12 @@ type t =
    do NOT reuse one of the holes.
 *)
 
+type alert = {kind:string; message:string; def:loc; use:loc}
+
+
 let number = function
   | Comment_start -> 1
   | Comment_not_end -> 2
-  | Deprecated _ -> 3
   | Fragile_match _ -> 4
   | Partial_application -> 5
   | Labels_omitted _ -> 6
@@ -160,9 +164,13 @@ let number = function
   | Unused_module _ -> 60
   | Unboxable_type_in_prim_decl _ -> 61
   | Constraint_on_gadt -> 62
+  | Erroneous_printed_signature _ -> 63
+  | Unsafe_without_parsing -> 64
+  | Redefining_unit _ -> 65
+  | Unused_open_bang _ -> 66
 ;;
 
-let last_warning_number = 62
+let last_warning_number = 66
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -203,6 +211,8 @@ type state =
   {
     active: bool array;
     error: bool array;
+    alerts: (Misc.Stdlib.String.Set.t * bool); (* false:set complement *)
+    alert_errors: (Misc.Stdlib.String.Set.t * bool); (* false:set complement *)
   }
 
 let current =
@@ -210,6 +220,8 @@ let current =
     {
       active = Array.make (last_warning_number + 1) true;
       error = Array.make (last_warning_number + 1) false;
+      alerts = (Misc.Stdlib.String.Set.empty, false); (* all enabled *)
+      alert_errors = (Misc.Stdlib.String.Set.empty, true); (* all soft *)
     }
 
 let disabled = ref false
@@ -221,8 +233,21 @@ let backup () = !current
 
 let restore x = current := x
 
-let is_active x = not !disabled && (!current).active.(number x);;
-let is_error x = not !disabled && (!current).error.(number x);;
+let is_active x =
+  not !disabled && (!current).active.(number x)
+
+let is_error x =
+  not !disabled && (!current).error.(number x)
+
+let alert_is_active {kind; _} =
+  not !disabled &&
+  let (set, pos) = (!current).alerts in
+  Misc.Stdlib.String.Set.mem kind set = pos
+
+let alert_is_error {kind; _} =
+  not !disabled &&
+  let (set, pos) = (!current).alert_errors in
+  Misc.Stdlib.String.Set.mem kind set = pos
 
 let mk_lazy f =
   let state = backup () in
@@ -239,10 +264,79 @@ let mk_lazy f =
         raise exn
     )
 
-let parse_opt error active flags s =
-  let set i = flags.(i) <- true in
-  let clear i = flags.(i) <- false in
-  let set_all i = active.(i) <- true; error.(i) <- true in
+let set_alert ~error ~enable s =
+  let upd =
+    match s with
+    | "all" ->
+        (Misc.Stdlib.String.Set.empty, not enable)
+    | s ->
+        let (set, pos) =
+          if error then (!current).alert_errors else (!current).alerts
+        in
+        let f =
+          if enable = pos
+          then Misc.Stdlib.String.Set.add
+          else Misc.Stdlib.String.Set.remove
+        in
+        (f s set, pos)
+  in
+  if error then
+    current := {(!current) with alert_errors=upd}
+  else
+    current := {(!current) with alerts=upd}
+
+let parse_alert_option s =
+  let n = String.length s in
+  let id_char = function
+    | 'a'..'z' | 'A'..'Z' | '_' | '\'' | '0'..'9' -> true
+    | _ -> false
+  in
+  let rec parse_id i =
+    if i < n && id_char s.[i] then parse_id (i + 1) else i
+  in
+  let rec scan i =
+    if i = n then ()
+    else if i + 1 = n then raise (Arg.Bad "Ill-formed list of alert settings")
+    else match s.[i], s.[i+1] with
+      | '+', '+' -> id (set_alert ~error:true ~enable:true) (i + 2)
+      | '+', _ -> id (set_alert ~error:false ~enable:true) (i + 1)
+      | '-', '-' -> id (set_alert ~error:true ~enable:false) (i + 2)
+      | '-', _ -> id (set_alert ~error:false ~enable:false) (i + 1)
+      | '@', _ ->
+          id (fun s ->
+              set_alert ~error:true ~enable:true s;
+              set_alert ~error:false ~enable:true s)
+            (i + 1)
+      | _ -> raise (Arg.Bad "Ill-formed list of alert settings")
+  and id f i =
+    let j = parse_id i in
+    if j = i then raise (Arg.Bad "Ill-formed list of alert settings");
+    let id = String.sub s i (j - i) in
+    f id;
+    scan j
+  in
+  scan 0
+
+let parse_opt error active errflag s =
+  let flags = if errflag then error else active in
+  let set i =
+    if i = 3 then set_alert ~error:errflag ~enable:true "deprecated"
+    else flags.(i) <- true
+  in
+  let clear i =
+    if i = 3 then set_alert ~error:errflag ~enable:false "deprecated"
+    else flags.(i) <- false
+  in
+  let set_all i =
+    if i = 3 then begin
+      set_alert ~error:false ~enable:true "deprecated";
+      set_alert ~error:true ~enable:true "deprecated"
+    end
+    else begin
+      active.(i) <- true;
+      error.(i) <- true
+    end
+  in
   let error () = raise (Arg.Bad "Ill-formed list of warnings") in
   let rec get_num n i =
     if i >= String.length s then i, n
@@ -293,27 +387,27 @@ let parse_opt error active flags s =
 let parse_options errflag s =
   let error = Array.copy (!current).error in
   let active = Array.copy (!current).active in
-  parse_opt error active (if errflag then error else active) s;
-  current := {error; active}
+  parse_opt error active errflag s;
+  current := {(!current) with error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60";;
+let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60-66";;
 let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
 let () = parse_options true defaults_warn_error;;
 
+let ref_manual_explanation () =
+  (* manual references are checked a posteriori by the manual
+     cross-reference consistency check in manual/tests*)
+  let[@manual.ref "s:comp-warnings"] chapter, section = 9, 5 in
+  Printf.sprintf "(See manual section %d.%d)" chapter section
+
 let message = function
-  | Comment_start -> "this is the start of a comment."
+  | Comment_start ->
+      "this `(*' is the start of a comment.\n\
+       Hint: Did you forget spaces when writing the infix operator `( * )'?"
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated (s, _, _) ->
-      (* Reduce \r\n to \n:
-           - Prevents any \r characters being printed on Unix when processing
-             Windows sources
-           - Prevents \r\r\n being generated on Windows, which affects the
-             testsuite
-       *)
-       "deprecated: " ^ Misc.normalise_eol s
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
@@ -389,6 +483,7 @@ let message = function
         file1 file2 modname
   | Unused_value_declaration v -> "unused value " ^ v ^ "."
   | Unused_open s -> "unused open " ^ s ^ "."
+  | Unused_open_bang s -> "unused open! " ^ s ^ "."
   | Unused_type_declaration s -> "unused type " ^ s ^ "."
   | Unused_for_index s -> "unused for-loop index " ^ s ^ "."
   | Unused_ancestor s -> "unused ancestor variable " ^ s ^ "."
@@ -428,14 +523,16 @@ let message = function
        not visible in the current scope: "
       ^ String.concat " " slist ^ ".\n\
        They will not be selected if the type becomes unknown."
-  | Ambiguous_name ([s], tl, false) ->
+  | Ambiguous_name ([s], tl, false, expansion) ->
       s ^ " belongs to several types: " ^ String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
-  | Ambiguous_name (_, _, false) -> assert false
-  | Ambiguous_name (_slist, tl, true) ->
+      ^ expansion
+  | Ambiguous_name (_, _, false, _ ) -> assert false
+  | Ambiguous_name (_slist, tl, true, expansion) ->
       "these field labels belong to several types: " ^
       String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
+      ^ expansion
   | Disambiguated_name s ->
       "this use of " ^ s ^ " relies on type-directed disambiguation,\n\
        it will not compile with OCaml 4.00 or earlier."
@@ -472,7 +569,7 @@ let message = function
       Printf.sprintf
         "Code should not depend on the actual values of\n\
          this constructor's arguments. They are only for information\n\
-         and may change in future versions. (See manual section 8.5)"
+         and may change in future versions. %t" ref_manual_explanation
   | Unreachable_case ->
       "this match case is unreachable.\n\
        Consider replacing it with a refutation case '<pat> -> .'"
@@ -494,8 +591,8 @@ let message = function
             "variables " ^ String.concat "," vars in
       Printf.sprintf
         "Ambiguous or-pattern variables under guard;\n\
-         %s may match different arguments. (See manual section 8.5)"
-        msg
+         %s may match different arguments. %t"
+        msg ref_manual_explanation
   | No_cmx_file name ->
       Printf.sprintf
         "no cmx file was found in path for module %s, \
@@ -513,20 +610,26 @@ let message = function
          or [@@unboxed]." t t
   | Constraint_on_gadt ->
       "Type constraints do not apply to GADT cases of variant types."
+  | Erroneous_printed_signature s ->
+      "The printed interface differs from the inferred interface.\n\
+       The inferred interface contained items which could not be printed\n\
+       properly due to name collisions between identifiers."
+     ^ s
+     ^ "\nBeware that this warning is purely informational and will not catch\n\
+        all instances of erroneous printed interface."
+  | Unsafe_without_parsing ->
+     "option -unsafe used with a preprocessor returning a syntax tree"
+  | Redefining_unit name ->
+      Printf.sprintf
+        "This type declaration is defining a new '()' constructor\n\
+         which shadows the existing one.\n\
+         Hint: Did you mean 'type %s = unit'?" name
 ;;
-
-let sub_locs = function
-  | Deprecated (_, def, use) ->
-      [
-        def, "Definition";
-        use, "Expected signature";
-      ]
-  | _ -> []
 
 let nerrors = ref 0;;
 
 type reporting_information =
-  { number : int
+  { id : string
   ; message : string
   ; is_error : bool
   ; sub_locs : (loc * string) list;
@@ -537,10 +640,42 @@ let report w =
   | false -> `Inactive
   | true ->
      if is_error w then incr nerrors;
-     `Active { number = number w; message = message w; is_error = is_error w;
-               sub_locs = sub_locs w;
-             }
-;;
+     `Active
+       { id = string_of_int (number w);
+         message = message w;
+         is_error = is_error w;
+         sub_locs = [];
+       }
+
+let report_alert (alert : alert) =
+  match alert_is_active alert with
+  | false -> `Inactive
+  | true ->
+      let is_error = alert_is_error alert in
+      if is_error then incr nerrors;
+      let message = Misc.normalise_eol alert.message in
+       (* Reduce \r\n to \n:
+           - Prevents any \r characters being printed on Unix when processing
+             Windows sources
+           - Prevents \r\r\n being generated on Windows, which affects the
+             testsuite
+       *)
+      let sub_locs =
+        if not alert.def.loc_ghost && not alert.use.loc_ghost then
+          [
+            alert.def, "Definition";
+            alert.use, "Expected signature";
+          ]
+        else
+          []
+      in
+      `Active
+        {
+          id = alert.kind;
+          message;
+          is_error;
+          sub_locs;
+        }
 
 exception Errors;;
 
@@ -558,7 +693,7 @@ let descriptions =
   [
     1, "Suspicious-looking start-of-comment mark.";
     2, "Suspicious-looking end-of-comment mark.";
-    3, "Deprecated feature.";
+    3, "Deprecated synonym for the 'deprecated' alert";
     4, "Fragile pattern matching: matching that will remain complete even\n\
    \    if additional constructors are added to one of the variant types\n\
    \    matched.";
@@ -628,7 +763,11 @@ let descriptions =
    59, "Assignment to non-mutable value";
    60, "Unused module declaration";
    61, "Unboxable type in primitive declaration";
-   62, "Type constraint on GADT type declaration"
+   62, "Type constraint on GADT type declaration";
+   63, "Erroneous printed signature";
+   64, "-unsafe used with a preprocessor returning a syntax tree";
+   65, "Type declaration defining a new '()' constructor";
+   66, "Unused open! statement";
   ]
 ;;
 
@@ -644,7 +783,7 @@ let help_warnings () =
     | l ->
         Printf.printf "  %c warnings %s.\n"
           (Char.uppercase_ascii c)
-          (String.concat ", " (List.map string_of_int l))
+          (String.concat ", " (List.map Int.to_string l))
   done;
   exit 0
 ;;

@@ -23,9 +23,12 @@ open Misc
 open Config
 open Cmo_format
 
-(* Command line option to prevent printing approximation and function code *)
+(* Command line options to prevent printing approximation,
+   function code and CRC
+ *)
 let no_approx = ref false
 let no_code = ref false
+let no_crc = ref false
 
 let input_stringlist ic len =
   let get_string_list sect len =
@@ -41,12 +44,15 @@ let input_stringlist ic len =
   get_string_list sect len
 
 let dummy_crc = String.make 32 '-'
+let null_crc = String.make 32 '0'
+
+let string_of_crc crc = if !no_crc then null_crc else Digest.to_hex crc
 
 let print_name_crc (name, crco) =
   let crc =
     match crco with
       None -> dummy_crc
-    | Some crc -> Digest.to_hex crc
+    | Some crc -> string_of_crc crc
   in
     printf "\t%s\t%s\n" crc name
 
@@ -107,11 +113,11 @@ let print_cmt_infos cmt =
   printf "cmt interface digest: %s\n"
     (match cmt.cmt_interface_digest with
      | None -> ""
-     | Some crc -> Digest.to_hex crc)
+     | Some crc -> string_of_crc crc)
 
 let print_general_infos name crc defines cmi cmx =
   printf "Name: %s\n" name;
-  printf "CRC of implementation: %s\n" (Digest.to_hex crc);
+  printf "CRC of implementation: %s\n" (string_of_crc crc);
   printf "Globals defined:\n";
   List.iter print_line defines;
   printf "Interfaces imported:\n";
@@ -121,9 +127,9 @@ let print_general_infos name crc defines cmi cmx =
 
 let print_global_table table =
   printf "Globals defined:\n";
-  Tbl.iter
+  Symtable.iter_global_map
     (fun id _ -> print_line (Ident.name id))
-    table.num_tbl
+    table
 
 open Cmx_format
 
@@ -150,7 +156,7 @@ let print_cmx_infos (ui, crc) =
       Compilation_unit.set_current cu;
       let root_symbols =
         List.map (fun s ->
-            Symbol.unsafe_create cu (Linkage_name.create ("caml"^s)))
+            Symbol.of_global_linkage cu (Linkage_name.create ("caml"^s)))
           ui.ui_defines
       in
       Format.printf "approximations@ %a@.@."
@@ -203,7 +209,7 @@ let p_list title print = function
 let dump_byte ic =
   Bytesections.read_toc ic;
   let toc = Bytesections.toc () in
-  let toc = List.sort Pervasives.compare toc in
+  let toc = List.sort Stdlib.compare toc in
   List.iter
     (fun (section, _) ->
        try
@@ -236,24 +242,24 @@ let dump_byte ic =
     toc
 
 let read_dyn_header filename ic =
-  let tempfile = Filename.temp_file "objinfo" ".out" in
   let helper = Filename.concat Config.standard_library "objinfo_helper" in
+  let tempfile = Filename.temp_file "objinfo" ".out" in
   try
     try_finally
+      ~always:(fun () -> remove_file tempfile)
       (fun () ->
-        let rc = Sys.command (sprintf "%s %s > %s"
-                                (Filename.quote helper)
-                                (Filename.quote filename)
-                                tempfile) in
-        if rc <> 0 then failwith "cannot read";
-        let tc = Scanf.Scanning.from_file tempfile in
-        try_finally
-          (fun () ->
-            let ofs = Scanf.bscanf tc "%Ld" (fun x -> x) in
-            LargeFile.seek_in ic ofs;
-            Some(input_value ic : dynheader))
-          (fun () -> Scanf.Scanning.close_in tc))
-      (fun () -> remove_file tempfile)
+         let rc = Sys.command (sprintf "%s %s > %s"
+                                 (Filename.quote helper)
+                                 (Filename.quote filename)
+                                 tempfile) in
+         if rc <> 0 then failwith "cannot read";
+         let tc = Scanf.Scanning.from_file tempfile in
+         try_finally
+           ~always:(fun () -> Scanf.Scanning.close_in tc)
+           (fun () ->
+              let ofs = Scanf.bscanf tc "%Ld" (fun x -> x) in
+              LargeFile.seek_in ic ofs;
+              Some(input_value ic : dynheader)))
   with Failure _ | Sys_error _ -> None
 
 let dump_obj filename =
@@ -321,8 +327,11 @@ let dump_obj filename =
   end
 
 let arg_list = [
-  "-no-approx", Arg.Set no_approx, " Do not print module approximation information";
-  "-no-code", Arg.Set no_code, " Do not print code from exported flambda functions";
+  "-no-approx", Arg.Set no_approx,
+    " Do not print module approximation information";
+  "-no-code", Arg.Set no_code,
+    " Do not print code from exported flambda functions";
+  "-null-crc", Arg.Set no_crc, " Print a null CRC for imported interfaces";
   "-args", Arg.Expand Arg.read_arg,
      "<file> Read additional newline separated command line arguments \n\
      \      from <file>";

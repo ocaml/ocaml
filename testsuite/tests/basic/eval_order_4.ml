@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* PR#7531 *)
 
 let f =
@@ -5,9 +7,9 @@ let f =
    in fun q -> fun i -> "") (print_endline "x")
 
 let _ =
-  let k = 
-    (let _i = print_int 1 
-     in fun q -> fun i -> "") () 
+  let k =
+    (let _i = print_int 1
+     in fun q -> fun i -> "") ()
   in k (print_int 0)
 
 let () =

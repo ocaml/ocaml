@@ -16,7 +16,6 @@
 (* Inclusion checks for the module language *)
 
 open Misc
-open Path
 open Typedtree
 open Types
 
@@ -24,9 +23,9 @@ type symptom =
     Missing_field of Ident.t * Location.t * string (* kind *)
   | Value_descriptions of Ident.t * value_description * value_description
   | Type_declarations of Ident.t * type_declaration
-        * type_declaration * Includecore.type_mismatch list
-  | Extension_constructors of
-      Ident.t * extension_constructor * extension_constructor
+        * type_declaration * Includecore.type_mismatch
+  | Extension_constructors of Ident.t * extension_constructor
+        * extension_constructor * Includecore.type_mismatch
   | Module_types of module_type * module_type
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
   | Modtype_permutation
@@ -47,15 +46,32 @@ type error = pos list * Env.t * symptom
 
 exception Error of error list
 
+type mark =
+  | Mark_both
+  | Mark_positive
+  | Mark_negative
+  | Mark_neither
+
+let negate_mark = function
+  | Mark_both -> Mark_both
+  | Mark_positive -> Mark_negative
+  | Mark_negative -> Mark_positive
+  | Mark_neither -> Mark_neither
+
+let mark_positive = function
+  | Mark_both | Mark_positive -> true
+  | Mark_negative | Mark_neither -> false
+
 (* All functions "blah env x1 x2" check that x1 is included in x2,
    i.e. that x1 is the type of an implementation that fulfills the
    specification x2. If not, Error is raised with a backtrace of the error. *)
 
 (* Inclusion between value descriptions *)
 
-let value_descriptions ~loc env cxt subst id vd1 vd2 =
+let value_descriptions ~loc env ~mark cxt subst id vd1 vd2 =
   Cmt_format.record_value_dependency vd1 vd2;
-  Env.mark_value_used env (Ident.name id) vd1;
+  if mark_positive mark then
+    Env.mark_value_used (Ident.name id) vd1;
   let vd2 = Subst.value_description subst vd2 in
   try
     Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2
@@ -64,39 +80,45 @@ let value_descriptions ~loc env cxt subst id vd1 vd2 =
 
 (* Inclusion between type declarations *)
 
-let type_declarations ~loc env ?(old_env=env) cxt subst id decl1 decl2 =
-  Env.mark_type_used env (Ident.name id) decl1;
+let type_declarations ~loc env ~mark ?old_env:_ cxt subst id decl1 decl2 =
+  let mark = mark_positive mark in
+  if mark then
+    Env.mark_type_used (Ident.name id) decl1;
   let decl2 = Subst.type_declaration subst decl2 in
-  let err =
-    Includecore.type_declarations ~loc env (Ident.name id) decl1 id decl2
-  in
-  if err <> [] then
-    raise(Error[cxt, old_env, Type_declarations(id, decl1, decl2, err)])
+  match
+    Includecore.type_declarations ~loc env ~mark
+      (Ident.name id) decl1 id decl2
+  with
+  | None -> ()
+  | Some err ->
+      raise(Error[cxt, env, Type_declarations(id, decl1, decl2, err)])
 
 (* Inclusion between extension constructors *)
 
-let extension_constructors ~loc env cxt subst id ext1 ext2 =
+let extension_constructors ~loc env ~mark cxt subst id ext1 ext2 =
+  let mark = mark_positive mark in
   let ext2 = Subst.extension_constructor subst ext2 in
-  if Includecore.extension_constructors ~loc env id ext1 ext2
-  then ()
-  else raise(Error[cxt, env, Extension_constructors(id, ext1, ext2)])
+  match Includecore.extension_constructors ~loc env ~mark id ext1 ext2 with
+  | None -> ()
+  | Some err ->
+      raise(Error[cxt, env, Extension_constructors(id, ext1, ext2, err)])
 
 (* Inclusion between class declarations *)
 
-let class_type_declarations ~loc ~old_env env cxt subst id decl1 decl2 =
+let class_type_declarations ~loc ~old_env:_ env cxt subst id decl1 decl2 =
   let decl2 = Subst.cltype_declaration subst decl2 in
   match Includeclass.class_type_declarations ~loc env decl1 decl2 with
     []     -> ()
   | reason ->
-      raise(Error[cxt, old_env,
+      raise(Error[cxt, env,
                   Class_type_declarations(id, decl1, decl2, reason)])
 
-let class_declarations ~old_env env cxt subst id decl1 decl2 =
+let class_declarations ~old_env:_ env cxt subst id decl1 decl2 =
   let decl2 = Subst.class_declaration subst decl2 in
   match Includeclass.class_declarations env decl1 decl2 with
     []     -> ()
   | reason ->
-      raise(Error[cxt, old_env, Class_declarations(id, decl1, decl2, reason)])
+      raise(Error[cxt, env, Class_declarations(id, decl1, decl2, reason)])
 
 (* Expand a module type identifier when possible *)
 
@@ -143,6 +165,14 @@ let kind_of_field_desc = function
   | Field_modtype _ -> "module type"
   | Field_class _ -> "class"
   | Field_classtype _ -> "class type"
+
+(** Map indexed by both field types and names.
+    This avoids name clashes between different sorts of fields
+    such as values and types. *)
+module FieldMap = Map.Make(struct
+    type t = field_desc
+    let compare = Stdlib.compare
+  end)
 
 let item_ident_name = function
     Sig_value(id, d) -> (id, d.val_loc, Field_value(Ident.name id))
@@ -213,9 +243,9 @@ let simplify_structure_coercion cc id_pos_list =
    Return the restriction that transforms a value of the smaller type
    into a value of the bigger type. *)
 
-let rec modtypes ~loc env cxt subst mty1 mty2 =
+let rec modtypes ~loc env ~mark cxt subst mty1 mty2 =
   try
-    try_modtypes ~loc env cxt subst mty1 mty2
+    try_modtypes ~loc env ~mark cxt subst mty1 mty2
   with
     Dont_match ->
       raise(Error[cxt, env, Module_types(mty1, Subst.modtype subst mty2)])
@@ -227,7 +257,7 @@ let rec modtypes ~loc env cxt subst mty1 mty2 =
           raise(Error((cxt, env, Module_types(mty1, Subst.modtype subst mty2))
                       :: reasons))
 
-and try_modtypes ~loc env cxt subst mty1 mty2 =
+and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
   match (mty1, mty2) with
   | (Mty_alias(pres1, p1), Mty_alias(pres2, p2)) -> begin
       if Env.is_functor_arg p2 env then
@@ -261,29 +291,37 @@ and try_modtypes ~loc env cxt subst mty1 mty2 =
         Mtype.strengthen ~aliasable:true env
           (expand_module_alias env cxt p1) p1
       in
-      let cc = modtypes ~loc env cxt subst mty1 mty2 in
+      let cc = modtypes ~loc env ~mark cxt subst mty1 mty2 in
       match pres1 with
       | Mta_present -> cc
       | Mta_absent -> Tcoerce_alias (p1, cc)
     end
   | (Mty_ident p1, _) when may_expand_module_path env p1 ->
-      try_modtypes ~loc env cxt subst (expand_module_path env cxt p1) mty2
+      try_modtypes ~loc env ~mark cxt subst
+        (expand_module_path env cxt p1) mty2
   | (_, Mty_ident _) ->
-      try_modtypes2 ~loc env cxt mty1 (Subst.modtype subst mty2)
+      try_modtypes2 ~loc env ~mark cxt mty1 (Subst.modtype subst mty2)
   | (Mty_signature sig1, Mty_signature sig2) ->
-      signatures ~loc env cxt subst sig1 sig2
+      signatures ~loc env ~mark cxt subst sig1 sig2
   | (Mty_functor(param1, None, res1), Mty_functor(_param2, None, res2)) ->
-      begin match modtypes ~loc env (Body param1::cxt) subst res1 res2 with
-        Tcoerce_none -> Tcoerce_none
+    begin
+      match modtypes ~loc env ~mark (Body param1::cxt) subst res1 res2 with
+      | Tcoerce_none -> Tcoerce_none
       | cc -> Tcoerce_functor (Tcoerce_none, cc)
-      end
+    end
   | (Mty_functor(param1, Some arg1, res1),
      Mty_functor(param2, Some arg2, res2)) ->
       let arg2' = Subst.modtype subst arg2 in
-      let cc_arg = modtypes ~loc env (Arg param1::cxt) Subst.identity arg2' arg1 in
+      let cc_arg =
+        modtypes ~loc env ~mark:(negate_mark mark)
+          (Arg param1::cxt) Subst.identity arg2' arg1
+      in
       let cc_res =
-        modtypes ~loc (Env.add_module param1 arg2' env) (Body param1::cxt)
-          (Subst.add_module param2 (Pident param1) subst) res1 res2 in
+        modtypes ~loc (Env.add_module param1 arg2' env) ~mark
+          (Body param1::cxt)
+          (Subst.add_module param2 (Path.Pident param1) subst)
+          res1 res2
+      in
       begin match (cc_arg, cc_res) with
           (Tcoerce_none, Tcoerce_none) -> Tcoerce_none
         | _ -> Tcoerce_functor(cc_arg, cc_res)
@@ -291,7 +329,7 @@ and try_modtypes ~loc env cxt subst mty1 mty2 =
   | (_, _) ->
       raise Dont_match
 
-and try_modtypes2 ~loc env cxt mty1 mty2 =
+and try_modtypes2 ~loc env ~mark cxt mty1 mty2 =
   (* mty2 is an identifier *)
   match (mty1, mty2) with
     (Mty_ident p1, Mty_ident p2)
@@ -299,13 +337,14 @@ and try_modtypes2 ~loc env cxt mty1 mty2 =
                    (Env.normalize_path_prefix None env p2) ->
       Tcoerce_none
   | (_, Mty_ident p2) when may_expand_module_path env p2 ->
-      try_modtypes ~loc env cxt Subst.identity mty1 (expand_module_path env cxt p2)
+      try_modtypes ~loc env ~mark cxt Subst.identity
+        mty1 (expand_module_path env cxt p2)
   | (_, _) ->
       raise Dont_match
 
 (* Inclusion between signatures *)
 
-and signatures ~loc env cxt subst sig1 sig2 =
+and signatures ~loc env ~mark cxt subst sig1 sig2 =
   (* Environment used to check inclusion of components *)
   let new_env =
     Env.add_signature sig1 (Env.in_signature true env) in
@@ -325,9 +364,9 @@ and signatures ~loc env cxt subst sig1 sig2 =
         let (id, _loc, name) = item_ident_name item in
         let nextpos = if is_runtime_component item then pos + 1 else pos in
         build_component_table nextpos
-                              (Tbl.add name (id, item, pos) tbl) rem in
+                              (FieldMap.add name (id, item, pos) tbl) rem in
   let len1, comps1 =
-    build_component_table 0 Tbl.empty sig1 in
+    build_component_table 0 FieldMap.empty sig1 in
   let len2 =
     List.fold_left
       (fun n i -> if is_runtime_component i then n + 1 else n)
@@ -344,7 +383,7 @@ and signatures ~loc env cxt subst sig1 sig2 =
         begin match unpaired with
             [] ->
               let cc =
-                signature_components ~loc env new_env cxt subst
+                signature_components ~loc env ~mark new_env cxt subst
                   (List.rev paired)
               in
               if len1 = len2 then (* see PR#5098 *)
@@ -365,15 +404,15 @@ and signatures ~loc env cxt subst sig1 sig2 =
           | _ -> name2, true
         in
         begin try
-          let (id1, item1, pos1) = Tbl.find name2 comps1 in
+          let (id1, item1, pos1) = FieldMap.find name2 comps1 in
           let new_subst =
             match item2 with
               Sig_type _ ->
-                Subst.add_type id2 (Pident id1) subst
+                Subst.add_type id2 (Path.Pident id1) subst
             | Sig_module _ ->
-                Subst.add_module id2 (Pident id1) subst
+                Subst.add_module id2 (Path.Pident id1) subst
             | Sig_modtype _ ->
-                Subst.add_modtype id2 (Mty_ident (Pident id1)) subst
+                Subst.add_modtype id2 (Mty_ident (Path.Pident id1)) subst
             | Sig_value _ | Sig_typext _
             | Sig_class _ | Sig_class_type _ ->
                 subst
@@ -393,28 +432,32 @@ and signatures ~loc env cxt subst sig1 sig2 =
 
 (* Inclusion between signature components *)
 
-and signature_components ~loc old_env env cxt subst paired =
-  let comps_rec rem = signature_components ~loc old_env env cxt subst rem in
+and signature_components ~loc old_env ~mark env cxt subst paired =
+  let comps_rec rem =
+    signature_components ~loc old_env ~mark env cxt subst rem
+  in
   match paired with
     [] -> []
   | (Sig_value(id1, valdecl1), Sig_value(_id2, valdecl2), pos) :: rem ->
-      let cc = value_descriptions ~loc env cxt subst id1 valdecl1 valdecl2 in
+      let cc =
+        value_descriptions ~loc env ~mark cxt subst id1 valdecl1 valdecl2
+      in
       begin match valdecl2.val_kind with
         Val_prim _ -> comps_rec rem
       | _ -> (pos, cc) :: comps_rec rem
       end
   | (Sig_type(id1, tydecl1, _), Sig_type(_id2, tydecl2, _), _pos) :: rem ->
-      type_declarations ~loc ~old_env env cxt subst id1 tydecl1 tydecl2;
+      type_declarations ~loc ~old_env env ~mark cxt subst id1 tydecl1 tydecl2;
       comps_rec rem
   | (Sig_typext(id1, ext1, _), Sig_typext(_id2, ext2, _), pos)
     :: rem ->
-      extension_constructors ~loc env cxt subst id1 ext1 ext2;
+      extension_constructors ~loc env ~mark cxt subst id1 ext1 ext2;
       (pos, Tcoerce_none) :: comps_rec rem
   | (Sig_module(id1, mty1, _), Sig_module(_id2, mty2, _), pos) :: rem ->
-      let cc = module_declarations ~loc env cxt subst id1 mty1 mty2 in
+      let cc = module_declarations ~loc env ~mark cxt subst id1 mty1 mty2 in
       (pos, cc) :: comps_rec rem
   | (Sig_modtype(id1, info1), Sig_modtype(_id2, info2), _pos) :: rem ->
-      modtype_infos ~loc env cxt subst id1 info1 info2;
+      modtype_infos ~loc env ~mark cxt subst id1 info1 info2;
       comps_rec rem
   | (Sig_class(id1, decl1, _), Sig_class(_id2, decl2, _), pos) :: rem ->
       class_declarations ~old_env env cxt subst id1 decl1 decl2;
@@ -426,22 +469,23 @@ and signature_components ~loc old_env env cxt subst paired =
   | _ ->
       assert false
 
-and module_declarations ~loc env cxt subst id1 md1 md2 =
-  Builtin_attributes.check_deprecated_inclusion
+and module_declarations ~loc env ~mark cxt subst id1 md1 md2 =
+  Builtin_attributes.check_alerts_inclusion
     ~def:md1.md_loc
     ~use:md2.md_loc
     loc
     md1.md_attributes md2.md_attributes
     (Ident.name id1);
-  let p1 = Pident id1 in
-  Env.mark_module_used env (Ident.name id1) md1.md_loc;
-  modtypes ~loc env (Module id1::cxt) subst
+  let p1 = Path.Pident id1 in
+  if mark_positive mark then
+    Env.mark_module_used (Ident.name id1) md1.md_loc;
+  modtypes ~loc env ~mark (Module id1::cxt) subst
     (Mtype.strengthen ~aliasable:true env md1.md_type p1) md2.md_type
 
 (* Inclusion between module type specifications *)
 
-and modtype_infos ~loc env cxt subst id info1 info2 =
-  Builtin_attributes.check_deprecated_inclusion
+and modtype_infos ~loc env ~mark cxt subst id info1 info2 =
+  Builtin_attributes.check_alerts_inclusion
     ~def:info1.mtd_loc
     ~use:info2.mtd_loc
     loc
@@ -454,16 +498,16 @@ and modtype_infos ~loc env cxt subst id info1 info2 =
       (None, None) -> ()
     | (Some _, None) -> ()
     | (Some mty1, Some mty2) ->
-        check_modtype_equiv ~loc env cxt' mty1 mty2
+        check_modtype_equiv ~loc env ~mark cxt' mty1 mty2
     | (None, Some mty2) ->
-        check_modtype_equiv ~loc env cxt' (Mty_ident(Pident id)) mty2
+        check_modtype_equiv ~loc env ~mark cxt' (Mty_ident(Path.Pident id)) mty2
   with Error reasons ->
     raise(Error((cxt, env, Modtype_infos(id, info1, info2)) :: reasons))
 
-and check_modtype_equiv ~loc env cxt mty1 mty2 =
+and check_modtype_equiv ~loc env ~mark cxt mty1 mty2 =
   match
-    (modtypes ~loc env cxt Subst.identity mty1 mty2,
-     modtypes ~loc env cxt Subst.identity mty2 mty1)
+    (modtypes ~loc env ~mark cxt Subst.identity mty1 mty2,
+     modtypes ~loc env ~mark:(negate_mark mark) cxt Subst.identity mty2 mty1)
   with
     (Tcoerce_none, Tcoerce_none) -> ()
   | (_c1, _c2) ->
@@ -475,40 +519,41 @@ and check_modtype_equiv ~loc env cxt mty1 mty2 =
 
 let can_alias env path =
   let rec no_apply = function
-    | Pident _ -> true
-    | Pdot(p, _, _) -> no_apply p
-    | Papply _ -> false
+    | Path.Pident _ -> true
+    | Path.Pdot(p, _, _) -> no_apply p
+    | Path.Papply _ -> false
   in
   no_apply path && not (Env.is_functor_arg path env)
 
 let check_modtype_inclusion ~loc env mty1 path1 mty2 =
-  try
-    let aliasable = can_alias env path1 in
-    ignore(modtypes ~loc env [] Subst.identity
-                    (Mtype.strengthen ~aliasable env mty1 path1) mty2)
-  with Error _ ->
-    raise Not_found
+  let aliasable = can_alias env path1 in
+  ignore(modtypes ~loc env ~mark:Mark_both [] Subst.identity
+           (Mtype.strengthen ~aliasable env mty1 path1) mty2)
 
-let _ = Env.check_modtype_inclusion := check_modtype_inclusion
+let () =
+  Env.check_modtype_inclusion := (fun ~loc a b c d ->
+    try (check_modtype_inclusion ~loc a b c d : unit)
+    with Error _ -> raise Not_found)
 
 (* Check that an implementation of a compilation unit meets its
    interface. *)
 
-let compunit env impl_name impl_sig intf_name intf_sig =
+let compunit env ?(mark=Mark_both) impl_name impl_sig intf_name intf_sig =
   try
-    signatures ~loc:(Location.in_file impl_name) env [] Subst.identity
-      impl_sig intf_sig
+    signatures ~loc:(Location.in_file impl_name) env ~mark []
+      Subst.identity impl_sig intf_sig
   with Error reasons ->
     raise(Error(([], Env.empty,Interface_mismatch(impl_name, intf_name))
                 :: reasons))
 
 (* Hide the context and substitution parameters to the outside world *)
 
-let modtypes ~loc env mty1 mty2 = modtypes ~loc env [] Subst.identity mty1 mty2
-let signatures env sig1 sig2 =
-  signatures ~loc:Location.none env [] Subst.identity sig1 sig2
-let type_declarations ~loc env id decl1 decl2 =
-  type_declarations ~loc env [] Subst.identity id decl1 decl2
+let modtypes ~loc env ?(mark=Mark_both) mty1 mty2 =
+  modtypes ~loc env ~mark [] Subst.identity mty1 mty2
+let signatures env ?(mark=Mark_both) sig1 sig2 =
+  signatures ~loc:Location.none env ~mark [] Subst.identity sig1 sig2
+let type_declarations ~loc env ?(mark=Mark_both) id decl1 decl2 =
+  type_declarations ~loc env ~mark [] Subst.identity id decl1 decl2
 
 (*
 let modtypes env m1 m2 =
@@ -522,7 +567,6 @@ let modtypes env m1 m2 =
 (* Error report *)
 
 open Format
-open Printtyp
 
 let show_loc msg ppf loc =
   let pos = loc.Location.loc_start in
@@ -535,41 +579,49 @@ let show_locs ppf (loc1, loc2) =
 
 let include_err ppf = function
   | Missing_field (id, loc, kind) ->
-      fprintf ppf "The %s `%a' is required but not provided" kind ident id;
+      fprintf ppf "The %s `%a' is required but not provided"
+        kind Printtyp.ident id;
       show_loc "Expected declaration" ppf loc
   | Value_descriptions(id, d1, d2) ->
       fprintf ppf
         "@[<hv 2>Values do not match:@ %a@;<1 -2>is not included in@ %a@]"
-        (value_description id) d1 (value_description id) d2;
-      show_locs ppf (d1.val_loc, d2.val_loc);
-  | Type_declarations(id, d1, d2, errs) ->
+        !Oprint.out_sig_item (Printtyp.tree_of_value_description id d1)
+        !Oprint.out_sig_item (Printtyp.tree_of_value_description id d2);
+      show_locs ppf (d1.val_loc, d2.val_loc)
+  | Type_declarations(id, d1, d2, err) ->
       fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Type declarations do not match"
-        (type_declaration id) d1
+        !Oprint.out_sig_item
+        (Printtyp.tree_of_type_declaration id d1 Trec_first)
         "is not included in"
-        (type_declaration id) d2
+        !Oprint.out_sig_item
+        (Printtyp.tree_of_type_declaration id d2 Trec_first)
         show_locs (d1.type_loc, d2.type_loc)
         (Includecore.report_type_mismatch
-           "the first" "the second" "declaration") errs
-  | Extension_constructors(id, x1, x2) ->
-      fprintf ppf
-       "@[<hv 2>Extension declarations do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]"
-      (extension_constructor id) x1
-      (extension_constructor id) x2;
-      show_locs ppf (x1.ext_loc, x2.ext_loc)
+           "the first" "the second" "declaration") err
+  | Extension_constructors(id, x1, x2, err) ->
+      fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
+        "Extension declarations do not match"
+        !Oprint.out_sig_item
+        (Printtyp.tree_of_extension_constructor id x1 Text_first)
+        "is not included in"
+        !Oprint.out_sig_item
+        (Printtyp.tree_of_extension_constructor id x2 Text_first)
+        show_locs (x1.ext_loc, x2.ext_loc)
+        (Includecore.report_type_mismatch
+           "the first" "the second" "declaration") err
   | Module_types(mty1, mty2)->
       fprintf ppf
        "@[<hv 2>Modules do not match:@ \
         %a@;<1 -2>is not included in@ %a@]"
-      modtype mty1
-      modtype mty2
+      !Oprint.out_module_type (Printtyp.tree_of_modtype mty1)
+      !Oprint.out_module_type (Printtyp.tree_of_modtype mty2)
   | Modtype_infos(id, d1, d2) ->
       fprintf ppf
        "@[<hv 2>Module type declarations do not match:@ \
         %a@;<1 -2>does not match@ %a@]"
-      (modtype_declaration id) d1
-      (modtype_declaration id) d2
+      !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d1)
+      !Oprint.out_sig_item (Printtyp.tree_of_modtype_declaration id d2)
   | Modtype_permutation ->
       fprintf ppf "Illegal permutation of structure fields"
   | Interface_mismatch(impl_name, intf_name) ->
@@ -579,15 +631,17 @@ let include_err ppf = function
       fprintf ppf
        "@[<hv 2>Class type declarations do not match:@ \
         %a@;<1 -2>does not match@ %a@]@ %a"
-      (Printtyp.cltype_declaration id) d1
-      (Printtyp.cltype_declaration id) d2
+       !Oprint.out_sig_item
+       (Printtyp.tree_of_cltype_declaration id d1 Trec_first)
+       !Oprint.out_sig_item
+       (Printtyp.tree_of_cltype_declaration id d2 Trec_first)
       Includeclass.report_error reason
   | Class_declarations(id, d1, d2, reason) ->
       fprintf ppf
        "@[<hv 2>Class declarations do not match:@ \
         %a@;<1 -2>does not match@ %a@]@ %a"
-      (Printtyp.class_declaration id) d1
-      (Printtyp.class_declaration id) d2
+      !Oprint.out_sig_item (Printtyp.tree_of_class_declaration id d1 Trec_first)
+      !Oprint.out_sig_item (Printtyp.tree_of_class_declaration id d2 Trec_first)
       Includeclass.report_error reason
   | Unbound_modtype_path path ->
       fprintf ppf "Unbound module type %a" Printtyp.path path
@@ -598,13 +652,14 @@ let include_err ppf = function
 
 let rec context ppf = function
     Module id :: rem ->
-      fprintf ppf "@[<2>module %a%a@]" ident id args rem
+      fprintf ppf "@[<2>module %a%a@]" Printtyp.ident id args rem
   | Modtype id :: rem ->
-      fprintf ppf "@[<2>module type %a =@ %a@]" ident id context_mty rem
+      fprintf ppf "@[<2>module type %a =@ %a@]"
+        Printtyp.ident id context_mty rem
   | Body x :: rem ->
       fprintf ppf "functor (%s) ->@ %a" (argname x) context_mty rem
   | Arg x :: rem ->
-      fprintf ppf "functor (%a : %a) -> ..." ident x context_mty rem
+      fprintf ppf "functor (%a : %a) -> ..." Printtyp.ident x context_mty rem
   | [] ->
       fprintf ppf "<here>"
 and context_mty ppf = function
@@ -615,7 +670,7 @@ and args ppf = function
     Body x :: rem ->
       fprintf ppf "(%s)%a" (argname x) args rem
   | Arg x :: rem ->
-      fprintf ppf "(%a :@ %a) : ..." ident x context_mty rem
+      fprintf ppf "(%a :@ %a) : ..." Printtyp.ident x context_mty rem
   | cxt ->
       fprintf ppf " :@ %a" context_mty cxt
 and argname x =
@@ -626,20 +681,20 @@ let path_of_context = function
     Module id :: rem ->
       let rec subm path = function
           [] -> path
-        | Module id :: rem -> subm (Pdot (path, Ident.name id, -1)) rem
+        | Module id :: rem -> subm (Path.Pdot (path, Ident.name id, -1)) rem
         | _ -> assert false
-      in subm (Pident id) rem
+      in subm (Path.Pident id) rem
   | _ -> assert false
 
 let context ppf cxt =
   if cxt = [] then () else
   if List.for_all (function Module _ -> true | _ -> false) cxt then
-    fprintf ppf "In module %a:@ " path (path_of_context cxt)
+    fprintf ppf "In module %a:@ " Printtyp.path (path_of_context cxt)
   else
     fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
 
 let include_err ppf (cxt, env, err) =
-  Printtyp.wrap_printing_env env (fun () ->
+  Printtyp.wrap_printing_env ~error:true env (fun () ->
     fprintf ppf "@[<v>%a%a@]" context (List.rev cxt) include_err err)
 
 let buffer = ref Bytes.empty
@@ -661,8 +716,9 @@ let report_error ppf errs =
     else if !pe then (fprintf ppf "...@ "; pe := false)
   in
   let print_errs ppf = List.iter (include_err' ppf) in
-  fprintf ppf "@[<v>%a%a@]" print_errs errs include_err err
-
+  Printtyp.Conflicts.reset();
+  fprintf ppf "@[<v>%a%a%t@]" print_errs errs include_err err
+    Printtyp.Conflicts.print
 
 (* We could do a better job to split the individual error items
    as sub-messages of the main interface mismatch on the whole unit. *)

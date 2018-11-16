@@ -27,7 +27,7 @@ open Lexing;;
 open Location;;
 open Typedtree;;
 
-let output_int oc i = output_string oc (string_of_int i)
+let output_int oc i = output_string oc (Int.to_string i)
 
 type annotation =
   | Ti_pat   of pattern
@@ -159,7 +159,7 @@ let print_info pp prev_loc ti =
       printtyp_reset_maybe loc;
       Printtyp.mark_loops typ;
       Format.pp_print_string Format.str_formatter "  ";
-      Printtyp.wrap_printing_env env
+      Printtyp.wrap_printing_env ~error:false env
                        (fun () -> Printtyp.type_sch Format.str_formatter typ);
       Format.pp_print_newline Format.str_formatter ();
       let s = Format.flush_str_formatter () in

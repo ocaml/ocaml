@@ -17,7 +17,7 @@ sudo: false
 language: c
 git:
   submodules: false
-script: bash -ex .travis-ci.sh
+script: bash -e tools/ci/travis/travis-ci.sh
 matrix:
   include:
   - env: CI_KIND=build XARCH=i386
@@ -33,6 +33,8 @@ matrix:
   - env: CI_KIND=build XARCH=x64
   - env: CI_KIND=build XARCH=x64 CONFIG_ARG=-flambda OCAMLRUNPARAM=b,v=0
   - env: CI_KIND=changes
+  - env: CI_KIND=manual
+  - env: CI_KIND=check-typo
   - env: CI_KIND=tests
   allow_failures:
   - env: CI_KIND=tests

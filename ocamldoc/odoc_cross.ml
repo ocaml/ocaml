@@ -31,7 +31,7 @@ open Odoc_parameter
 module S = Set.Make
     (
      struct type t = string * ref_kind option
-       let compare = Pervasives.compare
+       let compare = Stdlib.compare
      end
     )
 
@@ -138,13 +138,7 @@ let get_alias_names module_list =
   Hashtbl.clear exception_aliases;
   build_alias_list (Search_alias.search module_list 0)
 
-module Map_ord =
-  struct
-    type t = string
-    let compare (x:t) y = Pervasives.compare x y
-  end
-
-module Ele_map = Map.Make (Map_ord)
+module Ele_map = Misc.Stdlib.String.Map
 
 let known_elements = ref Ele_map.empty
 let add_known_element name k =
@@ -406,8 +400,12 @@ and associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module
             Some _ ->
               (acc_b, acc_inc, acc_names)
           | None ->
+              let mta_name =
+                Name.get_relative_opt
+                  !Odoc_global.library_namespace
+                  mta.mta_name in
               let mt_opt =
-                try Some (lookup_module_type mta.mta_name)
+                try Some (lookup_module_type mta_name)
                 with Not_found -> None
               in
               match mt_opt with
@@ -418,7 +416,7 @@ and associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module
                       mta.mta_name = Odoc_messages.sig_end then
                       acc_names
                     else
-                      (NF_mt mta.mta_name) :: acc_names)
+                      (NF_mt mta_name) :: acc_names)
                   )
               | Some mt ->
                   mta.mta_module <- Some mt ;

@@ -20,6 +20,7 @@
 
 module Inlined : sig
   type t =
+    | Classic_mode
     | Annotation
     | Decl_local_to_application
     | Without_subfunctions of

@@ -231,6 +231,13 @@ method! select_operation op args dbg =
   (* AMD64 does not support immediate operands for multiply high signed *)
   | Cmulhi ->
       (Iintop Imulh, args)
+  | Casr ->
+      begin match args with
+        (* Recognize sign extension *)
+        [Cop(Clsl, [k; Cconst_int 32], _); Cconst_int 32] ->
+          (Ispecific Isextend32, [k])
+        | _ -> super#select_operation op args dbg
+      end
   | _ -> super#select_operation op args dbg
 
 (* Recognize float arithmetic with mem *)

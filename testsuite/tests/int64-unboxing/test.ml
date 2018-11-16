@@ -1,3 +1,8 @@
+(* TEST
+   modules = "stubs.c"
+   * native
+*)
+
 external ( + ) : int64 -> int64 -> int64
   = "" "test_int64_add" [@@noalloc] [@@unboxed]
 external ( - ) : int64 -> int64 -> int64

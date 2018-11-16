@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type (_, _) t =
  A : ('a, 'a) t
 | B : string -> ('a, 'b) t
@@ -17,7 +21,9 @@ let x = N.f A;;
 
 [%%expect{|
 type (_, _) t = A : ('a, 'a) t | B : string -> ('a, 'b) t
-Line _, characters 52-74:
+Line 8, characters 52-74:
+8 | ....................................................function
+9 |    | B s -> s
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 A

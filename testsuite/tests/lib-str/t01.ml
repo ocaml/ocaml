@@ -1,3 +1,7 @@
+(* TEST
+   include str
+*)
+
 open Printf
 
 let build_result ngroups input =

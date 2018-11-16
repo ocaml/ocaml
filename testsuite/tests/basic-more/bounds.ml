@@ -1,4 +1,8 @@
-(* Test bound checks with ocamlopt *)
+(* TEST
+   include testing
+*)
+
+(* Test bound checks *)
 
 let a = [| 0; 1; 2 |]
 

@@ -1,3 +1,11 @@
+(* TEST
+include tool-ocaml-lib
+flags = "-w a"
+ocaml_script_as_argument = "true"
+* setup-ocaml-build-env
+** ocaml
+*)
+
 open Lib;;
 if Hashtbl.hash_param 5 6 [1;2;3] <> 697606130 then raise Not_found;;
 

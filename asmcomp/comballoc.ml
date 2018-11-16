@@ -18,46 +18,55 @@
 open Mach
 
 type allocation_state =
-    No_alloc                            (* no allocation is pending *)
-  | Pending_alloc of Reg.t * alloc_info list * int
-                                        (* an allocation is pending *)
-(* The arguments of Pending_alloc(reg, lst, sz) are:
-     reg  the register holding the result of the last allocation
-     lst  the list of pending allocations
-     sz the sum of all the sizes of lst *)
+    No_alloc
+  | Pending_alloc of
+    { reg: Reg.t;           (* register holding the result of the last
+                               allocation *)
+      allocs_rev: alloc_info list; (* the list of pending allocations,
+                                      in reverse order. *)
+      totalsz: int }        (* amount to be allocated in this block *)
 
 let allocated_list_sz = function
     No_alloc -> ([], 0)
-  | Pending_alloc(_, lst, sz) -> (lst, sz)
+  | Pending_alloc {allocs_rev; totalsz; _} -> (allocs_rev, totalsz)
 
 let rec combine i allocstate =
   match i.desc with
     Iend | Ireturn | Iexit _ | Iraise _ ->
       (i, allocated_list_sz allocstate)
-  | Iop(Ialloc { words = sz; blocks = l; _ }) ->
+  | Iop(Ialloc { bytes = sz; allocs = [alloc]; _ }) ->
       begin match allocstate with
-        No_alloc ->
-          let (newnext, (newl, newsz)) =
-            combine i.next (Pending_alloc(i.res.(0), l, sz)) in
-          (instr_cons_debug (Iop(Ialloc {
-               words = newsz; blocks = newl; spacetime_index = 0;
-               label_after_call_gc = None; }))
-            i.arg i.res i.dbg newnext, ([], 0))
-      | Pending_alloc(reg, lcur, ofs) ->
-          if ofs + sz < Config.max_young_wosize * Arch.size_addr then begin
-            let (newnext, newlsz) =
-              combine i.next (Pending_alloc(reg, l @ lcur, ofs + sz)) in
-            (instr_cons (Iop(Iintop_imm(Iadd, ofs))) [| reg |] i.res newnext,
-             newlsz)
-          end else begin
-            let (newnext, (newl, newsz)) =
-              combine i.next (Pending_alloc(i.res.(0), l, sz)) in
-            (instr_cons_debug (Iop(Ialloc {
-                 words = newsz; blocks = newl; spacetime_index = 0;
-                 label_after_call_gc = None; }))
-              i.arg i.res i.dbg newnext, (lcur, ofs))
-          end
+      | Pending_alloc {reg; allocs_rev; totalsz}
+          when totalsz + sz < Config.max_young_wosize * Arch.size_addr ->
+         let (next, (allocs_rev, totalsz)) =
+           combine i.next
+             (Pending_alloc { reg = i.res.(0);
+                              allocs_rev = alloc :: allocs_rev;
+                              totalsz = totalsz + sz }) in
+         (instr_cons_debug (Iop(Iintop_imm(Iadd, -sz)))
+            [| reg |] i.res i.dbg next,
+          (allocs_rev, totalsz))
+      | No_alloc | Pending_alloc _ ->
+         let (next, (allocs_rev, totalsz)) =
+           combine i.next
+             (Pending_alloc { reg = i.res.(0);
+                              allocs_rev = [alloc];
+                              totalsz = sz }) in
+         let next =
+           let offset = totalsz - sz in
+           if offset = 0 then next
+           else instr_cons_debug (Iop(Iintop_imm(Iadd, offset))) i.res
+                i.res i.dbg next
+         in
+         (instr_cons_debug (Iop(Ialloc {bytes = totalsz;
+                                        allocs = List.rev allocs_rev;
+                                        spacetime_index = 0;
+                                        label_after_call_gc = None; }))
+          i.arg i.res i.dbg next, allocated_list_sz allocstate)
       end
+  | Iop(Ialloc { allocs = ([]|_::_) }) ->
+     (* At this point, we know that allocations are no yet combined *)
+     assert false
   | Iop(Icall_ind _ | Icall_imm _ | Iextcall _ |
         Itailcall_ind _ | Itailcall_imm _) ->
       let newnext = combine_restart i.next in

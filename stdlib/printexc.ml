@@ -15,6 +15,8 @@
 
 open Printf
 
+type t = exn = ..
+
 let printers = ref []
 
 let locfmt = format_of_string "File \"%s\", line %d, characters %d-%d: %s"
@@ -280,12 +282,12 @@ let handle_uncaught_exception' exn debugger_in_use =
     (* Get the backtrace now, in case one of the [at_exit] function
        destroys it. *)
     let raw_backtrace =
-      if debugger_in_use (* Same test as in [byterun/printexc.c] *) then
+      if debugger_in_use (* Same test as in [runtime/printexc.c] *) then
         empty_backtrace
       else
         try_get_raw_backtrace ()
     in
-    (try Pervasives.do_at_exit () with _ -> ());
+    (try Stdlib.do_at_exit () with _ -> ());
     match !uncaught_exception_handler with
     | None ->
         eprintf "Fatal error: exception %s\n" (to_string exn);
@@ -308,7 +310,7 @@ let handle_uncaught_exception' exn debugger_in_use =
           "Fatal error: out of memory in uncaught exception handler"
 
 (* This function is called by [caml_fatal_uncaught_exception] in
-   [byterun/printexc.c] which expects no exception is raised. *)
+   [runtime/printexc.c] which expects no exception is raised. *)
 let handle_uncaught_exception exn debugger_in_use =
   try
     handle_uncaught_exception' exn debugger_in_use

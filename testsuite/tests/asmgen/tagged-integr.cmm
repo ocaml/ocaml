@@ -1,3 +1,9 @@
+(* TEST
+files = "main.c"
+arguments = "-DINT_FLOAT -DFUN=test main.c"
+* asmgen
+*)
+
 (**************************************************************************)
 (*                                                                        *)
 (*                                OCaml                                   *)

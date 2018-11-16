@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 module ASA = Augment_specialised_args
 module W = ASA.What_to_specialise
@@ -22,7 +23,6 @@ module E = Inline_and_simplify_aux.Env
 
 module Transform = struct
   let pass_name = "unbox-closures"
-  let variable_suffix = ""
 
   let precondition ~env ~(set_of_closures : Flambda.set_of_closures) =
     !Clflags.unbox_closures

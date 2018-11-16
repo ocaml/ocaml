@@ -403,8 +403,12 @@ class text =
            | Some t -> t
            )
       | Some (RK_section _) ->
-          self#latex_of_text_element fmt
-            (Latex ("["^(self#make_ref (self#label ~no_:false (Name.simple name)))^"]"))
+          let text = match text_opt with
+            | None -> []
+            | Some x -> x in
+          let label= self#make_ref (self#label ~no_:false (Name.simple name)) in
+          self#latex_of_text fmt
+            (text @ [Latex ("["^label^"]")] )
       | Some kind ->
           let f_label =
             match kind with
@@ -641,13 +645,14 @@ class latex =
              | None | Some (Other _) -> []
              end
           | Type_variant l ->
+             if l = [] then (p fmt2 "@[<h 6>  |"; [CodePre (flush2())]) else (
              let constructors =
                List.map (fun {vc_name; vc_args; vc_ret; vc_text} ->
                    p fmt2 "@[<h 6>  | %s" vc_name ;
                    let l = self#latex_of_cstr_args f mod_name (vc_args,vc_ret) in
                    l @ (self#entry_comment f vc_text) ) l
              in
-             List.flatten constructors
+             List.flatten constructors)
           | Type_record l ->
               self#latex_of_record f mod_name l
           | Type_open ->

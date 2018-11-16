@@ -1,5 +1,4 @@
 \chapter{The toplevel system or REPL (ocaml)} \label{c:camllight}
-\pdfchapter{The toplevel system or REPL (ocaml)}
 %HEVEA\cutname{toplevel.html}
 
 This chapter describes the toplevel system for OCaml, that permits
@@ -126,6 +125,11 @@ The following command-line options are recognized by the "ocaml" command.
 \begin{unix}
 The following environment variables are also consulted:
 \begin{options}
+\item["OCAMLTOP_INCLUDE_PATH"] Additional directories to search for compiled
+  object code files (".cmi", ".cmo" and ".cma"). The specified directories are
+  considered from left to right, after the include directories specified on the
+  command line via "-I" have been searched. Available since OCaml 4.08.
+
 \item["OCAMLTOP_UTF_8"] When printing string values, non-ascii bytes
 ($ {} > "\0x7E" $) are printed as decimal escape sequence if "OCAMLTOP_UTF_8" is
 set to false. Otherwise, they are printed unescaped.
@@ -213,7 +217,7 @@ directories:
   \item Directories added with the "#directory" directive.
   \item Directories given on the command line with "-I" options.
   \item The standard library directory.
-\end{enumerate}    
+\end{enumerate}
 
 \item[Environment queries]
   \begin{options}

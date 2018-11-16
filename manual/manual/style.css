@@ -1,7 +1,22 @@
+/* fira-sans-regular - latin */
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/fira-sans-v8-latin-regular.eot'); /* IE9 Compat Modes */
+  src: local('Fira Sans Regular'), local('FiraSans-Regular'),
+       url('../fonts/fira-sans-v8-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('../fonts/fira-sans-v8-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+       url('../fonts/fira-sans-v8-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('../fonts/fira-sans-v8-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('../fonts/fira-sans-v8-latin-regular.svg#FiraSans') format('svg'); /* Legacy iOS */
+}
+
+
 a:visited {color : #416DFF; text-decoration : none; }
-a:link {color : #416DFF; text-decoration : none;}
-a:hover {color : Red; text-decoration : none; background-color: #5FFF88}
-a:active {color : Red; text-decoration : underline; }
+a:link {color : #416DFF; text-decoration : none; }
+a:hover {color : Black; text-decoration : underline; }
+a:active {color : Black; text-decoration : underline; }
 .keyword { font-weight : bold ; color : Red }
 .keywordsign { color : #C04600 }
 .comment { color : Green }
@@ -11,22 +26,54 @@ a:active {color : Red; text-decoration : underline; }
 .warning { color : Red ; font-weight : bold }
 .info { margin-left : 3em; margin-right : 3em }
 .code { color : #465F91 ; }
-h1 { font-size : 20pt ; text-align: center; }
-h2 { font-size : 20pt ; border: 1px solid #000000; margin-top: 5px; margin-bottom: 2px;text-align: center; background-color: #90BDFF ;padding: 2px; }
-h3 { font-size : 20pt ; border: 1px solid #000000; margin-top: 5px; margin-bottom: 2px;text-align: center; background-color: #90DDFF ;padding: 2px; }
-h4 { font-size : 20pt ; border: 1px solid #000000; margin-top: 5px; margin-bottom: 2px;text-align: center; background-color: #90EDFF ;padding: 2px; }
-h5 { font-size : 20pt ; border: 1px solid #000000; margin-top: 5px; margin-bottom: 2px;text-align: center; background-color: #90FDFF ;padding: 2px; }
-h6 { font-size : 20pt ; border: 1px solid #000000; margin-top: 5px; margin-bottom: 2px;text-align: center; background-color: #90BDFF ; padding: 2px; }
-div.h7 { font-size : 20pt ; border: 1px solid #000000; margin-top: 5px; margin-bottom: 2px;text-align: center; background-color: #90DDFF ; padding: 2px; }
-div.h8 { font-size : 20pt ; border: 1px solid #000000; margin-top: 5px; margin-bottom: 2px;text-align: center; background-color: #F0FFFF ; padding: 2px; }
-div.h9 { font-size : 20pt ; border: 1px solid #000000; margin-top: 5px; margin-bottom: 2px;text-align: center; background-color: #FFFFFF ; padding: 2px; }
+h1 { font-size : 2rem ; text-align: center; }
+
+h2, h3, h4, h5, h6, div.h7, div.h8, div.h9 {
+  font-size: 1.75rem;
+  border: 1px solid #000;
+  margin-top: 20px;
+  margin-bottom: 2px;
+  text-align: center;
+  padding: 8px;
+  font-family: "Fira Sans", sans-serif;
+  font-weight: normal;
+}
+h1 {
+  font-family: "Fira Sans", sans-serif;
+  padding: 10px;
+}
+
+h2 { background-color: #90BDFF; }
+h3 { background-color: #90DDFF; }
+h4 { background-color: #90EDFF; }
+h5 { background-color: #90FDFF; }
+h6 { background-color: #90BDFF; }
+div.h7 { background-color: #90DDFF; }
+div.h8 { background-color: #F0FFFF; }
+div.h9 { background-color: #FFFFFF; }
+
 .typetable { border-style : hidden }
 .indextable { border-style : hidden }
 .paramstable { border-style : hidden ; padding: 5pt 5pt}
-body { background-color : White }
-tr { background-color : White }
-td.typefieldcomment { background-color : #FFFFFF }
-pre { margin-bottom: 4px }
+body {
+  background-color : #f7f7f7;
+  font-size: 1rem;
+  max-width: 800px;
+  width: 85%;
+  margin: auto;
+  padding-bottom: 30px;
+}
+td {
+  font-size: 1rem;
+}
+.navbar { /* previous - up - next */
+  position: absolute;
+  left: 10px;
+  top: 10px;
+}
+tr { background-color : #f7f7f7 }
+td.typefieldcomment { background-color : #f7f7f7 }
+pre { margin-bottom: 4px; white-space: pre-wrap; }
 div.sig_block {margin-left: 2em}
 ul.info-attributes { list-style: none; margin: 0; padding: 0; }
 div.info > p:first-child{ margin-top:0; }

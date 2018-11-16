@@ -106,6 +106,8 @@ and pattern_desc =
          *)
   | Tpat_lazy of pattern
         (** lazy P *)
+  | Tpat_exception of pattern
+        (** exception P *)
 
 and expression =
   { exp_desc: expression_desc;
@@ -171,13 +173,14 @@ and expression_desc =
                          (Labelled "y", Some (Texp_constant Const_int 3))
                         ])
          *)
-  | Texp_match of expression * case list * case list * partial
+  | Texp_match of expression * case list * partial
         (** match E0 with
             | P1 -> E1
-            | P2 -> E2
-            | exception P3 -> E3
+            | P2 | exception P3 -> E2
+            | exception P4 -> E3
 
-            [Texp_match (E0, [(P1, E1); (P2, E2)], [(P3, E3)], _)]
+            [Texp_match (E0, [(P1, E1); (P2 | exception P3, E2);
+                              (exception P4, E3)], _)]
          *)
   | Texp_try of expression * case list
         (** try E with P1 -> E1 | ... | PN -> EN *)
@@ -260,11 +263,11 @@ and class_expr_desc =
     Tcl_ident of Path.t * Longident.t loc * core_type list
   | Tcl_structure of class_structure
   | Tcl_fun of
-      arg_label * pattern * (Ident.t * string loc * expression) list
+      arg_label * pattern * (Ident.t * expression) list
       * class_expr * partial
   | Tcl_apply of class_expr * (arg_label * expression option) list
   | Tcl_let of rec_flag * value_binding list *
-                  (Ident.t * string loc * expression) list * class_expr
+                  (Ident.t * expression) list * class_expr
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
   (* Visible instance variables, methods and concrete methods *)
@@ -347,7 +350,7 @@ and structure_item_desc =
   | Tstr_primitive of value_description
   | Tstr_type of rec_flag * type_declaration list
   | Tstr_typext of type_extension
-  | Tstr_exception of extension_constructor
+  | Tstr_exception of type_exception
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
@@ -420,9 +423,11 @@ and signature_item =
 and signature_item_desc =
     Tsig_value of value_description
   | Tsig_type of rec_flag * type_declaration list
+  | Tsig_typesubst of type_declaration list
   | Tsig_typext of type_extension
-  | Tsig_exception of extension_constructor
+  | Tsig_exception of type_exception
   | Tsig_module of module_declaration
+  | Tsig_modsubst of module_substitution
   | Tsig_recmodule of module_declaration list
   | Tsig_modtype of module_type_declaration
   | Tsig_open of open_description
@@ -438,6 +443,16 @@ and module_declaration =
      md_type: module_type;
      md_attributes: attributes;
      md_loc: Location.t;
+    }
+
+and module_substitution =
+    {
+     ms_id: Ident.t;
+     ms_name: string loc;
+     ms_manifest: Path.t;
+     ms_txt: Longident.t loc;
+     ms_attributes: attributes;
+     ms_loc: Location.t;
     }
 
 and module_type_declaration =
@@ -506,12 +521,24 @@ and package_type = {
   pack_txt : Longident.t loc;
 }
 
-and row_field =
-    Ttag of string loc * attributes * bool * core_type list
+and row_field = {
+  rf_desc : row_field_desc;
+  rf_loc : Location.t;
+  rf_attributes : attributes;
+}
+
+and row_field_desc =
+    Ttag of string loc * bool * core_type list
   | Tinherit of core_type
 
-and object_field =
-  | OTtag of string loc * attributes * core_type
+and object_field = {
+  of_desc : object_field_desc;
+  of_loc : Location.t;
+  of_attributes : attributes;
+}
+
+and object_field_desc =
+  | OTtag of string loc * core_type
   | OTinherit of core_type
 
 and value_description =
@@ -575,7 +602,15 @@ and type_extension =
     tyext_params: (core_type * variance) list;
     tyext_constructors: extension_constructor list;
     tyext_private: private_flag;
+    tyext_loc: Location.t;
     tyext_attributes: attributes;
+  }
+
+and type_exception =
+  {
+    tyexn_constructor: extension_constructor;
+    tyexn_loc: Location.t;
+    tyexn_attributes: attribute list;
   }
 
 and extension_constructor =
@@ -668,3 +703,7 @@ val mknoloc: 'a -> 'a Asttypes.loc
 val mkloc: 'a -> Location.t -> 'a Asttypes.loc
 
 val pat_bound_idents: pattern -> Ident.t list
+val pat_bound_idents_with_loc: pattern -> (Ident.t * string loc) list
+
+(** Splits an or pattern into its value (left) and exception (right) parts. *)
+val split_pattern : pattern -> pattern option * pattern option

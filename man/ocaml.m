@@ -170,8 +170,7 @@ are supported.
 .B \-safe\-string
 Enforce the separation between types
 .BR string \ and\  bytes ,
-thereby making strings read-only. This will become the default in
-a future version of OCaml.
+thereby making strings read-only. This is the default.
 .TP
 .B \-short\-paths
 When a type is visible under several module-paths, use the shortest
@@ -207,9 +206,9 @@ accesses an array or string outside of its bounds.
 .B \-unsafe\-string
 Identify the types
 .BR string \ and\  bytes ,
-thereby making strings writable. For reasons of backward compatibility,
-this is the default setting for the moment, but this will change in a future
-version of OCaml.
+thereby making strings writable.
+This is intended for compatibility with old source code and should not
+be used with new software.
 .TP
 .B \-version
 Print version string and exit.
@@ -240,6 +239,49 @@ option.  See
 for the syntax of the
 .I warning\-list
 argument.
+.TP
+.BI \-color \ mode
+Enable or disable colors in compiler messages (especially warnings and errors).
+The following modes are supported:
+
+.B auto
+use heuristics to enable colors only if the output supports them (an
+ANSI-compatible tty terminal);
+
+.B always
+enable colors unconditionally;
+
+.B never
+disable color output.
+
+The default setting is
+.B auto,
+and the current heuristic
+checks that the "TERM" environment variable exists and is
+not empty or "dumb", and that isatty(stderr) holds.
+
+The environment variable "OCAML_COLOR" is considered if \-color is not
+provided. Its values are auto/always/never as above.
+
+.TP
+.BI \-error\-style \ mode
+Control the way error messages and warnings are printed.
+The following modes are supported:
+
+.B short
+only print the error and its location;
+
+.B contextual
+like "short", but also display the source code snippet corresponding
+to the location of the error.
+
+The default setting is
+.B contextual.
+
+The environment variable "OCAML_ERROR_STYLE" is considered if
+\-error\-style is not provided. Its values are short/contextual as
+above.
+
 .TP
 .B \-warn\-help
 Show the description of all available warning numbers.

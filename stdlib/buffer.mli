@@ -157,3 +157,127 @@ val truncate : t -> int -> unit
   Note: the internal byte sequence is not shortened.
   Raise [Invalid_argument] if [len < 0] or [len > length b].
   @since 4.05.0 *)
+
+(** {1 Iterators} *)
+
+val to_seq : t -> char Seq.t
+(** Iterate on the buffer, in increasing order.
+    Modification of the buffer during iteration is undefined behavior.
+    @since 4.07 *)
+
+val to_seqi : t -> (int * char) Seq.t
+(** Iterate on the buffer, in increasing order, yielding indices along chars.
+    Modification of the buffer during iteration is undefined behavior.
+    @since 4.07 *)
+
+val add_seq : t -> char Seq.t -> unit
+(** Add chars to the buffer
+    @since 4.07 *)
+
+val of_seq : char Seq.t -> t
+(** Create a buffer from the generator
+    @since 4.07 *)
+
+(** {1 Binary encoding of integers} *)
+
+(** The functions in this section append binary encodings of integers
+    to buffers.
+
+    Little-endian (resp. big-endian) encoding means that least
+    (resp. most) significant bytes are stored first.  Big-endian is
+    also known as network byte order.  Native-endian encoding is
+    either little-endian or big-endian depending on {!Sys.big_endian}.
+
+    32-bit and 64-bit integers are represented by the [int32] and
+    [int64] types, which can be interpreted either as signed or
+    unsigned numbers.
+
+    8-bit and 16-bit integers are represented by the [int] type,
+    which has more bits than the binary encoding.  Functions that
+    encode these values truncate their inputs to their least
+    significant bytes.
+*)
+
+val add_uint8 : t -> int -> unit
+(** [add_uint8 b i] appends a binary unsigned 8-bit integer [i] to
+    [b].
+    @since 4.08
+*)
+
+val add_int8 : t -> int -> unit
+(** [add_int8 b i] appends a binary signed 8-bit integer [i] to
+    [b].
+    @since 4.08
+*)
+
+val add_uint16_ne : t -> int -> unit
+(** [add_uint16_ne b i] appends a binary native-endian unsigned 16-bit
+    integer [i] to [b].
+    @since 4.08
+*)
+
+val add_uint16_be : t -> int -> unit
+(** [add_uint16_be b i] appends a binary big-endian unsigned 16-bit
+    integer [i] to [b].
+    @since 4.08
+*)
+
+val add_uint16_le : t -> int -> unit
+(** [add_uint16_le b i] appends a binary little-endian unsigned 16-bit
+    integer [i] to [b].
+    @since 4.08
+*)
+
+val add_int16_ne : t -> int -> unit
+(** [add_int16_ne b i] appends a binary native-endian signed 16-bit
+    integer [i] to [b].
+    @since 4.08
+*)
+
+val add_int16_be : t -> int -> unit
+(** [add_int16_be b i] appends a binary big-endian signed 16-bit
+    integer [i] to [b].
+    @since 4.08
+*)
+
+val add_int16_le : t -> int -> unit
+(** [add_int16_le b i] appends a binary little-endian signed 16-bit
+    integer [i] to [b].
+    @since 4.08
+*)
+
+val add_int32_ne : t -> int32 -> unit
+(** [add_int32_ne b i] appends a binary native-endian 32-bit integer
+    [i] to [b].
+    @since 4.08
+*)
+
+val add_int32_be : t -> int32 -> unit
+(** [add_int32_be b i] appends a binary big-endian 32-bit integer
+    [i] to [b].
+    @since 4.08
+*)
+
+val add_int32_le : t -> int32 -> unit
+(** [add_int32_le b i] appends a binary little-endian 32-bit integer
+    [i] to [b].
+    @since 4.08
+*)
+
+val add_int64_ne  : t -> int64 -> unit
+(** [add_int64_ne b i] appends a binary native-endian 64-bit integer
+    [i] to [b].
+    @since 4.08
+*)
+
+val add_int64_be : t -> int64 -> unit
+(** [add_int64_be b i] appends a binary big-endian 64-bit integer
+    [i] to [b].
+    @since 4.08
+*)
+
+val add_int64_le : t -> int64 -> unit
+(** [add_int64_ne b i] appends a binary little-endian 64-bit integer
+    [i] to [b].
+    @since 4.08
+*)

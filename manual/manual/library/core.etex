@@ -1,5 +1,4 @@
 \chapter{The core library} \label{c:corelib}\cutname{core.html}
-\pdfchapterfold{-1}{The core library}
 
 This chapter describes the OCaml core library, which is
  composed of declarations for built-in types and exceptions, plus
@@ -26,11 +25,12 @@ indexed at the end of this report.
 \input{builtin.tex}
 
 \ifouthtml
-\section{Module {\tt Pervasives}: the initially opened module}
+\section{Module {\tt Stdlib}: the initially opened module}
 \begin{links}
-\item \ahref{libref/Pervasives.html}{Module \texttt{Pervasives}: the initially opened module}
+\item \ahref{libref/Stdlib.html}{Module \texttt{Stdlib}: the initially opened module}
+\item \ahref{libref/Pervasives.html}{Module \texttt{Pervasives}: deprecated alias for Stdlib}
 \end{links}
 \else
-\input{Pervasives.tex}
+\input{Stdlib.tex}
 \fi
 

@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let shell = "/bin/sh"
+
 type error =
     E2BIG
   | EACCES
@@ -216,7 +218,7 @@ let execvpe_ml name args env =
       let argc = Array.length args in
       (* Drop the original args.(0) if it is there *)
       let new_args = Array.append
-        [| "/bin/sh"; file |]
+        [| shell; file |]
         (if argc = 0 then args else Array.sub args 1 (argc - 1)) in
       execve new_args.(0) new_args env in
   (* Try each path element in turn *)
@@ -260,7 +262,7 @@ let execvpe_ml name args env =
          which looks up the PATH environment variable whether SUID or not. *)
 
 let execvpe name args env =
-  try  
+  try
     execvpe_c name args env
   with Unix_error(ENOSYS, _, _) ->
     execvpe_ml name args env
@@ -301,8 +303,8 @@ type file_perm = int
 
 external openfile : string -> open_flag list -> file_perm -> file_descr
            = "unix_open"
-
 external close : file_descr -> unit = "unix_close"
+external fsync : file_descr -> unit = "unix_fsync"
 external unsafe_read : file_descr -> bytes -> int -> int -> int
    = "unix_read"
 external unsafe_write : file_descr -> bytes -> int -> int -> int = "unix_write"
@@ -332,9 +334,9 @@ let single_write_substring fd buf ofs len =
   single_write fd (Bytes.unsafe_of_string buf) ofs len
 
 external in_channel_of_descr : file_descr -> in_channel
-                             = "caml_ml_open_descriptor_in"
+                             = "unix_inchannel_of_filedescr"
 external out_channel_of_descr : file_descr -> out_channel
-                              = "caml_ml_open_descriptor_out"
+                              = "unix_outchannel_of_filedescr"
 external descr_of_in_channel : in_channel -> file_descr
                              = "caml_channel_descriptor"
 external descr_of_out_channel : out_channel -> file_descr
@@ -378,7 +380,7 @@ external fstat : file_descr -> stats = "unix_fstat"
 external isatty : file_descr -> bool = "unix_isatty"
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
-external link : string -> string -> unit = "unix_link"
+external link : ?follow:bool -> string -> string -> unit = "unix_link"
 
 module LargeFile =
   struct
@@ -406,10 +408,10 @@ module LargeFile =
   end
 
 external map_internal:
-   file_descr -> ('a, 'b) CamlinternalBigarray.kind
-              -> 'c CamlinternalBigarray.layout
+   file_descr -> ('a, 'b) Stdlib.Bigarray.kind
+              -> 'c Stdlib.Bigarray.layout
               -> bool -> int array -> int64
-              -> ('a, 'b, 'c) CamlinternalBigarray.genarray
+              -> ('a, 'b, 'c) Stdlib.Bigarray.Genarray.t
      = "caml_unix_map_file_bytecode" "caml_unix_map_file"
 
 let map_file fd ?(pos=0L) kind layout shared dims =
@@ -597,7 +599,7 @@ type msg_flag =
   | MSG_DONTROUTE
   | MSG_PEEK
 
-external socket : 
+external socket :
   ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
   = "unix_socket"
 external socketpair :
@@ -861,7 +863,7 @@ let getnameinfo_emulation addr opts =
           let kind = if List.mem NI_DGRAM opts then "udp" else "tcp" in
           (getservbyport p kind).s_name
         with Not_found ->
-          string_of_int p in
+          Int.to_string p in
       { ni_hostname = hostname; ni_service = service }
 
 let getnameinfo addr opts =
@@ -941,7 +943,7 @@ external sys_exit : int -> 'a = "caml_sys_exit"
 let system cmd =
   match fork() with
      0 -> begin try
-            execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+            execv shell [| shell; "-c"; cmd |]
           with _ ->
             sys_exit 127
           end
@@ -1006,26 +1008,24 @@ type popen_process =
 
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
-let open_proc cmd envopt proc input output error =
-   match fork() with
-     0 -> perform_redirections input output error;
-          let shell = "/bin/sh" in
-          let argv = [| shell; "-c"; cmd |] in
-          begin try
-            match envopt with
-            | Some env -> execve shell argv env
-            | None     -> execv shell argv
-          with _ ->
-            sys_exit 127
-          end
-   | id -> Hashtbl.add popen_processes proc id
+let open_proc prog args envopt proc input output error =
+  match fork() with
+    0 -> perform_redirections input output error;
+      begin try
+        match envopt with
+        | Some env -> execve prog args env
+        | None     -> execv prog args
+      with _ ->
+        sys_exit 127
+      end
+  | id -> Hashtbl.add popen_processes proc id
 
-let open_process_in cmd =
+let open_process_args_in prog args =
   let (in_read, in_write) = pipe ~cloexec:true () in
   let inchan = in_channel_of_descr in_read in
   begin
     try
-      open_proc cmd None (Process_in inchan) stdin in_write stderr
+      open_proc prog args None (Process_in inchan) stdin in_write stderr
     with e ->
       close_in inchan;
       close in_write;
@@ -1034,12 +1034,12 @@ let open_process_in cmd =
   close in_write;
   inchan
 
-let open_process_out cmd =
+let open_process_args_out prog args =
   let (out_read, out_write) = pipe ~cloexec:true () in
   let outchan = out_channel_of_descr out_write in
   begin
     try
-      open_proc cmd None (Process_out outchan) out_read stdout stderr
+      open_proc prog args None (Process_out outchan) out_read stdout stderr
     with e ->
     close_out outchan;
     close out_read;
@@ -1048,7 +1048,7 @@ let open_process_out cmd =
   close out_read;
   outchan
 
-let open_process cmd =
+let open_process_args prog args =
   let (in_read, in_write) = pipe ~cloexec:true () in
   let (out_read, out_write) =
     try pipe ~cloexec:true ()
@@ -1057,7 +1057,8 @@ let open_process cmd =
   let outchan = out_channel_of_descr out_write in
   begin
     try
-      open_proc cmd None (Process(inchan, outchan)) out_read in_write stderr
+      open_proc prog args None
+                (Process(inchan, outchan)) out_read in_write stderr
     with e ->
       close out_read; close out_write;
       close in_read; close in_write;
@@ -1067,7 +1068,7 @@ let open_process cmd =
   close in_write;
   (inchan, outchan)
 
-let open_process_full cmd env =
+let open_process_args_full prog args env =
   let (in_read, in_write) = pipe ~cloexec:true () in
   let (out_read, out_write) =
     try pipe ~cloexec:true ()
@@ -1081,18 +1082,29 @@ let open_process_full cmd env =
   let errchan = in_channel_of_descr err_read in
   begin
     try
-      open_proc cmd (Some env) (Process_full(inchan, outchan, errchan))
+      open_proc prog args (Some env) (Process_full(inchan, outchan, errchan))
                 out_read in_write err_write
     with e ->
       close out_read; close out_write;
       close in_read; close in_write;
-      close err_read; close err_write; 
+      close err_read; close err_write;
       raise e
   end;
   close out_read;
   close in_write;
   close err_write;
   (inchan, outchan, errchan)
+
+let open_process_shell fn cmd =
+  fn shell [|shell; "-c"; cmd|]
+let open_process_in cmd =
+  open_process_shell open_process_args_in cmd
+let open_process_out cmd =
+  open_process_shell open_process_args_out cmd
+let open_process cmd =
+  open_process_shell open_process_args cmd
+let open_process_full cmd =
+  open_process_shell open_process_args_full cmd
 
 let find_proc_id fun_name proc =
   try
@@ -1101,6 +1113,16 @@ let find_proc_id fun_name proc =
     pid
   with Not_found ->
     raise(Unix_error(EBADF, fun_name, ""))
+
+let process_in_pid inchan =
+  find_proc_id "process_in_pid" (Process_in inchan)
+let process_out_pid outchan =
+  find_proc_id "process_out_pid" (Process_out outchan)
+let process_pid (inchan, outchan) =
+  find_proc_id "process_pid" (Process(inchan, outchan))
+let process_full_pid (inchan, outchan, errchan) =
+  find_proc_id "process_full_pid"
+    (Process_full(inchan, outchan, errchan))
 
 let close_process_in inchan =
   let pid = find_proc_id "close_process_in" (Process_in inchan) in

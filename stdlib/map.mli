@@ -28,8 +28,8 @@
        struct
          type t = int * int
          let compare (x0,y0) (x1,y1) =
-           match Pervasives.compare x0 x1 with
-               0 -> Pervasives.compare y0 y1
+           match Stdlib.compare x0 x1 with
+               0 -> Stdlib.compare y0 y1
              | c -> c
        end
 
@@ -55,7 +55,7 @@ module type OrderedType =
           [f e1 e2] is strictly negative if [e1] is smaller than [e2],
           and [f e1 e2] is strictly positive if [e1] is greater than [e2].
           Example: a suitable ordering function is the generic structural
-          comparison function {!Pervasives.compare}. *)
+          comparison function {!Stdlib.compare}. *)
   end
 (** Input signature of the functor {!Map.Make}. *)
 
@@ -306,7 +306,24 @@ module type S =
     (** Same as {!Map.S.map}, but the function receives as arguments both the
        key and the associated value for each binding of the map. *)
 
+    (** {1 Iterators} *)
 
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    (** Iterate on the whole map, in ascending order
+        @since 4.07 *)
+
+    val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    (** [to_seq_from k m] iterates on a subset of the bindings of [m],
+        in ascending order, from key [k] or above.
+        @since 4.07 *)
+
+    val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
+    (** Add the given bindings to the map, in order.
+        @since 4.07 *)
+
+    val of_seq : (key * 'a) Seq.t -> 'a t
+    (** Build a map from the given bindings
+        @since 4.07 *)
   end
 (** Output signature of the functor {!Map.Make}. *)
 

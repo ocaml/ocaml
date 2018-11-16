@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* First-Order Unification by Structural Recursion *)
 (* Conor McBride, JFP 13(6) *)
 (* http://strictlypositive.org/publications.html *)

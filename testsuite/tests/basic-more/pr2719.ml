@@ -1,3 +1,7 @@
+(* TEST
+   include testing
+*)
+
 open Printf
 
 let bug () =

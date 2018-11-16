@@ -29,7 +29,8 @@ type instruction =
     live: Reg.Set.t }
 
 and instruction_desc =
-    Lend
+  | Lprologue
+  | Lend
   | Lop of operation
   | Lreloadretaddr
   | Lreturn
@@ -59,15 +60,15 @@ type fundecl =
 (* Invert a test *)
 
 let invert_integer_test = function
-    Isigned cmp -> Isigned(Cmm.negate_comparison cmp)
-  | Iunsigned cmp -> Iunsigned(Cmm.negate_comparison cmp)
+    Isigned cmp -> Isigned(Cmm.negate_integer_comparison cmp)
+  | Iunsigned cmp -> Iunsigned(Cmm.negate_integer_comparison cmp)
 
 let invert_test = function
     Itruetest -> Ifalsetest
   | Ifalsetest -> Itruetest
   | Iinttest(cmp) -> Iinttest(invert_integer_test cmp)
   | Iinttest_imm(cmp, n) -> Iinttest_imm(invert_integer_test cmp, n)
-  | Ifloattest(cmp, neg) -> Ifloattest(cmp, not neg)
+  | Ifloattest(cmp) -> Ifloattest(Cmm.negate_float_comparison cmp)
   | Ieventest -> Ioddtest
   | Ioddtest -> Ieventest
 
@@ -308,10 +309,21 @@ let rec linear i n =
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
 
+let add_prologue first_insn =
+  let insn = first_insn in
+  { desc = Lprologue;
+    next = insn;
+    arg = [| |];
+    res = [| |];
+    dbg = insn.dbg;
+    live = insn.live;
+  }
+
 let fundecl f =
+  let fun_body = add_prologue (linear f.Mach.fun_body end_instr) in
   { fun_name = f.Mach.fun_name;
-    fun_body = linear f.Mach.fun_body end_instr;
-    fun_fast = f.Mach.fun_fast;
+    fun_body;
+    fun_fast = not (List.mem Cmm.Reduce_code_size f.Mach.fun_codegen_options);
     fun_dbg  = f.Mach.fun_dbg;
     fun_spacetime_shape = f.Mach.fun_spacetime_shape;
   }

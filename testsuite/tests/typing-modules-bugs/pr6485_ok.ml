@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 (** Check that rebinding module preserves private type aliases *)
 
 module String_id : sig
@@ -44,4 +51,3 @@ let () =
   let module Baz = String_id2.Make(struct let module_name="Baz" end) in
   let baz = Baz.of_string "baz" in
   Printf.printf "baz = %s\n" (baz :> string)
-

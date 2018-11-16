@@ -1,3 +1,11 @@
+(* TEST
+   include systhreads
+   * not-bsd
+   ** libunix
+   *** bytecode
+   *** native
+*)
+
 (* POSIX threads and fork() *)
 
 let compute_thread c = ignore c

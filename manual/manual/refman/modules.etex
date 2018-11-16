@@ -1,5 +1,4 @@
 \section{Module\label{s:module-expr} expressions (module implementations)}
-\pdfsection{Module expressions (module implementations)}
 %HEVEA\cutname{modules.html}
 
 Module expressions are the module-level equivalent of value
@@ -197,19 +196,18 @@ the @"open"@ stops at the end of the structure expression.
 
 The expression @'include' module-expr@ in a structure re-exports in
 the current structure all definitions of the structure denoted by
-@module-expr@.  For instance, if the identifier "S" is bound to the
-module
-\begin{verbatim}
-        struct type t = int  let x = 2 end
-\end{verbatim}
-the module expression
-\begin{verbatim}
-        struct include S  let y = (x + 1 : t) end
-\end{verbatim}
-is equivalent to the module expression
-\begin{verbatim}
-        struct type t = S.t  let x = S.x  let y = (x + 1 : t) end
-\end{verbatim}
+@module-expr@.  For instance, if you define a module "S" as below
+\begin{caml_example*}{verbatim}
+module S = struct type t = int  let x = 2 end
+\end{caml_example}
+defining the module "B" as
+\begin{caml_example*}{verbatim}
+module B = struct include S  let y = (x + 1 : t) end
+\end{caml_example}
+is equivalent to defining it as
+\begin{caml_example*}{verbatim}
+module B = struct type t = S.t  let x = S.x  let y = (x + 1 : t) end
+\end{caml_example}
 The difference between @'open'@ and @'include'@ is that @'open'@
 simply provides short names for the components of the opened
 structure, without defining any components of the current structure,

@@ -1,0 +1,5 @@
+Line 10, characters 9-19:
+10 |  let _ = { a = () }
+              ^^^^^^^^^^
+Error: Some record fields are undefined: b
+

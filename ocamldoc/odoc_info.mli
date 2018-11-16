@@ -128,6 +128,10 @@ module Name :
       (** Take two names n1 and n2 = n3.n4 and return n4 if n3=n1 or else n2. *)
       val get_relative : t -> t -> t
 
+      (** Take two names n1 and n2 = n3.n4 and return n4 if n3=n1 and n1<>"" or else n2. *)
+      val get_relative_opt : t -> t -> t
+
+
       (** Return the name of the 'father' (like [dirname] for a file name).*)
       val father : t -> t
     end

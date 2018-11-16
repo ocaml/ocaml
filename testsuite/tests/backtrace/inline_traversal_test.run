@@ -1,0 +1,3 @@
+#!/bin/sh
+(${program} 2>&1 || true) | \
+  ${test_source_directory}/filter-locations.sh > ${output}

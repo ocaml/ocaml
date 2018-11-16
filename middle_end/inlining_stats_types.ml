@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 module Wsb = Inlining_cost.Whether_sufficient_benefit
 
@@ -35,12 +36,17 @@ let print_calculation ~depth ~title ~subfunctions ppf wsb =
 module Inlined = struct
 
   type t =
+    | Classic_mode
     | Annotation
     | Decl_local_to_application
     | Without_subfunctions of Wsb.t
     | With_subfunctions of Wsb.t * Wsb.t
 
   let summary ppf = function
+    | Classic_mode ->
+        Format.pp_print_text ppf
+        "This function was inlined because it was small enough \
+         to be inlined in `-Oclassic'"
     | Annotation ->
       Format.pp_print_text ppf
         "This function was inlined because of an annotation."
@@ -57,6 +63,7 @@ module Inlined = struct
          the expected benefit outweighed the change in code size."
 
   let calculation ~depth ppf = function
+    | Classic_mode -> ()
     | Annotation -> ()
     | Decl_local_to_application -> ()
     | Without_subfunctions wsb ->
@@ -85,7 +92,8 @@ module Not_inlined = struct
   let summary ppf = function
     | Classic_mode ->
       Format.pp_print_text ppf
-        "This function was prevented from inlining by `-Oclassic'."
+        "This function was not inlined because it was too \
+         large to be inlined in `-Oclassic'."
     | Above_threshold size ->
       Format.pp_print_text ppf
         "This function was not inlined because \
@@ -182,8 +190,8 @@ module Not_specialised = struct
   let summary ppf = function
     | Classic_mode ->
       Format.pp_print_text ppf
-        "This function was prevented from specialising by \
-          `-Oclassic'."
+        "This function was not specialised because it was \
+         compiled with `-Oclassic'."
     | Above_threshold size ->
       Format.pp_print_text ppf
         "This function was not specialised because \

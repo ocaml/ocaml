@@ -1,0 +1,83 @@
+val foreign_names : string list = ["été"; "simple"; "sœur"; "你好"]
+val test_files : string list =
+  ["été.txt"; "simple.txt"; "sœur.txt"; "你好.txt"]
+val to_create_and_delete_files : string list =
+  ["верблюды"; "骆驼"; "קעמל"; "اونٹ"; "Lạc đà";
+   "ఒంటె"; "ஒட்டகம்"; "وشتر";
+   "उष्ट्रः"; "اٺ"]
+val foreign_names2 : string list =
+  ["верблюды"; "骆驼"; "קעמל"; "اونٹ"]
+val getenvironmentenv : string -> string = <fun>
+val unix_getcwd : unit -> string = <fun>
+val sys_getcwd : unit -> string = <fun>
+val unix_readdir : string -> string list = <fun>
+val sys_readdir : string -> string list = <fun>
+val test_readdir : (string -> string list) -> string list = <fun>
+val test_open_in : unit -> string list = <fun>
+val test_getenv : unit -> (string * string) list = <fun>
+val test_mkdir : unit -> (bool * bool) list = <fun>
+val test_chdir : (string -> unit) -> (unit -> 'a) -> 'a list = <fun>
+val test_rmdir : unit -> bool list = <fun>
+val test_stat :
+  unit ->
+  (Unix.file_kind * Unix.file_kind * Unix.file_kind * Unix.file_kind) list =
+  <fun>
+val test_access : unit -> unit = <fun>
+val test_rename :
+  (string -> string -> unit) -> ((bool * bool) * (bool * bool)) list = <fun>
+val test_open_out : unit -> string list = <fun>
+val test_file_exists : unit -> bool list = <fun>
+val test_remove : unit -> bool list = <fun>
+val create_file : string -> unit = <fun>
+val test_symlink : unit -> bool = <fun>
+- : unit = ()
+val t_unix_readdir : string list =
+  ["été.txt"; "simple.txt"; "sœur.txt"; "你好.txt"]
+val t_sys_readdir : string list =
+  ["été.txt"; "simple.txt"; "sœur.txt"; "你好.txt"]
+val t_open_in : string list =
+  ["été.txt"; "simple.txt"; "sœur.txt"; "你好.txt"]
+val t_open_out : string list =
+  ["Hello, верблюды"; "Hello, 骆驼"; "Hello, קעמל";
+   "Hello, اونٹ"; "Hello, Lạc đà"; "Hello, ఒంటె";
+   "Hello, ஒட்டகம்"; "Hello, وشتر";
+   "Hello, उष्ट्रः"; "Hello, اٺ"]
+val t_file_exists : bool list =
+  [true; true; true; true; true; true; true; true; true; true]
+val t_stat :
+  (Unix.file_kind * Unix.file_kind * Unix.file_kind * Unix.file_kind) list =
+  [(Unix.S_REG, Unix.S_REG, Unix.S_REG, Unix.S_REG);
+   (Unix.S_REG, Unix.S_REG, Unix.S_REG, Unix.S_REG);
+   (Unix.S_REG, Unix.S_REG, Unix.S_REG, Unix.S_REG);
+   (Unix.S_REG, Unix.S_REG, Unix.S_REG, Unix.S_REG);
+   (Unix.S_REG, Unix.S_REG, Unix.S_REG, Unix.S_REG);
+   (Unix.S_REG, Unix.S_REG, Unix.S_REG, Unix.S_REG);
+   (Unix.S_REG, Unix.S_REG, Unix.S_REG, Unix.S_REG);
+   (Unix.S_REG, Unix.S_REG, Unix.S_REG, Unix.S_REG);
+   (Unix.S_REG, Unix.S_REG, Unix.S_REG, Unix.S_REG);
+   (Unix.S_REG, Unix.S_REG, Unix.S_REG, Unix.S_REG)]
+- : unit = ()
+val t_unix_rename : ((bool * bool) * (bool * bool)) list =
+  [((false, true), (true, false)); ((false, true), (true, false));
+   ((false, true), (true, false)); ((false, true), (true, false));
+   ((false, true), (true, false)); ((false, true), (true, false));
+   ((false, true), (true, false)); ((false, true), (true, false));
+   ((false, true), (true, false)); ((false, true), (true, false))]
+val t_sys_rename : ((bool * bool) * (bool * bool)) list =
+  [((false, true), (true, false)); ((false, true), (true, false));
+   ((false, true), (true, false)); ((false, true), (true, false));
+   ((false, true), (true, false)); ((false, true), (true, false));
+   ((false, true), (true, false)); ((false, true), (true, false));
+   ((false, true), (true, false)); ((false, true), (true, false))]
+- : bool list =
+[false; false; false; false; false; false; false; false; false; false]
+- : (bool * bool) list =
+[(true, true); (true, true); (true, true); (true, true)]
+val t_sys_chdir : string list = ["été"; "simple"; "sœur"; "你好"]
+val t_unix_chdir : string list = ["été"; "simple"; "sœur"; "你好"]
+- : bool list = [false; false; false; false]
+val t_getenv : (string * string) list =
+  [("верблюды", "верблюды"); ("骆驼", "骆驼");
+   ("קעמל", "קעמל"); ("اونٹ", "اونٹ")]
+- : bool = true
+

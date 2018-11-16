@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* Mantis 7201 *)
 
 let f () = 0 [@@inline never]

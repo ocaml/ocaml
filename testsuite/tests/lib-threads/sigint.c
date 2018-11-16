@@ -1,10 +1,21 @@
 #include <stdio.h>
-#include <windows.h>
+
+#ifdef _WIN32
+  #include <windows.h>
+#else
+  #include <stdlib.h>
+  #include <sys/types.h>
+  #include <signal.h>
+#endif
 
 int main(int argc, char** argv)
 {
+#ifdef _WIN32
   DWORD pid;
   HANDLE hProcess;
+#else
+  pid_t pid;
+#endif
 
   if (argc != 2) {
     printf("Usage: %s pid\n", argv[0]);
@@ -12,6 +23,7 @@ int main(int argc, char** argv)
   }
 
   pid = atoi(argv[1]);
+#ifdef _WIN32
   hProcess = OpenProcess(SYNCHRONIZE, FALSE, pid);
 
   if (!hProcess) {
@@ -32,6 +44,12 @@ int main(int argc, char** argv)
   WaitForSingleObject(hProcess, INFINITE);
   CloseHandle(hProcess);
   FreeConsole();
+#else
+  if (kill(pid,SIGINT)) {
+    perror("kill");
+    return 1;
+  }
+#endif
 
   return 0;
 }

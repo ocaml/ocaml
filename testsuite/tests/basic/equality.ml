@@ -1,3 +1,5 @@
+(* TEST *)
+
 let test n check res =
   print_string "Test "; print_int n;
   if check res then print_string " passed.\n" else print_string " FAILED.\n";

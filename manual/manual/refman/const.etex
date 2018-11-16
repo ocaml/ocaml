@@ -1,5 +1,4 @@
 \section{Constants}
-\pdfsection{Constants}
 %HEVEA\cutname{const.html}
 
 \ikwd{false\@\texttt{false}}
@@ -10,6 +9,9 @@
 \begin{syntax}
 constant:
     integer-literal
+  | int32-literal
+  | int64-literal
+  | nativeint-literal
   | float-literal
   | char-literal
   | string-literal
@@ -22,14 +24,13 @@ constant:
   | "[|""|]"
   | "`"tag-name
 \end{syntax}
-See also the following language extensions:
-\hyperref[s:ext-integer]{integer literals for types \texttt{int32}, \texttt{int64}
-and \texttt{nativeint}}, \hyperref[s:quoted-strings]{quoted strings}
-and \hyperref[s:extension-literals]{extension literals}.
+See also the following language extension:
+\hyperref[s:extension-literals]{extension literals}.
 
 The syntactic class of constants comprises literals from the four
 base types (integers, floating-point numbers, characters, character
-strings), and constant constructors from both normal and polymorphic
-variants, as well as the special constants @"false"@, @"true"@, @"("")"@,
+strings), the integer variants, and constant constructors
+from both normal and polymorphic variants, as well as the special
+constants @"false"@, @"true"@, @"("")"@,
 @"[""]"@, and @"[|""|]"@, which behave like constant constructors, and
 @"begin" "end"@, which is equivalent to @'('')'@.

@@ -112,31 +112,29 @@ let output_cmt oc cmt =
 let read filename =
 (*  Printf.fprintf stderr "Cmt_format.read %s\n%!" filename; *)
   let ic = open_in_bin filename in
-  try
-    let magic_number = read_magic_number ic in
-    let cmi, cmt =
-      if magic_number = Config.cmt_magic_number then
-        None, Some (input_cmt ic)
-      else if magic_number = Config.cmi_magic_number then
-        let cmi = Cmi_format.input_cmi ic in
-        let cmt = try
-                    let magic_number = read_magic_number ic in
-                    if magic_number = Config.cmt_magic_number then
-                      let cmt = input_cmt ic in
-                      Some cmt
-                    else None
-          with _ -> None
-        in
-        Some cmi, cmt
-      else
-        raise(Cmi_format.Error(Cmi_format.Not_an_interface filename))
-    in
-    close_in ic;
-(*    Printf.fprintf stderr "Cmt_format.read done\n%!"; *)
-    cmi, cmt
-  with e ->
-    close_in ic;
-    raise e
+  Misc.try_finally
+    ~always:(fun () -> close_in ic)
+    (fun () ->
+       let magic_number = read_magic_number ic in
+       let cmi, cmt =
+         if magic_number = Config.cmt_magic_number then
+           None, Some (input_cmt ic)
+         else if magic_number = Config.cmi_magic_number then
+           let cmi = Cmi_format.input_cmi ic in
+           let cmt = try
+               let magic_number = read_magic_number ic in
+               if magic_number = Config.cmt_magic_number then
+                 let cmt = input_cmt ic in
+                 Some cmt
+               else None
+             with _ -> None
+           in
+           Some cmi, cmt
+         else
+           raise(Cmi_format.Error(Cmi_format.Not_an_interface filename))
+       in
+       cmi, cmt
+    )
 
 let read_cmt filename =
   match read filename with
@@ -182,7 +180,7 @@ let save_cmt filename modname binary_annots sourcefile initial_env cmi =
            cmt_comments = Lexer.comments ();
            cmt_args = Sys.argv;
            cmt_sourcefile = sourcefile;
-           cmt_builddir =  Sys.getcwd ();
+           cmt_builddir = Location.rewrite_absolute_path (Sys.getcwd ());
            cmt_loadpath = !Config.load_path;
            cmt_source_digest = source_digest;
            cmt_initial_env = if need_to_clear_env then

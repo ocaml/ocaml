@@ -1,3 +1,6 @@
+(* TEST
+   include testing
+*)
 
 type t =
   | A of (int * int * int)

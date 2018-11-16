@@ -15,41 +15,50 @@
 
 # FIXME reduce redundancy by including ../Makefile
 
-include ../../config/Makefile
-CAMLRUN ?= ../../boot/ocamlrun
-CAMLYACC ?= ../../boot/ocamlyacc
+ROOTDIR = ../..
 
-CFLAGS += $(SHAREDCCCOMPOPTS)
-CPPFLAGS += -I../../byterun
-ROOTDIR=../..
+include $(ROOTDIR)/Makefile.config
+include $(ROOTDIR)/Makefile.common
+
+CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
+
+OC_CFLAGS += $(SHAREDLIB_CFLAGS)
+OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib \
       -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/unix
-MKLIB=$(CAMLRUN) ../../tools/ocamlmklib
+MKLIB=$(CAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 COMPFLAGS=-w +33..39 -warn-error A -bin-annot -g -safe-string
 
 C_OBJS=scheduler.o
 
 CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 
-LIB=../../stdlib
+LIB=$(ROOTDIR)/stdlib
 
-LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo pervasives.cmo		\
-  $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/bytes.cmo	\
-  $(LIB)/string.cmo $(LIB)/sys.cmo $(LIB)/sort.cmo marshal.cmo		\
-  $(LIB)/obj.cmo $(LIB)/int32.cmo $(LIB)/int64.cmo			\
-  $(LIB)/nativeint.cmo $(LIB)/lexing.cmo $(LIB)/parsing.cmo		\
-  $(LIB)/set.cmo $(LIB)/map.cmo $(LIB)/stack.cmo $(LIB)/queue.cmo	\
-  $(LIB)/camlinternalLazy.cmo $(LIB)/lazy.cmo $(LIB)/stream.cmo		\
-  $(LIB)/buffer.cmo $(LIB)/camlinternalFormat.cmo $(LIB)/printf.cmo	\
-  $(LIB)/arg.cmo $(LIB)/printexc.cmo $(LIB)/gc.cmo $(LIB)/digest.cmo	\
-  $(LIB)/random.cmo $(LIB)/hashtbl.cmo $(LIB)/format.cmo		\
-  $(LIB)/scanf.cmo $(LIB)/callback.cmo $(LIB)/camlinternalOO.cmo	\
-  $(LIB)/oo.cmo $(LIB)/camlinternalMod.cmo $(LIB)/genlex.cmo		\
-  $(LIB)/weak.cmo $(LIB)/ephemeron.cmo $(LIB)/filename.cmo		\
-  $(LIB)/memprof.cmo							\
-  $(LIB)/complex.cmo $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo	\
-  $(LIB)/bytesLabels.cmo $(LIB)/stringLabels.cmo			\
-  $(LIB)/moreLabels.cmo $(LIB)/stdLabels.cmo
+# Object file prefix
+P=stdlib__
+
+LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo stdlib.cmo $(LIB)/$(P)bool.cmo \
+  $(LIB)/$(P)seq.cmo $(LIB)/$(P)option.cmo $(LIB)/$(P)result.cmo \
+  $(LIB)/$(P)fun.cmo $(LIB)/$(P)unit.cmo \
+  $(LIB)/$(P)array.cmo $(LIB)/$(P)list.cmo \
+  $(LIB)/$(P)char.cmo $(LIB)/$(P)bytes.cmo $(LIB)/$(P)string.cmo \
+  $(LIB)/$(P)sys.cmo marshal.cmo $(LIB)/$(P)obj.cmo \
+  $(LIB)/$(P)int.cmo $(LIB)/$(P)int32.cmo $(LIB)/$(P)int64.cmo \
+  $(LIB)/$(P)nativeint.cmo $(LIB)/$(P)lexing.cmo $(LIB)/$(P)parsing.cmo \
+  $(LIB)/$(P)set.cmo $(LIB)/$(P)map.cmo $(LIB)/$(P)stack.cmo \
+  $(LIB)/$(P)queue.cmo $(LIB)/camlinternalLazy.cmo $(LIB)/$(P)lazy.cmo \
+  $(LIB)/$(P)stream.cmo $(LIB)/$(P)buffer.cmo $(LIB)/camlinternalFormat.cmo \
+  $(LIB)/$(P)printf.cmo $(LIB)/$(P)arg.cmo $(LIB)/$(P)printexc.cmo \
+  $(LIB)/$(P)gc.cmo $(LIB)/$(P)digest.cmo \
+  $(LIB)/$(P)random.cmo $(LIB)/$(P)hashtbl.cmo $(LIB)/$(P)format.cmo \
+  $(LIB)/$(P)scanf.cmo $(LIB)/$(P)callback.cmo $(LIB)/camlinternalOO.cmo \
+  $(LIB)/$(P)oo.cmo $(LIB)/camlinternalMod.cmo $(LIB)/$(P)genlex.cmo \
+  $(LIB)/$(P)weak.cmo $(LIB)/$(P)ephemeron.cmo $(LIB)/$(P)filename.cmo \
+  $(LIB)/$(P)memprof.cmo					\
+  $(LIB)/$(P)complex.cmo $(LIB)/$(P)arrayLabels.cmo $(LIB)/$(P)listLabels.cmo \
+  $(LIB)/$(P)bytesLabels.cmo $(LIB)/$(P)stringLabels.cmo \
+  $(LIB)/$(P)moreLabels.cmo $(LIB)/$(P)stdLabels.cmo
 
 UNIXLIB=../unix
 
@@ -63,37 +72,39 @@ libvmthreads.a: $(C_OBJS)
 	$(MKLIB) -o threads -oc vmthreads $(C_OBJS)
 
 threads.cma: $(CAML_OBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o threads -oc vmthreads $(CAML_OBJS)
+	$(MKLIB) -ocamlc '$(CAMLC)' -o threads -oc vmthreads $^
 
 stdlib.cma: $(LIB_OBJS)
-	$(CAMLC) -a -o stdlib.cma $(LIB_OBJS)
+	$(CAMLC) -a -o $@ $^
 
 unix.cma: $(UNIXLIB_OBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $(UNIXLIB_OBJS)
+	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $^
 
-pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
-	$(CAMLC) ${COMPFLAGS} -nopervasives -c pervasives.ml
+stdlib.cmo: stdlib.mli stdlib.cmi stdlib.ml
+	$(CAMLC) ${COMPFLAGS} -nopervasives \
+	  -pp "$(AWK) -f $(LIB)/expand_module_aliases.awk" -o $@ -c stdlib.ml
 
-pervasives.mli: $(LIB)/pervasives.mli
-	ln -s $(LIB)/pervasives.mli pervasives.mli
+stdlib.mli: $(LIB)/stdlib.mli
+	ln -s $(LIB)/stdlib.mli stdlib.mli
 
-pervasives.cmi: $(LIB)/pervasives.cmi
-	ln -s $(LIB)/pervasives.cmi pervasives.cmi
+stdlib.cmi: $(LIB)/stdlib.cmi
+	rm -f $@
+	ln -s $< $@
 
-marshal.cmo: marshal.mli marshal.cmi marshal.ml
-	$(CAMLC) ${COMPFLAGS} -c marshal.ml
+$(P)marshal.cmo: marshal.ml marshal.mli $(P)marshal.cmi
+	$(CAMLC) ${COMPFLAGS} -o$@ -c $<
 
 marshal.mli: $(LIB)/marshal.mli
-	ln -s $(LIB)/marshal.mli marshal.mli
+	ln -s $< $@
 
-marshal.cmi: $(LIB)/marshal.cmi
-	ln -s $(LIB)/marshal.cmi marshal.cmi
+$(P)marshal.cmi: $(LIB)/$(P)marshal.cmi
+	ln -s $< $@
 
 unix.mli: $(UNIXLIB)/unix.mli
-	ln -s -f $(UNIXLIB)/unix.mli unix.mli
+	ln -s -f $< $@
 
 unix.cmi: $(UNIXLIB)/unix.cmi
-	ln -s -f $(UNIXLIB)/unix.cmi unix.cmi
+	ln -s -f $< $@
 
 unix.cmo: unix.mli unix.cmi $(UNIXLIB)/unixLabels.cmo
 	$(CAMLC) ${COMPFLAGS} -c unix.ml
@@ -103,22 +114,26 @@ partialclean:
 
 clean: partialclean
 	rm -f libvmthreads.a dllvmthreads.so *.o
-	rm -f pervasives.mli marshal.mli unix.mli
-
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
+	rm -f stdlib.mli marshal.mli unix.mli
 
 CMIFILES=thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi
 
 install:
 	if test -f dllvmthreads.so; then \
-	  cp dllvmthreads.so "$(INSTALL_STUBLIBDIR)"; \
+	  $(INSTALL_PROG) dllvmthreads.so "$(INSTALL_STUBLIBDIR)"; \
 	fi
 	mkdir -p "$(INSTALL_LIBDIR)/vmthreads"
-	cp libvmthreads.a "$(INSTALL_LIBDIR)/vmthreads"
+	$(INSTALL_DATA) libvmthreads.a "$(INSTALL_LIBDIR)/vmthreads"
 	cd "$(INSTALL_LIBDIR)/vmthreads"; $(RANLIB) libvmthreads.a
-	cp $(CMIFILES) $(CMIFILES:.cmi=.mli) $(CMIFILES:.cmi=.cmti) \
-	   threads.cma stdlib.cma unix.cma "$(INSTALL_LIBDIR)/vmthreads"
+	$(INSTALL_DATA) \
+	  $(CMIFILES) \
+	  threads.cma stdlib.cma unix.cma \
+	  "$(INSTALL_LIBDIR)/vmthreads"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(CMIFILES:.cmi=.mli) $(CMIFILES:.cmi=.cmti) \
+	  "$(INSTALL_LIBDIR)/vmthreads"
+endif
 
 installopt:
 
@@ -130,12 +145,15 @@ installopt:
 .ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
+%.$(O): %.c
+	$(CC) -c $(OC_CFLAGS) $(OC_CPPFLAGS) $(OUTPUTOBJ)$@ $<
+
 .PHONY: depend
 depend:
 ifeq "$(TOOLCHAIN)" "msvc"
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
-	$(CC) -MM $(CPPFLAGS) *.c > .depend
+	$(CC) -MM $(OC_CPPFLAGS) *.c > .depend
 	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
 endif
 

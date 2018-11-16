@@ -10,12 +10,6 @@
 \def\event{$\bowtie$}
 \def\fromoneto#1#2{$#1 = 1, \ldots, #2$}
 
-% Pour avoir les exposants sur la ligne au-dessus (???)
-
-\ifplaintext
-\fontdimen14\tensy=12pt
-\fi
-
 % Numerotation
 \setcounter{secnumdepth}{2}     % Pour numeroter les \subsection
 \setcounter{tocdepth}{1}        % Pour ne pas mettre les \subsection
@@ -27,14 +21,10 @@
 \def\_{\hbox{\tt\char95}}
 \def_{\ifmmode\else\_\fi}
 
-\ifplaintext
-\def\ttstretch{\tt}
-\else
 \def\ttstretch{\tt\spaceskip=5.77pt plus 1.83pt minus 1.22pt}
 % La fonte cmr10 a normalement des espaces de 5.25pt non extensibles.
 % En 11 pt ca fait 5.77 pt. On lui ajoute la meme flexibilite que
 % cmr10 agrandie a 11 pt.
-\fi
 
 % Pour la traduction "xxxx" -> {\machine{xxxx}} faite par texquote2
 \def\machine#1{\mbox{\ttstretch{#1}}}
@@ -178,9 +168,7 @@
 %%% Augmenter l'espace entre numero de section
 %   et nom de section dans la table des matieres.
 
-\ifplaintext\else
 \def\l@section{\@dottedtocline{1}{1.5em}{2.8em}}  % D'origine: 2.3
-\fi
 
 % Pour alltt
 
@@ -210,41 +198,12 @@
   \newpage \phantomsection \twocolumn[{\Large\bf #2 \vskip4ex}]
   \markright{\uppercase{#2}}
   \addcontentsline{toc}{chapter}{#2}
-  \pdfsection{#2}
   \@input{#1.ind}}
-
-% PDF stuff -- no longer needed, Hyperref does the job
-
-\def\pdfchapterfold#1#2{}
-\def\pdfchapter#1{}
-\def\pdfsection#1{}
-
-%\ifpdf
-%\newcount\pdflabel
-%\pdflabel=1
-%\def\pdfchapterfold#1#2{
-%\pdfdest num \pdflabel fit
-%\pdfoutline goto num \pdflabel count #1 {\arabic{chapter}. #2}
-%\global\advance\pdflabel by 1
-%}
-%\def\pdfsection#1{
-%\pdfdest num \pdflabel fit
-%\pdfoutline goto num \pdflabel {#1}
-%\global\advance\pdflabel by 1
-%}
-%\else
-%\def\pdfchapterfold#1#2{}
-%\def\pdfsection#1{}
-%\fi
-%
-%\def\pdfchapter{\pdfchapterfold{0}}
-
-%%% Pour camlidl
-
-\def\transl#1{$[\![\mbox{#1}]\!]$}
 
 %%% Pour les references des modules
 \newcommand{\moduleref}[1]{\ref{#1}}
 %%% Fin des hacks
+
+\newenvironment{maintitle}{\begin{center}}{\end{center}}
 
 \makeatother

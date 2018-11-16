@@ -28,20 +28,23 @@ open Parameters
 
 (* Display information about the current event. *)
 let show_current_event ppf =
-  fprintf ppf "Time: %Li" (current_time ());
-  (match current_pc () with
-   | Some pc ->
-       fprintf ppf " - pc: %i" pc
-   | _ -> ());
+  if !Parameters.time then begin
+    fprintf ppf "Time: %Li" (current_time ());
+    (match current_pc () with
+     | Some pc ->
+         fprintf ppf " - pc: %i" pc
+     | _ -> ());
+  end;
   update_current_event ();
   reset_frame ();
   match current_report ()  with
   | None ->
-      fprintf ppf "@.Beginning of program.@.";
+      if !Parameters.time then fprintf ppf "@.";
+      fprintf ppf "Beginning of program.@.";
       show_no_point ()
   | Some {rep_type = (Event | Breakpoint); rep_program_pointer = pc} ->
         let ev = get_current_event () in
-        fprintf ppf " - module %s@." ev.ev_module;
+        if !Parameters.time then fprintf ppf " - module %s@." ev.ev_module;
         (match breakpoints_at_pc pc with
          | [] ->
              ()
@@ -55,17 +58,20 @@ let show_current_event ppf =
              (List.sort compare breakpoints));
         show_point ev true
   | Some {rep_type = Exited} ->
-      fprintf ppf "@.Program exit.@.";
+      if !Parameters.time then fprintf ppf "@.";
+      fprintf ppf "Program exit.@.";
       show_no_point ()
   | Some {rep_type = Uncaught_exc} ->
+      if !Parameters.time then fprintf ppf "@.";
       fprintf ppf
-        "@.Program end.@.\
+        "Program end.@.\
          @[Uncaught exception:@ %a@]@."
       Printval.print_exception (Debugcom.Remote_value.accu ());
       show_no_point ()
   | Some {rep_type = Trap_barrier} ->
                                         (* Trap_barrier not visible outside *)
                                         (* of module `time_travel'. *)
+      if !Parameters.time then fprintf ppf "@.";
       Misc.fatal_error "Show_information.show_current_event"
 
 (* Display short information about one frame. *)

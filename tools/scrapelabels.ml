@@ -30,7 +30,7 @@ let modules =
   ref [ "Arg"; "BigArray"; "Buffer"; "Condition"; "Dbm"; "Digest"; "Dynlink";
         "Event"; "Filename"; "Format"; "Gc"; "Genlex"; "Graphics";
         "Lexing"; "Marshal"; "Mutex"; "Parsing"; "Pervasives"; "Queue";
-        "Sort"; "Stack"; "Str"; "Stream"; "Sys";
+        "Stack"; "Str"; "Stream"; "Sys";
         "Thread"; "ThreadUnix"; "Weak" ]
 
 let stdlabels = ["Array"; "List"; "String"]
@@ -85,7 +85,7 @@ let convert_impl buffer =
         | UIDENT _ | LIDENT _ ->
             dropext (next_token ())
         | _ ->
-            prerr_endline ("bad index at position " ^ string_of_int s);
+            prerr_endline ("bad index at position " ^ Int.to_string s);
             (token, s, e)
         end
     | _ ->
@@ -186,7 +186,7 @@ let convert_impl buffer =
     end
   | Closing _ ->
       prerr_endline ("bad closing token at position " ^
-                     string_of_int (Lexing.lexeme_start buffer));
+                     Int.to_string (Lexing.lexeme_start buffer));
       modified := false
 
 type state = Out | Enter | In | Escape

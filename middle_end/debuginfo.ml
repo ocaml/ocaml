@@ -13,6 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open! Int_replace_polymorphic_compare
 open Lexing
 open Location
 
@@ -21,6 +22,9 @@ type item = {
   dinfo_line: int;
   dinfo_char_start: int;
   dinfo_char_end: int;
+  dinfo_start_bol: int;
+  dinfo_end_bol: int;
+  dinfo_end_line: int;
 }
 
 type t = item list
@@ -45,13 +49,22 @@ let to_string dbg =
     "{" ^ String.concat ";" items ^ "}"
 
 let item_from_location loc =
+  let valid_endpos =
+    String.equal loc.loc_end.pos_fname loc.loc_start.pos_fname in
   { dinfo_file = loc.loc_start.pos_fname;
     dinfo_line = loc.loc_start.pos_lnum;
     dinfo_char_start = loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
     dinfo_char_end =
-      if loc.loc_end.pos_fname = loc.loc_start.pos_fname
+      if valid_endpos
       then loc.loc_end.pos_cnum - loc.loc_start.pos_bol
       else loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
+    dinfo_start_bol = loc.loc_start.pos_bol;
+    dinfo_end_bol =
+      if valid_endpos then loc.loc_end.pos_bol
+      else loc.loc_start.pos_bol;
+    dinfo_end_line =
+      if valid_endpos then loc.loc_end.pos_lnum
+      else loc.loc_start.pos_lnum;
   }
 
 let from_location loc =
@@ -63,10 +76,15 @@ let to_location = function
     let loc_start =
       { pos_fname = d.dinfo_file;
         pos_lnum = d.dinfo_line;
-        pos_bol = 0;
-        pos_cnum = d.dinfo_char_start;
+        pos_bol = d.dinfo_start_bol;
+        pos_cnum = d.dinfo_start_bol + d.dinfo_char_start;
       } in
-    let loc_end = { loc_start with pos_cnum = d.dinfo_char_end; } in
+    let loc_end =
+      { pos_fname = d.dinfo_file;
+        pos_lnum = d.dinfo_end_line;
+        pos_bol = d.dinfo_end_bol;
+        pos_cnum = d.dinfo_start_bol + d.dinfo_char_end;
+      } in
     { loc_ghost = false; loc_start; loc_end; }
 
 let inline loc t =
@@ -88,13 +106,19 @@ let compare dbg1 dbg2 =
     | _ :: _, [] -> 1
     | [], _ :: _ -> -1
     | d1 :: ds1, d2 :: ds2 ->
-      let c = compare d1.dinfo_file d2.dinfo_file in
+      let c = String.compare d1.dinfo_file d2.dinfo_file in
       if c <> 0 then c else
       let c = compare d1.dinfo_line d2.dinfo_line in
       if c <> 0 then c else
       let c = compare d1.dinfo_char_end d2.dinfo_char_end in
       if c <> 0 then c else
       let c = compare d1.dinfo_char_start d2.dinfo_char_start in
+      if c <> 0 then c else
+      let c = compare d1.dinfo_start_bol d2.dinfo_start_bol in
+      if c <> 0 then c else
+      let c = compare d1.dinfo_end_bol d2.dinfo_end_bol in
+      if c <> 0 then c else
+      let c = compare d1.dinfo_end_line d2.dinfo_end_line in
       if c <> 0 then c else
       loop ds1 ds2
   in

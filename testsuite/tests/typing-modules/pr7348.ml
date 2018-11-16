@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module F (X : sig type t = private < foo:int; ..> val x : t end) = struct
   let x : < foo: int; ..> = X.x
 end;;
@@ -29,7 +33,7 @@ module A : sig end = struct
     let x : < foo: int; ..> = X.x
   end
 
-  module N = F(M)                
+  module N = F(M)
   let _ = (N.x = M.x)
 end;;
 [%%expect{|

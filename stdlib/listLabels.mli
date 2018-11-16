@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type 'a t = 'a list = [] | (::) of 'a * 'a list
+(** An alias for the type of lists. *)
+
 (** List operations.
 
    Some functions are flagged as not tail-recursive.  A tail-recursive
@@ -315,7 +318,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
    compare as equal, a positive integer if the first is greater,
    and a negative integer if the first is smaller (see Array.sort for
    a complete specification).  For example,
-   {!Pervasives.compare} is a suitable comparison function.
+   {!Stdlib.compare} is a suitable comparison function.
    The resulting list is sorted in increasing order.
    [List.sort] is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic
@@ -351,3 +354,13 @@ val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
     before the elements of [l2].
     Not tail-recursive (sum of the lengths of the arguments).
 *)
+
+(** {1 Iterators} *)
+
+val to_seq : 'a list -> 'a Seq.t
+(** Iterate on the list
+    @since 4.07 *)
+
+val of_seq : 'a Seq.t -> 'a list
+(** Create a list from the iterator
+    @since 4.07 *)

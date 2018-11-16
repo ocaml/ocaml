@@ -16,30 +16,45 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-(* We say that an [Ident.t] is "linear" iff:
+(* CR-someday vlaviron for mshinwell: I believe that the phantom lets introduced
+   in un_anf (when the new debug_full flag is enabled) bind mostly variables
+   that were created in the middle-end. Is it relevant to generate debugging
+   information for such variables ? I expect later pull requests to refine the
+   generation of these phantom constructions anyway, but maybe it would already
+   make sense to restrict the phantom let generation to variables with an actual
+   provenance.
+*)
+
+module V = Backend_var
+module VP = Backend_var.With_provenance
+
+(* We say that an [V.t] is "linear" iff:
    (a) it is used exactly once;
    (b) it is never assigned to (using [Uassign]).
 *)
-type ident_info =
-  { used : Ident.Set.t;
-    linear : Ident.Set.t;
-    assigned : Ident.Set.t;
-    closure_environment : Ident.Set.t;
-    let_bound_vars_that_can_be_moved : Ident.Set.t;
+type var_info =
+  { used : V.Set.t;
+    linear : V.Set.t;
+    assigned : V.Set.t;
+    closure_environment : V.Set.t;
+    let_bound_vars_that_can_be_moved : V.Set.t;
   }
 
 let ignore_uconstant (_ : Clambda.uconstant) = ()
 let ignore_ulambda (_ : Clambda.ulambda) = ()
 let ignore_ulambda_list (_ : Clambda.ulambda list) = ()
+let ignore_uphantom_defining_expr_option
+      (_ : Clambda.uphantom_defining_expr option) = ()
 let ignore_function_label (_ : Clambda.function_label) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
 let ignore_int (_ : int) = ()
-let ignore_ident (_ : Ident.t) = ()
-let ignore_ident_option (_ : Ident.t option) = ()
+let ignore_var (_ : V.t) = ()
+let ignore_var_option (_ : V.t option) = ()
 let ignore_primitive (_ : Lambda.primitive) = ()
 let ignore_string (_ : string) = ()
 let ignore_int_array (_ : int array) = ()
-let ignore_ident_list (_ : Ident.t list) = ()
+let ignore_var_with_provenance (_ : VP.t) = ()
+let ignore_var_with_provenance_list (_ : VP.t list) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
 
@@ -47,27 +62,27 @@ let ignore_meth_kind (_ : Lambda.meth_kind) = ()
    once (need to analyse exactly what the calls are from Cmmgen into this
    module). *)
 
-let closure_environment_ident (ufunction:Clambda.ufunction) =
+let closure_environment_var (ufunction:Clambda.ufunction) =
   (* The argument after the arity is the environment *)
   if List.length ufunction.params = ufunction.arity + 1 then
     let env_var = List.nth ufunction.params ufunction.arity in
-    assert(Ident.name env_var = "env");
+    assert (VP.name env_var = "env");
     Some env_var
   else
     (* closed function, no environment *)
     None
 
-let make_ident_info (clam : Clambda.ulambda) : ident_info =
-  let t : int Ident.Tbl.t = Ident.Tbl.create 42 in
-  let assigned_idents = ref Ident.Set.empty in
-  let environment_idents = ref Ident.Set.empty in
+let make_var_info (clam : Clambda.ulambda) : var_info =
+  let t : int V.Tbl.t = V.Tbl.create 42 in
+  let assigned_vars = ref V.Set.empty in
+  let environment_vars = ref V.Set.empty in
   let rec loop : Clambda.ulambda -> unit = function
     (* No underscores in the pattern match, to reduce the chance of failing
        to traverse some subexpression. *)
-    | Uvar id ->
-      begin match Ident.Tbl.find t id with
-      | n -> Ident.Tbl.replace t id (n + 1)
-      | exception Not_found -> Ident.Tbl.add t id 1
+    | Uvar var ->
+      begin match V.Tbl.find t var with
+      | n -> V.Tbl.replace t var (n + 1)
+      | exception Not_found -> V.Tbl.add t var 1
       end
     | Uconst const ->
       (* The only variables that might occur in [const] are those in constant
@@ -89,27 +104,31 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
       List.iter loop captured_variables;
       List.iter (fun (
         { Clambda. label; arity; params; body; dbg; env; } as clos) ->
-          (match closure_environment_ident clos with
+          (match closure_environment_var clos with
            | None -> ()
            | Some env_var ->
-             environment_idents :=
-               Ident.Set.add env_var !environment_idents);
+             environment_vars :=
+               V.Set.add (VP.var env_var) !environment_vars);
           ignore_function_label label;
           ignore_int arity;
-          ignore_ident_list params;
+          ignore_var_with_provenance_list params;
           loop body;
           ignore_debuginfo dbg;
-          ignore_ident_option env)
+          ignore_var_option env)
         functions
     | Uoffset (expr, offset) ->
       loop expr;
       ignore_int offset
-    | Ulet (_let_kind, _value_kind, _ident, def, body) ->
+    | Ulet (_let_kind, _value_kind, _var, def, body) ->
       loop def;
       loop body
+    | Uphantom_let (var, defining_expr_opt, body) ->
+      ignore_var_with_provenance var;
+      ignore_uphantom_defining_expr_option defining_expr_opt;
+      loop body
     | Uletrec (defs, body) ->
-      List.iter (fun (ident, def) ->
-          ignore_ident ident;
+      List.iter (fun (var, def) ->
+          ignore_var_with_provenance var;
           loop def)
         defs;
       loop body
@@ -135,14 +154,14 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
     | Ustaticfail (static_exn, args) ->
       ignore_int static_exn;
       List.iter loop args
-    | Ucatch (static_exn, idents, body, handler) ->
+    | Ucatch (static_exn, vars, body, handler) ->
       ignore_int static_exn;
-      ignore_ident_list idents;
+      ignore_var_with_provenance_list vars;
       loop body;
       loop handler
-    | Utrywith (body, ident, handler) ->
+    | Utrywith (body, var, handler) ->
       loop body;
-      ignore_ident ident;
+      ignore_var_with_provenance var;
       loop handler
     | Uifthenelse (cond, ifso, ifnot) ->
       loop cond;
@@ -154,14 +173,14 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
     | Uwhile (cond, body) ->
       loop cond;
       loop body
-    | Ufor (ident, low, high, direction_flag, body) ->
-      ignore_ident ident;
+    | Ufor (var, low, high, direction_flag, body) ->
+      ignore_var_with_provenance var;
       loop low;
       loop high;
       ignore_direction_flag direction_flag;
       loop body
-    | Uassign (ident, expr) ->
-      assigned_idents := Ident.Set.add ident !assigned_idents;
+    | Uassign (var, expr) ->
+      assigned_vars := V.Set.add var !assigned_vars;
       loop expr
     | Usend (meth_kind, e1, e2, args, dbg) ->
       ignore_meth_kind meth_kind;
@@ -174,24 +193,24 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
   in
   loop clam;
   let linear =
-    Ident.Tbl.fold (fun id n acc ->
+    V.Tbl.fold (fun var n acc ->
         assert (n >= 1);
-        if n = 1 && not (Ident.Set.mem id !assigned_idents)
-        then Ident.Set.add id acc
+        if n = 1 && not (V.Set.mem var !assigned_vars)
+        then V.Set.add var acc
         else acc)
-      t Ident.Set.empty
+      t V.Set.empty
   in
-  let assigned = !assigned_idents in
+  let assigned = !assigned_vars in
   let used =
     (* This doesn't work transitively and thus is somewhat restricted.  In
        particular, it does not allow us to get rid of useless chains of [let]s.
        However it should be sufficient to remove the majority of unnecessary
        [let] bindings that might hinder [Cmmgen]. *)
-    Ident.Tbl.fold (fun id _n acc -> Ident.Set.add id acc)
+    V.Tbl.fold (fun var _n acc -> V.Set.add var acc)
       t assigned
   in
-  { used; linear; assigned; closure_environment = !environment_idents;
-    let_bound_vars_that_can_be_moved = Ident.Set.empty;
+  { used; linear; assigned; closure_environment = !environment_vars;
+    let_bound_vars_that_can_be_moved = V.Set.empty;
   }
 
 (* When sequences of [let]-bindings match the evaluation order in a subsequent
@@ -200,9 +219,9 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
    variables that are known to be constant), and it is known that there were no
    intervening side-effects during the evaluation of the [let]-bindings,
    permit substitution of the variables for their defining expressions. *)
-let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
-  let obviously_constant = ref Ident.Set.empty in
-  let can_move = ref Ident.Set.empty in
+let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
+  let obviously_constant = ref V.Set.empty in
+  let can_move = ref V.Set.empty in
   let let_stack = ref [] in
   let examine_argument_list args =
     let rec loop let_bound_vars (args : Clambda.ulambda list) =
@@ -217,14 +236,14 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
            is left empty. *)
         []
       | let_bound_vars, (Uvar arg)::args
-          when Ident.Set.mem arg !obviously_constant ->
+          when V.Set.mem arg !obviously_constant ->
         loop let_bound_vars args
       | let_bound_var::let_bound_vars, (Uvar arg)::args
-          when Ident.same let_bound_var arg
-            && not (Ident.Set.mem arg ident_info.assigned) ->
-        assert (Ident.Set.mem arg ident_info.used);
-        assert (Ident.Set.mem arg ident_info.linear);
-        can_move := Ident.Set.add arg !can_move;
+          when V.same let_bound_var arg
+            && not (V.Set.mem arg var_info.assigned) ->
+        assert (V.Set.mem arg var_info.used);
+        assert (V.Set.mem arg var_info.linear);
+        can_move := V.Set.add arg !can_move;
         loop let_bound_vars args
       | _::_, _::_ ->
         (* The [let] sequence has ceased to match the evaluation order
@@ -238,8 +257,8 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
     let_stack := loop !let_stack args
   in
   let rec loop : Clambda.ulambda -> unit = function
-    | Uvar ident ->
-      if Ident.Set.mem ident ident_info.assigned then begin
+    | Uvar var ->
+      if V.Set.mem var var_info.assigned then begin
         let_stack := []
       end
     | Uconst const ->
@@ -260,29 +279,30 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
       List.iter (fun { Clambda. label; arity; params; body; dbg; env; } ->
           ignore_function_label label;
           ignore_int arity;
-          ignore_ident_list params;
+          ignore_var_with_provenance_list params;
           let_stack := [];
           loop body;
           let_stack := [];
           ignore_debuginfo dbg;
-          ignore_ident_option env)
+          ignore_var_option env)
         functions
     | Uoffset (expr, offset) ->
       (* [expr] should usually be a variable. *)
       examine_argument_list [expr];
       ignore_int offset
-    | Ulet (_let_kind, _value_kind, ident, def, body) ->
+    | Ulet (_let_kind, _value_kind, var, def, body) ->
+      let var = VP.var var in
       begin match def with
       | Uconst _ ->
         (* The defining expression is obviously constant, so we don't
            have to put this [let] on the stack, and we don't have to
            traverse the defining expression either. *)
-        obviously_constant := Ident.Set.add ident !obviously_constant;
+        obviously_constant := V.Set.add var !obviously_constant;
         loop body
       | _ ->
         loop def;
-        if Ident.Set.mem ident ident_info.linear then begin
-          let_stack := ident::!let_stack
+        if V.Set.mem var var_info.linear then begin
+          let_stack := var::!let_stack
         end else begin
           (* If we encounter a non-linear [let]-binding then we must clear
              the let stack, since we cannot now move any previous binding
@@ -291,12 +311,15 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
         end;
         loop body
       end
+    | Uphantom_let (var, _defining_expr, body) ->
+      ignore_var_with_provenance var;
+      loop body
     | Uletrec (defs, body) ->
       (* Evaluation order for [defs] is not defined, and this case
          probably isn't important for [Cmmgen] anyway. *)
       let_stack := [];
-      List.iter (fun (ident, def) ->
-          ignore_ident ident;
+      List.iter (fun (var, def) ->
+          ignore_var_with_provenance var;
           loop def;
           let_stack := [])
         defs;
@@ -333,19 +356,19 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
     | Ustaticfail (static_exn, args) ->
       ignore_int static_exn;
       examine_argument_list args
-    | Ucatch (static_exn, idents, body, handler) ->
+    | Ucatch (static_exn, vars, body, handler) ->
       ignore_int static_exn;
-      ignore_ident_list idents;
+      ignore_var_with_provenance_list vars;
       let_stack := [];
       loop body;
       let_stack := [];
       loop handler;
       let_stack := []
-    | Utrywith (body, ident, handler) ->
+    | Utrywith (body, var, handler) ->
       let_stack := [];
       loop body;
       let_stack := [];
-      ignore_ident ident;
+      ignore_var_with_provenance var;
       loop handler;
       let_stack := []
     | Uifthenelse (cond, ifso, ifnot) ->
@@ -366,8 +389,8 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
       let_stack := [];
       loop body;
       let_stack := []
-    | Ufor (ident, low, high, direction_flag, body) ->
-      ignore_ident ident;
+    | Ufor (var, low, high, direction_flag, body) ->
+      ignore_var_with_provenance var;
       (* Cmmgen generates code that evaluates low before high,
          but we don't do anything here at the moment anyway. *)
       ignore_ulambda low;
@@ -376,8 +399,8 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
       let_stack := [];
       loop body;
       let_stack := []
-    | Uassign (ident, expr) ->
-      ignore_ident ident;
+    | Uassign (var, expr) ->
+      ignore_var var;
       ignore_ulambda expr;
       let_stack := []
     | Usend (meth_kind, e1, e2, args, dbg) ->
@@ -399,15 +422,15 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
 let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
       : Clambda.ulambda =
   match clam with
-  | Uvar id ->
-    if not (Ident.Set.mem id is_let_moveable) then
+  | Uvar var ->
+    if not (V.Set.mem var is_let_moveable) then
       clam
     else
-      begin match Ident.Map.find id env with
+      begin match V.Map.find var env with
       | clam -> clam
       | exception Not_found ->
-        Misc.fatal_errorf "substitute_let_moveable: Unbound identifier %a"
-          Ident.print id
+        Misc.fatal_errorf "substitute_let_moveable: Unbound variable %a"
+          V.print var
       end
   | Uconst _ -> clam
   | Udirect_apply (label, args, dbg) ->
@@ -433,18 +456,35 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
   | Uoffset (clam, n) ->
     let clam = substitute_let_moveable is_let_moveable env clam in
     Uoffset (clam, n)
-  | Ulet (let_kind, value_kind, id, def, body) ->
+  | Ulet (let_kind, value_kind, var, def, body) ->
     let def = substitute_let_moveable is_let_moveable env def in
-    if Ident.Set.mem id is_let_moveable then
-      let env = Ident.Map.add id def env in
-      substitute_let_moveable is_let_moveable env body
+    if V.Set.mem (VP.var var) is_let_moveable then
+      let env = V.Map.add (VP.var var) def env in
+      let body = substitute_let_moveable is_let_moveable env body in
+      (* If we are about to delete a [let] in debug mode, keep it for the
+         debugger. *)
+      (* CR-someday mshinwell: find out why some closure constructions were
+         not leaving phantom lets behind after substitution. *)
+      if not !Clflags.debug_full then
+        body
+      else
+        match def with
+        | Uconst const ->
+          Uphantom_let (var, Some (Clambda.Uphantom_const const), body)
+        | Uvar alias_of ->
+          Uphantom_let (var, Some (Clambda.Uphantom_var alias_of), body)
+        | _ ->
+          Uphantom_let (var, None, body)
     else
       Ulet (let_kind, value_kind,
-            id, def, substitute_let_moveable is_let_moveable env body)
+            var, def, substitute_let_moveable is_let_moveable env body)
+  | Uphantom_let (var, defining_expr, body) ->
+    let body = substitute_let_moveable is_let_moveable env body in
+    Uphantom_let (var, defining_expr, body)
   | Uletrec (defs, body) ->
     let defs =
-      List.map (fun (id, def) ->
-          id, substitute_let_moveable is_let_moveable env def)
+      List.map (fun (var, def) ->
+          var, substitute_let_moveable is_let_moveable env def)
         defs
     in
     let body = substitute_let_moveable is_let_moveable env body in
@@ -479,14 +519,14 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
   | Ustaticfail (n, args) ->
     let args = substitute_let_moveable_list is_let_moveable env args in
     Ustaticfail (n, args)
-  | Ucatch (n, ids, body, handler) ->
+  | Ucatch (n, vars, body, handler) ->
     let body = substitute_let_moveable is_let_moveable env body in
     let handler = substitute_let_moveable is_let_moveable env handler in
-    Ucatch (n, ids, body, handler)
-  | Utrywith (body, id, handler) ->
+    Ucatch (n, vars, body, handler)
+  | Utrywith (body, var, handler) ->
     let body = substitute_let_moveable is_let_moveable env body in
     let handler = substitute_let_moveable is_let_moveable env handler in
-    Utrywith (body, id, handler)
+    Utrywith (body, var, handler)
   | Uifthenelse (cond, ifso, ifnot) ->
     let cond = substitute_let_moveable is_let_moveable env cond in
     let ifso = substitute_let_moveable is_let_moveable env ifso in
@@ -500,14 +540,14 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
     let cond = substitute_let_moveable is_let_moveable env cond in
     let body = substitute_let_moveable is_let_moveable env body in
     Uwhile (cond, body)
-  | Ufor (id, low, high, direction, body) ->
+  | Ufor (var, low, high, direction, body) ->
     let low = substitute_let_moveable is_let_moveable env low in
     let high = substitute_let_moveable is_let_moveable env high in
     let body = substitute_let_moveable is_let_moveable env body in
-    Ufor (id, low, high, direction, body)
-  | Uassign (id, expr) ->
+    Ufor (var, low, high, direction, body)
+  | Uassign (var, expr) ->
     let expr = substitute_let_moveable is_let_moveable env expr in
-    Uassign (id, expr)
+    Uassign (var, expr)
   | Usend (kind, e1, e2, args, dbg) ->
     let e1 = substitute_let_moveable is_let_moveable env e1 in
     let e2 = substitute_let_moveable is_let_moveable env e2 in
@@ -541,7 +581,7 @@ let both_moveable a b =
 
 let primitive_moveable (prim : Lambda.primitive)
     (args : Clambda.ulambda list)
-    (ident_info : ident_info) =
+    (var_info : var_info) =
   match prim, args with
   | Pfield _, [Uconst (Uconst_ref (_, _))] ->
     (* CR-someday mshinwell: Actually, maybe this shouldn't be needed; these
@@ -551,7 +591,7 @@ let primitive_moveable (prim : Lambda.primitive)
     (* Allow field access of symbols to be moveable.  (The comment in
        flambda.mli on [Read_symbol_field] may be helpful to the reader.) *)
     Moveable
-  | Pfield _, [Uvar id] when Ident.Set.mem id ident_info.closure_environment ->
+  | Pfield _, [Uvar var] when V.Set.mem var var_info.closure_environment ->
     (* accesses to the function environment is coeffect free: this block
        is never mutated *)
     Moveable
@@ -568,16 +608,16 @@ type moveable_for_env = Constant | Moveable
 
 (** Eliminate, through substitution, [let]-bindings of linear variables with
     moveable defining expressions. *)
-let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
+let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
       : Clambda.ulambda * moveable =
   match clam with
-  | Uvar id ->
-    begin match Ident.Map.find id env with
+  | Uvar var ->
+    begin match V.Map.find var env with
     | Constant, def -> def, Constant
     | Moveable, def -> def, Moveable
     | exception Not_found ->
       let moveable : moveable =
-        if Ident.Set.mem id ident_info.assigned then
+        if V.Set.mem var var_info.assigned then
           Fixed
         else
           Moveable
@@ -588,164 +628,187 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     (* Constant closures are rewritten separately. *)
     clam, Constant
   | Udirect_apply (label, args, dbg) ->
-    let args = un_anf_list ident_info env args in
+    let args = un_anf_list var_info env args in
     Udirect_apply (label, args, dbg), Fixed
   | Ugeneric_apply (func, args, dbg) ->
-    let func = un_anf ident_info env func in
-    let args = un_anf_list ident_info env args in
+    let func = un_anf var_info env func in
+    let args = un_anf_list var_info env args in
     Ugeneric_apply (func, args, dbg), Fixed
   | Uclosure (functions, variables_bound_by_the_closure) ->
     let functions =
       List.map (fun (ufunction : Clambda.ufunction) ->
           { ufunction with
-            body = un_anf ident_info env ufunction.body;
+            body = un_anf var_info env ufunction.body;
           })
         functions
     in
     let variables_bound_by_the_closure =
-      un_anf_list ident_info env variables_bound_by_the_closure
+      un_anf_list var_info env variables_bound_by_the_closure
     in
     Uclosure (functions, variables_bound_by_the_closure), Fixed
   | Uoffset (clam, n) ->
-    let clam, moveable = un_anf_and_moveable ident_info env clam in
+    let clam, moveable = un_anf_and_moveable var_info env clam in
     Uoffset (clam, n), both_moveable Moveable moveable
-  | Ulet (_let_kind, _value_kind, id, def, Uvar id') when Ident.same id id' ->
-    un_anf_and_moveable ident_info env def
-  | Ulet (let_kind, value_kind, id, def, body) ->
-    let def, def_moveable = un_anf_and_moveable ident_info env def in
-    let is_linear = Ident.Set.mem id ident_info.linear in
-    let is_used = Ident.Set.mem id ident_info.used in
-    let is_assigned = Ident.Set.mem id ident_info.assigned in
+  | Ulet (_let_kind, _value_kind, var, def, Uvar var')
+      when V.same (VP.var var) var' ->
+    un_anf_and_moveable var_info env def
+  | Ulet (let_kind, value_kind, var, def, body) ->
+    let def, def_moveable = un_anf_and_moveable var_info env def in
+    let is_linear = V.Set.mem (VP.var var) var_info.linear in
+    let is_used = V.Set.mem (VP.var var) var_info.used in
+    let is_assigned = V.Set.mem (VP.var var) var_info.assigned in
+    let maybe_for_debugger (body, moveable) : Clambda.ulambda * moveable =
+      if not !Clflags.debug_full then
+        body, moveable
+      else
+        match def with
+        | Uconst const ->
+          Uphantom_let (var, Some (Clambda.Uphantom_const const),
+            body), moveable
+        | Uvar alias_of ->
+          Uphantom_let (var, Some (Clambda.Uphantom_var alias_of), body),
+            moveable
+        | _ ->
+          Uphantom_let (var, None, body), moveable
+    in
     begin match def_moveable, is_linear, is_used, is_assigned with
     | (Constant | Moveable), _, false, _ ->
-      (* A moveable expression that is never used may be eliminated. *)
-      un_anf_and_moveable ident_info env body
+      (* A moveable expression that is never used may be eliminated.
+         However, if in debug mode and the defining expression is
+         appropriate, keep the let (as a phantom let) for the debugger. *)
+      maybe_for_debugger (un_anf_and_moveable var_info env body)
     | Constant, _, true, false
-    (* A constant expression bound to an unassigned identifier can replace any
-         occurrences of the identifier. *)
+    (* A constant expression bound to an unassigned variable can replace any
+       occurrences of the variable.  The same comment as above concerning
+       phantom lets applies. *)
     | Moveable, true, true, false  ->
-      (* A moveable expression bound to a linear unassigned [Ident.t]
-         may replace the single occurrence of the identifier. *)
+      (* A moveable expression bound to a linear unassigned [V.t]
+         may replace the single occurrence of the variable.  The same comment
+         as above concerning phantom lets applies. *)
       let def_moveable =
         match def_moveable with
         | Moveable -> Moveable
         | Constant -> Constant
         | Fixed -> assert false
       in
-      let env = Ident.Map.add id (def_moveable, def) env in
-      un_anf_and_moveable ident_info env body
+      let env = V.Map.add (VP.var var) (def_moveable, def) env in
+      maybe_for_debugger (un_anf_and_moveable var_info env body)
     | (Constant | Moveable), _, _, true
         (* Constant or Moveable but assigned. *)
     | Moveable, false, _, _
         (* Moveable but not used linearly. *)
     | Fixed, _, _, _ ->
-      let body, body_moveable = un_anf_and_moveable ident_info env body in
-      Ulet (let_kind, value_kind, id, def, body),
+      let body, body_moveable = un_anf_and_moveable var_info env body in
+      Ulet (let_kind, value_kind, var, def, body),
       both_moveable def_moveable body_moveable
     end
+  | Uphantom_let (var, defining_expr, body) ->
+    let body, body_moveable = un_anf_and_moveable var_info env body in
+    Uphantom_let (var, defining_expr, body), body_moveable
   | Uletrec (defs, body) ->
     let defs =
-      List.map (fun (id, def) -> id, un_anf ident_info env def) defs
+      List.map (fun (var, def) -> var, un_anf var_info env def) defs
     in
-    let body = un_anf ident_info env body in
+    let body = un_anf var_info env body in
     Uletrec (defs, body), Fixed
   | Uprim (prim, args, dbg) ->
-    let args, args_moveable = un_anf_list_and_moveable ident_info env args in
+    let args, args_moveable = un_anf_list_and_moveable var_info env args in
     let moveable =
-      both_moveable args_moveable (primitive_moveable prim args ident_info)
+      both_moveable args_moveable (primitive_moveable prim args var_info)
     in
     Uprim (prim, args, dbg), moveable
   | Uswitch (cond, sw, dbg) ->
-    let cond = un_anf ident_info env cond in
+    let cond = un_anf var_info env cond in
     let sw =
       { sw with
-        us_actions_consts = un_anf_array ident_info env sw.us_actions_consts;
-        us_actions_blocks = un_anf_array ident_info env sw.us_actions_blocks;
+        us_actions_consts = un_anf_array var_info env sw.us_actions_consts;
+        us_actions_blocks = un_anf_array var_info env sw.us_actions_blocks;
       }
     in
     Uswitch (cond, sw, dbg), Fixed
   | Ustringswitch (cond, branches, default) ->
-    let cond = un_anf ident_info env cond in
+    let cond = un_anf var_info env cond in
     let branches =
-      List.map (fun (s, branch) -> s, un_anf ident_info env branch)
+      List.map (fun (s, branch) -> s, un_anf var_info env branch)
         branches
     in
-    let default = Misc.may_map (un_anf ident_info env) default in
+    let default = Misc.may_map (un_anf var_info env) default in
     Ustringswitch (cond, branches, default), Fixed
   | Ustaticfail (n, args) ->
-    let args = un_anf_list ident_info env args in
+    let args = un_anf_list var_info env args in
     Ustaticfail (n, args), Fixed
-  | Ucatch (n, ids, body, handler) ->
-    let body = un_anf ident_info env body in
-    let handler = un_anf ident_info env handler in
-    Ucatch (n, ids, body, handler), Fixed
-  | Utrywith (body, id, handler) ->
-    let body = un_anf ident_info env body in
-    let handler = un_anf ident_info env handler in
-    Utrywith (body, id, handler), Fixed
+  | Ucatch (n, vars, body, handler) ->
+    let body = un_anf var_info env body in
+    let handler = un_anf var_info env handler in
+    Ucatch (n, vars, body, handler), Fixed
+  | Utrywith (body, var, handler) ->
+    let body = un_anf var_info env body in
+    let handler = un_anf var_info env handler in
+    Utrywith (body, var, handler), Fixed
   | Uifthenelse (cond, ifso, ifnot) ->
-    let cond, cond_moveable = un_anf_and_moveable ident_info env cond in
-    let ifso, ifso_moveable = un_anf_and_moveable ident_info env ifso in
-    let ifnot, ifnot_moveable = un_anf_and_moveable ident_info env ifnot in
+    let cond, cond_moveable = un_anf_and_moveable var_info env cond in
+    let ifso, ifso_moveable = un_anf_and_moveable var_info env ifso in
+    let ifnot, ifnot_moveable = un_anf_and_moveable var_info env ifnot in
     let moveable =
       both_moveable cond_moveable
         (both_moveable ifso_moveable ifnot_moveable)
     in
     Uifthenelse (cond, ifso, ifnot), moveable
   | Usequence (e1, e2) ->
-    let e1 = un_anf ident_info env e1 in
-    let e2 = un_anf ident_info env e2 in
+    let e1 = un_anf var_info env e1 in
+    let e2 = un_anf var_info env e2 in
     Usequence (e1, e2), Fixed
   | Uwhile (cond, body) ->
-    let cond = un_anf ident_info env cond in
-    let body = un_anf ident_info env body in
+    let cond = un_anf var_info env cond in
+    let body = un_anf var_info env body in
     Uwhile (cond, body), Fixed
-  | Ufor (id, low, high, direction, body) ->
-    let low = un_anf ident_info env low in
-    let high = un_anf ident_info env high in
-    let body = un_anf ident_info env body in
-    Ufor (id, low, high, direction, body), Fixed
-  | Uassign (id, expr) ->
-    let expr = un_anf ident_info env expr in
-    Uassign (id, expr), Fixed
+  | Ufor (var, low, high, direction, body) ->
+    let low = un_anf var_info env low in
+    let high = un_anf var_info env high in
+    let body = un_anf var_info env body in
+    Ufor (var, low, high, direction, body), Fixed
+  | Uassign (var, expr) ->
+    let expr = un_anf var_info env expr in
+    Uassign (var, expr), Fixed
   | Usend (kind, e1, e2, args, dbg) ->
-    let e1 = un_anf ident_info env e1 in
-    let e2 = un_anf ident_info env e2 in
-    let args = un_anf_list ident_info env args in
+    let e1 = un_anf var_info env e1 in
+    let e2 = un_anf var_info env e2 in
+    let args = un_anf_list var_info env args in
     Usend (kind, e1, e2, args, dbg), Fixed
   | Uunreachable ->
     Uunreachable, Fixed
 
-and un_anf ident_info env clam : Clambda.ulambda =
-  let clam, _moveable = un_anf_and_moveable ident_info env clam in
+and un_anf var_info env clam : Clambda.ulambda =
+  let clam, _moveable = un_anf_and_moveable var_info env clam in
   clam
 
-and un_anf_list_and_moveable ident_info env clams
+and un_anf_list_and_moveable var_info env clams
       : Clambda.ulambda list * moveable =
   List.fold_right (fun clam (l, acc_moveable) ->
-      let clam, moveable = un_anf_and_moveable ident_info env clam in
+      let clam, moveable = un_anf_and_moveable var_info env clam in
       clam :: l, both_moveable moveable acc_moveable)
     clams ([], (Moveable : moveable))
 
-and un_anf_list ident_info env clams : Clambda.ulambda list =
-  let clams, _moveable = un_anf_list_and_moveable ident_info env clams in
+and un_anf_list var_info env clams : Clambda.ulambda list =
+  let clams, _moveable = un_anf_list_and_moveable var_info env clams in
   clams
 
-and un_anf_array ident_info env clams : Clambda.ulambda array =
-  Array.map (un_anf ident_info env) clams
+and un_anf_array var_info env clams : Clambda.ulambda array =
+  Array.map (un_anf var_info env) clams
 
-let apply clam ~what =
-  let ident_info = make_ident_info clam in
+let apply ~ppf_dump clam ~what =
+  let var_info = make_var_info clam in
   let let_bound_vars_that_can_be_moved =
-    let_bound_vars_that_can_be_moved ident_info clam
+    let_bound_vars_that_can_be_moved var_info clam
   in
   let clam =
     substitute_let_moveable let_bound_vars_that_can_be_moved
-      Ident.Map.empty clam
+      V.Map.empty clam
   in
-  let ident_info = make_ident_info clam in
-  let clam = un_anf ident_info Ident.Map.empty clam in
+  let var_info = make_var_info clam in
+  let clam = un_anf var_info V.Map.empty clam in
   if !Clflags.dump_clambda then begin
-    Format.eprintf "@.un-anf (%s):@ %a@." what Printclambda.clambda clam
+    Format.fprintf ppf_dump
+      "@.un-anf (%s):@ %a@." what Printclambda.clambda clam
   end;
   clam

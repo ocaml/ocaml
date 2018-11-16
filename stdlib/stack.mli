@@ -35,9 +35,19 @@ val pop : 'a t -> 'a
 (** [pop s] removes and returns the topmost element in stack [s],
    or raises {!Empty} if the stack is empty. *)
 
+val pop_opt : 'a t -> 'a option
+(** [pop_opt s] removes and returns the topmost element in stack [s],
+   or returns [None] if the stack is empty.
+   @since 4.08 *)
+
 val top : 'a t -> 'a
 (** [top s] returns the topmost element in stack [s],
    or raises {!Empty} if the stack is empty. *)
+
+val top_opt : 'a t -> 'a option
+(** [top_opt s] returns the topmost element in stack [s],
+   or [None] if the stack is empty.
+   @since 4.08 *)
 
 val clear : 'a t -> unit
 (** Discard all elements from a stack. *)
@@ -61,3 +71,18 @@ val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
     where [x1] is the top of the stack, [x2] the second element,
     and [xn] the bottom element. The stack is unchanged.
     @since 4.03 *)
+
+(** {1 Iterators} *)
+
+val to_seq : 'a t -> 'a Seq.t
+(** Iterate on the stack, top to bottom.
+    It is safe to modify the stack during iteration.
+    @since 4.07 *)
+
+val add_seq : 'a t -> 'a Seq.t -> unit
+(** Add the elements from the iterator on the top of the stack.
+    @since 4.07 *)
+
+val of_seq : 'a Seq.t -> 'a t
+(** Create a stack from the iterator
+    @since 4.07 *)

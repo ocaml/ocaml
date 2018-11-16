@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* PR#7533 *)
 
 exception Foo

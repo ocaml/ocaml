@@ -23,6 +23,10 @@
    pointer type in the C compiler.  All arithmetic operations over
    are taken modulo 2{^32} or 2{^64} depending
    on the word size of the target architecture.
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
 *)
 
 type t
@@ -52,7 +56,11 @@ val mul : t -> t -> t
 val div : t -> t -> t
 (** Integer division.  Raise [Division_by_zero] if the second
    argument is zero.  This division rounds the real quotient of
-   its arguments towards zero, as specified for {!Pervasives.(/)}. *)
+   its arguments towards zero, as specified for {!Stdlib.(/)}. *)
+
+val unsigned_div : t -> t -> t
+(** Same as {!div}, except that arguments and result are interpreted as {e
+    unsigned} integers. *)
 
 val rem : t -> t -> t
 (** Integer remainder.  If [y] is not zero, the result
@@ -61,6 +69,10 @@ val rem : t -> t -> t
    [x = Targetint.add (Targetint.mul (Targetint.div x y) y)
                       (Targetint.rem x y)].
    If [y = 0], [Targetint.rem x y] raises [Division_by_zero]. *)
+
+val unsigned_rem : t -> t -> t
+(** Same as {!rem}, except that arguments and result are interpreted as {e
+    unsigned} integers. *)
 
 val succ : t -> t
 (** Successor.
@@ -173,9 +185,13 @@ val to_string : t -> string
 
 val compare: t -> t -> int
 (** The comparison function for target integers, with the same specification as
-    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    {!Stdlib.compare}.  Along with the type [t], this function [compare]
     allows the module [Targetint] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
+
+val unsigned_compare: t -> t -> int
+(** Same as {!compare}, except that arguments are interpreted as {e unsigned}
+    integers. *)
 
 val equal: t -> t -> bool
 (** The equal function for target ints. *)
@@ -186,3 +202,6 @@ type repr =
 
 val repr : t -> repr
 (** The concrete representation of a native integer. *)
+
+val print : Format.formatter -> t -> unit
+(** Print a target integer to a formatter. *)

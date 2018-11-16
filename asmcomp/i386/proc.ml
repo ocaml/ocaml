@@ -163,6 +163,22 @@ let loc_external_results res =
 
 let loc_exn_bucket = eax
 
+(* See "System V Application Binary Interface Intel386 Architecture
+   Processor Supplement Version 1.0"
+   (https://www.uclibc.org/docs/psABI-i386.pdf) *)
+
+let int_dwarf_reg_numbers = [| 0; 3; 1; 2; 6; 7; 5 |]
+
+let float_dwarf_reg_numbers = [| |]
+
+let dwarf_register_numbers ~reg_class =
+  match reg_class with
+  | 0 -> int_dwarf_reg_numbers
+  | 1 -> float_dwarf_reg_numbers
+  | _ -> Misc.fatal_errorf "Bad register class %d" reg_class
+
+let stack_ptr_dwarf_register_number = 4
+
 (* Volatile registers: the x87 top of FP stack is *)
 
 let reg_is_volatile = function
@@ -191,10 +207,12 @@ let destroyed_at_oper = function
   | Iop(Ialloc _ | Iintop Imulh) -> [| eax |]
   | Iop(Iintop(Icomp _) | Iintop_imm(Icomp _, _)) -> [| eax |]
   | Iop(Iintoffloat) -> [| eax |]
-  | Iifthenelse(Ifloattest(_, _), _, _) -> [| eax |]
+  | Iifthenelse(Ifloattest _, _, _) -> [| eax |]
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
+
+let destroyed_at_reloadretaddr = [| |]
 
 (* Maximal register pressure *)
 

@@ -25,7 +25,7 @@
 ;;  This is a preliminary version.
 ;;
 ;;  Possible improvements?
-;;   - dump some databaes: Info, Lib, ...
+;;   - dump some databases: Info, Lib, ...
 ;;   - accept a search path for local libraries instead of current dir
 ;;     (then distinguish between different modules lying in different
 ;;     directories)
@@ -33,8 +33,8 @@
 ;;
 ;;  Abstract over
 ;;   - the viewing method and the database, so that the documentation for
-;;     and identifier could be search in
-;;       * info / html / man / mli's sources
+;;     an identifier could be
+;;       * searched in info / html / man / mli's sources
 ;;       * viewed in Emacs or using an external previewer.
 ;;
 ;;  Take all identifiers (labels, Constructors, exceptions, etc.)
@@ -56,7 +56,7 @@
 (defvar ocaml-lib-path 'lazy
   "Path list for ocaml lib sources (mli files).
 
-`lazy' means ask ocaml to find it for your at first use.")
+`lazy' means ask ocaml to find it for you at first use.")
 (defun ocaml-lib-path ()
   "Compute if necessary and return the path for ocaml libs."
   (if (listp ocaml-lib-path) nil
@@ -233,7 +233,7 @@
   ocaml-visible-modules)
 
 (defun ocaml-open-module (arg)
-  "*Make module of name ARG visible whe ARG is a string.
+  "*Make module of name ARG visible when ARG is a string.
 When call interactively, make completion over known modules."
   (interactive "P")
   (if (not (stringp arg))
@@ -335,7 +335,7 @@ with an optional non-nil argument."
 (defun caml-complete (arg)
   "Does completion for OCaml identifiers qualified.
 
-It attemps to recognize an qualified identifier Module . entry
+It attemps to recognize a qualified identifier Module . entry
 around point using function \\[ocaml-qualified-identifier].
 
 If Module is defined, it does completion for identifier in Module.
@@ -647,14 +647,14 @@ current buffer using \\[ocaml-qualified-identifier]."
 (defun caml-help (arg)
   "Find documentation for OCaml qualified identifiers.
 
-It attemps to recognize an qualified identifier of the form
+It attempts to recognize a qualified identifier of the form
 ``Module . entry'' around point using function `ocaml-qualified-identifier'.
 
 If Module is undetermined it is temptatively guessed from the identifier name
-and according to visible modules.  If this is still unsucessful,  the user is
+and according to visible modules.  If this is still unsuccessful,  the user is
 then prompted for a Module name.
 
-The documentation for Module is first seach in the info manual if available,
+The documentation for Module is first searched in the info manual, if available,
 then in the ``module.mli'' source file.  The entry is then searched in the
 documentation.
 
@@ -666,7 +666,7 @@ Prefix arg 0 forces recompilation of visible modules (and their content)
 from the file content.
 
 Prefix arg 4 prompts for Module and identifier instead of guessing values
-from the possition of point in the current buffer."
+from the position of point in the current buffer."
   (interactive "p")
   (delete-overlay ocaml-help-ovl)
   (let ((module) (entry) (module-entry))
@@ -726,9 +726,9 @@ from the possition of point in the current buffer."
 (defvar ocaml-links nil
   "Local links in the current of last info node or interface file.
 
-The car of the list is a key that indentifies the module to prevent
+The car of the list is a key that identifies the module to prevent
 recompilation when next help command is relative to the same module.
-The cdr is a list of elments, each of which is an string and a pair of
+The cdr is a list of elements, each of which is a string and a pair of
 buffer positions."
 )
 (make-variable-buffer-local 'ocaml-links)

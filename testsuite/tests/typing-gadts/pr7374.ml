@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type ('a, 'b) eq = Refl : ('a, 'a) eq
 
 module type S = sig
@@ -17,7 +21,9 @@ end = struct
     fun Refl -> Refl
 end;; (* should fail *)
 [%%expect{|
-Line _, characters 16-20:
+Line 7, characters 16-20:
+7 |     fun Refl -> Refl
+                    ^^^^
 Error: This expression has type (a, a) eq
        but an expression was expected of type (a, t) eq
        Type a is not compatible with type t = [ `Rec of 'a ] X.t as 'a
@@ -41,7 +47,9 @@ module F (X : sig type 'a t end) = struct
     fun Refl Refl -> Refl;;
 end;; (* should fail *)
 [%%expect{|
-Line _, characters 21-25:
+Line 4, characters 21-25:
+4 |     fun Refl Refl -> Refl;;
+                         ^^^^
 Error: This expression has type (a, a) eq
        but an expression was expected of type (a, a X.t X.t) eq
        Type a = b X.t is not compatible with type a X.t X.t

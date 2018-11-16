@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type _ t = I : int t;;
 
 let f (type a) (x : a t) =
@@ -8,7 +12,9 @@ let f (type a) (x : a t) =
   () ;;
 [%%expect{|
 type _ t = I : int t
-Line _, characters 9-10:
+Line 5, characters 9-10:
+5 |     let (I : a t) = x     (* fail because of toplevel let *)
+             ^
 Error: This pattern matches values of type int t
        but a pattern was expected which matches values of type a t
        Type int is not compatible with type a
@@ -30,7 +36,9 @@ let bad (type a) =
 ;;
 [%%expect{|
 type (_, _) eq = Refl : ('a, 'a) eq
-Line _, characters 10-14:
+Line 8, characters 10-14:
+8 |      let (Refl : (int, a) eq) = M.e  (* must fail for soundness *)
+              ^^^^
 Error: This pattern matches values of type (int, int) eq
        but a pattern was expected which matches values of type (int, a) eq
        Type int is not compatible with type a

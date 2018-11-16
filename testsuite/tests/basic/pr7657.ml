@@ -1,3 +1,5 @@
+(* TEST *)
+
 [@@@ocaml.warning "-21-5"]
 
 let foo g () = g 1; ()

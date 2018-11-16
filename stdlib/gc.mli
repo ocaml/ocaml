@@ -84,10 +84,13 @@ type stat =
 
 type control =
   { mutable minor_heap_size : int;
+    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.minor_heap_size = ...}"]
     (** The size (in words) of the minor heap.  Changing
        this parameter will trigger a minor collection.  Default: 256k. *)
 
     mutable major_heap_increment : int;
+    [@ocaml.deprecated_mutable
+         "Use {(Gc.get()) with Gc.major_heap_increment = ...}"]
     (** How much to add to the major heap when increasing it. If this
         number is less than or equal to 1000, it is a percentage of
         the current heap size (i.e. setting it to 100 will double the heap
@@ -95,6 +98,7 @@ type control =
         number of words that will be added to the heap. Default: 15. *)
 
     mutable space_overhead : int;
+    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.space_overhead = ...}"]
     (** The major GC speed is computed from this parameter.
        This is the memory that will be "wasted" because the GC does not
        immediately collect unreachable blocks.  It is expressed as a
@@ -104,6 +108,7 @@ type control =
        Default: 80. *)
 
     mutable verbose : int;
+    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.verbose = ...}"]
     (** This value controls the GC messages on standard error output.
        It is a sum of some of the following flags, to print messages
        on the corresponding events:
@@ -121,6 +126,7 @@ type control =
        Default: 0. *)
 
     mutable max_overhead : int;
+    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.max_overhead = ...}"]
     (** Heap compaction is triggered when the estimated amount
        of "wasted" memory is more than [max_overhead] percent of the
        amount of live data.  If [max_overhead] is set to 0, heap
@@ -132,11 +138,14 @@ type control =
        Default: 500. *)
 
     mutable stack_limit : int;
+    [@ocaml.deprecated_mutable "Use {(Gc.get()) with Gc.stack_limit = ...}"]
     (** The maximum size of the stack (in words).  This is only
        relevant to the byte-code runtime, as the native code runtime
        uses the operating system's stack.  Default: 1024k. *)
 
     mutable allocation_policy : int;
+    [@ocaml.deprecated_mutable
+         "Use {(Gc.get()) with Gc.allocation_policy = ...}"]
     (** The policy used for allocating in the heap.  Possible
         values are 0 and 1.  0 is the next-fit policy, which is
         quite fast but can result in fragmentation.  1 is the
@@ -149,7 +158,41 @@ type control =
         out variations in its workload. This is an integer between
         1 and 50.
         Default: 1. @since 4.03.0 *)
-}
+
+    custom_major_ratio : int;
+    (** Target ratio of floating garbage to major heap size for
+        out-of-heap memory held by custom values located in the major
+        heap. The GC speed is adjusted to try to use this much memory
+        for dead values that are not yet collected. Expressed as a
+        percentage of major heap size. The default value keeps the
+        out-of-heap floating garbage about the same size as the
+        in-heap overhead.
+        Note: this only applies to values allocated with
+        [caml_alloc_custom_mem] (e.g. bigarrays).
+        Default: 44.
+        @since 4.08.0 *)
+
+    custom_minor_ratio : int;
+    (** Bound on floating garbage for out-of-heap memory held by
+        custom values in the minor heap. A minor GC is triggered when
+        this much memory is held by custom values located in the minor
+        heap. Expressed as a percentage of minor heap size.
+        Note: this only applies to values allocated with
+        [caml_alloc_custom_mem] (e.g. bigarrays).
+        Default: 100.
+        @since 4.08.0 *)
+
+    custom_minor_max_size : int;
+    (** Maximum amount of out-of-heap memory for each custom value
+        allocated in the minor heap. When a custom value is allocated
+        on the minor heap and holds more than this many bytes, only
+        this value is counted against [custom_minor_ratio] and the
+        rest is directly counted against [custom_major_ratio].
+        Note: this only applies to values allocated with
+        [caml_alloc_custom_mem] (e.g. bigarrays).
+        Default: 8192 bytes.
+        @since 4.08.0 *)
+  }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
     OCAMLRUNPARAM environment variable.  See the documentation of
@@ -306,7 +349,7 @@ val finalise : ('a -> unit) -> 'a -> unit
 
 
    The results of calling {!String.make}, {!Bytes.make}, {!Bytes.create},
-   {!Array.make}, and {!Pervasives.ref} are guaranteed to be
+   {!Array.make}, and {!Stdlib.ref} are guaranteed to be
    heap-allocated and non-constant except when the length argument is [0].
 *)
 
@@ -318,9 +361,9 @@ val finalise_last : (unit -> unit) -> 'a -> unit
     first time. So contrary to {!finalise} the value will never be
     reachable again or used again. In particular every weak pointer
     and ephemeron that contained this value as key or data is unset
-    before running the finalisation function. Moreover the
-    finalisation function attached with `GC.finalise` are always
-    called before the finalisation function attached with `GC.finalise_last`.
+    before running the finalisation function. Moreover the finalisation
+    functions attached with {!finalise} are always called before the
+    finalisation functions attached with {!finalise_last}.
 
     @since 4.04
 *)

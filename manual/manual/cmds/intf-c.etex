@@ -1,5 +1,4 @@
 \chapter{Interfacing\label{c:intf-c} C with OCaml}
-\pdfchapterfold{-9}{Interfacing C with OCaml}
 %HEVEA\cutname{intfc.html}
 
 This chapter describes how user-defined primitives, written in C, can
@@ -7,7 +6,6 @@ be linked with OCaml code and called from OCaml functions, and how
 these C functions can call back to OCaml code.
 
 \section{Overview and compilation information}
-\pdfsection{Overview and compilation information}
 
 \subsection{Declaring primitives}
 
@@ -436,7 +434,6 @@ bytecode executable (so that the bytecode from "unix.cma" and
 "threads.cma" is actually linked in).
 
 \section{The \texttt{value} type}
-\pdfsection{The value type}
 
 All OCaml objects are represented by the C type "value",
 defined in the include file "caml/mlvalues.h", along with macros to
@@ -503,7 +500,6 @@ these problems, it is preferable to wrap the pointer in a OCaml block
 with tag "Abstract_tag" or "Custom_tag".
 
 \section{Representation of OCaml data types}
-\pdfsection{Representation of OCaml data types}
 
 This section describes how OCaml data types are encoded in the
 "value" type.
@@ -657,7 +653,6 @@ pair "("\var{v}", "\var{w}")", rather than a block of size 3
 containing \var{v} and \var{w} in fields 1 and 2.
 
 \section{Operations on values}
-\pdfsection{Operations on values}
 
 \subsection{Kind tests}
 
@@ -871,7 +866,6 @@ the C string \var{s} as argument.
 \end{itemize}
 
 \section{Living in harmony with the garbage collector}
-\pdfsection{Living in harmony with the garbage collector}
 
 Unused blocks in the heap are automatically reclaimed by the garbage
 collector. This requires some cooperation from C code that
@@ -1174,11 +1168,10 @@ has taken place since "r" was allocated.
 
 
 \section{A complete example}
-\pdfsection{A complete example}
 
 This section outlines how the functions from the Unix "curses" library
 can be made available to OCaml programs. First of all, here is
-the interface "curses.mli" that declares the "curses" primitives and
+the interface "curses.ml" that declares the "curses" primitives and
 data types:
 \begin{verbatim}
 (* File curses.ml -- declaration of primitives and data types *)
@@ -1221,7 +1214,8 @@ static struct custom_operations curses_window_ops = {
   custom_hash_default,
   custom_serialize_default,
   custom_deserialize_default,
-  custom_compare_ext_default
+  custom_compare_ext_default,
+  custom_fixed_length_default
 };
 
 /* Accessing the WINDOW * part of an OCaml custom block */
@@ -1336,7 +1330,6 @@ instead of "-cclib -lcurses".)
 %% and not "world". Why?
 
 \section{Advanced topic: callbacks from C to OCaml} \label{s:callback}
-\pdfsection{Advanced topic: callbacks from C to OCaml}
 
 So far, we have described how to call C functions from OCaml. In this
 section, we show how C functions can call OCaml functions, either as
@@ -1600,8 +1593,8 @@ With "ocamlopt", you should do:
 \paragraph{Warning:} On some ports, special options are required on the final
 linking phase that links together the object file produced by the
 "-output-obj" option and the remainder of the program.  Those options
-are shown in the configuration file "config/Makefile" generated during
-compilation of OCaml, as the variable "LDFLAGS".
+are shown in the configuration file "Makefile.config" generated during
+compilation of OCaml, as the variable "OC_LDFLAGS".
 \begin{itemize}
 \item Windows with the MSVC compiler: the object file produced by
 OCaml have been compiled with the "/MD" flag, and therefore
@@ -1659,7 +1652,6 @@ facility is only useful for building reloadable shared libraries.
 
 
 \section{Advanced example with callbacks}
-\pdfsection{Advanced example with callbacks}
 
 This section illustrates the callback facilities described in
 section~\ref{s:callback}. We are going to package some OCaml functions
@@ -1754,7 +1746,6 @@ To build the whole program, just invoke the C compiler as follows:
 "-lcurses -ltermcap" instead of "-lcurses".)
 
 \section{Advanced topic: custom blocks} \label{s:custom}
-\pdfsection{Advanced topic: custom blocks}
 
 Blocks with tag "Custom_tag" contain both arbitrary user data and a
 pointer to a C struct, with type "struct custom_operations", that
@@ -1817,7 +1808,7 @@ the same hash value.
 The "hash" field can be set to "custom_hash_default", in which case
 the custom block is ignored during hash computation.
 
-\item "void (*serialize)(value v, uintnat * wsize_32, uintnat * wsize_64)" \\
+\item "void (*serialize)(value v, uintnat * bsize_32, uintnat * bsize_64)" \\
 The "serialize" field contains a pointer to a C function that is
 called whenever the custom block needs to be serialized (marshaled)
 using the OCaml functions "output_value" or "Marshal.to_...".
@@ -1827,7 +1818,7 @@ then call the user-provided "serialize" function.  That function is
 responsible for writing the data contained in the custom block, using
 the "serialize_..." functions defined in "<caml/intext.h>" and listed
 below.  The user-provided "serialize" function must then store in its
-"wsize_32" and "wsize_64" parameters the sizes in bytes of the data
+"bsize_32" and "bsize_64" parameters the sizes in bytes of the data
 part of the custom block on a 32-bit architecture and on a 64-bit
 architecture, respectively.
 
@@ -1853,6 +1844,15 @@ The "deserialize" field can be set to "custom_deserialize_default"
 to indicate that deserialization is not supported.  In this case,
 do not register the "struct custom_operations" with the deserializer
 using "register_custom_operations" (see below).
+
+\item "const struct custom_fixed_length* fixed_length" \\
+Normally, space in the serialized output is reserved to write the
+"bsize_32" and "bsize_64" fields returned by "serialize". However, for
+very short custom blocks, this space can be larger than the data
+itself! As a space optimisation, if "serialize" always returns the
+same values for "bsize_32" and "bsize_64", then these values may be
+specified in the "fixed_length" structure, and do not consume space in
+the serialized output.
 \end{itemize}
 
 Note: the "finalize", "compare", "hash", "serialize" and "deserialize"
@@ -1864,7 +1864,8 @@ functions, and do not use "CAMLreturn" to return the result.
 
 \subsection{Allocating custom blocks}
 
-Custom blocks must be allocated via the "caml_alloc_custom" function:
+Custom blocks must be allocated via "caml_alloc_custom" or
+"caml_alloc_custom_mem":
 \begin{center}
 "caml_alloc_custom("\var{ops}", "\var{size}", "\var{used}", "\var{max}")"
 \end{center}
@@ -1915,6 +1916,18 @@ or if the previous discussion made little sense to you, just take
 $\var{used} = 0$ and $\var{max} = 1$.  But if you later find that the
 finalization functions are not called ``often enough'', consider
 increasing the $\var{used} / \var{max}$ ratio.
+
+\begin{center}
+"caml_alloc_custom_mem("\var{ops}", "\var{size}", "\var{used}")"
+\end{center}
+Use this function when your custom block holds only out-of-heap memory
+(memory allocated with "malloc" or "caml_stat_alloc") and no other
+resources. "used" should be the number of bytes of out-of-heap
+memory that are held by your custom block. This function works like
+"caml_alloc_custom" except that the "max" parameter is under the
+control of the user (via the "custom_major_ratio",
+"custom_minor_ratio", and "custom_minor_max_size" parameters) and
+proportional to the heap sizes.
 
 \subsection{Accessing custom blocks}
 
@@ -2005,11 +2018,116 @@ and the "alloc_final" function is still available to allocate a custom
 block with a given finalization function, but default comparison,
 hashing and serialization functions.  "caml_alloc_final("\var{n}",
 "\var{f}", "\var{used}", "\var{max}")" returns a fresh custom block of
-size \var{n} words, with finalization function \var{f}.  The first
+size \var{n}+1 words, with finalization function \var{f}.  The first
 word is reserved for storing the custom operations; the other
-\var{n}-1 words are available for your data.  The two parameters
+\var{n} words are available for your data.  The two parameters
 \var{used} and \var{max} are used to control the speed of garbage
 collection, as described for "caml_alloc_custom".
+
+\section{Advanced topic: Big arrays and the OCaml-C interface}
+\label{s:C-Bigarrays}
+
+This section explains how C stub code that interfaces C or Fortran
+code with OCaml code can use big arrays.
+
+\subsection{Include file}
+
+The include file "<caml/bigarray.h>" must be included in the C stub
+file.  It declares the functions, constants and macros discussed
+below.
+
+\subsection{Accessing an OCaml bigarray from C or Fortran}
+
+If \var{v} is a OCaml "value" representing a big array, the expression
+"Caml_ba_data_val("\var{v}")" returns a pointer to the data part of the array.
+This pointer is of type "void *" and can be cast to the appropriate C
+type for the array (e.g. "double []", "char [][10]", etc).
+
+Various characteristics of the OCaml big array can be consulted from C
+as follows:
+\begin{tableau}{|l|l|}{C expression}{Returns}
+\entree{"Caml_ba_array_val("\var{v}")->num_dims"}{number of dimensions}
+\entree{"Caml_ba_array_val("\var{v}")->dim["\var{i}"]"}{\var{i}-th dimension}
+\entree{"Caml_ba_array_val("\var{v}")->flags & BIGARRAY_KIND_MASK"}{kind of array elements}
+\end{tableau}
+The kind of array elements is one of the following constants:
+\begin{tableau}{|l|l|}{Constant}{Element kind}
+\entree{"CAML_BA_FLOAT32"}{32-bit single-precision floats}
+\entree{"CAML_BA_FLOAT64"}{64-bit double-precision floats}
+\entree{"CAML_BA_SINT8"}{8-bit signed integers}
+\entree{"CAML_BA_UINT8"}{8-bit unsigned integers}
+\entree{"CAML_BA_SINT16"}{16-bit signed integers}
+\entree{"CAML_BA_UINT16"}{16-bit unsigned integers}
+\entree{"CAML_BA_INT32"}{32-bit signed integers}
+\entree{"CAML_BA_INT64"}{64-bit signed integers}
+\entree{"CAML_BA_CAML_INT"}{31- or 63-bit signed integers}
+\entree{"CAML_BA_NATIVE_INT"}{32- or 64-bit (platform-native) integers}
+\end{tableau}
+%
+The following example shows the passing of a two-dimensional big array
+to a C function and a Fortran function.
+\begin{verbatim}
+    extern void my_c_function(double * data, int dimx, int dimy);
+    extern void my_fortran_function_(double * data, int * dimx, int * dimy);
+
+    value caml_stub(value bigarray)
+    {
+      int dimx = Caml_ba_array_val(bigarray)->dim[0];
+      int dimy = Caml_ba_array_val(bigarray)->dim[1];
+      /* C passes scalar parameters by value */
+      my_c_function(Caml_ba_data_val(bigarray), dimx, dimy);
+      /* Fortran passes all parameters by reference */
+      my_fortran_function_(Caml_ba_data_val(bigarray), &dimx, &dimy);
+      return Val_unit;
+    }
+\end{verbatim}
+
+\subsection{Wrapping a C or Fortran array as an OCaml big array}
+
+A pointer \var{p} to an already-allocated C or Fortran array can be
+wrapped and returned to OCaml as a big array using the "caml_ba_alloc"
+or "caml_ba_alloc_dims" functions.
+\begin{itemize}
+\item
+"caml_ba_alloc("\var{kind} "|" \var{layout}, \var{numdims}, \var{p}, \var{dims}")"
+
+Return an OCaml big array wrapping the data pointed to by \var{p}.
+\var{kind} is the kind of array elements (one of the "CAML_BA_"
+kind constants above).  \var{layout} is "CAML_BA_C_LAYOUT" for an
+array with C layout and "CAML_BA_FORTRAN_LAYOUT" for an array with
+Fortran layout.  \var{numdims} is the number of dimensions in the
+array.  \var{dims} is an array of \var{numdims} long integers, giving
+the sizes of the array in each dimension.
+
+\item
+"caml_ba_alloc_dims("\var{kind} "|" \var{layout}, \var{numdims},
+\var{p}, "(long) "\nth{dim}{1}, "(long) "\nth{dim}{2}, \ldots, "(long) "\nth{dim}{numdims}")"
+
+Same as "caml_ba_alloc", but the sizes of the array in each dimension
+are listed as extra arguments in the function call, rather than being
+passed as an array.
+\end{itemize}
+%
+The following example illustrates how statically-allocated C and
+Fortran arrays can be made available to OCaml.
+\begin{verbatim}
+    extern long my_c_array[100][200];
+    extern float my_fortran_array_[300][400];
+
+    value caml_get_c_array(value unit)
+    {
+      long dims[2];
+      dims[0] = 100; dims[1] = 200;
+      return caml_ba_alloc(CAML_BA_NATIVE_INT | CAML_BA_C_LAYOUT,
+                           2, my_c_array, dims);
+    }
+
+    value caml_get_fortran_array(value unit)
+    {
+      return caml_ba_alloc_dims(CAML_BA_FLOAT32 | CAML_BA_FORTRAN_LAYOUT,
+                                2, my_fortran_array_, 300L, 400L);
+    }
+\end{verbatim}
 
 \section{Advanced topic: cheaper C call}
 \label{s:C-cheaper-call}
@@ -2338,7 +2456,7 @@ them, you need to include both "<caml/misc.h>" and "<caml/osdeps.h>".
 \item "char_os* caml_stat_strdup_to_os(const char *)" copies the argument while
 translating from OCaml encoding to the platform encoding. This function is
 typically used to convert the "char *" underlying an OCaml string before passing
-it to an operating system API that takes an Unicode argument. Under Unix, it is
+it to an operating system API that takes a Unicode argument. Under Unix, it is
 equivalent to "caml_stat_strdup".
 
 {\bf Note:} For maximum backwards compatibility in Unicode mode, if the argument

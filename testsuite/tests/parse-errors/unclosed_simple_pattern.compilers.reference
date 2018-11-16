@@ -1,0 +1,53 @@
+Line 7, characters 0-2:
+7 | ;;
+    ^^
+Error: Syntax error: ')' expected
+Line 6, characters 9-10:
+6 |   | List.(_
+             ^
+  This '(' might be unmatched
+Line 4, characters 0-2:
+4 | ;;
+    ^^
+Error: Syntax error: ')' expected
+Line 3, characters 4-5:
+3 |   | (_
+        ^
+  This '(' might be unmatched
+Line 4, characters 0-2:
+4 | ;;
+    ^^
+Error: Syntax error: ')' expected
+Line 3, characters 4-5:
+3 |   | (_ : int
+        ^
+  This '(' might be unmatched
+Line 6, characters 18-25:
+6 |   | (module Foo : sig end
+                      ^^^^^^^
+Error: invalid package type: only module type identifier and 'with type' constraints are supported
+Line 7, characters 0-2:
+7 | ;;
+    ^^
+Error: Syntax error: '}' expected
+Line 6, characters 4-5:
+6 |   | { foo; bar;
+        ^
+  This '{' might be unmatched
+Line 4, characters 0-2:
+4 | ;;
+    ^^
+Error: Syntax error: ']' expected
+Line 3, characters 4-5:
+3 |   | [ 1; 2;
+        ^
+  This '[' might be unmatched
+Line 4, characters 0-2:
+4 | ;;
+    ^^
+Error: Syntax error: '|]' expected
+Line 3, characters 4-6:
+3 |   | [| 3; 4;
+        ^^
+  This '[|' might be unmatched
+

@@ -92,17 +92,17 @@ C code (`ocamlc -custom`) require a Microsoft Visual C/C++ Compiler and the
 Any edition (including Express/Community editions) of Microsoft Visual Studio
 2005 or later may be used to provide the required Windows headers and the C
 compiler. Additionally, some older Microsoft Windows SDKs include the
-Visual C/C++ Compiler.
+Visual C/C++ Compiler as well as the Build Tools for Visual Studio.
 
 |=====
-|                    | `cl` Version | Express                 | SDK
+|                    | `cl` Version | Express                 | SDK/Build Tools
 | Visual Studio 2005 | 14.00.x.x    | 32-bit only <<vs1,(*)>> |
 | Visual Studio 2008 | 15.00.x.x    | 32-bit only             | Windows SDK 7.0 also provides 32/64-bit compilers
 | Visual Studio 2010 | 16.00.x.x    | 32-bit only             | Windows SDK 7.1 also provides 32/64-bit compilers
 | Visual Studio 2012 | 17.00.x.x    | 32/64-bit               |
 | Visual Studio 2013 | 18.00.x.x    | 32/64-bit               |
-| Visual Studio 2015 | 19.00.x.x    | 32/64-bit               |
-| Visual Studio 2017 | 19.10.x.x    | 32/64-bit               |
+| Visual Studio 2015 | 19.00.x.x    | 32/64-bit               | Build Tools for Visual Studio 2015 also provides 32/64-bit compilers
+| Visual Studio 2017 | 19.10.x.x    | 32/64-bit               | Build Tools for Visual Studio 2017 also provides 32/64-bit compilers
 |=====
 
 [[vs1]]
@@ -159,6 +159,9 @@ indicate if they are the "Native Tools" or "Cross Tools" versions. Visual Studio
 2015 and 2017 make the shortcuts even clearer by including the full name of the
 architecture.
 
+The Build Tools for Visual Studio 2015 and 2017 provide shortcuts similar to
+the ones of their respective Visual Studio version.
+
 You cannot at present use a cross-compiler to compile 64-bit OCaml on 32-bit
 Windows.
 
@@ -188,29 +191,30 @@ the top-level of the OCaml distribution by running:
 
   eval $(tools/msvs-promote-path)
 
-If you forget to do this, `make world` will fail relatively
+If you forget to do this, `make world.opt` will fail relatively
 quickly as it will be unable to link `ocamlrun`.
 
 Now run:
 
-        cp config/m-nt.h byterun/caml/m.h
-        cp config/s-nt.h byterun/caml/s.h
+        cp config/m-nt.h runtime/caml/m.h
+        cp config/s-nt.h runtime/caml/s.h
 
 followed by:
 
-        cp config/Makefile.msvc config/Makefile
+        cp config/Makefile.msvc Makefile.config
 
 for 32-bit, or:
 
-        cp config/Makefile.msvc64 config/Makefile
+        cp config/Makefile.msvc64 Makefile.config
 
-for 64-bit. Then, edit `config/Makefile` as needed, following the comments in
+for 64-bit. Then, edit `Makefile.config` as needed, following the comments in
 this file. Normally, the only variable that needs to be changed is `PREFIX`,
 which indicates where to install everything.
 
 Finally, use `make` to build the system, e.g.
 
-        make world bootstrap opt opt.opt install
+        make world.opt
+        make install
 
 After installing, it is not necessary to keep the Cygwin installation (although
 you may require it to build additional third party libraries and tools).  You
@@ -223,7 +227,7 @@ like to copy the `tools/msvs-promote-path` script and add the `eval` line to
 your `~/.bashrc` file.
 
 * The Microsoft Visual C/C++ compiler does not implement "computed gotos", and
-  therefore generates inefficient code for `byterun/interp.c`.  Consequently,
+  therefore generates inefficient code for `runtime/interp.c`.  Consequently,
   the performance of bytecode programs is about 2/3 of that obtained under
   Unix/GCC,  Cygwin or Mingw-w64 on similar hardware.
 
@@ -264,24 +268,25 @@ the WinZip Options Window.)
 
 Now run:
 
-        cp config/m-nt.h byterun/caml/m.h
-        cp config/s-nt.h byterun/caml/s.h
+        cp config/m-nt.h runtime/caml/m.h
+        cp config/s-nt.h runtime/caml/s.h
 
 followed by:
 
-        cp config/Makefile.mingw config/Makefile
+        cp config/Makefile.mingw Makefile.config
 
 for 32-bit, or:
 
-        cp config/Makefile.mingw64 config/Makefile
+        cp config/Makefile.mingw64 Makefile.config
 
-for 64-bit. Then, edit `config/Makefile` as needed, following the comments in
+for 64-bit. Then, edit `Makefile.config` as needed, following the comments in
 this file. Normally, the only variable that needs to be changed is `PREFIX`,
 which indicates where to install everything.
 
 Finally, use `make` to build the system, e.g.
 
-        make world bootstrap opt opt.opt install
+        make world.opt
+        make install
 
 After installing, you will need to ensure that `ocamlopt` (or `ocamlc -custom`)
 can access the C compiler.  You can do this either by using OCaml from Cygwin's
@@ -291,12 +296,6 @@ bash or by adding Cygwin's bin directory (e.g. `C:\cygwin\bin`) to your `PATH`.
   `str`, `threads`, and large parts of `unix`.
 
 * The replay debugger is partially supported (no reverse execution).
-
-* The default `config/Makefile.mingw` and `config/Makefile.mingw64` pass
-  `-static-libgcc` to the linker. For more information on this topic:
-
-  - http://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Link-Options.html#Link-Options
-  - http://caml.inria.fr/mantis/view.php?id=6411
 
 [[seflexdll]]
 == FlexDLL
@@ -327,7 +326,10 @@ done in one of three ways:
 OCaml is then compiled as normal for the port you require, except that before
 compiling `world`, you must compile `flexdll`, i.e.:
 
-  make flexdll world [bootstrap] opt opt.opt flexlink.opt install
+  make flexdll
+  make world.opt
+  make flexlink.opt
+  make install
 
  * You should ignore the error messages that say ocamlopt was not found.
  * `make install` will install FlexDLL by placing `flexlink.exe`
@@ -351,7 +353,7 @@ are UTF-8 encoded strings.  In addition to filenames,
 this applies to environment variables and command-line arguments.
 
 The mode must be decided before building the system, by tweaking
-the `WINDOWS_UNICODE` variable in `config/Makefile`.  A value of 1
+the `WINDOWS_UNICODE` variable in `Makefile.config`.  A value of 1
 enables the the new "Unicode" mode, while a value of 0 maintains
 the legacy mode.
 

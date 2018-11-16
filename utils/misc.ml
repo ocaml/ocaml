@@ -17,18 +17,37 @@
 
 exception Fatal_error
 
-let fatal_error msg =
-  prerr_string ">> Fatal error: "; prerr_endline msg; raise Fatal_error
+let fatal_errorf fmt =
+  Format.kfprintf
+    (fun _ -> raise Fatal_error)
+    Format.err_formatter
+    ("@?>> Fatal error: " ^^ fmt ^^ "@.")
 
-let fatal_errorf fmt = Format.kasprintf fatal_error fmt
+let fatal_error msg = fatal_errorf "%s" msg
 
 (* Exceptions *)
 
-let try_finally work cleanup =
-  let result = (try work () with e -> cleanup (); raise e) in
-  cleanup ();
-  result
-;;
+let try_finally ?(always=(fun () -> ())) ?(exceptionally=(fun () -> ())) work =
+  match work () with
+    | result ->
+      begin match always () with
+        | () -> result
+        | exception always_exn ->
+          let always_bt = Printexc.get_raw_backtrace () in
+          exceptionally ();
+          Printexc.raise_with_backtrace always_exn always_bt
+      end
+    | exception work_exn ->
+      let work_bt = Printexc.get_raw_backtrace () in
+      begin match always () with
+        | () ->
+          exceptionally ();
+          Printexc.raise_with_backtrace work_exn work_bt
+        | exception always_exn ->
+          let always_bt = Printexc.get_raw_backtrace () in
+          exceptionally ();
+          Printexc.raise_with_backtrace always_exn always_bt
+      end
 
 type ref_and_value = R : 'a ref * 'a -> ref_and_value
 
@@ -104,6 +123,14 @@ module Stdlib = struct
       in
       aux [] l
 
+    let rec find_map f = function
+      | x :: xs ->
+          begin match f x with
+          | None -> find_map f xs
+          | Some _ as y -> y
+          end
+      | [] -> None
+
     let map2_prefix f l1 l2 =
       let rec aux acc l1 l2 =
         match l1, l2 with
@@ -138,6 +165,14 @@ module Stdlib = struct
 
   module Option = struct
     type 'a t = 'a option
+
+    let is_none = function
+      | None -> true
+      | Some _ -> false
+
+    let is_some = function
+      | None -> false
+      | Some _ -> true
 
     let equal eq o1 o2 =
       match o1, o2 with
@@ -174,6 +209,18 @@ module Stdlib = struct
         else loop (succ i) in
       loop 0
   end
+
+  module String = struct
+    include String
+    module Set = Set.Make(String)
+    module Map = Map.Make(String)
+    module Tbl = Hashtbl.Make(struct
+      include String
+      let hash = Hashtbl.hash
+    end)
+  end
+
+  external compare : 'a -> 'a -> int = "%compare"
 end
 
 let may = Stdlib.Option.iter
@@ -236,6 +283,15 @@ let expand_directory alt s =
   then Filename.concat alt
                        (String.sub s 1 (String.length s - 1))
   else s
+
+let path_separator =
+  match Sys.os_type with
+  | "Win32" -> ';'
+  | _ -> ':'
+
+let split_path_contents ?(sep = path_separator) = function
+  | "" -> []
+  | s -> String.split_on_char sep s
 
 (* Hashtable functions *)
 
@@ -308,7 +364,9 @@ let no_overflow_add a b = (a lxor b) lor (a lxor (lnot (a+b))) < 0
 
 let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
 
-let no_overflow_mul a b = b <> 0 && (a * b) / b = a
+(* Taken from Hacker's Delight, chapter "Overflow Detection" *)
+let no_overflow_mul a b =
+  not ((a = min_int && b < 0) || (b <> 0 && (a * b) / b <> a))
 
 let no_overflow_lsl a k =
   0 <= k && k < Sys.word_size && min_int asr k <= a && a <= max_int asr k
@@ -376,6 +434,11 @@ let get_ref r =
   let v = !r in
   r := []; v
 
+let set_or_ignore f opt x =
+  match f x with
+  | None -> ()
+  | Some y -> opt := Some y
+
 let fst3 (x, _, _) = x
 let snd3 (_,x,_) = x
 let thd3 (_,_,x) = x
@@ -414,19 +477,26 @@ module LongString = struct
       set dst (dstoff + i) (get src (srcoff + i))
     done
 
+  let blit_string src srcoff dst dstoff len =
+    for i = 0 to len - 1 do
+      set dst (dstoff + i) (String.get src (srcoff + i))
+    done
+
   let output oc tbl pos len =
     for i = pos to pos + len - 1 do
       output_char oc (get tbl i)
     done
 
-  let unsafe_blit_to_bytes src srcoff dst dstoff len =
-    for i = 0 to len - 1 do
-      Bytes.unsafe_set dst (dstoff + i) (get src (srcoff + i))
-    done
+  let input_bytes_into tbl ic len =
+    let count = ref len in
+    Array.iter (fun str ->
+      let chunk = min !count (Bytes.length str) in
+      really_input ic str 0 chunk;
+      count := !count - chunk) tbl
 
   let input_bytes ic len =
     let tbl = create len in
-    Array.iter (fun str -> really_input ic str 0 (Bytes.length str)) tbl;
+    input_bytes_into tbl ic len;
     tbl
 end
 
@@ -493,6 +563,7 @@ let spellcheck env name =
          else if dist = best_dist then (head :: best_choice, dist)
          else acc
   in
+  let env = List.sort_uniq (fun s1 s2 -> String.compare s2 s1) env in
   fst (List.fold_left (compare name) ([], max_int) env)
 
 let did_you_mean ppf get_choices =
@@ -513,10 +584,6 @@ let did_you_mean ppf get_choices =
 let cut_at s c =
   let pos = String.index s c in
   String.sub s 0 pos, String.sub s (pos+1) (String.length s - pos - 1)
-
-
-module StringSet = Set.Make(struct type t = string let compare = compare end)
-module StringMap = Map.Make(struct type t = string let compare = compare end)
 
 (* Color handling *)
 module Color = struct
@@ -581,9 +648,9 @@ module Color = struct
   (* map a tag to a style, if the tag is known.
      @raise Not_found otherwise *)
   let style_of_tag s = match s with
-    | "error" -> (!cur_styles).error
-    | "warning" -> (!cur_styles).warning
-    | "loc" -> (!cur_styles).loc
+    | Format.String_tag "error" -> (!cur_styles).error
+    | Format.String_tag "warning" -> (!cur_styles).warning
+    | Format.String_tag "loc" -> (!cur_styles).loc
     | _ -> raise Not_found
 
   let color_enabled = ref true
@@ -604,13 +671,13 @@ module Color = struct
   (* add color handling to formatter [ppf] *)
   let set_color_tag_handling ppf =
     let open Format in
-    let functions = pp_get_formatter_tag_functions ppf () in
+    let functions = pp_get_formatter_stag_functions ppf () in
     let functions' = {functions with
-      mark_open_tag=(mark_open_tag ~or_else:functions.mark_open_tag);
-      mark_close_tag=(mark_close_tag ~or_else:functions.mark_close_tag);
+      mark_open_stag=(mark_open_tag ~or_else:functions.mark_open_stag);
+      mark_close_stag=(mark_close_tag ~or_else:functions.mark_close_stag);
     } in
     pp_set_mark_tags ppf true; (* enable tags *)
-    pp_set_formatter_tag_functions ppf functions';
+    pp_set_formatter_stag_functions ppf functions';
     (* also setup margins *)
     pp_set_margin ppf (pp_get_margin std_formatter());
     ()
@@ -643,6 +710,12 @@ module Color = struct
             | None -> should_enable_color ())
       );
       ()
+end
+
+module Error_style = struct
+  type setting =
+    | Contextual
+    | Short
 end
 
 let normalise_eol s =
@@ -683,6 +756,27 @@ let delete_eol_spaces src =
   in
   let stop = loop 0 0 in
   Bytes.sub_string dst 0 stop
+
+let pp_two_columns ?(sep = "|") ?max_lines ppf (lines: (string * string) list) =
+  let left_column_size =
+    List.fold_left (fun acc (s, _) -> max acc (String.length s)) 0 lines in
+  let lines_nb = List.length lines in
+  let ellipsed_first, ellipsed_last =
+    match max_lines with
+    | Some max_lines when lines_nb > max_lines ->
+        let printed_lines = max_lines - 1 in (* the ellipsis uses one line *)
+        let lines_before = printed_lines / 2 + printed_lines mod 2 in
+        let lines_after = printed_lines / 2 in
+        (lines_before, lines_nb - lines_after - 1)
+    | _ -> (-1, -1)
+  in
+  Format.fprintf ppf "@[<v>";
+  List.iteri (fun k (line_l, line_r) ->
+    if k = ellipsed_first then Format.fprintf ppf "...@,";
+    if ellipsed_first <= k && k <= ellipsed_last then ()
+    else Format.fprintf ppf "%*s %s %s@," left_column_size line_l sep line_r
+  ) lines;
+  Format.fprintf ppf "@]"
 
 type hook_info = {
   sourcefile : string;
@@ -730,3 +824,63 @@ module MakeHooks(M: sig
   let apply_hooks sourcefile intf =
     fold_hooks !hooks sourcefile intf
 end
+
+(* showing configuration and configuration variables *)
+let show_config_and_exit () =
+  Config.print_config stdout;
+  exit 0
+
+let show_config_variable_and_exit x =
+  match Config.config_var x with
+  | Some v ->
+      (* we intentionally don't print a newline to avoid Windows \r
+         issues: bash only strips the trailing \n when using a command
+         substitution $(ocamlc -config-var foo), so a trailing \r would
+         remain if printing a newline under Windows and scripts would
+         have to use $(ocamlc -config-var foo | tr -d '\r')
+         for portability. Ugh. *)
+      print_string v;
+      exit 0
+  | None ->
+      exit 2
+
+let get_build_path_prefix_map =
+  let init = ref false in
+  let map_cache = ref None in
+  fun () ->
+    if not !init then begin
+      init := true;
+      match Sys.getenv "BUILD_PATH_PREFIX_MAP" with
+      | exception Not_found -> ()
+      | encoded_map ->
+        match Build_path_prefix_map.decode_map encoded_map with
+          | Error err ->
+              fatal_errorf
+                "Invalid value for the environment variable \
+                 BUILD_PATH_PREFIX_MAP: %s" err
+          | Ok map -> map_cache := Some map
+    end;
+    !map_cache
+
+let debug_prefix_map_flags () =
+  if not Config.as_has_debug_prefix_map then
+    []
+  else begin
+    match get_build_path_prefix_map () with
+    | None -> []
+    | Some map ->
+      List.fold_right
+        (fun map_elem acc ->
+           match map_elem with
+           | None -> acc
+           | Some { Build_path_prefix_map.target; source; } ->
+             (Printf.sprintf "--debug-prefix-map %s=%s"
+                (Filename.quote source)
+                (Filename.quote target)) :: acc)
+        map
+        []
+  end
+
+let print_if ppf flag printer arg =
+  if !flag then Format.fprintf ppf "%a@." printer arg;
+  arg

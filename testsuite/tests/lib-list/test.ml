@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (* Standard test case *)
 let () =
   let l = List.init 10 (fun x -> x) in
@@ -56,7 +59,8 @@ let () =
     let _ = List.init n (fun x -> result := (x = n - 1)) in
     assert !result
   in
-  let threshold = 10_000 in (* Threshold must equal the value in stdlib/list.ml *)
+  (* Threshold must equal the value in stdlib/list.ml *)
+  let threshold = 10_000 in
   test threshold; (* Non tail-recursive case *)
   test (threshold + 1) (* Tail-recursive case *)
 ;;

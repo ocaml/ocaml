@@ -16,33 +16,39 @@
 (* Selection of pseudo-instructions, assignment of pseudo-registers,
    sequentialization. *)
 
-open Misc
 open Cmm
 open Reg
 open Mach
 
+module Int = Numbers.Int
+module V = Backend_var
+module VP = Backend_var.With_provenance
+
 type environment =
-  { vars : (Ident.t, Reg.t array) Tbl.t;
-    static_exceptions : (int, Reg.t array list) Tbl.t;
+  { vars : (Reg.t array * Backend_var.Provenance.t option) V.Map.t;
+    static_exceptions : Reg.t array list Int.Map.t;
     (** Which registers must be populated when jumping to the given
         handler. *)
   }
 
-let env_add id v env =
-  { env with vars = Tbl.add id v env.vars }
+let env_add var regs env =
+  let provenance = VP.provenance var in
+  let var = VP.var var in
+  { env with vars = V.Map.add var (regs, provenance) env.vars }
 
 let env_add_static_exception id v env =
-  { env with static_exceptions = Tbl.add id v env.static_exceptions }
+  { env with static_exceptions = Int.Map.add id v env.static_exceptions }
 
 let env_find id env =
-  Tbl.find id env.vars
+  let regs, _provenance = V.Map.find id env.vars in
+  regs
 
 let env_find_static_exception id env =
-  Tbl.find id env.static_exceptions
+  Int.Map.find id env.static_exceptions
 
 let env_empty = {
-  vars = Tbl.empty;
-  static_exceptions = Tbl.empty;
+  vars = V.Map.empty;
+  static_exceptions = Int.Map.empty;
 }
 
 (* Infer the type of the result of an operation *)
@@ -81,32 +87,32 @@ let size_expr (env:environment) exp =
     | Cblockheader _ -> Arch.size_int
     | Cvar id ->
         begin try
-          Tbl.find id localenv
+          V.Map.find id localenv
         with Not_found ->
         try
           let regs = env_find id env in
           size_machtype (Array.map (fun r -> r.typ) regs)
         with Not_found ->
-          fatal_error("Selection.size_expr: unbound var " ^
-                      Ident.unique_name id)
+          Misc.fatal_error("Selection.size_expr: unbound var " ^
+                           V.unique_name id)
         end
     | Ctuple el ->
         List.fold_right (fun e sz -> size localenv e + sz) el 0
     | Cop(op, _, _) ->
         size_machtype(oper_result_type op)
     | Clet(id, arg, body) ->
-        size (Tbl.add id (size localenv arg) localenv) body
+        size (V.Map.add (VP.var id) (size localenv arg) localenv) body
     | Csequence(_e1, e2) ->
         size localenv e2
     | _ ->
-        fatal_error "Selection.size_expr"
-  in size Tbl.empty exp
+        Misc.fatal_error "Selection.size_expr"
+  in size V.Map.empty exp
 
 (* Swap the two arguments of an integer comparison *)
 
 let swap_intcomp = function
-    Isigned cmp -> Isigned(swap_comparison cmp)
-  | Iunsigned cmp -> Iunsigned(swap_comparison cmp)
+    Isigned cmp -> Isigned(swap_integer_comparison cmp)
+  | Iunsigned cmp -> Iunsigned(swap_integer_comparison cmp)
 
 (* Naming of registers *)
 
@@ -120,11 +126,12 @@ let all_regs_anonymous rv =
     false
 
 let name_regs id rv =
+  let id = VP.var id in
   if Array.length rv = 1 then
-    rv.(0).raw_name <- Raw_name.create_from_ident id
+    rv.(0).raw_name <- Raw_name.create_from_var id
   else
     for i = 0 to Array.length rv - 1 do
-      rv.(i).raw_name <- Raw_name.create_from_ident id;
+      rv.(i).raw_name <- Raw_name.create_from_var id;
       rv.(i).part <- Some i
     done
 
@@ -290,6 +297,7 @@ method is_simple_expr = function
   | Cvar _ -> true
   | Ctuple el -> List.for_all self#is_simple_expr el
   | Clet(_id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
+  | Cphantom_let(_var, _defining_expr, body) -> self#is_simple_expr body
   | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
   | Cop(op, args, _) ->
       begin match op with
@@ -325,6 +333,7 @@ method effects_of exp =
   | Ctuple el -> EC.join_list_map el self#effects_of
   | Clet (_id, arg, body) ->
     EC.join (self#effects_of arg) (self#effects_of body)
+  | Cphantom_let (_var, _defining_expr, body) -> self#effects_of body
   | Csequence (e1, e2) ->
     EC.join (self#effects_of e1) (self#effects_of e2)
   | Cifthenelse (cond, ifso, ifnot) ->
@@ -396,7 +405,7 @@ method mark_instr = function
 (* Default instruction selection for operators *)
 
 method select_allocation () =
-  Ialloc { words = 0; blocks = []; spacetime_index = 0;
+  Ialloc { bytes = 0; allocs = []; spacetime_index = 0;
            label_after_call_gc = None; }
 method select_allocation_args _env = [| |]
 
@@ -466,7 +475,7 @@ method select_operation op args _dbg =
     let extra_args = self#select_checkbound_extra_args () in
     let op = self#select_checkbound () in
     self#select_arith op (args @ extra_args)
-  | _ -> fatal_error "Selection.select_oper"
+  | _ -> Misc.fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
     [arg; Cconst_int n] when self#is_immediate n ->
@@ -512,11 +521,11 @@ method select_condition = function
     Cop(Ccmpi cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
   | Cop(Ccmpi cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
+      (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
   | Cop(Ccmpi cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
+      (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, args, _) ->
       (Iinttest(Isigned cmp), Ctuple args)
   | Cop(Ccmpa cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
@@ -524,13 +533,13 @@ method select_condition = function
   | Cop(Ccmpa cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
   | Cop(Ccmpa cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
+      (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
+      (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, args, _) ->
       (Iinttest(Iunsigned cmp), Ctuple args)
   | Cop(Ccmpf cmp, args, _) ->
-      (Ifloattest(cmp, false), Ctuple args)
+      (Ifloattest cmp, Ctuple args)
   | Cop(Cand, [arg; Cconst_int 1], _) ->
       (Ioddtest, arg)
   | arg ->
@@ -584,8 +593,8 @@ method adjust_type src dst =
     match ts, td with
     | Val, Int -> dst.typ <- Val
     | Int, Val -> ()
-    | _, _ -> fatal_error("Selection.adjust_type: bad assignment to "
-                                                           ^ Reg.name dst)
+    | _, _ -> Misc.fatal_error("Selection.adjust_type: bad assignment to "
+                               ^ Reg.name dst)
 
 method adjust_types src dst =
   for i = 0 to min (Array.length src) (Array.length dst) - 1 do
@@ -656,19 +665,21 @@ method emit_expr (env:environment) exp =
       begin try
         Some(env_find v env)
       with Not_found ->
-        fatal_error("Selection.emit_expr: unbound var " ^ Ident.unique_name v)
+        Misc.fatal_error("Selection.emit_expr: unbound var " ^ V.unique_name v)
       end
   | Clet(v, e1, e2) ->
       begin match self#emit_expr env e1 with
         None -> None
       | Some r1 -> self#emit_expr (self#bind_let env v r1) e2
       end
+  | Cphantom_let (_var, _defining_expr, body) ->
+      self#emit_expr env body
   | Cassign(v, e1) ->
       let rv =
         try
           env_find v env
         with Not_found ->
-          fatal_error ("Selection.emit_expr: unbound var " ^ Ident.name v) in
+          Misc.fatal_error ("Selection.emit_expr: unbound var " ^ V.name v) in
       begin match self#emit_expr env e1 with
         None -> None
       | Some r1 -> self#adjust_types r1 rv; self#insert_moves r1 rv; Some [||]
@@ -739,17 +750,16 @@ method emit_expr (env:environment) exp =
                   loc_arg (Proc.loc_external_results rd) in
               self#insert_move_results loc_res rd stack_ofs;
               Some rd
-          | Ialloc { words; spacetime_index; label_after_call_gc; _ } ->
-              assert (words <= Config.max_young_wosize);
+          | Ialloc { spacetime_index; label_after_call_gc; _ } ->
               let rd = self#regs_for typ_val in
               let alloc_hd = match new_args with
                 | Cblockheader (hd, _dbg) :: _ -> hd
                 | _ -> assert false
               in
-              let words = size_expr env (Ctuple new_args) in
-              let blocks = [{ alloc_hd; alloc_dbg = dbg }] in
+              let bytes = size_expr env (Ctuple new_args) in
+              let allocs = [{ alloc_hd; alloc_dbg = dbg }] in
               let op =
-                Ialloc { words; blocks; spacetime_index; label_after_call_gc; }
+                Ialloc { bytes; allocs; spacetime_index; label_after_call_gc; }
               in
               let args = self#select_allocation_args env in
               self#insert_debug (Iop op) dbg args rd;
@@ -799,9 +809,8 @@ method emit_expr (env:environment) exp =
         List.map (fun (nfail, ids, e2) ->
             let rs =
               List.map
-                (* CR-someday mshinwell: consider how we can do better than
-                   [typ_val] when appropriate. *)
-                (fun id -> let r = self#regs_for typ_val in name_regs id r; r)
+                (fun (id, typ) ->
+                  let r = self#regs_for typ in name_regs id r; r)
                 ids in
             (nfail, ids, rs, e2))
           handlers
@@ -818,7 +827,7 @@ method emit_expr (env:environment) exp =
       let translate_one_handler (nfail, ids, rs, e2) =
         assert(List.length ids = List.length rs);
         let new_env =
-          List.fold_left (fun env (id, r) -> env_add id r env)
+          List.fold_left (fun env ((id, _typ), r) -> env_add id r env)
             env (List.combine ids rs)
         in
         let (r, s) = self#emit_sequence new_env e2 in
@@ -838,14 +847,13 @@ method emit_expr (env:environment) exp =
           let dest_args =
             try env_find_static_exception nfail env
             with Not_found ->
-              fatal_error ("Selection.emit_expr: unboun label "^
-                           string_of_int nfail)
+              Misc.fatal_error ("Selection.emit_expr: unbound label "^
+                                Stdlib.Int.to_string nfail)
           in
           (* Intermediate registers to handle cases where some
              registers from src are present in dest *)
           let tmp_regs = Reg.createv_like src in
-          (* Ccatch registers are created with type Val. They must not
-             contain out of heap pointers *)
+          (* Ccatch registers must not contain out of heap pointers *)
           Array.iter (fun reg -> assert(reg.typ <> Addr)) src;
           self#insert_moves src tmp_regs ;
           self#insert_moves tmp_regs (Array.concat dest_args) ;
@@ -934,15 +942,15 @@ method private emit_parts (env:environment) ~effects_after exp =
           Some (Ctuple [], env)
         else begin
           (* The normal case *)
-          let id = Ident.create "bind" in
+          let id = V.create_local "bind" in
           if all_regs_anonymous r then
             (* r is an anonymous, unshared register; use it directly *)
-            Some (Cvar id, env_add id r env)
+            Some (Cvar id, env_add (VP.create id) r env)
           else begin
             (* Introduce a fresh temp to hold the result *)
             let tmp = Reg.createv_like r in
             self#insert_moves r tmp;
-            Some (Cvar id, env_add id tmp env)
+            Some (Cvar id, env_add (VP.create id) tmp env)
           end
         end
   end
@@ -1038,6 +1046,8 @@ method emit_tail (env:environment) exp =
         None -> ()
       | Some r1 -> self#emit_tail (self#bind_let env v r1) e2
       end
+  | Cphantom_let (_var, _defining_expr, body) ->
+      self#emit_tail env body
   | Cop((Capply ty) as op, args, dbg) ->
       begin match self#emit_parts_list env args with
         None -> ()
@@ -1102,7 +1112,7 @@ method emit_tail (env:environment) exp =
                 self#insert(Iop(Istackoffset(-stack_ofs))) [||] [||];
                 self#insert Ireturn loc_res [||]
               end
-          | _ -> fatal_error "Selection.emit_tail"
+          | _ -> Misc.fatal_error "Selection.emit_tail"
       end
   | Csequence(e1, e2) ->
       begin match self#emit_expr env e1 with
@@ -1133,7 +1143,8 @@ method emit_tail (env:environment) exp =
         List.map (fun (nfail, ids, e2) ->
             let rs =
               List.map
-                (fun id -> let r = self#regs_for typ_val in name_regs id r; r)
+                (fun (id, typ) ->
+                  let r = self#regs_for typ in name_regs id r; r)
                 ids in
             (nfail, ids, rs, e2))
           handlers in
@@ -1146,7 +1157,7 @@ method emit_tail (env:environment) exp =
         assert(List.length ids = List.length rs);
         let new_env =
           List.fold_left
-            (fun env (id,r) -> env_add id r env)
+            (fun env ((id, _typ),r) -> env_add id r env)
             env (List.combine ids rs) in
         nfail, self#emit_tail_sequence new_env e2
       in
@@ -1206,8 +1217,8 @@ method emit_fundecl f =
     if not Config.spacetime then None, env
     else begin
       let reg = self#regs_for typ_int in
-      let node_hole = Ident.create "spacetime_node_hole" in
-      Some (node_hole, reg), env_add node_hole reg env
+      let node_hole = V.create_local "spacetime_node_hole" in
+      Some (node_hole, reg), env_add (VP.create node_hole) reg env
     end
   in
   self#emit_tail env f.Cmm.fun_body;
@@ -1221,7 +1232,7 @@ method emit_fundecl f =
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
     fun_body = body;
-    fun_fast = f.Cmm.fun_fast;
+    fun_codegen_options = f.Cmm.fun_codegen_options;
     fun_dbg  = f.Cmm.fun_dbg;
     fun_spacetime_shape;
   }

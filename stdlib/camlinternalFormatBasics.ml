@@ -29,6 +29,7 @@ type int_conv =
   | Int_X | Int_CX                 (*  %X | %#X        *)
   | Int_o | Int_Co                 (*  %o | %#o        *)
   | Int_u                          (*  %u              *)
+  | Int_Cd | Int_Ci | Int_Cu       (*  %#d | %#i | %#u *)
 
 (* Float conversion. *)
 type float_conv =

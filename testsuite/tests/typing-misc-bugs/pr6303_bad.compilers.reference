@@ -1,0 +1,6 @@
+File "pr6303_bad.ml", line 11, characters 22-23:
+11 | let r' : string foo = r
+                           ^
+Error: This expression has type int foo
+       but an expression was expected of type string foo
+       Type int is not compatible with type string 

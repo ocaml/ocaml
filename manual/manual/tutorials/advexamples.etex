@@ -1,9 +1,8 @@
 \chapter{Advanced examples with classes and modules}
-\pdfchapterfold{-3}{Tutorial: Advanced examples with classes and modules}
 %HEVEA\cutname{advexamples.html}
 \label{c:advexamples}
 
-{\it (Chapter written by Didier Rémy)}
+{\it (Chapter written by Didier RÃ©my)}
 
 \bigskip
 
@@ -17,7 +16,6 @@ programming pattern known as {\em virtual types} through the example
 of window managers.
 
 \section{Extended example: bank accounts}
-\pdfsection{Extended example: bank accounts}
 \label{ss:bank-accounts}
 
 In this section, we illustrate most aspects of Object and inheritance
@@ -300,7 +298,6 @@ new Client.account (new Euro.c 100.);;
 
 
 \section{Simple modules as classes}
-\pdfsection{Simple modules as classes}
 \label{ss:modules-as-classes}
 
 One may wonder whether it is possible to treat primitive types such as
@@ -533,7 +530,6 @@ module Set : SET =
 \end{caml_example*}
 
 \section{The subject/observer pattern}
-\pdfsection{The subject/observer pattern}
 \label{ss:subject-observer}
 
 The following example, known as the subject/observer pattern, is often

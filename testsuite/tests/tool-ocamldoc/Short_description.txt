@@ -1,0 +1,8 @@
+(* TEST
+   * ocamldoc with latex
+*)
+
+Short global description in text mode
+
+This file tests that documentation in text mode are given
+a short description in the global description of modules.

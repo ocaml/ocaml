@@ -25,6 +25,13 @@
    space than values of type [int], and arithmetic operations on
    [int64] are generally slower than those on [int].  Use [int64]
    only when the application requires exact 64-bit arithmetic.
+
+    Literals for 64-bit integers are suffixed by L:
+    {[
+      let zero: int64 = 0L
+      let one: int64 = 1L
+      let m_one: int64 = -1L
+    ]}
 *)
 
 val zero : int64
@@ -51,13 +58,25 @@ external mul : int64 -> int64 -> int64 = "%int64_mul"
 external div : int64 -> int64 -> int64 = "%int64_div"
 (** Integer division.  Raise [Division_by_zero] if the second
    argument is zero.  This division rounds the real quotient of
-   its arguments towards zero, as specified for {!Pervasives.(/)}. *)
+   its arguments towards zero, as specified for {!Stdlib.(/)}. *)
+
+val unsigned_div : int64 -> int64 -> int64
+(** Same as {!div}, except that arguments and result are interpreted as {e
+    unsigned} 64-bit integers.
+
+    @since 4.08.0 *)
 
 external rem : int64 -> int64 -> int64 = "%int64_mod"
 (** Integer remainder.  If [y] is not zero, the result
    of [Int64.rem x y] satisfies the following property:
    [x = Int64.add (Int64.mul (Int64.div x y) y) (Int64.rem x y)].
    If [y = 0], [Int64.rem x y] raises [Division_by_zero]. *)
+
+val unsigned_rem : int64 -> int64 -> int64
+(** Same as {!rem}, except that arguments and result are interpreted as {e
+    unsigned} 64-bit integers.
+
+    @since 4.08.0 *)
 
 val succ : int64 -> int64
 (** Successor.  [Int64.succ x] is [Int64.add x Int64.one]. *)
@@ -114,6 +133,13 @@ external to_int : int64 -> int = "%int64_to_int"
    is taken modulo 2{^31}, i.e. the top 33 bits are lost
    during the conversion. *)
 
+val unsigned_to_int : int64 -> int option
+(** Same as {!to_int}, but interprets the argument as an {e unsigned} integer.
+    Returns [None] if the unsigned value of the argument cannot fit into an
+    [int].
+
+    @since 4.08.0 *)
+
 external of_float : float -> int64
   = "caml_int64_of_float" "caml_int64_of_float_unboxed"
   [@@unboxed] [@@noalloc]
@@ -150,7 +176,7 @@ external to_nativeint : int64 -> nativeint = "%int64_to_nativeint"
 
 external of_string : string -> int64 = "caml_int64_of_string"
 (** Convert the given string to a 64-bit integer.
-   The string is read in decimal (by default, or if the string 
+   The string is read in decimal (by default, or if the string
    begins with [0u]) or in hexadecimal, octal or binary if the
    string begins with [0x], [0o] or [0b] respectively.
 
@@ -193,9 +219,15 @@ type t = int64
 
 val compare: t -> t -> int
 (** The comparison function for 64-bit integers, with the same specification as
-    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    {!Stdlib.compare}.  Along with the type [t], this function [compare]
     allows the module [Int64] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
+
+val unsigned_compare: t -> t -> int
+(** Same as {!compare}, except that arguments are interpreted as {e unsigned}
+    64-bit integers.
+
+    @since 4.08.0 *)
 
 val equal: t -> t -> bool
 (** The equal function for int64s.

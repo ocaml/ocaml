@@ -1,0 +1,25 @@
+Line 12, characters 20-25:
+12 | let empty_tuple = [%tuple];;
+                         ^^^^^
+Error: broken invariant in parsetree: Tuples must have at least 2 components.
+Line 1, characters 21-27:
+1 | let empty_record = [%record];;
+                         ^^^^^^
+Error: broken invariant in parsetree: Records cannot be empty.
+Line 1, characters 20-27:
+1 | let empty_apply = [%no_args f];;
+                        ^^^^^^^
+Error: broken invariant in parsetree: Function application with no argument.
+Line 1, characters 19-45:
+1 | let f = function [%record_with_functor_fields] -> ();;
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: broken invariant in parsetree: Functor application not allowed here.
+Line 1, characters 3-12:
+1 | [%%empty_let];;
+       ^^^^^^^^^
+Error: broken invariant in parsetree: Let with no bindings.
+Line 1, characters 3-13:
+1 | [%%empty_type];;
+       ^^^^^^^^^^
+Error: broken invariant in parsetree: Type declarations cannot be empty.
+

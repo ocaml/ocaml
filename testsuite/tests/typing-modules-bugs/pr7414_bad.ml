@@ -1,3 +1,11 @@
+(* TEST
+flags = " -w a "
+ocamlc_byte_exit_status = "2"
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 module type T = sig
   type t
   val x : t
@@ -7,7 +15,7 @@ end
 module Int = struct
   type t = int
   let x = 0
-  let show x = string_of_int x
+  let show x = Int.to_string x
 end
 
 module String = struct

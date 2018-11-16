@@ -33,9 +33,11 @@ let is_expanded pos = pos < !first_nonexpanded_pos
 
 let expand_position pos len =
   if pos < !first_nonexpanded_pos then
-    first_nonexpanded_pos := !first_nonexpanded_pos + len (* Shift the position *)
+    (* Shift the position *)
+    first_nonexpanded_pos := !first_nonexpanded_pos + len
   else
-    first_nonexpanded_pos :=  pos + len + 2 (* New last position *)
+    (* New last position *)
+    first_nonexpanded_pos := pos + len + 2
 
 let prepare ppf =
   Toploop.set_paths ();
@@ -73,6 +75,7 @@ let file_argument name =
                               (Array.length !argv - !current)
       in
       Compenv.readenv ppf Before_link;
+      Compmisc.read_clflags_from_env ();
       if prepare ppf && Toploop.run_script ppf name newargs
       then exit 0
       else exit 2
@@ -98,10 +101,9 @@ module Options = Main_args.Make_bytetop_options (struct
   let set r () = r := true
   let clear r () = r := false
 
-  let _absname = set Location.absname
-  let _I dir =
-    let dir = Misc.expand_directory Config.standard_library dir in
-    include_dirs := dir :: !include_dirs
+  let _absname = set Clflags.absname
+  let _alert = Warnings.parse_alert_option
+  let _I dir = include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
   let _noinit = set noinit
   let _labels = clear classic
@@ -114,6 +116,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
+  let _nopervasives = set nopervasives
   let _open s = open_modules := s :: !open_modules
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
@@ -129,7 +132,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _no_strict_formats = clear strict_formats
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = clear unboxed_types
-  let _unsafe = set fast
+  let _unsafe = set unsafe
   let _unsafe_string = set unsafe_string
   let _version () = print_version ()
   let _vnum () = print_version_num ()
@@ -139,6 +142,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let _warn_help = Warnings.help_warnings
   let _dparsetree = set dump_parsetree
   let _dtypedtree = set dump_typedtree
+  let _dno_unique_ids = clear unique_ids
+  let _dunique_ids = set unique_ids
   let _dsource = set dump_source
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
@@ -146,6 +151,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let _dtimings () = profile_columns := [ `Time ]
   let _dprofile () = profile_columns := Profile.all_columns
   let _dinstr = set dump_instr
+  let _color = Misc.set_or_ignore color_reader.parse color
+  let _error_style = Misc.set_or_ignore error_style_reader.parse error_style
 
   let _args = wrap_expand Arg.read_arg
   let _args0 = wrap_expand Arg.read_arg0
@@ -153,6 +160,13 @@ module Options = Main_args.Make_bytetop_options (struct
   let anonymous s = file_argument s
 end);;
 
+let () =
+  let extra_paths =
+    match Sys.getenv "OCAMLTOP_INCLUDE_PATH" with
+    | exception Not_found -> []
+    | s -> Misc.split_path_contents s
+  in
+  Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
 
 let main () =
   let ppf = Format.err_formatter in
@@ -166,6 +180,7 @@ let main () =
     | Arg.Help msg -> Printf.printf "%s" msg; exit 0
   end;
   Compenv.readenv ppf Before_link;
+  Compmisc.read_clflags_from_env ();
   if not (prepare ppf) then exit 2;
   Compmisc.init_path false;
   Toploop.loop Format.std_formatter

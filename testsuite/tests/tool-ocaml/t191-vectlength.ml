@@ -1,3 +1,11 @@
+(* TEST
+include tool-ocaml-lib
+flags = "-w a"
+ocaml_script_as_argument = "true"
+* setup-ocaml-build-env
+** ocaml
+*)
+
 open Lib;;
 let x = 0.0 in
 if Array.length [| x |] <> 1 then raise Not_found

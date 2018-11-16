@@ -171,6 +171,31 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0
 
+(* See "DWARF for the ARM 64-bit architecture (AArch64)" available from
+   developer.arm.com. *)
+
+let int_dwarf_reg_numbers =
+  [| 0; 1; 2; 3; 4; 5; 6; 7;
+     8; 9; 10; 11; 12; 13; 14; 15;
+     19; 20; 21; 22; 23; 24; 25;
+     26; 27; 28; 16; 17;
+  |]
+
+let float_dwarf_reg_numbers =
+  [| 64; 65; 66; 67; 68; 69; 70; 71;
+     72; 73; 74; 75; 76; 77; 78; 79;
+     80; 81; 82; 83; 84; 85; 86; 87;
+     88; 89; 90; 91; 92; 93; 94; 95;
+  |]
+
+let dwarf_register_numbers ~reg_class =
+  match reg_class with
+  | 0 -> int_dwarf_reg_numbers
+  | 1 -> float_dwarf_reg_numbers
+  | _ -> Misc.fatal_errorf "Bad register class %d" reg_class
+
+let stack_ptr_dwarf_register_number = 31
+
 (* Volatile registers: none *)
 
 let regs_are_volatile _rs = false
@@ -197,6 +222,8 @@ let destroyed_at_oper = function
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
+
+let destroyed_at_reloadretaddr = [| |]
 
 (* Maximal register pressure *)
 
@@ -230,8 +257,9 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command (Config.asm ^ " -o " ^
-                 Filename.quote outfile ^ " " ^ Filename.quote infile)
+  Ccomp.command (Config.asm ^ " " ^
+                 (String.concat " " (Misc.debug_prefix_map_flags ())) ^
+                 " -o " ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 
 let init () = ()

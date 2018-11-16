@@ -16,7 +16,7 @@
 BASEDIR=../..
 #MODULES=
 MAIN_MODULE=sorts
-ADD_COMPFLAGS=-thread
+ADD_COMPFLAGS=-I +threads
 LIBRARIES=unix threads graphics
 
 include $(BASEDIR)/makefiles/Makefile.one

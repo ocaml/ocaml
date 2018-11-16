@@ -1,16 +1,21 @@
 \chapter{Objects in OCaml}
 \label{c:objectexamples}
-\pdfchapterfold{-15}{Tutorial: Objects in OCaml}
 %HEVEA\cutname{objectexamples.html}
-{\it (Chapter written by Jérôme Vouillon, Didier Rémy and Jacques Garrigue)}
+{\it (Chapter written by JÃ©rÃ´me Vouillon, Didier RÃ©my and Jacques Garrigue)}
 
 \bigskip
 
 \noindent This chapter gives an overview of the object-oriented features of
-OCaml. Note that the relation between object, class and type
-in OCaml is very different from that in mainstream
-object-oriented languages like Java or C++, so that you should not
-assume that similar keywords mean the same thing.
+OCaml.
+
+Note that the relationship between object, class and type in OCaml is
+different than in mainstream object-oriented languages such as Java and
+C++, so you shouldn't assume that similar keywords mean the same thing.
+Object-oriented features are used much less frequently in OCaml than
+in those languages.  OCaml has alternatives that are often more appropriate,
+such as modules and functors.  Indeed, many OCaml programs do not use objects
+at all.
+
 
 \begin{htmlonly}
 
@@ -45,7 +50,6 @@ assume that similar keywords mean the same thing.
 \end{htmlonly}
 
 \section{Classes and objects}
-\pdfsection{Classes and objects}
 \label{ss:classes-and-objects}
 
 The class "point" below defines one instance variable "x" and two methods
@@ -70,7 +74,7 @@ automatically defined by the class definition above. It stands for the
 object type "<get_x : int; move : int -> unit>", listing the methods
 of class "point" along with their types.
 
-We now invoke some methods to "p":
+We now invoke some methods of "p":
 \begin{caml_example}{toplevel}
 p#get_x;;
 p#move 3;;
@@ -180,7 +184,6 @@ alternative is to use initializers, as described below in section
 \ref{ss:initializers}.
 
 \section{Immediate objects}
-\pdfsection{Immediate objects}
 \label{ss:immediate-objects}
 
 There is another, more direct way to create an object: create it
@@ -216,10 +219,9 @@ weaknesses can be advantages in some situations, as we will see
 in sections \ref{ss:reference-to-self} and \ref{ss:parameterized-classes}.
 
 \section{Reference to self}
-\pdfsection{Reference to self}
 \label{ss:reference-to-self}
 
-A method or an initializer can send messages to self (that is,
+A method or an initializer can invoke methods on self (that is,
 the current object).  For that, self must be explicitly bound, here to
 the variable "s" ("s" could be any identifier, even though we will
 often choose the name "self".)
@@ -264,7 +266,6 @@ let my_int =
 \end{caml_example}
 
 \section{Initializers}
-\pdfsection{Initializers}
 \label{ss:initializers}
 
 Let-bindings within class definitions are evaluated before the object
@@ -291,7 +292,6 @@ Another example can be seen in section \ref{ss:bank-accounts}.
 
 
 \section{Virtual methods}
-\pdfsection{Virtual methods and variables}
 \label{ss:virtual-methods}
 
 It is possible to declare a method without actually defining it, using
@@ -333,7 +333,6 @@ class point2 x_init =
 \end{caml_example}
 
 \section{Private methods}
-\pdfsection{Private methods}
 \label{ss:private-methods}
 
 Private methods are methods that do not appear in object interfaces.
@@ -400,7 +399,6 @@ Of course, private methods can also be virtual. Then, the keywords must
 appear in this order "method private virtual".
 
 \section{Class interfaces}
-\pdfsection{Class interfaces}
 \label{ss:class-interfaces}
 
 
@@ -444,7 +442,6 @@ end;;
 \end{caml_example}
 
 \section{Inheritance}
-\pdfsection{Inheritance}
 \label{ss:inheritance}
 
 We illustrate inheritance by defining a class of colored points that
@@ -477,7 +474,6 @@ let incr p = set_x p (get_succ_x p);;
 \end{caml_example}
 
 \section{Multiple inheritance}
-\pdfsection{Multiple inheritance}
 \label{ss:multiple-inheritance}
 
 Multiple inheritance is allowed. Only the last definition of a method
@@ -530,7 +526,6 @@ class another_printable_colored_point y c c' =
 \end{caml_example}
 
 \section{Parameterized classes}
-\pdfsection{Parameterized classes}
 \label{ss:parameterized-classes}
 
 Reference cells can be implemented as objects.
@@ -637,7 +632,6 @@ class ['a] colored_circle c =
 \end{caml_example}
 
 \section{Polymorphic methods}
-\pdfsection{Polymorphic methods}
 \label{ss:polymorphic-methods}
 
 While parameterized classes may be polymorphic in their contents, they
@@ -658,7 +652,7 @@ does not work in practice.
 let l = new intlist [1; 2; 3];;
 l#fold (fun x y -> x+y) 0;;
 l;;
-l#fold (fun s x -> s ^ string_of_int x ^ " ") "" [@@expect error];;
+l#fold (fun s x -> s ^ Int.to_string x ^ " ") "" [@@expect error];;
 \end{caml_example}
 Our iterator works, as shows its first use for summation. However,
 since objects themselves are not polymorphic (only their constructors
@@ -678,7 +672,7 @@ class intlist (l : int list) =
   end;;
 let l = new intlist [1; 2; 3];;
 l#fold (fun x y -> x+y) 0;;
-l#fold (fun s x -> s ^ string_of_int x ^ " ") "";;
+l#fold (fun s x -> s ^ Int.to_string x ^ " ") "";;
 \end{caml_example}
 As you can see in the class type shown by the compiler, while
 polymorphic method types must be fully explicit in class definitions
@@ -705,7 +699,7 @@ The following idiom separates description and definition.
 \begin{caml_example*}{toplevel}
 class type ['a] iterator =
   object method fold : ('b -> 'a -> 'b) -> 'b -> 'b end;;
-class intlist l =
+class intlist' l =
   object (self : int #iterator)
     method empty = (l = [])
     method fold f accu = List.fold_left f accu l
@@ -768,7 +762,6 @@ itself polymorphic.  In method "m2", the argument of "n2" and "x" must
 have the same type, which is quantified at the same level as "'a".
 
 \section{Using coercions}
-\pdfsection{Using coercions}
 \label{ss:using-coercions}
 
 Subtyping is never implicit.  There are, however, two ways to perform
@@ -964,7 +957,6 @@ type 'a c'_class = 'a constraint 'a = < m : int; .. >;;
 with an extra type variable capturing the open object type.
 
 \section{Functional objects}
-\pdfsection{Functional objects}
 \label{ss:functional-objects}
 
 It is possible to write a version of class "point" without assignments
@@ -1008,7 +1000,6 @@ Functional update is often used in conjunction with binary methods
 as illustrated in section \ref{module:string}.
 
 \section{Cloning objects}
-\pdfsection{Cloning objects}
 \label{ss:cloning-objects}
 
 Objects can also be cloned, whether they are functional or imperative.
@@ -1108,7 +1099,6 @@ p # save; p # set 1; p # save; p # set 2;
 
 
 \section{Recursive classes}
-\pdfsection{Recursive classes}
 \label{ss:recursive-classes}
 
 Recursive classes can be used to define objects whose types are
@@ -1130,7 +1120,6 @@ Although their types are mutually recursive, the classes "widget" and
 
 
 \section{Binary methods}
-\pdfsection{Binary methods}
 \label{ss:binary-methods}
 
 A binary method is a method which takes an argument of the same type
@@ -1220,7 +1209,6 @@ class money x =
 \end{caml_example}
 
 \section{Friends}
-\pdfsection{Friends}
 \label{ss:friends}
 
 The above class "money" reveals a problem that often occurs with binary

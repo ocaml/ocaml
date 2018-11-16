@@ -1,3 +1,7 @@
+(* TEST
+   flags += " -unsafe "
+*)
+
 type peg = Out | Empty | Peg
 
 let board = [|

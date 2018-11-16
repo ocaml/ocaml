@@ -1,3 +1,7 @@
+(* TEST
+   modules = "manyargsprim.c"
+*)
+
 let manyargs a b c d e f g h i j k l m n o =
   print_string "a = "; print_int a; print_newline();
   print_string "b = "; print_int b; print_newline();

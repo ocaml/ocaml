@@ -1,0 +1,4 @@
+#!/bin/sh
+TZ=utc touch -m -t 201707011200 dst-file
+TZ=utc touch -m -t 201702011200 non-dst-file
+`cygpath -m "${program}"` > `cygpath -m "${output}"` 2>&1

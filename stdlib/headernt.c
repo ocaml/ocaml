@@ -90,7 +90,7 @@ static BOOL WINAPI ctrl_handler(DWORD event)
 #if WINDOWS_UNICODE
 #define CP CP_UTF8
 #else
-#define CP CP_THREAD_ACP
+#define CP CP_ACP
 #endif
 
 static void write_console(HANDLE hOut, WCHAR *wstr)
@@ -98,10 +98,13 @@ static void write_console(HANDLE hOut, WCHAR *wstr)
   DWORD consoleMode, numwritten, len;
   static char str[MAX_PATH];
 
-  if (GetConsoleMode(hOut, &consoleMode) != 0) { /* The output stream is a Console */
+  if (GetConsoleMode(hOut, &consoleMode) != 0) {
+    /* The output stream is a Console */
     WriteConsole(hOut, wstr, wcslen(wstr), &numwritten, NULL);
   } else { /* The output stream is redirected */
-    len = WideCharToMultiByte(CP, 0, wstr, wcslen(wstr), str, sizeof(str), NULL, NULL);
+    len =
+      WideCharToMultiByte(CP, 0, wstr, wcslen(wstr), str, sizeof(str),
+                          NULL, NULL);
     WriteFile(hOut, str, len, &numwritten, NULL);
   }
 }
@@ -113,7 +116,8 @@ static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
   STARTUPINFO stinfo;
   PROCESS_INFORMATION procinfo;
   DWORD retcode;
-  if (SearchPath(NULL, runtime, L".exe", sizeof(path)/sizeof(wchar_t), path, &runtime) == 0) {
+  if (SearchPath(NULL, runtime, L".exe", sizeof(path)/sizeof(wchar_t),
+                 path, &runtime) == 0) {
     HANDLE errh;
     errh = GetStdHandle(STD_ERROR_HANDLE);
     write_console(errh, L"Cannot exec ");
@@ -180,7 +184,8 @@ int wmain(void)
 #endif
   }
   CloseHandle(h);
-  MultiByteToWideChar(CP, 0, runtime_path, -1, wruntime_path, sizeof(wruntime_path)/sizeof(wchar_t));
+  MultiByteToWideChar(CP, 0, runtime_path, -1, wruntime_path,
+                      sizeof(wruntime_path)/sizeof(wchar_t));
   run_runtime(wruntime_path , cmdline);
 #if _MSC_VER >= 1200
     __assume(0); /* Not reached */

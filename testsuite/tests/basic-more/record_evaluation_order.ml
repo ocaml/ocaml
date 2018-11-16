@@ -1,3 +1,6 @@
+(* TEST
+   include testing
+*)
 
 type r =
   { a : unit;

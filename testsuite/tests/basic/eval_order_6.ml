@@ -1,3 +1,5 @@
+(* TEST *)
+
 type t =
   { mutable x : int;
     y : int }
@@ -9,9 +11,8 @@ let r = { x = 10; y = 20 };;
 
 let h = f r;;
 
-print_endline (string_of_int (h ()));;
+print_endline (Int.to_string (h ()));;
 
 r.x <- 20;;
 
-print_endline (string_of_int (h ()));;
-
+print_endline (Int.to_string (h ()));;

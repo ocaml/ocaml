@@ -41,20 +41,17 @@ let use_debugger_symtable fn arg =
   let old_symtable = Symtable.current_state() in
   begin match !debugger_symtable with
   | None ->
-      Compdynlink.init();
       Compdynlink.allow_unsafe_modules true;
       debugger_symtable := Some(Symtable.current_state())
   | Some st ->
       Symtable.restore_state st
   end;
-  try
-    let result = fn arg in
-    debugger_symtable := Some(Symtable.current_state());
-    Symtable.restore_state old_symtable;
-    result
-  with exn ->
-    Symtable.restore_state old_symtable;
-    raise exn
+  Misc.try_finally (fun () ->
+      let result = fn arg in
+      debugger_symtable := Some(Symtable.current_state());
+      result
+    )
+    ~always:(fun () -> Symtable.restore_state old_symtable)
 
 (* Load a .cmo or .cma file *)
 
@@ -106,11 +103,9 @@ let eval_path path =
 
 (* since 4.00, "topdirs.cmi" is not in the same directory as the standard
   library, so we load it beforehand as it cannot be found in the search path. *)
-let () =
-  let compiler_libs =
-    Filename.concat Config.standard_library "compiler-libs" in
+let init () =
   let topdirs =
-    Filename.concat compiler_libs "topdirs.cmi" in
+    Filename.concat !Parameters.topdirs_path "topdirs.cmi" in
   ignore (Env.read_signature "Topdirs" topdirs)
 
 let match_printer_type desc typename =
@@ -119,12 +114,11 @@ let match_printer_type desc typename =
       Env.lookup_type (Ldot(Lident "Topdirs", typename)) Env.empty
     with Not_found ->
       raise (Error(Unbound_identifier(Ldot(Lident "Topdirs", typename)))) in
-  Ctype.init_def(Ident.current_time());
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify Env.empty
     (Ctype.newconstr printer_type [ty_arg])
-    (Ctype.instance Env.empty desc.val_type);
+    (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
   ty_arg

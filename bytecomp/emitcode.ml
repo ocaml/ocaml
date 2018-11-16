@@ -22,8 +22,7 @@ open Lambda
 open Instruct
 open Opcodes
 open Cmo_format
-
-module StringSet = Set.Make(String)
+module String = Misc.Stdlib.String
 
 type error = Not_compatible_32 of (string * string)
 exception Error of error
@@ -39,12 +38,15 @@ let marshal_to_channel_with_possibly_32bit_compat ~filename ~kind outchan obj =
 
 
 let report_error ppf (file, kind) =
-  Format.fprintf ppf "Generated %s %S cannot be used on a 32-bit platform" kind file
+  Format.fprintf ppf "Generated %s %S cannot be used on a 32-bit platform"
+                     kind file
 let () =
   Location.register_error_of_exn
     (function
-      | Error (Not_compatible_32 info) -> Some (Location.error_of_printer_file report_error info)
-      | _ -> None
+      | Error (Not_compatible_32 info) ->
+          Some (Location.error_of_printer_file report_error info)
+      | _ ->
+          None
     )
 
 (* Buffering of bytecode *)
@@ -162,14 +164,16 @@ and slot_for_c_prim name =
 (* Debugging events *)
 
 let events = ref ([] : debug_event list)
-let debug_dirs = ref StringSet.empty
+let debug_dirs = ref String.Set.empty
 
 let record_event ev =
   let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
   let abspath = Location.absolute_path path in
-  debug_dirs := StringSet.add (Filename.dirname abspath) !debug_dirs;
-  if Filename.is_relative path then
-    debug_dirs := StringSet.add (Sys.getcwd ()) !debug_dirs;
+  debug_dirs := String.Set.add (Filename.dirname abspath) !debug_dirs;
+  if Filename.is_relative path then begin
+    let cwd = Location.rewrite_absolute_path (Sys.getcwd ()) in
+    debug_dirs := String.Set.add cwd !debug_dirs;
+  end;
   ev.ev_pos <- !out_position;
   events := ev :: !events
 
@@ -179,18 +183,18 @@ let init () =
   out_position := 0;
   label_table := Array.make 16 (Label_undefined []);
   reloc_info := [];
-  debug_dirs := StringSet.empty;
+  debug_dirs := String.Set.empty;
   events := []
 
 (* Emission of one instruction *)
 
 let emit_comp = function
-| Ceq -> out opEQ    | Cneq -> out opNEQ
+| Ceq -> out opEQ    | Cne -> out opNEQ
 | Clt -> out opLTINT | Cle -> out opLEINT
 | Cgt -> out opGTINT | Cge -> out opGEINT
 
 and emit_branch_comp = function
-| Ceq -> out opBEQ    | Cneq -> out opBNEQ
+| Ceq -> out opBEQ    | Cne -> out opBNEQ
 | Clt -> out opBLTINT | Cle -> out opBLEINT
 | Cgt -> out opBGTINT | Cge -> out opBGEINT
 
@@ -262,7 +266,8 @@ let emit_instr = function
   | Kgetvectitem -> out opGETVECTITEM
   | Ksetvectitem -> out opSETVECTITEM
   | Kgetstringchar -> out opGETSTRINGCHAR
-  | Ksetstringchar -> out opSETSTRINGCHAR
+  | Kgetbyteschar -> out opGETBYTESCHAR
+  | Ksetbyteschar -> out opSETBYTESCHAR
   | Kbranch lbl -> out opBRANCH; out_label lbl
   | Kbranchif lbl -> out opBRANCHIF; out_label lbl
   | Kbranchifnot lbl -> out opBRANCHIFNOT; out_label lbl
@@ -304,6 +309,11 @@ let emit_instr = function
 
 (* Emission of a list of instructions. Include some peephole optimization. *)
 
+let remerge_events ev1 = function
+  | Kevent ev2 :: c ->
+    Kevent (Bytegen.merge_events ev1 ev2) :: c
+  | c -> Kevent ev1 :: c
+
 let rec emit = function
     [] -> ()
   (* Peephole optimizations *)
@@ -316,7 +326,7 @@ let rec emit = function
         emit rem
   | Kpush::Kconst k::Kintcomp c::Kbranchifnot lbl::rem
       when is_immed_const k ->
-        emit_branch_comp (negate_comparison c) ;
+        emit_branch_comp (negate_integer_comparison c) ;
         out_const k ;
         out_label lbl ;
         emit rem
@@ -372,13 +382,13 @@ let rec emit = function
           out opPUSHGETGLOBAL; slot_for_literal sc
       end;
       emit c
-  | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
+  | Kpush :: (Kevent ({ev_kind = Event_before} as ev)) ::
     (Kgetglobal _ as instr1) :: (Kgetfield _ as instr2) :: c ->
-      emit (Kpush :: instr1 :: instr2 :: ev :: c)
-  | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
+      emit (Kpush :: instr1 :: instr2 :: remerge_events ev c)
+  | Kpush :: (Kevent ({ev_kind = Event_before} as ev)) ::
     (Kacc _ | Kenvacc _ | Koffsetclosure _ | Kgetglobal _ | Kconst _ as instr)::
     c ->
-      emit (Kpush :: instr :: ev :: c)
+      emit (Kpush :: instr :: remerge_events ev c)
   | Kgetglobal id :: Kgetfield n :: c ->
       out opGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
   (* Default case *)
@@ -397,12 +407,12 @@ let to_file outchan unit_name objfile ~required_globals code =
   LongString.output outchan !out_buffer 0 !out_position;
   let (pos_debug, size_debug) =
     if !Clflags.debug then begin
-      debug_dirs := StringSet.add
+      debug_dirs := String.Set.add
         (Filename.dirname (Location.absolute_path objfile))
         !debug_dirs;
       let p = pos_out outchan in
       output_value outchan !events;
-      output_value outchan (StringSet.elements !debug_dirs);
+      output_value outchan (String.Set.elements !debug_dirs);
       (p, pos_out outchan - p)
     end else
       (0, 0) in
@@ -434,13 +444,12 @@ let to_memory init_code fun_code =
   init();
   emit init_code;
   emit fun_code;
-  let code = Meta.static_alloc !out_position in
-  LongString.unsafe_blit_to_bytes !out_buffer 0 code 0 !out_position;
-  let reloc = List.rev !reloc_info
-  and code_size = !out_position in
+  let code = LongString.create !out_position in
+  LongString.blit !out_buffer 0 code 0 !out_position;
+  let reloc = List.rev !reloc_info in
   let events = !events in
   init();
-  (code, code_size, reloc, events)
+  (code, reloc, events)
 
 (* Emission to a file for a packed library *)
 

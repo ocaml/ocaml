@@ -26,32 +26,27 @@ open Typedtree
    The current directory is always searched first,
    then the directories specified with the -I option (in command-line order),
    then the standard library directory. *)
-let init_path () =
-  Config.load_path :=
-    "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
-  Env.reset_cache ()
+let init_path () = Compmisc.init_path false
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
-  let initial =
-    if Config.safe_string then Env.initial_safe_string
-    else if !Clflags.unsafe_string then Env.initial_unsafe_string
-    else Env.initial_safe_string
+  let current = Env.get_unit_name () in
+  let initial = !Odoc_global.initially_opened_module in
+  let initially_opened_module =
+    if initial = current then
+      None
+    else
+      Some initial
   in
-  let open_mod env m =
-    let open Asttypes in
-    let lid = {loc = Location.in_file "ocamldoc command line";
-               txt = Longident.parse m } in
-    snd (Typemod.type_open_ Override env lid.loc lid) in
-  (* Open the list of modules given as arguments of the "-open" flag
-     The list is reversed to open the modules in the left-to-right order *)
-  let to_open = List.rev !Clflags.open_modules in
-  let to_open =
-    if Env.get_unit_name () = "Pervasives"
-    then to_open
-    else "Pervasives" :: to_open
-  in
-  List.fold_left open_mod initial to_open
+  let open_implicit_modules =
+    let ln = !Odoc_global.library_namespace in
+    let ln = if current = ln || ln = initial || ln = "" then [] else [ln] in
+    ln @ List.rev !Clflags.open_modules in
+  Typemod.initial_env
+    ~loc:(Location.in_file "ocamldoc command line")
+    ~safe_string:(Config.safe_string || not !Clflags.unsafe_string)
+    ~open_implicit_modules
+    ~initially_opened_module
 
 (** Optionally preprocess a source file *)
 let preprocess sourcefile =
@@ -83,7 +78,7 @@ let process_implementation_file sourcefile =
   let env = initial_env () in
   try
     let parsetree =
-      Pparse.file ~tool_name Format.err_formatter inputfile
+      Pparse.file ~tool_name inputfile
         (no_docstring Parse.implementation) Pparse.Structure
     in
     let typedtree =
@@ -92,18 +87,19 @@ let process_implementation_file sourcefile =
     in
     (Some (parsetree, typedtree), inputfile)
   with
-    e ->
-      match e with
-        Syntaxerr.Error err ->
+  | Syntaxerr.Error _ as exn ->
+      begin match Location.error_of_exn exn with
+      | Some (`Ok err) ->
           fprintf Format.err_formatter "@[%a@]@."
-            Syntaxerr.report_error err;
-          None, inputfile
-      | Failure s ->
-          prerr_endline s;
-          incr Odoc_global.errors ;
-          None, inputfile
-      | e ->
-          raise e
+            Location.print_report err
+      | _ ->
+          assert false
+      end;
+      None, inputfile
+  | Failure s ->
+      prerr_endline s;
+      incr Odoc_global.errors ;
+      None, inputfile
 
 (** Analysis of an interface file. Returns (Some signature) if
    no error occurred, else None and an error message is printed.*)
@@ -114,7 +110,7 @@ let process_interface_file sourcefile =
   Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let ast =
-    Pparse.file ~tool_name Format.err_formatter inputfile
+    Pparse.file ~tool_name inputfile
       (no_docstring Parse.interface) Pparse.Signature
   in
   let sg = Typemod.type_interface sourcefile (initial_env()) ast in

@@ -1,3 +1,8 @@
+(* TEST
+   modules = "is_in_static_data.c"
+   * native
+*)
+
 (* Data that should be statically allocated by the compiler (all versions) *)
 
 external is_in_static_data : 'a -> bool = "caml_is_in_static_data"

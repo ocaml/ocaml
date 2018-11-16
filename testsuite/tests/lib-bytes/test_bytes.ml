@@ -1,7 +1,11 @@
+(* TEST
+   include testing
+*)
+
 let test_raises_invalid_argument f x =
   ignore
-    (Testing.test_raises_exc_p (function Invalid_argument _ -> true | _ -> false)
-         f x)
+    (Testing.test_raises_exc_p
+      (function Invalid_argument _ -> true | _ -> false) f x)
 
 let check b offset s =
   let rec loop i =
@@ -16,10 +20,10 @@ let () =
   begin
     (*
            abcde
-    ?????     
+    ?????
     *)
     Testing.test
-      (length (extend abcde 7 (-7)) = 5); 
+      (length (extend abcde 7 (-7)) = 5);
 
     (*
     abcde

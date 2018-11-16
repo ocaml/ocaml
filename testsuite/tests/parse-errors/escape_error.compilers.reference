@@ -1,0 +1,13 @@
+Line 8, characters 16-18:
+8 | try foo () with ;;
+                    ^^
+Error: Syntax error
+Line 2, characters 5-6:
+2 | (3 : );;
+         ^
+Error: Syntax error
+Line 2, characters 6-7:
+2 | (3 :> );;
+          ^
+Error: Syntax error
+

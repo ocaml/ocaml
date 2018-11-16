@@ -37,7 +37,7 @@ let share c =
       begin try
         Lvar (Hashtbl.find consts c)
       with Not_found ->
-        let id = Ident.create "shared" in
+        let id = Ident.create_local "shared" in
         Hashtbl.add consts c id;
         Lvar id
       end
@@ -112,7 +112,7 @@ let transl_label_init_general f =
 
 let transl_label_init_flambda f =
   assert(Config.flambda);
-  let method_cache_id = Ident.create "method_cache" in
+  let method_cache_id = Ident.create_local "method_cache" in
   method_cache := Lvar method_cache_id;
   (* Calling f (usually Translmod.transl_struct) requires the
      method_cache variable to be initialised to be able to generate
@@ -162,7 +162,7 @@ let transl_label_init f =
 let wrapping = ref false
 let top_env = ref Env.empty
 let classes = ref []
-let method_ids = ref IdentSet.empty
+let method_ids = ref Ident.Set.empty
 
 let oo_add_class id =
   classes := id :: !classes;
@@ -171,32 +171,28 @@ let oo_add_class id =
 let oo_wrap env req f x =
   if !wrapping then
     if !cache_required then f x else
-    try cache_required := true; let lam = f x in cache_required := false; lam
-    with exn -> cache_required := false; raise exn
-  else try
-    wrapping := true;
-    cache_required := req;
-    top_env := env;
-    classes := [];
-    method_ids := IdentSet.empty;
-    let lambda = f x in
-    let lambda =
-      List.fold_left
-        (fun lambda id ->
-          Llet(StrictOpt, Pgenval, id,
-               Lprim(Pmakeblock(0, Mutable, None),
-                     [lambda_unit; lambda_unit; lambda_unit],
-                     Location.none),
-               lambda))
-        lambda !classes
-    in
-    wrapping := false;
-    top_env := Env.empty;
-    lambda
-  with exn ->
-    wrapping := false;
-    top_env := Env.empty;
-    raise exn
+      Misc.protect_refs [Misc.R (cache_required, true)] (fun () ->
+          f x
+        )
+  else
+    Misc.protect_refs [Misc.R (wrapping, true); Misc.R (top_env, env)]
+      (fun () ->
+         cache_required := req;
+         classes := [];
+         method_ids := Ident.Set.empty;
+         let lambda = f x in
+         let lambda =
+           List.fold_left
+             (fun lambda id ->
+                Llet(StrictOpt, Pgenval, id,
+                     Lprim(Pmakeblock(0, Mutable, None),
+                           [lambda_unit; lambda_unit; lambda_unit],
+                           Location.none),
+                     lambda))
+             lambda !classes
+         in
+         lambda
+      )
 
 let reset () =
   Hashtbl.clear consts;
@@ -207,4 +203,4 @@ let reset () =
   wrapping := false;
   top_env := Env.empty;
   classes := [];
-  method_ids := IdentSet.empty
+  method_ids := Ident.Set.empty

@@ -13,13 +13,52 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Miscellaneous useful types and functions *)
+(** Miscellaneous useful types and functions
+
+  {b Warning:} this module is unstable and part of
+  {{!Compiler_libs}compiler-libs}.
+
+*)
 
 val fatal_error: string -> 'a
 val fatal_errorf: ('a, Format.formatter, unit, 'b) format4 -> 'a
 exception Fatal_error
 
-val try_finally : (unit -> 'a) -> (unit -> unit) -> 'a;;
+val try_finally :
+  ?always:(unit -> unit) ->
+  ?exceptionally:(unit -> unit) ->
+  (unit -> 'a) -> 'a
+(** [try_finally work ~always ~exceptionally] is designed to run code
+    in [work] that may fail with an exception, and has two kind of
+    cleanup routines: [always], that must be run after any execution
+    of the function (typically, freeing system resources), and
+    [exceptionally], that should be run only if [work] or [always]
+    failed with an exception (typically, undoing user-visible state
+    changes that would only make sense if the function completes
+    correctly). For example:
+
+    {[
+      let objfile = outputprefix ^ ".cmo" in
+      let oc = open_out_bin objfile in
+      Misc.try_finally
+        (fun () ->
+           bytecode
+           ++ Timings.(accumulate_time (Generate sourcefile))
+               (Emitcode.to_file oc modulename objfile);
+           Warnings.check_fatal ())
+        ~always:(fun () -> close_out oc)
+        ~exceptionally:(fun _exn -> remove_file objfile);
+    ]}
+
+    If [exceptionally] fail with an exception, it is propagated as
+    usual.
+
+    If [always] or [exceptionally] use exceptions internally for
+    control-flow but do not raise, then [try_finally] is careful to
+    preserve any exception backtrace coming from [work] or [always]
+    for easier debugging.
+*)
+
 
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
         (* [map_end f l t] is [map f l @ t], just more efficient. *)
@@ -64,6 +103,10 @@ module Stdlib : sig
         out the [None] elements and returns the list of the arguments of
         the [Some] elements. *)
 
+    val find_map : ('a -> 'b option) -> 'a t -> 'b option
+    (** [find_map f l] returns the first evaluation of [f] that returns [Some],
+       or returns None if there is no such element. *)
+
     val some_if_all_elements_are_some : 'a option t -> 'a t option
     (** If all elements of the given list are [Some _] then [Some xs]
         is returned with the [xs] being the contents of those [Some]s, with
@@ -83,6 +126,9 @@ module Stdlib : sig
   module Option : sig
     type 'a t = 'a option
 
+    val is_none : 'a t -> bool
+    val is_some : 'a t -> bool
+
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 
     val iter : ('a -> unit) -> 'a t -> unit
@@ -97,6 +143,15 @@ module Stdlib : sig
        Invalid_argument if the two arrays are determined to have
        different lengths. *)
   end
+
+  module String : sig
+    include module type of String
+    module Set : Set.S with type elt = string
+    module Map : Map.S with type key = string
+    module Tbl : Hashtbl.S with type key = string
+  end
+
+  external compare : 'a -> 'a -> int = "%compare"
 end
 
 val find_in_path: string list -> string -> string
@@ -112,6 +167,13 @@ val remove_file: string -> unit
 val expand_directory: string -> string -> string
         (* [expand_directory alt file] eventually expands a [+] at the
            beginning of file into [alt] (an alternate root directory) *)
+
+val split_path_contents: ?sep:char -> string -> string list
+(* [split_path_contents ?sep s] interprets [s] as the value of a "PATH"-like
+   variable and returns the corresponding list of directories. [s] is split
+   using the platform-specific delimiter, or [~sep] if it is passed.
+
+   Returns the empty list if [s] is empty. *)
 
 val create_hashtable: int -> ('a * 'b) list -> ('a, 'b) Hashtbl.t
         (* Create a hashtable of the given size and fills it with the
@@ -188,6 +250,9 @@ val get_ref: 'a list ref -> 'a list
         (* [get_ref lr] returns the content of the list reference [lr] and reset
            its content to the empty list. *)
 
+val set_or_ignore : ('a -> 'b option) -> 'b option ref -> 'a -> unit
+        (* [set_or_ignore f opt x] sets [opt] to [f x] if it returns [Some _],
+           or leaves it unmodified if it returns [None]. *)
 
 val fst3: 'a * 'b * 'c -> 'a
 val snd3: 'a * 'b * 'c -> 'b
@@ -206,8 +271,9 @@ module LongString :
     val get : t -> int -> char
     val set : t -> int -> char -> unit
     val blit : t -> int -> t -> int -> int -> unit
+    val blit_string : string -> int -> t -> int -> int -> unit
     val output : out_channel -> t -> int -> int -> unit
-    val unsafe_blit_to_bytes : t -> int -> bytes -> int -> int -> unit
+    val input_bytes_into : t -> in_channel -> int -> unit
     val input_bytes : in_channel -> int -> t
   end
 
@@ -253,12 +319,6 @@ val cut_at : string -> char -> string * string
    @since 4.01
 *)
 
-
-module StringSet: Set.S with type elt = string
-module StringMap: Map.S with type key = string
-(* TODO: replace all custom instantiations of StringSet/StringMap in various
-   compiler modules with this one. *)
-
 (* Color handling *)
 module Color : sig
   type color =
@@ -302,6 +362,13 @@ module Color : sig
   (* adds functions to support color tags to the given formatter. *)
 end
 
+(* See the -error-style option *)
+module Error_style : sig
+  type setting =
+    | Contextual
+    | Short
+end
+
 val normalise_eol : string -> string
 (** [normalise_eol s] returns a fresh copy of [s] with any '\r' characters
    removed. Intended for pre-processing text which will subsequently be printed
@@ -312,7 +379,31 @@ val delete_eol_spaces : string -> string
    line spaces removed. Intended to normalize the output of the
    toplevel for tests. *)
 
+val pp_two_columns :
+  ?sep:string -> ?max_lines:int ->
+  Format.formatter -> (string * string) list -> unit
+(** [pp_two_columns ?sep ?max_lines ppf l] prints the lines in [l] as two
+   columns separated by [sep] ("|" by default). [max_lines] can be used to
+   indicate a maximum number of lines to print -- an ellipsis gets inserted at
+   the middle if the input has too many lines.
 
+   Example:
+
+    {v pp_two_columns ~max_lines:3 Format.std_formatter [
+      "abc", "hello";
+      "def", "zzz";
+      "a"  , "bllbl";
+      "bb" , "dddddd";
+    ] v}
+
+    prints
+
+    {v
+    abc | hello
+    ...
+    bb  | dddddd
+    v}
+*)
 
 (** {1 Hook machinery}
 
@@ -347,3 +438,20 @@ module type HookSig = sig
 end
 
 module MakeHooks : functor (M : sig type t end) -> HookSig with type t = M.t
+
+
+(** configuration variables *)
+val show_config_and_exit : unit -> unit
+val show_config_variable_and_exit : string -> unit
+
+val get_build_path_prefix_map: unit -> Build_path_prefix_map.map option
+(** Returns the map encoded in the [BUILD_PATH_PREFIX_MAP] environment
+    variable. *)
+
+val debug_prefix_map_flags: unit -> string list
+(** Returns the list of [--debug-prefix-map] flags to be passed to the
+    assembler, built from the [BUILD_PATH_PREFIX_MAP] environment variable. *)
+
+val print_if :
+  Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
+(** [print_if ppf flag fmt x] prints [x] with [fmt] on [ppf] if [b] is true. *)

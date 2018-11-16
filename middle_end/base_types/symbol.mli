@@ -28,10 +28,11 @@
 
 include Identifiable.S
 
-val create : Compilation_unit.t -> Linkage_name.t -> t
+val of_variable : Variable.t -> t
+
 (* Create the symbol without prefixing with the compilation unit.
-   Used for predefined exceptions *)
-val unsafe_create : Compilation_unit.t -> Linkage_name.t -> t
+   Used for global symbols like predefined exceptions *)
+val of_global_linkage : Compilation_unit.t -> Linkage_name.t -> t
 
 val import_for_pack : pack:Compilation_unit.t -> t -> t
 

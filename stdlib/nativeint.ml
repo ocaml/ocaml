@@ -49,6 +49,14 @@ let min_int = shift_left 1n (size - 1)
 let max_int = sub min_int 1n
 let lognot n = logxor n (-1n)
 
+let unsigned_to_int =
+  let max_int = of_int Stdlib.max_int in
+  fun n ->
+    if compare zero n <= 0 && compare n max_int <= 0 then
+      Some (to_int n)
+    else
+      None
+
 external format : string -> nativeint -> string = "caml_nativeint_format"
 let to_string n = format "%d" n
 
@@ -61,5 +69,22 @@ let of_string_opt s =
 
 type t = nativeint
 
-let compare (x: t) (y: t) = Pervasives.compare x y
+let compare (x: t) (y: t) = Stdlib.compare x y
 let equal (x: t) (y: t) = compare x y = 0
+
+let unsigned_compare n m =
+  compare (sub n min_int) (sub m min_int)
+
+(* Unsigned division from signed division of the same
+   bitness. See Warren Jr., Henry S. (2013). Hacker's Delight (2 ed.), Sec 9-3.
+*)
+let unsigned_div n d =
+  if d < zero then
+    if unsigned_compare n d < 0 then zero else one
+  else
+    let q = shift_left (div (shift_right_logical n 1) d) 1 in
+    let r = sub n (mul q d) in
+    if unsigned_compare r d >= 0 then succ q else q
+
+let unsigned_rem n d =
+  sub n (mul (unsigned_div n d) d)

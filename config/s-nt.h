@@ -17,7 +17,7 @@
 
 #define OCAML_OS_TYPE "Win32"
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) || _MSC_VER >= 1600
 #define HAS_STDINT_H
 #endif
 #undef BSD_SIGNALS
@@ -29,7 +29,10 @@
 #define HAS_GETHOSTNAME
 #define HAS_MKTIME
 #define HAS_PUTENV
-#define HAS_LOCALE
+#ifndef __MINGW32__
+#define HAS_LOCALE_H
+#define HAS_STRTOD_L
+#endif
 #define HAS_BROKEN_PRINTF
 #define HAS_IPV6
 #define HAS_NICE

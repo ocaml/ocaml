@@ -33,6 +33,7 @@ module Env : sig
      : never_inline:bool
     -> backend:(module Backend_intf.S)
     -> round:int
+    -> ppf_dump:Format.formatter
     -> t
 
   (** Obtain the first-class module that gives information about the
@@ -46,6 +47,9 @@ module Env : sig
 
   (** Which simplification round we are currently in. *)
   val round : t -> int
+
+  (** Where to print intermediate asts and similar debug information *)
+  val ppf_dump : t -> Format.formatter
 
   (** Add the approximation of a variable---that is to say, some knowledge
       about the value(s) the variable may take on at runtime---to the
@@ -128,12 +132,6 @@ module Env : sig
       variables from outer scopes that are not accessible. *)
   val local : t -> t
 
-  (** Note that the inliner is descending into a function body from the given
-      set of closures.  A set of such descents is maintained. *)
-  (* CR-someday mshinwell: consider changing name to remove "declaration".
-     Also, isn't this the inlining stack?  Maybe we can use that instead. *)
-  val enter_set_of_closures_declaration : Set_of_closures_origin.t -> t -> t
-
   (** Determine whether the inliner is currently inside a function body from
       the given set of closures.  This is used to detect whether a given
       function call refers to a function which exists somewhere on the current
@@ -200,11 +198,11 @@ module Env : sig
 
   (** Whether it is permissible to inline a call to a function in the given
       environment. *)
-  val inlining_allowed : t -> Closure_id.t -> bool
+  val inlining_allowed : t -> Closure_origin.t -> bool
 
   (** Whether the given environment is currently being used to rewrite the
       body of an inlined function. *)
-  val inside_inlined_function : t -> Closure_id.t -> t
+  val inside_inlined_function : t -> Closure_origin.t -> t
 
   (** If collecting inlining statistics, record that the inliner is about to
       descend into [closure_id].  This information enables us to produce a
@@ -361,3 +359,10 @@ val prepare_to_simplify_closure
   -> parameter_approximations:Simple_value_approx.t Variable.Map.t
   -> set_of_closures_env:Env.t
   -> Env.t
+
+val keep_body_check
+   : is_classic_mode:bool
+  -> recursive:Variable.Set.t Lazy.t
+  -> Variable.t
+  -> Flambda.function_declaration
+  -> bool

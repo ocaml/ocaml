@@ -1,1 +1,0 @@
-Sys.getenv FOO -> Some "BAR"

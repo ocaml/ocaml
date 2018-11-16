@@ -20,6 +20,8 @@ open Config
 open Cmx_format
 open Compilenv
 
+module String = Misc.Stdlib.String
+
 type error =
     File_not_found of string
   | Not_an_object_file of string
@@ -119,7 +121,7 @@ let object_file_name name =
     try
       find_in_path !load_path name
     with Not_found ->
-      fatal_error "Asmlink.object_file_name: not found" in
+      fatal_errorf "Asmlink.object_file_name: %s not found" name in
   if Filename.check_suffix file_name ".cmx" then
     Filename.chop_suffix file_name ".cmx" ^ ext_obj
   else if Filename.check_suffix file_name ".cmxa" then
@@ -203,8 +205,25 @@ let scan_file obj_name tolink = match read_file obj_name with
 
 (* Second pass: generate the startup file and link it with everything else *)
 
-let make_startup_file ppf units_list =
-  let compile_phrase p = Asmgen.compile_phrase ppf p in
+let force_linking_of_startup ~ppf_dump =
+  Asmgen.compile_phrase ~ppf_dump
+    (Cmm.Cdata ([Cmm.Csymbol_address "caml_startup"]))
+
+let make_globals_map units_list ~crc_interfaces =
+  let crc_interfaces = String.Tbl.of_seq (List.to_seq crc_interfaces) in
+  let defined =
+    List.map (fun (unit, _, impl_crc) ->
+        let intf_crc = String.Tbl.find crc_interfaces unit.ui_name in
+        String.Tbl.remove crc_interfaces unit.ui_name;
+        (unit.ui_name, intf_crc, Some impl_crc, unit.ui_defines))
+      units_list
+  in
+  String.Tbl.fold (fun name intf acc ->
+      (name, intf, None, []) :: acc)
+    crc_interfaces defined
+
+let make_startup_file ~ppf_dump units_list ~crc_interfaces =
+  let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset "_startup";
   (* set the name of the "current" compunit *)
@@ -218,19 +237,8 @@ let make_startup_file ppf units_list =
     (fun i name -> compile_phrase (Cmmgen.predef_exception i name))
     Runtimedef.builtin_exceptions;
   compile_phrase (Cmmgen.global_table name_list);
-  compile_phrase
-    (Cmmgen.globals_map
-       (List.map
-          (fun (unit,_,crc) ->
-               let intf_crc =
-                 try
-                   match List.assoc unit.ui_name unit.ui_imports_cmi with
-                     None -> assert false
-                   | Some crc -> crc
-                 with Not_found -> assert false
-               in
-                 (unit.ui_name, intf_crc, crc, unit.ui_defines))
-          units_list));
+  let globals_map = make_globals_map units_list ~crc_interfaces in
+  compile_phrase (Cmmgen.globals_map globals_map);
   compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
   compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
   let all_names = "_startup" :: "_system" :: name_list in
@@ -238,10 +246,12 @@ let make_startup_file ppf units_list =
   if Config.spacetime then begin
     compile_phrase (Cmmgen.spacetime_shapes all_names);
   end;
+  if !Clflags.output_complete_object then
+    force_linking_of_startup ~ppf_dump;
   Emit.end_assembly ()
 
-let make_shared_startup_file ppf units =
-  let compile_phrase p = Asmgen.compile_phrase ppf p in
+let make_shared_startup_file ~ppf_dump units =
+  let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup";
   Compilenv.reset "_shared_startup";
   Emit.begin_assembly ();
@@ -251,6 +261,8 @@ let make_shared_startup_file ppf units =
   compile_phrase
     (Cmmgen.global_table
        (List.map (fun (ui,_) -> ui.ui_symbol) units));
+  if !Clflags.output_complete_object then
+    force_linking_of_startup ~ppf_dump;
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
   Emit.end_assembly ()
@@ -259,7 +271,7 @@ let call_linker_shared file_list output_name =
   if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")
   then raise(Error Linking_error)
 
-let link_shared ppf objfiles output_name =
+let link_shared ~ppf_dump objfiles output_name =
   Profile.record_call output_name (fun () ->
     let units_tolink = List.fold_right scan_file objfiles [] in
     List.iter
@@ -278,7 +290,7 @@ let link_shared ppf objfiles output_name =
     Asmgen.compile_unit output_name
       startup !Clflags.keep_startup_file startup_obj
       (fun () ->
-         make_shared_startup_file ppf
+         make_shared_startup_file ~ppf_dump
            (List.map (fun (ui,_,crc) -> (ui,crc)) units_tolink)
       );
     call_linker_shared (startup_obj :: objfiles) output_name;
@@ -314,7 +326,7 @@ let call_linker file_list startup_file output_name =
 
 (* Main entry point *)
 
-let link ppf objfiles output_name =
+let link ~ppf_dump objfiles output_name =
   Profile.record_call output_name (fun () ->
     let stdlib =
       if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
@@ -333,6 +345,7 @@ let link ppf objfiles output_name =
     List.iter
       (fun (info, file_name, crc) -> check_consistency file_name info crc)
       units_tolink;
+    let crc_interfaces = extract_crc_interfaces () in
     Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
     Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
                                                  (* put user's opts first *)
@@ -343,11 +356,12 @@ let link ppf objfiles output_name =
     let startup_obj = Filename.temp_file "camlstartup" ext_obj in
     Asmgen.compile_unit output_name
       startup !Clflags.keep_startup_file startup_obj
-      (fun () -> make_startup_file ppf units_tolink);
+      (fun () -> make_startup_file ~ppf_dump units_tolink ~crc_interfaces);
     Misc.try_finally
       (fun () ->
-        call_linker (List.map object_file_name objfiles) startup_obj output_name)
-      (fun () -> remove_file startup_obj)
+         call_linker (List.map object_file_name objfiles)
+           startup_obj output_name)
+      ~always:(fun () -> remove_file startup_obj)
   )
 
 (* Error report *)
@@ -422,4 +436,6 @@ let reset () =
   implementations_defined := [];
   cmx_required := [];
   interfaces := [];
-  implementations := []
+  implementations := [];
+  lib_ccobjs := [];
+  lib_ccopts := []

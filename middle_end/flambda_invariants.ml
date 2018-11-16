@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-30-40-41-42"]
+[@@@ocaml.warning "+a-4-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 type flambda_kind =
   | Normal
@@ -77,7 +78,6 @@ exception Access_to_global_module_identifier of Lambda.primitive
 exception Pidentity_should_not_occur
 exception Pdirapply_should_be_expanded
 exception Prevapply_should_be_expanded
-exception Ploc_should_be_expanded
 exception Sequential_logical_operator_primitives_must_be_expanded of
   Lambda.primitive
 exception Var_within_closure_bound_multiple_times of Var_within_closure.t
@@ -265,9 +265,11 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       ({ Flambda.function_decls; free_vars; specialised_args;
           direct_call_surrogates = _; } as set_of_closures) =
       (* CR-soon mshinwell: check [direct_call_surrogates] *)
-      let { Flambda.set_of_closures_id; set_of_closures_origin; funs; } =
+    let { Flambda. is_classic_mode;
+          set_of_closures_id; set_of_closures_origin; funs; } =
         function_decls
       in
+      ignore (is_classic_mode : bool);
       ignore_set_of_closures_id set_of_closures_id;
       ignore_set_of_closures_origin set_of_closures_origin;
       let functions_in_closure = Variable.Map.keys funs in
@@ -462,14 +464,13 @@ let primitive_invariants flam ~no_access_to_global_module_identifiers =
           raise (Sequential_logical_operator_primitives_must_be_expanded prim)
         | Pgetglobal id ->
           if no_access_to_global_module_identifiers
-            && not (Ident.is_predef_exn id) then
+            && not (Ident.is_predef id) then
           begin
             raise (Access_to_global_module_identifier prim)
           end
         | Pidentity -> raise Pidentity_should_not_occur
         | Pdirapply -> raise Pdirapply_should_be_expanded
         | Prevapply -> raise Prevapply_should_be_expanded
-        | Ploc _ -> raise Ploc_should_be_expanded
         | _ -> ()
         end
       | _ -> ())
@@ -815,9 +816,6 @@ let check_exn ?(kind=Normal) ?(cmxfile=false) (flam:Flambda.program) =
     | Prevapply_should_be_expanded ->
       Format.eprintf ">> The Prevapply primitive should never occur in an \
         Flambda expression (see simplif.ml); use Apply instead"
-    | Ploc_should_be_expanded ->
-      Format.eprintf ">> The Ploc primitive should never occur in an \
-        Flambda expression (see translcore.ml); use Apply instead"
     | Move_to_a_closure_not_in_the_free_variables (start_from, move_to) ->
       Format.eprintf ">> A Move_within_set_of_closures from the closure %a \
         to closures that are not parts of its free variables: %a"

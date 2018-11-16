@@ -1,8 +1,11 @@
+(* TEST
+*)
+
 let native =
-  match Filename.basename Sys.argv.(0) with
-  | "program.byte" | "program.byte.exe" -> false
-  | "program.native" | "program.native.exe" -> true
-  | s -> print_endline s; assert false
+  match Sys.backend_type with
+  | Sys.Native -> true
+  | Sys.Bytecode -> false
+  | Sys.Other s -> print_endline s; assert false
 
 
 let size x = Obj.reachable_words (Obj.repr x)

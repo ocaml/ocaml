@@ -101,17 +101,14 @@ let trim s =
   else s
 
 let escaped s =
-  let rec needs_escape i =
-    if i >= length s then false else
+  let rec escape_if_needed s n i =
+    if i >= n then s else
       match unsafe_get s i with
-      | '\"' | '\\' | '\n' | '\t' | '\r' | '\b' -> true
-      | ' ' .. '~' -> needs_escape (i+1)
-      | _ -> true
+      | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' ->
+          bts (B.escaped (bos s))
+      | _ -> escape_if_needed s n (i+1)
   in
-  if needs_escape 0 then
-    bts (B.escaped (bos s))
-  else
-    s
+  escape_if_needed s (length s) 0
 
 (* duplicated in bytes.ml *)
 let rec index_rec s lim i c =
@@ -138,8 +135,10 @@ let index_from s i c =
 (* duplicated in bytes.ml *)
 let index_from_opt s i c =
   let l = length s in
-  if i < 0 || i > l then invalid_arg "String.index_from_opt / Bytes.index_from_opt" else
-  index_rec_opt s l i c
+  if i < 0 || i > l then
+    invalid_arg "String.index_from_opt / Bytes.index_from_opt"
+  else
+    index_rec_opt s l i c
 
 (* duplicated in bytes.ml *)
 let rec rindex_rec s i c =
@@ -200,7 +199,7 @@ let uncapitalize_ascii s =
 
 type t = string
 
-let compare (x: t) (y: t) = Pervasives.compare x y
+let compare (x: t) (y: t) = Stdlib.compare x y
 external equal : string -> string -> bool = "caml_string_equal"
 
 let split_on_char sep s =
@@ -224,3 +223,11 @@ let capitalize s =
   B.capitalize (bos s) |> bts
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
+
+(** {1 Iterators} *)
+
+let to_seq s = bos s |> B.to_seq
+
+let to_seqi s = bos s |> B.to_seqi
+
+let of_seq g = B.of_seq g |> bts

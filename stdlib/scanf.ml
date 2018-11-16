@@ -17,14 +17,14 @@ open CamlinternalFormatBasics
 open CamlinternalFormat
 
 (* alias to avoid warning for ambiguity between
-   Pervasives.format6
+   Stdlib.format6
    and CamlinternalFormatBasics.format6
 
    (the former is in fact an alias for the latter,
     but the ambiguity warning doesn't care)
 *)
 type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
-  ('a, 'b, 'c, 'd, 'e, 'f) Pervasives.format6
+  ('a, 'b, 'c, 'd, 'e, 'f) Stdlib.format6
 
 
 (* The run-time library for scanners. *)
@@ -39,12 +39,12 @@ module type SCANNING = sig
   type file_name = string
 
   val stdin : in_channel
-  (* The scanning buffer reading from [Pervasives.stdin].
-     [stdib] is equivalent to [Scanning.from_channel Pervasives.stdin]. *)
+  (* The scanning buffer reading from [Stdlib.stdin].
+     [stdib] is equivalent to [Scanning.from_channel Stdlib.stdin]. *)
 
   val stdib : in_channel
   (* An alias for [Scanf.stdin], the scanning buffer reading from
-     [Pervasives.stdin]. *)
+     [Stdlib.stdin]. *)
 
   val next_char : scanbuf -> char
   (* [Scanning.next_char ib] advance the scanning buffer for
@@ -126,11 +126,11 @@ module type SCANNING = sig
   val from_file_bin : file_name -> in_channel
   val from_string : string -> in_channel
   val from_function : (unit -> char) -> in_channel
-  val from_channel : Pervasives.in_channel -> in_channel
+  val from_channel : Stdlib.in_channel -> in_channel
 
   val close_in : in_channel -> unit
 
-  val memo_from_channel : Pervasives.in_channel -> in_channel
+  val memo_from_channel : Stdlib.in_channel -> in_channel
   (* Obsolete. *)
 
 end
@@ -143,8 +143,8 @@ module Scanning : SCANNING = struct
   type file_name = string
 
   type in_channel_name =
-    | From_channel of Pervasives.in_channel
-    | From_file of file_name * Pervasives.in_channel
+    | From_channel of Stdlib.in_channel
+    | From_file of file_name * Stdlib.in_channel
     | From_function
     | From_string
 
@@ -213,7 +213,7 @@ module Scanning : SCANNING = struct
 
   let name_of_input ib =
     match ib.ic_input_name with
-    | From_channel _ic -> "unnamed Pervasives input channel"
+    | From_channel _ic -> "unnamed Stdlib input channel"
     | From_file (fname, _ic) -> fname
     | From_function -> "unnamed function"
     | From_string -> "unnamed character string"
@@ -325,7 +325,7 @@ module Scanning : SCANNING = struct
   let file_buffer_size = ref 1024
 
   (* The scanner closes the input channel at end of input. *)
-  let scan_close_at_end ic = Pervasives.close_in ic; raise End_of_file
+  let scan_close_at_end ic = Stdlib.close_in ic; raise End_of_file
 
   (* The scanner does not close the input channel at end of input:
      it just raises [End_of_file]. *)
@@ -352,13 +352,13 @@ module Scanning : SCANNING = struct
   let from_ic_close_at_end = from_ic scan_close_at_end
   let from_ic_raise_at_end = from_ic scan_raise_at_end
 
-  (* The scanning buffer reading from [Pervasives.stdin].
+  (* The scanning buffer reading from [Stdlib.stdin].
      One could try to define [stdib] as a scanning buffer reading a character
      at a time (no bufferization at all), but unfortunately the top-level
      interaction would be wrong. This is due to some kind of
-     'race condition' when reading from [Pervasives.stdin],
+     'race condition' when reading from [Stdlib.stdin],
      since the interactive compiler and [Scanf.scanf] will simultaneously
-     read the material they need from [Pervasives.stdin]; then, confusion
+     read the material they need from [Stdlib.stdin]; then, confusion
      will result from what should be read by the top-level and what should be
      read by [Scanf.scanf].
      This is even more complicated by the one character lookahead that
@@ -369,7 +369,7 @@ module Scanning : SCANNING = struct
      characters have been read, we simply ask to read more. *)
   let stdin =
     from_ic scan_raise_at_end
-      (From_file ("-", Pervasives.stdin)) Pervasives.stdin
+      (From_file ("-", Stdlib.stdin)) Stdlib.stdin
 
 
   let stdib = stdin
@@ -382,8 +382,8 @@ module Scanning : SCANNING = struct
       from_ic_close_at_end (From_file (fname, ic)) ic
 
 
-  let open_in = open_in_file Pervasives.open_in
-  let open_in_bin = open_in_file Pervasives.open_in_bin
+  let open_in = open_in_file Stdlib.open_in
+  let open_in_bin = open_in_file Stdlib.open_in_bin
 
   let from_file = open_in
   let from_file_bin = open_in_bin
@@ -395,14 +395,14 @@ module Scanning : SCANNING = struct
   let close_in ib =
     match ib.ic_input_name with
     | From_channel ic ->
-      Pervasives.close_in ic
-    | From_file (_fname, ic) -> Pervasives.close_in ic
+      Stdlib.close_in ic
+    | From_file (_fname, ic) -> Stdlib.close_in ic
     | From_function | From_string -> ()
 
 
   (*
      Obsolete: a memo [from_channel] version to build a [Scanning.in_channel]
-     scanning buffer out of a [Pervasives.in_channel].
+     scanning buffer out of a [Stdlib.in_channel].
      This function was used to try to preserve the scanning
      semantics for the (now obsolete) function [fscanf].
      Given that all scanner must read from a [Scanning.in_channel] scanning
@@ -411,7 +411,7 @@ module Scanning : SCANNING = struct
      from the same scanning buffer.
      This obliged this library to allocated scanning buffers that were
      not properly garbage collectable, hence leading to memory leaks.
-     If you need to read from a [Pervasives.in_channel] input channel
+     If you need to read from a [Stdlib.in_channel] input channel
      [ic], simply define a [Scanning.in_channel] formatted input channel as in
      [let ib = Scanning.from_channel ic], then use [Scanf.bscanf ib] as usual.
   *)
@@ -556,7 +556,7 @@ let integer_conversion_of_char = function
 
 
 (* Extract an integer literal token.
-   Since the functions Pervasives.*int*_of_string do not accept a leading +,
+   Since the functions Stdlib.*int*_of_string do not accept a leading +,
    we skip it if necessary. *)
 let token_int_literal conv ib =
   let tok =
@@ -1547,21 +1547,8 @@ let sscanf_format :
   fun s format f -> bscanf_format (Scanning.from_string s) format f
 
 
-let string_to_String s =
-  let l = String.length s in
-  let b = Buffer.create (l + 2) in
-  Buffer.add_char b '\"';
-  for i = 0 to l - 1 do
-    let c = s.[i] in
-    if c = '\"' then Buffer.add_char b '\\';
-    Buffer.add_char b c;
-  done;
-  Buffer.add_char b '\"';
-  Buffer.contents b
-
-
 let format_from_string s fmt =
-  sscanf_format (string_to_String s) fmt (fun x -> x)
+  sscanf_format ("\"" ^ String.escaped s ^ "\"") fmt (fun x -> x)
 
 
 let unescaped s =

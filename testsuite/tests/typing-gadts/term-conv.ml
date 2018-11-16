@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* HOAS to de Bruijn, by chak *)
 (* http://www.cse.unsw.edu.au/~chak/haskell/term-conv/ *)
 
@@ -37,8 +41,8 @@ module Typeable :
       | Fun : ('a ty * 'b ty) -> ('a -> 'b) ty
     type (_, _) eq = Eq : ('a, 'a) eq
     exception CastFailure
-    val check_eq : 't ty -> 't' ty -> ('t, 't') eq
-    val gcast : 't ty -> 't' ty -> 't -> 't'
+    val check_eq : 't ty -> ' t' ty -> ('t, ' t') eq
+    val gcast : 't ty -> ' t' ty -> 't -> ' t'
   end
 |}];;
 

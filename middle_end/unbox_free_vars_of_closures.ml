@@ -14,13 +14,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 module B = Inlining_cost.Benefit
 
 let pass_name = "unbox-free-vars-of-closures"
 let () = Pass_wrapper.register ~pass_name
-let variable_suffix = ""
 
 (* CR-someday mshinwell: Nearly but not quite the same as something that
    Augment_specialised_args uses. *)
@@ -29,7 +29,7 @@ let add_lifted_projections_around_set_of_closures
       ~definitions_indexed_by_new_inner_vars =
   let body =
     Flambda_utils.name_expr (Set_of_closures set_of_closures)
-      ~name:pass_name
+      ~name:Internal_variable_names.unbox_free_vars_of_closures
   in
   Variable.Map.fold (fun new_inner_var (projection : Projection.t)
             (expr, benefit) ->
@@ -104,14 +104,8 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
                    "new inner" and a fresh "new outer" var, since we know
                    the definition is not a duplicate. *)
                 let projecting_from = Projection.projecting_from projection in
-                let new_inner_var =
-                  Variable.rename projecting_from
-                    ~append:variable_suffix
-                in
-                let new_outer_var =
-                  Variable.rename projecting_from
-                    ~append:variable_suffix
-                in
+                let new_inner_var = Variable.rename projecting_from in
+                let new_outer_var = Variable.rename projecting_from in
                 let definitions_indexed_by_new_inner_vars =
                   Variable.Map.add new_inner_var projection
                     definitions_indexed_by_new_inner_vars
@@ -169,7 +163,8 @@ let run ~env ~(set_of_closures : Flambda.set_of_closures) =
         Some (expr, benefit)
 
 let run ~env ~set_of_closures =
-  Pass_wrapper.with_dump ~pass_name ~input:set_of_closures
+  Pass_wrapper.with_dump ~ppf_dump:(Inline_and_simplify_aux.Env.ppf_dump env)
+    ~pass_name ~input:set_of_closures
     ~print_input:Flambda.print_set_of_closures
     ~print_output:(fun ppf (expr, _) -> Flambda.print ppf expr)
     ~f:(fun () -> run ~env ~set_of_closures)

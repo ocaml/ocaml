@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* Tests for nested equations (bind abstract types from other modules) *)
 
 type _ t = Int : int t;;
@@ -12,7 +16,9 @@ let w_bool : bool t = Obj.magic 0;;
 let f_bool (x : bool) : int = let Int = w_bool in x;; (* fail *)
 [%%expect{|
 val w_bool : bool t = Int
-Line _, characters 34-37:
+Line 2, characters 34-37:
+2 | let f_bool (x : bool) : int = let Int = w_bool in x;; (* fail *)
+                                      ^^^
 Error: This pattern matches values of type int t
        but a pattern was expected which matches values of type bool t
        Type int is not compatible with type bool
@@ -29,7 +35,9 @@ let w_spec : Arg.spec t = Obj.magic 0;;
 let f_spec (x : Arg.spec) : int = let Int = w_spec in x;; (* fail *)
 [%%expect{|
 val w_spec : Arg.spec t = Int
-Line _, characters 38-41:
+Line 2, characters 38-41:
+2 | let f_spec (x : Arg.spec) : int = let Int = w_spec in x;; (* fail *)
+                                          ^^^
 Error: This pattern matches values of type int t
        but a pattern was expected which matches values of type Arg.spec t
        Type int is not compatible with type Arg.spec

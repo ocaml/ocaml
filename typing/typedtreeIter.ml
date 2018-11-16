@@ -27,6 +27,7 @@ module type IteratorArgument = sig
     val enter_structure : structure -> unit
     val enter_value_description : value_description -> unit
     val enter_type_extension : type_extension -> unit
+    val enter_type_exception : type_exception -> unit
     val enter_extension_constructor : extension_constructor -> unit
     val enter_pattern : pattern -> unit
     val enter_expression : expression -> unit
@@ -53,6 +54,7 @@ module type IteratorArgument = sig
     val leave_structure : structure -> unit
     val leave_value_description : value_description -> unit
     val leave_type_extension : type_extension -> unit
+    val leave_type_exception : type_exception -> unit
     val leave_extension_constructor : extension_constructor -> unit
     val leave_pattern : pattern -> unit
     val leave_expression : expression -> unit
@@ -141,7 +143,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_primitive vd -> iter_value_description vd
         | Tstr_type (rf, list) -> iter_type_declarations rf list
         | Tstr_typext tyext -> iter_type_extension tyext
-        | Tstr_exception ext -> iter_extension_constructor ext
+        | Tstr_exception ext -> iter_type_exception ext
         | Tstr_module x -> iter_module_binding x
         | Tstr_recmodule list -> List.iter iter_module_binding list
         | Tstr_modtype mtd -> iter_module_type_declaration mtd
@@ -219,6 +221,11 @@ module MakeIterator(Iter : IteratorArgument) : sig
       List.iter iter_extension_constructor tyext.tyext_constructors;
       Iter.leave_type_extension tyext
 
+    and iter_type_exception tyexn =
+      Iter.enter_type_exception tyexn;
+      iter_extension_constructor tyexn.tyexn_constructor;
+      Iter.leave_type_exception tyexn
+
     and iter_pattern pat =
       Iter.enter_pattern pat;
       List.iter (fun (cstr, _, _attrs) -> match cstr with
@@ -245,7 +252,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
             List.iter (fun (_, _, pat) -> iter_pattern pat) list
         | Tpat_array list -> List.iter iter_pattern list
         | Tpat_or (p1, p2, _) -> iter_pattern p1; iter_pattern p2
-        | Tpat_lazy p -> iter_pattern p
+        | Tpat_lazy p
+        | Tpat_exception p -> iter_pattern p
       end;
       Iter.leave_pattern pat
 
@@ -279,10 +287,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
                   None -> ()
                 | Some exp -> iter_expression exp
             ) list
-        | Texp_match (exp, list1, list2, _) ->
+        | Texp_match (exp, list, _) ->
             iter_expression exp;
-            iter_cases list1;
-            iter_cases list2;
+            iter_cases list
         | Texp_try (exp, list) ->
             iter_expression exp;
             iter_cases list
@@ -380,12 +387,15 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_value_description vd
         | Tsig_type (rf, list) ->
             iter_type_declarations rf list
+        | Tsig_typesubst list ->
+            iter_type_declarations Nonrecursive list
         | Tsig_exception ext ->
-            iter_extension_constructor ext
+            iter_type_exception ext
         | Tsig_typext tyext ->
             iter_type_extension tyext
         | Tsig_module md ->
             iter_module_type md.md_type
+        | Tsig_modsubst _ -> ()
         | Tsig_recmodule list ->
             List.iter (fun md -> iter_module_type md.md_type) list
         | Tsig_modtype mtd ->
@@ -489,7 +499,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tcl_structure clstr -> iter_class_structure clstr
         | Tcl_fun (_label, pat, priv, cl, _partial) ->
           iter_pattern pat;
-          List.iter (fun (_id, _, exp) -> iter_expression exp) priv;
+          List.iter (fun (_id, exp) -> iter_expression exp) priv;
           iter_class_expr cl
 
         | Tcl_apply (cl, args) ->
@@ -502,7 +512,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
         | Tcl_let (rec_flat, bindings, ivars, cl) ->
           iter_bindings rec_flat bindings;
-          List.iter (fun (_id, _, exp) -> iter_expression exp) ivars;
+          List.iter (fun (_id, exp) -> iter_expression exp) ivars;
             iter_class_expr cl
 
         | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->
@@ -588,14 +598,14 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
 
     and iter_row_field rf =
-      match rf with
-        Ttag (_label, _attrs, _bool, list) ->
+      match rf.rf_desc with
+      | Ttag (_label, _bool, list) ->
           List.iter iter_core_type list
       | Tinherit ct -> iter_core_type ct
 
     and iter_object_field ofield =
-      match ofield with
-        OTtag (_, _, ct) | OTinherit ct -> iter_core_type ct
+      match ofield.of_desc with
+      | OTtag (_, ct) | OTinherit ct -> iter_core_type ct
 
     and iter_class_field cf =
       Iter.enter_class_field cf;
@@ -626,6 +636,7 @@ module DefaultIteratorArgument = struct
       let enter_structure _ = ()
       let enter_value_description _ = ()
       let enter_type_extension _ = ()
+      let enter_type_exception _ = ()
       let enter_extension_constructor _ = ()
       let enter_pattern _ = ()
       let enter_expression _ = ()
@@ -652,6 +663,7 @@ module DefaultIteratorArgument = struct
       let leave_structure _ = ()
       let leave_value_description _ = ()
       let leave_type_extension _ = ()
+      let leave_type_exception _ = ()
       let leave_extension_constructor _ = ()
       let leave_pattern _ = ()
       let leave_expression _ = ()

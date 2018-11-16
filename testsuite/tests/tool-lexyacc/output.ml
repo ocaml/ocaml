@@ -21,7 +21,7 @@ let copy_chunk (Location(start,stop)) =
 
 
 let output_action (i,act) =
-  output_string !oc ("action_" ^ string_of_int i ^ " lexbuf = (\n");
+  output_string !oc ("action_" ^ Int.to_string i ^ " lexbuf = (\n");
   copy_chunk act;
   output_string !oc ")\nand "
 
@@ -44,7 +44,7 @@ let enumerate_vect v =
     with Not_found ->
       env := (v.(pos), {pos = [pos]; freq = 1 }) :: !env
   done;
-  Sort.list (fun (e1, occ1) (e2, occ2) -> occ1.freq >= occ2.freq) !env
+  List.sort (fun (e1, occ1) (e2, occ2) -> compare occ2.freq occ1.freq) !env
 
 
 let output_move = function
@@ -53,9 +53,9 @@ let output_move = function
   | Goto dest ->
       match !states.(dest) with
         Perform act_num ->
-          output_string !oc ("action_" ^ string_of_int act_num ^ " lexbuf")
+          output_string !oc ("action_" ^ Int.to_string act_num ^ " lexbuf")
       | _ ->
-          output_string !oc ("state_" ^ string_of_int dest ^ " lexbuf")
+          output_string !oc ("state_" ^ Int.to_string dest ^ " lexbuf")
 
 
 (* Cannot use standard char_for_read because the characters to escape
@@ -111,13 +111,13 @@ let output_state state_num = function
       ()
   | Shift(what_to_do, moves) ->
       output_string !oc
-        ("state_"  ^ string_of_int state_num ^ " lexbuf =\n");
+        ("state_"  ^ Int.to_string state_num ^ " lexbuf =\n");
       begin match what_to_do with
         No_remember -> ()
       | Remember i ->
           output_string !oc
             ("  Lexing.set_backtrack lexbuf action_" ^
-             string_of_int i ^ ";\n")
+             Int.to_string i ^ ";\n")
       end;
       output_all_trans moves
 
@@ -129,7 +129,7 @@ let rec output_entries = function
   | (name,state_num) :: rest ->
       output_string !oc (name ^ " lexbuf =\n");
       output_string !oc "  Lexing.init lexbuf;\n";
-      output_string !oc ("  state_" ^ string_of_int state_num ^
+      output_string !oc ("  state_" ^ Int.to_string state_num ^
                         " lexbuf\n");
       match rest with
         [] -> ()

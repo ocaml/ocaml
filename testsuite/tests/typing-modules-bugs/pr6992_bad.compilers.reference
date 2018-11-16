@@ -1,0 +1,6 @@
+File "pr6992_bad.ml", line 16, characters 69-71:
+16 |   let uniq (type a) (type b) (Eq : a fix) (Eq : b fix) : (a, b) eq = Eq
+                                                                          ^^
+Error: This expression has type (a, a) eq
+       but an expression was expected of type (a, b) eq
+       Type a is not compatible with type b 

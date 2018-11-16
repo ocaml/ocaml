@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type (_, _) t =
     Any : ('a, 'b) t
   | Eq : ('a, 'a) t
@@ -21,7 +25,9 @@ let () = print_endline (f M.eq) ;;
 [%%expect{|
 type (_, _) t = Any : ('a, 'b) t | Eq : ('a, 'a) t
 module M : sig type s = private [> `A ] val eq : (s, [ `A | `B ]) t end
-Line _, characters 39-64:
+Line 16, characters 39-64:
+16 | .......................................function
+17 |   | Any -> "Any"
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
@@ -49,7 +55,9 @@ module N :
     type s = private < a : int; .. >
     val eq : (s, < a : int; b : bool >) t
   end
-Line _, characters 49-74:
+Line 12, characters 49-74:
+12 | .................................................function
+13 |   | Any -> "Any"
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq

@@ -85,44 +85,40 @@ type call ident")
   (setq caml-types-location-re
         (concat "^" caml-types-position-re " " caml-types-position-re)))
 
+(defface caml-types-expr-face
+  '((((class color) (background light)) :background "#88FF44")
+    (((class color) (background  dark)) :background "dark green"))
+  "Face for highlighting expressions and types")
+
 (defvar caml-types-expr-ovl (make-overlay 1 1))
-(make-face 'caml-types-expr-face)
-(set-face-doc-string 'caml-types-expr-face
-                     "face for hilighting expressions and types")
-(if (not (face-differs-from-default-p 'caml-types-expr-face))
-    (set-face-background 'caml-types-expr-face "#88FF44"))
 (overlay-put caml-types-expr-ovl 'face 'caml-types-expr-face)
 
+(defface caml-types-typed-face '((t :background "#FF8844"))
+  "Face for highlighting typed expressions.")
+
 (defvar caml-types-typed-ovl (make-overlay 1 1))
-(make-face 'caml-types-typed-face)
-(set-face-doc-string 'caml-types-typed-face
-                     "face for hilighting typed expressions")
-(if (not (face-differs-from-default-p 'caml-types-typed-face))
-    (set-face-background 'caml-types-typed-face "#FF8844"))
 (overlay-put caml-types-typed-ovl 'face 'caml-types-typed-face)
 
+(defface caml-types-scope-face
+  '((((class color) (background light)) :background "#BBFFFF")
+    (((class color) (background  dark)) :background "dark blue"))
+  "Face for highlighting variable scopes.")
+
 (defvar caml-types-scope-ovl (make-overlay 1 1))
-(make-face 'caml-types-scope-face)
-(set-face-doc-string 'caml-types-scope-face
-                     "face for hilighting variable scopes")
-(if (not (face-differs-from-default-p 'caml-types-scope-face))
-    (set-face-background 'caml-types-scope-face "#BBFFFF"))
 (overlay-put caml-types-scope-ovl 'face 'caml-types-scope-face)
 
+(defface caml-types-def-face '((t :background "#FF4444"))
+  "Face for highlighting binding occurrences.")
+
 (defvar caml-types-def-ovl (make-overlay 1 1))
-(make-face 'caml-types-def-face)
-(set-face-doc-string 'caml-types-def-face
-                     "face for hilighting binding occurrences")
-(if (not (face-differs-from-default-p 'caml-types-def-face))
-    (set-face-background 'caml-types-def-face "#FF4444"))
 (overlay-put caml-types-def-ovl 'face 'caml-types-def-face)
 
+(defface caml-types-occ-face
+  '((((class color) (background light)) :background "#44FF44")
+    (((class color) (background  dark)) :background "dark green"))
+  "Face for highlighting variable occurrences.")
+
 (defvar caml-types-occ-ovl (make-overlay 1 1))
-(make-face 'caml-types-occ-face)
-(set-face-doc-string 'caml-types-occ-face
-                     "face for hilighting variable occurrences")
-(if (not (face-differs-from-default-p 'caml-types-occ-face))
-    (set-face-background 'caml-types-occ-face "#44FF44"))
 (overlay-put caml-types-occ-ovl 'face 'caml-types-occ-face)
 
 
@@ -669,7 +665,7 @@ The function uses two overlays.
                            (error (message "End of buffer!")))))
                        (setq speed (* speed speed)))))
                   ;; main action, when the motion is inside the window
-                  ;; or on orginal button down event
+                  ;; or on original button down event
                   ((or (caml-mouse-movement-p event)
                        (equal original-event event))
                    (setq cnum (caml-event-point-end event))
@@ -732,7 +728,7 @@ The function uses two overlays.
       ;; However, it could also be a key stroke before mouse release.
       ;; Emacs does not allow to test whether mouse is up or down.
       ;; Not sure it is robust to loop for mouse release after an error
-      ;; occured, as is done for exploration.
+      ;; occurred, as is done for exploration.
       ;; So far, we just ignore next event. (Next line also be uncommenting.)
       (if event (caml-read-event)))))
 

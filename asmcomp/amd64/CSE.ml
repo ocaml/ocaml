@@ -27,7 +27,7 @@ method! class_of_operation op =
   match op with
   | Ispecific spec ->
     begin match spec with
-    | Ilea _ -> Op_pure
+    | Ilea _ | Isextend32 -> Op_pure
     | Istore_int(_, _, is_asg) -> Op_store is_asg
     | Ioffset_loc(_, _) -> Op_store true
     | Ifloatarithmem _ | Ifloatsqrtf _ -> Op_load

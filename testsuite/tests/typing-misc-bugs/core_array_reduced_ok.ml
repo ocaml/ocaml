@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 type sexp = A of string | L of sexp list
 type 'a t = 'a array
 let _ = fun (_ : 'a t)  -> ()

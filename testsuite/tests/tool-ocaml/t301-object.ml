@@ -1,3 +1,11 @@
+(* TEST
+include tool-ocaml-lib
+flags = "-w a"
+ocaml_script_as_argument = "true"
+* setup-ocaml-build-env
+** ocaml
+*)
+
 (**** file testinterp/t301-object.ml
    suggested by Jacques Garrigue to Basile Starynkevitch
 

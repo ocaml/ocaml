@@ -1,3 +1,10 @@
+(* TEST
+flags = " -principal -w +18+19 -warn-error A "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 type c1 = < c1: c1 >
 type c2 = < c1: c1; c2: c1; c3: c1; c4: c1; c5: c1; c6: c1 >
 type c3 = < c1: c2; c2: c2; c3: c2; c4: c2; c5: c2; c6: c2 >

@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 (* CR-someday mshinwell: move to Flambda_utils *)
 let rec tail_variable : Flambda.t -> Variable.t option = function
@@ -27,11 +28,6 @@ let rec tail_variable : Flambda.t -> Variable.t option = function
 let closure_symbol ~(backend : (module Backend_intf.S)) closure_id =
   let module Backend = (val backend) in
   Backend.closure_symbol closure_id
-
-let make_variable_symbol prefix var =
-  Symbol.create (Compilation_unit.get_current_exn ())
-    (Linkage_name.create
-       (prefix ^ Variable.unique_name (Variable.rename var)))
 
 (** Traverse the given expression assigning symbols to [let]- and [let rec]-
     bound constant variables.  At the same time collect the definitions of
@@ -46,7 +42,7 @@ let assign_symbols_and_collect_constant_definitions
   let assign_symbol var (named : Flambda.named) =
     if not (Inconstant_idents.variable var inconstants) then begin
       let assign_symbol () =
-        let symbol = make_variable_symbol "" var in
+        let symbol = Symbol.of_variable (Variable.rename var) in
         Variable.Tbl.add var_to_symbol_tbl var symbol
       in
       let assign_existing_symbol = Variable.Tbl.add var_to_symbol_tbl var in
@@ -543,6 +539,8 @@ let constant_dependencies ~backend:_
   | Project_closure (s, _) ->
     Symbol.Set.singleton s
 
+module Symbol_SCC = Strongly_connected_components.Make (Symbol)
+
 let program_graph ~backend imported_symbols symbol_to_constant
     (initialize_symbol_tbl :
       (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
@@ -584,7 +582,6 @@ let program_graph ~backend imported_symbols symbol_to_constant
       )
       effect_tbl graph_with_initialisation
   in
-  let module Symbol_SCC = Strongly_connected_components.Make (Symbol) in
   let components =
     Symbol_SCC.connected_components_sorted_from_roots_to_leaf
       graph
@@ -605,7 +602,6 @@ let add_definition_of_symbol constant_definitions
     assert(not (Symbol.Tbl.mem initialize_symbol_tbl sym));
     (sym, Symbol.Map.find sym constant_definitions)
   in
-  let module Symbol_SCC = Strongly_connected_components.Make (Symbol) in
   match component with
   | Symbol_SCC.Has_loop l ->
     let l = List.map symbol_declaration l in
@@ -676,14 +672,7 @@ let introduce_free_variables_in_set_of_closures
              end else begin
                done_something := true;
                let body = Flambda_utils.toplevel_substitution subst body in
-               Flambda.create_function_declaration
-                 ~params:func_decl.params
-                 ~body
-                 ~stub:func_decl.stub
-                 ~dbg:func_decl.dbg
-                 ~inline:func_decl.inline
-                 ~specialise:func_decl.specialise
-                 ~is_a_functor:func_decl.is_a_functor
+               Flambda.update_body_of_function_declaration func_decl ~body
              end)
           function_decls.funs)
   in
@@ -760,12 +749,9 @@ let var_to_block_field
   var_to_block_field_tbl
 
 let program_symbols ~backend (program : Flambda.program) =
-  let new_fake_symbol =
-    let r = ref 0 in
-    fun () ->
-      incr r;
-      Symbol.create (Compilation_unit.get_current_exn ())
-        (Linkage_name.create ("fake_effect_symbol_" ^ string_of_int !r))
+  let new_fake_symbol () =
+    let var = Variable.create Internal_variable_names.fake_effect_symbol in
+    Symbol.of_variable var
   in
   let initialize_symbol_tbl = Symbol.Tbl.create 42 in
   let effect_tbl = Symbol.Tbl.create 42 in
@@ -876,15 +862,10 @@ let project_closure_map symbol_definition_map =
     symbol_definition_map
     Symbol.Map.empty
 
-let the_dead_constant_index = ref 0
-
 let lift_constants (program : Flambda.program) ~backend =
   let the_dead_constant =
-    let index = !the_dead_constant_index in
-    incr the_dead_constant_index;
-    let name = Printf.sprintf "the_dead_constant_%d" index in
-    Symbol.create (Compilation_unit.get_current_exn ())
-      (Linkage_name.create name)
+    let var = Variable.create Internal_variable_names.the_dead_constant in
+    Symbol.of_variable var
   in
   let program_body : Flambda.program_body =
     Let_symbol (the_dead_constant, Allocated_const (Nativeint 0n),

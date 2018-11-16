@@ -1,0 +1,12 @@
+locale from environment
+  print 1.23 : 1.23
+  parse "12345.6789" : 12345.6789
+  roundtrip 1.23 : 1.23
+locale nl_NL
+  print 1.23 : 1.23
+  parse "12345.6789" : 12345.6789
+  roundtrip 1.23 : 1.23
+locale POSIX
+  print 1.23 : 1.23
+  parse "12345.6789" : 12345.6789
+  roundtrip 1.23 : 1.23

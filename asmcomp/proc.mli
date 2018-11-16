@@ -56,6 +56,7 @@ val max_register_pressure: Mach.operation -> int array
 (* Registers destroyed by operations *)
 val destroyed_at_oper: Mach.instruction_desc -> Reg.t array
 val destroyed_at_raise: Reg.t array
+val destroyed_at_reloadretaddr : Reg.t array
 
 (* Volatile registers: those that change value when read *)
 val regs_are_volatile: Reg.t array -> bool
@@ -66,6 +67,15 @@ val op_is_pure: Mach.operation -> bool
 (* Info for laying out the stack frame *)
 val num_stack_slots: int array
 val contains_calls: bool ref
+
+(** For a given register class, the DWARF register numbering for that class.
+    Given an allocated register with location [Reg n] and class [reg_class], the
+    returned array contains the corresponding DWARF register number at index
+    [n - first_available_register.(reg_class)]. *)
+val dwarf_register_numbers : reg_class:int -> int array
+
+(** The DWARF register number corresponding to the stack pointer. *)
+val stack_ptr_dwarf_register_number : int
 
 (* Calling the assembler *)
 val assemble_file: string -> string -> int

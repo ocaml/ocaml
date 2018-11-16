@@ -24,32 +24,30 @@ type type_replacement =
   | Path of Path.t
   | Type_function of { params : type_expr list; body : type_expr }
 
-module PathMap = Map.Make(Path)
-
 type t =
-  { types: type_replacement PathMap.t;
-    modules: Path.t PathMap.t;
-    modtypes: (Ident.t, module_type) Tbl.t;
+  { types: type_replacement Path.Map.t;
+    modules: Path.t Path.Map.t;
+    modtypes: module_type Ident.Map.t;
     for_saving: bool;
   }
 
 let identity =
-  { types = PathMap.empty;
-    modules = PathMap.empty;
-    modtypes = Tbl.empty;
+  { types = Path.Map.empty;
+    modules = Path.Map.empty;
+    modtypes = Ident.Map.empty;
     for_saving = false;
   }
 
-let add_type_path id p s = { s with types = PathMap.add id (Path p) s.types }
+let add_type_path id p s = { s with types = Path.Map.add id (Path p) s.types }
 let add_type id p s = add_type_path (Pident id) p s
 
 let add_type_function id ~params ~body s =
-  { s with types = PathMap.add id (Type_function { params; body }) s.types }
+  { s with types = Path.Map.add id (Type_function { params; body }) s.types }
 
-let add_module_path id p s = { s with modules = PathMap.add id p s.modules }
+let add_module_path id p s = { s with modules = Path.Map.add id p s.modules }
 let add_module id p s = add_module_path (Pident id) p s
 
-let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
+let add_modtype id ty s = { s with modtypes = Ident.Map.add id ty s.modtypes }
 
 let for_saving s = { s with for_saving = true }
 
@@ -61,10 +59,10 @@ let remove_loc =
   {default_mapper with location = (fun _this _loc -> Location.none)}
 
 let is_not_doc = function
-  | ({Location.txt = "ocaml.doc"}, _) -> false
-  | ({Location.txt = "ocaml.text"}, _) -> false
-  | ({Location.txt = "doc"}, _) -> false
-  | ({Location.txt = "text"}, _) -> false
+  | {Parsetree.attr_name = {Location.txt = "ocaml.doc"}; _} -> false
+  | {Parsetree.attr_name = {Location.txt = "ocaml.text"}; _} -> false
+  | {Parsetree.attr_name = {Location.txt = "doc"}; _} -> false
+  | {Parsetree.attr_name = {Location.txt = "text"}; _} -> false
   | _ -> true
 
 let attrs s x =
@@ -78,7 +76,7 @@ let attrs s x =
     else x
 
 let rec module_path s path =
-  try PathMap.find path s.modules
+  try Path.Map.find path s.modules
   with Not_found ->
     match path with
     | Pident _ -> path
@@ -90,7 +88,7 @@ let rec module_path s path =
 let modtype_path s = function
     Pident id as p ->
       begin try
-        match Tbl.find id s.modtypes with
+        match Ident.Map.find id s.modtypes with
           | Mty_ident p -> p
           | _ -> fatal_error "Subst.modtype_path"
       with Not_found -> p end
@@ -100,7 +98,7 @@ let modtype_path s = function
       fatal_error "Subst.modtype_path"
 
 let type_path s path =
-  match PathMap.find path s.types with
+  match Path.Map.find path s.types with
   | Path p -> p
   | Type_function _ -> assert false
   | exception Not_found ->
@@ -119,7 +117,7 @@ let type_path s p =
   | Ext (p, cstr) -> Pdot(module_path s p, cstr, nopos)
 
 let to_subst_by_type_function s p =
-  match PathMap.find p s.types with
+  match Path.Map.find p s.types with
   | Path _ -> false
   | Type_function _ -> true
   | exception Not_found -> false
@@ -131,7 +129,7 @@ let reset_for_saving () = new_id := -1
 
 let newpersty desc =
   decr new_id;
-  { desc = desc; level = generic_level; id = !new_id }
+  { desc; level = generic_level; scope = Btype.lowest_level; id = !new_id }
 
 (* ensure that all occurrences of 'Tvar None' are physically shared *)
 let tvar_none = Tvar None
@@ -184,7 +182,7 @@ let rec typexp s ty =
       else match desc with
       | Tconstr (p, args, _abbrev) ->
          let args = List.map (typexp s) args in
-         begin match PathMap.find p s.types with
+         begin match Path.Map.find p s.types with
          | exception Not_found -> Tconstr(type_path s p, args, ref Mnil)
          | Path _ -> Tconstr(type_path s p, args, ref Mnil)
          | Type_function { params; body } ->
@@ -299,7 +297,8 @@ let type_declaration s decl =
         end;
       type_private = decl.type_private;
       type_variance = decl.type_variance;
-      type_newtype_level = None;
+      type_is_newtype = false;
+      type_expansion_scope = Btype.lowest_level;
       type_loc = loc s decl.type_loc;
       type_attributes = attrs s decl.type_attributes;
       type_immediate = decl.type_immediate;
@@ -386,31 +385,52 @@ let extension_constructor s ext =
     cleanup_types ();
     ext
 
-let rec rename_bound_idents s idents = function
-    [] -> (List.rev idents, s)
-  | Sig_type(id, _, _) :: sg ->
+let rec rename_bound_idents s sg = function
+    [] -> sg, s
+  | Sig_type(id, td, rs) :: rest ->
       let id' = Ident.rename id in
-      rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
-  | Sig_module(id, _, _) :: sg ->
+      rename_bound_idents
+        (add_type id (Pident id') s)
+        (Sig_type(id', td, rs) :: sg)
+        rest
+  | Sig_module(id, md, rs) :: rest ->
       let id' = Ident.rename id in
-      rename_bound_idents (add_module id (Pident id') s) (id' :: idents) sg
-  | Sig_modtype(id, _) :: sg ->
+      rename_bound_idents
+        (add_module id (Pident id') s)
+        (Sig_module (id', md, rs) :: sg)
+        rest
+  | Sig_modtype(id, mtd) :: rest ->
       let id' = Ident.rename id in
-      rename_bound_idents (add_modtype id (Mty_ident(Pident id')) s)
-                          (id' :: idents) sg
-  | (Sig_class(id, _, _) | Sig_class_type(id, _, _)) :: sg ->
+      rename_bound_idents
+        (add_modtype id (Mty_ident(Pident id')) s)
+        (Sig_modtype(id', mtd) :: sg)
+        rest
+  | Sig_class(id, cd, rs) :: rest ->
       (* cheat and pretend they are types cf. PR#6650 *)
       let id' = Ident.rename id in
-      rename_bound_idents (add_type id (Pident id') s) (id' :: idents) sg
-  | (Sig_value(id, _) | Sig_typext(id, _, _)) :: sg ->
+      rename_bound_idents
+        (add_type id (Pident id') s)
+        (Sig_class(id', cd, rs) :: sg)
+        rest
+  | Sig_class_type(id, ctd, rs) :: rest ->
+      (* cheat and pretend they are types cf. PR#6650 *)
       let id' = Ident.rename id in
-      rename_bound_idents s (id' :: idents) sg
+      rename_bound_idents
+        (add_type id (Pident id') s)
+        (Sig_class_type(id', ctd, rs) :: sg)
+        rest
+  | Sig_value(id, vd) :: rest ->
+      let id' = Ident.rename id in
+      rename_bound_idents s (Sig_value(id', vd) :: sg) rest
+  | Sig_typext(id, ec, es) :: rest ->
+      let id' = Ident.rename id in
+      rename_bound_idents s (Sig_typext(id',ec,es) :: sg) rest
 
 let rec modtype s = function
     Mty_ident p as mty ->
       begin match p with
         Pident id ->
-          begin try Tbl.find id s.modtypes with Not_found -> mty end
+          begin try Ident.Map.find id s.modtypes with Not_found -> mty end
       | Pdot(p, n, pos) ->
           Mty_ident(Pdot(module_path s p, n, pos))
       | Papply _ ->
@@ -429,26 +449,27 @@ and signature s sg =
   (* Components of signature may be mutually recursive (e.g. type declarations
      or class and type declarations), so first build global renaming
      substitution... *)
-  let (new_idents, s') = rename_bound_idents s [] sg in
+  let (sg', s') = rename_bound_idents s [] sg in
   (* ... then apply it to each signature component in turn *)
-  List.map2 (signature_component s') sg new_idents
+  List.rev_map (signature_item s') sg'
 
-and signature_component s comp newid =
+
+and signature_item s comp =
   match comp with
-    Sig_value(_id, d) ->
-      Sig_value(newid, value_description s d)
-  | Sig_type(_id, d, rs) ->
-      Sig_type(newid, type_declaration s d, rs)
-  | Sig_typext(_id, ext, es) ->
-      Sig_typext(newid, extension_constructor s ext, es)
-  | Sig_module(_id, d, rs) ->
-      Sig_module(newid, module_declaration s d, rs)
-  | Sig_modtype(_id, d) ->
-      Sig_modtype(newid, modtype_declaration s d)
-  | Sig_class(_id, d, rs) ->
-      Sig_class(newid, class_declaration s d, rs)
-  | Sig_class_type(_id, d, rs) ->
-      Sig_class_type(newid, cltype_declaration s d, rs)
+    Sig_value(id, d) ->
+      Sig_value(id, value_description s d)
+  | Sig_type(id, d, rs) ->
+      Sig_type(id, type_declaration s d, rs)
+  | Sig_typext(id, ext, es) ->
+      Sig_typext(id, extension_constructor s ext, es)
+  | Sig_module(id, d, rs) ->
+      Sig_module(id, module_declaration s d, rs)
+  | Sig_modtype(id, d) ->
+      Sig_modtype(id, modtype_declaration s d)
+  | Sig_class(id, d, rs) ->
+      Sig_class(id, class_declaration s d, rs)
+  | Sig_class_type(id, d, rs) ->
+      Sig_class_type(id, cltype_declaration s d, rs)
 
 and module_declaration s decl =
   {
@@ -464,14 +485,15 @@ and modtype_declaration s decl  =
     mtd_loc = loc s decl.mtd_loc;
   }
 
+
 (* For every binding k |-> d of m1, add k |-> f d to m2
    and return resulting merged map. *)
 
 let merge_tbls f m1 m2 =
-  Tbl.fold (fun k d accu -> Tbl.add k (f d) accu) m1 m2
+  Ident.Map.fold (fun k d accu -> Ident.Map.add k (f d) accu) m1 m2
 
 let merge_path_maps f m1 m2 =
-  PathMap.fold (fun k d accu -> PathMap.add k (f d) accu) m1 m2
+  Path.Map.fold (fun k d accu -> Path.Map.add k (f d) accu) m1 m2
 
 let type_replacement s = function
   | Path p -> Path (type_path s p)

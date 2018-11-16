@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 type t = {
   compilation_unit : Compilation_unit.t;
@@ -42,7 +43,7 @@ include Identifiable.Make (struct
   let output chan t =
     output_string chan t.name;
     output_string chan "_";
-    output_string chan (string_of_int t.name_stamp)
+    output_string chan (Int.to_string t.name_stamp)
 
   let hash t = t.name_stamp lxor (Compilation_unit.hash t.compilation_unit)
 
@@ -61,7 +62,7 @@ end)
 
 let previous_name_stamp = ref (-1)
 
-let create ?current_compilation_unit name =
+let create_with_name_string ?current_compilation_unit name =
   let compilation_unit =
     match current_compilation_unit with
     | Some compilation_unit -> compilation_unit
@@ -76,31 +77,25 @@ let create ?current_compilation_unit name =
     name_stamp;
   }
 
-let create_with_same_name_as_ident ident = create (Ident.name ident)
+let create ?current_compilation_unit name =
+  let name = (name : Internal_variable_names.t :> string) in
+  create_with_name_string ?current_compilation_unit name
 
-let clambda_name t =
-  (Compilation_unit.string_for_printing t.compilation_unit) ^ "_" ^ t.name
+let create_with_same_name_as_ident ident =
+  create_with_name_string (Ident.name ident)
 
-let rename ?current_compilation_unit ?append t =
-  let current_compilation_unit =
-    match current_compilation_unit with
-    | Some compilation_unit -> compilation_unit
-    | None -> Compilation_unit.get_current_exn ()
-  in
-  let name =
-    match append with
-    | None -> t.name
-    | Some s -> t.name ^ s
-  in
-  create ~current_compilation_unit name
+let rename ?current_compilation_unit t =
+  create_with_name_string ?current_compilation_unit t.name
 
 let in_compilation_unit t cu =
   Compilation_unit.equal cu t.compilation_unit
 
 let get_compilation_unit t = t.compilation_unit
 
+let name t = t.name
+
 let unique_name t =
-  t.name ^ "_" ^ (string_of_int t.name_stamp)
+  t.name ^ "_" ^ (Int.to_string t.name_stamp)
 
 let print_list ppf ts =
   List.iter (fun t -> Format.fprintf ppf "@ %a" print t) ts

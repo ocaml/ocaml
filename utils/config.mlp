@@ -28,10 +28,11 @@ let standard_library =
   with Not_found ->
     standard_library_default
 
-let standard_runtime = "%%BYTERUN%%"
 let ccomp_type = "%%CCOMPTYPE%%"
 let c_compiler = "%%CC%%"
 let c_output_obj = "%%OUTPUTOBJ%%"
+let c_has_debug_prefix_map = %%CC_HAS_DEBUG_PREFIX_MAP%%
+let as_has_debug_prefix_map = %%AS_HAS_DEBUG_PREFIX_MAP%%
 let ocamlc_cflags = "%%OCAMLC_CFLAGS%%"
 let ocamlc_cppflags = "%%OCAMLC_CPPFLAGS%%"
 let ocamlopt_cflags = "%%OCAMLOPT_CFLAGS%%"
@@ -73,33 +74,36 @@ let mkdll, mkexe, mkmaindll =
 
 let profiling = %%PROFILING%%
 let flambda = %%FLAMBDA%%
+let with_flambda_invariants = %%WITH_FLAMBDA_INVARIANTS%%
 let safe_string = %%FORCE_SAFE_STRING%%
 let default_safe_string = %%DEFAULT_SAFE_STRING%%
 let windows_unicode = %%WINDOWS_UNICODE%% != 0
+let supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
 
 let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 
 let afl_instrument = %%AFL_INSTRUMENT%%
 
-let exec_magic_number = "Caml1999X011"
-and cmi_magic_number = "Caml1999I022"
-and cmo_magic_number = "Caml1999O022"
-and cma_magic_number = "Caml1999A022"
+let exec_magic_number = "Caml1999X023"
+    (* exec_magic_number is duplicated in runtime/caml/exec.h *)
+and cmi_magic_number = "Caml1999I023"
+and cmo_magic_number = "Caml1999O023"
+and cma_magic_number = "Caml1999A023"
 and cmx_magic_number =
   if flambda then
-    "Caml1999y022"
+    "Caml1999y023"
   else
-    "Caml1999Y022"
+    "Caml1999Y023"
 and cmxa_magic_number =
   if flambda then
-    "Caml1999z022"
+    "Caml1999z023"
   else
-    "Caml1999Z022"
-and ast_impl_magic_number = "Caml1999M022"
-and ast_intf_magic_number = "Caml1999N022"
-and cmxs_magic_number = "Caml1999D022"
+    "Caml1999Z023"
+and ast_impl_magic_number = "Caml1999M023"
+and ast_intf_magic_number = "Caml1999N023"
+and cmxs_magic_number = "Caml1999D023"
     (* cmxs_magic_number is duplicated in otherlibs/dynlink/natdynlink.ml *)
-and cmt_magic_number = "Caml1999T022"
+and cmt_magic_number = "Caml1999T023"
 
 let load_path = ref ([] : string list)
 
@@ -112,7 +116,7 @@ let max_tag = 245
 let lazy_tag = 246
 
 let max_young_wosize = 256
-let stack_threshold = 256 (* see byterun/config.h *)
+let stack_threshold = 256 (* see runtime/caml/config.h *)
 let stack_safety_margin = 60
 
 let architecture = "%%ARCH%%"
@@ -150,14 +154,19 @@ let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
 let flexdll_dirs = [%%FLEXDLL_DIR%%];;
 
-let print_config oc =
-  let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
-  let p_int name valu = Printf.fprintf oc "%s: %d\n" name valu in
-  let p_bool name valu = Printf.fprintf oc "%s: %B\n" name valu in
+type configuration_value =
+  | String of string
+  | Int of int
+  | Bool of bool
+
+let configuration_variables =
+  let p x v = (x, String v) in
+  let p_int x v = (x, Int v) in
+  let p_bool x v = (x, Bool v) in
+[
   p "version" version;
   p "standard_library_default" standard_library_default;
   p "standard_library" standard_library;
-  p "standard_runtime" standard_runtime;
   p "ccomp_type" ccomp_type;
   p "c_compiler" c_compiler;
   p "ocamlc_cflags" ocamlc_cflags;
@@ -197,8 +206,8 @@ let print_config oc =
   p_bool "flat_float_array" flat_float_array;
   p_bool "afl_instrument" afl_instrument;
   p_bool "windows_unicode" windows_unicode;
+  p_bool "supports_shared_libraries" supports_shared_libraries;
 
-  (* print the magic number *)
   p "exec_magic_number" exec_magic_number;
   p "cmi_magic_number" cmi_magic_number;
   p "cmo_magic_number" cmo_magic_number;
@@ -209,6 +218,30 @@ let print_config oc =
   p "ast_intf_magic_number" ast_intf_magic_number;
   p "cmxs_magic_number" cmxs_magic_number;
   p "cmt_magic_number" cmt_magic_number;
+]
 
+let print_config_value oc = function
+  | String s ->
+      Printf.fprintf oc "%s" s
+  | Int n ->
+      Printf.fprintf oc "%d" n
+  | Bool p ->
+      Printf.fprintf oc "%B" p
+
+let print_config oc =
+  let print (x, v) =
+    Printf.fprintf oc "%s: %a\n" x print_config_value v in
+  List.iter print configuration_variables;
   flush oc;
 ;;
+
+let config_var x =
+  match List.assoc_opt x configuration_variables with
+  | None -> None
+  | Some v ->
+      let s = match v with
+        | String s -> s
+        | Int n -> Int.to_string n
+        | Bool b -> string_of_bool b
+      in
+      Some s

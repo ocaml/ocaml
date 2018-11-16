@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* test whether padding modifiers are accepted without any padding
    size
 

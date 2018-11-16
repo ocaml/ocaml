@@ -32,10 +32,10 @@ let print_raw =
 
 (**** Type level management ****)
 
-let generic_level = 100000000
+let generic_level = Ident.highest_scope
 
 (* Used to mark a type during a traversal. *)
-let lowest_level = 0
+let lowest_level = Ident.lowest_scope
 let pivot_level = 2 * lowest_level - 1
     (* pivot_level - lowest_level < lowest_level *)
 
@@ -44,7 +44,7 @@ let pivot_level = 2 * lowest_level - 1
 let new_id = ref (-1)
 
 let newty2 level desc  =
-  incr new_id; { desc; level; id = !new_id }
+  incr new_id; { desc; level; scope = lowest_level; id = !new_id }
 let newgenty desc      = newty2 generic_level desc
 let newgenvar ?name () = newgenty (Tvar name)
 (*
@@ -72,6 +72,7 @@ type change =
     Ctype of type_expr * type_desc
   | Ccompress of type_expr * type_desc * type_desc
   | Clevel of type_expr * int
+  | Cscope of type_expr * int
   | Cname of
       (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
   | Crow of row_field option ref * row_field option
@@ -209,7 +210,7 @@ let proxy ty =
 
 (**** Utilities for fixed row private types ****)
 
-let row_of_type t = 
+let row_of_type t =
   match (repr t).desc with
     Tobject(t,_) ->
       let rec get_row t =
@@ -242,37 +243,61 @@ let is_constr_row ~allow_ident t =
                   (*  Utilities for type traversal  *)
                   (**********************************)
 
-let rec iter_row f row =
-  List.iter
-    (fun (_, fi) ->
-      match row_field_repr fi with
-      | Rpresent(Some ty) -> f ty
-      | Reither(_, tl, _, _) -> List.iter f tl
-      | _ -> ())
-    row.row_fields;
+let rec fold_row f init row =
+  let result =
+    List.fold_left
+      (fun init (_, fi) ->
+         match row_field_repr fi with
+         | Rpresent(Some ty) -> f init ty
+         | Reither(_, tl, _, _) -> List.fold_left f init tl
+         | _ -> init)
+      init
+      row.row_fields
+  in
   match (repr row.row_more).desc with
-    Tvariant row -> iter_row f row
+    Tvariant row -> fold_row f result row
   | Tvar _ | Tunivar _ | Tsubst _ | Tconstr _ | Tnil ->
-      Misc.may (fun (_,l) -> List.iter f l) row.row_name
+    begin match
+      Misc.may_map (fun (_,l) -> List.fold_left f result l) row.row_name
+    with
+    | None -> result
+    | Some result -> result
+    end
   | _ -> assert false
 
-let iter_type_expr f ty =
+let iter_row f row =
+  fold_row (fun () v -> f v) () row
+
+let fold_type_expr f init ty =
   match ty.desc with
-    Tvar _              -> ()
-  | Tarrow (_, ty1, ty2, _) -> f ty1; f ty2
-  | Ttuple l            -> List.iter f l
-  | Tconstr (_, l, _)   -> List.iter f l
+    Tvar _              -> init
+  | Tarrow (_, ty1, ty2, _) ->
+    let result = f init ty1 in
+    f result ty2
+  | Ttuple l            -> List.fold_left f init l
+  | Tconstr (_, l, _)   -> List.fold_left f init l
   | Tobject(ty, {contents = Some (_, p)})
-                        -> f ty; List.iter f p
-  | Tobject (ty, _)     -> f ty
-  | Tvariant row        -> iter_row f row; f (row_more row)
-  | Tfield (_, _, ty1, ty2) -> f ty1; f ty2
-  | Tnil                -> ()
-  | Tlink ty            -> f ty
-  | Tsubst ty           -> f ty
-  | Tunivar _           -> ()
-  | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
-  | Tpackage (_, _, l)  -> List.iter f l
+    ->
+    let result = f init ty in
+    List.fold_left f result p
+  | Tobject (ty, _)     -> f init ty
+  | Tvariant row        ->
+    let result = fold_row f init row in
+    f result (row_more row)
+  | Tfield (_, _, ty1, ty2) ->
+    let result = f init ty1 in
+    f result ty2
+  | Tnil                -> init
+  | Tlink ty            -> f init ty
+  | Tsubst ty           -> f init ty
+  | Tunivar _           -> init
+  | Tpoly (ty, tyl)     ->
+    let result = f init ty in
+    List.fold_left f result tyl
+  | Tpackage (_, _, l)  -> List.fold_left f init l
+
+let iter_type_expr f ty =
+  fold_type_expr (fun () v -> f v) () ty
 
 let rec iter_abbrev f = function
     Mnil                   -> ()
@@ -582,7 +607,7 @@ let memorize_abbrev mem priv path v v' =
 let rec forget_abbrev_rec mem path =
   match mem with
     Mnil ->
-      assert false
+      mem
   | Mcons (_, path', _, _, rem) when Path.same path path' ->
       rem
   | Mcons (priv, path', v, v', rem) ->
@@ -639,6 +664,7 @@ let undo_change = function
     Ctype  (ty, desc) -> ty.desc <- desc
   | Ccompress  (ty, desc, _) -> ty.desc <- desc
   | Clevel (ty, level) -> ty.level <- level
+  | Cscope (ty, scope) -> ty.scope <- scope
   | Cname  (r, v) -> r := v
   | Crow   (r, v) -> r := v
   | Ckind  (r, v) -> r := v
@@ -670,8 +696,15 @@ let link_type ty ty' =
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
 let set_level ty level =
-  if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
-  ty.level <- level
+  if level <> ty.level then begin
+    if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
+    ty.level <- level
+  end
+let set_scope ty scope =
+  if scope <> ty.scope then begin
+    if ty.id <= !last_snapshot then log_change (Cscope (ty, ty.scope));
+    ty.scope <- scope
+  end
 let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
 let set_name nm v =

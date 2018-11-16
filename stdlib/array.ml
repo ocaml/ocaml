@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* An alias for the type of arrays. *)
+type 'a t = 'a array
+
 (* Array operations *)
 
 external length : 'a array -> int = "%array_length"
@@ -302,3 +305,40 @@ let stable_sort cmp a =
 
 
 let fast_sort = stable_sort
+
+(** {1 Iterators} *)
+
+let to_seq a =
+  let rec aux i () =
+    if i < length a
+    then
+      let x = unsafe_get a i in
+      Seq.Cons (x, aux (i+1))
+    else Seq.Nil
+  in
+  aux 0
+
+let to_seqi a =
+  let rec aux i () =
+    if i < length a
+    then
+      let x = unsafe_get a i in
+      Seq.Cons ((i,x), aux (i+1))
+    else Seq.Nil
+  in
+  aux 0
+
+let of_rev_list = function
+    [] -> [||]
+  | hd::tl as l ->
+      let len = list_length 0 l in
+      let a = create len hd in
+      let rec fill i = function
+          [] -> a
+        | hd::tl -> unsafe_set a i hd; fill (i-1) tl
+      in
+      fill (len-2) tl
+
+let of_seq i =
+  let l = Seq.fold_left (fun acc x -> x::acc) [] i in
+  of_rev_list l

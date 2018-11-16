@@ -1,39 +1,12 @@
 \chapter{Language extensions} \label{c:extensions}
-\pdfchapter{Language extensions}
 %HEVEA\cutname{extn.html}
 
 This chapter describes language extensions and convenience features
 that are implemented in OCaml, but not described in the
 OCaml reference manual.
 
-\section{Integer literals for types \texttt{int32}, \texttt{int64}
-         and \texttt{nativeint}} \label{s:ext-integer}
 
-(Introduced in Objective Caml 3.07)
-
-\begin{syntax}
-constant: ...
-          | int32-literal
-          | int64-literal
-          | nativeint-literal
-;
-int32-literal: integer-literal 'l'
-;
-int64-literal: integer-literal 'L'
-;
-nativeint-literal: integer-literal 'n'
-\end{syntax}
-
-An integer literal can be followed by one of the letters "l", "L" or "n"
-to indicate that this integer has type "int32", "int64" or "nativeint"
-respectively, instead of the default type "int" for integer literals.
-\index{int32\@\verb`int32`}
-\index{int64\@\verb`int64`}
-\index{nativeint\@\verb`nativeint`}
-The library modules "Int32"[\moduleref{Int32}],
-"Int64"[\moduleref{Int64}] and "Nativeint"[\moduleref{Nativeint}]
-provide operations on these integer types.
-
+%HEVEA\cutdef{section}
 \section{Recursive definitions of values} \label{s:letrecvalues}
 
 (Introduced in Objective Caml 1.00)
@@ -158,31 +131,31 @@ Recursive module definitions, introduced by the @"module rec"@ \ldots
 @module-expr@ and the @module-type@ to refer recursively to the module
 identifiers being defined.  A typical example of a recursive module
 definition is:
-\begin{verbatim}
-    module rec A : sig
-                     type t = Leaf of string | Node of ASet.t
-                     val compare: t -> t -> int
-                   end
-                 = struct
-                     type t = Leaf of string | Node of ASet.t
-                     let compare t1 t2 =
-                       match (t1, t2) with
-                         (Leaf s1, Leaf s2) -> Pervasives.compare s1 s2
-                       | (Leaf _, Node _) -> 1
-                       | (Node _, Leaf _) -> -1
-                       | (Node n1, Node n2) -> ASet.compare n1 n2
-                   end
-        and ASet : Set.S with type elt = A.t
-                 = Set.Make(A)
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+module rec A : sig
+  type t = Leaf of string | Node of ASet.t
+  val compare: t -> t -> int
+end = struct
+  type t = Leaf of string | Node of ASet.t
+  let compare t1 t2 =
+    match (t1, t2) with
+    | (Leaf s1, Leaf s2) -> Stdlib.compare s1 s2
+    | (Leaf _, Node _) -> 1
+    | (Node _, Leaf _) -> -1
+    | (Node n1, Node n2) -> ASet.compare n1 n2
+end
+and ASet
+  : Set.S with type elt = A.t
+  = Set.Make(A)
+\end{caml_example*}
 It can be given the following specification:
-\begin{verbatim}
-    module rec A : sig
-                     type t = Leaf of string | Node of ASet.t
-                     val compare: t -> t -> int
-                   end
-        and ASet : Set.S with type elt = A.t
-\end{verbatim}
+\begin{caml_example*}{signature}
+module rec A : sig
+  type t = Leaf of string | Node of ASet.t
+  val compare: t -> t -> int
+end
+and ASet : Set.S with type elt = A.t
+\end{caml_example*}
 
 This is an experimental extension of OCaml: the class of
 recursive definitions accepted, as well as its dynamic semantics are
@@ -199,7 +172,19 @@ module expressions are then evaluated, and the initial values
 for the safe modules are replaced by the values thus computed.  If a
 function component of a safe module is applied during this computation
 (which corresponds to an ill-founded recursive definition), the
-"Undefined_recursive_module" exception is raised.
+"Undefined_recursive_module" exception is raised at runtime:
+
+\begin{caml_example}{verbatim}
+module rec M: sig val f: unit -> int end = struct let f () = N.x end
+and N:sig val x: int end = struct let x = M.f () end
+\end{caml_example}
+
+If there are no safe modules along a dependency cycle, an error is raised
+
+\begin{caml_example}{verbatim}[error]
+module rec M: sig val x: int end = struct let x = N.y end
+and N:sig val x: int val y:int end = struct let x = M.x let y = 0 end
+\end{caml_example}
 
 Note that, in the @specification@ case, the @module-type@s must be
 parenthesized if they use the @'with' mod-constraint@ construct.
@@ -241,18 +226,17 @@ The typical use of private types is in the export signature of a
 module, to ensure that construction of values of the private type always
 go through the functions provided by the module, while still allowing
 pattern-matching outside the defining module.  For example:
-\begin{verbatim}
-        module M : sig
-                     type t = private A | B of int
-                     val a : t
-                     val b : int -> t
-                   end
-                 = struct
-                     type t = A | B of int
-                     let a = A
-                     let b n = assert (n > 0); B n
-                   end
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+module M : sig
+  type t = private A | B of int
+  val a : t
+  val b : int -> t
+end = struct
+  type t = A | B of int
+  let a = A
+  let b n = assert (n > 0); B n
+end
+\end{caml_example*}
 Here, the @"private"@ declaration ensures that in any value of type
 "M.t", the argument to the "B" constructor is always a positive integer.
 
@@ -279,18 +263,17 @@ advantage of this knowledge to perform type-directed optimizations.
 
 The following example uses a private type abbreviation to define a
 module of nonnegative integers:
-\begin{verbatim}
-        module N : sig
-                     type t = private int
-                     val of_int: int -> t
-                     val to_int: t -> int
-                   end
-                 = struct
-                     type t = int
-                     let of_int n = assert (n >= 0); n
-                     let to_int n = n
-                   end
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+module N : sig
+  type t = private int
+  val of_int: int -> t
+  val to_int: t -> int
+end = struct
+  type t = int
+  let of_int n = assert (n >= 0); n
+  let to_int n = n
+end
+\end{caml_example*}
 The type "N.t" is incompatible with "int", ensuring that nonnegative
 integers and regular integers are not confused.  However, if "x" has
 type "N.t", the coercion "(x :> int)" is legal and returns the
@@ -324,48 +307,48 @@ above should denote either an object type or a polymorphic variant
 type, with some possibility of refinement left. If the private
 declaration is used in an interface, the corresponding implementation
 may either provide a ground instance, or a refined private type.
-\begin{verbatim}
-   module M : sig type c = private < x : int; .. > val o : c end =
-     struct
-       class c = object method x = 3 method y = 2 end
-       let o = new c
-     end
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+module M : sig type c = private < x : int; .. > val o : c end =
+struct
+  class c = object method x = 3 method y = 2 end
+  let o = new c
+end
+\end{caml_example*}
 This declaration does more than hiding the "y" method, it also makes
 the type "c" incompatible with any other closed object type, meaning
 that only "o" will be of type "c". In that respect it behaves
 similarly to private record types. But private row types are
 more flexible with respect to incremental refinement. This feature can
 be used in combination with functors.
-\begin{verbatim}
-   module F(X : sig type c = private < x : int; .. > end) =
-     struct
-       let get_x (o : X.c) = o#x
-     end
-   module G(X : sig type c = private < x : int; y : int; .. > end) =
-     struct
-       include F(X)
-       let get_y (o : X.c) = o#y
-     end
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+module F(X : sig type c = private < x : int; .. > end) =
+struct
+  let get_x (o : X.c) = o#x
+end
+module G(X : sig type c = private < x : int; y : int; .. > end) =
+struct
+  include F(X)
+  let get_y (o : X.c) = o#y
+end
+\end{caml_example*}
 
 A polymorphic variant type [t], for example
-\begin{verbatim}
-   type t = [ `A of int | `B of bool ]
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+type t = [ `A of int | `B of bool ]
+\end{caml_example*}
 can be refined in two ways. A definition [u] may add new field to [t],
 and the declaration
-\begin{verbatim}
-  type u = private [> t]
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+type u = private [> t]
+\end{caml_example*}
 will keep those new fields abstract. Construction of values of type
 [u] is possible using the known variants of [t], but any
 pattern-matching will require a default case to handle the potential
 extra fields. Dually, a declaration [u] may restrict the fields of [t]
 through abstraction: the declaration
-\begin{verbatim}
-  type v = private [< t > `A]
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+type v = private [< t > `A]
+\end{caml_example*}
 corresponds to private variant types. One cannot create a value of the
 private type [v], except using the constructors that are explicitly
 listed as present, "(`A n)" in this example; yet, when
@@ -418,14 +401,14 @@ In an object copy expression,
 a single identifier @id@ stands for @id '=' id@, and a qualified identifier
 @module-path '.' id@ stands for @module-path '.' id '=' id@.
 For example, all following methods are equivalent:
-\begin{verbatim}
-          object
-            val x=0. val y=0. val z=0.
-            method f_0 x y = {< x; y >}
-            method f_1 x y = {< x = x; y >}
-            method f_2 x y = {< x=x ; y = y >}
-          end
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+object
+  val x=0. val y=0. val z=0.
+  method f_0 x y = {< x; y >}
+  method f_1 x y = {< x = x; y >}
+  method f_2 x y = {< x=x ; y = y >}
+end
+\end{caml_example*}
 
 \section{Locally abstract types}
 \ikwd{type\@\texttt{type}}
@@ -448,40 +431,40 @@ suspend the evaluation of @expr@ as a regular abstraction would.  The
 syntax has been chosen to fit nicely in the context of function
 declarations, where it is generally used. It is possible to freely mix
 regular function parameters with pseudo type parameters, as in:
-\begin{verbatim}
-        let f = fun (type t) (foo : t list) -> ...
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+let f = fun (type t) (foo : t list) -> (assert false)[@ellipsis]
+\end{caml_example*}
 and even use the alternative syntax for declaring functions:
-\begin{verbatim}
-        let f (type t) (foo : t list) = ...
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+let f (type t) (foo : t list) = (assert false)[@ellipsis]
+\end{caml_example*}
 If several locally abstract types need to be introduced, it is possible to use
 the syntax
 @"fun" '(' "type" typeconstr-name_1 \ldots typeconstr-name_n ')' "->" expr@
 as syntactic sugar for @"fun" '(' "type" typeconstr-name_1 ')' "->" \ldots "->"
 "fun" '(' "type" typeconstr-name_n ')' "->" expr@. For instance,
-\begin{verbatim}
-        let f = fun (type t u v) -> fun (foo : (t * u * v) list) -> ...
-        let f' (type t u v) (foo : (t * u * v) list) = ...
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+let f = fun (type t u v) -> fun (foo : (t * u * v) list) -> (assert false)[@ellipsis]
+let f' (type t u v) (foo : (t * u * v) list) = (assert false)[@ellipsis]
+\end{caml_example}
 
 This construction is useful because the type constructors it introduces
 can be used in places where a type variable is not allowed. For
 instance, one can use it to define an exception in a local module
 within a polymorphic function.
-\begin{verbatim}
-        let f (type t) () =
-          let module M = struct exception E of t end in
-          (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+let f (type t) () =
+  let module M = struct exception E of t end in
+  (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
+\end{caml_example*}
 
 Here is another example:
-\begin{verbatim}
-        let sort_uniq (type s) (cmp : s -> s -> int) =
-          let module S = Set.Make(struct type t = s let compare = cmp end) in
-          fun l ->
-            S.elements (List.fold_right S.add l S.empty)
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+let sort_uniq (type s) (cmp : s -> s -> int) =
+  let module S = Set.Make(struct type t = s let compare = cmp end) in
+  fun l ->
+    S.elements (List.fold_right S.add l S.empty)
+\end{caml_example*}
 
 It is also extremely useful for first-class modules (see
 section~\ref{s-first-class-modules}) and generalized algebraic datatypes
@@ -506,15 +489,15 @@ The @"(type" typeconstr-name")"@ syntax construction by itself does not make
 polymorphic the type variable it introduces, but it can be combined
 with explicit polymorphic annotations where needed.
 The above rule is provided as syntactic sugar to make this easier:
-\begin{verbatim}
-        let rec f : type t1 t2. t1 * t2 list -> t1 = ...
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+let rec f : type t1 t2. t1 * t2 list -> t1 = (assert false)[@ellipsis]
+\end{caml_example*}
 \noindent
 is automatically expanded into
-\begin{verbatim}
-        let rec f : 't1 't2. 't1 * 't2 list -> 't1 =
-          fun (type t1) (type t2) -> (... : t1 * t2 list -> t1)
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+let rec f : 't1 't2. 't1 * 't2 list -> 't1 =
+  fun (type t1) (type t2) -> ( (assert false)[@ellipsis] : t1 * t2 list -> t1)
+\end{caml_example*}
 This syntax can be very useful when defining recursive functions involving
 GADTs, see the section~\ref{s:gadts} for a more detailed explanation.
 
@@ -608,54 +591,61 @@ select at run-time among several implementations of a signature.
 Each implementation is a structure that we can encapsulate as a
 first-class module, then store in a data structure such as a hash
 table:
-\begin{verbatim}
-        module type DEVICE = sig ... end
-        let devices : (string, (module DEVICE)) Hashtbl.t = Hashtbl.create 17
+\begin{caml_example*}{verbatim}
+type picture = unit[@ellipsis]
+module type DEVICE = sig
+  val draw : picture -> unit
+  [@@@ellipsis]
+end
+let devices : (string, (module DEVICE)) Hashtbl.t = Hashtbl.create 17
 
-        module SVG = struct ... end
-        let _ = Hashtbl.add devices "SVG" (module SVG : DEVICE)
+module SVG = struct let draw () = () [@@ellipsis] end
+let _ = Hashtbl.add devices "SVG" (module SVG : DEVICE)
 
-        module PDF = struct ... end
-        let _ = Hashtbl.add devices "PDF" (module PDF: DEVICE)
-\end{verbatim}
+module PDF = struct let draw () = () [@@ellipsis] end
+let _ = Hashtbl.add devices "PDF" (module PDF: DEVICE)
+\end{caml_example*}
+
 We can then select one implementation based on command-line
 arguments, for instance:
-\begin{verbatim}
-        module Device =
-          (val (try Hashtbl.find devices (parse_cmdline())
-                with Not_found -> eprintf "Unknown device %s\n"; exit 2)
-           : DEVICE)
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+let parse_cmdline () = "SVG"[@ellipsis]
+module Device =
+  (val (let device_name = parse_cmdline () in
+        try Hashtbl.find devices device_name
+        with Not_found ->
+          Printf.eprintf "Unknown device %s\n" device_name;
+          exit 2)
+   : DEVICE)
+\end{caml_example*}
 Alternatively, the selection can be performed within a function:
-\begin{verbatim}
-        let draw_using_device device_name picture =
-          let module Device =
-            (val (Hashtbl.find_devices device_name) : DEVICE)
-          in
-            Device.draw picture
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+let draw_using_device device_name picture =
+  let module Device =
+    (val (Hashtbl.find devices device_name) : DEVICE)
+  in
+  Device.draw picture
+\end{caml_example*}
 
 \paragraph{Advanced examples}
 With first-class modules, it is possible to parametrize some code over the
 implementation of a module without using a functor.
 
-\begin{verbatim}
-        let sort (type s) (module Set : Set.S with type elt = s) l =
-          Set.elements (List.fold_right Set.add l Set.empty)
-        val sort : (module Set.S with type elt = 'a) -> 'a list -> 'a list
-\end{verbatim}
+\begin{caml_example}{verbatim}
+let sort (type s) (module Set : Set.S with type elt = s) l =
+  Set.elements (List.fold_right Set.add l Set.empty)
+\end{caml_example}
 
 To use this function, one can wrap the "Set.Make" functor:
 
-\begin{verbatim}
-        let make_set (type s) cmp =
-          let module S = Set.Make(struct
-            type t = s
-            let compare = cmp
-          end) in
-          (module S : Set.S with type elt = s)
-        val make_set : ('a -> 'a -> int) -> (module Set.S with type elt = 'a)
-\end{verbatim}
+\begin{caml_example}{verbatim}
+let make_set (type s) cmp =
+  let module S = Set.Make(struct
+    type t = s
+    let compare = cmp
+  end) in
+  (module S : Set.S with type elt = s)
+\end{caml_example}
 
 \iffalse
 Another advanced use of first-class module is to encode existential
@@ -663,38 +653,38 @@ types. In particular, they can be used to simulate generalized
 algebraic data types (GADT). To demonstrate this, we first define a type
 of witnesses for type equalities:
 
-\begin{verbatim}
-        module TypEq : sig
-          type ('a, 'b) t
-          val apply: ('a, 'b) t -> 'a -> 'b
-          val refl: ('a, 'a) t
-          val sym: ('a, 'b) t -> ('b, 'a) t
-        end = struct
-          type ('a, 'b) t = ('a -> 'b) * ('b -> 'a)
-          let refl = (fun x -> x), (fun x -> x)
-          let apply (f, _) x = f x
-          let sym (f, g) = (g, f)
-        end
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+module TypEq : sig
+  type ('a, 'b) t
+  val apply: ('a, 'b) t -> 'a -> 'b
+  val refl: ('a, 'a) t
+  val sym: ('a, 'b) t -> ('b, 'a) t
+end = struct
+  type ('a, 'b) t = ('a -> 'b) * ('b -> 'a)
+  let refl = (fun x -> x), (fun x -> x)
+  let apply (f, _) x = f x
+  let sym (f, g) = (g, f)
+end
+\end{caml_example*}
 
 We can then define a parametrized algebraic data type whose
 constructors provide some information about the type parameter:
 
-\begin{verbatim}
-        module rec Typ : sig
-          module type PAIR = sig
-            type t and t1 and t2
-            val eq: (t, t1 * t2) TypEq.t
-            val t1: t1 Typ.typ
-            val t2: t2 Typ.typ
-          end
+\begin{caml_example*}{verbatim}
+module rec Typ : sig
+  module type PAIR = sig
+    type t and t1 and t2
+    val eq: (t, t1 * t2) TypEq.t
+    val t1: t1 Typ.typ
+    val t2: t2 Typ.typ
+  end
 
-          type 'a typ =
-            | Int of ('a, int) TypEq.t
-            | String of ('a, string) TypEq.t
-            | Pair of (module PAIR with type t = 'a)
-        end = Typ
-\end{verbatim}
+  type 'a typ =
+    | Int of ('a, int) TypEq.t
+    | String of ('a, string) TypEq.t
+    | Pair of (module PAIR with type t = 'a)
+end = Typ
+\end{caml_example*}
 
 Values of type "'a typ" are supposed to be runtime representations for
 the type "'a". The constructors "Int" and "String" are easy: they
@@ -707,40 +697,40 @@ shows how to use first-class modules to simulate existentials.
 
 Here is how to construct values of type "'a typ":
 
-\begin{verbatim}
-        let int = Typ.Int TypEq.refl
+\begin{caml_example*}{verbatim}
+let int = Typ.Int TypEq.refl
 
-        let str = Typ.String TypEq.refl
+let str = Typ.String TypEq.refl
 
-        let pair (type s1) (type s2) t1 t2 =
-          let module P = struct
-            type t = s1 * s2
-            type t1 = s1
-            type t2 = s2
-            let eq = TypEq.refl
-            let t1 = t1
-            let t2 = t2
-          end in
-          let pair = (module P : Typ.PAIR with type t = s1 * s2) in
-          Typ.Pair pair
-\end{verbatim}
+let pair (type s1) (type s2) t1 t2 =
+  let module P = struct
+    type t = s1 * s2
+    type t1 = s1
+    type t2 = s2
+    let eq = TypEq.refl
+    let t1 = t1
+    let t2 = t2
+  end in
+  let pair = (module P : Typ.PAIR with type t = s1 * s2) in
+  Typ.Pair pair
+\end{caml_example*}
 
 And finally, here is an example of a polymorphic function that takes the
 runtime representation of some type "'a" and a value of the same type,
 then pretty-prints the value into a string:
 
-\begin{verbatim}
-        open Typ
-        let rec to_string: 'a. 'a Typ.typ -> 'a -> string =
-          fun (type s) t x ->
-            match t with
-            | Int eq -> string_of_int (TypEq.apply eq x)
-            | String eq -> Printf.sprintf "%S" (TypEq.apply eq x)
-            | Pair p ->
-                let module P = (val p : PAIR with type t = s) in
-                let (x1, x2) = TypEq.apply P.eq x in
-                Printf.sprintf "(%s,%s)" (to_string P.t1 x1) (to_string P.t2 x2)
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+open Typ
+let rec to_string: 'a. 'a Typ.typ -> 'a -> string =
+  fun (type s) t x ->
+    match t with
+    | Int eq -> Int.to_string (TypEq.apply eq x)
+    | String eq -> Printf.sprintf "%S" (TypEq.apply eq x)
+    | Pair p ->
+        let module P = (val p : PAIR with type t = s) in
+        let (x1, x2) = TypEq.apply P.eq x in
+        Printf.sprintf "(%s,%s)" (to_string P.t1 x1) (to_string P.t2 x2)
+\end{caml_example*}
 
 Note that this function uses an explicit polymorphic annotation to obtain
 polymorphic recursion.
@@ -772,31 +762,31 @@ A typical use, in conjunction with the signature-level @'include'@
 construct, is to extend the signature of an existing structure.
 In that case, one wants to keep the types equal to types in the
 original module. This can done using the following idiom.
-\begin{verbatim}
-        module type MYHASH = sig
-          include module type of struct include Hashtbl end
-          val replace: ('a, 'b) t -> 'a -> 'b -> unit
-        end
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+module type MYHASH = sig
+  include module type of struct include Hashtbl end
+  val replace: ('a, 'b) t -> 'a -> 'b -> unit
+end
+\end{caml_example*}
 The signature "MYHASH" then contains all the fields of the signature
 of the module "Hashtbl" (with strengthened type definitions), plus the
 new field "replace".  An implementation of this signature can be
 obtained easily by using the @'include'@ construct again, but this
 time at the structure level:
-\begin{verbatim}
-        module MyHash : MYHASH = struct
-          include Hashtbl
-          let replace t k v = remove t k; add t k v
-        end
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+module MyHash : MYHASH = struct
+  include Hashtbl
+  let replace t k v = remove t k; add t k v
+end
+\end{caml_example*}
 
 Another application where the absence of strengthening comes handy, is
 to provide an alternative implementation for an existing module.
-\begin{verbatim}
-        module MySet : module type of Set = struct
-          ...
-        end
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+module MySet : module type of Set = struct
+  include Set[@@ellipsis]
+end
+\end{caml_example*}
 This idiom guarantees that "Myset" is compatible with Set, but allows
 it to represent sets internally in a different way.
 
@@ -805,6 +795,9 @@ it to represent sets internally in a different way.
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
 \label{s:signature-substitution}
+
+\subsection{Destructive substitutions}
+\label{ss:destructive-substitution}
 
 (Introduced in OCaml 3.12, generalized in 4.06)
 
@@ -827,18 +820,18 @@ same type parameters.
 A natural application of destructive substitution is merging two
 signatures sharing a type name.
 \begin{caml_example*}{verbatim}
-        module type Printable = sig
-          type t
-          val print : Format.formatter -> t -> unit
-        end
-        module type Comparable = sig
-          type t
-          val compare : t -> t -> int
-        end
-        module type PrintableComparable = sig
-          include Printable
-          include Comparable with type t := t
-        end
+module type Printable = sig
+  type t
+  val print : Format.formatter -> t -> unit
+end
+module type Comparable = sig
+  type t
+  val compare : t -> t -> int
+end
+module type PrintableComparable = sig
+  include Printable
+  include Comparable with type t := t
+end
 \end{caml_example*}
 
 One can also use this to completely remove a field:
@@ -858,6 +851,51 @@ same type.
 \begin{caml_example}{verbatim}
 module type ComparableInt = Comparable with type t = int ;;
 module type CompareInt = ComparableInt with type t := int
+\end{caml_example}
+
+\subsection{Local substitution declarations}
+\label{ss:local-substitution}
+
+(Introduced in OCaml 4.08)
+
+\begin{syntax}
+specification:
+          ...
+        | 'type' type-subst { 'and' type-subst }
+        | 'module' module-name ':=' extended-module-path
+;
+
+type-subst:
+          [type-params] typeconstr-name ':=' typexpr { type-constraint }
+\end{syntax}
+
+
+Local substitions behave like destructive substitutions (@'with' ... ':=' ...@)
+but instead of being applied to a whole signature after the fact, they are
+introduced during the specification of the signature, and will apply to all the
+items that follow.
+
+This provides a convenient way to introduce local names for types and modules
+when defining a signature:
+
+\begin{caml_example}{verbatim}
+module type S = sig
+  type t
+  module Sub : sig
+    type outer := t
+    type t
+    val to_outer : t -> outer
+  end
+end
+\end{caml_example}
+
+Note that, unlike type declarations, type substitution declarations are not
+recursive, so substitutions like the following are rejected:
+
+\begin{caml_example}{toplevel}
+module type S = sig
+  type 'a poly_list := [ `Cons of 'a * 'a poly_list | `Nil ]
+end [@@expect error];;
 \end{caml_example}
 
 \section{Type-level module aliases}
@@ -928,43 +966,52 @@ place of the @'-pack'@ mechanism. Suppose that you have a library
 @'Mylib'@ composed of modules @'A'@ and @'B'@. Using @'-pack'@, one
 would issue the command line
 \begin{verbatim}
-  ocamlc -pack a.cmo b.cmo -o mylib.cmo
+ocamlc -pack a.cmo b.cmo -o mylib.cmo
 \end{verbatim}
 and as a result obtain a @'Mylib'@ compilation unit, containing
 physically @'A'@ and @'B'@ as submodules, and with no dependencies on
 their respective compilation units.
 Here is a concrete example of a possible alternative approach:
 \begin{enumerate}
-\item Rename the files containing @'A'@ and @'B'@ to @'Mylib_A'@ and
-  @'Mylib_B'@.
+\item Rename the files containing @'A'@ and @'B'@ to @'Mylib__A'@ and
+  @'Mylib__B'@.
 \item Create a packing interface @'Mylib.ml'@, containing the
   following lines.
 \begin{verbatim}
-    module A = Mylib_A
-    module B = Mylib_B
+module A = Mylib__A
+module B = Mylib__B
 \end{verbatim}
 \item Compile @'Mylib.ml'@ using @'-no-alias-deps'@, and the other
   files using @'-no-alias-deps'@ and @'-open' 'Mylib'@ (the last one is
   equivalent to adding the line @'open!' 'Mylib'@ at the top of each
   file).
 \begin{verbatim}
-    ocamlc -c -no-alias-deps Mylib.ml
-    ocamlc -c -no-alias-deps -open Mylib Mylib_*.mli Mylib_*.ml
+ocamlc -c -no-alias-deps Mylib.ml
+ocamlc -c -no-alias-deps -open Mylib Mylib__*.mli Mylib__*.ml
 \end{verbatim}
 \item Finally, create a library containing all the compilation units,
   and export all the compiled interfaces.
 \begin{verbatim}
-    ocamlc -a Mylib*.cmo -o Mylib.cma
+ocamlc -a Mylib*.cmo -o Mylib.cma
 \end{verbatim}
 \end{enumerate}
 This approach lets you access @'A'@ and @'B'@ directly inside the
 library, and as @'Mylib.A'@ and @'Mylib.B'@ from outside.
 It also has the advantage that @'Mylib'@ is no longer monolithic: if
-you use @'Mylib.A'@, only @'Mylib_A'@ will be linked in, not
-@'Mylib_B'@.
+you use @'Mylib.A'@, only @'Mylib__A'@ will be linked in, not
+@'Mylib__B'@.
 %Note that in the above @'Mylib.cmo'@ is actually empty, and one could
 %name the interface @'Mylib.mli'@, but this would require that all
 %clients are compiled with the @'-no-alias-deps'@ flag.
+
+Note the use of double underscores in @'Mylib__A'@ and
+@'Mylib__B'@. These were chosen on purpose; the compiler uses the
+following heuristic when printing paths: given a path @'Lib__fooBar'@,
+if @'Lib.FooBar'@ exists and is an alias for @'Lib__fooBar'@, then the
+compiler will always display @'Lib.FooBar'@ instead of
+@'Lib__fooBar'@. This way the long @'Mylib__'@ names stay hidden and
+all the user sees is the nicer dot names. This is how the OCaml
+standard library is compiled.
 
 \section{Overriding in open statements}\label{s:explicit-overriding-open}
 \ikwd{open.\@\texttt{open\char33}}
@@ -1047,37 +1094,32 @@ scope of this branch.
 \paragraph{Recursive functions}
 
 Here is a concrete example:
-\begin{verbatim}
-        type _ term =
-          | Int : int -> int term
-          | Add : (int -> int -> int) term
-          | App : ('b -> 'a) term * 'b term -> 'a term
+\begin{caml_example*}{verbatim}
+type _ term =
+  | Int : int -> int term
+  | Add : (int -> int -> int) term
+  | App : ('b -> 'a) term * 'b term -> 'a term
 
-        let rec eval : type a. a term -> a = function
-          | Int n    -> n                 (* a = int *)
-          | Add      -> (fun x y -> x+y)  (* a = int -> int -> int *)
-          | App(f,x) -> (eval f) (eval x)
-                  (* eval called at types (b->a) and b for fresh b *)
-
-        let two = eval (App (App (Add, Int 1), Int 1))
-        val two : int = 2
-\end{verbatim}
+let rec eval : type a. a term -> a = function
+  | Int n    -> n                 (* a = int *)
+  | Add      -> (fun x y -> x+y)  (* a = int -> int -> int *)
+  | App(f,x) -> (eval f) (eval x)
+          (* eval called at types (b->a) and b for fresh b *)
+\end{caml_example*}
+\begin{caml_example}{verbatim}
+let two = eval (App (App (Add, Int 1), Int 1))
+\end{caml_example}
 It is important to remark that the function "eval" is using the
 polymorphic syntax for locally abstract types. When defining a recursive
 function that manipulates a GADT, explicit polymorphic recursion should
 generally be used. For instance, the following definition fails with a
 type error:
-\begin{verbatim}
-        let rec eval (type a) : a term -> a = function
-          | Int n    -> n
-          | Add      -> (fun x y -> x+y)
-          | App(f,x) -> (eval f) (eval x)
-(*                            ^
-   Error: This expression has type ($App_'b -> a) term but an expression was
-   expected of type 'a
-   The type constructor $App_'b would escape its scope
-*)
-\end{verbatim}
+\begin{caml_example}{verbatim}[error]
+let rec eval (type a) : a term -> a = function
+  | Int n    -> n
+  | Add      -> (fun x y -> x+y)
+  | App(f,x) -> (eval f) (eval x)
+\end{caml_example}
 In absence of an explicit polymorphic annotation, a monomorphic type
 is inferred for the recursive function. If a recursive call occurs
 inside the function definition at a type that involves an existential
@@ -1118,16 +1160,15 @@ Moreover, the notion of ambiguity used is stronger: a type is only
 seen as ambiguous if it was mixed with incompatible types (equated by
 constraints), without type annotations between them.
 For instance, the following program types correctly.
-\begin{verbatim}
-        let rec sum : type a. a term -> _ = fun x ->
-          let y =
-            match x with
-            | Int n -> n
-            | Add   -> 0
-            | App(f,x) -> sum f + sum x
-          in y + 1
-        val sum : 'a term -> int = <fun>
-\end{verbatim}
+\begin{caml_example}{verbatim}
+let rec sum : type a. a term -> _ = fun x ->
+  let y =
+    match x with
+    | Int n -> n
+    | Add   -> 0
+    | App(f,x) -> sum f + sum x
+  in y + 1
+\end{caml_example}
 Here the return type "int" is never mixed with "a", so it is seen as
 non-ambiguous, and can be inferred.
 When using such partial type annotations we strongly suggest
@@ -1138,14 +1179,14 @@ The exhaustiveness check is aware of GADT constraints, and can
 automatically infer that some cases cannot happen.
 For instance, the following pattern matching is correctly seen as
 exhaustive (the "Add" case cannot happen).
-\begin{verbatim}
-        let get_int : int term -> int = function
-          | Int n    -> n
-          | App(_,_) -> 0
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+let get_int : int term -> int = function
+  | Int n    -> n
+  | App(_,_) -> 0
+\end{caml_example*}
 
 
-\paragraph{Refutation cases and redundancy} (Introduced in OCaml 4.03)
+\paragraph{Refutation cases} (Introduced in OCaml 4.03)
 
 Usually, the exhaustiveness check only tries to check whether the
 cases omitted from the pattern matching are typable or not.
@@ -1163,22 +1204,23 @@ Wild cards in the generated patterns are handled in a special way: if
 their type is a variant type with only GADT constructors, then the
 pattern is split into the different constructors, in order to check whether
 any of them is possible (this splitting is not done for arguments of these
-constructors, to avoid non-termination.) We also split tuples and
+constructors, to avoid non-termination). We also split tuples and
 variant types with only one case, since they may contain GADTs inside.
 For instance, the following code is deemed exhaustive:
 
-\begin{verbatim}
-        type _ t =
-          | Int : int t
-          | Bool : bool t
+\begin{caml_example*}{verbatim}
+type _ t =
+  | Int : int t
+  | Bool : bool t
 
-        let deep : (char t * int) option -> char = function
-          | None -> 'c'
-          | _ -> .
-\end{verbatim}
+let deep : (char t * int) option -> char = function
+  | None -> 'c'
+  | _ -> .
+\end{caml_example*}
 
 Namely, the inferred remaining case is "Some _", which is split into
-"Some (Int, _)" and "Some (Bool, _)", which are both untypable.
+"Some (Int, _)" and "Some (Bool, _)", which are both untypable because
+"deep" expects a non-existing "char t" as the first element of the tuple.
 Note that the refutation case could be omitted here, because it is
 automatically added when there is only one case in the pattern
 matching.
@@ -1198,28 +1240,28 @@ polytypic behavior.
 Here is an example of a polymorphic function that takes the
 runtime representation of some type "t" and a value of the same type,
 then pretty-prints the value as a string:
-\begin{verbatim}
-        type _ typ =
-          | Int : int typ
-          | String : string typ
-          | Pair : 'a typ * 'b typ -> ('a * 'b) typ
+\begin{caml_example*}{verbatim}
+type _ typ =
+  | Int : int typ
+  | String : string typ
+  | Pair : 'a typ * 'b typ -> ('a * 'b) typ
 
-        let rec to_string: type t. t typ -> t -> string =
-          fun t x ->
-          match t with
-          | Int -> string_of_int x
-          | String -> Printf.sprintf "%S" x
-          | Pair(t1,t2) ->
-              let (x1, x2) = x in
-              Printf.sprintf "(%s,%s)" (to_string t1 x1) (to_string t2 x2)
-\end{verbatim}
+let rec to_string: type t. t typ -> t -> string =
+  fun t x ->
+  match t with
+  | Int -> Int.to_string x
+  | String -> Printf.sprintf "%S" x
+  | Pair(t1,t2) ->
+      let (x1, x2) = x in
+      Printf.sprintf "(%s,%s)" (to_string t1 x1) (to_string t2 x2)
+\end{caml_example*}
 
 Another frequent application of GADTs is equality witnesses.
-\begin{verbatim}
-        type (_,_) eq = Eq : ('a,'a) eq
+\begin{caml_example*}{verbatim}
+type (_,_) eq = Eq : ('a,'a) eq
 
-        let cast : type a b. (a,b) eq -> a -> b = fun Eq x -> x
-\end{verbatim}
+let cast : type a b. (a,b) eq -> a -> b = fun Eq x -> x
+\end{caml_example*}
 Here type "eq" has only one constructor, and by matching on it one
 adds a local constraint allowing the conversion between "a" and "b".
 By building such equality witnesses, one can make equal types which
@@ -1227,27 +1269,27 @@ are syntactically different.
 
 Here is an example using both singleton types and equality witnesses
 to implement dynamic types.
-\begin{verbatim}
-        let rec eq_type : type a b. a typ -> b typ -> (a,b) eq option =
-          fun a b ->
-          match a, b with
-          | Int, Int -> Some Eq
-          | String, String -> Some Eq
-          | Pair(a1,a2), Pair(b1,b2) ->
-              begin match eq_type a1 b1, eq_type a2 b2 with
-              | Some Eq, Some Eq -> Some Eq
-              | _ -> None
-              end
-          | _ -> None
+\begin{caml_example*}{verbatim}
+let rec eq_type : type a b. a typ -> b typ -> (a,b) eq option =
+  fun a b ->
+  match a, b with
+  | Int, Int -> Some Eq
+  | String, String -> Some Eq
+  | Pair(a1,a2), Pair(b1,b2) ->
+      begin match eq_type a1 b1, eq_type a2 b2 with
+      | Some Eq, Some Eq -> Some Eq
+      | _ -> None
+      end
+  | _ -> None
 
-        type dyn = Dyn : 'a typ * 'a -> dyn
+type dyn = Dyn : 'a typ * 'a -> dyn
 
-        let get_dyn : type a. a typ -> dyn -> a option =
-          fun a (Dyn(b,x)) ->
-          match eq_type a b with
-          | None -> None
-          | Some Eq -> Some x
-\end{verbatim}
+let get_dyn : type a. a typ -> dyn -> a option =
+  fun a (Dyn(b,x)) ->
+  match eq_type a b with
+  | None -> None
+  | Some Eq -> Some x
+\end{caml_example*}
 
 \paragraph{Existential type names in error messages}%
 \label{p:existential-names}
@@ -1295,15 +1337,15 @@ and may be improved in future versions.
 GADT pattern-matching may also add type equations to non-local
 abstract types. The behaviour is the same as with local abstract
 types. Reusing the above "eq" type, one can write:
-\begin{verbatim}
-        module M : sig type t val x : t val e : (t,int) eq end = struct
-          type t = int
-          let x = 33
-          let e = Eq
-        end
+\begin{caml_example*}{verbatim}
+module M : sig type t val x : t val e : (t,int) eq end = struct
+  type t = int
+  let x = 33
+  let e = Eq
+end
 
-        let x : int = let Eq = M.e in M.x
-\end{verbatim}
+let x : int = let Eq = M.e in M.x
+\end{caml_example*}
 
 Of course, not all abstract types can be refined, as this would
 contradict the exhaustiveness check. Namely, builtin types (those
@@ -1567,22 +1609,19 @@ Some attributes are understood by the type-checker:
 \item
  ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
  Same as ``ocaml.warning'', for the "-warn-error" command-line option.
+
 \item
-  ``ocaml.deprecated'' or ``deprecated''.
-  Can be applied to most kind of items in signatures or
-  structures.  When the element is later referenced, a warning (3) is
-  triggered.  If the payload of the attribute is a string literal,
-  the warning message includes this text.  It is also possible
-  to use this ``ocaml.deprecated'' as a floating attribute
-  on top of an ``.mli'' file (i.e. before any other non-attribute
-  item) or on top of an ``.ml'' file without a corresponding
-  interface; this marks the unit itself as being deprecated.
+ ``ocaml.alert'' or ``alert'': see section~\ref{s:alerts}.
+
+\item
+  ``ocaml.deprecated'' or ``deprecated'': alias for the
+  ``deprecated'' alert, see section~\ref{s:alerts}.
 \item
   ``ocaml.deprecated_mutable'' or ``deprecated_mutable''.
   Can be applied to a mutable record label.  If the label is later
-  used to modify the field (with ``expr.l <- expr''), a warning (3)
+  used to modify the field (with ``expr.l <- expr''), the ``deprecated'' alert
   will be triggered.  If the payload of the attribute is a string literal,
-  the warning message includes this text.
+  the alert message includes this text.
 \item
   ``ocaml.ppwarning'' or ``ppwarning'', in any context, with
   a string literal payload.  The text is reported as warning (22)
@@ -1642,47 +1681,67 @@ Some attributes are understood by the type-checker:
    default is currently "boxed" but it may change in the future.
 \end{itemize}
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 module X = struct
   [@@@warning "+9"]  (* locally enable warning 9 in this structure *)
-  ...
+  [@@@ellipsis]
 end
-  [@@deprecated "Please use module 'Y' instead."]
+[@@deprecated "Please use module 'Y' instead."]
 
-let x = begin[@warning "+9"] ... end in ....
+let x = begin[@warning "+9"] [()[@ellipsis]] end
 
 type t = A | B
   [@@deprecated "Please use type 's' instead."]
+\end{caml_example*}
 
-let f x =
-  assert (x >= 0) [@ppwarning "TODO: remove this later"];
+\begin{caml_example*}{verbatim}[warning=22]
+let fires_warning_22 x =
+  assert (x >= 0) [@ppwarning "TODO: remove this later"]
+\end{caml_example*}
 
-let rec no_op = function
+\begin{caml_example*}{verbatim}[warning=51]
+let rec is_a_tail_call = function
   | [] -> ()
-  | _ :: q -> (no_op[@tailcall]) q;;
+  | _ :: q -> (is_a_tail_call[@tailcall]) q
 
+let rec not_a_tail_call = function
+  | [] -> []
+  | x :: q -> x :: (not_a_tail_call[@tailcall]) q
+\end{caml_example*}
+
+\begin{caml_example*}{verbatim}
 let f x = x [@@inline]
 
 let () = (f[@inlined]) ()
+\end{caml_example}
 
+\begin{caml_example*}{verbatim}
 type fragile =
   | Int of int [@warn_on_literal_pattern]
   | String of string [@warn_on_literal_pattern]
+\end{caml_example*}
 
-let f = function
-| Int 0 | String "constant" -> () (* trigger warning 52 *)
+\begin{caml_example}{verbatim}[warning=52]
+let fragile_match_1 = function
+| Int 0 -> ()
 | _ -> ()
+\end{caml_example}
 
+\begin{caml_example}{verbatim}[warning=52]
+let fragile_match_2 = function
+| String "constant" -> ()
+| _ -> ()
+\end{caml_example}
+
+\begin{caml_example*}{verbatim}
 module Immediate: sig
   type t [@@immediate]
   val x: t ref
 end = struct
   type t = A | B
-  let x = ref 0
+  let x = ref A
 end
-  ....
-
-\end{verbatim}
+\end{caml_example*}
 
 
 \section{Extension nodes}\label{s:extension-nodes}
@@ -1767,8 +1826,22 @@ When this form is used together with the infix syntax for attributes,
 the attributes are considered to apply to the payload:
 
 \begin{verbatim}
-fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@foo ] ];
+fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@bar ] ];
 \end{verbatim}
+
+Quoted strings "{|...|}" are particularly interesting for payloads
+that embed foreign syntax fragments. Those fragments can be interpreted
+by a preprocessor and turned into OCaml code without requiring escaping
+quotes. For instance, you can use "[%sql {|...|}]" to
+represent arbitrary SQL statements -- assuming you have a ppx-rewriter
+that recognizes the "%sql" extension.
+
+Note that the word-delimited form, for example "{sql|...|sql}", should
+not be used for signaling that an extension is in use.
+Indeed, the user cannot see from the code whether this string literal has
+different semantics than they expect. Moreover, giving semantics to a
+specific delimiter limits the freedom to change the delimiter to avoid
+escaping issues.
 
 \subsection{Built-in extension nodes}
 
@@ -1792,81 +1865,6 @@ let y = [%extension_constructor Y]
 \begin{caml_example}{toplevel}
  x <> y;;
 \end{caml_example}
-
-\section{Quoted strings}\label{s:quoted-strings}
-
-(Introduced in OCaml 4.02)
-
-Quoted strings "{foo|...|foo}" provide a different lexical syntax to
-write string literals in OCaml code. They are useful to represent
-strings of arbitrary content without escaping -- as long as the
-delimiter you chose (here "|foo}") does not occur in the string
-itself.
-
-\begin{syntax}
-string-literal: ...
-     |  '{' quoted-string-id '|'  ........ '|' quoted-string-id '}'
-;
-quoted-string-id:
-     { 'a'...'z' || '_' }
-;
-\end{syntax}
-
-The opening delimiter has the form "{id|" where "id" is a (possibly
-empty) sequence of lowercase letters and underscores.  The
-corresponding closing delimiter is "|id}" (with the same
-identifier). Unlike regular OCaml string literals, quoted
-strings do not interpret any character in a special way.
-
-Example:
-
-\begin{verbatim}
-String.length {|\"|}         (* returns 2 *)
-String.length {foo|\"|foo}   (* returns 2 *)
-\end{verbatim}
-
-Quoted strings are interesting in particular in conjunction to
-extension nodes "[%foo ...]" (see \ref{s:extension-nodes}) to embed
-foreign syntax fragments to be interpreted by a preprocessor and
-turned into OCaml code: you can use "[%sql {|...|}]" for example to
-represent arbitrary SQL statements -- assuming you have a ppx-rewriter
-that recognizes the "%sql" extension -- without requiring escaping
-quotes.
-
-Note that the non-extension form, for example "{sql|...|sql}", should
-not be used for this purpose, as the user cannot see in the code that
-this string literal has a different semantics than they expect, and
-giving a semantics to a specific delimiter limits the freedom to
-change the delimiter to avoid escaping issues.
-
-\section{Exception cases in pattern matching}\label{s:exception-match}
-
-(Introduced in OCaml 4.02)
-
-A new form of exception patterns is allowed, only as a toplevel
-pattern under a "match"..."with" pattern-matching (other occurrences
-are rejected by the type-checker).
-
-\begin{syntax}
-pattern: ...
- | 'exception' pattern
-;
-\end{syntax}
-
-Cases with such a toplevel pattern are called ``exception cases'',
-as opposed to regular ``value cases''.  Exception cases are applied
-when the evaluation of the matched expression raises an exception.
-The exception value is then matched against all the exception cases
-and re-raised if none of them accept the exception (as for a
-"try"..."with" block).  Since the bodies of all exception and value
-cases is outside the scope of the exception handler, they are all
-considered to be in tail-position: if the "match"..."with" block
-itself is in tail position in the current function, any function call
-in tail position in one of the case bodies results in an actual tail
-call.
-
-It is an error if all cases are exception cases in a given pattern
-matching.
 
 \section{Extensible variant types}\label{s:extensible-variants}
 
@@ -1898,52 +1896,69 @@ constr-def:
 Extensible variant types are variant types which can be extended with
 new variant constructors. Extensible variant types are defined using
 "..". New variant constructors are added using "+=".
-\begin{verbatim}
-        type attr = ..
+\begin{caml_example*}{verbatim}
+module Expr = struct
+  type attr = ..
 
-        type attr += Str of string
+  type attr += Str of string
 
-        type attr +=
-          | Int of int
-          | Float of float
-\end{verbatim}
+  type attr +=
+    | Int of int
+    | Float of float
+end
+\end{caml_example*}
 
 Pattern matching on an extensible variant type requires a default case
 to handle unknown variant constructors:
-\begin{verbatim}
-        let to_string = function
-          | Str s -> s
-          | Int i -> string_of_int i
-          | Float f -> string_of_float f
-          | _ -> "?"
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+let to_string = function
+  | Expr.Str s -> s
+  | Expr.Int i -> Int.to_string i
+  | Expr.Float f -> string_of_float f
+  | _ -> "?"
+\end{caml_example*}
 
 A preexisting example of an extensible variant type is the built-in
 "exn" type used for exceptions. Indeed, exception constructors can be
 declared using the type extension syntax:
-\begin{verbatim}
-        type exn += Exc of int
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+type exn += Exc of int
+\end{caml_example*}
 
 Extensible variant constructors can be rebound to a different name. This
 allows exporting variants from another module.
-\begin{verbatim}
-        type Expr.attr += Str = Expr.Str
-\end{verbatim}
+\begin{caml_example}{toplevel}[error]
+let not_in_scope = Str "Foo";;
+\end{caml_example}
+\begin{caml_example*}{verbatim}
+type Expr.attr += Str = Expr.Str
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+let now_works = Str "foo";;
+\end{caml_example}
 
 Extensible variant constructors can be declared "private". As with
 regular variants, this prevents them from being constructed directly by
 constructor application while still allowing them to be de-structured in
 pattern-matching.
-\begin{verbatim}
-        module Bool : sig
-          type attr += private Bool of int
-          val bool : bool -> attr
-        end = struct
-          type attr += Bool of int
-          let bool p = if p then Bool 1 else Bool 0
-        end
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+module B : sig
+  type Expr.attr += private Bool of int
+  val bool : bool -> Expr.attr
+end = struct
+  type Expr.attr += Bool of int
+  let bool p = if p then Bool 1 else Bool 0
+end
+\end{caml_example*}
+
+\begin{caml_example}{toplevel}
+let inspection_works = function
+  | B.Bool p -> (p = 1)
+  | _ -> true;;
+\end{caml_example}
+\begin{caml_example}{toplevel}[error]
+let construction_is_forbidden = B.Bool 1;;
+\end{caml_example}
 
 \subsection{Private extensible variant types}
 
@@ -1959,19 +1974,19 @@ type-representation:
 Extensible variant types can be declared "private". This prevents new
 constructors from being declared directly, but allows extension
 constructors to be referred to in interfaces.
-\begin{verbatim}
-        module Msg : sig
-          type t = private ..
-          module MkConstr (X : sig type t end) : sig
-            type t += C of X.t
-          end
-        end = struct
-          type t = ..
-          module MkConstr (X : sig type t end) = struct
-            type t += C of X.t
-          end
-        end
-\end{verbatim}
+\begin{caml_example*}{verbatim}
+module Msg : sig
+  type t = private ..
+  module MkConstr (X : sig type t end) : sig
+    type t += C of X.t
+  end
+end = struct
+  type t = ..
+  module MkConstr (X : sig type t end) = struct
+    type t += C of X.t
+  end
+end
+\end{caml_example*}
 
 \section{Generative functors}\label{s:generative-functors}
 
@@ -2072,7 +2087,7 @@ range @["g".."z"||"G".."Z"]@ are extension-only literals.
 ;
 \end{syntax}
 
-The arguments of a sum-type constructors can now be defined using the
+The arguments of sum-type constructors can now be defined using the
 same syntax as records.  Mutable and polymorphic fields are allowed.
 GADT syntax is supported.  Attributes can be specified on individual
 fields.
@@ -2084,52 +2099,30 @@ the inline record as a pseudo-value, but the record cannot escape the
 scope of the binding and can only be used with the dot-notation to
 extract or modify fields or to build new constructor values.
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t =
   | Point of {width: int; mutable x: float; mutable y: float}
-  | ...
+  | Other
 
 let v = Point {width = 10; x = 0.; y = 0.}
 
 let scale l = function
   | Point p -> Point {p with x = l *. p.x; y = l *. p.y}
-  | ....
+  | Other -> Other
 
 let print = function
   | Point {x; y; _} -> Printf.printf "%f/%f" x y
-  | ....
+  | Other -> ()
 
 let reset = function
   | Point p -> p.x <- 0.; p.y <- 0.
-  | ...
+  | Other -> ()
+\end{caml_example*}
 
+\begin{caml_example}{verbatim}[error]
 let invalid = function
-  | Point p -> p  (* INVALID *)
-  | ...
-\end{verbatim}
-
-
-\section{Local exceptions}
-\ikwd{let\@\texttt{let}}
-\ikwd{exception\@\texttt{exception}} \label{s:local-exceptions}
-
-(Introduced in OCaml 4.04)
-
-It is possible to define local exceptions in expressions:
-
-\begin{syntax}
-expr:
-       ...
-     | "let" "exception" constr-decl "in" expr
-\end{syntax}
-
-
-The syntactic scope of the exception constructor is the inner
-expression, but nothing prevents exception values created with this
-constructor from escaping this scope.  Two executions of the definition
-above result in two incompatible exception constructors (as for any
-exception definition).
-
+  | Point p -> p
+\end{caml_example}
 
 \section{Documentation comments}
 (Introduced in OCaml 4.03)
@@ -2155,23 +2148,23 @@ Comments surrounded by blank lines that appear within structures,
 signatures, classes or class types are converted into
 @floating-attribute@s. For example:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t = T
 
 (** Now some definitions for [t] *)
 
 let mkT = T
-\end{verbatim}
+\end{caml_example*}
 
 will be converted to:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t = T
 
 [@@@ocaml.text " Now some definitions for [t] "]
 
 let mkT = T
-\end{verbatim}
+\end{caml_example*}
 
 \subsection{Item comments}
 
@@ -2181,44 +2174,44 @@ are converted into @item-attribute@s. Immediately before or immediately
 after means that there must be no blank lines, ";;", or other
 documentation comments between them. For example:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t = T
 (** A description of [t] *)
 
-\end{verbatim}
+\end{caml_example*}
 
 or
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 
 (** A description of [t] *)
 type t = T
-\end{verbatim}
+\end{caml_example*}
 
 will be converted to:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t = T
 [@@ocaml.doc " A description of [t] "]
-\end{verbatim}
+\end{caml_example*}
 
 Note that, if a comment appears immediately next to multiple items,
 as in:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t = T
 (** An ambiguous comment *)
 type s = S
-\end{verbatim}
+\end{caml_example*}
 
 then it will be attached to both items:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t = T
 [@@ocaml.doc " An ambiguous comment "]
 type s = S
 [@@ocaml.doc " An ambiguous comment "]
-\end{verbatim}
+\end{caml_example*}
 
 and the compiler will emit warning 50.
 
@@ -2230,7 +2223,7 @@ constructor are are converted into @attribute@s. Immediately
 after means that there must be no blank lines or other documentation
 comments between them. For example:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t1 = lbl:int (** Labelled argument *) -> unit
 
 type t2 = {
@@ -2247,11 +2240,11 @@ type t4 = < meth: int * int; (** Object method *) >
 type t5 = [
   `PCstr (** Polymorphic variant constructor *)
 ]
-\end{verbatim}
+\end{caml_example*}
 
 will be converted to:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t1 = lbl:(int [@ocaml.doc " Labelled argument "]) -> unit
 
 type t2 = {
@@ -2268,51 +2261,51 @@ type t4 = < meth : int * int [@ocaml.doc " Object method "] >
 type t5 = [
   `PCstr [@ocaml.doc " Polymorphic variant constructor "]
 ]
-\end{verbatim}
+\end{caml_example*}
 
 Note that label comments take precedence over item comments, so:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t = T of string
 (** Attaches to T not t *)
-\end{verbatim}
+\end{caml_example*}
 
 will be converted to:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t =  T of string [@ocaml.doc " Attaches to T not t "]
-\end{verbatim}
+\end{caml_example*}
 
 whilst:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t = T of string
 (** Attaches to T not t *)
 (** Attaches to t *)
-\end{verbatim}
+\end{caml_example*}
 
 will be converted to:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t =  T of string [@ocaml.doc " Attaches to T not t "]
 [@@ocaml.doc " Attaches to t "]
-\end{verbatim}
+\end{caml_example*}
 
 In the absence of meaningful comment on the last constructor of
 a type, an empty comment~"(**)" can be used instead:
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t = T of string
 (**)
 (** Attaches to t *)
-\end{verbatim}
+\end{caml_example*}
 
 will be converted directly to
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t =  T of string
 [@@ocaml.doc " Attaches to t "]
-\end{verbatim}
+\end{caml_example*}
 
 \section{Extended indexing operators \label{s:index-operators} }
 (Introduced in 4.06)
@@ -2354,3 +2347,118 @@ let dict =
 dict.Dict.%{"one"};;
 let open Dict in dict.%{"two"};;
 \end{caml_example}
+
+\section{Empty variant types\label{s:empty-variants} }
+(Introduced in 4.07.0)
+
+\begin{syntax}
+type-representation:
+          ...
+        | '=' '|'
+\end{syntax}
+This extension allows user to define empty variants.
+Empty variant type can be eliminated by refutation case of pattern matching.
+\begin{caml_example*}{verbatim}
+type t = |
+let f (x: t) = match x with _ -> .
+\end{caml_example*}
+
+\section{Alerts \label{s:alerts} }
+(Introduced in 4.08)
+
+Since OCaml 4.08, it is possible to mark components (such as value or
+type declarations) in signatures with ``alerts'' that will be reported
+when those components are referenced.  This generalizes the notion of
+``deprecated'' components which were previously reported as warning 3.
+Those alerts can be used for instance to report usage of unsafe
+features, or of features which are only available on some platforms,
+etc.
+
+Alert categories are identified by a symbolic identifier (a lowercase
+identifier, following the usual lexical rules) and an optional
+message.  The identifier is used to control which alerts are enabled,
+and which ones are turned into fatal errors.  The message is reported
+to the user when the alert is triggered (i.e. when the marked
+component is referenced).
+
+The "ocaml.alert" or "alert" attribute serves two purposes: (i) to
+mark component with an alert to be triggerred when the component is
+referenced, and (ii) to control which alert names are enabled.  In the
+first form, the attribute takes an identifier possibly
+followed by a message. Here is an example of a value declaration marked
+with an alert:
+
+\begin{verbatim}
+module U: sig
+  val fork: unit -> bool
+    [@@alert unix "This function is only available under Unix."]
+end
+\end{verbatim}
+
+Here "unix" is the identifier for the alert.  If this alert category
+is enabled, any reference to "U.fork" will produce a message at
+compile time, which can be turned or not into a fatal error.
+
+And here is another example as a floating attribute on top
+of an ``.mli'' file (i.e. before any other non-attribute item)
+or on top of an ``.ml'' file without a corresponding interface file,
+so that any reference to that unit will trigger the alert:
+
+\begin{verbatim}
+[@@@alert unsafe "This module is unsafe!"]
+\end{verbatim}
+
+
+Controlling which alerts are enabled and whether they are turned into
+fatal errors is done either through the compiler's command-line option
+"-alert <spec>" or locally in the code through the "alert" or
+"ocaml.alert" attribute taking a single string payload "<spec>".  In
+both cases, the syntax for "<spec>" is a concatenation of items of the
+form:
+
+\begin{itemize}
+\item "+id" enables alert "id".
+\item "-id" disables alert "id".
+\item "++id" turns alert "id" into a fatal error.
+\item "--id" turns alert "id" into non-fatal mode.
+\item "\@id" equivalent to "++id+id" (enables "id" and turns it into a fatal-error)
+\end{itemize}
+
+As a special case, if "id" is "all", it stands for all alerts.
+
+Here are some examples:
+
+\begin{verbatim}
+
+(* Disable all alerts, reenables just unix (as a soft alert) and window
+   (as a fatal-error), for the rest of the current structure *)
+
+[@@@alert "-all--all+unix@window"]
+ ...
+
+let x =
+  (* Locally disable the window alert *)
+  begin[@alert "-window"]
+      ...
+  end
+\end{verbatim}
+
+Before OCaml 4.08, there was support for a single kind of deprecation
+alert.  It is now known as the "deprecated" alert, but legacy
+attributes to trigger it and the legacy ways to control it as warning
+3 are still supported. For instance, passing "-w +3" on the
+command-line is equivant to "-alert +deprecated", and:
+
+\begin{verbatim}
+val x: int
+  [@@@ocaml.deprecated "Please do something else"]
+\end{verbatim}
+
+is equivalent to:
+
+\begin{verbatim}
+val x: int
+  [@@@ocaml.alert deprecated "Please do something else"]
+\end{verbatim}
+
+%HEVEA\cutend

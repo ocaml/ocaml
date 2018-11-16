@@ -1,0 +1,10 @@
+- : Parsetree.expression =
+{Parsetree.pexp_desc =
+  Parsetree.Pexp_constant (Parsetree.Pconst_integer ("1", None));
+ pexp_loc =
+  {Location.loc_start =
+    {Lexing.pos_fname = ""; pos_lnum = 1; pos_bol = 0; pos_cnum = 0};
+   loc_end = {Lexing.pos_fname = ""; pos_lnum = 1; pos_bol = 0; pos_cnum = 1};
+   loc_ghost = false};
+ pexp_loc_stack = []; pexp_attributes = []}
+

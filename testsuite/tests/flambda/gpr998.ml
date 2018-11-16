@@ -1,3 +1,7 @@
+(* TEST
+   ocamlopt_flags = "-unbox-closures"
+*)
+
 (* This test attempts to check that unused closures are not deleted
    during conversion from flambda to clambda. The idea is that there is
    a direct call to [foo] in [bar] even though the closure for [foo] is

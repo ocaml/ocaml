@@ -36,19 +36,25 @@ static void report_error(
   const command_settings *settings,
   const char *message, const WCHAR *argument)
 {
-  WCHAR error_message[1024];
+  WCHAR windows_error_message[1024];
   DWORD error = GetLastError();
-  char *error_message_c;
-  FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0,
-                error_message, sizeof(error_message)/sizeof(WCHAR), NULL);
-  error_message_c = caml_stat_strdup_of_utf16(error_message);
+  char *caml_error_message, buf[256];
+  if (FormatMessage(
+    FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+    NULL, error, 0, windows_error_message,
+    sizeof(windows_error_message)/sizeof(WCHAR), NULL) ) {
+    caml_error_message = caml_stat_strdup_of_utf16(windows_error_message);
+  } else {
+    caml_error_message = caml_stat_alloc(256);
+    sprintf(caml_error_message, "unknown Windows error #%lu", error);
+  }
   if ( is_defined(argument) )
     error_with_location(file, line,
-      settings, "%s %s: %s", message, argument, error_message_c);
+      settings, "%s %s: %s", message, argument, caml_error_message);
   else
     error_with_location(file, line,
-      settings, "%s: %s", message, error_message_c);
-  caml_stat_free(error_message_c);
+      settings, "%s: %s", message, caml_error_message);
+  caml_stat_free(caml_error_message);
 }
 
 static WCHAR *find_program(const WCHAR *program_name)
@@ -132,6 +138,61 @@ static WCHAR *commandline_of_arguments(WCHAR **arguments)
   return commandline;
 }
 
+static LPVOID prepare_environment(WCHAR **localenv)
+{
+  LPTCH p, r, env, process_env = NULL;
+  WCHAR **q;
+  int l, process_env_length, localenv_length, env_length;
+
+  if (localenv == NULL) return NULL;
+
+  process_env = GetEnvironmentStrings();
+  if (process_env == NULL) return NULL;
+
+  /* Compute length of process environment */
+  process_env_length = 0;
+  p = process_env;
+  while (*p != L'\0') {
+    l = wcslen(p) + 1; /* also count terminating '\0' */
+    process_env_length += l;
+    p += l;
+  }
+
+  /* Compute length of local environment */
+  localenv_length = 0;
+  q = localenv;
+  while (*q != NULL) {
+    localenv_length += wcslen(*q) + 1;
+    q++;
+  }
+
+  /* Build new env that contains both process and local env */
+  env_length = process_env_length + localenv_length + 1;
+  env = malloc(env_length * sizeof(WCHAR));
+  if (env == NULL) {
+    FreeEnvironmentStrings(process_env);
+    return NULL;
+  }
+  r = env;
+  p = process_env;
+  while (*p != L'\0') {
+    l = wcslen(p) + 1; /* also count terminating '\0' */
+    memcpy(r, p, l * sizeof(WCHAR));
+    p += l;
+    r += l;
+  }
+  FreeEnvironmentStrings(process_env);
+  q = localenv;
+  while (*q != NULL) {
+    l = wcslen(*q) + 1;
+    memcpy(r, *q, l * sizeof(WCHAR));
+    r += l;
+    q++;
+  }
+  *r = L'\0';
+  return env;
+}
+
 static SECURITY_ATTRIBUTES security_attributes = {
   sizeof(SECURITY_ATTRIBUTES), /* nLength */
   NULL, /* lpSecurityDescriptor */
@@ -177,6 +238,11 @@ if ( (condition) ) \
   goto cleanup; \
 } else { }
 
+static WCHAR *translate_finename(WCHAR *filename)
+{
+  if (!wcscmp(filename, L"/dev/null")) return L"NUL"; else return filename;
+}
+
 int run_command(const command_settings *settings)
 {
   BOOL process_created = FALSE;
@@ -190,8 +256,15 @@ int run_command(const command_settings *settings)
   LPCWSTR current_directory = NULL;
   STARTUPINFO startup_info;
   PROCESS_INFORMATION process_info;
-  DWORD wait_result, status;
+  BOOL wait_result;
+  DWORD status, stamp, cur;
   DWORD timeout = (settings->timeout > 0) ? settings->timeout * 1000 : INFINITE;
+
+  JOBOBJECT_ASSOCIATE_COMPLETION_PORT port = {NULL, NULL};
+  HANDLE hJob = NULL;
+  DWORD completion_code;
+  ULONG_PTR completion_key;
+  LPOVERLAPPED pOverlapped;
 
   ZeroMemory(&startup_info, sizeof(STARTUPINFO));
   startup_info.cb = sizeof(STARTUPINFO);
@@ -206,23 +279,27 @@ int run_command(const command_settings *settings)
 
   commandline = commandline_of_arguments(settings->argv);
 
+  environment = prepare_environment(settings->envp);
+
   if (is_defined(settings->stdin_filename))
   {
-    startup_info.hStdInput = create_input_handle(settings->stdin_filename);
+    WCHAR *stdin_filename = translate_finename(settings->stdin_filename);
+    startup_info.hStdInput = create_input_handle(stdin_filename);
     checkerr( (startup_info.hStdInput == INVALID_HANDLE_VALUE),
       "Could not redirect standard input",
-      settings->stdin_filename);
+      stdin_filename);
     stdin_redirected = 1;
   } else startup_info.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 
   if (is_defined(settings->stdout_filename))
   {
+    WCHAR *stdout_filename = translate_finename(settings->stdout_filename);
     startup_info.hStdOutput = create_output_handle(
-      settings->stdout_filename, settings->append
+      stdout_filename, settings->append
     );
     checkerr( (startup_info.hStdOutput == INVALID_HANDLE_VALUE),
       "Could not redirect standard output",
-      settings->stdout_filename);
+      stdout_filename);
     stdout_redirected = 1;
   } else startup_info.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -240,13 +317,14 @@ int run_command(const command_settings *settings)
 
     if (! stderr_redirected)
     {
+      WCHAR *stderr_filename = translate_finename(settings->stderr_filename);
       startup_info.hStdError = create_output_handle
       (
-        settings->stderr_filename, settings->append
+        stderr_filename, settings->append
       );
       checkerr( (startup_info.hStdError == INVALID_HANDLE_VALUE),
         "Could not redirect standard error",
-        settings->stderr_filename);
+        stderr_filename);
       stderr_redirected = 1;
     }
   } else startup_info.hStdError = GetStdHandle(STD_ERROR_HANDLE);
@@ -257,31 +335,60 @@ int run_command(const command_settings *settings)
     NULL, /* SECURITY_ATTRIBUTES process_attributes */
     NULL, /* SECURITY_ATTRIBUTES thread_attributes */
     TRUE, /* BOOL inherit_handles */
-    CREATE_UNICODE_ENVIRONMENT, /* DWORD creation_flags */
-    NULL, /* LPVOID environment */
+    CREATE_SUSPENDED | CREATE_UNICODE_ENVIRONMENT, /* DWORD creation_flags */
+    environment,
     NULL, /* LPCSTR current_directory */
     &startup_info,
     &process_info
   );
   checkerr( (! process_created), "CreateProcess failed", NULL);
 
-  CloseHandle(process_info.hThread); /* Not needed so closed ASAP */
+  hJob = CreateJobObject(NULL, NULL);
+  checkerr( (hJob == NULL), "CreateJobObject failed", NULL);
+  checkerr( !AssignProcessToJobObject(hJob, process_info.hProcess),
+    "AssignProcessToJob failed", NULL);
+  port.CompletionPort =
+    CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
+  checkerr( (port.CompletionPort == NULL),
+    "CreateIoCompletionPort failed", NULL);
+  checkerr( !SetInformationJobObject(
+    hJob,
+    JobObjectAssociateCompletionPortInformation,
+    &port, sizeof(port)), "SetInformationJobObject failed", NULL);
 
-  wait_result = WaitForSingleObject(process_info.hProcess, timeout);
-  if (wait_result == WAIT_OBJECT_0)
+  ResumeThread(process_info.hThread);
+  CloseHandle(process_info.hThread);
+
+  stamp = GetTickCount();
+  while ((wait_result = GetQueuedCompletionStatus(port.CompletionPort,
+                                                  &completion_code,
+                                                  &completion_key,
+                                                  &pOverlapped,
+                                                  timeout))
+         && completion_code != JOB_OBJECT_MSG_ACTIVE_PROCESS_ZERO)
+  {
+    if (timeout != INFINITE)
+    {
+      cur = GetTickCount();
+      stamp = (cur > stamp ? cur - stamp : MAXDWORD - stamp + cur);
+      timeout = (timeout > stamp ? timeout - stamp : 0);
+      stamp = cur;
+    }
+  }
+  if (wait_result)
   {
     /* The child has terminated before the timeout has expired */
     checkerr( (! GetExitCodeProcess(process_info.hProcess, &status)),
       "GetExitCodeProcess failed", NULL);
-  } else if (wait_result == WAIT_TIMEOUT) {
+  } else if (pOverlapped == NULL) {
     /* The timeout has expired, terminate the process */
-    checkerr( (! TerminateProcess(process_info.hProcess, 0)),
-      "TerminateProcess failed", NULL);
+    checkerr( (! TerminateJobObject(hJob, 0)),
+      "TerminateJob failed", NULL);
     status = -1;
     wait_again = 1;
   } else {
     error_with_location(__FILE__, __LINE__, settings,
-      "WaitForSingleObject failed\n");
+      "GetQueuedCompletionStatus failed\n");
     report_error(__FILE__, __LINE__,
       settings, "Failure while waiting for process termination", NULL);
     status = -1;
@@ -299,5 +406,7 @@ cleanup:
     WaitForSingleObject(process_info.hProcess, 1000);
   }
   if (process_created) CloseHandle(process_info.hProcess);
+  if (hJob != NULL) CloseHandle(hJob);
+  if (port.CompletionPort != NULL) CloseHandle(port.CompletionPort);
   return status;
 }

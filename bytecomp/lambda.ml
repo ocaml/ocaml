@@ -27,13 +27,6 @@ type compile_time_constant =
   | Ostype_cygwin
   | Backend_type
 
-type loc_kind =
-  | Loc_FILE
-  | Loc_LINE
-  | Loc_MODULE
-  | Loc_LOC
-  | Loc_POS
-
 type immediate_or_pointer =
   | Immediate
   | Pointer
@@ -54,7 +47,6 @@ type primitive =
   | Pignore
   | Prevapply
   | Pdirapply
-  | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
@@ -68,7 +60,6 @@ type primitive =
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
-  | Plazyforce
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
@@ -80,14 +71,14 @@ type primitive =
   | Pdivint of is_safe | Pmodint of is_safe
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
-  | Pintcomp of comparison
+  | Pintcomp of integer_comparison
   | Poffsetint of int
   | Poffsetref of int
   (* Float operations *)
   | Pintoffloat | Pfloatofint
   | Pnegfloat | Pabsfloat
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
-  | Pfloatcomp of comparison
+  | Pfloatcomp of float_comparison
   (* String operations *)
   | Pstringlength | Pstringrefu  | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
@@ -103,8 +94,6 @@ type primitive =
   | Pisint
   (* Test if the (integer) argument is outside an interval *)
   | Pisout
-  (* Bitvect operations *)
-  | Pbittest
   (* Operations on boxed integers (Nativeint.t, Int32.t, Int64.t) *)
   | Pbintofint of boxed_integer
   | Pintofbint of boxed_integer
@@ -121,7 +110,7 @@ type primitive =
   | Plslbint of boxed_integer
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
-  | Pbintcomp of boxed_integer * comparison
+  | Pbintcomp of boxed_integer * integer_comparison
   (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
   | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
   | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
@@ -131,9 +120,12 @@ type primitive =
   | Pstring_load_16 of bool
   | Pstring_load_32 of bool
   | Pstring_load_64 of bool
-  | Pstring_set_16 of bool
-  | Pstring_set_32 of bool
-  | Pstring_set_64 of bool
+  | Pbytes_load_16 of bool
+  | Pbytes_load_32 of bool
+  | Pbytes_load_64 of bool
+  | Pbytes_set_16 of bool
+  | Pbytes_set_32 of bool
+  | Pbytes_set_64 of bool
   (* load/set 16,32,64 bits from a
      (char, int8_unsigned_elt, c_layout) Bigarray.Array1.t : (unsafe) *)
   | Pbigstring_load_16 of bool
@@ -152,8 +144,11 @@ type primitive =
   (* Inhibition of optimisation *)
   | Popaque
 
-and comparison =
-    Ceq | Cneq | Clt | Cgt | Cle | Cge
+and integer_comparison =
+    Ceq | Cne | Clt | Cgt | Cle | Cge
+
+and float_comparison =
+    CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge
 
 and value_kind =
     Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
@@ -186,6 +181,30 @@ and raise_kind =
   | Raise_reraise
   | Raise_notrace
 
+let equal_boxed_integer x y =
+  match x, y with
+  | Pnativeint, Pnativeint
+  | Pint32, Pint32
+  | Pint64, Pint64 ->
+    true
+  | (Pnativeint | Pint32 | Pint64), _ ->
+    false
+
+let equal_primitive =
+  (* Should be implemented like [equal_value_kind] of [equal_boxed_integer],
+     i.e. by matching over the various constructors but the type has more
+     than 100 constructors... *)
+  (=)
+
+let equal_value_kind x y =
+  match x, y with
+  | Pgenval, Pgenval -> true
+  | Pfloatval, Pfloatval -> true
+  | Pboxedintval bi1, Pboxedintval bi2 -> equal_boxed_integer bi1 bi2
+  | Pintval, Pintval -> true
+  | (Pgenval | Pfloatval | Pboxedintval _ | Pintval), _ -> false
+
+
 type structured_constant =
     Const_base of constant
   | Const_pointer of int
@@ -199,16 +218,43 @@ type inline_attribute =
   | Unroll of int (* [@unroll x] *)
   | Default_inline (* no [@inline] attribute *)
 
+let equal_inline_attribute x y =
+  match x, y with
+  | Always_inline, Always_inline
+  | Never_inline, Never_inline
+  | Default_inline, Default_inline ->
+    true
+  | Unroll u, Unroll v ->
+    u = v
+  | (Always_inline | Never_inline | Unroll _ | Default_inline), _ ->
+    false
+
 type specialise_attribute =
   | Always_specialise (* [@specialise] or [@specialise always] *)
   | Never_specialise (* [@specialise never] *)
   | Default_specialise (* no [@specialise] attribute *)
+
+let equal_specialise_attribute x y =
+  match x, y with
+  | Always_specialise, Always_specialise
+  | Never_specialise, Never_specialise
+  | Default_specialise, Default_specialise ->
+    true
+  | (Always_specialise | Never_specialise | Default_specialise), _ ->
+    false
 
 type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
 
 type meth_kind = Self | Public | Cached
+
+let equal_meth_kind x y =
+  match x, y with
+  | Self, Self -> true
+  | Public, Public -> true
+  | Cached, Cached -> true
+  | (Self | Public | Cached), _ -> false
 
 type shared_code = (int * int) list
 
@@ -268,7 +314,7 @@ and lambda_event =
   { lev_loc: Location.t;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
-    lev_env: Env.summary }
+    lev_env: Env.t }
 
 and lambda_event_kind =
     Lev_before
@@ -299,7 +345,7 @@ let default_stub_attribute =
 
 (* Build sharing keys *)
 (*
-   Those keys are later compared with Pervasives.compare.
+   Those keys are later compared with Stdlib.compare.
    For that reason, they should not include cycles.
 *)
 
@@ -391,7 +437,9 @@ let make_key e =
 let name_lambda strict arg fn =
   match arg with
     Lvar id -> fn id
-  | _ -> let id = Ident.create "let" in Llet(strict, Pgenval, id, arg, fn id)
+  | _ ->
+      let id = Ident.create_local "let" in
+      Llet(strict, Pgenval, id, arg, fn id)
 
 let name_lambda_list args fn =
   let rec name_list names = function
@@ -399,7 +447,7 @@ let name_lambda_list args fn =
   | (Lvar _ as arg) :: rem ->
       name_list (arg :: names) rem
   | arg :: rem ->
-      let id = Ident.create "let" in
+      let id = Ident.create_local "let" in
       Llet(Strict, Pgenval, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
@@ -408,7 +456,7 @@ let iter_opt f = function
   | None -> ()
   | Some e -> f e
 
-let iter f = function
+let iter_head_constructor f = function
     Lvar _
   | Lconst _ -> ()
   | Lapply{ap_func = fn; ap_args = args} ->
@@ -454,40 +502,83 @@ let iter f = function
   | Lifused (_v, e) ->
       f e
 
+let rec free_variables = function
+  | Lvar id -> Ident.Set.singleton id
+  | Lconst _ -> Ident.Set.empty
+  | Lapply{ap_func = fn; ap_args = args} ->
+      free_variables_list (free_variables fn) args
+  | Lfunction{body; params} ->
+      Ident.Set.diff (free_variables body)
+        (Ident.Set.of_list params)
+  | Llet(_str, _k, id, arg, body) ->
+      Ident.Set.union
+        (free_variables arg)
+        (Ident.Set.remove id (free_variables body))
+  | Lletrec(decl, body) ->
+      let set = free_variables_list (free_variables body) (List.map snd decl) in
+      Ident.Set.diff set (Ident.Set.of_list (List.map fst decl))
+  | Lprim(_p, args, _loc) ->
+      free_variables_list Ident.Set.empty args
+  | Lswitch(arg, sw,_) ->
+      let set =
+        free_variables_list
+          (free_variables_list (free_variables arg)
+             (List.map snd sw.sw_consts))
+          (List.map snd sw.sw_blocks)
+      in
+      begin match sw.sw_failaction with
+      | None -> set
+      | Some failaction -> Ident.Set.union set (free_variables failaction)
+      end
+  | Lstringswitch (arg,cases,default,_) ->
+      let set =
+        free_variables_list (free_variables arg)
+          (List.map snd cases)
+      in
+      begin match default with
+      | None -> set
+      | Some default -> Ident.Set.union set (free_variables default)
+      end
+  | Lstaticraise (_,args) ->
+      free_variables_list Ident.Set.empty args
+  | Lstaticcatch(body, (_, params), handler) ->
+      Ident.Set.union
+        (Ident.Set.diff
+           (free_variables handler)
+           (Ident.Set.of_list params))
+        (free_variables body)
+  | Ltrywith(body, param, handler) ->
+      Ident.Set.union
+        (Ident.Set.remove
+           param
+           (free_variables handler))
+        (free_variables body)
+  | Lifthenelse(e1, e2, e3) ->
+      Ident.Set.union
+        (Ident.Set.union (free_variables e1) (free_variables e2))
+        (free_variables e3)
+  | Lsequence(e1, e2) ->
+      Ident.Set.union (free_variables e1) (free_variables e2)
+  | Lwhile(e1, e2) ->
+      Ident.Set.union (free_variables e1) (free_variables e2)
+  | Lfor(v, lo, hi, _dir, body) ->
+      let set = Ident.Set.union (free_variables lo) (free_variables hi) in
+      Ident.Set.union set (Ident.Set.remove v (free_variables body))
+  | Lassign(id, e) ->
+      Ident.Set.add id (free_variables e)
+  | Lsend (_k, met, obj, args, _) ->
+      free_variables_list
+        (Ident.Set.union (free_variables met) (free_variables obj))
+        args
+  | Levent (lam, _evt) ->
+      free_variables lam
+  | Lifused (_v, e) ->
+      (* Shouldn't v be considered a free variable ? *)
+      free_variables e
 
-module IdentSet = Set.Make(Ident)
-
-let free_ids get l =
-  let fv = ref IdentSet.empty in
-  let rec free l =
-    iter free l;
-    fv := List.fold_right IdentSet.add (get l) !fv;
-    match l with
-      Lfunction{params} ->
-        List.iter (fun param -> fv := IdentSet.remove param !fv) params
-    | Llet(_str, _k, id, _arg, _body) ->
-        fv := IdentSet.remove id !fv
-    | Lletrec(decl, _body) ->
-        List.iter (fun (id, _exp) -> fv := IdentSet.remove id !fv) decl
-    | Lstaticcatch(_e1, (_,vars), _e2) ->
-        List.iter (fun id -> fv := IdentSet.remove id !fv) vars
-    | Ltrywith(_e1, exn, _e2) ->
-        fv := IdentSet.remove exn !fv
-    | Lfor(v, _e1, _e2, _dir, _e3) ->
-        fv := IdentSet.remove v !fv
-    | Lassign(id, _e) ->
-        fv := IdentSet.add id !fv
-    | Lvar _ | Lconst _ | Lapply _
-    | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
-    | Lifthenelse _ | Lsequence _ | Lwhile _
-    | Lsend _ | Levent _ | Lifused _ -> ()
-  in free l; !fv
-
-let free_variables l =
-  free_ids (function Lvar id -> [id] | _ -> []) l
-
-let free_methods l =
-  free_ids (function Lsend(Self, Lvar meth, _, _, _) -> [meth] | _ -> []) l
+and free_variables_list set exprs =
+  List.fold_left (fun set expr -> Ident.Set.union (free_variables expr) set)
+    set exprs
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0
@@ -495,12 +586,6 @@ let raise_count = ref 0
 let next_raise_count () =
   incr raise_count ;
   !raise_count
-
-let negative_raise_count = ref 0
-
-let next_negative_raise_count () =
-  decr negative_raise_count ;
-  !negative_raise_count
 
 (* Anticipated staticraise, for guards *)
 let staticfail = Lstaticraise (0,[])
@@ -555,52 +640,87 @@ let rec make_sequence fn = function
       let lam = fn x in Lsequence(lam, make_sequence fn rem)
 
 (* Apply a substitution to a lambda-term.
-   Assumes that the bound variables of the lambda-term do not
-   belong to the domain of the substitution.
    Assumes that the image of the substitution is out of reach
    of the bound variables of the lambda-term (no capture). *)
 
-let subst_lambda s lam =
-  let rec subst = function
-    Lvar id as l ->
-      begin try Ident.find_same id s with Not_found -> l end
-  | Lconst _ as l -> l
-  | Lapply ap ->
-      Lapply{ap with ap_func = subst ap.ap_func;
-                     ap_args = List.map subst ap.ap_args}
-  | Lfunction{kind; params; body; attr; loc} ->
-      Lfunction{kind; params; body = subst body; attr; loc}
-  | Llet(str, k, id, arg, body) -> Llet(str, k, id, subst arg, subst body)
-  | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
-  | Lprim(p, args, loc) -> Lprim(p, List.map subst args, loc)
-  | Lswitch(arg, sw, loc) ->
-      Lswitch(subst arg,
-              {sw with sw_consts = List.map subst_case sw.sw_consts;
-                       sw_blocks = List.map subst_case sw.sw_blocks;
-                       sw_failaction = subst_opt  sw.sw_failaction; },
-              loc)
-  | Lstringswitch (arg,cases,default,loc) ->
-      Lstringswitch
-        (subst arg,List.map subst_strcase cases,subst_opt default,loc)
-  | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
-  | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
-  | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
-  | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst e1, subst e2, subst e3)
-  | Lsequence(e1, e2) -> Lsequence(subst e1, subst e2)
-  | Lwhile(e1, e2) -> Lwhile(subst e1, subst e2)
-  | Lfor(v, e1, e2, dir, e3) -> Lfor(v, subst e1, subst e2, dir, subst e3)
-  | Lassign(id, e) -> Lassign(id, subst e)
-  | Lsend (k, met, obj, args, loc) ->
-      Lsend (k, subst met, subst obj, List.map subst args, loc)
-  | Levent (lam, evt) -> Levent (subst lam, evt)
-  | Lifused (v, e) -> Lifused (v, subst e)
-  and subst_decl (id, exp) = (id, subst exp)
-  and subst_case (key, case) = (key, subst case)
-  and subst_strcase (key, case) = (key, subst case)
-  and subst_opt = function
+let subst update_env s lam =
+  let rec subst s lam =
+    let remove_list l s =
+      List.fold_left (fun s id -> Ident.Map.remove id s) s l
+    in
+    let module M = Ident.Map in
+    match lam with
+    | Lvar id as l ->
+        begin try Ident.Map.find id s with Not_found -> l end
+    | Lconst _ as l -> l
+    | Lapply ap ->
+        Lapply{ap with ap_func = subst s ap.ap_func;
+                      ap_args = subst_list s ap.ap_args}
+    | Lfunction{kind; params; body; attr; loc} ->
+        let s = List.fold_right Ident.Map.remove params s in
+        Lfunction{kind; params; body = subst s body; attr; loc}
+    | Llet(str, k, id, arg, body) ->
+        Llet(str, k, id, subst s arg, subst (Ident.Map.remove id s) body)
+    | Lletrec(decl, body) ->
+        let s =
+          List.fold_left (fun s (id, _) -> Ident.Map.remove id s)
+            s decl
+        in
+        Lletrec(List.map (subst_decl s) decl, subst s body)
+    | Lprim(p, args, loc) -> Lprim(p, subst_list s args, loc)
+    | Lswitch(arg, sw, loc) ->
+        Lswitch(subst s arg,
+                {sw with sw_consts = List.map (subst_case s) sw.sw_consts;
+                        sw_blocks = List.map (subst_case s) sw.sw_blocks;
+                        sw_failaction = subst_opt s sw.sw_failaction; },
+                loc)
+    | Lstringswitch (arg,cases,default,loc) ->
+        Lstringswitch
+          (subst s arg,List.map (subst_strcase s) cases,subst_opt s default,loc)
+    | Lstaticraise (i,args) ->  Lstaticraise (i, subst_list s args)
+    | Lstaticcatch(body, (id, params), handler) ->
+        Lstaticcatch(subst s body, (id, params),
+                    subst (remove_list params s) handler)
+    | Ltrywith(body, exn, handler) ->
+        Ltrywith(subst s body, exn, subst (Ident.Map.remove exn s) handler)
+    | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst s e1, subst s e2, subst s e3)
+    | Lsequence(e1, e2) -> Lsequence(subst s e1, subst s e2)
+    | Lwhile(e1, e2) -> Lwhile(subst s e1, subst s e2)
+    | Lfor(v, lo, hi, dir, body) ->
+        Lfor(v, subst s lo, subst s hi, dir,
+          subst (Ident.Map.remove v s) body)
+    | Lassign(id, e) ->
+        assert(not (Ident.Map.mem id s));
+        Lassign(id, subst s e)
+    | Lsend (k, met, obj, args, loc) ->
+        Lsend (k, subst s met, subst s obj, subst_list s args, loc)
+    | Levent (lam, evt) ->
+        let lev_env =
+          Ident.Map.fold (fun id _ env ->
+            match Env.find_value (Path.Pident id) evt.lev_env with
+            | exception Not_found -> env
+            | vd -> update_env id vd env
+          ) s evt.lev_env
+        in
+        Levent (subst s lam, { evt with lev_env })
+    | Lifused (v, e) -> Lifused (v, subst s e)
+  and subst_list s l = List.map (subst s) l
+  and subst_decl s (id, exp) = (id, subst s exp)
+  and subst_case s (key, case) = (key, subst s case)
+  and subst_strcase s (key, case) = (key, subst s case)
+  and subst_opt s = function
     | None -> None
-    | Some e -> Some (subst e)
-  in subst lam
+    | Some e -> Some (subst s e)
+  in
+  subst s lam
+
+let rename idmap lam =
+  let update_env oldid vd env =
+    let newid = Ident.Map.find oldid idmap in
+    Env.add_value newid vd env
+  in
+  let s = Ident.Map.map (fun new_id -> Lvar new_id) idmap in
+  subst update_env s lam
 
 let rec map f lam =
   let lam =
@@ -672,45 +792,50 @@ let bind str var exp body =
     Lvar var' when Ident.same var var' -> body
   | _ -> Llet(str, Pgenval, var, exp, body)
 
-and commute_comparison = function
-| Ceq -> Ceq| Cneq -> Cneq
-| Clt -> Cgt | Cle -> Cge
-| Cgt -> Clt | Cge -> Cle
+let negate_integer_comparison = function
+  | Ceq -> Cne
+  | Cne -> Ceq
+  | Clt -> Cge
+  | Cle -> Cgt
+  | Cgt -> Cle
+  | Cge -> Clt
 
-and negate_comparison = function
-| Ceq -> Cneq| Cneq -> Ceq
-| Clt -> Cge | Cle -> Cgt
-| Cgt -> Cle | Cge -> Clt
+let swap_integer_comparison = function
+  | Ceq -> Ceq
+  | Cne -> Cne
+  | Clt -> Cgt
+  | Cle -> Cge
+  | Cgt -> Clt
+  | Cge -> Cle
+
+let negate_float_comparison = function
+  | CFeq -> CFneq
+  | CFneq -> CFeq
+  | CFlt -> CFnlt
+  | CFnlt -> CFlt
+  | CFgt -> CFngt
+  | CFngt -> CFgt
+  | CFle -> CFnle
+  | CFnle -> CFle
+  | CFge -> CFnge
+  | CFnge -> CFge
+
+let swap_float_comparison = function
+  | CFeq -> CFeq
+  | CFneq -> CFneq
+  | CFlt -> CFgt
+  | CFnlt -> CFngt
+  | CFle -> CFge
+  | CFnle -> CFnge
+  | CFgt -> CFlt
+  | CFngt -> CFnlt
+  | CFge -> CFle
+  | CFnge -> CFnle
 
 let raise_kind = function
   | Raise_regular -> "raise"
   | Raise_reraise -> "reraise"
   | Raise_notrace -> "raise_notrace"
-
-let lam_of_loc kind loc =
-  let loc_start = loc.Location.loc_start in
-  let (file, lnum, cnum) = Location.get_pos_info loc_start in
-  let enum = loc.Location.loc_end.Lexing.pos_cnum -
-      loc_start.Lexing.pos_cnum + cnum in
-  match kind with
-  | Loc_POS ->
-    Lconst (Const_block (0, [
-          Const_immstring file;
-          Const_base (Const_int lnum);
-          Const_base (Const_int cnum);
-          Const_base (Const_int enum);
-        ]))
-  | Loc_FILE -> Lconst (Const_immstring file)
-  | Loc_MODULE ->
-    let filename = Filename.basename file in
-    let name = Env.get_unit_name () in
-    let module_name = if name = "" then "//"^filename^"//" else name in
-    Lconst (Const_immstring module_name)
-  | Loc_LOC ->
-    let loc = Printf.sprintf "File %S, line %d, characters %d-%d"
-        file lnum cnum enum in
-    Lconst (Const_immstring loc)
-  | Loc_LINE -> Lconst (Const_base (Const_int lnum))
 
 let merge_inline_attributes attr1 attr2 =
   match attr1, attr2 with

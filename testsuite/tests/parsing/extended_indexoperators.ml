@@ -1,3 +1,10 @@
+(* TEST
+   flags = "-dparsetree"
+   * setup-ocamlc.byte-build-env
+   ** ocamlc.byte
+   *** check-ocamlc.byte-output
+*)
+
 let (.?[]) = Hashtbl.find_opt
 let (.@[]) = Hashtbl.find
 let ( .@[]<- ) = Hashtbl.add
@@ -21,7 +28,3 @@ let ( .%() ) x y = x.(y);;
 let x = [| 0 |];;
 let _ = 1 #? x.(0);;
 let _ = 1 #? x.%(0);;
-
-(* form GPR#1467 *)
-let _ = x.%((); (); 0)
-let _ = x.%(print_endline "hello"; 0)

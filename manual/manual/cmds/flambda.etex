@@ -1,5 +1,4 @@
 \chapter{Optimisation with Flambda}
-\pdfchapterfold{-9}{Optimisation with Flambda}
 %HEVEA\cutname{flambda.html}
 
 \section{Overview}
@@ -553,7 +552,7 @@ let rec iter f l =
 and used like this:
 \begin{verbatim}
 let print_int x =
-  print_endline (string_of_int x)
+  print_endline (Int.to_string x)
 
 let run xs =
   iter print_int (List.rev xs)
@@ -595,7 +594,7 @@ let run xs =
     match l with
     | [] -> ()
     | h :: t ->
-      print_endline (string_of_int h);
+      print_endline (Int.to_string h);
       iter' f t
   in
   iter' print_int (List.rev xs)
@@ -607,7 +606,7 @@ let run xs =
     match l with
     | [] -> ()
     | h :: t ->
-      print_endline (string_of_int h);
+      print_endline (Int.to_string h);
       iter' t
   in
   iter' (List.rev xs)

@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* Adapted from: An Expressive Language of Signatures
    by Norman Ramsey, Kathleen Fisher and Paul Govereau *)
 

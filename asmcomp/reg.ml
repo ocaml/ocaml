@@ -15,20 +15,22 @@
 
 open Cmm
 
+module V = Backend_var
+
 module Raw_name = struct
   type t =
     | Anon
     | R
-    | Ident of Ident.t
+    | Var of V.t
 
-  let create_from_ident ident = Ident ident
+  let create_from_var var = Var var
 
   let to_string t =
     match t with
     | Anon -> None
     | R -> Some "R"
-    | Ident ident ->
-      let name = Ident.name ident in
+    | Var var ->
+      let name = V.name var in
       if String.length name <= 0 then None else Some name
 end
 
@@ -115,7 +117,7 @@ let name t =
     in
     match t.part with
     | None -> with_spilled
-    | Some part -> with_spilled ^ "#" ^ string_of_int part
+    | Some part -> with_spilled ^ "#" ^ Int.to_string part
 
 let first_virtual_reg_stamp = ref (-1)
 

@@ -14,7 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+[@@@ocaml.warning "+a-4-9-30-40-41-42-66"]
+open! Int_replace_polymorphic_compare
 
 [@@@ocaml.warning "+9"]
 (* Warning 9 is enabled to ensure correct update of each function when
@@ -58,8 +59,8 @@ module Set = struct
   let vars l = Variable.Set.of_list (List.map var l)
 end
 
-let rename ?current_compilation_unit ?append p =
-  { var = Variable.rename ?current_compilation_unit ?append p.var }
+let rename ?current_compilation_unit p =
+  { var = Variable.rename ?current_compilation_unit p.var }
 
 let map_var f { var } = { var = f var }
 
