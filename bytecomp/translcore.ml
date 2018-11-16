@@ -643,7 +643,7 @@ let primitive_is_ccall = function
      a C function call that may raise an exception *)
   | Pccall _ | Pstringrefs  | Pbytesrefs | Pbytessets | Parrayrefs _ |
     Parraysets _ | Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply |
-    Prevapply | Pperform | Presume -> true
+    Prevapply | Prunstack | Pperform | Presume -> true
   | _ -> false
 
 (* Assertions *)
@@ -1469,7 +1469,7 @@ and transl_handler e body val_caselist exn_caselist eff_caselist =
   let alloc_stack =
     Lprim(prim_alloc_stack, [val_fun; exn_fun; eff_fun], Location.none)
   in
-  Lprim(Presume, [alloc_stack; body_fun; arg], e.exp_loc)
+  Lprim(Prunstack, [alloc_stack; body_fun; arg], e.exp_loc)
 
 (* Wrapper for class compilation *)
 

@@ -112,53 +112,25 @@ typedef value (callback_stub)(caml_domain_state* state, value closure, value* ar
 
 callback_stub caml_callback_asm, caml_callback2_asm, caml_callback3_asm;
 
-static void check_stack(int nargs, value* args)
-{
-  CAMLparamN(args, nargs);
-  caml_maybe_expand_stack();
-  CAMLreturn0;
-}
-
-static value do_callback(callback_stub* cbstub, value closure,
-                         int nargs, value* args)
-{
-  /* we don't put the args in a CAMLparam, because we don't want
-     to keep them alive for the whole duration of the callback */
-  CAMLparam1(closure);
-  struct stack_info* saved_parent;
-  char* saved_system_sp;
-  value ret;
-
-  saved_system_sp = Caml_state->system_sp;
-  saved_parent = Stack_parent(Caml_state->current_stack);
-
-  Stack_parent(Caml_state->current_stack) = NULL;
-
-  check_stack(nargs, args);
-  ret = cbstub(Caml_state, closure, args);
-
-  Caml_state->system_sp = saved_system_sp;
-  Stack_parent(Caml_state->current_stack) = saved_parent;
-
-  CAMLreturn(ret);
-}
-
 CAMLexport value caml_callback_exn(value closure, value arg)
 {
-  return do_callback(&caml_callback_asm, closure, 1, &arg);
+  caml_maybe_expand_stack();
+  return caml_callback_asm(Caml_state, closure, &arg);
 }
 
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 {
   value args[] = {arg1, arg2};
-  return do_callback(&caml_callback2_asm, closure, 2, args);
+  caml_maybe_expand_stack();
+  return caml_callback2_asm(Caml_state, closure, args);
 }
 
 CAMLexport value caml_callback3_exn(value closure,
                                     value arg1, value arg2, value arg3)
 {
   value args[] = {arg1, arg2, arg3};
-  return do_callback(&caml_callback3_asm, closure, 3, args);
+  caml_maybe_expand_stack();
+  return caml_callback3_asm(Caml_state, closure, args);
 }
 
 /* Native-code callbacks.  caml_callback[123]_exn are implemented in asm. */
