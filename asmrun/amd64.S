@@ -184,7 +184,8 @@
 
 /* Switch between OCaml stacks. Clobbers %r11. Expects target stack in %r10. */
 #define SWITCH_OCAML_STACKS \
-    /* Build caml_context at the bottom of the stack */ \
+    /* Build caml_context at the bottom of the stack, \
+       saving the exception pointer of the source stack */ \
         pushq   $0 ; CFI_ADJUST(8); \
         PUSH_EXN_HANDLER; \
     /* Save OCaml SP in the stack slot */ \
@@ -333,31 +334,26 @@ G(caml_system__code_begin):
 /* DWARF
 /******************************************************************************/
 
-#define DW_CFA_val_expression     0x16
-#define DW_CFA_expression         0x10
+/* These constants are taken from:
+
+     DWARF Debugging Information Format, Version 3
+     http://dwarfstd.org/doc/Dwarf3.pdf
+
+   with the amd64-specific register numbers coming from
+   Fig. 3.36 ("DWARF Register Number Mapping") of:
+
+     System V Application Binary Interface
+     AMD64 Architecture Processor Supplement
+     Version 1.0
+     https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf */
+
 #define DW_CFA_def_cfa_expression 0x0f
-#define DW_CFA_restore            0x03
 #define DW_CFA_val_offset         0x14
 #define DW_REG_rbp                6
 #define DW_REG_rsp                7
-#define DW_REG_retaddr            16
 #define DW_OP_breg                0x70
-#define DW_OP_breg3               0x73  /* rbx */
-#define DW_OP_breg7               0x77  /* rsp */
-#define DW_OP_breg13              0x7d  /* r13 */
-#define DW_OP_nop                 0x96
 #define DW_OP_deref               0x06
-#define DW_OP_const1u             0x08
-#define DW_OP_plus                0x22
 #define DW_OP_plus_uconst         0x23
-#define DW_OP_minus               0x1c
-#define DW_OP_shl                 0x24
-#define DW_OP_shr                 0x25
-#define DW_OP_dup                 0x12
-#define DW_OP_piece               0x93
-#define DW_OP_swap                0x16
-#define DW_OP_const8u             0x0e
-#define DW_OP_and                 0x1a
 
 /******************************************************************************/
 /* Allocation */
