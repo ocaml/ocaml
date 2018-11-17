@@ -1224,29 +1224,30 @@ let variance : (Variance.t list, variance_req) property =
     check;
   }
 
-let rec compute_immediacies_fixpoint env decls immediacies =
-  let new_decls =
-    List.map2
-      (fun (id, decl) immediacy ->
-         id, {decl with type_immediate = immediacy})
-      decls immediacies
+let immediacy : (bool, unit) property =
+  let eq = (=) in
+  let merge ~prop:_ ~new_prop = new_prop in
+  let default _decl = false in
+  let compute env decl () =
+    compute_immediacy env decl in
+  let update_decl decl immediacy =
+    { decl with type_immediate = immediacy } in
+  let check _env _id decl () =
+    if (marked_as_immediate decl) && (not decl.type_immediate) then
+      raise (Error (decl.type_loc, Bad_immediate_attribute))
   in
-  let new_env = add_types_to_env new_decls env in
-  let new_immediacies =
-    List.map
-      (fun (_id, decl) -> compute_immediacy new_env decl)
-      new_decls
-  in
-  if new_immediacies <> immediacies then
-    compute_immediacies_fixpoint env decls new_immediacies
-  else begin
-    List.iter (fun (_, decl) ->
-      if (marked_as_immediate decl) && (not decl.type_immediate) then
-        raise (Error (decl.type_loc, Bad_immediate_attribute))
-      else ())
-      new_decls;
-    new_decls
-  end
+  {
+    eq;
+    merge;
+    default;
+    compute;
+    update_decl;
+    check;
+  }
+
+let compute_property_noreq property env decls =
+  let req = List.map (fun _ -> ()) decls in
+  compute_property property env decls req
 
 let add_injectivity =
   List.map
@@ -1456,11 +1457,8 @@ let transl_type_decl env rec_flag sdecl_list =
     in
     compute_property variance env decls required
   in
-  (* Add immediacies to the declarations *)
-  let decls =
-    compute_immediacies_fixpoint env decls
-      (List.map (fun _ -> false) decls)
-  in
+  (* Add immediacies to the environment *)
+  let decls = compute_property_noreq immediacy env decls in
   (* Compute the final environment with variance and immediacy *)
   let final_env = add_types_to_env decls env in
   (* Check re-exportation *)
