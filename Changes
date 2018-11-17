@@ -292,6 +292,10 @@ Working version
   unused "open!" statements
   (Alain Frisch, report by dwang, review by and design from Leo White)
 
+- GPR#1974: Trigger warning 5 in "let _ = e" and "ignore e" if e is of function
+  type and syntactically an application. (For the case of "ignore e" the warning
+  already existed, but used to be triggered even when e was not an application.)
+  (Nicolás Ojeda Bär, review by Alain Frisch and Jacques Garrigue)
 
 ### Code generation and optimizations:
 
