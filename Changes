@@ -578,6 +578,10 @@ Working version
   [Proc.stack_ptr_dwarf_register_number].
   (Mark Shinwell, review by Bernhard Schommer)
 
+- GPR#2152: refactorize the fixpoint to compute type-system properties
+  of mutually-recursive type declarations.
+  (Gabriel Scherer, review by Armaël Guéneau)
+
 ### Bug fixes:
 
 - MPR#7867: Fix #mod_use raising an exception for filenames with no
