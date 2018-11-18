@@ -1200,6 +1200,10 @@ let compute_property
   in
   compute_fixpoint props
 
+let compute_property_noreq property env decls =
+  let req = List.map (fun _ -> ()) decls in
+  compute_property property env decls req
+
 type variance_req = (bool * bool * bool) list
 let variance : (Variance.t list, variance_req) property =
   let eq li1 li2 =
@@ -1224,6 +1228,20 @@ let variance : (Variance.t list, variance_req) property =
     check;
   }
 
+let transl_variance : Asttypes.variance -> _ = function
+  | Covariant -> (true, false, false)
+  | Contravariant -> (false, true, false)
+  | Invariant -> (false, false, false)
+
+let variance_of_params ptype_params =
+  List.map transl_variance (List.map snd ptype_params)
+let variance_of_sdecl sdecl =
+  variance_of_params sdecl.ptype_params
+
+let compute_variance_decls env sdecls decls =
+  let required = List.map variance_of_sdecl sdecls in
+  compute_property variance env decls required
+
 let immediacy : (bool, unit) property =
   let eq = (=) in
   let merge ~prop:_ ~new_prop = new_prop in
@@ -1245,26 +1263,16 @@ let immediacy : (bool, unit) property =
     check;
   }
 
-let compute_property_noreq property env decls =
-  let req = List.map (fun _ -> ()) decls in
-  compute_property property env decls req
-
-let add_injectivity =
-  List.map
-    (function
-      | Covariant -> (true, false, false)
-      | Contravariant -> (false, true, false)
-      | Invariant -> (false, false, false)
-    )
+let compute_immediacy_decls env decls =
+  compute_property_noreq immediacy env decls
 
 (* for typeclass.ml *)
 let compute_variance_class_decls env cldecls =
   let decls, required =
     List.fold_right
       (fun (obj_id, obj_abbr, _cl_abbr, _clty, _cltydef, ci) (decls, req) ->
-        let variance = List.map snd ci.ci_params in
         (obj_id, obj_abbr) :: decls,
-        add_injectivity variance :: req)
+        variance_of_params ci.ci_params :: req)
       cldecls ([],[])
   in
   let decls = compute_property variance env decls required in
@@ -1322,6 +1330,10 @@ let name_recursion sdecl id decl =
       {decl with type_manifest = Some ty'}
     else decl
   | _ -> decl
+
+let name_recursion_decls sdecls decls =
+  List.map2 (fun sdecl (id, decl) -> (id, name_recursion sdecl id decl))
+    sdecls decls
 
 (* Warn on definitions of type "type foo = ()" which redefine a different unit
    type and are likely a mistake. *)
@@ -1440,24 +1452,12 @@ let transl_type_decl env rec_flag sdecl_list =
     sdecl_list tdecls;
   (* Check that constraints are enforced *)
   List.iter2 (check_constraints new_env) sdecl_list decls;
-  (* Name recursion *)
+  (* Add type properties to declarations *)
   let decls =
-    List.map2 (fun sdecl (id, decl) -> id, name_recursion sdecl id decl)
-      sdecl_list decls
-  in
-  (* Add variances to the declarations *)
-  let decls =
-    let required =
-      List.map
-        (fun sdecl ->
-           add_injectivity (List.map snd sdecl.ptype_params)
-        )
-        sdecl_list
-    in
-    compute_property variance env decls required
-  in
-  (* Add immediacies to the environment *)
-  let decls = compute_property_noreq immediacy env decls in
+    decls
+    |> name_recursion_decls sdecl_list
+    |> compute_variance_decls env sdecl_list
+    |> compute_immediacy_decls env in
   (* Compute the final environment with variance and immediacy *)
   let final_env = add_types_to_env decls env in
   (* Check re-exportation *)
@@ -1637,7 +1637,7 @@ let transl_type_extension extend env loc styext =
       if List.for_all2
            (fun (c1, n1, _) (c2, n2, _) -> (not c2 || c1) && (not n2 || n1))
            type_variance
-           (add_injectivity (List.map snd styext.ptyext_params))
+           (variance_of_params styext.ptyext_params)
       then None else Some Includecore.Variance
   in
   begin match err with
@@ -1965,7 +1965,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   let decl = name_recursion sdecl id decl in
   let type_variance =
     compute_variance_decl env true decl
-      (add_injectivity (List.map snd sdecl.ptype_params), sdecl.ptype_loc)
+      (variance_of_sdecl sdecl, sdecl.ptype_loc)
   in
   let type_immediate = compute_immediacy env decl in
   let decl = {decl with type_variance; type_immediate} in
