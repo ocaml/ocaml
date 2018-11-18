@@ -462,6 +462,9 @@ Working version
   (Sébastien Hinderer, review by Xavier Leroy, Stephen Dolan and
   Damien Doligez)
 
+- GPR#2148: fix a parallel build bug involving CamlinternalLazy.
+  (Stephen Dolan, review by Gabriel Scherer and Nicolas Ojeda Bar)
+
 ### Internal/compiler-libs changes:
 
 - GPR#292: use Menhir as the parser generator for the OCaml parser.
