@@ -553,8 +553,10 @@ let override_sys_argv args =
 
 let run_script ppf name args =
   override_sys_argv args;
-  Compmisc.init_path ~dir:(Filename.dirname name) false;
+  let dir = Filename.dirname name in
+  Compmisc.init_path ~dir false;
                    (* Note: would use [Filename.abspath] here, if we had it. *)
+  Dll.replace_last_path "" dir;
   begin
     try toplevel_env := Compmisc.initial_env()
     with Env.Error _ | Typetexp.Error _ as exn ->
