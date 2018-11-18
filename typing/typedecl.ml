@@ -1200,7 +1200,7 @@ let compute_property
   in
   compute_fixpoint props
 
-type variance_req = (bool * bool * bool) list * Location.t
+type variance_req = (bool * bool * bool) list
 let variance : (Variance.t list, variance_req) property =
   let eq li1 li2 =
     try List.for_all2 Variance.eq li1 li2 with _ -> false in
@@ -1208,12 +1208,12 @@ let variance : (Variance.t list, variance_req) property =
   let default decl =
     List.map (fun _ -> Variance.null) decl.type_params in
   let compute env decl req =
-    compute_variance_decl env false decl req in
+    compute_variance_decl env false decl (req, decl.type_loc) in
   let update_decl decl variance =
     { decl with type_variance = variance } in
   let check env id decl req =
     if not (is_hash id) then
-      ignore (compute_variance_decl env true decl req)
+      ignore (compute_variance_decl env true decl (req, decl.type_loc))
   in
   {
     eq;
@@ -1264,7 +1264,7 @@ let compute_variance_class_decls env cldecls =
       (fun (obj_id, obj_abbr, _cl_abbr, _clty, _cltydef, ci) (decls, req) ->
         let variance = List.map snd ci.ci_params in
         (obj_id, obj_abbr) :: decls,
-        (add_injectivity variance, ci.ci_loc) :: req)
+        add_injectivity variance :: req)
       cldecls ([],[])
   in
   let decls = compute_property variance env decls required in
@@ -1450,8 +1450,7 @@ let transl_type_decl env rec_flag sdecl_list =
     let required =
       List.map
         (fun sdecl ->
-           add_injectivity (List.map snd sdecl.ptype_params),
-           sdecl.ptype_loc
+           add_injectivity (List.map snd sdecl.ptype_params)
         )
         sdecl_list
     in
@@ -1674,6 +1673,11 @@ let transl_type_extension extend env loc styext =
   (* Check variances are correct *)
   List.iter
     (fun ext->
+       (* Note that [loc] here is distinct from [type_decl.type_loc],
+          which makes the [loc] parameter to this function
+          useful. [loc] is the location of the extension, while
+          [type_decl] points to the original type declaration being
+          extended. *)
       ignore (compute_variance_extension env true type_decl
                 ext.ext_type (type_variance, loc)))
     constructors;
