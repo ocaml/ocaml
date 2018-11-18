@@ -1,3 +1,7 @@
+(* TEST
+   modules = "stubs.c"
+*)
+
 (* C version of ephetest.ml *)
 
 let make_ra () = ref (ref 1) [@@inline never]
