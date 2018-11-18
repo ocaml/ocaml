@@ -1194,7 +1194,7 @@ let add_injectivity =
     )
 
 (* for typeclass.ml *)
-let compute_variance_decls env cldecls =
+let compute_variance_class_decls env cldecls =
   let decls, required =
     List.fold_right
       (fun (obj_id, obj_abbr, _cl_abbr, _clty, _cltydef, ci) (decls, req) ->
