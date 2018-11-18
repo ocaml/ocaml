@@ -588,12 +588,14 @@ let override_sys_argv args =
 
 let run_script ppf name args =
   let len = Array.length args in
+  let dir = Filename.dirname name in
+                   (* Note: would use [Filename.abspath] here, if we had it. *)
   if Array.length Sys.argv < len then invalid_arg "Toploop.run_script";
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
-  Compmisc.init_path ~dir:(Filename.dirname name) true;
-                   (* Note: would use [Filename.abspath] here, if we had it. *)
+  Config.load_path :=
+    Misc.Stdlib.List.replace_last ~eq:String.equal "" dir !Config.load_path;
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
   let explicit_name =

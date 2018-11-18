@@ -161,6 +161,15 @@ module Stdlib = struct
           | t::q -> aux (n-1) (t::acc) q
       in
       aux n [] l
+
+    let replace_last ?(eq=(=)) item replacement l =
+      let swap_and_reverse (seen, acc) elt =
+        if eq elt item && not seen then
+          (true, replacement::acc)
+        else
+          (seen, elt::acc)
+      in
+      snd @@ List.fold_left swap_and_reverse (false, []) (List.rev l)
   end
 
   module Option = struct

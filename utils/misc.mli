@@ -121,6 +121,10 @@ module Stdlib : sig
     (** [split_at n l] returns the pair [before, after] where [before] is
         the [n] first elements of [l] and [after] the remaining ones.
         If [l] has less than [n] elements, raises Invalid_argument. *)
+
+    val replace_last : ?eq:('a -> 'a -> bool) -> 'a -> 'a -> 'a list -> 'a list
+    (** [replace_last ?eq item replacement l] returns l with the last occurrence
+        of [item] replaced with [replacement]. *)
   end
 
   module Option : sig

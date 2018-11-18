@@ -45,16 +45,8 @@ let remove_path dirs =
   search_path := List.filter (fun d -> not (List.mem d dirs)) !search_path
 
 let replace_last_path dir replacement =
-  let (_, new_search) =
-    let swap_and_reverse (seen, acc) d =
-      if String.equal d dir && not seen then
-        (true, replacement::acc)
-      else
-        (seen, d::acc)
-    in
-    List.fold_left swap_and_reverse  (false, []) (List.rev !search_path)
-  in
-  search_path := new_search
+  search_path :=
+    Misc.Stdlib.List.replace_last ~eq:String.equal dir replacement !search_path
 
 (* Extract the name of a DLLs from its external name (xxx.so or -lxxx) *)
 

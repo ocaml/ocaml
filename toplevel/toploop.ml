@@ -554,8 +554,9 @@ let override_sys_argv args =
 let run_script ppf name args =
   override_sys_argv args;
   let dir = Filename.dirname name in
-  Compmisc.init_path ~dir false;
                    (* Note: would use [Filename.abspath] here, if we had it. *)
+  Config.load_path :=
+    Misc.Stdlib.List.replace_last ~eq:String.equal "" dir !Config.load_path;
   Dll.replace_last_path "" dir;
   begin
     try toplevel_env := Compmisc.initial_env()
