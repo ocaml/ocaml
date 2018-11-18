@@ -125,6 +125,7 @@ module Variance = struct
   let union v1 v2 = v1 lor v2
   let inter v1 v2 = v1 land v2
   let subset v1 v2 = (v1 land v2 = v1)
+  let eq (v1 : t) v2 = (v1 = v2)
   let set x b v =
     if b then v lor single x else  v land (lnot (single x))
   let mem x = subset (single x)
