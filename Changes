@@ -318,6 +318,9 @@ Working version
 - GPR#1917: comballoc: ensure object allocation order is preserved
   (Stephen Dolan)
 
+- MPR#6242, GPR#2143: optimize some local functions
+  (Alain Frisch, review by Gabriel Scherer)
+
 ### Runtime system:
 
 - MPR#7198, MPR#7750, GPR#1738: add a function (caml_custom_alloc_mem)
