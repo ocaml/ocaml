@@ -1723,11 +1723,9 @@ let rec trace fst txt ppf = function
 
 let is_discarded is_last = function
   | Trace.(Diff { got=t1, t1'; expected=t2, t2'}) ->
-      if is_constr_row ~allow_ident:true t1'
+      is_constr_row ~allow_ident:true t1'
       || is_constr_row ~allow_ident:true t2'
-      || same_path t1 t1' && same_path t2 t2' && not is_last then
-        true
-      else false
+      || same_path t1 t1' && same_path t2 t2' && not is_last
   | _ -> false
 
 (** Flatten the trace and remove elements that are always discarded

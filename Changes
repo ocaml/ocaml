@@ -181,8 +181,8 @@ Working version
     - GPR#2094, rewording for "constructor has no type" error
     - MPR#7565, GPR#2140, more context for universal variable escape
       in method type
-  (Florian Angeletti, reviews by Jacques Garrique, Gabriel Radanne,
-   Gabriel Scherer and Jeremy Yallop)
+  (Florian Angeletti, reviews by Jacques Garrique, Armaël Guéneau,
+   Gabriel Radanne, Gabriel Scherer and Jeremy Yallop)
 
 - GPR#1748: do not error when instantiating polymorphic fields in patterns.
   (Thomas Refis, review by Gabriel Scherer)
