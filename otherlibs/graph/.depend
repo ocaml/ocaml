@@ -1,18 +1,21 @@
 color.o: color.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h
 draw.o: draw.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h \
  ../../byterun/caml/alloc.h ../../byterun/caml/mlvalues.h
 dump_img.o: dump_img.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h \
  image.h ../../byterun/caml/alloc.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/memory.h ../../byterun/caml/domain.h \
@@ -20,7 +23,8 @@ dump_img.o: dump_img.c libgraph.h ../../byterun/caml/mlvalues.h \
 events.o: events.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h \
  ../../byterun/caml/alloc.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/signals.h ../../byterun/caml/memory.h \
@@ -31,28 +35,32 @@ events.o: events.c libgraph.h ../../byterun/caml/mlvalues.h \
 fill.o: fill.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h \
  ../../byterun/caml/memory.h ../../byterun/caml/domain.h \
  ../../byterun/caml/mlvalues.h ../../byterun/caml/alloc.h
 image.o: image.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h \
  image.h ../../byterun/caml/alloc.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/custom.h
 make_img.o: make_img.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h \
  image.h ../../byterun/caml/memory.h ../../byterun/caml/domain.h \
  ../../byterun/caml/mlvalues.h ../../byterun/caml/alloc.h
 open.o: open.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h \
  ../../byterun/caml/alloc.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/callback.h ../../byterun/caml/memory.h \
@@ -61,22 +69,26 @@ open.o: open.c libgraph.h ../../byterun/caml/mlvalues.h \
 point_col.o: point_col.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h
 sound.o: sound.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h
 subwindow.o: subwindow.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h
 text.o: text.c libgraph.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/misc.h \
  ../../byterun/caml/alloc.h ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/memory.h ../../byterun/caml/domain.h \
