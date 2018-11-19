@@ -745,7 +745,9 @@ and transl_let rec_flag pat_expr_list =
         pat_expr_list in
       let transl_case {vb_expr=expr; vb_attributes; vb_loc} id =
         let lam = transl_exp expr in
-        let lam = Translattribute.add_function_attributes lam vb_loc vb_attributes in
+        let lam =
+          Translattribute.add_function_attributes lam vb_loc vb_attributes
+        in
         (id, lam) in
       let lam_bds = List.map2 transl_case pat_expr_list idlist in
       fun body -> Lletrec(lam_bds, body)
