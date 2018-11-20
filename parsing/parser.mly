@@ -3199,7 +3199,7 @@ atomic_type:
       { tys }
 ;
 
-package_type:
+%inline package_type:
     mktyp(module_type
       { Ptyp_package (package_type_of_module_type $1) })
       { $1 }
