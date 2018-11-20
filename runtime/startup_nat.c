@@ -84,6 +84,7 @@ static void init_static(void)
   cf->digest_computed = 0;
   caml_ext_table_init(&caml_code_fragments_table, 8);
   caml_ext_table_add(&caml_code_fragments_table, cf);
+  caml_page_table_add(In_code_area, cf->code_start, cf->code_end);
 }
 
 /* These are termination hooks used by the systhreads library */

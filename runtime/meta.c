@@ -110,6 +110,7 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
     cf->digest_computed = 0;
   }
   caml_ext_table_add(&caml_code_fragments_table, cf);
+  caml_page_table_add(In_code_area, cf->code_start, cf->code_end);
 
 #ifdef ARCH_BIG_ENDIAN
   caml_fixup_endianness((code_t) prog, len);
@@ -156,6 +157,7 @@ CAMLprim value caml_static_release_bytecode(value bc)
   caml_debugger(CODE_UNLOADED, Val_long(index));
 
   caml_ext_table_remove(&caml_code_fragments_table, cf);
+  caml_page_table_remove(In_code_area, cf->code_start, cf->code_end);
 
 #ifndef NATIVE_CODE
   caml_release_bytecode(prog, len);
