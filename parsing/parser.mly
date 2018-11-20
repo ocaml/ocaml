@@ -2783,19 +2783,13 @@ generic_type_declaration(flag, kind):
     { $1 }
 ;
 nonempty_type_kind:
-  | ty = core_type
-      { (Ptype_abstract, Public, Some ty) }
-  | PRIVATE ty = core_type
-      { (Ptype_abstract, Private, Some ty) }
-  | cs = constructor_declarations
-      { (Ptype_variant cs, Public, None) }
-  | PRIVATE cs = constructor_declarations
-      { (Ptype_variant cs, Private, None) }
-  | DOTDOT
-      { (Ptype_open, Public, None) }
-  | PRIVATE DOTDOT
-      { (Ptype_open, Private, None) }
-  | priv = private_flag LBRACE ls = label_declarations RBRACE
+  | priv = inline_private_flag ty = core_type
+      { (Ptype_abstract, priv, Some ty) }
+  | priv = inline_private_flag cs = constructor_declarations
+      { (Ptype_variant cs, priv, None) }
+  | priv = inline_private_flag DOTDOT
+      { (Ptype_open, priv, None) }
+  | priv = inline_private_flag LBRACE ls = label_declarations RBRACE
       { (Ptype_record ls, priv, None) }
   | ty = core_type EQUAL priv = private_flag cs = constructor_declarations
       { (Ptype_variant cs, priv, Some ty) }
@@ -3438,6 +3432,10 @@ direction_flag:
   | DOWNTO                                      { Downto }
 ;
 private_flag:
+  inline_private_flag
+    { $1 }
+;
+%inline inline_private_flag:
     /* empty */                                 { Public }
   | PRIVATE                                     { Private }
 ;
