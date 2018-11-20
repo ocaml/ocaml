@@ -37,10 +37,6 @@ val classify_lazy_argument : Typedtree.expression ->
                              | `Identifier of [`Forward_value | `Other]
                              | `Other]
 
-val lazy_val_requires_forward : Env.t -> Types.type_expr -> bool
-  (** Whether a forward block is needed for a lazy thunk on a value, i.e.
-      if the value can be represented as a float/forward/lazy *)
-
 val value_kind_union :
       Lambda.value_kind -> Lambda.value_kind -> Lambda.value_kind
   (** [value_kind_union k1 k2] is a value_kind at least as general as
