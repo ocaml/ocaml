@@ -174,7 +174,7 @@ CAMLprim value caml_memprof_set(value v) {
   CAMLreturn(Val_unit);
 }
 
-/* Cf. Memprof.alloc_kind */
+/* Cf. Gc.Memprof.alloc_kind */
 enum ml_alloc_kind {
   Minor = Val_long(0),
   Major = Val_long(1),
@@ -324,8 +324,8 @@ void caml_memprof_postpone_track_alloc_shr(value block) {
   int32_t occurences = mt_generate_poisson(Whsize_val(block));
   CAMLassert(Is_in_heap(block));
   if(occurences > 0) {
-    struct postponed_block* pb =
-      (struct postponed_block*)caml_stat_alloc_noexc(sizeof(struct postponed_block));
+    struct postponed_block* pb = (struct postponed_block*)
+      caml_stat_alloc_noexc(sizeof(struct postponed_block));
     if(pb == NULL) return;
     pb->block = block;
     caml_register_generational_global_root(&pb->block);
@@ -367,7 +367,7 @@ void caml_memprof_handle_postponed() {
   { struct postponed_block* next = p->next;                \
     caml_remove_generational_global_root(&p->callstack);   \
     caml_remove_generational_global_root(&p->block);       \
-    caml_stat_free(p);                                               \
+    caml_stat_free(p);                                     \
     p = next; }
 
   caml_memprof_set_suspended(1);
@@ -567,7 +567,8 @@ void caml_memprof_call_gc_end(double exceeded_by) {
       if(next_sample < 0) {
         if(n_samples >= sz) {
           sz *= 2;
-          p = (struct smp*)caml_stat_resize_noexc(samples, sz * sizeof(struct smp));
+          p = (struct smp*)
+            caml_stat_resize_noexc(samples, sz * sizeof(struct smp));
           if(p == NULL) { caml_stat_free(samples); goto abort; }
           samples = p;
         }

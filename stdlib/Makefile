@@ -56,7 +56,6 @@ OTHERS= $(P)pervasives.cmo $(P)seq.cmo $(P)option.cmo $(P)result.cmo \
   camlinternalOO.cmo $(P)oo.cmo camlinternalMod.cmo \
   $(P)genlex.cmo $(P)ephemeron.cmo \
   $(P)filename.cmo $(P)complex.cmo \
-  $(P)memprof.cmo \
   $(P)arrayLabels.cmo $(P)listLabels.cmo $(P)bytesLabels.cmo \
   $(P)stringLabels.cmo $(P)moreLabels.cmo $(P)stdLabels.cmo \
   $(P)spacetime.cmo $(P)bigarray.cmo

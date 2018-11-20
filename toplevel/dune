@@ -69,7 +69,6 @@
                     ; stdlib__ListLabels
                     stdlib__Map
                     stdlib__Marshal
-                    stdlib__Memprof
                     ; stdlib__MoreLabels
                     stdlib__Nativeint
                     stdlib__Obj
