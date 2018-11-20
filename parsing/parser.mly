@@ -2211,9 +2211,8 @@ simple_expr:
       { $1 }
 ;
 %inline simple_expr_attrs:
-  | BEGIN ext_attributes seq_expr END
-      { let (ext, attrs) = $2 in
-        $3.pexp_desc, (ext, attrs @ $3.pexp_attributes) }
+  | BEGIN ext = ext attrs = attributes e = seq_expr END
+      { e.pexp_desc, (ext, attrs @ e.pexp_attributes) }
   | BEGIN ext_attributes END
       { Pexp_construct (mkloc (Lident "()") (make_loc $sloc), None), $2 }
   | BEGIN ext_attributes seq_expr error
@@ -3604,7 +3603,7 @@ ext:
   | /* empty */     { None }
   | PERCENT attr_id { not_expecting $loc "extension" }
 ;
-%inline ext_attributes: (* TODO should disappear? *)
+%inline ext_attributes:
   ext attributes    { $1, $2 }
 ;
 extension:
