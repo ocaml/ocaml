@@ -68,6 +68,9 @@ let psig_value (vd, ext) =
   (Psig_value vd, ext)
 let psig_type ((nr, ext), tys) =
   (Psig_type (nr, tys), ext)
+let psig_typesubst ((nr, ext), tys) =
+  assert (nr = Recursive); (* see [no_nonrec_flag] *)
+  (Psig_typesubst tys, ext)
 let psig_exception (te, ext) =
   (Psig_exception te, ext)
 let psig_include (body, ext) =
@@ -1457,8 +1460,7 @@ signature_item:
     | type_declarations
         { psig_type $1 }
     | type_subst_declarations
-        { let (l, ext) = $1 in
-          (Psig_typesubst (List.rev l), ext) }
+        { psig_typesubst $1 }
     | sig_type_extension
         { psig_typext $1 }
     | sig_exception_declaration
@@ -2704,97 +2706,71 @@ primitive_declaration:
       ext }
 ;
 
-(* Type declarations *)
+(* Type declarations and type substitutions. *)
 
-(* A set of type declarations begins with a [type_declaration] and continues
-   with a possibly empty list of [and_type_declaration]s. *)
+(* Type declarations [type t = u] and type substitutions [type t := u] are very
+   similar, so we view them as instances of [generic_type_declarations]. In the
+   case of a type declaration, the use of [nonrec_flag] means that [NONREC] may
+   be absent or present, whereas in the case of a type substitution, the use of
+   [no_nonrec_flag] means that [NONREC] must be absent. The use of [type_kind]
+   versus [type_subst_kind] means that in the first case, we expect an [EQUAL]
+   sign, whereas in the second case, we expect [COLONEQUAL]. *)
 
 %inline type_declarations:
-  xlist(type_declaration, and_type_declaration)
+  generic_type_declarations(nonrec_flag, type_kind)
     { $1 }
 ;
 
-type_subst_declarations:
-    type_subst_declaration
-      { let (ty, ext) = $1 in ([ty], ext) }
-  | type_subst_declarations and_type_subst_declaration
-      { let (tys, ext) = $1 in ($2 :: tys, ext) }
+%inline type_subst_declarations:
+  generic_type_declarations(no_nonrec_flag, type_subst_kind)
+    { $1 }
 ;
 
-type_subst_declaration:
+(* A set of type declarations or substitutions begins with a
+   [generic_type_declaration] and continues with a possibly empty list of
+   [generic_and_type_declaration]s. *)
+
+%inline generic_type_declarations(flag, kind):
+  xlist(
+    generic_type_declaration(flag, kind),
+    generic_and_type_declaration(kind)
+  )
+  { $1 }
+;
+
+(* [generic_type_declaration] and [generic_and_type_declaration] look similar,
+   but are in reality different enough that it is difficult to share anything
+   between them. *)
+
+generic_type_declaration(flag, kind):
   TYPE
   ext = ext
   attrs1 = attributes
-  no_nonrec_flag
+  flag = flag
   params = type_parameters
   id = mkrhs(LIDENT)
-  type_kind = type_subst_kind
+  kind_priv_manifest = kind
   cstrs = constraints
   attrs2 = post_item_attributes
     {
-        let (kind, priv, manifest) = type_kind in
-        let docs = symbol_docs $sloc in
-        let attrs = attrs1 @ attrs2 in
-        let loc = make_loc $sloc in
-        let ty =
-          Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs
-        in
-        (ty, ext)
+      let (kind, priv, manifest) = kind_priv_manifest in
+      let docs = symbol_docs $sloc in
+      let attrs = attrs1 @ attrs2 in
+      let loc = make_loc $sloc in
+      (flag, ext),
+      Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs
     }
 ;
-and_type_subst_declaration:
+%inline generic_and_type_declaration(kind):
   AND
   attrs1 = attributes
   params = type_parameters
   id = mkrhs(LIDENT)
-  type_kind = type_subst_kind
+  kind_priv_manifest = kind
   cstrs = constraints
   attrs2 = post_item_attributes
     {
-      let (kind, priv, manifest) = type_kind in
-      let docs = symbol_docs $sloc in
-      let attrs = attrs1 @ attrs2 in
-      let loc = make_loc $sloc in
-      let text = symbol_text $symbolstartpos in
-      Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs ~text
-    }
-;
-
-(* The definitions of [type_declaration] and [and_type_declaration] look very
-   similar, but are in reality sufficiently different that it is difficult to
-   share anything between them. *)
-
-type_declaration:
-  TYPE
-  ext = ext
-  attrs1 = attributes
-  nonrec_flag = nonrec_flag
-  params = type_parameters
-  id = mkrhs(LIDENT)
-  type_kind = type_kind
-  cstrs = constraints
-  attrs2 = post_item_attributes
-    {
-      let (kind, priv, manifest) = type_kind in
-      let docs = symbol_docs $sloc in
-      let attrs = attrs1 @ attrs2 in
-      let loc = make_loc $sloc in
-      let ty =
-        Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs
-      in
-      (nonrec_flag, ext), ty
-    }
-;
-and_type_declaration:
-  AND
-  attrs1 = attributes
-  params = type_parameters
-  id = mkrhs(LIDENT)
-  type_kind = type_kind
-  cstrs = constraints
-  attrs2 = post_item_attributes
-    {
-      let (kind, priv, manifest) = type_kind in
+      let (kind, priv, manifest) = kind_priv_manifest in
       let docs = symbol_docs $sloc in
       let attrs = attrs1 @ attrs2 in
       let loc = make_loc $sloc in
