@@ -25,4 +25,3 @@
  (targets dynlink_compilerlibs.ml)
  (action (write-file %{targets}
            "(* empty because we are linking with ocamlcommon *)")))
-
