@@ -230,21 +230,17 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         (KS.union opt_available_across_prev_insn available_across)
     in
     let case_1d =
-      if KS.is_empty case_1c then KS.empty
-      else
-        KS.diff (KS.inter available_before available_across)
-          opt_available_across_prev_insn
+      KS.diff (KS.inter available_before available_across)
+        opt_available_across_prev_insn
     in
     let case_2a =
       KS.diff opt_available_across_prev_insn
         (KS.union available_before available_across)
     in
     let case_2c =
-      if KS.is_empty case_2a then KS.empty
-      else
-        KS.diff
-          (KS.inter opt_available_across_prev_insn available_before)
-          available_across
+      KS.diff
+        (KS.inter opt_available_across_prev_insn available_before)
+        available_across
     in
     let handle case action result =
       KS.fold (fun key result -> (key, action) :: result) case result
