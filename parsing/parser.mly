@@ -816,6 +816,9 @@ The precedences must be listed from low to high.
 %inline wrap_mksig_ext(symb): symb
     { wrap_mksig_ext ~loc:$sloc $1 }
 
+%inline mk_directive_arg(symb): symb
+    { mk_directive_arg ~loc:$sloc $1 }
+
 /* Generic definitions */
 
 (* [iloption(X)] recognizes either nothing or [X]. Assuming [X] produces
@@ -3395,15 +3398,12 @@ class_longident:
 /* Toplevel directives */
 
 toplevel_directive:
-  HASH dir = mkrhs(ident) arg = ioption(toplevel_directive_argument)
+  HASH dir = mkrhs(ident)
+  arg = ioption(mk_directive_arg(toplevel_directive_argument))
     { mk_directive ~loc:$sloc dir arg }
 ;
 
-toplevel_directive_argument:
-  toplevel_directive_argument_
-    { mk_directive_arg ~loc:$sloc $1 }
-;
-toplevel_directive_argument_:
+%inline toplevel_directive_argument:
   | STRING        { let (s, _) = $1 in Pdir_string s }
   | INT           { let (n, m) = $1 in Pdir_int (n ,m) }
   | val_longident { Pdir_ident $1 }
