@@ -147,138 +147,260 @@ let targetint_const n =
   Targetint.add (Targetint.shift_left (Targetint.of_int n) 1)
     Targetint.one
 
+(* Lifting of phantom lets, on both Clambda and Cmm terms, so they don't
+   obstruct pattern matches such as those used for arithmetic simplification. *)
+
+(* CR-someday mshinwell: A more satisfactory solution would be to change the Cmm
+   language to be in ANF form and then perform such simplifications based on
+   approximations calculated in [Selectgen]. This would require changing the
+   [Selectgen] logic to perform an [Un_anf]-style analysis to know which
+   variables may be substituted for their defining expressions when compiling a
+   [Cop]. *)
+
+let transl_defining_expr_of_phantom_let defining_expr =
+  match defining_expr with
+  | None -> None
+  | Some defining_expr ->
+    let defining_expr =
+      match defining_expr with
+      | Uphantom_const (Uconst_ref (sym, _defining_expr)) ->
+        Cphantom_const_symbol sym
+      | Uphantom_read_symbol_field { sym; field; } ->
+        Cphantom_read_symbol_field { sym; field; }
+      | Uphantom_const (Uconst_int i) | Uphantom_const (Uconst_ptr i) ->
+        Cphantom_const_int (targetint_const i)
+      | Uphantom_var var -> Cphantom_var var
+      | Uphantom_read_field { var; field; } ->
+        Cphantom_read_field { var; field; }
+      | Uphantom_offset_var { var; offset_in_words; } ->
+        Cphantom_offset_var { var; offset_in_words; }
+      | Uphantom_block { tag; fields; } ->
+        Cphantom_block { tag; fields; }
+    in
+    Some defining_expr
+
+let rec discard_phantom_lets exp =
+  match exp with
+  | Cphantom_let (_var, _defining_expr, body) ->
+      discard_phantom_lets body
+  | exp -> exp
+
+let lift_phantom_lets exp f =
+  let rec lift exp lifted_rev depth =
+    let next_depth = depth + 1 in
+    match exp with
+    | Cop (op, args, dbg) when depth < 4 ->
+      let lifted_rev, args =
+        List.fold_left (fun (lifted_rev, args) arg ->
+            let lifted_rev, arg = lift arg lifted_rev next_depth in
+            lifted_rev, arg :: args)
+          ([], [])
+          (List.rev args)
+      in
+      lifted_rev, Cop (op, args, dbg)
+    | Cphantom_let (var, defining_expr, body) ->
+      lift body ((var, defining_expr) :: lifted_rev) depth
+    | _ -> lifted_rev, exp
+  in
+  let lifted_rev, exp = lift exp [] 0 in
+  let exp = f exp in
+  List.fold_left (fun exp (var, defining_expr) ->
+      Cphantom_let (var, defining_expr, exp))
+    exp
+    lifted_rev
+
+let lift_phantom_lets2 exp1 exp2 f =
+  lift_phantom_lets exp1 (fun exp1 ->
+    lift_phantom_lets exp2 (fun exp2 ->
+      f exp1 exp2))
+
+let lift_phantom_lets_clambda0 exp f =
+  let rec lift exp lifted_rev depth =
+    let next_depth = depth + 1 in
+    match exp with
+    | Uprim (prim, args, dbg) when depth < 4 ->
+      let lifted_rev, args =
+        List.fold_left (fun (lifted_rev, args) arg ->
+            let lifted_rev, arg = lift arg lifted_rev next_depth in
+            lifted_rev, arg :: args)
+          ([], [])
+          (List.rev args)
+      in
+      lifted_rev, Uprim (prim, args, dbg)
+    | Uifthenelse (cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
+      let lifted_rev, cond = lift cond lifted_rev next_depth in
+      let lifted_rev, ifso = lift ifso lifted_rev next_depth in
+      let lifted_rev, ifnot = lift ifnot lifted_rev next_depth in
+      lifted_rev, Uifthenelse (cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg)
+    | Uphantom_let (var, defining_expr, body) ->
+      lift body ((var, defining_expr) :: lifted_rev) depth
+    | _ -> lifted_rev, exp
+  in
+  let lifted_rev, exp = lift exp [] 0 in
+  let exp = f exp in
+  lifted_rev, exp
+
+let lift_phantom_lets_clambda_to_cmm exp f =
+  let lifted_rev, exp = lift_phantom_lets_clambda0 exp f in
+  List.fold_left (fun exp (var, defining_expr) ->
+      let defining_expr = transl_defining_expr_of_phantom_let defining_expr in
+      Cphantom_let (var, defining_expr, exp))
+    exp
+    lifted_rev
+
+let lift_phantom_lets3_clambda_to_cmm exp1 exp2 exp3 f =
+  lift_phantom_lets_clambda_to_cmm exp1 (fun exp1 ->
+    lift_phantom_lets_clambda_to_cmm exp2 (fun exp2 ->
+      lift_phantom_lets_clambda_to_cmm exp3 (fun exp3 ->
+        f exp1 exp2 exp3)))
+
+(* Arithmetic simplification on integers *)
+
 let add_no_overflow n x c dbg =
   let d = n + x in
   if d = 0 then c else Cop(Caddi, [c; Cconst_int d], dbg)
 
 let rec add_const c n dbg =
   if n = 0 then c
-  else match c with
-  | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
-  | Cop(Caddi, [Cconst_int x; c], _)
-    when no_overflow_add n x ->
-      add_no_overflow n x c dbg
-  | Cop(Caddi, [c; Cconst_int x], _)
-    when no_overflow_add n x ->
-      add_no_overflow n x c dbg
-  | Cop(Csubi, [Cconst_int x; c], _) when no_overflow_add n x ->
-      Cop(Csubi, [Cconst_int (n + x); c], dbg)
-  | Cop(Csubi, [c; Cconst_int x], _) when no_overflow_sub n x ->
-      add_const c (n - x) dbg
-  | c -> Cop(Caddi, [c; Cconst_int n], dbg)
+  else
+    lift_phantom_lets c (fun c ->
+      match c with
+      | Cconst_int x when no_overflow_add x n -> Cconst_int (x + n)
+      | Cop(Caddi, [Cconst_int x; c], _)
+        when no_overflow_add n x ->
+          add_no_overflow n x c dbg
+      | Cop(Caddi, [c; Cconst_int x], _)
+        when no_overflow_add n x ->
+          add_no_overflow n x c dbg
+      | Cop(Csubi, [Cconst_int x; c], _) when no_overflow_add n x ->
+          Cop(Csubi, [Cconst_int (n + x); c], dbg)
+      | Cop(Csubi, [c; Cconst_int x], _) when no_overflow_sub n x ->
+          add_const c (n - x) dbg
+      | c -> Cop(Caddi, [c; Cconst_int n], dbg))
 
 let incr_int c dbg = add_const c 1 dbg
 let decr_int c dbg = add_const c (-1) dbg
 
 let rec add_int c1 c2 dbg =
-  match (c1, c2) with
-  | (Cconst_int n, c) | (c, Cconst_int n) ->
-      add_const c n dbg
-  | (Cop(Caddi, [c1; Cconst_int n1], _), c2) ->
-      add_const (add_int c1 c2 dbg) n1 dbg
-  | (c1, Cop(Caddi, [c2; Cconst_int n2], _)) ->
-      add_const (add_int c1 c2 dbg) n2 dbg
-  | (_, _) ->
-      Cop(Caddi, [c1; c2], dbg)
+  lift_phantom_lets2 c1 c2 (fun c1 c2 ->
+    match (c1, c2) with
+    | (Cconst_int n, c) | (c, Cconst_int n) ->
+        add_const c n dbg
+    | (Cop(Caddi, [c1; Cconst_int n1], _), c2) ->
+        add_const (add_int c1 c2 dbg) n1 dbg
+    | (c1, Cop(Caddi, [c2; Cconst_int n2], _)) ->
+        add_const (add_int c1 c2 dbg) n2 dbg
+    | (_, _) ->
+        Cop(Caddi, [c1; c2], dbg))
 
 let rec sub_int c1 c2 dbg =
-  match (c1, c2) with
-  | (c1, Cconst_int n2) when n2 <> min_int ->
-      add_const c1 (-n2) dbg
-  | (c1, Cop(Caddi, [c2; Cconst_int n2], _)) when n2 <> min_int ->
-      add_const (sub_int c1 c2 dbg) (-n2) dbg
-  | (Cop(Caddi, [c1; Cconst_int n1], _), c2) ->
-      add_const (sub_int c1 c2 dbg) n1 dbg
-  | (c1, c2) ->
-      Cop(Csubi, [c1; c2], dbg)
+  lift_phantom_lets2 c1 c2 (fun c1 c2 ->
+    match (c1, c2) with
+    | (c1, Cconst_int n2) when n2 <> min_int ->
+        add_const c1 (-n2) dbg
+    | (c1, Cop(Caddi, [c2; Cconst_int n2], _)) when n2 <> min_int ->
+        add_const (sub_int c1 c2 dbg) (-n2) dbg
+    | (Cop(Caddi, [c1; Cconst_int n1], _), c2) ->
+        add_const (sub_int c1 c2 dbg) n1 dbg
+    | (c1, c2) ->
+        Cop(Csubi, [c1; c2], dbg))
 
 let rec lsl_int c1 c2 dbg =
-  match (c1, c2) with
-  | (Cop(Clsl, [c; Cconst_int n1], _), Cconst_int n2)
-    when n1 > 0 && n2 > 0 && n1 + n2 < size_int * 8 ->
-      Cop(Clsl, [c; Cconst_int (n1 + n2)], dbg)
-  | (Cop(Caddi, [c1; Cconst_int n1], _), Cconst_int n2)
-    when no_overflow_lsl n1 n2 ->
-      add_const (lsl_int c1 c2 dbg) (n1 lsl n2) dbg
-  | (_, _) ->
-      Cop(Clsl, [c1; c2], dbg)
+  lift_phantom_lets2 c1 c2 (fun c1 c2 ->
+    match (c1, c2) with
+    | (Cop(Clsl, [c; Cconst_int n1], _), Cconst_int n2)
+      when n1 > 0 && n2 > 0 && n1 + n2 < size_int * 8 ->
+        Cop(Clsl, [c; Cconst_int (n1 + n2)], dbg)
+    | (Cop(Caddi, [c1; Cconst_int n1], _), Cconst_int n2)
+      when no_overflow_lsl n1 n2 ->
+        add_const (lsl_int c1 c2 dbg) (n1 lsl n2) dbg
+    | (_, _) ->
+        Cop(Clsl, [c1; c2], dbg))
 
 let is_power2 n = n = 1 lsl Misc.log2 n
 
 and mult_power2 c n dbg = lsl_int c (Cconst_int (Misc.log2 n)) dbg
 
 let rec mul_int c1 c2 dbg =
-  match (c1, c2) with
-  | (c, Cconst_int 0) | (Cconst_int 0, c) -> Csequence (c, Cconst_int 0)
-  | (c, Cconst_int 1) | (Cconst_int 1, c) ->
-      c
-  | (c, Cconst_int(-1)) | (Cconst_int(-1), c) ->
-      sub_int (Cconst_int 0) c dbg
-  | (c, Cconst_int n) when is_power2 n -> mult_power2 c n dbg
-  | (Cconst_int n, c) when is_power2 n -> mult_power2 c n dbg
-  | (Cop(Caddi, [c; Cconst_int n], _), Cconst_int k) |
-    (Cconst_int k, Cop(Caddi, [c; Cconst_int n], _))
-    when no_overflow_mul n k ->
-      add_const (mul_int c (Cconst_int k) dbg) (n * k) dbg
-  | (c1, c2) ->
-      Cop(Cmuli, [c1; c2], dbg)
+  lift_phantom_lets2 c1 c2 (fun c1 c2 ->
+    match (c1, c2) with
+    | (c, Cconst_int 0) | (Cconst_int 0, c) -> Csequence (c, Cconst_int 0)
+    | (c, Cconst_int 1) | (Cconst_int 1, c) ->
+        c
+    | (c, Cconst_int(-1)) | (Cconst_int(-1), c) ->
+        sub_int (Cconst_int 0) c dbg
+    | (c, Cconst_int n) when is_power2 n -> mult_power2 c n dbg
+    | (Cconst_int n, c) when is_power2 n -> mult_power2 c n dbg
+    | (Cop(Caddi, [c; Cconst_int n], _), Cconst_int k) |
+      (Cconst_int k, Cop(Caddi, [c; Cconst_int n], _))
+      when no_overflow_mul n k ->
+        add_const (mul_int c (Cconst_int k) dbg) (n * k) dbg
+    | (c1, c2) ->
+        Cop(Cmuli, [c1; c2], dbg))
 
 
-let ignore_low_bit_int = function
-    Cop(Caddi, [(Cop(Clsl, [_; Cconst_int n], _) as c); Cconst_int 1], _)
-      when n > 0
-      -> c
-  | Cop(Cor, [c; Cconst_int 1], _) -> c
-  | c -> c
+let ignore_low_bit_int c =
+  lift_phantom_lets c (fun c ->
+    match c with
+    | Cop(Caddi, [(Cop(Clsl, [_; Cconst_int n], _) as c); Cconst_int 1], _)
+        when n > 0
+        -> c
+    | Cop(Cor, [c; Cconst_int 1], _) -> c
+    | c -> c)
 
 let lsr_int c1 c2 dbg =
-  match c2 with
-    Cconst_int 0 ->
-      c1
-  | Cconst_int n when n > 0 ->
-      Cop(Clsr, [ignore_low_bit_int c1; c2], dbg)
-  | _ ->
-      Cop(Clsr, [c1; c2], dbg)
+  lift_phantom_lets c2 (fun c2 ->
+    match c2 with
+      Cconst_int 0 ->
+        c1
+    | Cconst_int n when n > 0 ->
+        Cop(Clsr, [ignore_low_bit_int c1; c2], dbg)
+    | _ ->
+        Cop(Clsr, [c1; c2], dbg))
 
 let asr_int c1 c2 dbg =
-  match c2 with
-    Cconst_int 0 ->
-      c1
-  | Cconst_int n when n > 0 ->
-      Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
-  | _ ->
-      Cop(Casr, [c1; c2], dbg)
+  lift_phantom_lets c2 (fun c2 ->
+    match c2 with
+      Cconst_int 0 ->
+        c1
+    | Cconst_int n when n > 0 ->
+        Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
+    | _ ->
+        Cop(Casr, [c1; c2], dbg))
 
 let tag_int i dbg =
-  match i with
-    Cconst_int n ->
-      int_const n
-  | Cop(Casr, [c; Cconst_int n], _) when n > 0 ->
-      Cop(Cor, [asr_int c (Cconst_int (n - 1)) dbg; Cconst_int 1], dbg)
-  | c ->
-      incr_int (lsl_int c (Cconst_int 1) dbg) dbg
+  lift_phantom_lets i (fun i ->
+    match i with
+    | Cconst_int n ->
+        int_const n
+    | Cop(Casr, [c; Cconst_int n], _) when n > 0 ->
+        Cop(Cor, [asr_int c (Cconst_int (n - 1)) dbg; Cconst_int 1], dbg)
+    | c ->
+        incr_int (lsl_int c (Cconst_int 1) dbg) dbg)
 
 let force_tag_int i dbg =
-  match i with
-    Cconst_int n ->
-      int_const n
-  | Cop(Casr, [c; Cconst_int n], dbg') when n > 0 ->
-      Cop(Cor, [asr_int c (Cconst_int (n - 1)) dbg'; Cconst_int 1], dbg)
-  | c ->
-      Cop(Cor, [lsl_int c (Cconst_int 1) dbg; Cconst_int 1], dbg)
+  lift_phantom_lets i (fun i ->
+    match i with
+      Cconst_int n ->
+        int_const n
+    | Cop(Casr, [c; Cconst_int n], dbg') when n > 0 ->
+        Cop(Cor, [asr_int c (Cconst_int (n - 1)) dbg'; Cconst_int 1], dbg)
+    | c ->
+        Cop(Cor, [lsl_int c (Cconst_int 1) dbg; Cconst_int 1], dbg))
 
 let untag_int i dbg =
-  match i with
-    Cconst_int n -> Cconst_int(n asr 1)
-  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], _) -> c
-  | Cop(Cor, [Cop(Casr, [c; Cconst_int n], _); Cconst_int 1], _)
-    when n > 0 && n < size_int * 8 ->
-      Cop(Casr, [c; Cconst_int (n+1)], dbg)
-  | Cop(Cor, [Cop(Clsr, [c; Cconst_int n], _); Cconst_int 1], _)
-    when n > 0 && n < size_int * 8 ->
-      Cop(Clsr, [c; Cconst_int (n+1)], dbg)
-  | Cop(Cor, [c; Cconst_int 1], _) -> Cop(Casr, [c; Cconst_int 1], dbg)
-  | c -> Cop(Casr, [c; Cconst_int 1], dbg)
+  lift_phantom_lets i (fun i ->
+    match i with
+      Cconst_int n -> Cconst_int(n asr 1)
+    | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], _) -> c
+    | Cop(Cor, [Cop(Casr, [c; Cconst_int n], _); Cconst_int 1], _)
+      when n > 0 && n < size_int * 8 ->
+        Cop(Casr, [c; Cconst_int (n+1)], dbg)
+    | Cop(Cor, [Cop(Clsr, [c; Cconst_int n], _); Cconst_int 1], _)
+      when n > 0 && n < size_int * 8 ->
+        Cop(Clsr, [c; Cconst_int (n+1)], dbg)
+    | Cop(Cor, [c; Cconst_int 1], _) -> Cop(Casr, [c; Cconst_int 1], dbg)
+    | c -> Cop(Casr, [c; Cconst_int 1], dbg))
 
 (* Description of the "then" and "else" continuations in [transl_if]. If
    the "then" continuation is true and the "else" continuation is false then
@@ -425,100 +547,106 @@ let raise_symbol dbg symb =
   raise_regular dbg (Cconst_symbol symb)
 
 let rec div_int c1 c2 is_safe dbg =
-  match (c1, c2) with
-    (c1, Cconst_int 0) ->
-      Csequence(c1, raise_symbol dbg caml_exn_Division_by_zero)
-  | (c1, Cconst_int 1) ->
-      c1
-  | (Cconst_int n1, Cconst_int n2) ->
-      Cconst_int (n1 / n2)
-  | (c1, Cconst_int n) when n <> min_int ->
-      let l = Misc.log2 n in
-      if n = 1 lsl l then
-        (* Algorithm:
-              t = shift-right-signed(c1, l - 1)
-              t = shift-right(t, W - l)
-              t = c1 + t
-              res = shift-right-signed(c1 + t, l)
-        *)
-        Cop(Casr, [bind "dividend" c1 (fun c1 ->
-                     let t = asr_int c1 (Cconst_int (l - 1)) dbg in
-                     let t = lsr_int t (Cconst_int (Nativeint.size - l)) dbg in
-                     add_int c1 t dbg);
-                   Cconst_int l], dbg)
-      else if n < 0 then
-        sub_int (Cconst_int 0) (div_int c1 (Cconst_int (-n)) is_safe dbg) dbg
-      else begin
-        let (m, p) = divimm_parameters (Nativeint.of_int n) in
-        (* Algorithm:
-              t = multiply-high-signed(c1, m)
-              if m < 0, t = t + c1
-              if p > 0, t = shift-right-signed(t, p)
-              res = t + sign-bit(c1)
-        *)
-        bind "dividend" c1 (fun c1 ->
-          let t = Cop(Cmulhi, [c1; Cconst_natint m], dbg) in
-          let t = if m < 0n then Cop(Caddi, [t; c1], dbg) else t in
-          let t = if p > 0 then Cop(Casr, [t; Cconst_int p], dbg) else t in
-          add_int t (lsr_int c1 (Cconst_int (Nativeint.size - 1)) dbg) dbg)
-      end
-  | (c1, c2) when !Clflags.unsafe || is_safe = Lambda.Unsafe ->
-      Cop(Cdivi, [c1; c2], dbg)
-  | (c1, c2) ->
-      bind "divisor" c2 (fun c2 ->
-        bind "dividend" c1 (fun c1 ->
-          Cifthenelse(c2,
-                      dbg,
-                      Cop(Cdivi, [c1; c2], dbg),
-                      dbg,
-                      raise_symbol dbg caml_exn_Division_by_zero,
-                      dbg)))
+  lift_phantom_lets2 c1 c2 (fun c1 c2 ->
+    match (c1, c2) with
+      (c1, Cconst_int 0) ->
+        Csequence(c1, raise_symbol dbg caml_exn_Division_by_zero)
+    | (c1, Cconst_int 1) ->
+        c1
+    | (Cconst_int n1, Cconst_int n2) ->
+        Cconst_int (n1 / n2)
+    | (c1, Cconst_int n) when n <> min_int ->
+        let l = Misc.log2 n in
+        if n = 1 lsl l then
+          (* Algorithm:
+                t = shift-right-signed(c1, l - 1)
+                t = shift-right(t, W - l)
+                t = c1 + t
+                res = shift-right-signed(c1 + t, l)
+          *)
+          Cop(Casr, [bind "dividend" c1 (fun c1 ->
+                       let t = asr_int c1 (Cconst_int (l - 1)) dbg in
+                       let t =
+                         lsr_int t (Cconst_int (Nativeint.size - l)) dbg
+                       in
+                       add_int c1 t dbg);
+                     Cconst_int l], dbg)
+        else if n < 0 then
+          sub_int (Cconst_int 0) (div_int c1 (Cconst_int (-n)) is_safe dbg) dbg
+        else begin
+          let (m, p) = divimm_parameters (Nativeint.of_int n) in
+          (* Algorithm:
+                t = multiply-high-signed(c1, m)
+                if m < 0, t = t + c1
+                if p > 0, t = shift-right-signed(t, p)
+                res = t + sign-bit(c1)
+          *)
+          bind "dividend" c1 (fun c1 ->
+            let t = Cop(Cmulhi, [c1; Cconst_natint m], dbg) in
+            let t = if m < 0n then Cop(Caddi, [t; c1], dbg) else t in
+            let t = if p > 0 then Cop(Casr, [t; Cconst_int p], dbg) else t in
+            add_int t (lsr_int c1 (Cconst_int (Nativeint.size - 1)) dbg) dbg)
+        end
+    | (c1, c2) when !Clflags.unsafe || is_safe = Lambda.Unsafe ->
+        Cop(Cdivi, [c1; c2], dbg)
+    | (c1, c2) ->
+        bind "divisor" c2 (fun c2 ->
+          bind "dividend" c1 (fun c1 ->
+            Cifthenelse(c2,
+                        dbg,
+                        Cop(Cdivi, [c1; c2], dbg),
+                        dbg,
+                        raise_symbol dbg caml_exn_Division_by_zero,
+                        dbg))))
 
 let mod_int c1 c2 is_safe dbg =
-  match (c1, c2) with
-    (c1, Cconst_int 0) ->
-      Csequence(c1, raise_symbol dbg caml_exn_Division_by_zero)
-  | (c1, Cconst_int (1 | (-1))) ->
-      Csequence(c1, Cconst_int 0)
-  | (Cconst_int n1, Cconst_int n2) ->
-      Cconst_int (n1 mod n2)
-  | (c1, (Cconst_int n as c2)) when n <> min_int ->
-      let l = Misc.log2 n in
-      if n = 1 lsl l then
-        (* Algorithm:
-              t = shift-right-signed(c1, l - 1)
-              t = shift-right(t, W - l)
-              t = c1 + t
-              t = bit-and(t, -n)
-              res = c1 - t
-         *)
-        bind "dividend" c1 (fun c1 ->
-          let t = asr_int c1 (Cconst_int (l - 1)) dbg in
-          let t = lsr_int t (Cconst_int (Nativeint.size - l)) dbg in
-          let t = add_int c1 t dbg in
-          let t = Cop(Cand, [t; Cconst_int (-n)], dbg) in
-          sub_int c1 t dbg)
-      else
-        bind "dividend" c1 (fun c1 ->
-          sub_int c1 (mul_int (div_int c1 c2 is_safe dbg) c2 dbg) dbg)
-  | (c1, c2) when !Clflags.unsafe || is_safe = Lambda.Unsafe ->
-      (* Flambda already generates that test *)
-      Cop(Cmodi, [c1; c2], dbg)
-  | (c1, c2) ->
-      bind "divisor" c2 (fun c2 ->
-        bind "dividend" c1 (fun c1 ->
-          Cifthenelse(c2,
-                      dbg,
-                      Cop(Cmodi, [c1; c2], dbg),
-                      dbg,
-                      raise_symbol dbg caml_exn_Division_by_zero,
-                      dbg)))
+  lift_phantom_lets2 c1 c2 (fun c1 c2 ->
+    match (c1, c2) with
+      (c1, Cconst_int 0) ->
+        Csequence(c1, raise_symbol dbg caml_exn_Division_by_zero)
+    | (c1, Cconst_int (1 | (-1))) ->
+        Csequence(c1, Cconst_int 0)
+    | (Cconst_int n1, Cconst_int n2) ->
+        Cconst_int (n1 mod n2)
+    | (c1, (Cconst_int n as c2)) when n <> min_int ->
+        let l = Misc.log2 n in
+        if n = 1 lsl l then
+          (* Algorithm:
+                t = shift-right-signed(c1, l - 1)
+                t = shift-right(t, W - l)
+                t = c1 + t
+                t = bit-and(t, -n)
+                res = c1 - t
+           *)
+          bind "dividend" c1 (fun c1 ->
+            let t = asr_int c1 (Cconst_int (l - 1)) dbg in
+            let t = lsr_int t (Cconst_int (Nativeint.size - l)) dbg in
+            let t = add_int c1 t dbg in
+            let t = Cop(Cand, [t; Cconst_int (-n)], dbg) in
+            sub_int c1 t dbg)
+        else
+          bind "dividend" c1 (fun c1 ->
+            sub_int c1 (mul_int (div_int c1 c2 is_safe dbg) c2 dbg) dbg)
+    | (c1, c2) when !Clflags.unsafe || is_safe = Lambda.Unsafe ->
+        (* Flambda already generates that test *)
+        Cop(Cmodi, [c1; c2], dbg)
+    | (c1, c2) ->
+        bind "divisor" c2 (fun c2 ->
+          bind "dividend" c1 (fun c1 ->
+            Cifthenelse(c2,
+                        dbg,
+                        Cop(Cmodi, [c1; c2], dbg),
+                        dbg,
+                        raise_symbol dbg caml_exn_Division_by_zero,
+                        dbg))))
 
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
 
-let is_different_from x = function
-    Cconst_int n -> n <> x
+let is_different_from x cmm =
+  let cmm = discard_phantom_lets cmm in
+  match cmm with
+  | Cconst_int n -> n <> x
   | Cconst_natint n -> n <> Nativeint.of_int x
   | _ -> false
 
@@ -547,14 +675,15 @@ let safe_mod_bi is_safe =
 (* Bool *)
 
 let test_bool dbg cmm =
-  match cmm with
-  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], _) -> c
-  | Cconst_int n ->
-      if n = 1 then
-        Cconst_int 0
-      else
-        Cconst_int 1
-  | c -> Cop(Ccmpi Cne, [c; Cconst_int 1], dbg)
+  lift_phantom_lets cmm (fun cmm ->
+    match cmm with
+    | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], _) -> c
+    | Cconst_int n ->
+        if n = 1 then
+          Cconst_int 0
+        else
+          Cconst_int 1
+    | c -> Cop(Ccmpi Cne, [c; Cconst_int 1], dbg))
 
 (* Float *)
 
@@ -567,23 +696,24 @@ let map_ccatch f rec_flag handlers body =
   Ccatch(rec_flag, handlers, f body)
 
 let rec unbox_float dbg cmm =
-  match cmm with
-  | Cop(Calloc, [_header; c], _) -> c
-  | Clet(id, exp, body) -> Clet(id, exp, unbox_float dbg body)
-  | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
-      Cifthenelse(cond,
-        ifso_dbg, unbox_float dbg e1,
-        ifnot_dbg, unbox_float dbg e2,
-        dbg)
-  | Csequence(e1, e2) -> Csequence(e1, unbox_float dbg e2)
-  | Cswitch(e, tbl, el, dbg') ->
-    Cswitch(e, tbl,
-      Array.map (fun (expr, dbg) -> unbox_float dbg expr, dbg) el, dbg')
-  | Ccatch(rec_flag, handlers, body) ->
-    map_ccatch (unbox_float dbg) rec_flag handlers body
-  | Ctrywith(e1, id, e2, dbg) ->
-      Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2, dbg)
-  | c -> Cop(Cload (Double_u, Immutable), [c], dbg)
+  lift_phantom_lets cmm (fun cmm ->
+    match cmm with
+    | Cop(Calloc, [_header; c], _) -> c
+    | Clet(id, exp, body) -> Clet(id, exp, unbox_float dbg body)
+    | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
+        Cifthenelse(cond,
+          ifso_dbg, unbox_float dbg e1,
+          ifnot_dbg, unbox_float dbg e2,
+          dbg)
+    | Csequence(e1, e2) -> Csequence(e1, unbox_float dbg e2)
+    | Cswitch(e, tbl, el, dbg') ->
+      Cswitch(e, tbl,
+        Array.map (fun (expr, dbg) -> unbox_float dbg expr, dbg) el, dbg')
+    | Ccatch(rec_flag, handlers, body) ->
+      map_ccatch (unbox_float dbg) rec_flag handlers body
+    | Ctrywith(e1, id, e2, dbg) ->
+        Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2, dbg)
+    | c -> Cop(Cload (Double_u, Immutable), [c], dbg))
 
 (* Complex *)
 
@@ -598,33 +728,35 @@ let complex_im c dbg = Cop(Cload (Double_u, Immutable),
 
 let return_unit c = Csequence(c, Cconst_pointer 1)
 
-let rec remove_unit = function
-    Cconst_pointer 1 -> Ctuple []
-  | Csequence(c, Cconst_pointer 1) -> c
-  | Csequence(c1, c2) ->
-      Csequence(c1, remove_unit c2)
-  | Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
-      Cifthenelse(cond,
-        ifso_dbg, remove_unit ifso,
-        ifnot_dbg,
-        remove_unit ifnot, dbg)
-  | Cswitch(sel, index, cases, dbg) ->
-      Cswitch(sel, index,
-        Array.map (fun (case, dbg) -> remove_unit case, dbg) cases,
-        dbg)
-  | Ccatch(rec_flag, handlers, body) ->
-      map_ccatch remove_unit rec_flag handlers body
-  | Ctrywith(body, exn, handler, dbg) ->
-      Ctrywith(remove_unit body, exn, remove_unit handler, dbg)
-  | Clet(id, c1, c2) ->
-      Clet(id, c1, remove_unit c2)
-  | Cop(Capply _mty, args, dbg) ->
-      Cop(Capply typ_void, args, dbg)
-  | Cop(Cextcall(proc, _mty, alloc, label_after), args, dbg) ->
-      Cop(Cextcall(proc, typ_void, alloc, label_after), args, dbg)
-  | Cexit (_,_) as c -> c
-  | Ctuple [] as c -> c
-  | c -> Csequence(c, Ctuple [])
+let rec remove_unit cmm =
+  lift_phantom_lets cmm (fun cmm ->
+    match cmm with
+      Cconst_pointer 1 -> Ctuple []
+    | Csequence(c, Cconst_pointer 1) -> c
+    | Csequence(c1, c2) ->
+        Csequence(c1, remove_unit c2)
+    | Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
+        Cifthenelse(cond,
+          ifso_dbg, remove_unit ifso,
+          ifnot_dbg,
+          remove_unit ifnot, dbg)
+    | Cswitch(sel, index, cases, dbg) ->
+        Cswitch(sel, index,
+          Array.map (fun (case, dbg) -> remove_unit case, dbg) cases,
+          dbg)
+    | Ccatch(rec_flag, handlers, body) ->
+        map_ccatch remove_unit rec_flag handlers body
+    | Ctrywith(body, exn, handler, dbg) ->
+        Ctrywith(remove_unit body, exn, remove_unit handler, dbg)
+    | Clet(id, c1, c2) ->
+        Clet(id, c1, remove_unit c2)
+    | Cop(Capply _mty, args, dbg) ->
+        Cop(Capply typ_void, args, dbg)
+    | Cop(Cextcall(proc, _mty, alloc, label_after), args, dbg) ->
+        Cop(Cextcall(proc, typ_void, alloc, label_after), args, dbg)
+    | Cexit (_,_) as c -> c
+    | Ctuple [] as c -> c
+    | c -> Csequence(c, Ctuple []))
 
 (* Access to block fields *)
 
@@ -717,23 +849,24 @@ let array_indexing ?typ log2size ptr ofs dbg =
     | None | Some Addr -> Cadda
     | Some Int -> Caddi
     | _ -> assert false in
-  match ofs with
-  | Cconst_int n ->
-      let i = n asr 1 in
-      if i = 0 then ptr else Cop(add, [ptr; Cconst_int(i lsl log2size)], dbg)
-  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], dbg') ->
-      Cop(add, [ptr; lsl_const c log2size dbg], dbg')
-  | Cop(Caddi, [c; Cconst_int n], dbg') when log2size = 0 ->
-      Cop(add, [Cop(add, [ptr; untag_int c dbg], dbg); Cconst_int (n asr 1)],
-        dbg')
-  | Cop(Caddi, [c; Cconst_int n], _) ->
-      Cop(add, [Cop(add, [ptr; lsl_const c (log2size - 1) dbg], dbg);
-                    Cconst_int((n-1) lsl (log2size - 1))], dbg)
-  | _ when log2size = 0 ->
-      Cop(add, [ptr; untag_int ofs dbg], dbg)
-  | _ ->
-      Cop(add, [Cop(add, [ptr; lsl_const ofs (log2size - 1) dbg], dbg);
-                    Cconst_int((-1) lsl (log2size - 1))], dbg)
+  lift_phantom_lets ofs (fun ofs ->
+    match ofs with
+    | Cconst_int n ->
+        let i = n asr 1 in
+        if i = 0 then ptr else Cop(add, [ptr; Cconst_int(i lsl log2size)], dbg)
+    | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], dbg') ->
+        Cop(add, [ptr; lsl_const c log2size dbg], dbg')
+    | Cop(Caddi, [c; Cconst_int n], dbg') when log2size = 0 ->
+        Cop(add, [Cop(add, [ptr; untag_int c dbg], dbg); Cconst_int (n asr 1)],
+          dbg')
+    | Cop(Caddi, [c; Cconst_int n], _) ->
+        Cop(add, [Cop(add, [ptr; lsl_const c (log2size - 1) dbg], dbg);
+                      Cconst_int((n-1) lsl (log2size - 1))], dbg)
+    | _ when log2size = 0 ->
+        Cop(add, [ptr; untag_int ofs dbg], dbg)
+    | _ ->
+        Cop(add, [Cop(add, [ptr; lsl_const ofs (log2size - 1) dbg], dbg);
+                      Cconst_int((-1) lsl (log2size - 1))], dbg))
 
 let addr_array_ref arr ofs dbg =
   Cop(Cload (Word_val, Mutable),
@@ -995,41 +1128,44 @@ let split_int64_for_32bit_target arg dbg =
             Cop (Cload (Thirtytwo_unsigned, Mutable), [second], dbg)])
 
 let rec unbox_int bi arg dbg =
-  match arg with
-    Cop(Calloc, [_hdr; _ops; Cop(Clsl, [contents; Cconst_int 32], dbg')], _dbg)
-    when bi = Pint32 && size_int = 8 && big_endian ->
-      (* Force sign-extension of low 32 bits *)
-      Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg'); Cconst_int 32],
-        dbg)
-  | Cop(Calloc, [_hdr; _ops; contents], _dbg)
-    when bi = Pint32 && size_int = 8 && not big_endian ->
-      (* Force sign-extension of low 32 bits *)
-      Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg); Cconst_int 32], dbg)
-  | Cop(Calloc, [_hdr; _ops; contents], _dbg) ->
-      contents
-  | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body dbg)
-  | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
-      Cifthenelse(cond,
-        ifso_dbg, unbox_int bi e1 ifso_dbg,
-        ifnot_dbg, unbox_int bi e2 ifnot_dbg,
-        dbg)
-  | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2 dbg)
-  | Cswitch(e, tbl, el, dbg') ->
-      Cswitch(e, tbl,
-        Array.map (fun (e, dbg) -> unbox_int bi e dbg, dbg) el,
-        dbg')
-  | Ccatch(rec_flag, handlers, body) ->
-      map_ccatch (fun e -> unbox_int bi e dbg) rec_flag handlers body
-  | Ctrywith(e1, id, e2, handler_dbg) ->
-      Ctrywith(unbox_int bi e1 dbg, id,
-        unbox_int bi e2 handler_dbg, handler_dbg)
-  | _ ->
-      if size_int = 4 && bi = Pint64 then
-        split_int64_for_32bit_target arg dbg
-      else
-        Cop(
-          Cload((if bi = Pint32 then Thirtytwo_signed else Word_int), Mutable),
-          [Cop(Cadda, [arg; Cconst_int size_addr], dbg)], dbg)
+  lift_phantom_lets arg (fun arg ->
+    match arg with
+      Cop(Calloc, [_hdr; _ops; Cop(Clsl, [contents; Cconst_int 32], dbg')],
+        _dbg)
+      when bi = Pint32 && size_int = 8 && big_endian ->
+        (* Force sign-extension of low 32 bits *)
+        Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg'); Cconst_int 32],
+          dbg)
+    | Cop(Calloc, [_hdr; _ops; contents], _dbg)
+      when bi = Pint32 && size_int = 8 && not big_endian ->
+        (* Force sign-extension of low 32 bits *)
+        Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg); Cconst_int 32],
+          dbg)
+    | Cop(Calloc, [_hdr; _ops; contents], _dbg) ->
+        contents
+    | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body dbg)
+    | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
+        Cifthenelse(cond,
+          ifso_dbg, unbox_int bi e1 ifso_dbg,
+          ifnot_dbg, unbox_int bi e2 ifnot_dbg,
+          dbg)
+    | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2 dbg)
+    | Cswitch(e, tbl, el, dbg') ->
+        Cswitch(e, tbl,
+          Array.map (fun (e, dbg) -> unbox_int bi e dbg, dbg) el,
+          dbg')
+    | Ccatch(rec_flag, handlers, body) ->
+        map_ccatch (fun e -> unbox_int bi e dbg) rec_flag handlers body
+    | Ctrywith(e1, id, e2, handler_dbg) ->
+        Ctrywith(unbox_int bi e1 dbg, id,
+          unbox_int bi e2 handler_dbg, handler_dbg)
+    | _ ->
+        if size_int = 4 && bi = Pint64 then
+          split_int64_for_32bit_target arg dbg
+        else
+          Cop(
+            Cload((if bi = Pint32 then Thirtytwo_signed else Word_int), Mutable),
+            [Cop(Cadda, [arg; Cconst_int size_addr], dbg)], dbg))
 
 let make_unsigned_int bi arg dbg =
   if bi = Pint32 && size_int = 8
@@ -1510,21 +1646,25 @@ struct
     make_switch arg cases actions dbg
   let bind arg body = bind "switcher" arg body
 
-  let make_catch dbg handler = match handler with
-  | Cexit (i,[]) -> i,fun e -> e
-  | _ ->
-      let i = next_raise_count () in
-(*
-      Printf.eprintf  "SHARE CMM: %i\n" i ;
-      Printcmm.expression Format.str_formatter handler ;
-      Printf.eprintf "%s\n" (Format.flush_str_formatter ()) ;
-*)
-      i,
-      (fun body -> match body with
-      | Cexit (j,_) ->
-          if i=j then handler
-          else body
-      | _ ->  ccatch (i,[],body,handler,dbg))
+  let make_catch dbg handler =
+    let handler = discard_phantom_lets handler in
+    match handler with
+    | Cexit (i,[]) -> i,fun e -> e
+    | _ ->
+        let i = next_raise_count () in
+  (*
+        Printf.eprintf  "SHARE CMM: %i\n" i ;
+        Printcmm.expression Format.str_formatter handler ;
+        Printf.eprintf "%s\n" (Format.flush_str_formatter ()) ;
+  *)
+        i,
+        (fun body ->
+          lift_phantom_lets body (fun body ->
+            match body with
+            | Cexit (j,_) ->
+                if i=j then handler
+                else body
+            | _ ->  ccatch (i,[],body,handler,dbg)))
 
   let make_exit i = Cexit (i,[])
 
@@ -1900,28 +2040,7 @@ let rec transl env e =
   | Ulet(str, kind, id, exp, body) ->
       transl_let env str kind id exp body
   | Uphantom_let (var, defining_expr, body) ->
-      let defining_expr =
-        match defining_expr with
-        | None -> None
-        | Some defining_expr ->
-          let defining_expr =
-            match defining_expr with
-            | Uphantom_const (Uconst_ref (sym, _defining_expr)) ->
-              Cphantom_const_symbol sym
-            | Uphantom_read_symbol_field { sym; field; } ->
-              Cphantom_read_symbol_field { sym; field; }
-            | Uphantom_const (Uconst_int i) | Uphantom_const (Uconst_ptr i) ->
-              Cphantom_const_int (targetint_const i)
-            | Uphantom_var var -> Cphantom_var var
-            | Uphantom_read_field { var; field; } ->
-              Cphantom_read_field { var; field; }
-            | Uphantom_offset_var { var; offset_in_words; } ->
-              Cphantom_offset_var { var; offset_in_words; }
-            | Uphantom_block { tag; fields; } ->
-              Cphantom_block { tag; fields; }
-          in
-          Some defining_expr
-      in
+      let defining_expr = transl_defining_expr_of_phantom_let defining_expr in
       Cphantom_let (var, defining_expr, transl env body)
   | Uletrec(bindings, body) ->
       transl_letrec env bindings (transl env body)
@@ -1937,24 +2056,31 @@ let rec transl env e =
           make_alloc dbg tag (List.map (transl env) args)
       | (Pccall prim, args) ->
           transl_ccall env prim args dbg
-      | (Pduparray (kind, _), [Uprim (Pmakearray (kind', _), args, _dbg)]) ->
-          (* We arrive here in two cases:
-             1. When using Closure, all the time.
-             2. When using Flambda, if a float array longer than
-             [Translcore.use_dup_for_constant_arrays_bigger_than] turns out
-             to be non-constant.
-             If for some reason Flambda fails to lift a constant array we
-             could in theory also end up here.
-             Note that [kind] above is unconstrained, but with the current
-             state of [Translcore], we will in fact only get here with
-             [Pfloatarray]s. *)
-          assert (kind = kind');
-          transl_make_array dbg env kind args
-      | (Pduparray _, [arg]) ->
-          let prim_obj_dup =
-            Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
-          in
-          transl_ccall env prim_obj_dup [arg] dbg
+      | (Pduparray (kind, _), args) ->
+          begin match args with
+          | [arg] ->
+              lift_phantom_lets_clambda_to_cmm arg (fun arg ->
+                match arg with
+                | Uprim (Pmakearray (kind', _), args, dbg) ->
+                    (* We arrive here in two cases:
+                       1. When using Closure, all the time.
+                       2. When using Flambda, if a float array longer than
+                       [Translcore.use_dup_for_constant_arrays_bigger_than]
+                       turns out to be non-constant.
+                       If for some reason Flambda fails to lift a constant array
+                       we could in theory also end up here.
+                       Note that [kind] above is unconstrained, but with the
+                       current state of [Translcore], we will in fact only get
+                       here with [Pfloatarray]s. *)
+                    assert (kind = kind');
+                    transl_make_array dbg env kind args
+                | arg ->
+                    let prim_obj_dup =
+                      Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
+                    in
+                    transl_ccall env prim_obj_dup [arg] dbg)
+          | _ -> fatal_error "Cmmgen.transl:prim (Pduparray)"
+          end
       | (Pmakearray _, []) ->
           transl_structured_constant (Uconst_block(0, []))
       | (Pmakearray (kind, _), args) -> transl_make_array dbg env kind args
@@ -2045,10 +2171,11 @@ let rec transl env e =
   | Utrywith(body, exn, handler, dbg) ->
       Ctrywith(transl env body, exn, transl env handler, dbg)
   | Uifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
-      transl_if env Unknown
-        dbg cond
-        ifso_dbg (transl env ifso)
-        ifnot_dbg (transl env ifnot)
+      lift_phantom_lets3_clambda_to_cmm cond ifso ifnot (fun cond ifso ifnot ->
+        transl_if env Unknown
+          dbg cond
+          ifso_dbg (transl env ifso)
+          ifnot_dbg (transl env ifnot))
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl env exp1), transl env exp2)
   | Uwhile(cond, body, dbg) ->
@@ -2342,11 +2469,13 @@ and transl_prim_2 env p arg1 arg2 dbg =
           rather than
             (+ ( * 200 (>>s a 1)) 15)
         *)
-       match transl env arg1, transl env arg2 with
-         | Cconst_int _ as c1, c2 ->
+       lift_phantom_lets2 (transl env arg1) (transl env arg2)
+         (fun arg1 arg2 ->
+           match arg1, arg2 with
+           | Cconst_int _ as c1, c2 ->
              incr_int (mul_int (untag_int c1 dbg) (decr_int c2 dbg) dbg) dbg
-         | c1, c2 ->
-             incr_int (mul_int (decr_int c1 dbg) (untag_int c2 dbg) dbg) dbg
+           | c1, c2 ->
+             incr_int (mul_int (decr_int c1 dbg) (untag_int c2 dbg) dbg) dbg)
      end
   | Pdivint is_safe ->
       tag_int(div_int (untag_int(transl env arg1) dbg)
@@ -2780,27 +2909,31 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_3: %a" Printlambda.primitive prim
 
-and transl_unbox_float dbg env = function
-    Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f
-  | exp -> unbox_float dbg (transl env exp)
+and transl_unbox_float dbg env ulam =
+  lift_phantom_lets_clambda_to_cmm ulam (fun ulam ->
+    match ulam with
+    | Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f
+    | exp -> unbox_float dbg (transl env exp))
 
-and transl_unbox_int dbg env bi = function
-    Uconst(Uconst_ref(_, Some (Uconst_int32 n))) ->
-      Cconst_natint (Nativeint.of_int32 n)
-  | Uconst(Uconst_ref(_, Some (Uconst_nativeint n))) ->
-      Cconst_natint n
-  | Uconst(Uconst_ref(_, Some (Uconst_int64 n))) ->
-      if size_int = 8 then
-        Cconst_natint (Int64.to_nativeint n)
-      else begin
-        let low = Int64.to_nativeint n in
-        let high = Int64.to_nativeint (Int64.shift_right_logical n 32) in
-        if big_endian then Ctuple [Cconst_natint high; Cconst_natint low]
-        else Ctuple [Cconst_natint low; Cconst_natint high]
-      end
-  | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
-      Cconst_int i
-  | exp -> unbox_int bi (transl env exp) dbg
+and transl_unbox_int dbg env bi ulam =
+  lift_phantom_lets_clambda_to_cmm ulam (fun ulam ->
+    match ulam with
+    | Uconst(Uconst_ref(_, Some (Uconst_int32 n))) ->
+        Cconst_natint (Nativeint.of_int32 n)
+    | Uconst(Uconst_ref(_, Some (Uconst_nativeint n))) ->
+        Cconst_natint n
+    | Uconst(Uconst_ref(_, Some (Uconst_int64 n))) ->
+        if size_int = 8 then
+          Cconst_natint (Int64.to_nativeint n)
+        else begin
+          let low = Int64.to_nativeint n in
+          let high = Int64.to_nativeint (Int64.shift_right_logical n 32) in
+          if big_endian then Ctuple [Cconst_natint high; Cconst_natint low]
+          else Ctuple [Cconst_natint low; Cconst_natint high]
+        end
+   | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
+           Cconst_int i
+   | exp -> unbox_int bi (transl env exp) dbg)
 
 and transl_unbox_number dbg env bn arg =
   match bn with
@@ -2846,9 +2979,11 @@ and transl_let env str kind id exp body =
            transl_unbox_number dbg env boxed_number exp,
            transl (add_unboxed_id (VP.var id) unboxed_id boxed_number env) body)
 
-and make_catch ncatch body handler dbg = match body with
-| Cexit (nexit,[]) when nexit=ncatch -> handler
-| _ ->  ccatch (ncatch, [], body, handler, dbg)
+and make_catch ncatch body handler dbg =
+  lift_phantom_lets body (fun body ->
+    match body with
+    | Cexit (nexit,[]) when nexit=ncatch -> handler
+    | _ ->  ccatch (ncatch, [], body, handler, dbg))
 
 and is_shareable_cont exp =
   match exp with
@@ -2870,92 +3005,93 @@ and transl_if env (approx : then_else)
       (dbg : Debuginfo.t) cond
       (then_dbg : Debuginfo.t) then_
       (else_dbg : Debuginfo.t) else_ =
-  match cond with
-  | Uconst (Uconst_ptr 0) -> else_
-  | Uconst (Uconst_ptr 1) -> then_
-  | Uifthenelse (arg1,
-        ifso_dbg, arg2,
-        _ifnot_dbg, Uconst (Uconst_ptr 0),
-        inner_dbg) ->
-      transl_sequand env approx
-        inner_dbg arg1
-        ifso_dbg arg2
-        then_dbg then_
-        else_dbg else_
-  | Uprim (Psequand, [arg1; arg2], inner_dbg) ->
-      transl_sequand env approx
-        inner_dbg arg1
-        inner_dbg arg2
-        then_dbg then_
-        else_dbg else_
-  | Uifthenelse (arg1,
-        _ifso_dbg, Uconst (Uconst_ptr 1),
-        ifnot_dbg, arg2,
-        inner_dbg) ->
-      transl_sequor env approx
-        inner_dbg arg1
-        ifnot_dbg arg2
-        then_dbg then_
-        else_dbg else_
-  | Uprim (Psequor, [arg1; arg2], inner_dbg) ->
-      transl_sequor env approx
-        inner_dbg arg1
-        inner_dbg arg2
-        then_dbg then_
-        else_dbg else_
-  | Uprim (Pnot, [arg], _dbg) ->
-      transl_if env (invert_then_else approx)
-        dbg arg
-        else_dbg else_
-        then_dbg then_
-  | Uifthenelse (Uconst (Uconst_ptr 1),
-        ifso_dbg, ifso,
-        _, _,
-        _) ->
-      transl_if env approx
-        ifso_dbg ifso
-        then_dbg then_
-        else_dbg else_
-  | Uifthenelse (Uconst (Uconst_ptr 0),
-        _, _,
-        ifnot_dbg, ifnot,
-        _) ->
-      transl_if env approx
-        ifnot_dbg ifnot
-        then_dbg then_
-        else_dbg else_
-  | Uifthenelse (cond,
-        ifso_dbg, ifso,
-        ifnot_dbg, ifnot,
-        inner_dbg) ->
-      make_shareable_cont then_dbg
-        (fun shareable_then ->
-           make_shareable_cont else_dbg
-             (fun shareable_else ->
-                mk_if_then_else
-                  inner_dbg (test_bool inner_dbg (transl env cond))
-                  ifso_dbg (transl_if env approx
-                    ifso_dbg ifso
-                    then_dbg shareable_then
-                    else_dbg shareable_else)
-                  ifnot_dbg (transl_if env approx
-                    ifnot_dbg ifnot
-                    then_dbg shareable_then
-                    else_dbg shareable_else))
-             else_)
-        then_
-  | _ -> begin
-      match approx with
-      | Then_true_else_false ->
-          transl env cond
-      | Then_false_else_true ->
-          mk_not dbg (transl env cond)
-      | Unknown ->
-          mk_if_then_else
-            dbg (test_bool dbg (transl env cond))
-            then_dbg then_
-            else_dbg else_
-    end
+  lift_phantom_lets_clambda_to_cmm cond (fun cond ->
+    match cond with
+    | Uconst (Uconst_ptr 0) -> else_
+    | Uconst (Uconst_ptr 1) -> then_
+    | Uifthenelse (arg1,
+          ifso_dbg, arg2,
+          _ifnot_dbg, Uconst (Uconst_ptr 0),
+          inner_dbg) ->
+        transl_sequand env approx
+          inner_dbg arg1
+          ifso_dbg arg2
+          then_dbg then_
+          else_dbg else_
+    | Uprim (Psequand, [arg1; arg2], inner_dbg) ->
+        transl_sequand env approx
+          inner_dbg arg1
+          inner_dbg arg2
+          then_dbg then_
+          else_dbg else_
+    | Uifthenelse (arg1,
+          _ifso_dbg, Uconst (Uconst_ptr 1),
+          ifnot_dbg, arg2,
+          inner_dbg) ->
+        transl_sequor env approx
+          inner_dbg arg1
+          ifnot_dbg arg2
+          then_dbg then_
+          else_dbg else_
+    | Uprim (Psequor, [arg1; arg2], inner_dbg) ->
+        transl_sequor env approx
+          inner_dbg arg1
+          inner_dbg arg2
+          then_dbg then_
+          else_dbg else_
+    | Uprim (Pnot, [arg], _dbg) ->
+        transl_if env (invert_then_else approx)
+          dbg arg
+          else_dbg else_
+          then_dbg then_
+    | Uifthenelse (Uconst (Uconst_ptr 1),
+          ifso_dbg, ifso,
+          _, _,
+          _) ->
+        transl_if env approx
+          ifso_dbg ifso
+          then_dbg then_
+          else_dbg else_
+    | Uifthenelse (Uconst (Uconst_ptr 0),
+          _, _,
+          ifnot_dbg, ifnot,
+          _) ->
+        transl_if env approx
+          ifnot_dbg ifnot
+          then_dbg then_
+          else_dbg else_
+    | Uifthenelse (cond,
+          ifso_dbg, ifso,
+          ifnot_dbg, ifnot,
+          inner_dbg) ->
+        make_shareable_cont then_dbg
+          (fun shareable_then ->
+             make_shareable_cont else_dbg
+               (fun shareable_else ->
+                  mk_if_then_else
+                    inner_dbg (test_bool inner_dbg (transl env cond))
+                    ifso_dbg (transl_if env approx
+                      ifso_dbg ifso
+                      then_dbg shareable_then
+                      else_dbg shareable_else)
+                    ifnot_dbg (transl_if env approx
+                      ifnot_dbg ifnot
+                      then_dbg shareable_then
+                      else_dbg shareable_else))
+               else_)
+          then_
+    | _ -> begin
+        match approx with
+        | Then_true_else_false ->
+            transl env cond
+        | Then_false_else_true ->
+            mk_not dbg (transl env cond)
+        | Unknown ->
+            mk_if_then_else
+              dbg (test_bool dbg (transl env cond))
+              then_dbg then_
+              else_dbg else_
+      end)
 
 and transl_sequand env (approx : then_else)
       (arg1_dbg : Debuginfo.t) arg1
