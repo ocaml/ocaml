@@ -626,12 +626,26 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
         substitute ~at_call_site ~block_subst fpc sb rn u1
       in
       let block_subst, body =
-         substitute ~at_call_site ~block_subst fpc
-           (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2
+        substitute ~at_call_site ~block_subst fpc
+          (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2
       in
       let term = Ulet (str, kind, id', defining_expr, body) in
       block_subst, term
   | Uphantom_let (id, defining_expr, body) ->
+      let block_subst, provenance =
+        match VP.provenance id with
+        | None -> block_subst, None
+        | Some provenance ->
+          let block_subst, dbg =
+            subst_debuginfo ~at_call_site ~block_subst
+              (V.Provenance.debuginfo provenance)
+          in
+          let provenance =
+            V.Provenance.replace_debuginfo provenance dbg
+          in
+          block_subst, Some provenance
+      in
+      let id' = VP.rename ?provenance id in
       let defining_expr =
         match defining_expr with
           | None -> None
@@ -672,9 +686,10 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
                   Misc.fatal_error "[Closure] cannot handle [Uphantom_block]"
       in
       let block_subst, body =
-        substitute ~at_call_site ~block_subst fpc sb rn body
+        substitute ~at_call_site ~block_subst fpc
+          (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn body
       in
-      let term = Uphantom_let (id, defining_expr, body) in
+      let term = Uphantom_let (id', defining_expr, body) in
       block_subst, term
   | Uletrec(bindings, body) ->
       let bindings1 =
@@ -972,8 +987,22 @@ let rec bind_params_rec ~block_subst ~at_call_site fpc subst params args body =
         in
         if occurs_var (VP.var p1) body then
           Ulet(Immutable, Pgenval, p1', u1, body')
-        else if no_effects a1 then body'
-        else Usequence(a1, body')
+        else
+          let lam =
+            if no_effects a1 then body'
+            else Usequence(a1, body')
+          in
+          match !Clflags.debug_full with
+          | None -> lam
+          | Some _ ->
+              let defining_expr =
+                match u1 with
+                | Uvar var -> Some (Uphantom_var var)
+                | Uprim (Pfield field, [Uvar var], _dbg) ->
+                    Some (Uphantom_read_field { var; field; })
+                | _ -> None
+              in
+              Uphantom_let (p1', defining_expr, lam)
       end
   | (_, _) -> assert false
 
