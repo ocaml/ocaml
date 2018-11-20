@@ -3250,14 +3250,14 @@ meth_list:
   | DOTDOT
       { [], Open }
 ;
-field:
+%inline field:
   mkrhs(label) COLON poly_type_no_attr attributes
     { let info = symbol_info $endpos in
       let attrs = add_info_attrs info $4 in
       Of.tag ~loc:(make_loc $sloc) ~attrs $1 $3 }
 ;
 
-field_semi:
+%inline field_semi:
   mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
     { let info =
         match rhs_info $endpos($4) with
