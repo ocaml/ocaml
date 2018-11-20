@@ -2857,14 +2857,28 @@ constructor_declarations:
 (* A constructor declaration begins with an opening symbol, which can
    be either epsilon or BAR. Note that this opening symbol is included
    in the footprint $sloc. *)
-constructor_declaration(opening):
+(* Because [constructor_declaration] and [extension_constructor_declaration]
+   are identical except for their semantic actions, we introduce the symbol
+   [generic_constructor_declaration], whose semantic action is neutral -- it
+   merely returns a tuple. *)
+generic_constructor_declaration(opening):
   opening
   cid = mkrhs(constr_ident)
   args_res = generalized_constructor_arguments
   attrs = attributes
-    { let args, res = args_res in
+    {
+      let args, res = args_res in
       let info = symbol_info $endpos in
-      Type.constructor cid ~args ?res ~attrs ~loc:(make_loc $sloc) ~info }
+      let loc = make_loc $sloc in
+      cid, args, res, attrs, loc, info
+    }
+;
+%inline constructor_declaration(opening):
+  d = generic_constructor_declaration(opening)
+    {
+      let cid, args, res, attrs, loc, info = d in
+      Type.constructor cid ~args ?res ~attrs ~loc ~info
+    }
 ;
 str_exception_declaration:
   sig_exception_declaration
@@ -2971,14 +2985,12 @@ label_declaration_semi:
   | extension_constructor_rebind(opening)
       { $1 }
 ;
-extension_constructor_declaration(opening):
-  opening
-  cid = mkrhs(constr_ident)
-  args_res = generalized_constructor_arguments
-  attrs = attributes
-    { let args, res = args_res in
-      let info = symbol_info $endpos in
-      Te.decl cid ~args ?res ~attrs ~loc:(make_loc $sloc) ~info }
+%inline extension_constructor_declaration(opening):
+  d = generic_constructor_declaration(opening)
+    {
+      let cid, args, res, attrs, loc, info = d in
+      Te.decl cid ~args ?res ~attrs ~loc ~info
+    }
 ;
 extension_constructor_rebind(opening):
   opening
