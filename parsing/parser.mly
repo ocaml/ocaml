@@ -1549,14 +1549,22 @@ module_declaration_body:
   id = mkrhs(mod_longident)
     { Mty.alias ~loc:(make_loc $sloc) id }
 ;
+(* A module substitution (in a signature). *)
 module_subst:
-    MODULE ext_attributes mkrhs(UIDENT)
-    COLONEQUAL mkrhs(mod_ext_longident) post_item_attributes
-      { let (ext, attrs) = $2 in
-        let docs = symbol_docs $sloc in
-        Ms.mk $3 $5 ~attrs:(attrs@$6) ~loc:(make_loc $sloc) ~docs, ext }
-  | MODULE ext_attributes mkrhs(UIDENT) COLONEQUAL error
-      { expecting $loc($5) "module path" }
+  MODULE
+  ext = ext attrs1 = attributes
+  uid = mkrhs(UIDENT)
+  COLONEQUAL
+  body = mkrhs(mod_ext_longident)
+  attrs2 = post_item_attributes
+  {
+    let attrs = attrs1 @ attrs2 in
+    let loc = make_loc $sloc in
+    let docs = symbol_docs $sloc in
+    Ms.mk uid body ~attrs ~loc ~docs, ext
+  }
+| MODULE ext attributes mkrhs(UIDENT) COLONEQUAL error
+    { expecting $loc($6) "module path" }
 ;
 
 (* A group of recursive module declarations. *)
