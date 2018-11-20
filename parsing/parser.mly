@@ -2898,7 +2898,7 @@ sig_exception_declaration:
         (Te.decl id ~args ?res ~attrs:(attrs1 @ attrs2) ~loc ~docs)
       , ext }
 ;
-let_exception_declaration:
+%inline let_exception_declaration:
     mkrhs(constr_ident) generalized_constructor_arguments attributes
       { let args, res = $2 in
         Te.decl $1 ~args ?res ~attrs:$3 ~loc:(make_loc $sloc) }
