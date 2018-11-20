@@ -2782,22 +2782,31 @@ generic_type_declaration(flag, kind):
   llist(preceded(CONSTRAINT, constrain))
     { $1 }
 ;
+(* Lots of %inline expansion are required for [nonempty_type_kind] to be
+   LR(1). At the cost of some manual expansion, it would be possible to give a
+   definition that leads to a smaller grammar (after expansion) and therefore
+   a smaller automaton. *)
 nonempty_type_kind:
-  | priv = inline_private_flag ty = core_type
+  | priv = inline_private_flag
+    ty = core_type
       { (Ptype_abstract, priv, Some ty) }
-  | priv = inline_private_flag cs = constructor_declarations
-      { (Ptype_variant cs, priv, None) }
-  | priv = inline_private_flag DOTDOT
-      { (Ptype_open, priv, None) }
-  | priv = inline_private_flag LBRACE ls = label_declarations RBRACE
-      { (Ptype_record ls, priv, None) }
-  | ty = core_type EQUAL priv = private_flag cs = constructor_declarations
-      { (Ptype_variant cs, priv, Some ty) }
-  | ty = core_type EQUAL priv = private_flag DOTDOT
-      { (Ptype_open, priv, Some ty) }
-  | ty = core_type EQUAL priv = private_flag LBRACE ls = label_declarations RBRACE
-      { (Ptype_record ls, priv, Some ty) }
-
+  | oty = type_synonym
+    priv = inline_private_flag
+    cs = constructor_declarations
+      { (Ptype_variant cs, priv, oty) }
+  | oty = type_synonym
+    priv = inline_private_flag
+    DOTDOT
+      { (Ptype_open, priv, oty) }
+  | oty = type_synonym
+    priv = inline_private_flag
+    LBRACE ls = label_declarations RBRACE
+      { (Ptype_record ls, priv, oty) }
+;
+%inline type_synonym:
+  ioption(terminated(core_type, EQUAL))
+    { $1 }
+;
 type_kind:
     /*empty*/
       { (Ptype_abstract, Public, None) }
