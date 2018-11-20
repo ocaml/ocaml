@@ -3273,7 +3273,7 @@ meth_list:
     { Of.inherit_ ~loc:(make_loc $sloc) ty }
 ;
 
-label:
+%inline label:
     LIDENT                                      { $1 }
 ;
 
