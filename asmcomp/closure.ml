@@ -654,10 +654,12 @@ let rec substitute loc fpc sb rn ulam =
           let new_nfail = next_raise_count () in
           new_nfail, Some (Int.Map.add nfail new_nfail rn)
         | None -> nfail, rn in
-      let ids' = List.map VP.rename ids in
+      let ids' = List.map (fun (id, k) -> VP.rename id, k) ids in
       let sb' =
         List.fold_right2
-          (fun id id' s -> V.Map.add (VP.var id) (Uvar (VP.var id')) s)
+          (fun (id, _) (id', _) s ->
+             V.Map.add (VP.var id) (Uvar (VP.var id')) s
+          )
           ids ids' sb
       in
       Ucatch(nfail, ids', substitute loc fpc sb rn u1,
@@ -1103,7 +1105,7 @@ let rec close fenv cenv = function
   | Lstaticcatch(body, (i, vars), handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
-      let vars = List.map (fun var -> VP.create var) vars in
+      let vars = List.map (fun (var, k) -> VP.create var, k) vars in
       (Ucatch(i, vars, ubody, uhandler), Value_unknown)
   | Ltrywith(body, id, handler) ->
       let (ubody, _) = close fenv cenv body in

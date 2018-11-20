@@ -277,7 +277,7 @@ type lambda =
   | Lstringswitch of
       lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
-  | Lstaticcatch of lambda * (int * Ident.t list) * lambda
+  | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -546,7 +546,7 @@ let rec free_variables = function
       Ident.Set.union
         (Ident.Set.diff
            (free_variables handler)
-           (Ident.Set.of_list params))
+           (Ident.Set.of_list (List.map fst params)))
         (free_variables body)
   | Ltrywith(body, param, handler) ->
       Ident.Set.union
@@ -647,7 +647,7 @@ let rec make_sequence fn = function
 let subst update_env s lam =
   let rec subst s lam =
     let remove_list l s =
-      List.fold_left (fun s id -> Ident.Map.remove id s) s l
+      List.fold_left (fun s (id, _kind) -> Ident.Map.remove id s) s l
     in
     let module M = Ident.Map in
     match lam with
@@ -792,10 +792,13 @@ let rec map f lam =
 
 (* To let-bind expressions to variables *)
 
-let bind str var exp body =
+let bind_with_value_kind str (var, kind) exp body =
   match exp with
     Lvar var' when Ident.same var var' -> body
-  | _ -> Llet(str, Pgenval, var, exp, body)
+  | _ -> Llet(str, kind, var, exp, body)
+
+let bind str var exp body =
+  bind_with_value_kind str (var, Pgenval) exp body
 
 let negate_integer_comparison = function
   | Ceq -> Cne

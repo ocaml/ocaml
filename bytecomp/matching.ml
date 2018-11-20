@@ -2572,6 +2572,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   let rec do_rec r total_r = function
     | [] -> r,total_r
     | (mat,i,vars,pm)::rem ->
+        let vars = List.map (fun id -> id, Pgenval) vars in
         begin try
           let ctx = select_columns mat ctx in
           let handler_i, total_i =
@@ -2579,7 +2580,8 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
           match raw_action r with
           | Lstaticraise (j,args) ->
               if i=j then
-                List.fold_right2 (bind Alias) vars args handler_i,
+                List.fold_right2 (bind_with_value_kind Alias)
+                  vars args handler_i,
                 jumps_map (ctx_rshift_num (ncols mat)) total_i
               else
                 do_rec r total_r rem
@@ -3087,9 +3089,14 @@ let for_let loc param pat body =
   | _ ->
       let opt = ref false in
       let nraise = next_raise_count () in
-      let catch_ids = pat_bound_idents pat in
-      let bind = map_return (assign_pat opt nraise catch_ids loc pat) param in
-      if !opt then Lstaticcatch(bind, (nraise, catch_ids), body)
+      let catch_ids = pat_bound_idents_full pat in
+      let ids_with_kinds =
+        List.map (fun (id, _, typ) -> id, Typeopt.value_kind pat.pat_env typ)
+          catch_ids
+      in
+      let ids = List.map (fun (id, _, _) -> id) catch_ids in
+      let bind = map_return (assign_pat opt nraise ids loc pat) param in
+      if !opt then Lstaticcatch(bind, (nraise, ids_with_kinds), body)
       else simple_for_let loc param pat body
 
 (* Handling of tupled functions and matchings *)

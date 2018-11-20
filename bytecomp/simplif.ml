@@ -263,10 +263,14 @@ let simplify_exits lam =
       let ls = List.map simplif ls in
       begin try
         let xs,handler =  Hashtbl.find subst i in
-        let ys = List.map Ident.rename xs in
-        let env = List.fold_right2 Ident.Map.add xs ys Ident.Map.empty in
+        let ys = List.map (fun (x, k) -> Ident.rename x, k) xs in
+        let env =
+          List.fold_right2
+            (fun (x, _) (y, _) env -> Ident.Map.add x y env)
+            xs ys Ident.Map.empty
+        in
         List.fold_right2
-          (fun y l r -> Llet (Alias, Pgenval, y, l, r))
+          (fun (y, kind) l r -> Llet (Alias, kind, y, l, r))
           ys ls (Lambda.rename env handler)
       with
       | Not_found -> Lstaticraise (i,ls)

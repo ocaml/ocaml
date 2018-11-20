@@ -482,7 +482,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lstaticcatch (body, (i, ids), handler) ->
     let st_exn = Static_exception.create () in
     let env = Env.add_static_exception env i st_exn in
-    let vars = List.map (Variable.create_with_same_name_as_ident) ids in
+    let ids = List.map fst ids in
+    let vars = List.map Variable.create_with_same_name_as_ident ids in
     Static_catch (st_exn, vars, close t env body,
       close t (Env.add_vars env ids vars) handler)
   | Ltrywith (body, id, handler) ->

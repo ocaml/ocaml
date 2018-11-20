@@ -156,7 +156,7 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
       List.iter loop args
     | Ucatch (static_exn, vars, body, handler) ->
       ignore_int static_exn;
-      ignore_var_with_provenance_list vars;
+      ignore_var_with_provenance_list (List.map fst vars);
       loop body;
       loop handler
     | Utrywith (body, var, handler) ->
@@ -358,7 +358,7 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
       examine_argument_list args
     | Ucatch (static_exn, vars, body, handler) ->
       ignore_int static_exn;
-      ignore_var_with_provenance_list vars;
+      ignore_var_with_provenance_list (List.map fst vars);
       let_stack := [];
       loop body;
       let_stack := [];

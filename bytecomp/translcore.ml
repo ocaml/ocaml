@@ -874,7 +874,12 @@ and transl_match e arg pat_expr_list partial =
         in
         (* Simplif doesn't like it if binders are not uniq, so we make sure to
            use different names in the value and the exception branches. *)
-        let ids  = Typedtree.pat_bound_idents pv in
+        let ids_full = Typedtree.pat_bound_idents_full pv in
+        let ids = List.map (fun (id, _, _) -> id) ids_full in
+        let ids_kinds =
+          List.map (fun (id, _, ty) -> id, Typeopt.value_kind pv.pat_env ty)
+            ids_full
+        in
         let vids = List.map Ident.rename ids in
         let pv = alpha_pat (List.combine ids vids) pv in
         (* Also register the names of the exception so Re-raise happens. *)
@@ -887,7 +892,7 @@ and transl_match e arg pat_expr_list partial =
         in
         (pv, static_raise vids) :: val_cases,
         (pe, static_raise ids) :: exn_cases,
-        (lbl, ids, rhs) :: static_handlers
+        (lbl, ids_kinds, rhs) :: static_handlers
   in
   let val_cases, exn_cases, static_handlers =
     let x, y, z = List.fold_left rewrite_case ([], [], []) pat_expr_list in
@@ -899,7 +904,7 @@ and transl_match e arg pat_expr_list partial =
     Lstaticcatch
       (Ltrywith (Lstaticraise (static_exception_id, body), id,
                  Matching.for_trywith (Lvar id) exn_cases),
-       (static_exception_id, val_ids),
+       (static_exception_id, (List.map (fun id -> id, Pgenval) val_ids)),
        handler)
   in
   let classic =

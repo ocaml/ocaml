@@ -196,12 +196,15 @@ and lam ppf = function
   | Ucatch(i, vars, lbody, lhandler) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
         lam lbody i
-        (fun ppf vars -> match vars with
-          | [] -> ()
-          | _ ->
-              List.iter
-                (fun x -> fprintf ppf " %a" VP.print x)
-                vars)
+        (fun ppf vars ->
+           List.iter
+             (fun (x, k) ->
+                fprintf ppf " %a%a"
+                 VP.print x
+                 Printlambda.value_kind k
+             )
+             vars
+        )
         vars
         lam lhandler
   | Utrywith(lbody, param, lhandler) ->

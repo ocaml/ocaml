@@ -581,12 +581,11 @@ let rec lam ppf = function
   | Lstaticcatch(lbody, (i, vars), lhandler) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
         lam lbody i
-        (fun ppf vars -> match vars with
-          | [] -> ()
-          | _ ->
-              List.iter
-                (fun x -> fprintf ppf " %a" Ident.print x)
-                vars)
+        (fun ppf vars ->
+           List.iter
+             (fun (x, k) -> fprintf ppf " %a%a" Ident.print x value_kind k)
+             vars
+        )
         vars
         lam lhandler
   | Ltrywith(lbody, param, lhandler) ->
