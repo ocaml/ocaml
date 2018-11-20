@@ -77,12 +77,19 @@ module Phantom_vars = struct
     let defining_expr t = t.defining_expr
   end
 
-  let available_before (insn : L.instruction) = insn.phantom_available_before
+  module Cache = struct
+    type t = unit
 
-  let available_across insn =
+    let create () = ()
+  end
+
+  let available_before _cache (insn : L.instruction) =
+    insn.phantom_available_before
+
+  let available_across cache insn =
     (* Phantom variable availability never changes during the execution
        of a [Linearize] instruction. *)
-    available_before insn
+    available_before cache insn
 
   let must_restart_ranges_upon_any_change () =
     (* See [Available_ranges_vars]. *)

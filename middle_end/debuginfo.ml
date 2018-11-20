@@ -150,6 +150,7 @@ module Block = struct
     (* CR-someday mshinwell: We could perhaps have a link to the parent
        _frame_, if such exists. *)
     parent : t option;
+    parents_transitive : t list;
   }
 
   let next_id = ref 0
@@ -159,36 +160,49 @@ module Block = struct
     incr next_id;
     id
 
+  let parents_transitive_from_parent ~parent =
+    match parent with
+    | None -> []
+    | Some parent -> parent :: parent.parents_transitive
+
   let create_lexical_scope ~parent =
+    let parents_transitive = parents_transitive_from_parent ~parent in
     { id = get_next_id ();
       frame_location = None;
       parent;
+      parents_transitive;
     }
 
   let create_non_inlined_frame range =
     { id = get_next_id ();
       frame_location = Some range;
       parent = None;
+      parents_transitive = [];
     }
 
   let create_and_reparent ~like:t ~new_parent =
+    let parent = new_parent in
+    let parents_transitive = parents_transitive_from_parent ~parent in
     { t with
       id = get_next_id ();
-      parent = new_parent;
+      parent;
+      parents_transitive;
     }
 
   let rec graft t ~(onto : t option) : t =
-    match t.parent with
-    | None ->
-      { t with
-        parent = onto;
-      }
-    | Some parent ->
-      { t with
-        parent = Some (graft parent ~onto);
-      }
+    let parent =
+      match t.parent with
+      | None -> onto
+      | Some parent -> Some (graft parent ~onto)
+    in
+    let parents_transitive = parents_transitive_from_parent ~parent in
+    { t with
+      parent;
+      parents_transitive;
+    }
 
   let parent t = t.parent
+  let unique_id t = t.id
 
   let rec frame_list_innermost_first t =
     match t.parent with
@@ -229,7 +243,7 @@ module Block = struct
     let equal t1 t2 = (t1.id = t2.id)
     let hash t = Hashtbl.hash t.id
 
-    let print ppf { id; frame_location; parent; } =
+    let print ppf { id; frame_location; parent; parents_transitive = _; } =
       Format.fprintf ppf "@[<hov 1>(\
           @[<hov 1>(id@ %d)@]@ \
           @[<hov 1>(frame_location@ %a)@]@ \
@@ -244,13 +258,27 @@ module Block = struct
       Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
   end)
 
+  module Set = struct
+    include Set
+
+    let diff t1 t2 =
+      if t1 == t2 then empty
+      else diff t1 t2
+
+    let union t1 t2 =
+      if t1 == t2 then t1
+      else union t1 t2
+
+    let inter t1 t2 =
+      if t1 == t2 then t1
+      else inter t1 t2
+  end
+
   let print_id ppf { id; _ } =
     Format.fprintf ppf "block %d" id
 
-  let rec block_and_all_parents t =
-    match t.parent with
-    | None -> Set.singleton t
-    | Some parent -> Set.add t (block_and_all_parents parent)
+  let block_and_all_parents t =
+    Set.add t (Set.of_list t.parents_transitive)
 end
 
 module Current_block = struct

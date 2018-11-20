@@ -189,21 +189,17 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
          comment at the top of available_regs.ml.
 
      (c) [key] is in [S.available_before insn] but it is not in
-         [S.available_across insn].  This will only happen for operation
-         (i.e. [Lop]) instructions, for example calls, or allocations.  To give
-         a good user experience it is necessary to show availability when
-         the debugger is standing on the very first instruction of the
-         operation but not thereafter.  As such we terminate the range one
-         byte beyond the first machine instruction of [insn].
+         [S.available_across insn]. This will only happen when calculating
+         variables' available ranges for operation (i.e. [Lop]) instructions
+         (for example calls or allocations). To give a good user experience it
+         is necessary to show availability when the debugger is standing on the
+         very first instruction of the operation but not thereafter. As such we
+         terminate the range one byte beyond the first machine instruction of
+         [insn].
 
      (d) [key] is in [S.available_across insn], which means (as for (b) above)
          it is in [S.available_before insn].  The existing range remains open.
   *)
-
-  let opt_available_across insn_opt =
-    match insn_opt with
-    | None -> KS.empty
-    | Some insn -> S.available_across insn
 
   type action =
     | Open_one_byte_subrange
@@ -211,31 +207,44 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     | Close_subrange
     | Close_subrange_one_byte_after
 
-  let actions_at_instruction ~(insn : L.instruction)
+  let debug = false
+
+  let actions_at_instruction cache ~(insn : L.instruction)
         ~(prev_insn : L.instruction option) =
-    if not (KS.subset (S.available_across insn) (S.available_before insn)) then
+    let available_before = S.available_before cache insn in
+    let available_across = S.available_across cache insn in
+    if debug && (not (KS.subset available_across available_before)) then
     begin
       Clflags.dump_avail := true;
       Misc.fatal_errorf "[available_across] is not a subset of \
           [available_before] for instruction@ %a"
         Printlinear.instr insn
     end;
+    let opt_available_across_prev_insn =
+      match prev_insn with
+      | None -> KS.empty
+      | Some prev_insn -> S.available_across cache prev_insn
+    in
     let case_1c =
-      KS.diff (S.available_before insn)
-        (KS.union (opt_available_across prev_insn) (S.available_across insn))
+      KS.diff available_before
+        (KS.union opt_available_across_prev_insn available_across)
     in
     let case_1d =
-      KS.diff (KS.inter (S.available_before insn) (S.available_across insn))
-        (opt_available_across prev_insn)
+      if KS.is_empty case_1c then KS.empty
+      else
+        KS.diff (KS.inter available_before available_across)
+          opt_available_across_prev_insn
     in
     let case_2a =
-      KS.diff (opt_available_across prev_insn)
-        (KS.union (S.available_before insn) (S.available_across insn))
+      KS.diff opt_available_across_prev_insn
+        (KS.union available_before available_across)
     in
     let case_2c =
-      KS.diff
-        (KS.inter (opt_available_across prev_insn) (S.available_before insn))
-        (S.available_across insn)
+      if KS.is_empty case_2a then KS.empty
+      else
+        KS.diff
+          (KS.inter opt_available_across_prev_insn available_before)
+          available_across
     in
     let handle case action result =
       KS.fold (fun key result -> (key, action) :: result) case result
@@ -249,13 +258,13 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     in
     let must_restart =
       if S.must_restart_ranges_upon_any_change () then
-        KS.inter (opt_available_across prev_insn) (S.available_before insn)
+        KS.inter opt_available_across_prev_insn available_before
       else
         KS.empty
     in
     actions, must_restart
 
-  let rec process_instruction t (fundecl : L.fundecl)
+  let rec process_instruction t (fundecl : L.fundecl) cache
         ~(first_insn : L.instruction) ~(insn : L.instruction)
         ~(prev_insn : L.instruction option)
         ~open_subranges ~subrange_state =
@@ -320,7 +329,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
           open_subranges
     in
     let actions, must_restart =
-      actions_at_instruction ~insn ~prev_insn:!prev_insn
+      actions_at_instruction cache ~insn ~prev_insn:!prev_insn
     in
     let open_subranges =
       KS.fold (fun key open_subranges ->
@@ -365,7 +374,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       let subrange_state =
         Subrange_state.advance_over_instruction subrange_state insn
       in
-      process_instruction t fundecl ~first_insn ~insn:insn.next
+      process_instruction t fundecl cache ~first_insn ~insn:insn.next
         ~prev_insn:(Some insn) ~open_subranges ~subrange_state
 
   let process_instructions t fundecl ~first_insn =
@@ -385,8 +394,9 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       t, fundecl
     else
       let t = { ranges = S.Index.Tbl.create 42; } in
+      let cache = S.Cache.create () in
       let first_insn =
-        process_instructions t fundecl
+        process_instructions t fundecl cache
           ~first_insn:fundecl.fun_body
       in
       let fundecl : L.fundecl =

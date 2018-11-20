@@ -14,6 +14,7 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+module Int = Numbers.Int
 module L = Linearize
 
 module Lexical_blocks = struct
@@ -49,16 +50,29 @@ module Lexical_blocks = struct
     let create _fundecl block ~start_insn:_ = Some (block, ())
   end
 
-  let available_before (insn : L.instruction) =
+  module Cache = struct
+    type t = Debuginfo.Block.Set.t Int.Tbl.t
+
+    let create () = Int.Tbl.create 1000
+  end
+
+  let available_before cache (insn : L.instruction) =
     let innermost = Debuginfo.innermost_block insn.dbg in
     match Debuginfo.Current_block.to_block innermost with
     | Toplevel -> Debuginfo.Block.Set.empty
-    | Block block -> Debuginfo.Block.block_and_all_parents block
+    | Block block ->
+      let block_id = Debuginfo.Block.unique_id block in
+      match Int.Tbl.find cache block_id with
+      | exception Not_found ->
+        let available_before = Debuginfo.Block.block_and_all_parents block in
+        Int.Tbl.replace cache block_id available_before;
+        available_before
+      | available_before -> available_before
 
-  let available_across insn =
+  let available_across cache insn =
     (* Block scoping never changes during the execution of a [Linearize]
        instruction. *)
-    available_before insn
+    available_before cache insn
 
   let must_restart_ranges_upon_any_change () = false
 end

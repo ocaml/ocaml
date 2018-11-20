@@ -62,9 +62,14 @@ module type S_functor = sig
     with type key := Key.t
     with type index := Index.t
 
-  val available_before : L.instruction -> Key.Set.t
+  module Cache : sig
+    type t
+    val create : unit -> t
+  end
 
-  val available_across : L.instruction -> Key.Set.t
+  val available_before : Cache.t -> L.instruction -> Key.Set.t
+
+  val available_across : Cache.t -> L.instruction -> Key.Set.t
 
   val must_restart_ranges_upon_any_change : unit -> bool
 end

@@ -55,6 +55,8 @@ module Block : sig
 
   val parent : t -> t option
 
+  val unique_id : t -> int
+
   include Identifiable.S with type t := t
 
   val print_id : Format.formatter -> t -> unit

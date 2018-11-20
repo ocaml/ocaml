@@ -138,6 +138,12 @@ module Vars = struct
     let is_parameter t = t.is_parameter
   end
 
+  module Cache = struct
+    type t = unit
+
+    let create () = ()
+  end
+
   let availability_set_to_key_set (avail : Reg_availability_set.t) =
     match avail with
     | Unreachable -> Key.Set.empty
@@ -146,12 +152,12 @@ module Vars = struct
         available_before
         Key.Set.empty
 
-  let available_before (insn : L.instruction) =
+  let available_before _cache (insn : L.instruction) =
     availability_set_to_key_set insn.available_before
 
-  let available_across (insn : L.instruction) =
+  let available_across cache (insn : L.instruction) =
     match insn.available_across with
-    | None -> available_before insn
+    | None -> available_before cache insn
     | Some across -> availability_set_to_key_set across
 
   let must_restart_ranges_upon_any_change () =

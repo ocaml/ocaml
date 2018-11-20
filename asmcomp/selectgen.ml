@@ -109,6 +109,8 @@ let size_expr (env:environment) exp =
         size_machtype(oper_result_type op)
     | Clet(id, arg, body) ->
         size (V.Map.add (VP.var id) (size localenv arg) localenv) body
+    | Cphantom_let(_id, _defining_expr, body) ->
+        size localenv body
     | Csequence(_e1, e2) ->
         size localenv e2
     | _ ->
