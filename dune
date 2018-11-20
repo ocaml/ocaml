@@ -63,7 +63,8 @@
    lambda printlambda semantics_of_primitives switch matching translobj
    translattribute translprim translcore translclass translmod simplif
    runtimedef meta opcodes bytesections dll symtable pparse main_args compenv
-   compmisc compdynlink compplugin makedepend compile_common
+   compmisc compdynlink_types compdynlink_platform_intf compdynlink_common
+   compdynlink compplugin makedepend compile_common
    ; manual update: mli only files
    cmo_format
    ; manual update: this is required.

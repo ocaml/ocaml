@@ -275,7 +275,8 @@ module Make (P : Dynlink_platform_intf.S) = struct
   let set_allowed_units allowed_units =
     let allowed_units = String.Set.of_list allowed_units in
     let state =
-      { !global_state with
+      let state = !global_state in
+      { state with
         allowed_units;
       }
     in
@@ -287,7 +288,8 @@ module Make (P : Dynlink_platform_intf.S) = struct
         (String.Set.of_list units)
     in
     let state =
-      { !global_state with
+      let state = !global_state in
+      { state with
         allowed_units;
       }
     in
@@ -299,7 +301,8 @@ module Make (P : Dynlink_platform_intf.S) = struct
         (String.Set.of_list units)
     in
     let state =
-      { !global_state with
+      let state = !global_state in
+      { state with
         allowed_units;
       }
     in
