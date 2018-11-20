@@ -220,24 +220,6 @@ let expecting loc nonterm =
 let not_expecting loc nonterm =
     raise Syntaxerr.(Error(Not_expecting(make_loc loc, nonterm)))
 
-(* This is somewhat hackish: we don't want to allow "type nonrec t := ...",
-   because the definition is nonrecursive by default. Simply removing
-   "nonrec_flag" from the rule results in a shift/reduce conflict:
-       "TYPE . UNDERSCORE"
-   can either be a shift in the type_subst_declaration rule, or a reduce of
-   nonrec_flag in the type_declaration rule.
-
-   To avoid it we could either %inline the nonrec_flag rule, but "meh", or we
-   could add nonrec_flag to the type_subst_declaration rule, and explicitely
-   check if it was passed. In which case we raise a proper error. *)
-let check_nonrec_absent loc nonrec_flag =
-  match nonrec_flag with
-  | Recursive ->
-    () (* nothing to do, this happens when "nonrec" is absent from the source *)
-  | Nonrecursive ->
-    let err = {|"nonrec", type substitutions are non recursive by default|} in
-    raise Syntaxerr.(Error(Not_expecting(loc, err)))
-
 let dotop_fun ~loc dotop =
   (* We could use ghexp here, but sticking to mkexp for parser.mly
      compatibility. TODO improve parser.mly *)
@@ -2740,10 +2722,10 @@ type_subst_declarations:
 ;
 
 type_subst_declaration:
-    TYPE ext_attributes nrf=nonrec_flag params=type_parameters
+    TYPE ext_attributes no_nonrec_flag params=type_parameters
     name=mkrhs(LIDENT) kind_priv_man=type_subst_kind cstrs=constraints
     post_attrs=post_item_attributes
-      { check_nonrec_absent (make_loc $loc(nrf)) nrf;
+      {
         let (ext, attrs) = $2 in
         let docs = symbol_docs $sloc in
         let (kind, priv, manifest) = kind_priv_man in
