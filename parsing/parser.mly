@@ -3236,15 +3236,16 @@ opt_ampersand:
   nonempty_llist(name_tag)
     { $1 }
 ;
+(* A method list (in an object type). *)
 meth_list:
     field_semi meth_list
       { let (f, c) = $2 in ($1 :: f, c) }
-  | inherit_field_semi meth_list
-      { let (f, c) = $2 in ($1 :: f, c) }
+  | head = inherit_field SEMI tail = meth_list
+      { let (f, c) = tail in (head :: f, c) }
   | field_semi           { [$1], Closed }
   | field                { [$1], Closed }
-  | inherit_field_semi   { [$1], Closed }
-  | atomic_type     { [Of.inherit_ ~loc:(make_loc $sloc) $1], Closed }
+  | head = inherit_field SEMI { [head], Closed }
+  | head = inherit_field { [head], Closed }
   | DOTDOT               { [], Open }
 ;
 field:
@@ -3265,9 +3266,10 @@ field_semi:
       Of.tag ~loc:(make_loc $sloc) ~attrs $1 $3 }
 ;
 
-inherit_field_semi:
-  atomic_type SEMI
-    { Of.inherit_ ~loc:(make_loc $sloc) $1 }
+%inline inherit_field:
+  ty = atomic_type
+    { Of.inherit_ ~loc:(make_loc $sloc) ty }
+;
 
 label:
     LIDENT                                      { $1 }
