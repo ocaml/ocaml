@@ -701,8 +701,10 @@ and transl_function loc return untuplify_fn repr partial (param:Ident.t) cases =
        Matching.for_function loc repr (Lvar param)
          (transl_cases cases) partial)
   | [] ->
-      (* A pattern matching must contain at least one case *)
-      assert false
+      (* With Camlp4, a pattern matching might be empty *)
+      ((Curried, [param, Pgenval], return),
+       Matching.for_function loc repr (Lvar param)
+         (transl_cases cases) partial)
 
 (*
   Notice: transl_let consumes (ie compiles) its pat_expr_list argument,
