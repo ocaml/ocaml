@@ -3238,15 +3238,17 @@ opt_ampersand:
 ;
 (* A method list (in an object type). *)
 meth_list:
-    field_semi meth_list
-      { let (f, c) = $2 in ($1 :: f, c) }
+    head = field_semi         tail = meth_list
   | head = inherit_field SEMI tail = meth_list
       { let (f, c) = tail in (head :: f, c) }
-  | field_semi           { [$1], Closed }
-  | field                { [$1], Closed }
-  | head = inherit_field SEMI { [head], Closed }
-  | head = inherit_field { [head], Closed }
-  | DOTDOT               { [], Open }
+  | head = field_semi
+  | head = inherit_field SEMI
+      { [head], Closed }
+  | head = field
+  | head = inherit_field
+      { [head], Closed }
+  | DOTDOT
+      { [], Open }
 ;
 field:
   mkrhs(label) COLON poly_type_no_attr attributes
