@@ -2782,37 +2782,37 @@ generic_type_declaration(flag, kind):
   llist(preceded(CONSTRAINT, constrain))
     { $1 }
 ;
-%inline nonempty_type_kind(eq_symb):
-  | eq_symb core_type
-      { (Ptype_abstract, Public, Some $2) }
-  | eq_symb PRIVATE core_type
-      { (Ptype_abstract, Private, Some $3) }
-  | eq_symb constructor_declarations
-      { (Ptype_variant $2, Public, None) }
-  | eq_symb PRIVATE constructor_declarations
-      { (Ptype_variant $3, Private, None) }
-  | eq_symb DOTDOT
+nonempty_type_kind:
+  | ty = core_type
+      { (Ptype_abstract, Public, Some ty) }
+  | PRIVATE ty = core_type
+      { (Ptype_abstract, Private, Some ty) }
+  | cs = constructor_declarations
+      { (Ptype_variant cs, Public, None) }
+  | PRIVATE cs = constructor_declarations
+      { (Ptype_variant cs, Private, None) }
+  | DOTDOT
       { (Ptype_open, Public, None) }
-  | eq_symb PRIVATE DOTDOT
+  | PRIVATE DOTDOT
       { (Ptype_open, Private, None) }
-  | eq_symb private_flag LBRACE label_declarations RBRACE
-      { (Ptype_record $4, $2, None) }
-  | eq_symb core_type EQUAL private_flag constructor_declarations
-      { (Ptype_variant $5, $4, Some $2) }
-  | eq_symb core_type EQUAL private_flag DOTDOT
-      { (Ptype_open, $4, Some $2) }
-  | eq_symb core_type EQUAL private_flag LBRACE label_declarations RBRACE
-      { (Ptype_record $6, $4, Some $2) }
+  | priv = private_flag LBRACE ls = label_declarations RBRACE
+      { (Ptype_record ls, priv, None) }
+  | ty = core_type EQUAL priv = private_flag cs = constructor_declarations
+      { (Ptype_variant cs, priv, Some ty) }
+  | ty = core_type EQUAL priv = private_flag DOTDOT
+      { (Ptype_open, priv, Some ty) }
+  | ty = core_type EQUAL priv = private_flag LBRACE ls = label_declarations RBRACE
+      { (Ptype_record ls, priv, Some ty) }
 
 type_kind:
     /*empty*/
       { (Ptype_abstract, Public, None) }
-  | nonempty_type_kind(EQUAL)
-      { $1 }
+  | EQUAL nonempty_type_kind
+      { $2 }
 ;
-type_subst_kind:
-    nonempty_type_kind(COLONEQUAL)
-      { $1 }
+%inline type_subst_kind:
+    COLONEQUAL nonempty_type_kind
+      { $2 }
 ;
 type_parameters:
     /* empty */
