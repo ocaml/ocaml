@@ -725,15 +725,18 @@ let transl_primitive loc p env ty path =
     | Some prim -> prim
   in
   let rec make_params n =
-    if n <= 0 then [] else Ident.create_local "prim" :: make_params (n-1)
+    if n <= 0 then []
+    else (Ident.create_local "prim", Pgenval) :: make_params (n-1)
   in
   let params = make_params p.prim_arity in
-  let args = List.map (fun id -> Lvar id) params in
+  let args = List.map (fun (id, _) -> Lvar id) params in
   let body = lambda_of_prim p.prim_name prim loc args None in
   match params with
   | [] -> body
   | _ ->
-      Lfunction{ kind = Curried; params;
+      Lfunction{ kind = Curried;
+                 params;
+                 return = Pgenval;
                  attr = default_stub_attribute;
                  loc = loc;
                  body = body; }

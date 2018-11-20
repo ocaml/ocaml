@@ -923,7 +923,8 @@ let rec close fenv cenv = function
         let (new_fun, approx) = close fenv cenv
           (Lfunction{
                kind = Curried;
-               params = final_args;
+               return = Pgenval;
+               params = List.map (fun v -> v, Pgenval) final_args;
                body = Lapply{ap_should_be_tailcall=false;
                              ap_loc=loc;
                              ap_func=(Lvar funct_var);
@@ -1165,9 +1166,9 @@ and close_functions fenv cenv fun_defs =
     List.flatten
       (List.map
          (function
-           | (id, Lfunction{kind; params; body; attr; loc}) ->
+           | (id, Lfunction{kind; params; return; body; attr; loc}) ->
                Simplif.split_default_wrapper ~id ~kind ~params
-                 ~body ~attr ~loc
+                 ~body ~attr ~loc ~return
            | _ -> assert false
          )
          fun_defs)
@@ -1223,6 +1224,7 @@ and close_functions fenv cenv fun_defs =
   let useless_env = ref initially_closed in
   (* Translate each function definition *)
   let clos_fundef (id, params, body, fundesc, dbg) env_pos =
+    let params = List.map (fun (id, _typ) -> id) params in
     let env_param = V.create_local "env" in
     let cenv_fv =
       build_closure_env env_param (fv_pos - env_pos) fv in

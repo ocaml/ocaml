@@ -214,12 +214,13 @@ and transl_exp0 e =
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
   | Texp_function { arg_label = _; param; cases; partial; } ->
-      let ((kind, params), body) =
+      let ((kind, params, return), body) =
         event_function e
           (function repr ->
             let pl = push_defaults e.exp_loc [] cases partial in
-            transl_function e.exp_loc !Clflags.native_code repr partial
-              param pl)
+            let return_kind = function_return_value_kind e.exp_env e.exp_type in
+            transl_function e.exp_loc return_kind !Clflags.native_code repr
+              partial param pl)
       in
       let attr = {
         default_function_attribute with
@@ -228,7 +229,7 @@ and transl_exp0 e =
       }
       in
       let loc = e.exp_loc in
-      Lfunction{kind; params; body; attr; loc}
+      Lfunction{kind; params; return; body; attr; loc}
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
@@ -503,7 +504,8 @@ and transl_exp0 e =
       | `Other ->
          (* other cases compile to a lazy block holding a function *)
          let fn = Lfunction {kind = Curried;
-                             params= [Ident.create_local "param"];
+                             params= [Ident.create_local "param", Pgenval];
+                             return = Pgenval;
                              attr = default_function_attribute;
                              loc = e.exp_loc;
                              body = transl_exp e} in
@@ -605,15 +607,22 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
         and id_arg = Ident.create_local "param" in
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
-            Lfunction{kind = Curried; params = ids; body = lam; attr; loc} ->
-              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr;
+            Lfunction{kind = Curried; params = ids; return;
+                      body = lam; attr; loc} ->
+              Lfunction{kind = Curried;
+                        params = (id_arg, Pgenval)::ids;
+                        return;
+                        body = lam; attr;
                         loc}
-          | Levent(Lfunction{kind = Curried; params = ids;
+          | Levent(Lfunction{kind = Curried; params = ids; return;
                              body = lam; attr; loc}, _) ->
-              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr;
+              Lfunction{kind = Curried; params = (id_arg, Pgenval)::ids;
+                        return;
+                        body = lam; attr;
                         loc}
           | lam ->
-              Lfunction{kind = Curried; params = [id_arg]; body = lam;
+              Lfunction{kind = Curried; params = [id_arg, Pgenval];
+                        return = Pgenval; body = lam;
                         attr = default_stub_attribute; loc = loc}
         in
         List.fold_left
@@ -629,15 +638,18 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
                                 sargs)
      : Lambda.lambda)
 
-and transl_function loc untuplify_fn repr partial param cases =
+and transl_function loc return untuplify_fn repr partial (param:Ident.t) cases =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
-        partial = partial'; }} as exp}]
+        partial = partial'; }; exp_env; exp_type} as exp}]
     when Parmatch.inactive ~partial pat ->
-      let ((_, params), body) =
-        transl_function exp.exp_loc false repr partial' param' cases in
-      ((Curried, param :: params),
+      let kind = value_kind pat.pat_env pat.pat_type in
+      let return_kind = function_return_value_kind exp_env exp_type in
+      let ((_, params, return), body) =
+        transl_function exp.exp_loc return_kind false repr partial' param' cases
+      in
+      ((Curried, (param, kind) :: params, return),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
   | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
       begin try
@@ -647,19 +659,50 @@ and transl_function loc untuplify_fn repr partial param cases =
             (fun {c_lhs; c_guard; c_rhs} ->
               (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
             cases in
-        let params = List.map (fun _ -> Ident.create_local "param") pl in
-        ((Tupled, params),
+        let kinds =
+          (* All the patterns might not share the same types. We must take the
+             union of the patterns types *)
+          match pats_expr_list with
+          | [] -> assert false
+          | (pats, _, _) :: cases ->
+              let first_case_kinds =
+                List.map (fun pat -> value_kind pat.pat_env pat.pat_type) pats
+              in
+              List.fold_left
+                (fun kinds (pats, _, _) ->
+                   List.map2 (fun kind pat ->
+                       value_kind_union kind
+                         (value_kind pat.pat_env pat.pat_type))
+                     kinds pats)
+                first_case_kinds cases
+        in
+        let tparams =
+          List.map (fun kind -> Ident.create_local "param", kind) kinds
+        in
+        let params = List.map fst tparams in
+        ((Tupled, tparams, return),
          Matching.for_tupled_function loc params
            (transl_tupled_cases pats_expr_list) partial)
       with Matching.Cannot_flatten ->
-        ((Curried, [param]),
+        ((Curried, [param, Pgenval], return),
          Matching.for_function loc repr (Lvar param)
            (transl_cases cases) partial)
       end
-  | _ ->
-      ((Curried, [param]),
+  | {c_lhs=pat} :: other_cases ->
+      let kind =
+        (* All the patterns might not share the same types. We must take the
+           union of the patterns types *)
+        List.fold_left (fun k {c_lhs=pat} ->
+            Typeopt.value_kind_union k
+              (value_kind pat.pat_env pat.pat_type))
+          (value_kind pat.pat_env pat.pat_type) other_cases
+      in
+      ((Curried, [param, kind], return),
        Matching.for_function loc repr (Lvar param)
          (transl_cases cases) partial)
+  | [] ->
+      (* A pattern matching must contain at least one case *)
+      assert false
 
 (*
   Notice: transl_let consumes (ie compiles) its pat_expr_list argument,
