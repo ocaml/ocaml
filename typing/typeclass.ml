@@ -1738,7 +1738,11 @@ let type_classes define_class approx kind env cls =
   Ctype.end_def ();
   let res = List.rev_map (final_decl env define_class) res in
   let decls = List.fold_right extract_type_decls res [] in
-  let decls = Typedecl.compute_variance_class_decls env decls in
+  let decls =
+    try Typedecl_variance.update_class_decls env decls
+    with Typedecl_variance.Error(loc, err) ->
+      raise (Typedecl.Error(loc, Typedecl.Variance err))
+  in
   let res = List.map2 merge_type_decls res decls in
   let env = List.fold_left (final_env define_class) env res in
   let res = List.map (check_coercions env) res in

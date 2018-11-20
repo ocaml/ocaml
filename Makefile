@@ -99,7 +99,7 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/cmt_format.cmo typing/untypeast.cmo \
   typing/includemod.cmo typing/typetexp.cmo typing/printpat.cmo \
   typing/parmatch.cmo typing/stypes.cmo \
-  typing/typedecl_properties.cmo \
+  typing/typedecl_properties.cmo typing/typedecl_variance.cmo \
   typing/typedecl.cmo typing/typeopt.cmo \
   typing/rec_check.cmo typing/typecore.cmo typing/typeclass.cmo \
   typing/typemod.cmo
