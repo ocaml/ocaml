@@ -2722,29 +2722,42 @@ type_subst_declarations:
 ;
 
 type_subst_declaration:
-    TYPE ext_attributes no_nonrec_flag params=type_parameters
-    name=mkrhs(LIDENT) kind_priv_man=type_subst_kind cstrs=constraints
-    post_attrs=post_item_attributes
-      {
-        let (ext, attrs) = $2 in
+  TYPE
+  ext = ext
+  attrs1 = attributes
+  no_nonrec_flag
+  params = type_parameters
+  id = mkrhs(LIDENT)
+  type_kind = type_subst_kind
+  cstrs = constraints
+  attrs2 = post_item_attributes
+    {
+        let (kind, priv, manifest) = type_kind in
         let docs = symbol_docs $sloc in
-        let (kind, priv, manifest) = kind_priv_man in
+        let attrs = attrs1 @ attrs2 in
+        let loc = make_loc $sloc in
         let ty =
-          Type.mk name ~params ~cstrs ~kind ~priv
-            ?manifest ~attrs:(attrs @ post_attrs) ~loc:(make_loc $sloc) ~docs
+          Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs
         in
-        (ty, ext) }
+        (ty, ext)
+    }
 ;
 and_type_subst_declaration:
-    AND attrs=attributes params=type_parameters name=mkrhs(LIDENT)
-    kind_priv_man=type_subst_kind cstrs=constraints
-    post_attrs=post_item_attributes
-      { let docs = symbol_docs $sloc in
-        let text = symbol_text $symbolstartpos in
-        let (kind, priv, manifest) = kind_priv_man in
-        Type.mk name ~params ~cstrs
-          ~kind ~priv ?manifest
-          ~attrs:(attrs @ post_attrs) ~loc:(make_loc $sloc) ~docs ~text }
+  AND
+  attrs1 = attributes
+  params = type_parameters
+  id = mkrhs(LIDENT)
+  type_kind = type_subst_kind
+  cstrs = constraints
+  attrs2 = post_item_attributes
+    {
+      let (kind, priv, manifest) = type_kind in
+      let docs = symbol_docs $sloc in
+      let attrs = attrs1 @ attrs2 in
+      let loc = make_loc $sloc in
+      let text = symbol_text $symbolstartpos in
+      Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs ~text
+    }
 ;
 
 (* The definitions of [type_declaration] and [and_type_declaration] look very
@@ -2786,10 +2799,7 @@ and_type_declaration:
       let attrs = attrs1 @ attrs2 in
       let loc = make_loc $sloc in
       let text = symbol_text $symbolstartpos in
-      let ty =
-        Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs ~text
-      in
-      ty
+      Type.mk id ~params ~cstrs ~kind ~priv ?manifest ~attrs ~loc ~docs ~text
     }
 ;
 %inline constraints:
