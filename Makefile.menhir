@@ -24,6 +24,10 @@
 #   updated result. Use it to make permanent changes to the compiler
 #   parser.
 #
+# - demote-menhir undoes the effect of promote-menhir. The files in
+#   the boot/ directory that are affected by promote-menhir and are
+#   under version control are restored to their normal state (HEAD).
+#
 # - test-menhir builds the parser from parser.mly without storing it
 #   in the boot/ directory, and only checks that the generated parser
 #   builds correctly. Use it to quickly check if a parser.mly change
@@ -88,6 +92,14 @@ import-menhirLib:
            $(addprefix `$(MENHIR) --suggest-menhirLib`/menhirLib.,ml mli) \
            boot/menhir
 
+
+## demote-menhir
+
+DEMOTE:=menhirLib.ml menhirLib.mli parser.ml parser.mli
+
+.PHONY: demote-menhir
+demote-menhir:
+	git checkout HEAD -- $(addprefix boot/menhir/,$(DEMOTE))
 
 ## test-menhir
 
