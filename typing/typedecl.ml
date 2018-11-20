@@ -55,7 +55,7 @@ type error =
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
-  | Bad_immediate_attribute
+  | Immediacy of Typedecl_immediacy.error
   | Bad_unboxed_attribute of string
   | Wrong_unboxed_type_float
   | Boxed_and_unboxed
@@ -129,37 +129,8 @@ let update_type temp_env env id loc =
       with Ctype.Unify trace ->
         raise (Error(loc, Type_clash (env, trace)))
 
-(* We use the Ctype.expand_head_opt version of expand_head to get access
-   to the manifest type of private abbreviations. *)
-let rec get_unboxed_type_representation env ty fuel =
-  if fuel < 0 then None else
-  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
-  match ty.desc with
-  | Tconstr (p, args, _) ->
-    begin match Env.find_type p env with
-    | exception Not_found -> Some ty
-    | {type_immediate = true; _} -> Some Predef.type_int
-    | {type_unboxed = {unboxed = false}} -> Some ty
-    | {type_params; type_kind =
-         Type_record ([{ld_type = ty2; _}], _)
-       | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
-       | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]}
-
-      ->
-        let ty2 = match ty2.desc with Tpoly (t, _) -> t | _ -> ty2 in
-        get_unboxed_type_representation env
-          (Ctype.apply env type_params ty2 args) (fuel - 1)
-    | {type_kind=Type_abstract} -> None
-          (* This case can occur when checking a recursive unboxed type
-             declaration. *)
-    | _ -> assert false (* only the above can be unboxed *)
-    end
-  | _ -> Some ty
-
-let get_unboxed_type_representation env ty =
-  (* Do not give too much fuel: PR#7424 *)
-  get_unboxed_type_representation env ty 100
-;;
+let get_unboxed_type_representation =
+  Typedecl_unboxed.get_unboxed_type_representation
 
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
@@ -839,51 +810,6 @@ let check_abbrev_recursion env id_loc_list to_check tdecl =
   let id = tdecl.typ_id in
   check_recursion env (List.assoc id id_loc_list) (Path.Pident id) decl to_check
 
-let marked_as_immediate decl =
-  Builtin_attributes.immediate decl.type_attributes
-
-let compute_immediacy env tdecl =
-  match (tdecl.type_kind, tdecl.type_manifest) with
-  | (Type_variant [{cd_args = Cstr_tuple [arg]; _}], _)
-    | (Type_variant [{cd_args = Cstr_record [{ld_type = arg; _}]; _}], _)
-    | (Type_record ([{ld_type = arg; _}], _), _)
-  when tdecl.type_unboxed.unboxed ->
-    begin match get_unboxed_type_representation env arg with
-    | Some argrepr -> not (Ctype.maybe_pointer_type env argrepr)
-    | None -> false
-    end
-  | (Type_variant (_ :: _ as cstrs), _) ->
-    not (List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs)
-  | (Type_abstract, Some(typ)) ->
-    not (Ctype.maybe_pointer_type env typ)
-  | (Type_abstract, None) -> marked_as_immediate tdecl
-  | _ -> false
-
-let immediacy : (bool, unit) Typedecl_properties.property =
-  let open Typedecl_properties in
-  let eq = (=) in
-  let merge ~prop:_ ~new_prop = new_prop in
-  let default _decl = false in
-  let compute env decl () =
-    compute_immediacy env decl in
-  let update_decl decl immediacy =
-    { decl with type_immediate = immediacy } in
-  let check _env _id decl () =
-    if (marked_as_immediate decl) && (not decl.type_immediate) then
-      raise (Error (decl.type_loc, Bad_immediate_attribute))
-  in
-  {
-    eq;
-    merge;
-    default;
-    compute;
-    update_decl;
-    check;
-  }
-
-let compute_immediacy_decls env decls =
-  Typedecl_properties.compute_property_noreq immediacy env decls
-
 (* Check multiple declarations of labels/constructors *)
 
 let check_duplicates sdecl_list =
@@ -1063,9 +989,11 @@ let transl_type_decl env rec_flag sdecl_list =
       decls
       |> name_recursion_decls sdecl_list
       |> Typedecl_variance.update_decls env sdecl_list
-      |> compute_immediacy_decls env
+      |> Typedecl_immediacy.update_decls env
     with
-    | Typedecl_variance.Error (loc, err) -> raise (Error (loc, Variance err)) in
+    | Typedecl_variance.Error (loc, err) -> raise (Error (loc, Variance err))
+    | Typedecl_immediacy.Error (loc, err) -> raise (Error (loc, Immediacy err))
+  in
   (* Compute the final environment with variance and immediacy *)
   let final_env = add_types_to_env decls env in
   (* Check re-exportation *)
@@ -1577,7 +1505,9 @@ let transl_with_constraint env id row_path orig_decl sdecl =
           env ~check:true decl (Typedecl_variance.variance_of_sdecl sdecl)
     with Typedecl_variance.Error (loc, err) ->
       raise (Error (loc, Variance err)) in
-  let type_immediate = compute_immediacy env decl in
+  let type_immediate =
+    (* Typedecl_immediacy.compute_decl never raises *)
+    Typedecl_immediacy.compute_decl env decl in
   let decl = {decl with type_variance; type_immediate} in
   Ctype.end_def();
   generalize_decl decl;
@@ -1866,7 +1796,7 @@ let report_error ppf = function
            a direct argument or result of the primitive,@ \
            it should not occur deeply into its type.@]"
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
-  | Bad_immediate_attribute ->
+  | Immediacy Typedecl_immediacy.Bad_immediate_attribute ->
       fprintf ppf "@[%s@ %s@]"
         "Types marked with the immediate attribute must be"
         "non-pointer types like int or bool"
