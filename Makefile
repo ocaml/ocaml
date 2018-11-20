@@ -1171,21 +1171,17 @@ endif
 
 DYNLINK_DIR=otherlibs/dynlink
 
-driver/compdynlink.mlbyte: $(DYNLINK_DIR)/dynlink.ml driver/compdynlink.mli
-	grep -v 'REMOVE_ME for ../../debugger/dynlink.ml' \
-          $(DYNLINK_DIR)/dynlink.ml | \
-          sed 's/Dynlink_/Compdynlink_/g' \
-          > driver/compdynlink.mlbyte
+driver/compdynlink.mlbyte: $(DYNLINK_DIR)/dynlink.ml driver/compdynlink.mli \
+    driver/compify_dynlink.sh
+	driver/compify_dynlink.sh $^ $@
 
-driver/compdynlink_common.ml: $(DYNLINK_DIR)/dynlink_common.ml
-	cat $(DYNLINK_DIR)/dynlink_common.ml | \
-          sed 's/Dynlink_/Compdynlink_/g' \
-          > driver/compdynlink_common.ml
+driver/compdynlink_common.ml: $(DYNLINK_DIR)/dynlink_common.ml \
+    driver/compify_dynlink.sh
+	driver/compify_dynlink.sh $^ $@
 
-driver/compdynlink_common.mli: $(DYNLINK_DIR)/dynlink_common.mli
-	cat $(DYNLINK_DIR)/dynlink_common.mli | \
-	  sed 's/Dynlink_/Compdynlink_/g' \
-	  > driver/compdynlink_common.mli
+driver/compdynlink_common.mli: $(DYNLINK_DIR)/dynlink_common.mli \
+    driver/compify_dynlink.sh
+	driver/compify_dynlink.sh $^ $@
 
 driver/compdynlink_types.mli: $(DYNLINK_DIR)/dynlink_types.mli
 	cp $(DYNLINK_DIR)/dynlink_types.mli driver/compdynlink_types.mli
@@ -1193,10 +1189,9 @@ driver/compdynlink_types.mli: $(DYNLINK_DIR)/dynlink_types.mli
 driver/compdynlink_types.ml: $(DYNLINK_DIR)/dynlink_types.ml
 	cp $(DYNLINK_DIR)/dynlink_types.ml driver/compdynlink_types.ml
 
-driver/compdynlink_platform_intf.ml: $(DYNLINK_DIR)/dynlink_platform_intf.ml
-	cat $(DYNLINK_DIR)/dynlink_platform_intf.ml | \
-          sed 's/Dynlink_/Compdynlink_/g' \
-          > driver/compdynlink_platform_intf.ml
+driver/compdynlink_platform_intf.ml: $(DYNLINK_DIR)/dynlink_platform_intf.ml \
+    driver/compify_dynlink.sh
+	driver/compify_dynlink.sh $^ $@
 
 ifeq ($(NATDYNLINK),true)
 driver/compdynlink.mlopt: $(DYNLINK_DIR)/natdynlink.ml driver/compdynlink.mli
@@ -1210,10 +1205,9 @@ driver/compdynlink.mlopt: $(DYNLINK_DIR)/nodynlink.ml driver/compdynlink.mli
 	  > driver/compdynlink.mlopt
 endif
 
-driver/compdynlink.mli: $(DYNLINK_DIR)/dynlink.mli
-	cat $(DYNLINK_DIR)/dynlink.mli | \
-	  sed 's/Dynlink_/Compdynlink_/g' \
-	  > driver/compdynlink.mli
+driver/compdynlink.mli: $(DYNLINK_DIR)/dynlink.mli \
+    driver/compify_dynlink.sh
+	driver/compify_dynlink.sh $^ $@
 
 driver/compdynlink_types.cmi: driver/compdynlink_types.mli
 	$(CAMLC) $(COMPFLAGS) -c $<
