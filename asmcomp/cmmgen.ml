@@ -35,19 +35,24 @@ type boxed_number =
   | Boxed_float of Debuginfo.t
   | Boxed_integer of boxed_integer * Debuginfo.t
 
+module IntMap = Map.Make(Int)
+
 type env = {
   unboxed_ids : (V.t * boxed_number) V.tbl;
+  catch_types : boxed_number option list IntMap.t;
   environment_param : V.t option;
 }
 
 let empty_env =
   {
-    unboxed_ids =V.empty;
+    unboxed_ids = V.empty;
+    catch_types = IntMap.empty;
     environment_param = None;
   }
 
 let create_env ~environment_param =
-  { unboxed_ids = V.empty;
+  {
+    empty_env with
     environment_param;
   }
 
@@ -59,6 +64,15 @@ let add_unboxed_id id unboxed_id bn env =
   { env with
     unboxed_ids = V.add id (unboxed_id, bn) env.unboxed_ids;
   }
+
+let add_catch_types i typs env =
+  { env with
+    catch_types = IntMap.add i typs env.catch_types
+  }
+
+let catch_types i env =
+  try IntMap.find i env.catch_types
+  with Not_found -> []
 
 (* Local binding of complex expressions *)
 
@@ -1962,15 +1976,23 @@ let rec transl env e =
           strmatch_compile dbg arg (Misc.may_map (transl env) d)
             (List.map (fun (s,act) -> s,transl env act) sw))
   | Ustaticfail (nfail, args) ->
-      Cexit (nfail, List.map (transl env) args)
+      let typs = catch_types nfail env in
+      let dbg = Debuginfo.none in
+      assert(List.length typs = List.length args);
+      let args =
+        List.map2
+          (fun arg typ ->
+             match typ with
+             | None -> transl env arg
+             | Some bn -> transl_unbox_number dbg env bn arg
+          )
+          args typs
+      in
+      Cexit (nfail, args)
   | Ucatch(nfail, [], body, handler) ->
       make_catch nfail (transl env body) (transl env handler)
   | Ucatch(nfail, ids, body, handler) ->
-      (* CR-someday mshinwell: consider how we can do better than
-         [typ_val] when appropriate. *)
-      let ids_with_types =
-        List.map (fun (i, _) -> (i, Cmm.typ_val)) ids in
-      ccatch(nfail, ids_with_types, transl env body, transl env handler)
+      transl_catch env nfail ids body handler
   | Utrywith(body, exn, handler) ->
       Ctrywith(transl env body, exn, transl env handler)
   | Uifthenelse(cond, ifso, ifnot) ->
@@ -2029,6 +2051,33 @@ let rec transl env e =
   | Uunreachable ->
       let dbg = Debuginfo.none in
       Cop(Cload (Word_int, Mutable), [Cconst_int 0], dbg)
+
+and transl_catch env nfail ids body handler =
+  let env_handler, typs, ids_with_types =
+    List.fold_right
+      (fun (id, k) (env, typs, ids) ->
+         match k with
+         | Pfloatval ->
+             let dbg = Debuginfo.none in
+             let unboxed_id = V.create_local (VP.name id) in
+             let typ = Boxed_float dbg in
+             add_unboxed_id (VP.var id) unboxed_id typ env,
+             Some typ :: typs,
+             (* keep provenance from id? *)
+             (VP.create unboxed_id, Cmm.typ_float) :: ids
+         | _ ->
+             env,
+             None :: typs,
+             (id, Cmm.typ_val) :: ids
+      )
+      ids (env, [], [])
+  in
+  let env_body = add_catch_types nfail typs env in
+  ccatch
+    (nfail, ids_with_types,
+     transl env_body body,
+     transl env_handler handler
+    )
 
 and transl_make_array dbg env kind args =
   match kind with
