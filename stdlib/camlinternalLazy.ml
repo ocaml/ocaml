@@ -15,6 +15,8 @@
 
 (* Internals of forcing lazy values. *)
 
+type 'a t = 'a lazy_t
+
 exception Undefined
 
 let raise_undefined = Obj.repr (fun () -> raise Undefined)

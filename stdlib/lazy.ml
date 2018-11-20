@@ -47,7 +47,7 @@
    rules for the [lazy] keyword.
 *)
 
-type 'a t = 'a lazy_t
+type 'a t = 'a CamlinternalLazy.t
 
 exception Undefined = CamlinternalLazy.Undefined
 

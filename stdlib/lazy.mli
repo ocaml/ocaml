@@ -15,7 +15,7 @@
 
 (** Deferred computations. *)
 
-type 'a t = 'a lazy_t
+type 'a t = 'a CamlinternalLazy.t
 (** A value of type ['a Lazy.t] is a deferred computation, called
    a suspension, that has a result of type ['a].  The special
    expression syntax [lazy (expr)] makes a suspension of the

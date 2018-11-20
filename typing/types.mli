@@ -278,6 +278,7 @@ module Variance : sig
   val union  : t -> t -> t
   val inter  : t -> t -> t
   val subset : t -> t -> bool
+  val eq : t -> t -> bool
   val set : f -> bool -> t -> t
   val mem : f -> t -> bool
   val conjugate : t -> t                (* exchange positive and negative *)

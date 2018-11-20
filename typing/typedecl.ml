@@ -1135,79 +1135,147 @@ let compute_immediacy env tdecl =
   | _ -> false
 
 (* Computes the fixpoint for the variance and immediacy of type declarations *)
+let add_types_to_env decls env =
+  List.fold_right
+    (fun (id, decl) env -> add_type ~check:true id decl env)
+    decls env
 
-let rec compute_properties_fixpoint env decls required variances immediacies =
-  let new_decls =
-    List.map2
-      (fun (id, decl) (variance, immediacy) ->
-         id, {decl with type_variance = variance; type_immediate = immediacy})
-      decls (List.combine variances immediacies)
-  in
-  let new_env =
-    List.fold_right
-      (fun (id, decl) env -> add_type ~check:true id decl env)
-      new_decls env
-  in
-  let new_variances =
-    List.map2
-      (fun (_id, decl) -> compute_variance_decl new_env false decl)
-      new_decls required
-  in
-  let new_variances =
-    List.map2 (List.map2 Variance.union) new_variances variances in
-  let new_immediacies =
-    List.map
-      (fun (_id, decl) -> compute_immediacy new_env decl)
+type decl = Types.type_declaration
+
+(** An abstract interface for properties of type definitions, such as
+   variance and immediacy, that are computed by a fixpoint on
+   mutually-recursive type declarations. This interface contains all
+   the operations needed to initialize and run the fixpoint
+   computation, and then (optionally) check that the result is
+   consistent with the declaration or user expectations.
+
+   ['prop] represents the type of property values
+   ({!Types.Variance.t}, just 'bool' for immediacy, etc).
+
+   ['req] represents the property value required by the author of the
+   declaration, if they gave an expectation: [type +'a t = ...].
+
+   Some properties have no natural notion of user requirement, or
+   their requirement is global, or already stored in
+   [type_declaration]; they can just use [unit] as ['req] parameter. *)
+type ('prop, 'req) property = {
+  eq : 'prop -> 'prop -> bool;
+  merge : prop:'prop -> new_prop:'prop -> 'prop;
+
+  default : decl -> 'prop;
+  compute : Env.t -> decl -> 'req -> 'prop;
+  update_decl : decl -> 'prop -> decl;
+
+  check : Env.t -> Ident.t -> decl -> 'req -> unit;
+}
+
+let compute_property
+: ('prop, 'req) property -> Env.t ->
+  (Ident.t * decl) list -> 'req list -> (Ident.t * decl) list
+= fun property env decls required ->
+  (* [decls] and [required] must be lists of the same size,
+     with [required] containing the requirement for the corresponding
+     declaration in [decls]. *)
+  let props = List.map (fun (_id, decl) -> property.default decl) decls in
+  let rec compute_fixpoint props =
+    let new_decls =
+      List.map2 (fun (id, decl) prop ->
+          (id, property.update_decl decl prop))
+        decls props in
+    let new_env = add_types_to_env new_decls env in
+    let new_props =
+      List.map2
+        (fun (_id, decl) (prop, req) ->
+           let new_prop = property.compute new_env decl req in
+           property.merge ~prop ~new_prop)
+        new_decls (List.combine props required) in
+    if not (List.for_all2 property.eq props new_props)
+    then compute_fixpoint new_props
+    else begin
+      List.iter2
+        (fun (id, decl) req -> property.check new_env id decl req)
+        new_decls required;
       new_decls
+    end
   in
-  if new_variances <> variances || new_immediacies <> immediacies then
-    compute_properties_fixpoint env decls required new_variances new_immediacies
-  else begin
-    (* List.iter (fun (id, decl) ->
-      Printf.eprintf "%s:" (Ident.name id);
-      List.iter (fun (v : Variance.t) ->
-        Printf.eprintf " %x" (Obj.magic v : int))
-        decl.type_variance;
-      prerr_endline "")
-      new_decls; *)
-    List.iter (fun (_, decl) ->
-      if (marked_as_immediate decl) && (not decl.type_immediate) then
-        raise (Error (decl.type_loc, Bad_immediate_attribute))
-      else ())
-      new_decls;
-    List.iter2
-      (fun (id, decl) req -> if not (is_hash id) then
-        ignore (compute_variance_decl new_env true decl req))
-      new_decls required;
-    new_decls, new_env
-  end
+  compute_fixpoint props
 
-let init_variance (_id, decl) =
-  List.map (fun _ -> Variance.null) decl.type_params
+let compute_property_noreq property env decls =
+  let req = List.map (fun _ -> ()) decls in
+  compute_property property env decls req
 
-let add_injectivity =
-  List.map
-    (function
-      | Covariant -> (true, false, false)
-      | Contravariant -> (false, true, false)
-      | Invariant -> (false, false, false)
-    )
+type variance_req = (bool * bool * bool) list
+let variance : (Variance.t list, variance_req) property =
+  let eq li1 li2 =
+    try List.for_all2 Variance.eq li1 li2 with _ -> false in
+  let merge ~prop ~new_prop = List.map2 Variance.union prop new_prop in
+  let default decl =
+    List.map (fun _ -> Variance.null) decl.type_params in
+  let compute env decl req =
+    compute_variance_decl env false decl (req, decl.type_loc) in
+  let update_decl decl variance =
+    { decl with type_variance = variance } in
+  let check env id decl req =
+    if not (is_hash id) then
+      ignore (compute_variance_decl env true decl (req, decl.type_loc))
+  in
+  {
+    eq;
+    merge;
+    default;
+    compute;
+    update_decl;
+    check;
+  }
+
+let transl_variance : Asttypes.variance -> _ = function
+  | Covariant -> (true, false, false)
+  | Contravariant -> (false, true, false)
+  | Invariant -> (false, false, false)
+
+let variance_of_params ptype_params =
+  List.map transl_variance (List.map snd ptype_params)
+let variance_of_sdecl sdecl =
+  variance_of_params sdecl.ptype_params
+
+let compute_variance_decls env sdecls decls =
+  let required = List.map variance_of_sdecl sdecls in
+  compute_property variance env decls required
+
+let immediacy : (bool, unit) property =
+  let eq = (=) in
+  let merge ~prop:_ ~new_prop = new_prop in
+  let default _decl = false in
+  let compute env decl () =
+    compute_immediacy env decl in
+  let update_decl decl immediacy =
+    { decl with type_immediate = immediacy } in
+  let check _env _id decl () =
+    if (marked_as_immediate decl) && (not decl.type_immediate) then
+      raise (Error (decl.type_loc, Bad_immediate_attribute))
+  in
+  {
+    eq;
+    merge;
+    default;
+    compute;
+    update_decl;
+    check;
+  }
+
+let compute_immediacy_decls env decls =
+  compute_property_noreq immediacy env decls
 
 (* for typeclass.ml *)
-let compute_variance_decls env cldecls =
+let compute_variance_class_decls env cldecls =
   let decls, required =
     List.fold_right
       (fun (obj_id, obj_abbr, _cl_abbr, _clty, _cltydef, ci) (decls, req) ->
-        let variance = List.map snd ci.ci_params in
         (obj_id, obj_abbr) :: decls,
-        (add_injectivity variance, ci.ci_loc) :: req)
+        variance_of_params ci.ci_params :: req)
       cldecls ([],[])
   in
-  let (decls, _) =
-    compute_properties_fixpoint env decls required
-      (List.map init_variance decls)
-      (List.map (fun _ -> false) decls)
-  in
+  let decls = compute_property variance env decls required in
   List.map2
     (fun (_,decl) (_, _, cl_abbr, clty, cltydef, _) ->
       let variance = decl.type_variance in
@@ -1262,6 +1330,10 @@ let name_recursion sdecl id decl =
       {decl with type_manifest = Some ty'}
     else decl
   | _ -> decl
+
+let name_recursion_decls sdecls decls =
+  List.map2 (fun sdecl (id, decl) -> (id, name_recursion sdecl id decl))
+    sdecls decls
 
 (* Warn on definitions of type "type foo = ()" which redefine a different unit
    type and are likely a mistake. *)
@@ -1342,17 +1414,13 @@ let transl_type_decl env rec_flag sdecl_list =
   (* Check for duplicates *)
   check_duplicates sdecl_list;
   (* Build the final env. *)
-  let newenv =
-    List.fold_right
-      (fun (id, decl) env -> add_type ~check:true id decl env)
-      decls env
-  in
+  let new_env = add_types_to_env decls env in
   (* Update stubs *)
   begin match rec_flag with
     | Asttypes.Nonrecursive -> ()
     | Asttypes.Recursive ->
       List.iter2
-        (fun id sdecl -> update_type temp_env newenv id sdecl.ptype_loc)
+        (fun id sdecl -> update_type temp_env new_env id sdecl.ptype_loc)
         id_list sdecl_list
   end;
   (* Generalize type declarations. *)
@@ -1364,16 +1432,16 @@ let transl_type_decl env rec_flag sdecl_list =
       id_list sdecl_list
   in
   List.iter (fun (id, decl) ->
-    check_well_founded_manifest newenv (List.assoc id id_loc_list)
+    check_well_founded_manifest new_env (List.assoc id id_loc_list)
       (Path.Pident id) decl)
     decls;
   let to_check =
     function Path.Pident id -> List.mem_assoc id id_loc_list | _ -> false in
   List.iter (fun (id, decl) ->
-    check_well_founded_decl newenv (List.assoc id id_loc_list) (Path.Pident id)
+    check_well_founded_decl new_env (List.assoc id id_loc_list) (Path.Pident id)
       decl to_check)
     decls;
-  List.iter (check_abbrev_recursion newenv id_loc_list to_check) tdecls;
+  List.iter (check_abbrev_recursion new_env id_loc_list to_check) tdecls;
   (* Check that all type variables are closed *)
   List.iter2
     (fun sdecl tdecl ->
@@ -1383,34 +1451,23 @@ let transl_type_decl env rec_flag sdecl_list =
        | None   -> ())
     sdecl_list tdecls;
   (* Check that constraints are enforced *)
-  List.iter2 (check_constraints newenv) sdecl_list decls;
-  (* Name recursion *)
+  List.iter2 (check_constraints new_env) sdecl_list decls;
+  (* Add type properties to declarations *)
   let decls =
-    List.map2 (fun sdecl (id, decl) -> id, name_recursion sdecl id decl)
-      sdecl_list decls
-  in
-  (* Add variances to the environment *)
-  let required =
-    List.map
-      (fun sdecl ->
-         add_injectivity (List.map snd sdecl.ptype_params),
-         sdecl.ptype_loc
-      )
-      sdecl_list
-  in
-  let final_decls, final_env =
-    compute_properties_fixpoint env decls required
-      (List.map init_variance decls)
-      (List.map (fun _ -> false) decls)
-  in
+    decls
+    |> name_recursion_decls sdecl_list
+    |> compute_variance_decls env sdecl_list
+    |> compute_immediacy_decls env in
+  (* Compute the final environment with variance and immediacy *)
+  let final_env = add_types_to_env decls env in
   (* Check re-exportation *)
-  List.iter2 (check_abbrev final_env) sdecl_list final_decls;
+  List.iter2 (check_abbrev final_env) sdecl_list decls;
   (* Keep original declaration *)
   let final_decls =
     List.map2
       (fun tdecl (_id2, decl) ->
         { tdecl with typ_type = decl }
-      ) tdecls final_decls
+      ) tdecls decls
   in
   (* Done *)
   (final_decls, final_env)
@@ -1580,7 +1637,7 @@ let transl_type_extension extend env loc styext =
       if List.for_all2
            (fun (c1, n1, _) (c2, n2, _) -> (not c2 || c1) && (not n2 || n1))
            type_variance
-           (add_injectivity (List.map snd styext.ptyext_params))
+           (variance_of_params styext.ptyext_params)
       then None else Some Includecore.Variance
   in
   begin match err with
@@ -1616,6 +1673,11 @@ let transl_type_extension extend env loc styext =
   (* Check variances are correct *)
   List.iter
     (fun ext->
+       (* Note that [loc] here is distinct from [type_decl.type_loc],
+          which makes the [loc] parameter to this function
+          useful. [loc] is the location of the extension, while
+          [type_decl] points to the original type declaration being
+          extended. *)
       ignore (compute_variance_extension env true type_decl
                 ext.ext_type (type_variance, loc)))
     constructors;
@@ -1903,7 +1965,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   let decl = name_recursion sdecl id decl in
   let type_variance =
     compute_variance_decl env true decl
-      (add_injectivity (List.map snd sdecl.ptype_params), sdecl.ptype_loc)
+      (variance_of_sdecl sdecl, sdecl.ptype_loc)
   in
   let type_immediate = compute_immediacy env decl in
   let decl = {decl with type_variance; type_immediate} in

@@ -292,6 +292,10 @@ Working version
   unused "open!" statements
   (Alain Frisch, report by dwang, review by and design from Leo White)
 
+- GPR#1974: Trigger warning 5 in "let _ = e" and "ignore e" if e is of function
+  type and syntactically an application. (For the case of "ignore e" the warning
+  already existed, but used to be triggered even when e was not an application.)
+  (Nicolás Ojeda Bär, review by Alain Frisch and Jacques Garrigue)
 
 ### Code generation and optimizations:
 
@@ -458,6 +462,9 @@ Working version
   (Sébastien Hinderer, review by Xavier Leroy, Stephen Dolan and
   Damien Doligez)
 
+- GPR#2148: fix a parallel build bug involving CamlinternalLazy.
+  (Stephen Dolan, review by Gabriel Scherer and Nicolas Ojeda Bar)
+
 ### Internal/compiler-libs changes:
 
 - GPR#292: use Menhir as the parser generator for the OCaml parser.
@@ -570,6 +577,10 @@ Working version
 - GPR#2080: Add [Proc.dwarf_register_numbers] and
   [Proc.stack_ptr_dwarf_register_number].
   (Mark Shinwell, review by Bernhard Schommer)
+
+- GPR#2152: refactorize the fixpoint to compute type-system properties
+  of mutually-recursive type declarations.
+  (Gabriel Scherer, review by Armaël Guéneau)
 
 ### Bug fixes:
 

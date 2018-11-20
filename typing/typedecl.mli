@@ -55,7 +55,7 @@ val check_coherence:
 val is_fixed_type : Parsetree.type_declaration -> bool
 
 (* for typeclass.ml *)
-val compute_variance_decls:
+val compute_variance_class_decls:
     Env.t ->
     (Ident.t * Types.type_declaration * Types.type_declaration *
      Types.class_declaration * Types.class_type_declaration *
