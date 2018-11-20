@@ -313,6 +313,12 @@ Working version
 - GPR#1917: comballoc: ensure object allocation order is preserved
   (Stephen Dolan)
 
+### Toplevel:
+
+- GPR#2155: re-implement Config.load_path initialisation to fix regression
+  caused by GPR#1041.
+  (David Allsopp, review by ??)
+
 ### Runtime system:
 
 - MPR#7198, MPR#7750, GPR#1738: add a function (caml_custom_alloc_mem)

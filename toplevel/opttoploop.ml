@@ -531,11 +531,9 @@ let set_paths () =
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
   let expand = Misc.expand_directory Config.standard_library in
+  Compmisc.reinit_path ();
   load_path := List.concat [
     [ "" ];
-    List.map expand (List.rev !Compenv.first_include_dirs);
-    List.map expand (List.rev !Clflags.include_dirs);
-    List.map expand (List.rev !Compenv.last_include_dirs);
     !load_path;
     [expand "+camlp4"];
   ]
@@ -594,8 +592,9 @@ let run_script ppf name args =
   Array.blit args 0 Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
   Arg.current := 0;
-  Config.load_path :=
-    Misc.Stdlib.List.replace_last ~eq:String.equal "" dir !Config.load_path;
+  Compmisc.reinit_path ~dir ();
+  (* Remove the "" entry added by set_paths. Not so proud of this... *)
+  Config.load_path := List.tl !Config.load_path;
   toplevel_env := Compmisc.initial_env();
   Sys.interactive := false;
   let explicit_name =
