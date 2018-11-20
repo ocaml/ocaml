@@ -1173,15 +1173,15 @@ DYNLINK_DIR=otherlibs/dynlink
 
 driver/compdynlink.mlbyte: $(DYNLINK_DIR)/dynlink.ml driver/compdynlink.mli \
     driver/compify_dynlink.sh
-	driver/compify_dynlink.sh $^ $@
+	driver/compify_dynlink.sh $< $@
 
 driver/compdynlink_common.ml: $(DYNLINK_DIR)/dynlink_common.ml \
     driver/compify_dynlink.sh
-	driver/compify_dynlink.sh $^ $@
+	driver/compify_dynlink.sh $< $@
 
 driver/compdynlink_common.mli: $(DYNLINK_DIR)/dynlink_common.mli \
     driver/compify_dynlink.sh
-	driver/compify_dynlink.sh $^ $@
+	driver/compify_dynlink.sh $< $@
 
 driver/compdynlink_types.mli: $(DYNLINK_DIR)/dynlink_types.mli
 	cp $(DYNLINK_DIR)/dynlink_types.mli driver/compdynlink_types.mli
@@ -1191,7 +1191,7 @@ driver/compdynlink_types.ml: $(DYNLINK_DIR)/dynlink_types.ml
 
 driver/compdynlink_platform_intf.ml: $(DYNLINK_DIR)/dynlink_platform_intf.ml \
     driver/compify_dynlink.sh
-	driver/compify_dynlink.sh $^ $@
+	driver/compify_dynlink.sh $< $@
 
 ifeq ($(NATDYNLINK),true)
 driver/compdynlink.mlopt: $(DYNLINK_DIR)/natdynlink.ml driver/compdynlink.mli
@@ -1207,7 +1207,7 @@ endif
 
 driver/compdynlink.mli: $(DYNLINK_DIR)/dynlink.mli \
     driver/compify_dynlink.sh
-	driver/compify_dynlink.sh $^ $@
+	driver/compify_dynlink.sh $< $@
 
 driver/compdynlink_types.cmi: driver/compdynlink_types.mli
 	$(CAMLC) $(COMPFLAGS) -c $<
