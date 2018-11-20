@@ -28,9 +28,9 @@ let rewrite_label env label =
    referenced), we do this in two passes. *)
 
 let rec coalesce env (insn : L.instruction) ~last_insn_was_label =
-  if insn == L.end_instr then
-    env, insn
-  else
+  match insn.desc with
+  | Lend -> env, insn
+  | _ ->
     let env, desc, this_insn_is_label =
       match insn.desc with
       | Llabel label ->
@@ -43,10 +43,11 @@ let rec coalesce env (insn : L.instruction) ~last_insn_was_label =
         | None ->
           env, Some insn.desc, Some label
         end
-      | Lprologue | Lend | Lop _ | Lreloadretaddr | Lreturn | Lpushtrap
+      | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Lpushtrap
       | Lpoptrap | Lraise _ | Lbranch _
       | Lcondbranch _ | Lcondbranch3 _ | Lswitch _ | Lsetuptrap _ ->
         env, Some insn.desc, None
+      | Lend -> assert false
     in
     let env, next =
       coalesce env insn.next ~last_insn_was_label:this_insn_is_label
@@ -63,13 +64,12 @@ let rec coalesce env (insn : L.instruction) ~last_insn_was_label =
     env, insn
 
 let rec renumber env (insn : L.instruction) =
-  if insn == L.end_instr then
-    insn
-  else
+  match insn.desc with
+  | Lend -> insn
+  | _ ->
     let desc : L.instruction_desc =
       match insn.desc with
       | Lprologue
-      | Lend
       | Lop _
       | Lreloadretaddr
       | Lreturn
@@ -88,6 +88,7 @@ let rec renumber env (insn : L.instruction) =
       | Lswitch labels ->
         Lswitch (Array.map (rewrite_label env) labels)
       | Lsetuptrap label -> Lsetuptrap (rewrite_label env label)
+      | Lend -> assert false
     in
     let next = renumber env insn.next in
     { insn with L. desc; next; }

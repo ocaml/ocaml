@@ -354,20 +354,25 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         open_subranges
         actions
     in
+    let open_subranges =
+      match insn.desc with
+      | Lend ->
+        let open_subranges =
+          KM.fold (fun key _ open_subranges ->
+              close_subrange key ~end_pos_offset:0 ~open_subranges)
+            open_subranges
+            open_subranges
+        in
+        assert (KM.is_empty open_subranges);
+        open_subranges
+      | _ -> open_subranges
+    in
     begin if !used_label then
       insert_insn ~new_insn:label_insn
     end;
     let first_insn = !first_insn in
     match insn.desc with
-    | Lend ->
-      let open_subranges =
-        KM.fold (fun key _ open_subranges ->
-            close_subrange key ~end_pos_offset:0 ~open_subranges)
-          open_subranges
-          open_subranges
-      in
-      assert (KM.is_empty open_subranges);
-      first_insn
+    | Lend -> first_insn
     | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
     | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
     | Lsetuptrap _ | Lpushtrap | Lpoptrap | Lraise _ ->
