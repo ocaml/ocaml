@@ -350,7 +350,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
             List.iter (fun (_path, _, exp) ->
                 iter_expression exp
             ) list
-        | Texp_letmodule (_id, _, mexpr, exp) ->
+        | Texp_letmodule (_id, _, _, mexpr, exp) ->
             iter_module_expr mexpr;
             iter_expression exp
         | Texp_letexception (cd, exp) ->

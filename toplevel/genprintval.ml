@@ -39,7 +39,7 @@ module type OBJ =
 module type EVALPATH =
   sig
     type valu
-    val eval_path: Env.t -> Path.t -> valu
+    val eval_address: Env.address -> valu
     exception Error
     val same_value: valu -> valu -> bool
   end
@@ -201,7 +201,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       match ty_path with
       | Pident _ ->
           Oide_ident name
-      | Pdot(p, _s, _pos) ->
+      | Pdot(p, _s) ->
           if try
                match (lookup_fun (Lident (Out_name.print name)) env).desc with
                | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
@@ -427,7 +427,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     | None ->
                         let pos =
                           match rep with
-                          | Record_extension -> 1
+                          | Record_extension _ -> 1
                           | _ -> 0
                         in
                         let unbx =
@@ -554,10 +554,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
             Cstr_extension(p, _) -> p
             | _ -> raise Not_found
         in
+        let addr = Env.find_constructor_address path env in
         (* Make sure this is the right exception and not an homonym,
            by evaluating the exception found and comparing with the
            identifier contained in the exception bucket *)
-        if not (EVP.same_value slot (EVP.eval_path env path))
+        if not (EVP.same_value slot (EVP.eval_address addr))
         then raise Not_found;
         tree_of_constr_with_args
            (fun x -> Oide_ident x) name (cstr.cstr_inlined <> None)

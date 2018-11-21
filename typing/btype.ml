@@ -235,7 +235,7 @@ let is_constr_row ~allow_ident t =
   match t.desc with
     Tconstr (Path.Pident id, _, _) when allow_ident ->
       is_row_name (Ident.name id)
-  | Tconstr (Path.Pdot (_, s, _), _, _) -> is_row_name s
+  | Tconstr (Path.Pdot (_, s), _, _) -> is_row_name s
   | _ -> false
 
 
@@ -352,7 +352,7 @@ let type_iterators =
       Sig_value (_, vd)     -> it.it_value_description it vd
     | Sig_type (_, td, _)   -> it.it_type_declaration it td
     | Sig_typext (_, td, _) -> it.it_extension_constructor it td
-    | Sig_module (_, md, _) -> it.it_module_declaration it md
+    | Sig_module (_, _, md, _) -> it.it_module_declaration it md
     | Sig_modtype (_, mtd)  -> it.it_modtype_declaration it mtd
     | Sig_class (_, cd, _)  -> it.it_class_declaration it cd
     | Sig_class_type (_, ctd, _) -> it.it_class_type_declaration it ctd
@@ -382,7 +382,7 @@ let type_iterators =
     it.it_path ctd.clty_path
   and it_module_type it = function
       Mty_ident p
-    | Mty_alias(_, p) -> it.it_path p
+    | Mty_alias p -> it.it_path p
     | Mty_signature sg -> it.it_signature it sg
     | Mty_functor (_, mto, mt) ->
         may (it.it_module_type it) mto;

@@ -151,7 +151,7 @@ let classify_expression : Typedtree.expression -> sd =
         classify_path env path
 
     (* non-binding cases *)
-    | Texp_letmodule (_, _, _, e)
+    | Texp_letmodule (_, _, _, _, e)
     | Texp_sequence (_, e)
     | Texp_letexception (_, e) ->
         classify_expression env e
@@ -511,7 +511,7 @@ let rec expression : Typedtree.expression -> term_judg =
          G |- let <bindings> in body : m
       *)
       value_bindings rec_flag bindings >> expression body
-    | Texp_letmodule (x, _, mexp, e) ->
+    | Texp_letmodule (x, _, _, mexp, e) ->
       module_binding (x, mexp) >> expression e
     | Texp_match (e, cases, _) ->
       (*
@@ -613,7 +613,7 @@ let rec expression : Typedtree.expression -> term_judg =
           | Record_float -> Dereference
           | Record_unboxed _ -> Return
           | Record_regular | Record_inlined _
-          | Record_extension -> Guard
+          | Record_extension _ -> Guard
         in
         let field (_label, field_def) = match field_def with
             Kept _ -> empty
@@ -848,7 +848,7 @@ and modexp : Typedtree.module_expr -> term_judg =
           (* This corresponds to 'external' declarations,
              and the coercion ignores its argument *)
           k Ignore
-        | Tcoerce_alias (pth, coe) ->
+        | Tcoerce_alias (_, pth, coe) ->
           (* Alias coercions ignore their arguments, but they evaluate
              their alias module 'pth' under another coercion. *)
           coercion coe (fun m -> path pth << m)
@@ -876,7 +876,7 @@ and path : Path.t -> term_judg =
   fun pth -> match pth with
     | Path.Pident x ->
         single x
-    | Path.Pdot (t, _, _) ->
+    | Path.Pdot (t, _) ->
         path t << Dereference
     | Path.Papply (f, p) ->
         join [
@@ -963,7 +963,7 @@ and structure_item : Typedtree.structure_item -> bind_judg =
           | Sig_value (id, _)
           | Sig_type (id, _, _)
           | Sig_typext (id, _, _)
-          | Sig_module (id, _, _)
+          | Sig_module (id, _, _, _)
           | Sig_modtype (id, _)
           | Sig_class (id, _, _)
           | Sig_class_type (id, _, _)
