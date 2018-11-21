@@ -392,7 +392,9 @@ type pattern_matching =
 
 type pm_or_compiled =
   {body : pattern_matching ;
-   handlers : (matrix * int * Ident.t list * pattern_matching) list ;
+   handlers :
+     (matrix * int * (Ident.t * Lambda.value_kind) list * pattern_matching)
+       list;
    or_matrix : matrix ; }
 
 type pm_half_compiled =
@@ -664,25 +666,6 @@ let default_compat p def =
     def []
 
 (* Or-pattern expansion, variables are a complication w.r.t. the article *)
-let rec extract_vars r p = match p.pat_desc with
-| Tpat_var (id, _) -> Ident.Set.add id r
-| Tpat_alias (p, id,_ ) ->
-    extract_vars (Ident.Set.add id r) p
-| Tpat_tuple pats ->
-    List.fold_left extract_vars r pats
-| Tpat_record (lpats,_) ->
-    List.fold_left
-      (fun r (_, _, p) -> extract_vars r p)
-      r lpats
-| Tpat_construct (_, _, pats) ->
-    List.fold_left extract_vars r pats
-| Tpat_array pats ->
-    List.fold_left extract_vars r pats
-| Tpat_variant (_,Some p, _) -> extract_vars r p
-| Tpat_lazy p -> extract_vars r p
-| Tpat_or (p,_,_) -> extract_vars r p
-| Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> r
-| Tpat_exception _ -> assert false
 
 exception Cannot_flatten
 
@@ -834,8 +817,8 @@ let insert_or_append p ps act ors no =
         if is_or q then begin
           if may_compat p q then
             if
-              Ident.Set.is_empty (extract_vars Ident.Set.empty p) &&
-              Ident.Set.is_empty (extract_vars Ident.Set.empty q) &&
+              Typedtree.pat_bound_idents p = [] &&
+              Typedtree.pat_bound_idents q = [] &&
               equiv_pat p q
             then (* attempt insert, for equivalent orpats with no variables *)
               let _, not_e = get_equiv q rem in
@@ -1129,12 +1112,13 @@ and precompile_or argo cls ors args def k = match ors with
                   | _ -> assert false)
                 others ;
               args = (match args with _::r -> r | _ -> assert false) ;
-              default = default_compat orp def} in
+             default = default_compat orp def} in
+          let pm_fv = pm_free_variables orpm in
           let vars =
-            Ident.Set.elements
-              (Ident.Set.inter
-                 (extract_vars Ident.Set.empty orp)
-                 (pm_free_variables orpm)) in
+            Typedtree.pat_bound_idents_full orp
+            |> List.filter (fun (id, _, _) -> Ident.Set.mem id pm_fv)
+            |> List.map (fun (id,_,ty) -> id,Typeopt.value_kind orp.pat_env ty)
+          in
           let or_num = next_raise_count () in
           let new_patl = Parmatch.omega_list patl in
 
@@ -1144,7 +1128,7 @@ and precompile_or argo cls ors args def k = match ors with
 
           let body,handlers = do_cases rem in
           explode_or_pat
-            argo new_patl mk_new_action body vars [] orp,
+            argo new_patl mk_new_action body (List.map fst vars) [] orp,
           let mat = [[orp]] in
           ((mat, or_num, vars , orpm):: handlers)
       | cl::rem ->
@@ -2566,7 +2550,6 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   let rec do_rec r total_r = function
     | [] -> r,total_r
     | (mat,i,vars,pm)::rem ->
-        let vars = List.map (fun id -> id, Pgenval) vars in
         begin try
           let ctx = select_columns mat ctx in
           let handler_i, total_i =
