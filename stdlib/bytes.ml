@@ -320,7 +320,7 @@ let rcontains_from s i c =
 type t = bytes
 
 let compare (x: t) (y: t) = Stdlib.compare x y
-external equal : t -> t -> bool = "caml_bytes_equal"
+external equal : t -> t -> bool = "caml_bytes_equal" [@@noalloc]
 
 (* Deprecated functions implemented via other deprecated functions *)
 [@@@ocaml.warning "-3"]
