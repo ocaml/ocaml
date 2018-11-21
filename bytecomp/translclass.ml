@@ -870,9 +870,17 @@ let transl_class ids cl_id pub_meths cl vflag =
             Lsequence(mkappl (oo_prim "init_class", [Lvar cla]),
                       lset cached 0 (Lvar env_init))))
   and lclass_virt () =
-    lset cached 0 (Lfunction{kind = Curried; attr = default_function_attribute;
-                             loc = Location.none; return = Pgenval;
-                             params = [cla, Pgenval]; body = def_ids cla cl_init})
+    lset cached 0
+      (Lfunction
+         {
+           kind = Curried;
+           attr = default_function_attribute;
+           loc = Location.none;
+           return = Pgenval;
+           params = [cla, Pgenval];
+           body = def_ids cla cl_init;
+         }
+      )
   in
   let lupdate_cache =
     if ids = [] then ldirect () else
