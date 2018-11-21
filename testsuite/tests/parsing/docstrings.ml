@@ -78,11 +78,24 @@ module Manual : sig
 
   (** The comment for the class type my_class_type *)
   class type my_class_type = object
+    (** This is a docstring that OCaml <= 4.07.1 drops.
+        For some reason, when a class type begins with two docstrings,
+        it keeps only the second one.
+        This is fixed by GPR#2151. *)
+
     (** The comment for variable x. *)
     val mutable x : int
 
     (** The commend for method m. *)
     method m : int -> int
+
+    (** This is a docstring that OCaml <= 4.07.1 misplaces.
+        For some reason, when a class type ends with two docstrings,
+        it keeps both of them, but exchanges their order.
+        This is again fixed by GPR#2151. *)
+
+    (** Another docstring that OCaml <= 4.07.1 misplaces. *)
+
   end
 
   (** The comment for module Foo *)
@@ -230,8 +243,13 @@ module Manual :
       end[@@ocaml.doc " The comment for class my_class "]
     class type my_class_type =
       object
+        [@@@ocaml.text
+          " This is a docstring that OCaml <= 4.07.1 drops.\n        For some reason, when a class type begins with two docstrings,\n        it keeps only the second one.\n        This is fixed by GPR#2151. "]
         val  mutable x : int[@@ocaml.doc " The comment for variable x. "]
         method  m : int -> int[@@ocaml.doc " The commend for method m. "]
+        [@@@ocaml.text
+          " This is a docstring that OCaml <= 4.07.1 misplaces.\n        For some reason, when a class type ends with two docstrings,\n        it keeps both of them, but exchanges their order.\n        This is again fixed by GPR#2151. "]
+        [@@@ocaml.text " Another docstring that OCaml <= 4.07.1 misplaces. "]
       end[@@ocaml.doc " The comment for the class type my_class_type "]
     module Foo :
     sig
@@ -294,8 +312,8 @@ module Manual :
     module type my_module_type  = sig val x : int end[@@ocaml.doc
                                                        " The comment for module type my_module_type. "]
   end ;;
-Line 128, characters 12-14:
-128 |     inherit cl
+Line 141, characters 12-14:
+141 |     inherit cl
                   ^^
 Error: Unbound class cl
 |}]
