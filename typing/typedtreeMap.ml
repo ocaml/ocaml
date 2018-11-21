@@ -382,9 +382,9 @@ module MakeMap(Map : MapArgument) = struct
               (path, lid, map_expression exp)
             ) list
           )
-        | Texp_letmodule (id, name, mexpr, exp) ->
+        | Texp_letmodule (id, name, pres, mexpr, exp) ->
           Texp_letmodule (
-            id, name,
+            id, name, pres,
             map_module_expr mexpr,
             map_expression exp
           )

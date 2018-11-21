@@ -609,14 +609,14 @@ bytecomp/lambda.cmi : typing/types.cmi typing/primitive.cmi typing/path.cmi \
 bytecomp/matching.cmo : typing/types.cmi typing/typeopt.cmi \
     typing/typedtree.cmi bytecomp/switch.cmi typing/printpat.cmi \
     bytecomp/printlambda.cmi typing/primitive.cmi typing/predef.cmi \
-    typing/path.cmi typing/parmatch.cmi utils/misc.cmi parsing/longident.cmi \
+    typing/parmatch.cmi utils/misc.cmi parsing/longident.cmi \
     parsing/location.cmi bytecomp/lambda.cmi typing/ident.cmi typing/env.cmi \
     utils/clflags.cmi typing/btype.cmi parsing/asttypes.cmi \
     bytecomp/matching.cmi
 bytecomp/matching.cmx : typing/types.cmx typing/typeopt.cmx \
     typing/typedtree.cmx bytecomp/switch.cmx typing/printpat.cmx \
     bytecomp/printlambda.cmx typing/primitive.cmx typing/predef.cmx \
-    typing/path.cmx typing/parmatch.cmx utils/misc.cmx parsing/longident.cmx \
+    typing/parmatch.cmx utils/misc.cmx parsing/longident.cmx \
     parsing/location.cmx bytecomp/lambda.cmx typing/ident.cmx typing/env.cmx \
     utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi \
     bytecomp/matching.cmi
@@ -634,12 +634,12 @@ bytecomp/printinstr.cmx : bytecomp/printlambda.cmx parsing/location.cmx \
     bytecomp/lambda.cmx bytecomp/instruct.cmx typing/ident.cmx \
     bytecomp/printinstr.cmi
 bytecomp/printinstr.cmi : bytecomp/instruct.cmi
-bytecomp/printlambda.cmo : typing/types.cmi typing/primitive.cmi \
-    parsing/location.cmi bytecomp/lambda.cmi typing/ident.cmi \
-    parsing/asttypes.cmi bytecomp/printlambda.cmi
-bytecomp/printlambda.cmx : typing/types.cmx typing/primitive.cmx \
-    parsing/location.cmx bytecomp/lambda.cmx typing/ident.cmx \
-    parsing/asttypes.cmi bytecomp/printlambda.cmi
+bytecomp/printlambda.cmo : typing/types.cmi typing/printtyp.cmi \
+    typing/primitive.cmi parsing/location.cmi bytecomp/lambda.cmi \
+    typing/ident.cmi parsing/asttypes.cmi bytecomp/printlambda.cmi
+bytecomp/printlambda.cmx : typing/types.cmx typing/printtyp.cmx \
+    typing/primitive.cmx parsing/location.cmx bytecomp/lambda.cmx \
+    typing/ident.cmx parsing/asttypes.cmi bytecomp/printlambda.cmi
 bytecomp/printlambda.cmi : bytecomp/lambda.cmi
 bytecomp/runtimedef.cmo : bytecomp/runtimedef.cmi
 bytecomp/runtimedef.cmx : bytecomp/runtimedef.cmi

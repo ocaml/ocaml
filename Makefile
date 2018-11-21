@@ -1272,8 +1272,7 @@ partialclean::
 	rm -f driver/compdynlink.mlopt
 	rm -f driver/compdynlink.mli
 	rm -f driver/compdynlink_platform_intf.ml
-	rm -f driver/compdynlink_common.mlbyte
-	rm -f driver/compdynlink_common.mlopt
+	rm -f driver/compdynlink_common.ml
 	rm -f driver/compdynlink_common.mli
 	rm -f driver/compdynlink_types.mli
 	rm -f driver/compdynlink_types.ml

@@ -2459,7 +2459,7 @@ let all_rhs_idents exp =
     let leave_expression exp =
       if is_unpack exp then begin match exp.exp_desc with
       | Texp_letmodule
-          (id_mod,_,
+          (id_mod,_,_,
            {mod_desc=
             Tmod_unpack ({exp_desc=Texp_ident (Path.Pident id_exp,_,_)},_)},
            _) ->
