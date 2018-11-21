@@ -241,6 +241,7 @@ let execute_phrase print_outcome ppf phr =
       let oldenv = !toplevel_env in
       Typecore.reset_delayed_checks ();
       let (str, sg, sn, newenv) = Typemod.type_toplevel_phrase oldenv sstr in
+      let str = Tppx.process_all str in      
       if !Clflags.dump_typedtree then Printtyped.implementation ppf str;
       let sg' = Typemod.Signature_names.simplify newenv sn sg in
       ignore (Includemod.signatures oldenv sg sg');
@@ -364,6 +365,8 @@ let preprocess_phrase ppf phr =
   if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;
   if !Clflags.dump_source then Pprintast.top_phrase ppf phr;
   phr
+
+let process_typed_phrase _ tstr = Tppx.process_all tstr
 
 let use_file ppf wrap_mod name =
   try

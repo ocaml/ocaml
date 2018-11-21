@@ -411,6 +411,11 @@ let mk_ppx f =
   "<command>  Pipe abstract syntax trees through preprocessor <command>"
 ;;
 
+let mk_tppx f =
+  "-tppx", Arg.String f,
+  "<command>  Pipe typed trees through preprocessor <command>"
+;;
+
 let mk_plugin f =
   "-plugin", Arg.String f,
   "<plugin>  Load dynamic plugin <plugin>"
@@ -856,6 +861,7 @@ module type Common_options = sig
   val _nopervasives : unit -> unit
   val _open : string -> unit
   val _ppx : string -> unit
+  val _tppx : string -> unit
   val _principal : unit -> unit
   val _no_principal : unit -> unit
   val _rectypes : unit -> unit
@@ -1131,6 +1137,7 @@ struct
     mk_pack_byt F._pack;
     mk_pp F._pp;
     mk_ppx F._ppx;
+    mk_tppx F._tppx;
     mk_plugin F._plugin;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
@@ -1203,6 +1210,7 @@ struct
     mk_nopervasives F._nopervasives;
     mk_open F._open;
     mk_ppx F._ppx;
+    mk_tppx F._tppx;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
@@ -1316,6 +1324,7 @@ struct
     mk_plugin F._plugin;
     mk_pp F._pp;
     mk_ppx F._ppx;
+    mk_tppx F._tppx;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
@@ -1431,6 +1440,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_o3 F._o3;
     mk_open F._open;
     mk_ppx F._ppx;
+    mk_tppx F._tppx;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
@@ -1512,6 +1522,7 @@ struct
     mk_open F._open;
     mk_pp F._pp;
     mk_ppx F._ppx;
+    mk_tppx F._tppx;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;

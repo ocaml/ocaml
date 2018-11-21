@@ -2463,6 +2463,11 @@ driver/pparse.cmx : utils/warnings.cmx utils/profile.cmx \
     parsing/location.cmx utils/config.cmx utils/clflags.cmx utils/ccomp.cmx \
     parsing/ast_mapper.cmx parsing/ast_invariants.cmx driver/pparse.cmi
 driver/pparse.cmi : parsing/parsetree.cmi utils/misc.cmi
+driver/tppx.cmo : typing/typedtree.cmi utils/misc.cmi parsing/location.cmi \
+    utils/config.cmi utils/clflags.cmi utils/ccomp.cmi driver/tppx.cmi
+driver/tppx.cmx : typing/typedtree.cmx utils/misc.cmx parsing/location.cmx \
+    utils/config.cmx utils/clflags.cmx utils/ccomp.cmx driver/tppx.cmi
+driver/tppx.cmi : typing/typedtree.cmi
 toplevel/expunge.cmo : bytecomp/symtable.cmi bytecomp/runtimedef.cmi \
     utils/misc.cmi typing/ident.cmi bytecomp/bytesections.cmi
 toplevel/expunge.cmx : bytecomp/symtable.cmx bytecomp/runtimedef.cmx \

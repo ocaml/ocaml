@@ -216,6 +216,7 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _open s = Clflags.open_modules := s :: !Clflags.open_modules
   let _pp s = Clflags.preprocessor := Some s
   let _ppx s = Clflags.all_ppx := s :: !Clflags.all_ppx
+  let _tppx s = Clflags.all_tppx := s :: !Clflags.all_tppx
   let _principal = set Clflags.principal
   let _no_principal = unset Clflags.principal
   let _rectypes = set Clflags.recursive_types

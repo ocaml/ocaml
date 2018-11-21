@@ -13,6 +13,40 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** The interface of a -tppx rewriter
+
+  A -tppx rewriter is a program that accepts a serialized typed tree
+  and outputs another, possibly modified, abstract syntax tree.
+  This module encapsulates the interface between the compiler and
+  the -tppx rewriters.
+
+  {!mapper} allows the implementation of AST rewriting using open
+  recursion. A typical mapper would be based on {!default_mapper},
+  a deep identity mapper, and will fall back on it for handling the
+  nodes it does not modify. For example:
+
+  {[
+open Asttypes
+open Typedtree
+open Tast_mapper
+
+let test_mapper argv =
+  { default_mapper with
+    expr = fun mapper expr ->
+      match expr with
+      | { pexp_desc = Pexp_extension ({ txt = "test" }, PStr [])} ->
+        Ast_helper.Exp.constant (Const_int 42)
+      | other -> default_mapper.expr mapper other; }
+
+let () =
+  register "tppx_test" test_mapper]}
+
+  This -tppx rewriter, which replaces any annotated number of type
+  [int] in expressions with the constant [42], can be compiled using
+  [ocamlc -o tppx_test -I +compiler-libs ocamlcommon.cma tppx_test.ml].
+
+  *)
+
 open Asttypes
 open Typedtree
 
@@ -68,3 +102,9 @@ type mapper =
 
 
 val default: mapper
+
+val register: string -> (string list -> mapper) -> unit
+
+(** Register a mapper. The first argument to [register] is a symbolic
+    name to be used by the tppx driver. The mapper function takes any
+    extra arguments as a list of strings.  *)

@@ -95,6 +95,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _plugin = option_with_arg "-plugin"
   let _pp _s = incompatible "-pp"
   let _ppx _s = incompatible "-ppx"
+  let _tppx _s = incompatible "-tppx"
   let _principal = option "-principal"
   let _no_principal = option "-no-principal"
   let _rectypes = option "-rectypes"

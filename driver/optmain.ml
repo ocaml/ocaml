@@ -171,6 +171,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _plugin p = Compplugin.load p
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
+  let _tppx s = first_tppx := s :: !first_tppx
   let _principal = set principal
   let _no_principal = clear principal
   let _rectypes = set recursive_types

@@ -692,6 +692,14 @@ let _ = add_directive "ppx"
           syntax tree through the preprocessor command.";
     }
 
+let _ = add_directive "tppx"
+    (Directive_string(fun s -> Clflags.all_tppx := s :: !Clflags.all_tppx))
+    {
+      section = section_options;
+      doc = "After parsing and typing, pipe \
+          the typed tree through the preprocessor command.";
+    }
+
 let _ = add_directive "warnings"
     (Directive_string (parse_warnings std_out false))
     {

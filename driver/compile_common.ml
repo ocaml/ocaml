@@ -116,6 +116,7 @@ let implementation ~tool_name ~native ~backend ~sourcefile ~outputprefix =
   let parsed = parse_impl info in
   if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
     let typed = typecheck_impl info parsed in
+    let typed = (Tppx.process_all (fst typed), snd typed) in
     if Clflags.(should_stop_after Compiler_pass.Typing) then () else begin
       let exceptionally () =
         List.iter (fun suf -> remove_file (suf info)) sufs;

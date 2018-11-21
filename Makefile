@@ -112,7 +112,7 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/meta.cmo bytecomp/opcodes.cmo \
   bytecomp/bytesections.cmo bytecomp/dll.cmo \
   bytecomp/symtable.cmo \
-  driver/pparse.cmo driver/main_args.cmo \
+  driver/pparse.cmo driver/tppx.cmo driver/main_args.cmo \
   driver/compenv.cmo driver/compmisc.cmo \
   driver/compdynlink_types.cmo driver/compdynlink_platform_intf.cmo \
   driver/compdynlink_common.cmo driver/compdynlink.cmo \

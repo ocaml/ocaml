@@ -722,3 +722,48 @@ let default =
     value_description;
     with_constraint;
   }
+
+let magic = Config.ast_impl_magic_number
+
+let typedtree_of_file fn =
+  let ic = open_in_bin fn in
+  ignore (really_input_string ic (String.length magic));
+  ignore (input_value ic : string);
+  let tstr = (input_value ic : Typedtree.structure) in
+    close_in ic;
+    tstr
+
+let typedtree_to_file fn tstr =
+  let oc = open_out_bin fn in
+  output_string oc (magic : string);
+  output_value oc (!Location.input_name : string);
+  output_value oc (tstr : Typedtree.structure);
+  close_out oc
+
+let really_apply ~source ~target mapper =
+  typedtree_to_file target (mapper.structure mapper (typedtree_of_file source))
+
+let run_main mapper =
+  try
+    let a = Sys.argv in
+    let n = Array.length a in
+    if n > 2 then
+      let mapper () =
+        try mapper (Array.to_list (Array.sub a 1 (n - 3)))
+        with exn ->
+          let f _ _ = raise exn in
+            {default with structure = f}
+      in
+        really_apply ~source:a.(n - 2) ~target:a.(n - 1) (mapper ())
+    else begin
+      Printf.eprintf "Usage: %s [extra_args] <infile> <outfile>\n%!"
+                     Sys.executable_name;
+      exit 2
+    end
+  with exn ->
+    prerr_endline (Printexc.to_string exn);
+    exit 2
+
+let register_function = ref (fun _name f -> run_main f)
+let register name f = !register_function name f
+

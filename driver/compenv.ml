@@ -54,6 +54,8 @@ let first_ccopts = ref []
 let last_ccopts = ref []
 let first_ppx = ref []
 let last_ppx = ref []
+let first_tppx = ref []
+let last_tppx = ref []
 let first_objfiles = ref []
 let last_objfiles = ref []
 
@@ -396,6 +398,14 @@ let read_one_param ppf position name v =
         first_ppx := v :: !first_ppx
     end
 
+  | "tppx" ->
+    begin
+      match position with
+      | Before_link | Before_compile _ ->
+        last_tppx := v :: !last_tppx
+      | Before_args ->
+        first_tppx := v :: !first_tppx
+    end
 
   | "cmo" | "cma" ->
     if not !native_code then
@@ -560,11 +570,13 @@ let readenv ppf position =
   last_include_dirs := [];
   last_ccopts := [];
   last_ppx := [];
+  last_tppx := [];
   last_objfiles := [];
   apply_config_file ppf position;
   read_OCAMLPARAM ppf position;
   all_ccopts := !last_ccopts @ !first_ccopts;
-  all_ppx := !last_ppx @ !first_ppx
+  all_ppx := !last_ppx @ !first_ppx;
+  all_tppx := !last_tppx @ !first_tppx
 
 let get_objfiles ~with_ocamlparam =
   if with_ocamlparam then

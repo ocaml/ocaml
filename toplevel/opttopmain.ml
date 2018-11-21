@@ -191,6 +191,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _nostdlib = set no_std_include
   let _nopervasives = set nopervasives
   let _ppx s = Compenv.first_ppx := s :: !Compenv.first_ppx
+  let _tppx s = Compenv.first_tppx := s :: !Compenv.first_tppx
   let _principal = set principal
   let _no_principal = clear principal
   let _real_paths = set real_paths
