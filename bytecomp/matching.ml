@@ -598,12 +598,15 @@ let simplify_cases args cls = match args with
       | ((pat :: patl, action) as cl) :: rem ->
           begin match pat.pat_desc with
           | Tpat_var (id, _) ->
-              (omega :: patl, bind Alias id arg action) ::
+              let k = Typeopt.value_kind pat.pat_env pat.pat_type in
+              (omega :: patl, bind_with_value_kind Alias (id, k) arg action) ::
               simplify rem
           | Tpat_any ->
               cl :: simplify rem
           | Tpat_alias(p, id,_) ->
-              simplify ((p :: patl, bind Alias id arg action) :: rem)
+              let k = Typeopt.value_kind pat.pat_env pat.pat_type in
+              simplify ((p :: patl,
+                         bind_with_value_kind Alias (id, k) arg action) :: rem)
           | Tpat_record ([],_) ->
               (omega :: patl, action)::
               simplify rem
