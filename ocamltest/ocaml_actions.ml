@@ -1106,6 +1106,12 @@ let shared_libraries = Actions.make
     "Shared libraries are supported."
     "Shared libraries are not supported.")
 
+let no_shared_libraries = Actions.make
+  "no-shared-libraries"
+  (Actions_helpers.pass_or_skip (not Ocamltest_config.shared_libraries)
+    "Shared libraries are not supported."
+    "Shared libraries are supported.")
+
 let native_compiler = Actions.make
   "native-compiler"
   (Actions_helpers.pass_or_skip (Ocamltest_config.arch <> "none")
@@ -1335,6 +1341,7 @@ let _ =
     spacetime;
     no_spacetime;
     shared_libraries;
+    no_shared_libraries;
     native_compiler;
     native_dynlink;
     debugger;
