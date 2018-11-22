@@ -597,6 +597,15 @@ chapter~\ref{c:parsinglib}:
 \else section~\ref{Ast-underscoremapper}\fi,
 implements the external interface of a preprocessor.
 
+\item["-tppx" \var{command}]
+Pipe typed trees through preprocessor \var{command}.
+The module "Tast_mapper", described in
+\ifouthtml
+chapter~\ref{c:parsinglib}:
+\ahref{libref/Tast\_mapper.html}{ \texttt{Tast_mapper} }
+\else section~\ref{Tast-underscoremapper}\fi,
+implements the external interface of a typed preprocessor.
+
 \item["-principal"]
 Check information path during type-checking, to make sure that all
 types are derived in a principal way.  When using labelled arguments

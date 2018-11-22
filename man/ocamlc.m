@@ -610,6 +610,13 @@ The module
 .BR Ast_mapper (3)
 implements the external interface of a preprocessor.
 .TP
+.BI \-tppx \ command
+After typing, pipe the typedtree tree through the preprocessor
+.IR command .
+The module
+.BR Tast_mapper (3)
+implements the external interface of a typed preprocessor.
+.TP
 .B \-principal
 Check information path during type-checking, to make sure that all
 types are derived in a principal way.  When using labelled arguments

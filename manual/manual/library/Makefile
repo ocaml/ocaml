@@ -25,7 +25,7 @@ STDLIB_INTF = $(STDLIB_MODs:%=%.tex)
 
 COMPILER_LIBS_PLUGIN_HOOKS = Pparse.tex Typemod.tex
 
-COMPILER_LIBS_INTF = Asthelper.tex Astmapper.tex Asttypes.tex \
+COMPILER_LIBS_INTF = Asthelper.tex Astmapper.tex Tastmapper.tex Asttypes.tex \
   Lexer.tex Location.tex Longident.tex Parse.tex Pprintast.tex Printast.tex \
   $(COMPILER_LIBS_PLUGIN_HOOKS)
 
@@ -66,6 +66,7 @@ ocamldoc.out: $(DOC_ALL)
 	  -latex-value-prefix ""
 	mv Ast_helper.tex Asthelper.tex
 	mv Ast_mapper.tex Astmapper.tex
+	mv Tast_mapper.tex Tastmapper.tex
 	mv Ocaml_operators.tex Ocamloperators.tex
 
 %.tex: %.etex
