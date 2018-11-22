@@ -527,7 +527,9 @@ and to_clambda_set_of_closures t env
     in
     { label = Compilenv.function_label closure_id;
       arity = Flambda_utils.function_arity function_decl;
-      params = List.map (fun var -> VP.create var) (params @ [env_var]);
+      params =
+        List.map (fun var -> VP.create var, Lambda.Pgenval) (params @ [env_var]);
+      return = Lambda.Pgenval;
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
       env = Some env_var;
@@ -567,7 +569,8 @@ and to_clambda_closed_set_of_closures t env symbol
     in
     { label = Compilenv.function_label (Closure_id.wrap id);
       arity = Flambda_utils.function_arity function_decl;
-      params = List.map (fun var -> VP.create var) params;
+      params = List.map (fun var -> VP.create var, Lambda.Pgenval) params;
+      return = Lambda.Pgenval;
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
       env = None;

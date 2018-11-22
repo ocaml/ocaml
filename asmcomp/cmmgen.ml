@@ -2959,7 +2959,7 @@ let transl_function ~ppf_dump f =
       [ Reduce_code_size ]
   in
   Cfunction {fun_name = f.label;
-             fun_args = List.map (fun id -> (id, typ_val)) f.params;
+             fun_args = List.map (fun (id, _) -> (id, typ_val)) f.params;
              fun_body = cmm_body;
              fun_codegen_options;
              fun_dbg  = f.dbg}

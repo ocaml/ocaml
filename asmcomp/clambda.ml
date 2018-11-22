@@ -78,7 +78,8 @@ and ulambda =
 and ufunction = {
   label  : function_label;
   arity  : int;
-  params : Backend_var.With_provenance.t list;
+  params : (Backend_var.With_provenance.t * value_kind) list;
+  return : value_kind;
   body   : ulambda;
   dbg    : Debuginfo.t;
   env    : Backend_var.t option;
