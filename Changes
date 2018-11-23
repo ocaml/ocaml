@@ -180,6 +180,10 @@ Working version
 - GPR#1936: Add module Float.Array
   (Damien Doligez, review by Xavier Clerc and Alain Frisch)
 
+- GPR#2002: Add Format.pp_print_custom_break, a new more general kind of break
+  hint that can emit non-whitespace characters.
+  (Vladimir Keleshev and Pierre Weis, review by Josh Berdine, Gabriel Radanne)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
