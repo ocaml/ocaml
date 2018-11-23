@@ -30,3 +30,7 @@ module type Rejected3 = sig
   type t3 := int
   and u3 = char
 end;;
+
+module type Rejected0 = sig
+  type nonrec t := int
+end;;

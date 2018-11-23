@@ -87,13 +87,21 @@ val find_constructor_address: Path.t -> t -> address
 
 val add_functor_arg: Ident.t -> t -> t
 val is_functor_arg: Path.t -> t -> bool
-val normalize_path: Location.t option -> t -> Path.t -> Path.t
-(* Normalize the path to a concrete value or module.
+
+val normalize_module_path: Location.t option -> t -> Path.t -> Path.t
+(* Normalize the path to a concrete module.
    If the option is None, allow returning dangling paths.
    Otherwise raise a Missing_module error, and may add forgotten
    head as required global. *)
+
+val normalize_type_path: Location.t option -> t -> Path.t -> Path.t
+(* Normalize the prefix part of the type path *)
+
 val normalize_path_prefix: Location.t option -> t -> Path.t -> Path.t
-(* Only normalize the prefix part of the path *)
+(* Normalize the prefix part of other kinds of paths
+   (value/modtype/etc) *)
+
+
 val reset_required_globals: unit -> unit
 val get_required_globals: unit -> Ident.t list
 val add_required_global: Ident.t -> unit

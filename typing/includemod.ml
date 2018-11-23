@@ -264,14 +264,16 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
       if Env.is_functor_arg p2 env then
         raise (Error[cxt, env, Invalid_module_alias p2]);
       if not (Path.same p1 p2) then begin
-        let p1 = Env.normalize_path None env p1
-        and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
+        let p1 = Env.normalize_module_path None env p1
+        and p2 = Env.normalize_module_path None env
+            (Subst.module_path subst p2)
+        in
         if not (Path.same p1 p2) then raise Dont_match
       end;
       Tcoerce_none
   | (Mty_alias p1, _) -> begin
       let p1 = try
-        Env.normalize_path (Some Location.none) env p1
+        Env.normalize_module_path (Some Location.none) env p1
       with Env.Error (Env.Missing_module (_, _, path)) ->
         raise (Error[cxt, env, Unbound_module_path path])
       in

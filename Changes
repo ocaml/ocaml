@@ -471,8 +471,9 @@ Working version
 ### Internal/compiler-libs changes:
 
 - GPR#292: use Menhir as the parser generator for the OCaml parser.
-  Satellite GPRs: GPR#1844, GPR#1846, GPR#1853, GPR#1850, GPR#1934
-  (Gabriel Scherer, Nicolás Ojeda Bär, Frédéric Bour and Thomas Refis,
+  Satellite GPRs: GPR#1844, GPR#1846, GPR#1853, GPR#1850, GPR#1934, GPR#2151
+  (Gabriel Scherer, Nicolás Ojeda Bär, Frédéric Bour, Thomas Refis
+   and François Pottier,
    review by Nicolás Ojeda Bär, Leo White and David Allsopp)
 
 - GPR#374: use Misc.try_finally for resource cleanup in the compiler
@@ -681,6 +682,9 @@ Working version
 - GPR#2130: fix printing of type variables with a quote in their name
   (Alain Frisch, review by Armaël Guéneau and Gabriel Scherer,
   report by Hugo Heuzard)
+
+- GPR#2131: fix wrong calls to Env.normalize_path on non-module paths
+  (Alain Frisch, review by Jacques Garrigue)
 
 
 OCaml 4.07.1 (4 October 2018)

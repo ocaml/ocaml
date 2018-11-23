@@ -1318,7 +1318,7 @@ beforedepend:: bytecomp/opcodes.ml
 
 # Testing the parser -- see parsing/HACKING.adoc
 
-SOURCE_FILES=$(shell git ls-files '*.ml' '*.mli')
+SOURCE_FILES=$(shell git ls-files '*.ml' '*.mli' | grep -v boot/menhir/parser)
 
 AST_FILES=$(addsuffix .ast,$(SOURCE_FILES))
 
