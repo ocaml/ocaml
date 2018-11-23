@@ -915,7 +915,7 @@ and transl_match e arg pat_expr_list partial =
     Lstaticcatch
       (Ltrywith (Lstaticraise (static_exception_id, body), id,
                  Matching.for_trywith (Lvar id) exn_cases),
-       (static_exception_id, (List.map (fun id -> id, Pgenval) val_ids)),
+       (static_exception_id, val_ids),
        handler)
   in
   let classic =
@@ -924,17 +924,25 @@ and transl_match e arg pat_expr_list partial =
       assert (static_handlers = []);
       Matching.for_multiple_match e.exp_loc (transl_list argl) val_cases partial
     | {exp_desc = Texp_tuple argl}, _ :: _ ->
-      let val_ids = List.map (fun _ -> Typecore.name_pattern "val" []) argl in
-      let lvars = List.map (fun id -> Lvar id) val_ids in
-      static_catch (transl_list argl) val_ids
-        (Matching.for_multiple_match e.exp_loc lvars val_cases partial)
+        let val_ids =
+          List.map
+            (fun arg ->
+               Typecore.name_pattern "val" [],
+               Typeopt.value_kind arg.exp_env arg.exp_type
+            )
+            argl
+        in
+        let lvars = List.map (fun (id, _) -> Lvar id) val_ids in
+        static_catch (transl_list argl) val_ids
+          (Matching.for_multiple_match e.exp_loc lvars val_cases partial)
     | arg, [] ->
       assert (static_handlers = []);
       Matching.for_function e.exp_loc None (transl_exp arg) val_cases partial
     | arg, _ :: _ ->
-      let val_id = Typecore.name_cases "val" pat_expr_list in
-      static_catch [transl_exp arg] [val_id]
-        (Matching.for_function e.exp_loc None (Lvar val_id) val_cases partial)
+        let val_id = Typecore.name_cases "val" pat_expr_list in
+        let k = Typeopt.value_kind arg.exp_env arg.exp_type in
+        static_catch [transl_exp arg] [val_id, k]
+          (Matching.for_function e.exp_loc None (Lvar val_id) val_cases partial)
   in
   List.fold_left (fun body (static_exception_id, val_ids, handler) ->
     Lstaticcatch (body, (static_exception_id, val_ids), handler)
