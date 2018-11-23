@@ -585,9 +585,9 @@ Working version
   [Proc.stack_ptr_dwarf_register_number].
   (Mark Shinwell, review by Bernhard Schommer)
 
-- GPR#2152: refactorize the fixpoint to compute type-system properties
-  of mutually-recursive type declarations.
-  (Gabriel Scherer, review by Armaël Guéneau)
+- GPR#2152, GPR#2517: refactorize the fixpoint to compute type-system
+  properties of mutually-recursive type declarations.
+  (Gabriel Scherer and Rodolphe Lepigre, review by Armaël Guéneau)
 
 ### Bug fixes:
 
