@@ -13,13 +13,25 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* LZCNT instruction is not avialble on Intel Architecures prior to Haswell.
+
+   Important: lzcnt assembles to bsr on architectures prior to Haswell.  Code
+   that uses lzcnt will run on older Intels and silently produce wrong
+   results.
+
+   This is a placehold. Replace with architecture-specific logic in
+   command-line options and cpuid checking. *)
+let lzcnt_support = ref false
+
 (* Machine-specific command-line options *)
 
 let command_line_options =
   [ "-fPIC", Arg.Set Clflags.pic_code,
       " Generate position-independent machine code (default)";
     "-fno-PIC", Arg.Clear Clflags.pic_code,
-      " Generate position-dependent machine code" ]
+      " Generate position-dependent machine code";
+    "-flzcnt", Arg.Set lzcnt_support,
+      " Use lzcnt instruction to count leading zeros" ]
 
 (* Specific operations for the AMD64 processor *)
 
@@ -44,6 +56,8 @@ type specific_operation =
   | Ifloatsqrtf of addressing_mode     (* Float square root from memory *)
   | Isextend32                         (* 32 to 64 bit conversion with sign
                                           extension *)
+  | Ilzcnt                             (* count leading zeros instruction *)
+
 and float_operation =
     Ifloatadd | Ifloatsub | Ifloatmul | Ifloatdiv
 
@@ -130,6 +144,8 @@ let print_specific_operation printreg op ppf arg =
       fprintf ppf "bswap_%i %a" i printreg arg.(0)
   | Isextend32 ->
       fprintf ppf "sextend32 %a" printreg arg.(0)
+  | Ilzcnt ->
+      fprintf ppf "lzcnt %a" printreg arg.(0)
 
 let win64 =
   match Config.system with
