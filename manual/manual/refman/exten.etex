@@ -2505,7 +2505,7 @@ Another possibility is to immediately open the result of a functor application
     elements (of_list x)
 \end{caml_example}
 
-Going further, this construction can introduce private components inside a
+Going further, this construction can introduce local components inside a
 structure,
 
 \begin{caml_example}{verbatim}
@@ -2519,22 +2519,28 @@ module M = struct
 end
 \end{caml_example}
 
-One important limitation of those extended opens is that they should not generate
-new unnamed types that are visible from the outside world:
+One important restriction is that types introduced by @'open' 'struct' ...
+'end'@ cannot appear in the signature of the enclosing structure, unless they
+are defined equal to some non-local type.
+So:
+
+\begin{caml_example}{verbatim}
+module M = struct
+  open struct type 'a t = 'a option = None | Some of 'a end
+  let x : int t = Some 1
+end
+\end{caml_example}
+is OK, but:
 
 \begin{caml_example}{verbatim}[error]
 module M = struct
-  open struct
-    type t = A
-  end
-  [@@@ellipsis]
+  open struct type t = A end
   let x = A
-  [@@@ellipsis]
 end
 \end{caml_example}
+is not because "x" cannot be given any type other than "t", which only exists
+locally. Although the above would be OK if "x" too was local:
 
-In the case above, exposing the value "x" is problematic because its type, "t",
-is private. This value should be kept private too with
 \begin{caml_example}{verbatim}
 module M: sig end = struct
   open struct
@@ -2559,7 +2565,7 @@ end
 and not
 
 \begin{verbatim}
-  open sig type t = int end
+  open struct type t = int end
 \end{verbatim}
 
 In those situations, local substitutions(see \ref{ss:local-substitution})
