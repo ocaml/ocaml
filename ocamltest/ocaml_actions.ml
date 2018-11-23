@@ -177,6 +177,23 @@ let get_program_file backend env =
 
 let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C
 
+let cmas_need_dynamic_loading directories libraries =
+  let loads_c_code library =
+    let library = Misc.find_in_path directories library in
+    let ic = open_in_bin library in
+    let len_magic_number = String.length Config.cma_magic_number in
+    let magic_number = really_input_string ic len_magic_number in
+    if magic_number = Config.cma_magic_number then
+      let toc_pos = input_binary_int ic in
+      seek_in ic toc_pos;
+      let toc = (input_value ic : Cmo_format.library) in
+      close_in ic;
+      toc.Cmo_format.lib_dllibs <> []
+    else
+      assert false (* How have non-cma files ended up on the libraries? *)
+  in
+  List.exists loads_c_code (String.words libraries)
+
 let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let program_variable = compiler#program_variable in
   let program_file = Environments.safe_lookup program_variable env in
@@ -204,15 +221,22 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
     if compile_only then " -c " else ""
   in
   let output = if compile_only then "" else "-o " ^ program_file in
+  let libraries = libraries compiler#target env in
+  let bytecode_links_c_code =
+    not Config.supports_shared_libraries &&
+    compiler#target = Ocaml_backends.Bytecode &&
+    cmas_need_dynamic_loading (directories env) libraries
+  in
   let commandline =
   [
     compiler#name ocamlsrcdir;
-    Ocaml_flags.runtime_flags ocamlsrcdir env compiler#target has_c_file;
+    Ocaml_flags.runtime_flags ocamlsrcdir env compiler#target
+                              (has_c_file || bytecode_links_c_code);
     c_headers_flags;
     Ocaml_flags.stdlib ocamlsrcdir;
     directory_flags env;
     flags env;
-    libraries compiler#target env;
+    libraries;
     backend_default_flags env compiler#target;
     backend_flags env compiler#target;
     compile_flags;
