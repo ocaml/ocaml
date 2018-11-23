@@ -1,0 +1,5 @@
+File "_none_", line 1:
+Alert deprecated: The -vmthread argument of ocamlc is deprecated
+since OCaml 4.08.0.  Please switch to system threads, which have the
+same API. Lightweight threads with VM-level scheduling are provided by
+third-party libraries such as Lwt, but with a different API.
