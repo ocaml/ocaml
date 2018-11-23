@@ -1913,7 +1913,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
         Tstr_value(rec_flag, defs),
-        List.map (fun (id, { Asttypes.loc; _ })->
+        List.map (fun (id, { Asttypes.loc; _ }, _typ)->
           Signature_names.check_value names loc id;
           Sig_value(id, Env.find_value (Pident id) newenv)
         ) (let_bound_idents_with_loc defs),

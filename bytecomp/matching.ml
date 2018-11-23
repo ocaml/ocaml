@@ -392,7 +392,9 @@ type pattern_matching =
 
 type pm_or_compiled =
   {body : pattern_matching ;
-   handlers : (matrix * int * Ident.t list * pattern_matching) list ;
+   handlers :
+     (matrix * int * (Ident.t * Lambda.value_kind) list * pattern_matching)
+       list;
    or_matrix : matrix ; }
 
 type pm_half_compiled =
@@ -596,12 +598,15 @@ let simplify_cases args cls = match args with
       | ((pat :: patl, action) as cl) :: rem ->
           begin match pat.pat_desc with
           | Tpat_var (id, _) ->
-              (omega :: patl, bind Alias id arg action) ::
+              let k = Typeopt.value_kind pat.pat_env pat.pat_type in
+              (omega :: patl, bind_with_value_kind Alias (id, k) arg action) ::
               simplify rem
           | Tpat_any ->
               cl :: simplify rem
           | Tpat_alias(p, id,_) ->
-              simplify ((p :: patl, bind Alias id arg action) :: rem)
+              let k = Typeopt.value_kind pat.pat_env pat.pat_type in
+              simplify ((p :: patl,
+                         bind_with_value_kind Alias (id, k) arg action) :: rem)
           | Tpat_record ([],_) ->
               (omega :: patl, action)::
               simplify rem
@@ -664,25 +669,6 @@ let default_compat p def =
     def []
 
 (* Or-pattern expansion, variables are a complication w.r.t. the article *)
-let rec extract_vars r p = match p.pat_desc with
-| Tpat_var (id, _) -> Ident.Set.add id r
-| Tpat_alias (p, id,_ ) ->
-    extract_vars (Ident.Set.add id r) p
-| Tpat_tuple pats ->
-    List.fold_left extract_vars r pats
-| Tpat_record (lpats,_) ->
-    List.fold_left
-      (fun r (_, _, p) -> extract_vars r p)
-      r lpats
-| Tpat_construct (_, _, pats) ->
-    List.fold_left extract_vars r pats
-| Tpat_array pats ->
-    List.fold_left extract_vars r pats
-| Tpat_variant (_,Some p, _) -> extract_vars r p
-| Tpat_lazy p -> extract_vars r p
-| Tpat_or (p,_,_) -> extract_vars r p
-| Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> r
-| Tpat_exception _ -> assert false
 
 exception Cannot_flatten
 
@@ -834,8 +820,8 @@ let insert_or_append p ps act ors no =
         if is_or q then begin
           if may_compat p q then
             if
-              Ident.Set.is_empty (extract_vars Ident.Set.empty p) &&
-              Ident.Set.is_empty (extract_vars Ident.Set.empty q) &&
+              Typedtree.pat_bound_idents p = [] &&
+              Typedtree.pat_bound_idents q = [] &&
               equiv_pat p q
             then (* attempt insert, for equivalent orpats with no variables *)
               let _, not_e = get_equiv q rem in
@@ -1129,12 +1115,13 @@ and precompile_or argo cls ors args def k = match ors with
                   | _ -> assert false)
                 others ;
               args = (match args with _::r -> r | _ -> assert false) ;
-              default = default_compat orp def} in
+             default = default_compat orp def} in
+          let pm_fv = pm_free_variables orpm in
           let vars =
-            Ident.Set.elements
-              (Ident.Set.inter
-                 (extract_vars Ident.Set.empty orp)
-                 (pm_free_variables orpm)) in
+            Typedtree.pat_bound_idents_full orp
+            |> List.filter (fun (id, _, _) -> Ident.Set.mem id pm_fv)
+            |> List.map (fun (id,_,ty) -> id,Typeopt.value_kind orp.pat_env ty)
+          in
           let or_num = next_raise_count () in
           let new_patl = Parmatch.omega_list patl in
 
@@ -1144,7 +1131,7 @@ and precompile_or argo cls ors args def k = match ors with
 
           let body,handlers = do_cases rem in
           explode_or_pat
-            argo new_patl mk_new_action body vars [] orp,
+            argo new_patl mk_new_action body (List.map fst vars) [] orp,
           let mat = [[orp]] in
           ((mat, or_num, vars , orpm):: handlers)
       | cl::rem ->
@@ -2573,7 +2560,8 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
           match raw_action r with
           | Lstaticraise (j,args) ->
               if i=j then
-                List.fold_right2 (bind Alias) vars args handler_i,
+                List.fold_right2 (bind_with_value_kind Alias)
+                  vars args handler_i,
                 jumps_map (ctx_rshift_num (ncols mat)) total_i
               else
                 do_rec r total_r rem
@@ -3084,9 +3072,14 @@ let for_let loc param pat body =
   | _ ->
       let opt = ref false in
       let nraise = next_raise_count () in
-      let catch_ids = pat_bound_idents pat in
-      let bind = map_return (assign_pat opt nraise catch_ids loc pat) param in
-      if !opt then Lstaticcatch(bind, (nraise, catch_ids), body)
+      let catch_ids = pat_bound_idents_full pat in
+      let ids_with_kinds =
+        List.map (fun (id, _, typ) -> id, Typeopt.value_kind pat.pat_env typ)
+          catch_ids
+      in
+      let ids = List.map (fun (id, _, _) -> id) catch_ids in
+      let bind = map_return (assign_pat opt nraise ids loc pat) param in
+      if !opt then Lstaticcatch(bind, (nraise, ids_with_kinds), body)
       else simple_for_let loc param pat body
 
 (* Handling of tupled functions and matchings *)

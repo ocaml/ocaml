@@ -697,7 +697,7 @@ val let_bound_idents: value_binding list -> Ident.t list
 val rev_let_bound_idents: value_binding list -> Ident.t list
 
 val let_bound_idents_with_loc:
-    value_binding list -> (Ident.t * string loc) list
+    value_binding list -> (Ident.t * string loc * type_expr) list
 
 (** Alpha conversion of patterns *)
 val alpha_pat: (Ident.t * Ident.t) list -> pattern -> pattern
@@ -706,7 +706,8 @@ val mknoloc: 'a -> 'a Asttypes.loc
 val mkloc: 'a -> Location.t -> 'a Asttypes.loc
 
 val pat_bound_idents: pattern -> Ident.t list
-val pat_bound_idents_with_loc: pattern -> (Ident.t * string loc) list
+val pat_bound_idents_full:
+  pattern -> (Ident.t * string loc * type_expr) list
 
 (** Splits an or pattern into its value (left) and exception (right) parts. *)
 val split_pattern : pattern -> pattern option * pattern option

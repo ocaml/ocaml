@@ -260,7 +260,7 @@ type lambda =
   | Lstringswitch of
       lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
-  | Lstaticcatch of lambda * (int * Ident.t list) * lambda
+  | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -273,7 +273,8 @@ type lambda =
 
 and lfunction =
   { kind: function_kind;
-    params: Ident.t list;
+    params: (Ident.t * value_kind) list;
+    return: value_kind;
     body: lambda;
     attr: function_attribute; (* specified with [@inline] attribute *)
     loc : Location.t; }
@@ -362,6 +363,8 @@ val rename : Ident.t Ident.Map.t -> lambda -> lambda
 
 val map : (lambda -> lambda) -> lambda -> lambda
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
+val bind_with_value_kind:
+  let_kind -> (Ident.t * value_kind) -> lambda -> lambda -> lambda
 
 val negate_integer_comparison : integer_comparison -> integer_comparison
 val swap_integer_comparison : integer_comparison -> integer_comparison

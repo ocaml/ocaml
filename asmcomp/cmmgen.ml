@@ -1969,7 +1969,7 @@ let rec transl env e =
       (* CR-someday mshinwell: consider how we can do better than
          [typ_val] when appropriate. *)
       let ids_with_types =
-        List.map (fun i -> (i, Cmm.typ_val)) ids in
+        List.map (fun (i, _) -> (i, Cmm.typ_val)) ids in
       ccatch(nfail, ids_with_types, transl env body, transl env handler)
   | Utrywith(body, exn, handler) ->
       Ctrywith(transl env body, exn, transl env handler)
@@ -2910,7 +2910,7 @@ let transl_function ~ppf_dump f =
       [ Reduce_code_size ]
   in
   Cfunction {fun_name = f.label;
-             fun_args = List.map (fun id -> (id, typ_val)) f.params;
+             fun_args = List.map (fun (id, _) -> (id, typ_val)) f.params;
              fun_body = cmm_body;
              fun_codegen_options;
              fun_dbg  = f.dbg}

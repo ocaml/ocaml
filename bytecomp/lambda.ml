@@ -276,7 +276,7 @@ type lambda =
   | Lstringswitch of
       lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
-  | Lstaticcatch of lambda * (int * Ident.t list) * lambda
+  | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
@@ -289,7 +289,8 @@ type lambda =
 
 and lfunction =
   { kind: function_kind;
-    params: Ident.t list;
+    params: (Ident.t * value_kind) list;
+    return: value_kind;
     body: lambda;
     attr: function_attribute; (* specified with [@inline] attribute *)
     loc: Location.t; }
@@ -508,7 +509,7 @@ let rec free_variables = function
       free_variables_list (free_variables fn) args
   | Lfunction{body; params} ->
       Ident.Set.diff (free_variables body)
-        (Ident.Set.of_list params)
+        (Ident.Set.of_list (List.map fst params))
   | Llet(_str, _k, id, arg, body) ->
       Ident.Set.union
         (free_variables arg)
@@ -544,7 +545,7 @@ let rec free_variables = function
       Ident.Set.union
         (Ident.Set.diff
            (free_variables handler)
-           (Ident.Set.of_list params))
+           (Ident.Set.of_list (List.map fst params)))
         (free_variables body)
   | Ltrywith(body, param, handler) ->
       Ident.Set.union
@@ -647,7 +648,7 @@ let rec make_sequence fn = function
 let subst update_env s lam =
   let rec subst s lam =
     let remove_list l s =
-      List.fold_left (fun s id -> Ident.Map.remove id s) s l
+      List.fold_left (fun s (id, _kind) -> Ident.Map.remove id s) s l
     in
     let module M = Ident.Map in
     match lam with
@@ -657,9 +658,13 @@ let subst update_env s lam =
     | Lapply ap ->
         Lapply{ap with ap_func = subst s ap.ap_func;
                       ap_args = subst_list s ap.ap_args}
-    | Lfunction{kind; params; body; attr; loc} ->
-        let s = List.fold_right Ident.Map.remove params s in
-        Lfunction{kind; params; body = subst s body; attr; loc}
+    | Lfunction lf ->
+        let s =
+          List.fold_right
+            (fun (id, _) s -> Ident.Map.remove id s)
+            lf.params s
+        in
+        Lfunction {lf with body = subst s lf.body}
     | Llet(str, k, id, arg, body) ->
         Llet(str, k, id, subst s arg, subst (Ident.Map.remove id s) body)
     | Lletrec(decl, body) ->
@@ -738,8 +743,8 @@ let rec map f lam =
           ap_inlined;
           ap_specialised;
         }
-    | Lfunction { kind; params; body; attr; loc; } ->
-        Lfunction { kind; params; body = map f body; attr; loc; }
+    | Lfunction { kind; params; return; body; attr; loc; } ->
+        Lfunction { kind; params; return; body = map f body; attr; loc; }
     | Llet (str, k, v, e1, e2) ->
         Llet (str, k, v, map f e1, map f e2)
     | Lletrec (idel, e2) ->
@@ -788,10 +793,13 @@ let rec map f lam =
 
 (* To let-bind expressions to variables *)
 
-let bind str var exp body =
+let bind_with_value_kind str (var, kind) exp body =
   match exp with
     Lvar var' when Ident.same var var' -> body
-  | _ -> Llet(str, Pgenval, var, exp, body)
+  | _ -> Llet(str, kind, var, exp, body)
+
+let bind str var exp body =
+  bind_with_value_kind str (var, Pgenval) exp body
 
 let negate_integer_comparison = function
   | Ceq -> Cne

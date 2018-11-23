@@ -606,19 +606,19 @@ let map_pattern_desc f d =
 
 (* List the identifiers bound by a pattern or a let *)
 
-let idents = ref([]: (Ident.t * string loc) list)
+let idents = ref([]: (Ident.t * string loc * Types.type_expr) list)
 
 let rec bound_idents pat =
   match pat.pat_desc with
-  | Tpat_var (id,s) -> idents := (id,s) :: !idents
-  | Tpat_alias(p, id, s ) ->
-      bound_idents p; idents := (id,s) :: !idents
+  | Tpat_var (id,s) -> idents := (id,s,pat.pat_type) :: !idents
+  | Tpat_alias(p, id, s) ->
+      bound_idents p; idents := (id,s,pat.pat_type) :: !idents
   | Tpat_or(p1, _, _) ->
       (* Invariant : both arguments binds the same variables *)
       bound_idents p1
   | d -> iter_pattern_desc bound_idents d
 
-let pat_bound_idents_with_loc pat =
+let pat_bound_idents_full pat =
   idents := [];
   bound_idents pat;
   let res = !idents in
@@ -626,7 +626,7 @@ let pat_bound_idents_with_loc pat =
   res
 
 let pat_bound_idents pat =
-  List.map fst (pat_bound_idents_with_loc pat)
+  List.map (fun (id,_,_) -> id) (pat_bound_idents_full pat)
 
 let rev_let_bound_idents_with_loc bindings =
   idents := [];
@@ -636,8 +636,11 @@ let rev_let_bound_idents_with_loc bindings =
 let let_bound_idents_with_loc pat_expr_list =
   List.rev(rev_let_bound_idents_with_loc pat_expr_list)
 
-let rev_let_bound_idents pat = List.map fst (rev_let_bound_idents_with_loc pat)
-let let_bound_idents pat = List.map  fst (let_bound_idents_with_loc pat)
+let rev_let_bound_idents pat =
+  List.map (fun (id,_,_) -> id) (rev_let_bound_idents_with_loc pat)
+
+let let_bound_idents pat =
+  List.map (fun (id,_,_) -> id) (let_bound_idents_with_loc pat)
 
 let alpha_var env id = List.assoc id env
 

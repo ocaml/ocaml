@@ -206,8 +206,8 @@ let simplify_exits lam =
   | Lapply ap ->
       Lapply{ap with ap_func = simplif ap.ap_func;
                      ap_args = List.map simplif ap.ap_args}
-  | Lfunction{kind; params; body = l; attr; loc} ->
-     Lfunction{kind; params; body = simplif l; attr; loc}
+  | Lfunction{kind; params; return; body = l; attr; loc} ->
+     Lfunction{kind; params; return; body = simplif l; attr; loc}
   | Llet(str, kind, v, l1, l2) -> Llet(str, kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
@@ -263,10 +263,14 @@ let simplify_exits lam =
       let ls = List.map simplif ls in
       begin try
         let xs,handler =  Hashtbl.find subst i in
-        let ys = List.map Ident.rename xs in
-        let env = List.fold_right2 Ident.Map.add xs ys Ident.Map.empty in
+        let ys = List.map (fun (x, k) -> Ident.rename x, k) xs in
+        let env =
+          List.fold_right2
+            (fun (x, _) (y, _) env -> Ident.Map.add x y env)
+            xs ys Ident.Map.empty
+        in
         List.fold_right2
-          (fun y l r -> Llet (Alias, Pgenval, y, l, r))
+          (fun (y, kind) l r -> Llet (Alias, kind, y, l, r))
           ys ls (Lambda.rename env handler)
       with
       | Not_found -> Lstaticraise (i,ls)
@@ -314,7 +318,7 @@ let simplify_exits lam =
 *)
 
 let beta_reduce params body args =
-  List.fold_left2 (fun l param arg -> Llet(Strict, Pgenval, param, arg, l))
+  List.fold_left2 (fun l (param, kind) arg -> Llet(Strict, kind, param, arg, l))
                   body params args
 
 (* Simplification of lets *)
@@ -470,13 +474,18 @@ let simplify_lets lam =
       simplif (beta_reduce params body args)
   | Lapply ap -> Lapply {ap with ap_func = simplif ap.ap_func;
                                  ap_args = List.map simplif ap.ap_args}
-  | Lfunction{kind; params; body = l; attr; loc} ->
+  | Lfunction{kind; params; return=return1; body = l; attr; loc} ->
       begin match simplif l with
-        Lfunction{kind=Curried; params=params'; body; attr; loc}
+        Lfunction{kind=Curried; params=params'; return=return2; body; attr; loc}
         when kind = Curried && optimize ->
-          Lfunction{kind; params = params @ params'; body; attr; loc}
+          (* The return type is the type of the value returned after
+             applying all the parameters to the function. The return
+             type of the merged function taking [params @ params'] as
+             parameters is the type returned after applying [params']. *)
+          let return = return2 in
+          Lfunction{kind; params = params @ params'; return; body; attr; loc}
       | body ->
-          Lfunction{kind; params; body; attr; loc}
+          Lfunction{kind; params; return = return1; body; attr; loc}
       end
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
@@ -648,10 +657,10 @@ and list_emit_tail_infos is_tail =
    'Some' constructor, only to deconstruct it immediately in the
    function's body. *)
 
-let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
+let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
   let rec aux map = function
     | Llet(Strict, k, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
-        Ident.name optparam = "*opt*" && List.mem optparam params
+        Ident.name optparam = "*opt*" && List.mem_assoc optparam params
           && not (List.mem_assoc optparam map)
       ->
         let wrapper_body, inner = aux ((optparam, id) :: map) rest in
@@ -665,7 +674,7 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
 
         let inner_id = Ident.create_local (Ident.name fun_id ^ "_inner") in
         let map_param p = try List.assoc p map with Not_found -> p in
-        let args = List.map (fun p -> Lvar (map_param p)) params in
+        let args = List.map (fun (p, _) -> Lvar (map_param p)) params in
         let wrapper_body =
           Lapply {
             ap_func = Lvar inner_id;
@@ -676,7 +685,7 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
             ap_specialised = Default_specialise;
           }
         in
-        let inner_params = List.map map_param params in
+        let inner_params = List.map map_param (List.map fst params) in
         let new_ids = List.map Ident.rename inner_params in
         let subst =
           List.fold_left2 (fun s id new_id ->
@@ -685,16 +694,18 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
         in
         let body = Lambda.rename subst body in
         let inner_fun =
-          Lfunction { kind = Curried; params = new_ids; body; attr; loc; }
+          Lfunction { kind = Curried;
+            params = List.map (fun id -> id, Pgenval) new_ids;
+            return; body; attr; loc; }
         in
         (wrapper_body, (inner_id, inner_fun))
   in
   try
     let body, inner = aux [] body in
     let attr = default_stub_attribute in
-    [(fun_id, Lfunction{kind; params; body; attr; loc}); inner]
+    [(fun_id, Lfunction{kind; params; return; body; attr; loc}); inner]
   with Exit ->
-    [(fun_id, Lfunction{kind; params; body; attr; loc})]
+    [(fun_id, Lfunction{kind; params; return; body; attr; loc})]
 
 module Hooks = Misc.MakeHooks(struct
     type t = lambda

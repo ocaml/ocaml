@@ -589,6 +589,10 @@ Working version
   of mutually-recursive type declarations.
   (Gabriel Scherer, review by Armaël Guéneau)
 
+- GPR#2156: propagate more type information through Lambda and Clambda
+  intermediate language, as a preparation step for more future optimizations
+  (Pierre Chambart and Alain Frisch, cross-reviewed by themselves)
+
 ### Bug fixes:
 
 - MPR#7867: Fix #mod_use raising an exception for filenames with no

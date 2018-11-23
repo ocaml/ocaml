@@ -54,9 +54,10 @@ let ignore_primitive (_ : Lambda.primitive) = ()
 let ignore_string (_ : string) = ()
 let ignore_int_array (_ : int array) = ()
 let ignore_var_with_provenance (_ : VP.t) = ()
-let ignore_var_with_provenance_list (_ : VP.t list) = ()
+let ignore_params_with_value_kind (_ : (VP.t * Lambda.value_kind) list) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
+let ignore_value_kind (_ : Lambda.value_kind) = ()
 
 (* CR-soon mshinwell: check we aren't traversing function bodies more than
    once (need to analyse exactly what the calls are from Cmmgen into this
@@ -65,7 +66,7 @@ let ignore_meth_kind (_ : Lambda.meth_kind) = ()
 let closure_environment_var (ufunction:Clambda.ufunction) =
   (* The argument after the arity is the environment *)
   if List.length ufunction.params = ufunction.arity + 1 then
-    let env_var = List.nth ufunction.params ufunction.arity in
+    let (env_var, _) = List.nth ufunction.params ufunction.arity in
     assert (VP.name env_var = "env");
     Some env_var
   else
@@ -103,7 +104,7 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
     | Uclosure (functions, captured_variables) ->
       List.iter loop captured_variables;
       List.iter (fun (
-        { Clambda. label; arity; params; body; dbg; env; } as clos) ->
+        { Clambda. label; arity; params; return; body; dbg; env; } as clos) ->
           (match closure_environment_var clos with
            | None -> ()
            | Some env_var ->
@@ -111,7 +112,8 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
                V.Set.add (VP.var env_var) !environment_vars);
           ignore_function_label label;
           ignore_int arity;
-          ignore_var_with_provenance_list params;
+          ignore_params_with_value_kind params;
+          ignore_value_kind return;
           loop body;
           ignore_debuginfo dbg;
           ignore_var_option env)
@@ -156,7 +158,7 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
       List.iter loop args
     | Ucatch (static_exn, vars, body, handler) ->
       ignore_int static_exn;
-      ignore_var_with_provenance_list vars;
+      ignore_params_with_value_kind vars;
       loop body;
       loop handler
     | Utrywith (body, var, handler) ->
@@ -276,10 +278,11 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
     | Uclosure (functions, captured_variables) ->
       ignore_ulambda_list captured_variables;
       (* Start a new let stack for speed. *)
-      List.iter (fun { Clambda. label; arity; params; body; dbg; env; } ->
+      List.iter (fun {Clambda. label; arity; params; return; body; dbg; env} ->
           ignore_function_label label;
           ignore_int arity;
-          ignore_var_with_provenance_list params;
+          ignore_params_with_value_kind params;
+          ignore_value_kind return;
           let_stack := [];
           loop body;
           let_stack := [];
@@ -358,7 +361,7 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
       examine_argument_list args
     | Ucatch (static_exn, vars, body, handler) ->
       ignore_int static_exn;
-      ignore_var_with_provenance_list vars;
+      ignore_params_with_value_kind vars;
       let_stack := [];
       loop body;
       let_stack := [];

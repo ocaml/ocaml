@@ -654,10 +654,12 @@ let rec substitute loc fpc sb rn ulam =
           let new_nfail = next_raise_count () in
           new_nfail, Some (Int.Map.add nfail new_nfail rn)
         | None -> nfail, rn in
-      let ids' = List.map VP.rename ids in
+      let ids' = List.map (fun (id, k) -> VP.rename id, k) ids in
       let sb' =
         List.fold_right2
-          (fun id id' s -> V.Map.add (VP.var id) (Uvar (VP.var id')) s)
+          (fun (id, _) (id', _) s ->
+             V.Map.add (VP.var id) (Uvar (VP.var id')) s
+          )
           ids ids' sb
       in
       Ucatch(nfail, ids', substitute loc fpc sb rn u1,
@@ -923,7 +925,8 @@ let rec close fenv cenv = function
         let (new_fun, approx) = close fenv cenv
           (Lfunction{
                kind = Curried;
-               params = final_args;
+               return = Pgenval;
+               params = List.map (fun v -> v, Pgenval) final_args;
                body = Lapply{ap_should_be_tailcall=false;
                              ap_loc=loc;
                              ap_func=(Lvar funct_var);
@@ -1102,7 +1105,7 @@ let rec close fenv cenv = function
   | Lstaticcatch(body, (i, vars), handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
-      let vars = List.map (fun var -> VP.create var) vars in
+      let vars = List.map (fun (var, k) -> VP.create var, k) vars in
       (Ucatch(i, vars, ubody, uhandler), Value_unknown)
   | Ltrywith(body, id, handler) ->
       let (ubody, _) = close fenv cenv body in
@@ -1165,9 +1168,9 @@ and close_functions fenv cenv fun_defs =
     List.flatten
       (List.map
          (function
-           | (id, Lfunction{kind; params; body; attr; loc}) ->
+           | (id, Lfunction{kind; params; return; body; attr; loc}) ->
                Simplif.split_default_wrapper ~id ~kind ~params
-                 ~body ~attr ~loc
+                 ~body ~attr ~loc ~return
            | _ -> assert false
          )
          fun_defs)
@@ -1189,7 +1192,7 @@ and close_functions fenv cenv fun_defs =
   let uncurried_defs =
     List.map
       (function
-          (id, Lfunction{kind; params; body; loc}) ->
+          (id, Lfunction{kind; params; return; body; loc}) ->
             let label = Compilenv.make_symbol (Some (V.unique_name id)) in
             let arity = List.length params in
             let fundesc =
@@ -1199,20 +1202,20 @@ and close_functions fenv cenv fun_defs =
                fun_inline = None;
                fun_float_const_prop = !Clflags.float_const_prop } in
             let dbg = Debuginfo.from_location loc in
-            (id, params, body, fundesc, dbg)
+            (id, params, return, body, fundesc, dbg)
         | (_, _) -> fatal_error "Closure.close_functions")
       fun_defs in
   (* Build an approximate fenv for compiling the functions *)
   let fenv_rec =
     List.fold_right
-      (fun (id, _params, _body, fundesc, _dbg) fenv ->
+      (fun (id, _params, _return, _body, fundesc, _dbg) fenv ->
         V.Map.add id (Value_closure(fundesc, Value_unknown)) fenv)
       uncurried_defs fenv in
   (* Determine the offsets of each function's closure in the shared block *)
   let env_pos = ref (-1) in
   let clos_offsets =
     List.map
-      (fun (_id, _params, _body, fundesc, _dbg) ->
+      (fun (_id, _params, _return, _body, fundesc, _dbg) ->
         let pos = !env_pos + 1 in
         env_pos := !env_pos + 1 + (if fundesc.fun_arity <> 1 then 3 else 2);
         pos)
@@ -1222,23 +1225,28 @@ and close_functions fenv cenv fun_defs =
      does not use its environment parameter is invalidated. *)
   let useless_env = ref initially_closed in
   (* Translate each function definition *)
-  let clos_fundef (id, params, body, fundesc, dbg) env_pos =
+  let clos_fundef (id, params, return, body, fundesc, dbg) env_pos =
     let env_param = V.create_local "env" in
     let cenv_fv =
       build_closure_env env_param (fv_pos - env_pos) fv in
     let cenv_body =
       List.fold_right2
-        (fun (id, _params, _body, _fundesc, _dbg) pos env ->
+        (fun (id, _params, _return, _body, _fundesc, _dbg) pos env ->
           V.Map.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
     let (ubody, approx) = close fenv_rec cenv_body body in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
-    let fun_params = if !useless_env then params else params @ [env_param] in
+    let fun_params =
+      if !useless_env
+      then params
+      else params @ [env_param, Pgenval]
+    in
     let f =
       {
         label  = fundesc.fun_label;
         arity  = fundesc.fun_arity;
-        params = List.map (fun var -> VP.create var) fun_params;
+        params = List.map (fun (var, kind) -> VP.create var, kind) fun_params;
+        return;
         body   = ubody;
         dbg;
         env = Some env_param;
@@ -1248,7 +1256,7 @@ and close_functions fenv cenv fun_defs =
        their wrapper functions) to be inlined *)
     let n =
       List.fold_left
-        (fun n id -> n + if V.name id = "*opt*" then 8 else 1)
+        (fun n (id, _) -> n + if V.name id = "*opt*" then 8 else 1)
         0
         fun_params
     in
@@ -1264,7 +1272,7 @@ and close_functions fenv cenv fun_defs =
       | Never_inline -> min_int
       | Unroll _ -> assert false
     in
-    let fun_params = List.map (fun var -> VP.create var) fun_params in
+    let fun_params = List.map (fun (var, _) -> VP.create var) fun_params in
     if lambda_smaller ubody threshold
     then fundesc.fun_inline <- Some(fun_params, ubody);
 
@@ -1280,7 +1288,7 @@ and close_functions fenv cenv fun_defs =
          recompile *)
         Compilenv.backtrack snap; (* PR#6337 *)
         List.iter
-          (fun (_id, _params, _body, fundesc, _dbg) ->
+          (fun (_id, _params, _return, _body, fundesc, _dbg) ->
              fundesc.fun_closed <- false;
              fundesc.fun_inline <- None;
           )

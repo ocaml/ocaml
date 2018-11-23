@@ -71,7 +71,11 @@ and ulambda =
   | Uswitch of ulambda * ulambda_switch * Debuginfo.t
   | Ustringswitch of ulambda * (string * ulambda) list * ulambda option
   | Ustaticfail of int * ulambda list
-  | Ucatch of int * Backend_var.With_provenance.t list * ulambda * ulambda
+  | Ucatch of
+      int *
+      (Backend_var.With_provenance.t * value_kind) list *
+      ulambda *
+      ulambda
   | Utrywith of ulambda * Backend_var.With_provenance.t * ulambda
   | Uifthenelse of ulambda * ulambda * ulambda
   | Usequence of ulambda * ulambda
@@ -85,7 +89,8 @@ and ulambda =
 and ufunction = {
   label  : function_label;
   arity  : int;
-  params : Backend_var.With_provenance.t list;
+  params : (Backend_var.With_provenance.t * value_kind) list;
+  return : value_kind;
   body   : ulambda;
   dbg    : Debuginfo.t;
   env    : Backend_var.t option;

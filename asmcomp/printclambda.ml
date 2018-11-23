@@ -52,16 +52,23 @@ let rec structured_constant ppf = function
       fprintf ppf ")"
   | Uconst_string s -> fprintf ppf "%S" s
   | Uconst_closure(clos, sym, fv) ->
-      let idents ppf =
-        List.iter (fprintf ppf "@ %a" VP.print) in
-      let one_fun ppf f =
-        fprintf ppf "(fun@ %s@ %d@ @[<2>%a@]@ @[<2>%a@])"
-          f.label f.arity idents f.params lam f.body in
       let funs ppf =
         List.iter (fprintf ppf "@ %a" one_fun) in
       let sconsts ppf scl =
         List.iter (fun sc -> fprintf ppf "@ %a" uconstant sc) scl in
       fprintf ppf "@[<2>(const_closure%a %s@ %a)@]" funs clos sym sconsts fv
+
+and one_fun ppf f =
+  let idents ppf =
+    List.iter
+      (fun (x, k) ->
+         fprintf ppf "@ %a%a"
+           VP.print x
+           Printlambda.value_kind k
+      )
+  in
+  fprintf ppf "(fun@ %s%s@ %d@ @[<2>%a@]@ @[<2>%a@])"
+    f.label (value_kind f.return) f.arity idents f.params lam f.body
 
 and phantom_defining_expr ppf = function
   | Uphantom_const const -> uconstant ppf const
@@ -103,13 +110,8 @@ and lam ppf = function
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(apply@ %a%a)@]" lam lfun lams largs
   | Uclosure(clos, fv) ->
-      let idents ppf =
-        List.iter (fprintf ppf "@ %a" VP.print) in
-      let one_fun ppf f =
-        fprintf ppf "@[<2>(fun@ %s@ %d @[<2>%a@]@ @[<2>%a@]@])"
-          f.label f.arity idents f.params lam f.body in
       let funs ppf =
-        List.iter (fprintf ppf "@ %a" one_fun) in
+        List.iter (fprintf ppf "@ @[<2>%a@]" one_fun) in
       let lams ppf =
         List.iter (fprintf ppf "@ %a" lam) in
       fprintf ppf "@[<2>(closure@ %a %a)@]" funs clos lams fv
@@ -196,12 +198,15 @@ and lam ppf = function
   | Ucatch(i, vars, lbody, lhandler) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
         lam lbody i
-        (fun ppf vars -> match vars with
-          | [] -> ()
-          | _ ->
-              List.iter
-                (fun x -> fprintf ppf " %a" VP.print x)
-                vars)
+        (fun ppf vars ->
+           List.iter
+             (fun (x, k) ->
+                fprintf ppf " %a%a"
+                 VP.print x
+                 Printlambda.value_kind k
+             )
+             vars
+        )
         vars
         lam lhandler
   | Utrywith(lbody, param, lhandler) ->
