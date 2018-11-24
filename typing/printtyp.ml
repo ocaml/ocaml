@@ -1882,15 +1882,14 @@ let explanation intro prev env = function
       Some(dprintf "@,@[<hov>The type variable %a occurs inside@ %a@]"
             type_expr x type_expr y)
 
-let mismatch intro env =
-  let rec mismatch intro prev env = function
-      h :: rem ->
-        begin match mismatch intro (Some h) env rem with
-          Some _ as m -> m
-        | None -> explanation intro prev env h
-        end
-    | [] -> None in
-  mismatch intro None env
+let mismatch intro env trace =
+  let rec mismatch intro env = function
+    | [] -> None
+    | [h] -> explanation intro None env h
+    | h :: (prev :: _ as rem) -> match explanation intro (Some prev) env h with
+      | Some _ as m -> m
+      | None -> mismatch intro env rem in
+  mismatch intro env (List.rev trace)
 
 let explain mis ppf =
   match mis with
