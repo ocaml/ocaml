@@ -1721,32 +1721,46 @@ let rec trace fst txt ppf = function
        (trace false txt) rem
   | _ -> ()
 
-let is_discarded is_last = function
+
+type printing_status =
+  | Discard
+  | Keep
+  | Optional_refinement
+  (** An [Optional_refinement] printing status is attributed to trace
+      elements that are focusing on a new subpart of a structural type.
+      Since the whole type should have been printed earlier in the trace,
+      we only print those elements if they are the last printed element
+      of a trace, and there is no explicit explanation for the
+      type error.
+  *)
+
+let printing_status  = function
   | Trace.(Diff { got=t1, t1'; expected=t2, t2'}) ->
-      is_constr_row ~allow_ident:true t1'
-      || is_constr_row ~allow_ident:true t2'
-      || same_path t1 t1' && same_path t2 t2' && not is_last
-  | _ -> false
+      if  is_constr_row ~allow_ident:true t1'
+       || is_constr_row ~allow_ident:true t2'
+      then Discard
+      else if same_path t1 t1' && same_path t2 t2' then Optional_refinement
+      else Keep
+  | _ -> Keep
 
 (** Flatten the trace and remove elements that are always discarded
     during printing *)
 let prepare_trace f tr =
-  let rec clean_trace = function
-    | [] -> []
-    | x :: q -> let rem = clean_trace q in
-        if is_discarded (rem=[]) x then rem
-        else x :: rem
+  let clean_trace x l = match printing_status x with
+    | Keep -> x :: l
+    | Optional_refinement when l = [] -> [x]
+    | Optional_refinement | Discard -> l
   in
   match Trace.flatten f tr with
   | [] -> []
   | elt :: rem -> (* the first element is always kept *)
-      elt :: clean_trace rem
+      elt :: List.fold_right clean_trace rem []
 
 (** Keep elements that are not [Diff _ ] and take the decision
     for the last element, require a prepared trace *)
 let rec filter_trace keep_last = function
   | [] -> []
-  | [Trace.Diff d as elt] when is_discarded false elt ->
+  | [Trace.Diff d as elt] when printing_status elt = Optional_refinement ->
       if keep_last then [d] else []
   | Trace.Diff d :: rem -> d :: filter_trace keep_last rem
   | _ :: rem -> filter_trace keep_last rem
@@ -1967,6 +1981,7 @@ let report_unification_error ppf env tr
     ~error:true
 ;;
 
+(** [trace] requires the trace to be prepared *)
 let trace fst keep_last txt ppf tr =
   print_labels := not !Clflags.classic;
   try match tr with
