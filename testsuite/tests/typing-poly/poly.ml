@@ -456,6 +456,8 @@ Line 9, characters 41-42:
                                              ^
 Error: This expression has type < m : 'b. 'b -> 'b list >
        but an expression was expected of type < m : 'b. 'b -> 'c >
+       The method m has type 'b. 'b -> 'b list,
+       but the expected method type was 'b. 'b -> 'c
        The universal variable 'b would escape its scope
 |}];;
 
@@ -1098,6 +1100,8 @@ Line 2, characters 3-4:
 Error: This expression has type < m : 'a. 'a * < m : 'a * 'b > > as 'b
        but an expression was expected of type
          < m : 'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd) >
+       The method m has type 'a. 'a * 'd, but the expected method type was
+       'c. 'c * 'd
        The universal variable 'a would escape its scope
 |}];;
 

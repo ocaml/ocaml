@@ -1721,16 +1721,49 @@ let rec trace fst txt ppf = function
        (trace false txt) rem
   | _ -> ()
 
+
+type printing_status =
+  | Discard
+  | Keep
+  | Optional_refinement
+  (** An [Optional_refinement] printing status is attributed to trace
+      elements that are focusing on a new subpart of a structural type.
+      Since the whole type should have been printed earlier in the trace,
+      we only print those elements if they are the last printed element
+      of a trace, and there is no explicit explanation for the
+      type error.
+  *)
+
+let printing_status  = function
+  | Trace.(Diff { got=t1, t1'; expected=t2, t2'}) ->
+      if  is_constr_row ~allow_ident:true t1'
+       || is_constr_row ~allow_ident:true t2'
+      then Discard
+      else if same_path t1 t1' && same_path t2 t2' then Optional_refinement
+      else Keep
+  | _ -> Keep
+
+(** Flatten the trace and remove elements that are always discarded
+    during printing *)
+let prepare_trace f tr =
+  let clean_trace x l = match printing_status x with
+    | Keep -> x :: l
+    | Optional_refinement when l = [] -> [x]
+    | Optional_refinement | Discard -> l
+  in
+  match Trace.flatten f tr with
+  | [] -> []
+  | elt :: rem -> (* the first element is always kept *)
+      elt :: List.fold_right clean_trace rem []
+
+(** Keep elements that are not [Diff _ ] and take the decision
+    for the last element, require a prepared trace *)
 let rec filter_trace keep_last = function
-  | Trace.(Diff ({ got=t1, t1'; expected=t2, t2'} as elt)) :: rem ->
-      let rem' = filter_trace keep_last rem in
-      if is_constr_row ~allow_ident:true t1'
-      || is_constr_row ~allow_ident:true t2'
-      || same_path t1 t1' && same_path t2 t2' && not (keep_last && rem' = [])
-      then rem'
-      else elt :: rem'
-  | _elt :: rem -> filter_trace keep_last rem
-  | _ -> []
+  | [] -> []
+  | [Trace.Diff d as elt] when printing_status elt = Optional_refinement ->
+      if keep_last then [d] else []
+  | Trace.Diff d :: rem -> d :: filter_trace keep_last rem
+  | _ :: rem -> filter_trace keep_last rem
 
 let type_path_list =
   Format.pp_print_list ~pp_sep:(fun ppf () -> Format.pp_print_break ppf 2 0)
@@ -1809,10 +1842,15 @@ let explain_variant = function
   | Trace.Incompatible_types_for s ->
       Some(dprintf "@,Types for tag `%s are incompatible" s)
 
-let explain_escape intro ctx e =
+let explain_escape intro prev ctx e =
   let pre = match ctx with
-    | None -> ignore
-    | Some ctx ->  dprintf "@[%t@;<1 2>%a@]" intro type_expr ctx in
+    | Some ctx ->  dprintf "@[%t@;<1 2>%a@]" intro type_expr ctx
+    | None -> match e, prev with
+      | Trace.Univ _, Some(Trace.Incompatible_fields {name; diff}) ->
+          dprintf "@,@[The method %s has type@ %a,@ \
+                   but the expected method type was@ %a@]" name
+            type_expr diff.Trace.got type_expr diff.Trace.expected
+      | _ -> ignore in
   match e with
   | Trace.Univ u ->  Some(
       dprintf "%t@,The universal variable %a would escape its scope"
@@ -1846,9 +1884,9 @@ let explain_object = function
     )
 
 
-let explanation intro env = function
+let explanation intro prev env = function
   | Trace.Diff { Trace.got = _, s; expected = _,t } -> explanation_diff env s t
-  | Trace.Escape {kind;context} -> explain_escape intro context kind
+  | Trace.Escape {kind;context} -> explain_escape intro prev context kind
   | Trace.Incompatible_fields { name; _ } ->
         Some(dprintf "@,Types for method %s are incompatible" name)
   | Trace.Variant v -> explain_variant v
@@ -1858,13 +1896,14 @@ let explanation intro env = function
       Some(dprintf "@,@[<hov>The type variable %a occurs inside@ %a@]"
             type_expr x type_expr y)
 
-let rec mismatch intro env = function
-    h :: rem ->
-      begin match mismatch intro env rem with
-        Some _ as m -> m
-      | None -> explanation intro env h
-      end
-  | [] -> None
+let mismatch intro env trace =
+  let rec mismatch intro env = function
+    | [] -> None
+    | [h] -> explanation intro None env h
+    | h :: (prev :: _ as rem) -> match explanation intro (Some prev) env h with
+      | Some _ as m -> m
+      | None -> mismatch intro env rem in
+  mismatch intro env (List.rev trace)
 
 let explain mis ppf =
   match mis with
@@ -1906,7 +1945,7 @@ let warn_on_missing_defs env ppf = function
 
 let unification_error env tr txt1 ppf txt2 ty_expect_explanation =
   reset ();
-  let tr = Trace.flatten (fun t t' -> t, hide_variant_name t') tr in
+  let tr = prepare_trace (fun t t' -> t, hide_variant_name t') tr in
   let mis = mismatch txt1 env tr in
   match tr with
   | [] -> assert false
@@ -1942,6 +1981,7 @@ let report_unification_error ppf env tr
     ~error:true
 ;;
 
+(** [trace] requires the trace to be prepared *)
 let trace fst keep_last txt ppf tr =
   print_labels := not !Clflags.classic;
   try match tr with
@@ -1964,8 +2004,8 @@ let trace fst keep_last txt ppf tr =
 let report_subtyping_error ppf env tr1 txt1 tr2 =
   wrap_printing_env ~error:true env (fun () ->
     reset ();
-    let tr1 = Trace.flatten (fun t t' -> prepare_expansion (t, t')) tr1 in
-    let tr2 = Trace.flatten (fun t t' -> prepare_expansion (t, t')) tr2 in
+    let tr1 = prepare_trace (fun t t' -> prepare_expansion (t, t')) tr1 in
+    let tr2 = prepare_trace (fun t t' -> prepare_expansion (t, t')) tr2 in
     let keep_first = match tr2 with
       | Trace.[Obj _ | Variant _ | Escape _ ] | [] -> true
       | _ -> false in
