@@ -96,6 +96,7 @@ and ident_sys_blocked_io = ident_create "Sys_blocked_io"
 and ident_assert_failure = ident_create "Assert_failure"
 and ident_undefined_recursive_module =
         ident_create "Undefined_recursive_module"
+and ident_finaliser_raised = ident_create "Finaliser_raised"
 
 let all_predef_exns = [
   ident_match_failure;
@@ -110,6 +111,7 @@ let all_predef_exns = [
   ident_sys_blocked_io;
   ident_assert_failure;
   ident_undefined_recursive_module;
+  ident_finaliser_raised;
 ]
 
 let path_match_failure = Pident ident_match_failure
@@ -217,6 +219,7 @@ let common_initial_env add_type add_extension empty_env =
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_extension ident_undefined_recursive_module
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
+  add_extension ident_finaliser_raised [type_exn] (
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
   add_type ident_nativeint decl_abstr (
@@ -233,7 +236,7 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_int decl_abstr_imm (
   add_type ident_extension_constructor decl_abstr (
   add_type ident_floatarray decl_abstr (
-    empty_env))))))))))))))))))))))))))))
+    empty_env)))))))))))))))))))))))))))))
 
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in

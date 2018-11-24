@@ -328,6 +328,15 @@ void caml_raise_in_async_callback (value exc)
   caml_raise(exc);
 }
 
+/* Idem as above in the case of exceptions raised in finalisers. In
+   this case, the exception is promoted to a serious exception before
+   being re-raised. */
+void caml_raise_in_finaliser (value exc)
+{
+  caml_set_something_to_do();
+  caml_raise_finaliser_raised(exc);
+}
+
 /* OS-independent numbering of signals */
 
 #ifndef SIGABRT

@@ -47,7 +47,8 @@ extern caml_generated_constant
   caml_exn_Sys_blocked_io,
   caml_exn_Stack_overflow,
   caml_exn_Assert_failure,
-  caml_exn_Undefined_recursive_module;
+  caml_exn_Undefined_recursive_module,
+  caml_exn_Finaliser_raised;
 
 /* Exception raising */
 
@@ -163,6 +164,11 @@ void caml_raise_not_found(void)
 void caml_raise_sys_blocked_io(void)
 {
   caml_raise_constant((value) caml_exn_Sys_blocked_io);
+}
+
+void caml_raise_finaliser_raised (value exn)
+{
+  caml_raise_with_arg((value) caml_exn_Finaliser_raised, exn);
 }
 
 /* We use a pre-allocated exception because we can't

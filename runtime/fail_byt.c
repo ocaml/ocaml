@@ -192,6 +192,12 @@ CAMLexport void caml_raise_sys_blocked_io(void)
   caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
 }
 
+CAMLexport void caml_raise_finaliser_raised(value exn)
+{
+  check_global_data("Finaliser_raised");
+  caml_raise_with_arg(Field(caml_global_data, FINALISER_RAISED_EXN), exn);
+}
+
 int caml_is_special_exception(value exn) {
   /* this function is only used in caml_format_exception to produce
      a more readable textual representation of some exceptions. It is

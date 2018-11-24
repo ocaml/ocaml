@@ -113,6 +113,14 @@ exception Undefined_recursive_module of (string * int * int)
    is evaluated. The arguments are the location of the definition in
    the source code (file name, line number, column number). *)
 
+exception Finaliser_raised of exn
+(** Exception raised at allocation points if a finaliser has an
+   uncaught exception. The argument is the uncaught exception. A
+   [Finaliser_raised] exception denotes either an unexpected exception
+   (such as {!Stdlib.Out_of_memory} or {!Sys.Break}) or a programming
+   error. As a general rule, such an exception should not caught
+   except as part of a catch-all handler. *)
+
 (** {1 Comparisons} *)
 
 external ( = ) : 'a -> 'a -> bool = "%equal"

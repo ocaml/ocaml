@@ -203,7 +203,7 @@ void caml_final_do_calls (void)
 #endif
       running_finalisation_function = 0;
       if (Is_exception_result (res))
-        caml_raise_in_async_callback(Extract_exception(res));
+        caml_raise_in_finaliser (Extract_exception (res));
     }
     caml_gc_message (0x80, "Done calling finalisation functions.\n");
     if (caml_finalise_end_hook != NULL) (*caml_finalise_end_hook) ();

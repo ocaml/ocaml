@@ -45,6 +45,7 @@ void caml_execute_signal(int signal_number, int in_signal_handler);
 void caml_record_signal(int signal_number);
 void caml_set_something_to_do (void);
 void caml_raise_in_async_callback (value exc);
+void caml_raise_in_finaliser (value exc);
 void caml_process_event(void);
 int caml_set_signal_action(int signo, int action);
 
