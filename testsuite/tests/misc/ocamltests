@@ -5,6 +5,7 @@ ephetest2.ml
 ephetest3.ml
 fib.ml
 finaliser.ml
+finaliser_raised.ml
 gcwords.ml
 gpr1370.ml
 hamming.ml
