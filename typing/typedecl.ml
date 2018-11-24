@@ -47,16 +47,15 @@ type error =
   | Rebind_wrong_type of Longident.t * Env.t * Ctype.Unification_trace.t
   | Rebind_mismatch of Longident.t * Path.t * Path.t
   | Rebind_private of Longident.t
-  | Bad_variance of int * (bool * bool * bool) * (bool * bool * bool)
+  | Variance of Typedecl_variance.error
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_ext of type_expr * extension_constructor
-  | Varying_anonymous
   | Val_in_structure
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
-  | Bad_immediate_attribute
+  | Immediacy of Typedecl_immediacy.error
   | Bad_unboxed_attribute of string
   | Wrong_unboxed_type_float
   | Boxed_and_unboxed
@@ -130,37 +129,8 @@ let update_type temp_env env id loc =
       with Ctype.Unify trace ->
         raise (Error(loc, Type_clash (env, trace)))
 
-(* We use the Ctype.expand_head_opt version of expand_head to get access
-   to the manifest type of private abbreviations. *)
-let rec get_unboxed_type_representation env ty fuel =
-  if fuel < 0 then None else
-  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
-  match ty.desc with
-  | Tconstr (p, args, _) ->
-    begin match Env.find_type p env with
-    | exception Not_found -> Some ty
-    | {type_immediate = true; _} -> Some Predef.type_int
-    | {type_unboxed = {unboxed = false}} -> Some ty
-    | {type_params; type_kind =
-         Type_record ([{ld_type = ty2; _}], _)
-       | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
-       | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]}
-
-      ->
-        let ty2 = match ty2.desc with Tpoly (t, _) -> t | _ -> ty2 in
-        get_unboxed_type_representation env
-          (Ctype.apply env type_params ty2 args) (fuel - 1)
-    | {type_kind=Type_abstract} -> None
-          (* This case can occur when checking a recursive unboxed type
-             declaration. *)
-    | _ -> assert false (* only the above can be unboxed *)
-    end
-  | _ -> Some ty
-
-let get_unboxed_type_representation env ty =
-  (* Do not give too much fuel: PR#7424 *)
-  get_unboxed_type_representation env ty 100
-;;
+let get_unboxed_type_representation =
+  Typedecl_unboxed.get_unboxed_type_representation
 
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
@@ -840,450 +810,6 @@ let check_abbrev_recursion env id_loc_list to_check tdecl =
   let id = tdecl.typ_id in
   check_recursion env (List.assoc id id_loc_list) (Path.Pident id) decl to_check
 
-(* Compute variance *)
-
-let get_variance ty visited =
-  try TypeMap.find ty !visited with Not_found -> Variance.null
-
-let compute_variance env visited vari ty =
-  let rec compute_variance_rec vari ty =
-    (* Format.eprintf "%a: %x@." Printtyp.type_expr ty (Obj.magic vari); *)
-    let ty = Ctype.repr ty in
-    let vari' = get_variance ty visited in
-    if Variance.subset vari vari' then () else
-    let vari = Variance.union vari vari' in
-    visited := TypeMap.add ty vari !visited;
-    let compute_same = compute_variance_rec vari in
-    match ty.desc with
-      Tarrow (_, ty1, ty2, _) ->
-        let open Variance in
-        let v = conjugate vari in
-        let v1 =
-          if mem May_pos v || mem May_neg v
-          then set May_weak true v else v
-        in
-        compute_variance_rec v1 ty1;
-        compute_same ty2
-    | Ttuple tl ->
-        List.iter compute_same tl
-    | Tconstr (path, tl, _) ->
-        let open Variance in
-        if tl = [] then () else begin
-          try
-            let decl = Env.find_type path env in
-            let cvari f = mem f vari in
-            List.iter2
-              (fun ty v ->
-                let cv f = mem f v in
-                let strict =
-                  cvari Inv && cv Inj || (cvari Pos || cvari Neg) && cv Inv
-                in
-                if strict then compute_variance_rec full ty else
-                let p1 = inter v vari
-                and n1 = inter v (conjugate vari) in
-                let v1 =
-                  union (inter covariant (union p1 (conjugate p1)))
-                    (inter (conjugate covariant) (union n1 (conjugate n1)))
-                and weak =
-                  cvari May_weak && (cv May_pos || cv May_neg) ||
-                  (cvari May_pos || cvari May_neg) && cv May_weak
-                in
-                let v2 = set May_weak weak v1 in
-                compute_variance_rec v2 ty)
-              tl decl.type_variance
-          with Not_found ->
-            List.iter (compute_variance_rec may_inv) tl
-        end
-    | Tobject (ty, _) ->
-        compute_same ty
-    | Tfield (_, _, ty1, ty2) ->
-        compute_same ty1;
-        compute_same ty2
-    | Tsubst ty ->
-        compute_same ty
-    | Tvariant row ->
-        let row = Btype.row_repr row in
-        List.iter
-          (fun (_,f) ->
-            match Btype.row_field_repr f with
-              Rpresent (Some ty) ->
-                compute_same ty
-            | Reither (_, tyl, _, _) ->
-                let open Variance in
-                let upper =
-                  List.fold_left (fun s f -> set f true s)
-                    null [May_pos; May_neg; May_weak]
-                in
-                let v = inter vari upper in
-                (* cf PR#7269:
-                   if List.length tyl > 1 then upper else inter vari upper *)
-                List.iter (compute_variance_rec v) tyl
-            | _ -> ())
-          row.row_fields;
-        compute_same row.row_more
-    | Tpoly (ty, _) ->
-        compute_same ty
-    | Tvar _ | Tnil | Tlink _ | Tunivar _ -> ()
-    | Tpackage (_, _, tyl) ->
-        let v =
-          Variance.(if mem Pos vari || mem Neg vari then full else may_inv)
-        in
-        List.iter (compute_variance_rec v) tyl
-  in
-  compute_variance_rec vari ty
-
-let make p n i =
-  let open Variance in
-  set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
-
-let compute_variance_type env check (required, loc) decl tyl =
-  (* Requirements *)
-  let required =
-    List.map (fun (c,n,i) -> if c || n then (c,n,i) else (true,true,i))
-      required
-  in
-  (* Prepare *)
-  let params = List.map Btype.repr decl.type_params in
-  let tvl = ref TypeMap.empty in
-  (* Compute occurrences in the body *)
-  let open Variance in
-  List.iter
-    (fun (cn,ty) ->
-      compute_variance env tvl (if cn then full else covariant) ty)
-    tyl;
-  if check then begin
-    (* Check variance of parameters *)
-    let pos = ref 0 in
-    List.iter2
-      (fun ty (c, n, i) ->
-        incr pos;
-        let var = get_variance ty tvl in
-        let (co,cn) = get_upper var and ij = mem Inj var in
-        if Btype.is_Tvar ty && (co && not c || cn && not n || not ij && i)
-        then raise (Error(loc, Bad_variance (!pos, (co,cn,ij), (c,n,i)))))
-      params required;
-    (* Check propagation from constrained parameters *)
-    let args = Btype.newgenty (Ttuple params) in
-    let fvl = Ctype.free_variables args in
-    let fvl = List.filter (fun v -> not (List.memq v params)) fvl in
-    (* If there are no extra variables there is nothing to do *)
-    if fvl = [] then () else
-    let tvl2 = ref TypeMap.empty in
-    List.iter2
-      (fun ty (p,n,_) ->
-        if Btype.is_Tvar ty then () else
-        let v =
-          if p then if n then full else covariant else conjugate covariant in
-        compute_variance env tvl2 v ty)
-      params required;
-    let visited = ref TypeSet.empty in
-    let rec check ty =
-      let ty = Ctype.repr ty in
-      if TypeSet.mem ty !visited then () else
-      let visited' = TypeSet.add ty !visited in
-      visited := visited';
-      let v1 = get_variance ty tvl in
-      let snap = Btype.snapshot () in
-      let v2 =
-        TypeMap.fold
-          (fun t vt v ->
-            if Ctype.equal env false [ty] [t] then union vt v else v)
-          !tvl2 null in
-      Btype.backtrack snap;
-      let (c1,n1) = get_upper v1 and (c2,n2,_,i2) = get_lower v2 in
-      if c1 && not c2 || n1 && not n2 then
-        if List.memq ty fvl then
-          let code = if not i2 then -2 else if c2 || n2 then -1 else -3 in
-          raise (Error (loc, Bad_variance (code, (c1,n1,false), (c2,n2,false))))
-        else
-          Btype.iter_type_expr check ty
-    in
-    List.iter (fun (_,ty) -> check ty) tyl;
-  end;
-  List.map2
-    (fun ty (p, n, i) ->
-      let v = get_variance ty tvl in
-      let tr = decl.type_private in
-      (* Use required variance where relevant *)
-      let concr = decl.type_kind <> Type_abstract (*|| tr = Type_new*) in
-      let (p, n) =
-        if tr = Private || not (Btype.is_Tvar ty) then (p, n) (* set *)
-        else (false, false) (* only check *)
-      and i = concr  || i && tr = Private in
-      let v = union v (make p n i) in
-      let v =
-        if not concr then v else
-        if mem Pos v && mem Neg v then full else
-        if Btype.is_Tvar ty then v else
-        union v
-          (if p then if n then full else covariant else conjugate covariant)
-      in
-      if decl.type_kind = Type_abstract && tr = Public then v else
-      set May_weak (mem May_neg v) v)
-    params required
-
-let add_false = List.map (fun ty -> false, ty)
-
-(* A parameter is constrained if it is either instantiated,
-   or it is a variable appearing in another parameter *)
-let constrained vars ty =
-  match ty.desc with
-  | Tvar _ -> List.exists (fun tl -> List.memq ty tl) vars
-  | _ -> true
-
-let for_constr = function
-  | Types.Cstr_tuple l -> add_false l
-  | Types.Cstr_record l ->
-      List.map
-        (fun {Types.ld_mutable; ld_type} -> (ld_mutable = Mutable, ld_type))
-        l
-
-let compute_variance_gadt env check (required, loc as rloc) decl
-    (tl, ret_type_opt) =
-  match ret_type_opt with
-  | None ->
-      compute_variance_type env check rloc {decl with type_private = Private}
-        (for_constr tl)
-  | Some ret_type ->
-      match Ctype.repr ret_type with
-      | {desc=Tconstr (_, tyl, _)} ->
-          (* let tyl = List.map (Ctype.expand_head env) tyl in *)
-          let tyl = List.map Ctype.repr tyl in
-          let fvl = List.map (Ctype.free_variables ?env:None) tyl in
-          let _ =
-            List.fold_left2
-              (fun (fv1,fv2) ty (c,n,_) ->
-                match fv2 with [] -> assert false
-                | fv :: fv2 ->
-                    (* fv1 @ fv2 = free_variables of other parameters *)
-                    if (c||n) && constrained (fv1 @ fv2) ty then
-                      raise (Error(loc, Varying_anonymous));
-                    (fv :: fv1, fv2))
-              ([], fvl) tyl required
-          in
-          compute_variance_type env check rloc
-            {decl with type_params = tyl; type_private = Private}
-            (for_constr tl)
-      | _ -> assert false
-
-let compute_variance_extension env check decl ext rloc =
-  compute_variance_gadt env check rloc
-    {decl with type_params = ext.ext_type_params}
-    (ext.ext_args, ext.ext_ret_type)
-
-let compute_variance_decl env check decl (required, _ as rloc) =
-  if (decl.type_kind = Type_abstract || decl.type_kind = Type_open)
-       && decl.type_manifest = None then
-    List.map
-      (fun (c, n, i) ->
-        make (not n) (not c) (decl.type_kind <> Type_abstract || i))
-      required
-  else
-  let mn =
-    match decl.type_manifest with
-      None -> []
-    | Some ty -> [false, ty]
-  in
-  match decl.type_kind with
-    Type_abstract | Type_open ->
-      compute_variance_type env check rloc decl mn
-  | Type_variant tll ->
-      if List.for_all (fun c -> c.Types.cd_res = None) tll then
-        compute_variance_type env check rloc decl
-          (mn @ List.flatten (List.map (fun c -> for_constr c.Types.cd_args)
-                                tll))
-      else begin
-        let mn =
-          List.map (fun (_,ty) -> (Types.Cstr_tuple [ty],None)) mn in
-        let tll =
-          mn @ List.map (fun c -> c.Types.cd_args, c.Types.cd_res) tll in
-        match List.map (compute_variance_gadt env check rloc decl) tll with
-        | vari :: rem ->
-            let varl = List.fold_left (List.map2 Variance.union) vari rem in
-            List.map
-              Variance.(fun v -> if mem Pos v && mem Neg v then full else v)
-              varl
-        | _ -> assert false
-      end
-  | Type_record (ftl, _) ->
-      compute_variance_type env check rloc decl
-        (mn @ List.map (fun {Types.ld_mutable; ld_type} ->
-             (ld_mutable = Mutable, ld_type)) ftl)
-
-let is_hash id =
-  let s = Ident.name id in
-  String.length s > 0 && s.[0] = '#'
-
-let marked_as_immediate decl =
-  Builtin_attributes.immediate decl.type_attributes
-
-let compute_immediacy env tdecl =
-  match (tdecl.type_kind, tdecl.type_manifest) with
-  | (Type_variant [{cd_args = Cstr_tuple [arg]; _}], _)
-    | (Type_variant [{cd_args = Cstr_record [{ld_type = arg; _}]; _}], _)
-    | (Type_record ([{ld_type = arg; _}], _), _)
-  when tdecl.type_unboxed.unboxed ->
-    begin match get_unboxed_type_representation env arg with
-    | Some argrepr -> not (Ctype.maybe_pointer_type env argrepr)
-    | None -> false
-    end
-  | (Type_variant (_ :: _ as cstrs), _) ->
-    not (List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs)
-  | (Type_abstract, Some(typ)) ->
-    not (Ctype.maybe_pointer_type env typ)
-  | (Type_abstract, None) -> marked_as_immediate tdecl
-  | _ -> false
-
-(* Computes the fixpoint for the variance and immediacy of type declarations *)
-let add_types_to_env decls env =
-  List.fold_right
-    (fun (id, decl) env -> add_type ~check:true id decl env)
-    decls env
-
-type decl = Types.type_declaration
-
-(** An abstract interface for properties of type definitions, such as
-   variance and immediacy, that are computed by a fixpoint on
-   mutually-recursive type declarations. This interface contains all
-   the operations needed to initialize and run the fixpoint
-   computation, and then (optionally) check that the result is
-   consistent with the declaration or user expectations.
-
-   ['prop] represents the type of property values
-   ({!Types.Variance.t}, just 'bool' for immediacy, etc).
-
-   ['req] represents the property value required by the author of the
-   declaration, if they gave an expectation: [type +'a t = ...].
-
-   Some properties have no natural notion of user requirement, or
-   their requirement is global, or already stored in
-   [type_declaration]; they can just use [unit] as ['req] parameter. *)
-type ('prop, 'req) property = {
-  eq : 'prop -> 'prop -> bool;
-  merge : prop:'prop -> new_prop:'prop -> 'prop;
-
-  default : decl -> 'prop;
-  compute : Env.t -> decl -> 'req -> 'prop;
-  update_decl : decl -> 'prop -> decl;
-
-  check : Env.t -> Ident.t -> decl -> 'req -> unit;
-}
-
-let compute_property
-: ('prop, 'req) property -> Env.t ->
-  (Ident.t * decl) list -> 'req list -> (Ident.t * decl) list
-= fun property env decls required ->
-  (* [decls] and [required] must be lists of the same size,
-     with [required] containing the requirement for the corresponding
-     declaration in [decls]. *)
-  let props = List.map (fun (_id, decl) -> property.default decl) decls in
-  let rec compute_fixpoint props =
-    let new_decls =
-      List.map2 (fun (id, decl) prop ->
-          (id, property.update_decl decl prop))
-        decls props in
-    let new_env = add_types_to_env new_decls env in
-    let new_props =
-      List.map2
-        (fun (_id, decl) (prop, req) ->
-           let new_prop = property.compute new_env decl req in
-           property.merge ~prop ~new_prop)
-        new_decls (List.combine props required) in
-    if not (List.for_all2 property.eq props new_props)
-    then compute_fixpoint new_props
-    else begin
-      List.iter2
-        (fun (id, decl) req -> property.check new_env id decl req)
-        new_decls required;
-      new_decls
-    end
-  in
-  compute_fixpoint props
-
-let compute_property_noreq property env decls =
-  let req = List.map (fun _ -> ()) decls in
-  compute_property property env decls req
-
-type variance_req = (bool * bool * bool) list
-let variance : (Variance.t list, variance_req) property =
-  let eq li1 li2 =
-    try List.for_all2 Variance.eq li1 li2 with _ -> false in
-  let merge ~prop ~new_prop = List.map2 Variance.union prop new_prop in
-  let default decl =
-    List.map (fun _ -> Variance.null) decl.type_params in
-  let compute env decl req =
-    compute_variance_decl env false decl (req, decl.type_loc) in
-  let update_decl decl variance =
-    { decl with type_variance = variance } in
-  let check env id decl req =
-    if not (is_hash id) then
-      ignore (compute_variance_decl env true decl (req, decl.type_loc))
-  in
-  {
-    eq;
-    merge;
-    default;
-    compute;
-    update_decl;
-    check;
-  }
-
-let transl_variance : Asttypes.variance -> _ = function
-  | Covariant -> (true, false, false)
-  | Contravariant -> (false, true, false)
-  | Invariant -> (false, false, false)
-
-let variance_of_params ptype_params =
-  List.map transl_variance (List.map snd ptype_params)
-let variance_of_sdecl sdecl =
-  variance_of_params sdecl.ptype_params
-
-let compute_variance_decls env sdecls decls =
-  let required = List.map variance_of_sdecl sdecls in
-  compute_property variance env decls required
-
-let immediacy : (bool, unit) property =
-  let eq = (=) in
-  let merge ~prop:_ ~new_prop = new_prop in
-  let default _decl = false in
-  let compute env decl () =
-    compute_immediacy env decl in
-  let update_decl decl immediacy =
-    { decl with type_immediate = immediacy } in
-  let check _env _id decl () =
-    if (marked_as_immediate decl) && (not decl.type_immediate) then
-      raise (Error (decl.type_loc, Bad_immediate_attribute))
-  in
-  {
-    eq;
-    merge;
-    default;
-    compute;
-    update_decl;
-    check;
-  }
-
-let compute_immediacy_decls env decls =
-  compute_property_noreq immediacy env decls
-
-(* for typeclass.ml *)
-let compute_variance_class_decls env cldecls =
-  let decls, required =
-    List.fold_right
-      (fun (obj_id, obj_abbr, _cl_abbr, _clty, _cltydef, ci) (decls, req) ->
-        (obj_id, obj_abbr) :: decls,
-        variance_of_params ci.ci_params :: req)
-      cldecls ([],[])
-  in
-  let decls = compute_property variance env decls required in
-  List.map2
-    (fun (_,decl) (_, _, cl_abbr, clty, cltydef, _) ->
-      let variance = decl.type_variance in
-      (decl, {cl_abbr with type_variance = variance},
-       {clty with cty_variance = variance},
-       {cltydef with clty_variance = variance}))
-    decls cldecls
-
 (* Check multiple declarations of labels/constructors *)
 
 let check_duplicates sdecl_list =
@@ -1348,6 +874,11 @@ let check_redefined_unit (td: Parsetree.type_declaration) =
       Location.prerr_warning td.ptype_loc (Warnings.Redefining_unit name)
   | _ ->
       ()
+
+let add_types_to_env decls env =
+  List.fold_right
+    (fun (id, decl) env -> add_type ~check:true id decl env)
+    decls env
 
 (* Translate a set of type declarations, mutually recursive or not *)
 let transl_type_decl env rec_flag sdecl_list =
@@ -1454,10 +985,15 @@ let transl_type_decl env rec_flag sdecl_list =
   List.iter2 (check_constraints new_env) sdecl_list decls;
   (* Add type properties to declarations *)
   let decls =
-    decls
-    |> name_recursion_decls sdecl_list
-    |> compute_variance_decls env sdecl_list
-    |> compute_immediacy_decls env in
+    try
+      decls
+      |> name_recursion_decls sdecl_list
+      |> Typedecl_variance.update_decls env sdecl_list
+      |> Typedecl_immediacy.update_decls env
+    with
+    | Typedecl_variance.Error (loc, err) -> raise (Error (loc, Variance err))
+    | Typedecl_immediacy.Error (loc, err) -> raise (Error (loc, Immediacy err))
+  in
   (* Compute the final environment with variance and immediacy *)
   let final_env = add_types_to_env decls env in
   (* Check re-exportation *)
@@ -1637,7 +1173,7 @@ let transl_type_extension extend env loc styext =
       if List.for_all2
            (fun (c1, n1, _) (c2, n2, _) -> (not c2 || c1) && (not n2 || n1))
            type_variance
-           (variance_of_params styext.ptyext_params)
+           (Typedecl_variance.variance_of_params styext.ptyext_params)
       then None else Some Includecore.Variance
   in
   begin match err with
@@ -1673,13 +1209,14 @@ let transl_type_extension extend env loc styext =
   (* Check variances are correct *)
   List.iter
     (fun ext->
-       (* Note that [loc] here is distinct from [type_decl.type_loc],
-          which makes the [loc] parameter to this function
-          useful. [loc] is the location of the extension, while
-          [type_decl] points to the original type declaration being
-          extended. *)
-      ignore (compute_variance_extension env true type_decl
-                ext.ext_type (type_variance, loc)))
+       (* Note that [loc] here is distinct from [type_decl.type_loc], which
+          makes the [loc] parameter to this function useful. [loc] is the
+          location of the extension, while [type_decl] points to the original
+          type declaration being extended. *)
+       try Typedecl_variance.check_variance_extension
+             env type_decl ext (type_variance, loc)
+       with Typedecl_variance.Error (loc, err) ->
+         raise (Error (loc, Variance err)))
     constructors;
   (* Add extension constructors to the environment *)
   let newenv =
@@ -1964,10 +1501,13 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   end;
   let decl = name_recursion sdecl id decl in
   let type_variance =
-    compute_variance_decl env true decl
-      (variance_of_sdecl sdecl, sdecl.ptype_loc)
-  in
-  let type_immediate = compute_immediacy env decl in
+    try Typedecl_variance.compute_decl
+          env ~check:true decl (Typedecl_variance.variance_of_sdecl sdecl)
+    with Typedecl_variance.Error (loc, err) ->
+      raise (Error (loc, Variance err)) in
+  let type_immediate =
+    (* Typedecl_immediacy.compute_decl never raises *)
+    Typedecl_immediacy.compute_decl env decl in
   let decl = {decl with type_variance; type_immediate} in
   Ctype.end_def();
   generalize_decl decl;
@@ -2194,7 +1734,7 @@ let report_error ppf = function
         "The constructor"
         Printtyp.longident lid
         "is private"
-  | Bad_variance (n, v1, v2) ->
+  | Variance (Typedecl_variance.Bad_variance (n, v1, v2)) ->
       let variance (p,n,i) =
         let inj = if i then "injective " else "" in
         match p, n with
@@ -2211,6 +1751,7 @@ let report_error ppf = function
         | 3 when not teen -> "rd"
         | _ -> "th"
       in
+      (* FIXME: this test below is horrible, use a proper variant *)
       if n = -1 then
         fprintf ppf "@[%s@ %s@ It"
           "In this definition, a type variable has a variance that"
@@ -2235,7 +1776,7 @@ let report_error ppf = function
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
   | Bad_fixed_type r ->
       fprintf ppf "This fixed type %s" r
-  | Varying_anonymous ->
+  | Variance Typedecl_variance.Varying_anonymous ->
       fprintf ppf "@[%s@ %s@ %s@]"
         "In this GADT definition," "the variance of some parameter"
         "cannot be checked"
@@ -2255,7 +1796,7 @@ let report_error ppf = function
            a direct argument or result of the primitive,@ \
            it should not occur deeply into its type.@]"
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
-  | Bad_immediate_attribute ->
+  | Immediacy Typedecl_immediacy.Bad_immediate_attribute ->
       fprintf ppf "@[%s@ %s@]"
         "Types marked with the immediate attribute must be"
         "non-pointer types like int or bool"
