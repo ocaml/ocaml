@@ -194,6 +194,7 @@ testsuite/tests/warnings/w32.ml text eol=lf
 # These are forced to \n to allow the Cygwin testsuite to pass on a
 # Windows-checkout
 testsuite/tests/formatting/margins.ml text eol=lf
+testsuite/tests/letrec-check/pr7706.ml text eol=lf
 testsuite/tests/letrec-disallowed/disallowed.ml text eol=lf
 testsuite/tests/letrec-disallowed/extension_constructor.ml text eol=lf
 testsuite/tests/letrec-disallowed/float_block_allowed.ml text eol=lf
