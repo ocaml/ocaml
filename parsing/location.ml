@@ -671,8 +671,8 @@ let batch_mode_printer : report_printer =
       | Report_warning_as_error _
       | Report_alert_as_error _
       | Report_error -> "error"
-      | Report_warning _ -> "warning"
-      | Report_alert _ -> "alert"
+      | Report_warning _
+      | Report_alert _ -> "warning"
     in
     let highlight ppf loc =
       match error_style () with
