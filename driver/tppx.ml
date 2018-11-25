@@ -27,7 +27,8 @@ let magic = Config.ast_impl_magic_number
 let apply_rewriter fn_in tppx =
   let fn_out = Filename.temp_file "camltppx" "" in
   let comm =
-    Printf.sprintf "%s %s %s" tppx (Filename.quote fn_in) (Filename.quote fn_out)
+    Printf.sprintf "%s %s %s"
+      tppx (Filename.quote fn_in) (Filename.quote fn_out)
   in
   let ok = Ccomp.command comm = 0 in
   Misc.remove_file fn_in;
@@ -85,4 +86,3 @@ let process_all tstr =
   match !Clflags.all_tppx with
   | [] -> tstr
   | tppxs -> rewrite tppxs tstr
-

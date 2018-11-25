@@ -13,7 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Typed ppx *)
+(** Typed ppx *)
 
 val process_all : Typedtree.structure -> Typedtree.structure
-

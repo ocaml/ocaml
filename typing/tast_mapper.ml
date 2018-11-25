@@ -766,5 +766,5 @@ let run_main mapper =
     exit 2
 
 let register_function = ref (fun _name f -> run_main f)
-let register name f = !register_function name f
 
+let register name f = !register_function name f

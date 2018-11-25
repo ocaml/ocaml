@@ -21,4 +21,3 @@ let newmapper argv =
 
 let () =
   register "test" newmapper
-
