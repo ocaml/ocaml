@@ -55,7 +55,8 @@
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
    typedtreeIter typedtreeMap tast_mapper cmt_format untypeast includemod
    typetexp printpat parmatch stypes typedecl typeopt rec_check typecore
-   typeclass typemod
+   typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy
+   typedecl_unboxed
    ; manual update: mli only files
    annot outcometree
 
