@@ -65,10 +65,10 @@ let remembered = ref Ident.empty
 
 let rec remember phrase_name i = function
   | [] -> ()
-  | Sig_value  (id, _) :: rest
-  | Sig_module (id, _, _, _) :: rest
-  | Sig_typext (id, _, _) :: rest
-  | Sig_class  (id, _, _) :: rest ->
+  | Sig_value  (id, _, _) :: rest
+  | Sig_module (id, _, _, _, _) :: rest
+  | Sig_typext (id, _, _, _) :: rest
+  | Sig_class  (id, _, _, _) :: rest ->
       remembered := Ident.add id (phrase_name, i) !remembered;
       remember phrase_name (succ i) rest
   | _ :: rest -> remember phrase_name i rest
@@ -262,7 +262,7 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
 let pr_item =
   Printtyp.print_items
     (fun env -> function
-      | Sig_value(id, {val_kind = Val_reg; val_type}) ->
+      | Sig_value(id, {val_kind = Val_reg; val_type}, _) ->
           Some (outval_of_value env (toplevel_value id) val_type)
       | _ -> None
     )
@@ -349,7 +349,7 @@ let execute_phrase print_outcome ppf phr =
                 | _ ->
                     if rewritten then
                       match sg' with
-                      | [ Sig_value (id, vd) ] ->
+                      | [ Sig_value (id, vd, _) ] ->
                           let outv =
                             outval_of_value newenv (toplevel_value id)
                               vd.val_type

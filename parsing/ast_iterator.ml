@@ -52,6 +52,7 @@ type iterator = {
   module_expr: iterator -> module_expr -> unit;
   module_type: iterator -> module_type -> unit;
   module_type_declaration: iterator -> module_type_declaration -> unit;
+  open_declaration: iterator -> open_declaration -> unit;
   open_description: iterator -> open_description -> unit;
   pat: iterator -> pattern -> unit;
   payload: iterator -> payload -> unit;
@@ -210,8 +211,8 @@ module CT = struct
     | Pcty_arrow (_lab, t, ct) ->
         sub.typ sub t; sub.class_type sub ct
     | Pcty_extension x -> sub.extension sub x
-    | Pcty_open (_ovf, lid, e) ->
-        iter_loc sub lid; sub.class_type sub e
+    | Pcty_open (o, e) ->
+        sub.open_description sub o; sub.class_type sub e
 
   let iter_field sub {pctf_desc = desc; pctf_loc = loc; pctf_attributes = attrs}
     =
@@ -320,7 +321,7 @@ module M = struct
     | Pstr_module x -> sub.module_binding sub x
     | Pstr_recmodule l -> List.iter (sub.module_binding sub) l
     | Pstr_modtype x -> sub.module_type_declaration sub x
-    | Pstr_open x -> sub.open_description sub x
+    | Pstr_open x -> sub.open_declaration sub x
     | Pstr_class l -> List.iter (sub.class_declaration sub) l
     | Pstr_class_type l ->
         List.iter (sub.class_type_declaration sub) l
@@ -400,8 +401,8 @@ module E = struct
     | Pexp_object cls -> sub.class_structure sub cls
     | Pexp_newtype (_s, e) -> sub.expr sub e
     | Pexp_pack me -> sub.module_expr sub me
-    | Pexp_open (_ovf, lid, e) ->
-        iter_loc sub lid; sub.expr sub e
+    | Pexp_open (o, e) ->
+        sub.open_declaration sub o; sub.expr sub e
     | Pexp_extension x -> sub.extension sub x
     | Pexp_unreachable -> ()
 end
@@ -462,8 +463,8 @@ module CE = struct
     | Pcl_constraint (ce, ct) ->
         sub.class_expr sub ce; sub.class_type sub ct
     | Pcl_extension x -> sub.extension sub x
-    | Pcl_open (_ovf, lid, e) ->
-        iter_loc sub lid; sub.class_expr sub e
+    | Pcl_open (o, e) ->
+        sub.open_description sub o; sub.class_expr sub e
 
   let iter_kind sub = function
     | Cfk_concrete (_o, e) -> sub.expr sub e
@@ -572,10 +573,16 @@ let default_iterator =
          this.attributes this pmb_attributes;
       );
 
+    open_declaration =
+      (fun this {popen_expr; popen_override = _; popen_attributes; popen_loc} ->
+         this.module_expr this popen_expr;
+         this.location this popen_loc;
+         this.attributes this popen_attributes
+      );
 
     open_description =
-      (fun this {popen_lid; popen_override = _; popen_attributes; popen_loc} ->
-         iter_loc this popen_lid;
+      (fun this {popen_expr; popen_override = _; popen_attributes; popen_loc} ->
+         iter_loc this popen_expr;
          this.location this popen_loc;
          this.attributes this popen_attributes
       );

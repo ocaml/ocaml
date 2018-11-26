@@ -135,7 +135,8 @@ module MakeMap(Map : MapArgument) = struct
           Tstr_recmodule list
         | Tstr_modtype mtd ->
           Tstr_modtype (map_module_type_declaration mtd)
-        | Tstr_open od -> Tstr_open od
+        | Tstr_open od ->
+          Tstr_open {od with open_expr = map_module_expr od.open_expr}
         | Tstr_class list ->
           let list =
             List.map
@@ -403,6 +404,9 @@ module MakeMap(Map : MapArgument) = struct
           Texp_unreachable
         | Texp_extension_constructor _ as e ->
           e
+        | Texp_open (od, exp) ->
+          Texp_open ({od with open_expr = map_module_expr od.open_expr},
+                     map_expression exp)
     in
     let exp_extra = List.map map_exp_extra exp.exp_extra in
     Map.leave_expression {
@@ -422,7 +426,6 @@ module MakeMap(Map : MapArgument) = struct
       | Texp_poly (Some ct) ->
         Texp_poly (Some ( map_core_type ct )), loc, attrs
       | Texp_newtype _
-      | Texp_open _
       | Texp_poly None -> exp_extra
 
 
@@ -584,8 +587,8 @@ module MakeMap(Map : MapArgument) = struct
 
         | Tcl_ident (id, name, tyl) ->
             Tcl_ident (id, name, List.map map_core_type tyl)
-        | Tcl_open (ovf, p, lid, env, e) ->
-            Tcl_open (ovf, p, lid, env, map_class_expr e)
+        | Tcl_open (od, e) ->
+            Tcl_open (od, map_class_expr e)
     in
     Map.leave_class_expr { cexpr with cl_desc = cl_desc }
 
@@ -598,8 +601,8 @@ module MakeMap(Map : MapArgument) = struct
           Tcty_constr (path, lid, List.map map_core_type list)
         | Tcty_arrow (label, ct, cl) ->
           Tcty_arrow (label, map_core_type ct, map_class_type cl)
-        | Tcty_open (ovf, p, lid, env, e) ->
-          Tcty_open (ovf, p, lid, env, map_class_type e)
+        | Tcty_open (od, e) ->
+          Tcty_open (od, map_class_type e)
     in
     Map.leave_class_type { ct with cltyp_desc = cltyp_desc }
 

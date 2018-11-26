@@ -538,6 +538,32 @@ and transl_exp0 e =
          }
   | Texp_unreachable ->
       raise (Error (e.exp_loc, Unreachable_reached))
+  | Texp_open (od, e) ->
+      let pure = pure_module od.open_expr in
+      (* this optimization shouldn't be needed because Simplif would
+          actually remove the [Llet] when it's not used.
+          But since [scan_used_globals] runs before Simplif, we need to
+          do it. *)
+      begin match od.open_bound_items with
+      | [] when pure = Alias -> transl_exp e
+      | _ ->
+          let oid = Ident.create_local "open" in
+          let body, _ =
+            List.fold_left (fun (body, pos) id ->
+              Llet(Alias, Pgenval, id,
+                   Lprim(Pfield pos, [Lvar oid], od.open_loc), body),
+              pos + 1
+            ) (transl_exp e, 0) (bound_value_identifiers od.open_bound_items)
+          in
+          Llet(pure, Pgenval, oid,
+               !transl_module Tcoerce_none None od.open_expr, body)
+      end
+
+and pure_module m =
+  match m.mod_desc with
+    Tmod_ident _ -> Alias
+  | Tmod_constraint (m,_,_,_) -> pure_module m
+  | _ -> Strict
 
 and transl_list expr_list =
   List.map transl_exp expr_list

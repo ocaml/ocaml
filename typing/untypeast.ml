@@ -52,6 +52,7 @@ type mapper = {
   module_type_declaration:
     mapper -> T.module_type_declaration -> module_type_declaration;
   package_type: mapper -> T.package_type -> package_type;
+  open_declaration: mapper -> T.open_declaration -> open_declaration;
   open_description: mapper -> T.open_description -> open_description;
   pat: mapper -> T.pattern -> pattern;
   row_field: mapper -> T.row_field -> row_field;
@@ -143,7 +144,14 @@ let open_description sub od =
   let attrs = sub.attributes sub od.open_attributes in
   Opn.mk ~loc ~attrs
     ~override:od.open_override
-    (map_loc sub od.open_txt)
+    (snd od.open_expr)
+
+let open_declaration sub od =
+  let loc = sub.location sub od.open_loc in
+  let attrs = sub.attributes sub od.open_attributes in
+  Opn.mk ~loc ~attrs
+    ~override:od.open_override
+    (sub.module_expr sub od.open_expr)
 
 let structure_item sub item =
   let loc = sub.location sub item.str_loc in
@@ -167,7 +175,7 @@ let structure_item sub item =
     | Tstr_modtype mtd ->
         Pstr_modtype (sub.module_type_declaration sub mtd)
     | Tstr_open od ->
-        Pstr_open (sub.open_description sub od)
+        Pstr_open (sub.open_declaration sub od)
     | Tstr_class list ->
         Pstr_class
           (List.map
@@ -342,8 +350,6 @@ let exp_extra sub (extra, loc, attrs) sexp =
                      sub.typ sub cty2)
     | Texp_constraint cty ->
         Pexp_constraint (sexp, sub.typ sub cty)
-    | Texp_open (ovf, _path, lid, _) ->
-        Pexp_open (ovf, map_loc sub lid, sexp)
     | Texp_poly cto -> Pexp_poly (sexp, map_opt (sub.typ sub) cto)
     | Texp_newtype s -> Pexp_newtype (mkloc s loc, sexp)
   in
@@ -474,6 +480,8 @@ let expression sub exp =
                         PStr [ Str.eval ~loc
                                  (Exp.construct ~loc (map_loc sub lid) None)
                              ])
+    | Texp_open (od, exp) ->
+        Pexp_open (sub.open_declaration sub od, sub.expr sub exp)
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)
@@ -648,8 +656,8 @@ let class_expr sub cexpr =
     | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->
         Pcl_constraint (sub.class_expr sub cl,  sub.class_type sub clty)
 
-    | Tcl_open (ovf, _p, lid, _env, e) ->
-        Pcl_open (ovf, lid, sub.class_expr sub e)
+    | Tcl_open (od, e) ->
+        Pcl_open (sub.open_description sub od, sub.class_expr sub e)
 
     | Tcl_ident _ -> assert false
     | Tcl_constraint (_, None, _, _, _) -> assert false
@@ -665,8 +673,8 @@ let class_type sub ct =
         Pcty_constr (map_loc sub lid, List.map (sub.typ sub) list)
     | Tcty_arrow (label, ct, cl) ->
         Pcty_arrow (label, sub.typ sub ct, sub.class_type sub cl)
-    | Tcty_open (ovf, _p, lid, _env, e) ->
-        Pcty_open (ovf, lid, sub.class_type sub e)
+    | Tcty_open (od, e) ->
+        Pcty_open (sub.open_description sub od, sub.class_type sub e)
   in
   Cty.mk ~loc ~attrs desc
 
@@ -828,6 +836,7 @@ let default_mapper =
     module_type_declaration = module_type_declaration;
     module_binding = module_binding;
     package_type = package_type ;
+    open_declaration = open_declaration;
     open_description = open_description;
     include_description = include_description;
     include_declaration = include_declaration;

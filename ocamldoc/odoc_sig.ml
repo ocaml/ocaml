@@ -45,19 +45,19 @@ module Signature_search =
 
     let add_to_hash table signat =
       match signat with
-        Types.Sig_value (ident, _) ->
+        Types.Sig_value (ident, _, _) ->
           Hashtbl.add table (V (Name.from_ident ident)) signat
-      | Types.Sig_typext (ident, _, _) ->
+      | Types.Sig_typext (ident, _, _, _) ->
           Hashtbl.add table (X (Name.from_ident ident)) signat
-      | Types.Sig_type (ident, _, _) ->
+      | Types.Sig_type (ident, _, _, _) ->
           Hashtbl.add table (T (Name.from_ident ident)) signat
-      | Types.Sig_class (ident, _, _) ->
+      | Types.Sig_class (ident, _, _, _) ->
           Hashtbl.add table (C (Name.from_ident ident)) signat
-      | Types.Sig_class_type (ident, _, _) ->
+      | Types.Sig_class_type (ident, _, _, _) ->
           Hashtbl.add table (CT (Name.from_ident ident)) signat
-      | Types.Sig_module (ident, _, _, _) ->
+      | Types.Sig_module (ident, _, _, _, _) ->
           Hashtbl.add table (M (Name.from_ident ident)) signat
-      | Types.Sig_modtype (ident,_) ->
+      | Types.Sig_modtype (ident,_,_) ->
           Hashtbl.add table (MT (Name.from_ident ident)) signat
 
     let table signat =
@@ -67,39 +67,39 @@ module Signature_search =
 
     let search_value table name =
       match Hashtbl.find table (V name) with
-      | (Types.Sig_value (_, val_desc)) ->  val_desc.Types.val_type
+      | (Types.Sig_value (_, val_desc, _)) ->  val_desc.Types.val_type
       | _ -> assert false
 
     let search_extension table name =
       match Hashtbl.find table (X name) with
-      | (Types.Sig_typext (_, ext, _)) -> ext
+      | (Types.Sig_typext (_, ext, _, _)) -> ext
       | _ -> assert false
 
     let search_type table name =
       match Hashtbl.find table (T name) with
-      | (Types.Sig_type (_, type_decl, _)) -> type_decl
+      | (Types.Sig_type (_, type_decl, _, _)) -> type_decl
       | _ -> assert false
 
     let search_class table name =
       match Hashtbl.find table (C name) with
-      | (Types.Sig_class (_, class_decl, _)) -> class_decl
+      | (Types.Sig_class (_, class_decl, _, _)) -> class_decl
       | _ -> assert false
 
     let search_class_type table name =
       match Hashtbl.find table (CT name) with
-      | (Types.Sig_class_type (_, cltype_decl, _)) -> cltype_decl
+      | (Types.Sig_class_type (_, cltype_decl, _, _)) -> cltype_decl
       | _ -> assert false
 
     let search_module table name =
       match Hashtbl.find table (M name) with
-      | (Types.Sig_module (_ident, _, md, _)) -> md.Types.md_type
+      | (Types.Sig_module (_ident, _, md, _, _)) -> md.Types.md_type
       | _ -> assert false
 
     let search_module_type table name =
       match Hashtbl.find table (MT name) with
-      | (Types.Sig_modtype (_, {Types.mtd_type = Some module_type})) ->
+      | (Types.Sig_modtype (_, {Types.mtd_type = Some module_type}, _)) ->
           Some module_type
-      | (Types.Sig_modtype (_, {Types.mtd_type = None})) ->
+      | (Types.Sig_modtype (_, {Types.mtd_type = None}, _)) ->
           None
       | _ -> assert false
 

@@ -175,24 +175,25 @@ module FieldMap = Map.Make(struct
   end)
 
 let item_ident_name = function
-    Sig_value(id, d) -> (id, d.val_loc, Field_value(Ident.name id))
-  | Sig_type(id, d, _) -> (id, d.type_loc, Field_type(Ident.name id))
-  | Sig_typext(id, d, _) -> (id, d.ext_loc, Field_typext(Ident.name id))
-  | Sig_module(id, _, d, _) -> (id, d.md_loc, Field_module(Ident.name id))
-  | Sig_modtype(id, d) -> (id, d.mtd_loc, Field_modtype(Ident.name id))
-  | Sig_class(id, d, _) -> (id, d.cty_loc, Field_class(Ident.name id))
-  | Sig_class_type(id, d, _) -> (id, d.clty_loc, Field_classtype(Ident.name id))
+    Sig_value(id, d, _) -> (id, d.val_loc, Field_value(Ident.name id))
+  | Sig_type(id, d, _, _) -> (id, d.type_loc, Field_type(Ident.name id))
+  | Sig_typext(id, d, _, _) -> (id, d.ext_loc, Field_typext(Ident.name id))
+  | Sig_module(id, _, d, _, _) -> (id, d.md_loc, Field_module(Ident.name id))
+  | Sig_modtype(id, d, _) -> (id, d.mtd_loc, Field_modtype(Ident.name id))
+  | Sig_class(id, d, _, _) -> (id, d.cty_loc, Field_class(Ident.name id))
+  | Sig_class_type(id, d, _, _) ->
+      (id, d.clty_loc, Field_classtype(Ident.name id))
 
 let is_runtime_component = function
-  | Sig_value(_,{val_kind = Val_prim _})
-  | Sig_type(_,_,_)
-  | Sig_module(_,Mp_absent,_,_)
-  | Sig_modtype(_,_)
-  | Sig_class_type(_,_,_) -> false
-  | Sig_value(_,_)
-  | Sig_typext(_,_,_)
-  | Sig_module(_,Mp_present,_,_)
-  | Sig_class(_, _,_) -> true
+  | Sig_value(_,{val_kind = Val_prim _}, _)
+  | Sig_type(_,_,_,_)
+  | Sig_module(_,Mp_absent,_,_,_)
+  | Sig_modtype(_,_,_)
+  | Sig_class_type(_,_,_,_) -> false
+  | Sig_value(_,_,_)
+  | Sig_typext(_,_,_,_)
+  | Sig_module(_,Mp_present,_,_,_)
+  | Sig_class(_,_,_,_) -> true
 
 (* Print a coercion *)
 
@@ -339,7 +340,7 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
   let (id_pos_list,_) =
     List.fold_left
       (fun (l,pos) -> function
-          Sig_module (id, Mp_present, _, _) ->
+          Sig_module (id, Mp_present, _, _, _) ->
             ((id,pos,Tcoerce_none)::l , pos+1)
         | item -> (l, if is_runtime_component item then pos+1 else pos))
       ([], 0) sig1 in
@@ -347,6 +348,16 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
      The table is indexed by kind and name of component *)
   let rec build_component_table pos tbl = function
       [] -> pos, tbl
+    | (Sig_value (_, _, Hidden)
+      |Sig_type (_, _, _, Hidden)
+      |Sig_typext (_, _, _, Hidden)
+      |Sig_module (_, _, _, _, Hidden)
+      |Sig_modtype (_, _, Hidden)
+      |Sig_class (_, _, _, Hidden)
+      |Sig_class_type (_, _, _, Hidden)
+      ) as item :: rem ->
+        let pos = if is_runtime_component item then pos + 1 else pos in
+        build_component_table pos tbl rem (* do not pair private items. *)
     | item :: rem ->
         let (id, _loc, name) = item_ident_name item in
         let pos, nextpos =
@@ -386,7 +397,7 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
         let (id2, loc, name2) = item_ident_name item2 in
         let name2, report =
           match item2, name2 with
-            Sig_type (_, {type_manifest=None}, _), Field_type s
+            Sig_type (_, {type_manifest=None}, _, _), Field_type s
             when Btype.is_row_name s ->
               (* Do not report in case of failure,
                  as the main type will generate an error *)
@@ -428,7 +439,7 @@ and signature_components ~loc old_env ~mark env cxt subst paired =
   in
   match paired with
     [] -> []
-  | (Sig_value(id1, valdecl1), Sig_value(_id2, valdecl2), pos) :: rem ->
+  | (Sig_value(id1, valdecl1, _), Sig_value(_id2, valdecl2, _), pos) :: rem ->
       let cc =
         value_descriptions ~loc env ~mark cxt subst id1 valdecl1 valdecl2
       in
@@ -436,15 +447,16 @@ and signature_components ~loc old_env ~mark env cxt subst paired =
         Val_prim _ -> comps_rec rem
       | _ -> (pos, cc) :: comps_rec rem
       end
-  | (Sig_type(id1, tydecl1, _), Sig_type(_id2, tydecl2, _), _pos) :: rem ->
+  | (Sig_type(id1, tydecl1, _, _), Sig_type(_id2, tydecl2, _, _), _pos) :: rem
+    ->
       type_declarations ~loc ~old_env env ~mark cxt subst id1 tydecl1 tydecl2;
       comps_rec rem
-  | (Sig_typext(id1, ext1, _), Sig_typext(_id2, ext2, _), pos)
+  | (Sig_typext(id1, ext1, _, _), Sig_typext(_id2, ext2, _, _), pos)
     :: rem ->
       extension_constructors ~loc env ~mark cxt subst id1 ext1 ext2;
       (pos, Tcoerce_none) :: comps_rec rem
-  | (Sig_module(id1, pres1, mty1, _),
-     Sig_module(_id2, pres2, mty2, _), pos) :: rem -> begin
+  | (Sig_module(id1, pres1, mty1, _, _),
+     Sig_module(_id2, pres2, mty2, _, _), pos) :: rem -> begin
       let cc = module_declarations ~loc env ~mark cxt subst id1 mty1 mty2 in
       let rem = comps_rec rem in
       match pres1, pres2, mty1.md_type with
@@ -454,14 +466,14 @@ and signature_components ~loc old_env ~mark env cxt subst paired =
           (pos, Tcoerce_alias (env, p1, cc)) :: rem
       | Mp_absent, Mp_present, _ -> assert false
     end
-  | (Sig_modtype(id1, info1), Sig_modtype(_id2, info2), _pos) :: rem ->
+  | (Sig_modtype(id1, info1, _), Sig_modtype(_id2, info2, _), _pos) :: rem ->
       modtype_infos ~loc env ~mark cxt subst id1 info1 info2;
       comps_rec rem
-  | (Sig_class(id1, decl1, _), Sig_class(_id2, decl2, _), pos) :: rem ->
+  | (Sig_class(id1, decl1, _, _), Sig_class(_id2, decl2, _, _), pos) :: rem ->
       class_declarations ~old_env env cxt subst id1 decl1 decl2;
       (pos, Tcoerce_none) :: comps_rec rem
-  | (Sig_class_type(id1, info1, _),
-     Sig_class_type(_id2, info2, _), _pos) :: rem ->
+  | (Sig_class_type(id1, info1, _, _),
+     Sig_class_type(_id2, info2, _, _), _pos) :: rem ->
       class_type_declarations ~loc ~old_env env cxt subst id1 info1 info2;
       comps_rec rem
   | _ ->

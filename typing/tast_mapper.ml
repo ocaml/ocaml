@@ -17,7 +17,7 @@ open Asttypes
 open Typedtree
 
 (* TODO: add 'methods' for location, attribute, extension,
-   open_description, include_declaration, include_description *)
+   include_declaration, include_description *)
 
 type mapper =
   {
@@ -49,6 +49,8 @@ type mapper =
     pat: mapper -> pattern -> pattern;
     row_field: mapper -> row_field -> row_field;
     object_field: mapper -> object_field -> object_field;
+    open_declaration: mapper -> open_declaration -> open_declaration;
+    open_description: mapper -> open_description -> open_description;
     signature: mapper -> signature -> signature;
     signature_item: mapper -> signature_item -> signature_item;
     structure: mapper -> structure -> structure;
@@ -130,7 +132,7 @@ let structure_item sub {str_desc; str_loc; str_env} =
           (List.map (tuple3 id id (sub.class_type_declaration sub)) list)
     | Tstr_include incl ->
         Tstr_include (include_infos (sub.module_expr sub) incl)
-    | Tstr_open _
+    | Tstr_open od -> Tstr_open (sub.open_declaration sub od)
     | Tstr_attribute _ as d -> d
   in
   {str_desc; str_env; str_loc}
@@ -229,8 +231,6 @@ let expr sub x =
         Texp_constraint (sub.typ sub cty)
     | Texp_coerce (cty1, cty2) ->
         Texp_coerce (opt (sub.typ sub) cty1, sub.typ sub cty2)
-    | Texp_open (ovf, path, loc, env) ->
-        Texp_open (ovf, path, loc, sub.env sub env)
     | Texp_newtype _ as d -> d
     | Texp_poly cto -> Texp_poly (opt (sub.typ sub) cto)
   in
@@ -361,6 +361,8 @@ let expr sub x =
         Texp_unreachable
     | Texp_extension_constructor _ as e ->
         e
+    | Texp_open (od, e) ->
+        Texp_open (sub.open_declaration sub od, sub.expr sub e)
   in
   {x with exp_extra; exp_desc; exp_env}
 
@@ -405,7 +407,7 @@ let signature_item sub x =
     | Tsig_class_type list ->
         Tsig_class_type
           (List.map (sub.class_type_declaration sub) list)
-    | Tsig_open _
+    | Tsig_open od -> Tsig_open (sub.open_description sub od)
     | Tsig_attribute _ as d -> d
   in
   {x with sig_desc; sig_env}
@@ -442,6 +444,13 @@ let with_constraint sub = function
   | Twith_typesubst decl -> Twith_typesubst (sub.type_declaration sub decl)
   | Twith_module _
   | Twith_modsubst _ as d -> d
+
+let open_description sub od =
+  {od with open_env = sub.env sub od.open_env}
+
+let open_declaration sub od =
+  {od with open_expr = sub.module_expr sub od.open_expr;
+           open_env = sub.env sub od.open_env}
 
 let module_coercion sub = function
   | Tcoerce_none -> Tcoerce_none
@@ -539,8 +548,8 @@ let class_expr sub x =
         )
     | Tcl_ident (path, lid, tyl) ->
         Tcl_ident (path, lid, List.map (sub.typ sub) tyl)
-    | Tcl_open (ovf, p, lid, env, e) ->
-        Tcl_open (ovf, p, lid, sub.env sub env, sub.class_expr sub e)
+    | Tcl_open (od, e) ->
+        Tcl_open (sub.open_description sub od, sub.class_expr sub e)
   in
   {x with cl_desc; cl_env}
 
@@ -561,8 +570,8 @@ let class_type sub x =
            sub.typ sub ct,
            sub.class_type sub cl
           )
-    | Tcty_open (ovf, p, lid, env, e) ->
-        Tcty_open (ovf, p, lid, sub.env sub env, sub.class_type sub e)
+    | Tcty_open (od, e) ->
+        Tcty_open (sub.open_description sub od, sub.class_type sub e)
   in
   {x with cltyp_desc; cltyp_env}
 
@@ -708,6 +717,8 @@ let default =
     pat;
     row_field;
     object_field;
+    open_declaration;
+    open_description;
     signature;
     signature_item;
     structure;
