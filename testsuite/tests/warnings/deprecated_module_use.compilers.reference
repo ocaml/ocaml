@@ -1,6 +1,6 @@
 File "deprecated_module_use.ml", line 18, characters 5-22:
 18 | open Deprecated_module
-          <alert>^^^^^^^^^^^^^^^^^</alert>
+          ^^^^^^^^^^^^^^^^^
 Alert deprecated: module Deprecated_module
 
   As you could guess, Deprecated_module is deprecated.
@@ -8,17 +8,17 @@ Alert deprecated: module Deprecated_module
 
 File "deprecated_module_use.ml", line 20, characters 9-12:
 20 | type s = M.t
-              <alert>^^^</alert>
+              ^^^
 Alert deprecated: module Deprecated_module.M
 File "deprecated_module_use.ml", line 20, characters 9-12:
 20 | type s = M.t
-              <alert>^^^</alert>
+              ^^^
 Alert deprecated: Deprecated_module.M.t
 File "deprecated_module_use.ml", line 22, characters 5-6:
 22 | open M
-          <alert>^</alert>
+          ^
 Alert deprecated: module Deprecated_module.M
 File "deprecated_module_use.ml", line 23, characters 8-9:
 23 | let _ = x
-             <alert>^</alert>
+             ^
 Alert deprecated: Deprecated_module.M.x
