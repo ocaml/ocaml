@@ -205,7 +205,15 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
       h = caml_hash_mix_intnat(h, v);
       num--;
     }
-    else if (Is_in_value_area(v)) {
+#ifndef NO_NAKED_POINTERS
+    else if (!Is_in_value_area(v)) {
+      /* v is a pointer outside the heap, probably a code pointer.
+         Shall we count it?  Let's say yes by compatibility with old code. */
+      h = caml_hash_mix_intnat(h, v);
+      num--;
+    }
+#endif
+    else {
       switch (Tag_val(v)) {
       case String_tag:
         h = caml_hash_mix_string(h, v);
@@ -225,6 +233,21 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
       case Abstract_tag:
         /* Block contents unknown.  Do nothing. */
         break;
+#ifdef NO_NAKED_POINTERS
+      case Closure_tag:
+        /* Mix in the tag and size, but do not count this towards [num] */
+        h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
+        /* Copy fields into queue, not exceeding the total size [sz] */
+        for (i = 0, len = Wosize_val(v); i < len; i++) {
+          value f = Field(v, i);
+          /* Do not copy code pointers into the queue, which can only contain
+             values in no-naked-pointers mode. */
+          if (Is_in_code_area(f)) { h = caml_hash_mix_intnat(h, f); }
+          else if (wr >= sz) { break; }
+          else { queue[wr++] = f; }
+        }
+        break;
+#endif
       case Infix_tag:
         /* Mix in the offset to distinguish different functions from
            the same mutually-recursive definition */
@@ -264,11 +287,6 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         }
         break;
       }
-    } else {
-      /* v is a pointer outside the heap, probably a code pointer.
-         Shall we count it?  Let's say yes by compatibility with old code. */
-      h = caml_hash_mix_intnat(h, v);
-      num--;
     }
   }
   /* Final mixing of bits */
