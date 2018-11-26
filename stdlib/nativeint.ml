@@ -27,6 +27,8 @@ external logxor: nativeint -> nativeint -> nativeint = "%nativeint_xor"
 external shift_left: nativeint -> int -> nativeint = "%nativeint_lsl"
 external shift_right: nativeint -> int -> nativeint = "%nativeint_asr"
 external shift_right_logical: nativeint -> int -> nativeint = "%nativeint_lsr"
+external count_leading_zeros : nativeint -> int = "%nativeint_clz"
+external count_set_bits : nativeint -> int = "%nativeint_popcnt"
 external of_int: int -> nativeint = "%nativeint_of_int"
 external to_int: nativeint -> int = "%nativeint_to_int"
 external of_float : float -> nativeint

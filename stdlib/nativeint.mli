@@ -140,6 +140,13 @@ external shift_right_logical :
    regardless of the sign of [x].
    The result is unspecified if [y < 0] or [y >= bitsize]. *)
 
+external count_leading_zeros : nativeint -> int = "%nativeint_clz"
+(** Counts the number of most significant zero bits.
+   Interprets the argument as an {e unsigned} native integer. *)
+
+external count_set_bits : nativeint -> int = "%nativeint_popcnt"
+(** Counts the number of bit set to 1.
+   Interprets the argument as an {e unsigned} native integer. *)
 
 external of_int : int -> nativeint = "%nativeint_of_int"
 (** Convert the given integer (type [int]) to a native integer

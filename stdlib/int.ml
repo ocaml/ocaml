@@ -36,6 +36,8 @@ let lognot x = logxor x (-1)
 external shift_left : int -> int -> int = "%lslint"
 external shift_right : int -> int -> int = "%asrint"
 external shift_right_logical : int -> int -> int = "%lsrint"
+external count_leading_zeros : int -> int = "%clzint"
+external count_set_bits : int -> int = "%popcntint"
 let equal : int -> int -> bool = ( = )
 let compare : int -> int -> int = Stdlib.compare
 external to_float : int -> float = "%floatofint"

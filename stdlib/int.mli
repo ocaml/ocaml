@@ -100,6 +100,14 @@ external shift_right_logical : int -> int -> int = "%lsrint"
     of the sign of [x]. The result is unspecified if [n < 0] or
     [n > ]{!Sys.int_size}. *)
 
+external count_leading_zeros : int -> int = "%clzint"
+(** Counts the number of most significant zero bits.
+    Interprets the argument as an {e unsigned} integer. *)
+
+external count_set_bits : int -> int = "%popcntint"
+(** Counts the number of bit set to 1.
+    Interprets the argument as an {e unsigned} integer. *)
+
 (** {1:preds Predicates and comparisons} *)
 
 val equal : int -> int -> bool

@@ -27,6 +27,8 @@ external logxor : int64 -> int64 -> int64 = "%int64_xor"
 external shift_left : int64 -> int -> int64 = "%int64_lsl"
 external shift_right : int64 -> int -> int64 = "%int64_asr"
 external shift_right_logical : int64 -> int -> int64 = "%int64_lsr"
+external count_leading_zeros : int64 -> int = "%int64_clz"
+external count_set_bits : int64 -> int = "%int64_popcnt"
 external of_int : int -> int64 = "%int64_of_int"
 external to_int : int64 -> int = "%int64_to_int"
 external of_float : float -> int64
