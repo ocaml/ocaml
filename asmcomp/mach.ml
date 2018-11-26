@@ -23,7 +23,7 @@ type integer_comparison =
 
 type integer_operation =
     Iadd | Isub | Imul | Imulh | Idiv | Imod
-  | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
+  | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr | Iclz of bool | Ipopcnt
   | Icomp of integer_comparison
   | Icheckbound of { label_after_error : label option;
         spacetime_index : int; }
@@ -186,7 +186,7 @@ let spacetime_node_hole_pointer_is_live_before insn =
         (* [Icheckbound] doesn't need to return [true] for the same reason as
            [Ialloc]. *)
       | Iadd | Isub | Imul | Imulh | Idiv | Imod
-      | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
+      | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr | Iclz _ | Ipopcnt
       | Icomp _ -> false
       end
     | Ispecific specific_op ->

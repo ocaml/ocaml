@@ -55,6 +55,18 @@ let pseudoregs_for_operation op arg res =
     ( [| arg.(0); arg.(1); res.(0) |], [| res.(0) |])
   (* One-address unary operations: arg.(0) and res.(0) must be the same *)
   |  Iintop_imm((Imul|Iand|Ior|Ixor), _) -> (res, res)
+  (* To implement clz on s390, emit code using flogr instruction.
+     For flogr, the first result register must be an even register,
+     the second result register must be the consecutive register after the first
+     (and therefore implicit in the instruction encoding),
+     and the argument must be different from the two result registers,
+     to ensure that it is not clobbered.
+     To keep it simple, force the argument to r7 and the result to r8 and r9. *)
+  | Iintop(Iclz _) ->
+    let r7 = Proc.phys_reg 5 in
+    let r8 = Proc.phys_reg 6 in
+    let r9 = Proc.phys_reg 7 in
+    ([| r7 |], [| r8; r9 |])
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
@@ -76,10 +88,16 @@ method select_addressing _chunk exp =
   end else
     (Iindexed 0, exp)
 
+method private iextcall (func, alloc) =
+  Iextcall { func; alloc; label_after = Cmm.new_label (); }
+
 method! select_operation op args dbg =
   match (op, args) with
   (* Z does not support immediate operands for multiply high *)
     (Cmulhi, _) -> (Iintop Imulh, args)
+  (* Z does not support popcnt *)
+  | (Cpopcnt, args) ->
+       (self#iextcall("caml_untagged_int_popcnt", false), args)
   (* The and, or and xor instructions have a different range of immediate
      operands than the other instructions *)
   | (Cand, _) ->

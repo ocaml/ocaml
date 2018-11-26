@@ -212,6 +212,12 @@ method! select_operation op args dbg =
       (Iintop Imul, args)
   | (Cmulhi, args) ->
       (Iintop Imulh, args)
+  (* ARM prior to armv6 does not have full support for clz *)
+  | ((Cclz _), args) when !arch < ARMv6 ->
+       (self#iextcall("caml_untagged_int_clz", false), args)
+  (* ARM does not support popcnt *)
+  | (Cpopcnt, args) ->
+       (self#iextcall("caml_untagged_int_popcnt", false), args)
   (* Turn integer division/modulus into runtime ABI calls *)
   | (Cdivi, args) ->
       (self#iextcall("__aeabi_idiv", false), args)

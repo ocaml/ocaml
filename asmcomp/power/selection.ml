@@ -62,6 +62,9 @@ method select_addressing _chunk exp =
       then (Iindexed2, Ctuple[e1; e2])
       else (Iindexed d, Cop(Cadda, [e1; e2], dbg))
 
+method private iextcall (func, alloc) =
+  Iextcall { func; alloc; label_after = Cmm.new_label (); }
+
 method! select_operation op args dbg =
   match (op, args) with
   (* PowerPC does not support immediate operands for multiply high *)
@@ -78,6 +81,9 @@ method! select_operation op args dbg =
       (Ispecific Imultaddf, [arg1; arg2; arg3])
   | (Csubf, [Cop(Cmulf, [arg1; arg2], _); arg3]) ->
       (Ispecific Imultsubf, [arg1; arg2; arg3])
+  (* popcnt is not supported prior to ppc64le *)
+  | (Cpopcnt, args) when Config.model <> "ppc64le" ->
+      (self#iextcall("caml_untagged_int_popcnt", false), args)
   | _ ->
       super#select_operation op args dbg
 

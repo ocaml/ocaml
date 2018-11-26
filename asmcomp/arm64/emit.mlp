@@ -735,6 +735,8 @@ let emit_instr i =
     | Lop(Iintop Imod) ->
         `	sdiv	{emit_reg reg_tmp1}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	msub	{emit_reg i.res.(0)}, {emit_reg reg_tmp1}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
+    | Lop(Iintop (Iclz _)) ->
+        `       clz     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`;
     | Lop(Iintop Imulh) ->
         `	smulh	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Iintop op) ->

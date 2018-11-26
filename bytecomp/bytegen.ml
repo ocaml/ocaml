@@ -347,6 +347,8 @@ let comp_primitive p args =
   | Pasrint -> Kasrint
   | Poffsetint n -> Koffsetint n
   | Poffsetref n -> Koffsetref n
+  | Pclzint -> Kccall("caml_int_clz", 1)
+  | Ppopcntint -> Kccall("caml_int_popcnt", 1)
   | Pintoffloat -> Kccall("caml_int_of_float", 1)
   | Pfloatofint -> Kccall("caml_float_of_int", 1)
   | Pnegfloat -> Kccall("caml_neg_float", 1)
@@ -418,6 +420,8 @@ let comp_primitive p args =
   | Plslbint bi -> comp_bint_primitive bi "shift_left" args
   | Plsrbint bi -> comp_bint_primitive bi "shift_right_unsigned" args
   | Pasrbint bi -> comp_bint_primitive bi "shift_right" args
+  | Pclzbint bi -> comp_bint_primitive bi "clz" args
+  | Ppopcntbint bi -> comp_bint_primitive bi "popcnt" args
   | Pbintcomp(_, Ceq) -> Kccall("caml_equal", 2)
   | Pbintcomp(_, Cne) -> Kccall("caml_notequal", 2)
   | Pbintcomp(_, Clt) -> Kccall("caml_lessthan", 2)

@@ -89,6 +89,8 @@ let intop = function
   | Ilsl -> " << "
   | Ilsr -> " >>u "
   | Iasr -> " >>s "
+  | Iclz b -> Printf.sprintf " clz %B" b
+  | Ipopcnt -> " popcnt "
   | Icomp cmp -> intcomp cmp
   | Icheckbound { label_after_error; spacetime_index; } ->
     if not Config.spacetime then " check > "
@@ -148,6 +150,8 @@ let operation op arg ppf res =
     if Config.spacetime then begin
       fprintf ppf "(spacetime node = %a)" reg arg.(0)
     end
+  | Iintop(Iclz b) -> fprintf ppf "clz %B %a" b reg arg.(0)
+  | Iintop(Ipopcnt) -> fprintf ppf "popcnt %a" reg arg.(0)
   | Iintop(op) -> fprintf ppf "%a%s%a" reg arg.(0) (intop op) reg arg.(1)
   | Iintop_imm(op, n) -> fprintf ppf "%a%s%i" reg arg.(0) (intop op) n
   | Inegf -> fprintf ppf "-f %a" reg arg.(0)

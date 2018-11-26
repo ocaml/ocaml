@@ -684,6 +684,25 @@ let emit_instr fallthrough i =
   | Lop(Iintop(Ilsl | Ilsr | Iasr as op)) ->
       (* We have i.arg.(0) = i.res.(0) and i.arg.(1) = %ecx *)
       instr_for_intop op cl (reg i.res.(0))
+  | Lop(Iintop (Iclz non_zero_input)) ->
+    let res0 = reg i.res.(0) in
+    let arg0 = reg i.arg.(0) in
+    if non_zero_input then
+      (* No need to handle that bsr is undefind on 0 input. *)
+      (I.bsr arg0 res0;
+       I.xor (int 31) res0)
+    else
+      (let lbl_z = new_label () in
+       let lbl_nz = new_label () in
+       (I.bsr arg0 res0;
+        I.je (label lbl_z);
+        I.xor (int 31) res0;
+        I.jmp (label lbl_nz);
+        def_label lbl_z;
+        I.mov (int 32) res0;
+        def_label lbl_nz))
+  | Lop (Iintop Ipopcnt) ->
+      I.popcnt (reg i.arg.(0)) (reg i.res.(0));
   | Lop(Iintop Imulh) ->
       I.imul (reg i.arg.(1)) None
   | Lop(Iintop op) ->

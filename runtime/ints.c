@@ -280,6 +280,157 @@ CAMLprim value caml_int32_shift_right(value v1, value v2)
 CAMLprim value caml_int32_shift_right_unsigned(value v1, value v2)
 { return caml_copy_int32((uint32_t)Int32_val(v1) >> Int_val(v2)); }
 
+#if defined(__GNUC__)
+#if ARCH_INT32_TYPE == long
+#define int32_clz __builtin_clzl
+#define int32_popcnt __builtin_popcountl
+#else /* ARCH_INT32_TYPE == long */
+#define int32_clz __builtin_clz
+#define int32_popcnt __builtin_popcount
+#endif /* ARCH_INT32_TYPE == long */
+
+#define int64_clz __builtin_clzll
+#define int64_popcnt __builtin_popcountll
+
+#else /* defined(__GNUC__) */
+ /* _MSC_ does not have builtin for popcnt, and
+  *  has undefined behavior for clz builtin when
+  *  lzcnt instruction is not supported.
+  *  Use naive version of clz and popcnt from Hacker's Delight. */
+
+int naive_int64_clz(uint64_t v)
+{
+  int n = 0;
+  int64_t x = (int64_t) v;
+  int64_t y = x;
+
+L: if (x < 0) return n;
+   if (y == 0) return 64 - n;
+   n = n + 1;
+   x = x << 1;
+   y = y >> 1;
+   goto L;
+}
+
+int naive_int32_clz(uint32_t v)
+{
+  int n = 0;
+  uint32_t x = (uint32_t) v;
+  uint32_t y = x;
+
+L: if (x < 0) return n;
+   if (y == 0)
+#ifdef ARCH_SIXTYFOUR
+     return 64 - n;
+#else
+     return 32 - n;
+#endif
+   n = n + 1;
+   x = x << 1;
+   y = y >> 1;
+   goto L;
+}
+
+int naive_int64_popcnt (uint64_t x)
+{
+   int n = 0;
+   while (x != 0) {
+      n = n + 1;
+      x = x & (x - 1);
+   }
+   return n;
+}
+
+
+int naive_int32_popcnt (uint32_t x)
+{
+   int n = 0;
+   while (x != 0) {
+      n = n + 1;
+      x = x & (x - 1);
+   }
+   return n;
+}
+
+#define int32_clz naive_int32_clz
+#define int64_clz naive_int64_clz
+#define int32_popcnt naive_int32_popcnt
+#define int64_popcnt naive_int64_popcnt
+
+#endif /* defined(__GNUC__) */
+
+int wrap_int32_clz(uint32_t x)
+{
+  int res;
+  /* builtin_clz on input 0 is undefined */
+  if (x == 0) res = 32;
+  else
+    {
+      res = int32_clz(x);
+#ifdef ARCH_SIXTYFOUR
+      res -= 32;
+#endif
+    }
+  return res;
+}
+
+int wrap_int64_clz(uint64_t x)
+{
+  int res;
+  /* builtin_clz on input 0 is undefined */
+  if (x == 0) res = 64;
+  else res = int64_clz(x);
+  return res;
+}
+
+CAMLprim value caml_untagged_int_clz(value v1)
+{
+#ifdef ARCH_SIXTYFOUR
+  return wrap_int64_clz((uint64_t)v1);
+#else
+  return wrap_int32_clz((uint32_t)v1);
+#endif
+}
+
+CAMLprim value caml_int_clz(value v1)
+{
+  /* Do not use Long_val(v1) conversion and preserve the tag. It
+     guarantees that the input to builtin_clz is non-zero, to guard
+     against versions of builtin_clz that are undefined for intput 0.
+     The tag does not change the number of leading zeros.
+   */
+#ifdef ARCH_SIXTYFOUR
+  return Val_long(int64_clz((uint64_t)v1));
+#else
+  return Val_long(int32_clz((uint32_t)v1));
+#endif
+}
+
+CAMLprim value caml_untagged_int_popcnt(value v1)
+{
+#ifdef ARCH_SIXTYFOUR
+  return int64_popcnt((uint64_t)v1);
+#else
+  return int32_popcnt((uint32_t)v1);
+#endif
+}
+
+CAMLprim value caml_int_popcnt(value v1)
+{
+  /* -1 to account for the tag */
+#ifdef ARCH_SIXTYFOUR
+  return Val_long((int64_popcnt((uint64_t)v1)) - 1);
+#else
+  return Val_long((int32_popcnt((uint32_t)v1)) - 1);
+#endif
+}
+
+CAMLprim value caml_int32_clz(value v1)
+{ return Val_long(wrap_int32_clz((uint32_t)Int32_val(v1))); }
+
+CAMLprim value caml_int32_popcnt(value v1)
+{ return Val_long(int32_popcnt((uint32_t) (Int32_val(v1)))); }
+
 static int32_t caml_swap32(int32_t x)
 {
   return (((x & 0x000000FF) << 24) |
@@ -498,6 +649,12 @@ CAMLprim value caml_int64_shift_right(value v1, value v2)
 
 CAMLprim value caml_int64_shift_right_unsigned(value v1, value v2)
 { return caml_copy_int64((uint64_t) (Int64_val(v1)) >>  Int_val(v2)); }
+
+CAMLprim value caml_int64_clz(value v1)
+{ return Val_long(wrap_int64_clz((uint64_t) Int64_val(v1))); }
+
+CAMLprim value caml_int64_popcnt(value v1)
+{ return Val_long(int64_popcnt((uint64_t) (Int64_val(v1)))); }
 
 #ifdef ARCH_SIXTYFOUR
 static value caml_swap64(value x)
@@ -779,6 +936,24 @@ CAMLprim value caml_nativeint_shift_right(value v1, value v2)
 
 CAMLprim value caml_nativeint_shift_right_unsigned(value v1, value v2)
 { return caml_copy_nativeint((uintnat)Nativeint_val(v1) >> Int_val(v2)); }
+
+CAMLprim value caml_nativeint_clz(value v1)
+{
+#ifdef ARCH_SIXTYFOUR
+  return Val_long(wrap_int64_clz((uint64_t) Int64_val(v1)));
+#else
+  return Val_long(wrap_int32_clz((uint32_t) Int32_val(v1)));
+#endif
+}
+
+CAMLprim value caml_nativeint_popcnt(value v1)
+{
+#ifdef ARCH_SIXTYFOUR
+  return Val_long(int64_popcnt((uint64_t) Int64_val(v1)));
+#else
+  return Val_long(int32_popcnt((uint32_t) Int32_val(v1)));
+#endif
+}
 
 value caml_nativeint_direct_bswap(value v)
 {

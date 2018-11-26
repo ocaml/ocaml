@@ -1414,6 +1414,9 @@ let simplif_primitive_32bits = function
   | Plslbint Pint64 -> Pccall (default_prim "caml_int64_shift_left")
   | Plsrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right_unsigned")
   | Pasrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right")
+  | Pclzbint Pint64 -> Pccall (default_prim "caml_int64_clz")
+  | Ppopcntbint Pint64 -> Pccall (default_prim "caml_int64_popcnt")
+  | Ppopcntint -> Pccall (default_prim "caml_int_popcnt")
   | Pbintcomp(Pint64, Lambda.Ceq) -> Pccall (default_prim "caml_equal")
   | Pbintcomp(Pint64, Lambda.Cne) -> Pccall (default_prim "caml_notequal")
   | Pbintcomp(Pint64, Lambda.Clt) -> Pccall (default_prim "caml_lessthan")
@@ -2132,6 +2135,10 @@ and transl_prim_1 env p arg dbg =
                add_const (Cop(Cload (Word_int, Mutable), [arg], dbg))
                  (n lsl 1) dbg],
               dbg)))
+  | Pclzint -> tag_int (Cop((Cclz true), [transl env arg], dbg)) dbg
+  | Ppopcntint ->
+      let res = Cop(Cpopcnt, [transl env arg], dbg) in
+      tag_int (Cop(Caddi, [res; Cconst_int (-1)], dbg)) dbg
   (* Floating-point operations *)
   | Pfloatofint ->
       box_float dbg (Cop(Cfloatofint, [untag_int(transl env arg) dbg], dbg))
@@ -2181,6 +2188,27 @@ and transl_prim_1 env p arg dbg =
   | Pnegbint bi ->
       box_int dbg bi
         (Cop(Csubi, [Cconst_int 0; transl_unbox_int dbg env bi arg], dbg))
+  | Pclzbint bi -> begin
+      match (transl_unbox_int dbg env bi arg) with
+      | Cconst_natint 0n ->
+        let n = (match bi with
+          | Pnativeint -> 8*size_int
+          | Pint32 -> 32
+          | Pint64 -> 64)
+        in tag_int (Cconst_int n) dbg
+      | _ ->
+        let res = Cop((Cclz false),
+                      [make_unsigned_int bi
+                         (transl_unbox_int dbg env bi arg) dbg], dbg) in
+        if bi = Pint32 && size_int = 8 then
+          tag_int (Cop(Caddi, [res; Cconst_int (-32)], dbg)) dbg
+        else
+          tag_int res dbg
+    end
+  | Ppopcntbint bi ->
+      tag_int(Cop(Cpopcnt,
+                  [make_unsigned_int bi (transl_unbox_int dbg env bi arg) dbg],
+                  dbg)) dbg
   | Pbbswap bi ->
       let prim = match bi with
         | Pnativeint -> "nativeint"

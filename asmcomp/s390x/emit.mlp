@@ -468,6 +468,8 @@ let emit_instr i =
         `	srlg	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, 0({emit_reg i.arg.(1)})\n`
     | Lop(Iintop Iasr) ->
         `	srag	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, 0({emit_reg i.arg.(1)})\n`
+    | Lop(Iintop (Iclz _)) ->
+        `	flogr	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`;
     | Lop(Iintop(Icomp cmp)) ->
         let lbl = new_label() in
         let (comp, mask) = name_for_int_comparison cmp in
@@ -522,7 +524,7 @@ let emit_instr i =
     | Lop(Iintop_imm(Imul, n)) ->
         assert (i.arg.(0).loc = i.res.(0).loc);
           `	msgfi	{emit_reg i.res.(0)}, {emit_int n}\n`
-    | Lop(Iintop_imm((Imulh | Idiv | Imod), _)) ->
+    | Lop(Iintop_imm((Imulh | Idiv | Imod | Iclz _ | Ipopcnt), _)) ->
         assert false
     | Lop(Inegf | Iabsf as op) ->
         let instr = name_for_floatop1 op in

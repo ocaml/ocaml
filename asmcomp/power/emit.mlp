@@ -356,6 +356,8 @@ let name_for_intop = function
   | Ilsl  -> if ppc64 then "sld" else "slw"
   | Ilsr  -> if ppc64 then "srd" else "srw"
   | Iasr  -> if ppc64 then "srad" else "sraw"
+  | Iclz _ -> if ppc64 then "cntlzd" else "cntlzw"
+  | Ipopcnt  -> if ppc64 then "popcntd" else "popcntw"
   | _ -> Misc.fatal_error "Emit.Intop"
 
 let name_for_intop_imm = function
@@ -815,6 +817,12 @@ let emit_instr i =
         if !Clflags.debug then
           record_frame Reg.Set.empty false i.dbg ?label:label_after_error;
         `	{emit_string tglle}   {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
+    | Lop(Iintop ((Iclz _) as op)) ->
+        let instr = name_for_intop op in
+        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
+    | Lop(Iintop (Ipopcnt as op)) ->
+        let instr = name_for_intop op in
+        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iintop op) ->
         let instr = name_for_intop op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`

@@ -103,6 +103,9 @@ module I : sig
   val addsd: arg -> arg -> unit
   val and_: arg -> arg -> unit
   val andpd: arg -> arg -> unit
+  val bsr : arg -> arg -> unit
+  val lzcnt : arg -> arg -> unit
+  val popcnt : arg -> arg -> unit
   val bswap: arg -> unit
   val call: arg -> unit
   val cdq: unit -> unit
@@ -114,6 +117,7 @@ module I : sig
   val cvtss2sd: arg -> arg -> unit
   val cvttsd2si: arg -> arg -> unit
   val dec: arg -> unit
+  val neg: arg -> unit
   val divsd: arg -> arg -> unit
   val fabs: unit -> unit
   val fadd: arg -> unit

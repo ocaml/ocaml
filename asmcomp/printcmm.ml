@@ -126,6 +126,8 @@ let operation d = function
   | Clsl -> "<<"
   | Clsr -> ">>u"
   | Casr -> ">>s"
+  | Cclz b -> Printf.sprintf "clz %B" b
+  | Cpopcnt -> "popcnt"
   | Ccmpi c -> integer_comparison c
   | Caddv -> "+v"
   | Cadda -> "+a"

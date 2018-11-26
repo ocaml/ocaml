@@ -27,7 +27,7 @@ type integer_comparison =
 
 type integer_operation =
     Iadd | Isub | Imul | Imulh | Idiv | Imod
-  | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
+  | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr | Iclz of bool | Ipopcnt
   | Icomp of integer_comparison
   | Icheckbound of { label_after_error : label option;
         spacetime_index : int; }
