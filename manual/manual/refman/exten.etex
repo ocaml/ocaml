@@ -1679,6 +1679,23 @@ Some attributes are understood by the type-checker:
    the opposite of "ocaml.unboxed": keep the unoptimized
    representation of the type. When there is no annotation, the
    default is currently "boxed" but it may change in the future.
+ \item
+   "ocaml.local" or "local" take either "never", "always", "maybe" or
+   nothing as payload on a function definition.  If no payload is
+   provided, the default is "always".  The attribute controls an
+   optimization which consists in compiling a function into a static
+   continuation.  Contrary to inlining, this optimization does not
+   duplicate the function's body.  This is possible when all
+   references to the function are full applications, all sharing the
+   same continuation (for instance, the returned value of several
+   branches of a pattern matching). "never" disables the optimization,
+   "always" asserts that the optimization applies (otherwise a warning
+   55 is emitted) and "maybe" lets the optimization apply when
+   possible (this is the default behavior when the attribute is not
+   specified).  The optimization is implicitly disabled when using the
+   bytecode compiler in debug mode (-g), and for functions marked with
+   an "ocaml.inline always" or "ocaml.unrolled" attribute which
+   supersede "ocaml.local".
 \end{itemize}
 
 \begin{caml_example*}{verbatim}
