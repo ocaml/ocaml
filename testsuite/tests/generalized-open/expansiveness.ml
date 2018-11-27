@@ -20,8 +20,8 @@ let g = Fn.(fun x -> id x)
 let h = let open Fn in fun x -> id x
 ;;
 [%%expect{|
-val g : '_weak1 -> '_weak1 = <fun>
-val h : '_weak2 -> '_weak2 = <fun>
+val g : 'a -> 'a = <fun>
+val h : 'a -> 'a = <fun>
 |}]
 
 let i =
@@ -37,7 +37,7 @@ let iM =
   fun x -> M.id x
 ;;
 [%%expect{|
-val i : '_weak3 -> '_weak3 = <fun>
+val i : 'a -> 'a = <fun>
 val iM : 'a -> 'a = <fun>
 |}]
 
@@ -56,8 +56,8 @@ let jM =
   fun x -> M.id x
 ;;
 [%%expect{|
-val j : '_weak4 -> '_weak4 = <fun>
-val jM : '_weak5 -> '_weak5 = <fun>
+val j : '_weak1 -> '_weak1 = <fun>
+val jM : '_weak2 -> '_weak2 = <fun>
 |}]
 
 module Square(X : sig val x : int end) = struct
@@ -77,6 +77,6 @@ let kM =
   fun x -> x
 ;;
 [%%expect{|
-val k : '_weak6 -> '_weak6 = <fun>
-val kM : '_weak7 -> '_weak7 = <fun>
+val k : '_weak3 -> '_weak3 = <fun>
+val kM : '_weak4 -> '_weak4 = <fun>
 |}]
