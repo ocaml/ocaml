@@ -50,6 +50,8 @@ module type S_functor = sig
     type t
     module Set : Set.S with type elt = t
     module Map : Map.S with type key = t
+
+    val all_parents : t -> t list
   end
 
   module Subrange_state : S_subrange_state
@@ -62,14 +64,9 @@ module type S_functor = sig
     with type key := Key.t
     with type index := Index.t
 
-  module Cache : sig
-    type t
-    val create : unit -> t
-  end
+  val available_before : L.instruction -> Key.Set.t
 
-  val available_before : Cache.t -> L.instruction -> Key.Set.t
-
-  val available_across : Cache.t -> L.instruction -> Key.Set.t
+  val available_across : L.instruction -> Key.Set.t
 
   val must_restart_ranges_upon_any_change : unit -> bool
 end

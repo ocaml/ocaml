@@ -17,7 +17,11 @@
 module L = Linearize
 
 module Phantom_vars = struct
-  module Key = Backend_var
+  module Key = struct
+    include Backend_var
+    let all_parents _t = []
+  end
+
   module Index = Backend_var
 
   module Subrange_state :
@@ -77,19 +81,13 @@ module Phantom_vars = struct
     let defining_expr t = t.defining_expr
   end
 
-  module Cache = struct
-    type t = unit
-
-    let create () = ()
-  end
-
-  let available_before _cache (insn : L.instruction) =
+  let available_before (insn : L.instruction) =
     insn.phantom_available_before
 
-  let available_across cache insn =
+  let available_across insn =
     (* Phantom variable availability never changes during the execution
        of a [Linearize] instruction. *)
-    available_before cache insn
+    available_before insn
 
   let must_restart_ranges_upon_any_change () =
     (* See [Available_ranges_vars]. *)

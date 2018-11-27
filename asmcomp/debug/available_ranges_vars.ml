@@ -24,7 +24,10 @@ module Vars = struct
      same location.  As such, we quotient register sets by the equivalence
      relation that identifies two registers iff they have the same name and
      location. *)
-  module Key = RD.Distinguishing_names_and_locations
+  module Key = struct
+    include RD.Distinguishing_names_and_locations
+    let all_parents _t = []
+  end
 
   module Index = Backend_var
 
@@ -138,12 +141,6 @@ module Vars = struct
     let is_parameter t = t.is_parameter
   end
 
-  module Cache = struct
-    type t = unit
-
-    let create () = ()
-  end
-
   let availability_set_to_key_set (avail : Reg_availability_set.t) =
     match avail with
     | Unreachable -> Key.Set.empty
@@ -152,12 +149,12 @@ module Vars = struct
         available_before
         Key.Set.empty
 
-  let available_before _cache (insn : L.instruction) =
+  let available_before (insn : L.instruction) =
     availability_set_to_key_set insn.available_before
 
-  let available_across cache (insn : L.instruction) =
+  let available_across (insn : L.instruction) =
     match insn.available_across with
-    | None -> available_before cache insn
+    | None -> available_before insn
     | Some across -> availability_set_to_key_set across
 
   let must_restart_ranges_upon_any_change () =

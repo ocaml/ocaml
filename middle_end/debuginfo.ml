@@ -277,8 +277,7 @@ module Block = struct
   let print_id ppf { id; _ } =
     Format.fprintf ppf "block %d" id
 
-  let block_and_all_parents t =
-    Set.add t (Set.of_list t.parents_transitive)
+  let parents_transitive t = t.parents_transitive
 end
 
 module Current_block = struct

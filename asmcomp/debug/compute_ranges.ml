@@ -209,10 +209,10 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
 
   let debug = false
 
-  let actions_at_instruction cache ~(insn : L.instruction)
+  let actions_at_instruction ~(insn : L.instruction)
         ~(prev_insn : L.instruction option) =
-    let available_before = S.available_before cache insn in
-    let available_across = S.available_across cache insn in
+    let available_before = S.available_before insn in
+    let available_across = S.available_across insn in
     if debug && (not (KS.subset available_across available_before)) then
     begin
       Clflags.dump_avail := true;
@@ -223,7 +223,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let opt_available_across_prev_insn =
       match prev_insn with
       | None -> KS.empty
-      | Some prev_insn -> S.available_across cache prev_insn
+      | Some prev_insn -> S.available_across prev_insn
     in
     let case_1c =
       KS.diff available_before
@@ -243,7 +243,21 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         available_across
     in
     let handle case action result =
-      KS.fold (fun key result -> (key, action) :: result) case result
+      (* We use [K.all_parents] here to circumvent a potential performance
+         problem.  In the case of lexical blocks, there may be long chains
+         of blocks and their parents, yet the innermost block determines the
+         rest of the chain.  As such [S] (which comes from
+         lexical_block_ranges.ml) only needs to use the innermost blocks in
+         the "available before" sets, keeping things fast---but we still
+         populate ranges for all parent blocks, thus avoiding any
+         post-processing, by using [K.all_parents] here. *)
+      KS.fold (fun key result ->
+          List.fold_left (fun result key ->
+              (key, action) :: result)
+            result
+            (key :: (S.Key.all_parents key)))
+        case
+        result
     in
     let actions =
       []
@@ -260,7 +274,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     in
     actions, must_restart
 
-  let rec process_instruction t (fundecl : L.fundecl) cache
+  let rec process_instruction t (fundecl : L.fundecl)
         ~(first_insn : L.instruction) ~(insn : L.instruction)
         ~(prev_insn : L.instruction option)
         ~open_subranges ~subrange_state =
@@ -325,7 +339,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
           open_subranges
     in
     let actions, must_restart =
-      actions_at_instruction cache ~insn ~prev_insn:!prev_insn
+      actions_at_instruction ~insn ~prev_insn:!prev_insn
     in
     let open_subranges =
       KS.fold (fun key open_subranges ->
@@ -375,7 +389,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       let subrange_state =
         Subrange_state.advance_over_instruction subrange_state insn
       in
-      process_instruction t fundecl cache ~first_insn ~insn:insn.next
+      process_instruction t fundecl ~first_insn ~insn:insn.next
         ~prev_insn:(Some insn) ~open_subranges ~subrange_state
 
   let process_instructions t fundecl ~first_insn =
@@ -395,10 +409,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       t, fundecl
     else
       let t = { ranges = S.Index.Tbl.create 42; } in
-      let cache = S.Cache.create () in
       let first_insn =
-        process_instructions t fundecl cache
-          ~first_insn:fundecl.fun_body
+        process_instructions t fundecl ~first_insn:fundecl.fun_body
       in
       let fundecl : L.fundecl =
         { fundecl with fun_body = first_insn; }

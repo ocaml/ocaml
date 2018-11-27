@@ -70,8 +70,8 @@ module Make(I:I) = struct
 
 (* Utilities *)
 
-  let gen_cell_id () = V.create_local "cell"
-  let gen_size_id () = V.create_local "size"
+  let gen_cell_id () = V.create_local "*cell*"
+  let gen_size_id () = V.create_local "*size*"
 
   let mk_let_cell dbg id str ind body =
     let cell =

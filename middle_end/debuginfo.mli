@@ -55,13 +55,13 @@ module Block : sig
 
   val parent : t -> t option
 
+  val parents_transitive : t -> t list
+
   val unique_id : t -> int
 
   include Identifiable.S with type t := t
 
   val print_id : Format.formatter -> t -> unit
-
-  val block_and_all_parents : t -> Set.t
 end
 
 module Current_block : sig
