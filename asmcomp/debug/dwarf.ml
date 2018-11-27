@@ -992,18 +992,28 @@ let passes_for_fundecl (fundecl : L.fundecl) =
   let lexical_block_ranges, fundecl =
     Lexical_block_ranges.create fundecl
   in
-  let label_env, fundecl = Coalesce_labels.fundecl fundecl in
-  let available_ranges_vars =
-    Available_ranges_vars.rewrite_labels available_ranges_vars
-      ~env:label_env
-  in
-  let available_ranges_phantom_vars =
-    Available_ranges_phantom_vars.rewrite_labels available_ranges_phantom_vars
-      ~env:label_env
-  in
-  let lexical_block_ranges =
-    Lexical_block_ranges.rewrite_labels lexical_block_ranges
-      ~env:label_env
+  let available_ranges_vars, available_ranges_phantom_vars,
+        lexical_block_ranges, fundecl =
+    if not !Clflags.keep_asm_file then
+      available_ranges_vars, available_ranges_phantom_vars,
+        lexical_block_ranges, fundecl
+    else
+      let label_env, fundecl = Coalesce_labels.fundecl fundecl in
+      let available_ranges_vars =
+        Available_ranges_vars.rewrite_labels available_ranges_vars
+          ~env:label_env
+      in
+      let available_ranges_phantom_vars =
+        Available_ranges_phantom_vars.rewrite_labels
+          available_ranges_phantom_vars
+          ~env:label_env
+      in
+      let lexical_block_ranges =
+        Lexical_block_ranges.rewrite_labels lexical_block_ranges
+          ~env:label_env
+      in
+      available_ranges_vars, available_ranges_phantom_vars,
+        lexical_block_ranges, fundecl
   in
   let available_ranges_vars =
     Available_ranges_all_vars.create ~available_ranges_vars

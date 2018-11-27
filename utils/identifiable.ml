@@ -209,6 +209,18 @@ module Make_set (T : Thing) = struct
     match elements t with
     | [elt] -> Some elt
     | _ -> None
+
+  let union t1 t2 =
+    if t1 == t2 then t1
+    else union t1 t2
+
+  let inter t1 t2 =
+    if t1 == t2 then t1
+    else inter t1 t2
+
+  let diff t1 t2 =
+    if t1 == t2 then empty
+    else diff t1 t2
 end
 
 module Make_tbl (T : Thing) = struct
