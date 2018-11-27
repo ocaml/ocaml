@@ -188,11 +188,13 @@ let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
     match !Clflags.debug_full with
     | None -> None
     | Some _ ->
-      let dwarf = Dwarf.create ~prefix_name in
-      let _, toplevel_inconstants, toplevel_constants = clambda in
-      Dwarf.dwarf_for_toplevel_constants dwarf toplevel_constants;
-      Dwarf.dwarf_for_toplevel_inconstants dwarf toplevel_inconstants;
-      Some dwarf
+      Profile.record "dwarf"
+        (fun () -> let dwarf = Dwarf.create ~prefix_name in
+          let _, toplevel_inconstants, toplevel_constants = clambda in
+          Dwarf.dwarf_for_toplevel_constants dwarf toplevel_constants;
+          Dwarf.dwarf_for_toplevel_inconstants dwarf toplevel_inconstants;
+          Some dwarf)
+        ()
   in
   clambda
   ++ Profile.record "cmm" (Cmmgen.compunit ~ppf_dump ~unit_name)
@@ -246,7 +248,10 @@ let flambda_gen_implementation ?toplevel ~backend ~ppf_dump ~prefix_name
 
 let lambda_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
     (lambda:Lambda.program) =
-  let clambda = Closure.intro lambda.main_module_block_size lambda.code in
+  let clambda =
+    Profile.record "closure" (Closure.intro lambda.main_module_block_size)
+      lambda.code
+  in
   let provenance : Clambda.usymbol_provenance =
     { original_idents = [];
       module_path =
@@ -266,7 +271,8 @@ let lambda_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
     clambda, [preallocated_block], []
   in
   raw_clambda_dump_if ppf_dump clambda_and_constants;
-  end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
+  Profile.record "end_gen_implementation"
+    (end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name)
     clambda_and_constants
 
 let compile_implementation_gen ?toplevel prefixname ~unit_name

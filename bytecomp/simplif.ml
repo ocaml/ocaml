@@ -765,3 +765,6 @@ let simplify_lambda sourcefile lam =
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
     then emit_tail_infos true res;
   res
+
+let simplify_lambda sourcefile lam =
+  Profile.record "simplify_lambda" (simplify_lambda sourcefile) lam

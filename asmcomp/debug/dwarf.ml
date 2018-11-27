@@ -984,13 +984,22 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
 let passes_for_fundecl (fundecl : L.fundecl) =
   let fundecl = Available_filtering.fundecl fundecl in
   let available_ranges_vars, fundecl =
-    Available_ranges_vars.create fundecl
+    Profile.record "dwarf_available_ranges_vars" (fun fundecl ->
+        Available_ranges_vars.create fundecl)
+      ~accumulate:true
+      fundecl
   in
   let available_ranges_phantom_vars, fundecl =
-    Available_ranges_phantom_vars.create fundecl
+    Profile.record "dwarf_available_ranges_phantom_vars" (fun fundecl ->
+        Available_ranges_phantom_vars.create fundecl)
+      ~accumulate:true
+      fundecl
   in
   let lexical_block_ranges, fundecl =
-    Lexical_block_ranges.create fundecl
+    Profile.record "dwarf_lexical_block_ranges" (fun fundecl ->
+        Lexical_block_ranges.create fundecl)
+      ~accumulate:true
+      fundecl
   in
   let available_ranges_vars, available_ranges_phantom_vars,
         lexical_block_ranges, fundecl =
@@ -998,19 +1007,33 @@ let passes_for_fundecl (fundecl : L.fundecl) =
       available_ranges_vars, available_ranges_phantom_vars,
         lexical_block_ranges, fundecl
     else
-      let label_env, fundecl = Coalesce_labels.fundecl fundecl in
+      let label_env, fundecl =
+        Profile.record "dwarf_coalesce_labels" (fun () ->
+            Coalesce_labels.fundecl fundecl)
+          ~accumulate:true
+          ()
+      in
       let available_ranges_vars =
-        Available_ranges_vars.rewrite_labels available_ranges_vars
-          ~env:label_env
+        Profile.record "dwarf_rewrite_labels_vars" (fun () ->
+            Available_ranges_vars.rewrite_labels available_ranges_vars
+              ~env:label_env)
+          ~accumulate:true
+          ()
       in
       let available_ranges_phantom_vars =
-        Available_ranges_phantom_vars.rewrite_labels
-          available_ranges_phantom_vars
-          ~env:label_env
+        Profile.record "dwarf_rewrite_labels_phantom_vars" (fun () ->
+            Available_ranges_phantom_vars.rewrite_labels
+              available_ranges_phantom_vars
+              ~env:label_env)
+          ~accumulate:true
+          ()
       in
       let lexical_block_ranges =
-        Lexical_block_ranges.rewrite_labels lexical_block_ranges
-          ~env:label_env
+        Profile.record "dwarf_rewrite_labels_lexical_blocks" (fun () ->
+            Lexical_block_ranges.rewrite_labels lexical_block_ranges
+              ~env:label_env)
+          ~accumulate:true
+          ()
       in
       available_ranges_vars, available_ranges_phantom_vars,
         lexical_block_ranges, fundecl
@@ -1080,12 +1103,18 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
       ()
   in
   let whole_function_lexical_block, lexical_block_proto_dies =
-    create_lexical_block_proto_dies t lexical_block_ranges
-      ~function_proto_die fundecl ~start_of_function ~end_of_function
+    Profile.record "dwarf_create_lexical_block_proto_dies" (fun () ->
+        create_lexical_block_proto_dies t lexical_block_ranges
+          ~function_proto_die fundecl ~start_of_function ~end_of_function)
+      ~accumulate:true
+      ()
   in
-  dwarf_for_variables_and_parameters t ~function_proto_die
-    ~whole_function_lexical_block ~lexical_block_proto_dies
-    ~available_ranges_vars ~fundecl
+  Profile.record "dwarf_for_variables_and_parameters" (fun () ->
+      dwarf_for_variables_and_parameters t ~function_proto_die
+        ~whole_function_lexical_block ~lexical_block_proto_dies
+        ~available_ranges_vars ~fundecl)
+      ~accumulate:true
+    ()
 
 let dwarf_for_toplevel_constant t ~vars ~module_path ~symbol =
   (* Give each variable the same definition for the moment. *)
@@ -1210,3 +1239,5 @@ let emit t =
     ~compilation_unit_header_label:t.compilation_unit_header_label
     ~debug_loc_table:t.debug_loc_table
     ~debug_ranges_table:t.debug_ranges_table
+
+let emit t = Profile.record "emit_dwarf" emit t
