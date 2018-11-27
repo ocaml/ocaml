@@ -34,6 +34,10 @@ let is_specialised_attribute = function
   | {txt=("specialised"|"ocaml.specialised")} when Config.flambda -> true
   | _ -> false
 
+let is_local_attribute = function
+  | {txt=("local"|"ocaml.local")} -> true
+  | _ -> false
+
 let find_attribute p attributes =
   let inline_attribute, other_attributes =
     List.partition (fun a -> p a.Parsetree.attr_name) attributes
@@ -52,6 +56,37 @@ let is_unrolled = function
   | {txt="unrolled"|"ocaml.unrolled"} -> true
   | {txt="inline"|"ocaml.inline"|"inlined"|"ocaml.inlined"} -> false
   | _ -> assert false
+
+let get_id_payload =
+  let open Parsetree in
+  function
+  | PStr [] -> Some ""
+  | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] ->
+      begin match pexp_desc with
+      | Pexp_ident { txt = Longident.Lident id } -> Some id
+      | _ -> None
+      end
+  | _ -> None
+
+let parse_id_payload txt loc ~default ~empty cases payload =
+  let[@local] warn () =
+    let ( %> ) f g x = g (f x) in
+    let msg =
+      cases
+      |> List.map (fst %> Printf.sprintf "'%s'")
+      |> String.concat ", "
+      |> Printf.sprintf "It must be either %s or empty"
+    in
+    Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg));
+    default
+  in
+  match get_id_payload payload with
+  | Some "" -> empty
+  | None -> warn ()
+  | Some id ->
+      match List.assoc_opt id cases with
+      | Some r -> r
+      | None -> warn ()
 
 let parse_inline_attribute attr =
   match attr with
@@ -80,58 +115,42 @@ let parse_inline_attribute attr =
       | _ ->
         Location.prerr_warning loc (warning txt);
         Default_inline
-    end else begin
-      (* the 'inline' and 'inlined' attributes can be used as
-         [@inline], [@inline never] or [@inline always].
-         [@inline] is equivalent to [@inline always] *)
-      let warning txt =
-        Warnings.Attribute_payload
-          (txt, "It must be either empty, 'always' or 'never'")
-      in
-      match payload with
-      | PStr [] -> Always_inline
-      | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
-          match pexp_desc with
-          | Pexp_ident { txt = Longident.Lident "never" } ->
-            Never_inline
-          | Pexp_ident { txt = Longident.Lident "always" } ->
-            Always_inline
-          | _ ->
-            Location.prerr_warning loc (warning txt);
-            Default_inline
-        end
-      | _ ->
-        Location.prerr_warning loc (warning txt);
-        Default_inline
-    end
+    end else
+      parse_id_payload txt loc
+        ~default:Default_inline
+        ~empty:Always_inline
+        [
+          "never", Never_inline;
+          "always", Always_inline;
+        ]
+        payload
 
 let parse_specialise_attribute attr =
   match attr with
   | None -> Default_specialise
   | Some {Parsetree.attr_name = {txt; loc}; attr_payload = payload} ->
-    let open Parsetree in
-    let warning txt =
-      Warnings.Attribute_payload
-      (txt, "It must be either empty, 'always' or 'never'")
-    in
-    match payload with
-    | PStr [] -> Always_specialise
-    | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
-        (* the 'specialise' and 'specialised' attributes can be used as
-           [@specialise], [@specialise never] or [@specialise always].
-           [@specialise] is equivalent to [@specialise always] *)
-        match pexp_desc with
-        | Pexp_ident { txt = Longident.Lident "never" } ->
-          Never_specialise
-        | Pexp_ident { txt = Longident.Lident "always" } ->
-          Always_specialise
-        | _ ->
-          Location.prerr_warning loc (warning txt);
-          Default_specialise
-      end
-    | _ ->
-      Location.prerr_warning loc (warning txt);
-      Default_specialise
+      parse_id_payload txt loc
+        ~default:Default_specialise
+        ~empty:Always_specialise
+        [
+          "never", Never_specialise;
+          "always", Always_specialise;
+        ]
+        payload
+
+let parse_local_attribute attr =
+  match attr with
+  | None -> Default_local
+  | Some {Parsetree.attr_name = {txt; loc}; attr_payload = payload} ->
+      parse_id_payload txt loc
+        ~default:Default_local
+        ~empty:Always_local
+        [
+          "never", Never_local;
+          "always", Always_local;
+          "maybe", Default_local;
+        ]
+        payload
 
 let get_inline_attribute l =
   let attr, _ = find_attribute is_inline_attribute l in
@@ -140,6 +159,18 @@ let get_inline_attribute l =
 let get_specialise_attribute l =
   let attr, _ = find_attribute is_specialise_attribute l in
   parse_specialise_attribute attr
+
+let get_local_attribute l =
+  let attr, _ = find_attribute is_local_attribute l in
+  parse_local_attribute attr
+
+let check_local_inline loc attr =
+  match attr.local, attr.inline with
+  | Always_local, (Always_inline | Unroll _) ->
+      Location.prerr_warning loc
+        (Warnings.Duplicated_attribute "local/inline")
+  | _ ->
+      ()
 
 let add_inline_attribute expr loc attributes =
   match expr, get_inline_attribute attributes with
@@ -152,6 +183,7 @@ let add_inline_attribute expr loc attributes =
             (Warnings.Duplicated_attribute "inline")
       end;
       let attr = { attr with inline } in
+      check_local_inline loc attr;
       Lfunction { funct with attr = attr }
   | expr, (Always_inline | Never_inline | Unroll _) ->
       Location.prerr_warning loc
@@ -173,6 +205,24 @@ let add_specialise_attribute expr loc attributes =
   | expr, (Always_specialise | Never_specialise) ->
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute "specialise");
+      expr
+
+let add_local_attribute expr loc attributes =
+  match expr, get_local_attribute attributes with
+  | expr, Default_local -> expr
+  | Lfunction({ attr = { stub = false } as attr } as funct), local ->
+      begin match attr.local with
+      | Default_local -> ()
+      | Always_local | Never_local ->
+          Location.prerr_warning loc
+            (Warnings.Duplicated_attribute "local")
+      end;
+      let attr = { attr with local } in
+      check_local_inline loc attr;
+      Lfunction { funct with attr }
+  | expr, (Always_local | Never_local) ->
+      Location.prerr_warning loc
+        (Warnings.Misplaced_attribute "local");
       expr
 
 (* Get the [@inlined] attribute payload (or default if not present).
@@ -268,3 +318,15 @@ let check_attribute_on_module e {Parsetree.attr_name = { txt; loc }; _} =
       Location.prerr_warning loc
         (Warnings.Misplaced_attribute txt)
   | _ -> ()
+
+let add_function_attributes lam loc attr =
+  let lam =
+    add_inline_attribute lam loc attr
+  in
+  let lam =
+    add_specialise_attribute lam loc attr
+  in
+  let lam =
+    add_local_attribute lam loc attr
+  in
+  lam

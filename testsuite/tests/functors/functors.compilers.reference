@@ -20,10 +20,9 @@
        (module-defn(F1) functors.ml(31):516-632
          (function X Y is_a_functor always_inline
            (let
-             (cow =
+             (sheep =
                 (function x[int] : int
-                  (apply (field 0 Y) (apply (field 0 X) x)))
-              sheep = (function x[int] : int (+ 1 (apply cow x))))
+                  (+ 1 (apply (field 0 Y) (apply (field 0 X) x)))))
              (makeblock 0 sheep))))
      F2 =
        (module-defn(F2) functors.ml(36):634-784
@@ -31,10 +30,9 @@
            (let
              (X =a (makeblock 0 (field 1 X))
               Y =a (makeblock 0 (field 1 Y))
-              cow =
+              sheep =
                 (function x[int] : int
-                  (apply (field 0 Y) (apply (field 0 X) x)))
-              sheep = (function x[int] : int (+ 1 (apply cow x))))
+                  (+ 1 (apply (field 0 Y) (apply (field 0 X) x)))))
              (makeblock 0 sheep))))
      M =
        (module-defn(M) functors.ml(41):786-970

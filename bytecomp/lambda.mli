@@ -219,6 +219,11 @@ val equal_specialise_attribute
   -> specialise_attribute
   -> bool
 
+type local_attribute =
+  | Always_local (* [@local] or [@local always] *)
+  | Never_local (* [@local never] *)
+  | Default_local (* [@local maybe] or no [@local] attribute *)
+
 type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
@@ -242,6 +247,7 @@ type shared_code = (int * int) list     (* stack size -> code label *)
 type function_attribute = {
   inline : inline_attribute;
   specialise : specialise_attribute;
+  local: local_attribute;
   is_a_functor: bool;
   stub: bool;
 }
@@ -335,7 +341,16 @@ val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 val iter_head_constructor: (lambda -> unit) -> lambda -> unit
 (** [iter_head_constructor f lam] apply [f] to only the first level of
     sub expressions of [lam]. It does not recursively traverse the
-    expression. *)
+    expression.
+*)
+
+val shallow_iter:
+  tail:(lambda -> unit) ->
+  non_tail:(lambda -> unit) ->
+  lambda -> unit
+(** Same as [iter_head_constructor], but use a different callback for
+    sub-terms which are in tail position or not. *)
+
 
 val free_variables: lambda -> Ident.Set.t
 
@@ -362,6 +377,12 @@ val rename : Ident.t Ident.Map.t -> lambda -> lambda
     idents. *)
 
 val map : (lambda -> lambda) -> lambda -> lambda
+  (** Bottom-up rewriting, applying the function on
+      each node from the leaves to the root. *)
+
+val shallow_map  : (lambda -> lambda) -> lambda -> lambda
+  (** Rewrite each immediate sub-term with the function. *)
+
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 val bind_with_value_kind:
   let_kind -> (Ident.t * value_kind) -> lambda -> lambda -> lambda

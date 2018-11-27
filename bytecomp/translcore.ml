@@ -235,14 +235,10 @@ and transl_exp0 e =
             transl_function e.exp_loc return_kind !Clflags.native_code repr
               partial param pl)
       in
-      let attr = {
-        default_function_attribute with
-        inline = Translattribute.get_inline_attribute e.exp_attributes;
-        specialise = Translattribute.get_specialise_attribute e.exp_attributes;
-      }
-      in
+      let attr = default_function_attribute in
       let loc = e.exp_loc in
-      Lfunction{kind; params; return; body; attr; loc}
+      let lam = Lfunction{kind; params; return; body; attr; loc} in
+      Translattribute.add_function_attributes lam loc e.exp_attributes
   | Texp_apply({ exp_desc = Texp_ident(path, _, {val_kind = Val_prim p});
                 exp_type = prim_type } as funct, oargs)
     when List.length oargs >= p.prim_arity
@@ -769,12 +765,7 @@ and transl_let rec_flag pat_expr_list =
           fun body -> body
       | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
           let lam = transl_exp expr in
-          let lam =
-            Translattribute.add_inline_attribute lam vb_loc attr
-          in
-          let lam =
-            Translattribute.add_specialise_attribute lam vb_loc attr
-          in
+          let lam = Translattribute.add_function_attributes lam vb_loc attr in
           let mk_body = transl rem in
           fun body -> Matching.for_let pat.pat_loc lam pat (mk_body body)
       in transl pat_expr_list
@@ -789,12 +780,7 @@ and transl_let rec_flag pat_expr_list =
       let transl_case {vb_expr=expr; vb_attributes; vb_loc} id =
         let lam = transl_exp expr in
         let lam =
-          Translattribute.add_inline_attribute lam vb_loc
-            vb_attributes
-        in
-        let lam =
-          Translattribute.add_specialise_attribute lam vb_loc
-            vb_attributes
+          Translattribute.add_function_attributes lam vb_loc vb_attributes
         in
         (id, lam) in
       let lam_bds = List.map2 transl_case pat_expr_list idlist in
