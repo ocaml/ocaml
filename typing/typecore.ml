@@ -107,6 +107,9 @@ type error =
   | Illegal_letrec_expr
   | Illegal_class_expr
   | Empty_pattern
+  | Letop_type_clash of string * Ctype.Unification_trace.t
+  | Andop_type_clash of string * Ctype.Unification_trace.t
+  | Bindings_type_clash of Ctype.Unification_trace.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -213,12 +216,17 @@ let iter_expression f e =
     | Pexp_override sel -> List.iter (fun (_, e) -> expr e) sel
     | Pexp_letmodule (_, me, e) -> expr e; module_expr me
     | Pexp_object { pcstr_fields = fs } -> List.iter class_field fs
+    | Pexp_letop { let_; ands; body; _ } ->
+        binding_op let_; List.iter binding_op ands; expr body
     | Pexp_pack me -> module_expr me
     | Pexp_unreachable -> ()
 
   and case {pc_lhs = _; pc_guard; pc_rhs} =
     may expr pc_guard;
     expr pc_rhs
+
+  and binding_op { pbop_exp; _ } =
+    expr pbop_exp
 
   and binding x =
     expr x.pvb_expr
@@ -1060,6 +1068,11 @@ let all_idents_cases half_typed_cases =
   let f = function
     | {pexp_desc=Pexp_ident { txt = Longident.Lident id; _ }; _} ->
         Hashtbl.replace idents id ()
+    | {pexp_desc=Pexp_letop{ let_; ands; _ }; _ } ->
+        Hashtbl.replace idents let_.pbop_op.txt ();
+        List.iter
+          (fun { pbop_op; _ } -> Hashtbl.replace idents pbop_op.txt ())
+          ands
     | _ -> ()
   in
   List.iter
@@ -2051,7 +2064,7 @@ let check_partial_application statement exp =
             | Texp_let (_, _, e) | Texp_sequence (_, e) | Texp_open (_, e)
             | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e) ->
                 check e
-            | Texp_apply _ | Texp_send _ | Texp_new _ ->
+            | Texp_apply _ | Texp_send _ | Texp_new _ | Texp_letop _ ->
                 Location.prerr_warning exp_loc Warnings.Partial_application
           end
         in
@@ -2283,74 +2296,43 @@ and type_expect_
   in
   match sexp.pexp_desc with
   | Pexp_ident lid ->
-      begin
-        let (path, desc) = Typetexp.find_value env lid.loc lid.txt in
-        if !Clflags.annotations then begin
-          let dloc = desc.Types.val_loc in
-          let annot =
-            if dloc.Location.loc_ghost then Annot.Iref_external
-            else Annot.Iref_internal dloc
-          in
-          let name = Path.name ~paren:Oprint.parenthesized_ident path in
-          Stypes.record (Stypes.An_ident (loc, name, annot))
-        end;
-        let is_recarg =
-          match (repr desc.val_type).desc with
-          | Tconstr(p, _, _) -> Path.is_constructor_typath p
-          | _ -> false
-        in
-
-        begin match is_recarg, recarg, (repr desc.val_type).desc with
-        | _, Allowed, _
-        | true, Required, _
-        | false, Rejected, _
-          -> ()
-        | true, Rejected, _
-        | false, Required, (Tvar _ | Tconstr _) ->
-            raise (Error (loc, env, Inlined_record_escape))
-        | false, Required, _  ->
-            () (* will fail later *)
-        end;
-        rue {
-          exp_desc =
-            begin match desc.val_kind with
-              Val_ivar (_, cl_num) ->
-                let (self_path, _) =
-                  Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
-                in
-                Texp_instvar(self_path, path,
-                             match lid.txt with
-                                 Longident.Lident txt -> { txt; loc = lid.loc }
-                               | _ -> assert false)
-            | Val_self (_, _, cl_num, _) ->
-                let (path, _) =
-                  Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
-                in
-                Texp_ident(path, lid, desc)
-            | Val_unbound Val_unbound_instance_variable ->
-                raise(Error(loc, env, Masked_instance_variable lid.txt))
-            | Val_unbound Val_unbound_ghost_recursive ->
-                (* Only display the "missing rec" hint for non-ghost code *)
-                if not loc.Location.loc_ghost
-                && not desc.val_loc.Location.loc_ghost
-                then
-                  raise Typetexp.(Error (
-                    loc, env, Unbound_value_missing_rec (lid.txt, desc.val_loc)
-                  ))
-                else
-                  raise Typetexp.(Error (loc, env, Unbound_value lid.txt))
-            (*| Val_prim _ ->
-                let p = Env.normalize_path (Some loc) env path in
-                Env.add_required_global (Path.head p);
-                Texp_ident(path, lid, desc)*)
-            | _ ->
-                Texp_ident(path, lid, desc)
-          end;
-          exp_loc = loc; exp_extra = [];
-          exp_type = instance desc.val_type;
-          exp_attributes = sexp.pexp_attributes;
-          exp_env = env }
-      end
+      let path, desc = type_ident env ~recarg lid in
+      let exp_desc =
+        match desc.val_kind with
+        | Val_ivar (_, cl_num) ->
+            let (self_path, _) =
+              Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
+            in
+            Texp_instvar(self_path, path,
+                         match lid.txt with
+                             Longident.Lident txt -> { txt; loc = lid.loc }
+                           | _ -> assert false)
+        | Val_self (_, _, cl_num, _) ->
+            let (path, _) =
+              Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
+            in
+            Texp_ident(path, lid, desc)
+        | Val_unbound Val_unbound_instance_variable ->
+            raise(Error(loc, env, Masked_instance_variable lid.txt))
+        | Val_unbound Val_unbound_ghost_recursive ->
+            let desc_loc = desc.Types.val_loc in
+            (* Only display the "missing rec" hint for non-ghost code *)
+            if not loc.Location.loc_ghost
+            && not desc_loc.Location.loc_ghost
+            then
+              raise Typetexp.(Error (
+                loc, env, Unbound_value_missing_rec (lid.txt, desc_loc)
+              ))
+            else
+              raise Typetexp.(Error (loc, env, Unbound_value lid.txt))
+        | _ ->
+            Texp_ident(path, lid, desc)
+      in
+      rue {
+        exp_desc; exp_loc = loc; exp_extra = [];
+        exp_type = instance desc.val_type;
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env }
   | Pexp_constant(Pconst_string (str, _) as cst) -> (
     let cst = constant_or_raise env loc cst in
     (* Terrible hack for format strings *)
@@ -3327,6 +3309,71 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
+  | Pexp_letop{ let_ = slet; ands = sands; body = sbody } ->
+      let rec loop spat_acc ty_acc sands =
+        match sands with
+        | [] -> spat_acc, ty_acc
+        | { pbop_pat = spat; _} :: rest ->
+            let ty = newvar () in
+            let loc = { slet.pbop_op.loc with Location.loc_ghost = true } in
+            let spat_acc = Ast_helper.Pat.tuple ~loc [spat_acc; spat] in
+            let ty_acc = newty (Ttuple [ty_acc; ty]) in
+            loop spat_acc ty_acc rest
+      in
+      if !Clflags.principal then begin_def ();
+      let let_loc = slet.pbop_op.loc in
+      let op_path, op_desc = type_binding_op_ident env slet.pbop_op in
+      let op_type = instance op_desc.val_type in
+      let spat_params, ty_params = loop slet.pbop_pat (newvar ()) sands in
+      let ty_func_result = newvar () in
+      let ty_func = newty (Tarrow(Nolabel, ty_params, ty_func_result, Cok)) in
+      let ty_result = newvar () in
+      let ty_andops = newvar () in
+      let ty_op =
+        newty (Tarrow(Nolabel, ty_andops,
+          newty (Tarrow(Nolabel, ty_func, ty_result, Cok)), Cok))
+      in
+      begin try
+        unify env op_type ty_op
+      with Unify trace ->
+        raise(Error(let_loc, env, Letop_type_clash(slet.pbop_op.txt, trace)))
+      end;
+      if !Clflags.principal then begin
+        end_def ();
+        generalize_structure ty_andops;
+        generalize_structure ty_params;
+        generalize_structure ty_func_result;
+        generalize_structure ty_result
+      end;
+      let exp, ands = type_andops env slet.pbop_exp sands ty_andops in
+      let scase = Ast_helper.Exp.case spat_params sbody in
+      let cases, partial =
+        type_cases env ty_params ty_func_result true loc [scase]
+      in
+      let body =
+        match cases with
+        | [case] -> case
+        | _ -> assert false
+      in
+      let param = name_cases "param" cases in
+      let let_ =
+        { bop_op_name = slet.pbop_op;
+          bop_op_path = op_path;
+          bop_op_val = op_desc;
+          bop_op_type = op_type;
+          bop_exp = exp;
+          bop_loc = slet.pbop_loc; }
+      in
+      let desc =
+        Texp_letop{let_; ands; param; body; partial}
+      in
+      rue { exp_desc = desc;
+            exp_loc = sexp.pexp_loc;
+            exp_extra = [];
+            exp_type = instance ty_result;
+            exp_env = env;
+            exp_attributes = sexp.pexp_attributes; }
+
   | Pexp_extension ({ txt = ("ocaml.extension_constructor"
                              |"extension_constructor"); _ },
                     payload) ->
@@ -3357,6 +3404,61 @@ and type_expect_
            exp_type = instance ty_expected;
            exp_attributes = sexp.pexp_attributes;
            exp_env = env }
+
+and type_ident env ?(recarg=Rejected) lid =
+  let (path, desc) = Typetexp.find_value env lid.loc lid.txt in
+  if !Clflags.annotations then begin
+    let dloc = desc.Types.val_loc in
+    let annot =
+      if dloc.Location.loc_ghost then Annot.Iref_external
+      else Annot.Iref_internal dloc
+    in
+    let name = Path.name ~paren:Oprint.parenthesized_ident path in
+    Stypes.record (Stypes.An_ident (lid.loc, name, annot))
+  end;
+  let is_recarg =
+    match (repr desc.val_type).desc with
+    | Tconstr(p, _, _) -> Path.is_constructor_typath p
+    | _ -> false
+  in
+  begin match is_recarg, recarg, (repr desc.val_type).desc with
+  | _, Allowed, _
+  | true, Required, _
+  | false, Rejected, _ -> ()
+  | true, Rejected, _
+  | false, Required, (Tvar _ | Tconstr _) ->
+      raise (Error (lid.loc, env, Inlined_record_escape))
+  | false, Required, _  -> () (* will fail later *)
+  end;
+  path, desc
+
+and type_binding_op_ident env s =
+  let loc = s.loc in
+  let lid = Location.mkloc (Longident.Lident s.txt) loc in
+  let path, desc = type_ident env lid in
+  let path =
+    match desc.val_kind with
+    | Val_ivar _ | Val_unbound Val_unbound_instance_variable ->
+        fatal_error "Illegal name for instance variable"
+    | Val_self (_, _, cl_num, _) ->
+        let path, _ =
+          Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
+        in
+        path
+    | Val_unbound Val_unbound_ghost_recursive ->
+        let desc_loc = desc.Types.val_loc in
+        (* Only display the "missing rec" hint for non-ghost code *)
+        if not loc.Location.loc_ghost
+        && not desc_loc.Location.loc_ghost
+        then
+          raise Typetexp.(Error (
+            loc, env, Unbound_value_missing_rec (lid.txt, desc_loc)
+          ))
+        else
+          raise Typetexp.(Error (loc, env, Unbound_value lid.txt))
+    | _ -> path
+  in
+  path, desc
 
 and type_function ?in_function loc attrs env ty_expected_explained l caselist =
   let { ty = ty_expected; explanation } = ty_expected_explained in
@@ -4577,6 +4679,50 @@ and type_let
       | _ -> ()) l;
   (l, new_env, unpacks)
 
+and type_andops env sarg sands expected_ty =
+  let rec loop env let_sarg rev_sands expected_ty =
+    match rev_sands with
+    | [] -> type_expect env let_sarg (mk_expected expected_ty), []
+    | { pbop_op = sop; pbop_exp = sexp; pbop_loc = loc; _ } :: rest ->
+        if !Clflags.principal then begin_def ();
+        let op_path, op_desc = type_binding_op_ident env sop in
+        let op_type = instance op_desc.val_type in
+        let ty_arg = newvar () in
+        let ty_rest = newvar () in
+        let ty_result = newvar() in
+        let ty_rest_fun = newty (Tarrow(Nolabel, ty_arg, ty_result, Cok)) in
+        let ty_op = newty (Tarrow(Nolabel, ty_rest, ty_rest_fun, Cok)) in
+        begin try
+          unify env op_type ty_op
+        with Unify trace ->
+          raise(Error(sop.loc, env, Andop_type_clash(sop.txt, trace)))
+        end;
+        if !Clflags.principal then begin
+          end_def ();
+          generalize_structure ty_rest;
+          generalize_structure ty_arg;
+          generalize_structure ty_result
+        end;
+        let let_arg, rest = loop env let_sarg rest ty_rest in
+        let exp = type_expect env sexp (mk_expected ty_arg) in
+        begin try
+          unify env (instance ty_result) (instance expected_ty)
+        with Unify trace ->
+          raise(Error(loc, env, Bindings_type_clash(trace)))
+        end;
+        let andop =
+          { bop_op_name = sop;
+            bop_op_path = op_path;
+            bop_op_val = op_desc;
+            bop_op_type = op_type;
+            bop_exp = exp;
+            bop_loc = loc }
+        in
+        let_arg, andop :: rest
+  in
+  let let_arg, rev_ands = loop env sarg (List.rev sands) expected_ty in
+  let_arg, List.rev rev_ands
+
 (* Typing of toplevel bindings *)
 
 let type_binding env rec_flag spat_sexp_list scope =
@@ -4937,6 +5083,24 @@ let report_error env ppf = function
         "This kind of expression is not allowed as right-hand side of `let rec'"
   | Illegal_class_expr ->
       fprintf ppf "This kind of recursive class expression is not allowed"
+  | Letop_type_clash(name, trace) ->
+      report_unification_error ppf env trace
+        (function ppf ->
+          fprintf ppf "The operator %s has type" name)
+        (function ppf ->
+          fprintf ppf "but it was expected to have type")
+  | Andop_type_clash(name, trace) ->
+      report_unification_error ppf env trace
+        (function ppf ->
+          fprintf ppf "The operator %s has type" name)
+        (function ppf ->
+          fprintf ppf "but it was expected to have type")
+  | Bindings_type_clash(trace) ->
+      report_unification_error ppf env trace
+        (function ppf ->
+          fprintf ppf "These bindings have type")
+        (function ppf ->
+          fprintf ppf "but bindings were expected of type")
   | Empty_pattern -> assert false
 
 let report_error env ppf err =

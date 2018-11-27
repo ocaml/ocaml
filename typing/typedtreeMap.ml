@@ -400,6 +400,14 @@ module MakeMap(Map : MapArgument) = struct
           Texp_object (map_class_structure cl, string_list)
         | Texp_pack (mexpr) ->
           Texp_pack (map_module_expr mexpr)
+        | Texp_letop {let_; ands; param; body; partial} ->
+          Texp_letop{
+            let_ = map_binding_op let_;
+            ands = List.map map_binding_op ands;
+            param;
+            body = map_case body;
+            partial;
+          }
         | Texp_unreachable ->
           Texp_unreachable
         | Texp_extension_constructor _ as e ->
@@ -428,6 +436,9 @@ module MakeMap(Map : MapArgument) = struct
       | Texp_newtype _
       | Texp_poly None -> exp_extra
 
+  and map_binding_op bop =
+    let bop_exp = map_expression bop.bop_exp in
+    { bop with bop_exp }
 
   and map_package_type pack =
     let pack = Map.enter_package_type pack in

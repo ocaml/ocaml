@@ -361,6 +361,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_class_structure cl
         | Texp_pack (mexpr) ->
             iter_module_expr mexpr
+        | Texp_letop{let_; ands; param = _; body; partial = _} ->
+            iter_binding_op let_;
+            List.iter iter_binding_op ands;
+            iter_case body
         | Texp_unreachable ->
             ()
         | Texp_extension_constructor _ ->
@@ -370,6 +374,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_expression e
       end;
       Iter.leave_expression exp;
+
+    and iter_binding_op bop =
+      iter_expression bop.bop_exp
 
     and iter_package_type pack =
       Iter.enter_package_type pack;

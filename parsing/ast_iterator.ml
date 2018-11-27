@@ -27,6 +27,7 @@ open Location
 type iterator = {
   attribute: iterator -> attribute -> unit;
   attributes: iterator -> attribute list -> unit;
+  binding_op: iterator -> binding_op -> unit;
   case: iterator -> case -> unit;
   cases: iterator -> case list -> unit;
   class_declaration: iterator -> class_declaration -> unit;
@@ -403,8 +404,19 @@ module E = struct
     | Pexp_pack me -> sub.module_expr sub me
     | Pexp_open (o, e) ->
         sub.open_declaration sub o; sub.expr sub e
+    | Pexp_letop {let_; ands; body} ->
+        sub.binding_op sub let_;
+        List.iter (sub.binding_op sub) ands;
+        sub.expr sub body
     | Pexp_extension x -> sub.extension sub x
     | Pexp_unreachable -> ()
+
+  let iter_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
+    iter_loc sub pbop_op;
+    sub.pat sub pbop_pat;
+    sub.expr sub pbop_exp;
+    sub.location sub pbop_loc
+
 end
 
 module P = struct
@@ -541,6 +553,7 @@ let default_iterator =
 
     pat = P.iter;
     expr = E.iter;
+    binding_op = E.iter_binding_op;
 
     module_declaration =
       (fun this {pmd_name; pmd_type; pmd_attributes; pmd_loc} ->

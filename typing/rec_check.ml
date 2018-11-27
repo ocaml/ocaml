@@ -201,7 +201,8 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_field _
     | Texp_assert _
     | Texp_try _
-    | Texp_override _ ->
+    | Texp_override _
+    | Texp_letop _ ->
         Dynamic
   and classify_value_bindings rec_flag env bindings =
     (* We use a non-recursive classification, classifying each
@@ -788,6 +789,12 @@ let rec expression : Typedtree.expression -> term_judg =
           Delay
       in
       expression e << lazy_mode
+    | Texp_letop{let_; ands; body; _} ->
+        let case_env c m = fst (case c m) in
+        join [
+          list binding_op (let_ :: ands) << Dereference;
+          case_env body << Delay
+        ]
     | Texp_unreachable ->
       (*
         ----------
@@ -798,6 +805,10 @@ let rec expression : Typedtree.expression -> term_judg =
       path pth << Dereference
     | Texp_open (od, e) ->
       open_declaration od >> expression e
+
+and binding_op : Typedtree.binding_op -> term_judg =
+  fun bop ->
+    join [path bop.bop_op_path; expression bop.bop_exp]
 
 and class_structure : Typedtree.class_structure -> term_judg =
   fun cs -> list class_field cs.cstr_fields

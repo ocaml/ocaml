@@ -21,6 +21,7 @@ open Typedtree
 
 type mapper =
   {
+    binding_op: mapper -> binding_op -> binding_op;
     case: mapper -> case -> case;
     cases: mapper -> case list -> case list;
     class_declaration: mapper -> class_declaration -> class_declaration;
@@ -357,6 +358,14 @@ let expr sub x =
         Texp_object (sub.class_structure sub cl, sl)
     | Texp_pack mexpr ->
         Texp_pack (sub.module_expr sub mexpr)
+    | Texp_letop {let_; ands; param; body; partial} ->
+        Texp_letop{
+          let_ = sub.binding_op sub let_;
+          ands = List.map (sub.binding_op sub) ands;
+          param;
+          body = sub.case sub body;
+          partial;
+        }
     | Texp_unreachable ->
         Texp_unreachable
     | Texp_extension_constructor _ as e ->
@@ -370,6 +379,9 @@ let expr sub x =
 let package_type sub x =
   let pack_fields = List.map (tuple2 id (sub.typ sub)) x.pack_fields in
   {x with pack_fields}
+
+let binding_op sub x =
+  { x with bop_exp = sub.expr sub x.bop_exp }
 
 let signature sub x =
   let sig_final_env = sub.env sub x.sig_final_env in
@@ -692,6 +704,7 @@ let env _sub x = x
 
 let default =
   {
+    binding_op;
     case;
     cases;
     class_declaration;

@@ -23,6 +23,9 @@ Working version
 - GPR#1892: Allow shadowing of items coming from an include
   (Thomas Refis, review by Gabriel Radanne)
 
+- GPR#1947: Add "monadic" let operators
+  (Leo White, review by Thomas Refis)
+
 * GPR#2106: .~ is now a reserved keyword, and is no longer available
   for use in extended indexing operators
   (Jeremy Yallop, review by Gabriel Scherer, Florian Angeletti, and

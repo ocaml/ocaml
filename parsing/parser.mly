@@ -590,6 +590,8 @@ let mk_directive ~loc name arg =
 %token <string> INFIXOP3
 %token <string> INFIXOP4
 %token <string> DOTOP
+%token <string> LETOP
+%token <string> ANDOP
 %token INHERIT
 %token INITIALIZER
 %token <string * char option> INT
@@ -2059,6 +2061,12 @@ expr:
       { $1 }
   | let_bindings(ext) IN seq_expr
       { expr_of_let_bindings ~loc:$sloc $1 $3 }
+  | pbop_op = mkrhs(LETOP) bindings = letop_bindings IN body = seq_expr
+      { let (pbop_pat, pbop_exp, rev_ands) = bindings in
+        let ands = List.rev rev_ands in
+        let pbop_loc = make_loc $sloc in
+        let let_ = {pbop_op; pbop_pat; pbop_exp; pbop_loc} in
+        mkexp ~loc:$sloc (Pexp_letop{ let_; ands; body}) }
   | expr COLONCOLON expr
       { mkexp_cons ~loc:$sloc $loc($2) (ghexp ~loc:$sloc (Pexp_tuple[$1;$3])) }
   | mkrhs(label) LESSMINUS expr
@@ -2372,7 +2380,8 @@ label_expr:
     { xs }
 ;
 %inline let_ident:
-    val_ident { mkpatvar ~loc:$sloc $1 };
+    val_ident { mkpatvar ~loc:$sloc $1 }
+;
 let_binding_body:
     let_ident strict_binding
       { ($1, $2) }
@@ -2436,6 +2445,26 @@ and_let_binding:
       let attrs = attrs1 @ attrs2 in
       mklb ~loc:$sloc false body attrs
     }
+;
+letop_binding_body:
+    pat = let_ident exp = strict_binding
+      { (pat, exp) }
+  | pat = simple_pattern COLON typ = core_type EQUAL exp = seq_expr
+      { let loc = ($startpos(pat), $endpos(typ)) in
+        (ghpat ~loc (Ppat_constraint(pat, typ)), exp) }
+  | pat = pattern_no_exn EQUAL exp = seq_expr
+      { (pat, exp) }
+;
+letop_bindings:
+    body = letop_binding_body
+      { let let_pat, let_exp = body in
+        let_pat, let_exp, [] }
+  | bindings = letop_bindings pbop_op = mkrhs(ANDOP) body = let_binding_body
+      { let let_pat, let_exp, rev_ands = bindings in
+        let pbop_pat, pbop_exp = body in
+        let pbop_loc = make_loc $sloc in
+        let and_ = {pbop_op; pbop_pat; pbop_exp; pbop_loc} in
+        let_pat, let_exp, and_ :: rev_ands }
 ;
 fun_binding:
     strict_binding
@@ -3356,6 +3385,8 @@ operator:
   | INFIXOP2                                    { $1 }
   | INFIXOP3                                    { $1 }
   | INFIXOP4                                    { $1 }
+  | LETOP                                       { $1 }
+  | ANDOP                                       { $1 }
   | DOTOP LPAREN RPAREN                         { "."^ $1 ^"()" }
   | DOTOP LPAREN RPAREN LESSMINUS               { "."^ $1 ^ "()<-" }
   | DOTOP LBRACKET RBRACKET                     { "."^ $1 ^"[]" }

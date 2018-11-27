@@ -23,6 +23,7 @@ module T = Typedtree
 type mapper = {
   attribute: mapper -> T.attribute -> attribute;
   attributes: mapper -> T.attribute list -> attribute list;
+  binding_op: mapper -> T.binding_op -> T.pattern -> binding_op;
   case: mapper -> T.case -> case;
   cases: mapper -> T.case list -> case list;
   class_declaration: mapper -> T.class_declaration -> class_declaration;
@@ -116,6 +117,22 @@ let fresh_name s env =
       | Not_found -> aux (i+1)
   in
   aux 0
+
+(** Extract the [n] patterns from the case of a letop *)
+let rec extract_letop_patterns n pat =
+  if n = 0 then pat, []
+  else begin
+    match pat.pat_desc with
+    | Tpat_tuple([first; rest]) ->
+        let next, others = extract_letop_patterns (n-1) rest in
+        first, next :: others
+    | _ ->
+      let rec anys n =
+        if n = 0 then []
+        else { pat with pat_desc = Tpat_any } :: anys (n-1)
+      in
+      { pat with pat_desc = Tpat_any }, anys (n-1)
+  end
 
 (** Mapping functions. *)
 
@@ -473,6 +490,14 @@ let expression sub exp =
         Pexp_object (sub.class_structure sub cl)
     | Texp_pack (mexpr) ->
         Pexp_pack (sub.module_expr sub mexpr)
+    | Texp_letop {let_; ands; body; _} ->
+        let pat, and_pats =
+          extract_letop_patterns (List.length ands) body.c_lhs
+        in
+        let let_ = sub.binding_op sub let_ pat in
+        let ands = List.map2 (sub.binding_op sub) ands and_pats in
+        let body = sub.expr sub body.c_rhs in
+        Pexp_letop {let_; ands; body }
     | Texp_unreachable ->
         Pexp_unreachable
     | Texp_extension_constructor (lid, _) ->
@@ -485,6 +510,13 @@ let expression sub exp =
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)
+
+let binding_op sub bop pat =
+  let pbop_op = bop.bop_op_name in
+  let pbop_pat = sub.pat sub pat in
+  let pbop_exp = sub.expr sub bop.bop_exp in
+  let pbop_loc = bop.bop_loc in
+  {pbop_op; pbop_pat; pbop_exp; pbop_loc}
 
 let package_type sub pack =
   (map_loc sub pack.pack_txt,
@@ -804,8 +836,9 @@ let location _sub l = l
 
 let default_mapper =
   {
-    attribute = attribute ;
-    attributes = attributes ;
+    attribute = attribute;
+    attributes = attributes;
+    binding_op = binding_op;
     structure = structure;
     structure_item = structure_item;
     module_expr = module_expr;

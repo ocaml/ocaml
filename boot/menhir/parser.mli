@@ -49,6 +49,7 @@ type token =
   | MATCH
   | LPAREN
   | LIDENT of (string)
+  | LETOP of (string)
   | LET
   | LESSMINUS
   | LESS
@@ -118,6 +119,7 @@ type token =
   | BACKQUOTE
   | ASSERT
   | AS
+  | ANDOP of (string)
   | AND
   | AMPERSAND
   | AMPERAMPER
