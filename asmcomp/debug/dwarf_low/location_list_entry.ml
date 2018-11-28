@@ -55,7 +55,7 @@ module Location_list_entry = struct
     let offset_upper =
       match t.ending_address_offset with
       | None ->
-        (* It seems as if this should be "-1", but actually not.
+        (* It might seem as if this should be "-1", but actually not.
            DWARF-4 spec p.30 (point 2):
            "...the first address past the end of the address range over
             which the location is valid." *)

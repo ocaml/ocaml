@@ -20,6 +20,7 @@ module Int = Numbers.Int
 module L = Linearize
 module LB = Lexical_block_ranges
 module SLDL = Simple_location_description_lang
+module V = Backend_var
 
 type t = {
   compilation_unit_header_label : Asm_label.t;
@@ -30,6 +31,7 @@ type t = {
   start_of_code_symbol : Asm_symbol.t;
   end_of_code_symbol : Asm_symbol.t;
   output_path : string;
+  mutable rvalue_dies_required_for : V.Set.t;
   mutable emitted : bool;
 }
 
@@ -129,6 +131,7 @@ let create ~prefix_name =
     start_of_code_symbol;
     end_of_code_symbol;
     output_path;
+    rvalue_dies_required_for = V.Set.empty;
     emitted = false;
   }
 
@@ -382,6 +385,7 @@ let die_location_of_variable_rvalue t var ~proto_dies_for_vars =
   match proto_dies_for_variable var ~proto_dies_for_vars with
   | None -> None
   | Some { value_die_rvalue; _; } ->
+    t.rvalue_dies_required_for <- V.Set.add var t.rvalue_dies_required_for;
     let location =
       SLDL.Rvalue.location_from_another_die
         ~die_label:value_die_rvalue
@@ -791,60 +795,67 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
    and other "fun_var"s in the current mutually-recursive set.  (The last
    two cases are handled by the explicit addition of phantom lets way back
    in [Flambda_to_clambda].)  Phantom variables are also covered. *)
-let iterate_over_variable_like_things _t ~available_ranges_vars ~f =
+let iterate_over_variable_like_things t ~available_ranges_vars ~rvalues_only
+      ~f =
   ARV.iter available_ranges_vars ~f:(fun var range ->
-    let range_info = ARV.Range.info range in
-    let provenance = ARV.Range_info.provenance range_info in
-    let phantom : is_variable_phantom =
-      match ARV.Range_info.phantom_defining_expr range_info with
-      | Non_phantom -> Non_phantom
-      | Phantom _ -> Phantom
+    let should_process =
+      (not rvalues_only)
+        || V.Set.mem var t.rvalue_dies_required_for
     in
-    (* There are two variables in play here:
-       1. [var] is the "real" variable that is used to cross-reference
-           between DIEs;
-       2. [ident_for_type], if it is [Some], is the corresponding
-          identifier with the stamp as in the typed tree.  This is the
-          one used for lookup in .cmt files.
-       We cannot conflate these since the multiple [vars] that might
-       be associated with a given [ident_for_type] (due to inlining) may
-       not all have the same value. *)
-    (* CR-soon mshinwell: Default arguments currently appear as local
-       variables, not parameters. *)
-    (* CR-someday mshinwell: Introduce some flag on Backend_var.t to mark
-       identifiers that were generated internally (or vice-versa)? *)
-    let hidden =
-      let name = Backend_var.name var in
-      String.length name >= 1
-        && String.get name 0 = '*'
-        && String.get name (String.length name - 1) = '*'
-    in
-    let ident_for_type =
-      match provenance with
-      | None ->
-        (* In this case the variable won't be given a name in the DWARF,
-           so as not to appear in the debugger; but we still need to emit
-           a DIE for it, as it may be referenced as part of some chain of
-           phantom lets. *)
-        None
-      | Some provenance ->
-        (* CR-soon mshinwell: See CR-soon above; we can't do this yet
-           because there is often missing location information. *)
-        (*
-        let location = Backend_var.Provenance.location provenance in
-        if location = Debuginfo.none
-          && match Range.is_parameter range with
-             | Local -> true
-             | _ -> false
-        then None
-        else
-        *)
-        let original_ident =
-          Backend_var.Provenance.original_ident provenance
-        in
-        Some original_ident
-    in
-    f var ~phantom ~hidden ~ident_for_type ~range)
+    if should_process then begin
+      let range_info = ARV.Range.info range in
+      let provenance = ARV.Range_info.provenance range_info in
+      let phantom : is_variable_phantom =
+        match ARV.Range_info.phantom_defining_expr range_info with
+        | Non_phantom -> Non_phantom
+        | Phantom _ -> Phantom
+      in
+      (* There are two variables in play here:
+         1. [var] is the "real" variable that is used to cross-reference
+             between DIEs;
+         2. [ident_for_type], if it is [Some], is the corresponding
+            identifier with the stamp as in the typed tree.  This is the
+            one used for lookup in .cmt files.
+         We cannot conflate these since the multiple [vars] that might
+         be associated with a given [ident_for_type] (due to inlining) may
+         not all have the same value. *)
+      (* CR-soon mshinwell: Default arguments currently appear as local
+         variables, not parameters. *)
+      (* CR-someday mshinwell: Introduce some flag on Backend_var.t to mark
+         identifiers that were generated internally (or vice-versa)? *)
+      let hidden =
+        let name = Backend_var.name var in
+        String.length name >= 1
+          && String.get name 0 = '*'
+          && String.get name (String.length name - 1) = '*'
+      in
+      let ident_for_type =
+        match provenance with
+        | None ->
+          (* In this case the variable won't be given a name in the DWARF,
+             so as not to appear in the debugger; but we still need to emit
+             a DIE for it, as it may be referenced as part of some chain of
+             phantom lets. *)
+          None
+        | Some provenance ->
+          (* CR-soon mshinwell: See CR-soon above; we can't do this yet
+             because there is often missing location information. *)
+          (*
+          let location = Backend_var.Provenance.location provenance in
+          if location = Debuginfo.none
+            && match Range.is_parameter range with
+               | Local -> true
+               | _ -> false
+          then None
+          else
+          *)
+          let original_ident =
+            Backend_var.Provenance.original_ident provenance
+          in
+          Some original_ident
+      in
+      f var ~phantom ~hidden ~ident_for_type ~range
+    end)
 
 let dwarf_for_variables_and_parameters t ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
@@ -854,6 +865,7 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
     calculate_var_uniqueness ~available_ranges_vars
   in
   iterate_over_variable_like_things t ~available_ranges_vars
+    ~rvalues_only:false
     ~f:(fun var ~phantom ~hidden:_ ~ident_for_type:_ ~range:_ ->
       let value_die_lvalue = Proto_die.create_reference () in
       let value_die_rvalue = Proto_die.create_reference () in
@@ -865,15 +877,16 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
           value_die_rvalue;
           type_die;
         });
+  t.rvalue_dies_required_for <- V.Set.empty;
   (* CR-someday mshinwell: Consider changing [need_rvalue] to use a variant
      type "lvalue or rvalue". *)
   iterate_over_variable_like_things t ~available_ranges_vars
+    ~rvalues_only:false
     ~f:(dwarf_for_variable t ~fundecl ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:false);
-  (* CR-soon mshinwell: We should work out how to save space by not having
-     all "rvalue" DIEs. *)
   iterate_over_variable_like_things t ~available_ranges_vars
+    ~rvalues_only:true
     ~f:(dwarf_for_variable t ~fundecl ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true)
