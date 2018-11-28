@@ -942,13 +942,15 @@ case "$arch,$system" in
                   aspp="${TOOLPREF}gcc -m64 -c";;
   i386,solaris)   as="${TOOLPREF}as"
                   aspp="${TOOLPREF}gcc -c";;
-  power,elf)      if $arch64; then
-                    as="${TOOLPREF}as -a64 -mppc64"
-                    aspp="${TOOLPREF}gcc -m64 -c"
-                  else
-                    as="${TOOLPREF}as -mppc"
-                    aspp="${TOOLPREF}gcc -m32 -c"
-                  fi;;
+  power,elf)
+                  case "$model" in
+                      ppc64le) as="${TOOLPREF}as -a64 -mpower8"
+                               aspp="${TOOLPREF}gcc -m64 -mcpu=powerpc64le -c";;
+                      ppc64)   as="${TOOLPREF}as -a64 -mppc64"
+                               aspp="${TOOLPREF}gcc -m64 -c";;
+                      ppc)     as="${TOOLPREF}as -mppc"
+                               aspp="${TOOLPREF}gcc -m32 -c";;
+                  esac;;
   s390x,elf)      as="${TOOLPREF}as -m 64 -march=$model"
                   aspp="${TOOLPREF}gcc -c -Wa,-march=$model";;
   arm,freebsd)    as="${TOOLPREF}cc -c"

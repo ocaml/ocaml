@@ -481,6 +481,10 @@ Working version
 - GPR#2148: fix a parallel build bug involving CamlinternalLazy.
   (Stephen Dolan, review by Gabriel Scherer and Nicolas Ojeda Bar)
 
+- GPR#2171: change configure for ppc64le to pass command-line option
+  -mpower8 instead of -mppc64 to the assembler.
+  (Greta Yorsh, review by ?)
+
 ### Internal/compiler-libs changes:
 
 - GPR#292: use Menhir as the parser generator for the OCaml parser.
