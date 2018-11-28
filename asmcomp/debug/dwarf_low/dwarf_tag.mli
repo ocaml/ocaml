@@ -90,3 +90,5 @@ include Dwarf_emittable.S with type t := t
 val tag_name : t -> string
 
 val child_determination : t -> Child_determination.t
+
+val compare : t -> t -> int

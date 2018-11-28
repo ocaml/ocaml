@@ -14,8 +14,7 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module AS = Dwarf_attributes.Attribute_specification
-module AV = Dwarf_attribute_values.Attribute_value
+module ASS = Dwarf_attributes.Attribute_specification.Sealed
 module DIE = Debugging_information_entry
 
 type result = {
@@ -35,27 +34,14 @@ let run ~proto_die_root =
     let next_abbreviation_code = ref 1 in
     Proto_die.depth_first_fold proto_die_root
       ~init:(Abbreviations_table.create (), [], None)
-      ~f:(fun (abbrev_table, dies, compilation_unit_die) action ->
+      ~f:(fun (abbrev_table, dies, compilation_unit_die)
+              (action : Proto_die.fold_arg) ->
         let abbrev_table, die, compilation_unit_die =
           match action with
-          | `End_of_siblings ->
+          | End_of_siblings ->
             abbrev_table, DIE.create_null (), compilation_unit_die
-          | `DIE (tag, has_children, attribute_values, label, name) ->
-            let attribute_specs =
-              List.fold_left (fun attribute_specs attribute_value ->
-                  AS.Sealed.Set.add (AV.attribute_spec attribute_value)
-                    attribute_specs)
-                AS.Sealed.Set.empty
-                attribute_values
-            in
-            (* Sort the list of attribute values so they match up with the
-               abbreviations table entry (which uses [AS.Set]). *)
-            let attribute_values =
-              List.sort (fun av1 av2 ->
-                  AS.Sealed.compare (AV.attribute_spec av1)
-                    (AV.attribute_spec av2))
-                attribute_values
-            in
+          | DIE (tag, has_children, attribute_values, label, name) ->
+            let attribute_specs = ASS.Map.keys attribute_values in
             let abbrev_table, abbreviation_code =
               match
                 Abbreviations_table.find abbrev_table ~tag ~has_children

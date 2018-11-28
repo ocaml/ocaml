@@ -294,3 +294,5 @@ let child_determination t : Child_determination.t =
   | Rvalue_reference_type
   | Template_alias
   | User _ -> No
+
+let compare t1 t2 = Stdlib.compare t1 t2

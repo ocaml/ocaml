@@ -16,22 +16,34 @@
 
 module Uint64 = Numbers.Uint64
 
-type t = Dwarf_value.t
+type t = {
+  code : int;
+  comment : string;
+}
 
 exception Bad_abbreviation_code of int
 
-let of_int i tag =
-  if i < 1 then raise (Bad_abbreviation_code i);
-  Dwarf_value.uleb128
-    ~comment:(Printf.sprintf "abbrev. code (abbrev. has tag %s)"
-      (Dwarf_tag.tag_name tag))
-    (Uint64.of_int_exn i)
+let of_int code tag =
+  if code < 1 then raise (Bad_abbreviation_code code);
+  let comment =
+    Printf.sprintf "abbrev. code (abbrev. has tag %s)" (Dwarf_tag.tag_name tag)
+  in
+  { code;
+    comment;
+  }
 
 let null () =
-  Dwarf_value.uleb128 ~comment:"null abbreviation code" Uint64.zero
+  { code = 0;
+    comment = "null abbreviation code";
+  }
 
-let emit t =
-  Dwarf_value.emit t
+let encode t =
+  Dwarf_value.uleb128 ~comment:t.comment (Uint64.of_int_exn t.code)
 
-let size t =
-  Dwarf_value.size t
+let emit t = Dwarf_value.emit (encode t)
+
+let size t = Dwarf_value.size (encode t)
+
+let compare t1 t2 = Stdlib.compare t1.code t2.code
+
+let hash t = Hashtbl.hash t.code

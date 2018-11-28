@@ -20,7 +20,8 @@ type t
 
 include Dwarf_emittable.S with type t := t
 
-val create : abbreviation_code:Abbreviation_code.t
+val create
+   : abbreviation_code:Abbreviation_code.t
   -> tag:Dwarf_tag.t
   -> has_children:Child_determination.t
   -> attribute_specs:Dwarf_attributes.Attribute_specification.Sealed.Set.t

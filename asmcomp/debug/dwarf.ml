@@ -334,18 +334,16 @@ let construct_type_of_value_description t ~parent var ~output_path
               | Some proto_die_reference ->
                 DAH.create_type_from_reference ~proto_die_reference
           in
-          let field_proto_die =
-            Proto_die.create ~parent:(Some struct_type_die)
-              ~tag:Member
-              ~attribute_values:(type_attribute :: [
-                DAH.create_name name;
-                DAH.create_bit_size (Int64.of_int (Arch.size_addr * 8));
-                DAH.create_data_member_location
-                  ~byte_offset:(Int64.of_int (index * Arch.size_addr));
-              ])
-              ()
-          in
-          Proto_die.set_sort_priority field_proto_die index)
+          Proto_die.create_ignore ~sort_priority:index
+            ~parent:(Some struct_type_die)
+            ~tag:Member
+            ~attribute_values:(type_attribute :: [
+              DAH.create_name name;
+              DAH.create_bit_size (Int64.of_int (Arch.size_addr * 8));
+              DAH.create_data_member_location
+                ~byte_offset:(Int64.of_int (index * Arch.size_addr));
+            ])
+            ())
         (None :: fields);  (* "None" is for the GC header. *)
       let _pointer_to_struct_type_die : Proto_die.t =
         Proto_die.create ~reference ~parent
@@ -773,20 +771,21 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
       if need_rvalue then Some proto_dies.value_die_rvalue
       else Some proto_dies.value_die_lvalue
   in
-  let proto_die =
-    Proto_die.create ?reference
-      ~parent:(Some parent_proto_die)
-      ~tag
-      ~attribute_values:(type_and_name_attributes @ [
-        location_list_attribute_value;
-      ])
-      ()
+  let sort_priority =
+    match is_parameter with
+    | Local -> None
+    | Parameter { index; } ->
+      (* Ensure that parameters appear in the correct order in the debugger. *)
+      Some index
   in
-  match is_parameter with
-  | Local -> ()
-  | Parameter { index; } ->
-    (* Ensure that parameters appear in the correct order in the debugger. *)
-    Proto_die.set_sort_priority proto_die index
+  Proto_die.create_ignore ?reference
+    ?sort_priority
+    ~parent:(Some parent_proto_die)
+    ~tag
+    ~attribute_values:(type_and_name_attributes @ [
+      location_list_attribute_value;
+    ])
+    ()
 
 (* This function covers local variables, parameters, variables in closures
    and other "fun_var"s in the current mutually-recursive set.  (The last
@@ -1140,7 +1139,8 @@ let dwarf_for_toplevel_constant t ~vars ~module_path ~symbol =
           (* Mark everything as "external" so gdb puts the constants in its
              list of "global symbols". *)
           DAH.create_external ~is_visible_externally:true;
-        ])
+        ]
+        ())
     vars
 
 let dwarf_for_toplevel_constants t constants =
@@ -1206,6 +1206,7 @@ let dwarf_for_toplevel_inconstant t var ~module_path ~symbol =
       DAH.create_single_location_description single_location_description;
       DAH.create_external ~is_visible_externally:true;  (* see above *)
     ]
+    ()
 
 let dwarf_for_toplevel_inconstants t inconstants =
   List.iter (fun (inconstant : Clambda.preallocated_block) ->

@@ -34,6 +34,7 @@ val create_reference : unit -> reference
    a compilation unit (which is a top-level entity). *)
 val create
    : ?reference:reference
+  -> ?sort_priority:int
   -> parent:t option
   -> tag:Dwarf_tag.t
   -> attribute_values:Dwarf_attribute_values.Attribute_value.t list
@@ -41,12 +42,13 @@ val create
   -> t
 
 val create_ignore
-   : parent:t option
+   : ?reference:reference
+  -> ?sort_priority:int
+  -> parent:t option
   -> tag:Dwarf_tag.t
   -> attribute_values:Dwarf_attribute_values.Attribute_value.t list
   -> unit
-
-val set_sort_priority : t -> int -> unit
+  -> unit
 
 (* CR-someday mshinwell: add a [name] argument to the creation functions *)
 val set_name : t -> Asm_symbol.t -> unit
@@ -56,6 +58,13 @@ val set_name : t -> Asm_symbol.t -> unit
 (* CR-someday mshinwell: ideally, attribute values could accept proto-DIE
    values directly, but there is a circularity. *)
 val reference : t -> Asm_label.t
+
+type fold_arg = private
+  | DIE of Dwarf_tag.t * Child_determination.t
+      * (Dwarf_attribute_values.Attribute_value.t
+          Dwarf_attributes.Attribute_specification.Sealed.Map.t)
+      * Asm_label.t * Asm_symbol.t option (* optional name *)
+  | End_of_siblings
 
 (* [depth_first_fold] traverses a proto-DIE tree in a depth-first order
    convenient for DWARF information emission.  (Section 2.3, DWARF-4 spec.)
@@ -68,11 +77,5 @@ val reference : t -> Asm_label.t
 val depth_first_fold
    : t
   -> init:'a
-  -> f:('a
-    -> [ `DIE of Dwarf_tag.t * Child_determination.t
-           * (Dwarf_attribute_values.Attribute_value.t list)
-           * Asm_label.t * Asm_symbol.t option (* optional name *)
-       | `End_of_siblings
-       ]
-    -> 'a)
+  -> f:('a -> fold_arg -> 'a)
   -> 'a
