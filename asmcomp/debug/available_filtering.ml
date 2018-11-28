@@ -66,10 +66,6 @@ let filter_inplace (decl : L.fundecl) =
   decl
 
 let fundecl (decl : L.fundecl) =
-(*
-Format.eprintf "FUNCTION %a\n%!" Backend_sym.print decl.fun_name;
-*)
-(* XXX This pass is breaking things *)
-  match None (* !Clflags.debug_full *) with
+  match !Clflags.debug_full with
   | None -> decl
   | Some _ -> filter_inplace decl

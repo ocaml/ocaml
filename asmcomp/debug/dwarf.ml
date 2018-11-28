@@ -994,7 +994,12 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
   whole_function_lexical_block, lexical_block_proto_dies
 
 let passes_for_fundecl (fundecl : L.fundecl) =
-  let fundecl = Available_filtering.fundecl fundecl in
+  let fundecl =
+    Profile.record "dwarf_available_filtering" (fun fundecl ->
+        Available_filtering.fundecl fundecl)
+      ~accumulate:true
+      fundecl
+  in
   let available_ranges_vars, fundecl =
     Profile.record "dwarf_available_ranges_vars" (fun fundecl ->
         Available_ranges_vars.create fundecl)
