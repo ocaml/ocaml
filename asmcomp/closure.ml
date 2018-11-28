@@ -1263,9 +1263,14 @@ let rec close ~scope fenv cenv = function
         (Variable, _) ->
           let (ubody, abody) = close ~scope:body_scope fenv cenv body in
           (Ulet(Mutable, kind, VP.create ?provenance id, ulam, ubody), abody)
-      | (_, Value_const _)
+      | (_, Value_const const)
         when str = Alias || is_pure lam ->
-          close ~scope:body_scope (V.Map.add id alam fenv) cenv body
+          let ubody, abody =
+            close ~scope:body_scope (V.Map.add id alam fenv) cenv body
+          in
+          Uphantom_let (VP.create ?provenance id,
+              Some (Uphantom_const const), ubody),
+            abody
       | (_, _) ->
           let (ubody, abody) =
             close ~scope:body_scope (V.Map.add id alam fenv) cenv body
