@@ -845,6 +845,10 @@ let targetint ?comment n =
   | Int64 n -> int64 ?comment n
 
 let cache_string ?comment str =
+  let comment =
+    if !Clflags.keep_asm_file then comment
+    else None
+  in
   let cached : Cached_string.t = { str; comment; } in
   match Cached_string.Map.find cached !cached_strings with
   | label -> label
