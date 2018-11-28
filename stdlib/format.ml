@@ -818,9 +818,13 @@ let pp_set_formatter_output_functions state f g =
 let pp_get_formatter_output_functions state () =
   (state.pp_out_string, state.pp_out_flush)
 
+let newline =
+    match Sys.win32 with
+    | true -> "\r\n"
+    | false -> "\n"
 
 (* The default function to output new lines. *)
-let display_newline state () = state.pp_out_string "\n" 0  1
+let display_newline state () = state.pp_out_string newline 0  1
 
 (* The default function to output spaces. *)
 let blank_line = String.make 80 ' '
