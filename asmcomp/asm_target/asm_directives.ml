@@ -592,16 +592,41 @@ let switch_to_section_raw ~names ~flags ~args =
 let text () = switch_to_section Asm_section.Text
 let data () = switch_to_section Asm_section.Data
 
-type cached_string = {
-  str : string;
-  comment : string option;
-}
+module Cached_string = struct
+  type t = {
+    str : string;
+    comment : string option;
+  }
 
-let cached_strings = ref ([] : (cached_string * Asm_label.t) list)
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare { str = str1; comment = comment1; }
+          { str = str2; comment = comment2; } =
+      let c = String.compare str1 str2 in
+      if c <> 0 then c
+      else
+        match comment1, comment2 with
+        | None, None -> 0
+        | None, Some _ -> -1
+        | Some _, None -> 1
+        | Some comment1, Some comment2 -> String.compare comment1 comment2
+
+    let equal t1 t2 =
+      compare t1 t2 = 0
+
+    let hash t = Hashtbl.hash t
+
+    let print _ _ = Misc.fatal_error "Not yet implemented"
+    let output _ _ = Misc.fatal_error "Not yet implemented"
+  end)
+end
+
+let cached_strings = ref Cached_string.Map.empty
 let temp_var_counter = ref 0
 
 let reset () =
-  cached_strings := [];
+  cached_strings := Cached_string.Map.empty;
   sections_seen := [];
   temp_var_counter := 0
 
@@ -820,21 +845,21 @@ let targetint ?comment n =
   | Int64 n -> int64 ?comment n
 
 let cache_string ?comment str =
-  let cached : cached_string = { str; comment; } in
-  match List.assoc cached !cached_strings with
+  let cached : Cached_string.t = { str; comment; } in
+  match Cached_string.Map.find cached !cached_strings with
   | label -> label
   | exception Not_found ->
     let label = Asm_label.create () in
-    cached_strings := (cached, label) :: !cached_strings;
+    cached_strings := Cached_string.Map.add cached label !cached_strings;
     label
 
 let emit_cached_strings () =
-  List.iter (fun ({ str; comment; }, label_name) ->
+  Cached_string.Map.iter (fun { str; comment; } label_name ->
       define_label label_name;
       string ?comment str;
       int8 Int8.zero)
     !cached_strings;
-  cached_strings := []
+  cached_strings := Cached_string.Map.empty
 
 let mark_stack_non_executable () =
   let current_section = current_section () in

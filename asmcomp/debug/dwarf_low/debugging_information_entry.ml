@@ -36,7 +36,7 @@ let null =
   lazy (
     { label = Asm_label.create ();
       name = None;
-      abbreviation_code = Abbreviation_code.null ();
+      abbreviation_code = Abbreviation_code.null;
       attribute_values = ASS.Map.empty;
     })
 
@@ -47,7 +47,7 @@ let emit t =
      emit its label multiple times, or the assembler would complain.
      We don't actually need to point at the null DIE from anywhere else, so
      we elide emission of the label altogether. *)
-  if t.abbreviation_code <> Abbreviation_code.null () then begin
+  if not (Abbreviation_code.is_null t.abbreviation_code) then begin
     begin match t.name with
     | None -> ()
     | Some symbol -> A.define_data_symbol symbol

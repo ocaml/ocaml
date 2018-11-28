@@ -71,4 +71,6 @@ let emit t =
   A.new_line ();
   A.comment "Debugging information entries:";
   A.new_line ();
-  List.iter (fun die -> DIE.emit die) t.dies
+  Profile.record "die_emission" (fun dies ->
+      List.iter (fun die -> DIE.emit die) dies)
+    t.dies

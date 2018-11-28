@@ -32,10 +32,13 @@ let of_int code tag =
     comment;
   }
 
-let null () =
+let null =
   { code = 0;
     comment = "null abbreviation code";
   }
+
+let is_null t =
+  t == null
 
 let encode t =
   Dwarf_value.uleb128 ~comment:t.comment (Uint64.of_int_exn t.code)
