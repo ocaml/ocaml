@@ -474,7 +474,9 @@ let cfi_adjust_cfa_offset ~bytes =
     end
 
 let cfi_endproc () =
-  if should_generate_cfi () then emit Cfi_endproc
+  if should_generate_cfi () then begin
+    emit Cfi_endproc
+  end
 
 let cfi_offset ~reg ~offset =
   if should_generate_cfi () && offset <> 0 then begin
@@ -482,9 +484,15 @@ let cfi_offset ~reg ~offset =
   end
 
 let cfi_startproc () =
-  if should_generate_cfi () then emit Cfi_startproc
+  if should_generate_cfi () then begin
+    emit Cfi_startproc
+  end
 
-let comment text = emit (Comment text)
+let comment text =
+  if !Clflags.keep_asm_file then begin
+    emit (Comment text)
+  end
+
 let loc ~file_num ~line ~col = emit_non_masm (Loc { file_num; line; col; })
 let space ~bytes = emit (Space { bytes; })
 let string ?comment str = emit (Bytes { str; comment; })
@@ -778,14 +786,16 @@ let offset_into_section_label ?comment section upper
     | Sixty_four -> Sixty_four
   in
   let comment =
-    match comment with
-    | None ->
-      Format.asprintf "offset into %s" (Asm_section.to_string section)
-    | Some comment ->
-      Format.asprintf "%s (offset into %s)"
-        comment (Asm_section.to_string section)
+    if not !Clflags.keep_asm_file then None
+    else
+      match comment with
+      | None ->
+        Some (Format.asprintf "offset into %s" (Asm_section.to_string section))
+      | Some comment ->
+        Some (Format.asprintf "%s (offset into %s)"
+          comment (Asm_section.to_string section))
   in
-  const ~comment expr width
+  const ?comment expr width
 
 let offset_into_section_symbol ?comment section upper
       ~(width : TS.machine_width) =
@@ -806,14 +816,16 @@ let offset_into_section_symbol ?comment section upper
     | Sixty_four -> Sixty_four
   in
   let comment =
-    match comment with
-    | None ->
-      Format.asprintf "offset into %s" (Asm_section.to_string section)
-    | Some comment ->
-      Format.asprintf "%s (offset into %s)"
-        comment (Asm_section.to_string section)
+    if not !Clflags.keep_asm_file then None
+    else
+      match comment with
+      | None ->
+        Some (Format.asprintf "offset into %s" (Asm_section.to_string section))
+      | Some comment ->
+        Some (Format.asprintf "%s (offset into %s)"
+          comment (Asm_section.to_string section))
   in
-  const ~comment expr width
+  const ?comment expr width
 
 let int8 ?comment i =
   const ?comment (Signed_int (Int64.of_int (Int8.to_int i))) Eight

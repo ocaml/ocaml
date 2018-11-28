@@ -343,16 +343,18 @@ let emit { value; comment; } =
     let label = A.cache_string ?comment str in
     A.offset_into_section_label ?comment (DWARF Debug_str) label
       ~width:(width_for_ref_addr_or_sec_offset ());
-    let str_len = String.length str in
-    let max_str_len = 30 in
-    let abbrev =
-      if str_len <= max_str_len then
-        Printf.sprintf "  (.debug_str entry is %S)" str
-      else
-        let abbrev = (String.sub str 0 max_str_len) in
-        Printf.sprintf "  (.debug_str entry starts %S [...])" abbrev
-    in
-    A.comment abbrev
+    if !Clflags.keep_asm_file then begin
+      let str_len = String.length str in
+      let max_str_len = 30 in
+      let abbrev =
+        if str_len <= max_str_len then
+          Printf.sprintf "  (.debug_str entry is %S)" str
+        else
+          let abbrev = (String.sub str 0 max_str_len) in
+          Printf.sprintf "  (.debug_str entry starts %S [...])" abbrev
+      in
+      A.comment abbrev
+    end
   | Absolute_address addr -> A.targetint ?comment addr
   | Code_address_from_label lbl -> A.label ?comment lbl
   | Code_address_from_symbol sym -> A.symbol ?comment sym

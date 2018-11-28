@@ -91,11 +91,15 @@ module Attribute_value = struct
   let emit ((spec, value) : t) =
     match value with
     | Dwarf_value value ->
-      let comment =
-        Format.asprintf "(%a)"
-          Dwarf_attributes.Attribute_specification.Sealed.print spec
+      let value =
+        if not !Clflags.keep_asm_file then value
+        else
+          let comment =
+            Format.asprintf "(%a)"
+              Dwarf_attributes.Attribute_specification.Sealed.print spec
+          in
+          Dwarf_value.append_to_comment value comment
       in
-      let value = Dwarf_value.append_to_comment value comment in
       Dwarf_value.emit value
     | Single_location_description loc_desc ->
       A.uleb128 ~comment:"size of single location desc."
