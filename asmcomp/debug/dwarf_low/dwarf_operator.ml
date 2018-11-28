@@ -737,8 +737,13 @@ end) = struct
         | n ->
           Misc.fatal_errorf "Dwarf_operator: bad Arch.size_int = %d" n
       in
-      let comment = Format.asprintf "implicit value %a" Targetint.print i in
-      value (V.sleb128 ~comment (Int64.of_int (Bytes.length buf)))
+      let comment =
+        if !Clflags.keep_asm_file then
+          Some (Format.asprintf "implicit value %a" Targetint.print i)
+        else
+          None
+      in
+      value (V.sleb128 ?comment (Int64.of_int (Bytes.length buf)))
       >>> fun () ->
       value (V.string (Bytes.to_string buf))
     | DW_op_implicit_value (Symbol symbol) ->
