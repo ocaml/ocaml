@@ -313,7 +313,7 @@ module Array = struct
     let rec loop i =
       if i = n then false
       else if p (unsafe_get a i) then true
-      else loop (succ i) in
+      else loop (i + 1) in
     loop 0
 
   (* duplicated from array.ml *)
@@ -321,7 +321,7 @@ module Array = struct
     let n = length a in
     let rec loop i =
       if i = n then true
-      else if p (unsafe_get a i) then loop (succ i)
+      else if p (unsafe_get a i) then loop (i + 1)
       else false in
     loop 0
 
@@ -331,7 +331,7 @@ module Array = struct
     let rec loop i =
       if i = n then false
       else if compare (unsafe_get a i) x = 0 then true
-      else loop (succ i)
+      else loop (i + 1)
     in
     loop 0
 
@@ -341,7 +341,7 @@ module Array = struct
     let rec loop i =
       if i = n then false
       else if x = (unsafe_get a i) then true
-      else loop (succ i)
+      else loop (i + 1)
     in
     loop 0
 
