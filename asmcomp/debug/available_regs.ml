@@ -31,34 +31,36 @@ let augment_availability_at_raise avail =
   avail_at_raise := RAS.inter avail !avail_at_raise
 
 let check_invariants (instr : M.instruction) ~(avail_before : RAS.t) =
-  match avail_before with
-  | Unreachable -> ()
-  | Ok avail_before ->
-    (* Every register that is live across an instruction should also be
-       available before the instruction. *)
-    if not (R.Set.subset instr.live (RD.Set.forget_debug_info avail_before))
-    then begin
-      Misc.fatal_errorf "Live registers not a subset of available registers: \
-          live={%a} avail_before=%a missing={%a} insn=%a"
-        Printmach.regset instr.live
-        (RAS.print ~print_reg:Printmach.reg)
-        (RAS.Ok avail_before)
-        Printmach.regset (R.Set.diff instr.live
-          (RD.Set.forget_debug_info avail_before))
-        Printmach.instr ({ instr with M. next = M.end_instr (); })
-    end;
-    (* Every register that is an input to an instruction should be
-       available. *)
-    let args = R.set_of_array instr.arg in
-    let avail_before_fdi = RD.Set.forget_debug_info avail_before in
-    if not (R.Set.subset args avail_before_fdi) then begin
-      Misc.fatal_errorf "Instruction has unavailable input register(s): \
-          avail_before=%a avail_before_fdi={%a} inputs={%a} insn=%a"
-        (RAS.print ~print_reg:Printmach.reg) (RAS.Ok avail_before)
-        Printmach.regset avail_before_fdi
-        Printmach.regset args
-        Printmach.instr ({ instr with M. next = M.end_instr (); })
-    end
+  if !Clflags.dwarf_invariant_checks then begin
+    match avail_before with
+    | Unreachable -> ()
+    | Ok avail_before ->
+      (* Every register that is live across an instruction should also be
+         available before the instruction. *)
+      if not (R.Set.subset instr.live (RD.Set.forget_debug_info avail_before))
+      then begin
+        Misc.fatal_errorf "Live registers not a subset of available registers: \
+            live={%a} avail_before=%a missing={%a} insn=%a"
+          Printmach.regset instr.live
+          (RAS.print ~print_reg:Printmach.reg)
+          (RAS.Ok avail_before)
+          Printmach.regset (R.Set.diff instr.live
+            (RD.Set.forget_debug_info avail_before))
+          Printmach.instr ({ instr with M. next = M.end_instr (); })
+      end;
+      (* Every register that is an input to an instruction should be
+         available. *)
+      let args = R.set_of_array instr.arg in
+      let avail_before_fdi = RD.Set.forget_debug_info avail_before in
+      if not (R.Set.subset args avail_before_fdi) then begin
+        Misc.fatal_errorf "Instruction has unavailable input register(s): \
+            avail_before=%a avail_before_fdi={%a} inputs={%a} insn=%a"
+          (RAS.print ~print_reg:Printmach.reg) (RAS.Ok avail_before)
+          Printmach.regset avail_before_fdi
+          Printmach.regset args
+          Printmach.instr ({ instr with M. next = M.end_instr (); })
+      end
+  end
 
 (* [available_regs ~instr ~avail_before] calculates, given the registers
    "available before" an instruction [instr], the registers that are available
@@ -109,8 +111,7 @@ let rec available_regs (instr : M.instruction)
                 match RD.debug_info reg with
                 | None -> reg
                 | Some debug_info ->
-                  if V.same
-                    (RD.Debug_info.holds_value_of debug_info) ident
+                  if V.same (RD.Debug_info.holds_value_of debug_info) ident
                   then RD.clear_debug_info reg
                   else reg)
               avail_before
@@ -345,7 +346,9 @@ let rec available_regs (instr : M.instruction)
   begin match instr.available_across with
   | None -> ()
   | Some available_across ->
-    if not (RAS.subset available_across instr.available_before) then begin
+    if !Clflags.dwarf_invariant_checks
+      && not (RAS.subset available_across instr.available_before)
+    then begin
       Misc.fatal_errorf "[available_across] %a not a subset of \
          [available_before] %a:@ %a"
         (RAS.print ~print_reg:Printmach.reg) available_across

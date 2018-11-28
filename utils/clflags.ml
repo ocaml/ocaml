@@ -148,6 +148,8 @@ let clambda_checks = ref false          (* -clambda-checks *)
 let flambda_invariant_checks =
   ref Config.with_flambda_invariants    (* -flambda-(no-)invariants *)
 
+let dwarf_invariant_checks = ref false  (* -ddwarf-(no-)invariants *)
+
 let dont_write_files = ref false        (* set to true under ocamldoc *)
 
 let std_include_flag prefix =
