@@ -99,3 +99,18 @@ val to_list : ('a, 'e) result -> 'a list
 val to_seq : ('a, 'e) result -> 'a Seq.t
 (** [to_seq r] is [r] as a sequence. [Ok v] is the singleton sequence
     containing [v] and [Error _] is the empty sequence. *)
+
+(** {1 Syntax module} *)
+module Syntax : sig
+
+  val return : 'a -> ('a, 'e) result
+
+  val ( let* ) : ('a, 'e) result -> ('a -> ('b, 'e) result) -> ('b, 'e) result
+
+  val ( and* ) : ('a, 'e) result -> ('b, 'e) result -> ('a * 'b, 'e) result
+
+  val ( let+ ) : ('a, 'e) result -> ('a -> 'b) -> ('b, 'e) result
+
+  val ( and+ ) : ('a, 'e) result -> ('b, 'e) result -> ('a * 'b, 'e) result
+
+end

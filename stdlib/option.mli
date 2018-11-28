@@ -53,6 +53,10 @@ val fold : none:'a -> some:('b -> 'a) -> 'b option -> 'a
 val iter : ('a -> unit) -> 'a option -> unit
 (** [iter f o] is [f v] if [o] is [Some v] and [()] otherwise. *)
 
+val product : 'a option -> 'b option -> ('a * 'b) option
+(** [product o1 o2] is [None] if [o1] or [o2] are None and
+    [Some (v1, v2)] if [o1] is [Some v1] and [o2] is [Some v2] *)
+
 (** {1:preds Predicates and comparisons} *)
 
 val is_none : 'a option -> bool
@@ -81,3 +85,18 @@ val to_list : 'a option -> 'a list
 val to_seq : 'a option -> 'a Seq.t
 (** [to_seq o] is [o] as a sequence. [None] is the empty sequence and
     [Some v] is the singleton sequence containing [v]. *)
+
+(** {1 Syntax module} *)
+module Syntax : sig
+
+  val return : 'a -> 'a option
+
+  val ( let* ) : 'a option -> ('a -> 'b option) -> 'b option
+
+  val ( and* ) : 'a option -> 'b option -> ('a * 'b) option
+
+  val ( let+ ) : 'a option -> ('a -> 'b) -> 'b option
+
+  val ( and+ ) : 'a option -> 'b option -> ('a * 'b) option
+
+end

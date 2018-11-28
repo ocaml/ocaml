@@ -44,3 +44,24 @@ let compare ~ok ~error r0 r1 = match r0, r1 with
 let to_option = function Ok v -> Some v | Error _ -> None
 let to_list = function Ok v -> [v] | Error _ -> []
 let to_seq = function Ok v -> Seq.return v | Error _ -> Seq.empty
+
+let product r1 r2 =
+  match r1, r2 with
+  | (Error _ as r1), _ -> r1
+  | Ok _, (Error _ as r2) -> r2
+  | Ok v1, Ok v2 -> Ok (v1, v2)
+
+(** {1 Syntax module} *)
+module Syntax = struct
+
+  let return x = Ok x
+
+  let ( let* ) x f = bind x f
+
+  let ( and* ) a b = product a b
+
+  let ( let+ ) x f = map f x
+
+  let ( and+ ) a b = product a b
+
+end

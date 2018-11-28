@@ -142,6 +142,11 @@ val fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 (** [List.fold_right f [a1; ...; an] b] is
    [f a1 (f a2 (... (f an b) ...))].  Not tail-recursive. *)
 
+val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+(** [List.concat_map f l] is [List.concat (List.map f l)]. *)
+
+val flat_map : ('a -> 'b list) -> 'a list -> 'b list
+(** An alias for [concat_map] *)
 
 (** {1 Iterators on two lists} *)
 
@@ -302,6 +307,9 @@ val combine : 'a list -> 'b list -> ('a * 'b) list
    Raise [Invalid_argument] if the two lists
    have different lengths.  Not tail-recursive. *)
 
+val product : 'a list -> 'b list -> ('a * 'b) list
+(** [product [a1; ...; an] [b1; ...; bn]] is
+    [[(a1, b1); (a1, b2); ...; (a1, bn); (a2, b1); ...; (an, bn)]]. *)
 
 (** {1 Sorting} *)
 
@@ -358,3 +366,18 @@ val to_seq : 'a list -> 'a Seq.t
 val of_seq : 'a Seq.t -> 'a list
 (** Create a list from the iterator
     @since 4.07 *)
+
+(** {1 Syntax module} *)
+module Syntax : sig
+
+  val return : 'a -> 'a list
+
+  val ( let* ) : 'a list -> ('a -> 'b list) -> 'b list
+
+  val ( and* ) : 'a list -> 'b list -> ('a * 'b) list
+
+  val ( let+ ) : 'a list -> ('a -> 'b) -> 'b list
+
+  val ( and+ ) : 'a list -> 'b list -> ('a * 'b) list
+
+end

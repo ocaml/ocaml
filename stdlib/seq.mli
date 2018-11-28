@@ -80,3 +80,18 @@ val iter : ('a -> unit) -> 'a t -> unit
 (** Iterate on the sequence, calling the (imperative) function on every element.
     The traversal happens immediately and will not terminate on infinite
     sequences. *)
+
+(** {1 Syntax module} *)
+module Syntax : sig
+
+  val return : 'a -> 'a t
+
+  val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
+
+  val ( and* ) : 'a t -> 'b t -> ('a * 'b) t
+
+  val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
+
+  val ( and+ ) : 'a t -> 'b t -> ('a * 'b) t
+
+end
