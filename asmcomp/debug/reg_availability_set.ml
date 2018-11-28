@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2016--2017 Jane Street Group LLC                           *)
+(*   Copyright 2016--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -31,6 +31,7 @@ let inter regs1 regs2 =
   | Unreachable, _ -> regs2
   | _, Unreachable -> regs1
   | Ok avail1, Ok avail2 ->
+    (* CR mshinwell: Is this function not symmetric? *)
     let result =
       RD.Set.fold (fun reg1 result ->
           match RD.Set.find_reg_exn avail2 (RD.reg reg1) with
@@ -78,15 +79,15 @@ let canonicalise availability =
   match availability with
   | Unreachable -> Unreachable
   | Ok availability ->
-    let regs_by_ident = V.Tbl.create 42 in
+    let regs_by_var = V.Tbl.create 42 in
     RD.Set.iter (fun reg ->
         match RD.debug_info reg with
         | None -> ()
         | Some debug_info ->
           let name = RD.Debug_info.holds_value_of debug_info in
           if not (V.persistent name) then begin
-            match V.Tbl.find regs_by_ident name with
-            | exception Not_found -> V.Tbl.add regs_by_ident name reg
+            match V.Tbl.find regs_by_var name with
+            | exception Not_found -> V.Tbl.add regs_by_var name reg
             | (reg' : RD.t) ->
               (* We prefer registers that are assigned to the stack since
                  they probably give longer available ranges (less likely to
@@ -98,16 +99,19 @@ let canonicalise availability =
               | _, Unknown
               | Unknown, _ -> ()
               | Stack _, Reg _ ->
-                V.Tbl.remove regs_by_ident name;
-                V.Tbl.add regs_by_ident name reg
+                V.Tbl.remove regs_by_var name;
+                V.Tbl.add regs_by_var name reg
           end)
       availability;
     let result =
-      V.Tbl.fold (fun _ident reg availability ->
+      V.Tbl.fold (fun _var reg availability ->
           RD.Set.add reg availability)
-        regs_by_ident
+        regs_by_var
         RD.Set.empty
     in
+    if !Clflags.dwarf_invariant_checks then begin
+      assert (RD.Set.subset result availability)
+    end;
     Ok result
 
 let print ~print_reg ppf = function

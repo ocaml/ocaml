@@ -20,6 +20,7 @@ let canonicalise (_insn : L.instruction) avail_set =
   let avail_set = Reg_availability_set.canonicalise avail_set in
   (* Don't show variables and parameters of inlined functions except when in
      the inlined body. *)
+  (* XXX This should apply to the phantom ones too *)
   Reg_availability_set.map avail_set ~f:(fun avail_set ->
     Reg_with_debug_info.Set.filter (fun reg ->
         let debug_info = Reg_with_debug_info.debug_info reg in
