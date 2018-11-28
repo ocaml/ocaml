@@ -1867,7 +1867,7 @@ let reset () =
 let intro size lam =
   reset ();
   current_module_path :=
-    Some (Printtyp.rewrite_double_underscore_paths (Compmisc.initial_env ())
+    Some (Printtyp.rewrite_double_underscore_paths Env.initial_safe_string
       (Path.Pident (Ident.create_persistent (Compilenv.current_unit_name ()))));
   let id = Compilenv.make_symbol None in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));

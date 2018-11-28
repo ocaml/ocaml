@@ -3505,7 +3505,7 @@ let compunit ~ppf_dump ~unit_name (ulam, preallocated_blocks, constants) =
       transl empty_env ulam in
   let fun_name = S.of_external_name (Compilenv.make_symbol (Some "entry")) in
   let module_path =
-    Printtyp.rewrite_double_underscore_paths (Compmisc.initial_env ())
+    Printtyp.rewrite_double_underscore_paths Env.initial_safe_string
       (Path.Pident unit_name)
   in
   let c1 = [Cfunction {fun_name;
