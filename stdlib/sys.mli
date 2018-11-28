@@ -148,11 +148,13 @@ val max_array_length : int
 (** Maximum length of a normal array (i.e. any array whose elements are
     not of type [float]). The maximum length of a [float array]
     is [max_floatarray_length] if OCaml was configured with
-    [-flat-float-array]. *)
+    [--enable-flat-float-array] and [max_array_length] if configured
+    with [--disable-flat-float-array]. *)
 
 val max_floatarray_length : int
 (** Maximum length of a floatarray. This is also the maximum length of
-    a [float array] when OCaml is configured with [-flat-float-array]. *)
+    a [float array] when OCaml is configured with
+    [--enable-flat-float-array]. *)
 
 external runtime_variant : unit -> string = "caml_runtime_variant"
 (** Return the name of the runtime variant the program is running on.
