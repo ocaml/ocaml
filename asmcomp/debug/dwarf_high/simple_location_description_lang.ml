@@ -131,4 +131,4 @@ end
 let of_lvalue t = t
 let of_rvalue t = t
 
-let compile t = t
+let compile t = OB.optimize_sequence t

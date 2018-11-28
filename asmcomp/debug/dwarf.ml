@@ -524,7 +524,6 @@ let phantom_var_location_description t
       | None -> None
       | Some block ->
         let field = Targetint.of_int_exn field in
-        (* CR-soon mshinwell: Ditch [SLDL.compile]. *)
         let read_field =
           SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.read_field ~block ~field))
         in
