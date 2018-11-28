@@ -648,42 +648,42 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
       let id' = VP.rename ?provenance id in
       let defining_expr =
         match defining_expr with
-          | None -> None
-          | Some defining_expr ->
-              match defining_expr with
-              | Uphantom_var var ->
-                  begin match V.Map.find var sb with
-                  | exception Not_found -> Some defining_expr
-                  | Uvar var -> Some (Uphantom_var var)
-                  | Uoffset (Uvar var, offset_in_words) ->
-                      Some (Uphantom_offset_var { var; offset_in_words; })
-                  | _ -> None
-                  end
-              | Uphantom_read_field { var; field; } ->
-                  begin match V.Map.find var sb with
-                  | exception Not_found -> Some defining_expr
-                  | Uvar var -> Some (Uphantom_read_field { var; field; })
-                  | Uoffset (Uvar var, offset_in_words) ->
-                      let field = field + offset_in_words in
-                      Some (Uphantom_read_field { var; field; })
-                  | _ -> None
-                  end
-              | Uphantom_offset_var { var; offset_in_words; } ->
-                  begin match V.Map.find var sb with
-                  | exception Not_found -> Some defining_expr
-                  | Uvar var ->
-                      Some (Uphantom_offset_var { var; offset_in_words; })
-                  | Uoffset (Uvar var, offset_in_words') ->
-                      let offset_in_words =
-                        offset_in_words + offset_in_words'
-                      in
-                      Some (Uphantom_offset_var { var; offset_in_words; })
-                  | _ -> None
-                  end
-              | Uphantom_const _
-              | Uphantom_read_symbol_field _ -> Some defining_expr
-              | Uphantom_block _ ->
-                  Misc.fatal_error "[Closure] cannot handle [Uphantom_block]"
+        | None -> None
+        | Some defining_expr ->
+            match defining_expr with
+            | Uphantom_var var ->
+                begin match V.Map.find var sb with
+                | exception Not_found -> Some defining_expr
+                | Uvar var -> Some (Uphantom_var var)
+                | Uoffset (Uvar var, offset_in_words) ->
+                    Some (Uphantom_offset_var { var; offset_in_words; })
+                | _ -> None
+                end
+            | Uphantom_read_field { var; field; } ->
+                begin match V.Map.find var sb with
+                | exception Not_found -> Some defining_expr
+                | Uvar var -> Some (Uphantom_read_field { var; field; })
+                | Uoffset (Uvar var, offset_in_words) ->
+                    let field = field + offset_in_words in
+                    Some (Uphantom_read_field { var; field; })
+                | _ -> None
+                end
+            | Uphantom_offset_var { var; offset_in_words; } ->
+                begin match V.Map.find var sb with
+                | exception Not_found -> Some defining_expr
+                | Uvar var ->
+                    Some (Uphantom_offset_var { var; offset_in_words; })
+                | Uoffset (Uvar var, offset_in_words') ->
+                    let offset_in_words =
+                      offset_in_words + offset_in_words'
+                    in
+                    Some (Uphantom_offset_var { var; offset_in_words; })
+                | _ -> None
+                end
+            | Uphantom_const _
+            | Uphantom_read_symbol_field _ -> Some defining_expr
+            | Uphantom_block _ ->
+                Misc.fatal_error "[Closure] cannot handle [Uphantom_block]"
       in
       let block_subst, body =
         substitute ~at_call_site ~block_subst fpc
