@@ -959,21 +959,30 @@ let rec bind_params_rec ~block_subst ~at_call_site fpc subst params args body =
     in
     term
   | (p1 :: pl, a1 :: al) ->
+      let block_subst, provenance =
+        match VP.provenance p1 with
+        | None -> block_subst, None
+        | Some provenance ->
+          let block_subst, dbg =
+            subst_debuginfo ~at_call_site ~block_subst
+              (V.Provenance.debuginfo provenance)
+          in
+          block_subst, Some (V.Provenance.replace_debuginfo provenance dbg)
+      in
+      let p1' = VP.rename ?provenance p1 in
       if is_simple_argument a1 then
-        bind_params_rec ~block_subst ~at_call_site fpc
-          (V.Map.add (VP.var p1) a1 subst) pl al body
-      else begin
-        let block_subst, provenance =
-          match VP.provenance p1 with
-          | None -> block_subst, None
-          | Some provenance ->
-            let block_subst, dbg = 
-              subst_debuginfo ~at_call_site ~block_subst
-                (V.Provenance.debuginfo provenance)
-            in
-            block_subst, Some (V.Provenance.replace_debuginfo provenance dbg)
+        let term =
+          bind_params_rec ~block_subst ~at_call_site fpc
+            (V.Map.add (VP.var p1) a1 subst) pl al body
         in
-        let p1' = VP.rename ?provenance p1 in
+        let phantom_defining_expr =
+          match a1 with
+          | Uvar var -> Some (Uphantom_var var)
+          | Uconst const -> Some (Uphantom_const const)
+          | _ -> None
+        in
+        Uphantom_let (p1', phantom_defining_expr, term)
+      else begin
         let u1, u2 =
           match VP.name p1, a1 with
           | "*opt*", Uprim(Pmakeblock(0, Immutable, kind), [a], dbg) ->
