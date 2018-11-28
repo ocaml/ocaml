@@ -244,15 +244,13 @@ typing/includemod.cmo : typing/types.cmi typing/typedtree.cmi \
     typing/oprint.cmi typing/mtype.cmi utils/misc.cmi parsing/location.cmi \
     typing/includecore.cmi typing/includeclass.cmi typing/ident.cmi \
     typing/env.cmi typing/ctype.cmi typing/cmt_format.cmi utils/clflags.cmi \
-    parsing/builtin_attributes.cmi typing/btype.cmi parsing/asttypes.cmi \
-    typing/includemod.cmi
+    parsing/builtin_attributes.cmi typing/btype.cmi typing/includemod.cmi
 typing/includemod.cmx : typing/types.cmx typing/typedtree.cmx \
     typing/subst.cmx typing/printtyp.cmx typing/primitive.cmx typing/path.cmx \
     typing/oprint.cmx typing/mtype.cmx utils/misc.cmx parsing/location.cmx \
     typing/includecore.cmx typing/includeclass.cmx typing/ident.cmx \
     typing/env.cmx typing/ctype.cmx typing/cmt_format.cmx utils/clflags.cmx \
-    parsing/builtin_attributes.cmx typing/btype.cmx parsing/asttypes.cmi \
-    typing/includemod.cmi
+    parsing/builtin_attributes.cmx typing/btype.cmx typing/includemod.cmi
 typing/includemod.cmi : typing/types.cmi typing/typedtree.cmi \
     typing/path.cmi parsing/location.cmi typing/includecore.cmi \
     typing/ident.cmi typing/env.cmi typing/ctype.cmi
@@ -1091,7 +1089,7 @@ asmcomp/flambda_to_clambda.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/set_of_closures_id.cmi typing/primitive.cmi \
     middle_end/parameter.cmi utils/numbers.cmi \
     middle_end/base_types/mutable_variable.cmi utils/misc.cmi \
-    middle_end/base_types/linkage_name.cmi \
+    middle_end/base_types/linkage_name.cmi bytecomp/lambda.cmi \
     middle_end/initialize_symbol_to_let_symbol.cmi \
     middle_end/flambda_utils.cmi middle_end/flambda.cmi \
     asmcomp/export_info.cmi middle_end/debuginfo.cmi asmcomp/compilenv.cmi \
@@ -1106,7 +1104,7 @@ asmcomp/flambda_to_clambda.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/set_of_closures_id.cmx typing/primitive.cmx \
     middle_end/parameter.cmx utils/numbers.cmx \
     middle_end/base_types/mutable_variable.cmx utils/misc.cmx \
-    middle_end/base_types/linkage_name.cmx \
+    middle_end/base_types/linkage_name.cmx bytecomp/lambda.cmx \
     middle_end/initialize_symbol_to_let_symbol.cmx \
     middle_end/flambda_utils.cmx middle_end/flambda.cmx \
     asmcomp/export_info.cmx middle_end/debuginfo.cmx asmcomp/compilenv.cmx \
