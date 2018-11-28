@@ -80,3 +80,14 @@ let kM =
 val k : '_weak3 -> '_weak3 = <fun>
 val kM : '_weak4 -> '_weak4 = <fun>
 |}]
+
+let op =
+  let module M = struct
+      open struct let r = ref [] end
+      let s = r
+  end in
+  M.s
+;;
+[%%expect{|
+val op : '_weak5 list ref = {contents = []}
+|}]
