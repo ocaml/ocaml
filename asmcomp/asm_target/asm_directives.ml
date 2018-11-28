@@ -525,26 +525,42 @@ let const_machine_width ?comment constant =
   | Sixty_four -> const ?comment constant Sixty_four
 
 let float32 f =
-  let comment = Printf.sprintf "%.12f" f in
+  let comment =
+    if !Clflags.keep_asm_file then Some (Printf.sprintf "%.12f" f)
+    else None
+  in
   let f_int32 = Int64.of_int32 (Int32.bits_of_float f) in
-  const ~comment (Signed_int f_int32) Sixty_four
+  const ?comment (Signed_int f_int32) Sixty_four
 
 let float64_core f f_int64 =
   match TS.machine_width () with
   | Sixty_four ->
-    let comment = Printf.sprintf "%.12g" f in
-    const ~comment (Signed_int f_int64) Sixty_four
+    let comment =
+      if !Clflags.keep_asm_file then Some (Printf.sprintf "%.12g" f)
+      else None
+    in
+    const ?comment (Signed_int f_int64) Sixty_four
   | Thirty_two ->
-    let comment_lo = Printf.sprintf "low part of %.12g" f in
-    let comment_hi = Printf.sprintf "high part of %.12g" f in
+    let comment_lo =
+      if !Clflags.keep_asm_file then
+        Some (Printf.sprintf "low part of %.12g" f)
+      else
+        None
+    in
+    let comment_hi =
+      if !Clflags.keep_asm_file then
+        Some (Printf.sprintf "high part of %.12g" f)
+      else
+        None
+    in
     let lo = Signed_int (Int64.logand f_int64 0xffff_ffffL) in
     let hi = Signed_int (Int64.shift_right_logical f_int64 32) in
     if big_endian () then begin
-      const ~comment:comment_hi hi Thirty_two;
-      const ~comment:comment_lo lo Thirty_two
+      const ?comment:comment_hi hi Thirty_two;
+      const ?comment:comment_lo lo Thirty_two
     end else begin
-      const ~comment:comment_lo lo Thirty_two;
-      const ~comment:comment_hi hi Thirty_two
+      const ?comment:comment_lo lo Thirty_two;
+      const ?comment:comment_hi hi Thirty_two
     end
 
 let float64 f = float64_core f (Int64.bits_of_float f)
@@ -570,7 +586,10 @@ let define_label label_name =
   in
   emit (New_label (Asm_label.encode label_name, typ))
 
-let new_line () = emit New_line
+let new_line () =
+  if !Clflags.keep_asm_file then begin
+    emit New_line
+  end
 
 let sections_seen = ref []
 
