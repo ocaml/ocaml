@@ -171,7 +171,6 @@ let optimize_sequence ops =
     match ops with
     | [] -> []
     | DW_op_deref :: DW_op_stack_value :: [] -> []
-(* CR mshinwell: Think carefully about whether this is correct
     | (DW_op_bregx { reg_number; offset_in_bytes = offset_in_bytes'; })
         :: (DW_op_plus_uconst offset_in_bytes)
         :: ops
@@ -181,7 +180,6 @@ let optimize_sequence ops =
         Targetint.of_int64 (Uint64.to_int64 offset_in_bytes)
       in
       (O.DW_op_bregx { reg_number; offset_in_bytes; }) :: (optimize ops)
-*)
     | DW_op_addr addr :: DW_op_stack_value :: [] ->
       [O.DW_op_implicit_value addr]
     | DW_op_consts i :: DW_op_stack_value :: [] ->

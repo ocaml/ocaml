@@ -17,11 +17,25 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t = Backend_sym.t
+type t = string
 
-let create t = t
-
-let of_external_name name = Backend_sym.of_external_name name
+let escape t =
+  let spec = ref false in
+  for i = 0 to String.length t - 1 do
+    match String.unsafe_get t i with
+    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
+    | _ -> spec := true;
+  done;
+  if not !spec then t
+  else
+    let b = Buffer.create (String.length t + 10) in
+    String.iter
+      (function
+        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
+        | c -> Printf.bprintf b "$%02x" (Char.code c)
+      )
+      t;
+    Buffer.contents b
 
 let symbol_prefix () = (* XXX *)
   match Target_system.architecture () with
@@ -47,28 +61,19 @@ let symbol_prefix () = (* XXX *)
   | POWER
   | Z -> ""
 
-let escape t =
-  let spec = ref false in
-  for i = 0 to String.length t - 1 do
-    match String.unsafe_get t i with
-    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
-    | _ -> spec := true;
-  done;
-  if not !spec then t
-  else
-    let b = Buffer.create (String.length t + 10) in
-    String.iter
-      (function
-        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
-        | c -> Printf.bprintf b "$%02x" (Char.code c)
-      )
-      t;
-    Buffer.contents b
-
-let encode ?reloc t =
-  Backend_sym.to_escaped_string ?suffix:reloc
+let encode t =
+  Backend_sym.to_escaped_string
     ~symbol_prefix:(symbol_prefix ())
     ~escape t
+
+let create t = encode t
+
+let of_external_name name = encode (Backend_sym.of_external_name name)
+
+let encode ?reloc t =
+  match reloc with
+  | None -> t
+  | Some reloc -> t ^ reloc
 
 (* Detection of functions that can be duplicated between a DLL and
    the main program (PR#4690) *)
@@ -78,12 +83,18 @@ let isprefix s1 s2 =
     && String.sub s2 0 (String.length s1) = s1
 
 let is_generic_function t =
-  let name = encode t in
   List.exists
-    (fun p -> isprefix p name)
+    (fun p -> isprefix p t)
     ["caml_apply"; "caml_curry"; "caml_send"; "caml_tuplify"]
 
-include Identifiable.Make (Backend_sym)
+include Identifiable.Make (struct
+  type nonrec t = t
+  let compare = String.compare
+  let equal = String.equal
+  let hash = Hashtbl.hash
+  let output _ _ = Misc.fatal_error "Not yet implemented"
+  let print ppf t = Format.pp_print_string ppf t
+end)
 
 module Names = struct
   let mcount = of_external_name "mcount"
