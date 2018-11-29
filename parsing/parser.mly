@@ -2302,16 +2302,16 @@ simple_expr:
         Pexp_open(od, mkexp ~loc:$sloc (Pexp_construct($3, None))) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" $loc($3) ")" $loc($5) }
-  | LBRACE record_expr RBRACE
+  | LBRACE record_expr_content RBRACE
       { let (exten, fields) = $2 in
         Pexp_record(fields, exten) }
-  | LBRACE record_expr error
+  | LBRACE record_expr_content error
       { unclosed "{" $loc($1) "}" $loc($3) }
-  | od=open_dot_declaration DOT LBRACE record_expr RBRACE
+  | od=open_dot_declaration DOT LBRACE record_expr_content RBRACE
       { let (exten, fields) = $4 in
         (* TODO: review the location of Pexp_construct *)
         Pexp_open(od, mkexp ~loc:$sloc (Pexp_record(fields, exten))) }
-  | mod_longident DOT LBRACE record_expr error
+  | mod_longident DOT LBRACE record_expr_content error
       { unclosed "{" $loc($3) "}" $loc($5) }
   | LBRACKETBAR expr_semi_list BARRBRACKET
       { Pexp_array($2) }
@@ -2511,15 +2511,12 @@ fun_def:
   es = separated_nontrivial_llist(COMMA, expr)
     { es }
 ;
-record_expr:
-    simple_expr WITH lbl_expr_list              { (Some $1, $3) }
-  | lbl_expr_list                               { (None, $1) }
+record_expr_content:
+  eo = ioption(terminated(simple_expr, WITH))
+  fields = separated_or_terminated_nonempty_list(SEMI, record_expr_field)
+    { eo, fields }
 ;
-%inline lbl_expr_list:
-  xs = separated_or_terminated_nonempty_list(SEMI, lbl_expr)
-    { xs }
-;
-%inline lbl_expr:
+%inline record_expr_field:
   | label = mkrhs(label_longident)
     c = type_constraint?
     eo = preceded(EQUAL, expr)?
