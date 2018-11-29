@@ -606,6 +606,9 @@ Working version
   intermediate language, as a preparation step for more future optimizations
   (Pierre Chambart and Alain Frisch, cross-reviewed by themselves)
 
+* GPR#2173: removed TypedtreeMap
+  (Thomas Refis, review by Gabriel Scherer)
+
 ### Bug fixes:
 
 - MPR#7867: Fix #mod_use raising an exception for filenames with no
