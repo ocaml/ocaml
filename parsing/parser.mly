@@ -2276,9 +2276,9 @@ simple_expr:
       { Pexp_apply($1, [Nolabel,$2]) }
   | op(BANG {"!"}) simple_expr
       { Pexp_apply($1, [Nolabel,$2]) }
-  | LBRACELESS field_expr_list GREATERRBRACE
+  | LBRACELESS object_expr_content GREATERRBRACE
       { Pexp_override $2 }
-  | LBRACELESS field_expr_list error
+  | LBRACELESS object_expr_content error
       { unclosed "{<" $loc($1) ">}" $loc($3) }
   | LBRACELESS GREATERRBRACE
       { Pexp_override [] }
@@ -2286,10 +2286,10 @@ simple_expr:
       { Pexp_field($1, $3) }
   | od=open_dot_declaration DOT LPAREN seq_expr RPAREN
       { Pexp_open(od, $4) }
-  | od=open_dot_declaration DOT LBRACELESS field_expr_list GREATERRBRACE
+  | od=open_dot_declaration DOT LBRACELESS object_expr_content GREATERRBRACE
       { (* TODO: review the location of Pexp_override *)
         Pexp_open(od, mkexp ~loc:$sloc (Pexp_override $4)) }
-  | mod_longident DOT LBRACELESS field_expr_list error
+  | mod_longident DOT LBRACELESS object_expr_content error
       { unclosed "{<" $loc($3) ">}" $loc($5) }
   | simple_expr HASH mkrhs(label)
       { Pexp_send($1, $3) }
@@ -2530,11 +2530,11 @@ record_expr_content:
         in
         label, mkexp_opt_constraint ~loc:$sloc e c }
 ;
-%inline field_expr_list:
-  xs = separated_or_terminated_nonempty_list(SEMI, field_expr)
+%inline object_expr_content:
+  xs = separated_or_terminated_nonempty_list(SEMI, object_expr_field)
     { xs }
 ;
-field_expr:
+object_expr_field:
     mkrhs(label) EQUAL expr
       { ($1, $3) }
   | mkrhs(label)
@@ -2683,10 +2683,10 @@ simple_pattern_not_ident:
 
 simple_delimited_pattern:
   mkpat(
-      LBRACE lbl_pattern_list RBRACE
+      LBRACE record_pat_content RBRACE
       { let (fields, closed) = $2 in
         Ppat_record(fields, closed) }
-    | LBRACE lbl_pattern_list error
+    | LBRACE record_pat_content error
       { unclosed "{" $loc($1) "}" $loc($3) }
     | LBRACKET pattern_semi_list RBRACKET
       { fst (mktailpat $loc($3) $2) }
@@ -2711,13 +2711,13 @@ pattern_comma_list(self):
 ;
 (* A label-pattern list is a nonempty list of label-pattern pairs, optionally
    followed with an UNDERSCORE, separated-or-terminated with semicolons. *)
-%inline lbl_pattern_list:
-  listx(SEMI, lbl_pattern, UNDERSCORE)
+%inline record_pat_content:
+  listx(SEMI, record_pat_field, UNDERSCORE)
     { let fields, closed = $1 in
       let closed = match closed with Some () -> Open | None -> Closed in
       fields, closed }
 ;
-%inline lbl_pattern:
+%inline record_pat_field:
   label = mkrhs(label_longident)
   octy = preceded(COLON, core_type)?
   opat = preceded(EQUAL, pattern)?
