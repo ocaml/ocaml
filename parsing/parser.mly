@@ -314,15 +314,21 @@ let lapply ~loc p1 p2 =
 let exp_of_longident ~loc lid =
   mkexp ~loc (Pexp_ident {lid with txt = Lident(Longident.last lid.txt)})
 
+(* [loc_map] could be [Location.map]. *)
+let loc_map (f : 'a -> 'b) (x : 'a Location.loc) : 'b Location.loc =
+  { x with txt = f x.txt }
+
+let loc_last (id : Longident.t Location.loc) : string Location.loc =
+  loc_map Longident.last id
+
+let loc_lident (id : string Location.loc) : Longident.t Location.loc =
+  loc_map (fun x -> Lident x) id
+
 let exp_of_label ~loc lbl =
-  mkexp ~loc (Pexp_ident lbl)
+  mkexp ~loc (Pexp_ident (loc_lident lbl))
 
 let pat_of_label ~loc lbl =
-  mkpat ~loc (Ppat_var lbl)
-
-(* [loc_last] could be defined as [Location.map Longident.last]. *)
-let loc_last (id : Longident.t Location.loc) : string Location.loc =
-  { id with txt = Longident.last id.txt }
+  mkpat ~loc (Ppat_var (loc_last lbl))
 
 let mk_newtypes ~loc newtypes exp =
   let mkexp = mkexp ~loc in
@@ -2534,11 +2540,18 @@ record_expr_content:
   xs = separated_or_terminated_nonempty_list(SEMI, object_expr_field)
     { xs }
 ;
-object_expr_field:
-    mkrhs(label) EQUAL expr
-      { ($1, $3) }
-  | mkrhs(label)
-      { ($1, exp_of_label ~loc:$sloc {$1 with txt = Lident $1.txt}) }
+%inline object_expr_field:
+    label = mkrhs(label)
+    oe = preceded(EQUAL, expr)?
+      { let e =
+          match oe with
+          | None ->
+              (* No expression; this is a pun. Desugar it. *)
+              exp_of_label ~loc:$sloc label
+          | Some e ->
+              e
+        in
+        label, e }
 ;
 %inline expr_semi_list:
   es = separated_or_terminated_nonempty_list(SEMI, expr)
@@ -2725,7 +2738,7 @@ pattern_comma_list(self):
         match opat with
         | None ->
             (* No pattern; this is a pun. Desugar it. *)
-            pat_of_label ~loc:$sloc (loc_last label)
+            pat_of_label ~loc:$sloc label
         | Some pat ->
             pat
       in
