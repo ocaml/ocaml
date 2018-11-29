@@ -2519,15 +2519,18 @@ record_expr:
   xs = separated_or_terminated_nonempty_list(SEMI, lbl_expr)
     { xs }
 ;
-lbl_expr:
+%inline lbl_expr:
   | label = mkrhs(label_longident)
     c = type_constraint?
-    EQUAL
-    e = expr
-      { label, mkexp_opt_constraint ~loc:$sloc e c }
-  | label = mkrhs(label_longident)
-    c = type_constraint?
-      { let e = exp_of_longident ~loc:$sloc label in
+    eo = preceded(EQUAL, expr)?
+      { let e =
+          match eo with
+          | None ->
+              (* No pattern; this is a pun. Desugar it. *)
+              exp_of_longident ~loc:$sloc label
+          | Some e ->
+              e
+        in
         label, mkexp_opt_constraint ~loc:$sloc e c }
 ;
 %inline field_expr_list:
