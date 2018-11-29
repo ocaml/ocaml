@@ -188,6 +188,7 @@ module Directive = struct
     | Align of { bytes : int; }
     | Bytes of { str : string; comment : string option; }
     | Cfi_adjust_cfa_offset of int
+    | Cfi_def_cfa_offset of int
     | Cfi_endproc
     | Cfi_offset of { reg : int; offset : int; }
     | Cfi_startproc
@@ -321,6 +322,7 @@ module Directive = struct
       | _ -> bprintf buf "\t.space\t%d" bytes
       end
     | Cfi_adjust_cfa_offset n -> bprintf buf "\t.cfi_adjust_cfa_offset %d" n
+    | Cfi_def_cfa_offset n -> bprintf buf "\t.cfi_def_cfa_offset %d" n
     | Cfi_endproc -> bprintf buf "\t.cfi_endproc"
     | Cfi_offset { reg; offset; } ->
       bprintf buf "\t.cfi_offset %d, %d" reg offset
@@ -399,6 +401,7 @@ module Directive = struct
       end
     | New_line -> ()
     | Cfi_adjust_cfa_offset _ -> unsupported "Cfi_adjust_cfa_offset"
+    | Cfi_def_cfa_offset _ -> unsupported "Cfi_def_cfa_offset"
     | Cfi_endproc -> unsupported "Cfi_endproc"
     | Cfi_offset _ -> unsupported "Cfi_offset"
     | Cfi_startproc -> unsupported "Cfi_startproc"
@@ -471,7 +474,12 @@ let should_generate_cfi () =
 let cfi_adjust_cfa_offset ~bytes =
   if should_generate_cfi () && bytes <> 0 then begin
     emit (Cfi_adjust_cfa_offset bytes)
-    end
+  end
+
+let cfi_def_cfa_offset ~bytes =
+  if should_generate_cfi () then begin
+    emit (Cfi_def_cfa_offset bytes)
+  end
 
 let cfi_endproc () =
   if should_generate_cfi () then begin

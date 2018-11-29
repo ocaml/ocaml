@@ -738,7 +738,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
             | Some position ->
               Format.asprintf "%s[%a]"
                 (Backend_var.name var)
-                Debuginfo.Code_range.print position
+                Debuginfo.Code_range.print_compact position
       in
       (* CR-someday mshinwell: This should be tidied up.  It's only correct by
          virtue of the fact we do the closure-env ones second below. *)

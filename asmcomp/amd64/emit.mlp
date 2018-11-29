@@ -51,17 +51,6 @@ let register_name r =
   if r < 100 then Reg64 (int_reg_name.(r))
   else Regf (float_reg_name.(r - 100))
 
-(* CFI directives *)
-
-let cfi_startproc () =
-  if Config.asm_cfi_supported then D.cfi_startproc ()
-
-let cfi_endproc () =
-  if Config.asm_cfi_supported then D.cfi_endproc ()
-
-let cfi_adjust_cfa_offset bytes =
-  if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset ~bytes
-
 let emit_debug_info dbg =
   emit_debug_info_gen dbg D.file D.loc
 
@@ -79,6 +68,27 @@ let frame_size () = frame_size ~stack_offset:!stack_offset
 
 let slot_offset loc reg_class =
   slot_offset loc ~reg_class ~stack_offset:!stack_offset
+
+let cfa_offset () =
+  frame_size () + !stack_offset
+
+let push reg =
+  I.push reg;
+  D.cfi_adjust_cfa_offset ~bytes:8
+
+let pop reg =
+  I.pop reg;
+  D.cfi_adjust_cfa_offset ~bytes:(-8)
+
+let add_to_rsp n =
+  if n <> 0 then begin
+    if n > 0 then begin
+      I.add (int n) rsp
+    end else begin
+      I.sub (int (-n)) rsp
+    end;
+    D.cfi_adjust_cfa_offset ~bytes:(-n)
+  end
 
 (* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
@@ -255,6 +265,8 @@ type gc_call =
     gc_frame: label;                    (* Label of frame descriptor *)
     gc_spacetime : (X86_ast.arg * int) option;
     (* Spacetime node hole pointer and index *)
+    gc_cfa_offset : int;
+    (* Absolute offset of CFA from stack pointer *)
   }
 
 let call_gc_sites = ref ([] : gc_call list)
@@ -267,6 +279,7 @@ let emit_call_gc gc =
     assert Config.spacetime;
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
+  D.cfi_def_cfa_offset ~bytes:gc.gc_cfa_offset;
   emit_call caml_call_gc;
   def_label gc.gc_frame;
   I.jmp (label (L.create_int gc.gc_return_lbl))
@@ -281,6 +294,8 @@ type bound_error_call =
     bd_frame: label;                    (* Label of frame descriptor *)
     bd_spacetime : (X86_ast.arg * int) option;
     (* As for [gc_call]. *)
+    bd_cfa_offset : int;
+    (* As for [gc_call]. *)
   }
 
 let bound_error_sites = ref ([] : bound_error_call list)
@@ -292,7 +307,8 @@ let bound_error_label ?label dbg ~spacetime =
     let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
     bound_error_sites :=
       { bd_lbl = lbl_bound_error; bd_frame = lbl_frame;
-        bd_spacetime = spacetime; } :: !bound_error_sites;
+        bd_spacetime = spacetime; bd_cfa_offset = cfa_offset ();
+      } :: !bound_error_sites;
     lbl_bound_error
   end else begin
     if !bound_error_call = 0 then bound_error_call := new_label();
@@ -306,6 +322,7 @@ let emit_call_bound_error bd =
   | Some (node_ptr, index) ->
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
+  D.cfi_def_cfa_offset ~bytes:bd.bd_cfa_offset;
   emit_call caml_ml_array_bound_error;
   def_label bd.bd_frame
 
@@ -410,17 +427,18 @@ let emit_float_test cmp i lbl =
 
 let output_epilogue f =
   if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
-    if n <> 0
-    then begin
-      I.add (int n) rsp;
-      cfi_adjust_cfa_offset (-n);
+    let frame_size = frame_size () in
+    let n = frame_size - 8 - (if fp then 8 else 0) in
+    add_to_rsp n;
+    if fp then begin
+      pop rbp
     end;
-    if fp then I.pop rbp;
     f ();
     (* reset CFA back cause function body may continue *)
-    if n <> 0
-    then cfi_adjust_cfa_offset n
+    D.cfi_adjust_cfa_offset ~bytes:n;
+    if fp then begin
+      D.cfi_adjust_cfa_offset ~bytes:8
+    end
   end
   else
     f ()
@@ -466,12 +484,12 @@ let emit_profile () =
        all the registers used for argument passing, so we don't
        need to preserve other regs.  We do need to initialize rbp
        like mcount expects it, though. *)
-    I.push r10;
+    push r10;
     if not fp then I.mov rsp rbp;
     (* No Spacetime instrumentation needed: [mcount] cannot call anything
        OCaml-related. *)
     emit_call mcount;
-    I.pop r10
+    pop r10
   end
 
 (* Output the assembly code for an instruction *)
@@ -487,19 +505,14 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
-    if fp then begin
-      I.push rbp;
-      cfi_adjust_cfa_offset 8;
-      I.mov rsp rbp;
-    end;
     if !Clflags.gprofile then emit_profile();
     if frame_required() then begin
-      let n = frame_size() - 8 - (if fp then 8 else 0) in
-      if n <> 0
-      then begin
-        I.sub (int n) rsp;
-        cfi_adjust_cfa_offset n;
+      if fp then begin
+        push rbp;
+        I.mov rsp rbp;
       end;
+      let n = frame_size () - 8 - (if fp then 8 else 0) in
+      add_to_rsp (-n)
     end;
     def_label !tailrec_entry_point
   | Lop(Imove | Ispill | Ireload) ->
@@ -587,12 +600,7 @@ let emit_instr fallthrough i =
         end
       end
   | Lop(Istackoffset n) ->
-      if n < 0
-      then I.add (int (-n)) rsp
-      else if n > 0
-      then I.sub (int n) rsp;
-      if n <> 0
-      then cfi_adjust_cfa_offset n;
+      add_to_rsp (-n);
       stack_offset := !stack_offset + n
   | Lop(Iload(chunk, addr)) ->
       let dest = res i 0 in
@@ -646,12 +654,12 @@ let emit_instr fallthrough i =
              register allocator that %rax is destroyed by Ialloc, we can't
              force that the argument (the node pointer) is not in %rax.) *)
           if spacetime_node_hole_ptr_is_in_rax then begin
-            I.push rax
+            push rax
           end;
           load_symbol_addr caml_young_limit rax;
           I.cmp (mem64 QWORD 0 RAX) r15;
           if spacetime_node_hole_ptr_is_in_rax then begin
-            I.pop rax  (* this does not affect the flags *)
+            pop rax  (* this does not affect the flags *)
           end
         end else
           I.cmp (mem64_rip QWORD (Symbol caml_young_limit)) r15;
@@ -673,7 +681,9 @@ let emit_instr fallthrough i =
           { gc_lbl = lbl_call_gc;
             gc_return_lbl = lbl_redo;
             gc_frame = lbl_frame;
-            gc_spacetime; } :: !call_gc_sites
+            gc_spacetime;
+            gc_cfa_offset = cfa_offset ();
+          } :: !call_gc_sites
       end else begin
         if Config.spacetime then begin
           spacetime_before_uninstrumented_call ~node_ptr:(arg i 0)
@@ -854,16 +864,14 @@ let emit_instr fallthrough i =
   | Lsetuptrap lbl ->
       I.call (label (L.create_int lbl))
   | Lpushtrap ->
-      cfi_adjust_cfa_offset 8;
-      I.push r14;
-      cfi_adjust_cfa_offset 8;
+      (* This CFA adjustment corresponds to the call in [Lsetuptrap]. *)
+      D.cfi_adjust_cfa_offset ~bytes:8;
+      push r14;
       I.mov rsp r14;
       stack_offset := !stack_offset + trap_frame_size_in_bytes
   | Lpoptrap ->
-      I.pop r14;
-      cfi_adjust_cfa_offset (-8);
-      I.add (int 8) rsp;
-      cfi_adjust_cfa_offset (-8);
+      pop r14;
+      add_to_rsp 8;
       stack_offset := !stack_offset - trap_frame_size_in_bytes
   | Lraise k ->
       (* No Spacetime instrumentation is required for [caml_raise_exn] and
@@ -875,7 +883,11 @@ let emit_instr fallthrough i =
           record_frame Reg.Set.empty true i.dbg
       | Cmm.Raise_notrace ->
           I.mov r14 rsp;
-          I.pop r14;
+          (* CR-someday mshinwell: At this point we should mark the CFA
+             as unavailable, to avoid garbage variable values being seen when
+             stopped at exactly this point in the debugger, but it isn't clear
+             how to do that. *)
+          I.pop r14;  (* We use [I.pop] not [pop] to avoid CFA adjustment. *)
           I.ret ()
       end
 
@@ -912,18 +924,15 @@ let fundecl fundecl ~end_of_function_label =
     D.global fun_name;
   D.define_function_symbol fun_name;
   emit_debug_info fundecl.fun_dbg;
-  cfi_startproc ();
+  D.cfi_startproc ();
+  (* Set the initial CFA offset so as to cope with the CPU having pushed the
+     return address. (The CFA points at the first address above the return
+     address slot.) *)
+  D.cfi_def_cfa_offset ~bytes:8;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
-  if frame_required() then begin
-    let n = frame_size() - 8 - (if fp then 8 else 0) in
-    if n <> 0
-    then begin
-      cfi_adjust_cfa_offset (-n);
-    end;
-  end;
-  cfi_endproc ();
+  D.cfi_endproc ();
   D.define_label (Asm_label.create_int end_of_function_label);
   D.size fun_name
 

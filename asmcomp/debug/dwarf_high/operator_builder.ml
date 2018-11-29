@@ -167,10 +167,12 @@ let conditional ?(at_join = [O.DW_op_nop]) ~if_zero ~if_nonzero =
     :: if_zero @ if_nonzero @ at_join
 
 let optimize_sequence ops =
+  (* Note: DW_op_deref :: DW_op_stack_value cannot be removed.  This loses
+     dereferences for rvalues being used as parts of larger computations.
+     See CR-someday in simple_location_description_lang.ml. *)
   let rec optimize (ops : O.t list) =
     match ops with
     | [] -> []
-    | DW_op_deref :: DW_op_stack_value :: [] -> []
     | (DW_op_bregx { reg_number; offset_in_bytes = offset_in_bytes'; })
         :: (DW_op_plus_uconst offset_in_bytes)
         :: ops

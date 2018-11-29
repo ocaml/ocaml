@@ -1159,8 +1159,16 @@ let rec close ~scope fenv cenv = function
         | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
       in
       make_const (transl cst)
-  | Lfunction _ as funct ->
-      close_one_function fenv cenv (Ident.create_local "*fun*") funct
+  | Lfunction lfunction as funct ->
+      let id_name =
+        match !Clflags.debug_full with
+        | None -> "*fun*"
+        | Some _ ->
+            let loc = lfunction.loc in
+            if Location.is_none loc then "<anon_fun>"
+            else Format.asprintf "<anon_fun:%a>" Location.print_for_debug loc
+      in
+      close_one_function fenv cenv (Ident.create_local id_name) funct
 
     (* We convert [f a] to [let a' = a in let f' = f in fun b c -> f' a' b c]
        when fun_arity > nargs *)
@@ -1538,12 +1546,15 @@ let rec close ~scope fenv cenv = function
       let (ulam, _) = close ~scope fenv cenv lam in
       (Uassign(id, ulam), Value_unknown)
   | Levent(lam, ev) ->
+      let prev_module_path = !current_module_path in
       begin match ev.lev_kind with
       | Lev_module_definition path ->
         current_module_path := Some (Path.Pident path)
       | _ -> ()
       end;
-      close ~scope fenv cenv lam
+      let term, approx = close ~scope fenv cenv lam in
+      current_module_path := prev_module_path;
+      term, approx
   | Lifused _ ->
       assert false
 

@@ -55,6 +55,19 @@ module Lvalue = struct
 end
 
 module Rvalue = struct
+  (* CR-someday mshinwell: We append [DW_op_stack_value] to the ends of all
+     expressions here so that they can be used in two contexts:
+     - When called, to yield an rvalue, by one of our other expressions.
+       In this case [DW_op_stack_value] is maybe not needed.
+     - When passed directly to GDB (for example to describe a signed
+       integer constant).  In this case [DW_op_stack_value] is needed,
+       otherwise GDB will treat the top of stack as an lvalue, and
+       dereference it.
+     It may be that we should have a more nuanced partitioning of expressions
+     that reflects this distinction.  Alternatively if [DW_op_stack_value]
+     turns out to be always needed in both of the above cases, there is
+     nothing to do. *)
+
   type 'a t = 'a rvalue
 
   let signed_int_const i = [

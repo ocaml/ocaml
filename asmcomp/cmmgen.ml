@@ -2176,8 +2176,8 @@ let rec transl env e =
           dbg cond
           ifso_dbg (transl env ifso)
           ifnot_dbg (transl env ifnot))
-  | Usequence(exp1, exp2) ->
-      Csequence(remove_unit(transl env exp1), transl env exp2)
+  | Usequence(fooexp1, fooexp2) ->
+      Csequence(remove_unit(transl env fooexp1), transl env fooexp2)
   | Uwhile(cond, body, dbg) ->
       let raise_num = next_raise_count () in
       return_unit

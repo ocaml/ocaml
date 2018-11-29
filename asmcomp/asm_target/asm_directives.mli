@@ -133,6 +133,11 @@ val new_line : unit -> unit
     CFI is not supported on the target. *)
 val cfi_adjust_cfa_offset : bytes:int -> unit
 
+(** Define the current frame address offset.
+    This and other CFI functions will not emit anything in the case where
+    CFI is not supported on the target. *)
+val cfi_def_cfa_offset : bytes:int -> unit
+
 (** Note that the previous value of [reg] is saved at [offset] from
     the current frame address. *)
 val cfi_offset : reg:int -> offset:int -> unit
@@ -323,6 +328,7 @@ module Directive : sig
     | Align of { bytes : int; }
     | Bytes of { str : string; comment : string option; }
     | Cfi_adjust_cfa_offset of int
+    | Cfi_def_cfa_offset of int
     | Cfi_endproc
     | Cfi_offset of { reg : int; offset : int; }
     | Cfi_startproc
