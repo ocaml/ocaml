@@ -2520,12 +2520,15 @@ record_expr:
     { xs }
 ;
 lbl_expr:
-    mkrhs(label_longident) type_constraint? EQUAL expr
-      { ($1, mkexp_opt_constraint ~loc:$sloc $4 $2) }
-  | mkrhs(label_longident) type_constraint?
-      { ($1,
-         mkexp_opt_constraint ~loc:$sloc
-           (exp_of_longident ~loc:$sloc $1) $2) }
+  | label = mkrhs(label_longident)
+    c = type_constraint?
+    EQUAL
+    e = expr
+      { label, mkexp_opt_constraint ~loc:$sloc e c }
+  | label = mkrhs(label_longident)
+    c = type_constraint?
+      { let e = exp_of_longident ~loc:$sloc label in
+        label, mkexp_opt_constraint ~loc:$sloc e c }
 ;
 %inline field_expr_list:
   xs = separated_or_terminated_nonempty_list(SEMI, field_expr)
