@@ -2154,46 +2154,8 @@ expr:
       { Pexp_construct($1, Some $2) }
   | name_tag simple_expr %prec below_HASH
       { Pexp_variant($1, Some $2) }
-  | expr op(INFIXOP0) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(INFIXOP1) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(INFIXOP2) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(INFIXOP3) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(INFIXOP4) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(PLUS {"+"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(PLUSDOT {"+."}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(PLUSEQ {"+="}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(MINUS {"-"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(MINUSDOT {"-."}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(STAR {"*"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(PERCENT {"%"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(EQUAL {"="}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(LESS {"<"}) expr
-    { mkinfix $1 $2 $3 }
-  | expr op(GREATER {">"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(OR {"or"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(BARBAR {"||"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(AMPERSAND {"&"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(AMPERAMPER {"&&"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(COLONEQUAL {":="}) expr
-      { mkinfix $1 $2 $3 }
+  | e1 = expr op = op(infix_operator) e2 = expr
+      { mkinfix e1 op e2 }
   | subtractive expr %prec prec_unary_minus
       { mkuminus ~oploc:$loc($1) $1 $2 }
   | additive expr %prec prec_unary_plus
@@ -3389,11 +3351,6 @@ val_ident:
 ;
 operator:
     PREFIXOP                                    { $1 }
-  | INFIXOP0                                    { $1 }
-  | INFIXOP1                                    { $1 }
-  | INFIXOP2                                    { $1 }
-  | INFIXOP3                                    { $1 }
-  | INFIXOP4                                    { $1 }
   | LETOP                                       { $1 }
   | ANDOP                                       { $1 }
   | DOTOP LPAREN RPAREN                         { "."^ $1 ^"()" }
@@ -3404,21 +3361,29 @@ operator:
   | DOTOP LBRACE RBRACE LESSMINUS               { "."^ $1 ^ "{}<-" }
   | HASHOP                                      { $1 }
   | BANG                                        { "!" }
-  | PLUS                                        { "+" }
-  | PLUSDOT                                     { "+." }
-  | MINUS                                       { "-" }
-  | MINUSDOT                                    { "-." }
-  | STAR                                        { "*" }
-  | EQUAL                                       { "=" }
-  | LESS                                        { "<" }
-  | GREATER                                     { ">" }
-  | OR                                          { "or" }
-  | BARBAR                                      { "||" }
-  | AMPERSAND                                   { "&" }
-  | AMPERAMPER                                  { "&&" }
-  | COLONEQUAL                                  { ":=" }
-  | PLUSEQ                                      { "+=" }
-  | PERCENT                                     { "%" }
+  | infix_operator                              { $1 }
+;
+%inline infix_operator:
+  | op = INFIXOP0 { op }
+  | op = INFIXOP1 { op }
+  | op = INFIXOP2 { op }
+  | op = INFIXOP3 { op }
+  | op = INFIXOP4 { op }
+  | PLUS           {"+"}
+  | PLUSDOT       {"+."}
+  | PLUSEQ        {"+="}
+  | MINUS          {"-"}
+  | MINUSDOT      {"-."}
+  | STAR           {"*"}
+  | PERCENT        {"%"}
+  | EQUAL          {"="}
+  | LESS           {"<"}
+  | GREATER        {">"}
+  | OR            {"or"}
+  | BARBAR        {"||"}
+  | AMPERSAND      {"&"}
+  | AMPERAMPER    {"&&"}
+  | COLONEQUAL    {":="}
 ;
 constr_ident:
     UIDENT                                      { $1 }
