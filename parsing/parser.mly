@@ -99,8 +99,11 @@ let reloc_typ ~loc x =
   { x with ptyp_loc = make_loc loc;
            ptyp_loc_stack = push_loc x.ptyp_loc x.ptyp_loc_stack };;
 
-let mkoperator ~loc name =
+let mkexpvar ~loc (name : string) =
   mkexp ~loc (Pexp_ident(mkrhs (Lident name) loc))
+
+let mkoperator =
+  mkexpvar
 
 let mkpatvar ~loc name =
   mkpat ~loc (Ppat_var (mkrhs name loc))
@@ -2366,16 +2369,14 @@ labeled_simple_expr:
       { (Nolabel, $1) }
   | LABEL simple_expr %prec below_HASH
       { (Labelled $1, $2) }
-  | TILDE label_ident
-      { (Labelled (fst $2), snd $2) }
-  | QUESTION label_ident
-      { (Optional (fst $2), snd $2) }
+  | TILDE label = LIDENT
+      { let loc = $loc(label) in
+        (Labelled label, mkexpvar ~loc label) }
+  | QUESTION label = LIDENT
+      { let loc = $loc(label) in
+        (Optional label, mkexpvar ~loc label) }
   | OPTLABEL simple_expr %prec below_HASH
       { (Optional $1, $2) }
-;
-%inline label_ident:
-    LIDENT
-      { ($1, mkexp ~loc:$sloc (Pexp_ident(mkrhs (Lident $1) $sloc))) }
 ;
 %inline lident_list:
   xs = mkrhs(LIDENT)+
