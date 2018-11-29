@@ -743,11 +743,12 @@ end) = struct
         else
           None
       in
-      value (V.sleb128 ?comment (Int64.of_int (Bytes.length buf)))
+      value (V.uleb128 ?comment (Uint64.of_int_exn (Bytes.length buf)))
       >>> fun () ->
       value (V.string (Bytes.to_string buf))
     | DW_op_implicit_value (Symbol symbol) ->
-      value (V.sleb128 ~comment:"Arch.size_addr" (Int64.of_int Arch.size_addr))
+      value (V.uleb128 ~comment:"Arch.size_addr"
+        (Uint64.of_int_exn Arch.size_addr))
       >>> fun () ->
       value (V.code_address_from_symbol symbol)
     | DW_op_stack_value -> unit_result

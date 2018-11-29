@@ -180,12 +180,6 @@ let optimize_sequence ops =
         Targetint.of_int64 (Uint64.to_int64 offset_in_bytes)
       in
       (O.DW_op_bregx { reg_number; offset_in_bytes; }) :: (optimize ops)
-    | DW_op_addr addr :: DW_op_stack_value :: [] ->
-      [O.DW_op_implicit_value addr]
-    | DW_op_consts i :: DW_op_stack_value :: [] ->
-      (* CR mshinwell: Same again here *)
-      let i = Targetint.of_int64 i in
-      [O.DW_op_implicit_value (Int i)]
     | (DW_op_plus_uconst _) :: _ ->
       let rec total (ops : O.t list) =
         match ops with
