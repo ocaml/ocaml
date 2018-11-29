@@ -2364,11 +2364,7 @@ simple_expr:
 labeled_simple_expr:
     simple_expr %prec below_HASH
       { (Nolabel, $1) }
-  | label_expr
-      { $1 }
-;
-label_expr:
-    LABEL simple_expr %prec below_HASH
+  | LABEL simple_expr %prec below_HASH
       { (Labelled $1, $2) }
   | TILDE label_ident
       { (Labelled (fst $2), snd $2) }
