@@ -2484,18 +2484,31 @@ let type_interface sourcefile env ast =
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)
 
-let rec package_signatures subst = function
-    [] -> []
-  | (name, sg) :: rem ->
-      let sg' = Subst.signature subst sg in
-      let oldid = Ident.create_persistent name
-      and newid = Ident.create_local name in
-      Sig_module(newid, Mp_present, {md_type=Mty_signature sg';
-                         md_attributes=[];
-                         md_loc=Location.none;
-                        },
-                 Trec_not, Exported) ::
-      package_signatures (Subst.add_module oldid (Pident newid) subst) rem
+let package_signatures units =
+  let units_with_ids =
+    List.map
+      (fun (name, sg) ->
+        let oldid = Ident.create_persistent name in
+        let newid = Ident.create_local name in
+        (oldid, newid, sg))
+      units
+  in
+  let subst =
+    List.fold_left
+      (fun acc (oldid, newid, _) ->
+        Subst.add_module oldid (Pident newid) acc)
+      Subst.identity units_with_ids
+  in
+  List.map
+    (fun (_, newid, sg) ->
+      let sg = Subst.signature subst sg in
+      let md =
+        { md_type=Mty_signature sg;
+          md_attributes=[];
+          md_loc=Location.none; }
+      in
+      Sig_module(newid, Mp_present, md, Trec_not, Exported))
+    units_with_ids
 
 let package_units initial_env objfiles cmifile modulename =
   (* Read the signatures of the units *)
@@ -2513,7 +2526,7 @@ let package_units initial_env objfiles cmifile modulename =
       objfiles in
   (* Compute signature of packaged unit *)
   Ident.reinit();
-  let sg = package_signatures Subst.identity units in
+  let sg = package_signatures units in
   (* See if explicit interface is provided *)
   let prefix = Filename.remove_extension cmifile in
   let mlifile = prefix ^ !Config.interface_suffix in
