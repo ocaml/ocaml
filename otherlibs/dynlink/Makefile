@@ -58,6 +58,9 @@ COMPILEROBJS = $(addprefix $(ROOTDIR)/,\
   bytecomp/opcodes.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
   bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo)
 
+COMPILERINTFS = $(addprefix $(ROOTDIR)/,\
+  bytecomp/cmo_format.cmi)
+
 all: dynlink.cma extract_crc
 
 allopt: dynlink.cmxa
@@ -68,7 +71,7 @@ dynlink.cma: $(OBJS)
 dynlink.cmxa: $(NATOBJS)
 	$(OCAMLOPT) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a -o $@ $^
 
-dynlink_compilerlibs.cmo: $(COMPILEROBJS)
+dynlink_compilerlibs.cmo: $(COMPILEROBJS) $(COMPILERINTFS)
 	$(OCAMLC) $(COMPFLAGS) -pack -o $@ $^
 
 # This rule is ok since there is no corresponding rule for native code

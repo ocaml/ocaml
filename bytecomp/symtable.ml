@@ -342,6 +342,14 @@ let defined_globals patchlist =
     []
     patchlist
 
+let required_globals patchlist =
+  List.fold_left (fun accu rel ->
+      match rel with
+      | (Reloc_getglobal id, _pos) -> id :: accu
+      | _ -> accu)
+    []
+    patchlist
+
 let check_global_initialized patchlist =
   (* First determine the globals we will define *)
   let defined_globals = defined_globals patchlist in

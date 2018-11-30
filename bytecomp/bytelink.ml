@@ -94,17 +94,11 @@ let is_required (rel, _pos) =
   | _ -> false
 
 let add_required compunit =
-  let add_required_by_reloc (rel, _pos) =
-    match rel with
-      Reloc_getglobal id ->
-        missing_globals := Ident.Set.add id !missing_globals
-    | _ -> ()
-  in
-  let add_required_for_effects id =
+  let add id =
     missing_globals := Ident.Set.add id !missing_globals
   in
-  List.iter add_required_by_reloc compunit.cu_reloc;
-  List.iter add_required_for_effects compunit.cu_required_globals
+  List.iter add (Symtable.required_globals compunit.cu_reloc);
+  List.iter add compunit.cu_required_globals
 
 let remove_required (rel, _pos) =
   match rel with
