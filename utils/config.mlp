@@ -33,6 +33,7 @@ let ccomp_type = "%%CCOMPTYPE%%"
 let c_compiler = "%%CC%%"
 let c_output_obj = "%%OUTPUTOBJ%%"
 let c_has_debug_prefix_map = %%CC_HAS_DEBUG_PREFIX_MAP%%
+let as_has_debug_prefix_map = %%AS_HAS_DEBUG_PREFIX_MAP%%
 let ocamlc_cflags = "%%OCAMLC_CFLAGS%%"
 let ocamlc_cppflags = "%%OCAMLC_CPPFLAGS%%"
 let ocamlopt_cflags = "%%OCAMLOPT_CFLAGS%%"

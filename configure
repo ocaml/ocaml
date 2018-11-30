@@ -1897,6 +1897,12 @@ asm_cfi_supported=false
 
 export as aspp
 
+if $as --debug-prefix-map old=new simple.S 2> /dev/null; then
+    as_has_debug_prefix_map=true
+else
+    as_has_debug_prefix_map=false
+fi
+
 if ! $with_cfi; then
   echo "CFI support: disabled by command-line option -no-cfi"
 elif sh ./tryassemble cfi.S; then
@@ -2165,6 +2171,7 @@ config MAX_TESTSUITE_DIR_RETRIES "$max_testsuite_dir_retries"
 config FLAT_FLOAT_ARRAY "$flat_float_array"
 config AWK "awk"
 config CC_HAS_DEBUG_PREFIX_MAP "$cc_has_debug_prefix_map"
+config AS_HAS_DEBUG_PREFIX_MAP "$as_has_debug_prefix_map"
 
 
 rm -f tst hasgot.c
