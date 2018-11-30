@@ -3,17 +3,71 @@
 
 open Printf
 
-module A = Stdlib.Float.Array
+(* This is the module type of [Float.Array] except type [t] is abstract. *)
+module type S = sig
+  type t
+  val length : t -> int
+  val get : t -> int -> float
+  val set : t -> int -> float -> unit
+  val make : int -> float -> t
+  val create : int -> t
+  val init : int -> (int -> float) -> t
+  val append : t -> t -> t
+  val concat : t list -> t
+  val sub : t -> int -> int -> t
+  val copy : t -> t
+  val fill : t -> int -> int -> float -> unit
+  val blit : t -> int -> t -> int -> int -> unit
+  val to_list : t -> float list
+  val of_list : float list -> t
+  val iter : (float -> unit) -> t -> unit
+  val iteri : (int -> float -> unit) -> t -> unit
+  val map : (float -> float) -> t -> t
+  val mapi : (int -> float -> float) -> t -> t
+  val fold_left : ('a -> float -> 'a) -> 'a -> t -> 'a
+  val fold_right : (float -> 'a -> 'a) -> t -> 'a -> 'a
+  val iter2 : (float -> float -> unit) -> t -> t -> unit
+  val map2 : (float -> float -> float) -> t -> t -> t
+  val for_all : (float -> bool) -> t -> bool
+  val exists : (float -> bool) -> t -> bool
+  val mem : float -> t -> bool
+  val mem_ieee : float -> t -> bool
+  val sort : (float -> float -> int) -> t -> unit
+  val stable_sort : (float -> float -> int) -> t -> unit
+  val fast_sort : (float -> float -> int) -> t -> unit
+  val to_seq : t -> float Seq.t
+  val to_seqi : t -> (int * float) Seq.t
+  val of_seq : float Seq.t -> t
+  val map_to_array : (float -> 'a) -> t -> 'a array
+  val map_from_array : ('a -> float) -> 'a array -> t
+  val unsafe_get : t -> int -> float
+  val unsafe_set : t -> int -> float -> unit
+end
 
-let () = begin
+(* module [Array] specialized to [float] and with a few changes,
+   satisfies signature S *)
+module Float_array : S = struct
+  include Stdlib.Array
+  let create = create_float
+  let map_to_array f a = map f a
+  let map_from_array f a = map f a
+  let mem_ieee x a = exists ((=) x) a
+  type t = float array
+end
+
+module Test (A : S) : sig end = struct
 
   (* auxiliary functions *)
+
+  let neg_zero = 1.0 /. neg_infinity in
+
   let rec check_i_upto a i =
     if i >= 0 then begin
       assert (A.get a i = Float.of_int i);
       check_i_upto a (i - 1);
     end
   in
+
   let check_i a = check_i_upto a (A.length a - 1) in
 
   let check_inval f arg =
@@ -166,8 +220,12 @@ let () = begin
   (* [iteri] *)
   let a = A.init 300 Float.of_int in
   let r = ref 0 in
-  A.iteri (fun i x -> assert (i = !r); assert (x = Float.of_int i); r := i + 1)
-    a;
+  let f i x =
+    assert (i = !r);
+    assert (x = Float.of_int i);
+    r := i + 1
+  in
+  A.iteri f a;
   A.iteri (fun _ _ -> assert false) (A.create 0);
   assert (!r = 300);
 
@@ -272,27 +330,25 @@ let () = begin
   assert (A.mem 7776.0 a);
   assert (not (A.mem (-1.0) a));
   assert (not (A.mem 7777.0 a));
-  let minus_zero = 1.0 /. neg_infinity in
   let check v =
     A.set a 1000 v;
     assert (A.mem v a);
   in
-  List.iter check [infinity; neg_infinity; minus_zero; nan];
+  List.iter check [infinity; neg_infinity; neg_zero; nan];
 
-  (* [memq] *)
+  (* [mem_ieee] *)
   let a = A.init 7777 Float.of_int in
-  assert (A.memq 0.0 a);
-  assert (A.memq 7776.0 a);
-  assert (not (A.memq (-1.0) a));
-  assert (not (A.memq 7777.0 a));
-  let minus_zero = 1.0 /. neg_infinity in
+  assert (A.mem_ieee 0.0 a);
+  assert (A.mem_ieee 7776.0 a);
+  assert (not (A.mem_ieee (-1.0) a));
+  assert (not (A.mem_ieee 7777.0 a));
   let check v =
     A.set a 1000 v;
-    assert (A.memq v a);
+    assert (A.mem_ieee v a);
   in
-  List.iter check [infinity; neg_infinity; minus_zero];
+  List.iter check [infinity; neg_infinity; neg_zero];
   A.set a 0 nan;
-  assert (not (A.memq nan a));
+  assert (not (A.mem_ieee nan a));
 
   (* [sort] [fast_sort] [stable_sort] *)
   let check_sort sort cmp a =
@@ -328,12 +384,26 @@ let () = begin
     check_sorted a 0;
     check_permutation a b 0;
   in
+  Random.init 123;
+  let rand_float _ =
+    match Random.int 1004 with
+    | 1000 -> nan
+    | 1001 -> infinity
+    | 1002 -> neg_infinity
+    | 1003 -> neg_zero
+    | n when n < 500 -> Random.float 1.0
+    | _ -> -. Random.float 1.0
+  in
   let check s =
-    Random.init 123;
     let a = A.init 5 Float.of_int in
     check_sort s Stdlib.compare a; (* already sorted *)
     check_sort s (fun x y -> Stdlib.compare y x) a; (* reverse-sorted *)
-    let a = A.init 50000 (fun _ -> Random.float 1.0) in
+
+    let a = A.of_list [nan; neg_infinity; neg_zero; 0.; infinity] in
+    check_sort s Stdlib.compare a; (* already sorted *)
+    check_sort s (fun x y -> Stdlib.compare y x) a; (* reverse-sorted *)
+
+    let a = A.init 50000 rand_float in
     check_sort s Stdlib.compare a;
     let a = A.make 1000 1.0 in
     check_sort s Stdlib.compare a;
@@ -419,12 +489,16 @@ let () = begin
   let check c l1 l2 =
     assert (c = (normalize_comparison (compare (A.of_list l1) (A.of_list l2))))
   in
-  check 0    [0.0; 0.25; -4.0; 3.141592654]
-             [0.0; 0.25; -4.0; 3.141592654];
+  check 0    [0.0; 0.25; -4.0; 3.141592654; nan]
+             [0.0; 0.25; -4.0; 3.141592654; nan];
+  check (-1) [0.0; 0.25; nan]
+             [0.0; 0.25; 3.14];
   check (-1) [0.0; 0.25; -4.0]
              [0.0; 0.25; 3.14159];
   check 1    [0.0; 2.718; -4.0]
              [0.0; 0.25; 3.14159];
+  check 1    [0.0; 2.718; -4.0]
+             [nan; 0.25; 3.14159];
 
   (* [unsafe_get] [unsafe_set] *)
   let a = A.create 3 in
@@ -445,3 +519,7 @@ let () = begin
   test_structured_io (A.of_list [0.0; 0.25; -4.0; 3.141592654]);
 
 end
+
+(* We run the same tests on [Float.Array] and [Array]. *)
+module T1 = Test (Stdlib.Float.Array)
+module T2 = Test (Float_array)

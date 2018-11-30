@@ -336,7 +336,7 @@ module Array = struct
     loop 0
 
   (* mostly duplicated from array.ml, but slightly different *)
-  let memq x a =
+  let mem_ieee x a =
     let n = length a in
     let rec loop i =
       if i = n then false

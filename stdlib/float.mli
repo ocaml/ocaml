@@ -536,12 +536,12 @@ module Array : sig
       [(p a1) || (p a2) || ... || (p an)]. *)
 
   val mem : float -> t -> bool
-  (** [mem a l] is true if and only if [a] is equal (in the sense of generic
-      equality) to an element of [l]. *)
+  (** [mem a l] is true if and only if there is an element of [l] that is
+      structurally equal to [a], i.e. there is an [x] in [l] such
+      that [compare a x = 0]. *)
 
-  val memq : float -> t -> bool
-  (** Same as {!mem}, but uses float equality instead of generic
-      equality to compare elements. *)
+  val mem_ieee : float -> t -> bool
+  (** Same as {!mem}, but uses IEEE equality instead of structural equality. *)
 
   (** {2 Sorting} *)
 
@@ -642,7 +642,7 @@ module ArrayLabels : sig
   val for_all : f:(float -> bool) -> t -> bool
   val exists : f:(float -> bool) -> t -> bool
   val mem : float -> set:t -> bool
-  val memq : float -> set:t -> bool
+  val mem_ieee : float -> set:t -> bool
   val sort : cmp:(float -> float -> int) -> t -> unit
   val stable_sort : cmp:(float -> float -> int) -> t -> unit
   val fast_sort : cmp:(float -> float -> int) -> t -> unit
