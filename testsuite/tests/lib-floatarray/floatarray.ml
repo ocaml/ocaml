@@ -507,16 +507,19 @@ module Test (A : S) : sig end = struct
 
   (* I/O *)
   let test_structured_io value =
-    let (tmp, oc) = Filename.open_temp_file "floatarray" ".data" in
-    output_value oc value;
+    let (tmp, oc) =
+      Filename.open_temp_file ~mode:[Open_binary] "floatarray" ".data"
+    in
+    Marshal.to_channel oc value [];
     close_out oc;
     let ic = open_in_bin tmp in
-    let value' = input_value ic in
+    let value' = Marshal.from_channel ic in
     close_in ic;
     Sys.remove tmp;
-    assert (value = value')
+    assert (compare value value' = 0)
   in
-  test_structured_io (A.of_list [0.0; 0.25; -4.0; 3.141592654]);
+  let l = [0.; 0.25; -4.; 3.14159265; nan; infinity; neg_infinity; neg_zero] in
+  test_structured_io (A.of_list l);
 
 end
 
