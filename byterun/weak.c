@@ -71,7 +71,7 @@ CAMLprim value caml_ephe_create (value len)
   size = Long_val (len) + CAML_EPHE_FIRST_KEY;
   if (size < CAML_EPHE_FIRST_KEY || size > Max_wosize)
     caml_invalid_argument ("Weak.create");
-  res = caml_alloc_shr (size, Abstract_tag);
+  res = caml_alloc_shr_effect (size, Abstract_tag, CAML_ALLOC_EFFECT_GC);
   for (i = 1; i < size; i++) Field (res, i) = caml_ephe_none;
   Field (res, CAML_EPHE_LINK_OFFSET) = caml_ephe_list_head;
   caml_ephe_list_head = res;

@@ -367,6 +367,7 @@ utils/config.ml: utils/config.mlp config/Makefile Makefile
 	    $(call SUBST,WITH_PROFINFO) \
 	    $(call SUBST,WITH_SPACETIME) \
 	    $(call SUBST,ENABLE_CALL_COUNTS) \
+	    $(call SUBST,WITH_STATMEMPROF) \
 	    $(call SUBST,FLAT_FLOAT_ARRAY) \
 	    $< > $@
 

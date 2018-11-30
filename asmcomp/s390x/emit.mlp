@@ -212,7 +212,9 @@ let bound_error_call = ref 0
 let bound_error_label ?label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
+    let lbl_frame =
+      record_frame_label ?label Reg.Set.empty false (Dbg_other dbg)
+    in
     bound_error_sites :=
      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
    lbl_bound_error
@@ -345,11 +347,11 @@ let emit_instr i =
         emit_load_symbol_addr i.res.(0) s
     | Lop(Icall_ind { label_after; }) ->
         `	basr	%r14, {emit_reg i.arg.(0)}\n`;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
+        `{record_frame i.live false (Dbg_other i.dbg) ~label:label_after}\n`
 
     | Lop(Icall_imm { func; label_after; }) ->
         emit_call func;
-        `{record_frame i.live false i.dbg ~label:label_after}\n`
+        `{record_frame i.live false (Dbg_other i.dbg) ~label:label_after}\n`
     | Lop(Itailcall_ind { label_after = _; }) ->
         let n = frame_size() in
         if !contains_calls then
@@ -375,7 +377,7 @@ let emit_instr i =
         else begin
           emit_load_symbol_addr reg_r7 func;
           emit_call "caml_c_call";
-          `{record_frame i.live false i.dbg ~label:label_after}\n`
+          `{record_frame i.live false (Dbg_other i.dbg) ~label:label_after}\n`
         end
 
      | Lop(Istackoffset n) ->
@@ -412,11 +414,11 @@ let emit_instr i =
           | Double | Double_u -> "stdy" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
-    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
+    | Lop(Ialloc { words = n; blocks = dbg; label_after_call_gc; }) ->
         let lbl_redo = new_label() in
         let lbl_call_gc = new_label() in
         let lbl_frame =
-          record_frame_label i.live false i.dbg ?label:label_after_call_gc
+          record_frame_label i.live false (Dbg_alloc dbg) ?label:label_after_call_gc
         in
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
@@ -618,7 +620,7 @@ let emit_instr i =
         begin match k with
         | Cmm.Raise_withtrace ->
           emit_call "caml_raise_exn";
-          `{record_frame Reg.Set.empty true i.dbg}\n`
+          `{record_frame Reg.Set.empty true (Dbg_other i.dbg)}\n`
         | Cmm.Raise_notrace ->
           `	lg	%r1, 0(%r13)\n`;
           `	lgr	%r15, %r13\n`;
@@ -758,7 +760,7 @@ let end_assembly() =
       efa_data_label = (fun l -> `	.quad	{emit_label l}\n`);
       efa_16 = (fun n -> `	.short	{emit_int n}\n`);
       efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
-      efa_word = (fun n -> `	.quad	{emit_int n}\n`);
+      efa_word = (fun n -> `	.quad	{emit_nativeint n}\n`);
       efa_align = (fun n -> `	.align	{emit_int n}\n`);
       efa_label_rel = (fun lbl ofs ->
                            `	.long	({emit_label lbl} - .) + {emit_int32 ofs}\n`);

@@ -421,7 +421,7 @@ value caml_spacetime_frame_table(void)
       struct caml_loc_info li;
       debuginfo dbg;
       if (descr->frame_size != 0xffff) {
-        dbg = caml_debuginfo_extract(descr);
+        dbg = caml_debuginfo_extract(Val_backtrace_slot(descr));
         if (dbg != NULL) {
           location_list = Val_unit;
           while (dbg != NULL) {

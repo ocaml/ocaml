@@ -1254,6 +1254,7 @@ module List         = List
 module ListLabels   = ListLabels
 module Map          = Map
 module Marshal      = Marshal
+module Memprof      = Memprof
 module MoreLabels   = MoreLabels
 module Nativeint    = Nativeint
 module Obj          = Obj

@@ -53,6 +53,7 @@ with_ocamldoc=ocamldoc
 with_frame_pointers=false
 with_spacetime=false
 enable_call_counts=true
+with_statmemprof=false
 with_profinfo=false
 profinfo_width=0
 no_naked_pointers=false
@@ -195,6 +196,8 @@ while : ; do
         with_spacetime=true;  with_profinfo=true; profinfo_width=26;;
     -disable-call-counts|--disable-call-counts)
         enable_call_counts=false;;
+    -statmemprof|--statmemprof)
+        with_statmemprof=true;;
     -reserved-header-bits|--reserved-header-bits)
         with_spacetime=false; with_profinfo=true; profinfo_width=$2;shift
         case $profinfo_width in
@@ -2024,6 +2027,17 @@ if $with_spacetime; then
   fi
 fi
 
+if $with_statmemprof; then
+  echo "#define WITH_STATMEMPROF" >> m.h
+  case "$arch" in
+    i386|amd64|arm|s390x|none)
+      ;;
+    *)
+      err "Statistical memory profiling in native code for this platform "\
+          "is not supported.";;
+  esac
+fi
+
 if ! $shared_libraries_supported; then
   with_cplugins=false
 fi
@@ -2122,6 +2136,7 @@ config ASM_CFI_SUPPORTED "$asm_cfi_supported"
 config WITH_FRAME_POINTERS "$with_frame_pointers"
 config WITH_SPACETIME "$with_spacetime"
 config ENABLE_CALL_COUNTS "$enable_call_counts"
+config WITH_STATMEMPROF "$with_statmemprof"
 config WITH_PROFINFO "$with_profinfo"
 config LIBUNWIND_AVAILABLE "$libunwind_available"
 config LIBUNWIND_INCLUDE_FLAGS "$libunwind_include"
@@ -2215,6 +2230,11 @@ else
     inf "          ... with libunwind...... $has_libunwind"
   else
     inf "        spacetime profiling....... no"
+  fi
+  if $with_statmemprof; then
+    inf "        statistical memprof....... yes"
+  else
+    inf "        statistical memprof....... no"
   fi
   if $with_profinfo; then
     inf "        reserved bits in header... $profinfo_width"

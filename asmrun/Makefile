@@ -19,7 +19,7 @@ include ../Makefile.common
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
   parsing.c gc_ctrl.c md5.c obj.c lexing.c printexc.c callback.c \
-  weak.c compact.c finalise.c meta.c custom.c main.c globroots.c \
+  weak.c compact.c finalise.c meta.c custom.c main.c globroots.c memprof.c \
   $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c startup_aux.c \
   backtrace.c afl.c bigarray.c
 
@@ -78,7 +78,7 @@ COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
   md5.$(O) obj.$(O) lexing.$(O) $(UNIX_OR_WIN32).$(O)	\
   printexc.$(O) callback.$(O) weak.$(O) compact.$(O) finalise.$(O)	\
   custom.$(O) globroots.$(O) backtrace_prim.$(O) backtrace.$(O)		\
-  natdynlink.$(O) debugger.$(O) meta.$(O) dynlink.$(O)			\
+  natdynlink.$(O) debugger.$(O) meta.$(O) dynlink.$(O) memprof.$(O)	\
   clambda_checks.$(O) spacetime.$(O) spacetime_snapshot.$(O)		\
   afl.$(O) bigarray.$(O)
 

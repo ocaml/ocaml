@@ -71,9 +71,13 @@ CAMLprim value caml_array_get_float(value array, value index)
   d = Double_flat_field(array, idx);
 #define Setup_for_gc
 #define Restore_after_gc
+#define Setup_for_track_gc
+#define Restore_after_track_gc
   Alloc_small(res, Double_wosize, Double_tag);
 #undef Setup_for_gc
 #undef Restore_after_gc
+#undef Setup_for_track_gc
+#undef Restore_after_track_gc
   Store_double_val(res, d);
   return res;
 #else
@@ -108,9 +112,13 @@ CAMLprim value caml_floatarray_get(value array, value index)
   d = Double_flat_field(array, idx);
 #define Setup_for_gc
 #define Restore_after_gc
+#define Setup_for_track_gc
+#define Restore_after_track_gc
   Alloc_small(res, Double_wosize, Double_tag);
 #undef Setup_for_gc
 #undef Restore_after_gc
+#undef Setup_for_track_gc
+#undef Restore_after_track_gc
   Store_double_val(res, d);
   return res;
 }
@@ -176,9 +184,13 @@ CAMLprim value caml_array_unsafe_get_float(value array, value index)
   d = Double_flat_field(array, idx);
 #define Setup_for_gc
 #define Restore_after_gc
+#define Setup_for_track_gc
+#define Restore_after_track_gc
   Alloc_small(res, Double_wosize, Double_tag);
 #undef Setup_for_gc
 #undef Restore_after_gc
+#undef Setup_for_track_gc
+#undef Restore_after_track_gc
   Store_double_val(res, d);
   return res;
 #else /* FLAT_FLOAT_ARRAY */
@@ -210,9 +222,13 @@ CAMLprim value caml_floatarray_unsafe_get(value array, value index)
   d = Double_flat_field(array, idx);
 #define Setup_for_gc
 #define Restore_after_gc
+#define Setup_for_track_gc
+#define Restore_after_track_gc
   Alloc_small(res, Double_wosize, Double_tag);
 #undef Setup_for_gc
 #undef Restore_after_gc
+#undef Setup_for_track_gc
+#undef Restore_after_track_gc
   Store_double_val(res, d);
   return res;
 }
@@ -271,14 +287,18 @@ CAMLprim value caml_floatarray_create(value len)
     else
 #define Setup_for_gc
 #define Restore_after_gc
+#define Setup_for_track_gc
+#define Restore_after_track_gc
       Alloc_small (result, wosize, Double_array_tag);
 #undef Setup_for_gc
 #undef Restore_after_gc
+#undef Setup_for_track_gc
+#undef Restore_after_track_gc
   }else if (wosize > Max_wosize)
     caml_invalid_argument("Array.Floatarray.create");
   else {
-    result = caml_alloc_shr (wosize, Double_array_tag);
-    result = caml_check_urgent_gc (result);
+    result = caml_alloc_shr_effect (wosize, Double_array_tag,
+                                    CAML_ALLOC_EFFECT_GC);
   }
   return result;
 }
@@ -333,14 +353,12 @@ CAMLprim value caml_make_vect(value len, value init)
       CAML_INSTR_INT ("force_minor/make_vect@", 1);
       caml_request_minor_gc ();
       caml_gc_dispatch ();
-      res = caml_alloc_shr(size, 0);
+      res = caml_alloc_shr_effect(size, 0, CAML_ALLOC_EFFECT_GC);
       for (i = 0; i < size; i++) Field(res, i) = init;
-      res = caml_check_urgent_gc (res);
     }
     else {
-      res = caml_alloc_shr(size, 0);
+      res = caml_alloc_shr_effect(size, 0, CAML_ALLOC_EFFECT_GC);
       for (i = 0; i < size; i++) caml_initialize(&Field(res, i), init);
-      res = caml_check_urgent_gc (res);
     }
   }
   CAMLreturn (res);
@@ -373,8 +391,8 @@ CAMLprim value caml_make_array(value init)
       if (wsize <= Max_young_wosize) {
         res = caml_alloc_small(wsize, Double_array_tag);
       } else {
-        res = caml_alloc_shr(wsize, Double_array_tag);
-        res = caml_check_urgent_gc(res);
+        res = caml_alloc_shr_effect(wsize, Double_array_tag,
+                                    CAML_ALLOC_EFFECT_GC);
       }
       for (i = 0; i < size; i++) {
         double d = Double_val(Field(init, i));
@@ -505,7 +523,7 @@ static value caml_array_gather(intnat num_arrays,
   } else {
     /* Array of values, must be allocated in old generation and filled
        using caml_initialize. */
-    res = caml_alloc_shr(size, 0);
+    res = caml_alloc_shr_effect(size, 0, CAML_ALLOC_EFFECT_GC);
     for (i = 0, pos = 0; i < num_arrays; i++) {
       for (src = &Field(arrays[i], offsets[i]), count = lengths[i];
            count > 0;

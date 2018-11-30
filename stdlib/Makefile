@@ -52,6 +52,7 @@ OTHERS=$(P)seq.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo $(P)list.cmo \
   camlinternalOO.cmo $(P)oo.cmo camlinternalMod.cmo \
   $(P)genlex.cmo $(P)ephemeron.cmo \
   $(P)filename.cmo $(P)complex.cmo \
+  $(P)memprof.cmo \
   $(P)arrayLabels.cmo $(P)listLabels.cmo $(P)bytesLabels.cmo \
   $(P)stringLabels.cmo $(P)moreLabels.cmo $(P)stdLabels.cmo \
   $(P)spacetime.cmo $(P)bigarray.cmo

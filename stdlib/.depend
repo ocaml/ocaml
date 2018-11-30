@@ -111,6 +111,9 @@ stdlib__map.cmi : stdlib__seq.cmi
 stdlib__marshal.cmo : stdlib__bytes.cmi stdlib__marshal.cmi
 stdlib__marshal.cmx : stdlib__bytes.cmx stdlib__marshal.cmi
 stdlib__marshal.cmi :
+stdlib__memprof.cmo : stdlib__printexc.cmi stdlib__obj.cmi stdlib__ephemeron.cmi stdlib__memprof.cmi
+stdlib__memprof.cmx : stdlib__printexc.cmx stdlib__obj.cmx stdlib__ephemeron.cmx stdlib__memprof.cmi
+stdlib__memprof.cmi : stdlib__printexc.cmi stdlib__obj.cmi stdlib__ephemeron.cmi
 stdlib__moreLabels.cmo : stdlib__set.cmi stdlib__map.cmi stdlib__hashtbl.cmi stdlib__moreLabels.cmi
 stdlib__moreLabels.cmx : stdlib__set.cmx stdlib__map.cmx stdlib__hashtbl.cmx stdlib__moreLabels.cmi
 stdlib__moreLabels.cmi : stdlib__set.cmi stdlib__seq.cmi stdlib__map.cmi stdlib__hashtbl.cmi
@@ -273,6 +276,8 @@ stdlib__map.cmo : stdlib__seq.cmi stdlib__map.cmi
 stdlib__map.p.cmx : stdlib__seq.cmx stdlib__map.cmi
 stdlib__marshal.cmo : stdlib__bytes.cmi stdlib__marshal.cmi
 stdlib__marshal.p.cmx : stdlib__bytes.cmx stdlib__marshal.cmi
+stdlib__memprof.cmo : stdlib__printexc.cmi stdlib__obj.cmi stdlib__ephemeron.cmi stdlib__memprof.cmi
+stdlib__memprof.p.cmx : stdlib__printexc.cmx stdlib__obj.cmx stdlib__ephemeron.cmx stdlib__memprof.cmi
 stdlib__moreLabels.cmo : stdlib__set.cmi stdlib__map.cmi stdlib__hashtbl.cmi stdlib__moreLabels.cmi
 stdlib__moreLabels.p.cmx : stdlib__set.cmx stdlib__map.cmx stdlib__hashtbl.cmx stdlib__moreLabels.cmi
 stdlib__nativeint.cmo : stdlib__sys.cmi stdlib__nativeint.cmi

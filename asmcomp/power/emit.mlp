@@ -318,7 +318,7 @@ let record_frame ?label live raise_ dbg =
       | _ -> ())
     live;
   record_frame_descr ~label:lbl ~frame_size:(frame_size())
-    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
+    ~live_offset:!live_offset ~raise_frame:raise_ (Dbg_other dbg);
   `{emit_label lbl}:\n`
 
 (* Record floating-point literals (for PPC32) *)
@@ -1215,7 +1215,7 @@ let end_assembly() =
          (fun l -> `	{emit_string datag}	{emit_label l}\n`);
       efa_16 = (fun n -> `	.short	{emit_int n}\n`);
       efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
-      efa_word = (fun n -> `	{emit_string datag}	{emit_int n}\n`);
+      efa_word = (fun n -> `	{emit_string datag}	{emit_nativeint n}\n`);
       efa_align = (fun n -> `	.balign	{emit_int n}\n`);
       efa_label_rel = (fun lbl ofs ->
                            `	.long	({emit_label lbl} - .) + {emit_int32 ofs}\n`);

@@ -177,6 +177,11 @@ val default_safe_string: bool
            or -unsafe-string compile-time option by default.
 
            @since 4.06.0 *)
+
+val statmemprof : bool
+        (* Whether the compiler was configured with support for
+           statistical memory profiling. *)
+
 val flat_float_array : bool
         (* Whether the compiler and runtime automagically flatten float
            arrays *)

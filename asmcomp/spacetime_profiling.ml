@@ -357,7 +357,7 @@ class virtual instruction_selection = object (self)
       super#emit_blockheader env n dbg
     end
 
-  method! select_allocation words =
+  method! select_allocation () =
     if self#can_instrument () then begin
       (* Leave space for a direct call point.  We cannot easily insert any
          instrumentation code, so the fields are filled in instead by
@@ -369,12 +369,12 @@ class virtual instruction_selection = object (self)
           ~label
       in
       Mach.Ialloc {
-        words;
+        words = 0; blocks = [];
         label_after_call_gc = Some label;
         spacetime_index = index;
       }
     end else begin
-      super#select_allocation words
+      super#select_allocation ()
     end
 
   method! select_allocation_args env =
