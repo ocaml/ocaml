@@ -210,9 +210,10 @@ val exists : ('a -> bool) -> 'a array -> bool
     @since 4.03.0 *)
 
 val mem : 'a -> 'a array -> bool
-(** [mem a l] is true if and only if [a] is equal
-   to an element of [l].
-   @since 4.03.0 *)
+(** [mem a l] is true if and only if [a] is structurally equal
+    to an element of [l] (i.e. there is an [x] in [l] such that
+    [compare a x = 0]).
+    @since 4.03.0 *)
 
 val memq : 'a -> 'a array -> bool
 (** Same as {!Array.mem}, but uses physical equality instead of structural
