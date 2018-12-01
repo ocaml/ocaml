@@ -706,6 +706,8 @@ Working version
 - GPR#2131: fix wrong calls to Env.normalize_path on non-module paths
   (Alain Frisch, review by Jacques Garrigue)
 
+- GPR#2175: Apply substitution to all modules when packing
+  (Leo White, review by Gabriel Scherer)
 
 OCaml 4.07.1 (4 October 2018)
 -----------------------------
