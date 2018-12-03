@@ -363,6 +363,11 @@ let of_line ~file ~line ~scope =
   in
   Non_empty { block = scope; position; }
 
+let with_position t position =
+  match t with
+  | Empty -> Empty
+  | Non_empty { block; position = _; } -> Non_empty { block; position; }
+
 let of_location loc ~scope =
   let position = Code_range.of_location loc in
   Non_empty { block = scope; position; }

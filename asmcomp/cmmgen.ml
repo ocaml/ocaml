@@ -25,6 +25,7 @@ open Clambda
 open Cmm
 open Cmx_format
 
+module Int = Numbers.Int
 module String = Misc.Stdlib.String
 module V = Backend_var
 module VP = Backend_var.With_provenance
@@ -3532,10 +3533,11 @@ let startup_path =
 
 let next_placeholder_dbg_line = ref 0
 
-let placeholder_dbg ~startup_cmm_file () =
+let placeholder_dbg () =
   match !Clflags.debug_full with
   | None -> Debuginfo.none
   | Some _ ->
+      let file = "" in
       let line = !next_placeholder_dbg_line in
       incr next_placeholder_dbg_line;
       Debuginfo.of_line ~file ~line ~scope:Debuginfo.Current_block.toplevel
@@ -3554,8 +3556,8 @@ CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
 }
 *)
 
-let cache_public_method ~startup_cmm_file meths tag cache dbg =
-  let dbg = placeholder_dbg ~startup_cmm_file in
+let cache_public_method meths tag cache dbg =
+  let dbg = placeholder_dbg in
   let raise_num = next_raise_count () in
   let li = V.create_local "li" and hi = V.create_local "hi"
   and mi = V.create_local "mi" and tagged = V.create_local "tagged" in
@@ -3612,8 +3614,8 @@ let cache_public_method ~startup_cmm_file meths tag cache dbg =
            (app closN-1.code aN closN-1))))
 *)
 
-let apply_function_body ~startup_cmm_file arity =
-  let dbg = placeholder_dbg ~startup_cmm_file in
+let apply_function_body arity =
+  let dbg = placeholder_dbg in
   let arg = Array.make arity (V.create_local "arg") in
   for i = 1 to arity - 1 do arg.(i) <- V.create_local "arg" done;
   let clos = V.create_local "clos" in
@@ -3647,8 +3649,8 @@ let apply_function_body ~startup_cmm_file arity =
    app_fun clos 0,
    dbg ()))
 
-let send_function ~startup_cmm_file arity =
-  let dbg = placeholder_dbg ~startup_cmm_file in
+let send_function arity =
+  let dbg = placeholder_dbg in
   let (args, clos', body) = apply_function_body (1+arity) in
   let cache = V.create_local "cache"
   and obj = List.hd args
@@ -3698,8 +3700,8 @@ let send_function ~startup_cmm_file arity =
     fun_module_path = startup_path;
    }
 
-let apply_function ~startup_cmm_file arity =
-  let dbg = placeholder_dbg ~startup_cmm_file in
+let apply_function arity =
+  let dbg = placeholder_dbg in
   let fun_name = caml_apply arity in
   let (args, clos, body) = apply_function_body arity in
   let all_args = args @ [clos] in
@@ -3717,8 +3719,8 @@ let apply_function ~startup_cmm_file arity =
       (defun caml_tuplifyN (arg clos)
         (app clos.direct #0(arg) ... #N-1(arg) clos)) *)
 
-let tuplify_function ~startup_cmm_file arity =
-  let dbg = placeholder_dbg ~startup_cmm_file in
+let tuplify_function arity =
+  let dbg = placeholder_dbg in
   let fun_name = caml_tuplify arity in
   let dbg () = Debuginfo.none in
   let arg = V.create_local "arg" in
@@ -3770,8 +3772,8 @@ let tuplify_function ~startup_cmm_file arity =
 *)
 
 let max_arity_optimized = 15
-let final_curry_function ~startup_cmm_file arity =
-  let dbg () = placeholder_dbg ~startup_cmm_file in
+let final_curry_function arity =
+  let dbg () = placeholder_dbg in
   let last_arg = V.create_local "arg" in
   let last_clos = V.create_local "clos" in
   let env = empty_env in
@@ -3808,10 +3810,10 @@ let final_curry_function ~startup_cmm_file arity =
    }
 
 let rec intermediate_curry_functions arity num =
-  let dbg () = placeholder_dbg ~startup_cmm_file in
+  let dbg () = placeholder_dbg in
   let env = empty_env in
   if num = arity - 1 then
-    [final_curry_function ~startup_cmm_file arity]
+    [final_curry_function arity]
   else begin
     let fun_name =
       if num = 0 then caml_curry_n arity
@@ -3879,17 +3881,17 @@ let rec intermediate_curry_functions arity num =
                fun_module_path = startup_path;
               }
           in
-          cf :: intermediate_curry_functions ~startup_cmm_file arity (num+1)
+          cf :: intermediate_curry_functions arity (num+1)
        else
-          intermediate_curry_functions ~startup_cmm_file arity (num+1))
+          intermediate_curry_functions arity (num+1))
   end
 
-let curry_function ~startup_cmm_file arity =
+let curry_function arity =
   assert(arity <> 0);
   (* Functions with arity = 0 does not have a curry_function *)
   if arity > 0
-  then intermediate_curry_functions ~startup_cmm_file arity 0
-  else [tuplify_function ~startup_cmm_file (-arity)]
+  then intermediate_curry_functions arity 0
+  else [tuplify_function (-arity)]
 
 module Int = Numbers.Int
 
@@ -3913,8 +3915,8 @@ let generic_functions shared units =
 
 (* Generate the entry point *)
 
-let entry_point ~startup_cmm_file namelist =
-  let dbg () = placeholder_dbg ~startup_cmm_file in
+let entry_point namelist =
+  let dbg = placeholder_dbg in
   let incr_global_inited () =
     Cop(Cstore (Word_int, Assignment),
         [Cconst_symbol caml_globals_inited;
@@ -3943,20 +3945,6 @@ let entry_point ~startup_cmm_file namelist =
 
 (* Handling of the startup .cmm file when generating full debug info *)
 
-let write_startup_cmm_file ~startup_cmm_file expr =
-  let chan = open_out startup_cmm_file in
-  try
-    let ppf = Format.formatter_of_out_channel chan in
-    Format.pp_set_margin ppf 80;
-    Printcmm.set_print_dbg false;
-    Printcmm.phrase ppf cmm;
-    Format.pp_print_flush ppf ();
-    close_out chan;
-    cmm
-  with exn -> begin
-    remove_file startup_cmm_file;
-    raise exn
-  end
 
 (* Generate the table of globals *)
 

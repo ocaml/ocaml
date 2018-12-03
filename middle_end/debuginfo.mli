@@ -103,6 +103,8 @@ val to_location : t -> Location.t
 
 val innermost_block : t -> Current_block.t
 
+val with_position : t -> Code_range.t -> t
+
 val position : t -> Code_range.t option
 
 val iter_position_and_blocks_innermost_first

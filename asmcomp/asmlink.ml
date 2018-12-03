@@ -207,7 +207,17 @@ let force_linking_of_startup ~ppf_dump =
   Asmgen.compile_phrase ~ppf_dump ~dwarf:None
     (Cmm.Cdata ([Cmm.Csymbol_address Backend_sym.Names.caml_startup]))
 
-let make_startup_file ~ppf_dump ~dwarf_prefix_name units_list =
+let compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase =
+  let phrase =
+    match cmm_debug with
+    | None -> phrase
+    | Some (cmm_debug, _startup_cmm_file, _startup_cmm_chan) ->
+      Cmm_debug.write_cmm_to_channel_and_fix_up_debuginfo cmm_debug phrase
+  in
+  Asmgen.compile_phrase ~ppf_dump ~dwarf phrase
+
+let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units_list =
+  let compile_phrase = compile_phrase_with_cmm_debug cmm_debug in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset "_startup";
   (* set the name of the "current" compunit *)
@@ -251,7 +261,8 @@ let make_startup_file ~ppf_dump ~dwarf_prefix_name units_list =
     force_linking_of_startup ~ppf_dump;
   Emit.end_assembly dwarf
 
-let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name units =
+let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units =
+  let compile_phrase = compile_phrase_with_cmm_debug cmm_debug in
   Location.input_name := "caml_startup";
   Compilenv.reset "_shared_startup";
   let dwarf =
@@ -272,6 +283,15 @@ let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name units =
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
   Emit.end_assembly dwarf
+
+let create_cmm_debug ~dwarf_prefix_name =
+  match !Clflags.debug_full with
+  | None -> ()
+  | Some _ ->
+    let startup_cmm_file = dwarf_prefix_name ^ ".cmm" in
+    let startup_cmm_chan = open_out startup_cmm_file in
+    let cmm_debug = Cmm_debug.create ~startup_cmm_file ~startup_cmm_chan in
+    Some (cmm_debug, startup_cmm_file, startup_cmm_chan)
 
 let remove_startup_obj ~startup_obj =
   match !Clflags.debug_full with
@@ -303,12 +323,20 @@ let link_shared ~ppf_dump objfiles output_name =
       | None -> Filename.temp_file "camlstartup" ext_obj
       | Some _ -> dwarf_prefix_name ^ ext_obj
     in
-    Asmgen.compile_unit output_name
-      startup !Clflags.keep_startup_file startup_obj
-      (fun () ->
-         make_shared_startup_file ~ppf_dump ~dwarf_prefix_name
-           (List.map (fun (ui,_,crc) -> (ui,crc)) units_tolink)
-      );
+    let cmm_debug = create_cmm_debug ~dwarf_prefix_name in
+    Misc.try_finally (fun () ->
+        Asmgen.compile_unit output_name
+          startup !Clflags.keep_startup_file startup_obj
+          (fun () ->
+             make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
+               (List.map (fun (ui,_,crc) -> (ui,crc)) units_tolink)
+          ))
+      ~exceptionally:(fun () ->
+        match cmm_debug with
+        | None -> ()
+        | Some (cmm_debug, startup_cmm_file, startup_cmm_chan) ->
+          close_out startup_cmm_chan;
+          remove_file startup_cmm_file);
     Misc.try_finally
       (fun () ->
         call_linker_shared (startup_obj :: objfiles) output_name;
@@ -377,9 +405,19 @@ let link ~ppf_dump objfiles output_name =
       | None -> Filename.temp_file "camlstartup" ext_obj
       | Some _ -> dwarf_prefix_name ^ ext_obj
     in
-    Asmgen.compile_unit output_name
-      startup !Clflags.keep_startup_file startup_obj
-      (fun () -> make_startup_file ~ppf_dump ~dwarf_prefix_name units_tolink);
+    let cmm_debug = create_cmm_debug ~dwarf_prefix_name in
+    Misc.try_finally (fun () ->
+        Asmgen.compile_unit output_name
+          startup !Clflags.keep_startup_file startup_obj
+          (fun () ->
+            make_startup_file ~ppf_dump ~dwarf_prefix_name
+              ~cmm_debug units_tolink))
+      ~exceptionally:(fun () ->
+        match cmm_debug with
+        | None -> ()
+        | Some (cmm_debug, startup_cmm_file, startup_cmm_chan) ->
+          close_out startup_cmm_chan;
+          remove_file startup_cmm_file);
     Misc.try_finally
       (fun () ->
         call_linker (List.map object_file_name objfiles)
