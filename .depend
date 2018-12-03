@@ -485,11 +485,6 @@ typing/typedtreeIter.cmo : typing/typedtree.cmi utils/misc.cmi \
 typing/typedtreeIter.cmx : typing/typedtree.cmx utils/misc.cmx \
     parsing/asttypes.cmi typing/typedtreeIter.cmi
 typing/typedtreeIter.cmi : typing/typedtree.cmi parsing/asttypes.cmi
-typing/typedtreeMap.cmo : typing/typedtree.cmi utils/misc.cmi \
-    typing/typedtreeMap.cmi
-typing/typedtreeMap.cmx : typing/typedtree.cmx utils/misc.cmx \
-    typing/typedtreeMap.cmi
-typing/typedtreeMap.cmi : typing/typedtree.cmi
 typing/typemod.cmo : utils/warnings.cmi typing/typetexp.cmi typing/types.cmi \
     typing/typedtree.cmi typing/typedecl.cmi typing/typecore.cmi \
     typing/typeclass.cmi typing/subst.cmi typing/stypes.cmi \
