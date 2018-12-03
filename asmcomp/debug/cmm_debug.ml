@@ -39,11 +39,16 @@ let track_output_position_of_formatter t =
     Format.pp_get_formatter_out_functions ppf ()
   in
   let out_string str start_pos num_chars =
-    let substr = String.sub str start_pos num_chars in
-    assert (not (String.contains substr '\n'));
+    let num_newlines = ref 0 in
+    for index = start_pos to start_pos + num_chars - 1 do
+      if String.get str index = '\n' then begin
+        incr num_newlines
+      end
+    done;
     let old_pos = !current_pos in
     let new_pos : Lexing.position =
       { old_pos with
+        pos_lnum = old_pos.pos_lnum + !num_newlines;
         pos_cnum = old_pos.pos_cnum + num_chars;
       }
     in
@@ -115,6 +120,8 @@ let intercept_cmm_location_tags_on_formatter t =
       print_close_stag;
     }
   in
+  Format.pp_set_tags ppf true;
+  Format.pp_set_print_tags ppf true;
   Format.pp_set_formatter_stag_functions ppf stag_functions
 
 let create ~startup_cmm_file ~startup_cmm_chan =
@@ -132,6 +139,9 @@ let create ~startup_cmm_file ~startup_cmm_chan =
   t
 
 let write_cmm_to_channel_and_fix_up_debuginfo t phrase =
+  t.current_pos <- Lexing.dummy_pos;
+  t.start_positions_by_placeholder_line <- Int.Map.empty;
+  t.end_positions_by_placeholder_line <- Int.Map.empty;
   Printcmm.phrase' ~no_debuginfo:() t.ppf phrase;
   Format.pp_print_flush t.ppf ();
   Cmm.map_debuginfo_phrase phrase ~f:(fun dbg ->

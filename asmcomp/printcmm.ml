@@ -290,7 +290,8 @@ let rec expr ~print_dbg ppf = function
   | Cloop (e, _) ->
       fprintf ppf "@[<2>(loop@ %a)@]" (sequence ~print_dbg) e
   | Ccatch(flag, handlers, e1) ->
-      let print_handler ppf (i, ids, e2, _) =
+      let print_handler ppf (i, ids, e2, handler_dbg) =
+        mark_start_location ppf handler_dbg;
         fprintf ppf "(%d%a)@ %a"
           i
           (fun ppf ids ->
@@ -299,7 +300,8 @@ let rec expr ~print_dbg ppf = function
                  fprintf ppf "@ %a: %a"
                    VP.print id machtype ty)
                ids) ids
-          (sequence ~print_dbg) e2
+          (sequence ~print_dbg) e2;
+        mark_end_location ppf handler_dbg
       in
       let print_handlers ppf l =
         List.iter (print_handler ppf) l
