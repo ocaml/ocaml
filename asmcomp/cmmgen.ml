@@ -3557,14 +3557,13 @@ CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
 *)
 
 let cache_public_method meths tag cache dbg =
-  let dbg = placeholder_dbg in
   let raise_num = next_raise_count () in
-  let li = V.create_local "li" and hi = V.create_local "hi"
-  and mi = V.create_local "mi" and tagged = V.create_local "tagged" in
+  let li = V.create_local "*li*" and hi = V.create_local "*hi*"
+  and mi = V.create_local "*mi*" and tagged = V.create_local "*tagged*" in
   Clet (
   VP.create li, Cconst_int 3,
   Clet (
-  VP.create hi, Cop(Cload (Word_int, Mutable), [meths], dbg ()),
+  VP.create hi, Cop(Cload (Word_int, Mutable), [meths], dbg),
   Csequence(
   ccatch
     (raise_num, [],
@@ -3572,35 +3571,35 @@ let cache_public_method meths tag cache dbg =
        (Clet(
         VP.create mi,
         Cop(Cor,
-            [Cop(Clsr, [Cop(Caddi, [Cvar li; Cvar hi], dbg ()); Cconst_int 1],
-               dbg ());
+            [Cop(Clsr, [Cop(Caddi, [Cvar li; Cvar hi], dbg); Cconst_int 1],
+               dbg);
              Cconst_int 1],
-            dbg ()),
+            dbg),
         Csequence(
         Cifthenelse
           (Cop (Ccmpi Clt,
                 [tag;
                  Cop(Cload (Word_int, Mutable),
                      [Cop(Cadda,
-                          [meths; lsl_const (Cvar mi) log2_size_addr dbg ()],
-                          dbg ())],
-                     dbg ())], dbg ()),
-          dbg (), Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2], dbg ())),
-          dbg (), Cassign(li, Cvar mi),
-          dbg ()),
+                          [meths; lsl_const (Cvar mi) log2_size_addr dbg],
+                          dbg)],
+                     dbg)], dbg),
+          dbg, Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2], dbg)),
+          dbg, Cassign(li, Cvar mi),
+          dbg),
         Cifthenelse
-          (Cop(Ccmpi Cge, [Cvar li; Cvar hi], dbg ()),
-           dbg (), Cexit (raise_num, []),
-           dbg (), Ctuple [],
-           dbg ()))),
-       dbg ()),
+          (Cop(Ccmpi Cge, [Cvar li; Cvar hi], dbg),
+           dbg, Cexit (raise_num, []),
+           dbg, Ctuple [],
+           dbg))),
+       dbg),
      Ctuple [],
-     dbg ()),
+     dbg),
   Clet (
     VP.create tagged,
-      Cop(Cadda, [lsl_const (Cvar li) log2_size_addr dbg ();
-        Cconst_int(1 - 3 * size_addr)], dbg ()),
-    Csequence(Cop (Cstore (Word_int, Assignment), [cache; Cvar tagged], dbg ()),
+      Cop(Cadda, [lsl_const (Cvar li) log2_size_addr dbg;
+        Cconst_int(1 - 3 * size_addr)], dbg),
+    Csequence(Cop (Cstore (Word_int, Assignment), [cache; Cvar tagged], dbg),
               Cvar tagged)))))
 
 (* Generate an application function:
@@ -3623,13 +3622,13 @@ let apply_function_body arity =
   let rec app_fun clos n =
     if n = arity-1 then
       Cop(Capply typ_val,
-          [get_field env (Cvar clos) 0 dbg (); Cvar arg.(n); Cvar clos],
+          [get_field env (Cvar clos) 0 (dbg ()); Cvar arg.(n); Cvar clos],
           dbg ())
     else begin
       let newclos = V.create_local "clos" in
       Clet(VP.create newclos,
            Cop(Capply typ_val,
-               [get_field env (Cvar clos) 0 dbg (); Cvar arg.(n); Cvar clos],
+               [get_field env (Cvar clos) 0 (dbg ()); Cvar arg.(n); Cvar clos],
                dbg ()),
            app_fun newclos (n+1))
     end in
@@ -3639,10 +3638,10 @@ let apply_function_body arity =
    if arity = 1 then app_fun clos 0 else
    Cifthenelse(
    Cop(Ccmpi Ceq,
-     [get_field env (Cvar clos) 1 dbg (); int_const arity], dbg ()),
+     [get_field env (Cvar clos) 1 (dbg ()); int_const arity], dbg ()),
    dbg (),
    Cop(Capply typ_val,
-       get_field env (Cvar clos) 2 dbg ()
+       get_field env (Cvar clos) 2 (dbg ())
          :: List.map (fun s -> Cvar s) all_args,
        dbg ()),
    dbg (),
@@ -3660,7 +3659,7 @@ let send_function arity =
     let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
     let meths = V.create_local "meths" and cached = V.create_local "cached" in
     let real = V.create_local "real" in
-    let mask = get_field env (Cvar meths) 1 dbg () in
+    let mask = get_field env (Cvar meths) 1 (dbg ()) in
     let cached_pos = Cvar cached in
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg ());
                               Cconst_int(3*size_addr-1)], dbg ()) in
@@ -3675,7 +3674,7 @@ let send_function arity =
     VP.create real,
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag], dbg ()),
                 dbg (),
-                cache_public_method (Cvar meths) tag cache dbg (),
+                cache_public_method (Cvar meths) tag cache (dbg ()),
                 dbg (),
                 cached_pos,
                 dbg ()),
@@ -3728,13 +3727,14 @@ let tuplify_function arity =
   let rec access_components i =
     if i >= arity
     then []
-    else get_field env (Cvar arg) i dbg () :: access_components(i+1) in
+    else get_field env (Cvar arg) i (dbg ()) :: access_components(i+1) in
   Cfunction
    {fun_name;
     fun_args = [VP.create arg, typ_val; VP.create clos, typ_val];
     fun_body =
       Cop(Capply typ_val,
-          get_field env (Cvar clos) 2 dbg () :: access_components 0 @ [Cvar clos],
+          get_field env (Cvar clos) 2 (dbg ())
+            :: access_components 0 @ [Cvar clos],
           dbg ());
     fun_codegen_options = [];
     fun_dbg = dbg ();
@@ -3772,14 +3772,14 @@ let tuplify_function arity =
 
 let max_arity_optimized = 15
 let final_curry_function arity =
-  let dbg () = placeholder_dbg in
+  let dbg = placeholder_dbg in
   let last_arg = V.create_local "arg" in
   let last_clos = V.create_local "clos" in
   let env = empty_env in
   let rec curry_fun args clos n =
     if n = 0 then
       Cop(Capply typ_val,
-          get_field env (Cvar clos) 2 dbg () ::
+          get_field env (Cvar clos) 2 (dbg ()) ::
             args @ [Cvar last_arg; Cvar clos],
           dbg ())
     else
@@ -3787,14 +3787,15 @@ let final_curry_function arity =
         begin
       let newclos = V.create_local "clos" in
       Clet(VP.create newclos,
-           get_field env (Cvar clos) 3 dbg (),
-           curry_fun (get_field env (Cvar clos) 2 dbg () :: args) newclos (n-1))
+           get_field env (Cvar clos) 3 (dbg ()),
+           curry_fun (get_field env (Cvar clos) 2 (dbg ()) :: args)
+             newclos (n-1))
         end else
         begin
           let newclos = V.create_local "clos" in
           Clet(VP.create newclos,
-               get_field env (Cvar clos) 4 dbg (),
-               curry_fun (get_field env (Cvar clos) 3 dbg () :: args)
+               get_field env (Cvar clos) 4 (dbg ()),
+               curry_fun (get_field env (Cvar clos) 3 (dbg ()) :: args)
                          newclos (n-1))
     end in
   let fun_name = caml_curry_m_to_n arity (arity - 1) in
@@ -3809,7 +3810,7 @@ let final_curry_function arity =
    }
 
 let rec intermediate_curry_functions arity num =
-  let dbg () = placeholder_dbg in
+  let dbg = placeholder_dbg in
   let env = empty_env in
   if num = arity - 1 then
     [final_curry_function arity]
@@ -3859,7 +3860,7 @@ let rec intermediate_curry_functions arity num =
             else
               let newclos = V.create_local "clos" in
               Clet(VP.create newclos,
-                   get_field env (Cvar clos) 4 dbg (),
+                   get_field env (Cvar clos) 4 (dbg ()),
                    iter (i-1) (get_field env (Cvar clos) 3 (dbg ()) :: args)
                      newclos)
           in
@@ -3891,8 +3892,6 @@ let curry_function arity =
   if arity > 0
   then intermediate_curry_functions arity 0
   else [tuplify_function (-arity)]
-
-module Int = Numbers.Int
 
 let default_apply = Int.Set.add 2 (Int.Set.add 3 Int.Set.empty)
   (* These apply funs are always present in the main program because

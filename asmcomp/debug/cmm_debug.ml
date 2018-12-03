@@ -14,12 +14,14 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+module Int = Numbers.Int
+
 type t = {
   startup_cmm_file : string;
   ppf : Format.formatter;
   mutable current_pos : Lexing.position;
-  mutable start_positions_by_placeholder_line : Lexing.position Int.Map.empty;
-  mutable end_positions_by_placeholder_line : Lexing.position Int.Map.empty;
+  mutable start_positions_by_placeholder_line : Lexing.position Int.Map.t;
+  mutable end_positions_by_placeholder_line : Lexing.position Int.Map.t;
 }
 
 let track_output_position_of_formatter t =
@@ -33,13 +35,19 @@ let track_output_position_of_formatter t =
     }
   in
   let current_pos = ref empty_position in
-  let { out_string; out_flush; out_newline; out_spaces; out_indent; } =
-    Format.pp_get_formatter_out_functions ppf
+  let { Format. out_string; out_flush; out_newline; out_spaces; out_indent; } =
+    Format.pp_get_formatter_out_functions ppf ()
   in
   let out_string str start_pos num_chars =
     let substr = String.sub str start_pos num_chars in
     assert (not (String.contains substr '\n'));
-    current_char := !current_char + num_chars;
+    let old_pos = !current_pos in
+    let new_pos : Lexing.position =
+      { old_pos with
+        pos_cnum = old_pos.pos_cnum + num_chars;
+      }
+    in
+    current_pos := new_pos;
     out_string str start_pos num_chars
   in
   let out_newline () =
@@ -85,26 +93,31 @@ let track_output_position_of_formatter t =
   Format.pp_set_formatter_out_functions ppf out_functions
 
 let intercept_cmm_location_tags_on_formatter t =
-  let tag_functions = Format.pp_get_formatter_tag_functions ppf in
+  let ppf = t.ppf in
+  let stag_functions = Format.pp_get_formatter_stag_functions ppf () in
   let start_positions = ref Int.Map.empty in
   let end_positions = ref Int.Map.empty in
-  let print_open_tag tag =
-    match Printcmm.parse_placeholder_line_start_tag tag with
-    | None -> tag_functions.print_open_tag tag
-    | Some line -> start_positions := Int.Map.add line !current_pos
+  let print_open_stag stag =
+    match Printcmm.parse_placeholder_line_start_tag stag with
+    | None -> stag_functions.print_open_stag stag
+    | Some line ->
+      t.start_positions_by_placeholder_line
+        <- Int.Map.add line t.current_pos t.start_positions_by_placeholder_line
   in
-  let print_close_tag tag =
-    match Printcmm.parse_placeholder_line_end_tag tag with
-    | None -> tag_functions.print_close_tag tag
-    | Some line -> end_positions := Int.Map.add line !current_pos
+  let print_close_stag stag =
+    match Printcmm.parse_placeholder_line_end_tag stag with
+    | None -> stag_functions.print_close_stag stag
+    | Some line ->
+      t.end_positions_by_placeholder_line
+        <- Int.Map.add line t.current_pos t.end_positions_by_placeholder_line
   in
-  let tag_functions =
-    { tag_functions with
-      print_open_tag;
-      print_close_tag;
+  let stag_functions =
+    { stag_functions with
+      print_open_stag;
+      print_close_stag;
     }
   in
-  Format.pp_set_formatter_tag_functions ppf tag_functions
+  Format.pp_set_formatter_stag_functions ppf stag_functions
 
 let create ~startup_cmm_file ~startup_cmm_chan =
   let ppf = Format.formatter_of_out_channel startup_cmm_chan in
@@ -121,7 +134,7 @@ let create ~startup_cmm_file ~startup_cmm_chan =
   t
 
 let write_cmm_to_channel_and_fix_up_debuginfo t phrase =
-  Printcmm.phrase ?no_debuginfo:() t.ppf phrase;
+  Printcmm.phrase ~no_debuginfo:() t.ppf phrase;
   Format.pp_print_flush t.ppf ();
   Cmm.map_debuginfo_phrase phrase ~f:(fun dbg ->
     match Debuginfo.position dbg with

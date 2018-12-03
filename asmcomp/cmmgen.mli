@@ -23,15 +23,14 @@ val compunit:
     * Clambda.preallocated_constant list
   -> Cmm.phrase list
 
-val apply_function: startup_cmm_file:string -> int -> Cmm.phrase
-val send_function: startup_cmm_file:string -> int -> Cmm.phrase
-val curry_function: startup_cmm_file:string -> int -> Cmm.phrase list
+val apply_function: int -> Cmm.phrase
+val send_function: int -> Cmm.phrase
+val curry_function: int -> Cmm.phrase list
 val generic_functions
-   : startup_cmm_file:string
-  -> bool
+   : bool
   -> Cmx_format.unit_infos list
   -> Cmm.phrase list
-val entry_point: startup_cmm_file:string -> string list -> Cmm.phrase
+val entry_point: string list -> Cmm.phrase
 val global_table: string list -> Cmm.phrase
 val reference_symbols: string list -> Cmm.phrase
 val globals_map: (string * Digest.t * Digest.t * string list) list ->

@@ -310,12 +310,10 @@ type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
 
-let map_debuginfo_phrases phrases ~f =
-  List.map (fun phrase ->
-      match phrase with
-      | Cfunction fundecl -> Cfunction (map_debuginfo_fundecl fundecl ~f)
-      | Cdata _ -> phrase)
-    phrases
+let map_debuginfo_phrase phrase ~f =
+  match phrase with
+  | Cfunction fundecl -> Cfunction (map_debuginfo_fundecl fundecl ~f)
+  | Cdata _ -> phrase
 
 let ccatch (i, ids, e1, e2, loc) =
   Ccatch(Nonrecursive, [i, ids, e2, loc], e1)
