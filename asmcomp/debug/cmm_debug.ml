@@ -140,6 +140,7 @@ let write_cmm_to_channel_and_fix_up_debuginfo t phrase =
   t.start_positions_by_placeholder_line <- Int.Map.empty;
   t.end_positions_by_placeholder_line <- Int.Map.empty;
   Printcmm.phrase' ~no_debuginfo:() t.ppf phrase;
+  Format.pp_print_newline t.ppf ();
   Format.pp_print_flush t.ppf ();
   Cmm.map_debuginfo_phrase phrase ~f:(fun dbg ->
     match Debuginfo.position dbg with
