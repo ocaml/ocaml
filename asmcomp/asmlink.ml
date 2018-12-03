@@ -217,7 +217,6 @@ let compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase =
   Asmgen.compile_phrase ~ppf_dump ~dwarf phrase
 
 let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units_list =
-  let compile_phrase = compile_phrase_with_cmm_debug cmm_debug in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset "_startup";
   (* set the name of the "current" compunit *)
@@ -226,7 +225,9 @@ let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units_list =
     | None -> None
     | Some _ -> Some (Dwarf.create ~prefix_name:dwarf_prefix_name)
   in
-  let compile_phrase p = Asmgen.compile_phrase ~ppf_dump ~dwarf p in
+  let compile_phrase phrase =
+    compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase
+  in
   Emit.begin_assembly ();
   let name_list =
     List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
@@ -262,7 +263,6 @@ let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units_list =
   Emit.end_assembly dwarf
 
 let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units =
-  let compile_phrase = compile_phrase_with_cmm_debug cmm_debug in
   Location.input_name := "caml_startup";
   Compilenv.reset "_shared_startup";
   let dwarf =
@@ -270,7 +270,9 @@ let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units =
     | None -> None
     | Some _ -> Some (Dwarf.create ~prefix_name:dwarf_prefix_name)
   in
-  let compile_phrase p = Asmgen.compile_phrase ~ppf_dump ~dwarf p in
+  let compile_phrase phrase =
+    compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase
+  in
   Emit.begin_assembly ();
   List.iter compile_phrase
     (Cmmgen.generic_functions true (List.map fst units));
@@ -286,7 +288,7 @@ let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units =
 
 let create_cmm_debug ~dwarf_prefix_name =
   match !Clflags.debug_full with
-  | None -> ()
+  | None -> None
   | Some _ ->
     let startup_cmm_file = dwarf_prefix_name ^ ".cmm" in
     let startup_cmm_chan = open_out startup_cmm_file in
@@ -334,7 +336,7 @@ let link_shared ~ppf_dump objfiles output_name =
       ~exceptionally:(fun () ->
         match cmm_debug with
         | None -> ()
-        | Some (cmm_debug, startup_cmm_file, startup_cmm_chan) ->
+        | Some (_cmm_debug, startup_cmm_file, startup_cmm_chan) ->
           close_out startup_cmm_chan;
           remove_file startup_cmm_file);
     Misc.try_finally
@@ -415,7 +417,7 @@ let link ~ppf_dump objfiles output_name =
       ~exceptionally:(fun () ->
         match cmm_debug with
         | None -> ()
-        | Some (cmm_debug, startup_cmm_file, startup_cmm_chan) ->
+        | Some (_cmm_debug, startup_cmm_file, startup_cmm_chan) ->
           close_out startup_cmm_chan;
           remove_file startup_cmm_file);
     Misc.try_finally

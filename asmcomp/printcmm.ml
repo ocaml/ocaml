@@ -364,7 +364,7 @@ let data ppf dl =
   let items ppf = List.iter (fun d -> fprintf ppf "@ %a" data_item d) dl in
   fprintf ppf "@[<hv 1>(data%t)@]" items
 
-let phrase ?no_debuginfo ppf = function
+let phrase' ?no_debuginfo ppf = function
   | Cfunction f ->
       begin match no_debuginfo with
       | None -> fundecl ~print_dbg:true ppf f
@@ -372,8 +372,10 @@ let phrase ?no_debuginfo ppf = function
       end
   | Cdata dl -> data ppf dl
 
-let operation op = operation ~print_dbg:true op
+let operation ppf op = operation ~print_dbg:true ppf op
 
-let expression expr = expression ~print_dbg:true expr
+let expression ppf expr = expression ~print_dbg:true ppf expr
 
-let fundecl decl = fundecl ~print_dbg:true decl
+let fundecl ppf decl = fundecl ~print_dbg:true ppf decl
+
+let phrase ppf cmm_phrase = phrase' ?no_debuginfo:None ppf cmm_phrase

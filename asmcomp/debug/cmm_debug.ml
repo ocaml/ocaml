@@ -95,8 +95,6 @@ let track_output_position_of_formatter t =
 let intercept_cmm_location_tags_on_formatter t =
   let ppf = t.ppf in
   let stag_functions = Format.pp_get_formatter_stag_functions ppf () in
-  let start_positions = ref Int.Map.empty in
-  let end_positions = ref Int.Map.empty in
   let print_open_stag stag =
     match Printcmm.parse_placeholder_line_start_tag stag with
     | None -> stag_functions.print_open_stag stag
@@ -134,7 +132,7 @@ let create ~startup_cmm_file ~startup_cmm_chan =
   t
 
 let write_cmm_to_channel_and_fix_up_debuginfo t phrase =
-  Printcmm.phrase ~no_debuginfo:() t.ppf phrase;
+  Printcmm.phrase' ~no_debuginfo:() t.ppf phrase;
   Format.pp_print_flush t.ppf ();
   Cmm.map_debuginfo_phrase phrase ~f:(fun dbg ->
     match Debuginfo.position dbg with
