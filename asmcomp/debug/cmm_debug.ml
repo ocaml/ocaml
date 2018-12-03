@@ -27,14 +27,6 @@ type t = {
 let track_output_position_of_formatter t =
   let ppf = t.ppf in
   Format.pp_set_margin ppf 80;
-  let empty_position : Lexing.position =
-    { pos_fname = "";
-      pos_lnum = 1;
-      pos_bol = 0;
-      pos_cnum = 1;
-    }
-  in
-  let current_pos = ref empty_position in
   let { Format. out_string; out_flush; out_newline; out_spaces; out_indent; } =
     Format.pp_get_formatter_out_functions ppf ()
   in
@@ -45,18 +37,18 @@ let track_output_position_of_formatter t =
         incr num_newlines
       end
     done;
-    let old_pos = !current_pos in
+    let old_pos = t.current_pos in
     let new_pos : Lexing.position =
       { old_pos with
         pos_lnum = old_pos.pos_lnum + !num_newlines;
         pos_cnum = old_pos.pos_cnum + num_chars;
       }
     in
-    current_pos := new_pos;
+    t.current_pos <- new_pos;
     out_string str start_pos num_chars
   in
   let out_newline () =
-    let old_pos = !current_pos in
+    let old_pos = t.current_pos in
     let new_pos : Lexing.position =
       { old_pos with
         pos_lnum = old_pos.pos_lnum + 1;
@@ -64,27 +56,27 @@ let track_output_position_of_formatter t =
         pos_cnum = old_pos.pos_cnum + 1;
       }
     in
-    current_pos := new_pos;
+    t.current_pos <- new_pos;
     out_newline ()
   in
   let out_spaces num_spaces =
-    let old_pos = !current_pos in
+    let old_pos = t.current_pos in
     let new_pos : Lexing.position =
       { old_pos with
         pos_cnum = old_pos.pos_cnum + num_spaces;
       }
     in
-    current_pos := new_pos;
+    t.current_pos <- new_pos;
     out_spaces num_spaces
   in
   let out_indent num_spaces =
-    let old_pos = !current_pos in
+    let old_pos = t.current_pos in
     let new_pos : Lexing.position =
       { old_pos with
         pos_cnum = old_pos.pos_cnum + num_spaces;
       }
     in
-    current_pos := new_pos;
+    t.current_pos <- new_pos;
     out_indent num_spaces
   in
   let out_functions : Format.formatter_out_functions =
@@ -139,7 +131,12 @@ let create ~startup_cmm_file ~startup_cmm_chan =
   t
 
 let write_cmm_to_channel_and_fix_up_debuginfo t phrase =
-  t.current_pos <- Lexing.dummy_pos;
+  t.current_pos <-
+    { pos_fname = t.startup_cmm_file;
+      pos_lnum = 1;
+      pos_bol = 0;
+      pos_cnum = 1;
+    };
   t.start_positions_by_placeholder_line <- Int.Map.empty;
   t.end_positions_by_placeholder_line <- Int.Map.empty;
   Printcmm.phrase' ~no_debuginfo:() t.ppf phrase;

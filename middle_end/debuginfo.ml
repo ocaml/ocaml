@@ -31,8 +31,10 @@ module Code_range = struct
 
   let create ~file ~line ~char_start ~char_end =
     if line < 0 || char_start < 0 then begin
-      Misc.fatal_error "Bad line or starting char for \
-        [Debuginfo.Code_range.create]"
+      Misc.fatal_errorf "Bad line (%d) or starting char (%d) for \
+          [Debuginfo.Code_range.create]"
+        line
+        char_start
     end;
     { file;
       line;
