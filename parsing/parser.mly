@@ -99,8 +99,11 @@ let reloc_typ ~loc x =
   { x with ptyp_loc = make_loc loc;
            ptyp_loc_stack = push_loc x.ptyp_loc x.ptyp_loc_stack };;
 
-let mkoperator ~loc name =
+let mkexpvar ~loc (name : string) =
   mkexp ~loc (Pexp_ident(mkrhs (Lident name) loc))
+
+let mkoperator =
+  mkexpvar
 
 let mkpatvar ~loc name =
   mkpat ~loc (Ppat_var (mkrhs name loc))
@@ -314,15 +317,21 @@ let lapply ~loc p1 p2 =
 let exp_of_longident ~loc lid =
   mkexp ~loc (Pexp_ident {lid with txt = Lident(Longident.last lid.txt)})
 
+(* [loc_map] could be [Location.map]. *)
+let loc_map (f : 'a -> 'b) (x : 'a Location.loc) : 'b Location.loc =
+  { x with txt = f x.txt }
+
+let loc_last (id : Longident.t Location.loc) : string Location.loc =
+  loc_map Longident.last id
+
+let loc_lident (id : string Location.loc) : Longident.t Location.loc =
+  loc_map (fun x -> Lident x) id
+
 let exp_of_label ~loc lbl =
-  mkexp ~loc (Pexp_ident lbl)
+  mkexp ~loc (Pexp_ident (loc_lident lbl))
 
 let pat_of_label ~loc lbl =
-  mkpat ~loc (Ppat_var lbl)
-
-(* [loc_last] could be defined as [Location.map Longident.last]. *)
-let loc_last (id : Longident.t Location.loc) : string Location.loc =
-  { id with txt = Longident.last id.txt }
+  mkpat ~loc (Ppat_var (loc_last lbl))
 
 let mk_newtypes ~loc newtypes exp =
   let mkexp = mkexp ~loc in
@@ -2137,8 +2146,6 @@ expr:
       { unclosed "object" $loc($1) "end" $loc($4) }
 ;
 %inline expr_:
-  | expr_op
-      { $1 }
   | simple_expr nonempty_llist(labeled_simple_expr)
       { Pexp_apply($1, $2) }
   | expr_comma_list %prec below_COMMA
@@ -2147,48 +2154,8 @@ expr:
       { Pexp_construct($1, Some $2) }
   | name_tag simple_expr %prec below_HASH
       { Pexp_variant($1, Some $2) }
-;
-%inline expr_op:
-  | expr op(INFIXOP0) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(INFIXOP1) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(INFIXOP2) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(INFIXOP3) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(INFIXOP4) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(PLUS {"+"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(PLUSDOT {"+."}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(PLUSEQ {"+="}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(MINUS {"-"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(MINUSDOT {"-."}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(STAR {"*"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(PERCENT {"%"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(EQUAL {"="}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(LESS {"<"}) expr
-    { mkinfix $1 $2 $3 }
-  | expr op(GREATER {">"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(OR {"or"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(BARBAR {"||"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(AMPERSAND {"&"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(AMPERAMPER {"&&"}) expr
-      { mkinfix $1 $2 $3 }
-  | expr op(COLONEQUAL {":="}) expr
-      { mkinfix $1 $2 $3 }
+  | e1 = expr op = op(infix_operator) e2 = expr
+      { mkinfix e1 op e2 }
   | subtractive expr %prec prec_unary_minus
       { mkuminus ~oploc:$loc($1) $1 $2 }
   | additive expr %prec prec_unary_plus
@@ -2276,9 +2243,9 @@ simple_expr:
       { Pexp_apply($1, [Nolabel,$2]) }
   | op(BANG {"!"}) simple_expr
       { Pexp_apply($1, [Nolabel,$2]) }
-  | LBRACELESS field_expr_list GREATERRBRACE
+  | LBRACELESS object_expr_content GREATERRBRACE
       { Pexp_override $2 }
-  | LBRACELESS field_expr_list error
+  | LBRACELESS object_expr_content error
       { unclosed "{<" $loc($1) ">}" $loc($3) }
   | LBRACELESS GREATERRBRACE
       { Pexp_override [] }
@@ -2286,10 +2253,10 @@ simple_expr:
       { Pexp_field($1, $3) }
   | od=open_dot_declaration DOT LPAREN seq_expr RPAREN
       { Pexp_open(od, $4) }
-  | od=open_dot_declaration DOT LBRACELESS field_expr_list GREATERRBRACE
+  | od=open_dot_declaration DOT LBRACELESS object_expr_content GREATERRBRACE
       { (* TODO: review the location of Pexp_override *)
         Pexp_open(od, mkexp ~loc:$sloc (Pexp_override $4)) }
-  | mod_longident DOT LBRACELESS field_expr_list error
+  | mod_longident DOT LBRACELESS object_expr_content error
       { unclosed "{<" $loc($3) ">}" $loc($5) }
   | simple_expr HASH mkrhs(label)
       { Pexp_send($1, $3) }
@@ -2302,16 +2269,16 @@ simple_expr:
         Pexp_open(od, mkexp ~loc:$sloc (Pexp_construct($3, None))) }
   | mod_longident DOT LPAREN seq_expr error
       { unclosed "(" $loc($3) ")" $loc($5) }
-  | LBRACE record_expr RBRACE
+  | LBRACE record_expr_content RBRACE
       { let (exten, fields) = $2 in
         Pexp_record(fields, exten) }
-  | LBRACE record_expr error
+  | LBRACE record_expr_content error
       { unclosed "{" $loc($1) "}" $loc($3) }
-  | od=open_dot_declaration DOT LBRACE record_expr RBRACE
+  | od=open_dot_declaration DOT LBRACE record_expr_content RBRACE
       { let (exten, fields) = $4 in
         (* TODO: review the location of Pexp_construct *)
         Pexp_open(od, mkexp ~loc:$sloc (Pexp_record(fields, exten))) }
-  | mod_longident DOT LBRACE record_expr error
+  | mod_longident DOT LBRACE record_expr_content error
       { unclosed "{" $loc($3) "}" $loc($5) }
   | LBRACKETBAR expr_semi_list BARRBRACKET
       { Pexp_array($2) }
@@ -2358,22 +2325,16 @@ simple_expr:
 labeled_simple_expr:
     simple_expr %prec below_HASH
       { (Nolabel, $1) }
-  | label_expr
-      { $1 }
-;
-label_expr:
-    LABEL simple_expr %prec below_HASH
+  | LABEL simple_expr %prec below_HASH
       { (Labelled $1, $2) }
-  | TILDE label_ident
-      { (Labelled (fst $2), snd $2) }
-  | QUESTION label_ident
-      { (Optional (fst $2), snd $2) }
+  | TILDE label = LIDENT
+      { let loc = $loc(label) in
+        (Labelled label, mkexpvar ~loc label) }
+  | QUESTION label = LIDENT
+      { let loc = $loc(label) in
+        (Optional label, mkexpvar ~loc label) }
   | OPTLABEL simple_expr %prec below_HASH
       { (Optional $1, $2) }
-;
-%inline label_ident:
-    LIDENT
-      { ($1, mkexp ~loc:$sloc (Pexp_ident(mkrhs (Lident $1) $sloc))) }
 ;
 %inline lident_list:
   xs = mkrhs(LIDENT)+
@@ -2511,31 +2472,41 @@ fun_def:
   es = separated_nontrivial_llist(COMMA, expr)
     { es }
 ;
-record_expr:
-    simple_expr WITH lbl_expr_list              { (Some $1, $3) }
-  | lbl_expr_list                               { (None, $1) }
+record_expr_content:
+  eo = ioption(terminated(simple_expr, WITH))
+  fields = separated_or_terminated_nonempty_list(SEMI, record_expr_field)
+    { eo, fields }
 ;
-%inline lbl_expr_list:
-  xs = separated_or_terminated_nonempty_list(SEMI, lbl_expr)
+%inline record_expr_field:
+  | label = mkrhs(label_longident)
+    c = type_constraint?
+    eo = preceded(EQUAL, expr)?
+      { let e =
+          match eo with
+          | None ->
+              (* No pattern; this is a pun. Desugar it. *)
+              exp_of_longident ~loc:$sloc label
+          | Some e ->
+              e
+        in
+        label, mkexp_opt_constraint ~loc:$sloc e c }
+;
+%inline object_expr_content:
+  xs = separated_or_terminated_nonempty_list(SEMI, object_expr_field)
     { xs }
 ;
-lbl_expr:
-    mkrhs(label_longident) type_constraint? EQUAL expr
-      { ($1, mkexp_opt_constraint ~loc:$sloc $4 $2) }
-  | mkrhs(label_longident) type_constraint?
-      { ($1,
-         mkexp_opt_constraint ~loc:$sloc
-           (exp_of_longident ~loc:$sloc $1) $2) }
-;
-%inline field_expr_list:
-  xs = separated_or_terminated_nonempty_list(SEMI, field_expr)
-    { xs }
-;
-field_expr:
-    mkrhs(label) EQUAL expr
-      { ($1, $3) }
-  | mkrhs(label)
-      { ($1, exp_of_label ~loc:$sloc {$1 with txt = Lident $1.txt}) }
+%inline object_expr_field:
+    label = mkrhs(label)
+    oe = preceded(EQUAL, expr)?
+      { let e =
+          match oe with
+          | None ->
+              (* No expression; this is a pun. Desugar it. *)
+              exp_of_label ~loc:$sloc label
+          | Some e ->
+              e
+        in
+        label, e }
 ;
 %inline expr_semi_list:
   es = separated_or_terminated_nonempty_list(SEMI, expr)
@@ -2680,10 +2651,10 @@ simple_pattern_not_ident:
 
 simple_delimited_pattern:
   mkpat(
-      LBRACE lbl_pattern_list RBRACE
+      LBRACE record_pat_content RBRACE
       { let (fields, closed) = $2 in
         Ppat_record(fields, closed) }
-    | LBRACE lbl_pattern_list error
+    | LBRACE record_pat_content error
       { unclosed "{" $loc($1) "}" $loc($3) }
     | LBRACKET pattern_semi_list RBRACKET
       { fst (mktailpat $loc($3) $2) }
@@ -2708,13 +2679,13 @@ pattern_comma_list(self):
 ;
 (* A label-pattern list is a nonempty list of label-pattern pairs, optionally
    followed with an UNDERSCORE, separated-or-terminated with semicolons. *)
-%inline lbl_pattern_list:
-  listx(SEMI, lbl_pattern, UNDERSCORE)
+%inline record_pat_content:
+  listx(SEMI, record_pat_field, UNDERSCORE)
     { let fields, closed = $1 in
       let closed = match closed with Some () -> Open | None -> Closed in
       fields, closed }
 ;
-%inline lbl_pattern:
+%inline record_pat_field:
   label = mkrhs(label_longident)
   octy = preceded(COLON, core_type)?
   opat = preceded(EQUAL, pattern)?
@@ -2722,7 +2693,7 @@ pattern_comma_list(self):
         match opat with
         | None ->
             (* No pattern; this is a pun. Desugar it. *)
-            pat_of_label ~loc:$sloc (loc_last label)
+            pat_of_label ~loc:$sloc label
         | Some pat ->
             pat
       in
@@ -3380,11 +3351,6 @@ val_ident:
 ;
 operator:
     PREFIXOP                                    { $1 }
-  | INFIXOP0                                    { $1 }
-  | INFIXOP1                                    { $1 }
-  | INFIXOP2                                    { $1 }
-  | INFIXOP3                                    { $1 }
-  | INFIXOP4                                    { $1 }
   | LETOP                                       { $1 }
   | ANDOP                                       { $1 }
   | DOTOP LPAREN RPAREN                         { "."^ $1 ^"()" }
@@ -3395,21 +3361,29 @@ operator:
   | DOTOP LBRACE RBRACE LESSMINUS               { "."^ $1 ^ "{}<-" }
   | HASHOP                                      { $1 }
   | BANG                                        { "!" }
-  | PLUS                                        { "+" }
-  | PLUSDOT                                     { "+." }
-  | MINUS                                       { "-" }
-  | MINUSDOT                                    { "-." }
-  | STAR                                        { "*" }
-  | EQUAL                                       { "=" }
-  | LESS                                        { "<" }
-  | GREATER                                     { ">" }
-  | OR                                          { "or" }
-  | BARBAR                                      { "||" }
-  | AMPERSAND                                   { "&" }
-  | AMPERAMPER                                  { "&&" }
-  | COLONEQUAL                                  { ":=" }
-  | PLUSEQ                                      { "+=" }
-  | PERCENT                                     { "%" }
+  | infix_operator                              { $1 }
+;
+%inline infix_operator:
+  | op = INFIXOP0 { op }
+  | op = INFIXOP1 { op }
+  | op = INFIXOP2 { op }
+  | op = INFIXOP3 { op }
+  | op = INFIXOP4 { op }
+  | PLUS           {"+"}
+  | PLUSDOT       {"+."}
+  | PLUSEQ        {"+="}
+  | MINUS          {"-"}
+  | MINUSDOT      {"-."}
+  | STAR           {"*"}
+  | PERCENT        {"%"}
+  | EQUAL          {"="}
+  | LESS           {"<"}
+  | GREATER        {">"}
+  | OR            {"or"}
+  | BARBAR        {"||"}
+  | AMPERSAND      {"&"}
+  | AMPERAMPER    {"&&"}
+  | COLONEQUAL    {":="}
 ;
 constr_ident:
     UIDENT                                      { $1 }
