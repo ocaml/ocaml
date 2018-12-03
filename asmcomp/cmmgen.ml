@@ -3695,7 +3695,7 @@ let send_function arity =
     fun_args = List.map (fun (arg, ty) -> VP.create arg, ty) fun_args;
     fun_body = body;
     fun_codegen_options = [];
-    fun_dbg ()  = Debuginfo.none;
+    fun_dbg = dbg ();
     fun_human_name = S.to_string fun_name;
     fun_module_path = startup_path;
    }
