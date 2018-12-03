@@ -89,12 +89,12 @@ let intercept_cmm_location_tags_on_formatter t =
   let start_positions = ref Int.Map.empty in
   let end_positions = ref Int.Map.empty in
   let print_open_tag tag =
-    match Printcmm.parse_line_tag tag with
+    match Printcmm.parse_placeholder_line_start_tag tag with
     | None -> tag_functions.print_open_tag tag
     | Some line -> start_positions := Int.Map.add line !current_pos
   in
   let print_close_tag tag =
-    match Printcmm.parse_line_tag tag with
+    match Printcmm.parse_placeholder_line_end_tag tag with
     | None -> tag_functions.print_close_tag tag
     | Some line -> end_positions := Int.Map.add line !current_pos
   in

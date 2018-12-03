@@ -29,4 +29,5 @@ val fundecl : formatter -> Cmm.fundecl -> unit
 val data : formatter -> Cmm.data_item list -> unit
 val phrase : ?no_debuginfo:unit -> formatter -> Cmm.phrase -> unit
 val raise_kind: formatter -> Cmm.raise_kind -> unit
-val parse_line_tag : Format.tag -> int option
+val parse_placeholder_line_start_tag : Format.stag -> int option
+val parse_placeholder_line_end_tag : Format.stag -> int option

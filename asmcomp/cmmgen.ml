@@ -3722,7 +3722,6 @@ let apply_function arity =
 let tuplify_function arity =
   let dbg = placeholder_dbg in
   let fun_name = caml_tuplify arity in
-  let dbg () = Debuginfo.none in
   let arg = V.create_local "arg" in
   let clos = V.create_local "clos" in
   let env = empty_env in
@@ -3826,7 +3825,7 @@ let rec intermediate_curry_functions arity num =
       fun_body =
          if arity - num > 2 && arity <= max_arity_optimized then
            Cop(Calloc,
-               [alloc_closure_header 5 Debuginfo.none;
+               [alloc_closure_header 5 (dbg ());
                 Cconst_symbol(caml_curry_m_to_n arity (num + 1));
                 int_const (arity - num - 1);
                 Cconst_symbol(caml_curry_m_to_n_app arity (num + 1));

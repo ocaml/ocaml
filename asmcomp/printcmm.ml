@@ -21,22 +21,32 @@ open Cmm
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
-let mark_start_location_tag = "cmm_line_start:"
-let mark_end_location_tag = "cmm_line_end:"
+type Format.stag += Start_pos_tag of { placeholder_line : int; }
+type Format.stag += End_pos_tag of { placeholder_line : int; }
 
 let mark_start_location ppf dbg =
   match Debuginfo.position dbg with
   | None -> ()
   | Some pos ->
-    let line = Debuginfo.Code_range.line pos in
-    Format.pp_open_tag ppf (Printf.sprintf "%s%d" mark_start_location_tag line)
+    let placeholder_line = Debuginfo.Code_range.line pos in
+    Format.pp_open_stag ppf (Start_pos_tag { placeholder_line; })
 
 let mark_end_location ppf dbg =
   match Debuginfo.position dbg with
   | None -> ()
   | Some pos ->
-    let line = Debuginfo.Code_range.line pos in
-    Format.pp_open_tag ppf (Printf.sprintf "%s%d" mark_end_location_tag line)
+    let placeholder_line = Debuginfo.Code_range.line pos in
+    Format.pp_open_stag ppf (End_pos_tag { placeholder_line; })
+
+let parse_placeholder_line_start_tag (stag : Format.stag) =
+  match stag with
+  | Start_pos_tag { placeholder_line; } -> Some placeholder_line
+  | _ -> None
+
+let parse_placeholder_line_end_tag (stag : Format.stag) =
+  match stag with
+  | End_pos_tag { placeholder_line; } -> Some placeholder_line
+  | _ -> None
 
 let rec_flag ppf = function
   | Nonrecursive -> ()
@@ -226,7 +236,7 @@ let rec expr ~print_dbg ppf = function
       "@[<2>(phantom_let@ @[<2>%a@ %a@]@ %a)@]"
       VP.print var
       phantom_defining_expr_opt def
-      sequence body
+      (sequence ~print_dbg) body
   | Cassign(id, exp) ->
       fprintf ppf "@[<2>(assign @[<2>%a@ %a@])@]"
         V.print id (expr ~print_dbg) exp
@@ -236,12 +246,12 @@ let rec expr ~print_dbg ppf = function
        List.iter
         (fun e ->
           if !first then first := false else fprintf ppf "@ ";
-          expr ppf e)
+          (expr ~print_dbg) ppf e)
         el in
       fprintf ppf "@[<1>[%a]@]" tuple el
   | Cop(op, el, dbg) ->
       mark_start_location ppf dbg;
-      fprintf ppf "@[<2>(%s" dbg_id (operation ~print_dbg dbg op);
+      fprintf ppf "@[<2>(%s" (operation ~print_dbg dbg op);
       List.iter (fun e -> fprintf ppf "@ %a" (expr ~print_dbg) e) el;
       begin match op with
       | Capply mty -> fprintf ppf "@ %a" machtype mty
@@ -253,13 +263,16 @@ let rec expr ~print_dbg ppf = function
   | Csequence(e1, e2) ->
       fprintf ppf "@[<2>(seq@ %a@ %a)@]"
         (sequence ~print_dbg) e1 (sequence ~print_dbg) e2
-  | Cifthenelse(e1, _, e2, _, e3, dbg) ->
-      mark_location ppf dbg;
+  | Cifthenelse(e1, ifso_dbg, e2, ifnot_dbg, e3, dbg) ->
+      mark_start_location ppf dbg;
       fprintf ppf "@[<2>(if@ %a@ " (expr ~print_dbg) e1;
-      mark_location ppf ifso_dbg;
+      mark_end_location ppf dbg;
+      mark_start_location ppf ifso_dbg;
       fprintf ppf "%a@ " (expr ~print_dbg) e2;
-      mark_location ppf ifnot_dbg;
-      fprintf ppf "%a)@]" (expr ~print_dbg) e3
+      mark_end_location ppf ifso_dbg;
+      mark_start_location ppf ifnot_dbg;
+      fprintf ppf "%a)@]" (expr ~print_dbg) e3;
+      mark_end_location ppf ifnot_dbg
   | Cswitch(e1, index, cases, dbg) ->
       mark_start_location ppf dbg;
       let print_case i ppf =
@@ -298,7 +311,7 @@ let rec expr ~print_dbg ppf = function
         print_handlers handlers
   | Cexit (i, el) ->
       fprintf ppf "@[<2>(exit %d" i;
-      List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
+      List.iter (fun e -> fprintf ppf "@ %a" (expr ~print_dbg) e) el;
       fprintf ppf ")@]"
   | Ctrywith(e1, id, e2, handler_dbg) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -2>with@ %a@ "
@@ -323,17 +336,15 @@ let fundecl ~print_dbg ppf f =
        if !first then first := false else fprintf ppf "@ ";
        fprintf ppf "%a: %a" VP.print id machtype ty)
      cases in
-  mark_location ppf f.fun_dbg;
+  mark_start_location ppf f.fun_dbg;
   fprintf ppf "@[<1>(function ";
   if print_dbg then begin
     fprintf ppf "%a " Debuginfo.print f.fun_dbg
   end;
   fprintf ppf "%a@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
     Backend_sym.print f.fun_name
-    print_cases f.fun_args (sequence ~print_dbg) f.fun_body
-
-let set_print_dbg new_state =
-  print_dbg := new_state
+    print_cases f.fun_args (sequence ~print_dbg) f.fun_body;
+  mark_end_location ppf f.fun_dbg
 
 let data_item ppf = function
   | Cdefine_symbol s -> fprintf ppf "\"%a\":" Backend_sym.print s
@@ -360,3 +371,9 @@ let phrase ?no_debuginfo ppf = function
       | Some () -> fundecl ~print_dbg:false ppf f
       end
   | Cdata dl -> data ppf dl
+
+let operation op = operation ~print_dbg:true op
+
+let expression expr = expression ~print_dbg:true expr
+
+let fundecl decl = fundecl ~print_dbg:true decl

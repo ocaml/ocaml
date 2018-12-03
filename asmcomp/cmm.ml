@@ -209,11 +209,10 @@ let rec map_debuginfo_expression expr ~f =
     let expr = map_debuginfo_expression expr ~f in
     Cassign (var, expr)
   | Ctuple exprs ->
-    let exprs = map_debuginfo_expression_list expr ~f in
+    let exprs = map_debuginfo_expression_list exprs ~f in
     Ctuple exprs
   | Cop (op, exprs, dbg) ->
-    let op = map_debuginfo_op op ~f in
-    let exprs = map_debuginfo_expression_list expr ~f in
+    let exprs = map_debuginfo_expression_list exprs ~f in
     let dbg = f dbg in
     Cop (op, exprs, dbg)
   | Csequence (expr1, expr2) ->
