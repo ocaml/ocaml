@@ -177,6 +177,9 @@ Working version
 - GPR#2159, MPR#7874: annotate {String,Bytes}.equal as being [@@noalloc].
   (Pierre-Marie Pédrot, review by Nicolás Ojeda Bär)
 
+- GPR#1936: Add module Float.Array
+  (Damien Doligez, review by Xavier Clerc and Alain Frisch)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking

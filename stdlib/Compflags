@@ -30,5 +30,6 @@ case $1 in
       echo ' -w Ae';;
   stdlib__scanf.cmx|stdlib__scanf.p.cmx) echo ' -inline 9';;
   *Labels.cm[ox]|*Labels.p.cmx) echo ' -nolabels -no-alias-deps';;
+  stdlib__float.cm[ox]|stdlib__float.p.cmx) echo ' -nolabels -no-alias-deps';;
   *) echo ' ';;
 esac
