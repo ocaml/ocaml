@@ -30,24 +30,7 @@ let track_output_position_of_formatter t =
   let { Format. out_string; out_flush; out_newline; out_spaces; out_indent; } =
     Format.pp_get_formatter_out_functions ppf ()
   in
-  let out_string str start_pos num_chars =
-    let num_newlines = ref 0 in
-    for index = start_pos to start_pos + num_chars - 1 do
-      if String.get str index = '\n' then begin
-        incr num_newlines
-      end
-    done;
-    let old_pos = t.current_pos in
-    let new_pos : Lexing.position =
-      { old_pos with
-        pos_lnum = old_pos.pos_lnum + !num_newlines;
-        pos_cnum = old_pos.pos_cnum + num_chars;
-      }
-    in
-    t.current_pos <- new_pos;
-    out_string str start_pos num_chars
-  in
-  let out_newline () =
+  let track_newline () =
     let old_pos = t.current_pos in
     let new_pos : Lexing.position =
       { old_pos with
@@ -56,32 +39,30 @@ let track_output_position_of_formatter t =
         pos_cnum = old_pos.pos_cnum + 1;
       }
     in
-    t.current_pos <- new_pos;
-    out_newline ()
+    t.current_pos <- new_pos
   in
-  let out_spaces num_spaces =
-    let old_pos = t.current_pos in
-    let new_pos : Lexing.position =
-      { old_pos with
-        pos_cnum = old_pos.pos_cnum + num_spaces;
-      }
-    in
-    t.current_pos <- new_pos;
-    out_spaces num_spaces
-  in
-  let out_indent num_spaces =
-    let old_pos = t.current_pos in
-    let new_pos : Lexing.position =
-      { old_pos with
-        pos_cnum = old_pos.pos_cnum + num_spaces;
-      }
-    in
-    t.current_pos <- new_pos;
-    out_indent num_spaces
+  let out_string str start_pos num_chars =
+    for index = start_pos to start_pos + num_chars - 1 do
+      if String.get str index = '\n' then begin
+        track_newline ()
+      end else begin
+        let old_pos = t.current_pos in
+        let new_pos : Lexing.position =
+          { old_pos with
+            pos_cnum = old_pos.pos_cnum + 1;
+          }
+        in
+        t.current_pos <- new_pos
+      end
+    done;
+    out_string str start_pos num_chars
   in
   let out_functions : Format.formatter_out_functions =
     { out_string;
       out_flush;
+      (* The default [out_newline] calls [out_string] with a newline character,
+         so we don't need to override [out_newline].  A similar situation
+         exists for [out_spaces] and [out_indent]. *)
       out_newline;
       out_spaces;
       out_indent;
@@ -92,36 +73,45 @@ let track_output_position_of_formatter t =
 let intercept_cmm_location_tags_on_formatter t =
   let ppf = t.ppf in
   let stag_functions = Format.pp_get_formatter_stag_functions ppf () in
-  let print_open_stag stag =
+  let mark_open_stag stag =
     match Printcmm.parse_placeholder_line_start_tag stag with
-    | None -> stag_functions.print_open_stag stag
+    | None -> stag_functions.mark_open_stag stag
     | Some line ->
       t.start_positions_by_placeholder_line
-        <- Int.Map.add line t.current_pos t.start_positions_by_placeholder_line
+        <- Int.Map.add line t.current_pos t.start_positions_by_placeholder_line;
+      ""
   in
-  let print_close_stag stag =
+  let mark_close_stag stag =
     match Printcmm.parse_placeholder_line_end_tag stag with
-    | None -> stag_functions.print_close_stag stag
+    | None -> stag_functions.mark_close_stag stag
     | Some line ->
       t.end_positions_by_placeholder_line
-        <- Int.Map.add line t.current_pos t.end_positions_by_placeholder_line
+        <- Int.Map.add line t.current_pos t.end_positions_by_placeholder_line;
+      ""
   in
   let stag_functions =
     { stag_functions with
-      print_open_stag;
-      print_close_stag;
+      mark_open_stag;
+      mark_close_stag;
     }
   in
   Format.pp_set_tags ppf true;
-  Format.pp_set_print_tags ppf true;
+  Format.pp_set_mark_tags ppf true;
   Format.pp_set_formatter_stag_functions ppf stag_functions
 
 let create ~startup_cmm_file ~startup_cmm_chan =
   let ppf = Format.formatter_of_out_channel startup_cmm_chan in
+  let starting_pos : Lexing.position =
+    { pos_fname = startup_cmm_file;
+      pos_lnum = 1;
+      pos_bol = 0;
+      pos_cnum = 0;
+    }
+  in
   let t =
     { startup_cmm_file;
       ppf;
-      current_pos = Lexing.dummy_pos;
+      current_pos = starting_pos;
       start_positions_by_placeholder_line = Int.Map.empty;
       end_positions_by_placeholder_line = Int.Map.empty;
     }
@@ -131,12 +121,6 @@ let create ~startup_cmm_file ~startup_cmm_chan =
   t
 
 let write_cmm_to_channel_and_fix_up_debuginfo t phrase =
-  t.current_pos <-
-    { pos_fname = t.startup_cmm_file;
-      pos_lnum = 1;
-      pos_bol = 0;
-      pos_cnum = 1;
-    };
   t.start_positions_by_placeholder_line <- Int.Map.empty;
   t.end_positions_by_placeholder_line <- Int.Map.empty;
   Printcmm.phrase' ~no_debuginfo:() t.ppf phrase;
