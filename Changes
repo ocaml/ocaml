@@ -758,8 +758,8 @@ OCaml 4.07.0 (10 July 2018)
   bigarray library as on overlay adding the deprecated map_file functions.
   (Jérémie Dimino, review by Mark Shinwell)
 
-- MPR#7528: add a Format.pp_set_geometry function to avoid memory effects
-  in set_margin and set_max_indent.
+- MPR#7528, GPR#1500: add a Format.pp_set_geometry function to avoid memory
+  effects in set_margin and set_max_indent.
   (Florian Angeletti, review by Richard Bonichon, Gabriel Radanne,
    Gabiel Scherer and Pierre Weis)
 

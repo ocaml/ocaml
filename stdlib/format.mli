@@ -442,14 +442,14 @@ val safe_set_geometry : max_indent:int -> margin:int -> unit
    Outside of this domain, [pp_set_geometry] raises an invalid argument
    exception whereas [pp_safe_set_geometry] does nothing.
 
-   @since 4.07.0
+   @since 4.08.0
 *)
 
 val pp_get_geometry: formatter -> unit -> geometry
 val get_geometry: unit -> geometry
 (** Return the current geometry of the formatter
 
-    @since 4.07.0
+    @since 4.08.0
 *)
 
 
