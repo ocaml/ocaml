@@ -1,0 +1,73 @@
+(gdb) 
+245	      let (rx, ry) = split l in (x::rx, y::ry)
+(gdb) 
+244	  | (x,y)::l ->
+(gdb) 
+245	      let (rx, ry) = split l in (x::rx, y::ry)
+(gdb) inf loc
+rx = <error reading variable rx (Cannot access memory at address 0x0)>
+ry = <optimized out>
+x = [0: [0: "m", 3]]
+y = 0
+l = <optimized out>
+(gdb) bt
+#0  List.split (param=<optimized out>) at list.ml:245
+#1  0x000000000085f860 in Translcore.transl_exp0 (
+    e[/usr/local/home/mshinwell/mshinwell-ocaml3/bytecomp/translcore.ml:203,16--14202]={...} : Typedtree.expression) at bytecomp/translcore.ml:287
+#2  0x0000000000861771 in Translcore.transl_with_shape (e=<optimized out>) at bytecomp/translcore.ml:548
+#3  0x00000000008a0c71 in List.map (f=<fun> : 'a -> 'b, param=[...] : 'a list) at list.ml:89
+#4  0x0000000000861725 in Translcore.transl_list_with_shape (expr_list=<optimized out>)
+    at bytecomp/translcore.ml:550
+#5  0x000000000085f975 in Translcore.transl_exp0 (
+    e[/usr/local/home/mshinwell/mshinwell-ocaml3/bytecomp/translcore.ml:203,16--14202]={...} : Typedtree.expression) at bytecomp/translcore.ml:294
+#6  0x00000000008617db in Translcore.transl_guard (loc={...} : Location.t, 
+    guard=None : Typedtree.expression option, rhs={...} : Typedtree.expression, rhs_loc={...} : Location.t)
+    at bytecomp/translcore.ml:553
+#7  0x00000000008618ac in Translcore.transl_case (param=<optimized out>) at bytecomp/translcore.ml:561
+#8  0x00000000008a0c71 in List.map (f=<fun> : 'a -> 'b, param=[...] : 'a list) at list.ml:89
+#9  0x0000000000862a72 in Translcore.transl_function (loc={...} : Location.t, 
+    untuplify_fn=<optimized out>, repr=None : int ref option, partial=Total : Typedtree.partial, 
+    param/1800=Local (...) : Ident.t, cases/1801=<optimized out>) at bytecomp/translcore.ml:689
+#10 0x000000000086275b in Translcore.transl_function (loc={...} : Location.t, 
+    untuplify_fn=<optimized out>, repr=<optimized out>, partial=Total : Typedtree.partial, 
+    param/1800=Local (...) : Ident.t, cases/1801=<optimized out>) at bytecomp/translcore.ml:665
+#11 0x000000000085f2b8 in Translcore.transl_exp0 (
+    e[/usr/local/home/mshinwell/mshinwell-ocaml3/bytecomp/translcore.ml:203,16--14202]={...} : Typedtree.expression) at bytecomp/translcore.ml:218
+#12 0x0000000000858e50 in Translobj.<anon_fun:bytecomp/translobj.ml:180,6--528> (param=<optimized out>)
+    at bytecomp/translobj.ml:184
+#13 0x00000000006ae932 in Misc.<anon_fun:utils/misc.ml:56,2--204> (refs=<optimized out>, f=<optimized out>)
+    at utils/misc.ml:59
+#14 0x0000000000862d56 in Translcore.transl (param=[{...}] : Typedtree.value_binding list)
+    at bytecomp/translcore.ml:704
+#15 0x0000000000872fb2 in Translmod.transl_store (rootpath=Some (...) : Path.t option, 
+    subst/2590=<Stdlib__map.Make(Ident.T).t> : Lambda.lambda Ident.Map.t, param=<optimized out>)
+    at bytecomp/translmod.ml:878
+#16 0x0000000000872e59 in Translmod.transl_store_structure (glob=<optimized out>, map=<optimized out>, 
+    prims=[] : (int * Typedtree.primitive_coercion) list, str=<optimized out>)
+    at bytecomp/translmod.ml:1088
+#17 0x00000000008588f9 in Translobj.transl_store_label_init (glob=Global (...) : Ident.t, 
+    size/1133=3 : int, f=<optimized out>, arg=<optimized out>) at bytecomp/translobj.ml:139
+#18 0x0000000000874e8d in Translmod.transl_store_implementation (module_name="L" : string, 
+    param=<optimized out>) at bytecomp/translmod.ml:1156
+#19 0x00000000006ae7cd in Misc.try_finally_inner (always=<fun>, exceptionally=<fun>, work=<optimized out>)
+    at utils/misc.ml:31
+#20 0x00000000006ac015 in Optcompile.clambda (i={...} : Compile_common.info, typed=<optimized out>)
+    at driver/optcompile.ml:62
+#21 0x00000000006ae7cd in Misc.try_finally_inner (always=<fun>, exceptionally=<fun>, work=<optimized out>)
+    at utils/misc.ml:31
+#22 0x000000000089c2fc in Compile_common.<anon_fun:driver/compile_common.ml:115,41--489> (
+    param=<optimized out>) at driver/compile_common.ml:123
+#23 0x00000000006ae7cd in Misc.try_finally_inner (always=<fun>, exceptionally=<fun>, work=<optimized out>)
+    at utils/misc.ml:31
+#24 0x00000000006ae7cd in Misc.try_finally_inner (always=<fun>, exceptionally=<fun>, work=<optimized out>)
+    at utils/misc.ml:31
+#25 0x00000000008942c5 in Compenv.process_action (param=<optimized out>, action=<optimized out>)
+    at driver/compenv.ml:588
+#26 0x00000000008a0e81 in List.iter (f=<fun> : 'a -> unit, param=[...] : 'a list) at list.ml:107
+#27 0x0000000000894ccd in Compenv.process_deferred_actions (env=<optimized out>) at driver/compenv.ml:664
+#28 0x000000000059d68f in Optmain.main (
+    param[/usr/local/home/mshinwell/mshinwell-ocaml3/driver/optmain.ml:279,9--2912]=<optimized out>)
+    at driver/optmain.ml:294
+#29 0x000000000059f9fb in Optmain () at driver/optmain.ml:364
+#30 0x00000000005946b9 in caml_program ()
+

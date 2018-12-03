@@ -29,3 +29,4 @@ val fundecl : formatter -> Cmm.fundecl -> unit
 val data : formatter -> Cmm.data_item list -> unit
 val phrase : formatter -> Cmm.phrase -> unit
 val raise_kind: formatter -> Cmm.raise_kind -> unit
+val set_print_dbg : bool -> unit

@@ -216,6 +216,11 @@ type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
 
+val map_debuginfo_phrases
+   : phrase list
+  -> f:(Debuginfo.t -> Debuginfo.t)
+  -> phrase list
+
 val ccatch :
      int * (Backend_var.With_provenance.t * machtype) list
        * expression * expression * Debuginfo.t

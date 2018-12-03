@@ -189,7 +189,8 @@ let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
     | None -> None
     | Some _ ->
       Profile.record "dwarf"
-        (fun () -> let dwarf = Dwarf.create ~prefix_name in
+        (fun () ->
+          let dwarf = Dwarf.create ~prefix_name in
           let _, toplevel_inconstants, toplevel_constants = clambda in
           Dwarf.dwarf_for_toplevel_constants dwarf toplevel_constants;
           Dwarf.dwarf_for_toplevel_inconstants dwarf toplevel_inconstants;

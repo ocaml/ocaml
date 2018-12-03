@@ -95,6 +95,8 @@ val is_none : t -> bool
 
 val to_string_frames_only_innermost_last : t -> string
 
+val of_line : file:string -> line:int -> scope:Current_block.t -> t
+
 val of_location : Location.t -> scope:Current_block.t -> t
 
 val to_location : t -> Location.t

@@ -356,6 +356,13 @@ let to_string_frames_only_innermost_last t =
     in
     "{" ^ String.concat ";" ranges_innermost_last ^ "}"
 
+let of_line ~file ~line ~scope =
+  let position =
+    (* 80 seems like a reasonable default to cover a line. *)
+    Code_range.create ~file ~line ~char_start:0 ~char_end:80
+  in
+  Non_empty { block = scope; position; }
+
 let of_location loc ~scope =
   let position = Code_range.of_location loc in
   Non_empty { block = scope; position; }

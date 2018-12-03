@@ -188,6 +188,83 @@ type expression =
   | Ctrywith of expression * Backend_var.With_provenance.t * expression
       * Debuginfo.t
 
+let rec map_debuginfo_expression expr ~f =
+  match expr with
+  | Cconst_int _
+  | Cconst_natint _
+  | Cconst_float _
+  | Cconst_symbol _
+  | Cconst_pointer _
+  | Cconst_natpointer _ -> expr
+  | Cblockheader (hdr, dbg) -> Cblockheader (hdr, f dbg)
+  | Cvar _ -> expr
+  | Clet (var, defining_expr, body) ->
+    let defining_expr = map_debuginfo_expression defining_expr ~f in
+    let body = map_debuginfo_expression body ~f in
+    Clet (var, defining_expr, body)
+  | Cphantom_let (var, defining_expr_opt, body) ->
+    let body = map_debuginfo_expression body ~f in
+    Cphantom_let (var, defining_expr_opt, body)
+  | Cassign (var, expr) ->
+    let expr = map_debuginfo_expression expr ~f in
+    Cassign (var, expr)
+  | Ctuple exprs ->
+    let exprs = map_debuginfo_expression_list expr ~f in
+    Ctuple exprs
+  | Cop (op, exprs, dbg) ->
+    let op = map_debuginfo_op op ~f in
+    let exprs = map_debuginfo_expression_list expr ~f in
+    let dbg = f dbg in
+    Cop (op, exprs, dbg)
+  | Csequence (expr1, expr2) ->
+    let expr1 = map_debuginfo_expression expr1 ~f in
+    let expr2 = map_debuginfo_expression expr2 ~f in
+    Csequence (expr1, expr2)
+  | Cifthenelse (cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
+    let cond = map_debuginfo_expression cond ~f in
+    let ifso_dbg = f ifso_dbg in
+    let ifso = map_debuginfo_expression ifso ~f in
+    let ifnot_dbg = f ifnot_dbg in
+    let ifnot = map_debuginfo_expression ifnot ~f in
+    let dbg = f dbg in
+    Cifthenelse (cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg)
+  | Cswitch (scrutinee, cases, arms_with_dbg, dbg) ->
+    let scrutinee = map_debuginfo_expression scrutinee ~f in
+    let arms_with_dbg =
+      Array.map (fun (expr, dbg) ->
+          let expr = map_debuginfo_expression expr ~f in
+          let dbg = f dbg in
+          expr, dbg)
+        arms_with_dbg
+    in
+    let dbg = f dbg in
+    Cswitch (scrutinee, cases, arms_with_dbg, dbg)
+  | Cloop (expr, dbg) ->
+    let expr = map_debuginfo_expression expr ~f in
+    let dbg = f dbg in
+    Cloop (expr, dbg)
+  | Ccatch (recursive, handlers, body) ->
+    let handlers =
+      List.map (fun (k, params, handler, dbg) ->
+          let handler = map_debuginfo_expression handler ~f in
+          let dbg = f dbg in
+          k, params, handler, dbg)
+        handlers
+    in
+    let body = map_debuginfo_expression body ~f in
+    Ccatch (recursive, handlers, body)
+  | Cexit (k, args) ->
+    let args = map_debuginfo_expression_list args ~f in
+    Cexit (k, args)
+  | Ctrywith (body, exn_var, handler, handler_dbg) ->
+    let body = map_debuginfo_expression body ~f in
+    let handler = map_debuginfo_expression handler ~f in
+    let handler_dbg = f handler_dbg in
+    Ctrywith (body, exn_var, handler, handler_dbg)
+
+and map_debuginfo_expression_list exprs ~f =
+  List.map (fun expr -> map_debuginfo_expression expr ~f) exprs
+
 type codegen_option =
   | Reduce_code_size
   | No_CSE
@@ -200,6 +277,20 @@ type fundecl =
     fun_dbg : Debuginfo.t;
     fun_human_name : string;
     fun_module_path : Path.t option;
+  }
+
+let map_debuginfo_fundecl
+      { fun_name; fun_args; fun_body; fun_codegen_options; fun_dbg;
+        fun_human_name; fun_module_path;
+      }
+      ~f =
+  { fun_name;
+    fun_args;
+    fun_body = map_debuginfo_expression fun_body ~f;
+    fun_codegen_options;
+    fun_dbg = f fun_dbg;
+    fun_human_name;
+    fun_module_path;
   }
 
 type data_item =
@@ -219,6 +310,13 @@ type data_item =
 type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
+
+let map_debuginfo_phrases phrases ~f =
+  List.map (fun phrase ->
+      match phrase with
+      | Cfunction fundecl -> Cfunction (map_debuginfo_fundecl fundecl ~f)
+      | Cdata _ -> phrase)
+    phrases
 
 let ccatch (i, ids, e1, e2, loc) =
   Ccatch(Nonrecursive, [i, ids, e2, loc], e1)

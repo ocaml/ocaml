@@ -207,14 +207,14 @@ let force_linking_of_startup ~ppf_dump =
   Asmgen.compile_phrase ~ppf_dump ~dwarf:None
     (Cmm.Cdata ([Cmm.Csymbol_address Backend_sym.Names.caml_startup]))
 
-let make_startup_file ~ppf_dump units_list =
+let make_startup_file ~ppf_dump ~dwarf_prefix_name units_list =
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset "_startup";
   (* set the name of the "current" compunit *)
   let dwarf =
     match !Clflags.debug_full with
     | None -> None
-    | Some _ -> Some (Dwarf.create ~prefix_name:"_startup")
+    | Some _ -> Some (Dwarf.create ~prefix_name:dwarf_prefix_name)
   in
   let compile_phrase p = Asmgen.compile_phrase ~ppf_dump ~dwarf p in
   Emit.begin_assembly ();
@@ -251,13 +251,13 @@ let make_startup_file ~ppf_dump units_list =
     force_linking_of_startup ~ppf_dump;
   Emit.end_assembly dwarf
 
-let make_shared_startup_file ~ppf_dump units =
+let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name units =
   Location.input_name := "caml_startup";
   Compilenv.reset "_shared_startup";
   let dwarf =
     match !Clflags.debug_full with
     | None -> None
-    | Some _ -> Some (Dwarf.create ~prefix_name:"_startup")
+    | Some _ -> Some (Dwarf.create ~prefix_name:dwarf_prefix_name)
   in
   let compile_phrase p = Asmgen.compile_phrase ~ppf_dump ~dwarf p in
   Emit.begin_assembly ();
@@ -272,6 +272,11 @@ let make_shared_startup_file ~ppf_dump units =
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
   Emit.end_assembly dwarf
+
+let remove_startup_obj ~startup_obj =
+  match !Clflags.debug_full with
+  | None -> remove_file startup_obj
+  | Some _ -> ()
 
 let call_linker_shared file_list output_name =
   if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")
@@ -288,19 +293,27 @@ let link_shared ~ppf_dump objfiles output_name =
     let objfiles = List.rev (List.map object_file_name objfiles) @
       (List.rev !Clflags.ccobjs) in
 
+    let dwarf_prefix_name = output_name ^ ".shared_startup" in
     let startup =
       if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
-      then output_name ^ ".startup" ^ ext_asm
+      then dwarf_prefix_name ^ ext_asm
       else Filename.temp_file "camlstartup" ext_asm in
-    let startup_obj = output_name ^ ".startup" ^ ext_obj in
+    let startup_obj =
+      match !Clflags.debug_full with
+      | None -> Filename.temp_file "camlstartup" ext_obj
+      | Some _ -> dwarf_prefix_name ^ ext_obj
+    in
     Asmgen.compile_unit output_name
       startup !Clflags.keep_startup_file startup_obj
       (fun () ->
-         make_shared_startup_file ~ppf_dump
+         make_shared_startup_file ~ppf_dump ~dwarf_prefix_name
            (List.map (fun (ui,_,crc) -> (ui,crc)) units_tolink)
       );
-    call_linker_shared (startup_obj :: objfiles) output_name;
-    remove_file startup_obj
+    Misc.try_finally
+      (fun () ->
+        call_linker_shared (startup_obj :: objfiles) output_name;
+        remove_startup_obj ~startup_obj)
+      ~exceptionally:(fun () -> remove_file startup_obj)
   )
 
 let call_linker file_list startup_file output_name =
@@ -354,19 +367,25 @@ let link ~ppf_dump objfiles output_name =
     Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
     Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
                                                  (* put user's opts first *)
+    let dwarf_prefix_name = output_name ^ ".startup" in
     let startup =
       if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
-      then output_name ^ ".startup" ^ ext_asm
+      then dwarf_prefix_name ^ ext_asm
       else Filename.temp_file "camlstartup" ext_asm in
-    let startup_obj = Filename.temp_file "camlstartup" ext_obj in
+    let startup_obj =
+      match !Clflags.debug_full with
+      | None -> Filename.temp_file "camlstartup" ext_obj
+      | Some _ -> dwarf_prefix_name ^ ext_obj
+    in
     Asmgen.compile_unit output_name
       startup !Clflags.keep_startup_file startup_obj
-      (fun () -> make_startup_file ~ppf_dump units_tolink);
+      (fun () -> make_startup_file ~ppf_dump ~dwarf_prefix_name units_tolink);
     Misc.try_finally
       (fun () ->
-         call_linker (List.map object_file_name objfiles)
-           startup_obj output_name)
-      ~always:(fun () -> remove_file startup_obj)
+        call_linker (List.map object_file_name objfiles)
+          startup_obj output_name;
+        remove_startup_obj ~startup_obj)
+      ~exceptionally:(fun () -> remove_file startup_obj)
   )
 
 (* Error report *)

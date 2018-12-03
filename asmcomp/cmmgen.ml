@@ -3530,6 +3530,16 @@ let compunit ~ppf_dump ~unit_name (ulam, preallocated_blocks, constants) =
 let startup_path =
   Some (Path.Pident (Ident.create_persistent "_Ocaml_startup"))
 
+let next_placeholder_dbg_line = ref 0
+
+let placeholder_dbg ~startup_cmm_file () =
+  match !Clflags.debug_full with
+  | None -> Debuginfo.none
+  | Some _ ->
+      let line = !next_placeholder_dbg_line in
+      incr next_placeholder_dbg_line;
+      Debuginfo.of_line ~file ~line ~scope:Debuginfo.Current_block.toplevel
+
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
 {
@@ -3544,14 +3554,15 @@ CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
 }
 *)
 
-let cache_public_method meths tag cache dbg =
+let cache_public_method ~startup_cmm_file meths tag cache dbg =
+  let dbg = placeholder_dbg ~startup_cmm_file in
   let raise_num = next_raise_count () in
-  let li = V.create_local "*li*" and hi = V.create_local "*hi*"
-  and mi = V.create_local "*mi*" and tagged = V.create_local "*tagged*" in
+  let li = V.create_local "li" and hi = V.create_local "hi"
+  and mi = V.create_local "mi" and tagged = V.create_local "tagged" in
   Clet (
   VP.create li, Cconst_int 3,
   Clet (
-  VP.create hi, Cop(Cload (Word_int, Mutable), [meths], dbg),
+  VP.create hi, Cop(Cload (Word_int, Mutable), [meths], dbg ()),
   Csequence(
   ccatch
     (raise_num, [],
@@ -3559,35 +3570,35 @@ let cache_public_method meths tag cache dbg =
        (Clet(
         VP.create mi,
         Cop(Cor,
-            [Cop(Clsr, [Cop(Caddi, [Cvar li; Cvar hi], dbg); Cconst_int 1],
-               dbg);
+            [Cop(Clsr, [Cop(Caddi, [Cvar li; Cvar hi], dbg ()); Cconst_int 1],
+               dbg ());
              Cconst_int 1],
-            dbg),
+            dbg ()),
         Csequence(
         Cifthenelse
           (Cop (Ccmpi Clt,
                 [tag;
                  Cop(Cload (Word_int, Mutable),
                      [Cop(Cadda,
-                          [meths; lsl_const (Cvar mi) log2_size_addr dbg],
-                          dbg)],
-                     dbg)], dbg),
-          dbg, Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2], dbg)),
-          dbg, Cassign(li, Cvar mi),
-          dbg),
+                          [meths; lsl_const (Cvar mi) log2_size_addr dbg ()],
+                          dbg ())],
+                     dbg ())], dbg ()),
+          dbg (), Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2], dbg ())),
+          dbg (), Cassign(li, Cvar mi),
+          dbg ()),
         Cifthenelse
-          (Cop(Ccmpi Cge, [Cvar li; Cvar hi], dbg),
-           dbg, Cexit (raise_num, []),
-           dbg, Ctuple [],
-           dbg))),
-       dbg),
+          (Cop(Ccmpi Cge, [Cvar li; Cvar hi], dbg ()),
+           dbg (), Cexit (raise_num, []),
+           dbg (), Ctuple [],
+           dbg ()))),
+       dbg ()),
      Ctuple [],
-     dbg),
+     dbg ()),
   Clet (
     VP.create tagged,
-      Cop(Cadda, [lsl_const (Cvar li) log2_size_addr dbg;
-        Cconst_int(1 - 3 * size_addr)], dbg),
-    Csequence(Cop (Cstore (Word_int, Assignment), [cache; Cvar tagged], dbg),
+      Cop(Cadda, [lsl_const (Cvar li) log2_size_addr dbg ();
+        Cconst_int(1 - 3 * size_addr)], dbg ()),
+    Csequence(Cop (Cstore (Word_int, Assignment), [cache; Cvar tagged], dbg ()),
               Cvar tagged)))))
 
 (* Generate an application function:
@@ -3601,8 +3612,8 @@ let cache_public_method meths tag cache dbg =
            (app closN-1.code aN closN-1))))
 *)
 
-let apply_function_body arity =
-  let dbg = Debuginfo.none in
+let apply_function_body ~startup_cmm_file arity =
+  let dbg = placeholder_dbg ~startup_cmm_file in
   let arg = Array.make arity (V.create_local "arg") in
   for i = 1 to arity - 1 do arg.(i) <- V.create_local "arg" done;
   let clos = V.create_local "clos" in
@@ -3610,12 +3621,14 @@ let apply_function_body arity =
   let rec app_fun clos n =
     if n = arity-1 then
       Cop(Capply typ_val,
-          [get_field env (Cvar clos) 0 dbg; Cvar arg.(n); Cvar clos], dbg)
+          [get_field env (Cvar clos) 0 dbg (); Cvar arg.(n); Cvar clos],
+          dbg ())
     else begin
       let newclos = V.create_local "clos" in
       Clet(VP.create newclos,
            Cop(Capply typ_val,
-               [get_field env (Cvar clos) 0 dbg; Cvar arg.(n); Cvar clos], dbg),
+               [get_field env (Cvar clos) 0 dbg (); Cvar arg.(n); Cvar clos],
+               dbg ()),
            app_fun newclos (n+1))
     end in
   let args = Array.to_list arg in
@@ -3623,17 +3636,19 @@ let apply_function_body arity =
   (args, clos,
    if arity = 1 then app_fun clos 0 else
    Cifthenelse(
-   Cop(Ccmpi Ceq, [get_field env (Cvar clos) 1 dbg; int_const arity], dbg),
-   dbg,
+   Cop(Ccmpi Ceq,
+     [get_field env (Cvar clos) 1 dbg (); int_const arity], dbg ()),
+   dbg (),
    Cop(Capply typ_val,
-       get_field env (Cvar clos) 2 dbg :: List.map (fun s -> Cvar s) all_args,
-       dbg),
-   dbg,
+       get_field env (Cvar clos) 2 dbg ()
+         :: List.map (fun s -> Cvar s) all_args,
+       dbg ()),
+   dbg (),
    app_fun clos 0,
-   dbg))
+   dbg ()))
 
-let send_function arity =
-  let dbg = Debuginfo.none in
+let send_function ~startup_cmm_file arity =
+  let dbg = placeholder_dbg ~startup_cmm_file in
   let (args, clos', body) = apply_function_body (1+arity) in
   let cache = V.create_local "cache"
   and obj = List.hd args
@@ -3643,27 +3658,28 @@ let send_function arity =
     let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
     let meths = V.create_local "meths" and cached = V.create_local "cached" in
     let real = V.create_local "real" in
-    let mask = get_field env (Cvar meths) 1 dbg in
+    let mask = get_field env (Cvar meths) 1 dbg () in
     let cached_pos = Cvar cached in
-    let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg);
-                              Cconst_int(3*size_addr-1)], dbg) in
-    let tag' = Cop(Cload (Word_int, Mutable), [tag_pos], dbg) in
+    let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg ());
+                              Cconst_int(3*size_addr-1)], dbg ()) in
+    let tag' = Cop(Cload (Word_int, Mutable), [tag_pos], dbg ()) in
     Clet (
-    VP.create meths, Cop(Cload (Word_val, Mutable), [obj], dbg),
+    VP.create meths, Cop(Cload (Word_val, Mutable), [obj], dbg ()),
     Clet (
     VP.create cached,
-      Cop(Cand, [Cop(Cload (Word_int, Mutable), [cache], dbg); mask], dbg),
+      Cop(Cand, [Cop(Cload (Word_int, Mutable), [cache], dbg ()); mask],
+          dbg ()),
     Clet (
     VP.create real,
-    Cifthenelse(Cop(Ccmpa Cne, [tag'; tag], dbg),
-                dbg,
-                cache_public_method (Cvar meths) tag cache dbg,
-                dbg,
+    Cifthenelse(Cop(Ccmpa Cne, [tag'; tag], dbg ()),
+                dbg (),
+                cache_public_method (Cvar meths) tag cache dbg (),
+                dbg (),
                 cached_pos,
-                dbg),
+                dbg ()),
     Cop(Cload (Word_val, Mutable),
-      [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths], dbg);
-       Cconst_int(2*size_addr-1)], dbg)], dbg))))
+      [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths], dbg ());
+       Cconst_int(2*size_addr-1)], dbg ())], dbg ()))))
 
   in
   let body = Clet(VP.create clos', clos, body) in
@@ -3677,12 +3693,13 @@ let send_function arity =
     fun_args = List.map (fun (arg, ty) -> VP.create arg, ty) fun_args;
     fun_body = body;
     fun_codegen_options = [];
-    fun_dbg  = Debuginfo.none;
+    fun_dbg ()  = Debuginfo.none;
     fun_human_name = S.to_string fun_name;
     fun_module_path = startup_path;
    }
 
-let apply_function arity =
+let apply_function ~startup_cmm_file arity =
+  let dbg = placeholder_dbg ~startup_cmm_file in
   let fun_name = caml_apply arity in
   let (args, clos, body) = apply_function_body arity in
   let all_args = args @ [clos] in
@@ -3691,7 +3708,7 @@ let apply_function arity =
     fun_args = List.map (fun arg -> (VP.create arg, typ_val)) all_args;
     fun_body = body;
     fun_codegen_options = [];
-    fun_dbg  = Debuginfo.none;
+    fun_dbg = dbg ();
     fun_human_name = S.to_string fun_name;
     fun_module_path = startup_path;
    }
@@ -3700,25 +3717,26 @@ let apply_function arity =
       (defun caml_tuplifyN (arg clos)
         (app clos.direct #0(arg) ... #N-1(arg) clos)) *)
 
-let tuplify_function arity =
+let tuplify_function ~startup_cmm_file arity =
+  let dbg = placeholder_dbg ~startup_cmm_file in
   let fun_name = caml_tuplify arity in
-  let dbg = Debuginfo.none in
+  let dbg () = Debuginfo.none in
   let arg = V.create_local "arg" in
   let clos = V.create_local "clos" in
   let env = empty_env in
   let rec access_components i =
     if i >= arity
     then []
-    else get_field env (Cvar arg) i dbg :: access_components(i+1) in
+    else get_field env (Cvar arg) i dbg () :: access_components(i+1) in
   Cfunction
    {fun_name;
     fun_args = [VP.create arg, typ_val; VP.create clos, typ_val];
     fun_body =
       Cop(Capply typ_val,
-          get_field env (Cvar clos) 2 dbg :: access_components 0 @ [Cvar clos],
-          dbg);
+          get_field env (Cvar clos) 2 dbg () :: access_components 0 @ [Cvar clos],
+          dbg ());
     fun_codegen_options = [];
-    fun_dbg  = Debuginfo.none;
+    fun_dbg = dbg ();
     fun_human_name = S.to_string fun_name;
     fun_module_path = startup_path;
    }
@@ -3752,30 +3770,30 @@ let tuplify_function arity =
 *)
 
 let max_arity_optimized = 15
-let final_curry_function arity =
-  let dbg = Debuginfo.none in
+let final_curry_function ~startup_cmm_file arity =
+  let dbg () = placeholder_dbg ~startup_cmm_file in
   let last_arg = V.create_local "arg" in
   let last_clos = V.create_local "clos" in
   let env = empty_env in
   let rec curry_fun args clos n =
     if n = 0 then
       Cop(Capply typ_val,
-          get_field env (Cvar clos) 2 dbg ::
+          get_field env (Cvar clos) 2 dbg () ::
             args @ [Cvar last_arg; Cvar clos],
-          dbg)
+          dbg ())
     else
       if n = arity - 1 || arity > max_arity_optimized then
         begin
       let newclos = V.create_local "clos" in
       Clet(VP.create newclos,
-           get_field env (Cvar clos) 3 dbg,
-           curry_fun (get_field env (Cvar clos) 2 dbg :: args) newclos (n-1))
+           get_field env (Cvar clos) 3 dbg (),
+           curry_fun (get_field env (Cvar clos) 2 dbg () :: args) newclos (n-1))
         end else
         begin
           let newclos = V.create_local "clos" in
           Clet(VP.create newclos,
-               get_field env (Cvar clos) 4 dbg,
-               curry_fun (get_field env (Cvar clos) 3 dbg :: args)
+               get_field env (Cvar clos) 4 dbg (),
+               curry_fun (get_field env (Cvar clos) 3 dbg () :: args)
                          newclos (n-1))
     end in
   let fun_name = caml_curry_m_to_n arity (arity - 1) in
@@ -3784,16 +3802,16 @@ let final_curry_function arity =
     fun_args = [VP.create last_arg, typ_val; VP.create last_clos, typ_val];
     fun_body = curry_fun [] last_clos (arity-1);
     fun_codegen_options = [];
-    fun_dbg  = Debuginfo.none;
+    fun_dbg = dbg ();
     fun_human_name = S.to_string fun_name;
     fun_module_path = startup_path;
    }
 
 let rec intermediate_curry_functions arity num =
-  let dbg = Debuginfo.none in
+  let dbg () = placeholder_dbg ~startup_cmm_file in
   let env = empty_env in
   if num = arity - 1 then
-    [final_curry_function arity]
+    [final_curry_function ~startup_cmm_file arity]
   else begin
     let fun_name =
       if num = 0 then caml_curry_n arity
@@ -3811,15 +3829,15 @@ let rec intermediate_curry_functions arity num =
                 int_const (arity - num - 1);
                 Cconst_symbol(caml_curry_m_to_n_app arity (num + 1));
                 Cvar arg; Cvar clos],
-               dbg)
+               dbg ())
          else
            Cop(Calloc,
-                [alloc_closure_header 4 Debuginfo.none;
+                [alloc_closure_header 4 (dbg ());
                  Cconst_symbol(caml_curry_m_to_n arity (num + 1));
                  int_const 1; Cvar arg; Cvar clos],
-                dbg);
+                dbg ());
       fun_codegen_options = [];
-      fun_dbg  = Debuginfo.none;
+      fun_dbg = dbg ();
       fun_human_name = S.to_string fun_name;
       fun_module_path = startup_path;
      }
@@ -3835,13 +3853,14 @@ let rec intermediate_curry_functions arity num =
           let rec iter i args clos =
             if i = 0 then
               Cop(Capply typ_val,
-                  (get_field env (Cvar clos) 2 dbg) :: args @ [Cvar clos],
-                  dbg)
+                  (get_field env (Cvar clos) 2 (dbg ())) :: args @ [Cvar clos],
+                  dbg ())
             else
               let newclos = V.create_local "clos" in
               Clet(VP.create newclos,
-                   get_field env (Cvar clos) 4 dbg,
-                   iter (i-1) (get_field env (Cvar clos) 3 dbg :: args) newclos)
+                   get_field env (Cvar clos) 4 dbg (),
+                   iter (i-1) (get_field env (Cvar clos) 3 (dbg ()) :: args)
+                     newclos)
           in
           let fun_args =
             List.map (fun (arg, ty) -> VP.create arg, ty)
@@ -3855,22 +3874,22 @@ let rec intermediate_curry_functions arity num =
                fun_body = iter (num+1)
                   (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
                fun_codegen_options = [];
-               fun_dbg  = Debuginfo.none;
+               fun_dbg = dbg ();
                fun_human_name = S.to_string fun_name;
                fun_module_path = startup_path;
               }
           in
-          cf :: intermediate_curry_functions arity (num+1)
+          cf :: intermediate_curry_functions ~startup_cmm_file arity (num+1)
        else
-          intermediate_curry_functions arity (num+1))
+          intermediate_curry_functions ~startup_cmm_file arity (num+1))
   end
 
-let curry_function arity =
+let curry_function ~startup_cmm_file arity =
   assert(arity <> 0);
   (* Functions with arity = 0 does not have a curry_function *)
   if arity > 0
-  then intermediate_curry_functions arity 0
-  else [tuplify_function (-arity)]
+  then intermediate_curry_functions ~startup_cmm_file arity 0
+  else [tuplify_function ~startup_cmm_file (-arity)]
 
 module Int = Numbers.Int
 
@@ -3894,16 +3913,14 @@ let generic_functions shared units =
 
 (* Generate the entry point *)
 
-let entry_point namelist =
-  (* CR mshinwell: review all of these "None"s.  We should be able to at
-     least have filenames for these. *)
-  let dbg = Debuginfo.none in
-  let incr_global_inited =
+let entry_point ~startup_cmm_file namelist =
+  let dbg () = placeholder_dbg ~startup_cmm_file in
+  let incr_global_inited () =
     Cop(Cstore (Word_int, Assignment),
         [Cconst_symbol caml_globals_inited;
          Cop(Caddi, [Cop(Cload (Word_int, Mutable),
-                       [Cconst_symbol caml_globals_inited], dbg);
-                     Cconst_int 1], dbg)], dbg) in
+                       [Cconst_symbol caml_globals_inited], dbg ());
+                     Cconst_int 1], dbg ())], dbg ()) in
   let body =
     List.fold_right
       (fun name next ->
@@ -3912,17 +3929,34 @@ let entry_point namelist =
             Compilenv.make_symbol ~unitname:name (Some "entry"))
         in
         Csequence(Cop(Capply typ_void,
-                         [Cconst_symbol entry_sym], dbg),
-                  Csequence(incr_global_inited, next)))
+                         [Cconst_symbol entry_sym], dbg ()),
+                  Csequence(incr_global_inited (), next)))
       namelist (Cconst_int 1) in
   Cfunction {fun_name = caml_program;
              fun_args = [];
              fun_body = body;
              fun_codegen_options = [Reduce_code_size];
-             fun_dbg  = Debuginfo.none;
+             fun_dbg = dbg ();
              fun_human_name = "caml_program";
              fun_module_path = startup_path;
             }
+
+(* Handling of the startup .cmm file when generating full debug info *)
+
+let write_startup_cmm_file ~startup_cmm_file expr =
+  let chan = open_out startup_cmm_file in
+  try
+    let ppf = Format.formatter_of_out_channel chan in
+    Format.pp_set_margin ppf 80;
+    Printcmm.set_print_dbg false;
+    Printcmm.phrase ppf cmm;
+    Format.pp_print_flush ppf ();
+    close_out chan;
+    cmm
+  with exn -> begin
+    remove_file startup_cmm_file;
+    raise exn
+  end
 
 (* Generate the table of globals *)
 

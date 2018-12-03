@@ -99,15 +99,25 @@ let phantom_defining_expr_opt ppf defining_expr =
   | None -> Format.pp_print_string ppf "()"
   | Some defining_expr -> phantom_defining_expr ppf defining_expr
 
+let print_dbg = ref true
+
 let operation d = function
-  | Capply _ty -> Format.asprintf "app %a" Debuginfo.print d
+  | Capply _ty ->
+      if !print_dbg then Format.asprintf "app %a" Debuginfo.print d
+      else "app"
   | Cextcall(lbl, _ty, _alloc, _) ->
-      Format.asprintf "extcall \"%a\" %a"
-        Backend_sym.print lbl
-        Debuginfo.print d
+      if !print_dbg then
+        Format.asprintf "extcall \"%a\" %a"
+          Backend_sym.print lbl
+          Debuginfo.print d
+      else
+        Format.asprintf "extcall \"%a\""
+          Backend_sym.print lbl
   | Cload (c, Asttypes.Immutable) -> Printf.sprintf "load %s" (chunk c)
   | Cload (c, Asttypes.Mutable) -> Printf.sprintf "load_mut %s" (chunk c)
-  | Calloc -> Format.asprintf "alloc %a" Debuginfo.print d
+  | Calloc ->
+      if !print_dbg then Format.asprintf "alloc %a" Debuginfo.print d
+      else "alloc"
   | Cstore (c, init) ->
     let init =
       match init with
@@ -141,16 +151,24 @@ let operation d = function
   | Cfloatofint -> "floatofint"
   | Cintoffloat -> "intoffloat"
   | Ccmpf c -> Printf.sprintf "%sf" (float_comparison c)
-  | Craise k -> Format.asprintf "%a %a" raise_kind k Debuginfo.print d
-  | Ccheckbound -> Format.asprintf "checkbound %a" Debuginfo.print d
+  | Craise k ->
+      if !print_dbg then Format.asprintf "%a %a" raise_kind k Debuginfo.print d
+      else Format.asprintf "%a" raise_kind k
+  | Ccheckbound ->
+      if !print_dbg then Format.asprintf "checkbound %a" Debuginfo.print d
+      else "checkbound"
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
   | Cconst_natint n ->
     fprintf ppf "%s" (Nativeint.to_string n)
   | Cblockheader(n, d) ->
-    fprintf ppf "block-hdr(%s) %a"
-      (Nativeint.to_string n) Debuginfo.print d
+      if !print_dbg then
+        fprintf ppf "block-hdr(%s) %a"
+          (Nativeint.to_string n) Debuginfo.print d
+      else
+        fprintf ppf "block-hdr(%s)"
+          (Nativeint.to_string n)
   | Cconst_float n -> fprintf ppf "%F" n
   | Cconst_symbol s -> fprintf ppf "\"%a\"" Backend_sym.print s
   | Cconst_pointer n -> fprintf ppf "%ia" n
@@ -203,7 +221,9 @@ let rec expr ppf = function
         el in
       fprintf ppf "@[<1>[%a]@]" tuple el
   | Cop(op, el, dbg) ->
-      fprintf ppf "@[<2>(%s" (operation dbg op);
+      let dbg_id = Debuginfo.unique_id dbg in
+      Format.pp_open_tag (Printf.sprintf "capture_loc%d"
+      fprintf ppf "@[<2>(%s" dbg_id (operation dbg op);
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       begin match op with
       | Capply mty -> fprintf ppf "@ %a" machtype mty
@@ -269,9 +289,16 @@ let fundecl ppf f =
        if !first then first := false else fprintf ppf "@ ";
        fprintf ppf "%a: %a" VP.print id machtype ty)
      cases in
-  fprintf ppf "@[<1>(function %a %a@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
-         Debuginfo.print f.fun_dbg Backend_sym.print f.fun_name
-         print_cases f.fun_args sequence f.fun_body
+  fprintf ppf "@[<1>(function ";
+  if !print_dbg then begin
+    fprintf ppf "%a " Debuginfo.print f.fun_dbg
+  end;
+  fprintf ppf "%a@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
+    Backend_sym.print f.fun_name
+    print_cases f.fun_args sequence f.fun_body
+
+let set_print_dbg new_state =
+  print_dbg := new_state
 
 let data_item ppf = function
   | Cdefine_symbol s -> fprintf ppf "\"%a\":" Backend_sym.print s
