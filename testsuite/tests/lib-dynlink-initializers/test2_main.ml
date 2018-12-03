@@ -38,7 +38,7 @@ all_modules = "test2_inited_first.cmx test2_main.cmx"
 *)
 
 (* Check that a shared library can refer to a module in the main program
-   if its already loaded. *)
+   as long as that module has already been loaded. *)
 
 let g x = Test2_inited_first.f x
 

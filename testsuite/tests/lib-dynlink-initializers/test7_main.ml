@@ -37,7 +37,7 @@ all_modules = "test7_main.cmx"
 ***** run
 *)
 
-(* Check that a shared library can depend on an interface only module
+(* Check that a shared library can depend on an interface-only module
    that is also depended on by modules in the main program *)
 
 let f (x : Test7_interface_only.t) = x + 1 [@@inline never]

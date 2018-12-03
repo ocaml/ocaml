@@ -44,7 +44,7 @@ all_modules = "test4_main.cmx"
 *)
 
 (* Check that a module in a shared library cannot refer to another
-   module in the library that is loaded after the first. *)
+   module in the same shared library if it has not yet been loaded. *)
 
 let () =
   try

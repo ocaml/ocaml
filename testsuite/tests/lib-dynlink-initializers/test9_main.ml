@@ -43,7 +43,7 @@ all_modules = "test9_main.cmx"
 ***** run
 *)
 
-(* Check that a shared library can depend on an interface only module
+(* Check that a shared library can depend on an interface-only module
    that is implemented by another shared library that is loaded
    later. *)
 

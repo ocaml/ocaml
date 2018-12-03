@@ -49,9 +49,9 @@ all_modules = "test5_main.cmx"
 ***** run
 *)
 
-(* Check that a shared library that is loaded during the loading of
-   another shared libary can refer to modules of that library if they
-   have already finished loading. *)
+(* Check that when one shared library loads another shared library then
+   modules of the second shared library can refer to modules of the
+   first shared library, as long as they have already been loaded. *)
 
 let () =
   if Dynlink.is_native then

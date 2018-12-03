@@ -43,8 +43,9 @@ all_modules = "test3_main.cmx"
 ***** run
 *)
 
-(* Check that a module in a shared library can refer to another module
-   in the shared library if it is already loaded. *)
+(* Check that one module in a shared library can refer to another module
+   in the same shared library as long as the second module has already
+   been loaded. *)
 
 let () =
   if Dynlink.is_native then begin

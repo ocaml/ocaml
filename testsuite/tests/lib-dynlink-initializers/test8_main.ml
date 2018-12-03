@@ -47,8 +47,8 @@ all_modules = "test8_main.cmx"
 ***** run
 *)
 
-(* Check that modules of a shared library can have interface-only dependencies to
-   later modules in the library. *)
+(* Check that modules of a shared library can have interface-only
+   dependencies to later modules in the same shared library. *)
 
 let () =
   if Dynlink.is_native then begin
