@@ -34,24 +34,6 @@
 #define SIZEOF_SHORT 2
 #define SIZEOF_LONGLONG 8
 
-#ifdef __MINGW32__
-#define ARCH_INT64_TYPE long long
-#define ARCH_UINT64_TYPE unsigned long long
-#else
-#define ARCH_INT64_TYPE __int64
-#define ARCH_UINT64_TYPE unsigned __int64
-#endif
-#define ARCH_INT64_PRINTF_FORMAT "I64"
-#if _MSC_VER >= 1800
-#define ARCH_SIZET_PRINTF_FORMAT "z"
-#else
-#define ARCH_SIZET_PRINTF_FORMAT "I"
-#endif
-
-#if defined(_MSC_VER) && !defined(__cplusplus)
-#define inline __inline
-#endif
-
 #undef NONSTANDARD_DIV_MOD
 
 #define PROFINFO_WIDTH 0
