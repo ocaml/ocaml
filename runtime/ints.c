@@ -293,7 +293,7 @@ CAMLprim value caml_int32_shift_right_unsigned(value v1, value v2)
 #define int64_popcnt __builtin_popcountll
 
 #else /* defined(__GNUC__) */
-
+#ifdef _MSC_VER
 #include <intrin.h>
 #pragma intrinsic(_BitScanReverse)
 
@@ -357,7 +357,7 @@ int naive_int32_popcnt (uint32_t x)
 #define int64_clz naive_int64_clz
 #define int32_popcnt naive_int32_popcnt
 #define int64_popcnt naive_int64_popcnt
-
+#endif /* _MSC_VER */
 #endif /* defined(__GNUC__) */
 
 int wrap_int32_clz(uint32_t x)
