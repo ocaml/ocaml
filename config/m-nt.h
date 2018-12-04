@@ -32,6 +32,7 @@
 #define SIZEOF_PTR 4
 #endif
 #define SIZEOF_SHORT 2
+#define SIZEOF_LONGLONG 8
 
 #ifdef __MINGW32__
 #define ARCH_INT64_TYPE long long
