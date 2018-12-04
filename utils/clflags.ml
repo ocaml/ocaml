@@ -386,7 +386,6 @@ let color = ref None ;; (* -color *)
 let unboxed_types = ref false
 
 type dwarf_version =
-  | Four
   | Five
 
 let default_dwarf_version = Five

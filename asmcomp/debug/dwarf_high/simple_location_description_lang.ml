@@ -66,7 +66,11 @@ module Rvalue = struct
      It may be that we should have a more nuanced partitioning of expressions
      that reflects this distinction.  Alternatively if [DW_op_stack_value]
      turns out to be always needed in both of the above cases, there is
-     nothing to do. *)
+     nothing to do.
+     Note: page 10 of the DWARF-4 spec, line 26, distinguishes "location
+     descriptions" from "expressions".  Maybe this is the correct
+     terminology.
+  *)
 
   type 'a t = 'a rvalue
 

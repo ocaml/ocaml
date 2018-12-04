@@ -80,6 +80,14 @@ type t =
   | Type_unit
   | Rvalue_reference_type
   | Template_alias
+  | Coarray_type
+  | Generic_subrange
+  | Dynamic_type
+  | Atomic_type
+  | Call_site
+  | Call_site_parameter
+  | Skeleton_unit
+  | Immutable_type
   | User of user
 
 let tag_name t =
@@ -145,6 +153,14 @@ let tag_name t =
     | Type_unit -> "type_unit"
     | Rvalue_reference_type -> "rvalue_reference_type"
     | Template_alias -> "template_alias"
+    | Coarray_type -> "coarray_type"
+    | Generic_subrange -> "generic_subrange"
+    | Dynamic_type -> "dynamic_type"
+    | Atomic_type -> "atomic_type"
+    | Call_site -> "call_site"
+    | Call_site_parameter -> "call_site_parameter"
+    | Skeleton_unit -> "skeleton_unit"
+    | Immutable_type -> "immutable_type"
     | User i -> Format.asprintf "user_%a" Int16.print i
   in
   "DW_TAG_" ^ name
@@ -217,6 +233,14 @@ let encode t =
     | Type_unit -> 0x41
     | Rvalue_reference_type -> 0x42
     | Template_alias -> 0x43
+    | Coarray_type -> 0x44
+    | Generic_subrange -> 0x45
+    | Dynamic_type -> 0x46
+    | Atomic_type -> 0x47
+    | Call_site -> 0x48
+    | Call_site_parameter -> 0x49
+    | Skeleton_unit -> 0x4a
+    | Immutable_type -> 0x4b
     | User code ->
       assert (code >= dw_tag_lo_user && code <= dw_tag_hi_user);
       Int16.to_int code
@@ -231,13 +255,15 @@ let emit t =
 
 (* This function is permitted to say "Yes" when there might not be any
    children, but not the opposite. *)
+(* CR mshinwell: This function probably isn't correct yet *)
 let child_determination t : Child_determination.t =
   match t with
   | Compile_unit
   | Lexical_block
   | Subprogram
   | Structure_type
-  | Array_type -> Yes
+  | Array_type
+  | Call_site -> Yes
   | Class_type
   | Entry_point
   | Enumeration_type
@@ -293,6 +319,13 @@ let child_determination t : Child_determination.t =
   | Type_unit
   | Rvalue_reference_type
   | Template_alias
+  | Coarray_type
+  | Generic_subrange
+  | Dynamic_type
+  | Atomic_type
+  | Call_site_parameter
+  | Skeleton_unit
+  | Immutable_type
   | User _ -> No
 
 let compare t1 t2 = Stdlib.compare t1 t2

@@ -105,11 +105,10 @@ let mk_dwarf_format f =
 let mk_dwarf_version f =
   let default =
     match Clflags.default_dwarf_version with
-    | Clflags.Four -> "4+gnu"
     | Clflags.Five -> "5"
   in
   "-dwarf-version", Arg.String f,
-    Printf.sprintf "4+gnu|5  Set DWARF debug info version (default %s)" default
+    Printf.sprintf "5  Set DWARF debug info version (default %s)" default
 ;;
 
 let mk_for_pack_byt f =

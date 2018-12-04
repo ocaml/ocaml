@@ -35,6 +35,11 @@ val subset : t -> t -> bool
 
 val find_reg_opt : t -> Reg.t -> Reg_with_debug_info.t option
 
+val find_all_holding_value_of
+   : t
+  -> Backend_var.t
+  -> Reg_with_debug_info.t list
+
 val print
    : print_reg:(Format.formatter -> Reg.t -> unit)
   -> Format.formatter

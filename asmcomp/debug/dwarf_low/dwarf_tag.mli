@@ -83,6 +83,14 @@ type t =
   | Type_unit
   | Rvalue_reference_type
   | Template_alias
+  | Coarray_type
+  | Generic_subrange
+  | Dynamic_type
+  | Atomic_type
+  | Call_site
+  | Call_site_parameter
+  | Skeleton_unit
+  | Immutable_type
   | User of user
 
 include Dwarf_emittable.S with type t := t

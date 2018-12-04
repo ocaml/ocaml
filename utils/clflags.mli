@@ -227,7 +227,6 @@ val color : Misc.Color.setting option ref
 val unboxed_types : bool ref
 
 type dwarf_version =
-  | Four
   | Five
 
 val dwarf_version : dwarf_version ref

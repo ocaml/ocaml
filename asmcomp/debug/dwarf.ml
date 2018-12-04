@@ -1063,12 +1063,13 @@ let add_call_site_parameter t ~block_die ~arg_index ~arg ~stack_offset =
       in
       let arg_location =
         let everywhere_holding_var =
-          Reg_availability_set.find_holding_value_of holds_value_of
+          Reg_availability_set.find_all_holding_value_of holds_value_of
         in
         (* Only registers spilled at the time of the call will be available
            with certainty in the callee. *)
         let on_stack =
-          Misc.Stdlib.List.filter_map (fun reg ->
+          Misc.Stdlib.List.filter_map (fun rd ->
+              let reg = Reg_with_debug_info.reg rd in
               match reg.loc with
               | Stack stack_loc ->
                 Some (reg, offset_from_cfa_in_bytes reg stack_loc ~stack_offset)
@@ -1076,7 +1077,7 @@ let add_call_site_parameter t ~block_die ~arg_index ~arg ~stack_offset =
               | Unknown ->
                 Misc.fatal_errorf "Register without location: %a"
                   Printmach.reg reg)
-            (Reg.Set.elements everywhere_holding_var)
+            everywhere_holding_var
         in
         match on_stack with
         | [] -> []
@@ -1132,9 +1133,9 @@ let add_call_site t ~whole_function_lexical_block ~stack_offset
         ])
         ()
     in
-    (* For the moment, don't generate argument information if one or more
-       of the arguments is split across registers.  This could be improved
-       in the future. *)
+    (* CR-someday mshinwell: For the moment, don't generate argument
+       information if one or more of the arguments is split across registers.
+       This could be improved in the future. *)
     let no_split_args =
       Array.for_all (fun arg ->
           match arg.part with
@@ -1163,7 +1164,7 @@ let call_target_for_indirect_callee ~callee ~stack_offset =
   in
   (* It seems unlikely that we won't be calling through a [Reg], but we
      support the stack case (yielding [DW_AT_call_target] rather than the
-     "clobbered" variant) anyway. *)
+     "clobbered" variant) for completeness. *)
   if clobbered_by_call then
     [DAH.create_call_target_clobbered location_desc] 
   else
