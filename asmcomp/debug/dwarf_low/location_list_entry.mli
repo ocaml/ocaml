@@ -36,7 +36,7 @@ type entry =
       loc_desc : Counted_location_description.t;
     }
   | Default_location of Counted_location_description.t
-  | Base_address of Targetint.t
+  | Base_address of Asm_symbol.t
   | Start_end of {
       start_inclusive : Asm_label.t;
       end_exclusive : Asm_label.t;
