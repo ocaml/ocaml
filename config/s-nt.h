@@ -17,12 +17,13 @@
 
 #define OCAML_OS_TYPE "Win32"
 
+#undef BSD_SIGNALS
+#define SUPPORT_DYNAMIC_LINKING 1
+#define HAS_SOCKETS 1
+#define HAS_IPV6 1
 #if defined(__MINGW32__) || _MSC_VER >= 1600
 #define HAS_STDINT_H 1
 #endif
-#undef BSD_SIGNALS
-#define HAS_STRERROR 1
-#define HAS_SOCKETS 1
 #define HAS_GETCWD 1
 #define HAS_UTIME 1
 #define HAS_GETHOSTNAME 1
@@ -32,8 +33,7 @@
 #define HAS_LOCALE_H 1
 #define HAS_STRTOD_L 1
 #endif
-#define HAS_BROKEN_PRINTF 1
-#define HAS_IPV6 1
 #define HAS_NICE 1
-#define SUPPORT_DYNAMIC_LINKING 1
 #define HAS_EXECVPE 1
+#define HAS_BROKEN_PRINTF 1
+#define HAS_STRERROR 1
