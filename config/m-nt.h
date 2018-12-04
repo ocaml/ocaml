@@ -17,7 +17,7 @@
    Visual C++ or Mingw compiler */
 
 #ifdef _WIN64
-#define ARCH_SIXTYFOUR
+#define ARCH_SIXTYFOUR 1
 #else
 #undef ARCH_SIXTYFOUR
 #endif
@@ -55,4 +55,4 @@
 
 #define PROFINFO_WIDTH 0
 
-#define FLAT_FLOAT_ARRAY
+#define FLAT_FLOAT_ARRAY 1
