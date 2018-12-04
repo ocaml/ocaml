@@ -17,7 +17,7 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 (** The "DW_LLE_" prefix is omitted. *)
-type t =
+type entry =
   | End_of_list
   | Base_addressx of Address_index.t
   | Startx_endx of {
@@ -38,14 +38,22 @@ type t =
   | Default_location of Counted_location_description.t
   | Base_address of Targetint.t
   | Start_end of {
-      start_inclusive : Targetint.t;
-      end_exclusive : Targetint.t;
+      start_inclusive : Asm_label.t;
+      end_exclusive : Asm_label.t;
+      end_adjustment : int;
+      (** [end_adjustment] is not present in the DWARF specification.
+          It is used for one-byte adjustments to labels' addresses to ensure
+          correct delimiting of ranges. *)
       loc_desc : Counted_location_description.t;
     }
   | Start_length of {
-      start_inclusive : Targetint.t;
+      start_inclusive : Asm_label.t;
       length : Targetint.t;
       loc_desc : Counted_location_description.t;
     }
+
+type t
+
+val create : entry -> start_of_code_symbol:Asm_symbol.t -> t
 
 include Dwarf_emittable.S with type t := t
