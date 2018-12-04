@@ -114,7 +114,7 @@ module type S =
        equal, that is, contain equal elements. *)
 
     val subset: t -> t -> bool
-    (** [subset s1 s2] tests whether the set [s1] is a subset of
+    (** [subset s1 s2] tests whether the set [s1] is a subet of
        the set [s2]. *)
 
     val iter: (elt -> unit) -> t -> unit

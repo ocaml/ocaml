@@ -12,21 +12,40 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** DWARF location list entries. *)
+(** DWARF location list entries (DWARF-5 spec section 2.6.2, pages 43--45). *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t
+(** The "DW_LLE_" prefix is omitted. *)
+type t =
+  | End_of_list
+  | Base_addressx of Address_index.t
+  | Startx_endx of {
+      start_inclusive : Address_index.t;
+      end_exclusive : Address_index.t;
+      loc_desc : Counted_location_description.t;
+    }
+  | Startx_length of {
+      start_inclusive : Address_index.t;
+      length : Targetint.t;
+      loc_desc : Counted_location_description.t;
+    }
+  | Offset_pair of {
+      start_offset_inclusive : Targetint.t;
+      end_offset_exclusive : Targetint.t;
+      loc_desc : Counted_location_description.t;
+    }
+  | Default_location of Counted_location_description.t
+  | Base_address of Targetint.t
+  | Start_end of {
+      start_inclusive : Targetint.t;
+      end_exclusive : Targetint.t;
+      loc_desc : Counted_location_description.t;
+    }
+  | Start_length of {
+      start_inclusive : Targetint.t;
+      length : Targetint.t;
+      loc_desc : Counted_location_description.t;
+    }
 
 include Dwarf_emittable.S with type t := t
-
-val create_location_list_entry : start_of_code_symbol:Asm_symbol.t
-  -> first_address_when_in_scope:Asm_label.t
-  -> first_address_when_not_in_scope:Asm_label.t
-  -> first_address_when_not_in_scope_offset:int option
-  -> single_location_description:Single_location_description.t
-  -> t
-
-val create_base_address_selection_entry : base_address_symbol:Asm_symbol.t -> t
-
-val compare_ascending_vma : t -> t -> int

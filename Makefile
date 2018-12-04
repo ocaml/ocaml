@@ -157,6 +157,7 @@ DWARF_LOW=\
   asmcomp/debug/dwarf_low/simple_location_description.cmo \
   asmcomp/debug/dwarf_low/composite_location_description.cmo \
   asmcomp/debug/dwarf_low/single_location_description.cmo \
+  asmcomp/debug/dwarf_low/counted_location_description.cmo \
   asmcomp/debug/dwarf_low/dwarf_attributes.cmo \
   asmcomp/debug/dwarf_low/encoding_attribute.cmo \
   asmcomp/debug/dwarf_low/dwarf_attribute_values.cmo \
@@ -169,6 +170,7 @@ DWARF_LOW=\
   asmcomp/debug/dwarf_low/location_list.cmo \
   asmcomp/debug/dwarf_low/range_list_entry.cmo \
   asmcomp/debug/dwarf_low/range_list.cmo \
+  asmcomp/debug/dwarf_low/unit_type.cmo \
   asmcomp/debug/dwarf_low/debug_info_section.cmo \
   asmcomp/debug/dwarf_low/debug_loc_table.cmo \
   asmcomp/debug/dwarf_low/debug_ranges_table.cmo

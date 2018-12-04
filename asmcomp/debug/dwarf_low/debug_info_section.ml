@@ -29,7 +29,9 @@ let create ~dies ~debug_abbrev_label ~compilation_unit_header_label =
     compilation_unit_header_label;
   }
 
-let dwarf_version = Dwarf_version.four
+(* CR mshinwell: This must line up with whatever is set in the compiler.
+   However maybe we should just remove the user setting. *)
+let dwarf_version = Dwarf_version.five
 
 (* CR-someday mshinwell: this used to have "label - section", but maybe zero
    will do. *)
@@ -43,6 +45,8 @@ let address_width_in_bytes_on_target =
   Dwarf_value.int8 ~comment:"Arch.size_addr"
     (Numbers.Int8.of_int_exn Arch.size_addr)
 
+let unit_type = Unit_type.Compile
+
 let size_without_first_word t =
   let (+) = Dwarf_int.add in
   let total_die_size =
@@ -51,8 +55,9 @@ let size_without_first_word t =
       t.dies
   in
   Dwarf_version.size dwarf_version
-    + Dwarf_value.size (debug_abbrev_offset t)
+    + Dwarf_value.size unit_type
     + Dwarf_value.size address_width_in_bytes_on_target
+    + Dwarf_value.size (debug_abbrev_offset t)
     + total_die_size
 
 let size t =
@@ -66,8 +71,9 @@ let emit t =
   A.define_label t.compilation_unit_header_label;
   Initial_length.emit initial_length;
   Dwarf_version.emit dwarf_version;
-  Dwarf_value.emit (debug_abbrev_offset t);
+  Unit_type.emit unit_type;
   Dwarf_value.emit address_width_in_bytes_on_target;
+  Dwarf_value.emit (debug_abbrev_offset t);
   A.new_line ();
   A.comment "Debugging information entries:";
   A.new_line ();
