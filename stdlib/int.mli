@@ -101,12 +101,10 @@ external shift_right_logical : int -> int -> int = "%lsrint"
     [n > ]{!Sys.int_size}. *)
 
 external count_leading_zeros : int -> int = "%clzint"
-(** Counts the number of most significant zero bits.
-    Interprets the argument as an {e unsigned} integer. *)
+(** Counts the number of most significant zero bits. *)
 
 external count_set_bits : int -> int = "%popcntint"
-(** Counts the number of bit set to 1.
-    Interprets the argument as an {e unsigned} integer. *)
+(** Counts the number of bit set to 1. *)
 
 (** {1:preds Predicates and comparisons} *)
 

@@ -203,7 +203,7 @@ method! select_operation op args dbg =
       (Iintop Imulh, args)
   (* ARM does not support popcnt *)
   | Cpopcnt ->
-      (self#iextcall("caml_untagged_int_popcnt", false), args)
+      self#iextcall("caml_untagged_int_popcnt", false), args
   (* Bitwise logical operations have a different range of immediate
      operands than the other instructions *)
   | Cand -> self#select_logical Iand args

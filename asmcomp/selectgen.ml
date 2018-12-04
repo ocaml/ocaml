@@ -462,7 +462,7 @@ method select_operation op args _dbg =
   | (Clsl, _) -> self#select_shift Ilsl args
   | (Clsr, _) -> self#select_shift Ilsr args
   | (Casr, _) -> self#select_shift Iasr args
-  | (Cclz b, _) -> (Iintop (Iclz b), args)
+  | (Cclz {non_zero}, _) -> (Iintop (Iclz{non_zero}), args)
   | (Cpopcnt, _) -> (Iintop Ipopcnt, args)
   | (Ccmpi comp, _) -> self#select_arith_comp (Isigned comp) args
   | (Caddv, _) -> self#select_arith_comm Iadd args

@@ -12,80 +12,64 @@ let bitwidth = Sys.word_size
 
 let test_int () =
   (* call directly *)
-  let popcnt = int_popcnt in begin
-    assert (popcnt 0 = 0);
-    assert (popcnt 1 = 1);
-    assert (popcnt 7 = 3);
-    assert ((popcnt Int.max_int) = bitwidth-1-1);
-    assert ((popcnt Int.min_int) = 1);
-    assert ((popcnt (-1)) = bitwidth-1)
-  end;
+  assert (int_popcnt 0 = 0);
+  assert (int_popcnt 1 = 1);
+  assert (int_popcnt 7 = 3);
+  assert ((int_popcnt Int.max_int) = bitwidth-1-1);
+  assert ((int_popcnt Int.min_int) = 1);
+  assert ((int_popcnt (-1)) = bitwidth-1);
   (* call through standard library routines *)
-  let popcnt = Int.count_set_bits in begin
-    assert (popcnt 0 = 0);
-    assert (popcnt 1 = 1);
-    assert (popcnt 7 = 3);
-    assert ((popcnt Int.max_int) = bitwidth-1-1);
-    assert ((popcnt Int.min_int) = 1);
-    assert ((popcnt (-1)) = bitwidth-1)
-  end;
+  assert (Int.count_set_bits 0 = 0);
+  assert (Int.count_set_bits 1 = 1);
+  assert (Int.count_set_bits 7 = 3);
+  assert ((Int.count_set_bits Int.max_int) = bitwidth-1-1);
+  assert ((Int.count_set_bits Int.min_int) = 1);
+  assert ((Int.count_set_bits (-1)) = bitwidth-1);
   ()
 
 let test_nativeint ()  =
   (* call directly *)
-  let popcnt = nativeint_popcnt in begin
-    assert (popcnt 0n = 0);
-    assert (popcnt 7n = 3);
-    assert (popcnt Nativeint.max_int = (bitwidth - 1));
-    assert (popcnt Nativeint.min_int = 1);
-    assert ((popcnt (-1n)) = bitwidth)
-  end;
+  assert (nativeint_popcnt 0n = 0);
+  assert (nativeint_popcnt 7n = 3);
+  assert (nativeint_popcnt Nativeint.max_int = (bitwidth - 1));
+  assert (nativeint_popcnt Nativeint.min_int = 1);
+  assert ((nativeint_popcnt (-1n)) = bitwidth);
   (* call through standard library routines *)
-  let popcnt = Nativeint.count_set_bits in begin
-    assert (popcnt 0n = 0);
-    assert (popcnt 7n = 3);
-    assert (popcnt Nativeint.max_int = (bitwidth - 1));
-    assert (popcnt Nativeint.min_int = 1);
-    assert ((popcnt (-1n)) = bitwidth)
-  end;
+  assert (Nativeint.count_set_bits 0n = 0);
+  assert (Nativeint.count_set_bits 7n = 3);
+  assert (Nativeint.count_set_bits Nativeint.max_int = (bitwidth - 1));
+  assert (Nativeint.count_set_bits Nativeint.min_int = 1);
+  assert ((Nativeint.count_set_bits (-1n)) = bitwidth);
   ()
 
 let test_int32 () =
   (* call directly *)
-  let popcnt = int32_popcnt in begin
-    assert (popcnt 0l = 0);
-    assert (popcnt 7l = 3);
-    assert (popcnt Int32.max_int = (32 - 1));
-    assert (popcnt Int32.min_int = 1);
-    assert ((popcnt (-1l)) = 32)
-  end;
+  assert (int32_popcnt 0l = 0);
+  assert (int32_popcnt 7l = 3);
+  assert (int32_popcnt Int32.max_int = (32 - 1));
+  assert (int32_popcnt Int32.min_int = 1);
+  assert ((int32_popcnt (-1l)) = 32);
   (* call through standard library routines *)
-  let popcnt = Int32.count_set_bits in begin
-    assert (popcnt 0l = 0);
-    assert (popcnt 7l = 3);
-    assert (popcnt Int32.max_int = (32 - 1));
-    assert (popcnt Int32.min_int = 1);
-    assert ((popcnt (-1l)) = 32)
-  end;
+  assert (Int32.count_set_bits 0l = 0);
+  assert (Int32.count_set_bits 7l = 3);
+  assert (Int32.count_set_bits Int32.max_int = (32 - 1));
+  assert (Int32.count_set_bits Int32.min_int = 1);
+  assert ((Int32.count_set_bits (-1l)) = 32);
   ()
 
 let test_int64 () =
   (* call directly *)
-  let popcnt = int64_popcnt in begin
-    assert (popcnt 0L = 0);
-    assert (popcnt 7L = 3);
-    assert (popcnt Int64.max_int = (64 - 1));
-    assert (popcnt Int64.min_int = 1);
-    assert ((popcnt (-1L)) = 64);
-  end;
+  assert (int64_popcnt 0L = 0);
+  assert (int64_popcnt 7L = 3);
+  assert (int64_popcnt Int64.max_int = (64 - 1));
+  assert (int64_popcnt Int64.min_int = 1);
+  assert ((int64_popcnt (-1L)) = 64);
   (* call through standard library routines *)
-  let popcnt = Int64.count_set_bits in begin
-    assert (popcnt 0L = 0);
-    assert (popcnt 7L = 3);
-    assert (popcnt Int64.max_int = (64 - 1));
-    assert (popcnt Int64.min_int = 1);
-    assert ((popcnt (-1L)) = 64);
-  end;
+  assert (Int64.count_set_bits 0L = 0);
+  assert (Int64.count_set_bits 7L = 3);
+  assert (Int64.count_set_bits Int64.max_int = (64 - 1));
+  assert (Int64.count_set_bits Int64.min_int = 1);
+  assert ((Int64.count_set_bits (-1L)) = 64);
   ()
 
 let () =

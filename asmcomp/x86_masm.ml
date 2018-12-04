@@ -121,7 +121,6 @@ let print_instr b = function
   | ANDPD (arg1, arg2) -> i2 b "andpd" arg1 arg2
   | BSWAP arg -> i1 b "bswap" arg
   | BSR (arg1, arg2) -> i2 b "bsr" arg1 arg2
-  | LZCNT (arg1, arg2) -> i2 b "lzcnt" arg1 arg2
   | POPCNT (arg1, arg2) -> i2 b "popcnt" arg1 arg2
   | CALL arg  -> i1_call_jmp b "call" arg
   | CDQ -> i0 b "cdq"

@@ -123,12 +123,10 @@ external shift_right_logical : int32 -> int -> int32 = "%int32_lsr"
    The result is unspecified if [y < 0] or [y >= 32]. *)
 
 external count_leading_zeros : int32 -> int = "%int32_clz"
-(** Counts the number of most significant zero bits.
-   Interprets the argument as an {e unsigned} 32-bit integer. *)
+(** Counts the number of most significant zero bits. *)
 
 external count_set_bits : int32 -> int = "%int32_popcnt"
-(** Counts the number of bit set to 1.
-   Interprets the argument as an {e unsigned} 32-bit integer. *)
+(** Counts the number of bit set to 1. *)
 
 external of_int : int -> int32 = "%int32_of_int"
 (** Convert the given integer (type [int]) to a 32-bit integer

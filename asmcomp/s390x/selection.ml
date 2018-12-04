@@ -97,7 +97,7 @@ method! select_operation op args dbg =
     (Cmulhi, _) -> (Iintop Imulh, args)
   (* Z does not support popcnt *)
   | (Cpopcnt, args) ->
-       (self#iextcall("caml_untagged_int_popcnt", false), args)
+      self#iextcall("caml_untagged_int_popcnt", false), args
   (* The and, or and xor instructions have a different range of immediate
      operands than the other instructions *)
   | (Cand, _) ->
