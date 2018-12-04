@@ -68,6 +68,14 @@ let create_external ~is_visible_externally =
     let spec = AS.create A.External F.Flag in
     AV.create spec (V.bool ~comment:"not visible externally" false)
 
+let create_call_target loc_desc =
+  let spec = AS.create A.Call_target F.Exprloc in
+  AV.create spec (V.single_location_description loc_desc)
+
+let create_call_target_clobbered loc_desc =
+  let spec = AS.create A.Call_target_clobbered F.Exprloc in
+  AV.create spec (V.single_location_description loc_desc)
+
 let create_location ~location_list_label =
   let spec = AS.create A.Location F.Sec_offset_loclistptr in
   AV.create spec (V.offset_into_debug_loc location_list_label)

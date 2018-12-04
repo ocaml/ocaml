@@ -122,6 +122,13 @@ let create_ignore ?reference ?sort_priority ~parent ~tag ~attribute_values () =
   in
   ()
 
+let add_or_replace_attribute t attribute_value =
+  let attribute_values =
+    ASS.Map.add (AV.attribute_spec attribute_value) attribute_value
+      t.attribute_values
+  in
+  t.attribute_values <- attribute_values
+
 let set_name t name = t.name <- Some name
 
 type fold_arg =

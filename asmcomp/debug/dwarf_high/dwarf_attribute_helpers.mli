@@ -55,6 +55,14 @@ val create_external
    : is_visible_externally:bool
   -> Dwarf_attribute_values.Attribute_value.t
 
+val create_call_target
+   : Single_location_description.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_call_target_clobbered
+   : Single_location_description.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
 val create_location
    : location_list_label:Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t

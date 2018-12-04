@@ -392,8 +392,8 @@ type location_description =
   | Simple of Simple_location_description.t
   | Composite of Composite_location_description.t
 
-let reg_location_description (reg : Reg.t) ~offset_from_cfa_in_bytes
-      ~need_rvalue : location_description option =
+let reg_location_description0 (reg : Reg.t) ~offset_from_cfa_in_bytes
+      ~need_rvalue =
   let module SLD = Simple_location_description in
   match reg.loc with
   | Unknown ->
@@ -416,11 +416,11 @@ let reg_location_description (reg : Reg.t) ~offset_from_cfa_in_bytes
     | Some dwarf_reg_number ->
       let location_description =
         if not need_rvalue then
-          Simple (SLDL.compile (SLDL.of_lvalue (
-            SLDL.Lvalue.in_register ~dwarf_reg_number)))
+          SLDL.compile (SLDL.of_lvalue (
+            SLDL.Lvalue.in_register ~dwarf_reg_number))
         else
-          Simple (SLDL.compile (SLDL.of_rvalue (
-            SLDL.Rvalue.in_register ~dwarf_reg_number)))
+          SLDL.compile (SLDL.of_rvalue (
+            SLDL.Rvalue.in_register ~dwarf_reg_number))
       in
       Some location_description
     end
@@ -442,11 +442,19 @@ let reg_location_description (reg : Reg.t) ~offset_from_cfa_in_bytes
         Targetint.of_int_exn (offset_from_cfa_in_bytes / Arch.size_addr)
       in
       if not need_rvalue then
-        Some (Simple (SLDL.compile (SLDL.of_lvalue (
-          SLDL.Lvalue.in_stack_slot ~offset_in_words))))
+        Some (SLDL.compile (SLDL.of_lvalue (
+          SLDL.Lvalue.in_stack_slot ~offset_in_words)))
       else
-        Some (Simple (SLDL.compile (SLDL.of_rvalue (
-          SLDL.Rvalue.in_stack_slot ~offset_in_words))))
+        Some (SLDL.compile (SLDL.of_rvalue (
+          SLDL.Rvalue.in_stack_slot ~offset_in_words)))
+
+let reg_location_description reg ~offset_from_cfa_in_bytes
+      ~need_rvalue : location_description option =
+  match
+    reg_location_description0 reg ~offset_from_cfa_in_bytes ~need_rvalue
+  with
+  | None -> None
+  | Some simple_loc_desc -> Some (Simple simple_loc_desc)
 
 let phantom_var_location_description t
       ~(defining_expr : Mach.phantom_defining_expr) ~need_rvalue:_
@@ -1007,6 +1015,273 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
   in
   whole_function_lexical_block, lexical_block_proto_dies
 
+(* CR mshinwell: Share with [Available_ranges_vars]. *)
+let offset_from_cfa_in_bytes reg stack_loc ~stack_offset =
+  let frame_size = Proc.frame_size ~stack_offset in
+  let slot_offset =
+    Proc.slot_offset stack_loc ~reg_class:(Proc.register_class reg)
+      ~stack_offset
+  in
+  Some (frame_size - slot_offset)
+
+let add_call_site_parameter t ~block_die ~arg_index ~arg ~stack_offset =
+  (* The reason we call [Reg_availability_set.canonicalise] from
+     [Available_ranges] vars, rather than traversing each function's
+     code and rewriting all of the availability sets first, is so that
+     we don't lose information (in particular that a particular hard
+     register before a call contains the value of a certain variable)
+     that we may need here. *)
+  match Reg_availability_set.find_reg arg insn.available_before with
+  | None -> ()
+  | Some rd ->
+    match Reg_with_debug_info.provenance rd with
+    | None -> ()
+    | Some provenance ->
+      let holds_value_of = Reg_with_debug_info.holds_value_of rd in
+      let type_die_reference =
+        (* For functions defined in the same compilation unit, or for
+           self calls, share the type DIE. *)
+        match
+          V.Map.find holds_value_of t.type_dies_for_parameters_all_functions
+        with
+        | exception Not_found ->
+          let type_die = normal_type_for_var t ~parent:block_die var in
+          Proto_die.reference type_die
+        | existing_type_die_reference -> existing_type_die_reference
+      in
+      let param_location =
+        let offset_from_cfa_in_bytes =
+          match arg.loc with
+          | Stack stack_loc ->
+            offset_from_cfa_in_bytes arg stack_loc ~stack_offset
+          | Reg _ -> None
+          | Unknown ->
+            Misc.fatal_errorf "Register without location: %a" Printmach.reg arg
+        in
+        reg_location_description0 arg ~offset_from_cfa_in_bytes
+          ~need_rvalue:false
+      in
+      let arg_location =
+        let everywhere_holding_var =
+          Reg_availability_set.find_holding_value_of holds_value_of
+        in
+        (* Only registers spilled at the time of the call will be available
+           with certainty in the callee. *)
+        let on_stack =
+          Misc.Stdlib.List.filter_map (fun reg ->
+              match reg.loc with
+              | Stack stack_loc ->
+                Some (reg, offset_from_cfa_in_bytes reg stack_loc ~stack_offset)
+              | Reg _ -> None
+              | Unknown ->
+                Misc.fatal_errorf "Register without location: %a"
+                  Printmach.reg reg)
+            (Reg.Set.elements everywhere_holding_var)
+        in
+        match on_stack with
+        | [] -> []
+        | (reg, offset_from_cfa_in_bytes) :: _ ->
+          let arg_location =
+            reg_location_description reg ~offset_from_cfa_in_bytes
+              ~need_rvalue:false
+          in
+          [DAH.create_single_call_data_location_description arg_location]
+      in
+      Proto_die.create_ignore ~sort_priority:arg_index
+        ~parent:(Some block_die)
+        ~tag:Call_site_parameter
+        ~attribute_values:(arg_location @ [
+          (* We don't give the name of the parameter since it is
+             complicated to calculate (and there is currently insufficient
+             information to perform the calculation if the function is in
+             a different compilation unit). *)
+          DAH.create_type ~proto_die_reference:type_die_reference;
+          DAH.create_single_location_description param_location;
+        ])
+        ()
+
+let add_call_site t ~whole_function_lexical_block ~stack_offset
+      ~is_tail ~args ~(call_labels : Mach.call_labels) insn attrs =
+  let dbg = insn.dbg in
+  let block_die =
+    find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg
+  in
+  match block_die with
+  | None ->
+    Misc.fatal_error "No lexical block DIE found for debuginfo (the block \
+        should always exist since this debuginfo came from a [Linearize] \
+        instruction, not a [Backend_var]):@ %a"
+      Debuginfo.print dbg
+  | Some block_die ->
+    let position_attrs =
+      match Debuginfo.position dbg with
+      | None -> []
+      | Some code_range -> [
+          DAH.create_call_file (Debuginfo.Code_range.file code_range);
+          DAH.create_call_line (Debuginfo.Code_range.line code_range);
+          DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
+        ]
+    in
+    let call_site_die =
+      Proto_die.create ~parent:(Some block_die)
+        ~tag:Call_site
+        ~attribute_values:(attrs @ position_attrs @ [
+          DAH.create_call_pc call_labels.before;
+          DAH.create_call_return_pc call_labels.after;
+          DAH.create_call_tail_call is_tail;
+        ])
+        ()
+    in
+    (* For the moment, don't generate argument information if one or more
+       of the arguments is split across registers.  This could be improved
+       in the future. *)
+    let no_split_args =
+      Array.for_all (fun arg ->
+          match arg.part with
+          | None -> true
+          | Some _ -> false)
+        args
+    in
+    if no_split_args then begin
+      Array.iteri (fun arg_index arg ->
+          add_call_site_parameter t ~block_die ~arg_index ~arg)
+        args
+    end
+
+let call_target_for_indirect_callee ~callee ~stack_offset =
+  let offset_from_cfa_in_bytes, clobbered_by_call =
+    match callee.loc with
+    | Stack stack_loc ->
+      offset_from_cfa_in_bytes arg stack_loc ~stack_offset, false
+    | Reg _ -> None, true
+    | Unknown ->
+      Misc.fatal_errorf "Register without location: %a" Printmach.reg reg
+  in
+  let location_desc =
+    reg_location_description0 arg ~offset_from_cfa_in_bytes
+      ~need_rvalue:false
+  in
+  (* It seems unlikely that we won't be calling through a [Reg], but we
+     support the stack case (yielding [DW_AT_call_target] rather than the
+     "clobbered" variant) anyway. *)
+  if clobbered_by_call then
+    [DAH.create_call_target_clobbered location_desc] 
+  else
+    [DAH.create_call_target location_desc] 
+
+let dwarf_for_call_sites t ~function_proto_die ~whole_function_lexical_block
+      ~lexical_block_proto_dies ~(fundecl : L.fundecl)
+      ~external_calls_generated_during_emit ~function_symbol =
+  let found_self_tail_calls = ref false in
+  let add_call_site = add_call_site t ~whole_function_lexical_block in
+  let add_indirect_ocaml_call ~stack_offset ~callee ~args ~call_labels insn =
+    add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
+      (call_target_for_indirect_callee ~callee)
+  in
+  let add_direct_ocaml_call ~stack_offset ~callee ~args ~call_labels insn =
+    add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn [
+      DAH.create_call_target ~callee;
+    ]
+  in
+  let add_indirect_ocaml_tail_call ~stack_offset ~callee ~args ~call_labels
+        insn =
+    add_call_site ~stack_offset ~is_tail:true ~args ~call_labels insn
+      (call_target_for_indirect_callee ~callee)
+  in
+  let add_direct_ocaml_tail_call ~stack_offset ~callee ~args ~call_labels
+        insn =
+    (* DWARF-5 spec section 3.4, page 89, lines 19--22: [DW_TAG_call_site]s
+       are not to be generated for self tail calls (called "tail recursion
+       calls" in the spec). *)
+    if Asm_symbol.equal callee function_symbol then begin
+      found_self_tail_calls := true
+    end else begin
+      add_call_site ~is_tail:true ~args ~call_labels insn [
+        DAH.create_call_target ~callee;
+      ]
+    end
+  in
+  let add_external_call ~stack_offset ~callee ~args ~call_labels insn =
+    add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn [
+      DAH.create_call_target ~callee;
+    ]
+  in
+  let rec traverse_insns (insn : L.instruction) ~stack_offset =
+    match insn.desc with
+    | Lend -> stack_offset
+    | Lop op ->
+      let stack_offset =
+        match op with
+        | Icall_ind of { call_labels; } ->
+          let args = Array.sub insn.arg 1 (Array.length insn.arg - 1) in
+          add_indirect_ocaml_call ~stack_offset
+            ~callee:insn.arg.(0) ~args ~call_labels insn;
+          stack_offset
+        | Icall_imm of { func; call_labels; } ->
+          let callee = Asm_symbol.create callee in
+          add_direct_ocaml_call ~stack_offset
+            ~callee:func ~args:insn.arg ~call_labels insn;
+          stack_offset
+        | Itailcall_ind of { call_labels; } ->
+          let args = Array.sub insn.arg 1 (Array.length insn.arg - 1) in
+          add_indirect_ocaml_tail_call ~stack_offset
+            ~callee:insn.arg.(0) ~args ~call_labels insn;
+          stack_offset
+        | Itailcall_imm of { func; call_labels; } ->
+          let callee = Asm_symbol.create callee in
+          add_direct_ocaml_tail_call ~stack_offset
+            ~callee:func ~args:insn.arg ~call_labels insn;
+          stack_offset
+        | Iextcall of { func; alloc = _; call_labels; } ->
+          let callee = Asm_symbol.create callee in
+          add_external_call ~stack_offset
+            ~callee:func ~args:insn.arg ~call_labels insn;
+          stack_offset
+        | Imove
+        | Ispill
+        | Ireload
+        | Iconst_int _
+        | Iconst_float _
+        | Iconst_symbol _
+        | Iload _
+        | Istore _
+        | Ialloc _
+        | Iintop _
+        | Iintop_imm _
+        | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
+        | Ifloatofint | Iintoffloat
+        | Ispecific _
+        | Iname_for_debugger _ -> stack_offset
+        | Istackoffset delta -> stack_offset + delta
+      in
+      traverse_insns insn.next ~stack_offset
+    | Lprologue
+    | Lreloadretaddr
+    | Lreturn
+    | Llabel _
+    | Lbranch _
+    | Lcondbranch _
+    | Lcondbranch3 _
+    | Lswitch _
+    | Lsetuptrap _
+    | Lraise _ -> traverse_insns insn.next ~stack_offset
+    | Lpushtrap ->
+      traverse_insns insn.next
+        ~stack_offset:(stack_offset + Proc.trap_frame_size_in_bytes)
+    | Lpoptrap
+      traverse_insns insn.next
+        ~stack_offset:(stack_offset - Proc.trap_frame_size_in_bytes)
+  in
+  let (_stack_offset : int) =
+    traverse_insns fundecl.fun_body ~stack_offset:Proc.initial_stack_offset
+  in
+  List.iter (fun ({ callee; call_labels; dbg; }
+        : Emit.external_call_generated_during_emit) ->
+      (* We omit [DW_tag_call_site_parameter] for these calls. *)
+      add_external_call ~callee ~args:[] ~call_labels dbg)
+    external_calls_generated_during_emit;
+  !found_self_tail_calls
+
 let passes_for_fundecl (fundecl : L.fundecl) =
   let available_ranges_vars, fundecl =
     Profile.record "dwarf_available_ranges_vars" (fun fundecl ->
@@ -1069,224 +1344,6 @@ let passes_for_fundecl (fundecl : L.fundecl) =
   in
   available_ranges_vars, lexical_block_ranges, fundecl
 
-let add_call_site_parameter t ~block_die ~arg_index ~arg ~stack_offset =
-  (* The reason we call [Reg_availability_set.canonicalise] from
-     [Available_ranges] vars, rather than traversing each function's
-     code and rewriting all of the availability sets first, is so that
-     we don't lose information (in particular that a particular hard
-     register before a call contains the value of a certain variable)
-     that we may need here. *)
-  match Reg_availability_set.find_reg arg insn.available_before with
-  | None -> ()
-  | Some rd ->
-    match Reg_with_debug_info.provenance rd with
-    | None -> ()
-    | Some provenance ->
-      let holds_value_of = Reg_with_debug_info.holds_value_of rd in
-      let type_die_reference =
-        (* For functions defined in the same compilation unit, or for
-           self calls, share the type DIE. *)
-        match
-          V.Map.find holds_value_of t.type_dies_for_parameters_all_functions
-        with
-        | exception Not_found ->
-          let type_die = normal_type_for_var t ~parent:block_die var in
-          Proto_die.reference type_die
-        | existing_type_die_reference -> existing_type_die_reference
-      in
-      let offset_from_cfa_in_bytes stack_loc =
-        let frame_size = Proc.frame_size ~stack_offset in
-        let slot_offset =
-          Proc.slot_offset stack_loc ~reg_class:(Proc.register_class arg)
-            ~stack_offset
-        in
-        Some (frame_size - slot_offset)
-      in
-      let param_location =
-        let offset_from_cfa_in_bytes =
-          match arg.loc with
-          | Stack stack_loc -> offset_from_cfa_in_bytes stack_loc
-          | Reg _ | Unknown -> None
-        in
-        reg_location_description arg ~offset_from_cfa_in_bytes
-          ~need_rvalue:false
-      in
-      let arg_location =
-        let everywhere_holding_var =
-          Reg_availability_set.find_holding_value_of holds_value_of
-        in
-        (* Only registers spilled at the time of the call will be available
-           with certainty in the callee. *)
-        let on_stack =
-          Misc.Stdlib.List.filter_map (fun reg ->
-              match reg.loc with
-              | Stack stack_loc ->
-                Some (reg, offset_from_cfa_in_bytes stack_loc)
-              | Reg _ | Unknown -> None)
-            (Reg.Set.elements everywhere_holding_var)
-        in
-        match on_stack with
-        | [] -> []
-        | (reg, offset_from_cfa_in_bytes) :: _ ->
-          let arg_location =
-            reg_location_description reg ~offset_from_cfa_in_bytes
-              ~need_rvalue:false
-          in
-          DAH.create_single_location_description arg_location
-      in
-      Proto_die.create_ignore ~sort_priority:arg_index
-        ~parent:(Some block_die)
-        ~tag:Call_site_parameter
-        ~attribute_values:(arg_location @ [
-          (* We don't give the name of the parameter since it is
-             complicated to calculate (and there is currently insufficient
-             information to perform the calculation if the function is in
-             a different compilation unit). *)
-          DAH.create_type ~proto_die_reference:type_die_reference;
-          DAH.create_single_location_description param_location;
-        ])
-        ()
-
-let add_call_site t ~whole_function_lexical_block ~is_tail ~args
-      ~(call_labels : Mach.call_labels) insn attrs =
-  let dbg = insn.dbg in
-  let block_die =
-    find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg
-  in
-  match block_die with
-  | None ->
-    Misc.fatal_error "No lexical block DIE found for debuginfo (the block \
-        should always exist since this debuginfo came from a [Linearize] \
-        instruction, not a [Backend_var]):@ %a"
-      Debuginfo.print dbg
-  | Some block_die ->
-    let position_attrs =
-      match Debuginfo.position dbg with
-      | None -> []
-      | Some code_range -> [
-          DAH.create_call_file (Debuginfo.Code_range.file code_range);
-          DAH.create_call_line (Debuginfo.Code_range.line code_range);
-          DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
-        ]
-    in
-    let call_site_die =
-      Proto_die.create ~parent:(Some block_die)
-        ~tag:Call_site
-        ~attribute_values:(attrs @ position_attrs @ [
-          DAH.create_call_pc call_labels.before;
-          DAH.create_call_return_pc call_labels.after;
-          DAH.create_call_tail_call is_tail;
-        ])
-        ()
-    in
-    (* For the moment, don't generate argument information if one or more
-       of the arguments is split across registers.  This could be improved
-       in the future. *)
-    let no_split_args =
-      Array.for_all (fun arg ->
-          match arg.part with
-          | None -> true
-          | Some _ -> false)
-        args
-    in
-    if no_split_args then begin
-      Array.iteri (fun arg_index arg ->
-          add_call_site_parameter t ~block_die ~arg_index ~arg)
-        args
-    end
-
-let dwarf_for_call_sites t ~function_proto_die ~whole_function_lexical_block
-      ~lexical_block_proto_dies ~(fundecl : L.fundecl)
-      ~external_calls_generated_during_emit =
-  let add_call_site = add_call_site t ~whole_function_lexical_block in
-  let add_indirect_ocaml_call ~callee ~args ~call_labels insn =
-        ~available_before =
-    add_call_site ~is_tail:false ~args ~call_labels insn [
-
-    ]
-  in
-  let add_direct_ocaml_call ~callee ~args ~call_labels insn =
-    add_call_site ~is_tail:false ~args ~call_labels insn [
-      DAH.create_call_target ~callee;
-    ]
-  in
-  let add_indirect_ocaml_tail_call ~args ~callee ~call_labels insn =
-    add_call_site ~is_tail:true ~args ~call_labels insn [
-
-    ]
-  in
-  let add_direct_ocaml_tail_call ~args ~callee ~call_labels insn =
-(* XXX Should not generate this for self tail calls?
-   Presumably in this case we shouldn't say "all calls" at all *)
-    add_call_site ~is_tail:true ~args ~call_labels insn [
-      DAH.create_call_target ~callee;
-    ]
-  in
-  let add_external_call ~callee ~args ~call_labels insn =
-    add_call_site ~is_tail:false ~args ~call_labels insn [
-      DAH.create_call_target ~callee;
-    ]
-  in
-  let rec traverse_insns (insn : L.instruction) =
-    match insn.desc with
-    | Lend -> ()
-    | Lop op ->
-      begin match op with
-      | Icall_ind of { call_labels; } ->
-        let args = Array.sub insn.arg 1 (Array.length insn.arg - 1) in
-        add_indirect_ocaml_call ~args ~callee:insn.arg.(0) ~call_labels insn
-      | Icall_imm of { func; call_labels; } ->
-        let callee = Asm_symbol.create callee in
-        add_direct_ocaml_call ~args:insn.arg ~callee:func ~call_labels insn
-      | Itailcall_ind of { call_labels; } ->
-        let args = Array.sub insn.arg 1 (Array.length insn.arg - 1) in
-        add_indirect_ocaml_tail_call ~args ~callee:insn.arg.(0) ~call_labels
-          insn
-      | Itailcall_imm of { func; call_labels; } ->
-        let callee = Asm_symbol.create callee in
-        add_direct_ocaml_tail_call ~args:insn.arg ~callee:func ~call_labels
-          insn
-      | Iextcall of { func; alloc = _; call_labels; } ->
-        let callee = Asm_symbol.create callee in
-        add_external_call ~args:insn.arg ~callee:func ~call_labels insn
-      | Imove
-      | Ispill
-      | Ireload
-      | Iconst_int _
-      | Iconst_float _
-      | Iconst_symbol _
-      | Istackoffset _
-      | Iload _
-      | Istore _
-      | Ialloc _
-      | Iintop _
-      | Iintop_imm _
-      | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
-      | Ifloatofint | Iintoffloat
-      | Ispecific _
-      | Iname_for_debugger _ -> ()
-      end;
-      traverse_insns insn.next
-    | Lprologue
-    | Lreloadretaddr
-    | Lreturn
-    | Llabel _
-    | Lbranch _
-    | Lcondbranch _
-    | Lcondbranch3 _
-    | Lswitch _
-    | Lsetuptrap _
-    | Lpushtrap
-    | Lpoptrap
-    | Lraise _ -> traverse_insns insn.next
-  in
-  traverse_insns fundecl.fun_body;
-  List.iter (fun ({ callee; call_labels; dbg; }
-        : Emit.external_call_generated_during_emit) ->
-      (* We omit [DW_tag_call_site_parameter] for these calls. *)
-      add_external_call ~callee ~args:[] ~call_labels dbg)
-    external_calls_generated_during_emit
-
 let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
       (fundecl : L.fundecl) =
   let available_ranges_vars, lexical_block_ranges, fundecl =
@@ -1344,7 +1401,6 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
         start_of_function;
         end_of_function;
         DAH.create_type ~proto_die:type_proto_die;
-        DAH.create_call_all_calls true;
       ]
       ()
   in
@@ -1362,12 +1418,18 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
       ~accumulate:true
     ();
   if supports_call_sites () then begin
-    Profile.record "dwarf_for_call_sites" (fun () ->
-        dwarf_for_call_sites t ~function_proto_die
-          ~whole_function_lexical_block ~lexical_block_proto_dies ~fundecl
-          ~external_calls_generated_during_emit)
-        ~accumulate:true
-      ()
+    let found_self_tail_calls =
+      Profile.record "dwarf_for_call_sites" (fun () ->
+          dwarf_for_call_sites t ~function_proto_die
+            ~whole_function_lexical_block ~lexical_block_proto_dies ~fundecl
+            ~external_calls_generated_during_emit ~function_symbol)
+          ~accumulate:true
+        ()
+    in
+    if not found_self_tail_calls then begin
+      Proto_die.add_attribute function_proto_die
+        (DAH.create_call_all_calls true)
+    end
   end
 
 let dwarf_for_toplevel_constant t ~vars ~module_path ~symbol =
