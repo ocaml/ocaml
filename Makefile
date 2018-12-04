@@ -17,8 +17,8 @@
 
 ROOTDIR = .
 
-include Makefile.config
-include Makefile.common
+-include Makefile.config
+-include Makefile.common
 
 .PHONY: defaultentry
 ifeq "$(NATIVE_COMPILER)" "true"

@@ -14,8 +14,8 @@
 #**************************************************************************
 
 ROOTDIR=..
-include $(ROOTDIR)/Makefile.config
-include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.config
+-include $(ROOTDIR)/Makefile.common
 
 # $1: target name to dispatch to all otherlibs/*/Makefile
 define dispatch_

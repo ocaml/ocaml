@@ -16,8 +16,8 @@
 MAKEFLAGS := -r -R
 ROOTDIR = ..
 
-include $(ROOTDIR)/Makefile.config
-include $(ROOTDIR)/Makefile.common
+-include $(ROOTDIR)/Makefile.config
+-include $(ROOTDIR)/Makefile.common
 
 ifeq ($(SYSTEM),unix)
 override define shellquote
