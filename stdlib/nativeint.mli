@@ -145,7 +145,7 @@ external count_leading_zeros : nativeint -> int = "%nativeint_clz"
    Interprets the argument as an {e unsigned} native integer. *)
 
 external count_set_bits : nativeint -> int = "%nativeint_popcnt"
-(** Counts the number of bit set to 1.
+(** Counts the number of bits set to 1.
    Interprets the argument as an {e unsigned} native integer. *)
 
 external of_int : int -> nativeint = "%nativeint_of_int"
