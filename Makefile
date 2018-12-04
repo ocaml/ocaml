@@ -230,7 +230,6 @@ ASMCOMP=\
   asmcomp/debug/available_ranges_phantom_vars.cmo \
   asmcomp/debug/available_ranges_all_vars.cmo \
   asmcomp/debug/lexical_block_ranges.cmo \
-  asmcomp/debug/available_filtering.cmo \
   asmcomp/debug/name_laundry.cmo \
   asmcomp/debug/coalesce_labels.cmo \
   asmcomp/debug/dwarf.cmo \

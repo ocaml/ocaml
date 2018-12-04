@@ -15,7 +15,17 @@
 
 (* Generation of assembly code *)
 
-val fundecl: Linearize.fundecl -> end_of_function_label:Linearize.label -> unit
+type external_call_generated_during_emit = private {
+  callee : Asm_symbol.t;
+  call_labels : Mach.call_labels;
+  dbg : Debuginfo.t;
+}
+
+val fundecl
+   : Linearize.fundecl
+  -> end_of_function_label:Linearize.label
+  -> external_call_generated_during_emit list
+
 val data: Cmm.data_item list -> unit
 val begin_assembly: unit -> unit
 val end_assembly: Dwarf.t option -> unit

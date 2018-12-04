@@ -389,7 +389,7 @@ type dwarf_version =
   | Four
   | Five
 
-let default_dwarf_version = Four
+let default_dwarf_version = Five
 let dwarf_version = ref default_dwarf_version
 
 type dwarf_format =

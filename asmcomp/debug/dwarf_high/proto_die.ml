@@ -36,6 +36,7 @@ type t = {
      "how to reference this DIE" value. *)
   mutable name : Asm_symbol.t option;
   (* for references between DIEs across units *)
+  (* CR mshinwell: Is this being used at the moment?  Check *)
 }
 
 (* CR-someday mshinwell: tidy up (very similar to Dwarf_attribute_helpers,

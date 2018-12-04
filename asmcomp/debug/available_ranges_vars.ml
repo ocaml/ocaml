@@ -144,9 +144,10 @@ module Vars = struct
   let availability_set_to_key_set (avail : Reg_availability_set.t) =
     match avail with
     | Unreachable -> Key.Set.empty
-    | Ok available_before ->
+    | Ok avail ->
+      let avail = Reg_availability_set.canonicalise avail in
       RD.Set.fold (fun reg result -> Key.Set.add reg result)
-        available_before
+        avail ->
         Key.Set.empty
 
   let available_before (insn : L.instruction) =

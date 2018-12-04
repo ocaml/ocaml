@@ -466,21 +466,32 @@ method select_checkbound () =
   Icheckbound { spacetime_index = 0; label_after_error = None; }
 method select_checkbound_extra_args () = []
 
+method private new_call_labels () : Mach.call_labels =
+  { before = Cmm.new_label ();
+    after = Cmm.new_label ();
+  }
+
 method select_operation op args _dbg =
   match (op, args) with
   | (Capply _, Cconst_symbol func :: rem) ->
-    let label_after = Cmm.new_label () in
-    (Icall_imm { func; label_after; }, rem)
+    let call_labels = self#new_call_labels () in
+    (Icall_imm { func; call_labels; }, rem)
   | (Capply _, _) ->
-    let label_after = Cmm.new_label () in
-    (Icall_ind { label_after; }, args)
+    let call_labels = self#new_call_labels () in
+    (Icall_ind { call_labels; }, args)
   | (Cextcall(func, _ty, alloc, label_after), _) ->
-    let label_after =
-      match label_after with
-      | None -> Cmm.new_label ()
-      | Some label_after -> label_after
+    let call_labels : Mach.call_labels =
+      let before = Cmm.new_label () in
+      let after =
+        match label_after with
+        | None -> Cmm.new_label ()
+        | Some label_after -> label_after
+      in
+      { before;
+        after;
+      }
     in
-    Iextcall { func; alloc; label_after; }, args
+    Iextcall { func; alloc; call_labels; }, args
   | (Cload (chunk, _mut), [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])
@@ -1278,12 +1289,12 @@ method emit_tail (env:environment) exp =
       | Some(simple_args, env) ->
           let (new_op, new_args) = self#select_operation op simple_args dbg in
           match new_op with
-            Icall_ind { label_after; } ->
+            Icall_ind { call_labels; } ->
               let r1 = self#emit_tuple env new_args in
               let rarg = Array.sub r1 1 (Array.length r1 - 1) in
               let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
               if stack_ofs = 0 then begin
-                let call = Iop (Itailcall_ind { label_after; }) in
+                let call = Iop (Itailcall_ind { call_labels; }) in
                 let spacetime_reg =
                   self#about_to_emit_call env call [| r1.(0) |] dbg
                 in
@@ -1304,11 +1315,11 @@ method emit_tail (env:environment) exp =
                 self#insert env (Iop(Istackoffset(-stack_ofs))) [||] [||];
                 self#insert env Ireturn loc_res [||]
               end
-          | Icall_imm { func; label_after; } ->
+          | Icall_imm { func; call_labels; } ->
               let r1 = self#emit_tuple env new_args in
               let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
               if stack_ofs = 0 then begin
-                let call = Iop (Itailcall_imm { func; label_after; }) in
+                let call = Iop (Itailcall_imm { func; call_labels; }) in
                 let spacetime_reg =
                   self#about_to_emit_call env call [| |] dbg
                 in
@@ -1316,7 +1327,7 @@ method emit_tail (env:environment) exp =
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
                 self#insert_debug env call dbg loc_arg [||];
               end else if current_function_is func then begin
-                let call = Iop (Itailcall_imm { func; label_after; }) in
+                let call = Iop (Itailcall_imm { func; call_labels; }) in
                 let loc_arg' = Proc.loc_parameters r1 in
                 let spacetime_reg =
                   self#about_to_emit_call env call [| |] dbg

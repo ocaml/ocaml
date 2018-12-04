@@ -33,6 +33,8 @@ val equal : t -> t -> bool
 
 val subset : t -> t -> bool
 
+val find_reg_opt : t -> Reg.t -> Reg_with_debug_info.t option
+
 val print
    : print_reg:(Format.formatter -> Reg.t -> unit)
   -> Format.formatter

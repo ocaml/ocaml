@@ -80,6 +80,10 @@ let create_composite_location_description loc_desc =
   let spec = AS.create A.Location F.Exprloc in
   AV.create spec (V.composite_location_description loc_desc)
 
+let create_single_call_data_location_description loc_desc =
+  let spec = AS.create A.Call_data_location F.Exprloc in
+  AV.create spec (V.single_location_description loc_desc)
+
 let create_encoding ~encoding =
   let spec = AS.create A.Encoding F.Data1 in
   AV.create spec (V.encoding_attribute encoding)

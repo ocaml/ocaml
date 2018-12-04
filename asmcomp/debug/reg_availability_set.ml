@@ -113,6 +113,41 @@ let canonicalise availability =
       assert (RD.Set.subset result availability)
     end;
     Ok result
+(* CR mshinwell: Add this code which came from elsewhere into [canonicalise]
+let canonicalise (_insn : L.instruction) avail_set =
+  let avail_set = Reg_availability_set.canonicalise avail_set in
+  (* Don't show variables and parameters of inlined functions except when in
+     the inlined body. *)
+  (* XXX This should apply to the phantom ones too *)
+  Reg_availability_set.map avail_set ~f:(fun avail_set ->
+    Reg_with_debug_info.Set.filter (fun reg ->
+        let debug_info = Reg_with_debug_info.debug_info reg in
+        match debug_info with
+        | None -> true
+        | Some debug_info ->
+          match Reg_with_debug_info.Debug_info.provenance debug_info with
+          | None -> true
+          | Some provenance ->
+            let _dbg = Backend_var.Provenance.debuginfo provenance in
+            true
+(* CR mshinwell: Reinstate this.
+(*
+Format.eprintf "%a: var=%a versus insn=%a\n%!"
+  Backend_var.print (Reg_with_debug_info.Debug_info.holds_value_of debug_info)
+  Debuginfo.print_compact dbg
+  Debuginfo.print_compact insn.dbg;
+*)
+            match List.rev dbg, List.rev insn.dbg with
+            | _::((_::_) as dbg_rev1), _::((_::_) as dbg_rev2) ->
+              let in_inlined_body =
+                Misc.Stdlib.List.equal (fun dbg1 dbg2 -> dbg1 = dbg2)
+                  dbg_rev1
+                  dbg_rev2
+              in
+              not in_inlined_body
+            | _, _ -> true *)  )
+      avail_set)
+*)
 
 let print ~print_reg ppf = function
   | Unreachable -> Format.fprintf ppf "<unreachable>"

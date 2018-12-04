@@ -45,3 +45,6 @@ val dwarf_for_fundecl_and_emit
     called once all (in)constants and function declarations have been passed
     to the above functions. *)
 val emit : t -> unit
+
+(** Whether support for DWARF-5 call site marking is enabled. *)
+val supports_call_sites : unit -> bool

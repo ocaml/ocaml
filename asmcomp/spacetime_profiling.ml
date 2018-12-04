@@ -12,6 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-30-40-41-42"]
+
 open Backend_sym.Names
 
 module V = Backend_var
@@ -277,13 +279,14 @@ class virtual instruction_selection = object (self)
      instrumentation... *)
   val mutable disable_instrumentation = false
 
-  method private instrument_direct_call ~env ~func ~is_tail ~label_after dbg =
+  method private instrument_direct_call ~env ~func ~is_tail
+        ~(call_labels : Mach.call_labels) dbg =
     let instrumentation =
       code_for_call
         ~node:(Lazy.force !spacetime_node)
         ~callee:(Direct func)
         ~is_tail
-        ~label:label_after
+        ~label:call_labels.after
         dbg
     in
     match self#emit_expr env instrumentation ~bound_name:None with
@@ -291,7 +294,7 @@ class virtual instruction_selection = object (self)
     | Some reg -> Some reg
 
   method private instrument_indirect_call ~env ~callee ~is_tail
-      ~label_after dbg =
+      ~(call_labels : Mach.call_labels) dbg =
     (* [callee] is a pseudoregister, so we have to bind it in the environment
        and reference the variable to which it is bound. *)
     let callee_ident = V.create_local "callee" in
@@ -301,7 +304,7 @@ class virtual instruction_selection = object (self)
         ~node:(Lazy.force !spacetime_node)
         ~callee:(Indirect (Cmm.Cvar callee_ident))
         ~is_tail
-        ~label:label_after
+        ~label:call_labels.after
         dbg
     in
     match self#emit_expr env instrumentation ~bound_name:None with
@@ -316,24 +319,24 @@ class virtual instruction_selection = object (self)
     else
       let module M = Mach in
       match desc with
-      | M.Iop (M.Icall_imm { func; label_after; }) ->
+      | M.Iop (M.Icall_imm { func; call_labels; }) ->
         assert (Array.length arg = 0);
-        self#instrument_direct_call ~env ~func ~is_tail:false ~label_after dbg
-      | M.Iop (M.Icall_ind { label_after; }) ->
+        self#instrument_direct_call ~env ~func ~is_tail:false ~call_labels dbg
+      | M.Iop (M.Icall_ind { call_labels; }) ->
         assert (Array.length arg = 1);
         self#instrument_indirect_call ~env ~callee:arg.(0) dbg
-          ~is_tail:false ~label_after
-      | M.Iop (M.Itailcall_imm { func; label_after; }) ->
+          ~is_tail:false ~call_labels
+      | M.Iop (M.Itailcall_imm { func; call_labels; }) ->
         assert (Array.length arg = 0);
-        self#instrument_direct_call ~env ~func ~is_tail:true ~label_after dbg
-      | M.Iop (M.Itailcall_ind { label_after; }) ->
+        self#instrument_direct_call ~env ~func ~is_tail:true ~call_labels dbg
+      | M.Iop (M.Itailcall_ind { call_labels; }) ->
         assert (Array.length arg = 1);
         self#instrument_indirect_call ~env ~callee:arg.(0)
-          ~is_tail:true ~label_after dbg
-      | M.Iop (M.Iextcall { func; alloc = true; label_after; }) ->
+          ~is_tail:true ~call_labels dbg
+      | M.Iop (M.Iextcall { func; alloc = true; call_labels; }) ->
         (* N.B. No need to instrument "noalloc" external calls. *)
         assert (Array.length arg = 0);
-        self#instrument_direct_call ~env ~func ~is_tail:false ~label_after dbg
+        self#instrument_direct_call ~env ~func ~is_tail:false ~call_labels dbg
       | _ -> None
 
   method private instrument_blockheader ~env ~value's_header ~dbg =
