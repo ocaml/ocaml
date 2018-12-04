@@ -363,6 +363,8 @@ val set_margin : int -> unit
   maximum indentation limit is decreased while trying to preserve
   a minimal ratio [max_indent/margin>=50%] and if possible
   the current difference [margin - max_indent].
+
+  See also {!pp_set_geometry}.
 *)
 
 val pp_get_margin : formatter -> unit -> int
@@ -402,11 +404,55 @@ val set_max_indent : int -> unit
 
   If [d] is greater or equal than the current margin, it is ignored,
   and the current maximum indentation limit is kept.
+
+  See also {!pp_set_geometry}.
 *)
 
 val pp_get_max_indent : formatter -> unit -> int
 val get_max_indent : unit -> int
 (** Return the maximum indentation limit (in characters). *)
+
+(** {1 Geometry }
+
+Geometric functions can be used to manipulate simultaneously the
+coupled variables, margin and maxixum indentation limit.
+
+*)
+
+type geometry = { max_indent:int; margin: int}
+
+val check_geometry: geometry -> bool
+(** Check if the formatter geometry is valid: [1 < max_indent < margin] *)
+
+val pp_set_geometry : formatter -> max_indent:int -> margin:int -> unit
+val set_geometry : max_indent:int -> margin:int -> unit
+val pp_safe_set_geometry : formatter -> max_indent:int -> margin:int -> unit
+val safe_set_geometry : max_indent:int -> margin:int -> unit
+(**
+   [pp_set_geometry ppf ~max_indent ~margin] sets both the margin
+   and maximum indentation limit for [ppf].
+
+   When [1 < max_indent < margin],
+   [pp_set_geometry ppf ~max_indent ~margin]
+   is equivalent to
+   [pp_set_margin ppf margin; pp_set_max_indent ppf max_indent];
+   and avoids the subtly incorrect
+   [pp_set_max_indent ppf max_indent; pp_set_margin ppf margin];
+
+   Outside of this domain, [pp_set_geometry] raises an invalid argument
+   exception whereas [pp_safe_set_geometry] does nothing.
+
+   @since 4.08.0
+*)
+
+val pp_get_geometry: formatter -> unit -> geometry
+val get_geometry: unit -> geometry
+(** Return the current geometry of the formatter
+
+    @since 4.08.0
+*)
+
+
 
 (** {1 Maximum formatting depth} *)
 
