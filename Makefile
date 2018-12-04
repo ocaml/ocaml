@@ -127,6 +127,9 @@ utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
 utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
 	$(CPP) -I runtime/caml $< > $@
 
+configure: configure.ac aclocal.m4 VERSION tools/autogen
+	tools/autogen
+
 .PHONY: partialclean
 partialclean::
 	rm -f utils/config.ml utils/domainstate.ml utils/domainstate.mli
