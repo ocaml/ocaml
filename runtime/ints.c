@@ -293,43 +293,45 @@ CAMLprim value caml_int32_shift_right_unsigned(value v1, value v2)
 #define int64_popcnt __builtin_popcountll
 
 #else /* defined(__GNUC__) */
- /* _MSC_ does not have builtin for popcnt, and
-  *  has undefined behavior for clz builtin when
-  *  lzcnt instruction is not supported.
-  *  Use naive version of clz and popcnt from Hacker's Delight. */
+
+#include <intrin.h>
+#pragma intrinsic(_BitScanReverse)
 
 int naive_int64_clz(uint64_t v)
 {
-  int n = 0;
-  int64_t x = (int64_t) v;
-  int64_t y = x;
-
-L: if (x < 0) return n;
-   if (y == 0) return 64 - n;
-   n = n + 1;
-   x = x << 1;
-   y = y >> 1;
-   goto L;
+  unsigned long n;
+#ifdef ARCH_SIXTYFOUR
+  if (_BitScanReverse64(&n, v)) return 63-n;
+  else return 64;
+#else
+  /* _BitScanReverse64 is not supported */
+  if ((v >> 32) == 0)
+    {
+      if (_BitScanReverse(&n,v)) return 63-n;
+      else return 64;
+    }
+  else
+    {
+      _BitScanReverse(&n,(v>>32));
+      return 31-n;
+    }
+#endif
 }
 
 int naive_int32_clz(uint32_t v)
 {
-  int n = 0;
-  uint32_t x = (uint32_t) v;
-  uint32_t y = x;
-
-L: if (x < 0) return n;
-   if (y == 0)
+  unsigned long n;
+  if (_BitScanReverse(&n, v))
 #ifdef ARCH_SIXTYFOUR
-     return 64 - n;
+    return 63 - n;
 #else
-     return 32 - n;
+    return 31 - n;
 #endif
-   n = n + 1;
-   x = x << 1;
-   y = y >> 1;
-   goto L;
+  else return 32;
 }
+
+/* _MSVC_ intrinsic for popcnt is not supported on all targets.
+   Use naive version of clz and popcnt from Hacker's Delight. */
 
 int naive_int64_popcnt (uint64_t x)
 {
@@ -340,7 +342,6 @@ int naive_int64_popcnt (uint64_t x)
    }
    return n;
 }
-
 
 int naive_int32_popcnt (uint32_t x)
 {
