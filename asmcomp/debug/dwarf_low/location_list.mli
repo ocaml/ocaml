@@ -16,13 +16,6 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t
-
-include Dwarf_emittable.S with type t := t
-
-val create
-   : location_list_entries:Location_list_entry.t list
-  -> t
-
-val label : t -> Asm_label.t
-val compare_increasing_vma : t -> t -> int
+include module type of struct
+  include Location_or_range_list.Make (Location_list_entry)
+end

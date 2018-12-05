@@ -17,4 +17,4 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 include Location_or_range_list_entry.S
-  with type payload := unit
+  with type payload = unit

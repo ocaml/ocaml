@@ -14,8 +14,6 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module A = Asm_directives
-
 module Make (Entry : Location_or_range_list_entry.S) = struct
   type t = Entry.t list
 

@@ -146,7 +146,7 @@ module Attribute : sig
   (** We omit the "DW_AT_" prefix. *)
   type 'dwarf_classes t =
     | Sibling : Class.reference t
-    | Location : [< Class.exprloc | Class.loclistsptr ] t
+    | Location : [< Class.exprloc | Class.loclist ] t
     | Name : Class.string t
     | Ordering : Class.constant t
     | Byte_size : [< Class.constant | Class.exprloc | Class.reference ] t
@@ -212,7 +212,7 @@ module Attribute : sig
     | Entry_pc : Class.address t
     | Use_UTF8 : Class.flag t
     | Extension : Class.reference t
-    | Ranges : Class.rnglistsptr t
+    | Ranges : Class.rnglist t
     | Trampoline :
         [< Class.address | Class.flag | Class.reference | Class.string ] t
     | Call_column : Class.constant t

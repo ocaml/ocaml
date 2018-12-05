@@ -59,12 +59,12 @@ val create_call_target_clobbered
    : Single_location_description.t
   -> Dwarf_attribute_values.Attribute_value.t
 
-val create_loclistx
-   : Location_list_table.Offset.t
+val create_location
+   : Location_list_table.Index.t
   -> Dwarf_attribute_values.Attribute_value.t
 
-val create_rnglistx
-   : Range_list_table.Offset.t
+val create_ranges
+   : Range_list_table.Index.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_type

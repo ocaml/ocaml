@@ -21,6 +21,7 @@ type dwarf_section =
   | Debug_info
   | Debug_abbrev
   | Debug_aranges
+  | Debug_addr
   | Debug_loclists
   | Debug_rnglists
   | Debug_str

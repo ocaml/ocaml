@@ -83,8 +83,11 @@ module Uint32 : sig
 
   val print : Format.formatter -> t -> unit
 
+  val of_int_exn : int -> t
   val of_int32 : Int32.t -> t
   val of_int64_exn : Int64.t -> t
+
+  val to_int64 : t -> Int64.t
 end
 
 module Uint64 : sig

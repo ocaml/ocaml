@@ -137,6 +137,16 @@ module Uint32 = struct
 
   let upper_int64 = Int64.sub (Int64.shift_left Int64.one 32) Int64.one
 
+  let of_int_exn (i : int) =
+    if i < 0 then
+      Misc.fatal_errorf "Uint32.of_int_exn: %d is out of range" i
+    else
+      let i64 = Int64.of_int i in
+      if Int64.compare i64 upper_int64 > 0 then
+        Misc.fatal_errorf "Uint32.of_int_exn: %d is out of range" i
+      else
+        i64
+
   let of_int64_exn i =
     if Int64.compare i 0L < 0
         || Int64.compare i upper_int64 > 0
@@ -150,6 +160,8 @@ module Uint32 = struct
       Misc.fatal_errorf "Uint32.of_int64_exn: %ld is out of range" i
     else
       Int64.of_int32 i
+
+  let to_int64 t = t
 end
 
 module Uint64 = struct

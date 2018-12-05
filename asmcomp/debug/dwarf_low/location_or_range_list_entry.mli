@@ -67,4 +67,4 @@ module Make (P : sig
   module Payload : Dwarf_emittable.S
   val code_for_entry_kind : _ entry -> int
 end)
-  : S with type payload := P.Payload.t
+  : S with type payload = P.Payload.t

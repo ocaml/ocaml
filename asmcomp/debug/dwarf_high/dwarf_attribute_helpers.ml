@@ -71,13 +71,13 @@ let create_call_target_clobbered loc_desc =
   let spec = AS.create A.Call_target_clobbered F.Exprloc in
   AV.create spec (V.single_location_description loc_desc)
 
-let create_loclistx index =
-  let spec = AS.create A.Loclistx F.Loclistx in
-  AV.create spec (V.uleb128 (Location_list_table.Index.to_dwarf_value index))
+let create_location index =
+  let spec = AS.create A.Location F.Loclistx in
+  AV.create spec (V.loclistx ~index:(Location_list_table.Index.to_uint64 index))
 
-let create_rng index =
-  let spec = AS.create A.Rnglistx F.Rnglistx in
-  AV.create spec (V.uleb128 (Range_list_table.Index.to_dwarf_value index))
+let create_ranges index =
+  let spec = AS.create A.Ranges F.Rnglistx in
+  AV.create spec (V.rnglistx ~index:(Range_list_table.Index.to_uint64 index))
 
 let create_single_location_description loc_desc =
   let spec = AS.create A.Location F.Exprloc in

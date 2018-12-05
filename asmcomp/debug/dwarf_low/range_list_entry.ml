@@ -15,7 +15,11 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 include Location_or_range_list_entry.Make (struct
-  module Payload = Counted_location_description
+  module Payload = struct
+    type t = unit
+    let size () = Dwarf_int.zero ()
+    let emit () = ()
+  end
 
   let code_for_entry_kind (entry : _ Location_or_range_list_entry.entry) =
     match entry with

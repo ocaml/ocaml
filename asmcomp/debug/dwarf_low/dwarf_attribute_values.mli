@@ -103,6 +103,10 @@ module Value : sig
   val encoding_attribute
      : Encoding_attribute.t
     -> Dwarf_attributes.Form.data1 t
+
+  val loclistx : index:Numbers.Uint64.t -> Dwarf_attributes.Form.loclistx t
+
+  val rnglistx : index:Numbers.Uint64.t -> Dwarf_attributes.Form.rnglistx t
 end
 
 module Attribute_value : sig

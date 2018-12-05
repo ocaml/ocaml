@@ -26,7 +26,7 @@ module Make (Location_or_range_list : Dwarf_emittable.S) : sig
       forms [DW_FORM_loclistx] and [DW_FORM_rnglistx]. *)
   module Index : sig
     type t
-    val to_dwarf_value : t -> Dwarf_value.t
+    val to_uint64 : t -> Numbers.Uint64.t
   end
 
   val add : t -> Location_or_range_list.t -> Index.t

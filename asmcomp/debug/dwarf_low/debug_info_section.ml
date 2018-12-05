@@ -55,7 +55,7 @@ let size_without_first_word t =
       t.dies
   in
   Dwarf_version.size dwarf_version
-    + Dwarf_value.size unit_type
+    + Unit_type.size unit_type
     + Dwarf_value.size address_width_in_bytes_on_target
     + Dwarf_value.size (debug_abbrev_offset t)
     + total_die_size

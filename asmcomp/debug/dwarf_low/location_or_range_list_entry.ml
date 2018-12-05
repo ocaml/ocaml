@@ -64,6 +64,7 @@ module Make (P : sig
 end) = struct
   module Payload = P.Payload
 
+  type payload = Payload.t
   type nonrec entry = Payload.t entry
 
   type t = {

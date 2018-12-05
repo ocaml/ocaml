@@ -12,17 +12,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** DWARF range lists (DWARF-4 spec section 2.17.3). *)
+(** DWARF range lists. *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t
-
-include Dwarf_emittable.S with type t := t
-
-val create
-   : range_list_entries:Range_list_entry.t list
-  -> t
-
-val label : t -> Asm_label.t
-val compare_increasing_vma : t -> t -> int
+include module type of struct
+  include Location_or_range_list.Make (Range_list_entry)
+end
