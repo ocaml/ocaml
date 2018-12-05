@@ -74,6 +74,8 @@ asmcomp/*/emit.mlp       typo.tab=may typo.long-line=may
 # The build-aux directory contains bundled files so do not check it
 build-aux                typo.prune
 
+# For comparison with autoconf, some overlong lines are now permitted.
+config/Makefile.m*       typo.long-line
 /config/gnu              typo.prune
 /config/gnu/**           typo.prune
 
