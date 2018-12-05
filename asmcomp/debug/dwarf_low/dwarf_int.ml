@@ -96,6 +96,11 @@ let add t1 t2 =
 
 let succ t = add t (one ())
 
+let width_as_int64 () =
+  match zero () with
+  | Thirty_two _ -> 4L
+  | Sixty_four _ -> 8L
+
 let size t =
   match t with
   | Thirty_two _ -> Thirty_two 4l

@@ -1217,27 +1217,27 @@ let dwarf_for_call_sites t ~function_proto_die ~whole_function_lexical_block
     | Lop op ->
       let stack_offset =
         match op with
-        | Icall_ind of { call_labels; } ->
+        | Icall_ind { call_labels; } ->
           let args = Array.sub insn.arg 1 (Array.length insn.arg - 1) in
           add_indirect_ocaml_call ~stack_offset
             ~callee:insn.arg.(0) ~args ~call_labels insn;
           stack_offset
-        | Icall_imm of { func; call_labels; } ->
+        | Icall_imm { func; call_labels; } ->
           let callee = Asm_symbol.create callee in
           add_direct_ocaml_call ~stack_offset
             ~callee:func ~args:insn.arg ~call_labels insn;
           stack_offset
-        | Itailcall_ind of { call_labels; } ->
+        | Itailcall_ind { call_labels; } ->
           let args = Array.sub insn.arg 1 (Array.length insn.arg - 1) in
           add_indirect_ocaml_tail_call ~stack_offset
             ~callee:insn.arg.(0) ~args ~call_labels insn;
           stack_offset
-        | Itailcall_imm of { func; call_labels; } ->
+        | Itailcall_imm { func; call_labels; } ->
           let callee = Asm_symbol.create callee in
           add_direct_ocaml_tail_call ~stack_offset
             ~callee:func ~args:insn.arg ~call_labels insn;
           stack_offset
-        | Iextcall of { func; alloc = _; call_labels; } ->
+        | Iextcall { func; alloc = _; call_labels; } ->
           let callee = Asm_symbol.create callee in
           add_external_call ~stack_offset
             ~callee:func ~args:insn.arg ~call_labels insn;
@@ -1273,7 +1273,7 @@ let dwarf_for_call_sites t ~function_proto_die ~whole_function_lexical_block
     | Lpushtrap ->
       traverse_insns insn.next
         ~stack_offset:(stack_offset + Proc.trap_frame_size_in_bytes)
-    | Lpoptrap
+    | Lpoptrap ->
       traverse_insns insn.next
         ~stack_offset:(stack_offset - Proc.trap_frame_size_in_bytes)
   in

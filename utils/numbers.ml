@@ -157,7 +157,7 @@ module Uint64 = struct
 
   let zero = 0L
 
-  let print ppf t = Format.fprintf ppf "0x%Lx" t
+  let succ t = Int64.add 1L t
 
   let of_int_exn i =
     if i < 0 then
@@ -182,6 +182,15 @@ module Uint64 = struct
       i
 
   let to_int64 t = t
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+    let compare t1 t2 = Stdlib.compare t1 t2
+    let equal t1 t2 = (compare t1 t2 = 0)
+    let hash t = Hashtbl.hash t
+    let print ppf t = Format.fprintf ppf "0x%Lx" t
+    let output _ _ = Misc.fatal_error "Not yet implemented"
+  end)
 end
 
 module Float = struct

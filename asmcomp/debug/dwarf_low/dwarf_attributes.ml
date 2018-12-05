@@ -112,25 +112,25 @@ module Form = struct
     | Sec_offset_stroffsetsptr : (Class.stroffsetsptr, sec_offset) t
     | Exprloc : (Class.exprloc, exprloc) t
     | Flag_present : (Class.flag, flag_present) t
-    | Strx -> (Class.string, strx) t
-    | Addrx -> (Class.address, addrx) t
-    | Ref_sup4 -> (Class.reference, ref_sup4) t
-    | Strp_sup -> (Class.string, strp_sup) t
-    | Data16 -> (Class.constant, data16) t
-    | Line_strp -> (Class.string, line_strp) t
+    | Strx : (Class.string, strx) t
+    | Addrx : (Class.address, addrx) t
+    | Ref_sup4 : (Class.reference, ref_sup4) t
+    | Strp_sup : (Class.string, strp_sup) t
+    | Data16 : (Class.constant, data16) t
+    | Line_strp : (Class.string, line_strp) t
     | Ref_sig8 : (Class.reference, ref_sig8) t
-    | Implicit_const -> (Class.constant, implicit_const) t
-    | Loclistx -> (Class.loclist, loclistx) t
-    | Rnglistx -> (Class.rnglist, rnglistx) t
-    | Ref_sup8 -> (Class.reference, ref_sup8) t
-    | Strx1 -> (Class.string, strx1) t
-    | Strx2 -> (Class.string, strx2) t
-    | Strx3 -> (Class.string, strx3) t
-    | Strx4 -> (Class.string, strx4) t
-    | Addrx1 -> (Class.string, addrx1) t
-    | Addrx2 -> (Class.string, addrx2) t
-    | Addrx3 -> (Class.string, addrx3) t
-    | Addrx4 -> (Class.string, addrx4) t
+    | Implicit_const : (Class.constant, implicit_const) t
+    | Loclistx : (Class.loclist, loclistx) t
+    | Rnglistx : (Class.rnglist, rnglistx) t
+    | Ref_sup8 : (Class.reference, ref_sup8) t
+    | Strx1 : (Class.string, strx1) t
+    | Strx2 : (Class.string, strx2) t
+    | Strx3 : (Class.string, strx3) t
+    | Strx4 : (Class.string, strx4) t
+    | Addrx1 : (Class.string, addrx1) t
+    | Addrx2 : (Class.string, addrx2) t
+    | Addrx3 : (Class.string, addrx3) t
+    | Addrx4 : (Class.string, addrx4) t
 
   let name (type dwarf_class) (type form) (t : (dwarf_class, form) t) =
     let name =
@@ -155,10 +155,14 @@ module Form = struct
       | Ref4 -> "ref4"
       | Ref8 -> "ref8"
       | Ref_udata -> "ref_udata"
+      | Sec_offset_addrptr -> "sec_offset_addrptr"
       | Sec_offset_lineptr -> "sec_offset_lineptr"
+      | Sec_offset_loclist -> "sec_offset_loclist"
       | Sec_offset_loclistsptr -> "sec_offset_loclistsptr"
       | Sec_offset_macptr -> "sec_offset_macptr"
+      | Sec_offset_rnglist -> "sec_offset_rnglist"
       | Sec_offset_rnglistsptr -> "sec_offset_rnglistsptr"
+      | Sec_offset_stroffsetsptr -> "sec_offset_stroffsetsptr"
       | Exprloc -> "exprloc"
       | Flag_present -> "flag_present"
       | Strx -> "strx"
@@ -207,10 +211,14 @@ module Form = struct
       | Ref4 -> 0x13
       | Ref8 -> 0x14
       | Ref_udata -> 0x15
+      | Sec_offset_addrptr -> 0x17
       | Sec_offset_lineptr -> 0x17
+      | Sec_offset_loclist -> 0x17
       | Sec_offset_loclistsptr -> 0x17
       | Sec_offset_macptr -> 0x17
+      | Sec_offset_rnglist -> 0x17
       | Sec_offset_rnglistsptr -> 0x17
+      | Sec_offset_stroffsetsptr -> 0x17
       | Exprloc -> 0x18
       | Flag_present -> 0x19
       | Strx -> 0x1a

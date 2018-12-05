@@ -147,7 +147,7 @@ module Vars = struct
     | Ok avail ->
       let avail = Reg_availability_set.canonicalise avail in
       RD.Set.fold (fun reg result -> Key.Set.add reg result)
-        avail ->
+        avail
         Key.Set.empty
 
   let available_before (insn : L.instruction) =

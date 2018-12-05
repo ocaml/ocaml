@@ -12,15 +12,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Indexes into the .debug_addr table. *)
-
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t
+include Numbers.Uint64
 
-val zero : t
-
-val succ : t -> t
-
-include Identifiable.S with type t := t
-include Dwarf_emittable.S with type t := t
+let size t = Dwarf_value.size (Dwarf_value.uleb128 t)
+let emit t = Dwarf_value.emit (Dwarf_value.uleb128 t)

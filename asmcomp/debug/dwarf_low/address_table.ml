@@ -15,6 +15,7 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 module A = Asm_directives
+module Uint8 = Numbers.Uint8
 
 module Entry = struct
   type t = {
@@ -40,7 +41,7 @@ module Entry = struct
 
     let print _ _ = Misc.fatal_error "Not yet implemented"
     let output _ _ = Misc.fatal_error "Not yet implemented"
-  end
+  end)
 end
 
 type entry_and_soc_symbol = {
@@ -73,7 +74,7 @@ let add ?(adjustment = 0) t ~start_of_code_symbol addr =
     let index = t.next_index in
     t.next_index <- Address_index.succ index;
     t.rev_table <- Entry.Map.add entry index t.rev_table;
-    let entry : entry_with_soc_symbol =
+    let entry : entry_and_soc_symbol =
       { entry;
         start_of_code_symbol;
       }
@@ -94,13 +95,13 @@ let size t =
   Dwarf_int.add (Initial_length.size initial_length)
     (Initial_length.to_dwarf_int initial_length)
 
-let entry_to_dwarf_value (entry : entry_with_soc_symbol) =
-  let adjustment = Targetint.of_int_exn adjustment in
+let entry_to_dwarf_value (entry : entry_and_soc_symbol) =
+  let adjustment = Targetint.of_int_exn entry.entry.adjustment in
   Dwarf_value.code_address_from_label_symbol_diff
     ~comment:"ending address"
     ~upper:entry.entry.addr
     ~lower:entry.start_of_code_symbol
-    ~offset_upper:entry.entry.adjustment
+    ~offset_upper:adjustment
 
 let emit t =
   Initial_length.emit (initial_length t);
@@ -108,6 +109,6 @@ let emit t =
   A.uint8 (Uint8.of_int_exn Arch.size_addr);
   A.uint8 Uint8.zero;
   A.define_label t.base_label;
-  Address_index.Map.iter (fun entry ->
+  Address_index.Map.iter (fun _index entry ->
       Dwarf_value.emit (entry_to_dwarf_value entry))
     t.table

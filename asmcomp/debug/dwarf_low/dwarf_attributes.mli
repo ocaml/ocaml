@@ -32,8 +32,10 @@ module Class : sig
   type exprloc = [ `exprloc ]
   type flag = [ `flag ]
   type lineptr = [ `lineptr ]
+  type loclist = [ `loclist ]
   type loclistsptr = [ `loclistsptr ]
-  type macsptr = [ `macsptr ]
+  type macptr = [ `macptr ]
+  type rnglist = [ `rnglist ]
   type rnglistsptr = [ `rnglistsptr ]
   type reference = [ `reference ]
   type string = [ `string ]
@@ -109,13 +111,35 @@ module Form : sig
     | Ref4 : (Class.reference, [< ref1 | ref2 | ref4 ]) t
     | Ref8 : (Class.reference, [< ref1 | ref2 | ref4 | ref8 ]) t
     | Ref_udata : (Class.reference, ref_udata) t
+    | Sec_offset_addrptr : (Class.addrptr, sec_offset) t
     | Sec_offset_lineptr : (Class.lineptr, sec_offset) t
+    | Sec_offset_loclist : (Class.loclist, sec_offset) t
     | Sec_offset_loclistsptr : (Class.loclistsptr, sec_offset) t
-    | Sec_offset_macsptr : (Class.macsptr, sec_offset) t
+    | Sec_offset_macptr : (Class.macptr, sec_offset) t
+    | Sec_offset_rnglist : (Class.rnglist, sec_offset) t
     | Sec_offset_rnglistsptr : (Class.rnglistsptr, sec_offset) t
+    | Sec_offset_stroffsetsptr : (Class.stroffsetsptr, sec_offset) t
     | Exprloc : (Class.exprloc, exprloc) t
     | Flag_present : (Class.flag, flag_present) t
+    | Strx : (Class.string, strx) t
+    | Addrx : (Class.address, addrx) t
+    | Ref_sup4 : (Class.reference, ref_sup4) t
+    | Strp_sup : (Class.string, strp_sup) t
+    | Data16 : (Class.constant, data16) t
+    | Line_strp : (Class.string, line_strp) t
     | Ref_sig8 : (Class.reference, ref_sig8) t
+    | Implicit_const : (Class.constant, implicit_const) t
+    | Loclistx : (Class.loclist, loclistx) t
+    | Rnglistx : (Class.rnglist, rnglistx) t
+    | Ref_sup8 : (Class.reference, ref_sup8) t
+    | Strx1 : (Class.string, strx1) t
+    | Strx2 : (Class.string, strx2) t
+    | Strx3 : (Class.string, strx3) t
+    | Strx4 : (Class.string, strx4) t
+    | Addrx1 : (Class.string, addrx1) t
+    | Addrx2 : (Class.string, addrx2) t
+    | Addrx3 : (Class.string, addrx3) t
+    | Addrx4 : (Class.string, addrx4) t
 end
 
 module Attribute : sig
@@ -170,7 +194,7 @@ module Attribute : sig
     | Frame_base : [< Class.exprloc | Class.loclistsptr ] t
     | Friend : Class.reference t
     | Identifier_case : Class.constant t
-    | Macro_info : Class.macsptr t
+    | Macro_info : Class.macptr t
     | Namelist_item : Class.reference t
     | Priority : Class.reference t
     | Segment : [< Class.exprloc | Class.loclistsptr ] t
@@ -224,7 +248,7 @@ module Attribute : sig
     | Dwo_name : Class.string t
     | Reference : Class.flag t
     | Rvalue_reference : Class.flag t
-    | Macros : Class.macsptr t
+    | Macros : Class.macptr t
     | Call_all_calls : Class.flag t
     | Call_all_source_calls : Class.flag t
     | Call_all_tail_calls : Class.flag t

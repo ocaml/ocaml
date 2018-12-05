@@ -16,24 +16,24 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-(** The "DW_LLE_ and "DW_RLE_" prefixes are omitted. *)
+(** The "DW_LLE_" and "DW_RLE_" prefixes are omitted. *)
 type 'payload entry =
   | End_of_list
   | Base_addressx of Address_index.t
   | Startx_endx of {
       start_inclusive : Address_index.t;
       end_exclusive : Address_index.t;
-      payload : 'a;
+      payload : 'payload;
     }
   | Startx_length of {
       start_inclusive : Address_index.t;
       length : Targetint.t;
-      payload : 'a;
+      payload : 'payload;
     }
   | Offset_pair of {
       start_offset_inclusive : Targetint.t;
       end_offset_exclusive : Targetint.t;
-      payload : 'a;
+      payload : 'payload;
     }
   (** We emit [Default_location] since it is only applicable for location
       lists and we have no use for it at present. *)
@@ -45,12 +45,12 @@ type 'payload entry =
       (** [end_adjustment] is not present in the DWARF specification.
           It is used for one-byte adjustments to labels' addresses to ensure
           correct delimiting of ranges. *)
-      payload : 'a;
+      payload : 'payload;
     }
   | Start_length of {
       start_inclusive : Asm_label.t;
       length : Targetint.t;
-      payload : 'a;
+      payload : 'payload;
     }
 
 module type S = sig

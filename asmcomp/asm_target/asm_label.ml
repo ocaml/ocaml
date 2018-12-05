@@ -18,10 +18,22 @@ type t =
   | Int of int
   | String of string
 
-let print ppf t =
-  match t with
-  | Int i -> Format.fprintf ppf "L%d" i
-  | String s -> Format.fprintf ppf "L%s" s
+include Identifiable.Make (struct
+  type nonrec t = t
+
+  let compare t1 t2 = Stdlib.compare t1 t2
+
+  let equal t1 t2 = (compare t1 t2 = 0)
+
+  let hash t = Hashtbl.hash t
+
+  let print ppf t =
+    match t with
+    | Int i -> Format.fprintf ppf "L%d" i
+    | String s -> Format.fprintf ppf "L%s" s
+
+  let output _ _ = Misc.fatal_error "Not yet implemented"
+end)
 
 let create_int label = Int label
 let create_string label = String label

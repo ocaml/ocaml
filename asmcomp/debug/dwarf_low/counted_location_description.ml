@@ -25,9 +25,12 @@ let create loc_desc =
   }
 
 let size t =
-  Dwarf_int.add (Dwarf_value.size (Dwarf_value.uleb128 t.loc_desc_size))
+  Dwarf_int.add
+    (Dwarf_value.size (Dwarf_value.uleb128 (
+      Dwarf_int.to_uint64_exn t.loc_desc_size)))
     t.loc_desc_size
 
 let emit t =
-  Dwarf_value.emit (Dwarf_value.uleb128 t.loc_desc_size);
-  Single_location.emit t.loc_desc
+  Dwarf_value.emit (Dwarf_value.uleb128 (
+    Dwarf_int.to_uint64_exn t.loc_desc_size));
+  Single_location_description.emit t.loc_desc

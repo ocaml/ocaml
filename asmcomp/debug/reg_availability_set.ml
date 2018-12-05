@@ -75,6 +75,28 @@ let equal t1 t2 =
 let subset t1 t2 =
   equal (inter t1 t2) t1
 
+let find_reg_opt t reg =
+  match t with
+  | Unreachable -> None
+  | Ok rd_set ->
+    match RD.Set.find_reg_exn rd_set reg with
+    | exception Not_found -> None
+    | rd -> Some rd
+
+let find_all_holding_value_of t var =
+  match t with
+  | Unreachable -> []
+  | Ok rd_set ->
+    let rd_set =
+      RD.Set.filter (fun rd ->
+          match RD.debug_info rd with
+          | None -> false
+          | Some debug_info ->
+            Backend_var.equal (RD.Debug_info.holds_value_of debug_info) var)
+        rd_set
+    in
+    RD.Set.elements rd_set
+
 let canonicalise availability =
   match availability with
   | Unreachable -> Unreachable
