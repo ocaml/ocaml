@@ -26,8 +26,9 @@ type t = {
   compilation_unit_header_label : Asm_label.t;
   compilation_unit_proto_die : Proto_die.t;
   value_type_proto_die : Proto_die.t;
-  debug_loc_table : Debug_loc_table.t;
-  debug_ranges_table : Debug_ranges_table.t;
+  address_table : Address_table.t;
+  location_list_table : Location_list_table.t;
+  range_list_table : Range_list_table.t;
   start_of_code_symbol : Asm_symbol.t;
   end_of_code_symbol : Asm_symbol.t;
   output_path : string;
@@ -101,6 +102,12 @@ let create ~prefix_name =
         (Linkage_name.create "code_end"))
   in
   let debug_line_label = Asm_section.label (DWARF Debug_line) in
+  let address_table = Address_table.create ~start_of_code_symbol in
+  let addr_base = Address_table.base_label debug_addr_table in
+  let range_list_table = Range_list_table.create ~start_of_code_symbol in
+  let rnglists_base = Range_lists_table.base_label range_lists_table in
+  let location_list_table = Location_list_table.create ~start_of_code_symbol in
+  let loclists_base = Location_lists_table.base_label range_lists_table in
   let compilation_unit_proto_die =
     let attribute_values =
       let producer_name =
@@ -114,6 +121,9 @@ let create ~prefix_name =
         DAH.create_low_pc_from_symbol ~symbol:start_of_code_symbol;
         DAH.create_high_pc_from_symbol ~symbol:end_of_code_symbol;
         DAH.create_stmt_list ~debug_line_label;
+        DAH.create_addr_base addr_base;
+        DAH.create_rnglists_base rnglists_base;
+        DAH.create_loclists_base loclists_base;
       ]
     in
     Proto_die.create ~parent:None
@@ -131,13 +141,12 @@ let create ~prefix_name =
       ]
       ()
   in
-  let debug_loc_table = Debug_loc_table.create () in
-  let debug_ranges_table = Debug_ranges_table.create () in
   { compilation_unit_proto_die;
     compilation_unit_header_label = Asm_label.create ();
     value_type_proto_die;
-    debug_loc_table;
-    debug_ranges_table;
+    address_table;
+    location_list_table;
+    range_list_table;
     start_of_code_symbol;
     end_of_code_symbol;
     output_path;
@@ -626,18 +635,26 @@ let location_list_entry t ~parent ~(fundecl : L.fundecl)
   match single_location_description with
   | None -> None
   | Some single_location_description ->
-    let start_pos = ARV.Subrange.start_pos subrange in
-    let end_pos = ARV.Subrange.end_pos subrange in
-    let end_pos_offset = ARV.Subrange.end_pos_offset subrange in
-    let location_list_entry =
-      Location_list_entry.create_location_list_entry
-        ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name)
-        ~first_address_when_in_scope:(Asm_label.create_int start_pos)
-        ~first_address_when_not_in_scope:(Asm_label.create_int end_pos)
-        ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
-        ~single_location_description
+    let start_inclusive =
+      Address_table.add t.address_table (ARV.Subrange.start_pos subrange)
     in
-    Some location_list_entry
+    let end_exclusive =
+      Address_table.add t.address_table (ARV.Subrange.end_pos subrange)
+        ~adjustment:(ARV.Subrange.end_pos_offset subrange)
+    in
+    let loc_desc =
+      Counted_location_description.create single_location_description
+    in
+    let location_list_entry : Location_list_entry.entry =
+      (* DWARF-5 spec page 45 line 1. *)
+      Startx_endx {
+        start_inclusive;
+        end_exclusive;
+        loc_desc;
+      }
+    in
+    Some (Location_list_entry.create entry
+      ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name))
 
 let find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg =
   let block = Debuginfo.innermost_block dbg in
@@ -685,15 +702,8 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
         | Some block_die -> block_die
   in
   (* Build a location list that identifies where the value of [ident] may be
-     found at runtime, indexed by program counter range, and insert the list
-     into the .debug_loc table. *)
+     found at runtime, indexed by program counter range. *)
   let location_list_attribute_value =
-    (* DWARF-4 spec 2.6.2: "In the case of a compilation unit where all of the
-       machine code is contained in a single contiguous section, no base
-       address selection entry is needed."
-       However, we tried this (and emitted plain label addresses rather than
-       deltas in [Location_list_entry]), and the addresses were wrong in the
-       final executable.  Oh well. *)
     let location_list_entries =
       ARV.Range.fold range ~init:[]
         ~f:(fun location_list_entries subrange ->
@@ -706,16 +716,8 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
           | Some location_list_entry ->
             location_list_entry::location_list_entries)
     in
-    let base_address_selection_entry =
-      let fun_symbol = Asm_symbol.create fundecl.fun_name in
-      Location_list_entry.create_base_address_selection_entry
-        ~base_address_symbol:fun_symbol
-    in
-    let location_list_entries =
-      base_address_selection_entry :: location_list_entries
-    in
     let location_list = Location_list.create ~location_list_entries in
-    Debug_loc_table.insert t.debug_loc_table ~location_list
+    Location_list_table.insert t.location_list_table ~location_list
   in
   let type_and_name_attributes =
     match type_die_reference_for_var var ~proto_dies_for_vars with
@@ -861,8 +863,7 @@ let iterate_over_variable_like_things t ~available_ranges_vars ~rvalues_only
           None
         | Some provenance ->
           (* CR-soon mshinwell: See CR-soon above; we can't do this yet
-             because there is often missing location information. *)
-          (*
+             because there is often missing location information.
           let location = Backend_var.Provenance.location provenance in
           if location = Debuginfo.none
             && match Range.is_parameter range with
@@ -916,24 +917,35 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
 let create_range_list_entries_and_summarise ~start_of_code_symbol range =
   LB.Range.fold range ~init:([], Int.Triple.Set.empty)
     ~f:(fun (range_list_entries, summary) subrange ->
-      let start_pos = LB.Subrange.start_pos subrange in
-      let end_pos = LB.Subrange.end_pos subrange in
-      let end_pos_offset = LB.Subrange.end_pos_offset subrange in
+      let start_inclusive =
+        Address_table.add t.address_table (LB.Subrange.start_pos subrange)
+      in
+      let end_exclusive =
+        Address_table.add t.address_table (LB.Subrange.end_pos subrange)
+          ~adjustment:(LB.Subrange.end_pos_offset subrange)
+      in
+      let range_list_entry : Range_list_entry.entry =
+        (* DWARF-5 spec page 54 line 1. *)
+        Startx_endx {
+          start_inclusive;
+          end_exclusive;
+        }
+      in
       let range_list_entry =
-        Range_list_entry.create_range_list_entry
-          ~start_of_code_symbol
-          ~first_address_when_in_scope:(Asm_label.create_int start_pos)
-          ~first_address_when_not_in_scope:(Asm_label.create_int end_pos)
-          ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
+        Range_list_entry.create_range_list_entry entry ~start_of_code_symbol
       in
       let range_list_entries = range_list_entry::range_list_entries in
       let summary =
-        Int.Triple.Set.add (start_pos, end_pos, end_pos_offset) summary
+        Int.Pair.Set.add (start_inclusive, end_exclusive) summary
       in
       range_list_entries, summary)
 
+(* "Summaries", sets of pairs of the starting and ending points of ranges,
+   are used to dedup entries in the range list table.  We do this for range
+   lists but not yet for location lists since deduping entries in the latter
+   would involve comparing DWARF location descriptions. *)
 module All_summaries = Identifiable.Make (struct
-  include Int.Triple.Set
+  include Int.Pair.Set
   let hash t = Hashtbl.hash (elements t)
 end)
 
@@ -974,16 +986,9 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
               in
               match All_summaries.Map.find summary all_summaries with
               | exception Not_found ->
-                let base_address_selection_entry =
-                  Range_list_entry.create_base_address_selection_entry
-                    ~base_address_symbol:start_of_code_symbol
-                in
-                let range_list_entries =
-                  base_address_selection_entry :: range_list_entries
-                in
                 let range_list = Range_list.create ~range_list_entries in
                 let range_list_attribute_value =
-                  Debug_ranges_table.insert t.debug_ranges_table ~range_list
+                  Range_table.insert t.range_table ~range_list
                 in
                 let all_summaries =
                   All_summaries.Map.add summary range_list_attribute_value
@@ -1024,13 +1029,14 @@ let offset_from_cfa_in_bytes reg stack_loc ~stack_offset =
   in
   Some (frame_size - slot_offset)
 
-let add_call_site_parameter t ~block_die ~arg_index ~arg ~stack_offset =
+let add_call_site_argument t ~block_die ~arg_index ~arg ~stack_offset =
   (* The reason we call [Reg_availability_set.canonicalise] from
      [Available_ranges] vars, rather than traversing each function's
      code and rewriting all of the availability sets first, is so that
      we don't lose information (in particular that a particular hard
      register before a call contains the value of a certain variable)
-     that we may need here. *)
+     that we may need here.  (Specifically for the call to
+     [Reg_availability_set.find_all_holding_value_of].) *)
   match Reg_availability_set.find_reg arg insn.available_before with
   | None -> ()
   | Some rd ->
@@ -1145,7 +1151,7 @@ let add_call_site t ~whole_function_lexical_block ~stack_offset
     in
     if no_split_args then begin
       Array.iteri (fun arg_index arg ->
-          add_call_site_parameter t ~block_die ~arg_index ~arg)
+          add_call_site_argument t ~block_die ~arg_index ~arg)
         args
     end
 
@@ -1304,40 +1310,36 @@ let passes_for_fundecl (fundecl : L.fundecl) =
   in
   let available_ranges_vars, available_ranges_phantom_vars,
         lexical_block_ranges, fundecl =
-    if not !Clflags.keep_asm_file then
-      available_ranges_vars, available_ranges_phantom_vars,
-        lexical_block_ranges, fundecl
-    else
-      let label_env, fundecl =
-        Profile.record "dwarf_coalesce_labels" (fun () ->
-            Coalesce_labels.fundecl fundecl)
-          ~accumulate:true
-          ()
-      in
-      let available_ranges_vars =
-        Profile.record "dwarf_rewrite_labels_vars" (fun () ->
-            Available_ranges_vars.rewrite_labels available_ranges_vars
-              ~env:label_env)
-          ~accumulate:true
-          ()
-      in
-      let available_ranges_phantom_vars =
-        Profile.record "dwarf_rewrite_labels_phantom_vars" (fun () ->
-            Available_ranges_phantom_vars.rewrite_labels
-              available_ranges_phantom_vars
-              ~env:label_env)
-          ~accumulate:true
-          ()
-      in
-      let lexical_block_ranges =
-        Profile.record "dwarf_rewrite_labels_lexical_blocks" (fun () ->
-            Lexical_block_ranges.rewrite_labels lexical_block_ranges
-              ~env:label_env)
-          ~accumulate:true
-          ()
-      in
-      available_ranges_vars, available_ranges_phantom_vars,
-        lexical_block_ranges, fundecl
+    let label_env, fundecl =
+      Profile.record "dwarf_coalesce_labels" (fun () ->
+          Coalesce_labels.fundecl fundecl)
+        ~accumulate:true
+        ()
+    in
+    let available_ranges_vars =
+      Profile.record "dwarf_rewrite_labels_vars" (fun () ->
+          Available_ranges_vars.rewrite_labels available_ranges_vars
+            ~env:label_env)
+        ~accumulate:true
+        ()
+    in
+    let available_ranges_phantom_vars =
+      Profile.record "dwarf_rewrite_labels_phantom_vars" (fun () ->
+          Available_ranges_phantom_vars.rewrite_labels
+            available_ranges_phantom_vars
+            ~env:label_env)
+        ~accumulate:true
+        ()
+    in
+    let lexical_block_ranges =
+      Profile.record "dwarf_rewrite_labels_lexical_blocks" (fun () ->
+          Lexical_block_ranges.rewrite_labels lexical_block_ranges
+            ~env:label_env)
+        ~accumulate:true
+        ()
+    in
+    available_ranges_vars, available_ranges_phantom_vars,
+      lexical_block_ranges, fundecl
   in
   let available_ranges_vars =
     Available_ranges_all_vars.create ~available_ranges_vars
@@ -1556,7 +1558,8 @@ let emit t =
     ~start_of_code_symbol:t.start_of_code_symbol
     ~end_of_code_symbol:t.end_of_code_symbol
     ~compilation_unit_header_label:t.compilation_unit_header_label
-    ~debug_loc_table:t.debug_loc_table
-    ~debug_ranges_table:t.debug_ranges_table
+    ~address_table:t.address_table
+    ~location_list_table:t.location_list_table
+    ~range_list_table:t.range_list_table
 
 let emit t = Profile.record "emit_dwarf" emit t

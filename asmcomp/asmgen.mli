@@ -21,13 +21,19 @@ val compile_implementation_flambda :
     unit_name:Ident.t ->
     required_globals:Ident.Set.t ->
     backend:(module Backend_intf.S) ->
-    ppf_dump:Format.formatter -> Flambda.program -> unit
+    ppf_dump:Format.formatter ->
+    sourcefile:string ->
+    Flambda.program ->
+    unit
 
 val compile_implementation_clambda :
     ?toplevel:(Backend_sym.t -> bool) ->
     string ->
     unit_name:Ident.t ->
-    ppf_dump:Format.formatter -> Lambda.program -> unit
+    ppf_dump:Format.formatter ->
+    sourcefile:string ->
+    Lambda.program ->
+    unit
 
 val compile_phrase :
     ppf_dump:Format.formatter -> dwarf:Dwarf.t option -> Cmm.phrase -> unit

@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2013--2018 Jane Street Group LLC                           *)
+(*   Copyright 2018 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -12,9 +12,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** DWARF range list entries (DWARF-5 spec section 2.17.3, pages 52--54). *)
+(** Indexes into the .debug_addr table. *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-include Location_or_range_list_entry.S
-  with type Payload := Dwarf_unit
+type t
+
+val zero : t
+
+val succ : t -> t
+
+include Dwarf_emittable.S with type t := t

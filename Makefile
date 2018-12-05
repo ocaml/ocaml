@@ -166,9 +166,13 @@ DWARF_LOW=\
   asmcomp/debug/dwarf_low/abbreviations_table.cmo \
   asmcomp/debug/dwarf_low/debugging_information_entry.cmo \
   asmcomp/debug/dwarf_low/aranges_table.cmo \
+  asmcomp/debug/dwarf_low/address_index.cmo \
+  asmcomp/debug/dwarf_low/address_table.cmo \
+  asmcomp/debug/dwarf_low/location_or_range_list_entry.cmo \
   asmcomp/debug/dwarf_low/location_list_entry.cmo \
-  asmcomp/debug/dwarf_low/location_list.cmo \
   asmcomp/debug/dwarf_low/range_list_entry.cmo \
+  asmcomp/debug/dwarf_low/location_or_range_list.cmo \
+  asmcomp/debug/dwarf_low/location_list.cmo \
   asmcomp/debug/dwarf_low/range_list.cmo \
   asmcomp/debug/dwarf_low/unit_type.cmo \
   asmcomp/debug/dwarf_low/debug_info_section.cmo \

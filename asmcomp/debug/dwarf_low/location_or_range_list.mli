@@ -12,9 +12,4 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** DWARF range list entries (DWARF-5 spec section 2.17.3, pages 52--54). *)
-
 [@@@ocaml.warning "+a-4-30-40-41-42"]
-
-include Location_or_range_list_entry.S
-  with type Payload := Dwarf_unit

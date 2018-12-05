@@ -12,12 +12,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Coalesce labels that point at the same source location. This avoids
-    generating DWARF information that appears to reference different ranges of
-    code but actually points at the same place. In particular, generating
-    duplicate lexical blocks at the same position causes some of their local
-    variables to become hidden in gdb. This pass also produces tidier assembly
-    output.
+(** Coalesce labels that point at the same source location.  This maximises
+    the chance that two labels which actually point at the same location can
+    be identified as doing so by using a simple equality check.  This helps
+    in particular with constructing the DWARF-5 .debug_addr section.
 *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]

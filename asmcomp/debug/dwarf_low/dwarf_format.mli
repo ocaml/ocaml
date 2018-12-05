@@ -27,3 +27,7 @@ val set : t -> unit
 
 (** [get] raises if [set] has not been called beforehand. *)
 val get : unit -> t
+
+(** Exception raised when construction of 32-bit DWARF fails due to
+    outsize sections. *)
+exception Too_large_for_thirty_two_bit_dwarf

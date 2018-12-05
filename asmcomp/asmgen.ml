@@ -182,29 +182,36 @@ let set_export_info (ulambda, prealloc, structured_constants, export) =
   (ulambda, prealloc, structured_constants)
 
 let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
-    (clambda:clambda_and_constants) =
-  Emit.begin_assembly ();
-  let dwarf =
-    match !Clflags.debug_full with
-    | None -> None
-    | Some _ ->
-      Profile.record "dwarf"
-        (fun () ->
-          let dwarf = Dwarf.create ~prefix_name in
-          let _, toplevel_inconstants, toplevel_constants = clambda in
-          Dwarf.dwarf_for_toplevel_constants dwarf toplevel_constants;
-          Dwarf.dwarf_for_toplevel_inconstants dwarf toplevel_inconstants;
-          Some dwarf)
-        ()
-  in
-  clambda
-  ++ Profile.record "cmm" (Cmmgen.compunit ~ppf_dump ~unit_name)
-  ++ Profile.record "compile_phrases"
-       (List.iter (compile_phrase ~ppf_dump ~dwarf))
-  ++ (fun () -> ());
-  (match toplevel with
-  | None -> ()
-  | Some f -> compile_genfuns ~ppf_dump dwarf f);
+    ~sourcefile (clambda:clambda_and_constants) =
+  try
+    Emit.begin_assembly ();
+    let dwarf =
+      match !Clflags.debug_full with
+      | None -> None
+      | Some _ ->
+        Profile.record "dwarf"
+          (fun () ->
+            let dwarf = Dwarf.create ~prefix_name in
+            let _, toplevel_inconstants, toplevel_constants = clambda in
+            Dwarf.dwarf_for_toplevel_constants dwarf toplevel_constants;
+            Dwarf.dwarf_for_toplevel_inconstants dwarf toplevel_inconstants;
+            Some dwarf)
+          ()
+    in
+    clambda
+    ++ Profile.record "cmm" (Cmmgen.compunit ~ppf_dump ~unit_name)
+    ++ Profile.record "compile_phrases"
+         (List.iter (compile_phrase ~ppf_dump ~dwarf))
+    ++ (fun () -> ());
+    (match toplevel with
+    | None -> ()
+    | Some f -> compile_genfuns ~ppf_dump dwarf f)
+  with
+  | Dwarf_format.Too_large_for_thirty_two_bit_dwarf ->
+    let loc = Location.in_file sourcefile in
+    Location.report_errorf ~loc
+      "Cannot generate 32-bit DWARF for this source file; recompile \
+        with `-dwarf-format 64'"
 
   (* We add explicit references to external primitive symbols.  This
      is to ensure that the object files that define these symbols,
@@ -220,7 +227,7 @@ let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
   Emit.end_assembly dwarf
 
 let flambda_gen_implementation ?toplevel ~backend ~ppf_dump ~prefix_name
-    ~unit_name (program:Flambda.program) =
+    ~unit_name ~sourcefile (program:Flambda.program) =
   let export = Build_export_info.build_transient ~backend program in
   let (clambda, preallocated, constants) =
     Profile.record_call "backend" (fun () ->
@@ -245,10 +252,10 @@ let flambda_gen_implementation ?toplevel ~backend ~ppf_dump ~prefix_name
       (Symbol.Map.bindings constants)
   in
   end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
-    (clambda, preallocated, constants)
+    ~sourcefile (clambda, preallocated, constants)
 
 let lambda_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
-    (lambda:Lambda.program) =
+    ~sourcefile (lambda:Lambda.program) =
   let clambda =
     Profile.record "closure" (Closure.intro lambda.main_module_block_size)
       lambda.code
@@ -273,11 +280,12 @@ let lambda_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
   in
   raw_clambda_dump_if ppf_dump clambda_and_constants;
   Profile.record "end_gen_implementation"
-    (end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name)
+    (end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
+      ~sourcefile)
     clambda_and_constants
 
 let compile_implementation_gen ?toplevel prefixname ~unit_name
-    ~required_globals ~ppf_dump gen_implementation program =
+    ~required_globals ~ppf_dump ~sourcefile gen_implementation program =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
@@ -287,18 +295,20 @@ let compile_implementation_gen ?toplevel prefixname ~unit_name
       (prefixname ^ ext_obj) (fun () ->
         Ident.Set.iter Compilenv.require_global required_globals;
         gen_implementation ?toplevel ~ppf_dump ~prefix_name:prefixname
-          ~unit_name program)
+          ~unit_name ~sourcefile program)
 
 let compile_implementation_clambda ?toplevel prefixname ~unit_name
-    ~ppf_dump (program:Lambda.program) =
+    ~ppf_dump ~sourcefile (program:Lambda.program) =
   compile_implementation_gen ?toplevel prefixname ~unit_name
     ~required_globals:program.Lambda.required_globals
-    ~ppf_dump lambda_gen_implementation program
+    ~ppf_dump ~sourcefile lambda_gen_implementation program
 
 let compile_implementation_flambda ?toplevel prefixname ~unit_name
-    ~required_globals ~backend ~ppf_dump (program:Flambda.program) =
+    ~required_globals ~backend ~ppf_dump ~sourcefile
+    (program:Flambda.program) =
   compile_implementation_gen ?toplevel prefixname ~unit_name
-    ~required_globals ~ppf_dump (flambda_gen_implementation ~backend) program
+    ~required_globals ~ppf_dump ~sourcefile
+    (flambda_gen_implementation ~backend) program
 
 (* Error report *)
 
