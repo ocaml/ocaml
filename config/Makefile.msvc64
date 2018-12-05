@@ -187,7 +187,7 @@ WITH_OCAMLDOC=ocamldoc
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix str dynlink bigarray systhreads
+OTHERLIBRARIES=win32unix str dynlink bigarray raw_spacetime_lib systhreads
 
 ############# for the testsuite makefiles
   OTOPDIR=$(WINTOPDIR)
