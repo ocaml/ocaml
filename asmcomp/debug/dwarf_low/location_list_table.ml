@@ -14,3 +14,4 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+include Location_or_range_list_table.Make (Location_list)

@@ -43,10 +43,6 @@ val create_comp_dir
    : directory:string
   -> Dwarf_attribute_values.Attribute_value.t
 
-val create_range_list
-   : debug_ranges_label:Asm_label.t
-  -> Dwarf_attribute_values.Attribute_value.t
-
 val create_stmt_list
    : debug_line_label:Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t
@@ -63,8 +59,12 @@ val create_call_target_clobbered
    : Single_location_description.t
   -> Dwarf_attribute_values.Attribute_value.t
 
-val create_location
-   : location_list_label:Asm_label.t
+val create_loclistx
+   : Location_list_table.Offset.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_rnglistx
+   : Range_list_table.Offset.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_type

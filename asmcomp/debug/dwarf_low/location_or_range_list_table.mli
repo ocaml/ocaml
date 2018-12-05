@@ -22,11 +22,14 @@ module Make (Location_or_range_list : Dwarf_emittable.S) : sig
 
   val create : unit -> t
 
-  (** [Offset.t] values are used in conjunction with DWARF attributes of
+  (** [Index.t] values are used in conjunction with DWARF attributes of
       forms [DW_FORM_loclistx] and [DW_FORM_rnglistx]. *)
-  module Offset : Dwarf_emittable.S
+  module Index : sig
+    type t
+    val to_dwarf_value : t -> Dwarf_value.t
+  end
 
-  val add : t -> Location_or_range_list.t -> Offset.t
+  val add : t -> Location_or_range_list.t -> Index.t
 
   val base_addr : t -> Asm_label.t
 

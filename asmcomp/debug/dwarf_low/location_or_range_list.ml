@@ -16,16 +16,17 @@
 
 module A = Asm_directives
 
-module Make (Entry : Dwarf_emittable.S) = struct
-  type t = {
-    label : Asm_label.t;
-    entries : Entry.t list;
-  }
+module Make (Entry : Location_or_range_list_entry.S) = struct
+  type t = Entry.t list
 
   let size t =
-
+    List.fold_left (fun size entry ->
+        Dwarf_int.add size (Entry.size entry))
+      (Dwarf_int.zero ())
+      t
 
   let emit t =
-
-
+    List.iter (fun entry ->
+        Entry.emit entry)
+      t
 end

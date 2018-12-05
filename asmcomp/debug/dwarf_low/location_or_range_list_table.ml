@@ -25,15 +25,14 @@ module Make (Location_or_range_list : Dwarf_emittable.S) = struct
       : (Location_or_range_list.t * Dwarf_int.t) list;
   }
 
-  module Offset = struct
+  module Index = struct
     type t = Dwarf_value.t
 
-    let create offset =
+    let create index =
       (* DWARF-5 spec page 216 lines 12--15. *)
-      Dwarf_value.uleb128 (Int64.of_int offset)
+      Dwarf_value.uleb128 (Int64.of_int index)
 
-    let size t = Dwarf_value.size t
-    let emit t = Dwarf_value.emit t
+    let to_dwarf_value t = t
   end
 
   let create () =
@@ -44,7 +43,7 @@ module Make (Location_or_range_list : Dwarf_emittable.S) = struct
     }
 
   let add t list =
-    let which_offset = t.num_lists in
+    let which_index = t.num_lists in
     t.lists_with_offsets_from_first_list
       <- (list, t.current_offset_from_first_list)
            :: t.lists_with_offsets_from_first_list;
@@ -54,7 +53,7 @@ module Make (Location_or_range_list : Dwarf_emittable.S) = struct
     in
     t.current_offset_from_first_list <- next_offset_from_first_list;
     t.num_lists <- t.num_lists + 1;
-    Offset.create which_offset
+    Index.create which_index
 
   let base_addr t = t.base_addr
 

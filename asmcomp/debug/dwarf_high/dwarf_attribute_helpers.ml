@@ -55,11 +55,6 @@ let create_stmt_list ~debug_line_label =
   (* DWARF-4 standard section 3.1.1.4. *)
   AV.create spec (V.offset_into_debug_line debug_line_label)
 
-let create_range_list ~debug_ranges_label =
-  let spec = AS.create A.Ranges F.Sec_offset_rangelistptr in
-  (* DWARF-4 standard section 2.17.3. *)
-  AV.create spec (V.offset_into_debug_ranges debug_ranges_label)
-
 let create_external ~is_visible_externally =
   if is_visible_externally then
     let spec = AS.create A.External F.Flag_present in
@@ -76,9 +71,13 @@ let create_call_target_clobbered loc_desc =
   let spec = AS.create A.Call_target_clobbered F.Exprloc in
   AV.create spec (V.single_location_description loc_desc)
 
-let create_location ~location_list_label =
-  let spec = AS.create A.Location F.Sec_offset_loclistptr in
-  AV.create spec (V.offset_into_debug_loc location_list_label)
+let create_loclistx index =
+  let spec = AS.create A.Loclistx F.Loclistx in
+  AV.create spec (V.uleb128 (Location_list_table.Index.to_dwarf_value index))
+
+let create_rng index =
+  let spec = AS.create A.Rnglistx F.Rnglistx in
+  AV.create spec (V.uleb128 (Range_list_table.Index.to_dwarf_value index))
 
 let create_single_location_description loc_desc =
   let spec = AS.create A.Location F.Exprloc in

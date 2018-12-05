@@ -14,9 +14,6 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-let die_name_from_function_name ~function_name =
-  "camlDIE__" ^ function_name
-
 let base_type_die_name_for_var var ~output_path =
   let var_name = Backend_var.name var in
   assert (try ignore (String.index var_name ' '); false

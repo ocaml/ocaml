@@ -48,10 +48,6 @@ type proto_dies_for_var = {
 
 (* CR mshinwell: On OS X 10.11 (El Capitan), dwarfdump doesn't seem to be able
    to read our 64-bit DWARF output. *)
-(* CR mshinwell: objdump on Linux is reporting overlapping location lists *)
-(* CR mshinwell: Do we need something in the cmx files to make sure all units
-   have been built with -g-full?  Otherwise cross-compilation-unit DIE
-   references might not resolve at link time. *)
 
 let dwarf_version = ref Dwarf_version.five
 
@@ -705,8 +701,9 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
      found at runtime, indexed by program counter range. *)
   let location_list_attribute_value =
     let location_list_entries =
-      ARV.Range.fold range ~init:[]
-        ~f:(fun location_list_entries subrange ->
+      ARV.Range.fold range
+        ~init:(Location_list.create ())
+        ~f:(fun location_list subrange ->
           let location_list_entry =
             location_list_entry t ~parent:(Some function_proto_die)
               ~fundecl ~subrange ~proto_dies_for_vars ~need_rvalue
@@ -714,10 +711,12 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
           match location_list_entry with
           | None -> location_list_entries
           | Some location_list_entry ->
-            location_list_entry::location_list_entries)
+            Location_list.add location_list location_list_entry)
     in
-    let location_list = Location_list.create ~location_list_entries in
-    Location_list_table.insert t.location_list_table ~location_list
+    let location_list_index =
+      Location_list_table.add t.location_list_table location_list
+    in
+    DAH.loclistx location_list_index
   in
   let type_and_name_attributes =
     match type_die_reference_for_var var ~proto_dies_for_vars with
@@ -914,9 +913,9 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true)
 
-let create_range_list_entries_and_summarise ~start_of_code_symbol range =
-  LB.Range.fold range ~init:([], Int.Triple.Set.empty)
-    ~f:(fun (range_list_entries, summary) subrange ->
+let create_range_list_and_summarise ~start_of_code_symbol range =
+  LB.Range.fold range ~init:(Range_list.create (), Int.Triple.Set.empty)
+    ~f:(fun (range_list, summary) subrange ->
       let start_inclusive =
         Address_table.add t.address_table (LB.Subrange.start_pos subrange)
       in
@@ -934,11 +933,11 @@ let create_range_list_entries_and_summarise ~start_of_code_symbol range =
       let range_list_entry =
         Range_list_entry.create_range_list_entry entry ~start_of_code_symbol
       in
-      let range_list_entries = range_list_entry::range_list_entries in
+      let range_list = Range_list.add range_list range_list_entry in
       let summary =
         Int.Pair.Set.add (start_inclusive, end_exclusive) summary
       in
-      range_list_entries, summary)
+      range_list, summary)
 
 (* "Summaries", sets of pairs of the starting and ending points of ranges,
    are used to dedup entries in the range list table.  We do this for range
@@ -979,16 +978,15 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
                 create_up_to_root parent lexical_block_proto_dies all_summaries
             in
             let range_list_attribute_value, all_summaries =
-              let range_list_entries, summary =
+              let range_list, summary =
                 create_range_list_entries_and_summarise
                   ~start_of_code_symbol:t.start_of_code_symbol
                   range
               in
               match All_summaries.Map.find summary all_summaries with
               | exception Not_found ->
-                let range_list = Range_list.create ~range_list_entries in
-                let range_list_attribute_value =
-                  Range_table.insert t.range_table ~range_list
+                let range_list_index =
+                  Range_table.add t.range_table range_list
                 in
                 let all_summaries =
                   All_summaries.Map.add summary range_list_attribute_value
@@ -1002,7 +1000,7 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
               Proto_die.create ~parent:(Some parent)
                 ~tag:Lexical_block
                 ~attribute_values:[
-                  range_list_attribute_value;
+                  DAH.rnglistx range_list_index;
                 ]
                 ()
             in

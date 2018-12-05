@@ -18,8 +18,8 @@ type dwarf_section =
   | Debug_info
   | Debug_abbrev
   | Debug_aranges
-  | Debug_loc
-  | Debug_ranges
+  | Debug_loclists
+  | Debug_rnglists
   | Debug_str
   | Debug_line
 
@@ -117,8 +117,8 @@ let flags t ~first_occurrence =
         | Debug_info -> "__debug_info"
         | Debug_abbrev -> "__debug_abbrev"
         | Debug_aranges -> "__debug_aranges"
-        | Debug_loc -> "__debug_loc"
-        | Debug_ranges -> "__debug_ranges"
+        | Debug_loclists -> "__debug_loclists"
+        | Debug_rnglists -> "__debug_rnglists"
         | Debug_str -> "__debug_str"
         | Debug_line -> "__debug_line"
       in
@@ -129,8 +129,8 @@ let flags t ~first_occurrence =
         | Debug_info -> ".debug_info"
         | Debug_abbrev -> ".debug_abbrev"
         | Debug_aranges -> ".debug_aranges"
-        | Debug_loc -> ".debug_loc"
-        | Debug_ranges -> ".debug_ranges"
+        | Debug_loc -> ".debug_loclists"
+        | Debug_ranges -> ".debug_rnglists"
         | Debug_str -> ".debug_str"
         | Debug_line -> ".debug_line"
       in

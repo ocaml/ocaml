@@ -16,9 +16,8 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module Make (...) : sig
+module Make (Entry : Location_or_range_list_entry.S) : sig
   type t
-
 
   include Dwarf_emittable.S with type t := t
 end
