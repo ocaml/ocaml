@@ -102,11 +102,11 @@ let create ~prefix_name =
         (Linkage_name.create "code_end"))
   in
   let debug_line_label = Asm_section.label (DWARF Debug_line) in
-  let address_table = Address_table.create ~start_of_code_symbol in
+  let address_table = Address_table.create () in
   let addr_base = Address_table.base_label debug_addr_table in
-  let range_list_table = Range_list_table.create ~start_of_code_symbol in
+  let range_list_table = Range_list_table.create () in
   let rnglists_base = Range_lists_table.base_label range_lists_table in
-  let location_list_table = Location_list_table.create ~start_of_code_symbol in
+  let location_list_table = Location_list_table.create () in
   let loclists_base = Location_lists_table.base_label range_lists_table in
   let compilation_unit_proto_die =
     let attribute_values =
@@ -962,7 +962,6 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
       ]
       ()
   in
-  let start_of_code_symbol = Asm_symbol.create fundecl.fun_name in
   let all_blocks = LB.all_indexes lexical_block_ranges in
   let lexical_block_proto_dies, _all_summaries =
     B.Set.fold (fun block (lexical_block_proto_dies, all_summaries) ->
@@ -981,7 +980,8 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
             in
             let range_list_attribute_value, all_summaries =
               let range_list_entries, summary =
-                create_range_list_entries_and_summarise ~start_of_code_symbol
+                create_range_list_entries_and_summarise
+                  ~start_of_code_symbol:t.start_of_code_symbol
                   range
               in
               match All_summaries.Map.find summary all_summaries with

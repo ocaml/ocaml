@@ -17,4 +17,4 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 include Location_or_range_list_entry.S
-  with type Payload := Counted_location_description
+  with type payload := Counted_location_description.t

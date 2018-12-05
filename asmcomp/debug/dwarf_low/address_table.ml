@@ -49,14 +49,14 @@ type entry_and_soc_symbol = {
 }
 
 type t = {
-  addr_base_label : Asm_label.t;
+  base_label : Asm_label.t;
   mutable next_index : Address_index.t;
   mutable table : entry_and_soc_symbol Address_index.Map.t;
   mutable rev_table : Address_index.t Entry.Map.t;
 }
 
 let create () =
-  { addr_base_label = Asm_label.create ();
+  { base_label = Asm_label.create ();
     next_index = Address_index.zero;
     table = Address_index.Map.empty;
     rev_table = Entry.Map.empty;
@@ -82,7 +82,7 @@ let add ?(adjustment = 0) t ~start_of_code_symbol addr =
     index
   | index -> index
 
-let base_label t = t.addr_base_label
+let base_label t = t.base_label
 
 let initial_length t =
   let num_entries = Int64.of_int (Address_index.Map.cardinal t.table) in
@@ -107,7 +107,7 @@ let emit t =
   Dwarf_version.emit Dwarf_version.five;
   A.uint8 (Uint8.of_int_exn Arch.size_addr);
   A.uint8 Uint8.zero;
-  A.define_label t.addr_base_label;
+  A.define_label t.base_label;
   Address_index.Map.iter (fun entry ->
       Dwarf_value.emit (entry_to_dwarf_value entry))
     t.table

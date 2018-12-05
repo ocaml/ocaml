@@ -12,4 +12,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Functor for the production of DWARF location or range list modules. *)
+
 [@@@ocaml.warning "+a-4-30-40-41-42"]
+
+module Make (...) : sig
+  type t
+
+
+  include Dwarf_emittable.S with type t := t
+end

@@ -174,10 +174,11 @@ DWARF_LOW=\
   asmcomp/debug/dwarf_low/location_or_range_list.cmo \
   asmcomp/debug/dwarf_low/location_list.cmo \
   asmcomp/debug/dwarf_low/range_list.cmo \
+  asmcomp/debug/dwarf_low/location_or_range_list_table.cmo \
+  asmcomp/debug/dwarf_low/location_list_table.cmo \
+  asmcomp/debug/dwarf_low/range_list_table.cmo \
   asmcomp/debug/dwarf_low/unit_type.cmo \
-  asmcomp/debug/dwarf_low/debug_info_section.cmo \
-  asmcomp/debug/dwarf_low/debug_loc_table.cmo \
-  asmcomp/debug/dwarf_low/debug_ranges_table.cmo
+  asmcomp/debug/dwarf_low/debug_info_section.cmo
 
 DWARF_HIGH=\
   asmcomp/debug/dwarf_high/proto_die.cmo \

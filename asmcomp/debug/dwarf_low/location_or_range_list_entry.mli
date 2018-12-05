@@ -54,9 +54,8 @@ type 'payload entry =
     }
 
 module type S = sig
-  module Payload : Dwarf_emittable.S
-
-  type nonrec entry = Payload.t entry
+  type payload
+  type nonrec entry = payload entry
   type t
 
   val create : entry -> start_of_code_symbol:Asm_symbol.t -> t
@@ -68,4 +67,4 @@ module Make (P : sig
   module Payload : Dwarf_emittable.S
   val code_for_entry_kind : _ entry -> int
 end)
-  : S with module Payload := P.Payload
+  : S with type payload := P.Payload.t

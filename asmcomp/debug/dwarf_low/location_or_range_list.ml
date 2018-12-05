@@ -13,3 +13,19 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
+
+module A = Asm_directives
+
+module Make (Entry : Dwarf_emittable.S) = struct
+  type t = {
+    label : Asm_label.t;
+    entries : Entry.t list;
+  }
+
+  let size t =
+
+
+  let emit t =
+
+
+end

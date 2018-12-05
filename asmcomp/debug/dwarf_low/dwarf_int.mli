@@ -50,6 +50,8 @@ val of_targetint_exn : Targetint.t -> t
 val to_int64 : t -> Int64.t
 val to_uint64_exn : t -> Numbers.Uint64.t
 
+val width_as_int64 : unit -> Int64.t
+
 (** [add] and [succ] both check for overflow. *)
 val add : t -> t -> t
 val succ : t -> t

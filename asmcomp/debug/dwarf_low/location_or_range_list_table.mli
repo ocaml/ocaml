@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2018 Jane Street Group LLC                                 *)
+(*   Copyright 2013--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -12,32 +12,23 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Management of the .debug_addr table (DWARF-5 spec section 7.2.7,
-    page 241). *)
+(** Functor generating modules that handle DWARF location or range
+    list tables. *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t
+module Make (Location_or_range_list : Dwarf_emittable.S) : sig
+  type t
 
-val create : unit -> t
+  val create : unit -> t
 
-(** [add ~adjustment t addr] adds to the table the address of the label [addr]
-    (which in the assembly file is referenced from the [start_of_code_symbol])
-    plus the [adjustment].  If the [adjustment] is omitted then it is taken
-    to be zero.
+  (** [Offset.t] values are used in conjunction with DWARF attributes of
+      forms [DW_FORM_loclistx] and [DW_FORM_rnglistx]. *)
+  module Offset : Dwarf_emittable.S
 
-    The returned address index may be used for referencing the address e.g. in
-    a location list entry.
-*)
-val add
-   : ?adjustment:int
-  -> t
-  -> start_of_code_symbol:Asm_symbol.t
-  -> Asm_label.t
-  -> Address_index.t
+  val add : t -> Location_or_range_list.t -> Offset.t
 
-(** The label to be used as the value of the [DW_AT_base] attribute
-    (DWARF-5 spec page 66 line 14). *)
-val base_label : t -> Asm_label.t
+  val base_addr : t -> Asm_label.t
 
-include Dwarf_emittable.S with type t := t
+  include Dwarf_emittable.S with type t := t
+end
