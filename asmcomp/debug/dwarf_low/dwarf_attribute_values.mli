@@ -84,6 +84,10 @@ module Value : sig
     -> Asm_symbol.t
     -> Dwarf_attributes.Form.ref_addr t
 
+  val offset_into_debug_addr
+     : Asm_label.t
+    -> Dwarf_attributes.Form.sec_offset t
+
   val offset_into_debug_loclists
      : Asm_label.t
     -> Dwarf_attributes.Form.sec_offset t

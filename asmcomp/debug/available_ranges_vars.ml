@@ -142,10 +142,10 @@ module Vars = struct
   end
 
   let availability_set_to_key_set (avail : Reg_availability_set.t) =
+    let avail = Reg_availability_set.canonicalise avail in
     match avail with
     | Unreachable -> Key.Set.empty
     | Ok avail ->
-      let avail = Reg_availability_set.canonicalise avail in
       RD.Set.fold (fun reg result -> Key.Set.add reg result)
         avail
         Key.Set.empty

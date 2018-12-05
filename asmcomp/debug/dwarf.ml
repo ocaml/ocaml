@@ -52,9 +52,7 @@ type proto_dies_for_var = {
 let dwarf_version = ref Dwarf_version.five
 
 let supports_call_sites () =
-  match !dwarf_version with
-  | Four -> false
-  | Five -> true
+  Dwarf_version.compare !dwarf_version Dwarf_version.five >= 0
 
 let mangle_symbol symbol =
   let unit_name =
@@ -73,7 +71,7 @@ let create ~prefix_name =
   | Sixty_four -> Dwarf_format.set Sixty_four
   end;
   begin match !Clflags.dwarf_version with
-  | Four -> dwarf_version := Dwarf_version.four
+(*  | Four -> dwarf_version := Dwarf_version.four *)
   | Five -> dwarf_version := Dwarf_version.five
   end;
   let output_path, directory =
@@ -99,11 +97,11 @@ let create ~prefix_name =
   in
   let debug_line_label = Asm_section.label (DWARF Debug_line) in
   let address_table = Address_table.create () in
-  let addr_base = Address_table.base_label debug_addr_table in
-  let range_list_table = Range_list_table.create () in
-  let rnglists_base = Range_lists_table.base_label range_lists_table in
+  let addr_base = Address_table.base_addr address_table in
   let location_list_table = Location_list_table.create () in
-  let loclists_base = Location_lists_table.base_label range_lists_table in
+  let loclists_base = Location_list_table.base_addr location_list_table in
+  let range_list_table = Range_list_table.create () in
+  let rnglists_base = Range_list_table.base_addr range_list_table in
   let compilation_unit_proto_die =
     let attribute_values =
       let producer_name =
@@ -118,8 +116,8 @@ let create ~prefix_name =
         DAH.create_high_pc_from_symbol ~symbol:end_of_code_symbol;
         DAH.create_stmt_list ~debug_line_label;
         DAH.create_addr_base addr_base;
-        DAH.create_rnglists_base rnglists_base;
         DAH.create_loclists_base loclists_base;
+        DAH.create_rnglists_base rnglists_base;
       ]
     in
     Proto_die.create ~parent:None
@@ -255,8 +253,7 @@ let type_die_reference_for_var var ~proto_dies_for_vars =
    in the main gdb code to pass parameter indexes to the printing function.
    It is arguably more robust, too.
 *)
-(* CR mshinwell: remove [output_path] parameter, it's in [t] *)
-let construct_type_of_value_description t ~parent var ~output_path
+let construct_type_of_value_description t ~parent var
       ~(phantom_defining_expr : ARV.Range_info.phantom_defining_expr)
       ~proto_dies_for_vars ~reference =
   let normal_case () =
@@ -264,6 +261,14 @@ let construct_type_of_value_description t ~parent var ~output_path
       normal_type_for_var ~reference t ~parent var
     in
     ()
+  in
+  let var =
+    match var with
+    | Var var -> var
+    | Unique_name name -> Backend_var.create_persistent name
+  in
+  let name =
+    Name_laundry.base_type_die_name_for_var var ~output_path:t.output_path
   in
   match phantom_defining_expr with
   | Non_phantom -> normal_case ()
@@ -632,11 +637,15 @@ let location_list_entry t ~parent ~(fundecl : L.fundecl)
   | None -> None
   | Some single_location_description ->
     let start_inclusive =
-      Address_table.add t.address_table (ARV.Subrange.start_pos subrange)
+      Address_table.add t.address_table
+        (Asm_label.create_int (ARV.Subrange.start_pos subrange))
+        ~start_of_code_symbol:t.start_of_code_symbol
     in
     let end_exclusive =
-      Address_table.add t.address_table (ARV.Subrange.end_pos subrange)
+      Address_table.add t.address_table
+        (Asm_label.create_int (ARV.Subrange.end_pos subrange))
         ~adjustment:(ARV.Subrange.end_pos_offset subrange)
+        ~start_of_code_symbol:t.start_of_code_symbol
     in
     let loc_desc =
       Counted_location_description.create single_location_description
@@ -646,13 +655,14 @@ let location_list_entry t ~parent ~(fundecl : L.fundecl)
       Startx_endx {
         start_inclusive;
         end_exclusive;
-        loc_desc;
+        payload = loc_desc;
       }
     in
-    Some (Location_list_entry.create entry
-      ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name))
+    Some (Location_list_entry.create location_list_entry
+      ~start_of_code_symbol:t.start_of_code_symbol)
 
-let find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg =
+let find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg
+      ~lexical_block_proto_dies =
   let block = Debuginfo.innermost_block dbg in
   match Debuginfo.Current_block.to_block block with
   | Toplevel -> Some whole_function_lexical_block
@@ -687,7 +697,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
         let dbg = Backend_var.Provenance.debuginfo provenance in
         let block_die =
           find_lexical_block_die_from_debuginfo ~whole_function_lexical_block
-            dbg
+            dbg ~lexical_block_proto_dies
         in
         match block_die with
         | None ->
@@ -700,7 +710,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
   (* Build a location list that identifies where the value of [ident] may be
      found at runtime, indexed by program counter range. *)
   let location_list_attribute_value =
-    let location_list_entries =
+    let location_list =
       ARV.Range.fold range
         ~init:(Location_list.create ())
         ~f:(fun location_list subrange ->
@@ -709,14 +719,14 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
               ~fundecl ~subrange ~proto_dies_for_vars ~need_rvalue
           in
           match location_list_entry with
-          | None -> location_list_entries
+          | None -> location_list
           | Some location_list_entry ->
             Location_list.add location_list location_list_entry)
     in
     let location_list_index =
       Location_list_table.add t.location_list_table location_list
     in
-    DAH.loclistx location_list_index
+    DAH.create_location location_list_index
   in
   let type_and_name_attributes =
     match type_die_reference_for_var var ~proto_dies_for_vars with
@@ -764,8 +774,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
       if not need_rvalue then begin
         construct_type_of_value_description t
           ~parent:(Some t.compilation_unit_proto_die)
-          ident_for_type ~output_path:t.output_path
-          ~phantom_defining_expr ~proto_dies_for_vars
+          ident_for_type ~phantom_defining_expr ~proto_dies_for_vars
           ~reference
       end;
       let name_attribute =
@@ -913,29 +922,35 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true)
 
-let create_range_list_and_summarise ~start_of_code_symbol range =
-  LB.Range.fold range ~init:(Range_list.create (), Int.Triple.Set.empty)
+let create_range_list_and_summarise t range =
+  LB.Range.fold range ~init:(Range_list.create (), Address_index.Pair.Set.empty)
     ~f:(fun (range_list, summary) subrange ->
       let start_inclusive =
-        Address_table.add t.address_table (LB.Subrange.start_pos subrange)
+        Address_table.add t.address_table
+          (Asm_label.create_int (LB.Subrange.start_pos subrange))
+          ~start_of_code_symbol:t.start_of_code_symbol
       in
       let end_exclusive =
-        Address_table.add t.address_table (LB.Subrange.end_pos subrange)
+        Address_table.add t.address_table
+          (Asm_label.create_int (LB.Subrange.end_pos subrange))
           ~adjustment:(LB.Subrange.end_pos_offset subrange)
+          ~start_of_code_symbol:t.start_of_code_symbol
       in
       let range_list_entry : Range_list_entry.entry =
         (* DWARF-5 spec page 54 line 1. *)
         Startx_endx {
           start_inclusive;
           end_exclusive;
+          payload = ();
         }
       in
       let range_list_entry =
-        Range_list_entry.create_range_list_entry entry ~start_of_code_symbol
+        Range_list_entry.create range_list_entry
+          ~start_of_code_symbol:t.start_of_code_symbol
       in
       let range_list = Range_list.add range_list range_list_entry in
       let summary =
-        Int.Pair.Set.add (start_inclusive, end_exclusive) summary
+        Address_index.Pair.Set.add (start_inclusive, end_exclusive) summary
       in
       range_list, summary)
 
@@ -944,7 +959,7 @@ let create_range_list_and_summarise ~start_of_code_symbol range =
    lists but not yet for location lists since deduping entries in the latter
    would involve comparing DWARF location descriptions. *)
 module All_summaries = Identifiable.Make (struct
-  include Int.Pair.Set
+  include Address_index.Pair.Set
   let hash t = Hashtbl.hash (elements t)
 end)
 

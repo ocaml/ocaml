@@ -90,6 +90,8 @@ val offset_into_debug_line : ?comment:string -> Asm_label.t -> t
 
 val offset_into_debug_line_from_symbol : ?comment:string -> Asm_symbol.t -> t
 
+val offset_into_debug_addr : ?comment:string -> Asm_label.t -> t
+
 val offset_into_debug_loclists : ?comment:string -> Asm_label.t -> t
 
 val offset_into_debug_rnglists : ?comment:string -> Asm_label.t -> t

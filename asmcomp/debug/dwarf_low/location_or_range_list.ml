@@ -17,6 +17,10 @@
 module Make (Entry : Location_or_range_list_entry.S) = struct
   type t = Entry.t list
 
+  let create () = []
+
+  let add t entry = entry :: t
+
   let size t =
     List.fold_left (fun size entry ->
         Dwarf_int.add size (Entry.size entry))
@@ -26,5 +30,5 @@ module Make (Entry : Location_or_range_list_entry.S) = struct
   let emit t =
     List.iter (fun entry ->
         Entry.emit entry)
-      t
+      (List.rev t)
 end

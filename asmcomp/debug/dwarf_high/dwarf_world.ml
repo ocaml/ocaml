@@ -54,13 +54,13 @@ let emit ~compilation_unit_proto_die ~start_of_code_symbol
         Aranges_table.emit aranges_table;
       A.switch_to_section (DWARF Debug_addr);
       Profile.record "addr_table"
-        Aranges_table.emit address_table;
+        Address_table.emit address_table;
       A.switch_to_section (DWARF Debug_loclists);
       Profile.record "loclists_table"
-        Debug_loc_table.emit location_list_table;
+        Location_list_table.emit location_list_table;
       A.switch_to_section (DWARF Debug_rnglists);
       Profile.record "rnglists_table"
-        Debug_ranges_table.emit range_list_table;
+        Range_list_table.emit range_list_table;
       A.switch_to_section (DWARF Debug_line);
       A.switch_to_section (DWARF Debug_str);
       A.emit_cached_strings ())

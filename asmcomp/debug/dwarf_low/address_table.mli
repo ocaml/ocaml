@@ -38,6 +38,6 @@ val add
 
 (** The label to be used as the value of the [DW_AT_base] attribute
     (DWARF-5 spec page 66 line 14). *)
-val base_label : t -> Asm_label.t
+val base_addr : t -> Asm_label.t
 
 include Dwarf_emittable.S with type t := t

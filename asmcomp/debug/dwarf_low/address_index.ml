@@ -18,3 +18,18 @@ include Numbers.Uint64
 
 let size t = Dwarf_value.size (Dwarf_value.uleb128 t)
 let emit t = Dwarf_value.emit (Dwarf_value.uleb128 t)
+
+module Pair = struct
+  type nonrec t = t * t
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    (* XXX uint comparisons *)
+    let compare = Stdlib.compare
+    let hash = Hashtbl.hash
+    let equal t1 t2 = (compare t1 t2 = 0)
+
+    let print ppf (x, y) = Format.fprintf ppf "(%i, %i)" x y
+  end)
+end

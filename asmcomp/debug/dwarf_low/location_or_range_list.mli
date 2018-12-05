@@ -19,5 +19,9 @@
 module Make (Entry : Location_or_range_list_entry.S) : sig
   type t
 
+  val create : unit -> t
+
+  val add : t -> Entry.t -> t
+
   include Dwarf_emittable.S with type t := t
 end

@@ -136,3 +136,15 @@ let create_const_value_from_symbol ~symbol =
     let spec = AS.create A.Const_value F.Data8 in
     AV.create spec (V.symbol_64 symbol)
   | size -> Misc.fatal_errorf "Unknown Targetint.size %d" size
+
+let create_addr_base label =
+  let spec = AS.create A.Addr_base F.Sec_offset_addrptr in
+  AV.create spec (V.offset_into_debug_addr label)
+
+let create_loclists_base label =
+  let spec = AS.create A.Loclists_base F.Sec_offset_loclistsptr in
+  AV.create spec (V.offset_into_debug_loclists label)
+
+let create_rnglists_base label =
+  let spec = AS.create A.Rnglists_base F.Sec_offset_rnglistsptr in
+  AV.create spec (V.offset_into_debug_rnglists label)
