@@ -654,3 +654,21 @@ let check_def
 let compute_decl env decl =
   if not Config.flat_float_array then best_msig decl
   else check_def env decl
+
+
+(** Separability as a generic property *)
+type prop = Types.Separability.signature
+
+let property : (prop, unit) Typedecl_properties.property =
+  let open Typedecl_properties in
+  let eq ts1 ts2 = try List.for_all2 Sep.eq ts1 ts2 with _ -> false in
+  let merge ~prop:_ ~new_prop = new_prop in
+  let default decl = best_msig decl in
+  let compute env decl () = compute_decl env decl in
+  let update_decl decl type_separability = { decl with type_separability } in
+  let check _env _id _decl () = () in (* FIXME run final check? *)
+  { eq; merge; default; compute; update_decl; check; }
+
+(* Definition using the fixpoint infrastructure. *)
+let update_decls env decls =
+  Typedecl_properties.compute_property_noreq property env decls

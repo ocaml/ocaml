@@ -120,3 +120,12 @@ val compute_decl : Env.t -> Types.type_declaration -> mode list
     is not required anymore; we just use [Ind] as the mode of each parameter
     without any check.
 *)
+
+(** Property interface (see {!Typedecl_properties}). These functions
+    rely on {!compute_decl} and raise the {!Error} exception on error. *)
+type prop = Types.Separability.signature
+val property : (prop, unit) Typedecl_properties.property
+val update_decls :
+  Env.t ->
+  (Ident.t * Typedecl_properties.decl) list ->
+  (Ident.t * Typedecl_properties.decl) list
