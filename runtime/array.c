@@ -290,7 +290,18 @@ CAMLprim value caml_make_float_vect(value len)
 #ifdef FLAT_FLOAT_ARRAY
   return caml_floatarray_create (len);
 #else
-  return caml_alloc (Long_val (len), 0);
+  CAMLparam0 ();
+  CAMLlocal2 (result, x);
+  mlsize_t wosize = Long_val (len);
+  mlsize_t i;
+
+  if (wosize > Max_wosize) caml_invalid_argument ("Array.create_float");
+  result = caml_alloc (Long_val (len), 0);
+  for (i = 0; i < wosize; i++){
+    x = caml_alloc_small (Double_wosize, Double_tag);
+    Store_field (result, i, x);
+  }
+  CAMLreturn (result);
 #endif
 }
 
