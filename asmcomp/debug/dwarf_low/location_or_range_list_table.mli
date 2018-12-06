@@ -22,11 +22,17 @@ module Make (Location_or_range_list : Dwarf_emittable.S) : sig
 
   val create : unit -> t
 
-  (** [Index.t] values are used in conjunction with DWARF attributes of
-      forms [DW_FORM_loclistx] and [DW_FORM_rnglistx]. *)
   module Index : sig
     type t
+
+    (** [to_uint64] is used in conjunction with DWARF attributes of
+        forms [DW_FORM_loclistx] and [DW_FORM_rnglistx]. *)
     val to_uint64 : t -> Numbers.Uint64.t
+
+    (** [to_uint64] is used in conjunction with DWARF attributes of
+        form [DW_FORM_sec_offset].  Such attributes have to be used if offset
+        arrays are not supported on the host system. *)
+    val to_label : t -> Asm_label.t
   end
 
   val add : t -> Location_or_range_list.t -> Index.t

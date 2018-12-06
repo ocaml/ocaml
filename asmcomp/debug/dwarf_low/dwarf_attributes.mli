@@ -40,6 +40,9 @@ module Class : sig
   type reference = [ `reference ]
   type string = [ `string ]
   type stroffsetsptr = [ `stroffsetsptr ]
+
+  type dwarf_4_loclistptr = [ `dwarf_4_loclistptr ]
+  type dwarf_4_rangelistptr = [ `dwarf_4_rangelistptr ]
 end
 
 module Form : sig
@@ -119,6 +122,9 @@ module Form : sig
     | Sec_offset_rnglist : (Class.rnglist, sec_offset) t
     | Sec_offset_rnglistsptr : (Class.rnglistsptr, sec_offset) t
     | Sec_offset_stroffsetsptr : (Class.stroffsetsptr, sec_offset) t
+    | Dwarf_4_sec_offset_loclistptr : (Class.dwarf_4_loclistptr, sec_offset) t
+    | Dwarf_4_sec_offset_rangelistptr
+        : (Class.dwarf_4_rangelistptr, sec_offset) t
     | Exprloc : (Class.exprloc, exprloc) t
     | Flag_present : (Class.flag, flag_present) t
     | Strx : (Class.string, strx) t
@@ -268,6 +274,19 @@ module Attribute : sig
     | Deleted : Class.flag t
     | Defaulted : Class.constant t
     | Loclists_base : Class.loclistsptr t
+
+-    | Location : [< Class.exprloc | Class.loclistptr ] t
+-    | String_length : [< Class.exprloc | Class.loclistptr ] t
+-    | Return_addr : [< Class.exprloc | Class.loclistptr ] t
+-    | Start_scope : [< Class.constant | Class.rangelistptr ] t
+-    | Data_member_location :
+-        [< Class.constant | Class.exprloc | Class.loclistptr ] t
+-    | Frame_base : [< Class.exprloc | Class.loclistptr ] t
+-    | Segment : [< Class.exprloc | Class.loclistptr ] t
+-    | Static_link : [< Class.exprloc | Class.loclistptr ] t
+-    | Use_location : [< Class.exprloc | Class.loclistptr ] t
+-    | Vtable_elem_location : [< Class.exprloc | Class.loclistptr ] t
+-    | Ranges : Class.rangelistptr t
 
   module Sealed : sig
     type t
