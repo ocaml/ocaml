@@ -18,6 +18,8 @@ module AV = Dwarf_attribute_values.Attribute_value
 module F = Dwarf_attributes.Form
 module V = Dwarf_attribute_values.Value
 
+module Uint64 = Numbers.Uint64
+
 let create_low_pc ~address_label =
   let spec = AS.create A.Low_pc F.Addr in
   AV.create spec (V.code_address_from_label
@@ -62,6 +64,42 @@ let create_external ~is_visible_externally =
   else
     let spec = AS.create A.External F.Flag in
     AV.create spec (V.bool ~comment:"not visible externally" false)
+
+let create_call_file file =
+  let spec = AS.create A.Call_file F.Udata in
+  let file = Uint64.of_int_exn file in
+  AV.create spec (V.uleb128 ~comment:"file number" file)
+
+let create_call_line line =
+  let spec = AS.create A.Call_line F.Udata in
+  let line = Uint64.of_int_exn line in
+  AV.create spec (V.uleb128 ~comment:"line number" line)
+
+let create_call_column column =
+  let spec = AS.create A.Call_column F.Udata in
+  let column = Uint64.of_int_exn column in
+  AV.create spec (V.uleb128 ~comment:"column number" column)
+
+let create_call_pc label =
+  let spec = AS.create A.Call_pc F.Addr in
+  AV.create spec (V.code_address_from_label ~comment:"PC of call site" label)
+
+let create_call_return_pc label =
+  let spec = AS.create A.Call_return_pc F.Addr in
+  AV.create spec (V.code_address_from_label
+    ~comment:"PC immediately after call site" label)
+
+let create_call_tail_call ~is_tail =
+  if is_tail then
+    let spec = AS.create A.Call_tail_call F.Flag_present in
+    AV.create spec (V.flag_true ~comment:"is a tail call" ())
+  else
+    let spec = AS.create A.Call_tail_call F.Flag in
+    AV.create spec (V.bool ~comment:"is a non-tail call" false)
+
+let create_call_all_calls () =
+  let spec = AS.create A.Call_all_calls F.Flag_present in
+  AV.create spec (V.flag_true ~comment:"DW_AT_call_all_calls is set" ())
 
 let create_call_target loc_desc =
   let spec = AS.create A.Call_target F.Exprloc in

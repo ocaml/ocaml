@@ -46,6 +46,11 @@ module Value : sig
     -> Int64.t
     -> Dwarf_attributes.Form.data8 t
 
+  val uleb128
+     : ?comment:string
+    -> Numbers.Uint64.t
+    -> Dwarf_attributes.Form.udata t
+
   val string : ?comment:string -> string -> Dwarf_attributes.Form.string t
 
   val indirect_string

@@ -323,3 +323,9 @@ let reset () =
 
 let binary_backend_available = ref false
 let create_asm_file = ref true
+
+type external_call_generated_during_emit = {
+  callee : Asm_symbol.t;
+  call_labels : Mach.call_labels;
+  call_dbg : Debuginfo.t;
+}

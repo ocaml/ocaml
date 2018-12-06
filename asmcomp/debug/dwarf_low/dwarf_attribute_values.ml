@@ -33,6 +33,7 @@ module Value = struct
   let int16 ?comment i = Dwarf_value (V.int16 ?comment i)
   let int32 ?comment i = Dwarf_value (V.int32 ?comment i)
   let int64 ?comment i = Dwarf_value (V.int64 ?comment i)
+  let uleb128 ?comment i = Dwarf_value (V.uleb128 ?comment i)
   let string ?comment s = Dwarf_value (V.string ?comment s)
   let indirect_string ?comment ptr =
     Dwarf_value (V.indirect_string ?comment ptr)

@@ -51,6 +51,34 @@ val create_external
    : is_visible_externally:bool
   -> Dwarf_attribute_values.Attribute_value.t
 
+val create_call_file
+   : int
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_call_line
+   : int
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_call_column
+   : int
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_call_pc
+   : Asm_label.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_call_return_pc
+   : Asm_label.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_call_tail_call
+   : is_tail:bool
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_call_all_calls
+   : unit
+  -> Dwarf_attribute_values.Attribute_value.t
+
 val create_call_target
    : Single_location_description.t
   -> Dwarf_attribute_values.Attribute_value.t

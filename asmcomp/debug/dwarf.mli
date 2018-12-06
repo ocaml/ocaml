@@ -36,7 +36,9 @@ val dwarf_for_toplevel_inconstants
     the given emitter, and then generate corresponding DWARF. *)
 val dwarf_for_fundecl_and_emit
    : t
-  -> emit:(Linearize.fundecl -> end_of_function_label:Linearize.label -> unit)
+  -> emit:(Linearize.fundecl
+    -> end_of_function_label:Linearize.label
+    -> Emitaux.external_call_generated_during_emit list)
   -> end_of_function_label:Linearize.label
   -> Linearize.fundecl
   -> unit

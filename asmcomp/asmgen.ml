@@ -101,7 +101,9 @@ let rec regalloc ~ppf_dump round fd =
 let emit ~ppf_dump:_ dwarf fundecl =
   let end_of_function_label = Cmm.new_label () in
   match dwarf with
-  | None -> Emit.fundecl fundecl ~end_of_function_label
+  | None ->
+    ignore ((Emit.fundecl fundecl ~end_of_function_label)
+      : Emitaux.external_call_generated_during_emit list)
   | Some dwarf ->
     Dwarf.dwarf_for_fundecl_and_emit dwarf
       ~emit:Emit.fundecl
@@ -205,26 +207,24 @@ let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
     ++ (fun () -> ());
     (match toplevel with
     | None -> ()
-    | Some f -> compile_genfuns ~ppf_dump dwarf f)
+    | Some f -> compile_genfuns ~ppf_dump dwarf f);
+    (* We add explicit references to external primitive symbols.  This
+       is to ensure that the object files that define these symbols,
+       when part of a C library, won't be discarded by the linker.
+       This is important if a module that uses such a symbol is later
+       dynlinked. *)
+    compile_phrase ~ppf_dump ~dwarf
+      (Cmmgen.reference_symbols
+         (List.filter (fun s -> s <> "" && s.[0] <> '%')
+            (List.map Primitive.native_name !Translmod.primitive_declarations))
+      );
+    Emit.end_assembly dwarf
   with
   | Dwarf_format.Too_large_for_thirty_two_bit_dwarf ->
     let loc = Location.in_file sourcefile in
-    Location.report_errorf ~loc
+    Location.raise_errorf ~loc
       "Cannot generate 32-bit DWARF for this source file; recompile \
         with `-dwarf-format 64'"
-
-  (* We add explicit references to external primitive symbols.  This
-     is to ensure that the object files that define these symbols,
-     when part of a C library, won't be discarded by the linker.
-     This is important if a module that uses such a symbol is later
-     dynlinked. *)
-
-  compile_phrase ~ppf_dump ~dwarf
-    (Cmmgen.reference_symbols
-       (List.filter (fun s -> s <> "" && s.[0] <> '%')
-          (List.map Primitive.native_name !Translmod.primitive_declarations))
-    );
-  Emit.end_assembly dwarf
 
 let flambda_gen_implementation ?toplevel ~backend ~ppf_dump ~prefix_name
     ~unit_name ~sourcefile (program:Flambda.program) =

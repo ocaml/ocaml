@@ -54,7 +54,7 @@ let flambda i backend typed =
         ~module_initializer:lam)
     |> Asmgen.compile_implementation_flambda
       i.outputprefix ~unit_name:module_ident ~required_globals ~backend
-        ~ppf_dump:i.ppf_dump ~filename:i.sourcefile;
+        ~ppf_dump:i.ppf_dump ~sourcefile:i.sourcefile;
     Compilenv.save_unit_info (cmx i))
 
 let clambda i typed =
@@ -70,7 +70,7 @@ let clambda i typed =
        |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.program
        |> Asmgen.compile_implementation_clambda
          i.outputprefix ~unit_name:program.Lambda.module_ident
-         ~ppf_dump:i.ppf_dump ~filename:i.sourcefile;
+         ~ppf_dump:i.ppf_dump ~sourcefile:i.sourcefile;
        Compilenv.save_unit_info (cmx i))
 
 let implementation ~backend =

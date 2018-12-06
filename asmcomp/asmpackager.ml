@@ -99,6 +99,7 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
         members in
     let module_ident = Ident.create_persistent targetname in
     let prefixname = Filename.remove_extension objtemp in
+    let sourcefile = prefixname ^ ".ml" in
     if Config.flambda then begin
       let size, lam = Translmod.transl_package_flambda components coercion in
       let flam =
@@ -111,14 +112,14 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
           ~module_initializer:lam
       in
       Asmgen.compile_implementation_flambda
-        prefixname ~unit_name:module_ident ~backend
+        prefixname ~unit_name:module_ident ~sourcefile ~backend
         ~required_globals:Ident.Set.empty ~ppf_dump flam;
     end else begin
       let main_module_block_size, code =
         Translmod.transl_store_package
           components (Ident.create_persistent targetname) coercion in
       Asmgen.compile_implementation_clambda
-        prefixname ~unit_name:module_ident ~ppf_dump
+        prefixname ~unit_name:module_ident ~sourcefile ~ppf_dump
           { Lambda.code; main_module_block_size;
             module_ident; required_globals = Ident.Set.empty }
     end;

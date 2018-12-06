@@ -263,13 +263,20 @@ type gc_call =
   { gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_frame: label;                    (* Label of frame descriptor *)
+    gc_before_call: label;              (* Label immediately before GC call *)
     gc_spacetime : (X86_ast.arg * int) option;
     (* Spacetime node hole pointer and index *)
     gc_cfa_offset : int;
     (* Absolute offset of CFA from stack pointer *)
+    gc_dbg : Debuginfo.t;
+    (* Debug info used to retrieve the source location of the allocation. *)
   }
 
 let call_gc_sites = ref ([] : gc_call list)
+
+(* Call sites added by this pass (and not present in the [Linearize] code)
+   that are not contained within [call_gc_sites] or [bound_error_sites]. *)
+let additional_call_sites = ref []
 
 let emit_call_gc gc =
   def_label gc.gc_lbl;
@@ -291,11 +298,14 @@ let emit_call_gc gc =
 
 type bound_error_call =
   { bd_lbl: label;                      (* Entry label *)
+    bd_before_call: label;              (* Label immediately before call *)
     bd_frame: label;                    (* Label of frame descriptor *)
     bd_spacetime : (X86_ast.arg * int) option;
     (* As for [gc_call]. *)
     bd_cfa_offset : int;
     (* As for [gc_call]. *)
+    bd_dbg : Debuginfo.t;
+    (* Debug info used to retrieve the source location of the array access. *)
   }
 
 let bound_error_sites = ref ([] : bound_error_call list)
@@ -304,10 +314,12 @@ let bound_error_call = ref 0
 let bound_error_label ?label dbg ~spacetime =
   if !Clflags.debug || Config.spacetime then begin
     let lbl_bound_error = new_label() in
+    let bd_before_call = new_label () in
     let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
     bound_error_sites :=
-      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame;
+      { bd_lbl = lbl_bound_error; bd_before_call; bd_frame = lbl_frame;
         bd_spacetime = spacetime; bd_cfa_offset = cfa_offset ();
+        bd_dbg = dbg;
       } :: !bound_error_sites;
     lbl_bound_error
   end else begin
@@ -323,6 +335,7 @@ let emit_call_bound_error bd =
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
   D.cfi_def_cfa_offset ~bytes:bd.bd_cfa_offset;
+  def_label bd.bd_before_call;
   emit_call caml_ml_array_bound_error;
   def_label bd.bd_frame
 
@@ -694,16 +707,20 @@ let emit_instr fallthrough i =
         in
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
+            gc_before_call = new_label ();
             gc_return_lbl = lbl_redo;
             gc_frame = lbl_frame;
             gc_spacetime;
             gc_cfa_offset = cfa_offset ();
+            gc_dbg = i.dbg;
           } :: !call_gc_sites
       end else begin
         if Config.spacetime then begin
           spacetime_before_uninstrumented_call ~node_ptr:(arg i 0)
             ~index:spacetime_index;
         end;
+        let lbl_before = new_label () in
+        def_label lbl_before;
         begin match n with
         | 16 -> emit_call caml_alloc1
         | 24 -> emit_call caml_alloc2
@@ -717,7 +734,17 @@ let emit_instr fallthrough i =
             Debuginfo.none
         in
         def_label label;
-        I.lea (mem64 NONE 8 R15) (res i 0)
+        I.lea (mem64 NONE 8 R15) (res i 0);
+        let call_site : Emitaux.external_call_generated_during_emit =
+          { callee = Asm_symbol.Names.caml_call_gc;
+            call_labels = {
+              before = lbl_before;
+              after = label;
+            };
+            call_dbg = i.dbg;
+          }
+        in
+        additional_call_sites := call_site :: !additional_call_sites
       end
   | Lop(Iintop(Icomp cmp)) ->
       I.cmp (arg i 1) (arg i 0);
@@ -913,6 +940,36 @@ let rec emit_all fallthrough i =
       emit_instr fallthrough i;
       emit_all (Linearize.has_fallthrough i.desc) i.next
 
+let generated_call_sites () =
+  let call_sites =
+    List.fold_left (fun call_sites (gc_call : gc_call) ->
+        let call_site : Emitaux.external_call_generated_during_emit =
+          { callee = caml_call_gc;
+            call_labels = {
+              before = gc_call.gc_before_call;
+              after = gc_call.gc_frame;
+            };
+            call_dbg = gc_call.gc_dbg;
+          }
+        in
+        call_site :: call_sites)
+      !additional_call_sites
+      !call_gc_sites
+  in
+  List.fold_left (fun call_sites (bound_error_call : bound_error_call) ->
+      let call_site =
+        { callee = caml_ml_array_bound_error;
+          call_labels = {
+            before = bound_error_call.bd_before_call;
+            after = bound_error_call.bd_frame;
+          };
+          call_dbg = bound_error_call.bd_dbg;
+        }
+      in
+      call_site :: call_sites)
+    call_sites
+    !bound_error_sites
+
 let all_functions = ref []
 
 (* Emission of a function declaration *)
@@ -926,6 +983,7 @@ let fundecl fundecl ~end_of_function_label =
   call_gc_sites := [];
   bound_error_sites := [];
   bound_error_call := 0;
+  additional_call_sites := [];
   all_functions := fundecl :: !all_functions;
   D.text ();
   D.align ~bytes:16;
@@ -949,7 +1007,8 @@ let fundecl fundecl ~end_of_function_label =
   emit_call_bound_errors ();
   D.cfi_endproc ();
   D.define_label (Asm_label.create_int end_of_function_label);
-  D.size fun_name
+  D.size fun_name;
+  generated_call_sites ()
 
 (* Emission of data *)
 

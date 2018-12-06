@@ -16,7 +16,6 @@
 
 module ARV = Available_ranges_all_vars
 module DAH = Dwarf_attribute_helpers
-module Int = Numbers.Int
 module L = Linearize
 module LB = Lexical_block_ranges
 module SLDL = Simple_location_description_lang
@@ -613,8 +612,7 @@ let phantom_var_location_description t
       ~die_label:(Proto_die.reference proto_die)
       (!dwarf_version))
 
-let location_list_entry t ~parent ~(fundecl : L.fundecl)
-      ~subrange ~proto_dies_for_vars ~need_rvalue
+let location_list_entry t ~parent ~subrange ~proto_dies_for_vars ~need_rvalue
       : Location_list_entry.t option =
   let location_description =
     match ARV.Subrange.info subrange with
@@ -672,10 +670,10 @@ let find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg
     | exception Not_found -> None
     | proto_die -> Some proto_die
 
-let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
-      ~whole_function_lexical_block ~lexical_block_proto_dies
-      ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue
-      (var : Backend_var.t) ~phantom:_ ~hidden ~ident_for_type ~range =
+let dwarf_for_variable t ~function_proto_die ~whole_function_lexical_block
+      ~lexical_block_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
+      ~need_rvalue (var : Backend_var.t) ~phantom:_ ~hidden ~ident_for_type
+      ~range =
   let range_info = ARV.Range.info range in
   let provenance = ARV.Range_info.provenance range_info in
   let is_parameter = ARV.Range_info.is_parameter range_info in
@@ -716,7 +714,7 @@ let dwarf_for_variable t ~(fundecl : L.fundecl) ~function_proto_die
         ~f:(fun location_list subrange ->
           let location_list_entry =
             location_list_entry t ~parent:(Some function_proto_die)
-              ~fundecl ~subrange ~proto_dies_for_vars ~need_rvalue
+              ~subrange ~proto_dies_for_vars ~need_rvalue
           in
           match location_list_entry with
           | None -> location_list
@@ -890,7 +888,7 @@ let iterate_over_variable_like_things t ~available_ranges_vars ~rvalues_only
 
 let dwarf_for_variables_and_parameters t ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
-      ~available_ranges_vars ~(fundecl : L.fundecl) =
+      ~available_ranges_vars =
   let proto_dies_for_vars = Backend_var.Tbl.create 42 in
   let uniqueness_by_var =
     calculate_var_uniqueness ~available_ranges_vars
@@ -913,12 +911,12 @@ let dwarf_for_variables_and_parameters t ~function_proto_die
      type "lvalue or rvalue". *)
   iterate_over_variable_like_things t ~available_ranges_vars
     ~rvalues_only:false
-    ~f:(dwarf_for_variable t ~fundecl ~function_proto_die
+    ~f:(dwarf_for_variable t ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:false);
   iterate_over_variable_like_things t ~available_ranges_vars
     ~rvalues_only:true
-    ~f:(dwarf_for_variable t ~fundecl ~function_proto_die
+    ~f:(dwarf_for_variable t ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true)
 
@@ -964,7 +962,7 @@ module All_summaries = Identifiable.Make (struct
 end)
 
 let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
-      (fundecl : L.fundecl) ~start_of_function ~end_of_function
+      ~start_of_function ~end_of_function
       : Proto_die.t * (Proto_die.t Debuginfo.Block.Map.t) =
   let module B = Debuginfo.Block in
   let whole_function_lexical_block =
@@ -992,30 +990,28 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
               | Some parent ->
                 create_up_to_root parent lexical_block_proto_dies all_summaries
             in
-            let range_list_attribute_value, all_summaries =
+            let range_list_index, all_summaries =
               let range_list, summary =
-                create_range_list_entries_and_summarise
-                  ~start_of_code_symbol:t.start_of_code_symbol
-                  range
+                create_range_list_and_summarise t range
               in
               match All_summaries.Map.find summary all_summaries with
               | exception Not_found ->
                 let range_list_index =
-                  Range_table.add t.range_table range_list
+                  Range_list_table.add t.range_list_table range_list
                 in
                 let all_summaries =
-                  All_summaries.Map.add summary range_list_attribute_value
+                  All_summaries.Map.add summary range_list_index
                     all_summaries
                 in
-                range_list_attribute_value, all_summaries
-              | range_list_attribute_value ->
-                range_list_attribute_value, all_summaries
+                range_list_index, all_summaries
+              | range_list_index ->
+                range_list_index, all_summaries
             in
             let proto_die =
               Proto_die.create ~parent:(Some parent)
                 ~tag:Lexical_block
                 ~attribute_values:[
-                  DAH.rnglistx range_list_index;
+                  DAH.create_ranges range_list_index;
                 ]
                 ()
             in
@@ -1042,7 +1038,8 @@ let offset_from_cfa_in_bytes reg stack_loc ~stack_offset =
   in
   Some (frame_size - slot_offset)
 
-let add_call_site_argument t ~block_die ~arg_index ~arg ~stack_offset =
+let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
+      ~stack_offset (insn : L.instruction) =
   (* The reason we call [Reg_availability_set.canonicalise] from
      [Available_ranges] vars, rather than traversing each function's
      code and rewriting all of the availability sets first, is so that
@@ -1050,13 +1047,15 @@ let add_call_site_argument t ~block_die ~arg_index ~arg ~stack_offset =
      register before a call contains the value of a certain variable)
      that we may need here.  (Specifically for the call to
      [Reg_availability_set.find_all_holding_value_of].) *)
-  match Reg_availability_set.find_reg arg insn.available_before with
+  match Reg_availability_set.find_reg_opt insn.available_before arg with
   | None -> ()
   | Some rd ->
-    match Reg_with_debug_info.provenance rd with
+    match Reg_with_debug_info.debug_info rd with
     | None -> ()
-    | Some provenance ->
-      let holds_value_of = Reg_with_debug_info.holds_value_of rd in
+    | Some debug_info ->
+      let holds_value_of =
+        Reg_with_debug_info.Debug_info.holds_value_of debug_info
+      in
       let type_die_reference =
         (* For functions defined in the same compilation unit, or for
            self calls, share the type DIE. *)
@@ -1064,7 +1063,10 @@ let add_call_site_argument t ~block_die ~arg_index ~arg ~stack_offset =
           V.Map.find holds_value_of t.type_dies_for_parameters_all_functions
         with
         | exception Not_found ->
-          let type_die = normal_type_for_var t ~parent:block_die var in
+          let type_die =
+            normal_type_for_var t ~parent:(Some call_site_die)
+              (Var holds_value_of)
+          in
           Proto_die.reference type_die
         | existing_type_die_reference -> existing_type_die_reference
       in
@@ -1075,14 +1077,26 @@ let add_call_site_argument t ~block_die ~arg_index ~arg ~stack_offset =
             offset_from_cfa_in_bytes arg stack_loc ~stack_offset
           | Reg _ -> None
           | Unknown ->
-            Misc.fatal_errorf "Register without location: %a" Printmach.reg arg
+            Misc.fatal_errorf "Register without location: %a"
+              Printmach.reg arg
         in
-        reg_location_description0 arg ~offset_from_cfa_in_bytes
-          ~need_rvalue:false
+        let param_location =
+          reg_location_description0 arg ~offset_from_cfa_in_bytes
+            ~need_rvalue:false
+        in
+        match param_location with
+        | None -> []
+        | Some param_location ->
+          let param_location =
+            Single_location_description.of_simple_location_description
+              param_location
+          in
+          [DAH.create_single_location_description param_location]
       in
       let arg_location =
         let everywhere_holding_var =
-          Reg_availability_set.find_all_holding_value_of holds_value_of
+          Reg_availability_set.find_all_holding_value_of
+            insn.available_before holds_value_of
         in
         (* Only registers spilled at the time of the call will be available
            with certainty in the callee. *)
@@ -1091,7 +1105,8 @@ let add_call_site_argument t ~block_die ~arg_index ~arg ~stack_offset =
               let reg = Reg_with_debug_info.reg rd in
               match reg.loc with
               | Stack stack_loc ->
-                Some (reg, offset_from_cfa_in_bytes reg stack_loc ~stack_offset)
+                Some (reg,
+                  offset_from_cfa_in_bytes reg stack_loc ~stack_offset)
               | Reg _ -> None
               | Unknown ->
                 Misc.fatal_errorf "Register without location: %a"
@@ -1102,33 +1117,42 @@ let add_call_site_argument t ~block_die ~arg_index ~arg ~stack_offset =
         | [] -> []
         | (reg, offset_from_cfa_in_bytes) :: _ ->
           let arg_location =
-            reg_location_description reg ~offset_from_cfa_in_bytes
+            reg_location_description0 reg ~offset_from_cfa_in_bytes
               ~need_rvalue:false
           in
-          [DAH.create_single_call_data_location_description arg_location]
+          match arg_location with
+          | None -> []
+          | Some arg_location ->
+            let arg_location =
+              Single_location_description.of_simple_location_description
+                arg_location
+            in
+            [DAH.create_single_call_data_location_description arg_location]
       in
       Proto_die.create_ignore ~sort_priority:arg_index
-        ~parent:(Some block_die)
+        ~parent:(Some call_site_die)
         ~tag:Call_site_parameter
-        ~attribute_values:(arg_location @ [
+        ~attribute_values:(arg_location @ param_location @ [
           (* We don't give the name of the parameter since it is
              complicated to calculate (and there is currently insufficient
              information to perform the calculation if the function is in
              a different compilation unit). *)
-          DAH.create_type ~proto_die_reference:type_die_reference;
-          DAH.create_single_location_description param_location;
+          DAH.create_type_from_reference
+            ~proto_die_reference:type_die_reference;
         ])
         ()
 
-let add_call_site t ~whole_function_lexical_block ~stack_offset
-      ~is_tail ~args ~(call_labels : Mach.call_labels) insn attrs =
+let add_call_site t ~whole_function_lexical_block ~lexical_block_proto_dies
+      ~stack_offset ~is_tail ~args ~(call_labels : Mach.call_labels)
+      (insn : L.instruction) attrs =
   let dbg = insn.dbg in
   let block_die =
     find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg
+      ~lexical_block_proto_dies
   in
   match block_die with
   | None ->
-    Misc.fatal_error "No lexical block DIE found for debuginfo (the block \
+    Misc.fatal_errorf "No lexical block DIE found for debuginfo (the block \
         should always exist since this debuginfo came from a [Linearize] \
         instruction, not a [Backend_var]):@ %a"
       Debuginfo.print dbg
@@ -1137,7 +1161,10 @@ let add_call_site t ~whole_function_lexical_block ~stack_offset
       match Debuginfo.position dbg with
       | None -> []
       | Some code_range -> [
-          DAH.create_call_file (Debuginfo.Code_range.file code_range);
+          (* We assume that the current source file will always be
+             numbered 1 by the assembler (which generates .debug_line at the
+             moment). *)
+          DAH.create_call_file 1;
           DAH.create_call_line (Debuginfo.Code_range.line code_range);
           DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
         ]
@@ -1146,9 +1173,9 @@ let add_call_site t ~whole_function_lexical_block ~stack_offset
       Proto_die.create ~parent:(Some block_die)
         ~tag:Call_site
         ~attribute_values:(attrs @ position_attrs @ [
-          DAH.create_call_pc call_labels.before;
-          DAH.create_call_return_pc call_labels.after;
-          DAH.create_call_tail_call is_tail;
+          DAH.create_call_pc (Asm_label.create_int call_labels.before);
+          DAH.create_call_return_pc (Asm_label.create_int call_labels.after);
+          DAH.create_call_tail_call ~is_tail;
         ])
         ()
     in
@@ -1156,7 +1183,7 @@ let add_call_site t ~whole_function_lexical_block ~stack_offset
        information if one or more of the arguments is split across registers.
        This could be improved in the future. *)
     let no_split_args =
-      Array.for_all (fun arg ->
+      Array.for_all (fun (arg : Reg.t) ->
           match arg.part with
           | None -> true
           | Some _ -> false)
@@ -1164,49 +1191,68 @@ let add_call_site t ~whole_function_lexical_block ~stack_offset
     in
     if no_split_args then begin
       Array.iteri (fun arg_index arg ->
-          add_call_site_argument t ~block_die ~arg_index ~arg)
+          add_call_site_argument t ~call_site_die ~arg_index ~arg
+            ~stack_offset insn)
         args
     end
 
-let call_target_for_indirect_callee ~callee ~stack_offset =
+let call_target_for_direct_callee ~(callee : Asm_symbol.t) =
+  let simple_location_desc =
+    SLDL.compile (SLDL.of_lvalue (SLDL.Lvalue.const_symbol ~symbol:callee))
+  in
+  let location_desc =
+    Single_location_description.of_simple_location_description
+      simple_location_desc
+  in
+  [DAH.create_call_target location_desc] 
+
+let call_target_for_indirect_callee ~(callee : Reg.t) ~stack_offset =
   let offset_from_cfa_in_bytes, clobbered_by_call =
     match callee.loc with
     | Stack stack_loc ->
-      offset_from_cfa_in_bytes arg stack_loc ~stack_offset, false
+      offset_from_cfa_in_bytes callee stack_loc ~stack_offset, false
     | Reg _ -> None, true
     | Unknown ->
-      Misc.fatal_errorf "Register without location: %a" Printmach.reg reg
+      Misc.fatal_errorf "Register without location: %a" Printmach.reg callee
   in
-  let location_desc =
-    reg_location_description0 arg ~offset_from_cfa_in_bytes
+  let simple_location_desc =
+    reg_location_description0 callee ~offset_from_cfa_in_bytes
       ~need_rvalue:false
   in
-  (* It seems unlikely that we won't be calling through a [Reg], but we
-     support the stack case (yielding [DW_AT_call_target] rather than the
-     "clobbered" variant) for completeness. *)
-  if clobbered_by_call then
-    [DAH.create_call_target_clobbered location_desc] 
-  else
-    [DAH.create_call_target location_desc] 
+  match simple_location_desc with
+  | None -> []
+  | Some simple_location_desc ->
+    let location_desc =
+      Single_location_description.of_simple_location_description
+        simple_location_desc
+    in
+    (* It seems unlikely that we won't be calling through a [Reg], but we
+       support the stack case (yielding [DW_AT_call_target] rather than the
+       "clobbered" variant) for completeness. *)
+    if clobbered_by_call then
+      [DAH.create_call_target_clobbered location_desc] 
+    else
+      [DAH.create_call_target location_desc] 
 
-let dwarf_for_call_sites t ~function_proto_die ~whole_function_lexical_block
+let dwarf_for_call_sites t ~whole_function_lexical_block
       ~lexical_block_proto_dies ~(fundecl : L.fundecl)
       ~external_calls_generated_during_emit ~function_symbol =
   let found_self_tail_calls = ref false in
-  let add_call_site = add_call_site t ~whole_function_lexical_block in
+  let add_call_site =
+    add_call_site t ~whole_function_lexical_block ~lexical_block_proto_dies
+  in
   let add_indirect_ocaml_call ~stack_offset ~callee ~args ~call_labels insn =
     add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
-      (call_target_for_indirect_callee ~callee)
+      (call_target_for_indirect_callee ~callee ~stack_offset)
   in
   let add_direct_ocaml_call ~stack_offset ~callee ~args ~call_labels insn =
-    add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn [
-      DAH.create_call_target ~callee;
-    ]
+    add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
+      (call_target_for_direct_callee ~callee)
   in
   let add_indirect_ocaml_tail_call ~stack_offset ~callee ~args ~call_labels
         insn =
     add_call_site ~stack_offset ~is_tail:true ~args ~call_labels insn
-      (call_target_for_indirect_callee ~callee)
+      (call_target_for_indirect_callee ~callee ~stack_offset)
   in
   let add_direct_ocaml_tail_call ~stack_offset ~callee ~args ~call_labels
         insn =
@@ -1216,15 +1262,13 @@ let dwarf_for_call_sites t ~function_proto_die ~whole_function_lexical_block
     if Asm_symbol.equal callee function_symbol then begin
       found_self_tail_calls := true
     end else begin
-      add_call_site ~is_tail:true ~args ~call_labels insn [
-        DAH.create_call_target ~callee;
-      ]
+      add_call_site ~stack_offset ~is_tail:true ~args ~call_labels insn
+        (call_target_for_direct_callee ~callee)
     end
   in
   let add_external_call ~stack_offset ~callee ~args ~call_labels insn =
-    add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn [
-      DAH.create_call_target ~callee;
-    ]
+    add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
+      (call_target_for_direct_callee ~callee)
   in
   let rec traverse_insns (insn : L.instruction) ~stack_offset =
     match insn.desc with
@@ -1237,25 +1281,25 @@ let dwarf_for_call_sites t ~function_proto_die ~whole_function_lexical_block
           add_indirect_ocaml_call ~stack_offset
             ~callee:insn.arg.(0) ~args ~call_labels insn;
           stack_offset
-        | Icall_imm { func; call_labels; } ->
+        | Icall_imm { func = callee; call_labels; } ->
           let callee = Asm_symbol.create callee in
           add_direct_ocaml_call ~stack_offset
-            ~callee:func ~args:insn.arg ~call_labels insn;
+            ~callee ~args:insn.arg ~call_labels insn;
           stack_offset
         | Itailcall_ind { call_labels; } ->
           let args = Array.sub insn.arg 1 (Array.length insn.arg - 1) in
           add_indirect_ocaml_tail_call ~stack_offset
             ~callee:insn.arg.(0) ~args ~call_labels insn;
           stack_offset
-        | Itailcall_imm { func; call_labels; } ->
+        | Itailcall_imm { func = callee; call_labels; } ->
           let callee = Asm_symbol.create callee in
           add_direct_ocaml_tail_call ~stack_offset
-            ~callee:func ~args:insn.arg ~call_labels insn;
+            ~callee ~args:insn.arg ~call_labels insn;
           stack_offset
-        | Iextcall { func; alloc = _; call_labels; } ->
+        | Iextcall { func = callee; alloc = _; call_labels; } ->
           let callee = Asm_symbol.create callee in
           add_external_call ~stack_offset
-            ~callee:func ~args:insn.arg ~call_labels insn;
+            ~callee ~args:insn.arg ~call_labels insn;
           stack_offset
         | Imove
         | Ispill
@@ -1295,10 +1339,18 @@ let dwarf_for_call_sites t ~function_proto_die ~whole_function_lexical_block
   let (_stack_offset : int) =
     traverse_insns fundecl.fun_body ~stack_offset:Proc.initial_stack_offset
   in
-  List.iter (fun ({ callee; call_labels; dbg; }
-        : Emit.external_call_generated_during_emit) ->
-      (* We omit [DW_tag_call_site_parameter] for these calls. *)
-      add_external_call ~callee ~args:[] ~call_labels dbg)
+  List.iter (fun ({ callee; call_labels; call_dbg = dbg; }
+        : Emitaux.external_call_generated_during_emit) ->
+      (* We omit [DW_tag_call_site_parameter] for these calls.  As such the
+         [available_before] information and the stack offset is irrelevant
+         here. *)
+      let fake_insn : L.instruction =
+        { L.end_instr with
+          dbg;
+        }
+      in
+      add_external_call ~stack_offset:0 ~callee ~args:[| |] ~call_labels
+        fake_insn)
     external_calls_generated_during_emit;
   !found_self_tail_calls
 
@@ -1406,7 +1458,6 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
     normal_type_for_var t
       ~parent:(Some t.compilation_unit_proto_die)
       (Unique_name function_name)
-      ~output_path:t.output_path
   in
   let function_proto_die =
     Proto_die.create ~parent:(Some t.compilation_unit_proto_die)
@@ -1423,28 +1474,28 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
   let whole_function_lexical_block, lexical_block_proto_dies =
     Profile.record "dwarf_create_lexical_block_proto_dies" (fun () ->
         create_lexical_block_proto_dies t lexical_block_ranges
-          ~function_proto_die fundecl ~start_of_function ~end_of_function)
+          ~function_proto_die ~start_of_function ~end_of_function)
       ~accumulate:true
       ()
   in
   Profile.record "dwarf_for_variables_and_parameters" (fun () ->
       dwarf_for_variables_and_parameters t ~function_proto_die
         ~whole_function_lexical_block ~lexical_block_proto_dies
-        ~available_ranges_vars ~fundecl)
+        ~available_ranges_vars)
       ~accumulate:true
     ();
   if supports_call_sites () then begin
     let found_self_tail_calls =
       Profile.record "dwarf_for_call_sites" (fun () ->
-          dwarf_for_call_sites t ~function_proto_die
-            ~whole_function_lexical_block ~lexical_block_proto_dies ~fundecl
-            ~external_calls_generated_during_emit ~function_symbol)
+          dwarf_for_call_sites t ~whole_function_lexical_block
+            ~lexical_block_proto_dies ~fundecl
+            ~external_calls_generated_during_emit ~function_symbol:symbol)
           ~accumulate:true
         ()
     in
     if not found_self_tail_calls then begin
-      Proto_die.add_attribute function_proto_die
-        (DAH.create_call_all_calls true)
+      Proto_die.add_or_replace_attribute_value function_proto_die
+        (DAH.create_call_all_calls ())
     end
   end
 
@@ -1460,7 +1511,6 @@ let dwarf_for_toplevel_constant t ~vars ~module_path ~symbol =
         normal_type_for_var t
           ~parent:(Some t.compilation_unit_proto_die)
           (Var var)
-          ~output_path:t.output_path
       in
       let symbol = mangle_symbol symbol in
       Proto_die.create_ignore ~parent:(Some t.compilation_unit_proto_die)
@@ -1505,7 +1555,6 @@ let dwarf_for_toplevel_inconstant t var ~module_path ~symbol =
     normal_type_for_var t
       ~parent:(Some t.compilation_unit_proto_die)
       (Var var)
-      ~output_path:t.output_path
   in
   (* Toplevel inconstant "preallocated blocks" contain the thing of interest
      in field 0 (once it has been initialised).  We describe them using a

@@ -72,3 +72,9 @@ val binary_backend_available: bool ref
 
 val create_asm_file: bool ref
     (** Are we actually generating the textual assembly file? *)
+
+type external_call_generated_during_emit = {
+  callee : Asm_symbol.t;
+  call_labels : Mach.call_labels;
+  call_dbg : Debuginfo.t;
+}
