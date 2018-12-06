@@ -219,7 +219,7 @@ endif
 
 .PHONY: clean
 clean:
-	rm -f $(PROGRAMS) *.$(O) *.$(A) *.$(SO)
+	rm -f $(PROGRAMS) *.$(O) *.$(A) *.$(SO) ld.conf
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h
 	rm -f caml/version.h
 
