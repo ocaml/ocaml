@@ -204,10 +204,10 @@ module Test (A : S) : sig end = struct
   check_inval (A.blit a 0 a 101) 0;
 
   (* [to_list] [of_list] *)
-  let a = A.create 1000 in
-  assert (A.of_list (A.to_list a) = a);
-  let a = A.create 0 in
-  assert (A.of_list (A.to_list a) = a);
+  let a = A.init 1000 Float.of_int in
+  assert (compare a (A.of_list (A.to_list a)) = 0);
+  let a = A.init 0 Float.of_int in
+  assert (compare a (A.of_list (A.to_list a)) = 0);
   (* check_inval omitted *)
 
   (* [iter] *)
