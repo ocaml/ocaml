@@ -283,28 +283,6 @@ CAMLprim value caml_floatarray_create(value len)
   return result;
 }
 
-/* [len] is a [value] representing number of floats */
-/* [ int -> float array ] */
-CAMLprim value caml_make_float_vect(value len)
-{
-#ifdef FLAT_FLOAT_ARRAY
-  return caml_floatarray_create (len);
-#else
-  CAMLparam0 ();
-  CAMLlocal2 (result, x);
-  mlsize_t wosize = Long_val (len);
-  mlsize_t i;
-
-  if (wosize > Max_wosize) caml_invalid_argument ("Array.create_float");
-  result = caml_alloc (Long_val (len), 0);
-  for (i = 0; i < wosize; i++){
-    x = caml_alloc_small (Double_wosize, Double_tag);
-    Store_field (result, i, x);
-  }
-  CAMLreturn (result);
-#endif
-}
-
 /* [len] is a [value] representing number of words or floats */
 /* Spacetime profiling assumes that this function is only called from OCaml. */
 CAMLprim value caml_make_vect(value len, value init)
@@ -355,6 +333,20 @@ CAMLprim value caml_make_vect(value len, value init)
     }
   }
   CAMLreturn (res);
+}
+
+/* [len] is a [value] representing number of floats */
+/* [ int -> float array ] */
+CAMLprim value caml_make_float_vect(value len)
+{
+#ifdef FLAT_FLOAT_ARRAY
+  return caml_floatarray_create (len);
+#else
+  /* allocate the float in the major heap directly to avoid triggering
+     a minor GC in [caml_make_vect]. */
+  value x = caml_alloc_shr (Double_wosize, Double_tag);
+  return caml_make_vect (len, x);
+#endif
 }
 
 /* This primitive is used internally by the compiler to compile
