@@ -111,6 +111,22 @@ let mk_dwarf_version f =
     Printf.sprintf "5  Set DWARF debug info version (default %s)" default
 ;;
 
+let mk_dwarf_offsets f =
+  let help =
+    " Generate offset arrays in DWARF-5 location and range list tables"
+      ^ (if Clflags.default_dwarf_offsets then " (default)" else "")
+  in
+  "-dwarf-offsets", Arg.Unit f, help
+;;
+
+let mk_no_dwarf_offsets f =
+  let help =
+    " Do not enerate offset arrays in DWARF-5 location and range list tables"
+      ^ (if not Clflags.default_dwarf_offsets then " (default)" else "")
+  in
+  "-no-dwarf-offsets", Arg.Unit f, help
+;;
+
 let mk_for_pack_byt f =
   "-for-pack", Arg.String f,
   "<ident>  Generate code that can later be `packed' with\n\
@@ -1065,6 +1081,8 @@ module type Optcomp_options = sig
   val _dinterval : unit -> unit
   val _dwarf_format : int -> unit
   val _dwarf_version : string -> unit
+  val _dwarf_offsets : unit -> unit
+  val _no_dwarf_offsets : unit -> unit
   val _g_full : string -> unit
 end;;
 
@@ -1284,6 +1302,8 @@ struct
     mk_dtypes F._annot;
     mk_dwarf_format F._dwarf_format;
     mk_dwarf_version F._dwarf_version;
+    mk_dwarf_offsets F._dwarf_offsets;
+    mk_no_dwarf_offsets F._no_dwarf_offsets;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
     mk_g_full F._g_full;

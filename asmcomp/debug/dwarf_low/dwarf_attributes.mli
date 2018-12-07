@@ -41,8 +41,10 @@ module Class : sig
   type string = [ `string ]
   type stroffsetsptr = [ `stroffsetsptr ]
 
-  type dwarf_4_loclistptr = [ `dwarf_4_loclistptr ]
-  type dwarf_4_rangelistptr = [ `dwarf_4_rangelistptr ]
+  module Dwarf_4 : sig
+    type loclistptr = [ `loclistptr ]
+    type rangelistptr = [ `rangelistptr ]
+  end
 end
 
 module Form : sig
@@ -93,6 +95,13 @@ module Form : sig
   (** We omit the "DW_FORM_" prefix.
       "Indirect" is not currently supported.
   *)
+
+  module Dwarf_4 : sig
+    type ('dwarf_classes, 'form) t =
+      | Sec_offset_loclistptr : (Class.Dwarf_4.loclistptr, sec_offset) t
+      | Sec_offset_rangelistptr : (Class.Dwarf_4.rangelistptr, sec_offset) t
+  end
+
   type ('dwarf_classes, 'form) t =
     | Addr : (Class.address, addr) t
     | Block : (Class.block, block) t
@@ -122,9 +131,6 @@ module Form : sig
     | Sec_offset_rnglist : (Class.rnglist, sec_offset) t
     | Sec_offset_rnglistsptr : (Class.rnglistsptr, sec_offset) t
     | Sec_offset_stroffsetsptr : (Class.stroffsetsptr, sec_offset) t
-    | Dwarf_4_sec_offset_loclistptr : (Class.dwarf_4_loclistptr, sec_offset) t
-    | Dwarf_4_sec_offset_rangelistptr
-        : (Class.dwarf_4_rangelistptr, sec_offset) t
     | Exprloc : (Class.exprloc, exprloc) t
     | Flag_present : (Class.flag, flag_present) t
     | Strx : (Class.string, strx) t
@@ -146,10 +152,28 @@ module Form : sig
     | Addrx2 : (Class.string, addrx2) t
     | Addrx3 : (Class.string, addrx3) t
     | Addrx4 : (Class.string, addrx4) t
+    | Dwarf_4 : ('dwarf_classes, 'form) Dwarf_4.t -> ('dwarf_classes, 'form) t
 end
 
 module Attribute : sig
   (** We omit the "DW_AT_" prefix. *)
+
+  module Dwarf_4 : sig
+    type 'dwarf_classes t =
+      | Location : [< Class.exprloc | Class.loclistptr ] t
+      | String_length : [< Class.exprloc | Class.loclistptr ] t
+      | Return_addr : [< Class.exprloc | Class.loclistptr ] t
+      | Start_scope : [< Class.constant | Class.rangelistptr ] t
+      | Data_member_location :
+          [< Class.constant | Class.exprloc | Class.loclistptr ] t
+      | Frame_base : [< Class.exprloc | Class.loclistptr ] t
+      | Segment : [< Class.exprloc | Class.loclistptr ] t
+      | Static_link : [< Class.exprloc | Class.loclistptr ] t
+      | Use_location : [< Class.exprloc | Class.loclistptr ] t
+      | Vtable_elem_location : [< Class.exprloc | Class.loclistptr ] t
+      | Ranges : Class.rangelistptr t
+  end
+
   type 'dwarf_classes t =
     | Sibling : Class.reference t
     | Location : [< Class.exprloc | Class.loclist ] t
@@ -274,19 +298,7 @@ module Attribute : sig
     | Deleted : Class.flag t
     | Defaulted : Class.constant t
     | Loclists_base : Class.loclistsptr t
-
--    | Location : [< Class.exprloc | Class.loclistptr ] t
--    | String_length : [< Class.exprloc | Class.loclistptr ] t
--    | Return_addr : [< Class.exprloc | Class.loclistptr ] t
--    | Start_scope : [< Class.constant | Class.rangelistptr ] t
--    | Data_member_location :
--        [< Class.constant | Class.exprloc | Class.loclistptr ] t
--    | Frame_base : [< Class.exprloc | Class.loclistptr ] t
--    | Segment : [< Class.exprloc | Class.loclistptr ] t
--    | Static_link : [< Class.exprloc | Class.loclistptr ] t
--    | Use_location : [< Class.exprloc | Class.loclistptr ] t
--    | Vtable_elem_location : [< Class.exprloc | Class.loclistptr ] t
--    | Ranges : Class.rangelistptr t
+    | Dwarf_4 : 'dwarf_classes Dwarf_4.t -> 'dwarf_classes t
 
   module Sealed : sig
     type t

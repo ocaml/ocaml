@@ -227,10 +227,12 @@ val color : Misc.Color.setting option ref
 val unboxed_types : bool ref
 
 type dwarf_version =
+  | Four
   | Five
 
 val dwarf_version : dwarf_version ref
 val default_dwarf_version : dwarf_version
+val dwarf_location_and_range_table_offsets : bool
 
 type dwarf_format =
   | Thirty_two

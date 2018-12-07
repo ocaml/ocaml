@@ -32,6 +32,11 @@ module Class = struct
   type reference = [ `reference ]
   type string = [ `string ]
   type stroffsetsptr = [ `stroffsetsptr ]
+
+  module Dwarf_4 : sig
+    type loclistptr = [ `loclistptr ]
+    type rangelistptr = [ `rangelistptr ]
+  end
 end
 
 module Form = struct
@@ -78,6 +83,12 @@ module Form = struct
   type addrx2 = [ `addrx2 ]
   type addrx3 = [ `addrx3 ]
   type addrx4 = [ `addrx4 ]
+
+  module Dwarf_4 : sig
+    type ('dwarf_classes, 'form) t =
+      | Sec_offset_loclistptr : (Class.Dwarf_4.loclistptr, sec_offset) t
+      | Sec_offset_rangelistptr : (Class.Dwarf_4.rangelistptr, sec_offset) t
+  end
 
   type ('dwarf_classes, 'form) t =
     | Addr : (Class.address, addr) t
@@ -131,6 +142,7 @@ module Form = struct
     | Addrx2 : (Class.string, addrx2) t
     | Addrx3 : (Class.string, addrx3) t
     | Addrx4 : (Class.string, addrx4) t
+    | Dwarf_4 : ('dwarf_classes, 'form) Dwarf_4.t -> ('dwarf_classes, 'form) t
 
   let name (type dwarf_class) (type form) (t : (dwarf_class, form) t) =
     let name =
@@ -184,6 +196,8 @@ module Form = struct
       | Addrx2 -> "addrx2"
       | Addrx3 -> "addrx3"
       | Addrx4 -> "addrx4"
+      | Dwarf_4 Sec_offset_loclistptr -> "sec_offset_loclistptr"
+      | Dwarf_4 Sec_offset_rangelistptr -> "sec_offset_rangelistptr"
     in
     "DW_FORM_" ^ name
 
@@ -251,6 +265,22 @@ module Form = struct
 end
 
 module Attribute = struct
+  module Dwarf_4 : sig
+    type 'dwarf_classes t =
+      | Location : [< Class.exprloc | Class.loclistptr ] t
+      | String_length : [< Class.exprloc | Class.loclistptr ] t
+      | Return_addr : [< Class.exprloc | Class.loclistptr ] t
+      | Start_scope : [< Class.constant | Class.rangelistptr ] t
+      | Data_member_location :
+          [< Class.constant | Class.exprloc | Class.loclistptr ] t
+      | Frame_base : [< Class.exprloc | Class.loclistptr ] t
+      | Segment : [< Class.exprloc | Class.loclistptr ] t
+      | Static_link : [< Class.exprloc | Class.loclistptr ] t
+      | Use_location : [< Class.exprloc | Class.loclistptr ] t
+      | Vtable_elem_location : [< Class.exprloc | Class.loclistptr ] t
+      | Ranges : Class.rangelistptr t
+  end
+
   type 'dwarf_classes t =
     | Sibling : Class.reference t
     | Location : [< Class.exprloc | Class.loclist ] t
@@ -375,11 +405,7 @@ module Attribute = struct
     | Deleted : Class.flag t
     | Defaulted : Class.constant t
     | Loclists_base : Class.loclistsptr t
-(* CR mshinwell: decide what to do about these *)
-(*
-  let low_user = 0x2000
-  let hi_user = 0x3fff
-*)
+    | Dwarf_4 : 'dwarf_classes Dwarf_4.t -> 'dwarf_classes t
 
   let name (type dwarf_class) (t : dwarf_class t) =
     let name =
@@ -505,6 +531,17 @@ module Attribute = struct
       | Deleted -> "deleted"
       | Defaulted -> "defaulted"
       | Loclists_base -> "loclists_base"
+      | Dwarf_4 Location -> "location"
+      | Dwarf_4 String_length -> "string_length"
+      | Dwarf_4 Return_addr -> "return_addr"
+      | Dwarf_4 Start_scope -> "start_scope"
+      | Dwarf_4 Data_member_location -> "data_member_location"
+      | Dwarf_4 Frame_base -> "frame_base"
+      | Dwarf_4 Segment -> "segment"
+      | Dwarf_4 Static_link -> "static_link"
+      | Dwarf_4 Use_location -> "use_location"
+      | Dwarf_4 Vtable_elem_location -> "vtable_elem_location"
+      | Dwarf_4 Ranges -> "ranges"
     in
     "DW_AT_" ^ name
 
@@ -631,7 +668,6 @@ module Attribute = struct
     | Deleted -> 0x8a
     | Defaulted -> 0x8b
     | Loclists_base -> 0x8c
-(*    | User code -> code *)
 
   let encode t =
     Dwarf_value.uleb128 ~comment:(name t) (Uint64.of_int_exn (code t))

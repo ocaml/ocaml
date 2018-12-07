@@ -386,10 +386,12 @@ let color = ref None ;; (* -color *)
 let unboxed_types = ref false
 
 type dwarf_version =
+  | Four
   | Five
 
 let default_dwarf_version = Five
 let dwarf_version = ref default_dwarf_version
+let dwarf_location_and_range_table_offsets = false
 
 type dwarf_format =
   | Thirty_two

@@ -222,6 +222,8 @@ module type Optcomp_options = sig
   val _dinterval : unit -> unit
   val _dwarf_format : int -> unit
   val _dwarf_version : string -> unit
+  val _dwarf_offsets : unit -> unit
+  val _no_dwarf_offsets : unit -> unit
   val _g_full : string -> unit
 end;;
 

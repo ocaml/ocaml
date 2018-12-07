@@ -61,9 +61,9 @@ module Options = Main_args.Make_optcomp_options (struct
     | _ -> fatal "Please specify `32' or '64' for -dwarf-format"
   let _dwarf_version version =
     match version with
-(*    | "4+gnu" -> dwarf_version := Four *)
+    | "4+gnu" -> dwarf_version := Four
     | "5" -> dwarf_version := Five
-    | _ -> fatal "Please specify '5' for -dwarf-version"
+    | _ -> fatal "Please specify `4+gnu' or '5' for -dwarf-version"
   let _for_pack s = for_package := Some s
   let _g = set debug
   let _g_full debugger =
@@ -76,6 +76,8 @@ module Options = Main_args.Make_optcomp_options (struct
     debug := true;
     debug_full := Some debugger;
     binary_annotations := true
+  let _dwarf_offsets = set dwarf_location_and_range_table_offsets
+  let _no_dwarf_offsets = clear dwarf_location_and_range_table_offsets
   let _i () =
     print_types := true;
     compile_only := true;
