@@ -1074,7 +1074,7 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
               Proto_die.create ~parent:(Some parent)
                 ~tag:Lexical_block
                 ~attribute_values:[
-                  DAH.create_ranges range_list_attribte;
+                  DAH.create_ranges range_list_attribute;
                 ]
                 ()
             in
