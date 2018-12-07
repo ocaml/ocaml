@@ -33,7 +33,7 @@ module Class = struct
   type string = [ `string ]
   type stroffsetsptr = [ `stroffsetsptr ]
 
-  module Dwarf_4 : sig
+  module Dwarf_4 = struct
     type loclistptr = [ `loclistptr ]
     type rangelistptr = [ `rangelistptr ]
   end
@@ -84,7 +84,7 @@ module Form = struct
   type addrx3 = [ `addrx3 ]
   type addrx4 = [ `addrx4 ]
 
-  module Dwarf_4 : sig
+  module Dwarf_4 = struct
     type ('dwarf_classes, 'form) t =
       | Sec_offset_loclistptr : (Class.Dwarf_4.loclistptr, sec_offset) t
       | Sec_offset_rangelistptr : (Class.Dwarf_4.rangelistptr, sec_offset) t
@@ -265,7 +265,7 @@ module Form = struct
 end
 
 module Attribute = struct
-  module Dwarf_4 : sig
+  module Dwarf_4 = struct
     type 'dwarf_classes t =
       | Location : [< Class.exprloc | Class.loclistptr ] t
       | String_length : [< Class.exprloc | Class.loclistptr ] t

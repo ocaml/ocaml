@@ -232,7 +232,8 @@ type dwarf_version =
 
 val dwarf_version : dwarf_version ref
 val default_dwarf_version : dwarf_version
-val dwarf_location_and_range_table_offsets : bool
+val dwarf_location_and_range_table_offsets : bool ref
+val default_dwarf_offsets : bool
 
 type dwarf_format =
   | Thirty_two

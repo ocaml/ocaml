@@ -105,6 +105,7 @@ let mk_dwarf_format f =
 let mk_dwarf_version f =
   let default =
     match Clflags.default_dwarf_version with
+    | Clflags.Four -> "4+gnu"
     | Clflags.Five -> "5"
   in
   "-dwarf-version", Arg.String f,
