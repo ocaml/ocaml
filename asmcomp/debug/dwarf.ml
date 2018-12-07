@@ -1060,7 +1060,23 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
                   Range_list_table.add t.range_list_table range_list
                 in
                 let range_list_attribute =
-
+                  match !Clflags.dwarf_version with
+                  | Four ->
+                    let base_address_selection_entry =
+                      Dwarf_4_range_list_entry.
+                        create_base_address_selection_entry
+                          ~base_address_symbol:start_of_code_symbol
+                    in
+                    let range_list_entries =
+                      base_address_selection_entry
+                        :: dwarf_4_range_list_entries
+                    in
+                    let range_list =
+                      Dwarf_4_range_list.create ~range_list_entries
+                    in
+                    Debug_ranges_table.insert t.debug_ranges_table ~range_list
+                  | Five ->
+                    DAH.create_ranges range_list_index
                 in
                 let all_summaries =
                   All_summaries.Map.add summary range_list_index
@@ -1074,7 +1090,7 @@ let create_lexical_block_proto_dies t lexical_block_ranges ~function_proto_die
               Proto_die.create ~parent:(Some parent)
                 ~tag:Lexical_block
                 ~attribute_values:[
-                  DAH.create_ranges range_list_attribute;
+                  range_list_attribute;
                 ]
                 ()
             in
