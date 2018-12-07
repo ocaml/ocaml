@@ -423,6 +423,9 @@ Working version
   (Florian Angeletti, review by Daniel Bünzli, Perry E. Metzger
   and Gabriel Scherer)
 
+- GPR#2187: document "exception A | pat" patterns
+  (Florian Angeletti, review by Perry E. Metzger and Jeremy Yallop)
+
 ### Compiler distribution build system:
 
 - GPR#1776: add -no-install-bytecode-programs and related configure options to
