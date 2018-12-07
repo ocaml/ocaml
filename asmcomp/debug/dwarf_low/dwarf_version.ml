@@ -15,20 +15,14 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 type t =
-  | Dwarf_2
-  | Dwarf_3
   | Dwarf_4
   | Dwarf_5
 
-let two = Dwarf_2
-let three = Dwarf_3
 let four = Dwarf_4
 let five = Dwarf_5
 
 let code t =
   match t with
-  | Dwarf_2 -> 2
-  | Dwarf_3 -> 3
   | Dwarf_4 -> 4
   | Dwarf_5 -> 5
 

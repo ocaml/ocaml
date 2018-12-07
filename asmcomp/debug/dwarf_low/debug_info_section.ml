@@ -71,9 +71,15 @@ let emit t =
   A.define_label t.compilation_unit_header_label;
   Initial_length.emit initial_length;
   Dwarf_version.emit dwarf_version;
-  Unit_type.emit unit_type;
-  Dwarf_value.emit address_width_in_bytes_on_target;
-  Dwarf_value.emit (debug_abbrev_offset t);
+  begin match dwarf_version with
+  | Four ->
+    Dwarf_value.emit (debug_abbrev_offset t);
+    Dwarf_value.emit address_width_in_bytes_on_target
+  | Five ->
+    Unit_type.emit unit_type;
+    Dwarf_value.emit address_width_in_bytes_on_target;
+    Dwarf_value.emit (debug_abbrev_offset t)
+  end;
   A.new_line ();
   A.comment "Debugging information entries:";
   A.new_line ();
