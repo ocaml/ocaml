@@ -460,6 +460,14 @@ let mklbs ~loc ext rf lb =
 let addlb lbs lb =
   { lbs with lbs_bindings = lb :: lbs.lbs_bindings }
 
+let bind_rec rec_flag pattern expression =
+  match rec_flag, pattern with
+  | Recursive, {ppat_desc=Ppat_var {txt=var; loc}; _} ->
+      let lhs = Pat.var (Location.mkloc "#rec" loc) in
+      let rhs = Exp.ident (Location.mkloc (Lident var) loc) in
+      Exp.let_ Nonrecursive [Vb.mk lhs rhs] expression
+  | _ -> expression
+
 let val_of_let_bindings ~loc lbs =
   let bindings =
     List.map
@@ -467,7 +475,8 @@ let val_of_let_bindings ~loc lbs =
          Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
            ~docs:(Lazy.force lb.lb_docs)
            ~text:(Lazy.force lb.lb_text)
-           lb.lb_pattern lb.lb_expression)
+           lb.lb_pattern
+           (bind_rec lbs.lbs_rec lb.lb_pattern lb.lb_expression))
       lbs.lbs_bindings
   in
   let str = mkstr ~loc (Pstr_value(lbs.lbs_rec, List.rev bindings)) in
@@ -480,7 +489,8 @@ let expr_of_let_bindings ~loc lbs body =
     List.map
       (fun lb ->
          Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
-           lb.lb_pattern lb.lb_expression)
+           lb.lb_pattern
+           (bind_rec lbs.lbs_rec lb.lb_pattern lb.lb_expression))
       lbs.lbs_bindings
   in
     mkexp_attrs ~loc (Pexp_let(lbs.lbs_rec, List.rev bindings, body))
@@ -491,7 +501,8 @@ let class_of_let_bindings ~loc lbs body =
     List.map
       (fun lb ->
          Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
-           lb.lb_pattern lb.lb_expression)
+           lb.lb_pattern
+           (bind_rec lbs.lbs_rec lb.lb_pattern lb.lb_expression))
       lbs.lbs_bindings
   in
     (* Our use of let_bindings(no_ext) guarantees the following: *)
@@ -737,7 +748,7 @@ The precedences must be listed from low to high.
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW PREFIXOP STRING TRUE UIDENT
-          LBRACKETPERCENT
+          LBRACKETPERCENT REC
 
 
 /* Entry points */
@@ -2233,6 +2244,8 @@ simple_expr:
 %inline simple_expr_:
   | mkrhs(val_longident)
       { Pexp_ident ($1) }
+  | mkrhs(REC { Lident "#rec"})
+      { Pexp_ident $1 }
   | constant
       { Pexp_constant $1 }
   | mkrhs(constr_longident) %prec prec_constant_constructor
