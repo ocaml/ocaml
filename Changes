@@ -184,6 +184,8 @@ Working version
   hint that can emit non-whitespace characters.
   (Vladimir Keleshev and Pierre Weis, review by Josh Berdine, Gabriel Radanne)
 
+- GPR#2185: Add `List.filter_map`
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
