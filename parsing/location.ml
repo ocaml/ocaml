@@ -425,7 +425,7 @@ let highlight_quote ppf
     highlight_tag
     locs
   =
-  let iset = ISet.of_intervals @@ Misc.Stdlib.List.filter_map (fun loc ->
+  let iset = ISet.of_intervals @@ List.filter_map (fun loc ->
     let s, e = loc.loc_start, loc.loc_end in
     if s.pos_cnum = -1 || e.pos_cnum = -1 then None
     else Some ((s, s.pos_cnum), (e, e.pos_cnum - 1))

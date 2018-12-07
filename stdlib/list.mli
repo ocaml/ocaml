@@ -134,6 +134,13 @@ val rev_map : ('a -> 'b) -> 'a list -> 'b list
    {!List.rev}[ (]{!List.map}[ f l)], but is tail-recursive and
    more efficient. *)
 
+val filter_map : ('a -> 'b option) -> 'a list -> 'b list
+(** [filter_map f l] applies [f] to every element of [l], filters
+    out the [None] elements and returns the list of the arguments of
+    the [Some] elements.
+    @since 4.08.0
+*)
+
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 (** [List.fold_left f a [b1; ...; bn]] is
    [f (... (f (f a b1) b2) ...) bn]. *)

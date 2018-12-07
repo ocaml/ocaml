@@ -112,17 +112,6 @@ module Stdlib = struct
       | (hd1 :: tl1, hd2 :: tl2) -> eq hd1 hd2 && equal eq tl1 tl2
       | (_, _) -> false
 
-    let filter_map f l =
-      let rec aux acc l =
-        match l with
-        | [] -> List.rev acc
-        | h :: t ->
-          match f h with
-          | None -> aux acc t
-          | Some v -> aux (v :: acc) t
-      in
-      aux [] l
-
     let rec find_map f = function
       | x :: xs ->
           begin match f x with
