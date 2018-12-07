@@ -139,6 +139,56 @@ you only see a transient failure once and your change has no reason
 to affect threading, it's probably not your fault.
 
 
+### Benchmarking
+
+If your contribution can impact the performance of the code generated
+by the native compiler, you can use the infrastructure that the
+flambda team put together to benchmark the compiler to assess the
+consequences of your contribution. It has two main accessible parts:
+
+- The website that hosts benchmarks results, at
+[http://bench.flambda.ocamlpro.com/](http://bench.flambda.ocamlpro.com/).
+It exposes two ways to compare compilers: the first, under the header
+`Plot a given benchmark`, allows to select a benchmark and
+see graphs plotting the evolution of the performance of the different
+compilers over time. The second, under `Compare two runs`, allows
+to get an overview of the differences between a reference compiler
+(selected using the `ref` button) and a compiler under test (using
+the `tst` button). Clicking on the `Compare` button at the bottom
+right of the page will create a new page containing summaries and
+raw data comparing the selected runs.
+
+- The git repository containing the data about which benchmarks
+to run, on which compilers, at [https://github.com/OCamlPro/ocamlbench-repo](
+https://github.com/OCamlPro/ocamlbench-repo). This needs to be a valid
+opam 2.0 repository, and contains the benchmarks as normal packages
+and the compilers as versions of the package `ocaml-variants`.
+To add a compiler to the list, you must have a publicly accessible
+version of your branch (if you're making a pull request again the
+compiler, you should have a branch on github that was used to make
+the pull request, that you can use for this purpose).
+Then, you should make a pull request against `ocamlbench-repo`
+that adds a repertory in the `packages/ocaml-variants` sub-folder
+which contains a single `opam` file. The contents of the file
+should be inspired from the other files already present, with
+the main points of interest being the `url` field, which should
+point to your branch, the `build` field that should be adapted
+if the features that you want to benchmark depend on configure-time
+options, and the `setenv` field that can be used to pass compiler
+options via the `OCAMLPARAM` environment variable.
+The `trunk+flambda+opt` compiler, for instance, both uses a
+`configure` option and sets the `OCAMLPARAM` variable.
+The folder you add has to be named `ocaml-variants.%VERSION%+%DESCR%`,
+where `%VERSION%` is the version that will be used by opam to
+check compatibility with the opam packages that are needed for the
+benchmarks, and `%DESCR%` should be a short description of the feature
+you're benchmarking (if you're making a pull request against `ocaml`,
+you can use the PR number in the description, e.g. `+gpr0000`).
+Once your pull request is merged, it will likely take a few hours
+until the benchmark server picks up the new definition and again
+up to a few hours before the results are available on the results page.
+
+
 ## Description of the proposed change
 
 ### In the merge request interface
