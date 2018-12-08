@@ -205,10 +205,15 @@ let print_dependencies target_files deps =
     then print_on_same_line item
     else print_on_new_line item
   in
+  let print_dep item =
+    if !one_line
+    then print_on_same_line item
+    else print_on_new_line item
+  in
   List.iter print_compact target_files;
   print_string " "; print_string depends_on;
   pos := !pos + String.length depends_on + 1;
-  List.iter print_compact deps;
+  List.iter print_dep deps;
   print_string "\n"
 
 let print_raw_dependencies source_file deps =
