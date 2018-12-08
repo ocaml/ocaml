@@ -159,7 +159,9 @@ ocamlc := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlc $(flags)
 
 ocamlopt := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlopt $(flags)
 
-ocamldep := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/tools/ocamldep -slash
+ocamldep := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/tools/ocamldep
+depflags := -slash
+depincludes :=
 
 ocamllex := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/lex/ocamllex
 
@@ -246,7 +248,8 @@ ifneq "$(TOOLCHAIN)" "msvc"
 depend: $(dependencies_generated_prereqs)
 	$(CC) -MM $(OC_CPPFLAGS) $(c_files) \
 	  | sed -e 's/\.o/.$$(O)/' > .depend
-	$(ocamldep) $(mli_files) $(ml_files) >> .depend
+	$(ocamldep) $(depflags) $(depincludes) $(mli_files) $(ml_files) \
+	  >> .depend
 endif
 
 -include .depend

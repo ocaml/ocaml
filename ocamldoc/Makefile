@@ -24,7 +24,8 @@ OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc
 STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc $(STDLIBFLAGS)
 OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt $(STDLIBFLAGS)
-OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep -slash
+OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/tools/ocamldep
+DEPFLAGS = -slash
 OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
 # TODO: figure out whether the DEBUG lines the following preprocessor removes
 # are actually useful.
@@ -99,6 +100,7 @@ INCLUDES_NODEP=\
   -I $(ROOTDIR)/otherlibs/$(UNIXLIB) \
   -I $(ROOTDIR)/otherlibs/$(GRAPHLIB)
 
+DEPINCLUDES=$(INCLUDES_DEP)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats -bin-annot
@@ -509,7 +511,7 @@ depend:
 	$(OCAMLLEX) odoc_lexer.mll
 	$(OCAMLLEX) odoc_ocamlhtml.mll
 	$(OCAMLLEX) odoc_see_lexer.mll
-	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
-	$(OCAMLDEP) $(INCLUDES_DEP) -shared generators/*.ml >> .depend
+	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend
 
 include .depend
