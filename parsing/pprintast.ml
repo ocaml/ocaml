@@ -471,7 +471,7 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
     | Ppat_constraint (p, ct) ->
         pp f "@[<2>(%a@;:@;%a)@]" (pattern1 ctxt) p (core_type ctxt) ct
     | Ppat_lazy p ->
-        pp f "@[<2>(lazy@;%a)@]" (pattern1 ctxt) p
+        pp f "@[<2>(lazy@;%a)@]" (simple_pattern ctxt) p
     | Ppat_exception p ->
         pp f "@[<2>exception@;%a@]" (pattern1 ctxt) p
     | Ppat_extension e -> extension ctxt f e
