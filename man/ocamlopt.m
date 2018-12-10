@@ -427,7 +427,7 @@ Allow the compiler to use some optimizations that are valid only for code
 that is never dynlinked.
 .TP
 .B -nostdlib
-Do not automatically add the standard library directory the list of
+Do not automatically add the standard library directory to the list of
 directories searched for compiled interface files (.cmi), compiled
 object code files (.cmx), and libraries (.cmxa). See also option
 .BR \-I .

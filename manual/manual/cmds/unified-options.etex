@@ -424,7 +424,7 @@ compiled interface files (".cmi"), compiled object code files
 "-cclib -lxxx". See also option "-I".
 }%comp
 \nat{%
-Do not automatically add the standard library directory the list of
+Do not automatically add the standard library directory to the list of
 directories searched for compiled interface files (".cmi"), compiled
 object code files (".cmx"), and libraries (".cmxa"). See also option
 "-I".
