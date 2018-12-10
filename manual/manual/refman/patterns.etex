@@ -179,8 +179,9 @@ instance, the pattern "'0'"@'..'@"'9'" matches all characters that are digits.
 \subsubsection*{Exception patterns} \label{s:exception-match}
 (Introduced in OCaml 4.02)
 
-A new form of exception pattern, @ 'exception' pattern, @ is allowed
-only as a toplevel pattern under a "match"..."with" pattern-matching
+A new form of exception pattern, @ 'exception' pattern @, is allowed
+only as a toplevel pattern or inside a toplevel or-pattern under
+a "match"..."with" pattern-matching
 (other occurrences are rejected by the type-checker).
 
 Cases with such a toplevel pattern are called ``exception cases'',
