@@ -129,10 +129,10 @@ module type S =
         arguments, the function [f] is used to combine them.
         This is a special case of [merge]: [union f m1 m2] is equivalent
         to [merge f' m1 m2], where
-        - [f' k None None = None]
-        - [f' k (Some v) None = Some v]
-        - [f' k None (Some v) = Some v]
-        - [f' k (Some v1) (Some v2) = f k v1 v2]
+        - [f' _key None None = None]
+        - [f' _key (Some v) None = Some v]
+        - [f' _key None (Some v) = Some v]
+        - [f' key (Some v1) (Some v2) = f key v1 v2]
 
         @since 4.03.0
     *)
