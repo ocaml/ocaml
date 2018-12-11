@@ -29,9 +29,10 @@ let create ~dies ~debug_abbrev_label ~compilation_unit_header_label =
     compilation_unit_header_label;
   }
 
-(* CR mshinwell: This must line up with whatever is set in the compiler.
-   However maybe we should just remove the user setting. *)
-let dwarf_version = Dwarf_version.five
+let dwarf_version () =
+  match !Clflags.dwarf_version with
+  | Four -> Dwarf_version.four
+  | Five -> Dwarf_version.five
 
 (* CR-someday mshinwell: this used to have "label - section", but maybe zero
    will do. *)
@@ -54,11 +55,18 @@ let size_without_first_word t =
       (Dwarf_int.zero ())
       t.dies
   in
-  Dwarf_version.size dwarf_version
-    + Unit_type.size unit_type
-    + Dwarf_value.size address_width_in_bytes_on_target
-    + Dwarf_value.size (debug_abbrev_offset t)
-    + total_die_size
+  match !Clflags.dwarf_version with
+  | Four ->
+    Dwarf_version.size (dwarf_version ())
+      + Dwarf_value.size (debug_abbrev_offset t)
+      + Dwarf_value.size address_width_in_bytes_on_target
+      + total_die_size
+  | Five ->
+    Dwarf_version.size (dwarf_version ())
+      + Unit_type.size unit_type
+      + Dwarf_value.size address_width_in_bytes_on_target
+      + Dwarf_value.size (debug_abbrev_offset t)
+      + total_die_size
 
 let size t =
   let size_without_first_word = size_without_first_word t in
@@ -70,8 +78,8 @@ let emit t =
   let initial_length = Initial_length.create size_without_first_word in
   A.define_label t.compilation_unit_header_label;
   Initial_length.emit initial_length;
-  Dwarf_version.emit dwarf_version;
-  begin match dwarf_version with
+  Dwarf_version.emit (dwarf_version ());
+  begin match dwarf_version () with
   | Four ->
     Dwarf_value.emit (debug_abbrev_offset t);
     Dwarf_value.emit address_width_in_bytes_on_target

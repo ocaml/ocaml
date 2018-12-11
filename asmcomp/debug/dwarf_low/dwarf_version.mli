@@ -16,7 +16,9 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t
+type t = private
+  | Four
+  | Five
 
 include Dwarf_emittable.S with type t := t
 

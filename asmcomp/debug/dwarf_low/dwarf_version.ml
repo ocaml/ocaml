@@ -15,16 +15,16 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 type t =
-  | Dwarf_4
-  | Dwarf_5
+  | Four
+  | Five
 
-let four = Dwarf_4
-let five = Dwarf_5
+let four = Four
+let five = Five
 
 let code t =
   match t with
-  | Dwarf_4 -> 4
-  | Dwarf_5 -> 5
+  | Four -> 4
+  | Five -> 5
 
 let encode t =
   Dwarf_value.int16 ~comment:"DWARF version" (Numbers.Int16.of_int_exn (code t))

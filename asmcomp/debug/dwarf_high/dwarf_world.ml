@@ -54,7 +54,7 @@ let emit ~compilation_unit_proto_die ~start_of_code_symbol
       Profile.record "aranges_table"
         Aranges_table.emit aranges_table;
       A.switch_to_section (DWARF Debug_addr);
-      begin match Dwarf_format.get () with
+      begin match !Clflags.dwarf_version with
       | Four ->
         A.switch_to_section (DWARF Debug_loc);
         Profile.record "debug_loc"

@@ -12,6 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "+a-4-30-40-41-42"]
+
 module A = Dwarf_attributes.Attribute
 module AS = Dwarf_attributes.Attribute_specification
 module AV = Dwarf_attribute_values.Attribute_value
@@ -109,37 +111,40 @@ let create_call_target_clobbered loc_desc =
   let spec = AS.create A.Call_target_clobbered F.Exprloc in
   AV.create spec (V.single_location_description loc_desc)
 
-let create_location ~location_list_label =
-  let use_sec_offset () =
-    let spec = AS.create A.Location F.Sec_offset_loclistptr in
+let create_location index =
+  let location_list_label = Location_list_table.Index.to_label index in
+  let location_list_index = Location_list_table.Index.to_uint64 index in
+  match !Clflags.dwarf_version with
+  | Four ->
+    let spec =
+      AS.create (A.Dwarf_4 Location) (F.Dwarf_4 Sec_offset_loclistptr)
+    in
     AV.create spec (V.offset_into_debug_loc location_list_label)
-  in
-  match Dwarf_format.get () with
-  | Four -> use_sec_offset ()
   | Five ->
     if not !Clflags.dwarf_location_and_range_table_offsets then
-      use_sec_offset ()
+      let spec = AS.create A.Location F.Sec_offset_loclist in
+      AV.create spec (V.offset_into_debug_loc location_list_label)
     else
       let spec = AS.create A.Location F.Loclistx in
-      AV.create spec (
-        V.loclistx ~index:(Location_list_table.Index.to_uint64 index))
+      AV.create spec (V.loclistx ~index:location_list_index)
 
 let create_ranges index =
-  let use_sec_offset () =
-    let spec = AS.create A.Ranges F.Sec_offset_rangelistptr in
+  let range_list_label = Range_list_table.Index.to_label index in
+  let range_list_index = Range_list_table.Index.to_uint64 index in
+  match !Clflags.dwarf_version with
+  | Four ->
+    let spec =
+      AS.create (A.Dwarf_4 Ranges) (F.Dwarf_4 Sec_offset_rangelistptr)
+    in
     (* DWARF-4 standard section 2.17.3. *)
-    AV.create spec (V.offset_into_debug_ranges (
-      Range_list_table.Index.to_label index))
-  in
-  match Dwarf_format.get () with
-  | Four -> use_sec_offset ()
+    AV.create spec (V.offset_into_debug_ranges range_list_label)
   | Five ->
     if not !Clflags.dwarf_location_and_range_table_offsets then
-      use_sec_offset ()
+      let spec = AS.create A.Ranges F.Sec_offset_rnglist in
+      AV.create spec (V.offset_into_debug_ranges range_list_label)
     else
       let spec = AS.create A.Ranges F.Rnglistx in
-      AV.create spec (
-        V.rnglistx ~index:(Range_list_table.Index.to_uint64 index))
+      AV.create spec (V.rnglistx ~index:range_list_index)
 
 let create_single_location_description loc_desc =
   let spec = AS.create A.Location F.Exprloc in

@@ -26,6 +26,6 @@ val create
   -> compilation_unit_header_label:Asm_label.t
   -> t
 
-val dwarf_version : Dwarf_version.t
+val dwarf_version : unit -> Dwarf_version.t
 
 include Dwarf_emittable.S with type t := t
