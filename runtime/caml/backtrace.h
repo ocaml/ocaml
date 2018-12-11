@@ -109,6 +109,7 @@ CAMLextern char_os * caml_cds_file;
  * different prototype. */
 extern void caml_stash_backtrace(value exn, value * sp, int reraise);
 
+CAMLextern void caml_load_main_debug_info(void);
 #endif
 
 

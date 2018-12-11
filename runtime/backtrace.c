@@ -123,6 +123,7 @@ CAMLexport void caml_print_exception_backtrace(void)
     }
   }
 
+  /* See also printexc.ml */
   switch (caml_debug_info_status()) {
   case FILE_NOT_FOUND:
     fprintf(stderr,
@@ -143,7 +144,7 @@ CAMLexport void caml_print_exception_backtrace(void)
     fprintf(stderr,
             "(Cannot print locations:\n "
              "bytecode executable program file cannot be opened;\n "
-             "-- too many open files)\n");
+             "-- too many open files. Try running with OCAMLRUNPARAM=b=2)\n");
     break;
   }
 }

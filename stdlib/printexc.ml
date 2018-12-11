@@ -301,7 +301,7 @@ let errors = [| "";
   (* NO_FDS *)
   "(Cannot print locations:\n \
       bytecode executable program file cannot be opened;\n \
-      -- too many open files)"
+      -- too many open files. Try running with OCAMLRUNPARAM=b=2)"
 |]
 
 let default_uncaught_exception_handler exn raw_backtrace =

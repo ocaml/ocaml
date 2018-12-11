@@ -2,7 +2,14 @@
    flags += "-g"
    exit_status = "2"
    * bytecode
-     reference = "${test_source_directory}/pr2195.byte.reference"
+     ocamlrunparam += ",b=0"
+     reference = "${test_source_directory}/pr2195-nolocs.byte.reference"
+   * bytecode
+     ocamlrunparam += ",b=1"
+     reference = "${test_source_directory}/pr2195-nolocs.byte.reference"
+   * bytecode
+     ocamlrunparam += ",b=2"
+     reference = "${test_source_directory}/pr2195-locs.byte.reference"
    * native
      reference = "${test_source_directory}/pr2195.opt.reference"
      compare_programs = "false"

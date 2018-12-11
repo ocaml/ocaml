@@ -421,6 +421,13 @@ CAMLexport void caml_init_debug_info(void)
   caml_add_debug_info(caml_start_code, Val_long(caml_code_size), Val_unit);
 }
 
+CAMLexport void caml_load_main_debug_info(void)
+{
+  if (Caml_state->backtrace_active > 1) {
+    read_main_debug_info(caml_debug_info.contents[0]);
+  }
+}
+
 int caml_debug_info_available(void)
 {
   return (caml_debug_info.size != 0);

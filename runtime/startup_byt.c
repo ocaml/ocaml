@@ -454,6 +454,8 @@ CAMLexport void caml_main(char_os **argv)
   caml_oldify_mopup ();
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv + pos);
+  /* Load debugging info, if b>=2 */
+  caml_load_main_debug_info();
 #ifdef _WIN32
   /* Start a thread to handle signals */
   if (caml_secure_getenv(T("CAMLSIGPIPE")))
@@ -545,6 +547,8 @@ CAMLexport value caml_startup_code_exn(
   caml_section_table_size = section_table_size;
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv);
+  /* Load debugging info, if b>=2 */
+  caml_load_main_debug_info();
   /* Execute the program */
   caml_debugger(PROGRAM_START, Val_unit);
   return caml_interprete(caml_start_code, caml_code_size);
