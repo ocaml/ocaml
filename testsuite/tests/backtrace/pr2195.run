@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# ulimit -n will have no effect on the Windows builds. The number of open files
+# on Windows is theoretically limited by available memory only, however the CRT
+# is limited to 8192 open files (including the standard handles).
+ulimit -n 32
+
+${program} > ${output} 2>&1
+echo 'exit_status="'$?'"' > ${ocamltest_response}

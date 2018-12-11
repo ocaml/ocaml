@@ -17,6 +17,7 @@
 
 /* Start-up code */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -128,7 +129,10 @@ int caml_attempt_open(char_os **name, struct exec_trailer *trail,
   if (fd == -1) {
     caml_stat_free(truename);
     caml_gc_message(0x100, "Cannot open file\n");
-    return FILE_NOT_FOUND;
+    if (errno == EMFILE)
+      return NO_FDS;
+    else
+      return FILE_NOT_FOUND;
   }
   if (!do_open_script) {
     err = read (fd, buf, 2);
