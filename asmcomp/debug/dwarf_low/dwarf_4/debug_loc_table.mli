@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Representation of the DWARF .debug_loc table. *)
+(** Representation of the DWARF-4 .debug_loc table. *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
@@ -24,5 +24,5 @@ val create : unit -> t
 
 val insert
    : t
-  -> location_list:Location_list.t
+  -> location_list:Dwarf_4_location_list.t
   -> Dwarf_attribute_values.Attribute_value.t

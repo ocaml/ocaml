@@ -36,7 +36,7 @@ module Make (Location_or_range_list : Dwarf_emittable.S) = struct
   module Index = struct
     type t = Asm_label.t * Uint64.t
 
-    let create index = Uint64.of_int_exn index
+    let create label index = label, Uint64.of_int_exn index
 
     let to_label (label, _) = label
     let to_uint64 (_, index) = index
@@ -64,16 +64,16 @@ module Make (Location_or_range_list : Dwarf_emittable.S) = struct
     in
     t.current_offset_from_first_list <- next_offset_from_first_list;
     t.num_lists <- t.num_lists + 1;
-    Index.create label which_index
+    Index.create one_list.label which_index
 
   let base_addr t = t.base_addr
 
   let offset_array_supported () =
-    !Clflags.dwarf_offset_arrays_in_loclists_and_rnglists
+    !Clflags.dwarf_location_and_range_table_offsets
 
   let offset_entry_count t =
     if offset_array_supported () then Uint32.of_int_exn (List.length t.lists)
-    else 0l
+    else Uint32.zero
 
   let offset_array_size t =
     if offset_array_supported () then
@@ -85,7 +85,7 @@ module Make (Location_or_range_list : Dwarf_emittable.S) = struct
 
   let initial_length t =
     let lists_size =
-      List.fold_left (fun lists_size (list, _offset_from_first_list) ->
+      List.fold_left (fun lists_size { list; _ } ->
           Dwarf_int.add lists_size (Location_or_range_list.size list))
         (Dwarf_int.eight ())  (* DWARF-5 spec page 242 lines 12--20. *)
         t.lists

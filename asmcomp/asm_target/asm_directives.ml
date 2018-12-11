@@ -689,7 +689,7 @@ let initialize ~big_endian ~(emit : Directive.t -> unit) =
           if !Clflags.debug && dwarf_supported () then begin
             switch_to_section section
           end)
-      Asm_section.all_sections_in_order
+      (Asm_section.all_sections_in_order ())
   end;
   file ~file_name:"" ();  (* PR#7037 *)
   switch_to_section Asm_section.Text

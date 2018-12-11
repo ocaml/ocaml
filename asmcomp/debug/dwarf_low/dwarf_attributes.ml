@@ -254,6 +254,8 @@ module Form = struct
       | Addrx2 -> 0x2a
       | Addrx3 -> 0x2b
       | Addrx4 -> 0x2c
+      | Dwarf_4 Sec_offset_loclistptr -> 0x17
+      | Dwarf_4 Sec_offset_rangelistptr -> 0x17
     in
     Dwarf_value.uleb128 ~comment:(name t) (Uint64.of_int_exn code)
 
@@ -267,18 +269,18 @@ end
 module Attribute = struct
   module Dwarf_4 = struct
     type 'dwarf_classes t =
-      | Location : [< Class.exprloc | Class.loclistptr ] t
-      | String_length : [< Class.exprloc | Class.loclistptr ] t
-      | Return_addr : [< Class.exprloc | Class.loclistptr ] t
-      | Start_scope : [< Class.constant | Class.rangelistptr ] t
+      | Location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | String_length : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Return_addr : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Start_scope : [< Class.constant | Class.Dwarf_4.rangelistptr ] t
       | Data_member_location :
-          [< Class.constant | Class.exprloc | Class.loclistptr ] t
-      | Frame_base : [< Class.exprloc | Class.loclistptr ] t
-      | Segment : [< Class.exprloc | Class.loclistptr ] t
-      | Static_link : [< Class.exprloc | Class.loclistptr ] t
-      | Use_location : [< Class.exprloc | Class.loclistptr ] t
-      | Vtable_elem_location : [< Class.exprloc | Class.loclistptr ] t
-      | Ranges : Class.rangelistptr t
+          [< Class.constant | Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Frame_base : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Segment : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Static_link : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Use_location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Vtable_elem_location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Ranges : Class.Dwarf_4.rangelistptr t
   end
 
   type 'dwarf_classes t =
@@ -668,6 +670,17 @@ module Attribute = struct
     | Deleted -> 0x8a
     | Defaulted -> 0x8b
     | Loclists_base -> 0x8c
+    | Dwarf_4 Location -> 0x02
+    | Dwarf_4 String_length -> 0x19
+    | Dwarf_4 Return_addr -> 0x2a
+    | Dwarf_4 Start_scope -> 0x2c
+    | Dwarf_4 Data_member_location -> 0x38
+    | Dwarf_4 Frame_base -> 0x40
+    | Dwarf_4 Segment -> 0x46
+    | Dwarf_4 Static_link -> 0x48
+    | Dwarf_4 Use_location -> 0x4a
+    | Dwarf_4 Vtable_elem_location -> 0x4d
+    | Dwarf_4 Ranges -> 0x55
 
   let encode t =
     Dwarf_value.uleb128 ~comment:(name t) (Uint64.of_int_exn (code t))

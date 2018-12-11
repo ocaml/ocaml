@@ -89,14 +89,27 @@ module Value : sig
     -> Asm_symbol.t
     -> Dwarf_attributes.Form.ref_addr t
 
+  (** Not for use for DWARF >= version 5. *)
+  val offset_into_debug_loc
+     : Asm_label.t
+    -> Dwarf_attributes.Form.sec_offset t
+ 
+  (** Not for use for DWARF >= version 5. *)
+  val offset_into_debug_ranges
+     : Asm_label.t
+    -> Dwarf_attributes.Form.sec_offset t
+
+  (** Not for use for DWARF < version 5. *)
   val offset_into_debug_addr
      : Asm_label.t
     -> Dwarf_attributes.Form.sec_offset t
 
+  (** Not for use for DWARF < version 5. *)
   val offset_into_debug_loclists
      : Asm_label.t
     -> Dwarf_attributes.Form.sec_offset t
 
+  (** Not for use for DWARF < version 5. *)
   val offset_into_debug_rnglists
      : Asm_label.t
     -> Dwarf_attributes.Form.sec_offset t
@@ -113,8 +126,10 @@ module Value : sig
      : Encoding_attribute.t
     -> Dwarf_attributes.Form.data1 t
 
+  (** Not for use for DWARF < version 5. *)
   val loclistx : index:Numbers.Uint64.t -> Dwarf_attributes.Form.loclistx t
 
+  (** Not for use for DWARF < version 5. *)
   val rnglistx : index:Numbers.Uint64.t -> Dwarf_attributes.Form.rnglistx t
 end
 

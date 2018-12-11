@@ -22,6 +22,8 @@ type dwarf_section =
   | Debug_abbrev
   | Debug_aranges
   | Debug_addr
+  | Debug_loc
+  | Debug_ranges
   | Debug_loclists
   | Debug_rnglists
   | Debug_str
@@ -40,7 +42,7 @@ type t =
 
 val to_string : t -> string
 
-val all_sections_in_order : t list
+val all_sections_in_order : unit -> t list
 
 (** Whether the section holds code. *)
 val section_is_text : t -> bool

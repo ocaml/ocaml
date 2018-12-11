@@ -160,18 +160,18 @@ module Attribute : sig
 
   module Dwarf_4 : sig
     type 'dwarf_classes t =
-      | Location : [< Class.exprloc | Class.loclistptr ] t
-      | String_length : [< Class.exprloc | Class.loclistptr ] t
-      | Return_addr : [< Class.exprloc | Class.loclistptr ] t
-      | Start_scope : [< Class.constant | Class.rangelistptr ] t
+      | Location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | String_length : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Return_addr : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Start_scope : [< Class.constant | Class.Dwarf_4.rangelistptr ] t
       | Data_member_location :
-          [< Class.constant | Class.exprloc | Class.loclistptr ] t
-      | Frame_base : [< Class.exprloc | Class.loclistptr ] t
-      | Segment : [< Class.exprloc | Class.loclistptr ] t
-      | Static_link : [< Class.exprloc | Class.loclistptr ] t
-      | Use_location : [< Class.exprloc | Class.loclistptr ] t
-      | Vtable_elem_location : [< Class.exprloc | Class.loclistptr ] t
-      | Ranges : Class.rangelistptr t
+          [< Class.constant | Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Frame_base : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Segment : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Static_link : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Use_location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Vtable_elem_location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
+      | Ranges : Class.Dwarf_4.rangelistptr t
   end
 
   type 'dwarf_classes t =

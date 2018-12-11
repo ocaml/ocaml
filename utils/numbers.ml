@@ -147,6 +147,8 @@ end
 module Uint32 = struct
   type t = Int64.t
 
+  let zero = 0L
+
   let print ppf t = Format.fprintf ppf "0x%Lx" t
 
   let upper_int64 = Int64.sub (Int64.shift_left Int64.one 32) Int64.one

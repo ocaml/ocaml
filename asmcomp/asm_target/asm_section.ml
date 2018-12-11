@@ -19,6 +19,8 @@ type dwarf_section =
   | Debug_abbrev
   | Debug_aranges
   | Debug_addr
+  | Debug_loc
+  | Debug_ranges
   | Debug_loclists
   | Debug_rnglists
   | Debug_str
@@ -33,22 +35,33 @@ type t =
   | Jump_tables
   | DWARF of dwarf_section
 
-let all_sections_in_order = [
-  Text;
-  Data;
-  Read_only_data;
-  Eight_byte_literals;
-  Sixteen_byte_literals;
-  Jump_tables;
-  DWARF Debug_info;
-  DWARF Debug_abbrev;
-  DWARF Debug_aranges;
-  DWARF Debug_addr;
-  DWARF Debug_loclists;
-  DWARF Debug_rnglists;
-  DWARF Debug_str;
-  DWARF Debug_line;
-]
+let all_sections_in_order () =
+  let sections = [
+    Text;
+    Data;
+    Read_only_data;
+    Eight_byte_literals;
+    Sixteen_byte_literals;
+    Jump_tables;
+    DWARF Debug_info;
+    DWARF Debug_abbrev;
+    DWARF Debug_aranges;
+    DWARF Debug_addr;
+    DWARF Debug_str;
+    DWARF Debug_line;
+  ] in
+  let dwarf_location_sections =
+    match !Clflags.dwarf_version with
+    | Four ->
+      [ DWARF Debug_loc;
+        DWARF Debug_ranges;
+      ]
+    | Five ->
+      [ DWARF Debug_loclists;
+        DWARF Debug_rnglists;
+      ]
+  in
+  sections @ dwarf_location_sections
 
 let section_is_text = function
   | Text -> true
@@ -120,6 +133,8 @@ let flags t ~first_occurrence =
         | Debug_abbrev -> "__debug_abbrev"
         | Debug_aranges -> "__debug_aranges"
         | Debug_addr -> "__debug_addr"
+        | Debug_loc -> "__debug_loc"
+        | Debug_ranges -> "__debug_ranges"
         | Debug_loclists -> "__debug_loclists"
         | Debug_rnglists -> "__debug_rnglists"
         | Debug_str -> "__debug_str"
@@ -133,6 +148,8 @@ let flags t ~first_occurrence =
         | Debug_abbrev -> ".debug_abbrev"
         | Debug_aranges -> ".debug_aranges"
         | Debug_addr -> ".debug_addr"
+        | Debug_loc -> ".debug_loc"
+        | Debug_ranges -> ".debug_ranges"
         | Debug_loclists -> ".debug_loclists"
         | Debug_rnglists -> ".debug_rnglists"
         | Debug_str -> ".debug_str"
@@ -201,6 +218,8 @@ let debug_info_label = lazy (Asm_label.create ())
 let debug_abbrev_label = lazy (Asm_label.create ())
 let debug_aranges_label = lazy (Asm_label.create ())
 let debug_addr_label = lazy (Asm_label.create ())
+let debug_loc_label = lazy (Asm_label.create ())
+let debug_ranges_label = lazy (Asm_label.create ())
 let debug_loclists_label = lazy (Asm_label.create ())
 let debug_rnglists_label = lazy (Asm_label.create ())
 let debug_str_label = lazy (Asm_label.create ())
@@ -218,6 +237,8 @@ let label t =
   | DWARF Debug_abbrev -> Lazy.force debug_abbrev_label
   | DWARF Debug_aranges -> Lazy.force debug_aranges_label
   | DWARF Debug_addr -> Lazy.force debug_addr_label
+  | DWARF Debug_loc -> Lazy.force debug_loc_label
+  | DWARF Debug_ranges -> Lazy.force debug_ranges_label
   | DWARF Debug_loclists -> Lazy.force debug_loclists_label
   | DWARF Debug_rnglists -> Lazy.force debug_rnglists_label
   | DWARF Debug_str -> Lazy.force debug_str_label

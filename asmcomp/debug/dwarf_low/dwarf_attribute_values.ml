@@ -48,6 +48,10 @@ module Value = struct
     Dwarf_value (V.offset_into_debug_info ?comment lbl)
   let offset_into_debug_info_from_symbol ?comment sym =
     Dwarf_value (V.offset_into_debug_info_from_symbol ?comment sym)
+  let offset_into_debug_loc lbl =
+    Dwarf_value (V.offset_into_debug_loc lbl)
+  let offset_into_debug_ranges lbl =
+    Dwarf_value (V.offset_into_debug_ranges lbl)
   let offset_into_debug_addr lbl =
     Dwarf_value (V.offset_into_debug_addr lbl)
   let offset_into_debug_loclists lbl =

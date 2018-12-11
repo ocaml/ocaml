@@ -181,8 +181,10 @@ DWARF_LOW=\
   asmcomp/debug/dwarf_low/unit_type.cmo \
   asmcomp/debug/dwarf_low/dwarf_4/debug_loc_table.cmo \
   asmcomp/debug/dwarf_low/dwarf_4/debug_ranges_table.cmo \
-  asmcomp/debug/dwarf_low/dwarf_4_location_list_entry.cmo \
-  asmcomp/debug/dwarf_low/dwarf_4_range_list_entry.cmo \
+  asmcomp/debug/dwarf_low/dwarf_4/dwarf_4_location_list_entry.cmo \
+  asmcomp/debug/dwarf_low/dwarf_4/dwarf_4_location_list.cmo \
+  asmcomp/debug/dwarf_low/dwarf_4/dwarf_4_range_list_entry.cmo \
+  asmcomp/debug/dwarf_low/dwarf_4/dwarf_4_range_list.cmo \
   asmcomp/debug/dwarf_low/debug_info_section.cmo
 
 DWARF_HIGH=\

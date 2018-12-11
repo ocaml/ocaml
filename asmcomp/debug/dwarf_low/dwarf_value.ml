@@ -64,6 +64,8 @@ type value =
   | Offset_into_debug_line of Asm_label.t
   | Offset_into_debug_line_from_symbol of Asm_symbol.t
   | Offset_into_debug_addr of Asm_label.t
+  | Offset_into_debug_loc of Asm_label.t
+  | Offset_into_debug_ranges of Asm_label.t
   | Offset_into_debug_loclists of Asm_label.t
   | Offset_into_debug_rnglists of Asm_label.t
   | Offset_into_debug_abbrev of Asm_label.t
@@ -129,6 +131,10 @@ let print ppf { value; comment = _; } =
     Format.fprintf ppf "%a - .debug_line" Asm_symbol.print sym
   | Offset_into_debug_addr lbl ->
     Format.fprintf ppf "%a - .debug_addr" Asm_label.print lbl
+  | Offset_into_debug_loc lbl ->
+    Format.fprintf ppf "%a - .debug_loc" Asm_label.print lbl
+  | Offset_into_debug_ranges lbl ->
+    Format.fprintf ppf "%a - .debug_ranges" Asm_label.print lbl
   | Offset_into_debug_loclists lbl ->
     Format.fprintf ppf "%a - .debug_loclists" Asm_label.print lbl
   | Offset_into_debug_rnglists lbl ->
@@ -228,6 +234,16 @@ let offset_into_debug_addr ?comment lbl =
     comment;
   }
 
+let offset_into_debug_loc ?comment lbl =
+  { value = Offset_into_debug_loc lbl;
+    comment;
+  }
+ 
+let offset_into_debug_ranges ?comment lbl =
+  { value = Offset_into_debug_ranges lbl;
+    comment;
+  }
+
 let offset_into_debug_loclists ?comment lbl =
   { value = Offset_into_debug_loclists lbl;
     comment;
@@ -314,6 +330,8 @@ let size { value; comment = _; } =
   | Offset_into_debug_info _
   | Offset_into_debug_info_from_symbol _
   | Offset_into_debug_addr _
+  | Offset_into_debug_loc _
+  | Offset_into_debug_ranges _
   | Offset_into_debug_loclists _
   | Offset_into_debug_rnglists _
   | Offset_into_debug_abbrev _ -> Dwarf_int.size (Dwarf_int.zero ())
@@ -387,6 +405,12 @@ let emit { value; comment; } =
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_addr label ->
     A.offset_into_section_label ?comment (DWARF Debug_addr) label
+      ~width:(width_for_ref_addr_or_sec_offset ())
+  | Offset_into_debug_loc label ->
+    A.offset_into_section_label ?comment (DWARF Debug_loc) label
+      ~width:(width_for_ref_addr_or_sec_offset ())
+  | Offset_into_debug_ranges label ->
+    A.offset_into_section_label ?comment (DWARF Debug_ranges) label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_loclists label ->
     A.offset_into_section_label ?comment (DWARF Debug_loclists) label
