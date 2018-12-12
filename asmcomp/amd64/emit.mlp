@@ -506,12 +506,19 @@ let emit_profile () =
     pop r10
   end
 
-(* Emission of labels immediately prior to calls, used for DWARF-5 call site
-   support. *)
+(* Emission of labels immediately prior to and after calls, used for DWARF-5
+   call site support. *)
 
 let maybe_add_label_before_call ~call_labels =
   if Dwarf.supports_call_sites () then begin
     def_label call_labels.before
+  end
+
+(* This function should not be called if [record_frame] is going to be used,
+   since the latter defines the same label as this function. *)
+let maybe_add_label_after_call ~call_labels =
+  if Dwarf.supports_call_sites () then begin
+    def_label call_labels.after
   end
 
 (* Output the assembly code for an instruction *)
@@ -581,6 +588,8 @@ let emit_instr fallthrough i =
         I.jmp (arg i 0);
         if Config.spacetime then begin
           record_frame Reg.Set.empty false i.dbg ~label:call_labels.after
+        end else begin
+          maybe_add_label_after_call ~call_labels
         end
       end
   | Lop(Itailcall_imm { func; call_labels; }) ->
@@ -590,12 +599,18 @@ let emit_instr fallthrough i =
       | Some function_name ->
         if S.equal func function_name then begin
           maybe_add_label_before_call ~call_labels;
-          I.jmp (label (L.create_int !tailrec_entry_point))
+          I.jmp (label (L.create_int !tailrec_entry_point));
+          if not Config.spacetime then begin
+            maybe_add_label_after_call ~call_labels
+          end
         end else begin
           output_epilogue begin fun () ->
             add_used_symbol func;
             maybe_add_label_before_call ~call_labels;
-            emit_jump func
+            emit_jump func;
+            if not Config.spacetime then begin
+              maybe_add_label_after_call ~call_labels
+            end
           end
         end
       end;
@@ -626,6 +641,8 @@ let emit_instr fallthrough i =
         emit_call func;
         if Config.spacetime then begin
           record_frame Reg.Set.empty false i.dbg ~label:call_labels.after
+        end else begin
+          maybe_add_label_after_call ~call_labels
         end
       end
   | Lop(Istackoffset n) ->
