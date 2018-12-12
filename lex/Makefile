@@ -32,7 +32,8 @@ LINKFLAGS =
 YACCFLAGS = -v
 CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 CAMLDEP = $(CAMLRUN) $(ROOTDIR)/tools/ocamldep
-
+DEPFLAGS = -slash
+DEPINCLUDES =
 
 OBJS=cset.cmo syntax.cmo parser.cmo lexer.cmo table.cmo lexgen.cmo \
      compact.cmo common.cmo output.cmo outputbis.cmo main.cmo
@@ -81,6 +82,6 @@ beforedepend:: lexer.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) -slash *.mli *.ml > .depend
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend
 
 include .depend

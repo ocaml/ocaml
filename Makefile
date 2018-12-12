@@ -65,7 +65,8 @@ endif
 YACCFLAGS=-v --strict
 CAMLLEX=$(CAMLRUN) boot/ocamllex
 CAMLDEP=$(CAMLRUN) boot/ocamlc -depend
-DEPFLAGS=$(INCLUDES)
+DEPFLAGS=-slash
+DEPINCLUDES=$(INCLUDES)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 
@@ -1373,21 +1374,21 @@ partialclean::
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
 	 middle_end/base_types asmcomp/debug driver toplevel; \
-	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml || exit; \
+	 do $(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
-	$(CAMLDEP) -slash $(DEPFLAGS) -native \
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -native \
 		-impl driver/compdynlink.mlopt >> .depend
-	$(CAMLDEP) -slash $(DEPFLAGS) -bytecode \
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -bytecode \
 		-impl driver/compdynlink.mlbyte >> .depend
-	$(CAMLDEP) -slash $(DEPFLAGS) -native \
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -native \
 		-impl driver/compdynlink_common.mlopt >> .depend
-	$(CAMLDEP) -slash $(DEPFLAGS) -bytecode \
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -bytecode \
 		-impl driver/compdynlink_common.mlbyte >> .depend
-	$(CAMLDEP) -slash $(DEPFLAGS) -native \
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -native \
 		-impl driver/compdynlink_platform_intf.ml >> .depend
-	$(CAMLDEP) -slash $(DEPFLAGS) -native \
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -native \
 		-impl driver/compdynlink_types.mlopt >> .depend
-	$(CAMLDEP) -slash $(DEPFLAGS) -bytecode \
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -bytecode \
 		-impl driver/compdynlink_types.mlbyte >> .depend
 
 .PHONY: distclean

@@ -13,6 +13,8 @@ spacetime_offline.$(O): spacetime_offline.c ../../runtime/caml/alloc.h \
  ../../runtime/caml/signals.h ../../runtime/caml/stack.h \
  ../../runtime/caml/sys.h ../../runtime/caml/spacetime.h \
  ../../runtime/caml/stack.h ../../runtime/caml/s.h
-raw_spacetime_lib.cmo : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmx : raw_spacetime_lib.cmi
+raw_spacetime_lib.cmo : \
+    raw_spacetime_lib.cmi
+raw_spacetime_lib.cmx : \
+    raw_spacetime_lib.cmi
 raw_spacetime_lib.cmi :

@@ -34,6 +34,7 @@ endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(CAMLRUN) $(ROOTDIR)/tools/ocamldep
+DEPFLAGS=-slash
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
@@ -303,13 +304,14 @@ SPACE := $(EMPTY) $(EMPTY)
 # it looks for the .cmx file (not .p.cmx).
 .PHONY: depend
 depend:
-	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
+	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
 	  > .depend.tmp
-	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" \
+	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f remove_module_aliases.awk" \
 	  stdlib.ml stdlib.mli >> .depend.tmp
-	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.ml)) \
+	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.ml)) \
 	  | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend.tmp
-	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" stdlib.ml \
+	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f remove_module_aliases.awk" \
+	  stdlib.ml \
 	  | sed -e 's/\.cmx : /.p.cmx : /g' >> .depend.tmp
 	sed -Ee \
 	  's#(^| )(${subst ${SPACE},|,${UNPREFIXED_OBJS}})[.]#\1stdlib__\2.#g' \
