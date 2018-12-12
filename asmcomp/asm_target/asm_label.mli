@@ -17,7 +17,10 @@
     to [String] should not include any platform-specific prefix (such as "L",
     ".L", etc).
 
-    Note: Labels are not symbols---they are not accessible in the object file.
+    Note: Labels are not symbols in the usual sense---they are a construct
+    in the assembler's metalanguage and not accessible in the object
+    file---although on macOS the terminology for labels appears to be
+    "assembler local symbols".
 *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]

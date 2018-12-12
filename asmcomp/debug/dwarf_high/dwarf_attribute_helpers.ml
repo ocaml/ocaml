@@ -116,10 +116,8 @@ let create_location index =
   let location_list_index = Location_list_table.Index.to_uint64 index in
   match !Clflags.dwarf_version with
   | Four ->
-    let spec =
-      AS.create (A.Dwarf_4 Location) (F.Dwarf_4 Sec_offset_loclistptr)
-    in
-    AV.create spec (V.offset_into_debug_loc location_list_label)
+    (* See debug_loc_table.ml. *)
+    Misc.fatal_error "[create_location] not supported for DWARF-4"
   | Five ->
     if not !Clflags.dwarf_location_and_range_table_offsets then
       let spec = AS.create A.Location F.Sec_offset_loclist in

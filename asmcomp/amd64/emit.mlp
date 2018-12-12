@@ -287,6 +287,7 @@ let emit_call_gc gc =
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
   D.cfi_def_cfa_offset ~bytes:gc.gc_cfa_offset;
+  def_label gc.gc_before_call;
   emit_call caml_call_gc;
   def_label gc.gc_frame;
   I.jmp (label (L.create_int gc.gc_return_lbl))
@@ -1039,15 +1040,13 @@ let data l =
 
 let begin_assembly() =
   X86_proc.reset_asm_code ();
-  Asm_directives.initialize ~big_endian:Arch.big_endian
-    ~emit:(fun directive -> X86_proc.directive (Directive directive));
   reset_debug_info();                   (* PR#5603 *)
   reset_imp_table();
   float_constants := [];
   all_functions := [];
   Asm_label.initialize ~new_label:Cmm.new_label;
   Asm_directives.initialize ~big_endian:Arch.big_endian
-    ~emit:(fun dir -> directive (Directive dir));
+    ~emit:(fun directive -> X86_proc.directive (Directive directive));
   if Target_system.win64 () then begin
     let module D = X86_dsl.MASM in
     D.extrn caml_young_ptr QWORD;

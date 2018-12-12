@@ -14,6 +14,8 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+module A = Asm_directives
+
 module Make (Entry : Location_or_range_list_entry.S) = struct
   type t = Entry.t list
 
@@ -28,6 +30,8 @@ module Make (Entry : Location_or_range_list_entry.S) = struct
       t
 
   let emit t =
+    A.comment "Start of list:";
+    A.new_line ();
     List.iter (fun entry ->
         Entry.emit entry)
       (List.rev t)

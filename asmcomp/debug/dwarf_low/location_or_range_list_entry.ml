@@ -77,10 +77,10 @@ end) = struct
       start_of_code_symbol;
     }
 
-  let label_address t label ~adjustment =
+  let label_address ~comment t label ~adjustment =
     let adjustment = Targetint.of_int_exn adjustment in
     Dwarf_value.code_address_from_label_symbol_diff
-      ~comment:"ending address"
+      ~comment
       ~upper:label
       ~lower:t.start_of_code_symbol
       ~offset_upper:adjustment
@@ -146,35 +146,53 @@ end) = struct
 
   let emit t =
     (* DWARF-5 spec page 44 lines 14--15. *)
-    A.int8 (Int8.of_int_exn (P.code_for_entry_kind t.entry));
-    match t.entry with
+    A.comment "List entry:";
+    let comment =
+      if !Clflags.keep_asm_file then
+        let comment =
+          match t.entry with
+          | End_of_list -> "End_of_list"
+          | Base_addressx _ -> "Base_addressx"
+          | Startx_endx _ -> "Startx_endx"
+          | Startx_length _ -> "Startx_length"
+          | Offset_pair _ -> "Offset_pair"
+          | Base_address _ -> "Base_address"
+          | Start_end _ -> "Start_end"
+          | Start_length _ -> "Start_length"
+        in
+        Some comment
+      else
+        None
+    in
+    A.int8 ?comment (Int8.of_int_exn (P.code_for_entry_kind t.entry));
+    begin match t.entry with
     | End_of_list -> ()
     | Base_addressx addr_index ->
-      Address_index.emit addr_index
+      Address_index.emit ~comment:"base address" addr_index
     | Startx_endx {
         start_inclusive;
         end_exclusive;
         payload;
       } ->
-      Address_index.emit start_inclusive;
-      Address_index.emit end_exclusive;
+      Address_index.emit ~comment:"start_inclusive" start_inclusive;
+      Address_index.emit ~comment:"end_exclusive" end_exclusive;
       Payload.emit payload
     | Startx_length {
         start_inclusive;
         length;
         payload;
       } ->
-      Address_index.emit start_inclusive;
-      A.targetint length;
+      Address_index.emit ~comment:"start_inclusive" start_inclusive;
+      A.targetint ~comment:"length" length;
       Payload.emit payload
     | Offset_pair {
         start_offset_inclusive;
         end_offset_exclusive;
         payload;
       } ->
-      Dwarf_value.emit (Dwarf_value.sleb128 (
+      Dwarf_value.emit (Dwarf_value.sleb128 ~comment:"start_offset_inclusive" (
         Targetint.to_int64 start_offset_inclusive));
-      Dwarf_value.emit (Dwarf_value.sleb128 (
+      Dwarf_value.emit (Dwarf_value.sleb128 ~comment:"end_offset_exclusive" (
         Targetint.to_int64 end_offset_exclusive));
       Payload.emit payload
     | Base_address sym ->
@@ -185,16 +203,26 @@ end) = struct
         end_adjustment;
         payload;
       } ->
-      Dwarf_value.emit (label_address t start_inclusive ~adjustment:0);
       Dwarf_value.emit (
-        label_address t end_exclusive ~adjustment:end_adjustment);
+        label_address ~comment:"start_inclusive" t start_inclusive
+          ~adjustment:0);
+      Dwarf_value.emit (
+        label_address ~comment:"end_exclusive" t end_exclusive
+          ~adjustment:end_adjustment);
       Payload.emit payload
     | Start_length {
         start_inclusive;
         length;
         payload;
       } ->
-      Dwarf_value.emit (label_address t start_inclusive ~adjustment:0);
-      Dwarf_value.emit (Dwarf_value.uleb128 (Targetint.to_uint64_exn length));
+      Dwarf_value.emit (
+        label_address ~comment:"start_inclusive" t start_inclusive
+          ~adjustment:0);
+      Dwarf_value.emit (
+        Dwarf_value.uleb128 ~comment:"length" (Targetint.to_uint64_exn length));
       Payload.emit payload
+    end;
+    if !Clflags.keep_asm_file then begin
+      A.new_line ()
+    end
 end

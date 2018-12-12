@@ -108,11 +108,17 @@ module Make (Location_or_range_list : Dwarf_emittable.S) = struct
     if offset_array_supported () then begin
       A.comment "Offset array:";
       let offset_array_size = offset_array_size t in
-      List.iter (fun { offset_from_first_list; _ } ->
+      List.iteri (fun index { offset_from_first_list; _ } ->
           let offset =
             Dwarf_int.add offset_array_size offset_from_first_list
           in
-          Dwarf_int.emit offset)
+          let comment =
+            if !Clflags.keep_asm_file then
+              Some (Printf.sprintf "offset to list number %d" index)
+            else
+              None
+          in
+          Dwarf_int.emit ?comment offset)
         t.lists
     end;
     A.comment "Range or location list(s):";

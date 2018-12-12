@@ -46,22 +46,22 @@ let all_sections_in_order () =
     DWARF Debug_info;
     DWARF Debug_abbrev;
     DWARF Debug_aranges;
-    DWARF Debug_addr;
     DWARF Debug_str;
     DWARF Debug_line;
   ] in
-  let dwarf_location_sections =
+  let dwarf_version_dependent_sections =
     match !Clflags.dwarf_version with
     | Four ->
       [ DWARF Debug_loc;
         DWARF Debug_ranges;
       ]
     | Five ->
-      [ DWARF Debug_loclists;
+      [ DWARF Debug_addr;
+        DWARF Debug_loclists;
         DWARF Debug_rnglists;
       ]
   in
-  sections @ dwarf_location_sections
+  sections @ dwarf_version_dependent_sections
 
 let section_is_text = function
   | Text -> true

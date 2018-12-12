@@ -21,7 +21,8 @@ module Uint64 = Numbers.Uint64
 include Int64
 
 let size t = Dwarf_value.size (Dwarf_value.uleb128 (Uint64.of_int64_exn t))
-let emit t = Dwarf_value.emit (Dwarf_value.uleb128 (Uint64.of_int64_exn t))
+let emit ?comment t =
+  Dwarf_value.emit (Dwarf_value.uleb128 ?comment (Uint64.of_int64_exn t))
 
 include Identifiable.Make (struct
   type nonrec t = t

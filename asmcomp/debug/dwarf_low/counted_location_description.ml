@@ -31,6 +31,6 @@ let size t =
     t.loc_desc_size
 
 let emit t =
-  Dwarf_value.emit (Dwarf_value.uleb128 (
+  Dwarf_value.emit (Dwarf_value.uleb128 ~comment:"loc_desc_size" (
     Dwarf_int.to_uint64_exn t.loc_desc_size));
   Single_location_description.emit t.loc_desc
