@@ -125,6 +125,15 @@ let rec fold_right f l accu =
     [] -> accu
   | a::l -> f a (fold_right f l accu)
 
+let flat_map f l =
+  let rec flat_map_f acc = function
+    | [] -> rev acc
+    | hd :: tl -> flat_map_f (rev_append (f hd) acc) tl
+  in
+  flat_map_f [] l
+
+let concat_map = flat_map
+
 let rec map2 f l1 l2 =
   match (l1, l2) with
     ([], []) -> []
@@ -262,6 +271,18 @@ let rec combine l1 l2 =
     ([], []) -> []
   | (a1::l1, a2::l2) -> (a1, a2) :: combine l1 l2
   | (_, _) -> invalid_arg "List.combine"
+
+let product l1 l2 =
+  let rec prod l1 l2 racc =
+    match l1 with
+    | [] -> rev racc
+    | a1::l1 -> prod_one a1 l2 l1 l2 racc
+  and prod_one a1 l2 next1 original2 racc =
+    match l2 with
+    | [] -> prod next1 original2 racc
+    | a2::l2 -> prod_one a1 l2 next1 original2 ((a1, a2) :: racc)
+  in
+  prod l1 l2 []
 
 (** sorting *)
 
@@ -524,3 +545,17 @@ let of_seq seq =
       | Seq.Cons (x, next) -> x :: direct (depth-1) next
   in
   direct 500 seq
+
+module Syntax = struct
+
+  let return x = [x]
+
+  let ( let* ) x f = concat_map f x
+
+  let ( and* ) a b = product a b
+
+  let ( let+ ) x f = map f x
+
+  let ( and+ ) a b = product a b
+
+end

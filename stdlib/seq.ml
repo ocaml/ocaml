@@ -71,3 +71,30 @@ let iter f seq =
         aux next
   in
   aux seq
+
+let rec product seq1 seq2 () =
+  match seq1 () with
+  | Nil -> Nil
+  | Cons(x1, next1) ->
+      product_aux x1 seq2 next1 seq2 ()
+
+and product_aux x1 seq2 next1 original2 () =
+  match seq2 () with
+  | Nil -> product next1 original2 ()
+  | Cons(x2, next2) ->
+      Cons((x1, x2), product_aux x1 next2 next1 original2)
+
+(** {1 Syntax module} *)
+module Syntax = struct
+
+  let return x = return x
+
+  let ( let* ) x f = flat_map f x
+
+  let ( and* ) a b = product a b
+
+  let ( let+ ) x f = map f x
+
+  let ( and+ ) a b = product a b
+
+end
