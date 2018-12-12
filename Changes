@@ -417,18 +417,16 @@ Working version
   GPR#1702, GPR#1765, GPR#1863, and Gabriel Scherer's GPR#1903.
   (Gabriel Scherer, review by Florian Angeletti)
 
-- GPR#1788: move the quoted string description to the main chapters.
-  (Florian Angeletti, review by Xavier Clerc and Perry E. Metzger)
-
-- GPR#1831: move the local exceptions and exception cases to the main chapters.
-  (Florian Angeletti, review by Perry E. Metzger and Jeremy Yallop)
+- GPR#1788, 1831, 2007, 2198, move language extensions to the core chapters:
+     - GPR#1788: quoted string description
+     - GPR#1831: local exceptions and exception cases
+     - GPR#2007: 32-bit, 64-bit and native integer literals
+     - GPR#2198: lazy patterns
+  (Florian Angeletti, review by Xavier Clerc, Perry E. Metzger, Gabriel Scherer
+   and Jeremy Yallop)
 
 - GPR#1863: caml-tex2, move to compiler-libs
   (Florian Angeletti, review by Sébastien Hinderer and Gabriel Scherer)
-
-- GPR#2007: move the documentation for 32-bit, 64-bit and native integer
-  literals to the main part of the manual.
-  (Florian Angeletti, review by Gabriel Scherer)
 
 - GPR#2105: Change verbatim to caml_example in documentation
   (Maxime Flin, review by Florian Angeletti)

@@ -1535,7 +1535,7 @@ let explanation_submsg (id, {reason;loc;subid}) =
 
 let report_error loc = function
   | Circular_dependency cycle ->
-      let[@manual.ref "s-recursive-modules"] chapter, section = 8, 3 in
+      let[@manual.ref "s-recursive-modules"] chapter, section = 8, 2 in
       Location.errorf ~loc ~sub:(List.map explanation_submsg cycle)
         "Cannot safely evaluate the definition of the following cycle@ \
          of recursively-defined modules:@ %a.@ \
