@@ -69,7 +69,7 @@ let rec init_aux i n f =
     let r = f i in
     r :: init_aux (i+1) n f
 
-let rev_init_threshold =
+let max_recursion_threshold =
   match Sys.backend_type with
   | Sys.Native | Sys.Bytecode -> 10_000
   (* We don't know the size of the stack, better be safe and assume it's
@@ -78,7 +78,7 @@ let rev_init_threshold =
 
 let init len f =
   if len < 0 then invalid_arg "List.init" else
-  if len > rev_init_threshold then rev (init_tailrec_aux [] 0 len f)
+  if len > max_recursion_threshold then rev (init_tailrec_aux [] 0 len f)
   else init_aux 0 len f
 
 let rec flatten = function
