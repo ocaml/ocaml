@@ -172,6 +172,14 @@ module Attribute : sig
       | Use_location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
       | Vtable_elem_location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
       | Ranges : Class.Dwarf_4.rangelistptr t
+      | GNU_call_site_value : Class.exprloc t
+      | GNU_call_site_data_value : Class.exprloc t
+      | GNU_call_site_target : Class.exprloc t
+      | GNU_call_site_target_clobbered : Class.exprloc t
+      | GNU_tail_call : Class.flag t
+      | GNU_all_tail_call_sites : Class.flag t
+      | GNU_all_call_sites : Class.flag t
+      | GNU_all_source_call_sites : Class.flag t
   end
 
   type 'dwarf_classes t =

@@ -19,6 +19,10 @@ module Uint64 = Numbers.Uint64
 
 type user = Int16.t
 
+type dwarf_4 =
+  | GNU_call_site
+  | GNU_call_site_parameter
+
 type t =
   | Array_type
   | Class_type
@@ -88,6 +92,7 @@ type t =
   | Call_site_parameter
   | Skeleton_unit
   | Immutable_type
+  | Dwarf_4 of dwarf_4
   | User of user
 
 let tag_name t =
@@ -161,6 +166,8 @@ let tag_name t =
     | Call_site_parameter -> "call_site_parameter"
     | Skeleton_unit -> "skeleton_unit"
     | Immutable_type -> "immutable_type"
+    | Dwarf_4 GNU_call_site -> "GNU_call_site"
+    | Dwarf_4 GNU_call_site_parameter -> "GNU_call_site_parameter"
     | User i -> Format.asprintf "user_%a" Int16.print i
   in
   "DW_TAG_" ^ name
@@ -241,6 +248,8 @@ let encode t =
     | Call_site_parameter -> 0x49
     | Skeleton_unit -> 0x4a
     | Immutable_type -> 0x4b
+    | Dwarf_4 GNU_call_site -> 0x4109
+    | Dwarf_4 GNU_call_site_parameter -> 0x410a
     | User code ->
       assert (code >= dw_tag_lo_user && code <= dw_tag_hi_user);
       Int16.to_int code
@@ -252,80 +261,5 @@ let size t =
 
 let emit t =
   Dwarf_value.emit (encode t)
-
-(* This function is permitted to say "Yes" when there might not be any
-   children, but not the opposite. *)
-(* CR mshinwell: This function probably isn't correct yet *)
-let child_determination t : Child_determination.t =
-  match t with
-  | Compile_unit
-  | Lexical_block
-  | Subprogram
-  | Structure_type
-  | Array_type
-  | Call_site -> Yes
-  | Class_type
-  | Entry_point
-  | Enumeration_type
-  | Formal_parameter
-  | Imported_declaration
-  | Label
-  | Member
-  | Pointer_type
-  | Reference_type
-  | String_type
-  | Subroutine_type
-  | Typedef
-  | Union_type
-  | Unspecified_parameters
-  | Variant
-  | Common_block
-  | Common_inclusion
-  | Inheritance
-  | Inlined_subroutine
-  | Module
-  | Ptr_to_member_type
-  | Set_type
-  | Subrange_type
-  | With_stmt
-  | Access_declaration
-  | Base_type
-  | Catch_block
-  | Const_type
-  | Constant
-  | Enumerator
-  | File_type
-  | Friend
-  | Namelist
-  | Namelist_item
-  | Packed_type
-  | Template_type_parameter
-  | Template_value_parameter
-  | Thrown_type
-  | Try_block
-  | Variant_part
-  | Variable
-  | Volatile_type
-  | Dwarf_procedure
-  | Restrict_type
-  | Interface_type
-  | Namespace
-  | Imported_module
-  | Unspecified_type
-  | Partial_unit
-  | Imported_unit
-  | Condition
-  | Shared_type
-  | Type_unit
-  | Rvalue_reference_type
-  | Template_alias
-  | Coarray_type
-  | Generic_subrange
-  | Dynamic_type
-  | Atomic_type
-  | Call_site_parameter
-  | Skeleton_unit
-  | Immutable_type
-  | User _ -> No
 
 let compare t1 t2 = Stdlib.compare t1 t2

@@ -22,6 +22,11 @@ module V = Dwarf_attribute_values.Value
 
 module Uint64 = Numbers.Uint64
 
+let needs_dwarf_five () =
+  match !Clflags.dwarf_version with
+  | Four -> Misc.fatal_error "Attribute not supported for DWARF-4"
+  | Five -> ()
+
 let create_low_pc ~address_label =
   let spec = AS.create A.Low_pc F.Addr in
   AV.create spec (V.code_address_from_label
@@ -68,78 +73,95 @@ let create_external ~is_visible_externally =
     AV.create spec (V.bool ~comment:"not visible externally" false)
 
 let create_call_file file =
+  needs_dwarf_five ();
   let spec = AS.create A.Call_file F.Udata in
   let file = Uint64.of_int_exn file in
   AV.create spec (V.uleb128 ~comment:"file number" file)
 
 let create_call_line line =
+  needs_dwarf_five ();
   let spec = AS.create A.Call_line F.Udata in
   let line = Uint64.of_int_exn line in
   AV.create spec (V.uleb128 ~comment:"line number" line)
 
 let create_call_column column =
+  needs_dwarf_five ();
   let spec = AS.create A.Call_column F.Udata in
   let column = Uint64.of_int_exn column in
   AV.create spec (V.uleb128 ~comment:"column number" column)
 
 let create_call_pc label =
   let spec = AS.create A.Call_pc F.Addr in
+  needs_dwarf_five ();
   AV.create spec (V.code_address_from_label ~comment:"PC of call site" label)
 
 let create_call_return_pc label =
+  needs_dwarf_five ();
   let spec = AS.create A.Call_return_pc F.Addr in
   AV.create spec (V.code_address_from_label
     ~comment:"PC immediately after call site" label)
 
 let create_call_tail_call ~is_tail =
   if is_tail then
-    let spec = AS.create A.Call_tail_call F.Flag_present in
+    let spec =
+      match !Clflags.dwarf_version with
+      | Four -> AS.create (A.Dwarf_4 GNU_tail_call) F.Flag_present
+      | Five -> AS.create A.Call_tail_call F.Flag_present
+    in
     AV.create spec (V.flag_true ~comment:"is a tail call" ())
   else
-    let spec = AS.create A.Call_tail_call F.Flag in
+    let spec =
+      match !Clflags.dwarf_version with
+      | Four -> AS.create (A.Dwarf_4 GNU_tail_call) F.Flag
+      | Five -> AS.create A.Call_tail_call F.Flag
+    in
     AV.create spec (V.bool ~comment:"is a non-tail call" false)
 
 let create_call_all_calls () =
-  let spec = AS.create A.Call_all_calls F.Flag_present in
+  let spec =
+    match !Clflags.dwarf_version with
+    | Four -> AS.create (A.Dwarf_4 GNU_all_call_sites) F.Flag_present
+    | Five -> AS.create A.Call_all_calls F.Flag_present
+  in
   AV.create spec (V.flag_true ~comment:"DW_AT_call_all_calls is set" ())
 
 let create_call_target loc_desc =
-  let spec = AS.create A.Call_target F.Exprloc in
+  let spec =
+    match !Clflags.dwarf_version with
+    | Four -> AS.create (A.Dwarf_4 GNU_call_site_target) F.Exprloc
+    | Five -> AS.create A.Call_target F.Exprloc
+  in
   AV.create spec (V.single_location_description loc_desc)
 
 let create_call_target_clobbered loc_desc =
-  let spec = AS.create A.Call_target_clobbered F.Exprloc in
+  let spec =
+    match !Clflags.dwarf_version with
+    | Four -> AS.create (A.Dwarf_4 GNU_call_site_target_clobbered) F.Exprloc
+    | Five -> AS.create A.Call_target_clobbered F.Exprloc
+  in
   AV.create spec (V.single_location_description loc_desc)
 
 let create_location index =
+  needs_dwarf_five ();
   let location_list_label = Location_list_table.Index.to_label index in
   let location_list_index = Location_list_table.Index.to_uint64 index in
-  match !Clflags.dwarf_version with
-  | Four ->
-    (* See debug_loc_table.ml. *)
-    Misc.fatal_error "[create_location] not supported for DWARF-4"
-  | Five ->
-    if not !Clflags.dwarf_location_and_range_table_offsets then
-      let spec = AS.create A.Location F.Sec_offset_loclist in
-      AV.create spec (V.offset_into_debug_loclists location_list_label)
-    else
-      let spec = AS.create A.Location F.Loclistx in
-      AV.create spec (V.loclistx ~index:location_list_index)
+  if not !Clflags.dwarf_location_and_range_table_offsets then
+    let spec = AS.create A.Location F.Sec_offset_loclist in
+    AV.create spec (V.offset_into_debug_loclists location_list_label)
+  else
+    let spec = AS.create A.Location F.Loclistx in
+    AV.create spec (V.loclistx ~index:location_list_index)
 
 let create_ranges index =
+  needs_dwarf_five ();
   let range_list_label = Range_list_table.Index.to_label index in
   let range_list_index = Range_list_table.Index.to_uint64 index in
-  match !Clflags.dwarf_version with
-  | Four ->
-    (* See debug_ranges_table.ml. *)
-    Misc.fatal_error "[create_ranges] not supported for DWARF-4"
-  | Five ->
-    if not !Clflags.dwarf_location_and_range_table_offsets then
-      let spec = AS.create A.Ranges F.Sec_offset_rnglist in
-      AV.create spec (V.offset_into_debug_rnglists range_list_label)
-    else
-      let spec = AS.create A.Ranges F.Rnglistx in
-      AV.create spec (V.rnglistx ~index:range_list_index)
+  if not !Clflags.dwarf_location_and_range_table_offsets then
+    let spec = AS.create A.Ranges F.Sec_offset_rnglist in
+    AV.create spec (V.offset_into_debug_rnglists range_list_label)
+  else
+    let spec = AS.create A.Ranges F.Rnglistx in
+    AV.create spec (V.rnglistx ~index:range_list_index)
 
 let create_single_location_description loc_desc =
   let spec = AS.create A.Location F.Exprloc in
@@ -150,7 +172,16 @@ let create_composite_location_description loc_desc =
   AV.create spec (V.composite_location_description loc_desc)
 
 let create_single_call_data_location_description loc_desc =
+  needs_dwarf_five ();
   let spec = AS.create A.Call_data_location F.Exprloc in
+  AV.create spec (V.single_location_description loc_desc)
+
+let create_single_call_data_value_location_description loc_desc =
+  let spec =
+    match !Clflags.dwarf_version with
+    | Four -> AS.create (A.Dwarf_4 GNU_call_site_data_value) F.Exprloc
+    | Five -> AS.create A.Call_data_value F.Exprloc
+  in
   AV.create spec (V.single_location_description loc_desc)
 
 let create_encoding ~encoding =

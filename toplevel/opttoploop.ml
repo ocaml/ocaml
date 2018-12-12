@@ -219,16 +219,17 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
     else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
   in
   let fn = Filename.chop_extension dll in
+  let sourcefile = "" in
   if not Config.flambda then
     Asmgen.compile_implementation_clambda
       ~toplevel:need_symbol fn ~ppf_dump:ppf
-      ~unit_name:module_ident
+      ~unit_name:module_ident ~sourcefile
       { Lambda.code=slam ; main_module_block_size=size;
         module_ident; required_globals }
   else
     Asmgen.compile_implementation_flambda
       ~required_globals ~backend ~toplevel:need_symbol fn ~ppf_dump:ppf
-      ~unit_name:module_ident
+      ~unit_name:module_ident ~sourcefile
       (Middle_end.middle_end ~ppf_dump:ppf ~prefixname:"" ~backend ~size
          ~module_ident ~module_initializer:slam ~filename:"toplevel");
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;

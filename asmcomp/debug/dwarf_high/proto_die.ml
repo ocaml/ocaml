@@ -14,13 +14,9 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module A = Dwarf_attributes.Attribute
-module AS = Dwarf_attributes.Attribute_specification
 module ASS = Dwarf_attributes.Attribute_specification.Sealed
 module AV = Dwarf_attribute_values.Attribute_value
-module F = Dwarf_attributes.Form
 module Int = Numbers.Int
-module V = Dwarf_attribute_values.Value
 
 type reference = Asm_label.t
 let create_reference () = Asm_label.create ()
@@ -39,20 +35,13 @@ type t = {
   (* CR mshinwell: Is this being used at the moment?  Check *)
 }
 
-(* CR-someday mshinwell: tidy up (very similar to Dwarf_attribute_helpers,
-   but cannot use that due to circular dependency). *)
-let reference_proto_die attribute proto_die =
-  let spec = AS.create attribute F.Ref_addr in
-  let label = proto_die.label in
-  AV.create spec (V.offset_into_debug_info ~comment:"ref. to DIE" label)
-
 let attribute_values_map attribute_values =
   List.fold_left (fun map attribute_value ->
       ASS.Map.add (AV.attribute_spec attribute_value) attribute_value map)
     ASS.Map.empty
     attribute_values
 
-let create_sibling ~proto_die = reference_proto_die A.Sibling proto_die
+(* CR-someday mshinwell: Resurrect support for sibling links. *)
 
 let create ?reference ?(sort_priority = -1) ~parent ~tag ~attribute_values () =
   begin match parent with
@@ -60,32 +49,8 @@ let create ?reference ?(sort_priority = -1) ~parent ~tag ~attribute_values () =
     if tag <> Dwarf_tag.Compile_unit then begin
       failwith "only compilation unit proto-DIEs may be without parents"
     end
-  | Some parent ->
-    match Dwarf_tag.child_determination parent.tag with
-    | Yes -> ()
-    | No ->
-      failwith "attempt to attach proto-DIE to proto-DIE that \
-                never has children"
+  | Some _parent -> ()
   end;
-  (* Insert DW_AT_sibling to point at any next sibling of [t], if this new
-     node might have children.  (Section 2.3, DWARF-4 spec; and it seems
-     pointless if the node can never have children).  The order of siblings
-     probably matters; we make sure that it is preserved by the use of ::
-     below and within [depth_first_fold]. *)
-  let attribute_values =
-    match Dwarf_tag.child_determination tag with
-    | No -> attribute_values
-    | Yes ->
-      match parent with
-      | None -> attribute_values
-      | Some parent ->
-        match Int.Map.min_binding_opt parent.children_by_sort_priority with
-        | None -> attribute_values
-        | Some (sort_priority, []) ->
-          Misc.fatal_errorf "Empty sort priority %d" sort_priority
-        | Some (_sort_priority, (next_sibling_of_t ::_)) ->
-          (create_sibling ~proto_die:next_sibling_of_t) :: attribute_values
-  in
   let reference =
     match reference with
     | None -> Asm_label.create ()
