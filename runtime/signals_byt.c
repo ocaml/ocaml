@@ -54,7 +54,7 @@ void caml_process_event(void)
 static void handle_signal(int signal_number)
 {
   int saved_errno;
-  /* Save the value of errno (PR#5982). */
+  /* Save the caml_value of errno (PR#5982). */
   saved_errno = errno;
 #if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(signal_number, handle_signal);

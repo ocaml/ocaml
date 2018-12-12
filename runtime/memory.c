@@ -372,16 +372,16 @@ int caml_add_to_heap (char *m)
    to [Max_wosize].
    Return NULL when out of memory.
 */
-static value *expand_heap (mlsize_t request)
+static caml_value *expand_heap (mlsize_t request)
 {
   /* these point to headers, but we do arithmetic on them, hence [value *]. */
-  value *mem, *hp, *prev;
+  caml_value *mem, *hp, *prev;
   asize_t over_request, malloc_request, remain;
 
   CAMLassert (request <= Max_wosize);
   over_request = request + request / 100 * caml_percent_free;
   malloc_request = caml_clip_heap_chunk_wsz (over_request);
-  mem = (value *) caml_alloc_for_heap (Bsize_wsize (malloc_request));
+  mem = (caml_value *) caml_alloc_for_heap (Bsize_wsize (malloc_request));
   if (mem == NULL){
     caml_gc_message (0x04, "No room for growing heap\n");
     return NULL;
@@ -405,9 +405,9 @@ static value *expand_heap (mlsize_t request)
     caml_set_fields (Val_hp (hp), 0, Debug_free_major);
 #endif
     Field (Val_hp (mem), 1) = Field (Val_hp (prev), 0) = Val_hp (hp);
-    Field (Val_hp (hp), 0) = (value) NULL;
+    Field (Val_hp (hp), 0) = (caml_value) NULL;
   }else{
-    Field (Val_hp (prev), 0) = (value) NULL;
+    Field (Val_hp (prev), 0) = (caml_value) NULL;
     if (remain == 1) {
       Hd_hp (hp) = Make_header_allocated_here (0, 0, Caml_white);
     }
@@ -445,7 +445,7 @@ void caml_shrink_heap (char *chunk)
   {
     mlsize_t i;
     for (i = 0; i < Wsize_bsize (Chunk_size (chunk)); i++){
-      ((value *) chunk) [i] = Debug_free_shrink;
+      ((caml_value *) chunk) [i] = Debug_free_shrink;
     }
   }
 #endif
@@ -477,11 +477,11 @@ color_t caml_allocation_color (void *hp)
   }
 }
 
-static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
+static inline caml_value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
                                         int raise_oom, uintnat profinfo)
 {
   header_t *hp;
-  value *new_block;
+  caml_value *new_block;
 
   if (wosize > Max_wosize) {
     if (raise_oom)
@@ -500,7 +500,7 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
       else
         caml_raise_out_of_memory ();
     }
-    caml_fl_add_blocks ((value) new_block);
+    caml_fl_add_blocks ((caml_value) new_block);
     hp = caml_fl_allocate (wosize);
   }
 
@@ -535,7 +535,7 @@ static inline value caml_alloc_shr_aux (mlsize_t wosize, tag_t tag,
   return Val_hp (hp);
 }
 
-CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
+CAMLexport caml_value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
 {
   return caml_alloc_shr_aux(wosize, tag, 0, 0);
 }
@@ -545,13 +545,13 @@ CAMLexport value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t tag)
 /* Use this to debug problems with macros... */
 #define NO_PROFINFO 0xff
 
-CAMLexport value caml_alloc_shr_with_profinfo (mlsize_t wosize, tag_t tag,
+CAMLexport caml_value caml_alloc_shr_with_profinfo (mlsize_t wosize, tag_t tag,
                                                intnat profinfo)
 {
   return caml_alloc_shr_aux(wosize, tag, 1, profinfo);
 }
 
-CAMLexport value caml_alloc_shr_preserving_profinfo (mlsize_t wosize,
+CAMLexport caml_value caml_alloc_shr_preserving_profinfo (mlsize_t wosize,
   tag_t tag, header_t old_header)
 {
   return caml_alloc_shr_with_profinfo (wosize, tag, Profinfo_hd(old_header));
@@ -564,13 +564,13 @@ CAMLexport value caml_alloc_shr_preserving_profinfo (mlsize_t wosize,
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
 #include "caml/spacetime.h"
 
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+CAMLexport caml_value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
   return caml_alloc_shr_with_profinfo (wosize, tag,
     caml_spacetime_my_profinfo (NULL, wosize));
 }
 #else
-CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
+CAMLexport caml_value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
   return caml_alloc_shr_aux (wosize, tag, 1, NO_PROFINFO);
 }
@@ -587,16 +587,16 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 */
 CAMLexport void caml_alloc_dependent_memory (mlsize_t nbytes)
 {
-  caml_dependent_size += nbytes / sizeof (value);
-  caml_dependent_allocated += nbytes / sizeof (value);
+  caml_dependent_size += nbytes / sizeof (caml_value);
+  caml_dependent_allocated += nbytes / sizeof (caml_value);
 }
 
 CAMLexport void caml_free_dependent_memory (mlsize_t nbytes)
 {
-  if (caml_dependent_size < nbytes / sizeof (value)){
+  if (caml_dependent_size < nbytes / sizeof (caml_value)){
     caml_dependent_size = 0;
   }else{
-    caml_dependent_size -= nbytes / sizeof (value);
+    caml_dependent_size -= nbytes / sizeof (caml_value);
   }
 }
 
@@ -626,26 +626,26 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   }
 }
 
-/* You must use [caml_initialize] to store the initial value in a field of
-   a shared block, unless you are sure the value is not a young block.
-   A block value [v] is a shared block if and only if [Is_in_heap (v)]
+/* You must use [caml_initialize] to store the initial caml_value in a field of
+   a shared block, unless you are sure the caml_value is not a young block.
+   A block caml_value [v] is a shared block if and only if [Is_in_heap (v)]
    is true.
 */
 /* [caml_initialize] never calls the GC, so you may call it while a block is
    unfinished (i.e. just after a call to [caml_alloc_shr].) */
 /* PR#6084 workaround: define it as a weak symbol */
-CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
+CAMLexport CAMLweakdef void caml_initialize (caml_value *fp, caml_value val)
 {
   CAMLassert(Is_in_heap_or_young(fp));
   *fp = val;
-  if (!Is_young((value)fp) && Is_block (val) && Is_young (val)) {
+  if (!Is_young((caml_value)fp) && Is_block (val) && Is_young (val)) {
     add_to_ref_table (&caml_ref_table, fp);
   }
 }
 
 /* You must use [caml_modify] to change a field of an existing shared block,
-   unless you are sure the value being overwritten is not a shared block and
-   the value being written is not a young block. */
+   unless you are sure the caml_value being overwritten is not a shared block and
+   the caml_value being written is not a young block. */
 /* [caml_modify] never calls the GC. */
 /* [caml_modify] can also be used to do assignment on data structures that are
    in the minor heap instead of in the major heap.  In this case, it
@@ -654,7 +654,7 @@ CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
    block being changed is in the minor heap or the major heap. */
 /* PR#6084 workaround: define it as a weak symbol */
 
-CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
+CAMLexport CAMLweakdef void caml_modify (caml_value *fp, caml_value val)
 {
   /* The write barrier implemented by [caml_modify] checks for the
      following two conditions and takes appropriate action:
@@ -665,9 +665,9 @@ CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
         --> call [caml_darken] on the overwritten pointer so that the
             major GC treats it as an additional root.
   */
-  value old;
+  caml_value old;
 
-  if (Is_young((value)fp)) {
+  if (Is_young((caml_value)fp)) {
     /* The modified object resides in the minor heap.
        Conditions 1 and 2 cannot occur. */
     *fp = val;

@@ -51,8 +51,8 @@ CAMLexport char *caml_heap_start;
 char *caml_gc_sweep_hp;
 int caml_gc_phase;        /* always Phase_mark, Pase_clean,
                              Phase_sweep, or Phase_idle */
-static value *gray_vals;
-static value *gray_vals_cur, *gray_vals_end;
+static caml_value *gray_vals;
+static caml_value *gray_vals_cur, *gray_vals_end;
 static asize_t gray_vals_size;
 static int heap_is_pure;   /* The heap is pure if the only gray objects
                               below [markhp] are also in [gray_vals]. */
@@ -103,9 +103,9 @@ int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
  */
 static int ephe_list_pure;
 /** The ephemerons is pure if since the start of its iteration
-    no value have been darken. */
-static value *ephes_checked_if_pure;
-static value *ephes_to_check;
+    no caml_value have been darken. */
+static caml_value *ephes_checked_if_pure;
+static caml_value *ephes_to_check;
 
 int caml_major_window = 1;
 double caml_major_ring[Max_major_window] = { 0. };
@@ -121,16 +121,16 @@ void (*caml_major_gc_hook)(void) = NULL;
 
 static void realloc_gray_vals (void)
 {
-  value *new;
+  caml_value *new;
 
   CAMLassert (gray_vals_cur == gray_vals_end);
   if (gray_vals_size < caml_stat_heap_wsz / 32){
     caml_gc_message (0x08, "Growing gray_vals to %"
                            ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
-                     (intnat) gray_vals_size * sizeof (value) / 512);
-    new = (value *) caml_stat_resize_noexc ((char *) gray_vals,
+                     (intnat) gray_vals_size * sizeof (caml_value) / 512);
+    new = (caml_value *) caml_stat_resize_noexc ((char *) gray_vals,
                                             2 * gray_vals_size *
-                                            sizeof (value));
+                                            sizeof (caml_value));
     if (new == NULL){
       caml_gc_message (0x08, "No room for growing gray_vals\n");
       gray_vals_cur = gray_vals;
@@ -147,7 +147,7 @@ static void realloc_gray_vals (void)
   }
 }
 
-void caml_darken (value v, value *p /* not used */)
+void caml_darken (caml_value v, caml_value *p /* not used */)
 {
 #ifdef NATIVE_CODE_AND_NO_NAKED_POINTERS
   if (Is_block (v) && !Is_young (v) && Wosize_val (v) > 0) {
@@ -165,7 +165,7 @@ void caml_darken (value v, value *p /* not used */)
     /* We insist that naked pointers to outside the heap point to things that
        look like values with headers coloured black.  This isn't always
        strictly necessary but is essential in certain cases---in particular
-       when the value is allocated in a read-only section.  (For the values
+       when the caml_value is allocated in a read-only section.  (For the values
        where it would be safe it is a performance improvement since we avoid
        putting them on the grey list.) */
     CAMLassert (Is_in_heap (v) || Is_black_hd (h));
@@ -204,9 +204,9 @@ static void start_cycle (void)
 
 /* We may stop the slice inside values, in order to avoid large latencies
    on large arrays. In this case, [current_value] is the partially-marked
-   value and [current_index] is the index of the next field to be marked.
+   caml_value and [current_index] is the index of the next field to be marked.
 */
-static value current_value = 0;
+static caml_value current_value = 0;
 static mlsize_t current_index = 0;
 
 /* For instrumentation */
@@ -231,11 +231,11 @@ static void init_sweep_phase(void)
 }
 
 /* auxillary function of mark_slice */
-static inline value* mark_slice_darken(value *gray_vals_ptr,
-                                       value v, mlsize_t i,
+static inline caml_value* mark_slice_darken(caml_value *gray_vals_ptr,
+                                       caml_value v, mlsize_t i,
                                        int in_ephemeron, int *slice_pointers)
 {
-  value child;
+  caml_value child;
   header_t chd;
 
   child = Field (v, i);
@@ -255,7 +255,7 @@ static inline value* mark_slice_darken(value *gray_vals_ptr,
     INSTR (++ *slice_pointers;)
     chd = Hd_val (child);
     if (Tag_hd (chd) == Forward_tag){
-      value f = Forward_val (child);
+      caml_value f = Forward_val (child);
       if ((in_ephemeron && Is_long(f)) ||
           (Is_block (f)
            && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
@@ -300,10 +300,10 @@ static inline value* mark_slice_darken(value *gray_vals_ptr,
   return gray_vals_ptr;
 }
 
-static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
+static caml_value* mark_ephe_aux (caml_value *gray_vals_ptr, intnat *work,
                              int *slice_pointers)
 {
-  value v, data, key;
+  caml_value v, data, key;
   header_t hd;
   mlsize_t size, i;
 
@@ -327,7 +327,7 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
       if (key != caml_ephe_none &&
           Is_block (key) && Is_in_heap (key)){
         if (Tag_val (key) == Forward_tag){
-          value f = Forward_val (key);
+          caml_value f = Forward_val (key);
           if (Is_long (f) ||
               (Is_block (f) &&
                (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
@@ -383,8 +383,8 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
 
 static void mark_slice (intnat work)
 {
-  value *gray_vals_ptr;  /* Local copy of [gray_vals_cur] */
-  value v;
+  caml_value *gray_vals_ptr;  /* Local copy of [gray_vals_cur] */
+  caml_value v;
   header_t hd;
   mlsize_t size, i, start, end; /* [start] is a local copy of [current_index] */
 #ifdef CAML_INSTR
@@ -468,11 +468,11 @@ static void mark_slice (intnat work)
       if (work > 0){
         caml_gc_subphase = Subphase_mark_main;
       }
-    } else if (*ephes_to_check != (value) NULL) {
+    } else if (*ephes_to_check != (caml_value) NULL) {
       /* Continue to scan the list of ephe */
       gray_vals_ptr = mark_ephe_aux(gray_vals_ptr,&work,&slice_pointers);
     } else if (!ephe_list_pure){
-      /* We must scan again the list because some value have been darken */
+      /* We must scan again the list because some caml_value have been darken */
       ephe_list_pure = 1;
       ephes_to_check = ephes_checked_if_pure;
     }else{
@@ -493,11 +493,11 @@ static void mark_slice (intnat work)
       }
         break;
       case Subphase_mark_final: {
-        /** The set of unreachable value will not change anymore for
+        /** The set of unreachable caml_value will not change anymore for
             this cycle. Start clean phase. */
         caml_gc_phase = Phase_clean;
         caml_final_update_clean_phase ();
-        if (caml_ephe_list_head != (value) NULL){
+        if (caml_ephe_list_head != (caml_value) NULL){
           /* Initialise the clean phase. */
           ephes_to_check = &caml_ephe_list_head;
         } else {
@@ -521,13 +521,13 @@ static void mark_slice (intnat work)
 /* Clean ephemerons */
 static void clean_slice (intnat work)
 {
-  value v;
+  caml_value v;
 
   caml_gc_message (0x40, "Cleaning %"
                    ARCH_INTNAT_PRINTF_FORMAT "d words\n", work);
   while (work > 0){
     v = *ephes_to_check;
-    if (v != (value) NULL){
+    if (v != (caml_value) NULL){
       if (Is_white_val (v)){
         /* The whole array is dead, remove it from the list. */
         *ephes_to_check = Field (v, CAML_EPHE_LINK_OFFSET);
@@ -562,7 +562,7 @@ static void sweep_slice (intnat work)
       switch (Color_hd (hd)){
       case Caml_white:
         if (Tag_hd (hd) == Custom_tag){
-          void (*final_fun)(value) = Custom_ops_val(Val_hp(hp))->finalize;
+          void (*final_fun)(caml_value) = Custom_ops_val(Val_hp(hp))->finalize;
           if (final_fun != NULL) final_fun(Val_hp(hp));
         }
         caml_gc_sweep_hp = (char *) caml_fl_merge_block (Val_hp (hp));
@@ -887,11 +887,11 @@ void caml_init_major_heap (asize_t heap_size)
   }
 
   caml_fl_init_merge ();
-  caml_make_free_blocks ((value *) caml_heap_start,
+  caml_make_free_blocks ((caml_value *) caml_heap_start,
                          caml_stat_heap_wsz, 1, Caml_white);
   caml_gc_phase = Phase_idle;
   gray_vals_size = 2048;
-  gray_vals = (value *) caml_stat_alloc_noexc (gray_vals_size * sizeof (value));
+  gray_vals = (caml_value *) caml_stat_alloc_noexc (gray_vals_size * sizeof (caml_value));
   if (gray_vals == NULL)
     caml_fatal_error ("not enough memory for the gray cache");
   gray_vals_cur = gray_vals;

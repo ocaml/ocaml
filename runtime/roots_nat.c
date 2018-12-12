@@ -223,7 +223,7 @@ void caml_unregister_frametable(intnat *table) {
 char * caml_top_of_stack;
 char * caml_bottom_of_stack = NULL; /* no stack initially */
 uintnat caml_last_return_address = 1; /* not in OCaml code initially */
-value * caml_gc_regs;
+caml_value * caml_gc_regs;
 intnat caml_globals_inited = 0;
 static intnat caml_globals_scanned = 0;
 static link * caml_dyn_globals = NULL;
@@ -238,14 +238,14 @@ void caml_oldify_local_roots (void)
 {
   char * sp;
   uintnat retaddr;
-  value * regs;
+  caml_value * regs;
   frame_descr * d;
   uintnat h;
   intnat i, j;
   int n, ofs;
   unsigned short * p;
-  value * glob;
-  value * root;
+  caml_value * glob;
+  caml_value * root;
   struct caml__roots_block *lr;
   link *lnk;
 
@@ -263,7 +263,7 @@ void caml_oldify_local_roots (void)
 
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
-    for(glob = (value *) lnk->data; *glob != 0; glob++) {
+    for(glob = (caml_value *) lnk->data; *glob != 0; glob++) {
       for (j = 0; j < Wosize_val(*glob); j++){
         Oldify (&Field (*glob, j));
       }
@@ -290,7 +290,7 @@ void caml_oldify_local_roots (void)
           if (ofs & 1) {
             root = regs + (ofs >> 1);
           } else {
-            root = (value *)(sp + ofs);
+            root = (caml_value *)(sp + ofs);
           }
           Oldify (root);
         }
@@ -350,7 +350,7 @@ void caml_darken_all_roots_start (void)
 intnat caml_darken_all_roots_slice (intnat work)
 {
   static int i, j;
-  static value *glob;
+  static caml_value *glob;
   static int do_resume = 0;
   static mlsize_t roots_count = 0;
   intnat remaining_work = work;
@@ -391,7 +391,7 @@ intnat caml_darken_all_roots_slice (intnat work)
 void caml_do_roots (scanning_action f, int do_globals)
 {
   int i, j;
-  value * glob;
+  caml_value * glob;
   link *lnk;
   CAML_INSTR_SETUP (tmr, "major_roots");
 
@@ -406,7 +406,7 @@ void caml_do_roots (scanning_action f, int do_globals)
   }
   /* Dynamic global roots */
   iter_list(caml_dyn_globals, lnk) {
-    for(glob = (value *) lnk->data; *glob != 0; glob++) {
+    for(glob = (caml_value *) lnk->data; *glob != 0; glob++) {
       for (j = 0; j < Wosize_val(*glob); j++){
         f (Field (*glob, j), &Field (*glob, j));
       }
@@ -429,17 +429,17 @@ void caml_do_roots (scanning_action f, int do_globals)
 }
 
 void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
-                         uintnat last_retaddr, value * gc_regs,
+                         uintnat last_retaddr, caml_value * gc_regs,
                          struct caml__roots_block * local_roots)
 {
   char * sp;
   uintnat retaddr;
-  value * regs;
+  caml_value * regs;
   frame_descr * d;
   uintnat h;
   int i, j, n, ofs;
   unsigned short * p;
-  value * root;
+  caml_value * root;
   struct caml__roots_block *lr;
 
   sp = bottom_of_stack;
@@ -461,7 +461,7 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
           if (ofs & 1) {
             root = regs + (ofs >> 1);
           } else {
-            root = (value *)(sp + ofs);
+            root = (caml_value *)(sp + ofs);
           }
           f (*root, root);
         }
@@ -499,7 +499,7 @@ uintnat (*caml_stack_usage_hook)(void) = NULL;
 uintnat caml_stack_usage (void)
 {
   uintnat sz;
-  sz = (value *) caml_top_of_stack - (value *) caml_bottom_of_stack;
+  sz = (caml_value *) caml_top_of_stack - (caml_value *) caml_bottom_of_stack;
   if (caml_stack_usage_hook != NULL)
     sz += (*caml_stack_usage_hook)();
   return sz;

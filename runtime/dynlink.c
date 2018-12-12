@@ -226,10 +226,10 @@ void caml_free_shared_libs(void)
 
 #define Handle_val(v) (*((void **) (v)))
 
-CAMLprim value caml_dynlink_open_lib(value mode, value filename)
+CAMLprim caml_value caml_dynlink_open_lib(caml_value mode, caml_value filename)
 {
   void * handle;
-  value result;
+  caml_value result;
   char_os * p;
 
   caml_gc_message(0x100, "Opening shared library %s\n",
@@ -245,17 +245,17 @@ CAMLprim value caml_dynlink_open_lib(value mode, value filename)
   return result;
 }
 
-CAMLprim value caml_dynlink_close_lib(value handle)
+CAMLprim caml_value caml_dynlink_close_lib(caml_value handle)
 {
   caml_dlclose(Handle_val(handle));
   return Val_unit;
 }
 
 /*#include <stdio.h>*/
-CAMLprim value caml_dynlink_lookup_symbol(value handle, value symbolname)
+CAMLprim caml_value caml_dynlink_lookup_symbol(caml_value handle, caml_value symbolname)
 {
   void * symb;
-  value result;
+  caml_value result;
   symb = caml_dlsym(Handle_val(handle), String_val(symbolname));
   /* printf("%s = 0x%lx\n", String_val(symbolname), symb);
      fflush(stdout); */
@@ -267,12 +267,12 @@ CAMLprim value caml_dynlink_lookup_symbol(value handle, value symbolname)
 
 #ifndef NATIVE_CODE
 
-CAMLprim value caml_dynlink_add_primitive(value handle)
+CAMLprim caml_value caml_dynlink_add_primitive(caml_value handle)
 {
   return Val_int(caml_ext_table_add(&caml_prim_table, Handle_val(handle)));
 }
 
-CAMLprim value caml_dynlink_get_current_libs(value unit)
+CAMLprim caml_value caml_dynlink_get_current_libs(caml_value unit)
 {
   CAMLparam0();
   CAMLlocal1(res);
@@ -280,7 +280,7 @@ CAMLprim value caml_dynlink_get_current_libs(value unit)
 
   res = caml_alloc_tuple(shared_libs.size);
   for (i = 0; i < shared_libs.size; i++) {
-    value v = caml_alloc_small(1, Abstract_tag);
+    caml_value v = caml_alloc_small(1, Abstract_tag);
     Handle_val(v) = shared_libs.contents[i];
     Store_field(res, i, v);
   }
@@ -289,13 +289,13 @@ CAMLprim value caml_dynlink_get_current_libs(value unit)
 
 #else
 
-value caml_dynlink_add_primitive(value handle)
+caml_value caml_dynlink_add_primitive(caml_value handle)
 {
   caml_invalid_argument("dynlink_add_primitive");
   return Val_unit; /* not reached */
 }
 
-value caml_dynlink_get_current_libs(value unit)
+caml_value caml_dynlink_get_current_libs(caml_value unit)
 {
   caml_invalid_argument("dynlink_get_current_libs");
   return Val_unit; /* not reached */

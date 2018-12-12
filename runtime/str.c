@@ -28,7 +28,7 @@
 #include "caml/misc.h"
 
 /* returns a number of bytes (chars) */
-CAMLexport mlsize_t caml_string_length(value s)
+CAMLexport mlsize_t caml_string_length(caml_value s)
 {
   mlsize_t temp;
   temp = Bosize_val(s) - 1;
@@ -36,8 +36,8 @@ CAMLexport mlsize_t caml_string_length(value s)
   return temp - Byte (s, temp);
 }
 
-/* returns a value that represents a number of bytes (chars) */
-CAMLprim value caml_ml_string_length(value s)
+/* returns a caml_value that represents a number of bytes (chars) */
+CAMLprim caml_value caml_ml_string_length(caml_value s)
 {
   mlsize_t temp;
   temp = Bosize_val(s) - 1;
@@ -45,12 +45,12 @@ CAMLprim value caml_ml_string_length(value s)
   return Val_long(temp - Byte (s, temp));
 }
 
-CAMLprim value caml_ml_bytes_length(value s)
+CAMLprim caml_value caml_ml_bytes_length(caml_value s)
 {
   return caml_ml_string_length(s);
 }
 
-CAMLexport int caml_string_is_c_safe (value s)
+CAMLexport int caml_string_is_c_safe (caml_value s)
 {
   return strlen(String_val(s)) == caml_string_length(s);
 }
@@ -59,7 +59,7 @@ CAMLexport int caml_string_is_c_safe (value s)
  * [caml_create_string] is deprecated,
  * use [caml_create_bytes] instead
  */
-CAMLprim value caml_create_string(value len)
+CAMLprim caml_value caml_create_string(caml_value len)
 {
   mlsize_t size = Long_val(len);
   if (size > Bsize_wsize (Max_wosize) - 1){
@@ -68,8 +68,8 @@ CAMLprim value caml_create_string(value len)
   return caml_alloc_string(size);
 }
 
-/* [len] is a value that represents a number of bytes (chars) */
-CAMLprim value caml_create_bytes(value len)
+/* [len] is a caml_value that represents a number of bytes (chars) */
+CAMLprim caml_value caml_create_bytes(caml_value len)
 {
   mlsize_t size = Long_val(len);
   if (size > Bsize_wsize (Max_wosize) - 1){
@@ -80,19 +80,19 @@ CAMLprim value caml_create_bytes(value len)
 
 
 
-CAMLprim value caml_string_get(value str, value index)
+CAMLprim caml_value caml_string_get(caml_value str, caml_value index)
 {
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= caml_string_length(str)) caml_array_bound_error();
   return Val_int(Byte_u(str, idx));
 }
 
-CAMLprim value caml_bytes_get(value str, value index)
+CAMLprim caml_value caml_bytes_get(caml_value str, caml_value index)
 {
   return caml_string_get(str, index);
 }
 
-CAMLprim value caml_bytes_set(value str, value index, value newval)
+CAMLprim caml_value caml_bytes_set(caml_value str, caml_value index, caml_value newval)
 {
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= caml_string_length(str)) caml_array_bound_error();
@@ -104,13 +104,13 @@ CAMLprim value caml_bytes_set(value str, value index, value newval)
  * [caml_string_set] is deprecated,
  * use [caml_bytes_set] instead
  */
-CAMLprim value caml_string_set(value str, value index, value newval)
+CAMLprim caml_value caml_string_set(caml_value str, caml_value index, caml_value newval)
 {
   return caml_bytes_set(str,index,newval);
 }
 
 
-CAMLprim value caml_string_get16(value str, value index)
+CAMLprim caml_value caml_string_get16(caml_value str, caml_value index)
 {
   intnat res;
   unsigned char b1, b2;
@@ -126,12 +126,12 @@ CAMLprim value caml_string_get16(value str, value index)
   return Val_int(res);
 }
 
-CAMLprim value caml_bytes_get16(value str, value index)
+CAMLprim caml_value caml_bytes_get16(caml_value str, caml_value index)
 {
   return caml_string_get16(str,index);
 }
 
-CAMLprim value caml_string_get32(value str, value index)
+CAMLprim caml_value caml_string_get32(caml_value str, caml_value index)
 {
   int32_t res;
   unsigned char b1, b2, b3, b4;
@@ -149,12 +149,12 @@ CAMLprim value caml_string_get32(value str, value index)
   return caml_copy_int32(res);
 }
 
-CAMLprim value caml_bytes_get32(value str, value index)
+CAMLprim caml_value caml_bytes_get32(caml_value str, caml_value index)
 {
   return caml_string_get32(str,index);
 }
 
-CAMLprim value caml_string_get64(value str, value index)
+CAMLprim caml_value caml_string_get64(caml_value str, caml_value index)
 {
   uint64_t res;
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
@@ -182,12 +182,12 @@ CAMLprim value caml_string_get64(value str, value index)
   return caml_copy_int64(res);
 }
 
-CAMLprim value caml_bytes_get64(value str, value index)
+CAMLprim caml_value caml_bytes_get64(caml_value str, caml_value index)
 {
   return caml_string_get64(str,index);
 }
 
-CAMLprim value caml_bytes_set16(value str, value index, value newval)
+CAMLprim caml_value caml_bytes_set16(caml_value str, caml_value index, caml_value newval)
 {
   unsigned char b1, b2;
   intnat val;
@@ -206,7 +206,7 @@ CAMLprim value caml_bytes_set16(value str, value index, value newval)
   return Val_unit;
 }
 
-CAMLprim value caml_bytes_set32(value str, value index, value newval)
+CAMLprim caml_value caml_bytes_set32(caml_value str, caml_value index, caml_value newval)
 {
   unsigned char b1, b2, b3, b4;
   intnat val;
@@ -231,7 +231,7 @@ CAMLprim value caml_bytes_set32(value str, value index, value newval)
   return Val_unit;
 }
 
-CAMLprim value caml_bytes_set64(value str, value index, value newval)
+CAMLprim caml_value caml_bytes_set64(caml_value str, caml_value index, caml_value newval)
 {
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   int64_t val;
@@ -268,10 +268,10 @@ CAMLprim value caml_bytes_set64(value str, value index, value newval)
   return Val_unit;
 }
 
-CAMLprim value caml_string_equal(value s1, value s2)
+CAMLprim caml_value caml_string_equal(caml_value s1, caml_value s2)
 {
   mlsize_t sz1, sz2;
-  value * p1, * p2;
+  caml_value * p1, * p2;
 
   if (s1 == s2) return Val_true;
   sz1 = Wosize_val(s1);
@@ -282,22 +282,22 @@ CAMLprim value caml_string_equal(value s1, value s2)
   return Val_true;
 }
 
-CAMLprim value caml_bytes_equal(value s1, value s2)
+CAMLprim caml_value caml_bytes_equal(caml_value s1, caml_value s2)
 {
   return caml_string_equal(s1,s2);
 }
 
-CAMLprim value caml_string_notequal(value s1, value s2)
+CAMLprim caml_value caml_string_notequal(caml_value s1, caml_value s2)
 {
   return Val_not(caml_string_equal(s1, s2));
 }
 
-CAMLprim value caml_bytes_notequal(value s1, value s2)
+CAMLprim caml_value caml_bytes_notequal(caml_value s1, caml_value s2)
 {
   return caml_string_notequal(s1,s2);
 }
 
-CAMLprim value caml_string_compare(value s1, value s2)
+CAMLprim caml_value caml_string_compare(caml_value s1, caml_value s2)
 {
   mlsize_t len1, len2;
   int res;
@@ -313,67 +313,67 @@ CAMLprim value caml_string_compare(value s1, value s2)
   return Val_int(0);
 }
 
-CAMLprim value caml_bytes_compare(value s1, value s2)
+CAMLprim caml_value caml_bytes_compare(caml_value s1, caml_value s2)
 {
   return caml_string_compare(s1,s2);
 }
 
-CAMLprim value caml_string_lessthan(value s1, value s2)
+CAMLprim caml_value caml_string_lessthan(caml_value s1, caml_value s2)
 {
   return caml_string_compare(s1, s2) < Val_int(0) ? Val_true : Val_false;
 }
 
-CAMLprim value caml_bytes_lessthan(value s1, value s2)
+CAMLprim caml_value caml_bytes_lessthan(caml_value s1, caml_value s2)
 {
   return caml_string_lessthan(s1,s2);
 }
 
 
-CAMLprim value caml_string_lessequal(value s1, value s2)
+CAMLprim caml_value caml_string_lessequal(caml_value s1, caml_value s2)
 {
   return caml_string_compare(s1, s2) <= Val_int(0) ? Val_true : Val_false;
 }
 
-CAMLprim value caml_bytes_lessequal(value s1, value s2)
+CAMLprim caml_value caml_bytes_lessequal(caml_value s1, caml_value s2)
 {
   return caml_string_lessequal(s1,s2);
 }
 
 
-CAMLprim value caml_string_greaterthan(value s1, value s2)
+CAMLprim caml_value caml_string_greaterthan(caml_value s1, caml_value s2)
 {
   return caml_string_compare(s1, s2) > Val_int(0) ? Val_true : Val_false;
 }
 
-CAMLprim value caml_bytes_greaterthan(value s1, value s2)
+CAMLprim caml_value caml_bytes_greaterthan(caml_value s1, caml_value s2)
 {
   return caml_string_greaterthan(s1,s2);
 }
 
-CAMLprim value caml_string_greaterequal(value s1, value s2)
+CAMLprim caml_value caml_string_greaterequal(caml_value s1, caml_value s2)
 {
   return caml_string_compare(s1, s2) >= Val_int(0) ? Val_true : Val_false;
 }
 
-CAMLprim value caml_bytes_greaterequal(value s1, value s2)
+CAMLprim caml_value caml_bytes_greaterequal(caml_value s1, caml_value s2)
 {
   return caml_string_greaterequal(s1,s2);
 }
 
-CAMLprim value caml_blit_bytes(value s1, value ofs1, value s2, value ofs2,
-                                value n)
+CAMLprim caml_value caml_blit_bytes(caml_value s1, caml_value ofs1, caml_value s2, caml_value ofs2,
+                                caml_value n)
 {
   memmove(&Byte(s2, Long_val(ofs2)), &Byte(s1, Long_val(ofs1)), Long_val(n));
   return Val_unit;
 }
 
-CAMLprim value caml_blit_string(value s1, value ofs1, value s2, value ofs2,
-                                value n)
+CAMLprim caml_value caml_blit_string(caml_value s1, caml_value ofs1, caml_value s2, caml_value ofs2,
+                                caml_value n)
 {
   return caml_blit_bytes (s1, ofs1, s2, ofs2, n);
 }
 
-CAMLprim value caml_fill_bytes(value s, value offset, value len, value init)
+CAMLprim caml_value caml_fill_bytes(caml_value s, caml_value offset, caml_value len, caml_value init)
 {
   memset(&Byte(s, Long_val(offset)), Int_val(init), Long_val(len));
   return Val_unit;
@@ -382,17 +382,17 @@ CAMLprim value caml_fill_bytes(value s, value offset, value len, value init)
 /**
  * [caml_fill_string] is deprecated, use [caml_fill_bytes] instead
  */
-CAMLprim value caml_fill_string(value s, value offset, value len, value init)
+CAMLprim caml_value caml_fill_string(caml_value s, caml_value offset, caml_value len, caml_value init)
 {
   return caml_fill_bytes (s, offset, len, init);
 }
 
-CAMLexport value caml_alloc_sprintf(const char * format, ...)
+CAMLexport caml_value caml_alloc_sprintf(const char * format, ...)
 {
   va_list args;
   char buf[128];
   int n;
-  value res;
+  caml_value res;
 
 #if !defined(_WIN32) || defined(_UCRT)
   /* C99-compliant implementation */
@@ -432,7 +432,7 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
      string.
      If "len" < "sz", a null terminator was appended, and "len" is returned.
      If "len" == "sz", no null termination, and "len" is returned.
-     If "len" > "sz", a negative value is returned. */
+     If "len" > "sz", a negative caml_value is returned. */
   n = _vsnprintf(buf, sizeof(buf), format, args);
   va_end(args);
   if (n >= 0 && n <= sizeof(buf)) {
@@ -463,12 +463,12 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
 #endif
 }
 
-CAMLprim value caml_string_of_bytes(value bv)
+CAMLprim caml_value caml_string_of_bytes(caml_value bv)
 {
   return bv;
 }
 
-CAMLprim value caml_bytes_of_string(value bv)
+CAMLprim caml_value caml_bytes_of_string(caml_value bv)
 {
   return bv;
 }

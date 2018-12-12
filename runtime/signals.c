@@ -125,7 +125,7 @@ CAMLexport void caml_enter_blocking_section(void)
 CAMLexport void caml_leave_blocking_section(void)
 {
   int saved_errno;
-  /* Save the value of errno (PR#5982). */
+  /* Save the caml_value of errno (PR#5982). */
   saved_errno = errno;
   caml_leave_blocking_section_hook ();
   caml_process_pending_signals();
@@ -134,12 +134,12 @@ CAMLexport void caml_leave_blocking_section(void)
 
 /* Execute a signal handler immediately */
 
-static value caml_signal_handlers = 0;
+static caml_value caml_signal_handlers = 0;
 
 void caml_execute_signal(int signal_number, int in_signal_handler)
 {
-  value res;
-  value handler;
+  caml_value res;
+  caml_value handler;
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   void* saved_spacetime_trie_node_ptr;
 #endif
@@ -336,7 +336,7 @@ CAMLexport int caml_rev_convert_signal_number(int signo)
 
 /* Installation of a signal handler (as per [Sys.signal]) */
 
-CAMLprim value caml_install_signal_handler(value signal_number, value action)
+CAMLprim caml_value caml_install_signal_handler(caml_value signal_number, caml_value action)
 {
   CAMLparam2 (signal_number, action);
   CAMLlocal1 (res);

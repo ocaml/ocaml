@@ -51,8 +51,8 @@ static int extern_flags;        /* logical or of some of the flags above */
 /* Trail mechanism to undo forwarding pointers put inside objects */
 
 struct trail_entry {
-  value obj;    /* address of object + initial color in low 2 bits */
-  value field0; /* initial contents of field 0 */
+  caml_value obj;    /* address of object + initial color in low 2 bits */
+  caml_value field0; /* initial contents of field 0 */
 };
 
 struct trail_block {
@@ -67,7 +67,7 @@ static struct trail_entry * extern_trail_cur, * extern_trail_limit;
 
 /* Stack for pending values to marshal */
 
-struct extern_item { value * v; mlsize_t count; };
+struct extern_item { caml_value * v; mlsize_t count; };
 
 #define EXTERN_STACK_INIT_SIZE 256
 #define EXTERN_STACK_MAX_SIZE (1024*1024*100)
@@ -153,7 +153,7 @@ static void extern_replay_trail(void)
   lim = extern_trail_cur;
   while (1) {
     for (ent = &(blk->entries[0]); ent < lim; ent++) {
-      value obj = ent->obj;
+      caml_value obj = ent->obj;
       color_t colornum = obj & 3;
       obj = obj & ~3;
       Hd_val(obj) = Coloredhd_hd(Hd_val(obj), colornum);
@@ -173,7 +173,7 @@ static void extern_replay_trail(void)
 /* Set forwarding pointer on an object and add corresponding entry
    to the trail. */
 
-static void extern_record_location(value obj)
+static void extern_record_location(caml_value obj)
 {
   header_t hdr;
 
@@ -192,7 +192,7 @@ static void extern_record_location(value obj)
   extern_trail_cur->field0 = Field(obj, 0);
   extern_trail_cur++;
   Hd_val(obj) = Bluehd_hd(hdr);
-  Field(obj, 0) = (value) obj_counter;
+  Field(obj, 0) = (caml_value) obj_counter;
   obj_counter++;
 }
 
@@ -383,11 +383,11 @@ static void writecode64(int code, intnat val)
 }
 #endif
 
-/* Marshal the given value in the output buffer */
+/* Marshal the given caml_value in the output buffer */
 
 int caml_extern_allow_out_of_heap = 0;
 
-static void extern_rec(value v)
+static void extern_rec(caml_value v)
 {
   struct code_fragment * cf;
   struct extern_item * sp;
@@ -419,7 +419,7 @@ static void extern_rec(value v)
     mlsize_t sz = Wosize_hd(hd);
 
     if (tag == Forward_tag) {
-      value f = Forward_val (v);
+      caml_value f = Forward_val (v);
       if (Is_block (f)
           && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
               || Tag_val (f) == Lazy_tag
@@ -528,7 +528,7 @@ static void extern_rec(value v)
       break;
     }
     case Abstract_tag:
-      extern_invalid_argument("output_value: abstract value (Abstract)");
+      extern_invalid_argument("output_value: abstract caml_value (Abstract)");
       break;
     case Infix_tag:
       writecode32(CODE_INFIXPOINTER, Infix_offset_hd(hd));
@@ -538,13 +538,13 @@ static void extern_rec(value v)
       uintnat sz_32, sz_64;
       char * size_header;
       char * ident = Custom_ops_val(v)->identifier;
-      void (*serialize)(value v, uintnat * bsize_32,
+      void (*serialize)(caml_value v, uintnat * bsize_32,
                         uintnat * bsize_64)
         = Custom_ops_val(v)->serialize;
       const struct custom_fixed_length* fixed_length
         = Custom_ops_val(v)->fixed_length;
       if (serialize == NULL)
-        extern_invalid_argument("output_value: abstract value (Custom)");
+        extern_invalid_argument("output_value: abstract caml_value (Custom)");
       if (fixed_length == NULL) {
         write(CODE_CUSTOM_LEN);
         writeblock(ident, strlen(ident) + 1);
@@ -572,7 +572,7 @@ static void extern_rec(value v)
       break;
     }
     default: {
-      value field0;
+      caml_value field0;
       if (tag < 16 && sz < 8) {
         write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
       } else {
@@ -616,7 +616,7 @@ static void extern_rec(value v)
     writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
     writeblock((const char *)cf->digest, 16);
   } else {
-    extern_invalid_argument("output_value: abstract value (outside heap)");
+    extern_invalid_argument("output_value: abstract caml_value (outside heap)");
   }
   next_item:
     /* Pop one more item to marshal, if any */
@@ -633,7 +633,7 @@ static void extern_rec(value v)
 
 static int extern_flag_values[] = { NO_SHARING, CLOSURES, COMPAT_32 };
 
-static intnat extern_value(value v, value flags,
+static intnat extern_value(caml_value v, caml_value flags,
                            /*out*/ char header[32],
                            /*out*/ int * header_len)
 {
@@ -682,7 +682,7 @@ static intnat extern_value(value v, value flags,
   return res_len;
 }
 
-void caml_output_val(struct channel *chan, value v, value flags)
+void caml_output_val(struct channel *chan, caml_value v, caml_value flags)
 {
   char header[32];
   int header_len;
@@ -705,7 +705,7 @@ void caml_output_val(struct channel *chan, value v, value flags)
   }
 }
 
-CAMLprim value caml_output_value(value vchan, value v, value flags)
+CAMLprim caml_value caml_output_value(caml_value vchan, caml_value v, caml_value flags)
 {
   CAMLparam3 (vchan, v, flags);
   struct channel * channel = Channel(vchan);
@@ -716,12 +716,12 @@ CAMLprim value caml_output_value(value vchan, value v, value flags)
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_output_value_to_bytes(value v, value flags)
+CAMLprim caml_value caml_output_value_to_bytes(caml_value v, caml_value flags)
 {
   char header[32];
   int header_len;
   intnat data_len, ofs;
-  value res;
+  caml_value res;
   struct output_block * blk, * nextblk;
 
   init_extern_output();
@@ -744,12 +744,12 @@ CAMLprim value caml_output_value_to_bytes(value v, value flags)
   return res;
 }
 
-CAMLprim value caml_output_value_to_string(value v, value flags)
+CAMLprim caml_value caml_output_value_to_string(caml_value v, caml_value flags)
 {
   return caml_output_value_to_bytes(v,flags);
 }
 
-CAMLexport intnat caml_output_value_to_block(value v, value flags,
+CAMLexport intnat caml_output_value_to_block(caml_value v, caml_value flags,
                                              char * buf, intnat len)
 {
   char header[32];
@@ -772,8 +772,8 @@ CAMLexport intnat caml_output_value_to_block(value v, value flags,
   return header_len + data_len;
 }
 
-CAMLprim value caml_output_value_to_buffer(value buf, value ofs, value len,
-                                           value v, value flags)
+CAMLprim caml_value caml_output_value_to_buffer(caml_value buf, caml_value ofs, caml_value len,
+                                           caml_value v, caml_value flags)
 {
   intnat l =
     caml_output_value_to_block(v, flags,
@@ -781,7 +781,7 @@ CAMLprim value caml_output_value_to_buffer(value buf, value ofs, value len,
   return Val_long(l);
 }
 
-CAMLexport void caml_output_value_to_malloc(value v, value flags,
+CAMLexport void caml_output_value_to_malloc(caml_value v, caml_value flags,
                                             /*out*/ char ** buf,
                                             /*out*/ intnat * len)
 {

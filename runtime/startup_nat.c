@@ -65,7 +65,7 @@ static void init_static(void)
        because pointers equal to caml_data_segments[i].end are static data. */
     if (caml_page_table_add(In_static_data,
                             caml_data_segments[i].begin,
-                            caml_data_segments[i].end + sizeof(value)) != 0)
+                            caml_data_segments[i].end + sizeof(caml_value)) != 0)
       caml_fatal_error("not enough memory for initial page table");
   }
 
@@ -90,7 +90,7 @@ static void init_static(void)
 struct longjmp_buffer caml_termination_jmpbuf;
 void (*caml_termination_hook)(void *) = NULL;
 
-extern value caml_start_program (void);
+extern caml_value caml_start_program (void);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
 #ifdef _WIN32
@@ -104,7 +104,7 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-value caml_startup_common(char_os **argv, int pooling)
+caml_value caml_startup_common(char_os **argv, int pooling)
 {
   char_os * exe_name, * proc_self_exe;
   char tos;
@@ -158,14 +158,14 @@ value caml_startup_common(char_os **argv, int pooling)
   return caml_start_program();
 }
 
-value caml_startup_exn(char_os **argv)
+caml_value caml_startup_exn(char_os **argv)
 {
   return caml_startup_common(argv, /* pooling */ 0);
 }
 
 void caml_startup(char_os **argv)
 {
-  value res = caml_startup_exn(argv);
+  caml_value res = caml_startup_exn(argv);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }
@@ -175,14 +175,14 @@ void caml_main(char_os **argv)
   caml_startup(argv);
 }
 
-value caml_startup_pooled_exn(char_os **argv)
+caml_value caml_startup_pooled_exn(char_os **argv)
 {
   return caml_startup_common(argv, /* pooling */ 1);
 }
 
 void caml_startup_pooled(char_os **argv)
 {
-  value res = caml_startup_pooled_exn(argv);
+  caml_value res = caml_startup_pooled_exn(argv);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }

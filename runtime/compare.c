@@ -29,7 +29,7 @@
 
 /* Structural comparison on trees. */
 
-struct compare_item { value * v1, * v2; mlsize_t count; };
+struct compare_item { caml_value * v1, * v2; mlsize_t count; };
 
 #define COMPARE_STACK_INIT_SIZE 8
 #define COMPARE_STACK_MIN_ALLOC_SIZE 32
@@ -91,9 +91,9 @@ static struct compare_item * compare_resize_stack(struct compare_stack* stk,
 
 
 static intnat do_compare_val(struct compare_stack* stk,
-                             value v1, value v2, int total);
+                             caml_value v1, caml_value v2, int total);
 
-static intnat compare_val(value v1, value v2, int total)
+static intnat compare_val(caml_value v1, caml_value v2, int total)
 {
   struct compare_stack stk;
   intnat res;
@@ -110,16 +110,16 @@ static intnat compare_val(value v1, value v2, int total)
 #define LESS -1
 #define EQUAL 0
 #define GREATER 1
-#define UNORDERED ((intnat)1 << (8 * sizeof(value) - 1))
+#define UNORDERED ((intnat)1 << (8 * sizeof(caml_value) - 1))
 
-/* The return value of compare_val is as follows:
+/* The return caml_value of compare_val is as follows:
       > 0                 v1 is greater than v2
       0                   v1 is equal to v2
       < 0 and > UNORDERED v1 is less than v2
       UNORDERED           v1 and v2 cannot be compared */
 
 static intnat do_compare_val(struct compare_stack* stk,
-                             value v1, value v2, int total)
+                             caml_value v1, caml_value v2, int total)
 {
   struct compare_item * sp;
   tag_t t1, t2;
@@ -142,7 +142,7 @@ static intnat do_compare_val(struct compare_stack* stk,
           continue;
         case Custom_tag: {
           int res;
-          int (*compare)(value v1, value v2) = Custom_ops_val(v2)->compare_ext;
+          int (*compare)(caml_value v1, caml_value v2) = Custom_ops_val(v2)->compare_ext;
           if (compare == NULL) break;  /* for backward compatibility */
           caml_compare_unordered = 0;
           res = compare(v1, v2);
@@ -165,7 +165,7 @@ static intnat do_compare_val(struct compare_stack* stk,
           continue;
         case Custom_tag: {
           int res;
-          int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare_ext;
+          int (*compare)(caml_value v1, caml_value v2) = Custom_ops_val(v1)->compare_ext;
           if (compare == NULL) break;  /* for backward compatibility */
           caml_compare_unordered = 0;
           res = compare(v1, v2);
@@ -278,7 +278,7 @@ static intnat do_compare_val(struct compare_stack* stk,
     }
     case Custom_tag: {
       int res;
-      int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare;
+      int (*compare)(caml_value v1, caml_value v2) = Custom_ops_val(v1)->compare;
       /* Hardening against comparisons between different types */
       if (compare != Custom_ops_val(v2)->compare) {
         return strcmp(Custom_ops_val(v1)->identifier,
@@ -324,7 +324,7 @@ static intnat do_compare_val(struct compare_stack* stk,
   }
 }
 
-CAMLprim value caml_compare(value v1, value v2)
+CAMLprim caml_value caml_compare(caml_value v1, caml_value v2)
 {
   intnat res = compare_val(v1, v2, 1);
   /* Free stack if needed */
@@ -336,37 +336,37 @@ CAMLprim value caml_compare(value v1, value v2)
     return Val_int(EQUAL);
 }
 
-CAMLprim value caml_equal(value v1, value v2)
+CAMLprim caml_value caml_equal(caml_value v1, caml_value v2)
 {
   intnat res = compare_val(v1, v2, 0);
   return Val_int(res == 0);
 }
 
-CAMLprim value caml_notequal(value v1, value v2)
+CAMLprim caml_value caml_notequal(caml_value v1, caml_value v2)
 {
   intnat res = compare_val(v1, v2, 0);
   return Val_int(res != 0);
 }
 
-CAMLprim value caml_lessthan(value v1, value v2)
+CAMLprim caml_value caml_lessthan(caml_value v1, caml_value v2)
 {
   intnat res = compare_val(v1, v2, 0);
   return Val_int(res < 0 && res != UNORDERED);
 }
 
-CAMLprim value caml_lessequal(value v1, value v2)
+CAMLprim caml_value caml_lessequal(caml_value v1, caml_value v2)
 {
   intnat res = compare_val(v1, v2, 0);
   return Val_int(res <= 0 && res != UNORDERED);
 }
 
-CAMLprim value caml_greaterthan(value v1, value v2)
+CAMLprim caml_value caml_greaterthan(caml_value v1, caml_value v2)
 {
   intnat res = compare_val(v1, v2, 0);
   return Val_int(res > 0);
 }
 
-CAMLprim value caml_greaterequal(value v1, value v2)
+CAMLprim caml_value caml_greaterequal(caml_value v1, caml_value v2)
 {
   intnat res = compare_val(v1, v2, 0);
   return Val_int(res >= 0);

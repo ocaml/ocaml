@@ -30,34 +30,34 @@
 #include "caml/prims.h"
 #include "caml/spacetime.h"
 
-/* [size] is a value encoding a number of bytes */
-CAMLprim value caml_static_alloc(value size)
+/* [size] is a caml_value encoding a number of bytes */
+CAMLprim caml_value caml_static_alloc(caml_value size)
 {
-  return (value) caml_stat_alloc((asize_t) Long_val(size));
+  return (caml_value) caml_stat_alloc((asize_t) Long_val(size));
 }
 
-CAMLprim value caml_static_free(value blk)
+CAMLprim caml_value caml_static_free(caml_value blk)
 {
   caml_stat_free((void *) blk);
   return Val_unit;
 }
 
-CAMLprim value caml_static_resize(value blk, value new_size)
+CAMLprim caml_value caml_static_resize(caml_value blk, caml_value new_size)
 {
-  return (value) caml_stat_resize((char *) blk, (asize_t) Long_val(new_size));
+  return (caml_value) caml_stat_resize((char *) blk, (asize_t) Long_val(new_size));
 }
 
 /* unused since GPR#427 */
-CAMLprim value caml_obj_is_block(value arg)
+CAMLprim caml_value caml_obj_is_block(caml_value arg)
 {
   return Val_bool(Is_block(arg));
 }
 
-CAMLprim value caml_obj_tag(value arg)
+CAMLprim caml_value caml_obj_tag(caml_value arg)
 {
   if (Is_long (arg)){
     return Val_int (1000);   /* int_tag */
-  }else if ((long) arg & (sizeof (value) - 1)){
+  }else if ((long) arg & (sizeof (caml_value) - 1)){
     return Val_int (1002);   /* unaligned_tag */
   }else if (Is_in_value_area (arg)){
     return Val_int(Tag_val(arg));
@@ -66,16 +66,16 @@ CAMLprim value caml_obj_tag(value arg)
   }
 }
 
-CAMLprim value caml_obj_set_tag (value arg, value new_tag)
+CAMLprim caml_value caml_obj_set_tag (caml_value arg, caml_value new_tag)
 {
   Tag_val (arg) = Int_val (new_tag);
   return Val_unit;
 }
 
-/* [size] is a value encoding a number of blocks */
-CAMLprim value caml_obj_block(value tag, value size)
+/* [size] is a caml_value encoding a number of blocks */
+CAMLprim caml_value caml_obj_block(caml_value tag, caml_value size)
 {
-  value res;
+  caml_value res;
   mlsize_t sz, i;
   tag_t tg;
 
@@ -90,7 +90,7 @@ CAMLprim value caml_obj_block(value tag, value size)
 }
 
 /* Spacetime profiling assumes that this function is only called from OCaml. */
-CAMLprim value caml_obj_dup(value arg)
+CAMLprim caml_value caml_obj_dup(caml_value arg)
 {
   CAMLparam1 (arg);
   CAMLlocal1 (res);
@@ -102,7 +102,7 @@ CAMLprim value caml_obj_dup(value arg)
   tg = Tag_val(arg);
   if (tg >= No_scan_tag) {
     res = caml_alloc(sz, tg);
-    memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(value));
+    memcpy(Bp_val(res), Bp_val(arg), sz * sizeof(caml_value));
   } else if (sz <= Max_young_wosize) {
     uintnat profinfo;
     Get_my_profinfo_with_cached_backtrace(profinfo, sz);
@@ -128,10 +128,10 @@ CAMLprim value caml_obj_dup(value arg)
    before the block is reallocated (since there must be a minor
    collection within each major cycle).
 
-   [newsize] is a value encoding a number of fields (words, except
+   [newsize] is a caml_value encoding a number of fields (words, except
    for float arrays on 32-bit architectures).
 */
-CAMLprim value caml_obj_truncate (value v, value newsize)
+CAMLprim caml_value caml_obj_truncate (caml_value v, caml_value newsize)
 {
   mlsize_t new_wosize = Long_val (newsize);
   header_t hd = Hd_val (v);
@@ -167,7 +167,7 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
   return Val_unit;
 }
 
-CAMLprim value caml_obj_add_offset (value v, value offset)
+CAMLprim caml_value caml_obj_add_offset (caml_value v, caml_value offset)
 {
   return v + (unsigned long) Int32_val (offset);
 }
@@ -177,7 +177,7 @@ CAMLprim value caml_obj_add_offset (value v, value offset)
    to the GC.
  */
 
-CAMLprim value caml_lazy_follow_forward (value v)
+CAMLprim caml_value caml_lazy_follow_forward (caml_value v)
 {
   if (Is_block (v) && Is_in_value_area(v)
       && Tag_val (v) == Forward_tag){
@@ -187,7 +187,7 @@ CAMLprim value caml_lazy_follow_forward (value v)
   }
 }
 
-CAMLprim value caml_lazy_make_forward (value v)
+CAMLprim caml_value caml_lazy_make_forward (caml_value v)
 {
   CAMLparam1 (v);
   CAMLlocal1 (res);
@@ -201,9 +201,9 @@ CAMLprim value caml_lazy_make_forward (value v)
    See also GETPUBMET in interp.c
  */
 
-CAMLprim value caml_get_public_method (value obj, value tag)
+CAMLprim caml_value caml_get_public_method (caml_value obj, caml_value tag)
 {
-  value meths = Field (obj, 0);
+  caml_value meths = Field (obj, 0);
   int li = 3, hi = Field(meths,0), mi;
   while (li < hi) {
     mi = ((li+hi) >> 1) | 1;
@@ -222,7 +222,7 @@ CAMLprim value caml_get_public_method (value obj, value tag)
 #else
 #define MARK 0
 #endif
-value caml_cache_public_method (value meths, value tag, value *cache)
+caml_value caml_cache_public_method (caml_value meths, caml_value tag, caml_value *cache)
 {
   int li = 3, hi = Field(meths,0), mi;
   while (li < hi) {
@@ -230,15 +230,15 @@ value caml_cache_public_method (value meths, value tag, value *cache)
     if (tag < Field(meths,mi)) hi = mi-2;
     else li = mi;
   }
-  *cache = (li-3)*sizeof(value) + MARK;
+  *cache = (li-3)*sizeof(caml_value) + MARK;
   return Field (meths, li-1);
 }
 
-value caml_cache_public_method2 (value *meths, value tag, value *cache)
+caml_value caml_cache_public_method2 (caml_value *meths, caml_value tag, caml_value *cache)
 {
-  value ofs = *cache & meths[1];
-  if (*(value*)(((char*)(meths+3)) + ofs - MARK) == tag)
-    return *(value*)(((char*)(meths+2)) + ofs - MARK);
+  caml_value ofs = *cache & meths[1];
+  if (*(caml_value*)(((char*)(meths+3)) + ofs - MARK) == tag)
+    return *(caml_value*)(((char*)(meths+2)) + ofs - MARK);
   {
     int li = 3, hi = meths[0], mi;
     while (li < hi) {
@@ -246,41 +246,41 @@ value caml_cache_public_method2 (value *meths, value tag, value *cache)
       if (tag < meths[mi]) hi = mi-2;
       else li = mi;
     }
-    *cache = (li-3)*sizeof(value) + MARK;
+    *cache = (li-3)*sizeof(caml_value) + MARK;
     return meths[li-1];
   }
 }
 #endif /*CAML_JIT*/
 
-static value oo_last_id = Val_int(0);
+static caml_value oo_last_id = Val_int(0);
 
-CAMLprim value caml_set_oo_id (value obj) {
+CAMLprim caml_value caml_set_oo_id (caml_value obj) {
   Field(obj, 1) = oo_last_id;
   oo_last_id += 2;
   return obj;
 }
 
-CAMLprim value caml_fresh_oo_id (value v) {
+CAMLprim caml_value caml_fresh_oo_id (caml_value v) {
   v = oo_last_id;
   oo_last_id += 2;
   return v;
 }
 
-CAMLprim value caml_int_as_pointer (value n) {
+CAMLprim caml_value caml_int_as_pointer (caml_value n) {
   return n - 1;
 }
 
 /* Compute how many words in the heap are occupied by blocks accessible
-   from a given value */
+   from a given caml_value */
 
 #define ENTRIES_PER_QUEUE_CHUNK 4096
 struct queue_chunk {
   struct queue_chunk *next;
-  value entries[ENTRIES_PER_QUEUE_CHUNK];
+  caml_value entries[ENTRIES_PER_QUEUE_CHUNK];
 };
 
 
-CAMLprim value caml_obj_reachable_words(value v)
+CAMLprim caml_value caml_obj_reachable_words(caml_value v)
 {
   static struct queue_chunk first_chunk;
   struct queue_chunk *read_chunk, *write_chunk;
@@ -339,7 +339,7 @@ CAMLprim value caml_obj_reachable_words(value v)
     if (Tag_hd(hd) < No_scan_tag) {
       /* Push the interesting fields on the queue */
       for (i = 0; i < sz; i++) {
-        value v2 = Field(v, i);
+        caml_value v2 = Field(v, i);
         if (Is_block(v2) && Is_in_heap_or_young(v2)) {
           if (Tag_hd(Hd_val(v2)) == Infix_tag){
             v2 -= Infix_offset_hd(Hd_val(v2));

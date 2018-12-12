@@ -27,9 +27,9 @@
 #define ERRCODE 256
 
 struct parser_tables {    /* Mirrors parse_tables in ../stdlib/parsing.mli */
-  value actions;
-  value transl_const;
-  value transl_block;
+  caml_value actions;
+  caml_value transl_const;
+  caml_value transl_block;
   char * lhs;
   char * len;
   char * defred;
@@ -37,31 +37,31 @@ struct parser_tables {    /* Mirrors parse_tables in ../stdlib/parsing.mli */
   char * sindex;
   char * rindex;
   char * gindex;
-  value tablesize;
+  caml_value tablesize;
   char * table;
   char * check;
-  value error_function;
+  caml_value error_function;
   char * names_const;
   char * names_block;
 };
 
 struct parser_env {       /* Mirrors parser_env in ../stdlib/parsing.ml */
-  value s_stack;
-  value v_stack;
-  value symb_start_stack;
-  value symb_end_stack;
-  value stacksize;
-  value stackbase;
-  value curr_char;
-  value lval;
-  value symb_start;
-  value symb_end;
-  value asp;
-  value rule_len;
-  value rule_number;
-  value sp;
-  value state;
-  value errflag;
+  caml_value s_stack;
+  caml_value v_stack;
+  caml_value symb_start_stack;
+  caml_value symb_end_stack;
+  caml_value stacksize;
+  caml_value stackbase;
+  caml_value curr_char;
+  caml_value lval;
+  caml_value symb_start;
+  caml_value symb_end;
+  caml_value asp;
+  caml_value rule_len;
+  caml_value rule_number;
+  caml_value sp;
+  caml_value state;
+  caml_value errflag;
 };
 
 #if defined(ARCH_BIG_ENDIAN) || SIZEOF_SHORT != 2
@@ -115,9 +115,9 @@ static char * token_name(char * names, int number)
   return names;
 }
 
-static void print_token(struct parser_tables *tables, int state, value tok)
+static void print_token(struct parser_tables *tables, int state, caml_value tok)
 {
-  value v;
+  caml_value v;
 
   if (Is_long(tok)) {
     fprintf(stderr, "State %d: read token %s\n",
@@ -140,8 +140,8 @@ static void print_token(struct parser_tables *tables, int state, value tok)
 
 /* The pushdown automata */
 
-CAMLprim value caml_parse_engine(struct parser_tables *tables,
-                                 struct parser_env *env, value cmd, value arg)
+CAMLprim caml_value caml_parse_engine(struct parser_tables *tables,
+                                 struct parser_env *env, caml_value cmd, caml_value arg)
 {
   int state;
   mlsize_t sp, asp;
@@ -296,9 +296,9 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
 
 /* Control printing of debugging info */
 
-CAMLprim value caml_set_parser_trace(value flag)
+CAMLprim caml_value caml_set_parser_trace(caml_value flag)
 {
-  value oldflag = Val_bool(caml_parser_trace);
+  caml_value oldflag = Val_bool(caml_parser_trace);
   caml_parser_trace = Bool_val(flag);
   return oldflag;
 }

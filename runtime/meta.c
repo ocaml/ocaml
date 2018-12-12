@@ -35,7 +35,7 @@
 
 #ifndef NATIVE_CODE
 
-CAMLprim value caml_get_global_data(value unit)
+CAMLprim caml_value caml_get_global_data(caml_value unit)
 {
   return caml_global_data;
 }
@@ -43,7 +43,7 @@ CAMLprim value caml_get_global_data(value unit)
 char * caml_section_table = NULL;
 asize_t caml_section_table_size;
 
-CAMLprim value caml_get_section_table(value unit)
+CAMLprim caml_value caml_get_section_table(caml_value unit)
 {
   if (caml_section_table == NULL) caml_raise_not_found();
   return caml_input_value_from_block(caml_section_table,
@@ -58,7 +58,7 @@ struct bytecode {
 
 /* Convert a bytes array (= LongString.t) to a contiguous buffer.
    The result is allocated with caml_stat_alloc */
-static char* buffer_of_bytes_array(value ls, asize_t *len)
+static char* buffer_of_bytes_array(caml_value ls, asize_t *len)
 {
   CAMLparam1(ls);
   CAMLlocal1(s);
@@ -85,9 +85,9 @@ static char* buffer_of_bytes_array(value ls, asize_t *len)
   CAMLreturnT (char*, ret);
 }
 
-CAMLprim value caml_reify_bytecode(value ls_prog,
-                                   value debuginfo,
-                                   value digest_opt)
+CAMLprim caml_value caml_reify_bytecode(caml_value ls_prog,
+                                   caml_value debuginfo,
+                                   caml_value digest_opt)
 {
   CAMLparam3(ls_prog, debuginfo, digest_opt);
   CAMLlocal3(clos, bytecode, retval);
@@ -132,7 +132,7 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
    needed (before freeing it) - this might be useful for a JIT
    implementation */
 
-CAMLprim value caml_static_release_bytecode(value bc)
+CAMLprim caml_value caml_static_release_bytecode(caml_value bc)
 {
   code_t prog;
   asize_t len;
@@ -166,7 +166,7 @@ CAMLprim value caml_static_release_bytecode(value bc)
   return Val_unit;
 }
 
-CAMLprim value caml_register_code_fragment(value prog, value len, value digest)
+CAMLprim caml_value caml_register_code_fragment(caml_value prog, caml_value len, caml_value digest)
 {
   struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
   cf->code_start = (char *) prog;
@@ -177,10 +177,10 @@ CAMLprim value caml_register_code_fragment(value prog, value len, value digest)
   return Val_unit;
 }
 
-CAMLprim value caml_realloc_global(value size)
+CAMLprim caml_value caml_realloc_global(caml_value size)
 {
   mlsize_t requested_size, actual_size, i;
-  value new_global_data;
+  caml_value new_global_data;
 
   requested_size = Long_val(size);
   actual_size = Wosize_val(caml_global_data);
@@ -200,12 +200,12 @@ CAMLprim value caml_realloc_global(value size)
   return Val_unit;
 }
 
-CAMLprim value caml_get_current_environment(value unit)
+CAMLprim caml_value caml_get_current_environment(caml_value unit)
 {
   return *caml_extern_sp;
 }
 
-CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
+CAMLprim caml_value caml_invoke_traced_function(caml_value codeptr, caml_value env, caml_value arg)
 {
   /* Stack layout on entry:
        return frame into instrument_closure function
@@ -230,7 +230,7 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
        arg2 to call_original_code (env)
        saved env */
 
-  value * osp, * nsp;
+  caml_value * osp, * nsp;
   int i;
 
   osp = caml_extern_sp;
@@ -248,47 +248,47 @@ CAMLprim value caml_invoke_traced_function(value codeptr, value env, value arg)
 
 /* Dummy definitions to support compilation of ocamlc.opt */
 
-value caml_get_global_data(value unit)
+caml_value caml_get_global_data(caml_value unit)
 {
   caml_invalid_argument("Meta.get_global_data");
   return Val_unit; /* not reached */
 }
 
-value caml_get_section_table(value unit)
+caml_value caml_get_section_table(caml_value unit)
 {
   caml_invalid_argument("Meta.get_section_table");
   return Val_unit; /* not reached */
 }
 
-value caml_realloc_global(value size)
+caml_value caml_realloc_global(caml_value size)
 {
   caml_invalid_argument("Meta.realloc_global");
   return Val_unit; /* not reached */
 }
 
-value caml_invoke_traced_function(value codeptr, value env, value arg)
+caml_value caml_invoke_traced_function(caml_value codeptr, caml_value env, caml_value arg)
 {
   caml_invalid_argument("Meta.invoke_traced_function");
   return Val_unit; /* not reached */
 }
 
-value caml_reify_bytecode(value prog, value len)
+caml_value caml_reify_bytecode(caml_value prog, caml_value len)
 {
   caml_invalid_argument("Meta.reify_bytecode");
   return Val_unit; /* not reached */
 }
 
-value caml_static_release_bytecode(value prog, value len)
+caml_value caml_static_release_bytecode(caml_value prog, caml_value len)
 {
   caml_invalid_argument("Meta.static_release_bytecode");
   return Val_unit; /* not reached */
 }
 
-value * caml_stack_low;
-value * caml_stack_high;
-value * caml_stack_threshold;
-value * caml_extern_sp;
-value * caml_trapsp;
+caml_value * caml_stack_low;
+caml_value * caml_stack_high;
+caml_value * caml_stack_threshold;
+caml_value * caml_extern_sp;
+caml_value * caml_trapsp;
 int caml_callback_depth;
 int volatile caml_something_to_do;
 void (* volatile caml_async_action_hook)(void);

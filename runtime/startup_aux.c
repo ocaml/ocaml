@@ -141,7 +141,7 @@ int caml_startup_aux(int pooling)
 
 static void call_registered_value(char* name)
 {
-  value *f = caml_named_value(name);
+  caml_value *f = caml_named_value(name);
   if (f != NULL)
     caml_callback_exn(*f, Val_unit);
 }

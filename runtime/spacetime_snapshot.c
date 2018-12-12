@@ -46,21 +46,21 @@
 
 typedef struct {
   /* (GC header here.) */
-  value minor_words;
-  value promoted_words;
-  value major_words;
-  value minor_collections;
-  value major_collections;
-  value heap_words;
-  value heap_chunks;
-  value compactions;
-  value top_heap_words;
+  caml_value minor_words;
+  caml_value promoted_words;
+  caml_value major_words;
+  caml_value minor_collections;
+  caml_value major_collections;
+  caml_value heap_words;
+  caml_value heap_chunks;
+  caml_value compactions;
+  caml_value top_heap_words;
 } gc_stats;
 
 typedef struct {
-  value profinfo;
-  value num_blocks;
-  value num_words_including_headers;
+  caml_value profinfo;
+  caml_value num_blocks;
+  caml_value num_words_including_headers;
 } snapshot_entry;
 
 typedef struct {
@@ -70,12 +70,12 @@ typedef struct {
 
 typedef struct {
   /* (GC header here.) */
-  value time;
-  value gc_stats;
-  value entries;
-  value words_scanned;
-  value words_scanned_with_profinfo;
-  value total_allocations;
+  caml_value time;
+  caml_value gc_stats;
+  caml_value entries;
+  caml_value words_scanned;
+  caml_value words_scanned_with_profinfo;
+  caml_value total_allocations;
 } snapshot;
 
 typedef struct {
@@ -83,26 +83,26 @@ typedef struct {
   uintnat num_words_including_headers;
 } raw_snapshot_entry;
 
-static value allocate_outside_heap_with_tag(mlsize_t size_in_bytes, tag_t tag)
+static caml_value allocate_outside_heap_with_tag(mlsize_t size_in_bytes, tag_t tag)
 {
   /* CR-soon mshinwell: this function should live somewhere else */
   header_t* block;
 
-  CAMLassert(size_in_bytes % sizeof(value) == 0);
+  CAMLassert(size_in_bytes % sizeof(caml_value) == 0);
   block = caml_stat_alloc(sizeof(header_t) + size_in_bytes);
-  *block = Make_header(size_in_bytes / sizeof(value), tag, Caml_black);
-  return (value) &block[1];
+  *block = Make_header(size_in_bytes / sizeof(caml_value), tag, Caml_black);
+  return (caml_value) &block[1];
 }
 
-static value allocate_outside_heap(mlsize_t size_in_bytes)
+static caml_value allocate_outside_heap(mlsize_t size_in_bytes)
 {
   CAMLassert(size_in_bytes > 0);
   return allocate_outside_heap_with_tag(size_in_bytes, 0);
 }
 
-static value take_gc_stats(void)
+static caml_value take_gc_stats(void)
 {
-  value v_stats;
+  caml_value v_stats;
   gc_stats* stats;
 
   v_stats = allocate_outside_heap(sizeof(gc_stats));
@@ -115,22 +115,22 @@ static value take_gc_stats(void)
              + ((uintnat) caml_allocated_words));
   stats->minor_collections = Val_long(caml_stat_minor_collections);
   stats->major_collections = Val_long(caml_stat_major_collections);
-  stats->heap_words = Val_long(caml_stat_heap_wsz / sizeof(value));
+  stats->heap_words = Val_long(caml_stat_heap_wsz / sizeof(caml_value));
   stats->heap_chunks = Val_long(caml_stat_heap_chunks);
   stats->compactions = Val_long(caml_stat_compactions);
-  stats->top_heap_words = Val_long(caml_stat_top_heap_wsz / sizeof(value));
+  stats->top_heap_words = Val_long(caml_stat_top_heap_wsz / sizeof(caml_value));
 
   return v_stats;
 }
 
-static value get_total_allocations(void)
+static caml_value get_total_allocations(void)
 {
-  value v_total_allocations = Val_unit;
+  caml_value v_total_allocations = Val_unit;
   allocation_point* total = caml_all_allocation_points;
 
   while (total != NULL) {
-    value v_total;
-    v_total = allocate_outside_heap_with_tag(3 * sizeof(value), 0);
+    caml_value v_total;
+    v_total = allocate_outside_heap_with_tag(3 * sizeof(caml_value), 0);
 
     /* [v_total] is of type [Raw_spacetime_lib.total_allocations]. */
     Field(v_total, 0) = Val_long(Profinfo_hd(total->profinfo));
@@ -151,17 +151,17 @@ static value get_total_allocations(void)
   return v_total_allocations;
 }
 
-static value take_snapshot(double time_override, int use_time_override)
+static caml_value take_snapshot(double time_override, int use_time_override)
 {
-  value v_snapshot;
+  caml_value v_snapshot;
   snapshot* heap_snapshot;
-  value v_entries;
+  caml_value v_entries;
   snapshot_entries* entries;
   char* chunk;
-  value gc_stats;
+  caml_value gc_stats;
   uintnat index;
   uintnat target_index;
-  value v_time;
+  caml_value v_time;
   double time;
   uintnat profinfo;
   uintnat num_distinct_profinfos;
@@ -169,7 +169,7 @@ static value take_snapshot(double time_override, int use_time_override)
   static raw_snapshot_entry* raw_entries = NULL;
   uintnat words_scanned = 0;
   uintnat words_scanned_with_profinfo = 0;
-  value v_total_allocations;
+  caml_value v_total_allocations;
 
   if (!use_time_override) {
     time = caml_sys_time_unboxed(Val_unit);
@@ -256,7 +256,7 @@ static value take_snapshot(double time_override, int use_time_override)
     v_entries = Atom(0);
   }
 
-  CAMLassert(sizeof(double) == sizeof(value));
+  CAMLassert(sizeof(double) == sizeof(caml_value));
   v_time = allocate_outside_heap_with_tag(sizeof(double), Double_tag);
   Store_double_val(v_time, time);
 
@@ -280,8 +280,8 @@ static value take_snapshot(double time_override, int use_time_override)
 void caml_spacetime_save_snapshot (struct channel *chan, double time_override,
                                    int use_time_override)
 {
-  value v_snapshot;
-  value v_total_allocations;
+  caml_value v_snapshot;
+  caml_value v_total_allocations;
   snapshot* heap_snapshot;
 
   Lock(chan);
@@ -304,7 +304,7 @@ void caml_spacetime_save_snapshot (struct channel *chan, double time_override,
   }
   v_total_allocations = heap_snapshot->total_allocations;
   while (v_total_allocations != Val_unit) {
-    value next = Field(v_total_allocations, 2);
+    caml_value next = Field(v_total_allocations, 2);
     caml_stat_free(Hp_val(v_total_allocations));
     v_total_allocations = next;
   }
@@ -312,7 +312,7 @@ void caml_spacetime_save_snapshot (struct channel *chan, double time_override,
   caml_stat_free(Hp_val(v_snapshot));
 }
 
-CAMLprim value caml_spacetime_take_snapshot(value v_time_opt, value v_channel)
+CAMLprim caml_value caml_spacetime_take_snapshot(caml_value v_time_opt, caml_value v_channel)
 {
   struct channel * channel = Channel(v_channel);
   double time_override = 0.0;
@@ -333,9 +333,9 @@ extern struct custom_operations caml_int64_ops;  /* ints.c */
 static value
 allocate_int64_outside_heap(uint64_t i)
 {
-  value v;
+  caml_value v;
 
-  v = allocate_outside_heap_with_tag(2 * sizeof(value), Custom_tag);
+  v = allocate_outside_heap_with_tag(2 * sizeof(caml_value), Custom_tag);
   Custom_ops_val(v) = &caml_int64_ops;
   Int64_val(v) = i;
 
@@ -347,11 +347,11 @@ copy_string_outside_heap(char const *s)
 {
   int len;
   mlsize_t wosize, offset_index;
-  value result;
+  caml_value result;
 
   len = strlen(s);
-  wosize = (len + sizeof (value)) / sizeof (value);
-  result = allocate_outside_heap_with_tag(wosize * sizeof(value), String_tag);
+  wosize = (len + sizeof (caml_value)) / sizeof (caml_value);
+  result = allocate_outside_heap_with_tag(wosize * sizeof(caml_value), String_tag);
 
   Field (result, wosize - 1) = 0;
   offset_index = Bsize_wsize (wosize) - 1;
@@ -364,27 +364,27 @@ copy_string_outside_heap(char const *s)
 static value
 allocate_loc_outside_heap(struct caml_loc_info li)
 {
-  value result;
+  caml_value result;
 
   if (li.loc_valid) {
-    result = allocate_outside_heap_with_tag(5 * sizeof(value), 0);
+    result = allocate_outside_heap_with_tag(5 * sizeof(caml_value), 0);
     Field(result, 0) = Val_bool(li.loc_is_raise);
     Field(result, 1) = copy_string_outside_heap(li.loc_filename);
     Field(result, 2) = Val_int(li.loc_lnum);
     Field(result, 3) = Val_int(li.loc_startchr);
     Field(result, 4) = Val_int(li.loc_endchr);
   } else {
-    result = allocate_outside_heap_with_tag(sizeof(value), 1);
+    result = allocate_outside_heap_with_tag(sizeof(caml_value), 1);
     Field(result, 0) = Val_bool(li.loc_is_raise);
   }
 
   return result;
 }
 
-value caml_spacetime_timestamp(double time_override, int use_time_override)
+caml_value caml_spacetime_timestamp(double time_override, int use_time_override)
 {
   double time;
-  value v_time;
+  caml_value v_time;
 
   if (!use_time_override) {
     time = caml_sys_time_unboxed(Val_unit);
@@ -399,11 +399,11 @@ value caml_spacetime_timestamp(double time_override, int use_time_override)
   return v_time;
 }
 
-value caml_spacetime_frame_table(void)
+caml_value caml_spacetime_frame_table(void)
 {
   /* Flatten the frame table into a single associative list. */
 
-  value list = Val_long(0);  /* the empty list */
+  caml_value list = Val_long(0);  /* the empty list */
   uintnat i;
 
   if (!caml_debug_info_available()) {
@@ -417,7 +417,7 @@ value caml_spacetime_frame_table(void)
   for (i = 0; i <= caml_frame_descriptors_mask; i++) {
     frame_descr* descr = caml_frame_descriptors[i];
     if (descr != NULL) {
-      value location, return_address, pair, new_list_element, location_list;
+      caml_value location, return_address, pair, new_list_element, location_list;
       struct caml_loc_info li;
       debuginfo dbg;
       if (descr->frame_size != 0xffff) {
@@ -425,13 +425,13 @@ value caml_spacetime_frame_table(void)
         if (dbg != NULL) {
           location_list = Val_unit;
           while (dbg != NULL) {
-            value list_element;
+            caml_value list_element;
 
             caml_debuginfo_location(dbg, &li);
             location = allocate_loc_outside_heap(li);
 
             list_element =
-              allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
+              allocate_outside_heap_with_tag(2 * sizeof(caml_value), 0 /* (::) */);
             Field(list_element, 0) = location;
             Field(list_element, 1) = location_list;
             location_list = list_element;
@@ -440,12 +440,12 @@ value caml_spacetime_frame_table(void)
           }
 
           return_address = allocate_int64_outside_heap(descr->retaddr);
-          pair = allocate_outside_heap_with_tag(2 * sizeof(value), 0);
+          pair = allocate_outside_heap_with_tag(2 * sizeof(caml_value), 0);
           Field(pair, 0) = return_address;
           Field(pair, 1) = location_list;
 
           new_list_element =
-            allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
+            allocate_outside_heap_with_tag(2 * sizeof(caml_value), 0 /* (::) */);
           Field(new_list_element, 0) = pair;
           Field(new_list_element, 1) = list;
           list = new_list_element;
@@ -457,7 +457,7 @@ value caml_spacetime_frame_table(void)
   return list;
 }
 
-static void add_unit_to_shape_table(uint64_t *unit_table, value *list)
+static void add_unit_to_shape_table(uint64_t *unit_table, caml_value *list)
 {
   /* This function reverses the order of the lists giving the layout of each
      node; however, spacetime_profiling.ml ensures they are emitted in
@@ -466,7 +466,7 @@ static void add_unit_to_shape_table(uint64_t *unit_table, value *list)
   uint64_t* ptr = unit_table;
 
   while (*ptr != (uint64_t) 0) {
-    value new_list_element, pair, function_address, layout;
+    caml_value new_list_element, pair, function_address, layout;
 
     function_address =
       allocate_int64_outside_heap(*ptr++);
@@ -475,9 +475,9 @@ static void add_unit_to_shape_table(uint64_t *unit_table, value *list)
     while (*ptr != (uint64_t) 0) {
       int tag;
       int stored_tag;
-      value part_of_shape;
-      value new_part_list_element;
-      value location;
+      caml_value part_of_shape;
+      caml_value new_part_list_element;
+      caml_value location;
       int has_extra_argument = 0;
 
       stored_tag = *ptr++;
@@ -504,7 +504,7 @@ static void add_unit_to_shape_table(uint64_t *unit_table, value *list)
       location = allocate_int64_outside_heap(*ptr++);
 
       part_of_shape = allocate_outside_heap_with_tag(
-        sizeof(value) * (has_extra_argument ? 2 : 1), tag);
+        sizeof(caml_value) * (has_extra_argument ? 2 : 1), tag);
       Field(part_of_shape, 0) = location;
       if (has_extra_argument) {
         Field(part_of_shape, 1) =
@@ -512,18 +512,18 @@ static void add_unit_to_shape_table(uint64_t *unit_table, value *list)
       }
 
       new_part_list_element =
-        allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
+        allocate_outside_heap_with_tag(2 * sizeof(caml_value), 0 /* (::) */);
       Field(new_part_list_element, 0) = part_of_shape;
       Field(new_part_list_element, 1) = layout;
       layout = new_part_list_element;
     }
 
-    pair = allocate_outside_heap_with_tag(2 * sizeof(value), 0);
+    pair = allocate_outside_heap_with_tag(2 * sizeof(caml_value), 0);
     Field(pair, 0) = function_address;
     Field(pair, 1) = layout;
 
     new_list_element =
-      allocate_outside_heap_with_tag(2 * sizeof(value), 0 /* (::) */);
+      allocate_outside_heap_with_tag(2 * sizeof(caml_value), 0 /* (::) */);
     Field(new_list_element, 0) = pair;
     Field(new_list_element, 1) = *list;
     *list = new_list_element;
@@ -532,9 +532,9 @@ static void add_unit_to_shape_table(uint64_t *unit_table, value *list)
   }
 }
 
-value caml_spacetime_shape_table(void)
+caml_value caml_spacetime_shape_table(void)
 {
-  value list;
+  caml_value list;
   uint64_t* unit_table;
   shape_table *dynamic_table;
   uint64_t** static_table;
@@ -566,32 +566,32 @@ value caml_spacetime_shape_table(void)
 
 #else
 
-static value spacetime_disabled()
+static caml_value spacetime_disabled()
 {
   caml_failwith("Spacetime profiling not enabled");
 }
 
-CAMLprim value caml_spacetime_take_snapshot(value ignored)
+CAMLprim caml_value caml_spacetime_take_snapshot(caml_value ignored)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_spacetime_marshal_frame_table ()
+CAMLprim caml_value caml_spacetime_marshal_frame_table ()
 {
   return spacetime_disabled();
 }
 
-CAMLprim value caml_spacetime_frame_table ()
+CAMLprim caml_value caml_spacetime_frame_table ()
 {
   return spacetime_disabled();
 }
 
-CAMLprim value caml_spacetime_marshal_shape_table ()
+CAMLprim caml_value caml_spacetime_marshal_shape_table ()
 {
   return spacetime_disabled();
 }
 
-CAMLprim value caml_spacetime_shape_table ()
+CAMLprim caml_value caml_spacetime_shape_table ()
 {
   return spacetime_disabled();
 }

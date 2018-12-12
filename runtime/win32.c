@@ -68,7 +68,7 @@ CAMLnoreturn_end;
 static void caml_win32_sys_error(int errnum)
 {
   wchar_t buffer[512];
-  value msg;
+  caml_value msg;
   if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                     NULL,
                     errnum,
@@ -562,7 +562,7 @@ static LONG CALLBACK
 
 #else
 extern char *caml_exception_pointer;
-extern value *caml_young_ptr;
+extern caml_value *caml_young_ptr;
 
 /* Do not use the macro from address_class.h here. */
 #undef Is_in_code_area
@@ -591,7 +591,7 @@ static LONG CALLBACK
 
       /* refresh runtime parameters from registers */
       caml_exception_pointer =  (char *) ctx->R14;
-      caml_young_ptr         = (value *) ctx->R15;
+      caml_young_ptr         = (caml_value *) ctx->R15;
 
       /* call caml_reset_stack(faulting_address) using the alternate stack */
       alt_rsp  = win32_alt_stack + sizeof(win32_alt_stack) / sizeof(uintnat);
@@ -887,10 +887,10 @@ CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen,
   return retcode;
 }
 
-CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
+CAMLexport caml_value caml_copy_string_of_utf16(const wchar_t *s)
 {
   int retcode, slen;
-  value v;
+  caml_value v;
 
   slen = wcslen(s);
   /* Do not include final NULL */

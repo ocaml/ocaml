@@ -19,12 +19,12 @@
 
 #include "caml/mlvalues.h"
 
-CAMLprim value caml_setup_afl (value unit)
+CAMLprim caml_value caml_setup_afl (caml_value unit)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_reset_afl_instrumentation(value unused)
+CAMLprim caml_value caml_reset_afl_instrumentation(caml_value unused)
 {
   return Val_unit;
 }
@@ -73,7 +73,7 @@ static uint32_t afl_read()
   return msg;
 }
 
-CAMLprim value caml_setup_afl(value unit)
+CAMLprim caml_value caml_setup_afl(caml_value unit)
 {
   if (afl_initialised) return Val_unit;
   afl_initialised = 1;
@@ -150,7 +150,7 @@ CAMLprim value caml_setup_afl(value unit)
   }
 }
 
-CAMLprim value caml_reset_afl_instrumentation(value full)
+CAMLprim caml_value caml_reset_afl_instrumentation(caml_value full)
 {
   if (full != Val_int(0)) {
     memset(caml_afl_area_ptr, 0, sizeof(afl_area_initial));

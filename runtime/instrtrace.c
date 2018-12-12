@@ -178,7 +178,7 @@ char * caml_instr_string (code_t pc)
 
 
 void
-caml_trace_value_file (value v, code_t prog, asize_t proglen, FILE * f)
+caml_trace_value_file (caml_value v, code_t prog, asize_t proglen, FILE * f)
 {
   int i;
   fprintf (f, "%#" ARCH_INTNAT_PRINTF_FORMAT "x", v);
@@ -248,11 +248,11 @@ caml_trace_value_file (value v, code_t prog, asize_t proglen, FILE * f)
 }
 
 void
-caml_trace_accu_sp_file (value accu, value * sp, code_t prog, asize_t proglen,
+caml_trace_accu_sp_file (caml_value accu, caml_value * sp, code_t prog, asize_t proglen,
                          FILE * f)
 {
   int i;
-  value *p;
+  caml_value *p;
   fprintf (f, "accu=");
   caml_trace_value_file (accu, prog, proglen, f);
   fprintf (f, "\n sp=%#" ARCH_INTNAT_PRINTF_FORMAT "x @%ld:",

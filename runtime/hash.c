@@ -142,7 +142,7 @@ CAMLexport uint32_t caml_hash_mix_float(uint32_t hash, float d)
 
 /* Mix an OCaml string */
 
-CAMLexport uint32_t caml_hash_mix_string(uint32_t h, value s)
+CAMLexport uint32_t caml_hash_mix_string(uint32_t h, caml_value s)
 {
   mlsize_t len = caml_string_length(s);
   mlsize_t i;
@@ -181,15 +181,15 @@ CAMLexport uint32_t caml_hash_mix_string(uint32_t h, value s)
 
 /* The generic hash function */
 
-CAMLprim value caml_hash(value count, value limit, value seed, value obj)
+CAMLprim caml_value caml_hash(caml_value count, caml_value limit, caml_value seed, caml_value obj)
 {
-  value queue[HASH_QUEUE_SIZE]; /* Queue of values to examine */
-  intnat rd;                    /* Position of first value in queue */
-  intnat wr;                    /* One past position of last value in queue */
+  caml_value queue[HASH_QUEUE_SIZE]; /* Queue of values to examine */
+  intnat rd;                    /* Position of first caml_value in queue */
+  intnat wr;                    /* One past position of last caml_value in queue */
   intnat sz;                    /* Max number of values to put in queue */
   intnat num;                   /* Max number of meaningful values to see */
   uint32_t h;                     /* Rolling hash */
-  value v;
+  caml_value v;
   mlsize_t i, len;
 
   sz = Long_val(limit);
@@ -285,9 +285,9 @@ struct hash_state {
   intnat univ_limit, univ_count;
 };
 
-static void hash_aux(struct hash_state*, value obj);
+static void hash_aux(struct hash_state*, caml_value obj);
 
-CAMLprim value caml_hash_univ_param(value count, value limit, value obj)
+CAMLprim caml_value caml_hash_univ_param(caml_value count, caml_value limit, caml_value obj)
 {
   struct hash_state h;
   h.univ_limit = Long_val(limit);
@@ -295,7 +295,7 @@ CAMLprim value caml_hash_univ_param(value count, value limit, value obj)
   h.accu = 0;
   hash_aux(&h, obj);
   return Val_long(h.accu & 0x3FFFFFFF);
-  /* The & has two purposes: ensure that the return value is positive
+  /* The & has two purposes: ensure that the return caml_value is positive
      and give the same result on 32 bit and 64 bit architectures. */
 }
 
@@ -304,7 +304,7 @@ CAMLprim value caml_hash_univ_param(value count, value limit, value obj)
 #define Combine(new)  (h->accu = h->accu * Alpha + (new))
 #define Combine_small(new) (h->accu = h->accu * Beta + (new))
 
-static void hash_aux(struct hash_state* h, value obj)
+static void hash_aux(struct hash_state* h, caml_value obj)
 {
   unsigned char * p;
   mlsize_t i, j;
@@ -404,9 +404,9 @@ static void hash_aux(struct hash_state* h, value obj)
 
 /* Hashing variant tags */
 
-CAMLexport value caml_hash_variant(char const * tag)
+CAMLexport caml_value caml_hash_variant(char const * tag)
 {
-  value accu;
+  caml_value accu;
   /* Same hashing algorithm as in ../typing/btype.ml, function hash_variant */
   for (accu = Val_int(0); *tag != 0; tag++)
     accu = Val_int(223 * Int_val(accu) + *((unsigned char *) tag));

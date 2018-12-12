@@ -397,7 +397,7 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
    and unlocking around the I/O operations. */
 
 /* FIXME CAMLexport, but not in io.h  exported for Cash ? */
-CAMLexport void caml_finalize_channel(value vchan)
+CAMLexport void caml_finalize_channel(caml_value vchan)
 {
   struct channel * chan = Channel(vchan);
   if ((chan->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0) return;
@@ -434,14 +434,14 @@ CAMLexport void caml_finalize_channel(value vchan)
   }
 }
 
-static int compare_channel(value vchan1, value vchan2)
+static int compare_channel(caml_value vchan1, caml_value vchan2)
 {
   struct channel * chan1 = Channel(vchan1);
   struct channel * chan2 = Channel(vchan2);
   return (chan1 == chan2) ? 0 : (chan1 < chan2) ? -1 : 1;
 }
 
-static intnat hash_channel(value vchan)
+static intnat hash_channel(caml_value vchan)
 {
   return (intnat) (Channel(vchan));
 }
@@ -457,9 +457,9 @@ static struct custom_operations channel_operations = {
   custom_fixed_length_default
 };
 
-CAMLexport value caml_alloc_channel(struct channel *chan)
+CAMLexport caml_value caml_alloc_channel(struct channel *chan)
 {
-  value res;
+  caml_value res;
   chan->refcount++;             /* prevent finalization during next alloc */
   res = caml_alloc_custom(&channel_operations, sizeof(struct channel *),
                           1, 1000);
@@ -467,21 +467,21 @@ CAMLexport value caml_alloc_channel(struct channel *chan)
   return res;
 }
 
-CAMLprim value caml_ml_open_descriptor_in(value fd)
+CAMLprim caml_value caml_ml_open_descriptor_in(caml_value fd)
 {
   struct channel * chan = caml_open_descriptor_in(Int_val(fd));
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
   return caml_alloc_channel(chan);
 }
 
-CAMLprim value caml_ml_open_descriptor_out(value fd)
+CAMLprim caml_value caml_ml_open_descriptor_out(caml_value fd)
 {
   struct channel * chan = caml_open_descriptor_out(Int_val(fd));
   chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
   return caml_alloc_channel(chan);
 }
 
-CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
+CAMLprim caml_value caml_ml_set_channel_name(caml_value vchannel, caml_value vname)
 {
   struct channel * channel = Channel(vchannel);
   caml_stat_free(channel->name);
@@ -494,7 +494,7 @@ CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
 
 #define Pair_tag 0
 
-CAMLprim value caml_ml_out_channels_list (value unit)
+CAMLprim caml_value caml_ml_out_channels_list (caml_value unit)
 {
   CAMLparam0 ();
   CAMLlocal3 (res, tail, chan);
@@ -516,14 +516,14 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   CAMLreturn (res);
 }
 
-CAMLprim value caml_channel_descriptor(value vchannel)
+CAMLprim caml_value caml_channel_descriptor(caml_value vchannel)
 {
   int fd = Channel(vchannel)->fd;
   if (fd == -1) { errno = EBADF; caml_sys_error(NO_ARG); }
   return Val_int(fd);
 }
 
-CAMLprim value caml_ml_close_channel(value vchannel)
+CAMLprim caml_value caml_ml_close_channel(caml_value vchannel)
 {
   int result;
   int do_syscall;
@@ -563,19 +563,19 @@ CAMLprim value caml_ml_close_channel(value vchannel)
 #define EOVERFLOW ERANGE
 #endif
 
-CAMLprim value caml_ml_channel_size(value vchannel)
+CAMLprim caml_value caml_ml_channel_size(caml_value vchannel)
 {
   file_offset size = caml_channel_size(Channel(vchannel));
   if (size > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
   return Val_long(size);
 }
 
-CAMLprim value caml_ml_channel_size_64(value vchannel)
+CAMLprim caml_value caml_ml_channel_size_64(caml_value vchannel)
 {
   return Val_file_offset(caml_channel_size(Channel(vchannel)));
 }
 
-CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
+CAMLprim caml_value caml_ml_set_binary_mode(caml_value vchannel, caml_value mode)
 {
 #if defined(_WIN32) || defined(__CYGWIN__)
   struct channel * channel = Channel(vchannel);
@@ -601,7 +601,7 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
    file descriptors that may be closed.
 */
 
-CAMLprim value caml_ml_flush_partial(value vchannel)
+CAMLprim caml_value caml_ml_flush_partial(caml_value vchannel)
 {
   CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
@@ -614,7 +614,7 @@ CAMLprim value caml_ml_flush_partial(value vchannel)
   CAMLreturn (Val_bool(res));
 }
 
-CAMLprim value caml_ml_flush(value vchannel)
+CAMLprim caml_value caml_ml_flush(caml_value vchannel)
 {
   CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
@@ -626,7 +626,7 @@ CAMLprim value caml_ml_flush(value vchannel)
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_ml_output_char(value vchannel, value ch)
+CAMLprim caml_value caml_ml_output_char(caml_value vchannel, caml_value ch)
 {
   CAMLparam2 (vchannel, ch);
   struct channel * channel = Channel(vchannel);
@@ -637,7 +637,7 @@ CAMLprim value caml_ml_output_char(value vchannel, value ch)
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_ml_output_int(value vchannel, value w)
+CAMLprim caml_value caml_ml_output_int(caml_value vchannel, caml_value w)
 {
   CAMLparam2 (vchannel, w);
   struct channel * channel = Channel(vchannel);
@@ -648,8 +648,8 @@ CAMLprim value caml_ml_output_int(value vchannel, value w)
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_ml_output_partial(value vchannel, value buff, value start,
-                                      value length)
+CAMLprim caml_value caml_ml_output_partial(caml_value vchannel, caml_value buff, caml_value start,
+                                      caml_value length)
 {
   CAMLparam4 (vchannel, buff, start, length);
   struct channel * channel = Channel(vchannel);
@@ -661,8 +661,8 @@ CAMLprim value caml_ml_output_partial(value vchannel, value buff, value start,
   CAMLreturn (Val_int(res));
 }
 
-CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
-                              value length)
+CAMLprim caml_value caml_ml_output_bytes(caml_value vchannel, caml_value buff, caml_value start,
+                              caml_value length)
 {
   CAMLparam4 (vchannel, buff, start, length);
   struct channel * channel = Channel(vchannel);
@@ -681,13 +681,13 @@ CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_ml_output(value vchannel, value buff, value start,
-                              value length)
+CAMLprim caml_value caml_ml_output(caml_value vchannel, caml_value buff, caml_value start,
+                              caml_value length)
 {
   return caml_ml_output_bytes (vchannel, buff, start, length);
 }
 
-CAMLprim value caml_ml_seek_out(value vchannel, value pos)
+CAMLprim caml_value caml_ml_seek_out(caml_value vchannel, caml_value pos)
 {
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
@@ -698,7 +698,7 @@ CAMLprim value caml_ml_seek_out(value vchannel, value pos)
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_ml_seek_out_64(value vchannel, value pos)
+CAMLprim caml_value caml_ml_seek_out_64(caml_value vchannel, caml_value pos)
 {
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
@@ -709,19 +709,19 @@ CAMLprim value caml_ml_seek_out_64(value vchannel, value pos)
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_ml_pos_out(value vchannel)
+CAMLprim caml_value caml_ml_pos_out(caml_value vchannel)
 {
   file_offset pos = caml_pos_out(Channel(vchannel));
   if (pos > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
   return Val_long(pos);
 }
 
-CAMLprim value caml_ml_pos_out_64(value vchannel)
+CAMLprim caml_value caml_ml_pos_out_64(caml_value vchannel)
 {
   return Val_file_offset(caml_pos_out(Channel(vchannel)));
 }
 
-CAMLprim value caml_ml_input_char(value vchannel)
+CAMLprim caml_value caml_ml_input_char(caml_value vchannel)
 {
   CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
@@ -733,7 +733,7 @@ CAMLprim value caml_ml_input_char(value vchannel)
   CAMLreturn (Val_long(c));
 }
 
-CAMLprim value caml_ml_input_int(value vchannel)
+CAMLprim caml_value caml_ml_input_int(caml_value vchannel)
 {
   CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
@@ -748,8 +748,8 @@ CAMLprim value caml_ml_input_int(value vchannel)
   CAMLreturn (Val_long(i));
 }
 
-CAMLprim value caml_ml_input(value vchannel, value buff, value vstart,
-                             value vlength)
+CAMLprim caml_value caml_ml_input(caml_value vchannel, caml_value buff, caml_value vstart,
+                             caml_value vlength)
 {
   CAMLparam4 (vchannel, buff, vstart, vlength);
   struct channel * channel = Channel(vchannel);
@@ -783,7 +783,7 @@ CAMLprim value caml_ml_input(value vchannel, value buff, value vstart,
   CAMLreturn (Val_long(n));
 }
 
-CAMLprim value caml_ml_seek_in(value vchannel, value pos)
+CAMLprim caml_value caml_ml_seek_in(caml_value vchannel, caml_value pos)
 {
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
@@ -794,7 +794,7 @@ CAMLprim value caml_ml_seek_in(value vchannel, value pos)
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_ml_seek_in_64(value vchannel, value pos)
+CAMLprim caml_value caml_ml_seek_in_64(caml_value vchannel, caml_value pos)
 {
   CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
@@ -805,19 +805,19 @@ CAMLprim value caml_ml_seek_in_64(value vchannel, value pos)
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_ml_pos_in(value vchannel)
+CAMLprim caml_value caml_ml_pos_in(caml_value vchannel)
 {
   file_offset pos = caml_pos_in(Channel(vchannel));
   if (pos > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
   return Val_long(pos);
 }
 
-CAMLprim value caml_ml_pos_in_64(value vchannel)
+CAMLprim caml_value caml_ml_pos_in_64(caml_value vchannel)
 {
   return Val_file_offset(caml_pos_in(Channel(vchannel)));
 }
 
-CAMLprim value caml_ml_input_scan_line(value vchannel)
+CAMLprim caml_value caml_ml_input_scan_line(caml_value vchannel)
 {
   CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
@@ -829,7 +829,7 @@ CAMLprim value caml_ml_input_scan_line(value vchannel)
   CAMLreturn (Val_long(res));
 }
 
-CAMLprim value caml_terminfo_rows(value vchannel)
+CAMLprim caml_value caml_terminfo_rows(caml_value vchannel)
 {
   return Val_int(caml_num_rows_fd(Channel(vchannel)->fd));
 }

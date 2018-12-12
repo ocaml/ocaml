@@ -78,7 +78,7 @@ int caml_alloc_backtrace_buffer(void);
 /* These two functions are used by the bytecode runtime when loading
    and unloading bytecode */
 caml_value caml_add_debug_info(code_t code_start, caml_value code_size,
-                                   value events_heap);
+                                   caml_value events_heap);
 caml_value caml_remove_debug_info(code_t start);
 #endif
 

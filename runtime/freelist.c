@@ -38,30 +38,30 @@
 
 /* A free list block is a [value] (integer representing a pointer to the
    first word after the block's header). The end of the  list is NULL. */
-#define Val_NULL ((value) NULL)
+#define Val_NULL ((caml_value) NULL)
 
 /* The sentinel can be located anywhere in memory, but it must not be
    adjacent to any heap object. */
 static struct {
-  value filler1; /* Make sure the sentinel is never adjacent to any block. */
+  caml_value filler1; /* Make sure the sentinel is never adjacent to any block. */
   header_t h;
-  value first_field;
-  value filler2; /* Make sure the sentinel is never adjacent to any block. */
+  caml_value first_field;
+  caml_value filler2; /* Make sure the sentinel is never adjacent to any block. */
 } sentinel = {0, Make_header (0, 0, Caml_blue), Val_NULL, 0};
 
 #define Fl_head (Val_bp (&(sentinel.first_field)))
-static value fl_prev = Fl_head;  /* Current allocation pointer. */
-static value fl_last = Val_NULL; /* Last block in the list.  Only valid
+static caml_value fl_prev = Fl_head;  /* Current allocation pointer. */
+static caml_value fl_last = Val_NULL; /* Last block in the list.  Only valid
                                   just after [caml_fl_allocate] returns NULL. */
-value caml_fl_merge = Fl_head;   /* Current insertion pointer.  Managed
+caml_value caml_fl_merge = Fl_head;   /* Current insertion pointer.  Managed
                                     jointly with [sweep_slice]. */
 asize_t caml_fl_cur_wsz = 0;     /* Number of words in the free list,
                                     including headers but not fragments. */
 
 #define FLP_MAX 1000
-static value flp [FLP_MAX];
+static caml_value flp [FLP_MAX];
 static int flp_size = 0;
-static value beyond = Val_NULL;
+static caml_value beyond = Val_NULL;
 
 #define Next(b) (Field (b, 0))
 
@@ -73,7 +73,7 @@ uintnat caml_allocation_policy = Policy_next_fit;
 #ifdef DEBUG
 static void fl_check (void)
 {
-  value cur, prev;
+  caml_value cur, prev;
   int prev_found = 0, flp_found = 0, merge_found = 0;
   uintnat size_found = 0;
   int sz = 0;
@@ -119,8 +119,8 @@ static void fl_check (void)
    it is located in the high-address words of the free block, so that
    the linking of the free-list does not change in case 2.
 */
-static header_t *allocate_block (mlsize_t wh_sz, int flpi, value prev,
-                                 value cur)
+static header_t *allocate_block (mlsize_t wh_sz, int flpi, caml_value prev,
+                                 caml_value cur)
 {
   header_t h = Hd_bp (cur);
   CAMLassert (Whsize_hd (h) >= wh_sz);
@@ -187,11 +187,11 @@ uintnat caml_instr_alloc_jump = 0;
 */
 header_t *caml_fl_allocate (mlsize_t wo_sz)
 {
-  value cur = Val_NULL, prev;
+  caml_value cur = Val_NULL, prev;
   header_t *result;
   int i;
   mlsize_t sz, prevsz;
-  CAMLassert (sizeof (char *) == sizeof (value));
+  CAMLassert (sizeof (char *) == sizeof (caml_value));
   CAMLassert (wo_sz >= 1);
 #ifdef CAML_INSTR
   if (wo_sz < 10){
@@ -333,7 +333,7 @@ header_t *caml_fl_allocate (mlsize_t wo_sz)
           beyond = Val_NULL;
         }
       }else{
-        value buf [FLP_MAX];
+        caml_value buf [FLP_MAX];
         int j = 0;
         mlsize_t oldsz = sz;
 
@@ -356,19 +356,19 @@ header_t *caml_fl_allocate (mlsize_t wo_sz)
 #endif
         if (FLP_MAX >= flp_size + j - 1){
           if (j != 1){
-            memmove (&flp[i+j], &flp[i+1], sizeof (value) * (flp_size-i-1));
+            memmove (&flp[i+j], &flp[i+1], sizeof (caml_value) * (flp_size-i-1));
           }
-          if (j > 0) memmove (&flp[i], &buf[0], sizeof (value) * j);
+          if (j > 0) memmove (&flp[i], &buf[0], sizeof (caml_value) * j);
           flp_size += j - 1;
         }else{
           if (FLP_MAX > i + j){
             if (j != 1){
-              memmove (&flp[i+j], &flp[i+1], sizeof (value) * (FLP_MAX-i-j));
+              memmove (&flp[i+j], &flp[i+1], sizeof (caml_value) * (FLP_MAX-i-j));
             }
-            if (j > 0) memmove (&flp[i], &buf[0], sizeof (value) * j);
+            if (j > 0) memmove (&flp[i], &buf[0], sizeof (caml_value) * j);
           }else{
             if (i != FLP_MAX){
-              memmove (&flp[i], &buf[0], sizeof (value) * (FLP_MAX - i));
+              memmove (&flp[i], &buf[0], sizeof (caml_value) * (FLP_MAX - i));
             }
           }
           flp_size = FLP_MAX - 1;
@@ -411,7 +411,7 @@ void caml_fl_init_merge (void)
 #endif
 }
 
-static void truncate_flp (value changed)
+static void truncate_flp (caml_value changed)
 {
   if (changed == Fl_head){
     flp_size = 0;
@@ -444,9 +444,9 @@ void caml_fl_reset (void)
 
 /* [caml_fl_merge_block] returns the head pointer of the next block after [bp],
    because merging blocks may change the size of [bp]. */
-header_t *caml_fl_merge_block (value bp)
+header_t *caml_fl_merge_block (caml_value bp)
 {
-  value prev, cur;
+  caml_value prev, cur;
   header_t *adj;
   header_t hd = Hd_val (bp);
   mlsize_t prev_wosz;
@@ -470,7 +470,7 @@ header_t *caml_fl_merge_block (value bp)
     mlsize_t bp_whsz = Whsize_val (bp);
     if (bp_whsz <= Max_wosize){
       hd = Make_header (bp_whsz, 0, Caml_white);
-      bp = (value) last_fragment;
+      bp = (caml_value) last_fragment;
       Hd_val (bp) = hd;
       caml_fl_cur_wsz += Whsize_wosize (0);
     }
@@ -480,7 +480,7 @@ header_t *caml_fl_merge_block (value bp)
      and merge them. */
   adj = (header_t *) &Field (bp, Wosize_hd (hd));
   if (adj == Hp_val (cur)){
-    value next_cur = Next (cur);
+    caml_value next_cur = Next (cur);
     mlsize_t cur_whsz = Whsize_val (cur);
 
     if (Wosize_hd (hd) + cur_whsz <= Max_wosize){
@@ -491,7 +491,7 @@ header_t *caml_fl_merge_block (value bp)
       adj = (header_t *) &Field (bp, Wosize_hd (hd));
 #ifdef DEBUG
       fl_last = Val_NULL;
-      Next (cur) = (value) Debug_free_major;
+      Next (cur) = (caml_value) Debug_free_major;
       Hd_val (cur) = Debug_free_major;
 #endif
       cur = next_cur;
@@ -532,9 +532,9 @@ header_t *caml_fl_merge_block (value bp)
    terminated by Val_NULL, and field 1 of the first block must point to
    the last block.
 */
-void caml_fl_add_blocks (value bp)
+void caml_fl_add_blocks (caml_value bp)
 {
-  value cur = bp;
+  caml_value cur = bp;
   CAMLassert (fl_last != Val_NULL);
   CAMLassert (Next (fl_last) == Val_NULL);
   do {
@@ -551,7 +551,7 @@ void caml_fl_add_blocks (value bp)
       flp [flp_size++] = fl_last;
     }
   }else{
-    value prev;
+    caml_value prev;
 
     prev = Fl_head;
     cur = Next (prev);
@@ -585,7 +585,7 @@ void caml_fl_add_blocks (value bp)
           is overridden by the merge code, but we have historically used
           [Caml_white].
 */
-void caml_make_free_blocks (value *p, mlsize_t size, int do_merge, int color)
+void caml_make_free_blocks (caml_value *p, mlsize_t size, int do_merge, int color)
 {
   mlsize_t sz;
 

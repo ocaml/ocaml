@@ -26,10 +26,10 @@
 
 /* MD5 message digest */
 
-CAMLprim value caml_md5_string(value str, value ofs, value len)
+CAMLprim caml_value caml_md5_string(caml_value str, caml_value ofs, caml_value len)
 {
   struct MD5Context ctx;
-  value res;
+  caml_value res;
   caml_MD5Init(&ctx);
   caml_MD5Update(&ctx, &Byte_u(str, Long_val(ofs)), Long_val(len));
   res = caml_alloc_string(16);
@@ -37,11 +37,11 @@ CAMLprim value caml_md5_string(value str, value ofs, value len)
   return res;
 }
 
-CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
+CAMLexport caml_value caml_md5_channel(struct channel *chan, intnat toread)
 {
   CAMLparam0();
   struct MD5Context ctx;
-  value res;
+  caml_value res;
   intnat read;
   char buffer[4096];
 
@@ -68,7 +68,7 @@ CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
   CAMLreturn (res);
 }
 
-CAMLprim value caml_md5_chan(value vchan, value len)
+CAMLprim caml_value caml_md5_chan(caml_value vchan, caml_value len)
 {
    CAMLparam2 (vchan, len);
    CAMLreturn (caml_md5_channel(Channel(vchan), Long_val(len)));

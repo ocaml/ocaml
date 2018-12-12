@@ -33,7 +33,7 @@ struct ext_table caml_debug_info;
 CAMLexport int32_t caml_backtrace_active = 0;
 CAMLexport int32_t caml_backtrace_pos = 0;
 CAMLexport backtrace_slot * caml_backtrace_buffer = NULL;
-CAMLexport value caml_backtrace_last_exn = Val_unit;
+CAMLexport caml_value caml_backtrace_last_exn = Val_unit;
 
 void caml_init_backtrace(void)
 {
@@ -41,7 +41,7 @@ void caml_init_backtrace(void)
 }
 
 /* Start or stop the backtrace machinery */
-CAMLprim value caml_record_backtrace(value vflag)
+CAMLprim caml_value caml_record_backtrace(caml_value vflag)
 {
   int flag = Int_val(vflag);
 
@@ -59,7 +59,7 @@ CAMLprim value caml_record_backtrace(value vflag)
 }
 
 /* Return the status of the backtrace machinery */
-CAMLprim value caml_backtrace_status(value vunit)
+CAMLprim caml_value caml_backtrace_status(caml_value vunit)
 {
   return Val_bool(caml_backtrace_active);
 }
@@ -131,7 +131,7 @@ CAMLexport void caml_print_exception_backtrace(void)
 }
 
 /* Get a copy of the latest backtrace */
-CAMLprim value caml_get_exception_raw_backtrace(value unit)
+CAMLprim caml_value caml_get_exception_raw_backtrace(caml_value unit)
 {
   CAMLparam0();
   CAMLlocal1(res);
@@ -172,7 +172,7 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
 /* Copy back a backtrace and exception to the global state.
    This function should be used only with Printexc.raw_backtrace */
 /* noalloc (caml value): so no CAMLparam* CAMLreturn* */
-CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
+CAMLprim caml_value caml_restore_raw_backtrace(caml_value exn, caml_value backtrace)
 {
   intnat i;
   mlsize_t bt_size;
@@ -208,7 +208,7 @@ CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
 #define Debuginfo_val(vslot) ((debuginfo)(Long_val(vslot) << 1))
 
 /* Convert the raw backtrace to a data structure usable from OCaml */
-static value caml_convert_debuginfo(debuginfo dbg)
+static caml_value caml_convert_debuginfo(debuginfo dbg)
 {
   CAMLparam0();
   CAMLlocal2(p, fname);
@@ -233,7 +233,7 @@ static value caml_convert_debuginfo(debuginfo dbg)
   CAMLreturn(p);
 }
 
-CAMLprim value caml_convert_raw_backtrace_slot(value slot)
+CAMLprim caml_value caml_convert_raw_backtrace_slot(caml_value slot)
 {
   if (!caml_debug_info_available())
     caml_failwith("No debug information available");
@@ -242,7 +242,7 @@ CAMLprim value caml_convert_raw_backtrace_slot(value slot)
 }
 
 /* Convert the raw backtrace to a data structure usable from OCaml */
-CAMLprim value caml_convert_raw_backtrace(value bt)
+CAMLprim caml_value caml_convert_raw_backtrace(caml_value bt)
 {
   CAMLparam1(bt);
   CAMLlocal1(array);
@@ -277,12 +277,12 @@ CAMLprim value caml_convert_raw_backtrace(value bt)
   CAMLreturn(array);
 }
 
-CAMLprim value caml_raw_backtrace_length(value bt)
+CAMLprim caml_value caml_raw_backtrace_length(caml_value bt)
 {
   return Val_int(Wosize_val(bt));
 }
 
-CAMLprim value caml_raw_backtrace_slot(value bt, value index)
+CAMLprim caml_value caml_raw_backtrace_slot(caml_value bt, caml_value index)
 {
   uintnat i;
   debuginfo dbg;
@@ -295,7 +295,7 @@ CAMLprim value caml_raw_backtrace_slot(value bt, value index)
   return Val_debuginfo(dbg);
 }
 
-CAMLprim value caml_raw_backtrace_next_slot(value slot)
+CAMLprim caml_value caml_raw_backtrace_next_slot(caml_value slot)
 {
   debuginfo dbg;
 
@@ -324,7 +324,7 @@ CAMLprim value caml_raw_backtrace_next_slot(value slot)
    It is not used by the Printexc library anymore, or anywhere else in
    the compiler, but we have kept it in case some user still depends
    on it as an external.  */
-CAMLprim value caml_get_exception_backtrace(value unit)
+CAMLprim caml_value caml_get_exception_backtrace(caml_value unit)
 {
   CAMLparam0();
   CAMLlocal3(arr, res, backtrace);

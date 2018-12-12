@@ -31,9 +31,9 @@
 #include "caml/stacks.h"
 
 CAMLexport struct longjmp_buffer * caml_external_raise = NULL;
-value caml_exn_bucket;
+caml_value caml_exn_bucket;
 
-CAMLexport void caml_raise(value v)
+CAMLexport void caml_raise(caml_value v)
 {
   Unlock_exn();
   caml_exn_bucket = v;
@@ -41,12 +41,12 @@ CAMLexport void caml_raise(value v)
   siglongjmp(caml_external_raise->buf, 1);
 }
 
-CAMLexport void caml_raise_constant(value tag)
+CAMLexport void caml_raise_constant(caml_value tag)
 {
   caml_raise(tag);
 }
 
-CAMLexport void caml_raise_with_arg(value tag, value arg)
+CAMLexport void caml_raise_with_arg(caml_value tag, caml_value arg)
 {
   CAMLparam2 (tag, arg);
   CAMLlocal1 (bucket);
@@ -58,11 +58,11 @@ CAMLexport void caml_raise_with_arg(value tag, value arg)
   CAMLnoreturn;
 }
 
-CAMLexport void caml_raise_with_args(value tag, int nargs, value args[])
+CAMLexport void caml_raise_with_args(caml_value tag, int nargs, caml_value args[])
 {
   CAMLparam1 (tag);
   CAMLxparamN (args, nargs);
-  value bucket;
+  caml_value bucket;
   int i;
 
   CAMLassert(1 + nargs <= Max_young_wosize);
@@ -73,16 +73,16 @@ CAMLexport void caml_raise_with_args(value tag, int nargs, value args[])
   CAMLnoreturn;
 }
 
-CAMLexport void caml_raise_with_string(value tag, char const *msg)
+CAMLexport void caml_raise_with_string(caml_value tag, char const *msg)
 {
   CAMLparam1(tag);
-  value v_msg = caml_copy_string(msg);
+  caml_value v_msg = caml_copy_string(msg);
   caml_raise_with_arg(tag, v_msg);
   CAMLnoreturn;
 }
 
 /* PR#5115: Built-in exceptions can be triggered by input_value
-   while reading the initial value of [caml_global_data].
+   while reading the initial caml_value of [caml_global_data].
 
    We check against this issue here in runtime/fail_byt.c instead of
    runtime/intern.c. Having the check here means that these calls will
@@ -107,7 +107,7 @@ static void check_global_data_param(char const *exception_name, char const *msg)
   }
 }
 
-static inline value caml_get_failwith_tag (char const *msg)
+static inline caml_value caml_get_failwith_tag (char const *msg)
 {
   check_global_data_param("Failure", msg);
   return Field(caml_global_data, FAILURE_EXN);
@@ -118,15 +118,15 @@ CAMLexport void caml_failwith (char const *msg)
   caml_raise_with_string(caml_get_failwith_tag(msg), msg);
 }
 
-CAMLexport void caml_failwith_value (value msg)
+CAMLexport void caml_failwith_value (caml_value msg)
 {
   CAMLparam1(msg);
-  value tag = caml_get_failwith_tag(String_val(msg));
+  caml_value tag = caml_get_failwith_tag(String_val(msg));
   caml_raise_with_arg(tag, msg);
   CAMLnoreturn;
 }
 
-static inline value caml_get_invalid_argument_tag (char const *msg)
+static inline caml_value caml_get_invalid_argument_tag (char const *msg)
 {
   check_global_data_param("Invalid_argument", msg);
   return Field(caml_global_data, INVALID_EXN);
@@ -137,10 +137,10 @@ CAMLexport void caml_invalid_argument (char const *msg)
   caml_raise_with_string(caml_get_invalid_argument_tag(msg), msg);
 }
 
-CAMLexport void caml_invalid_argument_value (value msg)
+CAMLexport void caml_invalid_argument_value (caml_value msg)
 {
   CAMLparam1(msg);
-  value tag = caml_get_invalid_argument_tag(String_val(msg));
+  caml_value tag = caml_get_invalid_argument_tag(String_val(msg));
   caml_raise_with_arg(tag, msg);
   CAMLnoreturn;
 }
@@ -162,7 +162,7 @@ CAMLexport void caml_raise_stack_overflow(void)
   caml_raise_constant(Field(caml_global_data, STACK_OVERFLOW_EXN));
 }
 
-CAMLexport void caml_raise_sys_error(value msg)
+CAMLexport void caml_raise_sys_error(caml_value msg)
 {
   check_global_data_param("Sys_error", String_val(msg));
   caml_raise_with_arg(Field(caml_global_data, SYS_ERROR_EXN), msg);
@@ -192,7 +192,7 @@ CAMLexport void caml_raise_sys_blocked_io(void)
   caml_raise_constant(Field(caml_global_data, SYS_BLOCKED_IO));
 }
 
-int caml_is_special_exception(value exn) {
+int caml_is_special_exception(caml_value exn) {
   /* this function is only used in caml_format_exception to produce
      a more readable textual representation of some exceptions. It is
      better to fall back to the general, less readable representation

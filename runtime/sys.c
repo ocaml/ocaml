@@ -72,7 +72,7 @@ static char * error_message(void)
 #define EWOULDBLOCK (-1)
 #endif
 
-CAMLexport void caml_sys_error(value arg)
+CAMLexport void caml_sys_error(caml_value arg)
 {
   CAMLparam1 (arg);
   char * err;
@@ -93,7 +93,7 @@ CAMLexport void caml_sys_error(value arg)
   CAMLnoreturn;
 }
 
-CAMLexport void caml_sys_io_error(value arg)
+CAMLexport void caml_sys_io_error(caml_value arg)
 {
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
     caml_raise_sys_blocked_io();
@@ -104,7 +104,7 @@ CAMLexport void caml_sys_io_error(value arg)
 
 /* Check that [name] can safely be used as a file path */
 
-static void caml_sys_check_path(value name)
+static void caml_sys_check_path(caml_value name)
 {
   if (! caml_string_is_c_safe(name)) {
     errno = ENOENT;
@@ -112,7 +112,7 @@ static void caml_sys_check_path(value name)
   }
 }
 
-CAMLprim value caml_sys_exit(value retcode_v)
+CAMLprim caml_value caml_sys_exit(caml_value retcode_v)
 {
   int retcode = Int_val(retcode_v);
 
@@ -178,7 +178,7 @@ static int sys_open_flags[] = {
   O_BINARY, O_TEXT, O_NONBLOCK
 };
 
-CAMLprim value caml_sys_open(value path, value vflags, value vperm)
+CAMLprim caml_value caml_sys_open(caml_value path, caml_value vflags, caml_value vperm)
 {
   CAMLparam3(path, vflags, vperm);
   int fd, flags, perm;
@@ -211,7 +211,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   CAMLreturn(Val_long(fd));
 }
 
-CAMLprim value caml_sys_close(value fd_v)
+CAMLprim caml_value caml_sys_close(caml_value fd_v)
 {
   int fd = Int_val(fd_v);
   caml_enter_blocking_section();
@@ -220,7 +220,7 @@ CAMLprim value caml_sys_close(value fd_v)
   return Val_unit;
 }
 
-CAMLprim value caml_sys_file_exists(value name)
+CAMLprim caml_value caml_sys_file_exists(caml_value name)
 {
 #ifdef _WIN32
   struct _stati64 st;
@@ -240,7 +240,7 @@ CAMLprim value caml_sys_file_exists(value name)
   return Val_bool(ret == 0);
 }
 
-CAMLprim value caml_sys_is_directory(value name)
+CAMLprim caml_value caml_sys_is_directory(caml_value name)
 {
   CAMLparam1(name);
 #ifdef _WIN32
@@ -266,7 +266,7 @@ CAMLprim value caml_sys_is_directory(value name)
 #endif
 }
 
-CAMLprim value caml_sys_remove(value name)
+CAMLprim caml_value caml_sys_remove(caml_value name)
 {
   CAMLparam1(name);
   char_os * p;
@@ -281,7 +281,7 @@ CAMLprim value caml_sys_remove(value name)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_sys_rename(value oldname, value newname)
+CAMLprim caml_value caml_sys_rename(caml_value oldname, caml_value newname)
 {
   char_os * p_old;
   char_os * p_new;
@@ -300,7 +300,7 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
   return Val_unit;
 }
 
-CAMLprim value caml_sys_chdir(value dirname)
+CAMLprim caml_value caml_sys_chdir(caml_value dirname)
 {
   CAMLparam1(dirname);
   char_os * p;
@@ -315,7 +315,7 @@ CAMLprim value caml_sys_chdir(value dirname)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_sys_getcwd(value unit)
+CAMLprim caml_value caml_sys_getcwd(caml_value unit)
 {
   char_os buff[4096];
   char_os * ret;
@@ -328,10 +328,10 @@ CAMLprim value caml_sys_getcwd(value unit)
   return caml_copy_string_of_os(buff);
 }
 
-CAMLprim value caml_sys_unsafe_getenv(value var)
+CAMLprim caml_value caml_sys_unsafe_getenv(caml_value var)
 {
   char_os * res, * p;
-  value val;
+  caml_value val;
 
   if (! caml_string_is_c_safe(var)) caml_raise_not_found();
   p = caml_stat_strdup_to_os(String_val(var));
@@ -349,10 +349,10 @@ CAMLprim value caml_sys_unsafe_getenv(value var)
   return val;
 }
 
-CAMLprim value caml_sys_getenv(value var)
+CAMLprim caml_value caml_sys_getenv(caml_value var)
 {
   char_os * res, * p;
-  value val;
+  caml_value val;
 
   if (! caml_string_is_c_safe(var)) caml_raise_not_found();
   p = caml_stat_strdup_to_os(String_val(var));
@@ -373,7 +373,7 @@ CAMLprim value caml_sys_getenv(value var)
 char_os * caml_exe_name;
 char_os ** caml_main_argv;
 
-CAMLprim value caml_sys_get_argv(value unit)
+CAMLprim caml_value caml_sys_get_argv(caml_value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal3 (exe_name, argv, res);
@@ -412,7 +412,7 @@ void caml_sys_init(char_os * exe_name, char_os **argv)
 #endif
 #endif
 
-CAMLprim value caml_sys_system_command(value command)
+CAMLprim caml_value caml_sys_system_command(caml_value command)
 {
   CAMLparam1 (command);
   int status, retcode;
@@ -435,7 +435,7 @@ CAMLprim value caml_sys_system_command(value command)
   CAMLreturn (Val_int(retcode));
 }
 
-double caml_sys_time_include_children_unboxed(value include_children)
+double caml_sys_time_include_children_unboxed(caml_value include_children)
 {
 #ifdef HAS_GETRUSAGE
   struct rusage ru;
@@ -477,17 +477,17 @@ double caml_sys_time_include_children_unboxed(value include_children)
 #endif
 }
 
-CAMLprim value caml_sys_time_include_children(value include_children)
+CAMLprim caml_value caml_sys_time_include_children(caml_value include_children)
 {
   return caml_copy_double(
       caml_sys_time_include_children_unboxed(include_children));
 }
 
-double caml_sys_time_unboxed(value unit) {
+double caml_sys_time_unboxed(caml_value unit) {
   return caml_sys_time_include_children_unboxed(Val_false);
 }
 
-CAMLprim value caml_sys_time(value unit)
+CAMLprim caml_value caml_sys_time(caml_value unit)
 {
   return caml_copy_double(caml_sys_time_unboxed(unit));
 }
@@ -496,11 +496,11 @@ CAMLprim value caml_sys_time(value unit)
 extern int caml_win32_random_seed (intnat data[16]);
 #endif
 
-CAMLprim value caml_sys_random_seed (value unit)
+CAMLprim caml_value caml_sys_random_seed (caml_value unit)
 {
   intnat data[16];
   int n, i;
-  value res;
+  caml_value res;
 #ifdef _WIN32
   n = caml_win32_random_seed(data);
 #else
@@ -538,7 +538,7 @@ CAMLprim value caml_sys_random_seed (value unit)
   return res;
 }
 
-CAMLprim value caml_sys_const_big_endian(value unit)
+CAMLprim caml_value caml_sys_const_big_endian(caml_value unit)
 {
 #ifdef ARCH_BIG_ENDIAN
   return Val_true;
@@ -547,44 +547,44 @@ CAMLprim value caml_sys_const_big_endian(value unit)
 #endif
 }
 
-/* returns a value that represents a number of bits */
-CAMLprim value caml_sys_const_word_size(value unit)
+/* returns a caml_value that represents a number of bits */
+CAMLprim caml_value caml_sys_const_word_size(caml_value unit)
 {
-  return Val_long(8 * sizeof(value));
+  return Val_long(8 * sizeof(caml_value));
 }
 
-/* returns a value that represents a number of bits */
-CAMLprim value caml_sys_const_int_size(value unit)
+/* returns a caml_value that represents a number of bits */
+CAMLprim caml_value caml_sys_const_int_size(caml_value unit)
 {
-  return Val_long(8 * sizeof(value) - 1) ;
+  return Val_long(8 * sizeof(caml_value) - 1) ;
 }
 
-/* returns a value that represents a number of words */
-CAMLprim value caml_sys_const_max_wosize(value unit)
+/* returns a caml_value that represents a number of words */
+CAMLprim caml_value caml_sys_const_max_wosize(caml_value unit)
 {
   return Val_long(Max_wosize) ;
 }
 
-CAMLprim value caml_sys_const_ostype_unix(value unit)
+CAMLprim caml_value caml_sys_const_ostype_unix(caml_value unit)
 {
   return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Unix"));
 }
 
-CAMLprim value caml_sys_const_ostype_win32(value unit)
+CAMLprim caml_value caml_sys_const_ostype_win32(caml_value unit)
 {
   return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Win32"));
 }
 
-CAMLprim value caml_sys_const_ostype_cygwin(value unit)
+CAMLprim caml_value caml_sys_const_ostype_cygwin(caml_value unit)
 {
   return Val_bool(0 == strcmp(OCAML_OS_TYPE,"Cygwin"));
 }
 
-CAMLprim value caml_sys_const_backend_type(value unit)
+CAMLprim caml_value caml_sys_const_backend_type(caml_value unit)
 {
   return Val_int(1); /* Bytecode backed */
 }
-CAMLprim value caml_sys_get_config(value unit)
+CAMLprim caml_value caml_sys_get_config(caml_value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal2 (result, ostype);
@@ -592,7 +592,7 @@ CAMLprim value caml_sys_get_config(value unit)
   ostype = caml_copy_string(OCAML_OS_TYPE);
   result = caml_alloc_small (3, 0);
   Field(result, 0) = ostype;
-  Field(result, 1) = Val_long (8 * sizeof(value));
+  Field(result, 1) = Val_long (8 * sizeof(caml_value));
 #ifdef ARCH_BIG_ENDIAN
   Field(result, 2) = Val_true;
 #else
@@ -601,7 +601,7 @@ CAMLprim value caml_sys_get_config(value unit)
   CAMLreturn (result);
 }
 
-CAMLprim value caml_sys_read_directory(value path)
+CAMLprim caml_value caml_sys_read_directory(caml_value path)
 {
   CAMLparam1(path);
   CAMLlocal1(result);
@@ -626,12 +626,12 @@ CAMLprim value caml_sys_read_directory(value path)
   CAMLreturn(result);
 }
 
-/* Return true if the value is a filedescriptor (int) that is
+/* Return true if the caml_value is a filedescriptor (int) that is
  * (presumably) open on an interactive terminal */
-CAMLprim value caml_sys_isatty(value chan)
+CAMLprim caml_value caml_sys_isatty(caml_value chan)
 {
   int fd;
-  value ret;
+  caml_value ret;
 
   fd = (Channel(chan))->fd;
 #ifdef _WIN32

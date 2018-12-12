@@ -28,14 +28,14 @@
    balanced binary trees", Comm. ACM 33(6), 1990). */
 
 struct global_root {
-  value * root;                    /* the address of the root */
+  caml_value * root;                    /* the address of the root */
   struct global_root * forward[1]; /* variable-length array */
 };
 
 #define NUM_LEVELS 17
 
 struct global_root_list {
-  value * root;                 /* dummy value for layout compatibility */
+  caml_value * root;                 /* dummy caml_value for layout compatibility */
   struct global_root * forward[NUM_LEVELS]; /* forward chaining */
   int level;                    /* max used level */
 };
@@ -68,7 +68,7 @@ static int random_level(void)
 /* Insertion in a global root list */
 
 static void caml_insert_global_root(struct global_root_list * rootlist,
-                                    value * r)
+                                    caml_value * r)
 {
   struct global_root * update[NUM_LEVELS];
   struct global_root * e, * f;
@@ -109,7 +109,7 @@ static void caml_insert_global_root(struct global_root_list * rootlist,
 /* Deletion in a global root list */
 
 static void caml_delete_global_root(struct global_root_list * rootlist,
-                                    value * r)
+                                    caml_value * r)
 {
   struct global_root * update[NUM_LEVELS];
   struct global_root * e, * f;
@@ -185,7 +185,7 @@ struct global_root_list caml_global_roots_old = { NULL, { NULL, }, 0 };
 
 /* Register a global C root of the mutable kind */
 
-CAMLexport void caml_register_global_root(value *r)
+CAMLexport void caml_register_global_root(caml_value *r)
 {
   CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
   caml_insert_global_root(&caml_global_roots, r);
@@ -193,16 +193,16 @@ CAMLexport void caml_register_global_root(value *r)
 
 /* Un-register a global C root of the mutable kind */
 
-CAMLexport void caml_remove_global_root(value *r)
+CAMLexport void caml_remove_global_root(caml_value *r)
 {
   caml_delete_global_root(&caml_global_roots, r);
 }
 
 /* Register a global C root of the generational kind */
 
-CAMLexport void caml_register_generational_global_root(value *r)
+CAMLexport void caml_register_generational_global_root(caml_value *r)
 {
-  value v = *r;
+  caml_value v = *r;
   CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
   if (Is_block(v)) {
     if (Is_young(v))
@@ -214,9 +214,9 @@ CAMLexport void caml_register_generational_global_root(value *r)
 
 /* Un-register a global C root of the generational kind */
 
-CAMLexport void caml_remove_generational_global_root(value *r)
+CAMLexport void caml_remove_generational_global_root(caml_value *r)
 {
-  value v = *r;
+  caml_value v = *r;
   if (Is_block(v)) {
     if (Is_in_heap_or_young(v))
       caml_delete_global_root(&caml_global_roots_young, r);
@@ -225,11 +225,11 @@ CAMLexport void caml_remove_generational_global_root(value *r)
   }
 }
 
-/* Modify the value of a global C root of the generational kind */
+/* Modify the caml_value of a global C root of the generational kind */
 
-CAMLexport void caml_modify_generational_global_root(value *r, value newval)
+CAMLexport void caml_modify_generational_global_root(caml_value *r, caml_value newval)
 {
-  value oldval = *r;
+  caml_value oldval = *r;
 
   /* It is OK to have a root in roots_young that suddenly points to
      the old generation -- the next minor GC will take care of that.
@@ -242,7 +242,7 @@ CAMLexport void caml_modify_generational_global_root(value *r, value newval)
   }
   /* PR#4704 */
   else if (!Is_block(oldval) && Is_block(newval)) {
-    /* The previous value in the root was unboxed but now it is boxed.
+    /* The previous caml_value in the root was unboxed but now it is boxed.
        The root won't appear in any of the root lists thus far (by virtue
        of the operation of [caml_register_generational_global_root]), so we
        need to make sure it gets in, or else it will never be scanned. */
@@ -252,7 +252,7 @@ CAMLexport void caml_modify_generational_global_root(value *r, value newval)
       caml_insert_global_root(&caml_global_roots_old, r);
   }
   else if (Is_block(oldval) && !Is_block(newval)) {
-    /* The previous value in the root was boxed but now it is unboxed, so
+    /* The previous caml_value in the root was boxed but now it is unboxed, so
        the root should be removed. If [oldval] is young, this will happen
        anyway at the next minor collection, but it is safer to delete it
        here. */

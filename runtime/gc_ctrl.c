@@ -62,7 +62,7 @@ extern uintnat caml_allocation_policy;    /*        see freelist.c */
 #ifdef DEBUG
 
 /* Check that [v]'s header looks good.  [v] must be a block in the heap. */
-static void check_head (value v)
+static void check_head (caml_value v)
 {
   CAMLassert (Is_block (v));
   CAMLassert (Is_in_heap (v));
@@ -72,7 +72,7 @@ static void check_head (value v)
   CAMLassert (Is_in_heap (v));
   if (Tag_val (v) == Infix_tag){
     int offset = Wsize_bsize (Infix_offset_val (v));
-    value trueval = Val_op (&Field (v, -offset));
+    caml_value trueval = Val_op (&Field (v, -offset));
     CAMLassert (Tag_val (trueval) == Closure_tag);
     CAMLassert (Wosize_val (trueval) > offset);
     CAMLassert (Is_in_heap (&Field (trueval, Wosize_val (trueval) - 1)));
@@ -89,8 +89,8 @@ static void check_head (value v)
 static void check_block (header_t *hp)
 {
   mlsize_t i;
-  value v = Val_hp (hp);
-  value f;
+  caml_value v = Val_hp (hp);
+  caml_value f;
 
   check_head (v);
   switch (Tag_hp (hp)){
@@ -129,7 +129,7 @@ static void check_block (header_t *hp)
    gather statistics; return the stats if [returnstats] is true,
    otherwise return [Val_unit].
 */
-static value heap_stats (int returnstats)
+static caml_value heap_stats (int returnstats)
 {
   CAMLparam0 ();
   intnat live_words = 0, live_blocks = 0,
@@ -269,9 +269,9 @@ void caml_heap_check (void)
 }
 #endif
 
-CAMLprim value caml_gc_stat(value v)
+CAMLprim caml_value caml_gc_stat(caml_value v)
 {
-  value result;
+  caml_value result;
   CAML_INSTR_SETUP (tmr, "");
   CAMLassert (v == Val_unit);
   result = heap_stats (1);
@@ -279,7 +279,7 @@ CAMLprim value caml_gc_stat(value v)
   return result;
 }
 
-CAMLprim value caml_gc_quick_stat(value v)
+CAMLprim caml_value caml_gc_quick_stat(caml_value v)
 {
   CAMLparam0 ();
   CAMLlocal1 (res);
@@ -322,13 +322,13 @@ double caml_gc_minor_words_unboxed()
           + (double) (caml_young_alloc_end - caml_young_ptr));
 }
 
-CAMLprim value caml_gc_minor_words(value v)
+CAMLprim caml_value caml_gc_minor_words(caml_value v)
 {
   CAMLparam0 ();   /* v is ignored */
   CAMLreturn(caml_copy_double(caml_gc_minor_words_unboxed()));
 }
 
-CAMLprim value caml_gc_counters(value v)
+CAMLprim caml_value caml_gc_counters(caml_value v)
 {
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
@@ -346,12 +346,12 @@ CAMLprim value caml_gc_counters(value v)
   CAMLreturn (res);
 }
 
-CAMLprim value caml_gc_huge_fallback_count (value v)
+CAMLprim caml_value caml_gc_huge_fallback_count (caml_value v)
 {
   return Val_long (caml_huge_fallback_count);
 }
 
-CAMLprim value caml_gc_get(value v)
+CAMLprim caml_value caml_gc_get(caml_value v)
 {
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
@@ -398,7 +398,7 @@ static uintnat norm_window (intnat w)
   return w;
 }
 
-CAMLprim value caml_gc_set(value v)
+CAMLprim caml_value caml_gc_set(caml_value v)
 {
   uintnat newpf, newpm;
   asize_t newheapincr;
@@ -468,7 +468,7 @@ CAMLprim value caml_gc_set(value v)
   return Val_unit;
 }
 
-CAMLprim value caml_gc_minor(value v)
+CAMLprim caml_value caml_gc_minor(caml_value v)
 {
   CAML_INSTR_SETUP (tmr, "");
   CAMLassert (v == Val_unit);
@@ -493,7 +493,7 @@ static void test_and_compact (void)
   }
 }
 
-CAMLprim value caml_gc_major(value v)
+CAMLprim caml_value caml_gc_major(caml_value v)
 {
   CAML_INSTR_SETUP (tmr, "");
   CAMLassert (v == Val_unit);
@@ -506,7 +506,7 @@ CAMLprim value caml_gc_major(value v)
   return Val_unit;
 }
 
-CAMLprim value caml_gc_full_major(value v)
+CAMLprim caml_value caml_gc_full_major(caml_value v)
 {
   CAML_INSTR_SETUP (tmr, "");
   CAMLassert (v == Val_unit);
@@ -522,7 +522,7 @@ CAMLprim value caml_gc_full_major(value v)
   return Val_unit;
 }
 
-CAMLprim value caml_gc_major_slice (value v)
+CAMLprim caml_value caml_gc_major_slice (caml_value v)
 {
   CAML_INSTR_SETUP (tmr, "");
   CAMLassert (Is_long (v));
@@ -531,7 +531,7 @@ CAMLprim value caml_gc_major_slice (value v)
   return Val_long (0);
 }
 
-CAMLprim value caml_gc_compaction(value v)
+CAMLprim caml_value caml_gc_compaction(caml_value v)
 {
   CAML_INSTR_SETUP (tmr, "");
   CAMLassert (v == Val_unit);
@@ -547,12 +547,12 @@ CAMLprim value caml_gc_compaction(value v)
   return Val_unit;
 }
 
-CAMLprim value caml_get_minor_free (value v)
+CAMLprim caml_value caml_get_minor_free (caml_value v)
 {
   return Val_int (caml_young_ptr - caml_young_alloc_start);
 }
 
-CAMLprim value caml_get_major_bucket (value v)
+CAMLprim caml_value caml_get_major_bucket (caml_value v)
 {
   long i = Long_val (v);
   if (i < 0) caml_invalid_argument ("Gc.get_bucket");
@@ -566,7 +566,7 @@ CAMLprim value caml_get_major_bucket (value v)
   }
 }
 
-CAMLprim value caml_get_major_credit (value v)
+CAMLprim caml_value caml_get_major_credit (caml_value v)
 {
   CAMLassert (v == Val_unit);
   return Val_long ((long) (caml_major_work_credit * 1e6));
@@ -630,7 +630,7 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
 
 /* FIXME After the startup_aux.c unification, move these functions there. */
 
-CAMLprim value caml_runtime_variant (value unit)
+CAMLprim caml_value caml_runtime_variant (caml_value unit)
 {
   CAMLassert (unit == Val_unit);
 #if defined (DEBUG)
@@ -644,7 +644,7 @@ CAMLprim value caml_runtime_variant (value unit)
 
 extern int caml_parser_trace;
 
-CAMLprim value caml_runtime_parameters (value unit)
+CAMLprim caml_value caml_runtime_parameters (caml_value unit)
 {
 #define F_Z ARCH_INTNAT_PRINTF_FORMAT
 #define F_S ARCH_SIZET_PRINTF_FORMAT
@@ -679,13 +679,13 @@ CAMLprim value caml_runtime_parameters (value unit)
 
 /* Control runtime warnings */
 
-CAMLprim value caml_ml_enable_runtime_warnings(value vbool)
+CAMLprim caml_value caml_ml_enable_runtime_warnings(caml_value vbool)
 {
   caml_runtime_warnings = Bool_val(vbool);
   return Val_unit;
 }
 
-CAMLprim value caml_ml_runtime_warnings_enabled(value unit)
+CAMLprim caml_value caml_ml_runtime_warnings_enabled(caml_value unit)
 {
   CAMLassert (unit == Val_unit);
   return Val_bool(caml_runtime_warnings);

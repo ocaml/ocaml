@@ -30,8 +30,8 @@
 #endif
 
 struct final {
-  value fun;
-  value val;
+  caml_value fun;
+  caml_value val;
   int offset;
 };
 
@@ -46,7 +46,7 @@ struct finalisable {
    [young..size) : free space
 
    The element of the finalisable set are moved to the finalising set
-   below when the value are unreachable (for the first or last time).
+   below when the caml_value are unreachable (for the first or last time).
 
 */
 
@@ -124,8 +124,8 @@ static void generic_final_update (struct finalisable * final, int darken_value)
         /** dead */
         to_do_tl->item[k] = final->table[i];
         if(!darken_value){
-          /* The value is not darken so the finalisation function
-             is called with unit not with the value */
+          /* The caml_value is not darken so the finalisation function
+             is called with unit not with the caml_value */
           to_do_tl->item[k].val = Val_unit;
           to_do_tl->item[k].offset = 0;
         };
@@ -170,7 +170,7 @@ static int running_finalisation_function = 0;
 void caml_final_do_calls (void)
 {
   struct final f;
-  value res;
+  caml_value res;
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   void* saved_spacetime_trie_node_ptr;
 #endif
@@ -317,7 +317,7 @@ static void generic_final_minor_update (struct finalisable * final)
       if(Is_young(final->table[i].val) && Hd_val(final->table[i].val) != 0){
         /** dead */
         to_do_tl->item[k] = final->table[i];
-        /* The finalisation function is called with unit not with the value */
+        /* The finalisation function is called with unit not with the caml_value */
         to_do_tl->item[k].val = Val_unit;
         to_do_tl->item[k].offset = 0;
         k++;
@@ -332,7 +332,7 @@ static void generic_final_minor_update (struct finalisable * final)
     to_do_tl->size = todo_count;
   }
 
-  /** update the minor value to the copied major value */
+  /** update the minor caml_value to the copied major caml_value */
   for (i = final->old; i < final->young; i++){
     CAMLassert (Is_block (final->table[i].val));
     CAMLassert (Is_in_heap_or_young (final->table[i].val));
@@ -370,7 +370,7 @@ void caml_final_empty_young (void)
 }
 
 /* Put (f,v) in the recent set. */
-static void generic_final_register (struct finalisable *final, value f, value v)
+static void generic_final_register (struct finalisable *final, caml_value f, caml_value v)
 {
   if (!Is_block (v)
       || !Is_in_heap_or_young(v)
@@ -410,18 +410,18 @@ static void generic_final_register (struct finalisable *final, value f, value v)
 
 }
 
-CAMLprim value caml_final_register (value f, value v){
+CAMLprim caml_value caml_final_register (caml_value f, caml_value v){
   generic_final_register(&finalisable_first, f, v);
   return Val_unit;
 }
 
-CAMLprim value caml_final_register_called_without_value (value f, value v){
+CAMLprim caml_value caml_final_register_called_without_value (caml_value f, caml_value v){
   generic_final_register(&finalisable_last, f, v);
   return Val_unit;
 }
 
 
-CAMLprim value caml_final_release (value unit)
+CAMLprim caml_value caml_final_release (caml_value unit)
 {
   running_finalisation_function = 0;
   return Val_unit;

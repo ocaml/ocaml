@@ -30,7 +30,7 @@ static const mlsize_t mlsize_t_max = -1;
 
 /* returns number of elements (either fields or floats) */
 /* [ 'a array -> int ] */
-CAMLexport mlsize_t caml_array_length(value array)
+CAMLexport mlsize_t caml_array_length(caml_value array)
 {
 #ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(array) == Double_array_tag)
@@ -40,7 +40,7 @@ CAMLexport mlsize_t caml_array_length(value array)
     return Wosize_val(array);
 }
 
-CAMLexport int caml_is_double_array(value array)
+CAMLexport int caml_is_double_array(caml_value array)
 {
   return (Tag_val(array) == Double_array_tag);
 }
@@ -51,7 +51,7 @@ CAMLexport int caml_is_double_array(value array)
 */
 
 /* [ 'a array -> int -> 'a ] where 'a != float */
-CAMLprim value caml_array_get_addr(value array, value index)
+CAMLprim caml_value caml_array_get_addr(caml_value array, caml_value index)
 {
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
@@ -59,12 +59,12 @@ CAMLprim value caml_array_get_addr(value array, value index)
 }
 
 /* [ float array -> int -> float ] */
-CAMLprim value caml_array_get_float(value array, value index)
+CAMLprim caml_value caml_array_get_float(caml_value array, caml_value index)
 {
   intnat idx = Long_val(index);
 #ifdef FLAT_FLOAT_ARRAY
   double d;
-  value res;
+  caml_value res;
 
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
@@ -84,7 +84,7 @@ CAMLprim value caml_array_get_float(value array, value index)
 }
 
 /* [ 'a array -> int -> 'a ] */
-CAMLprim value caml_array_get(value array, value index)
+CAMLprim caml_value caml_array_get(caml_value array, caml_value index)
 {
 #ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(array) == Double_array_tag)
@@ -96,11 +96,11 @@ CAMLprim value caml_array_get(value array, value index)
 }
 
 /* [ floatarray -> int -> float ] */
-CAMLprim value caml_floatarray_get(value array, value index)
+CAMLprim caml_value caml_floatarray_get(caml_value array, caml_value index)
 {
   intnat idx = Long_val(index);
   double d;
-  value res;
+  caml_value res;
 
   CAMLassert (Tag_val(array) == Double_array_tag);
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
@@ -116,7 +116,7 @@ CAMLprim value caml_floatarray_get(value array, value index)
 }
 
 /* [ 'a array -> int -> 'a -> unit ] where 'a != float */
-CAMLprim value caml_array_set_addr(value array, value index, value newval)
+CAMLprim caml_value caml_array_set_addr(caml_value array, caml_value index, caml_value newval)
 {
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
@@ -125,7 +125,7 @@ CAMLprim value caml_array_set_addr(value array, value index, value newval)
 }
 
 /* [ float array -> int -> float -> unit ] */
-CAMLprim value caml_array_set_float(value array, value index, value newval)
+CAMLprim caml_value caml_array_set_float(caml_value array, caml_value index, caml_value newval)
 {
   intnat idx = Long_val(index);
 #ifdef FLAT_FLOAT_ARRAY
@@ -142,7 +142,7 @@ CAMLprim value caml_array_set_float(value array, value index, value newval)
 }
 
 /* [ 'a array -> int -> 'a -> unit ] */
-CAMLprim value caml_array_set(value array, value index, value newval)
+CAMLprim caml_value caml_array_set(caml_value array, caml_value index, caml_value newval)
 {
 #ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(array) == Double_array_tag)
@@ -154,7 +154,7 @@ CAMLprim value caml_array_set(value array, value index, value newval)
 }
 
 /* [ floatarray -> int -> float -> unit ] */
-CAMLprim value caml_floatarray_set(value array, value index, value newval)
+CAMLprim caml_value caml_floatarray_set(caml_value array, caml_value index, caml_value newval)
 {
   intnat idx = Long_val(index);
   double d = Double_val (newval);
@@ -166,12 +166,12 @@ CAMLprim value caml_floatarray_set(value array, value index, value newval)
 }
 
 /* [ float array -> int -> float ] */
-CAMLprim value caml_array_unsafe_get_float(value array, value index)
+CAMLprim caml_value caml_array_unsafe_get_float(caml_value array, caml_value index)
 {
   intnat idx = Long_val (index);
 #ifdef FLAT_FLOAT_ARRAY
   double d;
-  value res;
+  caml_value res;
 
   d = Double_flat_field(array, idx);
 #define Setup_for_gc
@@ -188,7 +188,7 @@ CAMLprim value caml_array_unsafe_get_float(value array, value index)
 }
 
 /* [ 'a array -> int -> 'a ] */
-CAMLprim value caml_array_unsafe_get(value array, value index)
+CAMLprim caml_value caml_array_unsafe_get(caml_value array, caml_value index)
 {
 #ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(array) == Double_array_tag)
@@ -200,11 +200,11 @@ CAMLprim value caml_array_unsafe_get(value array, value index)
 }
 
 /* [ floatarray -> int -> float ] */
-CAMLprim value caml_floatarray_unsafe_get(value array, value index)
+CAMLprim caml_value caml_floatarray_unsafe_get(caml_value array, caml_value index)
 {
   intnat idx = Long_val(index);
   double d;
-  value res;
+  caml_value res;
 
   CAMLassert (Tag_val(array) == Double_array_tag);
   d = Double_flat_field(array, idx);
@@ -218,7 +218,7 @@ CAMLprim value caml_floatarray_unsafe_get(value array, value index)
 }
 
 /* [ 'a array -> int -> 'a -> unit ] where 'a != float */
-CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
+CAMLprim caml_value caml_array_unsafe_set_addr(caml_value array, caml_value index,caml_value newval)
 {
   intnat idx = Long_val(index);
   Modify(&Field(array, idx), newval);
@@ -226,7 +226,7 @@ CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
 }
 
 /* [ float array -> int -> float -> unit ] */
-CAMLprim value caml_array_unsafe_set_float(value array,value index,value newval)
+CAMLprim caml_value caml_array_unsafe_set_float(caml_value array,caml_value index,caml_value newval)
 {
   intnat idx = Long_val(index);
 #ifdef FLAT_FLOAT_ARRAY
@@ -239,7 +239,7 @@ CAMLprim value caml_array_unsafe_set_float(value array,value index,value newval)
 }
 
 /* [ 'a array -> int -> 'a -> unit ] */
-CAMLprim value caml_array_unsafe_set(value array, value index, value newval)
+CAMLprim caml_value caml_array_unsafe_set(caml_value array, caml_value index, caml_value newval)
 {
 #ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(array) == Double_array_tag)
@@ -251,7 +251,7 @@ CAMLprim value caml_array_unsafe_set(value array, value index, value newval)
 }
 
 /* [ floatarray -> int -> float -> unit ] */
-CAMLprim value caml_floatarray_unsafe_set(value array, value index,value newval)
+CAMLprim caml_value caml_floatarray_unsafe_set(caml_value array, caml_value index,caml_value newval)
 {
   intnat idx = Long_val(index);
   double d = Double_val (newval);
@@ -261,10 +261,10 @@ CAMLprim value caml_floatarray_unsafe_set(value array, value index,value newval)
 
 /* [len] is a [value] representing number of floats. */
 /* [ int -> floatarray ] */
-CAMLprim value caml_floatarray_create(value len)
+CAMLprim caml_value caml_floatarray_create(caml_value len)
 {
   mlsize_t wosize = Long_val(len) * Double_wosize;
-  value result;
+  caml_value result;
   if (wosize <= Max_young_wosize){
     if (wosize == 0)
       return Atom(0);
@@ -285,7 +285,7 @@ CAMLprim value caml_floatarray_create(value len)
 
 /* [len] is a [value] representing number of floats */
 /* [ int -> float array ] */
-CAMLprim value caml_make_float_vect(value len)
+CAMLprim caml_value caml_make_float_vect(caml_value len)
 {
 #ifdef FLAT_FLOAT_ARRAY
   return caml_floatarray_create (len);
@@ -296,7 +296,7 @@ CAMLprim value caml_make_float_vect(value len)
 
 /* [len] is a [value] representing number of words or floats */
 /* Spacetime profiling assumes that this function is only called from OCaml. */
-CAMLprim value caml_make_vect(value len, value init)
+CAMLprim caml_value caml_make_vect(caml_value len, caml_value init)
 {
   CAMLparam2 (len, init);
   CAMLlocal1 (res);
@@ -352,7 +352,7 @@ CAMLprim value caml_make_vect(value len, value init)
    boxed floats and returns the corresponding flat-allocated [float array].
    In all other cases, it just returns its argument unchanged.
 */
-CAMLprim value caml_make_array(value init)
+CAMLprim caml_value caml_make_array(caml_value init)
 {
 #ifdef FLAT_FLOAT_ARRAY
   CAMLparam1 (init);
@@ -390,10 +390,10 @@ CAMLprim value caml_make_array(value init)
 
 /* Blitting */
 
-CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
-                               value n)
+CAMLprim caml_value caml_array_blit(caml_value a1, caml_value ofs1, caml_value a2, caml_value ofs2,
+                               caml_value n)
 {
-  value * src, * dst;
+  caml_value * src, * dst;
   intnat count;
 
 #ifdef FLAT_FLOAT_ARRAY
@@ -415,7 +415,7 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
        Again, memmove takes care of overlap. */
     memmove(&Field(a2, Long_val(ofs2)),
             &Field(a1, Long_val(ofs1)),
-            Long_val(n) * sizeof(value));
+            Long_val(n) * sizeof(caml_value));
     return Val_unit;
   }
   /* Array of values, destination is in old generation.
@@ -445,19 +445,19 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
 
 /* A generic function for extraction and concatenation of sub-arrays */
 
-static value caml_array_gather(intnat num_arrays,
-                               value arrays[/*num_arrays*/],
+static caml_value caml_array_gather(intnat num_arrays,
+                               caml_value arrays[/*num_arrays*/],
                                intnat offsets[/*num_arrays*/],
                                intnat lengths[/*num_arrays*/])
 {
   CAMLparamN(arrays, num_arrays);
-  value res;                    /* no need to register it as a root */
+  caml_value res;                    /* no need to register it as a root */
 #ifdef FLAT_FLOAT_ARRAY
   int isfloat = 0;
   mlsize_t wsize;
 #endif
   mlsize_t i, size, count, pos;
-  value * src;
+  caml_value * src;
 
   /* Determine total size and whether result array is an array of floats */
   size = 0;
@@ -494,7 +494,7 @@ static value caml_array_gather(intnat num_arrays,
     for (i = 0, pos = 0; i < num_arrays; i++) {
       memcpy(&Field(res, pos),
              &Field(arrays[i], offsets[i]),
-             lengths[i] * sizeof(value));
+             lengths[i] * sizeof(caml_value));
       pos += lengths[i];
     }
     CAMLassert(pos == size);
@@ -522,30 +522,30 @@ static value caml_array_gather(intnat num_arrays,
   CAMLreturn (res);
 }
 
-CAMLprim value caml_array_sub(value a, value ofs, value len)
+CAMLprim caml_value caml_array_sub(caml_value a, caml_value ofs, caml_value len)
 {
-  value arrays[1] = { a };
+  caml_value arrays[1] = { a };
   intnat offsets[1] = { Long_val(ofs) };
   intnat lengths[1] = { Long_val(len) };
   return caml_array_gather(1, arrays, offsets, lengths);
 }
 
-CAMLprim value caml_array_append(value a1, value a2)
+CAMLprim caml_value caml_array_append(caml_value a1, caml_value a2)
 {
-  value arrays[2] = { a1, a2 };
+  caml_value arrays[2] = { a1, a2 };
   intnat offsets[2] = { 0, 0 };
   intnat lengths[2] = { caml_array_length(a1), caml_array_length(a2) };
   return caml_array_gather(2, arrays, offsets, lengths);
 }
 
-CAMLprim value caml_array_concat(value al)
+CAMLprim caml_value caml_array_concat(caml_value al)
 {
 #define STATIC_SIZE 16
-  value static_arrays[STATIC_SIZE], * arrays;
+  caml_value static_arrays[STATIC_SIZE], * arrays;
   intnat static_offsets[STATIC_SIZE], * offsets;
   intnat static_lengths[STATIC_SIZE], * lengths;
   intnat n, i;
-  value l, res;
+  caml_value l, res;
 
   /* Length of list = number of arrays */
   for (n = 0, l = al; l != Val_int(0); l = Field(l, 1)) n++;
@@ -555,13 +555,13 @@ CAMLprim value caml_array_concat(value al)
     offsets = static_offsets;
     lengths = static_lengths;
   } else {
-    arrays = caml_stat_alloc(n * sizeof(value));
+    arrays = caml_stat_alloc(n * sizeof(caml_value));
     offsets = caml_stat_alloc_noexc(n * sizeof(intnat));
     if (offsets == NULL) {
       caml_stat_free(arrays);
       caml_raise_out_of_memory();
     }
-    lengths = caml_stat_alloc_noexc(n * sizeof(value));
+    lengths = caml_stat_alloc_noexc(n * sizeof(caml_value));
     if (lengths == NULL) {
       caml_stat_free(offsets);
       caml_stat_free(arrays);

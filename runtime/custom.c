@@ -25,7 +25,7 @@
 #include "caml/signals.h"
 
 /* [size] is a number of bytes */
-CAMLexport value caml_alloc_custom(struct custom_operations * ops,
+CAMLexport caml_value caml_alloc_custom(struct custom_operations * ops,
                                    uintnat size,
                                    mlsize_t mem,
                                    mlsize_t max)
@@ -34,7 +34,7 @@ CAMLexport value caml_alloc_custom(struct custom_operations * ops,
   CAMLparam0();
   CAMLlocal1(result);
 
-  wosize = 1 + (size + sizeof(value) - 1) / sizeof(value);
+  wosize = 1 + (size + sizeof(caml_value) - 1) / sizeof(caml_value);
   if (wosize <= Max_young_wosize) {
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;

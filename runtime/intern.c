@@ -51,7 +51,7 @@ static char * intern_extra_block = NULL;
 static asize_t obj_counter;
 /* Count how many objects seen so far */
 
-static value * intern_obj_table = NULL;
+static caml_value * intern_obj_table = NULL;
 /* The pointers to objects already seen */
 
 static color_t intern_color;
@@ -61,7 +61,7 @@ static header_t intern_header;
 /* Original header of the destination block.
    Meaningful only if intern_extra_block is NULL. */
 
-static value intern_block = 0;
+static caml_value intern_block = 0;
 /* Point to the heap block allocated as destination block.
    Meaningful only if intern_extra_block is NULL. */
 
@@ -229,7 +229,7 @@ static void readfloats(double * dest, mlsize_t len, unsigned int code)
 
 /* Item on the stack with defined operation */
 struct intern_item {
-  value * dest;
+  caml_value * dest;
   intnat arg;
   enum {
     OReadItems, /* read arg items and store them in dest[0], dest[1], ... */
@@ -314,12 +314,12 @@ static struct intern_item * intern_resize_stack(struct intern_item * sp)
     }                                                                   \
   } while(0)
 
-static void intern_rec(value *dest)
+static void intern_rec(caml_value *dest)
 {
   unsigned int code;
   tag_t tag;
   mlsize_t size, len, ofs_ind;
-  value v;
+  caml_value v;
   asize_t ofs;
   header_t header;
   unsigned char digest[16];
@@ -341,13 +341,13 @@ static void intern_rec(value *dest)
   case OFreshOID:
     /* Refresh the object ID */
     /* but do not do it for predefined exception slots */
-    if (Long_val(Field((value)dest, 1)) >= 0)
-      caml_set_oo_id((value)dest);
+    if (Long_val(Field((caml_value)dest, 1)) >= 0)
+      caml_set_oo_id((caml_value)dest);
     /* Pop item and iterate */
     sp--;
     break;
   case OShift:
-    /* Shift value by an offset */
+    /* Shift caml_value by an offset */
     *dest += sp->arg;
     /* Pop item and iterate */
     sp--;
@@ -356,7 +356,7 @@ static void intern_rec(value *dest)
     /* Pop item */
     sp->dest++;
     if (--(sp->arg) == 0) sp--;
-    /* Read a value and set v to this value */
+    /* Read a caml_value and set v to this caml_value */
   code = read8u();
   if (code >= PREFIX_SMALL_INT) {
     if (code >= PREFIX_SMALL_BLOCK) {
@@ -379,7 +379,7 @@ static void intern_rec(value *dest)
           /* Request freshing OID */
           PushItem();
           sp->op = OFreshOID;
-          sp->dest = (value*) v;
+          sp->dest = (caml_value*) v;
           sp->arg = 1;
           /* Finally read first two block elements: method table and old OID */
           ReadItems(&Field(v, 0), 2);
@@ -396,7 +396,7 @@ static void intern_rec(value *dest)
       /* Small string */
       len = (code & 0x1F);
     read_string:
-      size = (len + sizeof(value)) / sizeof(value);
+      size = (len + sizeof(caml_value)) / sizeof(caml_value);
       v = Val_hp(intern_dest);
       if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
       *intern_dest = Make_header_allocated_here(size, String_tag, intern_color);
@@ -503,9 +503,9 @@ static void intern_rec(value *dest)
         readblock(digest, 16);
         codeptr = intern_resolve_code_pointer(digest, ofs);
         if (codeptr != NULL) {
-          v = (value) codeptr;
+          v = (caml_value) codeptr;
         } else {
-          value * function_placeholder =
+          caml_value * function_placeholder =
             caml_named_value ("Debugger.function_placeholder");
           if (function_placeholder != NULL) {
             v = *function_placeholder;
@@ -517,7 +517,7 @@ static void intern_rec(value *dest)
         break;
       case CODE_INFIXPOINTER:
         ofs = read32u();
-        /* Read a value to *dest, then offset *dest by ofs */
+        /* Read a caml_value to *dest, then offset *dest by ofs */
         PushItem();
         sp->dest = dest;
         sp->op = OShift;
@@ -564,7 +564,7 @@ static void intern_rec(value *dest)
               "input_value: incorrect length of serialized custom block");
           }
         }
-        size = 1 + (size + sizeof(value) - 1) / sizeof(value);
+        size = 1 + (size + sizeof(caml_value) - 1) / sizeof(caml_value);
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
         *intern_dest = Make_header_allocated_here(size, Custom_tag,
@@ -646,7 +646,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
   obj_counter = 0;
   if (num_objects > 0) {
     intern_obj_table =
-      (value *) caml_stat_alloc_noexc(num_objects * sizeof(value));
+      (caml_value *) caml_stat_alloc_noexc(num_objects * sizeof(caml_value));
     if (intern_obj_table == NULL) {
       intern_cleanup();
       caml_raise_out_of_memory();
@@ -666,7 +666,7 @@ static void intern_add_to_heap(mlsize_t whsize)
     CAMLassert(intern_block == 0);
     CAMLassert(intern_dest <= end_extra_block);
     if (intern_dest < end_extra_block){
-      caml_make_free_blocks ((value *) intern_dest,
+      caml_make_free_blocks ((caml_value *) intern_dest,
                              end_extra_block - intern_dest, 0, Caml_white);
     }
     caml_allocated_words +=
@@ -733,13 +733,13 @@ static void caml_parse_header(char * fun_name,
 
 /* Reading from a channel */
 
-static value caml_input_val_core(struct channel *chan, int outside_heap)
+static caml_value caml_input_val_core(struct channel *chan, int outside_heap)
 {
   intnat r;
   char header[32];
   struct marshal_header h;
   char * block;
-  value res;
+  caml_value res;
 
   if (! caml_channel_binary_mode(chan))
     caml_failwith("input_value: not a binary channel");
@@ -784,12 +784,12 @@ static value caml_input_val_core(struct channel *chan, int outside_heap)
   return caml_check_urgent_gc(res);
 }
 
-value caml_input_val(struct channel* chan)
+caml_value caml_input_val(struct channel* chan)
 {
   return caml_input_val_core(chan, 0);
 }
 
-CAMLprim value caml_input_value(value vchan)
+CAMLprim caml_value caml_input_value(caml_value vchan)
 {
   CAMLparam1 (vchan);
   struct channel * chan = Channel(vchan);
@@ -803,7 +803,7 @@ CAMLprim value caml_input_value(value vchan)
 
 /* Reading from memory-resident blocks */
 
-CAMLprim value caml_input_value_to_outside_heap(value vchan)
+CAMLprim caml_value caml_input_value_to_outside_heap(caml_value vchan)
 {
   CAMLparam1 (vchan);
   struct channel * chan = Channel(vchan);
@@ -815,7 +815,7 @@ CAMLprim value caml_input_value_to_outside_heap(value vchan)
   CAMLreturn (res);
 }
 
-CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
+CAMLexport caml_value caml_input_val_from_bytes(caml_value str, intnat ofs)
 {
   CAMLparam1 (str);
   CAMLlocal1 (obj);
@@ -837,19 +837,19 @@ CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
   CAMLreturn (caml_check_urgent_gc(obj));
 }
 
-CAMLprim value caml_input_value_from_string(value str, value ofs)
+CAMLprim caml_value caml_input_value_from_string(caml_value str, caml_value ofs)
 {
   return caml_input_val_from_bytes(str, Long_val(ofs));
 }
 
-CAMLprim value caml_input_value_from_bytes(value str, value ofs)
+CAMLprim caml_value caml_input_value_from_bytes(caml_value str, caml_value ofs)
 {
   return caml_input_val_from_bytes(str, Long_val(ofs));
 }
 
-static value input_val_from_block(struct marshal_header * h)
+static caml_value input_val_from_block(struct marshal_header * h)
 {
-  value obj;
+  caml_value obj;
   /* Allocate result */
   intern_alloc(h->whsize, h->num_objects, 0);
   /* Fill it in */
@@ -860,7 +860,7 @@ static value input_val_from_block(struct marshal_header * h)
   return caml_check_urgent_gc(obj);
 }
 
-CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
+CAMLexport caml_value caml_input_value_from_malloc(char * data, intnat ofs)
 {
   struct marshal_header h;
 
@@ -872,7 +872,7 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 }
 
 /* [len] is a number of bytes */
-CAMLexport value caml_input_value_from_block(char * data, intnat len)
+CAMLexport caml_value caml_input_value_from_block(char * data, intnat len)
 {
   struct marshal_header h;
 
@@ -891,7 +891,7 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
    and we return the data size + the length of the part of the header
    that remains to be read. */
 
-CAMLprim value caml_marshal_data_size(value buff, value ofs)
+CAMLprim caml_value caml_marshal_data_size(caml_value buff, caml_value ofs)
 {
   uint32_t magic;
   int header_len;

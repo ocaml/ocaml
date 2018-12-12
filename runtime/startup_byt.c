@@ -326,7 +326,7 @@ CAMLexport void caml_main(char_os **argv)
   int fd, pos;
   struct exec_trailer trail;
   struct channel * chan;
-  value res;
+  caml_value res;
   char * req_prims;
   char_os * shared_lib_path, * shared_libs;
   char_os * exe_name, * proc_self_exe;
@@ -457,7 +457,7 @@ CAMLexport void caml_main(char_os **argv)
 
 /* Main entry point when code is linked in as initialized data */
 
-CAMLexport value caml_startup_code_exn(
+CAMLexport caml_value caml_startup_code_exn(
            code_t code, asize_t code_size,
            char *data, asize_t data_size,
            char *section_table, asize_t section_table_size,
@@ -542,7 +542,7 @@ CAMLexport void caml_startup_code(
            int pooling,
            char_os **argv)
 {
-  value res;
+  caml_value res;
 
   res = caml_startup_code_exn(code, code_size, data, data_size,
                               section_table, section_table_size,

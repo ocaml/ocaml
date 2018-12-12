@@ -38,8 +38,8 @@ CAMLexport void (*caml_natdynlink_hook)(void* handle, const char* unit) = NULL;
 #include <limits.h>
 
 #define Handle_val(v) (*((void **) Data_abstract_val(v)))
-static value Val_handle(void* handle) {
-  value res = caml_alloc_small(1, Abstract_tag);
+static caml_value Val_handle(void* handle) {
+  caml_value res = caml_alloc_small(1, Abstract_tag);
   Handle_val(res) = handle;
   return res;
 }
@@ -53,17 +53,17 @@ static void *getsym(void *handle, const char *module, const char *name){
   return sym;
 }
 
-CAMLprim value caml_natdynlink_getmap(value unit)
+CAMLprim caml_value caml_natdynlink_getmap(caml_value unit)
 {
   return caml_input_value_from_block(caml_globals_map, INT_MAX);
 }
 
-CAMLprim value caml_natdynlink_globals_inited(value unit)
+CAMLprim caml_value caml_natdynlink_globals_inited(caml_value unit)
 {
   return Val_int(caml_globals_inited);
 }
 
-CAMLprim value caml_natdynlink_open(value filename, value global)
+CAMLprim caml_value caml_natdynlink_open(caml_value filename, caml_value global)
 {
   CAMLparam2 (filename, global);
   CAMLlocal3 (res, handle, header);
@@ -95,7 +95,7 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
   CAMLreturn(res);
 }
 
-CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
+CAMLprim caml_value caml_natdynlink_run(caml_value handle_v, caml_value symbol) {
   CAMLparam2 (handle_v, symbol);
   CAMLlocal1 (result);
   void *sym,*sym2;
@@ -138,7 +138,7 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);
 
   entrypoint = optsym("__entry");
-  if (NULL != entrypoint) result = caml_callback((value)(&entrypoint), 0);
+  if (NULL != entrypoint) result = caml_callback((caml_value)(&entrypoint), 0);
   else result = Val_unit;
 
 #undef optsym
@@ -146,7 +146,7 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   CAMLreturn (result);
 }
 
-CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
+CAMLprim caml_value caml_natdynlink_run_toplevel(caml_value filename, caml_value symbol)
 {
   CAMLparam2 (filename, symbol);
   CAMLlocal3 (res, v, handle_v);
@@ -174,12 +174,12 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
   CAMLreturn(res);
 }
 
-CAMLprim value caml_natdynlink_loadsym(value symbol)
+CAMLprim caml_value caml_natdynlink_loadsym(caml_value symbol)
 {
   CAMLparam1 (symbol);
   CAMLlocal1 (sym);
 
-  sym = (value) caml_globalsym(String_val(symbol));
+  sym = (caml_value) caml_globalsym(String_val(symbol));
   if (!sym) caml_failwith(String_val(symbol));
   CAMLreturn(sym);
 }

@@ -110,7 +110,7 @@ static int cmp_ev_info(const void *a, const void *b)
 }
 
 static struct ev_info *process_debug_events(code_t code_start,
-                                            value events_heap,
+                                            caml_value events_heap,
                                             mlsize_t *num_events)
 {
   CAMLparam1(events_heap);
@@ -172,13 +172,13 @@ static struct ev_info *process_debug_events(code_t code_start,
 
 /* Processes a (Instruct.debug_event list array) into a form suitable
    for quick lookup and registers it for the (code_start,code_size) pc range. */
-CAMLprim value caml_add_debug_info(code_t code_start, value code_size,
-                                   value events_heap)
+CAMLprim caml_value caml_add_debug_info(code_t code_start, caml_value code_size,
+                                   caml_value events_heap)
 {
   CAMLparam1(events_heap);
   struct debug_info *debug_info;
 
-  /* build the OCaml-side debug_info value */
+  /* build the OCaml-side debug_info caml_value */
   debug_info = caml_stat_alloc(sizeof(struct debug_info));
 
   debug_info->start = code_start;
@@ -198,7 +198,7 @@ CAMLprim value caml_add_debug_info(code_t code_start, value code_size,
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value caml_remove_debug_info(code_t start)
+CAMLprim caml_value caml_remove_debug_info(code_t start)
 {
   CAMLparam0();
   CAMLlocal2(dis, prev);
@@ -229,7 +229,7 @@ int caml_alloc_backtrace_buffer(void){
 /* Store the return addresses contained in the given stack fragment
    into the backtrace array */
 
-void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
+void caml_stash_backtrace(caml_value exn, code_t pc, caml_value * sp, int reraise)
 {
   if (pc != NULL) pc = pc - 1;
   if (exn != caml_backtrace_last_exn || !reraise) {
@@ -259,7 +259,7 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise)
    updates *sp to point to the following one, and *trsp to the next
    trap frame, which we will skip when we reach it  */
 
-code_t caml_next_frame_pointer(value ** sp, value ** trsp)
+code_t caml_next_frame_pointer(caml_value ** sp, caml_value ** trsp)
 {
   while (*sp < caml_stack_high) {
     code_t *p = (code_t*) (*sp)++;
@@ -281,7 +281,7 @@ code_t caml_next_frame_pointer(value ** sp, value ** trsp)
    [caml_stash_backtrace], we first traverse the stack to compute the
    right size, then allocate space for the trace. */
 
-CAMLprim value caml_get_current_callstack(value max_frames_value)
+CAMLprim caml_value caml_get_current_callstack(caml_value max_frames_value)
 {
   CAMLparam1(max_frames_value);
   CAMLlocal1(trace);
@@ -293,8 +293,8 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
 
   /* first compute the size of the trace */
   {
-    value * sp = caml_extern_sp;
-    value * trsp = caml_trapsp;
+    caml_value * sp = caml_extern_sp;
+    caml_value * trsp = caml_trapsp;
 
     for (trace_size = 0; trace_size < max_frames; trace_size++) {
       code_t p = caml_next_frame_pointer(&sp, &trsp);
@@ -306,8 +306,8 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
 
   /* then collect the trace */
   {
-    value * sp = caml_extern_sp;
-    value * trsp = caml_trapsp;
+    caml_value * sp = caml_extern_sp;
+    caml_value * trsp = caml_trapsp;
     uintnat trace_pos;
 
     for (trace_pos = 0; trace_pos < trace_size; trace_pos++) {
@@ -359,7 +359,7 @@ static void read_main_debug_info(struct debug_info *di)
       caml_input_val(chan); /* Skip the list of absolute directory names */
       /* Relocate events in event list */
       for (l = evl; l != Val_int(0); l = Field(l, 1)) {
-        value ev = Field(l, 0);
+        caml_value ev = Field(l, 0);
         Field(ev, EV_POS) = Val_long(Long_val(Field(ev, EV_POS)) + orig);
       }
       /* Record event list */

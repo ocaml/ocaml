@@ -42,7 +42,7 @@ extern caml_value caml_ephe_none;
 /* In the header, in order to let major_gc.c
    and weak.c see the body of the function */
 static inline void caml_ephe_clean (caml_value v){
-  value child;
+  caml_value child;
   int release_data = 0;
   mlsize_t size, i;
   header_t hd;
@@ -56,7 +56,7 @@ static inline void caml_ephe_clean (caml_value v){
     if (child != caml_ephe_none
         && Is_block (child) && Is_in_heap_or_young (child)){
       if (Tag_val (child) == Forward_tag){
-        value f = Forward_val (child);
+        caml_value f = Forward_val (child);
         if (Is_block (f)) {
           if (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
               || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag){

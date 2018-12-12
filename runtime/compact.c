@@ -85,7 +85,7 @@ static void invert_pointer_at (word *p)
          contains the original block header. */
       {
         /* This block as a value. */
-        value val = (value) q - Infix_offset_val (q);
+        caml_value val = (caml_value) q - Infix_offset_val (q);
         /* Get the block header. */
         word *hp = (word *) Hp_val (val);
 
@@ -120,7 +120,7 @@ static void invert_pointer_at (word *p)
   }
 }
 
-void caml_invert_root (value v, value *p)
+void caml_invert_root (caml_value v, caml_value *p)
 {
   invert_pointer_at ((word *) p);
 }
@@ -238,14 +238,14 @@ static void do_compaction (void)
     }
     /* Invert weak pointers. */
     {
-      value *pp = &caml_ephe_list_head;
-      value p;
+      caml_value *pp = &caml_ephe_list_head;
+      caml_value p;
       word q;
       size_t sz, i;
 
       while (1){
         p = *pp;
-        if (p == (value) NULL) break;
+        if (p == (caml_value) NULL) break;
         q = Hd_val (p);
         while (Ecolor (q) == 0) q = * (word *) q;
         sz = Wosize_ehd (q);
@@ -322,7 +322,7 @@ static void do_compaction (void)
                 q = next;
               }
               CAMLassert (Ecolor (q) == 1 || Ecolor (q) == 3);
-              /* No need to preserve any profinfo value on the [Infix_tag]
+              /* No need to preserve any profinfo caml_value on the [Infix_tag]
                  headers; the Spacetime profiling heap snapshot code doesn't
                  look at them. */
               *infixes = Make_header (infixes - p, Infix_tag, Caml_white);
@@ -411,7 +411,7 @@ static void do_compaction (void)
     caml_fl_reset ();
     while (ch != NULL){
       if (Chunk_size (ch) > Chunk_alloc (ch)){
-        caml_make_free_blocks ((value *) (ch + Chunk_alloc (ch)),
+        caml_make_free_blocks ((caml_value *) (ch + Chunk_alloc (ch)),
                                Wsize_bsize (Chunk_size(ch)-Chunk_alloc(ch)), 1,
                                Caml_white);
       }
@@ -484,7 +484,7 @@ void caml_compact_heap (void)
     if (chunk == NULL) return;
     /* PR#5757: we need to make the new blocks blue, or they won't be
        recognized as free by the recompaction. */
-    caml_make_free_blocks ((value *) chunk,
+    caml_make_free_blocks ((caml_value *) chunk,
                            Wsize_bsize (Chunk_size (chunk)), 0, Caml_blue);
     if (caml_page_table_add (In_heap, chunk, chunk + Chunk_size (chunk)) != 0){
       caml_free_for_heap (chunk);

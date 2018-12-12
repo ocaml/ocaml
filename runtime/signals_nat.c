@@ -90,7 +90,7 @@ void caml_garbage_collection(void)
 DECLARE_SIGNAL_HANDLER(handle_signal)
 {
   int saved_errno;
-  /* Save the value of errno (PR#5982). */
+  /* Save the caml_value of errno (PR#5982). */
   saved_errno = errno;
 #if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(sig, handle_signal);
@@ -170,7 +170,7 @@ DECLARE_SIGNAL_HANDLER(trap_handler)
   }
 #endif
   caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-  caml_young_ptr = (value *) CONTEXT_YOUNG_PTR;
+  caml_young_ptr = (caml_value *) CONTEXT_YOUNG_PTR;
   caml_bottom_of_stack = (char *) CONTEXT_SP;
   caml_last_return_address = (uintnat) CONTEXT_PC;
   caml_array_bound_error();
@@ -229,7 +229,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
     /* Raise a Stack_overflow exception straight from this signal handler */
 #if defined(CONTEXT_YOUNG_PTR) && defined(CONTEXT_EXCEPTION_POINTER)
     caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
-    caml_young_ptr = (value *) CONTEXT_YOUNG_PTR;
+    caml_young_ptr = (caml_value *) CONTEXT_YOUNG_PTR;
 #endif
     caml_raise_stack_overflow();
 #endif

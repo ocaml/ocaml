@@ -74,21 +74,21 @@
 
 #ifdef ARCH_ALIGN_DOUBLE
 
-CAMLexport double caml_Double_val(value val)
+CAMLexport double caml_Double_val(caml_value val)
 {
-  union { value v[2]; double d; } buffer;
+  union { caml_value v[2]; double d; } buffer;
 
-  CAMLassert(sizeof(double) == 2 * sizeof(value));
+  CAMLassert(sizeof(double) == 2 * sizeof(caml_value));
   buffer.v[0] = Field(val, 0);
   buffer.v[1] = Field(val, 1);
   return buffer.d;
 }
 
-CAMLexport void caml_Store_double_val(value val, double dbl)
+CAMLexport void caml_Store_double_val(caml_value val, double dbl)
 {
-  union { value v[2]; double d; } buffer;
+  union { caml_value v[2]; double d; } buffer;
 
-  CAMLassert(sizeof(double) == 2 * sizeof(value));
+  CAMLassert(sizeof(double) == 2 * sizeof(caml_value));
   buffer.d = dbl;
   Field(val, 0) = buffer.v[0];
   Field(val, 1) = buffer.v[1];
@@ -142,9 +142,9 @@ void caml_free_locale(void)
 #endif
 }
 
-CAMLexport value caml_copy_double(double d)
+CAMLexport caml_value caml_copy_double(double d)
 {
-  value res;
+  caml_value res;
 
 #define Setup_for_gc
 #define Restore_after_gc
@@ -156,10 +156,10 @@ CAMLexport value caml_copy_double(double d)
 }
 
 #ifndef FLAT_FLOAT_ARRAY
-CAMLexport void caml_Store_double_array_field(value val, mlsize_t i, double dbl)
+CAMLexport void caml_Store_double_array_field(caml_value val, mlsize_t i, double dbl)
 {
   CAMLparam1 (val);
-  value d = caml_copy_double (dbl);
+  caml_value d = caml_copy_double (dbl);
 
   CAMLassert (Tag_val (val) != Double_array_tag);
   caml_modify (&Field(val, i), d);
@@ -167,9 +167,9 @@ CAMLexport void caml_Store_double_array_field(value val, mlsize_t i, double dbl)
 }
 #endif /* ! FLAT_FLOAT_ARRAY */
 
-CAMLprim value caml_format_float(value fmt, value arg)
+CAMLprim caml_value caml_format_float(caml_value fmt, caml_value arg)
 {
-  value res;
+  caml_value res;
   double d = Double_val(arg);
 
 #ifdef HAS_BROKEN_PRINTF
@@ -193,7 +193,7 @@ CAMLprim value caml_format_float(value fmt, value arg)
   return res;
 }
 
-CAMLprim value caml_hexstring_of_float(value arg, value vprec, value vstyle)
+CAMLprim caml_value caml_hexstring_of_float(caml_value arg, caml_value vprec, caml_value vstyle)
 {
   union { uint64_t i; double d; } u;
   int sign, exp;
@@ -202,7 +202,7 @@ CAMLprim value caml_hexstring_of_float(value arg, value vprec, value vstyle)
   char * buf, * p;
   intnat prec;
   int d;
-  value res;
+  caml_value res;
 
   /* Allocate output buffer */
   prec = Long_val(vprec);
@@ -316,7 +316,7 @@ static int caml_float_of_hex(const char * s, double * res)
         *res = m == 0 ? 0. : HUGE_VAL;
         return 0;
       }
-      /* regular exponent value */
+      /* regular exponent caml_value */
       exp = e;
       s = p;                    /* stop at next loop iteration */
       break;
@@ -369,7 +369,7 @@ static int caml_float_of_hex(const char * s, double * res)
   return 0;
 }
 
-CAMLprim value caml_float_of_string(value vs)
+CAMLprim caml_value caml_float_of_string(caml_value vs)
 {
   char parse_buffer[64];
   char * buf, * dst, * end;
@@ -416,62 +416,62 @@ CAMLprim value caml_float_of_string(value vs)
   return Val_unit; /* not reached */
 }
 
-CAMLprim value caml_int_of_float(value f)
+CAMLprim caml_value caml_int_of_float(caml_value f)
 {
   return Val_long((intnat) Double_val(f));
 }
 
-CAMLprim value caml_float_of_int(value n)
+CAMLprim caml_value caml_float_of_int(caml_value n)
 {
   return caml_copy_double((double) Long_val(n));
 }
 
-CAMLprim value caml_neg_float(value f)
+CAMLprim caml_value caml_neg_float(caml_value f)
 {
   return caml_copy_double(- Double_val(f));
 }
 
-CAMLprim value caml_abs_float(value f)
+CAMLprim caml_value caml_abs_float(caml_value f)
 {
   return caml_copy_double(fabs(Double_val(f)));
 }
 
-CAMLprim value caml_add_float(value f, value g)
+CAMLprim caml_value caml_add_float(caml_value f, caml_value g)
 {
   return caml_copy_double(Double_val(f) + Double_val(g));
 }
 
-CAMLprim value caml_sub_float(value f, value g)
+CAMLprim caml_value caml_sub_float(caml_value f, caml_value g)
 {
   return caml_copy_double(Double_val(f) - Double_val(g));
 }
 
-CAMLprim value caml_mul_float(value f, value g)
+CAMLprim caml_value caml_mul_float(caml_value f, caml_value g)
 {
   return caml_copy_double(Double_val(f) * Double_val(g));
 }
 
-CAMLprim value caml_div_float(value f, value g)
+CAMLprim caml_value caml_div_float(caml_value f, caml_value g)
 {
   return caml_copy_double(Double_val(f) / Double_val(g));
 }
 
-CAMLprim value caml_exp_float(value f)
+CAMLprim caml_value caml_exp_float(caml_value f)
 {
   return caml_copy_double(exp(Double_val(f)));
 }
 
-CAMLprim value caml_floor_float(value f)
+CAMLprim caml_value caml_floor_float(caml_value f)
 {
   return caml_copy_double(floor(Double_val(f)));
 }
 
-CAMLprim value caml_fmod_float(value f1, value f2)
+CAMLprim caml_value caml_fmod_float(caml_value f1, caml_value f2)
 {
   return caml_copy_double(fmod(Double_val(f1), Double_val(f2)));
 }
 
-CAMLprim value caml_frexp_float(value f)
+CAMLprim caml_value caml_frexp_float(caml_value f)
 {
   CAMLparam1 (f);
   CAMLlocal2 (res, mantissa);
@@ -491,22 +491,22 @@ double caml_ldexp_float_unboxed(double f, intnat i)
 }
 
 
-CAMLprim value caml_ldexp_float(value f, value i)
+CAMLprim caml_value caml_ldexp_float(caml_value f, caml_value i)
 {
   return caml_copy_double(ldexp(Double_val(f), Int_val(i)));
 }
 
-CAMLprim value caml_log_float(value f)
+CAMLprim caml_value caml_log_float(caml_value f)
 {
   return caml_copy_double(log(Double_val(f)));
 }
 
-CAMLprim value caml_log10_float(value f)
+CAMLprim caml_value caml_log10_float(caml_value f)
 {
   return caml_copy_double(log10(Double_val(f)));
 }
 
-CAMLprim value caml_modf_float(value f)
+CAMLprim caml_value caml_modf_float(caml_value f)
 {
   double frem;
 
@@ -521,67 +521,67 @@ CAMLprim value caml_modf_float(value f)
   CAMLreturn (res);
 }
 
-CAMLprim value caml_sqrt_float(value f)
+CAMLprim caml_value caml_sqrt_float(caml_value f)
 {
   return caml_copy_double(sqrt(Double_val(f)));
 }
 
-CAMLprim value caml_power_float(value f, value g)
+CAMLprim caml_value caml_power_float(caml_value f, caml_value g)
 {
   return caml_copy_double(pow(Double_val(f), Double_val(g)));
 }
 
-CAMLprim value caml_sin_float(value f)
+CAMLprim caml_value caml_sin_float(caml_value f)
 {
   return caml_copy_double(sin(Double_val(f)));
 }
 
-CAMLprim value caml_sinh_float(value f)
+CAMLprim caml_value caml_sinh_float(caml_value f)
 {
   return caml_copy_double(sinh(Double_val(f)));
 }
 
-CAMLprim value caml_cos_float(value f)
+CAMLprim caml_value caml_cos_float(caml_value f)
 {
   return caml_copy_double(cos(Double_val(f)));
 }
 
-CAMLprim value caml_cosh_float(value f)
+CAMLprim caml_value caml_cosh_float(caml_value f)
 {
   return caml_copy_double(cosh(Double_val(f)));
 }
 
-CAMLprim value caml_tan_float(value f)
+CAMLprim caml_value caml_tan_float(caml_value f)
 {
   return caml_copy_double(tan(Double_val(f)));
 }
 
-CAMLprim value caml_tanh_float(value f)
+CAMLprim caml_value caml_tanh_float(caml_value f)
 {
   return caml_copy_double(tanh(Double_val(f)));
 }
 
-CAMLprim value caml_asin_float(value f)
+CAMLprim caml_value caml_asin_float(caml_value f)
 {
   return caml_copy_double(asin(Double_val(f)));
 }
 
-CAMLprim value caml_acos_float(value f)
+CAMLprim caml_value caml_acos_float(caml_value f)
 {
   return caml_copy_double(acos(Double_val(f)));
 }
 
-CAMLprim value caml_atan_float(value f)
+CAMLprim caml_value caml_atan_float(caml_value f)
 {
   return caml_copy_double(atan(Double_val(f)));
 }
 
-CAMLprim value caml_atan2_float(value f, value g)
+CAMLprim caml_value caml_atan2_float(caml_value f, caml_value g)
 {
   return caml_copy_double(atan2(Double_val(f), Double_val(g)));
 }
 
-CAMLprim value caml_ceil_float(value f)
+CAMLprim caml_value caml_ceil_float(caml_value f)
 {
   return caml_copy_double(ceil(Double_val(f)));
 }
@@ -604,7 +604,7 @@ CAMLexport double caml_hypot(double x, double y)
 #endif
 }
 
-CAMLprim value caml_hypot_float(value f, value g)
+CAMLprim caml_value caml_hypot_float(caml_value f, caml_value g)
 {
   return caml_copy_double(caml_hypot(Double_val(f), Double_val(g)));
 }
@@ -638,12 +638,12 @@ CAMLexport double caml_log1p(double x)
 #endif
 }
 
-CAMLprim value caml_expm1_float(value f)
+CAMLprim caml_value caml_expm1_float(caml_value f)
 {
   return caml_copy_double(caml_expm1(Double_val(f)));
 }
 
-CAMLprim value caml_log1p_float(value f)
+CAMLprim caml_value caml_log1p_float(caml_value f)
 {
   return caml_copy_double(caml_log1p(Double_val(f)));
 }
@@ -671,21 +671,21 @@ CAMLexport double caml_copysign(double x, double y)
 #endif
 }
 
-CAMLprim value caml_copysign_float(value f, value g)
+CAMLprim caml_value caml_copysign_float(caml_value f, caml_value g)
 {
   return caml_copy_double(caml_copysign(Double_val(f), Double_val(g)));
 }
 
 #ifdef LACKS_SANE_NAN
 
-CAMLprim value caml_neq_float(value vf, value vg)
+CAMLprim caml_value caml_neq_float(caml_value vf, caml_value vg)
 {
   double f = Double_val(vf);
   double g = Double_val(vg);
   return Val_bool(isnan(f) || isnan(g) || f != g);
 }
 
-#define DEFINE_NAN_CMP(op) (value vf, value vg) \
+#define DEFINE_NAN_CMP(op) (caml_value vf, caml_value vg) \
 { \
   double f = Double_val(vf); \
   double g = Double_val(vg); \
@@ -703,12 +703,12 @@ intnat caml_float_compare_unboxed(double f, double g)
 
 #else
 
-CAMLprim value caml_neq_float(value f, value g)
+CAMLprim caml_value caml_neq_float(caml_value f, caml_value g)
 {
   return Val_bool(Double_val(f) != Double_val(g));
 }
 
-#define DEFINE_NAN_CMP(op) (value f, value g) \
+#define DEFINE_NAN_CMP(op) (caml_value f, caml_value g) \
 { \
   return Val_bool(Double_val(f) op Double_val(g)); \
 }
@@ -724,20 +724,20 @@ intnat caml_float_compare_unboxed(double f, double g)
 
 #endif
 
-CAMLprim value caml_eq_float DEFINE_NAN_CMP(==)
-CAMLprim value caml_le_float DEFINE_NAN_CMP(<=)
-CAMLprim value caml_lt_float DEFINE_NAN_CMP(<)
-CAMLprim value caml_ge_float DEFINE_NAN_CMP(>=)
-CAMLprim value caml_gt_float DEFINE_NAN_CMP(>)
+CAMLprim caml_value caml_eq_float DEFINE_NAN_CMP(==)
+CAMLprim caml_value caml_le_float DEFINE_NAN_CMP(<=)
+CAMLprim caml_value caml_lt_float DEFINE_NAN_CMP(<)
+CAMLprim caml_value caml_ge_float DEFINE_NAN_CMP(>=)
+CAMLprim caml_value caml_gt_float DEFINE_NAN_CMP(>)
 
-CAMLprim value caml_float_compare(value vf, value vg)
+CAMLprim caml_value caml_float_compare(caml_value vf, caml_value vg)
 {
   return Val_int(caml_float_compare_unboxed(Double_val(vf),Double_val(vg)));
 }
 
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
 
-value caml_classify_float_unboxed(double vd)
+caml_value caml_classify_float_unboxed(double vd)
 {
 #ifdef ARCH_SIXTYFOUR
   union { double d; uint64_t i; } u;
@@ -778,7 +778,7 @@ value caml_classify_float_unboxed(double vd)
 #endif
 }
 
-CAMLprim value caml_classify_float(value vd)
+CAMLprim caml_value caml_classify_float(caml_value vd)
 {
   return caml_classify_float_unboxed(Double_val(vd));
 }

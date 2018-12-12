@@ -82,7 +82,7 @@ sp is a local copy of the global variable caml_extern_sp. */
     sp[0] = accu; /* accu */ \
     sp[1] = Val_unit; /* C_CALL frame: dummy environment */ \
     sp[2] = Val_unit; /* RETURN frame: dummy local 0 */ \
-    sp[3] = (value) pc; /* RETURN frame: saved return address */ \
+    sp[3] = (caml_value) pc; /* RETURN frame: saved return address */ \
     sp[4] = env; /* RETURN frame: saved environment */ \
     sp[5] = Val_long(extra_args); /* RETURN frame: saved extra args */ \
     caml_extern_sp = sp; }
@@ -95,7 +95,7 @@ sp is a local copy of the global variable caml_extern_sp. */
 
 #define Setup_for_debugger \
    { sp -= 4; \
-     sp[0] = accu; sp[1] = (value)(pc - 1); \
+     sp[0] = accu; sp[1] = (caml_value)(pc - 1); \
      sp[2] = env; sp[3] = Val_long(extra_args); \
      caml_extern_sp = sp; }
 #define Restore_after_debugger { sp += 4; }
@@ -192,16 +192,16 @@ static intnat caml_bcodcount;
 
 /* The interpreter itself */
 
-value caml_interprete(code_t prog, asize_t prog_size)
+caml_value caml_interprete(code_t prog, asize_t prog_size)
 {
 #ifdef PC_REG
   register code_t pc PC_REG;
-  register value * sp SP_REG;
-  register value accu ACCU_REG;
+  register caml_value * sp SP_REG;
+  register caml_value accu ACCU_REG;
 #else
   register code_t pc;
-  register value * sp;
-  register value accu;
+  register caml_value * sp;
+  register caml_value accu;
 #endif
 #if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
 #ifdef JUMPTBL_BASE_REG
@@ -210,12 +210,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
   register char * jumptbl_base;
 #endif
 #endif
-  value env;
+  caml_value env;
   intnat extra_args;
   struct longjmp_buffer * initial_external_raise;
   intnat initial_sp_offset;
   /* volatile ensures that initial_local_roots and saved_pc
-     will keep correct value across longjmp */
+     will keep correct caml_value across longjmp */
   struct caml__roots_block * volatile initial_local_roots;
   volatile code_t saved_pc = NULL;
   struct longjmp_buffer raise_buf;
@@ -377,7 +377,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(PUSH_RETADDR): {
       sp -= 3;
-      sp[0] = (value) (pc + *pc);
+      sp[0] = (caml_value) (pc + *pc);
       sp[1] = env;
       sp[2] = Val_long(extra_args);
       pc++;
@@ -390,10 +390,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto check_stacks;
     }
     Instruct(APPLY1): {
-      value arg1 = sp[0];
+      caml_value arg1 = sp[0];
       sp -= 3;
       sp[0] = arg1;
-      sp[1] = (value)pc;
+      sp[1] = (caml_value)pc;
       sp[2] = env;
       sp[3] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -402,12 +402,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto check_stacks;
     }
     Instruct(APPLY2): {
-      value arg1 = sp[0];
-      value arg2 = sp[1];
+      caml_value arg1 = sp[0];
+      caml_value arg2 = sp[1];
       sp -= 3;
       sp[0] = arg1;
       sp[1] = arg2;
-      sp[2] = (value)pc;
+      sp[2] = (caml_value)pc;
       sp[3] = env;
       sp[4] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -416,14 +416,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto check_stacks;
     }
     Instruct(APPLY3): {
-      value arg1 = sp[0];
-      value arg2 = sp[1];
-      value arg3 = sp[2];
+      caml_value arg1 = sp[0];
+      caml_value arg2 = sp[1];
+      caml_value arg3 = sp[2];
       sp -= 3;
       sp[0] = arg1;
       sp[1] = arg2;
       sp[2] = arg3;
-      sp[3] = (value)pc;
+      sp[3] = (caml_value)pc;
       sp[4] = env;
       sp[5] = Val_long(extra_args);
       pc = Code_val(accu);
@@ -435,7 +435,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(APPTERM): {
       int nargs = *pc++;
       int slotsize = *pc;
-      value * newsp;
+      caml_value * newsp;
       int i;
       /* Slide the nargs bottom words of the current frame to the top
          of the frame, and discard the remainder of the frame */
@@ -448,7 +448,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto check_stacks;
     }
     Instruct(APPTERM1): {
-      value arg1 = sp[0];
+      caml_value arg1 = sp[0];
       sp = sp + *pc - 1;
       sp[0] = arg1;
       pc = Code_val(accu);
@@ -456,8 +456,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto check_stacks;
     }
     Instruct(APPTERM2): {
-      value arg1 = sp[0];
-      value arg2 = sp[1];
+      caml_value arg1 = sp[0];
+      caml_value arg2 = sp[1];
       sp = sp + *pc - 2;
       sp[0] = arg1;
       sp[1] = arg2;
@@ -467,9 +467,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
       goto check_stacks;
     }
     Instruct(APPTERM3): {
-      value arg1 = sp[0];
-      value arg2 = sp[1];
-      value arg3 = sp[2];
+      caml_value arg1 = sp[0];
+      caml_value arg2 = sp[1];
+      caml_value arg3 = sp[2];
       sp = sp + *pc - 3;
       sp[0] = arg1;
       sp[1] = arg2;
@@ -553,7 +553,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int nvars = *pc++;
       mlsize_t blksize = nfuncs * 2 - 1 + nvars;
       int i;
-      value * p;
+      caml_value * p;
       if (nvars > 0) *--sp = accu;
       if (blksize <= Max_young_wosize) {
         Alloc_small(accu, blksize, Closure_tag);
@@ -571,14 +571,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
       /* The code pointers and infix headers are not in the heap,
          so no need to go through caml_initialize. */
       p = &Field(accu, 0);
-      *p = (value) (pc + pc[0]);
+      *p = (caml_value) (pc + pc[0]);
       *--sp = accu;
       p++;
       for (i = 1; i < nfuncs; i++) {
         *p = Make_header(i * 2, Infix_tag, Caml_white);  /* color irrelevant. */
         p++;
-        *p = (value) (pc + pc[i]);
-        *--sp = (value) p;
+        *p = (caml_value) (pc + pc[i]);
+        *--sp = (caml_value) p;
         p++;
       }
       pc += nfuncs;
@@ -588,12 +588,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(PUSHOFFSETCLOSURE):
       *--sp = accu; /* fallthrough */
     Instruct(OFFSETCLOSURE):
-      accu = env + *pc++ * sizeof(value); Next;
+      accu = env + *pc++ * sizeof(caml_value); Next;
 
     Instruct(PUSHOFFSETCLOSUREM2):
       *--sp = accu; /* fallthrough */
     Instruct(OFFSETCLOSUREM2):
-      accu = env - 2 * sizeof(value); Next;
+      accu = env - 2 * sizeof(caml_value); Next;
     Instruct(PUSHOFFSETCLOSURE0):
       *--sp = accu; /* fallthrough */
     Instruct(OFFSETCLOSURE0):
@@ -601,7 +601,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(PUSHOFFSETCLOSURE2):
       *--sp = accu; /* fallthrough */
     Instruct(OFFSETCLOSURE2):
-      accu = env + 2 * sizeof(value); Next;
+      accu = env + 2 * sizeof(caml_value); Next;
 
 
 /* Access to global variables */
@@ -649,7 +649,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       mlsize_t wosize = *pc++;
       tag_t tag = *pc++;
       mlsize_t i;
-      value block;
+      caml_value block;
       if (wosize <= Max_young_wosize) {
         Alloc_small(block, wosize, tag);
         Field(block, 0) = accu;
@@ -664,7 +664,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
     Instruct(MAKEBLOCK1): {
       tag_t tag = *pc++;
-      value block;
+      caml_value block;
       Alloc_small(block, 1, tag);
       Field(block, 0) = accu;
       accu = block;
@@ -672,7 +672,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
     Instruct(MAKEBLOCK2): {
       tag_t tag = *pc++;
-      value block;
+      caml_value block;
       Alloc_small(block, 2, tag);
       Field(block, 0) = accu;
       Field(block, 1) = sp[0];
@@ -682,7 +682,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     }
     Instruct(MAKEBLOCK3): {
       tag_t tag = *pc++;
-      value block;
+      caml_value block;
       Alloc_small(block, 3, tag);
       Field(block, 0) = accu;
       Field(block, 1) = sp[0];
@@ -694,7 +694,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(MAKEFLOATBLOCK): {
       mlsize_t size = *pc++;
       mlsize_t i;
-      value block;
+      caml_value block;
       if (size <= Max_young_wosize / Double_wosize) {
         Alloc_small(block, size * Double_wosize, Double_array_tag);
       } else {
@@ -859,7 +859,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if ((char *) caml_trapsp
           >= (char *) caml_stack_high - initial_sp_offset) {
         caml_external_raise = initial_external_raise;
-        caml_extern_sp = (value *) ((char *) caml_stack_high
+        caml_extern_sp = (caml_value *) ((char *) caml_stack_high
                                     - initial_sp_offset);
         caml_callback_depth--;
         return Make_exception_result(accu);
@@ -877,7 +877,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     check_stacks:
       if (sp < caml_stack_threshold) {
         caml_extern_sp = sp;
-        caml_realloc_stack(Stack_threshold / sizeof(value));
+        caml_realloc_stack(Stack_threshold / sizeof(caml_value));
         sp = caml_extern_sp;
       }
       /* Fall through CHECK_SIGNALS */
@@ -973,11 +973,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Integer arithmetic */
 
     Instruct(NEGINT):
-      accu = (value)(2 - (intnat)accu); Next;
+      accu = (caml_value)(2 - (intnat)accu); Next;
     Instruct(ADDINT):
-      accu = (value)((intnat) accu + (intnat) *sp++ - 1); Next;
+      accu = (caml_value)((intnat) accu + (intnat) *sp++ - 1); Next;
     Instruct(SUBINT):
-      accu = (value)((intnat) accu - (intnat) *sp++ + 1); Next;
+      accu = (caml_value)((intnat) accu - (intnat) *sp++ + 1); Next;
     Instruct(MULINT):
       accu = Val_long(Long_val(accu) * Long_val(*sp++)); Next;
 
@@ -994,17 +994,17 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(ANDINT):
-      accu = (value)((intnat) accu & (intnat) *sp++); Next;
+      accu = (caml_value)((intnat) accu & (intnat) *sp++); Next;
     Instruct(ORINT):
-      accu = (value)((intnat) accu | (intnat) *sp++); Next;
+      accu = (caml_value)((intnat) accu | (intnat) *sp++); Next;
     Instruct(XORINT):
-      accu = (value)(((intnat) accu ^ (intnat) *sp++) | 1); Next;
+      accu = (caml_value)(((intnat) accu ^ (intnat) *sp++) | 1); Next;
     Instruct(LSLINT):
-      accu = (value)((((intnat) accu - 1) << Long_val(*sp++)) + 1); Next;
+      accu = (caml_value)((((intnat) accu - 1) << Long_val(*sp++)) + 1); Next;
     Instruct(LSRINT):
-      accu = (value)((((uintnat) accu) >> Long_val(*sp++)) | 1); Next;
+      accu = (caml_value)((((uintnat) accu) >> Long_val(*sp++)) | 1); Next;
     Instruct(ASRINT):
-      accu = (value)((((intnat) accu) >> Long_val(*sp++)) | 1); Next;
+      accu = (caml_value)((((intnat) accu) >> Long_val(*sp++)) | 1); Next;
 
 #define Integer_comparison(typ,opname,tst) \
     Instruct(opname): \
@@ -1065,8 +1065,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef CAML_METHOD_CACHE
     Instruct(GETPUBMET): {
       /* accu == object, pc[0] == tag, pc[1] == cache */
-      value meths = Field (accu, 0);
-      value ofs;
+      caml_value meths = Field (accu, 0);
+      caml_value ofs;
 #ifdef CAML_TEST_CACHE
       static int calls = 0, hits = 0;
       if (calls >= 10000000) {
@@ -1078,11 +1078,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       *--sp = accu;
       accu = Val_int(*pc++);
       ofs = *pc & Field(meths,1);
-      if (*(value*)(((char*)&Field(meths,3)) + ofs) == accu) {
+      if (*(caml_value*)(((char*)&Field(meths,3)) + ofs) == accu) {
 #ifdef CAML_TEST_CACHE
         hits++;
 #endif
-        accu = *(value*)(((char*)&Field(meths,2)) + ofs);
+        accu = *(caml_value*)(((char*)&Field(meths,2)) + ofs);
       }
       else
       {
@@ -1092,7 +1092,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
           if (accu < Field(meths,mi)) hi = mi-2;
           else li = mi;
         }
-        *pc = (li-3)*sizeof(value);
+        *pc = (li-3)*sizeof(caml_value);
         accu = Field (meths, li-1);
       }
       pc++;
@@ -1107,7 +1107,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
     Instruct(GETDYNMET): {
       /* accu == tag, sp[0] == object, *pc == cache */
-      value meths = Field (sp[0], 0);
+      caml_value meths = Field (sp[0], 0);
       int li = 3, hi = Field(meths,0), mi;
       while (li < hi) {
         mi = ((li+hi) >> 1) | 1;

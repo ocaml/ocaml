@@ -70,7 +70,7 @@ static double next_snapshot_time = 0.0;
 static struct channel *snapshot_channel;
 static int pid_when_snapshot_channel_opened;
 
-extern value caml_spacetime_debug(value);
+extern caml_value caml_spacetime_debug(caml_value);
 
 static char* start_of_free_node_block;
 static char* end_of_free_node_block;
@@ -94,11 +94,11 @@ shape_table* caml_spacetime_dynamic_shape_tables = NULL;
 
 static uintnat caml_spacetime_profinfo = (uintnat) 0;
 
-value caml_spacetime_trie_root = Val_unit;
-value* caml_spacetime_trie_node_ptr = &caml_spacetime_trie_root;
+caml_value caml_spacetime_trie_root = Val_unit;
+caml_value* caml_spacetime_trie_node_ptr = &caml_spacetime_trie_root;
 
-static value caml_spacetime_finaliser_trie_root_main_thread = Val_unit;
-value* caml_spacetime_finaliser_trie_root
+static caml_value caml_spacetime_finaliser_trie_root_main_thread = Val_unit;
+caml_value* caml_spacetime_finaliser_trie_root
   = &caml_spacetime_finaliser_trie_root_main_thread;
 
 /* CR-someday mshinwell: think about thread safety of the manipulation of
@@ -122,8 +122,8 @@ static void reinitialise_free_node_block(void)
   start_of_free_node_block = (char*) caml_stat_alloc_noexc(chunk_size);
   end_of_free_node_block = start_of_free_node_block + chunk_size;
 
-  for (index = 0; index < chunk_size / sizeof(value); index++) {
-    ((value*) start_of_free_node_block)[index] = Val_unit;
+  for (index = 0; index < chunk_size / sizeof(caml_value); index++) {
+    ((caml_value*) start_of_free_node_block)[index] = Val_unit;
   }
 }
 
@@ -140,7 +140,7 @@ static uint32_t magic_number_base = 0xace00ace;
 
 static void caml_spacetime_write_magic_number_internal(struct channel* chan)
 {
-  value magic_number;
+  caml_value magic_number;
   uint16_t features = 0;
 
 #ifdef ENABLE_CALL_COUNTS
@@ -157,7 +157,7 @@ static void caml_spacetime_write_magic_number_internal(struct channel* chan)
   Unlock(chan);
 }
 
-CAMLprim value caml_spacetime_write_magic_number(value v_channel)
+CAMLprim caml_value caml_spacetime_write_magic_number(caml_value v_channel)
 {
   caml_spacetime_write_magic_number_internal(Channel(v_channel));
   return Val_unit;
@@ -289,12 +289,12 @@ void caml_spacetime_register_shapes(void* dynlinked_table)
   caml_spacetime_dynamic_shape_tables = table;
 }
 
-CAMLprim value caml_spacetime_trie_is_initialized (value v_unit)
+CAMLprim caml_value caml_spacetime_trie_is_initialized (caml_value v_unit)
 {
   return (caml_spacetime_trie_root == Val_unit) ? Val_false : Val_true;
 }
 
-CAMLprim value caml_spacetime_get_trie_root (value v_unit)
+CAMLprim caml_value caml_spacetime_get_trie_root (caml_value v_unit)
 {
   return caml_spacetime_trie_root;
 }
@@ -320,11 +320,11 @@ void caml_spacetime_register_thread(
   num_per_threads++;
 }
 
-static void caml_spacetime_save_event_internal (value v_time_opt,
+static void caml_spacetime_save_event_internal (caml_value v_time_opt,
                                                 struct channel* chan,
-                                                value v_event_name)
+                                                caml_value v_event_name)
 {
-  value v_time;
+  caml_value v_time;
   double time_override = 0.0;
   int use_time_override = 0;
 
@@ -345,9 +345,9 @@ static void caml_spacetime_save_event_internal (value v_time_opt,
   caml_stat_free(Hp_val(v_time));
 }
 
-CAMLprim value caml_spacetime_save_event (value v_time_opt,
-                                          value v_channel,
-                                          value v_event_name)
+CAMLprim caml_value caml_spacetime_save_event (caml_value v_time_opt,
+                                          caml_value v_channel,
+                                          caml_value v_event_name)
 {
   struct channel* chan = Channel(v_channel);
 
@@ -360,7 +360,7 @@ CAMLprim value caml_spacetime_save_event (value v_time_opt,
 void save_trie (struct channel *chan, double time_override,
                 int use_time_override)
 {
-  value v_time, v_frames, v_shapes;
+  caml_value v_time, v_frames, v_shapes;
   /* CR-someday mshinwell: The commented-out changes here are for multicore,
      where we think we should have one trie per domain. */
   /* int num_marshalled = 0;
@@ -405,7 +405,7 @@ void save_trie (struct channel *chan, double time_override,
   Unlock(chan);
 }
 
-CAMLprim value caml_spacetime_save_trie (value v_time_opt, value v_channel)
+CAMLprim caml_value caml_spacetime_save_trie (caml_value v_time_opt, caml_value v_channel)
 {
   struct channel* channel = Channel(v_channel);
   double time_override = 0.0;
@@ -426,22 +426,22 @@ c_node_type caml_spacetime_classify_c_node(c_node* node)
   return (node->pc & 2) ? CALL : ALLOCATION;
 }
 
-c_node* caml_spacetime_c_node_of_stored_pointer(value node_stored)
+c_node* caml_spacetime_c_node_of_stored_pointer(caml_value node_stored)
 {
   CAMLassert(node_stored == Val_unit || Is_c_node(node_stored));
   return (node_stored == Val_unit) ? NULL : (c_node*) Hp_val(node_stored);
 }
 
 c_node* caml_spacetime_c_node_of_stored_pointer_not_null(
-      value node_stored)
+      caml_value node_stored)
 {
   CAMLassert(Is_c_node(node_stored));
   return (c_node*) Hp_val(node_stored);
 }
 
-value caml_spacetime_stored_pointer_of_c_node(c_node* c_node)
+caml_value caml_spacetime_stored_pointer_of_c_node(c_node* c_node)
 {
-  value node;
+  caml_value node;
   CAMLassert(c_node != NULL);
   node = Val_hp(c_node);
   CAMLassert(Is_c_node(node));
@@ -455,7 +455,7 @@ static int pc_inside_c_node_matches(c_node* node, void* pc)
 }
 #endif
 
-static value allocate_uninitialized_ocaml_node(int size_including_header)
+static caml_value allocate_uninitialized_ocaml_node(int size_including_header)
 {
   void* node;
   uintnat size;
@@ -463,7 +463,7 @@ static value allocate_uninitialized_ocaml_node(int size_including_header)
   CAMLassert(size_including_header >= 3);
   node = caml_stat_alloc(sizeof(uintnat) * size_including_header);
 
-  size = size_including_header * sizeof(value);
+  size = size_including_header * sizeof(caml_value);
 
   node = (void*) start_of_free_node_block;
   if (end_of_free_node_block - start_of_free_node_block < size) {
@@ -480,16 +480,16 @@ static value allocate_uninitialized_ocaml_node(int size_including_header)
   return Val_hp(node);
 }
 
-static value find_tail_node(value node, void* callee)
+static caml_value find_tail_node(caml_value node, void* callee)
 {
   /* Search the tail chain within [node] (which corresponds to an invocation
      of a caller of [callee]) to determine whether it contains a tail node
      corresponding to [callee].  Returns any such node, or [Val_unit] if no
      such node exists. */
 
-  value starting_node;
-  value pc;
-  value found = Val_unit;
+  caml_value starting_node;
+  caml_value pc;
+  caml_value found = Val_unit;
 
   starting_node = node;
   pc = Encode_node_pc(callee);
@@ -507,24 +507,24 @@ static value find_tail_node(value node, void* callee)
   return found;
 }
 
-CAMLprim value caml_spacetime_allocate_node(
+CAMLprim caml_value caml_spacetime_allocate_node(
       int size_including_header, void* pc, value* node_hole)
 {
-  value node;
-  value caller_node = Val_unit;
+  caml_value node;
+  caml_value caller_node = Val_unit;
 
   node = *node_hole;
   /* The node hole should either contain [Val_unit], indicating that this
      function was not tail called and we have not been to this point in the
-     trie before; or it should contain a value encoded using
+     trie before; or it should contain a caml_value encoded using
      [Encoded_tail_caller_node] that points at the node of a caller
-     that tail called the current function.  (Such a value is necessary to
+     that tail called the current function.  (Such a caml_value is necessary to
      be able to find the start of the caller's node, and hence its tail
      chain, so we as a tail-called callee can link ourselves in.) */
   CAMLassert(Is_tail_caller_node_encoded(node));
 
   if (node != Val_unit) {
-    value tail_node;
+    caml_value tail_node;
     /* The callee was tail called.  Find whether there already exists a node
        for it in the tail call chain within the caller's node.  The caller's
        node must always be an OCaml node. */
@@ -587,8 +587,8 @@ static c_node* allocate_c_node(void)
   CAMLassert((sizeof(c_node) % sizeof(uintnat)) == 0);
 
   /* CR-soon mshinwell: remove this and pad the structure properly */
-  for (index = 0; index < sizeof(c_node) / sizeof(value); index++) {
-    ((value*) node)[index] = Val_unit;
+  for (index = 0; index < sizeof(c_node) / sizeof(caml_value); index++) {
+    ((caml_value*) node)[index] = Val_unit;
   }
 
   node->gc_header =
@@ -611,14 +611,14 @@ static value* last_indirect_node_hole_ptr_node_hole;
 static call_point* last_indirect_node_hole_ptr_result;
 
 CAMLprim value* caml_spacetime_indirect_node_hole_ptr
-      (void* callee, value* node_hole, value caller_node)
+      (void* callee, value* node_hole, caml_value caller_node)
 {
   /* Find the address of the node hole for an indirect call to [callee].
      If [caller_node] is not [Val_unit], it is a pointer to the caller's
      node, and indicates that this is a tail call site. */
 
   c_node* c_node;
-  value encoded_callee;
+  caml_value encoded_callee;
 
   if (callee == last_indirect_node_hole_ptr_callee
       && node_hole == last_indirect_node_hole_ptr_node_hole) {
@@ -635,7 +635,7 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
   encoded_callee = Encode_c_node_pc_for_call(callee);
 
   while (*node_hole != Val_unit) {
-    CAMLassert(((uintnat) *node_hole) % sizeof(value) == 0);
+    CAMLassert(((uintnat) *node_hole) % sizeof(caml_value) == 0);
 
     c_node = caml_spacetime_c_node_of_stored_pointer_not_null(*node_hole);
 
@@ -668,7 +668,7 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
 
   *node_hole = caml_spacetime_stored_pointer_of_c_node(c_node);
 
-  CAMLassert(((uintnat) *node_hole) % sizeof(value) == 0);
+  CAMLassert(((uintnat) *node_hole) % sizeof(caml_value) == 0);
   CAMLassert(*node_hole != Val_unit);
 
 #ifdef ENABLE_CALL_COUNTS
@@ -722,7 +722,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
      frame should be attached.
 
      If [for_allocation] is non-zero then [wosize] must give the size in
-     words, excluding the header, of the value being allocated.
+     words, excluding the header, of the caml_value being allocated.
 
      If [cached_frames != NULL] then:
      1. If [*cached_frames] is NULL then save the captured backtrace in a
@@ -854,7 +854,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
       node = caml_spacetime_c_node_of_stored_pointer_not_null(*node_hole);
       CAMLassert(node != NULL);
       CAMLassert(node->next == Val_unit
-        || (((uintnat) (node->next)) % sizeof(value) == 0));
+        || (((uintnat) (node->next)) % sizeof(caml_value) == 0));
 
       prev = NULL;
 
@@ -897,7 +897,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
       Make_header_with_profinfo(
         /* "-1" because [c_node] has the GC header as its first
            element. */
-        offsetof(c_node, data.allocation.count)/sizeof(value) - 1,
+        offsetof(c_node, data.allocation.count)/sizeof(caml_value) - 1,
         Infix_tag,
         Caml_black,
         caml_spacetime_profinfo);
@@ -907,7 +907,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
        points. */
     if (caml_all_allocation_points != NULL) {
       node->data.allocation.next =
-        (value) &caml_all_allocation_points->count;
+        (caml_value) &caml_all_allocation_points->count;
     } else {
       node->data.allocation.next = Val_unit;
     }
@@ -922,7 +922,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
       Val_long(Long_val(node->data.allocation.count) + (1 + wosize));
   }
 
-  CAMLassert(node->next != (value) NULL);
+  CAMLassert(node->next != (caml_value) NULL);
 
   return for_allocation ? (void*) node : (void*) node_hole;
 #else
@@ -943,7 +943,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
      amd64.S.
   */
 
-  value node;
+  caml_value node;
 
   /* Update the trie with the current backtrace, as far back as
      [caml_last_return_address], and leave the node hole pointer at
@@ -951,7 +951,7 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
 
 #ifdef HAS_LIBUNWIND
   value* node_temp;
-  node_temp = (value*) find_trie_node_from_libunwind(0, 0, NULL);
+  node_temp = (caml_value*) find_trie_node_from_libunwind(0, 0, NULL);
   if (node_temp != NULL) {
     caml_spacetime_trie_node_ptr = node_temp;
   }
@@ -1006,7 +1006,7 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
   /* Called from code that creates a value's header inside an OCaml
      function. */
 
-  value node;
+  caml_value node;
   uintnat profinfo;
 
   caml_spacetime_profinfo++;
@@ -1024,12 +1024,12 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
      It's done like this to avoid re-calculating the place in the node
      (which already has to be done in the OCaml-generated code run before
      this function). */
-  node = (value) profinfo_words;
+  node = (caml_value) profinfo_words;
   CAMLassert(Alloc_point_profinfo(node, 0) == Val_unit);
 
-  /* The profinfo value is stored shifted to reduce the number of
+  /* The profinfo caml_value is stored shifted to reduce the number of
      instructions required on the OCaml side.  It also enables us to use
-     [Infix_tag] to obtain valid value pointers into the middle of nodes,
+     [Infix_tag] to obtain valid caml_value pointers into the middle of nodes,
      which is used for the linked list of all allocation points. */
   profinfo = Make_header_with_profinfo(
     index_within_node, Infix_tag, Caml_black, profinfo);
@@ -1043,7 +1043,7 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
   /* Add the new allocation point into the linked list of all allocation
      points. */
   if (caml_all_allocation_points != NULL) {
-    Alloc_point_next_ptr(node, 0) = (value) &caml_all_allocation_points->count;
+    Alloc_point_next_ptr(node, 0) = (caml_value) &caml_all_allocation_points->count;
   }
   else {
     CAMLassert(Alloc_point_next_ptr(node, 0) == Val_unit);
@@ -1056,7 +1056,7 @@ CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
 uintnat caml_spacetime_my_profinfo (struct ext_table** cached_frames,
                                     uintnat wosize)
 {
-  /* Return the profinfo value that should be written into a value's header
+  /* Return the profinfo caml_value that should be written into a value's header
      during an allocation from C.  This may necessitate extending the trie
      with information obtained from libunwind. */
 
@@ -1085,8 +1085,8 @@ void caml_spacetime_automatic_snapshot (void)
   }
 }
 
-CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
-  (value v_event_name)
+CAMLprim caml_value caml_spacetime_save_event_for_automatic_snapshots
+  (caml_value v_event_name)
 {
   if (automatic_snapshots) {
     maybe_reopen_snapshot_channel();
@@ -1109,12 +1109,12 @@ void caml_spacetime_automatic_save (void)
   }
 }
 
-CAMLprim value caml_spacetime_enabled (value v_unit)
+CAMLprim caml_value caml_spacetime_enabled (caml_value v_unit)
 {
   return Val_true;
 }
 
-CAMLprim value caml_register_channel_for_spacetime (value v_channel)
+CAMLprim caml_value caml_register_channel_for_spacetime (caml_value v_channel)
 {
   struct channel* channel = Channel(v_channel);
   channel->flags |= CHANNEL_FLAG_BLOCKING_WRITE;
@@ -1125,35 +1125,35 @@ CAMLprim value caml_register_channel_for_spacetime (value v_channel)
 
 /* Functions for when the compiler was not configured with "-spacetime". */
 
-CAMLprim value caml_spacetime_write_magic_number(value v_channel)
+CAMLprim caml_value caml_spacetime_write_magic_number(caml_value v_channel)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_spacetime_enabled (value v_unit)
+CAMLprim caml_value caml_spacetime_enabled (caml_value v_unit)
 {
   return Val_false;
 }
 
-CAMLprim value caml_spacetime_save_event (value v_time_opt,
-                                          value v_channel,
-                                          value v_event_name)
+CAMLprim caml_value caml_spacetime_save_event (caml_value v_time_opt,
+                                          caml_value v_channel,
+                                          caml_value v_event_name)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
-  (value v_event_name)
+CAMLprim caml_value caml_spacetime_save_event_for_automatic_snapshots
+  (caml_value v_event_name)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_spacetime_save_trie (value ignored)
+CAMLprim caml_value caml_spacetime_save_trie (caml_value ignored)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_register_channel_for_spacetime (value v_channel)
+CAMLprim caml_value caml_register_channel_for_spacetime (caml_value v_channel)
 {
   return Val_unit;
 }

@@ -48,10 +48,10 @@ static void add_string(struct stringbuf *buf, const char *s)
   buf->ptr += len;
 }
 
-CAMLexport char * caml_format_exception(value exn)
+CAMLexport char * caml_format_exception(caml_value exn)
 {
   mlsize_t start, i;
-  value bucket, v;
+  caml_value bucket, v;
   struct stringbuf buf;
   char intbuf[64];
   char * res;
@@ -107,10 +107,10 @@ CAMLexport char * caml_format_exception(value exn)
 #endif
 
 /* Default C implementation in case the OCaml one is not registered. */
-static void default_fatal_uncaught_exception(value exn)
+static void default_fatal_uncaught_exception(caml_value exn)
 {
   char * msg;
-  value * at_exit;
+  caml_value * at_exit;
   int saved_backtrace_active, saved_backtrace_pos;
 
   /* Build a string representation of the exception */
@@ -134,9 +134,9 @@ static void default_fatal_uncaught_exception(value exn)
 
 int caml_abort_on_uncaught_exn = 0; /* see afl.c */
 
-void caml_fatal_uncaught_exception(value exn)
+void caml_fatal_uncaught_exception(caml_value exn)
 {
-  value *handle_uncaught_exception;
+  caml_value *handle_uncaught_exception;
 
   handle_uncaught_exception =
     caml_named_value("Printexc.handle_uncaught_exception");

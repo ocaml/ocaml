@@ -77,7 +77,7 @@ void caml_debugger_cleanup_fork(void)
 #include "caml/stacks.h"
 #include "caml/sys.h"
 
-static value marshal_flags = Val_emptylist;
+static caml_value marshal_flags = Val_emptylist;
 
 static int sock_domain;         /* Socket domain for the debugger */
 static union {                  /* Socket address for the debugger */
@@ -237,20 +237,20 @@ void caml_debugger_init(void)
   caml_trap_barrier = caml_stack_high;
 }
 
-static value getval(struct channel *chan)
+static caml_value getval(struct channel *chan)
 {
-  value res;
+  caml_value res;
   if (caml_really_getblock(chan, (char *) &res, sizeof(res)) < sizeof(res))
     caml_raise_end_of_file(); /* Bad, but consistent with caml_getword */
   return res;
 }
 
-static void putval(struct channel *chan, value val)
+static void putval(struct channel *chan, caml_value val)
 {
   caml_really_putblock(chan, (char *) &val, sizeof(val));
 }
 
-static void safe_output_value(struct channel *chan, value val)
+static void safe_output_value(struct channel *chan, caml_value val)
 {
   struct longjmp_buffer raise_buf, * saved_external_raise;
 
@@ -273,9 +273,9 @@ static void safe_output_value(struct channel *chan, value val)
 
 void caml_debugger(enum event_kind event)
 {
-  value * frame;
+  caml_value * frame;
   intnat i, pos;
-  value val;
+  caml_value val;
 
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 

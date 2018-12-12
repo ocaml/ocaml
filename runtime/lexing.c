@@ -22,32 +22,32 @@
 #include "caml/stacks.h"
 
 struct lexer_buffer {
-  value refill_buff;
-  value lex_buffer;
-  value lex_buffer_len;
-  value lex_abs_pos;
-  value lex_start_pos;
-  value lex_curr_pos;
-  value lex_last_pos;
-  value lex_last_action;
-  value lex_eof_reached;
-  value lex_mem;
-  value lex_start_p;
-  value lex_curr_p;
+  caml_value refill_buff;
+  caml_value lex_buffer;
+  caml_value lex_buffer_len;
+  caml_value lex_abs_pos;
+  caml_value lex_start_pos;
+  caml_value lex_curr_pos;
+  caml_value lex_last_pos;
+  caml_value lex_last_action;
+  caml_value lex_eof_reached;
+  caml_value lex_mem;
+  caml_value lex_start_p;
+  caml_value lex_curr_p;
 };
 
 struct lexing_table {
-  value lex_base;
-  value lex_backtrk;
-  value lex_default;
-  value lex_trans;
-  value lex_check;
-  value lex_base_code;
-  value lex_backtrk_code;
-  value lex_default_code;
-  value lex_trans_code;
-  value lex_check_code;
-  value lex_code;
+  caml_value lex_base;
+  caml_value lex_backtrk;
+  caml_value lex_default;
+  caml_value lex_trans;
+  caml_value lex_check;
+  caml_value lex_base_code;
+  caml_value lex_backtrk_code;
+  caml_value lex_default_code;
+  caml_value lex_trans_code;
+  caml_value lex_check_code;
+  caml_value lex_code;
 };
 
 #if defined(ARCH_BIG_ENDIAN) || SIZEOF_SHORT != 2
@@ -58,7 +58,7 @@ struct lexing_table {
 #define Short(tbl,n) (((short *)(tbl))[(n)])
 #endif
 
-CAMLprim value caml_lex_engine(struct lexing_table *tbl, value start_state,
+CAMLprim caml_value caml_lex_engine(struct lexing_table *tbl, caml_value start_state,
                                struct lexer_buffer *lexbuf)
 {
   int state, base, backtrk, c;
@@ -120,7 +120,7 @@ CAMLprim value caml_lex_engine(struct lexing_table *tbl, value start_state,
 /* New lexer engine, with memory of positions  */
 /***********************************************/
 
-static void run_mem(char *pc, value mem, value curr_pos) {
+static void run_mem(char *pc, caml_value mem, caml_value curr_pos) {
   for (;;) {
     unsigned char dst, src ;
 
@@ -138,7 +138,7 @@ static void run_mem(char *pc, value mem, value curr_pos) {
   }
 }
 
-static void run_tag(char *pc, value mem) {
+static void run_tag(char *pc, caml_value mem) {
   for (;;) {
     unsigned char dst, src ;
 
@@ -156,7 +156,7 @@ static void run_tag(char *pc, value mem) {
   }
 }
 
-CAMLprim value caml_new_lex_engine(struct lexing_table *tbl, value start_state,
+CAMLprim caml_value caml_new_lex_engine(struct lexing_table *tbl, caml_value start_state,
                                    struct lexer_buffer *lexbuf)
 {
   int state, base, backtrk, c, pstate ;

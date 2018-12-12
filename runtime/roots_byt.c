@@ -37,7 +37,7 @@ CAMLexport void (*caml_scan_roots_hook) (scanning_action f) = NULL;
    heap. */
 void caml_oldify_local_roots (void)
 {
-  register value * sp;
+  register caml_value * sp;
   struct caml__roots_block *lr;
   intnat i, j;
 
@@ -98,11 +98,11 @@ void caml_do_roots (scanning_action f, int do_globals)
   CAML_INSTR_TIME (tmr, "major_roots/hook");
 }
 
-CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,
-                                     value *stack_high,
+CAMLexport void caml_do_local_roots (scanning_action f, caml_value *stack_low,
+                                     caml_value *stack_high,
                                      struct caml__roots_block *local_roots)
 {
-  register value * sp;
+  register caml_value * sp;
   struct caml__roots_block *lr;
   int i, j;
 

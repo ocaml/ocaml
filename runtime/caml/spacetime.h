@@ -122,17 +122,17 @@ typedef struct {
   /* The layout and encoding of this structure must match that of the
      allocation points within OCaml nodes, so that the linked list
      traversal across all allocation points works correctly. */
-  value profinfo;  /* encoded using [Infix_tag] (see above) */
-  value count;
+  caml_value profinfo;  /* encoded using [Infix_tag] (see above) */
+  caml_value count;
   /* [next] is [Val_unit] for the end of the list.
      Otherwise it points at the second word of this [allocation_point]
      structure. */
-  value next;
+  caml_value next;
 } allocation_point;
 
 typedef struct {
-  value callee_node;
-  value call_count;
+  caml_value callee_node;
+  caml_value call_count;
 } call_point;
 
 typedef struct {
@@ -144,7 +144,7 @@ typedef struct {
     call_point call;  /* for CALL */
     allocation_point allocation;  /* for ALLOCATION */
   } data;
-  value next;           /* [Val_unit] for the end of the list */
+  caml_value next;           /* [Val_unit] for the end of the list */
 } c_node; /* CR-soon mshinwell: rename to dynamic_node */
 
 typedef struct shape_table {
@@ -158,8 +158,8 @@ extern shape_table* caml_spacetime_dynamic_shape_tables;
 typedef struct ext_table* spacetime_unwind_info_cache;
 
 extern caml_value caml_spacetime_trie_root;
-extern value* caml_spacetime_trie_node_ptr;
-extern value* caml_spacetime_finaliser_trie_root;
+extern caml_value* caml_spacetime_trie_node_ptr;
+extern caml_value* caml_spacetime_finaliser_trie_root;
 
 extern allocation_point* caml_all_allocation_points;
 
@@ -170,7 +170,7 @@ extern c_node_type caml_spacetime_classify_c_node(c_node* node);
 extern c_node* caml_spacetime_c_node_of_stored_pointer(caml_value);
 extern c_node* caml_spacetime_c_node_of_stored_pointer_not_null(caml_value);
 extern caml_value caml_spacetime_stored_pointer_of_c_node(c_node* node);
-extern void caml_spacetime_register_thread(value*, value*);
+extern void caml_spacetime_register_thread(caml_value*, caml_value*);
 extern void caml_spacetime_register_shapes(void*);
 extern caml_value caml_spacetime_frame_table(void);
 extern caml_value caml_spacetime_shape_table(void);
