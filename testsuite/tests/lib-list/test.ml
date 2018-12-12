@@ -72,4 +72,10 @@ let () =
   test (threshold + 1) (* Tail-recursive case *)
 ;;
 
+(* List.flatten *)
+let () =
+  let counter = ref (-1) in
+  let lists = List.init 10 (fun i -> List.init (i*i*i*i) (fun _ -> incr counter; !counter)) in
+  List.iteri (fun idx elt -> assert (idx = elt)) (List.flatten lists)
+
 let () = print_endline "OK";;

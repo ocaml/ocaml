@@ -187,6 +187,10 @@ Working version
 - GPR#2185: Add `List.filter_map`
   (Thomas Refis, review by Alain Frisch and Gabriel Scherer)
 
+- GPR##2199: the implementation of List.flatten and List.concat
+  that are now tail recursive starting from a threshold.
+  (Nathan Moreau, review by ???)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking

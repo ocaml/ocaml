@@ -81,12 +81,6 @@ let init len f =
   if len > max_recursion_threshold then rev (init_tailrec_aux [] 0 len f)
   else init_aux 0 len f
 
-let rec flatten = function
-    [] -> []
-  | l::r -> l @ flatten r
-
-let concat = flatten
-
 let rec map f = function
     [] -> []
   | a::l -> let r = f a in r :: map f l
@@ -124,6 +118,23 @@ let rec fold_right f l accu =
   match l with
     [] -> accu
   | a::l -> f a (fold_right f l accu)
+
+let rev_flatten l =
+  fold_left (fun accu l -> rev_append l accu) [] l
+
+let rec flatten_aux len l =
+  match l with
+    [] -> []
+  | l1 :: r ->
+    let new_len = len + length l1 in
+    if max_recursion_threshold < new_len then
+      l1 @ flatten_aux new_len r
+    else
+      rev (rev_flatten l)
+
+let flatten l = flatten_aux 0 l
+
+let concat = flatten
 
 let rec map2 f l1 l2 =
   match (l1, l2) with
