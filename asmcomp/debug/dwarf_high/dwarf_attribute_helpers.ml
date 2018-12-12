@@ -121,7 +121,7 @@ let create_location index =
   | Five ->
     if not !Clflags.dwarf_location_and_range_table_offsets then
       let spec = AS.create A.Location F.Sec_offset_loclist in
-      AV.create spec (V.offset_into_debug_loc location_list_label)
+      AV.create spec (V.offset_into_debug_loclists location_list_label)
     else
       let spec = AS.create A.Location F.Loclistx in
       AV.create spec (V.loclistx ~index:location_list_index)
@@ -131,15 +131,12 @@ let create_ranges index =
   let range_list_index = Range_list_table.Index.to_uint64 index in
   match !Clflags.dwarf_version with
   | Four ->
-    let spec =
-      AS.create (A.Dwarf_4 Ranges) (F.Dwarf_4 Sec_offset_rangelistptr)
-    in
-    (* DWARF-4 standard section 2.17.3. *)
-    AV.create spec (V.offset_into_debug_ranges range_list_label)
+    (* See debug_ranges_table.ml. *)
+    Misc.fatal_error "[create_ranges] not supported for DWARF-4"
   | Five ->
     if not !Clflags.dwarf_location_and_range_table_offsets then
       let spec = AS.create A.Ranges F.Sec_offset_rnglist in
-      AV.create spec (V.offset_into_debug_ranges range_list_label)
+      AV.create spec (V.offset_into_debug_rnglists range_list_label)
     else
       let spec = AS.create A.Ranges F.Rnglistx in
       AV.create spec (V.rnglistx ~index:range_list_index)
