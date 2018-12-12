@@ -105,6 +105,15 @@ let create ~prefix_name =
   let range_list_table = Range_list_table.create () in
   let rnglists_base = Range_list_table.base_addr range_list_table in
   let compilation_unit_proto_die =
+    let dwarf_5_only =
+      match !Clflags.dwarf_version with
+      | Four -> []
+      | Five -> [
+        DAH.create_addr_base addr_base;
+        DAH.create_loclists_base loclists_base;
+        DAH.create_rnglists_base rnglists_base;
+      ]
+    in
     let attribute_values =
       let producer_name =
         Printf.sprintf "ocamlopt %s %s"
@@ -117,10 +126,7 @@ let create ~prefix_name =
         DAH.create_low_pc_from_symbol ~symbol:start_of_code_symbol;
         DAH.create_high_pc_from_symbol ~symbol:end_of_code_symbol;
         DAH.create_stmt_list ~debug_line_label;
-        DAH.create_addr_base addr_base;
-        DAH.create_loclists_base loclists_base;
-        DAH.create_rnglists_base rnglists_base;
-      ]
+      ] @ dwarf_5_only
     in
     Proto_die.create ~parent:None
       ~tag:Compile_unit
