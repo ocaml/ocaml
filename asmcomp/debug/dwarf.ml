@@ -52,8 +52,7 @@ type proto_dies_for_var = {
 
 let dwarf_version = ref Dwarf_version.five
 
-let supports_call_sites () =
-  Dwarf_version.compare !dwarf_version Dwarf_version.five >= 0
+let supports_call_sites () = true
 
 let mangle_symbol symbol =
   let unit_name =
@@ -1204,18 +1203,40 @@ let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
         match on_stack with
         | [] -> []
         | (reg, offset_from_cfa_in_bytes) :: _ ->
-          let arg_location =
+          let arg_location_lvalue =
             reg_location_description0 reg ~offset_from_cfa_in_bytes
               ~need_rvalue:false
           in
-          match arg_location with
-          | None -> []
-          | Some arg_location ->
-            let arg_location =
-              Single_location_description.of_simple_location_description
-                arg_location
-            in
-            [DAH.create_single_call_data_location_description arg_location]
+          let arg_location_rvalue =
+            reg_location_description0 reg ~offset_from_cfa_in_bytes
+              ~need_rvalue:true
+          in
+          let call_data_location =
+            match !Clflags.dwarf_version with
+            | Four -> []
+            | Five ->
+              match arg_location_lvalue with
+              | None -> []
+              | Some arg_location_lvalue ->
+                let arg_location =
+                  Single_location_description.of_simple_location_description
+                    arg_location_lvalue
+                in
+                [DAH.create_single_call_data_location_description arg_location]
+          in
+          let call_data_value =
+            match arg_location_rvalue with
+            | None -> []
+            | Some arg_location_rvalue ->
+              let arg_location =
+                Single_location_description.of_simple_location_description
+                  arg_location_rvalue
+              in
+              [DAH.create_single_call_data_value_location_description
+                arg_location;
+              ]
+          in
+          call_data_location @ call_data_value
       in
       Proto_die.create_ignore ~sort_priority:arg_index
         ~parent:(Some call_site_die)
@@ -1248,21 +1269,30 @@ let add_call_site t ~whole_function_lexical_block ~lexical_block_proto_dies
     let position_attrs =
       match Debuginfo.position dbg with
       | None -> []
-      | Some code_range -> [
-          (* We assume that the current source file will always be
-             numbered 1 by the assembler (which generates .debug_line at the
-             moment). *)
-          DAH.create_call_file 1;
-          DAH.create_call_line (Debuginfo.Code_range.line code_range);
-          DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
-        ]
+      | Some code_range ->
+        match !Clflags.dwarf_version with
+        | Four -> []
+        | Five -> [
+            (* We assume that the current source file will always be
+               numbered 1 by the assembler (which generates .debug_line at the
+               moment). *)
+            DAH.create_call_file 1;
+            DAH.create_call_line (Debuginfo.Code_range.line code_range);
+            DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
+          ]
     in
     let call_site_die =
+      let dwarf_5_only =
+        match !Clflags.dwarf_version with
+        | Four -> []
+        | Five -> [
+            DAH.create_call_pc (Asm_label.create_int call_labels.before);
+            DAH.create_call_return_pc (Asm_label.create_int call_labels.after);
+          ]
+      in
       Proto_die.create ~parent:(Some block_die)
         ~tag:Call_site
-        ~attribute_values:(attrs @ position_attrs @ [
-          DAH.create_call_pc (Asm_label.create_int call_labels.before);
-          DAH.create_call_return_pc (Asm_label.create_int call_labels.after);
+        ~attribute_values:(attrs @ position_attrs @ dwarf_5_only @ [
           DAH.create_call_tail_call ~is_tail;
         ])
         ()

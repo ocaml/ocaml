@@ -21,6 +21,10 @@
 
 type user = private Numbers.Int16.t
 
+type dwarf_4 =
+  | GNU_call_site
+  | GNU_call_site_parameter
+
 (** We omit the "DW_TAG_" prefix. *)
 type t =
   | Array_type
@@ -91,12 +95,11 @@ type t =
   | Call_site_parameter
   | Skeleton_unit
   | Immutable_type
+  | Dwarf_4 of dwarf_4
   | User of user
 
 include Dwarf_emittable.S with type t := t
 
 val tag_name : t -> string
-
-val child_determination : t -> Child_determination.t
 
 val compare : t -> t -> int

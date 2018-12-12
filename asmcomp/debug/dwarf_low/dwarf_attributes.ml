@@ -281,6 +281,14 @@ module Attribute = struct
       | Use_location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
       | Vtable_elem_location : [< Class.exprloc | Class.Dwarf_4.loclistptr ] t
       | Ranges : Class.Dwarf_4.rangelistptr t
+      | GNU_call_site_value : Class.exprloc t
+      | GNU_call_site_data_value : Class.exprloc t
+      | GNU_call_site_target : Class.exprloc t
+      | GNU_call_site_target_clobbered : Class.exprloc t
+      | GNU_tail_call : Class.flag t
+      | GNU_all_tail_call_sites : Class.flag t
+      | GNU_all_call_sites : Class.flag t
+      | GNU_all_source_call_sites : Class.flag t
   end
 
   type 'dwarf_classes t =
@@ -544,6 +552,15 @@ module Attribute = struct
       | Dwarf_4 Use_location -> "use_location"
       | Dwarf_4 Vtable_elem_location -> "vtable_elem_location"
       | Dwarf_4 Ranges -> "ranges"
+      | Dwarf_4 GNU_call_site_value -> "GNU_call_site_value"
+      | Dwarf_4 GNU_call_site_data_value -> "GNU_call_site_data_value"
+      | Dwarf_4 GNU_call_site_target -> "GNU_call_site_target"
+      | Dwarf_4 GNU_call_site_target_clobbered ->
+        "GNU_call_site_target_clobbered"
+      | Dwarf_4 GNU_tail_call -> "GNU_tail_call"
+      | Dwarf_4 GNU_all_tail_call_sites -> "GNU_all_tail_call_sites"
+      | Dwarf_4 GNU_all_call_sites -> "GNU_all_call_sites"
+      | Dwarf_4 GNU_all_source_call_sites -> "GNU_all_source_call_sites"
     in
     "DW_AT_" ^ name
 
@@ -681,6 +698,14 @@ module Attribute = struct
     | Dwarf_4 Use_location -> 0x4a
     | Dwarf_4 Vtable_elem_location -> 0x4d
     | Dwarf_4 Ranges -> 0x55
+    | Dwarf_4 GNU_call_site_value -> 0x2111
+    | Dwarf_4 GNU_call_site_data_value -> 0x2112
+    | Dwarf_4 GNU_call_site_target -> 0x2113
+    | Dwarf_4 GNU_call_site_target_clobbered -> 0x2114
+    | Dwarf_4 GNU_tail_call -> 0x2115
+    | Dwarf_4 GNU_all_tail_call_sites -> 0x2116
+    | Dwarf_4 GNU_all_call_sites -> 0x2117
+    | Dwarf_4 GNU_all_source_call_sites -> 0x2118
 
   let encode t =
     Dwarf_value.uleb128 ~comment:(name t) (Uint64.of_int_exn (code t))
