@@ -102,7 +102,7 @@
 
 /* The entry points */
 
-void caml_output_val (struct channel * chan, value v, value flags);
+void caml_output_val (struct channel * chan, caml_value v, caml_value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
 
 #endif /* CAML_INTERNALS */
@@ -111,13 +111,13 @@ void caml_output_val (struct channel * chan, value v, value flags);
 extern "C" {
 #endif
 
-CAMLextern void caml_output_value_to_malloc(value v, value flags,
+CAMLextern void caml_output_value_to_malloc(caml_value v, caml_value flags,
                                             /*out*/ char ** buf,
                                             /*out*/ intnat * len);
   /* Output [v] with flags [flags] to a memory buffer allocated with
      malloc.  On return, [*buf] points to the buffer and [*len]
      contains the number of bytes in buffer. */
-CAMLextern intnat caml_output_value_to_block(value v, value flags,
+CAMLextern intnat caml_output_value_to_block(caml_value v, caml_value flags,
                                              char * data, intnat len);
   /* Output [v] with flags [flags] to a user-provided memory buffer.
      [data] points to the start of this buffer, and [len] is its size
@@ -125,10 +125,10 @@ CAMLextern intnat caml_output_value_to_block(value v, value flags,
      Raise [Failure] if buffer is too short. */
 
 #ifdef CAML_INTERNALS
-value caml_input_val (struct channel * chan);
+caml_value caml_input_val (struct channel * chan);
   /* Read a structured value from the channel [chan]. */
 
-extern value caml_input_value_to_outside_heap (value channel);
+extern caml_value caml_input_value_to_outside_heap (caml_value channel);
   /* As for [caml_input_value], but the value is unmarshalled into
      malloc blocks that are not added to the heap.  Not for the
      casual user. */
@@ -137,18 +137,18 @@ extern int caml_extern_allow_out_of_heap;
   /* Permit the marshaller to traverse structures that look like OCaml
      values but do not live in the OCaml heap. */
 
-extern value caml_output_value(value vchan, value v, value flags);
+extern caml_value caml_output_value(caml_value vchan, caml_value v, caml_value flags);
 #endif /* CAML_INTERNALS */
 
-CAMLextern value caml_input_val_from_string (value str, intnat ofs);
+CAMLextern caml_value caml_input_val_from_string (caml_value str, intnat ofs);
   /* Read a structured value from the OCaml string [str], starting
      at offset [ofs]. */
-CAMLextern value caml_input_value_from_malloc(char * data, intnat ofs);
+CAMLextern caml_value caml_input_value_from_malloc(char * data, intnat ofs);
   /* Read a structured value from a malloced buffer.  [data] points
      to the beginning of the buffer, and [ofs] is the offset of the
      beginning of the externed data in this buffer.  The buffer is
      deallocated with [free] on return, or if an exception is raised. */
-CAMLextern value caml_input_value_from_block(char * data, intnat len);
+CAMLextern caml_value caml_input_value_from_block(char * data, intnat len);
   /* Read a structured value from a user-provided buffer.  [data] points
      to the beginning of the externed data in this buffer,
      and [len] is the length in bytes of valid data in this buffer.

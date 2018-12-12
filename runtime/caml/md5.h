@@ -23,12 +23,12 @@
 #include "mlvalues.h"
 #include "io.h"
 
-CAMLextern value caml_md5_string (value str, value ofs, value len);
-CAMLextern value caml_md5_chan (value vchan, value len);
+CAMLextern caml_value caml_md5_string (caml_value str, caml_value ofs, caml_value len);
+CAMLextern caml_value caml_md5_chan (caml_value vchan, caml_value len);
 CAMLextern void caml_md5_block(unsigned char digest[16],
                                void * data, uintnat len);
 
-CAMLextern value caml_md5_channel(struct channel *chan, intnat toread);
+CAMLextern caml_value caml_md5_channel(struct channel *chan, intnat toread);
 
 struct MD5Context {
         uint32_t buf[4];

@@ -20,10 +20,10 @@
 #include "address_class.h"
 #include "config.h"
 
-CAMLextern value *caml_young_start, *caml_young_end;
-CAMLextern value *caml_young_alloc_start, *caml_young_alloc_end;
-CAMLextern value *caml_young_ptr, *caml_young_limit;
-CAMLextern value *caml_young_trigger;
+CAMLextern caml_value *caml_young_start, *caml_young_end;
+CAMLextern caml_value *caml_young_alloc_start, *caml_young_alloc_end;
+CAMLextern caml_value *caml_young_ptr, *caml_young_limit;
+CAMLextern caml_value *caml_young_trigger;
 extern asize_t caml_minor_heap_wsz;
 extern int caml_in_minor_collection;
 extern double caml_extra_heap_resources_minor;
@@ -38,11 +38,11 @@ extern double caml_extra_heap_resources_minor;
   asize_t reserve;             \
 }
 
-struct caml_ref_table CAML_TABLE_STRUCT(value *);
+struct caml_ref_table CAML_TABLE_STRUCT(caml_value *);
 CAMLextern struct caml_ref_table caml_ref_table;
 
 struct caml_ephe_ref_elt {
-  value ephe;      /* an ephemeron in major heap */
+  caml_value ephe;      /* an ephemeron in major heap */
   mlsize_t offset; /* the offset that points in the minor heap  */
 };
 
@@ -50,7 +50,7 @@ struct caml_ephe_ref_table CAML_TABLE_STRUCT(struct caml_ephe_ref_elt);
 CAMLextern struct caml_ephe_ref_table caml_ephe_ref_table;
 
 struct caml_custom_elt {
-  value block;     /* The finalized block in the minor heap. */
+  caml_value block;     /* The finalized block in the minor heap. */
   mlsize_t mem;    /* The parameters for adjusting GC speed. */
   mlsize_t max;
 };
@@ -70,17 +70,17 @@ extern void caml_alloc_ephe_table (struct caml_ephe_ref_table *,
 extern void caml_realloc_custom_table (struct caml_custom_table *);
 extern void caml_alloc_custom_table (struct caml_custom_table *,
                                      asize_t, asize_t);
-extern void caml_oldify_one (value, value *);
+extern void caml_oldify_one (caml_value, caml_value *);
 extern void caml_oldify_mopup (void);
 
 #define Oldify(p) do{ \
-    value __oldify__v__ = *p; \
+    caml_value __oldify__v__ = *p; \
     if (Is_block (__oldify__v__) && Is_young (__oldify__v__)){ \
       caml_oldify_one (__oldify__v__, (p)); \
     } \
   }while(0)
 
-static inline void add_to_ref_table (struct caml_ref_table *tbl, value *p)
+static inline void add_to_ref_table (struct caml_ref_table *tbl, caml_value *p)
 {
   if (tbl->ptr >= tbl->limit){
     CAMLassert (tbl->ptr == tbl->limit);
@@ -90,7 +90,7 @@ static inline void add_to_ref_table (struct caml_ref_table *tbl, value *p)
 }
 
 static inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
-                                          value ar, mlsize_t offset)
+                                          caml_value ar, mlsize_t offset)
 {
   struct caml_ephe_ref_elt *ephe_ref;
   if (tbl->ptr >= tbl->limit){
@@ -103,7 +103,7 @@ static inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
   CAMLassert(ephe_ref->offset < Wosize_val(ephe_ref->ephe));
 }
 
-static inline void add_to_custom_table (struct caml_custom_table *tbl, value v,
+static inline void add_to_custom_table (struct caml_custom_table *tbl, caml_value v,
                                         mlsize_t mem, mlsize_t max)
 {
   struct caml_custom_elt *elt;

@@ -27,31 +27,31 @@
 extern "C" {
 #endif
 
-CAMLextern value caml_callback (value closure, value arg);
-CAMLextern value caml_callback2 (value closure, value arg1, value arg2);
-CAMLextern value caml_callback3 (value closure, value arg1, value arg2,
-                                 value arg3);
-CAMLextern value caml_callbackN (value closure, int narg, value args[]);
+CAMLextern caml_value caml_callback (caml_value closure, caml_value arg);
+CAMLextern caml_value caml_callback2 (caml_value closure, caml_value arg1, caml_value arg2);
+CAMLextern caml_value caml_callback3 (caml_value closure, caml_value arg1, caml_value arg2,
+                                 caml_value arg3);
+CAMLextern caml_value caml_callbackN (caml_value closure, int narg, caml_value args[]);
 
-CAMLextern value caml_callback_exn (value closure, value arg);
-CAMLextern value caml_callback2_exn (value closure, value arg1, value arg2);
-CAMLextern value caml_callback3_exn (value closure,
-                                     value arg1, value arg2, value arg3);
-CAMLextern value caml_callbackN_exn (value closure, int narg, value args[]);
+CAMLextern caml_value caml_callback_exn (caml_value closure, caml_value arg);
+CAMLextern caml_value caml_callback2_exn (caml_value closure, caml_value arg1, caml_value arg2);
+CAMLextern caml_value caml_callback3_exn (caml_value closure,
+                                     caml_value arg1, caml_value arg2, caml_value arg3);
+CAMLextern caml_value caml_callbackN_exn (caml_value closure, int narg, caml_value args[]);
 
 #define Make_exception_result(v) ((v) | 2)
 #define Is_exception_result(v) (((v) & 3) == 2)
 #define Extract_exception(v) ((v) & ~3)
 
-CAMLextern value * caml_named_value (char const * name);
-typedef void (*caml_named_action) (value*, char *);
+CAMLextern caml_value * caml_named_value (char const * name);
+typedef void (*caml_named_action) (caml_value*, char *);
 CAMLextern void caml_iterate_named_values(caml_named_action f);
 
 CAMLextern void caml_main (char_os ** argv);
 CAMLextern void caml_startup (char_os ** argv);
-CAMLextern value caml_startup_exn (char_os ** argv);
+CAMLextern caml_value caml_startup_exn (char_os ** argv);
 CAMLextern void caml_startup_pooled (char_os ** argv);
-CAMLextern value caml_startup_pooled_exn (char_os ** argv);
+CAMLextern caml_value caml_startup_pooled_exn (char_os ** argv);
 CAMLextern void caml_shutdown (void);
 
 CAMLextern int caml_callback_depth;

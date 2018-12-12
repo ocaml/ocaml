@@ -21,7 +21,7 @@
 #include "misc.h"
 #include "memory.h"
 
-typedef void (*scanning_action) (value, value *);
+typedef void (*scanning_action) (caml_value, caml_value *);
 
 void caml_oldify_local_roots (void);
 void caml_darken_all_roots_start (void);
@@ -29,11 +29,11 @@ intnat caml_darken_all_roots_slice (intnat);
 void caml_do_roots (scanning_action, int);
 extern uintnat caml_incremental_roots_count;
 #ifndef NATIVE_CODE
-CAMLextern void caml_do_local_roots (scanning_action, value *, value *,
+CAMLextern void caml_do_local_roots (scanning_action, caml_value *, caml_value *,
                                      struct caml__roots_block *);
 #else
 CAMLextern void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
-                                    uintnat last_retaddr, value * gc_regs,
+                                    uintnat last_retaddr, caml_value * gc_regs,
                                     struct caml__roots_block * local_roots);
 #endif
 

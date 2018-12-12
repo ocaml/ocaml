@@ -149,7 +149,7 @@ extern char* caml_stat_strdup_of_utf16(const wchar_t *s);
    [s] re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero
    or in the current code page otherwise.
 */
-extern value caml_copy_string_of_utf16(const wchar_t *s);
+extern caml_value caml_copy_string_of_utf16(const wchar_t *s);
 
 extern int caml_win32_isatty(int fd);
 

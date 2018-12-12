@@ -60,8 +60,8 @@ struct longjmp_buffer {
 #endif
 
 CAMLextern struct longjmp_buffer * caml_external_raise;
-extern value caml_exn_bucket;
-int caml_is_special_exception(value exn);
+extern caml_value caml_exn_bucket;
+int caml_is_special_exception(caml_value exn);
 
 #endif /* CAML_INTERNALS */
 
@@ -70,23 +70,23 @@ extern "C" {
 #endif
 
 CAMLnoreturn_start
-CAMLextern void caml_raise (value bucket)
+CAMLextern void caml_raise (caml_value bucket)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_raise_constant (value tag)
+CAMLextern void caml_raise_constant (caml_value tag)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_raise_with_arg (value tag, value arg)
+CAMLextern void caml_raise_with_arg (caml_value tag, caml_value arg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_raise_with_args (value tag, int nargs, value arg[])
+CAMLextern void caml_raise_with_args (caml_value tag, int nargs, caml_value arg[])
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_raise_with_string (value tag, char const * msg)
+CAMLextern void caml_raise_with_string (caml_value tag, char const * msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
@@ -94,7 +94,7 @@ CAMLextern void caml_failwith (char const *msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_failwith_value (value msg)
+CAMLextern void caml_failwith_value (caml_value msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
@@ -102,7 +102,7 @@ CAMLextern void caml_invalid_argument (char const *msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_invalid_argument_value (value msg)
+CAMLextern void caml_invalid_argument_value (caml_value msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
@@ -114,7 +114,7 @@ CAMLextern void caml_raise_stack_overflow (void)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_raise_sys_error (value)
+CAMLextern void caml_raise_sys_error (caml_value)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start

@@ -145,17 +145,17 @@ typedef uint64_t uintnat;
 /* Memory model parameters */
 
 /* The size of a page for memory management (in bytes) is [1 << Page_log].
-   [Page_size] must be a multiple of [sizeof (value)].
+   [Page_size] must be a multiple of [sizeof (caml_value)].
    [Page_log] must be be >= 8 and <= 20.
    Do not change the definition of [Page_size]. */
 #define Page_log 12             /* A page is 4 kilobytes. */
 #define Page_size (1 << Page_log)
 
 /* Initial size of stack (bytes). */
-#define Stack_size (4096 * sizeof(value))
+#define Stack_size (4096 * sizeof(caml_value))
 
 /* Minimum free size of stack (bytes); below that, it is reallocated. */
-#define Stack_threshold (256 * sizeof(value))
+#define Stack_threshold (256 * sizeof(caml_value))
 
 /* Default maximum size of the stack (words). */
 #define Max_stack_def (1024 * 1024)
@@ -181,7 +181,7 @@ typedef uint64_t uintnat;
 
 
 /* Minimum size increment when growing the heap (words).
-   Must be a multiple of [Page_size / sizeof (value)]. */
+   Must be a multiple of [Page_size / sizeof (caml_value)]. */
 #define Heap_chunk_min (15 * Page_size)
 
 /* Default size increment when growing the heap.
@@ -190,7 +190,7 @@ typedef uint64_t uintnat;
 #define Heap_chunk_def 15
 
 /* Default initial size of the major heap (words);
-   Must be a multiple of [Page_size / sizeof (value)]. */
+   Must be a multiple of [Page_size / sizeof (caml_value)]. */
 #define Init_heap_def (31 * Page_size)
 /* (about 512 kB for a 32-bit platform, 1 MB for a 64-bit platform.) */
 

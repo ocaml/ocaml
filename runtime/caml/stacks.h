@@ -24,15 +24,15 @@
 #include "mlvalues.h"
 #include "memory.h"
 
-CAMLextern value * caml_stack_low;
-CAMLextern value * caml_stack_high;
-CAMLextern value * caml_stack_threshold;
-CAMLextern value * caml_extern_sp;
-CAMLextern value * caml_trapsp;
-CAMLextern value * caml_trap_barrier;
+CAMLextern caml_value * caml_stack_low;
+CAMLextern caml_value * caml_stack_high;
+CAMLextern caml_value * caml_stack_threshold;
+CAMLextern caml_value * caml_extern_sp;
+CAMLextern caml_value * caml_trapsp;
+CAMLextern caml_value * caml_trap_barrier;
 
 #define Trap_pc(tp) (((code_t *)(tp))[0])
-#define Trap_link(tp) (((value **)(tp))[1])
+#define Trap_link(tp) (((caml_value **)(tp))[1])
 
 void caml_init_stack (uintnat init_max_size);
 void caml_realloc_stack (asize_t required_size);

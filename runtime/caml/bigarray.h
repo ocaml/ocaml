@@ -109,9 +109,9 @@ struct caml_ba_array {
 extern "C" {
 #endif
 
-CAMLextern value
+CAMLextern caml_value
     caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim);
-CAMLextern value caml_ba_alloc_dims(int flags, int num_dims, void * data,
+CAMLextern caml_value caml_ba_alloc_dims(int flags, int num_dims, void * data,
                                  ... /*dimensions, with type intnat */);
 CAMLextern uintnat caml_ba_byte_size(struct caml_ba_array * b);
 CAMLextern uintnat caml_ba_num_elts(struct caml_ba_array * b);
@@ -123,10 +123,10 @@ CAMLextern uintnat caml_ba_num_elts(struct caml_ba_array * b);
 #ifdef CAML_INTERNALS
 
 CAMLextern int caml_ba_element_size[];
-CAMLextern void caml_ba_finalize(value v);
-CAMLextern int caml_ba_compare(value v1, value v2);
-CAMLextern intnat caml_ba_hash(value v);
-CAMLextern void caml_ba_serialize(value, uintnat *, uintnat *);
+CAMLextern void caml_ba_finalize(caml_value v);
+CAMLextern int caml_ba_compare(caml_value v1, caml_value v2);
+CAMLextern intnat caml_ba_hash(caml_value v);
+CAMLextern void caml_ba_serialize(caml_value, uintnat *, uintnat *);
 CAMLextern uintnat caml_ba_deserialize(void * dst);
 
 #endif

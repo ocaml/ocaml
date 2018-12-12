@@ -22,8 +22,8 @@
 
 #include "mlvalues.h"
 
-extern value caml_ephe_list_head;
-extern value caml_ephe_none;
+extern caml_value caml_ephe_list_head;
+extern caml_value caml_ephe_none;
 
 
 /** The first field 0:  weak list;
@@ -41,7 +41,7 @@ extern value caml_ephe_none;
 
 /* In the header, in order to let major_gc.c
    and weak.c see the body of the function */
-static inline void caml_ephe_clean (value v){
+static inline void caml_ephe_clean (caml_value v){
   value child;
   int release_data = 0;
   mlsize_t size, i;

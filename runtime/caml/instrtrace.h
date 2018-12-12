@@ -26,8 +26,8 @@
 extern intnat caml_icount;
 void caml_stop_here (void);
 void caml_disasm_instr (code_t pc);
-void caml_trace_value_file (value v, code_t prog, asize_t proglen, FILE * f);
-void caml_trace_accu_sp_file(value accu, value * sp, code_t prog,
+void caml_trace_value_file (caml_value v, code_t prog, asize_t proglen, FILE * f);
+void caml_trace_accu_sp_file(caml_value accu, caml_value * sp, code_t prog,
                              asize_t proglen, FILE * f);
 
 #endif /* CAML_INTERNALS */

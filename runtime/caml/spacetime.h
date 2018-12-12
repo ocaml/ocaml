@@ -63,7 +63,7 @@ typedef enum {
 
 /* The "node program counter" at the start of an OCaml node. */
 #define Node_pc(node) (Field(node, 0))
-#define Encode_node_pc(pc) (((value) pc) | 1)
+#define Encode_node_pc(pc) (((caml_value) pc) | 1)
 #define Decode_node_pc(encoded_pc) ((void*) (encoded_pc & ~1))
 
 /* The circular linked list of tail-called functions within OCaml nodes. */
@@ -103,8 +103,8 @@ typedef enum {
    The call site and callee are both recorded in the shape. */
 #define Direct_callee_node(node,offset) (Field(node, offset))
 #define Direct_call_count(node,offset) (Field(node, offset + 1))
-#define Encode_call_point_pc(pc) (((value) pc) | 1)
-#define Decode_call_point_pc(pc) ((void*) (((value) pc) & ~((uintnat) 1)))
+#define Encode_call_point_pc(pc) (((caml_value) pc) | 1)
+#define Decode_call_point_pc(pc) ((void*) (((caml_value) pc) & ~((uintnat) 1)))
 
 /* Indirect call points (tail or non-tail) within OCaml nodes.
    They hold a linked list of (PC upon entry to the callee, pointer to
@@ -114,8 +114,8 @@ typedef enum {
 #define Indirect_pc_linked_list(node,offset) (Field(node, offset))
 
 /* Encodings of the program counter value within a C node. */
-#define Encode_c_node_pc_for_call(pc) ((((value) pc) << 2) | 3)
-#define Encode_c_node_pc_for_alloc_point(pc) ((((value) pc) << 2) | 1)
+#define Encode_c_node_pc_for_call(pc) ((((caml_value) pc) << 2) | 3)
+#define Encode_c_node_pc_for_alloc_point(pc) ((((caml_value) pc) << 2) | 1)
 #define Decode_c_node_pc(pc) ((void*) (((uintnat) (pc)) >> 2))
 
 typedef struct {
@@ -157,7 +157,7 @@ extern shape_table* caml_spacetime_dynamic_shape_tables;
 
 typedef struct ext_table* spacetime_unwind_info_cache;
 
-extern value caml_spacetime_trie_root;
+extern caml_value caml_spacetime_trie_root;
 extern value* caml_spacetime_trie_node_ptr;
 extern value* caml_spacetime_finaliser_trie_root;
 
@@ -167,17 +167,17 @@ extern void caml_spacetime_initialize(void);
 extern uintnat caml_spacetime_my_profinfo(
   spacetime_unwind_info_cache*, uintnat);
 extern c_node_type caml_spacetime_classify_c_node(c_node* node);
-extern c_node* caml_spacetime_c_node_of_stored_pointer(value);
-extern c_node* caml_spacetime_c_node_of_stored_pointer_not_null(value);
-extern value caml_spacetime_stored_pointer_of_c_node(c_node* node);
+extern c_node* caml_spacetime_c_node_of_stored_pointer(caml_value);
+extern c_node* caml_spacetime_c_node_of_stored_pointer_not_null(caml_value);
+extern caml_value caml_spacetime_stored_pointer_of_c_node(c_node* node);
 extern void caml_spacetime_register_thread(value*, value*);
 extern void caml_spacetime_register_shapes(void*);
-extern value caml_spacetime_frame_table(void);
-extern value caml_spacetime_shape_table(void);
+extern caml_value caml_spacetime_frame_table(void);
+extern caml_value caml_spacetime_shape_table(void);
 extern void caml_spacetime_save_snapshot (struct channel *chan,
                                           double time_override,
                                           int use_time_override);
-extern value caml_spacetime_timestamp(double time_override,
+extern caml_value caml_spacetime_timestamp(double time_override,
                                       int use_time_override);
 extern void caml_spacetime_automatic_snapshot (void);
 

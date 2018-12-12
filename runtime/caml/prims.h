@@ -20,7 +20,7 @@
 
 #ifdef CAML_INTERNALS
 
-typedef value (*c_primitive)();
+typedef caml_value (*c_primitive)();
 
 extern c_primitive caml_builtin_cprim[];
 extern char * caml_names_of_builtin_cprim[];

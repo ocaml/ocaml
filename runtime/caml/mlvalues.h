@@ -57,7 +57,10 @@ extern "C" {
          This is for use only by the GC.
 */
 
-typedef intnat value;
+typedef intnat caml_value;
+#ifdef CAML_VALUE
+typedef caml_value value;
+#endif
 typedef uintnat header_t;
 typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
@@ -72,8 +75,8 @@ typedef uintnat mark_t;
 /* Example: Val_long as in "Val from long" or "Val of long". */
 #define Val_long(x)     ((intnat) (((uintnat)(x) << 1)) + 1)
 #define Long_val(x)     ((x) >> 1)
-#define Max_long (((intnat)1 << (8 * sizeof(value) - 2)) - 1)
-#define Min_long (-((intnat)1 << (8 * sizeof(value) - 2)))
+#define Max_long (((intnat)1 << (8 * sizeof(caml_value) - 2)) - 1)
+#define Min_long (-((intnat)1 << (8 * sizeof(caml_value) - 2)))
 #define Val_int(x) Val_long(x)
 #define Int_val(x) ((int) Long_val(x))
 #define Unsigned_long_val(x) ((uintnat)(x) >> 1)
@@ -129,9 +132,9 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Hp_val(val) (((header_t *) (val)) - 1)
 #define Hp_op(op) (Hp_val (op))
 #define Hp_bp(bp) (Hp_val (bp))
-#define Val_op(op) ((value) (op))
-#define Val_hp(hp) ((value) (((header_t *) (hp)) + 1))
-#define Op_hp(hp) ((value *) Val_hp (hp))
+#define Val_op(op) ((caml_value) (op))
+#define Val_hp(hp) ((caml_value) (((header_t *) (hp)) + 1))
+#define Op_hp(hp) ((caml_value *) Val_hp (hp))
 #define Bp_hp(hp) ((char *) Val_hp (hp))
 
 #define Num_tags (1 << 8)
@@ -147,9 +150,9 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Wosize_hp(hp) (Wosize_hd (Hd_hp (hp)))
 #define Whsize_wosize(sz) ((sz) + 1)
 #define Wosize_whsize(sz) ((sz) - 1)
-#define Wosize_bhsize(sz) ((sz) / sizeof (value) - 1)
-#define Bsize_wsize(sz) ((sz) * sizeof (value))
-#define Wsize_bsize(sz) ((sz) / sizeof (value))
+#define Wosize_bhsize(sz) ((sz) / sizeof (caml_value) - 1)
+#define Bsize_wsize(sz) ((sz) * sizeof (caml_value))
+#define Wsize_bsize(sz) ((sz) / sizeof (caml_value))
 #define Bhsize_wosize(sz) (Bsize_wsize (Whsize_wosize (sz)))
 #define Bhsize_bosize(sz) ((sz) + sizeof (header_t))
 #define Bosize_val(val) (Bsize_wsize (Wosize_val (val)))
@@ -168,10 +171,10 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #ifdef ARCH_BIG_ENDIAN
 #define Tag_val(val) (((unsigned char *) (val)) [-1])
                                                  /* Also an l-value. */
-#define Tag_hp(hp) (((unsigned char *) (hp)) [sizeof(value)-1])
+#define Tag_hp(hp) (((unsigned char *) (hp)) [sizeof(caml_value)-1])
                                                  /* Also an l-value. */
 #else
-#define Tag_val(val) (((unsigned char *) (val)) [-sizeof(value)])
+#define Tag_val(val) (((unsigned char *) (val)) [-sizeof(caml_value)])
                                                  /* Also an l-value. */
 #define Tag_hp(hp) (((unsigned char *) (hp)) [0])
                                                  /* Also an l-value. */
@@ -184,9 +187,9 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 /* 1- If tag < No_scan_tag : a tuple of fields.  */
 
 /* Pointer to the first field. */
-#define Op_val(x) ((value *) (x))
+#define Op_val(x) ((caml_value *) (x))
 /* Fields are numbered from 0. */
-#define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
+#define Field(x, i) (((caml_value *)(x)) [i])           /* Also an l-value. */
 
 typedef int32_t opcode_t;
 typedef opcode_t * code_t;
@@ -216,7 +219,7 @@ typedef opcode_t * code_t;
 #define Object_tag 248
 #define Class_val(val) Field((val), 0)
 #define Oid_val(val) Long_val(Field((val), 1))
-CAMLextern value caml_get_public_method (value obj, value tag);
+CAMLextern caml_value caml_get_public_method (caml_value obj, caml_value tag);
 /* Called as:
    caml_callback(caml_get_public_method(obj, caml_hash_variant(name)), obj) */
 /* caml_get_public_method returns 0 if tag not in the table.
@@ -232,13 +235,13 @@ CAMLextern value caml_get_public_method (value obj, value tag);
 #define Lazy_tag 246
 
 /* Another special case: variants */
-CAMLextern value caml_hash_variant(char const * tag);
+CAMLextern caml_value caml_hash_variant(char const * tag);
 
 /* 2- If tag >= No_scan_tag : a sequence of bytes. */
 
 /* Pointer to the first byte */
 #define Bp_val(v) ((char *) (v))
-#define Val_bp(p) ((value) (p))
+#define Val_bp(p) ((caml_value) (p))
 /* Bytes are numbered from 0. */
 #define Byte(x, i) (((char *) (x)) [i])            /* Also an l-value. */
 #define Byte_u(x, i) (((unsigned char *) (x)) [i]) /* Also an l-value. */
@@ -258,19 +261,19 @@ CAMLextern value caml_hash_variant(char const * tag);
 #define String_val(x) ((char *) Bp_val(x))
 #endif
 #define Bytes_val(x) ((unsigned char *) Bp_val(x))
-CAMLextern mlsize_t caml_string_length (value);   /* size in bytes */
-CAMLextern int caml_string_is_c_safe (value);
+CAMLextern mlsize_t caml_string_length (caml_value);   /* size in bytes */
+CAMLextern int caml_string_is_c_safe (caml_value);
   /* true if string contains no '\0' null characters */
 
 /* Floating-point numbers. */
 #define Double_tag 253
-#define Double_wosize ((sizeof(double) / sizeof(value)))
+#define Double_wosize ((sizeof(double) / sizeof(caml_value)))
 #ifndef ARCH_ALIGN_DOUBLE
 #define Double_val(v) (* (double *)(v))
 #define Store_double_val(v,d) (* (double *)(v) = (d))
 #else
-CAMLextern double caml_Double_val (value);
-CAMLextern void caml_Store_double_val (value,double);
+CAMLextern double caml_Double_val (caml_value);
+CAMLextern void caml_Store_double_val (caml_value,double);
 #define Double_val(v) caml_Double_val(v)
 #define Store_double_val(v,d) caml_Store_double_val(v,d)
 #endif
@@ -280,11 +283,11 @@ CAMLextern void caml_Store_double_val (value,double);
 
 /* The [_flat_field] macros are for [floatarray] values and float-only records.
 */
-#define Double_flat_field(v,i) Double_val((value)((double *)(v) + (i)))
+#define Double_flat_field(v,i) Double_val((caml_value)((double *)(v) + (i)))
 #define Store_double_flat_field(v,i,d) do{ \
   mlsize_t caml__temp_i = (i); \
   double caml__temp_d = (d); \
-  Store_double_val((value)((double *) (v) + caml__temp_i), caml__temp_d); \
+  Store_double_val((caml_value)((double *) (v) + caml__temp_i), caml__temp_d); \
 }while(0)
 
 /* The [_array_field] macros are for [float array]. */
@@ -293,7 +296,7 @@ CAMLextern void caml_Store_double_val (value,double);
   #define Store_double_array_field(v,i,d) Store_double_flat_field(v,i,d)
 #else
   #define Double_array_field(v,i) Double_val (Field(v,i))
-  CAMLextern void caml_Store_double_array_field (value, mlsize_t, double);
+  CAMLextern void caml_Store_double_array_field (caml_value, mlsize_t, double);
   #define Store_double_array_field(v,i,d) caml_Store_double_array_field (v,i,d)
 #endif
 
@@ -303,14 +306,14 @@ CAMLextern void caml_Store_double_val (value,double);
   #define Double_field(v,i) Double_flat_field(v,i)
   #define Store_double_field(v,i,d) Store_double_flat_field(v,i,d)
 #else
-  static inline double Double_field (value v, mlsize_t i) {
+  static inline double Double_field (caml_value v, mlsize_t i) {
     if (Tag_val (v) == Double_array_tag){
       return Double_flat_field (v, i);
     }else{
       return Double_array_field (v, i);
     }
   }
-  static inline void Store_double_field (value v, mlsize_t i, double d) {
+  static inline void Store_double_field (caml_value v, mlsize_t i, double d) {
     if (Tag_val (v) == Double_array_tag){
       Store_double_flat_field (v, i, d);
     }else{
@@ -319,8 +322,8 @@ CAMLextern void caml_Store_double_val (value,double);
   }
 #endif /* FLAT_FLOAT_ARRAY */
 
-CAMLextern mlsize_t caml_array_length (value);   /* size in items */
-CAMLextern int caml_is_double_array (value);   /* 0 is false, 1 is true */
+CAMLextern mlsize_t caml_array_length (caml_value);   /* size in items */
+CAMLextern int caml_is_double_array (caml_value);   /* 0 is false, 1 is true */
 
 
 /* Custom blocks.  They contain a pointer to a "method suite"
@@ -339,7 +342,7 @@ struct custom_operations;       /* defined in [custom.h] */
 #ifndef ARCH_ALIGN_INT64
 #define Int64_val(v) (*((int64_t *) Data_custom_val(v)))
 #else
-CAMLextern int64_t caml_Int64_val(value v);
+CAMLextern int64_t caml_Int64_val(caml_value v);
 #define Int64_val(v) caml_Int64_val(v)
 #endif
 
@@ -366,9 +369,9 @@ CAMLextern header_t caml_atom_table[];
 
 /* The table of global identifiers */
 
-extern value caml_global_data;
+extern caml_value caml_global_data;
 
-CAMLextern value caml_set_oo_id(value obj);
+CAMLextern caml_value caml_set_oo_id(caml_value obj);
 
 #ifdef __cplusplus
 }

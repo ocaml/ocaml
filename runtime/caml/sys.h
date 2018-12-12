@@ -27,22 +27,22 @@ extern "C" {
 #define NO_ARG Val_int(0)
 
 CAMLnoreturn_start
-CAMLextern void caml_sys_error (value)
+CAMLextern void caml_sys_error (caml_value)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_sys_io_error (value)
+CAMLextern void caml_sys_io_error (caml_value)
 CAMLnoreturn_end;
 
-CAMLextern double caml_sys_time_unboxed(value);
+CAMLextern double caml_sys_time_unboxed(caml_value);
 CAMLextern void caml_sys_init (char_os * exe_name, char_os ** argv);
 
 CAMLnoreturn_start
-CAMLextern value caml_sys_exit (value)
+CAMLextern caml_value caml_sys_exit (caml_value)
 CAMLnoreturn_end;
 
-extern double caml_sys_time_unboxed(value);
-CAMLextern value caml_sys_get_argv(value unit);
+extern double caml_sys_time_unboxed(caml_value);
+CAMLextern caml_value caml_sys_get_argv(caml_value unit);
 
 extern char_os * caml_exe_name;
 

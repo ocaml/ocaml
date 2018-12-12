@@ -47,7 +47,7 @@ void caml_init_gc (uintnat minor_size, uintnat major_size, uintnat major_incr,
                    uintnat percent_fr, uintnat percent_m, uintnat window);
 
 
-CAMLextern value caml_gc_stat(value v);
+CAMLextern caml_value caml_gc_stat(caml_value v);
 
 #ifdef DEBUG
 void caml_heap_check (void);

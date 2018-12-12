@@ -29,14 +29,14 @@ struct custom_fixed_length {
 
 struct custom_operations {
   char *identifier;
-  void (*finalize)(value v);
-  int (*compare)(value v1, value v2);
-  intnat (*hash)(value v);
-  void (*serialize)(value v,
+  void (*finalize)(caml_value v);
+  int (*compare)(caml_value v1, caml_value v2);
+  intnat (*hash)(caml_value v);
+  void (*serialize)(caml_value v,
                     /*out*/ uintnat * bsize_32 /*size in bytes*/,
                     /*out*/ uintnat * bsize_64 /*size in bytes*/);
   uintnat (*deserialize)(void * dst);
-  int (*compare_ext)(value v1, value v2);
+  int (*compare_ext)(caml_value v1, caml_value v2);
   const struct custom_fixed_length* fixed_length;
 };
 
@@ -55,7 +55,7 @@ extern "C" {
 #endif
 
 
-CAMLextern value caml_alloc_custom(struct custom_operations * ops,
+CAMLextern caml_value caml_alloc_custom(struct custom_operations * ops,
                                    uintnat size, /*size in bytes*/
                                    mlsize_t mem, /*resources consumed*/
                                    mlsize_t max  /*max resources*/);
@@ -68,7 +68,7 @@ CAMLextern int caml_compare_unordered;
 #ifdef CAML_INTERNALS
 extern struct custom_operations * caml_find_custom_operations(char * ident);
 extern struct custom_operations *
-          caml_final_custom_operations(void (*fn)(value));
+          caml_final_custom_operations(void (*fn)(caml_value));
 
 extern void caml_init_custom_operations(void);
 #endif /* CAML_INTERNALS */
