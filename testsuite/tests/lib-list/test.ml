@@ -1,6 +1,12 @@
 (* TEST
 *)
 
+let string_of_even_opt x =
+  if x mod 2 = 0 then
+    Some (string_of_int x)
+  else
+    None
+
 (* Standard test case *)
 let () =
   let l = List.init 10 (fun x -> x) in
@@ -35,6 +41,7 @@ let () =
   assert (List.compare_length_with [1] 0 > 0);
   assert (List.compare_length_with ['1'] 1 = 0);
   assert (List.compare_length_with ['1'] 2 < 0);
+  assert (List.filter_map string_of_even_opt l = ["0";"2";"4";"6";"8"]);
   ()
 ;;
 

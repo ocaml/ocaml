@@ -98,11 +98,6 @@ module Stdlib : sig
     (** Returns [true] iff the given lists have the same length and content
         with respect to the given equality function. *)
 
-    val filter_map : ('a -> 'b option) -> 'a t -> 'b t
-    (** [filter_map f l] applies [f] to every element of [l], filters
-        out the [None] elements and returns the list of the arguments of
-        the [Some] elements. *)
-
     val find_map : ('a -> 'b option) -> 'a t -> 'b option
     (** [find_map f l] returns the first evaluation of [f] that returns [Some],
        or returns None if there is no such element. *)

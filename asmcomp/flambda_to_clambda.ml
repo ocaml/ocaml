@@ -649,7 +649,7 @@ let to_clambda_program t env constants (program : Flambda.program) =
           fields
       in
       let init_fields =
-        Misc.Stdlib.List.filter_map (function
+        List.filter_map (function
             | (i, field, None) -> Some (i, field)
             | (_, _, Some _) -> None)
           fields
