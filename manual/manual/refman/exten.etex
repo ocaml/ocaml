@@ -870,7 +870,7 @@ type-subst:
 \end{syntax}
 
 
-Local substitions behave like destructive substitutions (@'with' ... ':=' ...@)
+Local substitutions behave like destructive substitutions (@'with' ... ':=' ...@)
 but instead of being applied to a whole signature after the fact, they are
 introduced during the specification of the signature, and will apply to all the
 items that follow.
