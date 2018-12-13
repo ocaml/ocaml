@@ -1157,12 +1157,24 @@ let create_lexical_block_proto_dies t (fundecl : L.fundecl)
                 let _abstract_instance_proto_die, abstract_instance_symbol =
                   find_or_add_abstract_instance t fun_dbg
                 in
+                let range = LB.find lexical_block_ranges block in
+                let entry_pc =
+                  match LB.Range.lowest_address range with
+                  | None -> []
+                  | Some lowest_address -> [
+                      DAH.create_entry_pc lowest_address;
+                    ]
+                in
+                (* Note that with Flambda, this DIE may not be in the scope
+                   of the referenced abstract instance DIE, as inline
+                   expansions may be made out of the scope of the function
+                   declaration. *)
                 Proto_die.create ~parent:(Some parent)
                   ~tag:Inlined_subroutine
-                  ~attribute_values:[
+                  ~attribute_values:(entry_pc @ [
                     range_list_attribute;
                     DAH.create_abstract_origin abstract_instance_symbol;
-                  ]
+                  ])
                   ()
             in
             let lexical_block_proto_dies =
