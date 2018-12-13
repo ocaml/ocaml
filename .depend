@@ -4763,14 +4763,12 @@ middle_end/remove_unused_closure_vars.cmi : \
     middle_end/flambda.cmi
 middle_end/remove_unused_program_constructs.cmo : \
     middle_end/base_types/symbol.cmi \
-    utils/misc.cmi \
     middle_end/int_replace_polymorphic_compare.cmi \
     middle_end/flambda.cmi \
     middle_end/effect_analysis.cmi \
     middle_end/remove_unused_program_constructs.cmi
 middle_end/remove_unused_program_constructs.cmx : \
     middle_end/base_types/symbol.cmx \
-    utils/misc.cmx \
     middle_end/int_replace_polymorphic_compare.cmx \
     middle_end/flambda.cmx \
     middle_end/effect_analysis.cmx \
