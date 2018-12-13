@@ -136,6 +136,32 @@ module Variance = struct
   let get_lower v = (mem Pos v, mem Neg v, mem Inv v, mem Inj v)
 end
 
+module Separability = struct
+  type t = Ind | Sep | Deepsep
+  type signature = t list
+  let eq (m1 : t) m2 = (m1 = m2)
+  let rank = function
+    | Ind -> 0
+    | Sep -> 1
+    | Deepsep -> 2
+  let compare m1 m2 = compare (rank m1) (rank m2)
+  let max m1 m2 = if rank m1 >= rank m2 then m1 else m2
+
+  let print ppf = function
+    | Ind -> Format.fprintf ppf "Ind"
+    | Sep -> Format.fprintf ppf "Sep"
+    | Deepsep -> Format.fprintf ppf "Deepsep"
+
+  let print_signature ppf modes =
+    let pp_sep ppf () = Format.fprintf ppf ",@," in
+    Format.fprintf ppf "@[(%a)@]"
+      (Format.pp_print_list ~pp_sep print) modes
+
+  let default_signature ~arity =
+    let default_mode = if Config.flat_float_array then Deepsep else Ind in
+    List.init arity (fun _ -> default_mode)
+end
+
 (* Type definitions *)
 
 type type_declaration =
