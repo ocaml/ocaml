@@ -401,6 +401,9 @@ type dwarf_format =
 let default_dwarf_format = Thirty_two
 let dwarf_format = ref default_dwarf_format
 
+let default_dwarf_emit_self_tail_calls = true
+let dwarf_emit_self_tail_calls = ref default_dwarf_emit_self_tail_calls
+
 (* This is used by the -stop-after option. *)
 module Compiler_pass = struct
   (* If you add a new pass, the following must be updated:

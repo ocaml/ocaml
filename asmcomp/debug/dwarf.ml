@@ -35,6 +35,8 @@ type t = {
   output_path : string;
   mutable rvalue_dies_required_for : V.Set.t;
   mutable type_dies_for_parameters_all_functions : Asm_label.t V.Map.t;
+  function_abstract_instances_by_id :
+    (Proto_die.t * Asm_symbol.t) Debuginfo.Function.Id.Tbl.t;
   mutable emitted : bool;
 }
 
@@ -156,6 +158,7 @@ let create ~prefix_name =
     output_path;
     rvalue_dies_required_for = V.Set.empty;
     type_dies_for_parameters_all_functions = V.Map.empty;
+    function_abstract_instances_by_id = Debuginfo.Function.Id.Tbl.create 42;
     emitted = false;
   }
 
@@ -975,6 +978,44 @@ let dwarf_for_variables_and_parameters t fundecl ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true)
 
+let find_or_add_abstract_instance t fun_dbg =
+  let function_name = Debuginfo.Function.name fun_dbg in
+  let is_visible_externally =
+    Debuginfo.Function.is_visible_externally fun_dbg
+  in
+  let type_proto_die =
+    normal_type_for_var t
+      ~parent:(Some t.compilation_unit_proto_die)
+      (Unique_name function_name)
+  in
+  let abstract_instance_proto_die =
+    (* DWARF-5 specification section 3.3.8.1, page 82. *)
+    Proto_die.create ~parent:(Some t.compilation_unit_proto_die)
+      ~tag:Subprogram
+      ~attribute_values:[
+        DAH.create_name function_name;
+        DAH.create_external ~is_visible_externally;
+        DAH.create_type ~proto_die:type_proto_die;
+        (* Every function might potentially be inlined (and possibly in the
+           future), so we choose [DW_INL_inlined] as the most appropriate
+           setting for [DW_AT_inline], even if it doesn't seem exactly
+           correct.  We must set something here to ensure that the subprogram
+           is marked as an abstract instance root. *)
+        DAH.create_inline Inlined;
+      ]
+      ()
+  in
+  let function_id = Debuginfo.Function.id fundecl.fun_dbg in
+  let abstract_instance_proto_die_symbol =
+    Name_laundry.abstract_instance_root_die_name function_id
+  in
+  Proto_die.set_name abstract_instance_proto_die
+    abstract_instance_proto_die_symbol;
+  Debuginfo.Function.Id.Tbl.add t.function_abstract_instances_by_id
+    function_id
+    (abstract_instance_proto_die, abstract_instance_proto_die_symbol);
+  abstract_instance_proto_die, abstract_instance_proto_die_symbol
+
 let create_range_list_and_summarise t (fundecl : L.fundecl) range =
   LB.Range.fold range
     ~init:([], Range_list.create (), Address_index.Pair.Set.empty)
@@ -1033,6 +1074,7 @@ module All_summaries = Identifiable.Make (struct
   let hash t = Hashtbl.hash (elements t)
 end)
 
+(* CR mshinwell: rename, to reflect that this does inlined frames too now? *)
 let create_lexical_block_proto_dies t (fundecl : L.fundecl)
       lexical_block_ranges ~function_proto_die
       ~start_of_function ~end_of_function
@@ -1101,12 +1143,27 @@ let create_lexical_block_proto_dies t (fundecl : L.fundecl)
                 range_list_attribute, all_summaries
             in
             let proto_die =
-              Proto_die.create ~parent:(Some parent)
-                ~tag:Lexical_block
-                ~attribute_values:[
-                  range_list_attribute;
-                ]
-                ()
+              match B.frame_classification block with
+              | Lexical_scope_only ->
+              | Non_inlined_frame _ ->  (* CR mshinwell: unsure about this *)
+                Proto_die.create ~parent:(Some parent)
+                  ~tag:Lexical_block
+                  ~attribute_values:[
+                    range_list_attribute;
+                  ]
+                  ()
+              | Inlined_frame fun_dbg ->
+                let id = Debuginfo.Function.id fun_dbg in
+                let _abstract_instance_proto_die, abstract_instance_symbol =
+                  find_or_add_abstract_instance t fun_dbg
+                in
+                Proto_die.create ~parent:(Some parent)
+                  ~tag:Inlined_subroutine
+                  ~attribute_values:[
+                    range_list_attribute;
+                    DAH.create_abstract_origin abstract_instance_symbol;
+                  ]
+                  ()
             in
             let lexical_block_proto_dies =
               B.Map.add block proto_die lexical_block_proto_dies
@@ -1383,7 +1440,9 @@ let dwarf_for_call_sites t ~whole_function_lexical_block
     (* DWARF-5 spec section 3.4, page 89, lines 19--22: [DW_TAG_call_site]s
        are not to be generated for self tail calls (called "tail recursion
        calls" in the spec). *)
-    if Asm_symbol.equal callee function_symbol then begin
+    if Asm_symbol.equal callee function_symbol
+      && not !Clflags.dwarf_emit_self_tail_calls
+    then begin
       found_self_tail_calls := true
     end else begin
       add_call_site ~stack_offset ~is_tail:true ~args ~call_labels insn
@@ -1552,58 +1611,31 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
     DAH.create_high_pc
       ~address_label:(Asm_label.create_int end_of_function_label)
   in
-  let function_name =
-    match fundecl.fun_module_path with
-    | None ->
-      begin match fundecl.fun_human_name with
-      | "" -> "<anon>"
-      | name -> name
-      end
-    | Some path ->
-      let path = Printtyp.string_of_path path in
-      (* CR mshinwell: remove hack *)
-      match path with
-      | "_Ocaml_startup" ->
-        begin match fundecl.fun_human_name with
-        | "" -> "<anon>"
-        | name -> name
-        end
-      | _ ->
-        match fundecl.fun_human_name with
-        | "" -> path
-        | name -> path ^ "." ^ name
+  let abstract_instance_proto_die, _abstract_instance_symbol =
+    find_or_add_abstract_instance t fundecl.fun_dbg
   in
-  let is_visible_externally =
-    (* Not strictly accurate---should probably depend on the .mli, but
-       this should suffice for now. *)
-    fundecl.fun_module_path <> None
-  in
-  let type_proto_die =
-    normal_type_for_var t
-      ~parent:(Some t.compilation_unit_proto_die)
-      (Unique_name function_name)
-  in
-  let function_proto_die =
+  let concrete_instance_proto_die =
     Proto_die.create ~parent:(Some t.compilation_unit_proto_die)
       ~tag:Subprogram
       ~attribute_values:[
-        DAH.create_name function_name;
-        DAH.create_external ~is_visible_externally;
         start_of_function;
         end_of_function;
-        DAH.create_type ~proto_die:type_proto_die;
+        DAH.create_abstract_origin
+          (Proto_die.reference abstract_instance_proto_die);
       ]
       ()
   in
   let whole_function_lexical_block, lexical_block_proto_dies =
     Profile.record "dwarf_create_lexical_block_proto_dies" (fun () ->
         create_lexical_block_proto_dies t fundecl lexical_block_ranges
-          ~function_proto_die ~start_of_function ~end_of_function)
+          ~function_proto_die:abstract_instance_proto_die
+          ~start_of_function ~end_of_function)
       ~accumulate:true
       ()
   in
   Profile.record "dwarf_for_variables_and_parameters" (fun () ->
-      dwarf_for_variables_and_parameters t fundecl ~function_proto_die
+      dwarf_for_variables_and_parameters t fundecl
+        ~function_proto_die:abstract_instance_proto_die
         ~whole_function_lexical_block ~lexical_block_proto_dies
         ~available_ranges_vars)
       ~accumulate:true

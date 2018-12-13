@@ -193,9 +193,7 @@ type fundecl =
     fun_args: (Backend_var.With_provenance.t * machtype) list;
     fun_body: expression;
     fun_codegen_options : codegen_option list;
-    fun_dbg : Debuginfo.t;
-    fun_human_name : string;
-    fun_module_path : Path.t option;
+    fun_dbg : Debuginfo.Function.t;
   }
 
 type data_item =
@@ -216,7 +214,11 @@ type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
 
-val map_debuginfo_phrase : phrase -> f:(Debuginfo.t -> Debuginfo.t) -> phrase
+val map_debuginfo_phrase
+   : phrase
+  -> f:(Debuginfo.t -> Debuginfo.t)
+  -> f_function:(Debuginfo.Function.t -> Debuginfo.Function.t)
+  -> phrase
 
 val ccatch :
      int * (Backend_var.With_provenance.t * machtype) list

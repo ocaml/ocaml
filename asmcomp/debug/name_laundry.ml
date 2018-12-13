@@ -21,6 +21,14 @@ let base_type_die_name_for_var var ~output_path =
   let stamp = Backend_var.stamp var in
   Printf.sprintf "__ocaml %s %d %s" var_name stamp output_path
 
+let abstract_instance_root_die_name id =
+  let name =
+    Format.asprintf "%s_abstract_instance_%a"
+      (Compilenv.make_symbol None)
+      Debuginfo.Function.Id.print id
+  in
+  Asm_symbol.of_external_name name
+
 type split_base_type_die_name_result = {
   ident_name : string;
   ident_stamp : int;

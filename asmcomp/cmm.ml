@@ -273,23 +273,17 @@ type fundecl =
     fun_args: (Backend_var.With_provenance.t * machtype) list;
     fun_body: expression;
     fun_codegen_options : codegen_option list;
-    fun_dbg : Debuginfo.t;
-    fun_human_name : string;
-    fun_module_path : Path.t option;
+    fun_dbg : Debuginfo.Function.t;
   }
 
 let map_debuginfo_fundecl
-      { fun_name; fun_args; fun_body; fun_codegen_options; fun_dbg;
-        fun_human_name; fun_module_path;
-      }
-      ~f =
+      { fun_name; fun_args; fun_body; fun_codegen_options; fun_dbg; }
+      ~f ~f_function =
   { fun_name;
     fun_args;
     fun_body = map_debuginfo_expression fun_body ~f;
     fun_codegen_options;
-    fun_dbg = f fun_dbg;
-    fun_human_name;
-    fun_module_path;
+    fun_dbg = f_function fun_dbg;
   }
 
 type data_item =

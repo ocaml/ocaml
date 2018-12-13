@@ -27,12 +27,11 @@ type t = {
   tag : Dwarf_tag.t;
   mutable attribute_values : AV.t ASS.Map.t;
   label : Asm_label.t;
-  (* for references between DIEs within a single unit *)
+  (* For references between DIEs within a single unit *)
   (* CR-someday mshinwell: consider combining [label] and [name] into one
      "how to reference this DIE" value. *)
   mutable name : Asm_symbol.t option;
-  (* for references between DIEs across units *)
-  (* CR mshinwell: Is this being used at the moment?  Check *)
+  (* For references between DIEs across units *)
 }
 
 let attribute_values_map attribute_values =

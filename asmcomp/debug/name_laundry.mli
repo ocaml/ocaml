@@ -20,6 +20,10 @@
     type of some identifier. *)
 val base_type_die_name_for_var : Backend_var.t -> output_path:string -> string
 
+(** The symbol for the DWARF debugging information entry corresponding to the
+    abstract instance root for the function with the given ID. *)
+val abstract_instance_root_die_name : Debuginfo.Function.Id.t -> Asm_symbol.t
+
 type split_base_type_die_name_result = {
   ident_name : string;
   ident_stamp : int;

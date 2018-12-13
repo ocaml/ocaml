@@ -145,10 +145,68 @@ module Code_range = struct
   end
 end
 
+module Function = struct
+  type t = {
+    id : int;
+    position : Code_range.t;
+    human_name : string;
+    module_path : Path.t option;
+  }
+
+  module Id = Numbers.Int
+
+  let next_id = ref 0
+
+  let get_next_id () =
+    let id = !next_id in
+    incr next_id;
+    id
+
+  let create position ~human_name module_path =
+    { id = get_next_id ();
+      position;
+      human_name;
+      module_path;
+    }
+
+  let id t = t.id
+  let position t = t.position
+  let human_name t = t.human_name
+  let module_path t = t.module_path
+
+  let name t =
+    match t.module_path with
+    | None ->
+      begin match t.human_name with
+      | "" -> "<anon>"
+      | name -> name
+      end
+    | Some path ->
+      let path = Printtyp.string_of_path path in
+      (* CR mshinwell: remove hack *)
+      match path with
+      | "_Ocaml_startup" ->
+        begin match t.human_name with
+        | "" -> "<anon>"
+        | name -> name
+        end
+      | _ ->
+        match t.human_name with
+        | "" -> path
+        | name -> path ^ "." ^ name
+
+  let is_visible_externally t =
+    (* Not strictly accurate---should probably depend on the .mli, but
+       this should suffice for now. *)
+    match t.module_path with
+    | None -> false
+    | Some _ -> true
+end
+
 module Block = struct
   type t = {
     id : int;
-    frame_location : Code_range.t option;
+    frame_location : Function.t option;
     (* CR-someday mshinwell: We could perhaps have a link to the parent
        _frame_, if such exists. *)
     parent : t option;
@@ -175,9 +233,9 @@ module Block = struct
       parents_transitive;
     }
 
-  let create_non_inlined_frame range =
+  let create_non_inlined_frame fun_dbg =
     { id = get_next_id ();
-      frame_location = Some range;
+      frame_location = Some fun_dbg;
       parent = None;
       parents_transitive = [];
     }
@@ -221,16 +279,16 @@ module Block = struct
 
   type frame_classification =
     | Lexical_scope_only
-    | Non_inlined_frame of Code_range.t
-    | Inlined_frame of Code_range.t
+    | Non_inlined_frame of Function.t
+    | Inlined_frame of Function.t
 
   let frame_classification t =
     match t.frame_location with
     | None -> Lexical_scope_only
-    | Some range ->
+    | Some fun_dbg ->
       match t.parent with
-      | None -> Non_inlined_frame range
-      | Some _ -> Inlined_frame range
+      | None -> Non_inlined_frame fun_dbg
+      | Some _ -> Inlined_frame fun_dbg
 
   let rec iter_innermost_first t ~f =
     f t;

@@ -57,10 +57,8 @@ type fundecl =
   { fun_name: Backend_sym.t;
     fun_body: instruction;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t;
-    fun_human_name : string;
+    fun_dbg : Debuginfo.Function.t;
     fun_arity : int;
-    fun_module_path : Path.t option;
     fun_spacetime_shape : Mach.spacetime_shape option;
     fun_phantom_lets :
       (Backend_var.Provenance.t option * Mach.phantom_defining_expr)

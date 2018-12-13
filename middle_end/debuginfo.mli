@@ -38,18 +38,35 @@ module Code_range : sig
   end
 end
 
-(* CR-someday mshinwell: Consider introducing the notion of a "function
-   block". *)
+module Function : sig
+  type t
+
+  val create
+     : Code_range.t
+    -> human_name:string
+    -> module_path:Path.t option
+    -> t
+
+  module Id : Identifiable.S
+  val id : t -> Id.t
+
+  val position : t -> Code_range.t
+  val human_name : t -> string
+  val module_path : t -> Path.t option
+
+  val name : t -> string
+  val is_visible_externally : t -> bool
+end
 
 module Block : sig
   type t
 
-  val create_non_inlined_frame : Code_range.t -> t
+  val create_non_inlined_frame : Function.t -> t
 
   type frame_classification = private
     | Lexical_scope_only
-    | Non_inlined_frame of Code_range.t
-    | Inlined_frame of Code_range.t
+    | Non_inlined_frame of Function.t
+    | Inlined_frame of Function.t
 
   val frame_classification : t -> frame_classification
 
