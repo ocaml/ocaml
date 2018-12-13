@@ -189,7 +189,7 @@ Working version
 
 - GPR##2199: the implementation of List.flatten and List.concat
   that are now tail recursive starting from a threshold.
-  (Nathan Moreau, review by ???)
+  (Nathan Moreau, review by Alain Frisch and Jacques Garrigue)
 
 ### Other libraries:
 

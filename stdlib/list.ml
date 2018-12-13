@@ -119,18 +119,26 @@ let rec fold_right f l accu =
     [] -> accu
   | a::l -> f a (fold_right f l accu)
 
+let rec append_aux i l1 l2 =
+  match l1 with
+    [] -> l2
+  | first :: rest ->
+    if i > max_recursion_threshold / 2 then
+       rev_append (rev l1) l2
+    else
+       first :: append_aux (i + 1) rest l2
+
 let rev_flatten l =
   fold_left (fun accu l -> rev_append l accu) [] l
 
-let rec flatten_aux len l =
-  match l with
-    [] -> []
-  | l1 :: r ->
-    let new_len = len + length l1 in
-    if max_recursion_threshold < new_len then
-      l1 @ flatten_aux new_len r
-    else
-      rev (rev_flatten l)
+let rec flatten_aux i l =
+  if i > max_recursion_threshold / 2 then
+    rev (rev_flatten l)
+  else
+    match l with
+      [] -> []
+    | l1 :: r ->
+      append_aux 0 l1 (flatten_aux (i + 1) r)
 
 let flatten l = flatten_aux 0 l
 
