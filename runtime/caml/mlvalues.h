@@ -58,7 +58,7 @@ extern "C" {
 */
 
 typedef intnat caml_value;
-#ifdef CAML_VALUE
+#ifndef CAML_DO_NOT_TYPEDEF_VALUE
 typedef caml_value value;
 #endif
 typedef uintnat header_t;

@@ -236,9 +236,9 @@ ld.conf: $(ROOTDIR)/Makefile.config
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like
 # #ifdef X
-# CAMLprim value caml_foo() ...
+# CAMLprim caml_value caml_foo() ...
 # #else
-# CAMLprim value caml_foo() ...
+# CAMLprim caml_value caml_foo() ...
 # end), horrible things will happen (duplicated entries in Runtimedef ->
 # double registration in Symtable -> empty entry in the PRIM table ->
 # the bytecode interpreter is confused).
@@ -253,14 +253,14 @@ ld.conf: $(ROOTDIR)/Makefile.config
 # "using sort to process pathnames, it is recommended that LC_ALL .. set to C"
 
 primitives : $(PRIMS)
-	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" $(PRIMS) \
+	sed -n -e "s/CAMLprim caml_value \([a-z0-9_][a-z0-9_]*\).*/\1/p" $(PRIMS) \
 	  | LC_ALL=C sort | uniq > primitives
 
 prims.c : primitives
 	(echo '#define CAML_INTERNALS'; \
          echo '#include "caml/mlvalues.h"'; \
 	 echo '#include "caml/prims.h"'; \
-	 sed -e 's/.*/extern value &();/' primitives; \
+	 sed -e 's/.*/extern caml_value &();/' primitives; \
 	 echo 'c_primitive caml_builtin_cprim[] = {'; \
 	 sed -e 's/.*/	&,/' primitives; \
 	 echo '	 0 };'; \
