@@ -244,6 +244,15 @@ and immediate_subtypes_variant_row_field acc = function
       | Some rf -> immediate_subtypes_variant_row_field acc rf
       end
 
+let free_variables ty =
+  Ctype.free_variables (Ctype.repr ty)
+  |> List.map (fun {desc; id; _} ->
+      match desc with
+      | Tvar text -> {text; id}
+      | _ ->
+          (* Ctype.free_variables only returns Tvar nodes *)
+          assert false)
+
 
 (** [check_type env sigma ty m] returns the most permissive context [gamma]
     such that [ty] is separable at mode [m] in [gamma], under
@@ -333,30 +342,91 @@ let msig_of_external_type decl =
   | Always | Always_on_64bits -> best_msig decl
   | Unknown -> worst_msig decl
 
-(** [msig_of_context  context] returns the
+(** [msig_of_context ~decl_loc constructor context] returns the
    separability signature of a single-constructor type whose definition
-   is valid in the mode context [context]. *)
-let msig_of_context
-  : type_expr list -> context -> Sep.signature
-  = fun parameters context ->
-    let handle_parameter param_instance (acc, context) =
+   is valid in the mode context [context].
+
+   Note: A GADT constructor introduces existential type variables, and
+   may also introduce some equalities between the type parameters
+   (or universal type variables) of the type it is constructed and
+   type expressions containing universal and existential variables. In
+   other words, it introduces new type variables in scope, and
+   restricts existing variables by adding equality constraints.
+
+   [msig_of_context] performs the reverse transformation: the context
+   [ctx] computed from the argument of the constructor mentions
+   existential variables, and the function returns a context over the
+   (universal) type parameters only. (Type constraints do not
+   introduce existential variables, but they do introduce equalities;
+   they are handled as GADTs equalities by this function.)
+
+   The transformation is separability-preserving in the following
+   sense: for any valid instance of the result mode signature
+   (replacing the universal type parameters with ground types
+   respecting the variable's separability mode), any possible
+   extension of this context instance with ground instances for the
+   existential variables of [parameter] that respects the equation
+   constraints will validate the separability requirements of the
+   modes in the input context [ctx].
+
+   Sometimes no such universal context exists, as an existential type cannot
+   be safely introduced, then this function raises an [Error] exception with
+   a [Non_separable_evar] payload.
+*)
+let msig_of_context : decl_loc:Location.t -> parameters:type_expr list
+    -> context -> Sep.signature =
+  fun ~decl_loc ~parameters context ->
+    let handle_equation param_instance (acc, context) =
+      (* In the theory, GADT equations are of the form
+           ('a = <ty>)
+         for each type parameter 'a of the type constructor. For each
+         such equation, we should "strengthen" the current context in
+         the following way:
+         - if <ty> is another variable 'b,
+           the mode of 'a is set to the mode of 'b,
+           and 'b is set to Ind
+         - if <ty> is a type expression whose variables are all Ind,
+           set 'a to Ind and discard the equation
+         - otherwise (one of the variable of 'b is not Ind),
+           set 'a to Deepsep and set all variables of <ty> to Ind
+
+         In practice, type parameters are determined by their position
+         in a list, they do not necessarily have a corresponding type variable.
+         Instead of "setting 'a" in the context as in the description above,
+         we build a list of modes by repeated consing into
+         an accumulator variable [acc], setting existential variables
+         to Ind as we go. *)
       let param_instance = Ctype.repr param_instance in
       let get context var =
         try TVarMap.find var context with Not_found -> Ind in
-      let remove context var =
-        TVarMap.remove var context in
+      let set_ind context var =
+        TVarMap.add var Ind context in
+      let is_ind context var = match get context var with
+        | Ind -> true
+        | Sep | Deepsep -> false in
       match param_instance.desc with
       | Tvar text ->
           let var = {text; id = param_instance.Types.id} in
-          (get context var) :: acc, remove context var
+          (get context var) :: acc, (set_ind context var)
       | _ ->
-          failwith "TODO: GADT case"
+          let instance_exis = free_variables param_instance in
+          if List.for_all (is_ind context) instance_exis then
+            Ind :: acc, context
+          else
+            Deepsep :: acc, List.fold_left set_ind context instance_exis
     in
     let mode_signature, context =
       (* fold_right here is necessary to get the mode
          consed to the accumulator in the right order *)
-      List.fold_right handle_parameter parameters ([], context) in
-    assert (TVarMap.is_empty context);
+      List.fold_right handle_equation parameters ([], context) in
+    (* After all variable determined by the parameters have been set to Ind
+       by [handle_equation], all variables remaining in the context are
+       purely existential and should not require a stronger mode than Ind. *)
+    let check_existential evar mode =
+      if rank mode > rank Ind then
+        raise (Error (decl_loc, Non_separable_evar evar.text))
+    in
+    TVarMap.iter check_existential context;
     mode_signature
 
 (** [check_def env def] returns the signature required
@@ -375,7 +445,7 @@ let check_def
       msig_of_external_type def
   | Synonym type_expr ->
       check_type env type_expr Sep
-      |> msig_of_context def.type_params
+      |> msig_of_context ~decl_loc:def.type_loc ~parameters:def.type_params
   | Open | Algebraic (Zero | Several | One (Zero | Several)) ->
       assert boxed;
       best_msig def
@@ -383,7 +453,8 @@ let check_def
     if boxed then best_msig def
     else
       check_type env constructor.argument_type Sep
-      |> msig_of_context def.type_params
+      |> msig_of_context ~decl_loc:def.type_loc
+           ~parameters:constructor.result_type_parameter_instances
 
 let compute_decl env decl =
   if not Config.flat_float_array then best_msig decl
