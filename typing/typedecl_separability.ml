@@ -14,8 +14,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@warning "-32"] (* unused values *);;
-
 open Types
 
 type type_definition = type_declaration
@@ -253,6 +251,195 @@ let free_variables ty =
           (* Ctype.free_variables only returns Tvar nodes *)
           assert false)
 
+(** Coinductive hypotheses to handle equi-recursive types
+
+    OCaml allows infinite/cyclic types, such as
+      (int * 'a) as 'a
+    whose infinite unfolding is (int * (int * (int * (int * ...)))).
+
+    Remark: this specific type is only accepted if the -rectypes option
+    is passed, but such "equi-recursive types" are accepted by
+    default if the cycle goes through an object type or polymorphic
+    variant type:
+      [ `int | `other of 'a ] as 'a
+      < head : int; rest : 'a > as 'a
+
+    We have to take those infinite types in account in our
+    separability-checking program: a naive implementation would loop
+    infinitely when trying to prove that one of them is Deepsep.
+
+    After type-checking, the cycle-introducing form (... as 'a) does
+    not appear explicitly in the syntax of types: types are graphs/trees
+    with cycles in them, and we have to use the type_expr.id field,
+    an identifier for each node in the graph/tree, to detect cycles.
+
+    We avoid looping by remembering the set of separability queries
+    that we have already asked ourselves (in the current
+    search branch). For example, if we are asked to check
+
+      (int * 'a) : Deepsep
+
+    our algorithm will check both (int : Deepsep) and ('a : Deepsep),
+    but it will remember in these sub-checks that it is in the process
+    of checking (int * 'a) : Deepsep, adding it to a list of "active
+    goals", or "coinductive hypotheses".
+
+    Each new sub-query will start by checking whether the query
+    already appears as a coinductive hypothesis; in our example, this
+    can happen if 'a and (int * 'a) are in fact the same node in the
+    cyclic tree. In that case, we return immediately (instead of looping):
+    we reason that, assuming that 'a is indeed Deepsep, then it is
+    the case that (int * 'a) is also Deepsep.
+
+    This kind of cyclic reasoning can be dangerous: it would be wrong
+    to argue that an arbitrary 'a type is Deepsep by saying:
+    "assuming that 'a is Deepsep, then it is the case that 'a is
+    also Deepsep". In the first case, we made an assumption on 'a,
+    and used it on a type (int * 'a) which has 'a as a strict sub-component;
+    in the second, we use it on the same type 'a directly, which is invalid.
+
+    Now consider a type of the form (('a t) as 'a): while 'a is a sub-component
+    of ('a t), it may still be wrong to reason coinductively about it,
+    as ('a t) may be defined as (type 'a t = 'a).
+
+    When moving from (int * 'a) to a subcomponent (int) or ('a), we
+    say that the coinductive hypothesis on (int * 'a : m) is "safe":
+    it can be used immediately to prove the subcomponents, because we
+    made progress moving to a strict subcomponent (we are guarded
+    under a computational type constructor). On the other hand, when
+    moving from ('a t) to ('a), we say that the coinductive hypothesis
+    ('a t : m) is "unsafe" for the subgoal, as we don't know whether
+    we have made strict progress. In the general case, we keep track
+    of a set of safe and unsafe hypotheses made in the past, and we
+    use them to terminate checking if we encounter them again,
+    ensuring termination.
+
+    If we encounter a (ty : m) goal that is exactly a safe hypothesis,
+    we terminate with a success. In fact, we can use mode subtyping here:
+    if (ty : m') appears as a hypothesis with (m' >= m), then we would
+    succeed for (ty : m'), so (ty : m) should succeed as well.
+
+    On the other hand, if we encounter a (ty : m) goal that is an
+    *unsafe* hypothesis, we terminate the check with a failure. In this case,
+    we cannot work modulo mode subtyping: if (ty : m') appears with
+    (m' >= m), then the check (ty : m') would have failed, but it is still
+    possible that the weaker current query (ty : m) would succeed.
+
+    In usual coinductive-reasoning systems, unsafe hypotheses are turned
+    into safe hypotheses each time strict progress is made (for each
+    guarded sub-goal). Consider ((int * 'a) t as 'a : deepsep) for example:
+    the idea is that the ((int * 'a) t : deepsep) hypothesis would be
+    unsafe when checking ((int * 'a) : deepsep), but that the progress
+    step from (int * 'a : deepsep) to ('a : deepsep) would turn all
+    past unsafe hypotheses into safe hypotheses. There is a problem
+    with this, though, due to constraints: what if (_ t) is defined as
+
+      type 'b t = 'a constraint 'b = (int * 'a)
+
+    ?
+
+    In that case, then 'a is precisely the one-step unfolding
+    of the ((int * 'a) t) definition, and it would be an invalid,
+    cyclic reasoning to prove ('a : deepsep) from the now-safe
+    hypothesis ((int * 'a) t : deepsep).
+
+    Surprisingly-fortunately, we have exactly the information we need
+    to know whether (_ t) may or may not pull a constraint trick of
+    this nature: we can look at its mode signature, where constraints
+    are marked by a Deepsep mode. If we see Deepsep, we know that a
+    constraint exists, but we don't know what the constraint is:
+    we cannot tell at which point, when decomposing the parameter type,
+    a sub-component can be considered safe again. To model this,
+    we add a third category of co-inductive hypotheses: to "safe" and
+    "unsafe" we add the category of "poison" hypotheses, which remain
+    poisonous during the remaining of the type decomposition,
+    even in presence of safe, computational types constructors:
+
+    - when going under a computational constructor,
+      "unsafe" hypotheses become "safe"
+    - when going under a constraining type (more precisely, under
+      a type parameter that is marked Deepsep in the mode signature),
+      "unsafe" hypotheses become "poison"
+
+    The mode signature tells us even a bit more: if a parameter
+    is marked "Ind", we know that the type constructor cannot unfold
+    to this parameter (otherwise it would be Sep), so going under
+    this parameter can be considered a safe/guarded move: if
+    we have to check (foo t : m) with ((_ : Ind) t) in the signature,
+    we can recursively check (foo : Ind) with (foo t : m) marked
+    as "safe", rather than "unsafe".
+*)
+module TypeMap = Btype.TypeMap
+module ModeSet = Set.Make(Types.Separability)
+
+type coinductive_hyps = {
+  safe: ModeSet.t TypeMap.t;
+  unsafe: ModeSet.t TypeMap.t;
+  poison: ModeSet.t TypeMap.t;
+}
+
+module Hyps : sig
+  type t = coinductive_hyps
+  val empty : t
+  val add : type_expr -> mode -> t -> t
+  val guard : t -> t
+  val poison : t -> t
+  val safe : type_expr -> mode -> t -> bool
+  val unsafe : type_expr -> mode -> t -> bool
+end = struct
+  type t = coinductive_hyps
+
+  let empty = {
+    safe = TypeMap.empty;
+    unsafe = TypeMap.empty;
+    poison = TypeMap.empty;
+  }
+
+  let of_opt = function
+    | Some ms -> ms
+    | None -> ModeSet.empty
+
+  let merge map1 map2 =
+    TypeMap.merge (fun _k ms1 ms2 ->
+        Some (ModeSet.union (of_opt ms1) (of_opt ms2))
+      ) map1 map2
+
+  let guard {safe; unsafe; poison;} = {
+    safe = merge safe unsafe;
+    unsafe = TypeMap.empty;
+    poison;
+  }
+
+  let poison {safe; unsafe; poison;} = {
+    safe;
+    unsafe = TypeMap.empty;
+    poison = merge poison unsafe;
+  }
+
+  let add ty m hyps =
+    let m_map = TypeMap.singleton ty (ModeSet.singleton m) in
+    { hyps with unsafe = merge m_map hyps.unsafe; }
+
+  let find ty map = try TypeMap.find ty map with Not_found -> ModeSet.empty
+
+  let safe ty m hyps =
+    match ModeSet.max_elt_opt (find ty hyps.safe) with
+    | None -> false
+    | Some best_safe -> rank best_safe >= rank m
+
+  let unsafe ty m {safe = _; unsafe; poison} =
+    let in_map s = ModeSet.mem m (find ty s) in
+    List.exists in_map [unsafe; poison]
+end
+
+(** For a type expression [ty] (without constraints and existentials),
+    any mode checking [ty : m] is satisfied in the "worse case" context
+    that maps all free variables of [ty] to the most demanding mode,
+    Deepsep. *)
+let worst_case ty =
+  let add ctx tvar = TVarMap.add tvar Deepsep ctx in
+  List.fold_left add TVarMap.empty (free_variables ty)
+
 
 (** [check_type env sigma ty m] returns the most permissive context [gamma]
     such that [ty] is separable at mode [m] in [gamma], under
@@ -260,8 +447,12 @@ let free_variables ty =
 let check_type
   : Env.t -> type_expr -> mode -> context
   = fun env ty m ->
-  let rec check_type ty m =
+  let rec check_type hyps ty m =
     let ty = Ctype.repr ty in
+    if Hyps.safe ty m hyps then empty
+    else if Hyps.unsafe ty m hyps then worst_case ty
+    else
+    let hyps = Hyps.add ty m hyps in
     match (ty.desc, m) with
     (* Impossible case due to the call to [Ctype.repr]. *)
     | (Tlink _            , _      ) -> assert false
@@ -288,7 +479,7 @@ let check_type
     | (Tpackage(_,_,_)    , Deepsep) ->
         let tys = immediate_subtypes ty in
         let on_subtype context ty =
-          context ++ check_type ty (compose m Ind) in
+          context ++ check_type (Hyps.guard hyps) ty (compose m Ind) in
         List.fold_left on_subtype empty tys
     (* Polymorphic type, and corresponding polymorphic variable.
 
@@ -311,16 +502,20 @@ let check_type
        a scope violation), so they could be ignored if they occur
        under a separating type constructor. *)
     | (Tpoly(pty,_)       , m      ) ->
-        check_type pty m
+        check_type hyps pty m
     | (Tunivar(_)         , _      ) -> empty
     (* Type constructor case. *)
     | (Tconstr(path,tys,_), m      ) ->
         let msig = (Env.find_type path env).type_separability in
         let on_param context (ty, m_param) =
-          context ++ check_type ty (compose m m_param) in
+          let hyps = match m_param with
+            | Ind -> Hyps.guard hyps
+            | Sep -> hyps
+            | Deepsep -> Hyps.poison hyps in
+          context ++ check_type hyps ty (compose m m_param) in
         List.fold_left on_param empty (List.combine tys msig)
   in
-  check_type ty m
+  check_type Hyps.empty ty m
 
 let best_msig decl = List.map (fun _ -> Ind) decl.type_params
 let worst_msig decl = List.map (fun _ -> Deepsep) decl.type_params
