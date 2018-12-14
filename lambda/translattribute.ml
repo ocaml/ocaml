@@ -38,6 +38,10 @@ let is_local_attribute = function
   | {txt=("local"|"ocaml.local")} -> true
   | _ -> false
 
+let is_trmc_attribute = function
+  | {txt=("trmc"|"ocaml.trmc")} -> true
+  | _ -> false
+
 let find_attribute p attributes =
   let inline_attribute, other_attributes =
     List.partition (fun a -> p a.Parsetree.attr_name) attributes
@@ -225,6 +229,23 @@ let add_local_attribute expr loc attributes =
         (Warnings.Misplaced_attribute "local");
       expr
 
+let add_trmc_attribute expr loc attributes =
+  let is_trmc_attribute a = is_trmc_attribute a.Parsetree.attr_name in
+  if List.exists is_trmc_attribute attributes then
+    match expr with
+    | Lfunction funct ->
+        if funct.attr.trmc_candidate then
+            Location.prerr_warning loc
+              (Warnings.Duplicated_attribute "trmc");
+        let attr = { funct.attr with trmc_candidate = true } in
+        Lfunction { funct with attr }
+    | expr ->
+        Location.prerr_warning loc
+          (Warnings.Misplaced_attribute "local");
+        expr
+  else
+    expr
+
 (* Get the [@inlined] attribute payload (or default if not present).
    It also returns the expression without this attribute. This is
    used to ensure that this attribute is not misplaced: If it
@@ -328,5 +349,8 @@ let add_function_attributes lam loc attr =
   in
   let lam =
     add_local_attribute lam loc attr
+  in
+  let lam =
+    add_trmc_attribute lam loc attr
   in
   lam

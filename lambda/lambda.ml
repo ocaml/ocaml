@@ -269,6 +269,7 @@ type function_attribute = {
   local: local_attribute;
   is_a_functor: bool;
   stub: bool;
+  trmc_candidate: bool;
 }
 
 type lambda =
@@ -346,6 +347,7 @@ let default_function_attribute = {
   local = Default_local;
   is_a_functor = false;
   stub = false;
+  trmc_candidate = false;
 }
 
 let default_stub_attribute =

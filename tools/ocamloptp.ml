@@ -118,6 +118,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _strict_formats = ignore
   let _no_strict_formats = ignore
   let _shared = ignore
+  let _trmc = ignore
   let _thread = ignore
   let _unbox_closures = ignore
   let _unbox_closures_factor = ignore
@@ -135,7 +136,6 @@ module Options = Main_args.Make_optcomp_options (struct
   let _color = ignore
   let _error_style = ignore
   let _where = ignore
-
   let _linscan = ignore
   let _nopervasives = ignore
   let _match_context_rows = ignore

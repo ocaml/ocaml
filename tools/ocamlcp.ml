@@ -95,6 +95,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _no_strict_sequence = ignore
   let _strict_formats = ignore
   let _no_strict_formats = ignore
+  let _trmc = ignore
   let _thread = ignore
   let _vmthread = ignore
   let _unboxed_types = ignore

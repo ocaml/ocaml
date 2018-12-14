@@ -135,6 +135,7 @@ let debug_runavail = ref false          (* -drunavail *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
 
+let force_trmc = ref false              (* -trmc *)
 let force_slash = ref false             (* for ocamldep *)
 let clambda_checks = ref false          (* -clambda-checks *)
 
