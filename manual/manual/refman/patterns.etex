@@ -20,9 +20,10 @@ pattern:
   | pattern '::' pattern
   | '[|' pattern { ';' pattern } [ ';' ] '|]'
   | char-literal '..' char-literal
+  | 'lazy' pattern
   | 'exception' pattern
 \end{syntax}
-See also the following language extensions: \hyperref[s:lazypat]{lazy patterns},
+See also the following language extensions:
 \hyperref[s:local-opens]{local opens},
 \hyperref[s-first-class-modules]{first-class modules},
 \hyperref[s:attributes]{attributes} and
@@ -175,6 +176,33 @@ The pattern
 where \nth{c}{1}, \nth{c}{2}, \ldots, \nth{c}{n} are the characters
 that occur between \var{c} and \var{d} in the ASCII character set. For
 instance, the pattern "'0'"@'..'@"'9'" matches all characters that are digits.
+
+\subsubsection{Lazy patterns} \label{s:lazypat}
+
+\ikwd{lazy\@\texttt{lazy}}
+
+(Introduced in Objective Caml 3.11)
+
+\begin{syntax}
+pattern: ...
+\end{syntax}
+
+The pattern @"lazy" pattern@ matches a value \var{v} of type "Lazy.t",
+provided @pattern@ matches the result of forcing \var{v} with
+"Lazy.force". A successful match of a pattern containing @"lazy"@
+sub-patterns forces the corresponding parts of the value being matched, even
+those that imply no test such as @"lazy" value-name@ or @"lazy" "_"@.
+Matching a value with a @pattern-matching@ where some patterns
+contain @"lazy"@ sub-patterns may imply forcing parts of the value,
+even when the pattern selected in the end has no @"lazy"@ sub-pattern.
+
+For more information, see the description of module "Lazy" in the
+standard library (
+\ifouthtml
+\ahref{libref/Lazy.html}{Module \texttt{Lazy}}\else section~\ref{Lazy}\fi).
+%
+\index{Lazy (module)\@\verb`Lazy` (module)}%
+\index{force\@\verb`force`}%
 
 \subsubsection*{Exception patterns} \label{s:exception-match}
 (Introduced in OCaml 4.02)

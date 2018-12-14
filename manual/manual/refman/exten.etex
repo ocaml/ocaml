@@ -76,34 +76,6 @@ An expression @@e@@ is said to be {\em immediately linked to} the variable
    is immediately linked to @name@.
 \end{itemize}
 
-\section{Lazy patterns} \label{s:lazypat}
-
-\ikwd{lazy\@\texttt{lazy}}
-
-(Introduced in Objective Caml 3.11)
-
-\begin{syntax}
-pattern: ...
-         | 'lazy' pattern
-\end{syntax}
-
-The pattern @"lazy" pattern@ matches a value \var{v} of type "Lazy.t",
-provided @pattern@ matches the result of forcing \var{v} with
-"Lazy.force". A successful match of a pattern containing @"lazy"@
-sub-patterns forces the corresponding parts of the value being matched, even
-those that imply no test such as @"lazy" value-name@ or @"lazy" "_"@.
-Matching a value with a @pattern-matching@ where some patterns
-contain @"lazy"@ sub-patterns may imply forcing parts of the value,
-even when the pattern selected in the end has no @"lazy"@ sub-pattern.
-
-For more information, see the description of module "Lazy" in the
-standard library (
-\ifouthtml
-\ahref{libref/Lazy.html}{Module \texttt{Lazy}}\else section~\ref{Lazy}\fi).
-%
-\index{Lazy (module)\@\verb`Lazy` (module)}%
-\index{force\@\verb`force`}%
-
 \section{Recursive modules} \label{s-recursive-modules}
 \ikwd{module\@\texttt{module}}
 \ikwd{and\@\texttt{and}}
