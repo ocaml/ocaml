@@ -16,6 +16,10 @@
 #ifndef CAML_SIGNALS_H
 #define CAML_SIGNALS_H
 
+#if defined(CAML_INTERNALS) && defined(POSIX_SIGNALS)
+#include<signal.h>
+#endif
+
 #ifndef CAML_NAME_SPACE
 #include "compatibility.h"
 #endif
@@ -47,6 +51,9 @@ CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);
 CAMLextern int (*caml_try_leave_blocking_section_hook)(void);
 CAMLextern void (* volatile caml_async_action_hook)(void);
+#ifdef POSIX_SIGNALS
+CAMLextern int (*caml_sigmask_hook)(int, const sigset_t *, sigset_t *);
+#endif
 #endif /* CAML_INTERNALS */
 
 CAMLextern void caml_enter_blocking_section (void);

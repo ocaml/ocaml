@@ -44,20 +44,57 @@
 CAMLexport intnat volatile caml_signals_are_pending = 0;
 CAMLexport intnat volatile caml_pending_signals[NSIG];
 
+#ifdef POSIX_SIGNALS
+/* This wrapper makes [sigprocmask] compatible with
+   [pthread_sigmask]. Indeed, the latter returns the error code while
+   the former sets [errno].
+ */
+static int sigprocmask_wrapper(int how, const sigset_t *set, sigset_t *oldset) {
+  if(sigprocmask(how, set, oldset) != 0) return errno;
+  else return 0;
+}
+
+CAMLexport int (*caml_sigmask_hook)(int, const sigset_t *, sigset_t *)
+  = sigprocmask_wrapper;
+#endif
+
 /* Execute all pending signals */
 
 void caml_process_pending_signals(void)
 {
   int i;
+  int really_pending;
+#ifdef POSIX_SIGNALS
+  sigset_t set;
+#endif
 
-  if (caml_signals_are_pending) {
-    caml_signals_are_pending = 0;
-    for (i = 0; i < NSIG; i++) {
-      if (caml_pending_signals[i]) {
-        caml_pending_signals[i] = 0;
-        caml_execute_signal(i, 0);
-      }
+  if(!caml_signals_are_pending)
+    return;
+  caml_signals_are_pending = 0;
+
+  /* Check that there is indeed a pending signal before issuing the
+     syscall in [caml_sigmask_hook]. */
+  really_pending = 0;
+  for (i = 0; i < NSIG; i++)
+    if (caml_pending_signals[i]) {
+      really_pending = 1;
+      break;
     }
+  if(!really_pending)
+    return;
+
+#ifdef POSIX_SIGNALS
+  caml_sigmask_hook(/* dummy */ SIG_BLOCK, NULL, &set);
+#endif
+  for (i = 0; i < NSIG; i++) {
+    if (!caml_pending_signals[i])
+      continue;
+#ifdef POSIX_SIGNALS
+    if(sigismember(&set, i))
+      continue;
+#endif
+    caml_pending_signals[i] = 0;
+    caml_execute_signal(i, 0);
   }
 }
 
@@ -128,7 +165,22 @@ CAMLexport void caml_leave_blocking_section(void)
   /* Save the value of errno (PR#5982). */
   saved_errno = errno;
   caml_leave_blocking_section_hook ();
+
+  /* Some other thread may have switched
+     [caml_signals_are_pending] to 0 even though there are still
+     pending signals (masked in the other thread). To handle this
+     case, we force re-examination of all signals by setting it back
+     to 1.
+
+     Another case where this is necessary (even in a single threaded
+     setting) is when the blocking section unmasks a pending signal:
+     If the signal is pending and masked but has already been
+     examinated by [caml_process_pending_signals], then
+     [caml_signals_are_pending] is 0 but the signal needs to be
+     handled at this point. */
+  caml_signals_are_pending = 1;
   caml_process_pending_signals();
+
   errno = saved_errno;
 }
 
@@ -149,7 +201,7 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
      the original signal mask */
   sigemptyset(&nsigs);
   sigaddset(&nsigs, signal_number);
-  sigprocmask(SIG_BLOCK, &nsigs, &sigs);
+  caml_sigmask_hook(SIG_BLOCK, &nsigs, &sigs);
 #endif
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   /* We record the signal handler's execution separately, in the same
@@ -184,11 +236,11 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
     /* Restore the original signal mask */
-    sigprocmask(SIG_SETMASK, &sigs, NULL);
+    caml_sigmask_hook(SIG_SETMASK, &sigs, NULL);
   } else if (Is_exception_result(res)) {
     /* Restore the original signal mask and unblock the signal itself */
     sigdelset(&sigs, signal_number);
-    sigprocmask(SIG_SETMASK, &sigs, NULL);
+    caml_sigmask_hook(SIG_SETMASK, &sigs, NULL);
   }
 #endif
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
