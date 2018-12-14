@@ -254,6 +254,7 @@ type function_attribute = {
   local: local_attribute;
   is_a_functor: bool;
   stub: bool;
+  tmc_candidate: bool;
 }
 
 type scoped_location = Debuginfo.Scoped_location.t
