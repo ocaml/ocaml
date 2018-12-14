@@ -352,3 +352,26 @@ type u = U : 'a t -> u [@@unboxed];;
 type 'a t [@@immediate]
 type u = U : 'a t -> u [@@unboxed]
 |}];;
+
+(* This could not be accepted without using a fixpoint to check unboxed declarations
+   (GPR#2188) *)
+type ('a, 'b) t = K : 'c -> (bool, 'c) t [@@unboxed]
+and t1 = T1 : (bool, int) t -> t1 [@@unboxed]
+[%%expect{|
+type ('a, 'b) t = K : 'c -> (bool, 'c) t [@@unboxed]
+and t1 = T1 : (bool, int) t -> t1 [@@unboxed]
+|}];;
+
+(* This real-world example of recursive declaration comes from Markus Mottl
+   -- see MPR#7361 *)
+type ('a, 'kind) tree =
+  | Root : { mutable value : 'a; mutable rank : int } -> ('a, [ `root ]) tree
+  | Inner : { mutable parent : 'a node } -> ('a, [ `inner ]) tree
+and 'a node = Node : ('a, _) tree -> 'a node [@@ocaml.unboxed]
+[%%expect{|
+type ('a, 'kind) tree =
+    Root : { mutable value : 'a; mutable rank : int;
+    } -> ('a, [ `root ]) tree
+  | Inner : { mutable parent : 'a node; } -> ('a, [ `inner ]) tree
+and 'a node = Node : ('a, 'b) tree -> 'a node [@@unboxed]
+|}];;
