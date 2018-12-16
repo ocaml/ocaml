@@ -144,7 +144,7 @@ module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
     let to_seq = Hashtbl.to_seq
     let to_seq_keys = Hashtbl.to_seq_keys
     let to_seq_values = Hashtbl.to_seq_values
-    let of_seq = Hashtbl.of_seq
+    let of_seq ?size i = Hashtbl.of_seq ?size i
     let add_seq = Hashtbl.add_seq
     let replace_seq = Hashtbl.replace_seq
   end

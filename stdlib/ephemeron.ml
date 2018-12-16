@@ -408,8 +408,8 @@ module GenHashTable = struct
     let replace_seq tbl i =
       Seq.iter (fun (k,v) -> replace tbl k v) i
 
-    let of_seq i =
-      let tbl = create 16 in
+    let of_seq ?random ?(size = 16) i =
+      let tbl = create ?random size in
       replace_seq tbl i;
       tbl
 
@@ -482,8 +482,8 @@ module K1 = struct
         let hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
-    let of_seq i =
-      let tbl = create 16 in
+    let of_seq ?(size = 16) i =
+      let tbl = create size in
       replace_seq tbl i;
       tbl
   end
@@ -574,8 +574,8 @@ module K2 = struct
           let hash (_seed: int) x = H2.hash x
         end)
     let create sz = create ~random:false sz
-    let of_seq i =
-      let tbl = create 16 in
+    let of_seq ?(size = 16) i =
+      let tbl = create size in
       replace_seq tbl i;
       tbl
   end
@@ -678,8 +678,8 @@ module Kn = struct
         let hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
-    let of_seq i =
-      let tbl = create 16 in
+    let of_seq ?(size = 16) i =
+      let tbl = create size in
       replace_seq tbl i;
       tbl
   end

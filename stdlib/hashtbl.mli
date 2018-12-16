@@ -245,12 +245,18 @@ val replace_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
 (** Add the given bindings to the table, using {!replace}
     @since 4.07 *)
 
-val of_seq : ('a * 'b) Seq.t -> ('a, 'b) t
+val of_seq : ?random:bool -> ?size:int -> ('a * 'b) Seq.t -> ('a, 'b) t
 (** Build a table from the given bindings. The bindings are added
     in the same order they appear in the sequence, using {!replace_seq},
     which means that if two pairs have the same key, only the latest one
     will appear in the table.
-    @since 4.07 *)
+
+    [?random] is as for {!Hashtbl.create} and [?size] is the initial size of the
+    hash table (default is 16).
+
+    @since 4.07
+    @before 4.12 [?random] was always [OCAMLRUNPARAM]'s R flag and [?size]
+                 was 16. *)
 
 (** {1 Functorial interface} *)
 
@@ -348,8 +354,9 @@ module type S =
     val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
     (** @since 4.07 *)
 
-    val of_seq : (key * 'a) Seq.t -> 'a t
-    (** @since 4.07 *)
+    val of_seq : ?size:int -> (key * 'a) Seq.t -> 'a t
+    (** @since 4.07
+        @before 4.12 [?size] was always 16 *)
   end
 (** The output signature of the functor {!Hashtbl.Make}. *)
 
@@ -422,8 +429,10 @@ module type SeededS =
     val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
     (** @since 4.07 *)
 
-    val of_seq : (key * 'a) Seq.t -> 'a t
-    (** @since 4.07 *)
+    val of_seq : ?random:bool -> ?size:int -> (key * 'a) Seq.t -> 'a t
+    (** @since 4.07
+        @before 4.12 [?random] was [OCAMLRUNPARAM]'s R flag and [?size]
+                     was 16 *)
   end
 (** The output signature of the functor {!Hashtbl.MakeSeeded}.
     @since 4.00.0 *)

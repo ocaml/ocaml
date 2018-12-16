@@ -305,7 +305,7 @@ module type S =
     val to_seq_values : 'a t -> 'a Seq.t
     val add_seq : 'a t -> (key * 'a) Seq.t -> unit
     val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
-    val of_seq : (key * 'a) Seq.t -> 'a t
+    val of_seq : ?size:int -> (key * 'a) Seq.t -> 'a t
   end
 
 module type SeededS =
@@ -333,7 +333,7 @@ module type SeededS =
     val to_seq_values : 'a t -> 'a Seq.t
     val add_seq : 'a t -> (key * 'a) Seq.t -> unit
     val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
-    val of_seq : (key * 'a) Seq.t -> 'a t
+    val of_seq : ?random:bool -> ?size:int -> (key * 'a) Seq.t -> 'a t
   end
 
 module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
@@ -454,8 +454,8 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     let replace_seq tbl i =
       Seq.iter (fun (k,v) -> replace tbl k v) i
 
-    let of_seq i =
-      let tbl = create 16 in
+    let of_seq ?random ?(size = 16) i =
+      let tbl = create ?random size in
       replace_seq tbl i;
       tbl
 
@@ -477,8 +477,9 @@ module Make(H: HashedType): (S with type key = H.t) =
         let hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
-    let of_seq i =
-      let tbl = create 16 in
+
+    let of_seq ?(size = 16) i =
+      let tbl = create size in
       replace_seq tbl i;
       tbl
   end
@@ -607,7 +608,7 @@ let add_seq tbl i =
 let replace_seq tbl i =
   Seq.iter (fun (k,v) -> replace tbl k v) i
 
-let of_seq i =
-  let tbl = create 16 in
+let of_seq ?random ?(size = 16) i =
+  let tbl = create ?random size in
   replace_seq tbl i;
   tbl

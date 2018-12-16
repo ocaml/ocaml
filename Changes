@@ -22,6 +22,9 @@ Working version
 
 ### Standard library:
 
+* #2205: Add ?size parameter to all of_seq functions and ?random, where
+  appropriate.
+  (David Allsopp, review by Alain Frisch)
 
 ### Other libraries:
 
