@@ -599,4 +599,8 @@ module Make(H: HashedType): (S with type key = H.t) =
         let hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
+    let of_seq i =
+      let tbl = create 16 in
+      replace_seq tbl i;
+      tbl
   end
