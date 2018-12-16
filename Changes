@@ -326,7 +326,8 @@ OCaml 4.08.0
   (Pierre Weis, Richard Bonichon, review by Florian Angeletti)
 
 - GPR#2202: Correct Hashtbl.MakeSeeded.{add_seq,replace_seq,of_seq} to use
-  functor hash function instead of default hash function.
+  functor hash function instead of default hash function. Hashtbl.Make.of_seq
+  shouldn't create randomized hash tables.
   (David Allsopp, review by Alain Frisch)
 
 ### Other libraries:
