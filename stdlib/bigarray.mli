@@ -61,6 +61,45 @@
      and {!Stdlib.input_value}).
 *)
 
+(** {1 Indexing operators}
+
+   Similarly to ordinary arrays, the elements of a Bigarray, [a], can be
+   accessed using a specific syntax:
+   - for reading the value at indices [k,l]: [a.{k,l}]
+   - for assigning the value [x] at indices [k,l]: [a.{k,l}<-x]
+
+   For instance,
+   {[
+   let set_to_zero_then_check a k =
+     a.{k} <- 0.;
+     assert( a.{k} = 0. )
+   ]}
+   The expected dimension (and type) of the Bigarray [a] depends on
+   the number, [d], of indices:
+   - [d = 1] : {!Array1.t}
+   - [d = 2] : {!Array2.t}
+   - [d = 3] : {!Array3.t}
+   - [d >= 4] : {!Genarray}
+
+   Consequently, the function [set_to_zero_then_check] above has
+   type [(_, _, _) Array1.t -> int -> unit]. It can be converted to
+   three dimensional arrays ({!Array3.t}) with
+   {[
+   let set_to_zero_then_check a k l m =
+     a.{k,l,m} <- 0.;
+     assert( a.{k,l,m} = 0. )
+   ]}
+   Out-of-bounds access raises an [Invalid_argument] exception.
+   Accessing a non-generic Bigarray with the wrong number of indices is
+   a type error. Accessing a generic Bigarray with the wrong number of indices
+   raises an [Invalid_argument] exception.
+
+   A drawback of this approach is that generic multidimensional array of
+   dimension strictly inferior to [4] cannot use this operator syntax.
+   They are required to use {!Genarray.get} and {!Genarray.set}.
+
+*)
+
 (** {1 Element kinds} *)
 
 (** Bigarrays can contain elements of the following kinds:

@@ -53,6 +53,8 @@ expr:
   | expr '.(' expr ')' '<-' expr
   | expr '.[' expr ']'
   | expr '.[' expr ']' '<-' expr
+  | expr '.{' expr { ',' expr } '}'
+  | expr '.{' expr { ',' expr } '}' '<-' expr
   | 'if' expr 'then' expr [ 'else' expr ]
   | 'while' expr 'do' expr 'done'
   | 'for' value-name '=' expr ( 'to' || 'downto' ) expr 'do' expr 'done'
@@ -116,7 +118,6 @@ See also the following language extensions:
 \hyperref[s:object-notations]{object notations},
 \hyperref[s-first-class-modules]{first-class modules},
 \hyperref[s:explicit-overriding-open]{overriding in open statements},
-\hyperref[s:bigarray-access]{syntax for Bigarray access},
 \hyperref[s:attributes]{attributes},
 \hyperref[s:extension-nodes]{extension nodes} and
 \hyperref[s:index-operators]{extended indexing operators}.
@@ -144,7 +145,7 @@ precedence come first. For infix and prefix symbols, we write
 \ikwd{asr\@\texttt{asr}}
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
-\entree{".   .(   .[   .{" (see section~\ref{s:bigarray-access})}{--}
+\entree{".   .(   .[   .{" }{--}
 \entree{"#"\ldots}{left}
 \entree{function application, constructor application, tag
         application, "assert",
@@ -164,7 +165,7 @@ precedence come first. For infix and prefix symbols, we write
 \entree{"if"}{--}
 \entree{";"}{right}
 \entree{"let  match  fun  function  try"}{--}
-\end{tableau}
+\end{tableau}%$
 
 \subsection{Basic expressions}
 
@@ -677,6 +678,35 @@ the access is out of bounds. The value of the whole expression is @'()'@.
 compatibility with older versions of OCaml and will be removed in a
 future version. New code should use byte sequences and the "Bytes.set"
 function.
+
+\subsubsection*{Bigarrays}
+
+The expression @expr_0 '.{' expr_1 {',' expr_d} '}'@ returns the value of
+the multidimensional array (see "Bigarray"[\moduleref{Bigarray}]) @expr_0@
+at index (@expr_1@,$\ldots$,@expr_d@). Depending on the number, \var{d}, of
+indices, the expected type for @expr_0@ is
+\begin{description}
+\item[$d=1$ :]{"(_,_,_) Bigarray.Array1.t"}
+\item[$d=2$ :]{"(_,_,_) Bigarray.Array2.t"}
+\item[$d=3$ :]{"(_,_,_) Bigarray.Array3.t"}
+\item[$d \ge 4$ :]{"(_,_,_) Bigarray.Genarray.t"}
+\end{description}
+If the layout of the bigarray is C-compatible,
+the first index is $(0,\ldots,0)$ (repeated $d$ times), and the last is
+$(\var{dim}_1-1,\ldots,\var{dim}_d-1)$ where $\var{dim}_k$ is the length
+of the array along the k-th dimension. Otherwise, for Fortran-compatible
+layout, the first index is $(1,\ldots,1)$ (repeated $d$ times),
+and the last is $(\var{dim},\ldots,\var{dim}_d)$.
+The exception "Invalid_argument" is raised if the access is out of bounds.
+Accessing a non-generic Bigarray with the wrong number of indices is
+a type error. Accessing a generic Bigarray with the wrong number of
+indices raises an "Invalid_argument" exception.
+
+The expression @expr_0 '.{' expr_1 {',' expr_d} '}' '<-' expr_v@ modifies
+in-place the Bigarray denoted by @expr_0@, replacing the value
+at index (@expr_1@,$\ldots$,@expr_d@) by the value of @expr_v@.
+The exception "Invalid_argument" is raised if the access is out of bounds.
+The value of the whole expression is @'()'@.
 
 \subsection{Operators}
 \ikwd{mod\@\texttt{mod}}
