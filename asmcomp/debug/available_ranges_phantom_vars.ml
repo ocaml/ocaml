@@ -15,14 +15,15 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 module L = Linearize
+module V = Backend_var
 
 module Phantom_vars = struct
   module Key = struct
-    include Backend_var
+    include V
     let all_parents _t = []
   end
 
-  module Index = Backend_var
+  module Index = V
 
   module Subrange_state :
     Compute_ranges_intf.S_subrange_state
@@ -48,29 +49,32 @@ module Phantom_vars = struct
       with type key := Key.t
       with type index := Index.t
 
-    val provenance : t -> Backend_var.Provenance.t option
+    val provenance : t -> V.Provenance.t option
     val is_parameter : t -> Is_parameter.t
     val defining_expr : t -> Mach.phantom_defining_expr
   end = struct
     type t = {
-      provenance : Backend_var.Provenance.t option;
+      provenance : V.Provenance.t option;
       is_parameter : Is_parameter.t;
       defining_expr : Mach.phantom_defining_expr;
     }
 
     let create (fundecl : L.fundecl) var ~start_insn:_ =
-      match Backend_var.Map.find var fundecl.fun_phantom_lets with
+      match V.Map.find var fundecl.fun_phantom_lets with
       | exception Not_found ->
         Misc.fatal_errorf "Available_ranges_phantom_vars.Range_info.create: \
             phantom variable occurs in [phantom_available_before] but not in \
             [fun_phantom_lets]: %a"
-          Backend_var.print var
+          V.print var
       | provenance, defining_expr ->
-        (* CR-someday mshinwell: [Local] should presumably change to
-           [Parameter] when we emit DWARF inlined function information. *)
+        let is_parameter =
+          match provenance with
+          | None -> Is_parameter.local
+          | Some provenance -> V.Provenance.is_parameter provenance
+        in
         let t =
           { provenance;
-            is_parameter = Local;
+            is_parameter;
             defining_expr;
           }
         in

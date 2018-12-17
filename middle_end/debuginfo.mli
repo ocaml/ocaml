@@ -77,6 +77,9 @@ module Function : sig
     -> module_path:Path.t option
     -> t
 
+  (** Update the source code position of the given function debuginfo. *)
+  val with_position : t -> Code_range.t -> t
+
   module Id : sig
     (** The actual unique identifier for a function. *)
     type t
@@ -211,8 +214,7 @@ val iter_position_and_blocks_innermost_first
 
 val iter_position_and_frames_innermost_first
    : t
-  -> f_position:(Code_range.t -> unit)
-  -> f_fun_dbg:(Function.t -> unit)
+  -> f:(Code_range.t -> unit)
   -> unit
 
 module Block_subst : sig

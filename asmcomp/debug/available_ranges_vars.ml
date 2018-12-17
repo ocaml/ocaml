@@ -15,6 +15,7 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 module L = Linearize
+module V = Backend_var
 
 module Vars = struct
   module RD = Reg_with_debug_info
@@ -29,7 +30,7 @@ module Vars = struct
     let all_parents _t = []
   end
 
-  module Index = Backend_var
+  module Index = V
 
   module Subrange_state : sig
     include Compute_ranges_intf.S_subrange_state
@@ -105,11 +106,11 @@ module Vars = struct
       with type key := Key.t
       with type index := Index.t
 
-    val provenance : t -> Backend_var.Provenance.t option
+    val provenance : t -> V.Provenance.t option
     val is_parameter : t -> Is_parameter.t
   end = struct
     type t = {
-      provenance : Backend_var.Provenance.t option;
+      provenance : V.Provenance.t option;
       is_parameter : Is_parameter.t;
     }
 
@@ -121,14 +122,10 @@ module Vars = struct
         let provenance = RD.Debug_info.provenance debug_info in
 (*
         Format.eprintf "Reg being created with var %a, provenance %a\n%!"
-          Backend_var.print var
-          (Misc.Stdlib.Option.print Backend_var.Provenance.print) provenance;
+          V.print var
+          (Misc.Stdlib.Option.print V.Provenance.print) provenance;
 *)
-        let is_parameter : Is_parameter.t =
-          match RD.Debug_info.which_parameter debug_info with
-          | None -> Local
-          | Some index -> Parameter { index; }
-        in
+        let is_parameter = RD.Debug_info.is_parameter debug_info in
         let t =
           { provenance;
             is_parameter;

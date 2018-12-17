@@ -229,6 +229,9 @@ module Function = struct
   let create_from_line ~file ~line ~human_name ~module_path =
     create (Code_range.of_line ~file ~line) ~human_name ~module_path
 
+  let with_position t position =
+    { t with position; }
+
   let id t = t.id
   let position t = t.position
   let human_name t = t.human_name
@@ -552,13 +555,13 @@ let iter_position_and_blocks_innermost_first t ~f_position ~f_blocks =
     | None -> ()
     | Some block -> Block.iter_innermost_first block ~f:f_blocks
 
-let iter_position_and_frames_innermost_first t ~f_position ~f_fun_dbg =
+let iter_position_and_frames_innermost_first t ~f =
   iter_position_and_blocks_innermost_first t
-    ~f_position
+    ~f_position:f
     ~f_blocks:(fun block ->
       match Block.frame_classification block with
       | Lexical_scope_only -> ()
-      | Inlined_frame fun_dbg -> f_fun_dbg fun_dbg)
+      | Inlined_frame fun_dbg -> f (Function.position fun_dbg))
 
 include Identifiable.Make (struct
   type nonrec t = t

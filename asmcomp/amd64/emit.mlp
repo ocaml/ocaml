@@ -1014,7 +1014,7 @@ let fundecl fundecl ~end_of_function_label =
   else
     D.global fun_name;
   D.define_function_symbol fun_name;
-  emit_debug_info fundecl.fun_dbg;
+  emit_debug_info (Debuginfo.of_function fundecl.fun_dbg);
   D.cfi_startproc ();
   (* Set the initial CFA offset so as to cope with the CPU having pushed the
      return address. (The CFA points at the first address above the return

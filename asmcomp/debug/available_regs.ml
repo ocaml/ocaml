@@ -128,7 +128,7 @@ let rec available_regs (instr : M.instruction)
                 ~holds_value_of:ident
                 ~part_of_value
                 ~num_parts_of_value
-                ~is_parameter
+                is_parameter
                 ~provenance
             in
             avail_after := RD.Set.add regd (RD.Set.filter_reg !avail_after reg)

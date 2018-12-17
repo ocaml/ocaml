@@ -27,6 +27,11 @@ let needs_dwarf_five () =
   | Four -> Misc.fatal_error "Attribute not supported for DWARF-4"
   | Five -> ()
 
+let create_entry_pc address_label =
+  let spec = AS.create A.Entry_pc F.Addr in
+  AV.create spec (V.code_address_from_label
+    ~comment:"entry PC value" address_label)
+
 let create_low_pc ~address_label =
   let spec = AS.create A.Low_pc F.Addr in
   AV.create spec (V.code_address_from_label
@@ -241,3 +246,12 @@ let create_loclists_base label =
 let create_rnglists_base label =
   let spec = AS.create A.Rnglists_base F.Sec_offset_rnglistsptr in
   AV.create spec (V.offset_into_debug_rnglists label)
+
+let create_inline inline_code =
+  let spec = AS.create A.Inline F.Data1 in
+  AV.create spec (V.inline_code inline_code)
+
+let create_abstract_origin ~die_symbol =
+  let spec = AS.create A.Abstract_origin F.Ref_addr in
+  AV.create spec (V.offset_into_debug_info_from_symbol
+    ~comment:"abstract origin DIE" die_symbol)

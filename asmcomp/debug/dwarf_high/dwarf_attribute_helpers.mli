@@ -15,6 +15,10 @@
 (** Helper functions for constructing attribute values that do not
     require a knowledge of DWARF forms. *)
 
+val create_entry_pc
+   : Asm_label.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
 val create_low_pc
    : address_label:Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t
@@ -161,4 +165,12 @@ val create_loclists_base
 
 val create_rnglists_base
    : Asm_label.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_inline
+   : Inline_code.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_abstract_origin
+   : die_symbol:Asm_symbol.t
   -> Dwarf_attribute_values.Attribute_value.t

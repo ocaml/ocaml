@@ -283,7 +283,8 @@ let reset_debug_info () =
    display .loc for every instruction. *)
 let emit_debug_info_gen dbg file_emitter loc_emitter =
   if is_cfi_enabled () &&
-    (!Clflags.debug || Config.with_frame_pointers) then begin
+    (!Clflags.debug || Config.with_frame_pointers)
+  then begin
     Debuginfo.iter_position_and_frames_innermost_first dbg ~f:(fun code_range ->
       let module R = Debuginfo.Code_range in
       let file_name = R.file code_range in

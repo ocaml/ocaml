@@ -107,6 +107,8 @@ module type S = sig
 
     val extremities : t -> Linearize.label * Linearize.label
 
+    val lowest_address : t -> Linearize.label option
+
     val fold
        : t
       -> init:'a

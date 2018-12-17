@@ -118,6 +118,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       | None, None ->
         Misc.fatal_error "Ranges.extremities on empty range"
 
+    let lowest_address t = t.min_pos
+
     let fold t ~init ~f =
       List.fold_left f init t.subranges
 

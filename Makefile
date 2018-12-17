@@ -161,6 +161,7 @@ DWARF_LOW=\
   asmcomp/debug/dwarf_low/counted_location_description.cmo \
   asmcomp/debug/dwarf_low/dwarf_attributes.cmo \
   asmcomp/debug/dwarf_low/encoding_attribute.cmo \
+  asmcomp/debug/dwarf_low/inline_code.cmo \
   asmcomp/debug/dwarf_low/dwarf_attribute_values.cmo \
   asmcomp/debug/dwarf_low/abbreviation_code.cmo \
   asmcomp/debug/dwarf_low/abbreviations_table_entry.cmo \
@@ -257,10 +258,10 @@ ASMCOMP=\
 
 MIDDLE_END=\
   middle_end/int_replace_polymorphic_compare.cmo \
-  middle_end/debuginfo.cmo \
   middle_end/base_types/tag.cmo \
   middle_end/base_types/linkage_name.cmo \
   middle_end/base_types/compilation_unit.cmo \
+  middle_end/debuginfo.cmo \
   middle_end/internal_variable_names.cmo \
   middle_end/base_types/variable.cmo \
   middle_end/base_types/mutable_variable.cmo \

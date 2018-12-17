@@ -201,7 +201,8 @@ let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
           ()
     in
     clambda
-    ++ Profile.record "cmm" (Cmmgen.compunit ~ppf_dump ~unit_name)
+    ++ Profile.record "cmm"
+         (Cmmgen.compunit ~ppf_dump ~unit_name ~source_file:sourcefile)
     ++ Profile.record "compile_phrases"
          (List.iter (compile_phrase ~ppf_dump ~dwarf))
     ++ (fun () -> ());

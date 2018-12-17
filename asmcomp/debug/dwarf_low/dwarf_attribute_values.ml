@@ -74,6 +74,9 @@ module Value = struct
 
   let rnglistx ~index =
     Dwarf_value (V.uleb128 index)
+
+  let inline_code inline_code =
+    Dwarf_value (Inline_code.as_dwarf_value inline_code)
 end
 
 module Attribute_value = struct

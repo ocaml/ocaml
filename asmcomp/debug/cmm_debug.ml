@@ -120,6 +120,28 @@ let create ~startup_cmm_file ~startup_cmm_chan =
   intercept_cmm_location_tags_on_formatter t;
   t
 
+let rewrite_code_range t pos =
+  let placeholder_line = Debuginfo.Code_range.line pos in
+  match
+    Int.Map.find placeholder_line t.start_positions_by_placeholder_line
+  with
+  | exception Not_found ->
+    Misc.fatal_errorf "No start position for placeholder line %d"
+      placeholder_line
+  | start_pos ->
+    match
+      Int.Map.find placeholder_line t.end_positions_by_placeholder_line
+    with
+    | exception Not_found ->
+      Misc.fatal_errorf "No end position for placeholder line %d"
+        placeholder_line
+    | end_pos ->
+      let line = start_pos.pos_lnum in
+      let char_start = start_pos.pos_cnum - start_pos.pos_bol in
+      let char_end = end_pos.pos_cnum - start_pos.pos_cnum in
+      Debuginfo.Code_range.create ~file:t.startup_cmm_file
+        ~line ~char_start ~char_end
+
 let write_cmm_to_channel_and_fix_up_debuginfo t phrase =
   t.start_positions_by_placeholder_line <- Int.Map.empty;
   t.end_positions_by_placeholder_line <- Int.Map.empty;
@@ -127,29 +149,13 @@ let write_cmm_to_channel_and_fix_up_debuginfo t phrase =
   Format.pp_print_newline t.ppf ();
   Format.pp_print_flush t.ppf ();
   Cmm.map_debuginfo_phrase phrase ~f:(fun dbg ->
-    match Debuginfo.position dbg with
-    | None -> dbg
-    | Some pos ->
-      let placeholder_line = Debuginfo.Code_range.line pos in
-      match
-        Int.Map.find placeholder_line t.start_positions_by_placeholder_line
-      with
-      | exception Not_found ->
-        Misc.fatal_errorf "No start position for placeholder line %d"
-          placeholder_line
-      | start_pos ->
-        match
-          Int.Map.find placeholder_line t.end_positions_by_placeholder_line
-        with
-        | exception Not_found ->
-          Misc.fatal_errorf "No end position for placeholder line %d"
-            placeholder_line
-        | end_pos ->
-          let line = start_pos.pos_lnum in
-          let char_start = start_pos.pos_cnum - start_pos.pos_bol in
-          let char_end = end_pos.pos_cnum - start_pos.pos_cnum in
-          let pos =
-            Debuginfo.Code_range.create ~file:t.startup_cmm_file
-              ~line ~char_start ~char_end
-          in
-          Debuginfo.with_position dbg pos)
+      match Debuginfo.position dbg with
+      | None -> dbg
+      | Some pos ->
+        let pos = rewrite_code_range t pos in
+        Debuginfo.with_position dbg pos)
+    ~f_function:(fun fun_dbg ->
+      let pos =
+        rewrite_code_range t (Debuginfo.Function.position fun_dbg)
+      in
+      Debuginfo.Function.with_position fun_dbg pos)

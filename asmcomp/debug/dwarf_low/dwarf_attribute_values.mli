@@ -131,6 +131,8 @@ module Value : sig
 
   (** Not for use for DWARF < version 5. *)
   val rnglistx : index:Numbers.Uint64.t -> Dwarf_attributes.Form.rnglistx t
+
+  val inline_code : Inline_code.t -> Dwarf_attributes.Form.data1 t
 end
 
 module Attribute_value : sig

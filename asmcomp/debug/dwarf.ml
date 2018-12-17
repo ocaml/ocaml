@@ -711,13 +711,18 @@ let dwarf_for_variable t (fundecl : L.fundecl)
   let range_info = ARV.Range.info range in
   let provenance = ARV.Range_info.provenance range_info in
   let is_parameter =
-    (* The two cases here correspond to:
+    let is_parameter_from_provenance =
+      match provenance with
+      | None -> Is_parameter.local
+      | Some provenance -> Backend_var.Provenance.is_parameter provenance
+    in
+    (* The two inputs here correspond to:
        1. The normal case of parameters of function declarations, which are
           identified in [Selectgen].
        2. Parameters of inlined functions, which have to be tagged much
           earlier, on [let]-bindings when inlining is performed. *)
-    ARV.Range_info.is_parameter range_info
-      || Backend_var.is_parameter var
+    Is_parameter.join (ARV.Range_info.is_parameter range_info)
+      is_parameter_from_provenance
   in
   let phantom_defining_expr = ARV.Range_info.phantom_defining_expr range_info in
   let parent_proto_die : Proto_die.t =
@@ -1013,7 +1018,7 @@ let add_abstract_instance t fun_dbg =
       ]
       ()
   in
-  let id = Debuginfo.Function.id fundecl.fun_dbg in
+  let id = Debuginfo.Function.id fun_dbg in
   let abstract_instance_proto_die_symbol =
     Name_laundry.abstract_instance_root_die_name id
   in
@@ -1024,7 +1029,7 @@ let add_abstract_instance t fun_dbg =
   abstract_instance_proto_die, abstract_instance_proto_die_symbol
 
 let find_or_add_abstract_instance t fun_dbg =
-  let id = Debuginfo.Function.id fundecl.fun_dbg in
+  let id = Debuginfo.Function.id fun_dbg in
   match
     Debuginfo.Function.Id.Tbl.find t.function_abstract_instances_by_id id
   with
@@ -1035,7 +1040,7 @@ let find_maybe_in_another_unit_or_add_abstract_instance t fun_dbg =
   if not (Debuginfo.Function.dwarf_die_present fun_dbg) then
     None
   else
-    let id = Debuginfo.Function.id fundecl.fun_dbg in
+    let id = Debuginfo.Function.id fun_dbg in
     let dbg_comp_unit = Debuginfo.Function.Id.compilation_unit id in
     let this_comp_unit = Compilation_unit.get_current_exn () in
     let abstract_instance_proto_die_symbol =
@@ -1184,7 +1189,6 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                   ]
                   ()
               | Inlined_frame fun_dbg ->
-                let id = Debuginfo.Function.id fun_dbg in
                 let abstract_instance_symbol =
                   find_maybe_in_another_unit_or_add_abstract_instance t fun_dbg
                 in
@@ -1204,7 +1208,7 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                   match LB.Range.lowest_address range with
                   | None -> []
                   | Some lowest_address -> [
-                      DAH.create_entry_pc lowest_address;
+                      DAH.create_entry_pc (Asm_label.create_int lowest_address);
                     ]
                 in
                 (* Note that with Flambda, this DIE may not be in the scope
@@ -1215,7 +1219,8 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                   match abstract_instance_symbol with
                   | None -> []
                   | Some abstract_instance_symbol ->
-                    [DAH.create_abstract_origin abstract_instance_symbol]
+                    [DAH.create_abstract_origin
+                       ~die_symbol:abstract_instance_symbol]
                 in
                 Proto_die.create ~parent:(Some parent)
                   ~tag:Inlined_subroutine
@@ -1670,7 +1675,7 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
     DAH.create_high_pc
       ~address_label:(Asm_label.create_int end_of_function_label)
   in
-  let abstract_instance_proto_die, _abstract_instance_symbol =
+  let abstract_instance_proto_die, abstract_instance_die_symbol =
     find_or_add_abstract_instance t fundecl.fun_dbg
   in
   let concrete_instance_proto_die =
@@ -1680,7 +1685,7 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
         start_of_function;
         end_of_function;
         DAH.create_abstract_origin
-          (Proto_die.reference abstract_instance_proto_die);
+          ~die_symbol:abstract_instance_die_symbol;
       ]
       ()
   in
@@ -1711,7 +1716,7 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
         ()
     in
     if not found_self_tail_calls then begin
-      Proto_die.add_or_replace_attribute_value function_proto_die
+      Proto_die.add_or_replace_attribute_value concrete_instance_proto_die
         (DAH.create_call_all_calls ())
     end
   end
