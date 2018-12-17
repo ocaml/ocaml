@@ -1365,9 +1365,14 @@ let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
           in
           call_data_location @ call_data_value
       in
+      let tag : Dwarf_tag.t =
+        match !Clflags.dwarf_version with
+        | Four -> Dwarf_4 GNU_call_site_parameter
+        | Five -> Call_site_parameter
+      in
       Proto_die.create_ignore ~sort_priority:arg_index
         ~parent:(Some call_site_die)
-        ~tag:Call_site_parameter
+        ~tag
         ~attribute_values:(arg_location @ param_location @ [
           (* We don't give the name of the parameter since it is
              complicated to calculate (and there is currently insufficient
@@ -1417,8 +1422,13 @@ let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
             DAH.create_call_return_pc (Asm_label.create_int call_labels.after);
           ]
       in
+      let tag : Dwarf_tag.t =
+        match !Clflags.dwarf_version with
+        | Four -> Dwarf_4 GNU_call_site
+        | Five -> Call_site
+      in
       Proto_die.create ~parent:(Some block_die)
-        ~tag:Call_site
+        ~tag
         ~attribute_values:(attrs @ position_attrs @ dwarf_5_only @ [
           DAH.create_call_tail_call ~is_tail;
         ])
