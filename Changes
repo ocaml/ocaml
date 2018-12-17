@@ -205,6 +205,10 @@ OCaml 4.08.0
 - GPR#1525: Make function set_max_indent respect documentation
   (Pierre Weis, Richard Bonichon, review by Florian Angeletti)
 
+- GPR#2202: Correct Hashtbl.MakeSeeded.{add_seq,replace_seq,of_seq} to use
+  functor hash function instead of default hash function.
+  (David Allsopp, review by Alain Frisch)
+
 ### Other libraries:
 
 * GPR#2104, GPR#2211, PR#4127, PR#7709: Fix Thread.sigmask. When
