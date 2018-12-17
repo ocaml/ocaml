@@ -1254,134 +1254,139 @@ let offset_from_cfa_in_bytes reg stack_loc ~stack_offset =
 
 let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
       ~stack_offset (insn : L.instruction) =
-  (* The reason we call [Reg_availability_set.canonicalise] from
-     [Available_ranges] vars, rather than traversing each function's
-     code and rewriting all of the availability sets first, is so that
-     we don't lose information (in particular that a particular hard
-     register before a call contains the value of a certain variable)
-     that we may need here.  (Specifically for the call to
-     [Reg_availability_set.find_all_holding_value_of].) *)
-  match Reg_availability_set.find_reg_opt insn.available_before arg with
-  | None -> ()
-  | Some rd ->
-    match Reg_with_debug_info.debug_info rd with
-    | None -> ()
-    | Some debug_info ->
-      let holds_value_of =
-        Reg_with_debug_info.Debug_info.holds_value_of debug_info
-      in
-      let type_die_reference =
-        (* For functions defined in the same compilation unit, or for
-           self calls, share the type DIE. *)
-        match
-          V.Map.find holds_value_of t.type_dies_for_parameters_all_functions
-        with
-        | exception Not_found ->
-          let type_die =
-            normal_type_for_var t ~parent:(Some call_site_die)
-              (Var holds_value_of)
-          in
-          Proto_die.reference type_die
-        | existing_type_die_reference -> existing_type_die_reference
-      in
+  let param_location =
+    let offset_from_cfa_in_bytes =
+      match arg.loc with
+      | Stack stack_loc ->
+        offset_from_cfa_in_bytes arg stack_loc ~stack_offset
+      | Reg _ -> None
+      | Unknown ->
+        Misc.fatal_errorf "Register without location: %a"
+          Printmach.reg arg
+    in
+    let param_location =
+      reg_location_description0 arg ~offset_from_cfa_in_bytes
+        ~need_rvalue:false
+    in
+    match param_location with
+    | None -> []
+    | Some param_location ->
       let param_location =
-        let offset_from_cfa_in_bytes =
-          match arg.loc with
-          | Stack stack_loc ->
-            offset_from_cfa_in_bytes arg stack_loc ~stack_offset
-          | Reg _ -> None
-          | Unknown ->
-            Misc.fatal_errorf "Register without location: %a"
-              Printmach.reg arg
-        in
-        let param_location =
-          reg_location_description0 arg ~offset_from_cfa_in_bytes
-            ~need_rvalue:false
-        in
-        match param_location with
-        | None -> []
-        | Some param_location ->
-          let param_location =
-            Single_location_description.of_simple_location_description
-              param_location
-          in
-          [DAH.create_single_location_description param_location]
+        Single_location_description.of_simple_location_description
+          param_location
       in
-      let arg_location =
-        let everywhere_holding_var =
-          Reg_availability_set.find_all_holding_value_of
-            insn.available_before holds_value_of
+      [DAH.create_single_location_description param_location]
+  in
+  let arg_location, type_attribute =
+    (* The reason we call [Reg_availability_set.canonicalise] from
+       [Available_ranges] vars, rather than traversing each function's
+       code and rewriting all of the availability sets first, is so that
+       we don't lose information (in particular that a particular hard
+       register before a call contains the value of a certain variable)
+       that we may need here.  (Specifically for the call to
+       [Reg_availability_set.find_all_holding_value_of].) *)
+    match Reg_availability_set.find_reg_opt insn.available_before arg with
+    | None -> [], []
+    | Some rd ->
+      match Reg_with_debug_info.debug_info rd with
+      | None -> [], []
+      | Some debug_info ->
+        let holds_value_of =
+          Reg_with_debug_info.Debug_info.holds_value_of debug_info
         in
-        (* Only registers spilled at the time of the call will be available
-           with certainty in the callee. *)
-        let on_stack =
-          Misc.Stdlib.List.filter_map (fun rd ->
-              let reg = Reg_with_debug_info.reg rd in
-              match reg.loc with
-              | Stack stack_loc ->
-                Some (reg,
-                  offset_from_cfa_in_bytes reg stack_loc ~stack_offset)
-              | Reg _ -> None
-              | Unknown ->
-                Misc.fatal_errorf "Register without location: %a"
-                  Printmach.reg reg)
-            everywhere_holding_var
+        let type_die_reference =
+          (* For functions defined in the same compilation unit, or for
+             self calls, share the type DIE. *)
+          match
+            V.Map.find holds_value_of t.type_dies_for_parameters_all_functions
+          with
+          | exception Not_found ->
+            let type_die =
+              normal_type_for_var t ~parent:(Some call_site_die)
+                (Var holds_value_of)
+            in
+            Proto_die.reference type_die
+          | existing_type_die_reference -> existing_type_die_reference
         in
-        match on_stack with
-        | [] -> []
-        | (reg, offset_from_cfa_in_bytes) :: _ ->
-          let arg_location_lvalue =
-            reg_location_description0 reg ~offset_from_cfa_in_bytes
-              ~need_rvalue:false
+        let arg_location =
+          let everywhere_holding_var =
+            Reg_availability_set.find_all_holding_value_of
+              insn.available_before holds_value_of
           in
-          let arg_location_rvalue =
-            reg_location_description0 reg ~offset_from_cfa_in_bytes
-              ~need_rvalue:true
+          (* Only registers spilled at the time of the call will be available
+             with certainty in the callee. *)
+          let on_stack =
+            Misc.Stdlib.List.filter_map (fun rd ->
+                let reg = Reg_with_debug_info.reg rd in
+                match reg.loc with
+                | Stack stack_loc ->
+                  Some (reg,
+                    offset_from_cfa_in_bytes reg stack_loc ~stack_offset)
+                | Reg _ -> None
+                | Unknown ->
+                  Misc.fatal_errorf "Register without location: %a"
+                    Printmach.reg reg)
+              everywhere_holding_var
           in
-          let call_data_location =
-            match !Clflags.dwarf_version with
-            | Four -> []
-            | Five ->
-              match arg_location_lvalue with
+          match on_stack with
+          | [] -> []
+          | (reg, offset_from_cfa_in_bytes) :: _ ->
+            let arg_location_lvalue =
+              reg_location_description0 reg ~offset_from_cfa_in_bytes
+                ~need_rvalue:false
+            in
+            let arg_location_rvalue =
+              reg_location_description0 reg ~offset_from_cfa_in_bytes
+                ~need_rvalue:true
+            in
+            let call_data_location =
+              match !Clflags.dwarf_version with
+              | Four -> []
+              | Five ->
+                match arg_location_lvalue with
+                | None -> []
+                | Some arg_location_lvalue ->
+                  let arg_location =
+                    Single_location_description.of_simple_location_description
+                      arg_location_lvalue
+                  in
+                  [DAH.create_single_call_data_location_description arg_location]
+            in
+            let call_data_value =
+              match arg_location_rvalue with
               | None -> []
-              | Some arg_location_lvalue ->
+              | Some arg_location_rvalue ->
                 let arg_location =
                   Single_location_description.of_simple_location_description
-                    arg_location_lvalue
+                    arg_location_rvalue
                 in
-                [DAH.create_single_call_data_location_description arg_location]
-          in
-          let call_data_value =
-            match arg_location_rvalue with
-            | None -> []
-            | Some arg_location_rvalue ->
-              let arg_location =
-                Single_location_description.of_simple_location_description
-                  arg_location_rvalue
-              in
-              [DAH.create_single_call_data_value_location_description
-                arg_location;
-              ]
-          in
-          call_data_location @ call_data_value
-      in
-      let tag : Dwarf_tag.t =
-        match !Clflags.dwarf_version with
-        | Four -> Dwarf_4 GNU_call_site_parameter
-        | Five -> Call_site_parameter
-      in
-      Proto_die.create_ignore ~sort_priority:arg_index
-        ~parent:(Some call_site_die)
-        ~tag
-        ~attribute_values:(arg_location @ param_location @ [
-          (* We don't give the name of the parameter since it is
-             complicated to calculate (and there is currently insufficient
-             information to perform the calculation if the function is in
-             a different compilation unit). *)
-          DAH.create_type_from_reference
+                [DAH.create_single_call_data_value_location_description
+                  arg_location;
+                ]
+            in
+            call_data_location @ call_data_value
+        in
+        let type_attribute =
+          [DAH.create_type_from_reference
             ~proto_die_reference:type_die_reference;
-        ])
-        ()
+          ]
+        in
+        arg_location, type_attribute
+  in
+  let tag : Dwarf_tag.t =
+    match !Clflags.dwarf_version with
+    | Four -> Dwarf_4 GNU_call_site_parameter
+    | Five -> Call_site_parameter
+  in
+  (* We don't give the name of the parameter since it is
+     complicated to calculate (and there is currently insufficient
+     information to perform the calculation if the function is in
+     a different compilation unit). *)
+  Proto_die.create_ignore ~sort_priority:arg_index
+    ~parent:(Some call_site_die)
+    ~tag
+    ~attribute_values:(arg_location @ param_location @ type_attribute)
+    ()
 
 let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
       ~stack_offset ~is_tail ~args ~(call_labels : Mach.call_labels)
