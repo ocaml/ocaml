@@ -86,7 +86,9 @@ module Function : sig
 
     include Identifiable.S with type t := t
 
-    val to_string : t -> string
+    (** A textual representation suitable for including within symbol
+        names of DWARF debugging information entries. *)
+    val to_string_for_dwarf_die_name : t -> string
   end
 
   (** The unique identifier for the function. *)

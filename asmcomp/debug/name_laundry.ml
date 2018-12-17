@@ -25,7 +25,7 @@ let abstract_instance_root_die_name id =
   let name =
     Format.asprintf "%s_abstract_instance_%s"
       (Compilenv.make_symbol None)
-      Debuginfo.Function.Id.to_string id
+      Debuginfo.Function.Id.to_string_for_dwarf_die_name id
   in
   Asm_symbol.of_external_name name
 

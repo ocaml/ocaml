@@ -170,7 +170,7 @@ module Function = struct
 
     let compilation_unit t = t.compilation_unit
 
-    let to_string t =
+    let to_string_for_dwarf_die_name t =
       Format.sprintf "%s.%s"
         (Compilation_unit.string_for_printing t.compilation_unit)
         t.stamp

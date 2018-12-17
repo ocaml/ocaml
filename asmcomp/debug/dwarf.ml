@@ -1004,8 +1004,8 @@ let add_abstract_instance t fun_dbg =
         DAH.create_name function_name;
         DAH.create_external ~is_visible_externally;
         DAH.create_type ~proto_die:type_proto_die;
-        (* Every function might potentially be inlined (and possibly in the
-           future), so we choose [DW_INL_inlined] as the most appropriate
+        (* We assume every function might potentially be inlined (and possibly
+           in the future), so we choose [DW_INL_inlined] as the most appropriate
            setting for [DW_AT_inline], even if it doesn't seem exactly
            correct.  We must set something here to ensure that the subprogram
            is marked as an abstract instance root. *)
@@ -1211,11 +1211,16 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                    of the referenced abstract instance DIE, as inline
                    expansions may be made out of the scope of the function
                    declaration. *)
+                let abstract_instance =
+                  match abstract_instance_symbol with
+                  | None -> []
+                  | Some abstract_instance_symbol ->
+                    [DAH.create_abstract_origin abstract_instance_symbol]
+                in
                 Proto_die.create ~parent:(Some parent)
                   ~tag:Inlined_subroutine
-                  ~attribute_values:(entry_pc @ [
+                  ~attribute_values:(entry_pc @ abstract_instance @ [
                     range_list_attribute;
-                    DAH.create_abstract_origin abstract_instance_symbol;
                   ])
                   ()
             in
