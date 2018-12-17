@@ -703,24 +703,6 @@ let find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg
     | exception Not_found -> None
     | proto_die -> Some proto_die
 
-let find_closest_lexical_block_die_from_debuginfo ~whole_function_lexical_block
-      dbg ~scope_proto_dies =
-  let block = Debuginfo.innermost_block dbg in
-  match Debuginfo.Current_block.to_block block with
-  | Toplevel -> whole_function_lexical_block
-  | Block block ->
-    let module B = Debuginfo.Block in
-    let rec find_die block =
-      match B.Map.find block scope_proto_dies with
-      | exception Not_found ->
-        begin match B.parent block with
-        | None -> whole_function_lexical_block
-        | Some parent -> find_die parent
-        end
-      | proto_die -> proto_die
-    in
-    find_die block
-
 let dwarf_for_variable t (fundecl : L.fundecl)
       ~function_proto_die ~whole_function_lexical_block
       ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
@@ -743,11 +725,11 @@ let dwarf_for_variable t (fundecl : L.fundecl)
       is_parameter_from_provenance
   in
   let phantom_defining_expr = ARV.Range_info.phantom_defining_expr range_info in
-  let parent_proto_die : Proto_die.t =
+  let (parent_proto_die : Proto_die.t), hidden =
     match is_parameter with
     | Parameter _index ->
       (* Parameters need to be children of the function in question. *)
-      function_proto_die
+      function_proto_die, hidden
     | Local ->
       (* Local variables need to be children of "lexical blocks", which in turn
          are children of the function.  It is important to generate accurate
@@ -755,15 +737,22 @@ let dwarf_for_variable t (fundecl : L.fundecl)
          of which may be out of scope, being visible in the debugger at the
          same time. *)
       match provenance with
-      | None -> whole_function_lexical_block
+      | None ->
+        (* Any variable without provenance gets hidden. *)
+        whole_function_lexical_block, true
       | Some provenance ->
-        (* There may be no instructions marked with the block in which
-           [var] was defined.  Instead of just hiding [var] entirely in such
-           cases, we put it in the closest enclosing scope which does have some
-           instructions, or the whole-function scope if not. *)
         let dbg = Backend_var.Provenance.debuginfo provenance in
-        find_closest_lexical_block_die_from_debuginfo
-          ~whole_function_lexical_block dbg ~scope_proto_dies
+        let block_die =
+          find_lexical_block_die_from_debuginfo ~whole_function_lexical_block
+            dbg ~scope_proto_dies
+        in
+        match block_die with
+        | Some block_die -> block_die, hidden
+        | None ->
+          (* There are be no instructions marked with the block in which
+             [var] was defined.  For the moment, just hide [var], and put
+             it in the toplevel scope for the function. *)
+          whole_function_lexical_block, true
   in
   (* Build a location list that identifies where the value of [ident] may be
      found at runtime, indexed by program counter range.
