@@ -89,10 +89,8 @@ and ufunction = {
   label  : function_label;
   arity  : int;
   params : Backend_var.With_provenance.t list;
-  human_name : string;
-  module_path : Path.t option;
   body   : ulambda;
-  dbg    : Debuginfo.t;
+  dbg    : Debuginfo.Function.t;
   env    : Backend_var.t option;
 }
 

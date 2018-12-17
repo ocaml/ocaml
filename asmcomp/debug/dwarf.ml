@@ -693,24 +693,32 @@ let location_list_entry t (fundecl : L.fundecl) ~parent ~subrange
         ~start_of_code_symbol:t.start_of_code_symbol))
 
 let find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg
-      ~lexical_block_proto_dies =
+      ~scope_proto_dies =
   let block = Debuginfo.innermost_block dbg in
   match Debuginfo.Current_block.to_block block with
   | Toplevel -> Some whole_function_lexical_block
   | Block block ->
     let module B = Debuginfo.Block in
-    match B.Map.find block lexical_block_proto_dies with
+    match B.Map.find block scope_proto_dies with
     | exception Not_found -> None
     | proto_die -> Some proto_die
 
 let dwarf_for_variable t (fundecl : L.fundecl)
       ~function_proto_die ~whole_function_lexical_block
-      ~lexical_block_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
+      ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
       ~need_rvalue (var : Backend_var.t) ~phantom:_ ~hidden ~ident_for_type
       ~range =
   let range_info = ARV.Range.info range in
   let provenance = ARV.Range_info.provenance range_info in
-  let is_parameter = ARV.Range_info.is_parameter range_info in
+  let is_parameter =
+    (* The two cases here correspond to:
+       1. The normal case of parameters of function declarations, which are
+          identified in [Selectgen].
+       2. Parameters of inlined functions, which have to be tagged much
+          earlier, on [let]-bindings when inlining is performed. *)
+    ARV.Range_info.is_parameter range_info
+      || Backend_var.is_parameter var
+  in
   let phantom_defining_expr = ARV.Range_info.phantom_defining_expr range_info in
   let parent_proto_die : Proto_die.t =
     match is_parameter with
@@ -729,7 +737,7 @@ let dwarf_for_variable t (fundecl : L.fundecl)
         let dbg = Backend_var.Provenance.debuginfo provenance in
         let block_die =
           find_lexical_block_die_from_debuginfo ~whole_function_lexical_block
-            dbg ~lexical_block_proto_dies
+            dbg ~scope_proto_dies
         in
         match block_die with
         | None ->
@@ -945,7 +953,7 @@ let iterate_over_variable_like_things t ~available_ranges_vars ~rvalues_only
     end)
 
 let dwarf_for_variables_and_parameters t fundecl ~function_proto_die
-      ~whole_function_lexical_block ~lexical_block_proto_dies
+      ~whole_function_lexical_block ~scope_proto_dies
       ~available_ranges_vars =
   let proto_dies_for_vars = Backend_var.Tbl.create 42 in
   let uniqueness_by_var =
@@ -970,12 +978,12 @@ let dwarf_for_variables_and_parameters t fundecl ~function_proto_die
   iterate_over_variable_like_things t ~available_ranges_vars
     ~rvalues_only:false
     ~f:(dwarf_for_variable t fundecl ~function_proto_die
-      ~whole_function_lexical_block ~lexical_block_proto_dies
+      ~whole_function_lexical_block ~scope_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:false);
   iterate_over_variable_like_things t ~available_ranges_vars
     ~rvalues_only:true
     ~f:(dwarf_for_variable t fundecl ~function_proto_die
-      ~whole_function_lexical_block ~lexical_block_proto_dies
+      ~whole_function_lexical_block ~scope_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true)
 
 let add_abstract_instance t fun_dbg =
@@ -1024,16 +1032,22 @@ let find_or_add_abstract_instance t fun_dbg =
   | existing_instance -> existing_instance
 
 let find_maybe_in_another_unit_or_add_abstract_instance t fun_dbg =
-  let id = Debuginfo.Function.id fundecl.fun_dbg in
-  let dbg_comp_unit = Debuginfo.Function.Id.compilation_unit id in
-  let this_comp_unit = Compilation_unit.get_current_exn () in
-  if Compilation_unit.equal dbg_comp_unit this_comp_unit then
-    let _abstract_instance_proto_die, abstract_instance_proto_die_symbol =
-      find_or_add_abstract_instance t fun_dbg
-    in
-    abstract_instance_proto_die_symbol
+  if not (Debuginfo.Function.dwarf_die_present fun_dbg) then
+    None
   else
-    Name_laundry.abstract_instance_root_die_name id
+    let id = Debuginfo.Function.id fundecl.fun_dbg in
+    let dbg_comp_unit = Debuginfo.Function.Id.compilation_unit id in
+    let this_comp_unit = Compilation_unit.get_current_exn () in
+    let abstract_instance_proto_die_symbol =
+      if Compilation_unit.equal dbg_comp_unit this_comp_unit then
+        let _abstract_instance_proto_die, abstract_instance_proto_die_symbol =
+          find_or_add_abstract_instance t fun_dbg
+        in
+        abstract_instance_proto_die_symbol
+      else
+        Name_laundry.abstract_instance_root_die_name id
+    in
+    Some abstract_instance_proto_die_symbol
 
 let create_range_list_and_summarise t (fundecl : L.fundecl) range =
   LB.Range.fold range
@@ -1108,20 +1122,20 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
       ()
   in
   let all_blocks = LB.all_indexes lexical_block_ranges in
-  let lexical_block_proto_dies, _all_summaries =
-    B.Set.fold (fun block (lexical_block_proto_dies, all_summaries) ->
+  let scope_proto_dies, _all_summaries =
+    B.Set.fold (fun block (scope_proto_dies, all_summaries) ->
         let range = LB.find lexical_block_ranges block in
-        let rec create_up_to_root block lexical_block_proto_dies all_summaries =
-          match B.Map.find block lexical_block_proto_dies with
+        let rec create_up_to_root block scope_proto_dies all_summaries =
+          match B.Map.find block scope_proto_dies with
           | proto_die ->
-            proto_die, lexical_block_proto_dies, all_summaries
+            proto_die, scope_proto_dies, all_summaries
           | exception Not_found ->
-            let parent, lexical_block_proto_dies, all_summaries =
+            let parent, scope_proto_dies, all_summaries =
               match B.parent block with
               | None ->
-                function_proto_die, lexical_block_proto_dies, all_summaries
+                function_proto_die, scope_proto_dies, all_summaries
               | Some parent ->
-                create_up_to_root parent lexical_block_proto_dies all_summaries
+                create_up_to_root parent scope_proto_dies all_summaries
             in
             let range_list_attribute, all_summaries =
               let dwarf_4_range_list_entries, range_list, summary =
@@ -1163,7 +1177,6 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
             let proto_die =
               match B.frame_classification block with
               | Lexical_scope_only ->
-              | Non_inlined_frame _ ->  (* CR mshinwell: unsure about this *)
                 Proto_die.create ~parent:(Some parent)
                   ~tag:Lexical_block
                   ~attribute_values:[
@@ -1177,6 +1190,17 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                 in
                 let range = LB.find lexical_block_ranges block in
                 let entry_pc =
+                  (* CR-someday mshinwell: The "entry PC" is supposed to be the
+                     address of the "temporally first" instruction of the
+                     inlined function.  We assume here that we don't do
+                     transformations which might cause the first instruction
+                     of the inlined function to not be the one at the lowest
+                     address amongst all instructions of the inlined function.
+                     If this assumption is wrong the most likely outcome seems
+                     to be breakpoints being slightly in the wrong place,
+                     although still in the correct function.  Making this
+                     completely accurate will necessitate more tracking of
+                     instruction ordering from earlier in the compiler. *)
                   match LB.Range.lowest_address range with
                   | None -> []
                   | Some lowest_address -> [
@@ -1195,19 +1219,19 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                   ])
                   ()
             in
-            let lexical_block_proto_dies =
-              B.Map.add block proto_die lexical_block_proto_dies
+            let scope_proto_dies =
+              B.Map.add block proto_die scope_proto_dies
             in
-            proto_die, lexical_block_proto_dies, all_summaries
+            proto_die, scope_proto_dies, all_summaries
         in
-        let _proto_die, lexical_block_proto_dies, all_summaries =
-          create_up_to_root block lexical_block_proto_dies all_summaries
+        let _proto_die, scope_proto_dies, all_summaries =
+          create_up_to_root block scope_proto_dies all_summaries
         in
-        lexical_block_proto_dies, all_summaries)
+        scope_proto_dies, all_summaries)
       all_blocks
       (B.Map.empty, All_summaries.Map.empty)
   in
-  whole_function_lexical_block, lexical_block_proto_dies
+  whole_function_lexical_block, scope_proto_dies
 
 (* CR mshinwell: Share with [Available_ranges_vars]. *)
 let offset_from_cfa_in_bytes reg stack_loc ~stack_offset =
@@ -1344,13 +1368,13 @@ let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
         ])
         ()
 
-let add_call_site t ~whole_function_lexical_block ~lexical_block_proto_dies
+let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
       ~stack_offset ~is_tail ~args ~(call_labels : Mach.call_labels)
       (insn : L.instruction) attrs =
   let dbg = insn.dbg in
   let block_die =
     find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg
-      ~lexical_block_proto_dies
+      ~scope_proto_dies
   in
   match block_die with
   | None ->
@@ -1446,11 +1470,11 @@ let call_target_for_indirect_callee ~(callee : Reg.t) ~stack_offset =
       [DAH.create_call_target location_desc] 
 
 let dwarf_for_call_sites t ~whole_function_lexical_block
-      ~lexical_block_proto_dies ~(fundecl : L.fundecl)
+      ~scope_proto_dies ~(fundecl : L.fundecl)
       ~external_calls_generated_during_emit ~function_symbol =
   let found_self_tail_calls = ref false in
   let add_call_site =
-    add_call_site t ~whole_function_lexical_block ~lexical_block_proto_dies
+    add_call_site t ~whole_function_lexical_block ~scope_proto_dies
   in
   let add_indirect_ocaml_call ~stack_offset ~callee ~args ~call_labels insn =
     add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
@@ -1655,7 +1679,7 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
       ]
       ()
   in
-  let whole_function_lexical_block, lexical_block_proto_dies =
+  let whole_function_lexical_block, scope_proto_dies =
     Profile.record "dwarf_create_lexical_block_and_inlined_frame_proto_dies"
       (fun () ->
         create_lexical_block_and_inlined_frame_proto_dies t
@@ -1668,7 +1692,7 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
   Profile.record "dwarf_for_variables_and_parameters" (fun () ->
       dwarf_for_variables_and_parameters t fundecl
         ~function_proto_die:abstract_instance_proto_die
-        ~whole_function_lexical_block ~lexical_block_proto_dies
+        ~whole_function_lexical_block ~scope_proto_dies
         ~available_ranges_vars)
     ~accumulate:true
     ();
@@ -1676,7 +1700,7 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
     let found_self_tail_calls =
       Profile.record "dwarf_for_call_sites" (fun () ->
           dwarf_for_call_sites t ~whole_function_lexical_block
-            ~lexical_block_proto_dies ~fundecl
+            ~scope_proto_dies ~fundecl
             ~external_calls_generated_during_emit ~function_symbol:symbol)
         ~accumulate:true
         ()

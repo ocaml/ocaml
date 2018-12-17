@@ -24,19 +24,32 @@ module VP = Backend_var.With_provenance
 type Format.stag += Start_pos_tag of { placeholder_line : int; }
 type Format.stag += End_pos_tag of { placeholder_line : int; }
 
-let mark_start_location ppf dbg =
-  match Debuginfo.position dbg with
-  | None -> ()
-  | Some pos ->
-    let placeholder_line = Debuginfo.Code_range.line pos in
-    Format.pp_open_stag ppf (Start_pos_tag { placeholder_line; })
+module Make_mark_functions (P : sig
+  type t
 
-let mark_end_location ppf dbg =
-  match Debuginfo.position dbg with
-  | None -> ()
-  | Some pos ->
-    let placeholder_line = Debuginfo.Code_range.line pos in
-    Format.pp_open_stag ppf (End_pos_tag { placeholder_line; })
+  val position : t -> Debuginfo.Code_range.t option
+end) = struct
+  let mark_start_location ppf dbg =
+    match P.position dbg with
+    | None -> ()
+    | Some pos ->
+      let placeholder_line = Debuginfo.Code_range.line pos in
+      Format.pp_open_stag ppf (Start_pos_tag { placeholder_line; })
+
+  let mark_end_location ppf dbg =
+    match P.position dbg with
+    | None -> ()
+    | Some pos ->
+      let placeholder_line = Debuginfo.Code_range.line pos in
+      Format.pp_open_stag ppf (End_pos_tag { placeholder_line; })
+end
+
+include Make_mark_functions (Debuginfo)
+
+module Mark_fun_dbg = Make_mark_functions (struct
+  include Debuginfo.Function
+  let position t = Some (position t)
+end)
 
 let parse_placeholder_line_start_tag (stag : Format.stag) =
   match stag with
@@ -338,15 +351,15 @@ let fundecl ~print_dbg ppf f =
        if !first then first := false else fprintf ppf "@ ";
        fprintf ppf "%a: %a" VP.print id machtype ty)
      cases in
-  mark_start_location ppf f.fun_dbg;
+  Mark_fun_dbg.mark_start_location ppf f.fun_dbg;
   fprintf ppf "@[<1>(function ";
   if print_dbg then begin
-    fprintf ppf "%a " Debuginfo.print f.fun_dbg
+    fprintf ppf "%a " Debuginfo.Function.print f.fun_dbg
   end;
   fprintf ppf "%a@;<1 4>@[<1>(%a)@]@ @[%a@])@]@."
     Backend_sym.print f.fun_name
     print_cases f.fun_args (sequence ~print_dbg) f.fun_body;
-  mark_end_location ppf f.fun_dbg
+  Mark_fun_dbg.mark_end_location ppf f.fun_dbg
 
 let data_item ppf = function
   | Cdefine_symbol s -> fprintf ppf "\"%a\":" Backend_sym.print s

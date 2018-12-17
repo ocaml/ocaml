@@ -28,6 +28,7 @@ module Provenance : sig
      : module_path:Path.t
     -> debuginfo:Debuginfo.t
     -> original_ident:Ident.t
+    -> is_parameter:...
     -> t
 
   val module_path : t -> Path.t

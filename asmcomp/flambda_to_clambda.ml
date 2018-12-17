@@ -538,10 +538,8 @@ and to_clambda_set_of_closures t env
       arity = Flambda_utils.function_arity function_decl;
       params = List.map (fun var -> VP.create var) (params @ [env_var]);
       body = to_clambda t env_body function_decl.body;
-      dbg = function_decl.dbg;
+      dbg = assert false; (* XXX for pchambart *)
       env = Some env_var;
-      human_name = Closure_id.base_name closure_id;
-      module_path = None;
     }
   in
   let funs = List.map to_clambda_function all_functions in
@@ -580,10 +578,8 @@ and to_clambda_closed_set_of_closures t env symbol
       arity = Flambda_utils.function_arity function_decl;
       params = List.map (fun var -> VP.create var) params;
       body = to_clambda t env_body function_decl.body;
-      dbg = function_decl.dbg;
+      dbg = assert false; (* XXX for pchambart *)
       env = None;
-      human_name = Closure_id.base_name (Closure_id.wrap id);
-      module_path = None;
     }
   in
   let ufunct = List.map to_clambda_function functions in

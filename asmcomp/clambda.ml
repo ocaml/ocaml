@@ -78,10 +78,8 @@ and ufunction = {
   label  : function_label;
   arity  : int;
   params : Backend_var.With_provenance.t list;
-  human_name : string;
-  module_path : Path.t option;
   body   : ulambda;
-  dbg    : Debuginfo.t;
+  dbg    : Debuginfo.Function.t;
   env    : Backend_var.t option;
 }
 
@@ -95,8 +93,8 @@ and ulambda_switch =
 
 type function_description =
   { fun_label: function_label;          (* Label of direct entry point *)
-    fun_dbg: Debuginfo.Function.t;
     fun_arity: int;                     (* Number of arguments *)
+    fun_dbg: Debuginfo.Function.t;
     mutable fun_closed: bool;           (* True if environment not used *)
     mutable fun_inline: (Backend_var.With_provenance.t list * ulambda) option;
     mutable fun_float_const_prop: bool  (* Can propagate FP consts *)

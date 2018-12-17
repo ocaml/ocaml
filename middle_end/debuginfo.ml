@@ -52,6 +52,10 @@ module Code_range = struct
   let to_string t =
     Printf.sprintf "%s:%d,%d-%d" t.file t.line t.char_start t.char_end
 
+  let of_line ~file ~line =
+    (* 80 seems like a reasonable default to cover a line. *)
+    create ~file ~line ~char_start:0 ~char_end:80
+
   let of_location (loc : Location.t) =
     if Location.is_none loc then
       none
@@ -166,6 +170,11 @@ module Function = struct
 
     let compilation_unit t = t.compilation_unit
 
+    let to_string t =
+      Format.sprintf "%s.%s"
+        (Compilation_unit.string_for_printing t.compilation_unit)
+        t.stamp
+
     include Identifiable.Make (struct
       type nonrec t = t
 
@@ -213,6 +222,12 @@ module Function = struct
       module_path;
       dwarf_die_present;
     }
+
+  let create_from_location loc ~human_name ~module_path =
+    create (Code_range.of_location loc) ~human_name ~module_path
+
+  let create_from_line ~file ~line ~human_name ~module_path =
+    create (Code_range.of_line ~file ~line) ~human_name ~module_path
 
   let id t = t.id
   let position t = t.position
@@ -276,6 +291,10 @@ module Function = struct
   (* CR mshinwell: Naming is poor for this function *)
   let to_string t =
     Code_range.to_string t.position
+
+  let compare_on_source_position_only { position = position1; _ }
+        { position = position2; _ } =
+    Code_range.compare position1 position2
 end
 
 module Block = struct
@@ -492,10 +511,7 @@ let to_string_frames_only_innermost_last t =
     "{" ^ String.concat ";" ranges_innermost_last ^ "}"
 
 let of_line ~file ~line ~scope =
-  let position =
-    (* 80 seems like a reasonable default to cover a line. *)
-    Code_range.create ~file ~line ~char_start:0 ~char_end:80
-  in
+  let position = Code_range.of_line ~file ~line in
   Non_empty { block = scope; position; }
 
 let with_position t position =
@@ -511,6 +527,12 @@ let to_location t =
   match t with
   | Empty -> Location.none
   | Non_empty { block = _; position; } -> Code_range.to_location position
+
+let of_function fun_dbg =
+  Non_empty {
+    block = None;
+    position = Function.position fun_dbg;
+  }
 
 let innermost_block t =
   match t with

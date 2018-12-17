@@ -39,42 +39,108 @@ module Code_range : sig
 end
 
 module Function : sig
+  (** A value of type [t] uniquely identifies a function within a whole
+      program.  It also provides information about the source location of
+      the function, its name, and so forth.
+
+      Unique identifiers of functions are necessary for emitting DWARF debugging
+      information: in particular they are used to match up inlined frames
+      occurring in [Debuginfo.t] values with the corresponding debugging
+      information entries for the relevant functions. We do not use symbols as
+      unique identifiers since in Flambda they may not have been assigned before
+      a debuginfo value is required. *)
+
   type t
 
+  (** Create a function debuginfo given a [Code_range.t] corresponding to
+      its source location. *)
   val create
      : Code_range.t
     -> human_name:string
     -> module_path:Path.t option
     -> t
 
+  (** Create a function debuginfo given a [Location.t] corresponding to
+      its source location. *)
+  val create_from_location
+     : Location.t
+    -> human_name:string
+    -> module_path:Path.t option
+    -> t
+
+  (** Create a function debuginfo given a filename and line number
+      corresponding to its source location. *)
+  val create_from_line
+     : file:string
+    -> line:int
+    -> human_name:string
+    -> module_path:Path.t option
+    -> t
+
   module Id : sig
+    (** The actual unique identifier for a function. *)
     type t
 
+    (** Which compilation unit the function was defined in. *)
     val compilation_unit : t -> Compilation_unit.t
 
     include Identifiable.S with type t := t
+
+    val to_string : t -> string
   end
 
+  (** The unique identifier for the function. *)
   val id : t -> Id.t
 
+  (** The source code location of the function. *)
   val position : t -> Code_range.t
+
+  (** The name to be displayed in a debugger to identify the function,
+      without any module path qualification. *)
   val human_name : t -> string
+
+  (** The module path to the function, if such exists. *)
   val module_path : t -> Path.t option
 
+  (* CR mshinwell: Rename this and/or [human_name]. *)
+  (** The name to be displayed in a debugger to identify the function,
+      including any module path qualification. *)
   val name : t -> string
+
+  (** Whether the function is visible outside the compilation unit in which
+      it is defined. *)
   val is_visible_externally : t -> bool
 
+  (** Whether a DWARF debugging information entry should be expected to be
+      present for this function.  Such entries are only expected when full
+      DWARF information is being emitted.  This function is used to prevent
+      the emission of references to unbound symbols (purportedly referencing
+      DWARF DIEs) when part of a program is compiled without full DWARF
+      debugging information enabled. *)
   val dwarf_die_present : t -> bool
+
+  (** Comparison, equality, hashing and printing. *)
+  include Identifiable.S with type t := t
+
+  (** Compare two function debuginfo values only on their source location. *)
+  val compare_on_source_position_only : t -> t -> int
 end
 
 module Block : sig
+  (** A "block" represents the source-level structures within which a
+      particular computation is nested.  The following varieties of
+      structures are tracked:
+
+      - Lexical blocks
+      - Inlined functions (thought of as inlined-out stack frames).
+  *)
+
   type t
 
   val create_non_inlined_frame : Function.t -> t
 
   type frame_classification = private
     | Lexical_scope_only
-    | Non_inlined_frame of Function.t
     | Inlined_frame of Function.t
 
   val frame_classification : t -> frame_classification
@@ -126,6 +192,8 @@ val of_line : file:string -> line:int -> scope:Current_block.t -> t
 val of_location : Location.t -> scope:Current_block.t -> t
 
 val to_location : t -> Location.t
+
+val of_function : Function.t -> t
 
 val innermost_block : t -> Current_block.t
 

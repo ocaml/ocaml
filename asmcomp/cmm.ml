@@ -304,9 +304,10 @@ type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
 
-let map_debuginfo_phrase phrase ~f =
+let map_debuginfo_phrase phrase ~f ~f_function =
   match phrase with
-  | Cfunction fundecl -> Cfunction (map_debuginfo_fundecl fundecl ~f)
+  | Cfunction fundecl ->
+    Cfunction (map_debuginfo_fundecl fundecl ~f ~f_function)
   | Cdata _ -> phrase
 
 let ccatch (i, ids, e1, e2, loc) =

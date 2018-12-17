@@ -23,9 +23,9 @@ let base_type_die_name_for_var var ~output_path =
 
 let abstract_instance_root_die_name id =
   let name =
-    Format.asprintf "%s_abstract_instance_%a"
+    Format.asprintf "%s_abstract_instance_%s"
       (Compilenv.make_symbol None)
-      Debuginfo.Function.Id.print id
+      Debuginfo.Function.Id.to_string id
   in
   Asm_symbol.of_external_name name
 
