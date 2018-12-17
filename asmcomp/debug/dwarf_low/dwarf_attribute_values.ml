@@ -69,12 +69,6 @@ module Value = struct
   let symbol_64 sym =
     Dwarf_value (V.code_address_from_symbol sym)
 
-  let symbol_32_as_reference sym =
-    Dwarf_value (V.code_address_from_symbol sym)
-
-  let symbol_64_as_reference sym =
-    Dwarf_value (V.code_address_from_symbol sym)
-
   let loclistx ~index =
     Dwarf_value (V.uleb128 index)
 
