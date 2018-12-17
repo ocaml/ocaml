@@ -224,6 +224,8 @@ module type Optcomp_options = sig
   val _dwarf_version : string -> unit
   val _dwarf_offsets : unit -> unit
   val _no_dwarf_offsets : unit -> unit
+  val _dwarf_emit_self_tail_calls : unit -> unit
+  val _no_dwarf_emit_self_tail_calls : unit -> unit
   val _g_full : string -> unit
 end;;
 

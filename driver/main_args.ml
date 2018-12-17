@@ -115,7 +115,8 @@ let mk_dwarf_version f =
 let mk_dwarf_offsets f =
   let help =
     " Generate offset arrays in DWARF-5 location and range list tables"
-      ^ (if Clflags.default_dwarf_offsets then " (default)" else "")
+      ^ (if Clflags.default_dwarf_location_and_range_table_offsets
+         then " (default)" else "")
   in
   "-dwarf-offsets", Arg.Unit f, help
 ;;
@@ -123,9 +124,29 @@ let mk_dwarf_offsets f =
 let mk_no_dwarf_offsets f =
   let help =
     " Do not enerate offset arrays in DWARF-5 location and range list tables"
-      ^ (if not Clflags.default_dwarf_offsets then " (default)" else "")
+      ^ (if Clflags.default_dwarf_location_and_range_table_offsets
+         then " (default)" else "")
   in
   "-no-dwarf-offsets", Arg.Unit f, help
+;;
+
+let mk_dwarf_emit_self_tail_calls f =
+  let help =
+    " Generate DW_TAG_call_site for self tail calls (not strictly \
+        DWARF-5 compliant)"
+      ^ (if Clflags.default_dwarf_emit_self_tail_calls
+         then " (default)" else "")
+  in
+  "-dwarf-self-tail-calls", Arg.Unit f, help
+;;
+
+let mk_no_dwarf_emit_self_tail_calls f =
+  let help =
+    " Do not generate DW_TAG_call_site for self tail calls"
+      ^ (if not Clflags.default_dwarf_emit_self_tail_calls
+         then " (default)" else "")
+  in
+  "-no-dwarf-self-tail-calls", Arg.Unit f, help
 ;;
 
 let mk_for_pack_byt f =
@@ -1084,6 +1105,8 @@ module type Optcomp_options = sig
   val _dwarf_version : string -> unit
   val _dwarf_offsets : unit -> unit
   val _no_dwarf_offsets : unit -> unit
+  val _dwarf_emit_self_tail_calls : unit -> unit
+  val _no_dwarf_emit_self_tail_calls : unit -> unit
   val _g_full : string -> unit
 end;;
 
@@ -1305,6 +1328,8 @@ struct
     mk_dwarf_version F._dwarf_version;
     mk_dwarf_offsets F._dwarf_offsets;
     mk_no_dwarf_offsets F._no_dwarf_offsets;
+    mk_dwarf_emit_self_tail_calls F._dwarf_emit_self_tail_calls;
+    mk_no_dwarf_emit_self_tail_calls F._no_dwarf_emit_self_tail_calls;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
     mk_g_full F._g_full;

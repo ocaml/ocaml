@@ -978,7 +978,7 @@ let dwarf_for_variables_and_parameters t fundecl ~function_proto_die
       ~whole_function_lexical_block ~lexical_block_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true)
 
-let find_or_add_abstract_instance t fun_dbg =
+let add_abstract_instance t fun_dbg =
   let function_name = Debuginfo.Function.name fun_dbg in
   let is_visible_externally =
     Debuginfo.Function.is_visible_externally fun_dbg
@@ -1005,16 +1005,35 @@ let find_or_add_abstract_instance t fun_dbg =
       ]
       ()
   in
-  let function_id = Debuginfo.Function.id fundecl.fun_dbg in
+  let id = Debuginfo.Function.id fundecl.fun_dbg in
   let abstract_instance_proto_die_symbol =
-    Name_laundry.abstract_instance_root_die_name function_id
+    Name_laundry.abstract_instance_root_die_name id
   in
   Proto_die.set_name abstract_instance_proto_die
     abstract_instance_proto_die_symbol;
-  Debuginfo.Function.Id.Tbl.add t.function_abstract_instances_by_id
-    function_id
+  Debuginfo.Function.Id.Tbl.add t.function_abstract_instances_by_id id
     (abstract_instance_proto_die, abstract_instance_proto_die_symbol);
   abstract_instance_proto_die, abstract_instance_proto_die_symbol
+
+let find_or_add_abstract_instance t fun_dbg =
+  let id = Debuginfo.Function.id fundecl.fun_dbg in
+  match
+    Debuginfo.Function.Id.Tbl.find t.function_abstract_instances_by_id id
+  with
+  | exception Not_found -> add_abstract_instance t fun_dbg
+  | existing_instance -> existing_instance
+
+let find_maybe_in_another_unit_or_add_abstract_instance t fun_dbg =
+  let id = Debuginfo.Function.id fundecl.fun_dbg in
+  let dbg_comp_unit = Debuginfo.Function.Id.compilation_unit id in
+  let this_comp_unit = Compilation_unit.get_current_exn () in
+  if Compilation_unit.equal dbg_comp_unit this_comp_unit then
+    let _abstract_instance_proto_die, abstract_instance_proto_die_symbol =
+      find_or_add_abstract_instance t fun_dbg
+    in
+    abstract_instance_proto_die_symbol
+  else
+    Name_laundry.abstract_instance_root_die_name id
 
 let create_range_list_and_summarise t (fundecl : L.fundecl) range =
   LB.Range.fold range
@@ -1074,8 +1093,7 @@ module All_summaries = Identifiable.Make (struct
   let hash t = Hashtbl.hash (elements t)
 end)
 
-(* CR mshinwell: rename, to reflect that this does inlined frames too now? *)
-let create_lexical_block_proto_dies t (fundecl : L.fundecl)
+let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
       lexical_block_ranges ~function_proto_die
       ~start_of_function ~end_of_function
       : Proto_die.t * (Proto_die.t Debuginfo.Block.Map.t) =
@@ -1154,8 +1172,8 @@ let create_lexical_block_proto_dies t (fundecl : L.fundecl)
                   ()
               | Inlined_frame fun_dbg ->
                 let id = Debuginfo.Function.id fun_dbg in
-                let _abstract_instance_proto_die, abstract_instance_symbol =
-                  find_or_add_abstract_instance t fun_dbg
+                let abstract_instance_symbol =
+                  find_maybe_in_another_unit_or_add_abstract_instance t fun_dbg
                 in
                 let range = LB.find lexical_block_ranges block in
                 let entry_pc =
@@ -1638,8 +1656,10 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
       ()
   in
   let whole_function_lexical_block, lexical_block_proto_dies =
-    Profile.record "dwarf_create_lexical_block_proto_dies" (fun () ->
-        create_lexical_block_proto_dies t fundecl lexical_block_ranges
+    Profile.record "dwarf_create_lexical_block_and_inlined_frame_proto_dies"
+      (fun () ->
+        create_lexical_block_and_inlined_frame_proto_dies t
+          fundecl lexical_block_ranges
           ~function_proto_die:abstract_instance_proto_die
           ~start_of_function ~end_of_function)
       ~accumulate:true
@@ -1650,7 +1670,7 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
         ~function_proto_die:abstract_instance_proto_die
         ~whole_function_lexical_block ~lexical_block_proto_dies
         ~available_ranges_vars)
-      ~accumulate:true
+    ~accumulate:true
     ();
   if supports_call_sites () then begin
     let found_self_tail_calls =
@@ -1658,7 +1678,7 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
           dwarf_for_call_sites t ~whole_function_lexical_block
             ~lexical_block_proto_dies ~fundecl
             ~external_calls_generated_during_emit ~function_symbol:symbol)
-          ~accumulate:true
+        ~accumulate:true
         ()
     in
     if not found_self_tail_calls then begin

@@ -391,8 +391,10 @@ type dwarf_version =
 
 let default_dwarf_version = Four
 let dwarf_version = ref default_dwarf_version
-let default_dwarf_offsets = false
-let dwarf_location_and_range_table_offsets = ref default_dwarf_offsets
+
+let default_dwarf_location_and_range_table_offsets = false
+let dwarf_location_and_range_table_offsets =
+  ref default_dwarf_location_and_range_table_offsets
 
 type dwarf_format =
   | Thirty_two

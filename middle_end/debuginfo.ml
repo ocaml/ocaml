@@ -146,33 +146,79 @@ module Code_range = struct
 end
 
 module Function = struct
+  module Id = struct
+    type t = {
+      stamp : int;
+      compilation_unit : Compilation_unit.t;
+    }
+
+    let next_stamp = ref 0
+
+    let get_next_stamp () =
+      let stamp = !next_stamp in
+      incr next_stamp;
+      stamp
+
+    let create () =
+      { stamp = get_next_stamp ();
+        compilation_unit = Compilation_unit.get_current_exn ();
+      }
+
+    let compilation_unit t = t.compilation_unit
+
+    include Identifiable.Make (struct
+      type nonrec t = t
+
+      let compare { stamp = stamp1; compilation_unit = compilation_unit1; }
+            { stamp = stamp2; compilation_unit = compilation_unit2; } =
+        let c = Stdlib.compare stamp1 stamp2 in
+        if c <> 0 then c
+        else Compilation_unit.compare compilation_unit1 compilation_unit2
+
+      let equal t1 t2 =
+        compare t1 t2 = 0
+
+      let hash { stamp; compilation_unit; } =
+        Hashtbl.hash (stamp, Compilation_unit.hash compilation_unit)
+
+      let print ppf { stamp; compilation_unit; } =
+      Format.fprintf ppf "@[<hov 1>(\
+          @[<hov 1>(stamp@ %d)@]@ \
+          @[<hov 1>(compilation_unit@ %a)@])@]"
+        stamp
+        Compilation_unit.print compilation_unit
+
+      let output chan t =
+        Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
+    end)
+  end
+
   type t = {
-    id : int;
+    id : Id.t;
     position : Code_range.t;
     human_name : string;
     module_path : Path.t option;
+    dwarf_die_present : bool;
   }
 
-  module Id = Numbers.Int
-
-  let next_id = ref 0
-
-  let get_next_id () =
-    let id = !next_id in
-    incr next_id;
-    id
-
-  let create position ~human_name module_path =
-    { id = get_next_id ();
+  let create position ~human_name ~module_path =
+    let dwarf_die_present =
+      match !Clflags.debug_full with
+      | None -> false
+      | Some _ -> true
+    in
+    { id = Id.create ();
       position;
       human_name;
       module_path;
+      dwarf_die_present;
     }
 
   let id t = t.id
   let position t = t.position
   let human_name t = t.human_name
   let module_path t = t.module_path
+  let dwarf_die_present t = t.dwarf_die_present
 
   let name t =
     match t.module_path with
@@ -201,6 +247,35 @@ module Function = struct
     match t.module_path with
     | None -> false
     | Some _ -> true
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare t1 t2 = Id.compare t1.id t2.id
+    let equal t1 t2 = Id.equal t1.id t2.id
+    let hash t = Id.hash t.id
+
+    let print ppf { id; position; human_name; module_path;
+                    dwarf_die_present; } =
+      Format.fprintf ppf "@[<hov 1>(\
+          @[<hov 1>(id@ %a)@]@ \
+          @[<hov 1>(position@ %a)@]@ \
+          @[<hov 1>(human_name@ %s)@]@ \
+          @[<hov 1>(module_path@ %a)@]@ \
+          @[<hov 1>(dwarf_die_present@ %b)@])@]"
+        Id.print id
+        Code_range.print position
+        human_name
+        (Option.print Path.print) module_path
+        dwarf_die_present
+
+    let output chan t =
+      Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
+  end)
+
+  (* CR mshinwell: Naming is poor for this function *)
+  let to_string t =
+    Code_range.to_string t.position
 end
 
 module Block = struct
@@ -309,7 +384,7 @@ module Block = struct
           @[<hov 1>(frame_location@ %a)@]@ \
           @[<hov 1>(parent@ %s)@])@]"
         id
-        (Option.print Code_range.print) frame_location
+        (Option.print Function.print) frame_location
         (match parent with
           | None -> "()"
           | Some parent -> string_of_int parent.id)
@@ -408,7 +483,7 @@ let to_string_frames_only_innermost_last t =
       match block with
       | None -> []
       | Some block ->
-        List.map (fun range -> Code_range.to_string range)
+        List.map (fun range -> Function.to_string range)
           (Block.frame_list_innermost_first block)
     in
     let ranges_innermost_last =
@@ -456,13 +531,13 @@ let iter_position_and_blocks_innermost_first t ~f_position ~f_blocks =
     | None -> ()
     | Some block -> Block.iter_innermost_first block ~f:f_blocks
 
-let iter_position_and_frames_innermost_first t ~f =
+let iter_position_and_frames_innermost_first t ~f_position ~f_fun_dbg =
   iter_position_and_blocks_innermost_first t
-    ~f_position:f
+    ~f_position
     ~f_blocks:(fun block ->
       match Block.frame_classification block with
       | Lexical_scope_only -> ()
-      | Non_inlined_frame range | Inlined_frame range -> f range)
+      | Non_inlined_frame fun_dbg | Inlined_frame fun_dbg -> f_fun_dbg fun_dbg)
 
 include Identifiable.Make (struct
   type nonrec t = t

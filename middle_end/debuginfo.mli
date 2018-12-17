@@ -47,7 +47,14 @@ module Function : sig
     -> module_path:Path.t option
     -> t
 
-  module Id : Identifiable.S
+  module Id : sig
+    type t
+
+    val compilation_unit : t -> Compilation_unit.t
+
+    include Identifiable.S with type t := t
+  end
+
   val id : t -> Id.t
 
   val position : t -> Code_range.t
@@ -56,6 +63,8 @@ module Function : sig
 
   val name : t -> string
   val is_visible_externally : t -> bool
+
+  val dwarf_die_present : t -> bool
 end
 
 module Block : sig
@@ -132,7 +141,8 @@ val iter_position_and_blocks_innermost_first
 
 val iter_position_and_frames_innermost_first
    : t
-  -> f:(Code_range.t -> unit)
+  -> f_position:(Code_range.t -> unit)
+  -> f_fun_dbg:(Function.t -> unit)
   -> unit
 
 module Block_subst : sig
