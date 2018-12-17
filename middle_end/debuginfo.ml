@@ -72,16 +72,19 @@ module Code_range = struct
   include Identifiable.Make (struct
     type nonrec t = t
 
-    let print ppf { file; line; char_start; char_end; } =
-      Format.fprintf ppf "@[<hov 1>(\
-          @[<hov 1>(file@ %s)@]@ \
-          @[<hov 1>(line@ %d)@]@ \
-          @[<hov 1>(char_start@ %d)@]@ \
-          @[<hov 1>(char_end@ %d)@])@]"
-        file
-        line
-        char_start
-        char_end
+    let print ppf ({ file; line; char_start; char_end; } as t) =
+      if t == none then
+        Format.pp_print_string ppf "<none>"
+      else
+        Format.fprintf ppf "@[<hov 1>(\
+            @[<hov 1>(file@ %s)@]@ \
+            @[<hov 1>(line@ %d)@]@ \
+            @[<hov 1>(char_start@ %d)@]@ \
+            @[<hov 1>(char_end@ %d)@])@]"
+          file
+          line
+          char_start
+          char_end
 
     let output chan t =
       Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t

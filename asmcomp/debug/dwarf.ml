@@ -703,6 +703,24 @@ let find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg
     | exception Not_found -> None
     | proto_die -> Some proto_die
 
+let find_closest_lexical_block_die_from_debuginfo ~whole_function_lexical_block
+      dbg ~scope_proto_dies =
+  let block = Debuginfo.innermost_block dbg in
+  match Debuginfo.Current_block.to_block block with
+  | Toplevel -> whole_function_lexical_block
+  | Block block ->
+    let module B = Debuginfo.Block in
+    let rec find_die block =
+      match B.Map.find block scope_proto_dies with
+      | exception Not_found ->
+        begin match B.parent block with
+        | None -> whole_function_lexical_block
+        | Some parent -> find_die parent
+        end
+      | proto_die -> proto_die
+    in
+    find_die block
+
 let dwarf_for_variable t (fundecl : L.fundecl)
       ~function_proto_die ~whole_function_lexical_block
       ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
@@ -739,18 +757,13 @@ let dwarf_for_variable t (fundecl : L.fundecl)
       match provenance with
       | None -> whole_function_lexical_block
       | Some provenance ->
+        (* There may be no instructions marked with the block in which
+           [var] was defined.  Instead of just hiding [var] entirely in such
+           cases, we put it in the closest enclosing scope which does have some
+           instructions, or the whole-function scope if not. *)
         let dbg = Backend_var.Provenance.debuginfo provenance in
-        let block_die =
-          find_lexical_block_die_from_debuginfo ~whole_function_lexical_block
-            dbg ~scope_proto_dies
-        in
-        match block_die with
-        | None ->
-          (* There are no instructions marked with the block in which
-             [var] was defined.  Put the variable in the whole-function
-             lexical scope. *)
-          whole_function_lexical_block
-        | Some block_die -> block_die
+        find_closest_lexical_block_die_from_debuginfo
+          ~whole_function_lexical_block dbg ~scope_proto_dies
   in
   (* Build a location list that identifies where the value of [ident] may be
      found at runtime, indexed by program counter range.
