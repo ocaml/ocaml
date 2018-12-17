@@ -1690,7 +1690,7 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
     DAH.create_high_pc
       ~address_label:(Asm_label.create_int end_of_function_label)
   in
-  let abstract_instance_proto_die, abstract_instance_die_symbol =
+  let _abstract_instance_proto_die, abstract_instance_die_symbol =
     find_or_add_abstract_instance t fundecl.fun_dbg
   in
   let concrete_instance_proto_die =
@@ -1709,14 +1709,14 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
       (fun () ->
         create_lexical_block_and_inlined_frame_proto_dies t
           fundecl lexical_block_ranges
-          ~function_proto_die:abstract_instance_proto_die
+          ~function_proto_die:concrete_instance_proto_die
           ~start_of_function ~end_of_function)
       ~accumulate:true
       ()
   in
   Profile.record "dwarf_for_variables_and_parameters" (fun () ->
       dwarf_for_variables_and_parameters t fundecl
-        ~function_proto_die:abstract_instance_proto_die
+        ~function_proto_die:concrete_instance_proto_die
         ~whole_function_lexical_block ~scope_proto_dies
         ~available_ranges_vars)
     ~accumulate:true
@@ -1725,8 +1725,8 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
     let found_self_tail_calls =
       Profile.record "dwarf_for_call_sites" (fun () ->
           dwarf_for_call_sites t ~whole_function_lexical_block
-            ~scope_proto_dies ~fundecl
-            ~external_calls_generated_during_emit ~function_symbol:symbol)
+            ~scope_proto_dies ~fundecl ~external_calls_generated_during_emit
+            ~function_symbol:symbol)
         ~accumulate:true
         ()
     in
