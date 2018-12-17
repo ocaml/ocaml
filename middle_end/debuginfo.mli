@@ -226,11 +226,13 @@ module Block_subst : sig
      : t
     -> Block.t
     -> at_call_site:Current_block.t
+    -> function_being_inlined:Function.t
     -> t * Block.t
 
   val find_or_add
      : t
     -> debuginfo
     -> at_call_site:Current_block.t
+    -> function_being_inlined:Function.t
     -> t * debuginfo
 end

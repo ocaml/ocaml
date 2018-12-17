@@ -552,13 +552,26 @@ let find_action idxs acts tag =
     (* Can this happen? *)
     None
 
-let subst_debuginfo ~at_call_site ~block_subst dbg =
-  if !Clflags.debug then
-    Debuginfo.Block_subst.find_or_add block_subst dbg ~at_call_site
-  else
-    block_subst, dbg
+let subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst dbg =
+  match function_being_inlined with
+  | None -> block_subst, dbg
+  | Some function_being_inlined ->
+    if !Clflags.debug then
+  begin
+  Format.eprintf "Call site: %a\n%!" Debuginfo.Current_block.print at_call_site;
+  Format.eprintf "Orig dbg: %a\n%!" Debuginfo.print dbg;
+  let block_subst, dbg =
+      Debuginfo.Block_subst.find_or_add block_subst dbg ~at_call_site
+        ~function_being_inlined
+  in
+  Format.eprintf "New dbg: %a\n%!" Debuginfo.print dbg;
+  block_subst, dbg
+  end
+    else
+      block_subst, dbg
 
-let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
+let rec substitute ~at_call_site ~function_being_inlined ~block_subst
+      fpc sb rn ulam =
   match ulam with
     Uvar v ->
       let ulam =
@@ -568,22 +581,25 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
   | Uconst _ -> block_subst, ulam
   | Udirect_apply(lbl, args, dbg) ->
       let block_subst, dbg =
-        subst_debuginfo ~at_call_site ~block_subst dbg
+        subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst dbg
       in
       let block_subst, args =
-        substitute_list ~at_call_site ~block_subst fpc sb rn args
+        substitute_list ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn args
       in
       let term = Udirect_apply (lbl, args, dbg) in
       block_subst, term
   | Ugeneric_apply(fn, args, dbg) ->
       let block_subst, dbg =
-        subst_debuginfo ~at_call_site ~block_subst dbg
+        subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst dbg
       in
       let block_subst, callee =
-        substitute ~at_call_site ~block_subst fpc sb rn fn
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn fn
       in
       let block_subst, args =
-        substitute_list ~at_call_site ~block_subst fpc sb rn args
+        substitute_list ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn args
       in
       let term = Ugeneric_apply (callee, args, dbg) in
       block_subst, term
@@ -597,13 +613,15 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
            in [close], case [Lletrec], we discard the original
            let rec body and use only the substituted term. *)
       let block_subst, env =
-        substitute_list ~at_call_site ~block_subst fpc sb rn env
+        substitute_list ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn env
       in
       let term = Uclosure (defs, env) in
       block_subst, term
   | Uoffset(u, ofs) ->
       let block_subst, block =
-        substitute ~at_call_site ~block_subst fpc sb rn u
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u
       in
       let term = Uoffset (block, ofs) in
       block_subst, term
@@ -613,7 +631,7 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
         | None -> block_subst, None
         | Some provenance ->
           let block_subst, dbg =
-            subst_debuginfo ~at_call_site ~block_subst
+            subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst
               (V.Provenance.debuginfo provenance)
           in
           let provenance =
@@ -623,10 +641,11 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
       in
       let id' = VP.rename ?provenance id in
       let block_subst, defining_expr =
-        substitute ~at_call_site ~block_subst fpc sb rn u1
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u1
       in
       let block_subst, body =
-        substitute ~at_call_site ~block_subst fpc
+        substitute ~at_call_site ~function_being_inlined ~block_subst fpc
           (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2
       in
       let term = Ulet (str, kind, id', defining_expr, body) in
@@ -637,7 +656,7 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
         | None -> block_subst, None
         | Some provenance ->
           let block_subst, dbg =
-            subst_debuginfo ~at_call_site ~block_subst
+            subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst
               (V.Provenance.debuginfo provenance)
           in
           let provenance =
@@ -686,7 +705,7 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
                 Misc.fatal_error "[Closure] cannot handle [Uphantom_block]"
       in
       let block_subst, body =
-        substitute ~at_call_site ~block_subst fpc
+        substitute ~at_call_site ~function_being_inlined ~block_subst fpc
           (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn body
       in
       let term = Uphantom_let (id', defining_expr, body) in
@@ -704,28 +723,34 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
       let block_subst, bindings_rev =
         List.fold_left (fun (block_subst, bindings_rev) (_id, id', rhs) ->
             let block_subst, defining_expr =
-              substitute ~at_call_site ~block_subst fpc sb' rn rhs
+              substitute ~at_call_site ~function_being_inlined ~block_subst
+                fpc sb' rn rhs
             in
             block_subst, (id', defining_expr) :: bindings_rev)
           (block_subst, [])
           bindings1
       in
       let block_subst, body =
-        substitute ~at_call_site ~block_subst fpc sb' rn body
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb' rn body
       in
       let term = Uletrec (List.rev bindings_rev, body) in
       block_subst, term
   | Uprim(p, args, dbg) ->
       let block_subst, sargs =
-        substitute_list ~at_call_site ~block_subst fpc sb rn args
+        substitute_list ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn args
       in
-      let block_subst, dbg = subst_debuginfo ~at_call_site ~block_subst dbg in
+      let block_subst, dbg =
+        subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst dbg
+      in
       let (res, _) =
         simplif_prim fpc p (sargs, List.map approx_ulam sargs) dbg in
       block_subst, res
   | Uswitch(arg, sw, dbg) ->
       let block_subst, sarg =
-        substitute ~at_call_site ~block_subst fpc sb rn arg
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn arg
       in
       let action =
         (* Unfortunately, we cannot easily deal with the
@@ -742,15 +767,17 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
         | _ -> None
       in
       begin match action with
-      | Some (u, _) -> substitute ~at_call_site ~block_subst fpc sb rn u
+      | Some (u, _) ->
+          substitute ~at_call_site ~function_being_inlined ~block_subst
+            fpc sb rn u
       | None ->
           let block_subst, us_actions_consts =
-            substitute_switch_array ~at_call_site ~block_subst fpc sb rn
-              sw.us_actions_consts
+            substitute_switch_array ~at_call_site ~function_being_inlined
+              ~block_subst fpc sb rn sw.us_actions_consts
           in
           let block_subst, us_actions_blocks =
-            substitute_switch_array ~at_call_site ~block_subst fpc sb rn
-              sw.us_actions_blocks
+            substitute_switch_array ~at_call_site ~function_being_inlined
+              ~block_subst fpc sb rn sw.us_actions_blocks
           in
           let term =
             Uswitch (sarg,
@@ -764,12 +791,14 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
       end
   | Ustringswitch (arg, cases, default, dbg) ->
       let block_subst, arg =
-        substitute ~at_call_site ~block_subst fpc sb rn arg
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn arg
       in
       let block_subst, cases_rev =
         List.fold_left (fun (block_subst, cases_rev) (str, action, loc) ->
             let block_subst, action =
-              substitute ~at_call_site ~block_subst fpc sb rn action
+              substitute ~at_call_site ~function_being_inlined ~block_subst
+                fpc sb rn action
             in
             block_subst, (str, action, loc) :: cases_rev)
           (block_subst, [])
@@ -781,7 +810,8 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
         | None -> block_subst, None
         | Some (default, loc) ->
           let block_subst, default =
-            substitute ~at_call_site ~block_subst fpc sb rn default
+            substitute ~at_call_site ~function_being_inlined ~block_subst
+              fpc sb rn default
           in
           block_subst, Some (default, loc)
       in
@@ -799,7 +829,8 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
         | None -> nfail
       in
       let block_subst, args =
-        substitute_list ~at_call_site ~block_subst fpc sb rn args
+        substitute_list ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn args
       in
       let term = Ustaticfail (nfail, args) in
       block_subst, term
@@ -817,75 +848,90 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
           ids ids' sb
       in
       let block_subst, u1 =
-        substitute ~at_call_site ~block_subst fpc sb rn u1
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u1
       in
       let block_subst, u2 =
-        substitute ~at_call_site ~block_subst fpc sb' rn u2
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb' rn u2
       in
       let term = Ucatch (nfail, ids', u1, u2, loc) in
       block_subst, term
   | Utrywith(u1, id, u2, loc) ->
       let id' = VP.rename id in
       let block_subst, u1 =
-        substitute ~at_call_site ~block_subst fpc sb rn u1
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u1
       in
       let block_subst, u2 =
-        substitute ~at_call_site ~block_subst fpc
-          (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u2
       in
       let term = Utrywith (u1, id', u2, loc) in
       block_subst, term
   | Uifthenelse(u1, ifso_loc, u2, ifnot_loc, u3, loc) ->
       let block_subst, u1 =
-        substitute ~at_call_site ~block_subst fpc sb rn u1
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u1
       in
       begin match u1 with
         Uconst (Uconst_ptr n) ->
           if n <> 0 then
-            substitute ~at_call_site ~block_subst fpc sb rn u2
+            substitute ~at_call_site ~function_being_inlined ~block_subst
+              fpc sb rn u2
           else
-            substitute ~at_call_site ~block_subst fpc sb rn u3
+            substitute ~at_call_site ~function_being_inlined ~block_subst
+              fpc sb rn u3
       | Uprim(Pmakeblock _, _, _) ->
-          substitute ~at_call_site ~block_subst fpc sb rn u2
+          substitute ~at_call_site ~function_being_inlined ~block_subst
+            fpc sb rn u2
       | su1 ->
           let block_subst, u2 =
-            substitute ~at_call_site ~block_subst fpc sb rn u2
+            substitute ~at_call_site ~function_being_inlined ~block_subst
+              fpc sb rn u2
           in
           let block_subst, u3 =
-            substitute ~at_call_site ~block_subst fpc sb rn u3
+            substitute ~at_call_site ~function_being_inlined ~block_subst
+              fpc sb rn u3
           in
           let term = Uifthenelse (su1, ifso_loc, u2, ifnot_loc, u3, loc) in
           block_subst, term
       end
   | Usequence(u1, u2) ->
       let block_subst, u1 =
-        substitute ~at_call_site ~block_subst fpc sb rn u1
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u1
       in
       let block_subst, u2 =
-        substitute ~at_call_site ~block_subst fpc sb rn u2
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u2
       in
       let term = Usequence (u1, u2) in
       block_subst, term
   | Uwhile(u1, u2, loc) ->
       let block_subst, u1 =
-        substitute ~at_call_site ~block_subst fpc sb rn u1
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u1
       in
       let block_subst, u2 =
-        substitute ~at_call_site ~block_subst fpc sb rn u2
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u2
       in
       let term = Uwhile (u1, u2, loc) in
       block_subst, term
   | Ufor(id, u1, u2, dir, u3, loc) ->
       let id' = VP.rename id in
       let block_subst, u1 =
-        substitute ~at_call_site ~block_subst fpc sb rn u1
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u1
       in
       let block_subst, u2 =
-        substitute ~at_call_site ~block_subst fpc sb rn u2
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u2
       in
       let block_subst, u3 =
-        substitute ~at_call_site ~block_subst fpc
-          (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u3
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc (V.Map.add (VP.var id) (Uvar (VP.var id')) sb) rn u3
       in
       let term = Ufor (id', u1, u2, dir, u3, loc) in
       block_subst, term
@@ -896,31 +942,39 @@ let rec substitute ~at_call_site ~block_subst fpc sb rn ulam =
         with Not_found ->
           id in
       let block_subst, u =
-        substitute ~at_call_site ~block_subst fpc sb rn u
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u
       in
       let term = Uassign (id', u) in
       block_subst, term
   | Usend(k, u1, u2, ul, dbg) ->
-      let block_subst, dbg = subst_debuginfo ~at_call_site ~block_subst dbg in
+      let block_subst, dbg =
+        subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst dbg
+      in
       let block_subst, u1 =
-        substitute ~at_call_site ~block_subst fpc sb rn u1
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u1
       in
       let block_subst, u2 =
-        substitute ~at_call_site ~block_subst fpc sb rn u2
+        substitute ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn u2
       in
       let block_subst, ul =
-        substitute_list ~at_call_site ~block_subst fpc sb rn ul
+        substitute_list ~at_call_site ~function_being_inlined ~block_subst
+          fpc sb rn ul
       in
       let term = Usend (k, u1, u2, ul, dbg) in
       block_subst, term
   | Uunreachable ->
       block_subst, Uunreachable
 
-and substitute_list ~at_call_site ~block_subst fpc sb rn terms =
+and substitute_list ~at_call_site ~function_being_inlined ~block_subst
+      fpc sb rn terms =
   let block_subst, terms_rev =
     List.fold_left (fun (block_subst, terms_rev) term ->
         let block_subst, term =
-          substitute ~at_call_site ~block_subst fpc sb rn term
+          substitute ~at_call_site ~function_being_inlined ~block_subst
+            fpc sb rn term
         in
         block_subst, term::terms_rev)
       (block_subst, [])
@@ -928,13 +982,15 @@ and substitute_list ~at_call_site ~block_subst fpc sb rn terms =
   in
   block_subst, List.rev terms_rev
 
-and substitute_switch_array ~at_call_site ~block_subst fpc sb rn terms =
+and substitute_switch_array ~at_call_site ~function_being_inlined ~block_subst
+      fpc sb rn terms =
   let terms = Array.copy terms in
   let block_subst = ref block_subst in
   for index = 0 to Array.length terms -1 do
     let action, loc = terms.(index) in
     let new_block_subst, action =
-      substitute ~at_call_site ~block_subst:!block_subst fpc sb rn action
+      substitute ~at_call_site ~function_being_inlined
+        ~block_subst:!block_subst fpc sb rn action
     in
     block_subst := new_block_subst;
     terms.(index) <- action, loc
@@ -951,12 +1007,13 @@ let no_effects = function
   | Uclosure _ -> true
   | u -> is_pure_clambda u
 
-let rec bind_params_rec ~param_index ~block_subst ~at_call_site fpc
-      subst params args body =
+let rec bind_params_rec ~param_index ~block_subst ~at_call_site
+      ~function_being_inlined fpc subst params args body =
   match (params, args) with
     ([], []) ->
     let _block_subst, term =
-      substitute ~block_subst ~at_call_site fpc subst (Some Int.Map.empty) body
+      substitute ~block_subst ~at_call_site ~function_being_inlined
+        fpc subst (Some Int.Map.empty) body
     in
     term
   | (p1 :: pl, a1 :: al) ->
@@ -965,7 +1022,7 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site fpc
         | None -> block_subst, None
         | Some provenance ->
           let block_subst, dbg =
-            subst_debuginfo ~at_call_site ~block_subst
+            subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst
               (V.Provenance.debuginfo provenance)
           in
           block_subst, Some (V.Provenance.replace_debuginfo provenance dbg)
@@ -981,7 +1038,7 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site fpc
       if is_simple_argument a1 then
         let term =
           bind_params_rec ~param_index:(param_index + 1)
-            ~block_subst ~at_call_site fpc
+            ~block_subst ~at_call_site ~function_being_inlined fpc
             (V.Map.add (VP.var p1) a1 subst) pl al body
         in
         let phantom_defining_expr =
@@ -1001,7 +1058,7 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site fpc
         in
         let body' =
           bind_params_rec ~param_index:(param_index + 1)
-            ~block_subst ~at_call_site fpc
+            ~block_subst ~at_call_site ~function_being_inlined fpc
             (V.Map.add (VP.var p1) u2 subst) pl al body
         in
         if occurs_var (VP.var p1) body then
@@ -1025,11 +1082,12 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site fpc
       end
   | (_, _) -> assert false
 
-let bind_params ~at_call_site fpc params args body =
+let bind_params ~at_call_site ~function_being_inlined fpc params args body =
   let block_subst = Debuginfo.Block_subst.empty in
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
-  bind_params_rec ~param_index:0 ~block_subst ~at_call_site fpc V.Map.empty
+  bind_params_rec ~param_index:0 ~block_subst ~at_call_site
+    ~function_being_inlined fpc V.Map.empty
     (List.rev params) (List.rev args) body
 
 (* Check if a lambda term is ``pure'',
@@ -1060,7 +1118,9 @@ let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute =
           "Function information unavailable";
         Udirect_apply(fundesc.fun_label, app_args, dbg)
     | Some(params, body), _  ->
-        bind_params ~at_call_site:scope fundesc.fun_float_const_prop
+        bind_params ~at_call_site:scope
+          ~function_being_inlined:(Some fundesc.fun_dbg)
+          fundesc.fun_float_const_prop
           params app_args body
   in
   (* If ufunct can contain side-effects or function definitions,
@@ -1348,7 +1408,7 @@ let rec close ~scope fenv cenv = function
               V.Map.add id (Uoffset(Uvar clos_ident, pos)) sb)
             infos V.Map.empty in
         let _block_subst, ubody =
-          substitute ~at_call_site:scope
+          substitute ~at_call_site:scope ~function_being_inlined:None
             ~block_subst:Debuginfo.Block_subst.empty
             !Clflags.float_const_prop sb None ubody
         in

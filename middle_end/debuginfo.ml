@@ -361,6 +361,11 @@ module Block = struct
   let parent t = t.parent
   let unique_id t = t.id
 
+  let with_frame_location t fun_dbg =
+    { t with
+      frame_location = Some fun_dbg;
+    }
+
   let rec frame_list_innermost_first t =
     match t.parent with
     | None ->
@@ -608,7 +613,7 @@ module Block_subst = struct
   let empty = Block.Map.empty
 
   let rec find_or_add_block t (old_block : Block.t)
-        ~(at_call_site : Current_block.t)
+        ~(at_call_site : Current_block.t) ~function_being_inlined
         : t * Block.t =
     match Block.Map.find old_block t with
     | exception Not_found ->
@@ -617,17 +622,25 @@ module Block_subst = struct
         match old_parent with
         | None -> t, at_call_site
         | Some old_parent ->
-          let t, block = find_or_add_block t old_parent ~at_call_site in
+          let t, block =
+            find_or_add_block t old_parent ~at_call_site ~function_being_inlined
+          in
           t, Some block
       in
       let new_block =
         Block.create_and_reparent ~like:old_block ~new_parent
       in
+      let new_block =
+        match old_parent with
+        | None ->
+          Block.with_frame_location new_block function_being_inlined
+        | Some _ -> new_block
+      in
       let t = Block.Map.add old_block new_block t in
       t, new_block
     | new_block -> t, new_block
 
-  let find_or_add t old_debuginfo ~at_call_site =
+  let find_or_add t old_debuginfo ~at_call_site ~function_being_inlined =
     match old_debuginfo with
     | Empty -> t, Empty
     | Non_empty { block; position; } ->
@@ -635,6 +648,8 @@ module Block_subst = struct
       | None ->
         t, Non_empty { block = at_call_site; position; }
       | Some block ->
-        let t, block = find_or_add_block t block ~at_call_site in
+        let t, block =
+          find_or_add_block t block ~at_call_site ~function_being_inlined
+        in
         t, Non_empty { block = Some block; position; }
 end
