@@ -50,7 +50,9 @@ let emit t =
   if not (Abbreviation_code.is_null t.abbreviation_code) then begin
     begin match t.name with
     | None -> ()
-    | Some symbol -> A.define_data_symbol symbol
+    | Some symbol ->
+      A.define_data_symbol symbol;
+      A.global symbol
     end;
     A.define_label t.label
   end;
