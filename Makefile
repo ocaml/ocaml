@@ -196,6 +196,7 @@ DWARF_HIGH=\
   asmcomp/debug/dwarf_high/dwarf_world.cmo
 
 ASMCOMP=\
+  asmcomp/is_parameter.cmo \
   asmcomp/backend_var.cmo \
   asmcomp/backend_sym.cmo \
   asmcomp/target_system.cmo \
@@ -239,7 +240,6 @@ ASMCOMP=\
   $(DWARF_HIGH) \
   asmcomp/debug/compute_ranges_intf.cmo \
   asmcomp/debug/compute_ranges.cmo \
-  asmcomp/debug/is_parameter.cmo \
   asmcomp/debug/available_ranges_vars.cmo \
   asmcomp/debug/available_ranges_phantom_vars.cmo \
   asmcomp/debug/available_ranges_all_vars.cmo \

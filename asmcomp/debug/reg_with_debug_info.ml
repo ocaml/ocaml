@@ -21,7 +21,7 @@ module Debug_info = struct
     holds_value_of : V.t;
     part_of_value : int;
     num_parts_of_value : int;
-    which_parameter : int option;
+    is_parameter : Is_parameter.t;
     provenance : Backend_var.Provenance.t option;
   }
 
@@ -30,13 +30,13 @@ module Debug_info = struct
     if c <> 0 then c
     else
       Stdlib.compare
-        (t1.part_of_value, t1.num_parts_of_value, t1.which_parameter)
-        (t2.part_of_value, t2.num_parts_of_value, t2.which_parameter)
+        (t1.part_of_value, t1.num_parts_of_value, t1.is_parameter)
+        (t2.part_of_value, t2.num_parts_of_value, t2.is_parameter)
 
   let holds_value_of t = t.holds_value_of
   let part_of_value t = t.part_of_value
   let num_parts_of_value t = t.num_parts_of_value
-  let which_parameter t = t.which_parameter
+  let is_parameter t = t.is_parameter
   let provenance t = t.provenance
 
   let print ppf t =
@@ -55,9 +55,9 @@ module Debug_info = struct
     if not (t.part_of_value = 0 && t.num_parts_of_value = 1) then begin
       Format.fprintf ppf "(%d/%d)" t.part_of_value t.num_parts_of_value
     end;
-    begin match t.which_parameter with
-    | None -> ()
-    | Some index -> Format.fprintf ppf "[P%d]" index
+    begin match t.is_parameter with
+    | Local -> ()
+    | Parameter { index; } -> Format.fprintf ppf "[P%d]" index
     end
 end
 
@@ -70,7 +70,7 @@ module type T = sig
     -> holds_value_of:Backend_var.t
     -> part_of_value:int
     -> num_parts_of_value:int
-    -> which_parameter:int option
+    -> Is_parameter.t
     -> provenance:Backend_var.Provenance.t option
     -> t
   val create_with_debug_info : reg:Reg.t -> debug_info:Debug_info.t option -> t
@@ -103,15 +103,14 @@ module T = struct
     Order.compare t1.reg t2.reg
 
   let create ~reg ~holds_value_of ~part_of_value ~num_parts_of_value
-        ~which_parameter ~provenance =
+        is_parameter ~provenance =
     assert (num_parts_of_value >= 1);
     assert (part_of_value >= 0 && part_of_value < num_parts_of_value);
-    assert (match which_parameter with None -> true | Some index -> index >= 0);
     let debug_info : Debug_info.t =
       { holds_value_of;
         part_of_value;
         num_parts_of_value;
-        which_parameter;
+        is_parameter;
         provenance;
       }
     in

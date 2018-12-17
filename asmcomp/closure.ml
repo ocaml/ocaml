@@ -951,7 +951,8 @@ let no_effects = function
   | Uclosure _ -> true
   | u -> is_pure_clambda u
 
-let rec bind_params_rec ~block_subst ~at_call_site fpc subst params args body =
+let rec bind_params_rec ~param_index ~block_subst ~at_call_site fpc
+      subst params args body =
   match (params, args) with
     ([], []) ->
     let _block_subst, term =
@@ -969,10 +970,18 @@ let rec bind_params_rec ~block_subst ~at_call_site fpc subst params args body =
           in
           block_subst, Some (V.Provenance.replace_debuginfo provenance dbg)
       in
+      let provenance =
+        match provenance with
+        | None -> None
+        | Some provenance ->
+            Some (V.Provenance.replace_is_parameter (
+              Is_parameter.parameter ~index:param_index))
+      in
       let p1' = VP.rename ?provenance p1 in
       if is_simple_argument a1 then
         let term =
-          bind_params_rec ~block_subst ~at_call_site fpc
+          bind_params_rec ~param_index:(param_index + 1)
+            ~block_subst ~at_call_site fpc
             (V.Map.add (VP.var p1) a1 subst) pl al body
         in
         let phantom_defining_expr =
@@ -991,7 +1000,8 @@ let rec bind_params_rec ~block_subst ~at_call_site fpc subst params args body =
               a1, Uvar (VP.var p1')
         in
         let body' =
-          bind_params_rec ~block_subst ~at_call_site fpc
+          bind_params_rec ~param_index:(param_index + 1)
+            ~block_subst ~at_call_site fpc
             (V.Map.add (VP.var p1) u2 subst) pl al body
         in
         if occurs_var (VP.var p1) body then
@@ -1019,7 +1029,7 @@ let bind_params ~at_call_site fpc params args body =
   let block_subst = Debuginfo.Block_subst.empty in
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
-  bind_params_rec ~block_subst ~at_call_site fpc V.Map.empty
+  bind_params_rec ~param_index:0 ~block_subst ~at_call_site fpc V.Map.empty
     (List.rev params) (List.rev args) body
 
 (* Check if a lambda term is ``pure'',
@@ -1273,6 +1283,7 @@ let rec close ~scope fenv cenv = function
             V.Provenance.create ~module_path
               ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
               ~original_ident:id
+              Is_parameter.local
           in
           Some provenance
       in
@@ -1304,6 +1315,7 @@ let rec close ~scope fenv cenv = function
             V.Provenance.create ~module_path
               ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
               ~original_ident:id
+              Is_parameter.local
           in
           Some provenance
       in
@@ -1360,6 +1372,7 @@ let rec close ~scope fenv cenv = function
                     ~debuginfo:(Debuginfo.of_location Location.none
                        ~scope:new_scope)
                     ~original_ident:id
+                    Is_parameter.local
                 in
                 Some provenance
             in
@@ -1472,6 +1485,7 @@ let rec close ~scope fenv cenv = function
                     ~debuginfo:(Debuginfo.of_location loc
                       ~scope:body_scope)
                     ~original_ident:var
+                    Is_parameter.local
                 in
                 Some provenance
             in
@@ -1493,6 +1507,7 @@ let rec close ~scope fenv cenv = function
               ~debuginfo:(Debuginfo.of_location loc
                 ~scope:handler_scope)
               ~original_ident:id
+              Is_parameter.local
           in
           Some provenance
       in
@@ -1538,6 +1553,7 @@ let rec close ~scope fenv cenv = function
             V.Provenance.create ~module_path
               ~debuginfo:(Debuginfo.of_location loc ~scope:body_scope)
               ~original_ident:id
+              Is_parameter.local
           in
           Some provenance
       in
@@ -1676,6 +1692,7 @@ and close_functions fenv cenv fun_defs =
                   V.Provenance.create ~module_path
                     ~debuginfo:(Debuginfo.of_function fun_dbg)
                     ~original_ident:ident
+                    Is_parameter.local
                 in
                 Some provenance
           in

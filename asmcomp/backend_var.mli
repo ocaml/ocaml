@@ -28,14 +28,17 @@ module Provenance : sig
      : module_path:Path.t
     -> debuginfo:Debuginfo.t
     -> original_ident:Ident.t
-    -> is_parameter:...
+    -> Is_parameter.t
     -> t
 
   val module_path : t -> Path.t
   val debuginfo : t -> Debuginfo.t
   val original_ident : t -> Ident.t
+  val is_parameter : t -> Is_parameter.t
 
   val replace_debuginfo : t -> Debuginfo.t -> t
+
+  val replace_is_parameter : t -> Is_parameter.t -> t
 
   val print : Format.formatter -> t -> unit
 end

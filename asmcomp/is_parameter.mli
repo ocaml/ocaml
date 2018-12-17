@@ -14,6 +14,16 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t =
+(** Whether a variable is a local or a function parameter. *)
+
+type t = private
   | Local
   | Parameter of { index : int; }
+
+val local : t
+
+val parameter : index:int -> t
+
+val join : t -> t -> t
+
+include Identifiable.S with type t := t

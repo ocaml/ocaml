@@ -26,7 +26,7 @@ module Debug_info : sig
   val part_of_value : t -> int
   val num_parts_of_value : t -> int
 
-  val which_parameter : t -> int option
+  val is_parameter : t -> Is_parameter.t
   (** If the register corresponds to a function parameter, the value returned
       is the zero-based index of said parameter; otherwise it is [None]. *)
 
@@ -43,7 +43,7 @@ module type T = sig
     -> holds_value_of:Backend_var.t
     -> part_of_value:int
     -> num_parts_of_value:int
-    -> which_parameter:int option
+    -> Is_parameter.t
     -> provenance:Backend_var.Provenance.t option
     -> t
 

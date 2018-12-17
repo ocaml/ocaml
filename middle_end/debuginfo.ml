@@ -171,7 +171,7 @@ module Function = struct
     let compilation_unit t = t.compilation_unit
 
     let to_string_for_dwarf_die_name t =
-      Format.sprintf "%s.%s"
+      Format.sprintf "%s.%d"
         (Compilation_unit.string_for_printing t.compilation_unit)
         t.stamp
 
@@ -373,7 +373,6 @@ module Block = struct
 
   type frame_classification =
     | Lexical_scope_only
-    | Non_inlined_frame of Function.t
     | Inlined_frame of Function.t
 
   let frame_classification t =
@@ -381,7 +380,7 @@ module Block = struct
     | None -> Lexical_scope_only
     | Some fun_dbg ->
       match t.parent with
-      | None -> Non_inlined_frame fun_dbg
+      | None -> Lexical_scope_only
       | Some _ -> Inlined_frame fun_dbg
 
   let rec iter_innermost_first t ~f =
@@ -559,7 +558,7 @@ let iter_position_and_frames_innermost_first t ~f_position ~f_fun_dbg =
     ~f_blocks:(fun block ->
       match Block.frame_classification block with
       | Lexical_scope_only -> ()
-      | Non_inlined_frame fun_dbg | Inlined_frame fun_dbg -> f_fun_dbg fun_dbg)
+      | Inlined_frame fun_dbg -> f_fun_dbg fun_dbg)
 
 include Identifiable.Make (struct
   type nonrec t = t

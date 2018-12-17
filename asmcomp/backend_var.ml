@@ -23,30 +23,38 @@ module Provenance = struct
     module_path : Path.t;
     debuginfo : Debuginfo.t;
     original_ident : Ident.t;
+    is_parameter : Is_parameter.t;
   }
 
-  let print ppf { module_path; debuginfo; original_ident; } =
+  let print ppf { module_path; debuginfo; original_ident; is_parameter; } =
     Format.fprintf ppf "@[<hov 1>(\
         @[<hov 1>(module_path@ %a)@]@ \
         @[<hov 1>(debuginfo@ %a)@]@ \
-        @[<hov 1>(original_ident@ %a)@]\
+        @[<hov 1>(original_ident@ %a)@]@ \
+        @[<hov 1>(is_parameter@ %a)@]\
         )@]"
       Path.print module_path
       Debuginfo.print debuginfo
       Ident.print original_ident
+      Is_parameter.print is_parameter
 
-  let create ~module_path ~debuginfo ~original_ident =
+  let create ~module_path ~debuginfo ~original_ident is_parameter =
     { module_path;
       debuginfo;
       original_ident;
+      is_parameter;
     }
 
   let module_path t = t.module_path
   let debuginfo t = t.debuginfo
   let original_ident t = t.original_ident
+  let is_parameter t = t.is_parameter
 
   let replace_debuginfo t debuginfo =
     { t with debuginfo; }
+
+  let replace_is_parameter t is_parameter =
+    { t with is_parameter; }
 end
 
 module With_provenance = struct
