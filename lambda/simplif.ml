@@ -869,8 +869,360 @@ let simplify_local_functions lam =
   else
     rewrite lam
 
+(* trmc rewriting *)
+
+(** RFC
+    [map_return f l] apply the mapping function [f] on "return points" of [lam].
+    Since lambda is expression-oriented, a lot of things can be considered return points:
+    when evaluating (a ; b), both "(a ; b)" and "b" could be considered return
+    points, as they both reduces to the final value.
+    Therefore the following properties are expected:
+    - [f] will not be applied more than once on any branch,
+    - all values the lambda can return will go through [f], but [f] will not
+      necessarily be applied only on leaves.
+    The simplest implementation could be:
+      [let map_return f l = f l]
+
+    The actual implementation is finer-grained.
+    The main use of [map_return] for trmc is to turn code returning [v] into
+    [Psetfield (trmc_offset,v)].
+    If there is no benefit in rewriting code such as:
+      [if L then va else vb]
+    into:
+      [if L then Psetfield(..., va) else Psetfield(..., vb)]
+    instead of:
+      [Psetfield(..., if L then va else vb)]
+    then map_return can be dropped.
+*)
+let rec map_return f =
+  let on_assoc (k,v) = k, map_return f v in
+  let on_option = function
+    | None -> None
+    | Some v -> Some (map_return f v)
+  in
+  function
+  | Lvar _ | Lconst _ | Lapply _ | Lfunction _ | Lprim _ | Lsend _
+  | Lassign _ | Lfor _ | Lwhile _
+    as lam -> f lam
+  | Llet (lk, vk, id, l1, l2) ->
+    Llet (lk, vk, id, l1, map_return f l2)
+  | Lletrec (binds, lam) ->
+    Lletrec (binds, map_return f lam)
+  | Lswitch (l1, sw, loc) ->
+    Lswitch (l1,
+             {sw with
+              sw_consts = List.map on_assoc sw.sw_consts;
+              sw_blocks = List.map on_assoc sw.sw_blocks;
+              sw_failaction = on_option sw.sw_failaction },
+             loc)
+  | Lstringswitch (l1, ls, lo, loc) ->
+    Lstringswitch (l1, List.map on_assoc ls, on_option lo, loc)
+  | Lstaticraise (id, ls) ->
+    Lstaticraise (id, ls)
+  | Lstaticcatch (l1, ids, l2) ->
+    Lstaticcatch (map_return f l1, ids, map_return f l2)
+  | Ltrywith (l1, id, l2) ->
+    Ltrywith (map_return f l1, id, map_return f l2)
+  | Lifthenelse (l1, l2, l3) ->
+    Lifthenelse (l1, map_return f l2, map_return f l3)
+  | Lsequence (l1, l2) -> Lsequence (l1, map_return f l2)
+  | Levent (lam, lev) -> Levent (map_return f lam, lev)
+  | Lifused _ -> assert false
+
+(** [map_exits ~on_return ~on_tail lam] is used to map exit points of the
+    lambda, distinguishing between tail positions and non-tail ones.
+
+    Contrary to [map_return], the finer the notion of exit point is the more
+    tail calls we can preserve and/or rewrite.
+*)
+let rec map_exits ~on_return ~on_tail =
+  let on lam = map_exits ~on_return ~on_tail lam in
+  let on_assoc (k,v) = k, on v in
+  let on_option = function
+    | None -> None
+    | Some v -> Some (on v)
+  in
+  function
+  | Lvar _ | Lconst _ | Lapply _ | Lfunction _ | Lprim _ | Lsend _
+  | Lassign _ | Lfor _ | Lwhile _
+    as lam -> on_tail lam
+  | Llet (lk, vk, id, l1, l2) ->
+    Llet (lk, vk, id, l1, on l2)
+  | Lletrec (binds, lam) ->
+    Lletrec (binds, on lam)
+  | Lswitch (l1, sw, loc) ->
+    Lswitch (l1, {sw with
+                  sw_consts = List.map on_assoc sw.sw_consts;
+                  sw_blocks = List.map on_assoc sw.sw_blocks;
+                  sw_failaction = on_option sw.sw_failaction },
+             loc)
+  | Lstringswitch (l1, ls, lo, loc) ->
+    Lstringswitch (l1, List.map on_assoc ls, on_option lo, loc)
+  | Lstaticraise (id, ls) ->
+    Lstaticraise (id, ls)
+  | Lstaticcatch (l1, ids, l2) ->
+    Lstaticcatch (on l1, ids, on l2)
+  | Ltrywith (l1, id, l2) ->
+    Ltrywith (on_return l1, id, on l2)
+  | Lifthenelse (l1, l2, l3) ->
+    Lifthenelse (l1, on l2, on l3)
+  | Lsequence (l1, l2) -> Lsequence (l1, on l2)
+  | Levent (lam, lev) -> Levent (on lam, lev)
+  | Lifused _ -> assert false
+
+let trmc_placeholder = Lconst (Const_base (Const_int 0))
+
+(** All functions on which trmc can be applied in current scope are kept in a
+    list, all_candidates, and each is represented as a [trmc_stub].
+
+    Calls to such function with the correct arity are turned into trmc calls.
+    After trmc-rewriting, the function takes one more argument which is the
+    block to mutate to put the resulting value into.
+
+    The code is parameterized by the offset of the field to be mutated -- the
+    body of the function will be duplicated as many times as needed.
+
+    The first pass detect uses of such functions. All different offsets at
+    which trmc occurs are kept into the stub_uses field, together with a fresh
+    identifier.
+
+    A later pass will duplicate function body, specialize it for mutating the
+    offset and bind it to the identifier.
+*)
+
+type trmc_stub = {
+  stub_arity: int;
+  stub_body: lfunction;
+  mutable stub_uses: (int * Ident.t) list;
+  mutable stub_frozen: bool; (* true if no new function should be generated *)
+  mutable stub_warned: bool; (* true if a warning has already be emitted for
+                                this function *)
+}
+
+let rec list_last = function
+  | [] -> invalid_arg "list_last"
+  | [x] -> x
+  | _ :: xs -> list_last xs
+
+(* Detection of trmc calls *)
+
+let rec is_reccall all_candidates = function
+  | Lapply { ap_func = Lvar id; ap_args; ap_loc} ->
+      begin try
+        let stub = List.assoc id all_candidates in
+        if not stub.stub_body.attr.trmc_candidate && not stub.stub_warned then
+          begin
+            Location.prerr_warning ap_loc
+              Warnings.Potential_trmc_call;
+            stub.stub_warned <- true;
+          end;
+        if not (stub.stub_body.attr.trmc_candidate || !Clflags.force_trmc) then
+          raise Not_found;
+        if stub.stub_arity = List.length ap_args
+        then Some (id, stub)
+        else None
+      with Not_found -> None
+      end
+  | Levent (lam,_) -> is_reccall all_candidates lam
+  | _ -> None
+
+and is_trmc_call all_candidates = function
+  | Lprim (Pmakeblock _, [], _) -> false
+  | Lprim (Pmakeblock _, values, _) ->
+      begin match is_reccall all_candidates (list_last values) with
+      | Some _ -> true
+      | None -> false
+      end
+  | _ -> false
+
+and has_trmc all_candidates lam =
+  is_trmc_call all_candidates lam ||
+  (match lam with
+   | Levent (lam,_) -> has_trmc all_candidates lam
+   | Lprim (Pmakeblock _, [], _) -> false
+   | Lprim (Pmakeblock _, values, _) ->
+       has_trmc all_candidates (list_last values)
+   | _ -> false)
+
+and need_recfunc (id,stub) offset =
+  try List.assoc offset stub.stub_uses
+  with Not_found ->
+    assert (not stub.stub_frozen);
+    let fresh = Ident.name id ^ "_" ^ string_of_int offset in
+    let id' = Ident.create_local fresh in
+    stub.stub_uses <- (offset, id') :: stub.stub_uses;
+    id'
+
+and extract_reccall all_candidates acc = function
+  | arg :: args ->
+      begin match is_reccall all_candidates arg with
+      | None -> extract_reccall all_candidates (arg :: acc) args
+      | Some candidate ->
+          let offset = List.length acc in
+          need_recfunc candidate offset, arg,
+          List.rev_append acc (trmc_placeholder :: args)
+      end
+  | [] -> assert false
+
+and extract_direct_trmc all_candidates = function
+  | Lprim (Pmakeblock (tag, _flag, shape), values, loc) ->
+      let func, old_app, values' = extract_reccall all_candidates [] values in
+      func, old_app, Lprim (Pmakeblock (tag, Mutable, shape), values', loc)
+  | _ -> assert false
+
+and extract_trmc all_candidates name lam =
+  if is_trmc_call all_candidates lam then
+    let result = extract_direct_trmc all_candidates lam in
+    result, Lvar name
+  else match lam with
+    | Levent (lam,lev) ->
+        let result, lam = extract_trmc all_candidates name lam in
+        result, Levent (lam,lev)
+    | Lprim (Pmakeblock (tag,flag,shape), values, loc) ->
+        let result, values' = extract_trmc_list all_candidates name [] values in
+        result, Lprim (Pmakeblock (tag,flag,shape), values', loc)
+    | _ -> assert false
+
+and extract_trmc_list all_candidates name acc = function
+  | [arg] ->
+      assert (has_trmc all_candidates arg);
+      let result, arg' = extract_trmc all_candidates name arg in
+      result, List.rev_append acc [arg']
+  | arg :: args ->
+      extract_trmc_list all_candidates name (arg :: acc) args
+  | [] -> assert false
+
+(* Rewriting of trmc calls *)
+
+let on_trmc all_candidates lam =
+  if has_trmc all_candidates lam then
+    let name_block = Ident.create_local "trmc_block" in
+    let name_result = Ident.create_local "trmc_result" in
+    let (func, old_app, value_block), value_result =
+      extract_trmc all_candidates name_block lam
+    in
+    let rec map_app = function
+      | Levent (lam, lev) -> Levent (map_app lam, lev)
+      | Lapply apply ->
+          let ap_func = Lvar func in
+          let ap_args = Lvar name_block :: apply.ap_args in
+          Lapply {apply with ap_func; ap_args}
+      | _ -> assert false
+    in
+    let new_app = map_app old_app in
+    Llet (Strict, Pgenval, name_block, value_block,
+          Llet (Strict, Pgenval, name_result, value_result,
+                Lsequence (new_app, Lvar name_result)))
+  else lam
+
+(* Traversal and generation of trmc functions *)
+
+let rec introduce_trmc all_candidates bindings =
+
+  let candidates =
+    let rec extract = function
+      | [] -> []
+      | (id, Lfunction lfun) :: rest
+        when lfun.attr.trmc_candidate
+          || !Clflags.force_trmc
+          || Warnings.is_active Warnings.Potential_trmc_call
+        ->
+          let stub = {
+            stub_arity = List.length lfun.params;
+            stub_body = lfun;
+            stub_uses = [];
+            stub_frozen = false;
+            stub_warned = false;
+          } in
+          (id, stub) :: extract rest
+      | _ :: rest ->
+          extract rest
+    in
+    extract bindings
+  in
+
+  let all_candidates = candidates @ all_candidates in
+
+  let rewrite_stub_use lfun (offset, id') =
+    let caller_block = Ident.create_local "caller_block" in
+    let on_return lam =
+      Lprim (Psetfield (offset, Pointer, Heap_initialization),
+             [Lvar caller_block; lam], Location.none)
+    in
+    let on_tail lam =
+      if has_trmc all_candidates lam then
+        let name_block = Ident.create_local "trmc_block" in
+        let (func, old_app, value_block), value_result =
+          extract_trmc all_candidates name_block lam
+        in
+        let rec map_app = function
+          | Levent (lam, lev) -> Levent (map_app lam, lev)
+          | Lapply apply  ->
+              let ap_func = Lvar func in
+              let ap_args = Lvar name_block :: apply.ap_args in
+              Lapply {apply with ap_func; ap_args}
+          | _ -> assert false
+        in
+        let new_app = map_app old_app in
+        Llet (Strict, Pgenval, name_block, value_block,
+              Lsequence (
+                Lprim (Psetfield (offset, Pointer, Heap_initialization),
+                       [Lvar caller_block; value_result], Location.none),
+                new_app))
+      else on_return lam
+    in
+    let body = map_exits ~on_return:(map_return on_return) ~on_tail lfun.body in
+    let param = (caller_block, Pgenval) in
+    id', Lfunction {lfun with params = param :: lfun.params; body}
+  in
+  let bindings_of_stub (_id,stub) =
+    List.map (rewrite_stub_use stub.stub_body) stub.stub_uses
+  in
+
+  let rewrite_function lfun =
+    let body =
+      lfun.body |>
+      rewrite_trmc all_candidates |>
+      map_exits ~on_return:(fun x -> x) ~on_tail:(on_trmc all_candidates)
+    in
+    {lfun with body}
+  in
+
+  let rewrite_binding = function
+    (* Rewrite recursive functions *)
+    | id, Lfunction lfun -> id, Lfunction (rewrite_function lfun)
+    (* Don't touch other bindings *)
+    | binding -> binding
+  in
+
+  if candidates = [] then
+    List.map rewrite_binding bindings
+  else begin
+    let bindings = List.map rewrite_binding bindings in
+    (* Freeze stub generation, generate all stubs *)
+    List.iter (fun (_id,stub) ->
+        stub.stub_frozen <- true;
+        if stub.stub_uses = [] && stub.stub_body.attr.trmc_candidate then
+          Location.prerr_warning stub.stub_body.loc
+            Warnings.Unused_trmc_attribute;
+      ) candidates;
+    let bindings' = List.concat (List.map bindings_of_stub candidates) in
+    bindings' @ bindings
+  end
+
+and rewrite_trmc all_candidates =
+  let rec aux = function
+    | Lletrec (lams, lam) ->
+        Lletrec (introduce_trmc all_candidates lams, aux lam)
+    | lam -> Lambda.shallow_map aux lam
+  in
+  aux
+
 (* The entry point:
-   simplification + emission of tailcall annotations, if needed. *)
+   simplification
+   + rewriting of trmc-calls
+   + emission of tailcall annotations, if needed
+*)
 
 let simplify_lambda lam =
   let lam =
@@ -880,6 +1232,7 @@ let simplify_lambda lam =
        )
     |> simplify_exits
     |> simplify_lets
+    |> rewrite_trmc []
   in
   if !Clflags.annotations || Warnings.is_active Warnings.Expect_tailcall
     then emit_tail_infos true lam;
