@@ -652,29 +652,27 @@ let location_list_entry t (fundecl : L.fundecl) ~parent ~subrange
   match single_location_description with
   | None -> None
   | Some single_location_description ->
-    let start_pos = ARV.Subrange.start_pos subrange in
-    let end_pos = ARV.Subrange.end_pos subrange in
+    let start_pos = Asm_label.create_int (ARV.Subrange.start_pos subrange) in
+    let end_pos = Asm_label.create_int (ARV.Subrange.end_pos subrange) in
     let end_pos_offset = ARV.Subrange.end_pos_offset subrange in
     match !Clflags.dwarf_version with
     | Four ->
       let location_list_entry =
         Dwarf_4_location_list_entry.create_location_list_entry
           ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name)
-          ~first_address_when_in_scope:(Asm_label.create_int start_pos)
-          ~first_address_when_not_in_scope:(Asm_label.create_int end_pos)
+          ~first_address_when_in_scope:start_pos
+          ~first_address_when_not_in_scope:end_pos
           ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
           ~single_location_description
       in
       Some (Dwarf_4 location_list_entry)
     | Five ->
       let start_inclusive =
-        Address_table.add t.address_table
-          (Asm_label.create_int start_pos)
+        Address_table.add t.address_table start_pos
           ~start_of_code_symbol:t.start_of_code_symbol
       in
       let end_exclusive =
-        Address_table.add t.address_table
-          (Asm_label.create_int end_pos)
+        Address_table.add t.address_table end_pos
           ~adjustment:end_pos_offset
           ~start_of_code_symbol:t.start_of_code_symbol
       in
@@ -692,7 +690,7 @@ let location_list_entry t (fundecl : L.fundecl) ~parent ~subrange
       Some (Dwarf_5 (Location_list_entry.create location_list_entry
         ~start_of_code_symbol:t.start_of_code_symbol))
 
-let find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg
+let find_scope_die_from_debuginfo ~whole_function_lexical_block dbg
       ~scope_proto_dies =
   let block = Debuginfo.innermost_block dbg in
   match Debuginfo.Current_block.to_block block with
@@ -710,27 +708,19 @@ let dwarf_for_variable t (fundecl : L.fundecl)
       ~range =
   let range_info = ARV.Range.info range in
   let provenance = ARV.Range_info.provenance range_info in
-  let is_parameter =
-    let is_parameter_from_provenance =
-      match provenance with
-      | None -> Is_parameter.local
-      | Some provenance -> Backend_var.Provenance.is_parameter provenance
-    in
-    (* The two inputs here correspond to:
-       1. The normal case of parameters of function declarations, which are
-          identified in [Selectgen].
-       2. Parameters of inlined functions, which have to be tagged much
-          earlier, on [let]-bindings when inlining is performed. *)
-    Is_parameter.join (ARV.Range_info.is_parameter range_info)
-      is_parameter_from_provenance
+  let var_is_a_parameter_of_fundecl_itself =
+    match provenance with
+    | None -> false
+    | Some provenance ->
+      match Backend_var.Provenance.is_parameter provenance with
+      | Local -> false
+      | Parameter _ -> true
   in
   let phantom_defining_expr = ARV.Range_info.phantom_defining_expr range_info in
   let (parent_proto_die : Proto_die.t), hidden =
-    match is_parameter with
-    | Parameter _index ->
-      (* Parameters need to be children of the function in question. *)
+    if var_is_a_parameter_of_fundecl_itself then
       function_proto_die, hidden
-    | Local ->
+    else
       (* Local variables need to be children of "lexical blocks", which in turn
          are children of the function.  It is important to generate accurate
          lexical block information to avoid large numbers of variables, many
@@ -743,7 +733,7 @@ let dwarf_for_variable t (fundecl : L.fundecl)
       | Some provenance ->
         let dbg = Backend_var.Provenance.debuginfo provenance in
         let block_die =
-          find_lexical_block_die_from_debuginfo ~whole_function_lexical_block
+          find_scope_die_from_debuginfo ~whole_function_lexical_block
             dbg ~scope_proto_dies
         in
         match block_die with
@@ -855,6 +845,20 @@ let dwarf_for_variable t (fundecl : L.fundecl)
       name_attribute @ [
         DAH.create_type_from_reference ~proto_die_reference:reference;
       ]
+  in
+  let is_parameter =
+    let is_parameter_from_provenance =
+      match provenance with
+      | None -> Is_parameter.local
+      | Some provenance -> Backend_var.Provenance.is_parameter provenance
+    in
+    (* The two inputs here correspond to:
+       1. The normal case of parameters of function declarations, which are
+          identified in [Selectgen].
+       2. Parameters of inlined functions, which have to be tagged much
+          earlier, on [let]-bindings when inlining is performed. *)
+    Is_parameter.join (ARV.Range_info.is_parameter range_info)
+      is_parameter_from_provenance
   in
   let tag : Dwarf_tag.t =
     match is_parameter with
@@ -1395,7 +1399,7 @@ let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
       (insn : L.instruction) attrs =
   let dbg = insn.dbg in
   let block_die =
-    find_lexical_block_die_from_debuginfo ~whole_function_lexical_block dbg
+    find_scope_die_from_debuginfo ~whole_function_lexical_block dbg
       ~scope_proto_dies
   in
   match block_die with
