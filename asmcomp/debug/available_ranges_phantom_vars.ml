@@ -67,11 +67,11 @@ module Phantom_vars = struct
             [fun_phantom_lets]: %a"
           V.print var
       | provenance, defining_expr ->
-        let is_parameter =
-          match provenance with
-          | None -> Is_parameter.local
-          | Some provenance -> V.Provenance.is_parameter provenance
-        in
+        (* CR mshinwell: We need to explicitly clarify that this
+           [is_parameter] relates to the *current function* only and not
+           to inlined functions (which the [is_parameter] function on
+           [Backend_var.Provenance returns). *)
+        let is_parameter = Is_parameter.local in
         let t =
           { provenance;
             is_parameter;

@@ -709,12 +709,9 @@ let dwarf_for_variable t (fundecl : L.fundecl)
   let range_info = ARV.Range.info range in
   let provenance = ARV.Range_info.provenance range_info in
   let var_is_a_parameter_of_fundecl_itself =
-    match provenance with
-    | None -> false
-    | Some provenance ->
-      match Backend_var.Provenance.is_parameter provenance with
-      | Local -> false
-      | Parameter _ -> true
+    match ARV.Range_info.is_parameter range_info with
+    | Local -> false
+    | Parameter _ -> true
   in
   let phantom_defining_expr = ARV.Range_info.phantom_defining_expr range_info in
   let (parent_proto_die : Proto_die.t), hidden =
