@@ -197,7 +197,6 @@ DWARF_HIGH=\
   asmcomp/debug/dwarf_high/dwarf_world.cmo
 
 ASMCOMP=\
-  asmcomp/is_parameter.cmo \
   asmcomp/backend_var.cmo \
   asmcomp/backend_sym.cmo \
   asmcomp/target_system.cmo \
@@ -261,6 +260,7 @@ MIDDLE_END=\
   middle_end/base_types/tag.cmo \
   middle_end/base_types/linkage_name.cmo \
   middle_end/base_types/compilation_unit.cmo \
+  middle_end/base_types/is_parameter.cmo \
   middle_end/debuginfo.cmo \
   middle_end/internal_variable_names.cmo \
   middle_end/base_types/variable.cmo \
