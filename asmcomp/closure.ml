@@ -557,16 +557,22 @@ let subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst dbg =
   | None -> block_subst, dbg
   | Some function_being_inlined ->
     if !Clflags.debug then
+(*
   begin
   Format.eprintf "Call site: %a\n%!" Debuginfo.Current_block.print at_call_site;
   Format.eprintf "Orig dbg: %a\n%!" Debuginfo.print dbg;
+*)
   let block_subst, dbg =
       Debuginfo.Block_subst.find_or_add block_subst dbg ~at_call_site
         ~function_being_inlined
   in
+(*
   Format.eprintf "New dbg: %a\n%!" Debuginfo.print dbg;
+*)
   block_subst, dbg
+(*
   end
+*)
     else
       block_subst, dbg
 
