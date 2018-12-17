@@ -376,6 +376,9 @@ let compile_recmodule compile_rhs bindings cont =
           bindings))
     cont
 
+(* Hook for plugins *)
+let compile_recmodule = ref compile_recmodule
+
 (* Code to translate class entries in a structure *)
 
 let transl_class_bindings cl_list =
@@ -616,7 +619,7 @@ and transl_structure loc fields cc rootpath final_env = function
             transl_structure loc ext_fields cc rootpath final_env rem
           in
           let lam =
-            compile_recmodule
+            !compile_recmodule
               (fun id modl loc ->
                  let module_body =
                    transl_module Tcoerce_none (field_path rootpath id) modl
@@ -1022,7 +1025,7 @@ let transl_store_structure glob map prims aliases str =
             transl_store rootpath subst cont rem
         | Tstr_recmodule bindings ->
             let ids = List.map (fun mb -> mb.mb_id) bindings in
-            compile_recmodule
+            !compile_recmodule
               (fun id modl _loc ->
                  Lambda.subst no_env_update subst
                    (transl_module Tcoerce_none
@@ -1356,7 +1359,7 @@ let transl_toplevel_item item =
       toploop_setvalue id lam
   | Tstr_recmodule bindings ->
       let idents = List.map (fun mb -> mb.mb_id) bindings in
-      compile_recmodule
+      !compile_recmodule
         (fun id modl _loc -> transl_module Tcoerce_none (Some(Pident id)) modl)
         bindings
         (make_sequence toploop_setvalue_id idents)

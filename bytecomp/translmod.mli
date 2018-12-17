@@ -59,3 +59,8 @@ exception Error of Location.t * error
 val report_error: Location.t -> error -> Location.error
 
 val reset: unit -> unit
+
+val compile_recmodule :
+  ((Ident.t -> Typedtree.module_expr -> Location.t -> Lambda.lambda) ->
+   Typedtree.module_binding list -> Lambda.lambda -> Lambda.lambda)
+    ref

@@ -141,3 +141,12 @@ module ImplementationHooks : Misc.HookSig
   with type t = Typedtree.structure * Typedtree.module_coercion
 module InterfaceHooks : Misc.HookSig
   with type t = Typedtree.signature
+
+val type_module_type_of : Env.t ->
+  Parsetree.module_expr -> Typedtree.module_expr * Types.module_type
+
+val transl_recmodule_modtypes_fwd :
+    (Env.t ->
+     Parsetree.module_declaration list ->
+     Typedtree.module_declaration list * Env.t)
+    ref

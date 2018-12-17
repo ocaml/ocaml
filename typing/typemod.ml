@@ -184,7 +184,8 @@ let initial_env ~loc ~safe_string ~initially_opened_module
   in
   List.fold_left open_implicit_module env open_implicit_modules
 
-let type_open_descr ?used_slot ?toplevel env sod =
+let type_open_descr ?used_slot env sod =
+  let toplevel = None in
   let (path, newenv) =
     Builtin_attributes.warning_scope sod.popen_attributes
       (fun () ->
@@ -1074,6 +1075,9 @@ let mksig desc env loc =
   Cmt_format.add_saved_type (Cmt_format.Partial_signature_item sg);
   sg
 
+(* Hook for plugins *)
+let transl_recmodule_modtypes_fwd = ref (fun _ _ -> assert false)
+
 (* let signature sg = List.map (fun item -> item.sig_type) sg *)
 
 let rec transl_modtype env smty =
@@ -1282,7 +1286,7 @@ and transl_signature env sg =
             final_env
         | Psig_recmodule sdecls ->
             let (decls, newenv) =
-              transl_recmodule_modtypes env sdecls in
+              !transl_recmodule_modtypes_fwd env sdecls in
             List.iter
               (fun md -> Signature_names.check_module names md.md_loc md.md_id)
               decls;
@@ -1435,7 +1439,7 @@ and transl_modtype_decl_aux names env
   in
   newenv, mtd, Sig_modtype(id, decl, Exported)
 
-and transl_recmodule_modtypes env sdecls =
+let transl_recmodule_modtypes env sdecls =
   let make_env curr =
     List.fold_left
       (fun env (id, _, mty) ->
@@ -1512,6 +1516,9 @@ and transl_recmodule_modtypes env sdecls =
       sdecls dcl2
   in
   (dcl2, env2)
+
+let () =
+  transl_recmodule_modtypes_fwd := transl_recmodule_modtypes
 
 (* Try to convert a module expression to a module path. *)
 
@@ -2111,7 +2118,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             sbind
         in
         let (decls, newenv) =
-          transl_recmodule_modtypes env
+          !transl_recmodule_modtypes_fwd env
             (List.map (fun (name, smty, _smodl, attrs, loc) ->
                  {pmd_name=name; pmd_type=smty;
                   pmd_attributes=attrs; pmd_loc=loc}) sbind
@@ -2382,9 +2389,6 @@ let type_package env m p nl =
 let type_open_decl ?used_slot env od =
   type_open_decl ?used_slot ?toplevel:None false (Signature_names.create ()) env
     od
-
-let type_open_descr ?used_slot env od =
-  type_open_descr ?used_slot ?toplevel:None env od
 
 let () =
   Typecore.type_module := type_module_alias;
