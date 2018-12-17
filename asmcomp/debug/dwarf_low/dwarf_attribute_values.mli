@@ -71,6 +71,9 @@ module Value : sig
   val symbol_32 : Asm_symbol.t -> Dwarf_attributes.Form.data4 t
   val symbol_64 : Asm_symbol.t -> Dwarf_attributes.Form.data8 t
 
+  val symbol_32_as_reference : Asm_symbol.t -> Dwarf_attributes.Form.ref4 t
+  val symbol_64_as_reference : Asm_symbol.t -> Dwarf_attributes.Form.ref8 t
+
   val offset_into_debug_line
      : Asm_label.t
     -> Dwarf_attributes.Form.sec_offset t

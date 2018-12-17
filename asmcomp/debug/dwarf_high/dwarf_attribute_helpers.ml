@@ -250,6 +250,11 @@ let create_inline inline_code =
   AV.create spec (V.inline_code inline_code)
 
 let create_abstract_origin ~die_symbol =
-  let spec = AS.create Abstract_origin Ref_addr in
-  AV.create spec (V.offset_into_debug_info_from_symbol
-    ~comment:"abstract origin DIE" die_symbol)
+  match Targetint.size with
+  | 32 ->
+    let spec = AS.create Abstract_origin Ref4 in
+    AV.create spec (V.symbol_32_as_reference die_symbol)
+  | 64 ->
+    let spec = AS.create Abstract_origin Ref8 in
+    AV.create spec (V.symbol_64_as_reference die_symbol)
+  | size -> Misc.fatal_errorf "Unknown Targetint.size %d" size

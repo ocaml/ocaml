@@ -23,8 +23,7 @@ let base_type_die_name_for_var var ~output_path =
 
 let abstract_instance_root_die_name id =
   let name =
-    Format.asprintf "%s_abstract_instance_%s"
-      (Compilenv.make_symbol None)
+    Format.asprintf "caml__abstract_instance_%s"
       (Debuginfo.Function.Id.to_string_for_dwarf_die_name id)
   in
   Asm_symbol.of_external_name name
