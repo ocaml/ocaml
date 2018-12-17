@@ -223,7 +223,7 @@ class virtual selector_generic : object
     -> num_regs_per_arg:int array
     -> spacetime_node_hole:(Backend_var.t * Reg.t array) option
     -> env:environment
-    -> fun_dbg:Debuginfo.t
+    -> fun_dbg:Debuginfo.Function.t
     -> Mach.spacetime_shape option
   method get_current_dbg : unit -> Debuginfo.t
 

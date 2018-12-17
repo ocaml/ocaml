@@ -97,14 +97,7 @@ let rec all_instr ppf i =
 
 let fundecl ppf f =
   let dbg =
-    if Debuginfo.is_none f.fun_dbg then
-      ""
-    else
-      Format.asprintf " %a" Debuginfo.print f.fun_dbg in
-  let path =
-    match f.fun_module_path with
-    | None -> ""
-    | Some path -> " (" ^ Path.name path ^ ")"
-  in
-  fprintf ppf "@[<v 2>%a:%s%s@,%a@]" S.print f.fun_name dbg path
+    if not !Clflags.debug then ""
+    else Format.asprintf " %a" Debuginfo.Function.print f.fun_dbg in
+  fprintf ppf "@[<v 2>%a:%s@,%a@]" S.print f.fun_name dbg
     all_instr f.fun_body

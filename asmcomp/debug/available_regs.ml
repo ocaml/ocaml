@@ -99,7 +99,7 @@ let rec available_regs (instr : M.instruction)
       | Ireturn -> None, unreachable
       | Iop (Itailcall_ind _) | Iop (Itailcall_imm _) ->
         Some (ok Reg_with_debug_info.Set.empty), unreachable
-      | Iop (Iname_for_debugger { ident; which_parameter; provenance;
+      | Iop (Iname_for_debugger { ident; is_parameter; provenance;
           is_assignment; }) ->
         (* First forget about any existing debug info to do with [ident]
            if the naming corresponds to an assignment operation. *)
@@ -128,7 +128,7 @@ let rec available_regs (instr : M.instruction)
                 ~holds_value_of:ident
                 ~part_of_value
                 ~num_parts_of_value
-                ~which_parameter
+                ~is_parameter
                 ~provenance
             in
             avail_after := RD.Set.add regd (RD.Set.filter_reg !avail_after reg)

@@ -974,7 +974,7 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site fpc
         match provenance with
         | None -> None
         | Some provenance ->
-            Some (V.Provenance.replace_is_parameter (
+            Some (V.Provenance.replace_is_parameter provenance (
               Is_parameter.parameter ~index:param_index))
       in
       let p1' = VP.rename ?provenance p1 in

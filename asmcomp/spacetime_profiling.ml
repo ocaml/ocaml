@@ -354,7 +354,7 @@ class virtual instruction_selection = object (self)
     if something_was_instrumented () then begin
       let prologue_cmm =
         code_for_function_prologue ~function_name:f.Cmm.fun_name ~node_hole
-          ~fun_dbg
+          ~fun_dbg:(Debuginfo.of_function fun_dbg)
       in
       disable_instrumentation <- true;
       let node_temp_reg =

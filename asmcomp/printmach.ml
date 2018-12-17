@@ -160,12 +160,12 @@ let operation op arg ppf res =
   | Idivf -> fprintf ppf "%a /f %a" reg arg.(0) reg arg.(1)
   | Ifloatofint -> fprintf ppf "floatofint %a" reg arg.(0)
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
-  | Iname_for_debugger { ident; which_parameter; } ->
+  | Iname_for_debugger { ident; is_parameter; } ->
     fprintf ppf "name_for_debugger %a%s=%a"
       V.print ident
-      (match which_parameter with
-        | None -> ""
-        | Some index -> sprintf "[P%d]" index)
+      (match is_parameter with
+        | Is_parameter.Local -> ""
+        | Is_parameter.Parameter { index; } -> sprintf "[P%d]" index)
       reg arg.(0)
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
@@ -283,10 +283,9 @@ let phantom_let ppf (provenance_opt, defining_expr) =
 
 let fundecl ppf f =
   let dbg =
-    if Debuginfo.is_none f.fun_dbg then
-      ""
-    else
-      Format.asprintf " %a" Debuginfo.print f.fun_dbg in
+    if not !Clflags.debug then ""
+    else Format.asprintf " %a" Debuginfo.Function.print f.fun_dbg
+  in
   fprintf ppf "@[<v 2>%a(%a)%s@,%a"
     Backend_sym.print f.fun_name regs f.fun_args dbg instr f.fun_body;
   if not (Backend_var.Map.is_empty f.fun_phantom_lets) then begin

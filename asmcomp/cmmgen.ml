@@ -3556,7 +3556,7 @@ let placeholder_fun_dbg ~human_name =
   let human_name = S.to_string human_name in
   Debuginfo.Function.create_from_line ~file ~line
     ~human_name
-    ~module_path:(Some startup_path)
+    ~module_path:startup_path
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
@@ -3715,7 +3715,6 @@ let send_function arity =
    }
 
 let apply_function arity =
-  let dbg = placeholder_dbg in
   let fun_name = caml_apply arity in
   let (args, clos, body) = apply_function_body arity in
   let all_args = args @ [clos] in

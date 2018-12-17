@@ -420,8 +420,6 @@ let fundecl f =
     fun_fast = not (List.mem Cmm.Reduce_code_size f.Mach.fun_codegen_options);
     fun_dbg  = f.Mach.fun_dbg;
     fun_phantom_lets = f.Mach.fun_phantom_lets;
-    fun_human_name = f.Mach.fun_human_name;
     fun_arity = Array.length f.Mach.fun_args;
-    fun_module_path = f.Mach.fun_module_path;
     fun_spacetime_shape = f.Mach.fun_spacetime_shape;
   }

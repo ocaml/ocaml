@@ -154,7 +154,7 @@ let maybe_emit_naming_op env ~bound_name seq regs =
       Iname_for_debugger {
         ident = bound_name;
         provenance;
-        which_parameter = None;
+        is_parameter = Is_parameter.local;
         is_assignment = false;
       }
     in
@@ -824,7 +824,7 @@ method emit_expr (env:environment) exp ~bound_name =
           Iname_for_debugger {
             ident = v;
             provenance;
-            which_parameter = None;
+            is_parameter = Is_parameter.local;
             is_assignment = true;
           }
         in
@@ -866,7 +866,7 @@ method emit_expr (env:environment) exp ~bound_name =
                 Iname_for_debugger {
                   ident = bound_name;
                   provenance;
-                  which_parameter = None;
+                  is_parameter = Is_parameter.local;
                   is_assignment = false;
                 }
               in
@@ -1025,7 +1025,7 @@ method emit_expr (env:environment) exp ~bound_name =
                   Iname_for_debugger {
                     ident = var;
                     provenance;
-                    which_parameter = None;
+                    is_parameter = Is_parameter.local;
                     is_assignment = false;
                   }
                 in
@@ -1074,7 +1074,7 @@ method emit_expr (env:environment) exp ~bound_name =
               Iname_for_debugger {
                 ident = var;
                 provenance;
-                which_parameter = None;
+                is_parameter = Is_parameter.local;
                 is_assignment = false;
               }
             in
@@ -1114,7 +1114,7 @@ method private bind_let (env:environment) v r1 =
   let naming_op =
     Iname_for_debugger {
       ident = VP.var v;
-      which_parameter = None;
+      is_parameter = Is_parameter.local;
       provenance = VP.provenance v;
       is_assignment = false;
     }
@@ -1409,7 +1409,7 @@ method emit_tail (env:environment) exp =
                   Iname_for_debugger {
                     ident = var;
                     provenance;
-                    which_parameter = None;
+                    is_parameter = Is_parameter.local;
                     is_assignment = false;
                   }
                 in
@@ -1434,7 +1434,7 @@ method emit_tail (env:environment) exp =
               Iname_for_debugger {
                 ident = var;
                 provenance;
-                which_parameter = None;
+                is_parameter = Is_parameter.local;
                 is_assignment = false;
               }
             in
@@ -1469,6 +1469,7 @@ method private emit_tail_sequence ?at_start env dbg exp =
 
 method insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
       ~spacetime_node_hole:_ ~env ~fun_dbg =
+  let dbg = Debuginfo.of_function fun_dbg in
   let loc_arg_index = ref 0 in
   List.iteri (fun param_index (var, _ty) ->
       let provenance = VP.provenance var in
@@ -1477,7 +1478,7 @@ method insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
         Iname_for_debugger {
           ident = var;
           provenance;
-          which_parameter = Some param_index;
+          is_parameter = Is_parameter.parameter ~index:param_index;
           is_assignment = false;
         }
       in
@@ -1487,7 +1488,7 @@ method insert_prologue f ~loc_arg ~rarg ~num_regs_per_arg
           loc_arg.(!loc_arg_index + index))
       in
       loc_arg_index := !loc_arg_index + num_regs_for_arg;
-      self#insert_debug env (Iop naming_op) fun_dbg hard_regs_for_arg [| |])
+      self#insert_debug env (Iop naming_op) dbg hard_regs_for_arg [| |])
     f.Cmm.fun_args;
   self#insert_moves env loc_arg rarg;
   None
@@ -1569,8 +1570,6 @@ method emit_fundecl (f : Cmm.fundecl) =
     fun_body = body;
     fun_codegen_options = f.Cmm.fun_codegen_options;
     fun_dbg  = f.Cmm.fun_dbg;
-    fun_human_name = f.Cmm.fun_human_name;
-    fun_module_path = f.Cmm.fun_module_path;
     fun_spacetime_shape;
     fun_phantom_lets;
   }
