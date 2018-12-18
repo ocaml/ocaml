@@ -138,6 +138,8 @@ module Call_site : sig
 
   val fun_dbg : t -> Function.t
   val position : t -> Code_range.t
+
+  val print : Format.formatter -> t -> unit
 end
 
 module Block : sig

@@ -1106,7 +1106,6 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site
 
 let bind_params ~at_call_site ~function_being_inlined fpc params args
       ~idents_for_types body =
-  assert (List.compare_lengths args idents_for_types = 0);
   let block_subst = Debuginfo.Block_subst.empty in
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
@@ -1134,8 +1133,12 @@ let warning_if_forced_inline ~loc ~attribute warning =
 
 let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute
       ~idents_for_types =
+  assert (List.compare_lengths uargs idents_for_types = 0);
   let app_args =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
+  let idents_for_types =
+    if fundesc.fun_closed then idents_for_types else idents_for_types @ [None]
+  in
   let dbg = Debuginfo.of_location loc ~scope in
   let app =
     match fundesc.fun_inline, attribute with
