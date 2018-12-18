@@ -940,10 +940,10 @@ let iterate_over_variable_like_things t ~available_ranges_vars ~rvalues_only
           then None
           else
           *)
-          let original_ident =
-            Backend_var.Provenance.original_ident provenance
+          let ident_for_type =
+            Backend_var.Provenance.ident_for_type provenance
           in
-          Some original_ident
+          Some ident_for_type
       in
       f var ~phantom ~hidden ~ident_for_type ~range
     end)
@@ -1769,7 +1769,7 @@ let dwarf_for_toplevel_constants t constants =
             Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
               (Linkage_name.create constant.symbol)
           in
-          dwarf_for_toplevel_constant t ~vars:provenance.original_idents
+          dwarf_for_toplevel_constant t ~vars:provenance.idents_for_types
             ~module_path:provenance.module_path
             ~symbol)
     constants
@@ -1834,7 +1834,7 @@ let dwarf_for_toplevel_inconstants t inconstants =
         (* CR-someday mshinwell: Support multi-field preallocated blocks
            (ignored for the moment as the only one is the module block, which
            isn't made visible in the debugger). *)
-        match provenance.original_idents with
+        match provenance.idents_for_types with
         | [] | _::_::_ -> ()
         | [ident] ->
           dwarf_for_toplevel_inconstant t ident

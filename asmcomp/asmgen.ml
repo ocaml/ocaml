@@ -262,7 +262,7 @@ let lambda_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
       lambda.code
   in
   let provenance : Clambda.usymbol_provenance =
-    { original_idents = [];
+    { idents_for_types = [];
       module_path =
         Path.Pident (Ident.create_persistent (Compilenv.current_unit_name ()));
     }

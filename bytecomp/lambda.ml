@@ -309,7 +309,9 @@ and lambda_apply =
     ap_loc : Location.t;
     ap_should_be_tailcall : bool;
     ap_inlined : inline_attribute;
-    ap_specialised : specialise_attribute; }
+    ap_specialised : specialise_attribute;
+    ap_idents_for_types : Ident.t option list;
+  }
 
 and lambda_switch =
   { sw_numconsts: int;
@@ -465,6 +467,12 @@ let name_lambda_list args fn =
       Llet(Strict, Pgenval, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
+let make_idents_for_types ts =
+  List.map (fun t ->
+      match t with
+      | Lvar id -> Some id
+      | _ -> None)
+    ts
 
 let iter_default f = function
   | None -> ()
@@ -774,13 +782,15 @@ let rec map f lam =
     | Lconst _ -> lam
     | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall;
           ap_inlined; ap_specialised } ->
+        let ap_args = List.map (map f) ap_args in
         Lapply {
           ap_func = map f ap_func;
-          ap_args = List.map (map f) ap_args;
+          ap_args;
           ap_loc;
           ap_should_be_tailcall;
           ap_inlined;
           ap_specialised;
+          ap_idents_for_types = make_idents_for_types ap_args;
         }
     | Lfunction { kind; params; body; attr; loc; } ->
         Lfunction { kind; params; body = map f body; attr; loc; }

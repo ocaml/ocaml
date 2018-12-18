@@ -440,7 +440,9 @@ and transl_exp0 e =
                Lprim(Pfield 0, [transl_class_path ~loc e.exp_env cl], loc);
              ap_args=[lambda_unit];
              ap_inlined=Default_inline;
-             ap_specialised=Default_specialise}
+             ap_specialised=Default_specialise;
+             ap_idents_for_types = Lambda.make_idents_for_types [lambda_unit];
+            }
   | Texp_instvar(path_self, path, _) ->
       let loc = e.exp_loc in
       Lprim(Pfield_computed,
@@ -452,13 +454,16 @@ and transl_exp0 e =
         path expr
   | Texp_override(path_self, modifs) ->
       let cpy = Ident.create_local "copy" in
+      let ap_args = [transl_normal_path ~loc:e.exp_loc path_self] in
       Llet(Strict, Pgenval, cpy,
            Lapply{ap_should_be_tailcall=false;
                   ap_loc=e.exp_loc;
                   ap_func=Translobj.oo_prim "copy";
-                  ap_args=[transl_normal_path ~loc:e.exp_loc path_self];
+                  ap_args;
                   ap_inlined=Default_inline;
-                  ap_specialised=Default_specialise},
+                  ap_specialised=Default_specialise;
+                  ap_idents_for_types = Lambda.make_idents_for_types ap_args;
+                 },
            List.fold_right
              (fun (path, _, expr) rem ->
                 Lsequence(transl_setinstvar e.exp_loc
@@ -608,7 +613,9 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
                 ap_func=lexp;
                 ap_args=args;
                 ap_inlined=inlined;
-                ap_specialised=specialised;}
+                ap_specialised=specialised;
+                ap_idents_for_types = Lambda.make_idents_for_types args;
+               }
   in
   let rec build_apply lam args = function
       (None, optional) :: l ->

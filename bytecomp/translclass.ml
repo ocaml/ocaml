@@ -51,7 +51,9 @@ let mkappl (func, args) =
           ap_func=func;
           ap_args=args;
           ap_inlined=Default_inline;
-          ap_specialised=Default_specialise};;
+          ap_specialised=Default_specialise;
+          ap_idents_for_types = Lambda.make_idents_for_types args;
+         };;
 
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
@@ -470,13 +472,16 @@ let transl_class_rebind cl vf =
   try
     let obj_init = Ident.create_local "obj_init"
     and self = Ident.create_local "self" in
+    let ap_args = [Lvar self] in
     let obj_init0 =
       lapply {ap_should_be_tailcall=false;
               ap_loc=Location.none;
               ap_func=Lvar obj_init;
-              ap_args=[Lvar self];
+              ap_args;
               ap_inlined=Default_inline;
-              ap_specialised=Default_specialise}
+              ap_specialised=Default_specialise;
+              ap_idents_for_types = Lambda.make_idents_for_types ap_args;
+              }
     in
     let path, obj_init' = transl_class_rebind_0 self obj_init0 cl vf in
     let loc = cl.cl_loc in

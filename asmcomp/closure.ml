@@ -1014,15 +1014,16 @@ let no_effects = function
   | u -> is_pure_clambda u
 
 let rec bind_params_rec ~param_index ~block_subst ~at_call_site
-      ~function_being_inlined fpc subst params args body =
-  match (params, args) with
-    ([], []) ->
+      ~function_being_inlined fpc subst params args ~idents_for_types
+      body =
+  match (params, args, idents_for_types) with
+    ([], [], []) ->
     let _block_subst, term =
       substitute ~block_subst ~at_call_site ~function_being_inlined
         fpc subst (Some Int.Map.empty) body
     in
     term
-  | (p1 :: pl, a1 :: al) ->
+  | (p1 :: pl, a1 :: al, ident_for_type :: idents_for_types) ->
       let block_subst, provenance =
         match VP.provenance p1 with
         | None -> block_subst, None
@@ -1037,15 +1038,30 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site
         match provenance with
         | None -> None
         | Some provenance ->
-            Some (V.Provenance.replace_is_parameter provenance (
-              Is_parameter.parameter ~index:param_index))
+            let provenance =
+              V.Provenance.replace_is_parameter provenance
+                (Is_parameter.parameter ~index:param_index)
+            in
+            let provenance =
+              (* This ensures that even in the case where the argument of the
+                 application has been substituted (e.g. by [Simplif] in
+                 the case of an [Alias] let), we still have the ability to
+                 recover the type of this argument of the inlined function
+                 in the debugger. *)
+              match ident_for_type with
+              | None -> provenance
+              | Some ident_for_type ->
+                  V.Provenance.replace_ident_for_type provenance
+                    ident_for_type
+            in
+            Some provenance
       in
       let p1' = VP.rename ?provenance p1 in
       if is_simple_argument a1 then
         let term =
           bind_params_rec ~param_index:(param_index + 1)
             ~block_subst ~at_call_site ~function_being_inlined fpc
-            (V.Map.add (VP.var p1) a1 subst) pl al body
+            (V.Map.add (VP.var p1) a1 subst) pl al ~idents_for_types body
         in
         let phantom_defining_expr =
           match a1 with
@@ -1065,7 +1081,7 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site
         let body' =
           bind_params_rec ~param_index:(param_index + 1)
             ~block_subst ~at_call_site ~function_being_inlined fpc
-            (V.Map.add (VP.var p1) u2 subst) pl al body
+            (V.Map.add (VP.var p1) u2 subst) pl al ~idents_for_types body
         in
         if occurs_var (VP.var p1) body then
           Ulet(Immutable, Pgenval, p1', u1, body')
@@ -1086,15 +1102,18 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site
               in
               Uphantom_let (p1', defining_expr, lam)
       end
-  | (_, _) -> assert false
+  | (_, _, _) -> assert false
 
-let bind_params ~at_call_site ~function_being_inlined fpc params args body =
+let bind_params ~at_call_site ~function_being_inlined fpc params args
+      ~idents_for_types body =
+  assert (List.compare_lengths args idents_for_types = 0);
   let block_subst = Debuginfo.Block_subst.empty in
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
   bind_params_rec ~param_index:0 ~block_subst ~at_call_site
     ~function_being_inlined fpc V.Map.empty
-    (List.rev params) (List.rev args) body
+    (List.rev params) (List.rev args)
+    ~idents_for_types:(List.rev idents_for_types) body
 
 (* Check if a lambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
@@ -1113,7 +1132,8 @@ let warning_if_forced_inline ~loc ~attribute warning =
 
 (* Generate a direct application *)
 
-let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute =
+let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute
+      ~idents_for_types =
   let app_args =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
   let dbg = Debuginfo.of_location loc ~scope in
@@ -1130,7 +1150,7 @@ let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute =
         bind_params ~at_call_site:scope
           ~function_being_inlined:(Some call_site)
           fundesc.fun_float_const_prop
-          params app_args body
+          params app_args ~idents_for_types body
   in
   (* If ufunct can contain side-effects or function definitions,
      we must make sure that it is evaluated exactly once.
@@ -1252,7 +1272,7 @@ let rec close ~scope fenv cenv = function
     (* We convert [f a] to [let a' = a in let f' = f in fun b c -> f' a' b c]
        when fun_arity > nargs *)
   | Lapply{ap_func = funct; ap_args = args; ap_loc = loc;
-        ap_inlined = attribute} ->
+        ap_inlined = attribute; ap_idents_for_types; _ } ->
       let nargs = List.length args in
       begin match
         close ~scope fenv cenv funct,
@@ -1262,12 +1282,16 @@ let rec close ~scope fenv cenv = function
          [Uprim(Pmakeblock _, uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
           let app =
-            direct_apply ~scope ~loc ~attribute fundesc funct ufunct uargs in
+            direct_apply ~scope ~loc ~attribute fundesc funct ufunct uargs
+              ~idents_for_types:ap_idents_for_types
+          in
           (app, strengthen_approx app approx_res)
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)
         when nargs = fundesc.fun_arity ->
           let app =
-            direct_apply ~scope ~loc ~attribute fundesc funct ufunct uargs in
+            direct_apply ~scope ~loc ~attribute fundesc funct ufunct uargs
+              ~idents_for_types:ap_idents_for_types
+          in
           (app, strengthen_approx app approx_res)
 
       | ((ufunct, (Value_closure(fundesc, _) as fapprox)), uargs)
@@ -1288,6 +1312,9 @@ let rec close ~scope fenv cenv = function
           (List.map (fun (arg1, _arg2) -> Lvar arg1) first_args)
           @ (List.map (fun arg -> Lvar arg ) final_args)
         in
+        let ap_idents_for_types =
+          List.map (fun _lam -> None) internal_args
+        in
         let funct_var = V.create_local "*funct*" in
         let fenv = V.Map.add funct_var fapprox fenv in
         let (new_fun, approx) = close ~scope fenv cenv
@@ -1299,7 +1326,8 @@ let rec close ~scope fenv cenv = function
                              ap_func=(Lvar funct_var);
                              ap_args=internal_args;
                              ap_inlined=Default_inline;
-                             ap_specialised=Default_specialise};
+                             ap_specialised=Default_specialise;
+                             ap_idents_for_types};
                loc;
                attr = default_function_attribute})
         in
@@ -1316,11 +1344,13 @@ let rec close ~scope fenv cenv = function
           let (first_args, rem_args) = split_list fundesc.fun_arity args in
           let first_args = List.map (fun (id, _) -> Uvar id) first_args in
           let rem_args = List.map (fun (id, _) -> Uvar id) rem_args in
+          let idents_for_types = List.map (fun _arg -> None) first_args in
           let dbg = Debuginfo.of_location loc ~scope in
           warning_if_forced_inline ~loc ~attribute "Over-application";
           let body =
             Ugeneric_apply(direct_apply ~scope ~loc ~attribute
-                              fundesc funct ufunct first_args,
+                              fundesc funct ufunct first_args
+                              ~idents_for_types,
                            rem_args, dbg)
           in
           let result =
@@ -1351,7 +1381,7 @@ let rec close ~scope fenv cenv = function
           let provenance =
             V.Provenance.create ~module_path
               ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
-              ~original_ident:id
+              ~ident_for_type:id
               Is_parameter.local
           in
           Some provenance
@@ -1383,7 +1413,7 @@ let rec close ~scope fenv cenv = function
           let provenance =
             V.Provenance.create ~module_path
               ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
-              ~original_ident:id
+              ~ident_for_type:id
               Is_parameter.local
           in
           Some provenance
@@ -1440,7 +1470,7 @@ let rec close ~scope fenv cenv = function
                   V.Provenance.create ~module_path
                     ~debuginfo:(Debuginfo.of_location Location.none
                        ~scope:new_scope)
-                    ~original_ident:id
+                    ~ident_for_type:id
                     Is_parameter.local
                 in
                 Some provenance
@@ -1458,7 +1488,10 @@ let rec close ~scope fenv cenv = function
                               ap_func=funct;
                               ap_args=[arg];
                               ap_inlined=Default_inline;
-                              ap_specialised=Default_specialise})
+                              ap_specialised=Default_specialise;
+                              ap_idents_for_types =
+                                Lambda.make_idents_for_types [arg];
+                              })
   | Lprim(Pgetglobal id, [], loc) as lam ->
       let dbg = Debuginfo.of_location loc ~scope in
       check_constant_result ~scope lam
@@ -1553,7 +1586,7 @@ let rec close ~scope fenv cenv = function
                   V.Provenance.create ~module_path
                     ~debuginfo:(Debuginfo.of_location loc
                       ~scope:body_scope)
-                    ~original_ident:var
+                    ~ident_for_type:var
                     Is_parameter.local
                 in
                 Some provenance
@@ -1575,7 +1608,7 @@ let rec close ~scope fenv cenv = function
             V.Provenance.create ~module_path
               ~debuginfo:(Debuginfo.of_location loc
                 ~scope:handler_scope)
-              ~original_ident:id
+              ~ident_for_type:id
               Is_parameter.local
           in
           Some provenance
@@ -1621,7 +1654,7 @@ let rec close ~scope fenv cenv = function
           let provenance =
             V.Provenance.create ~module_path
               ~debuginfo:(Debuginfo.of_location loc ~scope:body_scope)
-              ~original_ident:id
+              ~ident_for_type:id
               Is_parameter.local
           in
           Some provenance
@@ -1760,7 +1793,7 @@ and close_functions fenv cenv fun_defs =
                 let provenance =
                   V.Provenance.create ~module_path
                     ~debuginfo:(Debuginfo.of_function fun_dbg)
-                    ~original_ident:ident
+                    ~ident_for_type:ident
                     Is_parameter.local
                 in
                 Some provenance

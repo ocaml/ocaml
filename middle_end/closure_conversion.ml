@@ -411,6 +411,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
            operators. *)
         ap_inlined = Default_inline;
         ap_specialised = Default_specialise;
+        ap_idents_for_types = Lambda.make_idents_for_types [arg];
       }
     in
     close t env (Lambda.Lapply apply)

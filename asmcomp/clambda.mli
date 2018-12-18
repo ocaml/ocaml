@@ -128,7 +128,7 @@ val compare_constants:
         uconstant -> uconstant -> int
 
 type usymbol_provenance = {
-  original_idents : Ident.t list;
+  idents_for_types : Ident.t list;
   module_path : Path.t;
 }
 

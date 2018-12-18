@@ -392,7 +392,7 @@ let clear_structured_constants () =
 
 let structured_constants () =
   let provenance : Clambda.usymbol_provenance =
-    { original_idents = [];
+    { idents_for_types = [];
       module_path =
         Path.Pident (Ident.create_persistent (current_unit_name ()));
     }

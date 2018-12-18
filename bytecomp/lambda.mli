@@ -293,7 +293,11 @@ and lambda_apply =
     ap_loc : Location.t;
     ap_should_be_tailcall : bool;       (* true if [@tailcall] was specified *)
     ap_inlined : inline_attribute; (* specified with the [@inlined] attribute *)
-    ap_specialised : specialise_attribute; }
+    ap_specialised : specialise_attribute;
+    ap_idents_for_types : Ident.t option list;
+    (** Corresponding elementwise to [ap_args], the identifier that should
+        be used for retrieving the types of arguments in the debugger. *)
+  }
 
 and lambda_switch =
   { sw_numconsts: int;                           (* Number of integer cases *)
@@ -339,6 +343,9 @@ val const_unit: structured_constant
 val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
+
+(** Helper function for constructing [ap_idents_for_types]. *)
+val make_idents_for_types : lambda list -> Ident.t option list
 
 val iter_head_constructor: (lambda -> unit) -> lambda -> unit
 (** [iter_head_constructor f lam] apply [f] to only the first level of

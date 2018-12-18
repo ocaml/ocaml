@@ -241,7 +241,10 @@ let simplify_exits lam =
                                      ap_func=f;
                                      ap_args=[x];
                                      ap_inlined=Default_inline;
-                                     ap_specialised=Default_specialise}
+                                     ap_specialised=Default_specialise;
+                                     ap_idents_for_types =
+                                       Lambda.make_idents_for_types [x];
+                                    }
 
         (* Simplify %apply, for n-ary functions with n > 1 *)
       | Pdirapply, [Lapply ap; x]
@@ -252,7 +255,10 @@ let simplify_exits lam =
                                      ap_func=f;
                                      ap_args=[x];
                                      ap_inlined=Default_inline;
-                                     ap_specialised=Default_specialise}
+                                     ap_specialised=Default_specialise;
+                                     ap_idents_for_types =
+                                       Lambda.make_idents_for_types [x];
+                                    }
 
       | _ -> Lprim(p, ll, loc)
      end
@@ -730,6 +736,7 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
             ap_should_be_tailcall = false;
             ap_inlined = Default_inline;
             ap_specialised = Default_specialise;
+            ap_idents_for_types = Lambda.make_idents_for_types args;
           }
         in
         let inner_params = List.map map_param params in

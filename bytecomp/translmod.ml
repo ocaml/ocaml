@@ -101,6 +101,8 @@ and apply_coercion_result loc strict funct params args cc_res =
     apply_coercion_result loc strict funct
       (param :: params) (arg :: args) cc_res
   | _ ->
+    let ap_args = List.rev args in
+    let ap_idents_for_types = Lambda.make_idents_for_types ap_args in
     name_lambda strict funct (fun id ->
       Lfunction{kind = Curried; params = List.rev params;
                 attr = { default_function_attribute with
@@ -112,9 +114,10 @@ and apply_coercion_result loc strict funct params args cc_res =
                          (Lapply{ap_should_be_tailcall=false;
                                  ap_loc=loc;
                                  ap_func=Lvar id;
-                                 ap_args=List.rev args;
+                                 ap_args;
                                  ap_inlined=Default_inline;
-                                 ap_specialised=Default_specialise})})
+                                 ap_specialised=Default_specialise;
+                                 ap_idents_for_types})})
 
 and wrap_id_pos_list loc id_pos_list get_field lam =
   let fv = free_variables lam in
@@ -324,13 +327,16 @@ let eval_rec_bindings bindings cont =
   | (_id, None, _rhs) :: rem ->
       bind_inits rem
   | (id, Some(loc, shape), _rhs) :: rem ->
+      let ap_args = [loc; shape] in
       Llet(Strict, Pgenval, id,
            Lapply{ap_should_be_tailcall=false;
                   ap_loc=Location.none;
                   ap_func=mod_prim "init_mod";
-                  ap_args=[loc; shape];
+                  ap_args;
                   ap_inlined=Default_inline;
-                  ap_specialised=Default_specialise},
+                  ap_specialised=Default_specialise;
+                  ap_idents_for_types = Lambda.make_idents_for_types ap_args;
+                 },
            bind_inits rem)
   and bind_strict = function
     [] ->
@@ -345,12 +351,16 @@ let eval_rec_bindings bindings cont =
   | (_id, None, _rhs) :: rem ->
       patch_forwards rem
   | (id, Some(_loc, shape), rhs) :: rem ->
+      let ap_args = [shape; Lvar id; rhs] in
       Lsequence(Lapply{ap_should_be_tailcall=false;
                        ap_loc=Location.none;
                        ap_func=mod_prim "update_mod";
-                       ap_args=[shape; Lvar id; rhs];
+                       ap_args;
                        ap_inlined=Default_inline;
-                       ap_specialised=Default_specialise},
+                       ap_specialised=Default_specialise;
+                       ap_idents_for_types =
+                         Lambda.make_idents_for_types ap_args;
+                      },
                 patch_forwards rem)
   in
     bind_inits bindings
@@ -476,14 +486,17 @@ and transl_module cc rootpath mexp =
           let inlined_attribute, funct =
             Translattribute.get_and_remove_inlined_attribute_on_module funct
           in
+          let ap_args = [transl_module ccarg None arg] in
           oo_wrap mexp.mod_env true
             (apply_coercion loc Strict cc)
             (Lapply{ap_should_be_tailcall=false;
                     ap_loc=loc;
                     ap_func=transl_module Tcoerce_none None funct;
-                    ap_args=[transl_module ccarg None arg];
+                    ap_args;
                     ap_inlined=inlined_attribute;
-                    ap_specialised=Default_specialise})
+                    ap_specialised=Default_specialise;
+                    ap_idents_for_types = Lambda.make_idents_for_types ap_args;
+                   })
       | Tmod_constraint(arg, _, _, ccarg) ->
           transl_module (compose_coercions cc ccarg) rootpath arg
       | Tmod_unpack(arg, _) ->
@@ -1179,25 +1192,32 @@ let toplevel_name id =
   with Not_found -> Ident.name id
 
 let toploop_getvalue id =
+  let ap_args = [Lconst(Const_base(Const_string (toplevel_name id, None)))] in
   Lapply{ap_should_be_tailcall=false;
          ap_loc=Location.none;
          ap_func=Lprim(Pfield toploop_getvalue_pos,
                        [Lprim(Pgetglobal toploop_ident, [], Location.none)],
                        Location.none);
-         ap_args=[Lconst(Const_base(Const_string (toplevel_name id, None)))];
+         ap_args;
          ap_inlined=Default_inline;
-         ap_specialised=Default_specialise}
+         ap_specialised=Default_specialise;
+         ap_idents_for_types = Lambda.make_idents_for_types ap_args;
+        }
 
 let toploop_setvalue id lam =
+  let ap_args = 
+    [Lconst(Const_base(Const_string (toplevel_name id, None))); lam]
+  in
   Lapply{ap_should_be_tailcall=false;
          ap_loc=Location.none;
          ap_func=Lprim(Pfield toploop_setvalue_pos,
                        [Lprim(Pgetglobal toploop_ident, [], Location.none)],
                        Location.none);
-         ap_args=[Lconst(Const_base(Const_string (toplevel_name id, None)));
-                  lam];
+         ap_args;
          ap_inlined=Default_inline;
-         ap_specialised=Default_specialise}
+         ap_specialised=Default_specialise;
+         ap_idents_for_types = Lambda.make_idents_for_types ap_args;
+        }
 
 let toploop_setvalue_id id = toploop_setvalue id (Lvar id)
 
