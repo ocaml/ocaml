@@ -1293,12 +1293,17 @@ let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
         let holds_value_of =
           Reg_with_debug_info.Debug_info.holds_value_of debug_info
         in
-        let type_die_reference =
-          let type_die =
-            normal_type_for_var t ~parent:(Some call_site_die)
-              (Var holds_value_of)
-          in
-          Proto_die.reference type_die
+        let type_attribute =
+          match Reg_with_debug_info.Debug_info.provenance debug_info with
+          | None -> []
+          | Some provenance ->
+            let type_die =
+              normal_type_for_var t ~parent:(Some call_site_die)
+                (Var (Backend_var.Provenance.ident_for_type provenance))
+            in
+            [DAH.create_type_from_reference
+              ~proto_die_reference:(Proto_die.reference type_die)
+            ]
         in
         let arg_location =
           let everywhere_holding_var =
@@ -1357,11 +1362,6 @@ let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
                 ]
             in
             call_data_location @ call_data_value
-        in
-        let type_attribute =
-          [DAH.create_type_from_reference
-            ~proto_die_reference:type_die_reference;
-          ]
         in
         arg_location, type_attribute
   in

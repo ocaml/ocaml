@@ -501,11 +501,20 @@ let rec lam ppf = function
   | Lconst cst ->
       struct_const ppf cst
   | Lapply ap ->
-      let lams ppf largs =
-        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
+      let lams_with_idents_for_types ppf largs =
+        List.iter (fun (l, ident_for_type) ->
+            fprintf ppf "@ %a" lam l;
+            if Misc.Stdlib.Option.is_some !Clflags.debug_full then begin
+              fprintf ppf "@ @{<debug_loc>(type: %a)@}"
+                (Misc.Stdlib.Option.print Ident.print) ident_for_type
+            end)
+          largs
+        in
       fprintf ppf "@[<2>(apply%a@ %a%a%a%a%a)@]"
         print_loc ap.ap_loc
-        lam ap.ap_func lams ap.ap_args
+        lam ap.ap_func
+        lams_with_idents_for_types
+        (List.combine ap.ap_args ap.ap_idents_for_types)
         apply_tailcall_attribute ap.ap_should_be_tailcall
         apply_inlined_attribute ap.ap_inlined
         apply_specialised_attribute ap.ap_specialised
