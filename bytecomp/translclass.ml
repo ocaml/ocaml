@@ -41,7 +41,11 @@ let lfunction params body =
 let lapply ap =
   match ap.ap_func with
     Lapply ap' ->
-      Lapply {ap with ap_func = ap'.ap_func; ap_args = ap'.ap_args @ ap.ap_args}
+      let ap_args = ap'.ap_args @ ap.ap_args in
+      let ap_idents_for_types =
+        ap'.ap_idents_for_types @ ap.ap_idents_for_types
+      in
+      Lapply {ap with ap_func = ap'.ap_func; ap_args; ap_idents_for_types}
   | _ ->
       Lapply ap
 

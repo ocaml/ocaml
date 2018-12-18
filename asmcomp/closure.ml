@@ -1288,9 +1288,13 @@ let rec close ~scope fenv cenv = function
         ((ufunct, Value_closure(fundesc, approx_res)),
          [Uprim(Pmakeblock _, uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
+          (* CR mshinwell: Maybe this could be improved? *)
+          let idents_for_types =
+            List.map (fun _ -> None) uargs
+          in
           let app =
             direct_apply ~scope ~loc ~attribute fundesc funct ufunct uargs
-              ~idents_for_types:ap_idents_for_types
+              ~idents_for_types
           in
           (app, strengthen_approx app approx_res)
       | ((ufunct, Value_closure(fundesc, approx_res)), uargs)

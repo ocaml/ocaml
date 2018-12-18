@@ -701,8 +701,11 @@ let subst update_env s lam =
         begin try Ident.Map.find id s with Not_found -> l end
     | Lconst _ as l -> l
     | Lapply ap ->
+        let ap_args = subst_list s ap.ap_args in
+        let ap_idents_for_types = make_idents_for_types ap_args in
         Lapply{ap with ap_func = subst s ap.ap_func;
-                      ap_args = subst_list s ap.ap_args}
+               ap_args; ap_idents_for_types;
+              }
     | Lfunction{kind; params; body; attr; loc} ->
         let s = List.fold_right Ident.Map.remove params s in
         Lfunction{kind; params; body = subst s body; attr; loc}
