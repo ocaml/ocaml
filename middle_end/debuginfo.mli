@@ -131,6 +131,15 @@ module Function : sig
   val compare_on_source_position_only : t -> t -> int
 end
 
+module Call_site : sig
+  type t
+
+  val create_from_location : Function.t -> Location.t -> t
+
+  val fun_dbg : t -> Function.t
+  val position : t -> Code_range.t
+end
+
 module Block : sig
   (** A "block" represents the source-level structures within which a
       particular computation is nested.  The following varieties of
@@ -142,11 +151,11 @@ module Block : sig
 
   type t
 
-  val create_non_inlined_frame : Function.t -> t
+  val create_non_inlined_frame : Call_site.t -> t
 
   type frame_classification = private
     | Lexical_scope_only
-    | Inlined_frame of Function.t
+    | Inlined_frame of Call_site.t
 
   val frame_classification : t -> frame_classification
 
@@ -226,13 +235,13 @@ module Block_subst : sig
      : t
     -> Block.t
     -> at_call_site:Current_block.t
-    -> function_being_inlined:Function.t
+    -> function_being_inlined:Call_site.t
     -> t * Block.t
 
   val find_or_add
      : t
     -> debuginfo
     -> at_call_site:Current_block.t
-    -> function_being_inlined:Function.t
+    -> function_being_inlined:Call_site.t
     -> t * debuginfo
 end

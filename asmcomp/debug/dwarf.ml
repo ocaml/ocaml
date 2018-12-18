@@ -34,7 +34,6 @@ type t = {
   end_of_code_symbol : Asm_symbol.t;
   output_path : string;
   mutable rvalue_dies_required_for : V.Set.t;
-  mutable type_dies_for_parameters_all_functions : Asm_label.t V.Map.t;
   function_abstract_instances_by_id :
     (Proto_die.t * Asm_symbol.t) Debuginfo.Function.Id.Tbl.t;
   mutable emitted : bool;
@@ -157,7 +156,6 @@ let create ~prefix_name =
     end_of_code_symbol;
     output_path;
     rvalue_dies_required_for = V.Set.empty;
-    type_dies_for_parameters_all_functions = V.Map.empty;
     function_abstract_instances_by_id = Debuginfo.Function.Id.Tbl.create 42;
     emitted = false;
   }
@@ -862,16 +860,6 @@ let dwarf_for_variable t (fundecl : L.fundecl)
     | Parameter _index -> Formal_parameter
     | Local -> Variable
   in
-  begin match is_parameter with
-  | Parameter _ ->
-    begin match type_die_reference_for_var var ~proto_dies_for_vars with
-    | None -> ()
-    | Some reference ->
-      t.type_dies_for_parameters_all_functions
-        <- V.Map.add var reference t.type_dies_for_parameters_all_functions
-    end
-  | Local -> ()
-  end;
   let reference =
     match proto_dies_for_variable var ~proto_dies_for_vars with
     | None -> None
@@ -1191,7 +1179,8 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                     range_list_attribute;
                   ]
                   ()
-              | Inlined_frame fun_dbg ->
+              | Inlined_frame call_site ->
+                let fun_dbg = Debuginfo.Call_site.fun_dbg call_site in
                 let abstract_instance_symbol =
                   find_maybe_in_another_unit_or_add_abstract_instance t fun_dbg
                 in
@@ -1225,7 +1214,7 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                     [DAH.create_abstract_origin
                        ~die_symbol:abstract_instance_symbol]
                 in
-                let code_range = Debuginfo.Function.position fun_dbg in
+                let code_range = Debuginfo.Call_site.position call_site in
                 Proto_die.create ~parent:(Some parent)
                   ~tag:Inlined_subroutine
                   ~attribute_values:(entry_pc @ abstract_instance @ [
@@ -1305,18 +1294,11 @@ let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
           Reg_with_debug_info.Debug_info.holds_value_of debug_info
         in
         let type_die_reference =
-          (* For functions defined in the same compilation unit, or for
-             self calls, share the type DIE. *)
-          match
-            V.Map.find holds_value_of t.type_dies_for_parameters_all_functions
-          with
-          | exception Not_found ->
-            let type_die =
-              normal_type_for_var t ~parent:(Some call_site_die)
-                (Var holds_value_of)
-            in
-            Proto_die.reference type_die
-          | existing_type_die_reference -> existing_type_die_reference
+          let type_die =
+            normal_type_for_var t ~parent:(Some call_site_die)
+              (Var holds_value_of)
+          in
+          Proto_die.reference type_die
         in
         let arg_location =
           let everywhere_holding_var =

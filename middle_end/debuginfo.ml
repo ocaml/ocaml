@@ -294,19 +294,39 @@ module Function = struct
       Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
   end)
 
-  (* CR mshinwell: Naming is poor for this function *)
-  let to_string t =
-    Code_range.to_string t.position
-
   let compare_on_source_position_only { position = position1; _ }
         { position = position2; _ } =
     Code_range.compare position1 position2
 end
 
+module Call_site = struct
+  type t = {
+    fun_dbg : Function.t;
+    position : Code_range.t;
+  }
+
+  let create_from_location fun_dbg loc =
+    { fun_dbg;
+      position = Code_range.of_location loc;
+    }
+
+  let fun_dbg t = t.fun_dbg
+  let position t = t.position
+
+  let to_string t = Code_range.to_string t.position
+
+  let print ppf { fun_dbg; position; } =
+    Format.fprintf ppf "@[<hov 1>(\
+        @[<hov 1>(fun_dbg@ %a)@]@ \
+        @[<hov 1>(position@ %a)@])@]"
+      Function.print fun_dbg
+      Code_range.print position
+end
+
 module Block = struct
   type t = {
     id : int;
-    frame_location : Function.t option;
+    frame_location : Call_site.t option;
     (* CR-someday mshinwell: We could perhaps have a link to the parent
        _frame_, if such exists. *)
     parent : t option;
@@ -333,9 +353,9 @@ module Block = struct
       parents_transitive;
     }
 
-  let create_non_inlined_frame fun_dbg =
+  let create_non_inlined_frame call_site =
     { id = get_next_id ();
-      frame_location = Some fun_dbg;
+      frame_location = Some call_site;
       parent = None;
       parents_transitive = [];
     }
@@ -384,15 +404,15 @@ module Block = struct
 
   type frame_classification =
     | Lexical_scope_only
-    | Inlined_frame of Function.t
+    | Inlined_frame of Call_site.t
 
   let frame_classification t =
     match t.frame_location with
     | None -> Lexical_scope_only
-    | Some fun_dbg ->
+    | Some call_site ->
       match t.parent with
       | None -> Lexical_scope_only
-      | Some _ -> Inlined_frame fun_dbg
+      | Some _ -> Inlined_frame call_site
 
   let rec iter_innermost_first t ~f =
     f t;
@@ -413,7 +433,7 @@ module Block = struct
           @[<hov 1>(frame_location@ %a)@]@ \
           @[<hov 1>(parent@ %s)@])@]"
         id
-        (Option.print Function.print) frame_location
+        (Option.print Call_site.print) frame_location
         (match parent with
           | None -> "()"
           | Some parent -> string_of_int parent.id)
@@ -512,7 +532,7 @@ let to_string_frames_only_innermost_last t =
       match block with
       | None -> []
       | Some block ->
-        List.map (fun range -> Function.to_string range)
+        List.map (fun range -> Call_site.to_string range)
           (Block.frame_list_innermost_first block)
     in
     let ranges_innermost_last =
@@ -569,7 +589,7 @@ let iter_position_and_frames_innermost_first t ~f =
     ~f_blocks:(fun block ->
       match Block.frame_classification block with
       | Lexical_scope_only -> ()
-      | Inlined_frame fun_dbg -> f (Function.position fun_dbg))
+      | Inlined_frame call_site -> f (Call_site.position call_site))
 
 include Identifiable.Make (struct
   type nonrec t = t

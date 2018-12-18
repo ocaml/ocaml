@@ -1124,8 +1124,11 @@ let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute =
           "Function information unavailable";
         Udirect_apply(fundesc.fun_label, app_args, dbg)
     | Some(params, body), _  ->
+        let call_site =
+          Debuginfo.Call_site.create_from_location fundesc.fun_dbg loc
+        in
         bind_params ~at_call_site:scope
-          ~function_being_inlined:(Some fundesc.fun_dbg)
+          ~function_being_inlined:(Some call_site)
           fundesc.fun_float_const_prop
           params app_args body
   in
