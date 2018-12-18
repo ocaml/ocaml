@@ -235,7 +235,9 @@ let simplify_exits lam =
         (* Simplify %revapply, for n-ary functions with n > 1 *)
       | Prevapply, [x; Lapply ap]
       | Prevapply, [x; Levent (Lapply ap,_)] ->
-        Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
+        let ap_args = ap.ap_args @ [x] in
+        let ap_idents_for_types = Lambda.make_idents_for_types ap_args in
+        Lapply {ap with ap_args; ap_loc = loc; ap_idents_for_types}
       | Prevapply, [x; f] -> Lapply {ap_should_be_tailcall=false;
                                      ap_loc=loc;
                                      ap_func=f;
@@ -249,7 +251,9 @@ let simplify_exits lam =
         (* Simplify %apply, for n-ary functions with n > 1 *)
       | Pdirapply, [Lapply ap; x]
       | Pdirapply, [Levent (Lapply ap,_); x] ->
-        Lapply {ap with ap_args = ap.ap_args @ [x]; ap_loc = loc}
+        let ap_args = ap.ap_args @ [x] in
+        let ap_idents_for_types = Lambda.make_idents_for_types ap_args in
+        Lapply {ap with ap_args; ap_loc = loc; ap_idents_for_types}
       | Pdirapply, [f; x] -> Lapply {ap_should_be_tailcall=false;
                                      ap_loc=loc;
                                      ap_func=f;

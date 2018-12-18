@@ -1133,7 +1133,11 @@ let warning_if_forced_inline ~loc ~attribute warning =
 
 let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute
       ~idents_for_types =
-  assert (List.compare_lengths uargs idents_for_types = 0);
+  if not (List.compare_lengths uargs idents_for_types = 0) then begin
+    Misc.fatal_errorf "uargs length %d, idents_for_types length %d, \
+        function %s"
+      (List.length uargs) (List.length idents_for_types) fundesc.fun_label
+  end;
   let app_args =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
   let idents_for_types =

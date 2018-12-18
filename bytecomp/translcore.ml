@@ -606,7 +606,10 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
     | Levent(Lsend(k, lmet, lobj, largs, loc), _) ->
         Lsend(k, lmet, lobj, largs @ args, loc)
     | Lapply ap ->
-        Lapply {ap with ap_args = ap.ap_args @ args; ap_loc = loc}
+        let ap_args = ap.ap_args @ args in
+        Lapply {ap with ap_args; ap_loc = loc;
+                ap_idents_for_types = Lambda.make_idents_for_types ap_args;
+               }
     | lexp ->
         Lapply {ap_should_be_tailcall=should_be_tailcall;
                 ap_loc=loc;
