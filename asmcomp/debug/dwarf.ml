@@ -1300,6 +1300,9 @@ let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
           | None -> []
           | Some provenance ->
             let type_die =
+              (* CR mshinwell: This should reuse DIEs which were created
+                 previously to describe these vars.  Also, shouldn't these
+                 DIEs be parented higher up? *)
               normal_type_for_var t ~parent:(Some call_site_die)
                 (Var (Backend_var.Provenance.ident_for_type provenance))
             in
