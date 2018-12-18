@@ -822,6 +822,8 @@ let dwarf_for_variable t (fundecl : L.fundecl)
       in
       (* CR-someday mshinwell: This should be tidied up.  It's only correct by
          virtue of the fact we do the closure-env ones second below. *)
+      (* CR mshinwell: The behaviour when [ident_for_type] is [None] is
+         different from the call site case below. *)
       let ident_for_type =
         match ident_for_type with
         | None -> Var var
