@@ -809,7 +809,7 @@ installoptopt:
 	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
      asmcomp/asm_target/*.cmx \
      asmcomp/debug/*.cmx asmcomp/debug/dwarf_low/*.cmx \
-     asmcomp/debug/dwarf_4/*.cmx asmcomp/dwarf_high/*.cmx \
+     asmcomp/debug/dwarf_low/dwarf_4/*.cmx asmcomp/debug/dwarf_high/*.cmx \
 	   middle_end/base_types/*.cmx "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
            compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
