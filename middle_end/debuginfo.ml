@@ -152,58 +152,60 @@ module Code_range = struct
   end
 end
 
-module Function = struct
-  module Id = struct
-    type t = {
-      stamp : int;
-      compilation_unit : Compilation_unit.t;
+module Id = struct
+  type t = {
+    stamp : int;
+    compilation_unit : Compilation_unit.t;
+  }
+
+  let next_stamp = ref 0
+
+  let get_next_stamp () =
+    let stamp = !next_stamp in
+    incr next_stamp;
+    stamp
+
+  let create () =
+    { stamp = get_next_stamp ();
+      compilation_unit = Compilation_unit.get_current_exn ();
     }
 
-    let next_stamp = ref 0
+  let compilation_unit t = t.compilation_unit
 
-    let get_next_stamp () =
-      let stamp = !next_stamp in
-      incr next_stamp;
+  let to_string_for_dwarf_die_name t =
+    Format.sprintf "%s_%d"
+      (Compilation_unit.string_for_printing t.compilation_unit)
+      t.stamp
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare { stamp = stamp1; compilation_unit = compilation_unit1; }
+          { stamp = stamp2; compilation_unit = compilation_unit2; } =
+      let c = Stdlib.compare stamp1 stamp2 in
+      if c <> 0 then c
+      else Compilation_unit.compare compilation_unit1 compilation_unit2
+
+    let equal t1 t2 =
+      compare t1 t2 = 0
+
+    let hash { stamp; compilation_unit; } =
+      Hashtbl.hash (stamp, Compilation_unit.hash compilation_unit)
+
+    let print ppf { stamp; compilation_unit; } =
+    Format.fprintf ppf "@[<hov 1>(\
+        @[<hov 1>(stamp@ %d)@]@ \
+        @[<hov 1>(compilation_unit@ %a)@])@]"
       stamp
+      Compilation_unit.print compilation_unit
 
-    let create () =
-      { stamp = get_next_stamp ();
-        compilation_unit = Compilation_unit.get_current_exn ();
-      }
+    let output chan t =
+      Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
+  end)
+end
 
-    let compilation_unit t = t.compilation_unit
-
-    let to_string_for_dwarf_die_name t =
-      Format.sprintf "%s_%d"
-        (Compilation_unit.string_for_printing t.compilation_unit)
-        t.stamp
-
-    include Identifiable.Make (struct
-      type nonrec t = t
-
-      let compare { stamp = stamp1; compilation_unit = compilation_unit1; }
-            { stamp = stamp2; compilation_unit = compilation_unit2; } =
-        let c = Stdlib.compare stamp1 stamp2 in
-        if c <> 0 then c
-        else Compilation_unit.compare compilation_unit1 compilation_unit2
-
-      let equal t1 t2 =
-        compare t1 t2 = 0
-
-      let hash { stamp; compilation_unit; } =
-        Hashtbl.hash (stamp, Compilation_unit.hash compilation_unit)
-
-      let print ppf { stamp; compilation_unit; } =
-      Format.fprintf ppf "@[<hov 1>(\
-          @[<hov 1>(stamp@ %d)@]@ \
-          @[<hov 1>(compilation_unit@ %a)@])@]"
-        stamp
-        Compilation_unit.print compilation_unit
-
-      let output chan t =
-        Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
-    end)
-  end
+module Function = struct
+  module Id = Id
 
   type t = {
     id : Id.t;
@@ -323,21 +325,16 @@ module Call_site = struct
 end
 
 module Block = struct
+  module Id = Id
+
   type t = {
-    id : int;
+    id : Id.t;
     frame_location : Call_site.t option;
     (* CR-someday mshinwell: We could perhaps have a link to the parent
        _frame_, if such exists. *)
     parent : t option;
     parents_transitive : t list;
   }
-
-  let next_id = ref 0
-
-  let get_next_id () =
-    let id = !next_id in
-    incr next_id;
-    id
 
   let parents_transitive_from_parent ~parent =
     match parent with
@@ -346,47 +343,38 @@ module Block = struct
 
   let create_lexical_scope ~parent =
     let parents_transitive = parents_transitive_from_parent ~parent in
-    { id = get_next_id ();
+    { id = Id.create ();
       frame_location = None;
       parent;
       parents_transitive;
     }
 
   let create_non_inlined_frame call_site =
-    { id = get_next_id ();
+    { id = Id.create ();
       frame_location = Some call_site;
       parent = None;
       parents_transitive = [];
+    }
+
+  let create_inlined_frame call_site ~parent =
+    let parents_transitive = parents_transitive_from_parent ~parent in
+    { id = Id.create ();
+      frame_location = Some call_site;
+      parent;
+      parents_transitive;
     }
 
   let create_and_reparent ~like:t ~new_parent =
     let parent = new_parent in
     let parents_transitive = parents_transitive_from_parent ~parent in
     { t with
-      id = get_next_id ();
-      parent;
-      parents_transitive;
-    }
-
-  let rec graft t ~(onto : t option) : t =
-    let parent =
-      match t.parent with
-      | None -> onto
-      | Some parent -> Some (graft parent ~onto)
-    in
-    let parents_transitive = parents_transitive_from_parent ~parent in
-    { t with
+      id = Id.create ();
       parent;
       parents_transitive;
     }
 
   let parent t = t.parent
   let unique_id t = t.id
-
-  let with_frame_location t fun_dbg =
-    { t with
-      frame_location = Some fun_dbg;
-    }
 
   let rec frame_list_innermost_first t =
     match t.parent with
@@ -422,20 +410,20 @@ module Block = struct
   include Identifiable.Make (struct
     type nonrec t = t
 
-    let compare t1 t2 = compare t1.id t2.id
-    let equal t1 t2 = (t1.id = t2.id)
-    let hash t = Hashtbl.hash t.id
+    let compare t1 t2 = Id.compare t1.id t2.id
+    let equal t1 t2 = Id.equal t1.id t2.id
+    let hash t = Id.hash t.id
 
     let print ppf { id; frame_location; parent; parents_transitive = _; } =
       Format.fprintf ppf "@[<hov 1>(\
-          @[<hov 1>(id@ %d)@]@ \
+          @[<hov 1>(id@ %a)@]@ \
           @[<hov 1>(frame_location@ %a)@]@ \
           @[<hov 1>(parent@ %s)@])@]"
-        id
+        Id.print id
         (Option.print Call_site.print) frame_location
         (match parent with
           | None -> "()"
-          | Some parent -> string_of_int parent.id)
+          | Some parent -> Format.asprintf "%a" Id.print parent.id)
 
     let output chan t =
       Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
@@ -458,7 +446,7 @@ module Block = struct
   end
 
   let print_id ppf { id; _ } =
-    Format.fprintf ppf "block %d" id
+    Format.fprintf ppf "block %a" Id.print id
 
   let parents_transitive t = t.parents_transitive
 end
@@ -479,14 +467,6 @@ module Current_block = struct
 
   let add_scope t =
     Some (Block.create_lexical_scope ~parent:t)
-
-  let inline t ~(at_call_site : t) : t =
-    match at_call_site with
-    | None -> t
-    | Some at_call_site ->
-      match t with
-      | None -> Some at_call_site
-      | Some t -> Some (Block.graft t ~onto:(Some at_call_site))
 
   include Identifiable.Make (struct
     type nonrec t = t
@@ -635,8 +615,7 @@ module Block_subst = struct
   let empty = Block.Map.empty
 
   let rec find_or_add_block t (old_block : Block.t)
-        ~(at_call_site : Current_block.t) ~function_being_inlined
-        : t * Block.t =
+        ~(at_call_site : Current_block.t) : t * Block.t =
     match Block.Map.find old_block t with
     | exception Not_found ->
       let old_parent = Block.parent old_block in
@@ -645,18 +624,12 @@ module Block_subst = struct
         | None -> t, at_call_site
         | Some old_parent ->
           let t, block =
-            find_or_add_block t old_parent ~at_call_site ~function_being_inlined
+            find_or_add_block t old_parent ~at_call_site
           in
           t, Some block
       in
       let new_block =
         Block.create_and_reparent ~like:old_block ~new_parent
-      in
-      let new_block =
-        match old_parent with
-        | None ->
-          Block.with_frame_location new_block function_being_inlined
-        | Some _ -> new_block
       in
       let t = Block.Map.add old_block new_block t in
       t, new_block
@@ -666,12 +639,14 @@ module Block_subst = struct
     match old_debuginfo with
     | Empty -> t, Empty
     | Non_empty { block; position; } ->
+      let at_call_site : Current_block.t =
+        Some (Block.create_inlined_frame function_being_inlined
+          ~parent:at_call_site)
+      in
       match block with
       | None ->
         t, Non_empty { block = at_call_site; position; }
       | Some block ->
-        let t, block =
-          find_or_add_block t block ~at_call_site ~function_being_inlined
-        in
+        let t, block = find_or_add_block t block ~at_call_site in
         t, Non_empty { block = Some block; position; }
 end

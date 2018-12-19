@@ -552,27 +552,24 @@ let find_action idxs acts tag =
     (* Can this happen? *)
     None
 
+(* CR mshinwell: "at_call_site" / "function_being_inlined" names may be
+   confusing.  Combine into one parameter? *)
 let subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst dbg =
   match function_being_inlined with
   | None -> block_subst, dbg
   | Some function_being_inlined ->
     if !Clflags.debug then
-(*
   begin
-  Format.eprintf "Call site: %a\n%!" Debuginfo.Current_block.print at_call_site;
+  Format.eprintf "Blocks at call site: %a\n%!" Debuginfo.Current_block.print at_call_site;
+  Format.eprintf "Call site: %a\n%!" Debuginfo.Call_site.print function_being_inlined;
   Format.eprintf "Orig dbg: %a\n%!" Debuginfo.print dbg;
-*)
   let block_subst, dbg =
       Debuginfo.Block_subst.find_or_add block_subst dbg ~at_call_site
         ~function_being_inlined
   in
-(*
-  Format.eprintf "New dbg: %a\n%!" Debuginfo.print dbg;
-*)
+  Format.eprintf "New dbg: %a\n\n%!" Debuginfo.print dbg;
   block_subst, dbg
-(*
   end
-*)
     else
       block_subst, dbg
 

@@ -151,6 +151,16 @@ module Block : sig
       - Inlined functions (thought of as inlined-out stack frames).
   *)
 
+  module Id : sig
+    (** The actual unique identifier for a block. *)
+    type t
+
+    (** Which compilation unit the block was defined in. *)
+    val compilation_unit : t -> Compilation_unit.t
+
+    include Identifiable.S with type t := t
+  end
+
   type t
 
   val create_non_inlined_frame : Call_site.t -> t
@@ -165,7 +175,7 @@ module Block : sig
 
   val parents_transitive : t -> t list
 
-  val unique_id : t -> int
+  val unique_id : t -> Id.t
 
   include Identifiable.S with type t := t
 
@@ -184,8 +194,6 @@ module Current_block : sig
   val to_block : t -> to_block
 
   val add_scope : t -> t
-
-  val inline : t -> at_call_site:t -> t
 
   include Identifiable.S with type t := t
 end
@@ -232,13 +240,6 @@ module Block_subst : sig
   type t
 
   val empty : t
-
-  val find_or_add_block
-     : t
-    -> Block.t
-    -> at_call_site:Current_block.t
-    -> function_being_inlined:Call_site.t
-    -> t * Block.t
 
   val find_or_add
      : t
