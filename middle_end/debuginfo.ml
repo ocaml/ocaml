@@ -418,12 +418,10 @@ module Block = struct
       Format.fprintf ppf "@[<hov 1>(\
           @[<hov 1>(id@ %a)@]@ \
           @[<hov 1>(frame_location@ %a)@]@ \
-          @[<hov 1>(parent@ %s)@])@]"
+          @[<hov 1>(parent@ %a)@])@]"
         Id.print id
         (Option.print Call_site.print) frame_location
-        (match parent with
-          | None -> "()"
-          | Some parent -> Format.asprintf "%a" print parent)
+        (Option.print print) parent
 
 (*
         (match parent with
