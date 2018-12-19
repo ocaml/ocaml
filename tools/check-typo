@@ -30,7 +30,7 @@
 # - presence of a copyright header (missing-header)
 # - absence of a leftover "$Id" string (svn-keyword)
 
-# Exceptions are handled with a git attribute: "ocaml-typo".
+# Exceptions are handled with git attributes: "typo.*".
 # Its value for a given file is a comma-separated list of rule names,
 # which lists the rules that should be disabled for this file.
 # The rule names are the ones shown above in parentheses.
@@ -57,8 +57,8 @@
 # This program ignores any file that is not under git control, unless
 # explicitly given on the command line.
 
-# If a directory has the git attribute "ocaml-typo" set to "prune",
-# then it and its contents are ignored.
+# If a directory has the git attribute "typo.prune" then it and its contents are
+# ignored.
 
 # You can ignore a rule by giving the option -<rule> on the command
 # line (before any file names).
