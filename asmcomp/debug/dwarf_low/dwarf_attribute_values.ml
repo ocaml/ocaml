@@ -77,6 +77,9 @@ module Value = struct
 
   let inline_code inline_code =
     Dwarf_value (Inline_code.as_dwarf_value inline_code)
+
+  let language lang =
+    Dwarf_value (Dwarf_language.as_dwarf_value lang)
 end
 
 module Attribute_value = struct

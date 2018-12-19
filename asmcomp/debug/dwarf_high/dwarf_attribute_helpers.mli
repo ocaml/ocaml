@@ -174,3 +174,7 @@ val create_inline
 val create_abstract_origin
    : die_symbol:Asm_symbol.t
   -> Dwarf_attribute_values.Attribute_value.t
+
+val create_language
+   : Dwarf_language.t
+  -> Dwarf_attribute_values.Attribute_value.t

@@ -253,3 +253,7 @@ let create_abstract_origin ~die_symbol =
   let spec = AS.create Abstract_origin Ref_addr in
   AV.create spec (V.offset_into_debug_info_from_symbol
     ~comment:"reference to abstract origin DIE" die_symbol)
+
+let create_language lang =
+  let spec = AS.create Language Data1 in
+  AV.create spec (V.language lang)

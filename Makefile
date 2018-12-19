@@ -154,6 +154,7 @@ DWARF_LOW=\
   asmcomp/debug/dwarf_low/initial_length.cmo \
   asmcomp/debug/dwarf_low/child_determination.cmo \
   asmcomp/debug/dwarf_low/dwarf_tag.cmo \
+  asmcomp/debug/dwarf_low/dwarf_language.cmo \
   asmcomp/debug/dwarf_low/dwarf_operator.cmo \
   asmcomp/debug/dwarf_low/simple_location_description.cmo \
   asmcomp/debug/dwarf_low/composite_location_description.cmo \

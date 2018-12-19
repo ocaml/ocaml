@@ -127,6 +127,7 @@ let create ~prefix_name =
         DAH.create_low_pc_from_symbol ~symbol:start_of_code_symbol;
         DAH.create_high_pc_from_symbol ~symbol:end_of_code_symbol;
         DAH.create_stmt_list ~debug_line_label;
+        DAH.create_language OCaml;
       ] @ dwarf_5_only
     in
     Proto_die.create ~parent:None

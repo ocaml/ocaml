@@ -3515,7 +3515,7 @@ let compunit ~ppf_dump ~unit_name ~source_file
   in
   let fun_dbg =
     Debuginfo.Function.create_from_location (Location.in_file source_file)
-      ~human_name
+      ~human_name:""
       ~module_path:(Some module_path)
   in
   let c1 = [Cfunction {fun_name;
