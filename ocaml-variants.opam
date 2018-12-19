@@ -1,0 +1,33 @@
+opam-version: "2.0"
+name: "ocaml-variants"
+version: "4.08.0+dev"
+synopsis: "OCaml development version"
+depends: [
+  "ocaml" {= "4.08.0" & post}
+  "base-unix" {post}
+  "base-bigarray" {post}
+  "base-threads" {post}
+]
+conflict-class: "ocaml-core-compiler"
+flags: compiler
+setenv: CAML_LD_LIBRARY_PATH = "%{lib}%/stublibs"
+build: [
+  ["./configure" "-prefix" prefix]
+    {os != "openbsd" & os != "freebsd" & os != "macos"}
+  ["./configure" "-prefix" prefix "-cc" "cc" "-aspp" "cc -c"]
+    {os = "openbsd" | os = "freebsd" | os = "macos"}
+  [make "-j%{jobs}%" "world"]
+  [make "-j%{jobs}%" "world.opt"]
+]
+install: [make "install"]
+maintainer: "caml-list@inria.fr"
+homepage: "https://ocaml.org"
+bug-reports: "https://caml.inria.fr/mantis/"
+authors: [
+  "Xavier Leroy"
+  "Damien Doligez"
+  "Alain Frisch"
+  "Jacques Garrigue"
+  "Didier Rémy"
+  "Jérôme Vouillon"
+]
