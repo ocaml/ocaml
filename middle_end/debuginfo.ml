@@ -250,9 +250,16 @@ module Function = struct
       end
     | Some path ->
       let path = Printtyp.string_of_path path in
-      match t.human_name with
-      | "" -> path
-      | name -> path ^ "." ^ name
+      match path with
+      | "_Ocaml_startup" ->
+        begin match t.human_name with
+        | "" -> "<anon>"
+        | name -> name
+        end
+      | _ ->
+        match t.human_name with
+        | "" -> path
+        | name -> path ^ "." ^ name
 
   let is_visible_externally t =
     (* Not strictly accurate---should probably depend on the .mli, but
