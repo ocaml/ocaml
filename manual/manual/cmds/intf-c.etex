@@ -2024,11 +2024,11 @@ word is reserved for storing the custom operations; the other
 \var{used} and \var{max} are used to control the speed of garbage
 collection, as described for "caml_alloc_custom".
 
-\section{Advanced topic: Big arrays and the OCaml-C interface}
+\section{Advanced topic: Bigarrays and the OCaml-C interface}
 \label{s:C-Bigarrays}
 
 This section explains how C stub code that interfaces C or Fortran
-code with OCaml code can use big arrays.
+code with OCaml code can use Bigarrays.
 
 \subsection{Include file}
 
@@ -2038,12 +2038,12 @@ below.
 
 \subsection{Accessing an OCaml bigarray from C or Fortran}
 
-If \var{v} is a OCaml "value" representing a big array, the expression
+If \var{v} is a OCaml "value" representing a Bigarray, the expression
 "Caml_ba_data_val("\var{v}")" returns a pointer to the data part of the array.
 This pointer is of type "void *" and can be cast to the appropriate C
 type for the array (e.g. "double []", "char [][10]", etc).
 
-Various characteristics of the OCaml big array can be consulted from C
+Various characteristics of the OCaml Bigarray can be consulted from C
 as follows:
 \begin{tableau}{|l|l|}{C expression}{Returns}
 \entree{"Caml_ba_array_val("\var{v}")->num_dims"}{number of dimensions}
@@ -2064,7 +2064,7 @@ The kind of array elements is one of the following constants:
 \entree{"CAML_BA_NATIVE_INT"}{32- or 64-bit (platform-native) integers}
 \end{tableau}
 %
-The following example shows the passing of a two-dimensional big array
+The following example shows the passing of a two-dimensional Bigarray
 to a C function and a Fortran function.
 \begin{verbatim}
     extern void my_c_function(double * data, int dimx, int dimy);
@@ -2082,16 +2082,16 @@ to a C function and a Fortran function.
     }
 \end{verbatim}
 
-\subsection{Wrapping a C or Fortran array as an OCaml big array}
+\subsection{Wrapping a C or Fortran array as an OCaml Bigarray}
 
 A pointer \var{p} to an already-allocated C or Fortran array can be
-wrapped and returned to OCaml as a big array using the "caml_ba_alloc"
+wrapped and returned to OCaml as a Bigarray using the "caml_ba_alloc"
 or "caml_ba_alloc_dims" functions.
 \begin{itemize}
 \item
 "caml_ba_alloc("\var{kind} "|" \var{layout}, \var{numdims}, \var{p}, \var{dims}")"
 
-Return an OCaml big array wrapping the data pointed to by \var{p}.
+Return an OCaml Bigarray wrapping the data pointed to by \var{p}.
 \var{kind} is the kind of array elements (one of the "CAML_BA_"
 kind constants above).  \var{layout} is "CAML_BA_C_LAYOUT" for an
 array with C layout and "CAML_BA_FORTRAN_LAYOUT" for an array with
