@@ -1,0 +1,31 @@
+opam-version: "2.0"
+name: "ocaml"
+version: "4.08.0"
+synopsis: "The OCaml compiler (virtual package)"
+description: """
+This package requires a matching implementation of OCaml,
+and polls it to initialise specific variables like `ocaml:native-dynlink`"""
+maintainer: "caml-list@inria.fr"
+depends: [
+  "ocaml-config"
+  "ocaml-base-compiler" {= "4.08.0"} |
+  "ocaml-variants" {>= "4.08.0" & < "4.08.1~"} |
+  "ocaml-system" {= "4.08.0"}
+]
+setenv: [
+  [CAML_LD_LIBRARY_PATH = "%{_:stubsdir}%"]
+  [CAML_LD_LIBRARY_PATH += "%{lib}%/stublibs"]
+  [OCAML_TOPLEVEL_PATH = "%{toplevel}%"]
+]
+build: ["ocaml" "%{ocaml-config:share}%/gen_ocaml_config.ml" _:version _:name]
+build-env: CAML_LD_LIBRARY_PATH = ""
+homepage: "https://ocaml.org"
+bug-reports: "https://caml.inria.fr/mantis/"
+authors: [
+  "Xavier Leroy"
+  "Damien Doligez"
+  "Alain Frisch"
+  "Jacques Garrigue"
+  "Didier Rémy"
+  "Jérôme Vouillon"
+]
