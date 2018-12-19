@@ -15,7 +15,7 @@
 
 # Bump this on any changes. It's vital that HOOK_VERSION followed by equals
 # appears nowhere else in these sources!
-HOOK_VERSION=2
+HOOK_VERSION=3
 
 # For what it's worth, allow for empty trees!
 if git rev-parse --verify HEAD >/dev/null 2>&1
@@ -60,8 +60,8 @@ not_pruned () {
   if [ "$DIR" = "." ] ; then
     return 0
   else
-    case ",$(git check-attr ocaml-typo "$DIR" | sed -e 's/.*: //')," in
-      ,prune,)
+    case ",$(git check-attr typo.prune "$DIR" | sed -e 's/.*: //')," in
+      ,set,)
       return 1
       ;;
       *)
