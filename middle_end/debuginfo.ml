@@ -414,7 +414,7 @@ module Block = struct
     let equal t1 t2 = Id.equal t1.id t2.id
     let hash t = Id.hash t.id
 
-    let print ppf { id; frame_location; parent; parents_transitive = _; } =
+    let rec print ppf { id; frame_location; parent; parents_transitive = _; } =
       Format.fprintf ppf "@[<hov 1>(\
           @[<hov 1>(id@ %a)@]@ \
           @[<hov 1>(frame_location@ %a)@]@ \
@@ -423,7 +423,13 @@ module Block = struct
         (Option.print Call_site.print) frame_location
         (match parent with
           | None -> "()"
+          | Some parent -> Format.asprintf "%a" print parent)
+
+(*
+        (match parent with
+          | None -> "()"
           | Some parent -> Format.asprintf "%a" Id.print parent.id)
+*)
 
     let output chan t =
       Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
@@ -467,6 +473,9 @@ module Current_block = struct
 
   let add_scope t =
     Some (Block.create_lexical_scope ~parent:t)
+
+  let add_inlined_frame t call_site =
+    Some (Block.create_inlined_frame call_site ~parent:t)
 
   include Identifiable.Make (struct
     type nonrec t = t
@@ -635,14 +644,10 @@ module Block_subst = struct
       t, new_block
     | new_block -> t, new_block
 
-  let find_or_add t old_debuginfo ~at_call_site ~function_being_inlined =
+  let find_or_add t old_debuginfo ~at_call_site =
     match old_debuginfo with
     | Empty -> t, Empty
     | Non_empty { block; position; } ->
-      let at_call_site : Current_block.t =
-        Some (Block.create_inlined_frame function_being_inlined
-          ~parent:at_call_site)
-      in
       match block with
       | None ->
         t, Non_empty { block = at_call_site; position; }

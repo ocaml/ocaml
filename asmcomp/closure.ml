@@ -553,29 +553,21 @@ let find_action idxs acts tag =
     None
 
 (* CR mshinwell: "at_call_site" / "function_being_inlined" names may be
-   confusing.  Combine into one parameter? *)
-let subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst dbg =
-  match function_being_inlined with
-  | None -> block_subst, dbg
-  | Some function_being_inlined ->
-    if !Clflags.debug then
-  begin
+   confusing.  Combine into one parameter?
+   ... now we can delete function_being_inlined. *)
+let subst_debuginfo ~at_call_site ~function_being_inlined:_ ~block_subst dbg =
 (*
   Format.eprintf "Blocks at call site: %a\n%!" Debuginfo.Current_block.print at_call_site;
   Format.eprintf "Call site: %a\n%!" Debuginfo.Call_site.print function_being_inlined;
   Format.eprintf "Orig dbg: %a\n%!" Debuginfo.print dbg;
 *)
   let block_subst, dbg =
-      Debuginfo.Block_subst.find_or_add block_subst dbg ~at_call_site
-        ~function_being_inlined
+    Debuginfo.Block_subst.find_or_add block_subst dbg ~at_call_site
   in
 (*
   Format.eprintf "New dbg: %a\n\n%!" Debuginfo.print dbg;
 *)
   block_subst, dbg
-  end
-    else
-      block_subst, dbg
 
 let rec substitute ~at_call_site ~function_being_inlined ~block_subst
       fpc sb rn ulam =
@@ -1155,7 +1147,10 @@ let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute
         let call_site =
           Debuginfo.Call_site.create_from_location fundesc.fun_dbg loc
         in
-        bind_params ~at_call_site:scope
+        let at_call_site =
+          Debuginfo.Current_block.add_inlined_frame scope call_site
+        in
+        bind_params ~at_call_site
           ~function_being_inlined:(Some call_site)
           fundesc.fun_float_const_prop
           params app_args ~idents_for_types body

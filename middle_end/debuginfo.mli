@@ -195,6 +195,8 @@ module Current_block : sig
 
   val add_scope : t -> t
 
+  val add_inlined_frame : t -> Call_site.t -> t
+
   include Identifiable.S with type t := t
 end
 
@@ -245,6 +247,5 @@ module Block_subst : sig
      : t
     -> debuginfo
     -> at_call_site:Current_block.t
-    -> function_being_inlined:Call_site.t
     -> t * debuginfo
 end

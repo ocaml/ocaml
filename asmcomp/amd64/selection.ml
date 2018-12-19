@@ -222,7 +222,9 @@ method! select_operation op args dbg =
   | Cstore ((Word_int|Word_val as chunk), _init) ->
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc'], _); Cconst_int n], _)]
-        when loc = loc' && self#is_immediate n ->
+        (* CR mshinwell: This used to be "=" instead of "==" but caused a
+           serious performance problem. *)
+        when loc == loc' && self#is_immediate n ->
           let (addr, arg) = self#select_addressing chunk loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
