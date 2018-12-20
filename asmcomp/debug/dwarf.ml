@@ -1421,12 +1421,7 @@ let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
     let call_site_die =
       let dwarf_5_only =
         match !Clflags.dwarf_version with
-        | Four -> [
-            (* The gdb source code (dwarf2read.c) says that [DW_AT_low_pc]
-               was a GNU alias for the DWARF-5 [DW_AT_call_return_pc]. *)
-            DAH.create_low_pc
-              ~address_label:(Asm_label.create_int call_labels.after);
-          ]
+        | Four -> []
         | Five -> [
             DAH.create_call_pc (Asm_label.create_int call_labels.before);
             DAH.create_call_return_pc (Asm_label.create_int call_labels.after);
