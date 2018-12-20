@@ -24,6 +24,14 @@ val base_type_die_name_for_var : Backend_var.t -> output_path:string -> string
     abstract instance root for the function with the given ID. *)
 val abstract_instance_root_die_name : Debuginfo.Function.Id.t -> Asm_symbol.t
 
+(** The symbol for the DWARF debugging information entry corresponding to the
+    concrete (non-inlined) instance for the function with the given ID. *)
+val concrete_instance_die_name : Debuginfo.Function.Id.t -> Asm_symbol.t
+
+(** The symbol for an incomplete non-defining declaration DIE for an
+    external function. *)
+val external_declaration_die_name : Asm_symbol.t -> Asm_symbol.t
+
 type split_base_type_die_name_result = {
   ident_name : string;
   ident_stamp : int;

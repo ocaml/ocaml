@@ -37,6 +37,7 @@ let ignore_ulambda_list (_ : Clambda.ulambda list) = ()
 let ignore_uphantom_defining_expr_option
       (_ : Clambda.uphantom_defining_expr option) = ()
 let ignore_function_label (_ : Clambda.function_label) = ()
+let ignore_apply_debuginfo (_ : Debuginfo.Apply.t) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
 let ignore_debuginfo_function (_ : Debuginfo.Function.t) = ()
 let ignore_int (_ : int) = ()
@@ -87,7 +88,7 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
     | Udirect_apply (label, args, dbg) ->
       ignore_function_label label;
       List.iter loop args;
-      ignore_debuginfo dbg
+      ignore_apply_debuginfo dbg
     | Ugeneric_apply (func, args, dbg) ->
       loop func;
       List.iter loop args;
@@ -261,7 +262,7 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
       (* We don't currently traverse [args]; they should all be variables
          anyway.  If this is added in the future, take care to traverse [args]
          following the evaluation order. *)
-      ignore_debuginfo dbg
+      ignore_apply_debuginfo dbg
     | Ugeneric_apply (func, args, dbg) ->
       examine_argument_list (args @ [func]);
       ignore_debuginfo dbg

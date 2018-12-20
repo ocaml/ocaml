@@ -556,18 +556,11 @@ let find_action idxs acts tag =
    confusing.  Combine into one parameter?
    ... now we can delete function_being_inlined. *)
 let subst_debuginfo ~at_call_site ~function_being_inlined:_ ~block_subst dbg =
-(*
-  Format.eprintf "Blocks at call site: %a\n%!" Debuginfo.Current_block.print at_call_site;
-  Format.eprintf "Call site: %a\n%!" Debuginfo.Call_site.print function_being_inlined;
-  Format.eprintf "Orig dbg: %a\n%!" Debuginfo.print dbg;
-*)
-  let block_subst, dbg =
-    Debuginfo.Block_subst.find_or_add block_subst dbg ~at_call_site
-  in
-(*
-  Format.eprintf "New dbg: %a\n\n%!" Debuginfo.print dbg;
-*)
-  block_subst, dbg
+  Debuginfo.Block_subst.find_or_add block_subst dbg ~at_call_site
+
+let subst_apply_debuginfo ~at_call_site ~function_being_inlined:_
+      ~block_subst dbg =
+  Debuginfo.Block_subst.find_or_add_for_apply block_subst dbg ~at_call_site
 
 let rec substitute ~at_call_site ~function_being_inlined ~block_subst
       fpc sb rn ulam =
@@ -580,7 +573,8 @@ let rec substitute ~at_call_site ~function_being_inlined ~block_subst
   | Uconst _ -> block_subst, ulam
   | Udirect_apply(lbl, args, dbg) ->
       let block_subst, dbg =
-        subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst dbg
+        subst_apply_debuginfo ~at_call_site ~function_being_inlined
+          ~block_subst dbg
       in
       let block_subst, args =
         substitute_list ~at_call_site ~function_being_inlined ~block_subst
@@ -1142,6 +1136,7 @@ let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute
     | _, Never_inline | None, _ ->
         warning_if_forced_inline ~loc ~attribute
           "Function information unavailable";
+        let dbg = Debuginfo.Apply.create fundesc.fun_dbg dbg in
         Udirect_apply(fundesc.fun_label, app_args, dbg)
     | Some(params, body), _  ->
         let call_site =

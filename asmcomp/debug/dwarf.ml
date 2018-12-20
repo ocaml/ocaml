@@ -34,8 +34,9 @@ type t = {
   end_of_code_symbol : Asm_symbol.t;
   output_path : string;
   mutable rvalue_dies_required_for : V.Set.t;
-  function_abstract_instances_by_id :
+  function_abstract_instances :
     (Proto_die.t * Asm_symbol.t) Debuginfo.Function.Id.Tbl.t;
+  die_symbols_for_external_declarations : Asm_symbol.t Asm_symbol.Tbl.t;
   mutable emitted : bool;
 }
 
@@ -157,7 +158,8 @@ let create ~prefix_name =
     end_of_code_symbol;
     output_path;
     rvalue_dies_required_for = V.Set.empty;
-    function_abstract_instances_by_id = Debuginfo.Function.Id.Tbl.create 42;
+    function_abstract_instances = Debuginfo.Function.Id.Tbl.create 42;
+    die_symbols_for_external_declarations = Asm_symbol.Tbl.create 42;
     emitted = false;
   }
 
@@ -1018,14 +1020,14 @@ let add_abstract_instance t fun_dbg =
   in
   Proto_die.set_name abstract_instance_proto_die
     abstract_instance_proto_die_symbol;
-  Debuginfo.Function.Id.Tbl.add t.function_abstract_instances_by_id id
+  Debuginfo.Function.Id.Tbl.add t.function_abstract_instances id
     (abstract_instance_proto_die, abstract_instance_proto_die_symbol);
   abstract_instance_proto_die, abstract_instance_proto_die_symbol
 
 let find_or_add_abstract_instance t fun_dbg =
   let id = Debuginfo.Function.id fun_dbg in
   match
-    Debuginfo.Function.Id.Tbl.find t.function_abstract_instances_by_id id
+    Debuginfo.Function.Id.Tbl.find t.function_abstract_instances id
   with
   | exception Not_found -> add_abstract_instance t fun_dbg
   | existing_instance -> existing_instance
@@ -1419,7 +1421,12 @@ let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
     let call_site_die =
       let dwarf_5_only =
         match !Clflags.dwarf_version with
-        | Four -> []
+        | Four -> [
+            (* The gdb source code (dwarf2read.c) says that [DW_AT_low_pc]
+               was a GNU alias for the DWARF-5 [DW_AT_call_return_pc]. *)
+            DAH.create_low_pc
+              ~address_label:(Asm_label.create_int call_labels.after);
+          ]
         | Five -> [
             DAH.create_call_pc (Asm_label.create_int call_labels.before);
             DAH.create_call_return_pc (Asm_label.create_int call_labels.after);
@@ -1454,15 +1461,43 @@ let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
         args
     end
 
-let call_target_for_direct_callee ~(callee : Asm_symbol.t) =
-  let simple_location_desc =
-    SLDL.compile (SLDL.of_lvalue (SLDL.Lvalue.const_symbol ~symbol:callee))
+type direct_callee =
+  | Ocaml of Debuginfo.Function.t
+  | External of Asm_symbol.t
+
+let call_target_for_direct_callee t (callee : direct_callee) =
+  let die_symbol =
+    match callee with
+    | Ocaml callee_dbg ->
+      if not (Debuginfo.Function.dwarf_die_present callee_dbg) then None
+      else
+        let id = Debuginfo.Function.id callee_dbg in
+        Some (Name_laundry.concrete_instance_die_name id)
+    | External callee ->
+      match
+        Asm_symbol.Tbl.find t.die_symbols_for_external_declarations callee
+      with
+      | exception Not_found ->
+        (* CR-someday mshinwell: dedup DIEs for runtime functions across
+           compilation units (maybe only generate the DIEs when compiling the
+           startup file)? *)
+        let callee_die =
+          Proto_die.create ~parent:(Some t.compilation_unit_proto_die)
+            ~tag:Subprogram
+            ~attribute_values:[
+            ]
+            ()
+        in
+        let die_symbol = Name_laundry.external_declaration_die_name callee in
+        Proto_die.set_name callee_die die_symbol;
+        Asm_symbol.Tbl.add t.die_symbols_for_external_declarations
+          callee die_symbol;
+        Some die_symbol
+      | die_symbol -> Some die_symbol
   in
-  let location_desc =
-    Single_location_description.of_simple_location_description
-      simple_location_desc
-  in
-  [DAH.create_call_target location_desc] 
+  match die_symbol with
+  | None -> []
+  | Some die_symbol -> [DAH.create_call_origin ~die_symbol]
 
 let call_target_for_indirect_callee ~(callee : Reg.t) ~stack_offset =
   let offset_from_cfa_in_bytes, clobbered_by_call =
@@ -1503,32 +1538,38 @@ let dwarf_for_call_sites t ~whole_function_lexical_block
     add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
       (call_target_for_indirect_callee ~callee ~stack_offset)
   in
-  let add_direct_ocaml_call ~stack_offset ~callee ~args ~call_labels insn =
-    add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
-      (call_target_for_direct_callee ~callee)
+  let add_direct_ocaml_call ~stack_offset ~callee_dbg ~args ~call_labels insn =
+    match callee_dbg with
+    | None -> ()
+    | Some callee_dbg ->
+      add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
+        (call_target_for_direct_callee t (Ocaml callee_dbg))
   in
   let add_indirect_ocaml_tail_call ~stack_offset ~callee ~args ~call_labels
         insn =
     add_call_site ~stack_offset ~is_tail:true ~args ~call_labels insn
       (call_target_for_indirect_callee ~callee ~stack_offset)
   in
-  let add_direct_ocaml_tail_call ~stack_offset ~callee ~args ~call_labels
-        insn =
-    (* DWARF-5 spec section 3.4, page 89, lines 19--22: [DW_TAG_call_site]s
-       are not to be generated for self tail calls (called "tail recursion
-       calls" in the spec). *)
-    if Asm_symbol.equal callee function_symbol
-      && not !Clflags.dwarf_emit_self_tail_calls
-    then begin
-      found_self_tail_calls := true
-    end else begin
-      add_call_site ~stack_offset ~is_tail:true ~args ~call_labels insn
-        (call_target_for_direct_callee ~callee)
-    end
+  let add_direct_ocaml_tail_call ~stack_offset ~callee ~callee_dbg
+        ~args ~call_labels insn =
+    match callee_dbg with
+    | None -> ()
+    | Some callee_dbg ->
+      (* DWARF-5 spec section 3.4, page 89, lines 19--22: [DW_TAG_call_site]s
+         are not to be generated for self tail calls (called "tail recursion
+         calls" in the spec). *)
+      if Asm_symbol.equal callee function_symbol
+        && not !Clflags.dwarf_emit_self_tail_calls
+      then begin
+        found_self_tail_calls := true
+      end else begin
+        add_call_site ~stack_offset ~is_tail:true ~args ~call_labels insn
+          (call_target_for_direct_callee t (Ocaml callee_dbg))
+      end
   in
   let add_external_call ~stack_offset ~callee ~args ~call_labels insn =
     add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
-      (call_target_for_direct_callee ~callee)
+      (call_target_for_direct_callee t (External callee))
   in
   let rec traverse_insns (insn : L.instruction) ~stack_offset =
     match insn.desc with
@@ -1541,20 +1582,19 @@ let dwarf_for_call_sites t ~whole_function_lexical_block
           add_indirect_ocaml_call ~stack_offset
             ~callee:insn.arg.(0) ~args ~call_labels insn;
           stack_offset
-        | Icall_imm { func = callee; call_labels; } ->
-          let callee = Asm_symbol.create callee in
+        | Icall_imm { callee_dbg; call_labels; _ } ->
           add_direct_ocaml_call ~stack_offset
-            ~callee ~args:insn.arg ~call_labels insn;
+            ~callee_dbg ~args:insn.arg ~call_labels insn;
           stack_offset
         | Itailcall_ind { call_labels; } ->
           let args = Array.sub insn.arg 1 (Array.length insn.arg - 1) in
           add_indirect_ocaml_tail_call ~stack_offset
             ~callee:insn.arg.(0) ~args ~call_labels insn;
           stack_offset
-        | Itailcall_imm { func = callee; call_labels; } ->
+        | Itailcall_imm { func = callee; callee_dbg; call_labels; _ } ->
           let callee = Asm_symbol.create callee in
           add_direct_ocaml_tail_call ~stack_offset
-            ~callee ~args:insn.arg ~call_labels insn;
+            ~callee ~callee_dbg ~args:insn.arg ~call_labels insn;
           stack_offset
         | Iextcall { func = callee; alloc = _; call_labels; } ->
           let callee = Asm_symbol.create callee in
@@ -1697,11 +1737,15 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
       ~attribute_values:[
         start_of_function;
         end_of_function;
+        DAH.create_entry_pc_from_symbol symbol;
         DAH.create_abstract_origin
           ~die_symbol:abstract_instance_die_symbol;
       ]
       ()
   in
+  Proto_die.set_name concrete_instance_proto_die
+    (Name_laundry.concrete_instance_die_name
+      (Debuginfo.Function.id fundecl.fun_dbg));
   let whole_function_lexical_block, scope_proto_dies =
     Profile.record "dwarf_create_lexical_block_and_inlined_frame_proto_dies"
       (fun () ->

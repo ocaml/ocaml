@@ -61,9 +61,17 @@ type operation =
   | Iconst_float of int64
   | Iconst_symbol of Backend_sym.t
   | Icall_ind of { call_labels : call_labels; }
-  | Icall_imm of { func : Backend_sym.t; call_labels : call_labels; }
+  | Icall_imm of {
+      func : Backend_sym.t;
+      callee_dbg : Debuginfo.Function.t option;
+      call_labels : call_labels;
+    }
   | Itailcall_ind of { call_labels : call_labels; }
-  | Itailcall_imm of { func : Backend_sym.t; call_labels : call_labels; }
+  | Itailcall_imm of {
+      func : Backend_sym.t;
+      callee_dbg : Debuginfo.Function.t option;
+      call_labels : call_labels;
+    }
   | Iextcall of { func : Backend_sym.t; alloc : bool;
       call_labels : call_labels; }
   | Istackoffset of int

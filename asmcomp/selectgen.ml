@@ -61,7 +61,7 @@ let env_empty = {
 (* Infer the type of the result of an operation *)
 
 let oper_result_type = function
-    Capply ty -> ty
+    Capply (ty, _callee_dbg) -> ty
   | Cextcall(_s, ty, _alloc, _) -> ty
   | Cload (c, _) ->
       begin match c with
@@ -473,9 +473,9 @@ method private new_call_labels () : Mach.call_labels =
 
 method select_operation op args _dbg =
   match (op, args) with
-  | (Capply _, Cconst_symbol func :: rem) ->
+  | (Capply (_, callee_dbg), Cconst_symbol func :: rem) ->
     let call_labels = self#new_call_labels () in
-    (Icall_imm { func; call_labels; }, rem)
+    (Icall_imm { func; callee_dbg; call_labels; }, rem)
   | (Capply _, _) ->
     let call_labels = self#new_call_labels () in
     (Icall_ind { call_labels; }, args)
@@ -1283,7 +1283,7 @@ method emit_tail (env:environment) exp =
   | Cphantom_let (var, defining_expr, body) ->
       let env = self#env_for_phantom_let env var ~defining_expr in
       self#emit_tail env body
-  | Cop((Capply ty) as op, args, dbg) ->
+  | Cop((Capply (ty, _callee_dbg)) as op, args, dbg) ->
       begin match self#emit_parts_list env args with
         None -> ()
       | Some(simple_args, env) ->
@@ -1315,11 +1315,13 @@ method emit_tail (env:environment) exp =
                 self#insert env (Iop(Istackoffset(-stack_ofs))) [||] [||];
                 self#insert env Ireturn loc_res [||]
               end
-          | Icall_imm { func; call_labels; } ->
+          | Icall_imm { func; callee_dbg; call_labels; } ->
               let r1 = self#emit_tuple env new_args in
               let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
               if stack_ofs = 0 then begin
-                let call = Iop (Itailcall_imm { func; call_labels; }) in
+                let call =
+                  Iop (Itailcall_imm { func; callee_dbg; call_labels; })
+                in
                 let spacetime_reg =
                   self#about_to_emit_call env call [| |] dbg
                 in
@@ -1327,7 +1329,9 @@ method emit_tail (env:environment) exp =
                 self#maybe_emit_spacetime_move env ~spacetime_reg;
                 self#insert_debug env call dbg loc_arg [||];
               end else if current_function_is func then begin
-                let call = Iop (Itailcall_imm { func; call_labels; }) in
+                let call =
+                  Iop (Itailcall_imm { func; callee_dbg; call_labels; })
+                in
                 let loc_arg' = Proc.loc_parameters r1 in
                 let spacetime_reg =
                   self#about_to_emit_call env call [| |] dbg

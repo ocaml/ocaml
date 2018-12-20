@@ -442,7 +442,7 @@ and to_clambda_switch t env cases num_keys default =
   | [| |] -> [| |], [| |]  (* May happen when [default] is [None]. *)
   | _ -> index, actions
 
-and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
+and to_clambda_direct_apply t func args direct_func _dbg env : Clambda.ulambda =
   let closed = is_function_constant t direct_func in
   let label = Compilenv.function_label direct_func in
   let uargs =
@@ -452,6 +452,7 @@ and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
        dropping any side effects.) *)
     if closed then uargs else uargs @ [subst_var env func]
   in
+  let dbg = assert false (* XXX pchambart to fix *) in
   Udirect_apply (label, uargs, dbg)
 
 (* Describe how to build a runtime closure block that corresponds to the

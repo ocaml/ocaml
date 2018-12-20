@@ -58,7 +58,7 @@ and uphantom_defining_expr =
 and ulambda =
     Uvar of Backend_var.t
   | Uconst of uconstant
-  | Udirect_apply of function_label * ulambda list * Debuginfo.t
+  | Udirect_apply of function_label * ulambda list * Debuginfo.Apply.t
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
   | Uclosure of ufunction list * ulambda list
   | Uoffset of ulambda * int

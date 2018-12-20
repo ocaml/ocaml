@@ -238,6 +238,15 @@ val iter_position_and_frames_innermost_first
   -> f:(Code_range.t -> unit)
   -> unit
 
+module Apply : sig
+  type t
+
+  val create : Function.t -> debuginfo -> t
+
+  val fun_dbg : t -> Function.t
+  val dbg : t -> debuginfo
+end
+
 module Block_subst : sig
   type t
 
@@ -248,4 +257,12 @@ module Block_subst : sig
     -> debuginfo
     -> at_call_site:Current_block.t
     -> t * debuginfo
+
+  (** This function does not affect the [Function.t] component of the
+      [Apply.t] debug info. *)
+  val find_or_add_for_apply
+     : t
+    -> Apply.t
+    -> at_call_site:Current_block.t
+    -> t * Apply.t
 end

@@ -134,7 +134,10 @@ type memory_chunk =
   | Double_u                           (* word-aligned 64-bit float *)
 
 and operation =
-    Capply of machtype
+    Capply of machtype * (Debuginfo.Function.t option)
+    (** Any direct call to an OCaml function should have a
+        [Debuginfo.Function.t] specified if DWARF information is to be
+        emitted. *)
   | Cextcall of Backend_sym.t * machtype * bool * label option
   | Cload of memory_chunk * Asttypes.mutable_flag
   | Calloc

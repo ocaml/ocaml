@@ -28,6 +28,16 @@ let abstract_instance_root_die_name id =
   in
   Asm_symbol.of_external_name name
 
+let concrete_instance_die_name id =
+  let name =
+    Format.asprintf "caml__concrete_instance_%s"
+      (Debuginfo.Function.Id.to_string_for_dwarf_die_name id)
+  in
+  Asm_symbol.of_external_name name
+
+let external_declaration_die_name sym =
+  Asm_symbol.prefix_with sym "camlDIE__"
+
 type split_base_type_die_name_result = {
   ident_name : string;
   ident_stamp : int;

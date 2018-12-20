@@ -27,6 +27,12 @@ val create_high_pc
    : address_label:Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t
 
+(* CR mshinwell: Make labels consistent / remove unnecessary ones. *)
+
+val create_entry_pc_from_symbol
+   : Asm_symbol.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
 val create_low_pc_from_symbol
    : symbol:Asm_symbol.t
   -> Dwarf_attribute_values.Attribute_value.t
@@ -171,10 +177,18 @@ val create_inline
    : Inline_code.t
   -> Dwarf_attribute_values.Attribute_value.t
 
+val create_call_origin
+   : die_symbol:Asm_symbol.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
 val create_abstract_origin
    : die_symbol:Asm_symbol.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_language
    : Dwarf_language.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_declaration
+   : unit
   -> Dwarf_attribute_values.Attribute_value.t

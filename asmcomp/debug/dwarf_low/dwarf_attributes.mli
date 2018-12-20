@@ -292,7 +292,7 @@ module Attribute : sig
     | Call_all_tail_calls : Class.flag t
     | Call_return_pc : Class.address t
     | Call_value : Class.exprloc t
-    | Call_origin : Class.exprloc t
+    | Call_origin : Class.reference t
     | Call_parameter : Class.reference t
     | Call_pc : Class.address t
     | Call_tail_call : Class.flag t

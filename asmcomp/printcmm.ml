@@ -140,7 +140,7 @@ let phantom_defining_expr_opt ppf defining_expr =
   | Some defining_expr -> phantom_defining_expr ppf defining_expr
 
 let operation ~print_dbg d = function
-  | Capply _ty ->
+  | Capply (_ty, _callee_dbg) ->
       if print_dbg then Format.asprintf "app %a" Debuginfo.print d
       else "app"
   | Cextcall(lbl, _ty, _alloc, _) ->
@@ -267,7 +267,7 @@ let rec expr ~print_dbg ppf = function
       fprintf ppf "@[<2>(%s" (operation ~print_dbg dbg op);
       List.iter (fun e -> fprintf ppf "@ %a" (expr ~print_dbg) e) el;
       begin match op with
-      | Capply mty -> fprintf ppf "@ %a" machtype mty
+      | Capply (mty, _callee_dbg) -> fprintf ppf "@ %a" machtype mty
       | Cextcall(_, mty, _, _) -> fprintf ppf "@ %a" machtype mty
       | _ -> ()
       end;

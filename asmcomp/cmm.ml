@@ -139,7 +139,7 @@ type memory_chunk =
   | Double_u
 
 and operation =
-    Capply of machtype
+    Capply of machtype * (Debuginfo.Function.t option)
   | Cextcall of Backend_sym.t * machtype * bool * label option
     (** If specified, the given label will be placed immediately after the
         call (at the same place as any frame descriptor would reference). *)

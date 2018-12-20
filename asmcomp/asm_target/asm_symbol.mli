@@ -37,6 +37,9 @@ val encode : ?reloc:string -> t -> string
     program (PR#4690). *)
 val is_generic_function : t -> bool
 
+(** Add a prefix to a symbol. *)
+val prefix_with : t -> string -> t
+
 include Identifiable.S with type t := t
 
 module Names : sig

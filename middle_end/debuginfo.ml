@@ -613,6 +613,21 @@ include Identifiable.Make (struct
   let hash t = Hashtbl.hash t
 end)
 
+module Apply = struct
+  type t = {
+    fun_dbg : Function.t;
+    dbg : debuginfo;
+  }
+
+  let create fun_dbg dbg =
+    { fun_dbg;
+      dbg;
+    }
+
+  let fun_dbg t = t.fun_dbg
+  let dbg t = t.dbg
+end
+
 module Block_subst = struct
   type t = Block.t Block.Map.t
 
@@ -639,7 +654,7 @@ module Block_subst = struct
       t, new_block
     | new_block -> t, new_block
 
-  let find_or_add t old_debuginfo ~at_call_site =
+  let find_or_add t (old_debuginfo : debuginfo) ~at_call_site =
     match old_debuginfo with
     | Empty -> t, Empty
     | Non_empty { block; position; } ->
@@ -649,4 +664,13 @@ module Block_subst = struct
       | Some block ->
         let t, block = find_or_add_block t block ~at_call_site in
         t, Non_empty { block = Some block; position; }
+
+  let find_or_add_for_apply t (apply : Apply.t) ~at_call_site =
+    let t, dbg = find_or_add t apply.dbg ~at_call_site in
+    let apply =
+      { apply with
+        dbg;
+      }
+    in
+    t, apply
 end

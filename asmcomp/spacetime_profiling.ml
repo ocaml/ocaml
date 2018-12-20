@@ -319,14 +319,14 @@ class virtual instruction_selection = object (self)
     else
       let module M = Mach in
       match desc with
-      | M.Iop (M.Icall_imm { func; call_labels; }) ->
+      | M.Iop (M.Icall_imm { func; callee_dbg = _; call_labels; }) ->
         assert (Array.length arg = 0);
         self#instrument_direct_call ~env ~func ~is_tail:false ~call_labels dbg
       | M.Iop (M.Icall_ind { call_labels; }) ->
         assert (Array.length arg = 1);
         self#instrument_indirect_call ~env ~callee:arg.(0) dbg
           ~is_tail:false ~call_labels
-      | M.Iop (M.Itailcall_imm { func; call_labels; }) ->
+      | M.Iop (M.Itailcall_imm { func; callee_dbg = _; call_labels; }) ->
         assert (Array.length arg = 0);
         self#instrument_direct_call ~env ~func ~is_tail:true ~call_labels dbg
       | M.Iop (M.Itailcall_ind { call_labels; }) ->

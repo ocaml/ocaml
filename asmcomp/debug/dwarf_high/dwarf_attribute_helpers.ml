@@ -40,6 +40,11 @@ let create_high_pc ~address_label =
   AV.create spec (V.code_address_from_label
     ~comment:"high PC value" address_label)
 
+let create_entry_pc_from_symbol symbol =
+  let spec = AS.create Entry_pc Addr in
+  AV.create spec (V.code_address_from_symbol
+    ~comment:"entry PC value" symbol)
+
 let create_low_pc_from_symbol ~symbol =
   let spec = AS.create Low_pc Addr in
   AV.create spec (V.code_address_from_symbol
@@ -249,6 +254,19 @@ let create_inline inline_code =
   let spec = AS.create Inline Data1 in
   AV.create spec (V.inline_code inline_code)
 
+let create_call_origin ~die_symbol =
+  let comment = "reference to call origin DIE" in
+  let spec =
+    match !Clflags.dwarf_version with
+    | Four ->
+      (* The GDB code says that [DW_AT_abstract_origin] is a GNU extension
+         alias, pre-DWARF 5, for [DW_AT_call_origin]. *)
+      AS.create Abstract_origin Ref_addr
+    | Five ->
+      AS.create Call_origin Ref_addr
+  in
+  AV.create spec (V.offset_into_debug_info_from_symbol ~comment die_symbol)
+
 let create_abstract_origin ~die_symbol =
   let spec = AS.create Abstract_origin Ref_addr in
   AV.create spec (V.offset_into_debug_info_from_symbol
@@ -257,3 +275,8 @@ let create_abstract_origin ~die_symbol =
 let create_language lang =
   let spec = AS.create Language Data1 in
   AV.create spec (V.language lang)
+
+let create_declaration () =
+  let spec = AS.create Declaration Flag_present in
+  AV.create spec (
+    V.flag_true ~comment:"incomplete / non-defining declaration" ())

@@ -75,6 +75,9 @@ let encode ?reloc t =
   | None -> t
   | Some reloc -> t ^ reloc
 
+let prefix_with t prefix =
+  (escape prefix) ^ t
+
 (* Detection of functions that can be duplicated between a DLL and
    the main program (PR#4690) *)
 
