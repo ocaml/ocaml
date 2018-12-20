@@ -1488,7 +1488,10 @@ let call_target_for_direct_callee t (callee : direct_callee) =
             ]
             ()
         in
-        let die_symbol = Name_laundry.external_declaration_die_name callee in
+        let die_symbol =
+          Name_laundry.external_declaration_die_name callee
+            (Compilation_unit.get_current_exn ())
+        in
         Proto_die.set_name callee_die die_symbol;
         Asm_symbol.Tbl.add t.die_symbols_for_external_declarations
           callee die_symbol;

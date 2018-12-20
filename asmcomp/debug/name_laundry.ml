@@ -35,8 +35,11 @@ let concrete_instance_die_name id =
   in
   Asm_symbol.of_external_name name
 
-let external_declaration_die_name sym =
-  Asm_symbol.prefix_with sym "camlDIE__"
+let external_declaration_die_name sym compilation_unit =
+  let compilation_unit =
+    Compilation_unit.string_for_printing compilation_unit
+  in
+  Asm_symbol.prefix_with sym ("camlDIE__" ^ compilation_unit ^ "__")
 
 type split_base_type_die_name_result = {
   ident_name : string;

@@ -30,7 +30,10 @@ val concrete_instance_die_name : Debuginfo.Function.Id.t -> Asm_symbol.t
 
 (** The symbol for an incomplete non-defining declaration DIE for an
     external function. *)
-val external_declaration_die_name : Asm_symbol.t -> Asm_symbol.t
+val external_declaration_die_name
+   : Asm_symbol.t
+  -> Compilation_unit.t
+  -> Asm_symbol.t
 
 type split_base_type_die_name_result = {
   ident_name : string;
