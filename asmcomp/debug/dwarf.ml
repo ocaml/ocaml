@@ -1257,7 +1257,7 @@ let offset_from_cfa_in_bytes reg stack_loc ~stack_offset =
   in
   Some (frame_size - slot_offset)
 
-let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
+let add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
       ~stack_offset (insn : L.instruction) =
   let param_location =
     let offset_from_cfa_in_bytes =
@@ -1315,49 +1315,58 @@ let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
             ]
         in
         let arg_location =
-          let everywhere_holding_var =
-            Reg_availability_set.find_all_holding_value_of
-              insn.available_before holds_value_of
-          in
-          (* Only registers spilled at the time of the call will be available
-             with certainty (in the caller's frame) during the execution of
-             the callee. *)
-          let on_stack =
-            Misc.Stdlib.List.filter_map (fun rd ->
-                let reg = Reg_with_debug_info.reg rd in
-                match reg.loc with
-                | Stack stack_loc ->
-                  Some (reg,
-                    offset_from_cfa_in_bytes reg stack_loc ~stack_offset)
-                | Reg _ -> None
-                | Unknown ->
-                  Misc.fatal_errorf "Register without location: %a"
-                    Printmach.reg reg)
-              everywhere_holding_var
-          in
-          match on_stack with
-          | [] -> []
-          | (reg, offset_from_cfa_in_bytes) :: _ ->
-            let arg_location_rvalue =
-              reg_location_description0 reg ~offset_from_cfa_in_bytes
-                ~need_rvalue:true
+          if is_tail then begin
+            (* If this is a tail call site, no arguments of the call will be
+               available with certainty in the callee, since any argument we
+               describe in DWARF (see comment below) will be on the stack---and
+               our stack frame may have been overwritten by the time such
+               argument is queried in the debugger. *)
+            []
+          end else begin
+            let everywhere_holding_var =
+              Reg_availability_set.find_all_holding_value_of
+                insn.available_before holds_value_of
             in
-            match arg_location_rvalue with
-            | None -> []
-            | Some arg_location_rvalue ->
-              let _arg_location =
-                Single_location_description.of_simple_location_description
-                  arg_location_rvalue
+            (* Only registers spilled at the time of the call will be available
+               with certainty (in the caller's frame) during the execution of
+               the callee. *)
+            let on_stack =
+              Misc.Stdlib.List.filter_map (fun rd ->
+                  let reg = Reg_with_debug_info.reg rd in
+                  match reg.loc with
+                  | Stack stack_loc ->
+                    Some (reg,
+                      offset_from_cfa_in_bytes reg stack_loc ~stack_offset)
+                  | Reg _ -> None
+                  | Unknown ->
+                    Misc.fatal_errorf "Register without location: %a"
+                      Printmach.reg reg)
+                everywhere_holding_var
+            in
+            match on_stack with
+            | [] -> []
+            | (reg, offset_from_cfa_in_bytes) :: _ ->
+              let arg_location_rvalue =
+                reg_location_description0 reg ~offset_from_cfa_in_bytes
+                  ~need_rvalue:true
               in
-              (* gdb does not seem to accept a simple location description
-                 here -- it complains about the use of [DW_op_stack_value]. *)
-              let composite =
-                Composite_location_description.
-                  pieces_of_simple_location_descriptions
-                    [arg_location_rvalue, arch_size_addr]
-              in
-              [DAH.create_composite_call_value_location_description composite;
-              ]
+              match arg_location_rvalue with
+              | None -> []
+              | Some arg_location_rvalue ->
+                let _arg_location =
+                  Single_location_description.of_simple_location_description
+                    arg_location_rvalue
+                in
+                (* gdb does not seem to accept a simple location description
+                   here -- it complains about the use of [DW_op_stack_value]. *)
+                let composite =
+                  Composite_location_description.
+                    pieces_of_simple_location_descriptions
+                      [arg_location_rvalue, arch_size_addr]
+                in
+                [DAH.create_composite_call_value_location_description composite;
+                ]
+          end
         in
         arg_location, type_attribute
   in
@@ -1442,7 +1451,7 @@ let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
     in
     if no_split_args then begin
       Array.iteri (fun arg_index arg ->
-          add_call_site_argument t ~call_site_die ~arg_index ~arg
+          add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~arg
             ~stack_offset insn)
         args
     end
