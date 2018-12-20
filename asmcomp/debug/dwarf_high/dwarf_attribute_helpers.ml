@@ -179,6 +179,22 @@ let create_composite_location_description loc_desc =
   let spec = AS.create Location Exprloc in
   AV.create spec (V.composite_location_description loc_desc)
 
+let create_single_call_value_location_description loc_desc =
+  let spec =
+    match !Clflags.dwarf_version with
+    | Four -> AS.create (Dwarf_4 GNU_call_site_value) Exprloc
+    | Five -> AS.create Call_value Exprloc
+  in
+  AV.create spec (V.single_location_description loc_desc)
+
+let create_composite_call_value_location_description loc_desc =
+  let spec =
+    match !Clflags.dwarf_version with
+    | Four -> AS.create (Dwarf_4 GNU_call_site_value) Exprloc
+    | Five -> AS.create Call_value Exprloc
+  in
+  AV.create spec (V.composite_location_description loc_desc)
+
 let create_single_call_data_location_description loc_desc =
   needs_dwarf_five ();
   let spec = AS.create Call_data_location Exprloc in

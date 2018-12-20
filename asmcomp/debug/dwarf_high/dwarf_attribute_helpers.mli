@@ -149,6 +149,14 @@ val create_composite_location_description
    : Composite_location_description.t
   -> Dwarf_attribute_values.Attribute_value.t
 
+val create_single_call_value_location_description
+   : Single_location_description.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_composite_call_value_location_description
+   : Composite_location_description.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
 val create_single_call_data_location_description
    : Single_location_description.t
   -> Dwarf_attribute_values.Attribute_value.t

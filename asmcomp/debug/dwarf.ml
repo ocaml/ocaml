@@ -168,6 +168,8 @@ type var_uniqueness = {
   position_is_unique : bool;
 }
 
+let arch_size_addr = Targetint.of_int_exn Arch.size_addr
+
 let calculate_var_uniqueness ~available_ranges_vars =
   let module String = Misc.Stdlib.String in
   let by_name = String.Tbl.create 42 in
@@ -487,7 +489,6 @@ let phantom_var_location_description t
   let module SLD = Simple_location_description in
   let lvalue lvalue = Some (Simple (SLDL.compile (SLDL.of_lvalue lvalue))) in
   let rvalue rvalue = Some (Simple (SLDL.compile (SLDL.of_rvalue rvalue))) in
-  let arch_size_addr = Targetint.of_int_exn Arch.size_addr in
   match defining_expr with
   | Iphantom_const_int i -> rvalue (SLDL.Rvalue.signed_int_const i)
   | Iphantom_const_symbol symbol ->
@@ -1319,7 +1320,8 @@ let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
               insn.available_before holds_value_of
           in
           (* Only registers spilled at the time of the call will be available
-             with certainty in the callee. *)
+             with certainty (in the caller's frame) during the execution of
+             the callee. *)
           let on_stack =
             Misc.Stdlib.List.filter_map (fun rd ->
                 let reg = Reg_with_debug_info.reg rd in
@@ -1336,40 +1338,26 @@ let add_call_site_argument t ~call_site_die ~arg_index ~(arg : Reg.t)
           match on_stack with
           | [] -> []
           | (reg, offset_from_cfa_in_bytes) :: _ ->
-            let arg_location_lvalue =
-              reg_location_description0 reg ~offset_from_cfa_in_bytes
-                ~need_rvalue:false
-            in
             let arg_location_rvalue =
               reg_location_description0 reg ~offset_from_cfa_in_bytes
                 ~need_rvalue:true
             in
-            let call_data_location =
-              match !Clflags.dwarf_version with
-              | Four -> []
-              | Five ->
-                match arg_location_lvalue with
-                | None -> []
-                | Some arg_location_lvalue ->
-                  let arg_location =
-                    Single_location_description.of_simple_location_description
-                      arg_location_lvalue
-                  in
-                  [DAH.create_single_call_data_location_description arg_location]
-            in
-            let call_data_value =
-              match arg_location_rvalue with
-              | None -> []
-              | Some arg_location_rvalue ->
-                let arg_location =
-                  Single_location_description.of_simple_location_description
-                    arg_location_rvalue
-                in
-                [DAH.create_single_call_data_value_location_description
-                  arg_location;
-                ]
-            in
-            call_data_location @ call_data_value
+            match arg_location_rvalue with
+            | None -> []
+            | Some arg_location_rvalue ->
+              let _arg_location =
+                Single_location_description.of_simple_location_description
+                  arg_location_rvalue
+              in
+              (* gdb does not seem to accept a simple location description
+                 here -- it complains about the use of [DW_op_stack_value]. *)
+              let composite =
+                Composite_location_description.
+                  pieces_of_simple_location_descriptions
+                    [arg_location_rvalue, arch_size_addr]
+              in
+              [DAH.create_composite_call_value_location_description composite;
+              ]
         in
         arg_location, type_attribute
   in
