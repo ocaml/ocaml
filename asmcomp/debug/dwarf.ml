@@ -229,18 +229,23 @@ let proto_dies_for_variable var ~proto_dies_for_vars =
   | exception Not_found -> None
   | result -> Some result
 
-let normal_type_for_var ?reference _t ~parent compilation_unit var =
-  let name =
-    Name_laundry.base_type_die_name_for_var compilation_unit var
+let normal_type_for_var ?reference _t ~parent ident_for_type =
+  let name_attribute =
+    match ident_for_type with
+    | None -> []
+    | Some (compilation_unit, var) ->
+      let name =
+        Name_laundry.base_type_die_name_for_var compilation_unit var
+      in
+      [DAH.create_name name]
   in
   Proto_die.create ?reference
     ~parent
     ~tag:Base_type
-    ~attribute_values:[
-      DAH.create_name name;
+    ~attribute_values:(name_attribute @ [
       DAH.create_encoding ~encoding:Encoding_attribute.signed;
       DAH.create_byte_size_exn ~byte_size:Arch.size_addr;
-    ]
+    ])
     ()
 
 let type_die_reference_for_var var ~proto_dies_for_vars =
@@ -260,18 +265,23 @@ let type_die_reference_for_var var ~proto_dies_for_vars =
    in the main gdb code to pass parameter indexes to the printing function.
    It is arguably more robust, too.
 *)
+(* CR mshinwell: we're not emitting param indexes *)
 (* CR mshinwell: Add proper type for [ident_for_type] *)
-let construct_type_of_value_description t ~parent (compilation_unit, var)
+let construct_type_of_value_description t ~parent ident_for_type
       ~(phantom_defining_expr : ARV.Range_info.phantom_defining_expr)
       ~proto_dies_for_vars ~reference =
   let normal_case () =
     let (_ : Proto_die.t) =
-      normal_type_for_var ~reference t ~parent compilation_unit var
+      normal_type_for_var ~reference t ~parent ident_for_type
     in
     ()
   in
-  let name =
-    Name_laundry.base_type_die_name_for_var compilation_unit var
+  let name_attribute =
+    match ident_for_type with
+    | None -> []
+    | Some (compilation_unit, var) ->
+      let name = Name_laundry.base_type_die_name_for_var compilation_unit var in
+      [DAH.create_name name]
   in
   match phantom_defining_expr with
   | Non_phantom -> normal_case ()
@@ -295,10 +305,9 @@ let construct_type_of_value_description t ~parent (compilation_unit, var)
         Proto_die.create ~reference
           ~parent
           ~tag:Typedef
-          ~attribute_values:[
-            DAH.create_name name;
+          ~attribute_values:(name_attribute @ [
             type_attribute_value;
-          ]
+          ])
           ()
       in
       ()
@@ -348,7 +357,7 @@ let construct_type_of_value_description t ~parent (compilation_unit, var)
           Proto_die.create_ignore ~sort_priority:index
             ~parent:(Some struct_type_die)
             ~tag:Member
-            ~attribute_values:(type_attribute :: [
+            ~attribute_values:(type_attribute :: name_attribute @ [
               DAH.create_name name;
               DAH.create_bit_size (Int64.of_int (Arch.size_addr * 8));
               DAH.create_data_member_location
@@ -359,10 +368,9 @@ let construct_type_of_value_description t ~parent (compilation_unit, var)
       let _pointer_to_struct_type_die : Proto_die.t =
         Proto_die.create ~reference ~parent
           ~tag:Pointer_type
-          ~attribute_values:[
-            DAH.create_name name;
+          ~attribute_values:(name_attribute @ [
             DAH.create_type ~proto_die:struct_type_die;
-          ]
+          ])
           ()
       in
       ()
@@ -816,15 +824,12 @@ let dwarf_for_variable t (fundecl : L.fundecl)
       (* CR mshinwell: re-check this CR-someday *)
       let type_attribute =
         if not need_rvalue then begin
-          match ident_for_type with
-          | None -> []
-          | Some ident_for_type ->
-            construct_type_of_value_description t
-              ~parent:(Some t.compilation_unit_proto_die)
-              ident_for_type ~phantom_defining_expr ~proto_dies_for_vars
-              ~reference;
-            [DAH.create_type_from_reference ~proto_die_reference:reference;
-            ]
+          construct_type_of_value_description t
+            ~parent:(Some t.compilation_unit_proto_die)
+            ident_for_type ~phantom_defining_expr ~proto_dies_for_vars
+            ~reference;
+          [DAH.create_type_from_reference ~proto_die_reference:reference;
+          ]
         end else begin
           []
         end
@@ -897,12 +902,11 @@ let iterate_over_variable_like_things t ~available_ranges_vars ~rvalues_only
         | Phantom _ -> Phantom
       in
       (* There are two variables in play here:
-         1. [var] is the "real" variable that is used to cross-reference
-             between DIEs;
-         2. [ident_for_type], if it is [Some], is the corresponding
-            identifier with the stamp as in the typed tree together with its
-            original compilation unit.  This is the one used for lookup in
-            .cmt files.
+         1. [var] is the "real" variable that is used for obtaining a value
+            at runtime in the debugger.
+         2. [ident_for_type] is the corresponding identifier with the stamp
+            as in the typed tree together with its original compilation unit.
+            This is the one used for lookup in .cmt files to retrieve a type.
          We cannot conflate these since the multiple [vars] that might
          be associated with a given [ident_for_type] (due to inlining) may
          not all have the same value. *)
@@ -1277,11 +1281,8 @@ let add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
               (* CR mshinwell: This should reuse DIEs which were created
                  previously to describe these vars.  Also, shouldn't these
                  DIEs be parented higher up? *)
-              let compilation_unit, ident =
-                Backend_var.Provenance.ident_for_type provenance
-              in
               normal_type_for_var t ~parent:(Some call_site_die)
-                compilation_unit ident
+                (Some (Backend_var.Provenance.ident_for_type provenance))
             in
             [DAH.create_type_from_reference
               ~proto_die_reference:(Proto_die.reference type_die)
@@ -1760,8 +1761,7 @@ let dwarf_for_toplevel_constant t ~vars ~module_path ~symbol =
       let type_proto_die =
         normal_type_for_var t
           ~parent:(Some t.compilation_unit_proto_die)
-          (Compilation_unit.get_current_exn ())
-          var
+          (Some (Compilation_unit.get_current_exn (), var))
       in
       let symbol = mangle_symbol symbol in
       Proto_die.create_ignore ~parent:(Some t.compilation_unit_proto_die)
@@ -1805,8 +1805,7 @@ let dwarf_for_toplevel_inconstant t var ~module_path ~symbol =
   let type_proto_die =
     normal_type_for_var t
       ~parent:(Some t.compilation_unit_proto_die)
-      (Compilation_unit.get_current_exn ())
-      var
+      (Some (Compilation_unit.get_current_exn (), var))
   in
   (* Toplevel inconstant "preallocated blocks" contain the thing of interest
      in field 0 (once it has been initialised).  We describe them using a
