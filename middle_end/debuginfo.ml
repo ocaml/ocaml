@@ -396,10 +396,7 @@ module Block = struct
   let frame_classification t =
     match t.frame_location with
     | None -> Lexical_scope_only
-    | Some call_site ->
-      match t.parent with
-      | None -> Lexical_scope_only
-      | Some _ -> Inlined_frame call_site
+    | Some call_site -> Inlined_frame call_site
 
   let rec iter_innermost_first t ~f =
     f t;

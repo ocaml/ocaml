@@ -285,26 +285,28 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
   if is_cfi_enabled () &&
     (!Clflags.debug || Config.with_frame_pointers)
   then begin
-    Debuginfo.iter_position_and_frames_innermost_first dbg ~f:(fun code_range ->
+    match Debuginfo.position dbg with
+    | None -> ()
+    | Some code_range ->
       let module R = Debuginfo.Code_range in
-      let file_name = R.file code_range in
-      let line = R.line code_range in
-      let col = R.char_start code_range in
-      if line > 0 then begin (* PR#6243 *)
-        let file_num =
-          try List.assoc file_name !file_pos_nums
-          with Not_found ->
-            let file_num = !file_pos_num_cnt in
-            incr file_pos_num_cnt;
-            file_emitter ~file_num ~file_name;
-            file_pos_nums := (file_name,file_num) :: !file_pos_nums;
-            file_num in
-        if not (Debuginfo.Code_range.equal code_range !prev_code_range)
-        then begin
+      if not (R.equal code_range !prev_code_range) then begin
+        let file_name = R.file code_range in
+        let line = R.line code_range in
+        let col = R.char_start code_range in
+        if line > 0 then begin (* PR#6243 *)
+          let file_num =
+            try List.assoc file_name !file_pos_nums
+            with Not_found ->
+              let file_num = !file_pos_num_cnt in
+              incr file_pos_num_cnt;
+              file_emitter ~file_num ~file_name;
+              file_pos_nums := (file_name,file_num) :: !file_pos_nums;
+              file_num
+          in
           loc_emitter ~file_num ~line ~col;
           prev_code_range := code_range
         end
-      end)
+      end
   end
 
 let emit_debug_info dbg =
