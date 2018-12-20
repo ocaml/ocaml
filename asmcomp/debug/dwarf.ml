@@ -1421,7 +1421,10 @@ let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
     let call_site_die =
       let dwarf_5_only =
         match !Clflags.dwarf_version with
-        | Four -> []
+        | Four -> [
+            DAH.create_low_pc
+              ~address_label:(Asm_label.create_int call_labels.after);
+          ]
         | Five -> [
             DAH.create_call_pc (Asm_label.create_int call_labels.before);
             DAH.create_call_return_pc (Asm_label.create_int call_labels.after);
