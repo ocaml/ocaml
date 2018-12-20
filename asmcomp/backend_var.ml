@@ -22,19 +22,21 @@ module Provenance = struct
   type t = {
     module_path : Path.t;
     debuginfo : Debuginfo.t;
-    ident_for_type : Ident.t;
+    ident_for_type : Compilation_unit.t * Ident.t;
     is_parameter : Is_parameter.t;
   }
 
-  let print ppf { module_path; debuginfo; ident_for_type; is_parameter; } =
+  let print ppf { module_path; debuginfo;
+        ident_for_type = (compilation_unit, ident_for_type); is_parameter; } =
     Format.fprintf ppf "@[<hov 1>(\
         @[<hov 1>(module_path@ %a)@]@ \
         @[<hov 1>(debuginfo@ %a)@]@ \
-        @[<hov 1>(ident_for_type@ %a)@]@ \
+        @[<hov 1>(ident_for_type@ %a.%a)@]@ \
         @[<hov 1>(is_parameter@ %a)@]\
         )@]"
       Path.print module_path
       Debuginfo.print debuginfo
+      Compilation_unit.print compilation_unit
       Ident.print ident_for_type
       Is_parameter.print is_parameter
 

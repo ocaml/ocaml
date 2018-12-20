@@ -229,18 +229,9 @@ let proto_dies_for_variable var ~proto_dies_for_vars =
   | exception Not_found -> None
   | result -> Some result
 
-type var_or_unique_name =
-  | Var of Backend_var.t
-  | Unique_name of string
-
-let normal_type_for_var ?reference t ~parent var =
-  let var =
-    match var with
-    | Var var -> var
-    | Unique_name name -> Backend_var.create_persistent name
-  in
+let normal_type_for_var ?reference _t ~parent compilation_unit var =
   let name =
-    Name_laundry.base_type_die_name_for_var var ~output_path:t.output_path
+    Name_laundry.base_type_die_name_for_var compilation_unit var
   in
   Proto_die.create ?reference
     ~parent
@@ -269,22 +260,18 @@ let type_die_reference_for_var var ~proto_dies_for_vars =
    in the main gdb code to pass parameter indexes to the printing function.
    It is arguably more robust, too.
 *)
-let construct_type_of_value_description t ~parent var
+(* CR mshinwell: Add proper type for [ident_for_type] *)
+let construct_type_of_value_description t ~parent (compilation_unit, var)
       ~(phantom_defining_expr : ARV.Range_info.phantom_defining_expr)
       ~proto_dies_for_vars ~reference =
   let normal_case () =
     let (_ : Proto_die.t) =
-      normal_type_for_var ~reference t ~parent var
+      normal_type_for_var ~reference t ~parent compilation_unit var
     in
     ()
   in
-  let var =
-    match var with
-    | Var var -> var
-    | Unique_name name -> Backend_var.create_persistent name
-  in
   let name =
-    Name_laundry.base_type_die_name_for_var var ~output_path:t.output_path
+    Name_laundry.base_type_die_name_for_var compilation_unit var
   in
   match phantom_defining_expr with
   | Non_phantom -> normal_case ()
@@ -826,26 +813,27 @@ let dwarf_for_variable t (fundecl : L.fundecl)
       in
       (* CR-someday mshinwell: This should be tidied up.  It's only correct by
          virtue of the fact we do the closure-env ones second below. *)
-      (* CR mshinwell: The behaviour when [ident_for_type] is [None] is
-         different from the call site case below. *)
-      let ident_for_type =
-        match ident_for_type with
-        | None -> Var var
-        | Some ident_for_type -> Var ident_for_type
+      (* CR mshinwell: re-check this CR-someday *)
+      let type_attribute =
+        if not need_rvalue then begin
+          match ident_for_type with
+          | None -> []
+          | Some ident_for_type ->
+            construct_type_of_value_description t
+              ~parent:(Some t.compilation_unit_proto_die)
+              ident_for_type ~phantom_defining_expr ~proto_dies_for_vars
+              ~reference;
+            [DAH.create_type_from_reference ~proto_die_reference:reference;
+            ]
+        end else begin
+          []
+        end
       in
-      if not need_rvalue then begin
-        construct_type_of_value_description t
-          ~parent:(Some t.compilation_unit_proto_die)
-          ident_for_type ~phantom_defining_expr ~proto_dies_for_vars
-          ~reference
-      end;
       let name_attribute =
         if hidden || need_rvalue then []
         else [DAH.create_name name_for_var]
       in
-      name_attribute @ [
-        DAH.create_type_from_reference ~proto_die_reference:reference;
-      ]
+      name_attribute @ type_attribute
   in
   let is_parameter =
     let is_parameter_from_provenance =
@@ -912,8 +900,9 @@ let iterate_over_variable_like_things t ~available_ranges_vars ~rvalues_only
          1. [var] is the "real" variable that is used to cross-reference
              between DIEs;
          2. [ident_for_type], if it is [Some], is the corresponding
-            identifier with the stamp as in the typed tree.  This is the
-            one used for lookup in .cmt files.
+            identifier with the stamp as in the typed tree together with its
+            original compilation unit.  This is the one used for lookup in
+            .cmt files.
          We cannot conflate these since the multiple [vars] that might
          be associated with a given [ident_for_type] (due to inlining) may
          not all have the same value. *)
@@ -936,20 +925,7 @@ let iterate_over_variable_like_things t ~available_ranges_vars ~rvalues_only
              phantom lets. *)
           None
         | Some provenance ->
-          (* CR-soon mshinwell: See CR-soon above; we can't do this yet
-             because there is often missing location information.
-          let location = Backend_var.Provenance.location provenance in
-          if location = Debuginfo.none
-            && match Range.is_parameter range with
-               | Local -> true
-               | _ -> false
-          then None
-          else
-          *)
-          let ident_for_type =
-            Backend_var.Provenance.ident_for_type provenance
-          in
-          Some ident_for_type
+          Some (Backend_var.Provenance.ident_for_type provenance)
       in
       f var ~phantom ~hidden ~ident_for_type ~range
     end)
@@ -993,11 +969,6 @@ let add_abstract_instance t fun_dbg =
   let is_visible_externally =
     Debuginfo.Function.is_visible_externally fun_dbg
   in
-  let type_proto_die =
-    normal_type_for_var t
-      ~parent:(Some t.compilation_unit_proto_die)
-      (Unique_name function_name)
-  in
   let abstract_instance_proto_die =
     (* DWARF-5 specification section 3.3.8.1, page 82. *)
     Proto_die.create ~parent:(Some t.compilation_unit_proto_die)
@@ -1005,7 +976,6 @@ let add_abstract_instance t fun_dbg =
       ~attribute_values:[
         DAH.create_name function_name;
         DAH.create_external ~is_visible_externally;
-        DAH.create_type ~proto_die:type_proto_die;
         (* We assume every function might potentially be inlined (and possibly
            in the future), so we choose [DW_INL_inlined] as the most appropriate
            setting for [DW_AT_inline], even if it doesn't seem exactly
@@ -1307,8 +1277,11 @@ let add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
               (* CR mshinwell: This should reuse DIEs which were created
                  previously to describe these vars.  Also, shouldn't these
                  DIEs be parented higher up? *)
+              let compilation_unit, ident =
+                Backend_var.Provenance.ident_for_type provenance
+              in
               normal_type_for_var t ~parent:(Some call_site_die)
-                (Var (Backend_var.Provenance.ident_for_type provenance))
+                compilation_unit ident
             in
             [DAH.create_type_from_reference
               ~proto_die_reference:(Proto_die.reference type_die)
@@ -1787,7 +1760,8 @@ let dwarf_for_toplevel_constant t ~vars ~module_path ~symbol =
       let type_proto_die =
         normal_type_for_var t
           ~parent:(Some t.compilation_unit_proto_die)
-          (Var var)
+          (Compilation_unit.get_current_exn ())
+          var
       in
       let symbol = mangle_symbol symbol in
       Proto_die.create_ignore ~parent:(Some t.compilation_unit_proto_die)
@@ -1831,7 +1805,8 @@ let dwarf_for_toplevel_inconstant t var ~module_path ~symbol =
   let type_proto_die =
     normal_type_for_var t
       ~parent:(Some t.compilation_unit_proto_die)
-      (Var var)
+      (Compilation_unit.get_current_exn ())
+      var
   in
   (* Toplevel inconstant "preallocated blocks" contain the thing of interest
      in field 0 (once it has been initialised).  We describe them using a

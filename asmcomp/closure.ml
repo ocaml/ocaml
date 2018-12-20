@@ -1125,6 +1125,13 @@ let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute
         function %s"
       (List.length uargs) (List.length idents_for_types) fundesc.fun_label
   end;
+  let idents_for_types =
+    List.map (fun ident_opt ->
+        match ident_opt with
+        | None -> None
+        | Some ident -> Some (Compilation_unit.get_current_exn (), ident))
+      idents_for_types
+  in
   let app_args =
     if fundesc.fun_closed then uargs else uargs @ [ufunct] in
   let idents_for_types =
@@ -1383,7 +1390,7 @@ let rec close ~scope fenv cenv = function
           let provenance =
             V.Provenance.create ~module_path
               ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
-              ~ident_for_type:id
+              ~ident_for_type:(Compilation_unit.get_current_exn (), id)
               Is_parameter.local
           in
           Some provenance
@@ -1415,7 +1422,7 @@ let rec close ~scope fenv cenv = function
           let provenance =
             V.Provenance.create ~module_path
               ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
-              ~ident_for_type:id
+              ~ident_for_type:(Compilation_unit.get_current_exn (), id)
               Is_parameter.local
           in
           Some provenance
@@ -1472,7 +1479,7 @@ let rec close ~scope fenv cenv = function
                   V.Provenance.create ~module_path
                     ~debuginfo:(Debuginfo.of_location Location.none
                        ~scope:new_scope)
-                    ~ident_for_type:id
+                    ~ident_for_type:(Compilation_unit.get_current_exn (), id)
                     Is_parameter.local
                 in
                 Some provenance
@@ -1588,7 +1595,7 @@ let rec close ~scope fenv cenv = function
                   V.Provenance.create ~module_path
                     ~debuginfo:(Debuginfo.of_location loc
                       ~scope:body_scope)
-                    ~ident_for_type:var
+                    ~ident_for_type:(Compilation_unit.get_current_exn (), var)
                     Is_parameter.local
                 in
                 Some provenance
@@ -1610,7 +1617,7 @@ let rec close ~scope fenv cenv = function
             V.Provenance.create ~module_path
               ~debuginfo:(Debuginfo.of_location loc
                 ~scope:handler_scope)
-              ~ident_for_type:id
+              ~ident_for_type:(Compilation_unit.get_current_exn (), id)
               Is_parameter.local
           in
           Some provenance
@@ -1656,7 +1663,7 @@ let rec close ~scope fenv cenv = function
           let provenance =
             V.Provenance.create ~module_path
               ~debuginfo:(Debuginfo.of_location loc ~scope:body_scope)
-              ~ident_for_type:id
+              ~ident_for_type:(Compilation_unit.get_current_exn (), id)
               Is_parameter.local
           in
           Some provenance
@@ -1795,7 +1802,7 @@ and close_functions fenv cenv fun_defs =
                 let provenance =
                   V.Provenance.create ~module_path
                     ~debuginfo:(Debuginfo.of_function fun_dbg)
-                    ~ident_for_type:ident
+                    ~ident_for_type:(Compilation_unit.get_current_exn (), ident)
                     Is_parameter.local
                 in
                 Some provenance
