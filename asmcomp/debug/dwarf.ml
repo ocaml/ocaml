@@ -117,18 +117,17 @@ let create ~prefix_name =
       ]
     in
     let attribute_values =
-      let producer_name =
-        Printf.sprintf "ocamlopt %s %s"
-          Config.cmt_magic_number
-          Sys.ocaml_version
-      in
-      [ DAH.create_producer ~producer_name;
+      [ DAH.create_producer ~producer_name:"ocamlopt";
         DAH.create_name output_path;
         DAH.create_comp_dir ~directory;
         DAH.create_low_pc_from_symbol ~symbol:start_of_code_symbol;
         DAH.create_high_pc_from_symbol ~symbol:end_of_code_symbol;
         DAH.create_stmt_list ~debug_line_label;
         DAH.create_language OCaml;
+        DAH.create_ocaml_load_path ~paths:!Config.load_path;
+        DAH.create_ocaml_cmi_magic_number ~magic:Config.cmi_magic_number;
+        DAH.create_ocaml_cmt_magic_number ~magic:Config.cmt_magic_number;
+        DAH.create_ocaml_compiler_version ~version:Sys.ocaml_version;
       ] @ dwarf_5_only
     in
     Proto_die.create ~parent:None

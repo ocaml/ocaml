@@ -200,3 +200,19 @@ val create_language
 val create_declaration
    : unit
   -> Dwarf_attribute_values.Attribute_value.t
+
+val create_ocaml_load_path
+   : paths:string list
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_ocaml_cmi_magic_number
+   : magic:string
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_ocaml_cmt_magic_number
+   : magic:string
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_ocaml_compiler_version
+   : version:string
+  -> Dwarf_attribute_values.Attribute_value.t

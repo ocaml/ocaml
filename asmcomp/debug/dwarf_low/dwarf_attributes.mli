@@ -182,6 +182,14 @@ module Attribute : sig
       | GNU_all_source_call_sites : Class.flag t
   end
 
+  module Ocaml_specific : sig
+    type 'dwarf_classes t =
+      | Load_path : Class.string t
+      | Cmi_magic_number : Class.string t
+      | Cmt_magic_number : Class.string t
+      | Compiler_version : Class.string t
+  end
+
   type 'dwarf_classes t =
     | Sibling : Class.reference t
     | Location : [< Class.exprloc | Class.loclist ] t
@@ -307,6 +315,7 @@ module Attribute : sig
     | Defaulted : Class.constant t
     | Loclists_base : Class.loclistsptr t
     | Dwarf_4 : 'dwarf_classes Dwarf_4.t -> 'dwarf_classes t
+    | Ocaml_specific : 'dwarf_classes Ocaml_specific.t -> 'dwarf_classes t
 
   module Sealed : sig
     type t

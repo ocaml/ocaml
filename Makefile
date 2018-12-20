@@ -237,6 +237,7 @@ ASMCOMP=\
   asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/debug/available_regs.cmo \
+  asmcomp/debug/name_laundry.cmo \
   $(DWARF_LOW) \
   $(DWARF_HIGH) \
   asmcomp/debug/compute_ranges_intf.cmo \
@@ -245,7 +246,6 @@ ASMCOMP=\
   asmcomp/debug/available_ranges_phantom_vars.cmo \
   asmcomp/debug/available_ranges_all_vars.cmo \
   asmcomp/debug/lexical_block_ranges.cmo \
-  asmcomp/debug/name_laundry.cmo \
   asmcomp/debug/coalesce_labels.cmo \
   asmcomp/debug/dwarf.cmo \
   asmcomp/debug/cmm_debug.cmo \

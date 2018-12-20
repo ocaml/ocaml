@@ -291,6 +291,14 @@ module Attribute = struct
       | GNU_all_source_call_sites : Class.flag t
   end
 
+  module Ocaml_specific = struct
+    type 'dwarf_classes t =
+      | Load_path : Class.string t
+      | Cmi_magic_number : Class.string t
+      | Cmt_magic_number : Class.string t
+      | Compiler_version : Class.string t
+  end
+
   type 'dwarf_classes t =
     | Sibling : Class.reference t
     | Location : [< Class.exprloc | Class.loclist ] t
@@ -416,6 +424,7 @@ module Attribute = struct
     | Defaulted : Class.constant t
     | Loclists_base : Class.loclistsptr t
     | Dwarf_4 : 'dwarf_classes Dwarf_4.t -> 'dwarf_classes t
+    | Ocaml_specific : 'dwarf_classes Ocaml_specific.t -> 'dwarf_classes t
 
   let name (type dwarf_class) (t : dwarf_class t) =
     let name =
@@ -561,6 +570,10 @@ module Attribute = struct
       | Dwarf_4 GNU_all_tail_call_sites -> "GNU_all_tail_call_sites"
       | Dwarf_4 GNU_all_call_sites -> "GNU_all_call_sites"
       | Dwarf_4 GNU_all_source_call_sites -> "GNU_all_source_call_sites"
+      | Ocaml_specific Load_path -> "Ocaml_load_path"
+      | Ocaml_specific Cmi_magic_number -> "Ocaml_cmi_magic_number"
+      | Ocaml_specific Cmt_magic_number -> "Ocaml_cmt_magic_number"
+      | Ocaml_specific Compiler_version -> "Ocaml_compiler_version"
     in
     "DW_AT_" ^ name
 
@@ -706,6 +719,10 @@ module Attribute = struct
     | Dwarf_4 GNU_all_tail_call_sites -> 0x2116
     | Dwarf_4 GNU_all_call_sites -> 0x2117
     | Dwarf_4 GNU_all_source_call_sites -> 0x2118
+    | Ocaml_specific Load_path -> 0x3100
+    | Ocaml_specific Cmi_magic_number -> 0x3101
+    | Ocaml_specific Cmt_magic_number -> 0x3102
+    | Ocaml_specific Compiler_version -> 0x3103
 
   let encode t =
     Dwarf_value.uleb128 ~comment:(name t) (Uint64.of_int_exn (code t))

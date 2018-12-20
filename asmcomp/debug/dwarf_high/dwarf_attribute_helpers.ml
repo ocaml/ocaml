@@ -296,3 +296,20 @@ let create_declaration () =
   let spec = AS.create Declaration Flag_present in
   AV.create spec (
     V.flag_true ~comment:"incomplete / non-defining declaration" ())
+
+let create_ocaml_load_path ~paths =
+  let path = Name_laundry.mangle_load_path paths in
+  let spec = AS.create (Ocaml_specific Load_path) Strp in
+  AV.create spec (V.indirect_string ~comment:"mangled load path" path)
+
+let create_ocaml_cmi_magic_number ~magic =
+  let spec = AS.create (Ocaml_specific Cmi_magic_number) Strp in
+  AV.create spec (V.indirect_string ~comment:".cmi magic number" magic)
+
+let create_ocaml_cmt_magic_number ~magic =
+  let spec = AS.create (Ocaml_specific Cmt_magic_number) Strp in
+  AV.create spec (V.indirect_string ~comment:".cmt magic number" magic)
+
+let create_ocaml_compiler_version ~version =
+  let spec = AS.create (Ocaml_specific Compiler_version) Strp in
+  AV.create spec (V.indirect_string ~comment:".cmt version number" version)
