@@ -518,7 +518,7 @@ module Ellipsis = struct
       let start = loc.L.loc_start.Lexing.pos_cnum in
       let attr_start = attr.P.attr_loc.L.loc_start.Lexing.pos_cnum in
       let attr_stop = attr.P.attr_loc.L.loc_end.Lexing.pos_cnum in
-      let stop = loc.L.loc_end.Lexing.pos_cnum in
+      let stop = max loc.L.loc_end.Lexing.pos_cnum attr_stop  in
       let check_nested () = match !left_mark with
         | Some (first,_) -> raise (Nested_ellipses {first; second=attr_start})
         | None -> () in
@@ -526,7 +526,7 @@ module Ellipsis = struct
       | "ellipsis" ->
           check_nested ();
           transforms :=
-            {Text_transform.kind=Ellipsis; start; stop=max attr_stop stop }
+            {Text_transform.kind=Ellipsis; start; stop }
             :: !transforms
       | "ellipsis.start" ->
           check_nested ();
@@ -534,7 +534,8 @@ module Ellipsis = struct
       | "ellipsis.stop" ->
           begin match !left_mark with
           | None -> raise (Unmatched_ellipsis {kind="right"; start; stop})
-          | Some (start, _ ) ->
+          | Some (start', stop' ) ->
+              let start, stop = min start start', max stop stop' in
               transforms := {kind=Ellipsis; start ; stop } :: !transforms;
               left_mark := None
           end
