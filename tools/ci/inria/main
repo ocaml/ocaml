@@ -128,6 +128,7 @@ case "${OCAML_ARCH}" in
     cleanup=true
     check_make_alldepend=true
     dorebase=true
+    confoptions="$confoptions -no-shared-libs "
   ;;
   mingw)
     instdir='C:/ocamlmgw'
