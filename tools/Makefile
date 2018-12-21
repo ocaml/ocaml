@@ -328,6 +328,7 @@ objinfo_helper$(EXE): objinfo_helper.c $(ROOTDIR)/runtime/caml/s.h
 OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
+        $(ROOTDIR)/asmcomp/backend_sym.cmo \
         $(ROOTDIR)/asmcomp/backend_var.cmo \
         $(ROOTDIR)/asmcomp/printclambda.cmo \
         $(ROOTDIR)/asmcomp/export_info.cmo \

@@ -1021,7 +1021,8 @@ asmcomp/emit.cmo : asmcomp/x86_proc.cmi asmcomp/x86_masm.cmi \
     utils/targetint.cmi asmcomp/target_system.cmi asmcomp/reg.cmi \
     asmcomp/proc.cmi utils/numbers.cmi utils/misc.cmi asmcomp/mach.cmi \
     asmcomp/linearize.cmi asmcomp/emitaux.cmi asmcomp/debug/dwarf.cmi \
-    middle_end/debuginfo.cmi utils/config.cmi asmcomp/cmm.cmi \
+    middle_end/debuginfo.cmi utils/config.cmi \
+    middle_end/base_types/compilation_unit.cmi asmcomp/cmm.cmi \
     utils/clflags.cmi asmcomp/branch_relaxation.cmi asmcomp/backend_sym.cmi \
     asmcomp/asm_target/asm_symbol.cmi asmcomp/asm_target/asm_section.cmi \
     asmcomp/asm_target/asm_label.cmi asmcomp/asm_target/asm_directives.cmi \
@@ -1031,7 +1032,8 @@ asmcomp/emit.cmx : asmcomp/x86_proc.cmx asmcomp/x86_masm.cmx \
     utils/targetint.cmx asmcomp/target_system.cmx asmcomp/reg.cmx \
     asmcomp/proc.cmx utils/numbers.cmx utils/misc.cmx asmcomp/mach.cmx \
     asmcomp/linearize.cmx asmcomp/emitaux.cmx asmcomp/debug/dwarf.cmx \
-    middle_end/debuginfo.cmx utils/config.cmx asmcomp/cmm.cmx \
+    middle_end/debuginfo.cmx utils/config.cmx \
+    middle_end/base_types/compilation_unit.cmx asmcomp/cmm.cmx \
     utils/clflags.cmx asmcomp/branch_relaxation.cmx asmcomp/backend_sym.cmx \
     asmcomp/asm_target/asm_symbol.cmx asmcomp/asm_target/asm_section.cmx \
     asmcomp/asm_target/asm_label.cmx asmcomp/asm_target/asm_directives.cmx \
@@ -1102,8 +1104,9 @@ asmcomp/flambda_to_clambda.cmo : middle_end/base_types/variable.cmi \
     middle_end/initialize_symbol_to_let_symbol.cmi \
     middle_end/flambda_utils.cmi middle_end/flambda.cmi \
     asmcomp/export_info.cmi middle_end/debuginfo.cmi asmcomp/compilenv.cmi \
-    asmcomp/closure_offsets.cmi middle_end/base_types/closure_id.cmi \
-    utils/clflags.cmi asmcomp/clambda.cmi asmcomp/backend_var.cmi \
+    middle_end/base_types/compilation_unit.cmi asmcomp/closure_offsets.cmi \
+    middle_end/base_types/closure_id.cmi utils/clflags.cmi \
+    asmcomp/clambda.cmi asmcomp/backend_var.cmi asmcomp/backend_sym.cmi \
     middle_end/allocated_const.cmi asmcomp/flambda_to_clambda.cmi
 asmcomp/flambda_to_clambda.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/var_within_closure.cmx \
@@ -1117,8 +1120,9 @@ asmcomp/flambda_to_clambda.cmx : middle_end/base_types/variable.cmx \
     middle_end/initialize_symbol_to_let_symbol.cmx \
     middle_end/flambda_utils.cmx middle_end/flambda.cmx \
     asmcomp/export_info.cmx middle_end/debuginfo.cmx asmcomp/compilenv.cmx \
-    asmcomp/closure_offsets.cmx middle_end/base_types/closure_id.cmx \
-    utils/clflags.cmx asmcomp/clambda.cmx asmcomp/backend_var.cmx \
+    middle_end/base_types/compilation_unit.cmx asmcomp/closure_offsets.cmx \
+    middle_end/base_types/closure_id.cmx utils/clflags.cmx \
+    asmcomp/clambda.cmx asmcomp/backend_var.cmx asmcomp/backend_sym.cmx \
     middle_end/allocated_const.cmx asmcomp/flambda_to_clambda.cmi
 asmcomp/flambda_to_clambda.cmi : middle_end/base_types/symbol.cmi \
     middle_end/flambda.cmi asmcomp/export_info.cmi asmcomp/clambda.cmi
