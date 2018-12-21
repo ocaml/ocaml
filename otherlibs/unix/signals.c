@@ -78,11 +78,7 @@ CAMLprim value unix_sigprocmask(value vaction, value vset)
 CAMLprim value unix_sigpending(value unit)
 {
   sigset_t pending;
-  int i;
   if (sigpending(&pending) == -1) uerror("sigpending", Nothing);
-  for (i = 1; i < NSIG; i++)
-    if(caml_pending_signals[i])
-      sigaddset(&pending, i);
   return encode_sigset(&pending);
 }
 

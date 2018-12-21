@@ -189,9 +189,6 @@ Working version
 
 ### Other libraries:
 
-- GPR#2104, PR#4127, PR#7709: Fix Thread.sigmask.
-  (Jacques-Henri Jourdan, review by Jérémie Dimino)
-
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
   symlinks.
   (Christopher Zimmermann, review by Xavier Leroy, Damien Doligez, David

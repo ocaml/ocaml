@@ -41,55 +41,24 @@
 
 /* The set of pending signals (received but not yet processed) */
 
-CAMLexport intnat volatile caml_signals_might_be_pending = 0;
+CAMLexport intnat volatile caml_signals_are_pending = 0;
 CAMLexport intnat volatile caml_pending_signals[NSIG];
-
-#ifdef POSIX_SIGNALS
-static void caml_get_sigmask_hook_default(int* mask) {
-  int i;
-  sigset_t set;
-  sigprocmask(/* dummy */ SIG_BLOCK, NULL, &set);
-  mask[0] = 0;
-  for (i = 1; i < NSIG; i++) mask[i] = sigismember(&set, i);
-}
-#else
-static void caml_get_sigmask_hook_default(int* mask) {
-  int i;
-  for (i = 0; i < NSIG; i++) mask[i] = 0;
-}
-#endif
-
-CAMLexport void (*caml_get_sigmask_hook)(int*) = caml_get_sigmask_hook_default;
 
 /* Execute all pending signals */
 
-void caml_process_pending_signals()
+void caml_process_pending_signals(void)
 {
   int i;
-  int blocked[NSIG];
-  int really_pending;
 
-  if(!caml_signals_might_be_pending)
-    return;
-  caml_signals_might_be_pending = 0;
-
-  /* Check that there is indeed a pending signal before issuing the
-     syscall in [caml_get_sigmask_hook]. */
-  really_pending = 0;
-  for (i = 0; i < NSIG; i++)
-    if (caml_pending_signals[i]) {
-      really_pending = 1;
-      break;
+  if (caml_signals_are_pending) {
+    caml_signals_are_pending = 0;
+    for (i = 0; i < NSIG; i++) {
+      if (caml_pending_signals[i]) {
+        caml_pending_signals[i] = 0;
+        caml_execute_signal(i, 0);
+      }
     }
-  if(!really_pending)
-    return;
-
-  caml_get_sigmask_hook(blocked);
-  for (i = 0; i < NSIG; i++)
-    if (caml_pending_signals[i] && !blocked[i]) {
-      caml_pending_signals[i] = 0;
-      caml_execute_signal(i, 0);
-    }
+  }
 }
 
 /* Record the delivery of a signal, and arrange for it to be processed
@@ -102,7 +71,7 @@ void caml_process_pending_signals()
 void caml_record_signal(int signal_number)
 {
   caml_pending_signals[signal_number] = 1;
-  caml_signals_might_be_pending = 1;
+  caml_signals_are_pending = 1;
 #ifndef NATIVE_CODE
   caml_something_to_do = 1;
 #else
@@ -148,7 +117,7 @@ CAMLexport void caml_enter_blocking_section(void)
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals.
        If none, done; otherwise, try again */
-    if (! caml_signals_might_be_pending) break;
+    if (! caml_signals_are_pending) break;
     caml_leave_blocking_section_hook ();
   }
 }
@@ -159,22 +128,7 @@ CAMLexport void caml_leave_blocking_section(void)
   /* Save the value of errno (PR#5982). */
   saved_errno = errno;
   caml_leave_blocking_section_hook ();
-
-  /* Some other thread may have switched
-     [caml_signals_might_be_pending] to 0 even though there are still
-     pending signals (masked in the other thread). To handle this
-     case, we force re-examination of all signals by setting it back
-     to 1.
-
-     Another case where this is necessary (even in a single threaded
-     setting) is when the blocking section unmasks a pending signal:
-     If the signal is pending and masked but has already been
-     examinated by [caml_process_pending_signals], then
-     [caml_signals_might_be_pending] is 0 but the signal needs to be
-     handled at this point. */
-  caml_signals_might_be_pending = 1;
   caml_process_pending_signals();
-
   errno = saved_errno;
 }
 

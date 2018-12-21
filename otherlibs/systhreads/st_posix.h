@@ -40,19 +40,10 @@ typedef int st_retcode;
 
 #define SIGPREEMPTION SIGVTALRM
 
-static void caml_get_sigmask_hook_pthread(int* mask) {
-  int i;
-  sigset_t set;
-  pthread_sigmask(/* dummy */ SIG_BLOCK, NULL, &set);
-  for (i = 0; i < NSIG; i++)
-    mask[i] = sigismember(&set, i);
-}
-
 /* OS-specific initialization */
 
 static int st_initialize(void)
 {
-  caml_get_sigmask_hook = caml_get_sigmask_hook_pthread;
   return 0;
 }
 
