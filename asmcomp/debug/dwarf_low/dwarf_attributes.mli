@@ -184,10 +184,14 @@ module Attribute : sig
 
   module Ocaml_specific : sig
     type 'dwarf_classes t =
-      | Load_path : Class.string t
+      | Compiler_version : Class.string t
       | Cmi_magic_number : Class.string t
       | Cmt_magic_number : Class.string t
-      | Compiler_version : Class.string t
+      | Load_path : Class.string t
+      | Source_directory_path : Class.string t
+      | Source_filename : Class.string t
+      | Object_directory_path : Class.string t
+      | Object_filename : Class.string t
   end
 
   type 'dwarf_classes t =

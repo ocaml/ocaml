@@ -30,12 +30,12 @@ let create_entry_pc address_label =
   AV.create spec (V.code_address_from_label
     ~comment:"entry PC value" address_label)
 
-let create_low_pc ~address_label =
+let create_low_pc address_label =
   let spec = AS.create Low_pc Addr in
   AV.create spec (V.code_address_from_label
     ~comment:"low PC value" address_label)
 
-let create_high_pc ~address_label =
+let create_high_pc address_label =
   let spec = AS.create High_pc Addr in
   AV.create spec (V.code_address_from_label
     ~comment:"high PC value" address_label)
@@ -45,17 +45,17 @@ let create_entry_pc_from_symbol symbol =
   AV.create spec (V.code_address_from_symbol
     ~comment:"entry PC value" symbol)
 
-let create_low_pc_from_symbol ~symbol =
+let create_low_pc_from_symbol symbol =
   let spec = AS.create Low_pc Addr in
   AV.create spec (V.code_address_from_symbol
     ~comment:"low PC value" symbol)
 
-let create_high_pc_from_symbol ~symbol =
+let create_high_pc_from_symbol symbol =
   let spec = AS.create High_pc Addr in
   AV.create spec (V.code_address_from_symbol
     ~comment:"high PC value" symbol)
 
-let create_producer ~producer_name =
+let create_producer producer_name =
   let spec = AS.create Producer Strp in
   AV.create spec (V.indirect_string ~comment:"producer name" producer_name)
 
@@ -63,7 +63,7 @@ let create_name name =
   let spec = AS.create Name Strp in
   AV.create spec (V.indirect_string ~comment:"name" name)
 
-let create_comp_dir ~directory =
+let create_comp_dir directory =
   let spec = AS.create Comp_dir Strp in
   AV.create spec (V.indirect_string ~comment:"compilation directory" directory)
 
@@ -297,19 +297,35 @@ let create_declaration () =
   AV.create spec (
     V.flag_true ~comment:"incomplete / non-defining declaration" ())
 
-let create_ocaml_load_path ~paths =
+let create_ocaml_compiler_version version =
+  let spec = AS.create (Ocaml_specific Compiler_version) Strp in
+  AV.create spec (V.indirect_string ~comment:".cmt version number" version)
+
+let create_ocaml_load_path paths =
   let path = Name_laundry.mangle_load_path paths in
   let spec = AS.create (Ocaml_specific Load_path) Strp in
   AV.create spec (V.indirect_string ~comment:"mangled load path" path)
 
-let create_ocaml_cmi_magic_number ~magic =
+let create_ocaml_cmi_magic_number magic =
   let spec = AS.create (Ocaml_specific Cmi_magic_number) Strp in
   AV.create spec (V.indirect_string ~comment:".cmi magic number" magic)
 
-let create_ocaml_cmt_magic_number ~magic =
+let create_ocaml_cmt_magic_number magic =
   let spec = AS.create (Ocaml_specific Cmt_magic_number) Strp in
   AV.create spec (V.indirect_string ~comment:".cmt magic number" magic)
 
-let create_ocaml_compiler_version ~version =
-  let spec = AS.create (Ocaml_specific Compiler_version) Strp in
-  AV.create spec (V.indirect_string ~comment:".cmt version number" version)
+let create_ocaml_source_directory_path magic =
+  let spec = AS.create (Ocaml_specific Source_directory_path) Strp in
+  AV.create spec (V.indirect_string ~comment:"source dir. path" magic)
+
+let create_ocaml_source_filename magic =
+  let spec = AS.create (Ocaml_specific Source_filename) Strp in
+  AV.create spec (V.indirect_string ~comment:"source dir. path" magic)
+
+let create_ocaml_object_directory_path magic =
+  let spec = AS.create (Ocaml_specific Object_directory_path) Strp in
+  AV.create spec (V.indirect_string ~comment:"object dir. path" magic)
+
+let create_ocaml_object_filename magic =
+  let spec = AS.create (Ocaml_specific Object_filename) Strp in
+  AV.create spec (V.indirect_string ~comment:"object dir. path" magic)

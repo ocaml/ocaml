@@ -24,6 +24,8 @@ type t = {
   mutable end_positions_by_placeholder_line : Lexing.position Int.Map.t;
 }
 
+let startup_cmm_file t = t.startup_cmm_file
+
 let track_output_position_of_formatter t =
   let ppf = t.ppf in
   Format.pp_set_margin ppf 80;

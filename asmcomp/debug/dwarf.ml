@@ -32,7 +32,6 @@ type t = {
   range_list_table : Range_list_table.t;
   start_of_code_symbol : Asm_symbol.t;
   end_of_code_symbol : Asm_symbol.t;
-  output_path : string;
   mutable rvalue_dies_required_for : V.Set.t;
   function_abstract_instances :
     (Proto_die.t * Asm_symbol.t) Debuginfo.Function.Id.Tbl.t;
@@ -67,7 +66,7 @@ let mangle_symbol symbol =
   in
   Asm_symbol.of_external_name symbol
 
-let create ~prefix_name =
+let create ~sourcefile ~prefix_name ~unit_name =
   begin match !Clflags.dwarf_format with
   | Thirty_two -> Dwarf_format.set Thirty_two
   | Sixty_four -> Dwarf_format.set Sixty_four
@@ -76,16 +75,17 @@ let create ~prefix_name =
   | Four -> dwarf_version := Dwarf_version.four
   | Five -> dwarf_version := Dwarf_version.five
   end;
-  let output_path, directory =
-    let path = prefix_name ^ Config.ext_obj in
-    if Filename.is_relative path then
-      (* N.B. Relative---but may still contain directories,
-         e.g. "foo/bar.ml". *)
-      let dir = Sys.getcwd () in
-      Filename.concat dir path,
-        Filename.concat dir (Filename.dirname path)
-    else
-      path, Filename.dirname path
+  let cwd = Sys.getcwd () in
+  let source_directory_path, source_filename =
+    if Filename.is_relative sourcefile then cwd, sourcefile
+    else Filename.dirname sourcefile, Filename.basename sourcefile
+  in
+  let object_directory_path =
+    if Filename.is_relative prefix_name then source_directory_path
+    else Filename.dirname prefix_name
+  in
+  let object_filename =
+    (Filename.basename prefix_name) ^ Config.ext_obj
   in
   let start_of_code_symbol =
     mangle_symbol (
@@ -117,17 +117,21 @@ let create ~prefix_name =
       ]
     in
     let attribute_values =
-      [ DAH.create_producer ~producer_name:"ocamlopt";
-        DAH.create_name output_path;
-        DAH.create_comp_dir ~directory;
-        DAH.create_low_pc_from_symbol ~symbol:start_of_code_symbol;
-        DAH.create_high_pc_from_symbol ~symbol:end_of_code_symbol;
-        DAH.create_stmt_list ~debug_line_label;
+      [ DAH.create_name (Ident.name unit_name);
         DAH.create_language OCaml;
-        DAH.create_ocaml_load_path ~paths:!Config.load_path;
-        DAH.create_ocaml_cmi_magic_number ~magic:Config.cmi_magic_number;
-        DAH.create_ocaml_cmt_magic_number ~magic:Config.cmt_magic_number;
-        DAH.create_ocaml_compiler_version ~version:Sys.ocaml_version;
+        DAH.create_producer "ocamlopt";
+        DAH.create_ocaml_compiler_version Sys.ocaml_version;
+        DAH.create_ocaml_cmi_magic_number Config.cmi_magic_number;
+        DAH.create_ocaml_cmt_magic_number Config.cmt_magic_number;
+        DAH.create_ocaml_load_path !Config.load_path;
+        DAH.create_comp_dir cwd;
+        DAH.create_ocaml_source_directory_path source_directory_path;
+        DAH.create_ocaml_source_filename source_filename;
+        DAH.create_ocaml_object_directory_path object_directory_path;
+        DAH.create_ocaml_object_filename object_filename;
+        DAH.create_low_pc_from_symbol start_of_code_symbol;
+        DAH.create_high_pc_from_symbol end_of_code_symbol;
+        DAH.create_stmt_list ~debug_line_label;
       ] @ dwarf_5_only
     in
     Proto_die.create ~parent:None
@@ -155,7 +159,6 @@ let create ~prefix_name =
     range_list_table;
     start_of_code_symbol;
     end_of_code_symbol;
-    output_path;
     rvalue_dies_required_for = V.Set.empty;
     function_abstract_instances = Debuginfo.Function.Id.Tbl.create 42;
     die_symbols_for_external_declarations = Asm_symbol.Tbl.create 42;
@@ -1392,8 +1395,7 @@ let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
       let dwarf_5_only =
         match !Clflags.dwarf_version with
         | Four -> [
-            DAH.create_low_pc
-              ~address_label:(Asm_label.create_int call_labels.after);
+            DAH.create_low_pc (Asm_label.create_int call_labels.after);
           ]
         | Five -> [
             DAH.create_call_pc (Asm_label.create_int call_labels.before);
@@ -1692,12 +1694,9 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
     emit fundecl ~end_of_function_label
   in
   let symbol = Asm_symbol.create fundecl.fun_name in
-  let start_of_function =
-    DAH.create_low_pc_from_symbol ~symbol
-  in
+  let start_of_function = DAH.create_low_pc_from_symbol symbol in
   let end_of_function =
-    DAH.create_high_pc
-      ~address_label:(Asm_label.create_int end_of_function_label)
+    DAH.create_high_pc (Asm_label.create_int end_of_function_label)
   in
   let _abstract_instance_proto_die, abstract_instance_die_symbol =
     find_or_add_abstract_instance t fundecl.fun_dbg

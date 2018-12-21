@@ -20,11 +20,11 @@ val create_entry_pc
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_low_pc
-   : address_label:Asm_label.t
+   : Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_high_pc
-   : address_label:Asm_label.t
+   : Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 (* CR mshinwell: Make labels consistent / remove unnecessary ones. *)
@@ -34,15 +34,15 @@ val create_entry_pc_from_symbol
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_low_pc_from_symbol
-   : symbol:Asm_symbol.t
+   : Asm_symbol.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_high_pc_from_symbol
-   : symbol:Asm_symbol.t
+   : Asm_symbol.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_producer
-   : producer_name:string
+   : string
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_name
@@ -50,7 +50,7 @@ val create_name
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_comp_dir
-   : directory:string
+   : string
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_stmt_list
@@ -201,18 +201,36 @@ val create_declaration
    : unit
   -> Dwarf_attribute_values.Attribute_value.t
 
-val create_ocaml_load_path
-   : paths:string list
+(** OCaml-specific DWARF attributes. *)
+
+val create_ocaml_compiler_version
+   : string
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_ocaml_cmi_magic_number
-   : magic:string
+   : string
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_ocaml_cmt_magic_number
-   : magic:string
+   : string
   -> Dwarf_attribute_values.Attribute_value.t
 
-val create_ocaml_compiler_version
-   : version:string
+val create_ocaml_load_path
+   : string list
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_ocaml_source_directory_path
+   : string
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_ocaml_source_filename
+   : string
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_ocaml_object_directory_path
+   : string
+  -> Dwarf_attribute_values.Attribute_value.t
+
+val create_ocaml_object_filename
+   : string
   -> Dwarf_attribute_values.Attribute_value.t

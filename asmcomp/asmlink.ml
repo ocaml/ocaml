@@ -219,11 +219,19 @@ let compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase =
 let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units_list =
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset "_startup";
+  (* CR mshinwell: Factor out "_Ocaml_startup" everywhere *)
   (* set the name of the "current" compunit *)
   let dwarf =
     match !Clflags.debug_full with
     | None -> None
-    | Some _ -> Some (Dwarf.create ~prefix_name:dwarf_prefix_name)
+    | Some _ ->
+      let sourcefile =
+        match cmm_debug with
+        | None -> ""
+        | Some (cmm_debug, _, _) -> Cmm_debug.startup_cmm_file cmm_debug
+      in
+      Some (Dwarf.create ~sourcefile ~prefix_name:dwarf_prefix_name
+        ~unit_name:(Ident.create_persistent "_Ocaml_startup"))
   in
   let compile_phrase phrase =
     compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase
@@ -268,7 +276,14 @@ let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units =
   let dwarf =
     match !Clflags.debug_full with
     | None -> None
-    | Some _ -> Some (Dwarf.create ~prefix_name:dwarf_prefix_name)
+    | Some _ ->
+      let sourcefile =
+        match cmm_debug with
+        | None -> ""
+        | Some (cmm_debug, _, _) -> Cmm_debug.startup_cmm_file cmm_debug
+      in
+      Some (Dwarf.create ~sourcefile ~prefix_name:dwarf_prefix_name
+        ~unit_name:(Ident.create_persistent "_Ocaml_shared_startup"))
   in
   let compile_phrase phrase =
     compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase

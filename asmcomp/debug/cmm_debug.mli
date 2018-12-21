@@ -25,4 +25,6 @@ val create
   -> startup_cmm_chan:Stdlib.out_channel
   -> t
 
+val startup_cmm_file : t -> string
+
 val write_cmm_to_channel_and_fix_up_debuginfo : t -> Cmm.phrase -> Cmm.phrase

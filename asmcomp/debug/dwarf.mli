@@ -17,8 +17,13 @@
 type t
 
 (** Create a value of type [t], which holds all state necessary to emit
-    DWARF debugging information for a single compilation unit. *)
-val create : prefix_name:string -> t
+    DWARF debugging information for a single compilation unit.
+    The names of the parameters line up with the code in [Asmgen]. *)
+val create
+   : sourcefile:string
+  -> prefix_name:string
+  -> unit_name:Ident.t
+  -> t
 
 (** For dealing with [Let_symbol] bindings. *)
 val dwarf_for_toplevel_constants
