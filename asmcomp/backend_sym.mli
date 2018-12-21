@@ -25,14 +25,14 @@ type backend_sym = t
 val of_symbol : Symbol.t -> t
 
 (** Create a backend symbol given the textual name of the symbol as found in
-    an object file.  (Any language-specific name mangling conventions must
+    an object file; and its enclosing compilation unit.
+    (Any language-specific name mangling conventions must
     have been applied to the name by the caller.  However any
-    assembler-specific conventions, such as escaping of special characters,
-    must *not* be applied by the caller. *)
-val of_external_name : string -> t
+    assembler-specific conventions, such as escaping of special characters
+    or prefixing, must *not* be applied by the caller. *)
+val of_external_name : Compilation_unit.t -> string -> t
 
-(** Create a backend symbol given a base name.  The current compilation unit
-    will be used as the unit for the symbol.  The [base_name] will be
+(** Create a backend symbol given a base name.  The [base_name] will be
     subject to escaping by this function. *)
 val create : base_name:string -> t
 
@@ -52,6 +52,9 @@ val to_escaped_string
   -> escape:(string -> string)
   -> t
   -> string
+
+(** The compilation unit where the symbol is defined. *)
+val compilation_unit : t -> Compilation_unit.t
 
 (** Sets, maps, total ordering, etc.
 

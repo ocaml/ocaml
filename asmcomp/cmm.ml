@@ -118,11 +118,11 @@ type rec_flag = Nonrecursive | Recursive
 
 type phantom_defining_expr =
   | Cphantom_const_int of Targetint.t
-  | Cphantom_const_symbol of string
+  | Cphantom_const_symbol of Backend_sym.t
   | Cphantom_var of Backend_var.t
   | Cphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
   | Cphantom_read_field of { var : Backend_var.t; field : int; }
-  | Cphantom_read_symbol_field of { sym : string; field : int; }
+  | Cphantom_read_symbol_field of { sym : Backend_sym.t; field : int; }
   | Cphantom_block of { tag : int; fields : Backend_var.t list; }
 
 type memory_chunk =

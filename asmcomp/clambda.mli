@@ -19,7 +19,7 @@
 open Asttypes
 open Lambda
 
-type function_label = string
+type function_label = Backend_sym.t
 
 type ustructured_constant =
   | Uconst_float of float
@@ -32,7 +32,7 @@ type ustructured_constant =
   | Uconst_closure of ufunction list * string * uconstant list
 
 and uconstant =
-  | Uconst_ref of string * ustructured_constant option
+  | Uconst_ref of Backend_sym.t * ustructured_constant option
   | Uconst_int of int
   | Uconst_ptr of int
 
@@ -48,7 +48,7 @@ and uphantom_defining_expr =
   (** The phantom-let-bound-variable's value is found by adding the given
       number of words to the pointer contained in the given identifier, then
       dereferencing. *)
-  | Uphantom_read_symbol_field of { sym : string; field : int; }
+  | Uphantom_read_symbol_field of { sym : Backend_sym.t; field : int; }
   (** As for [Uphantom_read_var_field], but with the pointer specified by
       a symbol. *)
   | Uphantom_block of { tag : int; fields : Backend_var.t list; }

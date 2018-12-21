@@ -235,8 +235,11 @@ let rec is_pure_clambda = function
 
 let make_const c = (Uconst c, Value_const c)
 let make_const_ref c =
-  make_const(Uconst_ref(Compilenv.new_structured_constant ~shared:true c,
-    Some c))
+  let sym =
+    Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+      (Compilenv.new_structured_constant ~shared:true c)
+  in
+  make_const(Uconst_ref(sym, Some c))
 let make_const_int n = make_const (Uconst_int n)
 let make_const_ptr n = make_const (Uconst_ptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
@@ -471,7 +474,11 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
         let name =
           Compilenv.new_structured_constant cst ~shared:true
         in
-        make_const (Uconst_ref (name, Some cst))
+        let sym =
+          Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+            name
+        in
+        make_const (Uconst_ref (sym, Some cst))
       with Exit ->
         (Uprim(p, args, dbg), Value_tuple (Array.of_list approxs))
       end
@@ -1122,8 +1129,9 @@ let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute
       ~idents_for_types =
   if not (List.compare_lengths uargs idents_for_types = 0) then begin
     Misc.fatal_errorf "uargs length %d, idents_for_types length %d, \
-        function %s"
-      (List.length uargs) (List.length idents_for_types) fundesc.fun_label
+        function %a"
+      (List.length uargs) (List.length idents_for_types)
+      Backend_sym.print fundesc.fun_label
   end;
   let idents_for_types =
     List.map (fun ident_opt ->
@@ -1236,7 +1244,11 @@ let rec close ~scope fenv cenv = function
         let name =
           Compilenv.new_structured_constant cst ~shared
         in
-        Uconst_ref (name, Some cst)
+        let sym =
+          Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+            name
+        in
+        Uconst_ref (sym, Some cst)
       in
       let rec transl = function
         | Const_base(Const_int n) -> Uconst_int n
@@ -1747,8 +1759,12 @@ and close_functions fenv cenv fun_defs =
                 ~human_name:(V.name id)
                 ~module_path:!current_module_path
             in
+            let fun_label =
+              Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+                label
+            in
             let fundesc =
-              {fun_label = label;
+              {fun_label;
                fun_arity = (if kind = Tupled then -arity else arity);
                fun_dbg;
                fun_closed = initially_closed;
@@ -1952,7 +1968,7 @@ let collect_exported_structured_constants a =
     | Value_unknown | Value_global_field _ -> ()
   and const = function
     | Uconst_ref (s, (Some c)) ->
-        Compilenv.add_exported_constant s;
+        Compilenv.add_exported_constant (Backend_sym.to_string s);
         structured_constant c
     | Uconst_ref (_s, None) -> assert false (* Cannot be generated *)
     | Uconst_int _ | Uconst_ptr _ -> ()

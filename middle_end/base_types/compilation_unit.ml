@@ -61,6 +61,10 @@ let create (id : Ident.t) linkage_name =
   end;
   { id; linkage_name; hash = Hashtbl.hash (Ident.name id); }
 
+let extern =
+  create (Ident.create_persistent "*external*")
+    (Linkage_name.create "*external*")
+
 let get_persistent_ident cu = cu.id
 let get_linkage_name cu = cu.linkage_name
 

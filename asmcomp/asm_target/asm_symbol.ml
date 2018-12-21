@@ -17,27 +17,34 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t = string
+type t = {
+  compilation_unit : Compilation_unit.t;
+  name : string;
+  (* Just like for [Backend_sym], the [name] uniquely determines the
+     symbol. *)
+}
 
-let escape t =
+let escape name =
   let spec = ref false in
-  for i = 0 to String.length t - 1 do
-    match String.unsafe_get t i with
+  for i = 0 to String.length name - 1 do
+    match String.unsafe_get name i with
     | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
     | _ -> spec := true;
   done;
-  if not !spec then t
-  else
-    let b = Buffer.create (String.length t + 10) in
+  if not !spec then begin
+    name
+  end else begin
+    let b = Buffer.create (String.length name + 10) in
     String.iter
       (function
         | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
         | c -> Printf.bprintf b "$%02x" (Char.code c)
       )
-      t;
+      name;
     Buffer.contents b
+  end
 
-let symbol_prefix () = (* XXX *)
+let symbol_prefix () = (* CR mshinwell: needs checking *)
   match Target_system.architecture () with
   | IA32 | X86_64 ->
     begin match Target_system.system () with
@@ -61,22 +68,39 @@ let symbol_prefix () = (* XXX *)
   | POWER
   | Z -> ""
 
-let encode t =
+let encode backend_sym =
   Backend_sym.to_escaped_string
     ~symbol_prefix:(symbol_prefix ())
-    ~escape t
+    ~escape backend_sym
 
-let create t = encode t
+let create backend_sym =
+  { compilation_unit = Backend_sym.compilation_unit backend_sym;
+    name = encode backend_sym;
+  }
 
-let of_external_name name = encode (Backend_sym.of_external_name name)
+let of_external_name compilation_unit name =
+  { compilation_unit;
+    name = encode (Backend_sym.of_external_name compilation_unit name);
+  }
+
+let of_external_name_no_prefix compilation_unit name =
+  let name =
+    Backend_sym.to_escaped_string ~symbol_prefix:"" ~escape
+      (Backend_sym.of_external_name compilation_unit name)
+  in
+  { compilation_unit;
+    name;
+  }
 
 let encode ?reloc t =
   match reloc with
-  | None -> t
-  | Some reloc -> t ^ reloc
+  | None -> t.name
+  | Some reloc -> t.name ^ reloc
 
 let prefix_with t prefix =
-  (escape prefix) ^ t
+  { compilation_unit = t.compilation_unit;
+    name = (escape prefix) ^ t.name;
+  }
 
 (* Detection of functions that can be duplicated between a DLL and
    the main program (PR#4690) *)
@@ -87,19 +111,25 @@ let isprefix s1 s2 =
 
 let is_generic_function t =
   List.exists
-    (fun p -> isprefix p t)
+    (fun p -> isprefix p t.name)
     ["caml_apply"; "caml_curry"; "caml_send"; "caml_tuplify"]
+
+let compilation_unit t = t.compilation_unit
 
 include Identifiable.Make (struct
   type nonrec t = t
-  let compare = String.compare
-  let equal = String.equal
-  let hash = Hashtbl.hash
+  let compare t1 t2 = String.compare t1.name t2.name
+  let equal t1 t2 = String.equal t1.name t2.name
+  let hash t = Hashtbl.hash t.name
   let output _ _ = Misc.fatal_error "Not yet implemented"
-  let print ppf t = Format.pp_print_string ppf t
+  let print ppf t = Format.pp_print_string ppf t.name
 end)
 
 module Names = struct
+  (* See corresponding CR-someday in backend_sym.ml. *)
+  let of_external_name name =
+    of_external_name Compilation_unit.extern name
+
   let mcount = of_external_name "mcount"
   let _mcount = of_external_name "_mcount"
   let __gnu_mcount_nc = of_external_name "__gnu_mcount_nc"

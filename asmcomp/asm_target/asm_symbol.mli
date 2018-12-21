@@ -22,8 +22,18 @@ type t
 (** Create an assembly symbol from a backend symbol. *)
 val create : Backend_sym.t -> t
 
-(** Create an assembly symbol from a name as found in an object file. *)
-val of_external_name : string -> t
+(** Create an assembly symbol from a name as found in an object file.
+    The name will be prefixed with the appropriate symbol prefix for the
+    target system. *)
+val of_external_name : Compilation_unit.t -> string -> t
+
+(** Like [of_external_name], but for specialised uses (in particular "direct
+    assignment" on macOS) where the name must not have a symbol prefix
+    applied. *)
+val of_external_name_no_prefix : Compilation_unit.t -> string -> t
+
+(** The compilation unit where the symbol is defined. *)
+val compilation_unit : t -> Compilation_unit.t
 
 (** Convert a symbol to the corresponding textual form, suitable for direct
     emission into an assembly file.  This may be useful e.g. when emitting

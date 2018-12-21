@@ -32,3 +32,5 @@ val get_current_exn : unit -> t
 val get_current_id_exn : unit -> Ident.t
 
 val string_for_printing : t -> string
+
+val extern : t

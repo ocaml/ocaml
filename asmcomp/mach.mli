@@ -48,11 +48,11 @@ type test =
 
 type phantom_defining_expr =
   | Iphantom_const_int of Targetint.t
-  | Iphantom_const_symbol of string
+  | Iphantom_const_symbol of Backend_sym.t
   | Iphantom_var of Backend_var.t
   | Iphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
   | Iphantom_read_field of { var : Backend_var.t; field : int; }
-  | Iphantom_read_symbol_field of { sym : string; field : int; }
+  | Iphantom_read_symbol_field of { sym : Backend_sym.t; field : int; }
   | Iphantom_block of { tag : int; fields : Backend_var.t option list; }
 
 type call_labels = {

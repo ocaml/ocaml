@@ -128,7 +128,7 @@ let alloc_boxedintnat_header dbg = Cblockheader (boxedintnat_header, dbg)
 
 let new_const_symbol () =
   let mangled_name = Compilenv.new_const_symbol () in
-  S.of_external_name mangled_name
+  S.of_external_name (Compilation_unit.get_current_exn ()) mangled_name
 
 (* Integers *)
 
@@ -1064,11 +1064,12 @@ let transl_constant = function
       else Cconst_natpointer
               (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
   | Uconst_ref (label, _) ->
-      Cconst_symbol (S.of_external_name label)
+      Cconst_symbol label
 
 let transl_structured_constant cst =
   let label = Compilenv.new_structured_constant cst ~shared:true in
-  Cconst_symbol (S.of_external_name label)
+  let compilation_unit = Compilation_unit.get_current_exn () in
+  Cconst_symbol (S.of_external_name compilation_unit label)
 
 (* Translate constant closures *)
 
@@ -1980,13 +1981,13 @@ let rec transl env e =
             Queue.add f functions;
             let without_header =
               if f.arity = 1 || f.arity = 0 then
-                Cconst_symbol (S.of_external_name f.label) ::
+                Cconst_symbol f.label ::
                 int_const f.arity ::
                 transl_fundecls (pos + 3) rem
               else
                 Cconst_symbol(curry_function f.arity) ::
                 int_const f.arity ::
-                Cconst_symbol (S.of_external_name f.label) ::
+                Cconst_symbol f.label ::
                 transl_fundecls (pos + 4) rem
             in
             if pos = 0 then without_header
@@ -2007,7 +2008,6 @@ let rec transl env e =
       then ptr
       else Cop(Caddv, [ptr; Cconst_int(offset * size_addr)], Debuginfo.none)
   | Udirect_apply(lbl, args, dbg) ->
-      let lbl = S.of_external_name lbl in
       Cop(Capply (typ_val, Some (Debuginfo.Apply.fun_dbg dbg)),
         Cconst_symbol lbl :: List.map (transl env) args,
         Debuginfo.Apply.dbg dbg)
@@ -2054,9 +2054,10 @@ let rec transl env e =
 
   (* Primitives *)
   | Uprim(prim, args, dbg) ->
+      let compilation_unit = Compilation_unit.get_current_exn () in
       begin match (simplif_primitive prim, args) with
         (Pgetglobal id, []) ->
-          Cconst_symbol (S.of_external_name (V.name id))
+          Cconst_symbol (S.of_external_name compilation_unit (V.name id))
       | (Pmakeblock _, []) ->
           assert false
       | (Pmakeblock(tag, _mut, _kind), args) ->
@@ -2282,8 +2283,10 @@ and transl_ccall env prim args dbg =
     | Untagged_int -> (typ_int, (fun i -> tag_int i dbg))
   in
   let args = transl_args prim.prim_native_repr_args args in
+  let compilation_unit = Compilation_unit.get_current_exn () in
   wrap_result
-    (Cop(Cextcall(S.of_external_name (Primitive.native_name prim),
+    (Cop(Cextcall(S.of_external_name compilation_unit
+                    (Primitive.native_name prim),
                   typ_res, prim.prim_alloc, None), args, dbg))
 
 and transl_prim_1 env p arg dbg =
@@ -3232,7 +3235,7 @@ and transl_letrec env bindings cont =
 let transl_function ~ppf_dump (f : Clambda.ufunction) =
   let body =
     if Config.flambda then
-      Un_anf.apply ~ppf_dump f.body ~what:f.label
+      Un_anf.apply ~ppf_dump f.body ~what:(Backend_sym.to_string f.label)
     else
       f.body
   in
@@ -3248,7 +3251,7 @@ let transl_function ~ppf_dump (f : Clambda.ufunction) =
     else
       [ Reduce_code_size ]
   in
-  Cfunction {fun_name = S.of_external_name f.label;
+  Cfunction {fun_name = f.label;
              fun_args = List.map (fun id -> (id, typ_val)) f.params;
              fun_body = cmm_body;
              fun_codegen_options;
@@ -3260,11 +3263,11 @@ let transl_function ~ppf_dump (f : Clambda.ufunction) =
 let rec transl_all_functions ~ppf_dump already_translated cont =
   try
     let f = Queue.take functions in
-    if String.Set.mem f.label already_translated then
+    if Backend_sym.Set.mem f.label already_translated then
       transl_all_functions ~ppf_dump already_translated cont
     else begin
       transl_all_functions ~ppf_dump
-        (String.Set.add f.label already_translated)
+        (Backend_sym.Set.add f.label already_translated)
         ((f.dbg, transl_function ~ppf_dump f) :: cont)
     end
   with Queue.Empty ->
@@ -3306,7 +3309,8 @@ let rec emit_structured_constant (symb, is_global) cst cont =
       emit_block (floatarray_header (List.length fields))
         (Misc.map_end (fun f -> Cdouble f) fields cont)
   | Uconst_closure(fundecls, lbl, fv) ->
-      let lbl = S.of_external_name lbl in
+      let compilation_unit = Compilation_unit.get_current_exn () in
+      let lbl = S.of_external_name compilation_unit lbl in
       assert(Backend_sym.equal lbl symb);
       add_cmm_constant (Const_closure ((symb, is_global), fundecls, fv));
       List.iter (fun f -> Queue.add f functions) fundecls;
@@ -3317,8 +3321,8 @@ and emit_constant cst cont =
   | Uconst_int n | Uconst_ptr n ->
       cint_const n
       :: cont
-  | Uconst_ref (label, _) ->
-      Csymbol_address (S.of_external_name label) :: cont
+  | Uconst_ref (sym, _) ->
+      Csymbol_address sym :: cont
 
 and emit_string_constant s cont =
   let n = size_int - 1 - (String.length s) mod size_int in
@@ -3351,8 +3355,7 @@ and emit_boxed_int64_constant n cont =
 let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
   let closure_symbol f =
     if Config.flambda then
-      let label = S.of_external_name f.label in
-      cdefine_symbol (S.add_suffix label "_closure", global_symb)
+      cdefine_symbol (S.add_suffix f.label "_closure", global_symb)
     else
       []
   in
@@ -3372,7 +3375,7 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
           if f2.arity = 1 || f2.arity = 0 then
             Cint(infix_header pos) ::
             (closure_symbol f2) @
-            Csymbol_address (S.of_external_name f2.label) ::
+            Csymbol_address f2.label ::
             cint_const f2.arity ::
             emit_others (pos + 3) rem
           else
@@ -3380,20 +3383,20 @@ let emit_constant_closure ((_, global_symb) as symb) fundecls clos_vars cont =
             (closure_symbol f2) @
             Csymbol_address(curry_function f2.arity) ::
             cint_const f2.arity ::
-            Csymbol_address (S.of_external_name f2.label) ::
+            Csymbol_address f2.label ::
             emit_others (pos + 4) rem in
       Cint(black_closure_header (fundecls_size fundecls
                                  + List.length clos_vars)) ::
       cdefine_symbol symb @
       (closure_symbol f1) @
       if f1.arity = 1 || f1.arity = 0 then
-        Csymbol_address (S.of_external_name f1.label) ::
+        Csymbol_address f1.label ::
         cint_const f1.arity ::
         emit_others 3 remainder
       else
         Csymbol_address(curry_function f1.arity) ::
         cint_const f1.arity ::
-        Csymbol_address (S.of_external_name f1.label) ::
+        Csymbol_address f1.label ::
         emit_others 4 remainder
 
 (* Emit constant blocks *)
@@ -3408,7 +3411,8 @@ let emit_constants cont (constants:Clambda.preallocated_constant list) =
   let c = ref cont in
   List.iter
     (fun { symbol = lbl; exported; definition = cst; provenance = _; } ->
-       let lbl = S.of_external_name lbl in
+      let compilation_unit = Compilation_unit.get_current_exn () in
+       let lbl = S.of_external_name compilation_unit lbl in
        let global = if exported then Global else Not_global in
        let cst = emit_structured_constant (lbl, global) cst [] in
          c:= Cdata(cst):: !c)
@@ -3441,7 +3445,7 @@ let transl_all_functions_and_emit_all_constants ~ppf_dump cont =
       aux already_translated cont translated_functions
   in
   let cont, translated_functions =
-    aux String.Set.empty cont []
+    aux Backend_sym.Set.empty cont []
   in
   let translated_functions =
     (* Sort functions according to source position *)
@@ -3455,12 +3459,16 @@ let transl_all_functions_and_emit_all_constants ~ppf_dump cont =
 (* Build the NULL terminated array of gc roots *)
 
 let emit_gc_roots_table ~symbols cont =
+  let compilation_unit = Compilation_unit.get_current_exn () in
   let table_symbol =
-    S.of_external_name (Compilenv.make_symbol (Some "gc_roots"))
+    S.of_external_name compilation_unit
+      (Compilenv.make_symbol (Some "gc_roots"))
   in
   Cdata(Cglobal_symbol table_symbol ::
         Cdefine_symbol table_symbol ::
-        List.map (fun s -> Csymbol_address (S.of_external_name s)) symbols @
+        List.map (fun s ->
+            Csymbol_address (S.of_external_name compilation_unit s))
+          symbols @
         [Cint 0n])
   :: cont
 
@@ -3468,6 +3476,7 @@ let emit_gc_roots_table ~symbols cont =
    constructs, and Clambda global module) *)
 
 let preallocate_block cont { Clambda.symbol; exported; tag; fields } =
+  let compilation_unit = Compilation_unit.get_current_exn () in
   let space =
     (* These words will be registered as roots and as such must contain
        valid values, in case we are in no-naked-pointers mode.  Likewise
@@ -3480,11 +3489,11 @@ let preallocate_block cont { Clambda.symbol; exported; tag; fields } =
         | Some (Uconst_field_int n) ->
             cint_const n
         | Some (Uconst_field_ref label) ->
-            Csymbol_address (S.of_external_name label))
+            Csymbol_address (S.of_external_name compilation_unit label))
       fields
   in
   let data =
-    let symbol = S.of_external_name symbol in
+    let symbol = S.of_external_name compilation_unit symbol in
     Cint(black_block_header tag (List.length fields)) ::
     if exported then
       Cglobal_symbol symbol ::
@@ -3506,13 +3515,14 @@ let emit_preallocated_blocks preallocated_blocks cont =
 
 let compunit ~ppf_dump ~unit_name ~source_file
       (ulam, preallocated_blocks, constants) =
+  let compilation_unit = Compilation_unit.get_current_exn () in
   let init_code =
     if !Clflags.afl_instrument then
       Afl_instrument.instrument_initialiser (transl empty_env ulam)
     else
       transl empty_env ulam in
   let human_name = Compilenv.make_symbol (Some "entry") in
-  let fun_name = S.of_external_name human_name in
+  let fun_name = S.of_external_name compilation_unit human_name in
   let module_path =
     Printtyp.rewrite_double_underscore_paths Env.initial_safe_string
       (Path.Pident unit_name)
@@ -3927,6 +3937,7 @@ let generic_functions shared units =
 (* Generate the entry point *)
 
 let entry_point namelist =
+  let compilation_unit = Compilation_unit.get_current_exn () in
   let dbg = placeholder_dbg in
   let incr_global_inited () =
     Cop(Cstore (Word_int, Assignment),
@@ -3938,7 +3949,7 @@ let entry_point namelist =
     List.fold_right
       (fun name next ->
         let entry_sym =
-          S.of_external_name (
+          S.of_external_name compilation_unit (
             Compilenv.make_symbol ~unitname:name (Some "entry"))
         in
         Csequence(Cop(Capply (typ_void, None),
@@ -3962,8 +3973,9 @@ let entry_point namelist =
 let cint_zero = Cint 0n
 
 let global_table namelist =
+  let compilation_unit = Compilation_unit.get_current_exn () in
   let mksym name =
-    Csymbol_address (S.of_external_name (
+    Csymbol_address (S.of_external_name compilation_unit (
       Compilenv.make_symbol ~unitname:name (Some "gc_roots")))
   in
   Cdata(Cglobal_symbol caml_globals ::
@@ -3972,8 +3984,10 @@ let global_table namelist =
         [cint_zero])
 
 let reference_symbols namelist =
+  let compilation_unit = Compilation_unit.get_current_exn () in
   let mksym name = Csymbol_address name in
-  Cdata(List.map (fun sym -> mksym (S.of_external_name sym)) namelist)
+  Cdata(List.map (fun sym -> mksym (S.of_external_name compilation_unit sym))
+    namelist)
 
 let global_data name v =
   Cdata(emit_structured_constant (name, Global)
@@ -3983,9 +3997,10 @@ let globals_map v = global_data caml_globals_map v
 
 (* Generate the master table of frame descriptors *)
 
-let frame_table namelist =
+let frame_table namelist = 
+  let compilation_unit = Compilation_unit.get_current_exn () in
   let mksym name =
-    Csymbol_address (S.of_external_name (
+    Csymbol_address (S.of_external_name compilation_unit (
       Compilenv.make_symbol ~unitname:name (Some "frametable")))
   in
   Cdata(Cglobal_symbol caml_frametable ::
@@ -3996,8 +4011,9 @@ let frame_table namelist =
 (* Generate the master table of Spacetime shapes *)
 
 let spacetime_shapes namelist =
+  let compilation_unit = Compilation_unit.get_current_exn () in
   let mksym name =
-    Csymbol_address (S.of_external_name (
+    Csymbol_address (S.of_external_name compilation_unit (
       Compilenv.make_symbol ~unitname:name (Some "spacetime_shapes")))
   in
   Cdata(Cglobal_symbol caml_spacetime_shapes ::
@@ -4008,10 +4024,11 @@ let spacetime_shapes namelist =
 (* Generate the table of module data and code segments *)
 
 let segment_table namelist symbol begname endname =
+  let compilation_unit = Compilation_unit.get_current_exn () in
   let addsyms name lst =
-    Csymbol_address (S.of_external_name (
+    Csymbol_address (S.of_external_name compilation_unit (
       Compilenv.make_symbol ~unitname:name (Some begname))) ::
-    Csymbol_address (S.of_external_name (
+    Csymbol_address (S.of_external_name compilation_unit (
       Compilenv.make_symbol ~unitname:name (Some endname))) ::
     lst
   in
@@ -4028,15 +4045,16 @@ let code_segment_table namelist =
 (* Initialize a predefined exception *)
 
 let predef_exception i name =
+  let compilation_unit = Compilation_unit.get_current_exn () in
   let symname = caml_exn name in
   let cst = Uconst_string name in
   let label' = Compilenv.new_const_symbol () in
-  let label = S.of_external_name label' in
+  let label = S.of_external_name compilation_unit label' in
   let cont = emit_structured_constant (label, Not_global) cst [] in
   Cdata(emit_structured_constant (symname, Global)
           (Uconst_block(Obj.object_tag,
                        [
-                         Uconst_ref(label', Some cst);
+                         Uconst_ref(label, Some cst);
                          Uconst_int (-i-1);
                        ])) cont)
 

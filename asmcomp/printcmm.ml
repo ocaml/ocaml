@@ -119,14 +119,14 @@ let raise_kind fmt = function
 let phantom_defining_expr ppf defining_expr =
   match defining_expr with
   | Cphantom_const_int i -> Targetint.print ppf i
-  | Cphantom_const_symbol sym -> Format.pp_print_string ppf sym
+  | Cphantom_const_symbol sym -> Backend_sym.print ppf sym
   | Cphantom_var var -> V.print ppf var
   | Cphantom_offset_var { var; offset_in_words; } ->
     Format.fprintf ppf "%a+(%d)" V.print var offset_in_words
   | Cphantom_read_field { var; field; } ->
     Format.fprintf ppf "%a.(%d)" V.print var field
   | Cphantom_read_symbol_field { sym; field; } ->
-    Format.fprintf ppf "%s.(%d)" sym field
+    Format.fprintf ppf "%a.(%d)" Backend_sym.print sym field
   | Cphantom_block { tag; fields; } ->
     Format.fprintf ppf "[%d: " tag;
     List.iter (fun field ->

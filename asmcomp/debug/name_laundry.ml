@@ -24,18 +24,20 @@ let base_type_die_name_for_var compilation_unit var =
     var_name stamp
 
 let abstract_instance_root_die_name id =
+  let compilation_unit = Debuginfo.Function.Id.compilation_unit id in
   let name =
     Format.asprintf "caml__abstract_instance_%s"
       (Debuginfo.Function.Id.to_string_for_dwarf_die_name id)
   in
-  Asm_symbol.of_external_name name
+  Asm_symbol.of_external_name compilation_unit name
 
 let concrete_instance_die_name id =
+  let compilation_unit = Debuginfo.Function.Id.compilation_unit id in
   let name =
     Format.asprintf "caml__concrete_instance_%s"
       (Debuginfo.Function.Id.to_string_for_dwarf_die_name id)
   in
-  Asm_symbol.of_external_name name
+  Asm_symbol.of_external_name compilation_unit name
 
 let external_declaration_die_name sym compilation_unit =
   let compilation_unit =

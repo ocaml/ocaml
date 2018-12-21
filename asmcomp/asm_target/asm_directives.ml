@@ -425,17 +425,43 @@ end
    abstractions (e.g. use of [Cmm.label], and in the future distinguished
    types to represent symbols and symbol references before they are mangled
    to plain [string]s for [Constant.t]). *)
-type proto_constant =
+type expr =
   | Signed_int of Int64.t
   | Unsigned_int of Uint64.t
   | This
   | Label of Asm_label.t
   | Symbol of Asm_symbol.t
-  | Add of proto_constant * proto_constant
-  | Sub of proto_constant * proto_constant
-  | Div of proto_constant * int
+  | Add of expr * expr
+  | Sub of expr * expr
+  | Div of expr * int
 
-let rec lower_proto_constant (cst : proto_constant) : Directive.Constant.t =
+type symbols_in_expr =
+  | Symbols_all_in_current_unit
+  | References_external_symbols
+
+let rec symbols_in_expr expr : symbols_in_expr =
+  match expr with
+  | Signed_int _ | Unsigned_int _ | This | Label _ ->
+    Symbols_all_in_current_unit
+  | Symbol sym ->
+    let sym_unit = Asm_symbol.compilation_unit sym in
+    let this_unit = Compilation_unit.get_current_exn () in
+    if Compilation_unit.equal sym_unit this_unit then
+      Symbols_all_in_current_unit
+    else
+      References_external_symbols
+  | Add (expr1, expr2) | Sub (expr1, expr2) ->
+    begin match symbols_in_expr expr1, symbols_in_expr expr2 with
+    | Symbols_all_in_current_unit, Symbols_all_in_current_unit ->
+      Symbols_all_in_current_unit
+    | Symbols_all_in_current_unit, References_external_symbols
+    | References_external_symbols, Symbols_all_in_current_unit
+    | References_external_symbols, References_external_symbols ->
+      References_external_symbols
+    end
+  | Div (expr, _) -> symbols_in_expr expr
+
+let rec lower_expr (cst : expr) : Directive.Constant.t =
   match cst with
   | Signed_int n -> Signed_int n
   | Unsigned_int n -> Unsigned_int n
@@ -443,10 +469,10 @@ let rec lower_proto_constant (cst : proto_constant) : Directive.Constant.t =
   | Label lbl -> Named_thing (Asm_label.encode lbl)
   | Symbol sym -> Named_thing (Asm_symbol.encode sym)
   | Add (cst1, cst2) ->
-    Add (lower_proto_constant cst1, lower_proto_constant cst2)
+    Add (lower_expr cst1, lower_expr cst2)
   | Sub (cst1, cst2) ->
-    Sub (lower_proto_constant cst1, lower_proto_constant cst2)
-  | Div (cst1, cst2) -> Div (lower_proto_constant cst1, cst2)
+    Sub (lower_expr cst1, lower_expr cst2)
+  | Div (cst1, cst2) -> Div (lower_expr cst1, cst2)
 
 let emit_ref = ref None
 
@@ -509,7 +535,7 @@ let global symbol = emit (Global (Asm_symbol.encode symbol))
 let indirect_symbol symbol = emit (Indirect_symbol (Asm_symbol.encode symbol))
 let private_extern symbol = emit (Private_extern (Asm_symbol.encode symbol))
 let size symbol cst =
-  emit (Size (Asm_symbol.encode symbol, (lower_proto_constant cst)))
+  emit (Size (Asm_symbol.encode symbol, (lower_expr cst)))
 let type_ symbol ~type_ = emit (Type (Asm_symbol.encode symbol, type_))
 
 let sleb128 ?comment i =
@@ -519,11 +545,11 @@ let uleb128 ?comment i =
   emit (Uleb128 { constant = Directive.Constant.Unsigned_int i; comment; })
 
 let direct_assignment var cst =
-  emit (Direct_assignment (var, lower_proto_constant cst))
+  emit (Direct_assignment (var, lower_expr cst))
 
 let const ?comment constant
       (width : Directive.Constant_with_width.width_in_bytes) =
-  let constant = lower_proto_constant constant in
+  let constant = lower_expr constant in
   let constant = Directive.Constant_with_width.create constant width in
   emit (Const { constant; comment; })
 
@@ -726,23 +752,37 @@ let new_temp_var () =
   incr temp_var_counter;
   Printf.sprintf "Ltemp%d" id
 
+(* CR mshinwell: comment needs some editing *)
 (* To avoid callers of this module having to worry about whether operands
    involved in displacement calculations are or are not relocatable, and to
    guard against clever linkers doing e.g. branch relaxation at link time, we
    always force such calculations to be done in a relocatable manner at
-   link time.  On macOS this requires use of the "direct assignment"
-   syntax rather than ".set": the latter forces expressions to be evaluated
-   as absolute assembly-time constants. *)
+   link time.
 
+   The macOS assembler requires "direct assignment" statements to be used to
+   ensure that an expression is evaluated at link time, not at assembly time of
+   the particular compilation unit. (Doing the expression evaluation at assembly
+   time would be wrong in cases such as measuring the offset of some entity from
+   the start of the .debug_info section, since the assembler's output might not
+   be placed at the start of the .debug_info section after linking.)
+
+   However, the macOS assember rejects direct assignment statements that contain
+   externally-defined symbols. In this case we can use the same syntax as for
+   other assemblers, since it is never possible for the expression to be made
+   absolute (and hence able to be evaluated at assembly time), due to the
+   undefined symbol.
+*)
 let force_relocatable expr =
-  match TS.assembler () with
-  | MacOS ->
+  match TS.assembler (), symbols_in_expr expr with
+  | MacOS, Symbols_all_in_current_unit ->
     let temp = new_temp_var () in
     direct_assignment temp expr;
-    let sym = Asm_symbol.of_external_name temp in
+    let compilation_unit = Compilation_unit.get_current_exn () in
+    let sym = Asm_symbol.of_external_name_no_prefix compilation_unit temp in
     Symbol sym  (* not really a symbol, but OK (same below) *)
-  | GAS_like | MASM ->
-    expr
+  | MacOS, References_external_symbols
+  | GAS_like, _
+  | MASM, _ -> expr
 
 let between_symbols ~upper ~lower =
   let expr = Sub (Symbol upper, Symbol lower) in
@@ -792,20 +832,15 @@ let scaled_distance_between_this_and_label_offset ~upper ~divide_by =
 let offset_into_section_label ?comment section upper
       ~(width : TS.machine_width) =
   let lower = Asm_section.label section in
-  let expr : proto_constant =
+  let expr : expr =
     (* The meaning of a label reference depends on the assembler:
        - On Mac OS X, it appears to be the distance from the label back to
          the start of the assembly file.
        - On gas, it is the distance from the label back to the start of the
          current section. *)
     match TS.assembler () with
-    | MacOS ->
-      let temp = new_temp_var () in
-      direct_assignment temp (Sub (Label upper, Label lower));
-      let sym = Asm_symbol.of_external_name temp in
-      Symbol sym
-    | GAS_like | MASM ->
-      Label upper
+    | MacOS -> force_relocatable (Sub (Label upper, Label lower))
+    | GAS_like | MASM -> Label upper
   in
   let width : Directive.Constant_with_width.width_in_bytes =
     match width with
@@ -827,14 +862,11 @@ let offset_into_section_label ?comment section upper
 let offset_into_section_symbol ?comment section upper
       ~(width : TS.machine_width) =
   let lower = Asm_section.label section in
-  let expr : proto_constant =
-    (* The same thing as for [offset_into_section_label] applies here. *)
+  let expr : expr =
+    (* The same comment as in [offset_into_section_label], above, applies
+       here. *)
     match TS.assembler () with
-    | MacOS ->
-      let temp = new_temp_var () in
-      direct_assignment temp (Sub (Symbol upper, Label lower));
-      let sym = Asm_symbol.of_external_name temp in
-      Symbol sym
+    | MacOS -> force_relocatable (Sub (Symbol upper, Label lower))
     | GAS_like | MASM -> Symbol upper
   in
   let width : Directive.Constant_with_width.width_in_bytes =

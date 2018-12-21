@@ -101,7 +101,7 @@ type phantom_defining_expr =
   (** The phantom-let-bound variable is a constant integer.
       The argument must be the tagged representation of an integer within
       the range of type [int] on the target.  (Analogously to [Cconst_int].) *)
-  | Cphantom_const_symbol of string
+  | Cphantom_const_symbol of Backend_sym.t
   (** The phantom-let-bound variable is an alias for a symbol. *)
   | Cphantom_var of Backend_var.t
   (** The phantom-let-bound variable is an alias for another variable.  The
@@ -113,7 +113,7 @@ type phantom_defining_expr =
   (** The phantom-let-bound-variable's value is found by adding the given
       number of words to the pointer contained in the given identifier, then
       dereferencing. *)
-  | Cphantom_read_symbol_field of { sym : string; field : int; }
+  | Cphantom_read_symbol_field of { sym : Backend_sym.t; field : int; }
   (** As for [Uphantom_read_var_field], but with the pointer specified by
       a symbol. *)
   | Cphantom_block of { tag : int; fields : Backend_var.t list; }

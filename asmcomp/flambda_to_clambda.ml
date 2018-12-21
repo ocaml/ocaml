@@ -81,6 +81,10 @@ let check_closure ulam named : Clambda.ulambda =
     let str_const =
       Compilenv.new_structured_constant (Uconst_string str) ~shared:true
     in
+    let str_const =
+      Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+        str_const
+    in
     Uprim (Pccall desc,
            [ulam; Clambda.Uconst (Uconst_ref (str_const, None))],
            Debuginfo.none)
@@ -99,6 +103,10 @@ let check_field ulam pos named_opt : Clambda.ulambda =
     in
     let str_const =
       Compilenv.new_structured_constant (Uconst_string str) ~shared:true
+    in
+    let str_const =
+      Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+        str_const
     in
     Uprim (Pccall desc, [ulam; Clambda.Uconst (Uconst_int pos);
         Clambda.Uconst (Uconst_ref (str_const, None))],
@@ -207,8 +215,7 @@ let to_uconst_symbol env symbol : Clambda.ustructured_constant option =
   | Some _ -> None
 
 let to_clambda_symbol' env sym : Clambda.uconstant =
-  let lbl = Linkage_name.to_string (Symbol.label sym) in
-  Uconst_ref (lbl, to_uconst_symbol env sym)
+  Uconst_ref (Backend_sym.of_symbol sym, to_uconst_symbol env sym)
 
 let to_clambda_symbol env sym : Clambda.ulambda =
   Uconst (to_clambda_symbol' env sym)
@@ -444,7 +451,7 @@ and to_clambda_switch t env cases num_keys default =
 
 and to_clambda_direct_apply t func args direct_func _dbg env : Clambda.ulambda =
   let closed = is_function_constant t direct_func in
-  let label = Compilenv.function_label direct_func in
+  let _label = Compilenv.function_label direct_func in
   let uargs =
     let uargs = subst_vars env args in
     (* Remove the closure argument if the closure is closed.  (Note that the
@@ -453,7 +460,8 @@ and to_clambda_direct_apply t func args direct_func _dbg env : Clambda.ulambda =
     if closed then uargs else uargs @ [subst_var env func]
   in
   let dbg = assert false (* XXX pchambart to fix *) in
-  Udirect_apply (label, uargs, dbg)
+  let sym = assert false in
+  Udirect_apply (sym, uargs, dbg)
 
 (* Describe how to build a runtime closure block that corresponds to the
    given Flambda set of closures.
@@ -535,7 +543,7 @@ and to_clambda_set_of_closures t env
           env, id :: params)
         function_decl.params (env, [])
     in
-    { label = Compilenv.function_label closure_id;
+    { label = assert false; (*Compilenv.function_label closure_id; XXX *)
       arity = Flambda_utils.function_arity function_decl;
       params = List.map (fun var -> VP.create var) (params @ [env_var]);
       body = to_clambda t env_body function_decl.body;
@@ -555,7 +563,7 @@ and to_clambda_closed_set_of_closures t env symbol
       ({ function_decls; } : Flambda.set_of_closures)
       : Clambda.ustructured_constant =
   let functions = Variable.Map.bindings function_decls.funs in
-  let to_clambda_function (id, (function_decl : Flambda.function_declaration))
+  let to_clambda_function (_id, (function_decl : Flambda.function_declaration))
         : Clambda.ufunction =
     (* All that we need in the environment, for translating one closure from
        a closed set of closures, is the substitutions for variables bound to
@@ -575,7 +583,7 @@ and to_clambda_closed_set_of_closures t env symbol
           env, id :: params)
         function_decl.params (env, [])
     in
-    { label = Compilenv.function_label (Closure_id.wrap id);
+    { label = assert false; (*Compilenv.function_label (Closure_id.wrap id); *)
       arity = Flambda_utils.function_arity function_decl;
       params = List.map (fun var -> VP.create var) params;
       body = to_clambda t env_body function_decl.body;

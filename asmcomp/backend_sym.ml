@@ -16,25 +16,46 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-type t = string
+type t = {
+  compilation_unit : Compilation_unit.t;
+  name : string;
+  (* The [name] uniquely determines the symbol.  The [compilation_unit] is
+     there so we can later easily distinguish between symbols from different
+     units. *)
+}
+
 type backend_sym = t
 
-let print ppf t = Format.pp_print_string ppf t
+let print ppf { name; _ } = Format.pp_print_string ppf name
 
-let to_string t = t
+let to_string { name; _ } = name
 
-let of_symbol sym = Linkage_name.to_string (Symbol.label sym)
+let of_symbol sym =
+  { compilation_unit = Symbol.compilation_unit sym;
+    name = Linkage_name.to_string (Symbol.label sym);
+  }
 
-let of_external_name name = name
+let of_external_name compilation_unit name =
+  { compilation_unit;
+    name;
+  }
 
 let create ~base_name =
+  let compilation_unit = Compilation_unit.get_current_exn () in
   let unit_name =
-    Linkage_name.to_string (Compilation_unit.get_linkage_name (
-      Compilation_unit.get_current_exn ()))
+    Linkage_name.to_string (Compilation_unit.get_linkage_name compilation_unit)
   in
-  unit_name ^ "__" ^ base_name
+  let name = unit_name ^ "__" ^ base_name in
+  { compilation_unit;
+    name;
+  }
 
-let add_suffix t new_suffix = t ^ new_suffix
+let compilation_unit t = t.compilation_unit
+
+let add_suffix t new_suffix =
+  { compilation_unit = t.compilation_unit;
+    name = t.name ^ new_suffix;
+  }
 
 let add_suffixes t new_suffixes =
   List.fold_left (fun t new_suffix -> add_suffix t new_suffix) t new_suffixes
@@ -48,7 +69,7 @@ let to_escaped_string ?suffix ~symbol_prefix ~escape t =
     | None -> ""
     | Some suffix -> suffix
   in
-  symbol_prefix ^ (escape t) ^ suffix
+  symbol_prefix ^ (escape t.name) ^ suffix
 
 include Identifiable.Make (struct
   type nonrec t = t
@@ -65,6 +86,14 @@ include Identifiable.Make (struct
 end)
 
 module Names = struct
+  (* CR-someday mshinwell: Give these proper compilation units.  For the
+     moment, since the compilation unit distinction only matters for
+     symbols involved in displacement calculations (for DWARF emission), we
+     just use [Compilation_unit.extern]. *)
+
+  let of_external_name name =
+    of_external_name Compilation_unit.extern name
+
   let sqrt = of_external_name "sqrt"
 
   let caml_exception_pointer = of_external_name "caml_exception_pointer"

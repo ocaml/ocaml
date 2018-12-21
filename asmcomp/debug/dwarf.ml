@@ -60,11 +60,11 @@ let mangle_symbol symbol =
     Linkage_name.to_string (Compilation_unit.get_linkage_name (
       Symbol.compilation_unit symbol))
   in
-  let symbol =
+  let symbol' =
     Compilenv.concat_symbol unit_name
       (Linkage_name.to_string (Symbol.label symbol))
   in
-  Asm_symbol.of_external_name symbol
+  Asm_symbol.of_external_name (Symbol.compilation_unit symbol) symbol'
 
 let create ~sourcefile ~prefix_name ~unit_name =
   begin match !Clflags.dwarf_format with
@@ -489,15 +489,13 @@ let phantom_var_location_description t
   match defining_expr with
   | Iphantom_const_int i -> rvalue (SLDL.Rvalue.signed_int_const i)
   | Iphantom_const_symbol symbol ->
-    (* CR-soon mshinwell: [Iphantom_const_symbol]'s arg should be of type
-       [Backend_sym.t].  Same for the others. *)
-    let symbol = Asm_symbol.of_external_name symbol in
+    let symbol = Asm_symbol.create symbol in
     lvalue (SLDL.Lvalue.const_symbol ~symbol)
   | Iphantom_read_symbol_field { sym; field; } ->
-    let sym = Asm_symbol.of_external_name sym in
+    let symbol = Asm_symbol.create sym in
     (* CR-soon mshinwell: Fix [field] to be of type [Targetint.t] *)
     let field = Targetint.of_int field in
-    rvalue (SLDL.Rvalue.read_symbol_field ~symbol:sym ~field)
+    rvalue (SLDL.Rvalue.read_symbol_field ~symbol ~field)
   | Iphantom_var var ->
     (* mshinwell: What happens if [var] isn't available at some point
        just due to the location list?  Should we push zero on the stack

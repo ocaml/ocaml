@@ -19,7 +19,7 @@
 open Asttypes
 open Lambda
 
-type function_label = string
+type function_label = Backend_sym.t
 
 type ustructured_constant =
   | Uconst_float of float
@@ -32,7 +32,7 @@ type ustructured_constant =
   | Uconst_closure of ufunction list * string * uconstant list
 
 and uconstant =
-  | Uconst_ref of string * ustructured_constant option
+  | Uconst_ref of Backend_sym.t * ustructured_constant option
   | Uconst_int of int
   | Uconst_ptr of int
 
@@ -41,7 +41,7 @@ and uphantom_defining_expr =
   | Uphantom_var of Backend_var.t
   | Uphantom_offset_var of { var : Backend_var.t; offset_in_words : int; }
   | Uphantom_read_field of { var : Backend_var.t; field : int; }
-  | Uphantom_read_symbol_field of { sym : string; field : int; }
+  | Uphantom_read_symbol_field of { sym : Backend_sym.t; field : int; }
   | Uphantom_block of { tag : int; fields : Backend_var.t list; }
 
 and ulambda =
@@ -152,9 +152,10 @@ let rec compare_float_lists l1 l2 =
 
 let compare_constants c1 c2 =
   match c1, c2 with
-  | Uconst_ref(lbl1, _c1), Uconst_ref(lbl2, _c2) -> String.compare lbl1 lbl2
-      (* Same labels -> same constants.
-         Different labels -> different constants, even if the contents
+  | Uconst_ref(sym1, _c1), Uconst_ref(sym2, _c2) ->
+      Backend_sym.compare sym1 sym2
+      (* Same symbols -> same constants.
+         Different symbols -> different constants, even if the contents
            match, because of string constants that must not be
            reshared. *)
   | Uconst_int n1, Uconst_int n2 -> Stdlib.compare n1 n2

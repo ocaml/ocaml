@@ -107,7 +107,8 @@ let get_imp_symbol s =
   match S.Tbl.find imp_table s with
   | exception Not_found ->
       let imps_name = "__caml_imp_%s" ^ (S.encode s) in
-      let imps = S.of_external_name imps_name in
+      let compilation_unit = Compilation_unit.get_current_exn () in
+      let imps = S.of_external_name compilation_unit imps_name in
       S.Tbl.add imp_table s imps;
       imps
   | imps -> imps
