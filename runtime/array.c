@@ -335,10 +335,6 @@ CAMLprim value caml_make_vect(value len, value init)
   CAMLreturn (res);
 }
 
-#ifndef FLAT_FLOAT_ARRAY
-static value uninitialized_float = Val_unit;
-#endif
-
 /* [len] is a [value] representing number of floats */
 /* [ int -> float array ] */
 CAMLprim value caml_make_float_vect(value len)
@@ -346,9 +342,10 @@ CAMLprim value caml_make_float_vect(value len)
 #ifdef FLAT_FLOAT_ARRAY
   return caml_floatarray_create (len);
 #else
+  static value uninitialized_float = Val_unit;
   if (uninitialized_float == Val_unit){
-    caml_register_global_root (&uninitialized_float);
     uninitialized_float = caml_alloc_shr (Double_wosize, Double_tag);
+    caml_register_generational_global_root (&uninitialized_float);
   }
   return caml_make_vect (len, uninitialized_float);
 #endif
