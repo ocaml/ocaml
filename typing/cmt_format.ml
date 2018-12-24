@@ -109,7 +109,7 @@ let output_cmt oc cmt =
   output_string oc Config.cmt_magic_number;
   output_value oc (cmt : cmt_infos)
 
-let read_from_channel ic =
+let read_from_channel ~filename ic =
   Misc.try_finally
     ~always:(fun () -> close_in ic)
     (fun () ->
@@ -136,10 +136,10 @@ let read_from_channel ic =
 
 let read filename =
 (*  Printf.fprintf stderr "Cmt_format.read %s\n%!" filename; *)
-  read_from_channel (open_in_bin filename)
+  read_from_channel ~filename (open_in_bin filename)
 
-let read_cmt_from_channel ic =
-  match read_from_channel ic with
+let read_cmt_from_channel ~filename ic =
+  match read_from_channel ~filename ic with
       _, None -> raise (Error (Not_a_typedtree filename))
     | _, Some cmt -> cmt
 

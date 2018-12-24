@@ -81,7 +81,11 @@ exception Error of error
 val read : string -> Cmi_format.cmi_infos option * cmt_infos option
 
 val read_cmt : string -> cmt_infos
-val read_cmt_from_channel : in_channel -> cmt_infos
+
+(** Like [read_cmt], but reads from a channel.  The [filename] is used only
+    for error reporting. *)
+val read_cmt_from_channel : filename:string -> in_channel -> cmt_infos
+
 val read_cmi : string -> Cmi_format.cmi_infos
 
 (** [save_cmt filename modname binary_annots sourcefile initial_env cmi]

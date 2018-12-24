@@ -36,8 +36,8 @@ val input_cmi : in_channel -> cmi_infos
 val read_cmi : string -> cmi_infos
 
 (** Like [read_cmi], but reads from a channel.  The channel will be closed
-    by this function. *)
-val read_cmi_from_channel : in_channel -> cmi_infos
+    by this function.  The [filename] is only used for error reporting. *)
+val read_cmi_from_channel : filename:string -> in_channel -> cmi_infos
 
 (* Error report *)
 

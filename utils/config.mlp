@@ -234,7 +234,7 @@ let print_config oc =
 ;;
 
 let digest_static_configuration_values () =
-  Digest.string (Marshal.to_string configuration_values [])
+  Digest.string (Marshal.to_string configuration_variables [])
 
 let config_var x =
   match List.assoc_opt x configuration_variables with

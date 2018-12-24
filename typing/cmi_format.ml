@@ -44,7 +44,7 @@ let input_cmi ic =
       cmi_flags = flags;
     }
 
-let read_cmi_from_channel ic =
+let read_cmi_from_channel ~filename ic =
   try
     let buffer =
       really_input_string ic (String.length Config.cmi_magic_number)
@@ -73,7 +73,7 @@ let read_cmi_from_channel ic =
       raise (Error e)
 
 let read_cmi filename =
-  read_cmi_from_channel (open_in_bin filename)
+  read_cmi_from_channel ~filename (open_in_bin filename)
 
 let output_cmi filename oc cmi =
 (* beware: the provided signature must have been substituted for saving *)
