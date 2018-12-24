@@ -218,6 +218,46 @@ let configuration_variables =
   p "cmt_magic_number" cmt_magic_number;
 ]
 
+(* CR mshinwell: rework the above to avoid duplicate list *)
+let configuration_variables_for_libmonda =
+  let p x v = (x, String v) in
+  let p_int x v = (x, Int v) in
+  let p_bool x v = (x, Bool v) in
+[
+  p "standard_library_default" standard_library_default;
+  p "standard_library" standard_library;
+  p "architecture" architecture;
+  p "model" model;
+  p_int "int_size" Sys.int_size;
+  p_int "word_size" Sys.word_size;
+  p "system" system;
+  p_bool "with_frame_pointers" with_frame_pointers;
+  p "os_type" Sys.os_type;
+  p_bool "systhread_supported" systhread_supported;
+  p "host" host;
+  p "target" target;
+  p_bool "profiling" profiling;
+  p_bool "flambda" flambda;
+  p_bool "spacetime" spacetime;
+  p_bool "safe_string" safe_string;
+  p_bool "default_safe_string" default_safe_string;
+  p_bool "flat_float_array" flat_float_array;
+  p_bool "afl_instrument" afl_instrument;
+  p_bool "windows_unicode" windows_unicode;
+  p_bool "supports_shared_libraries" supports_shared_libraries;
+
+  p "exec_magic_number" exec_magic_number;
+  p "cmi_magic_number" cmi_magic_number;
+  p "cmo_magic_number" cmo_magic_number;
+  p "cma_magic_number" cma_magic_number;
+  p "cmx_magic_number" cmx_magic_number;
+  p "cmxa_magic_number" cmxa_magic_number;
+  p "ast_impl_magic_number" ast_impl_magic_number;
+  p "ast_intf_magic_number" ast_intf_magic_number;
+  p "cmxs_magic_number" cmxs_magic_number;
+  p "cmt_magic_number" cmt_magic_number;
+]
+
 let print_config_value oc = function
   | String s ->
       Printf.fprintf oc "%s" s
@@ -233,8 +273,9 @@ let print_config oc =
   flush oc;
 ;;
 
+(* CR mshinwell: rename *)
 let digest_static_configuration_values () =
-  Digest.string (Marshal.to_string configuration_variables [])
+  Digest.string (Marshal.to_string configuration_variables_for_libmonda [])
 
 let config_var x =
   match List.assoc_opt x configuration_variables with
