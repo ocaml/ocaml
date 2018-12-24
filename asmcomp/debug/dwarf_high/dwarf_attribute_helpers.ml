@@ -299,33 +299,17 @@ let create_declaration () =
 
 let create_ocaml_compiler_version version =
   let spec = AS.create (Ocaml_specific Compiler_version) Strp in
-  AV.create spec (V.indirect_string ~comment:".cmt version number" version)
+  AV.create spec (V.indirect_string ~comment:"OCaml compiler version" version)
 
-let create_ocaml_load_path paths =
-  let path = Name_laundry.mangle_load_path paths in
-  let spec = AS.create (Ocaml_specific Load_path) Strp in
-  AV.create spec (V.indirect_string ~comment:"mangled load path" path)
+let create_ocaml_unit_name unit_name =
+  let spec = AS.create (Ocaml_specific Unit_name) Strp in
+  AV.create spec (V.indirect_string ~comment:"unit name" (Ident.name unit_name))
 
-let create_ocaml_cmi_magic_number magic =
-  let spec = AS.create (Ocaml_specific Cmi_magic_number) Strp in
-  AV.create spec (V.indirect_string ~comment:".cmi magic number" magic)
+let create_ocaml_config_digest digest =
+  let hex = Digest.to_hex digest in
+  let spec = AS.create (Ocaml_specific Config_digest) Strp in
+  AV.create spec (V.indirect_string ~comment:"static config value digest" hex)
 
-let create_ocaml_cmt_magic_number magic =
-  let spec = AS.create (Ocaml_specific Cmt_magic_number) Strp in
-  AV.create spec (V.indirect_string ~comment:".cmt magic number" magic)
-
-let create_ocaml_source_directory_path magic =
-  let spec = AS.create (Ocaml_specific Source_directory_path) Strp in
-  AV.create spec (V.indirect_string ~comment:"source dir. path" magic)
-
-let create_ocaml_source_filename magic =
-  let spec = AS.create (Ocaml_specific Source_filename) Strp in
-  AV.create spec (V.indirect_string ~comment:"source dir. path" magic)
-
-let create_ocaml_object_directory_path magic =
-  let spec = AS.create (Ocaml_specific Object_directory_path) Strp in
-  AV.create spec (V.indirect_string ~comment:"object dir. path" magic)
-
-let create_ocaml_object_filename magic =
-  let spec = AS.create (Ocaml_specific Object_filename) Strp in
-  AV.create spec (V.indirect_string ~comment:"object dir. path" magic)
+let create_ocaml_prefix_name name =
+  let spec = AS.create (Ocaml_specific Prefix_name) Strp in
+  AV.create spec (V.indirect_string ~comment:"prefix name" name)

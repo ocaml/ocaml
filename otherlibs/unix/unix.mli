@@ -268,6 +268,9 @@ val stdout : file_descr
 val stderr : file_descr
 (** File descriptor for standard error. *)
 
+val file_descr_of_int : int -> file_descr
+(** Create a file descriptor given a standard Unix fd. *)
+
 type open_flag =
     O_RDONLY                    (** Open for reading *)
   | O_WRONLY                    (** Open for writing *)

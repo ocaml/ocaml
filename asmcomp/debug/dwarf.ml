@@ -80,12 +80,9 @@ let create ~sourcefile ~prefix_name ~unit_name =
     if Filename.is_relative sourcefile then cwd, sourcefile
     else Filename.dirname sourcefile, Filename.basename sourcefile
   in
-  let object_directory_path =
-    if Filename.is_relative prefix_name then source_directory_path
-    else Filename.dirname prefix_name
-  in
-  let object_filename =
-    (Filename.basename prefix_name) ^ Config.ext_obj
+  let prefix_name =
+    if Filename.is_relative prefix_name then Filename.concat cwd prefix_name
+    else prefix_name
   in
   let start_of_code_symbol =
     mangle_symbol (
@@ -106,6 +103,7 @@ let create ~sourcefile ~prefix_name ~unit_name =
   let loclists_base = Location_list_table.base_addr location_list_table in
   let range_list_table = Range_list_table.create () in
   let rnglists_base = Range_list_table.base_addr range_list_table in
+  let config_digest = Config.digest_static_configuration_values () in
   let compilation_unit_proto_die =
     let dwarf_5_only =
       match !Clflags.dwarf_version with
@@ -117,21 +115,17 @@ let create ~sourcefile ~prefix_name ~unit_name =
       ]
     in
     let attribute_values =
-      [ DAH.create_name (Ident.name unit_name);
+      [ DAH.create_name source_filename;
+        DAH.create_comp_dir source_directory_path;
         (* The [OCaml] attribute value here is only defined in DWARF-5, but
            it doesn't mean anything else in DWARF-4, so we always emit it.
            This saves special-case logic in gdb based on the producer name. *)
         DAH.create_language OCaml;
         DAH.create_producer "ocamlopt";
+        DAH.create_ocaml_unit_name unit_name;
         DAH.create_ocaml_compiler_version Sys.ocaml_version;
-        DAH.create_ocaml_cmi_magic_number Config.cmi_magic_number;
-        DAH.create_ocaml_cmt_magic_number Config.cmt_magic_number;
-        DAH.create_ocaml_load_path !Config.load_path;
-        DAH.create_comp_dir cwd;
-        DAH.create_ocaml_source_directory_path source_directory_path;
-        DAH.create_ocaml_source_filename source_filename;
-        DAH.create_ocaml_object_directory_path object_directory_path;
-        DAH.create_ocaml_object_filename object_filename;
+        DAH.create_ocaml_config_digest config_digest;
+        DAH.create_ocaml_prefix_name prefix_name;
         DAH.create_low_pc_from_symbol start_of_code_symbol;
         DAH.create_high_pc_from_symbol end_of_code_symbol;
         DAH.create_stmt_list ~debug_line_label;

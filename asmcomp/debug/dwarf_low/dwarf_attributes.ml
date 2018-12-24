@@ -294,13 +294,10 @@ module Attribute = struct
   module Ocaml_specific = struct
     type 'dwarf_classes t =
       | Compiler_version : Class.string t
-      | Cmi_magic_number : Class.string t
-      | Cmt_magic_number : Class.string t
+      | Unit_name : Class.string t
+      | Config_digest : Class.string t
       | Load_path : Class.string t
-      | Source_directory_path : Class.string t
-      | Source_filename : Class.string t
-      | Object_directory_path : Class.string t
-      | Object_filename : Class.string t
+      | Prefix_name : Class.string t
   end
 
   type 'dwarf_classes t =
@@ -575,13 +572,10 @@ module Attribute = struct
       | Dwarf_4 GNU_all_call_sites -> "GNU_all_call_sites"
       | Dwarf_4 GNU_all_source_call_sites -> "GNU_all_source_call_sites"
       | Ocaml_specific Compiler_version -> "Ocaml_compiler_version"
-      | Ocaml_specific Cmi_magic_number -> "Ocaml_cmi_magic_number"
-      | Ocaml_specific Cmt_magic_number -> "Ocaml_cmt_magic_number"
+      | Ocaml_specific Unit_name -> "Ocaml_unit_name"
+      | Ocaml_specific Config_digest -> "Ocaml_config_digest"
       | Ocaml_specific Load_path -> "Ocaml_load_path"
-      | Ocaml_specific Source_directory_path -> "Ocaml_source_directory_path"
-      | Ocaml_specific Source_filename -> "Ocaml_source_filename"
-      | Ocaml_specific Object_directory_path -> "Ocaml_object_directory_path"
-      | Ocaml_specific Object_filename -> "Ocaml_object_filename"
+      | Ocaml_specific Prefix_name -> "Ocaml_prefix_name"
     in
     "DW_AT_" ^ name
 
@@ -728,13 +722,10 @@ module Attribute = struct
     | Dwarf_4 GNU_all_call_sites -> 0x2117
     | Dwarf_4 GNU_all_source_call_sites -> 0x2118
     | Ocaml_specific Compiler_version -> 0x3100
-    | Ocaml_specific Cmi_magic_number -> 0x3101
-    | Ocaml_specific Cmt_magic_number -> 0x3102
+    | Ocaml_specific Unit_name -> 0x3101
+    | Ocaml_specific Config_digest -> 0x3102
     | Ocaml_specific Load_path -> 0x3103
-    | Ocaml_specific Source_directory_path -> 0x3104
-    | Ocaml_specific Source_filename -> 0x3105
-    | Ocaml_specific Object_directory_path -> 0x3106
-    | Ocaml_specific Object_filename -> 0x3107
+    | Ocaml_specific Prefix_name -> 0x3104
 
   let encode t =
     Dwarf_value.uleb128 ~comment:(name t) (Uint64.of_int_exn (code t))

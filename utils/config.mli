@@ -244,3 +244,7 @@ val print_config : out_channel -> unit
 
 val config_var : string -> string option
 (** the configuration value of a variable, if it exists *)
+
+val digest_static_configuration_values : unit -> Digest.t
+(** Compute a digest of all static configuration values (i.e. excepting
+    variables such as [load_path]). *)

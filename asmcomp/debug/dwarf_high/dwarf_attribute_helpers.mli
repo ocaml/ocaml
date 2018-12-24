@@ -207,30 +207,14 @@ val create_ocaml_compiler_version
    : string
   -> Dwarf_attribute_values.Attribute_value.t
 
-val create_ocaml_cmi_magic_number
-   : string
+val create_ocaml_unit_name
+   : Ident.t
   -> Dwarf_attribute_values.Attribute_value.t
 
-val create_ocaml_cmt_magic_number
-   : string
+val create_ocaml_config_digest
+   : Digest.t
   -> Dwarf_attribute_values.Attribute_value.t
 
-val create_ocaml_load_path
-   : string list
-  -> Dwarf_attribute_values.Attribute_value.t
-
-val create_ocaml_source_directory_path
-   : string
-  -> Dwarf_attribute_values.Attribute_value.t
-
-val create_ocaml_source_filename
-   : string
-  -> Dwarf_attribute_values.Attribute_value.t
-
-val create_ocaml_object_directory_path
-   : string
-  -> Dwarf_attribute_values.Attribute_value.t
-
-val create_ocaml_object_filename
+val create_ocaml_prefix_name
    : string
   -> Dwarf_attribute_values.Attribute_value.t
