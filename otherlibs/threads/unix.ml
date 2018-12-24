@@ -188,6 +188,8 @@ let stdin = 0
 let stdout = 1
 let stderr = 2
 
+let file_descr_of_int i = i
+
 type open_flag =
     O_RDONLY
   | O_WRONLY
