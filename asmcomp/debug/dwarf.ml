@@ -118,6 +118,9 @@ let create ~sourcefile ~prefix_name ~unit_name =
     in
     let attribute_values =
       [ DAH.create_name (Ident.name unit_name);
+        (* The [OCaml] attribute value here is only defined in DWARF-5, but
+           it doesn't mean anything else in DWARF-4, so we always emit it.
+           This saves special-case logic in gdb based on the producer name. *)
         DAH.create_language OCaml;
         DAH.create_producer "ocamlopt";
         DAH.create_ocaml_compiler_version Sys.ocaml_version;
