@@ -271,9 +271,23 @@ let print_config oc =
   flush oc;
 ;;
 
+let print_config_value ppf = function
+  | String s ->
+      Format.fprintf ppf "%s" s
+  | Int n ->
+      Format.fprintf ppf "%d" n
+  | Bool p ->
+      Format.fprintf ppf "%B" p
+
+let string_of_config_for_libmonda () =
+  List.fold_left (fun acc (var, value) ->
+      Format.asprintf "%s%s: %a\n" acc var print_config_value value)
+    ""
+    configuration_variables_for_libmonda
+
 (* CR mshinwell: rename *)
 let digest_static_configuration_values () =
-  Digest.string (Marshal.to_string configuration_variables_for_libmonda [])
+  Digest.string (string_of_config_for_libmonda ())
 
 let config_var x =
   match List.assoc_opt x configuration_variables with
