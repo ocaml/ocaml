@@ -224,8 +224,6 @@ let configuration_variables_for_libmonda =
   let p_int x v = (x, Int v) in
   let p_bool x v = (x, Bool v) in
 [
-  p "standard_library_default" standard_library_default;
-  p "standard_library" standard_library;
   p "architecture" architecture;
   p "model" model;
   p_int "int_size" Sys.int_size;
