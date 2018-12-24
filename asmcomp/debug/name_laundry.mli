@@ -43,9 +43,3 @@ type split_base_type_die_name_result = private {
 
 (** The inverse of [base_type_die_name_for_var]. *)
 val split_base_type_die_name : string -> split_base_type_die_name_result option
-
-(** Encode a load or search path into a single string. *)
-val mangle_load_path : string list -> string
-
-(** The inverse of [mangle_load_path]. *)
-val demangle_load_path : string -> string list

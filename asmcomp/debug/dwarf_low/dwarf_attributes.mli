@@ -187,7 +187,6 @@ module Attribute : sig
       | Compiler_version : Class.string t
       | Unit_name : Class.string t
       | Config_digest : Class.string t
-      | Load_path : Class.string t
       | Prefix_name : Class.string t
   end
 

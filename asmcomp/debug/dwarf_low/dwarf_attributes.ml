@@ -296,7 +296,6 @@ module Attribute = struct
       | Compiler_version : Class.string t
       | Unit_name : Class.string t
       | Config_digest : Class.string t
-      | Load_path : Class.string t
       | Prefix_name : Class.string t
   end
 
@@ -574,7 +573,6 @@ module Attribute = struct
       | Ocaml_specific Compiler_version -> "Ocaml_compiler_version"
       | Ocaml_specific Unit_name -> "Ocaml_unit_name"
       | Ocaml_specific Config_digest -> "Ocaml_config_digest"
-      | Ocaml_specific Load_path -> "Ocaml_load_path"
       | Ocaml_specific Prefix_name -> "Ocaml_prefix_name"
     in
     "DW_AT_" ^ name
@@ -724,8 +722,7 @@ module Attribute = struct
     | Ocaml_specific Compiler_version -> 0x3100
     | Ocaml_specific Unit_name -> 0x3101
     | Ocaml_specific Config_digest -> 0x3102
-    | Ocaml_specific Load_path -> 0x3103
-    | Ocaml_specific Prefix_name -> 0x3104
+    | Ocaml_specific Prefix_name -> 0x3103
 
   let encode t =
     Dwarf_value.uleb128 ~comment:(name t) (Uint64.of_int_exn (code t))

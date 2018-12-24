@@ -57,9 +57,3 @@ let split_base_type_die_name name =
     let ident_stamp = int_of_string ident_stamp in
     Some { compilation_unit; ident_name; ident_stamp; }
   | _ -> None
-
-let mangle_load_path paths =
-  String.concat "\001" paths
-
-let demangle_load_path path =
-  String.split_on_char '\001' path
