@@ -12,25 +12,33 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Symbols in the assembly stream. Unlike labels, symbols are named entities
-    that are accessible in an object file. *)
+(** Symbols in the assembly stream.  Unlike labels, symbols are named entities
+    that are potentially accessible from outside an object file.  Symbols are
+    defined within sections. *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 type t
 
 (** Create an assembly symbol from a backend symbol. *)
-val create : Backend_sym.t -> t
+val create : Asm_section.t -> Backend_sym.t -> t
 
 (** Create an assembly symbol from a name as found in an object file.
     The name will be prefixed with the appropriate symbol prefix for the
     target system. *)
-val of_external_name : Compilation_unit.t -> string -> t
+val of_external_name : Asm_section.t -> Compilation_unit.t -> string -> t
 
 (** Like [of_external_name], but for specialised uses (in particular "direct
     assignment" on macOS) where the name must not have a symbol prefix
     applied. *)
-val of_external_name_no_prefix : Compilation_unit.t -> string -> t
+val of_external_name_no_prefix
+   : Asm_section.t
+  -> Compilation_unit.t
+  -> string
+  -> t
+
+(** The section enclosing the symbol. *)
+val section : t -> Asm_section.t
 
 (** The compilation unit where the symbol is defined. *)
 val compilation_unit : t -> Compilation_unit.t

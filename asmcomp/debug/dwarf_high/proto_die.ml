@@ -19,7 +19,7 @@ module AV = Dwarf_attribute_values.Attribute_value
 module Int = Numbers.Int
 
 type reference = Asm_label.t
-let create_reference () = Asm_label.create ()
+let create_reference () = Asm_label.create (DWARF Debug_info)
 
 type t = {
   parent : t option;
@@ -52,7 +52,7 @@ let create ?reference ?(sort_priority = -1) ~parent ~tag ~attribute_values () =
   end;
   let reference =
     match reference with
-    | None -> Asm_label.create ()
+    | None -> Asm_label.create (DWARF Debug_info)
     | Some reference -> reference
   in
   let attribute_values = attribute_values_map attribute_values in

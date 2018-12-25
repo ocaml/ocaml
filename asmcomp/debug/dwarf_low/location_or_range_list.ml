@@ -23,6 +23,8 @@ module Make (Entry : Location_or_range_list_entry.S) = struct
 
   let add t entry = entry :: t
 
+  let section = Entry.section
+
   let size t =
     List.fold_left (fun size entry ->
         Dwarf_int.add size (Entry.size entry))

@@ -57,7 +57,7 @@ type t = {
 }
 
 let create () =
-  { base_addr = Asm_label.create ();
+  { base_addr = Asm_label.create (DWARF Debug_addr);
     next_index = Address_index.zero;
     table = Address_index.Map.empty;
     rev_table = Entry.Map.empty;

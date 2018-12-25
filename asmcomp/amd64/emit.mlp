@@ -34,6 +34,7 @@ open X86_dsl
    for all targets. *)
 open! Branch_relaxation
 
+module AS = Asm_section
 module D = Asm_directives
 module L = Asm_label
 module S = Asm_symbol
@@ -108,7 +109,9 @@ let get_imp_symbol s =
   | exception Not_found ->
       let imps_name = "__caml_imp_%s" ^ (S.encode s) in
       let compilation_unit = Compilation_unit.get_current_exn () in
-      let imps = S.of_external_name compilation_unit imps_name in
+      let imps =
+        S.of_external_name AS.Data compilation_unit imps_name
+      in
       S.Tbl.add imp_table s imps;
       imps
   | imps -> imps
@@ -150,11 +153,11 @@ let load_symbol_addr s arg =
 
 (* Output a label *)
 
-let def_label lbl = D.define_label (L.create_int lbl)
+let def_label section lbl = D.define_label (L.create_int section lbl)
 
-let emit_Llabel fallthrough lbl =
+let emit_Llabel section fallthrough lbl =
   if not fallthrough && !fastcode_flag then D.align ~bytes:4;
-  def_label lbl
+  def_label section lbl
 
 (* Output a pseudo-register *)
 
@@ -203,7 +206,7 @@ let res32 i n = emit_subreg reg_low_32_name DWORD i.res.(n)
 let addressing addr typ i n =
   match addr with
   | Ibased(s, ofs) ->
-      let s = S.create s in
+      let s = S.create AS.Data s in
       add_used_symbol s;
       mem64_rip typ (Symbol s) ~ofs
   | Iindexed d ->
@@ -243,7 +246,7 @@ let record_frame_label ?label live raise_ dbg =
 
 let record_frame ?label live raise_ dbg =
   let lbl = record_frame_label ?label live raise_ dbg in
-  def_label lbl
+  def_label AS.Text lbl
 
 (* Spacetime instrumentation *)
 
@@ -280,7 +283,7 @@ let call_gc_sites = ref ([] : gc_call list)
 let additional_call_sites = ref []
 
 let emit_call_gc gc =
-  def_label gc.gc_lbl;
+  def_label AS.Text gc.gc_lbl;
   begin match gc.gc_spacetime with
   | None -> assert (not Config.spacetime)
   | Some (node_ptr, index) ->
@@ -288,10 +291,10 @@ let emit_call_gc gc =
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
   D.cfi_def_cfa_offset ~bytes:gc.gc_cfa_offset;
-  def_label gc.gc_before_call;
+  def_label AS.Text gc.gc_before_call;
   emit_call caml_call_gc;
-  def_label gc.gc_frame;
-  I.jmp (label (L.create_int gc.gc_return_lbl))
+  def_label AS.Text gc.gc_frame;
+  I.jmp (label (L.create_int AS.Text gc.gc_return_lbl))
 
 (* Record calls to caml_ml_array_bound_error.
    In -g mode, or when using Spacetime profiling, we maintain one call to
@@ -330,21 +333,21 @@ let bound_error_label ?label dbg ~spacetime =
   end
 
 let emit_call_bound_error bd =
-  def_label bd.bd_lbl;
+  def_label AS.Text bd.bd_lbl;
   begin match bd.bd_spacetime with
   | None -> ()
   | Some (node_ptr, index) ->
     spacetime_before_uninstrumented_call ~node_ptr ~index
   end;
   D.cfi_def_cfa_offset ~bytes:bd.bd_cfa_offset;
-  def_label bd.bd_before_call;
+  def_label AS.Text bd.bd_before_call;
   emit_call caml_ml_array_bound_error;
-  def_label bd.bd_frame
+  def_label AS.Text bd.bd_frame
 
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
   if !bound_error_call > 0 then begin
-    def_label !bound_error_call;
+    def_label AS.Text !bound_error_call;
     emit_call caml_ml_array_bound_error
   end
 
@@ -406,9 +409,9 @@ let emit_float_test cmp i lbl =
   | CFeq ->
       let next = new_label() in
       I.ucomisd (arg i 1) (arg i 0);
-      I.jp (label (L.create_int next));  (* skip if unordered *)
+      I.jp (label (L.create_int AS.Text next));  (* skip if unordered *)
       I.je lbl;                          (* branch taken if x=y *)
-      def_label next
+      def_label AS.Text next
   | CFneq ->
       I.ucomisd (arg i 1) (arg i 0);
       I.jp lbl;                   (* branch taken if unordered *)
@@ -471,23 +474,23 @@ let add_float_constant cst =
     lbl
 
 let emit_float_constant f lbl =
-  def_label lbl;
+  def_label AS.Eight_byte_literals lbl;
   D.int64 f
 
 (* Definition of global symbols *)
 
-let define_global_symbol0 base_name =
-  let sym = S.create (Backend_sym.create ~base_name) in
+let define_global_symbol0 section base_name =
+  let sym = S.create section (Backend_sym.create ~base_name) in
   add_def_symbol sym;
   D.global sym;
   sym
 
-let define_global_data_symbol base_name =
-  let sym = define_global_symbol0 base_name in
+let define_global_data_symbol section base_name =
+  let sym = define_global_symbol0 AS.Data base_name in
   D.define_data_symbol sym
 
 let define_global_text_symbol base_name =
-  let sym = define_global_symbol0 base_name in
+  let sym = define_global_symbol0 AS.Text base_name in
   D.define_function_symbol sym
 
 (* Emission of the profiling prelude *)
@@ -512,14 +515,14 @@ let emit_profile () =
 
 let maybe_add_label_before_call ~call_labels =
   if Dwarf.supports_call_sites () then begin
-    def_label call_labels.before
+    def_label AS.Text call_labels.before
   end
 
 (* This function should not be called if [record_frame] is going to be used,
    since the latter defines the same label as this function. *)
 let maybe_add_label_after_call ~call_labels =
   if Dwarf.supports_call_sites () then begin
-    def_label call_labels.after
+    def_label AS.Text call_labels.after
   end
 
 (* Output the assembly code for an instruction *)
@@ -544,7 +547,7 @@ let emit_instr fallthrough i =
       let n = frame_size () - 8 - (if fp then 8 else 0) in
       add_to_rsp (-n)
     end;
-    def_label !tailrec_entry_point
+    def_label AS.Text !tailrec_entry_point
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
@@ -567,7 +570,8 @@ let emit_instr fallthrough i =
           I.xorpd (res i 0) (res i 0)
       | _ ->
           let lbl = add_float_constant f in
-          I.movsd (mem64_rip NONE (Label (L.create_int lbl))) (res i 0)
+          I.movsd (mem64_rip NONE (
+            Label (L.create_int AS.Eight_byte_literals lbl))) (res i 0)
       end
   | Lop(Iconst_symbol s) ->
       let s = S.create s in
@@ -690,7 +694,7 @@ let emit_instr fallthrough i =
   | Lop(Ialloc { bytes = n; label_after_call_gc; spacetime_index; }) ->
       if !fastcode_flag then begin
         let lbl_redo = new_label() in
-        def_label lbl_redo;
+        def_label AS.Text lbl_redo;
         I.sub (int n) r15;
         let spacetime_node_hole_ptr_is_in_rax =
           Config.spacetime && (i.arg.(0).loc = Reg 0)
@@ -739,7 +743,7 @@ let emit_instr fallthrough i =
             ~index:spacetime_index;
         end;
         let lbl_before = new_label () in
-        def_label lbl_before;
+        def_label AS.Text lbl_before;
         begin match n with
         | 16 -> emit_call caml_alloc1
         | 24 -> emit_call caml_alloc2
@@ -752,7 +756,7 @@ let emit_instr fallthrough i =
           record_frame_label ?label:label_after_call_gc i.live false
             Debuginfo.none
         in
-        def_label label;
+        def_label AS.Text label;
         I.lea (mem64 NONE 8 R15) (res i 0);
         let call_site : Emitaux.external_call_generated_during_emit =
           { callee = Asm_symbol.Names.caml_call_gc;
@@ -914,9 +918,9 @@ let emit_instr fallthrough i =
       I.add (reg tmp2) (reg tmp1);
       I.jmp (reg tmp1);
 
-      D.switch_to_section Asm_section.Jump_tables;
+      D.switch_to_section AS.Jump_tables;
       D.align ~bytes:4;
-      def_label lbl;
+      def_label AS.Text lbl;
       for i = 0 to Array.length jumptbl - 1 do
         D.between_labels_32bit ~upper:(L.create_int jumptbl.(i))
           ~lower:(L.create_int lbl)
@@ -1082,7 +1086,7 @@ let begin_assembly() =
 
 
   if !Clflags.dlcode || Target_system.win64 () then begin
-    D.switch_to_section Asm_section.Eight_byte_literals;
+    D.switch_to_section AS.Eight_byte_literals;
     D.align ~bytes:16;
     D.define_data_symbol caml_negf_mask;
     D.int64 0x8000000000000000L;
@@ -1136,7 +1140,7 @@ let emit_spacetime_shapes () =
 
 let end_assembly dwarf =
   if !float_constants <> [] then begin
-    D.switch_to_section Asm_section.Eight_byte_literals;
+    D.switch_to_section AS.Eight_byte_literals;
     List.iter (fun (cst,lbl) -> emit_float_constant cst lbl) !float_constants
   end;
 
@@ -1167,7 +1171,7 @@ let end_assembly dwarf =
         (fun lbl ofs ->
           D.between_this_and_label_offset_32bit ~upper:(L.create_int lbl)
             ~offset_upper:(Targetint.of_int32 ofs));
-      efa_def_label = (fun lbl -> def_label lbl);
+      efa_def_label = (fun lbl -> def_label Data lbl);
       efa_string = (fun s -> D.string (s ^ "\000"))
     };
 

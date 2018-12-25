@@ -107,13 +107,13 @@ val string : ?comment:string -> string -> unit
     not emit anything.  (See [emit_cached_strings], below.)
     If a string is supplied to this function that is already in the cache
     then the previously-assigned label is returned, not a new one. *)
-val cache_string : ?comment:string -> string -> Asm_label.t
+val cache_string : ?comment:string -> Asm_section.t -> string -> Asm_label.t
 
 (** Emit the sequence of:
       label definition:
         <string><null terminator>
-    pairs as per previous calls to [cache_string].  This function clears
-    the cache. *)
+    pairs as per previous calls to [cache_string] with appropriate directives
+    to switch section interspersed.  This function clears the cache. *)
 val emit_cached_strings : unit -> unit
 
 (** Emit a comment. *)
@@ -198,84 +198,83 @@ val define_label : Asm_label.t -> unit
 val label : ?comment:string -> Asm_label.t -> unit
 
 (** Emit a machine-width reference to the address formed by adding the
-    given byte offset to the address of the given symbol. *)
+    given byte offset to the address of the given symbol.  The symbol may be
+    in a compilation unit and/or section different from the current one. *)
 val symbol_plus_offset
    : Asm_symbol.t
   -> offset_in_bytes:Targetint.t
   -> unit
 
-(** The following functions calculate distances between various entities
-    such as labels and symbols.  These distances are calculated at link time
-    after the entities concerned have been relocated.  This means that they
-    can be safely used even when the linker may insert (or remove) code or
-    data between the points being measured. *)
-
 (** Emit a machine-width reference giving the displacement between two given
-    labels.  To obtain a positive result the symbol at the [lower] address
-    should be the second argument, as for normal subtraction. *)
-val between_symbols
+    symbols.  To obtain a positive result the symbol at the [lower] address
+    should be the second argument, as for normal subtraction.  The symbols
+    must be in the current compilation unit and in the same section. *)
+val between_symbols_in_current_unit
    : upper:Asm_symbol.t
   -> lower:Asm_symbol.t
   -> unit
 
 (** Like [between_symbols], but for two labels, emitting a 16-bit-wide
-    reference.  The behaviour upon overflow is unspecified. *)
-val between_labels_16bit : upper:Asm_label.t -> lower:Asm_label.t -> unit
+    reference.  The behaviour upon overflow is unspecified.  The labels must
+    be in the same section. *)
+val between_labels_16_bit
+   : upper:Asm_label.t
+  -> lower:Asm_label.t
+  -> unit
 
 (** Like [between_symbols], but for two labels, emitting a 32-bit-wide
-    reference.  The behaviour upon overflow is unspecified. *)
-val between_labels_32bit : upper:Asm_label.t -> lower:Asm_label.t -> unit
+    reference.  The behaviour upon overflow is unspecified.  The labels must
+    be in the same section. *)
+val between_labels_32_bit
+   : upper:Asm_label.t
+  -> lower:Asm_label.t
+  -> unit
 
 (** Like [between_symbols], but for two labels, emitting a 64-bit-wide
-    reference. *)
-val between_labels_64bit : upper:Asm_label.t -> lower:Asm_label.t -> unit
+    reference.  The labels must be in the same section. *)
+val between_labels_64_bit
+   : upper:Asm_label.t
+  -> lower:Asm_label.t
+  -> unit
 
 (** Emit a machine-width reference giving the displacement between the
-    lower symbol and the sum of the address of the [upper] label plus
-    [offset_upper]. *)
-val between_symbol_and_label_offset
+    [lower] symbol and the sum of the address of the [upper] label plus
+    [offset_upper].  The [lower] symbol must be in the current compilation
+    unit.  The [upper] label must be in the same section as the [lower]
+    symbol. *)
+val between_symbol_in_current_unit_and_label_offset
    : ?comment:string
   -> upper:Asm_label.t
   -> lower:Asm_symbol.t
   -> offset_upper:Targetint.t
   -> unit
 
-(** As for [between_symbol_and_label_offset], but with the types of the
-    lower and upper bounds transposed. *)
-val between_symbol_and_label_offset'
-   : upper:Asm_symbol.t
-  -> lower:Asm_label.t
-  -> offset_lower:Targetint.t
-  -> unit
-
 (** Emit a 32-bit-wide reference giving the displacement between obtained
     by subtracting the current assembly location from the sum of the address
-    of the given label plus the given offset. *)
+    of the given label plus the given offset.  The label must be in the
+    same section as the assembler is currently emitting into. *)
+(* CR mshinwell: double-check use of this function *)
 val between_this_and_label_offset_32bit
    : upper:Asm_label.t
   -> offset_upper:Targetint.t
   -> unit
 
-val scaled_distance_between_this_and_label_offset
-   : upper:Asm_label.t
-  -> divide_by:int
-  -> unit
-
-(** Emit an integer giving the distance obtained by subtracting the
-    address of [base] from the address of [label].  [width] specifies the
-    size of the integer. *)
-val offset_into_section_label
+(** Emit an offset into a DWARF section given a label identifying the place
+    within such section. *)
+val offset_into_dwarf_section_label
    : ?comment:string
-  -> Asm_section.t
+  -> Asm_section.dwarf_section
   -> Asm_label.t
   -> width:Target_system.machine_width
   -> unit
 
-(** As for [offset_into_section_label], but using a symbol instead of
-    a label as one end of the measurement. *)
-val offset_into_section_symbol
+(** Emit an offset into a DWARF section given a symbol identifying the place
+    within such section.  The symbol may only be in a compilation unit different
+    from the current one if the supplied section is [Debug_info].  The symbol
+    must always be in the given section. *)
+val offset_into_dwarf_section_symbol
    : ?comment:string
-  -> Asm_section.t
+  -> Asm_section.dwarf_section
   -> Asm_symbol.t
   -> width:Target_system.machine_width
   -> unit
@@ -291,7 +290,6 @@ module Directive : sig
           conventions have by now been applied to these entities.) *)
       | Add of t * t
       | Sub of t * t
-      | Div of t * int
   end
 
   module Constant_with_width : sig
@@ -334,7 +332,6 @@ module Directive : sig
     | Cfi_startproc
     | Comment of comment
     | Const of { constant : Constant_with_width.t; comment : string option; }
-    | Direct_assignment of string * Constant.t
     | File of { file_num : int option; filename : string; }
     | Global of string
     | Indirect_symbol of string
@@ -347,6 +344,7 @@ module Directive : sig
         flags : string option;
         args : string list;
       }
+    | Set of string * Constant.t
     | Size of string * Constant.t
     | Sleb128 of { constant : Constant.t; comment : string option; }
     | Space of { bytes : int; }

@@ -26,7 +26,7 @@ let sort entries =
   List.sort Dwarf_4_range_list_entry.compare_ascending_vma entries
 
 let create ~range_list_entries =
-  { name = Asm_label.create ();
+  { name = Asm_label.create (DWARF Debug_ranges);
     entries = sort range_list_entries;
   }
 

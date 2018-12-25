@@ -51,11 +51,11 @@ type proto_dies_for_var = {
 (* CR mshinwell: On OS X 10.11 (El Capitan), dwarfdump doesn't seem to be able
    to read our 64-bit DWARF output. *)
 
-let dwarf_version = ref Dwarf_version.five
+let dwarf_version = ref Dwarf_version.four
 
-let supports_call_sites () = true
+let supports_call_sites () = false
 
-let mangle_symbol symbol =
+let mangle_symbol section symbol =
   let unit_name =
     Linkage_name.to_string (Compilation_unit.get_linkage_name (
       Symbol.compilation_unit symbol))
@@ -64,7 +64,7 @@ let mangle_symbol symbol =
     Compilenv.concat_symbol unit_name
       (Linkage_name.to_string (Symbol.label symbol))
   in
-  Asm_symbol.of_external_name (Symbol.compilation_unit symbol) symbol'
+  Asm_symbol.of_external_name section (Symbol.compilation_unit symbol) symbol'
 
 let create ~sourcefile ~prefix_name ~unit_name =
   begin match !Clflags.dwarf_format with
@@ -85,16 +85,16 @@ let create ~sourcefile ~prefix_name ~unit_name =
     else prefix_name
   in
   let start_of_code_symbol =
-    mangle_symbol (
+    mangle_symbol Text (
       Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
         (Linkage_name.create "code_begin"))
   in
   let end_of_code_symbol =
-    mangle_symbol (
+    mangle_symbol Text (
       Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
         (Linkage_name.create "code_end"))
   in
-  let debug_line_label = Asm_section.label (DWARF Debug_line) in
+  let debug_line_label = Asm_label.for_section (DWARF Debug_line) in
   let address_table = Address_table.create () in
   let addr_base = Address_table.base_addr address_table in
   let debug_loc_table = Debug_loc_table.create () in
@@ -147,7 +147,7 @@ let create ~sourcefile ~prefix_name ~unit_name =
       ()
   in
   { compilation_unit_proto_die;
-    compilation_unit_header_label = Asm_label.create ();
+    compilation_unit_header_label = Asm_label.create (DWARF Debug_info);
     value_type_proto_die;
     debug_loc_table;
     debug_ranges_table;
@@ -238,6 +238,8 @@ let normal_type_for_var ?reference _t ~parent ident_for_type =
       in
       [DAH.create_name name]
   in
+  (* CR mshinwell: This should not create duplicates when the name is
+     missing *)
   Proto_die.create ?reference
     ~parent
     ~tag:Base_type
@@ -486,10 +488,10 @@ let phantom_var_location_description t
   match defining_expr with
   | Iphantom_const_int i -> rvalue (SLDL.Rvalue.signed_int_const i)
   | Iphantom_const_symbol symbol ->
-    let symbol = Asm_symbol.create symbol in
+    let symbol = Asm_symbol.create Data symbol in
     lvalue (SLDL.Lvalue.const_symbol ~symbol)
   | Iphantom_read_symbol_field { sym; field; } ->
-    let symbol = Asm_symbol.create sym in
+    let symbol = Asm_symbol.create Data sym in
     (* CR-soon mshinwell: Fix [field] to be of type [Targetint.t] *)
     let field = Targetint.of_int field in
     rvalue (SLDL.Rvalue.read_symbol_field ~symbol ~field)
@@ -646,14 +648,18 @@ let location_list_entry t (fundecl : L.fundecl) ~parent ~subrange
   match single_location_description with
   | None -> None
   | Some single_location_description ->
-    let start_pos = Asm_label.create_int (ARV.Subrange.start_pos subrange) in
-    let end_pos = Asm_label.create_int (ARV.Subrange.end_pos subrange) in
+    let start_pos =
+      Asm_label.create_int Text (ARV.Subrange.start_pos subrange)
+    in
+    let end_pos =
+      Asm_label.create_int Text (ARV.Subrange.end_pos subrange)
+    in
     let end_pos_offset = ARV.Subrange.end_pos_offset subrange in
     match !Clflags.dwarf_version with
     | Four ->
       let location_list_entry =
         Dwarf_4_location_list_entry.create_location_list_entry
-          ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name)
+          ~start_of_code_symbol:(Asm_symbol.create Text fundecl.fun_name)
           ~first_address_when_in_scope:start_pos
           ~first_address_when_not_in_scope:end_pos
           ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
@@ -762,8 +768,11 @@ let dwarf_for_variable t (fundecl : L.fundecl)
             in
             dwarf_4_location_list_entries, location_list)
     in
+    (* CR mshinwell: Re-check on Linux that removing the BASE hasn't
+       messed anything up *)
     match !Clflags.dwarf_version with
     | Four ->
+(*
       let base_address_selection_entry =
         let fun_symbol = Asm_symbol.create fundecl.fun_name in
         Dwarf_4_location_list_entry.create_base_address_selection_entry
@@ -772,6 +781,8 @@ let dwarf_for_variable t (fundecl : L.fundecl)
       let location_list_entries =
         base_address_selection_entry :: dwarf_4_location_list_entries
       in
+*)
+      let location_list_entries = dwarf_4_location_list_entries in
       let location_list = Dwarf_4_location_list.create ~location_list_entries in
       Debug_loc_table.insert t.debug_loc_table ~location_list
     | Five ->
@@ -1030,11 +1041,11 @@ let create_range_list_and_summarise t (fundecl : L.fundecl) range =
       let end_pos = LB.Subrange.end_pos subrange in
       let end_pos_offset = LB.Subrange.end_pos_offset subrange in
       let start_inclusive =
-        Address_table.add t.address_table (Asm_label.create_int start_pos)
+        Address_table.add t.address_table (Asm_label.create_int Text start_pos)
           ~start_of_code_symbol:t.start_of_code_symbol
       in
       let end_exclusive =
-        Address_table.add t.address_table (Asm_label.create_int end_pos)
+        Address_table.add t.address_table (Asm_label.create_int Text end_pos)
           ~adjustment:(LB.Subrange.end_pos_offset subrange)
           ~start_of_code_symbol:t.start_of_code_symbol
       in
@@ -1061,9 +1072,10 @@ let create_range_list_and_summarise t (fundecl : L.fundecl) range =
         | Four ->
           let range_list_entry =
             Dwarf_4_range_list_entry.create_range_list_entry
-              ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name)
-              ~first_address_when_in_scope:(Asm_label.create_int start_pos)
-              ~first_address_when_not_in_scope:(Asm_label.create_int end_pos)
+              ~start_of_code_symbol:(Asm_symbol.create Text fundecl.fun_name)
+              ~first_address_when_in_scope:(Asm_label.create_int Text start_pos)
+              ~first_address_when_not_in_scope:
+                (Asm_label.create_int Text end_pos)
               ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
           in
           range_list_entry :: dwarf_4_range_list_entries
@@ -1122,15 +1134,17 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                 let range_list_attribute =
                   match !Clflags.dwarf_version with
                   | Four ->
+(*
                     let base_address_selection_entry =
                       Dwarf_4_range_list_entry.
                         create_base_address_selection_entry
                           ~base_address_symbol:
                             (Asm_symbol.create fundecl.fun_name)
                     in
+*)
                     let range_list_entries =
-                      base_address_selection_entry
-                        :: dwarf_4_range_list_entries
+                   (*   base_address_selection_entry
+                        :: *) dwarf_4_range_list_entries
                     in
                     let range_list =
                       Dwarf_4_range_list.create ~range_list_entries
@@ -1177,7 +1191,8 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                   match LB.Range.lowest_address range with
                   | None -> []
                   | Some lowest_address -> [
-                      DAH.create_entry_pc (Asm_label.create_int lowest_address);
+                      DAH.create_entry_pc (
+                        Asm_label.create_int Text lowest_address);
                     ]
                 in
                 (* Note that with Flambda, this DIE may not be in the scope
@@ -1390,11 +1405,12 @@ let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
       let dwarf_5_only =
         match !Clflags.dwarf_version with
         | Four -> [
-            DAH.create_low_pc (Asm_label.create_int call_labels.after);
+            DAH.create_low_pc (Asm_label.create_int Text call_labels.after);
           ]
         | Five -> [
-            DAH.create_call_pc (Asm_label.create_int call_labels.before);
-            DAH.create_call_return_pc (Asm_label.create_int call_labels.after);
+            DAH.create_call_pc (Asm_label.create_int Text call_labels.before);
+            DAH.create_call_return_pc (
+              Asm_label.create_int Text call_labels.after);
           ]
       in
       let tag : Dwarf_tag.t =
@@ -1560,12 +1576,12 @@ let dwarf_for_call_sites t ~whole_function_lexical_block
             ~callee:insn.arg.(0) ~args ~call_labels insn;
           stack_offset
         | Itailcall_imm { func = callee; callee_dbg; call_labels; _ } ->
-          let callee = Asm_symbol.create callee in
+          let callee = Asm_symbol.create Text callee in
           add_direct_ocaml_tail_call ~stack_offset
             ~callee ~callee_dbg ~args:insn.arg ~call_labels insn;
           stack_offset
         | Iextcall { func = callee; alloc = _; call_labels; } ->
-          let callee = Asm_symbol.create callee in
+          let callee = Asm_symbol.create Text callee in
           add_external_call ~stack_offset
             ~callee ~args:insn.arg ~call_labels insn;
           stack_offset
@@ -1688,10 +1704,10 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
   let external_calls_generated_during_emit =
     emit fundecl ~end_of_function_label
   in
-  let symbol = Asm_symbol.create fundecl.fun_name in
+  let symbol = Asm_symbol.create Text fundecl.fun_name in
   let start_of_function = DAH.create_low_pc_from_symbol symbol in
   let end_of_function =
-    DAH.create_high_pc (Asm_label.create_int end_of_function_label)
+    DAH.create_high_pc (Asm_label.create_int Text end_of_function_label)
   in
   let _abstract_instance_proto_die, abstract_instance_die_symbol =
     find_or_add_abstract_instance t fundecl.fun_dbg
@@ -1756,7 +1772,7 @@ let dwarf_for_toplevel_constant t ~vars ~module_path ~symbol =
           ~parent:(Some t.compilation_unit_proto_die)
           (Some (Compilation_unit.get_current_exn (), var))
       in
-      let symbol = mangle_symbol symbol in
+      let symbol = mangle_symbol Data symbol in
       Proto_die.create_ignore ~parent:(Some t.compilation_unit_proto_die)
         ~tag:Constant
         ~attribute_values:[
@@ -1845,7 +1861,7 @@ let dwarf_for_toplevel_inconstants t inconstants =
           Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
             (Linkage_name.create inconstant.symbol)
         in
-        let symbol = mangle_symbol symbol in
+        let symbol = mangle_symbol Data symbol in
         (* CR-someday mshinwell: Support multi-field preallocated blocks
            (ignored for the moment as the only one is the module block, which
            isn't made visible in the debugger). *)

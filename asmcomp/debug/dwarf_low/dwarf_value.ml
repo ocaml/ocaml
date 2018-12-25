@@ -367,8 +367,8 @@ let emit { value; comment; } =
   | String str -> A.string ?comment str
   | Indirect_string str ->
     (* "Indirect" strings are collected together into ".debug_str". *)
-    let label = A.cache_string ?comment str in
-    A.offset_into_section_label ?comment (DWARF Debug_str) label
+    let label = A.cache_string ?comment (DWARF Debug_str) str in
+    A.offset_into_dwarf_section_label ?comment Debug_str label
       ~width:(width_for_ref_addr_or_sec_offset ());
     if !Clflags.keep_asm_file then begin
       let str_len = String.length str in
@@ -386,47 +386,47 @@ let emit { value; comment; } =
   | Code_address_from_label lbl -> A.label ?comment lbl
   | Code_address_from_symbol sym -> A.symbol ?comment sym
   | Code_address_from_label_symbol_diff { upper; lower; offset_upper; } ->
-    A.between_symbol_and_label_offset ?comment ~upper ~lower ~offset_upper
+    A.between_symbol_in_current_unit_and_label_offset ?comment
+      ~upper ~lower ~offset_upper
   | Code_address_from_symbol_diff { upper; lower; } ->
-    A.between_symbols ~upper ~lower
+    A.between_symbols_in_current_unit ~upper ~lower
   | Code_address_from_symbol_plus_bytes { sym; offset_in_bytes; } ->
     A.symbol_plus_offset sym ~offset_in_bytes
   | Offset_into_debug_line label ->
-    A.offset_into_section_label ?comment (DWARF Debug_line) label
+    A.offset_into_dwarf_section_label ?comment Debug_line label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_line_from_symbol symbol ->
-    A.offset_into_section_symbol ?comment (DWARF Debug_line) symbol
+    A.offset_into_dwarf_section_symbol ?comment Debug_line symbol
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_info lbl ->
-    A.offset_into_section_label ?comment (DWARF Debug_info) lbl
+    A.offset_into_dwarf_section_label ?comment Debug_info lbl
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_info_from_symbol sym ->
-    A.offset_into_section_symbol ?comment (DWARF Debug_info) sym
+    A.offset_into_dwarf_section_symbol ?comment Debug_info sym
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_addr label ->
-    A.offset_into_section_label ?comment (DWARF Debug_addr) label
+    A.offset_into_dwarf_section_label ?comment Debug_addr label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_loc label ->
-    A.offset_into_section_label ?comment (DWARF Debug_loc) label
+    A.offset_into_dwarf_section_label ?comment Debug_loc label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_ranges label ->
-    A.offset_into_section_label ?comment (DWARF Debug_ranges) label
+    A.offset_into_dwarf_section_label ?comment Debug_ranges label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_loclists label ->
-    A.offset_into_section_label ?comment (DWARF Debug_loclists) label
+    A.offset_into_dwarf_section_label ?comment Debug_loclists label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_rnglists label ->
-    A.offset_into_section_label ?comment (DWARF Debug_rnglists) label
+    A.offset_into_dwarf_section_label ?comment Debug_rnglists label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Offset_into_debug_abbrev label ->
-    A.offset_into_section_label ?comment (DWARF Debug_abbrev) label
+    A.offset_into_dwarf_section_label ?comment Debug_abbrev label
       ~width:(width_for_ref_addr_or_sec_offset ())
   | Distance_between_labels_16bit { upper; lower; } ->
-    (* CR-someday mshinwell: This should really be checked for overflow, but
-       seems hard... *)
-    A.between_labels_16bit ~upper ~lower
+    (* We rely on the assembler for overflow checking here and in the
+       32-bit case below. *)
+    A.between_labels_16_bit ~upper ~lower
   | Distance_between_labels_32bit { upper; lower; } ->
-    (* CR-someday mshinwell: Same comment as for the 16 bit case. *)
-    A.between_labels_32bit ~upper ~lower
+    A.between_labels_32_bit ~upper ~lower
   | Distance_between_labels_64bit { upper; lower; } ->
-    A.between_labels_64bit ~upper ~lower
+    A.between_labels_64_bit ~upper ~lower

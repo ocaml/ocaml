@@ -28,4 +28,6 @@ include Location_or_range_list_entry.Make (struct
     | Base_address _ -> 0x06
     | Start_end _ -> 0x07
     | Start_length _ -> 0x08
+
+  let section : Asm_section.dwarf_section = Debug_loclists
 end)

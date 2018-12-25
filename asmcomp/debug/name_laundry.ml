@@ -29,7 +29,7 @@ let abstract_instance_root_die_name id =
     Format.asprintf "caml__abstract_instance_%s"
       (Debuginfo.Function.Id.to_string_for_dwarf_die_name id)
   in
-  Asm_symbol.of_external_name compilation_unit name
+  Asm_symbol.of_external_name (DWARF Debug_info) compilation_unit name
 
 let concrete_instance_die_name id =
   let compilation_unit = Debuginfo.Function.Id.compilation_unit id in
@@ -37,7 +37,7 @@ let concrete_instance_die_name id =
     Format.asprintf "caml__concrete_instance_%s"
       (Debuginfo.Function.Id.to_string_for_dwarf_die_name id)
   in
-  Asm_symbol.of_external_name compilation_unit name
+  Asm_symbol.of_external_name (DWARF Debug_info) compilation_unit name
 
 let external_declaration_die_name sym compilation_unit =
   let compilation_unit =

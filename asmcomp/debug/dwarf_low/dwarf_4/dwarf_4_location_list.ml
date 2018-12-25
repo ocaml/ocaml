@@ -28,7 +28,7 @@ let sort entries =
   List.sort Dwarf_4_location_list_entry.compare_ascending_vma entries
 
 let create ~location_list_entries =
-  { name = Asm_label.create ();
+  { name = Asm_label.create (DWARF Debug_loc);
     entries = sort location_list_entries;
   }
 

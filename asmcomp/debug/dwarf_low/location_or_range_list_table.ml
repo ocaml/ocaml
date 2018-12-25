@@ -19,7 +19,10 @@ module Uint8 = Numbers.Uint8
 module Uint32 = Numbers.Uint32
 module Uint64 = Numbers.Uint64
 
-module Make (Location_or_range_list : Dwarf_emittable.S) = struct
+module Make (Location_or_range_list : sig
+  include Dwarf_emittable.S
+  val section : Asm_section.dwarf_section
+end) = struct
   type one_list = {
     list : Location_or_range_list.t;
     offset_from_first_list : Dwarf_int.t;
@@ -43,7 +46,7 @@ module Make (Location_or_range_list : Dwarf_emittable.S) = struct
   end
 
   let create () =
-    { base_addr = Asm_label.create ();
+    { base_addr = Asm_label.create (DWARF Location_or_range_list.section);
       num_lists = 0;
       current_offset_from_first_list = Dwarf_int.zero ();
       lists = [];
@@ -54,7 +57,7 @@ module Make (Location_or_range_list : Dwarf_emittable.S) = struct
     let one_list =
       { list;
         offset_from_first_list = t.current_offset_from_first_list;
-        label = Asm_label.create ();
+        label = Asm_label.create (DWARF Location_or_range_list.section);
       }
     in
     t.lists <- one_list :: t.lists;

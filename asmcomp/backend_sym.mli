@@ -19,6 +19,8 @@
 type t
 type backend_sym = t
 
+type kind = Text | Data
+
 (** Create a backend symbol from an Flambda-style [Symbol.t] that
     encapsulates information both about the containing compilation unit and
     the base name of the symbol. *)
@@ -30,11 +32,11 @@ val of_symbol : Symbol.t -> t
     have been applied to the name by the caller.  However any
     assembler-specific conventions, such as escaping of special characters
     or prefixing, must *not* be applied by the caller. *)
-val of_external_name : Compilation_unit.t -> string -> t
+val of_external_name : Compilation_unit.t -> string -> kind -> t
 
 (** Create a backend symbol given a base name.  The [base_name] will be
     subject to escaping by this function. *)
-val create : base_name:string -> t
+val create : base_name:string -> kind -> t
 
 (** Add the given suffix to the given symbol.  The suffix will be subject
     to escaping. *)
@@ -55,6 +57,9 @@ val to_escaped_string
 
 (** The compilation unit where the symbol is defined. *)
 val compilation_unit : t -> Compilation_unit.t
+
+(** The kind of the symbol. *)
+val kind : t -> kind
 
 (** Sets, maps, total ordering, etc.
 

@@ -18,6 +18,7 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 type t = {
+  section : Asm_section.t;
   compilation_unit : Compilation_unit.t;
   name : string;
   (* Just like for [Backend_sym], the [name] uniquely determines the
@@ -73,24 +74,29 @@ let encode backend_sym =
     ~symbol_prefix:(symbol_prefix ())
     ~escape backend_sym
 
-let create backend_sym =
-  { compilation_unit = Backend_sym.compilation_unit backend_sym;
+let create section backend_sym =
+  { section;
+    compilation_unit = Backend_sym.compilation_unit backend_sym;
     name = encode backend_sym;
   }
 
-let of_external_name compilation_unit name =
-  { compilation_unit;
+let of_external_name section compilation_unit name =
+  { section;
+    compilation_unit;
     name = encode (Backend_sym.of_external_name compilation_unit name);
   }
 
-let of_external_name_no_prefix compilation_unit name =
+let of_external_name_no_prefix section compilation_unit name =
   let name =
     Backend_sym.to_escaped_string ~symbol_prefix:"" ~escape
       (Backend_sym.of_external_name compilation_unit name)
   in
-  { compilation_unit;
+  { section;
+    compilation_unit;
     name;
   }
+
+let section t = t.section
 
 let encode ?reloc t =
   match reloc with
@@ -98,7 +104,8 @@ let encode ?reloc t =
   | Some reloc -> t.name ^ reloc
 
 let prefix_with t prefix =
-  { compilation_unit = t.compilation_unit;
+  { section = t.section;
+    compilation_unit = t.compilation_unit;
     name = (escape prefix) ^ t.name;
   }
 
@@ -127,29 +134,30 @@ end)
 
 module Names = struct
   (* See corresponding CR-someday in backend_sym.ml. *)
-  let of_external_name name =
+  let of_external_name section name =
     of_external_name Compilation_unit.extern name
 
-  let mcount = of_external_name "mcount"
-  let _mcount = of_external_name "_mcount"
-  let __gnu_mcount_nc = of_external_name "__gnu_mcount_nc"
-  let sqrt = of_external_name "sqrt"
+  let mcount = of_external_name Text "mcount"
+  let _mcount = of_external_name Text "_mcount"
+  let __gnu_mcount_nc = of_external_name Text "__gnu_mcount_nc"
+  let sqrt = of_external_name Text "sqrt"
 
-  let caml_young_ptr = of_external_name "caml_young_ptr"
-  let caml_young_limit = of_external_name "caml_young_limit"
-  let caml_exception_pointer = of_external_name "caml_exception_pointer"
-  let caml_negf_mask = of_external_name "caml_negf_mask"
-  let caml_absf_mask = of_external_name "caml_absf_mask"
+  let caml_young_ptr = of_external_name Data "caml_young_ptr"
+  let caml_young_limit = of_external_name Data "caml_young_limit"
+  let caml_exception_pointer = of_external_name Data "caml_exception_pointer"
+  let caml_negf_mask = of_external_name Data "caml_negf_mask"
+  let caml_absf_mask = of_external_name Data "caml_absf_mask"
 
-  let caml_call_gc = of_external_name "caml_call_gc"
-  let caml_c_call = of_external_name "caml_c_call"
-  let caml_alloc1 = of_external_name "caml_alloc1"
-  let caml_alloc2 = of_external_name "caml_alloc2"
-  let caml_alloc3 = of_external_name "caml_alloc3"
-  let caml_allocN = of_external_name "caml_allocN"
-  let caml_ml_array_bound_error = of_external_name "caml_ml_array_bound_error"
-  let caml_raise_exn = of_external_name "caml_raise_exn"
+  let caml_call_gc = of_external_name Text "caml_call_gc"
+  let caml_c_call = of_external_name Text "caml_c_call"
+  let caml_alloc1 = of_external_name Text "caml_alloc1"
+  let caml_alloc2 = of_external_name Text "caml_alloc2"
+  let caml_alloc3 = of_external_name Text "caml_alloc3"
+  let caml_allocN = of_external_name Text "caml_allocN"
+  let caml_ml_array_bound_error =
+    of_external_name Text "caml_ml_array_bound_error"
+  let caml_raise_exn = of_external_name Text "caml_raise_exn"
 
-  let caml_frametable = of_external_name "caml_frametable"
-  let caml_spacetime_shapes = of_external_name "caml_spacetime_shapes"
+  let caml_frametable = of_external_name Data "caml_frametable"
+  let caml_spacetime_shapes = of_external_name Data "caml_spacetime_shapes"
 end

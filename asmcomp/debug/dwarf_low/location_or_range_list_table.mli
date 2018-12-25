@@ -17,7 +17,10 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module Make (Location_or_range_list : Dwarf_emittable.S) : sig
+module Make (Location_or_range_list : sig
+  include Dwarf_emittable.S
+  val section : Asm_section.dwarf_section
+end) : sig
   type t
 
   val create : unit -> t

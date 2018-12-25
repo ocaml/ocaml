@@ -23,5 +23,7 @@ module Make (Entry : Location_or_range_list_entry.S) : sig
 
   val add : t -> Entry.t -> t
 
+  val section : Asm_section.dwarf_section
+
   include Dwarf_emittable.S with type t := t
 end
