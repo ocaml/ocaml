@@ -152,8 +152,8 @@ module Names = struct
   let caml_young_ptr = of_external_name Data "caml_young_ptr"
   let caml_young_limit = of_external_name Data "caml_young_limit"
   let caml_exception_pointer = of_external_name Data "caml_exception_pointer"
-  let caml_negf_mask = of_external_name Data "caml_negf_mask"
-  let caml_absf_mask = of_external_name Data "caml_absf_mask"
+  let caml_negf_mask = of_external_name Eight_byte_literals "caml_negf_mask"
+  let caml_absf_mask = of_external_name Eight_byte_literals "caml_absf_mask"
 
   let caml_call_gc = of_external_name Text "caml_call_gc"
   let caml_c_call = of_external_name Text "caml_c_call"

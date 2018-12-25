@@ -572,19 +572,6 @@ let size ?size_of symbol =
   | _ -> ()
 
 let label ?comment label =
-  let lbl_section = Asm_label.section label in
-  let this_section =
-    match !current_section_ref with
-    | None -> not_initialized ()
-    | Some this_section -> this_section
-  in
-  if not (Asm_section.equal lbl_section this_section) then begin
-    Misc.fatal_errorf "Cannot reference label %a defined in section %a \
-        from section %a"
-      Asm_label.print label
-      Asm_section.print lbl_section
-      Asm_section.print this_section
-  end;
   const_machine_width ?comment (Label label)
 
 let define_label label =
