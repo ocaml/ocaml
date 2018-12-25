@@ -130,7 +130,7 @@ module Names = struct
   let caml_ba_get n = add_int_suffix (of_external_name "caml_ba_get_" Text) n
   let caml_ba_set n = add_int_suffix (of_external_name "caml_ba_set_" Text) n
 
-  let caml_exn name = add_suffix (of_external_name "caml_exn_" Text) name
+  let caml_exn name = add_suffix (of_external_name "caml_exn_" Data) name
 
   let caml_call_gc = of_external_name "caml_call_gc" Text
   let caml_modify = of_external_name "caml_modify" Text
