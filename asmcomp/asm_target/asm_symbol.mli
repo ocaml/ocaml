@@ -21,7 +21,7 @@
 type t
 
 (** Create an assembly symbol from a backend symbol. *)
-val create : Asm_section.t -> Backend_sym.t -> t
+val create : Backend_sym.t -> t
 
 (** Create an assembly symbol from a name as found in an object file.
     The name will be prefixed with the appropriate symbol prefix for the

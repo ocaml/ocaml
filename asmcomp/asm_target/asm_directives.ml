@@ -713,18 +713,33 @@ let initialize ~big_endian ~(emit : Directive.t -> unit) =
 
 let file ~file_num ~file_name = file ~file_num ~file_name ()
 
+let check_symbol_for_definition_in_current_section symbol =
+  let symbol_section = Asm_symbol.section symbol in
+  let this_section =
+    match !current_section_ref with
+    | None -> not_initialized ()
+    | Some this_section -> this_section
+  in
+  if not (Asm_section.equal symbol_section this_section) then begin
+    Misc.fatal_errorf "Cannot define symbol %a intended for section %a \
+        in section %a"
+      Asm_symbol.print symbol
+      Asm_section.print symbol_section
+      Asm_section.print this_section
+  end
+
 let define_data_symbol symbol =
+  check_symbol_for_definition_in_current_section symbol;
   emit (New_label (Asm_symbol.encode symbol, Machine_width_data));
   begin match TS.assembler (), TS.windows () with
   | GAS_like, false -> type_ symbol ~type_:"STT_OBJECT"
   | GAS_like, true | MacOS, _ | MASM, _ -> ()
   end
 
+(* CR mshinwell: Rename to [define_text_symbol]? *)
 let define_function_symbol symbol =
-  if not (current_section_is_text ()) then begin
-    Misc.fatal_error "[define_function_symbol] can only be called when \
-      emitting to a text section"
-  end;
+  check_symbol_for_definition_in_current_section symbol;
+  (* CR mshinwell: This shouldn't be called "New_label" *)
   emit (New_label (Asm_symbol.encode symbol, Code));
   begin match TS.assembler (), TS.windows () with
   | GAS_like, false -> type_ symbol ~type_:"STT_FUNC"

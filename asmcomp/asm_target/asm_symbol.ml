@@ -74,7 +74,12 @@ let encode backend_sym =
     ~symbol_prefix:(symbol_prefix ())
     ~escape backend_sym
 
-let create section backend_sym =
+let create backend_sym =
+  let section : Asm_section.t =
+    match Backend_sym.kind backend_sym with
+    | Text -> Text
+    | Data -> Data
+  in
   { section;
     compilation_unit = Backend_sym.compilation_unit backend_sym;
     name = encode backend_sym;

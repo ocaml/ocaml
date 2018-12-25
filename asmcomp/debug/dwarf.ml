@@ -488,10 +488,10 @@ let phantom_var_location_description t
   match defining_expr with
   | Iphantom_const_int i -> rvalue (SLDL.Rvalue.signed_int_const i)
   | Iphantom_const_symbol symbol ->
-    let symbol = Asm_symbol.create Data symbol in
+    let symbol = Asm_symbol.create symbol in
     lvalue (SLDL.Lvalue.const_symbol ~symbol)
   | Iphantom_read_symbol_field { sym; field; } ->
-    let symbol = Asm_symbol.create Data sym in
+    let symbol = Asm_symbol.create sym in
     (* CR-soon mshinwell: Fix [field] to be of type [Targetint.t] *)
     let field = Targetint.of_int field in
     rvalue (SLDL.Rvalue.read_symbol_field ~symbol ~field)
@@ -659,7 +659,7 @@ let location_list_entry t (fundecl : L.fundecl) ~parent ~subrange
     | Four ->
       let location_list_entry =
         Dwarf_4_location_list_entry.create_location_list_entry
-          ~start_of_code_symbol:(Asm_symbol.create Text fundecl.fun_name)
+          ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name)
           ~first_address_when_in_scope:start_pos
           ~first_address_when_not_in_scope:end_pos
           ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
@@ -1072,7 +1072,7 @@ let create_range_list_and_summarise t (fundecl : L.fundecl) range =
         | Four ->
           let range_list_entry =
             Dwarf_4_range_list_entry.create_range_list_entry
-              ~start_of_code_symbol:(Asm_symbol.create Text fundecl.fun_name)
+              ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name)
               ~first_address_when_in_scope:(Asm_label.create_int Text start_pos)
               ~first_address_when_not_in_scope:
                 (Asm_label.create_int Text end_pos)
@@ -1576,12 +1576,12 @@ let dwarf_for_call_sites t ~whole_function_lexical_block
             ~callee:insn.arg.(0) ~args ~call_labels insn;
           stack_offset
         | Itailcall_imm { func = callee; callee_dbg; call_labels; _ } ->
-          let callee = Asm_symbol.create Text callee in
+          let callee = Asm_symbol.create callee in
           add_direct_ocaml_tail_call ~stack_offset
             ~callee ~callee_dbg ~args:insn.arg ~call_labels insn;
           stack_offset
         | Iextcall { func = callee; alloc = _; call_labels; } ->
-          let callee = Asm_symbol.create Text callee in
+          let callee = Asm_symbol.create callee in
           add_external_call ~stack_offset
             ~callee ~args:insn.arg ~call_labels insn;
           stack_offset
@@ -1704,7 +1704,7 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
   let external_calls_generated_during_emit =
     emit fundecl ~end_of_function_label
   in
-  let symbol = Asm_symbol.create Text fundecl.fun_name in
+  let symbol = Asm_symbol.create fundecl.fun_name in
   let start_of_function = DAH.create_low_pc_from_symbol symbol in
   let end_of_function =
     DAH.create_high_pc (Asm_label.create_int Text end_of_function_label)

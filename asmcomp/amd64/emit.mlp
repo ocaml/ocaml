@@ -206,7 +206,7 @@ let res32 i n = emit_subreg reg_low_32_name DWORD i.res.(n)
 let addressing addr typ i n =
   match addr with
   | Ibased(s, ofs) ->
-      let s = S.create AS.Data s in
+      let s = S.create s in
       add_used_symbol s;
       mem64_rip typ (Symbol s) ~ofs
   | Iindexed d ->
@@ -479,18 +479,20 @@ let emit_float_constant f lbl =
 
 (* Definition of global symbols *)
 
-let define_global_symbol0 section base_name =
-  let sym = S.create section (Backend_sym.create ~base_name) in
+let define_global_data_symbol base_name =
+  let sym =
+    S.create (Backend_sym.create ~base_name Backend_sym.Data)
+  in
   add_def_symbol sym;
   D.global sym;
-  sym
-
-let define_global_data_symbol section base_name =
-  let sym = define_global_symbol0 AS.Data base_name in
   D.define_data_symbol sym
 
 let define_global_text_symbol base_name =
-  let sym = define_global_symbol0 AS.Text base_name in
+  let sym =
+    S.create (Backend_sym.create ~base_name Backend_sym.Text)
+  in
+  add_def_symbol sym;
+  D.global sym;
   D.define_function_symbol sym
 
 (* Emission of the profiling prelude *)
@@ -604,7 +606,7 @@ let emit_instr fallthrough i =
       | Some function_name ->
         if S.equal func function_name then begin
           maybe_add_label_before_call ~call_labels;
-          I.jmp (label (L.create_int !tailrec_entry_point));
+          I.jmp (label (L.create_int AS.Text !tailrec_entry_point));
           if not Config.spacetime then begin
             maybe_add_label_after_call ~call_labels
           end
@@ -722,7 +724,7 @@ let emit_instr fallthrough i =
         let lbl_frame =
           record_frame_label ?label:label_after_call_gc i.live false dbg
         in
-        I.jb (label (L.create_int lbl_call_gc));
+        I.jb (label (L.create_int AS.Text lbl_call_gc));
         I.lea (mem64 NONE 8 R15) (res i 0);
         let gc_spacetime =
           if not Config.spacetime then None
@@ -784,7 +786,7 @@ let emit_instr fallthrough i =
       in
       let lbl = bound_error_label ?label:label_after_error i.dbg ~spacetime in
       I.cmp (arg i 1) (arg i 0);
-      I.jbe (label (L.create_int lbl))
+      I.jbe (label (L.create_int AS.Text lbl))
   | Lop(Iintop_imm(Icheckbound { label_after_error; spacetime_index; }, n)) ->
       let spacetime =
         if not Config.spacetime then None
@@ -792,7 +794,7 @@ let emit_instr fallthrough i =
       in
       let lbl = bound_error_label ?label:label_after_error i.dbg ~spacetime in
       I.cmp (int n) (arg i 0);
-      I.jbe (label (L.create_int lbl))
+      I.jbe (label (L.create_int AS.Text lbl))
   | Lop(Iintop(Idiv | Imod)) ->
       I.cqo ();
       I.idiv (arg i 1)
@@ -855,11 +857,11 @@ let emit_instr fallthrough i =
         I.ret ()
       end
   | Llabel lbl ->
-      emit_Llabel fallthrough lbl
+      emit_Llabel AS.Text fallthrough lbl
   | Lbranch lbl ->
-      I.jmp (label (L.create_int lbl))
+      I.jmp (label (L.create_int AS.Text lbl))
   | Lcondbranch(tst, lbl) ->
-      let lbl = label (L.create_int lbl) in
+      let lbl = label (L.create_int AS.Text lbl) in
       begin match tst with
       | Itruetest ->
           output_test_zero i.arg.(0);
@@ -890,15 +892,15 @@ let emit_instr fallthrough i =
       I.cmp (int 1) (arg i 0);
       begin match lbl0 with
       | None -> ()
-      | Some lbl -> I.jb (label (L.create_int lbl))
+      | Some lbl -> I.jb (label (L.create_int AS.Text lbl))
       end;
       begin match lbl1 with
       | None -> ()
-      | Some lbl -> I.je (label (L.create_int lbl))
+      | Some lbl -> I.je (label (L.create_int AS.Text lbl))
       end;
       begin match lbl2 with
       | None -> ()
-      | Some lbl -> I.jg (label (L.create_int lbl))
+      | Some lbl -> I.jg (label (L.create_int AS.Text lbl))
       end
   | Lswitch jumptbl ->
       let lbl = new_label () in
@@ -912,7 +914,8 @@ let emit_instr fallthrough i =
         then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
         else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
 
-      I.lea (mem64_rip NONE (Label (L.create_int lbl))) (reg tmp1);
+      I.lea (mem64_rip NONE (Label (L.create_int AS.Jump_tables lbl)))
+        (reg tmp1);
       I.movsxd (mem64 DWORD 0 (arg64 i 0) ~scale:4 ~base:(reg64 tmp1))
                (reg tmp2);
       I.add (reg tmp2) (reg tmp1);
@@ -920,14 +923,14 @@ let emit_instr fallthrough i =
 
       D.switch_to_section AS.Jump_tables;
       D.align ~bytes:4;
-      def_label AS.Text lbl;
+      def_label AS.Jump_tables lbl;
       for i = 0 to Array.length jumptbl - 1 do
-        D.between_labels_32bit ~upper:(L.create_int jumptbl.(i))
-          ~lower:(L.create_int lbl)
+        D.between_labels_32_bit ~upper:(L.create_int AS.Jump_tables jumptbl.(i))
+          ~lower:(L.create_int AS.Jump_tables lbl)
       done;
       D.text ()
   | Lsetuptrap lbl ->
-      I.call (label (L.create_int lbl))
+      I.call (label (L.create_int AS.Text lbl))
   | Lpushtrap ->
       (* This CFA adjustment corresponds to the call in [Lsetuptrap]. *)
       D.cfi_adjust_cfa_offset ~bytes:8;
@@ -1029,7 +1032,7 @@ let fundecl fundecl ~end_of_function_label =
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
   D.cfi_endproc ();
-  D.define_label (Asm_label.create_int end_of_function_label);
+  D.define_label (Asm_label.create_int AS.Text end_of_function_label);
   D.size fun_name;
   generated_call_sites ()
 
@@ -1125,7 +1128,7 @@ let emit_spacetime_shapes () =
               | Allocation_point -> 3
             in
             D.int64 (Int64.of_int tag);
-            D.label (L.create_int label);
+            D.label (L.create_int AS.Data label);
             begin match part_of_shape with
             | Direct_call_point { callee; } -> D.symbol (S.create callee)
             | Indirect_call_point -> ()
@@ -1161,17 +1164,18 @@ let end_assembly dwarf =
   define_global_data_symbol "frametable";
 
   emit_frames
-    { efa_code_label = (fun l -> D.label (L.create_int l));
-      efa_data_label = (fun l -> D.label (L.create_int l));
+    { efa_code_label = (fun l -> D.label (L.create_int AS.Text l));
+      efa_data_label = (fun l -> D.label (L.create_int AS.Data l));
       efa_16 = (fun n -> D.int16 (Numbers.Int16.of_int_exn n));
       efa_32 = (fun n -> D.int32 n);
       efa_word = (fun n -> D.targetint (Targetint.of_int_exn n));
       efa_align = (fun bytes -> D.align ~bytes);
       efa_label_rel =
         (fun lbl ofs ->
-          D.between_this_and_label_offset_32bit ~upper:(L.create_int lbl)
+          D.between_this_and_label_offset_32bit
+            ~upper:(L.create_int AS.Data lbl)
             ~offset_upper:(Targetint.of_int32 ofs));
-      efa_def_label = (fun lbl -> def_label Data lbl);
+      efa_def_label = (fun lbl -> def_label AS.Data lbl);
       efa_string = (fun s -> D.string (s ^ "\000"))
     };
 
