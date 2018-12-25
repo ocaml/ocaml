@@ -83,13 +83,15 @@ let create section backend_sym =
 let of_external_name section compilation_unit name =
   { section;
     compilation_unit;
-    name = encode (Backend_sym.of_external_name compilation_unit name);
+    name =  (* The choice of [Data] is arbitrary. *)
+      encode (Backend_sym.of_external_name compilation_unit name Data);
   }
 
 let of_external_name_no_prefix section compilation_unit name =
   let name =
+    (* The choice of [Data] is arbitrary. *)
     Backend_sym.to_escaped_string ~symbol_prefix:"" ~escape
-      (Backend_sym.of_external_name compilation_unit name)
+      (Backend_sym.of_external_name compilation_unit name Data)
   in
   { section;
     compilation_unit;
@@ -135,7 +137,7 @@ end)
 module Names = struct
   (* See corresponding CR-someday in backend_sym.ml. *)
   let of_external_name section name =
-    of_external_name Compilation_unit.extern name
+    of_external_name section Compilation_unit.extern name
 
   let mcount = of_external_name Text "mcount"
   let _mcount = of_external_name Text "_mcount"

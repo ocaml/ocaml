@@ -83,7 +83,7 @@ let check_closure ulam named : Clambda.ulambda =
     in
     let str_const =
       Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
-        str_const
+        str_const Data
     in
     Uprim (Pccall desc,
            [ulam; Clambda.Uconst (Uconst_ref (str_const, None))],
@@ -106,7 +106,7 @@ let check_field ulam pos named_opt : Clambda.ulambda =
     in
     let str_const =
       Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
-        str_const
+        str_const Data
     in
     Uprim (Pccall desc, [ulam; Clambda.Uconst (Uconst_int pos);
         Clambda.Uconst (Uconst_ref (str_const, None))],

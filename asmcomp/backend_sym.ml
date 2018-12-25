@@ -34,7 +34,7 @@ let print ppf { name; _ } = Format.pp_print_string ppf name
 let to_string { name; _ } = name
 
 let of_symbol sym =
-  { kind = Symbol.kind sym;
+  { kind = Data;
     compilation_unit = Symbol.compilation_unit sym;
     name = Linkage_name.to_string (Symbol.label sym);
   }

@@ -237,7 +237,7 @@ let make_const c = (Uconst c, Value_const c)
 let make_const_ref c =
   let sym =
     Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
-      (Compilenv.new_structured_constant ~shared:true c)
+      (Compilenv.new_structured_constant ~shared:true c) Backend_sym.Data
   in
   make_const(Uconst_ref(sym, Some c))
 let make_const_int n = make_const (Uconst_int n)
@@ -476,7 +476,7 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
         in
         let sym =
           Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
-            name
+            name Backend_sym.Data
         in
         make_const (Uconst_ref (sym, Some cst))
       with Exit ->
@@ -1246,7 +1246,7 @@ let rec close ~scope fenv cenv = function
         in
         let sym =
           Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
-            name
+            name Backend_sym.Data
         in
         Uconst_ref (sym, Some cst)
       in
@@ -1761,7 +1761,7 @@ and close_functions fenv cenv fun_defs =
             in
             let fun_label =
               Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
-                label
+                label Backend_sym.Text
             in
             let fundesc =
               {fun_label;
