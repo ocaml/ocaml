@@ -23,6 +23,12 @@ val create_low_pc
    : Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t
 
+(** Creates a [DW_AT_high_pc] attribute value by taking the offset in
+    bytes from the [DW_AT_low_pc] attribute value. *)
+val create_high_pc_offset
+   : Targetint.t
+  -> Dwarf_attribute_values.Attribute_value.t
+
 val create_high_pc
    : low_pc:Asm_symbol.t
   -> Asm_label.t

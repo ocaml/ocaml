@@ -700,7 +700,11 @@ let initialize ~big_endian ~(emit : Directive.t -> unit) =
           end)
       (Asm_section.all_sections_in_order ())
   end;
-  file ~file_name:"" ();  (* PR#7037 *)
+  (* Stop dsymutil complaining about empty __debug_line sections (produces
+     bogus error "line table parameters mismatch") by making sure such sections
+     are never empty. *)
+  file ~file_num:1 ~file_name:"none" ();  (* also PR#7037 *)
+  loc ~file_num:1 ~line:1 ~col:1;
   switch_to_section Asm_section.Text
 
 let file ~file_num ~file_name = file ~file_num ~file_name ()
@@ -996,11 +1000,11 @@ let offset_into_dwarf_section_symbol ?comment section upper
         force_assembly_time_constant (DWARF section)
           (Sub (Symbol upper, Label lower))
       else
-        Misc.fatal_errorf "Don't know how to encode offset from undefined \
-            symbol %a into section %a on macOS (current compilation unit %a, \
-            symbol in compilation unit %a)"
-          Asm_symbol.print upper
+        Misc.fatal_errorf "Don't know how to encode offset from start of \
+            section %a to undefined symbol %a on macOS (current compilation \
+            unit %a, symbol in compilation unit %a)"
           Asm_section.print upper_section
+          Asm_symbol.print upper
           Compilation_unit.print (Compilation_unit.get_current_exn ())
           Compilation_unit.print (Asm_symbol.compilation_unit upper)
     | GAS_like | MASM ->

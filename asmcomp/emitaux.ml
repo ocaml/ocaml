@@ -268,8 +268,12 @@ let cfi_offset ~reg ~offset =
 let file_pos_nums =
   (ref [] : (string * int) list ref)
 
+(* This value must be greater than the value used for the "none" file in
+   [Asm_directives.initialize]. *)
+let init_file_pos_num_cnt = 2
+
 (* Number of files *)
-let file_pos_num_cnt = ref 1
+let file_pos_num_cnt = ref init_file_pos_num_cnt
 
 (* Most recent position emitted, to avoid duplicate ".loc" directives. *)
 let prev_code_range = ref Debuginfo.Code_range.none
@@ -277,7 +281,7 @@ let prev_code_range = ref Debuginfo.Code_range.none
 (* Reset debug state at beginning of asm file *)
 let reset_debug_info () =
   file_pos_nums := [];
-  file_pos_num_cnt := 1
+  file_pos_num_cnt := init_file_pos_num_cnt
 
 (* We only display .file if the file has not been seen before. We
    display .loc for every instruction. *)

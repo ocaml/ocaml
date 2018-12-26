@@ -1495,7 +1495,7 @@ let call_target_for_direct_callee t (callee : direct_callee) =
              a bogus value.  The only reason we want this DIE here in any
              case is for the low PC / entry PC values for GDB. *)
           if Target_system.macos_like () then
-            [DAH.create_high_pc_from_symbol ~low_pc:callee callee;
+            [DAH.create_high_pc_offset Targetint.zero;
             ]
           else
             []

@@ -35,6 +35,15 @@ let create_low_pc address_label =
   AV.create spec (V.code_address_from_label
     ~comment:"low PC value" address_label)
 
+let create_high_pc_offset offset =
+  match Targetint.repr offset with
+  | Int32 offset ->
+    let spec = AS.create High_pc Data4 in
+    AV.create spec (V.int32 ~comment:"high PC value as offset" offset)
+  | Int64 offset ->
+    let spec = AS.create High_pc Data8 in
+    AV.create spec (V.int64 ~comment:"high PC value as offset" offset)
+
 let create_high_pc ~low_pc high_pc =
   match Arch.size_addr with
   | 4 ->
