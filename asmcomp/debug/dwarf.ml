@@ -997,14 +997,14 @@ let add_abstract_instance t fun_dbg =
     (* DWARF-5 specification section 3.3.8.1, page 82. *)
     Proto_die.create ~parent:(Some t.compilation_unit_proto_die)
       ~tag:Subprogram
-      ~attribute_values:(attributes_for_abstract_instance fun_dbg) @ [
+      ~attribute_values:((attributes_for_abstract_instance fun_dbg) @ [
         (* We assume every function might potentially be inlined (and possibly
            in the future), so we choose [DW_INL_inlined] as the most appropriate
            setting for [DW_AT_inline], even if it doesn't seem exactly
            correct.  We must set something here to ensure that the subprogram
            is marked as an abstract instance root. *)
         DAH.create_inline Inlined;
-      ]
+      ])
       ()
   in
   let id = Debuginfo.Function.id fun_dbg in
@@ -1458,13 +1458,25 @@ let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
     end
 
 type direct_callee =
-  | Ocaml of Debuginfo.Function.t
+  | Ocaml of Asm_symbol.t * Debuginfo.Function.t
   | External of Asm_symbol.t
 
 let call_target_for_direct_callee t (callee : direct_callee) =
+  (* If we cannot reference DIEs across compilation units, then we treat
+     direct calls to OCaml functions as if they were to an external
+     function, fabricating our own subprogram DIE for each such function and
+     providing the "low PC" and "entry PC" value that GDB looks for (or may
+     look for in the future).  See gdb/dwarf2read.c:read_call_site_scope. *)
+  let callee =
+    match callee with
+    | Ocaml (callee_symbol, _callee_dbg)
+        when not (can_reference_dies_across_units ()) ->
+      External callee_symbol
+    | _ -> callee
+  in
   let die_symbol =
     match callee with
-    | Ocaml callee_dbg ->
+    | Ocaml (_callee_symbol, callee_dbg) ->
       if not (Debuginfo.Function.dwarf_die_present callee_dbg) then None
       else
         let id = Debuginfo.Function.id callee_dbg in
@@ -1474,12 +1486,16 @@ let call_target_for_direct_callee t (callee : direct_callee) =
         Asm_symbol.Tbl.find t.die_symbols_for_external_declarations callee
       with
       | exception Not_found ->
-        (* CR-someday mshinwell: dedup DIEs for runtime functions across
-           compilation units (maybe only generate the DIEs when compiling the
-           startup file)? *)
+        (* CR-someday mshinwell: dedup DIEs for runtime, "caml_curry", etc.
+           functions across compilation units (maybe only generate the DIEs
+           when compiling the startup file)? *)
         let callee_die =
           Proto_die.create ~parent:(Some t.compilation_unit_proto_die)
             ~tag:Subprogram
+            ~attribute_values:[
+              DAH.create_low_pc_from_symbol callee;
+              DAH.create_entry_pc_from_symbol callee;
+            ]
             ()
         in
         let die_symbol =
@@ -1535,12 +1551,13 @@ let dwarf_for_call_sites t ~whole_function_lexical_block
     add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
       (call_target_for_indirect_callee ~callee ~stack_offset)
   in
-  let add_direct_ocaml_call ~stack_offset ~callee_dbg ~args ~call_labels insn =
+  let add_direct_ocaml_call ~stack_offset ~callee ~callee_dbg ~args
+        ~call_labels insn =
     match callee_dbg with
     | None -> ()
     | Some callee_dbg ->
       add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
-        (call_target_for_direct_callee t (Ocaml callee_dbg))
+        (call_target_for_direct_callee t (Ocaml (callee, callee_dbg)))
   in
   let add_indirect_ocaml_tail_call ~stack_offset ~callee ~args ~call_labels
         insn =
@@ -1561,7 +1578,7 @@ let dwarf_for_call_sites t ~whole_function_lexical_block
         found_self_tail_calls := true
       end else begin
         add_call_site ~stack_offset ~is_tail:true ~args ~call_labels insn
-          (call_target_for_direct_callee t (Ocaml callee_dbg))
+          (call_target_for_direct_callee t (Ocaml (callee, callee_dbg)))
       end
   in
   let add_external_call ~stack_offset ~callee ~args ~call_labels insn =
@@ -1579,8 +1596,9 @@ let dwarf_for_call_sites t ~whole_function_lexical_block
           add_indirect_ocaml_call ~stack_offset
             ~callee:insn.arg.(0) ~args ~call_labels insn;
           stack_offset
-        | Icall_imm { callee_dbg; call_labels; _ } ->
-          add_direct_ocaml_call ~stack_offset
+        | Icall_imm { func = callee; callee_dbg; call_labels; _ } ->
+          let callee = Asm_symbol.create callee in
+          add_direct_ocaml_call ~stack_offset ~callee
             ~callee_dbg ~args:insn.arg ~call_labels insn;
           stack_offset
         | Itailcall_ind { call_labels; } ->
