@@ -32,6 +32,16 @@ val create : Backend_sym.t -> t
     target system. *)
 val of_external_name : Asm_section.t -> Compilation_unit.t -> string -> t
 
+(** Take an existing symbol and add a prefix to its name.  The compilation
+    unit and section must be specified as they often change during a
+    prefixing. *)
+val prefix
+   : t
+  -> Asm_section.t
+  -> Compilation_unit.t
+  -> prefix:string
+  -> t
+
 (** Like [of_external_name], but for specialised uses (in particular "direct
     assignment" on macOS) where the name must not have a symbol prefix
     applied. *)
@@ -58,9 +68,6 @@ val encode : ?reloc:string -> t -> string
 (** Detection of functions that can be duplicated between a DLL and the main
     program (PR#4690). *)
 val is_generic_function : t -> bool
-
-(** Add a prefix to a symbol. *)
-val prefix_with : t -> string -> t
 
 include Identifiable.S with type t := t
 

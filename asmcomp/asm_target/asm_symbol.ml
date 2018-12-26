@@ -110,9 +110,9 @@ let encode ?reloc t =
   | None -> t.name
   | Some reloc -> t.name ^ reloc
 
-let prefix_with t prefix =
-  { section = t.section;
-    compilation_unit = t.compilation_unit;
+let prefix t section compilation_unit ~prefix =
+  { section;
+    compilation_unit;
     name = (escape prefix) ^ t.name;
   }
 

@@ -997,9 +997,12 @@ let offset_into_dwarf_section_symbol ?comment section upper
           (Sub (Symbol upper, Label lower))
       else
         Misc.fatal_errorf "Don't know how to encode offset from undefined \
-            symbol %a into section %a on macOS"
+            symbol %a into section %a on macOS (current compilation unit %a, \
+            symbol in compilation unit %a)"
           Asm_symbol.print upper
           Asm_section.print upper_section
+          Compilation_unit.print (Compilation_unit.get_current_exn ())
+          Compilation_unit.print (Asm_symbol.compilation_unit upper)
     | GAS_like | MASM ->
       Symbol upper
   in

@@ -40,10 +40,11 @@ let concrete_instance_die_name id =
   Asm_symbol.of_external_name (DWARF Debug_info) compilation_unit name
 
 let external_declaration_die_name sym compilation_unit =
-  let compilation_unit =
+  let compilation_unit_str =
     Compilation_unit.string_for_printing compilation_unit
   in
-  Asm_symbol.prefix_with sym ("camlDIE__" ^ compilation_unit ^ "__")
+  Asm_symbol.prefix sym (DWARF Debug_info) compilation_unit
+    ~prefix:("camlDIE__" ^ compilation_unit_str ^ "__")
 
 type split_base_type_die_name_result = {
   compilation_unit : string;
