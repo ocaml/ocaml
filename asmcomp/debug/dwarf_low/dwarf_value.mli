@@ -55,32 +55,23 @@ val code_address_from_label : ?comment:string -> Asm_label.t -> t
 val code_address_from_symbol : ?comment:string -> Asm_symbol.t -> t
 
 (** The calculation is: (upper + offset_upper) - lower. *)
+(* CR mshinwell: This doesn't form a code address. *)
 val code_address_from_label_symbol_diff
    : ?comment:string
   -> upper:Asm_label.t
   -> lower:Asm_symbol.t
   -> offset_upper:Targetint.t
+  -> unit
   -> t
 
 val code_address_from_symbol_diff
-   : upper:Asm_symbol.t
+   : ?comment:string
+  -> upper:Asm_symbol.t
   -> lower:Asm_symbol.t
+  -> unit
   -> t
 
 val code_address_from_symbol_plus_bytes : Asm_symbol.t -> Targetint.t -> t
-
-(** N.B. The basic "offset" constructions here take labels rather than
-    absolute addresses---this is important so that the references are
-    relocated when multiple object files are linked together (and DWARF
-    information from them concatenated inside each of the various
-    sections).
-
-    - Offsets into .debug_info are of DW_FORM_ref_addr.
-
-    - Offsets into any other section are of DW_FORM_sec_offset.
-      (DWARF-4 spec p.142.)  However the widths are the same in both cases,
-      corresponding to the DWARF format.
-*)
 
 val offset_into_debug_info : ?comment:string -> Asm_label.t -> t
 
@@ -107,11 +98,26 @@ val offset_into_debug_rnglists : ?comment:string -> Asm_label.t -> t
 
 val offset_into_debug_abbrev : ?comment:string -> Asm_label.t -> t
 
-val distance_between_labels_16bit : upper:Asm_label.t -> lower:Asm_label.t -> t
+val distance_between_labels_16_bit
+   : ?comment:string
+  -> upper:Asm_label.t
+  -> lower:Asm_label.t
+  -> unit
+  -> t
 
-val distance_between_labels_32bit : upper:Asm_label.t -> lower:Asm_label.t -> t
+val distance_between_labels_32_bit
+   : ?comment:string
+  -> upper:Asm_label.t
+  -> lower:Asm_label.t
+  -> unit
+  -> t
 
-val distance_between_labels_64bit : upper:Asm_label.t -> lower:Asm_label.t -> t
+val distance_between_labels_64_bit
+   : ?comment:string
+  -> upper:Asm_label.t
+  -> lower:Asm_label.t
+  -> unit
+  -> t
 
 val append_to_comment : t -> string -> t
 

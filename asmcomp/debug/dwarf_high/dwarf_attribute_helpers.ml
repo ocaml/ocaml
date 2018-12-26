@@ -35,10 +35,17 @@ let create_low_pc address_label =
   AV.create spec (V.code_address_from_label
     ~comment:"low PC value" address_label)
 
-let create_high_pc address_label =
-  let spec = AS.create High_pc Addr in
-  AV.create spec (V.code_address_from_label
-    ~comment:"high PC value" address_label)
+let create_high_pc ~low_pc high_pc =
+  match Arch.size_addr with
+  | 4 ->
+    let spec = AS.create High_pc Data4 in
+    AV.create spec (V.distance_between_label_and_symbol_32_bit
+      ~comment:"high PC value" ~upper:high_pc ~lower:low_pc ())
+  | 8 ->
+    let spec = AS.create High_pc Data8 in
+    AV.create spec (V.distance_between_label_and_symbol_64_bit
+      ~comment:"high PC value" ~upper:high_pc ~lower:low_pc ())
+  | _ -> Misc.fatal_errorf "Unknown [Arch.size_addr] = %d" Arch.size_addr
 
 let create_entry_pc_from_symbol symbol =
   let spec = AS.create Entry_pc Addr in
@@ -50,10 +57,17 @@ let create_low_pc_from_symbol symbol =
   AV.create spec (V.code_address_from_symbol
     ~comment:"low PC value" symbol)
 
-let create_high_pc_from_symbol symbol =
-  let spec = AS.create High_pc Addr in
-  AV.create spec (V.code_address_from_symbol
-    ~comment:"high PC value" symbol)
+let create_high_pc_from_symbol ~low_pc high_pc =
+  match Arch.size_addr with
+  | 4 ->
+    let spec = AS.create High_pc Data4 in
+    AV.create spec (V.distance_between_symbols_32_bit
+      ~comment:"high PC value" ~upper:high_pc ~lower:low_pc ())
+  | 8 ->
+    let spec = AS.create High_pc Data8 in
+    AV.create spec (V.distance_between_symbols_64_bit
+      ~comment:"high PC value" ~upper:high_pc ~lower:low_pc ())
+  | _ -> Misc.fatal_errorf "Unknown [Arch.size_addr] = %d" Arch.size_addr
 
 let create_producer producer_name =
   let spec = AS.create Producer Strp in

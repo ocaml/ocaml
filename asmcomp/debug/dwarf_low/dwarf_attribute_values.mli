@@ -58,6 +58,48 @@ module Value : sig
     -> string
     -> Dwarf_attributes.Form.strp t
 
+  val distance_between_symbols_32_bit
+     : ?comment:string
+    -> upper:Asm_symbol.t
+    -> lower:Asm_symbol.t
+    -> unit
+    -> Dwarf_attributes.Form.data4 t
+
+  val distance_between_symbols_64_bit
+     : ?comment:string
+    -> upper:Asm_symbol.t
+    -> lower:Asm_symbol.t
+    -> unit
+    -> Dwarf_attributes.Form.data8 t
+
+  val distance_between_labels_32_bit
+     : ?comment:string
+    -> upper:Asm_label.t
+    -> lower:Asm_label.t
+    -> unit
+    -> Dwarf_attributes.Form.data4 t
+
+  val distance_between_labels_64_bit
+     : ?comment:string
+    -> upper:Asm_label.t
+    -> lower:Asm_label.t
+    -> unit
+    -> Dwarf_attributes.Form.data8 t
+
+  val distance_between_label_and_symbol_32_bit
+     : ?comment:string
+    -> upper:Asm_label.t
+    -> lower:Asm_symbol.t
+    -> unit
+    -> Dwarf_attributes.Form.data4 t
+
+  val distance_between_label_and_symbol_64_bit
+     : ?comment:string
+    -> upper:Asm_label.t
+    -> lower:Asm_symbol.t
+    -> unit
+    -> Dwarf_attributes.Form.data8 t
+
   val code_address_from_label
      : ?comment:string
     -> Asm_label.t

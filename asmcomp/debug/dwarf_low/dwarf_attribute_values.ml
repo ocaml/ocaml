@@ -37,6 +37,31 @@ module Value = struct
   let string ?comment s = Dwarf_value (V.string ?comment s)
   let indirect_string ?comment ptr =
     Dwarf_value (V.indirect_string ?comment ptr)
+
+  let distance_between_symbols_32_bit ?comment ~upper ~lower () =
+    assert (Arch.size_addr = 4);
+    Dwarf_value (V.code_address_from_symbol_diff ?comment ~upper ~lower ())
+
+  let distance_between_symbols_64_bit ?comment ~upper ~lower () =
+    assert (Arch.size_addr = 8);
+    Dwarf_value (V.code_address_from_symbol_diff ?comment ~upper ~lower ())
+
+  let distance_between_labels_32_bit ?comment ~upper ~lower () =
+    Dwarf_value (V.distance_between_labels_32_bit ?comment ~upper ~lower ())
+
+  let distance_between_labels_64_bit ?comment ~upper ~lower () =
+    Dwarf_value (V.distance_between_labels_64_bit ?comment ~upper ~lower ())
+
+  let distance_between_label_and_symbol_32_bit ?comment ~upper ~lower () =
+    assert (Arch.size_addr = 4);
+    Dwarf_value (V.code_address_from_label_symbol_diff ?comment
+      ~upper ~lower ~offset_upper:Targetint.zero ())
+
+  let distance_between_label_and_symbol_64_bit ?comment ~upper ~lower () =
+    assert (Arch.size_addr = 8);
+    Dwarf_value (V.code_address_from_label_symbol_diff ?comment
+      ~upper ~lower ~offset_upper:Targetint.zero ())
+
   let code_address_from_label ?comment lbl =
     Dwarf_value (V.code_address_from_label ?comment lbl)
   let code_address_from_symbol ?comment sym =

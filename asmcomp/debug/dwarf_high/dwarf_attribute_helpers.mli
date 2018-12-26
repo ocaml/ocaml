@@ -24,7 +24,8 @@ val create_low_pc
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_high_pc
-   : Asm_label.t
+   : low_pc:Asm_symbol.t
+  -> Asm_label.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 (* CR mshinwell: Make labels consistent / remove unnecessary ones. *)
@@ -38,7 +39,8 @@ val create_low_pc_from_symbol
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_high_pc_from_symbol
-   : Asm_symbol.t
+   : low_pc:Asm_symbol.t
+  -> Asm_symbol.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_producer

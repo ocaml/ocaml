@@ -130,7 +130,8 @@ let create ~sourcefile ~prefix_name =
         DAH.create_ocaml_config_digest config_digest;
         DAH.create_ocaml_prefix_name prefix_name;
         DAH.create_low_pc_from_symbol start_of_code_symbol;
-        DAH.create_high_pc_from_symbol end_of_code_symbol;
+        DAH.create_high_pc_from_symbol ~low_pc:start_of_code_symbol
+          end_of_code_symbol;
         DAH.create_stmt_list ~debug_line_label;
       ] @ dwarf_5_only
     in
@@ -629,7 +630,7 @@ type location_list_entry =
   | Dwarf_4 of Dwarf_4_location_list_entry.t
   | Dwarf_5 of Location_list_entry.t
 
-let location_list_entry t (fundecl : L.fundecl) ~parent ~subrange
+let location_list_entry t (_fundecl : L.fundecl) ~parent ~subrange
       ~proto_dies_for_vars ~need_rvalue : location_list_entry option =
   let location_description =
     match ARV.Subrange.info subrange with
@@ -662,7 +663,7 @@ let location_list_entry t (fundecl : L.fundecl) ~parent ~subrange
     | Four ->
       let location_list_entry =
         Dwarf_4_location_list_entry.create_location_list_entry
-          ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name)
+          ~start_of_code_symbol:t.start_of_code_symbol
           ~first_address_when_in_scope:start_pos
           ~first_address_when_not_in_scope:end_pos
           ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
@@ -842,6 +843,8 @@ let dwarf_for_variable t (fundecl : L.fundecl)
           [DAH.create_type_from_reference ~proto_die_reference:reference;
           ]
         end else begin
+          (* CR mshinwell: We need a type attribute here to stop dwarfdump
+             complaining. *)
           []
         end
       in
@@ -1036,7 +1039,7 @@ let find_maybe_in_another_unit_or_add_abstract_instance t fun_dbg =
     in
     Some abstract_instance_proto_die_symbol
 
-let create_range_list_and_summarise t (fundecl : L.fundecl) range =
+let create_range_list_and_summarise t (_fundecl : L.fundecl) range =
   LB.Range.fold range
     ~init:([], Range_list.create (), Address_index.Pair.Set.empty)
     ~f:(fun (dwarf_4_range_list_entries, range_list, summary) subrange ->
@@ -1075,7 +1078,7 @@ let create_range_list_and_summarise t (fundecl : L.fundecl) range =
         | Four ->
           let range_list_entry =
             Dwarf_4_range_list_entry.create_range_list_entry
-              ~start_of_code_symbol:(Asm_symbol.create fundecl.fun_name)
+              ~start_of_code_symbol:t.start_of_code_symbol
               ~first_address_when_in_scope:(Asm_label.create_int Text start_pos)
               ~first_address_when_not_in_scope:
                 (Asm_label.create_int Text end_pos)
@@ -1710,7 +1713,8 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
   let symbol = Asm_symbol.create fundecl.fun_name in
   let start_of_function = DAH.create_low_pc_from_symbol symbol in
   let end_of_function =
-    DAH.create_high_pc (Asm_label.create_int Text end_of_function_label)
+    DAH.create_high_pc ~low_pc:symbol
+      (Asm_label.create_int Text end_of_function_label)
   in
   let _abstract_instance_proto_die, abstract_instance_die_symbol =
     find_or_add_abstract_instance t fundecl.fun_dbg

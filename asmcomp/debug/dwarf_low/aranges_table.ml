@@ -37,8 +37,8 @@ let create ~start_of_code_symbol ~end_of_code_symbol
     (* end of header *)
     (* segment selector omitted (since we selected "flat address space") *)
     V.code_address_from_symbol start_of_code_symbol;
-    V.code_address_from_symbol_diff
-      ~upper:end_of_code_symbol ~lower:start_of_code_symbol;
+    V.code_address_from_symbol_diff ~comment:"end of code symbol"
+      ~upper:end_of_code_symbol ~lower:start_of_code_symbol ();
     (* The terminating entry is only two words since the segment selector
        word is again absent. *)
     V.absolute_address ~comment:"terminator word 1" Targetint.zero;

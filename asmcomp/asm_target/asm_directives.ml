@@ -182,6 +182,7 @@ module Directive = struct
     | Cfi_startproc
     | Comment of comment
     | Const of { constant : Constant_with_width.t; comment : string option; }
+    | Direct_assignment of string * Constant.t
     | File of { file_num : int option; filename : string; }
     | Global of string
     | Indirect_symbol of string
@@ -194,7 +195,6 @@ module Directive = struct
         flags : string option;
         args : string list;
       }
-    | Set of string * Constant.t
     | Size of string * Constant.t
     | Sleb128 of { constant : Constant.t; comment : string option; }
     | Space of { bytes : int; }
@@ -338,11 +338,11 @@ module Directive = struct
     | Uleb128 { constant; comment; } ->
       let comment = gas_comment_opt comment in
       bprintf buf "\t.uleb128 %a%s" Constant.print constant comment
-    | Set (var, const) ->
+    | Direct_assignment (var, const) ->
       begin match TS.assembler () with
       | MacOS -> bprintf buf "%s = %a" var Constant.print const
       | _ ->
-        Misc.fatal_error "Cannot emit [Set] except on macOS-like \
+        Misc.fatal_error "Cannot emit [Direct_assignment] except on macOS-like \
           assemblers"
       end
 
@@ -401,7 +401,7 @@ module Directive = struct
     | Sleb128 _ -> unsupported "Sleb128"
     | Type _ -> unsupported "Type"
     | Uleb128 _ -> unsupported "Uleb128"
-    | Set _ -> unsupported "Set"
+    | Direct_assignment _ -> unsupported "Direct_assignment"
 
   let print b t =
     match TS.assembler () with
@@ -504,8 +504,8 @@ let sleb128 ?comment i =
 let uleb128 ?comment i =
   emit (Uleb128 { constant = Directive.Constant.Unsigned_int i; comment; })
 
-let set var cst =
-  emit (Set (var, lower_expr cst))
+let direct_assignment var cst =
+  emit (Direct_assignment (var, lower_expr cst))
 
 let const ?comment constant
       (width : Directive.Constant_with_width.width_in_bytes) =
@@ -609,17 +609,22 @@ let switch_to_section section =
       true
     end
   in
-  current_section_ref := Some section;
-  let ({ names; flags; args; } : Asm_section.flags_for_section) =
-    Asm_section.flags section ~first_occurrence
-  in
-  if not first_occurrence then begin
-    new_line ()
-  end;
-  emit (Section { names; flags; args; });
-  if first_occurrence then begin
-    define_label (Asm_label.for_section section)
-  end
+  match !current_section_ref with
+  | Some section' when Asm_section.equal section section' ->
+    assert (not first_occurrence);
+    ()
+  | _ ->
+    current_section_ref := Some section;
+    let ({ names; flags; args; } : Asm_section.flags_for_section) =
+      Asm_section.flags section ~first_occurrence
+    in
+    if not first_occurrence then begin
+      new_line ()
+    end;
+    emit (Section { names; flags; args; });
+    if first_occurrence then begin
+      define_label (Asm_label.for_section section)
+    end
 
 let switch_to_section_raw ~names ~flags ~args =
   emit (Section { names; flags; args; })
@@ -809,7 +814,7 @@ let force_assembly_time_constant section expr =
        unexpected results when one of the labels is on a section boundary,
        for example.) *)
     let temp = new_temp_var () in
-    set temp expr;
+    direct_assignment temp expr;
     let compilation_unit = Compilation_unit.get_current_exn () in
     let sym =
       Asm_symbol.of_external_name_no_prefix section compilation_unit temp
@@ -871,23 +876,23 @@ let between_symbols_in_current_unit ~upper ~lower =
   let section = Asm_symbol.section upper in
   const_machine_width (force_assembly_time_constant section expr)
 
-let between_labels_16_bit ~upper ~lower =
+let between_labels_16_bit ?comment ~upper ~lower () =
   check_labels_in_same_section upper lower;
   let expr = Sub (Label upper, Label lower) in
   let section = Asm_label.section upper in
-  const (force_assembly_time_constant section expr) Sixteen
+  const ?comment (force_assembly_time_constant section expr) Sixteen
 
-let between_labels_32_bit ~upper ~lower =
+let between_labels_32_bit ?comment ~upper ~lower () =
   check_labels_in_same_section upper lower;
   let expr = Sub (Label upper, Label lower) in
   let section = Asm_label.section upper in
-  const (force_assembly_time_constant section expr) Thirty_two
+  const ?comment (force_assembly_time_constant section expr) Thirty_two
 
-let between_labels_64_bit ~upper ~lower =
+let between_labels_64_bit ?comment ~upper ~lower () =
   check_labels_in_same_section upper lower;
   let expr = Sub (Label upper, Label lower) in
   let section = Asm_label.section upper in
-  const (force_assembly_time_constant section expr) Sixty_four
+  const ?comment (force_assembly_time_constant section expr) Sixty_four
 
 let between_symbol_in_current_unit_and_label_offset ?comment
       ~upper ~lower ~offset_upper =

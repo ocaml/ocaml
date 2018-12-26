@@ -927,6 +927,7 @@ let emit_instr fallthrough i =
       for i = 0 to Array.length jumptbl - 1 do
         D.between_labels_32_bit ~upper:(L.create_int AS.Jump_tables jumptbl.(i))
           ~lower:(L.create_int AS.Jump_tables lbl)
+          ()
       done;
       D.text ()
   | Lsetuptrap lbl ->

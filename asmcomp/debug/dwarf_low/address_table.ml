@@ -102,6 +102,7 @@ let entry_to_dwarf_value (entry : entry_and_soc_symbol) =
     ~upper:entry.entry.addr
     ~lower:entry.start_of_code_symbol
     ~offset_upper:adjustment
+    ()
 
 let emit t =
   Initial_length.emit (initial_length t);

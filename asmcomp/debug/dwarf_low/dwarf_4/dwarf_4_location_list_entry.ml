@@ -50,6 +50,7 @@ module Location_list_entry = struct
       ~upper:t.beginning_address_label
       ~lower:t.start_of_code_symbol
       ~offset_upper:Targetint.zero
+      ()
 
   let ending_value t =
     let offset_upper =
@@ -67,6 +68,7 @@ module Location_list_entry = struct
       ~upper:t.ending_address_label
       ~lower:t.start_of_code_symbol
       ~offset_upper
+      ()
 
   let size t =
     let v1 = beginning_value t in

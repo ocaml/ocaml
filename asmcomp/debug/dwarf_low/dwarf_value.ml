@@ -12,6 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* CR mshinwell: Review again, especially the distance-measuring parts. *)
+
 (** Values written into DWARF sections.
     (For attribute values, see [Dwarf_attribute_values].)
 *)
@@ -69,15 +71,15 @@ type value =
   | Offset_into_debug_loclists of Asm_label.t
   | Offset_into_debug_rnglists of Asm_label.t
   | Offset_into_debug_abbrev of Asm_label.t
-  | Distance_between_labels_16bit of {
+  | Distance_between_labels_16_bit of {
       upper : Asm_label.t;
       lower : Asm_label.t;
     }
-  | Distance_between_labels_32bit of {
+  | Distance_between_labels_32_bit of {
       upper : Asm_label.t;
       lower : Asm_label.t;
     }
-  | Distance_between_labels_64bit of {
+  | Distance_between_labels_64_bit of {
       upper : Asm_label.t;
       lower : Asm_label.t;
     }
@@ -141,15 +143,15 @@ let print ppf { value; comment = _; } =
     Format.fprintf ppf "%a - .debug_rnglists" Asm_label.print lbl
   | Offset_into_debug_abbrev lbl ->
     Format.fprintf ppf "%a - .debug_abbrev" Asm_label.print lbl
-  | Distance_between_labels_16bit { upper; lower; } ->
+  | Distance_between_labels_16_bit { upper; lower; } ->
     Format.fprintf ppf "%a - %a (16)"
       Asm_label.print upper
       Asm_label.print lower
-  | Distance_between_labels_32bit { upper; lower; } ->
+  | Distance_between_labels_32_bit { upper; lower; } ->
     Format.fprintf ppf "%a - %a (32)"
       Asm_label.print upper
       Asm_label.print lower
-  | Distance_between_labels_64bit { upper; lower; } ->
+  | Distance_between_labels_64_bit { upper; lower; } ->
     Format.fprintf ppf "%a - %a (64)"
       Asm_label.print upper
       Asm_label.print lower
@@ -194,14 +196,15 @@ let code_address_from_symbol ?comment sym =
     comment;
   }
 
-let code_address_from_label_symbol_diff ?comment ~upper ~lower ~offset_upper =
+let code_address_from_label_symbol_diff ?comment ~upper ~lower
+      ~offset_upper () =
   { value = Code_address_from_label_symbol_diff { upper; lower; offset_upper; };
     comment;
   }
 
-let code_address_from_symbol_diff ~upper ~lower =
+let code_address_from_symbol_diff ?comment ~upper ~lower () =
   { value = Code_address_from_symbol_diff { upper; lower; };
-    comment = None;
+    comment;
   }
 
 let code_address_from_symbol_plus_bytes sym offset_in_bytes =
@@ -259,19 +262,19 @@ let offset_into_debug_abbrev ?comment lbl =
     comment;
   }
 
-let distance_between_labels_16bit ~upper ~lower =
-  { value = Distance_between_labels_16bit { upper; lower; };
-    comment = None;
+let distance_between_labels_16_bit ?comment ~upper ~lower () =
+  { value = Distance_between_labels_16_bit { upper; lower; };
+    comment;
   }
 
-let distance_between_labels_32bit ~upper ~lower =
-  { value = Distance_between_labels_32bit { upper; lower; };
-    comment = None;
+let distance_between_labels_32_bit ?comment ~upper ~lower () =
+  { value = Distance_between_labels_32_bit { upper; lower; };
+    comment;
   }
 
-let distance_between_labels_64bit ~upper ~lower =
-  { value = Distance_between_labels_64bit { upper; lower; };
-    comment = None;
+let distance_between_labels_64_bit ?comment ~upper ~lower () =
+  { value = Distance_between_labels_64_bit { upper; lower; };
+    comment;
   }
 
 let append_to_comment { value; comment; } to_append =
@@ -335,9 +338,9 @@ let size { value; comment = _; } =
   | Offset_into_debug_loclists _
   | Offset_into_debug_rnglists _
   | Offset_into_debug_abbrev _ -> Dwarf_int.size (Dwarf_int.zero ())
-  | Distance_between_labels_16bit _ -> Dwarf_int.two ()
-  | Distance_between_labels_32bit _ -> Dwarf_int.four ()
-  | Distance_between_labels_64bit _ -> Dwarf_int.eight ()
+  | Distance_between_labels_16_bit _ -> Dwarf_int.two ()
+  | Distance_between_labels_32_bit _ -> Dwarf_int.four ()
+  | Distance_between_labels_64_bit _ -> Dwarf_int.eight ()
 
 let emit { value; comment; } =
   let width_for_ref_addr_or_sec_offset () : Target_system.machine_width =
@@ -422,11 +425,11 @@ let emit { value; comment; } =
   | Offset_into_debug_abbrev label ->
     A.offset_into_dwarf_section_label ?comment Debug_abbrev label
       ~width:(width_for_ref_addr_or_sec_offset ())
-  | Distance_between_labels_16bit { upper; lower; } ->
+  | Distance_between_labels_16_bit { upper; lower; } ->
     (* We rely on the assembler for overflow checking here and in the
        32-bit case below. *)
-    A.between_labels_16_bit ~upper ~lower
-  | Distance_between_labels_32bit { upper; lower; } ->
-    A.between_labels_32_bit ~upper ~lower
-  | Distance_between_labels_64bit { upper; lower; } ->
-    A.between_labels_64_bit ~upper ~lower
+    A.between_labels_16_bit ?comment ~upper ~lower ()
+  | Distance_between_labels_32_bit { upper; lower; } ->
+    A.between_labels_32_bit ?comment ~upper ~lower ()
+  | Distance_between_labels_64_bit { upper; lower; } ->
+    A.between_labels_64_bit ?comment ~upper ~lower ()

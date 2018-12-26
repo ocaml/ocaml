@@ -218,23 +218,29 @@ val between_symbols_in_current_unit
     reference.  The behaviour upon overflow is unspecified.  The labels must
     be in the same section. *)
 val between_labels_16_bit
-   : upper:Asm_label.t
+   : ?comment:string
+  -> upper:Asm_label.t
   -> lower:Asm_label.t
+  -> unit
   -> unit
 
 (** Like [between_symbols], but for two labels, emitting a 32-bit-wide
     reference.  The behaviour upon overflow is unspecified.  The labels must
     be in the same section. *)
 val between_labels_32_bit
-   : upper:Asm_label.t
+   : ?comment:string
+  -> upper:Asm_label.t
   -> lower:Asm_label.t
+  -> unit
   -> unit
 
 (** Like [between_symbols], but for two labels, emitting a 64-bit-wide
     reference.  The labels must be in the same section. *)
 val between_labels_64_bit
-   : upper:Asm_label.t
+   : ?comment:string
+  -> upper:Asm_label.t
   -> lower:Asm_label.t
+  -> unit
   -> unit
 
 (** Emit a machine-width reference giving the displacement between the
@@ -332,6 +338,7 @@ module Directive : sig
     | Cfi_startproc
     | Comment of comment
     | Const of { constant : Constant_with_width.t; comment : string option; }
+    | Direct_assignment of string * Constant.t
     | File of { file_num : int option; filename : string; }
     | Global of string
     | Indirect_symbol of string
@@ -344,7 +351,6 @@ module Directive : sig
         flags : string option;
         args : string list;
       }
-    | Set of string * Constant.t
     | Size of string * Constant.t
     | Sleb128 of { constant : Constant.t; comment : string option; }
     | Space of { bytes : int; }

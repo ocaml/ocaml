@@ -87,6 +87,7 @@ end) = struct
       ~upper:label
       ~lower:t.start_of_code_symbol
       ~offset_upper:adjustment
+      ()
 
   let section = P.section
 

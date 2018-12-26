@@ -673,19 +673,19 @@ end) = struct
       value (V.int16 ~comment:"num bytes forward/backward, if TOS non-zero"
         num_bytes_forward)
     | DW_op_call2 { label; compilation_unit_header_label; } ->
-      value (V.distance_between_labels_16bit
-        ~upper:label ~lower:compilation_unit_header_label)
+      value (V.distance_between_labels_16_bit ~comment:"call2 target"
+        ~upper:label ~lower:compilation_unit_header_label ())
     | DW_op_call4 { label; compilation_unit_header_label; } ->
-      value (V.distance_between_labels_32bit
-        ~upper:label ~lower:compilation_unit_header_label)
+      value (V.distance_between_labels_32_bit ~comment:"call4 target"
+        ~upper:label ~lower:compilation_unit_header_label ())
     | DW_op_call_ref { label; compilation_unit_header_label; } ->
       begin match Dwarf_format.get () with
       | Thirty_two ->
-        value (V.distance_between_labels_32bit
-          ~upper:label ~lower:compilation_unit_header_label)
+        value (V.distance_between_labels_32_bit ~comment:"call_ref target"
+          ~upper:label ~lower:compilation_unit_header_label ())
       | Sixty_four ->
-        value (V.distance_between_labels_64bit
-          ~upper:label ~lower:compilation_unit_header_label)
+        value (V.distance_between_labels_64_bit ~comment:"call_ref target"
+          ~upper:label ~lower:compilation_unit_header_label ())
       end
     | DW_op_nop
     | DW_op_reg0
