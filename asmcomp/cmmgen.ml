@@ -3982,8 +3982,8 @@ let global_table namelist =
         Compilenv.make_symbol ~unitname:name (Some "gc_roots"))
       S.Data)
   in
-  Cdata(Cglobal_symbol caml_globals ::
-        Cdefine_symbol caml_globals ::
+  Cdata(Cglobal_symbol (caml_globals ()) ::
+        Cdefine_symbol (caml_globals ()) ::
         List.map mksym namelist @
         [cint_zero])
 
