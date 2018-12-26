@@ -816,9 +816,9 @@ let emit_instr fallthrough i =
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n) (res i 0)
   | Lop(Inegf) ->
-      I.xorpd (mem64_rip OWORD (Symbol caml_negf_mask)) (res i 0)
+      I.xorpd (mem64_rip OWORD (Symbol (caml_negf_mask ()))) (res i 0)
   | Lop(Iabsf) ->
-      I.andpd (mem64_rip OWORD (Symbol caml_absf_mask)) (res i 0)
+      I.andpd (mem64_rip OWORD (Symbol (caml_absf_mask ()))) (res i 0)
   | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
       instr_for_floatop floatop (arg i 1) (res i 0)
   | Lop(Ifloatofint) ->
@@ -1091,11 +1091,11 @@ let begin_assembly() =
   if !Clflags.dlcode || Target_system.win64 () then begin
     D.switch_to_section AS.Eight_byte_literals;
     D.align ~bytes:16;
-    D.define_data_symbol caml_negf_mask;
+    D.define_data_symbol (caml_negf_mask ());
     D.int64 0x8000000000000000L;
     D.int64 0L;
     D.align ~bytes:16;
-    D.define_data_symbol caml_absf_mask;
+    D.define_data_symbol (caml_absf_mask ());
     D.int64 0x7FFFFFFFFFFFFFFFL;
     D.int64 0xFFFFFFFFFFFFFFFFL;
   end;

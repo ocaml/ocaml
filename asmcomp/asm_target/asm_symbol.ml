@@ -140,31 +140,55 @@ include Identifiable.Make (struct
 end)
 
 module Names = struct
-  (* See corresponding CR-someday in backend_sym.ml. *)
-  let of_external_name section name =
-    of_external_name section Compilation_unit.extern name
+  let runtime = Compilation_unit.runtime
 
-  let mcount = of_external_name Text "mcount"
-  let _mcount = of_external_name Text "_mcount"
-  let __gnu_mcount_nc = of_external_name Text "__gnu_mcount_nc"
-  let sqrt = of_external_name Text "sqrt"
+  let mcount =
+    of_external_name Text runtime "mcount"
 
-  let caml_young_ptr = of_external_name Data "caml_young_ptr"
-  let caml_young_limit = of_external_name Data "caml_young_limit"
-  let caml_exception_pointer = of_external_name Data "caml_exception_pointer"
-  let caml_negf_mask = of_external_name Eight_byte_literals "caml_negf_mask"
-  let caml_absf_mask = of_external_name Eight_byte_literals "caml_absf_mask"
+  let _mcount =
+    of_external_name Text runtime "_mcount"
 
-  let caml_call_gc = of_external_name Text "caml_call_gc"
-  let caml_c_call = of_external_name Text "caml_c_call"
-  let caml_alloc1 = of_external_name Text "caml_alloc1"
-  let caml_alloc2 = of_external_name Text "caml_alloc2"
-  let caml_alloc3 = of_external_name Text "caml_alloc3"
-  let caml_allocN = of_external_name Text "caml_allocN"
+  let __gnu_mcount_nc =
+    of_external_name Text runtime "__gnu_mcount_nc"
+
+  let caml_young_ptr =
+    of_external_name Data runtime "caml_young_ptr"
+
+  let caml_young_limit =
+    of_external_name Data runtime "caml_young_limit"
+
+  let caml_exception_pointer =
+    of_external_name Data runtime "caml_exception_pointer"
+
+  let caml_negf_mask () =
+    let comp_unit = Compilation_unit.get_current_exn () in
+    of_external_name Eight_byte_literals comp_unit "caml_negf_mask"
+
+  let caml_absf_mask () =
+    let comp_unit = Compilation_unit.get_current_exn () in
+    of_external_name Eight_byte_literals comp_unit "caml_absf_mask"
+
+  let caml_call_gc =
+    of_external_name Text runtime "caml_call_gc"
+
+  let caml_c_call =
+    of_external_name Text runtime "caml_c_call"
+
+  let caml_alloc1 =
+    of_external_name Text runtime "caml_alloc1"
+
+  let caml_alloc2 =
+    of_external_name Text runtime "caml_alloc2"
+
+  let caml_alloc3 =
+    of_external_name Text runtime "caml_alloc3"
+
+  let caml_allocN =
+    of_external_name Text runtime "caml_allocN"
+
   let caml_ml_array_bound_error =
-    of_external_name Text "caml_ml_array_bound_error"
-  let caml_raise_exn = of_external_name Text "caml_raise_exn"
+    of_external_name Text runtime "caml_ml_array_bound_error"
 
-  let caml_frametable = of_external_name Data "caml_frametable"
-  let caml_spacetime_shapes = of_external_name Data "caml_spacetime_shapes"
+  let caml_raise_exn =
+    of_external_name Text runtime "caml_raise_exn"
 end

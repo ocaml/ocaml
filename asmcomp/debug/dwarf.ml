@@ -66,7 +66,10 @@ let mangle_symbol section symbol =
   in
   Asm_symbol.of_external_name section (Symbol.compilation_unit symbol) symbol'
 
-let create ~sourcefile ~prefix_name ~unit_name =
+let create ~sourcefile ~prefix_name =
+  let unit_name =
+    Compilation_unit.get_persistent_ident (Compilation_unit.get_current_exn ())
+  in
   begin match !Clflags.dwarf_format with
   | Thirty_two -> Dwarf_format.set Thirty_two
   | Sixty_four -> Dwarf_format.set Sixty_four

@@ -12,13 +12,19 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Names of object file symbols. *)
+(** Names of object file symbols, together with knowledge about whether such
+    symbols refer to code or data, and their enclosing compilation units. *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 type t
 type backend_sym = t
 
+(** Whether a symbol points at executable code ("text") or data.
+
+    Unlike [Asm_symbols]s, [Backend_sym]s of kind [Data] always point at
+    correctly-structured OCaml values.
+*)
 type kind = Text | Data
 
 (** Create a backend symbol from an Flambda-style [Symbol.t] that
@@ -70,14 +76,14 @@ include Identifiable.S with type t := t
 (** Like [print] but returns a string. *)
 val to_string : t -> string
 
+(** Symbols either defined in the runtime or defined in (shared) startup
+    files with standard names. *)
 module Names : sig
   (** External variables from the C library. *)
   val sqrt : t
 
   (** Global variables in the OCaml runtime accessed by OCaml code. *)
   val caml_exception_pointer : t
-  val caml_negf_mask : t
-  val caml_absf_mask : t
   val caml_backtrace_pos : t
   val caml_exn_Division_by_zero : t
   val caml_nativeint_ops : t
@@ -136,7 +142,7 @@ module Names : sig
   val caml_apply : int -> t
 
   (** Master table of globals. *)
-  val caml_globals : t
+  val caml_globals : unit -> t
   val caml_globals_map : t
 
   (** Master table of module data and code segments. *)

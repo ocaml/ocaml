@@ -6,7 +6,7 @@
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
 (*   Copyright 2013--2016 OCamlPro SAS                                    *)
-(*   Copyright 2014--2016 Jane Street Group LLC                           *)
+(*   Copyright 2014--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -61,9 +61,17 @@ let create (id : Ident.t) linkage_name =
   end;
   { id; linkage_name; hash = Hashtbl.hash (Ident.name id); }
 
-let extern =
-  create (Ident.create_persistent "*external*")
-    (Linkage_name.create "*external*")
+let runtime =
+  create (Ident.create_persistent "*runtime*")
+    (Linkage_name.create "*runtime*")
+
+let startup =
+  create (Ident.create_persistent "_Ocaml_startup")
+    (Linkage_name.create "_Ocaml_startup")
+
+let shared_startup =
+  create (Ident.create_persistent "_Ocaml_shared_startup")
+    (Linkage_name.create "_Ocaml_shared_startup")
 
 let get_persistent_ident cu = cu.id
 let get_linkage_name cu = cu.linkage_name

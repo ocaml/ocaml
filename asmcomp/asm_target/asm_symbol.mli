@@ -13,8 +13,12 @@
 (**************************************************************************)
 
 (** Symbols in the assembly stream.  Unlike labels, symbols are named entities
-    that are potentially accessible from outside an object file.  Symbols are
-    defined within sections. *)
+    that are potentially accessible from outside an object file.
+
+    These symbols are defined within sections and tied to a particular
+    compilation unit.  They may point anywhere, unlike [Backend_sym]s, where
+    those of [Data] kind must point at correctly-structured OCaml values.
+*)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
@@ -65,14 +69,13 @@ module Names : sig
   val mcount : t
   val _mcount : t
   val __gnu_mcount_nc : t
-  val sqrt : t
 
   (** Global variables in the OCaml runtime accessed by OCaml code. *)
   val caml_young_ptr : t
   val caml_young_limit : t
   val caml_exception_pointer : t
-  val caml_negf_mask : t
-  val caml_absf_mask : t
+  val caml_negf_mask : unit -> t
+  val caml_absf_mask : unit -> t
 
   (** Entry points to the OCaml runtime from OCaml code. *)
   val caml_call_gc : t
@@ -83,8 +86,4 @@ module Names : sig
   val caml_alloc3 : t
   val caml_ml_array_bound_error : t
   val caml_raise_exn : t
-
-  (** Standard OCaml auxiliary data structures. *)
-  val caml_frametable : t
-  val caml_spacetime_shapes : t
 end

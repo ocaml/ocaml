@@ -6,7 +6,7 @@
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
 (*   Copyright 2013--2016 OCamlPro SAS                                    *)
-(*   Copyright 2014--2016 Jane Street Group LLC                           *)
+(*   Copyright 2014--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -33,4 +33,14 @@ val get_current_id_exn : unit -> Ident.t
 
 val string_for_printing : t -> string
 
-val extern : t
+(** The compilation unit for entities defined in the startup file for
+    an executable. *)
+val startup : t
+
+(** The compilation unit for entities defined in the shared startup file for
+    a shared object. *)
+val shared_startup : t
+
+(** The compilation unit for entities defined in the C runtime code (or the
+    system C library, etc., in some cases). *)
+val runtime : t
