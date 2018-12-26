@@ -937,6 +937,9 @@ let offset_into_dwarf_section_label ?comment section upper
     match TS.assembler () with
     | MacOS ->
       let lower = Asm_label.for_dwarf_section section in
+      (* macOS does not use relocations in DWARF sections in places, such as
+         here, where they might be expected.  Instead dsymutil and other tools
+         parse DWARF sections properly and adjust offsets manually. *)
       force_assembly_time_constant expected_section
         (Sub (Label upper, Label lower))
     | GAS_like | MASM ->
@@ -986,7 +989,19 @@ let offset_into_dwarf_section_symbol ?comment section upper
     Misc.fatal_error "Don't know how to handle cross-unit references to \
       symbols that are not in the [Debug_info] section"
   end;
-  let expr : expr = Symbol upper in
+  let expr : expr =
+    match TS.assembler () with
+    | MacOS ->
+      if in_current_unit then
+        let lower = Asm_label.for_dwarf_section section in
+        (* Same note as in [offset_into_dwarf_section_label] applies here. *)
+        force_assembly_time_constant (DWARF section)
+          (Sub (Symbol upper, Label lower))
+      else
+        Symbol upper
+    | GAS_like | MASM ->
+      Symbol upper
+  in
   let width : Directive.Constant_with_width.width_in_bytes =
     match width with
     | Thirty_two -> Thirty_two
