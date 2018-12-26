@@ -1489,13 +1489,24 @@ let call_target_for_direct_callee t (callee : direct_callee) =
         (* CR-someday mshinwell: dedup DIEs for runtime, "caml_curry", etc.
            functions across compilation units (maybe only generate the DIEs
            when compiling the startup file)? *)
+        let bogus_high_pc =
+          (* We don't know what the high PC value is for a function whose
+             definition we don't have.  Silence dsymutil on macOS by adding
+             a bogus value.  The only reason we want this DIE here in any
+             case is for the low PC / entry PC values for GDB. *)
+          if Target_system.macos_like () then
+            [DAH.create_high_pc_from_symbol ~low_pc:callee callee;
+            ]
+          else
+            []
+        in
         let callee_die =
           Proto_die.create ~parent:(Some t.compilation_unit_proto_die)
             ~tag:Subprogram
-            ~attribute_values:[
+            ~attribute_values:(bogus_high_pc @ [
               DAH.create_low_pc_from_symbol callee;
               DAH.create_entry_pc_from_symbol callee;
-            ]
+            ])
             ()
         in
         let die_symbol =
