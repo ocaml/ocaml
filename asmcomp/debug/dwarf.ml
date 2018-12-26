@@ -1218,6 +1218,26 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                        making use of DWARF-5 spec page 85, line 30 onwards. *)
                     attributes_for_abstract_instance fun_dbg
                   | Some abstract_instance_symbol ->
+                    (* This appears to be the source of a bogus error from
+                       "dwarfdump --verify" on macOS:
+
+                       error: <address>: DIE has tag Unknown DW_TAG constant:
+                       0x4109 has DW_AT_abstract_origin that points to DIE
+                       <address> with incompatible tag TAG_subprogram
+
+                       The error seems to be bogus because:
+
+                       (a) 0x4109 is DW_TAG_GNU_call_site which has no
+                           DW_AT_abstract_origin attribute (it does in a child,
+                           but not in itself); and
+
+                       (b) When DW_AT_abstract_origin is used to reference an
+                           abstract instance then it is expected that the tags
+                           of the referring and referred-to DIEs differ.
+                           DWARF-5 spec page 85, lines 4--8.
+
+                       Since this complaint does not appear during a normal
+                       build process we do not attempt to work around it. *)
                     [DAH.create_abstract_origin
                        ~die_symbol:abstract_instance_symbol]
                 in
