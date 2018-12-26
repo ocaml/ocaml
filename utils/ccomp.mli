@@ -25,6 +25,7 @@ val run_command: string -> unit
 val compile_file:
   ?output:string -> ?opt:string -> ?stable_name:string -> string -> int
 val create_archive: string -> string list -> int
+val make_debuginfo_bundle : exe_name:string -> bool
 val expand_libname: string -> string
 val quote_files: string list -> string
 val quote_optfile: string option -> string

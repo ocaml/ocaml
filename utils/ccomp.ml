@@ -117,6 +117,13 @@ let compile_file ?output ?(opt="") ?stable_name name =
   then display_msvc_output file name;
   exit
 
+let make_debuginfo_bundle ~exe_name =
+  match Config.system with
+  | "macosx" ->
+    let result = command (Printf.sprintf "dsymutil %s" exe_name) in
+    result = 0
+  | _ -> true
+
 let macos_create_empty_archive ~quoted_archive =
   let result =
     command (Printf.sprintf "%s rc %s /dev/null" Config.ar quoted_archive)

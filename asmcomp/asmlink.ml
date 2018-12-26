@@ -387,8 +387,12 @@ let call_linker file_list startup_file output_name =
     else if !Clflags.output_c_object then Ccomp.Partial
     else Ccomp.Exe
   in
-  if not (Ccomp.call_linker mode output_name files c_lib)
-  then raise(Error Linking_error)
+  if not (Ccomp.call_linker mode output_name files c_lib) then begin
+    raise (Error Linking_error)
+  end;
+  if not (Ccomp.make_debuginfo_bundle ~exe_name:output_name) then begin
+    raise (Error Linking_error)
+  end
 
 (* Main entry point *)
 

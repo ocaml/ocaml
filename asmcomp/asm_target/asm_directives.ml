@@ -977,33 +977,29 @@ let offset_into_dwarf_section_symbol ?comment section upper
       Asm_section.print upper_section
       Asm_section.print (Asm_section.DWARF section)
   end;
-  let in_current_unit =
-    Compilation_unit.equal (Compilation_unit.get_current_exn ())
-      (Asm_symbol.compilation_unit upper)
-  in
   (* The macOS assembler doesn't seem to allow "distance to undefined symbol
-     from start of given section".  As such we make the assumption that
-     the debug_info section will be relocated to start at zero; and reject any
-     cross-unit reference that is not relative to the start of the debug_info
-     section.  Relevant link:
+     from start of given section".  As such we do not allow this function to
+     be used for undefined symbols on macOS at the moment.
+     Relevant link:
      <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=82005>.
   *)
-  if not in_current_unit
-    && not (Asm_section.equal (DWARF section) (DWARF Debug_info))
-  then begin
-    Misc.fatal_error "Don't know how to handle cross-unit references to \
-      symbols that are not in the [Debug_info] section"
-  end;
   let expr : expr =
     match TS.assembler () with
     | MacOS ->
+      let in_current_unit =
+        Compilation_unit.equal (Compilation_unit.get_current_exn ())
+          (Asm_symbol.compilation_unit upper)
+      in
       if in_current_unit then
         let lower = Asm_label.for_dwarf_section section in
         (* Same note as in [offset_into_dwarf_section_label] applies here. *)
         force_assembly_time_constant (DWARF section)
           (Sub (Symbol upper, Label lower))
       else
-        Symbol upper
+        Misc.fatal_errorf "Don't know how to encode offset from undefined \
+            symbol %a into section %a on macOS"
+          Asm_symbol.print upper
+          Asm_section.print upper_section
     | GAS_like | MASM ->
       Symbol upper
   in

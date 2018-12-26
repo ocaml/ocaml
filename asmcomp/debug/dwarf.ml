@@ -53,7 +53,12 @@ type proto_dies_for_var = {
 
 let dwarf_version = ref Dwarf_version.four
 
-let supports_call_sites () = false
+let supports_call_sites () = true
+
+let can_reference_dies_across_units () =
+  (* We don't know how to do this on macOS yet.  See comments in the
+     implementation of [Asm_directives.offset_into_dwarf_section_symbol]. *)
+  not (Target_system.macos_like ())
 
 let mangle_symbol section symbol =
   let unit_name =
@@ -978,18 +983,21 @@ let dwarf_for_variables_and_parameters t fundecl ~function_proto_die
       ~whole_function_lexical_block ~scope_proto_dies
       ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true)
 
-let add_abstract_instance t fun_dbg =
+let attributes_for_abstract_instance fun_dbg =
   let function_name = Debuginfo.Function.name fun_dbg in
   let is_visible_externally =
     Debuginfo.Function.is_visible_externally fun_dbg
   in
+  [ DAH.create_name function_name;
+    DAH.create_external ~is_visible_externally;
+  ]
+
+let add_abstract_instance t fun_dbg =
   let abstract_instance_proto_die =
     (* DWARF-5 specification section 3.3.8.1, page 82. *)
     Proto_die.create ~parent:(Some t.compilation_unit_proto_die)
       ~tag:Subprogram
-      ~attribute_values:[
-        DAH.create_name function_name;
-        DAH.create_external ~is_visible_externally;
+      ~attribute_values:(attributes_for_abstract_instance fun_dbg) @ [
         (* We assume every function might potentially be inlined (and possibly
            in the future), so we choose [DW_INL_inlined] as the most appropriate
            setting for [DW_AT_inline], even if it doesn't seem exactly
@@ -1024,16 +1032,15 @@ let find_maybe_in_another_unit_or_add_abstract_instance t fun_dbg =
     let id = Debuginfo.Function.id fun_dbg in
     let dbg_comp_unit = Debuginfo.Function.Id.compilation_unit id in
     let this_comp_unit = Compilation_unit.get_current_exn () in
-    let abstract_instance_proto_die_symbol =
-      if Compilation_unit.equal dbg_comp_unit this_comp_unit then
-        let _abstract_instance_proto_die, abstract_instance_proto_die_symbol =
-          find_or_add_abstract_instance t fun_dbg
-        in
-        abstract_instance_proto_die_symbol
-      else
-        Name_laundry.abstract_instance_root_die_name id
-    in
-    Some abstract_instance_proto_die_symbol
+    if Compilation_unit.equal dbg_comp_unit this_comp_unit then
+      let _abstract_instance_proto_die, abstract_instance_proto_die_symbol =
+        find_or_add_abstract_instance t fun_dbg
+      in
+      Some abstract_instance_proto_die_symbol
+    else if can_reference_dies_across_units () then
+      Some (Name_laundry.abstract_instance_root_die_name id)
+    else
+      None
 
 let create_range_list_and_summarise t (_fundecl : L.fundecl) range =
   LB.Range.fold range
@@ -1064,7 +1071,8 @@ let create_range_list_and_summarise t (_fundecl : L.fundecl) range =
           ~start_of_code_symbol:t.start_of_code_symbol
       in
       (* We still use the [Range_list] when emitting DWARF-4 (even though
-         it is a DWARF-5 structure) for the purposes of de-duplicating ranges. *)
+         it is a DWARF-5 structure) for the purposes of de-duplicating
+         ranges. *)
       let range_list = Range_list.add range_list range_list_entry in
       let summary =
         Address_index.Pair.Set.add (start_inclusive, end_exclusive) summary
@@ -1203,7 +1211,12 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
                    declaration. *)
                 let abstract_instance =
                   match abstract_instance_symbol with
-                  | None -> []
+                  | None ->
+                    (* If the abstract instance DIE cannot be referenced,
+                       reconstitute as much of its attributes as we can and
+                       put them directly into the DIE for the inlined frame,
+                       making use of DWARF-5 spec page 85, line 30 onwards. *)
+                    attributes_for_abstract_instance fun_dbg
                   | Some abstract_instance_symbol ->
                     [DAH.create_abstract_origin
                        ~die_symbol:abstract_instance_symbol]
@@ -1467,8 +1480,6 @@ let call_target_for_direct_callee t (callee : direct_callee) =
         let callee_die =
           Proto_die.create ~parent:(Some t.compilation_unit_proto_die)
             ~tag:Subprogram
-            ~attribute_values:[
-            ]
             ()
         in
         let die_symbol =
