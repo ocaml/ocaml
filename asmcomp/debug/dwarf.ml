@@ -839,14 +839,10 @@ let dwarf_for_variable t (fundecl : L.fundecl)
           construct_type_of_value_description t
             ~parent:(Some t.compilation_unit_proto_die)
             ident_for_type ~phantom_defining_expr ~proto_dies_for_vars
-            ~reference;
-          [DAH.create_type_from_reference ~proto_die_reference:reference;
-          ]
-        end else begin
-          (* CR mshinwell: We need a type attribute here to stop dwarfdump
-             complaining. *)
-          []
-        end
+            ~reference
+        end;
+        [DAH.create_type_from_reference ~proto_die_reference:reference;
+        ]
       in
       let name_attribute =
         if hidden || need_rvalue then []
