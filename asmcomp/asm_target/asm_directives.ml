@@ -820,8 +820,11 @@ let check_symbol_in_current_unit sym =
   let sym_unit = Asm_symbol.compilation_unit sym in
   let this_unit = Compilation_unit.get_current_exn () in
   if not (Compilation_unit.equal sym_unit this_unit) then begin
-    Misc.fatal_errorf "Symbol not in current compilation unit: %a"
+    Misc.fatal_errorf "Symbol %a (in compilation unit %a) not in current \
+        compilation unit %a"
       Asm_symbol.print sym
+      Compilation_unit.print sym_unit
+      Compilation_unit.print this_unit
   end
 
 let check_symbols_in_same_section sym1 sym2 =

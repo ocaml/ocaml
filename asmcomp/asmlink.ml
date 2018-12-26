@@ -220,7 +220,7 @@ let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units_list =
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   (* set the name of the "current" compunit *)
   Compilation_unit.set_current Compilation_unit.startup;
-  Compilenv.reset "_startup";
+  Compilenv.reset ~compilation_unit:Compilation_unit.startup "_startup";
   let dwarf =
     match !Clflags.debug_full with
     | None -> None
@@ -271,8 +271,11 @@ let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units_list =
 
 let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units =
   Location.input_name := "caml_startup";
-  Compilation_unit.set_current Compilation_unit.shared_startup;
-  Compilenv.reset "_shared_startup";
+  (* CR mshinwell: We need to work out how to get a proper unit name to
+     [Dwarf] here.  There may be multiple shared startup files in an
+     executable that utilises dynamic loading. *)
+  Compilation_unit.set_current Compilation_unit.startup;
+  Compilenv.reset ~compilation_unit:Compilation_unit.startup "_shared_startup";
   let dwarf =
     match !Clflags.debug_full with
     | None -> None

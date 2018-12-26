@@ -115,7 +115,7 @@ let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
 let current_unit_linkage_name () =
   Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
 
-let reset ?packname name =
+let reset ?compilation_unit ?packname name =
   Hashtbl.clear global_infos_table;
   Set_of_closures_id.Tbl.clear imported_sets_of_closures_table;
   let symbol = symbolname_for_pack packname name in
@@ -134,9 +134,12 @@ let reset ?packname name =
   merged_environment := Export_info.empty;
   Hashtbl.clear export_infos_table;
   let compilation_unit =
-    Compilation_unit.create
-      (Ident.create_persistent name)
-      (current_unit_linkage_name ())
+    match compilation_unit with
+    | None ->
+      Compilation_unit.create
+        (Ident.create_persistent name)
+        (current_unit_linkage_name ())
+    | Some compilation_unit -> compilation_unit
   in
   Compilation_unit.set_current compilation_unit
 

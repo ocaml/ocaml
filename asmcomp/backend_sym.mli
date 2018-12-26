@@ -142,7 +142,7 @@ module Names : sig
   val caml_apply : int -> t
 
   (** Master table of globals. *)
-  val caml_globals : unit -> t
+  val caml_globals : t
   val caml_globals_map : t
 
   (** Master table of module data and code segments. *)

@@ -37,10 +37,6 @@ val string_for_printing : t -> string
     an executable. *)
 val startup : t
 
-(** The compilation unit for entities defined in the shared startup file for
-    a shared object. *)
-val shared_startup : t
-
 (** The compilation unit for entities defined in the C runtime code (or the
     system C library, etc., in some cases). *)
 val runtime : t

@@ -66,12 +66,8 @@ let runtime =
     (Linkage_name.create "*runtime*")
 
 let startup =
-  create (Ident.create_persistent "_Ocaml_startup")
-    (Linkage_name.create "_Ocaml_startup")
-
-let shared_startup =
-  create (Ident.create_persistent "_Ocaml_shared_startup")
-    (Linkage_name.create "_Ocaml_shared_startup")
+  create (Ident.create_persistent "caml_startup")
+    (Linkage_name.create "caml_startup")
 
 let get_persistent_ident cu = cu.id
 let get_linkage_name cu = cu.linkage_name
