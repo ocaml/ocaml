@@ -99,12 +99,13 @@ module Names = struct
   let startup = Compilation_unit.startup
   let shared_startup = Compilation_unit.shared_startup
 
-  let check_compilation_unit_is_startup_or_shared_startup comp_unit =
+  let check_compilation_unit_is_startup_or_shared_startup comp_unit name =
     if (not (Compilation_unit.equal comp_unit startup))
       || (not (Compilation_unit.equal comp_unit shared_startup))
     then begin
       Misc.fatal_errorf "Compilation unit for symbol must be specified as \
-        either [startup] or [shared_startup]"
+          either [startup] or [shared_startup] (%s)"
+        name
     end
 
   let sqrt =
@@ -130,34 +131,36 @@ module Names = struct
 
   let caml_send n =
     let comp_unit = Compilation_unit.get_current_exn () in
-    check_compilation_unit_is_startup_or_shared_startup comp_unit;
+    check_compilation_unit_is_startup_or_shared_startup comp_unit "send";
     add_int_suffix (of_external_name comp_unit "caml_send" Text) n
 
   let caml_curry_n n =
     let comp_unit = Compilation_unit.get_current_exn () in
-    check_compilation_unit_is_startup_or_shared_startup comp_unit;
+    check_compilation_unit_is_startup_or_shared_startup comp_unit "curry_n";
     add_int_suffix (of_external_name comp_unit "caml_curry" Text) n
 
   let caml_curry_m_to_n m n =
     let comp_unit = Compilation_unit.get_current_exn () in
-    check_compilation_unit_is_startup_or_shared_startup comp_unit;
+    check_compilation_unit_is_startup_or_shared_startup comp_unit
+      "curry_m_to_n";
     add_suffixes (of_external_name comp_unit "caml_curry" Text)
       [string_of_int m; "_"; string_of_int n]
 
   let caml_curry_m_to_n_app m n =
     let comp_unit = Compilation_unit.get_current_exn () in
-    check_compilation_unit_is_startup_or_shared_startup comp_unit;
+    check_compilation_unit_is_startup_or_shared_startup comp_unit
+      "curry_m_to_n_app";
     add_suffixes (of_external_name comp_unit "caml_curry" Text)
       [string_of_int m; "_"; string_of_int n; "_app"]
 
   let caml_tuplify n =
     let comp_unit = Compilation_unit.get_current_exn () in
-    check_compilation_unit_is_startup_or_shared_startup comp_unit;
+    check_compilation_unit_is_startup_or_shared_startup comp_unit "tuplify";
     add_int_suffix (of_external_name comp_unit "caml_tuplify" Text) n
 
   let caml_apply n =
     let comp_unit = Compilation_unit.get_current_exn () in
-    check_compilation_unit_is_startup_or_shared_startup comp_unit;
+    check_compilation_unit_is_startup_or_shared_startup comp_unit "apply";
     add_int_suffix (of_external_name comp_unit "caml_apply" Text) n
 
   let caml_ba_get n =
@@ -227,7 +230,7 @@ module Names = struct
 
   let caml_globals () =
     let comp_unit = Compilation_unit.get_current_exn () in
-    check_compilation_unit_is_startup_or_shared_startup comp_unit;
+    check_compilation_unit_is_startup_or_shared_startup comp_unit "globals";
     of_external_name comp_unit "caml_globals" Data
 
   let caml_plugin_header =
