@@ -14,7 +14,6 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module DS = Dwarf_state
 module SLDL = Simple_location_description_lang
 
 let reg_location_description (reg : Reg.t) ~offset_from_cfa_in_bytes

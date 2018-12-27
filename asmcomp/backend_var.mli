@@ -33,6 +33,7 @@ module Provenance : sig
 
   val module_path : t -> Path.t
   val debuginfo : t -> Debuginfo.t
+  (* CR mshinwell: Make a new type for [Compilation.t * Ident.t] *)
   val ident_for_type : t -> Compilation_unit.t * Ident.t
   val is_parameter : t -> Is_parameter.t
 

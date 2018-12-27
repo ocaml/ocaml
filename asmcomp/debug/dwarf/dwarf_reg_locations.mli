@@ -18,7 +18,7 @@
 
 val reg_location_description
    : Reg.t
-  -> offset_from_cfa_in_bytes:int
+  -> offset_from_cfa_in_bytes:int option
   -> need_rvalue:bool
   -> Simple_location_description.t option
 
@@ -26,4 +26,4 @@ val offset_from_cfa_in_bytes
    : Reg.t
   -> Reg.stack_location
   -> stack_offset:int
-  -> int
+  -> int option

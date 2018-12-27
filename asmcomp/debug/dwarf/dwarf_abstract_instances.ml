@@ -14,13 +14,7 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module ARV = Available_ranges_all_vars
 module DAH = Dwarf_attribute_helpers
-module L = Linearize
-module LB = Lexical_block_ranges
-module SLDL = Simple_location_description_lang
-module V = Backend_var
-
 module DS = Dwarf_state
 
 let attributes fun_dbg =
@@ -77,7 +71,7 @@ let find_maybe_in_another_unit_or_add state fun_dbg =
         find_or_add state fun_dbg
       in
       Some abstract_instance_proto_die_symbol
-    else if can_reference_dies_across_units () then
+    else if DS.can_reference_dies_across_units state then
       Some (Dwarf_name_laundry.abstract_instance_root_die_name id)
     else
       None

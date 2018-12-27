@@ -28,14 +28,14 @@ let add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
     let offset_from_cfa_in_bytes =
       match arg.loc with
       | Stack stack_loc ->
-        offset_from_cfa_in_bytes arg stack_loc ~stack_offset
+        Dwarf_reg_locations.offset_from_cfa_in_bytes arg stack_loc ~stack_offset
       | Reg _ -> None
       | Unknown ->
         Misc.fatal_errorf "Register without location: %a"
           Printmach.reg arg
     in
     let param_location =
-      reg_location_description0 arg ~offset_from_cfa_in_bytes
+      Dwarf_reg_locations.reg_location_description arg ~offset_from_cfa_in_bytes
         ~need_rvalue:false
     in
     match param_location with
@@ -72,7 +72,8 @@ let add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
               (* CR mshinwell: This should reuse DIEs which were created
                  previously to describe these vars.  Also, shouldn't these
                  DIEs be parented higher up? *)
-              normal_type_for_var t ~parent:(Some call_site_die)
+              Dwarf_variables_and_parameters.normal_type_for_var state
+                ~parent:(Some call_site_die)
                 (Some (Backend_var.Provenance.ident_for_type provenance))
             in
             [DAH.create_type_from_reference

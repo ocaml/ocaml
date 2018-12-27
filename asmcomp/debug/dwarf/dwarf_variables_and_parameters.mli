@@ -16,10 +16,16 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+val normal_type_for_var
+   : ?reference:Proto_die.reference
+  -> parent:Proto_die.t option
+  -> (Compilation_unit.t * Ident.t) option
+  -> Proto_die.t
+
 val dwarf
    : Dwarf_state.t
   -> Linearize.fundecl
   -> function_proto_die:Proto_die.t
-  -> scope_proto_dies:Proto_die.t Numbers.Int.Map.t
+  -> scope_proto_dies:Proto_die.t Debuginfo.Block.Map.t
   -> Available_ranges_all_vars.t
   -> unit

@@ -18,7 +18,6 @@ module ARV = Available_ranges_all_vars
 module DAH = Dwarf_attribute_helpers
 module DS = Dwarf_state
 module L = Linearize
-module LB = Lexical_block_ranges
 module SLDL = Simple_location_description_lang
 module V = Backend_var
 
@@ -35,10 +34,6 @@ type proto_dies_for_var = {
   value_die_rvalue : Proto_die.reference;
   type_die : Proto_die.reference;
 }
-
-type location_description =
-  | Simple of Simple_location_description.t
-  | Composite of Composite_location_description.t
 
 let arch_size_addr = Targetint.of_int_exn Arch.size_addr
 
@@ -171,7 +166,7 @@ let construct_type_of_value_description state ~parent ident_for_type
           (* This (and other similar cases below) guard against the case where
              a variable referenced in the defining expression of a phantom
              variable doesn't have any available range. *)
-          DAH.create_type ~proto_die:t.value_type_proto_die
+          DAH.create_type ~proto_die:(DS.value_type_proto_die state)
         | Some target_type ->
           DAH.create_type_from_reference ~proto_die_reference:target_type
       in
@@ -285,6 +280,10 @@ let die_location_of_variable_rvalue state var ~proto_dies_for_vars =
         ~compilation_unit_header_label:(DS.compilation_unit_header_label state)
     in
     Some location
+
+type location_description =
+  | Simple of Simple_location_description.t
+  | Composite of Composite_location_description.t
 
 let reg_location_description reg ~offset_from_cfa_in_bytes
       ~need_rvalue : location_description option =
@@ -442,7 +441,7 @@ let phantom_var_location_description state
     in
     rvalue (SLDL.Rvalue.implicit_pointer ~offset_in_bytes:Targetint.zero
       ~die_label:(Proto_die.reference proto_die)
-      (!dwarf_version))
+      (DS.dwarf_version state))
 
 type location_list_entry =
   | Dwarf_4 of Dwarf_4_location_list_entry.t
@@ -510,7 +509,7 @@ let location_list_entry state (_fundecl : L.fundecl) ~parent ~subrange
         }
       in
       Some (Dwarf_5 (Location_list_entry.create location_list_entry
-        ~start_of_code_symbol:t.start_of_code_symbol))
+        ~start_of_code_symbol:(DS.start_of_code_symbol state)))
 
 let find_scope_die_from_debuginfo dbg ~function_proto_die ~scope_proto_dies =
   let block = Debuginfo.innermost_block dbg in
@@ -778,7 +777,7 @@ let dwarf state fundecl ~function_proto_die ~scope_proto_dies
           value_die_rvalue;
           type_die;
         });
-  t.rvalue_dies_required_for <- V.Set.empty;
+  DS.set_rvalue_dies_required_for state V.Set.empty;
   (* CR-someday mshinwell: Consider changing [need_rvalue] to use a variant
      type "lvalue or rvalue". *)
   iterate_over_variable_like_things state ~available_ranges_vars
