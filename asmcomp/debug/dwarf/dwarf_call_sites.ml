@@ -226,15 +226,19 @@ type direct_callee =
   | External of Asm_symbol.t
 
 let call_target_for_direct_callee state (callee : direct_callee) =
-  (* If we cannot reference DIEs across compilation units, then we treat
-     direct calls to OCaml functions as if they were to an external
-     function, fabricating our own subprogram DIE for each such function and
-     providing the "low PC" and "entry PC" value that GDB looks for (or may
-     look for in the future).  See gdb/dwarf2read.c:read_call_site_scope. *)
+  (* If we cannot reference DIEs across compilation units, then we treat direct
+     calls to OCaml functions in other compilation units as if they were to an
+     external function, fabricating our own subprogram DIE for each such
+     function and providing the "low PC" and "entry PC" value that GDB looks for
+     (or may look for in the future). See
+     gdb/dwarf2read.c:read_call_site_scope. *)
   let callee =
     match callee with
     | Ocaml (callee_symbol, _callee_dbg)
-        when not (DS.can_reference_dies_across_units state) ->
+        when (not (DS.can_reference_dies_across_units state))
+          && (not (Compilation_unit.equal
+            (Asm_symbol.compilation_unit callee_symbol)
+            (Compilation_unit.get_current_exn ()))) ->
       External callee_symbol
     | _ -> callee
   in
