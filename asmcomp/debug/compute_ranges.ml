@@ -145,9 +145,10 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   module KM = S.Key.Map
   module KS = S.Key.Set
 
-  (* The output of this pass satisfies the DWARF specification (e.g. DWARF-4
-     spec. section 2.6.2, page 30) in the sense that starting addresses of
-     ranges are treated as inclusive and ending addresses as exclusive.
+  (* Whilst this pass is not DWARF-specific, the output of this pass uses
+     the conventions of the DWARF specification (e.g. DWARF-4 spec.
+     section 2.6.2, page 30) in the sense that starting addresses of ranges
+     are treated as inclusive and ending addresses as exclusive.
 
      Imagine that, for a given [key], the program counter (PC) is exactly at the
      start of [insn]; that instruction has not yet been executed.  Assume

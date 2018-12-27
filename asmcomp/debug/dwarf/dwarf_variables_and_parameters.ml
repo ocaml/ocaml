@@ -1,0 +1,793 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                  Mark Shinwell, Jane Street Europe                     *)
+(*                                                                        *)
+(*   Copyright 2013--2018 Jane Street Group LLC                           *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
+[@@@ocaml.warning "+a-4-30-40-41-42"]
+
+module ARV = Available_ranges_all_vars
+module DAH = Dwarf_attribute_helpers
+module DS = Dwarf_state
+module L = Linearize
+module LB = Lexical_block_ranges
+module SLDL = Simple_location_description_lang
+module V = Backend_var
+
+type var_uniqueness = {
+  name_is_unique : bool;
+  position_is_unique : bool;
+}
+
+type is_variable_phantom = Non_phantom | Phantom
+
+type proto_dies_for_var = {
+  is_variable_phantom : is_variable_phantom;
+  value_die_lvalue : Proto_die.reference;
+  value_die_rvalue : Proto_die.reference;
+  type_die : Proto_die.reference;
+}
+
+type location_description =
+  | Simple of Simple_location_description.t
+  | Composite of Composite_location_description.t
+
+let arch_size_addr = Targetint.of_int_exn Arch.size_addr
+
+let calculate_var_uniqueness ~available_ranges_vars =
+  let module String = Misc.Stdlib.String in
+  let by_name = String.Tbl.create 42 in
+  let by_position = Debuginfo.Code_range.Option.Tbl.create 42 in
+  let update_uniqueness var pos =
+    let name = Backend_var.name var in
+    begin match String.Tbl.find by_name name with
+    | exception Not_found ->
+      String.Tbl.add by_name name (Backend_var.Set.singleton var)
+    | vars ->
+      String.Tbl.replace by_name name (Backend_var.Set.add var vars)
+    end;
+    begin match Debuginfo.Code_range.Option.Tbl.find by_position pos with
+    | exception Not_found ->
+      Debuginfo.Code_range.Option.Tbl.add by_position pos
+        (Backend_var.Set.singleton var)
+    | vars ->
+      Debuginfo.Code_range.Option.Tbl.replace by_position pos
+        (Backend_var.Set.add var vars)
+    end
+  in
+  let result = Backend_var.Tbl.create 42 in
+  ARV.iter available_ranges_vars
+    ~f:(fun var range ->
+      let range_info = ARV.Range.info range in
+      let dbg = ARV.Range_info.debuginfo range_info in
+      let pos = Debuginfo.position dbg in
+      update_uniqueness var pos;
+      Backend_var.Tbl.replace result var
+        { name_is_unique = false;
+          position_is_unique = false;
+        });
+  String.Tbl.iter (fun _name vars ->
+      match Backend_var.Set.get_singleton vars with
+      | None -> ()
+      | Some var ->
+        let var_uniqueness = Backend_var.Tbl.find result var in
+        Backend_var.Tbl.replace result var
+          { var_uniqueness with
+            name_is_unique = true;
+          })
+    by_name;
+  Debuginfo.Code_range.Option.Tbl.iter (fun _pos vars ->
+      match Backend_var.Set.get_singleton vars with
+      | None -> ()
+      | Some var ->
+        let var_uniqueness = Backend_var.Tbl.find result var in
+        Backend_var.Tbl.replace result var
+          { var_uniqueness with
+            position_is_unique = true;
+          })
+    by_position;
+  result
+
+let proto_dies_for_variable var ~proto_dies_for_vars =
+  match Backend_var.Tbl.find proto_dies_for_vars var with
+  | exception Not_found -> None
+  | result -> Some result
+
+let normal_type_for_var ?reference ~parent ident_for_type =
+  let name_attribute =
+    match ident_for_type with
+    | None -> []
+    | Some (compilation_unit, var) ->
+      let name =
+        Name_laundry.base_type_die_name_for_var compilation_unit var
+      in
+      [DAH.create_name name]
+  in
+  (* CR mshinwell: This should not create duplicates when the name is
+     missing *)
+  Proto_die.create ?reference
+    ~parent
+    ~tag:Base_type
+    ~attribute_values:(name_attribute @ [
+      DAH.create_encoding ~encoding:Encoding_attribute.signed;
+      DAH.create_byte_size_exn ~byte_size:Arch.size_addr;
+    ])
+    ()
+
+let type_die_reference_for_var var ~proto_dies_for_vars =
+  match proto_dies_for_variable var ~proto_dies_for_vars with
+  | None -> None
+  | Some dies -> Some dies.type_die
+
+(* Build a new DWARF type for [var].  Each variable has its
+   own type, which is basically its stamped name, and is nothing to do with
+   its inferred OCaml type.  The inferred type may be recovered by the
+   debugger by extracting the stamped name and then using that as a key
+   for lookup into the .cmt file for the appropriate module.
+
+   We emit the parameter index into the type if the variable in question
+   is a function parameter.  This is used in the debugger support library.
+   It would be nice not to have to have this hack, but it avoids changes
+   in the main gdb code to pass parameter indexes to the printing function.
+   It is arguably more robust, too.
+*)
+(* CR mshinwell: we're not emitting param indexes *)
+(* CR mshinwell: Add proper type for [ident_for_type] *)
+let construct_type_of_value_description state ~parent ident_for_type
+      ~(phantom_defining_expr : ARV.Range_info.phantom_defining_expr)
+      ~proto_dies_for_vars ~reference =
+  let normal_case () =
+    let (_ : Proto_die.t) =
+      normal_type_for_var ~reference ~parent ident_for_type
+    in
+    ()
+  in
+  let name_attribute =
+    match ident_for_type with
+    | None -> []
+    | Some (compilation_unit, var) ->
+      let name = Name_laundry.base_type_die_name_for_var compilation_unit var in
+      [DAH.create_name name]
+  in
+  match phantom_defining_expr with
+  | Non_phantom -> normal_case ()
+  | Phantom defining_expr ->
+    match defining_expr with
+    | Iphantom_const_int _
+    | Iphantom_const_symbol _
+    | Iphantom_read_symbol_field _ -> normal_case ()
+    | Iphantom_var var ->
+      let type_attribute_value =
+        match type_die_reference_for_var var ~proto_dies_for_vars with
+        | None ->
+          (* This (and other similar cases below) guard against the case where
+             a variable referenced in the defining expression of a phantom
+             variable doesn't have any available range. *)
+          DAH.create_type ~proto_die:t.value_type_proto_die
+        | Some target_type ->
+          DAH.create_type_from_reference ~proto_die_reference:target_type
+      in
+      let _proto_die : Proto_die.t =
+        Proto_die.create ~reference
+          ~parent
+          ~tag:Typedef
+          ~attribute_values:(name_attribute @ [
+            type_attribute_value;
+          ])
+          ()
+      in
+      ()
+    | Iphantom_read_field { var = _; field = _; } ->
+      (* We cannot dereference an implicit pointer when evaluating a DWARF
+         location expression, which means we must restrict ourselves to 
+         projections from non-phantom identifiers. *)
+      normal_case ()
+    | Iphantom_offset_var { var = _; offset_in_words = _; } ->
+      (* The same applies here as for [Iphantom_read_var_field] above, but we
+         never generate this for phantom identifiers at present (it is only
+         used for offsetting a closure environment variable). *)
+      normal_case ()
+    | Iphantom_block { tag = _; fields; } ->
+      (* The block will be described as a composite location expression
+         pointed at by an implicit pointer.  The corresponding type is
+         a pointer type whose target type is a structure type; the members of
+         the structure correspond to the fields of the block (plus the
+         header).  We don't use DWARF array types as we need to describe a
+         different type for each field. *)
+      let struct_type_die =
+        Proto_die.create ~parent
+          ~tag:Structure_type
+          ~attribute_values:[
+            DAH.create_name "<block>";
+            DAH.create_byte_size_exn
+              ~byte_size:((1 + List.length fields) * Arch.size_addr);
+          ]
+          ()
+      in
+      List.iteri (fun index field ->
+          let name = string_of_int (index - 1) in
+          let type_attribute =
+            match field with
+            | None ->
+              DAH.create_type ~proto_die:(DS.value_type_proto_die state)
+            | Some var ->
+              (* It's ok if [var] is a phantom identifier, since we will
+                 be building a composite location expression to describe the
+                 structure, and implicit pointers are permitted there.  (That
+                 is to say, the problem for [Iphantom_read_var_field] above
+                 does not exist here). *)
+              match type_die_reference_for_var var ~proto_dies_for_vars with
+              | None ->
+                DAH.create_type ~proto_die:(DS.value_type_proto_die state)
+              | Some proto_die_reference ->
+                DAH.create_type_from_reference ~proto_die_reference
+          in
+          Proto_die.create_ignore ~sort_priority:index
+            ~parent:(Some struct_type_die)
+            ~tag:Member
+            ~attribute_values:(type_attribute :: name_attribute @ [
+              DAH.create_name name;
+              DAH.create_bit_size (Int64.of_int (Arch.size_addr * 8));
+              DAH.create_data_member_location
+                ~byte_offset:(Int64.of_int (index * Arch.size_addr));
+            ])
+            ())
+        (None :: fields);  (* "None" is for the GC header. *)
+      let _pointer_to_struct_type_die : Proto_die.t =
+        Proto_die.create ~reference ~parent
+          ~tag:Pointer_type
+          ~attribute_values:(name_attribute @ [
+            DAH.create_type ~proto_die:struct_type_die;
+          ])
+          ()
+      in
+      ()
+
+let is_variable_phantom var ~proto_dies_for_vars =
+  match proto_dies_for_variable var ~proto_dies_for_vars with
+  | None -> None
+  | Some { is_variable_phantom; _ } -> Some is_variable_phantom
+
+let die_location_of_variable_lvalue state var ~proto_dies_for_vars =
+  (* We may need to reference the locations of other values in order to
+     describe the location of some particular value.  This is done by using
+     the "call" functionality of DWARF location descriptions.
+     (DWARF-4 specification section 2.5.1.5, page 24.)  This avoids any need
+     to transitively resolve phantom lets (to constants, symbols or
+     non-phantom variables) in the compiler. *)
+  match proto_dies_for_variable var ~proto_dies_for_vars with
+  | None -> None
+  | Some { value_die_lvalue; _; } ->
+    let location =
+      SLDL.Lvalue.location_from_another_die
+        ~die_label:value_die_lvalue
+        ~compilation_unit_header_label:(DS.compilation_unit_header_label state)
+    in
+    Some location
+
+let die_location_of_variable_rvalue state var ~proto_dies_for_vars =
+  match proto_dies_for_variable var ~proto_dies_for_vars with
+  | None -> None
+  | Some { value_die_rvalue; _; } ->
+    DS.set_rvalue_dies_required_for state
+      (V.Set.add var (DS.rvalue_dies_required_for state));
+    let location =
+      SLDL.Rvalue.location_from_another_die
+        ~die_label:value_die_rvalue
+        ~compilation_unit_header_label:(DS.compilation_unit_header_label state)
+    in
+    Some location
+
+let reg_location_description reg ~offset_from_cfa_in_bytes
+      ~need_rvalue : location_description option =
+  match
+    Dwarf_reg_locations.reg_location_description reg
+      ~offset_from_cfa_in_bytes ~need_rvalue
+  with
+  | None -> None
+  | Some simple_loc_desc -> Some (Simple simple_loc_desc)
+
+let phantom_var_location_description state
+      ~(defining_expr : Mach.phantom_defining_expr) ~need_rvalue:_
+      ~proto_dies_for_vars ~parent
+      : location_description option =
+  let module SLD = Simple_location_description in
+  let lvalue lvalue = Some (Simple (SLDL.compile (SLDL.of_lvalue lvalue))) in
+  let rvalue rvalue = Some (Simple (SLDL.compile (SLDL.of_rvalue rvalue))) in
+  match defining_expr with
+  | Iphantom_const_int i -> rvalue (SLDL.Rvalue.signed_int_const i)
+  | Iphantom_const_symbol symbol ->
+    let symbol = Asm_symbol.create symbol in
+    lvalue (SLDL.Lvalue.const_symbol ~symbol)
+  | Iphantom_read_symbol_field { sym; field; } ->
+    let symbol = Asm_symbol.create sym in
+    (* CR-soon mshinwell: Fix [field] to be of type [Targetint.t] *)
+    let field = Targetint.of_int field in
+    rvalue (SLDL.Rvalue.read_symbol_field ~symbol ~field)
+  | Iphantom_var var ->
+    (* mshinwell: What happens if [var] isn't available at some point
+       just due to the location list?  Should we push zero on the stack
+       first?  Or can we detect the stack is empty?  Or does gdb just abort
+       evaluation of the whole thing if the location list doesn't match?
+       mshinwell: The answer seems to be that you get an error saying
+       that you tried to pop something from an empty stack.  What we do
+       now is to wrap the location description in a composite location
+       description (with only one piece), which then causes gdb to
+       correctly detect unavailability. *)
+    (* CR-someday mshinwell: consider DWARF extension to avoid this?
+       The problem is worse for the read-field/read-var cases below,
+       since I think the (e.g.) dereferencing needs to be inside the piece
+       delimiters, exposing us to an error.  At the moment this should just
+       get caught by the exception handler in libmonda, but even still, a
+       better solution would be desirable.  Follow-up: actually it doesn't
+       get that far---the error is thrown even before the value printer
+       is called. *)
+    begin match
+      die_location_of_variable_rvalue state var ~proto_dies_for_vars
+    with
+    | None -> None
+    | Some rvalue ->
+      let location = SLDL.compile (SLDL.of_rvalue rvalue) in
+      let composite =
+        Composite_location_description.
+          pieces_of_simple_location_descriptions
+            [location, arch_size_addr]
+      in
+      Some (Composite composite)
+    end
+  | Iphantom_read_field { var; field; } ->
+    (* CR-soon mshinwell: Clarify the following (maybe in SLDL directly):
+       "lvalue" == "no DW_op_stack_value" *)
+    (* Reminder: see CR in flambda_utils.ml regarding these constructions *)
+    (* We need to use a location expression that when evaluated will
+       yield the runtime value of [var] *actually on the DWARF stack*.
+       This is necessary so that we can apply other stack operations,
+       such as arithmetic and dereferencing, to the value.  The upshot is
+       that we cannot use the "standalone" location-describing operators
+       such as DW_op_regx; instead we would use DW_op_bregx.  (Another
+       way of looking at this is that we need to get the DWARF operator
+       sequence without [DW_op_stack_value], either implicitly or
+       explicitly, at the end.) *)
+    begin match is_variable_phantom var ~proto_dies_for_vars with
+    | None | Some Phantom ->
+      (* For the moment, show this field access as unavailable, since we
+         cannot "DW_OP_deref" a value built up with implicit pointers. *)
+      None
+    | Some Non_phantom ->
+      match die_location_of_variable_rvalue state var ~proto_dies_for_vars with
+      | None -> None
+      | Some block ->
+        let field = Targetint.of_int_exn field in
+        let read_field =
+          SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.read_field ~block ~field))
+        in
+        let composite =
+          Composite_location_description.
+            pieces_of_simple_location_descriptions
+              [read_field, arch_size_addr]
+        in
+        Some (Composite composite)
+    end
+  | Iphantom_offset_var { var; offset_in_words; } ->
+    begin match
+      die_location_of_variable_lvalue state var ~proto_dies_for_vars
+    with
+    | None -> None
+    | Some location ->
+      let offset_in_words = Targetint.of_int_exn offset_in_words in
+      let offset_var =
+        SLDL.compile (SLDL.of_rvalue (
+          SLDL.Rvalue.offset_pointer location ~offset_in_words))
+      in
+      let composite =
+        Composite_location_description.
+          pieces_of_simple_location_descriptions
+            [offset_var, arch_size_addr]
+      in
+      Some (Composite composite)
+    end
+  | Iphantom_block { tag; fields; } ->
+    (* A phantom block construction: instead of the block existing in the
+       target program's address space, it is going to be conjured up in the
+       *debugger's* address space using instructions described in DWARF.
+       References between such blocks do not use normal pointers in the
+       target's address space---instead they use "implicit pointers"
+       (requires GNU DWARF extensions prior to DWARF-5). *)
+    (* CR-someday mshinwell: use a cache to dedup the CLDs *)
+    let header =
+      SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.signed_int_const (
+        Targetint.of_int64 (Int64.of_nativeint (
+          Cmmgen.black_block_header tag (List.length fields))))))
+    in
+    let header_size = arch_size_addr in
+    let field_size = arch_size_addr in
+    let fields =
+      List.map (fun var ->
+          let simple_location_description =
+            match var with
+            | None ->
+              (* This element of the block isn't accessible. *)
+              []
+            | Some ident ->
+              match
+                die_location_of_variable_rvalue state ident
+                  ~proto_dies_for_vars
+              with
+              | None -> []
+              | Some rvalue -> SLDL.compile (SLDL.of_rvalue rvalue)
+          in
+          simple_location_description, field_size)
+        fields
+    in
+    let composite_location_description =
+      Composite_location_description.pieces_of_simple_location_descriptions
+        ((header, header_size) :: fields)
+    in
+    let proto_die =
+      Proto_die.create ~parent
+        ~tag:Variable
+        ~attribute_values:[
+          DAH.create_composite_location_description
+            composite_location_description;
+        ]
+        ()
+    in
+    rvalue (SLDL.Rvalue.implicit_pointer ~offset_in_bytes:Targetint.zero
+      ~die_label:(Proto_die.reference proto_die)
+      (!dwarf_version))
+
+type location_list_entry =
+  | Dwarf_4 of Dwarf_4_location_list_entry.t
+  | Dwarf_5 of Location_list_entry.t
+
+let location_list_entry state (_fundecl : L.fundecl) ~parent ~subrange
+      ~proto_dies_for_vars ~need_rvalue : location_list_entry option =
+  let location_description =
+    match ARV.Subrange.info subrange with
+    | Non_phantom { reg; offset_from_cfa_in_bytes; } ->
+      reg_location_description reg ~offset_from_cfa_in_bytes ~need_rvalue
+    | Phantom defining_expr ->
+      phantom_var_location_description state ~defining_expr
+        ~need_rvalue ~proto_dies_for_vars ~parent
+  in
+  let single_location_description =
+    match location_description with
+    | None -> None
+    | Some (Simple simple) ->
+      Some (Single_location_description.of_simple_location_description simple)
+    | Some (Composite composite) ->
+      Some (Single_location_description.of_composite_location_description
+        composite)
+  in
+  match single_location_description with
+  | None -> None
+  | Some single_location_description ->
+    let start_pos =
+      Asm_label.create_int Text (ARV.Subrange.start_pos subrange)
+    in
+    let end_pos =
+      Asm_label.create_int Text (ARV.Subrange.end_pos subrange)
+    in
+    let end_pos_offset = ARV.Subrange.end_pos_offset subrange in
+    match !Clflags.dwarf_version with
+    | Four ->
+      let location_list_entry =
+        Dwarf_4_location_list_entry.create_location_list_entry
+          ~start_of_code_symbol:(DS.start_of_code_symbol state)
+          ~first_address_when_in_scope:start_pos
+          ~first_address_when_not_in_scope:end_pos
+          ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
+          ~single_location_description
+      in
+      Some (Dwarf_4 location_list_entry)
+    | Five ->
+      let start_inclusive =
+        Address_table.add (DS.address_table state) start_pos
+          ~start_of_code_symbol:(DS.start_of_code_symbol state)
+      in
+      let end_exclusive =
+        Address_table.add (DS.address_table state) end_pos
+          ~adjustment:end_pos_offset
+          ~start_of_code_symbol:(DS.start_of_code_symbol state)
+      in
+      let loc_desc =
+        Counted_location_description.create single_location_description
+      in
+      let location_list_entry : Location_list_entry.entry =
+        (* DWARF-5 spec page 45 line 1. *)
+        Startx_endx {
+          start_inclusive;
+          end_exclusive;
+          payload = loc_desc;
+        }
+      in
+      Some (Dwarf_5 (Location_list_entry.create location_list_entry
+        ~start_of_code_symbol:t.start_of_code_symbol))
+
+let find_scope_die_from_debuginfo dbg ~function_proto_die ~scope_proto_dies =
+  let block = Debuginfo.innermost_block dbg in
+  match block with
+  | None -> Some function_proto_die
+  | Some block ->
+    let module B = Debuginfo.Block in
+    match B.Map.find block scope_proto_dies with
+    | exception Not_found -> None
+    | proto_die -> Some proto_die
+
+let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
+      ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
+      ~need_rvalue (var : Backend_var.t) ~phantom:_ ~hidden ~ident_for_type
+      ~range =
+  let range_info = ARV.Range.info range in
+  let provenance = ARV.Range_info.provenance range_info in
+  let var_is_a_parameter_of_fundecl_itself =
+    match ARV.Range_info.is_parameter range_info with
+    | Local -> false
+    | Parameter _ -> true
+  in
+  let phantom_defining_expr = ARV.Range_info.phantom_defining_expr range_info in
+  let (parent_proto_die : Proto_die.t), hidden =
+    if var_is_a_parameter_of_fundecl_itself then
+      function_proto_die, hidden
+    else
+      (* Local variables need to be children of "lexical blocks", which in turn
+         are children of the function.  It is important to generate accurate
+         lexical block information to avoid large numbers of variables, many
+         of which may be out of scope, being visible in the debugger at the
+         same time. *)
+      match provenance with
+      | None ->
+        (* Any variable without provenance gets hidden. *)
+        function_proto_die, true
+      | Some provenance ->
+        let dbg = Backend_var.Provenance.debuginfo provenance in
+        let block_die =
+          find_scope_die_from_debuginfo dbg ~function_proto_die
+            ~scope_proto_dies
+        in
+        match block_die with
+        | Some block_die -> block_die, hidden
+        | None ->
+          (* There are be no instructions marked with the block in which
+             [var] was defined.  For the moment, just hide [var]. *)
+          function_proto_die, true
+  in
+  (* Build a location list that identifies where the value of [ident] may be
+     found at runtime, indexed by program counter range.
+     The representations of location lists (and range lists, used below to
+     describe lexical blocks) changed completely between DWARF-4 and
+     DWARF-5. *)
+  let location_list_attribute_value =
+    let dwarf_4_location_list_entries, location_list =
+      ARV.Range.fold range
+        ~init:([], Location_list.create ())
+        ~f:(fun (dwarf_4_location_list_entries, location_list) subrange ->
+          let location_list_entry =
+            location_list_entry state fundecl ~parent:(Some function_proto_die)
+              ~subrange ~proto_dies_for_vars ~need_rvalue
+          in
+          match location_list_entry with
+          | None -> dwarf_4_location_list_entries, location_list
+          | Some (Dwarf_4 location_list_entry) ->
+            let dwarf_4_location_list_entries =
+              location_list_entry :: dwarf_4_location_list_entries
+            in
+            dwarf_4_location_list_entries, location_list
+          | Some (Dwarf_5 location_list_entry) ->
+            let location_list =
+              Location_list.add location_list location_list_entry
+            in
+            dwarf_4_location_list_entries, location_list)
+    in
+    (* CR mshinwell: Re-check on Linux that removing the BASE hasn't
+       messed anything up *)
+    match !Clflags.dwarf_version with
+    | Four ->
+(*
+      let base_address_selection_entry =
+        let fun_symbol = Asm_symbol.create fundecl.fun_name in
+        Dwarf_4_location_list_entry.create_base_address_selection_entry
+          ~base_address_symbol:fun_symbol
+      in
+      let location_list_entries =
+        base_address_selection_entry :: dwarf_4_location_list_entries
+      in
+*)
+      let location_list_entries = dwarf_4_location_list_entries in
+      let location_list = Dwarf_4_location_list.create ~location_list_entries in
+      Debug_loc_table.insert (DS.debug_loc_table state) ~location_list
+    | Five ->
+      let location_list_index =
+        Location_list_table.add (DS.location_list_table state) location_list
+      in
+      DAH.create_location location_list_index
+  in
+  let type_and_name_attributes =
+    match type_die_reference_for_var var ~proto_dies_for_vars with
+    | None -> []
+    | Some reference ->
+      let name_is_unique, position_is_unique =
+        match Backend_var.Tbl.find uniqueness_by_var var with
+        | exception Not_found ->
+          Misc.fatal_errorf "No uniqueness information for %a"
+            Backend_var.print var
+        | { name_is_unique; position_is_unique; } ->
+          name_is_unique, position_is_unique
+      in
+      let name_for_var =
+        (* If the unstamped name of [ident] is unambiguous within the
+           function, then use it; otherwise, equip the name with the location
+           of its definition together with any inlined-out frames.
+           It might seem that parameters always have unique names, but they
+           don't, in the case of ones that weren't named in the source code. *)
+        (* CR-soon mshinwell: There are certain cases (e.g. let-bindings in
+           [Lambda]) which currently lack location information or (e.g.
+           inlined functions' parameters in [Closure]) where locations may
+           alias.  For these ones we disambiguate using the stamp. *)
+        if name_is_unique then Backend_var.name var
+        else if not position_is_unique then Backend_var.unique_toplevel_name var
+        else
+          match provenance with
+          | None -> Backend_var.unique_toplevel_name var
+          | Some provenance ->
+            let dbg = Backend_var.Provenance.debuginfo provenance in
+            match Debuginfo.position dbg with
+            | None -> Backend_var.unique_toplevel_name var
+            | Some position ->
+              Format.asprintf "%s[%a]"
+                (Backend_var.name var)
+                Debuginfo.Code_range.print_compact position
+      in
+      (* CR-someday mshinwell: This should be tidied up.  It's only correct by
+         virtue of the fact we do the closure-env ones second below. *)
+      (* CR mshinwell: re-check this CR-someday *)
+      let type_attribute =
+        if not need_rvalue then begin
+          construct_type_of_value_description state
+            ~parent:(Some (DS.compilation_unit_proto_die state))
+            ident_for_type ~phantom_defining_expr ~proto_dies_for_vars
+            ~reference
+        end;
+        [DAH.create_type_from_reference ~proto_die_reference:reference;
+        ]
+      in
+      let name_attribute =
+        if hidden || need_rvalue then []
+        else [DAH.create_name name_for_var]
+      in
+      name_attribute @ type_attribute
+  in
+  let is_parameter =
+    let is_parameter_from_provenance =
+      match provenance with
+      | None -> Is_parameter.local
+      | Some provenance -> Backend_var.Provenance.is_parameter provenance
+    in
+    (* The two inputs here correspond to:
+       1. The normal case of parameters of function declarations, which are
+          identified in [Selectgen].
+       2. Parameters of inlined functions, which have to be tagged much
+          earlier, on [let]-bindings when inlining is performed. *)
+    Is_parameter.join (ARV.Range_info.is_parameter range_info)
+      is_parameter_from_provenance
+  in
+  let tag : Dwarf_tag.t =
+    match is_parameter with
+    | Parameter _index -> Formal_parameter
+    | Local -> Variable
+  in
+  let reference =
+    match proto_dies_for_variable var ~proto_dies_for_vars with
+    | None -> None
+    | Some proto_dies ->
+      if need_rvalue then Some proto_dies.value_die_rvalue
+      else Some proto_dies.value_die_lvalue
+  in
+  let sort_priority =
+    match is_parameter with
+    | Local -> None
+    | Parameter { index; } ->
+      (* Ensure that parameters appear in the correct order in the debugger. *)
+      Some index
+  in
+  Proto_die.create_ignore ?reference
+    ?sort_priority
+    ~parent:(Some parent_proto_die)
+    ~tag
+    ~attribute_values:(type_and_name_attributes @ [
+      location_list_attribute_value;
+    ])
+    ()
+
+(* This function covers local variables, parameters, variables in closures
+   and other "fun_var"s in the current mutually-recursive set.  (The last
+   two cases are handled by the explicit addition of phantom lets way back
+   in [Flambda_to_clambda].)  Phantom variables are also covered. *)
+let iterate_over_variable_like_things state ~available_ranges_vars
+      ~rvalues_only ~f =
+  ARV.iter available_ranges_vars ~f:(fun var range ->
+    let should_process =
+      (not rvalues_only)
+        || V.Set.mem var (DS.rvalue_dies_required_for state)
+    in
+    if should_process then begin
+      let range_info = ARV.Range.info range in
+      let provenance = ARV.Range_info.provenance range_info in
+      let phantom : is_variable_phantom =
+        match ARV.Range_info.phantom_defining_expr range_info with
+        | Non_phantom -> Non_phantom
+        | Phantom _ -> Phantom
+      in
+      (* There are two variables in play here:
+         1. [var] is the "real" variable that is used for obtaining a value
+            at runtime in the debugger.
+         2. [ident_for_type] is the corresponding identifier with the stamp
+            as in the typed tree together with its original compilation unit.
+            This is the one used for lookup in .cmt files to retrieve a type.
+         We cannot conflate these since the multiple [vars] that might
+         be associated with a given [ident_for_type] (due to inlining) may
+         not all have the same value. *)
+      (* CR-soon mshinwell: Default arguments currently appear as local
+         variables, not parameters. *)
+      (* CR-someday mshinwell: Introduce some flag on Backend_var.t to mark
+         identifiers that were generated internally (or vice-versa)? *)
+      let hidden =
+        let name = Backend_var.name var in
+        String.length name >= 1
+          && String.get name 0 = '*'
+          && String.get name (String.length name - 1) = '*'
+      in
+      let ident_for_type =
+        match provenance with
+        | None ->
+          (* In this case the variable won't be given a name in the DWARF,
+             so as not to appear in the debugger; but we still need to emit
+             a DIE for it, as it may be referenced as part of some chain of
+             phantom lets. *)
+          None
+        | Some provenance ->
+          Some (Backend_var.Provenance.ident_for_type provenance)
+      in
+      f var ~phantom ~hidden ~ident_for_type ~range
+    end)
+
+let dwarf state fundecl ~function_proto_die ~scope_proto_dies
+      available_ranges_vars =
+  let proto_dies_for_vars = Backend_var.Tbl.create 42 in
+  let uniqueness_by_var =
+    calculate_var_uniqueness ~available_ranges_vars
+  in
+  iterate_over_variable_like_things state ~available_ranges_vars
+    ~rvalues_only:false
+    ~f:(fun var ~phantom ~hidden:_ ~ident_for_type:_ ~range:_ ->
+      let value_die_lvalue = Proto_die.create_reference () in
+      let value_die_rvalue = Proto_die.create_reference () in
+      let type_die = Proto_die.create_reference () in
+      assert (not (Backend_var.Tbl.mem proto_dies_for_vars var));
+      Backend_var.Tbl.add proto_dies_for_vars var
+        { is_variable_phantom = phantom;
+          value_die_lvalue;
+          value_die_rvalue;
+          type_die;
+        });
+  t.rvalue_dies_required_for <- V.Set.empty;
+  (* CR-someday mshinwell: Consider changing [need_rvalue] to use a variant
+     type "lvalue or rvalue". *)
+  iterate_over_variable_like_things state ~available_ranges_vars
+    ~rvalues_only:false
+    ~f:(dwarf_for_variable state fundecl ~function_proto_die
+      ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
+      ~need_rvalue:false);
+  iterate_over_variable_like_things state ~available_ranges_vars
+    ~rvalues_only:true
+    ~f:(dwarf_for_variable state fundecl ~function_proto_die
+      ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
+      ~need_rvalue:true)

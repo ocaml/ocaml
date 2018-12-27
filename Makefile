@@ -146,56 +146,69 @@ ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
 endif
 
 DWARF_LOW=\
-  asmcomp/debug/dwarf_low/dwarf_emittable.cmo \
-  asmcomp/debug/dwarf_low/dwarf_format.cmo \
-  asmcomp/debug/dwarf_low/dwarf_int.cmo \
-  asmcomp/debug/dwarf_low/dwarf_value.cmo \
-  asmcomp/debug/dwarf_low/dwarf_version.cmo \
-  asmcomp/debug/dwarf_low/initial_length.cmo \
-  asmcomp/debug/dwarf_low/child_determination.cmo \
-  asmcomp/debug/dwarf_low/dwarf_tag.cmo \
-  asmcomp/debug/dwarf_low/dwarf_language.cmo \
-  asmcomp/debug/dwarf_low/dwarf_operator.cmo \
-  asmcomp/debug/dwarf_low/simple_location_description.cmo \
-  asmcomp/debug/dwarf_low/composite_location_description.cmo \
-  asmcomp/debug/dwarf_low/single_location_description.cmo \
-  asmcomp/debug/dwarf_low/counted_location_description.cmo \
-  asmcomp/debug/dwarf_low/dwarf_attributes.cmo \
-  asmcomp/debug/dwarf_low/encoding_attribute.cmo \
-  asmcomp/debug/dwarf_low/inline_code.cmo \
-  asmcomp/debug/dwarf_low/dwarf_attribute_values.cmo \
-  asmcomp/debug/dwarf_low/abbreviation_code.cmo \
-  asmcomp/debug/dwarf_low/abbreviations_table_entry.cmo \
-  asmcomp/debug/dwarf_low/abbreviations_table.cmo \
-  asmcomp/debug/dwarf_low/debugging_information_entry.cmo \
-  asmcomp/debug/dwarf_low/aranges_table.cmo \
-  asmcomp/debug/dwarf_low/address_index.cmo \
-  asmcomp/debug/dwarf_low/address_table.cmo \
-  asmcomp/debug/dwarf_low/location_or_range_list_entry.cmo \
-  asmcomp/debug/dwarf_low/location_list_entry.cmo \
-  asmcomp/debug/dwarf_low/range_list_entry.cmo \
-  asmcomp/debug/dwarf_low/location_or_range_list.cmo \
-  asmcomp/debug/dwarf_low/location_list.cmo \
-  asmcomp/debug/dwarf_low/range_list.cmo \
-  asmcomp/debug/dwarf_low/location_or_range_list_table.cmo \
-  asmcomp/debug/dwarf_low/location_list_table.cmo \
-  asmcomp/debug/dwarf_low/range_list_table.cmo \
-  asmcomp/debug/dwarf_low/unit_type.cmo \
-  asmcomp/debug/dwarf_low/dwarf_4/dwarf_4_location_list_entry.cmo \
-  asmcomp/debug/dwarf_low/dwarf_4/dwarf_4_location_list.cmo \
-  asmcomp/debug/dwarf_low/dwarf_4/dwarf_4_range_list_entry.cmo \
-  asmcomp/debug/dwarf_low/dwarf_4/dwarf_4_range_list.cmo \
-  asmcomp/debug/dwarf_low/dwarf_4/debug_loc_table.cmo \
-  asmcomp/debug/dwarf_low/dwarf_4/debug_ranges_table.cmo \
-  asmcomp/debug/dwarf_low/debug_info_section.cmo
+  asmcomp/debug/dwarf/dwarf_low/dwarf_emittable.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_format.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_int.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_value.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_version.cmo \
+  asmcomp/debug/dwarf/dwarf_low/initial_length.cmo \
+  asmcomp/debug/dwarf/dwarf_low/child_determination.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_tag.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_language.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_operator.cmo \
+  asmcomp/debug/dwarf/dwarf_low/simple_location_description.cmo \
+  asmcomp/debug/dwarf/dwarf_low/composite_location_description.cmo \
+  asmcomp/debug/dwarf/dwarf_low/single_location_description.cmo \
+  asmcomp/debug/dwarf/dwarf_low/counted_location_description.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_attributes.cmo \
+  asmcomp/debug/dwarf/dwarf_low/encoding_attribute.cmo \
+  asmcomp/debug/dwarf/dwarf_low/inline_code.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_attribute_values.cmo \
+  asmcomp/debug/dwarf/dwarf_low/abbreviation_code.cmo \
+  asmcomp/debug/dwarf/dwarf_low/abbreviations_table_entry.cmo \
+  asmcomp/debug/dwarf/dwarf_low/abbreviations_table.cmo \
+  asmcomp/debug/dwarf/dwarf_low/debugging_information_entry.cmo \
+  asmcomp/debug/dwarf/dwarf_low/aranges_table.cmo \
+  asmcomp/debug/dwarf/dwarf_low/address_index.cmo \
+  asmcomp/debug/dwarf/dwarf_low/address_table.cmo \
+  asmcomp/debug/dwarf/dwarf_low/location_or_range_list_entry.cmo \
+  asmcomp/debug/dwarf/dwarf_low/location_list_entry.cmo \
+  asmcomp/debug/dwarf/dwarf_low/range_list_entry.cmo \
+  asmcomp/debug/dwarf/dwarf_low/location_or_range_list.cmo \
+  asmcomp/debug/dwarf/dwarf_low/location_list.cmo \
+  asmcomp/debug/dwarf/dwarf_low/range_list.cmo \
+  asmcomp/debug/dwarf/dwarf_low/location_or_range_list_table.cmo \
+  asmcomp/debug/dwarf/dwarf_low/location_list_table.cmo \
+  asmcomp/debug/dwarf/dwarf_low/range_list_table.cmo \
+  asmcomp/debug/dwarf/dwarf_low/unit_type.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/dwarf_4_location_list_entry.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/dwarf_4_location_list.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/dwarf_4_range_list_entry.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/dwarf_4_range_list.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/debug_loc_table.cmo \
+  asmcomp/debug/dwarf/dwarf_low/dwarf_4/debug_ranges_table.cmo \
+  asmcomp/debug/dwarf/dwarf_low/debug_info_section.cmo
 
 DWARF_HIGH=\
-  asmcomp/debug/dwarf_high/proto_die.cmo \
-  asmcomp/debug/dwarf_high/dwarf_attribute_helpers.cmo \
-  asmcomp/debug/dwarf_high/operator_builder.cmo \
-  asmcomp/debug/dwarf_high/assign_abbrevs.cmo \
-  asmcomp/debug/dwarf_high/simple_location_description_lang.cmo \
-  asmcomp/debug/dwarf_high/dwarf_world.cmo
+  asmcomp/debug/dwarf/dwarf_high/proto_die.cmo \
+  asmcomp/debug/dwarf/dwarf_high/dwarf_attribute_helpers.cmo \
+  asmcomp/debug/dwarf/dwarf_high/operator_builder.cmo \
+  asmcomp/debug/dwarf/dwarf_high/assign_abbrevs.cmo \
+  asmcomp/debug/dwarf/dwarf_high/simple_location_description_lang.cmo \
+  asmcomp/debug/dwarf/dwarf_high/dwarf_world.cmo
+
+DWARF=\
+  asmcomp/debug/dwarf/dwarf_name_laundry.cmo \
+	asmcomp/debug/dwarf/dwarf_compilation_unit.cmo \
+	asmcomp/debug/dwarf/dwarf_state.cmo \
+	asmcomp/debug/dwarf/dwarf_reg_locations.cmo \
+	asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmo \
+	asmcomp/debug/dwarf/dwarf_abstract_instances.cmo \
+	asmcomp/debug/dwarf/dwarf_call_sites.cmo \
+	asmcomp/debug/dwarf/dwarf_lexical_blocks_and_inlined_frames.cmo \
+	asmcomp/debug/dwarf/dwarf_concrete_instances.cmo \
+	asmcomp/debug/dwarf/dwarf_lifted_constants.cmo \
+  asmcomp/debug/dwarf/dwarf.cmo \
 
 ASMCOMP=\
   asmcomp/backend_var.cmo \
@@ -237,7 +250,6 @@ ASMCOMP=\
   asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/debug/available_regs.cmo \
-  asmcomp/debug/name_laundry.cmo \
   $(DWARF_LOW) \
   $(DWARF_HIGH) \
   asmcomp/debug/compute_ranges_intf.cmo \
@@ -247,7 +259,8 @@ ASMCOMP=\
   asmcomp/debug/available_ranges_all_vars.cmo \
   asmcomp/debug/lexical_block_ranges.cmo \
   asmcomp/debug/coalesce_labels.cmo \
-  asmcomp/debug/dwarf.cmo \
+  $(DWARF) \
+  asmcomp/debug/debug_passes.cmo \
   asmcomp/debug/cmm_debug.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \

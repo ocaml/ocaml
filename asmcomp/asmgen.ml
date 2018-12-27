@@ -105,10 +105,11 @@ let emit ~ppf_dump:_ dwarf fundecl =
     ignore ((Emit.fundecl fundecl ~end_of_function_label)
       : Emitaux.external_call_generated_during_emit list)
   | Some dwarf ->
-    Dwarf.dwarf_for_fundecl_and_emit dwarf
-      ~emit:Emit.fundecl
-      ~end_of_function_label
-      fundecl
+    let debug_passes_result =
+      Debug_passes.passes_for_fundecl_and_emit ~emit:Emit.fundecl
+        ~end_of_function_label fundecl
+    in
+    Dwarf.dwarf_for_fundecl dwarf debug_passes_result
 
 let (++) x f = f x
 

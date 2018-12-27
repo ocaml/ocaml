@@ -12,7 +12,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Generation of DWARF debugging information for OCaml compilation units. *)
+(** Generation and emission of DWARF debugging information for OCaml
+    compilation units. *)
 
 type t
 
@@ -26,27 +27,19 @@ val create
   -> prefix_name:string
   -> t
 
-(** For dealing with [Let_symbol] bindings. *)
+(** Generate DWARF for the given function. *)
+val dwarf_for_fundecl : t -> Debug_passes.result -> unit
+
+(** Generate DWARF for Flambda [Let_symbol] bindings. *)
 val dwarf_for_toplevel_constants
    : t
   -> Clambda.preallocated_constant list
   -> unit
 
-(** For dealing with [Initialize_symbol] bindings. *)
+(** Generate DWARF for Flambda [Initialize_symbol] bindings. *)
 val dwarf_for_toplevel_inconstants
    : t
   -> Clambda.preallocated_block list
-  -> unit
-
-(** Prepare a function definition for DWARF emission, emit the function using
-    the given emitter, and then generate corresponding DWARF. *)
-val dwarf_for_fundecl_and_emit
-   : t
-  -> emit:(Linearize.fundecl
-    -> end_of_function_label:Linearize.label
-    -> Emitaux.external_call_generated_during_emit list)
-  -> end_of_function_label:Linearize.label
-  -> Linearize.fundecl
   -> unit
 
 (** Write the DWARF information to the assembly file.  This should only be
