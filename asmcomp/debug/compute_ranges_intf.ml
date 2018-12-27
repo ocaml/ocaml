@@ -122,11 +122,10 @@ module type S = sig
 
   val range_covering_whole_function
      : t
+    -> end_of_function_label:Linearize.label
     -> Range_info.t
     -> Subrange_info.t
     -> Range.t
-
-  val end_of_function_label : t -> Linearize.label
 
   val iter : t -> f:(Index.t -> Range.t -> unit) -> unit
 

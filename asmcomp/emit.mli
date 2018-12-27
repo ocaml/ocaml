@@ -17,6 +17,7 @@
 
 val fundecl
    : Linearize.fundecl
+  -> end_of_function_label:Linearize.label
   -> Emitaux.external_call_generated_during_emit list
 
 val data: Cmm.data_item list -> unit

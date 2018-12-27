@@ -16,6 +16,13 @@
     the chance that two labels which actually point at the same location can
     be identified as doing so by using a simple equality check.  This helps
     in particular with constructing the DWARF-5 .debug_addr section.
+
+    This pass also rewrites all labels that are defined by [Llabel]
+    constructs in the code so that they are in increasing order by code
+    address.  (So in particular this excludes [call_labels] and so forth.)
+    This rewriting is necessary so that the code used to construct DWARF-4
+    location lists can use the ordering between labels as a proxy for
+    the ordering between the corresponding virtual memory addresses.
 *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]

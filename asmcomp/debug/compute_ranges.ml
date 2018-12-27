@@ -89,12 +89,13 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       let start_pos = Subrange.start_pos subrange in
       let end_pos = Subrange.end_pos subrange in
       (* This may seem dubious, but is correct by virtue of the way label
-         counters are allocated (see [Linearize]) and the fact that, below,
+         counters are allocated sequentially and the fact that, below,
          we go through the code from lowest (code) address to highest.  As
          such the label with the highest integer value should be the one with
          the highest address, and vice-versa.  (Note that we also exploit the
-         ordering when constructing location lists, to ensure that they are
-         sorted in increasing program counter order by start address.) *)
+         ordering when constructing DWARF-4 location lists, to ensure that
+         they are sorted in increasing program counter order by start
+         address.) *)
       assert (compare start_pos end_pos <= 0);
       begin match t.min_pos with
       | None -> t.min_pos <- Some start_pos
@@ -443,16 +444,21 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     in
     t, fundecl
 
-  let range_covering_whole_function t range_info subrange_info =
+  let range_covering_whole_function t ~end_of_function_label
+        range_info subrange_info : Range.t =
     let subrange =
-      Subrange.create0 ~start_pos:t.starting_label ~end_pos:t.ending_label
+      Subrange.create0
+        ~start_pos:t.starting_label ~end_pos:end_of_function_label
         ~end_pos_offset:0 ~subrange_info
     in
-    let range = Range.create range_info in
-    Range.add_subrange range ~subrange;
-    range
-
-  let end_of_function_label t = t.ending_label
+    (* We create the range directly in case [t.starting_label] and
+       [end_of_function_label] do not satisfy the usual invariant that the
+       former is smaller or equal to the latter. *)
+    { subranges = [subrange];
+      min_pos = Some t.starting_label;
+      max_pos = Some end_of_function_label;
+      range_info;
+    }
 
   let iter t ~f =
     S.Index.Tbl.iter (fun index range -> f index range)

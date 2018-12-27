@@ -30,10 +30,13 @@ type result = private
     lexical_block_ranges : Lexical_block_ranges.t;
     external_calls_generated_during_emit
       : Emitaux.external_call_generated_during_emit list;
+    end_of_function_label : Cmm.label;
   }
 
 val passes_for_fundecl_and_emit
    : emit:(Linearize.fundecl
+    -> end_of_function_label:Cmm.label
     -> Emitaux.external_call_generated_during_emit list)
+  -> end_of_function_label:Cmm.label
   -> Linearize.fundecl
   -> result

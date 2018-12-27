@@ -1004,7 +1004,7 @@ let all_functions = ref []
 
 (* Emission of a function declaration *)
 
-let fundecl fundecl =
+let fundecl fundecl ~end_of_function_label =
   let fun_name = S.create fundecl.fun_name in
   function_name := Some fun_name;
   fastcode_flag := fundecl.fun_fast;
@@ -1036,6 +1036,7 @@ let fundecl fundecl =
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
   D.cfi_endproc ();
+  D.define_label (Asm_label.create_int AS.Text end_of_function_label);
   D.size fun_name;
   generated_call_sites ()
 

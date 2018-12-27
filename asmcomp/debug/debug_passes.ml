@@ -22,6 +22,7 @@ type result =
     lexical_block_ranges : Lexical_block_ranges.t;
     external_calls_generated_during_emit
       : Emitaux.external_call_generated_during_emit list;
+    end_of_function_label : Cmm.label;
   }
 
 let passes_for_fundecl (fundecl : L.fundecl) =
@@ -82,13 +83,17 @@ let passes_for_fundecl (fundecl : L.fundecl) =
   in
   available_ranges_vars, lexical_block_ranges, fundecl
 
-let passes_for_fundecl_and_emit ~emit (fundecl : L.fundecl) =
+let passes_for_fundecl_and_emit ~emit ~end_of_function_label
+      (fundecl : L.fundecl) =
   let available_ranges_vars, lexical_block_ranges, fundecl =
     passes_for_fundecl fundecl
   in
-  let external_calls_generated_during_emit = emit fundecl in
+  let external_calls_generated_during_emit =
+    emit fundecl ~end_of_function_label
+  in
   { fundecl;
     available_ranges_vars;
     lexical_block_ranges;
     external_calls_generated_during_emit;
+    end_of_function_label;
   }

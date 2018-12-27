@@ -91,7 +91,8 @@ module All_summaries = Identifiable.Make (struct
   let hash t = Hashtbl.hash (elements t)
 end)
 
-let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die =
+let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die
+      ~end_of_function_label =
   let module B = Debuginfo.Block in
   let all_blocks = LB.all_indexes lexical_block_ranges in
   let scope_proto_dies, _all_summaries =
@@ -112,6 +113,7 @@ let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die =
               match B.frame_classification block with
               | Whole_function ->
                 LB.range_covering_whole_function lexical_block_ranges
+                  ~end_of_function_label
               | Lexical_scope | Inlined_frame _ ->
                 LB.find lexical_block_ranges block
             in
