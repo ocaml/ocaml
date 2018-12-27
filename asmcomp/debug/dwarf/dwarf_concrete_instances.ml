@@ -17,6 +17,9 @@
 module DAH = Dwarf_attribute_helpers
 module DS = Dwarf_state
 
+(* CR mshinwell: Function names are not being disambiguated
+   (e.g. Ctype.unify) *)
+
 let for_fundecl state (result : Debug_passes.result) =
   let available_ranges_vars = result.available_ranges_vars in
   let fundecl = result.fundecl in
