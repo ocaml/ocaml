@@ -422,8 +422,11 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         ending_label;  (* A placeholder -- this is set properly below. *)
       }
     in
+    let first_insn, ending_label =
+      process_instructions t fundecl ~first_insn:fundecl.fun_body
+    in
+    t.ending_label <- ending_label;
     let first_insn : L.instruction =
-      let first_insn = fundecl.fun_body in
       { desc = Llabel starting_label;
         next = first_insn;
         arg = [| |];
@@ -435,10 +438,6 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         available_across = None;
       }
     in
-    let first_insn, ending_label =
-      process_instructions t fundecl ~first_insn
-    in
-    t.ending_label <- ending_label;
     let fundecl : L.fundecl =
       { fundecl with fun_body = first_insn; }
     in

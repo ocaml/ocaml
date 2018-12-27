@@ -35,13 +35,15 @@ let rec coalesce env (insn : L.instruction) ~last_insn_was_label =
       match insn.desc with
       | Llabel label ->
         begin match last_insn_was_label with
-        | Some existing_label ->
+        | Some rewritten_existing_label ->
           (* This label immediately follows another, so delete it.
              References to it will be rewritten to the previous label. *)
-          let env = Int.Map.add label existing_label env in
+          let env = Int.Map.add label rewritten_existing_label env in
           env, None, last_insn_was_label
         | None ->
-          env, Some insn.desc, Some label
+          let rewritten_label = Cmm.new_label () in
+          let env = Int.Map.add label rewritten_label env in
+          env, Some insn.desc, Some rewritten_label
         end
       | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Lpushtrap
       | Lpoptrap | Lraise _ | Lbranch _
