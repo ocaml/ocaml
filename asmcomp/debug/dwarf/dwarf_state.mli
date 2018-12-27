@@ -66,4 +66,4 @@ val supports_call_sites : t -> bool
 
 val can_reference_dies_across_units : t -> bool
 
-val dwarf_version : t -> bool
+val dwarf_version : t -> Dwarf_version.t

@@ -14,11 +14,6 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module ARV = Available_ranges_all_vars
-module DAH = Dwarf_attribute_helpers
-module L = Linearize
-module LB = Lexical_block_ranges
-module SLDL = Simple_location_description_lang
 module V = Backend_var
 
 type t = {
@@ -79,6 +74,8 @@ let range_list_table t = t.range_list_table
 let start_of_code_symbol t = t.start_of_code_symbol
 let end_of_code_symbol t = t.end_of_code_symbol
 let rvalue_dies_required_for t = t.rvalue_dies_required_for
+let set_rvalue_dies_required_for t rvalue_dies_required_for =
+  t.rvalue_dies_required_for <- rvalue_dies_required_for
 let function_abstract_instances t = t.function_abstract_instances
 let die_symbols_for_external_declarations t =
   t.die_symbols_for_external_declarations

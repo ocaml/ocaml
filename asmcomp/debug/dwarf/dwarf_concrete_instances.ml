@@ -45,7 +45,7 @@ let for_fundecl state (result : Debug_passes.result) =
       ()
   in
   Proto_die.set_name concrete_instance_proto_die
-    (Name_laundry.concrete_instance_die_name
+    (Dwarf_name_laundry.concrete_instance_die_name
       (Debuginfo.Function.id fundecl.fun_dbg));
   let scope_proto_dies =
     Profile.record "dwarf_lexical_blocks_and_inlined_frames"

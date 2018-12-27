@@ -49,7 +49,7 @@ let add state fun_dbg =
   in
   let id = Debuginfo.Function.id fun_dbg in
   let abstract_instance_proto_die_symbol =
-    Name_laundry.abstract_instance_root_die_name id
+    Dwarf_name_laundry.abstract_instance_root_die_name id
   in
   Proto_die.set_name abstract_instance_proto_die
     abstract_instance_proto_die_symbol;
@@ -78,6 +78,6 @@ let find_maybe_in_another_unit_or_add state fun_dbg =
       in
       Some abstract_instance_proto_die_symbol
     else if can_reference_dies_across_units () then
-      Some (Name_laundry.abstract_instance_root_die_name id)
+      Some (Dwarf_name_laundry.abstract_instance_root_die_name id)
     else
       None

@@ -107,7 +107,7 @@ let normal_type_for_var ?reference ~parent ident_for_type =
     | None -> []
     | Some (compilation_unit, var) ->
       let name =
-        Name_laundry.base_type_die_name_for_var compilation_unit var
+        Dwarf_name_laundry.base_type_die_name_for_var compilation_unit var
       in
       [DAH.create_name name]
   in
@@ -154,7 +154,7 @@ let construct_type_of_value_description state ~parent ident_for_type
     match ident_for_type with
     | None -> []
     | Some (compilation_unit, var) ->
-      let name = Name_laundry.base_type_die_name_for_var compilation_unit var in
+      let name = Dwarf_name_laundry.base_type_die_name_for_var compilation_unit var in
       [DAH.create_name name]
   in
   match phantom_defining_expr with

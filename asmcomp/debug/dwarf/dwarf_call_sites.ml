@@ -243,7 +243,7 @@ let call_target_for_direct_callee t (callee : direct_callee) =
       if not (Debuginfo.Function.dwarf_die_present callee_dbg) then None
       else
         let id = Debuginfo.Function.id callee_dbg in
-        Some (Name_laundry.concrete_instance_die_name id)
+        Some (Dwarf_name_laundry.concrete_instance_die_name id)
     | External callee ->
       match
         Asm_symbol.Tbl.find t.die_symbols_for_external_declarations callee
@@ -273,7 +273,7 @@ let call_target_for_direct_callee t (callee : direct_callee) =
             ()
         in
         let die_symbol =
-          Name_laundry.external_declaration_die_name callee
+          Dwarf_name_laundry.external_declaration_die_name callee
             (Compilation_unit.get_current_exn ())
         in
         Proto_die.set_name callee_die die_symbol;

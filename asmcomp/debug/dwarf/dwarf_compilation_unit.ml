@@ -14,6 +14,8 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+module DAH = Dwarf_attribute_helpers
+
 let mangle_symbol section symbol =
   let unit_name =
     Linkage_name.to_string (Compilation_unit.get_linkage_name (
@@ -25,13 +27,14 @@ let mangle_symbol section symbol =
   in
   Asm_symbol.of_external_name section (Symbol.compilation_unit symbol) symbol'
 
-let compile_unit_proto_die ~sourcefile ~prefix_name ~address_table
+let compile_unit_proto_die ~sourcefile ~prefix_name
       address_table location_list_table range_list_table =
   let unit_name =
     Compilation_unit.get_persistent_ident (Compilation_unit.get_current_exn ())
   in
+  let cwd = Sys.getcwd () in
   let source_directory_path, source_filename =
-    if Filename.is_relative sourcefile then Sys.getcwd (), sourcefile
+    if Filename.is_relative sourcefile then cwd, sourcefile
     else Filename.dirname sourcefile, Filename.basename sourcefile
   in
   let prefix_name =
@@ -53,7 +56,7 @@ let compile_unit_proto_die ~sourcefile ~prefix_name ~address_table
   let loclists_base = Location_list_table.base_addr location_list_table in
   let rnglists_base = Range_list_table.base_addr range_list_table in
   let config_digest = Config.digest_static_configuration_values () in
-  let compilation_unit_proto_die =
+  let dwarf_5_only =
     match !Clflags.dwarf_version with
     | Four -> []
     | Five -> [
