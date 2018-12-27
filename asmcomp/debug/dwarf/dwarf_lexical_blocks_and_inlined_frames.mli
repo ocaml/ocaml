@@ -17,6 +17,12 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+val find_scope_die_from_debuginfo
+   : Debuginfo.t
+  -> function_proto_die:Proto_die.t
+  -> scope_proto_dies:Proto_die.t Debuginfo.Block.Map.t
+  -> Proto_die.t option
+
 val dwarf
    : Dwarf_state.t
   -> Linearize.fundecl

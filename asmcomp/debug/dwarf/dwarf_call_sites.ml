@@ -14,15 +14,13 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module ARV = Available_ranges_all_vars
 module DAH = Dwarf_attribute_helpers
 module DS = Dwarf_state
 module L = Linearize
-module LB = Lexical_block_ranges
-module SLDL = Simple_location_description_lang
-module V = Backend_var
 
-let add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
+let arch_size_addr = Targetint.of_int_exn Arch.size_addr
+
+let add_call_site_argument ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
       ~stack_offset (insn : L.instruction) =
   let param_location =
     let offset_from_cfa_in_bytes =
@@ -72,7 +70,7 @@ let add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
               (* CR mshinwell: This should reuse DIEs which were created
                  previously to describe these vars.  Also, shouldn't these
                  DIEs be parented higher up? *)
-              Dwarf_variables_and_parameters.normal_type_for_var state
+              Dwarf_variables_and_parameters.normal_type_for_var
                 ~parent:(Some call_site_die)
                 (Some (Backend_var.Provenance.ident_for_type provenance))
             in
@@ -102,7 +100,8 @@ let add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
                   match reg.loc with
                   | Stack stack_loc ->
                     Some (reg,
-                      offset_from_cfa_in_bytes reg stack_loc ~stack_offset)
+                      Dwarf_reg_locations.offset_from_cfa_in_bytes reg
+                        stack_loc ~stack_offset)
                   | Reg _ -> None
                   | Unknown ->
                     Misc.fatal_errorf "Register without location: %a"
@@ -113,8 +112,8 @@ let add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
             | [] -> []
             | (reg, offset_from_cfa_in_bytes) :: _ ->
               let arg_location_rvalue =
-                reg_location_description0 reg ~offset_from_cfa_in_bytes
-                  ~need_rvalue:true
+                Dwarf_reg_locations.reg_location_description reg
+                  ~offset_from_cfa_in_bytes ~need_rvalue:true
               in
               match arg_location_rvalue with
               | None -> []
@@ -151,12 +150,13 @@ let add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
     ~attribute_values:(arg_location @ param_location @ type_attribute)
     ()
 
-let add_call_site t ~scope_proto_dies ~function_proto_die
+let add_call_site ~scope_proto_dies ~function_proto_die
       ~stack_offset ~is_tail ~args ~(call_labels : Mach.call_labels)
       (insn : L.instruction) attrs =
   let dbg = insn.dbg in
   let block_die =
-    find_scope_die_from_debuginfo dbg ~function_proto_die ~scope_proto_dies
+    Dwarf_lexical_blocks_and_inlined_frames.find_scope_die_from_debuginfo dbg
+      ~function_proto_die ~scope_proto_dies
   in
   match block_die with
   | None ->
@@ -216,7 +216,7 @@ let add_call_site t ~scope_proto_dies ~function_proto_die
     in
     if no_split_args then begin
       Array.iteri (fun arg_index arg ->
-          add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~arg
+          add_call_site_argument ~call_site_die ~is_tail ~arg_index ~arg
             ~stack_offset insn)
         args
     end
@@ -225,7 +225,7 @@ type direct_callee =
   | Ocaml of Asm_symbol.t * Debuginfo.Function.t
   | External of Asm_symbol.t
 
-let call_target_for_direct_callee t (callee : direct_callee) =
+let call_target_for_direct_callee state (callee : direct_callee) =
   (* If we cannot reference DIEs across compilation units, then we treat
      direct calls to OCaml functions as if they were to an external
      function, fabricating our own subprogram DIE for each such function and
@@ -234,7 +234,7 @@ let call_target_for_direct_callee t (callee : direct_callee) =
   let callee =
     match callee with
     | Ocaml (callee_symbol, _callee_dbg)
-        when not (can_reference_dies_across_units ()) ->
+        when not (DS.can_reference_dies_across_units state) ->
       External callee_symbol
     | _ -> callee
   in
@@ -247,7 +247,8 @@ let call_target_for_direct_callee t (callee : direct_callee) =
         Some (Dwarf_name_laundry.concrete_instance_die_name id)
     | External callee ->
       match
-        Asm_symbol.Tbl.find t.die_symbols_for_external_declarations callee
+        Asm_symbol.Tbl.find (DS.die_symbols_for_external_declarations state)
+          callee
       with
       | exception Not_found ->
         (* CR-someday mshinwell: dedup DIEs for runtime, "caml_curry", etc.
@@ -265,7 +266,7 @@ let call_target_for_direct_callee t (callee : direct_callee) =
             []
         in
         let callee_die =
-          Proto_die.create ~parent:(Some t.compilation_unit_proto_die)
+          Proto_die.create ~parent:(Some (DS.compilation_unit_proto_die state))
             ~tag:Subprogram
             ~attribute_values:(bogus_high_pc @ [
               DAH.create_low_pc_from_symbol callee;
@@ -278,7 +279,7 @@ let call_target_for_direct_callee t (callee : direct_callee) =
             (Compilation_unit.get_current_exn ())
         in
         Proto_die.set_name callee_die die_symbol;
-        Asm_symbol.Tbl.add t.die_symbols_for_external_declarations
+        Asm_symbol.Tbl.add (DS.die_symbols_for_external_declarations state)
           callee die_symbol;
         Some die_symbol
       | die_symbol -> Some die_symbol
@@ -291,14 +292,18 @@ let call_target_for_indirect_callee ~(callee : Reg.t) ~stack_offset =
   let offset_from_cfa_in_bytes, clobbered_by_call =
     match callee.loc with
     | Stack stack_loc ->
-      offset_from_cfa_in_bytes callee stack_loc ~stack_offset, false
+      let offset_from_cfa_in_bytes =
+        Dwarf_reg_locations.offset_from_cfa_in_bytes callee stack_loc
+          ~stack_offset
+      in
+      offset_from_cfa_in_bytes, false
     | Reg _ -> None, true
     | Unknown ->
       Misc.fatal_errorf "Register without location: %a" Printmach.reg callee
   in
   let simple_location_desc =
-    reg_location_description0 callee ~offset_from_cfa_in_bytes
-      ~need_rvalue:false
+    Dwarf_reg_locations.reg_location_description callee
+      ~offset_from_cfa_in_bytes ~need_rvalue:false
   in
   match simple_location_desc with
   | None -> []
@@ -320,7 +325,7 @@ let dwarf state ~scope_proto_dies (fundecl : L.fundecl)
       ~function_proto_die =
   let found_self_tail_calls = ref false in
   let add_call_site =
-    add_call_site t ~scope_proto_dies ~function_proto_die
+    add_call_site ~scope_proto_dies ~function_proto_die
   in
   let add_indirect_ocaml_call ~stack_offset ~callee ~args ~call_labels insn =
     add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
@@ -332,7 +337,7 @@ let dwarf state ~scope_proto_dies (fundecl : L.fundecl)
     | None -> ()
     | Some callee_dbg ->
       add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
-        (call_target_for_direct_callee t (Ocaml (callee, callee_dbg)))
+        (call_target_for_direct_callee state (Ocaml (callee, callee_dbg)))
   in
   let add_indirect_ocaml_tail_call ~stack_offset ~callee ~args ~call_labels
         insn =
@@ -353,12 +358,12 @@ let dwarf state ~scope_proto_dies (fundecl : L.fundecl)
         found_self_tail_calls := true
       end else begin
         add_call_site ~stack_offset ~is_tail:true ~args ~call_labels insn
-          (call_target_for_direct_callee t (Ocaml (callee, callee_dbg)))
+          (call_target_for_direct_callee state (Ocaml (callee, callee_dbg)))
       end
   in
   let add_external_call ~stack_offset ~callee ~args ~call_labels insn =
     add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
-      (call_target_for_direct_callee t (External callee))
+      (call_target_for_direct_callee state (External callee))
   in
   let rec traverse_insns (insn : L.instruction) ~stack_offset =
     match insn.desc with

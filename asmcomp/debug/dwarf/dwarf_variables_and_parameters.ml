@@ -511,16 +511,6 @@ let location_list_entry state (_fundecl : L.fundecl) ~parent ~subrange
       Some (Dwarf_5 (Location_list_entry.create location_list_entry
         ~start_of_code_symbol:(DS.start_of_code_symbol state)))
 
-let find_scope_die_from_debuginfo dbg ~function_proto_die ~scope_proto_dies =
-  let block = Debuginfo.innermost_block dbg in
-  match block with
-  | None -> Some function_proto_die
-  | Some block ->
-    let module B = Debuginfo.Block in
-    match B.Map.find block scope_proto_dies with
-    | exception Not_found -> None
-    | proto_die -> Some proto_die
-
 let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
       ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
       ~need_rvalue (var : Backend_var.t) ~phantom:_ ~hidden ~ident_for_type
@@ -549,8 +539,8 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
       | Some provenance ->
         let dbg = Backend_var.Provenance.debuginfo provenance in
         let block_die =
-          find_scope_die_from_debuginfo dbg ~function_proto_die
-            ~scope_proto_dies
+          Dwarf_lexical_blocks_and_inlined_frames.find_scope_die_from_debuginfo
+            dbg ~function_proto_die ~scope_proto_dies
         in
         match block_die with
         | Some block_die -> block_die, hidden

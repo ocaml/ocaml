@@ -18,9 +18,10 @@
 
 val dwarf
    : Dwarf_state.t
-  -> scope_proto_dies:int
+  -> scope_proto_dies:Proto_die.t Debuginfo.Block.Map.t
   -> Linearize.fundecl
-  -> external_calls_generated_during_emit:int
+  -> external_calls_generated_during_emit
+       : Emitaux.external_call_generated_during_emit list
   -> function_symbol:Asm_symbol.t
   -> function_proto_die:Proto_die.t
-  -> unit
+  -> bool

@@ -22,6 +22,16 @@ module LB = Lexical_block_ranges
 module SLDL = Simple_location_description_lang
 module V = Backend_var
 
+let find_scope_die_from_debuginfo dbg ~function_proto_die ~scope_proto_dies =
+  let block = Debuginfo.innermost_block dbg in
+  match block with
+  | None -> Some function_proto_die
+  | Some block ->
+    let module B = Debuginfo.Block in
+    match B.Map.find block scope_proto_dies with
+    | exception Not_found -> None
+    | proto_die -> Some proto_die
+
 let create_range_list_and_summarise state (_fundecl : L.fundecl) range =
   LB.Range.fold range
     ~init:([], Range_list.create (), Address_index.Pair.Set.empty)
