@@ -45,12 +45,10 @@ module Debug_info = struct
     | None -> ()
     | Some provenance ->
       let dbg = Backend_var.Provenance.debuginfo provenance in
-      let block =
-        Debuginfo.Current_block.to_block (Debuginfo.innermost_block dbg)
-      in
-      match block with
-      | Toplevel -> Format.fprintf ppf "[toplevel]"
-      | Block block -> Format.fprintf ppf "[%a]" Debuginfo.Block.print_id block
+      match Debuginfo.innermost_block dbg with
+      | None -> ()
+      | Some block ->
+        Format.fprintf ppf "[%a]" Debuginfo.Block.print_id block
     end;
     if not (t.part_of_value = 0 && t.num_parts_of_value = 1) then begin
       Format.fprintf ppf "(%d/%d)" t.part_of_value t.num_parts_of_value

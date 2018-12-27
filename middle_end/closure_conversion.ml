@@ -17,7 +17,6 @@
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 open! Int_replace_polymorphic_compare
 
-module CB = Debuginfo.Current_block
 module Env = Closure_conversion_aux.Env
 module Function_decls = Closure_conversion_aux.Function_decls
 module Function_decl = Function_decls.Function_decl
@@ -233,7 +232,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
               func = func_var;
               args;
               kind = Indirect;
-              dbg = Debuginfo.of_location ap_loc ~scope:CB.toplevel;
+              dbg = Debuginfo.of_location ap_loc ~scope:(assert false);
               inline = ap_inlined;
               specialise = ap_specialised;
             })))
@@ -308,7 +307,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lsend (kind, meth, obj, args, loc) ->
     let meth_var = Variable.create Names.meth in
     let obj_var = Variable.create Names.obj in
-    let dbg = Debuginfo.of_location loc ~scope:CB.toplevel in
+    let dbg = Debuginfo.of_location loc ~scope:(assert false) in
     Flambda.create_let meth_var (Expr (close t env meth))
       (Flambda.create_let obj_var (Expr (close t env obj))
         (Lift_code.lifting_helper (close_list t env args)
@@ -330,7 +329,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let exn_symbol =
       t.symbol_for_global' Predef.ident_division_by_zero
     in
-    let dbg = Debuginfo.of_location loc ~scope:CB.toplevel in
+    let dbg = Debuginfo.of_location loc ~scope:(assert false) in
     let zero_const : Flambda.named =
       match prim with
       | Pdivint _ | Pmodint _ ->
@@ -417,7 +416,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     close t env (Lambda.Lapply apply)
   | Lprim (Praise kind, [arg], loc) ->
     let arg_var = Variable.create Names.raise_arg in
-    let dbg = Debuginfo.of_location loc ~scope:CB.toplevel in
+    let dbg = Debuginfo.of_location loc ~scope:(assert false) in
     Flambda.create_let arg_var (Expr (close t env arg))
       (name_expr
         (Prim (Praise kind, [arg_var], dbg))
@@ -445,7 +444,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
        by the simplification pass to increase the likelihood of eliminating
        the allocation, since some field accesses can be tracked back to known
        field values. *)
-    let dbg = Debuginfo.of_location loc ~scope:CB.toplevel in
+    let dbg = Debuginfo.of_location loc ~scope:(assert false) in
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
       ~name:(Names.of_primitive_arg p)
@@ -548,7 +547,7 @@ and close_functions t external_env function_declarations : Flambda.named =
   let close_one_function map decl =
     let body = Function_decl.body decl in
     let loc = Function_decl.loc decl in
-    let dbg = Debuginfo.of_location loc ~scope:CB.toplevel in
+    let dbg = Debuginfo.of_location loc ~scope:(assert false) in
     let params = Function_decl.params decl in
     (* Create fresh variables for the elements of the closure (cf.
        the comment on [Function_decl.closure_env_without_parameters], above).

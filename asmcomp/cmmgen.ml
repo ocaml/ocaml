@@ -3563,7 +3563,8 @@ let placeholder_dbg () =
       let file = "" in
       let line = !next_placeholder_dbg_line in
       incr next_placeholder_dbg_line;
-      Debuginfo.of_line ~file ~line ~scope:Debuginfo.Current_block.toplevel
+      Debuginfo.of_line ~file ~line
+        ~scope:(Debuginfo.Block.create_function_toplevel_lexical_scope ())
 
 let placeholder_fun_dbg ~human_name =
   let file = "" in

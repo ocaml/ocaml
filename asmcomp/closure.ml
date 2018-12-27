@@ -22,7 +22,7 @@ open Lambda
 open Switch
 open Clambda
 
-module CB = Debuginfo.Current_block
+module B = Debuginfo.Block
 
 module Int = Numbers.Int
 module Storer =
@@ -1158,7 +1158,7 @@ let direct_apply fundesc funct ufunct uargs ~loc ~scope ~attribute
           Debuginfo.Call_site.create_from_location fundesc.fun_dbg loc
         in
         let at_call_site =
-          Debuginfo.Current_block.add_inlined_frame scope call_site
+          Debuginfo.Block.create_inlined_frame call_site ~parent:scope
         in
         bind_params ~at_call_site
           ~function_being_inlined:(Some call_site)
@@ -1394,7 +1394,7 @@ let rec close ~scope fenv cenv = function
        Value_unknown)
   | Llet(str, kind, id, lam, body) ->
       let (ulam, alam) = close_named ~scope fenv cenv id lam in
-      let body_scope = CB.add_scope scope in
+      let body_scope = B.create_lexical_scope ~parent:scope in
       let provenance =
         match !current_module_path with
         | None -> None
@@ -1426,7 +1426,7 @@ let rec close ~scope fenv cenv = function
           (Ulet(Immutable, kind, VP.create ?provenance id, ulam, ubody), abody)
       end
   | Lphantom_let (id, defining_expr, body) ->
-      let body_scope = CB.add_scope scope in
+      let body_scope = B.create_lexical_scope ~parent:scope in
       let provenance =
         match !current_module_path with
         | None -> None
@@ -1474,7 +1474,7 @@ let rec close ~scope fenv cenv = function
         in
         (Ulet(Immutable, Pgenval, VP.create clos_ident, clos, ubody), approx)
       end else begin
-        let new_scope = CB.add_scope scope in
+        let new_scope = B.create_lexical_scope ~parent:scope in
         (* General case: recursive definition of values *)
         let rec clos_defs = function
           [] -> ([], fenv)
@@ -1577,7 +1577,7 @@ let rec close ~scope fenv cenv = function
       let usw =
         List.map
           (fun (s,act,loc) ->
-            let scope = CB.add_scope scope in
+            let scope = B.create_lexical_scope ~parent:scope in
             let uact,_ = close ~scope fenv cenv act in
             let dbg = Debuginfo.of_location loc ~scope in
             s,uact,dbg)
@@ -1585,7 +1585,7 @@ let rec close ~scope fenv cenv = function
       let ud =
         Misc.may_map
           (fun (d, loc) ->
-            let scope = CB.add_scope scope in
+            let scope = B.create_lexical_scope ~parent:scope in
             let ud,_ = close ~scope fenv cenv d in
             let dbg = Debuginfo.of_location loc ~scope in
             ud, dbg) d in
@@ -1594,7 +1594,7 @@ let rec close ~scope fenv cenv = function
   | Lstaticraise (i, args) ->
       (Ustaticfail (i, close_list ~scope fenv cenv args), Value_unknown)
   | Lstaticcatch(body, (i, vars), handler, loc) ->
-      let body_scope = CB.add_scope scope in
+      let body_scope = B.create_lexical_scope ~parent:scope in
       let (ubody, _) = close ~scope:body_scope fenv cenv body in
       let (uhandler, _) = close_new_scope ~scope fenv cenv handler in
       let vars =
@@ -1619,7 +1619,7 @@ let rec close ~scope fenv cenv = function
       (Ucatch(i, vars, ubody, uhandler, dbg), Value_unknown)
   | Ltrywith(body, id, handler, loc) ->
       let (ubody, _) = close_new_scope ~scope fenv cenv body in
-      let handler_scope = CB.add_scope scope in
+      let handler_scope = B.create_lexical_scope ~parent:scope in
       let (uhandler, _) = close ~scope:handler_scope fenv cenv handler in
       let provenance =
         match !current_module_path with
@@ -1643,9 +1643,9 @@ let rec close ~scope fenv cenv = function
             (close ~scope fenv cenv (if n = 0 then ifnot else ifso))
       | (uarg, _ ) ->
           let dbg = Debuginfo.of_location loc ~scope in
-          let ifso_scope = CB.add_scope scope in
+          let ifso_scope = B.create_lexical_scope ~parent:scope in
           let ifso_dbg = Debuginfo.of_location ifso_loc ~scope:ifso_scope in
-          let ifnot_scope = CB.add_scope scope in
+          let ifnot_scope = B.create_lexical_scope ~parent:scope in
           let ifnot_dbg = Debuginfo.of_location ifnot_loc ~scope:ifnot_scope in
           let (uifso, _) = close ~scope:ifso_scope fenv cenv ifso in
           let (uifnot, _) = close ~scope:ifnot_scope fenv cenv ifnot in
@@ -1658,14 +1658,14 @@ let rec close ~scope fenv cenv = function
       (Usequence(ulam1, ulam2), approx)
   | Lwhile(cond, body, loc) ->
       let (ucond, _) = close ~scope fenv cenv cond in
-      let body_scope = CB.add_scope scope in
+      let body_scope = B.create_lexical_scope ~parent:scope in
       let (ubody, _) = close ~scope:body_scope fenv cenv body in
       let dbg = Debuginfo.of_location loc ~scope:body_scope in
       (Uwhile(ucond, ubody, dbg), Value_unknown)
   | Lfor(id, lo, hi, dir, body, loc) ->
       let (ulo, _) = close ~scope fenv cenv lo in
       let (uhi, _) = close ~scope fenv cenv hi in
-      let body_scope = CB.add_scope scope in
+      let body_scope = B.create_lexical_scope ~parent:scope in
       let (ubody, _) = close_new_scope ~scope:body_scope fenv cenv body in
       let dbg = Debuginfo.of_location loc ~scope:body_scope in
       let provenance =
@@ -1717,7 +1717,7 @@ and close_named ~scope fenv cenv id = function
       close ~scope fenv cenv lam
 
 and close_new_scope ~scope fenv cenv lam =
-  let scope = CB.add_scope scope in
+  let scope = B.create_lexical_scope ~parent:scope in
   close ~scope fenv cenv lam
 
 (* Build a shared closure for a set of mutually recursive functions *)
@@ -1802,7 +1802,7 @@ and close_functions fenv cenv fun_defs =
         (fun (id, _params, _body, _fundesc, _fun_dbg) pos env ->
           V.Map.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
-    let scope = CB.toplevel in
+    let scope = B.create_function_toplevel_lexical_scope () in
     let (ubody, approx) = close ~scope fenv_rec cenv_body body in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
     let fun_params = if !useless_env then params else params @ [env_param] in
@@ -1927,12 +1927,12 @@ and close_switch ~scope fenv cenv cases num_keys default =
       (function
         | Single (loc, lam)
         | Shared (loc, (Lstaticraise (_,[]) as lam)) ->
-            let scope = CB.add_scope scope in
+            let scope = B.create_lexical_scope ~parent:scope in
             let dbg = Debuginfo.of_location ~scope loc in
             let ulam,_ = close_new_scope ~scope fenv cenv lam in
             ulam, dbg
         | Shared (loc, lam) ->
-            let scope = CB.add_scope scope in
+            let scope = B.create_lexical_scope ~parent:scope in
             let dbg = Debuginfo.of_location ~scope loc in
             let ulam,_ = close_new_scope ~scope fenv cenv lam in
             let i = next_raise_count () in
@@ -2027,7 +2027,7 @@ let intro size lam =
   let id = Compilenv.make_symbol None in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);
-  let scope = CB.toplevel in
+  let scope = B.create_function_toplevel_lexical_scope () in
   let (ulam, _approx) = close ~scope V.Map.empty V.Map.empty lam in
   let opaque =
     !Clflags.opaque

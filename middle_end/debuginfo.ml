@@ -329,7 +329,7 @@ module Block = struct
 
   type t = {
     id : Id.t;
-    frame_location : Call_site.t option;
+    inlined_frame : Call_site.t option;
     (* CR-someday mshinwell: We could perhaps have a link to the parent
        _frame_, if such exists. *)
     parent : t option;
@@ -341,31 +341,33 @@ module Block = struct
     | None -> []
     | Some parent -> parent :: parent.parents_transitive
 
-  let create_lexical_scope ~parent =
-    let parents_transitive = parents_transitive_from_parent ~parent in
+  let create_function_toplevel_lexical_scope () =
     { id = Id.create ();
-      frame_location = None;
-      parent;
-      parents_transitive;
-    }
-
-  let create_non_inlined_frame call_site =
-    { id = Id.create ();
-      frame_location = Some call_site;
+      inlined_frame = None;
       parent = None;
       parents_transitive = [];
     }
 
-  let create_inlined_frame call_site ~parent =
+  let create_lexical_scope ~parent =
+    let parent = Some parent in
     let parents_transitive = parents_transitive_from_parent ~parent in
     { id = Id.create ();
-      frame_location = Some call_site;
+      inlined_frame = None;
+      parent;
+      parents_transitive;
+    }
+
+  let create_inlined_frame call_site ~parent =
+    let parent = Some parent in
+    let parents_transitive = parents_transitive_from_parent ~parent in
+    { id = Id.create ();
+      inlined_frame = Some call_site;
       parent;
       parents_transitive;
     }
 
   let create_and_reparent ~like:t ~new_parent =
-    let parent = new_parent in
+    let parent = Some new_parent in
     let parents_transitive = parents_transitive_from_parent ~parent in
     { t with
       id = Id.create ();
@@ -379,12 +381,12 @@ module Block = struct
   let rec frame_list_innermost_first t =
     match t.parent with
     | None ->
-      begin match t.frame_location with
+      begin match t.inlined_frame with
       | None -> []
       | Some range -> [range]
       end
     | Some parent ->
-      begin match t.frame_location with
+      begin match t.inlined_frame with
       | None -> frame_list_innermost_first parent
       | Some range -> range::(frame_list_innermost_first parent)
       end
@@ -394,7 +396,7 @@ module Block = struct
     | Inlined_frame of Call_site.t
 
   let frame_classification t =
-    match t.frame_location with
+    match t.inlined_frame with
     | None -> Lexical_scope_only
     | Some call_site -> Inlined_frame call_site
 
@@ -411,13 +413,13 @@ module Block = struct
     let equal t1 t2 = Id.equal t1.id t2.id
     let hash t = Id.hash t.id
 
-    let rec print ppf { id; frame_location; parent; parents_transitive = _; } =
+    let rec print ppf { id; inlined_frame; parent; parents_transitive = _; } =
       Format.fprintf ppf "@[<hov 1>(\
           @[<hov 1>(id@ %a)@]@ \
-          @[<hov 1>(frame_location@ %a)@]@ \
+          @[<hov 1>(inlined_frame@ %a)@]@ \
           @[<hov 1>(parent@ %a)@])@]"
         Id.print id
-        (Option.print Call_site.print) frame_location
+        (Option.print Call_site.print) inlined_frame
         (Option.print print) parent
 
 (*
@@ -452,50 +454,10 @@ module Block = struct
   let parents_transitive t = t.parents_transitive
 end
 
-module Current_block = struct
-  type t = Block.t option
-
-  let toplevel = None
-
-  type to_block =
-    | Toplevel
-    | Block of Block.t
-
-  let to_block t =
-    match t with
-    | None -> Toplevel
-    | Some block -> Block block
-
-  let add_scope t =
-    Some (Block.create_lexical_scope ~parent:t)
-
-  let add_inlined_frame t call_site =
-    Some (Block.create_inlined_frame call_site ~parent:t)
-
-  include Identifiable.Make (struct
-    type nonrec t = t
-
-    let compare t1 t2 =
-      match t1, t2 with
-      | None, None -> 0
-      | None, Some _ -> -1
-      | Some _, None -> 1
-      | Some block1, Some block2 -> Block.compare block1 block2
-
-    let equal t1 t2 = (compare t1 t2 = 0)
-    let hash t = Hashtbl.hash t
-
-    let print ppf t = Misc.Stdlib.Option.print Block.print ppf t
-
-    let output chan t =
-      Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
-  end)
-end
-
 type t =
   | Empty
   | Non_empty of {
-      block : Block.t option;
+      block : Block.t;
       position : Code_range.t;
     }
 
@@ -512,11 +474,8 @@ let to_string_frames_only_innermost_last t =
   | Empty -> ""
   | Non_empty { block; position; } ->
     let frames =
-      match block with
-      | None -> []
-      | Some block ->
-        List.map (fun range -> Call_site.to_string range)
-          (Block.frame_list_innermost_first block)
+      List.map (fun range -> Call_site.to_string range)
+        (Block.frame_list_innermost_first block)
     in
     let ranges_innermost_last =
       List.rev ((Code_range.to_string position) :: frames)
@@ -543,14 +502,14 @@ let to_location t =
 
 let of_function fun_dbg =
   Non_empty {
-    block = None;
+    block = Block.create_function_toplevel_lexical_scope ();
     position = Function.position fun_dbg;
   }
 
 let innermost_block t =
   match t with
   | Empty -> None
-  | Non_empty { block; position = _; } -> block
+  | Non_empty { block; position = _; } -> Some block
 
 let position t =
   match t with
@@ -562,9 +521,7 @@ let iter_position_and_blocks_innermost_first t ~f_position ~f_blocks =
   | Empty -> ()
   | Non_empty { block; position; } ->
     f_position position;
-    match block with
-    | None -> ()
-    | Some block -> Block.iter_innermost_first block ~f:f_blocks
+    Block.iter_innermost_first block ~f:f_blocks
 
 let iter_position_and_frames_innermost_first t ~f =
   iter_position_and_blocks_innermost_first t
@@ -585,7 +542,7 @@ include Identifiable.Make (struct
           @[<hov 1>(position@ %a)@]@ \
           @[<hov 1>(block@ %a)@])@]"
         Code_range.print position
-        (Misc.Stdlib.Option.print Block.print) block
+        Block.print block
 
   let output chan t =
     Format.fprintf (Format.formatter_of_out_channel chan) "%a%!" print t
@@ -597,14 +554,7 @@ include Identifiable.Make (struct
     | Non_empty _, Empty -> 1
     | Non_empty { block = block1; position = position1; },
       Non_empty { block = block2; position = position2; } ->
-      let c = 
-        match block1, block2 with
-        | None, None -> 0
-        | None, Some _ -> -1
-        | Some _, None -> 1
-        | Some block1, Some block2 ->
-          Block.compare block1 block2
-      in
+      let c = Block.compare block1 block2 in
       if c <> 0 then c
       else Code_range.compare position1 position2
 
@@ -634,7 +584,7 @@ module Block_subst = struct
   let empty = Block.Map.empty
 
   let rec find_or_add_block t (old_block : Block.t)
-        ~(at_call_site : Current_block.t) : t * Block.t =
+        ~(at_call_site : Block.t) : t * Block.t =
     match Block.Map.find old_block t with
     | exception Not_found ->
       let old_parent = Block.parent old_block in
@@ -645,7 +595,7 @@ module Block_subst = struct
           let t, block =
             find_or_add_block t old_parent ~at_call_site
           in
-          t, Some block
+          t, block
       in
       let new_block =
         Block.create_and_reparent ~like:old_block ~new_parent
@@ -658,12 +608,8 @@ module Block_subst = struct
     match old_debuginfo with
     | Empty -> t, Empty
     | Non_empty { block; position; } ->
-      match block with
-      | None ->
-        t, Non_empty { block = at_call_site; position; }
-      | Some block ->
-        let t, block = find_or_add_block t block ~at_call_site in
-        t, Non_empty { block = Some block; position; }
+      let t, block = find_or_add_block t block ~at_call_site in
+      t, Non_empty { block; position; }
 
   let find_or_add_for_apply t (apply : Apply.t) ~at_call_site =
     let t, dbg = find_or_add t apply.dbg ~at_call_site in

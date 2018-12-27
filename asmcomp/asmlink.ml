@@ -390,8 +390,12 @@ let call_linker file_list startup_file output_name =
   if not (Ccomp.call_linker mode output_name files c_lib) then begin
     raise (Error Linking_error)
   end;
-  if not (Ccomp.make_debuginfo_bundle ~exe_name:output_name) then begin
-    raise (Error Linking_error)
+  begin match !Clflags.debug_full with
+  | None -> ()
+  | Some _ ->
+    if not (Ccomp.make_debuginfo_bundle ~exe_name:output_name) then begin
+      raise (Error Linking_error)
+    end
   end
 
 (* Main entry point *)

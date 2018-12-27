@@ -699,19 +699,17 @@ let location_list_entry t (_fundecl : L.fundecl) ~parent ~subrange
       Some (Dwarf_5 (Location_list_entry.create location_list_entry
         ~start_of_code_symbol:t.start_of_code_symbol))
 
-let find_scope_die_from_debuginfo ~whole_function_lexical_block dbg
-      ~scope_proto_dies =
+let find_scope_die_from_debuginfo dbg ~function_proto_die ~scope_proto_dies =
   let block = Debuginfo.innermost_block dbg in
-  match Debuginfo.Current_block.to_block block with
-  | Toplevel -> Some whole_function_lexical_block
-  | Block block ->
+  match block with
+  | None -> Some function_proto_die
+  | Some block ->
     let module B = Debuginfo.Block in
     match B.Map.find block scope_proto_dies with
     | exception Not_found -> None
     | proto_die -> Some proto_die
 
-let dwarf_for_variable t (fundecl : L.fundecl)
-      ~function_proto_die ~whole_function_lexical_block
+let dwarf_for_variable t (fundecl : L.fundecl) ~function_proto_die
       ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
       ~need_rvalue (var : Backend_var.t) ~phantom:_ ~hidden ~ident_for_type
       ~range =
@@ -735,20 +733,19 @@ let dwarf_for_variable t (fundecl : L.fundecl)
       match provenance with
       | None ->
         (* Any variable without provenance gets hidden. *)
-        whole_function_lexical_block, true
+        function_proto_die, true
       | Some provenance ->
         let dbg = Backend_var.Provenance.debuginfo provenance in
         let block_die =
-          find_scope_die_from_debuginfo ~whole_function_lexical_block
-            dbg ~scope_proto_dies
+          find_scope_die_from_debuginfo dbg ~function_proto_die
+            ~scope_proto_dies
         in
         match block_die with
         | Some block_die -> block_die, hidden
         | None ->
           (* There are be no instructions marked with the block in which
-             [var] was defined.  For the moment, just hide [var], and put
-             it in the toplevel scope for the function. *)
-          whole_function_lexical_block, true
+             [var] was defined.  For the moment, just hide [var]. *)
+          function_proto_die, true
   in
   (* Build a location list that identifies where the value of [ident] may be
      found at runtime, indexed by program counter range.
@@ -950,8 +947,7 @@ let iterate_over_variable_like_things t ~available_ranges_vars ~rvalues_only
     end)
 
 let dwarf_for_variables_and_parameters t fundecl ~function_proto_die
-      ~whole_function_lexical_block ~scope_proto_dies
-      ~available_ranges_vars =
+      ~scope_proto_dies ~available_ranges_vars =
   let proto_dies_for_vars = Backend_var.Tbl.create 42 in
   let uniqueness_by_var =
     calculate_var_uniqueness ~available_ranges_vars
@@ -975,13 +971,13 @@ let dwarf_for_variables_and_parameters t fundecl ~function_proto_die
   iterate_over_variable_like_things t ~available_ranges_vars
     ~rvalues_only:false
     ~f:(dwarf_for_variable t fundecl ~function_proto_die
-      ~whole_function_lexical_block ~scope_proto_dies
-      ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:false);
+      ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
+      ~need_rvalue:false);
   iterate_over_variable_like_things t ~available_ranges_vars
     ~rvalues_only:true
     ~f:(dwarf_for_variable t fundecl ~function_proto_die
-      ~whole_function_lexical_block ~scope_proto_dies
-      ~uniqueness_by_var ~proto_dies_for_vars ~need_rvalue:true)
+      ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
+      ~need_rvalue:true)
 
 let attributes_for_abstract_instance fun_dbg =
   let function_name = Debuginfo.Function.name fun_dbg in
@@ -1104,18 +1100,8 @@ end)
 
 let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
       lexical_block_ranges ~function_proto_die
-      ~start_of_function ~end_of_function
-      : Proto_die.t * (Proto_die.t Debuginfo.Block.Map.t) =
+      : Proto_die.t Debuginfo.Block.Map.t =
   let module B = Debuginfo.Block in
-  let whole_function_lexical_block =
-    Proto_die.create ~parent:(Some function_proto_die)
-      ~tag:Lexical_block
-      ~attribute_values:[
-        start_of_function;
-        end_of_function;
-      ]
-      ()
-  in
   let all_blocks = LB.all_indexes lexical_block_ranges in
   let scope_proto_dies, _all_summaries =
     B.Set.fold (fun block (scope_proto_dies, all_summaries) ->
@@ -1267,7 +1253,7 @@ let create_lexical_block_and_inlined_frame_proto_dies t (fundecl : L.fundecl)
       all_blocks
       (B.Map.empty, All_summaries.Map.empty)
   in
-  whole_function_lexical_block, scope_proto_dies
+  scope_proto_dies
 
 (* CR mshinwell: Share with [Available_ranges_vars]. *)
 let offset_from_cfa_in_bytes reg stack_loc ~stack_offset =
@@ -1406,13 +1392,12 @@ let add_call_site_argument t ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
     ~attribute_values:(arg_location @ param_location @ type_attribute)
     ()
 
-let add_call_site t ~whole_function_lexical_block ~scope_proto_dies
+let add_call_site t ~scope_proto_dies ~function_proto_die
       ~stack_offset ~is_tail ~args ~(call_labels : Mach.call_labels)
       (insn : L.instruction) attrs =
   let dbg = insn.dbg in
   let block_die =
-    find_scope_die_from_debuginfo ~whole_function_lexical_block dbg
-      ~scope_proto_dies
+    find_scope_die_from_debuginfo dbg ~function_proto_die ~scope_proto_dies
   in
   match block_die with
   | None ->
@@ -1571,12 +1556,12 @@ let call_target_for_indirect_callee ~(callee : Reg.t) ~stack_offset =
     else
       [DAH.create_call_target location_desc] 
 
-let dwarf_for_call_sites t ~whole_function_lexical_block
-      ~scope_proto_dies ~(fundecl : L.fundecl)
-      ~external_calls_generated_during_emit ~function_symbol =
+let dwarf_for_call_sites t ~scope_proto_dies ~(fundecl : L.fundecl)
+      ~external_calls_generated_during_emit ~function_symbol
+      ~function_proto_die =
   let found_self_tail_calls = ref false in
   let add_call_site =
-    add_call_site t ~whole_function_lexical_block ~scope_proto_dies
+    add_call_site t ~scope_proto_dies ~function_proto_die
   in
   let add_indirect_ocaml_call ~stack_offset ~callee ~args ~call_labels insn =
     add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
@@ -1790,29 +1775,27 @@ let dwarf_for_fundecl_and_emit t ~emit ~end_of_function_label
   Proto_die.set_name concrete_instance_proto_die
     (Name_laundry.concrete_instance_die_name
       (Debuginfo.Function.id fundecl.fun_dbg));
-  let whole_function_lexical_block, scope_proto_dies =
+  let scope_proto_dies =
     Profile.record "dwarf_create_lexical_block_and_inlined_frame_proto_dies"
       (fun () ->
         create_lexical_block_and_inlined_frame_proto_dies t
           fundecl lexical_block_ranges
-          ~function_proto_die:concrete_instance_proto_die
-          ~start_of_function ~end_of_function)
+          ~function_proto_die:concrete_instance_proto_die)
       ~accumulate:true
       ()
   in
   Profile.record "dwarf_for_variables_and_parameters" (fun () ->
       dwarf_for_variables_and_parameters t fundecl
         ~function_proto_die:concrete_instance_proto_die
-        ~whole_function_lexical_block ~scope_proto_dies
-        ~available_ranges_vars)
+        ~scope_proto_dies ~available_ranges_vars)
     ~accumulate:true
     ();
   if supports_call_sites () then begin
     let found_self_tail_calls =
       Profile.record "dwarf_for_call_sites" (fun () ->
-          dwarf_for_call_sites t ~whole_function_lexical_block
-            ~scope_proto_dies ~fundecl ~external_calls_generated_during_emit
-            ~function_symbol:symbol)
+          dwarf_for_call_sites t ~scope_proto_dies ~fundecl
+            ~external_calls_generated_during_emit ~function_symbol:symbol
+            ~function_proto_die:concrete_instance_proto_die)
         ~accumulate:true
         ()
     in

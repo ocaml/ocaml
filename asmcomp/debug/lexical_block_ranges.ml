@@ -56,9 +56,9 @@ module Lexical_blocks = struct
 
   let available_before (insn : L.instruction) =
     let innermost = Debuginfo.innermost_block insn.dbg in
-    match Debuginfo.Current_block.to_block innermost with
-    | Toplevel -> Debuginfo.Block.Set.empty
-    | Block block -> Debuginfo.Block.Set.singleton block
+    match innermost with
+    | None -> Debuginfo.Block.Set.empty
+    | Some block -> Debuginfo.Block.Set.singleton block
 
   let available_across insn =
     (* Block scoping never changes during the execution of a [Linearize]
