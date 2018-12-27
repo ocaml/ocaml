@@ -14,11 +14,7 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module ARV = Available_ranges_all_vars
 module L = Linearize
-module LB = Lexical_block_ranges
-module SLDL = Simple_location_description_lang
-module V = Backend_var
 
 type result =
   { fundecl : L.fundecl;
@@ -26,6 +22,7 @@ type result =
     lexical_block_ranges : Lexical_block_ranges.t;
     external_calls_generated_during_emit
       : Emitaux.external_call_generated_during_emit list;
+    end_of_function_label : Cmm.label;
   }
 
 let passes_for_fundecl (fundecl : L.fundecl) =
@@ -98,4 +95,5 @@ let passes_for_fundecl_and_emit ~emit ~end_of_function_label
     available_ranges_vars;
     lexical_block_ranges;
     external_calls_generated_during_emit;
+    end_of_function_label;
   }

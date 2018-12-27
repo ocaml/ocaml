@@ -19,6 +19,8 @@
 val compile_unit_proto_die
    : sourcefile:string
   -> prefix_name:string
+  -> start_of_code_symbol:Asm_symbol.t
+  -> end_of_code_symbol:Asm_symbol.t
   -> Address_table.t
   -> Location_list_table.t
   -> Range_list_table.t

@@ -16,18 +16,8 @@
 
 module DAH = Dwarf_attribute_helpers
 
-let mangle_symbol section symbol =
-  let unit_name =
-    Linkage_name.to_string (Compilation_unit.get_linkage_name (
-      Symbol.compilation_unit symbol))
-  in
-  let symbol' =
-    Compilenv.concat_symbol unit_name
-      (Linkage_name.to_string (Symbol.label symbol))
-  in
-  Asm_symbol.of_external_name section (Symbol.compilation_unit symbol) symbol'
-
 let compile_unit_proto_die ~sourcefile ~prefix_name
+      ~start_of_code_symbol ~end_of_code_symbol
       address_table location_list_table range_list_table =
   let unit_name =
     Compilation_unit.get_persistent_ident (Compilation_unit.get_current_exn ())
@@ -40,16 +30,6 @@ let compile_unit_proto_die ~sourcefile ~prefix_name
   let prefix_name =
     if Filename.is_relative prefix_name then Filename.concat cwd prefix_name
     else prefix_name
-  in
-  let start_of_code_symbol =
-    mangle_symbol Text (
-      Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
-        (Linkage_name.create "code_begin"))
-  in
-  let end_of_code_symbol =
-    mangle_symbol Text (
-      Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
-        (Linkage_name.create "code_end"))
   in
   let debug_line_label = Asm_label.for_section (DWARF Debug_line) in
   let addr_base = Address_table.base_addr address_table in

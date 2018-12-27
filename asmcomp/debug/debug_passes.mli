@@ -25,11 +25,12 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 type result = private
-  { fundecl : L.fundecl;
+  { fundecl : Linearize.fundecl;
     available_ranges_vars : Available_ranges_all_vars.t;
     lexical_block_ranges : Lexical_block_ranges.t;
     external_calls_generated_during_emit
       : Emitaux.external_call_generated_during_emit list;
+    end_of_function_label : Cmm.label;
   }
 
 val passes_for_fundecl_and_emit

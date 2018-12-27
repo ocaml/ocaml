@@ -43,3 +43,6 @@ type split_base_type_die_name_result = private {
 
 (** The inverse of [base_type_die_name_for_var]. *)
 val split_base_type_die_name : string -> split_base_type_die_name_result option
+
+(* CR mshinwell: rename? *)
+val mangle_symbol : Asm_section.t -> Symbol.t -> Asm_symbol.t

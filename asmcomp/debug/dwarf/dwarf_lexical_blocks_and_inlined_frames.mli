@@ -28,4 +28,4 @@ val dwarf
   -> Linearize.fundecl
   -> Lexical_block_ranges.t
   -> function_proto_die:Proto_die.t
-  -> unit
+  -> Proto_die.t Debuginfo.Block.Map.t

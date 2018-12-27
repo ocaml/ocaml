@@ -46,7 +46,3 @@ val dwarf_for_toplevel_inconstants
     called once all (in)constants and function declarations have been passed
     to the above functions. *)
 val emit : t -> unit
-
-(** Whether support for DWARF-5 (or DWARF-4 plus GNU extensions) call site
-    marking is enabled. *)
-val supports_call_sites : unit -> bool

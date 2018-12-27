@@ -14,13 +14,7 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module ARV = Available_ranges_all_vars
 module DAH = Dwarf_attribute_helpers
-module L = Linearize
-module LB = Lexical_block_ranges
-module SLDL = Simple_location_description_lang
-module V = Backend_var
-
 module DS = Dwarf_state
 
 type t = {
@@ -41,14 +35,25 @@ let create ~sourcefile ~prefix_name =
     | Four -> Dwarf_version.four
     | Five -> Dwarf_version.five
   in
+  let start_of_code_symbol =
+    Dwarf_name_laundry.mangle_symbol Text (
+      Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
+        (Linkage_name.create "code_begin"))
+  in
+  let end_of_code_symbol =
+    Dwarf_name_laundry.mangle_symbol Text (
+      Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
+        (Linkage_name.create "code_end"))
+  in
   let address_table = Address_table.create () in
   let debug_loc_table = Debug_loc_table.create () in
   let debug_ranges_table = Debug_ranges_table.create () in
   let location_list_table = Location_list_table.create () in
   let range_list_table = Range_list_table.create () in
   let compilation_unit_proto_die =
-    Dwarf_compilation_unit.compilation_unit_proto_die ~sourcefile ~prefix_name
-      adddress_table location_list_table range_list_table
+    Dwarf_compilation_unit.compile_unit_proto_die ~sourcefile ~prefix_name
+      ~start_of_code_symbol ~end_of_code_symbol
+      address_table location_list_table range_list_table
   in
   let value_type_proto_die =
     Proto_die.create ~parent:(Some compilation_unit_proto_die)
@@ -60,6 +65,7 @@ let create ~sourcefile ~prefix_name =
       ]
       ()
   in
+  let compilation_unit_header_label = Asm_label.create (DWARF Debug_info) in
   let state =
     DS.create ~compilation_unit_header_label
       ~compilation_unit_proto_die ~value_type_proto_die

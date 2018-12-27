@@ -28,7 +28,7 @@ let for_fundecl state (result : Debug_passes.result) =
   let start_of_function = DAH.create_low_pc_from_symbol symbol in
   let end_of_function =
     DAH.create_high_pc ~low_pc:symbol
-      (Asm_label.create_int Text end_of_function_label)
+      (Asm_label.create_int Text result.end_of_function_label)
   in
   let _abstract_instance_proto_die, abstract_instance_die_symbol =
     Dwarf_abstract_instances.find_or_add state fundecl.fun_dbg
@@ -58,7 +58,7 @@ let for_fundecl state (result : Debug_passes.result) =
   Profile.record "dwarf_variables_and_parameters" (fun () ->
       Dwarf_variables_and_parameters.dwarf state fundecl
         ~function_proto_die:concrete_instance_proto_die
-        ~scope_proto_dies ~available_ranges_vars)
+        ~scope_proto_dies available_ranges_vars)
     ~accumulate:true
     ();
   if (DS.supports_call_sites state) then begin

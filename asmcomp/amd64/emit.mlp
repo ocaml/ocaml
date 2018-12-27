@@ -515,15 +515,18 @@ let emit_profile () =
 (* Emission of labels immediately prior to and after calls, used for DWARF-5
    call site support. *)
 
+(* CR mshinwell: think about this *)
+let supports_call_sites () = true
+
 let maybe_add_label_before_call ~call_labels =
-  if Dwarf.supports_call_sites () then begin
+  if supports_call_sites () then begin
     def_label AS.Text call_labels.before
   end
 
 (* This function should not be called if [record_frame] is going to be used,
    since the latter defines the same label as this function. *)
 let maybe_add_label_after_call ~call_labels =
-  if Dwarf.supports_call_sites () then begin
+  if supports_call_sites () then begin
     def_label AS.Text call_labels.after
   end
 

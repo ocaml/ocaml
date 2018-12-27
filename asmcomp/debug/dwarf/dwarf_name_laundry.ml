@@ -58,3 +58,14 @@ let split_base_type_die_name name =
     let ident_stamp = int_of_string ident_stamp in
     Some { compilation_unit; ident_name; ident_stamp; }
   | _ -> None
+
+let mangle_symbol section symbol =
+  let unit_name =
+    Linkage_name.to_string (Compilation_unit.get_linkage_name (
+      Symbol.compilation_unit symbol))
+  in
+  let symbol' =
+    Compilenv.concat_symbol unit_name
+      (Linkage_name.to_string (Symbol.label symbol))
+  in
+  Asm_symbol.of_external_name section (Symbol.compilation_unit symbol) symbol'

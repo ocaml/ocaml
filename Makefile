@@ -203,10 +203,10 @@ DWARF=\
 	asmcomp/debug/dwarf/dwarf_compilation_unit.cmo \
 	asmcomp/debug/dwarf/dwarf_state.cmo \
 	asmcomp/debug/dwarf/dwarf_reg_locations.cmo \
-	asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmo \
 	asmcomp/debug/dwarf/dwarf_abstract_instances.cmo \
-	asmcomp/debug/dwarf/dwarf_call_sites.cmo \
 	asmcomp/debug/dwarf/dwarf_lexical_blocks_and_inlined_frames.cmo \
+	asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmo \
+	asmcomp/debug/dwarf/dwarf_call_sites.cmo \
 	asmcomp/debug/dwarf/dwarf_concrete_instances.cmo \
 	asmcomp/debug/dwarf/dwarf_lifted_constants.cmo \
   asmcomp/debug/dwarf/dwarf.cmo \

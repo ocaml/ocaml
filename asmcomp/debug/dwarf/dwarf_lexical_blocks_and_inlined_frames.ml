@@ -14,13 +14,10 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module ARV = Available_ranges_all_vars
 module DAH = Dwarf_attribute_helpers
 module DS = Dwarf_state
 module L = Linearize
 module LB = Lexical_block_ranges
-module SLDL = Simple_location_description_lang
-module V = Backend_var
 
 let find_scope_die_from_debuginfo dbg ~function_proto_die ~scope_proto_dies =
   let block = Debuginfo.innermost_block dbg in
@@ -42,10 +39,10 @@ let create_range_list_and_summarise state (_fundecl : L.fundecl) range =
       let start_inclusive =
         Address_table.add (DS.address_table state)
           (Asm_label.create_int Text start_pos)
-          ~start_of_code_symbol:(DS.start_of_code_symbol t)
+          ~start_of_code_symbol:(DS.start_of_code_symbol state)
       in
       let end_exclusive =
-        Address_table.add state.address_table
+        Address_table.add (DS.address_table state)
           (Asm_label.create_int Text end_pos)
           ~adjustment:(LB.Subrange.end_pos_offset subrange)
           ~start_of_code_symbol:(DS.start_of_code_symbol state)
@@ -114,7 +111,7 @@ let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die =
             in
             let range_list_attribute, all_summaries =
               let dwarf_4_range_list_entries, range_list, summary =
-                create_range_list_and_summarise t fundecl range
+                create_range_list_and_summarise state fundecl range
               in
               match All_summaries.Map.find summary all_summaries with
               | exception Not_found ->
@@ -198,7 +195,7 @@ let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die =
                        reconstitute as much of its attributes as we can and
                        put them directly into the DIE for the inlined frame,
                        making use of DWARF-5 spec page 85, line 30 onwards. *)
-                    attributes_for_abstract_instance fun_dbg
+                    Dwarf_abstract_instances.attributes fun_dbg
                   | Some abstract_instance_symbol ->
                     (* This appears to be the source of a bogus error from
                        "dwarfdump --verify" on macOS:

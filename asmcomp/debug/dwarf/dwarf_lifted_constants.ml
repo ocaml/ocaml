@@ -14,13 +14,9 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-module ARV = Available_ranges_all_vars
 module DAH = Dwarf_attribute_helpers
 module DS = Dwarf_state
-module L = Linearize
-module LB = Lexical_block_ranges
 module SLDL = Simple_location_description_lang
-module V = Backend_var
 
 let dwarf_for_toplevel_constant state ~vars ~module_path ~symbol =
   (* Give each variable the same definition for the moment. *)
@@ -31,11 +27,11 @@ let dwarf_for_toplevel_constant state ~vars ~module_path ~symbol =
         path ^ "." ^ name
       in
       let type_proto_die =
-        Dwarf_variables_and_parameters.normal_type_for_var state
+        Dwarf_variables_and_parameters.normal_type_for_var
           ~parent:(Some (DS.compilation_unit_proto_die state))
           (Some (Compilation_unit.get_current_exn (), var))
       in
-      let symbol = mangle_symbol Data symbol in
+      let symbol = Dwarf_name_laundry.mangle_symbol Data symbol in
       Proto_die.create_ignore
         ~parent:(Some (DS.compilation_unit_proto_die state))
         ~tag:Constant
@@ -76,7 +72,7 @@ let dwarf_for_toplevel_inconstant state var ~module_path ~symbol =
     path ^ "." ^ name
   in
   let type_proto_die =
-    Dwarf_variables_and_parameters.normal_type_for_var state
+    Dwarf_variables_and_parameters.normal_type_for_var
       ~parent:(Some (DS.compilation_unit_proto_die state))
       (Some (Compilation_unit.get_current_exn (), var))
   in
@@ -125,7 +121,7 @@ let dwarf_for_toplevel_inconstants state inconstants =
           Symbol.of_global_linkage (Compilation_unit.get_current_exn ())
             (Linkage_name.create inconstant.symbol)
         in
-        let symbol = mangle_symbol Data symbol in
+        let symbol = Dwarf_name_laundry.mangle_symbol Data symbol in
         (* CR-someday mshinwell: Support multi-field preallocated blocks
            (ignored for the moment as the only one is the module block, which
            isn't made visible in the debugger). *)
