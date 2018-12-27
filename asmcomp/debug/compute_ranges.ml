@@ -38,20 +38,17 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       subrange_info : Subrange_info.t;
     }
 
-    let create0 ~start_pos ~end_pos ~end_pos_offset ~subrange_info =
-      { start_pos;
-        end_pos;
-        end_pos_offset;
-        subrange_info;
-      }
-
     let create ~(start_insn : Linearize.instruction)
           ~start_pos
           ~end_pos ~end_pos_offset
           ~subrange_info =
       match start_insn.desc with
       | Llabel _ ->
-        create0 ~start_pos ~end_pos ~end_pos_offset ~subrange_info
+        { start_pos;
+          end_pos;
+          end_pos_offset;
+          subrange_info;
+        }
       | _ ->
         Misc.fatal_errorf "Subrange.create: bad [start_insn]: %a"
           Printlinear.instr start_insn
@@ -144,8 +141,6 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
 
   type t = {
     ranges : Range.t S.Index.Tbl.t;
-    starting_label : Linearize.label;
-    mutable ending_label : Linearize.label;
   }
 
   module KM = S.Key.Map
@@ -415,50 +410,17 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     if not !Clflags.debug then begin
       Misc.fatal_error "Range computations can only be done for debug mode"
     end;
-    let starting_label = Cmm.new_label () in
-    let ending_label = Cmm.new_label () in
     let t =
       { ranges = S.Index.Tbl.create 42;
-        starting_label;
-        ending_label;  (* A placeholder -- this is set properly below. *)
       }
     in
     let first_insn, ending_label =
       process_instructions t fundecl ~first_insn:fundecl.fun_body
     in
-    t.ending_label <- ending_label;
-    let first_insn : L.instruction =
-      { desc = Llabel starting_label;
-        next = first_insn;
-        arg = [| |];
-        res = [| |];
-        dbg = first_insn.dbg;
-        live = first_insn.live;
-        available_before = first_insn.available_before;
-        phantom_available_before = first_insn.phantom_available_before;
-        available_across = None;
-      }
-    in
     let fundecl : L.fundecl =
       { fundecl with fun_body = first_insn; }
     in
     t, fundecl
-
-  let range_covering_whole_function t ~end_of_function_label
-        range_info subrange_info : Range.t =
-    let subrange =
-      Subrange.create0
-        ~start_pos:t.starting_label ~end_pos:end_of_function_label
-        ~end_pos_offset:0 ~subrange_info
-    in
-    (* We create the range directly in case [t.starting_label] and
-       [end_of_function_label] do not satisfy the usual invariant that the
-       former is smaller or equal to the latter. *)
-    { subranges = [subrange];
-      min_pos = Some t.starting_label;
-      max_pos = Some end_of_function_label;
-      range_info;
-    }
 
   let iter t ~f =
     S.Index.Tbl.iter (fun index range -> f index range)
@@ -476,10 +438,6 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       S.Index.Tbl.map t.ranges (fun range ->
         Range.rewrite_labels range ~env)
     in
-    let starting_label = rewrite_label env t.starting_label in
-    let ending_label = rewrite_label env t.ending_label in
     { ranges;
-      starting_label;
-      ending_label;
     }
 end

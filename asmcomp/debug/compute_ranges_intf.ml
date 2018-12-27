@@ -120,13 +120,6 @@ module type S = sig
 
   val create : Linearize.fundecl -> t * Linearize.fundecl
 
-  val range_covering_whole_function
-     : t
-    -> end_of_function_label:Linearize.label
-    -> Range_info.t
-    -> Subrange_info.t
-    -> Range.t
-
   val iter : t -> f:(Index.t -> Range.t -> unit) -> unit
 
   val fold : t -> init:'a -> f:('a -> Index.t -> Range.t -> 'a) -> 'a

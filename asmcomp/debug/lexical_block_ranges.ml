@@ -65,6 +65,3 @@ module Subrange_info = Lexical_blocks.Subrange_info
 module Range_info = Lexical_blocks.Range_info
 
 include Compute_ranges.Make (Lexical_blocks)
-
-let range_covering_whole_function t ~end_of_function_label =
-  range_covering_whole_function t ~end_of_function_label () ()
