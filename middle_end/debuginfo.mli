@@ -149,8 +149,6 @@ module Block : sig
 
       - Lexical blocks
       - Inlined functions (thought of as inlined-out stack frames).
-
-      There is always a lexical block starting at the top of each function.
   *)
 
   module Id : sig
@@ -165,15 +163,10 @@ module Block : sig
 
   type t
 
-  val create_function_toplevel_lexical_scope : unit -> t
-
-  val create_lexical_scope : parent:t -> t
-
-  val create_inlined_frame : Call_site.t -> parent:t -> t
+  val create_non_inlined_frame : Call_site.t -> t
 
   type frame_classification = private
-    | Whole_function
-    | Lexical_scope
+    | Lexical_scope_only
     | Inlined_frame of Call_site.t
 
   val frame_classification : t -> frame_classification
@@ -189,6 +182,24 @@ module Block : sig
   val print_id : Format.formatter -> t -> unit
 end
 
+module Current_block : sig
+  type t
+
+  val toplevel : t
+
+  type to_block =
+    | Toplevel
+    | Block of Block.t
+
+  val to_block : t -> to_block
+
+  val add_scope : t -> t
+
+  val add_inlined_frame : t -> Call_site.t -> t
+
+  include Identifiable.S with type t := t
+end
+
 type t
 type debuginfo = t
 
@@ -202,15 +213,15 @@ val is_none : t -> bool
 
 val to_string_frames_only_innermost_last : t -> string
 
-val of_line : file:string -> line:int -> scope:Block.t -> t
+val of_line : file:string -> line:int -> scope:Current_block.t -> t
 
-val of_location : Location.t -> scope:Block.t -> t
+val of_location : Location.t -> scope:Current_block.t -> t
 
 val to_location : t -> Location.t
 
 val of_function : Function.t -> t
 
-val innermost_block : t -> Block.t option
+val innermost_block : t -> Current_block.t
 
 val with_position : t -> Code_range.t -> t
 
@@ -244,7 +255,7 @@ module Block_subst : sig
   val find_or_add
      : t
     -> debuginfo
-    -> at_call_site:Block.t
+    -> at_call_site:Current_block.t
     -> t * debuginfo
 
   (** This function does not affect the [Function.t] component of the
@@ -252,6 +263,6 @@ module Block_subst : sig
   val find_or_add_for_apply
      : t
     -> Apply.t
-    -> at_call_site:Block.t
+    -> at_call_site:Current_block.t
     -> t * Apply.t
 end
