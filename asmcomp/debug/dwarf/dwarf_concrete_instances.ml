@@ -51,8 +51,7 @@ let for_fundecl state (result : Debug_passes.result) =
     Profile.record "dwarf_lexical_blocks_and_inlined_frames"
       (fun () ->
         Dwarf_lexical_blocks_and_inlined_frames.dwarf state fundecl
-          lexical_block_ranges ~function_proto_die:concrete_instance_proto_die
-          ~end_of_function_label:result.end_of_function_label)
+          lexical_block_ranges ~function_proto_die:concrete_instance_proto_die)
       ~accumulate:true
       ()
   in

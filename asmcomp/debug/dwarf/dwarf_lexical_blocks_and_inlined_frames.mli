@@ -28,5 +28,4 @@ val dwarf
   -> Linearize.fundecl
   -> Lexical_block_ranges.t
   -> function_proto_die:Proto_die.t
-  -> end_of_function_label:Linearize.label
   -> Proto_die.t Debuginfo.Block.Map.t

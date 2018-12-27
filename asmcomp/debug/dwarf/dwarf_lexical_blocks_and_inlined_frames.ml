@@ -20,10 +20,10 @@ module L = Linearize
 module LB = Lexical_block_ranges
 
 let find_scope_die_from_debuginfo dbg ~function_proto_die ~scope_proto_dies =
-  let block = Debuginfo.innermost_block dbg in
-  match block with
-  | None -> Some function_proto_die
-  | Some block ->
+  let innermost_block = Debuginfo.innermost_block dbg in
+  match Debuginfo.Current_block.to_block innermost_block with
+  | Toplevel -> Some function_proto_die
+  | Block block ->
     let module B = Debuginfo.Block in
     match B.Map.find block scope_proto_dies with
     | exception Not_found -> None
@@ -91,8 +91,79 @@ module All_summaries = Identifiable.Make (struct
   let hash t = Hashtbl.hash (elements t)
 end)
 
-let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die
-      ~end_of_function_label =
+let die_for_lexical_block parent range_list_attribute =
+  Proto_die.create ~parent:(Some parent)
+    ~tag:Lexical_block
+    ~attribute_values:[
+      range_list_attribute;
+    ]
+    ()
+
+let die_for_inlined_frame state parent call_site range range_list_attribute =
+  let fun_dbg = Debuginfo.Call_site.fun_dbg call_site in
+  let abstract_instance_symbol =
+    Dwarf_abstract_instances.find_maybe_in_another_unit_or_add state fun_dbg
+  in
+  let entry_pc =
+    (* CR-someday mshinwell: The "entry PC" is supposed to be the address of the
+       "temporally first" instruction of the inlined function. We assume here
+       that we don't do transformations which might cause the first instruction
+       of the inlined function to not be the one at the lowest address amongst
+       all instructions of the inlined function. If this assumption is wrong the
+       most likely outcome seems to be breakpoints being slightly in the wrong
+       place, although still in the correct function. Making this completely
+       accurate will necessitate more tracking of instruction ordering from
+       earlier in the compiler. *)
+    match LB.Range.lowest_address range with
+    | None -> []
+    | Some lowest_address -> [
+        DAH.create_entry_pc (Asm_label.create_int Text lowest_address);
+      ]
+  in
+  (* Note that with Flambda, this DIE may not be in the scope of the referenced
+     abstract instance DIE, as inline expansions may be made out of the scope of
+     the function declaration. *)
+  let abstract_instance =
+    match abstract_instance_symbol with
+    | None ->
+      (* If the abstract instance DIE cannot be referenced, reconstitute as much
+         of its attributes as we can and put them directly into the DIE for the
+         inlined frame, making use of DWARF-5 spec page 85, line 30 onwards. *)
+      Dwarf_abstract_instances.attributes fun_dbg
+    | Some abstract_instance_symbol ->
+      (* This appears to be the source of a bogus error from "dwarfdump
+         --verify" on macOS:
+
+         error: <address>: DIE has tag Unknown DW_TAG constant: 0x4109 has
+         DW_AT_abstract_origin that points to DIE <address> with incompatible
+         tag TAG_subprogram
+
+         The error seems to be bogus because:
+
+         (a) 0x4109 is DW_TAG_GNU_call_site which has no DW_AT_abstract_origin
+             attribute (it does in a child, but not in itself); and
+
+         (b) When DW_AT_abstract_origin is used to reference an abstract
+             instance then it is expected that the tags of the referring and
+             referred-to DIEs differ. DWARF-5 spec page 85, lines 4--8.
+
+         Since this complaint does not appear during a normal build process we
+         do not attempt to work around it. *)
+      [DAH.create_abstract_origin ~die_symbol:abstract_instance_symbol]
+  in
+  let code_range = Debuginfo.Call_site.position call_site in
+  Proto_die.create ~parent:(Some parent)
+    ~tag:Inlined_subroutine
+    ~attribute_values:(entry_pc @ abstract_instance @ [
+      range_list_attribute;
+      (* See comment below about the use of the number 1 here. *)
+      DAH.create_call_file 1;
+      DAH.create_call_line (Debuginfo.Code_range.line code_range);
+      DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
+    ])
+    ()
+
+let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die =
   let module B = Debuginfo.Block in
   let all_blocks = LB.all_indexes lexical_block_ranges in
   let scope_proto_dies, _all_summaries =
@@ -152,92 +223,13 @@ let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die
             in
             let proto_die =
               match B.frame_classification block with
-              | Lexical_scope ->
-                Proto_die.create ~parent:(Some parent)
-                  ~tag:Lexical_block
-                  ~attribute_values:[
-                    range_list_attribute;
-                  ]
-                  ()
+              | Lexical_scope_only ->
+                die_for_lexical_block parent range_list_attribute
               | Inlined_frame call_site ->
-                let fun_dbg = Debuginfo.Call_site.fun_dbg call_site in
-                let abstract_instance_symbol =
-                  Dwarf_abstract_instances.find_maybe_in_another_unit_or_add
-                    state fun_dbg
-                in
-                let range = LB.find lexical_block_ranges block in
-                let entry_pc =
-                  (* CR-someday mshinwell: The "entry PC" is supposed to be the
-                     address of the "temporally first" instruction of the
-                     inlined function.  We assume here that we don't do
-                     transformations which might cause the first instruction
-                     of the inlined function to not be the one at the lowest
-                     address amongst all instructions of the inlined function.
-                     If this assumption is wrong the most likely outcome seems
-                     to be breakpoints being slightly in the wrong place,
-                     although still in the correct function.  Making this
-                     completely accurate will necessitate more tracking of
-                     instruction ordering from earlier in the compiler. *)
-                  match LB.Range.lowest_address range with
-                  | None -> []
-                  | Some lowest_address -> [
-                      DAH.create_entry_pc (
-                        Asm_label.create_int Text lowest_address);
-                    ]
-                in
-                (* Note that with Flambda, this DIE may not be in the scope
-                   of the referenced abstract instance DIE, as inline
-                   expansions may be made out of the scope of the function
-                   declaration. *)
-                let abstract_instance =
-                  match abstract_instance_symbol with
-                  | None ->
-                    (* If the abstract instance DIE cannot be referenced,
-                       reconstitute as much of its attributes as we can and
-                       put them directly into the DIE for the inlined frame,
-                       making use of DWARF-5 spec page 85, line 30 onwards. *)
-                    Dwarf_abstract_instances.attributes fun_dbg
-                  | Some abstract_instance_symbol ->
-                    (* This appears to be the source of a bogus error from
-                       "dwarfdump --verify" on macOS:
-
-                       error: <address>: DIE has tag Unknown DW_TAG constant:
-                       0x4109 has DW_AT_abstract_origin that points to DIE
-                       <address> with incompatible tag TAG_subprogram
-
-                       The error seems to be bogus because:
-
-                       (a) 0x4109 is DW_TAG_GNU_call_site which has no
-                           DW_AT_abstract_origin attribute (it does in a child,
-                           but not in itself); and
-
-                       (b) When DW_AT_abstract_origin is used to reference an
-                           abstract instance then it is expected that the tags
-                           of the referring and referred-to DIEs differ.
-                           DWARF-5 spec page 85, lines 4--8.
-
-                       Since this complaint does not appear during a normal
-                       build process we do not attempt to work around it. *)
-                    [DAH.create_abstract_origin
-                       ~die_symbol:abstract_instance_symbol]
-                in
-                let code_range = Debuginfo.Call_site.position call_site in
-                Proto_die.create ~parent:(Some parent)
-                  ~tag:Inlined_subroutine
-                  ~attribute_values:(entry_pc @ abstract_instance @ [
-                    range_list_attribute;
-                    (* See comment below about the use of the number 1 here. *)
-                    DAH.create_call_file 1;
-                    DAH.create_call_line
-                      (Debuginfo.Code_range.line code_range);
-                    DAH.create_call_column
-                      (Debuginfo.Code_range.char_start code_range);
-                  ])
-                  ()
+                die_for_inlined_frame state parent call_site range
+                  range_list_attribute
             in
-            let scope_proto_dies =
-              B.Map.add block proto_die scope_proto_dies
-            in
+            let scope_proto_dies = B.Map.add block proto_die scope_proto_dies in
             proto_die, scope_proto_dies, all_summaries
         in
         let _proto_die, scope_proto_dies, all_summaries =

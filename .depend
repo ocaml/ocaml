@@ -2475,9 +2475,11 @@ asmcomp/debug/cmm_debug.cmx : asmcomp/printcmm.cmx utils/numbers.cmx \
     asmcomp/debug/cmm_debug.cmi
 asmcomp/debug/cmm_debug.cmi : asmcomp/cmm.cmi
 asmcomp/debug/coalesce_labels.cmo : utils/numbers.cmi utils/misc.cmi \
-    asmcomp/linearize.cmi utils/clflags.cmi asmcomp/debug/coalesce_labels.cmi
+    asmcomp/linearize.cmi asmcomp/cmm.cmi utils/clflags.cmi \
+    asmcomp/debug/coalesce_labels.cmi
 asmcomp/debug/coalesce_labels.cmx : utils/numbers.cmx utils/misc.cmx \
-    asmcomp/linearize.cmx utils/clflags.cmx asmcomp/debug/coalesce_labels.cmi
+    asmcomp/linearize.cmx asmcomp/cmm.cmx utils/clflags.cmx \
+    asmcomp/debug/coalesce_labels.cmi
 asmcomp/debug/coalesce_labels.cmi : utils/numbers.cmi asmcomp/linearize.cmi
 asmcomp/debug/compute_ranges.cmo : asmcomp/printlinear.cmi utils/numbers.cmi \
     utils/misc.cmi asmcomp/linearize.cmi \

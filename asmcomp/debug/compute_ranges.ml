@@ -378,8 +378,6 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
             open_subranges
         in
         assert (KM.is_empty open_subranges);
-        (* Ensure we always emit a label at the end of the function. *)
-        used_label := true;
         open_subranges
       | _ -> open_subranges
     in
@@ -388,7 +386,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     end;
     let first_insn = !first_insn in
     match insn.desc with
-    | Lend -> first_insn, label
+    | Lend -> first_insn
     | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
     | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
     | Lsetuptrap _ | Lpushtrap | Lpoptrap | Lraise _ ->
@@ -414,7 +412,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       { ranges = S.Index.Tbl.create 42;
       }
     in
-    let first_insn, ending_label =
+    let first_insn =
       process_instructions t fundecl ~first_insn:fundecl.fun_body
     in
     let fundecl : L.fundecl =
