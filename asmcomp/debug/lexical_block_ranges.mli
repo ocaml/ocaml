@@ -50,3 +50,5 @@ include Compute_ranges_intf.S
   with module Subrange_state := Subrange_state
   with module Subrange_info := Subrange_info
   with module Range_info := Range_info
+
+val range_covering_whole_function : t -> Range.t

@@ -172,7 +172,8 @@ module Block : sig
   val create_inlined_frame : Call_site.t -> parent:t -> t
 
   type frame_classification = private
-    | Lexical_scope_only
+    | Whole_function
+    | Lexical_scope
     | Inlined_frame of Call_site.t
 
   val frame_classification : t -> frame_classification

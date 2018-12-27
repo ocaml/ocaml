@@ -38,17 +38,20 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       subrange_info : Subrange_info.t;
     }
 
+    let create0 ~start_pos ~end_pos ~end_pos_offset ~subrange_info =
+      { start_pos;
+        end_pos;
+        end_pos_offset;
+        subrange_info;
+      }
+
     let create ~(start_insn : Linearize.instruction)
           ~start_pos
           ~end_pos ~end_pos_offset
           ~subrange_info =
       match start_insn.desc with
       | Llabel _ ->
-        { start_pos;
-          end_pos;
-          end_pos_offset;
-          subrange_info;
-        }
+        create0 ~start_pos ~end_pos ~end_pos_offset ~subrange_info
       | _ ->
         Misc.fatal_errorf "Subrange.create: bad [start_insn]: %a"
           Printlinear.instr start_insn
@@ -140,6 +143,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
 
   type t = {
     ranges : Range.t S.Index.Tbl.t;
+    starting_label : Linearize.label;
+    mutable ending_label : Linearize.label;
   }
 
   module KM = S.Key.Map
@@ -377,6 +382,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
             open_subranges
         in
         assert (KM.is_empty open_subranges);
+        (* Ensure we always emit a label at the end of the function. *)
+        used_label := true;
         open_subranges
       | _ -> open_subranges
     in
@@ -385,7 +392,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     end;
     let first_insn = !first_insn in
     match insn.desc with
-    | Lend -> first_insn
+    | Lend -> first_insn, label
     | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
     | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
     | Lsetuptrap _ | Lpushtrap | Lpoptrap | Lraise _ ->
@@ -404,21 +411,49 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     S.Index.Set.of_list (List.map fst (S.Index.Tbl.to_list t.ranges))
 
   let create (fundecl : L.fundecl) =
-    if not !Clflags.debug then
-      let t =
-        { ranges = S.Index.Tbl.create 1;
-        }
-      in
-      t, fundecl
-    else
-      let t = { ranges = S.Index.Tbl.create 42; } in
-      let first_insn =
-        process_instructions t fundecl ~first_insn:fundecl.fun_body
-      in
-      let fundecl : L.fundecl =
-        { fundecl with fun_body = first_insn; }
-      in
-      t, fundecl
+    if not !Clflags.debug then begin
+      Misc.fatal_error "Range computations can only be done for debug mode"
+    end;
+    let starting_label = Cmm.new_label () in
+    let ending_label = Cmm.new_label () in
+    let t =
+      { ranges = S.Index.Tbl.create 42;
+        starting_label;
+        ending_label;  (* A placeholder -- this is set properly below. *)
+      }
+    in
+    let first_insn : L.instruction =
+      let first_insn = fundecl.fun_body in
+      { desc = Llabel starting_label;
+        next = first_insn;
+        arg = [| |];
+        res = [| |];
+        dbg = first_insn.dbg;
+        live = first_insn.live;
+        available_before = first_insn.available_before;
+        phantom_available_before = first_insn.phantom_available_before;
+        available_across = None;
+      }
+    in
+    let first_insn, ending_label =
+      process_instructions t fundecl ~first_insn
+    in
+    t.ending_label <- ending_label;
+    let fundecl : L.fundecl =
+      { fundecl with fun_body = first_insn; }
+    in
+    t, fundecl
+
+  let range_covering_whole_function t range_info subrange_info =
+    let subrange =
+      Subrange.create0 ~start_pos:t.starting_label ~end_pos:t.ending_label
+        ~end_pos_offset:0 ~subrange_info
+    in
+    let range = Range.create range_info in
+    Range.add_subrange range ~subrange;
+    range
+
+  let end_of_function_label t = t.ending_label
 
   let iter t ~f =
     S.Index.Tbl.iter (fun index range -> f index range)
@@ -436,5 +471,10 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       S.Index.Tbl.map t.ranges (fun range ->
         Range.rewrite_labels range ~env)
     in
-    { ranges; }
+    let starting_label = rewrite_label env t.starting_label in
+    let ending_label = rewrite_label env t.ending_label in
+    { ranges;
+      starting_label;
+      ending_label;
+    }
 end

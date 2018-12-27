@@ -96,7 +96,6 @@ let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die =
   let all_blocks = LB.all_indexes lexical_block_ranges in
   let scope_proto_dies, _all_summaries =
     B.Set.fold (fun block (scope_proto_dies, all_summaries) ->
-        let range = LB.find lexical_block_ranges block in
         let rec create_up_to_root block scope_proto_dies all_summaries =
           match B.Map.find block scope_proto_dies with
           | proto_die ->
@@ -108,6 +107,13 @@ let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die =
                 function_proto_die, scope_proto_dies, all_summaries
               | Some parent ->
                 create_up_to_root parent scope_proto_dies all_summaries
+            in
+            let range =
+              match B.frame_classification block with
+              | Whole_function ->
+                LB.range_covering_whole_function lexical_block_ranges
+              | Lexical_scope | Inlined_frame _ ->
+                LB.find lexical_block_ranges block
             in
             let range_list_attribute, all_summaries =
               let dwarf_4_range_list_entries, range_list, summary =
@@ -151,7 +157,7 @@ let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die =
             in
             let proto_die =
               match B.frame_classification block with
-              | Lexical_scope_only ->
+              | Whole_function | Lexical_scope ->
                 Proto_die.create ~parent:(Some parent)
                   ~tag:Lexical_block
                   ~attribute_values:[

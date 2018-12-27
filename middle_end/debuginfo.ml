@@ -392,13 +392,19 @@ module Block = struct
       end
 
   type frame_classification =
-    | Lexical_scope_only
+    | Whole_function
+    | Lexical_scope
     | Inlined_frame of Call_site.t
 
   let frame_classification t =
     match t.inlined_frame with
-    | None -> Lexical_scope_only
-    | Some call_site -> Inlined_frame call_site
+    | Some call_site ->
+      assert (Option.is_some t.parent);
+      Inlined_frame call_site
+    | None ->
+      match t.parent with
+      | None -> Whole_function
+      | Some _ -> Lexical_scope
 
   let rec iter_innermost_first t ~f =
     f t;
@@ -528,7 +534,7 @@ let iter_position_and_frames_innermost_first t ~f =
     ~f_position:f
     ~f_blocks:(fun block ->
       match Block.frame_classification block with
-      | Lexical_scope_only -> ()
+      | Whole_function | Lexical_scope -> ()
       | Inlined_frame call_site -> f (Call_site.position call_site))
 
 include Identifiable.Make (struct
@@ -589,6 +595,11 @@ module Block_subst = struct
     | exception Not_found ->
       let old_parent = Block.parent old_block in
       let t, new_parent =
+        (* CR mshinwell: Maybe this should stop one block back from the
+           parent, so that the "whole function" lexical block doesn't get
+           copied to the inlining site.  Anything parented to that lexical
+           block in the function being inlined should be parented to the
+           inlined frame block in the caller. *)
         match old_parent with
         | None -> t, at_call_site
         | Some old_parent ->
