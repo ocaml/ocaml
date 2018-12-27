@@ -49,8 +49,9 @@ CAMLOPT=$(CAMLRUN) ./ocamlopt -g-full gdb -nostdlib -I stdlib -I otherlibs/dynli
 ARCHES=amd64 i386 arm arm64 power s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
         -I middle_end/base_types -I asmcomp -I asmcomp/debug \
-        -I asmcomp/debug/dwarf_low -I asmcomp/debug/dwarf_low/dwarf_4 \
-        -I asmcomp/debug/dwarf_high \
+        -I asmcomp/debug/dwarf -I asmcomp/debug/dwarf/dwarf_low \
+        -I asmcomp/debug/dwarf/dwarf_low/dwarf_4 \
+        -I asmcomp/debug/dwarf/dwarf_high \
 	-I asmcomp/asm_target -I driver -I toplevel
 
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 \
@@ -754,10 +755,12 @@ endif
 	    middle_end/base_types/*.cmi \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	    asmcomp/*.cmi asmcomp/debug/*.cmi \
-	    asmcomp/debug/dwarf_low/*.cmi \
-            asmcomp/debug/dwarf_low/dwarf_4/*.cmi \
-            asmcomp/debug/dwarf_high/*.cmi \
+	    asmcomp/*.cmi \
+      asmcomp/debug/*.cmi \
+	    asmcomp/debug/dwarf/*.cmi \
+	    asmcomp/debug/dwarf/dwarf_low/*.cmi \
+      asmcomp/debug/dwarf/dwarf_low/dwarf_4/*.cmi \
+      asmcomp/debug/dwarf/dwarf_high/*.cmi \
 	    "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
@@ -769,18 +772,24 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	    middle_end/base_types/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	    asmcomp/*.cmt asmcomp/*.cmti \
+	    asmcomp/*.cmt \
+      asmcomp/*.cmti \
 	    asmcomp/*.mli \
-	    asmcomp/debug/*.cmt asmcomp/debug/*.cmti \
+	    asmcomp/debug/*.cmt \
+      asmcomp/debug/*.cmti \
 	    asmcomp/debug/*.mli \
-	    asmcomp/debug/dwarf_low/*.cmt \
-            asmcomp/debug/dwarf_low/*.cmti \
-	    asmcomp/debug/dwarf_low/*.mli \
-	    asmcomp/debug/dwarf_low/dwarf_4/*.cmt \
-            asmcomp/debug/dwarf_low/dwarf_4/*.cmti \
-	    asmcomp/debug/dwarf_low/dwarf_4/*.mli \
-	    asmcomp/debug/dwarf_high/*.cmt asmcomp/debug/dwarf_high/*.cmti \
-	    asmcomp/debug/dwarf_high/*.mli \
+	    asmcomp/debug/dwarf/*.cmt \
+      asmcomp/debug/dwarf/*.cmti \
+	    asmcomp/debug/dwarf/*.mli \
+	    asmcomp/debug/dwarf/dwarf_low/*.cmt \
+      asmcomp/debug/dwarf/dwarf_low/*.cmti \
+	    asmcomp/debug/dwarf/dwarf_low/*.mli \
+	    asmcomp/debug/dwarf/dwarf_low/dwarf_4/*.cmt \
+      asmcomp/debug/dwarf/dwarf_low/dwarf_4/*.cmti \
+	    asmcomp/debug/dwarf/dwarf_low/dwarf_4/*.mli \
+	    asmcomp/debug/dwarf/dwarf_high/*.cmt \
+      asmcomp/debug/dwarf/dwarf_high/*.cmti \
+	    asmcomp/debug/dwarf/dwarf_high/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -822,8 +831,11 @@ installoptopt:
 	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
 	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
      asmcomp/asm_target/*.cmx \
-     asmcomp/debug/*.cmx asmcomp/debug/dwarf_low/*.cmx \
-     asmcomp/debug/dwarf_low/dwarf_4/*.cmx asmcomp/debug/dwarf_high/*.cmx \
+     asmcomp/debug/*.cmx \
+     asmcomp/debug/dwarf/*.cmx \
+     asmcomp/debug/dwarf/dwarf_low/*.cmx \
+     asmcomp/debug/dwarf/dwarf_low/dwarf_4/*.cmx \
+     asmcomp/debug/dwarf/dwarf_high/*.cmx \
 	   middle_end/base_types/*.cmx "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
            compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
@@ -1455,9 +1467,10 @@ partialclean::
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
-	         middle_end/base_types asmcomp/debug asmcomp/debug/dwarf_low \
-                 asmcomp/debug/dwarf_low/dwarf_4 \
-                 asmcomp/asm_target asmcomp/debug/dwarf_high \
+	         middle_end/base_types asmcomp/debug asmcomp/debug/dwarf \
+                 asmcomp/debug/dwarf/dwarf_low \
+                 asmcomp/debug/dwarf/dwarf_low/dwarf_4 \
+                 asmcomp/asm_target asmcomp/debug/dwarf/dwarf_high \
                  driver toplevel tools; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
 	    $$d/*.$(O) $$d/*.$(SO) $d/*~; \
@@ -1468,8 +1481,9 @@ partialclean::
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
 	 middle_end/base_types asmcomp/debug asmcomp/asm_target \
-         asmcomp/debug/dwarf_low asmcomp/debug/dwarf_low/dwarf_4 \
-         asmcomp/debug/dwarf_high driver toplevel; \
+         asmcomp/debug/dwarf \
+         asmcomp/debug/dwarf/dwarf_low asmcomp/debug/dwarf/dwarf_low/dwarf_4 \
+         asmcomp/debug/dwarf/dwarf_high driver toplevel; \
 	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -native \
