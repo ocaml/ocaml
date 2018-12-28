@@ -184,6 +184,9 @@ Working version
   hint that can emit non-whitespace characters.
   (Vladimir Keleshev and Pierre Weis, review by Josh Berdine, Gabriel Radanne)
 
+- GPR#2183: Fix segfault in Array.create_float with -no-flat-float-array
+  (Damien Doligez, review by Gabriel Scherer and Jeremy Yallop)
+
 - GPR#2185: Add `List.filter_map`
   (Thomas Refis, review by Alain Frisch and Gabriel Scherer)
 

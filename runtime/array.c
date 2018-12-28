@@ -275,23 +275,12 @@ CAMLprim value caml_floatarray_create(value len)
 #undef Setup_for_gc
 #undef Restore_after_gc
   }else if (wosize > Max_wosize)
-    caml_invalid_argument("Array.Floatarray.create");
+    caml_invalid_argument("Float.Array.create");
   else {
     result = caml_alloc_shr (wosize, Double_array_tag);
     result = caml_check_urgent_gc (result);
   }
   return result;
-}
-
-/* [len] is a [value] representing number of floats */
-/* [ int -> float array ] */
-CAMLprim value caml_make_float_vect(value len)
-{
-#ifdef FLAT_FLOAT_ARRAY
-  return caml_floatarray_create (len);
-#else
-  return caml_alloc (Long_val (len), 0);
-#endif
 }
 
 /* [len] is a [value] representing number of words or floats */
@@ -344,6 +333,22 @@ CAMLprim value caml_make_vect(value len, value init)
     }
   }
   CAMLreturn (res);
+}
+
+/* [len] is a [value] representing number of floats */
+/* [ int -> float array ] */
+CAMLprim value caml_make_float_vect(value len)
+{
+#ifdef FLAT_FLOAT_ARRAY
+  return caml_floatarray_create (len);
+#else
+  static value uninitialized_float = Val_unit;
+  if (uninitialized_float == Val_unit){
+    uninitialized_float = caml_alloc_shr (Double_wosize, Double_tag);
+    caml_register_generational_global_root (&uninitialized_float);
+  }
+  return caml_make_vect (len, uninitialized_float);
+#endif
 }
 
 /* This primitive is used internally by the compiler to compile
