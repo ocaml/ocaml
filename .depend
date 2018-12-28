@@ -2745,7 +2745,7 @@ asmcomp/debug/dwarf/dwarf_lexical_blocks_and_inlined_frames.cmo : \
     asmcomp/debug/dwarf/dwarf_low/range_list.cmi \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmi asmcomp/linearize.cmi \
     asmcomp/debug/lexical_block_ranges.cmi utils/identifiable.cmi \
-    asmcomp/debug/dwarf/dwarf_state.cmi \
+    asmcomp/emitaux.cmi asmcomp/debug/dwarf/dwarf_state.cmi \
     asmcomp/debug/dwarf/dwarf_high/dwarf_attribute_helpers.cmi \
     asmcomp/debug/dwarf/dwarf_abstract_instances.cmi \
     asmcomp/debug/dwarf/dwarf_low/dwarf_4/dwarf_4_range_list_entry.cmi \
@@ -2762,7 +2762,7 @@ asmcomp/debug/dwarf/dwarf_lexical_blocks_and_inlined_frames.cmx : \
     asmcomp/debug/dwarf/dwarf_low/range_list.cmx \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmx asmcomp/linearize.cmx \
     asmcomp/debug/lexical_block_ranges.cmx utils/identifiable.cmx \
-    asmcomp/debug/dwarf/dwarf_state.cmx \
+    asmcomp/emitaux.cmx asmcomp/debug/dwarf/dwarf_state.cmx \
     asmcomp/debug/dwarf/dwarf_high/dwarf_attribute_helpers.cmx \
     asmcomp/debug/dwarf/dwarf_abstract_instances.cmx \
     asmcomp/debug/dwarf/dwarf_low/dwarf_4/dwarf_4_range_list_entry.cmx \

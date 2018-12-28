@@ -283,6 +283,18 @@ let reset_debug_info () =
   file_pos_nums := [];
   file_pos_num_cnt := init_file_pos_num_cnt
 
+let file_num_for ?file_emitter ~file_name () =
+  try List.assoc file_name !file_pos_nums
+  with Not_found ->
+    let file_num = !file_pos_num_cnt in
+    incr file_pos_num_cnt;
+    begin match file_emitter with
+    | None -> ()
+    | Some file_emitter -> file_emitter ~file_num ~file_name
+    end;
+    file_pos_nums := (file_name,file_num) :: !file_pos_nums;
+    file_num
+
 (* We only display .file if the file has not been seen before. We
    display .loc for every instruction. *)
 let emit_debug_info_gen dbg file_emitter loc_emitter =
@@ -298,15 +310,7 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
         let line = R.line code_range in
         let col = R.char_start code_range in
         if line > 0 then begin (* PR#6243 *)
-          let file_num =
-            try List.assoc file_name !file_pos_nums
-            with Not_found ->
-              let file_num = !file_pos_num_cnt in
-              incr file_pos_num_cnt;
-              file_emitter ~file_num ~file_name;
-              file_pos_nums := (file_name,file_num) :: !file_pos_nums;
-              file_num
-          in
+          let file_num = file_num_for ~file_emitter ~file_name () in
           loc_emitter ~file_num ~line ~col;
           prev_code_range := code_range
         end

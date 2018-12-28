@@ -38,6 +38,13 @@ val emit_debug_info_gen :
   (file_num:int -> file_name:string -> unit) ->
   (file_num:int -> line:int -> col:int -> unit) -> unit
 
+(** Assignment of file numberings for assembler output. *)
+val file_num_for
+   : ?file_emitter:(file_num:int -> file_name:string -> unit)
+  -> file_name:string
+  -> unit
+  -> int
+
 val record_frame_descr :
   label:int ->              (* Return address *)
   frame_size:int ->         (* Size of stack frame *)

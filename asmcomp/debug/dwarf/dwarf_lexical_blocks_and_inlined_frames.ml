@@ -152,12 +152,12 @@ let die_for_inlined_frame state parent call_site range range_list_attribute =
       [DAH.create_abstract_origin ~die_symbol:abstract_instance_symbol]
   in
   let code_range = Debuginfo.Call_site.position call_site in
+  let file_name = Debuginfo.Code_range.file code_range in
   Proto_die.create ~parent:(Some parent)
     ~tag:Inlined_subroutine
     ~attribute_values:(entry_pc @ abstract_instance @ [
       range_list_attribute;
-      (* See comment below about the use of the number 1 here. *)
-      DAH.create_call_file 1;
+      DAH.create_call_file (Emitaux.file_num_for ~file_name ());
       DAH.create_call_line (Debuginfo.Code_range.line code_range);
       DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
     ])

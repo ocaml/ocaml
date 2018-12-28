@@ -260,13 +260,14 @@ ASMCOMP=\
   asmcomp/debug/available_ranges_all_vars.cmo \
   asmcomp/debug/lexical_block_ranges.cmo \
   asmcomp/debug/coalesce_labels.cmo \
+  asmcomp/emitaux.cmo \
   $(DWARF) \
   asmcomp/debug/debug_passes.cmo \
   asmcomp/debug/cmm_debug.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
-  asmcomp/emitaux.cmo asmcomp/emit.cmo asmcomp/asmgen.cmo \
+  asmcomp/emit.cmo asmcomp/asmgen.cmo \
   asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo asmcomp/asmpackager.cmo \
   driver/opterrors.cmo driver/optcompile.cmo
 
