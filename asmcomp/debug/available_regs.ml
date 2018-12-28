@@ -140,7 +140,8 @@ let rec available_regs (instr : M.instruction)
         done;
         Some (ok avail_before), ok !avail_after
       | Iop (Imove | Ireload | Ispill) ->
-        (* Moves are special: they enable us to propagate names.
+        (* Moves are special: they enable us to propagate "holds value of"
+           information, such as names.
            No-op moves need to be handled specially---in this case, we may
            learn that a given hard register holds the value of multiple
            pseudoregisters (all of which have the same value).  This makes us
@@ -222,11 +223,39 @@ let rec available_regs (instr : M.instruction)
         if M.operation_can_raise op then begin
           augment_availability_at_raise (ok avail_across)
         end;
-        let avail_after =
-          RD.Set.union
-            (RD.Set.without_debug_info (Reg.set_of_array instr.res))
-            avail_across
+        (* In addition to tracking which registers hold the values of which
+           variables, we also track which registers contain which
+           immediate constants. *)
+        let result_regs =
+          let num_parts_of_value = Array.length instr.res in
+          let no_debug_info () =
+            RD.Set.without_debug_info (Reg.set_of_array instr.res)
+          in
+          if num_parts_of_value <> 1 then
+            no_debug_info ()
+          else
+            let result = instr.res.(0) in
+            let holds_value_of : RD.Holds_value_of.t option =
+              match op with
+              | Iconst_int i -> Some (Const_int (Targetint.of_nativeint i))
+              | Iconst_float f -> Some (Const_naked_float f)
+              | Iconst_symbol sym -> Some (Const_symbol sym)
+              | _ -> None
+            in
+            match holds_value_of with
+            | None -> no_debug_info ()
+            | Some holds_value_of ->
+              let result =
+                RD.create ~reg:result
+                  ~holds_value_of
+                  ~part_of_value:0
+                  ~num_parts_of_value:1
+                  Is_parameter.local
+                  ~provenance:None
+              in
+              RD.Set.singleton result
         in
+        let avail_after = RD.Set.union result_regs avail_across in
         Some (ok avail_across), ok avail_after
       | Iifthenelse (_, ifso, ifnot) -> join [ifso; ifnot] ~avail_before
       | Iswitch (_, cases) -> join (Array.to_list cases) ~avail_before

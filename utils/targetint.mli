@@ -166,6 +166,8 @@ val to_int64 : t -> int64
 val to_uint64_exn : t -> Numbers.Uint64.t
 (** Convert the given target integer to an unsigned 64-bit integer. *)
 
+val of_nativeint : Nativeint.t -> t
+
 val of_string : string -> t
 (** Convert the given string to a target integer.
     The string is read in decimal (by default) or in hexadecimal,

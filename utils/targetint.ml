@@ -51,6 +51,7 @@ module type S = sig
   val of_int64 : int64 -> t
   val to_int64 : t -> int64
   val to_uint64_exn : t -> Numbers.Uint64.t
+  val of_nativeint : Nativeint.t -> t
   val of_string : string -> t
   val to_string : t -> string
   val compare: t -> t -> int
@@ -82,6 +83,7 @@ module Int32 = struct
   let to_int32 x = x
   let of_int64 = Int64.to_int32
   let to_int64 = Int64.of_int32
+  let of_nativeint = Nativeint.to_int32
   let to_uint64_exn = Numbers.Uint64.of_int32_exn
   let repr x = Int32 x
   let print ppf t = Format.fprintf ppf "%ld" t
@@ -93,6 +95,7 @@ module Int64 = struct
   let of_int_exn = Int64.of_int
   let of_int64 x = x
   let to_int64 x = x
+  let of_nativeint = Int64.of_nativeint
   let to_uint64_exn = Numbers.Uint64.of_int64_exn
   let repr x = Int64 x
   let print ppf t = Format.fprintf ppf "%Ld" t
