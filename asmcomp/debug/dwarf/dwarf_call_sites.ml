@@ -173,7 +173,7 @@ let add_call_site ~scope_proto_dies ~function_proto_die
         | Four -> []
         | Five ->
           let file_name = Debuginfo.Code_range.file code_range in
-          [ DAH.create_call_file (Emitaux.file_num_for ~file_name ());
+          [ DAH.create_call_file (Emitaux.file_num_for ~file_name);
             DAH.create_call_line (Debuginfo.Code_range.line code_range);
             DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
           ]

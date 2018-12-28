@@ -157,7 +157,7 @@ let die_for_inlined_frame state parent call_site range range_list_attribute =
     ~tag:Inlined_subroutine
     ~attribute_values:(entry_pc @ abstract_instance @ [
       range_list_attribute;
-      DAH.create_call_file (Emitaux.file_num_for ~file_name ());
+      DAH.create_call_file (Emitaux.file_num_for ~file_name);
       DAH.create_call_line (Debuginfo.Code_range.line code_range);
       DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
     ])

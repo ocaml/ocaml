@@ -38,12 +38,9 @@ val emit_debug_info_gen :
   (file_num:int -> file_name:string -> unit) ->
   (file_num:int -> line:int -> col:int -> unit) -> unit
 
-(** Assignment of file numberings for assembler output. *)
-val file_num_for
-   : ?file_emitter:(file_num:int -> file_name:string -> unit)
-  -> file_name:string
-  -> unit
-  -> int
+(** Assignment of file numberings for assembly output.  Note that this
+    function may write to the assembly file. *)
+val file_num_for : file_name:string -> int
 
 val record_frame_descr :
   label:int ->              (* Return address *)

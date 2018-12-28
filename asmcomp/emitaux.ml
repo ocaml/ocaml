@@ -283,15 +283,12 @@ let reset_debug_info () =
   file_pos_nums := [];
   file_pos_num_cnt := init_file_pos_num_cnt
 
-let file_num_for ?file_emitter ~file_name () =
+let file_num_for0 ~file_emitter ~file_name =
   try List.assoc file_name !file_pos_nums
   with Not_found ->
     let file_num = !file_pos_num_cnt in
     incr file_pos_num_cnt;
-    begin match file_emitter with
-    | None -> ()
-    | Some file_emitter -> file_emitter ~file_num ~file_name
-    end;
+    file_emitter ~file_num ~file_name;
     file_pos_nums := (file_name,file_num) :: !file_pos_nums;
     file_num
 
@@ -310,19 +307,24 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
         let line = R.line code_range in
         let col = R.char_start code_range in
         if line > 0 then begin (* PR#6243 *)
-          let file_num = file_num_for ~file_emitter ~file_name () in
+          let file_num = file_num_for0 ~file_emitter ~file_name in
           loc_emitter ~file_num ~line ~col;
           prev_code_range := code_range
         end
       end
   end
 
+let default_file_emitter ~file_num ~file_name =
+  emit_string "\t.file\t";
+  emit_int file_num; emit_char '\t';
+  emit_string_literal file_name; emit_char '\n'
+
+let file_num_for ~file_name =
+  file_num_for0 ~file_emitter:default_file_emitter ~file_name
+
 let emit_debug_info dbg =
-  emit_debug_info_gen dbg (fun ~file_num ~file_name ->
-      emit_string "\t.file\t";
-      emit_int file_num; emit_char '\t';
-      emit_string_literal file_name; emit_char '\n';
-    )
+  emit_debug_info_gen dbg
+    default_file_emitter
     (fun ~file_num ~line ~col:_ ->
        emit_string "\t.loc\t";
        emit_int file_num; emit_char '\t';
