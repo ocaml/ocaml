@@ -27,3 +27,66 @@ Error: This expression has type unit list * unit list
        but an expression was expected of type int list * int list
        Type unit is not compatible with type int
 |}]
+
+module M : sig
+  type t = [
+    | `A of int
+    | `B of [ `BA | `BB of unit list ]
+    | `C of unit ]
+
+  val a : t -> t
+end = struct
+  type t = [
+    | `A of int
+    | `B of [ `BA | `BB of unit list ]
+    | `C of unit ]
+
+let a b =
+  let f = function
+    | Ok x -> x
+    | Error _ -> `C ()
+  in
+  f (match b with
+      | `A pc ->
+        begin match pc with
+          | 1 -> Ok (`B `BA)
+          | _ -> Ok (`B (`BB [1;2;3]))
+        end
+      | _ -> assert false)
+
+end
+;;
+[%%expect{|
+Line 8, characters 6-348:
+ 8 | ......struct
+ 9 |   type t = [
+10 |     | `A of int
+11 |     | `B of [ `BA | `BB of unit list ]
+12 |     | `C of unit ]
+...
+24 |         end
+25 |       | _ -> assert false)
+26 |
+27 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type t =
+               [ `A of int | `B of [ `BA | `BB of unit list ] | `C of unit ]
+           val a :
+             [> `A of int ] ->
+             [> `B of [> `BA | `BB of int list ] | `C of unit ]
+         end
+       is not included in
+         sig
+           type t =
+               [ `A of int | `B of [ `BA | `BB of unit list ] | `C of unit ]
+           val a : t -> t
+         end
+       Values do not match:
+         val a :
+           [> `A of int ] ->
+           [> `B of [> `BA | `BB of int list ] | `C of unit ]
+       is not included in
+         val a : t -> t
+|}]
