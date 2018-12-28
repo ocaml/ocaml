@@ -16,14 +16,18 @@
 
 type t =
   | DW_ATE_signed
+  | DW_ATE_float
 
 let signed = DW_ATE_signed
+let float = DW_ATE_float
 
 let name t =
   match t with
   | DW_ATE_signed -> "DW_ATE_signed"
+  | DW_ATE_float -> "DW_ATE_float"
 
 let encode = function
+  | DW_ATE_float -> 0x04
   | DW_ATE_signed -> 0x05
 
 let size _t = 1

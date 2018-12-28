@@ -402,8 +402,10 @@ let structured_constants () =
   in
   List.map
     (fun (symbol, definition) ->
-       {
-         Clambda.symbol;
+       { Clambda.
+         symbol =
+           Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+             symbol Backend_sym.Data;
          exported = Hashtbl.mem exported_constants symbol;
          definition;
          provenance = Some provenance;

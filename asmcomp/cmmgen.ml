@@ -3310,8 +3310,6 @@ let rec emit_structured_constant (symb, is_global) cst cont =
       emit_block (floatarray_header (List.length fields))
         (Misc.map_end (fun f -> Cdouble f) fields cont)
   | Uconst_closure(fundecls, lbl, fv) ->
-      let compilation_unit = Compilation_unit.get_current_exn () in
-      let lbl = S.of_external_name compilation_unit lbl S.Data in
       assert(Backend_sym.equal lbl symb);
       add_cmm_constant (Const_closure ((symb, is_global), fundecls, fv));
       List.iter (fun f -> Queue.add f functions) fundecls;
@@ -3412,8 +3410,6 @@ let emit_constants cont (constants:Clambda.preallocated_constant list) =
   let c = ref cont in
   List.iter
     (fun { symbol = lbl; exported; definition = cst; provenance = _; } ->
-      let compilation_unit = Compilation_unit.get_current_exn () in
-       let lbl = S.of_external_name compilation_unit lbl S.Data in
        let global = if exported then Global else Not_global in
        let cst = emit_structured_constant (lbl, global) cst [] in
          c:= Cdata(cst):: !c)
@@ -3468,9 +3464,7 @@ let emit_gc_roots_table ~symbols cont =
   in
   Cdata(Cglobal_symbol table_symbol ::
         Cdefine_symbol table_symbol ::
-        List.map (fun s ->
-            Csymbol_address (S.of_external_name compilation_unit s S.Data))
-          symbols @
+        List.map (fun s -> Csymbol_address s) symbols @
         [Cint 0n])
   :: cont
 
@@ -3478,7 +3472,6 @@ let emit_gc_roots_table ~symbols cont =
    constructs, and Clambda global module) *)
 
 let preallocate_block cont { Clambda.symbol; exported; tag; fields } =
-  let compilation_unit = Compilation_unit.get_current_exn () in
   let space =
     (* These words will be registered as roots and as such must contain
        valid values, in case we are in no-naked-pointers mode.  Likewise
@@ -3491,11 +3484,10 @@ let preallocate_block cont { Clambda.symbol; exported; tag; fields } =
         | Some (Uconst_field_int n) ->
             cint_const n
         | Some (Uconst_field_ref label) ->
-            Csymbol_address (S.of_external_name compilation_unit label S.Data))
+            Csymbol_address label)
       fields
   in
   let data =
-    let symbol = S.of_external_name compilation_unit symbol S.Data in
     Cint(black_block_header tag (List.length fields)) ::
     if exported then
       Cglobal_symbol symbol ::

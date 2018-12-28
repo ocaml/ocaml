@@ -2530,14 +2530,19 @@ asmcomp/debug/reg_availability_set.cmx : \
 asmcomp/debug/reg_availability_set.cmi : \
     asmcomp/debug/reg_with_debug_info.cmi asmcomp/reg.cmi \
     asmcomp/backend_var.cmi
-asmcomp/debug/reg_with_debug_info.cmo : asmcomp/reg.cmi \
-    middle_end/base_types/is_parameter.cmi middle_end/debuginfo.cmi \
-    asmcomp/backend_var.cmi asmcomp/debug/reg_with_debug_info.cmi
-asmcomp/debug/reg_with_debug_info.cmx : asmcomp/reg.cmx \
-    middle_end/base_types/is_parameter.cmx middle_end/debuginfo.cmx \
-    asmcomp/backend_var.cmx asmcomp/debug/reg_with_debug_info.cmi
-asmcomp/debug/reg_with_debug_info.cmi : asmcomp/reg.cmi \
-    middle_end/base_types/is_parameter.cmi asmcomp/backend_var.cmi
+asmcomp/debug/reg_with_debug_info.cmo : utils/targetint.cmi asmcomp/reg.cmi \
+    asmcomp/printmach.cmi utils/misc.cmi \
+    middle_end/base_types/is_parameter.cmi utils/identifiable.cmi \
+    middle_end/debuginfo.cmi asmcomp/backend_var.cmi asmcomp/backend_sym.cmi \
+    asmcomp/debug/reg_with_debug_info.cmi
+asmcomp/debug/reg_with_debug_info.cmx : utils/targetint.cmx asmcomp/reg.cmx \
+    asmcomp/printmach.cmx utils/misc.cmx \
+    middle_end/base_types/is_parameter.cmx utils/identifiable.cmx \
+    middle_end/debuginfo.cmx asmcomp/backend_var.cmx asmcomp/backend_sym.cmx \
+    asmcomp/debug/reg_with_debug_info.cmi
+asmcomp/debug/reg_with_debug_info.cmi : utils/targetint.cmi asmcomp/reg.cmi \
+    middle_end/base_types/is_parameter.cmi utils/identifiable.cmi \
+    asmcomp/backend_var.cmi asmcomp/backend_sym.cmi
 asmcomp/asm_target/asm_directives.cmo : utils/targetint.cmi \
     asmcomp/target_system.cmi utils/numbers.cmi utils/misc.cmi \
     utils/identifiable.cmi utils/config.cmi \
@@ -2646,6 +2651,7 @@ asmcomp/debug/dwarf/dwarf_abstract_instances.cmi : \
 asmcomp/debug/dwarf/dwarf_call_sites.cmo : utils/targetint.cmi \
     asmcomp/target_system.cmi \
     asmcomp/debug/dwarf/dwarf_low/single_location_description.cmi \
+    asmcomp/debug/dwarf/dwarf_high/simple_location_description_lang.cmi \
     asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmi asmcomp/proc.cmi \
@@ -2667,6 +2673,7 @@ asmcomp/debug/dwarf/dwarf_call_sites.cmo : utils/targetint.cmi \
 asmcomp/debug/dwarf/dwarf_call_sites.cmx : utils/targetint.cmx \
     asmcomp/target_system.cmx \
     asmcomp/debug/dwarf/dwarf_low/single_location_description.cmx \
+    asmcomp/debug/dwarf/dwarf_high/simple_location_description_lang.cmx \
     asmcomp/debug/reg_with_debug_info.cmx \
     asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmx asmcomp/proc.cmx \

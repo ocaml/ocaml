@@ -74,6 +74,10 @@ module Rvalue : sig
       to do with OCaml tagging.) *)
   val signed_int_const : Targetint.t -> normal t
 
+  (** V is the floating-point number whose bits are specified by the given
+      64-bit integer. *)
+  val float_const : Int64.t -> normal t
+
   (** V will be in the given register at time T. *)
   val in_register : dwarf_reg_number:int -> normal t
 

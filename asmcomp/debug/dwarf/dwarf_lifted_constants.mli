@@ -17,13 +17,15 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
-(** For dealing with Flambda [Let_symbol] bindings. *)
+(** For dealing with constants lifted by [Closure]; and Flambda's [Let_symbol]
+    bindings. *)
 val dwarf_for_toplevel_constants
    : Dwarf_state.t
   -> Clambda.preallocated_constant list
   -> unit
 
-(** For dealing with Flambda [Initialize_symbol] bindings. *)
+(** For dealing with [Closure]'s module blocks and Flambda's [Initialize_symbol]
+    bindings. *)
 val dwarf_for_toplevel_inconstants
    : Dwarf_state.t
   -> Clambda.preallocated_block list

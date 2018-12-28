@@ -74,6 +74,7 @@ val kind : t -> kind
 include Identifiable.S with type t := t
 
 (** Like [print] but returns a string. *)
+(* CR mshinwell: clarify that this is actually a unique name *)
 val to_string : t -> string
 
 (** Symbols either defined in the runtime or defined in (shared) startup

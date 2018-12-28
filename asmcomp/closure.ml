@@ -1194,6 +1194,7 @@ let check_constant_result ~scope lam ulam approx =
       begin match ulam with
       | Uprim(Pfield _, [Uprim(Pgetglobal _, _, _)], _) -> (ulam, approx)
       | _ ->
+          let id = Backend_sym.to_string id in
           let glb =
             Uprim(Pgetglobal (V.create_persistent id), [], dbg)
           in
@@ -2024,7 +2025,10 @@ let intro size lam =
   current_module_path :=
     Some (Printtyp.rewrite_double_underscore_paths Env.initial_safe_string
       (Path.Pident (Ident.create_persistent (Compilenv.current_unit_name ()))));
-  let id = Compilenv.make_symbol None in
+  let id =
+    Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+      (Compilenv.make_symbol None) Backend_sym.Data
+  in
   global_approx := Array.init size (fun i -> Value_global_field (id, i));
   Compilenv.set_global_approx(Value_tuple !global_approx);
   let scope = CB.toplevel in

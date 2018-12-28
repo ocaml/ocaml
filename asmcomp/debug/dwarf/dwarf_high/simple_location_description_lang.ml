@@ -79,6 +79,11 @@ module Rvalue = struct
     O.DW_op_stack_value;
   ]
 
+  let float_const i = [
+    OB.float_const i;
+    O.DW_op_stack_value;
+  ]
+
   let in_register ~dwarf_reg_number = [
     OB.contents_of_register ~dwarf_reg_number;
     O.DW_op_stack_value;

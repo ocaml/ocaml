@@ -46,6 +46,10 @@ let external_declaration_die_name sym compilation_unit =
   Asm_symbol.prefix sym (DWARF Debug_info) compilation_unit
     ~prefix:("camlDIE__" ^ compilation_unit_str ^ "__")
 
+let ocaml_value_type_name = "__ocaml_value"
+
+let ocaml_naked_float_type_name = "__ocaml_naked_float"
+
 type split_base_type_die_name_result = {
   compilation_unit : string;
   ident_name : string;

@@ -193,20 +193,9 @@ let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die =
                 let range_list_attribute =
                   match !Clflags.dwarf_version with
                   | Four ->
-(*
-                    let base_address_selection_entry =
-                      Dwarf_4_range_list_entry.
-                        create_base_address_selection_entry
-                          ~base_address_symbol:
-                            (Asm_symbol.create fundecl.fun_name)
-                    in
-*)
-                    let range_list_entries =
-                   (*   base_address_selection_entry
-                        :: *) dwarf_4_range_list_entries
-                    in
                     let range_list =
-                      Dwarf_4_range_list.create ~range_list_entries
+                      Dwarf_4_range_list.create
+                        ~range_list_entries:dwarf_4_range_list_entries
                     in
                     Debug_ranges_table.insert (DS.debug_ranges_table state)
                       ~range_list

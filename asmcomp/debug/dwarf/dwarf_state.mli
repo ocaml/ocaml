@@ -22,6 +22,7 @@ val create
    : compilation_unit_header_label:Asm_label.t
   -> compilation_unit_proto_die:Proto_die.t
   -> value_type_proto_die:Proto_die.t
+  -> naked_float_type_proto_die:Proto_die.t
   -> start_of_code_symbol:Asm_symbol.t
   -> end_of_code_symbol:Asm_symbol.t
   -> Address_table.t
@@ -37,6 +38,8 @@ val compilation_unit_header_label : t -> Asm_label.t
 val compilation_unit_proto_die : t -> Proto_die.t
 
 val value_type_proto_die : t -> Proto_die.t
+
+val naked_float_type_proto_die : t -> Proto_die.t
 
 val address_table : t -> Address_table.t
 
@@ -67,3 +70,14 @@ val supports_call_sites : t -> bool
 val can_reference_dies_across_units : t -> bool
 
 val dwarf_version : t -> Dwarf_version.t
+
+val record_type_die_for_lifted_constant
+   : t
+  -> Asm_symbol.t
+  -> Proto_die.t
+  -> unit
+
+val type_die_for_lifted_constant
+   : t
+  -> Asm_symbol.t
+  -> Proto_die.t option

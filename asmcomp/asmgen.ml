@@ -67,8 +67,8 @@ let raw_clambda_dump_if ppf
       Format.fprintf ppf "@.clambda:@.";
       Printclambda.clambda ppf ulambda;
       List.iter (fun {Clambda.symbol; definition} ->
-          Format.fprintf ppf "%s:@ %a@."
-            symbol
+          Format.fprintf ppf "%a:@ %a@."
+            Backend_sym.print symbol
             Printclambda.structured_constant definition)
         structured_constants
     end;
@@ -246,7 +246,8 @@ let flambda_gen_implementation ?toplevel ~backend ~ppf_dump ~prefix_name
   in
   let constants =
     List.map (fun (symbol, definition) ->
-        { Clambda.symbol = Linkage_name.to_string (Symbol.label symbol);
+        { Clambda.
+          symbol = Backend_sym.of_symbol symbol;
           exported = true;
           definition;
           provenance = None;
@@ -269,8 +270,12 @@ let lambda_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
     }
   in
   let preallocated_block =
+    let symbol =
+      Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+        (Compilenv.make_symbol None) Backend_sym.Data
+    in
     Clambda.{
-      symbol = Compilenv.make_symbol None;
+      symbol;
       exported = true;
       tag = 0;
       fields = List.init lambda.main_module_block_size (fun _ -> None);

@@ -17,6 +17,7 @@
 type t
 
 val signed : t
+val float : t
 
 val size : t -> int
 val as_dwarf_value : t -> Dwarf_value.t

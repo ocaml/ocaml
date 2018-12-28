@@ -20,6 +20,7 @@ type t = {
   compilation_unit_header_label : Asm_label.t;
   compilation_unit_proto_die : Proto_die.t;
   value_type_proto_die : Proto_die.t;
+  naked_float_type_proto_die : Proto_die.t;
   address_table : Address_table.t;
   debug_loc_table : Debug_loc_table.t;
   debug_ranges_table : Debug_ranges_table.t;
@@ -34,6 +35,7 @@ type t = {
   supports_call_sites : bool;
   can_reference_dies_across_units : bool;
   dwarf_version : Dwarf_version.t;
+  type_dies_for_lifted_constants : Proto_die.t Asm_symbol.Tbl.t;
 }
 
 let can_reference_dies_across_units () =
@@ -42,12 +44,14 @@ let can_reference_dies_across_units () =
   not (Target_system.macos_like ())
 
 let create ~compilation_unit_header_label ~compilation_unit_proto_die
-      ~value_type_proto_die ~start_of_code_symbol ~end_of_code_symbol
+      ~value_type_proto_die ~naked_float_type_proto_die
+      ~start_of_code_symbol ~end_of_code_symbol
       address_table debug_loc_table debug_ranges_table location_list_table
       range_list_table dwarf_version =
   { compilation_unit_header_label;
     compilation_unit_proto_die;
     value_type_proto_die;
+    naked_float_type_proto_die;
     address_table;
     debug_loc_table;
     debug_ranges_table;
@@ -61,11 +65,13 @@ let create ~compilation_unit_header_label ~compilation_unit_proto_die
     supports_call_sites = true;
     can_reference_dies_across_units = can_reference_dies_across_units ();
     dwarf_version;
+    type_dies_for_lifted_constants = Asm_symbol.Tbl.create 42;
   }
 
 let compilation_unit_header_label t = t.compilation_unit_header_label
 let compilation_unit_proto_die t = t.compilation_unit_proto_die
 let value_type_proto_die t = t.value_type_proto_die
+let naked_float_type_proto_die t = t.naked_float_type_proto_die
 let address_table t = t.address_table
 let debug_loc_table t = t.debug_loc_table
 let debug_ranges_table t = t.debug_ranges_table
@@ -82,3 +88,11 @@ let die_symbols_for_external_declarations t =
 let supports_call_sites t = t.supports_call_sites
 let can_reference_dies_across_units t = t.can_reference_dies_across_units
 let dwarf_version t = t.dwarf_version
+
+let record_type_die_for_lifted_constant t symbol proto_die =
+  Asm_symbol.Tbl.replace t.type_dies_for_lifted_constants symbol proto_die
+
+let type_die_for_lifted_constant t symbol =
+  match Asm_symbol.Tbl.find t.type_dies_for_lifted_constants symbol with
+  | exception Not_found -> None
+  | proto_die -> Some proto_die

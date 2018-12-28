@@ -59,8 +59,18 @@ let create ~sourcefile ~prefix_name =
     Proto_die.create ~parent:(Some compilation_unit_proto_die)
       ~tag:Base_type
       ~attribute_values:[
-        DAH.create_name "<value>";
+        DAH.create_name Dwarf_name_laundry.ocaml_value_type_name;
         DAH.create_encoding ~encoding:Encoding_attribute.signed;
+        DAH.create_byte_size_exn ~byte_size:Arch.size_addr;
+      ]
+      ()
+  in
+  let naked_float_type_proto_die =
+    Proto_die.create ~parent:(Some compilation_unit_proto_die)
+      ~tag:Base_type
+      ~attribute_values:[
+        DAH.create_name Dwarf_name_laundry.ocaml_naked_float_type_name;
+        DAH.create_encoding ~encoding:Encoding_attribute.float;
         DAH.create_byte_size_exn ~byte_size:Arch.size_addr;
       ]
       ()
@@ -68,7 +78,8 @@ let create ~sourcefile ~prefix_name =
   let compilation_unit_header_label = Asm_label.create (DWARF Debug_info) in
   let state =
     DS.create ~compilation_unit_header_label
-      ~compilation_unit_proto_die ~value_type_proto_die
+      ~compilation_unit_proto_die
+      ~value_type_proto_die ~naked_float_type_proto_die
       ~start_of_code_symbol ~end_of_code_symbol
       address_table debug_loc_table debug_ranges_table
       location_list_table range_list_table dwarf_version

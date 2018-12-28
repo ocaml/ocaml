@@ -35,6 +35,10 @@ val external_declaration_die_name
   -> Compilation_unit.t
   -> Asm_symbol.t
 
+val ocaml_value_type_name : string
+
+val ocaml_naked_float_type_name : string
+
 type split_base_type_die_name_result = private {
   compilation_unit : string;
   ident_name : string;

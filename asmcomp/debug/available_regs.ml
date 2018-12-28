@@ -111,9 +111,13 @@ let rec available_regs (instr : M.instruction)
                 match RD.debug_info reg with
                 | None -> reg
                 | Some debug_info ->
-                  if V.same (RD.Debug_info.holds_value_of debug_info) ident
-                  then RD.clear_debug_info reg
-                  else reg)
+                  match RD.Debug_info.holds_value_of debug_info with
+                  | Var in_debug_info ->
+                    if V.same in_debug_info ident
+                    then RD.clear_debug_info reg
+                    else reg
+                  | Const_int _ | Const_naked_float _ | Const_symbol _ ->
+                    reg)
               avail_before
         in
         let avail_after = ref forgetting_ident in
@@ -125,7 +129,7 @@ let rec available_regs (instr : M.instruction)
           if RD.Set.mem_reg forgetting_ident reg then begin
             let regd =
               RD.create ~reg
-                ~holds_value_of:ident
+                ~holds_value_of:(RD.Holds_value_of.Var ident)
                 ~part_of_value
                 ~num_parts_of_value
                 is_parameter

@@ -592,8 +592,8 @@ and to_clambda_closed_set_of_closures t env symbol
     }
   in
   let ufunct = List.map to_clambda_function functions in
-  let closure_lbl = Linkage_name.to_string (Symbol.label symbol) in
-  Uconst_closure (ufunct, closure_lbl, [])
+  let _closure_lbl = Linkage_name.to_string (Symbol.label symbol) in
+  Uconst_closure (ufunct, assert false (*closure_lbl*), [])
 
 let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
   let fields =
@@ -680,13 +680,14 @@ let to_clambda_program t env constants (program : Flambda.program) =
                 in
                 Some (Clambda.Uconst_field_int n)
             | Some (Flambda.Symbol sym) ->
-                let lbl = Linkage_name.to_string (Symbol.label sym) in
-                Some (Clambda.Uconst_field_ref lbl))
+                let _lbl = Linkage_name.to_string (Symbol.label sym) in
+                assert false)
+(*                Some (Clambda.Uconst_field_ref lbl))*)
           fields
       in
       let e1 = to_clambda_initialize_symbol t env symbol init_fields in
       let preallocated_block : Clambda.preallocated_block =
-        { symbol = Linkage_name.to_string (Symbol.label symbol);
+        { symbol = assert false; (*Linkage_name.to_string (Symbol.label symbol);*)
           exported = true;
           tag = Tag.to_int tag;
           fields = constant_fields;

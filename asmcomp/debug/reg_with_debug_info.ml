@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2016--2017 Jane Street Group LLC                           *)
+(*   Copyright 2016--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -14,11 +14,58 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-module V = Backend_var
+module Holds_value_of = struct
+  type t =
+    | Var of Backend_var.t
+    | Const_int of Targetint.t
+    | Const_naked_float of Int64.t
+    | Const_symbol of Backend_sym.t
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare t1 t2 =
+      match t1, t2 with
+      | Var var1, Var var2 -> Backend_var.compare var1 var2
+      | Const_int i1, Const_int i2 -> Targetint.compare i1 i2
+      | Const_naked_float f1, Const_naked_float f2 -> Int64.compare f1 f2
+      | Const_symbol sym1, Const_symbol sym2 -> Backend_sym.compare sym1 sym2
+      | Var _, _ -> -1
+      | Const_int _, Var _ -> 1
+      | Const_int _, _ -> -1
+      | Const_naked_float _, (Var _ | Const_int _) -> 1
+      | Const_naked_float _, _ -> -1
+      | Const_symbol _, _ -> 1
+
+    let equal t1 t2 =
+      compare t1 t2 = 0
+
+    let hash t =
+      match t with
+      | Var var -> Hashtbl.hash (0, Backend_var.hash var)
+      | Const_int i -> Hashtbl.hash (1, i)
+      | Const_naked_float f -> Hashtbl.hash (2, f)
+      | Const_symbol sym -> Hashtbl.hash (3, Backend_sym.hash sym)
+
+    let print ppf t =
+      match t with
+      | Var var ->
+        Format.fprintf ppf "@[(Var@ %a)@]"
+          Backend_var.print var
+      | Const_int i ->
+        Format.fprintf ppf "@[(Const_int@ %a)@]" Targetint.print i
+      | Const_naked_float f ->
+        Format.fprintf ppf "@[(Const_naked_float@ 0x%Lx)@]" f
+      | Const_symbol sym ->
+        Format.fprintf ppf "@[(Const_symbol@ %a)@]" Backend_sym.print sym
+
+    let output _ _ = Misc.fatal_error "Not yet implemented"
+  end)
+end
 
 module Debug_info = struct
   type t = {
-    holds_value_of : V.t;
+    holds_value_of : Holds_value_of.t;
     part_of_value : int;
     num_parts_of_value : int;
     is_parameter : Is_parameter.t;
@@ -26,7 +73,7 @@ module Debug_info = struct
   }
 
   let compare t1 t2 =
-    let c = V.compare t1.holds_value_of t2.holds_value_of in
+    let c = Holds_value_of.compare t1.holds_value_of t2.holds_value_of in
     if c <> 0 then c
     else
       Stdlib.compare
@@ -40,7 +87,7 @@ module Debug_info = struct
   let provenance t = t.provenance
 
   let print ppf t =
-    Format.fprintf ppf "%a" V.print t.holds_value_of;
+    Format.fprintf ppf "%a" Holds_value_of.print t.holds_value_of;
     begin match t.provenance with
     | None -> ()
     | Some provenance ->
@@ -67,7 +114,7 @@ module type T = sig
 
   val create
      : reg:Reg.t
-    -> holds_value_of:Backend_var.t
+    -> holds_value_of:Holds_value_of.t
     -> part_of_value:int
     -> num_parts_of_value:int
     -> Is_parameter.t
@@ -177,7 +224,7 @@ module Order_distinguishing_names_and_locations = struct
     | None, Some _ -> -1
     | Some _, None -> 1
     | Some di1, Some di2 ->
-      let c = V.compare di1.holds_value_of di2.holds_value_of in
+      let c = Holds_value_of.compare di1.holds_value_of di2.holds_value_of in
       if c <> 0 then c
       else Stdlib.compare t1.reg.loc t2.reg.loc
 end

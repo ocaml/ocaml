@@ -118,20 +118,22 @@ module Vars = struct
       match RD.debug_info reg with
       | None -> None
       | Some debug_info ->
-        let var = RD.Debug_info.holds_value_of debug_info in
-        let provenance = RD.Debug_info.provenance debug_info in
-(*
-        Format.eprintf "Reg being created with var %a, provenance %a\n%!"
-          V.print var
-          (Misc.Stdlib.Option.print V.Provenance.print) provenance;
-*)
-        let is_parameter = RD.Debug_info.is_parameter debug_info in
-        let t =
-          { provenance;
-            is_parameter;
-          }
-        in
-        Some (var, t)
+        match RD.Debug_info.holds_value_of debug_info with
+        | Const_int _ | Const_naked_float _ | Const_symbol _ -> None
+        | Var var ->
+          let provenance = RD.Debug_info.provenance debug_info in
+  (*
+          Format.eprintf "Reg being created with var %a, provenance %a\n%!"
+            V.print var
+            (Misc.Stdlib.Option.print V.Provenance.print) provenance;
+  *)
+          let is_parameter = RD.Debug_info.is_parameter debug_info in
+          let t =
+            { provenance;
+              is_parameter;
+            }
+          in
+          Some (var, t)
 
     let provenance t = t.provenance
 

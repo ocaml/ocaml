@@ -83,7 +83,7 @@ let find_reg_opt t reg =
     | exception Not_found -> None
     | rd -> Some rd
 
-let find_all_holding_value_of t var =
+let find_all_holding_value_of t holds_value_of =
   match t with
   | Unreachable -> []
   | Ok rd_set ->
@@ -92,7 +92,8 @@ let find_all_holding_value_of t var =
           match RD.debug_info rd with
           | None -> false
           | Some debug_info ->
-            Backend_var.equal (RD.Debug_info.holds_value_of debug_info) var)
+            RD.Holds_value_of.equal (RD.Debug_info.holds_value_of debug_info)
+              holds_value_of)
         rd_set
     in
     RD.Set.elements rd_set
@@ -106,24 +107,26 @@ let canonicalise availability =
         match RD.debug_info reg with
         | None -> ()
         | Some debug_info ->
-          let name = RD.Debug_info.holds_value_of debug_info in
-          if not (V.persistent name) then begin
-            match V.Tbl.find regs_by_var name with
-            | exception Not_found -> V.Tbl.add regs_by_var name reg
-            | (reg' : RD.t) ->
-              (* We prefer registers that are assigned to the stack since
-                 they probably give longer available ranges (less likely to
-                 be clobbered). *)
-              match RD.location reg, RD.location reg' with
-              | Reg _, Stack _
-              | Reg _, Reg _
-              | Stack _, Stack _
-              | _, Unknown
-              | Unknown, _ -> ()
-              | Stack _, Reg _ ->
-                V.Tbl.remove regs_by_var name;
-                V.Tbl.add regs_by_var name reg
-          end)
+          match RD.Debug_info.holds_value_of debug_info with
+          | Var name ->
+            if not (V.persistent name) then begin
+              match V.Tbl.find regs_by_var name with
+              | exception Not_found -> V.Tbl.add regs_by_var name reg
+              | (reg' : RD.t) ->
+                (* We prefer registers that are assigned to the stack since
+                   they probably give longer available ranges (less likely to
+                   be clobbered). *)
+                match RD.location reg, RD.location reg' with
+                | Reg _, Stack _
+                | Reg _, Reg _
+                | Stack _, Stack _
+                | _, Unknown
+                | Unknown, _ -> ()
+                | Stack _, Reg _ ->
+                  V.Tbl.remove regs_by_var name;
+                  V.Tbl.add regs_by_var name reg
+            end
+          | Const_int _ | Const_naked_float _ | Const_symbol _ -> ())
       availability;
     let result =
       V.Tbl.fold (fun _var reg availability ->

@@ -123,6 +123,9 @@ let add_unsigned_const i : O.t =
   end;
   DW_op_plus_uconst (Targetint.to_uint64_exn i)
 
+let float_const f : O.t =
+  DW_op_const8s f
+
 let implicit_pointer ~offset_in_bytes ~die_label dwarf_version : O.t =
   if Dwarf_version.compare dwarf_version Dwarf_version.four < 0 then
     Misc.fatal_error "DWARF implicit pointers not supported at this version"

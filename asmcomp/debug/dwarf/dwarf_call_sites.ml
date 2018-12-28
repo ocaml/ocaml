@@ -17,11 +17,12 @@
 module DAH = Dwarf_attribute_helpers
 module DS = Dwarf_state
 module L = Linearize
+module SLDL = Simple_location_description_lang
 
 let arch_size_addr = Targetint.of_int_exn Arch.size_addr
 
-let add_call_site_argument ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
-      ~stack_offset (insn : L.instruction) =
+let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
+      ~(arg : Reg.t) ~stack_offset (insn : L.instruction) =
   let param_location =
     let offset_from_cfa_in_bytes =
       match arg.loc with
@@ -62,78 +63,126 @@ let add_call_site_argument ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
         let holds_value_of =
           Reg_with_debug_info.Debug_info.holds_value_of debug_info
         in
-        let type_attribute =
-          match Reg_with_debug_info.Debug_info.provenance debug_info with
-          | None -> []
-          | Some provenance ->
-            let type_die =
-              (* CR mshinwell: This should reuse DIEs which were created
-                 previously to describe these vars.  Also, shouldn't these
-                 DIEs be parented higher up? *)
-              Dwarf_variables_and_parameters.normal_type_for_var
-                ~parent:(Some call_site_die)
-                (Some (Backend_var.Provenance.ident_for_type provenance))
-            in
-            [DAH.create_type_from_reference
-              ~proto_die_reference:(Proto_die.reference type_die)
-            ]
+        let create_composite_location_description arg_location =
+          let composite =
+            Composite_location_description.
+              pieces_of_simple_location_descriptions
+                [arg_location, arch_size_addr]
+          in
+          [DAH.create_composite_call_value_location_description
+            composite;
+          ]
         in
-        let arg_location =
-          if is_tail then begin
-            (* If this is a tail call site, no arguments of the call will be
-               available with certainty in the callee, since any argument we
-               describe in DWARF (see comment below) will be on the stack---and
-               our stack frame may have been overwritten by the time such
-               argument is queried in the debugger. *)
-            []
-          end else begin
-            let everywhere_holding_var =
-              Reg_availability_set.find_all_holding_value_of
-                insn.available_before holds_value_of
-            in
-            (* Only registers spilled at the time of the call will be available
-               with certainty (in the caller's frame) during the execution of
-               the callee. *)
-            let on_stack =
-              Misc.Stdlib.List.filter_map (fun rd ->
-                  let reg = Reg_with_debug_info.reg rd in
-                  match reg.loc with
-                  | Stack stack_loc ->
-                    Some (reg,
-                      Dwarf_reg_locations.offset_from_cfa_in_bytes reg
-                        stack_loc ~stack_offset)
-                  | Reg _ -> None
-                  | Unknown ->
-                    Misc.fatal_errorf "Register without location: %a"
-                      Printmach.reg reg)
-                everywhere_holding_var
-            in
-            match on_stack with
-            | [] -> []
-            | (reg, offset_from_cfa_in_bytes) :: _ ->
-              let arg_location_rvalue =
-                Dwarf_reg_locations.reg_location_description reg
-                  ~offset_from_cfa_in_bytes ~need_rvalue:true
+        match holds_value_of with
+        | Var holds_value_of ->
+          let type_attribute =
+            match Reg_with_debug_info.Debug_info.provenance debug_info with
+            | None -> []
+            | Some provenance ->
+              let type_die =
+                (* CR mshinwell: This should reuse DIEs which were created
+                   previously to describe these vars.  Also, shouldn't these
+                   DIEs be parented higher up? *)
+                Dwarf_variables_and_parameters.normal_type_for_var
+                  ~parent:(Some call_site_die)
+                  (Some (Backend_var.Provenance.ident_for_type provenance))
               in
-              match arg_location_rvalue with
-              | None -> []
-              | Some arg_location_rvalue ->
-                let _arg_location =
-                  Single_location_description.of_simple_location_description
-                    arg_location_rvalue
+              [DAH.create_type_from_reference
+                ~proto_die_reference:(Proto_die.reference type_die)
+              ]
+          in
+          let arg_location =
+            if is_tail then begin
+              (* If this is a tail call site, no arguments of the call will be
+                 available with certainty in the callee, since any argument we
+                 describe in DWARF (see comment below) will be on the
+                 stack---and our stack frame may have been overwritten by the
+                 time such argument is queried in the debugger. *)
+              []
+            end else begin
+              let everywhere_holding_var =
+                Reg_availability_set.find_all_holding_value_of
+                  insn.available_before (Var holds_value_of)
+              in
+              (* Only registers spilled at the time of the call will be
+                 available with certainty (in the caller's frame) during the
+                 execution of the callee. *)
+              let on_stack =
+                Misc.Stdlib.List.filter_map (fun rd ->
+                    let reg = Reg_with_debug_info.reg rd in
+                    match reg.loc with
+                    | Stack stack_loc ->
+                      Some (reg,
+                        Dwarf_reg_locations.offset_from_cfa_in_bytes reg
+                          stack_loc ~stack_offset)
+                    | Reg _ -> None
+                    | Unknown ->
+                      Misc.fatal_errorf "Register without location: %a"
+                        Printmach.reg reg)
+                  everywhere_holding_var
+              in
+              match on_stack with
+              | [] -> []
+              | (reg, offset_from_cfa_in_bytes) :: _ ->
+                let arg_location_rvalue =
+                  Dwarf_reg_locations.reg_location_description reg
+                    ~offset_from_cfa_in_bytes ~need_rvalue:true
                 in
-                (* gdb does not seem to accept a simple location description
-                   here -- it complains about the use of [DW_op_stack_value]. *)
-                let composite =
-                  Composite_location_description.
-                    pieces_of_simple_location_descriptions
-                      [arg_location_rvalue, arch_size_addr]
-                in
-                [DAH.create_composite_call_value_location_description composite;
-                ]
-          end
-        in
-        arg_location, type_attribute
+                match arg_location_rvalue with
+                | None -> []
+                | Some arg_location_rvalue ->
+                  (* gdb does not seem to accept a simple location description
+                     here -- it complains about the use of
+                     [DW_OP_stack_value]. *)
+                  create_composite_location_description arg_location_rvalue
+            end
+          in
+          arg_location, type_attribute
+        | Const_int i ->
+          let arg_location =
+            create_composite_location_description
+              (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.signed_int_const i)))
+          in
+          let type_attribute =
+            [ DAH.create_type ~proto_die:(DS.value_type_proto_die state)
+            ]
+          in
+          arg_location, type_attribute
+        | Const_naked_float f ->
+          let arg_location =
+            create_composite_location_description
+              (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.float_const f)))
+          in
+          let type_attribute =
+            [ DAH.create_type ~proto_die:(DS.naked_float_type_proto_die state)
+            ]
+          in
+          arg_location, type_attribute
+        | Const_symbol symbol ->
+          let symbol = Asm_symbol.create symbol in
+          let arg_location =
+            create_composite_location_description
+              (SLDL.compile (SLDL.of_lvalue (SLDL.Lvalue.const_symbol ~symbol)))
+          in
+          let type_attribute =
+            (* CR-someday mshinwell: Work out what we need to do in order to
+               know whether a given symbol, in another compilation unit, has
+               a DWARF DIE. *)
+            match DS.type_die_for_lifted_constant state symbol with
+            | None ->
+              (* In this case the debugger will have to print the value using
+                 only the contents of the heap, and not the OCaml type. *)
+              [ DAH.create_type ~proto_die:(DS.value_type_proto_die state)
+              ]
+            | Some type_die ->
+              (* This case may arise where the defining expression of a
+                 variable was lifted, but an occurrence of the variable as one
+                 of the call site arguments was substituted out.  Despite the
+                 substitution, we can still retrieve the OCaml type. *)
+              [ DAH.create_type ~proto_die:type_die
+              ]
+          in
+          arg_location, type_attribute
   in
   let tag : Dwarf_tag.t =
     match !Clflags.dwarf_version with
@@ -150,7 +199,7 @@ let add_call_site_argument ~call_site_die ~is_tail ~arg_index ~(arg : Reg.t)
     ~attribute_values:(arg_location @ param_location @ type_attribute)
     ()
 
-let add_call_site ~scope_proto_dies ~function_proto_die
+let add_call_site state ~scope_proto_dies ~function_proto_die
       ~stack_offset ~is_tail ~args ~(call_labels : Mach.call_labels)
       (insn : L.instruction) attrs =
   let dbg = insn.dbg in
@@ -214,7 +263,7 @@ let add_call_site ~scope_proto_dies ~function_proto_die
     in
     if no_split_args then begin
       Array.iteri (fun arg_index arg ->
-          add_call_site_argument ~call_site_die ~is_tail ~arg_index ~arg
+          add_call_site_argument state ~call_site_die ~is_tail ~arg_index ~arg
             ~stack_offset insn)
         args
     end
@@ -330,7 +379,7 @@ let dwarf state ~scope_proto_dies (fundecl : L.fundecl)
     add_call_site ~scope_proto_dies ~function_proto_die
   in
   let add_indirect_ocaml_call ~stack_offset ~callee ~args ~call_labels insn =
-    add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
+    add_call_site state ~stack_offset ~is_tail:false ~args ~call_labels insn
       (call_target_for_indirect_callee ~callee ~stack_offset)
   in
   let add_direct_ocaml_call ~stack_offset ~callee ~callee_dbg ~args
@@ -338,12 +387,12 @@ let dwarf state ~scope_proto_dies (fundecl : L.fundecl)
     match callee_dbg with
     | None -> ()
     | Some callee_dbg ->
-      add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
+      add_call_site state ~stack_offset ~is_tail:false ~args ~call_labels insn
         (call_target_for_direct_callee state (Ocaml (callee, callee_dbg)))
   in
   let add_indirect_ocaml_tail_call ~stack_offset ~callee ~args ~call_labels
         insn =
-    add_call_site ~stack_offset ~is_tail:true ~args ~call_labels insn
+    add_call_site state ~stack_offset ~is_tail:true ~args ~call_labels insn
       (call_target_for_indirect_callee ~callee ~stack_offset)
   in
   let add_direct_ocaml_tail_call ~stack_offset ~callee ~callee_dbg
@@ -359,12 +408,12 @@ let dwarf state ~scope_proto_dies (fundecl : L.fundecl)
       then begin
         found_self_tail_calls := true
       end else begin
-        add_call_site ~stack_offset ~is_tail:true ~args ~call_labels insn
+        add_call_site state ~stack_offset ~is_tail:true ~args ~call_labels insn
           (call_target_for_direct_callee state (Ocaml (callee, callee_dbg)))
       end
   in
   let add_external_call ~stack_offset ~callee ~args ~call_labels insn =
-    add_call_site ~stack_offset ~is_tail:false ~args ~call_labels insn
+    add_call_site state ~stack_offset ~is_tail:false ~args ~call_labels insn
       (call_target_for_direct_callee state (External callee))
   in
   let rec traverse_insns (insn : L.instruction) ~stack_offset =

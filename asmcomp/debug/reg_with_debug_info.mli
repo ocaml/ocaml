@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2016--2017 Jane Street Group LLC                           *)
+(*   Copyright 2016--2018 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -15,13 +15,31 @@
 (** Registers equipped with information used for generating debugging
     information. *)
 
+(** What a particular register holds. *)
+module Holds_value_of : sig
+  type t =
+    | Var of Backend_var.t
+      (** The value of the given variable. *)
+    | Const_int of Targetint.t
+      (** The given integer constant. *)
+    | Const_naked_float of Int64.t
+      (** The given floating-point constant. *)
+    | Const_symbol of Backend_sym.t
+      (** The given statically-allocated constant. *)
+
+  include Identifiable.S with type t := t
+end
+
 module Debug_info : sig
   type t
 
   val compare : t -> t -> int
 
-  val holds_value_of : t -> Backend_var.t
-  (** The identifier that the register holds (part of) the value of. *)
+  (* CR mshinwell: This doesn't seem quite right, because the provenance
+     is only relevant to the [Var] case.  Likewise [is_parameter]. *)
+  val holds_value_of : t -> Holds_value_of.t
+  (** The identifier or constant that the register holds (part of) the
+      value of. *)
 
   val part_of_value : t -> int
   val num_parts_of_value : t -> int
@@ -40,7 +58,7 @@ module type T = sig
 
   val create
      : reg:Reg.t
-    -> holds_value_of:Backend_var.t
+    -> holds_value_of:Holds_value_of.t
     -> part_of_value:int
     -> num_parts_of_value:int
     -> Is_parameter.t

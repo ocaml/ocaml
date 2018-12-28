@@ -29,7 +29,7 @@ type ustructured_constant =
   | Uconst_block of int * uconstant list
   | Uconst_float_array of float list
   | Uconst_string of string
-  | Uconst_closure of ufunction list * string * uconstant list
+  | Uconst_closure of ufunction list * Backend_sym.t * uconstant list
 
 and uconstant =
   | Uconst_ref of Backend_sym.t * ustructured_constant option
@@ -118,7 +118,7 @@ type value_approximation =
   | Value_tuple of value_approximation array
   | Value_unknown
   | Value_const of uconstant
-  | Value_global_field of string * int
+  | Value_global_field of Backend_sym.t * int
 
 (* Comparison functions for constants *)
 
@@ -133,11 +133,11 @@ type usymbol_provenance = {
 }
 
 type uconstant_block_field =
-  | Uconst_field_ref of string
+  | Uconst_field_ref of Backend_sym.t
   | Uconst_field_int of int
 
 type preallocated_block = {
-  symbol : string;
+  symbol : Backend_sym.t;
   exported : bool;
   tag : int;
   fields : uconstant_block_field option list;
@@ -145,7 +145,7 @@ type preallocated_block = {
 }
 
 type preallocated_constant = {
-  symbol : string;
+  symbol : Backend_sym.t;
   exported : bool;
   definition : ustructured_constant;
   provenance : usymbol_provenance option;

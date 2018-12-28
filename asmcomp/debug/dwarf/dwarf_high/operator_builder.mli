@@ -35,6 +35,8 @@ val signed_int_const : Targetint.t -> Dwarf_operator.t
 
 val add_unsigned_const : Targetint.t -> Dwarf_operator.t
 
+val float_const : Int64.t -> Dwarf_operator.t
+
 val implicit_pointer
    : offset_in_bytes:Targetint.t
   -> die_label:Asm_label.t

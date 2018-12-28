@@ -78,7 +78,8 @@ let rec structured_constant ppf = function
         List.iter (fprintf ppf "@ %a" one_fun) in
       let sconsts ppf scl =
         List.iter (fun sc -> fprintf ppf "@ %a" uconstant sc) scl in
-      fprintf ppf "@[<2>(const_closure%a %s@ %a)@]" funs clos sym sconsts fv
+      fprintf ppf "@[<2>(const_closure%a %a@ %a)@]" funs clos
+        Backend_sym.print sym sconsts fv
 
 and phantom_defining_expr ppf = function
   | Uphantom_const const -> uconstant ppf const
@@ -299,4 +300,4 @@ let rec approx ppf = function
   | Value_const c ->
       fprintf ppf "@[const(%a)@]" uconstant c
   | Value_global_field (s, i) ->
-      fprintf ppf "@[global(%s,%i)@]" s i
+      fprintf ppf "@[global(%a,%i)@]" Backend_sym.print s i
