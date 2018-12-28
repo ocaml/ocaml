@@ -84,7 +84,11 @@ module Directive = struct
       | Named_thing name -> Buffer.add_string buf name
       | Signed_int n ->
         begin match TS.assembler () with
-        | MacOS | GAS_like -> bprintf buf "0x%Lx" n
+        (* We use %Ld and not %Lx on Unix-like platforms to ensure that
+           ".sleb128" directives do not end up with hex arguments (since this
+           denotes a variable-length encoding it would not be clear where the
+           sign bit is). *)
+        | MacOS | GAS_like -> bprintf buf "%Ld" n
         | MASM ->
           if n >= -0x8000_0000L && n <= 0x7fff_ffffL then
             Buffer.add_string buf (Int64.to_string n)
