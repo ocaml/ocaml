@@ -776,16 +776,16 @@ asmcomp/asmgen.cmo : asmcomp/un_anf.cmi bytecomp/translmod.cmi \
     asmcomp/printlinear.cmi asmcomp/printcmm.cmi asmcomp/printclambda.cmi \
     typing/primitive.cmi typing/path.cmi utils/misc.cmi asmcomp/mach.cmi \
     parsing/location.cmi asmcomp/liveness.cmi asmcomp/linscan.cmi \
-    middle_end/base_types/linkage_name.cmi asmcomp/linearize.cmi \
-    bytecomp/lambda.cmi asmcomp/interval.cmi asmcomp/interf.cmi \
-    typing/ident.cmi asmcomp/flambda_to_clambda.cmi middle_end/flambda.cmi \
-    asmcomp/emitaux.cmi asmcomp/emit.cmi \
+    asmcomp/linearize.cmi bytecomp/lambda.cmi asmcomp/interval.cmi \
+    asmcomp/interf.cmi typing/ident.cmi asmcomp/flambda_to_clambda.cmi \
+    middle_end/flambda.cmi asmcomp/emitaux.cmi asmcomp/emit.cmi \
     asmcomp/debug/dwarf/dwarf_low/dwarf_format.cmi \
     asmcomp/debug/dwarf/dwarf.cmi asmcomp/debug/debug_passes.cmi \
     asmcomp/deadcode.cmi utils/config.cmi asmcomp/compilenv.cmi \
-    asmcomp/comballoc.cmi asmcomp/coloring.cmi asmcomp/cmmgen.cmi \
-    asmcomp/cmm.cmi asmcomp/closure.cmi utils/clflags.cmi asmcomp/clambda.cmi \
-    asmcomp/CSE.cmo asmcomp/build_export_info.cmi asmcomp/backend_sym.cmi \
+    middle_end/base_types/compilation_unit.cmi asmcomp/comballoc.cmi \
+    asmcomp/coloring.cmi asmcomp/cmmgen.cmi asmcomp/cmm.cmi \
+    asmcomp/closure.cmi utils/clflags.cmi asmcomp/clambda.cmi asmcomp/CSE.cmo \
+    asmcomp/build_export_info.cmi asmcomp/backend_sym.cmi \
     asmcomp/debug/available_regs.cmi asmcomp/asmgen.cmi
 asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     middle_end/base_types/symbol.cmx asmcomp/split.cmx asmcomp/spill.cmx \
@@ -794,16 +794,16 @@ asmcomp/asmgen.cmx : asmcomp/un_anf.cmx bytecomp/translmod.cmx \
     asmcomp/printlinear.cmx asmcomp/printcmm.cmx asmcomp/printclambda.cmx \
     typing/primitive.cmx typing/path.cmx utils/misc.cmx asmcomp/mach.cmx \
     parsing/location.cmx asmcomp/liveness.cmx asmcomp/linscan.cmx \
-    middle_end/base_types/linkage_name.cmx asmcomp/linearize.cmx \
-    bytecomp/lambda.cmx asmcomp/interval.cmx asmcomp/interf.cmx \
-    typing/ident.cmx asmcomp/flambda_to_clambda.cmx middle_end/flambda.cmx \
-    asmcomp/emitaux.cmx asmcomp/emit.cmx \
+    asmcomp/linearize.cmx bytecomp/lambda.cmx asmcomp/interval.cmx \
+    asmcomp/interf.cmx typing/ident.cmx asmcomp/flambda_to_clambda.cmx \
+    middle_end/flambda.cmx asmcomp/emitaux.cmx asmcomp/emit.cmx \
     asmcomp/debug/dwarf/dwarf_low/dwarf_format.cmx \
     asmcomp/debug/dwarf/dwarf.cmx asmcomp/debug/debug_passes.cmx \
     asmcomp/deadcode.cmx utils/config.cmx asmcomp/compilenv.cmx \
-    asmcomp/comballoc.cmx asmcomp/coloring.cmx asmcomp/cmmgen.cmx \
-    asmcomp/cmm.cmx asmcomp/closure.cmx utils/clflags.cmx asmcomp/clambda.cmx \
-    asmcomp/CSE.cmx asmcomp/build_export_info.cmx asmcomp/backend_sym.cmx \
+    middle_end/base_types/compilation_unit.cmx asmcomp/comballoc.cmx \
+    asmcomp/coloring.cmx asmcomp/cmmgen.cmx asmcomp/cmm.cmx \
+    asmcomp/closure.cmx utils/clflags.cmx asmcomp/clambda.cmx asmcomp/CSE.cmx \
+    asmcomp/build_export_info.cmx asmcomp/backend_sym.cmx \
     asmcomp/debug/available_regs.cmx asmcomp/asmgen.cmi
 asmcomp/asmgen.cmi : bytecomp/lambda.cmi typing/ident.cmi \
     middle_end/flambda.cmi asmcomp/debug/dwarf/dwarf.cmi asmcomp/cmm.cmi \
@@ -996,7 +996,7 @@ asmcomp/compilenv.cmo : utils/warnings.cmi middle_end/base_types/symbol.cmi \
     asmcomp/export_info.cmi typing/env.cmi utils/config.cmi \
     middle_end/base_types/compilation_unit.cmi asmcomp/cmx_format.cmi \
     middle_end/base_types/closure_id.cmi utils/clflags.cmi \
-    asmcomp/clambda.cmi asmcomp/compilenv.cmi
+    asmcomp/clambda.cmi asmcomp/backend_sym.cmi asmcomp/compilenv.cmi
 asmcomp/compilenv.cmx : utils/warnings.cmx middle_end/base_types/symbol.cmx \
     middle_end/simple_value_approx.cmx \
     middle_end/base_types/set_of_closures_id.cmx typing/path.cmx \
@@ -1005,7 +1005,7 @@ asmcomp/compilenv.cmx : utils/warnings.cmx middle_end/base_types/symbol.cmx \
     asmcomp/export_info.cmx typing/env.cmx utils/config.cmx \
     middle_end/base_types/compilation_unit.cmx asmcomp/cmx_format.cmi \
     middle_end/base_types/closure_id.cmx utils/clflags.cmx \
-    asmcomp/clambda.cmx asmcomp/compilenv.cmi
+    asmcomp/clambda.cmx asmcomp/backend_sym.cmx asmcomp/compilenv.cmi
 asmcomp/compilenv.cmi : middle_end/base_types/symbol.cmi \
     middle_end/simple_value_approx.cmi \
     middle_end/base_types/set_of_closures_id.cmi \
@@ -2528,18 +2528,15 @@ asmcomp/debug/reg_availability_set.cmx : \
     asmcomp/debug/reg_with_debug_info.cmx utils/clflags.cmx \
     asmcomp/backend_var.cmx asmcomp/debug/reg_availability_set.cmi
 asmcomp/debug/reg_availability_set.cmi : \
-    asmcomp/debug/reg_with_debug_info.cmi asmcomp/reg.cmi \
-    asmcomp/backend_var.cmi
+    asmcomp/debug/reg_with_debug_info.cmi asmcomp/reg.cmi
 asmcomp/debug/reg_with_debug_info.cmo : utils/targetint.cmi asmcomp/reg.cmi \
-    asmcomp/printmach.cmi utils/misc.cmi \
-    middle_end/base_types/is_parameter.cmi utils/identifiable.cmi \
-    middle_end/debuginfo.cmi asmcomp/backend_var.cmi asmcomp/backend_sym.cmi \
-    asmcomp/debug/reg_with_debug_info.cmi
+    utils/misc.cmi middle_end/base_types/is_parameter.cmi \
+    utils/identifiable.cmi middle_end/debuginfo.cmi asmcomp/backend_var.cmi \
+    asmcomp/backend_sym.cmi asmcomp/debug/reg_with_debug_info.cmi
 asmcomp/debug/reg_with_debug_info.cmx : utils/targetint.cmx asmcomp/reg.cmx \
-    asmcomp/printmach.cmx utils/misc.cmx \
-    middle_end/base_types/is_parameter.cmx utils/identifiable.cmx \
-    middle_end/debuginfo.cmx asmcomp/backend_var.cmx asmcomp/backend_sym.cmx \
-    asmcomp/debug/reg_with_debug_info.cmi
+    utils/misc.cmx middle_end/base_types/is_parameter.cmx \
+    utils/identifiable.cmx middle_end/debuginfo.cmx asmcomp/backend_var.cmx \
+    asmcomp/backend_sym.cmx asmcomp/debug/reg_with_debug_info.cmi
 asmcomp/debug/reg_with_debug_info.cmi : utils/targetint.cmi asmcomp/reg.cmi \
     middle_end/base_types/is_parameter.cmi utils/identifiable.cmi \
     asmcomp/backend_var.cmi asmcomp/backend_sym.cmi
@@ -2785,29 +2782,25 @@ asmcomp/debug/dwarf/dwarf_lexical_blocks_and_inlined_frames.cmi : \
     asmcomp/debug/lexical_block_ranges.cmi \
     asmcomp/debug/dwarf/dwarf_state.cmi middle_end/debuginfo.cmi
 asmcomp/debug/dwarf/dwarf_lifted_constants.cmo : utils/targetint.cmi \
-    middle_end/base_types/symbol.cmi \
     asmcomp/debug/dwarf/dwarf_low/single_location_description.cmi \
     asmcomp/debug/dwarf/dwarf_high/simple_location_description_lang.cmi \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmi typing/printtyp.cmi \
-    middle_end/base_types/linkage_name.cmi \
     asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmi \
     asmcomp/debug/dwarf/dwarf_state.cmi \
-    asmcomp/debug/dwarf/dwarf_name_laundry.cmi \
     asmcomp/debug/dwarf/dwarf_high/dwarf_attribute_helpers.cmi \
     middle_end/base_types/compilation_unit.cmi asmcomp/clambda.cmi \
-    asmcomp/backend_var.cmi asmcomp/debug/dwarf/dwarf_lifted_constants.cmi
+    asmcomp/backend_var.cmi asmcomp/asm_target/asm_symbol.cmi \
+    asmcomp/debug/dwarf/dwarf_lifted_constants.cmi
 asmcomp/debug/dwarf/dwarf_lifted_constants.cmx : utils/targetint.cmx \
-    middle_end/base_types/symbol.cmx \
     asmcomp/debug/dwarf/dwarf_low/single_location_description.cmx \
     asmcomp/debug/dwarf/dwarf_high/simple_location_description_lang.cmx \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmx typing/printtyp.cmx \
-    middle_end/base_types/linkage_name.cmx \
     asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmx \
     asmcomp/debug/dwarf/dwarf_state.cmx \
-    asmcomp/debug/dwarf/dwarf_name_laundry.cmx \
     asmcomp/debug/dwarf/dwarf_high/dwarf_attribute_helpers.cmx \
     middle_end/base_types/compilation_unit.cmx asmcomp/clambda.cmx \
-    asmcomp/backend_var.cmx asmcomp/debug/dwarf/dwarf_lifted_constants.cmi
+    asmcomp/backend_var.cmx asmcomp/asm_target/asm_symbol.cmx \
+    asmcomp/debug/dwarf/dwarf_lifted_constants.cmi
 asmcomp/debug/dwarf/dwarf_lifted_constants.cmi : \
     asmcomp/debug/dwarf/dwarf_state.cmi asmcomp/clambda.cmi
 asmcomp/debug/dwarf/dwarf_name_laundry.cmo : \
