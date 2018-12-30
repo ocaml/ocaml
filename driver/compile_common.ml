@@ -23,8 +23,8 @@ type info = {
   env : Env.t;
   ppf_dump : Format.formatter;
   tool_name : string;
+  native : bool;
 }
-
 
 let cmx i = i.output_prefix ^ ".cmx"
 let obj i = i.output_prefix ^ Config.ext_obj
@@ -43,6 +43,7 @@ let init ppf_dump ~native ~tool_name ~source_file ~output_prefix =
     source_file;
     ppf_dump;
     tool_name;
+    native;
   }
 
 

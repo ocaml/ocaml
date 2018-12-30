@@ -23,6 +23,7 @@ type info = {
   env : Env.t;
   ppf_dump : Format.formatter;
   tool_name : string;
+  native : bool;
 }
 (** Information needed to compile a file. *)
 
