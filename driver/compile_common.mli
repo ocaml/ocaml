@@ -28,10 +28,12 @@ type info = {
 
 val init :
   Format.formatter ->
-  init_path:bool ->
+  native:bool ->
   tool_name:string ->
-  source_file:string -> output_prefix:string -> info
-(** [init ppf ~init_path ~tool_name ~source_file ~output_prefix] initializes
+  source_file:string ->
+  output_prefix:string ->
+  info
+(** [init ppf ~native ~tool_name ~source_file ~output_prefix] initializes
     the various global variables and returns an {!info}.
 *)
 

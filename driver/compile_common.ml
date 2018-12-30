@@ -31,8 +31,8 @@ let obj i = i.output_prefix ^ Config.ext_obj
 let cmo i = i.output_prefix ^ ".cmo"
 let annot i = i.output_prefix ^ ".annot"
 
-let init ppf_dump ~init_path ~tool_name ~source_file ~output_prefix =
-  Compmisc.init_path init_path;
+let init ppf_dump ~native ~tool_name ~source_file ~output_prefix =
+  Compmisc.init_path native;
   let module_name = module_of_filename source_file output_prefix in
   Env.set_unit_name module_name;
   let env = Compmisc.initial_env() in
@@ -77,7 +77,7 @@ let interface ~tool_name ~source_file ~output_prefix =
   Compmisc.with_ppf_dump ~file_prefix:(output_prefix ^ ".cmi") @@ fun ppf_dump ->
   Profile.record_call source_file @@ fun () ->
   let info =
-    init ppf_dump ~init_path:false ~tool_name ~source_file ~output_prefix
+    init ppf_dump ~native:false ~tool_name ~source_file ~output_prefix
   in
   let ast = parse_intf info in
   if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
@@ -110,7 +110,7 @@ let implementation ~tool_name ~native ~backend ~source_file ~output_prefix =
   let suf, sufs = if native then ".cmx", [ cmx; obj ] else ".cmo", [ cmo ] in
   Compmisc.with_ppf_dump ~file_prefix:(output_prefix ^ suf) @@ fun ppf_dump ->
   let info =
-    init ppf_dump ~init_path:native ~tool_name ~source_file ~output_prefix
+    init ppf_dump ~native ~tool_name ~source_file ~output_prefix
   in
   Profile.record_call info.source_file @@ fun () ->
   let parsed = parse_impl info in
