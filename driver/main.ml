@@ -200,7 +200,7 @@ let main () =
       Compmisc.init_path false;
       let extracted_output = extract_output !output_name in
       let revd = get_objfiles ~with_ocamlparam:false in
-      Compmisc.with_ppf_dump ~fileprefix:extracted_output (fun ppf_dump ->
+      Compmisc.with_ppf_dump ~file_prefix:extracted_output (fun ppf_dump ->
         Bytepackager.package_files ~ppf_dump (Compmisc.initial_env ())
           revd (extracted_output));
       Warnings.check_fatal ();

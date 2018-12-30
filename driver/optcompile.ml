@@ -35,46 +35,46 @@ let flambda i backend typed =
   end;
   typed
   |> Profile.(record transl)
-      (Translmod.transl_implementation_flambda i.modulename)
+      (Translmod.transl_implementation_flambda i.module_name)
   |> Profile.(record generate)
     (fun {Lambda.module_ident; main_module_block_size;
           required_globals; code } ->
     ((module_ident, main_module_block_size), code)
     |>> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.lambda
-    |>> Simplif.simplify_lambda i.sourcefile
+    |>> Simplif.simplify_lambda i.source_file
     |>> print_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
     |> (fun ((module_ident, size), lam) ->
       Middle_end.middle_end
         ~ppf_dump:i.ppf_dump
-        ~prefixname:i.outputprefix
+        ~prefixname:i.output_prefix
         ~size
-        ~filename:i.sourcefile
+        ~filename:i.source_file
         ~module_ident
         ~backend
         ~module_initializer:lam)
     |> Asmgen.compile_implementation_flambda
-      i.outputprefix ~required_globals ~backend ~ppf_dump:i.ppf_dump;
+      i.output_prefix ~required_globals ~backend ~ppf_dump:i.ppf_dump;
     Compilenv.save_unit_info (cmx i))
 
 let clambda i typed =
   Clflags.use_inlining_arguments_set Clflags.classic_arguments;
   typed
   |> Profile.(record transl)
-    (Translmod.transl_store_implementation i.modulename)
+    (Translmod.transl_store_implementation i.module_name)
   |> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.program
   |> Profile.(record generate)
     (fun program ->
-       let code = Simplif.simplify_lambda i.sourcefile program.Lambda.code in
+       let code = Simplif.simplify_lambda i.source_file program.Lambda.code in
        { program with Lambda.code }
        |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.program
        |> Asmgen.compile_implementation_clambda
-         i.outputprefix ~ppf_dump:i.ppf_dump;
+         i.output_prefix ~ppf_dump:i.ppf_dump;
        Compilenv.save_unit_info (cmx i))
 
 let implementation ~backend =
   Compile_common.implementation ~tool_name
     ~native:true ~backend:(fun info typed ->
-      Compilenv.reset ?packname:!Clflags.for_package info.modulename;
+      Compilenv.reset ?packname:!Clflags.for_package info.module_name;
       if Config.flambda
       then flambda info backend typed
       else clambda info typed

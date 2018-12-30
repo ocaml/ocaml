@@ -17,9 +17,9 @@
 (** {2 Initialization} *)
 
 type info = {
-  sourcefile : string;
-  modulename : string;
-  outputprefix : string;
+  source_file : string;
+  module_name : string;
+  output_prefix : string;
   env : Env.t;
   ppf_dump : Format.formatter;
   tool_name : string;
@@ -30,8 +30,8 @@ val init :
   Format.formatter ->
   init_path:bool ->
   tool_name:string ->
-  sourcefile:string -> outputprefix:string -> info
-(** [init ppf ~init_path ~tool_name ~sourcefile ~outputprefix] initializes
+  source_file:string -> output_prefix:string -> info
+(** [init ppf ~init_path ~tool_name ~source_file ~output_prefix] initializes
     the various global variables and returns an {!info}.
 *)
 
@@ -52,7 +52,7 @@ val emit_signature : info -> Parsetree.signature -> Typedtree.signature -> unit
 
 val interface :
   tool_name:string ->
-  sourcefile:string -> outputprefix:string -> unit
+  source_file:string -> output_prefix:string -> unit
 (** The complete compilation pipeline for interfaces. *)
 
 (** {2 Implementations} *)
@@ -71,8 +71,8 @@ val implementation :
   tool_name:string ->
   native:bool ->
   backend:(info -> Typedtree.structure * Typedtree.module_coercion -> unit) ->
-  sourcefile:string ->
-  outputprefix:string ->
+  source_file:string ->
+  output_prefix:string ->
   unit
 (** The complete compilation pipeline for implementations. *)
 

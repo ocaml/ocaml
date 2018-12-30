@@ -25,14 +25,14 @@ let interface = Compile_common.interface ~tool_name
 let to_bytecode i (typedtree, coercion) =
   (typedtree, coercion)
   |> Profile.(record transl)
-    (Translmod.transl_implementation i.modulename)
+    (Translmod.transl_implementation i.module_name)
   |> Profile.(record ~accumulate:true generate)
     (fun { Lambda.code = lambda; required_globals } ->
        lambda
        |> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.lambda
-       |> Simplif.simplify_lambda i.sourcefile
+       |> Simplif.simplify_lambda i.source_file
        |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
-       |> Bytegen.compile_implementation i.modulename
+       |> Bytegen.compile_implementation i.module_name
        |> print_if i.ppf_dump Clflags.dump_instr Printinstr.instrlist
        |> fun bytecode -> bytecode, required_globals
     )
@@ -46,7 +46,7 @@ let emit_bytecode i (bytecode, required_globals) =
     (fun () ->
        bytecode
        |> Profile.(record ~accumulate:true generate)
-         (Emitcode.to_file oc i.modulename cmofile ~required_globals);
+         (Emitcode.to_file oc i.module_name cmofile ~required_globals);
     )
 
 let implementation =
