@@ -36,7 +36,14 @@ let init ppf_dump ~native ~tool_name ~source_file ~output_prefix =
   let module_name = module_of_filename source_file output_prefix in
   Env.set_unit_name module_name;
   let env = Compmisc.initial_env() in
-  { module_name; output_prefix; env; source_file; ppf_dump; tool_name }
+  {
+    module_name;
+    output_prefix;
+    env;
+    source_file;
+    ppf_dump;
+    tool_name;
+  }
 
 
 (** Compile a .mli file *)

@@ -54,7 +54,9 @@ val emit_signature : info -> Parsetree.signature -> Typedtree.signature -> unit
 
 val interface :
   tool_name:string ->
-  source_file:string -> output_prefix:string -> unit
+  source_file:string ->
+  output_prefix:string ->
+  unit
 (** The complete compilation pipeline for interfaces. *)
 
 (** {2 Implementations} *)
