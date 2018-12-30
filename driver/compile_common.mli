@@ -53,11 +53,7 @@ val emit_signature : info -> Parsetree.signature -> Typedtree.signature -> unit
     containing the given signature.
 *)
 
-val interface :
-  tool_name:string ->
-  source_file:string ->
-  output_prefix:string ->
-  unit
+val interface : info -> unit
 (** The complete compilation pipeline for interfaces. *)
 
 (** {2 Implementations} *)
@@ -73,11 +69,8 @@ val typecheck_impl :
 *)
 
 val implementation :
-  tool_name:string ->
-  native:bool ->
+  info ->
   backend:(info -> Typedtree.structure * Typedtree.module_coercion -> unit) ->
-  source_file:string ->
-  output_prefix:string ->
   unit
 (** The complete compilation pipeline for implementations. *)
 

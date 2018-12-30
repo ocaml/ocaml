@@ -81,12 +81,8 @@ let emit_signature info ast tsg =
   Typemod.save_signature info.module_name tsg
     info.output_prefix info.source_file info.env sg
 
-let interface ~tool_name ~source_file ~output_prefix =
-  Compmisc.with_ppf_dump ~file_prefix:(output_prefix ^ ".cmi") @@ fun ppf_dump ->
-  Profile.record_call source_file @@ fun () ->
-  let info =
-    init ppf_dump ~native:false ~tool_name ~source_file ~output_prefix
-  in
+let interface info =
+  Profile.record_call info.source_file @@ fun () ->
   let ast = parse_intf info in
   if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
     let tsg = typecheck_intf info ast in
@@ -114,13 +110,9 @@ let typecheck_impl i parsetree =
       Printtyped.implementation_with_coercion
   )
 
-let implementation ~tool_name ~native ~backend ~source_file ~output_prefix =
-  let suf, sufs = if native then ".cmx", [ cmx; obj ] else ".cmo", [ cmo ] in
-  Compmisc.with_ppf_dump ~file_prefix:(output_prefix ^ suf) @@ fun ppf_dump ->
-  let info =
-    init ppf_dump ~native ~tool_name ~source_file ~output_prefix
-  in
+let implementation info ~backend =
   Profile.record_call info.source_file @@ fun () ->
+  let sufs = if info.native then [ cmx; obj ] else [ cmo ] in
   let parsed = parse_impl info in
   if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
     let typed = typecheck_impl info parsed in
