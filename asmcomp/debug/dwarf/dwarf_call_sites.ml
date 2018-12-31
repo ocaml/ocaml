@@ -178,6 +178,8 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
             | None ->
               (* In this case the debugger will have to print the value using
                  only the contents of the heap, and not the OCaml type. *)
+              (* CR mshinwell: Except that it seems to use the type from the
+                 parameter -- see above *)
               [ DAH.create_type ~proto_die:(DS.value_type_proto_die state)
               ]
             | Some type_die ->

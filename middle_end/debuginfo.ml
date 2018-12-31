@@ -624,6 +624,8 @@ module Apply = struct
       dbg;
     }
 
+  (* CR mshinwell: This is displaying in gdb as [Debuginfo.fun_dbg] not
+     [Debuginfo.Apply.fun_dbg]. *)
   let fun_dbg t = t.fun_dbg
   let dbg t = t.dbg
 end

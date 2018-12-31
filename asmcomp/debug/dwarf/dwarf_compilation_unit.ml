@@ -31,6 +31,7 @@ let compile_unit_proto_die ~sourcefile ~prefix_name
     if Filename.is_relative prefix_name then Filename.concat cwd prefix_name
     else prefix_name
   in
+  (* CR mshinwell: Use [Build_path_prefix_map]. *)
   let debug_line_label = Asm_label.for_section (DWARF Debug_line) in
   let addr_base = Address_table.base_addr address_table in
   let loclists_base = Location_list_table.base_addr location_list_table in

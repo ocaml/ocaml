@@ -24,6 +24,9 @@
     location lists can use the ordering between labels as a proxy for
     the ordering between the corresponding virtual memory addresses.
 *)
+(* CR mshinwell: It's not clear the second paragraph above is true, since
+   maybe that code only looks at the labels inserted by [Compute_ranges],
+   which are in order. *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
