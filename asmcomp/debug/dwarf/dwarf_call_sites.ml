@@ -147,8 +147,14 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
             [ DAH.create_type ~proto_die:(DS.value_type_proto_die state)
             ]
           in
+          (* CR mshinwell: It looks like gdb is taking the type from the
+             parameter.  Maybe we should alter gdb to pass both the
+             argument's type and the parameter's type through, so that
+             libmonda can choose which is best (e.g. for a polymorphic
+             function we might prefer the argument). *)
           arg_location, type_attribute
         | Const_naked_float f ->
+          (* CR mshinwell: This shouldn't happen at the moment *)
           let arg_location =
             create_composite_location_description
               (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.float_const f)))
