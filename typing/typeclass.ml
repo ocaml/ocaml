@@ -986,14 +986,21 @@ and class_expr_aux cl_num val_env met_env scl =
           default;
        ]
       in
+      let label_name =
+        match l with
+        | Nolabel
+        | Labelled _ -> Misc.fatal_error "Expected optional argument"
+        | Optional label_name -> label_name
+      in
+      let ident_name = "*opt*" ^ label_name in
       let smatch =
-        Exp.match_ ~loc (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
+        Exp.match_ ~loc (Exp.ident ~loc (mknoloc (Longident.Lident ident_name)))
           scases
       in
       let sfun =
         Cl.fun_ ~loc:scl.pcl_loc
           l None
-          (Pat.var ~loc (mknoloc "*opt*"))
+          (Pat.var ~loc (mknoloc ident_name))
           (Cl.let_ ~loc:scl.pcl_loc Nonrecursive [Vb.mk spat smatch] sbody)
           (* Note: we don't put the '#default' attribute, as it
              is not detected for class-level let bindings.  See #5975.*)

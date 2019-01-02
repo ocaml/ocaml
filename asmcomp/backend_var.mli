@@ -21,6 +21,14 @@ include module type of struct include Ident end
 
 type backend_var = t
 
+(** Like [name], but removes the magic prefix that designates optional
+    parameters. *)
+val name_for_debugger : t -> string
+
+(** Like [unique_toplevel_name], but removes the magic prefix that
+    designates optional parameters. *)
+val unique_name_for_debugger : t -> string
+
 module Provenance : sig
   type t
 
@@ -56,6 +64,8 @@ module With_provenance : sig
   val provenance : t -> Provenance.t option
 
   val name : t -> string
+
+  val is_optional_parameter : t -> string option
 
   val rename : ?provenance:Provenance.t -> t -> t
 end

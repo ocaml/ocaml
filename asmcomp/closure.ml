@@ -1058,7 +1058,7 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site
       let p1' = VP.rename ?provenance p1 in
       if is_simple_argument a1 then
         let term =
-          bind_params_rec ~param_index:(param_index + 1)
+          bind_params_rec ~param_index:(param_index - 1)
             ~block_subst ~at_call_site ~function_being_inlined fpc
             (V.Map.add (VP.var p1) a1 subst) pl al ~idents_for_types body
         in
@@ -1071,14 +1071,14 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site
         Uphantom_let (p1', phantom_defining_expr, term)
       else begin
         let u1, u2 =
-          match VP.name p1, a1 with
-          | "*opt*", Uprim(Pmakeblock(0, Immutable, kind), [a], dbg) ->
+          match VP.is_optional_parameter p1, a1 with
+          | Some _, Uprim(Pmakeblock(0, Immutable, kind), [a], dbg) ->
               a, Uprim(Pmakeblock(0, Immutable, kind), [Uvar (VP.var p1')], dbg)
           | _ ->
               a1, Uvar (VP.var p1')
         in
         let body' =
-          bind_params_rec ~param_index:(param_index + 1)
+          bind_params_rec ~param_index:(param_index - 1)
             ~block_subst ~at_call_site ~function_being_inlined fpc
             (V.Map.add (VP.var p1) u2 subst) pl al ~idents_for_types body
         in
@@ -1108,7 +1108,8 @@ let bind_params ~at_call_site ~function_being_inlined fpc params args
   let block_subst = Debuginfo.Block_subst.empty in
   (* Reverse parameters and arguments to preserve right-to-left
      evaluation order (PR#2910). *)
-  bind_params_rec ~param_index:0 ~block_subst ~at_call_site
+  bind_params_rec ~param_index:(List.length params - 1)
+    ~block_subst ~at_call_site
     ~function_being_inlined fpc V.Map.empty
     (List.rev params) (List.rev args)
     ~idents_for_types:(List.rev idents_for_types) body
@@ -1326,6 +1327,7 @@ let rec close ~scope fenv cenv = function
         let first_args = List.map (fun arg ->
           (V.create_local "*arg*", arg) ) uargs in
         let final_args =
+          (* CR mshinwell: arguments should be marked as parameters *)
           Array.to_list (Array.init (fundesc.fun_arity - nargs)
                                     (fun _ -> V.create_local "*arg*")) in
         let rec iter args body =
@@ -1801,7 +1803,7 @@ and close_functions fenv cenv fun_defs =
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
     let fun_params = if !useless_env then params else params @ [env_param] in
     let params =
-      List.map (fun ident ->
+      List.mapi (fun index ident ->
           let provenance =
             if ident == env_param then
               None
@@ -1813,7 +1815,7 @@ and close_functions fenv cenv fun_defs =
                   V.Provenance.create ~module_path
                     ~debuginfo:(Debuginfo.of_function fun_dbg)
                     ~ident_for_type:(Compilation_unit.get_current_exn (), ident)
-                    Is_parameter.local
+                    (Is_parameter.parameter ~index)
                 in
                 Some provenance
           in
@@ -1833,8 +1835,9 @@ and close_functions fenv cenv fun_defs =
     (* give more chance of function with default parameters (i.e.
        their wrapper functions) to be inlined *)
     let n =
-      List.fold_left
-        (fun n id -> n + if V.name id = "*opt*" then 8 else 1)
+      List.fold_left (fun n id ->
+          n + if Misc.Stdlib.Option.is_some (V.is_optional_parameter id)
+              then 8 else 1)
         0
         fun_params
     in

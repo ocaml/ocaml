@@ -306,6 +306,9 @@ module Analyser =
          (* we look if the name of the parameter we just add is "*opt*", which means
             that there is a let param_name = ... in ... just right now *)
           let (p, next_exp) =
+            (* CR mshinwell: This needs fixing for the
+               [Ident.is_optional_parameter] change, as does elsewhere
+               in ocamldoc. *)
             match parameter with
               Simple_name { sn_name = "*opt*" } ->
                 (

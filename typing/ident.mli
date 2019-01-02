@@ -28,7 +28,6 @@ val print_with_scope : Format.formatter -> t -> unit
         (** Same as {!print} except that it will also add a "[n]" suffix
             if the scope of the argument is [n]. *)
 
-
 val create_scoped: scope:int -> string -> t
 val create_local: string -> t
 val create_persistent: string -> t
@@ -42,6 +41,7 @@ val rename: t -> t
 val name: t -> string
 val unique_name: t -> string
 val unique_toplevel_name: t -> string
+val is_optional_parameter : t -> string option
 val persistent: t -> bool
 val same: t -> t -> bool
         (** Compare identifiers by binding location.

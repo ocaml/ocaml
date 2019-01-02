@@ -18,6 +18,19 @@ include Ident
 
 type backend_var = t
 
+let name_for_debugger t =
+  match is_optional_parameter t with
+  | None -> name t
+  | Some name -> name
+
+let unique_name_for_debugger t =
+  let name =
+    match is_optional_parameter t with
+    | None -> name t
+    | Some name -> name
+  in
+  Printf.sprintf "%s/%d" name (stamp t)
+
 (* CR mshinwell: We need more command-line flags to control printing of
    debugging information. *)
 
@@ -89,6 +102,8 @@ module With_provenance = struct
     | With_provenance { var = _; provenance; } -> Some provenance
 
   let name t = name (var t)
+
+  let is_optional_parameter t = is_optional_parameter (var t)
 
   let rename ?provenance t =
     let var = rename (var t) in

@@ -717,15 +717,17 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
     | Llet(Strict, k, id,
         (Lifthenelse(Lvar optparam, _, _, _, _, _) as def), rest)
       when
-        Ident.name optparam = "*opt*" && List.mem optparam params
+        Misc.Stdlib.Option.is_some (Ident.is_optional_parameter optparam)
+          && List.mem optparam params
           && not (List.mem_assoc optparam map)
       ->
         let wrapper_body, inner = aux ((optparam, id) :: map) rest in
         Llet(Strict, k, id, def, wrapper_body), inner
     | _ when map = [] -> raise Exit
     | body ->
-        (* Check that those *opt* identifiers don't appear in the remaining
-           body. This should not appear, but let's be on the safe side. *)
+        (* Check that identifiers satisfying [Ident.is_optional_parameter] don't
+           appear in the remaining body.  They should not appear, but let's be
+           on the safe side. *)
         let fv = Lambda.free_variables body in
         List.iter (fun (id, _) -> if Ident.Set.mem id fv then raise Exit) map;
 

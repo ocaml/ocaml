@@ -2333,12 +2333,19 @@ and type_expect_
           loc_end = default_loc.Location.loc_end;
           loc_ghost = true }
       in
+      let label_name =
+        match l with
+        | Nolabel
+        | Labelled _ -> assert false  (* see above *)
+        | Optional label_name -> label_name
+      in
+      let ident_name = "*opt*" ^ label_name in
       let smatch =
         Exp.match_ ~loc:sloc
-          (Exp.ident ~loc (mknoloc (Longident.Lident "*opt*")))
+          (Exp.ident ~loc (mknoloc (Longident.Lident ident_name)))
           scases
       in
-      let pat = Pat.var ~loc:sloc (mknoloc "*opt*") in
+      let pat = Pat.var ~loc:sloc (mknoloc ident_name) in
       let body =
         Exp.let_ ~loc Nonrecursive
           ~attrs:[Attr.mk (mknoloc "#default") (PStr [])]
@@ -4238,7 +4245,8 @@ and type_let
   let is_fake_let =
     match spat_sexp_list with
     | [{pvb_expr={pexp_desc=Pexp_match(
-           {pexp_desc=Pexp_ident({ txt = Longident.Lident "*opt*"})},_)}}] ->
+           {pexp_desc=Pexp_ident({ txt = Longident.Lident txt; _ })},_)}}]
+      when String.length txt > 5 && String.equal (String.sub txt 0 5) "*opt*" ->
         true (* the fake let-declaration introduced by fun ?(x = e) -> ... *)
     | _ ->
         false

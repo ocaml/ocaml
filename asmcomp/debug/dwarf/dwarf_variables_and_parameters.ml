@@ -42,7 +42,7 @@ let calculate_var_uniqueness ~available_ranges_vars =
   let by_name = String.Tbl.create 42 in
   let by_position = Debuginfo.Code_range.Option.Tbl.create 42 in
   let update_uniqueness var pos =
-    let name = Backend_var.name var in
+    let name = Backend_var.name_for_debugger var in
     begin match String.Tbl.find by_name name with
     | exception Not_found ->
       String.Tbl.add by_name name (Backend_var.Set.singleton var)
@@ -612,27 +612,19 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
           name_is_unique, position_is_unique
       in
       let name_for_var =
-        (* If the unstamped name of [ident] is unambiguous within the
-           function, then use it; otherwise, equip the name with the location
-           of its definition together with any inlined-out frames.
-           It might seem that parameters always have unique names, but they
-           don't, in the case of ones that weren't named in the source code. *)
-        (* CR-soon mshinwell: There are certain cases (e.g. let-bindings in
-           [Lambda]) which currently lack location information or (e.g.
-           inlined functions' parameters in [Closure]) where locations may
-           alias.  For these ones we disambiguate using the stamp. *)
-        if name_is_unique then Backend_var.name var
-        else if not position_is_unique then Backend_var.unique_toplevel_name var
+        if name_is_unique then Backend_var.name_for_debugger var
+        else if not position_is_unique then
+          Backend_var.unique_name_for_debugger var
         else
           match provenance with
-          | None -> Backend_var.unique_toplevel_name var
+          | None -> Backend_var.unique_name_for_debugger var
           | Some provenance ->
             let dbg = Backend_var.Provenance.debuginfo provenance in
             match Debuginfo.position dbg with
-            | None -> Backend_var.unique_toplevel_name var
+            | None -> Backend_var.unique_name_for_debugger var
             | Some position ->
               Format.asprintf "%s[%a]"
-                (Backend_var.name var)
+                (Backend_var.name_for_debugger var)
                 Debuginfo.Code_range.print_compact position
       in
       (* CR-someday mshinwell: This should be tidied up.  It's only correct by
@@ -724,10 +716,10 @@ let iterate_over_variable_like_things state ~available_ranges_vars
          We cannot conflate these since the multiple [vars] that might
          be associated with a given [ident_for_type] (due to inlining) may
          not all have the same value. *)
-      (* CR-soon mshinwell: Default arguments currently appear as local
-         variables, not parameters. *)
       (* CR-someday mshinwell: Introduce some flag on Backend_var.t to mark
-         identifiers that were generated internally (or vice-versa)? *)
+         identifiers that were generated internally (or vice-versa)?  We
+         should probably also hide certain internally-generated identifiers
+         that appear in .cmt files but did not come from the source code. *)
       let hidden =
         let name = Backend_var.name var in
         String.length name >= 1

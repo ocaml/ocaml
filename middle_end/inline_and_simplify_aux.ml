@@ -529,8 +529,9 @@ let keep_body_check ~is_classic_mode ~recursive =
          (below the -inline threshold) it will always be inlined.
 
          Closure gives a bonus of [8] to optional arguments. In classic
-         mode, however, we would inline functions with the "*opt*" argument
-         in all cases, as it is a stub. (This is ensured by
+         mode, however, we would inline functions with the argument
+         satisfying [Ident.is_optional_parameter] in all cases, as such
+         functions are stubs. (This is ensured by
          [middle_end/closure_conversion.ml]).
       *)
       let inlining_threshold = initial_inlining_threshold ~round:0 in
