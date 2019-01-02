@@ -741,6 +741,18 @@ let iterate_over_variable_like_things state ~available_ranges_vars
              so as not to appear in the debugger; but we still need to emit
              a DIE for it, as it may be referenced as part of some chain of
              phantom lets. *)
+          let in_startup_file =
+            (* The startup file is generated from Cmm code and is therefore
+               not expected to link back to any .cmt file via identifier
+               names and stamps. *)
+            Compilation_unit.equal (Compilation_unit.get_current_exn ())
+              Compilation_unit.startup
+          in
+          if (not hidden) && (not in_startup_file) then begin
+            Misc.fatal_errorf "Variable %a is not hidden, but has no \
+                provenance\n%!"
+              Backend_var.print var
+          end;
           None
         | Some provenance ->
           Some (Backend_var.Provenance.ident_for_type provenance)

@@ -24,6 +24,7 @@ let attributes fun_dbg =
   in
   [ DAH.create_name function_name;
     DAH.create_external ~is_visible_externally;
+    (* CR mshinwell: This should have a linkage name attribute. *)
   ]
 
 let add state fun_dbg =

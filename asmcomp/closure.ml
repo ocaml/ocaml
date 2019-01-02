@@ -41,6 +41,11 @@ module VP = Backend_var.With_provenance
 
 let current_module_path = ref (None : Path.t option)
 
+let get_current_module_path () =
+  match !current_module_path with
+  | None -> Misc.fatal_error "Current module path not set"
+  | Some path -> path
+
 (* Auxiliaries for compiling functions *)
 
 let rec split_list n l =
@@ -1397,16 +1402,14 @@ let rec close ~scope fenv cenv = function
       let (ulam, alam) = close_named ~scope fenv cenv id lam in
       let body_scope = CB.add_scope scope in
       let provenance =
-        match !current_module_path with
-        | None -> None
-        | Some module_path ->
-          let provenance =
-            V.Provenance.create ~module_path
-              ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
-              ~ident_for_type:(Compilation_unit.get_current_exn (), id)
-              Is_parameter.local
-          in
-          Some provenance
+        let module_path = get_current_module_path () in
+        let provenance =
+          V.Provenance.create ~module_path
+            ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
+            ~ident_for_type:(Compilation_unit.get_current_exn (), id)
+            Is_parameter.local
+        in
+        Some provenance
       in
       begin match (str, alam) with
         (Variable, _) ->
@@ -1429,16 +1432,14 @@ let rec close ~scope fenv cenv = function
   | Lphantom_let (id, defining_expr, body) ->
       let body_scope = CB.add_scope scope in
       let provenance =
-        match !current_module_path with
-        | None -> None
-        | Some module_path ->
-          let provenance =
-            V.Provenance.create ~module_path
-              ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
-              ~ident_for_type:(Compilation_unit.get_current_exn (), id)
-              Is_parameter.local
-          in
-          Some provenance
+        let module_path = get_current_module_path () in
+        let provenance =
+          V.Provenance.create ~module_path
+            ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
+            ~ident_for_type:(Compilation_unit.get_current_exn (), id)
+            Is_parameter.local
+        in
+        Some provenance
       in
       let var = VP.create ?provenance id in
       let defining_expr =
@@ -1484,18 +1485,16 @@ let rec close ~scope fenv cenv = function
             let (ulam, approx) =
               close_named ~scope:new_scope fenv cenv id lam
             in
+            let module_path = get_current_module_path () in
             let provenance =
-              match !current_module_path with
-              | None -> None
-              | Some module_path ->
-                let provenance =
-                  V.Provenance.create ~module_path
-                    ~debuginfo:(Debuginfo.of_location Location.none
-                       ~scope:new_scope)
-                    ~ident_for_type:(Compilation_unit.get_current_exn (), id)
-                    Is_parameter.local
-                in
-                Some provenance
+              let provenance =
+                V.Provenance.create ~module_path
+                  ~debuginfo:(Debuginfo.of_location Location.none
+                     ~scope:new_scope)
+                  ~ident_for_type:(Compilation_unit.get_current_exn (), id)
+                  Is_parameter.local
+              in
+              Some provenance
             in
             ((VP.create ?provenance id, ulam) :: udefs,
               V.Map.add id approx fenv_body) in
@@ -1601,17 +1600,15 @@ let rec close ~scope fenv cenv = function
       let vars =
         List.map (fun var ->
             let provenance =
-              match !current_module_path with
-              | None -> None
-              | Some module_path ->
-                let provenance =
-                  V.Provenance.create ~module_path
-                    ~debuginfo:(Debuginfo.of_location loc
-                      ~scope:body_scope)
-                    ~ident_for_type:(Compilation_unit.get_current_exn (), var)
-                    Is_parameter.local
-                in
-                Some provenance
+              let module_path = get_current_module_path () in
+              let provenance =
+                V.Provenance.create ~module_path
+                  ~debuginfo:(Debuginfo.of_location loc
+                    ~scope:body_scope)
+                  ~ident_for_type:(Compilation_unit.get_current_exn (), var)
+                  Is_parameter.local
+              in
+              Some provenance
             in
             VP.create ?provenance var)
           vars
@@ -1623,17 +1620,15 @@ let rec close ~scope fenv cenv = function
       let handler_scope = CB.add_scope scope in
       let (uhandler, _) = close ~scope:handler_scope fenv cenv handler in
       let provenance =
-        match !current_module_path with
-        | None -> None
-        | Some module_path ->
-          let provenance =
-            V.Provenance.create ~module_path
-              ~debuginfo:(Debuginfo.of_location loc
-                ~scope:handler_scope)
-              ~ident_for_type:(Compilation_unit.get_current_exn (), id)
-              Is_parameter.local
-          in
-          Some provenance
+        let module_path = get_current_module_path () in
+        let provenance =
+          V.Provenance.create ~module_path
+            ~debuginfo:(Debuginfo.of_location loc
+              ~scope:handler_scope)
+            ~ident_for_type:(Compilation_unit.get_current_exn (), id)
+            Is_parameter.local
+        in
+        Some provenance
       in
       let dbg = Debuginfo.of_location loc ~scope in
       (Utrywith(ubody, VP.create ?provenance id, uhandler, dbg), Value_unknown)
@@ -1670,16 +1665,14 @@ let rec close ~scope fenv cenv = function
       let (ubody, _) = close_new_scope ~scope:body_scope fenv cenv body in
       let dbg = Debuginfo.of_location loc ~scope:body_scope in
       let provenance =
-        match !current_module_path with
-        | None -> None
-        | Some module_path ->
-          let provenance =
-            V.Provenance.create ~module_path
-              ~debuginfo:(Debuginfo.of_location loc ~scope:body_scope)
-              ~ident_for_type:(Compilation_unit.get_current_exn (), id)
-              Is_parameter.local
-          in
-          Some provenance
+        let module_path = get_current_module_path () in
+        let provenance =
+          V.Provenance.create ~module_path
+            ~debuginfo:(Debuginfo.of_location loc ~scope:body_scope)
+            ~ident_for_type:(Compilation_unit.get_current_exn (), id)
+            Is_parameter.local
+        in
+        Some provenance
       in
       (Ufor(VP.create ?provenance id, ulo, uhi, dir, ubody, dbg), Value_unknown)
   | Lassign(id, lam) ->

@@ -80,6 +80,7 @@ let bind_load name arg fn =
   | _ -> bind name arg fn
 
 let bind_nonvar name arg fn =
+  let name = "*" ^ name ^ "*" in
   match arg with
     Cconst_int _ | Cconst_natint _ | Cconst_symbol _
   | Cconst_pointer _ | Cconst_natpointer _

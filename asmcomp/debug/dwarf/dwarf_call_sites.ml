@@ -324,6 +324,7 @@ let call_target_for_direct_callee state (callee : direct_callee) =
           else
             []
         in
+        (* CR mshinwell: Add "declaration" attribute *)
         let callee_die =
           Proto_die.create ~parent:(Some (DS.compilation_unit_proto_die state))
             ~tag:Subprogram

@@ -18,6 +18,9 @@ include Ident
 
 type backend_var = t
 
+(* CR mshinwell: We need more command-line flags to control printing of
+   debugging information. *)
+
 module Provenance = struct
   type t = {
     module_path : Path.t;
@@ -90,7 +93,12 @@ module With_provenance = struct
   let rename ?provenance t =
     let var = rename (var t) in
     match provenance with
-    | None -> Without_provenance var
+    | None ->
+      begin match t with
+      | Without_provenance _ -> Without_provenance var
+      | With_provenance { var = _; provenance; } ->
+        With_provenance { var; provenance; }
+      end
     | Some provenance -> With_provenance { var; provenance; }
 
   let print ppf t =

@@ -231,7 +231,7 @@ and lam ppf = function
         print_dbg handler_dbg
         lam lhandler
   | Utrywith(lbody, param, lhandler, handler_dbg) ->
-      fprintf ppf "@[<2>(try@ %a@;<1 -1>with%a %a@ %a)@]"
+      fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a %a@ %a)@]"
         lam lbody
         VP.print param
         print_dbg handler_dbg
