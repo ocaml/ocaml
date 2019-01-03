@@ -15,6 +15,8 @@
 
 (* Introduction of closures, uncurrying, recognition of direct calls *)
 
+(* CR mshinwell: Access to closure variables through gdb *)
+
 open Misc
 open Asttypes
 open Primitive
