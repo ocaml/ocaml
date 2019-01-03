@@ -226,3 +226,7 @@ val create_ocaml_config_digest
 val create_ocaml_prefix_name
    : string
   -> Dwarf_attribute_values.Attribute_value.t
+
+val create_ocaml_linker_dirs
+   : string list
+  -> Dwarf_attribute_values.Attribute_value.t

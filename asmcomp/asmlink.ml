@@ -167,6 +167,7 @@ let read_file obj_name =
     Unit (file_name,info,crc)
   end
   else if Filename.check_suffix file_name ".cmxa" then begin
+    
     let infos =
       try read_library_info file_name
       with Compilenv.Error(Not_a_unit_info _) ->
@@ -216,7 +217,8 @@ let compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase =
   in
   Asmgen.compile_phrase ~ppf_dump ~dwarf phrase
 
-let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units_list =
+let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
+      ~objfiles units_list =
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   (* set the name of the "current" compunit *)
   Compilation_unit.set_current Compilation_unit.startup;
@@ -230,7 +232,8 @@ let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units_list =
         | None -> ""
         | Some (cmm_debug, _, _) -> Cmm_debug.startup_cmm_file cmm_debug
       in
-      Some (Dwarf.create ~sourcefile ~prefix_name:dwarf_prefix_name)
+      Some (Dwarf.create ~sourcefile ~prefix_name:dwarf_prefix_name
+        ~objfiles)
   in
   let compile_phrase phrase =
     compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase
@@ -269,7 +272,8 @@ let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units_list =
     force_linking_of_startup ~ppf_dump;
   Emit.end_assembly dwarf
 
-let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units =
+let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
+      ~objfiles units =
   Location.input_name := "caml_startup";
   (* CR mshinwell: We need to work out how to get a proper unit name to
      [Dwarf] here.  There may be multiple shared startup files in an
@@ -285,7 +289,8 @@ let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug units =
         | None -> ""
         | Some (cmm_debug, _, _) -> Cmm_debug.startup_cmm_file cmm_debug
       in
-      Some (Dwarf.create ~sourcefile ~prefix_name:dwarf_prefix_name)
+      Some (Dwarf.create ~sourcefile ~prefix_name:dwarf_prefix_name
+        ~objfiles)
   in
   let compile_phrase phrase =
     compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase
@@ -348,6 +353,7 @@ let link_shared ~ppf_dump objfiles output_name =
           startup !Clflags.keep_startup_file startup_obj
           (fun () ->
              make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
+               ~objfiles
                (List.map (fun (ui,_,crc) -> (ui,crc)) units_tolink)
           ))
       ~exceptionally:(fun () ->
@@ -438,7 +444,7 @@ let link ~ppf_dump objfiles output_name =
           startup !Clflags.keep_startup_file startup_obj
           (fun () ->
             make_startup_file ~ppf_dump ~dwarf_prefix_name
-              ~cmm_debug units_tolink))
+              ~cmm_debug ~objfiles units_tolink))
       ~exceptionally:(fun () ->
         match cmm_debug with
         | None -> ()

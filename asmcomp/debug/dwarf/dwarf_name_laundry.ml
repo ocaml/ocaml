@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*            Mark Shinwell and Thomas Refis, Jane Street Europe          *)
 (*                                                                        *)
-(*   Copyright 2013--2018 Jane Street Group LLC                           *)
+(*   Copyright 2013--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -73,3 +73,11 @@ let mangle_symbol section symbol =
       (Linkage_name.to_string (Symbol.label symbol))
   in
   Asm_symbol.of_external_name section (Symbol.compilation_unit symbol) symbol'
+
+let linker_dir_sep = '\001'
+
+let mangle_linker_dirs dirs =
+  String.concat (Printf.sprintf "%c" linker_dir_sep) dirs
+
+let demangle_linker_dirs mangled_dirs =
+  String.split_on_char linker_dir_sep mangled_dirs

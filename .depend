@@ -2458,13 +2458,17 @@ asmcomp/debug/available_ranges_vars.cmi : \
     asmcomp/debug/reg_with_debug_info.cmi asmcomp/reg.cmi \
     asmcomp/linearize.cmi middle_end/base_types/is_parameter.cmi \
     asmcomp/debug/compute_ranges_intf.cmo asmcomp/backend_var.cmi
-asmcomp/debug/available_regs.cmo : asmcomp/debug/reg_with_debug_info.cmi \
+asmcomp/debug/available_regs.cmo : utils/targetint.cmi \
+    asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
-    asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi utils/clflags.cmi \
+    asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi \
+    middle_end/base_types/is_parameter.cmi utils/clflags.cmi \
     asmcomp/backend_var.cmi asmcomp/debug/available_regs.cmi
-asmcomp/debug/available_regs.cmx : asmcomp/debug/reg_with_debug_info.cmx \
+asmcomp/debug/available_regs.cmx : utils/targetint.cmx \
+    asmcomp/debug/reg_with_debug_info.cmx \
     asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx asmcomp/proc.cmx \
-    asmcomp/printmach.cmx utils/misc.cmx asmcomp/mach.cmx utils/clflags.cmx \
+    asmcomp/printmach.cmx utils/misc.cmx asmcomp/mach.cmx \
+    middle_end/base_types/is_parameter.cmx utils/clflags.cmx \
     asmcomp/backend_var.cmx asmcomp/debug/available_regs.cmi
 asmcomp/debug/available_regs.cmi : asmcomp/mach.cmi
 asmcomp/debug/cmm_debug.cmo : asmcomp/printcmm.cmi utils/numbers.cmi \
@@ -2886,7 +2890,8 @@ asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmo : utils/targetint.cmi \
     asmcomp/debug/dwarf/dwarf_low/dwarf_4/debug_loc_table.cmi \
     asmcomp/debug/dwarf/dwarf_low/counted_location_description.cmi \
     asmcomp/debug/dwarf/dwarf_low/composite_location_description.cmi \
-    asmcomp/cmmgen.cmi utils/clflags.cmi asmcomp/backend_var.cmi \
+    middle_end/base_types/compilation_unit.cmi asmcomp/cmmgen.cmi \
+    utils/clflags.cmi asmcomp/backend_var.cmi \
     asmcomp/debug/available_ranges_all_vars.cmi \
     asmcomp/asm_target/asm_symbol.cmi asmcomp/asm_target/asm_label.cmi \
     asmcomp/arch.cmo asmcomp/debug/dwarf/dwarf_low/address_table.cmi \
@@ -2913,7 +2918,8 @@ asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmx : utils/targetint.cmx \
     asmcomp/debug/dwarf/dwarf_low/dwarf_4/debug_loc_table.cmx \
     asmcomp/debug/dwarf/dwarf_low/counted_location_description.cmx \
     asmcomp/debug/dwarf/dwarf_low/composite_location_description.cmx \
-    asmcomp/cmmgen.cmx utils/clflags.cmx asmcomp/backend_var.cmx \
+    middle_end/base_types/compilation_unit.cmx asmcomp/cmmgen.cmx \
+    utils/clflags.cmx asmcomp/backend_var.cmx \
     asmcomp/debug/available_ranges_all_vars.cmx \
     asmcomp/asm_target/asm_symbol.cmx asmcomp/asm_target/asm_label.cmx \
     asmcomp/arch.cmx asmcomp/debug/dwarf/dwarf_low/address_table.cmx \
@@ -3547,6 +3553,7 @@ asmcomp/debug/dwarf/dwarf_high/dwarf_attribute_helpers.cmo : \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmi utils/numbers.cmi \
     utils/misc.cmi asmcomp/debug/dwarf/dwarf_low/location_list_table.cmi \
     middle_end/base_types/linkage_name.cmi typing/ident.cmi \
+    asmcomp/debug/dwarf/dwarf_name_laundry.cmi \
     asmcomp/debug/dwarf/dwarf_low/dwarf_attributes.cmi \
     asmcomp/debug/dwarf/dwarf_low/dwarf_attribute_values.cmi \
     utils/clflags.cmi asmcomp/arch.cmo \
@@ -3556,6 +3563,7 @@ asmcomp/debug/dwarf/dwarf_high/dwarf_attribute_helpers.cmx : \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmx utils/numbers.cmx \
     utils/misc.cmx asmcomp/debug/dwarf/dwarf_low/location_list_table.cmx \
     middle_end/base_types/linkage_name.cmx typing/ident.cmx \
+    asmcomp/debug/dwarf/dwarf_name_laundry.cmx \
     asmcomp/debug/dwarf/dwarf_low/dwarf_attributes.cmx \
     asmcomp/debug/dwarf/dwarf_low/dwarf_attribute_values.cmx \
     utils/clflags.cmx asmcomp/arch.cmx \

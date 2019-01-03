@@ -188,6 +188,7 @@ module Attribute : sig
       | Unit_name : Class.string t
       | Config_digest : Class.string t
       | Prefix_name : Class.string t
+      | Linker_dirs : Class.string t
   end
 
   type 'dwarf_classes t =

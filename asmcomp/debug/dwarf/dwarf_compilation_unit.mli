@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2013--2018 Jane Street Group LLC                           *)
+(*   Copyright 2013--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -19,6 +19,7 @@
 val compile_unit_proto_die
    : sourcefile:string
   -> prefix_name:string
+  -> objfiles:string list
   -> start_of_code_symbol:Asm_symbol.t
   -> end_of_code_symbol:Asm_symbol.t
   -> Address_table.t

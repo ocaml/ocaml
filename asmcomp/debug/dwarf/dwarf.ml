@@ -25,7 +25,7 @@ type t = {
 (* CR mshinwell: On OS X 10.11 (El Capitan), dwarfdump doesn't seem to be able
    to read our 64-bit DWARF output. *)
 
-let create ~sourcefile ~prefix_name =
+let create ~sourcefile ~prefix_name ~objfiles =
   begin match !Clflags.dwarf_format with
   | Thirty_two -> Dwarf_format.set Thirty_two
   | Sixty_four -> Dwarf_format.set Sixty_four
@@ -52,7 +52,7 @@ let create ~sourcefile ~prefix_name =
   let range_list_table = Range_list_table.create () in
   let compilation_unit_proto_die =
     Dwarf_compilation_unit.compile_unit_proto_die ~sourcefile ~prefix_name
-      ~start_of_code_symbol ~end_of_code_symbol
+      ~objfiles ~start_of_code_symbol ~end_of_code_symbol
       address_table location_list_table range_list_table
   in
   let value_type_proto_die =

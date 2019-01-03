@@ -199,7 +199,6 @@ DWARF_HIGH=\
   asmcomp/debug/dwarf/dwarf_high/dwarf_world.cmo
 
 DWARF=\
-  asmcomp/debug/dwarf/dwarf_name_laundry.cmo \
 	asmcomp/debug/dwarf/dwarf_compilation_unit.cmo \
 	asmcomp/debug/dwarf/dwarf_state.cmo \
 	asmcomp/debug/dwarf/dwarf_reg_locations.cmo \
@@ -251,6 +250,7 @@ ASMCOMP=\
   asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
   asmcomp/debug/available_regs.cmo \
+  asmcomp/debug/dwarf/dwarf_name_laundry.cmo \
   $(DWARF_LOW) \
   $(DWARF_HIGH) \
   asmcomp/debug/compute_ranges_intf.cmo \

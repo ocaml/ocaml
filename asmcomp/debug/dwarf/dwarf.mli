@@ -25,6 +25,7 @@ type t
 val create
    : sourcefile:string
   -> prefix_name:string
+  -> objfiles:string list
   -> t
 
 (** Generate DWARF for the given function. *)

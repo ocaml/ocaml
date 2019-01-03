@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2013--2018 Jane Street Group LLC                           *)
+(*   Copyright 2013--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -16,7 +16,7 @@
 
 module DAH = Dwarf_attribute_helpers
 
-let compile_unit_proto_die ~sourcefile ~prefix_name
+let compile_unit_proto_die ~sourcefile ~prefix_name ~objfiles
       ~start_of_code_symbol ~end_of_code_symbol
       address_table location_list_table range_list_table =
   let unit_name =
@@ -30,6 +30,19 @@ let compile_unit_proto_die ~sourcefile ~prefix_name
   let prefix_name =
     if Filename.is_relative prefix_name then Filename.concat cwd prefix_name
     else prefix_name
+  in
+  let linker_dir_names =
+    List.map (fun objfile ->
+        let dir = Filename.dirname objfile in
+        if Filename.is_relative objfile then Filename.concat cwd dir
+        else dir)
+      objfiles
+  in
+  let linker_dirs =
+    match linker_dir_names with
+    | [] -> []
+    | linker_dir_names ->
+      [ DAH.create_ocaml_linker_dirs linker_dir_names ]
   in
   (* CR mshinwell: Use [Build_path_prefix_map]. *)
   let debug_line_label = Asm_label.for_section (DWARF Debug_line) in
@@ -62,7 +75,7 @@ let compile_unit_proto_die ~sourcefile ~prefix_name
       DAH.create_high_pc_from_symbol ~low_pc:start_of_code_symbol
         end_of_code_symbol;
       DAH.create_stmt_list ~debug_line_label;
-    ] @ dwarf_5_only
+    ] @ linker_dirs @ dwarf_5_only
   in
   Proto_die.create ~parent:None
     ~tag:Compile_unit

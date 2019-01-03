@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*            Mark Shinwell and Thomas Refis, Jane Street Europe          *)
 (*                                                                        *)
-(*   Copyright 2013--2018 Jane Street Group LLC                           *)
+(*   Copyright 2013--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -50,3 +50,7 @@ val split_base_type_die_name : string -> split_base_type_die_name_result option
 
 (* CR mshinwell: rename? *)
 val mangle_symbol : Asm_section.t -> Symbol.t -> Asm_symbol.t
+
+val mangle_linker_dirs : string list -> string
+
+val demangle_linker_dirs : string -> string list
