@@ -338,6 +338,8 @@ let create_ocaml_prefix_name name =
   AV.create spec (V.indirect_string ~comment:"prefix name" name)
 
 let create_ocaml_linker_dirs dirs =
-  let dirs = Dwarf_name_laundry.mangle_linker_dirs dirs in
+  let dirs =
+    Dwarf_name_laundry.mangle_linker_dirs (Misc.Stdlib.String.Set.elements dirs)
+  in
   let spec = AS.create (Ocaml_specific Linker_dirs) Strp in
   AV.create spec (V.indirect_string ~comment:"linker dirs" dirs)

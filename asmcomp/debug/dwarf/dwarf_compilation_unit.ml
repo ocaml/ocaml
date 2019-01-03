@@ -42,6 +42,7 @@ let compile_unit_proto_die ~sourcefile ~prefix_name ~objfiles
     match linker_dir_names with
     | [] -> []
     | linker_dir_names ->
+      let linker_dir_names = Misc.Stdlib.String.Set.of_list linker_dir_names in
       [ DAH.create_ocaml_linker_dirs linker_dir_names ]
   in
   (* CR mshinwell: Use [Build_path_prefix_map]. *)

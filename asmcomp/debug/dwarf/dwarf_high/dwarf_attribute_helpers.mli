@@ -228,5 +228,5 @@ val create_ocaml_prefix_name
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_ocaml_linker_dirs
-   : string list
+   : Misc.Stdlib.String.Set.t
   -> Dwarf_attribute_values.Attribute_value.t
