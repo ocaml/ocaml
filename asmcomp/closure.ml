@@ -61,8 +61,9 @@ let rec build_closure_env env_param pos = function
     [] -> V.Map.empty
   | id :: rem ->
       V.Map.add id
-        (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none))
-          (build_closure_env env_param (pos+1) rem)
+        (env_param, pos,
+          Uprim(Pfield pos, [Uvar env_param], Debuginfo.none))
+        (build_closure_env env_param (pos+1) rem)
 
 (* Auxiliary for accessing globals.  We change the name of the global
    to the name of the corresponding asm symbol.  This is done here
@@ -1779,6 +1780,10 @@ and close_functions fenv cenv fun_defs =
       uncurried_defs fenv in
   (* Determine the offsets of each function's closure in the shared block *)
   let env_pos = ref (-1) in
+  (* CR-someday mshinwell: Make the identifiers for the functions themselves
+     visible in DWARF.  The only tricky thing remaining is to determine
+     which functions are (or probably are) recursive---we don't want to show
+     these identifiers for all non-recursive functions. *)
   let clos_offsets =
     List.map
       (fun (_id, _params, _body, fundesc, _fun_dbg) ->
@@ -1793,8 +1798,14 @@ and close_functions fenv cenv fun_defs =
   (* Translate each function definition *)
   let clos_fundef (id, params, body, fundesc, fun_dbg) env_pos =
     let env_param = V.create_local "*env*" in
-    let cenv_fv =
+    let cenv_fv' =
       build_closure_env env_param (fv_pos - env_pos) fv in
+    let cenv_fv =
+      V.Map.fold (fun id (_env_param, _field, ulam) cenv_fv ->
+          V.Map.add id ulam cenv_fv)
+        cenv_fv'
+        V.Map.empty
+    in
     let cenv_body =
       List.fold_right2
         (fun (id, _params, _body, _fundesc, _fun_dbg) pos env ->
@@ -1802,6 +1813,26 @@ and close_functions fenv cenv fun_defs =
         uncurried_defs clos_offsets cenv_fv in
     let scope = CB.toplevel in
     let (ubody, approx) = close ~scope fenv_rec cenv_body body in
+    let ubody =
+      V.Map.fold (fun id (env_param, field, _ulam) ubody ->
+          let provenance =
+            match Debuginfo.Function.module_path fun_dbg with
+            | None -> None
+            | Some module_path ->
+              let provenance =
+                V.Provenance.create ~module_path
+                  ~debuginfo:(Debuginfo.of_location Location.none ~scope)
+                  ~ident_for_type:(Compilation_unit.get_current_exn (), id)
+                  Is_parameter.local
+              in
+              Some provenance
+          in
+          assert (field >= 0);
+          Uphantom_let (VP.create ?provenance id,
+            Some (Uphantom_read_field { var = env_param; field; }),
+            ubody))
+        cenv_fv' ubody
+    in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
     let fun_params = if !useless_env then params else params @ [env_param] in
     let params =
