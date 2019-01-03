@@ -46,12 +46,7 @@
 
 MENHIR ?= menhir
 
-## Menhir compilation flags
-
-MENHIRFLAGS := --explain --dump --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer \
-	--lalr --strict --table -lg 1 -la 1 \
-        --unused-token COMMENT --unused-token DOCSTRING --unused-token EOL\
-        --unused-token GREATERRBRACKET --fixed-exception
+## Unused tokens
 
 # tokens COMMENT, DOCSTRING and EOL are produced by special lexer
 # modes used by other consumers than the parser.
@@ -60,6 +55,13 @@ MENHIRFLAGS := --explain --dump --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer \
 # (which is used in polymorphic variant), but is not currently used by
 # the grammar.
 
+unused_tokens := COMMENT DOCSTRING EOL GREATERRBRACKET
+
+## Menhir compilation flags
+
+MENHIRFLAGS := --explain --dump --ocamlc "$(CAMLC) $(COMPFLAGS)" --infer \
+	--lalr --strict --table -lg 1 -la 1 \
+        $(addprefix --unused-token ,$(unused_tokens)) --fixed-exception
 
 ## promote-menhir
 
