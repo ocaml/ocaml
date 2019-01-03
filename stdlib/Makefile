@@ -33,7 +33,7 @@ OPTCOMPFLAGS=
 endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
-CAMLDEP=$(CAMLRUN) $(ROOTDIR)/tools/ocamldep
+CAMLDEP=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
 DEPFLAGS=-slash
 
 OC_CPPFLAGS += -I$(ROOTDIR)/runtime
@@ -281,7 +281,8 @@ $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
 $(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
 
-# Dependencies on Stdlib (not tracked by ocamldep)
+# Dependencies on Stdlib (not tracked by ocamlc -depend)
+
 $(OTHERS) std_exit.cmo: stdlib.cmi
 $(OTHERS:.cmo=.cmi) std_exit.cmi: stdlib.cmi
 $(OBJS:.cmo=.cmx) std_exit.cmx: stdlib.cmi
