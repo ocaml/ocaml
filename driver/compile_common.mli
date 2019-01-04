@@ -28,13 +28,13 @@ type info = {
 (** Information needed to compile a file. *)
 
 val init :
-  Format.formatter ->
+  ppf_dump:Format.formatter ->
   native:bool ->
   tool_name:string ->
   source_file:string ->
   output_prefix:string ->
   info
-(** [init ppf ~native ~tool_name ~source_file ~output_prefix] initializes
+(** [init ~ppf_dump ~native ~tool_name ~source_file ~output_prefix] initializes
     the various global variables and returns an {!info}.
 *)
 

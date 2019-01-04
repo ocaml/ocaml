@@ -31,7 +31,7 @@ let obj i = i.output_prefix ^ Config.ext_obj
 let cmo i = i.output_prefix ^ ".cmo"
 let annot i = i.output_prefix ^ ".annot"
 
-let init ppf_dump ~native ~tool_name ~source_file ~output_prefix =
+let init ~ppf_dump ~native ~tool_name ~source_file ~output_prefix =
   Compmisc.init_path native;
   let module_name = module_of_filename source_file output_prefix in
   Env.set_unit_name module_name;

@@ -25,7 +25,7 @@ let init =
 
 let interface ~source_file ~output_prefix =
   Compmisc.with_ppf_dump ~file_prefix:(output_prefix ^ ".cmi") @@ fun ppf_dump ->
-  let info = init ppf_dump ~source_file ~output_prefix in
+  let info = init ~ppf_dump ~source_file ~output_prefix in
   Compile_common.interface info
 
 let (|>>) (x, y) f = (x, f y)
@@ -79,7 +79,7 @@ let clambda i typed =
 
 let implementation ~backend ~source_file ~output_prefix =
   Compmisc.with_ppf_dump ~file_prefix:(output_prefix ^ ".cmx") @@ fun ppf_dump ->
-  let info = init ppf_dump ~source_file ~output_prefix in
+  let info = init ~ppf_dump ~source_file ~output_prefix in
   let backend info typed =
     Compilenv.reset ?packname:!Clflags.for_package info.module_name;
     if Config.flambda
