@@ -20,12 +20,11 @@ open Compile_common
 
 let tool_name = "ocamlopt"
 
-let init =
-  Compile_common.init ~native:true ~tool_name
+let with_info =
+  Compile_common.with_info ~native:true ~tool_name
 
 let interface ~source_file ~output_prefix =
-  Compmisc.with_ppf_dump ~file_prefix:(output_prefix ^ ".cmi") @@ fun ppf_dump ->
-  let info = init ~ppf_dump ~source_file ~output_prefix in
+  with_info ~source_file ~output_prefix ~dump_ext:"cmi" @@ fun info ->
   Compile_common.interface info
 
 let (|>>) (x, y) f = (x, f y)
@@ -78,12 +77,11 @@ let clambda i typed =
        Compilenv.save_unit_info (cmx i))
 
 let implementation ~backend ~source_file ~output_prefix =
-  Compmisc.with_ppf_dump ~file_prefix:(output_prefix ^ ".cmx") @@ fun ppf_dump ->
-  let info = init ~ppf_dump ~source_file ~output_prefix in
   let backend info typed =
     Compilenv.reset ?packname:!Clflags.for_package info.module_name;
     if Config.flambda
     then flambda info backend typed
     else clambda info typed
   in
+  with_info ~source_file ~output_prefix ~dump_ext:"cmx" @@ fun info ->
   Compile_common.implementation info ~backend

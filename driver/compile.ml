@@ -18,12 +18,11 @@ open Compile_common
 
 let tool_name = "ocamlc"
 
-let init =
-  Compile_common.init ~native:false ~tool_name
+let with_info =
+  Compile_common.with_info ~native:false ~tool_name
 
 let interface ~source_file ~output_prefix =
-  Compmisc.with_ppf_dump ~file_prefix:(output_prefix ^ ".cmi") @@ fun ppf_dump ->
-  let info = init ~ppf_dump ~source_file ~output_prefix in
+  with_info ~source_file ~output_prefix ~dump_ext:"cmi" @@ fun info ->
   Compile_common.interface info
 
 (** Bytecode compilation backend for .ml files. *)
@@ -56,10 +55,9 @@ let emit_bytecode i (bytecode, required_globals) =
     )
 
 let implementation ~source_file ~output_prefix =
-  Compmisc.with_ppf_dump ~file_prefix:(output_prefix ^ ".cmo") @@ fun ppf_dump ->
-  let info = init ~ppf_dump ~source_file ~output_prefix in
   let backend info typed =
     let bytecode = to_bytecode info typed in
     emit_bytecode info bytecode
   in
+  with_info ~source_file ~output_prefix ~dump_ext:"cmo" @@ fun info ->
   Compile_common.implementation info ~backend

@@ -31,12 +31,14 @@ let obj i = i.output_prefix ^ Config.ext_obj
 let cmo i = i.output_prefix ^ ".cmo"
 let annot i = i.output_prefix ^ ".annot"
 
-let init ~ppf_dump ~native ~tool_name ~source_file ~output_prefix =
+let with_info ~native ~tool_name ~source_file ~output_prefix ~dump_ext k =
   Compmisc.init_path native;
   let module_name = module_of_filename source_file output_prefix in
   Env.set_unit_name module_name;
   let env = Compmisc.initial_env() in
-  {
+  let dump_file = String.concat "." [output_prefix; dump_ext] in
+  Compmisc.with_ppf_dump ~file_prefix:dump_file @@ fun ppf_dump ->
+  k {
     module_name;
     output_prefix;
     env;
@@ -45,7 +47,6 @@ let init ~ppf_dump ~native ~tool_name ~source_file ~output_prefix =
     tool_name;
     native;
   }
-
 
 (** Compile a .mli file *)
 

@@ -27,15 +27,22 @@ type info = {
 }
 (** Information needed to compile a file. *)
 
-val init :
-  ppf_dump:Format.formatter ->
+val with_info :
   native:bool ->
   tool_name:string ->
   source_file:string ->
   output_prefix:string ->
-  info
-(** [init ~ppf_dump ~native ~tool_name ~source_file ~output_prefix] initializes
-    the various global variables and returns an {!info}.
+  dump_ext:string ->
+  (info -> 'a) -> 'a
+(** [with_info ~native ~tool_name ~source_file ~output_prefix ~dump_ext k]
+   invokes its continuation [k] with an [info] structure built from
+   its input, after initializing various global variables. This info
+   structure and the initialized global state are not valid anymore
+   after the continuation returns.
+
+   Due to current implementation limitations in the compiler, it is
+   unsafe to try to compile several distinct compilation units by
+   calling [with_info] several times.
 *)
 
 (** {2 Interfaces} *)
