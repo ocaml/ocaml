@@ -376,6 +376,9 @@ Working version
 
 ### Tools
 
+- GPR#2182: Split Emacs caml-mode as an independent project.
+  (Christophe Troestler, review by Gabriel Scherer)
+
 - MPR#7843, GPR#2013: ocamldoc, better handling of {{!label}text} in the latex
   backend.
   (Florian Angeletti, review by Nicolás Ojeda Bär and Gabriel Scherer)
