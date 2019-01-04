@@ -601,7 +601,12 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
         match single_location_description with
         | None -> []
         | Some single_location_description ->
-          [DAH.create_single_location_description single_location_description]
+          (* We set [is_visible_externally] to [false] since, even though
+             some static variables are accessible from other units, there
+             may be name clashes across units. *)
+          [DAH.create_single_location_description single_location_description;
+           DAH.create_external ~is_visible_externally:false;
+          ]
     end else begin
       (* Build a location list that identifies where the value of [var] may be
          found at runtime, indexed by program counter range. The representations
