@@ -494,6 +494,8 @@ let print_phantom_defining_expr ppf defining_expr =
     fprintf ppf "%a.(%d)"
       Ident.print var
       field
+  | Lphantom_read_global_module_block_field { field; } ->
+    fprintf ppf "<global module block>.(%d)" field
 
 let rec lam ppf = function
   | Lvar id ->

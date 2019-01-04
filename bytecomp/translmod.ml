@@ -890,8 +890,21 @@ let transl_store_structure glob map prims str =
             let lam =
               transl_let rec_flag pat_expr_list (store_idents Location.none ids)
             in
+            let add_phantom_lets lam =
+              match !Clflags.debug_full with
+              | None -> lam
+              | Some _ ->
+                List.fold_left (fun lam id ->
+                    let field, _coercion = Ident.find_same id map in
+                    Lphantom_let (Ident.rename id,
+                      Lphantom_read_global_module_block_field { field; },
+                      lam))
+                  lam
+                  ids
+            in
+            let rest = transl_store rootpath (add_idents false ids subst) rem in
             Lsequence(Lambda.subst no_env_update subst lam,
-                      transl_store rootpath (add_idents false ids subst) rem)
+                      add_phantom_lets rest)
         | Tstr_primitive descr ->
             record_primitive descr.val_val;
             transl_store rootpath subst rem
@@ -954,6 +967,14 @@ let transl_store_structure glob map prims str =
             let lam =
               transl_store (field_path rootpath id) subst str.str_items
             in
+            let lam =
+              Levent (lam, {
+                lev_loc = loc;
+                lev_kind = Lev_module_definition id;
+                lev_repr = None;
+                lev_env = Env.empty;
+              })
+            in
             (* Careful: see next case *)
             let subst = !transl_store_subst in
             let field = field_of_str loc str in
@@ -972,6 +993,14 @@ let transl_store_structure glob map prims str =
                 (transl_module Tcoerce_none (field_path rootpath id) modl)
                 loc mb_attributes
             in
+            let lam =
+              Levent (lam, {
+                lev_loc = loc;
+                lev_kind = Lev_module_definition id;
+                lev_repr = None;
+                lev_env = Env.empty;
+              })
+            in
             (* Careful: the module value stored in the global may be different
                from the local module value, in case a coercion is applied.
                If so, keep using the local module value (id) in the remainder of
@@ -984,10 +1013,18 @@ let transl_store_structure glob map prims str =
         | Tstr_recmodule bindings ->
             let ids = List.map (fun mb -> mb.mb_id) bindings in
             compile_recmodule
-              (fun id modl _loc ->
-                 Lambda.subst no_env_update subst
-                   (transl_module Tcoerce_none
-                      (field_path rootpath id) modl))
+              (fun id modl loc ->
+                 let lam =
+                   Lambda.subst no_env_update subst
+                     (transl_module Tcoerce_none
+                        (field_path rootpath id) modl)
+                 in
+                 Levent (lam, {
+                   lev_loc = loc;
+                   lev_kind = Lev_module_definition id;
+                   lev_repr = None;
+                   lev_env = Env.empty;
+                 }))
               bindings
               (Lsequence(store_idents Location.none ids,
                          transl_store rootpath (add_idents true ids subst) rem))

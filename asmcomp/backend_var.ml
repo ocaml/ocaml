@@ -40,33 +40,44 @@ module Provenance = struct
     debuginfo : Debuginfo.t;
     ident_for_type : Compilation_unit.t * Ident.t;
     is_parameter : Is_parameter.t;
+    is_static : bool;
   }
 
   let print ppf { module_path; debuginfo;
-        ident_for_type = (compilation_unit, ident_for_type); is_parameter; } =
+        ident_for_type = (compilation_unit, ident_for_type); is_parameter;
+        is_static; } =
     Format.fprintf ppf "@[<hov 1>(\
         @[<hov 1>(module_path@ %a)@]@ \
         @[<hov 1>(debuginfo@ %a)@]@ \
         @[<hov 1>(ident_for_type@ %a.%a)@]@ \
         @[<hov 1>(is_parameter@ %a)@]\
+        @[<hov 1>(is_static@ %b)@]\
         )@]"
       Path.print module_path
       Debuginfo.print debuginfo
       Compilation_unit.print compilation_unit
       Ident.print ident_for_type
       Is_parameter.print is_parameter
+      is_static
 
-  let create ~module_path ~debuginfo ~ident_for_type is_parameter =
+  let create ?static ~module_path ~debuginfo ~ident_for_type is_parameter =
+    let is_static =
+      match static with
+      | None -> false
+      | Some () -> true
+    in
     { module_path;
       debuginfo;
       ident_for_type;
       is_parameter;
+      is_static;
     }
 
   let module_path t = t.module_path
   let debuginfo t = t.debuginfo
   let ident_for_type t = t.ident_for_type
   let is_parameter t = t.is_parameter
+  let is_static t = t.is_static
 
   let replace_debuginfo t debuginfo =
     { t with debuginfo; }

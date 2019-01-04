@@ -37,6 +37,8 @@ type proto_dies_for_var = {
 
 let arch_size_addr = Targetint.of_int_exn Arch.size_addr
 
+(* Note: this function only works for static (toplevel) variables because we
+   assume they only occur in the entry function. *)
 let calculate_var_uniqueness ~available_ranges_vars =
   let module String = Misc.Stdlib.String in
   let by_name = String.Tbl.create 42 in
@@ -149,7 +151,9 @@ let construct_type_of_value_description state ~parent ident_for_type
     match ident_for_type with
     | None -> []
     | Some (compilation_unit, var) ->
-      let name = Dwarf_name_laundry.base_type_die_name_for_var compilation_unit var in
+      let name =
+        Dwarf_name_laundry.base_type_die_name_for_var compilation_unit var
+      in
       [DAH.create_name name]
   in
   match phantom_defining_expr with
@@ -443,12 +447,8 @@ let phantom_var_location_description state
       ~die_label:(Proto_die.reference proto_die)
       (DS.dwarf_version state))
 
-type location_list_entry =
-  | Dwarf_4 of Dwarf_4_location_list_entry.t
-  | Dwarf_5 of Location_list_entry.t
-
-let location_list_entry state (_fundecl : L.fundecl) ~parent ~subrange
-      ~proto_dies_for_vars ~need_rvalue : location_list_entry option =
+let single_location_description state (_fundecl : L.fundecl) ~parent ~subrange
+      ~proto_dies_for_vars ~need_rvalue =
   let location_description =
     match ARV.Subrange.info subrange with
     | Non_phantom { reg; offset_from_cfa_in_bytes; } ->
@@ -457,59 +457,75 @@ let location_list_entry state (_fundecl : L.fundecl) ~parent ~subrange
       phantom_var_location_description state ~defining_expr
         ~need_rvalue ~proto_dies_for_vars ~parent
   in
-  let single_location_description =
-    match location_description with
-    | None -> None
-    | Some (Simple simple) ->
-      Some (Single_location_description.of_simple_location_description simple)
-    | Some (Composite composite) ->
-      Some (Single_location_description.of_composite_location_description
-        composite)
-  in
-  match single_location_description with
+  match location_description with
   | None -> None
-  | Some single_location_description ->
-    let start_pos =
-      Asm_label.create_int Text (ARV.Subrange.start_pos subrange)
+  | Some (Simple simple) ->
+    Some (Single_location_description.of_simple_location_description simple)
+  | Some (Composite composite) ->
+    Some (Single_location_description.of_composite_location_description
+      composite)
+
+let single_phantom_location_description state ~parent ~proto_dies_for_vars
+      ~need_rvalue defining_expr =
+  let location_description =
+    phantom_var_location_description state ~defining_expr
+      ~need_rvalue ~proto_dies_for_vars ~parent
+  in
+  match location_description with
+  | None -> None
+  | Some (Simple simple) ->
+    Some (Single_location_description.of_simple_location_description simple)
+  | Some (Composite composite) ->
+    Some (Single_location_description.of_composite_location_description
+      composite)
+
+type location_list_entry =
+  | Dwarf_4 of Dwarf_4_location_list_entry.t
+  | Dwarf_5 of Location_list_entry.t
+
+let location_list_entry state ~subrange single_location_description
+      : location_list_entry =
+  let start_pos =
+    Asm_label.create_int Text (ARV.Subrange.start_pos subrange)
+  in
+  let end_pos =
+    Asm_label.create_int Text (ARV.Subrange.end_pos subrange)
+  in
+  let end_pos_offset = ARV.Subrange.end_pos_offset subrange in
+  match !Clflags.dwarf_version with
+  | Four ->
+    let location_list_entry =
+      Dwarf_4_location_list_entry.create_location_list_entry
+        ~start_of_code_symbol:(DS.start_of_code_symbol state)
+        ~first_address_when_in_scope:start_pos
+        ~first_address_when_not_in_scope:end_pos
+        ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
+        ~single_location_description
     in
-    let end_pos =
-      Asm_label.create_int Text (ARV.Subrange.end_pos subrange)
+    Dwarf_4 location_list_entry
+  | Five ->
+    let start_inclusive =
+      Address_table.add (DS.address_table state) start_pos
+        ~start_of_code_symbol:(DS.start_of_code_symbol state)
     in
-    let end_pos_offset = ARV.Subrange.end_pos_offset subrange in
-    match !Clflags.dwarf_version with
-    | Four ->
-      let location_list_entry =
-        Dwarf_4_location_list_entry.create_location_list_entry
-          ~start_of_code_symbol:(DS.start_of_code_symbol state)
-          ~first_address_when_in_scope:start_pos
-          ~first_address_when_not_in_scope:end_pos
-          ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
-          ~single_location_description
-      in
-      Some (Dwarf_4 location_list_entry)
-    | Five ->
-      let start_inclusive =
-        Address_table.add (DS.address_table state) start_pos
-          ~start_of_code_symbol:(DS.start_of_code_symbol state)
-      in
-      let end_exclusive =
-        Address_table.add (DS.address_table state) end_pos
-          ~adjustment:end_pos_offset
-          ~start_of_code_symbol:(DS.start_of_code_symbol state)
-      in
-      let loc_desc =
-        Counted_location_description.create single_location_description
-      in
-      let location_list_entry : Location_list_entry.entry =
-        (* DWARF-5 spec page 45 line 1. *)
-        Startx_endx {
-          start_inclusive;
-          end_exclusive;
-          payload = loc_desc;
-        }
-      in
-      Some (Dwarf_5 (Location_list_entry.create location_list_entry
-        ~start_of_code_symbol:(DS.start_of_code_symbol state)))
+    let end_exclusive =
+      Address_table.add (DS.address_table state) end_pos
+        ~adjustment:end_pos_offset
+        ~start_of_code_symbol:(DS.start_of_code_symbol state)
+    in
+    let loc_desc =
+      Counted_location_description.create single_location_description
+    in
+    let location_list_entry : Location_list_entry.entry =
+      (* DWARF-5 spec page 45 line 1. *)
+      Startx_endx {
+        start_inclusive;
+        end_exclusive;
+        payload = loc_desc;
+      }
+    in
+    Dwarf_5 (Location_list_entry.create location_list_entry
+      ~start_of_code_symbol:(DS.start_of_code_symbol state))
 
 let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
       ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
@@ -522,10 +538,17 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
     | Local -> false
     | Parameter _ -> true
   in
+  let is_static =
+    match provenance with
+    | None -> false
+    | Some provenance -> V.Provenance.is_static provenance
+  in
   let phantom_defining_expr = ARV.Range_info.phantom_defining_expr range_info in
   let (parent_proto_die : Proto_die.t), hidden =
     if var_is_a_parameter_of_fundecl_itself then
       function_proto_die, hidden
+    else if is_static then
+      DS.compilation_unit_proto_die state, hidden
     else
       (* Local variables need to be children of "lexical blocks", which in turn
          are children of the function.  It is important to generate accurate
@@ -549,55 +572,81 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
              [var] was defined.  For the moment, just hide [var]. *)
           function_proto_die, true
   in
-  (* Build a location list that identifies where the value of [ident] may be
-     found at runtime, indexed by program counter range.
-     The representations of location lists (and range lists, used below to
-     describe lexical blocks) changed completely between DWARF-4 and
-     DWARF-5. *)
-  let location_list_attribute_value =
-    let dwarf_4_location_list_entries, location_list =
-      ARV.Range.fold range
-        ~init:([], Location_list.create ())
-        ~f:(fun (dwarf_4_location_list_entries, location_list) subrange ->
-          let location_list_entry =
-            location_list_entry state fundecl ~parent:(Some function_proto_die)
-              ~subrange ~proto_dies_for_vars ~need_rvalue
-          in
-          match location_list_entry with
-          | None -> dwarf_4_location_list_entries, location_list
-          | Some (Dwarf_4 location_list_entry) ->
-            let dwarf_4_location_list_entries =
-              location_list_entry :: dwarf_4_location_list_entries
+  let location_attribute_value =
+    if is_static then begin
+      (* The location of a static (toplevel) variable is invariant under changes
+         to the program counter. As such a location list is not needed. *)
+      (* CR-someday mshinwell: In the future we should work out how to make
+         static variables be properly scoped with respect to the
+         interleaving function definitions.  Then, we would use the actual
+         calculated subranges here.  This work requires not only changes in
+         the OCaml middle end but also a determination as to whether GDB can
+         support the necessary scoping. *)
+      match phantom_defining_expr with
+      | Non_phantom -> []  (* Should have been caught earlier, in any case. *)
+      | Phantom defining_expr ->
+        if not (Mach.phantom_defining_expr_definitely_static defining_expr)
+        then begin
+          Misc.fatal_errorf "Variable %a bound by phantom let has defining \
+              expression that might not be invariant under changes to the \
+              program counter: %a"
+            V.print var
+            Printmach.phantom_defining_expr defining_expr
+        end;
+        let single_location_description =
+          single_phantom_location_description state
+            ~parent:(Some (DS.compilation_unit_proto_die state))
+            ~proto_dies_for_vars ~need_rvalue defining_expr
+        in
+        match single_location_description with
+        | None -> []
+        | Some single_location_description ->
+          [DAH.create_single_location_description single_location_description]
+    end else begin
+      (* Build a location list that identifies where the value of [var] may be
+         found at runtime, indexed by program counter range. The representations
+         of location lists (and range lists, used below to describe lexical
+         blocks) changed completely between DWARF-4 and DWARF-5. *)
+      let dwarf_4_location_list_entries, location_list =
+        ARV.Range.fold range
+          ~init:([], Location_list.create ())
+          ~f:(fun (dwarf_4_location_list_entries, location_list) subrange ->
+            let single_location_description =
+              single_location_description state fundecl
+                ~parent:(Some function_proto_die)
+                ~subrange ~proto_dies_for_vars ~need_rvalue
             in
-            dwarf_4_location_list_entries, location_list
-          | Some (Dwarf_5 location_list_entry) ->
-            let location_list =
-              Location_list.add location_list location_list_entry
-            in
-            dwarf_4_location_list_entries, location_list)
-    in
-    (* CR mshinwell: Re-check on Linux that removing the BASE hasn't
-       messed anything up *)
-    match !Clflags.dwarf_version with
-    | Four ->
-(*
-      let base_address_selection_entry =
-        let fun_symbol = Asm_symbol.create fundecl.fun_name in
-        Dwarf_4_location_list_entry.create_base_address_selection_entry
-          ~base_address_symbol:fun_symbol
+            match single_location_description with
+            | None -> dwarf_4_location_list_entries, location_list
+            | Some single_location_description ->
+              let location_list_entry =
+                location_list_entry state ~subrange single_location_description
+              in
+              match location_list_entry with
+              | Dwarf_4 location_list_entry ->
+                let dwarf_4_location_list_entries =
+                  location_list_entry :: dwarf_4_location_list_entries
+                in
+                dwarf_4_location_list_entries, location_list
+              | Dwarf_5 location_list_entry ->
+                let location_list =
+                  Location_list.add location_list location_list_entry
+                in
+                dwarf_4_location_list_entries, location_list)
       in
-      let location_list_entries =
-        base_address_selection_entry :: dwarf_4_location_list_entries
-      in
-*)
-      let location_list_entries = dwarf_4_location_list_entries in
-      let location_list = Dwarf_4_location_list.create ~location_list_entries in
-      Debug_loc_table.insert (DS.debug_loc_table state) ~location_list
-    | Five ->
-      let location_list_index =
-        Location_list_table.add (DS.location_list_table state) location_list
-      in
-      DAH.create_location location_list_index
+      match !Clflags.dwarf_version with
+      | Four ->
+        let location_list_entries = dwarf_4_location_list_entries in
+        let location_list =
+          Dwarf_4_location_list.create ~location_list_entries
+        in
+        [Debug_loc_table.insert (DS.debug_loc_table state) ~location_list]
+      | Five ->
+        let location_list_index =
+          Location_list_table.add (DS.location_list_table state) location_list
+        in
+        [DAH.create_location location_list_index]
+    end
   in
   let type_and_name_attributes =
     match type_die_reference_for_var var ~proto_dies_for_vars with
@@ -683,9 +732,7 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
     ?sort_priority
     ~parent:(Some parent_proto_die)
     ~tag
-    ~attribute_values:(type_and_name_attributes @ [
-      location_list_attribute_value;
-    ])
+    ~attribute_values:(type_and_name_attributes @ location_attribute_value)
     ()
 
 (* This function covers local variables, parameters, variables in closures
@@ -704,7 +751,17 @@ let iterate_over_variable_like_things state ~available_ranges_vars
       let provenance = ARV.Range_info.provenance range_info in
       let phantom : is_variable_phantom =
         match ARV.Range_info.phantom_defining_expr range_info with
-        | Non_phantom -> Non_phantom
+        | Non_phantom ->
+          begin match provenance with
+          | None -> ()
+          | Some provenance ->
+            if V.Provenance.is_static provenance then begin
+              Misc.fatal_errorf "Variable %a marked as static, but it is not \
+                  bound by a phantom let"
+                V.print var
+            end
+          end;
+          Non_phantom
         | Phantom _ -> Phantom
       in
       (* There are two variables in play here:

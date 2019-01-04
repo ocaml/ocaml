@@ -269,6 +269,7 @@ type phantom_defining_expr =
   | Lphantom_dead
   | Lphantom_var of Ident.t
   | Lphantom_read_field of { var : Ident.t; field : int; }
+  | Lphantom_read_global_module_block_field of { field : int; }
 
 type lambda =
     Lvar of Ident.t
@@ -337,7 +338,8 @@ type program =
   { module_ident : Ident.t;
     main_module_block_size : int;
     required_globals : Ident.Set.t;
-    code : lambda }
+    code : lambda;
+  }
 
 let const_unit = Const_pointer 0
 
@@ -676,7 +678,8 @@ let rec make_sequence fn = function
 
 let subst_phantom_defining_expr subst defining_expr =
   match defining_expr with
-  | Lphantom_dead -> Lphantom_dead
+  | Lphantom_dead
+  | Lphantom_read_global_module_block_field { field = _; } -> defining_expr
   | Lphantom_var var ->
       begin match Ident.Map.find var subst with
       | exception Not_found -> defining_expr

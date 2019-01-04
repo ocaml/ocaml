@@ -48,6 +48,15 @@ let get_current_module_path () =
   | None -> Misc.fatal_error "Current module path not set"
   | Some path -> path
 
+(* Maintain the current module block symbol *)
+
+let current_module_block_sym = ref (None : Backend_sym.t option)
+
+let get_current_module_block_sym () =
+  match !current_module_block_sym with
+  | None -> Misc.fatal_error "Current module block symbol not set"
+  | Some sym -> sym
+
 (* Auxiliaries for compiling functions *)
 
 let rec split_list n l =
@@ -1436,10 +1445,15 @@ let rec close ~scope fenv cenv = function
       end
   | Lphantom_let (id, defining_expr, body) ->
       let body_scope = CB.add_scope scope in
+      let static =
+        match defining_expr with
+        | Lphantom_read_global_module_block_field _ -> Some ()
+        | _ -> None
+      in
       let provenance =
         let module_path = get_current_module_path () in
         let provenance =
-          V.Provenance.create ~module_path
+          V.Provenance.create ?static ~module_path
             ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
             ~ident_for_type:(Compilation_unit.get_current_exn (), id)
             Is_parameter.local
@@ -1453,6 +1467,9 @@ let rec close ~scope fenv cenv = function
         | Lphantom_var var -> Some (Uphantom_var var)
         | Lphantom_read_field { var; field; } ->
             Some (Uphantom_read_field { var; field; })
+        | Lphantom_read_global_module_block_field { field; } ->
+            let sym = get_current_module_block_sym () in
+            Some (Uphantom_read_symbol_field { sym; field; })
       in
       let body, body_approx = close ~scope:body_scope fenv cenv body in
       Uphantom_let (var, defining_expr, body), body_approx
@@ -2045,12 +2062,14 @@ let collect_exported_structured_constants a =
 let reset () =
   global_approx := [||];
   function_nesting_depth := 0;
-  current_module_path := None
+  current_module_path := None;
+  current_module_block_sym := None
 
 (* The entry point *)
 
-let intro size lam =
+let intro size ~module_block_sym lam =
   reset ();
+  current_module_block_sym := Some module_block_sym;
   current_module_path :=
     Some (Printtyp.rewrite_double_underscore_paths Env.initial_safe_string
       (Path.Pident (Ident.create_persistent (Compilenv.current_unit_name ()))));

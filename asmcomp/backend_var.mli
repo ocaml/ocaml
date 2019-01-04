@@ -33,7 +33,8 @@ module Provenance : sig
   type t
 
   val create
-     : module_path:Path.t
+     : ?static:unit
+    -> module_path:Path.t
     -> debuginfo:Debuginfo.t
     -> ident_for_type:(Compilation_unit.t * Ident.t)
     -> Is_parameter.t
@@ -44,6 +45,7 @@ module Provenance : sig
   (* CR mshinwell: Make a new type for [Compilation.t * Ident.t] *)
   val ident_for_type : t -> Compilation_unit.t * Ident.t
   val is_parameter : t -> Is_parameter.t
+  val is_static : t -> bool
 
   val replace_debuginfo : t -> Debuginfo.t -> t
   val replace_ident_for_type : t -> Compilation_unit.t * Ident.t -> t

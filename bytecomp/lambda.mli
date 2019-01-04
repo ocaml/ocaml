@@ -250,6 +250,7 @@ type phantom_defining_expr =
   | Lphantom_dead
   | Lphantom_var of Ident.t
   | Lphantom_read_field of { var : Ident.t; field : int; }
+  | Lphantom_read_global_module_block_field of { field : int; }
 
 type lambda =
     Lvar of Ident.t
@@ -323,7 +324,8 @@ type program =
     main_module_block_size : int;
     required_globals : Ident.Set.t;    (* Modules whose initializer side effects
                                           must occur before [code]. *)
-    code : lambda }
+    code : lambda;
+  }
 (* Lambda code for the middle-end.
    * In the closure case the code is a sequence of assignments to a
      preallocated block of size [main_module_block_size] using

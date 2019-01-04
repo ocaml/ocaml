@@ -207,7 +207,7 @@ DWARF=\
 	asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmo \
 	asmcomp/debug/dwarf/dwarf_call_sites.cmo \
 	asmcomp/debug/dwarf/dwarf_concrete_instances.cmo \
-	asmcomp/debug/dwarf/dwarf_lifted_constants.cmo \
+	asmcomp/debug/dwarf/dwarf_toplevel_values.cmo \
   asmcomp/debug/dwarf/dwarf.cmo \
 
 ASMCOMP=\

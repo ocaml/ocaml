@@ -102,41 +102,20 @@ let dwarf_for_toplevel_constants state constants =
           ~symbol:constant.symbol constant)
     constants
 
-let dwarf_for_toplevel_inconstant state var ~module_path ~symbol =
-  let name =
-    let path = Printtyp.string_of_path module_path in
-    let name = Backend_var.name var in
-    path ^ "." ^ name
-  in
+let dwarf_for_closure_top_level_module_block state ~module_block_sym
+      ~module_block_var =
+  assert (not Config.flambda);
+  let name = Backend_var.name module_block_var in
   let type_proto_die =
     Dwarf_variables_and_parameters.normal_type_for_var
       ~parent:(Some (DS.compilation_unit_proto_die state))
-      (Some (Compilation_unit.get_current_exn (), var))
+      (Some (Compilation_unit.get_current_exn (), module_block_var))
   in
-  (* Toplevel inconstant "preallocated blocks" contain the thing of interest
-     in field 0 (once it has been initialised).  We describe them using a
-     single location description rather than a location list, since they
-     should be accessible at all times independent of the current value of
-     the PC. *)
   let single_location_description =
-    Single_location_description.of_simple_location_description (
-      (* We emit DWARF to describe an rvalue, rather than an lvalue, since
-         we manually read these values ourselves in libmonda (whereas for
-         e.g. a local variable bound to a read-symbol-field, the debugger
-         will do a final dereference after determining the lvalue from the
-         DWARF).  We cannot currently detect in libmonda whether or not a
-         reference to a toplevel module component "M.foo" is a constant
-         (represented as an rvalue in the DWARF, just the symbol's address)
-         or an inconstant---so we must be consistent as far as l/rvalue-ness
-         goes between the two. *)
-      (* CR-soon mshinwell: Actually this isn't the case.  We could use
-         SYMBOL_CLASS to distinguish them.  However maybe we'd better not
-         in case this doesn't work well with non-gdb. *)
-      let symbol = Asm_symbol.create symbol in
-      let lang =
-        SLDL.Rvalue.read_symbol_field ~symbol ~field:Targetint.zero
-      in
-      SLDL.compile (SLDL.of_rvalue lang))
+    let symbol = Asm_symbol.create module_block_sym in
+    let lang = SLDL.Lvalue.const_symbol ~symbol in
+    Single_location_description.of_simple_location_description
+      (SLDL.compile (SLDL.of_lvalue lang))
   in
   Proto_die.create_ignore ~parent:(Some (DS.compilation_unit_proto_die state))
     ~tag:Variable
@@ -144,24 +123,6 @@ let dwarf_for_toplevel_inconstant state var ~module_path ~symbol =
       DAH.create_name name;
       DAH.create_type ~proto_die:type_proto_die;
       DAH.create_single_location_description single_location_description;
-      DAH.create_external ~is_visible_externally:true;  (* see above *)
+      DAH.create_external ~is_visible_externally:true;
     ]
     ()
-
-let dwarf_for_toplevel_inconstants state inconstants =
-  List.iter (fun (inconstant : Clambda.preallocated_block) ->
-      (* CR-soon mshinwell: Should we be discarding toplevel things that don't
-         have provenance?  Maybe not -- think. *)
-      match inconstant.provenance with
-      | None -> ()
-      | Some provenance ->
-        (* CR-someday mshinwell: Support multi-field preallocated blocks
-           (ignored for the moment as the only one is the module block, which
-           isn't made visible in the debugger). *)
-        match provenance.idents_for_types with
-        | [] | _::_::_ -> ()
-        | [ident] ->
-          dwarf_for_toplevel_inconstant state ident
-            ~module_path:provenance.module_path
-            ~symbol:inconstant.symbol)
-    inconstants

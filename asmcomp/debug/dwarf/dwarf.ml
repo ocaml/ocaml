@@ -92,10 +92,12 @@ let dwarf_for_fundecl t (result : Debug_passes.result) =
   Dwarf_concrete_instances.for_fundecl t.state result
 
 let dwarf_for_toplevel_constants t constants =
-  Dwarf_lifted_constants.dwarf_for_toplevel_constants t.state constants
+  Dwarf_toplevel_values.dwarf_for_toplevel_constants t.state constants
 
-let dwarf_for_toplevel_inconstants t inconstants =
-  Dwarf_lifted_constants.dwarf_for_toplevel_inconstants t.state inconstants
+let dwarf_for_closure_top_level_module_block t ~module_block_sym
+      ~module_block_var =
+  Dwarf_toplevel_values.dwarf_for_closure_top_level_module_block t.state
+      ~module_block_sym ~module_block_var
 
 let emit t =
   if t.emitted then begin

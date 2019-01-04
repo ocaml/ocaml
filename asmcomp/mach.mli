@@ -55,6 +55,8 @@ type phantom_defining_expr =
   | Iphantom_read_symbol_field of { sym : Backend_sym.t; field : int; }
   | Iphantom_block of { tag : int; fields : Backend_var.t option list; }
 
+val phantom_defining_expr_definitely_static : phantom_defining_expr -> bool
+
 type call_labels = {
   before : label;
   after : label;

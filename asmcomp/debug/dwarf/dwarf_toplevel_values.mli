@@ -24,9 +24,10 @@ val dwarf_for_toplevel_constants
   -> Clambda.preallocated_constant list
   -> unit
 
-(** For dealing with [Closure]'s module blocks and Flambda's [Initialize_symbol]
-    bindings. *)
-val dwarf_for_toplevel_inconstants
+(** For dealing with [Closure]'s top level module blocks.  The symbol for
+    the module block and the corresponding variable must be provided. *)
+val dwarf_for_closure_top_level_module_block
    : Dwarf_state.t
-  -> Clambda.preallocated_block list
+  -> module_block_sym:Backend_sym.t
+  -> module_block_var:Backend_var.t
   -> unit

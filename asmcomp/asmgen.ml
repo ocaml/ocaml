@@ -199,7 +199,26 @@ let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
             in
             let _, toplevel_inconstants, toplevel_constants = clambda in
             Dwarf.dwarf_for_toplevel_constants dwarf toplevel_constants;
-            Dwarf.dwarf_for_toplevel_inconstants dwarf toplevel_inconstants;
+            (* Flambda [Initialize_symbol] blocks are not described in DWARF.
+               (This does not compromise the ability to inspect the values of
+               the corresponding lifted variables.) *)
+            if not Config.flambda then begin
+              let module_block_sym, module_block_var =
+                match toplevel_inconstants with
+                | [{ symbol = module_block_sym; exported = _; tag = _;
+                     fields = _;
+                     provenance = Some {
+                       idents_for_types = [module_block_var];
+                       module_path = _;
+                     };
+                   }] ->
+                  module_block_sym, module_block_var
+                | _ ->
+                  Misc.fatal_error "Unexpected form of [toplevel_inconstants]"
+              in
+              Dwarf.dwarf_for_closure_top_level_module_block dwarf
+                ~module_block_sym ~module_block_var
+            end;
             Some dwarf)
           ()
     in
@@ -257,25 +276,29 @@ let flambda_gen_implementation ?toplevel ~backend ~ppf_dump ~prefix_name
       (Symbol.Map.bindings constants)
   in
   end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
-    ~sourcefile (clambda, preallocated, constants)
+    ~sourcefile
+    (clambda, preallocated, constants)
 
 let lambda_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
     ~sourcefile (lambda:Lambda.program) =
+  let symbol =
+    Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
+      (Compilenv.make_symbol None) Backend_sym.Data
+  in
   let clambda =
-    Profile.record "closure" (Closure.intro lambda.main_module_block_size)
+    Profile.record "closure"
+      (Closure.intro lambda.main_module_block_size ~module_block_sym:symbol)
       lambda.code
   in
   let provenance : Clambda.usymbol_provenance =
-    { idents_for_types = [];
-      module_path =
-        Path.Pident (Ident.create_persistent (Compilenv.current_unit_name ()));
+    let module_block_ident =
+      Ident.create_persistent (Compilenv.current_unit_name ())
+    in
+    { idents_for_types = [module_block_ident];
+      module_path = Pident module_block_ident;
     }
   in
   let preallocated_block =
-    let symbol =
-      Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
-        (Compilenv.make_symbol None) Backend_sym.Data
-    in
     Clambda.{
       symbol;
       exported = true;

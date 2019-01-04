@@ -15,5 +15,10 @@
 
 (* Introduction of closures, uncurrying, recognition of direct calls *)
 
-val intro: int -> Lambda.lambda -> Clambda.ulambda
+val intro
+   : int
+  -> module_block_sym:Backend_sym.t
+  -> Lambda.lambda
+  -> Clambda.ulambda
+
 val reset : unit -> unit
