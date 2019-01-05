@@ -15,11 +15,11 @@
 
 (** Native compilation for .ml and .mli files. *)
 
-val interface: sourcefile:string -> outputprefix:string -> unit
+val interface: source_file:string -> output_prefix:string -> unit
 
 val implementation:
    backend:(module Backend_intf.S)
-   -> sourcefile:string -> outputprefix:string -> unit
+   -> source_file:string -> output_prefix:string -> unit
 
 (** {2 Internal functions} **)
 

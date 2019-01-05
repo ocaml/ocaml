@@ -74,12 +74,12 @@ let read_clflags_from_env () =
   set_from_env Clflags.error_style Clflags.error_style_reader;
   ()
 
-let with_ppf_dump ~fileprefix f =
+let with_ppf_dump ~file_prefix f =
   let ppf_dump, finally =
     if not !Clflags.dump_into_file
     then Format.err_formatter, ignore
     else
-       let ch = open_out (fileprefix ^ ".dump") in
+       let ch = open_out (file_prefix ^ ".dump") in
        let ppf = Format.formatter_of_out_channel ch in
        ppf,
        (fun () ->
