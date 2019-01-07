@@ -34,17 +34,17 @@ end) = struct
 
   exception Not_available of Module_name.t
 
+  let check_ tbl name crc source =
+    let (old_crc, old_source) = Module_name.Tbl.find tbl name in
+    if crc <> old_crc then raise(Inconsistency(name, source, old_source))
+
   let check tbl name crc source =
-    try
-      let (old_crc, old_source) = Module_name.Tbl.find tbl name in
-      if crc <> old_crc then raise(Inconsistency(name, source, old_source))
+    try check_ tbl name crc source
     with Not_found ->
       Module_name.Tbl.add tbl name (crc, source)
 
   let check_noadd tbl name crc source =
-    try
-      let (old_crc, old_source) = Module_name.Tbl.find tbl name in
-      if crc <> old_crc then raise(Inconsistency(name, source, old_source))
+    try check_ tbl name crc source
     with Not_found ->
       raise (Not_available name)
 
