@@ -125,7 +125,11 @@ let import_crcs penv ~source crcs =
 
 let check_consistency penv ps =
   try import_crcs penv ~source:ps.ps_filename ps.ps_crcs
-  with Consistbl.Inconsistency(name, source, auth) ->
+  with Consistbl.Inconsistency {
+      unit_name = name;
+      inconsistent_source = source;
+      original_source = auth;
+    } ->
     error (Inconsistent_import(name, auth, source))
 
 let can_load_cmis penv =

@@ -30,13 +30,21 @@ end) = struct
 
   let clear = Module_name.Tbl.clear
 
-  exception Inconsistency of Module_name.t * filepath * filepath
+  exception Inconsistency of {
+    unit_name : Module_name.t;
+    inconsistent_source : string;
+    original_source : string;
+  }
 
   exception Not_available of Module_name.t
 
   let check_ tbl name crc source =
     let (old_crc, old_source) = Module_name.Tbl.find tbl name in
-    if crc <> old_crc then raise(Inconsistency(name, source, old_source))
+    if crc <> old_crc then raise(Inconsistency {
+        unit_name = name;
+        inconsistent_source = source;
+        original_source = old_source;
+      })
 
   let check tbl name crc source =
     try check_ tbl name crc source

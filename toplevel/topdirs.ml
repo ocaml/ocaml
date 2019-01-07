@@ -119,7 +119,11 @@ exception Load_failed
 
 let check_consistency ppf filename cu =
   try Env.import_crcs ~source:filename cu.cu_imports
-  with Persistent_env.Consistbl.Inconsistency(name, user, auth) ->
+  with Persistent_env.Consistbl.Inconsistency {
+      unit_name = name;
+      inconsistent_source = user;
+      original_source = auth;
+    } ->
     fprintf ppf "@[<hv 0>The files %s@ and %s@ \
                  disagree over interface %s@]@."
             user auth name;
