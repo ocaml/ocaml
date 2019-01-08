@@ -1405,7 +1405,8 @@ AS_CASE([$arch,$system],
 ## Determine if the POSIX threads library is supported
 
 AS_IF([test x"$enable_pthread" = "xno"],
-  [AC_MSG_NOTICE([the POSIX threads library is disabled])],
+  [systhread_support=false
+  AC_MSG_NOTICE([the POSIX threads library is disabled])],
   [AS_CASE([$host],
     [*-*-mingw32|*-pc-windows],
       [systhread_support=true
