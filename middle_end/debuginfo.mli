@@ -57,7 +57,7 @@ module Function : sig
   val create
      : Code_range.t
     -> human_name:string
-    -> module_path:Path.t option
+    -> module_path:Path.t
     -> t
 
   (** Create a function debuginfo given a [Location.t] corresponding to
@@ -65,7 +65,7 @@ module Function : sig
   val create_from_location
      : Location.t
     -> human_name:string
-    -> module_path:Path.t option
+    -> module_path:Path.t
     -> t
 
   (** Create a function debuginfo given a filename and line number
@@ -74,7 +74,7 @@ module Function : sig
      : file:string
     -> line:int
     -> human_name:string
-    -> module_path:Path.t option
+    -> module_path:Path.t
     -> t
 
   (** Update the source code position of the given function debuginfo. *)
@@ -104,8 +104,8 @@ module Function : sig
       without any module path qualification. *)
   val human_name : t -> string
 
-  (** The module path to the function, if such exists. *)
-  val module_path : t -> Path.t option
+  (** The module path to the function. *)
+  val module_path : t -> Path.t
 
   (* CR mshinwell: Rename this and/or [human_name]. *)
   (** The name to be displayed in a debugger to identify the function,

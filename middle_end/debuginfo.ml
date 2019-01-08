@@ -211,7 +211,7 @@ module Function = struct
     id : Id.t;
     position : Code_range.t;
     human_name : string;
-    module_path : Path.t option;
+    module_path : Path.t;
     dwarf_die_present : bool;
   }
 
@@ -244,12 +244,15 @@ module Function = struct
   let dwarf_die_present t = t.dwarf_die_present
 
   let name t =
+(*
     match t.module_path with
     | None ->
+*)
       begin match t.human_name with
       | "" -> "<anon>"
       | name -> name
       end
+(*
     | Some path ->
       let path = Printtyp.string_of_path path in
       match path with
@@ -262,13 +265,12 @@ module Function = struct
         match t.human_name with
         | "" -> path
         | name -> path ^ "." ^ name
+*)
 
-  let is_visible_externally t =
+  let is_visible_externally _t =
     (* Not strictly accurate---should probably depend on the .mli, but
        this should suffice for now. *)
-    match t.module_path with
-    | None -> false
-    | Some _ -> true
+    true
 
   include Identifiable.Make (struct
     type nonrec t = t
@@ -288,7 +290,7 @@ module Function = struct
         Id.print id
         Code_range.print position
         human_name
-        (Option.print Path.print) module_path
+        Path.print module_path
         dwarf_die_present
 
     let output chan t =

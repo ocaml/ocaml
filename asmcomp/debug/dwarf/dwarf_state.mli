@@ -81,3 +81,14 @@ val type_die_for_lifted_constant
    : t
   -> Asm_symbol.t
   -> Proto_die.t option
+
+val find_die_for_module_path
+   : t
+  -> module_path:Path.t
+  -> Proto_die.t option
+
+val record_die_for_module_path
+   : t
+  -> module_path:Path.t
+  -> Proto_die.t
+  -> unit

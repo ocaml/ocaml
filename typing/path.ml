@@ -124,6 +124,9 @@ let is_constructor_typath p =
 module T = struct
   type nonrec t = t
   let compare = compare
+  let equal t1 t2 = (compare t1 t2 = 0)
+  let hash = Hashtbl.hash
 end
 module Set = Set.Make(T)
 module Map = Map.Make(T)
+module Tbl = Hashtbl.Make(T)

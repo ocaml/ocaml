@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2013--2018 Jane Street Group LLC                           *)
+(*   Copyright 2013--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -28,9 +28,12 @@ let attributes fun_dbg =
   ]
 
 let add state fun_dbg =
+  let module_path = Debuginfo.Function.module_path fun_dbg in
+  (* Concrete instances live inside module DIEs, to provide scoping. *)
+  let parent = Dwarf_modules.dwarf state ~module_path in
   let abstract_instance_proto_die =
     (* DWARF-5 specification section 3.3.8.1, page 82. *)
-    Proto_die.create ~parent:(Some (DS.compilation_unit_proto_die state))
+    Proto_die.create ~parent:(Some parent)
       ~tag:Subprogram
       ~attribute_values:((attributes fun_dbg) @ [
         (* We assume every function might potentially be inlined (and possibly

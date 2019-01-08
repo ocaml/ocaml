@@ -96,3 +96,11 @@ let type_die_for_lifted_constant t symbol =
   match Asm_symbol.Tbl.find t.type_dies_for_lifted_constants symbol with
   | exception Not_found -> None
   | proto_die -> Some proto_die
+
+let find_die_for_module_path t ~module_path =
+  match Path.Tbl.find t.module_path_dies module_path with
+  | exception Not_found -> None
+  | proto_die -> Some proto_die
+
+let record_die_for_module_path t ~module_path proto_die =
+  Path.Tbl.replace t.module_path_dies module_path proto_die
