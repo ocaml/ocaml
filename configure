@@ -832,6 +832,7 @@ with_libunwind_include_dir
 enable_graph_lib
 enable_str_lib
 enable_unix_lib
+enable_bigarray_lib
 enable_ocamldoc
 enable_frame_pointers
 enable_naked_pointers
@@ -1511,6 +1512,7 @@ Optional Features:
   --disable-graph-lib     do not build the graphics library
   --disable-str-lib       do not build the str library
   --disable-unix-lib      do not build the unix library
+  --disable-bigarray-lib  do not build the legacy separate bigarray library
   --disable-ocamldoc      do not build the ocamldoc documentation system
   --enable-frame-pointers use frame pointers in runtime and generated code
   --disable-naked-pointers
@@ -3055,6 +3057,12 @@ if test "${enable_unix_lib+set}" = set; then :
 fi
 
 
+# Check whether --enable-bigarray-lib was given.
+if test "${enable_bigarray_lib+set}" = set; then :
+  enableval=$enable_bigarray_lib;
+fi
+
+
 # Check whether --enable-ocamldoc was given.
 if test "${enable_ocamldoc+set}" = set; then :
   enableval=$enable_ocamldoc;
@@ -3190,6 +3198,9 @@ if test x"$enable_unix_lib" = "xno"; then :
   as_fn_error $? "replay debugger requires the unix library" "$LINENO" 5
 else
   enable_debugger="no"
+fi
+   if test x"$enable_bigarray_lib" = "xyes"; then :
+  as_fn_error $? "legacy bigarray library requires the unix library" "$LINENO" 5
 fi
 fi
 
@@ -12306,7 +12317,11 @@ esac
 
 otherlibraries="dynlink"
 if test x"$enable_unix_lib" != "xno"; then :
+  if test x"$enable_bigarray_lib" != "xno"; then :
   otherlibraries="$otherlibraries $unixlib bigarray"
+else
+  otherlibraries="$otherlibraries $unixlib"
+fi
 fi
 if test x"$enable_str_lib" != "xno"; then :
   otherlibraries="$otherlibraries str"
