@@ -824,7 +824,7 @@ enable_debug_runtime
 enable_debugger
 with_dllibs
 enable_instrumented_runtime
-enable_pthread
+enable_systhreads
 with_libunwind
 with_libunwind_include_dir
 enable_graph_lib
@@ -1502,7 +1502,7 @@ Optional Features:
   --enable-debugger       build the debugger [default=yes]
   --enable-instrumented-runtime
                           build the instrumented runtime [default=auto]
-  --disable-pthread       disable the POSIX thread library
+  --disable-systhreads    disable the Win32/POSIX threads library
   --disable-graph-lib     do not build the graphics library
   --disable-ocamldoc      do not build the ocamldoc documentation system
   --enable-frame-pointers use frame pointers in runtime and generated code
@@ -3003,9 +3003,9 @@ else
 fi
 
 
-# Check whether --enable-pthread was given.
-if test "${enable_pthread+set}" = set; then :
-  enableval=$enable_pthread;
+# Check whether --enable-systhreads was given.
+if test "${enable_systhreads+set}" = set; then :
+  enableval=$enable_systhreads;
 fi
 
 
@@ -15285,17 +15285,17 @@ esac
 
 ## Determine if the POSIX threads library is supported
 
-if test x"$enable_pthread" = "xno"; then :
+if test x"$enable_systhreads" = "xno"; then :
   systhread_support=false
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the POSIX threads library is disabled" >&5
-$as_echo "$as_me: the POSIX threads library is disabled" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32/POSIX threads library is disabled" >&5
+$as_echo "$as_me: the Win32/POSIX threads library is disabled" >&6;}
 else
   case $host in #(
   *-*-mingw32|*-pc-windows) :
     systhread_support=true
       otherlibraries="$otherlibraries systhreads"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: the POSIX threads library is supported" >&5
-$as_echo "$as_me: the POSIX threads library is supported" >&6;} ;; #(
+      { $as_echo "$as_me:${as_lineno-$LINENO}: the Win32 threads library is supported" >&5
+$as_echo "$as_me: the Win32 threads library is supported" >&6;} ;; #(
   *) :
 
 
@@ -15951,7 +15951,7 @@ fi
         :
 else
         ax_pthread_ok=no
-        if test x"$enable_pthread" = "xyes"; then :
+        if test x"$enable_systhreads" = "xyes"; then :
   as_fn_error $? "the POSIX thread library is not available" "$LINENO" 5
 else
   systhread_support=false

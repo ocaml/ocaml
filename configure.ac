@@ -221,9 +221,9 @@ AC_ARG_ENABLE([instrumented-runtime],
   [],
   [enable_instrumented_runtime=auto])
 
-AC_ARG_ENABLE([pthread],
-  [AS_HELP_STRING([--disable-pthread],
-    [disable the POSIX thread library])])
+AC_ARG_ENABLE([systhreads],
+  [AS_HELP_STRING([--disable-systhreads],
+    [disable the Win32/POSIX threads library])])
 
 AC_ARG_WITH([libunwind],
   [AS_HELP_STRING([--with-libunwind],
@@ -1404,14 +1404,14 @@ AS_CASE([$arch,$system],
 
 ## Determine if the POSIX threads library is supported
 
-AS_IF([test x"$enable_pthread" = "xno"],
+AS_IF([test x"$enable_systhreads" = "xno"],
   [systhread_support=false
-  AC_MSG_NOTICE([the POSIX threads library is disabled])],
+  AC_MSG_NOTICE([the Win32/POSIX threads library is disabled])],
   [AS_CASE([$host],
     [*-*-mingw32|*-pc-windows],
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
-      AC_MSG_NOTICE([the POSIX threads library is supported])],
+      AC_MSG_NOTICE([the Win32 threads library is supported])],
     [AX_PTHREAD(
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
@@ -1428,7 +1428,7 @@ AS_IF([test x"$enable_pthread" = "xno"],
       AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])
       LIBS="$saved_LIBS"
       CFLAGS="$saved_CFLAGS"],
-      [AS_IF([test x"$enable_pthread" = "xyes"],
+      [AS_IF([test x"$enable_systhreads" = "xyes"],
         [AC_MSG_ERROR([the POSIX thread library is not available])],
         [systhread_support=false
         AC_MSG_NOTICE([the POSIX threads library is not supported])])])])])
