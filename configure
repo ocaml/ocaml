@@ -724,6 +724,7 @@ x_libraries
 x_includes
 pthread_link
 ocamldoc
+with_camltex
 with_debugger
 as_has_debug_prefix_map
 cc_has_debug_prefix_map
@@ -824,10 +825,13 @@ enable_debug_runtime
 enable_debugger
 with_dllibs
 enable_instrumented_runtime
+enable_vmthreads
 enable_systhreads
 with_libunwind
 with_libunwind_include_dir
 enable_graph_lib
+enable_str_lib
+enable_unix_lib
 enable_ocamldoc
 enable_frame_pointers
 enable_naked_pointers
@@ -1502,8 +1506,11 @@ Optional Features:
   --enable-debugger       build the debugger [default=yes]
   --enable-instrumented-runtime
                           build the instrumented runtime [default=auto]
+  --disable-vmthreads     disable the bytecode threads library
   --disable-systhreads    disable the Win32/POSIX threads library
   --disable-graph-lib     do not build the graphics library
+  --disable-str-lib       do not build the str library
+  --disable-unix-lib      do not build the unix library
   --disable-ocamldoc      do not build the ocamldoc documentation system
   --enable-frame-pointers use frame pointers in runtime and generated code
   --disable-naked-pointers
@@ -2823,6 +2830,7 @@ VERSION=4.08.0+dev0-2018-04-09
 
 
 
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.common"
@@ -2982,7 +2990,7 @@ fi
 if test "${enable_debugger+set}" = set; then :
   enableval=$enable_debugger;
 else
-  enable_debugger=yes
+  enable_debugger=auto
 fi
 
 
@@ -3000,6 +3008,12 @@ if test "${enable_instrumented_runtime+set}" = set; then :
   enableval=$enable_instrumented_runtime;
 else
   enable_instrumented_runtime=auto
+fi
+
+
+# Check whether --enable-vmthreads was given.
+if test "${enable_vmthreads+set}" = set; then :
+  enableval=$enable_vmthreads;
 fi
 
 
@@ -3029,9 +3043,23 @@ if test "${enable_graph_lib+set}" = set; then :
 fi
 
 
+# Check whether --enable-str-lib was given.
+if test "${enable_str_lib+set}" = set; then :
+  enableval=$enable_str_lib;
+fi
+
+
+# Check whether --enable-unix-lib was given.
+if test "${enable_unix_lib+set}" = set; then :
+  enableval=$enable_unix_lib;
+fi
+
+
 # Check whether --enable-ocamldoc was given.
 if test "${enable_ocamldoc+set}" = set; then :
   enableval=$enable_ocamldoc;
+else
+  ocamldoc=auto
 fi
 
 
@@ -3156,6 +3184,25 @@ if test "${with_afl+set}" = set; then :
   withval=$with_afl;
 fi
 
+
+if test x"$enable_unix_lib" = "xno"; then :
+  if test x"$enable_debugger" = "xyes"; then :
+  as_fn_error $? "replay debugger requires the unix library" "$LINENO" 5
+else
+  enable_debugger="no"
+fi
+fi
+
+if test x"$enable_unix_lib" = "xno" -o x"$enable_str_lib" = "xno"; then :
+  if test x"$enable_ocamldoc" = "xyes"; then :
+  as_fn_error $? "ocamldoc requires the unix and str libraries" "$LINENO" 5
+else
+  enable_ocamldoc="no"
+     with_camltex=""
+fi
+else
+  with_camltex="true"
+fi
 
 # Initialization of libtool
 # Allow the MSVC linker to be found even if ld isn't installed.
@@ -12257,7 +12304,13 @@ case $host in #(
   cc_profile='-pg' ;;
 esac
 
-otherlibraries="$unixlib str dynlink bigarray"
+otherlibraries="dynlink"
+if test x"$enable_unix_lib" != "xno"; then :
+  otherlibraries="$otherlibraries $unixlib bigarray"
+fi
+if test x"$enable_str_lib" != "xno"; then :
+  otherlibraries="$otherlibraries str"
+fi
 
 # Checks for system services
 
@@ -15971,13 +16024,23 @@ fi
 
 ## Determine if the bytecode thread library is supported
 
-if $select && $setitimer && $gettimeofday && $wait; then :
+if test x"$enable_vmthreads" = "xno"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is disabled" >&5
+$as_echo "$as_me: the bytecode threads library is disabled" >&6;}
+else
+  if $select && $setitimer && $gettimeofday && $wait; then :
   otherlibraries="$otherlibraries threads"
-  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is supported" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is supported" >&5
 $as_echo "$as_me: the bytecode threads library is supported" >&6;}
+else
+  if test x"$enable_vmthreads" = "xyes"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is not available" >&5
+$as_echo "$as_me: the bytecode threads library is not available" >&6;}
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: the bytecode threads library is not supported" >&5
 $as_echo "$as_me: the bytecode threads library is not supported" >&6;}
+fi
+fi
 fi
 
 ## XWindow
@@ -16798,7 +16861,7 @@ else
   install_source_artifacts=true
 fi
 
-if test x"$enable_ocamldoc" == "xno"; then :
+if test x"$enable_ocamldoc" = "xno"; then :
   ocamldoc=""
 else
   ocamldoc=ocamldoc

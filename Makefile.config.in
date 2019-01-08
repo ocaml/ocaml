@@ -227,6 +227,7 @@ MKEXEDEBUGFLAG=@mkexedebugflag@
 RUNTIMED=@debug_runtime@
 RUNTIMEI=@instrumented_runtime@
 WITH_DEBUGGER=@with_debugger@
+WITH_CAMLTEX=@with_camltex@
 WITH_OCAMLDOC=@ocamldoc@
 ASM_CFI_SUPPORTED=@asm_cfi_supported@
 WITH_FRAME_POINTERS=@frame_pointers@
