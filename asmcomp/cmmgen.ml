@@ -3525,7 +3525,7 @@ let compunit ~ppf_dump ~unit_name ~source_file
   let fun_dbg =
     Debuginfo.Function.create_from_location (Location.in_file source_file)
       ~human_name:""
-      ~module_path:(Some module_path)
+      ~module_path
   in
   let c1 = [Cfunction {fun_name;
                        fun_args = [];
@@ -3545,7 +3545,7 @@ let compunit ~ppf_dump ~unit_name ~source_file
   emit_preallocated_blocks preallocated_blocks c3
 
 let startup_path =
-  Some (Path.Pident (Ident.create_persistent "_Ocaml_startup"))
+  Path.Pident (Ident.create_persistent "_Ocaml_startup")
 
 let next_placeholder_dbg_line = ref 0
 

@@ -1773,7 +1773,7 @@ and close_functions fenv cenv fun_defs =
             let fun_dbg =
               Debuginfo.Function.create_from_location loc
                 ~human_name:(V.name id)
-                ~module_path:!current_module_path
+                ~module_path:(get_current_module_path ())
             in
             let fun_label =
               Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
@@ -1833,16 +1833,14 @@ and close_functions fenv cenv fun_defs =
     let ubody =
       V.Map.fold (fun id (env_param, field, _ulam) ubody ->
           let provenance =
-            match Debuginfo.Function.module_path fun_dbg with
-            | None -> None
-            | Some module_path ->
-              let provenance =
-                V.Provenance.create ~module_path
-                  ~debuginfo:(Debuginfo.of_location Location.none ~scope)
-                  ~ident_for_type:(Compilation_unit.get_current_exn (), id)
-                  Is_parameter.local
-              in
-              Some provenance
+            let module_path = Debuginfo.Function.module_path fun_dbg in
+            let provenance =
+              V.Provenance.create ~module_path
+                ~debuginfo:(Debuginfo.of_location Location.none ~scope)
+                ~ident_for_type:(Compilation_unit.get_current_exn (), id)
+                Is_parameter.local
+            in
+            Some provenance
           in
           assert (field >= 0);
           Uphantom_let (VP.create ?provenance id,
@@ -1858,16 +1856,14 @@ and close_functions fenv cenv fun_defs =
             if ident == env_param then
               None
             else
-              match Debuginfo.Function.module_path fun_dbg with
-              | None -> None
-              | Some module_path ->
-                let provenance =
-                  V.Provenance.create ~module_path
-                    ~debuginfo:(Debuginfo.of_function fun_dbg)
-                    ~ident_for_type:(Compilation_unit.get_current_exn (), ident)
-                    (Is_parameter.parameter ~index)
-                in
-                Some provenance
+              let module_path = Debuginfo.Function.module_path fun_dbg in
+              let provenance =
+                V.Provenance.create ~module_path
+                  ~debuginfo:(Debuginfo.of_function fun_dbg)
+                  ~ident_for_type:(Compilation_unit.get_current_exn (), ident)
+                  (Is_parameter.parameter ~index)
+              in
+              Some provenance
           in
           VP.create ?provenance ident)
         fun_params

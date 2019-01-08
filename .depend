@@ -935,7 +935,8 @@ asmcomp/closure.cmx : utils/warnings.cmx bytecomp/switch.cmx \
     middle_end/base_types/compilation_unit.cmx utils/clflags.cmx \
     asmcomp/clambda.cmx asmcomp/backend_var.cmx asmcomp/backend_sym.cmx \
     parsing/asttypes.cmi asmcomp/arch.cmx asmcomp/closure.cmi
-asmcomp/closure.cmi : bytecomp/lambda.cmi asmcomp/clambda.cmi
+asmcomp/closure.cmi : bytecomp/lambda.cmi asmcomp/clambda.cmi \
+    asmcomp/backend_sym.cmi
 asmcomp/closure_offsets.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi utils/misc.cmi \
     middle_end/flambda_utils.cmi middle_end/flambda.cmi \
@@ -1500,16 +1501,14 @@ middle_end/closure_conversion_aux.cmi : middle_end/base_types/variable.cmi \
     middle_end/base_types/static_exception.cmi \
     middle_end/base_types/mutable_variable.cmi parsing/location.cmi \
     bytecomp/lambda.cmi typing/ident.cmi
-middle_end/debuginfo.cmo : typing/printtyp.cmi typing/path.cmi \
-    utils/misc.cmi parsing/location.cmi \
-    middle_end/int_replace_polymorphic_compare.cmi utils/identifiable.cmi \
-    middle_end/base_types/compilation_unit.cmi utils/clflags.cmi \
-    middle_end/debuginfo.cmi
-middle_end/debuginfo.cmx : typing/printtyp.cmx typing/path.cmx \
-    utils/misc.cmx parsing/location.cmx \
-    middle_end/int_replace_polymorphic_compare.cmx utils/identifiable.cmx \
-    middle_end/base_types/compilation_unit.cmx utils/clflags.cmx \
-    middle_end/debuginfo.cmi
+middle_end/debuginfo.cmo : typing/path.cmi utils/misc.cmi \
+    parsing/location.cmi middle_end/int_replace_polymorphic_compare.cmi \
+    utils/identifiable.cmi middle_end/base_types/compilation_unit.cmi \
+    utils/clflags.cmi middle_end/debuginfo.cmi
+middle_end/debuginfo.cmx : typing/path.cmx utils/misc.cmx \
+    parsing/location.cmx middle_end/int_replace_polymorphic_compare.cmx \
+    utils/identifiable.cmx middle_end/base_types/compilation_unit.cmx \
+    utils/clflags.cmx middle_end/debuginfo.cmi
 middle_end/debuginfo.cmi : typing/path.cmi parsing/location.cmi \
     utils/identifiable.cmi middle_end/base_types/compilation_unit.cmi
 middle_end/effect_analysis.cmo : bytecomp/semantics_of_primitives.cmi \
@@ -2628,13 +2627,13 @@ asmcomp/debug/dwarf/dwarf.cmx : middle_end/base_types/symbol.cmx \
     asmcomp/asm_target/asm_label.cmx asmcomp/arch.cmx \
     asmcomp/debug/dwarf/dwarf_low/address_table.cmx \
     asmcomp/debug/dwarf/dwarf.cmi
-asmcomp/debug/dwarf/dwarf.cmi : asmcomp/debug/dwarf/dwarf_state.cmi \
-    asmcomp/debug/debug_passes.cmi asmcomp/clambda.cmi \
-    asmcomp/backend_var.cmi asmcomp/backend_sym.cmi
+asmcomp/debug/dwarf/dwarf.cmi : asmcomp/debug/debug_passes.cmi \
+    asmcomp/clambda.cmi asmcomp/backend_var.cmi asmcomp/backend_sym.cmi
 asmcomp/debug/dwarf/dwarf_abstract_instances.cmo : \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmi \
     asmcomp/debug/dwarf/dwarf_state.cmi \
     asmcomp/debug/dwarf/dwarf_name_laundry.cmi \
+    asmcomp/debug/dwarf/dwarf_modules.cmi \
     asmcomp/debug/dwarf/dwarf_high/dwarf_attribute_helpers.cmi \
     middle_end/debuginfo.cmi middle_end/base_types/compilation_unit.cmi \
     asmcomp/debug/dwarf/dwarf_abstract_instances.cmi
@@ -2642,6 +2641,7 @@ asmcomp/debug/dwarf/dwarf_abstract_instances.cmx : \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmx \
     asmcomp/debug/dwarf/dwarf_state.cmx \
     asmcomp/debug/dwarf/dwarf_name_laundry.cmx \
+    asmcomp/debug/dwarf/dwarf_modules.cmx \
     asmcomp/debug/dwarf/dwarf_high/dwarf_attribute_helpers.cmx \
     middle_end/debuginfo.cmx middle_end/base_types/compilation_unit.cmx \
     asmcomp/debug/dwarf/dwarf_abstract_instances.cmi
@@ -2786,6 +2786,19 @@ asmcomp/debug/dwarf/dwarf_lexical_blocks_and_inlined_frames.cmi : \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmi asmcomp/linearize.cmi \
     asmcomp/debug/lexical_block_ranges.cmi \
     asmcomp/debug/dwarf/dwarf_state.cmi middle_end/debuginfo.cmi
+asmcomp/debug/dwarf/dwarf_modules.cmo : \
+    asmcomp/debug/dwarf/dwarf_high/proto_die.cmi typing/path.cmi \
+    utils/misc.cmi typing/ident.cmi asmcomp/debug/dwarf/dwarf_state.cmi \
+    asmcomp/debug/dwarf/dwarf_high/dwarf_attribute_helpers.cmi \
+    asmcomp/debug/dwarf/dwarf_modules.cmi
+asmcomp/debug/dwarf/dwarf_modules.cmx : \
+    asmcomp/debug/dwarf/dwarf_high/proto_die.cmx typing/path.cmx \
+    utils/misc.cmx typing/ident.cmx asmcomp/debug/dwarf/dwarf_state.cmx \
+    asmcomp/debug/dwarf/dwarf_high/dwarf_attribute_helpers.cmx \
+    asmcomp/debug/dwarf/dwarf_modules.cmi
+asmcomp/debug/dwarf/dwarf_modules.cmi : \
+    asmcomp/debug/dwarf/dwarf_high/proto_die.cmi typing/path.cmi \
+    asmcomp/debug/dwarf/dwarf_state.cmi
 asmcomp/debug/dwarf/dwarf_name_laundry.cmo : \
     middle_end/base_types/symbol.cmi middle_end/base_types/linkage_name.cmi \
     middle_end/debuginfo.cmi asmcomp/compilenv.cmi \
@@ -2817,7 +2830,7 @@ asmcomp/debug/dwarf/dwarf_reg_locations.cmi : \
     asmcomp/reg.cmi
 asmcomp/debug/dwarf/dwarf_state.cmo : asmcomp/target_system.cmi \
     asmcomp/debug/dwarf/dwarf_low/range_list_table.cmi \
-    asmcomp/debug/dwarf/dwarf_high/proto_die.cmi \
+    asmcomp/debug/dwarf/dwarf_high/proto_die.cmi typing/path.cmi \
     asmcomp/debug/dwarf/dwarf_low/location_list_table.cmi \
     asmcomp/debug/dwarf/dwarf_low/dwarf_version.cmi middle_end/debuginfo.cmi \
     asmcomp/debug/dwarf/dwarf_low/dwarf_4/debug_ranges_table.cmi \
@@ -2828,7 +2841,7 @@ asmcomp/debug/dwarf/dwarf_state.cmo : asmcomp/target_system.cmi \
     asmcomp/debug/dwarf/dwarf_state.cmi
 asmcomp/debug/dwarf/dwarf_state.cmx : asmcomp/target_system.cmx \
     asmcomp/debug/dwarf/dwarf_low/range_list_table.cmx \
-    asmcomp/debug/dwarf/dwarf_high/proto_die.cmx \
+    asmcomp/debug/dwarf/dwarf_high/proto_die.cmx typing/path.cmx \
     asmcomp/debug/dwarf/dwarf_low/location_list_table.cmx \
     asmcomp/debug/dwarf/dwarf_low/dwarf_version.cmx middle_end/debuginfo.cmx \
     asmcomp/debug/dwarf/dwarf_low/dwarf_4/debug_ranges_table.cmx \
@@ -2839,7 +2852,7 @@ asmcomp/debug/dwarf/dwarf_state.cmx : asmcomp/target_system.cmx \
     asmcomp/debug/dwarf/dwarf_state.cmi
 asmcomp/debug/dwarf/dwarf_state.cmi : \
     asmcomp/debug/dwarf/dwarf_low/range_list_table.cmi \
-    asmcomp/debug/dwarf/dwarf_high/proto_die.cmi \
+    asmcomp/debug/dwarf/dwarf_high/proto_die.cmi typing/path.cmi \
     asmcomp/debug/dwarf/dwarf_low/location_list_table.cmi \
     asmcomp/debug/dwarf/dwarf_low/dwarf_version.cmi middle_end/debuginfo.cmi \
     asmcomp/debug/dwarf/dwarf_low/dwarf_4/debug_ranges_table.cmi \
@@ -2848,6 +2861,7 @@ asmcomp/debug/dwarf/dwarf_state.cmi : \
     asmcomp/asm_target/asm_label.cmi \
     asmcomp/debug/dwarf/dwarf_low/address_table.cmi
 asmcomp/debug/dwarf/dwarf_toplevel_values.cmo : \
+    asmcomp/debug/dwarf/dwarf_low/single_location_description.cmi \
     asmcomp/debug/dwarf/dwarf_high/simple_location_description_lang.cmi \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmi typing/printtyp.cmi \
     asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmi \
@@ -2858,6 +2872,7 @@ asmcomp/debug/dwarf/dwarf_toplevel_values.cmo : \
     asmcomp/asm_target/asm_symbol.cmi \
     asmcomp/debug/dwarf/dwarf_toplevel_values.cmi
 asmcomp/debug/dwarf/dwarf_toplevel_values.cmx : \
+    asmcomp/debug/dwarf/dwarf_low/single_location_description.cmx \
     asmcomp/debug/dwarf/dwarf_high/simple_location_description_lang.cmx \
     asmcomp/debug/dwarf/dwarf_high/proto_die.cmx typing/printtyp.cmx \
     asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmx \
@@ -2874,8 +2889,9 @@ asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmo : utils/targetint.cmi \
     asmcomp/debug/dwarf/dwarf_low/single_location_description.cmi \
     asmcomp/debug/dwarf/dwarf_high/simple_location_description_lang.cmi \
     asmcomp/debug/dwarf/dwarf_low/simple_location_description.cmi \
-    asmcomp/debug/dwarf/dwarf_high/proto_die.cmi utils/misc.cmi \
-    asmcomp/mach.cmi asmcomp/debug/dwarf/dwarf_low/location_list_table.cmi \
+    asmcomp/debug/dwarf/dwarf_high/proto_die.cmi asmcomp/printmach.cmi \
+    utils/misc.cmi asmcomp/mach.cmi \
+    asmcomp/debug/dwarf/dwarf_low/location_list_table.cmi \
     asmcomp/debug/dwarf/dwarf_low/location_list_entry.cmi \
     asmcomp/debug/dwarf/dwarf_low/location_list.cmi asmcomp/linearize.cmi \
     middle_end/base_types/is_parameter.cmi \
@@ -2902,8 +2918,9 @@ asmcomp/debug/dwarf/dwarf_variables_and_parameters.cmx : utils/targetint.cmx \
     asmcomp/debug/dwarf/dwarf_low/single_location_description.cmx \
     asmcomp/debug/dwarf/dwarf_high/simple_location_description_lang.cmx \
     asmcomp/debug/dwarf/dwarf_low/simple_location_description.cmx \
-    asmcomp/debug/dwarf/dwarf_high/proto_die.cmx utils/misc.cmx \
-    asmcomp/mach.cmx asmcomp/debug/dwarf/dwarf_low/location_list_table.cmx \
+    asmcomp/debug/dwarf/dwarf_high/proto_die.cmx asmcomp/printmach.cmx \
+    utils/misc.cmx asmcomp/mach.cmx \
+    asmcomp/debug/dwarf/dwarf_low/location_list_table.cmx \
     asmcomp/debug/dwarf/dwarf_low/location_list_entry.cmx \
     asmcomp/debug/dwarf/dwarf_low/location_list.cmx asmcomp/linearize.cmx \
     middle_end/base_types/is_parameter.cmx \

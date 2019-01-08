@@ -36,6 +36,7 @@ type t = {
   can_reference_dies_across_units : bool;
   dwarf_version : Dwarf_version.t;
   type_dies_for_lifted_constants : Proto_die.t Asm_symbol.Tbl.t;
+  module_path_dies : Proto_die.t Path.Tbl.t;
 }
 
 let can_reference_dies_across_units () =
@@ -66,6 +67,7 @@ let create ~compilation_unit_header_label ~compilation_unit_proto_die
     can_reference_dies_across_units = can_reference_dies_across_units ();
     dwarf_version;
     type_dies_for_lifted_constants = Asm_symbol.Tbl.create 42;
+    module_path_dies = Path.Tbl.create 42;
   }
 
 let compilation_unit_header_label t = t.compilation_unit_header_label
