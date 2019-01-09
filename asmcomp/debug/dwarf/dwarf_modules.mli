@@ -16,6 +16,7 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+(* CR mshinwell: improve function name *)
 val dwarf
    : Dwarf_state.t
   -> module_path:Path.t
