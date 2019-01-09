@@ -20,13 +20,33 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.config
 include $(ROOTDIR)/Makefile.common
 
+ifeq "$(filter str,$(OTHERLIBRARIES))" ""
+  str := false
+else
+  str := true
+endif
+
+ifeq "$(filter systhreads,$(OTHERLIBRARIES))" ""
+  systhreads := false
+else
+  systhreads := true
+endif
+
+ifeq "$(filter $(UNIXLIB),$(OTHERLIBRARIES))" ""
+  unix := None
+else
+  ifeq "$(UNIX_OR_WIN32)" "win32"
+    unix := Some false
+  else
+    unix := Some true
+  endif
+endif
+
 ifeq "$(UNIX_OR_WIN32)" "win32"
-  unix := false
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -w -f - \
     | sed 's/\\/\\\\\\\\/g')
   mkexe := $(MKEXE_ANSI) -link $(OC_LDFLAGS)
 else
-  unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
   mkexe := $(MKEXE)
 endif
@@ -206,6 +226,8 @@ ocamltest_config.ml: ocamltest_config.ml.in Makefile
 	  -e 's|@@ARCH@@|$(ARCH)|' \
 	  -e 's|@@SHARED_LIBRARIES@@|$(SUPPORTS_SHARED_LIBRARIES)|' \
 	  -e 's|@@UNIX@@|$(unix)|' \
+	  -e 's|@@SYSTHREADS@@|$(systhreads)|' \
+	  -e 's|@@STR@@|$(str)|' \
 	  -e 's|@@SYSTEM@@|$(SYSTEM)|' \
 	  -e 's|@@CPP@@|$(CPP)|' \
 	  -e 's|@@OCAMLCDEFAULTFLAGS@@|$(ocamlcdefaultflags)|' \

@@ -124,6 +124,7 @@ AC_SUBST([otherlibraries])
 AC_SUBST([cc_has_debug_prefix_map])
 AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
+AC_SUBST([with_camltex])
 AC_SUBST([ocamldoc])
 AC_SUBST([pthread_link])
 AC_SUBST([x_includes])
@@ -207,7 +208,7 @@ AC_ARG_ENABLE([debugger],
   [AS_HELP_STRING([--enable-debugger],
     [build the debugger @<:@default=yes@:>@])],
   [],
-  [enable_debugger=yes])
+  [enable_debugger=auto])
 
 AC_ARG_WITH([dllibs],
   [AS_HELP_STRING([--with-dllibs=LIBS],
@@ -221,9 +222,13 @@ AC_ARG_ENABLE([instrumented-runtime],
   [],
   [enable_instrumented_runtime=auto])
 
-AC_ARG_ENABLE([pthread],
-  [AS_HELP_STRING([--disable-pthread],
-    [disable the POSIX thread library])])
+AC_ARG_ENABLE([vmthreads],
+  [AS_HELP_STRING([--disable-vmthreads],
+    [disable the bytecode threads library])])
+
+AC_ARG_ENABLE([systhreads],
+  [AS_HELP_STRING([--disable-systhreads],
+    [disable the Win32/POSIX threads library])])
 
 AC_ARG_WITH([libunwind],
   [AS_HELP_STRING([--with-libunwind],
@@ -237,9 +242,23 @@ AC_ARG_ENABLE([graph-lib],
   [AS_HELP_STRING([--disable-graph-lib],
     [do not build the graphics library])])
 
+AC_ARG_ENABLE([str-lib],
+  [AS_HELP_STRING([--disable-str-lib],
+    [do not build the str library])])
+
+AC_ARG_ENABLE([unix-lib],
+  [AS_HELP_STRING([--disable-unix-lib],
+    [do not build the unix library])])
+
+AC_ARG_ENABLE([bigarray-lib],
+  [AS_HELP_STRING([--disable-bigarray-lib],
+    [do not build the legacy separate bigarray library])])
+
 AC_ARG_ENABLE([ocamldoc],
   [AS_HELP_STRING([--disable-ocamldoc],
-    [do not build the ocamldoc documentation system])])
+    [do not build the ocamldoc documentation system])],
+  [],
+  [ocamldoc=auto])
 
 AC_ARG_ENABLE([frame-pointers],
   [AS_HELP_STRING([--enable-frame-pointers],
@@ -328,6 +347,20 @@ AC_ARG_WITH([afl],
   [AS_HELP_STRING([--with-afl],
     [use the AFL fuzzer])])
 
+AS_IF([test x"$enable_unix_lib" = "xno"],
+  [AS_IF([test x"$enable_debugger" = "xyes"],
+    [AC_MSG_ERROR([replay debugger requires the unix library])],
+    [enable_debugger="no"])
+   AS_IF([test x"$enable_bigarray_lib" = "xyes"],
+    [AC_MSG_ERROR([legacy bigarray library requires the unix library])])])
+
+AS_IF([test x"$enable_unix_lib" = "xno" -o x"$enable_str_lib" = "xno"],
+  [AS_IF([test x"$enable_ocamldoc" = "xyes"],
+    [AC_MSG_ERROR([ocamldoc requires the unix and str libraries])],
+    [enable_ocamldoc="no"
+     with_camltex=""])],
+  [with_camltex="true"])
+
 # Initialization of libtool
 # Allow the MSVC linker to be found even if ld isn't installed.
 # User-specified LD still takes precedence.
@@ -383,7 +416,13 @@ AS_CASE([$host],
   graphlib="graph"
   cc_profile='-pg'])
 
-otherlibraries="$unixlib str dynlink bigarray"
+otherlibraries="dynlink"
+AS_IF([test x"$enable_unix_lib" != "xno"],
+  [AS_IF([test x"$enable_bigarray_lib" != "xno"],
+    [otherlibraries="$otherlibraries $unixlib bigarray"],
+    [otherlibraries="$otherlibraries $unixlib"])])
+AS_IF([test x"$enable_str_lib" != "xno"],
+  [otherlibraries="$otherlibraries str"])
 
 # Checks for system services
 
@@ -1404,13 +1443,14 @@ AS_CASE([$arch,$system],
 
 ## Determine if the POSIX threads library is supported
 
-AS_IF([test x"$enable_pthread" = "xno"],
-  [AC_MSG_NOTICE([the POSIX threads library is disabled])],
+AS_IF([test x"$enable_systhreads" = "xno"],
+  [systhread_support=false
+  AC_MSG_NOTICE([the Win32/POSIX threads library is disabled])],
   [AS_CASE([$host],
     [*-*-mingw32|*-pc-windows],
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
-      AC_MSG_NOTICE([the POSIX threads library is supported])],
+      AC_MSG_NOTICE([the Win32 threads library is supported])],
     [AX_PTHREAD(
       [systhread_support=true
       otherlibraries="$otherlibraries systhreads"
@@ -1427,17 +1467,21 @@ AS_IF([test x"$enable_pthread" = "xno"],
       AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])
       LIBS="$saved_LIBS"
       CFLAGS="$saved_CFLAGS"],
-      [AS_IF([test x"$enable_pthread" = "xyes"],
+      [AS_IF([test x"$enable_systhreads" = "xyes"],
         [AC_MSG_ERROR([the POSIX thread library is not available])],
         [systhread_support=false
         AC_MSG_NOTICE([the POSIX threads library is not supported])])])])])
 
 ## Determine if the bytecode thread library is supported
 
-AS_IF([$select && $setitimer && $gettimeofday && $wait],
-  [otherlibraries="$otherlibraries threads"
-  AC_MSG_NOTICE([the bytecode threads library is supported])],
-  [AC_MSG_NOTICE([the bytecode threads library is not supported])])
+AS_IF([test x"$enable_vmthreads" = "xno"],
+  [AC_MSG_NOTICE([the bytecode threads library is disabled])],
+  [AS_IF([$select && $setitimer && $gettimeofday && $wait],
+    [otherlibraries="$otherlibraries threads"
+    AC_MSG_NOTICE([the bytecode threads library is supported])],
+    [AS_IF([test x"$enable_vmthreads" = "xyes"],
+      [AC_MSG_NOTICE([the bytecode threads library is not available])],
+      [AC_MSG_NOTICE([the bytecode threads library is not supported])])])])
 
 ## XWindow
 
@@ -1579,7 +1623,7 @@ AS_IF([test x"$enable_installing_source_artifacts" = "xno"],
   [install_source_artifacts=false],
   [install_source_artifacts=true])
 
-AS_IF([test x"$enable_ocamldoc" == "xno"],
+AS_IF([test x"$enable_ocamldoc" = "xno"],
   [ocamldoc=""],
   [ocamldoc=ocamldoc])
 

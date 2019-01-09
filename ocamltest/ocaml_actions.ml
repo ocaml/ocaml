@@ -1118,6 +1118,12 @@ let native_dynlink = Actions.make
     "native dynlink support available"
     "native dynlink support not available")
 
+let debugger = Actions.make
+  "debugger"
+  (Actions_helpers.pass_or_skip Ocamltest_config.ocamldebug
+     "debugger available"
+     "debugger not available")
+
 let csharp_compiler = Actions.make
   "csharp-compiler"
   (Actions_helpers.pass_or_skip (Ocamltest_config.csc<>"")
@@ -1331,6 +1337,7 @@ let _ =
     shared_libraries;
     native_compiler;
     native_dynlink;
+    debugger;
     csharp_compiler;
     windows_unicode;
     afl_instrument;

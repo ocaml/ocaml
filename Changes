@@ -492,6 +492,9 @@ Working version
   (Sébastien Hinderer, review by Xavier Leroy, Damien Doligez, Gabriel
   Scherer and Armaël Guéneau)
 
+- GPR#2053: allow unix, vmthreads and str not to be built.
+  (David Allsopp, review by Sébastien Hinderer)
+
 * GPR#2059: stop defining OCAML_STDLIB_DIR in s.h.
   (Sébastien Hinderer, review by David Allsopp and Damien Doligez)
 

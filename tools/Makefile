@@ -405,7 +405,9 @@ caml-tex: $(CAMLTEX)
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we delay building caml-tex to the opt.opt stage
+ifneq "$(WITH_CAMLTEX)" ""
 opt.opt:caml-tex
+endif
 clean::
 	rm -f -- caml-tex caml_tex.cm?
 

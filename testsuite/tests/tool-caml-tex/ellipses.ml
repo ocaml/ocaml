@@ -3,9 +3,10 @@
    output="ellipses.output"
    script = "${ocamlrun} ${ocamlsrcdir}/tools/caml-tex \
    -repo-root ${ocamlsrcdir} ${test_source_directory}/${test_file} -o ${output}"
-  * native-compiler
-  ** script with unix,str
-  *** check-program-output
+  * hasstr
+  ** native-compiler
+  *** script with unix,str
+  **** check-program-output
 *)
 
 \begin{caml_example*}{verbatim}

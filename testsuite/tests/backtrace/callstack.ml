@@ -1,11 +1,12 @@
 (* TEST
    flags = "-g"
+   * hassysthreads
    include systhreads
    compare_programs = "false"
-   * no-flambda
+   ** no-flambda
    reference = "${test_source_directory}/callstack.reference"
-   ** native
-   ** bytecode
+   *** native
+   *** bytecode
 *)
 let[@inline never] f0 () =
   Printexc.print_raw_backtrace stdout (Printexc.get_callstack 100); ()
