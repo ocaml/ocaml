@@ -206,7 +206,8 @@ let undefined_location loc =
   Lconst(Const_block(0,
                      [Const_base(Const_string (fname, None));
                       Const_base(Const_int line);
-                      Const_base(Const_int char)]))
+                      Const_base(Const_int char)]),
+         loc)
 
 exception Initialization_failure of unsafe_info
 
@@ -259,7 +260,8 @@ let init_shape id modl =
   in
   try
     Ok(undefined_location modl.mod_loc,
-       Lconst(init_shape_mod id modl.mod_loc modl.mod_env modl.mod_type))
+       Lconst(init_shape_mod id modl.mod_loc modl.mod_env modl.mod_type,
+              modl.mod_loc))
   with Initialization_failure reason -> Result.Error(reason)
 
 (* Reorder bindings to honor dependencies.  *)
@@ -471,7 +473,7 @@ and transl_module cc rootpath mexp =
     mexp.mod_attributes;
   let loc = mexp.mod_loc in
   match mexp.mod_type with
-    Mty_alias (Mta_absent, _) -> apply_coercion loc Alias cc lambda_unit
+    Mty_alias (Mta_absent, _) -> apply_coercion loc Alias cc (lambda_unit loc)
   | _ ->
       match mexp.mod_desc with
         Tmod_ident (path,_) ->
@@ -879,7 +881,7 @@ let transl_store_structure glob map prims str =
   let rec transl_store rootpath subst = function
     [] ->
       transl_store_subst := subst;
-        lambda_unit
+        lambda_unit Location.none
     | item :: rem ->
         match item.str_desc with
         | Tstr_eval (expr, _attrs) ->
@@ -1139,7 +1141,7 @@ let transl_store_structure glob map prims str =
       fatal_error("Translmod.store_ident: " ^ Ident.unique_name id)
 
   and store_idents loc idlist =
-    make_sequence (store_ident loc) idlist
+    make_sequence loc (store_ident loc) idlist
 
   and add_ident may_coerce id subst =
     try
@@ -1262,9 +1264,11 @@ let toplevel_name id =
   with Not_found -> Ident.name id
 
 let toploop_getvalue id =
-  let ap_args = [Lconst(Const_base(Const_string (toplevel_name id, None)))] in
+  let loc = Location.none in
+  let ap_args =
+    [Lconst(Const_base(Const_string (toplevel_name id, None)), loc)] in
   Lapply{ap_should_be_tailcall=false;
-         ap_loc=Location.none;
+         ap_loc=loc;
          ap_func=Lprim(Pfield toploop_getvalue_pos,
                        [Lprim(Pgetglobal toploop_ident, [], Location.none)],
                        Location.none);
@@ -1275,11 +1279,12 @@ let toploop_getvalue id =
         }
 
 let toploop_setvalue id lam =
+  let loc = Location.none in
   let ap_args = 
-    [Lconst(Const_base(Const_string (toplevel_name id, None))); lam]
+    [Lconst(Const_base(Const_string (toplevel_name id, None)), loc); lam]
   in
   Lapply{ap_should_be_tailcall=false;
-         ap_loc=Location.none;
+         ap_loc=loc;
          ap_func=Lprim(Pfield toploop_setvalue_pos,
                        [Lprim(Pgetglobal toploop_ident, [], Location.none)],
                        Location.none);
@@ -1309,7 +1314,7 @@ let transl_toplevel_item item =
   | Tstr_value(rec_flag, pat_expr_list) ->
       let idents = let_bound_idents pat_expr_list in
       transl_let rec_flag pat_expr_list
-        (make_sequence toploop_setvalue_id idents)
+        (make_sequence item.str_loc toploop_setvalue_id idents)
   | Tstr_typext(tyext) ->
       let idents =
         List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
@@ -1318,7 +1323,7 @@ let transl_toplevel_item item =
          definitions of the same extension constructor in the toplevel *)
       List.iter set_toplevel_unique_name idents;
         transl_type_extension item.str_env None tyext
-          (make_sequence toploop_setvalue_id idents)
+          (make_sequence item.str_loc toploop_setvalue_id idents)
   | Tstr_exception ext ->
       set_toplevel_unique_name ext.tyexn_constructor.ext_id;
       toploop_setvalue ext.tyexn_constructor.ext_id
@@ -1334,35 +1339,36 @@ let transl_toplevel_item item =
       compile_recmodule
         (fun id modl _loc -> transl_module Tcoerce_none (Some(Pident id)) modl)
         bindings
-        (make_sequence toploop_setvalue_id idents)
+        (make_sequence item.str_loc toploop_setvalue_id idents)
   | Tstr_class cl_list ->
       (* we need to use unique names for the classes because there might
          be a value named identically *)
       let (ids, class_bindings) = transl_class_bindings cl_list in
       List.iter set_toplevel_unique_name ids;
-      Lletrec(class_bindings, make_sequence toploop_setvalue_id ids)
+      Lletrec(class_bindings,
+        make_sequence item.str_loc toploop_setvalue_id ids)
   | Tstr_include incl ->
       let ids = bound_value_identifiers incl.incl_type in
       let modl = incl.incl_mod in
       let mid = Ident.create_local "include" in
       let rec set_idents pos = function
         [] ->
-          lambda_unit
+          lambda_unit incl.incl_loc
       | id :: ids ->
           Lsequence(toploop_setvalue id
-                      (Lprim(Pfield pos, [Lvar mid], Location.none)),
+                      (Lprim(Pfield pos, [Lvar mid], incl.incl_loc)),
                     set_idents (pos + 1) ids) in
       Llet(Strict, Pgenval, mid,
            transl_module Tcoerce_none None modl, set_idents 0 ids)
   | Tstr_primitive descr ->
       record_primitive descr.val_val;
-      lambda_unit
+      lambda_unit descr.val_loc
   | Tstr_modtype _
   | Tstr_open _
   | Tstr_type _
   | Tstr_class_type _
   | Tstr_attribute _ ->
-      lambda_unit
+      lambda_unit item.str_loc
 
 let transl_toplevel_item_and_close itm =
   close_toplevel_term
@@ -1371,12 +1377,12 @@ let transl_toplevel_item_and_close itm =
 let transl_toplevel_definition str =
   reset_labels ();
   Translprim.clear_used_primitives ();
-  make_sequence transl_toplevel_item_and_close str.str_items
+  make_sequence Location.none transl_toplevel_item_and_close str.str_items
 
 (* Compile the initialization code for a packed library *)
 
 let get_component = function
-    None -> Lconst const_unit
+    None -> Lconst (const_unit, Location.none)
   | Some id -> Lprim(Pgetglobal id, [], Location.none)
 
 let transl_package_flambda component_names coercion =
@@ -1420,8 +1426,9 @@ let transl_package component_names target_name coercion =
 let transl_store_package component_names target_name coercion =
   let rec make_sequence fn pos arg =
     match arg with
-      [] -> lambda_unit
-    | hd :: tl -> Lsequence(fn pos hd, make_sequence fn (pos + 1) tl) in
+      [] -> lambda_unit Location.none
+    | hd :: tl -> Lsequence(fn pos hd, make_sequence fn (pos + 1) tl)
+  in
   match coercion with
     Tcoerce_none ->
       (List.length component_names,

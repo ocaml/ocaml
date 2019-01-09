@@ -1635,7 +1635,14 @@ struct
   type location = Debuginfo.t
   let no_location = Debuginfo.none
 
-  let make_const i =  Cconst_int i
+  let make_const dbg i =
+    match !Clflags.debug_full with
+    | None -> Cconst_int i
+    | Some _ ->
+      let var = V.create_local "dummy" in
+      Cphantom_let (VP.create var, Some (Cphantom_set_debuginfo dbg),
+        Cconst_int i)
+
   (* To avoid changing [Switch] we rely on [Propagate_debuginfo] to change
      these [Debuginfo.none]s into something better. *)
   let make_prim dbg p args = Cop (p,args, dbg)
@@ -1861,14 +1868,14 @@ let rec is_unboxed_number ~strict env e =
       | Some (_, bn) -> Boxed (bn, false)
       end
 
-  | Uconst(Uconst_ref(_, Some (Uconst_float _))) ->
-      Boxed (Boxed_float Debuginfo.none, true)
-  | Uconst(Uconst_ref(_, Some (Uconst_int32 _))) ->
-      Boxed (Boxed_integer (Pint32, Debuginfo.none), true)
-  | Uconst(Uconst_ref(_, Some (Uconst_int64 _))) ->
-      Boxed (Boxed_integer (Pint64, Debuginfo.none), true)
-  | Uconst(Uconst_ref(_, Some (Uconst_nativeint _))) ->
-      Boxed (Boxed_integer (Pnativeint, Debuginfo.none), true)
+  | Uconst(Uconst_ref(_, Some (Uconst_float _)), dbg) ->
+      Boxed (Boxed_float dbg, true)
+  | Uconst(Uconst_ref(_, Some (Uconst_int32 _)), dbg) ->
+      Boxed (Boxed_integer (Pint32, dbg), true)
+  | Uconst(Uconst_ref(_, Some (Uconst_int64 _)), dbg) ->
+      Boxed (Boxed_integer (Pint64, dbg), true)
+  | Uconst(Uconst_ref(_, Some (Uconst_nativeint _)), dbg) ->
+      Boxed (Boxed_integer (Pnativeint, dbg), true)
   | Uprim(p, _, dbg) ->
       begin match simplif_primitive p with
         | Pccall p -> unboxed_number_kind_of_unbox dbg p.prim_native_repr_res
@@ -1966,8 +1973,14 @@ let rec transl env e =
       | None -> Cvar id
       | Some (unboxed_id, bn) -> box_number bn (Cvar unboxed_id)
       end
-  | Uconst sc ->
-      transl_constant sc
+  | Uconst (sc, dbg) ->
+      begin match !Clflags.debug_full with
+      | None -> transl_constant sc
+      | Some _ ->
+        let dummy_var = V.create_local "dummy" in
+        Cphantom_let (VP.create dummy_var, Some (Cphantom_set_debuginfo dbg),
+          transl_constant sc)
+      end
   | Uclosure(fundecls, []) ->
       let lbl = new_const_symbol S.Data in
       add_cmm_constant (
@@ -2340,7 +2353,7 @@ and transl_prim_1 env p arg dbg =
       if no_overflow_lsl n 1 then
         add_const (transl env arg) (n lsl 1) dbg
       else
-        transl_prim_2 env Paddint arg (Uconst (Uconst_int n))
+        transl_prim_2 env Paddint arg (Uconst (Uconst_int n, dbg))
                       Debuginfo.none
   | Poffsetref n ->
       return_unit
@@ -2924,27 +2937,31 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
 and transl_unbox_float dbg env ulam =
   lift_phantom_lets_clambda_to_cmm ulam (fun ulam ->
     match ulam with
-    | Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f
+    | Uconst(Uconst_ref(_, Some (Uconst_float f)), dbg) ->
+        set_debuginfo dbg (Cconst_float f)
     | exp -> unbox_float dbg (transl env exp))
 
 and transl_unbox_int dbg env bi ulam =
   lift_phantom_lets_clambda_to_cmm ulam (fun ulam ->
     match ulam with
-    | Uconst(Uconst_ref(_, Some (Uconst_int32 n))) ->
-        Cconst_natint (Nativeint.of_int32 n)
-    | Uconst(Uconst_ref(_, Some (Uconst_nativeint n))) ->
-        Cconst_natint n
-    | Uconst(Uconst_ref(_, Some (Uconst_int64 n))) ->
-        if size_int = 8 then
-          Cconst_natint (Int64.to_nativeint n)
-        else begin
-          let low = Int64.to_nativeint n in
-          let high = Int64.to_nativeint (Int64.shift_right_logical n 32) in
-          if big_endian then Ctuple [Cconst_natint high; Cconst_natint low]
-          else Ctuple [Cconst_natint low; Cconst_natint high]
-        end
-   | Uprim(Pbintofint bi',[Uconst(Uconst_int i)],_) when bi = bi' ->
-           Cconst_int i
+    | Uconst(Uconst_ref(_, Some (Uconst_int32 n)), dbg) ->
+        set_debuginfo dbg (Cconst_natint (Nativeint.of_int32 n))
+    | Uconst(Uconst_ref(_, Some (Uconst_nativeint n)), dbg) ->
+        set_debuginfo dbg (Cconst_natint n)
+    | Uconst(Uconst_ref(_, Some (Uconst_int64 n)), dbg) ->
+        let expr =
+          if size_int = 8 then
+            Cconst_natint (Int64.to_nativeint n)
+          else begin
+            let low = Int64.to_nativeint n in
+            let high = Int64.to_nativeint (Int64.shift_right_logical n 32) in
+            if big_endian then Ctuple [Cconst_natint high; Cconst_natint low]
+            else Ctuple [Cconst_natint low; Cconst_natint high]
+          end
+        in
+        set_debuginfo dbg cmm
+   | Uprim(Pbintofint bi',[Uconst(Uconst_int (i, dbg))],_dbg) when bi = bi' ->
+       set_debuginfo dbg (Cconst_int i)
    | exp -> unbox_int bi (transl env exp) dbg)
 
 and transl_unbox_number dbg env bn arg =

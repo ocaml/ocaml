@@ -61,7 +61,7 @@ let mkappl (func, args) =
 
 let lsequence l1 l2 =
   match l2 with
-  | Lconst (const_unit, _loc) -> l1
+  | Lconst (Const_pointer 0, _loc) -> l1
   | _ -> Lsequence (l1, l2)
 
 let lfield v i = Lprim(Pfield i, [Lvar v], Location.none)
@@ -107,7 +107,7 @@ let create_object cl obj init =
   let obj' = Ident.create_local "self" in
   let (inh_init, obj_init, has_init) = init obj' in
   match obj_init with
-  | Lconst (const_unit, _loc) ->
+  | Lconst (Const_pointer 0, _loc) ->
     (inh_init,
      mkappl (oo_prim (if has_init then "create_object_and_run_initializers"
                       else"create_object_opt"),
@@ -154,7 +154,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
                  Tcf_inherit (_, cl, _, _, _) ->
                    let (inh_init, obj_init') =
                      build_object_init cl_table (Lvar obj) [] inh_init
-                       (fun _ -> lambda_unit) cl
+                       (fun _ -> lambda_unit Location.none) cl
                    in
                    (inh_init, lsequence obj_init' obj_init, true)
                | Tcf_val (_, _, id, Tcfk_concrete (_, exp), _) ->
@@ -214,7 +214,7 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
   | _ ->
       let self = Ident.create_local "self" in
       let env = Ident.create_local "env" in
-      let obj = if ids = [] then lambda_unit else Lvar self in
+      let obj = if ids = [] then lambda_unit Location.none else Lvar self in
       let envs = if top then None else Some env in
       let ((_,inh_init), obj_init) =
         build_object_init cl_table obj params (envs,[]) copy_env cl in
@@ -380,7 +380,8 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
           (inh_init,
            Llet (Strict, Pgenval, inh,
                  mkappl(oo_prim "inherits", narrow_args @
-                        [lpath; Lconst(Const_pointer(if top then 1 else 0))]),
+                        [lpath; Lconst(Const_pointer(if top then 1 else 0),
+                                       Location.none)]),
                  Llet(StrictOpt, Pgenval, obj_init, lfield inh 0, cl_init)))
       | _ ->
           let core cl_init =
@@ -515,7 +516,7 @@ let transl_class_rebind cl vf =
            lfield cla 3],
           Location.none)))
   with Exit ->
-    lambda_unit
+    lambda_unit Location.none
 
 (* Rewrite a closure using builtins. Improves native code size. *)
 
@@ -542,7 +543,7 @@ let rec builtin_meths self env env2 body =
     | Lprim(Parrayrefu _, [Lvar s; Lvar n], _) when List.mem s self ->
         "var", [Lvar n]
     | Lprim(Pfield n, [Lvar e], _) when Ident.same e env ->
-        "env", [Lvar env2; Lconst(Const_pointer n)]
+        "env", [Lvar env2; Lconst(Const_pointer n, Location.none)]
     | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
         "meth", [met]
     | _ -> raise Not_found
@@ -613,7 +614,7 @@ module M = struct
     | "send_env"   -> SendEnv
     | "send_meth"  -> SendMeth
     | _ -> assert false
-    in Lconst(Const_pointer(Obj.magic tag)) :: args
+    in Lconst(Const_pointer(Obj.magic tag), Location.none) :: args
 end
 open M
 
@@ -671,10 +672,15 @@ let free_methods l =
     | Levent _ | Lifused _ -> ()
   in free l; !fv
 
+let is_lambda_unit lam =
+  match lam with
+  | Lconst (Const_pointer 0, _loc) -> true
+  | _ -> false
+
 let transl_class ids cl_id pub_meths cl vflag =
   (* First check if it is not only a rebind *)
   let rebind = transl_class_rebind cl vflag in
-  if rebind <> lambda_unit then rebind else
+  if not (is_lambda_unit rebind) then rebind else
 
   (* Prepare for heavy environment handling *)
   let tables = Ident.create_local (Ident.name cl_id ^ "_tables") in
@@ -733,7 +739,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   let new_ids_init = ref [] in
   let env1 = Ident.create_local "env" and env1' = Ident.create_local "env'" in
   let copy_env self =
-    if top then lambda_unit else
+    if top then lambda_unit Location.none else
     Lifused(env2, Lprim(Psetfield_computed (Pointer, Assignment),
                         [Lvar self; Lvar env2; Lvar env1'],
                         Location.none))
@@ -777,7 +783,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   and ldirect obj_init =
     Llet(Strict, Pgenval, obj_init, cl_init,
          Lsequence(mkappl (oo_prim "init_class", [Lvar cla]),
-                   mkappl (Lvar obj_init, [lambda_unit])))
+                   mkappl (Lvar obj_init, [lambda_unit Location.none])))
   in
   (* Simplest case: an object defined at toplevel (ids=[]) *)
   if top && ids = [] then llets (ltable cla (ldirect obj_init)) else
@@ -800,32 +806,32 @@ let transl_class ids cl_id pub_meths cl vflag =
       Lsequence(
       mkappl (oo_prim "init_class", [Lvar table]),
       Lprim(Pmakeblock(0, Immutable, None),
-            [mkappl (Lvar env_init, [lambda_unit]);
-             Lvar class_init; Lvar env_init; lambda_unit],
+            [mkappl (Lvar env_init, [lambda_unit Location.none]);
+             Lvar class_init; Lvar env_init; lambda_unit Location.none],
             Location.none))))
   and lbody_virt lenvs =
     Lprim(Pmakeblock(0, Immutable, None),
-          [lambda_unit; Lfunction{kind = Curried;
+          [lambda_unit Location.none; Lfunction{kind = Curried;
                                   attr = default_function_attribute;
                                   loc = Location.none;
                                   params = [cla]; body = cl_init};
-           lambda_unit; lenvs],
+           lambda_unit Location.none; lenvs],
          Location.none)
   in
   (* Still easy: a class defined at toplevel *)
   if top && concrete then lclass lbody else
-  if top then llets (lbody_virt lambda_unit) else
+  if top then llets (lbody_virt (lambda_unit Location.none)) else
 
   (* Now for the hard stuff: prepare for table caching *)
   let envs = Ident.create_local "envs"
   and cached = Ident.create_local "cached" in
   let lenvs =
     if !new_ids_meths = [] && !new_ids_init = [] && inh_init = []
-    then lambda_unit
+    then lambda_unit Location.none
     else Lvar envs in
   let lenv =
     let menv =
-      if !new_ids_meths = [] then lambda_unit else
+      if !new_ids_meths = [] then lambda_unit Location.none else
       Lprim(Pmakeblock(0, Immutable, None),
             List.map (fun id -> Lvar id) !new_ids_meths,
             Location.none) in
@@ -901,7 +907,7 @@ let transl_class ids cl_id pub_meths cl vflag =
          so that the program's behaviour does not change between runs *)
       lupdate_cache
     else
-      Lifthenelse(lfield cached 0, Location.none, lambda_unit,
+      Lifthenelse(lfield cached 0, Location.none, lambda_unit Location.none,
         Location.none, lupdate_cache, Location.none)
   in
   llets (
@@ -915,7 +921,8 @@ let transl_class ids cl_id pub_meths cl vflag =
            lfield cached 1;
            lfield cached 0;
            lenvs]
-        else [lambda_unit; lfield cached 0; lambda_unit; lenvs]),
+        else [lambda_unit Location.none; lfield cached 0;
+              lambda_unit Location.none; lenvs]),
         Location.none
        )))))
 

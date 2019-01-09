@@ -598,7 +598,7 @@ let simplify_lets lam =
       Lsend(k, simplif m, simplif o, List.map simplif ll, loc)
   | Levent(l, ev) -> Levent(simplif l, ev)
   | Lifused(v, l) ->
-      if count_var v > 0 then simplif l else lambda_unit
+      if count_var v > 0 then simplif l else lambda_unit Location.none
   and deleting_let v l1 l2 =
     match !Clflags.debug_full with
     | None -> simplif l2

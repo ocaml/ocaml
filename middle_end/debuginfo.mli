@@ -246,6 +246,8 @@ val iter_position_and_frames_innermost_first
   -> f:(Code_range.t -> unit)
   -> unit
 
+val best : t -> t -> t
+
 module Apply : sig
   type t
 

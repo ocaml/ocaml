@@ -119,6 +119,9 @@ type phantom_defining_expr =
   | Cphantom_block of { tag : int; fields : Backend_var.t list; }
   (** The phantom-let-bound variable points at a block with the given
       structure. *)
+  | Cphantom_set_debuginfo of Debuginfo.t
+  (** Pseudo-operation to set the current debuginfo. *)
+  (* CR mshinwell: It would be nice to find a better solution for this. *)
 
 type memory_chunk =
     Byte_unsigned

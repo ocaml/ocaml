@@ -124,6 +124,7 @@ type phantom_defining_expr =
   | Cphantom_read_field of { var : Backend_var.t; field : int; }
   | Cphantom_read_symbol_field of { sym : Backend_sym.t; field : int; }
   | Cphantom_block of { tag : int; fields : Backend_var.t list; }
+  | Cphantom_set_debuginfo of Debuginfo.t
 
 type memory_chunk =
     Byte_unsigned

@@ -86,7 +86,8 @@ let check_closure ulam named : Clambda.ulambda =
         str_const Data
     in
     Uprim (Pccall desc,
-           [ulam; Clambda.Uconst (Uconst_ref (str_const, None))],
+           [ulam;
+            Clambda.Uconst (Uconst_ref (str_const, None), Debuginfo.none)],
            Debuginfo.none)
 
 let check_field ulam pos named_opt : Clambda.ulambda =
@@ -108,8 +109,8 @@ let check_field ulam pos named_opt : Clambda.ulambda =
       Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
         str_const Data
     in
-    Uprim (Pccall desc, [ulam; Clambda.Uconst (Uconst_int pos);
-        Clambda.Uconst (Uconst_ref (str_const, None))],
+    Uprim (Pccall desc, [ulam; Clambda.Uconst (Uconst_int pos, Debuginfo.none);
+        Clambda.Uconst (Uconst_ref (str_const, None), Debuginfo.none)],
       Debuginfo.none)
 
 module Env : sig
@@ -218,7 +219,7 @@ let to_clambda_symbol' env sym : Clambda.uconstant =
   Uconst_ref (Backend_sym.of_symbol sym, to_uconst_symbol env sym)
 
 let to_clambda_symbol env sym : Clambda.ulambda =
-  Uconst (to_clambda_symbol' env sym)
+  Uconst (to_clambda_symbol' env sym, Debuginfo.none)
 
 let to_clambda_const env (const : Flambda.constant_defining_value_block_field)
       : Clambda.uconstant =
@@ -357,9 +358,9 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
 and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
   match named with
   | Symbol sym -> to_clambda_symbol env sym
-  | Const (Const_pointer n) -> Uconst (Uconst_ptr n)
-  | Const (Int n) -> Uconst (Uconst_int n)
-  | Const (Char c) -> Uconst (Uconst_int (Char.code c))
+  | Const (Const_pointer n) -> Uconst (Uconst_ptr n, Debuginfo.none)
+  | Const (Int n) -> Uconst (Uconst_int n, Debuginfo.none)
+  | Const (Char c) -> Uconst (Uconst_int (Char.code c), Debuginfo.none)
   | Allocated_const _ ->
     Misc.fatal_errorf "[Allocated_const] should have been lifted to a \
         [Let_symbol] construction before [Flambda_to_clambda]: %a = %a"
@@ -607,7 +608,7 @@ let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
       Debuginfo.none)
   in
   match fields with
-  | [] -> Uconst (Uconst_ptr 0)
+  | [] -> Uconst (Uconst_ptr 0, Debuginfo.none)
   | h :: t ->
     List.fold_left (fun acc (p, field) ->
         Clambda.Usequence (build_setfield (p, field), acc))
@@ -701,7 +702,7 @@ let to_clambda_program t env constants (program : Flambda.program) =
       let e2, constants, preallocated_blocks = loop env constants program in
       Usequence (e1, e2), constants, preallocated_blocks
     | End _ ->
-      Uconst (Uconst_ptr 0), constants, []
+      Uconst (Uconst_ptr 0, Debuginfo.none), constants, []
   in
   loop env constants program.program_body
 

@@ -77,14 +77,15 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
       | n -> V.Tbl.replace t var (n + 1)
       | exception Not_found -> V.Tbl.add t var 1
       end
-    | Uconst const ->
+    | Uconst (const, dbg) ->
       (* The only variables that might occur in [const] are those in constant
          closures---and those are all bound by such closures.  It follows that
          [const] cannot contain any variables that are bound in the current
          scope, so we do not need to count them here.  (The function bodies
          of the closures will be traversed when this function is called from
          [Cmmgen.transl_function].) *)
-      ignore_uconstant const
+      ignore_uconstant const;
+      ignore_debuginfo dbg
     | Udirect_apply (label, args, dbg) ->
       ignore_function_label label;
       List.iter loop args;
@@ -254,8 +255,9 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
       if V.Set.mem var var_info.assigned then begin
         let_stack := []
       end
-    | Uconst const ->
-      ignore_uconstant const
+    | Uconst (const, dbg) ->
+      ignore_uconstant const;
+      ignore_debuginfo dbg
     | Udirect_apply (label, args, dbg) ->
       ignore_function_label label;
       examine_argument_list args;
@@ -456,13 +458,11 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
       let body = substitute_let_moveable is_let_moveable env body in
       (* If we are about to delete a [let] in debug mode, keep it for the
          debugger. *)
-      (* CR-someday mshinwell: find out why some closure constructions were
-         not leaving phantom lets behind after substitution. *)
       match !Clflags.debug_full with
       | None -> body
       | Some _ ->
         match def with
-        | Uconst const ->
+        | Uconst (const, _dbg) ->
           Uphantom_let (var, Some (Clambda.Uphantom_const const), body)
         | Uvar alias_of ->
           Uphantom_let (var, Some (Clambda.Uphantom_var alias_of), body)
@@ -580,7 +580,7 @@ let primitive_moveable (prim : Lambda.primitive)
     (args : Clambda.ulambda list)
     (var_info : var_info) =
   match prim, args with
-  | Pfield _, [Uconst (Uconst_ref (_, _))] ->
+  | Pfield _, [Uconst (Uconst_ref (_, _), _dbg)] ->
     (* CR-someday mshinwell: Actually, maybe this shouldn't be needed; these
        should have been simplified to [Read_symbol_field], which doesn't yield
        a Clambda let.  This might be fixed when Inline_and_simplify can
@@ -659,7 +659,7 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
       | None -> body, moveable
       | Some _ ->
         match def with
-        | Uconst const ->
+        | Uconst (const, _dbg) ->
           Uphantom_let (var, Some (Clambda.Uphantom_const const),
             body), moveable
         | Uvar alias_of ->

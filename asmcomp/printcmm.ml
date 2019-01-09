@@ -133,6 +133,8 @@ let phantom_defining_expr ppf defining_expr =
         Format.fprintf ppf "%a; " V.print field)
       fields;
     Format.fprintf ppf "]"
+  | Cphantom_set_debuginfo dbg ->
+    Format.fprintf ppf "@[(set_debuginfo@ %a)@]" Debuginfo.print dbg
 
 let phantom_defining_expr_opt ppf defining_expr =
   match defining_expr with

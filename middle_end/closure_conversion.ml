@@ -172,7 +172,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         Misc.fatal_errorf "Closure_conversion.close: unbound identifier %a"
           Ident.print id
     end
-  | Lconst cst ->
+  | Lconst (cst, _loc) ->
+    (* CR mshinwell: don't ignore location *)
     let cst, name = close_const t cst in
     name_expr cst ~name
   | Llet ((Strict | Alias | StrictOpt), _value_kind, id, defining_expr, body) ->

@@ -474,7 +474,7 @@ let rec comp_expr env exp sz cont =
       with Not_found ->
         fatal_error ("Bytegen.comp_expr: var " ^ Ident.unique_name id)
       end
-  | Lconst cst ->
+  | Lconst (cst, _loc) ->
       Kconst cst :: cont
   | Lapply{ap_func = func; ap_args = args} ->
       let nargs = List.length args in
@@ -500,7 +500,7 @@ let rec comp_expr env exp sz cont =
       let getmethod, args' =
         if kind = Self then (Kgetmethod, met::obj::args) else
         match met with
-          Lconst(Const_base(Const_int n)) -> (Kgetpubmet n, obj::args)
+          Lconst(Const_base(Const_int n), _loc) -> (Kgetpubmet n, obj::args)
         | _ -> (Kgetdynmet, met::obj::args)
       in
       if is_tailcall cont then
@@ -537,7 +537,8 @@ let rec comp_expr env exp sz cont =
                       decl then begin
         (* let rec of functions *)
         let fv =
-          Ident.Set.elements (free_variables (Lletrec(decl, lambda_unit))) in
+          Ident.Set.elements (free_variables (
+            Lletrec(decl, lambda_unit Location.none))) in
         let rec_idents = List.map (fun (id, _lam) -> id) decl in
         let rec comp_fun pos = function
             [] -> []
@@ -649,10 +650,10 @@ let rec comp_expr env exp sz cont =
       end
   | Lprim(Praise k, [arg], _) ->
       comp_expr env arg sz (Kraise k :: discard_dead_code cont)
-  | Lprim(Paddint, [arg; Lconst(Const_base(Const_int n))], _)
+  | Lprim(Paddint, [arg; Lconst(Const_base(Const_int n), _loc)], _)
     when is_immed n ->
       comp_expr env arg sz (Koffsetint n :: cont)
-  | Lprim(Psubint, [arg; Lconst(Const_base(Const_int n))], _)
+  | Lprim(Psubint, [arg; Lconst(Const_base(Const_int n), _loc)], _)
     when is_immed (-n) ->
       comp_expr env arg sz (Koffsetint (-n) :: cont)
   | Lprim (Poffsetint n, [arg], _)
@@ -924,24 +925,25 @@ and comp_expr_list_assign env exprl sz pos cont = match exprl with
 
 and comp_binary_test env cond ifso ifnot sz cont =
   let cont_cond =
-    if ifnot = Lconst const_unit then begin
+    match ifnot with
+    | Lconst (Const_pointer 0, _loc) ->
       let (lbl_end, cont1) = label_code cont in
       Kstrictbranchifnot lbl_end :: comp_expr env ifso sz cont1
-    end else
-    match code_as_jump ifso sz with
-    | Some label ->
-      let cont = comp_expr env ifnot sz cont in
-      Kbranchif label :: cont
     | _ ->
-        match code_as_jump ifnot sz with
-        | Some label ->
-            let cont = comp_expr env ifso sz cont in
-            Kbranchifnot label :: cont
-        | _ ->
-            let (branch_end, cont1) = make_branch cont in
-            let (lbl_not, cont2) = label_code(comp_expr env ifnot sz cont1) in
-            Kbranchifnot lbl_not ::
-            comp_expr env ifso sz (branch_end :: cont2) in
+      match code_as_jump ifso sz with
+      | Some label ->
+        let cont = comp_expr env ifnot sz cont in
+        Kbranchif label :: cont
+      | _ ->
+          match code_as_jump ifnot sz with
+          | Some label ->
+              let cont = comp_expr env ifso sz cont in
+              Kbranchifnot label :: cont
+          | _ ->
+              let (branch_end, cont1) = make_branch cont in
+              let (lbl_not, cont2) = label_code(comp_expr env ifnot sz cont1) in
+              Kbranchifnot lbl_not ::
+              comp_expr env ifso sz (branch_end :: cont2) in
 
   comp_expr env cond sz cont_cond
 

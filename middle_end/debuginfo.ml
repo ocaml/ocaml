@@ -582,6 +582,13 @@ let iter_position_and_frames_innermost_first t ~f =
       | Lexical_scope_only -> ()
       | Inlined_frame call_site -> f (Call_site.position call_site))
 
+let best t1 t2 =
+  match t1, t2 with
+  | Empty, Empty -> Empty
+  | Empty, Non_empty _ -> t2
+  | Non_empty _, Empty -> t1
+  | Non_empty _, Non_empty _ -> t1  (* arbitrary choice *)
+
 include Identifiable.Make (struct
   type nonrec t = t
 

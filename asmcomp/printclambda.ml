@@ -111,7 +111,7 @@ and uconstant ppf = function
 and lam ppf = function
   | Uvar id ->
       V.print ppf id
-  | Uconst c -> uconstant ppf c
+  | Uconst (c, _loc) -> uconstant ppf c
   | Udirect_apply(f, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in

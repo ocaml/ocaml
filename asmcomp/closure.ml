@@ -256,19 +256,19 @@ let rec is_pure_clambda = function
 
 (* Simplify primitive operations on known arguments *)
 
-let make_const c = (Uconst c, Value_const c)
-let make_const_ref c =
+let make_const dbg c = (Uconst (c, dbg), Value_const c)
+let make_const_ref dbg c =
   let sym =
     Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
       (Compilenv.new_structured_constant ~shared:true c) Backend_sym.Data
   in
-  make_const(Uconst_ref(sym, Some c))
-let make_const_int n = make_const (Uconst_int n)
-let make_const_ptr n = make_const (Uconst_ptr n)
-let make_const_bool b = make_const_ptr(if b then 1 else 0)
+  make_const dbg (Uconst_ref(sym, Some c))
+let make_const_int dbg n = make_const dbg (Uconst_int n)
+let make_const_ptr dbg n = make_const dbg (Uconst_ptr n)
+let make_const_bool dbg b = make_const_ptr dbg (if b then 1 else 0)
 
-let make_integer_comparison cmp x y =
-  make_const_bool
+let make_integer_comparison dbg cmp x y =
+  make_const_bool dbg
     (match cmp with
        Ceq -> x = y
      | Cne -> x <> y
@@ -277,8 +277,8 @@ let make_integer_comparison cmp x y =
      | Cle -> x <= y
      | Cge -> x >= y)
 
-let make_float_comparison cmp x y =
-  make_const_bool
+let make_float_comparison dbg cmp x y =
+  make_const_bool dbg
     (match cmp with
      | CFeq -> x = y
      | CFneq -> not (x = y)
@@ -291,10 +291,10 @@ let make_float_comparison cmp x y =
      | CFge -> x >= y
      | CFnge -> not (x >= y))
 
-let make_const_float n = make_const_ref (Uconst_float n)
-let make_const_natint n = make_const_ref (Uconst_nativeint n)
-let make_const_int32 n = make_const_ref (Uconst_int32 n)
-let make_const_int64 n = make_const_ref (Uconst_int64 n)
+let make_const_float dbg n = make_const_ref dbg (Uconst_float n)
+let make_const_natint dbg n = make_const_ref dbg (Uconst_nativeint n)
+let make_const_int32 dbg n = make_const_ref dbg (Uconst_int32 n)
+let make_const_int64 dbg n = make_const_ref dbg (Uconst_int64 n)
 
 (* The [fpc] parameter is true if constant propagation of
    floating-point computations is allowed *)
@@ -305,14 +305,14 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
   (* int (or enumerated type) *)
   | [ Value_const(Uconst_int n1 | Uconst_ptr n1) ] ->
       begin match p with
-      | Pnot -> make_const_bool (n1 = 0)
-      | Pnegint -> make_const_int (- n1)
-      | Poffsetint n -> make_const_int (n + n1)
-      | Pfloatofint when fpc -> make_const_float (float_of_int n1)
-      | Pbintofint Pnativeint -> make_const_natint (Nativeint.of_int n1)
-      | Pbintofint Pint32 -> make_const_int32 (Int32.of_int n1)
-      | Pbintofint Pint64 -> make_const_int64 (Int64.of_int n1)
-      | Pbswap16 -> make_const_int (((n1 land 0xff) lsl 8)
+      | Pnot -> make_const_bool dbg (n1 = 0)
+      | Pnegint -> make_const_int dbg (- n1)
+      | Poffsetint n -> make_const_int dbg (n + n1)
+      | Pfloatofint when fpc -> make_const_float dbg (float_of_int n1)
+      | Pbintofint Pnativeint -> make_const_natint dbg (Nativeint.of_int n1)
+      | Pbintofint Pint32 -> make_const_int32 dbg (Int32.of_int n1)
+      | Pbintofint Pint64 -> make_const_int64 dbg (Int64.of_int n1)
+      | Pbswap16 -> make_const_int dbg (((n1 land 0xff) lsl 8)
                                     lor ((n1 land 0xff00) lsr 8))
       | _ -> default
       end
@@ -320,68 +320,70 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
   | [ Value_const(Uconst_int n1 | Uconst_ptr n1);
       Value_const(Uconst_int n2 | Uconst_ptr n2) ] ->
       begin match p with
-      | Psequand -> make_const_bool (n1 <> 0 && n2 <> 0)
-      | Psequor -> make_const_bool (n1 <> 0 || n2 <> 0)
-      | Paddint -> make_const_int (n1 + n2)
-      | Psubint -> make_const_int (n1 - n2)
-      | Pmulint -> make_const_int (n1 * n2)
-      | Pdivint _ when n2 <> 0 -> make_const_int (n1 / n2)
-      | Pmodint _ when n2 <> 0 -> make_const_int (n1 mod n2)
-      | Pandint -> make_const_int (n1 land n2)
-      | Porint -> make_const_int (n1 lor n2)
-      | Pxorint -> make_const_int (n1 lxor n2)
+      | Psequand -> make_const_bool dbg (n1 <> 0 && n2 <> 0)
+      | Psequor -> make_const_bool dbg (n1 <> 0 || n2 <> 0)
+      | Paddint -> make_const_int dbg (n1 + n2)
+      | Psubint -> make_const_int dbg (n1 - n2)
+      | Pmulint -> make_const_int dbg (n1 * n2)
+      | Pdivint _ when n2 <> 0 -> make_const_int dbg (n1 / n2)
+      | Pmodint _ when n2 <> 0 -> make_const_int dbg (n1 mod n2)
+      | Pandint -> make_const_int dbg (n1 land n2)
+      | Porint -> make_const_int dbg (n1 lor n2)
+      | Pxorint -> make_const_int dbg (n1 lxor n2)
       | Plslint when 0 <= n2 && n2 < 8 * Arch.size_int ->
-          make_const_int (n1 lsl n2)
+          make_const_int dbg (n1 lsl n2)
       | Plsrint when 0 <= n2 && n2 < 8 * Arch.size_int ->
-          make_const_int (n1 lsr n2)
+          make_const_int dbg (n1 lsr n2)
       | Pasrint when 0 <= n2 && n2 < 8 * Arch.size_int ->
-          make_const_int (n1 asr n2)
-      | Pintcomp c -> make_integer_comparison c n1 n2
+          make_const_int dbg (n1 asr n2)
+      | Pintcomp c -> make_integer_comparison dbg c n1 n2
       | _ -> default
       end
   (* float *)
   | [Value_const(Uconst_ref(_, Some (Uconst_float n1)))] when fpc ->
       begin match p with
-      | Pintoffloat -> make_const_int (int_of_float n1)
-      | Pnegfloat -> make_const_float (-. n1)
-      | Pabsfloat -> make_const_float (abs_float n1)
+      | Pintoffloat -> make_const_int dbg (int_of_float n1)
+      | Pnegfloat -> make_const_float dbg (-. n1)
+      | Pabsfloat -> make_const_float dbg (abs_float n1)
       | _ -> default
       end
   (* float, float *)
   | [Value_const(Uconst_ref(_, Some (Uconst_float n1)));
      Value_const(Uconst_ref(_, Some (Uconst_float n2)))] when fpc ->
       begin match p with
-      | Paddfloat -> make_const_float (n1 +. n2)
-      | Psubfloat -> make_const_float (n1 -. n2)
-      | Pmulfloat -> make_const_float (n1 *. n2)
-      | Pdivfloat -> make_const_float (n1 /. n2)
-      | Pfloatcomp c  -> make_float_comparison c n1 n2
+      | Paddfloat -> make_const_float dbg (n1 +. n2)
+      | Psubfloat -> make_const_float dbg (n1 -. n2)
+      | Pmulfloat -> make_const_float dbg (n1 *. n2)
+      | Pdivfloat -> make_const_float dbg (n1 /. n2)
+      | Pfloatcomp c  -> make_float_comparison dbg c n1 n2
       | _ -> default
       end
   (* nativeint *)
   | [Value_const(Uconst_ref(_, Some (Uconst_nativeint n)))] ->
       begin match p with
-      | Pintofbint Pnativeint -> make_const_int (Nativeint.to_int n)
-      | Pcvtbint(Pnativeint, Pint32) -> make_const_int32 (Nativeint.to_int32 n)
-      | Pcvtbint(Pnativeint, Pint64) -> make_const_int64 (Int64.of_nativeint n)
-      | Pnegbint Pnativeint -> make_const_natint (Nativeint.neg n)
+      | Pintofbint Pnativeint -> make_const_int dbg (Nativeint.to_int n)
+      | Pcvtbint (Pnativeint, Pint32) ->
+          make_const_int32 dbg (Nativeint.to_int32 n)
+      | Pcvtbint (Pnativeint, Pint64) ->
+          make_const_int64 dbg (Int64.of_nativeint n)
+      | Pnegbint Pnativeint -> make_const_natint dbg (Nativeint.neg n)
       | _ -> default
       end
   (* nativeint, nativeint *)
   | [Value_const(Uconst_ref(_, Some (Uconst_nativeint n1)));
      Value_const(Uconst_ref(_, Some (Uconst_nativeint n2)))] ->
       begin match p with
-      | Paddbint Pnativeint -> make_const_natint (Nativeint.add n1 n2)
-      | Psubbint Pnativeint -> make_const_natint (Nativeint.sub n1 n2)
-      | Pmulbint Pnativeint -> make_const_natint (Nativeint.mul n1 n2)
+      | Paddbint Pnativeint -> make_const_natint dbg (Nativeint.add n1 n2)
+      | Psubbint Pnativeint -> make_const_natint dbg (Nativeint.sub n1 n2)
+      | Pmulbint Pnativeint -> make_const_natint dbg (Nativeint.mul n1 n2)
       | Pdivbint {size=Pnativeint} when n2 <> 0n ->
-          make_const_natint (Nativeint.div n1 n2)
+          make_const_natint dbg (Nativeint.div n1 n2)
       | Pmodbint {size=Pnativeint} when n2 <> 0n ->
-          make_const_natint (Nativeint.rem n1 n2)
-      | Pandbint Pnativeint -> make_const_natint (Nativeint.logand n1 n2)
-      | Porbint Pnativeint ->  make_const_natint (Nativeint.logor n1 n2)
-      | Pxorbint Pnativeint -> make_const_natint (Nativeint.logxor n1 n2)
-      | Pbintcomp(Pnativeint, c)  -> make_integer_comparison c n1 n2
+          make_const_natint dbg (Nativeint.rem n1 n2)
+      | Pandbint Pnativeint -> make_const_natint dbg (Nativeint.logand n1 n2)
+      | Porbint Pnativeint ->  make_const_natint dbg (Nativeint.logor n1 n2)
+      | Pxorbint Pnativeint -> make_const_natint dbg (Nativeint.logxor n1 n2)
+      | Pbintcomp(Pnativeint, c)  -> make_integer_comparison dbg c n1 n2
       | _ -> default
       end
   (* nativeint, int *)
@@ -389,37 +391,38 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
      Value_const(Uconst_int n2)] ->
       begin match p with
       | Plslbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
-          make_const_natint (Nativeint.shift_left n1 n2)
+          make_const_natint dbg (Nativeint.shift_left n1 n2)
       | Plsrbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
-          make_const_natint (Nativeint.shift_right_logical n1 n2)
+          make_const_natint dbg (Nativeint.shift_right_logical n1 n2)
       | Pasrbint Pnativeint when 0 <= n2 && n2 < 8 * Arch.size_int ->
-          make_const_natint (Nativeint.shift_right n1 n2)
+          make_const_natint dbg (Nativeint.shift_right n1 n2)
       | _ -> default
       end
   (* int32 *)
   | [Value_const(Uconst_ref(_, Some (Uconst_int32 n)))] ->
       begin match p with
-      | Pintofbint Pint32 -> make_const_int (Int32.to_int n)
-      | Pcvtbint(Pint32, Pnativeint) -> make_const_natint (Nativeint.of_int32 n)
-      | Pcvtbint(Pint32, Pint64) -> make_const_int64 (Int64.of_int32 n)
-      | Pnegbint Pint32 -> make_const_int32 (Int32.neg n)
+      | Pintofbint Pint32 -> make_const_int dbg (Int32.to_int n)
+      | Pcvtbint (Pint32, Pnativeint) ->
+          make_const_natint dbg (Nativeint.of_int32 n)
+      | Pcvtbint (Pint32, Pint64) -> make_const_int64 dbg (Int64.of_int32 n)
+      | Pnegbint Pint32 -> make_const_int32 dbg (Int32.neg n)
       | _ -> default
       end
   (* int32, int32 *)
   | [Value_const(Uconst_ref(_, Some (Uconst_int32 n1)));
      Value_const(Uconst_ref(_, Some (Uconst_int32 n2)))] ->
       begin match p with
-      | Paddbint Pint32 -> make_const_int32 (Int32.add n1 n2)
-      | Psubbint Pint32 -> make_const_int32 (Int32.sub n1 n2)
-      | Pmulbint Pint32 -> make_const_int32 (Int32.mul n1 n2)
+      | Paddbint Pint32 -> make_const_int32 dbg (Int32.add n1 n2)
+      | Psubbint Pint32 -> make_const_int32 dbg (Int32.sub n1 n2)
+      | Pmulbint Pint32 -> make_const_int32 dbg (Int32.mul n1 n2)
       | Pdivbint {size=Pint32} when n2 <> 0l ->
-          make_const_int32 (Int32.div n1 n2)
+          make_const_int32 dbg (Int32.div n1 n2)
       | Pmodbint {size=Pint32} when n2 <> 0l ->
-          make_const_int32 (Int32.rem n1 n2)
-      | Pandbint Pint32 -> make_const_int32 (Int32.logand n1 n2)
-      | Porbint Pint32 -> make_const_int32 (Int32.logor n1 n2)
-      | Pxorbint Pint32 -> make_const_int32 (Int32.logxor n1 n2)
-      | Pbintcomp(Pint32, c) -> make_integer_comparison c n1 n2
+          make_const_int32 dbg (Int32.rem n1 n2)
+      | Pandbint Pint32 -> make_const_int32 dbg (Int32.logand n1 n2)
+      | Porbint Pint32 -> make_const_int32 dbg (Int32.logor n1 n2)
+      | Pxorbint Pint32 -> make_const_int32 dbg (Int32.logxor n1 n2)
+      | Pbintcomp (Pint32, c) -> make_integer_comparison dbg c n1 n2
       | _ -> default
       end
   (* int32, int *)
@@ -427,37 +430,39 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
      Value_const(Uconst_int n2)] ->
       begin match p with
       | Plslbint Pint32 when 0 <= n2 && n2 < 32 ->
-          make_const_int32 (Int32.shift_left n1 n2)
+          make_const_int32 dbg (Int32.shift_left n1 n2)
       | Plsrbint Pint32 when 0 <= n2 && n2 < 32 ->
-          make_const_int32 (Int32.shift_right_logical n1 n2)
+          make_const_int32 dbg (Int32.shift_right_logical n1 n2)
       | Pasrbint Pint32 when 0 <= n2 && n2 < 32 ->
-          make_const_int32 (Int32.shift_right n1 n2)
+          make_const_int32 dbg (Int32.shift_right n1 n2)
       | _ -> default
       end
   (* int64 *)
   | [Value_const(Uconst_ref(_, Some (Uconst_int64 n)))] ->
       begin match p with
-      | Pintofbint Pint64 -> make_const_int (Int64.to_int n)
-      | Pcvtbint(Pint64, Pint32) -> make_const_int32 (Int64.to_int32 n)
-      | Pcvtbint(Pint64, Pnativeint) -> make_const_natint (Int64.to_nativeint n)
-      | Pnegbint Pint64 -> make_const_int64 (Int64.neg n)
+      | Pintofbint Pint64 -> make_const_int dbg (Int64.to_int n)
+      | Pcvtbint (Pint64, Pint32) ->
+          make_const_int32 dbg (Int64.to_int32 n)
+      | Pcvtbint (Pint64, Pnativeint) ->
+          make_const_natint dbg (Int64.to_nativeint n)
+      | Pnegbint Pint64 -> make_const_int64 dbg (Int64.neg n)
       | _ -> default
       end
   (* int64, int64 *)
   | [Value_const(Uconst_ref(_, Some (Uconst_int64 n1)));
      Value_const(Uconst_ref(_, Some (Uconst_int64 n2)))] ->
       begin match p with
-      | Paddbint Pint64 -> make_const_int64 (Int64.add n1 n2)
-      | Psubbint Pint64 -> make_const_int64 (Int64.sub n1 n2)
-      | Pmulbint Pint64 -> make_const_int64 (Int64.mul n1 n2)
+      | Paddbint Pint64 -> make_const_int64 dbg (Int64.add n1 n2)
+      | Psubbint Pint64 -> make_const_int64 dbg (Int64.sub n1 n2)
+      | Pmulbint Pint64 -> make_const_int64 dbg (Int64.mul n1 n2)
       | Pdivbint {size=Pint64} when n2 <> 0L ->
-          make_const_int64 (Int64.div n1 n2)
+          make_const_int64 dbg (Int64.div n1 n2)
       | Pmodbint {size=Pint64} when n2 <> 0L ->
-          make_const_int64 (Int64.rem n1 n2)
-      | Pandbint Pint64 -> make_const_int64 (Int64.logand n1 n2)
-      | Porbint Pint64 -> make_const_int64 (Int64.logor n1 n2)
-      | Pxorbint Pint64 -> make_const_int64 (Int64.logxor n1 n2)
-      | Pbintcomp(Pint64, c) -> make_integer_comparison c n1 n2
+          make_const_int64 dbg (Int64.rem n1 n2)
+      | Pandbint Pint64 -> make_const_int64 dbg (Int64.logand n1 n2)
+      | Porbint Pint64 -> make_const_int64 dbg (Int64.logor n1 n2)
+      | Pxorbint Pint64 -> make_const_int64 dbg (Int64.logxor n1 n2)
+      | Pbintcomp (Pint64, c) -> make_integer_comparison dbg c n1 n2
       | _ -> default
       end
   (* int64, int *)
@@ -465,11 +470,11 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
      Value_const(Uconst_int n2)] ->
       begin match p with
       | Plslbint Pint64 when 0 <= n2 && n2 < 64 ->
-          make_const_int64 (Int64.shift_left n1 n2)
+          make_const_int64 dbg (Int64.shift_left n1 n2)
       | Plsrbint Pint64 when 0 <= n2 && n2 < 64 ->
-          make_const_int64 (Int64.shift_right_logical n1 n2)
+          make_const_int64 dbg (Int64.shift_right_logical n1 n2)
       | Pasrbint Pint64 when 0 <= n2 && n2 < 64 ->
-          make_const_int64 (Int64.shift_right n1 n2)
+          make_const_int64 dbg (Int64.shift_right n1 n2)
       | _ -> default
       end
   (* TODO: Pbbswap *)
@@ -501,14 +506,14 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
           Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
             name Backend_sym.Data
         in
-        make_const (Uconst_ref (sym, Some cst))
+        make_const dbg (Uconst_ref (sym, Some cst))
       with Exit ->
         (Uprim(p, args, dbg), Value_tuple (Array.of_list approxs))
       end
   (* Field access *)
   | Pfield n, _, [ Value_const(Uconst_ref(_, Some (Uconst_block(_, l)))) ]
     when n < List.length l ->
-      make_const (List.nth l n)
+      make_const dbg (List.nth l n)
   | Pfield n, [ Uprim(Pmakeblock _, ul, _) ], [approx]
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
@@ -516,30 +521,31 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
   | (Pstringlength | Pbyteslength),
      _,
      [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
-      make_const_int (String.length s)
+      make_const_int dbg (String.length s)
   (* Identity *)
   | (Pidentity | Pbytes_to_string | Pbytes_of_string), [arg1], [app1] ->
       (arg1, app1)
   (* Kind test *)
   | Pisint, _, [a1] ->
       begin match a1 with
-      | Value_const(Uconst_int _ | Uconst_ptr _) -> make_const_bool true
-      | Value_const(Uconst_ref _) -> make_const_bool false
-      | Value_closure _ | Value_tuple _ -> make_const_bool false
+      | Value_const(Uconst_int _ | Uconst_ptr _) -> make_const_bool dbg true
+      | Value_const(Uconst_ref _) -> make_const_bool dbg false
+      | Value_closure _ | Value_tuple _ -> make_const_bool dbg false
       | _ -> (Uprim(p, args, dbg), Value_unknown)
       end
   (* Compile-time constants *)
   | Pctconst c, _, _ ->
       begin match c with
-        | Big_endian -> make_const_bool Arch.big_endian
-        | Word_size -> make_const_int (8*Arch.size_int)
-        | Int_size -> make_const_int (8*Arch.size_int - 1)
-        | Max_wosize -> make_const_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )
-        | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
-        | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
-        | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
+        | Big_endian -> make_const_bool dbg Arch.big_endian
+        | Word_size -> make_const_int dbg (8*Arch.size_int)
+        | Int_size -> make_const_int dbg (8*Arch.size_int - 1)
+        | Max_wosize ->
+            make_const_int dbg ((1 lsl ((8*Arch.size_int) - 10)) - 1 )
+        | Ostype_unix -> make_const_bool dbg (Sys.os_type = "Unix")
+        | Ostype_win32 -> make_const_bool dbg (Sys.os_type = "Win32")
+        | Ostype_cygwin -> make_const_bool dbg (Sys.os_type = "Cygwin")
         | Backend_type ->
-            make_const_ptr 0 (* tag 0 is the same as Native here *)
+            make_const_ptr dbg 0 (* tag 0 is the same as Native here *)
       end
   (* Catch-all *)
   | _ ->
@@ -570,7 +576,7 @@ let simplif_prim fpc p (args, approxs as args_approxs) dbg =
    over functions. *)
 
 let approx_ulam = function
-    Uconst c -> Value_const c
+    Uconst (c, _dbg) -> Value_const c
   | _ -> Value_unknown
 
 let find_action idxs acts tag =
@@ -783,9 +789,9 @@ let rec substitute ~at_call_site ~function_being_inlined ~block_subst
            in this substitute function.
         *)
         match sarg with
-        | Uconst (Uconst_ref (_,  Some (Uconst_block (tag, _)))) ->
+        | Uconst (Uconst_ref (_,  Some (Uconst_block (tag, _))), _dbg) ->
             find_action sw.us_index_blocks sw.us_actions_blocks tag
-        | Uconst (Uconst_ptr tag) ->
+        | Uconst (Uconst_ptr tag, _dbg) ->
             find_action sw.us_index_consts sw.us_actions_consts tag
         | _ -> None
       in
@@ -898,7 +904,7 @@ let rec substitute ~at_call_site ~function_being_inlined ~block_subst
           fpc sb rn u1
       in
       begin match u1 with
-        Uconst (Uconst_ptr n) ->
+        Uconst (Uconst_ptr n, _dbg) ->
           if n <> 0 then
             substitute ~at_call_site ~function_being_inlined ~block_subst
               fpc sb rn u2
@@ -1083,7 +1089,7 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site
         let phantom_defining_expr =
           match a1 with
           | Uvar var -> Some (Uphantom_var var)
-          | Uconst const -> Some (Uphantom_const const)
+          | Uconst (const, _dbg) -> Some (Uphantom_const const)
           | _ -> None
         in
         Uphantom_let (p1', phantom_defining_expr, term)
@@ -1213,7 +1219,7 @@ let strengthen_approx appl approx =
 let check_constant_result ~scope lam ulam approx =
   let dbg = Debuginfo.of_location Location.none ~scope in
   match approx with
-    Value_const c when is_pure lam -> make_const c
+    Value_const c when is_pure lam -> make_const dbg c
   | Value_global_field (id, i) when is_pure lam ->
       begin match ulam with
       | Uprim(Pfield _, [Uprim(Pgetglobal _, _, _)], _) -> (ulam, approx)
@@ -1253,7 +1259,7 @@ exception NotClosed
 let close_approx_var fenv cenv id =
   let approx = try V.Map.find id fenv with Not_found -> Value_unknown in
   match approx with
-    Value_const c -> make_const c
+    Value_const c -> make_const Debuginfo.none c
   | approx ->
       let subst = try V.Map.find id cenv with Not_found -> Uvar id in
       (subst, approx)
@@ -1264,7 +1270,7 @@ let close_var fenv cenv id =
 let rec close ~scope fenv cenv = function
     Lvar id ->
       close_approx_var fenv cenv id
-  | Lconst cst ->
+  | Lconst (cst, loc) ->
       let str ?(shared = true) cst =
         let name =
           Compilenv.new_structured_constant cst ~shared
@@ -1299,7 +1305,7 @@ let rec close ~scope fenv cenv = function
         | Const_base(Const_int64 x) -> str (Uconst_int64 x)
         | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
       in
-      make_const (transl cst)
+      make_const (Debuginfo.of_location loc ~scope) (transl cst)
   | Lfunction _ as funct ->
       close_one_function fenv cenv (Ident.create_local "anon_fun") funct
 
@@ -1775,7 +1781,9 @@ and close_functions fenv cenv fun_defs =
     !function_nesting_depth < excessive_function_nesting_depth in
   (* Determine the free variables of the functions *)
   let fv =
-    V.Set.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
+    V.Set.elements (free_variables (
+      Lletrec(fun_defs, lambda_unit Location.none)))
+  in
   (* Build the function descriptors for the functions.
      Initially all functions are assumed not to need their environment
      parameter. *)
@@ -2055,7 +2063,7 @@ let collect_exported_structured_constants a =
     | Uconst_closure _ -> assert false (* Cannot be generated *)
   and ulam = function
     | Uvar _ -> ()
-    | Uconst c -> const c
+    | Uconst (c, _dbg) -> const c
     | Udirect_apply (_, ul, _) -> List.iter ulam ul
     | Ugeneric_apply (u, ul, _) -> ulam u; List.iter ulam ul
     | Uclosure (fl, ul) ->
