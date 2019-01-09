@@ -29,6 +29,12 @@ val name_for_debugger : t -> string
     designates optional parameters. *)
 val unique_name_for_debugger : t -> string
 
+(** Whether the given variable was:
+    (a) generated inside the compiler; and
+    (b) does not correspond to any variable in the source of the program
+        being compiled. *)
+val is_internal : t -> bool
+
 module Provenance : sig
   type t
 

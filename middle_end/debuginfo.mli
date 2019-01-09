@@ -38,6 +38,8 @@ module Code_range : sig
   end
 end
 
+(* CR mshinwell: Locations may be off by one line for inlined bodies *)
+
 module Function : sig
   (** A value of type [t] uniquely identifies a function within a whole
       program.  It also provides information about the source location of
@@ -58,6 +60,7 @@ module Function : sig
      : Code_range.t
     -> human_name:string
     -> module_path:Path.t
+    -> linkage_name:Linkage_name.t
     -> t
 
   (** Create a function debuginfo given a [Location.t] corresponding to
@@ -66,6 +69,7 @@ module Function : sig
      : Location.t
     -> human_name:string
     -> module_path:Path.t
+    -> linkage_name:Linkage_name.t
     -> t
 
   (** Create a function debuginfo given a filename and line number
@@ -75,6 +79,7 @@ module Function : sig
     -> line:int
     -> human_name:string
     -> module_path:Path.t
+    -> linkage_name:Linkage_name.t
     -> t
 
   (** Update the source code position of the given function debuginfo. *)
@@ -103,6 +108,9 @@ module Function : sig
   (** The name to be displayed in a debugger to identify the function,
       without any module path qualification. *)
   val human_name : t -> string
+
+  (** The linkage name of the function. *)
+  val linkage_name : t -> Linkage_name.t
 
   (** The module path to the function. *)
   val module_path : t -> Path.t

@@ -19,6 +19,7 @@
 val compile_unit_proto_die
    : sourcefile:string
   -> prefix_name:string
+  -> cmt_file_digest:Digest.t option
   -> objfiles:string list
   -> start_of_code_symbol:Asm_symbol.t
   -> end_of_code_symbol:Asm_symbol.t

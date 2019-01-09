@@ -31,6 +31,12 @@ let unique_name_for_debugger t =
   in
   Printf.sprintf "%s/%d" name (stamp t)
 
+let is_internal t =
+  let name = name t in
+  String.length name >= 1
+    && String.get name 0 = '*'
+    && String.get name (String.length name - 1) = '*'
+
 (* CR mshinwell: We need more command-line flags to control printing of
    debugging information. *)
 

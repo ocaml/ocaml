@@ -20,6 +20,11 @@ module DS = Dwarf_state
 let proto_die_for_module state ~module_path ~get_parent ~module_name =
   match DS.find_die_for_module_path state ~module_path with
   | None ->
+    (* We don't give information about the code range for the module
+       initialiser in this DIE.  The reason is that the standard says nothing
+       about the treatment of local variables, etc., for such initialisers.
+       Furthermore, we would not want such variables being in scope in the
+       debugger whenever we are inside a function from the module. *)
     let proto_die =
       Proto_die.create ~parent:(Some (get_parent ()))
         ~tag:Module

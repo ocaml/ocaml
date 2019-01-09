@@ -70,7 +70,10 @@ val typecheck_impl :
 val implementation :
   tool_name:string ->
   native:bool ->
-  backend:(info -> Typedtree.structure * Typedtree.module_coercion -> unit) ->
+  backend:(info
+    -> cmt_file_digest:Digest.t option
+    -> Typedtree.structure * Typedtree.module_coercion
+    -> unit) ->
   sourcefile:string ->
   outputprefix:string ->
   unit

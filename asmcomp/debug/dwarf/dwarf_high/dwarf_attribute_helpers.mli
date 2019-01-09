@@ -230,3 +230,7 @@ val create_ocaml_prefix_name
 val create_ocaml_linker_dirs
    : Misc.Stdlib.String.Set.t
   -> Dwarf_attribute_values.Attribute_value.t
+
+val create_ocaml_cmt_file_digest
+   : Digest.t
+  -> Dwarf_attribute_values.Attribute_value.t

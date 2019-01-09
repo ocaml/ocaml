@@ -1434,9 +1434,18 @@ let rec close ~scope fenv cenv = function
           let ubody, abody =
             close ~scope:body_scope (V.Map.add id alam fenv) cenv body
           in
-          Uphantom_let (VP.create ?provenance id,
-              Some (Uphantom_const const), ubody),
-            abody
+          (* Special case to avoid duplicate value definitions in DWARF at
+             the toplevels of modules.  (Phantom lets have already been added
+             in [Translmod] for these.) *)
+          begin match body with
+          | Lprim (Psetfield (_, _, Root_initialization),
+              [Lprim (Pgetglobal _, [], _); _],
+              _loc) -> ubody, abody
+          | _ ->
+            Uphantom_let (VP.create ?provenance id,
+                Some (Uphantom_const const), ubody),
+              abody
+          end
       | (_, _) ->
           let (ubody, abody) =
             close ~scope:body_scope (V.Map.add id alam fenv) cenv body
@@ -1703,8 +1712,14 @@ let rec close ~scope fenv cenv = function
   | Levent(lam, ev) ->
       let prev_module_path = !current_module_path in
       begin match ev.lev_kind with
-      | Lev_module_definition path ->
-        current_module_path := Some (Path.Pident path)
+      | Lev_module_definition ident ->
+        begin match prev_module_path with
+        | None ->
+          current_module_path := Some (Path.Pident ident)
+        | Some prev_module_path ->
+          let name = Ident.name ident in
+          current_module_path := Some (Path.Pdot (prev_module_path, name, 0))
+        end
       | _ -> ()
       end;
       let term, approx = close ~scope fenv cenv lam in
@@ -1774,6 +1789,7 @@ and close_functions fenv cenv fun_defs =
               Debuginfo.Function.create_from_location loc
                 ~human_name:(V.name id)
                 ~module_path:(get_current_module_path ())
+                ~linkage_name:(Linkage_name.create label)
             in
             let fun_label =
               Backend_sym.of_external_name (Compilation_unit.get_current_exn ())

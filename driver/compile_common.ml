@@ -120,7 +120,15 @@ let implementation ~tool_name ~native ~backend ~sourcefile ~outputprefix =
       let exceptionally () =
         List.iter (fun suf -> remove_file (suf info)) sufs;
       in
-      Misc.try_finally ~exceptionally (fun () -> backend info typed)
+      (* We accept a race condition between writing the .cmt file and
+         taking its digest. *)
+      let cmt_file_digest =
+        match !Clflags.debug_full with
+        | None -> None
+        | Some _ -> Some (Digest.file (outputprefix ^ ".cmt"))
+      in
+      Misc.try_finally ~exceptionally (fun () ->
+        backend info ~cmt_file_digest typed)
     end;
   end;
   Warnings.check_fatal ();

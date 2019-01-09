@@ -16,7 +16,7 @@
 
 module DAH = Dwarf_attribute_helpers
 
-let compile_unit_proto_die ~sourcefile ~prefix_name ~objfiles
+let compile_unit_proto_die ~sourcefile ~prefix_name ~cmt_file_digest ~objfiles
       ~start_of_code_symbol ~end_of_code_symbol
       address_table location_list_table range_list_table =
   let unit_name =
@@ -60,6 +60,11 @@ let compile_unit_proto_die ~sourcefile ~prefix_name ~objfiles
       DAH.create_rnglists_base rnglists_base;
     ]
   in
+  let cmt_file_digest =
+    match cmt_file_digest with
+    | None -> []
+    | Some cmt_file_digest -> [DAH.create_ocaml_cmt_file_digest cmt_file_digest]
+  in
   let attribute_values =
     [ DAH.create_name source_filename;
       DAH.create_comp_dir source_directory_path;
@@ -76,7 +81,7 @@ let compile_unit_proto_die ~sourcefile ~prefix_name ~objfiles
       DAH.create_high_pc_from_symbol ~low_pc:start_of_code_symbol
         end_of_code_symbol;
       DAH.create_stmt_list ~debug_line_label;
-    ] @ linker_dirs @ dwarf_5_only
+    ] @ cmt_file_digest @ linker_dirs @ dwarf_5_only
   in
   Proto_die.create ~parent:None
     ~tag:Compile_unit

@@ -28,6 +28,20 @@ let for_fundecl state (result : Debug_passes.result) =
     result.external_calls_generated_during_emit
   in
   let symbol = Asm_symbol.create fundecl.fun_name in
+  let linkage_name =
+    Linkage_name.create (Backend_sym.to_string fundecl.fun_name)
+  in
+  let linkage_name_from_fun_dbg =
+    Debuginfo.Function.linkage_name fundecl.fun_dbg
+  in
+  if not (Linkage_name.equal linkage_name linkage_name_from_fun_dbg)
+  then begin
+    Misc.fatal_errorf "Conflicting linkage names for function %a: \
+        we get %a from [fun_name], but [fun_dbg] has %a"
+      Backend_sym.print fundecl.fun_name
+      Linkage_name.print linkage_name
+      Linkage_name.print linkage_name_from_fun_dbg
+  end;
   let start_of_function = DAH.create_low_pc_from_symbol symbol in
   let end_of_function =
     DAH.create_high_pc ~low_pc:symbol
@@ -36,8 +50,10 @@ let for_fundecl state (result : Debug_passes.result) =
   let _abstract_instance_proto_die, abstract_instance_die_symbol =
     Dwarf_abstract_instances.find_or_add state fundecl.fun_dbg
   in
+  let module_path = Debuginfo.Function.module_path fundecl.fun_dbg in
+  let parent = Dwarf_modules.dwarf state ~module_path in
   let concrete_instance_proto_die =
-    Proto_die.create ~parent:(Some (DS.compilation_unit_proto_die state))
+    Proto_die.create ~parent:(Some parent)
       ~tag:Subprogram
       ~attribute_values:[
         start_of_function;

@@ -298,6 +298,7 @@ module Attribute = struct
       | Config_digest : Class.string t
       | Prefix_name : Class.string t
       | Linker_dirs : Class.string t
+      | Cmt_file_digest : Class.string t
   end
 
   type 'dwarf_classes t =
@@ -576,6 +577,7 @@ module Attribute = struct
       | Ocaml_specific Config_digest -> "Ocaml_config_digest"
       | Ocaml_specific Prefix_name -> "Ocaml_prefix_name"
       | Ocaml_specific Linker_dirs -> "Ocaml_linker_dirs"
+      | Ocaml_specific Cmt_file_digest -> "Ocaml_cmt_file_digest"
     in
     "DW_AT_" ^ name
 
@@ -726,6 +728,7 @@ module Attribute = struct
     | Ocaml_specific Config_digest -> 0x3102
     | Ocaml_specific Prefix_name -> 0x3103
     | Ocaml_specific Linker_dirs -> 0x3104
+    | Ocaml_specific Cmt_file_digest -> 0x3105
 
   let encode t =
     Dwarf_value.uleb128 ~comment:(name t) (Uint64.of_int_exn (code t))

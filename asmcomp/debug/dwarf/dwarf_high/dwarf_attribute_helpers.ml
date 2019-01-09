@@ -343,3 +343,8 @@ let create_ocaml_linker_dirs dirs =
   in
   let spec = AS.create (Ocaml_specific Linker_dirs) Strp in
   AV.create spec (V.indirect_string ~comment:"linker dirs" dirs)
+
+let create_ocaml_cmt_file_digest digest =
+  let hex = Digest.to_hex digest in
+  let spec = AS.create (Ocaml_specific Cmt_file_digest) Strp in
+  AV.create spec (V.indirect_string ~comment:".cmt file digest" hex)

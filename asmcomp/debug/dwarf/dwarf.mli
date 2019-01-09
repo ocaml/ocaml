@@ -19,12 +19,13 @@ type t
 
 (** Create a value of type [t], which holds all state necessary to emit
     DWARF debugging information for a single compilation unit.
-    The names of the parameters line up with the code in [Asmgen].
+    The names of certain parameters line up with the code in [Asmgen].
     The current [Compilation_unit] must have been set before calling this
     function. *)
 val create
    : sourcefile:string
   -> prefix_name:string
+  -> cmt_file_digest:Digest.t option
   -> objfiles:string list
   -> t
 

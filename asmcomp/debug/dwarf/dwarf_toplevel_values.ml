@@ -66,6 +66,7 @@ let dwarf_for_toplevel_constant state
   | Some (vars, module_path) ->
     (* Give each variable bound to this symbol the same definition for the
        moment. *)
+    let parent = Some (Dwarf_modules.dwarf state ~module_path) in
     List.iter (fun var ->
         let name =
           let path = Printtyp.string_of_path module_path in
@@ -74,14 +75,14 @@ let dwarf_for_toplevel_constant state
         in
         let type_proto_die =
           Dwarf_variables_and_parameters.normal_type_for_var
-            ~parent:(Some (DS.compilation_unit_proto_die state))
+            ~parent
             (Some (Compilation_unit.get_current_exn (), var))
         in
         (* The type DIE is noted down so that, when we find a call site one
            of whose arguments contains [symbol], we can link to it. *)
         DS.record_type_die_for_lifted_constant state symbol type_proto_die;
         Proto_die.create_ignore
-          ~parent:(Some (DS.compilation_unit_proto_die state))
+          ~parent
           ~tag:Constant
           ~attribute_values:(common_attributes @ [
             DAH.create_name name;

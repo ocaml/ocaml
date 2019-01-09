@@ -211,11 +211,12 @@ module Function = struct
     id : Id.t;
     position : Code_range.t;
     human_name : string;
+    linkage_name : Linkage_name.t;
     module_path : Path.t;
     dwarf_die_present : bool;
   }
 
-  let create position ~human_name ~module_path =
+  let create position ~human_name ~module_path ~linkage_name =
     let dwarf_die_present =
       match !Clflags.debug_full with
       | None -> false
@@ -224,15 +225,17 @@ module Function = struct
     { id = Id.create ();
       position;
       human_name;
+      linkage_name;
       module_path;
       dwarf_die_present;
     }
 
-  let create_from_location loc ~human_name ~module_path =
-    create (Code_range.of_location loc) ~human_name ~module_path
+  let create_from_location loc ~human_name ~module_path ~linkage_name =
+    create (Code_range.of_location loc) ~human_name ~module_path ~linkage_name
 
-  let create_from_line ~file ~line ~human_name ~module_path =
+  let create_from_line ~file ~line ~human_name ~module_path ~linkage_name =
     create (Code_range.of_line ~file ~line) ~human_name ~module_path
+      ~linkage_name
 
   let with_position t position =
     { t with position; }
@@ -240,6 +243,7 @@ module Function = struct
   let id t = t.id
   let position t = t.position
   let human_name t = t.human_name
+  let linkage_name t = t.linkage_name
   let module_path t = t.module_path
   let dwarf_die_present t = t.dwarf_die_present
 
@@ -279,17 +283,19 @@ module Function = struct
     let equal t1 t2 = Id.equal t1.id t2.id
     let hash t = Id.hash t.id
 
-    let print ppf { id; position; human_name; module_path;
+    let print ppf { id; position; human_name; linkage_name; module_path;
                     dwarf_die_present; } =
       Format.fprintf ppf "@[<hov 1>(\
           @[<hov 1>(id@ %a)@]@ \
           @[<hov 1>(position@ %a)@]@ \
           @[<hov 1>(human_name@ %s)@]@ \
+          @[<hov 1>(linkage_name@ %a)@]@ \
           @[<hov 1>(module_path@ %a)@]@ \
           @[<hov 1>(dwarf_die_present@ %b)@])@]"
         Id.print id
         Code_range.print position
         human_name
+        Linkage_name.print linkage_name
         Path.print module_path
         dwarf_die_present
 

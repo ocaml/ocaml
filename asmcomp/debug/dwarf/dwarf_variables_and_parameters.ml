@@ -43,8 +43,13 @@ let calculate_var_uniqueness ~available_ranges_vars =
   let module String = Misc.Stdlib.String in
   let by_name = String.Tbl.create 42 in
   let by_position = Debuginfo.Code_range.Option.Tbl.create 42 in
-  let update_uniqueness var pos =
+  let update_uniqueness var pos ~module_path =
     let name = Backend_var.name_for_debugger var in
+    let name =
+      match module_path with
+      | None -> name
+      | Some module_path -> Format.asprintf "%a.%s" Path.print module_path name
+    in
     begin match String.Tbl.find by_name name with
     | exception Not_found ->
       String.Tbl.add by_name name (Backend_var.Set.singleton var)
@@ -64,9 +69,19 @@ let calculate_var_uniqueness ~available_ranges_vars =
   ARV.iter available_ranges_vars
     ~f:(fun var range ->
       let range_info = ARV.Range.info range in
+      let provenance = ARV.Range_info.provenance range_info in
+      let module_path =
+        (* The startup function may contain phantom let bindings for
+           static identifiers that have various different (sub)module paths. *)
+        match provenance with
+        | None -> None
+        | Some provenance ->
+          if not (V.Provenance.is_static provenance) then None
+          else Some (V.Provenance.module_path provenance)
+      in
       let dbg = ARV.Range_info.debuginfo range_info in
       let pos = Debuginfo.position dbg in
-      update_uniqueness var pos;
+      update_uniqueness var pos ~module_path;
       Backend_var.Tbl.replace result var
         { name_is_unique = false;
           position_is_unique = false;
@@ -548,7 +563,12 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
     if var_is_a_parameter_of_fundecl_itself then
       function_proto_die, hidden
     else if is_static then
-      DS.compilation_unit_proto_die state, hidden
+      begin match provenance with
+      | None -> DS.compilation_unit_proto_die state, hidden
+      | Some provenance ->
+        let module_path = V.Provenance.module_path provenance in
+        Dwarf_modules.dwarf state ~module_path, hidden
+      end
     else
       (* Local variables need to be children of "lexical blocks", which in turn
          are children of the function.  It is important to generate accurate
@@ -782,12 +802,7 @@ let iterate_over_variable_like_things state ~available_ranges_vars
          identifiers that were generated internally (or vice-versa)?  We
          should probably also hide certain internally-generated identifiers
          that appear in .cmt files but did not come from the source code. *)
-      let hidden =
-        let name = Backend_var.name var in
-        String.length name >= 1
-          && String.get name 0 = '*'
-          && String.get name (String.length name - 1) = '*'
-      in
+      let hidden = Backend_var.is_internal var in
       let ident_for_type =
         match provenance with
         | None ->

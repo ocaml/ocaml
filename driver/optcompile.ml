@@ -26,7 +26,7 @@ let (|>>) (x, y) f = (x, f y)
 
 (** Native compilation backend for .ml files. *)
 
-let flambda i backend typed =
+let flambda i backend ~cmt_file_digest typed =
   if !Clflags.classic_inlining then begin
     Clflags.default_simplify_rounds := 1;
     Clflags.use_inlining_arguments_set Clflags.classic_arguments;
@@ -54,10 +54,11 @@ let flambda i backend typed =
         ~module_initializer:lam)
     |> Asmgen.compile_implementation_flambda
       i.outputprefix ~unit_name:module_ident ~required_globals ~backend
-        ~ppf_dump:i.ppf_dump ~sourcefile:i.sourcefile;
+        ~ppf_dump:i.ppf_dump ~cmt_file_digest
+        ~sourcefile:i.sourcefile;
     Compilenv.save_unit_info (cmx i))
 
-let clambda i typed =
+let clambda i ~cmt_file_digest typed =
   Clflags.use_inlining_arguments_set Clflags.classic_arguments;
   typed
   |> Profile.(record transl)
@@ -70,14 +71,14 @@ let clambda i typed =
        |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.program
        |> Asmgen.compile_implementation_clambda
          i.outputprefix ~unit_name:program.Lambda.module_ident
-         ~ppf_dump:i.ppf_dump ~sourcefile:i.sourcefile;
+         ~ppf_dump:i.ppf_dump ~cmt_file_digest ~sourcefile:i.sourcefile;
        Compilenv.save_unit_info (cmx i))
 
 let implementation ~backend =
   Compile_common.implementation ~tool_name
-    ~native:true ~backend:(fun info typed ->
+    ~native:true ~backend:(fun info ~cmt_file_digest typed ->
       Compilenv.reset ?packname:!Clflags.for_package info.modulename;
       if Config.flambda
-      then flambda info backend typed
-      else clambda info typed
+      then flambda info backend ~cmt_file_digest typed
+      else clambda info ~cmt_file_digest typed
     )

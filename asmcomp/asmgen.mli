@@ -19,6 +19,7 @@ val compile_implementation_flambda :
     ?toplevel:(Backend_sym.t -> bool) ->
     string ->
     unit_name:Ident.t ->
+    cmt_file_digest:Digest.t option ->
     required_globals:Ident.Set.t ->
     backend:(module Backend_intf.S) ->
     ppf_dump:Format.formatter ->
@@ -30,6 +31,7 @@ val compile_implementation_clambda :
     ?toplevel:(Backend_sym.t -> bool) ->
     string ->
     unit_name:Ident.t ->
+    cmt_file_digest:Digest.t option ->
     ppf_dump:Format.formatter ->
     sourcefile:string ->
     Lambda.program ->

@@ -189,6 +189,7 @@ module Attribute : sig
       | Config_digest : Class.string t
       | Prefix_name : Class.string t
       | Linker_dirs : Class.string t
+      | Cmt_file_digest : Class.string t
   end
 
   type 'dwarf_classes t =

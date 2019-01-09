@@ -3524,8 +3524,9 @@ let compunit ~ppf_dump ~unit_name ~source_file
   in
   let fun_dbg =
     Debuginfo.Function.create_from_location (Location.in_file source_file)
-      ~human_name:""
+      ~human_name:"*module_init*"
       ~module_path
+      ~linkage_name:(Linkage_name.create human_name)
   in
   let c1 = [Cfunction {fun_name;
                        fun_args = [];
@@ -3563,9 +3564,11 @@ let placeholder_fun_dbg ~human_name =
   let line = !next_placeholder_dbg_line in
   incr next_placeholder_dbg_line;
   let human_name = S.to_string human_name in
+  let linkage_name = Linkage_name.create human_name in
   Debuginfo.Function.create_from_line ~file ~line
     ~human_name
     ~module_path:startup_path
+    ~linkage_name
 
 (*
 CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)

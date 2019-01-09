@@ -51,7 +51,7 @@ let emit_bytecode i (bytecode, required_globals) =
 
 let implementation =
   Compile_common.implementation
-    ~native:false ~tool_name ~backend:(fun info typed ->
+    ~native:false ~tool_name ~backend:(fun info ~cmt_file_digest:_ typed ->
       let bytecode = to_bytecode info typed in
       emit_bytecode info bytecode
     )

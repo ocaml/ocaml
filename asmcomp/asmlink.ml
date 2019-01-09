@@ -233,7 +233,7 @@ let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
         | Some (cmm_debug, _, _) -> Cmm_debug.startup_cmm_file cmm_debug
       in
       Some (Dwarf.create ~sourcefile ~prefix_name:dwarf_prefix_name
-        ~objfiles)
+        ~cmt_file_digest:None ~objfiles)
   in
   let compile_phrase phrase =
     compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase
@@ -290,7 +290,7 @@ let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
         | Some (cmm_debug, _, _) -> Cmm_debug.startup_cmm_file cmm_debug
       in
       Some (Dwarf.create ~sourcefile ~prefix_name:dwarf_prefix_name
-        ~objfiles)
+        ~cmt_file_digest:None ~objfiles)
   in
   let compile_phrase phrase =
     compile_phrase_with_cmm_debug cmm_debug ~ppf_dump ~dwarf phrase

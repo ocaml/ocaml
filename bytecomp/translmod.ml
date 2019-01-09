@@ -940,6 +940,14 @@ let transl_store_structure glob map prims str =
             let lam =
               transl_store (field_path rootpath id) subst str.str_items
             in
+            let lam =
+              Levent (lam, {
+                lev_loc = loc;
+                lev_kind = Lev_module_definition id;
+                lev_repr = None;
+                lev_env = Env.empty;
+              })
+            in
             (* Careful: see next case *)
             let subst = !transl_store_subst in
             Lsequence(lam,
