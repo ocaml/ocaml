@@ -78,6 +78,8 @@ build-aux                typo.prune
 # configure is generated so do not check it
 configure                typo.prune
 
+ocaml-variants.opam      typo.prune
+
 emacs/*.el               typo.long-line=may
 emacs/caml.el            typo.long-line=may typo.missing-header
 emacs/COPYING            typo.prune

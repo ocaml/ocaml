@@ -12,17 +12,14 @@ conflict-class: "ocaml-core-compiler"
 flags: compiler
 setenv: CAML_LD_LIBRARY_PATH = "%{lib}%/stublibs"
 build: [
-  ["./configure" "-prefix" prefix]
-    {os != "openbsd" & os != "freebsd" & os != "macos"}
-  ["./configure" "-prefix" prefix "-cc" "cc" "-aspp" "cc -c"]
-    {os = "openbsd" | os = "freebsd" | os = "macos"}
+  ["./configure" "--prefix=%{prefix}%"]
   [make "-j%{jobs}%" "world"]
   [make "-j%{jobs}%" "world.opt"]
 ]
 install: [make "install"]
 maintainer: "caml-list@inria.fr"
 homepage: "https://ocaml.org"
-bug-reports: "https://caml.inria.fr/mantis/"
+bug-reports: "https://github.com/ocaml/ocaml/issues"
 authors: [
   "Xavier Leroy"
   "Damien Doligez"
