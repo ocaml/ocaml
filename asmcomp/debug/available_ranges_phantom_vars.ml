@@ -67,18 +67,23 @@ module Phantom_vars = struct
             [fun_phantom_lets]: %a"
           V.print var
       | provenance, defining_expr ->
-        (* CR mshinwell: We need to explicitly clarify that this
-           [is_parameter] relates to the *current function* only and not
-           to inlined functions (which the [is_parameter] function on
-           [Backend_var.Provenance returns). *)
-        let is_parameter = Is_parameter.local in
-        let t =
-          { provenance;
-            is_parameter;
-            defining_expr;
-          }
-        in
-        Some (var, t)
+        (* Static phantom variables are sent via a different path (see
+           [Available_ranges_all_vars]) since they are always available. *)
+        match provenance with
+        | Some provenance when V.Provenance.is_static provenance -> None
+        | _ ->
+          (* CR mshinwell: We need to explicitly clarify that this
+             [is_parameter] relates to the *current function* only and not
+             to inlined functions (which the [is_parameter] function on
+             [Backend_var.Provenance returns). *)
+          let is_parameter = Is_parameter.local in
+          let t =
+            { provenance;
+              is_parameter;
+              defining_expr;
+            }
+          in
+          Some (var, t)
 
     let provenance t = t.provenance
     let is_parameter t = t.is_parameter

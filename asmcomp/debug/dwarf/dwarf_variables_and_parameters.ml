@@ -603,7 +603,7 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
          the OCaml middle end but also a determination as to whether GDB can
          support the necessary scoping. *)
       match phantom_defining_expr with
-      | Non_phantom -> []  (* Should have been caught earlier, in any case. *)
+      | Non_phantom -> []  (* Should have been caught below, in any case. *)
       | Phantom defining_expr ->
         if not (Mach.phantom_defining_expr_definitely_static defining_expr)
         then begin

@@ -55,7 +55,7 @@ module Range : sig
 
   val info : t -> Range_info.t
 
-  val extremities : t -> Linearize.label * Linearize.label
+  val extremities : t -> (Linearize.label * Linearize.label) option
 
   val fold
      : t
@@ -69,6 +69,7 @@ type t
 val create
    : available_ranges_vars:Available_ranges_vars.t
   -> available_ranges_phantom_vars:Available_ranges_phantom_vars.t
+  -> Linearize.fundecl
   -> t
 
 val iter : t -> f:(Backend_var.t -> Range.t -> unit) -> unit

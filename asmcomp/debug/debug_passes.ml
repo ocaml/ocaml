@@ -79,7 +79,7 @@ let passes_for_fundecl (fundecl : L.fundecl) =
   in
   let available_ranges_vars =
     Available_ranges_all_vars.create ~available_ranges_vars
-      ~available_ranges_phantom_vars
+      ~available_ranges_phantom_vars fundecl
   in
   available_ranges_vars, lexical_block_ranges, fundecl
 
