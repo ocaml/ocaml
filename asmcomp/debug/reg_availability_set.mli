@@ -25,9 +25,8 @@ val inter : t -> t -> t
 
 val canonicalise : t -> t
 (** Return a subset of the given availability set which contains no registers
-    that are not associated with debug info (and holding values of
-    non-persistent identifiers); and where no two registers share the same
-    location. *)
+    that are not associated with debug info; and where no two registers
+    share the same location. *)
 
 val equal : t -> t -> bool
 

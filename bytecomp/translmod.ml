@@ -950,6 +950,7 @@ let transl_store_structure glob map prims str =
             in
             (* Careful: see next case *)
             let subst = !transl_store_subst in
+            let field, _coercion = Ident.find_same id map in
             Lsequence(lam,
                       Llet(Strict, Pgenval, id,
                            Lambda.subst no_env_update subst
@@ -957,15 +958,18 @@ let transl_store_structure glob map prims str =
                                     List.map (fun id -> Lvar id)
                                       (defined_idents str.str_items), loc)),
                            Lsequence(store_ident loc id,
-                                     transl_store rootpath
-                                                  (add_ident true id subst)
-                                                  rem)))
+                                     Lphantom_let (Ident.rename id,
+                                       Lphantom_read_global_module_block_field
+                                         { field; },
+                                       transl_store rootpath
+                                                    (add_ident true id subst)
+                                                    rem))))
         | Tstr_module{
             mb_id=id;mb_loc=loc;
             mb_expr= {
               mod_desc = Tmod_constraint (
                   {mod_desc = Tmod_structure str} as mexp, _, _,
-                  (Tcoerce_structure (map, _) as _cc))};
+                  (Tcoerce_structure (map', _) as _cc))};
             mb_attributes
           } ->
             (*    Format.printf "coerc id %s: %a@." (Ident.unique_name id)
@@ -986,15 +990,19 @@ let transl_store_structure glob map prims str =
             (* Careful: see next case *)
             let subst = !transl_store_subst in
             let field = field_of_str loc str in
+            let field_pos, _coercion = Ident.find_same id map in
             Lsequence(lam,
                       Llet(Strict, Pgenval, id,
                            Lambda.subst no_env_update subst
                              (Lprim(Pmakeblock(0, Immutable, None),
-                                    List.map field map, loc)),
+                                    List.map field map', loc)),
                            Lsequence(store_ident loc id,
-                                     transl_store rootpath
-                                                  (add_ident true id subst)
-                                                  rem)))
+                                     Lphantom_let (Ident.rename id,
+                                       Lphantom_read_global_module_block_field
+                                         { field = field_pos; },
+                                       transl_store rootpath
+                                                    (add_ident true id subst)
+                                                    rem))))
         | Tstr_module{mb_id=id; mb_expr=modl; mb_loc=loc; mb_attributes} ->
             let lam =
               Translattribute.add_inline_attribute
@@ -1009,6 +1017,7 @@ let transl_store_structure glob map prims str =
                 lev_env = Env.empty;
               })
             in
+            let field, _coercion = Ident.find_same id map in
             (* Careful: the module value stored in the global may be different
                from the local module value, in case a coercion is applied.
                If so, keep using the local module value (id) in the remainder of
@@ -1017,9 +1026,26 @@ let transl_store_structure glob map prims str =
                (add_ident true adds id -> Pgetglobal... to subst). *)
             Llet(Strict, Pgenval, id, Lambda.subst no_env_update subst lam,
                  Lsequence(store_ident loc id,
-                           transl_store rootpath (add_ident true id subst) rem))
+                           Lphantom_let (Ident.rename id,
+                             Lphantom_read_global_module_block_field { field; },
+                             transl_store rootpath (add_ident true id subst)
+                               rem)))
+        (* CR mshinwell: Try changing [store_idents] to add the
+           phantom lets *)
         | Tstr_recmodule bindings ->
             let ids = List.map (fun mb -> mb.mb_id) bindings in
+            let rest =
+              transl_store rootpath (add_idents true ids subst) rem
+            in
+            let rest =
+              List.fold_left (fun rest id ->
+                  let field, _coercion = Ident.find_same id map in
+                  Lphantom_let (Ident.rename id,
+                    Lphantom_read_global_module_block_field { field; },
+                    rest))
+                rest
+                ids
+            in
             compile_recmodule
               (fun id modl loc ->
                  let lam =
@@ -1034,8 +1060,7 @@ let transl_store_structure glob map prims str =
                    lev_env = Env.empty;
                  }))
               bindings
-              (Lsequence(store_idents Location.none ids,
-                         transl_store rootpath (add_idents true ids subst) rem))
+              (Lsequence(store_idents Location.none ids, rest))
         | Tstr_class cl_list ->
             let (ids, class_bindings) = transl_class_bindings cl_list in
             let lam =

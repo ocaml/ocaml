@@ -41,12 +41,18 @@ module VP = Backend_var.With_provenance
 
 (* Maintain the current module path *)
 
-let current_module_path = ref (None : Path.t option)
+type current_module_path =
+  | Never_set
+  | From_root of Path.t
+  | In_compilation_unit of Ident.t
+
+let current_module_path = ref (Never_set : current_module_path)
 
 let get_current_module_path () =
   match !current_module_path with
-  | None -> Misc.fatal_error "Current module path not set"
-  | Some path -> path
+  | Never_set -> Misc.fatal_error "Current module path not set"
+  | From_root path -> path
+  | In_compilation_unit ident -> Path.Pident ident
 
 (* Maintain the current module block symbol *)
 
@@ -1294,16 +1300,8 @@ let rec close ~scope fenv cenv = function
         | Const_base(Const_nativeint x) -> str (Uconst_nativeint x)
       in
       make_const (transl cst)
-  | Lfunction lfunction as funct ->
-      let id_name =
-        match !Clflags.debug_full with
-        | None -> "*fun*"
-        | Some _ ->
-            let loc = lfunction.loc in
-            if Location.is_none loc then "<anon_fun>"
-            else Format.asprintf "<anon_fun:%a>" Location.print_for_debug loc
-      in
-      close_one_function fenv cenv (Ident.create_local id_name) funct
+  | Lfunction _ as funct ->
+      close_one_function fenv cenv (Ident.create_local "anon_fun") funct
 
     (* We convert [f a] to [let a' = a in let f' = f in fun b c -> f' a' b c]
        when fun_arity > nargs *)
@@ -1714,11 +1712,13 @@ let rec close ~scope fenv cenv = function
       begin match ev.lev_kind with
       | Lev_module_definition ident ->
         begin match prev_module_path with
-        | None ->
-          current_module_path := Some (Path.Pident ident)
-        | Some prev_module_path ->
+        | Never_set ->
+          current_module_path := From_root (Path.Pident ident)
+        | From_root prev_module_path ->
           let name = Ident.name ident in
-          current_module_path := Some (Path.Pdot (prev_module_path, name, 0))
+          current_module_path :=
+            From_root (Path.Pdot (prev_module_path, name, 0))
+        | In_compilation_unit _ -> ()
         end
       | _ -> ()
       end;
@@ -1785,9 +1785,20 @@ and close_functions fenv cenv fun_defs =
           (id, Lfunction{kind; params; body; loc}) ->
             let label = Compilenv.make_symbol (Some (V.unique_name id)) in
             let arity = List.length params in
+            let human_name =
+              match !current_module_path with
+              | Never_set -> Misc.fatal_error "Current module path not set"
+              | From_root _ -> V.name id
+              | In_compilation_unit _ ->
+                (* This applies to things such as anonymous functions and
+                   functions in local modules. *)
+                Format.asprintf "<%s@%a>"
+                  (V.name id)
+                  Location.print_for_debug loc
+            in
             let fun_dbg =
               Debuginfo.Function.create_from_location loc
-                ~human_name:(V.name id)
+                ~human_name
                 ~module_path:(get_current_module_path ())
                 ~linkage_name:(Linkage_name.create label)
             in
@@ -1845,7 +1856,12 @@ and close_functions fenv cenv fun_defs =
           V.Map.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
     let scope = CB.toplevel in
+    let prev_module_path = !current_module_path in
+    current_module_path :=
+      In_compilation_unit (Compilation_unit.get_persistent_ident (
+        Compilation_unit.get_current_exn ()));
     let (ubody, approx) = close ~scope fenv_rec cenv_body body in
+    current_module_path := prev_module_path;
     let ubody =
       V.Map.fold (fun id (env_param, field, _ulam) ubody ->
           let provenance =
@@ -2074,7 +2090,7 @@ let collect_exported_structured_constants a =
 let reset () =
   global_approx := [||];
   function_nesting_depth := 0;
-  current_module_path := None;
+  current_module_path := Never_set;
   current_module_block_sym := None
 
 (* The entry point *)
@@ -2082,9 +2098,12 @@ let reset () =
 let intro size ~module_block_sym lam =
   reset ();
   current_module_block_sym := Some module_block_sym;
-  current_module_path :=
-    Some (Printtyp.rewrite_double_underscore_paths Env.initial_safe_string
-      (Path.Pident (Ident.create_persistent (Compilenv.current_unit_name ()))));
+  let rewritten_module_path =
+    Printtyp.rewrite_double_underscore_paths Env.initial_safe_string
+      (Path.Pident (Ident.create_persistent (
+        Compilenv.current_unit_name ())))
+  in
+  current_module_path := From_root rewritten_module_path;
   let id =
     Backend_sym.of_external_name (Compilation_unit.get_current_exn ())
       (Compilenv.make_symbol None) Backend_sym.Data
