@@ -500,7 +500,7 @@ let print_phantom_defining_expr ppf defining_expr =
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
-  | Lconst cst ->
+  | Lconst (cst, _loc) ->
       struct_const ppf cst
   | Lapply ap ->
       let lams_with_idents_for_types ppf largs =

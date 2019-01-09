@@ -254,7 +254,7 @@ type phantom_defining_expr =
 
 type lambda =
     Lvar of Ident.t
-  | Lconst of structured_constant
+  | Lconst of structured_constant * Location.t
   | Lapply of lambda_apply
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
@@ -342,7 +342,7 @@ type program =
 val make_key: lambda -> lambda option
 
 val const_unit: structured_constant
-val lambda_unit: lambda
+val lambda_unit: Location.t -> lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 
@@ -367,7 +367,7 @@ val transl_value_path: loc:Location.t -> Env.t -> Path.t -> lambda
 val transl_extension_path: loc:Location.t -> Env.t -> Path.t -> lambda
 val transl_class_path: loc:Location.t -> Env.t -> Path.t -> lambda
 
-val make_sequence: ('a -> lambda) -> 'a list -> lambda
+val make_sequence: Location.t -> ('a -> lambda) -> 'a list -> lambda
 
 val subst: (Ident.t -> Types.value_description -> Env.t -> Env.t) ->
   lambda Ident.Map.t -> lambda -> lambda

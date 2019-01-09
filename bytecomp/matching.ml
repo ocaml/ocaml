@@ -1578,7 +1578,8 @@ let inline_lazy_force_cond arg loc =
             Lifthenelse(
               (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
               Lprim(Pintcomp Ceq,
-                    [Lvar tag; Lconst(Const_base(Const_int Obj.forward_tag))],
+                    [Lvar tag;
+                     Lconst(Const_base(Const_int Obj.forward_tag), loc)],
                     loc),
               loc,
               Lprim(Pfield 0, [varg], loc),
@@ -1586,7 +1587,8 @@ let inline_lazy_force_cond arg loc =
               Lifthenelse(
                 (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
                 Lprim(Pintcomp Ceq,
-                      [Lvar tag; Lconst(Const_base(Const_int Obj.lazy_tag))],
+                      [Lvar tag;
+                       Lconst(Const_base(Const_int Obj.lazy_tag), loc)],
                       loc),
                 loc,
                 Lapply{ap_should_be_tailcall=false;
@@ -1804,7 +1806,7 @@ let make_array_matching kind p def ctx = function
         if pos >= len
         then argl
         else (Lprim(Parrayrefu kind,
-                    [arg; Lconst(Const_base(Const_int pos))],
+                    [arg; Lconst(Const_base(Const_int pos), p.pat_loc)],
                     p.pat_loc),
               StrictOpt,
               p.pat_loc) :: make_args (pos + 1) in
@@ -1872,7 +1874,7 @@ let make_string_test_sequence arg sw d =
           Lifthenelse
             (Lprim
                (prim_string_notequal,
-                [arg; Lconst (Const_immstring s)], loc),
+                [arg; Lconst (Const_immstring s, loc)], loc),
              loc,k,loc,lam,loc))
         sw d)
 
@@ -1884,12 +1886,13 @@ let rec split k xs = match xs with
       let xs,y0,ys = split (k-2) xs in
       x0::xs,y0,ys
 
-let zero_lam  = Lconst (Const_base (Const_int 0))
+let zero_lam loc = Lconst (Const_base (Const_int 0), loc)
 
 let tree_way_test loc arg lt eq gt =
   Lifthenelse
-    (Lprim (Pintcomp Clt,[arg;zero_lam], loc),loc,lt,loc,
-     Lifthenelse(Lprim (Pintcomp Clt,[zero_lam;arg], loc),loc,gt,loc,eq,loc),
+    (Lprim (Pintcomp Clt,[arg;zero_lam loc], loc),loc,lt,loc,
+     Lifthenelse(
+       Lprim (Pintcomp Clt,[zero_lam loc;arg], loc),loc,gt,loc,eq,loc),
      loc)
 
 (* Dichotomic tree *)
@@ -1905,7 +1908,7 @@ let rec do_make_string_test_tree arg
     bind_sw
       (Lprim
          (prim_string_compare,
-          [arg; Lconst (Const_immstring s)], loc))
+          [arg; Lconst (Const_immstring s, loc)], loc))
       (fun r ->
         tree_way_test loc r
           (do_make_string_test_tree arg lt delta d)
@@ -2010,7 +2013,7 @@ let rec do_tests_fail fail tst arg = function
   | [] -> fail
   | ((c_loc, c), (act_loc, act))::rem ->
       Lifthenelse
-        (Lprim (tst, [arg ; Lconst (Const_base c)], c_loc),
+        (Lprim (tst, [arg ; Lconst (Const_base c, c_loc)], c_loc),
          first_location_in rem,
          do_tests_fail fail tst arg rem,
          act_loc,
@@ -2022,7 +2025,7 @@ let rec do_tests_nofail tst arg = function
   | [_, (_loc, act)] -> act
   | ((c_loc, c), (act_loc, act))::rem ->
       Lifthenelse
-        (Lprim (tst, [arg ; Lconst (Const_base c)], c_loc),
+        (Lprim (tst, [arg ; Lconst (Const_base c, c_loc)], c_loc),
          first_location_in rem,
          do_tests_nofail tst arg rem,
          act_loc,
@@ -2049,7 +2052,8 @@ let make_test_sequence loc fail tst lt_tst arg
     let list1, list2 =
       cut (List.length const_lambda_list / 2) const_lambda_list in
     Lifthenelse(Lprim(lt_tst,
-                      [arg; Lconst(Const_base (snd (fst (List.hd list2))))],
+                      [arg;
+                       Lconst(Const_base (snd (fst (List.hd list2))), loc)],
                       loc),
                 first_location_in list1, make_test_sequence list1,
                 first_location_in list2, make_test_sequence list2,
@@ -2085,7 +2089,7 @@ module SArg = struct
         let newvar = Ident.create_local "*switcher*" in
         newvar,Lvar newvar in
     bind Alias newvar arg (body newarg)
-  let make_const i = Lconst (Const_base (Const_int i))
+  let make_const loc i = Lconst (Const_base (Const_int i), loc)
   let make_isout loc h arg = Lprim (Pisout, [h ; arg], loc)
   let make_isin loc h arg = Lprim (Pnot,[make_isout loc h arg], loc)
   let make_if loc cond ifso_loc ifso ifnot_loc ifnot =
@@ -2903,7 +2907,7 @@ let compile_orhandlers _loc compile_fun (loc1, lambda1) total1 ctx to_catch =
               rem
         with
         | Unused ->
-            do_rec loc_r (Lstaticcatch (r, (i,vars), lambda_unit, loc_r))
+            do_rec loc_r (Lstaticcatch (r, (i,vars), lambda_unit loc_r, loc_r))
               total_r rem
         end in
   do_rec loc1 lambda1 total1 to_catch
@@ -3003,7 +3007,8 @@ let rec comp_match_handlers loc comp_fun partial ctx arg first_match
                 with
                 | Unused ->
                     c_rec body_loc
-                      (Lstaticcatch (body, (i, []), lambda_unit, body_loc))
+                      (Lstaticcatch (body, (i, []), lambda_unit body_loc,
+                        body_loc))
                       total_rem rem
             end in
    try
@@ -3293,7 +3298,7 @@ let partial_function loc () =
            Lconst(Const_block(0,
               [Const_base(Const_string (fname, None));
                Const_base(Const_int line);
-               Const_base(Const_int char)]))], loc)], loc)
+               Const_base(Const_int char)]), loc)], loc)], loc)
 
 let for_function loc repr param (pat_act_list : pat_act_list) partial =
   compile_matching loc repr (partial_function loc) param pat_act_list partial
@@ -3397,10 +3402,10 @@ let assign_pat opt nraise catch_ids loc pat action_loc lam =
           collect acc pat action makeblock_loc)
         acc
         patl lams
-  | Tpat_tuple patl, Lconst(Const_block(_, scl)) ->
+  | Tpat_tuple patl, Lconst(Const_block(_, scl), _loc) ->
       opt := true;
       List.fold_left2 (fun acc pat sc ->
-          collect acc pat (Lconst sc) loc)
+          collect acc pat (Lconst (sc, loc)) loc)
         acc
         patl scl
   | _ ->

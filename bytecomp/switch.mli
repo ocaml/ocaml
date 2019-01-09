@@ -83,7 +83,7 @@ module type S =
     (* Various constructors, for making a binder,
         adding one integer, etc. *)
     val bind : act -> (act -> act) -> act
-    val make_const : int -> act
+    val make_const : location -> int -> act
     val make_offset : location -> act -> int -> act
     val make_prim : location -> primitive -> act list -> act
     val make_isout : location -> act -> act -> act

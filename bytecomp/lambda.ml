@@ -273,7 +273,7 @@ type phantom_defining_expr =
 
 type lambda =
     Lvar of Ident.t
-  | Lconst of structured_constant
+  | Lconst of structured_constant * Location.t
   | Lapply of lambda_apply
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
@@ -343,7 +343,7 @@ type program =
 
 let const_unit = Const_pointer 0
 
-let lambda_unit = Lconst const_unit
+let lambda_unit loc = Lconst (const_unit, loc)
 
 let default_function_attribute = {
   inline = Default_inline;
@@ -378,7 +378,7 @@ let make_key e =
         try Ident.find_same id env
         with Not_found -> e
       end
-    | Lconst  (Const_base (Const_string _)) ->
+    | Lconst  (Const_base (Const_string _), _loc) ->
         (* Mutable constants are not shared *)
         raise Not_simple
     | Lconst _ -> e
@@ -666,11 +666,11 @@ let transl_path ?(loc = Location.none) env path =
 
 (* Compile a sequence of expressions *)
 
-let rec make_sequence fn = function
-    [] -> lambda_unit
+let rec make_sequence loc fn = function
+    [] -> lambda_unit loc
   | [x] -> fn x
   | x::rem ->
-      let lam = fn x in Lsequence(lam, make_sequence fn rem)
+      let lam = fn x in Lsequence(lam, make_sequence loc fn rem)
 
 (* Apply a substitution to a lambda-term.
    Assumes that the image of the substitution is out of reach

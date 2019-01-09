@@ -61,8 +61,9 @@ let transl_extension_constructor env path ext =
   match ext.ext_kind with
     Text_decl _ ->
       Lprim (Pmakeblock (Obj.object_tag, Immutable, None),
-        [Lconst (Const_base (Const_string (name, None)));
-         Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))], loc)],
+        [Lconst (Const_base (Const_string (name, None)), loc);
+         Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0), loc)],
+           loc)],
         loc)
   | Text_rebind(path, _lid) ->
       transl_extension_path ~loc env path
@@ -72,7 +73,7 @@ let transl_extension_constructor env path ext =
 exception Not_constant
 
 let extract_constant = function
-    Lconst sc -> sc
+    Lconst (sc, _loc) -> sc
   | _ -> raise Not_constant
 
 let extract_float = function
@@ -171,7 +172,8 @@ let assert_failed exp =
            Lconst(Const_block(0,
               [Const_base(Const_string (fname, None));
                Const_base(Const_int line);
-               Const_base(Const_int char)]))], exp.exp_loc))], exp.exp_loc)
+               Const_base(Const_int char)]), exp.exp_loc)], exp.exp_loc))],
+          exp.exp_loc)
 ;;
 
 let rec cut n l =
@@ -210,7 +212,7 @@ and transl_exp0 e =
       transl_value_path ~loc:e.exp_loc e.exp_env path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
-      Lconst(Const_base cst)
+      Lconst(Const_base cst, e.exp_loc)
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
   | Texp_function { arg_label = _; param; cases; partial; } ->
@@ -286,7 +288,7 @@ and transl_exp0 e =
   | Texp_tuple el ->
       let ll, shape = transl_list_with_shape el in
       begin try
-        Lconst(Const_block(0, List.map extract_constant ll))
+        Lconst(Const_block(0, List.map extract_constant ll), e.exp_loc)
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable, Some shape), ll, e.exp_loc)
       end
@@ -297,12 +299,12 @@ and transl_exp0 e =
         | _ -> assert false
       end else begin match cstr.cstr_tag with
         Cstr_constant n ->
-          Lconst(Const_pointer n)
+          Lconst(Const_pointer n, e.exp_loc)
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
           begin try
-            Lconst(Const_block(n, List.map extract_constant ll))
+            Lconst(Const_block(n, List.map extract_constant ll), e.exp_loc)
           with Not_constant ->
             Lprim(Pmakeblock(n, Immutable, Some shape), ll, e.exp_loc)
           end
@@ -319,15 +321,16 @@ and transl_exp0 e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(Const_pointer tag)
+        None -> Lconst(Const_pointer tag, e.exp_loc)
       | Some arg ->
           let lam = transl_exp arg in
           try
             Lconst(Const_block(0, [Const_base(Const_int tag);
-                                   extract_constant lam]))
+                                   extract_constant lam]), e.exp_loc)
           with Not_constant ->
             Lprim(Pmakeblock(0, Immutable, None),
-                  [Lconst(Const_base(Const_int tag)); lam], e.exp_loc)
+                  [Lconst(Const_base(Const_int tag), e.exp_loc); lam],
+                  e.exp_loc)
       end
   | Texp_record {fields; representation; extended_expression} ->
       transl_record e.exp_loc e.exp_env fields representation
@@ -388,9 +391,10 @@ and transl_exp0 e =
             let imm_array =
               match kind with
               | Paddrarray | Pintarray ->
-                  Lconst(Const_block(0, cl))
+                  Lconst(Const_block(0, cl), e.exp_loc)
               | Pfloatarray ->
-                  Lconst(Const_float_array(List.map extract_float cl))
+                  Lconst(Const_float_array(List.map extract_float cl),
+                    e.exp_loc)
               | Pgenarray ->
                   raise Not_constant    (* can this really happen? *)
             in
@@ -411,7 +415,7 @@ and transl_exp0 e =
                   ifso.exp_loc,
                   event_before ifso (transl_exp ifso),
                   e.exp_loc,
-                  lambda_unit,
+                  lambda_unit e.exp_loc,
                   e.exp_loc)
   | Texp_sequence(expr1, expr2) ->
       Lsequence(transl_exp expr1, event_before expr2 (transl_exp expr2))
@@ -438,10 +442,11 @@ and transl_exp0 e =
              ap_loc=loc;
              ap_func=
                Lprim(Pfield 0, [transl_class_path ~loc e.exp_env cl], loc);
-             ap_args=[lambda_unit];
+             ap_args=[lambda_unit loc];
              ap_inlined=Default_inline;
              ap_specialised=Default_specialise;
-             ap_idents_for_types = Lambda.make_idents_for_types [lambda_unit];
+             ap_idents_for_types =
+               Lambda.make_idents_for_types [lambda_unit loc];
             }
   | Texp_instvar(path_self, path, _) ->
       let loc = e.exp_loc in
@@ -490,9 +495,9 @@ and transl_exp0 e =
       assert_failed e
   | Texp_assert (cond) ->
       if !Clflags.noassert
-      then lambda_unit
+      then lambda_unit e.exp_loc
       else
-        Lifthenelse (transl_exp cond, e.exp_loc, lambda_unit,
+        Lifthenelse (transl_exp cond, e.exp_loc, lambda_unit e.exp_loc,
           e.exp_loc, assert_failed e, e.exp_loc)
   | Texp_lazy e ->
       (* when e needs no computation (constants, identifiers, ...), we
@@ -786,11 +791,12 @@ and transl_record loc env fields repres opt_init_expr =
         if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in
         match repres with
-        | Record_regular -> Lconst(Const_block(0, cl))
-        | Record_inlined tag -> Lconst(Const_block(tag, cl))
-        | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
+        | Record_regular -> Lconst(Const_block(0, cl), loc)
+        | Record_inlined tag -> Lconst(Const_block(tag, cl), loc)
+        | Record_unboxed _ ->
+            Lconst((match cl with [v] -> v | _ -> assert false), loc)
         | Record_float ->
-            Lconst(Const_float_array(List.map extract_float cl))
+            Lconst(Const_float_array(List.map extract_float cl), loc)
         | Record_extension ->
             raise Not_constant
       with Not_constant ->

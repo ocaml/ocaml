@@ -60,14 +60,16 @@ let mkappl (func, args) =
          };;
 
 let lsequence l1 l2 =
-  if l2 = lambda_unit then l1 else Lsequence(l1, l2)
+  match l2 with
+  | Lconst (const_unit, _loc) -> l1
+  | _ -> Lsequence (l1, l2)
 
 let lfield v i = Lprim(Pfield i, [Lvar v], Location.none)
 
 let transl_label l = share (Const_immstring l)
 
 let transl_meth_list lst =
-  if lst = [] then Lconst (Const_pointer 0) else
+  if lst = [] then Lconst (Const_pointer 0, Location.none) else
   share (Const_block
             (0, List.map (fun lab -> Const_immstring lab) lst))
 
@@ -104,12 +106,13 @@ let bind_super tbl (vals, meths) cl_init =
 let create_object cl obj init =
   let obj' = Ident.create_local "self" in
   let (inh_init, obj_init, has_init) = init obj' in
-  if obj_init = lambda_unit then
+  match obj_init with
+  | Lconst (const_unit, _loc) ->
     (inh_init,
      mkappl (oo_prim (if has_init then "create_object_and_run_initializers"
                       else"create_object_opt"),
              [obj; Lvar cl]))
-  else begin
+  | _ ->
    (inh_init,
     Llet(Strict, Pgenval, obj',
             mkappl (oo_prim "create_object_opt", [obj; Lvar cl]),
@@ -117,7 +120,6 @@ let create_object cl obj init =
                    if not has_init then Lvar obj' else
                    mkappl (oo_prim "run_initializers_opt",
                            [obj; Lvar obj'; Lvar cl]))))
-  end
 
 let name_pattern default p =
   match p.pat_desc with

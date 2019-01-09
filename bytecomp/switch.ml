@@ -120,7 +120,7 @@ sig
   val no_location : location
 
   val bind : act -> (act -> act) -> act
-  val make_const : int -> act
+  val make_const : location -> int -> act
   val make_offset : location -> act -> int -> act
   val make_prim : location -> primitive -> act list -> act
   val make_isout : location -> act -> act -> act
@@ -611,7 +611,7 @@ let rec pkey chan  = function
 
   let make_if_test loc test arg i ifso_loc ifso ifnot_loc ifnot =
     Arg.make_if loc
-      (Arg.make_prim loc test [arg ; Arg.make_const i])
+      (Arg.make_prim loc test [arg ; Arg.make_const loc i])
       ifso_loc ifso ifnot_loc ifnot
 
   let make_if_lt loc arg i ifso_loc ifso ifnot_loc ifnot = match i with
@@ -638,14 +638,14 @@ let rec pkey chan  = function
   let make_if_out loc ctx l d mk_ifso mk_ifno = match l with
     | 0 ->
         do_make_if_out loc
-          (Arg.make_const d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
+          (Arg.make_const loc d) ctx.arg (mk_ifso ctx) (mk_ifno ctx)
     | _ ->
         Arg.bind
           (Arg.make_offset loc ctx.arg (-l))
           (fun arg ->
              let ctx = {off= (-l+ctx.off) ; arg=arg; loc; } in
              do_make_if_out loc
-               (Arg.make_const d) arg (mk_ifso ctx) (mk_ifno ctx))
+               (Arg.make_const loc d) arg (mk_ifso ctx) (mk_ifno ctx))
 
   let do_make_if_in loc h arg ifso_loc ifso ifnot_loc ifnot =
     Arg.make_if loc (Arg.make_isin loc h arg) ifso_loc ifso ifnot_loc ifnot
@@ -655,7 +655,7 @@ let rec pkey chan  = function
         let ifso_loc, ifso = mk_ifso ctx in
         let ifnot_loc, ifnot = mk_ifnot ctx in
         do_make_if_in loc
-          (Arg.make_const d) ctx.arg ifso_loc ifso ifnot_loc ifnot
+          (Arg.make_const loc d) ctx.arg ifso_loc ifso ifnot_loc ifnot
     | _ ->
         Arg.bind
           (Arg.make_offset loc ctx.arg (-l))
@@ -664,7 +664,7 @@ let rec pkey chan  = function
              let ifso_loc, ifso = mk_ifso ctx in
              let ifnot_loc, ifnot = mk_ifnot ctx in
              do_make_if_in loc
-               (Arg.make_const d) arg ifso_loc ifso ifnot_loc ifnot)
+               (Arg.make_const loc d) arg ifso_loc ifso ifnot_loc ifnot)
 
   let rec c_test ctx ({cases=cases ; actions=actions} as s) =
     let lcases = Array.length cases in

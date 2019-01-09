@@ -602,7 +602,7 @@ let comparison_primitive comparison comparison_kind =
   | Compare, Compare_int32s -> Pccall caml_int32_compare
   | Compare, Compare_int64s -> Pccall caml_int64_compare
 
-let lambda_of_loc kind loc =
+let lambda_of_loc ~target_loc kind loc =
   let loc_start = loc.Location.loc_start in
   let (file, lnum, cnum) = Location.get_pos_info loc_start in
   let file =
@@ -619,18 +619,18 @@ let lambda_of_loc kind loc =
           Const_base (Const_int lnum);
           Const_base (Const_int cnum);
           Const_base (Const_int enum);
-        ]))
-  | Loc_FILE -> Lconst (Const_immstring file)
+        ]), target_loc)
+  | Loc_FILE -> Lconst (Const_immstring file, target_loc)
   | Loc_MODULE ->
     let filename = Filename.basename file in
     let name = Env.get_unit_name () in
     let module_name = if name = "" then "//"^filename^"//" else name in
-    Lconst (Const_immstring module_name)
+    Lconst (Const_immstring module_name, target_loc)
   | Loc_LOC ->
     let loc = Printf.sprintf "File %S, line %d, characters %d-%d"
         file lnum cnum enum in
-    Lconst (Const_immstring loc)
-  | Loc_LINE -> Lconst (Const_base (Const_int lnum))
+    Lconst (Const_immstring loc, target_loc)
+  | Loc_LINE -> Lconst (Const_base (Const_int lnum), target_loc)
 
 let caml_restore_raw_backtrace =
   Primitive.simple ~name:"caml_restore_raw_backtrace" ~arity:2 ~alloc:false
@@ -683,9 +683,9 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   | Lazy_force, [arg] ->
       Matching.inline_lazy_force arg Location.none
   | Loc kind, [] ->
-      lambda_of_loc kind loc
+      lambda_of_loc ~target_loc:loc kind loc
   | Loc kind, [arg] ->
-      let lam = lambda_of_loc kind loc in
+      let lam = lambda_of_loc ~target_loc:loc kind loc in
       Lprim(Pmakeblock(0, Immutable, None), [lam; arg], loc)
   | Send, [obj; meth] ->
       Lsend(Public, meth, obj, [], loc)
