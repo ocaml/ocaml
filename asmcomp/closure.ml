@@ -1865,9 +1865,17 @@ and close_functions fenv cenv fun_defs =
         uncurried_defs clos_offsets cenv_fv in
     let scope = CB.toplevel in
     let prev_module_path = !current_module_path in
-    current_module_path :=
-      In_compilation_unit (Compilation_unit.get_persistent_ident (
-        Compilation_unit.get_current_exn ()));
+    let module_path =
+      let path =
+        Printtyp.rewrite_double_underscore_paths Env.initial_safe_string
+          (Path.Pident (Ident.create_persistent (
+            Compilenv.current_unit_name ())))
+      in
+      match path with
+      | Path.Pident ident -> ident
+      | _ -> Misc.fatal_errorf "Unexported form of path: %a" Path.print path
+    in
+    current_module_path := In_compilation_unit module_path;
     let (ubody, approx) = close ~scope fenv_rec cenv_body body in
     current_module_path := prev_module_path;
     let ubody =
