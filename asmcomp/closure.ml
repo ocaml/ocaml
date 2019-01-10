@@ -44,7 +44,7 @@ module VP = Backend_var.With_provenance
 type current_module_path =
   | Never_set
   | From_root of Path.t
-  | In_compilation_unit of Ident.t
+  | In_compilation_unit of Path.t
 
 let current_module_path = ref (Never_set : current_module_path)
 
@@ -52,7 +52,7 @@ let get_current_module_path () =
   match !current_module_path with
   | Never_set -> Misc.fatal_error "Current module path not set"
   | From_root path -> path
-  | In_compilation_unit ident -> Path.Pident ident
+  | In_compilation_unit path -> path
 
 (* Maintain the current module block symbol *)
 
@@ -1866,14 +1866,9 @@ and close_functions fenv cenv fun_defs =
     let scope = CB.toplevel in
     let prev_module_path = !current_module_path in
     let module_path =
-      let path =
-        Printtyp.rewrite_double_underscore_paths Env.initial_safe_string
-          (Path.Pident (Ident.create_persistent (
-            Compilenv.current_unit_name ())))
-      in
-      match path with
-      | Path.Pident ident -> ident
-      | _ -> Misc.fatal_errorf "Unexported form of path: %a" Path.print path
+      Printtyp.rewrite_double_underscore_paths Env.initial_safe_string
+        (Path.Pident (Ident.create_persistent (
+          Compilenv.current_unit_name ())))
     in
     current_module_path := In_compilation_unit module_path;
     let (ubody, approx) = close ~scope fenv_rec cenv_body body in
