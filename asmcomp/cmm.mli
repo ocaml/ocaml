@@ -119,9 +119,6 @@ type phantom_defining_expr =
   | Cphantom_block of { tag : int; fields : Backend_var.t list; }
   (** The phantom-let-bound variable points at a block with the given
       structure. *)
-  | Cphantom_set_debuginfo of Debuginfo.t
-  (** Pseudo-operation to set the current debuginfo. *)
-  (* CR mshinwell: It would be nice to find a better solution for this. *)
 
 type memory_chunk =
     Byte_unsigned
@@ -161,12 +158,12 @@ and operation =
 (** Every basic block should have a corresponding [Debuginfo.t] for its
     beginning. *)
 and expression =
-    Cconst_int of int
-  | Cconst_natint of nativeint
-  | Cconst_float of float
-  | Cconst_symbol of Backend_sym.t
-  | Cconst_pointer of int
-  | Cconst_natpointer of nativeint
+    Cconst_int of int * Debuginfo.t
+  | Cconst_natint of nativeint * Debuginfo.t
+  | Cconst_float of float * Debuginfo.t
+  | Cconst_symbol of Backend_sym.t * Debuginfo.t
+  | Cconst_pointer of int * Debuginfo.t
+  | Cconst_natpointer of nativeint * Debuginfo.t
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression

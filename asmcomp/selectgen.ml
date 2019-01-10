@@ -473,7 +473,7 @@ method private new_call_labels () : Mach.call_labels =
 
 method select_operation op args _dbg =
   match (op, args) with
-  | (Capply (_, callee_dbg), Cconst_symbol func :: rem) ->
+  | (Capply (_, callee_dbg), Cconst_symbol (func, _dbg) :: rem) ->
     let call_labels = self#new_call_labels () in
     (Icall_imm { func; callee_dbg; call_labels; }, rem)
   | (Capply _, _) ->
@@ -542,39 +542,39 @@ method select_operation op args _dbg =
   | _ -> fatal_error "Selection.select_oper"
 
 method private select_arith_comm op = function
-    [arg; Cconst_int n] when self#is_immediate n ->
+    [arg; Cconst_int (n, _dbg)] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
-  | [arg; Cconst_pointer n] when self#is_immediate n ->
+  | [arg; Cconst_pointer (n, _dbg)] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
-  | [Cconst_int n; arg] when self#is_immediate n ->
+  | [Cconst_int (n, _dbg); arg] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
-  | [Cconst_pointer n; arg] when self#is_immediate n ->
+  | [Cconst_pointer (n, _dbg); arg] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
 method private select_arith op = function
-    [arg; Cconst_int n] when self#is_immediate n ->
+    [arg; Cconst_int (n, _dbg)] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
-  | [arg; Cconst_pointer n] when self#is_immediate n ->
+  | [arg; Cconst_pointer (n, _dbg)] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
 method private select_shift op = function
-    [arg; Cconst_int n] when n >= 0 && n < Arch.size_int * 8 ->
+    [arg; Cconst_int (n, _)] when n >= 0 && n < Arch.size_int * 8 ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
 method private select_arith_comp cmp = function
-    [arg; Cconst_int n] when self#is_immediate n ->
+    [arg; Cconst_int (n, _)] when self#is_immediate n ->
       (Iintop_imm(Icomp cmp, n), [arg])
-  | [arg; Cconst_pointer n] when self#is_immediate n ->
+  | [arg; Cconst_pointer (n, _)] when self#is_immediate n ->
       (Iintop_imm(Icomp cmp, n), [arg])
-  | [Cconst_int n; arg] when self#is_immediate n ->
+  | [Cconst_int (n, _); arg] when self#is_immediate n ->
       (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
-  | [Cconst_pointer n; arg] when self#is_immediate n ->
+  | [Cconst_pointer (n, _); arg] when self#is_immediate n ->
       (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
   | args ->
       (Iintop(Icomp cmp), args)
@@ -582,29 +582,29 @@ method private select_arith_comp cmp = function
 (* Instruction selection for conditionals *)
 
 method select_condition = function
-    Cop(Ccmpi cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
+    Cop(Ccmpi cmp, [arg1; Cconst_int (n, _)], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
-  | Cop(Ccmpi cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
+  | Cop(Ccmpi cmp, [Cconst_int (n, _); arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
-  | Cop(Ccmpi cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
+  | Cop(Ccmpi cmp, [arg1; Cconst_pointer (n, _)], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
-  | Cop(Ccmpi cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
+  | Cop(Ccmpi cmp, [Cconst_pointer (n, _); arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, args, _) ->
       (Iinttest(Isigned cmp), Ctuple args)
-  | Cop(Ccmpa cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [arg1; Cconst_pointer (n, _)], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
-  | Cop(Ccmpa cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [arg1; Cconst_int (n, _)], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
-  | Cop(Ccmpa cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [Cconst_pointer (n, _); arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
-  | Cop(Ccmpa cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
+  | Cop(Ccmpa cmp, [Cconst_int (n, _); arg2], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, args, _) ->
       (Iinttest(Iunsigned cmp), Ctuple args)
   | Cop(Ccmpf cmp, args, _) ->
       (Ifloattest cmp, Ctuple args)
-  | Cop(Cand, [arg; Cconst_int 1], _) ->
+  | Cop(Cand, [arg; Cconst_int (1, _)], _) ->
       (Ioddtest, arg)
   | arg ->
       (Itruetest, arg)
@@ -777,24 +777,25 @@ method private maybe_emit_spacetime_move env ~spacetime_reg =
 
 method emit_expr (env:environment) exp ~bound_name =
   match exp with
-    Cconst_int n ->
+    Cconst_int (n, dbg) ->
       let r = self#regs_for typ_int in
-      Some(self#insert_op env (Iconst_int(Nativeint.of_int n)) [||] r)
-  | Cconst_natint n ->
+      Some(self#insert_op_debug env (Iconst_int(Nativeint.of_int n)) dbg [||] r)
+  | Cconst_natint (n, dbg) ->
       let r = self#regs_for typ_int in
-      Some(self#insert_op env (Iconst_int n) [||] r)
-  | Cconst_float n ->
+      Some(self#insert_op_debug env (Iconst_int n) dbg [||] r)
+  | Cconst_float (n, dbg) ->
       let r = self#regs_for typ_float in
-      Some(self#insert_op env (Iconst_float (Int64.bits_of_float n)) [||] r)
-  | Cconst_symbol n ->
+      Some(self#insert_op_debug env (Iconst_float (Int64.bits_of_float n)) dbg
+        [||] r)
+  | Cconst_symbol (n, dbg) ->
       let r = self#regs_for typ_val in
-      Some(self#insert_op env (Iconst_symbol n) [||] r)
-  | Cconst_pointer n ->
+      Some(self#insert_op_debug env (Iconst_symbol n) dbg [||] r)
+  | Cconst_pointer (n, dbg) ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)
-      Some(self#insert_op env (Iconst_int(Nativeint.of_int n)) [||] r)
-  | Cconst_natpointer n ->
+      Some(self#insert_op_debug env (Iconst_int(Nativeint.of_int n)) dbg [||] r)
+  | Cconst_natpointer (n, dbg) ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)
-      Some(self#insert_op env (Iconst_int n) [||] r)
+      Some(self#insert_op_debug env (Iconst_int n) dbg [||] r)
   | Cblockheader(n, dbg) ->
       self#emit_blockheader env n dbg
   | Cvar v ->
@@ -850,7 +851,9 @@ method emit_expr (env:environment) exp ~bound_name =
       end
   | Cop(Ccmpf _, _, dbg) ->
       self#emit_expr env
-        (Cifthenelse(exp, dbg, Cconst_int 1, dbg, Cconst_int 0, dbg))
+        (Cifthenelse(exp, dbg,
+          Cconst_int (1, dbg), dbg,
+          Cconst_int (0, dbg), dbg))
         ~bound_name
   | Cop(op, args, dbg) ->
       begin match self#emit_parts_list env args with

@@ -76,7 +76,7 @@ module Make(I:I) = struct
   let mk_let_cell dbg id str ind body =
     let cell =
       Cop(Cload (Word_int, Asttypes.Mutable),
-        [Cop(Cadda,[str;Cconst_int(Arch.size_int*ind)], dbg)],
+        [Cop(Cadda,[str;Cconst_int(Arch.size_int*ind, dbg)], dbg)],
         dbg) in
     Clet(id, cell, body)
 
@@ -86,7 +86,7 @@ module Make(I:I) = struct
 
   let mk_cmp_gen cmp_op dbg id nat ifso ifnot =
     let test =
-      Cop (Ccmpi cmp_op, [ Cvar id; Cconst_natpointer nat ], dbg)
+      Cop (Ccmpi cmp_op, [ Cvar id; Cconst_natpointer (nat, dbg) ], dbg)
     in
     Cifthenelse (test, dbg, ifso, dbg, ifnot, dbg)
 

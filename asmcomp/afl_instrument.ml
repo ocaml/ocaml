@@ -20,9 +20,15 @@ open Cmm
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
-let afl_area_ptr = Cconst_symbol Backend_sym.Names.caml_afl_area_ptr
-let afl_prev_loc = Cconst_symbol Backend_sym.Names.caml_afl_prev_loc
+let afl_area_ptr =
+  Cconst_symbol (Backend_sym.Names.caml_afl_area_ptr, Debuginfo.none)
+
+let afl_prev_loc =
+  Cconst_symbol (Backend_sym.Names.caml_afl_prev_loc, Debuginfo.none)
+
 let afl_map_size = 1 lsl 16
+
+let cconst_int i = Cconst_int (i, Debuginfo.none)
 
 let rec with_afl_logging b =
   if !Clflags.afl_inst_ratio < 100 &&
@@ -44,15 +50,15 @@ let rec with_afl_logging b =
     Clet(VP.create afl_area,
       op (Cload (Word_int, Asttypes.Mutable)) [afl_area_ptr],
       Clet(VP.create cur_pos, op Cxor [op (Cload (Word_int, Asttypes.Mutable))
-        [afl_prev_loc]; Cconst_int cur_location],
+        [afl_prev_loc]; cconst_int cur_location],
       Csequence(
         op (Cstore(Byte_unsigned, Assignment))
           [op Cadda [Cvar afl_area; Cvar cur_pos];
             op Cadda [op (Cload (Byte_unsigned, Asttypes.Mutable))
                         [op Cadda [Cvar afl_area; Cvar cur_pos]];
-                      Cconst_int 1]],
+                      cconst_int 1]],
         op (Cstore(Word_int, Assignment))
-          [afl_prev_loc; Cconst_int (cur_location lsr 1)]))) in
+          [afl_prev_loc; cconst_int (cur_location lsr 1)]))) in
   Csequence(instrumentation, instrument b)
 
 and instrument = function
@@ -102,6 +108,6 @@ let instrument_initialiser c =
   with_afl_logging
     (Csequence
        (Cop (Cextcall (Backend_sym.Names.caml_setup_afl, typ_int, false, None),
-             [Cconst_int 0],
+             [cconst_int 0],
              Debuginfo.none),
         c))

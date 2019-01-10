@@ -133,8 +133,6 @@ let phantom_defining_expr ppf defining_expr =
         Format.fprintf ppf "%a; " V.print field)
       fields;
     Format.fprintf ppf "]"
-  | Cphantom_set_debuginfo dbg ->
-    Format.fprintf ppf "@[(set_debuginfo@ %a)@]" Debuginfo.print dbg
 
 let phantom_defining_expr_opt ppf defining_expr =
   match defining_expr with
@@ -199,8 +197,8 @@ let operation ~print_dbg d = function
       else "checkbound"
 
 let rec expr ~print_dbg ppf = function
-  | Cconst_int n -> fprintf ppf "%i" n
-  | Cconst_natint n ->
+  | Cconst_int (n, _dbg) -> fprintf ppf "%i" n
+  | Cconst_natint (n, _dbg) ->
     fprintf ppf "%s" (Nativeint.to_string n)
   | Cblockheader(n, d) ->
       mark_start_location ppf d;
@@ -212,10 +210,10 @@ let rec expr ~print_dbg ppf = function
           (Nativeint.to_string n)
       end;
       mark_end_location ppf d
-  | Cconst_float n -> fprintf ppf "%F" n
-  | Cconst_symbol s -> fprintf ppf "\"%a\"" Backend_sym.print s
-  | Cconst_pointer n -> fprintf ppf "%ia" n
-  | Cconst_natpointer n -> fprintf ppf "%sa" (Nativeint.to_string n)
+  | Cconst_float (n, _dbg) -> fprintf ppf "%F" n
+  | Cconst_symbol (s, _dbg) -> fprintf ppf "\"%a\"" Backend_sym.print s
+  | Cconst_pointer (n, _dbg) -> fprintf ppf "%ia" n
+  | Cconst_natpointer (n, _dbg) -> fprintf ppf "%sa" (Nativeint.to_string n)
   | Cvar id -> V.print ppf id
   | Clet(id, def, (Clet(_, _, _) as body)) ->
       let print_binding id ppf def =

@@ -124,7 +124,6 @@ type phantom_defining_expr =
   | Cphantom_read_field of { var : Backend_var.t; field : int; }
   | Cphantom_read_symbol_field of { sym : Backend_sym.t; field : int; }
   | Cphantom_block of { tag : int; fields : Backend_var.t list; }
-  | Cphantom_set_debuginfo of Debuginfo.t
 
 type memory_chunk =
     Byte_unsigned
@@ -160,12 +159,12 @@ and operation =
   | Ccheckbound
 
 type expression =
-    Cconst_int of int
-  | Cconst_natint of nativeint
-  | Cconst_float of float
-  | Cconst_symbol of Backend_sym.t
-  | Cconst_pointer of int
-  | Cconst_natpointer of nativeint
+    Cconst_int of int * Debuginfo.t
+  | Cconst_natint of nativeint * Debuginfo.t
+  | Cconst_float of float * Debuginfo.t
+  | Cconst_symbol of Backend_sym.t * Debuginfo.t
+  | Cconst_pointer of int * Debuginfo.t
+  | Cconst_natpointer of nativeint * Debuginfo.t
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Backend_var.t
   | Clet of Backend_var.With_provenance.t * expression * expression

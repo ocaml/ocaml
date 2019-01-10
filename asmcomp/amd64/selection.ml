@@ -33,25 +33,25 @@ type addressing_expr =
 
 let rec select_addr exp =
   match exp with
-    Cconst_symbol s when not !Clflags.dlcode ->
+    Cconst_symbol (s, _) when not !Clflags.dlcode ->
       (Asymbol s, 0)
-  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int m], _) ->
+  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int (m, _)], _) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop(Csubi, [arg; Cconst_int m], _) ->
+  | Cop(Csubi, [arg; Cconst_int (m, _)], _) ->
       let (a, n) = select_addr arg in (a, n - m)
-  | Cop((Caddi | Caddv | Cadda), [Cconst_int m; arg], _) ->
+  | Cop((Caddi | Caddv | Cadda), [Cconst_int (m, _); arg], _) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop(Clsl, [arg; Cconst_int(1|2|3 as shift)], _) ->
+  | Cop(Clsl, [arg; Cconst_int((1|2|3 as shift), _)], _) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, 1 lsl shift), n lsl shift)
       | _ -> (Alinear exp, 0)
       end
-  | Cop(Cmuli, [arg; Cconst_int(2|4|8 as mult)], _) ->
+  | Cop(Cmuli, [arg; Cconst_int((2|4|8 as mult), _)], _) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, mult), n * mult)
       | _ -> (Alinear exp, 0)
       end
-  | Cop(Cmuli, [Cconst_int(2|4|8 as mult); arg], _) ->
+  | Cop(Cmuli, [Cconst_int((2|4|8 as mult), _); arg], _) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, mult), n * mult)
       | _ -> (Alinear exp, 0)
@@ -174,16 +174,16 @@ method select_addressing _chunk exp =
 
 method! select_store is_assign addr exp =
   match exp with
-    Cconst_int n when self#is_immediate n ->
+    Cconst_int (n, _) when self#is_immediate n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | (Cconst_natint n) when self#is_immediate_natint n ->
+  | (Cconst_natint (n, _)) when self#is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | (Cblockheader(n, _dbg))
       when self#is_immediate_natint n && not Config.spacetime ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
-  | Cconst_pointer n when self#is_immediate n ->
+  | Cconst_pointer (n, _) when self#is_immediate n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | Cconst_natpointer n when self#is_immediate_natint n ->
+  | Cconst_natpointer (n, _) when self#is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | _ ->
       super#select_store is_assign addr exp
@@ -221,7 +221,7 @@ method! select_operation op args dbg =
   (* Recognize store instructions *)
   | Cstore ((Word_int|Word_val as chunk), _init) ->
       begin match args with
-        [loc; Cop(Caddi, [Cop(Cload _, [loc'], _); Cconst_int n], _)]
+        [loc; Cop(Caddi, [Cop(Cload _, [loc'], _); Cconst_int (n, _)], _)]
         (* CR mshinwell: This used to be "=" instead of "==" but caused a
            serious performance problem. *)
         when loc == loc' && self#is_immediate n ->
@@ -248,7 +248,7 @@ method! select_operation op args dbg =
   | Casr ->
       begin match args with
         (* Recognize sign extension *)
-        [Cop(Clsl, [k; Cconst_int 32], _); Cconst_int 32] ->
+        [Cop(Clsl, [k; Cconst_int (32, _)], _); Cconst_int (32, _)] ->
           (Ispecific Isextend32, [k])
         | _ -> super#select_operation op args dbg
       end
