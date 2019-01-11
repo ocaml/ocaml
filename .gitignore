@@ -261,6 +261,7 @@ _build
 /tools/make_opcodes
 /tools/make_opcodes.ml
 /tools/caml-tex
+/tools/gen_prefix
 
 /utils/config.ml
 
