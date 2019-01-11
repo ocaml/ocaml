@@ -651,6 +651,13 @@ OCaml 4.08.0
 * GPR#2173: removed TypedtreeMap
   (Thomas Refis, review by Gabriel Scherer)
 
+- GPR#2218: introduce a prefixed version of compiler-libs consisting
+  of the top-level modules Ocaml_common, Ocaml_bytecomp, Ocaml_optcomp
+  and Ocaml_toplevel.
+  (Nicolás Ojeda Bär)
+
+### Bug fixes:
+
 - MPR#7867: Fix #mod_use raising an exception for filenames with no
   extension.
   (Geoff Gole)
