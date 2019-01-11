@@ -277,7 +277,12 @@ type lambda =
   | Lapply of lambda_apply
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
-  | Lphantom_let of Ident.t * phantom_defining_expr * lambda
+  | Lphantom_let of {
+      id : Ident.t;
+      id_for_type : Ident.t;
+      defining_expr : phantom_defining_expr;
+      body : lambda;
+    }
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t
   | Lswitch of lambda * lambda_switch * Location.t
@@ -396,8 +401,8 @@ let make_key e =
         let ex = tr_rec env ex in
         let y = make_key x in
         Llet (str,k,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
-    | Lphantom_let (id, defining_expr, body) ->
-        Lphantom_let (id, defining_expr, tr_rec env body)
+    | Lphantom_let { id; id_for_type; defining_expr; body; } ->
+        Lphantom_let { id; id_for_type; defining_expr; body = tr_rec env body; }
     | Lprim (p,es,_) ->
         Lprim (p,tr_recs env es, Location.none)
     | Lswitch (e,sw,loc) ->
@@ -489,7 +494,7 @@ let iter_head_constructor f = function
       f body
   | Llet(_str, _k, _id, arg, body) ->
       f arg; f body
-  | Lphantom_let(_id, _defining_expr, body) ->
+  | Lphantom_let { body; _ } ->
       f body
   | Lletrec(decl, body) ->
       f body;
@@ -540,7 +545,7 @@ let rec free_variables = function
       Ident.Set.union
         (free_variables arg)
         (Ident.Set.remove id (free_variables body))
-  | Lphantom_let(_id, _defining_expr, body) ->
+  | Lphantom_let { body; _ } ->
       free_variables body
   | Lletrec(decl, body) ->
       let set = free_variables_list (free_variables body) (List.map snd decl) in
@@ -631,8 +636,9 @@ let rec patch_guarded patch = function
       Lifthenelse (cond, ifso_loc, body, ifnot_loc, patch, loc)
   | Llet(str, k, id, lam, body) ->
       Llet (str, k, id, lam, patch_guarded patch body)
-  | Lphantom_let(id, defining_expr, body) ->
-      Lphantom_let (id, defining_expr, patch_guarded patch body)
+  | Lphantom_let { id; id_for_type; defining_expr; body } ->
+      let body = patch_guarded patch body in
+      Lphantom_let { id; id_for_type; defining_expr; body }
   | Levent(lam, ev) ->
       Levent (patch_guarded patch lam, ev)
   | _ -> fatal_error "Lambda.patch_guarded"
@@ -714,9 +720,10 @@ let subst update_env s lam =
         Lfunction{kind; params; body = subst s body; attr; loc}
     | Llet(str, k, id, arg, body) ->
         Llet(str, k, id, subst s arg, subst (Ident.Map.remove id s) body)
-    | Lphantom_let (id, defining_expr, body) ->
-        Lphantom_let (id, subst_phantom_defining_expr s defining_expr,
-          subst s body)
+    | Lphantom_let { id; id_for_type; defining_expr; body; } ->
+        let defining_expr = subst_phantom_defining_expr s defining_expr in
+        let body = subst s body in
+        Lphantom_let { id; id_for_type; defining_expr; body; }
     | Lletrec(decl, body) ->
         let s =
           List.fold_left (fun s (id, _) -> Ident.Map.remove id s)
@@ -802,8 +809,8 @@ let rec map f lam =
         Lfunction { kind; params; body = map f body; attr; loc; }
     | Llet (str, k, v, e1, e2) ->
         Llet (str, k, v, map f e1, map f e2)
-    | Lphantom_let (v, defining_expr, body) ->
-        Lphantom_let (v, defining_expr, map f body)
+    | Lphantom_let { id; id_for_type; defining_expr; body; } ->
+        Lphantom_let { id; id_for_type; defining_expr; body = map f body; }
     | Lletrec (idel, e2) ->
         Lletrec (List.map (fun (v, e) -> (v, map f e)) idel, map f e2)
     | Lprim (p, el, loc) ->

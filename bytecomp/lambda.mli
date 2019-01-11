@@ -258,7 +258,12 @@ type lambda =
   | Lapply of lambda_apply
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
-  | Lphantom_let of Ident.t * phantom_defining_expr * lambda
+  | Lphantom_let of {
+      id : Ident.t;
+      id_for_type : Ident.t;
+      defining_expr : phantom_defining_expr;
+      body : lambda;
+    }
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t
   | Lswitch of lambda * lambda_switch * Location.t

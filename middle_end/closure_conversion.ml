@@ -197,7 +197,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
            initial_value = var;
            body;
            contents_kind = block_kind })
-  | Lphantom_let (_id, _defining_expr, body) ->
+  | Lphantom_let { id = _; id_for_type = _; defining_expr = _; body; } ->
     (* CR mshinwell for pchambart: Add code here! *)
     close t env body
   | Lfunction { kind; params; body; attr; loc; } ->

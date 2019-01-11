@@ -529,7 +529,7 @@ let rec comp_expr env exp sz cont =
       comp_expr env arg sz
         (Kpush :: comp_expr (add_var id (sz+1) env) body (sz+1)
           (add_pop 1 cont))
-  | Lphantom_let (_id, _defining_expr, body) ->
+  | Lphantom_let { body; _ } ->
       comp_expr env body sz cont
   | Lletrec(decl, body) ->
       let ndecl = List.length decl in

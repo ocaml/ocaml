@@ -898,9 +898,13 @@ let transl_store_structure glob map prims str =
               | Some _ ->
                 List.fold_left (fun lam id ->
                     let field, _coercion = Ident.find_same id map in
-                    Lphantom_let (Ident.rename id,
-                      Lphantom_read_global_module_block_field { field; },
-                      lam))
+                    Lphantom_let {
+                      id = Ident.rename id;
+                      id_for_type = id;
+                      defining_expr =
+                        Lphantom_read_global_module_block_field { field; };
+                      body = lam;
+                    })
                   lam
                   ids
             in
@@ -960,12 +964,17 @@ let transl_store_structure glob map prims str =
                                     List.map (fun id -> Lvar id)
                                       (defined_idents str.str_items), loc)),
                            Lsequence(store_ident loc id,
-                                     Lphantom_let (Ident.rename id,
-                                       Lphantom_read_global_module_block_field
-                                         { field; },
-                                       transl_store rootpath
-                                                    (add_ident true id subst)
-                                                    rem))))
+                                     Lphantom_let {
+                                       id = Ident.rename id;
+                                       id_for_type = id;
+                                       defining_expr =
+                                         Lphantom_read_global_module_block_field
+                                           { field; };
+                                       body =
+                                         transl_store rootpath
+                                                      (add_ident true id subst)
+                                                      rem;
+                                     })))
         | Tstr_module{
             mb_id=id;mb_loc=loc;
             mb_expr= {
@@ -999,12 +1008,17 @@ let transl_store_structure glob map prims str =
                              (Lprim(Pmakeblock(0, Immutable, None),
                                     List.map field map', loc)),
                            Lsequence(store_ident loc id,
-                                     Lphantom_let (Ident.rename id,
-                                       Lphantom_read_global_module_block_field
-                                         { field = field_pos; },
-                                       transl_store rootpath
-                                                    (add_ident true id subst)
-                                                    rem))))
+                                     Lphantom_let {
+                                       id = Ident.rename id;
+                                       id_for_type = id;
+                                       defining_expr =
+                                         Lphantom_read_global_module_block_field
+                                           { field = field_pos; };
+                                       body =
+                                         transl_store rootpath
+                                                      (add_ident true id subst)
+                                                      rem;
+                                     })))
         | Tstr_module{mb_id=id; mb_expr=modl; mb_loc=loc; mb_attributes} ->
             let lam =
               Translattribute.add_inline_attribute
@@ -1028,10 +1042,16 @@ let transl_store_structure glob map prims str =
                (add_ident true adds id -> Pgetglobal... to subst). *)
             Llet(Strict, Pgenval, id, Lambda.subst no_env_update subst lam,
                  Lsequence(store_ident loc id,
-                           Lphantom_let (Ident.rename id,
-                             Lphantom_read_global_module_block_field { field; },
-                             transl_store rootpath (add_ident true id subst)
-                               rem)))
+                           Lphantom_let {
+                             id = Ident.rename id;
+                             id_for_type = id;
+                             defining_expr =
+                               Lphantom_read_global_module_block_field
+                                 { field; };
+                             body =
+                               transl_store rootpath (add_ident true id subst)
+                                 rem;
+                           }))
         (* CR mshinwell: Try changing [store_idents] to add the
            phantom lets *)
         | Tstr_recmodule bindings ->
@@ -1042,9 +1062,13 @@ let transl_store_structure glob map prims str =
             let rest =
               List.fold_left (fun rest id ->
                   let field, _coercion = Ident.find_same id map in
-                  Lphantom_let (Ident.rename id,
-                    Lphantom_read_global_module_block_field { field; },
-                    rest))
+                  Lphantom_let {
+                    id = Ident.rename id;
+                    id_for_type = id;
+                    defining_expr =
+                      Lphantom_read_global_module_block_field { field; };
+                    body = rest;
+                  })
                 rest
                 ids
             in

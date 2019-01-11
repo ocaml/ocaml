@@ -1456,7 +1456,7 @@ let rec close ~scope fenv cenv = function
           in
           (Ulet(Immutable, kind, VP.create ?provenance id, ulam, ubody), abody)
       end
-  | Lphantom_let (id, defining_expr, body) ->
+  | Lphantom_let { id; id_for_type; defining_expr; body; } ->
       let body_scope = CB.add_scope scope in
       let static =
         match defining_expr with
@@ -1468,7 +1468,7 @@ let rec close ~scope fenv cenv = function
         let provenance =
           V.Provenance.create ?static ~module_path
             ~debuginfo:(Debuginfo.of_location Location.none ~scope:body_scope)
-            ~ident_for_type:(Compilation_unit.get_current_exn (), id)
+            ~ident_for_type:(Compilation_unit.get_current_exn (), id_for_type)
             Is_parameter.local
         in
         Some provenance

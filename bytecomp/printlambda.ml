@@ -562,9 +562,10 @@ let rec lam ppf = function
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
-  | Lphantom_let (id, defining_expr, body) ->
-      fprintf ppf "@[<2>(phantom_let@ %a = %a@ %a)@]"
+  | Lphantom_let { id; id_for_type; defining_expr; body; } ->
+      fprintf ppf "@[<2>(phantom_let@ %a[%a] = %a@ %a)@]"
         Ident.print id
+        Ident.print id_for_type
         print_phantom_defining_expr defining_expr
         lam body
   | Lprim(prim, largs, loc) ->
