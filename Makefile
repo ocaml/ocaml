@@ -1216,12 +1216,10 @@ driver/compdynlink.mli: $(DYNLINK_DIR)/dynlink.mli \
 driver/compdynlink_platform_intf.mli: driver/compdynlink_platform_intf.ml
 	cp $< $@
 
-driver/compdynlink.cmo: driver/compdynlink.mlbyte driver/compdynlink.cmi \
-    driver/compdynlink_common.cmi driver/compdynlink_common.cmo
+driver/compdynlink.cmo: driver/compdynlink.mlbyte
 	$(CAMLC) $(COMPFLAGS) -c -impl $<
 
-driver/compdynlink.cmx: driver/compdynlink.mlopt driver/compdynlink.cmi \
-    driver/compdynlink_common.cmi driver/compdynlink_common.cmx
+driver/compdynlink.cmx: driver/compdynlink.mlopt
 	$(CAMLOPT) $(COMPFLAGS) -c -impl $<
 
 beforedepend:: driver/compdynlink.mlbyte \
