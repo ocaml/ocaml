@@ -1381,15 +1381,7 @@ depend: beforedepend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -bytecode \
 		-impl driver/compdynlink.mlbyte >> .depend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -native \
-		-impl driver/compdynlink_common.mlopt >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -bytecode \
-		-impl driver/compdynlink_common.mlbyte >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -native \
 		-impl driver/compdynlink_platform_intf.ml >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -native \
-		-impl driver/compdynlink_types.mlopt >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -bytecode \
-		-impl driver/compdynlink_types.mlbyte >> .depend
 
 .PHONY: distclean
 distclean: clean
