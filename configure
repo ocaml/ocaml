@@ -3318,6 +3318,11 @@ esac
   fi
 fi
 
+# libtool expects host_os=mingw for native Windows
+old_host_os=$host_os
+if test x"$host_os" = "xwindows"; then :
+  host_os=mingw
+fi
 case `pwd` in
   *\ * | *\	*)
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Libtool does not cope well with whitespace in \`pwd\`" >&5
@@ -12163,6 +12168,7 @@ CC=$lt_save_CC
 # Only expand once:
 
 
+host_os=$old_host_os
 
 # Extracting information from libtool's configuration
 if test -n "$RANLIB" ; then :
@@ -12515,6 +12521,16 @@ case $host in #(
 esac
 
 # Adjust according to target
+
+# On Windows we do not take $enable_shared because it does not seem
+# to work. This should be better understood later
+#AS_CASE([$target],
+#  [*-pc-windows],
+#    [enable_shared=yes])
+
+if test x"$enable_shared" = "xno"; then :
+  with_sharedlibs=false
+fi
 
 case $CC,$host in #(
   *,*-*-darwin*) :
@@ -13360,6 +13376,18 @@ if test x"$enable_shared" != "xno"; then :
     mksharedlib="$CC -shared -flat_namespace -undefined suppress \
                    -Wl,-no_compact_unwind"
       shared_libraries_supported=true ;; #(
+  *-*-mingw32) :
+    mksharedlib='$(FLEXLINK)'
+      mkmaindll='$(FLEXLINK) -maindll'
+      shared_libraries_supported=$with_sharedlibs ;; #(
+  *-pc-windows) :
+    mksharedlib='$(FLEXLINK)'
+      mkmaindll='$(FLEXLINK) -maindll'
+      shared_libraries_supported=$with_sharedlibs ;; #(
+  *-*-cygwin*) :
+    mksharedlib="$flexlink"
+      mkmaindll="$flexlink -maindll"
+      shared_libraries_supported=true ;; #(
   *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*) :
     sharedlib_cflags="-fPIC"
@@ -13374,25 +13402,6 @@ if test x"$enable_shared" != "xno"; then :
 esac
 fi
 
-# On Windows we do not take $enable_shared because it does not seem
-# to work. This should be better understood later
-case $host in #(
-  *-*-cygwin*) :
-    mksharedlib="$flexlink"
-    mkmaindll="$flexlink -maindll"
-    shared_libraries_supported=$with_sharedlibs ;; #(
-  *-*-mingw32) :
-    mksharedlib='$(FLEXLINK)'
-    mkmaindll='$(FLEXLINK) -maindll'
-    shared_libraries_supported=$with_sharedlibs ;; #(
-  *-pc-windows) :
-    mksharedlib='$(FLEXLINK)'
-    mkmaindll='$(FLEXLINK) -maindll'
-    shared_libraries_supported=$with_sharedlibs ;; #(
-  *) :
-     ;;
-esac
-
 if test -z "$mkmaindll"; then :
   mkmaindll=$mksharedlib
 fi
@@ -13401,7 +13410,7 @@ fi
 
 natdynlink=false
 
-if test x"$enable_shared" != "no"; then :
+if test x"$enable_shared" != "xno"; then :
   case "$host" in #(
   *-*-cygwin*) :
     natdynlink=true ;; #(
@@ -14672,7 +14681,8 @@ fi
 esac
 
 ## shared library support
-case $host in #(
+if $shared_libraries_supported; then :
+  case $host in #(
   *-*-mingw32|*-pc-windows) :
     supports_shared_libraries=$shared_libraries_supported; dllibs="" ;; #(
   *) :
@@ -14725,6 +14735,9 @@ fi
 fi
  ;;
 esac
+else
+  supports_shared_libraries=false
+fi
 
 if $supports_shared_libraries; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: Dynamic loading of shared libraries is supported." >&5
