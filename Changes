@@ -190,6 +190,9 @@ Working version
 - GPR#2185: Add `List.filter_map`
   (Thomas Refis, review by Alain Frisch and Gabriel Scherer)
 
+- GPR#1525: Make function set_max_indent respect documentation
+  (Pierre Weis, Richard Bonichon, review by Florian Angeletti)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
