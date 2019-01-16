@@ -1212,59 +1212,20 @@ driver/compdynlink.mli: $(DYNLINK_DIR)/dynlink.mli \
     driver/compify_dynlink.sh
 	driver/compify_dynlink.sh $< $@
 
-driver/compdynlink_types.cmi: driver/compdynlink_types.mli
-	$(CAMLC) $(COMPFLAGS) -c $<
-
-driver/compdynlink_types.cmo: driver/compdynlink_types.ml \
-    driver/compdynlink_types.cmi
-	$(CAMLC) $(COMPFLAGS) -c $<
-
-driver/compdynlink_types.cmx: driver/compdynlink_types.ml \
-    driver/compdynlink_types.cmi
-	$(CAMLOPT) $(COMPFLAGS) -c $<
-
 # See comment in otherlibs/dynlink/Makefile about these two rules.
 driver/compdynlink_platform_intf.mli: driver/compdynlink_platform_intf.ml
 	cp $< $@
-driver/compdynlink_platform_intf.cmi: driver/compdynlink_platform_intf.mli \
-    driver/compdynlink_types.cmi
-	$(CAMLC) $(COMPFLAGS) -c $<
 
-driver/compdynlink_platform_intf.cmo: driver/compdynlink_platform_intf.ml \
-    driver/compdynlink_platform_intf.cmi \
-    driver/compdynlink_types.cmo
-	$(CAMLC) $(COMPFLAGS) -c $<
-
-driver/compdynlink_platform_intf.cmx: driver/compdynlink_platform_intf.ml \
-    driver/compdynlink_platform_intf.cmi \
-    driver/compdynlink_types.cmx
-	$(CAMLOPT) $(COMPFLAGS) -c $<
-
-driver/compdynlink_common.cmi: driver/compdynlink_common.mli \
-    driver/compdynlink_platform_intf.cmi
-	$(CAMLC) $(COMPFLAGS) -c $<
-
-driver/compdynlink_common.cmo: driver/compdynlink_common.ml \
-    driver/compdynlink_common.cmi \
-    driver/compdynlink_platform_intf.cmo
-	$(CAMLC) $(COMPFLAGS) -c $<
-
-driver/compdynlink_common.cmx: driver/compdynlink_common.ml \
-    driver/compdynlink_common.cmi \
-    driver/compdynlink_platform_intf.cmx
-	$(CAMLOPT) $(COMPFLAGS) -c $<
-
-driver/compdynlink.cmo: driver/compdynlink.mlbyte driver/compdynlink.cmi \
-    driver/compdynlink_common.cmi driver/compdynlink_common.cmo
+driver/compdynlink.cmo: driver/compdynlink.mlbyte
 	$(CAMLC) $(COMPFLAGS) -c -impl $<
 
-driver/compdynlink.cmx: driver/compdynlink.mlopt driver/compdynlink.cmi \
-    driver/compdynlink_common.cmi driver/compdynlink_common.cmx
+driver/compdynlink.cmx: driver/compdynlink.mlopt
 	$(CAMLOPT) $(COMPFLAGS) -c -impl $<
 
 beforedepend:: driver/compdynlink.mlbyte \
                driver/compdynlink.mlopt \
                driver/compdynlink_platform_intf.ml \
+               driver/compdynlink_platform_intf.mli \
                driver/compdynlink_types.ml \
                driver/compdynlink_types.mli \
                driver/compdynlink.mli \
@@ -1380,16 +1341,6 @@ depend: beforedepend
 		-impl driver/compdynlink.mlopt >> .depend
 	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -bytecode \
 		-impl driver/compdynlink.mlbyte >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -native \
-		-impl driver/compdynlink_common.mlopt >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -bytecode \
-		-impl driver/compdynlink_common.mlbyte >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -native \
-		-impl driver/compdynlink_platform_intf.ml >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -native \
-		-impl driver/compdynlink_types.mlopt >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -bytecode \
-		-impl driver/compdynlink_types.mlbyte >> .depend
 
 .PHONY: distclean
 distclean: clean
