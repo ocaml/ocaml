@@ -86,6 +86,7 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
                 Dwarf_variables_and_parameters.normal_type_for_var
                   ~parent:(Some call_site_die)
                   (Some (Backend_var.Provenance.ident_for_type provenance))
+                  (Backend_var.Provenance.is_parameter provenance)
               in
               [DAH.create_type_from_reference
                 ~proto_die_reference:(Proto_die.reference type_die)

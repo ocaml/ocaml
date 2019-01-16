@@ -20,6 +20,7 @@ val normal_type_for_var
    : ?reference:Proto_die.reference
   -> parent:Proto_die.t option
   -> (Compilation_unit.t * Ident.t) option
+  -> Is_parameter.t
   -> Proto_die.t
 
 val dwarf

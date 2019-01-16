@@ -113,13 +113,14 @@ let proto_dies_for_variable var ~proto_dies_for_vars =
   | exception Not_found -> None
   | result -> Some result
 
-let normal_type_for_var ?reference ~parent ident_for_type =
+let normal_type_for_var ?reference ~parent ident_for_type is_parameter =
   let name_attribute =
     match ident_for_type with
     | None -> []
     | Some (compilation_unit, var) ->
       let name =
         Dwarf_name_laundry.base_type_die_name_for_var compilation_unit var
+          is_parameter
       in
       [DAH.create_name name]
   in
@@ -155,10 +156,10 @@ let type_die_reference_for_var var ~proto_dies_for_vars =
 (* CR mshinwell: Add proper type for [ident_for_type] *)
 let construct_type_of_value_description state ~parent ident_for_type
       ~(phantom_defining_expr : ARV.Range_info.phantom_defining_expr)
-      ~proto_dies_for_vars ~reference =
+      is_parameter ~proto_dies_for_vars ~reference =
   let normal_case () =
     let (_ : Proto_die.t) =
-      normal_type_for_var ~reference ~parent ident_for_type
+      normal_type_for_var ~reference ~parent ident_for_type is_parameter
     in
     ()
   in
@@ -168,6 +169,7 @@ let construct_type_of_value_description state ~parent ident_for_type
     | Some (compilation_unit, var) ->
       let name =
         Dwarf_name_laundry.base_type_die_name_for_var compilation_unit var
+          is_parameter
       in
       [DAH.create_name name]
   in
@@ -673,6 +675,20 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
         [DAH.create_location location_list_index]
     end
   in
+  let is_parameter =
+    let is_parameter_from_provenance =
+      match provenance with
+      | None -> Is_parameter.local
+      | Some provenance -> Backend_var.Provenance.is_parameter provenance
+    in
+    (* The two inputs here correspond to:
+       1. The normal case of parameters of function declarations, which are
+          identified in [Selectgen].
+       2. Parameters of inlined functions, which have to be tagged much
+          earlier, on [let]-bindings when inlining is performed. *)
+    Is_parameter.join (ARV.Range_info.is_parameter range_info)
+      is_parameter_from_provenance
+  in
   let type_and_name_attributes =
     match type_die_reference_for_var var ~proto_dies_for_vars with
     | None -> []
@@ -708,8 +724,8 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
         if not need_rvalue then begin
           construct_type_of_value_description state
             ~parent:(Some (DS.compilation_unit_proto_die state))
-            ident_for_type ~phantom_defining_expr ~proto_dies_for_vars
-            ~reference
+            ident_for_type is_parameter ~phantom_defining_expr
+            ~proto_dies_for_vars ~reference
         end;
         [DAH.create_type_from_reference ~proto_die_reference:reference;
         ]
@@ -719,20 +735,6 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
         else [DAH.create_name name_for_var]
       in
       name_attribute @ type_attribute
-  in
-  let is_parameter =
-    let is_parameter_from_provenance =
-      match provenance with
-      | None -> Is_parameter.local
-      | Some provenance -> Backend_var.Provenance.is_parameter provenance
-    in
-    (* The two inputs here correspond to:
-       1. The normal case of parameters of function declarations, which are
-          identified in [Selectgen].
-       2. Parameters of inlined functions, which have to be tagged much
-          earlier, on [let]-bindings when inlining is performed. *)
-    Is_parameter.join (ARV.Range_info.is_parameter range_info)
-      is_parameter_from_provenance
   in
   let tag : Dwarf_tag.t =
     match is_parameter with

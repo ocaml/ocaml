@@ -18,7 +18,11 @@
 
 (** The name of the DWARF debugging information entry corresponding to the
     type of some identifier. *)
-val base_type_die_name_for_var : Compilation_unit.t -> Backend_var.t -> string
+val base_type_die_name_for_var
+   : Compilation_unit.t
+  -> Backend_var.t
+  -> Is_parameter.t
+  -> string
 
 (** The symbol for the DWARF debugging information entry corresponding to the
     abstract instance root for the function with the given ID. *)
@@ -43,6 +47,7 @@ type split_base_type_die_name_result = private {
   compilation_unit : string;
   ident_name : string;
   ident_stamp : int;
+  is_parameter : Is_parameter.t;
 }
 
 (** The inverse of [base_type_die_name_for_var]. *)

@@ -77,6 +77,7 @@ let dwarf_for_toplevel_constant state
           Dwarf_variables_and_parameters.normal_type_for_var
             ~parent
             (Some (Compilation_unit.get_current_exn (), var))
+            Is_parameter.local
         in
         (* The type DIE is noted down so that, when we find a call site one
            of whose arguments contains [symbol], we can link to it. *)
@@ -111,6 +112,7 @@ let dwarf_for_closure_top_level_module_block state ~module_block_sym
     Dwarf_variables_and_parameters.normal_type_for_var
       ~parent:(Some (DS.compilation_unit_proto_die state))
       (Some (Compilation_unit.get_current_exn (), module_block_var))
+      Is_parameter.local
   in
   let single_location_description =
     let symbol = Asm_symbol.create module_block_sym in
