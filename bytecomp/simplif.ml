@@ -36,9 +36,9 @@ let rec eliminate_ref id = function
       else lam
   | Llet(str, kind, v, e1, e2) ->
       Llet(str, kind, v, eliminate_ref id e1, eliminate_ref id e2)
-  | Lphantom_let { id; id_for_type; defining_expr; body; } ->
+  | Lphantom_let { id = id'; id_for_type; defining_expr; body; } ->
       let body = eliminate_ref id body in
-      Lphantom_let { id; id_for_type; defining_expr; body; }
+      Lphantom_let { id = id'; id_for_type; defining_expr; body; }
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
