@@ -1170,8 +1170,8 @@ let end_assembly dwarf =
   emit_frames
     { efa_code_label = (fun l -> D.label (L.create_int AS.Text l));
       efa_data_label = (fun l -> D.label (L.create_int AS.Data l));
-      efa_16 = (fun n -> D.int16 (Numbers.Int16.of_int_exn n));
-      efa_32 = (fun n -> D.int32 n);
+      efa_16 = (fun n -> D.uint16 (Numbers.Uint16.of_int_exn n));
+      efa_32 = (fun n -> D.uint32 (Numbers.Uint32.of_int32 n));
       efa_word = (fun n -> D.targetint (Targetint.of_int_exn n));
       efa_align = (fun bytes -> D.align ~bytes);
       efa_label_rel =
