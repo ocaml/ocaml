@@ -17,6 +17,7 @@
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
+#include <caml/callback.h>
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
@@ -42,6 +43,9 @@
 static value alloc_process_status(int pid, int status)
 {
   value st, res;
+
+  if (pid == 0)
+    caml_raise_constant(*caml_named_value("Unix.Waitpid_would_block"));
 
   if (WIFEXITED(status)) {
     st = caml_alloc_small(1, TAG_WEXITED);

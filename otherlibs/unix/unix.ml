@@ -202,6 +202,10 @@ type wait_flag =
     WNOHANG
   | WUNTRACED
 
+exception Waitpid_would_block
+
+let _ = Callback.register_exception "Unix.Waitpid_would_block" Waitpid_would_block
+
 external execv : string -> string array -> 'a = "unix_execv"
 external execve : string -> string array -> string array -> 'a = "unix_execve"
 external execvp : string -> string array -> 'a = "unix_execvp"

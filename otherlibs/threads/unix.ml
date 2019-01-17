@@ -184,6 +184,10 @@ type wait_flag =
     WNOHANG
   | WUNTRACED
 
+exception Waitpid_would_block
+
+let _ = Callback.register_exception "Unix.Waitpid_would_block" Waitpid_would_block
+
 let stdin = 0
 let stdout = 1
 let stderr = 2
