@@ -1109,7 +1109,12 @@ let begin_assembly() =
 
   D.text ();
   define_global_text_symbol "code_begin";
+(* CR mshinwell: Let's try to do without this, so that the address of the
+   first function coincides with the base address of the DWARF compilation unit
+   after dsymutil has run.  Otherwise we can't do the hack in gdb to work
+   around dsymutil's non-relocation of DW_AT_low_pc at call sites.
   if Target_system.macos_like () then I.nop (); (* PR#4690 *)
+*)
   ()
 
 let emit_spacetime_shapes () =
