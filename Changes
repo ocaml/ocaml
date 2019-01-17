@@ -101,6 +101,10 @@ Working version
   pid.
   (Romain Beauxis, review by Nicolás Ojeda Bär)
 
+- GPR#2220: Remove duplicate process management code in
+  otherlibs/threads/unix.ml
+  (Romain Beauxis, review by Gabriel Scherer and Alain Frisch)
+
 - GPR#1182: Add new Printf formats %#d %#Ld %#ld %#nd (idem for %i and %u) for
   alternative integer formatting.
   (ygrek, review by Gabriel Scherer)
