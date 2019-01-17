@@ -89,12 +89,17 @@ let add_to_synonym_list synonyms suffix =
 (* Find file 'name' (capitalized) in search path *)
 let find_module_in_load_path name =
   let names = List.map (fun ext -> name ^ ext) (!mli_synonyms @ !ml_synonyms) in
-  let uname = String.uncapitalize_ascii name in
-  let unames = List.map (fun ext -> uname ^ ext) (!mli_synonyms @ !ml_synonyms) in
+  let unames =
+    let uname = String.uncapitalize_ascii name in
+    List.map (fun ext -> uname ^ ext) (!mli_synonyms @ !ml_synonyms)
+  in
   let rec find_in_array a pos =
     if pos >= Array.length a then None else begin
       let s = a.(pos) in
-      if List.mem s names || List.mem s unames then Some s else find_in_array a (pos + 1)
+      if List.mem s names || List.mem s unames then
+        Some s
+      else
+        find_in_array a (pos + 1)
     end in
   let rec find_in_path = function
     [] -> raise Not_found
