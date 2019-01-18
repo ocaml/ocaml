@@ -191,6 +191,8 @@ ocamlcdefaultflags :=
 
 ocamloptdefaultflags := $(shell ./getocamloptdefaultflags $(TARGET))
 
+.SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
+
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
 all: ocamltest$(EXE)
 allopt: ocamltest.opt$(EXE)
