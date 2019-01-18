@@ -3,6 +3,9 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+OCaml 4.08.0
+------------
+
 ### Language features:
 
 - MPR#6422, MPR#7083, GPR#305, GPR#1568: Allow "exception" under or-patterns
