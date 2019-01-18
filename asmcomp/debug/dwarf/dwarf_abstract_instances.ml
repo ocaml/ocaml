@@ -19,12 +19,10 @@ module DS = Dwarf_state
 
 let attributes fun_dbg =
   let function_name = Debuginfo.Function.name fun_dbg in
-  let _linkage_name = Debuginfo.Function.linkage_name fun_dbg in
   let is_visible_externally =
     Debuginfo.Function.is_visible_externally fun_dbg
   in
   [ DAH.create_name function_name;
-(*    DAH.create_linkage_name ~linkage_name; *)
     DAH.create_external ~is_visible_externally;
   ]
 

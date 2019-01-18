@@ -142,7 +142,7 @@ val create_data_member_location
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_linkage_name
-   : linkage_name:Linkage_name.t
+   : Linkage_name.t
   -> Dwarf_attribute_values.Attribute_value.t
 
 val create_sibling

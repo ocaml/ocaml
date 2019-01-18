@@ -262,7 +262,7 @@ let create_data_member_location ~byte_offset =
   let spec = AS.create Data_member_location Data8 in
   AV.create spec (V.int64 ~comment:"data member location" byte_offset)
 
-let create_linkage_name ~linkage_name =
+let create_linkage_name linkage_name =
   let spec = AS.create Linkage_name Strp in
   AV.create spec (V.indirect_string ~comment:"linkage name"
     (Linkage_name.to_string linkage_name))

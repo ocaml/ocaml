@@ -110,6 +110,8 @@ let encode ?reloc t =
   | None -> t.name
   | Some reloc -> t.name ^ reloc
 
+let linkage_name t = Linkage_name.create (encode t)
+
 let prefix t section compilation_unit ~prefix =
   { section;
     compilation_unit;

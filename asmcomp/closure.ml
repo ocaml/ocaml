@@ -39,6 +39,8 @@ module Storer =
 module V = Backend_var
 module VP = Backend_var.With_provenance
 
+let anon_fun = "*anon_fun*"
+
 (* Maintain the current module path *)
 
 type current_module_path =
@@ -1307,7 +1309,7 @@ let rec close ~scope fenv cenv = function
       in
       make_const (Debuginfo.of_location loc ~scope) (transl cst)
   | Lfunction _ as funct ->
-      close_one_function fenv cenv (Ident.create_local "anon_fun") funct
+      close_one_function fenv cenv (Ident.create_local anon_fun) funct
 
     (* We convert [f a] to [let a' = a in let f' = f in fun b c -> f' a' b c]
        when fun_arity > nargs *)
@@ -1796,18 +1798,29 @@ and close_functions fenv cenv fun_defs =
             let human_name =
               match !current_module_path with
               | Never_set -> Misc.fatal_error "Current module path not set"
-              | From_root _ -> V.name id
+              | From_root _ ->
+                if String.equal (V.name id) anon_fun then
+                  Format.asprintf "<anon_fun@%a>"
+                    Location.print_for_debug loc
+                else
+                  V.name id
               | In_compilation_unit _ ->
-                (* This applies to things such as anonymous functions and
-                   functions in local modules. *)
+                let name =
+                  if String.equal (V.name id) anon_fun then "anon_fun"
+                  else V.name id
+                in
+                (* This applies to things such as functions in local modules. *)
                 Format.asprintf "<%s@%a>"
-                  (V.name id)
+                  name
                   Location.print_for_debug loc
             in
             let fun_dbg =
               Debuginfo.Function.create_from_location loc
                 ~human_name
                 ~module_path:(get_current_module_path ())
+                (* CR mshinwell: Check if [linkage_name] can be removed.  We
+                   use OCaml qualified names as [DW_AT_linkage_name]s now, not
+                   symbol names. *)
                 ~linkage_name:(Linkage_name.create label)
             in
             let fun_label =

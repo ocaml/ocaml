@@ -116,9 +116,9 @@ module Function : sig
   val module_path : t -> Path.t
 
   (* CR mshinwell: Rename this and/or [human_name]. *)
-  (** The name to be displayed in a debugger to identify the function,
-      including any module path qualification. *)
   val name : t -> string
+
+  val name_with_module_path : t -> string
 
   (** Whether the function is visible outside the compilation unit in which
       it is defined. *)

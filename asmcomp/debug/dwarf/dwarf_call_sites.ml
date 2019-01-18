@@ -279,7 +279,7 @@ let add_call_site state ~scope_proto_dies ~function_proto_die
 
 type direct_callee =
   | Ocaml of Asm_symbol.t * Debuginfo.Function.t
-  | External of Asm_symbol.t
+  | External of Asm_symbol.t * Linkage_name.t
 
 let call_target_for_direct_callee state (callee : direct_callee) =
   (* If we cannot reference DIEs across compilation units, then we treat direct
@@ -290,12 +290,17 @@ let call_target_for_direct_callee state (callee : direct_callee) =
      gdb/dwarf2read.c:read_call_site_scope. *)
   let callee =
     match callee with
-    | Ocaml (callee_symbol, _callee_dbg)
+    | Ocaml (callee_symbol, callee_dbg)
         when (not (DS.can_reference_dies_across_units state))
           && (not (Compilation_unit.equal
             (Asm_symbol.compilation_unit callee_symbol)
             (Compilation_unit.get_current_exn ()))) ->
-      External callee_symbol
+      let linkage_name =
+        (* See comment about linkage names in dwarf_concrete_instances.ml. *)
+        Linkage_name.create (
+          Debuginfo.Function.name_with_module_path callee_dbg)
+      in
+      External (callee_symbol, linkage_name)
     | _ -> callee
   in
   let die_symbol =
@@ -305,7 +310,7 @@ let call_target_for_direct_callee state (callee : direct_callee) =
       else
         let id = Debuginfo.Function.id callee_dbg in
         Some (Dwarf_name_laundry.concrete_instance_die_name id)
-    | External callee ->
+    | External (callee, linkage_name) ->
       match
         Asm_symbol.Tbl.find (DS.die_symbols_for_external_declarations state)
           callee
@@ -314,25 +319,17 @@ let call_target_for_direct_callee state (callee : direct_callee) =
         (* CR-someday mshinwell: dedup DIEs for runtime, "caml_curry", etc.
            functions across compilation units (maybe only generate the DIEs
            when compiling the startup file)? *)
-        let bogus_high_pc =
-          (* We don't know what the high PC value is for a function whose
-             definition we don't have.  Silence dsymutil on macOS by adding
-             a bogus value.  The only reason we want this DIE here in any
-             case is for the low PC / entry PC values for GDB. *)
-          if Target_system.macos_like () then
-            [DAH.create_high_pc_offset Targetint.zero;
-            ]
-          else
-            []
-        in
-        (* CR mshinwell: Add "declaration" attribute *)
         let callee_die =
           Proto_die.create ~parent:(Some (DS.compilation_unit_proto_die state))
             ~tag:Subprogram
-            ~attribute_values:(bogus_high_pc @ [
-              DAH.create_low_pc_from_symbol callee;
-              DAH.create_entry_pc_from_symbol callee;
-            ])
+            ~attribute_values:[
+              DAH.create_declaration ();
+              (* We use the linkage name rather than the actual symbol address
+                 [of the target function] because dsymutil helpfully
+                 replaces such symbol references, when they refer to other
+                 compilation units, with zeros. *)
+              DAH.create_linkage_name linkage_name;
+            ]
             ()
         in
         let die_symbol =
@@ -423,8 +420,9 @@ let dwarf state ~scope_proto_dies (fundecl : L.fundecl)
       end
   in
   let add_external_call ~stack_offset ~callee ~args ~call_labels insn =
+    let linkage_name = Asm_symbol.linkage_name callee in
     add_call_site state ~stack_offset ~is_tail:false ~args ~call_labels insn
-      (call_target_for_direct_callee state (External callee))
+      (call_target_for_direct_callee state (External (callee, linkage_name)))
   in
   let rec traverse_insns (insn : L.instruction) ~stack_offset =
     match insn.desc with

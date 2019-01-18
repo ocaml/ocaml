@@ -28,6 +28,18 @@ let for_fundecl state (result : Debug_passes.result) =
     result.external_calls_generated_during_emit
   in
   let symbol = Asm_symbol.create fundecl.fun_name in
+  (* Our "linkage names" in DWARF are in fact normal OCaml qualified paths.
+     This is done, instead of using the actual symbol names, because there
+     appears to be a presumption in GDB that demangled names can be deduced
+     from mangled names.  This is not the case, reliably, using the current
+     OCaml mangling scheme.  Since fully-qualified name should be unique across
+     a whole program anyway it doesn't seem that there is any real downside
+     to using such names as the linkage names. *)
+  let linkage_name =
+    Linkage_name.create (
+      Debuginfo.Function.name_with_module_path fundecl.fun_dbg)
+  in
+(*
   let linkage_name =
     Linkage_name.create (Backend_sym.to_string fundecl.fun_name)
   in
@@ -42,6 +54,7 @@ let for_fundecl state (result : Debug_passes.result) =
       Linkage_name.print linkage_name
       Linkage_name.print linkage_name_from_fun_dbg
   end;
+*)
   let start_of_function = DAH.create_low_pc_from_symbol symbol in
   let end_of_function =
     DAH.create_high_pc ~low_pc:symbol
@@ -60,6 +73,7 @@ let for_fundecl state (result : Debug_passes.result) =
         end_of_function;
         DAH.create_entry_pc_from_symbol symbol;
         DAH.create_abstract_origin ~die_symbol:abstract_instance_die_symbol;
+        DAH.create_linkage_name linkage_name;
       ]
       ()
   in

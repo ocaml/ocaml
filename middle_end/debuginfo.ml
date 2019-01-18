@@ -247,6 +247,9 @@ module Function = struct
   let module_path t = t.module_path
   let dwarf_die_present t = t.dwarf_die_present
 
+  let name_with_module_path t =
+    Format.asprintf "%s.%s" (Path.name t.module_path) t.human_name
+
   let name t =
 (*
     match t.module_path with
