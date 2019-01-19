@@ -1,235 +1,237 @@
 addlabels.cmo : \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmi \
-    ../parsing/longident.cmi \
-    ../parsing/location.cmi \
-    ../parsing/asttypes.cmi
+    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../unprefixed_compilerlibs/parse.cmo \
+    ../unprefixed_compilerlibs/longident.cmo \
+    ../unprefixed_compilerlibs/location.cmo \
+    ../unprefixed_compilerlibs/asttypes.cmi
 addlabels.cmx : \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmx \
-    ../parsing/longident.cmx \
-    ../parsing/location.cmx \
-    ../parsing/asttypes.cmi
+    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../unprefixed_compilerlibs/parse.cmx \
+    ../unprefixed_compilerlibs/longident.cmx \
+    ../unprefixed_compilerlibs/location.cmx \
+    ../unprefixed_compilerlibs/asttypes.cmi
 caml_tex.cmo : \
-    ../toplevel/toploop.cmi \
-    ../parsing/syntaxerr.cmi \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmi \
-    ../utils/misc.cmi \
-    ../parsing/location.cmi \
-    ../parsing/lexer.cmi \
-    ../driver/compmisc.cmi \
-    ../driver/compenv.cmi \
-    ../utils/clflags.cmi \
-    ../parsing/ast_iterator.cmi \
-    ../parsing/ast_helper.cmi
+    ../unprefixed_compilerlibs/toploop.cmo \
+    ../unprefixed_compilerlibs/syntaxerr.cmo \
+    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../unprefixed_compilerlibs/parse.cmo \
+    ../unprefixed_compilerlibs/misc.cmo \
+    ../unprefixed_compilerlibs/location.cmo \
+    ../unprefixed_compilerlibs/lexer.cmo \
+    ../unprefixed_compilerlibs/compmisc.cmo \
+    ../unprefixed_compilerlibs/compenv.cmo \
+    ../unprefixed_compilerlibs/clflags.cmo \
+    ../unprefixed_compilerlibs/ast_iterator.cmo \
+    ../unprefixed_compilerlibs/ast_helper.cmo
 caml_tex.cmx : \
-    ../toplevel/toploop.cmx \
-    ../parsing/syntaxerr.cmx \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmx \
-    ../utils/misc.cmx \
-    ../parsing/location.cmx \
-    ../parsing/lexer.cmx \
-    ../driver/compmisc.cmx \
-    ../driver/compenv.cmx \
-    ../utils/clflags.cmx \
-    ../parsing/ast_iterator.cmx \
-    ../parsing/ast_helper.cmx
+    ../unprefixed_compilerlibs/toploop.cmx \
+    ../unprefixed_compilerlibs/syntaxerr.cmx \
+    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../unprefixed_compilerlibs/parse.cmx \
+    ../unprefixed_compilerlibs/misc.cmx \
+    ../unprefixed_compilerlibs/location.cmx \
+    ../unprefixed_compilerlibs/lexer.cmx \
+    ../unprefixed_compilerlibs/compmisc.cmx \
+    ../unprefixed_compilerlibs/compenv.cmx \
+    ../unprefixed_compilerlibs/clflags.cmx \
+    ../unprefixed_compilerlibs/ast_iterator.cmx \
+    ../unprefixed_compilerlibs/ast_helper.cmx
 cmpbyt.cmo : \
-    ../bytecomp/bytesections.cmi
+    ../unprefixed_compilerlibs/bytesections.cmo
 cmpbyt.cmx : \
-    ../bytecomp/bytesections.cmx
+    ../unprefixed_compilerlibs/bytesections.cmx
 cmt2annot.cmo : \
-    ../typing/untypeast.cmi \
-    ../typing/types.cmi \
-    ../typing/typedtree.cmi \
-    ../typing/tast_mapper.cmi \
-    ../typing/stypes.cmi \
-    ../parsing/pprintast.cmi \
-    ../typing/path.cmi \
-    ../typing/oprint.cmi \
-    ../parsing/location.cmi \
-    ../typing/ident.cmi \
-    ../typing/envaux.cmi \
-    ../typing/env.cmi \
-    ../utils/config.cmi \
-    ../typing/cmt_format.cmi \
-    ../parsing/asttypes.cmi \
-    ../typing/annot.cmi
+    ../unprefixed_compilerlibs/untypeast.cmo \
+    ../unprefixed_compilerlibs/types.cmo \
+    ../unprefixed_compilerlibs/typedtree.cmo \
+    ../unprefixed_compilerlibs/tast_mapper.cmo \
+    ../unprefixed_compilerlibs/stypes.cmo \
+    ../unprefixed_compilerlibs/pprintast.cmo \
+    ../unprefixed_compilerlibs/path.cmo \
+    ../unprefixed_compilerlibs/oprint.cmo \
+    ../unprefixed_compilerlibs/location.cmo \
+    ../unprefixed_compilerlibs/ident.cmo \
+    ../unprefixed_compilerlibs/envaux.cmo \
+    ../unprefixed_compilerlibs/env.cmo \
+    ../unprefixed_compilerlibs/config.cmo \
+    ../unprefixed_compilerlibs/cmt_format.cmo \
+    ../unprefixed_compilerlibs/asttypes.cmi \
+    ../unprefixed_compilerlibs/annot.cmi
 cmt2annot.cmx : \
-    ../typing/untypeast.cmx \
-    ../typing/types.cmx \
-    ../typing/typedtree.cmx \
-    ../typing/tast_mapper.cmx \
-    ../typing/stypes.cmx \
-    ../parsing/pprintast.cmx \
-    ../typing/path.cmx \
-    ../typing/oprint.cmx \
-    ../parsing/location.cmx \
-    ../typing/ident.cmx \
-    ../typing/envaux.cmx \
-    ../typing/env.cmx \
-    ../utils/config.cmx \
-    ../typing/cmt_format.cmx \
-    ../parsing/asttypes.cmi \
-    ../typing/annot.cmi
+    ../unprefixed_compilerlibs/untypeast.cmx \
+    ../unprefixed_compilerlibs/types.cmx \
+    ../unprefixed_compilerlibs/typedtree.cmx \
+    ../unprefixed_compilerlibs/tast_mapper.cmx \
+    ../unprefixed_compilerlibs/stypes.cmx \
+    ../unprefixed_compilerlibs/pprintast.cmx \
+    ../unprefixed_compilerlibs/path.cmx \
+    ../unprefixed_compilerlibs/oprint.cmx \
+    ../unprefixed_compilerlibs/location.cmx \
+    ../unprefixed_compilerlibs/ident.cmx \
+    ../unprefixed_compilerlibs/envaux.cmx \
+    ../unprefixed_compilerlibs/env.cmx \
+    ../unprefixed_compilerlibs/config.cmx \
+    ../unprefixed_compilerlibs/cmt_format.cmx \
+    ../unprefixed_compilerlibs/asttypes.cmi \
+    ../unprefixed_compilerlibs/annot.cmi
 cvt_emit.cmo :
 cvt_emit.cmx :
 dumpobj.cmo : \
-    ../bytecomp/symtable.cmi \
+    ../unprefixed_compilerlibs/symtable.cmo \
     opnames.cmo \
-    ../bytecomp/opcodes.cmo \
-    ../parsing/location.cmi \
-    ../bytecomp/lambda.cmi \
-    ../bytecomp/instruct.cmi \
-    ../typing/ident.cmi \
-    ../utils/config.cmi \
-    ../bytecomp/cmo_format.cmi \
-    ../bytecomp/bytesections.cmi \
-    ../parsing/asttypes.cmi
+    ../unprefixed_compilerlibs/opcodes.cmo \
+    ../unprefixed_compilerlibs/location.cmo \
+    ../unprefixed_compilerlibs/lambda.cmo \
+    ../unprefixed_compilerlibs/instruct.cmo \
+    ../unprefixed_compilerlibs/ident.cmo \
+    ../unprefixed_compilerlibs/config.cmo \
+    ../unprefixed_compilerlibs/cmo_format.cmi \
+    ../unprefixed_compilerlibs/bytesections.cmo \
+    ../unprefixed_compilerlibs/asttypes.cmi
 dumpobj.cmx : \
-    ../bytecomp/symtable.cmx \
+    ../unprefixed_compilerlibs/symtable.cmx \
     opnames.cmx \
-    ../bytecomp/opcodes.cmx \
-    ../parsing/location.cmx \
-    ../bytecomp/lambda.cmx \
-    ../bytecomp/instruct.cmx \
-    ../typing/ident.cmx \
-    ../utils/config.cmx \
-    ../bytecomp/cmo_format.cmi \
-    ../bytecomp/bytesections.cmx \
-    ../parsing/asttypes.cmi
+    ../unprefixed_compilerlibs/opcodes.cmx \
+    ../unprefixed_compilerlibs/location.cmx \
+    ../unprefixed_compilerlibs/lambda.cmx \
+    ../unprefixed_compilerlibs/instruct.cmx \
+    ../unprefixed_compilerlibs/ident.cmx \
+    ../unprefixed_compilerlibs/config.cmx \
+    ../unprefixed_compilerlibs/cmo_format.cmi \
+    ../unprefixed_compilerlibs/bytesections.cmx \
+    ../unprefixed_compilerlibs/asttypes.cmi
 eqparsetree.cmo : \
-    ../parsing/parsetree.cmi \
-    ../parsing/longident.cmi \
-    ../parsing/location.cmi \
-    ../parsing/asttypes.cmi
+    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../unprefixed_compilerlibs/longident.cmo \
+    ../unprefixed_compilerlibs/location.cmo \
+    ../unprefixed_compilerlibs/asttypes.cmi
 eqparsetree.cmx : \
-    ../parsing/parsetree.cmi \
-    ../parsing/longident.cmx \
-    ../parsing/location.cmx \
-    ../parsing/asttypes.cmi
+    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../unprefixed_compilerlibs/longident.cmx \
+    ../unprefixed_compilerlibs/location.cmx \
+    ../unprefixed_compilerlibs/asttypes.cmi
+gen_prefix.cmo :
+gen_prefix.cmx :
 lintapidiff.cmo : \
-    ../typing/printtyp.cmi \
-    ../driver/pparse.cmi \
-    ../typing/path.cmi \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmi \
-    ../utils/misc.cmi \
-    ../parsing/location.cmi \
-    ../typing/ident.cmi
+    ../unprefixed_compilerlibs/printtyp.cmo \
+    ../unprefixed_compilerlibs/pparse.cmo \
+    ../unprefixed_compilerlibs/path.cmo \
+    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../unprefixed_compilerlibs/parse.cmo \
+    ../unprefixed_compilerlibs/misc.cmo \
+    ../unprefixed_compilerlibs/location.cmo \
+    ../unprefixed_compilerlibs/ident.cmo
 lintapidiff.cmx : \
-    ../typing/printtyp.cmx \
-    ../driver/pparse.cmx \
-    ../typing/path.cmx \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmx \
-    ../utils/misc.cmx \
-    ../parsing/location.cmx \
-    ../typing/ident.cmx
+    ../unprefixed_compilerlibs/printtyp.cmx \
+    ../unprefixed_compilerlibs/pparse.cmx \
+    ../unprefixed_compilerlibs/path.cmx \
+    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../unprefixed_compilerlibs/parse.cmx \
+    ../unprefixed_compilerlibs/misc.cmx \
+    ../unprefixed_compilerlibs/location.cmx \
+    ../unprefixed_compilerlibs/ident.cmx
 make_opcodes.cmo :
 make_opcodes.cmx :
 objinfo.cmo : \
-    ../bytecomp/symtable.cmi \
-    ../middle_end/base_types/symbol.cmi \
-    ../asmcomp/printclambda.cmi \
-    ../utils/misc.cmi \
-    ../middle_end/base_types/linkage_name.cmi \
-    ../typing/ident.cmi \
-    ../asmcomp/export_info.cmi \
-    ../utils/config.cmi \
-    ../middle_end/base_types/compilation_unit.cmi \
-    ../asmcomp/cmx_format.cmi \
-    ../typing/cmt_format.cmi \
-    ../bytecomp/cmo_format.cmi \
-    ../typing/cmi_format.cmi \
-    ../bytecomp/bytesections.cmi
+    ../unprefixed_compilerlibs/symtable.cmo \
+    ../unprefixed_compilerlibs/symbol.cmo \
+    ../unprefixed_compilerlibs/printclambda.cmo \
+    ../unprefixed_compilerlibs/misc.cmo \
+    ../unprefixed_compilerlibs/linkage_name.cmo \
+    ../unprefixed_compilerlibs/ident.cmo \
+    ../unprefixed_compilerlibs/export_info.cmo \
+    ../unprefixed_compilerlibs/config.cmo \
+    ../unprefixed_compilerlibs/compilation_unit.cmo \
+    ../unprefixed_compilerlibs/cmx_format.cmi \
+    ../unprefixed_compilerlibs/cmt_format.cmo \
+    ../unprefixed_compilerlibs/cmo_format.cmi \
+    ../unprefixed_compilerlibs/cmi_format.cmo \
+    ../unprefixed_compilerlibs/bytesections.cmo
 objinfo.cmx : \
-    ../bytecomp/symtable.cmx \
-    ../middle_end/base_types/symbol.cmx \
-    ../asmcomp/printclambda.cmx \
-    ../utils/misc.cmx \
-    ../middle_end/base_types/linkage_name.cmx \
-    ../typing/ident.cmx \
-    ../asmcomp/export_info.cmx \
-    ../utils/config.cmx \
-    ../middle_end/base_types/compilation_unit.cmx \
-    ../asmcomp/cmx_format.cmi \
-    ../typing/cmt_format.cmx \
-    ../bytecomp/cmo_format.cmi \
-    ../typing/cmi_format.cmx \
-    ../bytecomp/bytesections.cmx
+    ../unprefixed_compilerlibs/symtable.cmx \
+    ../unprefixed_compilerlibs/symbol.cmx \
+    ../unprefixed_compilerlibs/printclambda.cmx \
+    ../unprefixed_compilerlibs/misc.cmx \
+    ../unprefixed_compilerlibs/linkage_name.cmx \
+    ../unprefixed_compilerlibs/ident.cmx \
+    ../unprefixed_compilerlibs/export_info.cmx \
+    ../unprefixed_compilerlibs/config.cmx \
+    ../unprefixed_compilerlibs/compilation_unit.cmx \
+    ../unprefixed_compilerlibs/cmx_format.cmi \
+    ../unprefixed_compilerlibs/cmt_format.cmx \
+    ../unprefixed_compilerlibs/cmo_format.cmi \
+    ../unprefixed_compilerlibs/cmi_format.cmx \
+    ../unprefixed_compilerlibs/bytesections.cmx
 ocaml299to3.cmo :
 ocaml299to3.cmx :
 ocamlcp.cmo : \
-    ../driver/main_args.cmi
+    ../unprefixed_compilerlibs/main_args.cmo
 ocamlcp.cmx : \
-    ../driver/main_args.cmx
+    ../unprefixed_compilerlibs/main_args.cmx
 ocamldep.cmo : \
-    ../driver/makedepend.cmi
+    ../unprefixed_compilerlibs/makedepend.cmo
 ocamldep.cmx : \
-    ../driver/makedepend.cmx
+    ../unprefixed_compilerlibs/makedepend.cmx
 ocamlmklib.cmo : \
     ocamlmklibconfig.cmo \
-    ../utils/misc.cmi \
-    ../utils/config.cmi
+    ../unprefixed_compilerlibs/misc.cmo \
+    ../unprefixed_compilerlibs/config.cmo
 ocamlmklib.cmx : \
     ocamlmklibconfig.cmx \
-    ../utils/misc.cmx \
-    ../utils/config.cmx
+    ../unprefixed_compilerlibs/misc.cmx \
+    ../unprefixed_compilerlibs/config.cmx
 ocamlmklibconfig.cmo :
 ocamlmklibconfig.cmx :
 ocamlmktop.cmo : \
-    ../utils/ccomp.cmi
+    ../unprefixed_compilerlibs/ccomp.cmo
 ocamlmktop.cmx : \
-    ../utils/ccomp.cmx
+    ../unprefixed_compilerlibs/ccomp.cmx
 ocamloptp.cmo : \
-    ../driver/main_args.cmi
+    ../unprefixed_compilerlibs/main_args.cmo
 ocamloptp.cmx : \
-    ../driver/main_args.cmx
+    ../unprefixed_compilerlibs/main_args.cmx
 ocamlprof.cmo : \
-    ../utils/warnings.cmi \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmi \
-    ../parsing/location.cmi
+    ../unprefixed_compilerlibs/warnings.cmo \
+    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../unprefixed_compilerlibs/parse.cmo \
+    ../unprefixed_compilerlibs/location.cmo
 ocamlprof.cmx : \
-    ../utils/warnings.cmx \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmx \
-    ../parsing/location.cmx
+    ../unprefixed_compilerlibs/warnings.cmx \
+    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../unprefixed_compilerlibs/parse.cmx \
+    ../unprefixed_compilerlibs/location.cmx
 opnames.cmo :
 opnames.cmx :
 primreq.cmo : \
-    ../utils/misc.cmi \
-    ../utils/config.cmi \
-    ../bytecomp/cmo_format.cmi
+    ../unprefixed_compilerlibs/misc.cmo \
+    ../unprefixed_compilerlibs/config.cmo \
+    ../unprefixed_compilerlibs/cmo_format.cmi
 primreq.cmx : \
-    ../utils/misc.cmx \
-    ../utils/config.cmx \
-    ../bytecomp/cmo_format.cmi
+    ../unprefixed_compilerlibs/misc.cmx \
+    ../unprefixed_compilerlibs/config.cmx \
+    ../unprefixed_compilerlibs/cmo_format.cmi
 profiling.cmo : \
     profiling.cmi
 profiling.cmx : \
     profiling.cmi
 profiling.cmi :
 read_cmt.cmo : \
-    ../parsing/location.cmi \
-    ../driver/compmisc.cmi \
-    ../typing/cmt_format.cmi \
+    ../unprefixed_compilerlibs/location.cmo \
+    ../unprefixed_compilerlibs/compmisc.cmo \
+    ../unprefixed_compilerlibs/cmt_format.cmo \
     cmt2annot.cmo \
-    ../utils/clflags.cmi
+    ../unprefixed_compilerlibs/clflags.cmo
 read_cmt.cmx : \
-    ../parsing/location.cmx \
-    ../driver/compmisc.cmx \
-    ../typing/cmt_format.cmx \
+    ../unprefixed_compilerlibs/location.cmx \
+    ../unprefixed_compilerlibs/compmisc.cmx \
+    ../unprefixed_compilerlibs/cmt_format.cmx \
     cmt2annot.cmx \
-    ../utils/clflags.cmx
+    ../unprefixed_compilerlibs/clflags.cmx
 scrapelabels.cmo :
 scrapelabels.cmx :
 stripdebug.cmo : \
-    ../utils/misc.cmi \
-    ../bytecomp/bytesections.cmi
+    ../unprefixed_compilerlibs/misc.cmo \
+    ../unprefixed_compilerlibs/bytesections.cmo
 stripdebug.cmx : \
-    ../utils/misc.cmx \
-    ../bytecomp/bytesections.cmx
+    ../unprefixed_compilerlibs/misc.cmx \
+    ../unprefixed_compilerlibs/bytesections.cmx

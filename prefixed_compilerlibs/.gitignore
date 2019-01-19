@@ -1,5 +1,0 @@
-ocaml_common.ml
-ocaml_bytecomp.ml
-ocaml_optcomp.ml
-ocaml_toplevel.ml
-ocaml_*__*.ml*
