@@ -931,7 +931,7 @@ unprefixed_sources:
 	$(MAKE) force_unprefixed_sources
 	touch unprefixed_sources
 
-beforedepend:: unprefixed_sources
+beforedepend:: force_unprefixed_sources
 
 partialclean::
 	rm -f $(COMPLIBDIR_U)/*.ml*
@@ -1244,6 +1244,8 @@ parsing/parser.ml: boot/menhir/parser.ml parsing/parser.mly \
 parsing/parser.mli: boot/menhir/parser.mli
 	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
 
+$(COMPLIBDIR)/ocaml_common__parser.mly: parsing/parser.mly
+	cp $< $@
 
 partialclean:: partialclean-menhir
 

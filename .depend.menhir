@@ -1,11 +1,28 @@
-parsing/parser.cmo : parsing/syntaxerr.cmi parsing/parsetree.cmi \
-    parsing/longident.cmi parsing/location.cmi parsing/docstrings.cmi \
-    utils/clflags.cmi parsing/asttypes.cmi parsing/ast_helper.cmi \
-    parsing/parser.cmi
-parsing/parser.cmx : parsing/syntaxerr.cmx parsing/parsetree.cmi \
-    parsing/longident.cmx parsing/location.cmx parsing/docstrings.cmx \
-    utils/clflags.cmx parsing/asttypes.cmi parsing/ast_helper.cmx \
-    parsing/parser.cmi
-parsing/parser.cmi : parsing/parsetree.cmi parsing/location.cmi \
-    parsing/docstrings.cmi
-parsing/parser.ml parsing/parser.mli: parsing/ast_helper.cmi parsing/asttypes.cmi utils/clflags.cmi parsing/docstrings.cmi parsing/location.cmi parsing/longident.cmi parsing/parsetree.cmi parsing/syntaxerr.cmi
+compilerlibs/ocaml_common__parser.cmo : \
+    compilerlibs/ocaml_common__syntaxerr.cmi \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__docstrings.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
+    compilerlibs/ocaml_common__asttypes.cmi \
+    compilerlibs/ocaml_common__ast_helper.cmi \
+    compilerlibs/ocaml_common.cmo \
+    compilerlibs/ocaml_common__parser.cmi
+compilerlibs/ocaml_common__parser.cmx : \
+    compilerlibs/ocaml_common__syntaxerr.cmx \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__longident.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__docstrings.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
+    compilerlibs/ocaml_common__asttypes.cmi \
+    compilerlibs/ocaml_common__ast_helper.cmx \
+    compilerlibs/ocaml_common.cmx \
+    compilerlibs/ocaml_common__parser.cmi
+compilerlibs/ocaml_common__parser.cmi : \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__docstrings.cmi \
+    compilerlibs/ocaml_common.cmo
+compilerlibs/ocaml_common__parser.ml compilerlibs/ocaml_common__parser.mli: compilerlibs/ocaml_common.cmo compilerlibs/ocaml_common__ast_helper.cmi compilerlibs/ocaml_common__asttypes.cmi compilerlibs/ocaml_common__clflags.cmi compilerlibs/ocaml_common__docstrings.cmi compilerlibs/ocaml_common__location.cmi compilerlibs/ocaml_common__longident.cmi compilerlibs/ocaml_common__parsetree.cmi compilerlibs/ocaml_common__syntaxerr.cmi
