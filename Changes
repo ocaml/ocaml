@@ -195,6 +195,10 @@ Working version
 
 ### Other libraries:
 
+- GPR#2222: Set default status in waitpid when pid is zero. Otherwise,
+  status value is undefined.
+  (Romain Beauxis, review by Stephen Dolan)
+
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
   symlinks.
   (Christopher Zimmermann, review by Xavier Leroy, Damien Doligez, David
