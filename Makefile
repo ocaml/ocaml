@@ -849,7 +849,7 @@ $(COMPLIBDIR)/%.cmi: $(COMPLIBDIR)/%.mli
 $(COMPLIBDIR)/%.cmo: $(COMPLIBDIR)/%.ml
 	$(CAMLC) $(P_COMPFLAGS) -c $<
 
-$(COMPLIBDIR)/%.cmx: $(COMPLIBDIR)/%.ml
+$(COMPLIBDIR)/%.cmx: $(COMPLIBDIR)/%.ml ocamlopt
 	$(CAMLOPT) $(P_COMPFLAGS) -c $<
 
 define cp
@@ -882,7 +882,7 @@ beforedepend:: $$(COMPLIBDIR)/ocaml_$(1).ml
 $$(COMPLIBDIR)/ocaml_$(1).cmo: $$(COMPLIBDIR)/ocaml_$(1).ml
 	$$(CAMLC) $$(COMPFLAGS) -no-alias-deps -w -49 -c $$<
 
-$$(COMPLIBDIR)/ocaml_$(1).cmx: $$(COMPLIBDIR)/ocaml_$(1).ml
+$$(COMPLIBDIR)/ocaml_$(1).cmx: $$(COMPLIBDIR)/ocaml_$(1).ml ocamlopt
 	$$(CAMLOPT) $$(COMPFLAGS) -no-alias-deps -w -49 -c $$<
 
 $$(COMPLIBDIR)/ocaml$(1).cma: $$(COMPLIBDIR)/ocaml_$(1).cmo \
@@ -1065,8 +1065,6 @@ ocamlopt.opt: $(COMPLIBDIR_U)/ocamlcommon.cmxa \
 
 partialclean::
 	rm -f ocamlopt.opt
-
-$(COMMON_CMX) $(BYTECOMP_CMX) $(OPTCOMP_CMX): ocamlopt
 
 # The predefined exceptions and primitives
 
@@ -1332,21 +1330,34 @@ lintapidiff:
 # compiler for "make world" and the list of dependencies for
 # asmcomp/export_info.cmo is long).
 
-compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END_CMO)
-	$(CAMLC) -a -o $@ $^
-compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END_CMX)
-	$(CAMLOPT) -a -o $@ $^
+MIDDLE_END_CMO:=$(notdir $(filter-out $(MLI_ONLY:=.cmo),$(MIDDLE_END:=.cmo)))
+MIDDLE_END_CMX:=$(notdir $(filter-out $(MLI_ONLY:=.cmx),$(MIDDLE_END:=.cmx)))
+
+$(COMPLIBDIR_U)/ocamlmiddleend.cma: unprefixed_sources \
+    $(COMPLIBDIR)/ocaml_optcomp.cmo \
+    $(addprefix $(COMPLIBDIR)/ocaml_optcomp__,$(MIDDLE_END_CMO)) \
+    $(addprefix $(COMPLIBDIR_U)/,$(MIDDLE_END_CMO))
+	$(CAMLC) -a -linkall -o $@ $(filter %.cmo, $^)
+
+$(COMPLIBDIR_U)/ocamlmiddleend.cmxa: unprefixed_sources \
+    $(COMPLIBDIR)/ocaml_optcomp.cmx \
+    $(addprefix $(COMPLIBDIR)/ocaml_optcomp__,$(MIDDLE_END_CMX)) \
+    $(addprefix $(COMPLIBDIR_U)/,$(MIDDLE_END_CMX))
+	$(CAMLOPT) -a -linkall -o $@ $(filter %.cmx, $^)
+
 partialclean::
-	rm -f compilerlibs/ocamlmiddleend.cma \
-	      compilerlibs/ocamlmiddleend.cmxa \
-	      compilerlibs/ocamlmiddleend.$(A)
+	rm -f $(COMPLIBDIR_U)/ocamlmiddleend.cma \
+	      $(COMPLIBDIR_U)/ocamlmiddleend.cmxa \
+	      $(COMPLIBDIR_U)/ocamlmiddleend.$(A)
 
 # Tools
 
 .PHONY: ocamltools
-ocamltools: ocamlc ocamllex asmcomp/cmx_format.cmi \
-            asmcomp/printclambda.cmo compilerlibs/ocamlmiddleend.cma \
-            asmcomp/export_info.cmo
+ocamltools: ocamlc ocamllex \
+            $(COMPLIBDIR_U)/cmx_format.cmi \
+            $(COMPLIBDIR_U)/printclambda.cmo \
+            $(COMPLIBDIR_U)/ocamlmiddleend.cma \
+            $(COMPLIBDIR_U)/export_info.cmo
 	$(MAKE) -C tools all
 
 .PHONY: ocamltoolsopt
@@ -1354,9 +1365,11 @@ ocamltoolsopt: ocamlopt
 	$(MAKE) -C tools opt
 
 .PHONY: ocamltoolsopt.opt
-ocamltoolsopt.opt: ocamlc.opt ocamllex.opt asmcomp/cmx_format.cmi \
-                   asmcomp/printclambda.cmx compilerlibs/ocamlmiddleend.cmxa \
-                   asmcomp/export_info.cmx
+ocamltoolsopt.opt: ocamlc.opt ocamllex.opt \
+                   $(COMPLIBDIR_U)/cmx_format.cmi \
+                   $(COMPLIBDIR_U)/printclambda.cmx \
+                   $(COMPLIBDIR_U)/ocamlmiddleend.cmxa \
+                   $(COMPLIBDIR_U)/export_info.cmx
 	$(MAKE) -C tools opt.opt
 
 partialclean::

@@ -346,8 +346,11 @@ objinfo_helper$(EXE): objinfo_helper.c $(ROOTDIR)/runtime/caml/s.h
 OBJINFO=$(COMPLIBDIR_U)/ocamlcommon.cma \
         $(COMPLIBDIR_U)/ocamlbytecomp.cma \
         $(COMPLIBDIR_U)/ocamlmiddleend.cma \
+        $(COMPLIBDIR)/ocaml_optcomp__backend_var.cmo \
         $(COMPLIBDIR_U)/backend_var.cmo \
+        $(COMPLIBDIR)/ocaml_optcomp__printclambda.cmo \
         $(COMPLIBDIR_U)/printclambda.cmo \
+        $(COMPLIBDIR)/ocaml_optcomp__export_info.cmo \
         $(COMPLIBDIR_U)/export_info.cmo \
         objinfo.cmo
 
@@ -407,7 +410,7 @@ install::
 	  "$(INSTALL_BINDIR)/"
 endif
 
-CAMLTEX= $(COMPLIBDIR_U)/ocamlcommon.cma \
+CAMLTEX=$(COMPLIBDIR_U)/ocamlcommon.cma \
 	$(COMPLIBDIR_U)/ocamlbytecomp.cma \
 	$(COMPLIBDIR_U)/ocamltoplevel.cma \
 	$(ROOTDIR)/otherlibs/str/str.cma \
