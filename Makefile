@@ -1355,8 +1355,12 @@ partialclean::
 .PHONY: ocamltools
 ocamltools: ocamlc ocamllex \
             $(COMPLIBDIR_U)/cmx_format.cmi \
+            $(COMPLIBDIR)/ocaml_optcomp__printclambda.cmo \
             $(COMPLIBDIR_U)/printclambda.cmo \
             $(COMPLIBDIR_U)/ocamlmiddleend.cma \
+            $(COMPLIBDIR)/ocaml_optcomp__backend_var.cmo \
+            $(COMPLIBDIR_U)/backend_var.cmo \
+            $(COMPLIBDIR)/ocaml_optcomp__export_info.cmo \
             $(COMPLIBDIR_U)/export_info.cmo
 	$(MAKE) -C tools all
 
@@ -1367,8 +1371,12 @@ ocamltoolsopt: ocamlopt
 .PHONY: ocamltoolsopt.opt
 ocamltoolsopt.opt: ocamlc.opt ocamllex.opt \
                    $(COMPLIBDIR_U)/cmx_format.cmi \
+                   $(COMPLIBDIR)/ocaml_optcomp__printclambda.cmx \
                    $(COMPLIBDIR_U)/printclambda.cmx \
                    $(COMPLIBDIR_U)/ocamlmiddleend.cmxa \
+                   $(COMPLIBDIR)/ocaml_optcomp__backend_var.cmx \
+                   $(COMPLIBDIR_U)/backend_var.cmx \
+                   $(COMPLIBDIR)/ocaml_optcomp__export_info.cmx \
                    $(COMPLIBDIR_U)/export_info.cmx
 	$(MAKE) -C tools opt.opt
 

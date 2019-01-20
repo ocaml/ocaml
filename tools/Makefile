@@ -119,7 +119,6 @@ CSLPROF_IMPORTS:=config.cmo build_path_prefix_map.cmo misc.cmo \
   pprintast.cmo \
   lexer.cmo parse.cmo
 CSLPROF_IMPORTS:=\
-  ocaml_common.cmo \
   $(addprefix $(P), $(CSLPROF_IMPORTS)) \
   $(CSLPROF_IMPORTS)
 
@@ -129,7 +128,6 @@ ocamlcp_cmos := config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
                warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
                clflags.cmo main_args.cmo
 ocamlcp_cmos := \
-  ocaml_common.cmo \
   $(addprefix $(P), $(ocamlcp_cmos)) \
   $(ocamlcp_cmos)
 
@@ -158,7 +156,6 @@ installopt::
 OCAMLMKLIB=ocamlmklibconfig.cmo ocamlmklib.cmo
 OCAMLMKLIB_IMPORTS:=config.cmo build_path_prefix_map.cmo misc.cmo
 OCAMLMKLIB_IMPORTS:=\
-  ocaml_common.cmo \
   $(addprefix $(P), $(OCAMLMKLIB_IMPORTS)) \
   $(OCAMLMKLIB_IMPORTS)
 
@@ -184,7 +181,6 @@ OCAMLMKTOP=ocamlmktop.cmo
 OCAMLMKTOP_IMPORTS:=config.cmo build_path_prefix_map.cmo misc.cmo \
        identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo ccomp.cmo
 OCAMLMKTOP_IMPORTS:=\
-  ocaml_common.cmo \
   $(addprefix $(P), $(OCAMLMKTOP_IMPORTS)) \
   $(OCAMLMKTOP_IMPORTS)
 
