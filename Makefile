@@ -128,7 +128,7 @@ COMP=bytecomp/cmo_format bytecomp/lambda bytecomp/printlambda \
   bytecomp/translprim bytecomp/translcore \
   bytecomp/translclass bytecomp/translmod \
   bytecomp/simplif bytecomp/runtimedef \
-  bytecomp/meta bytecomp/opcodes \
+  bytecomp/instruct bytecomp/meta bytecomp/opcodes \
   bytecomp/bytesections bytecomp/dll \
   bytecomp/symtable \
   driver/pparse driver/main_args \
@@ -141,7 +141,7 @@ COMP=bytecomp/cmo_format bytecomp/lambda bytecomp/printlambda \
 
 COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
 
-BYTECOMP=bytecomp/instruct bytecomp/bytegen \
+BYTECOMP=bytecomp/bytegen \
   bytecomp/printinstr bytecomp/emitcode \
   bytecomp/bytelink bytecomp/bytelibrarian bytecomp/bytepackager \
   driver/errors driver/compile

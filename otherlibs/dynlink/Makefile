@@ -27,7 +27,9 @@ CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 
-INCLUDES=$(addprefix -I $(ROOTDIR)/,utils typing bytecomp asmcomp)
+COMPLIBDIR=$(ROOTDIR)/compilerlibs
+COMPLIBDIR_U=$(ROOTDIR)/unprefixed_compilerlibs
+INCLUDES=-I $(COMPLIBDIR) -I $(COMPLIBDIR_U)
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -bin-annot -g \
    -I $(ROOTDIR)/stdlib -warn-error A \
    -safe-string -strict-sequence -strict-formats
@@ -42,24 +44,33 @@ OBJS=dynlink_compilerlibs.cmo dynlink_types.cmo \
 NATOBJS=dynlink_types.cmx dynlink_platform_intf.cmx \
   dynlink_common.cmx dynlink.cmx
 
-COMPILEROBJS = $(addprefix $(ROOTDIR)/,\
-  utils/config.cmo utils/build_path_prefix_map.cmo utils/misc.cmo \
-  utils/identifiable.cmo utils/numbers.cmo utils/arg_helper.cmo \
-  utils/clflags.cmo utils/consistbl.cmo \
-  utils/terminfo.cmo utils/warnings.cmo \
-  parsing/location.cmo parsing/longident.cmo \
-  parsing/docstrings.cmo parsing/syntaxerr.cmo \
-  parsing/ast_helper.cmo parsing/ast_mapper.cmo parsing/ast_iterator.cmo \
-  parsing/attr_helper.cmo parsing/builtin_attributes.cmo \
-  typing/ident.cmo typing/path.cmo typing/primitive.cmo typing/types.cmo \
-  typing/btype.cmo typing/subst.cmo typing/predef.cmo \
-  typing/datarepr.cmo typing/cmi_format.cmo typing/env.cmo \
-  bytecomp/lambda.cmo bytecomp/instruct.cmo \
-  bytecomp/opcodes.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
-  bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo)
+COMPILEROBJS := \
+  config.cmo build_path_prefix_map.cmo misc.cmo \
+  identifiable.cmo numbers.cmo arg_helper.cmo \
+  clflags.cmo consistbl.cmo \
+  terminfo.cmo warnings.cmo \
+  location.cmo longident.cmo \
+  docstrings.cmo syntaxerr.cmo \
+  ast_helper.cmo ast_mapper.cmo ast_iterator.cmo \
+  attr_helper.cmo builtin_attributes.cmo \
+  ident.cmo path.cmo primitive.cmo types.cmo \
+  btype.cmo subst.cmo predef.cmo \
+  datarepr.cmo cmi_format.cmo env.cmo \
+  lambda.cmo instruct.cmo \
+  opcodes.cmo runtimedef.cmo bytesections.cmo \
+  dll.cmo meta.cmo symtable.cmo
 
-COMPILERINTFS = $(addprefix $(ROOTDIR)/,\
-  bytecomp/cmo_format.cmi)
+COMPILEROBJS := \
+  $(COMPLIBDIR)/ocaml_common.cmo \
+  $(addprefix $(COMPLIBDIR)/ocaml_common__, $(COMPILEROBJS)) \
+  $(addprefix $(COMPLIBDIR_U)/, $(COMPILEROBJS))
+
+COMPILERINTFS := \
+  cmo_format.cmi
+
+COMPILERINTFS := \
+  $(addprefix $(COMPLIBDIR)/ocaml_common__, $(COMPILERINTFS)) \
+  $(addprefix $(COMPLIBDIR_U)/, $(COMPILERINTFS))
 
 all: dynlink.cma extract_crc
 
