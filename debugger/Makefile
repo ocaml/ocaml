@@ -31,34 +31,41 @@ CAMLLEX=$(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 CAMLDEP=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
 DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
+COMPLIBDIR=$(ROOTDIR)/compilerlibs
+COMPLIBDIR_U=$(ROOTDIR)/unprefixed_compilerlibs
 
-DIRECTORIES=$(UNIXDIR) $(addprefix $(ROOTDIR)/,\
-  utils parsing typing bytecomp toplevel driver)
+DIRECTORIES=$(UNIXDIR) $(COMPLIBDIR) $(COMPLIBDIR_U)
 
 INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
-utils_modules := $(addprefix utils/,\
+utils_modules := \
   config build_path_prefix_map misc identifiable numbers arg_helper clflags \
-  consistbl warnings terminfo)
+  consistbl warnings terminfo
 
-parsing_modules := $(addprefix parsing/,\
+parsing_modules := \
   location longident docstrings syntaxerr ast_helper ast_mapper ast_iterator \
-  attr_helper builtin_attributes pprintast)
+  attr_helper builtin_attributes pprintast
 
-typing_modules := $(addprefix typing/,\
+typing_modules := \
   ident path types btype primitive typedtree subst predef datarepr \
-  cmi_format env oprint ctype printtyp mtype envaux)
+  cmi_format env oprint ctype printtyp mtype envaux
 
-bytecomp_modules := $(addprefix bytecomp/,\
-  runtimedef bytesections dll meta symtable opcodes)
+bytecomp_modules := \
+  runtimedef bytesections dll meta symtable opcodes
 
-other_compiler_modules := driver/compdynlink_types \
-  driver/compdynlink_platform_intf \
-  driver/compdynlink_common driver/compdynlink toplevel/genprintval
+other_compiler_modules := compdynlink_types \
+  compdynlink_platform_intf \
+  compdynlink_common compdynlink
 
-compiler_modules := $(addprefix $(ROOTDIR)/,\
+compiler_modules := \
   $(utils_modules) $(parsing_modules) $(typing_modules) \
-  $(bytecomp_modules) $(other_compiler_modules))
+  $(bytecomp_modules) $(other_compiler_modules)
+
+compiler_modules := \
+  $(addprefix $(COMPLIBDIR)/ocaml_common__, $(compiler_modules)) \
+  $(addprefix $(COMPLIBDIR_U)/, $(compiler_modules)) \
+  $(COMPLIBDIR)/ocaml_toplevel__genprintval \
+  $(COMPLIBDIR_U)/genprintval
 
 debugger_modules := \
   int64ops primitives unix_tools debugger_config parameters lexer \
