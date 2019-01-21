@@ -568,21 +568,12 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 endif
 	$(INSTALL_PROG) yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
 	$(INSTALL_DATA) \
-	   utils/*.cmi \
-	   parsing/*.cmi \
-	   typing/*.cmi \
-	   bytecomp/*.cmi \
-	   driver/*.cmi \
-	   toplevel/*.cmi \
+	   $(COMPLIBDIR)/*.cmi $(COMPLIBDIR_U)/*.cmi \
 	   "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	   utils/*.cmt utils/*.cmti utils/*.mli \
-	   parsing/*.cmt parsing/*.cmti parsing/*.mli \
-	   typing/*.cmt typing/*.cmti typing/*.mli \
-	   bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
-	   driver/*.cmt driver/*.cmti driver/*.mli \
-	   toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
+	   $(COMPLIBDIR)/*.cmt $(COMPLIBDIR)/*.cmti $(COMPLIBDIR)/*.mli \
+	   $(COMPLIBDIR_U)/*.cmt $(COMPLIBDIR_U)/*.cmti $(COMPLIBDIR_U)/*.mli \
 	   "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -590,26 +581,26 @@ endif
 	   $(COMPLIBDIR_U)/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	  $(COMPLIBDIR)/ocaml_common__*.cmi "$(INSTALL_OCAMLCOMMONDIR)"
+	  $(COMPLIBDIR)/ocaml_common*.cmi "$(INSTALL_OCAMLCOMMONDIR)"
 	$(INSTALL_DATA) \
-	  $(COMPLIBDIR)/ocaml_bytecomp__*.cmi "$(INSTALL_OCAMLBYTECOMPDIR)"
+	  $(COMPLIBDIR)/ocaml_bytecomp*.cmi "$(INSTALL_OCAMLBYTECOMPDIR)"
 	$(INSTALL_DATA) \
-	  $(COMPLIBDIR)/ocaml_optcomp__*.cmi "$(INSTALL_OCAMLTOPLEVELDIR)"
+	  $(COMPLIBDIR)/ocaml_toplevel*.cmi "$(INSTALL_OCAMLTOPLEVELDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	  $(COMPLIBDIR)/ocaml_common__*.cmt \
-	  $(COMPLIBDIR)/ocaml_common__*.cmti \
-	  $(COMPLIBDIR)/ocaml_common__*.mli \
+	  $(COMPLIBDIR)/ocaml_common*.cmt \
+	  $(COMPLIBDIR)/ocaml_common*.cmti \
+	  $(COMPLIBDIR)/ocaml_common*.mli \
 	  "$(INSTALL_OCAMLCOMMONDIR)"
 	$(INSTALL_DATA) \
-	  $(COMPLIBDIR)/ocaml_bytecomp__*.cmt \
-	  $(COMPLIBDIR)/ocaml_bytecomp__*.cmti \
-	  $(COMPLIBDIR)/ocaml_bytecomp__*.mli \
+	  $(COMPLIBDIR)/ocaml_bytecomp*.cmt \
+	  $(COMPLIBDIR)/ocaml_bytecomp*.cmti \
+	  $(COMPLIBDIR)/ocaml_bytecomp*.mli \
 	  "$(INSTALL_OCAMLBYTECOMPDIR)"
 	$(INSTALL_DATA) \
-	  $(COMPLIBDIR)/ocaml_toplevel__*.cmt \
-	  $(COMPLIBDIR)/ocaml_toplevel__*.cmti \
-	  $(COMPLIBDIR)/ocaml_toplevel__*.mli \
+	  $(COMPLIBDIR)/ocaml_toplevel*.cmt \
+	  $(COMPLIBDIR)/ocaml_toplevel*.cmti \
+	  $(COMPLIBDIR)/ocaml_toplevel*.mli \
 	  "$(INSTALL_OCAMLTOPLEVELDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -698,13 +689,13 @@ endif
 	    $(COMPLIBDIR_U)/ocamloptcomp.cma $(OPTSTART) \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	    $(COMPLIBDIR)/ocaml_optcomp__*.cmi \
+	    $(COMPLIBDIR)/ocaml_optcomp*.cmi \
 	    "$(INSTALL_OCAMLOPTCOMPDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	    $(COMPLIBDIR)/ocaml_optcomp__*.cmt \
-	    $(COMPLIBDIR)/ocaml_optcomp__*.cmti \
-	    $(COMPLIBDIR)/ocaml_optcomp__*.mli \
+	    $(COMPLIBDIR)/ocaml_optcomp*.cmt \
+	    $(COMPLIBDIR)/ocaml_optcomp*.cmti \
+	    $(COMPLIBDIR)/ocaml_optcomp*.mli \
 	    "$(INSTALL_OCAMLOPTCOMPDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -743,9 +734,9 @@ installoptopt:
 	   $(LN) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
 	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
 	$(INSTALL_DATA) \
-	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
-	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
-	   middle_end/base_types/*.cmx "$(INSTALL_COMPLIBDIR)"
+	   $(COMPLIBDIR)/*.cmx \
+	   $(COMPLIBDIR_U)/*.cmx \
+	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
            $(COMPLIBDIR_U)/ocamlcommon.cmxa $(COMPLIBDIR_U)/ocamlcommon.$(A) \
 	   $(COMPLIBDIR_U)/ocamlbytecomp.cmxa \
@@ -755,13 +746,13 @@ installoptopt:
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	   $(COMPLIBDIR)/ocaml_common__*.cmx \
+	   $(COMPLIBDIR)/ocaml_common*.cmx \
 	   "$(INSTALL_OCAMLCOMMONDIR)"
 	$(INSTALL_DATA) \
-	   $(COMPLIBDIR)/ocaml_bytecomp__*.cmx \
+	   $(COMPLIBDIR)/ocaml_bytecomp*.cmx \
 	   "$(INSTALL_OCAMLBYTECOMPDIR)"
 	$(INSTALL_DATA) \
-	   $(COMPLIBDIR)/ocaml_optcomp__*.cmx \
+	   $(COMPLIBDIR)/ocaml_optcomp*.cmx \
 	   "$(INSTALL_OCAMLOPTCOMPDIR)"
 	$(INSTALL_DATA) \
            $(COMPLIBDIR)/ocamlcommon.cmxa \
