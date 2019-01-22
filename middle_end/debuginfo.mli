@@ -22,6 +22,8 @@ module Code_range : sig
 
   val none : t
 
+  val is_none : t -> bool
+
   val file : t -> string
   val line : t -> int
   val char_start : t -> int

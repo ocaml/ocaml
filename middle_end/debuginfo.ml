@@ -44,6 +44,9 @@ module Code_range = struct
 
   let none = create ~file:"" ~line:0 ~char_start:0 ~char_end:0
 
+  let is_none t =
+    t == none
+
   let file t = t.file
   let line t = t.line
   let char_start t = t.char_start

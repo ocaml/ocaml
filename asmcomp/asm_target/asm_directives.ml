@@ -679,6 +679,15 @@ let reset () =
   temp_var_counter := 0
 
 let file ?file_num ~file_name () =
+  (* gas can silently emit corrupted line tables if a .file directive
+     contains a number but an empty filename. *)
+  let file_name =
+    match file_num with
+    | None -> file_name
+    | Some _file_num ->
+      if String.length file_name <= 0 then "none"
+      else file_name
+  in
   emit_non_masm (File { file_num = file_num; filename = file_name; })
 
 let initialize ~big_endian ~(emit : Directive.t -> unit) =

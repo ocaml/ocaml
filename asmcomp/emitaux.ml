@@ -315,6 +315,10 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
   end
 
 let default_file_emitter ~file_num ~file_name =
+  let file_name =
+    if String.length file_name <= 0 then "none"
+    else file_name
+  in
   emit_string "\t.file\t";
   emit_int file_num; emit_char '\t';
   emit_string_literal file_name; emit_char '\n'

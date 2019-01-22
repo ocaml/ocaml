@@ -227,14 +227,18 @@ let add_call_site state ~scope_proto_dies ~function_proto_die
       match Debuginfo.position dbg with
       | None -> []
       | Some code_range ->
-        (* These are DWARF-5 attributes, but should be fine in DWARF-4
-           output.  They are also needed for polymorphic function type
-           recovery. *)
-        let file_name = Debuginfo.Code_range.file code_range in
-        [ DAH.create_call_file (Emitaux.file_num_for ~file_name);
-          DAH.create_call_line (Debuginfo.Code_range.line code_range);
-          DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
-        ]
+        if not (Debuginfo.Code_range.is_none code_range) then begin
+          (* These are DWARF-5 attributes, but should be fine in DWARF-4
+             output.  They are also needed for polymorphic function type
+             recovery. *)
+          let file_name = Debuginfo.Code_range.file code_range in
+          [ DAH.create_call_file (Emitaux.file_num_for ~file_name);
+            DAH.create_call_line (Debuginfo.Code_range.line code_range);
+            DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
+          ]
+        end else begin
+          []
+        end
     in
     let call_site_die =
       let dwarf_5_only =
