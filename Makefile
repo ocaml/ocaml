@@ -662,23 +662,6 @@ $(eval $(call f,bytecomp,$(BYTECOMP)))
 $(eval $(call f,optcomp,$(OPTCOMP)))
 $(eval $(call f,toplevel,$(TOPLEVEL)))
 
-unprefixed_sources: tools/gen_prefix CompilerModules
-	$(CAMLRUN) $< $(filter-out $(MLI_ONLY), $(COMMON)) \
-	  -mli $(filter $(MLI_ONLY), $(COMMON)) -prefix ocaml_common \
-	  -unprefix $(COMPLIBDIR_U)
-	$(CAMLRUN) $< $(filter-out $(MLI_ONLY), $(BYTECOMP)) \
-	  -mli $(filter $(MLI_ONLY), $(BYTECOMP)) -prefix ocaml_bytecomp \
-	  -unprefix $(COMPLIBDIR_U)
-	$(CAMLRUN) $< $(filter-out $(MLI_ONLY), $(TOPLEVEL)) \
-	  -mli $(filter $(MLI_ONLY), $(TOPLEVEL)) -prefix ocaml_toplevel \
-	  -unprefix $(COMPLIBDIR_U)
-	$(CAMLRUN) $< $(filter-out $(MLI_ONLY), $(OPTCOMP)) \
-	  -mli $(filter $(MLI_ONLY), $(OPTCOMP)) -prefix ocaml_optcomp \
-	  -unprefix $(COMPLIBDIR_U)
-	touch $@
-
-beforedepend:: unprefixed_sources
-
 partialclean::
 	rm -f $(COMPLIBDIR_U)/*.ml $(COMPLIBDIR_U)/*.mli
 
@@ -714,16 +697,19 @@ $(COMPLIBDIR)/ocaml_common.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_common $(COMMON) > $@
 $(COMPLIBDIR)/ocamlcommon.cma: $(COMMON_CMO)
 	$(CAMLC) -a -linkall -o $@ $^
-$(COMPLIBDIR_U)/ocamlcommon.cma: unprefixed_sources \
+$(COMPLIBDIR_U)/ocamlcommon.cma: $(COMPLIBDIR_U)/common \
     $(COMMON_CMI_U) $(COMMON_CMO_U)
 	$(CAMLC) -a -linkall -o $@ $(filter %.cmo,$^)
+$(COMPLIBDIR_U)/common: tools/gen_prefix CompilerModules
+	$(CAMLRUN) $< $(COMMON_ML) -mli $(COMMON_MLI_ONLY) \
+	  -prefix ocaml_common -unprefix $(COMPLIBDIR_U)
+	touch $@
 
 partialclean::
-	rm -f $(COMPLIBDIR)/ocaml_common.ml
-	rm -f $(COMPLIBDIR)/ocamlcommon.cma
-	rm -f $(COMPLIBDIR_U)/ocamlcommon.cma
+	rm -f $(COMPLIBDIR)/ocaml_common.ml $(COMPLIBDIR)/ocamlcommon.cma
+	rm -f $(COMPLIBDIR_U)/ocamlcommon.cma $(COMPLIBDIR_U)/common
 
-beforedepend:: $(COMPLIBDIR)/ocaml_common.ml
+beforedepend:: $(COMPLIBDIR)/ocaml_common.ml $(COMPLIBDIR_U)/common
 
 # The bytecode compiler
 
@@ -731,16 +717,19 @@ $(COMPLIBDIR)/ocaml_bytecomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_bytecomp $(BYTECOMP) > $@
 $(COMPLIBDIR)/ocamlbytecomp.cma: $(BYTECOMP_CMO)
 	$(CAMLC) -a -o $@ $^
-$(COMPLIBDIR_U)/ocamlbytecomp.cma: unprefixed_sources \
+$(COMPLIBDIR_U)/ocamlbytecomp.cma: $(COMPLIBDIR_U)/bytecomp \
     $(BYTECOMP_CMI_U) $(BYTECOMP_CMO_U)
 	$(CAMLC) -a -o $@ $(filter %.cmo,$^)
+$(COMPLIBDIR_U)/bytecomp: tools/gen_prefix CompilerModules
+	$(CAMLRUN) $< $(BYTECOMP_ML) -mli $(BYTECOMP_MLI_ONLY) \
+	  -prefix ocaml_bytecomp -unprefix $(COMPLIBDIR_U)
+	touch $@
 
 partialclean::
-	rm -f $(COMPLIBDIR)/ocaml_bytecomp.ml
-	rm -f $(COMPLIBDIR)/ocamlbytecomp.cma
-	rm -f $(COMPLIBDIR_U)/ocamlbytecomp.cma
+	rm -f $(COMPLIBDIR)/ocaml_bytecomp.ml $(COMPLIBDIR)/ocamlbytecomp.cma
+	rm -f $(COMPLIBDIR_U)/ocamlbytecomp.cma $(COMPLIBDIR_U)/bytecomp
 
-beforedepend:: $(COMPLIBDIR)/ocaml_bytecomp.ml
+beforedepend:: $(COMPLIBDIR)/ocaml_bytecomp.ml $(COMPLIBDIR_U)/bytecomp
 
 ocamlc: $(COMPLIBDIR_U)/ocamlcommon.cma $(COMPLIBDIR_U)/ocamlbytecomp.cma \
 	$(BYTESTART)
@@ -755,16 +744,19 @@ $(COMPLIBDIR)/ocaml_optcomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_optcomp $(OPTCOMP) > $@
 $(COMPLIBDIR)/ocamloptcomp.cma: $(OPTCOMP_CMO)
 	$(CAMLC) -a -o $@ $^
-$(COMPLIBDIR_U)/ocamloptcomp.cma: unprefixed_sources \
+$(COMPLIBDIR_U)/ocamloptcomp.cma: $(COMPLIBDIR_U)/optcomp \
     $(OPTCOMP_CMI_U) $(OPTCOMP_CMO_U)
 	$(CAMLC) -a -o $@ $(filter %.cmo,$^)
+$(COMPLIBDIR_U)/optcomp: tools/gen_prefix CompilerModules
+	$(CAMLRUN) $< $(OPTCOMP_ML) -mli $(OPTCOMP_MLI_ONLY) \
+	  -prefix ocaml_optcomp -unprefix $(COMPLIBDIR_U)
+	touch $@
 
 partialclean::
-	rm -f $(COMPLIBDIR)/ocaml_optcomp.ml
-	rm -f $(COMPLIBDIR)/ocamloptcomp.cma
-	rm -f $(COMPLIBDIR_U)/ocamloptcomp.cma
+	rm -f $(COMPLIBDIR)/ocaml_optcomp.ml $(COMPLIBDIR)/ocamloptcomp.cma
+	rm -f $(COMPLIBDIR_U)/ocamloptcomp.cma $(COMPLIBDIR_U)/optcomp
 
-beforedepend:: $(COMPLIBDIR)/ocaml_optcomp.ml
+beforedepend:: $(COMPLIBDIR)/ocaml_optcomp.ml $(COMPLIBDIR_U)/optcomp
 
 ocamlopt: $(COMPLIBDIR_U)/ocamlcommon.cma $(COMPLIBDIR_U)/ocamloptcomp.cma \
           $(OPTSTART)
@@ -779,16 +771,19 @@ $(COMPLIBDIR)/ocaml_toplevel.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_toplevel $(TOPLEVEL) > $@
 $(COMPLIBDIR)/ocamltoplevel.cma: $(TOPLEVEL_CMO)
 	$(CAMLC) -a -o $@ $^
-$(COMPLIBDIR_U)/ocamltoplevel.cma: unprefixed_sources \
-    $(OPTCOMP_CMI_U) $(OPTCOMP_CMO_U)
+$(COMPLIBDIR_U)/ocamltoplevel.cma: $(COMPLIBDIR_U)/toplevel \
+    $(TOPLEVEL_CMI_U) $(TOPLEVEL_CMO_U)
 	$(CAMLC) -a -o $@ $(filter %.cmo,$^)
+$(COMPLIBDIR_U)/toplevel: tools/gen_prefix CompilerModules
+	$(CAMLRUN) $< $(TOPLEVEL_ML) -mli $(TOPLEVEL_MLI_ONLY) \
+	  -prefix ocaml_toplevel -unprefix $(COMPLIBDIR_U)
+	touch $@
 
 partialclean::
-	rm -f $(COMPLIBDIR)/ocaml_toplevel.ml
-	rm -f $(COMPLIBDIR)/ocamltoplevel.cma
-	rm -f $(COMPLIBDIR_U)/ocamltoplevel.cma
+	rm -f $(COMPLIBDIR)/ocaml_toplevel.ml $(COMPLIBDIR)/ocamltoplevel.cma
+	rm -f $(COMPLIBDIR_U)/ocamltoplevel.cma $(COMPLIBDIR_U)/toplevel
 
-beforedepend:: $(COMPLIBDIR)/ocaml_toplevel.ml
+beforedepend:: $(COMPLIBDIR)/ocaml_toplevel.ml $(COMPLIBDIR_U)/toplevel
 
 ocaml_dependencies := \
   $(COMPLIBDIR_U)/ocamlcommon.cma \
@@ -841,7 +836,7 @@ beforedepend:: parsing/lexer.ml
 
 $(COMPLIBDIR)/ocamlcommon.cmxa: $(COMMON_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -linkall -o $@ $^
-$(COMPLIBDIR_U)/ocamlcommon.cmxa: unprefixed_sources \
+$(COMPLIBDIR_U)/ocamlcommon.cmxa: $(COMPLIBDIR_U)/common \
     $(COMMON_CMI_U) $(COMMON_CMO_U:.cmo=.cmx)
 	$(CAMLOPT) -a -linkall -o $@ $(filter %.cmx,$^)
 partialclean::
@@ -852,7 +847,7 @@ partialclean::
 
 $(COMPLIBDIR)/ocamlbytecomp.cmxa: $(BYTECOMP_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
-$(COMPLIBDIR_U)/ocamlbytecomp.cmxa: unprefixed_sources \
+$(COMPLIBDIR_U)/ocamlbytecomp.cmxa: $(COMPLIBDIR_U)/bytecomp \
     $(BYTECOMP_CMI_U) $(BYTECOMP_CMO_U:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $(filter %.cmx,$^)
 partialclean::
@@ -872,7 +867,7 @@ partialclean::
 
 $(COMPLIBDIR)/ocamloptcomp.cmxa: $(OPTCOMP_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
-$(COMPLIBDIR_U)/ocamloptcomp.cmxa: unprefixed_sources \
+$(COMPLIBDIR_U)/ocamloptcomp.cmxa: $(COMPLIBDIR_U)/optcomp \
     $(OPTCOMP_CMI_U) $(OPTCOMP_CMO_U:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $(filter %.cmx,$^)
 partialclean::
@@ -1151,10 +1146,10 @@ lintapidiff:
 # compiler for "make world" and the list of dependencies for
 # asmcomp/export_info.cmo is long).
 
-$(COMPLIBDIR_U)/ocamlmiddleend.cma: unprefixed_sources \
+$(COMPLIBDIR_U)/ocamlmiddleend.cma: $(COMPLIBDIR_U)/optcomp \
     $(MIDDLE_END_CMI_U) $(MIDDLE_END_CMO_U)
 	$(CAMLC) -a -o $@ $(filter %.cmo, $^)
-$(COMPLIBDIR_U)/ocamlmiddleend.cmxa: unprefixed_sources \
+$(COMPLIBDIR_U)/ocamlmiddleend.cmxa: $(COMPLIBDIR_U)/optcomp \
     $(MIDDLE_END_CMI_U) $(MIDDLE_END_CMO_U:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $(filter %.cmx, $^)
 

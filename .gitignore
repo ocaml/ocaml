@@ -268,5 +268,3 @@ _build
 /yacc/ocamlyacc
 /yacc/version.h
 /yacc/.gdb_history
-
-/unprefixed_sources

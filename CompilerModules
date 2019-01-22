@@ -91,31 +91,31 @@ COMP=bytecomp/cmo_format bytecomp/lambda bytecomp/printlambda \
   driver/compile_common
 
 COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
+COMMON_ML=$(filter-out $(MLI_ONLY),$(COMMON))
+COMMON_MLI_ONLY=$(filter $(MLI_ONLY),$(COMMON))
 COMMON_CMO=\
   $(COMPLIBDIR)/ocaml_common.cmo \
-  $(addprefix $(COMPLIBDIR)/ocaml_common__,\
-    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY),$(COMMON)))))
+  $(addprefix $(COMPLIBDIR)/ocaml_common__,$(notdir $(COMMON_ML:=.cmo)))
 COMMON_CMO_U=\
   $(COMMON_CMO) \
   $(COMMON_CMO:$(COMPLIBDIR)/ocaml_common__%=$(COMPLIBDIR_U)/%)
 COMMON_CMI_U=\
-  $(addprefix $(COMPLIBDIR_U)/,\
-    $(notdir $(addsuffix .cmi,$(filter $(MLI_ONLY),$(COMMON)))))
+  $(addprefix $(COMPLIBDIR_U)/,$(notdir $(COMMON_MLI_ONLY:=.cmi)))
 
 BYTECOMP=bytecomp/bytegen \
   bytecomp/printinstr bytecomp/emitcode \
   bytecomp/bytelink bytecomp/bytelibrarian bytecomp/bytepackager \
   driver/errors driver/compile
+BYTECOMP_ML=$(filter-out $(MLI_ONLY),$(BYTECOMP))
+BYTECOMP_MLI_ONLY=$(filter $(MLI_ONLY),$(BYTECOMP))
 BYTECOMP_CMO=\
   $(COMPLIBDIR)/ocaml_bytecomp.cmo \
-  $(addprefix $(COMPLIBDIR)/ocaml_bytecomp__,\
-    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY),$(BYTECOMP)))))
+  $(addprefix $(COMPLIBDIR)/ocaml_bytecomp__,$(notdir $(BYTECOMP_ML:=.cmo)))
 BYTECOMP_CMO_U=\
   $(BYTECOMP_CMO) \
   $(BYTECOMP_CMO:$(COMPLIBDIR)/ocaml_bytecomp__%=$(COMPLIBDIR_U)/%)
 BYTECOMP_CMI_U=\
-  $(addprefix $(COMPLIBDIR_U)/,\
-    $(notdir $(addsuffix .cmi,$(filter $(MLI_ONLY),$(BYTECOMP)))))
+  $(addprefix $(COMPLIBDIR_U)/,$(notdir $(BYTECOMP_MLI_ONLY:=.cmi)))
 
 ARCH_SPECIFIC =\
   asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
@@ -243,44 +243,42 @@ MIDDLE_END=\
   middle_end/ref_to_variables \
   middle_end/flambda_invariants \
   middle_end/middle_end
+MIDDLE_END_ML=$(filter-out $(MLI_ONLY),$(MIDDLE_END))
+MIDDLE_END_MLI_ONLY=$(filter $(MLI_ONLY),$(MIDDLE_END))
 MIDDLE_END_CMO=\
   $(COMPLIBDIR)/ocaml_middleend.cmo \
-  $(addprefix $(COMPLIBDIR)/ocaml_optcomp__,\
-    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY), $(MIDDLE_END))))) \
-  $(addprefix $(COMPLIBDIR)/ocaml_middleend__,\
-    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY), $(MIDDLE_END)))))
+  $(addprefix $(COMPLIBDIR)/ocaml_optcomp__,$(notdir $(MIDDLE_END_ML:=.cmo))) \
+  $(addprefix $(COMPLIBDIR)/ocaml_middleend__,$(notdir $(MIDDLE_END_ML:=.cmo)))
 MIDDLE_END_CMO_U=\
   $(filter $(COMPLIBDIR)/ocaml_optcomp__%,$(MIDDLE_END_CMO)) \
-  $(addprefix $(COMPLIBDIR_U)/,\
-    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY), $(MIDDLE_END)))))
+  $(addprefix $(COMPLIBDIR_U)/,$(notdir $(MIDDLE_END_ML:=.cmo)))
 MIDDLE_END_CMI_U=\
-  $(addprefix $(COMPLIBDIR_U)/,\
-    $(notdir $(addsuffix .cmi,$(filter $(MLI_ONLY),$(MIDDLE_END)))))
+  $(addprefix $(COMPLIBDIR_U)/,$(notdir $(MIDDLE_END_MLI_ONLY:=.cmi)))
 
 OPTCOMP=$(MIDDLE_END) $(ASMCOMP)
+OPTCOMP_ML=$(filter-out $(MLI_ONLY),$(OPTCOMP))
+OPTCOMP_MLI_ONLY=$(filter $(MLI_ONLY),$(OPTCOMP))
 OPTCOMP_CMO=\
   $(COMPLIBDIR)/ocaml_optcomp.cmo \
-  $(addprefix $(COMPLIBDIR)/ocaml_optcomp__,\
-    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY),$(OPTCOMP)))))
+  $(addprefix $(COMPLIBDIR)/ocaml_optcomp__,$(notdir $(OPTCOMP_ML:=.cmo)))
 OPTCOMP_CMO_U=\
   $(OPTCOMP_CMO) \
   $(OPTCOMP_CMO:$(COMPLIBDIR)/ocaml_optcomp__%=$(COMPLIBDIR_U)/%)
 OPTCOMP_CMI_U=\
-  $(addprefix $(COMPLIBDIR_U)/,\
-    $(notdir $(addsuffix .cmi,$(filter $(MLI_ONLY),$(OPTCOMP)))))
+  $(addprefix $(COMPLIBDIR_U)/,$(notdir $(OPTCOMP_MLI_ONLY:=.cmi)))
 
 TOPLEVEL=toplevel/genprintval toplevel/toploop \
   toplevel/trace toplevel/topdirs toplevel/topmain
+TOPLEVEL_ML=$(filter-out $(MLI_ONLY),$(TOPLEVEL))
+TOPLEVEL_MLI_ONLY=$(filter $(MLI_ONLY),$(TOPLEVEL))
 TOPLEVEL_CMO=\
   $(COMPLIBDIR)/ocaml_toplevel.cmo \
-  $(addprefix $(COMPLIBDIR)/ocaml_toplevel__,\
-    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY),$(TOPLEVEL)))))
+  $(addprefix $(COMPLIBDIR)/ocaml_toplevel__,$(notdir $(TOPLEVEL_ML:=.cmo)))
 TOPLEVEL_CMO_U=\
   $(TOPLEVEL_CMO) \
   $(TOPLEVEL_CMO:$(COMPLIBDIR)/ocaml_toplevel__%=$(COMPLIBDIR_U)/%)
 TOPLEVEL_CMI_U=\
-  $(addprefix $(COMPLIBDIR_U)/,\
-    $(notdir $(addsuffix .cmi,$(filter $(MLI_ONLY),$(TOPLEVEL)))))
+  $(addprefix $(COMPLIBDIR_U)/,$(notdir $(TOPLEVEL_MLI_ONLY:=.cmi)))
 
 OPTTOPLEVEL=toplevel/genprintval toplevel/opttoploop \
   toplevel/opttopdirs toplevel/opttopmain
