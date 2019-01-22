@@ -4,3 +4,4 @@ common
 bytecomp
 toplevel
 optcomp
+opttoplevel

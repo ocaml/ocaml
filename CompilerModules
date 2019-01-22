@@ -291,6 +291,7 @@ OPTTOPLEVEL_CMO=\
     $(notdir $(OPTTOPLEVEL_ML:=.cmo)))
 OPTTOPLEVEL_CMO_U=\
   $(COMPLIBDIR)/ocaml_toplevel__genprintval.cmo \
+  $(COMPLIBDIR)/ocaml_opttoplevel__genprintval.cmo \
   $(addprefix $(COMPLIBDIR)/ocaml_opttoplevel__, \
     $(filter-out genprintval.cmo,$(notdir $(OPTTOPLEVEL_ML:=.cmo)))) \
   $(addprefix $(COMPLIBDIR_U)/,$(notdir $(OPTTOPLEVEL_ML:=.cmo)))

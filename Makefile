@@ -608,10 +608,12 @@ clean:: partialclean
 
 # Prefixed compiler-libs
 
-OPENS=-open Ocaml_common \
-      -open Ocaml_bytecomp \
-      -open Ocaml_optcomp \
-      -open Ocaml_toplevel
+OPENS=\
+  -open Ocaml_common \
+  -open Ocaml_bytecomp \
+  -open Ocaml_optcomp \
+  -open Ocaml_toplevel \
+  -open Ocaml_opttoplevel
 
 %.cmx %.cmxa: ocamlopt
 
@@ -771,6 +773,8 @@ $(COMPLIBDIR)/ocaml_toplevel.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_toplevel $(TOPLEVEL) > $@
 $(COMPLIBDIR)/ocaml_toplevel.cmo: $(COMPLIBDIR)/ocaml_toplevel.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
+$(COMPLIBDIR)/ocaml_toplevel.cmx: $(COMPLIBDIR)/ocaml_toplevel.ml
+	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamltoplevel.cma: $(TOPLEVEL_CMO)
 	$(CAMLC) -a -o $@ $^
 $(COMPLIBDIR_U)/ocamltoplevel.cma: $(COMPLIBDIR_U)/toplevel \
@@ -1275,12 +1279,6 @@ driver/compdynlink.mli: $(DYNLINK_DIR)/dynlink.mli \
 driver/compdynlink_platform_intf.mli: driver/compdynlink_platform_intf.ml
 	cp $< $@
 
-driver/compdynlink.cmo: driver/compdynlink.mlbyte
-	$(CAMLC) $(COMPFLAGS) $(INCLUDES) -c -impl $<
-
-driver/compdynlink.cmx: driver/compdynlink.mlopt
-	$(CAMLOPT) $(COMPFLAGS) $(INCLUDES) -c -impl $<
-
 beforedepend:: driver/compdynlink.mlbyte \
                driver/compdynlink.mlopt \
                driver/compdynlink_platform_intf.ml \
@@ -1302,6 +1300,36 @@ partialclean::
 	rm -f driver/compdynlink_types.ml
 
 # The native toplevel
+
+$(COMPLIBDIR)/ocaml_opttoplevel.ml: tools/gen_prefix CompilerModules
+	$(CAMLRUN) $< -prefix ocaml_opttoplevel $(OPTTOPLEVEL) > $@
+$(COMPLIBDIR)/ocaml_opttoplevel.cmo: $(COMPLIBDIR)/ocaml_opttoplevel.ml
+	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
+$(COMPLIBDIR)/ocaml_opttoplevel.cmx: $(COMPLIBDIR)/ocaml_opttoplevel.ml
+	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
+$(COMPLIBDIR)/ocaml_opttoplevel__genprintval.ml:
+	echo 'include Ocaml_toplevel__genprintval' > $@
+$(COMPLIBDIR)/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMO:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $^
+$(COMPLIBDIR_U)/ocamlopttoplevel.cmxa: $(COMPLIBDIR_U)/opttoplevel \
+    $(OPTTOPLEVEL_CMI_U) $(OPTTOPLEVEL_CMO_U:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(filter %.cmx,$^)
+$(COMPLIBDIR_U)/opttoplevel: tools/gen_prefix CompilerModules
+	$(CAMLRUN) $< $(filter-out %genprintval,$(OPTTOPLEVEL_ML)) \
+	  -mli $(OPTTOPLEVEL_MLI_ONLY) \
+	  -prefix ocaml_opttoplevel -unprefix $(COMPLIBDIR_U)
+	touch $@
+
+$(foreach f,$(filter-out %genprintval.ml,$(OPTTOPLEVEL:=.ml)),\
+  $(eval $(call cp,opttoplevel,$(f))))
+
+partialclean::
+	rm -f $(COMPLIBDIR)/ocaml_opttoplevel.ml \
+	  $(COMPLIBDIR)/ocamlopttoplevel.cmxa
+	rm -f $(COMPLIBDIR_U)/ocamlopttoplevel.cmxa $(COMPLIBDIR_U)/opttoplevel
+
+beforedepend:: $(COMPLIBDIR)/ocaml_opttoplevel.ml $(COMPLIBDIR_U)/opttoplevel
+
 # When the native toplevel executable has an extension (e.g. ".exe"),
 # provide a phony 'ocamlnat' synonym
 
@@ -1390,14 +1418,15 @@ MAPS=\
   -map $(COMPLIBDIR)/ocaml_common.ml \
   -map $(COMPLIBDIR)/ocaml_bytecomp.ml \
   -map $(COMPLIBDIR)/ocaml_toplevel.ml \
-  -map $(COMPLIBDIR)/ocaml_optcomp.ml
+  -map $(COMPLIBDIR)/ocaml_optcomp.ml \
+  -map $(COMPLIBDIR)/ocaml_opttoplevel.ml
 
 .PHONY: depend
 depend: beforedepend
 	(for d in driver toplevel; do \
 	 $(CAMLDEP) $(DEPFLAGS) -I $(COMPLIBDIR_U) $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
-	(for d in common bytecomp toplevel optcomp; \
+	(for d in common bytecomp toplevel optcomp opttoplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $(MAPS) $(OPENS) -I $(COMPLIBDIR) \
 	  $(COMPLIBDIR)/ocaml_$${d}__*.mli \
 	  $(COMPLIBDIR)/ocaml_$${d}__*.ml || exit; \
