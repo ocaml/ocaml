@@ -618,37 +618,51 @@ $(COMPLIBDIR)/%.cmx: $(COMPLIBDIR)/%.ml ocamlopt
 	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
 
 $(COMPLIBDIR)/ocaml_common__compdynlink.cmo: \
-    $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte
+	$(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte
 	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) -c -impl $<
 
 $(COMPLIBDIR)/ocaml_common__compdynlink.cmx: \
-    $(COMPLIBDIR)/ocaml_common__compdynlink.mlopt ocamlopt
+	$(COMPLIBDIR)/ocaml_common__compdynlink.mlopt \
+	$(COMPLIBDIR)/ocaml_optcomp__cmx_format.cmi ocamlopt
 	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) -c -impl $<
 
-define copy_with_prefix
+tools/gen_prefix: tools/gen_prefix.ml
+	$(CAMLC) -o $@ $<
+
+define copy_file_with_prefix
 $(COMPLIBDIR)/ocaml_$(1)__$(notdir $(2)): $(2)
 	(for d in $(3); do echo "open! $$$${d}"; done; cat $$<) > $$@
 
 beforedepend:: $(COMPLIBDIR)/ocaml_$(1)__$(notdir $(2))
 endef
 
-tools/gen_prefix: tools/gen_prefix.ml
-	$(CAMLC) -o $@ $<
-
-define f
+define copy_files_with_prefix
 $(foreach f,\
-  $(filter-out $(MLI_ONLY:=.ml),\
-     $(patsubst driver/compdynlink.ml,\
-       driver/compdynlink.mlbyte driver/compdynlink.mlopt,$(2:=.ml))) \
-  $(filter-out $(ML_ONLY:=.mli),$(2:=.mli)),\
-  $(eval $(call copy_with_prefix,$(1),$(f),$(3))))
+  $(addsuffix .ml,$(filter-out $(MLI_ONLY),$(2))) \
+  $(addsuffix .mli,$(filter-out $(ML_ONLY),$(2))),\
+  $(eval $(call copy_file_with_prefix,$(1),$(f),$(3))))
 endef
 
-$(eval $(call f,common,$(COMMON),Ocaml_common))
-$(eval $(call f,bytecomp,$(BYTECOMP),Ocaml_common Ocaml_bytecomp))
-$(eval $(call f,optcomp,$(OPTCOMP),Ocaml_common Ocaml_optcomp))
-$(eval $(call f,toplevel,$(TOPLEVEL),\
-	Ocaml_common Ocaml_bytecomp Ocaml_toplevel))
+$(call copy_files_with_prefix,common,$(filter-out driver/compdynlink,$(COMMON)),Ocaml_common)
+
+$(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte: driver/compdynlink.mlbyte
+	(echo 'open! Ocaml_common'; cat $<) > $@
+
+$(COMPLIBDIR)/ocaml_common__compdynlink.mlopt: driver/compdynlink.mlopt
+	(echo 'open! Ocaml_common'; \
+	 echo 'module Cmx_format = Ocaml_optcomp__cmx_format'; \
+	 cat $<) > $@
+
+$(COMPLIBDIR)/ocaml_common__compdynlink.mli: driver/compdynlink.mli
+	(echo 'open! Ocaml_common'; cat $<) > $@
+
+beforedepend:: $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte \
+	$(COMPLIBDIR)/ocaml_common__compdynlink.mlopt \
+	$(COMPLIBDIR)/ocaml_common__compdynlink.mli
+
+$(call copy_files_with_prefix,bytecomp,$(BYTECOMP),Ocaml_common Ocaml_bytecomp)
+$(call copy_files_with_prefix,optcomp,$(OPTCOMP),Ocaml_common Ocaml_optcomp)
+$(call copy_files_with_prefix,toplevel,$(TOPLEVEL),Ocaml_common Ocaml_bytecomp Ocaml_toplevel)
 
 partialclean::
 	rm -f $(COMPLIBDIR_U)/*.ml $(COMPLIBDIR_U)/*.mli
@@ -1333,9 +1347,7 @@ $(COMPLIBDIR_U)/opttoplevel: tools/gen_prefix CompilerModules
 	  -prefix ocaml_opttoplevel -unprefix $(COMPLIBDIR_U)
 	touch $@
 
-$(foreach f,$(filter-out %genprintval.ml,$(OPTTOPLEVEL:=.ml)),\
-  $(eval $(call copy_with_prefix,opttoplevel,$(f),\
-	Ocaml_common Ocaml_bytecomp Ocaml_optcomp Ocaml_opttoplevel)))
+$(call copy_files_with_prefix,opttoplevel,$(filter-out toplevel/genprintval,$(OPTTOPLEVEL)),Ocaml_common Ocaml_bytecomp Ocaml_optcomp Ocaml_opttoplevel)
 
 partialclean::
 	rm -f $(COMPLIBDIR)/ocaml_opttoplevel.ml \

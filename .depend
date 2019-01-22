@@ -7716,7 +7716,7 @@ compilerlibs/ocaml_optcomp__x86_proc.cmi : \
     compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo
 compilerlibs/ocaml_opttoplevel__opttopdirs.cmo : \
-    compilerlibs/ocaml_opttoplevel__opttoploop.cmo \
+    compilerlibs/ocaml_opttoplevel__opttoploop.cmi \
     compilerlibs/ocaml_opttoplevel.cmo \
     compilerlibs/ocaml_optcomp__asmlink.cmi \
     compilerlibs/ocaml_optcomp.cmo \
@@ -7731,7 +7731,8 @@ compilerlibs/ocaml_opttoplevel__opttopdirs.cmo : \
     compilerlibs/ocaml_common__compdynlink.cmi \
     compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
-    compilerlibs/ocaml_bytecomp.cmo
+    compilerlibs/ocaml_bytecomp.cmo \
+    compilerlibs/ocaml_opttoplevel__opttopdirs.cmi
 compilerlibs/ocaml_opttoplevel__opttopdirs.cmx : \
     compilerlibs/ocaml_opttoplevel__opttoploop.cmx \
     compilerlibs/ocaml_opttoplevel.cmx \
@@ -7748,7 +7749,14 @@ compilerlibs/ocaml_opttoplevel__opttopdirs.cmx : \
     compilerlibs/ocaml_common__compdynlink.cmi \
     compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
-    compilerlibs/ocaml_bytecomp.cmx
+    compilerlibs/ocaml_bytecomp.cmx \
+    compilerlibs/ocaml_opttoplevel__opttopdirs.cmi
+compilerlibs/ocaml_opttoplevel__opttopdirs.cmi : \
+    compilerlibs/ocaml_opttoplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common.cmo \
+    compilerlibs/ocaml_bytecomp.cmo
 compilerlibs/ocaml_opttoplevel__opttoploop.cmo : \
     compilerlibs/ocaml_opttoplevel.cmo \
     compilerlibs/ocaml_optcomp__proc.cmi \
@@ -7795,7 +7803,8 @@ compilerlibs/ocaml_opttoplevel__opttoploop.cmo : \
     compilerlibs/ocaml_common__asttypes.cmi \
     compilerlibs/ocaml_common__ast_helper.cmi \
     compilerlibs/ocaml_common.cmo \
-    compilerlibs/ocaml_bytecomp.cmo
+    compilerlibs/ocaml_bytecomp.cmo \
+    compilerlibs/ocaml_opttoplevel__opttoploop.cmi
 compilerlibs/ocaml_opttoplevel__opttoploop.cmx : \
     compilerlibs/ocaml_opttoplevel.cmx \
     compilerlibs/ocaml_optcomp__proc.cmx \
@@ -7842,10 +7851,24 @@ compilerlibs/ocaml_opttoplevel__opttoploop.cmx : \
     compilerlibs/ocaml_common__asttypes.cmi \
     compilerlibs/ocaml_common__ast_helper.cmx \
     compilerlibs/ocaml_common.cmx \
-    compilerlibs/ocaml_bytecomp.cmx
+    compilerlibs/ocaml_bytecomp.cmx \
+    compilerlibs/ocaml_opttoplevel__opttoploop.cmi
+compilerlibs/ocaml_opttoplevel__opttoploop.cmi : \
+    compilerlibs/ocaml_opttoplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__types.cmi \
+    compilerlibs/ocaml_common__path.cmi \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__outcometree.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__env.cmi \
+    compilerlibs/ocaml_common.cmo \
+    compilerlibs/ocaml_bytecomp.cmo
 compilerlibs/ocaml_opttoplevel__opttopmain.cmo : \
-    compilerlibs/ocaml_opttoplevel__opttoploop.cmo \
-    compilerlibs/ocaml_opttoplevel__opttopdirs.cmo \
+    compilerlibs/ocaml_opttoplevel__opttoploop.cmi \
+    compilerlibs/ocaml_opttoplevel__opttopdirs.cmi \
     compilerlibs/ocaml_opttoplevel.cmo \
     compilerlibs/ocaml_optcomp__printmach.cmi \
     compilerlibs/ocaml_optcomp.cmo \
@@ -7857,7 +7880,8 @@ compilerlibs/ocaml_opttoplevel__opttopmain.cmo : \
     compilerlibs/ocaml_common__compenv.cmi \
     compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
-    compilerlibs/ocaml_bytecomp.cmo
+    compilerlibs/ocaml_bytecomp.cmo \
+    compilerlibs/ocaml_opttoplevel__opttopmain.cmi
 compilerlibs/ocaml_opttoplevel__opttopmain.cmx : \
     compilerlibs/ocaml_opttoplevel__opttoploop.cmx \
     compilerlibs/ocaml_opttoplevel__opttopdirs.cmx \
@@ -7872,8 +7896,15 @@ compilerlibs/ocaml_opttoplevel__opttopmain.cmx : \
     compilerlibs/ocaml_common__compenv.cmx \
     compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
-    compilerlibs/ocaml_bytecomp.cmx
+    compilerlibs/ocaml_bytecomp.cmx \
+    compilerlibs/ocaml_opttoplevel__opttopmain.cmi
+compilerlibs/ocaml_opttoplevel__opttopmain.cmi : \
+    compilerlibs/ocaml_opttoplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common.cmo \
+    compilerlibs/ocaml_bytecomp.cmo
 compilerlibs/ocaml_common__compdynlink.cmx : \
+    compilerlibs/ocaml_optcomp__cmx_format.cmi \
     compilerlibs/ocaml_common__compdynlink_types.cmx \
     compilerlibs/ocaml_common__compdynlink_common.cmx \
     compilerlibs/ocaml_common.cmx \
@@ -8436,15 +8467,15 @@ unprefixed_compilerlibs/opterrors.cmo : \
 unprefixed_compilerlibs/opterrors.cmx : \
     compilerlibs/ocaml_optcomp__opterrors.cmx
 unprefixed_compilerlibs/opttopdirs.cmo : \
-    compilerlibs/ocaml_opttoplevel__opttopdirs.cmo
+    compilerlibs/ocaml_opttoplevel__opttopdirs.cmi
 unprefixed_compilerlibs/opttopdirs.cmx : \
     compilerlibs/ocaml_opttoplevel__opttopdirs.cmx
 unprefixed_compilerlibs/opttoploop.cmo : \
-    compilerlibs/ocaml_opttoplevel__opttoploop.cmo
+    compilerlibs/ocaml_opttoplevel__opttoploop.cmi
 unprefixed_compilerlibs/opttoploop.cmx : \
     compilerlibs/ocaml_opttoplevel__opttoploop.cmx
 unprefixed_compilerlibs/opttopmain.cmo : \
-    compilerlibs/ocaml_opttoplevel__opttopmain.cmo
+    compilerlibs/ocaml_opttoplevel__opttopmain.cmi
 unprefixed_compilerlibs/opttopmain.cmx : \
     compilerlibs/ocaml_opttoplevel__opttopmain.cmx
 unprefixed_compilerlibs/outcometree.cmi : \
