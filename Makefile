@@ -608,33 +608,26 @@ clean:: partialclean
 
 # Prefixed compiler-libs
 
-OPENS=\
-  -open Ocaml_common \
-  -open Ocaml_bytecomp \
-  -open Ocaml_optcomp \
-  -open Ocaml_opttoplevel \
-  -open Ocaml_toplevel
-
 $(COMPLIBDIR)/%.cmi: $(COMPLIBDIR)/%.mli
-	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c $<
+	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
 
 $(COMPLIBDIR)/%.cmo: $(COMPLIBDIR)/%.ml
-	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c $<
+	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
 
 $(COMPLIBDIR)/%.cmx: $(COMPLIBDIR)/%.ml ocamlopt
-	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c $<
+	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
 
 $(COMPLIBDIR)/ocaml_common__compdynlink.cmo: \
     $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte
-	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c -impl $<
+	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) -c -impl $<
 
 $(COMPLIBDIR)/ocaml_common__compdynlink.cmx: \
     $(COMPLIBDIR)/ocaml_common__compdynlink.mlopt ocamlopt
-	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c -impl $<
+	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) -c -impl $<
 
-define cp
+define copy_with_prefix
 $(COMPLIBDIR)/ocaml_$(1)__$(notdir $(2)): $(2)
-	cp $$< $$@
+	(for d in $(3); do echo "open! $$$${d}"; done; cat $$<) > $$@
 
 beforedepend:: $(COMPLIBDIR)/ocaml_$(1)__$(notdir $(2))
 endef
@@ -648,13 +641,14 @@ $(foreach f,\
      $(patsubst driver/compdynlink.ml,\
        driver/compdynlink.mlbyte driver/compdynlink.mlopt,$(2:=.ml))) \
   $(filter-out $(ML_ONLY:=.mli),$(2:=.mli)),\
-  $(eval $(call cp,$(1),$(f))))
+  $(eval $(call copy_with_prefix,$(1),$(f),$(3))))
 endef
 
-$(eval $(call f,common,$(COMMON)))
-$(eval $(call f,bytecomp,$(BYTECOMP)))
-$(eval $(call f,optcomp,$(OPTCOMP)))
-$(eval $(call f,toplevel,$(TOPLEVEL)))
+$(eval $(call f,common,$(COMMON),Ocaml_common))
+$(eval $(call f,bytecomp,$(BYTECOMP),Ocaml_common Ocaml_bytecomp))
+$(eval $(call f,optcomp,$(OPTCOMP),Ocaml_common Ocaml_optcomp))
+$(eval $(call f,toplevel,$(TOPLEVEL),\
+	Ocaml_common Ocaml_bytecomp Ocaml_toplevel))
 
 partialclean::
 	rm -f $(COMPLIBDIR_U)/*.ml $(COMPLIBDIR_U)/*.mli
@@ -1340,7 +1334,8 @@ $(COMPLIBDIR_U)/opttoplevel: tools/gen_prefix CompilerModules
 	touch $@
 
 $(foreach f,$(filter-out %genprintval.ml,$(OPTTOPLEVEL:=.ml)),\
-  $(eval $(call cp,opttoplevel,$(f))))
+  $(eval $(call copy_with_prefix,opttoplevel,$(f),\
+	Ocaml_common Ocaml_bytecomp Ocaml_optcomp Ocaml_opttoplevel)))
 
 partialclean::
 	rm -f $(COMPLIBDIR)/ocaml_opttoplevel.ml \
@@ -1446,15 +1441,15 @@ depend: beforedepend
 	 $(CAMLDEP) $(DEPFLAGS) -I $(COMPLIBDIR_U) $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
 	(for d in common bytecomp toplevel optcomp opttoplevel; \
-	 do $(CAMLDEP) $(DEPFLAGS) $(MAPS) $(OPENS) -I $(COMPLIBDIR) \
+	 do $(CAMLDEP) $(DEPFLAGS) $(MAPS) -I $(COMPLIBDIR) \
 	  $(COMPLIBDIR)/ocaml_$${d}__*.mli \
 	  $(COMPLIBDIR)/ocaml_$${d}__*.ml || exit; \
 	 done) >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(MAPS) $(OPENS) -I $(COMPLIBDIR) -native \
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I $(COMPLIBDIR) -native \
 	 -impl $(COMPLIBDIR)/ocaml_common__compdynlink.mlopt >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(MAPS) $(OPENS) -I $(COMPLIBDIR) -bytecode \
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I $(COMPLIBDIR) -bytecode \
 	 -impl $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(MAPS) $(OPENS) -I $(COMPLIBDIR) \
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I $(COMPLIBDIR) \
 	 $(COMPLIBDIR_U)/*.mli $(COMPLIBDIR_U)/*.ml >> .depend
 
 .PHONY: distclean

@@ -33,11 +33,11 @@ let gen_unprefix () =
           (Filename.concat !unprefix m ^ if mli then ".mli" else ".ml")
       in
       if mli then
-        Printf.fprintf oc "include module type of struct include %s.%s end\n"
-          (String.capitalize_ascii !prefix) (String.capitalize_ascii m)
+        Printf.fprintf oc "include module type of struct include %s__%s end\n"
+          (String.capitalize_ascii !prefix) m
       else
-        Printf.fprintf oc "include %s.%s\n"
-          (String.capitalize_ascii !prefix) (String.capitalize_ascii m);
+        Printf.fprintf oc "include %s__%s\n"
+          (String.capitalize_ascii !prefix) m;
       close_out oc
     ) modules
 
