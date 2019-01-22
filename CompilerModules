@@ -15,6 +15,27 @@
 #*                                                                        *
 #**************************************************************************
 
+COMPLIBDIR=compilerlibs
+COMPLIBDIR_U=unprefixed_compilerlibs
+
+MLI_ONLY=\
+  parsing/asttypes \
+  parsing/parsetree \
+  typing/outcometree \
+  typing/annot \
+  bytecomp/cmo_format \
+  asmcomp/cmx_format \
+  asmcomp/x86_ast \
+  middle_end/backend_intf \
+  middle_end/simplify_boxed_integer_ops_intf \
+  middle_end/inlining_decision_intf
+
+ML_ONLY=\
+  bytecomp/opcodes \
+  asmcomp/arch \
+  asmcomp/CSE \
+  asmcomp/branch_relaxation_intf
+
 UTILS=utils/config utils/build_path_prefix_map utils/misc \
   utils/identifiable utils/numbers utils/arg_helper \
   utils/clflags utils/profile \
@@ -70,11 +91,31 @@ COMP=bytecomp/cmo_format bytecomp/lambda bytecomp/printlambda \
   driver/compile_common
 
 COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
+COMMON_CMO=\
+  $(COMPLIBDIR)/ocaml_common.cmo \
+  $(addprefix $(COMPLIBDIR)/ocaml_common__,\
+    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY),$(COMMON)))))
+COMMON_CMO_U=\
+  $(COMMON_CMO) \
+  $(COMMON_CMO:$(COMPLIBDIR)/ocaml_common__%=$(COMPLIBDIR_U)/%)
+COMMON_CMI_U=\
+  $(addprefix $(COMPLIBDIR_U)/,\
+    $(notdir $(addsuffix .cmi,$(filter $(MLI_ONLY),$(COMMON)))))
 
 BYTECOMP=bytecomp/bytegen \
   bytecomp/printinstr bytecomp/emitcode \
   bytecomp/bytelink bytecomp/bytelibrarian bytecomp/bytepackager \
   driver/errors driver/compile
+BYTECOMP_CMO=\
+  $(COMPLIBDIR)/ocaml_bytecomp.cmo \
+  $(addprefix $(COMPLIBDIR)/ocaml_bytecomp__,\
+    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY),$(BYTECOMP)))))
+BYTECOMP_CMO_U=\
+  $(BYTECOMP_CMO) \
+  $(BYTECOMP_CMO:$(COMPLIBDIR)/ocaml_bytecomp__%=$(COMPLIBDIR_U)/%)
+BYTECOMP_CMI_U=\
+  $(addprefix $(COMPLIBDIR_U)/,\
+    $(notdir $(addsuffix .cmi,$(filter $(MLI_ONLY),$(BYTECOMP)))))
 
 ARCH_SPECIFIC =\
   asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
@@ -202,29 +243,57 @@ MIDDLE_END=\
   middle_end/ref_to_variables \
   middle_end/flambda_invariants \
   middle_end/middle_end
+MIDDLE_END_CMO=\
+  $(COMPLIBDIR)/ocaml_middleend.cmo \
+  $(addprefix $(COMPLIBDIR)/ocaml_optcomp__,\
+    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY), $(MIDDLE_END))))) \
+  $(addprefix $(COMPLIBDIR)/ocaml_middleend__,\
+    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY), $(MIDDLE_END)))))
+MIDDLE_END_CMO_U=\
+  $(filter $(COMPLIBDIR)/ocaml_optcomp__%,$(MIDDLE_END_CMO)) \
+  $(addprefix $(COMPLIBDIR_U)/,\
+    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY), $(MIDDLE_END)))))
+MIDDLE_END_CMI_U=\
+  $(addprefix $(COMPLIBDIR_U)/,\
+    $(notdir $(addsuffix .cmi,$(filter $(MLI_ONLY),$(MIDDLE_END)))))
 
 OPTCOMP=$(MIDDLE_END) $(ASMCOMP)
+OPTCOMP_CMO=\
+  $(COMPLIBDIR)/ocaml_optcomp.cmo \
+  $(addprefix $(COMPLIBDIR)/ocaml_optcomp__,\
+    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY),$(OPTCOMP)))))
+OPTCOMP_CMO_U=\
+  $(OPTCOMP_CMO) \
+  $(OPTCOMP_CMO:$(COMPLIBDIR)/ocaml_optcomp__%=$(COMPLIBDIR_U)/%)
+OPTCOMP_CMI_U=\
+  $(addprefix $(COMPLIBDIR_U)/,\
+    $(notdir $(addsuffix .cmi,$(filter $(MLI_ONLY),$(OPTCOMP)))))
 
 TOPLEVEL=toplevel/genprintval toplevel/toploop \
   toplevel/trace toplevel/topdirs toplevel/topmain
+TOPLEVEL_CMO=\
+  $(COMPLIBDIR)/ocaml_toplevel.cmo \
+  $(addprefix $(COMPLIBDIR)/ocaml_toplevel__,\
+    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY),$(TOPLEVEL)))))
+TOPLEVEL_CMO_U=\
+  $(TOPLEVEL_CMO) \
+  $(TOPLEVEL_CMO:$(COMPLIBDIR)/ocaml_toplevel__%=$(COMPLIBDIR_U)/%)
+TOPLEVEL_CMI_U=\
+  $(addprefix $(COMPLIBDIR_U)/,\
+    $(notdir $(addsuffix .cmi,$(filter $(MLI_ONLY),$(TOPLEVEL)))))
 
 OPTTOPLEVEL=toplevel/genprintval toplevel/opttoploop \
   toplevel/opttopdirs toplevel/opttopmain
-
-MLI_ONLY=\
-  parsing/asttypes \
-  parsing/parsetree \
-  typing/outcometree \
-  typing/annot \
-  bytecomp/cmo_format \
-  asmcomp/cmx_format \
-  asmcomp/x86_ast \
-  middle_end/backend_intf \
-  middle_end/simplify_boxed_integer_ops_intf \
-  middle_end/inlining_decision_intf
-
-ML_ONLY=\
-  bytecomp/opcodes \
-  asmcomp/arch \
-  asmcomp/CSE \
-  asmcomp/branch_relaxation_intf
+OPTTOPLEVEL_CMO=\
+  $(COMPLIBDIR)/ocaml_opttoplevel.cmo \
+  $(COMPLIBDIR)/ocaml_toplevel__genprintval.cmo \
+  $(addprefix $(COMPLIBDIR)/ocaml_opttoplevel__,\
+    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY),$(OPTTOPLEVEL)))))
+OPTTOPLEVEL_CMO_U=\
+  $(filter-out %opttoplevel__genprintval.cmo,\
+    $(OPTTOPLEVEL_CMO)) \
+  $(addprefix $(COMPLIBDIR_U)/,\
+    $(notdir $(addsuffix .cmo,$(filter-out $(MLI_ONLY),$(OPTTOPLEVEL)))))
+OPTTOPLEVEL_CMI_U=\
+  $(addprefix $(COMPLIBDIR_U)/,\
+    $(notdir $(addsuffix .cmi,$(filter $(MLI_ONLY),$(OPTTOPLEVEL)))))
