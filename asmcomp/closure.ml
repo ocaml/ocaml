@@ -659,7 +659,7 @@ let rec substitute ~at_call_site ~function_being_inlined ~block_subst
   | Ulet(str, kind, id, u1, u2) ->
       let block_subst, provenance =
         match VP.provenance id with
-        | None -> block_subst, None
+        | None -> block_subst, VP.Clear
         | Some provenance ->
           let block_subst, dbg =
             subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst
@@ -668,9 +668,9 @@ let rec substitute ~at_call_site ~function_being_inlined ~block_subst
           let provenance =
             V.Provenance.replace_debuginfo provenance dbg
           in
-          block_subst, Some provenance
+          block_subst, VP.Replace_with provenance
       in
-      let id' = VP.rename ?provenance id in
+      let id' = VP.rename id ~provenance in
       let block_subst, defining_expr =
         substitute ~at_call_site ~function_being_inlined ~block_subst
           fpc sb rn u1
@@ -684,7 +684,7 @@ let rec substitute ~at_call_site ~function_being_inlined ~block_subst
   | Uphantom_let (id, defining_expr, body) ->
       let block_subst, provenance =
         match VP.provenance id with
-        | None -> block_subst, None
+        | None -> block_subst, VP.Clear
         | Some provenance ->
           let block_subst, dbg =
             subst_debuginfo ~at_call_site ~function_being_inlined ~block_subst
@@ -693,9 +693,9 @@ let rec substitute ~at_call_site ~function_being_inlined ~block_subst
           let provenance =
             V.Provenance.replace_debuginfo provenance dbg
           in
-          block_subst, Some provenance
+          block_subst, VP.Replace_with provenance
       in
-      let id' = VP.rename ?provenance id in
+      let id' = VP.rename id ~provenance in
       let defining_expr =
         match defining_expr with
         | None -> None
@@ -744,7 +744,7 @@ let rec substitute ~at_call_site ~function_being_inlined ~block_subst
   | Uletrec(bindings, body) ->
       let bindings1 =
         List.map (fun (id, rhs) ->
-          (VP.var id, VP.rename id, rhs)) bindings
+          (VP.var id, VP.rename id ~provenance:VP.Keep, rhs)) bindings
       in
       let sb' =
         List.fold_right (fun (id, id', _) s ->
@@ -872,7 +872,7 @@ let rec substitute ~at_call_site ~function_being_inlined ~block_subst
           let new_nfail = next_raise_count () in
           new_nfail, Some (Int.Map.add nfail new_nfail rn)
         | None -> nfail, rn in
-      let ids' = List.map VP.rename ids in
+      let ids' = List.map (fun id -> VP.rename id ~provenance:VP.Keep) ids in
       let sb' =
         List.fold_right2
           (fun id id' s -> V.Map.add (VP.var id) (Uvar (VP.var id')) s)
@@ -889,7 +889,7 @@ let rec substitute ~at_call_site ~function_being_inlined ~block_subst
       let term = Ucatch (nfail, ids', u1, u2, loc) in
       block_subst, term
   | Utrywith(u1, id, u2, loc) ->
-      let id' = VP.rename id in
+      let id' = VP.rename id ~provenance:VP.Keep in
       let block_subst, u1 =
         substitute ~at_call_site ~function_being_inlined ~block_subst
           fpc sb rn u1
@@ -951,7 +951,7 @@ let rec substitute ~at_call_site ~function_being_inlined ~block_subst
       let term = Uwhile (u1, u2, loc) in
       block_subst, term
   | Ufor(id, u1, u2, dir, u3, loc) ->
-      let id' = VP.rename id in
+      let id' = VP.rename id ~provenance:VP.Keep in
       let block_subst, u1 =
         substitute ~at_call_site ~function_being_inlined ~block_subst
           fpc sb rn u1
@@ -1061,7 +1061,7 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site
       in
       let provenance =
         match provenance with
-        | None -> None
+        | None -> VP.Clear
         | Some provenance ->
             let provenance =
               V.Provenance.replace_is_parameter provenance
@@ -1079,9 +1079,9 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site
                   V.Provenance.replace_ident_for_type provenance
                     ident_for_type
             in
-            Some provenance
+            VP.Replace_with provenance
       in
-      let p1' = VP.rename ?provenance p1 in
+      let p1' = VP.rename p1 ~provenance in
       if is_simple_argument a1 then
         let term =
           bind_params_rec ~param_index:(param_index - 1)

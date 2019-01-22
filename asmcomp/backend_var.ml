@@ -122,16 +122,22 @@ module With_provenance = struct
 
   let is_optional_parameter t = is_optional_parameter (var t)
 
-  let rename ?provenance t =
+  type rename_provenance =
+    | Clear
+    | Keep
+    | Replace_with of Provenance.t
+
+  let rename t ~(provenance : rename_provenance) =
     let var = rename (var t) in
     match provenance with
-    | None ->
+    | Clear -> Without_provenance var
+    | Keep ->
       begin match t with
       | Without_provenance _ -> Without_provenance var
       | With_provenance { var = _; provenance; } ->
         With_provenance { var; provenance; }
       end
-    | Some provenance -> With_provenance { var; provenance; }
+    | Replace_with provenance -> With_provenance { var; provenance; }
 
   let print ppf t =
     match provenance t with

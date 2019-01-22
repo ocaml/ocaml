@@ -75,5 +75,10 @@ module With_provenance : sig
 
   val is_optional_parameter : t -> string option
 
-  val rename : ?provenance:Provenance.t -> t -> t
+  type rename_provenance =
+    | Clear
+    | Keep
+    | Replace_with of Provenance.t
+
+  val rename : t -> provenance:rename_provenance -> t
 end
