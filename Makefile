@@ -47,10 +47,10 @@ include stdlib/StdlibModules
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims runtime/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x
-
+INCLUDES=-I $(COMPLIBDIR) -I $(COMPLIBDIR_U) -I driver -I toplevel
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48-66 \
 	  -warn-error A \
-          -bin-annot -safe-string -strict-formats
+          -bin-annot -safe-string -strict-formats -no-alias-deps
 LINKFLAGS=
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
@@ -191,7 +191,7 @@ opt-core: runtimeopt
 opt:
 	$(MAKE) runtimeopt
 	$(MAKE) ocamlopt
-	$(MAKE) prefixed_compilerlibs.opt
+	$(MAKE) compilerlibs.opt
 	$(MAKE) libraryopt
 	$(MAKE) otherlibrariesopt ocamltoolsopt
 
@@ -204,9 +204,9 @@ opt.opt:
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) prefixed_compilerlibs
-	$(MAKE) prefixed_compilerlibs.opt
-	$(MAKE) prefixed_compilerlibs.optopt
+	$(MAKE) compilerlibs
+	$(MAKE) compilerlibs.opt
+	$(MAKE) compilerlibs.optopt
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
@@ -237,7 +237,7 @@ coreboot:
 
 .PHONY: all
 all: coreall
-	$(MAKE) prefixed_compilerlibs
+	$(MAKE) compilerlibs
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 
@@ -612,21 +612,25 @@ OPENS=-open Ocaml_common \
       -open Ocaml_bytecomp \
       -open Ocaml_optcomp \
       -open Ocaml_toplevel
-P_COMPFLAGS=$(COMPFLAGS) -I $(COMPLIBDIR) \
-    -no-alias-deps $(OPENS)
-P_DEPFLAGS=\
-    $(patsubst %,-map $(COMPLIBDIR)/ocaml_%.ml, \
-      common bytecomp optcomp toplevel) $(OPENS)
-P_DEPINCLUDES=-I $(COMPLIBDIR)
+
+%.cmx %.cmxa: ocamlopt
 
 $(COMPLIBDIR)/%.cmi: $(COMPLIBDIR)/%.mli
-	$(CAMLC) $(P_COMPFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c $<
 
 $(COMPLIBDIR)/%.cmo: $(COMPLIBDIR)/%.ml
-	$(CAMLC) $(P_COMPFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c $<
 
-$(COMPLIBDIR)/%.cmx: $(COMPLIBDIR)/%.ml ocamlopt
-	$(CAMLOPT) $(P_COMPFLAGS) -c $<
+$(COMPLIBDIR)/%.cmx: $(COMPLIBDIR)/%.ml
+	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c $<
+
+$(COMPLIBDIR)/ocaml_common__compdynlink.cmo: \
+    $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte
+	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c -impl $<
+
+$(COMPLIBDIR)/ocaml_common__compdynlink.cmx: \
+    $(COMPLIBDIR)/ocaml_common__compdynlink.mlopt
+	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c -impl $<
 
 define cp
 $(COMPLIBDIR)/ocaml_$(1)__$(notdir $(2)): $(2)
@@ -647,10 +651,10 @@ $(foreach f,\
   $(eval $(call cp,$(1),$(f))))
 
 $$(COMPLIBDIR)/ocaml_$(1).cmo: $$(COMPLIBDIR)/ocaml_$(1).ml
-	$$(CAMLC) $$(COMPFLAGS) -no-alias-deps -w -49 -c $$<
+	$$(CAMLC) $$(COMPFLAGS) -w -49 -c $$<
 
-$$(COMPLIBDIR)/ocaml_$(1).cmx: $$(COMPLIBDIR)/ocaml_$(1).ml ocamlopt
-	$$(CAMLOPT) $$(COMPFLAGS) -no-alias-deps -w -49 -c $$<
+$$(COMPLIBDIR)/ocaml_$(1).cmx: $$(COMPLIBDIR)/ocaml_$(1).ml
+	$$(CAMLOPT) $$(COMPFLAGS) -w -49 -c $$<
 endef
 
 $(eval $(call f,common,$(COMMON)))
@@ -676,8 +680,7 @@ unprefixed_sources: tools/gen_prefix CompilerModules
 beforedepend:: unprefixed_sources
 
 partialclean::
-	rm -f $(COMPLIBDIR_U)/*.ml*
-	rm -f $(COMPLIBDIR_U)/*.cm*
+	rm -f $(COMPLIBDIR_U)/*.ml $(COMPLIBDIR_U)/*.mli
 
 $(COMPLIBDIR_U)/%.cmi: $(COMPLIBDIR_U)/%.mli
 	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
@@ -688,26 +691,18 @@ $(COMPLIBDIR_U)/%.cmo: $(COMPLIBDIR_U)/%.ml
 $(COMPLIBDIR_U)/%.cmx: $(COMPLIBDIR_U)/%.ml
 	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
 
-$(COMPLIBDIR)/ocaml_common__compdynlink.cmo: \
-    $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte
-	$(CAMLC) $(P_COMPFLAGS) -c -impl $<
-
-$(COMPLIBDIR)/ocaml_common__compdynlink.cmx: \
-    $(COMPLIBDIR)/ocaml_common__compdynlink.mlopt
-	$(CAMLOPT) $(P_COMPFLAGS) -c -impl $<
-
-.PHONY: prefixed_compilerlibs
-prefixed_compilerlibs: \
+.PHONY: compilerlibs
+compilerlibs: \
     $(COMPLIBDIR)/ocamlcommon.cma \
     $(COMPLIBDIR)/ocamlbytecomp.cma \
     $(COMPLIBDIR)/ocamltoplevel.cma
 
-.PHONY: prefixed_compilerlibs.opt
-prefixed_compilerlibs.opt: \
+.PHONY: compilerlibs.opt
+compilerlibs.opt: \
     $(COMPLIBDIR)/ocamloptcomp.cma
 
-.PHONY: prefixed_compilerlibs.optopt
-prefixed_compilerlibs.optopt: \
+.PHONY: compilerlibs.optopt
+compilerlibs.optopt: \
     $(COMPLIBDIR)/ocamlcommon.cmxa \
     $(COMPLIBDIR)/ocamlbytecomp.cmxa \
     $(COMPLIBDIR)/ocamltoplevel.cmxa \
@@ -1366,29 +1361,18 @@ list-all-asts:
 partialclean::
 	rm -f $(AST_FILES)
 
-driver/%.cmi: driver/%.mli
-	$(CAMLC) $(COMPFLAGS) \
-	  -I $(COMPLIBDIR) -I $(COMPLIBDIR_U) -I driver -c $<
+# Default rules
 
-driver/%.cmo: driver/%.ml
-	$(CAMLC) $(COMPFLAGS) \
-	  -I $(COMPLIBDIR) -I $(COMPLIBDIR_U) -I driver -c $<
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
 
-driver/%.cmx: driver/%.ml
-	$(CAMLOPT) $(COMPFLAGS) \
-	  -I $(COMPLIBDIR) -I $(COMPLIBDIR_U) -I driver -c $<
+.ml.cmo:
+	$(CAMLC) $(COMPFLAGS) $(INCLUDES) -c $<
 
-toplevel/%.cmi: toplevel/%.mli
-	$(CAMLC) $(COMPFLAGS) \
-	  -I $(COMPLIBDIR) -I $(COMPLIBDIR_U) -I toplevel -c $<
+.mli.cmi:
+	$(CAMLC) $(COMPFLAGS) $(INCLUDES) -c $<
 
-toplevel/%.cmo: toplevel/%.ml
-	$(CAMLC) $(COMPFLAGS) \
-	  -I $(COMPLIBDIR) -I $(COMPLIBDIR_U) -I toplevel -c $<
-
-toplevel/%.cmx: toplevel/%.ml
-	$(CAMLOPT) $(COMPFLAGS) \
-	  -I $(COMPLIBDIR) -I $(COMPLIBDIR_U) -I toplevel -c $<
+.ml.cmx:
+	$(CAMLOPT) $(COMPFLAGS) $(INCLUDES) -c $<
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
@@ -1399,21 +1383,28 @@ partialclean::
 	done
 	rm -f *~
 
+MAPS=\
+  -map $(COMPLIBDIR)/ocaml_common.ml \
+  -map $(COMPLIBDIR)/ocaml_bytecomp.ml \
+  -map $(COMPLIBDIR)/ocaml_toplevel.ml \
+  -map $(COMPLIBDIR)/ocaml_optcomp.ml
+
 .PHONY: depend
 depend: beforedepend
 	(for d in driver toplevel; do \
 	 $(CAMLDEP) $(DEPFLAGS) -I $(COMPLIBDIR_U) $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
 	(for d in common bytecomp toplevel optcomp; \
-	 do $(CAMLDEP) $(DEPFLAGS) $(P_DEPFLAGS) $(P_DEPINCLUDES) \
-          $(COMPLIBDIR)/ocaml_$${d}__*.{ml,mli} || exit; \
+	 do $(CAMLDEP) $(DEPFLAGS) $(MAPS) $(OPENS) -I $(COMPLIBDIR) \
+	  $(COMPLIBDIR)/ocaml_$${d}__*.mli \
+	  $(COMPLIBDIR)/ocaml_$${d}__*.ml || exit; \
 	 done) >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(P_DEPFLAGS) $(P_DEPINCLUDES) -native \
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) $(OPENS) -I $(COMPLIBDIR) -native \
 	 -impl $(COMPLIBDIR)/ocaml_common__compdynlink.mlopt >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(P_DEPFLAGS) $(P_DEPINCLUDES) -bytecode \
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) $(OPENS) -I $(COMPLIBDIR) -bytecode \
 	 -impl $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte >> .depend
-	$(CAMLDEP) $(DEPFLAGS) -I $(COMPLIBDIR) $(P_DEPFLAGS) \
-	 $(COMPLIBDIR_U)/*.{ml,mli} >> .depend
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) $(OPENS) -I $(COMPLIBDIR) \
+	 $(COMPLIBDIR_U)/*.mli $(COMPLIBDIR_U)/*.ml >> .depend
 
 .PHONY: distclean
 distclean: clean
