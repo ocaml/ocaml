@@ -7715,6 +7715,10 @@ compilerlibs/ocaml_optcomp__x86_proc.cmi : \
     compilerlibs/ocaml_optcomp__x86_ast.cmi \
     compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo
+compilerlibs/ocaml_opttoplevel__genprintval.cmo : \
+    compilerlibs/ocaml_toplevel__genprintval.cmi
+compilerlibs/ocaml_opttoplevel__genprintval.cmx : \
+    compilerlibs/ocaml_toplevel__genprintval.cmx
 compilerlibs/ocaml_opttoplevel__opttopdirs.cmo : \
     compilerlibs/ocaml_opttoplevel__opttoploop.cmi \
     compilerlibs/ocaml_opttoplevel.cmo \
@@ -7758,6 +7762,7 @@ compilerlibs/ocaml_opttoplevel__opttopdirs.cmi : \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 compilerlibs/ocaml_opttoplevel__opttoploop.cmo : \
+    compilerlibs/ocaml_opttoplevel__genprintval.cmo \
     compilerlibs/ocaml_opttoplevel.cmo \
     compilerlibs/ocaml_optcomp__proc.cmi \
     compilerlibs/ocaml_optcomp__middle_end.cmi \
@@ -7806,6 +7811,7 @@ compilerlibs/ocaml_opttoplevel__opttoploop.cmo : \
     compilerlibs/ocaml_bytecomp.cmo \
     compilerlibs/ocaml_opttoplevel__opttoploop.cmi
 compilerlibs/ocaml_opttoplevel__opttoploop.cmx : \
+    compilerlibs/ocaml_opttoplevel__genprintval.cmx \
     compilerlibs/ocaml_opttoplevel.cmx \
     compilerlibs/ocaml_optcomp__proc.cmx \
     compilerlibs/ocaml_optcomp__middle_end.cmx \
