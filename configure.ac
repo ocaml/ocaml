@@ -331,8 +331,8 @@ AC_ARG_WITH([reserved-header-bits],
 # expect --enable-force-safe-string to become the default in the future.
 
 AC_ARG_ENABLE([force-safe-string],
-  [AS_HELP_STRING([--disable-force-safe-string],
-    [do not force strings to be safe])])
+  [AS_HELP_STRING([--enable-force-safe-string],
+    [force strings to be safe])])
 
 AC_ARG_WITH([default-string],
   [AS_HELP_STRING([--with-default-string=mode],
