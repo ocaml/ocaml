@@ -691,7 +691,7 @@ compilerlibs.optopt: \
     $(COMPLIBDIR)/ocamlcommon.cmxa \
     $(COMPLIBDIR)/ocamlbytecomp.cmxa \
     $(COMPLIBDIR)/ocamloptcomp.cmxa \
-    $(COMPLIBDIR)/ocamloptoplevel.cmxa
+    $(COMPLIBDIR)/ocamlopttoplevel.cmxa
 
 # Shared parts of the system
 
