@@ -1,0 +1,230 @@
+# -*- Makefile -*-
+
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 2019 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+UTILS=utils/config utils/build_path_prefix_map utils/misc \
+  utils/identifiable utils/numbers utils/arg_helper \
+  utils/clflags utils/profile \
+  utils/terminfo utils/ccomp utils/warnings \
+  utils/consistbl \
+  utils/strongly_connected_components \
+  utils/targetint
+
+PARSING=parsing/asttypes parsing/parsetree \
+  parsing/location parsing/longident \
+  parsing/docstrings parsing/syntaxerr \
+  parsing/ast_helper \
+  parsing/pprintast \
+  parsing/camlinternalMenhirLib parsing/parser \
+  parsing/lexer parsing/parse parsing/printast \
+  parsing/ast_mapper parsing/ast_iterator parsing/attr_helper \
+  parsing/builtin_attributes parsing/ast_invariants parsing/depend
+
+TYPING=typing/outcometree typing/annot \
+  typing/ident typing/path \
+  typing/primitive typing/types \
+  typing/btype typing/oprint \
+  typing/subst typing/predef \
+  typing/datarepr typing/cmi_format typing/env \
+  typing/typedtree typing/printtyped typing/ctype \
+  typing/printtyp typing/includeclass \
+  typing/mtype typing/envaux typing/includecore \
+  typing/typedtreeIter typing/tast_mapper \
+  typing/cmt_format typing/untypeast \
+  typing/includemod typing/typetexp typing/printpat \
+  typing/parmatch typing/stypes \
+  typing/typedecl_properties typing/typedecl_variance \
+  typing/typedecl_unboxed typing/typedecl_immediacy \
+  typing/typedecl typing/typeopt \
+  typing/rec_check typing/typecore typing/typeclass \
+  typing/typemod
+
+COMP=bytecomp/cmo_format bytecomp/lambda bytecomp/printlambda \
+  bytecomp/semantics_of_primitives \
+  bytecomp/switch bytecomp/matching \
+  bytecomp/translobj bytecomp/translattribute \
+  bytecomp/translprim bytecomp/translcore \
+  bytecomp/translclass bytecomp/translmod \
+  bytecomp/simplif bytecomp/runtimedef \
+  bytecomp/instruct bytecomp/meta bytecomp/opcodes \
+  bytecomp/bytesections bytecomp/dll \
+  bytecomp/symtable \
+  driver/pparse driver/main_args \
+  driver/compenv driver/compmisc \
+  driver/compdynlink_types driver/compdynlink_platform_intf \
+  driver/compdynlink_common driver/compdynlink \
+  driver/compplugin driver/makedepend \
+  driver/compile_common
+
+COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
+
+BYTECOMP=bytecomp/bytegen \
+  bytecomp/printinstr bytecomp/emitcode \
+  bytecomp/bytelink bytecomp/bytelibrarian bytecomp/bytepackager \
+  driver/errors driver/compile
+
+ARCH_SPECIFIC =\
+  asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
+  asmcomp/scheduling.ml asmcomp/reload.ml
+
+INTEL_ASM=\
+  asmcomp/x86_ast \
+  asmcomp/x86_proc \
+  asmcomp/x86_dsl \
+  asmcomp/x86_gas \
+  asmcomp/x86_masm
+
+ARCH_SPECIFIC_ASMCOMP=
+ifeq ($(ARCH),i386)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
+ifeq ($(ARCH),amd64)
+ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
+endif
+
+ASMCOMP=\
+  $(ARCH_SPECIFIC_ASMCOMP) \
+  asmcomp/cmx_format \
+  asmcomp/arch \
+  asmcomp/backend_var \
+  asmcomp/cmm asmcomp/printcmm \
+  asmcomp/reg asmcomp/debug/reg_with_debug_info \
+  asmcomp/debug/reg_availability_set \
+  asmcomp/mach asmcomp/proc \
+  asmcomp/clambda asmcomp/printclambda \
+  asmcomp/export_info \
+  asmcomp/export_info_for_pack \
+  asmcomp/compilenv \
+  asmcomp/closure \
+  asmcomp/traverse_for_exported_symbols \
+  asmcomp/build_export_info \
+  asmcomp/closure_offsets \
+  asmcomp/flambda_to_clambda \
+  asmcomp/import_approx \
+  asmcomp/un_anf \
+  asmcomp/afl_instrument \
+  asmcomp/strmatch asmcomp/cmmgen \
+  asmcomp/interval \
+  asmcomp/printmach asmcomp/selectgen \
+  asmcomp/spacetime_profiling asmcomp/selection \
+  asmcomp/comballoc \
+  asmcomp/CSEgen asmcomp/CSE \
+  asmcomp/liveness \
+  asmcomp/spill asmcomp/split \
+  asmcomp/interf asmcomp/coloring \
+  asmcomp/linscan \
+  asmcomp/reloadgen asmcomp/reload \
+  asmcomp/deadcode \
+  asmcomp/printlinear asmcomp/linearize \
+  asmcomp/debug/available_regs \
+  asmcomp/schedgen asmcomp/scheduling \
+  asmcomp/branch_relaxation_intf \
+  asmcomp/branch_relaxation \
+  asmcomp/emitaux asmcomp/emit asmcomp/asmgen \
+  asmcomp/asmlink asmcomp/asmlibrarian asmcomp/asmpackager \
+  driver/opterrors driver/optcompile
+
+MIDDLE_END=\
+  middle_end/backend_intf \
+  middle_end/simplify_boxed_integer_ops_intf \
+  middle_end/inlining_decision_intf \
+  middle_end/int_replace_polymorphic_compare \
+  middle_end/debuginfo \
+  middle_end/base_types/tag \
+  middle_end/base_types/linkage_name \
+  middle_end/base_types/compilation_unit \
+  middle_end/internal_variable_names \
+  middle_end/base_types/variable \
+  middle_end/base_types/mutable_variable \
+  middle_end/base_types/id_types \
+  middle_end/base_types/set_of_closures_id \
+  middle_end/base_types/set_of_closures_origin \
+  middle_end/base_types/closure_element \
+  middle_end/base_types/closure_id \
+  middle_end/base_types/closure_origin \
+  middle_end/base_types/var_within_closure \
+  middle_end/base_types/static_exception \
+  middle_end/base_types/export_id \
+  middle_end/base_types/symbol \
+  middle_end/pass_wrapper \
+  middle_end/allocated_const \
+  middle_end/parameter \
+  middle_end/projection \
+  middle_end/flambda \
+  middle_end/flambda_iterators \
+  middle_end/flambda_utils \
+  middle_end/inlining_cost \
+  middle_end/effect_analysis \
+  middle_end/freshening \
+  middle_end/simple_value_approx \
+  middle_end/lift_code \
+  middle_end/closure_conversion_aux \
+  middle_end/closure_conversion \
+  middle_end/initialize_symbol_to_let_symbol \
+  middle_end/lift_let_to_initialize_symbol \
+  middle_end/find_recursive_functions \
+  middle_end/invariant_params \
+  middle_end/inconstant_idents \
+  middle_end/alias_analysis \
+  middle_end/lift_constants \
+  middle_end/share_constants \
+  middle_end/simplify_common \
+  middle_end/remove_unused_arguments \
+  middle_end/remove_unused_closure_vars \
+  middle_end/remove_unused_program_constructs \
+  middle_end/simplify_boxed_integer_ops \
+  middle_end/simplify_primitives \
+  middle_end/inlining_stats_types \
+  middle_end/inlining_stats \
+  middle_end/inline_and_simplify_aux \
+  middle_end/remove_free_vars_equal_to_args \
+  middle_end/extract_projections \
+  middle_end/augment_specialised_args \
+  middle_end/unbox_free_vars_of_closures \
+  middle_end/unbox_specialised_args \
+  middle_end/unbox_closures \
+  middle_end/inlining_transforms \
+  middle_end/inlining_decision \
+  middle_end/inline_and_simplify \
+  middle_end/ref_to_variables \
+  middle_end/flambda_invariants \
+  middle_end/middle_end
+
+OPTCOMP=$(MIDDLE_END) $(ASMCOMP)
+
+TOPLEVEL=toplevel/genprintval toplevel/toploop \
+  toplevel/trace toplevel/topdirs toplevel/topmain
+
+OPTTOPLEVEL=toplevel/genprintval toplevel/opttoploop \
+  toplevel/opttopdirs toplevel/opttopmain
+
+MLI_ONLY=\
+  parsing/asttypes \
+  parsing/parsetree \
+  typing/outcometree \
+  typing/annot \
+  bytecomp/cmo_format \
+  asmcomp/cmx_format \
+  asmcomp/x86_ast \
+  middle_end/backend_intf \
+  middle_end/simplify_boxed_integer_ops_intf \
+  middle_end/inlining_decision_intf
+
+ML_ONLY=\
+  bytecomp/opcodes \
+  asmcomp/arch \
+  asmcomp/CSE \
+  asmcomp/branch_relaxation_intf
