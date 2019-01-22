@@ -1526,7 +1526,7 @@ Optional Features:
                           also install the bytecode versions of programs
   --disable-native-compiler
                           do not build the native compiler
-  --enable-flambda        enable flmabda optimizations
+  --enable-flambda        enable flambda optimizations
   --enable-flambda-invariants
                           enable invariants checks in flambda
   --disable-force-safe-string

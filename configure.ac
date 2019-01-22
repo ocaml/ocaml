@@ -293,7 +293,7 @@ AC_ARG_ENABLE([native-compiler],
 
 AC_ARG_ENABLE([flambda],
   [AS_HELP_STRING([--enable-flambda],
-    [enable flmabda optimizations])])
+    [enable flambda optimizations])])
 
 AC_ARG_ENABLE([flambda-invariants],
   [AS_HELP_STRING([--enable-flambda-invariants],
