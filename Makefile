@@ -396,12 +396,12 @@ endif
 	  $(COMPLIBDIR)/ocamltoplevel.cma "$(INSTALL_OCAMLTOPLEVELDIR)"
 	$(INSTALL_PROG) expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
 	$(INSTALL_DATA) \
-	   toplevel/topdirs.cmi \
+	   $(COMPLIBDIR_U)/topdirs.cmi \
 	   "$(INSTALL_LIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	   toplevel/topdirs.cmt toplevel/topdirs.cmti \
-           toplevel/topdirs.mli \
+	   $(COMPLIBDIR_U)/topdirs.cmt \
+           $(COMPLIBDIR_U)/topdirs.ml \
 	   "$(INSTALL_LIBDIR)"
 endif
 	$(MAKE) -C tools install
@@ -643,7 +643,8 @@ $(foreach f,\
   $(eval $(call copy_file_with_prefix,$(1),$(f),$(3))))
 endef
 
-$(call copy_files_with_prefix,common,$(filter-out driver/compdynlink,$(COMMON)),Ocaml_common)
+$(call copy_files_with_prefix,common,\
+$(filter-out driver/compdynlink,$(COMMON)),Ocaml_common)
 
 $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte: driver/compdynlink.mlbyte
 	(echo 'open! Ocaml_common'; cat $<) > $@
@@ -662,7 +663,8 @@ beforedepend:: $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte \
 
 $(call copy_files_with_prefix,bytecomp,$(BYTECOMP),Ocaml_common Ocaml_bytecomp)
 $(call copy_files_with_prefix,optcomp,$(OPTCOMP),Ocaml_common Ocaml_optcomp)
-$(call copy_files_with_prefix,toplevel,$(TOPLEVEL),Ocaml_common Ocaml_bytecomp Ocaml_toplevel)
+$(call copy_files_with_prefix,toplevel,$(TOPLEVEL),\
+Ocaml_common Ocaml_bytecomp Ocaml_toplevel)
 
 partialclean::
 	rm -f $(COMPLIBDIR_U)/*.ml $(COMPLIBDIR_U)/*.mli
@@ -1347,7 +1349,8 @@ $(COMPLIBDIR_U)/opttoplevel: tools/gen_prefix CompilerModules
 	  -prefix ocaml_opttoplevel -unprefix $(COMPLIBDIR_U)
 	touch $@
 
-$(call copy_files_with_prefix,opttoplevel,$(filter-out toplevel/genprintval,$(OPTTOPLEVEL)),Ocaml_common Ocaml_bytecomp Ocaml_optcomp Ocaml_opttoplevel)
+$(call copy_files_with_prefix,opttoplevel,$(filter-out toplevel/genprintval,\
+$(OPTTOPLEVEL)),Ocaml_common Ocaml_bytecomp Ocaml_optcomp Ocaml_opttoplevel)
 
 partialclean::
 	rm -f $(COMPLIBDIR)/ocaml_opttoplevel.ml \
