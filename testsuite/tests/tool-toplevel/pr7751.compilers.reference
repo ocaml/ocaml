@@ -1,8 +1,9 @@
-- : Parsetree.expression =
-{Parsetree.pexp_desc =
-  Parsetree.Pexp_constant (Parsetree.Pconst_integer ("1", None));
+- : Ocaml_common.Parsetree.expression =
+{Ocaml_common.Parsetree.pexp_desc =
+  Ocaml_common.Parsetree.Pexp_constant
+   (Ocaml_common.Parsetree.Pconst_integer ("1", None));
  pexp_loc =
-  {Location.loc_start =
+  {Ocaml_common.Location.loc_start =
     {Lexing.pos_fname = ""; pos_lnum = 1; pos_bol = 0; pos_cnum = 0};
    loc_end = {Lexing.pos_fname = ""; pos_lnum = 1; pos_bol = 0; pos_cnum = 1};
    loc_ghost = false};

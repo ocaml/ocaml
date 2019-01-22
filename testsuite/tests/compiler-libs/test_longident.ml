@@ -1,6 +1,6 @@
 (* TEST
-   flags = "-I ${ocamlsrcdir}/parsing"
-   include ocamlcommon
+   flags = "-I ${ocamlsrcdir}/unprefixed_compilerlibs \
+            -I ${ocamlsrcdir}/compilerlibs"
    * expect
 *)
 
@@ -20,7 +20,7 @@ val flatten_dot : string list = ["M"; "foo"]
 let flatten_apply = L.flatten (L.Lapply (L.Lident "F", L.Lident "X"))
 [%%expect {|
 >> Fatal error: Longident.flat
-Exception: Misc.Fatal_error.
+Exception: Ocaml_common.Misc.Fatal_error.
 |}]
 
 let unflatten_empty = L.unflatten []
@@ -48,7 +48,7 @@ val last_dot : string = "foo"
 let last_apply = L.last (L.Lapply (L.Lident "F", L.Lident "X"))
 [%%expect {|
 >> Fatal error: Longident.last
-Exception: Misc.Fatal_error.
+Exception: Ocaml_common.Misc.Fatal_error.
 |}]
 let last_dot_apply = L.last
     (L.Ldot (L.Lapply (L.Lident "F", L.Lident "X"), "foo"))
@@ -84,7 +84,7 @@ val parse_complex : L.t =
 
 let string_of_longident lid = Format.asprintf "%a" Pprintast.longident lid
 [%%expect{|
-val string_of_longident : Longident.t -> string = <fun>
+val string_of_longident : Ocaml_common.Longident.t -> string = <fun>
 |}]
 let str_empty   = string_of_longident parse_empty
 [%%expect {|

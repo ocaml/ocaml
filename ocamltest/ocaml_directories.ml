@@ -28,7 +28,7 @@ let libunix ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "otherlibs"; subdir]
 
 let toplevel ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "toplevel"]
+  Filename.make_path [ocamlsrcdir; "unprefixed_compilerlibs"]
 
 let runtime ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "runtime"]
