@@ -649,12 +649,6 @@ $(foreach f,\
        driver/compdynlink.mlbyte driver/compdynlink.mlopt,$(2:=.ml))) \
   $(filter-out $(ML_ONLY:=.mli),$(2:=.mli)),\
   $(eval $(call cp,$(1),$(f))))
-
-$$(COMPLIBDIR)/ocaml_$(1).cmo: $$(COMPLIBDIR)/ocaml_$(1).ml
-	$$(CAMLC) $$(COMPFLAGS) -w -49 -c $$<
-
-$$(COMPLIBDIR)/ocaml_$(1).cmx: $$(COMPLIBDIR)/ocaml_$(1).ml
-	$$(CAMLOPT) $$(COMPFLAGS) -w -49 -c $$<
 endef
 
 $(eval $(call f,common,$(COMMON)))
@@ -695,6 +689,8 @@ compilerlibs.optopt: \
 
 $(COMPLIBDIR)/ocaml_common.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_common $(COMMON) > $@
+$(COMPLIBDIR)/ocaml_common.cmo: $(COMPLIBDIR)/ocaml_common.ml
+	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamlcommon.cma: $(COMMON_CMO)
 	$(CAMLC) -a -linkall -o $@ $^
 $(COMPLIBDIR_U)/ocamlcommon.cma: $(COMPLIBDIR_U)/common \
@@ -715,6 +711,8 @@ beforedepend:: $(COMPLIBDIR)/ocaml_common.ml $(COMPLIBDIR_U)/common
 
 $(COMPLIBDIR)/ocaml_bytecomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_bytecomp $(BYTECOMP) > $@
+$(COMPLIBDIR)/ocaml_bytecomp.cmo: $(COMPLIBDIR)/ocaml_bytecomp.ml
+	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamlbytecomp.cma: $(BYTECOMP_CMO)
 	$(CAMLC) -a -o $@ $^
 $(COMPLIBDIR_U)/ocamlbytecomp.cma: $(COMPLIBDIR_U)/bytecomp \
@@ -742,6 +740,8 @@ partialclean::
 
 $(COMPLIBDIR)/ocaml_optcomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_optcomp $(OPTCOMP) > $@
+$(COMPLIBDIR)/ocaml_optcomp.cmo: $(COMPLIBDIR)/ocaml_optcomp.ml
+	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamloptcomp.cma: $(OPTCOMP_CMO)
 	$(CAMLC) -a -o $@ $^
 $(COMPLIBDIR_U)/ocamloptcomp.cma: $(COMPLIBDIR_U)/optcomp \
@@ -769,6 +769,8 @@ partialclean::
 
 $(COMPLIBDIR)/ocaml_toplevel.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_toplevel $(TOPLEVEL) > $@
+$(COMPLIBDIR)/ocaml_toplevel.cmo: $(COMPLIBDIR)/ocaml_toplevel.ml
+	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamltoplevel.cma: $(TOPLEVEL_CMO)
 	$(CAMLC) -a -o $@ $^
 $(COMPLIBDIR_U)/ocamltoplevel.cma: $(COMPLIBDIR_U)/toplevel \
@@ -834,6 +836,8 @@ beforedepend:: parsing/lexer.ml
 
 # Shared parts of the system compiled with the native-code compiler
 
+$(COMPLIBDIR)/ocaml_common.cmx: $(COMPLIBDIR)/ocaml_common.ml
+	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamlcommon.cmxa: $(COMMON_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -linkall -o $@ $^
 $(COMPLIBDIR_U)/ocamlcommon.cmxa: $(COMPLIBDIR_U)/common \
@@ -845,6 +849,8 @@ partialclean::
 
 # The bytecode compiler compiled with the native-code compiler
 
+$(COMPLIBDIR)/ocaml_bytecomp.cmx: $(COMPLIBDIR)/ocaml_bytecomp.ml
+	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamlbytecomp.cmxa: $(BYTECOMP_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
 $(COMPLIBDIR_U)/ocamlbytecomp.cmxa: $(COMPLIBDIR_U)/bytecomp \
@@ -865,6 +871,8 @@ partialclean::
 
 # The native-code compiler compiled with itself
 
+$(COMPLIBDIR)/ocaml_optcomp.cmx: $(COMPLIBDIR)/ocaml_optcomp.ml
+	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamloptcomp.cmxa: $(OPTCOMP_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
 $(COMPLIBDIR_U)/ocamloptcomp.cmxa: $(COMPLIBDIR_U)/optcomp \
