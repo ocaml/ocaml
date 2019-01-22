@@ -612,8 +612,8 @@ OPENS=\
   -open Ocaml_common \
   -open Ocaml_bytecomp \
   -open Ocaml_optcomp \
-  -open Ocaml_toplevel \
-  -open Ocaml_opttoplevel
+  -open Ocaml_opttoplevel \
+  -open Ocaml_toplevel
 
 $(COMPLIBDIR)/%.cmi: $(COMPLIBDIR)/%.mli
 	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c $<
