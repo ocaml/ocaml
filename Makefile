@@ -375,17 +375,17 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  $(COMPLIBDIR)/ocaml_common*.cmt \
 	  $(COMPLIBDIR)/ocaml_common*.cmti \
-	  $(COMPLIBDIR)/ocaml_common*.mli \
+	  $(COMPLIBDIR)/ocaml_common.ml $(COMPLIBDIR)/ocaml_common__*.mli \
 	  "$(INSTALL_OCAMLCOMMONDIR)"
 	$(INSTALL_DATA) \
 	  $(COMPLIBDIR)/ocaml_bytecomp*.cmt \
 	  $(COMPLIBDIR)/ocaml_bytecomp*.cmti \
-	  $(COMPLIBDIR)/ocaml_bytecomp*.mli \
+	  $(COMPLIBDIR)/ocaml_bytecomp.ml $(COMPLIBDIR)/ocaml_bytecomp__*.mli \
 	  "$(INSTALL_OCAMLBYTECOMPDIR)"
 	$(INSTALL_DATA) \
 	  $(COMPLIBDIR)/ocaml_toplevel*.cmt \
 	  $(COMPLIBDIR)/ocaml_toplevel*.cmti \
-	  $(COMPLIBDIR)/ocaml_toplevel*.mli \
+	  $(COMPLIBDIR)/ocaml_toplevel.ml $(COMPLIBDIR)/ocaml_toplevel__*.mli \
 	  "$(INSTALL_OCAMLTOPLEVELDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -400,6 +400,8 @@ endif
 	   "$(INSTALL_LIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
+	   $(COMPLIBDIR)/ocaml_toplevel__topdirs.cmti \
+	   $(COMPLIBDIR)/ocaml_toplevel__topdirs.mli \
 	   $(COMPLIBDIR_U)/topdirs.cmt \
            $(COMPLIBDIR_U)/topdirs.ml \
 	   "$(INSTALL_LIBDIR)"
@@ -448,26 +450,13 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 endif
 	$(MAKE) -C stdlib installopt
 	$(INSTALL_DATA) \
-	    middle_end/*.cmi \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    middle_end/base_types/*.cmi \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    asmcomp/*.cmi \
+	    $(COMPLIBDIR)/ocaml_*__*.cmi $(COMPLIBDIR_U)/*.cmi \
 	    "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	    middle_end/*.cmt middle_end/*.cmti \
-	    middle_end/*.mli \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    middle_end/base_types/*.cmt middle_end/base_types/*.cmti \
-	    middle_end/base_types/*.mli \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    asmcomp/*.cmt asmcomp/*.cmti \
-	    asmcomp/*.mli \
+	    $(COMPLIBDIR)/*.cmt $(COMPLIBDIR)/*.cmti $(COMPLIBDIR)/*.mli \
+	    $(COMPLIBDIR_U)/*.cmt $(COMPLIBDIR_U)/*.cmti $(COMPLIBDIR_U)/*.mli \
+	    $(COMPLIBDIR_U)/*.ml \
 	    "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -480,7 +469,8 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	    $(COMPLIBDIR)/ocaml_optcomp*.cmt \
 	    $(COMPLIBDIR)/ocaml_optcomp*.cmti \
-	    $(COMPLIBDIR)/ocaml_optcomp*.mli \
+	    $(COMPLIBDIR)/ocaml_optcomp.ml \
+	    $(COMPLIBDIR)/ocaml_optcomp__*.mli \
 	    "$(INSTALL_OCAMLOPTCOMPDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -519,8 +509,7 @@ installoptopt:
 	   $(LN) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
 	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
 	$(INSTALL_DATA) \
-	   $(COMPLIBDIR)/*.cmx \
-	   $(COMPLIBDIR_U)/*.cmx \
+	   $(COMPLIBDIR)/ocaml_*__*.cmx $(COMPLIBDIR_U)/*.cmx \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
            $(COMPLIBDIR_U)/ocamlcommon.cmxa $(COMPLIBDIR_U)/ocamlcommon.$(A) \
@@ -557,7 +546,7 @@ installoptopt:
 	  $(INSTALL_PROG) \
 	    ocamlnat$(EXE) "$(INSTALL_BINDIR)/ocamlnat$(EXE)"; \
 	  $(INSTALL_DATA) \
-	     toplevel/opttopdirs.cmi \
+	     $(COMPLIBDIR_U)/opttopdirs.cmi \
 	     "$(INSTALL_LIBDIR)"; \
 	  $(INSTALL_DATA) \
 	     $(COMPLIBDIR_U)/ocamlopttoplevel.cmxa \
