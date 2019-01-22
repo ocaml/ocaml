@@ -206,7 +206,7 @@ AC_ARG_ENABLE([debug-runtime],
 
 AC_ARG_ENABLE([debugger],
   [AS_HELP_STRING([--enable-debugger],
-    [build the debugger @<:@default=yes@:>@])],
+    [build the debugger @<:@default=auto@:>@])],
   [],
   [enable_debugger=auto])
 
