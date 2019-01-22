@@ -169,7 +169,7 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
           let symbol = Asm_symbol.create symbol in
           let arg_location =
             create_composite_location_description
-              (SLDL.compile (SLDL.of_lvalue (SLDL.Lvalue.const_symbol ~symbol)))
+              (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.const_symbol symbol)))
           in
           let type_attribute =
             (* CR-someday mshinwell: Work out what we need to do in order to

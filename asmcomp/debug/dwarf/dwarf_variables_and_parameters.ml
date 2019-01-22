@@ -326,12 +326,12 @@ let phantom_var_location_description state
   | Iphantom_const_int i -> rvalue (SLDL.Rvalue.signed_int_const i)
   | Iphantom_const_symbol symbol ->
     let symbol = Asm_symbol.create symbol in
-    lvalue (SLDL.Lvalue.const_symbol ~symbol)
+    lvalue (SLDL.Lvalue.const_symbol symbol)
   | Iphantom_read_symbol_field { sym; field; } ->
     let symbol = Asm_symbol.create sym in
     (* CR-soon mshinwell: Fix [field] to be of type [Targetint.t] *)
     let field = Targetint.of_int field in
-    rvalue (SLDL.Rvalue.read_symbol_field ~symbol ~field)
+    rvalue (SLDL.Rvalue.read_symbol_field symbol ~field)
   | Iphantom_var var ->
     (* mshinwell: What happens if [var] isn't available at some point
        just due to the location list?  Should we push zero on the stack

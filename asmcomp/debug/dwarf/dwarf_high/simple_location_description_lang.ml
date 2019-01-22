@@ -40,9 +40,9 @@ module Lvalue = struct
     in
     OB.address_of_stack_slot ~offset_in_bytes
 
-  let const_symbol ~symbol = [OB.value_of_symbol ~symbol]
+  let const_symbol symbol = [OB.value_of_symbol ~symbol]
 
-  let in_symbol_field ~symbol ~field =
+  let in_symbol_field symbol ~field =
     let offset_in_bytes =
       Targetint.mul field Targetint.size_in_bytes_as_targetint
     in
@@ -84,6 +84,11 @@ module Rvalue = struct
     O.DW_op_stack_value;
   ]
 
+  let const_symbol symbol = [
+    OB.value_of_symbol ~symbol;
+    O.DW_op_stack_value;
+  ]
+
   let in_register ~dwarf_reg_number = [
     OB.contents_of_register ~dwarf_reg_number;
     O.DW_op_stack_value;
@@ -119,8 +124,8 @@ module Rvalue = struct
           O.DW_op_stack_value;
         ]
 
-  let read_symbol_field ~symbol ~field =
-    read_field ~block:(Lvalue.const_symbol ~symbol) ~field
+  let read_symbol_field symbol ~field =
+    read_field ~block:(Lvalue.const_symbol symbol) ~field
 
   let offset_pointer lvalue ~offset_in_words =
     let offset_in_bytes =
