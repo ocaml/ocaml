@@ -1504,7 +1504,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-debug-runtime do not build runtime with debugging support
-  --enable-debugger       build the debugger [default=yes]
+  --enable-debugger       build the debugger [default=auto]
   --enable-instrumented-runtime
                           build the instrumented runtime [default=auto]
   --disable-vmthreads     disable the bytecode threads library
