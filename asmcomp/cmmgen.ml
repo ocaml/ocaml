@@ -2214,7 +2214,7 @@ let rec transl env e =
       let tst = match dir with Upto -> Cgt   | Downto -> Clt in
       let inc = match dir with Upto -> Caddi | Downto -> Csubi in
       let raise_num = next_raise_count () in
-      let id_prev = VP.rename id in
+      let id_prev = VP.rename ~provenance:None id in
       return_unit
         (Clet
            (id, transl env low,

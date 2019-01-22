@@ -23,6 +23,11 @@ type t = {
   name : string;
   (* Just like for [Backend_sym], the [name] uniquely determines the
      symbol. *)
+  name_without_prefix : string;
+  (* Like [name], but without any symbol prefix.  This is required for
+     emission into DWARF information in situations where GDB may look up
+     a symbol name via the minsyms table, whose entries appear to lack the
+     prefix.  In particular this happens when resolving call site chains. *)
 }
 
 let escape name =
@@ -69,9 +74,14 @@ let symbol_prefix () = (* CR mshinwell: needs checking *)
   | POWER
   | Z -> ""
 
-let encode backend_sym =
+let encode ?without_prefix backend_sym =
+  let symbol_prefix =
+    match without_prefix with
+    | None -> symbol_prefix ()
+    | Some () -> ""
+  in
   Backend_sym.to_escaped_string
-    ~symbol_prefix:(symbol_prefix ())
+    ~symbol_prefix
     ~escape backend_sym
 
 let create backend_sym =
@@ -83,13 +93,18 @@ let create backend_sym =
   { section;
     compilation_unit = Backend_sym.compilation_unit backend_sym;
     name = encode backend_sym;
+    name_without_prefix = encode ~without_prefix:() backend_sym;
   }
 
 let of_external_name section compilation_unit name =
+  let backend_sym =
+    (* The choice of [Data] is arbitrary. *)
+    Backend_sym.of_external_name compilation_unit name Data
+  in
   { section;
     compilation_unit;
-    name =  (* The choice of [Data] is arbitrary. *)
-      encode (Backend_sym.of_external_name compilation_unit name Data);
+    name = encode backend_sym;
+    name_without_prefix = encode ~without_prefix:() backend_sym;
   }
 
 let of_external_name_no_prefix section compilation_unit name =
@@ -101,6 +116,10 @@ let of_external_name_no_prefix section compilation_unit name =
   { section;
     compilation_unit;
     name;
+    (* CR mshinwell: [name] might have a prefix...
+       Let's look through and find where this function is being used, and
+       see whether we can supply the name without a prefix at all times. *)
+    name_without_prefix = name;
   }
 
 let section t = t.section
@@ -110,12 +129,14 @@ let encode ?reloc t =
   | None -> t.name
   | Some reloc -> t.name ^ reloc
 
-let linkage_name t = Linkage_name.create (encode t)
+let linkage_name t = Linkage_name.create t.name_without_prefix
 
 let prefix t section compilation_unit ~prefix =
+  let prefix = escape prefix in
   { section;
     compilation_unit;
-    name = (escape prefix) ^ t.name;
+    name = prefix ^ t.name;
+    name_without_prefix = prefix ^ t.name_without_prefix;
   }
 
 (* Detection of functions that can be duplicated between a DLL and

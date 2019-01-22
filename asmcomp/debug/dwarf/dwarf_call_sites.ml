@@ -227,14 +227,14 @@ let add_call_site state ~scope_proto_dies ~function_proto_die
       match Debuginfo.position dbg with
       | None -> []
       | Some code_range ->
-        match !Clflags.dwarf_version with
-        | Four -> []
-        | Five ->
-          let file_name = Debuginfo.Code_range.file code_range in
-          [ DAH.create_call_file (Emitaux.file_num_for ~file_name);
-            DAH.create_call_line (Debuginfo.Code_range.line code_range);
-            DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
-          ]
+        (* These are DWARF-5 attributes, but should be fine in DWARF-4
+           output.  They are also needed for polymorphic function type
+           recovery. *)
+        let file_name = Debuginfo.Code_range.file code_range in
+        [ DAH.create_call_file (Emitaux.file_num_for ~file_name);
+          DAH.create_call_line (Debuginfo.Code_range.line code_range);
+          DAH.create_call_column (Debuginfo.Code_range.char_start code_range);
+        ]
     in
     let call_site_die =
       let dwarf_5_only =
@@ -310,7 +310,7 @@ let call_target_for_direct_callee state (callee : direct_callee) =
       else
         let id = Debuginfo.Function.id callee_dbg in
         Some (Dwarf_name_laundry.concrete_instance_die_name id)
-    | External (callee, linkage_name) ->
+    | External (callee, _linkage_name) ->
       match
         Asm_symbol.Tbl.find (DS.die_symbols_for_external_declarations state)
           callee
@@ -319,6 +319,7 @@ let call_target_for_direct_callee state (callee : direct_callee) =
         (* CR-someday mshinwell: dedup DIEs for runtime, "caml_curry", etc.
            functions across compilation units (maybe only generate the DIEs
            when compiling the startup file)? *)
+        let linkage_name = Asm_symbol.linkage_name callee in
         let callee_die =
           Proto_die.create ~parent:(Some (DS.compilation_unit_proto_die state))
             ~tag:Subprogram
@@ -327,7 +328,13 @@ let call_target_for_direct_callee state (callee : direct_callee) =
               (* We use the linkage name rather than the actual symbol address
                  [of the target function] because dsymutil helpfully
                  replaces such symbol references, when they refer to other
-                 compilation units, with zeros. *)
+                 compilation units, with zeros.
+                 Unlike the [DW_AT_linkage_names] used on concrete symbols, we
+                 have to emit a linkage name consisting of the actual
+                 object file symbol here (rather than the OCaml path to the
+                 function in question), since those are what the GDB minsyms
+                 lookup code uses.  (Such code is called when resolving call
+                 site chains.) *)
               DAH.create_linkage_name linkage_name;
             ]
             ()

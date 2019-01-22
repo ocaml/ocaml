@@ -226,6 +226,21 @@ val color : Misc.Color.setting option ref
 
 val unboxed_types : bool ref
 
+(* Settings required:
+
+Dwarf version:
+- 4 + gnu
+- 5
+
+Dwarf format: 32/64
+
+- Location + range table offsets (5 only)
+- Emit self tail calls
+
+-
+
+*)
+
 type dwarf_version =
   | Four
   | Five
