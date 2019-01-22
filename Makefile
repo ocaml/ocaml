@@ -651,14 +651,14 @@ $$(COMPLIBDIR)/ocaml_$(1).ml: tools/gen_prefix CompilerModules
 
 beforedepend:: $$(COMPLIBDIR)/ocaml_$(1).ml
 
+partialclean::
+	rm -f $$(COMPLIBDIR)/ocaml_$(1).ml
+
 $$(COMPLIBDIR)/ocaml_$(1).cmo: $$(COMPLIBDIR)/ocaml_$(1).ml
 	$$(CAMLC) $$(COMPFLAGS) -no-alias-deps -w -49 -c $$<
 
 $$(COMPLIBDIR)/ocaml_$(1).cmx: $$(COMPLIBDIR)/ocaml_$(1).ml ocamlopt
 	$$(CAMLOPT) $$(COMPFLAGS) -no-alias-deps -w -49 -c $$<
-
-partialclean::
-	rm -f $$(COMPLIBDIR)/ocaml_$(1).{ml,cm*}
 endef
 
 $(eval $(call f,common,$(COMMON)))
@@ -695,9 +695,6 @@ $(COMPLIBDIR_U)/%.cmo: $(COMPLIBDIR_U)/%.ml
 
 $(COMPLIBDIR_U)/%.cmx: $(COMPLIBDIR_U)/%.ml
 	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
-
-partialclean::
-	rm -f $(COMPLIBDIR)/ocaml_*__*.{ml*,cm*}
 
 $(COMPLIBDIR)/ocaml_common__compdynlink.cmo: \
     $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte
@@ -1379,7 +1376,8 @@ toplevel/%.cmx: toplevel/%.ml
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
-	         middle_end/base_types asmcomp/debug driver toplevel tools; do \
+	         middle_end/base_types asmcomp/debug driver toplevel tools \
+	         $(COMPLIBDIR) $(COMPLIBDIR_U); do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
 	    $$d/*.$(O) $$d/*.$(SO) $d/*~; \
 	done
