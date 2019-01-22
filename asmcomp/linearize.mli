@@ -56,6 +56,7 @@ val instr_cons
   -> available_before:Reg_availability_set.t
   -> phantom_available_before:Ident.Set.t
   -> available_across:Reg_availability_set.t option
+  -> Debuginfo.t
   -> instruction
 
 val instr_cons_same_avail
@@ -63,6 +64,7 @@ val instr_cons_same_avail
   -> Reg.t array
   -> Reg.t array
   -> instruction
+  -> Debuginfo.t
   -> instruction
 
 val invert_test: Mach.test -> Mach.test

@@ -95,11 +95,12 @@ let rec end_instr =
   }
 
 (* Cons an instruction (live, debug empty) *)
-
+(* CR mshinwell: Names of these four functions are confusing -- rename.
+   This first function is only used within the second one too. *)
 let instr_cons d a r n ~available_before ~phantom_available_before
-      ~available_across =
+      ~available_across dbg =
   { desc = d; next = n; arg = a; res = r;
-    dbg = Debuginfo.none; live = Reg.Set.empty;
+    dbg; live = Reg.Set.empty;
     available_before;
     phantom_available_before;
     available_across;
@@ -108,17 +109,22 @@ let instr_cons d a r n ~available_before ~phantom_available_before
 (* Like [instr_cons], but takes availability information from the given
    instruction, with the exception of "available across" which is cleared. *)
 
-let instr_cons_same_avail d a r n =
+let instr_cons_same_avail d a r n dbg =
   instr_cons d a r n ~available_before:n.available_before
     ~phantom_available_before:n.phantom_available_before
-    ~available_across:None
+    ~available_across:None dbg
 
 (* Cons a simple instruction (arg, res, live empty) *)
 
-let cons_instr d n ~available_before ~phantom_available_before
+let cons_instr ?dbg d n ~available_before ~phantom_available_before
       ~available_across =
+  let dbg =
+    match dbg with
+    | None -> n.dbg
+    | Some dbg -> dbg
+  in
   { desc = d; next = n; arg = [||]; res = [||];
-    dbg = n.dbg; live = Reg.Set.empty;
+    dbg; live = Reg.Set.empty;
     available_before;
     phantom_available_before;
     available_across;
@@ -127,8 +133,8 @@ let cons_instr d n ~available_before ~phantom_available_before
 (* Like [cons_instr], but takes availability information from the given
    instruction, with the exception of "available across" which is cleared. *)
 
-let cons_instr_same_avail d n =
-  cons_instr d n ~available_before:n.available_before
+let cons_instr_same_avail ?dbg d n =
+  cons_instr ?dbg d n ~available_before:n.available_before
     ~phantom_available_before:n.phantom_available_before
     ~available_across:None
 
@@ -190,7 +196,19 @@ let add_branch lbl n =
     let n1 = discard_dead_code n in
     match n1.desc with
     | Llabel lbl1 when lbl1 = lbl -> n1
-    | _ -> cons_instr_same_avail (Lbranch lbl) n1
+    | _ ->
+      (* Here, we really want the new instruction to have the debuginfo from
+         the instruction that will precede it---but we don't have that
+         instruction yet.  We can just use [Debuginfo.none] instead: in the
+         debugger, the previous instruction's debuginfo should persist across
+         the branch.
+
+         In any event we should not use [n1.dbg] here.  That would cause, for
+         example, the jumps to join points at the end of [Iswitch] arms to
+         end up with the debuginfo from any immediately-subsequent arm.  Such
+         a mistake can lead to erroneous printing of values in the
+         debugger when standing on such jumps. *)
+      cons_instr_same_avail ~dbg:Debuginfo.none (Lbranch lbl) n1
   else
     discard_dead_code n
 
@@ -329,7 +347,8 @@ let rec linear i n =
            of the loop, which branches to the top of the loop, must be the
            same as that of the first instruction of the loop (except for
            "available across" which is always empty). *)
-        cons_instr (Lbranch lbl_head) n1
+        cons_instr ~dbg:Debuginfo.none  (* [n1.dbg] would be wrong *)
+          (Lbranch lbl_head) n1
           ~available_before:available_before_at_top
           ~phantom_available_before:phantom_available_before_at_top
           ~available_across:None
@@ -383,11 +402,15 @@ let rec linear i n =
       incr try_depth;
       assert (i.Mach.arg = [| |] || Config.spacetime);
       let (lbl_body, n2) =
-        get_label (instr_cons_same_avail Lpushtrap i.Mach.arg [| |]
-                    (linear body (cons_instr_same_avail Lpoptrap n1))) in
+        let body =
+          linear body (cons_instr_same_avail ~dbg:Debuginfo.none Lpoptrap n1)
+        in
+        get_label (
+          instr_cons_same_avail Lpushtrap i.Mach.arg [| |] body body.dbg)
+      in
       decr try_depth;
       instr_cons_same_avail (Lsetuptrap lbl_body) i.Mach.arg [| |]
-        (linear handler (add_branch lbl_join n2))
+        (linear handler (add_branch lbl_join n2)) n2.dbg
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
 

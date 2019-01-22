@@ -74,7 +74,7 @@ module Make (T : Branch_relaxation_intf.S) = struct
       | Some l ->
         instr_cons_same_avail
           (Lcondbranch (Iinttest_imm (Isigned Cmm.Ceq, n), l))
-          arg [||] next
+          arg [||] next next.dbg
     in
     let rec fixup did_fix pc instr =
       match instr.desc with
@@ -104,7 +104,9 @@ module Make (T : Branch_relaxation_intf.S) = struct
             let lbl2 = Cmm.new_label() in
             let cont =
               instr_cons_same_avail (Lbranch lbl) [||] [||]
-                (instr_cons_same_avail (Llabel lbl2) [||] [||] instr.next)
+                (instr_cons_same_avail (Llabel lbl2) [||] [||] instr.next
+                  instr.next.dbg)
+                Debuginfo.none
             in
             instr.desc <- Lcondbranch (invert_test test, lbl2);
             instr.next <- cont;
