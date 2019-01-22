@@ -646,14 +646,6 @@ $(foreach f,\
   $(filter-out $(ML_ONLY:=.mli),$(2:=.mli)),\
   $(eval $(call cp,$(1),$(f))))
 
-$$(COMPLIBDIR)/ocaml_$(1).ml: tools/gen_prefix CompilerModules
-	$$(CAMLRUN) $$< -prefix $(1) $(2) > $$@
-
-beforedepend:: $$(COMPLIBDIR)/ocaml_$(1).ml
-
-partialclean::
-	rm -f $$(COMPLIBDIR)/ocaml_$(1).ml
-
 $$(COMPLIBDIR)/ocaml_$(1).cmo: $$(COMPLIBDIR)/ocaml_$(1).ml
 	$$(CAMLC) $$(COMPFLAGS) -no-alias-deps -w -49 -c $$<
 
@@ -723,25 +715,37 @@ prefixed_compilerlibs.optopt: \
 
 # Shared parts of the system
 
+$(COMPLIBDIR)/ocaml_common.ml: tools/gen_prefix CompilerModules
+	$(CAMLRUN) $< -prefix ocaml_common $(COMMON) > $@
 $(COMPLIBDIR)/ocamlcommon.cma: $(COMMON_CMO)
 	$(CAMLC) -a -linkall -o $@ $^
 $(COMPLIBDIR_U)/ocamlcommon.cma: unprefixed_sources \
     $(COMMON_CMI_U) $(COMMON_CMO_U)
 	$(CAMLC) -a -linkall -o $@ $(filter %.cmo,$^)
+
 partialclean::
+	rm -f $(COMPLIBDIR)/ocaml_common.ml
 	rm -f $(COMPLIBDIR)/ocamlcommon.cma
 	rm -f $(COMPLIBDIR_U)/ocamlcommon.cma
 
+beforedepend:: $(COMPLIBDIR)/ocaml_common.ml
+
 # The bytecode compiler
 
+$(COMPLIBDIR)/ocaml_bytecomp.ml: tools/gen_prefix CompilerModules
+	$(CAMLRUN) $< -prefix ocaml_bytecomp $(BYTECOMP) > $@
 $(COMPLIBDIR)/ocamlbytecomp.cma: $(BYTECOMP_CMO)
 	$(CAMLC) -a -o $@ $^
 $(COMPLIBDIR_U)/ocamlbytecomp.cma: unprefixed_sources \
     $(BYTECOMP_CMI_U) $(BYTECOMP_CMO_U)
 	$(CAMLC) -a -o $@ $(filter %.cmo,$^)
+
 partialclean::
+	rm -f $(COMPLIBDIR)/ocaml_bytecomp.ml
 	rm -f $(COMPLIBDIR)/ocamlbytecomp.cma
 	rm -f $(COMPLIBDIR_U)/ocamlbytecomp.cma
+
+beforedepend:: $(COMPLIBDIR)/ocaml_bytecomp.ml
 
 ocamlc: $(COMPLIBDIR_U)/ocamlcommon.cma $(COMPLIBDIR_U)/ocamlbytecomp.cma \
 	$(BYTESTART)
@@ -752,14 +756,20 @@ partialclean::
 
 # The native-code compiler
 
+$(COMPLIBDIR)/ocaml_optcomp.ml: tools/gen_prefix CompilerModules
+	$(CAMLRUN) $< -prefix ocaml_optcomp $(OPTCOMP) > $@
 $(COMPLIBDIR)/ocamloptcomp.cma: $(OPTCOMP_CMO)
 	$(CAMLC) -a -o $@ $^
 $(COMPLIBDIR_U)/ocamloptcomp.cma: unprefixed_sources \
     $(OPTCOMP_CMI_U) $(OPTCOMP_CMO_U)
 	$(CAMLC) -a -o $@ $(filter %.cmo,$^)
+
 partialclean::
+	rm -f $(COMPLIBDIR)/ocaml_optcomp.ml
 	rm -f $(COMPLIBDIR)/ocamloptcomp.cma
 	rm -f $(COMPLIBDIR_U)/ocamloptcomp.cma
+
+beforedepend:: $(COMPLIBDIR)/ocaml_optcomp.ml
 
 ocamlopt: $(COMPLIBDIR_U)/ocamlcommon.cma $(COMPLIBDIR_U)/ocamloptcomp.cma \
           $(OPTSTART)
@@ -770,14 +780,20 @@ partialclean::
 
 # The toplevel
 
+$(COMPLIBDIR)/ocaml_toplevel.ml: tools/gen_prefix CompilerModules
+	$(CAMLRUN) $< -prefix ocaml_toplevel $(TOPLEVEL) > $@
 $(COMPLIBDIR)/ocamltoplevel.cma: $(TOPLEVEL_CMO)
 	$(CAMLC) -a -o $@ $^
 $(COMPLIBDIR_U)/ocamltoplevel.cma: unprefixed_sources \
     $(OPTCOMP_CMI_U) $(OPTCOMP_CMO_U)
 	$(CAMLC) -a -o $@ $(filter %.cmo,$^)
+
 partialclean::
+	rm -f $(COMPLIBDIR)/ocaml_toplevel.ml
 	rm -f $(COMPLIBDIR)/ocamltoplevel.cma
 	rm -f $(COMPLIBDIR_U)/ocamltoplevel.cma
+
+beforedepend:: $(COMPLIBDIR)/ocaml_toplevel.ml
 
 ocaml_dependencies := \
   $(COMPLIBDIR_U)/ocamlcommon.cma \

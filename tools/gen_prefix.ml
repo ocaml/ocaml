@@ -51,8 +51,8 @@ let gen_prefix () =
     List.fold_left (fun acc s -> max acc (String.length s)) 0 mods
   in
   List.iter (fun m ->
-      Printf.printf "module %-*s = Ocaml_%s__%s\n"
-        max_width (String.capitalize_ascii m) !prefix m
+      Printf.printf "module %-*s = %s__%s\n" max_width
+        (String.capitalize_ascii m) (String.capitalize_ascii !prefix) m
     ) mods
 
 let spec =
