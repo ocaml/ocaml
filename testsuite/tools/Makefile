@@ -17,24 +17,21 @@ BASEDIR = ..
 ROOTDIR = ../..
 
 include $(ROOTDIR)/Makefile.config
+COMPLIBDIR=compilerlibs
+COMPLIBDIR_U=unprefixed_compilerlibs
 expect_MAIN=expect_test
 expect_PROG=$(expect_MAIN)$(EXE)
-expect_COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \
-          -I $(OTOPDIR)/driver -I $(OTOPDIR)/typing -I $(OTOPDIR)/toplevel
-expect_LIBRARIES := $(addprefix $(ROOTDIR)/compilerlibs/,\
+expect_COMPFLAGS=-I $(OTOPDIR)/$(COMPLIBDIR) -I $(OTOPDIR)/$(COMPLIBDIR_U)
+expect_LIBRARIES := $(addprefix $(ROOTDIR)/$(COMPLIBDIR_U)/,\
   ocamlcommon ocamlbytecomp ocamltoplevel)
 
 codegen_INCLUDES=\
-  -I $(OTOPDIR)/parsing \
-  -I $(OTOPDIR)/utils \
-  -I $(OTOPDIR)/typing \
-  -I $(OTOPDIR)/middle_end \
-  -I $(OTOPDIR)/bytecomp \
-  -I $(OTOPDIR)/asmcomp
+  -I $(OTOPDIR)/$(COMPLIBDIR) \
+  -I $(OTOPDIR)/$(COMPLIBDIR_U)
 
 codegen_OTHEROBJECTS=\
-  $(OTOPDIR)/compilerlibs/ocamlcommon.cma \
-  $(OTOPDIR)/compilerlibs/ocamloptcomp.cma
+  $(OTOPDIR)/$(COMPLIBDIR_U)/ocamlcommon.cma \
+  $(OTOPDIR)/$(COMPLIBDIR_U)/ocamloptcomp.cma
 
 codegen_OBJECTS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo codegen_main.cmo
 
