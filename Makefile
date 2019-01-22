@@ -615,15 +615,13 @@ OPENS=\
   -open Ocaml_toplevel \
   -open Ocaml_opttoplevel
 
-%.cmx %.cmxa: ocamlopt
-
 $(COMPLIBDIR)/%.cmi: $(COMPLIBDIR)/%.mli
 	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c $<
 
 $(COMPLIBDIR)/%.cmo: $(COMPLIBDIR)/%.ml
 	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c $<
 
-$(COMPLIBDIR)/%.cmx: $(COMPLIBDIR)/%.ml
+$(COMPLIBDIR)/%.cmx: $(COMPLIBDIR)/%.ml ocamlopt
 	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c $<
 
 $(COMPLIBDIR)/ocaml_common__compdynlink.cmo: \
@@ -631,7 +629,7 @@ $(COMPLIBDIR)/ocaml_common__compdynlink.cmo: \
 	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c -impl $<
 
 $(COMPLIBDIR)/ocaml_common__compdynlink.cmx: \
-    $(COMPLIBDIR)/ocaml_common__compdynlink.mlopt
+    $(COMPLIBDIR)/ocaml_common__compdynlink.mlopt ocamlopt
 	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) $(OPENS) -c -impl $<
 
 define cp
@@ -667,7 +665,7 @@ $(COMPLIBDIR_U)/%.cmi: $(COMPLIBDIR_U)/%.mli
 $(COMPLIBDIR_U)/%.cmo: $(COMPLIBDIR_U)/%.ml
 	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
 
-$(COMPLIBDIR_U)/%.cmx: $(COMPLIBDIR_U)/%.ml
+$(COMPLIBDIR_U)/%.cmx: $(COMPLIBDIR_U)/%.ml ocamlopt
 	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
 
 .PHONY: compilerlibs
@@ -695,8 +693,12 @@ $(COMPLIBDIR)/ocaml_common.cmo: $(COMPLIBDIR)/ocaml_common.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamlcommon.cma: $(COMMON_CMO)
 	$(CAMLC) -a -linkall -o $@ $^
-$(COMPLIBDIR_U)/ocamlcommon.cma: $(COMPLIBDIR_U)/common \
-    $(COMMON_CMI_U) $(COMMON_CMO_U)
+
+# Legacy unprefixed ocamlcommon
+
+$(addprefix $(COMPLIBDIR_U)/,$(COMMON_ML:=.ml) $(COMMON_MLI_ONLY:=.mli)): \
+	$(COMPLIBDIR_U)/common
+$(COMPLIBDIR_U)/ocamlcommon.cma: $(COMMON_CMI_U) $(COMMON_CMO_U)
 	$(CAMLC) -a -linkall -o $@ $(filter %.cmo,$^)
 $(COMPLIBDIR_U)/common: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(COMMON_ML) -mli $(COMMON_MLI_ONLY) \
@@ -717,8 +719,12 @@ $(COMPLIBDIR)/ocaml_bytecomp.cmo: $(COMPLIBDIR)/ocaml_bytecomp.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamlbytecomp.cma: $(BYTECOMP_CMO)
 	$(CAMLC) -a -o $@ $^
-$(COMPLIBDIR_U)/ocamlbytecomp.cma: $(COMPLIBDIR_U)/bytecomp \
-    $(BYTECOMP_CMI_U) $(BYTECOMP_CMO_U)
+
+# Legacy unprefixed ocamlbytecomp
+
+$(addprefix $(COMPLIBDIR_U)/,$(BYTECOMP_ML:=.ml) $(BYTECOMP_MLI_ONLY:=.mli)): \
+	$(COMPLIBDIR_U)/bytecomp
+$(COMPLIBDIR_U)/ocamlbytecomp.cma: $(BYTECOMP_CMI_U) $(BYTECOMP_CMO_U)
 	$(CAMLC) -a -o $@ $(filter %.cmo,$^)
 $(COMPLIBDIR_U)/bytecomp: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(BYTECOMP_ML) -mli $(BYTECOMP_MLI_ONLY) \
@@ -746,8 +752,12 @@ $(COMPLIBDIR)/ocaml_optcomp.cmo: $(COMPLIBDIR)/ocaml_optcomp.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamloptcomp.cma: $(OPTCOMP_CMO)
 	$(CAMLC) -a -o $@ $^
-$(COMPLIBDIR_U)/ocamloptcomp.cma: $(COMPLIBDIR_U)/optcomp \
-    $(OPTCOMP_CMI_U) $(OPTCOMP_CMO_U)
+
+# Legacy unprefixed ocamloptcomp
+
+$(addprefix $(COMPLIBDIR_U)/,$(OPTCOMP_ML:=.ml) $(OPTCOMP_MLI_ONLY:=.mli)): \
+	$(COMPLIBDIR_U)/optcomp
+$(COMPLIBDIR_U)/ocamloptcomp.cma: $(OPTCOMP_CMI_U) $(OPTCOMP_CMO_U)
 	$(CAMLC) -a -o $@ $(filter %.cmo,$^)
 $(COMPLIBDIR_U)/optcomp: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(OPTCOMP_ML) -mli $(OPTCOMP_MLI_ONLY) \
@@ -777,8 +787,12 @@ $(COMPLIBDIR)/ocaml_toplevel.cmx: $(COMPLIBDIR)/ocaml_toplevel.ml
 	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamltoplevel.cma: $(TOPLEVEL_CMO)
 	$(CAMLC) -a -o $@ $^
-$(COMPLIBDIR_U)/ocamltoplevel.cma: $(COMPLIBDIR_U)/toplevel \
-    $(TOPLEVEL_CMI_U) $(TOPLEVEL_CMO_U)
+
+# Legacy unprefixed ocamltoplevel
+
+$(addprefix $(COMPLIBDIR_U)/,$(TOPLEVEL_ML:=.ml) $(TOPLEVEL_MLI_ONLY:=.mli)): \
+	$(COMPLIBDIR_U)/toplevel
+$(COMPLIBDIR_U)/ocamltoplevel.cma: $(TOPLEVEL_CMI_U) $(TOPLEVEL_CMO_U)
 	$(CAMLC) -a -o $@ $(filter %.cmo,$^)
 $(COMPLIBDIR_U)/toplevel: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(TOPLEVEL_ML) -mli $(TOPLEVEL_MLI_ONLY) \
@@ -879,12 +893,12 @@ $(COMPLIBDIR)/ocaml_optcomp.cmx: $(COMPLIBDIR)/ocaml_optcomp.ml
 	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
 $(COMPLIBDIR)/ocamloptcomp.cmxa: $(OPTCOMP_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
-$(COMPLIBDIR_U)/ocamloptcomp.cmxa: $(COMPLIBDIR_U)/optcomp \
-    $(OPTCOMP_CMI_U) $(OPTCOMP_CMO_U:.cmo=.cmx)
+$(COMPLIBDIR_U)/ocamloptcomp.cmxa: $(OPTCOMP_CMI_U) $(OPTCOMP_CMO_U:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $(filter %.cmx,$^)
 partialclean::
 	rm -f $(COMPLIBDIR)/ocamloptcomp.cmxa $(COMPLIBDIR)/ocamloptcomp.$(A)
-	rm -f $(COMPLIBDIR_U)/ocamloptcomp.cmxa $(COMPLIBDIR_U)/ocamloptcomp.$(A)
+	rm -f $(COMPLIBDIR_U)/ocamloptcomp.cmxa \
+	  $(COMPLIBDIR_U)/ocamloptcomp.$(A)
 
 ocamlopt.opt: $(COMPLIBDIR_U)/ocamlcommon.cmxa \
 	      $(COMPLIBDIR_U)/ocamloptcomp.cmxa \
@@ -1158,12 +1172,12 @@ lintapidiff:
 # compiler for "make world" and the list of dependencies for
 # asmcomp/export_info.cmo is long).
 
-$(COMPLIBDIR_U)/ocamlmiddleend.cma: $(COMPLIBDIR_U)/optcomp \
-    $(MIDDLE_END_CMI_U) $(MIDDLE_END_CMO_U)
-	$(CAMLC) -a -o $@ $(filter %.cmo, $^)
-$(COMPLIBDIR_U)/ocamlmiddleend.cmxa: $(COMPLIBDIR_U)/optcomp \
-    $(MIDDLE_END_CMI_U) $(MIDDLE_END_CMO_U:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $(filter %.cmx, $^)
+$(COMPLIBDIR_U)/ocamlmiddleend.cma: \
+	$(MIDDLE_END_CMI_U) $(MIDDLE_END_CMO_U)
+	$(CAMLC) -a -o $@ $(filter %.cmo,$^)
+$(COMPLIBDIR_U)/ocamlmiddleend.cmxa: \
+	$(MIDDLE_END_CMI_U) $(MIDDLE_END_CMO_U:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $(filter %.cmx,$^)
 
 partialclean::
 	rm -f $(COMPLIBDIR_U)/ocamlmiddleend.cma \
@@ -1311,8 +1325,13 @@ $(COMPLIBDIR)/ocaml_opttoplevel__genprintval.ml:
 	echo 'include Ocaml_toplevel__genprintval' > $@
 $(COMPLIBDIR)/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
-$(COMPLIBDIR_U)/ocamlopttoplevel.cmxa: $(COMPLIBDIR_U)/opttoplevel \
-    $(OPTTOPLEVEL_CMI_U) $(OPTTOPLEVEL_CMO_U:.cmo=.cmx)
+
+# Legacy unprefixed ocamlopttoplevel
+
+$(addprefix $(COMPLIBDIR_U)/,$(OPTTOPLEVEL_ML:=.ml) \
+	$(OPTTOPLEVEL_MLI_ONLY:=.mli)): $(COMPLIBDIR_U)/opttoplevel
+$(COMPLIBDIR_U)/ocamlopttoplevel.cmxa: \
+	$(OPTTOPLEVEL_CMI_U) $(OPTTOPLEVEL_CMO_U:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $(filter %.cmx,$^)
 $(COMPLIBDIR_U)/opttoplevel: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(filter-out %genprintval,$(OPTTOPLEVEL_ML)) \
@@ -1402,7 +1421,7 @@ partialclean::
 .mli.cmi:
 	$(CAMLC) $(COMPFLAGS) $(INCLUDES) -c $<
 
-.ml.cmx:
+.ml.cmx: ocamlopt
 	$(CAMLOPT) $(COMPFLAGS) $(INCLUDES) -c $<
 
 partialclean::
