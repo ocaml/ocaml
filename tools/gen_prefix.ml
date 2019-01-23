@@ -32,6 +32,8 @@ let gen_unprefix () =
         open_out_bin
           (Filename.concat !unprefix m ^ if mli then ".mli" else ".ml")
       in
+      Printf.fprintf oc "[@@@ocaml.deprecated \"use %s.%s instead.\"]\n"
+        (String.capitalize_ascii !prefix) (String.capitalize_ascii m);
       if mli then
         Printf.fprintf oc "include module type of struct include %s__%s end\n"
           (String.capitalize_ascii !prefix) m
