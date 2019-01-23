@@ -28,8 +28,7 @@ OCAMLC    = $(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLOPT  = $(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib -I $(ROOTDIR)/stdlib
 
 COMPLIBDIR=$(ROOTDIR)/compilerlibs
-COMPLIBDIR_U=$(ROOTDIR)/unprefixed_compilerlibs
-INCLUDES=-I $(COMPLIBDIR) -I $(COMPLIBDIR_U)
+INCLUDES=-I $(COMPLIBDIR)
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -bin-annot -g \
    -I $(ROOTDIR)/stdlib -warn-error A \
    -safe-string -strict-sequence -strict-formats
@@ -62,15 +61,15 @@ COMPILEROBJS := \
 
 COMPILEROBJS := \
   $(COMPLIBDIR)/ocaml_common.cmo \
-  $(addprefix $(COMPLIBDIR)/ocaml_common__, $(COMPILEROBJS)) \
-  $(addprefix $(COMPLIBDIR_U)/, $(COMPILEROBJS))
+  $(addprefix $(COMPLIBDIR)/ocaml_common__,$(COMPILEROBJS)) \
+  $(addprefix $(COMPLIBDIR)/,$(COMPILEROBJS))
 
 COMPILERINTFS := \
   cmo_format.cmi
 
 COMPILERINTFS := \
-  $(addprefix $(COMPLIBDIR)/ocaml_common__, $(COMPILERINTFS)) \
-  $(addprefix $(COMPLIBDIR_U)/, $(COMPILERINTFS))
+  $(addprefix $(COMPLIBDIR)/ocaml_common__,$(COMPILERINTFS)) \
+  $(addprefix $(COMPLIBDIR)/,$(COMPILERINTFS))
 
 all: dynlink.cma extract_crc
 
