@@ -111,7 +111,7 @@ let cons_instr ?(arg = [| |]) ?(res = [| |]) (affinity : affinity) desc next =
     | Next ->
       match next.affinity with
       | Irrelevant -> next.dbg, Irrelevant
-      | Previous -> Misc.fatal_error "Circularity in affinities"
+      | Previous -> Insn_debuginfo.none (), Irrelevant
   in
   { desc;
     next;
