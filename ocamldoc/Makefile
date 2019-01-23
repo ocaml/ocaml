@@ -27,7 +27,6 @@ OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt $(STDLIBFLAGS)
 OCAMLDEP  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
 DEPFLAGS = -slash
 OCAMLLEX  = $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
-COMPLIBDIR = $(ROOTDIR)/compilerlibs
 # TODO: figure out whether the DEBUG lines the following preprocessor removes
 # are actually useful.
 # If they are not, then the preprocessor logic (including the
@@ -86,11 +85,10 @@ endif
 #############
 
 INCLUDES_DEP=\
-  -I $(COMPLIBDIR)
+  -I $(ROOTDIR)/compilerlibs
 
 INCLUDES_NODEP=\
   -I $(ROOTDIR)/stdlib \
-  -I $(ROOTDIR)/compilerlibs \
   -I $(ROOTDIR)/otherlibs/str \
   -I $(ROOTDIR)/otherlibs/dynlink \
   -I $(ROOTDIR)/otherlibs/$(UNIXLIB) \

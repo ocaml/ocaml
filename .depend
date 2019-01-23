@@ -172,6 +172,8 @@ driver/errors.cmi :
 driver/main.cmo : \
     compilerlibs/warnings.cmo \
     compilerlibs/profile.cmo \
+    compilerlibs/ocaml_common.cmo \
+    compilerlibs/ocaml_bytecomp.cmo \
     compilerlibs/misc.cmo \
     compilerlibs/makedepend.cmo \
     compilerlibs/main_args.cmo \
@@ -189,6 +191,8 @@ driver/main.cmo : \
 driver/main.cmx : \
     compilerlibs/warnings.cmx \
     compilerlibs/profile.cmx \
+    compilerlibs/ocaml_common.cmx \
+    compilerlibs/ocaml_bytecomp.cmx \
     compilerlibs/misc.cmx \
     compilerlibs/makedepend.cmx \
     compilerlibs/main_args.cmx \
@@ -293,6 +297,8 @@ driver/optmain.cmo : \
     compilerlibs/proc.cmo \
     compilerlibs/printmach.cmo \
     compilerlibs/optcompile.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common.cmo \
     compilerlibs/misc.cmo \
     compilerlibs/makedepend.cmo \
     compilerlibs/main_args.cmo \
@@ -316,6 +322,8 @@ driver/optmain.cmx : \
     compilerlibs/proc.cmx \
     compilerlibs/printmach.cmx \
     compilerlibs/optcompile.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common.cmx \
     compilerlibs/misc.cmx \
     compilerlibs/makedepend.cmx \
     compilerlibs/main_args.cmx \
@@ -366,12 +374,14 @@ driver/pparse.cmi : \
 toplevel/expunge.cmo : \
     compilerlibs/symtable.cmo \
     compilerlibs/runtimedef.cmo \
+    compilerlibs/ocaml_common.cmo \
     compilerlibs/misc.cmo \
     compilerlibs/ident.cmo \
     compilerlibs/bytesections.cmo
 toplevel/expunge.cmx : \
     compilerlibs/symtable.cmx \
     compilerlibs/runtimedef.cmx \
+    compilerlibs/ocaml_common.cmx \
     compilerlibs/misc.cmx \
     compilerlibs/ident.cmx \
     compilerlibs/bytesections.cmx
@@ -749,9 +759,11 @@ toplevel/topmain.cmx : \
     toplevel/topmain.cmi
 toplevel/topmain.cmi :
 toplevel/topstart.cmo : \
-    compilerlibs/topmain.cmo
+    compilerlibs/topmain.cmo \
+    compilerlibs/ocaml_toplevel.cmo
 toplevel/topstart.cmx : \
-    compilerlibs/topmain.cmx
+    compilerlibs/topmain.cmx \
+    compilerlibs/ocaml_toplevel.cmx
 toplevel/trace.cmo : \
     compilerlibs/types.cmo \
     compilerlibs/toploop.cmo \
@@ -8875,6 +8887,7 @@ compilerlibs/x86_proc.cmx : \
     compilerlibs/ocaml_optcomp__x86_proc.cmx
 compilerlibs/ocaml_common__compdynlink.cmx : \
     compilerlibs/ocaml_optcomp__cmx_format.cmi \
+    compilerlibs/ocaml_optcomp.cmx \
     compilerlibs/ocaml_common__compdynlink_types.cmx \
     compilerlibs/ocaml_common__compdynlink_common.cmx \
     compilerlibs/ocaml_common.cmx \

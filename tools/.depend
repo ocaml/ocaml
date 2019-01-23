@@ -11,6 +11,7 @@ addlabels.cmx : \
     ../compilerlibs/location.cmx \
     ../compilerlibs/asttypes.cmi
 caml_tex.cmo : \
+    ../compilerlibs/toploop.cmo \
     ../compilerlibs/syntaxerr.cmo \
     ../compilerlibs/parsetree.cmi \
     ../compilerlibs/parse.cmo \
@@ -23,6 +24,7 @@ caml_tex.cmo : \
     ../compilerlibs/ast_iterator.cmo \
     ../compilerlibs/ast_helper.cmo
 caml_tex.cmx : \
+    ../compilerlibs/toploop.cmx \
     ../compilerlibs/syntaxerr.cmx \
     ../compilerlibs/parsetree.cmi \
     ../compilerlibs/parse.cmx \
@@ -35,8 +37,10 @@ caml_tex.cmx : \
     ../compilerlibs/ast_iterator.cmx \
     ../compilerlibs/ast_helper.cmx
 cmpbyt.cmo : \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/bytesections.cmo
 cmpbyt.cmx : \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/bytesections.cmx
 cmt2annot.cmo : \
     ../compilerlibs/untypeast.cmo \
@@ -47,6 +51,7 @@ cmt2annot.cmo : \
     ../compilerlibs/pprintast.cmo \
     ../compilerlibs/path.cmo \
     ../compilerlibs/oprint.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/location.cmo \
     ../compilerlibs/ident.cmo \
     ../compilerlibs/envaux.cmo \
@@ -64,6 +69,7 @@ cmt2annot.cmx : \
     ../compilerlibs/pprintast.cmx \
     ../compilerlibs/path.cmx \
     ../compilerlibs/oprint.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/location.cmx \
     ../compilerlibs/ident.cmx \
     ../compilerlibs/envaux.cmx \
@@ -78,6 +84,7 @@ dumpobj.cmo : \
     ../compilerlibs/symtable.cmo \
     opnames.cmo \
     ../compilerlibs/opcodes.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/location.cmo \
     ../compilerlibs/lambda.cmo \
     ../compilerlibs/instruct.cmo \
@@ -90,6 +97,7 @@ dumpobj.cmx : \
     ../compilerlibs/symtable.cmx \
     opnames.cmx \
     ../compilerlibs/opcodes.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/location.cmx \
     ../compilerlibs/lambda.cmx \
     ../compilerlibs/instruct.cmx \
@@ -134,6 +142,8 @@ objinfo.cmo : \
     ../compilerlibs/symtable.cmo \
     ../compilerlibs/symbol.cmo \
     ../compilerlibs/printclambda.cmo \
+    ../compilerlibs/ocaml_optcomp.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/misc.cmo \
     ../compilerlibs/linkage_name.cmo \
     ../compilerlibs/ident.cmo \
@@ -149,6 +159,8 @@ objinfo.cmx : \
     ../compilerlibs/symtable.cmx \
     ../compilerlibs/symbol.cmx \
     ../compilerlibs/printclambda.cmx \
+    ../compilerlibs/ocaml_optcomp.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/misc.cmx \
     ../compilerlibs/linkage_name.cmx \
     ../compilerlibs/ident.cmx \
@@ -163,48 +175,62 @@ objinfo.cmx : \
 ocaml299to3.cmo :
 ocaml299to3.cmx :
 ocamlcp.cmo : \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/main_args.cmo
 ocamlcp.cmx : \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/main_args.cmx
 ocamldep.cmo : \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/makedepend.cmo
 ocamldep.cmx : \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/makedepend.cmx
 ocamlmklib.cmo : \
     ocamlmklibconfig.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/misc.cmo \
     ../compilerlibs/config.cmo
 ocamlmklib.cmx : \
     ocamlmklibconfig.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/misc.cmx \
     ../compilerlibs/config.cmx
 ocamlmklibconfig.cmo :
 ocamlmklibconfig.cmx :
 ocamlmktop.cmo : \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/ccomp.cmo
 ocamlmktop.cmx : \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/ccomp.cmx
 ocamloptp.cmo : \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/main_args.cmo
 ocamloptp.cmx : \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/main_args.cmx
 ocamlprof.cmo : \
     ../compilerlibs/warnings.cmo \
     ../compilerlibs/parsetree.cmi \
     ../compilerlibs/parse.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/location.cmo
 ocamlprof.cmx : \
     ../compilerlibs/warnings.cmx \
     ../compilerlibs/parsetree.cmi \
     ../compilerlibs/parse.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/location.cmx
 opnames.cmo :
 opnames.cmx :
 primreq.cmo : \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/misc.cmo \
     ../compilerlibs/config.cmo \
     ../compilerlibs/cmo_format.cmi
 primreq.cmx : \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/misc.cmx \
     ../compilerlibs/config.cmx \
     ../compilerlibs/cmo_format.cmi
@@ -214,12 +240,14 @@ profiling.cmx : \
     profiling.cmi
 profiling.cmi :
 read_cmt.cmo : \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/location.cmo \
     ../compilerlibs/compmisc.cmo \
     ../compilerlibs/cmt_format.cmo \
     cmt2annot.cmo \
     ../compilerlibs/clflags.cmo
 read_cmt.cmx : \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/location.cmx \
     ../compilerlibs/compmisc.cmx \
     ../compilerlibs/cmt_format.cmx \
@@ -228,8 +256,10 @@ read_cmt.cmx : \
 scrapelabels.cmo :
 scrapelabels.cmx :
 stripdebug.cmo : \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/misc.cmo \
     ../compilerlibs/bytesections.cmo
 stripdebug.cmx : \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/misc.cmx \
     ../compilerlibs/bytesections.cmx

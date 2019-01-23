@@ -77,8 +77,7 @@ CAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
 CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
-COMPLIBDIR = $(ROOTDIR)/compilerlibs
-INCLUDES = -I $(COMPLIBDIR)
+INCLUDES = -I $(ROOTDIR)/compilerlibs
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
  -safe-string -strict-formats -bin-annot $(INCLUDES)
 LINKFLAGS = $(INCLUDES)
@@ -93,8 +92,8 @@ allopt: opt.opt
 
 CAMLDEP_OBJ=ocamldep.cmo
 CAMLDEP_IMPORTS= \
-  $(COMPLIBDIR)/ocamlcommon.cma \
-  $(COMPLIBDIR)/ocamlbytecomp.cma
+  $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+  $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma
 ocamldep: LINKFLAGS += -compat-32
 $(call byte_and_opt,ocamldep,$(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ),)
 
@@ -286,8 +285,8 @@ beforedepend:: cvt_emit.ml
 # Reading cmt files
 
 READ_CMT= \
-          $(COMPLIBDIR)/ocamlcommon.cma \
-          $(COMPLIBDIR)/ocamlbytecomp.cma \
+          $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+          $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
           \
           cmt2annot.cmo read_cmt.cmo
 
@@ -305,8 +304,8 @@ install::
 # The bytecode disassembler
 
 DUMPOBJ= \
-          $(COMPLIBDIR)/ocamlcommon.cma \
-          $(COMPLIBDIR)/ocamlbytecomp.cma \
+          $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+          $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
           \
           opnames.cmo dumpobj.cmo
 
@@ -338,15 +337,15 @@ objinfo_helper$(EXE): objinfo_helper.c $(ROOTDIR)/runtime/caml/s.h
 	$(CC) $(OC_CFLAGS) $(OC_CPPFLAGS) -I$(ROOTDIR)/runtime $(OUTPUTEXE)$@ \
           $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) $< $(LIBBFD_LINK)
 
-OBJINFO=$(COMPLIBDIR)/ocamlcommon.cma \
-        $(COMPLIBDIR)/ocamlbytecomp.cma \
-        $(COMPLIBDIR)/ocamlmiddleend.cma \
-        $(COMPLIBDIR)/ocaml_optcomp__backend_var.cmo \
-        $(COMPLIBDIR)/backend_var.cmo \
-        $(COMPLIBDIR)/ocaml_optcomp__printclambda.cmo \
-        $(COMPLIBDIR)/printclambda.cmo \
-        $(COMPLIBDIR)/ocaml_optcomp__export_info.cmo \
-        $(COMPLIBDIR)/export_info.cmo \
+OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+        $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
+        $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
+        $(ROOTDIR)/compilerlibs/ocaml_optcomp__backend_var.cmo \
+        $(ROOTDIR)/compilerlibs/backend_var.cmo \
+        $(ROOTDIR)/compilerlibs/ocaml_optcomp__printclambda.cmo \
+        $(ROOTDIR)/compilerlibs/printclambda.cmo \
+        $(ROOTDIR)/compilerlibs/ocaml_optcomp__export_info.cmo \
+        $(ROOTDIR)/compilerlibs/export_info.cmo \
         objinfo.cmo
 
 $(call byte_and_opt,ocamlobjinfo,$(OBJINFO),objinfo_helper$(EXE))
@@ -355,19 +354,19 @@ install::
 	$(INSTALL_PROG) \
 	  objinfo_helper$(EXE) "$(INSTALL_LIBDIR)/objinfo_helper$(EXE)"
 
-primreq=$(COMPLIBDIR)/ocamlcommon.cma \
-        $(COMPLIBDIR)/ocamlbytecomp.cma \
+primreq=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+        $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
         primreq.cmo
 
 # Scan object files for required primitives
 $(call byte_and_opt,primreq,$(primreq),)
 
-LINTAPIDIFF=$(COMPLIBDIR)/ocamlcommon.cmxa \
-        $(COMPLIBDIR)/ocamlbytecomp.cmxa \
-        $(COMPLIBDIR)/ocamlmiddleend.cmxa \
-        $(COMPLIBDIR)/backend_var.cmx \
-        $(COMPLIBDIR)/printclambda.cmx \
-        $(COMPLIBDIR)/export_info.cmx \
+LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
+        $(ROOTDIR)/compilerlibs/ocamlbytecomp.cmxa \
+        $(ROOTDIR)/compilerlibs/ocamlmiddleend.cmxa \
+        $(ROOTDIR)/compilerlibs/backend_var.cmx \
+        $(ROOTDIR)/compilerlibs/printclambda.cmx \
+        $(ROOTDIR)/compilerlibs/export_info.cmx \
 	$(ROOTDIR)/otherlibs/str/str.cmxa \
 	lintapidiff.cmx
 
@@ -384,16 +383,16 @@ clean::
 
 # Copy a bytecode executable, stripping debug info
 
-stripdebug=$(COMPLIBDIR)/ocamlcommon.cma \
-           $(COMPLIBDIR)/ocamlbytecomp.cma \
+stripdebug=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+           $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
            stripdebug.cmo
 
 $(call byte_and_opt,stripdebug,$(stripdebug),)
 
 # Compare two bytecode executables
 
-CMPBYT=$(COMPLIBDIR)/ocamlcommon.cma \
-       $(COMPLIBDIR)/ocamlbytecomp.cma \
+CMPBYT=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+       $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
        cmpbyt.cmo
 
 $(call byte_and_opt,cmpbyt,$(CMPBYT),)
@@ -405,9 +404,9 @@ install::
 	  "$(INSTALL_BINDIR)/"
 endif
 
-CAMLTEX=$(COMPLIBDIR)/ocamlcommon.cma \
-	$(COMPLIBDIR)/ocamlbytecomp.cma \
-	$(COMPLIBDIR)/ocamltoplevel.cma \
+CAMLTEX=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
+	$(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
+	$(ROOTDIR)/compilerlibs/ocamltoplevel.cma \
 	$(ROOTDIR)/otherlibs/str/str.cma \
 	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.cma \
 	caml_tex.ml

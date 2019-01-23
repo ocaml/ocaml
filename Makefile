@@ -47,7 +47,7 @@ include stdlib/StdlibModules
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims runtime/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x
-INCLUDES=-I $(COMPLIBDIR) -I driver -I toplevel
+INCLUDES=-I compilerlibs -I driver -I toplevel
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48-66 \
 	  -warn-error A \
           -bin-annot -safe-string -strict-formats -no-alias-deps
@@ -79,6 +79,8 @@ OPTTOPLEVELSTART=toplevel/opttopstart.cmo
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
+
+COMPLIBDIR=$(LIBDIR)/compiler-libs
 
 TOPINCLUDES=$(addprefix -I otherlibs/,$(filter-out %threads,$(OTHERLIBRARIES)))
 RUNTOP=./runtime/ocamlrun ./ocaml \
@@ -191,7 +193,6 @@ opt-core: runtimeopt
 opt:
 	$(MAKE) runtimeopt
 	$(MAKE) ocamlopt
-	$(MAKE) compilerlibs.opt
 	$(MAKE) libraryopt
 	$(MAKE) otherlibrariesopt ocamltoolsopt
 
@@ -204,9 +205,6 @@ opt.opt:
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) compilerlibs
-	$(MAKE) compilerlibs.opt
-	$(MAKE) compilerlibs.optopt
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
@@ -237,7 +235,6 @@ coreboot:
 
 .PHONY: all
 all: coreall
-	$(MAKE) compilerlibs
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 
@@ -308,7 +305,7 @@ flexlink.opt:
 	mv flexlink.exe flexlink.opt && \
 	mv flexlink flexlink.exe
 
-INSTALL_COMPLIBDIR=$(DESTDIR)$(LIBDIR)/compiler-libs
+INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
 INSTALL_FLEXDLLDIR=$(INSTALL_LIBDIR)/flexdll
 
 .PHONY: install-flexdll
@@ -345,27 +342,27 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 endif
 	$(INSTALL_PROG) yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
 	$(INSTALL_DATA) \
-	   $(COMPLIBDIR)/*.cmi \
+	   compilerlibs/*.cmi \
 	   "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	   $(COMPLIBDIR)/*.cmt $(COMPLIBDIR)/*.cmti $(COMPLIBDIR)/*.mli \
+	   compilerlibs/*.cmt compilerlibs/*.cmti compilerlibs/*.mli \
 	   "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
-	   $(COMPLIBDIR)/ocamlcommon.cma $(COMPLIBDIR)/ocamlbytecomp.cma \
-	   $(COMPLIBDIR)/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
+	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
+	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_PROG) expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
 	$(INSTALL_DATA) \
-	   $(COMPLIBDIR)/topdirs.cmi \
+	   compilerlibs/topdirs.cmi \
 	   "$(INSTALL_LIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	   $(COMPLIBDIR)/ocaml_toplevel__topdirs.cmti \
-	   $(COMPLIBDIR)/ocaml_toplevel__topdirs.mli \
-	   $(COMPLIBDIR)/topdirs.cmt \
-           $(COMPLIBDIR)/topdirs.ml \
+	   compilerlibs/ocaml_toplevel__topdirs.cmti \
+	   compilerlibs/ocaml_toplevel__topdirs.mli \
+	   compilerlibs/topdirs.cmt \
+           compilerlibs/topdirs.ml \
 	   "$(INSTALL_LIBDIR)"
 endif
 	$(MAKE) -C tools install
@@ -411,15 +408,15 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 endif
 	$(MAKE) -C stdlib installopt
 	$(INSTALL_DATA) \
-	    $(COMPLIBDIR)/*.cmi \
+	    compilerlibs/*.cmi \
 	    "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	    $(COMPLIBDIR)/*.cmt $(COMPLIBDIR)/*.cmti $(COMPLIBDIR)/*.mli \
+	    compilerlibs/*.cmt compilerlibs/*.cmti compilerlibs/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
-	    $(COMPLIBDIR)/ocamloptcomp.cma $(OPTSTART) \
+	    compilerlibs/ocamloptcomp.cma $(OPTSTART) \
 	    "$(INSTALL_COMPLIBDIR)"
 	if test -n "$(WITH_OCAMLDOC)"; then \
 	  $(MAKE) -C ocamldoc installopt; \
@@ -454,13 +451,12 @@ installoptopt:
 	   $(LN) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
 	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
 	$(INSTALL_DATA) \
-	   $(COMPLIBDIR)/*.cmx \
+	   compilerlibs/*.cmx \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-           $(COMPLIBDIR)/ocamlcommon.cmxa $(COMPLIBDIR)/ocamlcommon.$(A) \
-	   $(COMPLIBDIR)/ocamlbytecomp.cmxa \
-	   $(COMPLIBDIR)/ocamlbytecomp.$(A) \
-	   $(COMPLIBDIR)/ocamloptcomp.cmxa $(COMPLIBDIR)/ocamloptcomp.$(A) \
+           compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
+	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
+	   compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A) \
 	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
@@ -468,11 +464,11 @@ installoptopt:
 	  $(INSTALL_PROG) \
 	    ocamlnat$(EXE) "$(INSTALL_BINDIR)/ocamlnat$(EXE)"; \
 	  $(INSTALL_DATA) \
-	     $(COMPLIBDIR)/opttopdirs.cmi \
+	     compilerlibs/opttopdirs.cmi \
 	     "$(INSTALL_LIBDIR)"; \
 	  $(INSTALL_DATA) \
-	     $(COMPLIBDIR)/ocamlopttoplevel.cmxa \
-	     $(COMPLIBDIR)/ocamlopttoplevel.$(A) \
+	     compilerlibs/ocamlopttoplevel.cmxa \
+	     compilerlibs/ocamlopttoplevel.$(A) \
 	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.$(O)) \
 	     "$(INSTALL_COMPLIBDIR)"; \
 	fi
@@ -513,26 +509,26 @@ clean:: partialclean
 
 # Prefixed compiler-libs
 
-$(COMPLIBDIR)/ocaml_common__compdynlink.cmo: \
-	$(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte
-	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) -c -impl $<
+compilerlibs/ocaml_common__compdynlink.cmo: \
+	compilerlibs/ocaml_common__compdynlink.mlbyte
+	$(CAMLC) $(COMPFLAGS) -I compilerlibs -c -impl $<
 
-$(COMPLIBDIR)/ocaml_common__compdynlink.cmx: \
-	$(COMPLIBDIR)/ocaml_common__compdynlink.mlopt \
-	$(COMPLIBDIR)/ocaml_optcomp__cmx_format.cmi ocamlopt
-	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) -c -impl $<
+compilerlibs/ocaml_common__compdynlink.cmx: \
+	compilerlibs/ocaml_common__compdynlink.mlopt \
+	compilerlibs/ocaml_optcomp__cmx_format.cmi ocamlopt
+	$(CAMLOPT) $(COMPFLAGS) -I compilerlibs -c -impl $<
 
 tools/gen_prefix: tools/gen_prefix.ml
 	$(CAMLC) -o $@ $<
 
 define copy_file_with_prefix
-$(COMPLIBDIR)/ocaml_$(1)__$(notdir $(2)): $(2)
+compilerlibs/ocaml_$(1)__$(notdir $(2)): $(2)
 	(for d in $(3); do \
 	   echo "open! $$$${d}"; \
 	   echo "#1 \"$(2)\""; \
 	 done; cat $$<) > $$@
 
-beforedepend:: $(COMPLIBDIR)/ocaml_$(1)__$(notdir $(2))
+beforedepend:: compilerlibs/ocaml_$(1)__$(notdir $(2))
 endef
 
 define copy_files_with_prefix
@@ -545,19 +541,19 @@ endef
 $(call copy_files_with_prefix,common,\
 $(filter-out driver/compdynlink,$(COMMON)),Ocaml_common)
 
-$(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte: driver/compdynlink.mlbyte
+compilerlibs/ocaml_common__compdynlink.mlbyte: driver/compdynlink.mlbyte
 	(echo 'open! Ocaml_common'; cat $<) > $@
 
-$(COMPLIBDIR)/ocaml_common__compdynlink.mlopt: driver/compdynlink.mlopt
+compilerlibs/ocaml_common__compdynlink.mlopt: driver/compdynlink.mlopt
 	(echo 'open! Ocaml_common'; \
 	 cat $<) > $@
 
-$(COMPLIBDIR)/ocaml_common__compdynlink.mli: driver/compdynlink.mli
+compilerlibs/ocaml_common__compdynlink.mli: driver/compdynlink.mli
 	(echo 'open! Ocaml_common'; cat $<) > $@
 
-beforedepend:: $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte \
-	$(COMPLIBDIR)/ocaml_common__compdynlink.mlopt \
-	$(COMPLIBDIR)/ocaml_common__compdynlink.mli
+beforedepend:: compilerlibs/ocaml_common__compdynlink.mlbyte \
+	compilerlibs/ocaml_common__compdynlink.mlopt \
+	compilerlibs/ocaml_common__compdynlink.mli
 
 $(call copy_files_with_prefix,bytecomp,$(BYTECOMP),Ocaml_common Ocaml_bytecomp)
 $(call copy_files_with_prefix,optcomp,$(OPTCOMP),Ocaml_common Ocaml_optcomp)
@@ -565,78 +561,61 @@ $(call copy_files_with_prefix,toplevel,$(TOPLEVEL),\
 Ocaml_common Ocaml_bytecomp Ocaml_toplevel)
 
 partialclean::
-	rm -f $(COMPLIBDIR)/*.ml $(COMPLIBDIR)/*.mli
+	rm -f compilerlibs/*.ml compilerlibs/*.mli
 
-$(COMPLIBDIR)/%.cmi: $(COMPLIBDIR)/%.mli
-	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
+compilerlibs/%.cmi: compilerlibs/%.mli
+	$(CAMLC) $(COMPFLAGS) -I compilerlibs -c $<
 
-$(COMPLIBDIR)/%.cmo: $(COMPLIBDIR)/%.ml
-	$(CAMLC) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
+compilerlibs/%.cmo: compilerlibs/%.ml
+	$(CAMLC) $(COMPFLAGS) -I compilerlibs -c $<
 
-$(COMPLIBDIR)/%.cmx: $(COMPLIBDIR)/%.ml ocamlopt
-	$(CAMLOPT) $(COMPFLAGS) -I $(COMPLIBDIR) -c $<
-
-.PHONY: compilerlibs
-compilerlibs: \
-    $(COMPLIBDIR)/ocamlcommon.cma \
-    $(COMPLIBDIR)/ocamlbytecomp.cma \
-    $(COMPLIBDIR)/ocamltoplevel.cma
-
-.PHONY: compilerlibs.opt
-compilerlibs.opt: \
-    $(COMPLIBDIR)/ocamloptcomp.cma
-
-.PHONY: compilerlibs.optopt
-compilerlibs.optopt: \
-    $(COMPLIBDIR)/ocamlcommon.cmxa \
-    $(COMPLIBDIR)/ocamlbytecomp.cmxa \
-    $(COMPLIBDIR)/ocamloptcomp.cmxa \
-    $(COMPLIBDIR)/ocamlopttoplevel.cmxa
+compilerlibs/%.cmx: compilerlibs/%.ml ocamlopt
+	$(CAMLOPT) $(COMPFLAGS) -I compilerlibs -c $<
 
 # Shared parts of the system
 
-$(COMPLIBDIR)/ocaml_common.ml: tools/gen_prefix CompilerModules
+compilerlibs/ocaml_common.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_common $(COMMON) > $@
-$(COMPLIBDIR)/ocaml_common.cmo: $(COMPLIBDIR)/ocaml_common.ml
+compilerlibs/ocaml_common.cmo: compilerlibs/ocaml_common.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
-$(addprefix $(COMPLIBDIR)/,$(COMMON_ML:=.ml) $(COMMON_MLI_ONLY:=.mli)): \
-	$(COMPLIBDIR)/common
-$(COMPLIBDIR)/common: tools/gen_prefix CompilerModules
+$(addprefix compilerlibs/,$(COMMON_ML:=.ml) $(COMMON_MLI_ONLY:=.mli)): \
+	compilerlibs/common
+compilerlibs/common: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(COMMON_ML) -mli $(COMMON_MLI_ONLY) \
-	  -prefix ocaml_common -unprefix $(COMPLIBDIR)
+	  -prefix ocaml_common -unprefix compilerlibs
 	touch $@
-$(COMPLIBDIR)/ocamlcommon.cma: $(COMMON_CMO)
+compilerlibs/ocamlcommon.cma: $(COMMON_CMO)
 	$(CAMLC) -a -linkall -o $@ $^
 
 partialclean::
-	rm -f $(COMPLIBDIR)/ocaml_common.ml
-	rm -f $(COMPLIBDIR)/ocamlcommon.cma
-	rm -f $(COMPLIBDIR)/common
+	rm -f compilerlibs/ocaml_common.ml
+	rm -f compilerlibs/ocamlcommon.cma
+	rm -f compilerlibs/common
 
-beforedepend:: $(COMPLIBDIR)/ocaml_common.ml $(COMPLIBDIR)/common
+beforedepend:: compilerlibs/ocaml_common.ml compilerlibs/common
 
 # The bytecode compiler
 
-$(COMPLIBDIR)/ocaml_bytecomp.ml: tools/gen_prefix CompilerModules
+compilerlibs/ocaml_bytecomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_bytecomp $(BYTECOMP) > $@
-$(COMPLIBDIR)/ocaml_bytecomp.cmo: $(COMPLIBDIR)/ocaml_bytecomp.ml
+compilerlibs/ocaml_bytecomp.cmo: compilerlibs/ocaml_bytecomp.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
-$(addprefix $(COMPLIBDIR)/,$(BYTECOMP_ML:=.ml) $(BYTECOMP_MLI_ONLY:=.mli)): \
-	$(COMPLIBDIR)/bytecomp
-$(COMPLIBDIR)/bytecomp: tools/gen_prefix CompilerModules
+$(addprefix compilerlibs/,$(BYTECOMP_ML:=.ml) $(BYTECOMP_MLI_ONLY:=.mli)): \
+	compilerlibs/bytecomp
+compilerlibs/bytecomp: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(BYTECOMP_ML) -mli $(BYTECOMP_MLI_ONLY) \
-	  -prefix ocaml_bytecomp -unprefix $(COMPLIBDIR)
+	  -prefix ocaml_bytecomp -unprefix compilerlibs
 	touch $@
-$(COMPLIBDIR)/ocamlbytecomp.cma: $(BYTECOMP_CMO)
+compilerlibs/ocamlbytecomp.cma: $(BYTECOMP_CMO)
 	$(CAMLC) -a -o $@ $^
 
 partialclean::
-	rm -f $(COMPLIBDIR)/ocaml_bytecomp.ml $(COMPLIBDIR)/ocamlbytecomp.cma
-	rm -f $(COMPLIBDIR)/bytecomp
+	rm -f compilerlibs/ocaml_bytecomp.ml compilerlibs/ocamlbytecomp.cma
+	rm -f compilerlibs/bytecomp
 
-beforedepend:: $(COMPLIBDIR)/ocaml_bytecomp.ml $(COMPLIBDIR)/bytecomp
+beforedepend:: compilerlibs/ocaml_bytecomp.ml compilerlibs/bytecomp
 
-ocamlc: $(COMPLIBDIR)/ocamlcommon.cma $(COMPLIBDIR)/ocamlbytecomp.cma \
+ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	$(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
 
@@ -645,26 +624,26 @@ partialclean::
 
 # The native-code compiler
 
-$(COMPLIBDIR)/ocaml_optcomp.ml: tools/gen_prefix CompilerModules
+compilerlibs/ocaml_optcomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_optcomp $(OPTCOMP) > $@
-$(COMPLIBDIR)/ocaml_optcomp.cmo: $(COMPLIBDIR)/ocaml_optcomp.ml
+compilerlibs/ocaml_optcomp.cmo: compilerlibs/ocaml_optcomp.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
-$(addprefix $(COMPLIBDIR)/,$(OPTCOMP_ML:=.ml) $(OPTCOMP_MLI_ONLY:=.mli)): \
-	$(COMPLIBDIR)/optcomp
-$(COMPLIBDIR)/optcomp: tools/gen_prefix CompilerModules
+$(addprefix compilerlibs/,$(OPTCOMP_ML:=.ml) $(OPTCOMP_MLI_ONLY:=.mli)): \
+	compilerlibs/optcomp
+compilerlibs/optcomp: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(OPTCOMP_ML) -mli $(OPTCOMP_MLI_ONLY) \
-	  -prefix ocaml_optcomp -unprefix $(COMPLIBDIR)
+	  -prefix ocaml_optcomp -unprefix compilerlibs
 	touch $@
-$(COMPLIBDIR)/ocamloptcomp.cma: $(OPTCOMP_CMO)
+compilerlibs/ocamloptcomp.cma: $(OPTCOMP_CMO)
 	$(CAMLC) -a -o $@ $^
 
 partialclean::
-	rm -f $(COMPLIBDIR)/ocaml_optcomp.ml $(COMPLIBDIR)/ocamloptcomp.cma
-	rm -f $(COMPLIBDIR)/optcomp
+	rm -f compilerlibs/ocaml_optcomp.ml compilerlibs/ocamloptcomp.cma
+	rm -f compilerlibs/optcomp
 
-beforedepend:: $(COMPLIBDIR)/ocaml_optcomp.ml $(COMPLIBDIR)/optcomp
+beforedepend:: compilerlibs/ocaml_optcomp.ml compilerlibs/optcomp
 
-ocamlopt: $(COMPLIBDIR)/ocamlcommon.cma $(COMPLIBDIR)/ocamloptcomp.cma \
+ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
           $(OPTSTART)
 	$(CAMLC) $(LINKFLAGS) -o $@ $^
 
@@ -673,31 +652,31 @@ partialclean::
 
 # The toplevel
 
-$(COMPLIBDIR)/ocaml_toplevel.ml: tools/gen_prefix CompilerModules
+compilerlibs/ocaml_toplevel.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_toplevel $(TOPLEVEL) > $@
-$(COMPLIBDIR)/ocaml_toplevel.cmo: $(COMPLIBDIR)/ocaml_toplevel.ml
+compilerlibs/ocaml_toplevel.cmo: compilerlibs/ocaml_toplevel.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
-$(COMPLIBDIR)/ocaml_toplevel.cmx: $(COMPLIBDIR)/ocaml_toplevel.ml
+compilerlibs/ocaml_toplevel.cmx: compilerlibs/ocaml_toplevel.ml
 	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
-$(addprefix $(COMPLIBDIR)/,$(TOPLEVEL_ML:=.ml) $(TOPLEVEL_MLI_ONLY:=.mli)): \
-	$(COMPLIBDIR)/toplevel
-$(COMPLIBDIR)/toplevel: tools/gen_prefix CompilerModules
+$(addprefix compilerlibs/,$(TOPLEVEL_ML:=.ml) $(TOPLEVEL_MLI_ONLY:=.mli)): \
+	compilerlibs/toplevel
+compilerlibs/toplevel: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(TOPLEVEL_ML) -mli $(TOPLEVEL_MLI_ONLY) \
-	  -prefix ocaml_toplevel -unprefix $(COMPLIBDIR)
+	  -prefix ocaml_toplevel -unprefix compilerlibs
 	touch $@
-$(COMPLIBDIR)/ocamltoplevel.cma: $(TOPLEVEL_CMO)
+compilerlibs/ocamltoplevel.cma: $(TOPLEVEL_CMO)
 	$(CAMLC) -a -o $@ $^
 
 partialclean::
-	rm -f $(COMPLIBDIR)/ocaml_toplevel.ml $(COMPLIBDIR)/ocamltoplevel.cma
-	rm -f $(COMPLIBDIR)/toplevel
+	rm -f compilerlibs/ocaml_toplevel.ml compilerlibs/ocamltoplevel.cma
+	rm -f compilerlibs/toplevel
 
-beforedepend:: $(COMPLIBDIR)/ocaml_toplevel.ml $(COMPLIBDIR)/toplevel
+beforedepend:: compilerlibs/ocaml_toplevel.ml compilerlibs/toplevel
 
 ocaml_dependencies := \
-  $(COMPLIBDIR)/ocamlcommon.cma \
-  $(COMPLIBDIR)/ocamlbytecomp.cma \
-  $(COMPLIBDIR)/ocamltoplevel.cma $(TOPLEVELSTART)
+  compilerlibs/ocamlcommon.cma \
+  compilerlibs/ocamlbytecomp.cma \
+  compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART)
 
 .INTERMEDIATE: ocaml.tmp
 ocaml.tmp: $(ocaml_dependencies)
@@ -743,23 +722,23 @@ beforedepend:: parsing/lexer.ml
 
 # Shared parts of the system compiled with the native-code compiler
 
-$(COMPLIBDIR)/ocaml_common.cmx: $(COMPLIBDIR)/ocaml_common.ml
+compilerlibs/ocaml_common.cmx: compilerlibs/ocaml_common.ml
 	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
-$(COMPLIBDIR)/ocamlcommon.cmxa: $(COMMON_CMO:.cmo=.cmx)
+compilerlibs/ocamlcommon.cmxa: $(COMMON_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -linkall -o $@ $^
 partialclean::
-	rm -f $(COMPLIBDIR)/ocamlcommon.cmxa $(COMPLIBDIR)/ocamcommon.$(A)
+	rm -f compilerlibs/ocamlcommon.cmxa compilerlibs/ocamcommon.$(A)
 
 # The bytecode compiler compiled with the native-code compiler
 
-$(COMPLIBDIR)/ocaml_bytecomp.cmx: $(COMPLIBDIR)/ocaml_bytecomp.ml
+compilerlibs/ocaml_bytecomp.cmx: compilerlibs/ocaml_bytecomp.ml
 	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
-$(COMPLIBDIR)/ocamlbytecomp.cmxa: $(BYTECOMP_CMO:.cmo=.cmx)
+compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
 partialclean::
-	rm -f $(COMPLIBDIR)/ocamlbytecomp.cmxa $(COMPLIBDIR)/ocamlbytecomp.$(A)
+	rm -f compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A)
 
-ocamlc.opt: $(COMPLIBDIR)/ocamlcommon.cmxa $(COMPLIBDIR)/ocamlbytecomp.cmxa \
+ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
             $(BYTESTART:.cmo=.cmx)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^ -cclib "$(BYTECCLIBS)"
 
@@ -768,14 +747,14 @@ partialclean::
 
 # The native-code compiler compiled with itself
 
-$(COMPLIBDIR)/ocaml_optcomp.cmx: $(COMPLIBDIR)/ocaml_optcomp.ml
+compilerlibs/ocaml_optcomp.cmx: compilerlibs/ocaml_optcomp.ml
 	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
-$(COMPLIBDIR)/ocamloptcomp.cmxa: $(OPTCOMP_CMO:.cmo=.cmx)
+compilerlibs/ocamloptcomp.cmxa: $(OPTCOMP_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
 partialclean::
-	rm -f $(COMPLIBDIR)/ocamloptcomp.cmxa $(COMPLIBDIR)/ocamloptcomp.$(A)
+	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A)
 
-ocamlopt.opt: $(COMPLIBDIR)/ocamlcommon.cmxa $(COMPLIBDIR)/ocamloptcomp.cmxa \
+ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
               $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
 
@@ -833,7 +812,7 @@ tools/cvt_emit: tools/cvt_emit.mll
 
 # The "expunge" utility
 
-expunge: $(COMPLIBDIR)/ocamlcommon.cma $(COMPLIBDIR)/ocamlbytecomp.cma \
+expunge: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
          toplevel/expunge.cmo
 	$(CAMLC) $(LINKFLAGS) -o $@ $^
 
@@ -958,7 +937,7 @@ parsing/parser.ml: boot/menhir/parser.ml parsing/parser.mly \
 parsing/parser.mli: boot/menhir/parser.mli
 	cat $< | sed "s/MenhirLib/CamlinternalMenhirLib/g" > $@
 
-$(COMPLIBDIR)/ocaml_common__parser.mly: parsing/parser.mly
+compilerlibs/ocaml_common__parser.mly: parsing/parser.mly
 	cp $< $@
 
 partialclean:: partialclean-menhir
@@ -1046,28 +1025,28 @@ lintapidiff:
 # compiler for "make world" and the list of dependencies for
 # asmcomp/export_info.cmo is long).
 
-$(COMPLIBDIR)/ocamlmiddleend.cma: $(MIDDLE_END_CMO)
+compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END_CMO)
 	$(CAMLC) -a -o $@ $^
-$(COMPLIBDIR)/ocamlmiddleend.cmxa: $(MIDDLE_END_CMO:.cmo=.cmx)
+compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
 partialclean::
-	rm -f $(COMPLIBDIR)/ocamlmiddleend.cma \
-	      $(COMPLIBDIR)/ocamlmiddleend.cmxa \
-	      $(COMPLIBDIR)/ocamlmiddleend.$(A)
+	rm -f compilerlibs/ocamlmiddleend.cma \
+	      compilerlibs/ocamlmiddleend.cmxa \
+	      compilerlibs/ocamlmiddleend.$(A)
 
 # Tools
 
 .PHONY: ocamltools
 ocamltools: ocamlc ocamllex \
-            $(COMPLIBDIR)/cmx_format.cmi \
-            $(COMPLIBDIR)/ocaml_optcomp__printclambda.cmo \
-            $(COMPLIBDIR)/printclambda.cmo \
-            $(COMPLIBDIR)/ocamlmiddleend.cma \
-            $(COMPLIBDIR)/ocaml_optcomp__backend_var.cmo \
-            $(COMPLIBDIR)/backend_var.cmo \
-            $(COMPLIBDIR)/ocaml_optcomp__export_info.cmo \
-            $(COMPLIBDIR)/export_info.cmo
+            compilerlibs/cmx_format.cmi \
+            compilerlibs/ocaml_optcomp__printclambda.cmo \
+            compilerlibs/printclambda.cmo \
+            compilerlibs/ocamlmiddleend.cma \
+            compilerlibs/ocaml_optcomp__backend_var.cmo \
+            compilerlibs/backend_var.cmo \
+            compilerlibs/ocaml_optcomp__export_info.cmo \
+            compilerlibs/export_info.cmo
 	$(MAKE) -C tools all
 
 .PHONY: ocamltoolsopt
@@ -1076,14 +1055,14 @@ ocamltoolsopt: ocamlopt
 
 .PHONY: ocamltoolsopt.opt
 ocamltoolsopt.opt: ocamlc.opt ocamllex.opt \
-                   $(COMPLIBDIR)/cmx_format.cmi \
-                   $(COMPLIBDIR)/ocaml_optcomp__printclambda.cmx \
-                   $(COMPLIBDIR)/printclambda.cmx \
-                   $(COMPLIBDIR)/ocamlmiddleend.cmxa \
-                   $(COMPLIBDIR)/ocaml_optcomp__backend_var.cmx \
-                   $(COMPLIBDIR)/backend_var.cmx \
-                   $(COMPLIBDIR)/ocaml_optcomp__export_info.cmx \
-                   $(COMPLIBDIR)/export_info.cmx
+                   compilerlibs/cmx_format.cmi \
+                   compilerlibs/ocaml_optcomp__printclambda.cmx \
+                   compilerlibs/printclambda.cmx \
+                   compilerlibs/ocamlmiddleend.cmxa \
+                   compilerlibs/ocaml_optcomp__backend_var.cmx \
+                   compilerlibs/backend_var.cmx \
+                   compilerlibs/ocaml_optcomp__export_info.cmx \
+                   compilerlibs/export_info.cmx
 	$(MAKE) -C tools opt.opt
 
 partialclean::
@@ -1187,33 +1166,33 @@ partialclean::
 
 # The native toplevel
 
-$(COMPLIBDIR)/ocaml_opttoplevel.ml: tools/gen_prefix CompilerModules
+compilerlibs/ocaml_opttoplevel.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_opttoplevel $(OPTTOPLEVEL) > $@
-$(COMPLIBDIR)/ocaml_opttoplevel.cmo: $(COMPLIBDIR)/ocaml_opttoplevel.ml
+compilerlibs/ocaml_opttoplevel.cmo: compilerlibs/ocaml_opttoplevel.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
-$(COMPLIBDIR)/ocaml_opttoplevel.cmx: $(COMPLIBDIR)/ocaml_opttoplevel.ml
+compilerlibs/ocaml_opttoplevel.cmx: compilerlibs/ocaml_opttoplevel.ml
 	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
-$(COMPLIBDIR)/ocaml_opttoplevel__genprintval.ml:
+compilerlibs/ocaml_opttoplevel__genprintval.ml:
 	echo 'include Ocaml_toplevel__genprintval' > $@
-$(addprefix $(COMPLIBDIR)/,$(OPTTOPLEVEL_ML:=.ml) \
-	$(OPTTOPLEVEL_MLI_ONLY:=.mli)): $(COMPLIBDIR)/opttoplevel
-$(COMPLIBDIR)/opttoplevel: tools/gen_prefix CompilerModules
+$(addprefix compilerlibs/,$(OPTTOPLEVEL_ML:=.ml) \
+	$(OPTTOPLEVEL_MLI_ONLY:=.mli)): compilerlibs/opttoplevel
+compilerlibs/opttoplevel: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(filter-out %genprintval,$(OPTTOPLEVEL_ML)) \
 	  -mli $(OPTTOPLEVEL_MLI_ONLY) \
-	  -prefix ocaml_opttoplevel -unprefix $(COMPLIBDIR)
+	  -prefix ocaml_opttoplevel -unprefix compilerlibs
 	touch $@
-$(COMPLIBDIR)/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMO:.cmo=.cmx)
+compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
 $(call copy_files_with_prefix,opttoplevel,$(filter-out toplevel/genprintval,\
 $(OPTTOPLEVEL)),Ocaml_common Ocaml_bytecomp Ocaml_optcomp Ocaml_opttoplevel)
 
 partialclean::
-	rm -f $(COMPLIBDIR)/ocaml_opttoplevel.ml \
-	  $(COMPLIBDIR)/ocamlopttoplevel.cmxa
-	rm -f $(COMPLIBDIR)/opttoplevel
+	rm -f compilerlibs/ocaml_opttoplevel.ml \
+	  compilerlibs/ocamlopttoplevel.cmxa
+	rm -f compilerlibs/opttoplevel
 
-beforedepend:: $(COMPLIBDIR)/ocaml_opttoplevel.ml $(COMPLIBDIR)/opttoplevel
+beforedepend:: compilerlibs/ocaml_opttoplevel.ml compilerlibs/opttoplevel
 
 # When the native toplevel executable has an extension (e.g. ".exe"),
 # provide a phony 'ocamlnat' synonym
@@ -1223,17 +1202,17 @@ ifneq ($(EXE),)
 ocamlnat: ocamlnat$(EXE)
 endif
 
-ocamlnat$(EXE): $(COMPLIBDIR)/ocamlcommon.cmxa \
-    $(COMPLIBDIR)/ocamloptcomp.cmxa \
-    $(COMPLIBDIR)/ocamlbytecomp.cmxa \
-    $(COMPLIBDIR)/ocamlopttoplevel.cmxa \
+ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa \
+    compilerlibs/ocamloptcomp.cmxa \
+    compilerlibs/ocamlbytecomp.cmxa \
+    compilerlibs/ocamlopttoplevel.cmxa \
     $(OPTTOPLEVELSTART:.cmo=.cmx)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -o $@ $^
 
 partialclean::
 	rm -f ocamlnat$(EXE)
 
-$(COMPLIBDIR)/ocaml_opttoplevel__opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+compilerlibs/ocaml_opttoplevel__opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 
 # The numeric opcodes
 
@@ -1293,32 +1272,32 @@ partialclean::
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
 	         middle_end/base_types asmcomp/debug driver toplevel tools \
-	         $(COMPLIBDIR) $(COMPLIBDIR); do \
+	         compilerlibs; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
 	    $$d/*.$(O) $$d/*.$(SO) $d/*~; \
 	done
 	rm -f *~
 
 MAPS=\
-  -map $(COMPLIBDIR)/ocaml_common.ml \
-  -map $(COMPLIBDIR)/ocaml_bytecomp.ml \
-  -map $(COMPLIBDIR)/ocaml_toplevel.ml \
-  -map $(COMPLIBDIR)/ocaml_optcomp.ml \
-  -map $(COMPLIBDIR)/ocaml_opttoplevel.ml
+  -map compilerlibs/ocaml_common.ml \
+  -map compilerlibs/ocaml_bytecomp.ml \
+  -map compilerlibs/ocaml_toplevel.ml \
+  -map compilerlibs/ocaml_optcomp.ml \
+  -map compilerlibs/ocaml_opttoplevel.ml
 
 .PHONY: depend
 depend: beforedepend
 	(for d in driver toplevel; do \
-	 $(CAMLDEP) $(DEPFLAGS) -I $(COMPLIBDIR) $$d/*.mli $$d/*.ml || exit; \
+	 $(CAMLDEP) $(DEPFLAGS) -I compilerlibs $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
-	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I $(COMPLIBDIR) \
-	 $(filter-out $(COMPLIBDIR)/ocaml_common.ml $(COMPLIBDIR)/ocaml_bytecomp.ml \
-$(COMPLIBDIR)/ocaml_toplevel.ml $(COMPLIBDIR)/ocaml_optcomp.ml $(COMPLIBDIR)/ocaml_opttoplevel.ml,\
-$(wildcard $(COMPLIBDIR)/*.mli $(COMPLIBDIR)/*.ml)) >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I $(COMPLIBDIR) -native \
-	 -impl $(COMPLIBDIR)/ocaml_common__compdynlink.mlopt >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I $(COMPLIBDIR) -bytecode \
-	 -impl $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte >> .depend
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \
+	 $(filter-out compilerlibs/ocaml_common.ml compilerlibs/ocaml_bytecomp.ml \
+compilerlibs/ocaml_toplevel.ml compilerlibs/ocaml_optcomp.ml compilerlibs/ocaml_opttoplevel.ml,\
+$(wildcard compilerlibs/*.mli compilerlibs/*.ml)) >> .depend
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs -native \
+	 -impl compilerlibs/ocaml_common__compdynlink.mlopt >> .depend
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs -bytecode \
+	 -impl compilerlibs/ocaml_common__compdynlink.mlbyte >> .depend
 
 .PHONY: distclean
 distclean: clean
