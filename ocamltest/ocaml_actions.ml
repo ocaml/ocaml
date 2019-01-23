@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 (* Actions specific to the OCaml compilers *)
 
 open Ocamltest_stdlib

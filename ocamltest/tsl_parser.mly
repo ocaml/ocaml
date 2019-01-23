@@ -17,6 +17,7 @@
 
 %{
 
+open Ocaml_common
 open Location
 open Tsl_ast
 
