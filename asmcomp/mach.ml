@@ -155,6 +155,7 @@ let end_instr () =
     dbg = Insn_debuginfo.none ();
   }
 
+(* CR mshinwell: May be able to ditch this type now *)
 type phantom_available_before =
   | Take_from of instruction
   | Exactly of Backend_var.Set.t
@@ -162,13 +163,35 @@ type phantom_available_before =
 let instr_cons_debug ~phantom_available_before d a r dbg n =
   let phantom_available_before =
     match phantom_available_before with
-    | Take_from insn -> insn.phantom_available_before
+    | Take_from insn -> Insn_debuginfo.phantom_available_before insn.dbg
     | Exactly avail -> avail
   in
-  { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty;
-    phantom_available_before;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+  let dbg = Insn_debuginfo.create dbg ~phantom_available_before in
+  { desc = d; next = n; arg = a; res = r; dbg; live = Reg.Set.empty;
+  }
+
+let instr_cons_from ?arg ?res ?dbg from desc ~next =
+  let arg =
+    match arg with
+    | None -> from.arg
+    | Some arg -> arg
+  in
+  let res =
+    match res with
+    | None -> from.res
+    | Some res -> res
+  in
+  let dbg =
+    match dbg with
+    | None -> from.dbg
+    | Some dbg -> dbg
+  in
+  { desc;
+    next;
+    arg;
+    res;
+    dbg;
+    live = Reg.Set.empty;
   }
 
 let rec instr_iter f i =

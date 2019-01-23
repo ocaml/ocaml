@@ -31,7 +31,6 @@ type instruction =
     mutable next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
-    dbg: Debuginfo.t;
     live: Reg.Set.t;
     dbg : Insn_debuginfo.t;
     affinity : internal_affinity;
@@ -106,9 +105,9 @@ type affinity =
   | Next
 
 let cons_instr ?(arg = [| |]) ?(res = [| |]) (affinity : affinity) desc next =
-  let dbg, (affinity : internal_affinity) =
+  let dbg, affinity =
     match affinity with
-    | Previous -> Insn_debuginfo.None, Previous
+    | Previous -> Insn_debuginfo.none (), (Previous : internal_affinity)
     | Next ->
       match next.affinity with
       | Irrelevant -> next.dbg, Irrelevant
@@ -140,7 +139,7 @@ let copy_instr desc (to_copy : Mach.instruction) next =
     | Irrelevant -> insn
   in
   { desc = desc;
-    next = propagate_debuginfo_forwards_to_next_insns next;
+    next = propagate_debuginfo_to_next_insns next;
     arg = to_copy.arg;
     res = to_copy.res;
     dbg = to_copy.dbg;
@@ -242,23 +241,23 @@ let rec linear i n =
   | Iop op ->
       copy_instr (Lop op) i (linear i.Mach.next n)
   | Ireturn ->
-      assert (i.Mach.available_across = None);
+      assert (Insn_debuginfo.available_across i.Mach.dbg = None);
       let n1 = copy_instr Lreturn i (discard_dead_code n) in
-      if !Proc.contains_calls then
+      if !Proc.contains_calls then begin
         (* Make sure that a value still in the "return address register"
            isn't marked as available at the return instruction if it has to
            be reloaded immediately prior. *)
-        let dbg =
-          Insn_debuginfo.map_available_before n1.dbg
-            ~f:(fun available_before ->
-              RAS.map available_before
-                ~f:(fun set ->
-                  Reg_with_debug_info.Set.made_unavailable_by_clobber set
-                    ~regs_clobbered:Proc.destroyed_at_reloadretaddr
-                    ~register_class:Proc.register_class))
-        in
-        cons_instr Next Lreloadretaddr { n1 with dbg; }
-      else n1
+        Insn_debuginfo.map_available_before n1.dbg
+          ~f:(fun available_before ->
+            RAS.map available_before
+              ~f:(fun set ->
+                Reg_with_debug_info.Set.made_unavailable_by_clobber set
+                  ~regs_clobbered:Proc.destroyed_at_reloadretaddr
+                  ~register_class:Proc.register_class));
+        cons_instr Next Lreloadretaddr n1
+      end else begin
+        n1
+      end
   | Iifthenelse(test, ifso, ifnot) ->
       let n1 = linear i.Mach.next n in
       (* The following cases preserve existing availability information
@@ -377,8 +376,7 @@ let rec linear i n =
       assert (i.Mach.arg = [| |] || Config.spacetime);
       let (lbl_body, n2) =
         let body = linear body (cons_instr Previous Lpoptrap n1) in
-        get_label (
-          cons_instr Next Lpushtrap ~arg:i.Mach.arg body body.dbg)
+        get_label (cons_instr Next Lpushtrap ~arg:i.Mach.arg body)
       in
       decr try_depth;
       cons_instr Next (Lsetuptrap lbl_body) ~arg:i.Mach.arg
@@ -390,7 +388,7 @@ let add_prologue first_insn =
   (* The prologue needs to come after any [Iname_for_debugger] operations that
      refer to parameters.  (Such operations always come in a contiguous
      block, cf. [Selectgen].) *)
-  let rec skip_naming_ops insn =
+  let rec skip_naming_ops (insn : instruction) : instruction =
     match insn.desc with
     | Lop (Iname_for_debugger _) ->
       { insn with next = skip_naming_ops insn.next; }
@@ -401,9 +399,7 @@ let add_prologue first_insn =
         res = [| |];
         dbg = insn.dbg;
         live = insn.live;
-        available_before = insn.available_before;
-        phantom_available_before = insn.phantom_available_before;
-        available_across = insn.available_across;
+        affinity = Irrelevant;
       }
   in
   skip_naming_ops first_insn

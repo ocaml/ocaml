@@ -150,10 +150,10 @@ module Vars = struct
         Key.Set.empty
 
   let available_before (insn : L.instruction) =
-    availability_set_to_key_set insn.available_before
+    availability_set_to_key_set (Insn_debuginfo.available_before insn.dbg)
 
   let available_across (insn : L.instruction) =
-    match insn.available_across with
+    match Insn_debuginfo.available_across insn.dbg with
     | None -> available_before insn
     | Some across -> availability_set_to_key_set across
 

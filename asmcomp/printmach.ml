@@ -177,10 +177,11 @@ let rec instr ppf i =
     fprintf ppf "}@]@,";
     if !Clflags.dump_avail then begin
       let module RAS = Reg_availability_set in
+      (* CR mshinwell: Just have [Insn_debuginfo.print] or something *)
       fprintf ppf "@[<1>AB={%a},PAB={%a}"
-        (RAS.print ~print_reg:reg) i.available_before
-        Backend_var.Set.print i.phantom_available_before;
-      begin match i.available_across with
+        (RAS.print ~print_reg:reg) (Insn_debuginfo.available_before i.dbg)
+        Backend_var.Set.print (Insn_debuginfo.phantom_available_before i.dbg);
+      begin match Insn_debuginfo.available_across i.dbg with
       | None -> ()
       | Some available_across ->
         fprintf ppf ",AA={%a}" (RAS.print ~print_reg:reg) available_across
@@ -235,8 +236,9 @@ let rec instr ppf i =
   | Iraise k ->
       fprintf ppf "%a %a" Printcmm.raise_kind k reg i.arg.(0)
   end;
-  if not (Debuginfo.is_none i.dbg) then
-    fprintf ppf "%a" Debuginfo.print i.dbg;
+  let dbg = Insn_debuginfo.dbg i.dbg in
+  if not (Debuginfo.is_none dbg) then
+    fprintf ppf "%a" Debuginfo.print dbg;
   begin match i.next.desc with
     Iend -> ()
   | _ -> fprintf ppf "@,%a" instr i.next

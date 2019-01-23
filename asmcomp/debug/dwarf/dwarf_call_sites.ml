@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2013--2018 Jane Street Group LLC                           *)
+(*   Copyright 2013--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -18,6 +18,7 @@ module DAH = Dwarf_attribute_helpers
 module DS = Dwarf_state
 module L = Linearize
 module SLDL = Simple_location_description_lang
+module V = Backend_var
 
 let arch_size_addr = Targetint.of_int_exn Arch.size_addr
 
@@ -54,7 +55,8 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
        register before a call contains the value of a certain variable)
        that we may need here.  (Specifically for the call to
        [Reg_availability_set.find_all_holding_value_of].) *)
-    match Reg_availability_set.find_reg_opt insn.available_before arg with
+    let available_before = Insn_debuginfo.available_before insn.dbg in
+    match Reg_availability_set.find_reg_opt available_before arg with
     | None -> [], []
     | Some rd ->
       match Reg_with_debug_info.debug_info rd with
@@ -103,7 +105,7 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
             end else begin
               let everywhere_holding_var =
                 Reg_availability_set.find_all_holding_value_of
-                  insn.available_before (Var holds_value_of)
+                  available_before (Var holds_value_of)
               in
               (* Only registers spilled at the time of the call will be
                  available with certainty (in the caller's frame) during the
@@ -211,7 +213,7 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
 let add_call_site state ~scope_proto_dies ~function_proto_die
       ~stack_offset ~is_tail ~args ~(call_labels : Mach.call_labels)
       (insn : L.instruction) attrs =
-  let dbg = insn.dbg in
+  let dbg = Insn_debuginfo.dbg insn.dbg in
   let block_die =
     Dwarf_lexical_blocks_and_inlined_frames.find_scope_die_from_debuginfo dbg
       ~function_proto_die ~scope_proto_dies
@@ -504,11 +506,14 @@ let dwarf state ~scope_proto_dies (fundecl : L.fundecl)
   let (_stack_offset : int) =
     traverse_insns fundecl.fun_body ~stack_offset:Proc.initial_stack_offset
   in
-  List.iter (fun ({ callee; call_labels; call_dbg = dbg; }
+  List.iter (fun ({ callee; call_labels; call_dbg; }
         : Emitaux.external_call_generated_during_emit) ->
       (* We omit [DW_tag_call_site_parameter] for these calls.  As such the
          [available_before] information and the stack offset is irrelevant
          here. *)
+      let dbg =
+        Insn_debuginfo.create call_dbg ~phantom_available_before:V.Set.empty
+      in
       let fake_insn : L.instruction =
         { L.end_instr with
           dbg;

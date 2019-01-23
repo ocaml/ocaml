@@ -304,11 +304,9 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         next = insn;
         arg = [| |];
         res = [| |];
-        dbg = insn.dbg;
+        dbg = Insn_debuginfo.none ();
         live = insn.live;
-        available_before = insn.available_before;
-        phantom_available_before = insn.phantom_available_before;
-        available_across = None;
+        affinity = Irrelevant;
       }
     in
     let used_label = ref false in

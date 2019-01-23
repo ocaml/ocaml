@@ -87,7 +87,7 @@ let check_invariants (instr : M.instruction) ~(avail_before : RAS.t) =
 let rec available_regs (instr : M.instruction)
       ~(avail_before : RAS.t) : RAS.t =
   check_invariants instr ~avail_before;
-  instr.available_before <- avail_before;
+  Insn_debuginfo.set_available_before instr.dbg avail_before;
   let avail_across, avail_after =
     let ok set = RAS.Ok set in
     let unreachable = RAS.Unreachable in
@@ -375,17 +375,18 @@ let rec available_regs (instr : M.instruction)
         augment_availability_at_raise avail_before;
         None, unreachable
   in
-  instr.available_across <- avail_across;
-  begin match instr.available_across with
+  Insn_debuginfo.set_available_across instr.dbg avail_across;
+  begin match avail_across with
   | None -> ()
   | Some available_across ->
+    let instr_available_before = Insn_debuginfo.available_before instr.dbg in
     if !Clflags.dwarf_invariant_checks
-      && not (RAS.subset available_across instr.available_before)
+      && not (RAS.subset available_across instr_available_before)
     then begin
       Misc.fatal_errorf "[available_across] %a not a subset of \
          [available_before] %a:@ %a"
         (RAS.print ~print_reg:Printmach.reg) available_across
-        (RAS.print ~print_reg:Printmach.reg) instr.available_before
+        (RAS.print ~print_reg:Printmach.reg) instr_available_before
         Printmach.instr ({ instr with M. next = M.end_instr (); })
     end
   end;

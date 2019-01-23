@@ -111,6 +111,7 @@ type instruction =
     next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
+    mutable live: Reg.Set.t;
     dbg: Insn_debuginfo.t;
   }
 
@@ -157,9 +158,29 @@ type phantom_available_before =
 
 val dummy_instr: instruction
 val end_instr: unit -> instruction
-val instr_cons_debug: phantom_available_before:phantom_available_before
-      -> instruction_desc -> Reg.t array -> Reg.t array -> Debuginfo.t ->
-        instruction -> instruction
+
+val instr_cons_debug
+   : phantom_available_before:phantom_available_before
+  -> instruction_desc
+  -> Reg.t array
+  -> Reg.t array
+  -> Debuginfo.t
+  -> instruction
+  -> instruction
+
+(** Cons an instruction onto the given [next] instruction.  The new instruction
+    has the specified [instruction_desc] and an empty [live] field.  The
+    [arg], [res] and [dbg] fields of the new instruction are those of [from]
+    except where overridden by one or more of the optional arguments. *)
+val instr_cons_from
+   : ?arg:Reg.t array
+  -> ?res:Reg.t array
+  -> ?dbg:Insn_debuginfo.t
+  -> instruction
+  -> instruction_desc
+  -> next:instruction
+  -> instruction
+
 val instr_iter: (instruction -> unit) -> instruction -> unit
 
 val spacetime_node_hole_pointer_is_live_before : instruction -> bool

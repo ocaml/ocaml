@@ -17,7 +17,9 @@
 
 type label = Cmm.label
 
-type internal_affinity
+type internal_affinity =
+  | Previous
+  | Irrelevant
 
 type instruction =
   { mutable desc: instruction_desc;
@@ -27,7 +29,6 @@ type instruction =
     live: Reg.Set.t;
     dbg : Insn_debuginfo.t;
     affinity : internal_affinity;
-    (** [affinity] is only used during the linearization algorithm itself. *)
   }
 
 and instruction_desc =

@@ -55,7 +55,8 @@ module Lexical_blocks = struct
   end
 
   let available_before (insn : L.instruction) =
-    let innermost = Debuginfo.innermost_block insn.dbg in
+    let dbg = Insn_debuginfo.dbg insn.dbg in
+    let innermost = Debuginfo.innermost_block dbg in
     match Debuginfo.Current_block.to_block innermost with
     | Toplevel -> Debuginfo.Block.Set.empty
     | Block block -> Debuginfo.Block.Set.singleton block

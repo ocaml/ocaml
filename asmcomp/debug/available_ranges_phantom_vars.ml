@@ -91,7 +91,7 @@ module Phantom_vars = struct
   end
 
   let available_before (insn : L.instruction) =
-    insn.phantom_available_before
+    Insn_debuginfo.phantom_available_before insn.dbg
 
   let available_across insn =
     (* Phantom variable availability never changes during the execution
