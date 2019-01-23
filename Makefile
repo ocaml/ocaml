@@ -512,10 +512,9 @@ clean:: partialclean
 compilerlibs/ocaml_common__compdynlink.cmo: \
 	compilerlibs/ocaml_common__compdynlink.mlbyte
 	$(CAMLC) $(COMPFLAGS) -I compilerlibs -c -impl $<
-
 compilerlibs/ocaml_common__compdynlink.cmx: \
 	compilerlibs/ocaml_common__compdynlink.mlopt \
-	compilerlibs/ocaml_optcomp__cmx_format.cmi ocamlopt
+	compilerlibs/ocaml_optcomp__cmx_format.cmi
 	$(CAMLOPT) $(COMPFLAGS) -I compilerlibs -c -impl $<
 
 tools/gen_prefix: tools/gen_prefix.ml
@@ -525,7 +524,7 @@ define copy_file_with_prefix
 compilerlibs/ocaml_$(1)__$(notdir $(2)): $(2)
 	(for d in $(3); do \
 	   echo "open! $$$${d}"; \
-	   echo "#1 \"$(2)\""; \
+	   echo "# 1 \"$(2)\""; \
 	 done; cat $$<) > $$@
 
 beforedepend:: compilerlibs/ocaml_$(1)__$(notdir $(2))
@@ -543,14 +542,10 @@ $(filter-out driver/compdynlink,$(COMMON)),Ocaml_common)
 
 compilerlibs/ocaml_common__compdynlink.mlbyte: driver/compdynlink.mlbyte
 	(echo 'open! Ocaml_common'; cat $<) > $@
-
 compilerlibs/ocaml_common__compdynlink.mlopt: driver/compdynlink.mlopt
-	(echo 'open! Ocaml_common'; \
-	 cat $<) > $@
-
+	(echo 'open! Ocaml_common'; cat $<) > $@
 compilerlibs/ocaml_common__compdynlink.mli: driver/compdynlink.mli
 	(echo 'open! Ocaml_common'; cat $<) > $@
-
 beforedepend:: compilerlibs/ocaml_common__compdynlink.mlbyte \
 	compilerlibs/ocaml_common__compdynlink.mlopt \
 	compilerlibs/ocaml_common__compdynlink.mli
