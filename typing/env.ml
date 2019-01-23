@@ -679,11 +679,23 @@ let rec print_address ppf = function
 
 let current_unit = ref ""
 
+let set_unit_name name =
+  current_unit := name
+
+let get_unit_name () =
+  !current_unit
+
+let is_current_unit_name name =
+  !current_unit = name
+
+let is_current_unit_id id =
+  is_current_unit_name (Ident.name id)
+
 let find_same_module id tbl =
   match IdTbl.find_same id tbl with
   | x -> x
   | exception Not_found
-    when Ident.persistent id && not (Ident.name id = !current_unit) ->
+    when Ident.persistent id && not (is_current_unit_id id) ->
       Persistent
 
 (* Persistent structure descriptions *)
@@ -759,7 +771,7 @@ end
 
 let add_persistent_structure id env =
   if not (Ident.persistent id) then invalid_arg "Env.add_persistent_structure";
-  if Ident.name id <> !current_unit then
+  if not (is_current_unit_id id) then
     { env with
       modules = IdTbl.add id Persistent env.modules;
       components = IdTbl.add id Persistent env.components;
@@ -801,10 +813,10 @@ let acknowledge_pers_struct check modname
     (function
         | Rectypes ->
             if not !Clflags.recursive_types then
-              error (Need_recursive_types(ps.ps_name, !current_unit))
+              error (Need_recursive_types(ps.ps_name, get_unit_name ()))
         | Unsafe_string ->
             if Config.safe_string then
-              error (Depend_on_unsafe_string_unit (ps.ps_name, !current_unit));
+              error (Depend_on_unsafe_string_unit (ps.ps_name, get_unit_name ()));
         | Alerts _ -> ()
         | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
@@ -889,7 +901,7 @@ let check_pers_struct ~loc name =
   end
 
 let reset_cache () =
-  current_unit := "";
+  set_unit_name "";
   Hashtbl.clear persistent_structures;
   clear_imports ();
   Hashtbl.clear value_declarations;
@@ -911,11 +923,6 @@ let reset_cache_toplevel () =
   Hashtbl.clear used_constructors
 
 
-let set_unit_name name =
-  current_unit := name
-
-let get_unit_name () =
-  !current_unit
 
 (* Lookup by identifier *)
 
