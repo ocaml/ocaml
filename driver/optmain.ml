@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+open Ocaml_optcomp
+
 open Clflags
 open Compenv
 
