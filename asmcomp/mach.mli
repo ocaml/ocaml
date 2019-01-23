@@ -111,11 +111,7 @@ type instruction =
     next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
-    mutable dbg: Debuginfo.t;
-    phantom_available_before: Backend_var.Set.t;
-    mutable live: Reg.Set.t;
-    mutable available_before: Reg_availability_set.t;
-    mutable available_across: Reg_availability_set.t option;
+    dbg: Insn_debuginfo.t;
   }
 
 and instruction_desc =

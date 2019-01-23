@@ -18,7 +18,13 @@
 open Reg
 open Mach
 
+module RAS = Reg_availability_set
+
 type label = Cmm.label
+
+type internal_affinity =
+  | Previous
+  | Irrelevant
 
 type instruction =
   { mutable desc: instruction_desc;
@@ -27,9 +33,8 @@ type instruction =
     res: Reg.t array;
     dbg: Debuginfo.t;
     live: Reg.Set.t;
-    phantom_available_before: Backend_var.Set.t;
-    mutable available_before: Reg_availability_set.t;
-    mutable available_across: Reg_availability_set.t option;
+    dbg : Insn_debuginfo.t;
+    affinity : internal_affinity;
   }
 
 and instruction_desc =
@@ -82,72 +87,65 @@ let invert_test = function
 
 (* The "end" instruction *)
 
+let end_dbg = Insn_debuginfo.none ()
+
 let rec end_instr =
   { desc = Lend;
     next = end_instr;
     arg = [||];
     res = [||];
-    dbg = Debuginfo.none;
+    dbg = end_dbg;
     live = Reg.Set.empty;
-    phantom_available_before = Ident.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+    affinity = Irrelevant;
   }
 
-(* Cons an instruction (live, debug empty) *)
-(* CR mshinwell: Names of these four functions are confusing -- rename.
-   This first function is only used within the second one too. *)
-let instr_cons d a r n ~available_before ~phantom_available_before
-      ~available_across dbg =
-  { desc = d; next = n; arg = a; res = r;
-    dbg; live = Reg.Set.empty;
-    available_before;
-    phantom_available_before;
-    available_across;
-  }
+(* [cons_instr] is documented in the .mli. *)
 
-(* Like [instr_cons], but takes availability information from the given
-   instruction, with the exception of "available across" which is cleared. *)
+type affinity =
+  | Previous
+  | Next
 
-let instr_cons_same_avail d a r n dbg =
-  instr_cons d a r n ~available_before:n.available_before
-    ~phantom_available_before:n.phantom_available_before
-    ~available_across:None dbg
-
-(* Cons a simple instruction (arg, res, live empty) *)
-
-let cons_instr ?dbg d n ~available_before ~phantom_available_before
-      ~available_across =
-  let dbg =
-    match dbg with
-    | None -> n.dbg
-    | Some dbg -> dbg
+let cons_instr ?(arg = [| |]) ?(res = [| |]) (affinity : affinity) desc next =
+  let dbg, (affinity : internal_affinity) =
+    match affinity with
+    | Previous -> Insn_debuginfo.None, Previous
+    | Next ->
+      match next.affinity with
+      | Irrelevant -> next.dbg, Irrelevant
+      | Previous -> Misc.fatal_error "Circularity in affinities"
   in
-  { desc = d; next = n; arg = [||]; res = [||];
-    dbg; live = Reg.Set.empty;
-    available_before;
-    phantom_available_before;
-    available_across;
+  { desc;
+    next;
+    arg;
+    res;
+    dbg;
+    live = Reg.Set.empty;
+    affinity;
   }
 
-(* Like [cons_instr], but takes availability information from the given
-   instruction, with the exception of "available across" which is cleared. *)
+(* Build an instruction with [arg], [res], and [live] taken from the given
+   [Mach.instruction].  The debuginfo is also taken from the given
+   instruction and propagated to any immediately-subsequent instructions
+   that have been marked with affinity [Previous]. *)
 
-let cons_instr_same_avail ?dbg d n =
-  cons_instr ?dbg d n ~available_before:n.available_before
-    ~phantom_available_before:n.phantom_available_before
-    ~available_across:None
-
-(* Build an instruction with arg, res, dbg, live and the availability sets
-   taken from the given Mach.instruction *)
-
-let copy_instr d i n =
-  { desc = d; next = n;
-    arg = i.Mach.arg; res = i.Mach.res;
-    dbg = i.Mach.dbg; live = i.Mach.live;
-    phantom_available_before = i.Mach.phantom_available_before;
-    available_before = i.Mach.available_before;
-    available_across = i.Mach.available_across;
+let copy_instr desc (to_copy : Mach.instruction) next =
+  let rec propagate_debuginfo_to_next_insns insn =
+    match insn.affinity with
+    | Previous ->
+      let next = propagate_debuginfo_to_next_insns insn.next in
+      { insn with
+        next;
+        dbg = to_copy.dbg;
+      }
+    | Irrelevant -> insn
+  in
+  { desc = desc;
+    next = propagate_debuginfo_forwards_to_next_insns next;
+    arg = to_copy.arg;
+    res = to_copy.res;
+    dbg = to_copy.dbg;
+    live = to_copy.live;
+    affinity = Irrelevant;
   }
 
 (*
@@ -162,7 +160,7 @@ let get_label n = match n.desc with
   | Lend -> (-1, n)
   | _ ->
     let lbl = Cmm.new_label () in
-    (lbl, cons_instr_same_avail (Llabel lbl) n)
+    (lbl, cons_instr Next (Llabel lbl) n)
 
 (* Check the fallthrough label *)
 let check_label n = match n.desc with
@@ -196,19 +194,7 @@ let add_branch lbl n =
     let n1 = discard_dead_code n in
     match n1.desc with
     | Llabel lbl1 when lbl1 = lbl -> n1
-    | _ ->
-      (* Here, we really want the new instruction to have the debuginfo from
-         the instruction that will precede it---but we don't have that
-         instruction yet.  We can just use [Debuginfo.none] instead: in the
-         debugger, the previous instruction's debuginfo should persist across
-         the branch.
-
-         In any event we should not use [n1.dbg] here.  That would cause, for
-         example, the jumps to join points at the end of [Iswitch] arms to
-         end up with the debuginfo from any immediately-subsequent arm.  Such
-         a mistake can lead to erroneous printing of values in the
-         debugger when standing on such jumps. *)
-      cons_instr_same_avail ~dbg:Debuginfo.none (Lbranch lbl) n1
+    | _ -> cons_instr Previous (Lbranch lbl) n1
   else
     discard_dead_code n
 
@@ -262,14 +248,16 @@ let rec linear i n =
         (* Make sure that a value still in the "return address register"
            isn't marked as available at the return instruction if it has to
            be reloaded immediately prior. *)
-        let available_before =
-          Reg_availability_set.map n1.available_before
-            ~f:(fun set ->
-              Reg_with_debug_info.Set.made_unavailable_by_clobber set
-                ~regs_clobbered:Proc.destroyed_at_reloadretaddr
-                ~register_class:Proc.register_class)
+        let dbg =
+          Insn_debuginfo.map_available_before n1.dbg
+            ~f:(fun available_before ->
+              RAS.map available_before
+                ~f:(fun set ->
+                  Reg_with_debug_info.Set.made_unavailable_by_clobber set
+                    ~regs_clobbered:Proc.destroyed_at_reloadretaddr
+                    ~register_class:Proc.register_class))
         in
-        cons_instr_same_avail Lreloadretaddr { n1 with available_before; }
+        cons_instr Next Lreloadretaddr { n1 with dbg; }
       else n1
   | Iifthenelse(test, ifso, ifnot) ->
       let n1 = linear i.Mach.next n in
@@ -336,25 +324,11 @@ let rec linear i n =
       end else
         copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
   | Iloop body ->
-      let available_before_at_top = body.Mach.available_before in
-      let phantom_available_before_at_top =
-        body.Mach.phantom_available_before
-      in
       let lbl_head = Cmm.new_label() in
       let n1 = linear i.Mach.next n in
-      let n1 =
-        (* The register availability for the branch instruction at the end
-           of the loop, which branches to the top of the loop, must be the
-           same as that of the first instruction of the loop (except for
-           "available across" which is always empty). *)
-        cons_instr ~dbg:Debuginfo.none  (* [n1.dbg] would be wrong *)
-          (Lbranch lbl_head) n1
-          ~available_before:available_before_at_top
-          ~phantom_available_before:phantom_available_before_at_top
-          ~available_across:None
-      in
+      let n1 = cons_instr Previous (Lbranch lbl_head) n1 in
       let n2 = linear body n1 in
-      cons_instr_same_avail (Llabel lbl_head) n2
+      cons_instr Next (Llabel lbl_head) n2
   | Icatch(_rec_flag, handlers, body) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       (* CR mshinwell for pchambart:
@@ -373,7 +347,7 @@ let rec linear i n =
       let n2 = List.fold_left2 (fun n (_nfail, handler) lbl_handler ->
           match handler.Mach.desc with
           | Iend -> n
-          | _ -> cons_instr_same_avail (Llabel lbl_handler) (linear handler n))
+          | _ -> cons_instr Next (Llabel lbl_handler) (linear handler n))
           n1 handlers labels_at_entry_to_handlers
       in
       let n3 = linear body (add_branch lbl_end n2) in
@@ -389,12 +363,12 @@ let rec linear i n =
        *)
       let rec loop i tt =
         if t = tt then i
-        else loop (cons_instr_same_avail Lpushtrap i) (tt - 1)
+        else loop (cons_instr Next Lpushtrap i) (tt - 1)
       in
       let n1 = loop (linear i.Mach.next n) !try_depth in
       let rec loop i tt =
         if t = tt then i
-        else loop (cons_instr_same_avail Lpoptrap i) (tt - 1)
+        else loop (cons_instr Previous Lpoptrap i) (tt - 1)
       in
       loop (add_branch lbl n1) !try_depth
   | Itrywith(body, handler) ->
@@ -402,15 +376,13 @@ let rec linear i n =
       incr try_depth;
       assert (i.Mach.arg = [| |] || Config.spacetime);
       let (lbl_body, n2) =
-        let body =
-          linear body (cons_instr_same_avail ~dbg:Debuginfo.none Lpoptrap n1)
-        in
+        let body = linear body (cons_instr Previous Lpoptrap n1) in
         get_label (
-          instr_cons_same_avail Lpushtrap i.Mach.arg [| |] body body.dbg)
+          cons_instr Next Lpushtrap ~arg:i.Mach.arg body body.dbg)
       in
       decr try_depth;
-      instr_cons_same_avail (Lsetuptrap lbl_body) i.Mach.arg [| |]
-        (linear handler (add_branch lbl_join n2)) n2.dbg
+      cons_instr Next (Lsetuptrap lbl_body) ~arg:i.Mach.arg
+        (linear handler (add_branch lbl_join n2))
   | Iraise k ->
       copy_instr (Lraise k) i (discard_dead_code n)
 

@@ -102,11 +102,8 @@ type instruction =
     next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
-    mutable dbg: Debuginfo.t;
-    phantom_available_before: Backend_var.Set.t;
     mutable live: Reg.Set.t;
-    mutable available_before: Reg_availability_set.t;
-    mutable available_across: Reg_availability_set.t option;
+    dbg: Insn_debuginfo.t;
   }
 
 and instruction_desc =
@@ -145,11 +142,8 @@ let rec dummy_instr =
     next = dummy_instr;
     arg = [||];
     res = [||];
-    dbg = Debuginfo.none;
-    phantom_available_before = Backend_var.Set.empty;
     live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+    dbg = Insn_debuginfo.none ();
   }
 
 let end_instr () =
@@ -157,11 +151,8 @@ let end_instr () =
     next = dummy_instr;
     arg = [||];
     res = [||];
-    dbg = Debuginfo.none;
-    phantom_available_before = Backend_var.Set.empty;
     live = Reg.Set.empty;
-    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
-    available_across = None;
+    dbg = Insn_debuginfo.none ();
   }
 
 type phantom_available_before =

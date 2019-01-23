@@ -17,16 +17,17 @@
 
 type label = Cmm.label
 
+type internal_affinity
+
 type instruction =
   { mutable desc: instruction_desc;
     mutable next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
-    dbg: Debuginfo.t;
     live: Reg.Set.t;
-    phantom_available_before: Backend_var.Set.t;
-    mutable available_before: Reg_availability_set.t;
-    mutable available_across: Reg_availability_set.t option;
+    dbg : Insn_debuginfo.t;
+    affinity : internal_affinity;
+    (** [affinity] is only used during the linearization algorithm itself. *)
   }
 
 and instruction_desc =
@@ -48,23 +49,23 @@ and instruction_desc =
 val has_fallthrough :  instruction_desc -> bool
 val end_instr: instruction
 
-val instr_cons
-   : instruction_desc
-  -> Reg.t array
-  -> Reg.t array
-  -> instruction
-  -> available_before:Reg_availability_set.t
-  -> phantom_available_before:Ident.Set.t
-  -> available_across:Reg_availability_set.t option
-  -> Debuginfo.t
-  -> instruction
+type affinity =
+  | Previous
+  | Next
 
-val instr_cons_same_avail
-   : instruction_desc
-  -> Reg.t array
-  -> Reg.t array
+(** Cons an instruction, optionally given its arguments and results, with
+    [live] being set to empty.  The [affinity] argument controls whether the
+    new instruction's debuginfo should be taken from the next instruction or
+    the previous instruction (which will be consed onto this instruction at
+    some point in the future).  The setting of this argument should be made
+    carefully so as to ensure correct visibility of variables in the
+    debugger. *)
+val cons_instr
+   : ?arg:Reg.t array
+  -> ?res:Reg.t array
+  -> affinity
+  -> instruction_desc
   -> instruction
-  -> Debuginfo.t
   -> instruction
 
 val invert_test: Mach.test -> Mach.test
