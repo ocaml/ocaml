@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 type ref_kind =
     RK_module
   | RK_module_type

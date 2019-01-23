@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 (** The functions to get a string from different kinds of elements (types, modules, ...). *)
 
 (** @return the variance string for the given type and (covariant, contravariant) information. *)

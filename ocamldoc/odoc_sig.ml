@@ -15,6 +15,7 @@
 
 (** Analysis of interface files. *)
 
+open Ocaml_common
 open Misc
 open Asttypes
 open Types

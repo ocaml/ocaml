@@ -15,13 +15,13 @@ odoc.cmx : \
     odoc_args.cmx \
     odoc_analyse.cmx
 odoc_analyse.cmo : \
-    ../unprefixed_compilerlibs/warnings.cmo \
-    ../unprefixed_compilerlibs/types.cmo \
-    ../unprefixed_compilerlibs/typemod.cmo \
-    ../unprefixed_compilerlibs/typedtree.cmo \
-    ../unprefixed_compilerlibs/syntaxerr.cmo \
-    ../unprefixed_compilerlibs/pparse.cmo \
-    ../unprefixed_compilerlibs/parse.cmo \
+    ../compilerlibs/warnings.cmo \
+    ../compilerlibs/types.cmo \
+    ../compilerlibs/typemod.cmo \
+    ../compilerlibs/typedtree.cmo \
+    ../compilerlibs/syntaxerr.cmo \
+    ../compilerlibs/pparse.cmo \
+    ../compilerlibs/parse.cmo \
     odoc_types.cmi \
     odoc_text.cmi \
     odoc_sig.cmi \
@@ -35,21 +35,22 @@ odoc_analyse.cmo : \
     odoc_comments.cmi \
     odoc_class.cmo \
     odoc_ast.cmi \
-    ../unprefixed_compilerlibs/location.cmo \
-    ../unprefixed_compilerlibs/lexer.cmo \
-    ../unprefixed_compilerlibs/env.cmo \
-    ../unprefixed_compilerlibs/config.cmo \
-    ../unprefixed_compilerlibs/compmisc.cmo \
-    ../unprefixed_compilerlibs/clflags.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/location.cmo \
+    ../compilerlibs/lexer.cmo \
+    ../compilerlibs/env.cmo \
+    ../compilerlibs/config.cmo \
+    ../compilerlibs/compmisc.cmo \
+    ../compilerlibs/clflags.cmo \
     odoc_analyse.cmi
 odoc_analyse.cmx : \
-    ../unprefixed_compilerlibs/warnings.cmx \
-    ../unprefixed_compilerlibs/types.cmx \
-    ../unprefixed_compilerlibs/typemod.cmx \
-    ../unprefixed_compilerlibs/typedtree.cmx \
-    ../unprefixed_compilerlibs/syntaxerr.cmx \
-    ../unprefixed_compilerlibs/pparse.cmx \
-    ../unprefixed_compilerlibs/parse.cmx \
+    ../compilerlibs/warnings.cmx \
+    ../compilerlibs/types.cmx \
+    ../compilerlibs/typemod.cmx \
+    ../compilerlibs/typedtree.cmx \
+    ../compilerlibs/syntaxerr.cmx \
+    ../compilerlibs/pparse.cmx \
+    ../compilerlibs/parse.cmx \
     odoc_types.cmx \
     odoc_text.cmx \
     odoc_sig.cmx \
@@ -63,18 +64,19 @@ odoc_analyse.cmx : \
     odoc_comments.cmx \
     odoc_class.cmx \
     odoc_ast.cmx \
-    ../unprefixed_compilerlibs/location.cmx \
-    ../unprefixed_compilerlibs/lexer.cmx \
-    ../unprefixed_compilerlibs/env.cmx \
-    ../unprefixed_compilerlibs/config.cmx \
-    ../unprefixed_compilerlibs/compmisc.cmx \
-    ../unprefixed_compilerlibs/clflags.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/location.cmx \
+    ../compilerlibs/lexer.cmx \
+    ../compilerlibs/env.cmx \
+    ../compilerlibs/config.cmx \
+    ../compilerlibs/compmisc.cmx \
+    ../compilerlibs/clflags.cmx \
     odoc_analyse.cmi
 odoc_analyse.cmi : \
     odoc_module.cmo \
     odoc_global.cmi
 odoc_args.cmo : \
-    ../unprefixed_compilerlibs/warnings.cmo \
+    ../compilerlibs/warnings.cmo \
     odoc_types.cmi \
     odoc_texi.cmo \
     odoc_messages.cmo \
@@ -85,13 +87,14 @@ odoc_args.cmo : \
     odoc_gen.cmi \
     odoc_dot.cmo \
     odoc_config.cmi \
-    ../unprefixed_compilerlibs/main_args.cmo \
-    ../unprefixed_compilerlibs/config.cmo \
-    ../unprefixed_compilerlibs/compenv.cmo \
-    ../unprefixed_compilerlibs/clflags.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/main_args.cmo \
+    ../compilerlibs/config.cmo \
+    ../compilerlibs/compenv.cmo \
+    ../compilerlibs/clflags.cmo \
     odoc_args.cmi
 odoc_args.cmx : \
-    ../unprefixed_compilerlibs/warnings.cmx \
+    ../compilerlibs/warnings.cmx \
     odoc_types.cmx \
     odoc_texi.cmx \
     odoc_messages.cmx \
@@ -102,19 +105,20 @@ odoc_args.cmx : \
     odoc_gen.cmx \
     odoc_dot.cmx \
     odoc_config.cmx \
-    ../unprefixed_compilerlibs/main_args.cmx \
-    ../unprefixed_compilerlibs/config.cmx \
-    ../unprefixed_compilerlibs/compenv.cmx \
-    ../unprefixed_compilerlibs/clflags.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/main_args.cmx \
+    ../compilerlibs/config.cmx \
+    ../compilerlibs/compenv.cmx \
+    ../compilerlibs/clflags.cmx \
     odoc_args.cmi
 odoc_args.cmi : \
     odoc_gen.cmi
 odoc_ast.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
-    ../unprefixed_compilerlibs/typedtree.cmo \
-    ../unprefixed_compilerlibs/predef.cmo \
-    ../unprefixed_compilerlibs/path.cmo \
-    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../compilerlibs/types.cmo \
+    ../compilerlibs/typedtree.cmo \
+    ../compilerlibs/predef.cmo \
+    ../compilerlibs/path.cmo \
+    ../compilerlibs/parsetree.cmi \
     odoc_value.cmo \
     odoc_types.cmi \
     odoc_type.cmo \
@@ -127,17 +131,18 @@ odoc_ast.cmo : \
     odoc_exception.cmo \
     odoc_env.cmi \
     odoc_class.cmo \
-    ../unprefixed_compilerlibs/misc.cmo \
-    ../unprefixed_compilerlibs/location.cmo \
-    ../unprefixed_compilerlibs/ident.cmo \
-    ../unprefixed_compilerlibs/asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/misc.cmo \
+    ../compilerlibs/location.cmo \
+    ../compilerlibs/ident.cmo \
+    ../compilerlibs/asttypes.cmi \
     odoc_ast.cmi
 odoc_ast.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
-    ../unprefixed_compilerlibs/typedtree.cmx \
-    ../unprefixed_compilerlibs/predef.cmx \
-    ../unprefixed_compilerlibs/path.cmx \
-    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../compilerlibs/types.cmx \
+    ../compilerlibs/typedtree.cmx \
+    ../compilerlibs/predef.cmx \
+    ../compilerlibs/path.cmx \
+    ../compilerlibs/parsetree.cmi \
     odoc_value.cmx \
     odoc_types.cmx \
     odoc_type.cmx \
@@ -150,30 +155,34 @@ odoc_ast.cmx : \
     odoc_exception.cmx \
     odoc_env.cmx \
     odoc_class.cmx \
-    ../unprefixed_compilerlibs/misc.cmx \
-    ../unprefixed_compilerlibs/location.cmx \
-    ../unprefixed_compilerlibs/ident.cmx \
-    ../unprefixed_compilerlibs/asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/misc.cmx \
+    ../compilerlibs/location.cmx \
+    ../compilerlibs/ident.cmx \
+    ../compilerlibs/asttypes.cmi \
     odoc_ast.cmi
 odoc_ast.cmi : \
-    ../unprefixed_compilerlibs/types.cmo \
-    ../unprefixed_compilerlibs/typedtree.cmo \
-    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../compilerlibs/types.cmo \
+    ../compilerlibs/typedtree.cmo \
+    ../compilerlibs/parsetree.cmi \
     odoc_sig.cmi \
     odoc_name.cmi \
-    odoc_module.cmo
+    odoc_module.cmo \
+    ../compilerlibs/ocaml_common.cmo
 odoc_class.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
+    ../compilerlibs/types.cmo \
     odoc_value.cmo \
     odoc_types.cmi \
     odoc_parameter.cmo \
-    odoc_name.cmi
+    odoc_name.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_class.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
+    ../compilerlibs/types.cmx \
     odoc_value.cmx \
     odoc_types.cmx \
     odoc_parameter.cmx \
-    odoc_name.cmx
+    odoc_name.cmx \
+    ../compilerlibs/ocaml_common.cmx
 odoc_comments.cmo : \
     odoc_types.cmi \
     odoc_text.cmi \
@@ -209,10 +218,12 @@ odoc_comments_global.cmx : \
     odoc_comments_global.cmi
 odoc_comments_global.cmi :
 odoc_config.cmo : \
-    ../unprefixed_compilerlibs/config.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/config.cmo \
     odoc_config.cmi
 odoc_config.cmx : \
-    ../unprefixed_compilerlibs/config.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/config.cmx \
     odoc_config.cmi
 odoc_config.cmi :
 odoc_control.cmo :
@@ -232,7 +243,8 @@ odoc_cross.cmo : \
     odoc_extension.cmo \
     odoc_exception.cmo \
     odoc_class.cmo \
-    ../unprefixed_compilerlibs/misc.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/misc.cmo \
     odoc_cross.cmi
 odoc_cross.cmx : \
     odoc_value.cmx \
@@ -249,7 +261,8 @@ odoc_cross.cmx : \
     odoc_extension.cmx \
     odoc_exception.cmx \
     odoc_class.cmx \
-    ../unprefixed_compilerlibs/misc.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/misc.cmx \
     odoc_cross.cmi
 odoc_cross.cmi : \
     odoc_types.cmi \
@@ -263,19 +276,21 @@ odoc_dag2html.cmx : \
 odoc_dag2html.cmi : \
     odoc_info.cmi
 odoc_dep.cmo : \
-    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../compilerlibs/parsetree.cmi \
     odoc_type.cmo \
     odoc_print.cmi \
     odoc_module.cmo \
-    ../unprefixed_compilerlibs/misc.cmo \
-    ../unprefixed_compilerlibs/depend.cmo
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/misc.cmo \
+    ../compilerlibs/depend.cmo
 odoc_dep.cmx : \
-    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../compilerlibs/parsetree.cmi \
     odoc_type.cmx \
     odoc_print.cmx \
     odoc_module.cmx \
-    ../unprefixed_compilerlibs/misc.cmx \
-    ../unprefixed_compilerlibs/depend.cmx
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/misc.cmx \
+    ../compilerlibs/depend.cmx
 odoc_dot.cmo : \
     odoc_messages.cmo \
     odoc_info.cmi
@@ -283,48 +298,55 @@ odoc_dot.cmx : \
     odoc_messages.cmx \
     odoc_info.cmx
 odoc_env.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
-    ../unprefixed_compilerlibs/printtyp.cmo \
-    ../unprefixed_compilerlibs/predef.cmo \
-    ../unprefixed_compilerlibs/path.cmo \
+    ../compilerlibs/types.cmo \
+    ../compilerlibs/printtyp.cmo \
+    ../compilerlibs/predef.cmo \
+    ../compilerlibs/path.cmo \
     odoc_name.cmi \
-    ../unprefixed_compilerlibs/misc.cmo \
-    ../unprefixed_compilerlibs/btype.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/misc.cmo \
+    ../compilerlibs/btype.cmo \
     odoc_env.cmi
 odoc_env.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
-    ../unprefixed_compilerlibs/printtyp.cmx \
-    ../unprefixed_compilerlibs/predef.cmx \
-    ../unprefixed_compilerlibs/path.cmx \
+    ../compilerlibs/types.cmx \
+    ../compilerlibs/printtyp.cmx \
+    ../compilerlibs/predef.cmx \
+    ../compilerlibs/path.cmx \
     odoc_name.cmx \
-    ../unprefixed_compilerlibs/misc.cmx \
-    ../unprefixed_compilerlibs/btype.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/misc.cmx \
+    ../compilerlibs/btype.cmx \
     odoc_env.cmi
 odoc_env.cmi : \
-    ../unprefixed_compilerlibs/types.cmo \
-    odoc_name.cmi
+    ../compilerlibs/types.cmo \
+    odoc_name.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_exception.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
-    odoc_types.cmi \
-    odoc_type.cmo \
-    odoc_name.cmi
-odoc_exception.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
-    odoc_types.cmx \
-    odoc_type.cmx \
-    odoc_name.cmx
-odoc_extension.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
+    ../compilerlibs/types.cmo \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_name.cmi \
-    ../unprefixed_compilerlibs/asttypes.cmi
-odoc_extension.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
+    ../compilerlibs/ocaml_common.cmo
+odoc_exception.cmx : \
+    ../compilerlibs/types.cmx \
     odoc_types.cmx \
     odoc_type.cmx \
     odoc_name.cmx \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmx
+odoc_extension.cmo : \
+    ../compilerlibs/types.cmo \
+    odoc_types.cmi \
+    odoc_type.cmo \
+    odoc_name.cmi \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/asttypes.cmi
+odoc_extension.cmx : \
+    ../compilerlibs/types.cmx \
+    odoc_types.cmx \
+    odoc_type.cmx \
+    odoc_name.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/asttypes.cmi
 odoc_gen.cmo : \
     odoc_texi.cmo \
     odoc_module.cmo \
@@ -352,38 +374,42 @@ odoc_global.cmo : \
     odoc_types.cmi \
     odoc_messages.cmo \
     odoc_config.cmi \
-    ../unprefixed_compilerlibs/clflags.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/clflags.cmo \
     odoc_global.cmi
 odoc_global.cmx : \
     odoc_types.cmx \
     odoc_messages.cmx \
     odoc_config.cmx \
-    ../unprefixed_compilerlibs/clflags.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/clflags.cmx \
     odoc_global.cmi
 odoc_global.cmi : \
     odoc_types.cmi
 odoc_html.cmo : \
-    ../unprefixed_compilerlibs/parameter.cmo \
+    ../compilerlibs/parameter.cmo \
     odoc_text.cmi \
     odoc_ocamlhtml.cmo \
     odoc_messages.cmo \
     odoc_info.cmi \
     odoc_global.cmi \
     odoc_dag2html.cmi \
-    ../unprefixed_compilerlibs/misc.cmo \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/misc.cmo \
+    ../compilerlibs/asttypes.cmi
 odoc_html.cmx : \
-    ../unprefixed_compilerlibs/parameter.cmx \
+    ../compilerlibs/parameter.cmx \
     odoc_text.cmx \
     odoc_ocamlhtml.cmx \
     odoc_messages.cmx \
     odoc_info.cmx \
     odoc_global.cmx \
     odoc_dag2html.cmx \
-    ../unprefixed_compilerlibs/misc.cmx \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/misc.cmx \
+    ../compilerlibs/asttypes.cmi
 odoc_info.cmo : \
-    ../unprefixed_compilerlibs/printtyp.cmo \
+    ../compilerlibs/printtyp.cmo \
     odoc_value.cmo \
     odoc_types.cmi \
     odoc_type.cmo \
@@ -404,10 +430,11 @@ odoc_info.cmo : \
     odoc_comments.cmi \
     odoc_class.cmo \
     odoc_analyse.cmi \
-    ../unprefixed_compilerlibs/location.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/location.cmo \
     odoc_info.cmi
 odoc_info.cmx : \
-    ../unprefixed_compilerlibs/printtyp.cmx \
+    ../compilerlibs/printtyp.cmx \
     odoc_value.cmx \
     odoc_types.cmx \
     odoc_type.cmx \
@@ -428,10 +455,11 @@ odoc_info.cmx : \
     odoc_comments.cmx \
     odoc_class.cmx \
     odoc_analyse.cmx \
-    ../unprefixed_compilerlibs/location.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/location.cmx \
     odoc_info.cmi
 odoc_info.cmi : \
-    ../unprefixed_compilerlibs/types.cmo \
+    ../compilerlibs/types.cmo \
     odoc_value.cmo \
     odoc_types.cmi \
     odoc_type.cmo \
@@ -442,8 +470,9 @@ odoc_info.cmi : \
     odoc_extension.cmo \
     odoc_exception.cmo \
     odoc_class.cmo \
-    ../unprefixed_compilerlibs/location.cmo \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/location.cmo \
+    ../compilerlibs/asttypes.cmi
 odoc_inherit.cmo :
 odoc_inherit.cmx :
 odoc_latex.cmo : \
@@ -451,13 +480,15 @@ odoc_latex.cmo : \
     odoc_messages.cmo \
     odoc_latex_style.cmo \
     odoc_info.cmi \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/asttypes.cmi
 odoc_latex.cmx : \
     odoc_to_text.cmx \
     odoc_messages.cmx \
     odoc_latex_style.cmx \
     odoc_info.cmx \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/asttypes.cmi
 odoc_latex_style.cmo :
 odoc_latex_style.cmx :
 odoc_lexer.cmo : \
@@ -471,23 +502,25 @@ odoc_lexer.cmx : \
     odoc_global.cmx \
     odoc_comments_global.cmx
 odoc_man.cmo : \
-    ../unprefixed_compilerlibs/parameter.cmo \
+    ../compilerlibs/parameter.cmo \
     odoc_str.cmi \
     odoc_print.cmi \
     odoc_misc.cmi \
     odoc_messages.cmo \
     odoc_info.cmi \
-    ../unprefixed_compilerlibs/misc.cmo \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/misc.cmo \
+    ../compilerlibs/asttypes.cmi
 odoc_man.cmx : \
-    ../unprefixed_compilerlibs/parameter.cmx \
+    ../compilerlibs/parameter.cmx \
     odoc_str.cmx \
     odoc_print.cmx \
     odoc_misc.cmx \
     odoc_messages.cmx \
     odoc_info.cmx \
-    ../unprefixed_compilerlibs/misc.cmx \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/misc.cmx \
+    ../compilerlibs/asttypes.cmi
 odoc_merge.cmo : \
     odoc_value.cmo \
     odoc_types.cmi \
@@ -516,36 +549,41 @@ odoc_merge.cmi : \
     odoc_types.cmi \
     odoc_module.cmo
 odoc_messages.cmo : \
-    ../unprefixed_compilerlibs/config.cmo
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/config.cmo
 odoc_messages.cmx : \
-    ../unprefixed_compilerlibs/config.cmx
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/config.cmx
 odoc_misc.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
-    ../unprefixed_compilerlibs/predef.cmo \
-    ../unprefixed_compilerlibs/path.cmo \
+    ../compilerlibs/types.cmo \
+    ../compilerlibs/predef.cmo \
+    ../compilerlibs/path.cmo \
     odoc_types.cmi \
     odoc_messages.cmo \
-    ../unprefixed_compilerlibs/longident.cmo \
-    ../unprefixed_compilerlibs/ctype.cmo \
-    ../unprefixed_compilerlibs/btype.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/longident.cmo \
+    ../compilerlibs/ctype.cmo \
+    ../compilerlibs/btype.cmo \
     odoc_misc.cmi
 odoc_misc.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
-    ../unprefixed_compilerlibs/predef.cmx \
-    ../unprefixed_compilerlibs/path.cmx \
+    ../compilerlibs/types.cmx \
+    ../compilerlibs/predef.cmx \
+    ../compilerlibs/path.cmx \
     odoc_types.cmx \
     odoc_messages.cmx \
-    ../unprefixed_compilerlibs/longident.cmx \
-    ../unprefixed_compilerlibs/ctype.cmx \
-    ../unprefixed_compilerlibs/btype.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/longident.cmx \
+    ../compilerlibs/ctype.cmx \
+    ../compilerlibs/btype.cmx \
     odoc_misc.cmi
 odoc_misc.cmi : \
-    ../unprefixed_compilerlibs/types.cmo \
+    ../compilerlibs/types.cmo \
     odoc_types.cmi \
-    ../unprefixed_compilerlibs/longident.cmo \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/longident.cmo \
+    ../compilerlibs/asttypes.cmi
 odoc_module.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
+    ../compilerlibs/types.cmo \
     odoc_value.cmo \
     odoc_types.cmi \
     odoc_type.cmo \
@@ -553,9 +591,10 @@ odoc_module.cmo : \
     odoc_extension.cmo \
     odoc_exception.cmo \
     odoc_class.cmo \
-    ../unprefixed_compilerlibs/misc.cmo
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/misc.cmo
 odoc_module.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
+    ../compilerlibs/types.cmx \
     odoc_value.cmx \
     odoc_types.cmx \
     odoc_type.cmx \
@@ -563,29 +602,35 @@ odoc_module.cmx : \
     odoc_extension.cmx \
     odoc_exception.cmx \
     odoc_class.cmx \
-    ../unprefixed_compilerlibs/misc.cmx
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/misc.cmx
 odoc_name.cmo : \
-    ../unprefixed_compilerlibs/path.cmo \
+    ../compilerlibs/path.cmo \
     odoc_misc.cmi \
-    ../unprefixed_compilerlibs/ident.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/ident.cmo \
     odoc_name.cmi
 odoc_name.cmx : \
-    ../unprefixed_compilerlibs/path.cmx \
+    ../compilerlibs/path.cmx \
     odoc_misc.cmx \
-    ../unprefixed_compilerlibs/ident.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/ident.cmx \
     odoc_name.cmi
 odoc_name.cmi : \
-    ../unprefixed_compilerlibs/path.cmo \
-    ../unprefixed_compilerlibs/longident.cmo \
-    ../unprefixed_compilerlibs/ident.cmo
+    ../compilerlibs/path.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/longident.cmo \
+    ../compilerlibs/ident.cmo
 odoc_ocamlhtml.cmo :
 odoc_ocamlhtml.cmx :
 odoc_parameter.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
-    odoc_types.cmi
+    ../compilerlibs/types.cmo \
+    odoc_types.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_parameter.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
-    odoc_types.cmx
+    ../compilerlibs/types.cmx \
+    odoc_types.cmx \
+    ../compilerlibs/ocaml_common.cmx
 odoc_parser.cmo : \
     odoc_types.cmi \
     odoc_comments_global.cmi \
@@ -597,19 +642,22 @@ odoc_parser.cmx : \
 odoc_parser.cmi : \
     odoc_types.cmi
 odoc_print.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
-    ../unprefixed_compilerlibs/printtyp.cmo \
-    ../unprefixed_compilerlibs/misc.cmo \
-    ../unprefixed_compilerlibs/btype.cmo \
+    ../compilerlibs/types.cmo \
+    ../compilerlibs/printtyp.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/misc.cmo \
+    ../compilerlibs/btype.cmo \
     odoc_print.cmi
 odoc_print.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
-    ../unprefixed_compilerlibs/printtyp.cmx \
-    ../unprefixed_compilerlibs/misc.cmx \
-    ../unprefixed_compilerlibs/btype.cmx \
+    ../compilerlibs/types.cmx \
+    ../compilerlibs/printtyp.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/misc.cmx \
+    ../compilerlibs/btype.cmx \
     odoc_print.cmi
 odoc_print.cmi : \
-    ../unprefixed_compilerlibs/types.cmo
+    ../compilerlibs/types.cmo \
+    ../compilerlibs/ocaml_common.cmo
 odoc_scan.cmo : \
     odoc_value.cmo \
     odoc_types.cmi \
@@ -657,9 +705,9 @@ odoc_see_lexer.cmo : \
 odoc_see_lexer.cmx : \
     odoc_parser.cmx
 odoc_sig.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
-    ../unprefixed_compilerlibs/typedtree.cmo \
-    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../compilerlibs/types.cmo \
+    ../compilerlibs/typedtree.cmo \
+    ../compilerlibs/parsetree.cmi \
     odoc_value.cmo \
     odoc_types.cmi \
     odoc_type.cmo \
@@ -673,18 +721,19 @@ odoc_sig.cmo : \
     odoc_exception.cmo \
     odoc_env.cmi \
     odoc_class.cmo \
-    ../unprefixed_compilerlibs/misc.cmo \
-    ../unprefixed_compilerlibs/longident.cmo \
-    ../unprefixed_compilerlibs/location.cmo \
-    ../unprefixed_compilerlibs/ident.cmo \
-    ../unprefixed_compilerlibs/ctype.cmo \
-    ../unprefixed_compilerlibs/btype.cmo \
-    ../unprefixed_compilerlibs/asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/misc.cmo \
+    ../compilerlibs/longident.cmo \
+    ../compilerlibs/location.cmo \
+    ../compilerlibs/ident.cmo \
+    ../compilerlibs/ctype.cmo \
+    ../compilerlibs/btype.cmo \
+    ../compilerlibs/asttypes.cmi \
     odoc_sig.cmi
 odoc_sig.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
-    ../unprefixed_compilerlibs/typedtree.cmx \
-    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../compilerlibs/types.cmx \
+    ../compilerlibs/typedtree.cmx \
+    ../compilerlibs/parsetree.cmi \
     odoc_value.cmx \
     odoc_types.cmx \
     odoc_type.cmx \
@@ -698,28 +747,30 @@ odoc_sig.cmx : \
     odoc_exception.cmx \
     odoc_env.cmx \
     odoc_class.cmx \
-    ../unprefixed_compilerlibs/misc.cmx \
-    ../unprefixed_compilerlibs/longident.cmx \
-    ../unprefixed_compilerlibs/location.cmx \
-    ../unprefixed_compilerlibs/ident.cmx \
-    ../unprefixed_compilerlibs/ctype.cmx \
-    ../unprefixed_compilerlibs/btype.cmx \
-    ../unprefixed_compilerlibs/asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/misc.cmx \
+    ../compilerlibs/longident.cmx \
+    ../compilerlibs/location.cmx \
+    ../compilerlibs/ident.cmx \
+    ../compilerlibs/ctype.cmx \
+    ../compilerlibs/btype.cmx \
+    ../compilerlibs/asttypes.cmi \
     odoc_sig.cmi
 odoc_sig.cmi : \
-    ../unprefixed_compilerlibs/types.cmo \
-    ../unprefixed_compilerlibs/typedtree.cmo \
-    ../unprefixed_compilerlibs/parsetree.cmi \
+    ../compilerlibs/types.cmo \
+    ../compilerlibs/typedtree.cmo \
+    ../compilerlibs/parsetree.cmi \
     odoc_types.cmi \
     odoc_type.cmo \
     odoc_name.cmi \
     odoc_module.cmo \
     odoc_env.cmi \
     odoc_class.cmo \
-    ../unprefixed_compilerlibs/location.cmo
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/location.cmo
 odoc_str.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
-    ../unprefixed_compilerlibs/printtyp.cmo \
+    ../compilerlibs/types.cmo \
+    ../compilerlibs/printtyp.cmo \
     odoc_value.cmo \
     odoc_type.cmo \
     odoc_print.cmi \
@@ -729,11 +780,12 @@ odoc_str.cmo : \
     odoc_extension.cmo \
     odoc_exception.cmo \
     odoc_class.cmo \
-    ../unprefixed_compilerlibs/asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/asttypes.cmi \
     odoc_str.cmi
 odoc_str.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
-    ../unprefixed_compilerlibs/printtyp.cmx \
+    ../compilerlibs/types.cmx \
+    ../compilerlibs/printtyp.cmx \
     odoc_value.cmx \
     odoc_type.cmx \
     odoc_print.cmx \
@@ -743,15 +795,17 @@ odoc_str.cmx : \
     odoc_extension.cmx \
     odoc_exception.cmx \
     odoc_class.cmx \
-    ../unprefixed_compilerlibs/asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/asttypes.cmi \
     odoc_str.cmi
 odoc_str.cmi : \
-    ../unprefixed_compilerlibs/types.cmo \
+    ../compilerlibs/types.cmo \
     odoc_value.cmo \
     odoc_type.cmo \
     odoc_extension.cmo \
     odoc_exception.cmo \
-    odoc_class.cmo
+    odoc_class.cmo \
+    ../compilerlibs/ocaml_common.cmo
 odoc_test.cmo : \
     odoc_info.cmi \
     odoc_gen.cmi \
@@ -761,17 +815,19 @@ odoc_test.cmx : \
     odoc_gen.cmx \
     odoc_args.cmx
 odoc_texi.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
+    ../compilerlibs/types.cmo \
     odoc_to_text.cmo \
     odoc_messages.cmo \
     odoc_info.cmi \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/asttypes.cmi
 odoc_texi.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
+    ../compilerlibs/types.cmx \
     odoc_to_text.cmx \
     odoc_messages.cmx \
     odoc_info.cmx \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/asttypes.cmi
 odoc_text.cmo : \
     odoc_types.cmi \
     odoc_text_parser.cmi \
@@ -801,53 +857,60 @@ odoc_text_parser.cmx : \
 odoc_text_parser.cmi : \
     odoc_types.cmi
 odoc_to_text.cmo : \
-    ../unprefixed_compilerlibs/parameter.cmo \
+    ../compilerlibs/parameter.cmo \
     odoc_str.cmi \
     odoc_module.cmo \
     odoc_messages.cmo \
     odoc_info.cmi
 odoc_to_text.cmx : \
-    ../unprefixed_compilerlibs/parameter.cmx \
+    ../compilerlibs/parameter.cmx \
     odoc_str.cmx \
     odoc_module.cmx \
     odoc_messages.cmx \
     odoc_info.cmx
 odoc_type.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
+    ../compilerlibs/types.cmo \
     odoc_types.cmi \
     odoc_name.cmi \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/asttypes.cmi
 odoc_type.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
+    ../compilerlibs/types.cmx \
     odoc_types.cmx \
     odoc_name.cmx \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/asttypes.cmi
 odoc_types.cmo : \
     odoc_messages.cmo \
-    ../unprefixed_compilerlibs/location.cmo \
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/location.cmo \
     odoc_types.cmi
 odoc_types.cmx : \
     odoc_messages.cmx \
-    ../unprefixed_compilerlibs/location.cmx \
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/location.cmx \
     odoc_types.cmi
 odoc_types.cmi : \
-    ../unprefixed_compilerlibs/location.cmo
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/location.cmo
 odoc_value.cmo : \
-    ../unprefixed_compilerlibs/types.cmo \
-    ../unprefixed_compilerlibs/printtyp.cmo \
+    ../compilerlibs/types.cmo \
+    ../compilerlibs/printtyp.cmo \
     odoc_types.cmi \
     odoc_parameter.cmo \
     odoc_name.cmi \
     odoc_misc.cmi \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmo \
+    ../compilerlibs/asttypes.cmi
 odoc_value.cmx : \
-    ../unprefixed_compilerlibs/types.cmx \
-    ../unprefixed_compilerlibs/printtyp.cmx \
+    ../compilerlibs/types.cmx \
+    ../compilerlibs/printtyp.cmx \
     odoc_types.cmx \
     odoc_parameter.cmx \
     odoc_name.cmx \
     odoc_misc.cmx \
-    ../unprefixed_compilerlibs/asttypes.cmi
+    ../compilerlibs/ocaml_common.cmx \
+    ../compilerlibs/asttypes.cmi
 generators/odoc_literate.cmo : \
     odoc_info.cmi \
     odoc_html.cmo \

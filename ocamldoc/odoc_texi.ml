@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 (** Generation of Texinfo documentation. *)
 
 open Odoc_info

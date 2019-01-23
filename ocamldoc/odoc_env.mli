@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 (** Environment for finding complete names from relative names. *)
 
 (** An environment of known names,

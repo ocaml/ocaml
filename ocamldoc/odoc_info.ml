@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 (** Interface for analysing documented OCaml source files and to the collected information. *)
 
 type ref_kind = Odoc_types.ref_kind =

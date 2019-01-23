@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 (** Environment for finding complete names from relative names. *)
 
 let print_DEBUG s = print_string s ; print_newline ();;

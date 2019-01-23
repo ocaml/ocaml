@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 (** Representation and manipulation of exceptions. *)
 
 module Name = Odoc_name

@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 module String = Misc.Stdlib.String
 
 (** Representation and manipulation of modules and module types. *)

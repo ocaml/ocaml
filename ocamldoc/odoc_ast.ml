@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 (** Analysis of implementation files. *)
 open Misc
 open Asttypes

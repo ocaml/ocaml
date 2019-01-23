@@ -14,6 +14,7 @@
 (**************************************************************************)
 
 open Format
+open Ocaml_common
 let () = Printtyp.Naming_context.enable false
 
 let new_fmt () =

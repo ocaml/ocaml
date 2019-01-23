@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 (** Global variables. *)
 
 (* Tell ocaml compiler not to generate files. *)
