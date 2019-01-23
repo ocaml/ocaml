@@ -711,6 +711,17 @@ type pers_struct =
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct option) Hashtbl.t)
 
+let clear_persistent_structures () =
+  Hashtbl.clear persistent_structures
+
+let clear_missing_persistent_structures () =
+  let missing_entries =
+    Hashtbl.fold
+      (fun name r acc -> if r = None then name :: acc else acc)
+      persistent_structures []
+  in
+  List.iter (Hashtbl.remove persistent_structures) missing_entries
+
 (* Consistency between persistent structures *)
 
 let crc_units = Consistbl.create()
@@ -900,29 +911,24 @@ let check_pers_struct ~loc name =
         (fun () -> check_pers_struct ~loc name)
   end
 
+let reset_declaration_caches () =
+  Hashtbl.clear value_declarations;
+  Hashtbl.clear type_declarations;
+  Hashtbl.clear module_declarations;
+  Hashtbl.clear used_constructors;
+  ()
+
 let reset_cache () =
   set_unit_name "";
-  Hashtbl.clear persistent_structures;
+  clear_persistent_structures ();
   clear_imports ();
-  Hashtbl.clear value_declarations;
-  Hashtbl.clear type_declarations;
-  Hashtbl.clear module_declarations;
-  Hashtbl.clear used_constructors
+  reset_declaration_caches ();
+  ()
 
 let reset_cache_toplevel () =
-  (* Delete 'missing cmi' entries from the cache. *)
-  let l =
-    Hashtbl.fold
-      (fun name r acc -> if r = None then name :: acc else acc)
-      persistent_structures []
-  in
-  List.iter (Hashtbl.remove persistent_structures) l;
-  Hashtbl.clear value_declarations;
-  Hashtbl.clear type_declarations;
-  Hashtbl.clear module_declarations;
-  Hashtbl.clear used_constructors
-
-
+  clear_missing_persistent_structures ();
+  reset_declaration_caches ();
+  ()
 
 (* Lookup by identifier *)
 
