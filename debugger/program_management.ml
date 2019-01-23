@@ -16,6 +16,7 @@
 
 (* Manage the loading of the program *)
 
+open Ocaml_common
 open Int64ops
 open Unix
 open Unix_tools

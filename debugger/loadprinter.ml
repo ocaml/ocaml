@@ -15,6 +15,7 @@
 
 (* Loading and installation of user-defined printer functions *)
 
+open Ocaml_common
 open Misc
 open Longident
 open Types

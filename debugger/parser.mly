@@ -16,6 +16,7 @@
 
 %{
 
+open Ocaml_common
 open Int64ops
 open Input_handling
 open Longident
@@ -93,19 +94,19 @@ open Parser_aux
 %type <Parser_aux.break_arg> break_argument_eol
 
 %start list_arguments_eol
-%type <Longident.t option * int option * int option> list_arguments_eol
+%type <Ocaml_common.Longident.t option * int option * int option> list_arguments_eol
 
 %start end_of_line
 %type <unit> end_of_line
 
 %start longident_eol
-%type <Longident.t> longident_eol
+%type <Ocaml_common.Longident.t> longident_eol
 
 %start opt_longident
-%type <Longident.t option> opt_longident
+%type <Ocaml_common.Longident.t option> opt_longident
 
 %start opt_longident_eol
-%type <Longident.t option> opt_longident_eol
+%type <Ocaml_common.Longident.t option> opt_longident_eol
 
 %%
 

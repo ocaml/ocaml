@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 open Format
+open Ocaml_common
 
 val max_printer_depth : int ref
 val max_printer_steps : int ref

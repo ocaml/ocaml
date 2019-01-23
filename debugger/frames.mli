@@ -16,6 +16,7 @@
 
 (****************************** Frames *********************************)
 
+open Ocaml_common
 open Instruct
 
 (* Current frame number *)

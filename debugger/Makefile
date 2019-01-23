@@ -32,9 +32,8 @@ CAMLDEP=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
 DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
 COMPLIBDIR=$(ROOTDIR)/compilerlibs
-COMPLIBDIR_U=$(ROOTDIR)/unprefixed_compilerlibs
 
-DIRECTORIES=$(UNIXDIR) $(COMPLIBDIR) $(COMPLIBDIR_U)
+DIRECTORIES=$(UNIXDIR) $(COMPLIBDIR)
 
 INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
@@ -62,10 +61,11 @@ compiler_modules := \
   $(bytecomp_modules) $(other_compiler_modules)
 
 compiler_modules := \
-  $(addprefix $(COMPLIBDIR)/ocaml_common__, $(compiler_modules)) \
-  $(addprefix $(COMPLIBDIR_U)/, $(compiler_modules)) \
+  $(COMPLIBDIR)/ocaml_common \
+  $(addprefix $(COMPLIBDIR)/ocaml_common__,$(compiler_modules)) \
+  $(addprefix $(COMPLIBDIR)/,$(compiler_modules)) \
   $(COMPLIBDIR)/ocaml_toplevel__genprintval \
-  $(COMPLIBDIR_U)/genprintval
+  $(COMPLIBDIR)/genprintval
 
 debugger_modules := \
   int64ops primitives unix_tools debugger_config parameters lexer \

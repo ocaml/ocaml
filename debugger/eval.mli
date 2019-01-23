@@ -14,6 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
 open Types
 open Parser_aux
 open Format

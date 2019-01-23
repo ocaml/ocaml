@@ -16,6 +16,7 @@
 
 (********************************* Events ******************************)
 
+open Ocaml_common
 open Instruct
 
 let get_pos ev =

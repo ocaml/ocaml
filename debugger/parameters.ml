@@ -16,6 +16,7 @@
 
 (* Miscellaneous parameters *)
 
+open Ocaml_common
 open Primitives
 open Config
 open Debugger_config

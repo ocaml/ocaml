@@ -16,6 +16,7 @@
 
 (* Handling of symbol tables (globals and events) *)
 
+open Ocaml_common
 open Instruct
 open Debugger_config (* Toplevel *)
 open Program_loading

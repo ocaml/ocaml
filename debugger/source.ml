@@ -16,6 +16,7 @@
 
 (************************ Source management ****************************)
 
+open Ocaml_common
 open Misc
 open Primitives
 

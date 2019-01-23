@@ -17,6 +17,8 @@
 (* To print values *)
 
 open Format
+open Ocaml_common
+open Ocaml_toplevel
 open Parser_aux
 open Types
 

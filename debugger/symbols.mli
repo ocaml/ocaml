@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
+
 (* Modules used by the program. *)
 val modules : string list ref
 

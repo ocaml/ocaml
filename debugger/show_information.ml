@@ -14,6 +14,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Ocaml_common
 open Instruct
 open Format
 open Debugcom
