@@ -547,7 +547,6 @@ $(COMPLIBDIR)/ocaml_common__compdynlink.mlbyte: driver/compdynlink.mlbyte
 
 $(COMPLIBDIR)/ocaml_common__compdynlink.mlopt: driver/compdynlink.mlopt
 	(echo 'open! Ocaml_common'; \
-	 echo 'module Cmx_format = Ocaml_optcomp__cmx_format'; \
 	 cat $<) > $@
 
 $(COMPLIBDIR)/ocaml_common__compdynlink.mli: driver/compdynlink.mli
