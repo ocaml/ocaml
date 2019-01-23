@@ -513,8 +513,7 @@ compilerlibs/ocaml_common__compdynlink.cmo: \
 	compilerlibs/ocaml_common__compdynlink.mlbyte
 	$(CAMLC) $(COMPFLAGS) -I compilerlibs -c -impl $<
 compilerlibs/ocaml_common__compdynlink.cmx: \
-	compilerlibs/ocaml_common__compdynlink.mlopt \
-	compilerlibs/ocaml_optcomp__cmx_format.cmi
+	compilerlibs/ocaml_common__compdynlink.mlopt
 	$(CAMLOPT) $(COMPFLAGS) -I compilerlibs -c -impl $<
 
 tools/gen_prefix: tools/gen_prefix.ml
@@ -522,10 +521,9 @@ tools/gen_prefix: tools/gen_prefix.ml
 
 define copy_file_with_prefix
 compilerlibs/ocaml_$(1)__$(notdir $(2)): $(2)
-	(for d in $(3); do \
-	   echo "open! $$$${d}"; \
-	   echo "# 1 \"$(2)\""; \
-	 done; cat $$<) > $$@
+	($(foreach d,$(3),echo "open! $(d)";) \
+	 echo "# 1 \"$(2)\""; \
+	 cat $$<) > $$@
 
 beforedepend:: compilerlibs/ocaml_$(1)__$(notdir $(2))
 endef

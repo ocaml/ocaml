@@ -1,7 +1,0 @@
-*.ml
-*.mli
-common
-bytecomp
-toplevel
-optcomp
-opttoplevel
