@@ -50,7 +50,7 @@ ARCHES=amd64 i386 arm arm64 power s390x
 INCLUDES=-I compilerlibs -I driver -I toplevel
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48-66 \
 	  -warn-error A \
-          -bin-annot -safe-string -strict-formats -no-alias-deps
+          -bin-annot -safe-string -strict-formats -no-alias-deps $(INCLUDES)
 LINKFLAGS=
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
@@ -511,10 +511,10 @@ clean:: partialclean
 
 compilerlibs/ocaml_common__compdynlink.cmo: \
 	compilerlibs/ocaml_common__compdynlink.mlbyte
-	$(CAMLC) $(COMPFLAGS) -I compilerlibs -c -impl $<
+	$(CAMLC) $(COMPFLAGS) -c -impl $<
 compilerlibs/ocaml_common__compdynlink.cmx: \
 	compilerlibs/ocaml_common__compdynlink.mlopt
-	$(CAMLOPT) $(COMPFLAGS) -I compilerlibs -c -impl $<
+	$(CAMLOPT) $(COMPFLAGS) -c -impl $<
 
 tools/gen_prefix: tools/gen_prefix.ml
 	$(CAMLC) -o $@ $<
@@ -556,17 +556,10 @@ Ocaml_common Ocaml_bytecomp Ocaml_toplevel)
 partialclean::
 	rm -f compilerlibs/*.ml compilerlibs/*.mli
 
-compilerlibs/%.cmi: compilerlibs/%.mli
-	$(CAMLC) $(COMPFLAGS) -I compilerlibs -c $<
-
-compilerlibs/%.cmo: compilerlibs/%.ml
-	$(CAMLC) $(COMPFLAGS) -I compilerlibs -c $<
-
-compilerlibs/%.cmx: compilerlibs/%.ml ocamlopt
-	$(CAMLOPT) $(COMPFLAGS) -I compilerlibs -c $<
-
 # Shared parts of the system
 
+compilerlibs/ocamlcommon.cma: $(COMMON_CMO)
+	$(CAMLC) -a -linkall -o $@ $^
 compilerlibs/ocaml_common.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_common $(COMMON) > $@
 compilerlibs/ocaml_common.cmo: compilerlibs/ocaml_common.ml
@@ -577,18 +570,17 @@ compilerlibs/common: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(COMMON_ML) -mli $(COMMON_MLI_ONLY) \
 	  -prefix ocaml_common -unprefix compilerlibs
 	touch $@
-compilerlibs/ocamlcommon.cma: $(COMMON_CMO)
-	$(CAMLC) -a -linkall -o $@ $^
-
 partialclean::
-	rm -f compilerlibs/ocaml_common.ml
 	rm -f compilerlibs/ocamlcommon.cma
+	rm -f compilerlibs/ocaml_common.ml
 	rm -f compilerlibs/common
 
 beforedepend:: compilerlibs/ocaml_common.ml compilerlibs/common
 
 # The bytecode compiler
 
+compilerlibs/ocamlbytecomp.cma: $(BYTECOMP_CMO)
+	$(CAMLC) -a -o $@ $^
 compilerlibs/ocaml_bytecomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_bytecomp $(BYTECOMP) > $@
 compilerlibs/ocaml_bytecomp.cmo: compilerlibs/ocaml_bytecomp.ml
@@ -599,17 +591,14 @@ compilerlibs/bytecomp: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(BYTECOMP_ML) -mli $(BYTECOMP_MLI_ONLY) \
 	  -prefix ocaml_bytecomp -unprefix compilerlibs
 	touch $@
-compilerlibs/ocamlbytecomp.cma: $(BYTECOMP_CMO)
-	$(CAMLC) -a -o $@ $^
-
 partialclean::
-	rm -f compilerlibs/ocaml_bytecomp.ml compilerlibs/ocamlbytecomp.cma
+	rm -f compilerlibs/ocamlbytecomp.cma
+	rm -f compilerlibs/ocaml_bytecomp.ml
 	rm -f compilerlibs/bytecomp
 
 beforedepend:: compilerlibs/ocaml_bytecomp.ml compilerlibs/bytecomp
 
-ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-	$(BYTESTART)
+ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
 
 partialclean::
@@ -617,6 +606,8 @@ partialclean::
 
 # The native-code compiler
 
+compilerlibs/ocamloptcomp.cma: $(OPTCOMP_CMO)
+	$(CAMLC) -a -o $@ $^
 compilerlibs/ocaml_optcomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_optcomp $(OPTCOMP) > $@
 compilerlibs/ocaml_optcomp.cmo: compilerlibs/ocaml_optcomp.ml
@@ -627,11 +618,10 @@ compilerlibs/optcomp: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(OPTCOMP_ML) -mli $(OPTCOMP_MLI_ONLY) \
 	  -prefix ocaml_optcomp -unprefix compilerlibs
 	touch $@
-compilerlibs/ocamloptcomp.cma: $(OPTCOMP_CMO)
-	$(CAMLC) -a -o $@ $^
 
 partialclean::
-	rm -f compilerlibs/ocaml_optcomp.ml compilerlibs/ocamloptcomp.cma
+	rm -f compilerlibs/ocamloptcomp.cma
+	rm -f compilerlibs/ocaml_optcomp.ml
 	rm -f compilerlibs/optcomp
 
 beforedepend:: compilerlibs/ocaml_optcomp.ml compilerlibs/optcomp
@@ -645,6 +635,8 @@ partialclean::
 
 # The toplevel
 
+compilerlibs/ocamltoplevel.cma: $(TOPLEVEL_CMO)
+	$(CAMLC) -a -o $@ $^
 compilerlibs/ocaml_toplevel.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_toplevel $(TOPLEVEL) > $@
 compilerlibs/ocaml_toplevel.cmo: compilerlibs/ocaml_toplevel.ml
@@ -657,11 +649,9 @@ compilerlibs/toplevel: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(TOPLEVEL_ML) -mli $(TOPLEVEL_MLI_ONLY) \
 	  -prefix ocaml_toplevel -unprefix compilerlibs
 	touch $@
-compilerlibs/ocamltoplevel.cma: $(TOPLEVEL_CMO)
-	$(CAMLC) -a -o $@ $^
-
 partialclean::
-	rm -f compilerlibs/ocaml_toplevel.ml compilerlibs/ocamltoplevel.cma
+	rm -f compilerlibs/ocamltoplevel.cma
+	rm -f compilerlibs/ocaml_toplevel.ml
 	rm -f compilerlibs/toplevel
 
 beforedepend:: compilerlibs/ocaml_toplevel.ml compilerlibs/toplevel
@@ -715,19 +705,19 @@ beforedepend:: parsing/lexer.ml
 
 # Shared parts of the system compiled with the native-code compiler
 
-compilerlibs/ocaml_common.cmx: compilerlibs/ocaml_common.ml
-	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
 compilerlibs/ocamlcommon.cmxa: $(COMMON_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -linkall -o $@ $^
+compilerlibs/ocaml_common.cmx: compilerlibs/ocaml_common.ml
+	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
 partialclean::
-	rm -f compilerlibs/ocamlcommon.cmxa compilerlibs/ocamcommon.$(A)
+	rm -f compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A)
 
 # The bytecode compiler compiled with the native-code compiler
 
+compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP_CMO:.cmo=.cmx)
+	$(CAMLOPT) -a $(OCAML_NATDYNLINKOPTS) -o $@ $^
 compilerlibs/ocaml_bytecomp.cmx: compilerlibs/ocaml_bytecomp.ml
 	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
-compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP_CMO:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A)
 
@@ -740,10 +730,10 @@ partialclean::
 
 # The native-code compiler compiled with itself
 
-compilerlibs/ocaml_optcomp.cmx: compilerlibs/ocaml_optcomp.ml
-	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
 compilerlibs/ocamloptcomp.cmxa: $(OPTCOMP_CMO:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
+compilerlibs/ocaml_optcomp.cmx: compilerlibs/ocaml_optcomp.ml
+	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A)
 
@@ -753,6 +743,9 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 
 partialclean::
 	rm -f ocamlopt.opt
+
+$(COMMON_CMO:.cmo=.cmx) $(BYTECOMP_CMO:.cmo=.cmx) $(OPTCOMP_CMO:.cmo=.cmx): \
+	ocamlopt
 
 # The predefined exceptions and primitives
 
@@ -1159,6 +1152,8 @@ partialclean::
 
 # The native toplevel
 
+compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMO:.cmo=.cmx)
+	$(CAMLOPT) -a -o $@ $^
 compilerlibs/ocaml_opttoplevel.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_opttoplevel $(OPTTOPLEVEL) > $@
 compilerlibs/ocaml_opttoplevel.cmo: compilerlibs/ocaml_opttoplevel.ml
@@ -1174,15 +1169,13 @@ compilerlibs/opttoplevel: tools/gen_prefix CompilerModules
 	  -mli $(OPTTOPLEVEL_MLI_ONLY) \
 	  -prefix ocaml_opttoplevel -unprefix compilerlibs
 	touch $@
-compilerlibs/ocamlopttoplevel.cmxa: $(OPTTOPLEVEL_CMO:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $^
 
 $(call copy_files_with_prefix,opttoplevel,$(filter-out toplevel/genprintval,\
 $(OPTTOPLEVEL)),Ocaml_common Ocaml_bytecomp Ocaml_optcomp Ocaml_opttoplevel)
 
 partialclean::
-	rm -f compilerlibs/ocaml_opttoplevel.ml \
-	  compilerlibs/ocamlopttoplevel.cmxa
+	rm -f compilerlibs/ocamlopttoplevel.cmxa
+	rm -f compilerlibs/ocaml_opttoplevel.ml
 	rm -f compilerlibs/opttoplevel
 
 beforedepend:: compilerlibs/ocaml_opttoplevel.ml compilerlibs/opttoplevel
@@ -1195,8 +1188,7 @@ ifneq ($(EXE),)
 ocamlnat: ocamlnat$(EXE)
 endif
 
-ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa \
-    compilerlibs/ocamloptcomp.cmxa \
+ocamlnat$(EXE): compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
     compilerlibs/ocamlbytecomp.cmxa \
     compilerlibs/ocamlopttoplevel.cmxa \
     $(OPTTOPLEVELSTART:.cmo=.cmx)
@@ -1254,13 +1246,13 @@ partialclean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) $(INCLUDES) -c $<
+	$(CAMLC) $(COMPFLAGS) -c $<
 
 .mli.cmi:
-	$(CAMLC) $(COMPFLAGS) $(INCLUDES) -c $<
+	$(CAMLC) $(COMPFLAGS) -c $<
 
-.ml.cmx: ocamlopt
-	$(CAMLOPT) $(COMPFLAGS) $(INCLUDES) -c $<
+.ml.cmx:
+	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
