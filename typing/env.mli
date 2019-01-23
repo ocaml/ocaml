@@ -260,13 +260,11 @@ val crc_of_unit: modname -> Digest.t
 
 val imports: unit -> crcs
 
+(* may raise Consistbl.Inconsistency *)
+val import_crcs: source:string -> crcs -> unit
+
 (* [is_imported_opaque md] returns true if [md] is an opaque imported module  *)
 val is_imported_opaque: string -> bool
-
-(* Direct access to the table of imported compilation units with their CRC *)
-
-val crc_units: Consistbl.t
-val add_import: string -> unit
 
 (* Summaries -- compact representation of an environment, to be
    exported in debugging information. *)

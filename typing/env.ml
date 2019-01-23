@@ -730,16 +730,17 @@ let clear_imports () =
   imported_units := String.Set.empty;
   imported_opaque_units := String.Set.empty
 
+let import_crcs ~source crcs =
+  let import_crc (name, crco) =
+    match crco with
+    | None -> ()
+    | Some crc ->
+        add_import name;
+        Consistbl.check crc_units name crc source
+  in List.iter import_crc crcs
+
 let check_consistency ps =
-  try
-    List.iter
-      (fun (name, crco) ->
-         match crco with
-            None -> ()
-          | Some crc ->
-              add_import name;
-              Consistbl.check crc_units name crc ps.ps_filename)
-      ps.ps_crcs;
+  try import_crcs ~source:ps.ps_filename ps.ps_crcs
   with Consistbl.Inconsistency(name, source, auth) ->
     error (Inconsistent_import(name, auth, source))
 
