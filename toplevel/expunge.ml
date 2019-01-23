@@ -16,6 +16,7 @@
 (* "Expunge" a toplevel by removing compiler modules from the global map.
    Usage: expunge <source file> <dest file> <names of modules to keep> *)
 
+open Ocaml_common
 open Misc
 module String = Misc.Stdlib.String
 
