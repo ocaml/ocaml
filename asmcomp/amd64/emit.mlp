@@ -865,14 +865,21 @@ let emit_instr fallthrough i =
                          ConstLabel lbl))
       done;
       D.text ()
-  | Lsetuptrap lbl ->
-      I.call (label lbl)
-  | Lpushtrap ->
-      cfi_adjust_cfa_offset 8;
-      I.push r14;
-      cfi_adjust_cfa_offset 8;
-      I.mov rsp r14;
-      stack_offset := !stack_offset + 16
+  | Lpushtrap {lbl_handler} ->
+      let load_label_addr s arg =
+       (* CR mshinwell: this needs more testing *)
+        if !Clflags.pic_code then
+          I.lea (mem64_rip NONE (emit_label s)) arg
+        else
+          I.mov (sym (emit_label s)) arg
+      in
+      cfi_adjust_cfa_offset 16;
+      I.sub (int 16) rsp;
+      stack_offset := !stack_offset + 16;
+      I.mov r14 (mem64 QWORD 0 RSP);
+      load_label_addr lbl_handler r14;
+      I.mov r14 (mem64 QWORD 8 RSP);
+      I.mov rsp r14
   | Lpoptrap ->
       I.pop r14;
       cfi_adjust_cfa_offset (-8);
