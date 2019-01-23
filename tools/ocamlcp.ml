@@ -14,6 +14,7 @@
 (**************************************************************************)
 
 open Printf
+open Ocaml_common
 
 let compargs = ref ([] : string list)
 let profargs = ref ([] : string list)

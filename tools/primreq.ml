@@ -16,6 +16,7 @@
 (* Determine the set of C primitives required by the given .cmo and .cma
    files *)
 
+open Ocaml_common
 open Config
 open Cmo_format
 module String = Misc.Stdlib.String

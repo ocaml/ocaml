@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 open Printf
+open Ocaml_common
 
 open Location
 open Parsetree

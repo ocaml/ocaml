@@ -15,6 +15,8 @@
 
 (* Disassembler for executable and .cmo object files *)
 
+open Ocaml_common
+
 open Asttypes
 open Config
 open Instruct

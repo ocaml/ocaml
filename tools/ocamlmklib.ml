@@ -15,6 +15,7 @@
 
 open Printf
 open Ocamlmklibconfig
+open Ocaml_common
 
 let syslib x =
   if Config.ccomp_type = "msvc" then x ^ ".lib" else "-l" ^ x
