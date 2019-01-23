@@ -527,7 +527,10 @@ tools/gen_prefix: tools/gen_prefix.ml
 
 define copy_file_with_prefix
 $(COMPLIBDIR)/ocaml_$(1)__$(notdir $(2)): $(2)
-	(for d in $(3); do echo "open! $$$${d}"; done; cat $$<) > $$@
+	(for d in $(3); do \
+	   echo "open! $$$${d}"; \
+	   echo "#1 \"$(2)\""; \
+	 done; cat $$<) > $$@
 
 beforedepend:: $(COMPLIBDIR)/ocaml_$(1)__$(notdir $(2))
 endef
