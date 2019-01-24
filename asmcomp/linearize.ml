@@ -3,9 +3,11 @@
 (*                                 OCaml                                  *)
 (*                                                                        *)
 (*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                   Mark Shinwell, Jane Street Europe                    *)
 (*                                                                        *)
 (*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
+(*   Copyright 2019 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -19,6 +21,7 @@ open Reg
 open Mach
 
 module RAS = Reg_availability_set
+module RD = Reg_with_debug_info
 
 type label = Cmm.label
 
@@ -32,7 +35,7 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     live: Reg.Set.t;
-    dbg : Insn_debuginfo.t;
+    mutable dbg : Insn_debuginfo.t;
     affinity : internal_affinity;
   }
 
@@ -84,16 +87,60 @@ let invert_test = function
   | Ieventest -> Ioddtest
   | Ioddtest -> Ieventest
 
-(* The "end" instruction *)
+(* Registers clobbered by an instruction, either across ("during") the
+   execution of the instruction itself, or when the results are written out. *)
 
-let end_dbg = Insn_debuginfo.none ()
+let regs_clobbered_by (insn : instruction) =
+  let clobbered =
+    match insn.desc with
+    | Lop op -> Proc.destroyed_at_oper (Iop op)
+    | Lreloadretaddr -> Proc.destroyed_at_reloadretaddr
+    | Lprologue | Lend | Lreturn | Lpushtrap | Lpoptrap | Llabel _ | Lbranch _
+    | Lcondbranch _ | Lcondbranch3 _ | Lswitch _ | Lsetuptrap _
+    | Lraise _ -> [| |]
+  in
+  Array.concat [clobbered; insn.res]
+
+(* Register availability calculations.  We try to assign proper availability
+   information to new instructions to avoid "holes" where variables vanish
+   in the debugger when stepping by instruction. *)
+
+let available_before_new_insn ~arg_of_new_insn ~res_of_new_insn
+      ~(next : instruction) =
+  let available_before_next = Insn_debuginfo.available_before next.dbg in
+  (* Before the new instruction, we can be sure that the following registers
+     are available: all those available immediately after the new instruction,
+     minus the result registers of the new instruction, plus the argument
+     registers of the new instruction. Other registers may also be available,
+     but we cannot be sure. *)
+  let without_args_of_new_insn =
+    RAS.made_unavailable_by_clobber available_before_next
+      ~regs_clobbered:res_of_new_insn
+      ~register_class:Proc.register_class
+  in
+  let args_of_new_insn =
+    Array.map (fun reg -> RD.create_without_debug_info ~reg) arg_of_new_insn
+  in
+  RAS.map without_args_of_new_insn ~f:(fun regs ->
+    RD.Set.union (RD.Set.of_array args_of_new_insn) regs)
+
+let available_after0 ~available_before (insn : instruction) =
+  RAS.made_unavailable_by_clobber available_before
+    ~regs_clobbered:(regs_clobbered_by insn)
+    ~register_class:Proc.register_class
+
+let available_after (insn : instruction) =
+  available_after0 ~available_before:(Insn_debuginfo.available_before insn.dbg)
+    insn
+
+(* The "end" instruction *)
 
 let rec end_instr =
   { desc = Lend;
     next = end_instr;
     arg = [||];
     res = [||];
-    dbg = end_dbg;
+    dbg = Insn_debuginfo.none;
     live = Reg.Set.empty;
     affinity = Irrelevant;
   }
@@ -107,11 +154,24 @@ type affinity =
 let cons_instr ?(arg = [| |]) ?(res = [| |]) (affinity : affinity) desc next =
   let dbg, affinity =
     match affinity with
-    | Previous -> Insn_debuginfo.none (), (Previous : internal_affinity)
+    | Previous -> Insn_debuginfo.none, (Previous : internal_affinity)
     | Next ->
       match next.affinity with
-      | Irrelevant -> next.dbg, Irrelevant
-      | Previous -> Insn_debuginfo.none (), Irrelevant
+      | Irrelevant ->
+        let available_before_new_insn =
+          available_before_new_insn ~arg_of_new_insn:arg ~res_of_new_insn:res
+            ~next
+        in
+        let dbg =
+          Insn_debuginfo.with_available_before next.dbg
+            available_before_new_insn
+        in
+        let dbg =
+          (* This should be conservative. *)
+          Insn_debuginfo.with_available_across dbg None
+        in
+        dbg, Irrelevant
+      | Previous -> Insn_debuginfo.none, Irrelevant
   in
   { desc;
     next;
@@ -123,29 +183,48 @@ let cons_instr ?(arg = [| |]) ?(res = [| |]) (affinity : affinity) desc next =
   }
 
 (* Build an instruction with [arg], [res], and [live] taken from the given
-   [Mach.instruction].  The debuginfo is also taken from the given
-   instruction and propagated to any immediately-subsequent instructions
-   that have been marked with affinity [Previous]. *)
+   [Mach.instruction] and cons it onto the supplied [next] instruction.
+   The debuginfo is taken from the given instruction and propagated (having
+   made any necessary updates to register availability information) to any
+   immediately-subsequent instructions that have been marked with affinity
+   [Previous]. *)
 
 let copy_instr desc (to_copy : Mach.instruction) next =
-  let rec propagate_debuginfo_to_next_insns insn =
+  let rec propagate_debuginfo_to_next_insns insn ~available_before =
     match insn.affinity with
     | Previous ->
-      let next = propagate_debuginfo_to_next_insns insn.next in
+      let dbg =
+        Insn_debuginfo.with_available_before to_copy.dbg available_before
+      in
+      let dbg =
+        (* This should be conservative. *)
+        Insn_debuginfo.with_available_across dbg None
+      in
+      let next =
+        let available_before = available_after0 ~available_before insn in
+        propagate_debuginfo_to_next_insns insn.next ~available_before
+      in
       { insn with
         next;
-        dbg = to_copy.dbg;
+        dbg;
       }
     | Irrelevant -> insn
   in
-  { desc = desc;
-    next = propagate_debuginfo_to_next_insns next;
-    arg = to_copy.arg;
-    res = to_copy.res;
-    dbg = to_copy.dbg;
-    live = to_copy.live;
-    affinity = Irrelevant;
-  }
+  let proto_insn =
+    { desc = desc;
+      next;
+      arg = to_copy.arg;
+      res = to_copy.res;
+      dbg = to_copy.dbg;
+      live = to_copy.live;
+      affinity = Irrelevant;
+    }
+  in
+  let next =
+    propagate_debuginfo_to_next_insns next
+      ~available_before:(available_after proto_insn)
+  in
+  { proto_insn with next; }
 
 (*
    Label the beginning of the given instruction sequence.
@@ -247,13 +326,14 @@ let rec linear i n =
         (* Make sure that a value still in the "return address register"
            isn't marked as available at the return instruction if it has to
            be reloaded immediately prior. *)
-        Insn_debuginfo.map_available_before n1.dbg
-          ~f:(fun available_before ->
-            RAS.map available_before
-              ~f:(fun set ->
-                Reg_with_debug_info.Set.made_unavailable_by_clobber set
-                  ~regs_clobbered:Proc.destroyed_at_reloadretaddr
-                  ~register_class:Proc.register_class));
+        n1.dbg <-
+          Insn_debuginfo.map_available_before n1.dbg
+            ~f:(fun available_before ->
+              RAS.map available_before
+                ~f:(fun set ->
+                  Reg_with_debug_info.Set.made_unavailable_by_clobber set
+                    ~regs_clobbered:Proc.destroyed_at_reloadretaddr
+                    ~register_class:Proc.register_class));
         cons_instr Next Lreloadretaddr n1
       end else begin
         n1

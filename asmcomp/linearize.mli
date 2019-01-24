@@ -27,7 +27,7 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     live: Reg.Set.t;
-    dbg : Insn_debuginfo.t;
+    mutable dbg : Insn_debuginfo.t;
     affinity : internal_affinity;
   }
 

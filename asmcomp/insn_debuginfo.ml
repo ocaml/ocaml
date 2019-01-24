@@ -17,8 +17,8 @@
 type t = {
   dbg: Debuginfo.t;
   phantom_available_before: Backend_var.Set.t;
-  mutable available_before: Reg_availability_set.t;
-  mutable available_across: Reg_availability_set.t option;
+  available_before: Reg_availability_set.t;
+  available_across: Reg_availability_set.t option;
 }
 
 let create dbg ~phantom_available_before =
@@ -28,7 +28,7 @@ let create dbg ~phantom_available_before =
     available_across = None;
   }
 
-let none () =
+let none =
   { dbg = Debuginfo.none;
     phantom_available_before = Backend_var.Set.empty;
     available_before = Reg_availability_set.Unreachable;
@@ -40,11 +40,11 @@ let phantom_available_before t = t.phantom_available_before
 let available_before t = t.available_before
 let available_across t = t.available_across
 
-let set_available_before t available_before =
-  t.available_before <- available_before
+let with_available_before t available_before =
+  { t with available_before; }
 
-let set_available_across t available_across =
-  t.available_across <- available_across
+let with_available_across t available_across =
+  { t with available_across; }
 
 let map_available_before t ~f =
-  set_available_before t (f t.available_before)
+  with_available_before t (f t.available_before)

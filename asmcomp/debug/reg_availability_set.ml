@@ -138,6 +138,13 @@ let canonicalise availability =
     end;
     Ok result
 
+let made_unavailable_by_clobber t ~regs_clobbered ~register_class =
+  match t with
+  | Ok availability ->
+    Ok (RD.Set.made_unavailable_by_clobber availability ~regs_clobbered
+      ~register_class)
+  | Unreachable -> Unreachable
+
 let print ~print_reg ppf = function
   | Unreachable -> Format.fprintf ppf "<unreachable>"
   | Ok availability ->

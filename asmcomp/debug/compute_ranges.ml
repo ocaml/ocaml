@@ -304,7 +304,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         next = insn;
         arg = [| |];
         res = [| |];
-        dbg = Insn_debuginfo.none ();
+        dbg = Insn_debuginfo.none;
         live = insn.live;
         affinity = Irrelevant;
       }

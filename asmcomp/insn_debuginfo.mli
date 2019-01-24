@@ -20,7 +20,7 @@
 type t
 
 (** Create a debugging information structure that corresponds to some
-    particular instruction.  Values of type [t] are mutable.
+    particular instruction.  Values of type [t] are immutable.
 
     The parameters are as for the documentation on [dbg] and
     [phantom_available_before], below. *)
@@ -29,8 +29,8 @@ val create
   -> phantom_available_before:Backend_var.Set.t
   -> t
 
-(** Create an empty debugging information structure. *)
-val none : unit -> t
+(** The empty debugging information structure. *)
+val none : t
 
 (** Information about the source location and the block where the instruction
     is located. *)
@@ -50,14 +50,14 @@ val available_across : t -> Reg_availability_set.t option
 
 (** Set which registers are available (in the sense of [Available_regs])
     immediately prior to commencement of execution of the instruction. *)
-val set_available_before : t -> Reg_availability_set.t -> unit
+val with_available_before : t -> Reg_availability_set.t -> t
 
 (** Set which registers are available (in the sense of [Available_regs])
     during execution of the instruction. *)
-val set_available_across : t -> Reg_availability_set.t option -> unit
+val with_available_across : t -> Reg_availability_set.t option -> t
 
 (** Change the [available_before] field according to the given function. *)
 val map_available_before
    : t
   -> f:(Reg_availability_set.t -> Reg_availability_set.t)
-  -> unit
+  -> t

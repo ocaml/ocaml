@@ -103,7 +103,7 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     mutable live: Reg.Set.t;
-    dbg: Insn_debuginfo.t;
+    mutable dbg: Insn_debuginfo.t;
   }
 
 and instruction_desc =
@@ -143,7 +143,7 @@ let rec dummy_instr =
     arg = [||];
     res = [||];
     live = Reg.Set.empty;
-    dbg = Insn_debuginfo.none ();
+    dbg = Insn_debuginfo.none;
   }
 
 let end_instr () =
@@ -152,7 +152,7 @@ let end_instr () =
     arg = [||];
     res = [||];
     live = Reg.Set.empty;
-    dbg = Insn_debuginfo.none ();
+    dbg = Insn_debuginfo.none;
   }
 
 (* CR mshinwell: May be able to ditch this type now *)

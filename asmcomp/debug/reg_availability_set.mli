@@ -20,13 +20,20 @@ type t =
 
 val map : t -> f:(Reg_with_debug_info.Set.t -> Reg_with_debug_info.Set.t) -> t
 
-val inter : t -> t -> t
 (** Intersection of availabilities. *)
+val inter : t -> t -> t
 
-val canonicalise : t -> t
 (** Return a subset of the given availability set which contains no registers
     that are not associated with debug info; and where no two registers
     share the same location. *)
+val canonicalise : t -> t
+
+(** Like [Reg_with_debug_info.made_unavailable_by_clobber]. *)
+val made_unavailable_by_clobber
+   : t
+  -> regs_clobbered:Reg.t array
+  -> register_class:(Reg.t -> int)
+  -> t
 
 val equal : t -> t -> bool
 
