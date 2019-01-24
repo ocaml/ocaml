@@ -437,20 +437,20 @@ let alert_is_error {kind; _} =
   let (set, pos) = (!current).alert_errors in
   Misc.Stdlib.String.Set.mem kind set = pos
 
+let with_state state f =
+  let prev = backup () in
+  restore state;
+  try
+    let r = f () in
+    restore prev;
+    r
+  with exn ->
+    restore prev;
+    raise exn
+
 let mk_lazy f =
   let state = backup () in
-  lazy
-    (
-      let prev = backup () in
-      restore state;
-      try
-        let r = f () in
-        restore prev;
-        r
-      with exn ->
-        restore prev;
-        raise exn
-    )
+  lazy (with_state state f)
 
 let set_alert ~error ~enable s =
   let upd =
