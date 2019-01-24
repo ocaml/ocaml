@@ -675,18 +675,6 @@ type can_load_cmis =
   | Can_load_cmis
   | Cannot_load_cmis of EnvLazy.log
 
-let can_load_cmis = ref Can_load_cmis
-
-let without_cmis f x =
-  let log = EnvLazy.log () in
-  let res =
-    Misc.(protect_refs
-            [R (can_load_cmis, Cannot_load_cmis log)]
-            (fun () -> f x))
-  in
-  EnvLazy.backtrack log;
-  res
-
 (* Persistent structure descriptions *)
 
 type pers_struct =
@@ -697,13 +685,41 @@ type pers_struct =
     ps_filename: string;
     ps_flags: pers_flags list }
 
-let persistent_structures =
-  (Hashtbl.create 17 : (string, pers_struct option) Hashtbl.t)
+type persistent_env = {
+  persistent_structures : (string, pers_struct option) Hashtbl.t;
+  imported_units: String.Set.t ref;
+  imported_opaque_units: String.Set.t ref;
+  crc_units: Consistbl.t;
+  can_load_cmis: can_load_cmis ref;
+}
 
-let clear_persistent_structures () =
-  Hashtbl.clear persistent_structures
+let empty_persistent_env () = {
+  persistent_structures = Hashtbl.create 17;
+  imported_units = ref String.Set.empty;
+  imported_opaque_units = ref String.Set.empty;
+  crc_units = Consistbl.create ();
+  can_load_cmis = ref Can_load_cmis;
+}
+
+let persistent_env = empty_persistent_env ()
+
+let clear_persistent_env () =
+  let {
+    persistent_structures;
+    imported_units;
+    imported_opaque_units;
+    crc_units;
+    can_load_cmis;
+  } = persistent_env in
+  Hashtbl.clear persistent_structures;
+  imported_units := String.Set.empty;
+  imported_opaque_units := String.Set.empty;
+  Consistbl.clear crc_units;
+  can_load_cmis := Can_load_cmis;
+  ()
 
 let clear_missing_persistent_structures () =
+  let {persistent_structures; _} = persistent_env in
   let missing_entries =
     Hashtbl.fold
       (fun name r acc -> if r = None then name :: acc else acc)
@@ -711,26 +727,16 @@ let clear_missing_persistent_structures () =
   in
   List.iter (Hashtbl.remove persistent_structures) missing_entries
 
-(* Consistency between persistent structures *)
-
-let crc_units = Consistbl.create()
-
-let imported_units = ref String.Set.empty
-
 let add_import s =
+  let {imported_units; _} = persistent_env in
   imported_units := String.Set.add s !imported_units
 
-let imported_opaque_units = ref String.Set.empty
-
 let add_imported_opaque s =
+  let {imported_opaque_units; _} = persistent_env in
   imported_opaque_units := String.Set.add s !imported_opaque_units
 
-let clear_imports () =
-  Consistbl.clear crc_units;
-  imported_units := String.Set.empty;
-  imported_opaque_units := String.Set.empty
-
 let import_crcs ~source crcs =
+  let {crc_units; _} = persistent_env in
   let import_crc (name, crco) =
     match crco with
     | None -> ()
@@ -744,9 +750,23 @@ let check_consistency ps =
   with Consistbl.Inconsistency(name, source, auth) ->
     error (Inconsistent_import(name, auth, source))
 
+let can_load_cmis () =
+  !(persistent_env.can_load_cmis)
+
+let without_cmis f x =
+  let log = EnvLazy.log () in
+  let res =
+    Misc.(protect_refs
+            [R (persistent_env.can_load_cmis, Cannot_load_cmis log)]
+            (fun () -> f x))
+  in
+  EnvLazy.backtrack log;
+  res
+
 (* Reading persistent structures from .cmi files *)
 
 let save_pers_struct crc ps =
+  let {persistent_structures; crc_units; _} = persistent_env in
   let modname = ps.ps_name in
   Hashtbl.add persistent_structures modname (Some ps);
   List.iter
@@ -822,6 +842,7 @@ let acknowledge_pers_struct check modname
         | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
   if check then check_consistency ps;
+  let {persistent_structures; _} = persistent_env in
   Hashtbl.add persistent_structures modname (Some ps);
   ps
 
@@ -832,12 +853,13 @@ let read_pers_struct check modname filename =
     { Persistent_signature.filename; cmi }
 
 let find_pers_struct check name =
+  let {persistent_structures; _} = persistent_env in
   if name = "*predef*" then raise Not_found;
   match Hashtbl.find persistent_structures name with
   | Some ps -> ps
   | None -> raise Not_found
   | exception Not_found ->
-    match !can_load_cmis with
+    match can_load_cmis () with
     | Cannot_load_cmis _ -> raise Not_found
     | Can_load_cmis ->
         let ps =
@@ -891,6 +913,7 @@ let find_pers_struct name =
   find_pers_struct true name
 
 let check_pers_struct ~loc name =
+  let {persistent_structures; _} = persistent_env in
   if not (Hashtbl.mem persistent_structures name) then begin
     (* PR#6843: record the weak dependency ([add_import]) regardless of
        whether the check succeeds, to help make builds more
@@ -910,8 +933,7 @@ let reset_declaration_caches () =
 
 let reset_cache () =
   set_unit_name "";
-  clear_persistent_structures ();
-  clear_imports ();
+  clear_persistent_env ();
   reset_declaration_caches ();
   ()
 
@@ -923,7 +945,7 @@ let reset_cache_toplevel () =
 (* get_components *)
 
 let get_components_opt c =
-  match !can_load_cmis with
+  match can_load_cmis () with
   | Can_load_cmis ->
     EnvLazy.force !components_of_module_maker' c.comps
   | Cannot_load_cmis log ->
@@ -1645,6 +1667,7 @@ type iter_cont = unit -> unit
 let iter_env_cont = ref []
 
 let rec scrape_alias_for_visit env sub mty =
+  let {persistent_structures; _} = persistent_env in
   match mty with
   | Mty_alias path ->
       begin match may_subst Subst.module_path sub path with
@@ -1685,6 +1708,7 @@ let iter_env proj1 proj2 f env () =
        match comps with
        | Value (comps, _) -> iter_components (Pident id) path comps
        | Persistent ->
+           let {persistent_structures; _} = persistent_env in
            match Hashtbl.find persistent_structures (Ident.name id) with
            | exception Not_found | None -> ()
            | Some ps -> iter_components (Pident id) path ps.ps_comps)
@@ -1704,6 +1728,7 @@ let same_types env1 env2 =
 
 let used_persistent () =
   let r = ref Concr.empty in
+  let {persistent_structures; _} = persistent_env in
   Hashtbl.iter (fun s pso -> if pso != None then r := Concr.add s !r)
     persistent_structures;
   !r
@@ -2525,10 +2550,12 @@ let crc_of_unit name =
 (* Return the list of imported interfaces with their CRCs *)
 
 let imports () =
+  let {imported_units; crc_units; _} = persistent_env in
   Consistbl.extract (String.Set.elements !imported_units) crc_units
 
 (* Returns true if [s] is an opaque imported module  *)
 let is_imported_opaque s =
+  let {imported_opaque_units; _} = persistent_env in
   String.Set.mem s !imported_opaque_units
 
 (* Save a signature to a file *)
@@ -2632,6 +2659,7 @@ let fold_modules f lid env acc =
                let data = EnvLazy.force subst_modtype_maker data in
                f name p data acc
            | Persistent ->
+               let {persistent_structures; _} = persistent_env in
                match Hashtbl.find persistent_structures name with
                | exception Not_found | None -> acc
                | Some ps ->
@@ -2677,6 +2705,7 @@ let filter_non_loaded_persistent f env =
          match data with
          | Value _ -> acc
          | Persistent ->
+             let {persistent_structures; _} = persistent_env in
              match Hashtbl.find persistent_structures name with
              | Some _ -> acc
              | exception Not_found | None ->
