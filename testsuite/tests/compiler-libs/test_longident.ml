@@ -1,6 +1,5 @@
 (* TEST
-   flags = "-I ${ocamlsrcdir}/unprefixed_compilerlibs \
-            -I ${ocamlsrcdir}/compilerlibs"
+   flags = "-I ${ocamlsrcdir}/compilerlibs"
    * expect
 *)
 

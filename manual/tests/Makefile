@@ -9,8 +9,8 @@ all: check-cross-references check-stdlib
 tools: cross-reference-checker
 
 cross-reference-checker: cross_reference_checker.ml
-	$(OCAMLC) $(TOPDIR)/unprefixed_compilerlibs/ocamlcommon.cma \
-	  -I $(TOPDIR)/compilerlibs -I $(TOPDIR)/unprefixed_compilerlibs \
+	$(OCAMLC) $(TOPDIR)/compilerlibs/ocamlcommon.cma \
+	  -I $(TOPDIR)/compilerlibs
 	  $< -o $@
 
 .PHONY: check-cross-references

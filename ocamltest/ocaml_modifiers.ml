@@ -92,7 +92,7 @@ let systhreads =
 
 let compilerlibs_subdirs =
 [
-  "unprefixed_compilerlibs"; "compilerlibs"
+  "compilerlibs"; "compilerlibs"
 ]
 
 let add_compiler_subdir subdir =
