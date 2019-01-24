@@ -50,10 +50,6 @@ class c = object
 
 end;;
 [%%expect {|
-Line 4, characters 8-9:
-4 |     let b = 5 in ()
-            ^
-Warning 26 [unused-var]: unused variable b.
 Line 8, characters 8-9:
 8 |     let y = 5 in ()
             ^
@@ -87,10 +83,6 @@ Line 4, characters 8-9:
 4 |     let b = 5 in ()
             ^
 Warning 26 [unused-var]: unused variable b.
-Line 9, characters 8-9:
-9 |     let y = 5 in ()
-            ^
-Warning 26 [unused-var]: unused variable y.
 class c : object val a : unit val x : unit end
 |}];;
 
