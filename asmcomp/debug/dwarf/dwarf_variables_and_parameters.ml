@@ -37,6 +37,8 @@ type proto_dies_for_var = {
 
 let arch_size_addr = Targetint.of_int_exn Arch.size_addr
 
+(* CR mshinwell: Check about [Reg.parts_of_value]. *)
+
 (* Note: this function only works for static (toplevel) variables because we
    assume they only occur in the entry function. *)
 let calculate_var_uniqueness ~available_ranges_vars =
