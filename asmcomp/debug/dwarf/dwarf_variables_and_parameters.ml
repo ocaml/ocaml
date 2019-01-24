@@ -23,8 +23,39 @@ module V = Backend_var
 
 type var_uniqueness = {
   name_is_unique : bool;
-  position_is_unique : bool;
+  position_is_unique_given_name_is_unique : bool;
 }
+
+module Backend_var_and_code_range = struct
+  type t = Backend_var.t * (Debuginfo.Code_range.t option)
+
+  include Identifiable.Make (struct
+    type nonrec t = t
+
+    let compare (var1, range_opt1) (var2, range_opt2) =
+      let c = Backend_var.compare var1 var2 in
+      if c <> 0 then c
+      else
+        match range_opt1, range_opt2 with
+        | None, None -> 0
+        | None, Some _ -> -1
+        | Some _, None -> 1
+        | Some range1, Some range2 ->
+          Debuginfo.Code_range.compare range1 range2
+
+    let equal t1 t2 = (compare t1 t2 = 0)
+
+    let hash (var, range_opt) =
+      match range_opt with
+      | None -> Hashtbl.hash (Backend_var.hash var, None)
+      | Some range ->
+        Hashtbl.hash (Backend_var.hash var,
+          Some (Debuginfo.Code_range.hash range))
+
+    let print _ _ = Misc.fatal_error "Not yet implemented"
+    let output _ _ = Misc.fatal_error "Not yet implemented"
+  end)
+end
 
 type is_variable_phantom = Non_phantom | Phantom
 
@@ -37,14 +68,12 @@ type proto_dies_for_var = {
 
 let arch_size_addr = Targetint.of_int_exn Arch.size_addr
 
-(* CR mshinwell: Check about [Reg.parts_of_value]. *)
-
 (* Note: this function only works for static (toplevel) variables because we
    assume they only occur in the entry function. *)
 let calculate_var_uniqueness ~available_ranges_vars =
   let module String = Misc.Stdlib.String in
   let by_name = String.Tbl.create 42 in
-  let by_position = Debuginfo.Code_range.Option.Tbl.create 42 in
+  let by_position = Backend_var_and_code_range.Tbl.create 42 in
   let update_uniqueness var pos ~module_path =
     let name = Backend_var.name_for_debugger var in
     let name =
@@ -58,12 +87,12 @@ let calculate_var_uniqueness ~available_ranges_vars =
     | vars ->
       String.Tbl.replace by_name name (Backend_var.Set.add var vars)
     end;
-    begin match Debuginfo.Code_range.Option.Tbl.find by_position pos with
+    begin match Backend_var_and_code_range.Tbl.find by_position (var, pos) with
     | exception Not_found ->
-      Debuginfo.Code_range.Option.Tbl.add by_position pos
+      Backend_var_and_code_range.Tbl.add by_position (var, pos)
         (Backend_var.Set.singleton var)
     | vars ->
-      Debuginfo.Code_range.Option.Tbl.replace by_position pos
+      Backend_var_and_code_range.Tbl.replace by_position (var, pos)
         (Backend_var.Set.add var vars)
     end
   in
@@ -86,7 +115,7 @@ let calculate_var_uniqueness ~available_ranges_vars =
       update_uniqueness var pos ~module_path;
       Backend_var.Tbl.replace result var
         { name_is_unique = false;
-          position_is_unique = false;
+          position_is_unique_given_name_is_unique = false;
         });
   String.Tbl.iter (fun _name vars ->
       match Backend_var.Set.get_singleton vars with
@@ -98,14 +127,19 @@ let calculate_var_uniqueness ~available_ranges_vars =
             name_is_unique = true;
           })
     by_name;
-  Debuginfo.Code_range.Option.Tbl.iter (fun _pos vars ->
+  (* Note that [by_position] isn't of type [_ Debuginfo.Code_range.Map.t].
+     The reason that the [Backend_var.t] is included in the key is because we
+     need to make a judgement as to whether two variables have the same
+     position _given also that they have the same name_.  (See the
+     computations in [dwarf_for_variable], below.) *)
+  Backend_var_and_code_range.Tbl.iter (fun _var_and_pos vars ->
       match Backend_var.Set.get_singleton vars with
       | None -> ()
       | Some var ->
         let var_uniqueness = Backend_var.Tbl.find result var in
         Backend_var.Tbl.replace result var
           { var_uniqueness with
-            position_is_unique = true;
+            position_is_unique_given_name_is_unique = true;
           })
     by_position;
   result
@@ -154,7 +188,6 @@ let type_die_reference_for_var var ~proto_dies_for_vars =
    in the main gdb code to pass parameter indexes to the printing function.
    It is arguably more robust, too.
 *)
-(* CR mshinwell: we're not emitting param indexes *)
 (* CR mshinwell: Add proper type for [ident_for_type] *)
 let construct_type_of_value_description state ~parent ident_for_type
       ~(phantom_defining_expr : ARV.Range_info.phantom_defining_expr)
@@ -695,19 +728,18 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
     match type_die_reference_for_var var ~proto_dies_for_vars with
     | None -> []
     | Some reference ->
-      let name_is_unique, position_is_unique =
+      let name_is_unique, position_is_unique_given_name_is_unique =
         match Backend_var.Tbl.find uniqueness_by_var var with
         | exception Not_found ->
           Misc.fatal_errorf "No uniqueness information for %a"
             Backend_var.print var
-        | { name_is_unique; position_is_unique; } ->
-          name_is_unique, position_is_unique
+        | { name_is_unique; position_is_unique_given_name_is_unique; } ->
+          name_is_unique, position_is_unique_given_name_is_unique
       in
       let name_for_var =
-        if name_is_unique then Backend_var.name_for_debugger var
-        else if not position_is_unique then
-          Backend_var.unique_name_for_debugger var
-        else
+        if name_is_unique then begin
+          Backend_var.name_for_debugger var
+        end else if position_is_unique_given_name_is_unique then begin
           match provenance with
           | None -> Backend_var.unique_name_for_debugger var
           | Some provenance ->
@@ -718,6 +750,9 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
               Format.asprintf "%s[%a]"
                 (Backend_var.name_for_debugger var)
                 Debuginfo.Code_range.print_compact position
+        end else begin
+          Backend_var.unique_name_for_debugger var
+        end
       in
       (* CR-someday mshinwell: This should be tidied up.  It's only correct by
          virtue of the fact we do the closure-env ones second below. *)
