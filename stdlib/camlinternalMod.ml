@@ -38,7 +38,8 @@ let rec init_mod loc shape =
       overwrite closure template;
       closure
   | Lazy ->
-      Obj.repr (lazy (raise (Undefined_recursive_module loc)))
+      Obj.repr (lazy (raise (Undefined_recursive_module loc))
+                : _ CamlinternalLazy.t)
   | Class ->
       Obj.repr (CamlinternalOO.dummy_class loc)
   | Module comps ->

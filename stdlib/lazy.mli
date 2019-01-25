@@ -15,7 +15,7 @@
 
 (** Deferred computations. *)
 
-type 'a t = 'a lazy_t
+type 'a t = 'a CamlinternalLazy.t
 (** A value of type ['a Lazy.t] is a deferred computation, called
    a suspension, that has a result of type ['a].  The special
    expression syntax [lazy (expr)] makes a suspension of the
@@ -41,15 +41,17 @@ type 'a t = 'a lazy_t
 
 
 exception Undefined
+exception RacyLazy
 
 (* val force : 'a t -> 'a  *)
 external force : 'a t -> 'a = "%lazy_force"
 (** [force x] forces the suspension [x] and returns its result.
-   If [x] has already been forced, [Lazy.force x] returns the
-   same value again without recomputing it.  If it raised an exception,
-   the same exception is raised again.
-   Raise {!Undefined} if the forcing of [x] tries to force [x] itself
-   recursively.
+    If [x] has already been forced, [Lazy.force x] returns the
+    same value again without recomputing it.  If it raised an exception,
+    the same exception is raised again.
+    Raise {!Undefined} if the forcing of [x] tries to force [x] itself
+    recursively.
+    Raise {!RacyLazy} if another domain is also concurrently forcing [x].
 *)
 
 val force_val : 'a t -> 'a
@@ -60,6 +62,7 @@ val force_val : 'a t -> 'a
     recursively.
     If the computation of [x] raises an exception, it is unspecified
     whether [force_val x] raises the same exception or {!Undefined}.
+    Raise {!RacyLazy} if another domain is also concurrently forcing [x].
 *)
 
 val from_fun : (unit -> 'a) -> 'a t

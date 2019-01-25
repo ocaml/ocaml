@@ -1,14 +1,14 @@
 BASEDIR=../..
 
+
+
 # The -keep_dwarf_unwind option of ld was introduced in ld version 224.1.
 # (The last released version where it is not supported is version 136.)
 default:
 	@printf " ... testing 'unwind_test':"
-	@if [ ! $(SYSTEM) = macosx ]; then \
-	  echo " => skipped (not on Mac OSX)"; \
-	elif $(BYTECODE_ONLY); then \
+	@if $(BYTECODE_ONLY); then \
 	  echo " => skipped (bytecode only)"; \
-	else \
+	elif [ $(SYSTEM) = macosx ]; then \
 	  LDFULL="`ld -v 2>&1`"; \
 	  LD="`echo $$LDFULL | grep -o \"ld64-[0-9]*\"`"; \
 	  LDVER="`echo $$LD | sed \"s/ld64-//\"`"; \
@@ -19,23 +19,36 @@ default:
 	   echo " => skipped (ld version is $$LDVER, only 224 or above " \
 	   echo "    are supported)"; \
 	  else \
-	    $(MAKE) native_macosx_tests; \
+	    $(MAKE) run_tests; \
 	  fi; \
+	else \
+	  if ! pkg-config --exists libunwind 2>/dev/null; then \
+	    echo " => skipped (libunwind package not found)";  \
+          else \
+	    $(MAKE) run_tests ; \
+	  fi ; \
 	fi
 
-native_macosx_tests:
-	@$(MAKE) clean ; $(MAKE) unwind_test && \
-	./unwind_test >/dev/null 2>&1 && echo " => passed" || echo " => failed"
 
-unwind_test:
-	@$(OCAMLOPT) -c -opaque mylib.mli
-	@$(OCAMLOPT) -c driver.ml
-	@$(OCAMLOPT) -c mylib.ml
-	@$(OCAMLOPT) -ccopt -I -ccopt $(CTOPDIR)/byterun -c stack_walker.c
-	@$(OCAMLOPT) -cclib -Wl,-keep_dwarf_unwind -o unwind_test mylib.cmx \
-	             driver.cmx stack_walker.o
+include $(BASEDIR)/makefiles/Makefile.common
+
+ifeq ($(SYSTEM),macosx)
+LIBUNWIND_OPTS = -cclib -Wl,-keep_dwarf_unwind
+else
+LIBUNWIND_OPTS = $(patsubst %, -cclib %, $(shell pkg-config --libs libunwind))
+endif
+
+run_tests: unwind_test
+	@./unwind_test | diff -u unwind_test.reference - && echo " => passed" || echo " => failed"
+
+unwind_test: mylib.mli driver.ml mylib.ml stack_walker.c
+	@$(OCAMLOPT) -g -c -opaque mylib.mli
+	@$(OCAMLOPT) -g -c driver.ml
+	@$(OCAMLOPT) -g -c mylib.ml
+	@$(OCAMLOPT) -g -ccopt -I -ccopt $(CTOPDIR)/byterun -c stack_walker.c
+	@$(OCAMLOPT) -g -o unwind_test mylib.cmx \
+	             driver.cmx stack_walker.o $(LIBUNWIND_OPTS)
 
 clean:
 	@rm -f *.cm* *.o unwind_test
 
-include $(BASEDIR)/makefiles/Makefile.common

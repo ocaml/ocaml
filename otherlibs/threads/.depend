@@ -1,8 +1,8 @@
 scheduler.o: scheduler.c ../../byterun/caml/alloc.h \
  ../../byterun/caml/misc.h ../../byterun/caml/config.h \
  ../../byterun/caml/m.h ../../byterun/caml/s.h \
- ../../byterun/caml/mlvalues.h ../../byterun/caml/domain_state.h \
- ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/mlvalues.h \
+ ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/backtrace.h \
  ../../byterun/caml/exec.h ../../byterun/caml/callback.h \
  ../../byterun/caml/memory.h ../../byterun/caml/gc.h \

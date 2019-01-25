@@ -1470,6 +1470,9 @@ let code_force_lazy_block =
   get_mod_field "CamlinternalLazy" "force_lazy_block"
 ;;
 
+let code_lazy_wrap_fun =
+  get_mod_field "CamlinternalLazy" "wrap_fun"
+
 (* inline_lazy_force inlines the beginning of the code of Lazy.force. When
    the value argument is tagged as:
    - forward, take field 0

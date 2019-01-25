@@ -1,7 +1,8 @@
 strstubs.$(O): strstubs.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
- ../../byterun/caml/domain_state.h ../../byterun/caml/domain_state.tbl \
+ ../../byterun/caml/camlatomic.h ../../byterun/caml/domain_state.h \
+ ../../byterun/caml/domain_state.tbl \
  ../../byterun/caml/byte_domain_state.tbl ../../byterun/caml/alloc.h \
  ../../byterun/caml/mlvalues.h ../../byterun/caml/memory.h \
  ../../byterun/caml/domain.h ../../byterun/caml/alloc.h \

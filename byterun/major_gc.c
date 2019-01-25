@@ -516,10 +516,21 @@ static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
           caml_darken_cont(v);
           e = stk->stack[--stk->count];
         } else {
-          atomic_store_explicit(
-             Hp_atomic_val(v),
-             With_status_hd(hd, global.MARKED),
-             memory_order_relaxed);
+again:
+          if (Tag_hd(hd) == Lazy_tag) {
+            if (!atomic_compare_exchange_strong(
+                  Hp_atomic_val(v), &hd,
+                  With_status_hd(hd, global.MARKED))) {
+              hd = Hd_val(v);
+              goto again;
+            }
+          }
+          else {
+            atomic_store_explicit(
+              Hp_atomic_val(v),
+              With_status_hd(hd, global.MARKED),
+              memory_order_relaxed);
+          }
           if (Tag_hd(hd) < No_scan_tag) {
             mark_entry child = {v, 0, Wosize_hd(hd)};
             mark_stack_push(stk, e);
@@ -825,10 +836,8 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
             100.0 * (double)(caml_stat_space_overhead.heap_words_last_cycle
                             - live_words_last_cycle) / live_words_last_cycle;
 
-          if (caml_stat_space_overhead.l == NULL) {
-            caml_stat_space_overhead.l =
-              (struct buf_list_t*)caml_stat_alloc_noexc(sizeof(struct buf_list_t));
-          } else if (caml_stat_space_overhead.index == BUFFER_SIZE) {
+          if (caml_stat_space_overhead.l == NULL ||
+              caml_stat_space_overhead.index == BUFFER_SIZE) {
             struct buf_list_t *l =
               (struct buf_list_t*)caml_stat_alloc_noexc(sizeof(struct buf_list_t));
             l->next = caml_stat_space_overhead.l;

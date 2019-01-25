@@ -309,28 +309,6 @@ struct caml__roots_block {
   CAMLparam0 (); \
   CAMLxparamN (x, (size))
 
-/* CAMLunused is preserved for compatibility reasons.
-   Instead of the legacy GCC/Clang-only
-     CAMLunused foo;
-   you should prefer
-     CAMLunused_start foo CAMLunused_end;
-   which supports both GCC/Clang and MSVC.
-*/
-#if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
-  #define CAMLunused_start __attribute__ ((unused))
-  #define CAMLunused_end
-  #define CAMLunused __attribute__ ((unused))
-#elif _MSC_VER >= 1500
-  #define CAMLunused_start  __pragma( warning (push) )           \
-    __pragma( warning (disable:4189 ) )
-  #define CAMLunused_end __pragma( warning (pop))
-  #define CAMLunused
-#else
-  #define CAMLunused_start
-  #define CAMLunused_end
-  #define CAMLunused
-#endif
-
 #define CAMLxparam1(x) \
   struct caml__roots_block caml__roots_##x; \
   caml_domain_state* domain_state_##x = Caml_state; \

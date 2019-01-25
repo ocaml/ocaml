@@ -1,0 +1,60 @@
+#!/bin/sh
+
+show_builds () {
+curl -sL \
+  -H 'User-Agent: build log downloader' \
+  'https://api.travis-ci.org/v3/repo/ocamllabs%2Focaml-multicore/builds?include=build.jobs' | \
+jq -r '.builds | reverse | .[] |
+  (if .pull_request_title then
+    "PR #\(.pull_request_number)%[2m\(.commit.message | split("\n")[0])"
+   else
+    "\(.branch.name)%[2m\(.commit.message | split("\n")[0])"
+   end) as $desc |
+  (if .duration != null then "(\(.duration/60 | floor)m)" else "" end) as $time |
+  (if .state == "passed" then
+    "[32m"
+   elif .state == "started" then
+    "[33m"
+   else
+    "[31m"
+   end) as $colour |
+  "[1m\($colour)\(.number) \(.state)%[0m\($desc) [2m\($time)[0m"' | \
+column -t -s '%'
+}
+
+dump_log () {
+curl -sL \
+  -H 'User-Agent: build log downloader' \
+  'https://api.travis-ci.org/v3/repo/ocamllabs%2Focaml-multicore/builds?include=build.jobs' | \
+jq -r --arg key "$1" \
+  '[.builds[] | .jobs[] as $job |
+    select($job.state != "passed") |
+    if $key != "" then
+      select([.number, $job.number, .branch.name] | any(.==$key))
+    else . end |
+    $job] |
+   first |
+   "\(.number) \(.id)"' | {\
+    read number id
+    echo "Fetching logs for build $number ..." 1>&2
+    curl -Ls "https://api.travis-ci.org/v3/job/$id/log.txt"
+  } | less -r +G
+}
+
+case "$1" in
+"") show_builds ;;
+log) dump_log "$2" ;;
+*) cat <<EOF; exit
+Displays recent Travis builds and build logs
+
+   $0:
+         prints a list of recent builds and their status
+
+   $0 log:
+         shows the log of the most recent non-passing build
+
+   $0 log KEY:
+         shows the log of the most recent non-passing build
+         whose branch name or build ID matches KEY
+EOF
+esac

@@ -18,6 +18,7 @@
 /* Operations on objects */
 
 #include <string.h>
+#include "caml/camlatomic.h"
 #include "caml/alloc.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
@@ -52,6 +53,29 @@ CAMLprim value caml_obj_set_tag (value arg, value new_tag)
 {
   Tag_val (arg) = Int_val (new_tag);
   return Val_unit;
+}
+
+CAMLprim value caml_obj_cas_tag (value arg, value old_tag, value new_tag)
+{
+  header_t hd;
+  tag_t tag;
+
+again:
+  hd = Hd_val(arg);
+  tag = Tag_hd(hd);
+  if (tag == Int_val(old_tag)) {
+    if (caml_domain_alone()) {
+      Tag_val (arg) = Int_val (new_tag);
+      return Val_unit;
+    } else if (atomic_compare_exchange_strong(Hp_atomic_val(arg), &hd,
+                                       (hd & ~0xFF) | Int_val(new_tag))) {
+      return Val_unit;
+    } else {
+      goto again;
+    }
+  } else {
+    caml_invalid_argument ("unexpected tag");
+  }
 }
 
 /* [size] is a value encoding a number of blocks */

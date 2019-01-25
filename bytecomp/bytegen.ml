@@ -682,7 +682,7 @@ let rec comp_expr env exp sz cont =
                  (Kmakeblock(List.length args, 0) ::
                   Kccall("caml_make_array", 1) :: cont)
       end
-  | Lprim(Presume, args, _) ->
+  | Lprim((Presume|Prunstack), args, _) ->
       let nargs = List.length args - 1 in
       assert (nargs = 2);
       (* Resume itself only pushes 3 words, but perform adds another *)
