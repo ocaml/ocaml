@@ -132,6 +132,7 @@ value caml_startup_common(char_os **argv, int pooling)
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
     return Val_unit;
   }
+  caml_maybe_expand_stack();
   return caml_start_program(Caml_state);
 }
 
@@ -140,7 +141,7 @@ value caml_startup_exn(char_os **argv)
   return caml_startup_common(argv, /* pooling */ 0);
 }
 
-void caml_startup(char_os **argv)
+void caml_main(char_os **argv)
 {
   value res = caml_startup_exn(argv);
   caml_maybe_print_stats(Val_unit);
@@ -148,9 +149,9 @@ void caml_startup(char_os **argv)
     caml_fatal_uncaught_exception(Extract_exception(res));
 }
 
-void caml_main(char_os **argv)
+void caml_startup(char_os **argv)
 {
-  caml_startup(argv);
+  caml_main(argv);
 }
 
 value caml_startup_pooled_exn(char_os **argv)

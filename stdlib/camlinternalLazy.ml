@@ -15,19 +15,36 @@
 
 (* Internals of forcing lazy values. *)
 
-exception Undefined
+type 'a t = 'a lazy_t
 
-let raise_undefined = Obj.repr (fun () -> raise Undefined)
+exception Undefined
+exception RacyLazy
+
+external domain_self : unit -> int = "caml_ml_domain_id"
+
+let wrap_fun (f: unit -> 'a) l =
+  let myid = domain_self () in
+  let bomb () =
+    if myid = domain_self () then
+      raise Undefined
+    else raise RacyLazy
+  in
+  let rec wf () =
+    if Obj.compare_and_swap_field (Obj.repr l) 0 (Obj.repr wf) (Obj.repr bomb) then
+      f ()
+    else raise RacyLazy
+  in
+  wf
+
 
 (* Assume [blk] is a block with tag lazy *)
 let force_lazy_block (blk : 'arg lazy_t) =
   let closure = (Obj.obj (Obj.field (Obj.repr blk) 0) : unit -> 'arg) in
-  Obj.set_field (Obj.repr blk) 0 raise_undefined;
   try
     let result = closure () in
     (* do set_field BEFORE set_tag *)
     Obj.set_field (Obj.repr blk) 0 (Obj.repr result);
-    Obj.set_tag (Obj.repr blk) Obj.forward_tag;
+    Obj.cas_tag (Obj.repr blk) Obj.lazy_tag Obj.forward_tag;
     result
   with e ->
     Obj.set_field (Obj.repr blk) 0 (Obj.repr (fun () -> raise e));
@@ -37,11 +54,10 @@ let force_lazy_block (blk : 'arg lazy_t) =
 (* Assume [blk] is a block with tag lazy *)
 let force_val_lazy_block (blk : 'arg lazy_t) =
   let closure = (Obj.obj (Obj.field (Obj.repr blk) 0) : unit -> 'arg) in
-  Obj.set_field (Obj.repr blk) 0 raise_undefined;
   let result = closure () in
   (* do set_field BEFORE set_tag *)
   Obj.set_field (Obj.repr blk) 0 (Obj.repr result);
-  Obj.set_tag (Obj.repr blk) (Obj.forward_tag);
+  Obj.cas_tag (Obj.repr blk) Obj.lazy_tag Obj.forward_tag;
   result
 
 

@@ -46,3 +46,5 @@ val expand_stringswitch:
     Location.t -> lambda -> (string * lambda) list -> lambda option -> lambda
 
 val inline_lazy_force : lambda -> Location.t -> lambda
+
+val code_lazy_wrap_fun : lambda Lazy.t
