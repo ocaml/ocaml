@@ -25,6 +25,11 @@ Working 4.05.x branch
 - GPR#1753: avoid potential off-by-one overflow in debugger socket path length.
   (Anil Madhavapeddy)
 
+- MPR#7765, GPR#8817: When unmarshaling bigarrays, protect against integer
+  overflows in size computations
+  (Xavier Leroy, report by Maximilian Tschirschnitz,
+   review by Gabriel Scherer, adapted by Stéphane Glondu)
+
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
 
