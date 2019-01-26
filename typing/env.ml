@@ -677,16 +677,15 @@ type can_load_cmis =
 
 (* Persistent structure descriptions *)
 
-type pers_struct =
-  { ps_name: string;
-    ps_sig: signature Lazy.t;
-    ps_comps: module_components;
-    ps_crcs: (string * Digest.t option) list;
-    ps_filename: string;
-    ps_flags: pers_flags list }
+type pers_struct = {
+  ps_name: string;
+  ps_crcs: (string * Digest.t option) list;
+  ps_filename: string;
+  ps_flags: pers_flags list;
+}
 
-type persistent_env = {
-  persistent_structures : (string, pers_struct option) Hashtbl.t;
+type 'a persistent_env = {
+  persistent_structures : (string, (pers_struct * 'a) option) Hashtbl.t;
   imported_units: String.Set.t ref;
   imported_opaque_units: String.Set.t ref;
   crc_units: Consistbl.t;
@@ -701,7 +700,13 @@ let empty_persistent_env () = {
   can_load_cmis = ref Can_load_cmis;
 }
 
-let persistent_env = empty_persistent_env ()
+type persistent_module = {
+  pm_signature: signature Lazy.t;
+  pm_components: module_components;
+}
+
+let persistent_env : persistent_module persistent_env =
+  empty_persistent_env ()
 
 let clear_persistent_env () =
   let {
@@ -763,12 +768,19 @@ let without_cmis f x =
   EnvLazy.backtrack log;
   res
 
+let fold_persistent_values f x =
+  let {persistent_structures; _} = persistent_env in
+  Hashtbl.fold (fun modname pso x -> match pso with
+      | None -> x
+      | Some (_, pm) -> f modname pm x)
+    persistent_structures x
+
 (* Reading persistent structures from .cmi files *)
 
-let save_pers_struct crc ps =
+let save_pers_struct crc ps pm =
   let {persistent_structures; crc_units; _} = persistent_env in
   let modname = ps.ps_name in
-  Hashtbl.add persistent_structures modname (Some ps);
+  Hashtbl.add persistent_structures modname (Some (ps, pm));
   List.iter
     (function
         | Rectypes -> ()
@@ -801,35 +813,18 @@ let add_persistent_structure id env =
   else
     env
 
-let acknowledge_pers_struct check modname
-      { Persistent_signature.filename; cmi } =
+let acknowledge_pers_struct check modname pers_sig pm =
+  let { Persistent_signature.filename; cmi } = pers_sig in
   let name = cmi.cmi_name in
-  let sign = cmi.cmi_sign in
   let crcs = cmi.cmi_crcs in
   let flags = cmi.cmi_flags in
-  let alerts =
-    List.fold_left (fun acc -> function Alerts s -> s | _ -> acc)
-      Misc.Stdlib.String.Map.empty
-      flags
-  in
-  let id = Ident.create_persistent name in
-  let path = Pident id in
-  let addr = EnvLazy.create_forced (Aident id) in
-  let comps =
-      !components_of_module' ~alerts ~loc:Location.none
-        empty (Some Subst.identity) Subst.identity path addr
-        (Mty_signature sign)
-  in
   let ps = { ps_name = name;
-             ps_sig = lazy (Subst.signature Subst.identity sign);
-             ps_comps = comps;
              ps_crcs = crcs;
              ps_filename = filename;
              ps_flags = flags;
            } in
   if ps.ps_name <> modname then
     error (Illegal_renaming(modname, ps.ps_name, filename));
-
   List.iter
     (function
         | Rectypes ->
@@ -843,39 +838,43 @@ let acknowledge_pers_struct check modname
     ps.ps_flags;
   if check then check_consistency ps;
   let {persistent_structures; _} = persistent_env in
-  Hashtbl.add persistent_structures modname (Some ps);
+  Hashtbl.add persistent_structures modname (Some (ps, pm));
   ps
 
-let read_pers_struct check modname filename =
+let read_pers_struct val_of_pers_sig check modname filename =
   add_import modname;
   let cmi = read_cmi filename in
-  acknowledge_pers_struct check modname
-    { Persistent_signature.filename; cmi }
+  let pers_sig = { Persistent_signature.filename; cmi } in
+  let pm = val_of_pers_sig pers_sig in
+  let ps = acknowledge_pers_struct check modname pers_sig pm in
+  (ps, pm)
 
-let find_pers_struct check name =
+let find_pers_struct val_of_pers_sig check name =
   let {persistent_structures; _} = persistent_env in
   if name = "*predef*" then raise Not_found;
   match Hashtbl.find persistent_structures name with
-  | Some ps -> ps
+  | Some p -> p
   | None -> raise Not_found
   | exception Not_found ->
     match can_load_cmis () with
     | Cannot_load_cmis _ -> raise Not_found
     | Can_load_cmis ->
-        let ps =
+        let psig =
           match !Persistent_signature.load ~unit_name:name with
-          | Some ps -> ps
+          | Some psig -> psig
           | None ->
             Hashtbl.add persistent_structures name None;
             raise Not_found
         in
         add_import name;
-        acknowledge_pers_struct check name ps
+        let pm = val_of_pers_sig psig in
+        let ps = acknowledge_pers_struct check name psig pm in
+        (ps, pm)
 
 (* Emits a warning if there is no valid cmi for name *)
-let check_pers_struct ~loc name =
+let check_pers_struct ~loc val_of_pers_sig name =
   try
-    ignore (find_pers_struct false name)
+    ignore (find_pers_struct val_of_pers_sig false name)
   with
   | Not_found ->
       let warn = Warnings.No_cmi_file(name, None) in
@@ -906,11 +905,35 @@ let check_pers_struct ~loc name =
       let warn = Warnings.No_cmi_file(name, Some msg) in
         Location.prerr_warning loc warn
 
+(* persistent values *)
+let val_of_persistent_signature { Persistent_signature.cmi; _ } =
+  let name = cmi.cmi_name in
+  let sign = cmi.cmi_sign in
+  let flags = cmi.cmi_flags in
+  let id = Ident.create_persistent name in
+  let path = Pident id in
+  let addr = EnvLazy.create_forced (Aident id) in
+  let alerts =
+    List.fold_left (fun acc -> function Alerts s -> s | _ -> acc)
+      Misc.Stdlib.String.Map.empty
+      flags
+  in
+  let loc = Location.none in
+  let pm_signature = lazy (Subst.signature Subst.identity sign) in
+  let pm_components =
+    !components_of_module' ~alerts ~loc
+      empty (Some Subst.identity) Subst.identity path addr (Mty_signature sign) in
+  {
+    pm_signature;
+    pm_components;
+  }
+
+(* specialized *_pers_struct operations *)
 let read_pers_struct modname filename =
-  read_pers_struct true modname filename
+  read_pers_struct val_of_persistent_signature true modname filename
 
 let find_pers_struct name =
-  find_pers_struct true name
+  find_pers_struct val_of_persistent_signature true name
 
 let check_pers_struct ~loc name =
   let {persistent_structures; _} = persistent_env in
@@ -921,8 +944,17 @@ let check_pers_struct ~loc name =
     add_import name;
     if (Warnings.is_active (Warnings.No_cmi_file("", None))) then
       !add_delayed_check_forward
-        (fun () -> check_pers_struct ~loc name)
+        (fun () -> check_pers_struct val_of_persistent_signature ~loc name)
   end
+
+let read_pers_mod modname filename =
+  snd (read_pers_struct modname filename)
+
+let find_pers_mod name =
+  snd (find_pers_struct name)
+
+let check_pers_mod ~loc name =
+  check_pers_struct ~loc name
 
 let reset_declaration_caches () =
   Hashtbl.clear value_declarations;
@@ -963,7 +995,7 @@ let rec find_module_descr path env =
     Pident id ->
       begin match find_same_module id env.components with
       | Value x -> fst x
-      | Persistent -> (find_pers_struct (Ident.name id)).ps_comps
+      | Persistent -> (find_pers_mod (Ident.name id)).pm_components
       end
   | Pdot(p, s) ->
       begin match get_components (find_module_descr p env) with
@@ -1067,8 +1099,8 @@ let find_module ~alias path env =
         match find_same_module id env.modules with
         | Value (data, _) -> EnvLazy.force subst_modtype_maker data
         | Persistent ->
-            let ps = find_pers_struct (Ident.name id) in
-            md (Mty_signature(Lazy.force ps.ps_sig))
+            let pm = find_pers_mod (Ident.name id) in
+            md (Mty_signature(Lazy.force pm.pm_signature))
       end
   | Pdot(p, s) ->
       begin match get_components (find_module_descr p env) with
@@ -1305,15 +1337,16 @@ let mark_module_used name loc =
 let rec lookup_module_descr_aux ?loc ~mark lid env =
   match lid with
     Lident s ->
+      let find_components s = (find_pers_mod s).pm_components in
       begin match IdTbl.find_name ~mark s env.components with
-      | exception Not_found when s <> !current_unit ->
+      | exception Not_found when not (is_current_unit_name s) ->
         let p = Path.Pident (Ident.create_persistent s) in
-        (p, (find_pers_struct s).ps_comps)
+        (p, find_components s)
       | (p, data) ->
         (p,
          match data with
          | Value (comp, _) -> comp
-         | Persistent -> (find_pers_struct s).ps_comps)
+         | Persistent -> find_components s)
       end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr ?loc ~mark l env in
@@ -1354,7 +1387,7 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
     Lident s ->
       begin match IdTbl.find_name ~mark s env.modules with
       | exception Not_found when !Clflags.transparent_modules && not load ->
-          check_pers_struct s
+          check_pers_mod s
             ~loc:(Option.value loc ~default:Location.none);
           Path.Pident (Ident.create_persistent s)
       | p, data ->
@@ -1374,11 +1407,11 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
                 (Builtin_attributes.alerts_of_attrs md_attributes)
           | Persistent ->
               if !Clflags.transparent_modules && not load then
-                check_pers_struct s
+                check_pers_mod s
                   ~loc:(Option.value loc ~default:Location.none)
               else begin
-                let ps = find_pers_struct s in
-                report_alerts ?loc p ps.ps_comps.alerts
+                let pm = find_pers_mod s in
+                report_alerts ?loc p pm.pm_components.alerts
               end
           end;
           p
@@ -1711,7 +1744,7 @@ let iter_env proj1 proj2 f env () =
            let {persistent_structures; _} = persistent_env in
            match Hashtbl.find persistent_structures (Ident.name id) with
            | exception Not_found | None -> ()
-           | Some ps -> iter_components (Pident id) path ps.ps_comps)
+           | Some (_, pm) -> iter_components (Pident id) path pm.pm_components)
     env.components
 
 let run_iter_cont l =
@@ -1727,11 +1760,7 @@ let same_types env1 env2 =
   env1.types == env2.types && env1.components == env2.components
 
 let used_persistent () =
-  let r = ref Concr.empty in
-  let {persistent_structures; _} = persistent_env in
-  Hashtbl.iter (fun s pso -> if pso != None then r := Concr.add s !r)
-    persistent_structures;
-  !r
+  fold_persistent_values (fun s _m r -> Concr.add s r) Concr.empty
 
 let find_all_comps proj s (p,(mcomps, _)) =
   match get_components mcomps with
@@ -2506,8 +2535,8 @@ let open_signature
 (* Read a signature from a file *)
 
 let read_signature modname filename =
-  let ps = read_pers_struct modname filename in
-  Lazy.force ps.ps_sig
+  let pm = read_pers_mod modname filename in
+  Lazy.force pm.pm_signature
 
 let is_identchar_latin1 = function
   | 'A'..'Z' | 'a'..'z' | '_' | '\192'..'\214' | '\216'..'\246'
@@ -2536,7 +2565,7 @@ let persistent_structures_of_dir dir =
 (* Return the CRC of the interface of the given compilation unit *)
 
 let crc_of_unit name =
-  let ps = find_pers_struct name in
+  let (ps, _) = find_pers_struct name in
   let crco =
     try
       List.assoc name ps.ps_crcs
@@ -2590,19 +2619,24 @@ let save_signature_with_imports ~alerts sg modname filename imports =
       let id = Ident.create_persistent modname in
       let path = Pident id in
       let addr = EnvLazy.create_forced (Aident id) in
-      let comps =
-        components_of_module ~alerts ~loc:Location.none
-          empty None Subst.identity path addr (Mty_signature sg)
-      in
       let ps =
         { ps_name = modname;
-          ps_sig = lazy (Subst.signature Subst.identity sg);
-          ps_comps = comps;
           ps_crcs = (cmi.cmi_name, Some crc) :: imports;
           ps_filename = filename;
           ps_flags = cmi.cmi_flags;
         } in
-      save_pers_struct crc ps;
+      let pm =
+        let comps =
+          components_of_module ~alerts ~loc:Location.none
+            empty None Subst.identity path addr (Mty_signature sg)
+        in
+        let sign = lazy (Subst.signature Subst.identity sg) in
+        {
+          pm_components = comps;
+          pm_signature = sign;
+        }
+      in
+      save_pers_struct crc ps pm;
       cmi
     )
     ~exceptionally:(fun () -> remove_file filename)
@@ -2662,8 +2696,9 @@ let fold_modules f lid env acc =
                let {persistent_structures; _} = persistent_env in
                match Hashtbl.find persistent_structures name with
                | exception Not_found | None -> acc
-               | Some ps ->
-                   f name p (md (Mty_signature (Lazy.force ps.ps_sig))) acc)
+               | Some (_, pm) ->
+                   let data = md (Mty_signature (Lazy.force pm.pm_signature)) in
+                   f name p data acc)
         env.modules
         acc
   | Some l ->
