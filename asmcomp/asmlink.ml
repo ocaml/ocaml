@@ -23,15 +23,15 @@ open Compilenv
 module String = Misc.Stdlib.String
 
 type error =
-    File_not_found of string
-  | Not_an_object_file of string
-  | Missing_implementations of (string * string list) list
-  | Inconsistent_interface of string * string * string
-  | Inconsistent_implementation of string * string * string
-  | Assembler_error of string
+  | File_not_found of filepath
+  | Not_an_object_file of filepath
+  | Missing_implementations of (modname * string list) list
+  | Inconsistent_interface of modname * filepath * filepath
+  | Inconsistent_implementation of modname * filepath * filepath
+  | Assembler_error of filepath
   | Linking_error
-  | Multiple_definition of string * string * string
-  | Missing_cmx of string * string
+  | Multiple_definition of modname * filepath * filepath
+  | Missing_cmx of filepath * modname
 
 exception Error of error
 
