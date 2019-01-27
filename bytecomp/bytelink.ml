@@ -20,15 +20,15 @@ open Config
 open Cmo_format
 
 type error =
-    File_not_found of string
-  | Not_an_object_file of string
-  | Wrong_object_name of string
-  | Symbol_error of string * Symtable.error
-  | Inconsistent_import of string * string * string
+  | File_not_found of filepath
+  | Not_an_object_file of filepath
+  | Wrong_object_name of filepath
+  | Symbol_error of filepath * Symtable.error
+  | Inconsistent_import of modname * filepath * filepath
   | Custom_runtime
-  | File_exists of string
-  | Cannot_open_dll of string
-  | Required_module_unavailable of string
+  | File_exists of filepath
+  | Cannot_open_dll of filepath
+  | Required_module_unavailable of modname
 
 exception Error of error
 
