@@ -44,10 +44,13 @@ utils/config.cmx : \
     utils/config.cmi
 utils/config.cmi :
 utils/consistbl.cmo : \
+    utils/misc.cmi \
     utils/consistbl.cmi
 utils/consistbl.cmx : \
+    utils/misc.cmx \
     utils/consistbl.cmi
-utils/consistbl.cmi :
+utils/consistbl.cmi : \
+    utils/misc.cmi
 utils/identifiable.cmo : \
     utils/misc.cmi \
     utils/identifiable.cmi
@@ -472,6 +475,7 @@ typing/cmt_format.cmx : \
 typing/cmt_format.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     typing/env.cmi \
     typing/cmi_format.cmi
@@ -1699,6 +1703,7 @@ bytecomp/bytelink.cmx : \
     bytecomp/bytelink.cmi
 bytecomp/bytelink.cmi : \
     bytecomp/symtable.cmi \
+    utils/misc.cmi \
     bytecomp/cmo_format.cmi
 bytecomp/bytepackager.cmo : \
     typing/typemod.cmi \
@@ -1749,6 +1754,7 @@ bytecomp/bytesections.cmx : \
     bytecomp/bytesections.cmi
 bytecomp/bytesections.cmi :
 bytecomp/cmo_format.cmi : \
+    utils/misc.cmi \
     bytecomp/lambda.cmi \
     typing/ident.cmi
 bytecomp/dll.cmo : \
@@ -2478,6 +2484,7 @@ asmcomp/asmlink.cmx : \
     asmcomp/asmgen.cmx \
     asmcomp/asmlink.cmi
 asmcomp/asmlink.cmi : \
+    utils/misc.cmi \
     asmcomp/cmx_format.cmi
 asmcomp/asmpackager.cmo : \
     typing/typemod.cmi \
@@ -2778,6 +2785,7 @@ asmcomp/cmmgen.cmi : \
     asmcomp/cmm.cmi \
     asmcomp/clambda.cmi
 asmcomp/cmx_format.cmi : \
+    utils/misc.cmi \
     asmcomp/export_info.cmi \
     asmcomp/clambda.cmi
 asmcomp/coloring.cmo : \
