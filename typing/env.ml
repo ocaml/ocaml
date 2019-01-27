@@ -533,6 +533,15 @@ and address_unforced =
 
 and address_lazy = (address_unforced, address) EnvLazy.t
 
+let empty_structure =
+  Structure_comps {
+    comp_values = NameMap.empty;
+    comp_constrs = NameMap.empty;
+    comp_labels = NameMap.empty;
+    comp_types = NameMap.empty;
+    comp_modules = NameMap.empty; comp_modtypes = NameMap.empty;
+    comp_components = NameMap.empty; comp_classes = NameMap.empty;
+    comp_cltypes = NameMap.empty }
 
 let copy_local ~from env =
   { env with
@@ -605,22 +614,6 @@ let diff env1 env2 =
   IdTbl.diff_keys env1.modules env2.modules @
   IdTbl.diff_keys env1.classes env2.classes
 
-type can_load_cmis =
-  | Can_load_cmis
-  | Cannot_load_cmis of EnvLazy.log
-
-let can_load_cmis = ref Can_load_cmis
-
-let without_cmis f x =
-  let log = EnvLazy.log () in
-  let res =
-    Misc.(protect_refs
-            [R (can_load_cmis, Cannot_load_cmis log)]
-            (fun () -> f x))
-  in
-  EnvLazy.backtrack log;
-  res
-
 (* Forward declarations *)
 
 let components_of_module' =
@@ -645,28 +638,6 @@ let strengthen =
 
 let md md_type =
   {md_type; md_attributes=[]; md_loc=Location.none}
-
-let get_components_opt c =
-  match !can_load_cmis with
-  | Can_load_cmis ->
-    EnvLazy.force !components_of_module_maker' c.comps
-  | Cannot_load_cmis log ->
-    EnvLazy.force_logged log !components_of_module_maker' c.comps
-
-let empty_structure =
-  Structure_comps {
-    comp_values = NameMap.empty;
-    comp_constrs = NameMap.empty;
-    comp_labels = NameMap.empty;
-    comp_types = NameMap.empty;
-    comp_modules = NameMap.empty; comp_modtypes = NameMap.empty;
-    comp_components = NameMap.empty; comp_classes = NameMap.empty;
-    comp_cltypes = NameMap.empty }
-
-let get_components c =
-  match get_components_opt c with
-  | None -> empty_structure
-  | Some c -> c
 
 (* Print addresses *)
 
@@ -697,6 +668,24 @@ let find_same_module id tbl =
   | exception Not_found
     when Ident.persistent id && not (is_current_unit_id id) ->
       Persistent
+
+(* cmi loading *)
+
+type can_load_cmis =
+  | Can_load_cmis
+  | Cannot_load_cmis of EnvLazy.log
+
+let can_load_cmis = ref Can_load_cmis
+
+let without_cmis f x =
+  let log = EnvLazy.log () in
+  let res =
+    Misc.(protect_refs
+            [R (can_load_cmis, Cannot_load_cmis log)]
+            (fun () -> f x))
+  in
+  EnvLazy.backtrack log;
+  res
 
 (* Persistent structure descriptions *)
 
@@ -929,6 +918,20 @@ let reset_cache_toplevel () =
   clear_missing_persistent_structures ();
   reset_declaration_caches ();
   ()
+
+(* get_components *)
+
+let get_components_opt c =
+  match !can_load_cmis with
+  | Can_load_cmis ->
+    EnvLazy.force !components_of_module_maker' c.comps
+  | Cannot_load_cmis log ->
+    EnvLazy.force_logged log !components_of_module_maker' c.comps
+
+let get_components c =
+  match get_components_opt c with
+  | None -> empty_structure
+  | Some c -> c
 
 (* Lookup by identifier *)
 
