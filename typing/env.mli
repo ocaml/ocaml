@@ -16,6 +16,7 @@
 (* Environment handling *)
 
 open Types
+open Misc
 
 type summary =
     Env_empty
@@ -242,23 +243,22 @@ val get_unit_name: unit -> string
 val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature:
-  alerts:string Misc.Stdlib.String.Map.t -> signature -> string -> string ->
-  Cmi_format.cmi_infos
+  alerts:alerts -> signature -> string -> string
+  -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-  alerts:string Misc.Stdlib.String.Map.t ->
-  signature -> string -> string -> (string * Digest.t option) list
+  alerts:alerts -> signature -> modname -> filepath -> crcs
   -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)
 
 (* Return the CRC of the interface of the given compilation unit *)
 
-val crc_of_unit: string -> Digest.t
+val crc_of_unit: modname -> Digest.t
 
 (* Return the set of compilation units imported, with their CRC *)
 
-val imports: unit -> (string * Digest.t option) list
+val imports: unit -> crcs
 
 (* [is_imported_opaque md] returns true if [md] is an opaque imported module  *)
 val is_imported_opaque: string -> bool
@@ -283,10 +283,10 @@ val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t
 (* Error report *)
 
 type error =
-  | Illegal_renaming of string * string * string
-  | Inconsistent_import of string * string * string
-  | Need_recursive_types of string * string
-  | Depend_on_unsafe_string_unit of string * string
+  | Illegal_renaming of modname * modname * filepath
+  | Inconsistent_import of modname * filepath * filepath
+  | Need_recursive_types of modname * modname
+  | Depend_on_unsafe_string_unit of modname * modname
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
 
