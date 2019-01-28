@@ -1,7 +1,7 @@
 [
   structure_item (stop_after_typing_impl.ml[13,349+0]..stop_after_typing_impl.ml[13,349+37])
     Tstr_primitive
-    value_description apply/3 (stop_after_typing_impl.ml[13,349+0]..stop_after_typing_impl.ml[13,349+37])
+    value_description apply/79 (stop_after_typing_impl.ml[13,349+0]..stop_after_typing_impl.ml[13,349+37])
       core_type (stop_after_typing_impl.ml[13,349+16]..stop_after_typing_impl.ml[13,349+26])
         Ttyp_arrow
         Nolabel
