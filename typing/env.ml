@@ -490,11 +490,17 @@ and module_components =
   {
     alerts: alerts;
     loc: Location.t;
-    comps:
-      (t * Subst.t * Path.t * address_lazy * Types.module_type,
-       module_components_repr option)
-        EnvLazy.t;
+    comps: (components_maker, module_components_repr option) EnvLazy.t;
   }
+
+and components_maker = {
+  cm_env: t;
+  cm_freshening_subst: Subst.t;
+  cm_prefixing_subst: Subst.t;
+  cm_path: Path.t;
+  cm_addr: address_lazy;
+  cm_mty: Types.module_type;
+}
 
 and module_components_repr =
     Structure_comps of structure_components
@@ -619,14 +625,13 @@ let without_cmis f x =
 (* Forward declarations *)
 
 let components_of_module' =
-  ref ((fun ~alerts:_ ~loc:_ _env _sub _path _addr _mty -> assert false) :
+  ref ((fun ~alerts:_ ~loc:_ _env _fsub _psub _path _addr _mty -> assert false):
          alerts:alerts -> loc:Location.t -> t ->
-       Subst.t -> Path.t -> address_lazy -> module_type ->
+       Subst.t -> Subst.t -> Path.t -> address_lazy -> module_type ->
        module_components)
 let components_of_module_maker' =
-  ref ((fun (_env, _sub, _path, _addr, _mty) -> assert false) :
-          t * Subst.t * Path.t * address_lazy * module_type ->
-          module_components_repr option)
+  ref ((fun _ -> assert false) :
+          components_maker -> module_components_repr option)
 let components_of_functor_appl' =
   ref ((fun _f _env _p1 _p2 -> assert false) :
           functor_components -> t -> Path.t -> Path.t -> module_components)
@@ -780,7 +785,7 @@ let acknowledge_pers_struct check modname
   let addr = EnvLazy.create_forced (Aident id) in
   let comps =
       !components_of_module' ~alerts ~loc:Location.none
-        empty Subst.identity path addr (Mty_signature sign)
+        empty Subst.identity Subst.identity path addr (Mty_signature sign)
   in
   let ps = { ps_name = name;
              ps_sig = lazy (Subst.signature Subst.identity sign);
@@ -1615,14 +1620,16 @@ let lookup_cltype ?loc ?(mark = true) lid env =
 type iter_cont = unit -> unit
 let iter_env_cont = ref []
 
-let rec scrape_alias_for_visit env mty =
+let rec scrape_alias_for_visit env sub mty =
   match mty with
-  | Mty_alias (Pident id)
-    when Ident.persistent id
-      && not (Hashtbl.mem persistent_structures (Ident.name id)) -> false
-  | Mty_alias path -> (* PR#6600: find_module may raise Not_found *)
-      begin try scrape_alias_for_visit env (find_module path env).md_type
-      with Not_found -> false
+  | Mty_alias path ->
+      begin match Subst.module_path sub path with
+      | Pident id
+        when Ident.persistent id
+          && not (Hashtbl.mem persistent_structures (Ident.name id)) -> false
+      | path -> (* PR#6600: find_module may raise Not_found *)
+          try scrape_alias_for_visit env sub (find_module path env).md_type
+          with Not_found -> false
       end
   | _ -> true
 
@@ -1633,8 +1640,8 @@ let iter_env proj1 proj2 f env () =
       let visit =
         match EnvLazy.get_arg mcomps.comps with
         | None -> true
-        | Some (env, _sub, _path, _addr, mty) ->
-            scrape_alias_for_visit env mty
+        | Some { cm_mty; cm_freshening_subst; _ } ->
+            scrape_alias_for_visit env cm_freshening_subst cm_mty
       in
       if not visit then () else
       match get_components mcomps with
@@ -1720,17 +1727,23 @@ let find_shadowed_types path env =
 
 (* Expand manifest module type names at the top of the given module type *)
 
-let rec scrape_alias env ?path mty =
+let rec scrape_alias env sub ?path mty =
   match mty, path with
-    Mty_ident p, _ ->
+    Mty_ident _, _ ->
+      let p =
+        match Subst.modtype sub mty with
+        | Mty_ident p -> p
+        | _ -> assert false (* only [Mty_ident]s in [sub] *)
+      in
       begin try
-        scrape_alias env (find_modtype_expansion p env) ?path
+        scrape_alias env sub (find_modtype_expansion p env) ?path
       with Not_found ->
         mty
       end
   | Mty_alias path, _ ->
+      let path = Subst.module_path sub path in
       begin try
-        scrape_alias env (find_module path env).md_type ~path
+        scrape_alias env sub (find_module path env).md_type ~path
       with Not_found ->
         (*Location.prerr_warning Location.none
           (Warnings.No_cmi_file (Path.name path));*)
@@ -1740,55 +1753,79 @@ let rec scrape_alias env ?path mty =
       !strengthen ~aliasable:true env mty path
   | _ -> mty
 
-let scrape_alias env mty = scrape_alias env mty
-
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)
 
-let rec prefix_idents root sub = function
-    [] -> ([], sub)
+let rec prefix_idents root freshening_sub prefixing_sub = function
+    [] -> ([], freshening_sub, prefixing_sub)
   | Sig_value(id, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
-      let (pl, final_sub) = prefix_idents root sub rem in
-      (p::pl, final_sub)
+      let (pl, final_fs, final_ps) =
+        prefix_idents root freshening_sub prefixing_sub rem
+      in
+      ((p, id)::pl, final_fs, final_ps)
   | Sig_type(id, _, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
-      let (pl, final_sub) =
-        prefix_idents root (Subst.add_type id p sub) rem
+      let id' = Ident.rename id in
+      let (pl, final_fs, final_ps) =
+        prefix_idents root
+          (Subst.add_type id (Pident id') freshening_sub)
+          (Subst.add_type id' p prefixing_sub)
+          rem
       in
-      (p::pl, final_sub)
+      ((p, id')::pl, final_fs, final_ps)
   | Sig_typext(id, _, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
+      let id' = Ident.rename id in
       (* we extend the substitution in case of an inlined record *)
-      let (pl, final_sub) =
-        prefix_idents root (Subst.add_type id p sub) rem
+      let (pl, final_fs, final_ps) =
+        prefix_idents root
+          (Subst.add_type id (Pident id') freshening_sub)
+          (Subst.add_type id' p prefixing_sub)
+          rem
       in
-      (p::pl, final_sub)
+      ((p, id')::pl, final_fs, final_ps)
   | Sig_module(id, _, _, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
-      let (pl, final_sub) =
-        prefix_idents root (Subst.add_module id p sub) rem
+      let id' = Ident.rename id in
+      let (pl, final_fs, final_ps) =
+        prefix_idents root
+          (Subst.add_module id (Pident id') freshening_sub)
+          (Subst.add_module id' p prefixing_sub)
+          rem
       in
-      (p::pl, final_sub)
+      ((p, id')::pl, final_fs, final_ps)
   | Sig_modtype(id, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
-      let (pl, final_sub) =
-        prefix_idents root (Subst.add_modtype id (Mty_ident p) sub) rem
+      let id' = Ident.rename id in
+      let (pl, final_fs, final_ps) =
+        prefix_idents root
+          (Subst.add_modtype id (Mty_ident (Pident id')) freshening_sub)
+          (Subst.add_modtype id' (Mty_ident p) prefixing_sub)
+          rem
       in
-      (p::pl, final_sub)
+      ((p, id')::pl, final_fs, final_ps)
   | Sig_class(id, _, _, _) :: rem ->
       (* pretend this is a type, cf. PR#6650 *)
       let p = Pdot(root, Ident.name id) in
-      let (pl, final_sub) =
-        prefix_idents root (Subst.add_type id p sub) rem
+      let id' = Ident.rename id in
+      let (pl, final_fs, final_ps) =
+        prefix_idents root
+          (Subst.add_type id (Pident id') freshening_sub)
+          (Subst.add_type id' p prefixing_sub)
+          rem
       in
-      (p::pl, final_sub)
+      ((p, id')::pl, final_fs, final_ps)
   | Sig_class_type(id, _, _, _) :: rem ->
       let p = Pdot(root, Ident.name id) in
-      let (pl, final_sub) =
-        prefix_idents root (Subst.add_type id p sub) rem
+      let id' = Ident.rename id in
+      let (pl, final_fs, final_ps) =
+        prefix_idents root
+          (Subst.add_type id (Pident id') freshening_sub)
+          (Subst.add_type id' p prefixing_sub)
+          rem
       in
-      (p::pl, final_sub)
+      ((p, id')::pl, final_fs, final_ps)
 
 (* Compute structure descriptions *)
 
@@ -1817,15 +1854,23 @@ let module_declaration_address env id presence md =
   | Mp_present ->
       EnvLazy.create_forced (Aident id)
 
-let rec components_of_module ~alerts ~loc env sub path addr mty =
+let rec components_of_module ~alerts ~loc env fs ps path addr mty =
   {
     alerts;
     loc;
-    comps = EnvLazy.create (env, sub, path, addr, mty)
+    comps = EnvLazy.create {
+      cm_env = env;
+      cm_freshening_subst = fs;
+      cm_prefixing_subst = ps;
+      cm_path = path;
+      cm_addr = addr;
+      cm_mty = mty
+    }
   }
 
-and components_of_module_maker (env, sub, path, addr, mty) =
-  match scrape_alias env mty with
+and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
+                                cm_path; cm_addr; cm_mty} =
+  match scrape_alias cm_env cm_freshening_subst cm_mty with
     Mty_signature sg ->
       let c =
         { comp_values = NameMap.empty;
@@ -1834,19 +1879,22 @@ and components_of_module_maker (env, sub, path, addr, mty) =
           comp_modules = NameMap.empty; comp_modtypes = NameMap.empty;
           comp_components = NameMap.empty; comp_classes = NameMap.empty;
           comp_cltypes = NameMap.empty } in
-      let pl, sub = prefix_idents path sub sg in
-      let env = ref env in
+      let pl, freshening_sub, prefixing_sub =
+        prefix_idents cm_path cm_freshening_subst cm_prefixing_subst sg
+      in
+      let env = ref cm_env in
       let pos = ref 0 in
       let next_address () =
         let addr : address_unforced =
-          Projection { parent = addr; pos = !pos }
+          Projection { parent = cm_addr; pos = !pos }
         in
         incr pos;
         EnvLazy.create addr
       in
-      List.iter2 (fun item path ->
+      let sub = Subst.compose freshening_sub prefixing_sub in
+      List.iter2 (fun item (path, id) ->
         match item with
-          Sig_value(id, decl, _) ->
+          Sig_value(_, decl, _) ->
             let decl' = Subst.value_description sub decl in
             let addr =
               match decl.val_kind with
@@ -1855,16 +1903,18 @@ and components_of_module_maker (env, sub, path, addr, mty) =
             in
             c.comp_values <-
               NameMap.add (Ident.name id) (decl', addr) c.comp_values;
-        | Sig_type(id, decl, _, _) ->
-            let decl' = Subst.type_declaration sub decl in
-            Datarepr.set_row_name decl' (Subst.type_path sub (Path.Pident id));
+        | Sig_type(_, decl, _, _) ->
+            let fresh_decl = Subst.type_declaration freshening_sub decl in
+            let final_decl = Subst.type_declaration prefixing_sub fresh_decl in
+            Datarepr.set_row_name final_decl
+              (Subst.type_path prefixing_sub (Path.Pident id));
             let constructors =
-              List.map snd (Datarepr.constructors_of_type path decl') in
+              List.map snd (Datarepr.constructors_of_type path final_decl) in
             let labels =
-              List.map snd (Datarepr.labels_of_type path decl') in
+              List.map snd (Datarepr.labels_of_type path final_decl) in
             c.comp_types <-
               NameMap.add (Ident.name id)
-                (decl', (constructors, labels))
+                (final_decl, (constructors, labels))
                   c.comp_types;
             List.iter
               (fun descr ->
@@ -1876,20 +1926,21 @@ and components_of_module_maker (env, sub, path, addr, mty) =
                 c.comp_labels <-
                   add_to_tbl descr.lbl_name descr c.comp_labels)
               labels;
-            env := store_type_infos id decl !env
-        | Sig_typext(id, ext, _, _) ->
+            env := store_type_infos id fresh_decl !env
+        | Sig_typext(_, ext, _, _) ->
             let ext' = Subst.extension_constructor sub ext in
             let descr = Datarepr.extension_descr path ext' in
             let addr = next_address () in
             c.comp_constrs <-
               add_to_tbl (Ident.name id) (descr, Some addr) c.comp_constrs
-        | Sig_module(id, pres, md, _, _) ->
+        | Sig_module(_, pres, md, _, _) ->
             let md' = EnvLazy.create (sub, md) in
             let addr =
               match pres with
               | Mp_absent -> begin
                   match md.md_type with
                   | Mty_alias path ->
+                      let path = Subst.module_path freshening_sub path in
                       EnvLazy.create (ModAlias {env = !env; path})
                   | _ -> assert false
                 end
@@ -1901,29 +1952,34 @@ and components_of_module_maker (env, sub, path, addr, mty) =
               Builtin_attributes.alerts_of_attrs md.md_attributes
             in
             let comps =
-              components_of_module ~alerts ~loc:md.md_loc !env sub path
-                addr md.md_type
+              components_of_module ~alerts ~loc:md.md_loc !env freshening_sub
+                prefixing_sub path addr md.md_type
             in
             c.comp_components <-
               NameMap.add (Ident.name id) (comps, addr) c.comp_components;
-            env := store_module ~check:false id addr pres md !env
-        | Sig_modtype(id, decl, _) ->
-            let decl' = Subst.modtype_declaration sub decl in
+            env :=
+              store_module ~freshening_sub ~check:false id addr pres md !env
+        | Sig_modtype(_, decl, _) ->
+            let fresh_decl = Subst.modtype_declaration freshening_sub decl in
+            let final_decl =
+              Subst.modtype_declaration prefixing_sub fresh_decl
+            in
             c.comp_modtypes <-
-              NameMap.add (Ident.name id) decl' c.comp_modtypes;
-            env := store_modtype id decl !env
-        | Sig_class(id, decl, _, _) ->
+              NameMap.add (Ident.name id) final_decl c.comp_modtypes;
+            env := store_modtype id fresh_decl !env
+        | Sig_class(_, decl, _, _) ->
             let decl' = Subst.class_declaration sub decl in
             c.comp_classes <-
               NameMap.add (Ident.name id) (decl', next_address ())
                 c.comp_classes
-        | Sig_class_type(id, decl, _, _) ->
+        | Sig_class_type(_, decl, _, _) ->
             let decl' = Subst.cltype_declaration sub decl in
             c.comp_cltypes <-
               NameMap.add (Ident.name id) decl' c.comp_cltypes)
         sg pl;
         Some (Structure_comps c)
   | Mty_functor(param, ty_arg, ty_res) ->
+      let sub = Subst.compose cm_freshening_subst cm_prefixing_subst in
         Some (Functor_comps {
           fcomp_param = param;
           (* fcomp_arg and fcomp_res must be prefixed eagerly, because
@@ -2050,7 +2106,7 @@ and store_extension ~check id addr ext env =
     constrs = TycompTbl.add id (desc, Some addr) env.constrs;
     summary = Env_extension(env.summary, id, ext) }
 
-and store_module ~check id addr presence md env =
+and store_module ~check ~freshening_sub id addr presence md env =
   let loc = md.md_loc in
   if check then
     check_usage loc id (fun s -> Warnings.Unused_module s)
@@ -2058,13 +2114,14 @@ and store_module ~check id addr presence md env =
   let alerts = Builtin_attributes.alerts_of_attrs md.md_attributes in
   { env with
     modules =
-      IdTbl.add id (Value (EnvLazy.create (Subst.identity, md), addr))
+      IdTbl.add id (Value (EnvLazy.create (freshening_sub, md), addr))
         env.modules;
     components =
       IdTbl.add id
         (Value
            (components_of_module ~alerts ~loc:md.md_loc
-              env Subst.identity (Pident id) addr md.md_type, addr))
+              env freshening_sub Subst.identity (Pident id) addr md.md_type,
+            addr))
         env.components;
     summary = Env_module(env.summary, id, presence, md) }
 
@@ -2083,6 +2140,8 @@ and store_cltype id desc env =
     cltypes = IdTbl.add id desc env.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
 
+let scrape_alias env mty = scrape_alias env Subst.identity mty
+
 (* Compute the components of a functor application in a path. *)
 
 let components_of_functor_appl f env p1 p2 =
@@ -2091,6 +2150,8 @@ let components_of_functor_appl f env p1 p2 =
   with Not_found ->
     let p = Papply(p1, p2) in
     let sub = Subst.add_module f.fcomp_param p2 Subst.identity in
+    (* we have to apply eagerly instead of passing sub to [components_of_module]
+       because of the call to [check_well_formed_module]. *)
     let mty = Subst.modtype sub f.fcomp_res in
     let addr = EnvLazy.create_failed Not_found in
     !check_well_formed_module env Location.(in_file !input_name)
@@ -2099,7 +2160,7 @@ let components_of_functor_appl f env p1 p2 =
       components_of_module ~alerts:Misc.Stdlib.String.Map.empty
         ~loc:Location.none
         (*???*)
-        env Subst.identity p addr mty
+        env Subst.identity Subst.identity p addr mty
     in
     Hashtbl.add f.fcomp_cache p2 comps;
     comps
@@ -2131,7 +2192,9 @@ and add_extension ~check id ext env =
 
 and add_module_declaration ?(arg=false) ~check id presence md env =
   let addr = module_declaration_address env id presence md in
-  let env = store_module ~check id addr presence md env in
+  let env =
+    store_module ~freshening_sub:Subst.identity ~check id addr presence md env
+  in
   if arg then add_functor_arg id env else env
 
 and add_modtype id info env =
@@ -2472,7 +2535,7 @@ let save_signature_with_imports ~alerts sg modname filename imports =
       let addr = EnvLazy.create_forced (Aident id) in
       let comps =
         components_of_module ~alerts ~loc:Location.none
-          empty Subst.identity path addr (Mty_signature sg)
+          empty Subst.identity Subst.identity path addr (Mty_signature sg)
       in
       let ps =
         { ps_name = modname;
