@@ -59,8 +59,8 @@ let used_constructors :
 type error =
   | Illegal_renaming of modname * modname * filepath
   | Inconsistent_import of modname * filepath * filepath
-  | Need_recursive_types of modname * modname
-  | Depend_on_unsafe_string_unit of modname * modname
+  | Need_recursive_types of modname
+  | Depend_on_unsafe_string_unit of modname
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
 
@@ -740,10 +740,10 @@ let acknowledge_pers_struct check modname pers_sig pm =
     (function
         | Rectypes ->
             if not !Clflags.recursive_types then
-              error (Need_recursive_types(ps.ps_name, get_unit_name ()))
+              error (Need_recursive_types(ps.ps_name))
         | Unsafe_string ->
             if Config.safe_string then
-              error (Depend_on_unsafe_string_unit (ps.ps_name, get_unit_name ()));
+              error (Depend_on_unsafe_string_unit(ps.ps_name));
         | Alerts _ -> ()
         | Opaque -> add_imported_opaque modname)
     ps.ps_flags;
@@ -803,11 +803,11 @@ let check_pers_struct ~loc val_of_pers_sig name =
                %s when %s was expected"
               Location.print_filename filename ps_name name
         | Inconsistent_import _ -> assert false
-        | Need_recursive_types(name, _) ->
+        | Need_recursive_types(name) ->
             Format.sprintf
               "%s uses recursive types"
               name
-        | Depend_on_unsafe_string_unit (name, _) ->
+        | Depend_on_unsafe_string_unit(name) ->
             Printf.sprintf "%s uses -unsafe-string"
               name
         | Missing_module _ -> assert false
@@ -2761,15 +2761,15 @@ let report_error ppf = function
       "@[<hov>The files %a@ and %a@ \
               make inconsistent assumptions@ over interface %s@]"
       Location.print_filename source1 Location.print_filename source2 name
-  | Need_recursive_types(import, export) ->
+  | Need_recursive_types(import) ->
       fprintf ppf
-        "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"
-        export import "The compilation flag -rectypes is required"
-  | Depend_on_unsafe_string_unit(import, export) ->
+        "@[<hov>Invalid import of %s, which uses recursive types.@ %s@]"
+        import "The compilation flag -rectypes is required"
+  | Depend_on_unsafe_string_unit(import) ->
       fprintf ppf
-        "@[<hov>Unit %s imports from %s, compiled with -unsafe-string.@ %s@]"
-        export import "This compiler has been configured in strict \
-                       safe-string mode (-force-safe-string)"
+        "@[<hov>Invalid import of %s, compiled with -unsafe-string.@ %s@]"
+        import "This compiler has been configured in strict \
+                                  safe-string mode (-force-safe-string)"
   | Missing_module(_, path1, path2) ->
       fprintf ppf "@[@[<hov>";
       if Path.same path1 path2 then

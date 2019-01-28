@@ -283,8 +283,8 @@ val env_of_only_summary : (summary -> Subst.t -> t) -> t -> t
 type error =
   | Illegal_renaming of modname * modname * filepath
   | Inconsistent_import of modname * filepath * filepath
-  | Need_recursive_types of modname * modname
-  | Depend_on_unsafe_string_unit of modname * modname
+  | Need_recursive_types of modname
+  | Depend_on_unsafe_string_unit of modname
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
 
