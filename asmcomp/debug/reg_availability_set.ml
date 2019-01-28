@@ -112,18 +112,33 @@ let canonicalise availability =
             begin match V.Tbl.find regs_by_var name with
             | exception Not_found -> V.Tbl.add regs_by_var name reg
             | (reg' : RD.t) ->
-              (* We prefer registers that are assigned to the stack since
-                 they probably give longer available ranges (less likely to
-                 be clobbered). *)
-              match RD.location reg, RD.location reg' with
+              let loc = RD.location reg in
+              let loc' = RD.location reg' in
+              match loc, loc' with
+              | Stack _, Reg _ ->
+                (* We prefer registers that are assigned to the stack since
+                   they probably give longer available ranges (less likely to
+                   be clobbered). *)
+                V.Tbl.remove regs_by_var name;
+                V.Tbl.add regs_by_var name reg
               | Reg _, Stack _
               | Reg _, Reg _
               | Stack _, Stack _
               | _, Unknown
-              | Unknown, _ -> ()
-              | Stack _, Reg _ ->
-                V.Tbl.remove regs_by_var name;
-                V.Tbl.add regs_by_var name reg
+              | Unknown, _ ->
+                (* In all other cases, we use a fixed method to choose which
+                   register to choose as the canonical one, to avoid
+                   unnecessary opening and closing of ranges. *)
+                let c = Stdlib.compare loc loc' in
+                if c = 0 then begin
+                  ()
+                end else if c < 0 then begin
+                  V.Tbl.remove regs_by_var name;
+                  V.Tbl.add regs_by_var name reg
+                end else begin
+                  V.Tbl.remove regs_by_var name;
+                  V.Tbl.add regs_by_var name reg'
+                end
             end
           | Const_int _ | Const_naked_float _ | Const_symbol _ -> ())
       availability;

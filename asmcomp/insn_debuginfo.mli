@@ -46,6 +46,9 @@ val available_before : t -> Reg_availability_set.t
 
 (** Which registers are available (in the sense of [Available_regs])
     during execution of the instruction. *)
+(* CR mshinwell: We need to note here that [available_across] may not be a
+   subset of [available_before], in the case where e.g. %rax and %rbx hold
+   the value of x before the instruction but %rax is not available across. *)
 val available_across : t -> Reg_availability_set.t option
 
 (** Set which registers are available (in the sense of [Available_regs])

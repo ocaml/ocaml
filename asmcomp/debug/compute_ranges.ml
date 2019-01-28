@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2014--2018 Jane Street Group LLC                           *)
+(*   Copyright 2014--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -33,18 +33,20 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
        epilogues, including returns in the middle of functions. *)
     type t = {
       start_pos : L.label;
+      start_pos_offset : int;
       end_pos : L.label;
       end_pos_offset : int;
       subrange_info : Subrange_info.t;
     }
 
     let create ~(start_insn : Linearize.instruction)
-          ~start_pos
+          ~start_pos ~start_pos_offset
           ~end_pos ~end_pos_offset
           ~subrange_info =
       match start_insn.desc with
       | Llabel _ ->
         { start_pos;
+          start_pos_offset;
           end_pos;
           end_pos_offset;
           subrange_info;
@@ -54,6 +56,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
           Printlinear.instr start_insn
 
     let start_pos t = t.start_pos
+    let start_pos_offset t = t.start_pos_offset
     let end_pos t = t.end_pos
     let end_pos_offset t = t.end_pos_offset
     let info t = t.subrange_info
@@ -166,8 +169,9 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
          [S.available_across insn].  There is nothing to do.
 
      (b) [key] is not in [S.available_before insn] but it is in
-         [S.available_across insn].  This cannot happen---see the
-         comment at the top of available_regs.ml.
+         [S.available_across insn].  A new range is created with the starting
+         position being one byte after the first machine instruction of [insn]
+         and left open.
 
      (c) [key] is in [S.available_before insn] but it is not in
          [S.available_across insn].  A new range is created with the starting
@@ -189,8 +193,9 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
          the debugger is standing on [insn].
 
      (b) [key] is not in [S.available_before insn] but it is in
-         [S.available_across insn].  This cannot happen---see the
-         comment at the top of available_regs.ml.
+         [S.available_across insn].  The range endpoint is given as the address
+         of the first machine instruction of [insn]; and a new range is opened
+         in the same way as for case 1 (b), above.
 
      (c) [key] is in [S.available_before insn] but it is not in
          [S.available_across insn]. This will only happen when calculating
@@ -208,26 +213,36 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   type action =
     | Open_one_byte_subrange
     | Open_subrange
+    | Open_subrange_one_byte_after
     | Close_subrange
     | Close_subrange_one_byte_after
 
-  let debug = false
+  (* CR mshinwell: Move to [Clflags] *)
+  let check_invariants = ref false
 
   let actions_at_instruction ~(insn : L.instruction)
         ~(prev_insn : L.instruction option) =
     let available_before = S.available_before insn in
     let available_across = S.available_across insn in
-    if debug && (not (KS.subset available_across available_before)) then
-    begin
+(*
+    if !check_invariants && (not (KS.subset available_across available_before))
+    then begin
       Clflags.dump_avail := true;
-      Misc.fatal_errorf "[available_across] is not a subset of \
-          [available_before] for instruction@ %a"
+      Misc.fatal_errorf "[available_across] = %a@ is not a subset of \
+          [available_before] = %a@ for instruction:\n%a"
+        KS.print available_across
+        KS.print available_before
         Printlinear.instr insn
     end;
+*)
     let opt_available_across_prev_insn =
       match prev_insn with
       | None -> KS.empty
       | Some prev_insn -> S.available_across prev_insn
+    in
+    let case_1b =
+      KS.diff available_across
+        (KS.union opt_available_across_prev_insn available_before)
     in
     let case_1c =
       KS.diff available_before
@@ -240,6 +255,10 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let case_2a =
       KS.diff opt_available_across_prev_insn
         (KS.union available_before available_across)
+    in
+    let case_2b =
+      KS.inter opt_available_across_prev_insn
+        (KS.diff available_across available_before)
     in
     let case_2c =
       KS.diff
@@ -264,10 +283,18 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         result
     in
     let actions =
+      (* Ranges must be closed before they are opened---otherwise, when a
+         variable moves between registers at a range boundary, we might end up
+         with no open range for that variable.  Note that the pipeline below
+         constructs the [actions] list in reverse order---later functions in
+         the pipeline produce actions nearer the head of the list. *)
       []
+      |> handle case_1b Open_subrange_one_byte_after
       |> handle case_1c Open_one_byte_subrange
       |> handle case_1d Open_subrange
       |> handle case_2a Close_subrange
+      |> handle case_2b Close_subrange
+      |> handle case_2b Open_subrange_one_byte_after
       |> handle case_2c Close_subrange_one_byte_after
     in
     let must_restart =
@@ -310,14 +337,14 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       }
     in
     let used_label = ref false in
-    let open_subrange key ~open_subranges =
+    let open_subrange key ~start_pos_offset ~open_subranges =
       used_label := true;
-      KM.add key (label, label_insn) open_subranges
+      KM.add key (label, start_pos_offset, label_insn) open_subranges
     in
     let close_subrange key ~end_pos_offset ~open_subranges =
       match KM.find key open_subranges with
       | exception Not_found -> open_subranges
-      | start_pos, start_insn ->
+      | start_pos, start_pos_offset, start_insn ->
         let open_subranges = KM.remove key open_subranges in
         match Range_info.create fundecl key ~start_insn with
         | None -> open_subranges
@@ -334,7 +361,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
           let subrange_info = Subrange_info.create key subrange_state in
           let subrange =
             Subrange.create ~start_insn
-              ~start_pos ~end_pos:label ~end_pos_offset
+              ~start_pos ~start_pos_offset
+              ~end_pos:label ~end_pos_offset
               ~subrange_info
           in
           Range.add_subrange range ~subrange;
@@ -348,7 +376,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
           let open_subranges =
             close_subrange key ~end_pos_offset:0 ~open_subranges
           in
-          open_subrange key ~open_subranges)
+          open_subrange key ~start_pos_offset:0 ~open_subranges)
         must_restart
         open_subranges
     in
@@ -356,9 +384,14 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       List.fold_left (fun open_subranges (key, (action : action)) ->
           match action with
           | Open_one_byte_subrange ->
-            let open_subranges = open_subrange key ~open_subranges in
+            let open_subranges =
+              open_subrange key ~start_pos_offset:0 ~open_subranges
+            in
             close_subrange key ~end_pos_offset:1 ~open_subranges
-          | Open_subrange -> open_subrange key ~open_subranges
+          | Open_subrange ->
+            open_subrange key ~start_pos_offset:0 ~open_subranges
+          | Open_subrange_one_byte_after ->
+            open_subrange key ~start_pos_offset:1 ~open_subranges
           | Close_subrange ->
             close_subrange key ~end_pos_offset:0 ~open_subranges
           | Close_subrange_one_byte_after ->
@@ -381,6 +414,22 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     in
     begin if !used_label then
       insert_insn ~new_insn:label_insn
+    end;
+    if !check_invariants then begin
+      let open_subranges =
+        KS.of_list (
+          List.map (fun (key, _datum) -> key) (KM.bindings open_subranges))
+      in
+      let available_before = S.available_before insn in
+      let available_across = S.available_across insn in
+      let should_be_open = KS.union available_across available_before in
+      let not_open_but_should_be = KS.diff open_subranges should_be_open in
+      if not (KS.is_empty not_open_but_should_be) then begin
+        Misc.fatal_errorf "Ranges for %a are not open immediately prior to \
+            the following instruction, but should be:@ %a"
+          KS.print not_open_but_should_be
+          Printlinear.instr { insn with L.next = L.end_instr; }
+      end
     end;
     let first_insn = !first_insn in
     match insn.desc with

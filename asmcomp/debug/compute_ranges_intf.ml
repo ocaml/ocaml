@@ -48,8 +48,15 @@ module type S_functor = sig
 
   module Key : sig
     type t
-    module Set : Set.S with type elt = t
+
+    module Set : sig
+      include Set.S with type elt = t
+      val print : Format.formatter -> t -> unit
+    end
+
     module Map : Map.S with type key = t
+
+    val print : Format.formatter -> t -> unit
 
     val all_parents : t -> t list
   end
@@ -96,6 +103,7 @@ module type S = sig
     val info : t -> Subrange_info.t
 
     val start_pos : t -> Linearize.label
+    val start_pos_offset : t -> int
     val end_pos : t -> Linearize.label
     val end_pos_offset : t -> int
   end

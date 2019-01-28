@@ -133,12 +133,12 @@ module type T = sig
   val clear_debug_info : t -> t
 end
 
-module T = struct
-  type t = {
-    reg : Reg.t;
-    debug_info : Debug_info.t option;
-  }
+type t = {
+  reg : Reg.t;
+  debug_info : Debug_info.t option;
+}
 
+module T = struct
   type reg_with_debug_info = t
 
   module Order = struct
@@ -229,15 +229,40 @@ module Order_distinguishing_names_and_locations = struct
       else Stdlib.compare t1.reg.loc t2.reg.loc
 end
 
+let print ~print_reg ppf t =
+  match t.debug_info with
+  | None -> Format.fprintf ppf "%a" print_reg t.reg
+  | Some debug_info ->
+    Format.fprintf ppf "%a(%a)" print_reg t.reg Debug_info.print debug_info
+
 module Distinguishing_names_and_locations = struct
+  type nonrec t = t
   include T
 
-  module Set = Set.Make (Order_distinguishing_names_and_locations)
+  module Set = struct
+    include Set.Make (Order_distinguishing_names_and_locations)
+
+    let print ~print_reg ppf t =
+      let elts ppf t =
+        iter (fun rd -> Format.fprintf ppf "@ %a" (print ~print_reg) rd) t
+      in
+      Format.fprintf ppf "@[<1>{@[%a@ @]}@]" elts t
+  end
+
   module Map = Map.Make (Order_distinguishing_names_and_locations)
 end
 
 module Set = struct
-  include Set.Make (T)
+  include Set.Make (struct
+    type nonrec t = t
+    include T
+  end)
+
+  let print ~print_reg ppf t =
+    let elts ppf t =
+      iter (fun rd -> Format.fprintf ppf "@ %a" (print ~print_reg) rd) t
+    in
+    Format.fprintf ppf "@[<1>{@[%a@ @]}@]" elts t
 
   let of_array elts =
     of_list (Array.to_list elts)
@@ -275,9 +300,3 @@ module Set = struct
     | [reg] -> reg
     | _ -> assert false
 end
-
-let print ~print_reg ppf t =
-  match t.debug_info with
-  | None -> Format.fprintf ppf "%a" print_reg t.reg
-  | Some debug_info ->
-    Format.fprintf ppf "%a(%a)" print_reg t.reg Debug_info.print debug_info

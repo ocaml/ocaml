@@ -34,6 +34,8 @@ let create_range_list_and_summarise state (_fundecl : L.fundecl) range =
     ~init:([], Range_list.create (), Address_index.Pair.Set.empty)
     ~f:(fun (dwarf_4_range_list_entries, range_list, summary) subrange ->
       let start_pos = LB.Subrange.start_pos subrange in
+      (* CR mshinwell: Deal with [start_pos_offset] for completeness, or
+         assert that it's zero and explain why. *)
       let end_pos = LB.Subrange.end_pos subrange in
       let end_pos_offset = LB.Subrange.end_pos_offset subrange in
       let start_inclusive =

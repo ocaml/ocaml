@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2014--2018 Jane Street Group LLC                           *)
+(*   Copyright 2014--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -20,14 +20,23 @@ module V = Backend_var
 module Vars = struct
   module RD = Reg_with_debug_info
 
-  (* By the time this pass has run, register stamps are irrelevant; indeed,
+  (* By the time this pass runs, register stamps are irrelevant; indeed,
      there may be multiple registers with different stamps assigned to the
      same location.  As such, we quotient register sets by the equivalence
      relation that identifies two registers iff they have the same name and
      location. *)
   module Key = struct
     include RD.Distinguishing_names_and_locations
+
+    module Set = struct
+      include Set
+
+      let print ppf t = print ~print_reg:Printmach.reg ppf t
+    end
+
     let all_parents _t = []
+
+    let print ppf t = RD.print ~print_reg:Printmach.reg ppf t
   end
 
   module Index = V

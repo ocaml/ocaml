@@ -540,6 +540,7 @@ let location_list_entry state ~subrange single_location_description
   let start_pos =
     Asm_label.create_int Text (ARV.Subrange.start_pos subrange)
   in
+  let start_pos_offset = ARV.Subrange.start_pos_offset subrange in
   let end_pos =
     Asm_label.create_int Text (ARV.Subrange.end_pos subrange)
   in
@@ -550,6 +551,7 @@ let location_list_entry state ~subrange single_location_description
       Dwarf_4_location_list_entry.create_location_list_entry
         ~start_of_code_symbol:(DS.start_of_code_symbol state)
         ~first_address_when_in_scope:start_pos
+        ~first_address_when_in_scope_offset:(Some start_pos_offset)
         ~first_address_when_not_in_scope:end_pos
         ~first_address_when_not_in_scope_offset:(Some end_pos_offset)
         ~single_location_description
@@ -558,6 +560,7 @@ let location_list_entry state ~subrange single_location_description
   | Five ->
     let start_inclusive =
       Address_table.add (DS.address_table state) start_pos
+        ~adjustment:start_pos_offset
         ~start_of_code_symbol:(DS.start_of_code_symbol state)
     in
     let end_exclusive =

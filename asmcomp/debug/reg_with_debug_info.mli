@@ -99,12 +99,27 @@ module Distinguishing_names_and_locations : sig
     with type t = reg_with_debug_info
     with type reg_with_debug_info = reg_with_debug_info
 
-  module Set : Set.S with type elt = t
+  module Set : sig
+    include Set.S with type elt = t
+
+    val print
+       : print_reg:(Format.formatter -> Reg.t -> unit)
+      -> Format.formatter
+      -> t
+      -> unit
+  end
+
   module Map : Map.S with type key = t
 end
 
 module Set : sig
   include Set.S with type elt = t
+
+  val print
+     : print_reg:(Format.formatter -> Reg.t -> unit)
+    -> Format.formatter
+    -> t
+    -> unit
 
   val of_array : reg_with_debug_info array -> t
 

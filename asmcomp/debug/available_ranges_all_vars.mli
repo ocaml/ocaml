@@ -32,6 +32,7 @@ module Subrange : sig
   val info : t -> Subrange_info.t
 
   val start_pos : t -> Linearize.label
+  val start_pos_offset : t -> int
   val end_pos : t -> Linearize.label
   val end_pos_offset : t -> int
 end

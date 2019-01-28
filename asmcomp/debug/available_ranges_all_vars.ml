@@ -105,6 +105,11 @@ module Subrange = struct
     | Var subrange -> ARV.Subrange.start_pos subrange
     | Phantom_var (_, subrange) -> ARPV.Subrange.start_pos subrange
 
+  let start_pos_offset t =
+    match t with
+    | Var subrange -> ARV.Subrange.start_pos_offset subrange
+    | Phantom_var (_, subrange) -> ARPV.Subrange.start_pos_offset subrange
+
   let end_pos t =
     match t with
     | Var subrange -> ARV.Subrange.end_pos subrange
