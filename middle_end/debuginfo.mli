@@ -7,7 +7,7 @@
 (*                                                                        *)
 (*   Copyright 2006 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*   Copyright 2018 Jane Street Group LLC                                 *)
+(*   Copyright 2018--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -30,6 +30,8 @@ module Code_range : sig
   val char_end : t -> int
 
   val print_compact : Format.formatter -> t -> unit
+
+  val print_compact_without_dirname : Format.formatter -> t -> unit
 
   include Identifiable.S with type t := t
 

@@ -26,14 +26,16 @@ type var_uniqueness = {
   position_is_unique_given_name_is_unique : bool;
 }
 
-module Backend_var_and_code_range = struct
+module Var_name_and_code_range = struct
   type t = Backend_var.t * (Debuginfo.Code_range.t option)
 
   include Identifiable.Make (struct
     type nonrec t = t
 
     let compare (var1, range_opt1) (var2, range_opt2) =
-      let c = Backend_var.compare var1 var2 in
+      let name1 = Backend_var.name_for_debugger var1 in
+      let name2 = Backend_var.name_for_debugger var2 in
+      let c = String.compare name1 name2 in
       if c <> 0 then c
       else
         match range_opt1, range_opt2 with
@@ -47,9 +49,9 @@ module Backend_var_and_code_range = struct
 
     let hash (var, range_opt) =
       match range_opt with
-      | None -> Hashtbl.hash (Backend_var.hash var, None)
+      | None -> Hashtbl.hash (Backend_var.name_for_debugger var, None)
       | Some range ->
-        Hashtbl.hash (Backend_var.hash var,
+        Hashtbl.hash (Backend_var.name_for_debugger var,
           Some (Debuginfo.Code_range.hash range))
 
     let print _ _ = Misc.fatal_error "Not yet implemented"
@@ -73,7 +75,7 @@ let arch_size_addr = Targetint.of_int_exn Arch.size_addr
 let calculate_var_uniqueness ~available_ranges_vars =
   let module String = Misc.Stdlib.String in
   let by_name = String.Tbl.create 42 in
-  let by_position = Backend_var_and_code_range.Tbl.create 42 in
+  let by_position = Var_name_and_code_range.Tbl.create 42 in
   let update_uniqueness var pos ~module_path =
     let name = Backend_var.name_for_debugger var in
     let name =
@@ -87,12 +89,12 @@ let calculate_var_uniqueness ~available_ranges_vars =
     | vars ->
       String.Tbl.replace by_name name (Backend_var.Set.add var vars)
     end;
-    begin match Backend_var_and_code_range.Tbl.find by_position (var, pos) with
+    begin match Var_name_and_code_range.Tbl.find by_position (var, pos) with
     | exception Not_found ->
-      Backend_var_and_code_range.Tbl.add by_position (var, pos)
+      Var_name_and_code_range.Tbl.add by_position (var, pos)
         (Backend_var.Set.singleton var)
     | vars ->
-      Backend_var_and_code_range.Tbl.replace by_position (var, pos)
+      Var_name_and_code_range.Tbl.replace by_position (var, pos)
         (Backend_var.Set.add var vars)
     end
   in
@@ -132,7 +134,7 @@ let calculate_var_uniqueness ~available_ranges_vars =
      need to make a judgement as to whether two variables have the same
      position _given also that they have the same name_.  (See the
      computations in [dwarf_for_variable], below.) *)
-  Backend_var_and_code_range.Tbl.iter (fun _var_and_pos vars ->
+  Var_name_and_code_range.Tbl.iter (fun _var_and_pos vars ->
       match Backend_var.Set.get_singleton vars with
       | None -> ()
       | Some var ->
@@ -752,7 +754,7 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
             | Some position ->
               Format.asprintf "%s[%a]"
                 (Backend_var.name_for_debugger var)
-                Debuginfo.Code_range.print_compact position
+                Debuginfo.Code_range.print_compact_without_dirname position
         end else begin
           Backend_var.unique_name_for_debugger var
         end

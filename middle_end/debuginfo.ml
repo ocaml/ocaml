@@ -116,6 +116,14 @@ module Code_range = struct
       Format.fprintf ppf ",%i--%i" t.char_start t.char_end
     end
 
+  let print_compact_without_dirname ppf t =
+    Format.fprintf ppf "%s:%i"
+      (Filename.basename t.file)
+      t.line;
+    if t.char_start >= 0 then begin
+      Format.fprintf ppf ",%i--%i" t.char_start t.char_end
+    end
+
   let to_location t : Location.t =
     let loc_start : Lexing.position =
       { pos_fname = t.file;
@@ -517,10 +525,6 @@ type debuginfo = t
 
 let none = Empty
 
-let is_none = function
-  | Empty -> true
-  | Non_empty _ -> false
-
 let to_string_frames_only_innermost_last t =
   match t with
   | Empty -> ""
@@ -569,7 +573,17 @@ let innermost_block t =
 let position t =
   match t with
   | Empty -> None
-  | Non_empty { block = _; position; } -> Some position
+  | Non_empty { block = _; position; } ->
+    if Code_range.is_none position then None
+    else Some position
+
+(* CR mshinwell: This is dubious.  Think about it in the context of
+   [Emitaux] *)
+let is_none = function
+  | Empty -> true
+  | Non_empty { block = _; position; } ->
+    if Code_range.is_none position then true
+    else false
 
 let iter_position_and_blocks_innermost_first t ~f_position ~f_blocks =
   match t with
@@ -645,8 +659,6 @@ module Apply = struct
       dbg;
     }
 
-  (* CR mshinwell: This is displaying in gdb as [Debuginfo.fun_dbg] not
-     [Debuginfo.Apply.fun_dbg]. *)
   let fun_dbg t = t.fun_dbg
   let dbg t = t.dbg
 end
