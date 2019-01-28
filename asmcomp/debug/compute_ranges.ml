@@ -163,7 +163,7 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
      There are eight cases, referenced in the code below.
 
      1. First four cases: [key] is currently unavailable, i.e. it is not a
-     member of [prev_insn.available_across].
+     member of (roughly speaking) [S.available_across prev_insn].
 
      (a) [key] is not in [S.available_before insn] and neither is it in
          [S.available_across insn].  There is nothing to do.
@@ -172,6 +172,11 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
          [S.available_across insn].  A new range is created with the starting
          position being one byte after the first machine instruction of [insn]
          and left open.
+
+         It might seem like this case 1 (b) is impossible, likewise for 2 (b)
+         below, since "available across" should always be a subset of
+         "available before".  However this does not hold in general: see the
+         comment in available_ranges_vars.ml.
 
      (c) [key] is in [S.available_before insn] but it is not in
          [S.available_across insn].  A new range is created with the starting
@@ -218,23 +223,12 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     | Close_subrange_one_byte_after
 
   (* CR mshinwell: Move to [Clflags] *)
-  let check_invariants = ref false
+  let check_invariants = ref true
 
   let actions_at_instruction ~(insn : L.instruction)
         ~(prev_insn : L.instruction option) =
     let available_before = S.available_before insn in
     let available_across = S.available_across insn in
-(*
-    if !check_invariants && (not (KS.subset available_across available_before))
-    then begin
-      Clflags.dump_avail := true;
-      Misc.fatal_errorf "[available_across] = %a@ is not a subset of \
-          [available_before] = %a@ for instruction:\n%a"
-        KS.print available_across
-        KS.print available_before
-        Printlinear.instr insn
-    end;
-*)
     let opt_available_across_prev_insn =
       match prev_insn with
       | None -> KS.empty
@@ -293,8 +287,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
       |> handle case_1c Open_one_byte_subrange
       |> handle case_1d Open_subrange
       |> handle case_2a Close_subrange
-      |> handle case_2b Close_subrange
       |> handle case_2b Open_subrange_one_byte_after
+      |> handle case_2b Close_subrange
       |> handle case_2c Close_subrange_one_byte_after
     in
     let must_restart =
@@ -420,15 +414,16 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
         KS.of_list (
           List.map (fun (key, _datum) -> key) (KM.bindings open_subranges))
       in
-      let available_before = S.available_before insn in
-      let available_across = S.available_across insn in
-      let should_be_open = KS.union available_across available_before in
-      let not_open_but_should_be = KS.diff open_subranges should_be_open in
+      let should_be_open = S.available_across insn in
+      let not_open_but_should_be = KS.diff should_be_open open_subranges in
       if not (KS.is_empty not_open_but_should_be) then begin
-        Misc.fatal_errorf "Ranges for %a are not open immediately prior to \
-            the following instruction, but should be:@ %a"
+        Misc.fatal_errorf "%a: ranges for %a are not open across the following \
+            instruction:\n%a\navailable_across:@ %a\nopen_subranges: %a"
+          Backend_sym.print fundecl.fun_name
           KS.print not_open_but_should_be
           Printlinear.instr { insn with L.next = L.end_instr; }
+          KS.print should_be_open
+          KS.print open_subranges
       end
     end;
     let first_insn = !first_insn in

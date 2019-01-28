@@ -149,6 +149,12 @@ module Vars = struct
     let is_parameter t = t.is_parameter
   end
 
+  (* Important note: [Reg_availability_set.canonicalise] does not preserve
+     subset inclusion.  This means in particular that a canonicalised
+     [available_across] set may not be a subset of the corresponding
+     canonicalised [available_before].  [Compute_ranges] can cope with
+     this. *)
+
   let availability_set_to_key_set (avail : Reg_availability_set.t) =
     let avail = Reg_availability_set.canonicalise avail in
     match avail with
