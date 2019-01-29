@@ -359,7 +359,7 @@ let mk_gno_dwarf_cmm f =
   let help =
     " Neither generate debugging information for functions \n     \
       fabricated by the compiler in the Cmm language nor the corresponding\
-      \n     .cmm source file (implies -gdwarf-vars)"
+      \n     .cmm source file"
       ^ Clflags.describe_debug_default_negated Clflags.Debug_dwarf_cmm
   in
   "-gno-dwarf-cmm", Arg.Unit f, help
@@ -368,7 +368,7 @@ let mk_gno_dwarf_cmm f =
 let mk_gdwarf_offsets f =
   let help =
     " Generate offset arrays in DWARF-5 location and range list\n     tables"
-      ^ (if Clflags.default_gdwarf_offsets then "(default)" else "")
+      ^ (if Clflags.default_gdwarf_offsets then " (default)" else "")
   in
   "-gdwarf-offsets", Arg.Unit f, help
 ;;
@@ -377,7 +377,7 @@ let mk_gno_dwarf_offsets f =
   let help =
     " Do not generate offset arrays in DWARF-5 location and\n     \
       range list tables"
-      ^ (if not Clflags.default_gdwarf_offsets then "(default)" else "")
+      ^ (if not Clflags.default_gdwarf_offsets then " (default)" else "")
   in
   "-gno-dwarf-offsets", Arg.Unit f, help
 ;;
