@@ -46,9 +46,7 @@ module Lvalue = struct
     let offset_in_bytes =
       Targetint.mul field Targetint.size_in_bytes_as_targetint
     in
-    (OB.value_of_symbol ~symbol) :: [
-      OB.add_unsigned_const offset_in_bytes;
-    ]
+    (OB.value_of_symbol ~symbol) :: OB.add_unsigned_const offset_in_bytes
 
   let location_from_another_die ~die_label ~compilation_unit_header_label =
     [OB.call ~die_label ~compilation_unit_header_label]
@@ -107,19 +105,21 @@ module Rvalue = struct
       Targetint.mul field Targetint.size_in_bytes_as_targetint
     in
     (* We emit special code to catch the case where evaluation of [block]
-       fails (for example due to unavailability). *)
+       fails (for example due to unavailability).  In the event of an
+       unavailability failure, the [DW_OP_call*] evaluation of [block] does
+       nothing to the stack. *)
     (OB.signed_int_const Targetint.zero) ::
       block @ [
         O.DW_op_dup;
       ] @
       OB.conditional ~if_zero:[
         ]
-        ~if_nonzero:[
+        ~if_nonzero:([
           O.DW_op_swap;
           O.DW_op_drop;
-          OB.add_unsigned_const offset_in_bytes;
-          O.DW_op_deref;
-        ]
+        ] @ OB.add_unsigned_const offset_in_bytes @ [
+          O.DW_op_deref
+        ])
         ~at_join:[
           O.DW_op_stack_value;
         ]
@@ -138,11 +138,10 @@ module Rvalue = struct
       ] @
       OB.conditional ~if_zero:[
         ]
-        ~if_nonzero:[
+        ~if_nonzero:([
           O.DW_op_swap;
-          O.DW_op_drop;
-          OB.add_unsigned_const offset_in_bytes;
-        ]
+          O.DW_op_drop
+        ] @ OB.add_unsigned_const offset_in_bytes)
         ~at_join:[
           O.DW_op_stack_value;
         ]
@@ -158,4 +157,4 @@ end
 let of_lvalue t = t
 let of_rvalue t = t
 
-let compile t = OB.optimize_sequence t
+let compile t = t

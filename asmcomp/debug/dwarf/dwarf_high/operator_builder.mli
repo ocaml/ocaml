@@ -33,7 +33,7 @@ val value_of_symbol : symbol:Asm_symbol.t -> Dwarf_operator.t
 
 val signed_int_const : Targetint.t -> Dwarf_operator.t
 
-val add_unsigned_const : Targetint.t -> Dwarf_operator.t
+val add_unsigned_const : Targetint.t -> Dwarf_operator.t list
 
 val float_const : Int64.t -> Dwarf_operator.t
 
@@ -53,5 +53,3 @@ val conditional
   -> if_zero:Dwarf_operator.t list
   -> if_nonzero:Dwarf_operator.t list
   -> Dwarf_operator.t list
-
-val optimize_sequence : Dwarf_operator.t list -> Dwarf_operator.t list
