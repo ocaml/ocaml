@@ -173,13 +173,10 @@ module Vars = struct
     | Some across -> availability_set_to_key_set across
 
   let must_restart_ranges_upon_any_change () =
-    match !Clflags.debug_full with
-    | Some Gdb -> false
-    | Some Lldb ->
-      (* Work at OCamlPro suggested that lldb requires ranges to be
-         completely restarted in the event of any change. *)
-      true
-    | None -> Misc.fatal_error "Shouldn't be here without [debug_full]"
+    (* Work at OCamlPro suggested that lldb requires ranges to be
+       completely restarted in the event of any change.  We may wish to add
+       code here in the future if that hypothesis is validated. *)
+    false
 end
 
 module Subrange_state = Vars.Subrange_state

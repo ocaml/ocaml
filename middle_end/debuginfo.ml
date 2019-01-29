@@ -228,11 +228,7 @@ module Function = struct
   }
 
   let create position ~human_name ~module_path ~linkage_name =
-    let dwarf_die_present =
-      match !Clflags.debug_full with
-      | None -> false
-      | Some _ -> true
-    in
+    let dwarf_die_present = Clflags.debug_thing Debug_dwarf_functions in
     { id = Id.create ();
       position;
       human_name;

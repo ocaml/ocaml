@@ -40,7 +40,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dllib s = defer (ProcessDLLs (Misc.rev_split_words s))
   let _dllpath s = dllpaths := !dllpaths @ [s]
   let _for_pack s = for_package := Some s
-  let _g = set debug
+  let _g = use_g ()
   let _i () =
     print_types := true;
     compile_only := true;

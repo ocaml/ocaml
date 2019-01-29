@@ -198,7 +198,9 @@ let read_one_param ppf position name v =
   let set name options s =  setter ppf (fun b -> b) name options s in
   let clear name options s = setter ppf (fun b -> not b) name options s in
   match name with
-  | "g" -> set "g" [ Clflags.debug ] v
+  (* CR mshinwell: Once the new debugging flags have been approved upstream,
+     we'd best add them to this list too... *)
+  | "g" -> use_g ()
   | "p" -> set "p" [ Clflags.gprofile ] v
   | "bin-annot" -> set "bin-annot" [ Clflags.binary_annotations ] v
   | "afl-instrument" -> set "afl-instrument" [ Clflags.afl_instrument ] v

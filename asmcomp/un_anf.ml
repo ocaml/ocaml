@@ -458,9 +458,9 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
       let body = substitute_let_moveable is_let_moveable env body in
       (* If we are about to delete a [let] in debug mode, keep it for the
          debugger. *)
-      match !Clflags.debug_full with
-      | None -> body
-      | Some _ ->
+      if not (Clflags.debug_thing Clflags.Debug_dwarf_vars) then
+        body
+      else
         match def with
         | Uconst (const, _dbg) ->
           Uphantom_let (var, Some (Clambda.Uphantom_const const), body)
@@ -655,9 +655,9 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
     let is_used = V.Set.mem (VP.var var) var_info.used in
     let is_assigned = V.Set.mem (VP.var var) var_info.assigned in
     let maybe_for_debugger (body, moveable) : Clambda.ulambda * moveable =
-      match !Clflags.debug_full with
-      | None -> body, moveable
-      | Some _ ->
+      if not (Clflags.debug_thing Clflags.Debug_dwarf_vars) then
+        body, moveable
+      else
         match def with
         | Uconst (const, _dbg) ->
           Uphantom_let (var, Some (Clambda.Uphantom_const const),

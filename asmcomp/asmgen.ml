@@ -189,9 +189,9 @@ let end_gen_implementation ?toplevel ~ppf_dump ~prefix_name ~unit_name
   try
     Emit.begin_assembly ();
     let dwarf =
-      match !Clflags.debug_full with
-      | None -> None
-      | Some _ ->
+      if not (Clflags.debug_thing Clflags.Debug_dwarf_functions) then
+        None
+      else
         Profile.record "dwarf"
           (fun () ->
             let dwarf =

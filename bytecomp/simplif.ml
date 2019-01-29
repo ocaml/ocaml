@@ -355,8 +355,12 @@ let beta_reduce params body args =
 
 let simplify_lets lam =
 
-  (* Disable optimisations for bytecode compilation with -g flag *)
-  let optimize = !Clflags.native_code || not !Clflags.debug in
+  (* Disable optimisations for bytecode compilation when the relevant `-g...'
+     option is specified. *)
+  let optimize =
+    !Clflags.native_code
+      || not (Clflags.debug_thing Clflags.Debug_disable_bytecode_opt)
+  in
 
   (* First pass: count the occurrences of all let-bound identifiers *)
 
@@ -523,16 +527,15 @@ let simplify_lets lam =
       end
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
-      begin match !Clflags.debug_full with
-      | None -> simplif l2
-      | Some _ ->
-          Lphantom_let {
-            id = v;
-            id_for_type = v;
-            defining_expr = Lphantom_var w;
-            body = simplif l2;
-          }
-      end
+      if not (Clflags.debug_thing Clflags.Debug_dwarf_vars) then
+        simplif l2
+      else
+        Lphantom_let {
+          id = v;
+          id_for_type = v;
+          defining_expr = Lphantom_var w;
+          body = simplif l2;
+        }
   | Llet(Strict, kind, v,
          Lprim(Pmakeblock(0, Mutable, kind_ref) as prim, [linit], loc), lbody)
     when optimize ->
@@ -607,18 +610,18 @@ let simplify_lets lam =
   | Lifused(v, l) ->
       if count_var v > 0 then simplif l else lambda_unit Location.none
   and deleting_let v l1 l2 =
-    match !Clflags.debug_full with
-    | None -> simplif l2
-    | Some _ ->
-        match phantomise (simplif l1) with
-        | None -> simplif l2
-        | Some defining_expr ->
-            Lphantom_let {
-              id = v;
-              id_for_type = v;
-              defining_expr;
-              body = simplif l2;
-            }
+    if not (Clflags.debug_thing Clflags.Debug_dwarf_vars) then
+      simplif l2
+    else
+      match phantomise (simplif l1) with
+      | None -> simplif l2
+      | Some defining_expr ->
+          Lphantom_let {
+            id = v;
+            id_for_type = v;
+            defining_expr;
+            body = simplif l2;
+          }
   in
   simplif lam
 

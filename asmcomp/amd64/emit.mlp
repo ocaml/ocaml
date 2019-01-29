@@ -318,7 +318,9 @@ let bound_error_sites = ref ([] : bound_error_call list)
 let bound_error_call = ref 0
 
 let bound_error_label ?label dbg ~spacetime =
-  if !Clflags.debug || Config.spacetime then begin
+  if Clflags.debug_thing Clflags.Debug_bounds_checking
+     || Config.spacetime
+  then begin
     let lbl_bound_error = new_label() in
     let bd_before_call = new_label () in
     let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in

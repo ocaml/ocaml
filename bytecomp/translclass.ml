@@ -311,7 +311,10 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
             | Tcf_method (name, _, Tcfk_concrete (_, exp)) ->
                 let met_code = msubst true (transl_exp exp) in
                 let met_code =
-                  if !Clflags.native_code && List.length met_code = 1 then
+                  if (Clflags.debug_thing Clflags.Debug_ocamldebug
+                       || Clflags.debug_thing Clflags.Debug_subprocs)
+                     && List.length met_code = 1
+                  then
                     (* Force correct naming of method for profiles *)
                     let met = Ident.create_local ("method_" ^ name.txt) in
                     [Llet(Strict, Pgenval, met, List.hd met_code, Lvar met)]
@@ -723,7 +726,12 @@ let transl_class ids cl_id pub_meths cl vflag =
         begin try
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
-          if not arr || !Clflags.debug then raise Not_found;
+          if not arr
+             || Clflags.debug_thing Clflags.Debug_ocamldebug
+             || Clflags.debug_thing Clflags.Debug_subprocs
+          then begin
+            raise Not_found
+          end;
           builtin_meths [self] env env2 (lfunction args body')
         with Not_found ->
           [lfunction (self :: args)

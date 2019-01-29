@@ -77,7 +77,7 @@ let instr ppf i =
   let available_across = Insn_debuginfo.available_across i.dbg in
   let dbg = Insn_debuginfo.dbg i.dbg in
   (* CR mshinwell: Use a printer in [Insn_debuginfo] *)
-  if !Clflags.dump_avail then begin
+  if !Clflags.dump_avail && !Clflags.dump_linear_dbg then begin
     let print_reg = Printmach.reg in
     if not (Backend_var.Set.is_empty phantom_available_before) then
       fprintf ppf "@;@{<debug_avail>@[<hov 4>^---(available_before@ %a)@ \
@@ -94,7 +94,7 @@ let instr ppf i =
         (Misc.Stdlib.Option.print (Reg_availability_set.print ~print_reg))
         available_across
   end;
-  if not (Debuginfo.is_none dbg) then
+  if (not (Debuginfo.is_none dbg)) && !Clflags.dump_linear_dbg then
     fprintf ppf "@ @[<hov 4>@{<debug_loc>    %a@}@]" Debuginfo.print dbg
 
 let rec all_instr ppf i =
@@ -104,7 +104,7 @@ let rec all_instr ppf i =
 
 let fundecl ppf f =
   let dbg =
-    if not !Clflags.debug then ""
+    if not !Clflags.dump_linear_dbg then ""
     else Format.asprintf " %a" Debuginfo.Function.print f.fun_dbg in
   fprintf ppf "@[<v 2>%a:%s@,%a@]" S.print f.fun_name dbg
     all_instr f.fun_body

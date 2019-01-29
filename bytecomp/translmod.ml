@@ -549,7 +549,7 @@ and transl_structure loc fields cc rootpath final_env = function
       (* This debugging event provides information regarding the structure
          items. It is ignored by the OCaml debugger but is used by
          Js_of_ocaml to preserve variable names. *)
-      (if !Clflags.debug && not !Clflags.native_code then
+      (if Clflags.debug_thing Clflags.Debug_js_of_ocaml then
          Levent(body,
                 {lev_loc = loc;
                  lev_kind = Lev_pseudo;
@@ -893,9 +893,7 @@ let transl_store_structure glob map prims str =
               transl_let rec_flag pat_expr_list (store_idents Location.none ids)
             in
             let add_phantom_lets lam =
-              match !Clflags.debug_full with
-              | None -> lam
-              | Some _ ->
+              if Clflags.debug_thing Clflags.Debug_dwarf_vars then
                 List.fold_left (fun lam id ->
                     let field, _coercion = Ident.find_same id map in
                     Lphantom_let {
@@ -907,6 +905,8 @@ let transl_store_structure glob map prims str =
                     })
                   lam
                   ids
+              else
+                lam
             in
             let rest = transl_store rootpath (add_idents false ids subst) rem in
             Lsequence(Lambda.subst no_env_update subst lam,

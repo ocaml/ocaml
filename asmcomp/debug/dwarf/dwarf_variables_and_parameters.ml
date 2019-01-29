@@ -27,14 +27,12 @@ type var_uniqueness = {
 }
 
 module Var_name_and_code_range = struct
-  type t = Backend_var.t * (Debuginfo.Code_range.t option)
+  type t = string * (Debuginfo.Code_range.t option)
 
   include Identifiable.Make (struct
     type nonrec t = t
 
-    let compare (var1, range_opt1) (var2, range_opt2) =
-      let name1 = Backend_var.name_for_debugger var1 in
-      let name2 = Backend_var.name_for_debugger var2 in
+    let compare (name1, range_opt1) (name2, range_opt2) =
       let c = String.compare name1 name2 in
       if c <> 0 then c
       else
@@ -47,12 +45,11 @@ module Var_name_and_code_range = struct
 
     let equal t1 t2 = (compare t1 t2 = 0)
 
-    let hash (var, range_opt) =
+    let hash (name, range_opt) =
       match range_opt with
-      | None -> Hashtbl.hash (Backend_var.name_for_debugger var, None)
+      | None -> Hashtbl.hash (name, None)
       | Some range ->
-        Hashtbl.hash (Backend_var.name_for_debugger var,
-          Some (Debuginfo.Code_range.hash range))
+        Hashtbl.hash (name, Some (Debuginfo.Code_range.hash range))
 
     let print _ _ = Misc.fatal_error "Not yet implemented"
     let output _ _ = Misc.fatal_error "Not yet implemented"
@@ -71,7 +68,8 @@ type proto_dies_for_var = {
 let arch_size_addr = Targetint.of_int_exn Arch.size_addr
 
 (* Note: this function only works for static (toplevel) variables because we
-   assume they only occur in the entry function. *)
+   assume they all occur in a single compilation unit (namely the startup
+   one). *)
 let calculate_var_uniqueness ~available_ranges_vars =
   let module String = Misc.Stdlib.String in
   let by_name = String.Tbl.create 42 in
@@ -89,12 +87,12 @@ let calculate_var_uniqueness ~available_ranges_vars =
     | vars ->
       String.Tbl.replace by_name name (Backend_var.Set.add var vars)
     end;
-    begin match Var_name_and_code_range.Tbl.find by_position (var, pos) with
+    begin match Var_name_and_code_range.Tbl.find by_position (name, pos) with
     | exception Not_found ->
-      Var_name_and_code_range.Tbl.add by_position (var, pos)
+      Var_name_and_code_range.Tbl.add by_position (name, pos)
         (Backend_var.Set.singleton var)
     | vars ->
-      Var_name_and_code_range.Tbl.replace by_position (var, pos)
+      Var_name_and_code_range.Tbl.replace by_position (name, pos)
         (Backend_var.Set.add var vars)
     end
   in
@@ -547,7 +545,7 @@ let location_list_entry state ~subrange single_location_description
     Asm_label.create_int Text (ARV.Subrange.end_pos subrange)
   in
   let end_pos_offset = ARV.Subrange.end_pos_offset subrange in
-  match !Clflags.dwarf_version with
+  match !Clflags.gdwarf_version with
   | Four ->
     let location_list_entry =
       Dwarf_4_location_list_entry.create_location_list_entry
@@ -701,7 +699,7 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
                 in
                 dwarf_4_location_list_entries, location_list)
       in
-      match !Clflags.dwarf_version with
+      match !Clflags.gdwarf_version with
       | Four ->
         let location_list_entries = dwarf_4_location_list_entries in
         let location_list =

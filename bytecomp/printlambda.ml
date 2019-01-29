@@ -506,7 +506,7 @@ let rec lam ppf = function
       let lams_with_idents_for_types ppf largs =
         List.iter (fun (l, ident_for_type) ->
             fprintf ppf "@ %a" lam l;
-            if Misc.Stdlib.Option.is_some !Clflags.debug_full then begin
+            if !Clflags.dump_lambda_loc then begin
               fprintf ppf "@ @{<debug_loc>(type: %a)@}"
                 (Misc.Stdlib.Option.print Ident.print) ident_for_type
             end)

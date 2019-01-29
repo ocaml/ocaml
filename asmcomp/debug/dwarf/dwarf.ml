@@ -26,12 +26,12 @@ type t = {
    to read our 64-bit DWARF output. *)
 
 let create ~sourcefile ~prefix_name ~cmt_file_digest ~objfiles =
-  begin match !Clflags.dwarf_format with
+  begin match !Clflags.gdwarf_format with
   | Thirty_two -> Dwarf_format.set Thirty_two
   | Sixty_four -> Dwarf_format.set Sixty_four
   end;
   let dwarf_version =
-    match !Clflags.dwarf_version with
+    match !Clflags.gdwarf_version with
     | Four -> Dwarf_version.four
     | Five -> Dwarf_version.five
   in
@@ -89,15 +89,21 @@ let create ~sourcefile ~prefix_name ~cmt_file_digest ~objfiles =
   }
 
 let dwarf_for_fundecl t (result : Debug_passes.result) =
-  Dwarf_concrete_instances.for_fundecl t.state result
+  if Clflags.debug_thing Debug_dwarf_functions then begin
+    Dwarf_concrete_instances.for_fundecl t.state result
+  end
 
 let dwarf_for_toplevel_constants t constants =
-  Dwarf_toplevel_values.dwarf_for_toplevel_constants t.state constants
+  if Clflags.debug_thing Debug_dwarf_vars then begin
+    Dwarf_toplevel_values.dwarf_for_toplevel_constants t.state constants
+  end
 
 let dwarf_for_closure_top_level_module_block t ~module_block_sym
       ~module_block_var =
-  Dwarf_toplevel_values.dwarf_for_closure_top_level_module_block t.state
-      ~module_block_sym ~module_block_var
+  if Clflags.debug_thing Debug_dwarf_vars then begin
+    Dwarf_toplevel_values.dwarf_for_closure_top_level_module_block t.state
+        ~module_block_sym ~module_block_var
+  end
 
 let emit t =
   if t.emitted then begin

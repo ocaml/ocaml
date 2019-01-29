@@ -2323,7 +2323,7 @@ and transl_prim_1 env p arg dbg =
      Cop(Caddi, [transl env arg; cconst_int (-1)], dbg)
      (* always a pointer outside the heap *)
   (* Exceptions *)
-  | Praise _ when not (!Clflags.debug) ->
+  | Praise _ when not (Clflags.debug_thing Clflags.Debug_backtraces) ->
       Cop(Craise Cmm.Raise_notrace, [transl env arg], dbg)
   | Praise Lambda.Raise_notrace ->
       Cop(Craise Cmm.Raise_notrace, [transl env arg], dbg)
@@ -3562,13 +3562,13 @@ let startup_path =
 let next_placeholder_dbg_line = ref 0
 
 let placeholder_dbg () =
-  match !Clflags.debug_full with
-  | None -> Debuginfo.none
-  | Some _ ->
-      let file = "" in
-      let line = !next_placeholder_dbg_line in
-      incr next_placeholder_dbg_line;
-      Debuginfo.of_line ~file ~line ~scope:Debuginfo.Current_block.toplevel
+  if not (Clflags.debug_thing Clflags.Debug_dwarf_cmm) then
+    Debuginfo.none
+  else
+    let file = "" in
+    let line = !next_placeholder_dbg_line in
+    incr next_placeholder_dbg_line;
+    Debuginfo.of_line ~file ~line ~scope:Debuginfo.Current_block.toplevel
 
 let placeholder_fun_dbg ~human_name =
   let file = "" in

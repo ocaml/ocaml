@@ -100,10 +100,7 @@ module Phantom_vars = struct
 
   let must_restart_ranges_upon_any_change () =
     (* See [Available_ranges_vars]. *)
-    match !Clflags.debug_full with
-    | Some Gdb -> false
-    | Some Lldb -> true
-    | None -> Misc.fatal_error "Shouldn't be here without [debug_full]"
+    false
 end
 
 module Subrange_state = Phantom_vars.Subrange_state

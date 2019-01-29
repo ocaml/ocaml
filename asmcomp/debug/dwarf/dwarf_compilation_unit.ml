@@ -52,7 +52,7 @@ let compile_unit_proto_die ~sourcefile ~prefix_name ~cmt_file_digest ~objfiles
   let rnglists_base = Range_list_table.base_addr range_list_table in
   let config_digest = Config.digest_static_configuration_values () in
   let dwarf_5_only =
-    match !Clflags.dwarf_version with
+    match !Clflags.gdwarf_version with
     | Four -> []
     | Five -> [
       DAH.create_addr_base addr_base;

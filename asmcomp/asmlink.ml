@@ -224,9 +224,9 @@ let make_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
   Compilation_unit.set_current Compilation_unit.startup;
   Compilenv.reset ~compilation_unit:Compilation_unit.startup "_startup";
   let dwarf =
-    match !Clflags.debug_full with
-    | None -> None
-    | Some _ ->
+    if not (Clflags.debug_thing Clflags.Debug_dwarf_functions) then
+      None
+    else
       let sourcefile =
         match cmm_debug with
         | None -> ""
@@ -281,9 +281,9 @@ let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
   Compilation_unit.set_current Compilation_unit.startup;
   Compilenv.reset ~compilation_unit:Compilation_unit.startup "_shared_startup";
   let dwarf =
-    match !Clflags.debug_full with
-    | None -> None
-    | Some _ ->
+    if not (Clflags.debug_thing Clflags.Debug_dwarf_functions) then
+      None
+    else
       let sourcefile =
         match cmm_debug with
         | None -> ""
@@ -309,18 +309,18 @@ let make_shared_startup_file ~ppf_dump ~dwarf_prefix_name ~cmm_debug
   Emit.end_assembly dwarf
 
 let create_cmm_debug ~dwarf_prefix_name =
-  match !Clflags.debug_full with
-  | None -> None
-  | Some _ ->
+  if not (Clflags.debug_thing Clflags.Debug_dwarf_cmm) then
+    None
+  else
     let startup_cmm_file = dwarf_prefix_name ^ ".cmm" in
     let startup_cmm_chan = open_out startup_cmm_file in
     let cmm_debug = Cmm_debug.create ~startup_cmm_file ~startup_cmm_chan in
     Some (cmm_debug, startup_cmm_file, startup_cmm_chan)
 
 let remove_startup_obj ~startup_obj =
-  match !Clflags.debug_full with
-  | None -> remove_file startup_obj
-  | Some _ -> ()
+  if not (Clflags.debug_thing Clflags.Debug_dwarf_cmm) then begin
+    remove_file startup_obj
+  end
 
 let call_linker_shared file_list output_name =
   if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")
@@ -343,9 +343,10 @@ let link_shared ~ppf_dump objfiles output_name =
       then dwarf_prefix_name ^ ext_asm
       else Filename.temp_file "camlstartup" ext_asm in
     let startup_obj =
-      match !Clflags.debug_full with
-      | None -> Filename.temp_file "camlstartup" ext_obj
-      | Some _ -> dwarf_prefix_name ^ ext_obj
+      if not (Clflags.debug_thing Clflags.Debug_dwarf_cmm) then
+        Filename.temp_file "camlstartup" ext_obj
+      else
+        dwarf_prefix_name ^ ext_obj
     in
     let cmm_debug = create_cmm_debug ~dwarf_prefix_name in
     Misc.try_finally (fun () ->
@@ -396,9 +397,7 @@ let call_linker file_list startup_file output_name =
   if not (Ccomp.call_linker mode output_name files c_lib) then begin
     raise (Error Linking_error)
   end;
-  begin match !Clflags.debug_full with
-  | None -> ()
-  | Some _ ->
+  if Clflags.debug_thing Clflags.Debug_dwarf_loc then begin
     if not (Ccomp.make_debuginfo_bundle ~exe_name:output_name) then begin
       raise (Error Linking_error)
     end
@@ -434,9 +433,10 @@ let link ~ppf_dump objfiles output_name =
       then dwarf_prefix_name ^ ext_asm
       else Filename.temp_file "camlstartup" ext_asm in
     let startup_obj =
-      match !Clflags.debug_full with
-      | None -> Filename.temp_file "camlstartup" ext_obj
-      | Some _ -> dwarf_prefix_name ^ ext_obj
+      if not (Clflags.debug_thing Clflags.Debug_dwarf_cmm) then
+        Filename.temp_file "camlstartup" ext_obj
+      else
+        dwarf_prefix_name ^ ext_obj
     in
     let cmm_debug = create_cmm_debug ~dwarf_prefix_name in
     Misc.try_finally (fun () ->

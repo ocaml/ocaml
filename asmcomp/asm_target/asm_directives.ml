@@ -708,7 +708,11 @@ let initialize ~big_endian ~(emit : Directive.t -> unit) =
         | Sixteen_byte_literals
         | Jump_tables -> switch_to_section section
         | DWARF _ ->
-          if !Clflags.debug && dwarf_supported () then begin
+          (* All of the other settings that require these DWARF sections
+             imply [Debug_dwarf_functions]; see clflags.ml. *)
+          if Clflags.debug_thing Debug_dwarf_functions
+            && dwarf_supported ()
+          then begin
             switch_to_section section
           end)
       (Asm_section.all_sections_in_order ())

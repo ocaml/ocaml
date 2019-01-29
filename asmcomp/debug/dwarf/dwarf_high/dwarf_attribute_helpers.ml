@@ -21,7 +21,7 @@ module V = Dwarf_attribute_values.Value
 module Uint64 = Numbers.Uint64
 
 let needs_dwarf_five () =
-  match !Clflags.dwarf_version with
+  match !Clflags.gdwarf_version with
   | Four -> Misc.fatal_error "Attribute not supported for DWARF-4"
   | Five -> ()
 
@@ -135,14 +135,14 @@ let create_call_return_pc label =
 let create_call_tail_call ~is_tail =
   if is_tail then
     let spec =
-      match !Clflags.dwarf_version with
+      match !Clflags.gdwarf_version with
       | Four -> AS.create (Dwarf_4 GNU_tail_call) Flag_present
       | Five -> AS.create Call_tail_call Flag_present
     in
     AV.create spec (V.flag_true ~comment:"is a tail call" ())
   else
     let spec =
-      match !Clflags.dwarf_version with
+      match !Clflags.gdwarf_version with
       | Four -> AS.create (Dwarf_4 GNU_tail_call) Flag
       | Five -> AS.create Call_tail_call Flag
     in
@@ -150,7 +150,7 @@ let create_call_tail_call ~is_tail =
 
 let create_call_all_calls () =
   let spec =
-    match !Clflags.dwarf_version with
+    match !Clflags.gdwarf_version with
     | Four -> AS.create (Dwarf_4 GNU_all_call_sites) Flag_present
     | Five -> AS.create Call_all_calls Flag_present
   in
@@ -158,7 +158,7 @@ let create_call_all_calls () =
 
 let create_call_target loc_desc =
   let spec =
-    match !Clflags.dwarf_version with
+    match !Clflags.gdwarf_version with
     | Four -> AS.create (Dwarf_4 GNU_call_site_target) Exprloc
     | Five -> AS.create Call_target Exprloc
   in
@@ -166,7 +166,7 @@ let create_call_target loc_desc =
 
 let create_call_target_clobbered loc_desc =
   let spec =
-    match !Clflags.dwarf_version with
+    match !Clflags.gdwarf_version with
     | Four -> AS.create (Dwarf_4 GNU_call_site_target_clobbered) Exprloc
     | Five -> AS.create Call_target_clobbered Exprloc
   in
@@ -176,7 +176,7 @@ let create_location index =
   needs_dwarf_five ();
   let location_list_label = Location_list_table.Index.to_label index in
   let location_list_index = Location_list_table.Index.to_uint64 index in
-  if not !Clflags.dwarf_location_and_range_table_offsets then
+  if not !Clflags.gdwarf_offsets then
     let spec = AS.create Location Sec_offset_loclist in
     AV.create spec (V.offset_into_debug_loclists location_list_label)
   else
@@ -187,7 +187,7 @@ let create_ranges index =
   needs_dwarf_five ();
   let range_list_label = Range_list_table.Index.to_label index in
   let range_list_index = Range_list_table.Index.to_uint64 index in
-  if not !Clflags.dwarf_location_and_range_table_offsets then
+  if not !Clflags.gdwarf_offsets then
     let spec = AS.create Ranges Sec_offset_rnglist in
     AV.create spec (V.offset_into_debug_rnglists range_list_label)
   else
@@ -204,7 +204,7 @@ let create_composite_location_description loc_desc =
 
 let create_single_call_value_location_description loc_desc =
   let spec =
-    match !Clflags.dwarf_version with
+    match !Clflags.gdwarf_version with
     | Four -> AS.create (Dwarf_4 GNU_call_site_value) Exprloc
     | Five -> AS.create Call_value Exprloc
   in
@@ -212,7 +212,7 @@ let create_single_call_value_location_description loc_desc =
 
 let create_composite_call_value_location_description loc_desc =
   let spec =
-    match !Clflags.dwarf_version with
+    match !Clflags.gdwarf_version with
     | Four -> AS.create (Dwarf_4 GNU_call_site_value) Exprloc
     | Five -> AS.create Call_value Exprloc
   in
@@ -225,7 +225,7 @@ let create_single_call_data_location_description loc_desc =
 
 let create_single_call_data_value_location_description loc_desc =
   let spec =
-    match !Clflags.dwarf_version with
+    match !Clflags.gdwarf_version with
     | Four -> AS.create (Dwarf_4 GNU_call_site_data_value) Exprloc
     | Five -> AS.create Call_data_value Exprloc
   in
@@ -296,7 +296,7 @@ let create_inline inline_code =
 let create_call_origin ~die_symbol =
   let comment = "reference to call origin DIE" in
   let spec =
-    match !Clflags.dwarf_version with
+    match !Clflags.gdwarf_version with
     | Four ->
       (* The GDB code says that [DW_AT_abstract_origin] is a GNU extension
          alias, pre-DWARF 5, for [DW_AT_call_origin]. *)

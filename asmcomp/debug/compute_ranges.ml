@@ -447,9 +447,6 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     S.Index.Set.of_list (List.map fst (S.Index.Tbl.to_list t.ranges))
 
   let create (fundecl : L.fundecl) =
-    if not !Clflags.debug then begin
-      Misc.fatal_error "Range computations can only be done for debug mode"
-    end;
     let t =
       { ranges = S.Index.Tbl.create 42;
       }

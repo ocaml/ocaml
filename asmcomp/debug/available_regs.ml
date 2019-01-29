@@ -405,12 +405,13 @@ and join branches ~avail_before =
   None, avail_after
 
 let fundecl (f : M.fundecl) =
-  match !Clflags.debug_full with
-  | None -> f
-  | Some _ ->
+  if not (Clflags.debug_thing Debug_dwarf_vars) then begin
+    f
+  end else begin
     assert (Hashtbl.length avail_at_exit = 0);
     avail_at_raise := RAS.Unreachable;
     let fun_args = R.set_of_array f.fun_args in
     let avail_before = RAS.Ok (RD.Set.without_debug_info fun_args) in
     ignore ((available_regs f.fun_body ~avail_before) : RAS.t);
     f
+  end

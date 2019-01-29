@@ -292,12 +292,12 @@ let file_num_for0 ~file_emitter ~file_name =
     file_pos_nums := (file_name,file_num) :: !file_pos_nums;
     file_num
 
-(* We only display .file if the file has not been seen before. We
-   display .loc for every instruction. *)
+(* We only emit .file if the file has not been seen before. We
+   emit .loc for every instruction. *)
 let emit_debug_info_gen dbg file_emitter loc_emitter =
-  if is_cfi_enabled () &&
-    (!Clflags.debug || Config.with_frame_pointers)
-  then begin
+  (* CR mshinwell: Why was this predicated on [Config.with_frame_pointers]
+     before? *)
+  if is_cfi_enabled () && Clflags.debug_thing Clflags.Debug_dwarf_loc then begin
     match Debuginfo.position dbg with
     | None -> ()
     | Some code_range ->

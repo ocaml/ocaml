@@ -80,31 +80,35 @@ let for_fundecl state (result : Debug_passes.result) =
   Proto_die.set_name concrete_instance_proto_die
     (Dwarf_name_laundry.concrete_instance_die_name
       (Debuginfo.Function.id fundecl.fun_dbg));
-  let scope_proto_dies =
-    Profile.record "dwarf_lexical_blocks_and_inlined_frames"
-      (fun () ->
-        Dwarf_lexical_blocks_and_inlined_frames.dwarf state fundecl
-          lexical_block_ranges ~function_proto_die:concrete_instance_proto_die)
-      ~accumulate:true
-      ()
-  in
-  Profile.record "dwarf_variables_and_parameters" (fun () ->
-      Dwarf_variables_and_parameters.dwarf state fundecl
-        ~function_proto_die:concrete_instance_proto_die
-        ~scope_proto_dies available_ranges_vars)
-    ~accumulate:true
-    ();
-  if (DS.supports_call_sites state) then begin
-    let found_self_tail_calls =
-      Profile.record "dwarf_call_sites" (fun () ->
-          Dwarf_call_sites.dwarf state ~scope_proto_dies fundecl
-            ~external_calls_generated_during_emit ~function_symbol:symbol
-            ~function_proto_die:concrete_instance_proto_die)
+  if Clflags.debug_thing Debug_dwarf_scopes then begin
+    let scope_proto_dies =
+      Profile.record "dwarf_lexical_blocks_and_inlined_frames"
+        (fun () ->
+          Dwarf_lexical_blocks_and_inlined_frames.dwarf state fundecl
+            lexical_block_ranges ~function_proto_die:concrete_instance_proto_die)
         ~accumulate:true
         ()
     in
-    if not found_self_tail_calls then begin
-      Proto_die.add_or_replace_attribute_value concrete_instance_proto_die
-        (DAH.create_call_all_calls ())
+    if Clflags.debug_thing Debug_dwarf_vars then begin
+      Profile.record "dwarf_variables_and_parameters" (fun () ->
+          Dwarf_variables_and_parameters.dwarf state fundecl
+            ~function_proto_die:concrete_instance_proto_die
+            ~scope_proto_dies available_ranges_vars)
+        ~accumulate:true
+        ();
+      if (DS.supports_call_sites state) then begin
+        let found_self_tail_calls =
+          Profile.record "dwarf_call_sites" (fun () ->
+              Dwarf_call_sites.dwarf state ~scope_proto_dies fundecl
+                ~external_calls_generated_during_emit ~function_symbol:symbol
+                ~function_proto_die:concrete_instance_proto_die)
+            ~accumulate:true
+            ()
+        in
+        if not found_self_tail_calls then begin
+          Proto_die.add_or_replace_attribute_value concrete_instance_proto_die
+            (DAH.create_call_all_calls ())
+        end
+      end
     end
   end

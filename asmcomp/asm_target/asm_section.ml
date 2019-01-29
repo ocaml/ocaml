@@ -50,7 +50,7 @@ let all_sections_in_order () =
     DWARF Debug_line;
   ] in
   let dwarf_version_dependent_sections =
-    match !Clflags.dwarf_version with
+    match !Clflags.gdwarf_version with
     | Four ->
       [ DWARF Debug_loc;
         DWARF Debug_ranges;

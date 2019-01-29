@@ -34,7 +34,7 @@ exception Error of Location.t * error
 let event_before exp lam = match lam with
 | Lstaticraise (_,_) -> lam
 | _ ->
-  if !Clflags.debug && not !Clflags.native_code
+  if Clflags.debug_thing Clflags.Debug_ocamldebug
   then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_before;
                     lev_repr = None;
@@ -42,7 +42,7 @@ let event_before exp lam = match lam with
   else lam
 
 let event_after exp lam =
-  if !Clflags.debug && not !Clflags.native_code
+  if Clflags.debug_thing Clflags.Debug_ocamldebug
   then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_after exp.exp_type;
                     lev_repr = None;

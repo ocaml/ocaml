@@ -30,7 +30,7 @@ let create ~dies ~debug_abbrev_label ~compilation_unit_header_label =
   }
 
 let dwarf_version () =
-  match !Clflags.dwarf_version with
+  match !Clflags.gdwarf_version with
   | Four -> Dwarf_version.four
   | Five -> Dwarf_version.five
 
@@ -55,7 +55,7 @@ let size_without_first_word t =
       (Dwarf_int.zero ())
       t.dies
   in
-  match !Clflags.dwarf_version with
+  match !Clflags.gdwarf_version with
   | Four ->
     Dwarf_version.size (dwarf_version ())
       + Dwarf_value.size (debug_abbrev_offset t)

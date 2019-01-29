@@ -150,7 +150,7 @@ let event_before = Translprim.event_before
 let event_after = Translprim.event_after
 
 let event_function exp lam =
-  if !Clflags.debug && not !Clflags.native_code then
+  if Clflags.debug_thing Clflags.Debug_ocamldebug then
     let repr = Some (ref 0) in
     let (info, body) = lam repr in
     (info,

@@ -63,7 +63,7 @@ let create ~compilation_unit_header_label ~compilation_unit_proto_die
     rvalue_dies_required_for = V.Set.empty;
     function_abstract_instances = Debuginfo.Function.Id.Tbl.create 42;
     die_symbols_for_external_declarations = Asm_symbol.Tbl.create 42;
-    supports_call_sites = true;
+    supports_call_sites = Clflags.debug_thing Debug_dwarf_call_sites;
     can_reference_dies_across_units = can_reference_dies_across_units ();
     dwarf_version;
     type_dies_for_lifted_constants = Asm_symbol.Tbl.create 42;

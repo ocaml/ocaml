@@ -56,6 +56,7 @@ module type Common_options = sig
   val _dparsetree : unit -> unit
   val _dtypedtree : unit -> unit
   val _drawlambda : unit -> unit
+  val _drawlambda_loc : unit -> unit
   val _dlambda : unit -> unit
   val _dlambda_loc : unit -> unit
 
@@ -181,20 +182,20 @@ module type Optcommon_options = sig
   val _drawflambda : unit -> unit
   val _dflambda_invariants : unit -> unit
   val _dflambda_no_invariants : unit -> unit
-  val _ddwarf_invariants : unit -> unit
-  val _ddwarf_no_invariants : unit -> unit
   val _dflambda_let : int -> unit
   val _dflambda_verbose : unit -> unit
   val _drawclambda : unit -> unit
+  val _drawclambda_dbg : unit -> unit
   val _dclambda : unit -> unit
   val _dclambda_dbg : unit -> unit
+  val _dmach_dbg : unit -> unit
+  val _dlinear_dbg : unit -> unit
   val _dcmm : unit -> unit
   val _dsel : unit -> unit
   val _dcombine : unit -> unit
   val _dcse : unit -> unit
   val _dlive : unit -> unit
   val _davail : unit -> unit
-  val _drunavail : unit -> unit
   val _dspill : unit -> unit
   val _dsplit : unit -> unit
   val _dinterf : unit -> unit
@@ -220,13 +221,48 @@ module type Optcomp_options = sig
   val _afl_instrument : unit -> unit
   val _afl_inst_ratio : int -> unit
   val _dinterval : unit -> unit
-  val _dwarf_format : int -> unit
-  val _dwarf_version : string -> unit
-  val _dwarf_offsets : unit -> unit
-  val _no_dwarf_offsets : unit -> unit
-  val _dwarf_emit_self_tail_calls : unit -> unit
-  val _no_dwarf_emit_self_tail_calls : unit -> unit
-  val _g_full : string -> unit
+
+  val _g0 : unit -> unit
+  val _g1 : unit -> unit
+  val _g2 : unit -> unit
+  val _g3 : unit -> unit
+
+  val _gjs_of_ocaml : unit -> unit
+  val _gno_js_of_ocaml : unit -> unit
+  val _gocamldebug : unit -> unit
+  val _gno_ocamldebug : unit -> unit
+  val _gsubprocs : unit -> unit
+  val _gno_subprocs : unit -> unit
+  val _gbacktraces : unit -> unit
+  val _gno_backtraces : unit -> unit
+  val _gbounds_checking : unit -> unit
+  val _gno_bounds_checking : unit -> unit
+  val _gdisable_bytecode_opt : unit -> unit
+  val _gno_disable_bytecode_opt : unit -> unit
+
+  val _gdwarf_format : int -> unit
+  val _gdwarf_version : string -> unit
+
+  val _gdwarf_cfi : unit -> unit
+  val _gno_dwarf_cfi : unit -> unit
+  val _gdwarf_loc : unit -> unit
+  val _gno_dwarf_loc : unit -> unit
+  val _gdwarf_scopes : unit -> unit
+  val _gno_dwarf_scopes : unit -> unit
+  val _gdwarf_vars : unit -> unit
+  val _gno_dwarf_vars : unit -> unit
+  val _gdwarf_call_sites : unit -> unit
+  val _gno_dwarf_call_sites : unit -> unit
+  val _gdwarf_cmm : unit -> unit
+  val _gno_dwarf_cmm : unit -> unit
+
+  val _gdwarf_offsets : unit -> unit
+  val _gno_dwarf_offsets : unit -> unit
+  val _gdwarf_self_tail_calls : unit -> unit
+  val _gno_dwarf_self_tail_calls : unit -> unit
+
+  val _ddebug_invariants : unit -> unit
+  val _dno_debug_invariants : unit -> unit
 end;;
 
 module type Opttop_options = sig

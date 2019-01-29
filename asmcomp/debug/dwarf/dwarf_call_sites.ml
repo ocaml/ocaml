@@ -196,7 +196,7 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
           arg_location, type_attribute
   in
   let tag : Dwarf_tag.t =
-    match !Clflags.dwarf_version with
+    match !Clflags.gdwarf_version with
     | Four -> Dwarf_4 GNU_call_site_parameter
     | Five -> Call_site_parameter
   in
@@ -244,7 +244,7 @@ let add_call_site state ~scope_proto_dies ~function_proto_die
     in
     let call_site_die =
       let dwarf_5_only =
-        match !Clflags.dwarf_version with
+        match !Clflags.gdwarf_version with
         | Four -> [
             DAH.create_low_pc (Asm_label.create_int Text call_labels.after);
           ]
@@ -255,7 +255,7 @@ let add_call_site state ~scope_proto_dies ~function_proto_die
           ]
       in
       let tag : Dwarf_tag.t =
-        match !Clflags.dwarf_version with
+        match !Clflags.gdwarf_version with
         | Four -> Dwarf_4 GNU_call_site
         | Five -> Call_site
       in
@@ -424,7 +424,7 @@ let dwarf state ~scope_proto_dies (fundecl : L.fundecl)
          are not to be generated for self tail calls (called "tail recursion
          calls" in the spec). *)
       if Asm_symbol.equal callee function_symbol
-        && not !Clflags.dwarf_emit_self_tail_calls
+        && not !Clflags.gdwarf_self_tail_calls
       then begin
         found_self_tail_calls := true
       end else begin

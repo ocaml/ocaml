@@ -123,9 +123,10 @@ let implementation ~tool_name ~native ~backend ~sourcefile ~outputprefix =
       (* We accept a race condition between writing the .cmt file and
          taking its digest. *)
       let cmt_file_digest =
-        match !Clflags.debug_full with
-        | None -> None
-        | Some _ -> Some (Digest.file (outputprefix ^ ".cmt"))
+        if Clflags.debug_thing Clflags.Debug_dwarf_vars then
+          Some (Digest.file (outputprefix ^ ".cmt"))
+        else
+          None
       in
       Misc.try_finally ~exceptionally (fun () ->
         backend info ~cmt_file_digest typed)

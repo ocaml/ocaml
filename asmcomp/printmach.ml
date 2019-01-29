@@ -285,7 +285,7 @@ let phantom_let ppf (provenance_opt, defining_expr) =
 
 let fundecl ppf f =
   let dbg =
-    if not !Clflags.debug then ""
+    if not !Clflags.dump_mach_dbg then ""
     else Format.asprintf " %a" Debuginfo.Function.print f.fun_dbg
   in
   fprintf ppf "@[<v 2>%a(%a)%s@,%a"

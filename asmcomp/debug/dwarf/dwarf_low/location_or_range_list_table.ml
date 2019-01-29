@@ -72,7 +72,7 @@ end) = struct
   let base_addr t = t.base_addr
 
   let offset_array_supported () =
-    !Clflags.dwarf_location_and_range_table_offsets
+    !Clflags.gdwarf_offsets
 
   let offset_entry_count t =
     if offset_array_supported () then Uint32.of_int_exn (List.length t.lists)

@@ -1115,17 +1115,17 @@ let rec bind_params_rec ~param_index ~block_subst ~at_call_site
             if no_effects a1 then body'
             else Usequence(a1, body')
           in
-          match !Clflags.debug_full with
-          | None -> lam
-          | Some _ ->
-              let defining_expr =
-                match u1 with
-                | Uvar var -> Some (Uphantom_var var)
-                | Uprim (Pfield field, [Uvar var], _dbg) ->
-                    Some (Uphantom_read_field { var; field; })
-                | _ -> None
-              in
-              Uphantom_let (p1', defining_expr, lam)
+          if not (Clflags.debug_thing Clflags.Debug_dwarf_vars) then
+            lam
+          else
+            let defining_expr =
+              match u1 with
+              | Uvar var -> Some (Uphantom_var var)
+              | Uprim (Pfield field, [Uvar var], _dbg) ->
+                  Some (Uphantom_read_field { var; field; })
+              | _ -> None
+            in
+            Uphantom_let (p1', defining_expr, lam)
       end
   | (_, _, _) -> assert false
 

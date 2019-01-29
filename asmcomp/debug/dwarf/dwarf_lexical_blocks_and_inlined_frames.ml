@@ -69,7 +69,7 @@ let create_range_list_and_summarise state (_fundecl : L.fundecl) range =
         Address_index.Pair.Set.add (start_inclusive, end_exclusive) summary
       in
       let dwarf_4_range_list_entries =
-        match !Clflags.dwarf_version with
+        match !Clflags.gdwarf_version with
         | Four ->
           let range_list_entry =
             Dwarf_4_range_list_entry.create_range_list_entry
@@ -193,7 +193,7 @@ let dwarf state (fundecl : L.fundecl) lexical_block_ranges ~function_proto_die =
                   Range_list_table.add (DS.range_list_table state) range_list
                 in
                 let range_list_attribute =
-                  match !Clflags.dwarf_version with
+                  match !Clflags.gdwarf_version with
                   | Four ->
                     let range_list =
                       Dwarf_4_range_list.create

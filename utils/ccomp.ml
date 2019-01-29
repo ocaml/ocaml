@@ -99,7 +99,8 @@ let compile_file ?output ?(opt="") ?stable_name name =
           | None -> ""
           | Some o -> Printf.sprintf "%s%s" Config.c_output_obj o)
          opt
-         (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
+         (if Clflags.debug_thing Clflags.Debug_subprocs
+           && Config.ccomp_type <> "msvc" then "-g" else "")
          (String.concat " " (List.rev !Clflags.all_ccopts))
          (quote_prefixed "-I"
             (List.map (Misc.expand_directory Config.standard_library)

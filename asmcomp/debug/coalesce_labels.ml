@@ -96,16 +96,13 @@ let rec renumber env (insn : L.instruction) =
     { insn with L. desc; next; }
 
 let fundecl (decl : L.fundecl) : int Int.Map.t * L.fundecl =
-  if not !Clflags.debug then Int.Map.empty, decl
-  else begin
-    let env, fun_body =
-      coalesce Int.Map.empty decl.fun_body ~last_insn_was_label:None
-    in
-    let fun_body = renumber env fun_body in
-    let decl =
-      { decl with
-        fun_body;
-      }
-    in
-    env, decl
-  end
+  let env, fun_body =
+    coalesce Int.Map.empty decl.fun_body ~last_insn_was_label:None
+  in
+  let fun_body = renumber env fun_body in
+  let decl =
+    { decl with
+      fun_body;
+    }
+  in
+  env, decl
