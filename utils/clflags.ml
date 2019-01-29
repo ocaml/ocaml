@@ -149,13 +149,13 @@ let describe_debug_default_internal ~negate thing =
           if negate then not enabled_at_level
           else enabled_at_level
         in
-        if state then Some ("default at " ^ level)
+        if state then Some ("-" ^ level)
         else None)
       all_g_levels
   in
   match defaults with
   | [] -> ""
-  | defaults -> " (" ^ (String.concat "; " defaults) ^ ")"
+  | defaults -> " (default with " ^ (String.concat ", " defaults) ^ ")"
 
 let describe_debug_default thing =
   describe_debug_default_internal ~negate:false thing

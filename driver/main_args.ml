@@ -104,15 +104,15 @@ let mk_g1 f =
 
 let mk_g2 f =
   let help =
-    " As for `-g1', but generate simple DWARF information for module and \
-      function names, etc."
+    " As for `-g1', but generate simple DWARF information for module and\
+      \n     function names, etc."
   in
   "-g2", Arg.Unit f, help
 ;;
 
 let mk_g3 f =
   let help =
-    " Generate debugging information suitable for extensive use of a \
+    " Generate DWARF information suitable for extensive use of a\n     \
       platform debugger"
   in
   "-g3", Arg.Unit f, help
@@ -144,14 +144,14 @@ let mk_gdwarf_version f =
     | Clflags.Five -> "5"
   in
   "-gdwarf-version", Arg.String f,
-    Printf.sprintf "5  Set DWARF debug info version (default %s; does not \
-      affect CFI or line number tables)" default
+    Printf.sprintf "5  Set DWARF debug info version (default %s; does not\
+      \n     affect CFI or line number tables)" default
 ;;
 
 let mk_gocamldebug f =
   let help =
-    " Generate debugging information for use with `ocamldebug' \
-      (bytecode only)%s"
+    " Generate debugging information for use with `ocamldebug'\n     \
+      (bytecode only)"
       ^ Clflags.describe_debug_default Clflags.Debug_ocamldebug
   in
   "-gocamldebug", Arg.Unit f, help
@@ -159,8 +159,8 @@ let mk_gocamldebug f =
 
 let mk_gno_ocamldebug f =
   let help =
-    " Do not generate debugging information for use with `ocamldebug' \
-      (bytecode only)%s"
+    " Do not generate debugging information for use with\n     \
+      `ocamldebug' (bytecode only)"
       ^ Clflags.describe_debug_default_negated Clflags.Debug_subprocs
   in
   "-gno-ocamldebug", Arg.Unit f, help
@@ -168,8 +168,8 @@ let mk_gno_ocamldebug f =
 
 let mk_gjs_of_ocaml f =
   let help =
-    " Generate debugging information for use with `js_of_ocaml' \
-      (bytecode only)%s"
+    " Generate debugging information for use with `js_of_ocaml'\n     \
+      (bytecode only)"
       ^ Clflags.describe_debug_default Clflags.Debug_js_of_ocaml
   in
   "-gjs-of-ocaml", Arg.Unit f, help
@@ -177,8 +177,8 @@ let mk_gjs_of_ocaml f =
 
 let mk_gno_js_of_ocaml f =
   let help =
-    " Do not generate debugging information for use with `js_of_ocaml' \
-      (bytecode only)%s"
+    " Do not generate debugging information for use with\n     \
+      `js_of_ocaml' (bytecode only)"
       ^ Clflags.describe_debug_default_negated Clflags.Debug_js_of_ocaml
   in
   "-gno-js-of-ocaml", Arg.Unit f, help
@@ -186,7 +186,8 @@ let mk_gno_js_of_ocaml f =
 
 let mk_gsubprocs f =
   let help =
-    " Pass the `-g' option to subprocesses (C compiler, linker, ppx, etc.)%s"
+    " Pass the `-g' option to subprocesses (C compiler, linker,\
+      \n     ppx, etc.)"
       ^ Clflags.describe_debug_default Clflags.Debug_subprocs
   in
   "-gsubprocs", Arg.Unit f, help
@@ -194,7 +195,8 @@ let mk_gsubprocs f =
 
 let mk_gno_subprocs f =
   let help =
-    " Do not pass the `-g' option to subprocesses (C compiler, linker, etc.)%s"
+    " Do not pass the `-g' option to subprocesses (C compiler,\
+      \n     linker, ppx, etc.)"
       ^ Clflags.describe_debug_default_negated Clflags.Debug_subprocs
   in
   "-gno-subprocs", Arg.Unit f, help
@@ -202,8 +204,8 @@ let mk_gno_subprocs f =
 
 let mk_gbacktraces f =
   let help =
-    " Record backtraces and generate information to show source locations \
-        within them"
+    " Record backtraces and generate information to show source\
+      \n     locations within them"
       ^ Clflags.describe_debug_default Clflags.Debug_backtraces
   in
   "-gbacktraces", Arg.Unit f, help
@@ -211,8 +213,8 @@ let mk_gbacktraces f =
 
 let mk_gno_backtraces f =
   let help =
-    " Do not record backtraces and generate information to show source \
-        locations within them"
+    " Do not record backtraces and generate information to show\
+      \n     source locations within them"
       ^ Clflags.describe_debug_default_negated Clflags.Debug_backtraces
   in
   "-gno-backtraces", Arg.Unit f, help
@@ -220,8 +222,8 @@ let mk_gno_backtraces f =
 
 let mk_gbounds_checking f =
   let help =
-    " Increase the accuracy of bounds-check-failure handlers for debugging\
-        (implies -gbacktraces)"
+    " Increase the accuracy of bounds-check-failure\
+      \n     handlers for debugging (implies -gbacktraces)"
       ^ Clflags.describe_debug_default Clflags.Debug_bounds_checking
   in
   "-gbounds-checking-precision", Arg.Unit f, help
@@ -229,8 +231,8 @@ let mk_gbounds_checking f =
 
 let mk_gno_bounds_checking f =
   let help =
-    " Do not increase the accuracy of bounds-check-failure handlers for \
-        debugging"
+    " Do not increase the accuracy of\
+      \n     bounds-check-failure handlers for debugging"
       ^ Clflags.describe_debug_default_negated Clflags.Debug_bounds_checking
   in
   "-gno-bounds-checking-precision", Arg.Unit f, help
@@ -238,25 +240,28 @@ let mk_gno_bounds_checking f =
 
 let mk_gdisable_bytecode_opt f =
   let help =
-    " Disable certain optimisations to assist debugging (bytecode only)"
+    " Disable certain optimisations to assist debugging\
+      \n     (bytecode only)"
       ^ Clflags.describe_debug_default Clflags.Debug_disable_bytecode_opt
   in
-  "-gdisable_bytecode_opt", Arg.Unit f, help
+  "-gdisable-bytecode-opt", Arg.Unit f, help
 ;;
 
 let mk_gno_disable_bytecode_opt f =
   let help =
-    " Do not disable certain optimisations to assist debugging (bytecode only)"
+    " Do not disable certain optimisations to assist\
+      \n     debugging (bytecode only)"
       ^ Clflags.describe_debug_default_negated
           Clflags.Debug_disable_bytecode_opt
   in
-  "-gno-disable_bytecode_opt", Arg.Unit f, help
+  "-gno-disable-bytecode-opt", Arg.Unit f, help
 ;;
 
 let mk_gdwarf_cfi f =
   let help =
-    " Describe call frame information in DWARF, enabling stack unwinding \
-        and backtraces in platform debuggers (implies -gsubprocs)"
+    " Describe call frame information in DWARF, enabling stack\
+      \n     unwinding and backtraces in platform debuggers (implies \
+      -gsubprocs)\n    "
       ^ Clflags.describe_debug_default Clflags.Debug_dwarf_cfi
   in
   "-gdwarf-cfi", Arg.Unit f, help
@@ -264,7 +269,7 @@ let mk_gdwarf_cfi f =
 
 let mk_gno_dwarf_cfi f =
   let help =
-    " Do not describe call frame information in DWARF"
+    " Do not describe call frame information in DWARF\n    "
       ^ Clflags.describe_debug_default_negated Clflags.Debug_dwarf_cfi
   in
   "-gno-dwarf-cfi", Arg.Unit f, help
@@ -272,7 +277,8 @@ let mk_gno_dwarf_cfi f =
 
 let mk_gdwarf_loc f =
   let help =
-    " Describe source location information in DWARF (implies -gdwarf-cfi)"
+    " Describe source location information in DWARF (implies\
+      \n     -gdwarf-cfi)"
       ^ Clflags.describe_debug_default Clflags.Debug_dwarf_loc
   in
   "-gdwarf-loc", Arg.Unit f, help
@@ -280,7 +286,7 @@ let mk_gdwarf_loc f =
 
 let mk_gno_dwarf_loc f =
   let help =
-    " Do not describe source location information in DWARF"
+    " Do not describe source location information in DWARF\n    "
       ^ Clflags.describe_debug_default_negated Clflags.Debug_dwarf_loc
   in
   "-gno-dwarf-loc", Arg.Unit f, help
@@ -288,8 +294,8 @@ let mk_gno_dwarf_loc f =
 
 let mk_gdwarf_scopes f =
   let help =
-    " Describe variable and inlined frame scoping in DWARF \
-      (implies -gdwarf-loc)"
+    " Describe variable and inlined frame scoping in DWARF\
+      \n     (implies -gdwarf-loc)"
       ^ Clflags.describe_debug_default Clflags.Debug_dwarf_scopes
   in
   "-gdwarf-scopes", Arg.Unit f, help
@@ -297,7 +303,8 @@ let mk_gdwarf_scopes f =
 
 let mk_gno_dwarf_scopes f =
   let help =
-    " Do not describe variable and inlined frame scoping in DWARF"
+    " Do not describe variable and inlined frame scoping in DWARF\
+      \n    "
       ^ Clflags.describe_debug_default_negated Clflags.Debug_dwarf_scopes
   in
   "-gno-dwarf-scopes", Arg.Unit f, help
@@ -305,7 +312,7 @@ let mk_gno_dwarf_scopes f =
 
 let mk_gdwarf_vars f =
   let help =
-    " Describe variables and function parameters in DWARF \
+    " Describe variables and function parameters in DWARF\n     \
       (implies -gdwarf-scopes)"
       ^ Clflags.describe_debug_default Clflags.Debug_dwarf_vars
   in
@@ -314,7 +321,8 @@ let mk_gdwarf_vars f =
 
 let mk_gno_dwarf_vars f =
   let help =
-    " Do not describe variables and function parameters in DWARF"
+    " Do not describe variables and function parameters in DWARF\
+      \n    "
       ^ Clflags.describe_debug_default_negated Clflags.Debug_dwarf_vars
   in
   "-gno-dwarf-vars", Arg.Unit f, help
@@ -322,7 +330,7 @@ let mk_gno_dwarf_vars f =
 
 let mk_gdwarf_call_sites f =
   let help =
-    " Describe call sites (and the arguments at such) in DWARF \
+    " Describe call sites (and the arguments at such) in\n     DWARF \
       (implies -gdwarf-vars)"
       ^ Clflags.describe_debug_default Clflags.Debug_dwarf_call_sites
   in
@@ -331,7 +339,7 @@ let mk_gdwarf_call_sites f =
 
 let mk_gno_dwarf_call_sites f =
   let help =
-    " Do not describe call sites (and the arguments at such) in DWARF"
+    " Do not describe call sites (and the arguments at such)\n     in DWARF"
       ^ Clflags.describe_debug_default_negated Clflags.Debug_dwarf_call_sites
   in
   "-gno-dwarf-call-sites", Arg.Unit f, help
@@ -339,9 +347,9 @@ let mk_gno_dwarf_call_sites f =
 
 let mk_gdwarf_cmm f =
   let help =
-    " Generate debugging information for functions fabricated by the \
-      compiler in the Cmm language and the corresponding .cmm source file \
-      (implies -gdwarf-vars)"
+    " Generate debugging information for functions fabricated by the\n     \
+      compiler in the Cmm language and the corresponding .cmm source file\
+      \n     (implies -gdwarf-vars)"
       ^ Clflags.describe_debug_default Clflags.Debug_dwarf_cmm
   in
   "-gdwarf-cmm", Arg.Unit f, help
@@ -349,7 +357,9 @@ let mk_gdwarf_cmm f =
 
 let mk_gno_dwarf_cmm f =
   let help =
-    " Do not describe call sites (and the arguments at such) in DWARF"
+    " Neither generate debugging information for functions \n     \
+      fabricated by the compiler in the Cmm language nor the corresponding\
+      \n     .cmm source file (implies -gdwarf-vars)"
       ^ Clflags.describe_debug_default_negated Clflags.Debug_dwarf_cmm
   in
   "-gno-dwarf-cmm", Arg.Unit f, help
@@ -357,7 +367,7 @@ let mk_gno_dwarf_cmm f =
 
 let mk_gdwarf_offsets f =
   let help =
-    " Generate offset arrays in DWARF-5 location and range list tables"
+    " Generate offset arrays in DWARF-5 location and range list\n     tables"
       ^ (if Clflags.default_gdwarf_offsets then "(default)" else "")
   in
   "-gdwarf-offsets", Arg.Unit f, help
@@ -365,7 +375,8 @@ let mk_gdwarf_offsets f =
 
 let mk_gno_dwarf_offsets f =
   let help =
-    " Do not generate offset arrays in DWARF-5 location and range list tables"
+    " Do not generate offset arrays in DWARF-5 location and\n     \
+      range list tables"
       ^ (if not Clflags.default_gdwarf_offsets then "(default)" else "")
   in
   "-gno-dwarf-offsets", Arg.Unit f, help
@@ -373,25 +384,26 @@ let mk_gno_dwarf_offsets f =
 
 let mk_gdwarf_self_tail_calls f =
   let help =
-    " Generate DW_TAG_call_site for self tail calls (DWARF-5 only, but not \
-        strictly DWARF-5 compliant)"
-      ^ (if Clflags.default_gdwarf_self_tail_calls then "(default)" else "")
+    " Generate DW_TAG_call_site for self tail calls\n     (DWARF-5 only, but \
+        not strictly DWARF-5 compliant)"
+      ^ (if Clflags.default_gdwarf_self_tail_calls then " (default)" else "")
   in
   "-gdwarf-self-tail-calls", Arg.Unit f, help
 ;;
 
 let mk_gno_dwarf_self_tail_calls f =
   let help =
-    " Do not generate DW_TAG_call_site for self tail calls (DWARF-5 only, but \
-        not strictly DWARF-5 compliant)"
-      ^ (if not Clflags.default_gdwarf_self_tail_calls then "(default)" else "")
+    " Do not generate DW_TAG_call_site for self tail\n     calls \
+        (DWARF-5 only, but not strictly DWARF-5 compliant)"
+      ^ (if not Clflags.default_gdwarf_self_tail_calls
+         then " (default)" else "")
   in
   "-gno-dwarf-self-tail-calls", Arg.Unit f, help
 ;;
 
 let mk_ddebug_invariants f =
   let help =
-    " Check invariants during debugging information generation passes"
+    " Check invariants during debugging information generation\n     passes"
       ^ (if Clflags.default_ddebug_invariants then " (default)" else "")
   in
   "-ddebug-invariants", Arg.Unit f, help
@@ -399,7 +411,8 @@ let mk_ddebug_invariants f =
 
 let mk_dno_debug_invariants f =
   let help =
-    " Do not check invariants during debugging information generation passes"
+    " Do not check invariants during debugging information\n     generation \
+      passes"
       ^ (if not Clflags.default_ddebug_invariants then " (default)" else "")
   in
   "-dno-debug-invariants", Arg.Unit f, help
@@ -970,7 +983,7 @@ let mk_drawclambda f =
 ;;
 
 let mk_drawclambda_dbg f =
-  "-drawclambda", Arg.Unit f,
+  "-drawclambda-dbg", Arg.Unit f,
     " As per `-drawclambda' except also prints debug info"
 ;;
 
@@ -1040,7 +1053,7 @@ let mk_dlive f =
 ;;
 
 let mk_davail f =
-  "-davail", Arg.Unit f, " Print register availability info when printing \
+  "-davail", Arg.Unit f, " Print register availability when printing \
     Mach and Linearize code"
 ;;
 
@@ -1610,6 +1623,13 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_opt F._for_pack;
     mk_stop_after F._stop_after;
+    mk_g_opt F._g;
+    mk_g0 F._g0;
+    mk_g1 F._g1;
+    mk_g2 F._g2;
+    mk_g3 F._g3;
+    mk_gdwarf_format F._gdwarf_format;
+    mk_gdwarf_version F._gdwarf_version;
     mk_i F._i;
     mk_I F._I;
     mk_impl F._impl;
@@ -1728,17 +1748,12 @@ struct
     mk_dlinear F._dlinear;
     mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
+    mk_ddebug_invariants F._ddebug_invariants;
+    mk_dno_debug_invariants F._dno_debug_invariants;
     mk_dtimings F._dtimings;
     mk_dprofile F._dprofile;
     mk_dump_into_file F._dump_into_file;
     mk_dump_pass F._dump_pass;
-
-    mk_g_opt F._g;
-
-    mk_g0 F._g0;
-    mk_g1 F._g1;
-    mk_g2 F._g2;
-    mk_g3 F._g3;
 
     mk_gjs_of_ocaml F._gjs_of_ocaml;
     mk_gno_js_of_ocaml F._gno_js_of_ocaml;
@@ -1752,9 +1767,6 @@ struct
     mk_gno_bounds_checking F._gno_bounds_checking;
     mk_gdisable_bytecode_opt F._gdisable_bytecode_opt;
     mk_gno_disable_bytecode_opt F._gno_disable_bytecode_opt;
-
-    mk_gdwarf_format F._gdwarf_format;
-    mk_gdwarf_version F._gdwarf_version;
 
     mk_gdwarf_cfi F._gdwarf_cfi;
     mk_gno_dwarf_cfi F._gno_dwarf_cfi;
@@ -1773,9 +1785,6 @@ struct
     mk_gno_dwarf_offsets F._gno_dwarf_offsets;
     mk_gdwarf_self_tail_calls F._gdwarf_self_tail_calls;
     mk_gno_dwarf_self_tail_calls F._gno_dwarf_self_tail_calls;
-
-    mk_ddebug_invariants F._ddebug_invariants;
-    mk_dno_debug_invariants F._dno_debug_invariants;
 
     mk_args F._args;
     mk_args0 F._args0;
