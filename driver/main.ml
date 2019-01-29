@@ -40,7 +40,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dllib s = defer (ProcessDLLs (Misc.rev_split_words s))
   let _dllpath s = dllpaths := !dllpaths @ [s]
   let _for_pack s = for_package := Some s
-  let _g = use_g ()
+  let _g () = use_g ()
   let _i () =
     print_types := true;
     compile_only := true;
@@ -130,6 +130,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dparsetree = set dump_parsetree
   let _dtypedtree = set dump_typedtree
   let _drawlambda = set dump_rawlambda
+  let _drawlambda_loc () = dump_rawlambda := true; dump_lambda_loc := true
   let _dlambda = set dump_lambda
   let _dlambda_loc () = dump_lambda := true; dump_lambda_loc := true
   let _dinstr = set dump_instr

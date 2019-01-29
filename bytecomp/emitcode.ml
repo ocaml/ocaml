@@ -406,7 +406,11 @@ let to_file outchan unit_name objfile ~required_globals code =
   emit code;
   LongString.output outchan !out_buffer 0 !out_position;
   let (pos_debug, size_debug) =
-    if !Clflags.debug then begin
+    let debug =
+      Clflags.debug_thing Clflags.Debug_ocamldebug
+        || Clflags.debug_thing Clflags.Debug_js_of_ocaml
+    in
+    if debug then begin
       debug_dirs := String.Set.add
         (Filename.dirname (Location.absolute_path objfile))
         !debug_dirs;

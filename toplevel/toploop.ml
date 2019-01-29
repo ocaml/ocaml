@@ -508,7 +508,7 @@ let initialize_toplevel_env () =
 exception PPerror
 
 let loop ppf =
-  Clflags.debug := true;
+  Clflags.use_g1 ();
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
     fprintf ppf "        OCaml version %s@.@." Config.version;

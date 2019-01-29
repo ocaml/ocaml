@@ -131,6 +131,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dparsetree = option "-dparsetree"
   let _dtypedtree = option "-dtypedtree"
   let _drawlambda = option "-drawlambda"
+  let _drawlambda_loc = option "-drawlambda-loc"
   let _dlambda = option "-dlambda"
   let _dlambda_loc = option "-dlambda-loc"
   let _dflambda = option "-dflambda"

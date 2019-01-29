@@ -143,7 +143,11 @@ let rename_append_bytecode packagename oc mapping defined ofs prefix subst
     if compunit.cu_force_link then force_link := true;
     seek_in ic compunit.cu_pos;
     Misc.copy_file_chunk ic oc compunit.cu_codesize;
-    if !Clflags.debug && compunit.cu_debug > 0 then begin
+    let debug =
+      Clflags.debug_thing Clflags.Debug_ocamldebug
+        || Clflags.debug_thing Clflags.Debug_js_of_ocaml
+    in
+    if debug && compunit.cu_debug > 0 then begin
       seek_in ic compunit.cu_debug;
       List.iter (relocate_debug ofs prefix subst) (input_value ic);
       debug_dirs := List.fold_left
@@ -244,7 +248,11 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
                                           targetname Subst.identity members in
     build_global_target ~ppf_dump oc targetname members mapping ofs coercion;
     let pos_debug = pos_out oc in
-    if !Clflags.debug && !events <> [] then begin
+    let debug =
+      Clflags.debug_thing Clflags.Debug_ocamldebug
+        || Clflags.debug_thing Clflags.Debug_js_of_ocaml
+    in
+    if debug && !events <> [] then begin
       output_value oc (List.rev !events);
       output_value oc (String.Set.elements !debug_dirs);
     end;
