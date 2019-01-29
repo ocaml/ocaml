@@ -239,8 +239,8 @@ val check_filter_method: Env.t -> string -> private_flag -> type_expr -> unit
 val occur_in: Env.t -> type_expr -> type_expr -> bool
 val deep_occur: type_expr -> type_expr -> bool
 val filter_self_method:
-        Env.t -> string -> private_flag -> (Ident.t * type_expr) Meths.t ref ->
-        type_expr -> Ident.t * type_expr
+        Env.t -> string -> private_flag -> (Ident.t * type_expr) Meths.t ->
+        type_expr -> (Ident.t * type_expr) Meths.t * (Ident.t * type_expr)
         (* Raises [Filter_method_failed] instead of [Unify], and only if the
            self type is closed at this point. *)
 val moregeneral: Env.t -> bool -> type_expr -> type_expr -> unit

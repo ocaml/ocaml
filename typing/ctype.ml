@@ -3389,14 +3389,12 @@ let check_filter_method env name priv ty =
   ignore(filter_method env name priv ty)
 
 let filter_self_method env lab priv meths ty =
-  let ty' = filter_method env lab priv ty in
-  try
-    Meths.find lab !meths
-  with Not_found ->
-    let pair = (Ident.create_local lab, ty') in
-    meths := Meths.add lab pair !meths;
-    pair
-
+  match Meths.find lab meths with
+  | pair -> meths, pair
+  | exception Not_found ->
+      let ty' = filter_method env lab priv ty in
+      let pair = (Ident.create_local lab, ty') in
+      Meths.add lab pair meths, pair
 
                         (***********************************)
                         (*  Matching between type schemes  *)

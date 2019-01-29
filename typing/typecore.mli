@@ -48,6 +48,16 @@ type type_expected = private {
   explanation: type_forcing_context option;
 }
 
+(* Variables in patterns *)
+type pattern_variable =
+  {
+    pv_id: Ident.t;
+    pv_type: type_expr;
+    pv_loc: Location.t;
+    pv_as_var: bool;
+    pv_attributes: Typedtree.attributes;
+  }
+
 val mk_expected:
   ?explanation:type_forcing_context ->
   type_expr ->
@@ -104,12 +114,8 @@ val type_class_arg_pattern:
         (Ident.t * Ident.t * type_expr) list *
         Env.t * Env.t
 val type_self_pattern:
-        string -> type_expr -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
-        Typedtree.pattern *
-        (Ident.t * type_expr) Meths.t ref *
-        (Ident.t * Asttypes.mutable_flag * Asttypes.virtual_flag * type_expr)
-            Vars.t ref *
-        Env.t * Env.t * Env.t
+        string -> Env.t -> Parsetree.pattern ->
+        Typedtree.pattern * pattern_variable list
 val check_partial:
         ?lev:int -> Env.t -> type_expr ->
         Location.t -> Typedtree.value Typedtree.case list -> Typedtree.partial
