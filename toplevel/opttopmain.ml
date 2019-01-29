@@ -105,26 +105,6 @@ module Options = Main_args.Make_opttop_options (struct
   let _init s = init_file := Some s
   let _noinit = set noinit
   let _clambda_checks () = clambda_checks := true
-  let _dwarf_format format =
-    match format with
-    | 32 -> dwarf_format := Thirty_two
-    | 64 -> dwarf_format := Sixty_four
-    | _ -> Compenv.fatal "Please specify `32' or '64' for -dwarf-format"
-  let _dwarf_version version =
-    match version with
-    | "4+gnu" -> dwarf_version := Four
-    | "5" -> dwarf_version := Five
-    | _ -> Compenv.fatal "Please specify `4+gnu' or '5' for -dwarf-version"
-  let _g_full debugger =
-    let debugger =
-      match String.lowercase_ascii debugger with
-      | "gdb" -> Gdb
-      | "lldb" -> Lldb
-      | _ -> Compenv.fatal "Please specify `gdb' or `lldb' for -g-full"
-    in
-    debug := true;
-    debug_full := Some debugger;
-    binary_annotations := true
   let _inline spec =
     Float_arg_helper.parse spec
       "Syntax: -inline <n> | <round>=<n>[,...]"
@@ -244,9 +224,14 @@ module Options = Main_args.Make_opttop_options (struct
   let _dparsetree = set dump_parsetree
   let _dtypedtree = set dump_typedtree
   let _drawlambda = set dump_rawlambda
+  let _drawlambda_loc () = dump_rawlambda := true; dump_lambda_loc := true
   let _dlambda = set dump_lambda
   let _drawclambda = set dump_rawclambda
+  let _drawclambda_dbg () = dump_rawclambda := true; dump_rawclambda_dbg := true
   let _dclambda = set dump_clambda
+  let _dclambda_dbg () = dump_clambda := true; dump_clambda_dbg := true
+  let _dmach_dbg = set dump_mach_dbg
+  let _dlinear_dbg = set dump_linear_dbg
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
   let _dcombine = set dump_combine
@@ -267,6 +252,91 @@ module Options = Main_args.Make_opttop_options (struct
   let _safe_string = clear unsafe_string
   let _unsafe_string = set unsafe_string
   let _open s = open_modules := s :: !open_modules
+
+  let _g () = use_g ()
+
+  let _g0 () = use_g0 ()
+  let _g1 () = use_g1 ()
+  let _g2 () = use_g2 ()
+  let _g3 () = use_g3 ()
+
+  let _gocamldebug () = set_debug_thing Debug_ocamldebug
+  let _gno_ocamldebug () = clear_debug_thing Debug_ocamldebug
+  let _gjs_of_ocaml () = set_debug_thing Debug_js_of_ocaml
+  let _gno_js_of_ocaml () = clear_debug_thing Debug_js_of_ocaml
+  let _gsubprocs () = set_debug_thing Debug_subprocs
+  let _gno_subprocs () = clear_debug_thing Debug_subprocs
+  let _gbacktraces () = set_debug_thing Debug_backtraces
+  let _gno_backtraces () = clear_debug_thing Debug_backtraces
+  let _gbounds_checking () =
+    set_debug_thing Debug_bounds_checking;
+    _gbacktraces ()
+  let _gno_bounds_checking () = clear_debug_thing Debug_bounds_checking
+  let _gdisable_bytecode_opt () = set_debug_thing Debug_disable_bytecode_opt
+  let _gno_disable_bytecode_opt () = 
+    clear_debug_thing Debug_disable_bytecode_opt
+
+  let _gdwarf_format format =
+    match format with
+    | 32 -> gdwarf_format := Thirty_two
+    | 64 -> gdwarf_format := Sixty_four
+    | _ -> Misc.fatal_error "Please specify `32' or `64' for -gdwarf-format"
+
+  let _gdwarf_version version =
+    match version with
+    | "4+gnu" -> gdwarf_version := Four
+    | "5" -> gdwarf_version := Five
+    | _ -> Misc.fatal_error "Please specify `4+gnu' or `5' for -gdwarf-version"
+
+  let _gdwarf_cfi () =
+    set_debug_thing Debug_dwarf_cfi;
+    _gsubprocs ()
+
+  let _gno_dwarf_cfi () =
+    clear_debug_thing Debug_dwarf_cfi
+
+  let _gdwarf_loc () =
+    set_debug_thing Debug_dwarf_loc;
+    _gdwarf_cfi ()
+
+  let _gno_dwarf_loc () =
+    clear_debug_thing Debug_dwarf_loc
+
+  let _gdwarf_scopes () =
+    set_debug_thing Debug_dwarf_scopes;
+    _gdwarf_loc ()
+
+  let _gno_dwarf_scopes () =
+    clear_debug_thing Debug_dwarf_scopes
+
+  let _gdwarf_vars () =
+    set_debug_thing Debug_dwarf_vars;
+    _gdwarf_scopes ()
+
+  let _gno_dwarf_vars () =
+    clear_debug_thing Debug_dwarf_vars
+
+  let _gdwarf_call_sites () =
+    set_debug_thing Debug_dwarf_call_sites;
+    _gdwarf_vars ()
+
+  let _gno_dwarf_call_sites () =
+    clear_debug_thing Debug_dwarf_call_sites
+
+  let _gdwarf_cmm () =
+    set_debug_thing Debug_dwarf_cmm;
+    _gdwarf_vars ()
+
+  let _gno_dwarf_cmm () =
+    clear_debug_thing Debug_dwarf_cmm
+
+  let _gdwarf_offsets = set gdwarf_offsets
+  let _gno_dwarf_offsets = clear gdwarf_offsets
+  let _gdwarf_self_tail_calls = set gdwarf_self_tail_calls
+  let _gno_dwarf_self_tail_calls = clear gdwarf_self_tail_calls
+
+  let _ddebug_invariants = set ddebug_invariants
+  let _dno_debug_invariants = clear ddebug_invariants
 
   let _args = wrap_expand Arg.read_arg
   let _args0 = wrap_expand Arg.read_arg0

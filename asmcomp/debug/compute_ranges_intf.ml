@@ -126,6 +126,8 @@ module type S = sig
 
   type t
 
+  val empty : t
+
   val create : Linearize.fundecl -> t * Linearize.fundecl
 
   val iter : t -> f:(Index.t -> Range.t -> unit) -> unit

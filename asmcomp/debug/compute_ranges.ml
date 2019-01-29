@@ -446,6 +446,10 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
   let all_indexes t =
     S.Index.Set.of_list (List.map fst (S.Index.Tbl.to_list t.ranges))
 
+  let empty =
+    { ranges = S.Index.Tbl.create 1;
+    }
+
   let create (fundecl : L.fundecl) =
     let t =
       { ranges = S.Index.Tbl.create 42;

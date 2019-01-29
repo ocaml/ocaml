@@ -212,6 +212,9 @@ described in section~\ref{s-ocamlrun-dllpath}.
 \nat{%
 \item["-dwarf-format" \var{format}]
 
+% CR mshinwell: This is out of date.  All of the new options need documenting.
+% Let's do this once they are agreed upstream.
+
 Sets the format of the DWARF debugging information emitted when using the
 "-g-full" option.  Valid values are "32" for 32-bit DWARF and "64" for
 64-bit DWARF.  These bit widths do not bear any relation to the target

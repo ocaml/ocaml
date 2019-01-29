@@ -16,6 +16,8 @@
 
 module L = Linearize
 
+(* CR mshinwell: Predicate these passes on the new CLI flags. *)
+
 type result =
   { fundecl : L.fundecl;
     available_ranges_vars : Available_ranges_all_vars.t;
@@ -86,7 +88,12 @@ let passes_for_fundecl (fundecl : L.fundecl) =
 let passes_for_fundecl_and_emit ~emit ~end_of_function_label
       (fundecl : L.fundecl) =
   let available_ranges_vars, lexical_block_ranges, fundecl =
-    passes_for_fundecl fundecl
+    if Clflags.debug_thing Debug_dwarf_vars then
+      passes_for_fundecl fundecl
+    else
+      Available_ranges_all_vars.empty,
+        Lexical_block_ranges.empty,
+        fundecl
   in
   let external_calls_generated_during_emit =
     emit fundecl ~end_of_function_label

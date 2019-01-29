@@ -67,6 +67,8 @@ end
 
 type t
 
+val empty : t
+
 val create
    : available_ranges_vars:Available_ranges_vars.t
   -> available_ranges_phantom_vars:Available_ranges_phantom_vars.t

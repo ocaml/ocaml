@@ -169,6 +169,12 @@ type t = {
   static_phantom_vars : Range.t V.Map.t;
 }
 
+let empty = {
+  available_ranges_vars = Available_ranges_vars.empty;
+  available_ranges_phantom_vars = Available_ranges_phantom_vars.empty;
+  static_phantom_vars = V.Map.empty;
+}
+
 let create ~available_ranges_vars ~available_ranges_phantom_vars
       (fundecl : L.fundecl) =
   let vars = ARV.all_indexes available_ranges_vars in
