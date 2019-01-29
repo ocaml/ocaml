@@ -175,3 +175,110 @@ Error: Cannot close type of object literal:
        it has been unified with the self type of a class that is not yet
        completely defined.
 |}]
+
+(* MPR#7894 and variations *)
+class parameter_contains_self app = object(self)
+  method invalidate : unit =
+    app#redrawWidget self
+end;;
+[%%expect{|
+class parameter_contains_self :
+  < redrawWidget : 'a -> unit; .. > ->
+  object ('a) method invalidate : unit end
+|}]
+
+class closes_via_inheritance param =
+  let _ = new parameter_contains_self param in object
+    inherit parameter_contains_self param
+  end;;
+[%%expect{|
+Uncaught exception: File "typing/typeclass.ml", line 302, characters 15-21: Assertion failed
+
+|}]
+
+class closes_via_application param =
+  let _ = new parameter_contains_self param in
+  parameter_contains_self param;;
+[%%expect{|
+Uncaught exception: File "typing/ctype.ml", line 307, characters 27-33: Assertion failed
+
+|}]
+
+let escapes_via_inheritance param =
+  let module Local = struct
+    class c = object
+      inherit parameter_contains_self param
+    end
+  end in
+  ();;
+[%%expect{|
+Uncaught exception: File "typing/typeclass.ml", line 302, characters 15-21: Assertion failed
+
+|}]
+
+let escapes_via_application param =
+  let module Local = struct
+    class c = parameter_contains_self param
+  end in
+  ();;
+[%%expect{|
+Uncaught exception: File "typing/ctype.ml", line 392, characters 30-36: Assertion failed
+
+|}]
+
+let can_close_object_via_inheritance param =
+    let _ = new parameter_contains_self param in object
+    inherit parameter_contains_self param
+  end;;
+[%%expect{|
+Uncaught exception: File "typing/ctype.ml", line 383, characters 25-31: Assertion failed
+
+|}]
+
+let can_escape_object_via_inheritance param = object
+    inherit parameter_contains_self param
+  end;;
+[%%expect{|
+val can_escape_object_via_inheritance :
+  < redrawWidget : parameter_contains_self -> unit; .. > ->
+  parameter_contains_self = <fun>
+|}]
+
+let can_close_object_explicitly = object (_ : < i : int >)
+  method i = 5
+end;;
+[%%expect{|
+val can_close_object_explicitly : < i : int > = <obj>
+|}]
+
+let cannot_close_object_explicitly_with_inheritance = object
+  inherit object (_ : < i : int >)
+    method i = 5
+  end
+end;;
+[%%expect{|
+Line 2, characters 17-34:
+2 |   inherit object (_ : < i : int >)
+                     ^^^^^^^^^^^^^^^^^
+Error: This pattern cannot match self: it only matches values of type
+       < i : int >
+|}]
+
+class closes_after_constraint =
+  ((fun (x : 'a) -> object (_:'a) end) : 'a -> object('a) end) (object end);;
+[%%expect{|
+Line 2, characters 63-75:
+2 |   ((fun (x : 'a) -> object (_:'a) end) : 'a -> object('a) end) (object end);;
+                                                                   ^^^^^^^^^^^^
+Error: This expression has type <  > but an expression was expected of type
+         < .. >
+       Self type cannot be unified with a closed object type
+|}];;
+
+class type ['a] ct = object ('a) end
+class type closes_via_application = [ <m : int> ] ct;;
+[%%expect{|
+class type ['a] ct = object ('a) constraint 'a = < .. > end
+Uncaught exception: File "typing/ctype.ml", line 392, characters 30-36: Assertion failed
+
+|}];;

@@ -923,3 +923,362 @@ Line 2, characters 44-49:
 Error: The ancestor variable super
        cannot be accessed from the definition of an instance variable
 |}];;
+
+(* Some more tests of class idiosyncrasies *)
+
+class c = object method private m = 3 end
+  and d = object method o = object inherit c end end;;
+[%%expect {|
+Line 2, characters 28-48:
+2 |   and d = object method o = object inherit c end end;;
+                                ^^^^^^^^^^^^^^^^^^^^
+Error: Cannot close type of object literal: < _.. >
+       it has been unified with the self type of a class that is not yet
+       completely defined.
+|}];;
+
+class c = object(_ : 'self)
+  method o = object(_ : 'self) method o = assert false end
+end;;
+[%%expect {|
+Line 2, characters 13-58:
+2 |   method o = object(_ : 'self) method o = assert false end
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Cannot close type of object literal: < o : '_weak3; _.. >
+       it has been unified with the self type of a class that is not yet
+       completely defined.
+|}];;
+
+class c = object
+    method m = 1
+    inherit object (self)
+      method n = self#m
+    end
+  end;;
+[%%expect {|
+Line 4, characters 17-23:
+4 |       method n = self#m
+                     ^^^^^^
+Warning 17 [undeclared-virtual-method]: the virtual method m is not declared.
+class c : object method m : int method n : int end
+|}];;
+
+class [ 'a ] c = object (_ : 'a) end;;
+let o = object
+    method m = 1
+    inherit [ < m : int > ] c
+  end;;
+[%%expect {|
+class ['a] c : object ('a) constraint 'a = < .. > end
+Uncaught exception: File "typing/ctype.ml", line 379, characters 30-36: Assertion failed
+
+|}];;
+
+class type [ 'a ] d = object method a : 'a method b : 'a end
+class c : ['a] d = object (self) method a = 1 method b = assert false end;;
+[%%expect {|
+class type ['a] d = object method a : 'a method b : 'a end
+Line 2, characters 19-73:
+2 | class c : ['a] d = object (self) method a = 1 method b = assert false end;;
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The class type object method a : int method b : 'a end
+       is not matched by the class type ['_a] d
+       The class type object method a : int method b : 'a end
+       is not matched by the class type
+         object method a : 'a method b : 'a end
+       The method a has type int but is expected to have type 'a
+       Type int is not compatible with type 'a
+|}];;
+
+class type ['a] ct = object ('a) end
+class c : [ < a : int; ..> ] ct = object method a = 3 end;;
+[%%expect {|
+class type ['a] ct = object ('a) constraint 'a = < .. > end
+Line 2, characters 0-57:
+2 | class c : [ < a : int; ..> ] ct = object method a = 3 end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This class should be virtual. The following methods are undefined : a
+|}];;
+
+class virtual c : [ < a : int; ..> ] ct = object method a = 3 end;;
+[%%expect {|
+class virtual c : object method virtual a : int end
+|}];;
+
+class c : object
+  method m : < m : 'a > as 'a
+  end = object (self)
+  method m = self
+end;;
+[%%expect {|
+Lines 3-5, characters 8-3:
+3 | ........object (self)
+4 |   method m = self
+5 | end..
+Error: The class type object ('a) method m : 'a end
+       is not matched by the class type
+         object method m : < m : 'a > as 'a end
+       The method m has type < m : 'a; .. > as 'a
+       but is expected to have type < m : 'b > as 'b
+       The second object type has no method *dummy method*
+|}];;
+
+class c :
+  object
+    method foo : < foo : int; .. > -> < foo : int> -> unit
+  end =
+  object
+    method foo : 'a. (< foo : int; .. > as 'a) -> 'a -> unit = assert false
+  end;;
+[%%expect {|
+Lines 5-7, characters 2-5:
+5 | ..object
+6 |     method foo : 'a. (< foo : int; .. > as 'a) -> 'a -> unit = assert false
+7 |   end..
+Error: The class type
+         object method foo : (< foo : int; .. > as 'a) -> 'a -> unit end
+       is not matched by the class type
+         object method foo : < foo : int; .. > -> < foo : int > -> unit end
+       The method foo has type 'a. (< foo : int; .. > as 'a) -> 'a -> unit
+       but is expected to have type
+         'b. (< foo : int; .. > as 'b) -> < foo : int > -> unit
+       Type 'c is not compatible with type <  >
+|}];;
+
+
+class c = (fun x -> object(_:'foo) end) 3;;
+[%%expect {|
+class c : object  end
+|}, Principal{|
+Line 1, characters 26-34:
+1 | class c = (fun x -> object(_:'foo) end) 3;;
+                              ^^^^^^^^
+Error: This pattern cannot match self: it only matches values of type 'foo
+|}];;
+
+class virtual c =
+  ((fun (x : 'self -> unit) -> object(_:'self) end) (fun (_ : < a : int; .. >) -> ())
+   : object method virtual a : int end)
+[%%expect {|
+class virtual c : object method virtual a : int end
+|}, Principal{|
+Line 2, characters 37-46:
+2 |   ((fun (x : 'self -> unit) -> object(_:'self) end) (fun (_ : < a : int; .. >) -> ())
+                                         ^^^^^^^^^
+Error: This pattern cannot match self: it only matches values of type 'self
+|}];;
+
+class c = object
+  val x = 3
+  method o = {< x = 4; y = 5 >}
+  val y = 4
+end;;
+[%%expect {|
+Line 3, characters 13-31:
+3 |   method o = {< x = 4; y = 5 >}
+                 ^^^^^^^^^^^^^^^^^^
+Error: Unbound instance variable y
+|}];;
+
+class c : object('self) method m : < m : 'a; x : int; ..> -> unit as 'a end =
+    object (_ : 'self) method m (_ : 'self) = () end;;
+[%%expect {|
+Line 2, characters 4-52:
+2 |     object (_ : 'self) method m (_ : 'self) = () end;;
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The class type object ('a) method m : 'a -> unit end
+       is not matched by the class type
+         object method m : < m : 'a; x : int; .. > -> unit as 'a end
+       The method m has type < m : 'a; .. > -> unit as 'a
+       but is expected to have type
+         'b. (< m : 'c; x : int; .. > as 'b) -> unit as 'c
+       The second object type has no method *dummy method*
+|}];;
+
+let is_empty (x : < >) = ()
+class c = object (self) method private foo = is_empty self end;;
+[%%expect {|
+val is_empty : <  > -> unit = <fun>
+Line 2, characters 54-58:
+2 | class c = object (self) method private foo = is_empty self end;;
+                                                          ^^^^
+Error: This expression has type < .. > but an expression was expected of type
+         <  >
+       Self type cannot be unified with a closed object type
+|}];;
+
+(* Warnings about private methods implicitly made public *)
+let has_foo (x : < foo : 'a; .. >) = ()
+
+class c = object (self) method private foo = 5 initializer has_foo self end;;
+[%%expect {|
+val has_foo : < foo : 'a; .. > -> unit = <fun>
+Line 3, characters 10-75:
+3 | class c = object (self) method private foo = 5 initializer has_foo self end;;
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
+ foo.
+class c : object method foo : int end
+|}];;
+
+class type c = object(< foo : 'a; ..>) method private foo : int end;;
+[%%expect {|
+class type c = object method foo : int end
+|}];;
+
+class ['a] p = object (_ : 'a) method private foo = 5 end;;
+class c = [ < foo : int; .. > ] p;;
+[%%expect {|
+class ['a] p :
+  object ('a) constraint 'a = < .. > method private foo : int end
+class c : object method foo : int end
+|}];;
+
+(* Errors for undefined methods *)
+
+class c = object method virtual foo : int end;;
+[%%expect {|
+Line 1, characters 0-45:
+1 | class c = object method virtual foo : int end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This class should be virtual.
+       The following methods are undefined : foo
+|}];;
+
+class type ct = object method virtual foo : int end;;
+[%%expect {|
+Line 1, characters 0-51:
+1 | class type ct = object method virtual foo : int end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This class type should be virtual.
+       The following methods are undefined : foo
+|}];;
+
+let o = object method virtual foo : int end;;
+[%%expect {|
+Line 1, characters 8-43:
+1 | let o = object method virtual foo : int end;;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This object has virtual methods.
+       The following methods are undefined : foo
+|}];;
+
+class c = object(self) initializer self#foo end;;
+[%%expect {|
+Line 1, characters 35-43:
+1 | class c = object(self) initializer self#foo end;;
+                                       ^^^^^^^^
+Warning 17 [undeclared-virtual-method]: the virtual method foo is not declared.
+Line 1, characters 0-47:
+1 | class c = object(self) initializer self#foo end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This class should be virtual.
+       The following methods are undefined : foo
+|}];;
+
+let o = object(self) initializer self#foo end;;
+[%%expect {|
+Line 1, characters 33-37:
+1 | let o = object(self) initializer self#foo end;;
+                                     ^^^^
+Error: This expression has type <  >
+       It has no method foo
+|}];;
+
+let has_foo (x : < foo : int; ..>) = ()
+class c = object(self) initializer has_foo self end;;
+[%%expect {|
+val has_foo : < foo : int; .. > -> unit = <fun>
+Line 2, characters 0-51:
+2 | class c = object(self) initializer has_foo self end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This class should be virtual.
+       The following methods are undefined : foo
+|}];;
+
+let o = object(self) initializer has_foo self end;;
+[%%expect {|
+Line 1, characters 41-45:
+1 | let o = object(self) initializer has_foo self end;;
+                                             ^^^^
+Error: This expression has type <  > but an expression was expected of type
+         < foo : int; .. >
+       The first object type has no method foo
+|}];;
+
+class c = object(_ : < foo : int; ..>) end;;
+[%%expect {|
+Line 1, characters 0-42:
+1 | class c = object(_ : < foo : int; ..>) end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This class should be virtual.
+       The following methods are undefined : foo
+|}];;
+
+class type ct = object(< foo : int; ..>) end;;
+[%%expect {|
+Line 1, characters 0-44:
+1 | class type ct = object(< foo : int; ..>) end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This class type should be virtual.
+       The following methods are undefined : foo
+|}];;
+
+let o = object(_ : < foo : int; ..>) end;;
+[%%expect {|
+Line 1, characters 8-40:
+1 | let o = object(_ : < foo : int; ..>) end;;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This object has virtual methods.
+       The following methods are undefined : foo
+|}];;
+
+(* Shadowing/overriding methods in class types *)
+
+class type c = object
+  val x : int
+  val x : float
+end;;
+[%%expect {|
+class type c = object val x : float end
+|}];;
+
+class type c = object
+  val x : int
+  val mutable x : int
+end;;
+[%%expect {|
+class type c = object val mutable x : int end
+|}];;
+
+class type c = object
+  val mutable x : int
+  val x : int
+end;;
+[%%expect {|
+class type c = object val x : int end
+|}];;
+
+class type virtual c = object
+  val virtual x : int
+  val x : int
+end;;
+[%%expect {|
+class type c = object val x : int end
+|}];;
+
+class type virtual c = object
+  val x : int
+  val virtual x : int
+end;;
+[%%expect {|
+class type c = object val x : int end
+|}];;
+
+class type virtual c = object
+  val x : int
+  val virtual x : float
+end;;
+[%%expect {|
+class type c = object val x : float end
+|}];;
