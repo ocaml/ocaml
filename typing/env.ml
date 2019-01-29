@@ -495,7 +495,7 @@ and module_components =
 
 and components_maker = {
   cm_env: t;
-  cm_freshening_subst: Subst.t;
+  cm_freshening_subst: Subst.t option;
   cm_prefixing_subst: Subst.t;
   cm_path: Path.t;
   cm_addr: address_lazy;
@@ -569,8 +569,7 @@ let check_shadowing env = function
       None
 
 let subst_modtype_maker (subst, md) =
-  if subst == Subst.identity then md
-  else {md with md_type = Subst.modtype subst md.md_type}
+  {md with md_type = Subst.modtype subst md.md_type}
 
 let empty = {
   values = IdTbl.empty; constrs = TycompTbl.empty;
@@ -627,7 +626,7 @@ let without_cmis f x =
 let components_of_module' =
   ref ((fun ~alerts:_ ~loc:_ _env _fsub _psub _path _addr _mty -> assert false):
          alerts:alerts -> loc:Location.t -> t ->
-       Subst.t -> Subst.t -> Path.t -> address_lazy -> module_type ->
+       Subst.t option -> Subst.t -> Path.t -> address_lazy -> module_type ->
        module_components)
 let components_of_module_maker' =
   ref ((fun _ -> assert false) :
@@ -785,7 +784,8 @@ let acknowledge_pers_struct check modname
   let addr = EnvLazy.create_forced (Aident id) in
   let comps =
       !components_of_module' ~alerts ~loc:Location.none
-        empty Subst.identity Subst.identity path addr (Mty_signature sign)
+        empty (Some Subst.identity) Subst.identity path addr
+        (Mty_signature sign)
   in
   let ps = { ps_name = name;
              ps_sig = lazy (Subst.signature Subst.identity sign);
@@ -1614,6 +1614,13 @@ let lookup_cltype ?loc ?(mark = true) lid env =
   mark_type_path env desc.clty_path;
   r
 
+(* Helper to handle optional substitutions. *)
+
+let may_subst subst_f sub x =
+  match sub with
+  | None -> x
+  | Some sub -> subst_f sub x
+
 (* Iter on an environment (ignoring the body of functors and
    not yet evaluated structures) *)
 
@@ -1623,7 +1630,7 @@ let iter_env_cont = ref []
 let rec scrape_alias_for_visit env sub mty =
   match mty with
   | Mty_alias path ->
-      begin match Subst.module_path sub path with
+      begin match may_subst Subst.module_path sub path with
       | Pident id
         when Ident.persistent id
           && not (Hashtbl.mem persistent_structures (Ident.name id)) -> false
@@ -1731,7 +1738,7 @@ let rec scrape_alias env sub ?path mty =
   match mty, path with
     Mty_ident _, _ ->
       let p =
-        match Subst.modtype sub mty with
+        match may_subst Subst.modtype sub mty with
         | Mty_ident p -> p
         | _ -> assert false (* only [Mty_ident]s in [sub] *)
       in
@@ -1741,7 +1748,7 @@ let rec scrape_alias env sub ?path mty =
         mty
       end
   | Mty_alias path, _ ->
-      let path = Subst.module_path sub path in
+      let path = may_subst Subst.module_path sub path in
       begin try
         scrape_alias env sub (find_module path env).md_type ~path
       with Not_found ->
@@ -1756,65 +1763,75 @@ let rec scrape_alias env sub ?path mty =
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)
 
-let rec prefix_idents root items_and_paths freshening_sub prefixing_sub = function
-  | [] -> (List.rev items_and_paths, freshening_sub, prefixing_sub)
-  | Sig_value(id, _, _) as item :: rem ->
+let prefix_idents root freshening_sub prefixing_sub sg =
+  let refresh id add_fn = function
+    | None -> id, None
+    | Some sub ->
+      let id' = Ident.rename id in
+      id', Some (add_fn id (Pident id') sub)
+  in
+  let rec prefix_idents root items_and_paths freshening_sub prefixing_sub =
+    function
+    | [] -> (List.rev items_and_paths, freshening_sub, prefixing_sub)
+    | Sig_value(id, _, _) as item :: rem ->
       let p = Pdot(root, Ident.name id) in
       prefix_idents root
         ((item, p) :: items_and_paths) freshening_sub prefixing_sub rem
-  | Sig_type(id, td, rs, vis) :: rem ->
+    | Sig_type(id, td, rs, vis) :: rem ->
       let p = Pdot(root, Ident.name id) in
-      let id' = Ident.rename id in
+      let id', freshening_sub = refresh id Subst.add_type freshening_sub in
       prefix_idents root
         ((Sig_type(id', td, rs, vis), p) :: items_and_paths)
-        (Subst.add_type id (Pident id') freshening_sub)
+        freshening_sub
         (Subst.add_type id' p prefixing_sub)
         rem
-  | Sig_typext(id, ec, es, vis) :: rem ->
+    | Sig_typext(id, ec, es, vis) :: rem ->
       let p = Pdot(root, Ident.name id) in
-      let id' = Ident.rename id in
+      let id', freshening_sub = refresh id Subst.add_type freshening_sub in
       (* we extend the substitution in case of an inlined record *)
       prefix_idents root
         ((Sig_typext(id', ec, es, vis), p) :: items_and_paths)
-        (Subst.add_type id (Pident id') freshening_sub)
+        freshening_sub
         (Subst.add_type id' p prefixing_sub)
         rem
-  | Sig_module(id, pres, md, rs, vis) :: rem ->
+    | Sig_module(id, pres, md, rs, vis) :: rem ->
       let p = Pdot(root, Ident.name id) in
-      let id' = Ident.rename id in
+      let id', freshening_sub = refresh id Subst.add_module freshening_sub in
       prefix_idents root
         ((Sig_module(id', pres, md, rs, vis), p) :: items_and_paths)
-        (Subst.add_module id (Pident id') freshening_sub)
+        freshening_sub
         (Subst.add_module id' p prefixing_sub)
         rem
-  | Sig_modtype(id, mtd, vis) :: rem ->
+    | Sig_modtype(id, mtd, vis) :: rem ->
       let p = Pdot(root, Ident.name id) in
-      let id' = Ident.rename id in
+      let id', freshening_sub =
+        refresh id (fun i p s -> Subst.add_modtype i (Mty_ident p) s)
+          freshening_sub
+      in
       prefix_idents root
         ((Sig_modtype(id', mtd, vis), p) :: items_and_paths)
-        (Subst.add_modtype id (Mty_ident (Pident id')) freshening_sub)
+        freshening_sub
         (Subst.add_modtype id' (Mty_ident p) prefixing_sub)
         rem
-  | Sig_class(id, cd, rs, vis) :: rem ->
+    | Sig_class(id, cd, rs, vis) :: rem ->
       (* pretend this is a type, cf. PR#6650 *)
       let p = Pdot(root, Ident.name id) in
-      let id' = Ident.rename id in
+      let id', freshening_sub = refresh id Subst.add_type freshening_sub in
       prefix_idents root
         ((Sig_class(id', cd, rs, vis), p) :: items_and_paths)
-        (Subst.add_type id (Pident id') freshening_sub)
+        freshening_sub
         (Subst.add_type id' p prefixing_sub)
         rem
-  | Sig_class_type(id, ctd, rs, vis) :: rem ->
+    | Sig_class_type(id, ctd, rs, vis) :: rem ->
       let p = Pdot(root, Ident.name id) in
-      let id' = Ident.rename id in
+      let id', freshening_sub = refresh id Subst.add_type freshening_sub in
       prefix_idents root
         ((Sig_class_type(id', ctd, rs, vis), p) :: items_and_paths)
-        (Subst.add_type id (Pident id') freshening_sub)
+        freshening_sub
         (Subst.add_type id' p prefixing_sub)
         rem
-
-let prefix_idents root sub sg =
-  prefix_idents root [] sub sg
+  in
+  prefix_idents root [] freshening_sub prefixing_sub sg
 
 (* Compute structure descriptions *)
 
@@ -1880,7 +1897,7 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
         incr pos;
         EnvLazy.create addr
       in
-      let sub = Subst.compose freshening_sub prefixing_sub in
+      let sub = may_subst Subst.compose freshening_sub prefixing_sub in
       List.iter (fun (item, path) ->
         match item with
           Sig_value(id, decl, _) ->
@@ -1893,7 +1910,9 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
             c.comp_values <-
               NameMap.add (Ident.name id) (decl', addr) c.comp_values;
         | Sig_type(id, decl, _, _) ->
-            let fresh_decl = Subst.type_declaration freshening_sub decl in
+            let fresh_decl =
+              may_subst Subst.type_declaration freshening_sub decl
+            in
             let final_decl = Subst.type_declaration prefixing_sub fresh_decl in
             Datarepr.set_row_name final_decl
               (Subst.type_path prefixing_sub (Path.Pident id));
@@ -1928,8 +1947,8 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
               match pres with
               | Mp_absent -> begin
                   match md.md_type with
-                  | Mty_alias path ->
-                      let path = Subst.module_path freshening_sub path in
+                  | Mty_alias p ->
+                      let path = may_subst Subst.module_path freshening_sub p in
                       EnvLazy.create (ModAlias {env = !env; path})
                   | _ -> assert false
                 end
@@ -1949,7 +1968,9 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
             env :=
               store_module ~freshening_sub ~check:false id addr pres md !env
         | Sig_modtype(id, decl, _) ->
-            let fresh_decl = Subst.modtype_declaration freshening_sub decl in
+            let fresh_decl =
+              may_subst Subst.modtype_declaration freshening_sub decl
+            in
             let final_decl =
               Subst.modtype_declaration prefixing_sub fresh_decl
             in
@@ -1968,7 +1989,9 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
         items_and_paths;
         Some (Structure_comps c)
   | Mty_functor(param, ty_arg, ty_res) ->
-      let sub = Subst.compose cm_freshening_subst cm_prefixing_subst in
+      let sub =
+        may_subst Subst.compose cm_freshening_subst cm_prefixing_subst
+      in
         Some (Functor_comps {
           fcomp_param = param;
           (* fcomp_arg and fcomp_res must be prefixed eagerly, because
@@ -2101,10 +2124,13 @@ and store_module ~check ~freshening_sub id addr presence md env =
     check_usage loc id (fun s -> Warnings.Unused_module s)
       module_declarations;
   let alerts = Builtin_attributes.alerts_of_attrs md.md_attributes in
+  let module_decl_lazy =
+    match freshening_sub with
+    | None -> EnvLazy.create_forced md
+    | Some s -> EnvLazy.create (s, md)
+  in
   { env with
-    modules =
-      IdTbl.add id (Value (EnvLazy.create (freshening_sub, md), addr))
-        env.modules;
+    modules = IdTbl.add id (Value (module_decl_lazy, addr)) env.modules;
     components =
       IdTbl.add id
         (Value
@@ -2129,7 +2155,7 @@ and store_cltype id desc env =
     cltypes = IdTbl.add id desc env.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
 
-let scrape_alias env mty = scrape_alias env Subst.identity mty
+let scrape_alias env mty = scrape_alias env None mty
 
 (* Compute the components of a functor application in a path. *)
 
@@ -2149,7 +2175,7 @@ let components_of_functor_appl f env p1 p2 =
       components_of_module ~alerts:Misc.Stdlib.String.Map.empty
         ~loc:Location.none
         (*???*)
-        env Subst.identity Subst.identity p addr mty
+        env None Subst.identity p addr mty
     in
     Hashtbl.add f.fcomp_cache p2 comps;
     comps
@@ -2181,9 +2207,7 @@ and add_extension ~check id ext env =
 
 and add_module_declaration ?(arg=false) ~check id presence md env =
   let addr = module_declaration_address env id presence md in
-  let env =
-    store_module ~freshening_sub:Subst.identity ~check id addr presence md env
-  in
+  let env = store_module ~freshening_sub:None ~check id addr presence md env in
   if arg then add_functor_arg id env else env
 
 and add_modtype id info env =
@@ -2524,7 +2548,7 @@ let save_signature_with_imports ~alerts sg modname filename imports =
       let addr = EnvLazy.create_forced (Aident id) in
       let comps =
         components_of_module ~alerts ~loc:Location.none
-          empty Subst.identity Subst.identity path addr (Mty_signature sg)
+          empty None Subst.identity path addr (Mty_signature sg)
       in
       let ps =
         { ps_name = modname;
