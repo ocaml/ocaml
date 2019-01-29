@@ -1712,6 +1712,38 @@ struct
     mk__ F.anonymous;
 
     mk_match_context_rows F._match_context_rows;
+
+    mk_gjs_of_ocaml F._gjs_of_ocaml;
+    mk_gno_js_of_ocaml F._gno_js_of_ocaml;
+    mk_gocamldebug F._gocamldebug;
+    mk_gno_ocamldebug F._gno_ocamldebug;
+    mk_gsubprocs F._gsubprocs;
+    mk_gno_subprocs F._gno_subprocs;
+    mk_gbacktraces F._gbacktraces;
+    mk_gno_backtraces F._gno_backtraces;
+    mk_gbounds_checking F._gbounds_checking;
+    mk_gno_bounds_checking F._gno_bounds_checking;
+    mk_gdisable_bytecode_opt F._gdisable_bytecode_opt;
+    mk_gno_disable_bytecode_opt F._gno_disable_bytecode_opt;
+
+    mk_gdwarf_cfi F._gdwarf_cfi;
+    mk_gno_dwarf_cfi F._gno_dwarf_cfi;
+    mk_gdwarf_loc F._gdwarf_loc;
+    mk_gno_dwarf_loc F._gno_dwarf_loc;
+    mk_gdwarf_scopes F._gdwarf_scopes;
+    mk_gno_dwarf_scopes F._gno_dwarf_scopes;
+    mk_gdwarf_vars F._gdwarf_vars;
+    mk_gno_dwarf_vars F._gno_dwarf_vars;
+    mk_gdwarf_call_sites F._gdwarf_call_sites;
+    mk_gno_dwarf_call_sites F._gno_dwarf_call_sites;
+    mk_gdwarf_cmm F._gdwarf_cmm;
+    mk_gno_dwarf_cmm F._gno_dwarf_cmm;
+
+    mk_gdwarf_offsets F._gdwarf_offsets;
+    mk_gno_dwarf_offsets F._gno_dwarf_offsets;
+    mk_gdwarf_self_tail_calls F._gdwarf_self_tail_calls;
+    mk_gno_dwarf_self_tail_calls F._gno_dwarf_self_tail_calls;
+
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
     mk_dsource F._dsource;
@@ -1754,37 +1786,6 @@ struct
     mk_dprofile F._dprofile;
     mk_dump_into_file F._dump_into_file;
     mk_dump_pass F._dump_pass;
-
-    mk_gjs_of_ocaml F._gjs_of_ocaml;
-    mk_gno_js_of_ocaml F._gno_js_of_ocaml;
-    mk_gocamldebug F._gocamldebug;
-    mk_gno_ocamldebug F._gno_ocamldebug;
-    mk_gsubprocs F._gsubprocs;
-    mk_gno_subprocs F._gno_subprocs;
-    mk_gbacktraces F._gbacktraces;
-    mk_gno_backtraces F._gno_backtraces;
-    mk_gbounds_checking F._gbounds_checking;
-    mk_gno_bounds_checking F._gno_bounds_checking;
-    mk_gdisable_bytecode_opt F._gdisable_bytecode_opt;
-    mk_gno_disable_bytecode_opt F._gno_disable_bytecode_opt;
-
-    mk_gdwarf_cfi F._gdwarf_cfi;
-    mk_gno_dwarf_cfi F._gno_dwarf_cfi;
-    mk_gdwarf_loc F._gdwarf_loc;
-    mk_gno_dwarf_loc F._gno_dwarf_loc;
-    mk_gdwarf_scopes F._gdwarf_scopes;
-    mk_gno_dwarf_scopes F._gno_dwarf_scopes;
-    mk_gdwarf_vars F._gdwarf_vars;
-    mk_gno_dwarf_vars F._gno_dwarf_vars;
-    mk_gdwarf_call_sites F._gdwarf_call_sites;
-    mk_gno_dwarf_call_sites F._gno_dwarf_call_sites;
-    mk_gdwarf_cmm F._gdwarf_cmm;
-    mk_gno_dwarf_cmm F._gno_dwarf_cmm;
-
-    mk_gdwarf_offsets F._gdwarf_offsets;
-    mk_gno_dwarf_offsets F._gno_dwarf_offsets;
-    mk_gdwarf_self_tail_calls F._gdwarf_self_tail_calls;
-    mk_gno_dwarf_self_tail_calls F._gno_dwarf_self_tail_calls;
 
     mk_args F._args;
     mk_args0 F._args0;
