@@ -1756,76 +1756,65 @@ let rec scrape_alias env sub ?path mty =
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)
 
-let rec prefix_idents root freshening_sub prefixing_sub = function
-    [] -> ([], freshening_sub, prefixing_sub)
-  | Sig_value(id, _, _) :: rem ->
+let rec prefix_idents root items_and_paths freshening_sub prefixing_sub = function
+  | [] -> (List.rev items_and_paths, freshening_sub, prefixing_sub)
+  | Sig_value(id, _, _) as item :: rem ->
       let p = Pdot(root, Ident.name id) in
-      let (pl, final_fs, final_ps) =
-        prefix_idents root freshening_sub prefixing_sub rem
-      in
-      ((p, id)::pl, final_fs, final_ps)
-  | Sig_type(id, _, _, _) :: rem ->
+      prefix_idents root
+        ((item, p) :: items_and_paths) freshening_sub prefixing_sub rem
+  | Sig_type(id, td, rs, vis) :: rem ->
       let p = Pdot(root, Ident.name id) in
       let id' = Ident.rename id in
-      let (pl, final_fs, final_ps) =
-        prefix_idents root
-          (Subst.add_type id (Pident id') freshening_sub)
-          (Subst.add_type id' p prefixing_sub)
-          rem
-      in
-      ((p, id')::pl, final_fs, final_ps)
-  | Sig_typext(id, _, _, _) :: rem ->
+      prefix_idents root
+        ((Sig_type(id', td, rs, vis), p) :: items_and_paths)
+        (Subst.add_type id (Pident id') freshening_sub)
+        (Subst.add_type id' p prefixing_sub)
+        rem
+  | Sig_typext(id, ec, es, vis) :: rem ->
       let p = Pdot(root, Ident.name id) in
       let id' = Ident.rename id in
       (* we extend the substitution in case of an inlined record *)
-      let (pl, final_fs, final_ps) =
-        prefix_idents root
-          (Subst.add_type id (Pident id') freshening_sub)
-          (Subst.add_type id' p prefixing_sub)
-          rem
-      in
-      ((p, id')::pl, final_fs, final_ps)
-  | Sig_module(id, _, _, _, _) :: rem ->
+      prefix_idents root
+        ((Sig_typext(id', ec, es, vis), p) :: items_and_paths)
+        (Subst.add_type id (Pident id') freshening_sub)
+        (Subst.add_type id' p prefixing_sub)
+        rem
+  | Sig_module(id, pres, md, rs, vis) :: rem ->
       let p = Pdot(root, Ident.name id) in
       let id' = Ident.rename id in
-      let (pl, final_fs, final_ps) =
-        prefix_idents root
-          (Subst.add_module id (Pident id') freshening_sub)
-          (Subst.add_module id' p prefixing_sub)
-          rem
-      in
-      ((p, id')::pl, final_fs, final_ps)
-  | Sig_modtype(id, _, _) :: rem ->
+      prefix_idents root
+        ((Sig_module(id', pres, md, rs, vis), p) :: items_and_paths)
+        (Subst.add_module id (Pident id') freshening_sub)
+        (Subst.add_module id' p prefixing_sub)
+        rem
+  | Sig_modtype(id, mtd, vis) :: rem ->
       let p = Pdot(root, Ident.name id) in
       let id' = Ident.rename id in
-      let (pl, final_fs, final_ps) =
-        prefix_idents root
-          (Subst.add_modtype id (Mty_ident (Pident id')) freshening_sub)
-          (Subst.add_modtype id' (Mty_ident p) prefixing_sub)
-          rem
-      in
-      ((p, id')::pl, final_fs, final_ps)
-  | Sig_class(id, _, _, _) :: rem ->
+      prefix_idents root
+        ((Sig_modtype(id', mtd, vis), p) :: items_and_paths)
+        (Subst.add_modtype id (Mty_ident (Pident id')) freshening_sub)
+        (Subst.add_modtype id' (Mty_ident p) prefixing_sub)
+        rem
+  | Sig_class(id, cd, rs, vis) :: rem ->
       (* pretend this is a type, cf. PR#6650 *)
       let p = Pdot(root, Ident.name id) in
       let id' = Ident.rename id in
-      let (pl, final_fs, final_ps) =
-        prefix_idents root
-          (Subst.add_type id (Pident id') freshening_sub)
-          (Subst.add_type id' p prefixing_sub)
-          rem
-      in
-      ((p, id')::pl, final_fs, final_ps)
-  | Sig_class_type(id, _, _, _) :: rem ->
+      prefix_idents root
+        ((Sig_class(id', cd, rs, vis), p) :: items_and_paths)
+        (Subst.add_type id (Pident id') freshening_sub)
+        (Subst.add_type id' p prefixing_sub)
+        rem
+  | Sig_class_type(id, ctd, rs, vis) :: rem ->
       let p = Pdot(root, Ident.name id) in
       let id' = Ident.rename id in
-      let (pl, final_fs, final_ps) =
-        prefix_idents root
-          (Subst.add_type id (Pident id') freshening_sub)
-          (Subst.add_type id' p prefixing_sub)
-          rem
-      in
-      ((p, id')::pl, final_fs, final_ps)
+      prefix_idents root
+        ((Sig_class_type(id', ctd, rs, vis), p) :: items_and_paths)
+        (Subst.add_type id (Pident id') freshening_sub)
+        (Subst.add_type id' p prefixing_sub)
+        rem
+
+let prefix_idents root sub sg =
+  prefix_idents root [] sub sg
 
 (* Compute structure descriptions *)
 
@@ -1879,7 +1868,7 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
           comp_modules = NameMap.empty; comp_modtypes = NameMap.empty;
           comp_components = NameMap.empty; comp_classes = NameMap.empty;
           comp_cltypes = NameMap.empty } in
-      let pl, freshening_sub, prefixing_sub =
+      let items_and_paths, freshening_sub, prefixing_sub =
         prefix_idents cm_path cm_freshening_subst cm_prefixing_subst sg
       in
       let env = ref cm_env in
@@ -1892,9 +1881,9 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
         EnvLazy.create addr
       in
       let sub = Subst.compose freshening_sub prefixing_sub in
-      List.iter2 (fun item (path, id) ->
+      List.iter (fun (item, path) ->
         match item with
-          Sig_value(_, decl, _) ->
+          Sig_value(id, decl, _) ->
             let decl' = Subst.value_description sub decl in
             let addr =
               match decl.val_kind with
@@ -1903,7 +1892,7 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
             in
             c.comp_values <-
               NameMap.add (Ident.name id) (decl', addr) c.comp_values;
-        | Sig_type(_, decl, _, _) ->
+        | Sig_type(id, decl, _, _) ->
             let fresh_decl = Subst.type_declaration freshening_sub decl in
             let final_decl = Subst.type_declaration prefixing_sub fresh_decl in
             Datarepr.set_row_name final_decl
@@ -1927,13 +1916,13 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
                   add_to_tbl descr.lbl_name descr c.comp_labels)
               labels;
             env := store_type_infos id fresh_decl !env
-        | Sig_typext(_, ext, _, _) ->
+        | Sig_typext(id, ext, _, _) ->
             let ext' = Subst.extension_constructor sub ext in
             let descr = Datarepr.extension_descr path ext' in
             let addr = next_address () in
             c.comp_constrs <-
               add_to_tbl (Ident.name id) (descr, Some addr) c.comp_constrs
-        | Sig_module(_, pres, md, _, _) ->
+        | Sig_module(id, pres, md, _, _) ->
             let md' = EnvLazy.create (sub, md) in
             let addr =
               match pres with
@@ -1959,7 +1948,7 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
               NameMap.add (Ident.name id) (comps, addr) c.comp_components;
             env :=
               store_module ~freshening_sub ~check:false id addr pres md !env
-        | Sig_modtype(_, decl, _) ->
+        | Sig_modtype(id, decl, _) ->
             let fresh_decl = Subst.modtype_declaration freshening_sub decl in
             let final_decl =
               Subst.modtype_declaration prefixing_sub fresh_decl
@@ -1967,16 +1956,16 @@ and components_of_module_maker {cm_env; cm_freshening_subst; cm_prefixing_subst;
             c.comp_modtypes <-
               NameMap.add (Ident.name id) final_decl c.comp_modtypes;
             env := store_modtype id fresh_decl !env
-        | Sig_class(_, decl, _, _) ->
+        | Sig_class(id, decl, _, _) ->
             let decl' = Subst.class_declaration sub decl in
             c.comp_classes <-
               NameMap.add (Ident.name id) (decl', next_address ())
                 c.comp_classes
-        | Sig_class_type(_, decl, _, _) ->
+        | Sig_class_type(id, decl, _, _) ->
             let decl' = Subst.cltype_declaration sub decl in
             c.comp_cltypes <-
               NameMap.add (Ident.name id) decl' c.comp_cltypes)
-        sg pl;
+        items_and_paths;
         Some (Structure_comps c)
   | Mty_functor(param, ty_arg, ty_res) ->
       let sub = Subst.compose cm_freshening_subst cm_prefixing_subst in
