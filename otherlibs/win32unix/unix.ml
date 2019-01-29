@@ -1000,11 +1000,12 @@ let open_process_full cmd =
 
 let find_proc_id fun_name proc =
   try
-    let pid = Hashtbl.find popen_processes proc in
-    Hashtbl.remove popen_processes proc;
-    pid
+    Hashtbl.find popen_processes proc
   with Not_found ->
     raise(Unix_error(EBADF, fun_name, ""))
+
+let remove_proc_id proc =
+  Hashtbl.remove popen_processes proc
 
 let process_in_pid inchan =
   find_proc_id "process_in_pid" (Process_in inchan)
@@ -1017,24 +1018,30 @@ let process_full_pid (inchan, outchan, errchan) =
     (Process_full(inchan, outchan, errchan))
 
 let close_process_in inchan =
-  let pid = find_proc_id "close_process_in" (Process_in inchan) in
+  let proc = Process_in inchan in
+  let pid = find_proc_id "close_process_in" proc in
+  remove_proc_id proc;
   close_in inchan;
   snd(waitpid [] pid)
 
 let close_process_out outchan =
-  let pid = find_proc_id "close_process_out" (Process_out outchan) in
+  let proc = Process_out outchan in
+  let pid = find_proc_id "close_process_out" proc in
+  remove_proc_id proc;
   close_out outchan;
   snd(waitpid [] pid)
 
 let close_process (inchan, outchan) =
-  let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
+  let proc = Process(inchan, outchan) in
+  let pid = find_proc_id "close_process" proc in
+  remove_proc_id proc;
   close_in inchan; close_out outchan;
   snd(waitpid [] pid)
 
 let close_process_full (inchan, outchan, errchan) =
-  let pid =
-    find_proc_id "close_process_full"
-                 (Process_full(inchan, outchan, errchan)) in
+  let proc = Process_full(inchan, outchan, errchan) in
+  let pid = find_proc_id "close_process_full" proc in
+  remove_proc_id proc;
   close_in inchan; close_out outchan; close_in errchan;
   snd(waitpid [] pid)
 
