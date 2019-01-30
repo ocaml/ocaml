@@ -124,6 +124,12 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
 
     let lowest_address t = t.min_pos
 
+    let is_empty t =
+      match t.min_pos, t.max_pos with
+      | Some min, Some max -> min = max
+      | Some _, None | None, Some _ -> assert false
+      | None, None -> true
+
     let fold t ~init ~f =
       List.fold_left f init t.subranges
 
@@ -463,12 +469,22 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     in
     t, fundecl
 
+  (* For [iter] and [fold] below we take care never to pass empty ranges to
+     the caller.  We do not want to emit such ranges, as in location lists,
+     they can be confused with end-of-list markers (see comment about
+     [Lprologue] in linearize.ml). *)
+
   let iter t ~f =
-    S.Index.Tbl.iter (fun index range -> f index range)
+    S.Index.Tbl.iter (fun index range ->
+        if not (Range.is_empty range) then begin
+          f index range
+        end)
       t.ranges
 
   let fold t ~init ~f =
-    S.Index.Tbl.fold (fun index range acc -> f acc index range)
+    S.Index.Tbl.fold (fun index range acc ->
+        if not (Range.is_empty range) then f acc index range
+        else acc)
       t.ranges
       init
 

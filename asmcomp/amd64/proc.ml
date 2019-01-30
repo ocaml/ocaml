@@ -386,6 +386,9 @@ let trap_frame_size_in_bytes = 16
 let frame_required () =
   fp || !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
 
+let prologue_required () =
+  !Clflags.gprofile || frame_required ()
+
 let frame_size ~stack_offset =                    (* includes return address *)
   if frame_required() then begin
     let sz =

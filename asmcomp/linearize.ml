@@ -473,14 +473,41 @@ let add_prologue first_insn =
     | Lop (Iname_for_debugger _) ->
       { insn with next = skip_naming_ops insn.next; }
     | _ ->
-      { desc = Lprologue;
-        next = insn;
-        arg = [| |];
-        res = [| |];
-        dbg = insn.dbg;
-        live = insn.live;
-        affinity = Irrelevant;
-      }
+      (* We expect [Lprologue] to expand to at least one instruction---as such,
+         if no prologue is required, we avoid adding the instruction here.
+         The reason is subtle: an empty expansion of [Lprologue] can cause
+         two labels, one either side of the [Lprologue], to point at the same
+         location.  This means that we lose the property (cf. [Coalesce_labels])
+         that we can check if two labels point at the same location by
+         comparing them for equality.  This causes trouble when the function
+         whose prologue is in question lands at the top of the object file
+         and we are emitting debugging information:
+           foo_code_begin:
+           foo:
+           .L1:
+           ; empty prologue
+           .L2:
+           ...
+         If we were to emit a location list entry from L1...L2, not realising
+         that they point at the same location, then the beginning and ending
+         points of the range would be both equal to each other and (relative to
+         "foo_code_begin") equal to zero. This appears to cause binutils to skip
+         the remaining location list entries for the variable in question; and
+         also, to generate a completely entry location list on the output. This
+         may arise because the "end of location list" marker is also two zero
+         words! Examining such output with e.g. objdump will then cause a
+         complaint about there being a hole in the location lists. *)
+      if Proc.prologue_required () then
+        { desc = Lprologue;
+          next = insn;
+          arg = [| |];
+          res = [| |];
+          dbg = insn.dbg;
+          live = insn.live;
+          affinity = Irrelevant;
+        }
+      else
+        insn
   in
   skip_naming_ops first_insn
 

@@ -24,6 +24,10 @@
     location lists can use the ordering between labels as a proxy for
     the ordering between the corresponding virtual memory addresses.
 *)
+(* CR mshinwell: Also update comment to note that we need labels to be
+   deduped so we can avoid emitting empty location list entries, which produce
+   "hole in location list" warnings in objdump when such an entry is at the
+   start of an object file (top of first function). *)
 (* CR mshinwell: It's not clear the second paragraph above is true, since
    maybe that code only looks at the labels inserted by [Compute_ranges],
    which are in order. *)

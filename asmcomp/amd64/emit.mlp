@@ -546,6 +546,7 @@ let emit_instr fallthrough i =
   match i.desc with
   | Lend -> ()
   | Lprologue ->
+    assert (Proc.prologue_required ());
     if !Clflags.gprofile then emit_profile();
     if frame_required() then begin
       if fp then begin

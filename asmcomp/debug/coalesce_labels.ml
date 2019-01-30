@@ -96,6 +96,8 @@ let rec renumber env (insn : L.instruction) =
     { insn with L. desc; next; }
 
 let fundecl (decl : L.fundecl) : int Int.Map.t * L.fundecl =
+  Printlinear.fundecl Format.std_formatter decl;
+  Format.printf "\n%!";
   let env, fun_body =
     coalesce Int.Map.empty decl.fun_body ~last_insn_was_label:None
   in
@@ -105,4 +107,6 @@ let fundecl (decl : L.fundecl) : int Int.Map.t * L.fundecl =
       fun_body;
     }
   in
+  Printlinear.fundecl Format.std_formatter decl;
+  Format.printf "\n%!";
   env, decl

@@ -70,6 +70,7 @@ val contains_calls: bool ref
 val initial_stack_offset : int
 val trap_frame_size_in_bytes : int
 val frame_required : unit -> bool
+val prologue_required : unit -> bool
 val frame_size : stack_offset:int -> int
 val slot_offset : Reg.stack_location -> reg_class:int -> stack_offset:int -> int
 
