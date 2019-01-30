@@ -39,22 +39,6 @@ let for_fundecl state (result : Debug_passes.result) =
     Linkage_name.create (
       Debuginfo.Function.name_with_module_path fundecl.fun_dbg)
   in
-(*
-  let linkage_name =
-    Linkage_name.create (Backend_sym.to_string fundecl.fun_name)
-  in
-  let linkage_name_from_fun_dbg =
-    Debuginfo.Function.linkage_name fundecl.fun_dbg
-  in
-  if not (Linkage_name.equal linkage_name linkage_name_from_fun_dbg)
-  then begin
-    Misc.fatal_errorf "Conflicting linkage names for function %a: \
-        we get %a from [fun_name], but [fun_dbg] has %a"
-      Backend_sym.print fundecl.fun_name
-      Linkage_name.print linkage_name
-      Linkage_name.print linkage_name_from_fun_dbg
-  end;
-*)
   let start_of_function = DAH.create_low_pc_from_symbol symbol in
   let end_of_function =
     DAH.create_high_pc ~low_pc:symbol

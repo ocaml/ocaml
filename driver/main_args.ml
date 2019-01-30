@@ -186,8 +186,8 @@ let mk_gno_js_of_ocaml f =
 
 let mk_gsubprocs f =
   let help =
-    " Pass the `-g' option to subprocesses (C compiler, linker,\
-      \n     ppx, etc.)"
+    " Pass the `-g' option to subprocesses (C compiler, ppx,\
+      \n     etc.)"
       ^ Clflags.describe_debug_default Clflags.Debug_subprocs
   in
   "-gsubprocs", Arg.Unit f, help
