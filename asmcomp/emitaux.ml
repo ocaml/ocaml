@@ -175,16 +175,22 @@ let emit_frames a =
     a.efa_data_label (label_debuginfos rs dbg)
   in
   let emit_frame fd =
+    let code_ranges =
+      List.rev (Debuginfo.to_code_range_list_innermost_first fd.fd_debuginfo)
+    in
+    let no_debuginfo =
+      match code_ranges with
+      | [] -> true
+      | _ -> false
+    in
     a.efa_code_label fd.fd_lbl;
-    a.efa_16 (if Debuginfo.is_none fd.fd_debuginfo
+    a.efa_16 (if no_debuginfo
               then fd.fd_frame_size
               else fd.fd_frame_size + 1);
     a.efa_16 (List.length fd.fd_live_offset);
     List.iter a.efa_16 fd.fd_live_offset;
     a.efa_align Arch.size_addr;
-    match
-      List.rev (Debuginfo.to_code_range_list_innermost_first fd.fd_debuginfo)
-    with
+    match code_ranges with
     | [] -> ()
     | _ :: _ as rdbg -> emit_debuginfo_label fd.fd_raise rdbg
   in

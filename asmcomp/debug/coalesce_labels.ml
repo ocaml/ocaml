@@ -79,6 +79,8 @@ let rec renumber env (insn : L.instruction) =
       match insn.desc with
       | Lprologue -> insn.desc
       | Lop op ->
+        (* CR mshinwell: This may not actually be needed, but we should
+           explain why in the .mli. *)
         let op : Mach.operation =
           match op with
           | Imove
