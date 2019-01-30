@@ -594,10 +594,10 @@ type proto_proto_die =
       Dwarf_attribute_values.Attribute_value.t list Lazy.t;
   }
 
-let parameter_dies : proto_proto_die Int.Map.t ref = ref Int.Map.empty
+let parameter_dies : proto_proto_die list Int.Map.t ref = ref Int.Map.empty
 
 let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
-      ~parameter_min_sort_priority ~scope_proto_dies ~uniqueness_by_var
+      ~scope_proto_dies ~uniqueness_by_var
       ~proto_dies_for_vars ~need_rvalue (var : Backend_var.t) ~phantom:_
       ~hidden ~ident_for_type ~range =
   let range_info = ARV.Range.info range in
@@ -647,7 +647,7 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
           function_proto_die, true
   in
   let location_attribute_value =
-    (* We defer this computation so that location lists are only added to the
+    (* We use [lazy] here so that location lists are only added to the
        [Debug_loc_table] (or equivalent for DWARF-5) after we have been through
        all of the variables and parameters for this function. This means that we
        can make the order of location lists in such table coincide with the
@@ -660,76 +660,78 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
        encountered during a linear scan of the .debug_info section is not the
        first one in the [Debug_loc_table] (or presumably the equivalent for
        DWARF-5). *)
-    lazy (
-      if is_static then begin
-        (* The location of a static (toplevel) variable is invariant under
-           changes to the program counter. As such a location list is not
-           needed. *)
-        (* CR-someday mshinwell: In the future we should work out how to make
-           static variables be properly scoped with respect to the
-           interleaving function definitions.  Then, we would use the actual
-           calculated subranges here.  This work requires not only changes in
-           the OCaml middle end but also a determination as to whether GDB can
-           support the necessary scoping. *)
-        match phantom_defining_expr with
-        | Non_phantom -> []  (* Should have been caught below, in any case. *)
-        | Phantom defining_expr ->
-          if not (Mach.phantom_defining_expr_definitely_static defining_expr)
-          then begin
-            Misc.fatal_errorf "Variable %a bound by phantom let has defining \
-                expression that might not be invariant under changes to the \
-                program counter: %a"
-              V.print var
-              Printmach.phantom_defining_expr defining_expr
-          end;
-          let single_location_description =
-            single_phantom_location_description state
-              ~parent:(Some (DS.compilation_unit_proto_die state))
-              ~proto_dies_for_vars ~need_rvalue defining_expr
-          in
-          match single_location_description with
-          | None -> []
-          | Some single_location_description ->
-            (* We set [is_visible_externally] to [false] since, even though
-               some static variables are accessible from other units, there
-               may be name clashes across units. *)
-            [DAH.create_single_location_description single_location_description;
-             DAH.create_external ~is_visible_externally:false;
-            ]
-      end else begin
-        (* Build a location list that identifies where the value of [var] may be
-           found at runtime, indexed by program counter range. The
-           representations of location lists (and range lists, used below to
-           describe lexical blocks) changed completely between DWARF-4 and
-           DWARF-5. *)
-        let dwarf_4_location_list_entries, location_list =
-          ARV.Range.fold range
-            ~init:([], Location_list.create ())
-            ~f:(fun (dwarf_4_location_list_entries, location_list) subrange ->
-              let single_location_description =
-                single_location_description state fundecl
-                  ~parent:(Some function_proto_die)
-                  ~subrange ~proto_dies_for_vars ~need_rvalue
-              in
-              match single_location_description with
-              | None -> dwarf_4_location_list_entries, location_list
-              | Some single_location_description ->
-                let location_list_entry =
-                  location_list_entry state ~subrange
-                    single_location_description
-                in
-                match location_list_entry with
-                | Dwarf_4 location_list_entry ->
-                  let dwarf_4_location_list_entries =
-                    location_list_entry :: dwarf_4_location_list_entries
-                  in
-                  dwarf_4_location_list_entries, location_list
-                | Dwarf_5 location_list_entry ->
-                  let location_list =
-                    Location_list.add location_list location_list_entry
-                  in
-                  dwarf_4_location_list_entries, location_list)
+    if is_static then begin
+      (* The location of a static (toplevel) variable is invariant under
+         changes to the program counter. As such a location list is not
+         needed. *)
+      (* CR-someday mshinwell: In the future we should work out how to make
+         static variables be properly scoped with respect to the
+         interleaving function definitions.  Then, we would use the actual
+         calculated subranges here.  This work requires not only changes in
+         the OCaml middle end but also a determination as to whether GDB can
+         support the necessary scoping. *)
+      match phantom_defining_expr with
+      | Non_phantom ->
+        lazy []  (* Should have been caught below, in any case. *)
+      | Phantom defining_expr ->
+        if not (Mach.phantom_defining_expr_definitely_static defining_expr)
+        then begin
+          Misc.fatal_errorf "Variable %a bound by phantom let has defining \
+              expression that might not be invariant under changes to the \
+              program counter: %a"
+            V.print var
+            Printmach.phantom_defining_expr defining_expr
+        end;
+        let single_location_description =
+          single_phantom_location_description state
+            ~parent:(Some (DS.compilation_unit_proto_die state))
+            ~proto_dies_for_vars ~need_rvalue defining_expr
         in
+        match single_location_description with
+        | None -> lazy []
+        | Some single_location_description ->
+          (* We set [is_visible_externally] to [false] since, even though
+             some static variables are accessible from other units, there
+             may be name clashes across units. *)
+          lazy [
+            DAH.create_single_location_description single_location_description;
+            DAH.create_external ~is_visible_externally:false;
+          ]
+    end else begin
+      (* Build a location list that identifies where the value of [var] may be
+         found at runtime, indexed by program counter range. The
+         representations of location lists (and range lists, used below to
+         describe lexical blocks) changed completely between DWARF-4 and
+         DWARF-5. *)
+      let dwarf_4_location_list_entries, location_list =
+        ARV.Range.fold range
+          ~init:([], Location_list.create ())
+          ~f:(fun (dwarf_4_location_list_entries, location_list) subrange ->
+            let single_location_description =
+              single_location_description state fundecl
+                ~parent:(Some function_proto_die)
+                ~subrange ~proto_dies_for_vars ~need_rvalue
+            in
+            match single_location_description with
+            | None -> dwarf_4_location_list_entries, location_list
+            | Some single_location_description ->
+              let location_list_entry =
+                location_list_entry state ~subrange
+                  single_location_description
+              in
+              match location_list_entry with
+              | Dwarf_4 location_list_entry ->
+                let dwarf_4_location_list_entries =
+                  location_list_entry :: dwarf_4_location_list_entries
+                in
+                dwarf_4_location_list_entries, location_list
+              | Dwarf_5 location_list_entry ->
+                let location_list =
+                  Location_list.add location_list location_list_entry
+                in
+                dwarf_4_location_list_entries, location_list)
+      in
+      lazy (
         match !Clflags.gdwarf_version with
         | Four ->
           let location_list_entries = dwarf_4_location_list_entries in
@@ -741,8 +743,8 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
           let location_list_index =
             Location_list_table.add (DS.location_list_table state) location_list
           in
-          [DAH.create_location location_list_index]
-      end)
+          [DAH.create_location location_list_index])
+    end
   in
   let is_parameter =
     let is_parameter_from_provenance =
@@ -809,7 +811,13 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
   in
   let tag : Dwarf_tag.t =
     match is_parameter with
-    | Parameter _index -> Formal_parameter
+    | Parameter _index ->
+      (* The lvalue DIE is the "normal" one for variables and parameters; it
+         is the one that is marked with a name, for example.  To avoid
+         erroneous display of, or confusion, around rvalue DIEs we always
+         mark them as variables not parameters. *)
+      if need_rvalue then Variable
+      else Formal_parameter
     | Local -> Variable
   in
   let reference =
@@ -823,26 +831,33 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
     match is_parameter with
     | Local -> None
     | Parameter { index; } ->
-      (* Ensure that parameters appear in the correct order in the debugger.
-         [parameter_min_sort_priority] ensures that lvalue and rvalue DIEs
-         for the same parameter are kept apart, to avoid disturbing the
-         property (above) required to silence objdump. *)
-      Some (index + parameter_min_sort_priority)
+      (* Ensure that parameters appear in the correct order in the debugger. *)
+      if need_rvalue then None
+      else Some index
   in
   let parent = Some parent_proto_die in
-  match is_parameter with
-  | Parameter { index; } ->
+  match sort_priority with
+  | Some sort_priority ->
     let proto_proto_die =
       { reference;
-        sort_priority;
+        sort_priority = Some sort_priority;
         parent;
         tag;
         type_and_name_attributes;
         location_attribute_value;
       }
     in
-    parameter_dies := Int.Map.add index proto_proto_die !parameter_dies
-  | Local ->
+    (* There can be multiple entries for the same [sort_priority] because of
+       parameters of inlined functions.  The ordering between parameters at
+       the same [sort_priority] doesn't matter (with respect to the objdump
+       property, above). *)
+    let proto_proto_dies =
+      match Int.Map.find sort_priority !parameter_dies with
+      | exception Not_found -> [proto_proto_die]
+      | proto_proto_dies -> proto_proto_die :: proto_proto_dies
+    in
+    parameter_dies := Int.Map.add sort_priority proto_proto_dies !parameter_dies
+  | None ->
     (* There is no ordering constraint on DIEs for local variables, so we
        can create them now, without disrupting the property required (above)
        to silence objdump. *)
@@ -857,9 +872,8 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
       ()
 
 (* This function covers local variables, parameters, variables in closures
-   and other "fun_var"s in the current mutually-recursive set.  (The last
-   two cases are handled by the explicit addition of phantom lets way back
-   in [Flambda_to_clambda].)  Phantom variables are also covered. *)
+   and other "fun_var"s in the current function declaration.  Phantom
+   variables are also covered. *)
 let iterate_over_variable_like_things state ~available_ranges_vars
       ~rvalues_only ~f =
   ARV.iter available_ranges_vars ~f:(fun var range ->
@@ -950,31 +964,30 @@ let dwarf state fundecl ~function_proto_die ~scope_proto_dies
   iterate_over_variable_like_things state ~available_ranges_vars
     ~rvalues_only:false
     ~f:(dwarf_for_variable state fundecl ~function_proto_die
-      ~parameter_min_sort_priority:0
       ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
       ~need_rvalue:false);
-  let parameter_min_sort_priority = Int.Map.cardinal !parameter_dies in
-  iterate_over_variable_like_things state ~available_ranges_vars
-    ~rvalues_only:true
-    ~f:(dwarf_for_variable state fundecl ~function_proto_die
-      ~parameter_min_sort_priority
-      ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
-      ~need_rvalue:true);
   (* [Proto_die] puts all DIEs without a sort priority before the ones with
      a sort priority.  The ones without a sort priority that we are concerned
      with here have already been emitted (above).  As such the ones we are
      going to emit now will be in the right place, with respect to silencing
      objdump (see above). *)
-  Int.Map.iter
-    (fun _ { reference; sort_priority; parent; tag; type_and_name_attributes;
-             location_attribute_value; } ->
-      let attribute_values =
-        type_and_name_attributes @ Lazy.force location_attribute_value
-      in
-      Proto_die.create_ignore ?reference
-        ?sort_priority
-        ~parent
-        ~tag
-        ~attribute_values
-        ())
-    !parameter_dies
+  Int.Map.iter (fun _ proto_proto_dies ->
+      List.iter (fun { reference; sort_priority; parent; tag; type_and_name_attributes;
+                       location_attribute_value; } ->
+          let attribute_values =
+            type_and_name_attributes @ Lazy.force location_attribute_value
+          in
+          Proto_die.create_ignore ?reference
+            ?sort_priority
+            ~parent
+            ~tag
+            ~attribute_values
+            ())
+        proto_proto_dies)
+    !parameter_dies;
+  parameter_dies := Int.Map.empty;
+  iterate_over_variable_like_things state ~available_ranges_vars
+    ~rvalues_only:true
+    ~f:(dwarf_for_variable state fundecl ~function_proto_die
+      ~scope_proto_dies ~uniqueness_by_var ~proto_dies_for_vars
+      ~need_rvalue:true);

@@ -697,6 +697,9 @@ let initialize ~big_endian ~(emit : Directive.t -> unit) =
   begin match TS.assembler () with
   | MASM | MacOS -> ()
   | GAS_like ->
+    (* CR mshinwell: Is this really the case?  Surely some of the DIEs
+       would have gone wrong if this were the case.  Maybe it only applies
+       across sections. *)
     (* Forward label references are illegal in gas.  Just put them in for
        all assemblers, they won't harm. *)
     List.iter (fun (section : Asm_section.t) ->
