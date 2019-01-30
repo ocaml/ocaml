@@ -54,23 +54,28 @@ let passes_for_fundecl (fundecl : L.fundecl) =
     in
     let available_ranges_vars =
       Profile.record "debug_rewrite_labels_vars" (fun () ->
-          Available_ranges_vars.rewrite_labels available_ranges_vars
-            ~env:label_env)
+          Available_ranges_vars.
+            rewrite_labels_and_remove_empty_subranges_and_ranges
+              available_ranges_vars
+              ~env:label_env)
         ~accumulate:true
         ()
     in
     let available_ranges_phantom_vars =
       Profile.record "debug_rewrite_labels_phantom_vars" (fun () ->
-          Available_ranges_phantom_vars.rewrite_labels
-            available_ranges_phantom_vars
-            ~env:label_env)
+          Available_ranges_phantom_vars.
+            rewrite_labels_and_remove_empty_subranges_and_ranges
+              available_ranges_phantom_vars
+              ~env:label_env)
         ~accumulate:true
         ()
     in
     let lexical_block_ranges =
       Profile.record "debug_rewrite_labels_lexical_blocks" (fun () ->
-          Lexical_block_ranges.rewrite_labels lexical_block_ranges
-            ~env:label_env)
+          Lexical_block_ranges.
+            rewrite_labels_and_remove_empty_subranges_and_ranges
+              lexical_block_ranges
+              ~env:label_env)
         ~accumulate:true
         ()
     in

@@ -139,5 +139,8 @@ module type S = sig
   val all_indexes : t -> Index.Set.t
 
   (** The [env] should come from [Coalesce_labels.fundecl]. *)
-  val rewrite_labels : t -> env:int Numbers.Int.Map.t -> t
+  val rewrite_labels_and_remove_empty_subranges_and_ranges
+     : t
+    -> env:int Numbers.Int.Map.t
+    -> t
 end

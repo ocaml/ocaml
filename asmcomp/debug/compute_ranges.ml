@@ -62,10 +62,15 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let info t = t.subrange_info
 
     let rewrite_labels t ~env =
-      { t with
-        start_pos = rewrite_label env t.start_pos;
-        end_pos = rewrite_label env t.end_pos;
-      }
+      let start_pos = rewrite_label env t.start_pos in
+      let end_pos = rewrite_label env t.end_pos in
+      if start_pos = end_pos then None
+      else
+        Some {
+          t with
+          start_pos;
+          end_pos;
+        }
   end
 
   module Range = struct
@@ -124,30 +129,35 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
 
     let lowest_address t = t.min_pos
 
-    (* This is only intended to really mean "empty" after
-       [Coalesce_labels] has run. *)
-    let is_empty t =
-      match t.min_pos, t.max_pos with
-      | Some min, Some max -> min = max
-      | Some _, None | None, Some _ -> assert false
-      | None, None -> true
-
     let fold t ~init ~f =
       List.fold_left f init t.subranges
 
-    let rewrite_labels t ~env =
+    let no_subranges t =
+      match t.subranges with
+      | [] -> true
+      | _ -> false
+
+    let rewrite_labels_and_remove_empty_subranges t ~env =
       let subranges =
-        List.map (fun subrange ->
+        Misc.Stdlib.List.filter_map (fun subrange ->
             Subrange.rewrite_labels subrange ~env)
           t.subranges
       in
-      let min_pos = Misc.Stdlib.Option.map (rewrite_label env) t.min_pos in
-      let max_pos = Misc.Stdlib.Option.map (rewrite_label env) t.max_pos in
-      { t with
-        subranges;
-        min_pos;
-        max_pos;
-      }
+      match subranges with
+      | [] ->
+        { t with
+          subranges;
+          min_pos = None;
+          max_pos = None;
+        }
+      | subranges ->
+        let min_pos = Misc.Stdlib.Option.map (rewrite_label env) t.min_pos in
+        let max_pos = Misc.Stdlib.Option.map (rewrite_label env) t.max_pos in
+        { t with
+          subranges;
+          min_pos;
+          max_pos;
+        }
   end
 
   type t = {
@@ -471,32 +481,31 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     in
     t, fundecl
 
-  (* For [iter] and [fold] below we take care never to pass empty ranges to
-     the caller.  We do not want to emit such ranges, as in location lists,
-     they can be confused with end-of-list markers (see comment about
-     [Lprologue] in linearize.ml). *)
-
   let iter t ~f =
-    S.Index.Tbl.iter (fun index range ->
-        if not (Range.is_empty range) then begin
-          f index range
-        end)
+    S.Index.Tbl.iter (fun index range -> f index range)
       t.ranges
 
   let fold t ~init ~f =
-    S.Index.Tbl.fold (fun index range acc ->
-        if not (Range.is_empty range) then f acc index range
-        else acc)
+    S.Index.Tbl.fold (fun index range acc -> f acc index range)
       t.ranges
       init
 
   let find t index = S.Index.Tbl.find t.ranges index
 
-  let rewrite_labels t ~env =
+  let rewrite_labels_and_remove_empty_subranges_and_ranges t ~env =
+    let empty_ranges = ref S.Index.Set.empty in
     let ranges =
-      S.Index.Tbl.map t.ranges (fun range ->
-        Range.rewrite_labels range ~env)
+      S.Index.Tbl.mapi t.ranges (fun index range ->
+          let range =
+            Range.rewrite_labels_and_remove_empty_subranges range ~env
+          in
+          if Range.no_subranges range then begin
+            empty_ranges := S.Index.Set.add index !empty_ranges
+          end;
+          range)
     in
+    S.Index.Set.iter (fun index -> S.Index.Tbl.remove t.ranges index)
+      !empty_ranges;
     { ranges;
     }
 end
