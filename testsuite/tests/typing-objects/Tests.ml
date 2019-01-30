@@ -1074,10 +1074,7 @@ class c = object
   val y = 4
 end;;
 [%%expect {|
-Line 3, characters 13-31:
-3 |   method o = {< x = 4; y = 5 >}
-                 ^^^^^^^^^^^^^^^^^^
-Error: Unbound instance variable y
+class c : object ('a) val x : int val y : int method o : 'a end
 |}];;
 
 class c : object('self) method m : < m : 'a; x : int; ..> -> unit as 'a end =

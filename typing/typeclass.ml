@@ -613,9 +613,6 @@ type intermediate_class_field =
         priv : private_flag;
         override : override_flag;
         met_env : Env.t;
-        vars_state :
-          (Ident.t * Asttypes.mutable_flag * Asttypes.virtual_flag
-           * Types.type_expr) Vars.t;
         sdefinition : Parsetree.expression;
         warning_state : Warnings.state;
         loc : Location.t;
@@ -627,9 +624,6 @@ type intermediate_class_field =
         attributes : attribute list; }
   | Initializer of
       { met_env : Env.t;
-        vars_state :
-          (Ident.t * Asttypes.mutable_flag * Asttypes.virtual_flag
-           * Types.type_expr) Vars.t;
         sexpr : Parsetree.expression;
         warning_state : Warnings.state;
         loc : Location.t;
@@ -830,11 +824,10 @@ let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
                          Field_type_mismatch ("method", label.txt, err)))
            end;
            let sdefinition = make_method self_loc cl_num expr in
-           let vars_state = !vars in
            let warning_state = Warnings.backup () in
            let field =
              Concrete_method
-               { label; priv; override; met_env; vars_state;
+               { label; priv; override; met_env;
                  sdefinition; warning_state; loc; attributes }
            in
            let rev_fields = field :: rev_fields in
@@ -856,11 +849,9 @@ let rec class_field_first_pass self_loc cl_num self_type meths vars acc cf =
       Builtin_attributes.warning_scope cf.pcf_attributes
         (fun () ->
            let sexpr = make_method self_loc cl_num sexpr in
-           let vars_state = !vars in
            let warning_state = Warnings.backup () in
            let field =
-             Initializer
-               { met_env; vars_state; sexpr; warning_state; loc; attributes }
+             Initializer { met_env; sexpr; warning_state; loc; attributes }
            in
            let rev_fields = field :: rev_fields in
            { acc with rev_fields })
@@ -894,7 +885,7 @@ and class_fields_first_pass self_loc cl_num self_type meths vars
   in
   List.rev acc.rev_fields, acc.concr_meths, acc.inher
 
-and class_field_second_pass self_type vars meths field =
+and class_field_second_pass self_type meths field =
   let mkcf desc loc attrs =
     { cf_desc = desc; cf_loc = loc; cf_attributes = attrs }
   in
@@ -918,12 +909,10 @@ and class_field_second_pass self_type vars meths field =
       let kind = Tcfk_virtual cty in
       let desc = Tcf_method(label, priv, kind) in
       mkcf desc loc attributes
-  | Concrete_method { label; priv; override; met_env; vars_state;
+  | Concrete_method { label; priv; override; met_env;
                       sdefinition; warning_state; loc; attributes } ->
       Warnings.with_state warning_state
         (fun () ->
-           let old_vars = !vars in
-           vars := vars_state;
            (* Read the generalized type *)
            let (_, ty) = Meths.find label.txt !meths in
            let meth_type =
@@ -935,16 +924,13 @@ and class_field_second_pass self_type vars meths field =
            Ctype.end_def ();
            let kind = Tcfk_concrete (override, texp) in
            let desc = Tcf_method(label, priv, kind) in
-           vars := old_vars;
            mkcf desc loc attributes)
   | Constraint { cty1; cty2; loc; attributes } ->
       let desc = Tcf_constraint(cty1, cty2) in
       mkcf desc loc attributes
-  | Initializer { met_env; vars_state; sexpr; warning_state; loc; attributes } ->
+  | Initializer { met_env; sexpr; warning_state; loc; attributes } ->
       Warnings.with_state warning_state
         (fun () ->
-           let old_vars = !vars in
-           vars := vars_state;
            Ctype.raise_nongen_level ();
            let unit_type = Ctype.instance Predef.type_unit in
            let meth_type =
@@ -954,17 +940,16 @@ and class_field_second_pass self_type vars meths field =
            let texp = type_expect met_env sexpr meth_type in
            Ctype.end_def ();
            let desc = Tcf_initializer texp in
-           vars := old_vars;
            mkcf desc loc attributes)
   | Attribute { attribute; loc; attributes; } ->
       let desc = Tcf_attribute attribute in
       mkcf desc loc attributes
 
-and class_fields_second_pass self_type vars meths fields =
+and class_fields_second_pass self_type meths fields =
   let rev_cfs =
     List.fold_left
       (fun cfs field ->
-         let cf = class_field_second_pass self_type vars meths field in
+         let cf = class_field_second_pass self_type meths field in
          cf :: cfs)
       [] fields
   in
@@ -1083,7 +1068,7 @@ and class_structure cl_num final val_env met_env loc
     (* But keep levels correct on the type of self *)
     Meths.iter (fun _ (_,ty) -> Ctype.unify val_env ty (Ctype.newvar ())) ms
   end;
-  let fields = class_fields_second_pass self_type vars meths fields in
+  let fields = class_fields_second_pass self_type meths fields in
   let meths = Meths.map (function (id, _ty) -> id) !meths in
 
   (* Check for private methods made public *)

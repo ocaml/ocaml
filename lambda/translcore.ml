@@ -510,10 +510,9 @@ and transl_exp0 ~in_new_scope ~scopes e =
              ap_specialised=Default_specialise;
            },
            List.fold_right
-             (fun (path, _, expr) rem ->
-               let var = transl_value_path loc e.exp_env path in
+             (fun (id, _, expr) rem ->
                 Lsequence(transl_setinstvar ~scopes Loc_unknown
-                            (Lvar cpy) var expr, rem))
+                            (Lvar cpy) (Lvar id) expr, rem))
              modifs
              (Lvar cpy))
   | Texp_letmodule(None, loc, Mp_present, modl, body) ->

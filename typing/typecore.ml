@@ -3627,8 +3627,7 @@ and type_expect_
           let type_override (lab, snewval) =
             begin try
               let (id, _, _, ty) = Vars.find lab.txt !vars in
-              (Path.Pident id, lab,
-               type_expect env snewval (mk_expected (instance ty)))
+              (id, lab, type_expect env snewval (mk_expected (instance ty)))
             with
               Not_found ->
                 let vars = Vars.fold (fun var _ li -> var::li) !vars [] in

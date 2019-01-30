@@ -930,7 +930,7 @@ and value_binding i ppf x =
   expression (i+1) ppf x.vb_expr
 
 and string_x_expression i ppf (s, _, e) =
-  line i ppf "<override> \"%a\"\n" fmt_path s;
+  line i ppf "<override> \"%a\"\n" fmt_ident s;
   expression (i+1) ppf e;
 
 and record_field i ppf = function
