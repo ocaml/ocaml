@@ -31,7 +31,7 @@ let augment_availability_at_raise avail =
   avail_at_raise := RAS.inter avail !avail_at_raise
 
 let check_invariants (instr : M.instruction) ~(avail_before : RAS.t) =
-  if !Clflags.dwarf_invariant_checks then begin
+  if !Clflags.ddebug_invariants then begin
     match avail_before with
     | Unreachable -> ()
     | Ok avail_before ->
@@ -380,7 +380,7 @@ let rec available_regs (instr : M.instruction)
   | None -> ()
   | Some available_across ->
     let instr_available_before = Insn_debuginfo.available_before instr.dbg in
-    if !Clflags.dwarf_invariant_checks
+    if !Clflags.ddebug_invariants
       && not (RAS.subset available_across instr_available_before)
     then begin
       Misc.fatal_errorf "[available_across] %a not a subset of \

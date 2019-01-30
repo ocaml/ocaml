@@ -313,7 +313,7 @@ let mk_gno_dwarf_scopes f =
 let mk_gdwarf_vars f =
   let help =
     " Describe variables and function parameters in DWARF\n     \
-      (implies -gdwarf-scopes)"
+      (implies -gdwarf-scopes and -bin-annot)"
       ^ Clflags.describe_debug_default Clflags.Debug_dwarf_vars
   in
   "-gdwarf-vars", Arg.Unit f, help

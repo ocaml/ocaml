@@ -311,7 +311,8 @@ module Options = Main_args.Make_opttop_options (struct
 
   let _gdwarf_vars () =
     set_debug_thing Debug_dwarf_vars;
-    _gdwarf_scopes ()
+    _gdwarf_scopes ();
+    set binary_annotations ()
 
   let _gno_dwarf_vars () =
     clear_debug_thing Debug_dwarf_vars

@@ -148,7 +148,7 @@ let canonicalise availability =
         regs_by_var
         RD.Set.empty
     in
-    if !Clflags.dwarf_invariant_checks then begin
+    if !Clflags.ddebug_invariants then begin
       assert (RD.Set.subset result availability)
     end;
     Ok result
