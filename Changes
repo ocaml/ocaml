@@ -35,8 +35,8 @@ OCaml 4.08.0
   under or-patterns.
   (Thomas Refis and Leo White, review by Jacques Garrigue)
 
-- GPR#2122: Introduce local substitutions in signatures: "type t := type_expr"
-  and "module M := Extended(Module).Path"
+- GPR#2122, GPR#2230: Introduce local substitutions in signatures:
+  "type t := type_expr" and "module M := Extended(Module).Path"
   (Thomas Refis, with help and review from Leo White, and Alain Frisch)
 
 ### Type system:
