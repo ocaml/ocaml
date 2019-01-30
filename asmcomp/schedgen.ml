@@ -393,6 +393,7 @@ method schedule_fundecl f =
       fun_arity = f.fun_arity;
       fun_spacetime_shape = f.fun_spacetime_shape;
       fun_phantom_lets = f.fun_phantom_lets;
+      fun_tailrec_entry_point_label = f.fun_tailrec_entry_point_label;
     }
   end else
     f

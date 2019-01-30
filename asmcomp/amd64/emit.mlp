@@ -555,8 +555,7 @@ let emit_instr fallthrough i =
       end;
       let n = frame_size () - 8 - (if fp then 8 else 0) in
       add_to_rsp (-n)
-    end;
-    def_label AS.Text !tailrec_entry_point
+    end
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
       if src.loc <> dst.loc then
@@ -1012,7 +1011,7 @@ let fundecl fundecl ~end_of_function_label =
   let fun_name = S.create fundecl.fun_name in
   function_name := Some fun_name;
   fastcode_flag := fundecl.fun_fast;
-  tailrec_entry_point := new_label();
+  tailrec_entry_point := fundecl.fun_tailrec_entry_point_label;
   stack_offset := initial_stack_offset;
   call_gc_sites := [];
   bound_error_sites := [];
@@ -1036,6 +1035,7 @@ let fundecl fundecl ~end_of_function_label =
      return address. (The CFA points at the first address above the return
      address slot.) *)
   D.cfi_def_cfa_offset ~bytes:8;
+  def_label AS.Text fundecl.fun_tailrec_entry_point_label;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();

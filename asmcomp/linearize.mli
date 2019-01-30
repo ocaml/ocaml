@@ -81,6 +81,7 @@ type fundecl =
     fun_phantom_lets :
       (Backend_var.Provenance.t option * Mach.phantom_defining_expr)
         Backend_var.Map.t;
+    fun_tailrec_entry_point_label : label;
   }
 
 val fundecl: Mach.fundecl -> fundecl

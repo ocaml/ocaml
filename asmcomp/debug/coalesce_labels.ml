@@ -104,9 +104,13 @@ let fundecl (decl : L.fundecl) : int Int.Map.t * L.fundecl =
     coalesce Int.Map.empty decl.fun_body ~last_insn_was_label:None
   in
   let fun_body = renumber env fun_body in
+  let fun_tailrec_entry_point_label =
+    rewrite_label env decl.fun_tailrec_entry_point_label
+  in
   let decl =
     { decl with
       fun_body;
+      fun_tailrec_entry_point_label;
     }
   in
 (*

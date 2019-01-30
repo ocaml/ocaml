@@ -124,6 +124,8 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
 
     let lowest_address t = t.min_pos
 
+    (* This is only intended to really mean "empty" after
+       [Coalesce_labels] has run. *)
     let is_empty t =
       match t.min_pos, t.max_pos with
       | Some min, Some max -> min = max
