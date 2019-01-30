@@ -39,4 +39,5 @@ let size t =
     !t
 
 let emit t =
-  List.iter (fun loc_list -> Dwarf_4_location_list.emit loc_list) !t
+  List.iter (fun loc_list -> Dwarf_4_location_list.emit loc_list)
+    (List.rev !t)

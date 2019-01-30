@@ -30,7 +30,7 @@ type result = {
    DIEs reference the particular patterns of attributes they use via the
    abbreviation codes.) *)
 let run ~proto_die_root =
-  let abbrev_table, dies, compilation_unit_die =
+  let abbrev_table, dies_rev, compilation_unit_die =
     let next_abbreviation_code = ref 1 in
     Proto_die.depth_first_fold proto_die_root
       ~init:(Abbreviations_table.create (), [], None)
@@ -82,6 +82,6 @@ let run ~proto_die_root =
         abbrev_table, die::dies, compilation_unit_die)
   in
   { abbrev_table;
-    dies = List.rev dies;
+    dies = List.rev dies_rev;
     compilation_unit_die;
   }

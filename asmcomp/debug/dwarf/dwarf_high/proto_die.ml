@@ -113,11 +113,11 @@ let rec depth_first_fold t ~init ~f =
     acc
   else
     let acc =
-      Int.Map.fold (fun _sort_priority children acc ->
+      Int.Map.fold (fun _sort_priority children_rev acc ->
           List.fold_left (fun acc child ->
               depth_first_fold child ~init:acc ~f)
             acc
-            children)
+            (List.rev children_rev))
         t.children_by_sort_priority
         acc
     in
