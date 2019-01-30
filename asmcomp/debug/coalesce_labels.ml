@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2016--2018 Jane Street Group LLC                           *)
+(*   Copyright 2016--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -22,6 +22,12 @@ let rewrite_label env label =
   match Int.Map.find label env with
   | exception Not_found -> label
   | label -> label
+
+let rewrite_call_labels env ({ before; after; } : Mach.call_labels)
+      : Mach.call_labels =
+  { before = rewrite_label env before;
+    after = rewrite_label env after;
+  }
 
 (* Since there may be both forward references and labels that require
    coalescing (possibly where one of a group to be coalesced was forward
@@ -71,8 +77,50 @@ let rec renumber env (insn : L.instruction) =
   | _ ->
     let desc : L.instruction_desc =
       match insn.desc with
-      | Lprologue
-      | Lop _
+      | Lprologue -> insn.desc
+      | Lop op ->
+        let op : Mach.operation =
+          match op with
+          | Imove
+          | Ispill
+          | Ireload
+          | Iconst_int _
+          | Iconst_float _
+          | Iconst_symbol _ -> op
+          | Icall_ind { call_labels; } ->
+            let call_labels = rewrite_call_labels env call_labels in
+            Icall_ind { call_labels; }
+          | Icall_imm { func; callee_dbg; call_labels; } ->
+            let call_labels = rewrite_call_labels env call_labels in
+            Icall_imm { func; callee_dbg; call_labels; }
+          | Itailcall_ind { call_labels; } ->
+            let call_labels = rewrite_call_labels env call_labels in
+            Itailcall_ind { call_labels; }
+          | Itailcall_imm { func; callee_dbg; call_labels; } ->
+            let call_labels = rewrite_call_labels env call_labels in
+            Itailcall_imm { func; callee_dbg; call_labels; }
+          | Iextcall { func; alloc; call_labels; } ->
+            let call_labels = rewrite_call_labels env call_labels in
+            Iextcall { func; alloc; call_labels; }
+          | Istackoffset _
+          | Iload _
+          | Istore _ -> op
+          | Ialloc { bytes; label_after_call_gc; spacetime_index; } ->
+            let label_after_call_gc =
+              Option.map (rewrite_label env) label_after_call_gc
+            in
+            Ialloc { bytes; label_after_call_gc; spacetime_index; }
+          | Iintop _
+          | Iintop_imm _
+          | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
+          | Ifloatofint | Iintoffloat
+          | Ispecific _
+            (* For the moment we assume [Ispecific] operations do not contain
+               labels. *)
+          | Iname_for_debugger { ident = _; is_parameter = _;
+              provenance = _; is_assignment = _; } -> op
+        in
+        Lop op
       | Lreloadretaddr
       | Lreturn
       | Lpushtrap

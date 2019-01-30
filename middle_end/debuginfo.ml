@@ -176,6 +176,11 @@ module Id = struct
     incr next_stamp;
     stamp
 
+  let none =
+    { stamp = -1;
+      compilation_unit = Compilation_unit.startup;
+    }
+
   let create () =
     { stamp = get_next_stamp ();
       compilation_unit = Compilation_unit.get_current_exn ();
@@ -228,7 +233,7 @@ module Function = struct
   }
 
   let none = {
-    id = Id.create ();
+    id = Id.none;
     position = Code_range.none;
     human_name = "";
     linkage_name = Linkage_name.create "";

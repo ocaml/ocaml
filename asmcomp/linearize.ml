@@ -494,7 +494,7 @@ let add_prologue first_insn =
          that we can check if two labels point at the same location by
          comparing them for equality.  This causes trouble when the function
          whose prologue is in question lands at the top of the object file
-         and we are emitting debugging information:
+         and we are emitting DWARF debugging information:
            foo_code_begin:
            foo:
            .L1:
@@ -516,6 +516,7 @@ let add_prologue first_insn =
             arg = [| |];
             res = [| |];
             dbg = tailrec_entry_point.dbg;
+            (* CR mshinwell: live sets here and above should be empty? *)
             live = tailrec_entry_point.live;
             affinity = Irrelevant;
           }
