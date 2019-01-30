@@ -58,6 +58,8 @@ module Function : sig
 
   type t
 
+  val none : t
+
   (** Create a function debuginfo given a [Code_range.t] corresponding to
       its source location. *)
   val create

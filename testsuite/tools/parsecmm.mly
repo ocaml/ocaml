@@ -29,7 +29,7 @@ let rec make_letdef def body =
 let make_switch n selector caselist =
   let index = Array.make n 0 in
   let casev = Array.of_list caselist in
-  let actv = Array.make (Array.length casev) (Cexit(0,[])) in
+  let actv = Array.make (Array.length casev) (Cexit(0,[]), Debuginfo.none) in
   for i = 0 to Array.length casev - 1 do
     let (posl, e) = casev.(i) in
     List.iter (fun pos -> index.(pos) <- i) posl;
@@ -39,10 +39,11 @@ let make_switch n selector caselist =
 
 let access_array base numelt size =
   match numelt with
-    Cconst_int 0 -> base
-  | Cconst_int n -> Cop(Cadda, [base; Cconst_int(n * size)], Debuginfo.none)
+    Cconst_int (0, _) -> base
+  | Cconst_int (n, dbg) -> Cop(Cadda, [base; Cconst_int(n * size, dbg)], dbg)
   | _ -> Cop(Cadda, [base;
-                     Cop(Clsl, [numelt; Cconst_int(Misc.log2 size)],
+                     Cop(Clsl,
+                         [numelt; Cconst_int(Misc.log2 size, Debuginfo.none)],
                          Debuginfo.none)],
              Debuginfo.none)
 
@@ -161,7 +162,11 @@ phrase:
 fundecl:
     LPAREN FUNCTION fun_name LPAREN params RPAREN sequence RPAREN
       { List.iter (fun (id, ty) -> unbind_ident id) $5;
-        let fun_name = Backend_sym.of_external_name $3 in
+        let fun_name =
+          Backend_sym.of_external_name
+            (Compilation_unit.get_current_exn ())
+            $3 Backend_sym.Text
+        in
         {fun_name; fun_args = $5; fun_body = $7;
          fun_codegen_options =
            if Config.flambda then [
@@ -169,7 +174,7 @@ fundecl:
              No_CSE;
            ]
            else [ Reduce_code_size ];
-         fun_dbg = debuginfo ()} }
+         fun_dbg = Debuginfo.Function.none; } }
 ;
 fun_name:
     STRING              { $1 }
@@ -196,18 +201,25 @@ componentlist:
   | componentlist STAR component { $3 :: $1 }
 ;
 expr:
-    INTCONST    { Cconst_int $1 }
-  | FLOATCONST  { Cconst_float (float_of_string $1) }
-  | STRING      { Cconst_symbol (Backend_sym.of_external_name $1) }
-  | POINTER     { Cconst_pointer $1 }
+    INTCONST    { Cconst_int ($1, debuginfo ()) }
+  | FLOATCONST  { Cconst_float (float_of_string $1, debuginfo ()) }
+  | STRING      { Cconst_symbol (Backend_sym.of_external_name
+                                   (Compilation_unit.get_current_exn ())
+                                   $1 Text,
+                                 debuginfo ()) }
+  | POINTER     { Cconst_pointer ($1, debuginfo ()) }
   | IDENT       { Cvar(find_ident $1) }
   | LBRACKET RBRACKET { Ctuple [] }
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }
   | LPAREN ASSIGN IDENT expr RPAREN { Cassign(find_ident $3, $4) }
   | LPAREN APPLY location expr exprlist machtype RPAREN
-                { Cop(Capply $6, $4 :: List.rev $5, debuginfo ?loc:$3 ()) }
+                { Cop(Capply ($6, None),
+                      $4 :: List.rev $5, debuginfo ?loc:$3 ()) }
   | LPAREN EXTCALL STRING exprlist machtype RPAREN
-               {Cop(Cextcall(Backend_sym.of_external_name $3, $5, false, None),
+               {Cop(Cextcall(Backend_sym.of_external_name
+                               (Compilation_unit.get_current_exn ())
+                               $3 Text,
+                             $5, false, None),
                   List.rev $4, debuginfo ())}
   | LPAREN ALLOC exprlist RPAREN { Cop(Calloc, List.rev $3, debuginfo ()) }
   | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3], debuginfo ()) }
@@ -215,24 +227,31 @@ expr:
   | LPAREN unaryop expr RPAREN { Cop($2, [$3], debuginfo ()) }
   | LPAREN binaryop expr expr RPAREN { Cop($2, [$3; $4], debuginfo ()) }
   | LPAREN SEQ sequence RPAREN { $3 }
-  | LPAREN IF expr expr expr RPAREN { Cifthenelse($3, $4, $5) }
+  | LPAREN IF expr expr expr RPAREN
+      { Cifthenelse($3, debuginfo (), $4, debuginfo (), $5, debuginfo ()) }
   | LPAREN SWITCH INTCONST expr caselist RPAREN { make_switch $3 $4 $5 }
   | LPAREN WHILE expr sequence RPAREN
       { let body =
           match $3 with
-            Cconst_int x when x <> 0 -> $4
-          | _ -> Cifthenelse($3, $4, (Cexit(0,[]))) in
-        Ccatch(Recursive, [0, [], Cloop body], Ctuple []) }
+            Cconst_int (x, _) when x <> 0 -> $4
+          | _ -> Cifthenelse($3, debuginfo (), $4, debuginfo (), (Cexit(0,[])),
+                             debuginfo ()) in
+        Ccatch(Recursive, [0, [], Cloop (body, debuginfo ()), debuginfo ()],
+               Ctuple []) }
   | LPAREN EXIT IDENT exprlist RPAREN
     { Cexit(find_label $3, List.rev $4) }
   | LPAREN CATCH sequence WITH catch_handlers RPAREN
     { let handlers = $5 in
       List.iter (fun (_, l, _) ->
         List.iter (fun (x, _) -> unbind_ident x) l) handlers;
+      let handlers =
+        List.map (fun (k, params, handler) -> k, params, handler, debuginfo ())
+          handlers
+      in
       Ccatch(Recursive, handlers, $3) }
   | EXIT        { Cexit(0,[]) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
-                { unbind_ident $5; Ctrywith($3, $5, $6) }
+                { unbind_ident $5; Ctrywith($3, $5, $6, debuginfo ()) }
   | LPAREN VAL expr expr RPAREN
       { Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
           debuginfo ()) }
@@ -339,7 +358,7 @@ sequence:
   | expr                        { $1 }
 ;
 caselist:
-    onecase sequence caselist   { ($1, $2) :: $3 }
+    onecase sequence caselist   { ($1, ($2, debuginfo ())) :: $3 }
   | /**/                        { [] }
 ;
 onecase:
@@ -359,20 +378,28 @@ datalist:
 ;
 dataitem:
     STRING COLON                { Cdefine_symbol (
-                                    Backend_sym.of_external_name $1) }
+                                    Backend_sym.of_external_name
+                                      (Compilation_unit.get_current_exn ())
+                                      $1 Data) }
   | BYTE INTCONST               { Cint8 $2 }
   | HALF INTCONST               { Cint16 $2 }
   | INT INTCONST                { Cint(Nativeint.of_int $2) }
   | FLOAT FLOATCONST            { Cdouble (float_of_string $2) }
   | ADDR STRING                 { Csymbol_address (
-                                    Backend_sym.of_external_name $2) }
+                                    Backend_sym.of_external_name
+                                      (Compilation_unit.get_current_exn ())
+                                      $2 Data) }
   | VAL STRING                  { Csymbol_address (
-                                    Backend_sym.of_external_name $2) }
+                                    Backend_sym.of_external_name
+                                      (Compilation_unit.get_current_exn ())
+                                      $2 Data) }
   | KSTRING STRING              { Cstring $2 }
   | SKIP INTCONST               { Cskip $2 }
   | ALIGN INTCONST              { Calign $2 }
   | GLOBAL STRING               { Cglobal_symbol (
-                                    Backend_sym.of_external_name $2) }
+                                    Backend_sym.of_external_name
+                                      (Compilation_unit.get_current_exn ())
+                                      $2 Data) }
 ;
 catch_handlers:
   | catch_handler

@@ -227,6 +227,15 @@ module Function = struct
     dwarf_die_present : bool;
   }
 
+  let none = {
+    id = Id.create ();
+    position = Code_range.none;
+    human_name = "";
+    linkage_name = Linkage_name.create "";
+    module_path = Path.Pident (Ident.create_persistent "*none*");
+    dwarf_die_present = false;
+  }
+
   let create position ~human_name ~module_path ~linkage_name =
     let dwarf_die_present = Clflags.debug_thing Debug_dwarf_functions in
     { id = Id.create ();
