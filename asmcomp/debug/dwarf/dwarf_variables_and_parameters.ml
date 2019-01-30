@@ -814,7 +814,7 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
     | Parameter _index ->
       (* The lvalue DIE is the "normal" one for variables and parameters; it
          is the one that is marked with a name, for example.  To avoid
-         erroneous display of, or confusion, around rvalue DIEs we always
+         erroneous display of, or confusion around, rvalue DIEs we always
          mark them as variables not parameters. *)
       if need_rvalue then Variable
       else Formal_parameter
@@ -972,8 +972,8 @@ let dwarf state fundecl ~function_proto_die ~scope_proto_dies
      going to emit now will be in the right place, with respect to silencing
      objdump (see above). *)
   Int.Map.iter (fun _ proto_proto_dies ->
-      List.iter (fun { reference; sort_priority; parent; tag; type_and_name_attributes;
-                       location_attribute_value; } ->
+      List.iter (fun { reference; sort_priority; parent; tag;
+                       type_and_name_attributes; location_attribute_value; } ->
           let attribute_values =
             type_and_name_attributes @ Lazy.force location_attribute_value
           in
