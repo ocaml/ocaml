@@ -143,43 +143,33 @@ let emit_frames a =
       Hashtbl.add filenames name lbl;
       lbl
   in
+  let module CR = Debuginfo.Code_range in
   let module Label_table =
     Hashtbl.Make (struct
-      type t = bool * Debuginfo.t
+      type t = bool * (CR.t list)
 
-      let equal ((rs1 : bool), dbg1) (rs2, dbg2) =
-        rs1 = rs2 && Debuginfo.compare dbg1 dbg2 = 0
+      let equal ((rs1 : bool), code_ranges1) (rs2, code_ranges2) =
+        rs1 = rs2
+          && Misc.Stdlib.List.equal CR.equal code_ranges1 code_ranges2
 
       let hash (rs, dbg) =
-        Hashtbl.hash (rs, Debuginfo.hash dbg)
+        Hashtbl.hash (rs, Hashtbl.hash (List.map CR.hash dbg))
     end)
   in
   let debuginfos = Label_table.create 7 in
-  let (* rec *) label_debuginfos rs dbg =
-    let key = (rs, dbg) in
+  let rec label_debuginfos rs rdbg =
+    let key = (rs, rdbg) in
     try fst (Label_table.find debuginfos key)
     with Not_found ->
       let lbl = Cmm.new_label () in
-      Label_table.add debuginfos key (lbl, None);
-      lbl
-(* XXX Resurrect this
-      let block =
-        Debuginfo.Current_block.to_block (Debuginfo.innermost_block dbg)
-      in
-      match block with
-      | Toplevel -> assert false
-      | Block block ->
-        match Debuginfo.Block.parent block with
-        | None -> None
-        | Some block ->
-          let dbg = Debuginfo.create block ~position:
-
       let next =
-        match dbg with
+        match rdbg with
         | [] -> assert false
         | _ :: [] -> None
-        | _ :: ((_ :: _) as dbg') -> Some (label_debuginfos false dbg')
-      in *)
+        | _ :: ((_ :: _) as rdbg') -> Some (label_debuginfos false rdbg')
+      in
+      Label_table.add debuginfos key (lbl, next);
+      lbl
   in
   let emit_debuginfo_label rs dbg =
     a.efa_data_label (label_debuginfos rs dbg)
@@ -192,9 +182,11 @@ let emit_frames a =
     a.efa_16 (List.length fd.fd_live_offset);
     List.iter a.efa_16 fd.fd_live_offset;
     a.efa_align Arch.size_addr;
-    if not (Debuginfo.is_none fd.fd_debuginfo) then begin
-      emit_debuginfo_label fd.fd_raise fd.fd_debuginfo
-    end
+    match
+      List.rev (Debuginfo.to_code_range_list_innermost_first fd.fd_debuginfo)
+    with
+    | [] -> ()
+    | _ :: _ as rdbg -> emit_debuginfo_label fd.fd_raise rdbg
   in
   let emit_filename name lbl =
     a.efa_def_label lbl;
@@ -202,31 +194,28 @@ let emit_frames a =
     a.efa_align Arch.size_addr
   in
   let pack_info fd_raise code_range =
-    let line = min 0xFFFFF (Debuginfo.Code_range.line code_range)
-    and char_start = min 0xFF (Debuginfo.Code_range.char_start code_range)
-    and char_end = min 0x3FF (Debuginfo.Code_range.char_end code_range)
+    let line = min 0xFFFFF (CR.line code_range)
+    and char_start = min 0xFF (CR.char_start code_range)
+    and char_end = min 0x3FF (CR.char_end code_range)
     and kind = if fd_raise then 1 else 0 in
     Int64.(add (shift_left (of_int line) 44)
              (add (shift_left (of_int char_start) 36)
                 (add (shift_left (of_int char_end) 26)
                    (of_int kind))))
   in
-  let emit_debuginfo (rs, dbg) (lbl,next) =
-    let code_range = Debuginfo.position dbg in
-    match code_range with
-    | None -> () (* XXX *)
-    | Some code_range ->
-      a.efa_align Arch.size_addr;
-      a.efa_def_label lbl;
-      let info = pack_info rs code_range in
-      a.efa_label_rel
-        (label_filename (Debuginfo.Code_range.file code_range))
-        (Int64.to_int32 info);
-      a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
-      begin match next with
-      | Some next -> a.efa_data_label next
-      | None -> a.efa_word 0
-      end
+  let emit_debuginfo (rs, rdbg) (lbl,next) =
+    let code_range = List.hd rdbg in
+    a.efa_align Arch.size_addr;
+    a.efa_def_label lbl;
+    let info = pack_info rs code_range in
+    a.efa_label_rel
+      (label_filename (CR.file code_range))
+      (Int64.to_int32 info);
+    a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
+    begin match next with
+    | Some next -> a.efa_data_label next
+    | None -> a.efa_word 0
+    end
   in
   a.efa_word (List.length !frame_descriptors);
   List.iter emit_frame !frame_descriptors;
@@ -262,7 +251,7 @@ let cfi_offset ~reg ~offset =
     emit_string "\n"
   end
 
-(* Emit debug information *)
+(* Emit source location (e.g. DWARF .debug_line) information *)
 
 (* This assoc list is expected to be very short *)
 let file_pos_nums =

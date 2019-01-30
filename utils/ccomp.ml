@@ -121,6 +121,8 @@ let compile_file ?output ?(opt="") ?stable_name name =
 let make_debuginfo_bundle ~exe_name =
   match Config.system with
   | "macosx" ->
+    (* CR mshinwell: We should think about whether this should always be
+       run from here *)
     let result = command (Printf.sprintf "dsymutil %s" exe_name) in
     result = 0
   | _ -> true

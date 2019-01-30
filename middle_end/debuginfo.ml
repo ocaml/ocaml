@@ -537,6 +537,18 @@ let to_string_frames_only_innermost_last t =
     in
     "{" ^ String.concat ";" ranges_innermost_last ^ "}"
 
+let to_code_range_list_innermost_first t =
+  match t with
+  | Empty -> []
+  | Non_empty { block; position; } ->
+    let frames =
+      match block with
+      | None -> []
+      | Some block ->
+        List.map Call_site.position (Block.frame_list_innermost_first block)
+    in
+    position :: frames
+
 let of_line ~file ~line ~scope =
   let position = Code_range.of_line ~file ~line in
   Non_empty { block = scope; position; }

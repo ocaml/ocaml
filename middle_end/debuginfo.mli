@@ -225,6 +225,8 @@ val is_none : t -> bool
 
 val to_string_frames_only_innermost_last : t -> string
 
+val to_code_range_list_innermost_first : t -> Code_range.t list
+
 val of_line : file:string -> line:int -> scope:Current_block.t -> t
 
 val of_location : Location.t -> scope:Current_block.t -> t
