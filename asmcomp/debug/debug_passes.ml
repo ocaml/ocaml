@@ -16,8 +16,6 @@
 
 module L = Linearize
 
-(* CR mshinwell: Predicate these passes on the new CLI flags. *)
-
 type result =
   { fundecl : L.fundecl;
     available_ranges_vars : Available_ranges_all_vars.t;
