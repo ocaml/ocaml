@@ -1035,7 +1035,6 @@ let fundecl fundecl ~end_of_function_label =
      return address. (The CFA points at the first address above the return
      address slot.) *)
   D.cfi_def_cfa_offset ~bytes:8;
-  def_label AS.Text fundecl.fun_tailrec_entry_point_label;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
