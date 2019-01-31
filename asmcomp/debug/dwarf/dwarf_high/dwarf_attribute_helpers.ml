@@ -47,6 +47,7 @@ let create_high_pc_offset offset =
 let create_high_pc ~low_pc high_pc =
   match Arch.size_addr with
   | 4 ->
+    (* CR mshinwell: Shouldn't these be of form [Addr]? *)
     let spec = AS.create High_pc Data4 in
     AV.create spec (V.distance_between_label_and_symbol_32_bit
       ~comment:"high PC value" ~upper:high_pc ~lower:low_pc ())
