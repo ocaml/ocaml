@@ -35,9 +35,14 @@ let create ~start_of_code_symbol ~end_of_code_symbol
     V.int8 ~comment:"Arch.size_addr" (Int8.of_int_exn Arch.size_addr);
     V.int8 ~comment:"flat address space" Int8.zero;
     (* end of header *)
+    (* The mystery values match up with what gcc emits and stop bfd from
+       mangling the aranges tables.  They do not appear to be referenced in
+       the DWARF specification. *)
+    V.int16 ~comment:"mystery value 1" Int16.zero;
+    V.int16 ~comment:"mystery value 2" Int16.zero;
     (* segment selector omitted (since we selected "flat address space") *)
     V.code_address_from_symbol start_of_code_symbol;
-    V.code_address_from_symbol_diff ~comment:"end of code symbol"
+    V.code_address_from_symbol_diff ~comment:"length of code"
       ~upper:end_of_code_symbol ~lower:start_of_code_symbol ();
     (* The terminating entry is only two words since the segment selector
        word is again absent. *)
