@@ -23,6 +23,12 @@ type result = {
   compilation_unit_die : Debugging_information_entry.t option;
 }
 
+(* CR-someday mshinwell: Try to work out a straightforward way of ensuring
+   that the order of location lists matches the order in which their
+   references (in DW_AT_location attributes) will be found in a top-down
+   linear scan of the flattened DIE tree.  This will suppress the objdump
+   complaint "Location lists in .debug_loc start at ...". *)
+
 (* For each pattern of attributes found in the tree of proto-DIEs (of which
    there should be few compared to the number of DIEs), assign an abbreviation
    code, generating an abbreviations table in the process.  At the same time,

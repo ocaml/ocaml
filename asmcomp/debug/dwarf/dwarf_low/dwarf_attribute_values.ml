@@ -108,6 +108,7 @@ module Value = struct
 end
 
 module Attribute_value = struct
+  (* CR mshinwell: Try to remove the attribute spec *)
   type t =
     Dwarf_attributes.Attribute_specification.Sealed.t * Value.internal_t
 
