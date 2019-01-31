@@ -101,3 +101,20 @@ Line 3, characters 11-12:
                ^
 Error: Unbound type constructor t
 |}]
+
+(** MPR7905, PR2231:
+    We want to reject invalid right-hand side
+    before typing the type declaration.
+*)
+module type Rejected = sig
+  type cycle = A of cycle
+  type t := cycle = A of t
+  (** this type declaration is purposefully erroneous *)
+end
+
+[%%expect{|
+Line 3, characters 2-26:
+3 |   type t := cycle = A of t
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Only type synonyms are allowed on the right of :=
+|}]

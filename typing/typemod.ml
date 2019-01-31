@@ -1187,14 +1187,18 @@ and transl_signature env sg =
             sg,
             final_env
         | Psig_typesubst sdecls ->
+            List.iter (fun td ->
+              if td.ptype_kind <> Ptype_abstract || td.ptype_manifest = None ||
+                 td.ptype_private = Private
+              then
+                (* This error should be a parsing error,
+                   once we have nice error messages there. *)
+                raise (Error (td.ptype_loc, env, Invalid_type_subst_rhs))
+            ) sdecls;
             let (decls, newenv) =
               Typedecl.transl_type_decl env Nonrecursive sdecls
             in
             List.iter (fun td ->
-              if td.typ_kind <> Ttype_abstract || td.typ_manifest = None ||
-                 td.typ_private = Private
-              then
-                raise (Error (td.typ_loc, env, Invalid_type_subst_rhs));
               let info =
                   let subst =
                     Subst.add_type_function (Pident td.typ_id)
