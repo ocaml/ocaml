@@ -59,10 +59,10 @@ let used_constructors :
 let prefixed_sg = Hashtbl.create 113
 
 type error =
-  | Illegal_renaming of string * string * string
-  | Inconsistent_import of string * string * string
-  | Need_recursive_types of string * string
-  | Depend_on_unsafe_string_unit of string * string
+  | Illegal_renaming of modname * modname * filepath
+  | Inconsistent_import of modname * filepath * filepath
+  | Need_recursive_types of modname * modname
+  | Depend_on_unsafe_string_unit of modname * modname
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
 
@@ -490,7 +490,7 @@ and module_declaration_lazy =
 
 and module_components =
   {
-    alerts: string Misc.Stdlib.String.Map.t;
+    alerts: alerts;
     loc: Location.t;
     comps:
       (t * Subst.t * Path.t * address_lazy * Types.module_type,
@@ -622,7 +622,7 @@ let without_cmis f x =
 
 let components_of_module' =
   ref ((fun ~alerts:_ ~loc:_ _env _sub _path _addr _mty -> assert false) :
-         alerts:string Misc.Stdlib.String.Map.t -> loc:Location.t -> t ->
+         alerts:alerts -> loc:Location.t -> t ->
        Subst.t -> Path.t -> address_lazy -> module_type ->
        module_components)
 let components_of_module_maker' =

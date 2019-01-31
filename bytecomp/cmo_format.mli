@@ -15,6 +15,8 @@
 
 (* Symbol table information for .cmo and .cma files *)
 
+open Misc
+
 (* Relocation information *)
 
 type reloc_info =
@@ -26,15 +28,14 @@ type reloc_info =
 (* Descriptor for compilation units *)
 
 type compilation_unit =
-  { cu_name: string;                    (* Name of compilation unit *)
+  { cu_name: modname;                   (* Name of compilation unit *)
     mutable cu_pos: int;                (* Absolute position in file *)
     cu_codesize: int;                   (* Size of code block *)
     cu_reloc: (reloc_info * int) list;  (* Relocation information *)
-    cu_imports:
-      (string * Digest.t option) list; (* Names and CRC of intfs imported *)
-    cu_required_globals: Ident.t list; (* Compilation units whose initialization
-                                          side effects must occur before this
-                                          one. *)
+    cu_imports: crcs;                   (* Names and CRC of intfs imported *)
+    cu_required_globals: Ident.t list;  (* Compilation units whose
+                                           initialization side effects
+                                           must occur before this one. *)
     cu_primitives: string list;         (* Primitives declared inside *)
     mutable cu_force_link: bool;        (* Must be linked even if unref'ed *)
     mutable cu_debug: int;              (* Position of debugging info, or 0 *)

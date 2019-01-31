@@ -13,25 +13,27 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Misc
+
 (* Link .cmo files and produce a bytecode executable. *)
 
-val link : string list -> string -> unit
+val link : filepath list -> filepath -> unit
 val reset : unit -> unit
 
-val check_consistency: string -> Cmo_format.compilation_unit -> unit
+val check_consistency: filepath -> Cmo_format.compilation_unit -> unit
 
-val extract_crc_interfaces: unit -> (string * Digest.t option) list
+val extract_crc_interfaces: unit -> crcs
 
 type error =
-    File_not_found of string
-  | Not_an_object_file of string
-  | Wrong_object_name of string
-  | Symbol_error of string * Symtable.error
-  | Inconsistent_import of string * string * string
+  | File_not_found of filepath
+  | Not_an_object_file of filepath
+  | Wrong_object_name of filepath
+  | Symbol_error of filepath * Symtable.error
+  | Inconsistent_import of modname * filepath * filepath
   | Custom_runtime
-  | File_exists of string
-  | Cannot_open_dll of string
-  | Required_module_unavailable of string
+  | File_exists of filepath
+  | Cannot_open_dll of filepath
+  | Required_module_unavailable of modname
 
 exception Error of error
 
