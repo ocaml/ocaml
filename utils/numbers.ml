@@ -81,6 +81,8 @@ end
 module Int16 = struct
   type t = int
 
+  let zero = 0
+
   let print ppf t = Format.pp_print_int ppf t
 
   let of_int_exn i =
