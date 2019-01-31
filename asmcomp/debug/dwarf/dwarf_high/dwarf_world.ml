@@ -27,6 +27,9 @@ let emit ~compilation_unit_proto_die ~start_of_code_symbol
         Assign_abbrevs.run ~proto_die_root:compilation_unit_proto_die)
       ()
   in
+  List.iter (fun location_list ->
+      Debug_loc_table.insert debug_loc_table location_list)
+    assigned_abbrevs.dwarf_4_location_lists;
   let debug_abbrev_label = Asm_label.for_section (DWARF Debug_abbrev) in
   let debug_info_label = Asm_label.for_section (DWARF Debug_info) in
   let debug_info =

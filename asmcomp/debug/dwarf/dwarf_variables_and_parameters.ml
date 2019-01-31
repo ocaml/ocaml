@@ -632,7 +632,7 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
              [var] was defined.  For the moment, just hide [var]. *)
           function_proto_die, true
   in
-  let location_attribute_value =
+  let location_attribute_value, location_list_in_debug_loc_table =
     if is_static then begin
       (* The location of a static (toplevel) variable is invariant under changes
          to the program counter. As such a location list is not needed. *)
@@ -643,7 +643,7 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
          the OCaml middle end but also a determination as to whether GDB can
          support the necessary scoping. *)
       match phantom_defining_expr with
-      | Non_phantom -> []  (* Should have been caught below, in any case. *)
+      | Non_phantom -> [], None  (* Should have been caught below. *)
       | Phantom defining_expr ->
         if not (Mach.phantom_defining_expr_definitely_static defining_expr)
         then begin
@@ -659,14 +659,14 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
             ~proto_dies_for_vars ~need_rvalue defining_expr
         in
         match single_location_description with
-        | None -> []
+        | None -> [], None
         | Some single_location_description ->
           (* We set [is_visible_externally] to [false] since, even though
              some static variables are accessible from other units, there
              may be name clashes across units. *)
           [DAH.create_single_location_description single_location_description;
            DAH.create_external ~is_visible_externally:false;
-          ]
+          ], None
     end else begin
       (* Build a location list that identifies where the value of [var] may be
          found at runtime, indexed by program counter range. The representations
@@ -705,12 +705,13 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
         let location_list =
           Dwarf_4_location_list.create ~location_list_entries
         in
-        [Debug_loc_table.insert (DS.debug_loc_table state) ~location_list]
+        [Debug_loc_table.attribute_to_reference_location_list location_list],
+          Some location_list
       | Five ->
         let location_list_index =
           Location_list_table.add (DS.location_list_table state) location_list
         in
-        [DAH.create_location location_list_index]
+        [DAH.create_location location_list_index], None
     end
   in
   let is_parameter =
@@ -804,6 +805,7 @@ let dwarf_for_variable state (fundecl : L.fundecl) ~function_proto_die
   in
   Proto_die.create_ignore ?reference
     ?sort_priority
+    ?location_list_in_debug_loc_table
     ~parent:(Some parent_proto_die)
     ~tag
     ~attribute_values:(type_and_name_attributes @ location_attribute_value)

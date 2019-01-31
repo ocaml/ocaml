@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2014--2018 Jane Street Group LLC                           *)
+(*   Copyright 2014--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -22,7 +22,8 @@ include Dwarf_emittable.S with type t := t
 
 val create : unit -> t
 
-val insert
-   : t
-  -> location_list:Dwarf_4_location_list.t
+val insert : t -> Dwarf_4_location_list.t -> unit
+
+val attribute_to_reference_location_list
+   : Dwarf_4_location_list.t
   -> Dwarf_attribute_values.Attribute_value.t

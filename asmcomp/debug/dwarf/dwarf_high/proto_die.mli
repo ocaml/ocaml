@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2013--2018 Jane Street Group LLC                           *)
+(*   Copyright 2013--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -35,6 +35,7 @@ val create_reference : unit -> reference
 val create
    : ?reference:reference
   -> ?sort_priority:int
+  -> ?location_list_in_debug_loc_table:Dwarf_4_location_list.t
   -> parent:t option
   -> tag:Dwarf_tag.t
   -> attribute_values:Dwarf_attribute_values.Attribute_value.t list
@@ -44,6 +45,7 @@ val create
 val create_ignore
    : ?reference:reference
   -> ?sort_priority:int
+  -> ?location_list_in_debug_loc_table:Dwarf_4_location_list.t
   -> parent:t option
   -> tag:Dwarf_tag.t
   -> attribute_values:Dwarf_attribute_values.Attribute_value.t list
@@ -69,6 +71,7 @@ type fold_arg = private
       * (Dwarf_attribute_values.Attribute_value.t
           Dwarf_attributes.Attribute_specification.Sealed.Map.t)
       * Asm_label.t * Asm_symbol.t option (* optional name *)
+      * Dwarf_4_location_list.t option
   | End_of_siblings
 
 (* [depth_first_fold] traverses a proto-DIE tree in a depth-first order
@@ -84,3 +87,14 @@ val depth_first_fold
   -> init:'a
   -> f:('a -> fold_arg -> 'a)
   -> 'a
+
+(** If this proto-DIE has been marked as referencing a DWARF-4 location list,
+    return which list it is.  We do not currently need to reference more than
+    one list in the [attribute_values] of any given proto-DIE.  This
+    information (which could theoretically be deduced directly from
+    [attribute_values] rather than relying on the caller---though relying
+    on the caller is easier) enables us to emit the .debug_loc location lists
+    in the same order as they are encountered during a top-down traversal
+    as per [depth_first_fold].  This suppresses a complaint from objdump
+    "Location lists in .debug_loc start at ...". *)
+val location_list_in_debug_loc_table : t -> Dwarf_4_location_list.t option

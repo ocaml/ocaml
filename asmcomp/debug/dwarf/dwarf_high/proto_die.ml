@@ -32,6 +32,7 @@ type t = {
      "how to reference this DIE" value. *)
   mutable name : Asm_symbol.t option;
   (* For references between DIEs across units *)
+  location_list_in_debug_loc_table : Dwarf_4_location_list.t option;
 }
 
 let attribute_values_map attribute_values =
@@ -42,7 +43,8 @@ let attribute_values_map attribute_values =
 
 (* CR-someday mshinwell: Resurrect support for sibling links. *)
 
-let create ?reference ?(sort_priority = -1) ~parent ~tag ~attribute_values () =
+let create ?reference ?(sort_priority = -1) ?location_list_in_debug_loc_table
+      ~parent ~tag ~attribute_values () =
   begin match parent with
   | None ->
     if tag <> Dwarf_tag.Compile_unit then begin
@@ -63,6 +65,7 @@ let create ?reference ?(sort_priority = -1) ~parent ~tag ~attribute_values () =
       attribute_values;
       label = reference;
       name = None;
+      location_list_in_debug_loc_table;
     }
   in
   begin match parent with
@@ -80,9 +83,11 @@ let create ?reference ?(sort_priority = -1) ~parent ~tag ~attribute_values () =
   end;
   t
 
-let create_ignore ?reference ?sort_priority ~parent ~tag ~attribute_values () =
+let create_ignore ?reference ?sort_priority ?location_list_in_debug_loc_table
+      ~parent ~tag ~attribute_values () =
   let (_ : t) =
-    create ?reference ?sort_priority ~parent ~tag ~attribute_values ()
+    create ?reference ?sort_priority ?location_list_in_debug_loc_table
+      ~parent ~tag ~attribute_values ()
   in
   ()
 
@@ -99,6 +104,7 @@ type fold_arg =
   | DIE of Dwarf_tag.t * Child_determination.t
       * AV.t ASS.Map.t
       * Asm_label.t * Asm_symbol.t option (* optional name *)
+      * Dwarf_4_location_list.t option
   | End_of_siblings
 
 let rec depth_first_fold t ~init ~f =
@@ -107,7 +113,8 @@ let rec depth_first_fold t ~init ~f =
     else Yes
   in
   let acc =
-    f init (DIE (t.tag, has_children, t.attribute_values, t.label, t.name))
+    f init (DIE (t.tag, has_children, t.attribute_values, t.label, t.name,
+      t.location_list_in_debug_loc_table))
   in
   if Int.Map.is_empty t.children_by_sort_priority then
     acc
@@ -124,3 +131,5 @@ let rec depth_first_fold t ~init ~f =
     f acc End_of_siblings
 
 let reference t = t.label
+
+let location_list_in_debug_loc_table t = t.location_list_in_debug_loc_table
