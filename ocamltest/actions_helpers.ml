@@ -81,6 +81,13 @@ let setup_build_env add_testfile additional_files (_log : out_channel) env =
     then (testfile env) :: some_files
     else some_files in
   setup_symlinks (test_source_directory env) build_dir files;
+  let build_path_prefix_map =
+    Variables.make
+      ("BUILD_PATH_PREFIX_MAP", "rewriting for build directory path")
+  in
+  let env =
+    Environments.add build_path_prefix_map ("TEST_DIRECTORY=" ^ build_dir) env
+  in
   Sys.chdir build_dir;
   (Result.pass, env)
 

@@ -31,6 +31,10 @@ let compile_unit_proto_die ~sourcefile ~prefix_name ~cmt_file_digest ~objfiles
     if Filename.is_relative prefix_name then Filename.concat cwd prefix_name
     else prefix_name
   in
+  let source_directory_path =
+    Location.rewrite_absolute_path source_directory_path
+  in
+  let prefix_name = Location.rewrite_absolute_path prefix_name in
   let linker_dir_names =
     List.map (fun objfile ->
         let dir = Filename.dirname objfile in
