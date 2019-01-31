@@ -554,26 +554,33 @@ let rec print_address ppf = function
 
 (* The name of the compilation unit currently compiled.
    "" if outside a compilation unit. *)
+module Current_unit_name : sig
+  val get : unit -> modname
+  val set : modname -> unit
+  val is : modname -> bool
+  val is_name_of : Ident.t -> bool
+end = struct
+  let current_unit =
+    ref ""
+  let get () =
+    !current_unit
+  let set name =
+    current_unit := name
+  let is name =
+    !current_unit = name
+  let is_name_of id =
+    is (Ident.name id)
+end
+let _ = ignore Current_unit_name.is
 
-let current_unit = ref ""
-
-let set_unit_name name =
-  current_unit := name
-
-let get_unit_name () =
-  !current_unit
-
-let is_current_unit_name name =
-  !current_unit = name
-
-let is_current_unit_id id =
-  is_current_unit_name (Ident.name id)
+let set_unit_name = Current_unit_name.set
+let get_unit_name = Current_unit_name.get
 
 let find_same_module id tbl =
   match IdTbl.find_same id tbl with
   | x -> x
   | exception Not_found
-    when Ident.persistent id && not (is_current_unit_id id) ->
+    when Ident.persistent id && not (Current_unit_name.is_name_of id) ->
       Persistent
 
 (* signature of persistent compilation units *)
@@ -584,7 +591,7 @@ type persistent_module = {
 
 let add_persistent_structure id env =
   if not (Ident.persistent id) then invalid_arg "Env.add_persistent_structure";
-  if not (is_current_unit_id id) then
+  if not (Current_unit_name.is_name_of id) then
     { env with
       modules = IdTbl.add id Persistent env.modules;
       components = IdTbl.add id Persistent env.components;
@@ -655,7 +662,7 @@ let reset_declaration_caches () =
   ()
 
 let reset_cache () =
-  set_unit_name "";
+  Current_unit_name.set "";
   Persistent_env.clear persistent_env;
   reset_declaration_caches ();
   ()
@@ -1030,7 +1037,7 @@ let rec lookup_module_descr_aux ?loc ~mark lid env =
     Lident s ->
       let find_components s = (find_pers_mod s).pm_components in
       begin match IdTbl.find_name ~mark s env.components with
-      | exception Not_found when not (is_current_unit_name s) ->
+      | exception Not_found when not (Current_unit_name.is s) ->
         let p = Path.Pident (Ident.create_persistent s) in
         (p, find_components s)
       | (p, data) ->
