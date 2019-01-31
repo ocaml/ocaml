@@ -15,6 +15,7 @@
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
 module DAH = Dwarf_attribute_helpers
+module String = Misc.Stdlib.String
 
 let compile_unit_proto_die ~sourcefile ~prefix_name ~cmt_file_digest ~objfiles
       ~start_of_code_symbol ~end_of_code_symbol
@@ -46,7 +47,10 @@ let compile_unit_proto_die ~sourcefile ~prefix_name ~cmt_file_digest ~objfiles
     match linker_dir_names with
     | [] -> []
     | linker_dir_names ->
-      let linker_dir_names = Misc.Stdlib.String.Set.of_list linker_dir_names in
+      let linker_dir_names =
+        String.Set.map Location.rewrite_absolute_path
+          (String.Set.of_list linker_dir_names)
+      in
       [ DAH.create_ocaml_linker_dirs linker_dir_names ]
   in
   (* CR mshinwell: Use [Build_path_prefix_map]. *)
