@@ -969,12 +969,16 @@ class functional_point y =
     val x = y
     method get_x = x
     method move d = {< x = x + d >}
+    method move_to x = {< x >}
   end;;
 let p = new functional_point 7;;
 p#get_x;;
 (p#move 3)#get_x;;
+(p#move_to 15)#get_x;;
 p#get_x;;
 \end{caml_example}
+As with records, the form "{< x >}" is an elided version of
+"{< x = x >}" which avoids the repetition of the instance variable name.
 Note that the type abbreviation "functional_point" is recursive, which can
 be seen in the class type of "functional_point": the type of self is "'a"
 and "'a" appears inside the type of the method "move".
@@ -987,6 +991,7 @@ class bad_functional_point y =
     val x = y
     method get_x = x
     method move d = new bad_functional_point (x+d)
+    method move_to x = new bad_functional_point x
   end;;
 \end{caml_example}
 While objects of either class will behave the same, objects of their
