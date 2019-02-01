@@ -54,8 +54,14 @@ type pers_struct = {
 
 module String = Misc.Stdlib.String
 
+(* If a .cmi file is missing (or invalid), we
+   store it as Missing in the cache. *)
+type 'a pers_struct_info =
+  | Missing
+  | Found of pers_struct * 'a
+
 type 'a t = {
-  persistent_structures : (string, (pers_struct * 'a) option) Hashtbl.t;
+  persistent_structures : (string, 'a pers_struct_info) Hashtbl.t;
   imported_units: String.Set.t ref;
   imported_opaque_units: String.Set.t ref;
   crc_units: Consistbl.t;
@@ -88,7 +94,7 @@ let clear penv =
 let clear_missing {persistent_structures; _} =
   let missing_entries =
     Hashtbl.fold
-      (fun name r acc -> if r = None then name :: acc else acc)
+      (fun name r acc -> if r = Missing then name :: acc else acc)
       persistent_structures []
   in
   List.iter (Hashtbl.remove persistent_structures) missing_entries
@@ -101,8 +107,8 @@ let add_imported_opaque {imported_opaque_units; _} s =
 
 let find_in_cache {persistent_structures; _} s =
   match Hashtbl.find persistent_structures s with
-  | exception Not_found | None -> None
-  | Some (_ps, pm) -> Some pm
+  | exception Not_found | Missing -> None
+  | Found (_ps, pm) -> Some pm
 
 let import_crcs penv ~source crcs =
   let {crc_units; _} = penv in
@@ -136,8 +142,8 @@ let without_cmis penv f x =
 
 let fold {persistent_structures; _} f x =
   Hashtbl.fold (fun modname pso x -> match pso with
-      | None -> x
-      | Some (_, pm) -> f modname pm x)
+      | Missing -> x
+      | Found (_, pm) -> f modname pm x)
     persistent_structures x
 
 (* Reading persistent structures from .cmi files *)
@@ -145,7 +151,7 @@ let fold {persistent_structures; _} f x =
 let save_pers_struct penv crc ps pm =
   let {persistent_structures; crc_units; _} = penv in
   let modname = ps.ps_name in
-  Hashtbl.add persistent_structures modname (Some (ps, pm));
+  Hashtbl.add persistent_structures modname (Found (ps, pm));
   List.iter
     (function
         | Rectypes -> ()
@@ -181,7 +187,7 @@ let acknowledge_pers_struct penv check modname pers_sig pm =
     ps.ps_flags;
   if check then check_consistency penv ps;
   let {persistent_structures; _} = penv in
-  Hashtbl.add persistent_structures modname (Some (ps, pm));
+  Hashtbl.add persistent_structures modname (Found (ps, pm));
   ps
 
 let read_pers_struct penv val_of_pers_sig check modname filename =
@@ -196,8 +202,8 @@ let find_pers_struct penv val_of_pers_sig check name =
   let {persistent_structures; _} = penv in
   if name = "*predef*" then raise Not_found;
   match Hashtbl.find persistent_structures name with
-  | Some ps -> ps
-  | None -> raise Not_found
+  | Found (ps, pm) -> (ps, pm)
+  | Missing -> raise Not_found
   | exception Not_found ->
     match can_load_cmis penv with
     | Cannot_load_cmis _ -> raise Not_found
@@ -206,7 +212,7 @@ let find_pers_struct penv val_of_pers_sig check name =
           match !Persistent_signature.load ~unit_name:name with
           | Some psig -> psig
           | None ->
-            Hashtbl.add persistent_structures name None;
+            Hashtbl.add persistent_structures name Missing;
             raise Not_found
         in
         add_import penv name;
