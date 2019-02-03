@@ -1328,7 +1328,7 @@ partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
 	         middle_end/base_types asmcomp/debug driver toplevel tools; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
-	    $$d/*.$(O) $$d/*.$(SO) $d/*~; \
+	    $$d/*.$(O) $$d/*.$(SO) $$d/*~; \
 	done
 	rm -f *~
 
