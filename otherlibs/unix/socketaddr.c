@@ -111,10 +111,19 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
   case AF_UNIX:
     { value n;
       /* Based on recommendation in section BUGS of Linux unix(7). See
-         http://man7.org/linux/man-pages/man7/unix.7.html */
-      mlsize_t path_length =
-        strnlen(adr->s_unix.sun_path,
-                adr_len - offsetof(struct sockaddr_un, sun_path));
+         http://man7.org/linux/man-pages/man7/unix.7.html. */
+      mlsize_t struct_offset = offsetof(struct sockaddr_un, sun_path);
+      mlsize_t path_length = 0;
+      if (adr_len > struct_offset) {
+        // adr_len is 0 when sent from an unbound socket
+        path_length = adr_len - struct_offset;
+        if (adr->s_unix.sun_path[0] != '\0') {
+          /* paths _may_ be null-terminated, but abstract sockets
+           * start with a null, and may contain internal nulls. */
+          path_length = strnlen(adr->s_unix.sun_path, path_length);
+        }
+      }
+
       n = caml_alloc_initialized_string(path_length,
                                         (char *)adr->s_unix.sun_path);
       Begin_root (n);
