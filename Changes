@@ -135,11 +135,14 @@ OCaml 4.08.0
 - GPR#1959: Small simplification and optimization to Format.ifprintf
   (Gabriel Radanne, review by Gabriel Scherer)
 
-- GPR#1855: Add `Pervasives.protect ~finally`, similar to `Misc.try_finally`
-  from the compiler library but using `Printexc.raise_with_backtrace` for
-  preserving backtraces.
-  (Marcello Seri, review by Daniel Bünzli, Gabriel Scherer, François Bobot,
-  Nicolás Ojeda Bär, Xavier Clerc and Boris Yakobowski)
+- GPR#1855, GPR#2118: Add `Fun.protect ~finally` for enforcing local
+  invariants whether a function raises or not, similar to
+  `unwind-protect` in Lisp and `FINALLY` in Modula-2. It is careful
+  about preserving backtraces and treating exceptions in finally as
+  errors.
+  (Marcello Seri and Guillaume Munch-Maccagnoni, review by Daniel
+  Bünzli, Gabriel Scherer, François Bobot, Nicolás Ojeda Bär, Xavier
+  Clerc, Boris Yakobowski, Damien Doligez, and Xavier Leroy)
 
 - GPR#1986, MPR#6450: Add Set.disjoint
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
