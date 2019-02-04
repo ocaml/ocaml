@@ -594,6 +594,9 @@ OCaml 4.08.0
 - GPR#1938: always check ast invariants after preprocessing
   (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)
 
+- GPR#1941: refactor the command line parsing of ocamlcp and ocamloptp
+  (Valentin Gatien-Baron, review by Florian Angeletti)
+
 - GPR#1948: Refactor Stdlib.Format. Notably, use Stdlib.Stack and Stdlib.Queue,
   and avoid exceptions for control flow.
   (Vladimir Keleshev, review by Nicolás Ojeda Bär and Gabriel Scherer)
