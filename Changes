@@ -447,11 +447,13 @@ OCaml 4.08.0
   GPR#1702, GPR#1765, GPR#1863, and Gabriel Scherer's GPR#1903.
   (Gabriel Scherer, review by Florian Angeletti)
 
-- GPR#1788, 1831, 2007, 2198, move language extensions to the core chapters:
+- GPR#1788, 1831, 2007, 2198, 2232, move language extensions to the core
+  chapters:
      - GPR#1788: quoted string description
      - GPR#1831: local exceptions and exception cases
      - GPR#2007: 32-bit, 64-bit and native integer literals
      - GPR#2198: lazy patterns
+     - GPR#2232: short object copy notation
   (Florian Angeletti, review by Xavier Clerc, Perry E. Metzger, Gabriel Scherer
    and Jeremy Yallop)
 
