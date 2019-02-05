@@ -1,0 +1,53 @@
+#!/bin/sh
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 2019 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+case $1 in
+  compilerlibs/ocaml_{common,bytecomp,toplevel,optcomp,opttoplevel}.cm*)
+      echo ' -w -49';;
+  compilerlibs/ocaml_common__*.cm*)
+      echo ' -I compilerlibs' \
+           ' -open Ocaml_common';;
+  compilerlibs/ocaml_bytecomp__*.cm*)
+      echo ' -I compilerlibs' \
+           ' -open Ocaml_common' \
+           ' -open Ocaml_bytecomp';;
+  compilerlibs/ocaml_toplevel__*.cm*)
+      echo ' -I compilerlibs' \
+           ' -open Ocaml_common' \
+           ' -open Ocaml_bytecomp' \
+           ' -open Ocaml_toplevel';;
+  compilerlibs/ocaml_optcomp__*.cm*)
+      echo ' -I compilerlibs' \
+           ' -open Ocaml_common' \
+           ' -open Ocaml_optcomp';;
+  compilerlibs/ocaml_opttoplevel__*.cm*)
+      echo ' -I compilerlibs' \
+           ' -open Ocaml_common' \
+           ' -open Ocaml_bytecomp' \
+           ' -open Ocaml_optcomp' \
+           ' -open Ocaml_opttoplevel';;
+  compilerlibs/unprefixed/*.cm*)
+      echo ' -I compilerlibs';;
+  driver/*main.cm*)
+      echo ' -I compilerlibs' \
+           ' -I driver';;
+  toplevel/expunge.cm*)
+      echo ' -I compilerlibs';;
+  toplevel/topstart.cm*)
+      echo ' -I compilerlibs';;
+  *)
+      echo ' ';;
+esac

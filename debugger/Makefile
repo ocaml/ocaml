@@ -62,9 +62,7 @@ compiler_modules := \
 compiler_modules := \
   $(ROOTDIR)/compilerlibs/ocaml_common \
   $(addprefix $(ROOTDIR)/compilerlibs/ocaml_common__,$(compiler_modules)) \
-  $(addprefix $(ROOTDIR)/compilerlibs/,$(compiler_modules)) \
-  $(ROOTDIR)/compilerlibs/ocaml_toplevel__genprintval \
-  $(ROOTDIR)/compilerlibs/genprintval
+  $(ROOTDIR)/compilerlibs/ocaml_toplevel__genprintval
 
 debugger_modules := \
   int64ops primitives unix_tools debugger_config parameters lexer \

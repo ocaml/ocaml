@@ -47,10 +47,9 @@ include stdlib/StdlibModules
 CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims runtime/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x
-INCLUDES=-I compilerlibs -I driver -I toplevel
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48-66 \
 	  -warn-error A \
-          -bin-annot -safe-string -strict-formats -no-alias-deps $(INCLUDES)
+          -bin-annot -safe-string -strict-formats -no-alias-deps
 LINKFLAGS=
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
@@ -511,19 +510,17 @@ clean:: partialclean
 
 compilerlibs/ocaml_common__compdynlink.cmo: \
 	compilerlibs/ocaml_common__compdynlink.mlbyte
-	$(CAMLC) $(COMPFLAGS) -c -impl $<
+	$(CAMLC) $(COMPFLAGS) $(shell compilerlibs/Compflags $@) -c -impl $<
 compilerlibs/ocaml_common__compdynlink.cmx: \
 	compilerlibs/ocaml_common__compdynlink.mlopt
-	$(CAMLOPT) $(COMPFLAGS) -c -impl $<
+	$(CAMLOPT) $(COMPFLAGS) $(shell compilerlibs/Compflags $@) -c -impl $<
 
 tools/gen_prefix: tools/gen_prefix.ml
 	$(CAMLC) -o $@ $<
 
 define copy_file_with_prefix
 compilerlibs/ocaml_$(1)__$(notdir $(2)): $(2)
-	($(foreach d,$(3),echo "open! $(d)";) \
-	 echo "# 1 \"$(2)\""; \
-	 cat $$<) > $$@
+	(echo "# 1 \"$(2)\""; cat $$<) > $$@
 
 beforedepend:: compilerlibs/ocaml_$(1)__$(notdir $(2))
 endef
@@ -532,26 +529,24 @@ define copy_files_with_prefix
 $(foreach f,\
   $(addsuffix .ml,$(filter-out $(MLI_ONLY),$(2))) \
   $(addsuffix .mli,$(filter-out $(ML_ONLY),$(2))),\
-  $(eval $(call copy_file_with_prefix,$(1),$(f),$(3))))
+  $(eval $(call copy_file_with_prefix,$(1),$(f))))
 endef
 
-$(call copy_files_with_prefix,common,\
-$(filter-out driver/compdynlink,$(COMMON)),Ocaml_common)
+$(call copy_files_with_prefix,common,$(filter-out driver/compdynlink,$(COMMON)))
 
 compilerlibs/ocaml_common__compdynlink.mlbyte: driver/compdynlink.mlbyte
-	(echo 'open! Ocaml_common'; cat $<) > $@
+	cp $< $@
 compilerlibs/ocaml_common__compdynlink.mlopt: driver/compdynlink.mlopt
-	(echo 'open! Ocaml_common'; cat $<) > $@
+	cp $< $@
 compilerlibs/ocaml_common__compdynlink.mli: driver/compdynlink.mli
-	(echo 'open! Ocaml_common'; cat $<) > $@
+	cp $< $@
 beforedepend:: compilerlibs/ocaml_common__compdynlink.mlbyte \
 	compilerlibs/ocaml_common__compdynlink.mlopt \
 	compilerlibs/ocaml_common__compdynlink.mli
 
-$(call copy_files_with_prefix,bytecomp,$(BYTECOMP),Ocaml_common Ocaml_bytecomp)
-$(call copy_files_with_prefix,optcomp,$(OPTCOMP),Ocaml_common Ocaml_optcomp)
-$(call copy_files_with_prefix,toplevel,$(TOPLEVEL),\
-Ocaml_common Ocaml_bytecomp Ocaml_toplevel)
+$(call copy_files_with_prefix,bytecomp,$(BYTECOMP))
+$(call copy_files_with_prefix,optcomp,$(OPTCOMP))
+$(call copy_files_with_prefix,toplevel,$(TOPLEVEL))
 
 partialclean::
 	rm -f compilerlibs/*.ml compilerlibs/*.mli
@@ -568,14 +563,14 @@ $(addprefix compilerlibs/,$(COMMON_ML:=.ml) $(COMMON_MLI_ONLY:=.mli)): \
 	compilerlibs/common
 compilerlibs/common: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(COMMON_ML) -mli $(COMMON_MLI_ONLY) \
-	  -prefix ocaml_common -unprefix compilerlibs
+	  -prefix ocaml_common -unprefix compilerlibs/unprefixed
 	touch $@
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
 	rm -f compilerlibs/ocaml_common.ml
 	rm -f compilerlibs/common
 
-beforedepend:: compilerlibs/ocaml_common.ml compilerlibs/common
+beforedepend:: compilerlibs/ocaml_common.cmo compilerlibs/common
 
 # The bytecode compiler
 
@@ -589,14 +584,14 @@ $(addprefix compilerlibs/,$(BYTECOMP_ML:=.ml) $(BYTECOMP_MLI_ONLY:=.mli)): \
 	compilerlibs/bytecomp
 compilerlibs/bytecomp: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(BYTECOMP_ML) -mli $(BYTECOMP_MLI_ONLY) \
-	  -prefix ocaml_bytecomp -unprefix compilerlibs
+	  -prefix ocaml_bytecomp -unprefix compilerlibs/unprefixed
 	touch $@
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cma
 	rm -f compilerlibs/ocaml_bytecomp.ml
 	rm -f compilerlibs/bytecomp
 
-beforedepend:: compilerlibs/ocaml_bytecomp.ml compilerlibs/bytecomp
+beforedepend:: compilerlibs/ocaml_bytecomp.cmo compilerlibs/bytecomp
 
 ocamlc: compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma $(BYTESTART)
 	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
@@ -616,7 +611,7 @@ $(addprefix compilerlibs/,$(OPTCOMP_ML:=.ml) $(OPTCOMP_MLI_ONLY:=.mli)): \
 	compilerlibs/optcomp
 compilerlibs/optcomp: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(OPTCOMP_ML) -mli $(OPTCOMP_MLI_ONLY) \
-	  -prefix ocaml_optcomp -unprefix compilerlibs
+	  -prefix ocaml_optcomp -unprefix compilerlibs/unprefixed
 	touch $@
 
 partialclean::
@@ -624,7 +619,7 @@ partialclean::
 	rm -f compilerlibs/ocaml_optcomp.ml
 	rm -f compilerlibs/optcomp
 
-beforedepend:: compilerlibs/ocaml_optcomp.ml compilerlibs/optcomp
+beforedepend:: compilerlibs/ocaml_optcomp.cmo compilerlibs/optcomp
 
 ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
           $(OPTSTART)
@@ -647,14 +642,14 @@ $(addprefix compilerlibs/,$(TOPLEVEL_ML:=.ml) $(TOPLEVEL_MLI_ONLY:=.mli)): \
 	compilerlibs/toplevel
 compilerlibs/toplevel: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(TOPLEVEL_ML) -mli $(TOPLEVEL_MLI_ONLY) \
-	  -prefix ocaml_toplevel -unprefix compilerlibs
+	  -prefix ocaml_toplevel -unprefix compilerlibs/unprefixed
 	touch $@
 partialclean::
 	rm -f compilerlibs/ocamltoplevel.cma
 	rm -f compilerlibs/ocaml_toplevel.ml
 	rm -f compilerlibs/toplevel
 
-beforedepend:: compilerlibs/ocaml_toplevel.ml compilerlibs/toplevel
+beforedepend:: compilerlibs/ocaml_toplevel.cmo compilerlibs/toplevel
 
 ocaml_dependencies := \
   compilerlibs/ocamlcommon.cma \
@@ -1025,14 +1020,14 @@ partialclean::
 
 .PHONY: ocamltools
 ocamltools: ocamlc ocamllex \
-            compilerlibs/cmx_format.cmi \
+            compilerlibs/unprefixed/cmx_format.cmi \
             compilerlibs/ocaml_optcomp__printclambda.cmo \
-            compilerlibs/printclambda.cmo \
+            compilerlibs/unprefixed/printclambda.cmo \
             compilerlibs/ocamlmiddleend.cma \
             compilerlibs/ocaml_optcomp__backend_var.cmo \
-            compilerlibs/backend_var.cmo \
+            compilerlibs/unprefixed/backend_var.cmo \
             compilerlibs/ocaml_optcomp__export_info.cmo \
-            compilerlibs/export_info.cmo
+            compilerlibs/unprefixed/export_info.cmo
 	$(MAKE) -C tools all
 
 .PHONY: ocamltoolsopt
@@ -1041,14 +1036,14 @@ ocamltoolsopt: ocamlopt
 
 .PHONY: ocamltoolsopt.opt
 ocamltoolsopt.opt: ocamlc.opt ocamllex.opt \
-                   compilerlibs/cmx_format.cmi \
+                   compilerlibs/unprefixed/cmx_format.cmi \
                    compilerlibs/ocaml_optcomp__printclambda.cmx \
-                   compilerlibs/printclambda.cmx \
+                   compilerlibs/unprefixed/printclambda.cmx \
                    compilerlibs/ocamlmiddleend.cmxa \
                    compilerlibs/ocaml_optcomp__backend_var.cmx \
-                   compilerlibs/backend_var.cmx \
+                   compilerlibs/unprefixed/backend_var.cmx \
                    compilerlibs/ocaml_optcomp__export_info.cmx \
-                   compilerlibs/export_info.cmx
+                   compilerlibs/unprefixed/export_info.cmx
 	$(MAKE) -C tools opt.opt
 
 partialclean::
@@ -1167,18 +1162,18 @@ $(addprefix compilerlibs/,$(OPTTOPLEVEL_ML:=.ml) \
 compilerlibs/opttoplevel: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(filter-out %genprintval,$(OPTTOPLEVEL_ML)) \
 	  -mli $(OPTTOPLEVEL_MLI_ONLY) \
-	  -prefix ocaml_opttoplevel -unprefix compilerlibs
+	  -prefix ocaml_opttoplevel -unprefix compilerlibs/unprefixed
 	touch $@
 
 $(call copy_files_with_prefix,opttoplevel,$(filter-out toplevel/genprintval,\
-$(OPTTOPLEVEL)),Ocaml_common Ocaml_bytecomp Ocaml_optcomp Ocaml_opttoplevel)
+$(OPTTOPLEVEL)))
 
 partialclean::
 	rm -f compilerlibs/ocamlopttoplevel.cmxa
 	rm -f compilerlibs/ocaml_opttoplevel.ml
 	rm -f compilerlibs/opttoplevel
 
-beforedepend:: compilerlibs/ocaml_opttoplevel.ml compilerlibs/opttoplevel
+beforedepend:: compilerlibs/ocaml_opttoplevel.cmo compilerlibs/opttoplevel
 
 # When the native toplevel executable has an extension (e.g. ".exe"),
 # provide a phony 'ocamlnat' synonym
@@ -1246,13 +1241,13 @@ partialclean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) $(shell compilerlibs/Compflags $@) -c $<
 
 .mli.cmi:
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(COMPFLAGS) $(shell compilerlibs/Compflags $@) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) -c $<
+	$(CAMLOPT) $(COMPFLAGS) $(shell compilerlibs/Compflags $@) -c $<
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
@@ -1276,13 +1271,29 @@ depend: beforedepend
 	 $(CAMLDEP) $(DEPFLAGS) -I compilerlibs $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
 	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \
-	 $(filter-out compilerlibs/ocaml_common.ml compilerlibs/ocaml_bytecomp.ml \
-compilerlibs/ocaml_toplevel.ml compilerlibs/ocaml_optcomp.ml compilerlibs/ocaml_opttoplevel.ml,\
-$(wildcard compilerlibs/*.mli compilerlibs/*.ml)) >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs -native \
+	 -open Ocaml_common \
+	 compilerlibs/ocaml_common__*.{ml,mli} >> .depend
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \
+	 -open Ocaml_common -open Ocaml_bytecomp \
+	 compilerlibs/ocaml_bytecomp__*.{ml,mli} >> .depend
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \
+	 -open Ocaml_common -open Ocaml_bytecomp -open Ocaml_toplevel \
+	 compilerlibs/ocaml_toplevel__*.{ml,mli} >> .depend
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \
+	 -open Ocaml_common -open Ocaml_optcomp \
+	 compilerlibs/ocaml_optcomp__*.{ml,mli} >> .depend
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \
+	 -open Ocaml_common -open Ocaml_bytecomp -open Ocaml_optcomp \
+	 -open Ocaml_optoptcomp \
+	 compilerlibs/ocaml_opttopcomp__*.{ml,mli} >> .depend
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \
+	 -open Ocaml_common -native \
 	 -impl compilerlibs/ocaml_common__compdynlink.mlopt >> .depend
-	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs -bytecode \
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \
+	 -open Ocaml_common -bytecode \
 	 -impl compilerlibs/ocaml_common__compdynlink.mlbyte >> .depend
+	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \
+	 compilerlibs/unprefixed/*.mli compilerlibs/unprefixed/*.ml >> .depend
 
 .PHONY: distclean
 distclean: clean

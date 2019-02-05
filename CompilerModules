@@ -93,7 +93,7 @@ COMMON_MLI_ONLY=$(notdir $(filter $(MLI_ONLY),$(COMMON)))
 COMMON_CMO=\
   compilerlibs/ocaml_common.cmo \
   $(addprefix compilerlibs/ocaml_common__,$(COMMON_ML:=.cmo)) \
-  $(addprefix compilerlibs/,$(COMMON_ML:=.cmo))
+  $(addprefix compilerlibs/unprefixed/,$(COMMON_ML:=.cmo))
 
 BYTECOMP=bytecomp/bytegen \
   bytecomp/printinstr bytecomp/emitcode \
@@ -104,7 +104,7 @@ BYTECOMP_MLI_ONLY=$(notdir $(filter $(MLI_ONLY),$(BYTECOMP)))
 BYTECOMP_CMO=\
   compilerlibs/ocaml_bytecomp.cmo \
   $(addprefix compilerlibs/ocaml_bytecomp__,$(BYTECOMP_ML:=.cmo)) \
-  $(addprefix compilerlibs/,$(BYTECOMP_ML:=.cmo))
+  $(addprefix compilerlibs/unprefixed/,$(BYTECOMP_ML:=.cmo))
 
 ARCH_SPECIFIC =\
   asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
@@ -236,9 +236,9 @@ MIDDLE_END_ML=$(notdir $(filter-out $(MLI_ONLY),$(MIDDLE_END)))
 MIDDLE_END_MLI_ONLY=$(notdir $(filter $(MLI_ONLY),$(MIDDLE_END)))
 MIDDLE_END_CMO=\
   $(addprefix compilerlibs/ocaml_optcomp__,$(MIDDLE_END_ML:=.cmo)) \
-  $(addprefix compilerlibs/,$(MIDDLE_END_ML:=.cmo))
+  $(addprefix compilerlibs/unprefixed/,$(MIDDLE_END_ML:=.cmo))
 MIDDLE_END_CMI=\
-  $(addprefix compilerlibs/,$(MIDDLE_END_MLI_ONLY:=.cmi))
+  $(addprefix compilerlibs/unprefixed/,$(MIDDLE_END_MLI_ONLY:=.cmi))
 
 OPTCOMP=$(MIDDLE_END) $(ASMCOMP)
 OPTCOMP_ML=$(notdir $(filter-out $(MLI_ONLY),$(OPTCOMP)))
@@ -246,7 +246,7 @@ OPTCOMP_MLI_ONLY=$(notdir $(filter $(MLI_ONLY),$(OPTCOMP)))
 OPTCOMP_CMO=\
   compilerlibs/ocaml_optcomp.cmo \
   $(addprefix compilerlibs/ocaml_optcomp__,$(OPTCOMP_ML:=.cmo)) \
-  $(addprefix compilerlibs/,$(OPTCOMP_ML:=.cmo))
+  $(addprefix compilerlibs/unprefixed/,$(OPTCOMP_ML:=.cmo))
 
 TOPLEVEL=toplevel/genprintval toplevel/toploop \
   toplevel/trace toplevel/topdirs toplevel/topmain
@@ -255,7 +255,7 @@ TOPLEVEL_MLI_ONLY=$(notdir $(filter $(MLI_ONLY),$(TOPLEVEL)))
 TOPLEVEL_CMO=\
   compilerlibs/ocaml_toplevel.cmo \
   $(addprefix compilerlibs/ocaml_toplevel__,$(TOPLEVEL_ML:=.cmo)) \
-  $(addprefix compilerlibs/,$(TOPLEVEL_ML:=.cmo))
+  $(addprefix compilerlibs/unprefixed/,$(TOPLEVEL_ML:=.cmo))
 
 OPTTOPLEVEL=toplevel/genprintval toplevel/opttoploop \
   toplevel/opttopdirs toplevel/opttopmain
@@ -265,4 +265,4 @@ OPTTOPLEVEL_CMO=\
   compilerlibs/ocaml_opttoplevel.cmo \
   compilerlibs/ocaml_toplevel__genprintval.cmo \
   $(addprefix compilerlibs/ocaml_opttoplevel__,$(OPTTOPLEVEL_ML:=.cmo)) \
-  $(addprefix compilerlibs/,$(OPTTOPLEVEL_ML:=.cmo))
+  $(addprefix compilerlibs/unprefixed/,$(OPTTOPLEVEL_ML:=.cmo))

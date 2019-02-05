@@ -3,7 +3,6 @@ breakpoints.cmo : \
     pos.cmi \
     parameters.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/instruct.cmo \
     exec.cmi \
     debugcom.cmi \
     checkpoints.cmi \
@@ -13,14 +12,12 @@ breakpoints.cmx : \
     pos.cmx \
     parameters.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/instruct.cmx \
     exec.cmx \
     debugcom.cmx \
     checkpoints.cmx \
     breakpoints.cmi
 breakpoints.cmi : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/instruct.cmo
+    ../compilerlibs/ocaml_common.cmo
 checkpoints.cmo : \
     primitives.cmi \
     int64ops.cmi \
@@ -37,7 +34,6 @@ checkpoints.cmi : \
 command_line.cmo : \
     unix_tools.cmi \
     $(UNIXDIR)/unix.cmi \
-    ../compilerlibs/types.cmo \
     time_travel.cmi \
     symbols.cmi \
     source.cmi \
@@ -53,31 +49,22 @@ command_line.cmo : \
     parser.cmi \
     parameters.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/misc.cmo \
-    ../compilerlibs/longident.cmo \
-    ../compilerlibs/location.cmo \
     loadprinter.cmi \
     lexer.cmi \
     int64ops.cmi \
-    ../compilerlibs/instruct.cmo \
     input_handling.cmi \
     history.cmi \
     frames.cmi \
     events.cmi \
     eval.cmi \
-    ../compilerlibs/envaux.cmo \
-    ../compilerlibs/env.cmo \
     debugger_config.cmi \
     debugcom.cmi \
-    ../compilerlibs/ctype.cmo \
-    ../compilerlibs/config.cmo \
     checkpoints.cmi \
     breakpoints.cmi \
     command_line.cmi
 command_line.cmx : \
     unix_tools.cmx \
     $(UNIXDIR)/unix.cmx \
-    ../compilerlibs/types.cmx \
     time_travel.cmx \
     symbols.cmx \
     source.cmx \
@@ -93,24 +80,16 @@ command_line.cmx : \
     parser.cmx \
     parameters.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/misc.cmx \
-    ../compilerlibs/longident.cmx \
-    ../compilerlibs/location.cmx \
     loadprinter.cmx \
     lexer.cmx \
     int64ops.cmx \
-    ../compilerlibs/instruct.cmx \
     input_handling.cmx \
     history.cmx \
     frames.cmx \
     events.cmx \
     eval.cmx \
-    ../compilerlibs/envaux.cmx \
-    ../compilerlibs/env.cmx \
     debugger_config.cmx \
     debugcom.cmx \
-    ../compilerlibs/ctype.cmx \
-    ../compilerlibs/config.cmx \
     checkpoints.cmx \
     breakpoints.cmx \
     command_line.cmi
@@ -118,14 +97,12 @@ command_line.cmi :
 debugcom.cmo : \
     primitives.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/misc.cmo \
     int64ops.cmi \
     input_handling.cmi \
     debugcom.cmi
 debugcom.cmx : \
     primitives.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/misc.cmx \
     int64ops.cmx \
     input_handling.cmx \
     debugcom.cmi
@@ -139,68 +116,31 @@ debugger_config.cmx : \
     debugger_config.cmi
 debugger_config.cmi :
 eval.cmo : \
-    ../compilerlibs/types.cmo \
-    ../compilerlibs/symtable.cmo \
-    ../compilerlibs/subst.cmo \
     printval.cmi \
-    ../compilerlibs/printtyp.cmo \
-    ../compilerlibs/predef.cmo \
-    ../compilerlibs/path.cmo \
     parser_aux.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/misc.cmo \
-    ../compilerlibs/longident.cmo \
-    ../compilerlibs/instruct.cmo \
-    ../compilerlibs/ident.cmo \
     frames.cmi \
-    ../compilerlibs/env.cmo \
     debugcom.cmi \
-    ../compilerlibs/ctype.cmo \
-    ../compilerlibs/btype.cmo \
     eval.cmi
 eval.cmx : \
-    ../compilerlibs/types.cmx \
-    ../compilerlibs/symtable.cmx \
-    ../compilerlibs/subst.cmx \
     printval.cmx \
-    ../compilerlibs/printtyp.cmx \
-    ../compilerlibs/predef.cmx \
-    ../compilerlibs/path.cmx \
     parser_aux.cmi \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/misc.cmx \
-    ../compilerlibs/longident.cmx \
-    ../compilerlibs/instruct.cmx \
-    ../compilerlibs/ident.cmx \
     frames.cmx \
-    ../compilerlibs/env.cmx \
     debugcom.cmx \
-    ../compilerlibs/ctype.cmx \
-    ../compilerlibs/btype.cmx \
     eval.cmi
 eval.cmi : \
-    ../compilerlibs/types.cmo \
-    ../compilerlibs/path.cmo \
     parser_aux.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/longident.cmo \
-    ../compilerlibs/instruct.cmo \
-    ../compilerlibs/ident.cmo \
-    ../compilerlibs/env.cmo \
     debugcom.cmi
 events.cmo : \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/location.cmo \
-    ../compilerlibs/instruct.cmo \
     events.cmi
 events.cmx : \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/location.cmx \
-    ../compilerlibs/instruct.cmx \
     events.cmi
 events.cmi : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/instruct.cmo
+    ../compilerlibs/ocaml_common.cmo
 exec.cmo : \
     exec.cmi
 exec.cmx : \
@@ -209,22 +149,17 @@ exec.cmi :
 frames.cmo : \
     symbols.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/misc.cmo \
-    ../compilerlibs/instruct.cmo \
     events.cmi \
     debugcom.cmi \
     frames.cmi
 frames.cmx : \
     symbols.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/misc.cmx \
-    ../compilerlibs/instruct.cmx \
     events.cmx \
     debugcom.cmx \
     frames.cmi
 frames.cmi : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/instruct.cmo
+    ../compilerlibs/ocaml_common.cmo
 history.cmo : \
     primitives.cmi \
     int64ops.cmi \
@@ -264,39 +199,17 @@ lexer.cmx : \
 lexer.cmi : \
     parser.cmi
 loadprinter.cmo : \
-    ../compilerlibs/types.cmo \
-    ../compilerlibs/symtable.cmo \
     printval.cmi \
-    ../compilerlibs/printtyp.cmo \
-    ../compilerlibs/path.cmo \
     parameters.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/misc.cmo \
-    ../compilerlibs/longident.cmo \
-    ../compilerlibs/env.cmo \
-    ../compilerlibs/ctype.cmo \
-    ../compilerlibs/config.cmo \
-    ../compilerlibs/compdynlink.cmo \
     loadprinter.cmi
 loadprinter.cmx : \
-    ../compilerlibs/types.cmx \
-    ../compilerlibs/symtable.cmx \
     printval.cmx \
-    ../compilerlibs/printtyp.cmx \
-    ../compilerlibs/path.cmx \
     parameters.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/misc.cmx \
-    ../compilerlibs/longident.cmx \
-    ../compilerlibs/env.cmx \
-    ../compilerlibs/ctype.cmx \
-    ../compilerlibs/config.cmx \
-    ../compilerlibs/compdynlink.cmx \
     loadprinter.cmi
 loadprinter.cmi : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/longident.cmo \
-    ../compilerlibs/compdynlink.cmo
+    ../compilerlibs/ocaml_common.cmo
 main.cmo : \
     unix_tools.cmi \
     $(UNIXDIR)/unix.cmi \
@@ -307,17 +220,12 @@ main.cmo : \
     primitives.cmi \
     parameters.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/misc.cmo \
     loadprinter.cmi \
     input_handling.cmi \
     frames.cmi \
     exec.cmi \
-    ../compilerlibs/env.cmo \
     debugger_config.cmi \
-    ../compilerlibs/config.cmo \
     command_line.cmi \
-    ../compilerlibs/cmi_format.cmo \
-    ../compilerlibs/clflags.cmo \
     checkpoints.cmi
 main.cmx : \
     unix_tools.cmx \
@@ -329,44 +237,33 @@ main.cmx : \
     primitives.cmx \
     parameters.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/misc.cmx \
     loadprinter.cmx \
     input_handling.cmx \
     frames.cmx \
     exec.cmx \
-    ../compilerlibs/env.cmx \
     debugger_config.cmx \
-    ../compilerlibs/config.cmx \
     command_line.cmx \
-    ../compilerlibs/cmi_format.cmx \
-    ../compilerlibs/clflags.cmx \
     checkpoints.cmx
 parameters.cmo : \
     primitives.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/envaux.cmo \
     debugger_config.cmi \
-    ../compilerlibs/config.cmo \
     parameters.cmi
 parameters.cmx : \
     primitives.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/envaux.cmx \
     debugger_config.cmx \
-    ../compilerlibs/config.cmx \
     parameters.cmi
 parameters.cmi :
 parser.cmo : \
     parser_aux.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/longident.cmo \
     int64ops.cmi \
     input_handling.cmi \
     parser.cmi
 parser.cmx : \
     parser_aux.cmi \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/longident.cmx \
     int64ops.cmx \
     input_handling.cmx \
     parser.cmi
@@ -374,41 +271,28 @@ parser.cmi : \
     parser_aux.cmi \
     ../compilerlibs/ocaml_common.cmo
 parser_aux.cmi : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/longident.cmo
+    ../compilerlibs/ocaml_common.cmo
 pattern_matching.cmo : \
-    ../compilerlibs/typedtree.cmo \
     parser_aux.cmi \
-    ../compilerlibs/misc.cmo \
     debugger_config.cmi \
     debugcom.cmi \
-    ../compilerlibs/ctype.cmo \
     pattern_matching.cmi
 pattern_matching.cmx : \
-    ../compilerlibs/typedtree.cmx \
     parser_aux.cmi \
-    ../compilerlibs/misc.cmx \
     debugger_config.cmx \
     debugcom.cmx \
-    ../compilerlibs/ctype.cmx \
     pattern_matching.cmi
 pattern_matching.cmi : \
-    ../compilerlibs/typedtree.cmo \
     parser_aux.cmi \
     debugcom.cmi
 pos.cmo : \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/location.cmo \
-    ../compilerlibs/instruct.cmo \
     pos.cmi
 pos.cmx : \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/location.cmx \
-    ../compilerlibs/instruct.cmx \
     pos.cmi
 pos.cmi : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/instruct.cmo
+    ../compilerlibs/ocaml_common.cmo
 primitives.cmo : \
     $(UNIXDIR)/unix.cmi \
     primitives.cmi
@@ -418,37 +302,20 @@ primitives.cmx : \
 primitives.cmi : \
     $(UNIXDIR)/unix.cmi
 printval.cmo : \
-    ../compilerlibs/types.cmo \
-    ../compilerlibs/symtable.cmo \
-    ../compilerlibs/printtyp.cmo \
     parser_aux.cmi \
-    ../compilerlibs/outcometree.cmi \
-    ../compilerlibs/oprint.cmo \
     ../compilerlibs/ocaml_toplevel.cmo \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/genprintval.cmo \
-    ../compilerlibs/env.cmo \
     debugcom.cmi \
     printval.cmi
 printval.cmx : \
-    ../compilerlibs/types.cmx \
-    ../compilerlibs/symtable.cmx \
-    ../compilerlibs/printtyp.cmx \
     parser_aux.cmi \
-    ../compilerlibs/outcometree.cmi \
-    ../compilerlibs/oprint.cmx \
     ../compilerlibs/ocaml_toplevel.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/genprintval.cmx \
-    ../compilerlibs/env.cmx \
     debugcom.cmx \
     printval.cmi
 printval.cmi : \
-    ../compilerlibs/types.cmo \
-    ../compilerlibs/path.cmo \
     parser_aux.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/env.cmo \
     debugcom.cmi
 program_loading.cmo : \
     unix_tools.cmi \
@@ -481,9 +348,7 @@ program_management.cmo : \
     int64ops.cmi \
     input_handling.cmi \
     history.cmi \
-    ../compilerlibs/envaux.cmo \
     debugger_config.cmi \
-    ../compilerlibs/config.cmo \
     breakpoints.cmi \
     program_management.cmi
 program_management.cmx : \
@@ -499,9 +364,7 @@ program_management.cmx : \
     int64ops.cmx \
     input_handling.cmx \
     history.cmx \
-    ../compilerlibs/envaux.cmx \
     debugger_config.cmx \
-    ../compilerlibs/config.cmx \
     breakpoints.cmx \
     program_management.cmi
 program_management.cmi :
@@ -523,8 +386,6 @@ show_information.cmo : \
     printval.cmi \
     parameters.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/misc.cmo \
-    ../compilerlibs/instruct.cmo \
     frames.cmi \
     events.cmi \
     debugcom.cmi \
@@ -538,8 +399,6 @@ show_information.cmx : \
     printval.cmx \
     parameters.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/misc.cmx \
-    ../compilerlibs/instruct.cmx \
     frames.cmx \
     events.cmx \
     debugcom.cmx \
@@ -547,15 +406,12 @@ show_information.cmx : \
     breakpoints.cmx \
     show_information.cmi
 show_information.cmi : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/instruct.cmo
+    ../compilerlibs/ocaml_common.cmo
 show_source.cmo : \
     source.cmi \
     primitives.cmi \
     parameters.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/location.cmo \
-    ../compilerlibs/instruct.cmo \
     events.cmi \
     debugger_config.cmi \
     show_source.cmi
@@ -564,56 +420,40 @@ show_source.cmx : \
     primitives.cmx \
     parameters.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/location.cmx \
-    ../compilerlibs/instruct.cmx \
     events.cmx \
     debugger_config.cmx \
     show_source.cmi
 show_source.cmi : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/instruct.cmo
+    ../compilerlibs/ocaml_common.cmo
 source.cmo : \
     primitives.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/misc.cmo \
     debugger_config.cmi \
-    ../compilerlibs/config.cmo \
     source.cmi
 source.cmx : \
     primitives.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/misc.cmx \
     debugger_config.cmx \
-    ../compilerlibs/config.cmx \
     source.cmi
 source.cmi :
 symbols.cmo : \
-    ../compilerlibs/symtable.cmo \
     program_loading.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/misc.cmo \
-    ../compilerlibs/instruct.cmo \
     events.cmi \
     debugger_config.cmi \
     debugcom.cmi \
     checkpoints.cmi \
-    ../compilerlibs/bytesections.cmo \
     symbols.cmi
 symbols.cmx : \
-    ../compilerlibs/symtable.cmx \
     program_loading.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/misc.cmx \
-    ../compilerlibs/instruct.cmx \
     events.cmx \
     debugger_config.cmx \
     debugcom.cmx \
     checkpoints.cmx \
-    ../compilerlibs/bytesections.cmx \
     symbols.cmi
 symbols.cmi : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/instruct.cmo
+    ../compilerlibs/ocaml_common.cmo
 time_travel.cmo : \
     trap_barrier.cmi \
     symbols.cmi \
@@ -621,9 +461,7 @@ time_travel.cmo : \
     program_loading.cmi \
     primitives.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/misc.cmo \
     int64ops.cmi \
-    ../compilerlibs/instruct.cmo \
     input_handling.cmi \
     exec.cmi \
     events.cmi \
@@ -639,9 +477,7 @@ time_travel.cmx : \
     program_loading.cmx \
     primitives.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/misc.cmx \
     int64ops.cmx \
-    ../compilerlibs/instruct.cmx \
     input_handling.cmx \
     exec.cmx \
     events.cmx \
@@ -666,12 +502,10 @@ trap_barrier.cmi :
 unix_tools.cmo : \
     $(UNIXDIR)/unix.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/misc.cmo \
     unix_tools.cmi
 unix_tools.cmx : \
     $(UNIXDIR)/unix.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/misc.cmx \
     unix_tools.cmi
 unix_tools.cmi : \
     $(UNIXDIR)/unix.cmi

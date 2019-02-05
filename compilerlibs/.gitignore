@@ -3,5 +3,16 @@
 # The lines tell git to ignore everything in this directory except
 # the .gitignore file itself.
 
-*
-!.gitignore
+*.ml
+*.mli
+*.cm*
+*.obj
+*.lib
+*.mlbyte
+*.mlopt
+*.a
+common
+bytecomp
+optcomp
+toplevel
+opttoplevel

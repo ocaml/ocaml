@@ -62,14 +62,14 @@ COMPILEROBJS := \
 COMPILEROBJS := \
   $(COMPLIBDIR)/ocaml_common.cmo \
   $(addprefix $(COMPLIBDIR)/ocaml_common__,$(COMPILEROBJS)) \
-  $(addprefix $(COMPLIBDIR)/,$(COMPILEROBJS))
+  $(addprefix $(COMPLIBDIR)/unprefixed/,$(COMPILEROBJS))
 
 COMPILERINTFS := \
   cmo_format.cmi
 
 COMPILERINTFS := \
   $(addprefix $(COMPLIBDIR)/ocaml_common__,$(COMPILERINTFS)) \
-  $(addprefix $(COMPLIBDIR)/,$(COMPILERINTFS))
+  $(addprefix $(COMPLIBDIR)/unprefixed/,$(COMPILERINTFS))
 
 all: dynlink.cma extract_crc
 

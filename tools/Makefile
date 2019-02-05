@@ -77,7 +77,7 @@ CAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
 CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
-INCLUDES = -I $(ROOTDIR)/compilerlibs
+INCLUDES = -I $(ROOTDIR)/compilerlibs -I $(ROOTDIR)/compilerlibs/unprefixed
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
  -safe-string -strict-formats -bin-annot $(INCLUDES)
 LINKFLAGS = $(INCLUDES)
@@ -341,11 +341,11 @@ OBJINFO=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cma \
         $(ROOTDIR)/compilerlibs/ocaml_optcomp__backend_var.cmo \
-        $(ROOTDIR)/compilerlibs/backend_var.cmo \
+        $(ROOTDIR)/compilerlibs/unprefixed/backend_var.cmo \
         $(ROOTDIR)/compilerlibs/ocaml_optcomp__printclambda.cmo \
-        $(ROOTDIR)/compilerlibs/printclambda.cmo \
+        $(ROOTDIR)/compilerlibs/unprefixed/printclambda.cmo \
         $(ROOTDIR)/compilerlibs/ocaml_optcomp__export_info.cmo \
-        $(ROOTDIR)/compilerlibs/export_info.cmo \
+        $(ROOTDIR)/compilerlibs/unprefixed/export_info.cmo \
         objinfo.cmo
 
 $(call byte_and_opt,ocamlobjinfo,$(OBJINFO),objinfo_helper$(EXE))
@@ -364,9 +364,12 @@ $(call byte_and_opt,primreq,$(primreq),)
 LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlbytecomp.cmxa \
         $(ROOTDIR)/compilerlibs/ocamlmiddleend.cmxa \
-        $(ROOTDIR)/compilerlibs/backend_var.cmx \
-        $(ROOTDIR)/compilerlibs/printclambda.cmx \
-        $(ROOTDIR)/compilerlibs/export_info.cmx \
+        $(ROOTDIR)/compilerlibs/ocaml_optcomp__backend_var.cmo \
+        $(ROOTDIR)/compilerlibs/unprefixed/backend_var.cmx \
+        $(ROOTDIR)/compilerlibs/ocaml_optcomp__printclambda.cmo \
+        $(ROOTDIR)/compilerlibs/unprefixed/printclambda.cmx \
+        $(ROOTDIR)/compilerlibs/ocaml_optcomp__export_info.cmo \
+        $(ROOTDIR)/compilerlibs/unprefixed/export_info.cmx \
 	$(ROOTDIR)/otherlibs/str/str.cmxa \
 	lintapidiff.cmx
 
