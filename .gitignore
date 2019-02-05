@@ -71,9 +71,9 @@ _build
 /bytecomp/runtimedef.ml
 /bytecomp/opcodes.ml
 
-/debugger/lexer.ml
-/debugger/parser.ml
-/debugger/parser.mli
+/debugger/debug_lexer.ml
+/debugger/debug_parser.ml
+/debugger/debug_parser.mli
 /debugger/ocamldebug
 /driver/compdynlink.mlopt
 /driver/compdynlink.mlbyte
