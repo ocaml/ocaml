@@ -64,7 +64,10 @@ module Make (S : Compute_ranges_intf.S_functor) = struct
     let rewrite_labels t ~env =
       let start_pos = rewrite_label env t.start_pos in
       let end_pos = rewrite_label env t.end_pos in
-      if start_pos = end_pos then None
+      if start_pos = end_pos
+        && t.start_pos_offset = 0
+        && t.end_pos_offset = 0
+      then None
       else
         Some {
           t with
