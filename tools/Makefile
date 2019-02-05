@@ -77,7 +77,7 @@ CAMLC = $(CAMLRUN) $(ROOTDIR)/boot/ocamlc -g -nostdlib -I $(ROOTDIR)/boot \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
 CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
-INCLUDES = -I $(ROOTDIR)/compilerlibs -I $(ROOTDIR)/compilerlibs/unprefixed
+INCLUDES = -I $(ROOTDIR)/compilerlibs
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
  -safe-string -strict-formats -bin-annot $(INCLUDES) -open Ocaml_common
 LINKFLAGS = $(INCLUDES)
@@ -109,25 +109,19 @@ clean::
 P=ocaml_common__
 
 CSLPROF=ocamlprof.cmo
-CSLPROF_IMPORTS:=config.cmo build_path_prefix_map.cmo misc.cmo \
-  identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo docstrings.cmo \
-  syntaxerr.cmo ast_helper.cmo \
-  camlinternalMenhirLib.cmo parser.cmo \
-  pprintast.cmo \
-  lexer.cmo parse.cmo
-CSLPROF_IMPORTS:=\
-  $(addprefix $(P), $(CSLPROF_IMPORTS)) \
-  $(CSLPROF_IMPORTS)
+CSLPROF_IMPORTS=$(P)config.cmo $(P)build_path_prefix_map.cmo $(P)misc.cmo \
+  $(P)identifiable.cmo $(P)numbers.cmo $(P)arg_helper.cmo $(P)clflags.cmo $(P)terminfo.cmo \
+  $(P)warnings.cmo $(P)location.cmo $(P)longident.cmo $(P)docstrings.cmo \
+  $(P)syntaxerr.cmo $(P)ast_helper.cmo \
+  $(P)camlinternalMenhirLib.cmo $(P)parser.cmo \
+  $(P)pprintast.cmo \
+  $(P)lexer.cmo $(P)parse.cmo
 
 $(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
 
-ocamlcp_cmos := config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
-               warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
-               clflags.cmo main_args.cmo
-ocamlcp_cmos := \
-  $(addprefix $(P), $(ocamlcp_cmos)) \
-  $(ocamlcp_cmos)
+ocamlcp_cmos := $(P)config.cmo $(P)build_path_prefix_map.cmo $(P)misc.cmo $(P)profile.cmo \
+               $(P)warnings.cmo $(P)identifiable.cmo $(P)numbers.cmo $(P)arg_helper.cmo \
+               $(P)clflags.cmo $(P)main_args.cmo
 
 $(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
 $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
@@ -152,10 +146,7 @@ installopt::
 # To help building mixed-mode libraries (OCaml + C)
 
 OCAMLMKLIB=ocamlmklibconfig.cmo ocamlmklib.cmo
-OCAMLMKLIB_IMPORTS:=config.cmo build_path_prefix_map.cmo misc.cmo
-OCAMLMKLIB_IMPORTS:=\
-  $(addprefix $(P), $(OCAMLMKLIB_IMPORTS)) \
-  $(OCAMLMKLIB_IMPORTS)
+OCAMLMKLIB_IMPORTS:=$(P)config.cmo $(P)build_path_prefix_map.cmo $(P)misc.cmo
 
 $(call byte_and_opt,ocamlmklib,$(OCAMLMKLIB_IMPORTS) $(OCAMLMKLIB),)
 
@@ -176,12 +167,9 @@ clean::
 # To make custom toplevels
 
 OCAMLMKTOP=ocamlmktop.cmo
-OCAMLMKTOP_IMPORTS:=config.cmo build_path_prefix_map.cmo misc.cmo \
-       identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
-       load_path.cmo ccomp.cmo
-OCAMLMKTOP_IMPORTS:=\
-  $(addprefix $(P), $(OCAMLMKTOP_IMPORTS)) \
-  $(OCAMLMKTOP_IMPORTS)
+OCAMLMKTOP_IMPORTS:=$(P)config.cmo $(P)build_path_prefix_map.cmo $(P)misc.cmo \
+       $(P)identifiable.cmo $(P)numbers.cmo $(P)arg_helper.cmo $(P)clflags.cmo \
+       $(P)load_path.cmo $(P)ccomp.cmo
 
 $(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 
@@ -451,7 +439,8 @@ CAMLDEP=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
 DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -open Ocaml_common *.mli *.ml > .depend
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -map ../compilerlibs/ocaml_common.ml \
+	  -open Ocaml_common *.mli *.ml > .depend
 
 .PHONY: clean install beforedepend depend
 

@@ -354,14 +354,14 @@ endif
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_PROG) expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
 	$(INSTALL_DATA) \
-	   compilerlibs/topdirs.cmi \
+	   compilerlibs/unprefixed/topdirs.cmi \
 	   "$(INSTALL_LIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	   compilerlibs/ocaml_toplevel__topdirs.cmti \
 	   compilerlibs/ocaml_toplevel__topdirs.mli \
-	   compilerlibs/topdirs.cmt \
-           compilerlibs/topdirs.ml \
+	   compilerlibs/unprefixed/topdirs.cmt \
+           compilerlibs/unprefixed/topdirs.ml \
 	   "$(INSTALL_LIBDIR)"
 endif
 	$(MAKE) -C tools install
@@ -463,7 +463,7 @@ installoptopt:
 	  $(INSTALL_PROG) \
 	    ocamlnat$(EXE) "$(INSTALL_BINDIR)/ocamlnat$(EXE)"; \
 	  $(INSTALL_DATA) \
-	     compilerlibs/opttopdirs.cmi \
+	     compilerlibs/unprefixed/opttopdirs.cmi \
 	     "$(INSTALL_LIBDIR)"; \
 	  $(INSTALL_DATA) \
 	     compilerlibs/ocamlopttoplevel.cmxa \
@@ -1268,8 +1268,9 @@ MAPS=\
 .PHONY: depend
 depend: beforedepend
 	(for d in driver toplevel; do \
-	 $(CAMLDEP) $(DEPFLAGS) -I compilerlibs \
-	   -open Ocaml_common -open Ocaml_bytecomp -open Ocaml_toplevel \
+	 $(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \
+	   -open Ocaml_common -open Ocaml_bytecomp \
+	   -open Ocaml_toplevel -open Ocaml_optcomp \
 	   $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
 	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \

@@ -97,7 +97,8 @@ clean::
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -open Ocaml_common *.mli *.ml \
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -map ../compilerlibs/ocaml_common.ml \
+	  -open Ocaml_common *.mli *.ml \
 	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
 debug_lexer.ml: debug_lexer.mll

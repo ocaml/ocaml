@@ -43,33 +43,26 @@ OBJS=dynlink_compilerlibs.cmo dynlink_types.cmo \
 NATOBJS=dynlink_types.cmx dynlink_platform_intf.cmx \
   dynlink_common.cmx dynlink.cmx
 
-COMPILEROBJS := \
-  config.cmo build_path_prefix_map.cmo misc.cmo \
-  identifiable.cmo numbers.cmo arg_helper.cmo \
-  clflags.cmo consistbl.cmo \
-  terminfo.cmo warnings.cmo load_path.cmo \
-  location.cmo longident.cmo \
-  docstrings.cmo syntaxerr.cmo \
-  ast_helper.cmo ast_mapper.cmo ast_iterator.cmo \
-  attr_helper.cmo builtin_attributes.cmo \
-  ident.cmo path.cmo primitive.cmo types.cmo \
-  btype.cmo subst.cmo predef.cmo \
-  datarepr.cmo cmi_format.cmo env.cmo \
-  lambda.cmo instruct.cmo \
-  opcodes.cmo runtimedef.cmo bytesections.cmo \
-  dll.cmo meta.cmo symtable.cmo
+P=$(COMPLIBDIR)/ocaml_common__
 
-COMPILEROBJS := \
-  $(COMPLIBDIR)/ocaml_common.cmo \
-  $(addprefix $(COMPLIBDIR)/ocaml_common__,$(COMPILEROBJS)) \
-  $(addprefix $(COMPLIBDIR)/unprefixed/,$(COMPILEROBJS))
+COMPILEROBJS = \
+  $(P)config.cmo $(P)build_path_prefix_map.cmo $(P)misc.cmo \
+  $(P)identifiable.cmo $(P)numbers.cmo $(P)arg_helper.cmo \
+  $(P)clflags.cmo $(P)consistbl.cmo \
+  $(P)terminfo.cmo $(P)warnings.cmo $(P)load_path.cmo \
+  $(P)location.cmo $(P)longident.cmo \
+  $(P)docstrings.cmo $(P)syntaxerr.cmo \
+  $(P)ast_helper.cmo $(P)ast_mapper.cmo $(P)ast_iterator.cmo \
+  $(P)attr_helper.cmo $(P)builtin_attributes.cmo \
+  $(P)ident.cmo $(P)path.cmo $(P)primitive.cmo $(P)types.cmo \
+  $(P)btype.cmo $(P)subst.cmo $(P)predef.cmo \
+  $(P)datarepr.cmo $(P)cmi_format.cmo $(P)env.cmo \
+  $(P)lambda.cmo $(P)instruct.cmo \
+  $(P)opcodes.cmo $(P)runtimedef.cmo $(P)bytesections.cmo \
+  $(P)dll.cmo $(P)meta.cmo $(P)symtable.cmo
 
-COMPILERINTFS := \
-  cmo_format.cmi
-
-COMPILERINTFS := \
-  $(addprefix $(COMPLIBDIR)/ocaml_common__,$(COMPILERINTFS)) \
-  $(addprefix $(COMPLIBDIR)/unprefixed/,$(COMPILERINTFS))
+COMPILERINTFS = \
+  $(P)cmo_format.cmi
 
 all: dynlink.cma extract_crc
 

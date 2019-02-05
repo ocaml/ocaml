@@ -1,365 +1,1102 @@
 driver/compdynlink.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/compdynlink_common.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__compdynlink_types.cmi \
+    compilerlibs/ocaml_common__compdynlink_platform_intf.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/compdynlink_common.cmi
 driver/compdynlink_common.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__compdynlink_types.cmx \
+    compilerlibs/ocaml_common__compdynlink_platform_intf.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/compdynlink_common.cmi
 driver/compdynlink_common.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__compdynlink_platform_intf.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/compdynlink_platform_intf.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__compdynlink_types.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/compdynlink_platform_intf.cmi
 driver/compdynlink_platform_intf.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__compdynlink_types.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/compdynlink_platform_intf.cmi
 driver/compdynlink_platform_intf.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__compdynlink_types.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/compdynlink_types.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/compdynlink_types.cmi
 driver/compdynlink_types.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/compdynlink_types.cmi
 driver/compdynlink_types.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/compenv.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__profile.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
+    compilerlibs/ocaml_common__ccomp.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/compenv.cmi
 driver/compenv.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__profile.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
+    compilerlibs/ocaml_common__ccomp.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/compenv.cmi
 driver/compenv.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/compile.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__translmod.cmi \
+    compilerlibs/ocaml_common__simplif.cmi \
+    compilerlibs/ocaml_common__profile.cmi \
+    compilerlibs/ocaml_common__printlambda.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__lambda.cmi \
+    compilerlibs/ocaml_common__compile_common.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
+    compilerlibs/ocaml_bytecomp__printinstr.cmi \
+    compilerlibs/ocaml_bytecomp__emitcode.cmi \
+    compilerlibs/ocaml_bytecomp__bytegen.cmi \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/compile.cmi
 driver/compile.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__translmod.cmx \
+    compilerlibs/ocaml_common__simplif.cmx \
+    compilerlibs/ocaml_common__profile.cmx \
+    compilerlibs/ocaml_common__printlambda.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__lambda.cmx \
+    compilerlibs/ocaml_common__compile_common.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
+    compilerlibs/ocaml_bytecomp__printinstr.cmx \
+    compilerlibs/ocaml_bytecomp__emitcode.cmx \
+    compilerlibs/ocaml_bytecomp__bytegen.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/compile.cmi
 driver/compile.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__typedtree.cmi \
+    compilerlibs/ocaml_common__instruct.cmi \
+    compilerlibs/ocaml_common__ident.cmi \
+    compilerlibs/ocaml_common__compile_common.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/compile_common.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__typemod.cmi \
+    compilerlibs/ocaml_common__typedtree.cmi \
+    compilerlibs/ocaml_common__typecore.cmi \
+    compilerlibs/ocaml_common__stypes.cmi \
+    compilerlibs/ocaml_common__profile.cmi \
+    compilerlibs/ocaml_common__printtyped.cmi \
+    compilerlibs/ocaml_common__printtyp.cmi \
+    compilerlibs/ocaml_common__printast.cmi \
+    compilerlibs/ocaml_common__pprintast.cmi \
+    compilerlibs/ocaml_common__pparse.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__includemod.cmi \
+    compilerlibs/ocaml_common__env.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__compmisc.cmi \
+    compilerlibs/ocaml_common__compenv.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
+    compilerlibs/ocaml_common__builtin_attributes.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/compile_common.cmi
 driver/compile_common.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__typemod.cmx \
+    compilerlibs/ocaml_common__typedtree.cmx \
+    compilerlibs/ocaml_common__typecore.cmx \
+    compilerlibs/ocaml_common__stypes.cmx \
+    compilerlibs/ocaml_common__profile.cmx \
+    compilerlibs/ocaml_common__printtyped.cmx \
+    compilerlibs/ocaml_common__printtyp.cmx \
+    compilerlibs/ocaml_common__printast.cmx \
+    compilerlibs/ocaml_common__pprintast.cmx \
+    compilerlibs/ocaml_common__pparse.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__includemod.cmx \
+    compilerlibs/ocaml_common__env.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__compmisc.cmx \
+    compilerlibs/ocaml_common__compenv.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
+    compilerlibs/ocaml_common__builtin_attributes.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/compile_common.cmi
 driver/compile_common.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__typedtree.cmi \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__env.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/compmisc.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__typemod.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__load_path.cmi \
+    compilerlibs/ocaml_common__ident.cmi \
+    compilerlibs/ocaml_common__env.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__compenv.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/compmisc.cmi
 driver/compmisc.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__typemod.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__load_path.cmx \
+    compilerlibs/ocaml_common__ident.cmx \
+    compilerlibs/ocaml_common__env.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__compenv.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/compmisc.cmi
 driver/compmisc.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__env.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/compplugin.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__load_path.cmi \
+    compilerlibs/ocaml_common__compmisc.cmi \
+    compilerlibs/ocaml_common__compenv.cmi \
+    compilerlibs/ocaml_common__compdynlink.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/compplugin.cmi
 driver/compplugin.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__load_path.cmx \
+    compilerlibs/ocaml_common__compmisc.cmx \
+    compilerlibs/ocaml_common__compenv.cmx \
+    compilerlibs/ocaml_common__compdynlink.cmi \
+    compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/compplugin.cmi
 driver/compplugin.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/errors.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__location.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/errors.cmi
 driver/errors.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__location.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/errors.cmi
 driver/errors.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/main.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__profile.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__makedepend.cmi \
+    compilerlibs/ocaml_common__main_args.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__compplugin.cmi \
+    compilerlibs/ocaml_common__compmisc.cmi \
+    compilerlibs/ocaml_common__compenv.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
+    compilerlibs/ocaml_bytecomp__compile.cmi \
+    compilerlibs/ocaml_bytecomp__bytepackager.cmi \
+    compilerlibs/ocaml_bytecomp__bytelink.cmi \
+    compilerlibs/ocaml_bytecomp__bytelibrarian.cmi \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/main.cmi
 driver/main.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__profile.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__makedepend.cmx \
+    compilerlibs/ocaml_common__main_args.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__compplugin.cmx \
+    compilerlibs/ocaml_common__compmisc.cmx \
+    compilerlibs/ocaml_common__compenv.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
+    compilerlibs/ocaml_bytecomp__compile.cmx \
+    compilerlibs/ocaml_bytecomp__bytepackager.cmx \
+    compilerlibs/ocaml_bytecomp__bytelink.cmx \
+    compilerlibs/ocaml_bytecomp__bytelibrarian.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/main.cmi
 driver/main.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/main_args.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__profile.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/main_args.cmi
 driver/main_args.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__profile.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/main_args.cmi
 driver/main_args.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/makedepend.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__pparse.cmi \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__parser.cmi \
+    compilerlibs/ocaml_common__parse.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__lexer.cmi \
+    compilerlibs/ocaml_common__depend.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__compplugin.cmi \
+    compilerlibs/ocaml_common__compenv.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/makedepend.cmi
 driver/makedepend.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__pparse.cmx \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__parser.cmx \
+    compilerlibs/ocaml_common__parse.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__longident.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__lexer.cmx \
+    compilerlibs/ocaml_common__depend.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__compplugin.cmx \
+    compilerlibs/ocaml_common__compenv.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/makedepend.cmi
 driver/makedepend.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/optcompile.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp__middle_end.cmi \
+    compilerlibs/ocaml_optcomp__compilenv.cmi \
+    compilerlibs/ocaml_optcomp__asmgen.cmi \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__translmod.cmi \
+    compilerlibs/ocaml_common__simplif.cmi \
+    compilerlibs/ocaml_common__profile.cmi \
+    compilerlibs/ocaml_common__printlambda.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__lambda.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__compile_common.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/optcompile.cmi
 driver/optcompile.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp__middle_end.cmx \
+    compilerlibs/ocaml_optcomp__compilenv.cmx \
+    compilerlibs/ocaml_optcomp__asmgen.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__translmod.cmx \
+    compilerlibs/ocaml_common__simplif.cmx \
+    compilerlibs/ocaml_common__profile.cmx \
+    compilerlibs/ocaml_common__printlambda.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__lambda.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__compile_common.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/optcompile.cmi
 driver/optcompile.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp__backend_intf.cmi \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__typedtree.cmi \
+    compilerlibs/ocaml_common__compile_common.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/opterrors.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__location.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/opterrors.cmi
 driver/opterrors.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__location.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/opterrors.cmi
 driver/opterrors.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/optmain.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp__proc.cmi \
+    compilerlibs/ocaml_optcomp__printmach.cmi \
+    compilerlibs/ocaml_optcomp__optcompile.cmi \
+    compilerlibs/ocaml_optcomp__import_approx.cmi \
+    compilerlibs/ocaml_optcomp__compilenv.cmi \
+    compilerlibs/ocaml_optcomp__backend_intf.cmi \
+    compilerlibs/ocaml_optcomp__asmpackager.cmi \
+    compilerlibs/ocaml_optcomp__asmlink.cmi \
+    compilerlibs/ocaml_optcomp__asmlibrarian.cmi \
+    compilerlibs/ocaml_optcomp__arch.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__profile.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__makedepend.cmi \
+    compilerlibs/ocaml_common__main_args.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__compplugin.cmi \
+    compilerlibs/ocaml_common__compmisc.cmi \
+    compilerlibs/ocaml_common__compenv.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/optmain.cmi
 driver/optmain.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp__proc.cmx \
+    compilerlibs/ocaml_optcomp__printmach.cmx \
+    compilerlibs/ocaml_optcomp__optcompile.cmx \
+    compilerlibs/ocaml_optcomp__import_approx.cmx \
+    compilerlibs/ocaml_optcomp__compilenv.cmx \
+    compilerlibs/ocaml_optcomp__backend_intf.cmi \
+    compilerlibs/ocaml_optcomp__asmpackager.cmx \
+    compilerlibs/ocaml_optcomp__asmlink.cmx \
+    compilerlibs/ocaml_optcomp__asmlibrarian.cmx \
+    compilerlibs/ocaml_optcomp__arch.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__profile.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__makedepend.cmx \
+    compilerlibs/ocaml_common__main_args.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__compplugin.cmx \
+    compilerlibs/ocaml_common__compmisc.cmx \
+    compilerlibs/ocaml_common__compenv.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/optmain.cmi
 driver/optmain.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 driver/pparse.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__profile.cmi \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__parse.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
+    compilerlibs/ocaml_common__ccomp.cmi \
+    compilerlibs/ocaml_common__ast_mapper.cmi \
+    compilerlibs/ocaml_common__ast_invariants.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     driver/pparse.cmi
 driver/pparse.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__profile.cmx \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__parse.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
+    compilerlibs/ocaml_common__ccomp.cmx \
+    compilerlibs/ocaml_common__ast_mapper.cmx \
+    compilerlibs/ocaml_common__ast_invariants.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     driver/pparse.cmi
 driver/pparse.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 toplevel/expunge.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__symtable.cmi \
+    compilerlibs/ocaml_common__runtimedef.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__ident.cmi \
+    compilerlibs/ocaml_common__bytesections.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 toplevel/expunge.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__symtable.cmx \
+    compilerlibs/ocaml_common__runtimedef.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__ident.cmx \
+    compilerlibs/ocaml_common__bytesections.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx
 toplevel/genprintval.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__types.cmi \
+    compilerlibs/ocaml_common__printtyp.cmi \
+    compilerlibs/ocaml_common__predef.cmi \
+    compilerlibs/ocaml_common__path.cmi \
+    compilerlibs/ocaml_common__outcometree.cmi \
+    compilerlibs/ocaml_common__oprint.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__ident.cmi \
+    compilerlibs/ocaml_common__env.cmi \
+    compilerlibs/ocaml_common__datarepr.cmi \
+    compilerlibs/ocaml_common__ctype.cmi \
+    compilerlibs/ocaml_common__btype.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     toplevel/genprintval.cmi
 toplevel/genprintval.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__types.cmx \
+    compilerlibs/ocaml_common__printtyp.cmx \
+    compilerlibs/ocaml_common__predef.cmx \
+    compilerlibs/ocaml_common__path.cmx \
+    compilerlibs/ocaml_common__outcometree.cmi \
+    compilerlibs/ocaml_common__oprint.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__longident.cmx \
+    compilerlibs/ocaml_common__ident.cmx \
+    compilerlibs/ocaml_common__env.cmx \
+    compilerlibs/ocaml_common__datarepr.cmx \
+    compilerlibs/ocaml_common__ctype.cmx \
+    compilerlibs/ocaml_common__btype.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     toplevel/genprintval.cmi
 toplevel/genprintval.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__types.cmi \
+    compilerlibs/ocaml_common__path.cmi \
+    compilerlibs/ocaml_common__outcometree.cmi \
+    compilerlibs/ocaml_common__env.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 toplevel/opttopdirs.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp__asmlink.cmi \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__types.cmi \
+    compilerlibs/ocaml_common__printtyp.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__load_path.cmi \
+    compilerlibs/ocaml_common__ident.cmi \
+    compilerlibs/ocaml_common__env.cmi \
+    compilerlibs/ocaml_common__ctype.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__compdynlink.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     toplevel/opttopdirs.cmi
 toplevel/opttopdirs.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp__asmlink.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__types.cmx \
+    compilerlibs/ocaml_common__printtyp.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__longident.cmx \
+    compilerlibs/ocaml_common__load_path.cmx \
+    compilerlibs/ocaml_common__ident.cmx \
+    compilerlibs/ocaml_common__env.cmx \
+    compilerlibs/ocaml_common__ctype.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__compdynlink.cmi \
+    compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     toplevel/opttopdirs.cmi
 toplevel/opttopdirs.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__longident.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 toplevel/opttoploop.cmo : \
+    compilerlibs/ocaml_toplevel__genprintval.cmi \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp__proc.cmi \
+    compilerlibs/ocaml_optcomp__middle_end.cmi \
+    compilerlibs/ocaml_optcomp__import_approx.cmi \
+    compilerlibs/ocaml_optcomp__compilenv.cmi \
+    compilerlibs/ocaml_optcomp__backend_intf.cmi \
+    compilerlibs/ocaml_optcomp__asmlink.cmi \
+    compilerlibs/ocaml_optcomp__asmgen.cmi \
+    compilerlibs/ocaml_optcomp__arch.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__types.cmi \
+    compilerlibs/ocaml_common__typemod.cmi \
+    compilerlibs/ocaml_common__typedtree.cmi \
+    compilerlibs/ocaml_common__typecore.cmi \
+    compilerlibs/ocaml_common__translmod.cmi \
+    compilerlibs/ocaml_common__simplif.cmi \
+    compilerlibs/ocaml_common__printtyped.cmi \
+    compilerlibs/ocaml_common__printtyp.cmi \
+    compilerlibs/ocaml_common__printlambda.cmi \
+    compilerlibs/ocaml_common__printast.cmi \
+    compilerlibs/ocaml_common__predef.cmi \
+    compilerlibs/ocaml_common__pprintast.cmi \
+    compilerlibs/ocaml_common__pparse.cmi \
+    compilerlibs/ocaml_common__path.cmi \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__parse.cmi \
+    compilerlibs/ocaml_common__outcometree.cmi \
+    compilerlibs/ocaml_common__oprint.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__load_path.cmi \
+    compilerlibs/ocaml_common__lexer.cmi \
+    compilerlibs/ocaml_common__lambda.cmi \
+    compilerlibs/ocaml_common__includemod.cmi \
+    compilerlibs/ocaml_common__ident.cmi \
+    compilerlibs/ocaml_common__env.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__compmisc.cmi \
+    compilerlibs/ocaml_common__compenv.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
+    compilerlibs/ocaml_common__btype.cmi \
+    compilerlibs/ocaml_common__asttypes.cmi \
+    compilerlibs/ocaml_common__ast_helper.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     toplevel/opttoploop.cmi
 toplevel/opttoploop.cmx : \
+    compilerlibs/ocaml_toplevel__genprintval.cmx \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp__proc.cmx \
+    compilerlibs/ocaml_optcomp__middle_end.cmx \
+    compilerlibs/ocaml_optcomp__import_approx.cmx \
+    compilerlibs/ocaml_optcomp__compilenv.cmx \
+    compilerlibs/ocaml_optcomp__backend_intf.cmi \
+    compilerlibs/ocaml_optcomp__asmlink.cmx \
+    compilerlibs/ocaml_optcomp__asmgen.cmx \
+    compilerlibs/ocaml_optcomp__arch.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__types.cmx \
+    compilerlibs/ocaml_common__typemod.cmx \
+    compilerlibs/ocaml_common__typedtree.cmx \
+    compilerlibs/ocaml_common__typecore.cmx \
+    compilerlibs/ocaml_common__translmod.cmx \
+    compilerlibs/ocaml_common__simplif.cmx \
+    compilerlibs/ocaml_common__printtyped.cmx \
+    compilerlibs/ocaml_common__printtyp.cmx \
+    compilerlibs/ocaml_common__printlambda.cmx \
+    compilerlibs/ocaml_common__printast.cmx \
+    compilerlibs/ocaml_common__predef.cmx \
+    compilerlibs/ocaml_common__pprintast.cmx \
+    compilerlibs/ocaml_common__pparse.cmx \
+    compilerlibs/ocaml_common__path.cmx \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__parse.cmx \
+    compilerlibs/ocaml_common__outcometree.cmi \
+    compilerlibs/ocaml_common__oprint.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__longident.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__load_path.cmx \
+    compilerlibs/ocaml_common__lexer.cmx \
+    compilerlibs/ocaml_common__lambda.cmx \
+    compilerlibs/ocaml_common__includemod.cmx \
+    compilerlibs/ocaml_common__ident.cmx \
+    compilerlibs/ocaml_common__env.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__compmisc.cmx \
+    compilerlibs/ocaml_common__compenv.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
+    compilerlibs/ocaml_common__btype.cmx \
+    compilerlibs/ocaml_common__asttypes.cmi \
+    compilerlibs/ocaml_common__ast_helper.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     toplevel/opttoploop.cmi
 toplevel/opttoploop.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__types.cmi \
+    compilerlibs/ocaml_common__path.cmi \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__outcometree.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__env.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 toplevel/opttopmain.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp__printmach.cmi \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__main_args.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__compmisc.cmi \
+    compilerlibs/ocaml_common__compenv.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     toplevel/opttopmain.cmi
 toplevel/opttopmain.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp__printmach.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__main_args.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__compmisc.cmx \
+    compilerlibs/ocaml_common__compenv.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     toplevel/opttopmain.cmi
 toplevel/opttopmain.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 toplevel/opttopstart.cmo : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 toplevel/opttopstart.cmx : \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx
 toplevel/topdirs.cmo : \
+    compilerlibs/ocaml_toplevel__trace.cmi \
+    compilerlibs/ocaml_toplevel__toploop.cmi \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__typetexp.cmi \
+    compilerlibs/ocaml_common__types.cmi \
+    compilerlibs/ocaml_common__symtable.cmi \
+    compilerlibs/ocaml_common__printtyp.cmi \
+    compilerlibs/ocaml_common__predef.cmi \
+    compilerlibs/ocaml_common__path.cmi \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__opcodes.cmo \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__meta.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__load_path.cmi \
+    compilerlibs/ocaml_common__ident.cmi \
+    compilerlibs/ocaml_common__env.cmi \
+    compilerlibs/ocaml_common__dll.cmi \
+    compilerlibs/ocaml_common__ctype.cmi \
+    compilerlibs/ocaml_common__consistbl.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__cmo_format.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
+    compilerlibs/ocaml_common__btype.cmi \
+    compilerlibs/ocaml_common__asttypes.cmi \
+    compilerlibs/ocaml_common__ast_helper.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     toplevel/topdirs.cmi
 toplevel/topdirs.cmx : \
+    compilerlibs/ocaml_toplevel__trace.cmx \
+    compilerlibs/ocaml_toplevel__toploop.cmx \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__typetexp.cmx \
+    compilerlibs/ocaml_common__types.cmx \
+    compilerlibs/ocaml_common__symtable.cmx \
+    compilerlibs/ocaml_common__printtyp.cmx \
+    compilerlibs/ocaml_common__predef.cmx \
+    compilerlibs/ocaml_common__path.cmx \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__opcodes.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__meta.cmx \
+    compilerlibs/ocaml_common__longident.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__load_path.cmx \
+    compilerlibs/ocaml_common__ident.cmx \
+    compilerlibs/ocaml_common__env.cmx \
+    compilerlibs/ocaml_common__dll.cmx \
+    compilerlibs/ocaml_common__ctype.cmx \
+    compilerlibs/ocaml_common__consistbl.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__cmo_format.cmi \
+    compilerlibs/ocaml_common__clflags.cmx \
+    compilerlibs/ocaml_common__btype.cmx \
+    compilerlibs/ocaml_common__asttypes.cmi \
+    compilerlibs/ocaml_common__ast_helper.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     toplevel/topdirs.cmi
 toplevel/topdirs.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__longident.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 toplevel/toploop.cmo : \
+    compilerlibs/ocaml_toplevel__genprintval.cmi \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__typetexp.cmi \
+    compilerlibs/ocaml_common__types.cmi \
+    compilerlibs/ocaml_common__typemod.cmi \
+    compilerlibs/ocaml_common__typedtree.cmi \
+    compilerlibs/ocaml_common__typecore.cmi \
+    compilerlibs/ocaml_common__translmod.cmi \
+    compilerlibs/ocaml_common__symtable.cmi \
+    compilerlibs/ocaml_common__simplif.cmi \
+    compilerlibs/ocaml_common__printtyped.cmi \
+    compilerlibs/ocaml_common__printtyp.cmi \
+    compilerlibs/ocaml_common__printlambda.cmi \
+    compilerlibs/ocaml_common__printast.cmi \
+    compilerlibs/ocaml_common__predef.cmi \
+    compilerlibs/ocaml_common__pprintast.cmi \
+    compilerlibs/ocaml_common__pparse.cmi \
+    compilerlibs/ocaml_common__path.cmi \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__parse.cmi \
+    compilerlibs/ocaml_common__outcometree.cmi \
+    compilerlibs/ocaml_common__oprint.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__meta.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__load_path.cmi \
+    compilerlibs/ocaml_common__lexer.cmi \
+    compilerlibs/ocaml_common__includemod.cmi \
+    compilerlibs/ocaml_common__ident.cmi \
+    compilerlibs/ocaml_common__env.cmi \
+    compilerlibs/ocaml_common__dll.cmi \
+    compilerlibs/ocaml_common__consistbl.cmi \
+    compilerlibs/ocaml_common__config.cmi \
+    compilerlibs/ocaml_common__compmisc.cmi \
+    compilerlibs/ocaml_common__compenv.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
+    compilerlibs/ocaml_common__btype.cmi \
+    compilerlibs/ocaml_common__asttypes.cmi \
+    compilerlibs/ocaml_common__ast_helper.cmi \
     compilerlibs/ocaml_common.cmo \
+    compilerlibs/ocaml_bytecomp__printinstr.cmi \
+    compilerlibs/ocaml_bytecomp__emitcode.cmi \
+    compilerlibs/ocaml_bytecomp__bytegen.cmi \
     compilerlibs/ocaml_bytecomp.cmo \
     toplevel/toploop.cmi
 toplevel/toploop.cmx : \
+    compilerlibs/ocaml_toplevel__genprintval.cmx \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__typetexp.cmx \
+    compilerlibs/ocaml_common__types.cmx \
+    compilerlibs/ocaml_common__typemod.cmx \
+    compilerlibs/ocaml_common__typedtree.cmx \
+    compilerlibs/ocaml_common__typecore.cmx \
+    compilerlibs/ocaml_common__translmod.cmx \
+    compilerlibs/ocaml_common__symtable.cmx \
+    compilerlibs/ocaml_common__simplif.cmx \
+    compilerlibs/ocaml_common__printtyped.cmx \
+    compilerlibs/ocaml_common__printtyp.cmx \
+    compilerlibs/ocaml_common__printlambda.cmx \
+    compilerlibs/ocaml_common__printast.cmx \
+    compilerlibs/ocaml_common__predef.cmx \
+    compilerlibs/ocaml_common__pprintast.cmx \
+    compilerlibs/ocaml_common__pparse.cmx \
+    compilerlibs/ocaml_common__path.cmx \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__parse.cmx \
+    compilerlibs/ocaml_common__outcometree.cmi \
+    compilerlibs/ocaml_common__oprint.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__meta.cmx \
+    compilerlibs/ocaml_common__longident.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__load_path.cmx \
+    compilerlibs/ocaml_common__lexer.cmx \
+    compilerlibs/ocaml_common__includemod.cmx \
+    compilerlibs/ocaml_common__ident.cmx \
+    compilerlibs/ocaml_common__env.cmx \
+    compilerlibs/ocaml_common__dll.cmx \
+    compilerlibs/ocaml_common__consistbl.cmx \
+    compilerlibs/ocaml_common__config.cmx \
+    compilerlibs/ocaml_common__compmisc.cmx \
+    compilerlibs/ocaml_common__compenv.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
+    compilerlibs/ocaml_common__btype.cmx \
+    compilerlibs/ocaml_common__asttypes.cmi \
+    compilerlibs/ocaml_common__ast_helper.cmx \
     compilerlibs/ocaml_common.cmx \
+    compilerlibs/ocaml_bytecomp__printinstr.cmx \
+    compilerlibs/ocaml_bytecomp__emitcode.cmx \
+    compilerlibs/ocaml_bytecomp__bytegen.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     toplevel/toploop.cmi
 toplevel/toploop.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__types.cmi \
+    compilerlibs/ocaml_common__path.cmi \
+    compilerlibs/ocaml_common__parsetree.cmi \
+    compilerlibs/ocaml_common__outcometree.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__env.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 toplevel/topmain.cmo : \
+    compilerlibs/ocaml_toplevel__toploop.cmi \
+    compilerlibs/ocaml_toplevel__topdirs.cmi \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__warnings.cmi \
+    compilerlibs/ocaml_common__profile.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__main_args.cmi \
+    compilerlibs/ocaml_common__location.cmi \
+    compilerlibs/ocaml_common__compmisc.cmi \
+    compilerlibs/ocaml_common__compenv.cmi \
+    compilerlibs/ocaml_common__clflags.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     toplevel/topmain.cmi
 toplevel/topmain.cmx : \
+    compilerlibs/ocaml_toplevel__toploop.cmx \
+    compilerlibs/ocaml_toplevel__topdirs.cmx \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__warnings.cmx \
+    compilerlibs/ocaml_common__profile.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__main_args.cmx \
+    compilerlibs/ocaml_common__location.cmx \
+    compilerlibs/ocaml_common__compmisc.cmx \
+    compilerlibs/ocaml_common__compenv.cmx \
+    compilerlibs/ocaml_common__clflags.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     toplevel/topmain.cmi
 toplevel/topmain.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 toplevel/topstart.cmo : \
+    compilerlibs/ocaml_toplevel__topmain.cmi \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 toplevel/topstart.cmx : \
+    compilerlibs/ocaml_toplevel__topmain.cmx \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx
 toplevel/trace.cmo : \
+    compilerlibs/ocaml_toplevel__toploop.cmi \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__types.cmi \
+    compilerlibs/ocaml_common__printtyp.cmi \
+    compilerlibs/ocaml_common__predef.cmi \
+    compilerlibs/ocaml_common__path.cmi \
+    compilerlibs/ocaml_common__misc.cmi \
+    compilerlibs/ocaml_common__meta.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__ctype.cmi \
+    compilerlibs/ocaml_common__asttypes.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo \
     toplevel/trace.cmi
 toplevel/trace.cmx : \
+    compilerlibs/ocaml_toplevel__toploop.cmx \
     compilerlibs/ocaml_toplevel.cmx \
+    compilerlibs/ocaml_optcomp.cmx \
+    compilerlibs/ocaml_common__types.cmx \
+    compilerlibs/ocaml_common__printtyp.cmx \
+    compilerlibs/ocaml_common__predef.cmx \
+    compilerlibs/ocaml_common__path.cmx \
+    compilerlibs/ocaml_common__misc.cmx \
+    compilerlibs/ocaml_common__meta.cmx \
+    compilerlibs/ocaml_common__longident.cmx \
+    compilerlibs/ocaml_common__ctype.cmx \
+    compilerlibs/ocaml_common__asttypes.cmi \
     compilerlibs/ocaml_common.cmx \
     compilerlibs/ocaml_bytecomp.cmx \
     toplevel/trace.cmi
 toplevel/trace.cmi : \
     compilerlibs/ocaml_toplevel.cmo \
+    compilerlibs/ocaml_optcomp.cmo \
+    compilerlibs/ocaml_common__types.cmi \
+    compilerlibs/ocaml_common__path.cmi \
+    compilerlibs/ocaml_common__longident.cmi \
+    compilerlibs/ocaml_common__env.cmi \
     compilerlibs/ocaml_common.cmo \
     compilerlibs/ocaml_bytecomp.cmo
 compilerlibs/ocaml_common__annot.cmi : \

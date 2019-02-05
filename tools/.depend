@@ -1,259 +1,245 @@
 addlabels.cmo : \
-    ../compilerlibs/unprefixed/parsetree.cmi \
-    ../compilerlibs/unprefixed/parse.cmo \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/longident.cmo \
-    ../compilerlibs/unprefixed/location.cmo \
-    ../compilerlibs/unprefixed/asttypes.cmi
+    ../compilerlibs/ocaml_common__parsetree.cmi \
+    ../compilerlibs/ocaml_common__parse.cmi \
+    ../compilerlibs/ocaml_common__longident.cmi \
+    ../compilerlibs/ocaml_common__location.cmi \
+    ../compilerlibs/ocaml_common__asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmo
 addlabels.cmx : \
-    ../compilerlibs/unprefixed/parsetree.cmi \
-    ../compilerlibs/unprefixed/parse.cmx \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/longident.cmx \
-    ../compilerlibs/unprefixed/location.cmx \
-    ../compilerlibs/unprefixed/asttypes.cmi
+    ../compilerlibs/ocaml_common__parsetree.cmi \
+    ../compilerlibs/ocaml_common__parse.cmx \
+    ../compilerlibs/ocaml_common__longident.cmx \
+    ../compilerlibs/ocaml_common__location.cmx \
+    ../compilerlibs/ocaml_common__asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmx
 caml_tex.cmo : \
-    ../compilerlibs/unprefixed/toploop.cmo \
-    ../compilerlibs/unprefixed/syntaxerr.cmo \
-    ../compilerlibs/unprefixed/parsetree.cmi \
-    ../compilerlibs/unprefixed/parse.cmo \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/misc.cmo \
-    ../compilerlibs/unprefixed/location.cmo \
-    ../compilerlibs/unprefixed/lexer.cmo \
-    ../compilerlibs/unprefixed/compmisc.cmo \
-    ../compilerlibs/unprefixed/compenv.cmo \
-    ../compilerlibs/unprefixed/clflags.cmo \
-    ../compilerlibs/unprefixed/ast_iterator.cmo \
-    ../compilerlibs/unprefixed/ast_helper.cmo
+    ../compilerlibs/ocaml_common__syntaxerr.cmi \
+    ../compilerlibs/ocaml_common__parsetree.cmi \
+    ../compilerlibs/ocaml_common__parse.cmi \
+    ../compilerlibs/ocaml_common__misc.cmi \
+    ../compilerlibs/ocaml_common__location.cmi \
+    ../compilerlibs/ocaml_common__lexer.cmi \
+    ../compilerlibs/ocaml_common__compmisc.cmi \
+    ../compilerlibs/ocaml_common__compenv.cmi \
+    ../compilerlibs/ocaml_common__clflags.cmi \
+    ../compilerlibs/ocaml_common__ast_iterator.cmi \
+    ../compilerlibs/ocaml_common__ast_helper.cmi \
+    ../compilerlibs/ocaml_common.cmo
 caml_tex.cmx : \
-    ../compilerlibs/unprefixed/toploop.cmx \
-    ../compilerlibs/unprefixed/syntaxerr.cmx \
-    ../compilerlibs/unprefixed/parsetree.cmi \
-    ../compilerlibs/unprefixed/parse.cmx \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/misc.cmx \
-    ../compilerlibs/unprefixed/location.cmx \
-    ../compilerlibs/unprefixed/lexer.cmx \
-    ../compilerlibs/unprefixed/compmisc.cmx \
-    ../compilerlibs/unprefixed/compenv.cmx \
-    ../compilerlibs/unprefixed/clflags.cmx \
-    ../compilerlibs/unprefixed/ast_iterator.cmx \
-    ../compilerlibs/unprefixed/ast_helper.cmx
+    ../compilerlibs/ocaml_common__syntaxerr.cmx \
+    ../compilerlibs/ocaml_common__parsetree.cmi \
+    ../compilerlibs/ocaml_common__parse.cmx \
+    ../compilerlibs/ocaml_common__misc.cmx \
+    ../compilerlibs/ocaml_common__location.cmx \
+    ../compilerlibs/ocaml_common__lexer.cmx \
+    ../compilerlibs/ocaml_common__compmisc.cmx \
+    ../compilerlibs/ocaml_common__compenv.cmx \
+    ../compilerlibs/ocaml_common__clflags.cmx \
+    ../compilerlibs/ocaml_common__ast_iterator.cmx \
+    ../compilerlibs/ocaml_common__ast_helper.cmx \
+    ../compilerlibs/ocaml_common.cmx
 cmpbyt.cmo : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/bytesections.cmo
+    ../compilerlibs/ocaml_common__bytesections.cmi \
+    ../compilerlibs/ocaml_common.cmo
 cmpbyt.cmx : \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/bytesections.cmx
+    ../compilerlibs/ocaml_common__bytesections.cmx \
+    ../compilerlibs/ocaml_common.cmx
 cmt2annot.cmo : \
-    ../compilerlibs/unprefixed/untypeast.cmo \
-    ../compilerlibs/unprefixed/types.cmo \
-    ../compilerlibs/unprefixed/typedtree.cmo \
-    ../compilerlibs/unprefixed/tast_mapper.cmo \
-    ../compilerlibs/unprefixed/stypes.cmo \
-    ../compilerlibs/unprefixed/pprintast.cmo \
-    ../compilerlibs/unprefixed/path.cmo \
-    ../compilerlibs/unprefixed/oprint.cmo \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/location.cmo \
-    ../compilerlibs/unprefixed/load_path.cmo \
-    ../compilerlibs/unprefixed/ident.cmo \
-    ../compilerlibs/unprefixed/envaux.cmo \
-    ../compilerlibs/unprefixed/env.cmo \
-    ../compilerlibs/unprefixed/cmt_format.cmo \
-    ../compilerlibs/unprefixed/asttypes.cmi \
-    ../compilerlibs/unprefixed/annot.cmi
+    ../compilerlibs/ocaml_common__untypeast.cmi \
+    ../compilerlibs/ocaml_common__types.cmi \
+    ../compilerlibs/ocaml_common__typedtree.cmi \
+    ../compilerlibs/ocaml_common__tast_mapper.cmi \
+    ../compilerlibs/ocaml_common__stypes.cmi \
+    ../compilerlibs/ocaml_common__pprintast.cmi \
+    ../compilerlibs/ocaml_common__path.cmi \
+    ../compilerlibs/ocaml_common__oprint.cmi \
+    ../compilerlibs/ocaml_common__location.cmi \
+    ../compilerlibs/ocaml_common__load_path.cmi \
+    ../compilerlibs/ocaml_common__ident.cmi \
+    ../compilerlibs/ocaml_common__envaux.cmi \
+    ../compilerlibs/ocaml_common__env.cmi \
+    ../compilerlibs/ocaml_common__cmt_format.cmi \
+    ../compilerlibs/ocaml_common__asttypes.cmi \
+    ../compilerlibs/ocaml_common__annot.cmi \
+    ../compilerlibs/ocaml_common.cmo
 cmt2annot.cmx : \
-    ../compilerlibs/unprefixed/untypeast.cmx \
-    ../compilerlibs/unprefixed/types.cmx \
-    ../compilerlibs/unprefixed/typedtree.cmx \
-    ../compilerlibs/unprefixed/tast_mapper.cmx \
-    ../compilerlibs/unprefixed/stypes.cmx \
-    ../compilerlibs/unprefixed/pprintast.cmx \
-    ../compilerlibs/unprefixed/path.cmx \
-    ../compilerlibs/unprefixed/oprint.cmx \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/location.cmx \
-    ../compilerlibs/unprefixed/load_path.cmx \
-    ../compilerlibs/unprefixed/ident.cmx \
-    ../compilerlibs/unprefixed/envaux.cmx \
-    ../compilerlibs/unprefixed/env.cmx \
-    ../compilerlibs/unprefixed/cmt_format.cmx \
-    ../compilerlibs/unprefixed/asttypes.cmi \
-    ../compilerlibs/unprefixed/annot.cmi
+    ../compilerlibs/ocaml_common__untypeast.cmx \
+    ../compilerlibs/ocaml_common__types.cmx \
+    ../compilerlibs/ocaml_common__typedtree.cmx \
+    ../compilerlibs/ocaml_common__tast_mapper.cmx \
+    ../compilerlibs/ocaml_common__stypes.cmx \
+    ../compilerlibs/ocaml_common__pprintast.cmx \
+    ../compilerlibs/ocaml_common__path.cmx \
+    ../compilerlibs/ocaml_common__oprint.cmx \
+    ../compilerlibs/ocaml_common__location.cmx \
+    ../compilerlibs/ocaml_common__load_path.cmx \
+    ../compilerlibs/ocaml_common__ident.cmx \
+    ../compilerlibs/ocaml_common__envaux.cmx \
+    ../compilerlibs/ocaml_common__env.cmx \
+    ../compilerlibs/ocaml_common__cmt_format.cmx \
+    ../compilerlibs/ocaml_common__asttypes.cmi \
+    ../compilerlibs/ocaml_common__annot.cmi \
+    ../compilerlibs/ocaml_common.cmx
 cvt_emit.cmo : \
     ../compilerlibs/ocaml_common.cmo
 cvt_emit.cmx : \
     ../compilerlibs/ocaml_common.cmx
 dumpobj.cmo : \
-    ../compilerlibs/unprefixed/symtable.cmo \
     opnames.cmo \
-    ../compilerlibs/unprefixed/opcodes.cmo \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/location.cmo \
-    ../compilerlibs/unprefixed/lambda.cmo \
-    ../compilerlibs/unprefixed/instruct.cmo \
-    ../compilerlibs/unprefixed/ident.cmo \
-    ../compilerlibs/unprefixed/config.cmo \
-    ../compilerlibs/unprefixed/cmo_format.cmi \
-    ../compilerlibs/unprefixed/bytesections.cmo \
-    ../compilerlibs/unprefixed/asttypes.cmi
+    ../compilerlibs/ocaml_common__symtable.cmi \
+    ../compilerlibs/ocaml_common__opcodes.cmo \
+    ../compilerlibs/ocaml_common__location.cmi \
+    ../compilerlibs/ocaml_common__lambda.cmi \
+    ../compilerlibs/ocaml_common__instruct.cmi \
+    ../compilerlibs/ocaml_common__ident.cmi \
+    ../compilerlibs/ocaml_common__config.cmi \
+    ../compilerlibs/ocaml_common__cmo_format.cmi \
+    ../compilerlibs/ocaml_common__bytesections.cmi \
+    ../compilerlibs/ocaml_common__asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmo
 dumpobj.cmx : \
-    ../compilerlibs/unprefixed/symtable.cmx \
     opnames.cmx \
-    ../compilerlibs/unprefixed/opcodes.cmx \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/location.cmx \
-    ../compilerlibs/unprefixed/lambda.cmx \
-    ../compilerlibs/unprefixed/instruct.cmx \
-    ../compilerlibs/unprefixed/ident.cmx \
-    ../compilerlibs/unprefixed/config.cmx \
-    ../compilerlibs/unprefixed/cmo_format.cmi \
-    ../compilerlibs/unprefixed/bytesections.cmx \
-    ../compilerlibs/unprefixed/asttypes.cmi
+    ../compilerlibs/ocaml_common__symtable.cmx \
+    ../compilerlibs/ocaml_common__opcodes.cmx \
+    ../compilerlibs/ocaml_common__location.cmx \
+    ../compilerlibs/ocaml_common__lambda.cmx \
+    ../compilerlibs/ocaml_common__instruct.cmx \
+    ../compilerlibs/ocaml_common__ident.cmx \
+    ../compilerlibs/ocaml_common__config.cmx \
+    ../compilerlibs/ocaml_common__cmo_format.cmi \
+    ../compilerlibs/ocaml_common__bytesections.cmx \
+    ../compilerlibs/ocaml_common__asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmx
 eqparsetree.cmo : \
-    ../compilerlibs/unprefixed/parsetree.cmi \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/longident.cmo \
-    ../compilerlibs/unprefixed/location.cmo \
-    ../compilerlibs/unprefixed/asttypes.cmi
+    ../compilerlibs/ocaml_common__parsetree.cmi \
+    ../compilerlibs/ocaml_common__longident.cmi \
+    ../compilerlibs/ocaml_common__location.cmi \
+    ../compilerlibs/ocaml_common__asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmo
 eqparsetree.cmx : \
-    ../compilerlibs/unprefixed/parsetree.cmi \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/longident.cmx \
-    ../compilerlibs/unprefixed/location.cmx \
-    ../compilerlibs/unprefixed/asttypes.cmi
+    ../compilerlibs/ocaml_common__parsetree.cmi \
+    ../compilerlibs/ocaml_common__longident.cmx \
+    ../compilerlibs/ocaml_common__location.cmx \
+    ../compilerlibs/ocaml_common__asttypes.cmi \
+    ../compilerlibs/ocaml_common.cmx
 gen_prefix.cmo : \
     ../compilerlibs/ocaml_common.cmo
 gen_prefix.cmx : \
     ../compilerlibs/ocaml_common.cmx
 lintapidiff.cmo : \
-    ../compilerlibs/unprefixed/printtyp.cmo \
-    ../compilerlibs/unprefixed/pparse.cmo \
-    ../compilerlibs/unprefixed/path.cmo \
-    ../compilerlibs/unprefixed/parsetree.cmi \
-    ../compilerlibs/unprefixed/parse.cmo \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/misc.cmo \
-    ../compilerlibs/unprefixed/location.cmo \
-    ../compilerlibs/unprefixed/ident.cmo
+    ../compilerlibs/ocaml_common__printtyp.cmi \
+    ../compilerlibs/ocaml_common__pparse.cmi \
+    ../compilerlibs/ocaml_common__path.cmi \
+    ../compilerlibs/ocaml_common__parsetree.cmi \
+    ../compilerlibs/ocaml_common__parse.cmi \
+    ../compilerlibs/ocaml_common__misc.cmi \
+    ../compilerlibs/ocaml_common__location.cmi \
+    ../compilerlibs/ocaml_common__ident.cmi \
+    ../compilerlibs/ocaml_common.cmo
 lintapidiff.cmx : \
-    ../compilerlibs/unprefixed/printtyp.cmx \
-    ../compilerlibs/unprefixed/pparse.cmx \
-    ../compilerlibs/unprefixed/path.cmx \
-    ../compilerlibs/unprefixed/parsetree.cmi \
-    ../compilerlibs/unprefixed/parse.cmx \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/misc.cmx \
-    ../compilerlibs/unprefixed/location.cmx \
-    ../compilerlibs/unprefixed/ident.cmx
+    ../compilerlibs/ocaml_common__printtyp.cmx \
+    ../compilerlibs/ocaml_common__pparse.cmx \
+    ../compilerlibs/ocaml_common__path.cmx \
+    ../compilerlibs/ocaml_common__parsetree.cmi \
+    ../compilerlibs/ocaml_common__parse.cmx \
+    ../compilerlibs/ocaml_common__misc.cmx \
+    ../compilerlibs/ocaml_common__location.cmx \
+    ../compilerlibs/ocaml_common__ident.cmx \
+    ../compilerlibs/ocaml_common.cmx
 make_opcodes.cmo : \
     ../compilerlibs/ocaml_common.cmo
 make_opcodes.cmx : \
     ../compilerlibs/ocaml_common.cmx
 objinfo.cmo : \
-    ../compilerlibs/unprefixed/symtable.cmo \
-    ../compilerlibs/unprefixed/symbol.cmo \
-    ../compilerlibs/unprefixed/printclambda.cmo \
     ../compilerlibs/ocaml_optcomp.cmo \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/misc.cmo \
-    ../compilerlibs/unprefixed/linkage_name.cmo \
-    ../compilerlibs/unprefixed/ident.cmo \
-    ../compilerlibs/unprefixed/export_info.cmo \
-    ../compilerlibs/unprefixed/config.cmo \
-    ../compilerlibs/unprefixed/compilation_unit.cmo \
-    ../compilerlibs/unprefixed/cmx_format.cmi \
-    ../compilerlibs/unprefixed/cmt_format.cmo \
-    ../compilerlibs/unprefixed/cmo_format.cmi \
-    ../compilerlibs/unprefixed/cmi_format.cmo \
-    ../compilerlibs/unprefixed/bytesections.cmo
+    ../compilerlibs/ocaml_common__symtable.cmi \
+    ../compilerlibs/ocaml_common__misc.cmi \
+    ../compilerlibs/ocaml_common__ident.cmi \
+    ../compilerlibs/ocaml_common__config.cmi \
+    ../compilerlibs/ocaml_common__cmt_format.cmi \
+    ../compilerlibs/ocaml_common__cmo_format.cmi \
+    ../compilerlibs/ocaml_common__cmi_format.cmi \
+    ../compilerlibs/ocaml_common__bytesections.cmi \
+    ../compilerlibs/ocaml_common.cmo
 objinfo.cmx : \
-    ../compilerlibs/unprefixed/symtable.cmx \
-    ../compilerlibs/unprefixed/symbol.cmx \
-    ../compilerlibs/unprefixed/printclambda.cmx \
     ../compilerlibs/ocaml_optcomp.cmx \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/misc.cmx \
-    ../compilerlibs/unprefixed/linkage_name.cmx \
-    ../compilerlibs/unprefixed/ident.cmx \
-    ../compilerlibs/unprefixed/export_info.cmx \
-    ../compilerlibs/unprefixed/config.cmx \
-    ../compilerlibs/unprefixed/compilation_unit.cmx \
-    ../compilerlibs/unprefixed/cmx_format.cmi \
-    ../compilerlibs/unprefixed/cmt_format.cmx \
-    ../compilerlibs/unprefixed/cmo_format.cmi \
-    ../compilerlibs/unprefixed/cmi_format.cmx \
-    ../compilerlibs/unprefixed/bytesections.cmx
+    ../compilerlibs/ocaml_common__symtable.cmx \
+    ../compilerlibs/ocaml_common__misc.cmx \
+    ../compilerlibs/ocaml_common__ident.cmx \
+    ../compilerlibs/ocaml_common__config.cmx \
+    ../compilerlibs/ocaml_common__cmt_format.cmx \
+    ../compilerlibs/ocaml_common__cmo_format.cmi \
+    ../compilerlibs/ocaml_common__cmi_format.cmx \
+    ../compilerlibs/ocaml_common__bytesections.cmx \
+    ../compilerlibs/ocaml_common.cmx
 ocaml299to3.cmo : \
     ../compilerlibs/ocaml_common.cmo
 ocaml299to3.cmx : \
     ../compilerlibs/ocaml_common.cmx
 ocamlcp.cmo : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/main_args.cmo
+    ../compilerlibs/ocaml_common__main_args.cmi \
+    ../compilerlibs/ocaml_common.cmo
 ocamlcp.cmx : \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/main_args.cmx
+    ../compilerlibs/ocaml_common__main_args.cmx \
+    ../compilerlibs/ocaml_common.cmx
 ocamldep.cmo : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/makedepend.cmo
+    ../compilerlibs/ocaml_common__makedepend.cmi \
+    ../compilerlibs/ocaml_common.cmo
 ocamldep.cmx : \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/makedepend.cmx
+    ../compilerlibs/ocaml_common__makedepend.cmx \
+    ../compilerlibs/ocaml_common.cmx
 ocamlmklib.cmo : \
     ocamlmklibconfig.cmo \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/misc.cmo \
-    ../compilerlibs/unprefixed/config.cmo
+    ../compilerlibs/ocaml_common__misc.cmi \
+    ../compilerlibs/ocaml_common__config.cmi \
+    ../compilerlibs/ocaml_common.cmo
 ocamlmklib.cmx : \
     ocamlmklibconfig.cmx \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/misc.cmx \
-    ../compilerlibs/unprefixed/config.cmx
+    ../compilerlibs/ocaml_common__misc.cmx \
+    ../compilerlibs/ocaml_common__config.cmx \
+    ../compilerlibs/ocaml_common.cmx
 ocamlmklibconfig.cmo : \
     ../compilerlibs/ocaml_common.cmo
 ocamlmklibconfig.cmx : \
     ../compilerlibs/ocaml_common.cmx
 ocamlmktop.cmo : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/ccomp.cmo
+    ../compilerlibs/ocaml_common__ccomp.cmi \
+    ../compilerlibs/ocaml_common.cmo
 ocamlmktop.cmx : \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/ccomp.cmx
+    ../compilerlibs/ocaml_common__ccomp.cmx \
+    ../compilerlibs/ocaml_common.cmx
 ocamloptp.cmo : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/main_args.cmo
+    ../compilerlibs/ocaml_common__main_args.cmi \
+    ../compilerlibs/ocaml_common.cmo
 ocamloptp.cmx : \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/main_args.cmx
+    ../compilerlibs/ocaml_common__main_args.cmx \
+    ../compilerlibs/ocaml_common.cmx
 ocamlprof.cmo : \
-    ../compilerlibs/unprefixed/warnings.cmo \
-    ../compilerlibs/unprefixed/parsetree.cmi \
-    ../compilerlibs/unprefixed/parse.cmo \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/location.cmo
+    ../compilerlibs/ocaml_common__warnings.cmi \
+    ../compilerlibs/ocaml_common__parsetree.cmi \
+    ../compilerlibs/ocaml_common__parse.cmi \
+    ../compilerlibs/ocaml_common__location.cmi \
+    ../compilerlibs/ocaml_common.cmo
 ocamlprof.cmx : \
-    ../compilerlibs/unprefixed/warnings.cmx \
-    ../compilerlibs/unprefixed/parsetree.cmi \
-    ../compilerlibs/unprefixed/parse.cmx \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/location.cmx
+    ../compilerlibs/ocaml_common__warnings.cmx \
+    ../compilerlibs/ocaml_common__parsetree.cmi \
+    ../compilerlibs/ocaml_common__parse.cmx \
+    ../compilerlibs/ocaml_common__location.cmx \
+    ../compilerlibs/ocaml_common.cmx
 opnames.cmo : \
     ../compilerlibs/ocaml_common.cmo
 opnames.cmx : \
     ../compilerlibs/ocaml_common.cmx
 primreq.cmo : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/misc.cmo \
-    ../compilerlibs/unprefixed/config.cmo \
-    ../compilerlibs/unprefixed/cmo_format.cmi
+    ../compilerlibs/ocaml_common__misc.cmi \
+    ../compilerlibs/ocaml_common__config.cmi \
+    ../compilerlibs/ocaml_common__cmo_format.cmi \
+    ../compilerlibs/ocaml_common.cmo
 primreq.cmx : \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/misc.cmx \
-    ../compilerlibs/unprefixed/config.cmx \
-    ../compilerlibs/unprefixed/cmo_format.cmi
+    ../compilerlibs/ocaml_common__misc.cmx \
+    ../compilerlibs/ocaml_common__config.cmx \
+    ../compilerlibs/ocaml_common__cmo_format.cmi \
+    ../compilerlibs/ocaml_common.cmx
 profiling.cmo : \
     ../compilerlibs/ocaml_common.cmo \
     profiling.cmi
@@ -263,28 +249,28 @@ profiling.cmx : \
 profiling.cmi : \
     ../compilerlibs/ocaml_common.cmo
 read_cmt.cmo : \
+    ../compilerlibs/ocaml_common__location.cmi \
+    ../compilerlibs/ocaml_common__compmisc.cmi \
+    ../compilerlibs/ocaml_common__cmt_format.cmi \
+    ../compilerlibs/ocaml_common__clflags.cmi \
     ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/location.cmo \
-    ../compilerlibs/unprefixed/compmisc.cmo \
-    ../compilerlibs/unprefixed/cmt_format.cmo \
-    cmt2annot.cmo \
-    ../compilerlibs/unprefixed/clflags.cmo
+    cmt2annot.cmo
 read_cmt.cmx : \
+    ../compilerlibs/ocaml_common__location.cmx \
+    ../compilerlibs/ocaml_common__compmisc.cmx \
+    ../compilerlibs/ocaml_common__cmt_format.cmx \
+    ../compilerlibs/ocaml_common__clflags.cmx \
     ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/location.cmx \
-    ../compilerlibs/unprefixed/compmisc.cmx \
-    ../compilerlibs/unprefixed/cmt_format.cmx \
-    cmt2annot.cmx \
-    ../compilerlibs/unprefixed/clflags.cmx
+    cmt2annot.cmx
 scrapelabels.cmo : \
     ../compilerlibs/ocaml_common.cmo
 scrapelabels.cmx : \
     ../compilerlibs/ocaml_common.cmx
 stripdebug.cmo : \
-    ../compilerlibs/ocaml_common.cmo \
-    ../compilerlibs/unprefixed/misc.cmo \
-    ../compilerlibs/unprefixed/bytesections.cmo
+    ../compilerlibs/ocaml_common__misc.cmi \
+    ../compilerlibs/ocaml_common__bytesections.cmi \
+    ../compilerlibs/ocaml_common.cmo
 stripdebug.cmx : \
-    ../compilerlibs/ocaml_common.cmx \
-    ../compilerlibs/unprefixed/misc.cmx \
-    ../compilerlibs/unprefixed/bytesections.cmx
+    ../compilerlibs/ocaml_common__misc.cmx \
+    ../compilerlibs/ocaml_common__bytesections.cmx \
+    ../compilerlibs/ocaml_common.cmx
