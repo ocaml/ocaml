@@ -14,7 +14,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
 open Instruct
 
 val get_pos : debug_event -> Lexing.position;;

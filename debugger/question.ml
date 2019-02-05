@@ -26,7 +26,7 @@ let yes_or_no message =
           let rec ask () =
             resume_user_input ();
             let line =
-              string_trim (Lexer.line (Lexing.from_function read_user_input))
+              string_trim (Debug_lexer.line (Lexing.from_function read_user_input))
             in
               stop_user_input ();
               match (if String.length line > 0 then line.[0] else ' ') with

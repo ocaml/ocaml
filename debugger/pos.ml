@@ -13,7 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common;;
 open Instruct;;
 open Lexing;;
 open Location;;

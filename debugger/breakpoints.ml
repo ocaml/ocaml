@@ -16,7 +16,6 @@
 
 (******************************* Breakpoints ***************************)
 
-open Ocaml_common
 open Checkpoints
 open Debugcom
 open Instruct

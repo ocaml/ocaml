@@ -16,7 +16,6 @@
 
 (* Miscellaneous parameters *)
 
-open Ocaml_common
 open Debugger_config
 
 let program_name = ref ""

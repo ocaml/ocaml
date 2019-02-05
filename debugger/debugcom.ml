@@ -16,7 +16,6 @@
 
 (* Low-level communication with the debuggee *)
 
-open Ocaml_common
 open Int64ops
 open Primitives
 

@@ -17,7 +17,6 @@
 (****************** Tools for Unix *************************************)
 
 module Real_stdlib = Stdlib
-open Ocaml_common
 open Misc
 open Unix
 

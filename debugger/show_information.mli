@@ -15,7 +15,6 @@
 (**************************************************************************)
 
 open Format;;
-open Ocaml_common;;
 
 (* Display information about the current event. *)
 val show_current_event : formatter -> unit;;

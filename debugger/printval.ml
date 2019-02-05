@@ -17,10 +17,10 @@
 (* To print values *)
 
 open Format
-open Ocaml_common
-open Ocaml_toplevel
 open Parser_aux
 open Types
+
+module Genprintval = Ocaml_toplevel.Genprintval
 
 (* To name printed and ellipsed values *)
 

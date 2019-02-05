@@ -13,6 +13,4 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 val get_desc : Instruct.debug_event -> string;;

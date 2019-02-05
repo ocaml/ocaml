@@ -16,7 +16,6 @@
 
 (***************************** Frames **********************************)
 
-open Ocaml_common
 open Instruct
 open Debugcom
 open Events

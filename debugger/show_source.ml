@@ -14,7 +14,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
 open Debugger_config
 open Instruct
 open Parameters

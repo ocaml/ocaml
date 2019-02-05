@@ -16,7 +16,6 @@
 (* Loading and installation of user-defined printer functions *)
 
 open Format
-open Ocaml_common
 
 val init : unit -> unit
 

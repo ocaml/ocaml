@@ -14,7 +14,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
 open Misc
 open Path
 open Instruct

@@ -24,7 +24,7 @@ CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
-          -safe-string -strict-sequence -strict-formats
+          -safe-string -strict-sequence -strict-formats -open Ocaml_common
 LINKFLAGS=-linkall -I $(UNIXDIR)
 YACCFLAGS=
 CAMLLEX=$(CAMLRUN) $(ROOTDIR)/boot/ocamllex
@@ -62,14 +62,15 @@ compiler_modules := \
 compiler_modules := \
   $(ROOTDIR)/compilerlibs/ocaml_common \
   $(addprefix $(ROOTDIR)/compilerlibs/ocaml_common__,$(compiler_modules)) \
+  $(ROOTDIR)/compilerlibs/ocaml_toplevel \
   $(ROOTDIR)/compilerlibs/ocaml_toplevel__genprintval
 
 debugger_modules := \
-  int64ops primitives unix_tools debugger_config parameters lexer \
+  int64ops primitives unix_tools debugger_config parameters debug_lexer \
   input_handling question debugcom exec source pos checkpoints events \
   program_loading symbols breakpoints trap_barrier history printval \
   show_source time_travel program_management frames eval \
-  show_information loadprinter parser command_line main
+  show_information loadprinter debug_parser command_line main
 
 all_modules := $(compiler_modules) $(debugger_modules)
 
@@ -97,19 +98,19 @@ clean::
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -open Ocaml_common *.mli *.ml \
 	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
-lexer.ml: lexer.mll
-	$(CAMLLEX) lexer.mll
+debug_lexer.ml: debug_lexer.mll
+	$(CAMLLEX) debug_lexer.mll
 clean::
-	rm -f lexer.ml
-beforedepend:: lexer.ml
+	rm -f debug_lexer.ml
+beforedepend:: debug_lexer.ml
 
-parser.ml parser.mli: parser.mly
-	$(CAMLYACC) parser.mly
+debug_parser.ml debug_parser.mli: debug_parser.mly
+	$(CAMLYACC) debug_parser.mly
 clean::
-	rm -f parser.ml parser.mli
-beforedepend:: parser.ml parser.mli
+	rm -f debug_parser.ml debug_parser.mli
+beforedepend:: debug_parser.ml debug_parser.mli
 
 include .depend
