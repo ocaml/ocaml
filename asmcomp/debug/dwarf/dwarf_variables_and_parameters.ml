@@ -404,8 +404,6 @@ let phantom_var_location_description state
       with
       | None -> None
       | Some rvalue ->
-        (* CR mshinwell: Maybe now we're fixing DW_OP_stack_value usage,
-           this won't be needed *)
         let location = SLDL.compile (SLDL.of_rvalue rvalue) in
         let composite =
           Composite_location_description.
@@ -420,7 +418,13 @@ let phantom_var_location_description state
       with
       | None -> None
       | Some lvalue ->
-        Some (Simple (SLDL.compile (SLDL.of_lvalue lvalue)))
+        let location = SLDL.compile (SLDL.of_lvalue lvalue) in
+        let composite =
+          Composite_location_description.
+            pieces_of_simple_location_descriptions
+              [location, arch_size_addr]
+        in
+        Some (Composite composite)
       end
   | Iphantom_read_field { var; field; } ->
     begin match is_variable_phantom var ~proto_dies_for_vars with

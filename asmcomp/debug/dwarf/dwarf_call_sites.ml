@@ -20,8 +20,6 @@ module L = Linearize
 module SLDL = Simple_location_description_lang
 module V = Backend_var
 
-let arch_size_addr = Targetint.of_int_exn Arch.size_addr
-
 let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
       ~(arg : Reg.t) ~stack_offset (insn : L.instruction) =
   let param_location =
@@ -65,14 +63,12 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
         let holds_value_of =
           Reg_with_debug_info.Debug_info.holds_value_of debug_info
         in
-        let create_composite_location_description arg_location =
-          let composite =
-            Composite_location_description.
-              pieces_of_simple_location_descriptions
-                [arg_location, arch_size_addr]
+        let create_location_description arg_location =
+          let arg_location =
+            Single_location_description.of_simple_location_description
+              arg_location
           in
-          [DAH.create_composite_call_value_location_description
-            composite;
+          [DAH.create_single_call_value_location_description arg_location;
           ]
         in
         match holds_value_of with
@@ -134,32 +130,24 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
                 match arg_location_rvalue with
                 | None -> []
                 | Some arg_location_rvalue ->
-                  (* gdb does not seem to accept a simple location description
-                     here -- it complains about the use of
-                     [DW_OP_stack_value]. *)
-                  create_composite_location_description arg_location_rvalue
+                  create_location_description arg_location_rvalue
             end
           in
           arg_location, type_attribute
         | Const_int i ->
           let arg_location =
-            create_composite_location_description
+            create_location_description
               (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.signed_int_const i)))
           in
           let type_attribute =
             [ DAH.create_type ~proto_die:(DS.value_type_proto_die state)
             ]
           in
-          (* CR mshinwell: It looks like gdb is taking the type from the
-             parameter.  Maybe we should alter gdb to pass both the
-             argument's type and the parameter's type through, so that
-             libmonda can choose which is best (e.g. for a polymorphic
-             function we might prefer the argument). *)
           arg_location, type_attribute
         | Const_naked_float f ->
           (* CR mshinwell: This shouldn't happen at the moment *)
           let arg_location =
-            create_composite_location_description
+            create_location_description
               (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.float_const f)))
           in
           let type_attribute =
@@ -170,7 +158,7 @@ let add_call_site_argument state ~call_site_die ~is_tail ~arg_index
         | Const_symbol symbol ->
           let symbol = Asm_symbol.create symbol in
           let arg_location =
-            create_composite_location_description
+            create_location_description
               (SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.const_symbol symbol)))
           in
           let type_attribute =
