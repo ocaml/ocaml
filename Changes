@@ -417,6 +417,10 @@ OCaml 4.08.0
 - MPR#6242, GPR#2143: optimize some local functions
   (Alain Frisch, review by Gabriel Scherer)
 
+- GPR#2082: New options [-insn-sched] and [-no-insn-sched] to control
+  instruction scheduling.
+  (Mark Shinwell, review by Damien Doligez)
+
 - GPR#2239: Fix match miscompilation with flambda
   (Leo White, review by Alain Frisch)
 

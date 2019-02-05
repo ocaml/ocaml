@@ -153,6 +153,8 @@ module Options = Main_args.Make_opttop_options (struct
     Int_arg_helper.parse spec
       "Syntax: -inline-max-depth <n> | <round>=<n>[,...]"
       inline_max_depth
+  let _insn_sched = set insn_sched
+  let _no_insn_sched = clear insn_sched
   let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
   let _no_unbox_specialised_args = clear unbox_specialised_args
   let _o s = output_name := Some s
