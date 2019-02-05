@@ -1266,7 +1266,7 @@ let rec lookup_module_descr_aux ?loc ~mark lid env =
   match lid with
     Lident s ->
       begin match IdTbl.find_name ~mark s env.components with
-      | exception Not_found ->
+      | exception Not_found when s <> !current_unit ->
         let p = Path.Pident (Ident.create_persistent s) in
         (p, (find_pers_struct s).ps_comps)
       | (p, data) ->
