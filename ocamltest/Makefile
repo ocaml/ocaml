@@ -173,7 +173,7 @@ include_directories := $(addprefix -I , $(directories))
 
 flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
-  -w +a-4-9-41-42-44-45-48 -warn-error A
+  -w +a-4-9-41-42-44-45-48 -warn-error A -open Ocaml_common
 
 ocamlc := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlc $(flags)
 
@@ -272,8 +272,8 @@ ifneq "$(TOOLCHAIN)" "msvc"
 depend: $(dependencies_generated_prereqs)
 	$(CC) -MM $(OC_CPPFLAGS) $(c_files) \
 	  | sed -e 's/\.o/.$$(O)/' > .depend
-	$(ocamldep) $(depflags) $(depincludes) $(mli_files) $(ml_files) \
-	  >> .depend
+	$(ocamldep) $(depflags) $(depincludes) -open Ocaml_common \
+	  $(mli_files) $(ml_files) >> .depend
 endif
 
 -include .depend

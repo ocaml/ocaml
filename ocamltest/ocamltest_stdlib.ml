@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (* A few extensions to OCaml's standard library *)
 
 (* Pervaisive *)

@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (* Main program of the ocamltest test driver *)
 
 open Ocamltest_stdlib

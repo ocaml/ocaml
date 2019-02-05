@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (* Interpretation of TSL blocks and operations on test trees *)
 
 open Tsl_ast

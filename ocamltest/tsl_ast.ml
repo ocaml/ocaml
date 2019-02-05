@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (* Abstract Syntax Tree for the Tests Specification Language *)
 
 type 'a located = {
