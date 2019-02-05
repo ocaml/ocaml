@@ -116,9 +116,11 @@ let dwarf_for_closure_top_level_module_block state ~module_block_sym
   in
   let single_location_description =
     let symbol = Asm_symbol.create module_block_sym in
-    let lang = SLDL.Lvalue.const_symbol symbol in
+    let lang =
+      SLDL.Lvalue_without_address.of_rvalue (SLDL.Rvalue.const_symbol symbol)
+    in
     Single_location_description.of_simple_location_description
-      (SLDL.compile (SLDL.of_lvalue lang))
+      (SLDL.compile (SLDL.of_lvalue_without_address lang))
   in
   Proto_die.create_ignore ~parent:(Some (DS.compilation_unit_proto_die state))
     ~tag:Variable

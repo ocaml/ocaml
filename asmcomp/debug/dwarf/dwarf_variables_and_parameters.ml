@@ -350,23 +350,36 @@ let reg_location_description reg ~offset_from_cfa_in_bytes
   | None -> None
   | Some simple_loc_desc -> Some (Simple simple_loc_desc)
 
+(* Phantom-let-bound variables are always immutable, so we don't actually
+   need lvalue (in the sense of the [SLDL] module) descriptions for them.
+   (For example, we'll never need to watchpoint them.)  However, to be
+   consistent with normal variables, we always emit lvalue descriptions (and
+   emit rvalue descriptions only when required). *)
 let phantom_var_location_description state
-      ~(defining_expr : Mach.phantom_defining_expr) ~need_rvalue:_
+      ~(defining_expr : Mach.phantom_defining_expr) ~need_rvalue
       ~proto_dies_for_vars ~parent
       : location_description option =
   let module SLD = Simple_location_description in
   let lvalue lvalue = Some (Simple (SLDL.compile (SLDL.of_lvalue lvalue))) in
+  let lvalue_without_address lvalue =
+    Some (Simple (SLDL.compile (SLDL.of_lvalue_without_address lvalue)))
+  in
   let rvalue rvalue = Some (Simple (SLDL.compile (SLDL.of_rvalue rvalue))) in
   match defining_expr with
-  | Iphantom_const_int i -> rvalue (SLDL.Rvalue.signed_int_const i)
+  | Iphantom_const_int i ->
+    let i = SLDL.Rvalue.signed_int_const i in
+    if need_rvalue then rvalue i
+    else lvalue_without_address (SLDL.Lvalue_without_address.of_rvalue i)
   | Iphantom_const_symbol symbol ->
-    let symbol = Asm_symbol.create symbol in
-    lvalue (SLDL.Lvalue.const_symbol symbol)
+    let symbol = SLDL.Rvalue.const_symbol (Asm_symbol.create symbol) in
+    if need_rvalue then rvalue symbol
+    else lvalue_without_address (SLDL.Lvalue_without_address.of_rvalue symbol)
   | Iphantom_read_symbol_field { sym; field; } ->
     let symbol = Asm_symbol.create sym in
     (* CR-soon mshinwell: Fix [field] to be of type [Targetint.t] *)
     let field = Targetint.of_int field in
-    rvalue (SLDL.Rvalue.read_symbol_field symbol ~field)
+    if need_rvalue then rvalue (SLDL.Rvalue.read_symbol_field symbol ~field)
+    else lvalue (SLDL.Lvalue.in_symbol_field symbol ~field)
   | Iphantom_var var ->
     (* mshinwell: What happens if [var] isn't available at some point
        just due to the location list?  Should we push zero on the stack
@@ -385,32 +398,31 @@ let phantom_var_location_description state
        better solution would be desirable.  Follow-up: actually it doesn't
        get that far---the error is thrown even before the value printer
        is called. *)
-    begin match
-      die_location_of_variable_rvalue state var ~proto_dies_for_vars
-    with
-    | None -> None
-    | Some rvalue ->
-      let location = SLDL.compile (SLDL.of_rvalue rvalue) in
-      let composite =
-        Composite_location_description.
-          pieces_of_simple_location_descriptions
-            [location, arch_size_addr]
-      in
-      Some (Composite composite)
-    end
+    if need_rvalue then
+      begin match
+        die_location_of_variable_rvalue state var ~proto_dies_for_vars
+      with
+      | None -> None
+      | Some rvalue ->
+        (* CR mshinwell: Maybe now we're fixing DW_OP_stack_value usage,
+           this won't be needed *)
+        let location = SLDL.compile (SLDL.of_rvalue rvalue) in
+        let composite =
+          Composite_location_description.
+            pieces_of_simple_location_descriptions
+              [location, arch_size_addr]
+        in
+        Some (Composite composite)
+      end
+    else
+      begin match
+        die_location_of_variable_lvalue state var ~proto_dies_for_vars
+      with
+      | None -> None
+      | Some lvalue ->
+        Some (Simple (SLDL.compile (SLDL.of_lvalue lvalue)))
+      end
   | Iphantom_read_field { var; field; } ->
-    (* CR-soon mshinwell: Clarify the following (maybe in SLDL directly):
-       "lvalue" == "no DW_op_stack_value" *)
-    (* Reminder: see CR in flambda_utils.ml regarding these constructions *)
-    (* We need to use a location expression that when evaluated will
-       yield the runtime value of [var] *actually on the DWARF stack*.
-       This is necessary so that we can apply other stack operations,
-       such as arithmetic and dereferencing, to the value.  The upshot is
-       that we cannot use the "standalone" location-describing operators
-       such as DW_op_regx; instead we would use DW_op_bregx.  (Another
-       way of looking at this is that we need to get the DWARF operator
-       sequence without [DW_op_stack_value], either implicitly or
-       explicitly, at the end.) *)
     begin match is_variable_phantom var ~proto_dies_for_vars with
     | None | Some Phantom ->
       (* For the moment, show this field access as unavailable, since we
@@ -421,15 +433,18 @@ let phantom_var_location_description state
       | None -> None
       | Some block ->
         let field = Targetint.of_int_exn field in
-        let read_field =
-          SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.read_field ~block ~field))
-        in
-        let composite =
-          Composite_location_description.
-            pieces_of_simple_location_descriptions
-              [read_field, arch_size_addr]
-        in
-        Some (Composite composite)
+        if need_rvalue then
+          let read_field =
+            SLDL.compile (SLDL.of_rvalue (SLDL.Rvalue.read_field ~block ~field))
+          in
+          let composite =
+            Composite_location_description.
+              pieces_of_simple_location_descriptions
+                [read_field, arch_size_addr]
+          in
+          Some (Composite composite)
+        else
+          lvalue (SLDL.Lvalue.read_field ~block ~field)
     end
   | Iphantom_offset_var { var; offset_in_words; } ->
     begin match
@@ -438,16 +453,8 @@ let phantom_var_location_description state
     | None -> None
     | Some location ->
       let offset_in_words = Targetint.of_int_exn offset_in_words in
-      let offset_var =
-        SLDL.compile (SLDL.of_rvalue (
-          SLDL.Rvalue.offset_pointer location ~offset_in_words))
-      in
-      let composite =
-        Composite_location_description.
-          pieces_of_simple_location_descriptions
-            [offset_var, arch_size_addr]
-      in
-      Some (Composite composite)
+      if need_rvalue then None
+      else lvalue (SLDL.Lvalue.offset_pointer location ~offset_in_words)
     end
   | Iphantom_block { tag; fields; } ->
     (* A phantom block construction: instead of the block existing in the
@@ -495,9 +502,14 @@ let phantom_var_location_description state
         ]
         ()
     in
-    rvalue (SLDL.Rvalue.implicit_pointer ~offset_in_bytes:Targetint.zero
-      ~die_label:(Proto_die.reference proto_die)
-      (DS.dwarf_version state))
+    let offset_in_bytes = Targetint.zero in
+    let die_label = Proto_die.reference proto_die in
+    let version = DS.dwarf_version state in
+    if need_rvalue then
+      rvalue (SLDL.Rvalue.implicit_pointer ~offset_in_bytes ~die_label version)
+    else
+      lvalue_without_address (SLDL.Lvalue_without_address.implicit_pointer
+        ~offset_in_bytes ~die_label version)
 
 let single_location_description state (_fundecl : L.fundecl) ~parent ~subrange
       ~proto_dies_for_vars ~need_rvalue =
