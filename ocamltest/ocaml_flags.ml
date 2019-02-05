@@ -20,7 +20,7 @@ let stdlib ocamlsrcdir =
   "-nostdlib -I " ^ stdlib_path
 
 let include_toplevel_directory ocamlsrcdir =
-  "-I " ^ (Ocaml_directories.toplevel ocamlsrcdir)
+  "-I " ^ (Ocaml_directories.toplevel ocamlsrcdir) ^ " -open Ocaml_toplevel"
 
 let c_includes ocamlsrcdir =
   let dir = Ocaml_directories.runtime ocamlsrcdir in

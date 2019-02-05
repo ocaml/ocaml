@@ -90,19 +90,19 @@ let systhreads =
   (make_library_modifier
     "threads" (compiler_subdir ["otherlibs"; "systhreads"]))
 
-let compilerlibs_subdirs =
-[
-  "compilerlibs"; "compilerlibs"
-]
-
 let add_compiler_subdir subdir =
   Append (Ocaml_variables.directories, (wrap (compiler_subdir [subdir])))
 
 let config =
-  List.map add_compiler_subdir compilerlibs_subdirs
+  add_compiler_subdir "compilerlibs" ::
+  Append (Ocaml_variables.flags, wrap "-open Ocaml_common") ::
+  []
 
 let ocamlcommon =
-  Append (Ocaml_variables.libraries, wrap "ocamlcommon") :: config
+  Append (Ocaml_variables.libraries, wrap "ocamlcommon") ::
+  Append (Ocaml_variables.flags, wrap "-open Ocaml_bytecomp") ::
+  Append (Ocaml_variables.flags, wrap "-open Ocaml_toplevel") ::
+  config
 
 let _ =
   register_modifiers "principal" principal;

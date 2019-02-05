@@ -1,11 +1,11 @@
 (* TEST
-   flags = "-I ${ocamlsrcdir}/compilerlibs"
+   flags = "-I ${ocamlsrcdir}/compilerlibs -open Ocaml_common"
    * expect
 *)
 
 module L = Longident
 [%%expect {|
-module L = Longident
+module L = Ocaml_common.Longident
 |}]
 
 let flatten_ident = L.flatten (L.Lident "foo")

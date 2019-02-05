@@ -1,6 +1,6 @@
 (* TEST
    include config
-   flags = "-w -55"
+   flags += "-w -55"
    ocamlc_flags = "ocaml_common__config.cmo"
    ocamlopt_flags = "-inline 20 ocaml_common__config.cmx"
 *)
