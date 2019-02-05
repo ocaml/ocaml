@@ -17,19 +17,18 @@ BASEDIR = ..
 ROOTDIR = ../..
 
 include $(ROOTDIR)/Makefile.config
-COMPLIBDIR=compilerlibs
 expect_MAIN=expect_test
 expect_PROG=$(expect_MAIN)$(EXE)
-expect_COMPFLAGS=-I $(OTOPDIR)/$(COMPLIBDIR)
-expect_LIBRARIES := $(addprefix $(ROOTDIR)/$(COMPLIBDIR)/,\
+expect_COMPFLAGS=-I $(OTOPDIR)/compilerlibs
+expect_LIBRARIES := $(addprefix $(ROOTDIR)/compilerlibs/,\
   ocamlcommon ocamlbytecomp ocamltoplevel)
 
 codegen_INCLUDES=\
-  -I $(OTOPDIR)/$(COMPLIBDIR)
+  -I $(OTOPDIR)/compilerlibs
 
 codegen_OTHEROBJECTS=\
-  $(OTOPDIR)/$(COMPLIBDIR)/ocamlcommon.cma \
-  $(OTOPDIR)/$(COMPLIBDIR)/ocamloptcomp.cma
+  $(OTOPDIR)/compilerlibs/ocamlcommon.cma \
+  $(OTOPDIR)/compilerlibs/ocamloptcomp.cma
 
 codegen_OBJECTS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo codegen_main.cmo
 

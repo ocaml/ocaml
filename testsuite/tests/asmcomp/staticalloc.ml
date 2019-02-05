@@ -1,7 +1,7 @@
 (* TEST
   include config
   * native
-    flags = "ocaml_common__config.cmx config.cmx"
+    flags = "ocaml_common__config.cmx"
 *)
 
 (* Check the effectiveness of structured constant propagation and

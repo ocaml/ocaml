@@ -342,10 +342,12 @@ endif
 	$(INSTALL_PROG) yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
 	$(INSTALL_DATA) \
 	   compilerlibs/*.cmi \
+	   compilerlibs/unprefixed/*.cmi \
 	   "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	   compilerlibs/*.cmt compilerlibs/*.cmti compilerlibs/*.mli \
+	   compilerlibs/unprefixed/*.cmt compilerlibs/unprefixed/*.cmti compilerlibs/unprefixed/*.mli \
 	   "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -408,10 +410,12 @@ endif
 	$(MAKE) -C stdlib installopt
 	$(INSTALL_DATA) \
 	    compilerlibs/*.cmi \
+	    compilerlibs/unprefixed/*.cmi \
 	    "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	    compilerlibs/*.cmt compilerlibs/*.cmti compilerlibs/*.mli \
+	    compilerlibs/unprefixed/*.cmt compilerlibs/unprefixed/*.cmti compilerlibs/unprefixed/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -451,6 +455,7 @@ installoptopt:
 	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
 	$(INSTALL_DATA) \
 	   compilerlibs/*.cmx \
+	   compilerlibs/unprefixed/*.cmx \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
            compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
@@ -514,6 +519,7 @@ compilerlibs/ocaml_common__compdynlink.cmo: \
 compilerlibs/ocaml_common__compdynlink.cmx: \
 	compilerlibs/ocaml_common__compdynlink.mlopt
 	$(CAMLOPT) $(COMPFLAGS) $(shell compilerlibs/Compflags $@) -c -impl $<
+compilerlibs/unprefixed/compdynlink.cmx: compilerlibs/ocaml_common__compdynlink.cmx
 
 tools/gen_prefix: tools/gen_prefix.ml
 	$(CAMLC) -o $@ $<
@@ -553,8 +559,8 @@ partialclean::
 
 # Shared parts of the system
 
-compilerlibs/ocamlcommon.cma: $(COMMON_CMO)
-	$(CAMLC) -a -linkall -o $@ $^
+compilerlibs/ocamlcommon.cma: $(COMMON_CMO) $(COMMON_UNPREFIXED_CMI)
+	$(CAMLC) -a -linkall -o $@ $(COMMON_CMO)
 compilerlibs/ocaml_common.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_common $(COMMON) > $@
 compilerlibs/ocaml_common.cmo: compilerlibs/ocaml_common.ml
@@ -574,8 +580,8 @@ beforedepend:: compilerlibs/ocaml_common.cmo compilerlibs/common
 
 # The bytecode compiler
 
-compilerlibs/ocamlbytecomp.cma: $(BYTECOMP_CMO)
-	$(CAMLC) -a -o $@ $^
+compilerlibs/ocamlbytecomp.cma: $(BYTECOMP_CMO) $(BYTECOMP_UNPREFIXED_CMI)
+	$(CAMLC) -a -o $@ $(BYTECOMP_CMO)
 compilerlibs/ocaml_bytecomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_bytecomp $(BYTECOMP) > $@
 compilerlibs/ocaml_bytecomp.cmo: compilerlibs/ocaml_bytecomp.ml
@@ -601,8 +607,8 @@ partialclean::
 
 # The native-code compiler
 
-compilerlibs/ocamloptcomp.cma: $(OPTCOMP_CMO)
-	$(CAMLC) -a -o $@ $^
+compilerlibs/ocamloptcomp.cma: $(OPTCOMP_CMO) $(OPTCOMP_UNPREFIXED_CMI)
+	$(CAMLC) -a -o $@ $(OPTCOMP_CMO)
 compilerlibs/ocaml_optcomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_optcomp $(OPTCOMP) > $@
 compilerlibs/ocaml_optcomp.cmo: compilerlibs/ocaml_optcomp.ml

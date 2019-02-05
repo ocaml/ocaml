@@ -1,8 +1,8 @@
 (* TEST
    include config
    flags = "-w -55"
-   ocamlc_flags = "ocaml_common__config.cmo config.cmo"
-   ocamlopt_flags = "-inline 20 ocaml_common__config.cmx config.cmx"
+   ocamlc_flags = "ocaml_common__config.cmo"
+   ocamlopt_flags = "-inline 20 ocaml_common__config.cmx"
 *)
 
 let eliminate_intermediate_float_record () =
