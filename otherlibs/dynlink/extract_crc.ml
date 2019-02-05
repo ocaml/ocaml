@@ -15,8 +15,6 @@
 
 (* Print the digests of unit interfaces *)
 
-open Ocaml_common
-
 let load_path = ref []
 let first = ref true
 

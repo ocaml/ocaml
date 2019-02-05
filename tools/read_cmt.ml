@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 let gen_annot = ref false
 let gen_ml = ref false
 let print_info_arg = ref false

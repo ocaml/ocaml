@@ -79,7 +79,7 @@ CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
 CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 INCLUDES = -I $(ROOTDIR)/compilerlibs -I $(ROOTDIR)/compilerlibs/unprefixed
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
- -safe-string -strict-formats -bin-annot $(INCLUDES)
+ -safe-string -strict-formats -bin-annot $(INCLUDES) -open Ocaml_common
 LINKFLAGS = $(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 
@@ -451,7 +451,7 @@ CAMLDEP=$(CAMLRUN) $(ROOTDIR)/boot/ocamlc -depend
 DEPFLAGS=-slash
 DEPINCLUDES=$(INCLUDES)
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend
+	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -open Ocaml_common *.mli *.ml > .depend
 
 .PHONY: clean install beforedepend depend
 

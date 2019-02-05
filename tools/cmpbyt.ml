@@ -17,7 +17,6 @@
    Ignore loader prefix and debug infos. *)
 
 open Printf
-open Ocaml_common
 
 let readtoc ic =
   Bytesections.read_toc ic;

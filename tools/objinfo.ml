@@ -19,7 +19,6 @@
    and on bytecode executables. *)
 
 open Printf
-open Ocaml_common
 open Ocaml_optcomp
 open Misc
 open Config

@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 let _ =
   let args = Ccomp.quote_files (List.tl (Array.to_list Sys.argv)) in
   let ocamlmktop = Sys.executable_name in

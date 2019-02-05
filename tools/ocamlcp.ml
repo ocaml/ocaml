@@ -14,7 +14,6 @@
 (**************************************************************************)
 
 open Printf
-open Ocaml_common
 
 let make_archive = ref false;;
 let with_impl = ref false;;

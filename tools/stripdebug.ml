@@ -19,7 +19,6 @@
 *)
 
 open Printf
-open Ocaml_common
 open Misc
 
 let stripdebug infile outfile =

@@ -24,7 +24,8 @@ CAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -g -nostdlib -I $(ROOTDIR)/stdlib
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A \
-          -safe-string -strict-sequence -strict-formats -open Ocaml_common
+          -safe-string -strict-sequence -strict-formats -open Ocaml_common \
+          -no-alias-deps
 LINKFLAGS=-linkall -I $(UNIXDIR)
 YACCFLAGS=
 CAMLLEX=$(CAMLRUN) $(ROOTDIR)/boot/ocamllex
@@ -60,9 +61,7 @@ compiler_modules := \
   $(bytecomp_modules) $(other_compiler_modules)
 
 compiler_modules := \
-  $(ROOTDIR)/compilerlibs/ocaml_common \
   $(addprefix $(ROOTDIR)/compilerlibs/ocaml_common__,$(compiler_modules)) \
-  $(ROOTDIR)/compilerlibs/ocaml_toplevel \
   $(ROOTDIR)/compilerlibs/ocaml_toplevel__genprintval
 
 debugger_modules := \

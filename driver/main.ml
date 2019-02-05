@@ -13,9 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-open Ocaml_bytecomp
-
 open Clflags
 open Compenv
 

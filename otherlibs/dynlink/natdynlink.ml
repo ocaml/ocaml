@@ -16,7 +16,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_optcomp
+module Cmx_format = Ocaml_optcomp.Cmx_format
 
 (* Dynamic loading of .cmx files *)
 

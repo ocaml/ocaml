@@ -1,12 +1,14 @@
 addlabels.cmo : \
     ../compilerlibs/unprefixed/parsetree.cmi \
     ../compilerlibs/unprefixed/parse.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/unprefixed/longident.cmo \
     ../compilerlibs/unprefixed/location.cmo \
     ../compilerlibs/unprefixed/asttypes.cmi
 addlabels.cmx : \
     ../compilerlibs/unprefixed/parsetree.cmi \
     ../compilerlibs/unprefixed/parse.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/unprefixed/longident.cmx \
     ../compilerlibs/unprefixed/location.cmx \
     ../compilerlibs/unprefixed/asttypes.cmi
@@ -15,6 +17,7 @@ caml_tex.cmo : \
     ../compilerlibs/unprefixed/syntaxerr.cmo \
     ../compilerlibs/unprefixed/parsetree.cmi \
     ../compilerlibs/unprefixed/parse.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/unprefixed/misc.cmo \
     ../compilerlibs/unprefixed/location.cmo \
     ../compilerlibs/unprefixed/lexer.cmo \
@@ -28,6 +31,7 @@ caml_tex.cmx : \
     ../compilerlibs/unprefixed/syntaxerr.cmx \
     ../compilerlibs/unprefixed/parsetree.cmi \
     ../compilerlibs/unprefixed/parse.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/unprefixed/misc.cmx \
     ../compilerlibs/unprefixed/location.cmx \
     ../compilerlibs/unprefixed/lexer.cmx \
@@ -78,8 +82,10 @@ cmt2annot.cmx : \
     ../compilerlibs/unprefixed/cmt_format.cmx \
     ../compilerlibs/unprefixed/asttypes.cmi \
     ../compilerlibs/unprefixed/annot.cmi
-cvt_emit.cmo :
-cvt_emit.cmx :
+cvt_emit.cmo : \
+    ../compilerlibs/ocaml_common.cmo
+cvt_emit.cmx : \
+    ../compilerlibs/ocaml_common.cmx
 dumpobj.cmo : \
     ../compilerlibs/unprefixed/symtable.cmo \
     opnames.cmo \
@@ -108,22 +114,27 @@ dumpobj.cmx : \
     ../compilerlibs/unprefixed/asttypes.cmi
 eqparsetree.cmo : \
     ../compilerlibs/unprefixed/parsetree.cmi \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/unprefixed/longident.cmo \
     ../compilerlibs/unprefixed/location.cmo \
     ../compilerlibs/unprefixed/asttypes.cmi
 eqparsetree.cmx : \
     ../compilerlibs/unprefixed/parsetree.cmi \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/unprefixed/longident.cmx \
     ../compilerlibs/unprefixed/location.cmx \
     ../compilerlibs/unprefixed/asttypes.cmi
-gen_prefix.cmo :
-gen_prefix.cmx :
+gen_prefix.cmo : \
+    ../compilerlibs/ocaml_common.cmo
+gen_prefix.cmx : \
+    ../compilerlibs/ocaml_common.cmx
 lintapidiff.cmo : \
     ../compilerlibs/unprefixed/printtyp.cmo \
     ../compilerlibs/unprefixed/pparse.cmo \
     ../compilerlibs/unprefixed/path.cmo \
     ../compilerlibs/unprefixed/parsetree.cmi \
     ../compilerlibs/unprefixed/parse.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/unprefixed/misc.cmo \
     ../compilerlibs/unprefixed/location.cmo \
     ../compilerlibs/unprefixed/ident.cmo
@@ -133,11 +144,14 @@ lintapidiff.cmx : \
     ../compilerlibs/unprefixed/path.cmx \
     ../compilerlibs/unprefixed/parsetree.cmi \
     ../compilerlibs/unprefixed/parse.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/unprefixed/misc.cmx \
     ../compilerlibs/unprefixed/location.cmx \
     ../compilerlibs/unprefixed/ident.cmx
-make_opcodes.cmo :
-make_opcodes.cmx :
+make_opcodes.cmo : \
+    ../compilerlibs/ocaml_common.cmo
+make_opcodes.cmx : \
+    ../compilerlibs/ocaml_common.cmx
 objinfo.cmo : \
     ../compilerlibs/unprefixed/symtable.cmo \
     ../compilerlibs/unprefixed/symbol.cmo \
@@ -172,8 +186,10 @@ objinfo.cmx : \
     ../compilerlibs/unprefixed/cmo_format.cmi \
     ../compilerlibs/unprefixed/cmi_format.cmx \
     ../compilerlibs/unprefixed/bytesections.cmx
-ocaml299to3.cmo :
-ocaml299to3.cmx :
+ocaml299to3.cmo : \
+    ../compilerlibs/ocaml_common.cmo
+ocaml299to3.cmx : \
+    ../compilerlibs/ocaml_common.cmx
 ocamlcp.cmo : \
     ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/unprefixed/main_args.cmo
@@ -196,8 +212,10 @@ ocamlmklib.cmx : \
     ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/unprefixed/misc.cmx \
     ../compilerlibs/unprefixed/config.cmx
-ocamlmklibconfig.cmo :
-ocamlmklibconfig.cmx :
+ocamlmklibconfig.cmo : \
+    ../compilerlibs/ocaml_common.cmo
+ocamlmklibconfig.cmx : \
+    ../compilerlibs/ocaml_common.cmx
 ocamlmktop.cmo : \
     ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/unprefixed/ccomp.cmo
@@ -222,8 +240,10 @@ ocamlprof.cmx : \
     ../compilerlibs/unprefixed/parse.cmx \
     ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/unprefixed/location.cmx
-opnames.cmo :
-opnames.cmx :
+opnames.cmo : \
+    ../compilerlibs/ocaml_common.cmo
+opnames.cmx : \
+    ../compilerlibs/ocaml_common.cmx
 primreq.cmo : \
     ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/unprefixed/misc.cmo \
@@ -235,10 +255,13 @@ primreq.cmx : \
     ../compilerlibs/unprefixed/config.cmx \
     ../compilerlibs/unprefixed/cmo_format.cmi
 profiling.cmo : \
+    ../compilerlibs/ocaml_common.cmo \
     profiling.cmi
 profiling.cmx : \
+    ../compilerlibs/ocaml_common.cmx \
     profiling.cmi
-profiling.cmi :
+profiling.cmi : \
+    ../compilerlibs/ocaml_common.cmo
 read_cmt.cmo : \
     ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/unprefixed/location.cmo \
@@ -253,8 +276,10 @@ read_cmt.cmx : \
     ../compilerlibs/unprefixed/cmt_format.cmx \
     cmt2annot.cmx \
     ../compilerlibs/unprefixed/clflags.cmx
-scrapelabels.cmo :
-scrapelabels.cmx :
+scrapelabels.cmo : \
+    ../compilerlibs/ocaml_common.cmo
+scrapelabels.cmx : \
+    ../compilerlibs/ocaml_common.cmx
 stripdebug.cmo : \
     ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/unprefixed/misc.cmo \

@@ -41,13 +41,25 @@ case $1 in
            ' -open Ocaml_opttoplevel';;
   compilerlibs/unprefixed/*.cm*)
       echo ' -I compilerlibs';;
-  driver/*main.cm*)
+  driver/main.cm*)
       echo ' -I compilerlibs' \
-           ' -I driver';;
+           ' -I driver' \
+           ' -open Ocaml_common' \
+           ' -open Ocaml_bytecomp';;
+  driver/optmain.cm*)
+      echo ' -I compilerlibs' \
+           ' -I driver' \
+           ' -open Ocaml_common' \
+           ' -open Ocaml_optcomp';;
   toplevel/expunge.cm*)
-      echo ' -I compilerlibs';;
+      echo ' -I compilerlibs' \
+           ' -open Ocaml_common';;
   toplevel/topstart.cm*)
-      echo ' -I compilerlibs';;
+      echo ' -I compilerlibs' \
+           ' -open Ocaml_toplevel';;
+  toplevel/opttopstart.cm*)
+      echo ' -I compilerlibs' \
+           ' -open Ocaml_opttoplevel';;
   *)
       echo ' ';;
 esac

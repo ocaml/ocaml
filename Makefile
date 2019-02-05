@@ -559,7 +559,7 @@ compilerlibs/ocaml_common.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_common $(COMMON) > $@
 compilerlibs/ocaml_common.cmo: compilerlibs/ocaml_common.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
-$(addprefix compilerlibs/,$(COMMON_ML:=.ml) $(COMMON_MLI_ONLY:=.mli)): \
+$(addprefix compilerlibs/unprefixed/,$(COMMON_ML:=.ml) $(COMMON_MLI_ONLY:=.mli)): \
 	compilerlibs/common
 compilerlibs/common: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(COMMON_ML) -mli $(COMMON_MLI_ONLY) \
@@ -580,7 +580,7 @@ compilerlibs/ocaml_bytecomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_bytecomp $(BYTECOMP) > $@
 compilerlibs/ocaml_bytecomp.cmo: compilerlibs/ocaml_bytecomp.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
-$(addprefix compilerlibs/,$(BYTECOMP_ML:=.ml) $(BYTECOMP_MLI_ONLY:=.mli)): \
+$(addprefix compilerlibs/unprefixed/,$(BYTECOMP_ML:=.ml) $(BYTECOMP_MLI_ONLY:=.mli)): \
 	compilerlibs/bytecomp
 compilerlibs/bytecomp: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(BYTECOMP_ML) -mli $(BYTECOMP_MLI_ONLY) \
@@ -607,7 +607,7 @@ compilerlibs/ocaml_optcomp.ml: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< -prefix ocaml_optcomp $(OPTCOMP) > $@
 compilerlibs/ocaml_optcomp.cmo: compilerlibs/ocaml_optcomp.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
-$(addprefix compilerlibs/,$(OPTCOMP_ML:=.ml) $(OPTCOMP_MLI_ONLY:=.mli)): \
+$(addprefix compilerlibs/unprefixed/,$(OPTCOMP_ML:=.ml) $(OPTCOMP_MLI_ONLY:=.mli)): \
 	compilerlibs/optcomp
 compilerlibs/optcomp: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(OPTCOMP_ML) -mli $(OPTCOMP_MLI_ONLY) \
@@ -638,7 +638,7 @@ compilerlibs/ocaml_toplevel.cmo: compilerlibs/ocaml_toplevel.ml
 	$(CAMLC) $(COMPFLAGS) -w -49 -c $<
 compilerlibs/ocaml_toplevel.cmx: compilerlibs/ocaml_toplevel.ml
 	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
-$(addprefix compilerlibs/,$(TOPLEVEL_ML:=.ml) $(TOPLEVEL_MLI_ONLY:=.mli)): \
+$(addprefix compilerlibs/unprefixed/,$(TOPLEVEL_ML:=.ml) $(TOPLEVEL_MLI_ONLY:=.mli)): \
 	compilerlibs/toplevel
 compilerlibs/toplevel: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(TOPLEVEL_ML) -mli $(TOPLEVEL_MLI_ONLY) \
@@ -1157,7 +1157,7 @@ compilerlibs/ocaml_opttoplevel.cmx: compilerlibs/ocaml_opttoplevel.ml
 	$(CAMLOPT) $(COMPFLAGS) -w -49 -c $<
 compilerlibs/ocaml_opttoplevel__genprintval.ml:
 	echo 'include Ocaml_toplevel__genprintval' > $@
-$(addprefix compilerlibs/,$(OPTTOPLEVEL_ML:=.ml) \
+$(addprefix compilerlibs/unprefixed/,$(OPTTOPLEVEL_ML:=.ml) \
 	$(OPTTOPLEVEL_MLI_ONLY:=.mli)): compilerlibs/opttoplevel
 compilerlibs/opttoplevel: tools/gen_prefix CompilerModules
 	$(CAMLRUN) $< $(filter-out %genprintval,$(OPTTOPLEVEL_ML)) \
@@ -1268,7 +1268,9 @@ MAPS=\
 .PHONY: depend
 depend: beforedepend
 	(for d in driver toplevel; do \
-	 $(CAMLDEP) $(DEPFLAGS) -I compilerlibs $$d/*.mli $$d/*.ml || exit; \
+	 $(CAMLDEP) $(DEPFLAGS) -I compilerlibs \
+	   -open Ocaml_common -open Ocaml_bytecomp -open Ocaml_toplevel \
+	   $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
 	$(CAMLDEP) $(DEPFLAGS) $(MAPS) -I compilerlibs \
 	 -open Ocaml_common \

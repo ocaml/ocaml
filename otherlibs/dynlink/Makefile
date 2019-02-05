@@ -144,11 +144,11 @@ dynlink.cmo: dynlink.cmi dynlink_common.cmi \
 dynlink.cmx: dynlink.cmi dynlink_common.cmi \
       dynlink_types.cmx dynlink_common.cmx natdynlink.ml
 	cp natdynlink.ml dynlink.mlopt
-	$(OCAMLOPT) -c $(COMPFLAGS) -impl dynlink.mlopt
+	$(OCAMLOPT) -c $(COMPFLAGS) -no-alias-deps -impl dynlink.mlopt
 	rm -f dynlink.mlopt
 
 extract_crc.cmo: extract_crc.ml dynlink.cmi
-	$(OCAMLC) -c $(COMPFLAGS) extract_crc.ml
+	$(OCAMLC) -c $(COMPFLAGS) -open Ocaml_common extract_crc.ml
 
 extract_crc: $(COMPILEROBJS) dynlink.cma extract_crc.cmo
 	$(OCAMLC) -o $@ $^

@@ -15,7 +15,6 @@
 
 (* Generate an .annot file from a .cmt file. *)
 
-open Ocaml_common
 open Asttypes
 open Typedtree
 open Tast_mapper
