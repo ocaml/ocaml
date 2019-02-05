@@ -245,12 +245,10 @@ main.cmx : \
     command_line.cmx \
     checkpoints.cmx
 parameters.cmo : \
-    primitives.cmi \
     ../compilerlibs/ocaml_common.cmo \
     debugger_config.cmi \
     parameters.cmi
 parameters.cmx : \
-    primitives.cmx \
     ../compilerlibs/ocaml_common.cmx \
     debugger_config.cmx \
     parameters.cmi

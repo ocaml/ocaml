@@ -43,20 +43,6 @@ exception Division_by_zero = Division_by_zero
 exception Sys_blocked_io = Sys_blocked_io
 exception Undefined_recursive_module = Undefined_recursive_module
 
-type raw_backtrace
-external get_raw_backtrace:
-  unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
-external raise_with_backtrace: exn -> raw_backtrace -> 'a
-  = "%raise_with_backtrace"
-
-let protect ~(finally: unit -> unit) work =
-  match work () with
-  | result -> finally (); result
-  | exception work_exn ->
-    let work_bt = get_raw_backtrace () in
-    finally ();
-    raise_with_backtrace work_exn work_bt
-
 (* Composition operators *)
 
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"

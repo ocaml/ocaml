@@ -13,23 +13,25 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Misc
+
 type pers_flags =
   | Rectypes
-  | Alerts of string Misc.Stdlib.String.Map.t
+  | Alerts of alerts
   | Opaque
   | Unsafe_string
 
 type error =
-    Not_an_interface of string
-  | Wrong_version_interface of string * string
-  | Corrupted_interface of string
+  | Not_an_interface of filepath
+  | Wrong_version_interface of filepath * string
+  | Corrupted_interface of filepath
 
 exception Error of error
 
 type cmi_infos = {
-    cmi_name : string;
+    cmi_name : Misc.modname;
     cmi_sign : Types.signature_item list;
-    cmi_crcs : (string * Digest.t option) list;
+    cmi_crcs : crcs;
     cmi_flags : pers_flags list;
 }
 

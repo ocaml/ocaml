@@ -47,7 +47,7 @@ COMPILEROBJS := \
   config.cmo build_path_prefix_map.cmo misc.cmo \
   identifiable.cmo numbers.cmo arg_helper.cmo \
   clflags.cmo consistbl.cmo \
-  terminfo.cmo warnings.cmo \
+  terminfo.cmo warnings.cmo load_path.cmo \
   location.cmo longident.cmo \
   docstrings.cmo syntaxerr.cmo \
   ast_helper.cmo ast_mapper.cmo ast_iterator.cmo \

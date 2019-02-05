@@ -36,6 +36,7 @@ ML_ONLY=\
 UTILS=utils/config utils/build_path_prefix_map utils/misc \
   utils/identifiable utils/numbers utils/arg_helper \
   utils/clflags utils/profile \
+  utils/load_path \
   utils/terminfo utils/ccomp utils/warnings \
   utils/consistbl \
   utils/strongly_connected_components \

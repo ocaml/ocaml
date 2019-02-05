@@ -1254,7 +1254,7 @@ partialclean::
 	         middle_end/base_types asmcomp/debug driver toplevel tools \
 	         compilerlibs; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
-	    $$d/*.$(O) $$d/*.$(SO) $d/*~; \
+	    $$d/*.$(O) $$d/*.$(SO) $$d/*~; \
 	done
 	rm -f *~
 

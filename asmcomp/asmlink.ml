@@ -23,15 +23,15 @@ open Compilenv
 module String = Misc.Stdlib.String
 
 type error =
-    File_not_found of string
-  | Not_an_object_file of string
-  | Missing_implementations of (string * string list) list
-  | Inconsistent_interface of string * string * string
-  | Inconsistent_implementation of string * string * string
-  | Assembler_error of string
+  | File_not_found of filepath
+  | Not_an_object_file of filepath
+  | Missing_implementations of (modname * string list) list
+  | Inconsistent_interface of modname * filepath * filepath
+  | Inconsistent_implementation of modname * filepath * filepath
+  | Assembler_error of filepath
   | Linking_error
-  | Multiple_definition of string * string * string
-  | Missing_cmx of string * string
+  | Multiple_definition of modname * filepath * filepath
+  | Missing_cmx of filepath * modname
 
 exception Error of error
 
@@ -112,14 +112,14 @@ let runtime_lib () =
     else "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
   try
     if !Clflags.nopervasives then []
-    else [ find_in_path !load_path libname ]
+    else [ Load_path.find libname ]
   with Not_found ->
     raise(Error(File_not_found libname))
 
 let object_file_name name =
   let file_name =
     try
-      find_in_path !load_path name
+      Load_path.find name
     with Not_found ->
       fatal_errorf "Asmlink.object_file_name: %s not found" name in
   if Filename.check_suffix file_name ".cmx" then
@@ -159,7 +159,7 @@ type file =
 let read_file obj_name =
   let file_name =
     try
-      find_in_path !load_path obj_name
+      Load_path.find obj_name
     with Not_found ->
       raise(Error(File_not_found obj_name)) in
   if Filename.check_suffix file_name ".cmx" then begin

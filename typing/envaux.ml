@@ -60,11 +60,10 @@ let rec env_from_summary sum subst =
       | Env_cltype (s, id, desc) ->
           Env.add_cltype id (Subst.cltype_declaration subst desc)
                          (env_from_summary s subst)
-      | Env_open(s, hidden_submodules, path) ->
+      | Env_open(s, path) ->
           let env = env_from_summary s subst in
           let path' = Subst.module_path subst path in
-          begin match Env.open_signature_from_env_summary path' env
-                        ~hidden_submodules with
+          begin match Env.open_signature Asttypes.Override path' env with
           | Some env -> env
           | None -> assert false
           | exception Not_found -> raise (Error (Module_not_found path'))
@@ -84,6 +83,9 @@ let rec env_from_summary sum subst =
       | Env_copy_types (s, sl) ->
           let env = env_from_summary s subst in
           Env.do_copy_types (Env.make_copy_of_types sl env) env
+      | Env_persistent (s, id) ->
+          let env = env_from_summary s subst in
+          Env.add_persistent_structure id env
     in
       Hashtbl.add env_cache (sum, subst) env;
       env

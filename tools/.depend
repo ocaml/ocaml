@@ -53,10 +53,10 @@ cmt2annot.cmo : \
     ../compilerlibs/unprefixed/oprint.cmo \
     ../compilerlibs/ocaml_common.cmo \
     ../compilerlibs/unprefixed/location.cmo \
+    ../compilerlibs/unprefixed/load_path.cmo \
     ../compilerlibs/unprefixed/ident.cmo \
     ../compilerlibs/unprefixed/envaux.cmo \
     ../compilerlibs/unprefixed/env.cmo \
-    ../compilerlibs/unprefixed/config.cmo \
     ../compilerlibs/unprefixed/cmt_format.cmo \
     ../compilerlibs/unprefixed/asttypes.cmi \
     ../compilerlibs/unprefixed/annot.cmi
@@ -71,10 +71,10 @@ cmt2annot.cmx : \
     ../compilerlibs/unprefixed/oprint.cmx \
     ../compilerlibs/ocaml_common.cmx \
     ../compilerlibs/unprefixed/location.cmx \
+    ../compilerlibs/unprefixed/load_path.cmx \
     ../compilerlibs/unprefixed/ident.cmx \
     ../compilerlibs/unprefixed/envaux.cmx \
     ../compilerlibs/unprefixed/env.cmx \
-    ../compilerlibs/unprefixed/config.cmx \
     ../compilerlibs/unprefixed/cmt_format.cmx \
     ../compilerlibs/unprefixed/asttypes.cmi \
     ../compilerlibs/unprefixed/annot.cmi

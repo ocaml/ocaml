@@ -58,7 +58,7 @@ let add_ccobjs l =
 let copy_object_file oc name =
   let file_name =
     try
-      find_in_path !load_path name
+      Load_path.find name
     with Not_found ->
       raise(Error(File_not_found name)) in
   let ic = open_in_bin file_name in

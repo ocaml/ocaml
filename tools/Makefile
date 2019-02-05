@@ -177,7 +177,8 @@ clean::
 
 OCAMLMKTOP=ocamlmktop.cmo
 OCAMLMKTOP_IMPORTS:=config.cmo build_path_prefix_map.cmo misc.cmo \
-       identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo ccomp.cmo
+       identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
+       load_path.cmo ccomp.cmo
 OCAMLMKTOP_IMPORTS:=\
   $(addprefix $(P), $(OCAMLMKTOP_IMPORTS)) \
   $(OCAMLMKTOP_IMPORTS)
