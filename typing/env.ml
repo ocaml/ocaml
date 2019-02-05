@@ -56,8 +56,6 @@ let used_constructors :
     (string * Location.t * string, (constructor_usage -> unit)) Hashtbl.t
   = Hashtbl.create 16
 
-let prefixed_sg = Hashtbl.create 113
-
 type error =
   | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
@@ -892,8 +890,7 @@ let reset_cache () =
   Hashtbl.clear value_declarations;
   Hashtbl.clear type_declarations;
   Hashtbl.clear module_declarations;
-  Hashtbl.clear used_constructors;
-  Hashtbl.clear prefixed_sg
+  Hashtbl.clear used_constructors
 
 let reset_cache_toplevel () =
   (* Delete 'missing cmi' entries from the cache. *)
@@ -906,8 +903,7 @@ let reset_cache_toplevel () =
   Hashtbl.clear value_declarations;
   Hashtbl.clear type_declarations;
   Hashtbl.clear module_declarations;
-  Hashtbl.clear used_constructors;
-  Hashtbl.clear prefixed_sg
+  Hashtbl.clear used_constructors
 
 
 let set_unit_name name =
@@ -1793,25 +1789,6 @@ let rec prefix_idents root sub = function
         prefix_idents root (Subst.add_type id p sub) rem
       in
       (p::pl, final_sub)
-
-let prefix_idents root sub sg =
-  if sub = Subst.identity then
-    let sgs =
-      try
-        Hashtbl.find prefixed_sg root
-      with Not_found ->
-        let sgs = ref [] in
-        Hashtbl.add prefixed_sg root sgs;
-        sgs
-    in
-    try
-      List.assq sg !sgs
-    with Not_found ->
-      let r = prefix_idents root sub sg in
-      sgs := (sg, r) :: !sgs;
-      r
-  else
-    prefix_idents root sub sg
 
 (* Compute structure descriptions *)
 
