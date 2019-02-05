@@ -118,8 +118,9 @@ module Options = Main_args.Make_optcomp_options (struct
     Float_arg_helper.parse spec
       "Syntax: -inline-branch-factor <n> | <round>=<n>[,...]"
        inline_branch_factor
-  let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
+  let _insn_sched = set insn_sched
+  let _intf = intf
   let _keep_docs = set keep_docs
   let _no_keep_docs = clear keep_docs
   let _keep_locs = set keep_locs
@@ -139,6 +140,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _noassert = set noassert
   let _noautolink = set no_auto_link
   let _nodynlink = clear dlcode
+  let _no_insn_sched = clear insn_sched
   let _nolabels = set classic
   let _nostdlib = set no_std_include
   let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures

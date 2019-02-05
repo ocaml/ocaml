@@ -229,6 +229,9 @@ val error_style_reader : Misc.Error_style.setting env_reader
 
 val unboxed_types : bool ref
 
+val insn_sched : bool ref
+val insn_sched_default : bool
+
 module Compiler_pass : sig
   type t = Parsing | Typing
   val of_string : string -> t option

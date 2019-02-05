@@ -69,6 +69,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _inline_lifting_benefit = ignore
   let _inline_branch_factor = ignore
   let _classic_inlining = ignore
+  let _insn_sched = ignore
   let _intf _ = with_intf := true
   let _intf_suffix = ignore
   let _keep_docs = ignore
@@ -85,6 +86,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _noassert = ignore
   let _noautolink = ignore
   let _nodynlink = ignore
+  let _no_insn_sched = ignore
   let _nolabels = ignore
   let _nostdlib = ignore
   let _no_unbox_free_vars_of_closures = ignore
