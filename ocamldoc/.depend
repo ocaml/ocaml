@@ -5,7 +5,8 @@ odoc.cmo : \
     odoc_gen.cmi \
     odoc_config.cmi \
     odoc_args.cmi \
-    odoc_analyse.cmi
+    odoc_analyse.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc.cmx : \
     odoc_messages.cmx \
     odoc_info.cmx \
@@ -13,7 +14,8 @@ odoc.cmx : \
     odoc_gen.cmx \
     odoc_config.cmx \
     odoc_args.cmx \
-    odoc_analyse.cmx
+    odoc_analyse.cmx \
+    ../compilerlibs/ocaml_common.cmx
 odoc_analyse.cmo : \
     odoc_types.cmi \
     odoc_text.cmi \
@@ -48,7 +50,8 @@ odoc_analyse.cmx : \
     odoc_analyse.cmi
 odoc_analyse.cmi : \
     odoc_module.cmo \
-    odoc_global.cmi
+    odoc_global.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_args.cmo : \
     odoc_types.cmi \
     odoc_texi.cmo \
@@ -76,7 +79,8 @@ odoc_args.cmx : \
     ../compilerlibs/ocaml_common.cmx \
     odoc_args.cmi
 odoc_args.cmi : \
-    odoc_gen.cmi
+    odoc_gen.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_ast.cmo : \
     odoc_value.cmo \
     odoc_types.cmi \
@@ -136,6 +140,7 @@ odoc_comments.cmo : \
     odoc_global.cmi \
     odoc_cross.cmi \
     odoc_comments_global.cmi \
+    ../compilerlibs/ocaml_common.cmo \
     odoc_comments.cmi
 odoc_comments.cmx : \
     odoc_types.cmx \
@@ -149,24 +154,32 @@ odoc_comments.cmx : \
     odoc_global.cmx \
     odoc_cross.cmx \
     odoc_comments_global.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     odoc_comments.cmi
 odoc_comments.cmi : \
     odoc_types.cmi \
-    odoc_module.cmo
+    odoc_module.cmo \
+    ../compilerlibs/ocaml_common.cmo
 odoc_comments_global.cmo : \
+    ../compilerlibs/ocaml_common.cmo \
     odoc_comments_global.cmi
 odoc_comments_global.cmx : \
+    ../compilerlibs/ocaml_common.cmx \
     odoc_comments_global.cmi
-odoc_comments_global.cmi :
+odoc_comments_global.cmi : \
+    ../compilerlibs/ocaml_common.cmo
 odoc_config.cmo : \
     ../compilerlibs/ocaml_common.cmo \
     odoc_config.cmi
 odoc_config.cmx : \
     ../compilerlibs/ocaml_common.cmx \
     odoc_config.cmi
-odoc_config.cmi :
-odoc_control.cmo :
-odoc_control.cmx :
+odoc_config.cmi : \
+    ../compilerlibs/ocaml_common.cmo
+odoc_control.cmo : \
+    ../compilerlibs/ocaml_common.cmo
+odoc_control.cmx : \
+    ../compilerlibs/ocaml_common.cmx
 odoc_cross.cmo : \
     odoc_value.cmo \
     odoc_types.cmi \
@@ -203,15 +216,19 @@ odoc_cross.cmx : \
     odoc_cross.cmi
 odoc_cross.cmi : \
     odoc_types.cmi \
-    odoc_module.cmo
+    odoc_module.cmo \
+    ../compilerlibs/ocaml_common.cmo
 odoc_dag2html.cmo : \
     odoc_info.cmi \
+    ../compilerlibs/ocaml_common.cmo \
     odoc_dag2html.cmi
 odoc_dag2html.cmx : \
     odoc_info.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     odoc_dag2html.cmi
 odoc_dag2html.cmi : \
-    odoc_info.cmi
+    odoc_info.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_dep.cmo : \
     odoc_type.cmo \
     odoc_print.cmi \
@@ -224,10 +241,12 @@ odoc_dep.cmx : \
     ../compilerlibs/ocaml_common.cmx
 odoc_dot.cmo : \
     odoc_messages.cmo \
-    odoc_info.cmi
+    odoc_info.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_dot.cmx : \
     odoc_messages.cmx \
-    odoc_info.cmx
+    odoc_info.cmx \
+    ../compilerlibs/ocaml_common.cmx
 odoc_env.cmo : \
     odoc_name.cmi \
     ../compilerlibs/ocaml_common.cmo \
@@ -266,6 +285,7 @@ odoc_gen.cmo : \
     odoc_latex.cmo \
     odoc_html.cmo \
     odoc_dot.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     odoc_gen.cmi
 odoc_gen.cmx : \
     odoc_texi.cmx \
@@ -274,6 +294,7 @@ odoc_gen.cmx : \
     odoc_latex.cmx \
     odoc_html.cmx \
     odoc_dot.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     odoc_gen.cmi
 odoc_gen.cmi : \
     odoc_texi.cmo \
@@ -281,7 +302,8 @@ odoc_gen.cmi : \
     odoc_man.cmo \
     odoc_latex.cmo \
     odoc_html.cmo \
-    odoc_dot.cmo
+    odoc_dot.cmo \
+    ../compilerlibs/ocaml_common.cmo
 odoc_global.cmo : \
     odoc_types.cmi \
     odoc_messages.cmo \
@@ -295,7 +317,8 @@ odoc_global.cmx : \
     ../compilerlibs/ocaml_common.cmx \
     odoc_global.cmi
 odoc_global.cmi : \
-    odoc_types.cmi
+    odoc_types.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_html.cmo : \
     odoc_text.cmi \
     odoc_ocamlhtml.cmo \
@@ -370,8 +393,10 @@ odoc_info.cmi : \
     odoc_exception.cmo \
     odoc_class.cmo \
     ../compilerlibs/ocaml_common.cmo
-odoc_inherit.cmo :
-odoc_inherit.cmx :
+odoc_inherit.cmo : \
+    ../compilerlibs/ocaml_common.cmo
+odoc_inherit.cmx : \
+    ../compilerlibs/ocaml_common.cmx
 odoc_latex.cmo : \
     odoc_to_text.cmo \
     odoc_messages.cmo \
@@ -384,18 +409,22 @@ odoc_latex.cmx : \
     odoc_latex_style.cmx \
     odoc_info.cmx \
     ../compilerlibs/ocaml_common.cmx
-odoc_latex_style.cmo :
-odoc_latex_style.cmx :
+odoc_latex_style.cmo : \
+    ../compilerlibs/ocaml_common.cmo
+odoc_latex_style.cmx : \
+    ../compilerlibs/ocaml_common.cmx
 odoc_lexer.cmo : \
     odoc_parser.cmi \
     odoc_messages.cmo \
     odoc_global.cmi \
-    odoc_comments_global.cmi
+    odoc_comments_global.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_lexer.cmx : \
     odoc_parser.cmx \
     odoc_messages.cmx \
     odoc_global.cmx \
-    odoc_comments_global.cmx
+    odoc_comments_global.cmx \
+    ../compilerlibs/ocaml_common.cmx
 odoc_man.cmo : \
     odoc_str.cmi \
     odoc_print.cmi \
@@ -421,6 +450,7 @@ odoc_merge.cmo : \
     odoc_extension.cmo \
     odoc_exception.cmo \
     odoc_class.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     odoc_merge.cmi
 odoc_merge.cmx : \
     odoc_value.cmx \
@@ -433,10 +463,12 @@ odoc_merge.cmx : \
     odoc_extension.cmx \
     odoc_exception.cmx \
     odoc_class.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     odoc_merge.cmi
 odoc_merge.cmi : \
     odoc_types.cmi \
-    odoc_module.cmo
+    odoc_module.cmo \
+    ../compilerlibs/ocaml_common.cmo
 odoc_messages.cmo : \
     ../compilerlibs/ocaml_common.cmo
 odoc_messages.cmx : \
@@ -482,8 +514,10 @@ odoc_name.cmx : \
     odoc_name.cmi
 odoc_name.cmi : \
     ../compilerlibs/ocaml_common.cmo
-odoc_ocamlhtml.cmo :
-odoc_ocamlhtml.cmx :
+odoc_ocamlhtml.cmo : \
+    ../compilerlibs/ocaml_common.cmo
+odoc_ocamlhtml.cmx : \
+    ../compilerlibs/ocaml_common.cmx
 odoc_parameter.cmo : \
     odoc_types.cmi \
     ../compilerlibs/ocaml_common.cmo
@@ -493,13 +527,16 @@ odoc_parameter.cmx : \
 odoc_parser.cmo : \
     odoc_types.cmi \
     odoc_comments_global.cmi \
+    ../compilerlibs/ocaml_common.cmo \
     odoc_parser.cmi
 odoc_parser.cmx : \
     odoc_types.cmx \
     odoc_comments_global.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     odoc_parser.cmi
 odoc_parser.cmi : \
-    odoc_types.cmi
+    odoc_types.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_print.cmo : \
     ../compilerlibs/ocaml_common.cmo \
     odoc_print.cmi
@@ -515,7 +552,8 @@ odoc_scan.cmo : \
     odoc_module.cmo \
     odoc_extension.cmo \
     odoc_exception.cmo \
-    odoc_class.cmo
+    odoc_class.cmo \
+    ../compilerlibs/ocaml_common.cmo
 odoc_scan.cmx : \
     odoc_value.cmx \
     odoc_types.cmx \
@@ -523,7 +561,8 @@ odoc_scan.cmx : \
     odoc_module.cmx \
     odoc_extension.cmx \
     odoc_exception.cmx \
-    odoc_class.cmx
+    odoc_class.cmx \
+    ../compilerlibs/ocaml_common.cmx
 odoc_search.cmo : \
     odoc_value.cmo \
     odoc_types.cmi \
@@ -532,6 +571,7 @@ odoc_search.cmo : \
     odoc_extension.cmo \
     odoc_exception.cmo \
     odoc_class.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     odoc_search.cmi
 odoc_search.cmx : \
     odoc_value.cmx \
@@ -541,6 +581,7 @@ odoc_search.cmx : \
     odoc_extension.cmx \
     odoc_exception.cmx \
     odoc_class.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     odoc_search.cmi
 odoc_search.cmi : \
     odoc_value.cmo \
@@ -549,11 +590,14 @@ odoc_search.cmi : \
     odoc_module.cmo \
     odoc_extension.cmo \
     odoc_exception.cmo \
-    odoc_class.cmo
+    odoc_class.cmo \
+    ../compilerlibs/ocaml_common.cmo
 odoc_see_lexer.cmo : \
-    odoc_parser.cmi
+    odoc_parser.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_see_lexer.cmx : \
-    odoc_parser.cmx
+    odoc_parser.cmx \
+    ../compilerlibs/ocaml_common.cmx
 odoc_sig.cmo : \
     odoc_value.cmo \
     odoc_types.cmi \
@@ -628,11 +672,13 @@ odoc_str.cmi : \
 odoc_test.cmo : \
     odoc_info.cmi \
     odoc_gen.cmi \
-    odoc_args.cmi
+    odoc_args.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_test.cmx : \
     odoc_info.cmx \
     odoc_gen.cmx \
-    odoc_args.cmx
+    odoc_args.cmx \
+    ../compilerlibs/ocaml_common.cmx
 odoc_texi.cmo : \
     odoc_to_text.cmo \
     odoc_messages.cmo \
@@ -647,40 +693,50 @@ odoc_text.cmo : \
     odoc_types.cmi \
     odoc_text_parser.cmi \
     odoc_text_lexer.cmo \
+    ../compilerlibs/ocaml_common.cmo \
     odoc_text.cmi
 odoc_text.cmx : \
     odoc_types.cmx \
     odoc_text_parser.cmx \
     odoc_text_lexer.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     odoc_text.cmi
 odoc_text.cmi : \
-    odoc_types.cmi
+    odoc_types.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_text_lexer.cmo : \
     odoc_text_parser.cmi \
-    odoc_misc.cmi
+    odoc_misc.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_text_lexer.cmx : \
     odoc_text_parser.cmx \
-    odoc_misc.cmx
+    odoc_misc.cmx \
+    ../compilerlibs/ocaml_common.cmx
 odoc_text_parser.cmo : \
     odoc_types.cmi \
     odoc_misc.cmi \
+    ../compilerlibs/ocaml_common.cmo \
     odoc_text_parser.cmi
 odoc_text_parser.cmx : \
     odoc_types.cmx \
     odoc_misc.cmx \
+    ../compilerlibs/ocaml_common.cmx \
     odoc_text_parser.cmi
 odoc_text_parser.cmi : \
-    odoc_types.cmi
+    odoc_types.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_to_text.cmo : \
     odoc_str.cmi \
     odoc_module.cmo \
     odoc_messages.cmo \
-    odoc_info.cmi
+    odoc_info.cmi \
+    ../compilerlibs/ocaml_common.cmo
 odoc_to_text.cmx : \
     odoc_str.cmx \
     odoc_module.cmx \
     odoc_messages.cmx \
-    odoc_info.cmx
+    odoc_info.cmx \
+    ../compilerlibs/ocaml_common.cmx
 odoc_type.cmo : \
     odoc_types.cmi \
     odoc_name.cmi \

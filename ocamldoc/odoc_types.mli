@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (** Types for the information collected in comments. *)
 
 (** The different kinds of element references. *)

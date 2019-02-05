@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (** Representation of element names. *)
 
 type t = string

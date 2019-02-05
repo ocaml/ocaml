@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (** The man pages generator. *)
 open Odoc_info
 open Value

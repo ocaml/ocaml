@@ -19,7 +19,6 @@
 let print_DEBUG s = print_string s ; print_newline ()
 
 open Format
-open Ocaml_common
 open Typedtree
 
 

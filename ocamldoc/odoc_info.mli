@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (** Interface to the information collected in source files. *)
 
 (** The different kinds of element references. *)

@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (** The functions to get a string from different kinds of elements (types, modules, ...). *)
 
 module Name = Odoc_name

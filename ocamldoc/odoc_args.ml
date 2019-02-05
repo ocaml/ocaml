@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (** Command-line arguments. *)
 
 module M = Odoc_messages

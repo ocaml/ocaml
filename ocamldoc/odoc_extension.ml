@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (** Representation and manipulation of type extensions. *)
 
 module Name = Odoc_name

@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (** The module for analysing the typed abstract syntax tree and source code and creating modules, classes, ..., elements.*)
 
 type typedtree = Typedtree.structure * Typedtree.module_coercion

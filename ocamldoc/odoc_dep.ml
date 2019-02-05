@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (** Top modules dependencies. *)
 
 module Module = Odoc_module

@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (** Representation and manipulation of classes and class types.*)
 
 module Name = Odoc_name

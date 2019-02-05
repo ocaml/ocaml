@@ -97,7 +97,8 @@ INCLUDES_NODEP=\
 DEPINCLUDES=$(INCLUDES_DEP)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats -bin-annot
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats -bin-annot \
+          -open Ocaml_common
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES=\
@@ -505,7 +506,7 @@ depend:
 	$(OCAMLLEX) odoc_lexer.mll
 	$(OCAMLLEX) odoc_ocamlhtml.mll
 	$(OCAMLLEX) odoc_see_lexer.mll
-	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -open Ocaml_common *.mll *.mly *.ml *.mli > .depend
 	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend
 
 include .depend

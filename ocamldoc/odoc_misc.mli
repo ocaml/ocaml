@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Ocaml_common
-
 (** Miscellaneous functions *)
 
 (** [no_blanks s] returns the given string without any blank
