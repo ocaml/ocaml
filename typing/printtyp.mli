@@ -153,3 +153,4 @@ val hide_rec_items : signature -> unit
 val protect_rec_items : signature -> unit
 val reset_naming_context : unit -> unit
 val wrap_env : (Env.t -> Env.t) -> ('a -> 'b) -> 'a -> 'b
+val filter_rem_sig : signature_item -> signature -> signature * signature
