@@ -50,28 +50,43 @@ val text : unit -> unit
 (** Abbreviation for [switch_to_section Data]. *)
 val data : unit -> unit
 
-(** Emit an 8-bit signed integer.  There is no padding or sign extension. *)
-val int8 : Numbers.Int8.t -> unit
+(** Emit an 8-bit signed integer.  There is no padding or sign extension.
+    If the [comment] is specified it will be put on the same line as the
+    integer. *)
+val int8 : ?comment:string -> Numbers.Int8.t -> unit
 
 (** Emit a 16-bit signed integer.  There is no padding or sign extension. *)
-val int16 : Numbers.Int16.t -> unit
+val int16 : ?comment:string -> Numbers.Int16.t -> unit
 
 (** Emit a 32-bit signed integer.  There is no padding or sign extension. *)
-val int32 : Int32.t -> unit
+val int32 : ?comment:string -> Int32.t -> unit
 
 (** Emit a 64-bit signed integer. *)
-val int64 : Int64.t -> unit
+val int64 : ?comment:string -> Int64.t -> unit
+
+(** Emit an 8-bit unsigned integer.  There is no padding. *)
+val uint8 : ?comment:string -> Numbers.Uint8.t -> unit
+
+(** Emit an 16-bit unsigned integer.  There is no padding. *)
+val uint16 : ?comment:string -> Numbers.Uint16.t -> unit
+
+(** Emit an 32-bit unsigned integer.  There is no padding. *)
+val uint32 : ?comment:string -> Numbers.Uint32.t -> unit
+
+(** Emit an 64-bit unsigned integer.  There is no padding. *)
+val uint64 : ?comment:string -> Numbers.Uint64.t -> unit
 
 (** Emit a signed integer whose width is that of an address on the target
     machine.  There is no padding or sign extension. *)
-val targetint : Targetint.t -> unit
+(* CR-soon mshinwell: Target addresses should not be signed *)
+val targetint : ?comment:string -> Targetint.t -> unit
 
 (** Emit a 64-bit integer in unsigned LEB128 variable-length encoding
     (cf. DWARF debugging information standard). *)
-val uleb128 : Int64.t -> unit
+val uleb128 : ?comment:string -> Numbers.Uint64.t -> unit
 
 (** Emit a 64-bit integer in signed LEB128 variable-length encoding. *)
-val sleb128 : Int64.t -> unit
+val sleb128 : ?comment:string -> Int64.t -> unit
 
 (** Emit a 32-bit-wide floating point number. *)
 val float32 : float -> unit
@@ -85,20 +100,20 @@ val float64_from_bits : Int64.t -> unit
 
 (** Emit a string (directly into the current section).  This function
     does not write a terminating null. *)
-val string : string -> unit
+val string : ?comment:string -> string -> unit
 
 (** Cache a string for later emission.  The returned label may be used to
     obtain the address of the string in the section.  This function does
     not emit anything.  (See [emit_cached_strings], below.)
     If a string is supplied to this function that is already in the cache
     then the previously-assigned label is returned, not a new one. *)
-val cache_string : string -> Asm_label.t
+val cache_string : ?comment:string -> Asm_section.t -> string -> Asm_label.t
 
 (** Emit the sequence of:
       label definition:
         <string><null terminator>
-    pairs as per previous calls to [cache_string].  This function clears
-    the cache. *)
+    pairs as per previous calls to [cache_string] with appropriate directives
+    to switch section interspersed.  This function clears the cache. *)
 val emit_cached_strings : unit -> unit
 
 (** Emit a comment. *)
@@ -110,10 +125,18 @@ val file : file_num:int -> file_name:string -> unit
 (** Mark the source location of the current assembly position. *)
 val loc : file_num:int -> line:int -> col:int -> unit
 
+(** Emit a blank line. *)
+val new_line : unit -> unit
+
 (** Adjust the current frame address offset by the given number of bytes.
     This and other CFI functions will not emit anything in the case where
     CFI is not supported on the target. *)
 val cfi_adjust_cfa_offset : bytes:int -> unit
+
+(** Define the current frame address offset.
+    This and other CFI functions will not emit anything in the case where
+    CFI is not supported on the target. *)
+val cfi_def_cfa_offset : bytes:int -> unit
 
 (** Note that the previous value of [reg] is saved at [offset] from
     the current frame address. *)
@@ -156,7 +179,7 @@ val define_function_symbol : Asm_symbol.t -> unit
 val global : Asm_symbol.t -> unit
 
 (** Emit a machine-width reference to the given symbol. *)
-val symbol : Asm_symbol.t -> unit
+val symbol : ?comment:string -> Asm_symbol.t -> unit
 
 (** Mark a symbol as "private extern" (see assembler documentation for
     details). *)
@@ -172,76 +195,92 @@ val indirect_symbol : Asm_symbol.t -> unit
 val define_label : Asm_label.t -> unit
 
 (** Emit a machine-width reference to the given label. *)
-val label : Asm_label.t -> unit
+val label : ?comment:string -> Asm_label.t -> unit
 
 (** Emit a machine-width reference to the address formed by adding the
-    given byte offset to the address of the given symbol. *)
+    given byte offset to the address of the given symbol.  The symbol may be
+    in a compilation unit and/or section different from the current one. *)
 val symbol_plus_offset
    : Asm_symbol.t
   -> offset_in_bytes:Targetint.t
   -> unit
 
-(** The following functions calculate distances between various entities
-    such as labels and symbols.  These distances are calculated at link time
-    after the entities concerned have been relocated.  This means that they
-    can be safely used even when the linker may insert (or remove) code or
-    data between the points being measured. *)
-
 (** Emit a machine-width reference giving the displacement between two given
-    labels.  To obtain a positive result the symbol at the [lower] address
-    should be the second argument, as for normal subtraction. *)
-val between_symbols
+    symbols.  To obtain a positive result the symbol at the [lower] address
+    should be the second argument, as for normal subtraction.  The symbols
+    must be in the current compilation unit and in the same section. *)
+val between_symbols_in_current_unit
    : upper:Asm_symbol.t
   -> lower:Asm_symbol.t
   -> unit
 
+(** Like [between_symbols], but for two labels, emitting a 16-bit-wide
+    reference.  The behaviour upon overflow is unspecified.  The labels must
+    be in the same section. *)
+val between_labels_16_bit
+   : ?comment:string
+  -> upper:Asm_label.t
+  -> lower:Asm_label.t
+  -> unit
+  -> unit
+
 (** Like [between_symbols], but for two labels, emitting a 32-bit-wide
-    reference.  The behaviour upon overflow is unspecified. *)
-val between_labels_32bit : upper:Asm_label.t -> lower:Asm_label.t -> unit
+    reference.  The behaviour upon overflow is unspecified.  The labels must
+    be in the same section. *)
+val between_labels_32_bit
+   : ?comment:string
+  -> upper:Asm_label.t
+  -> lower:Asm_label.t
+  -> unit
+  -> unit
+
+(** Like [between_symbols], but for two labels, emitting a 64-bit-wide
+    reference.  The labels must be in the same section. *)
+val between_labels_64_bit
+   : ?comment:string
+  -> upper:Asm_label.t
+  -> lower:Asm_label.t
+  -> unit
+  -> unit
 
 (** Emit a machine-width reference giving the displacement between the
-    lower symbol and the sum of the address of the [upper] label plus
-    [offset_upper]. *)
-val between_symbol_and_label_offset
-   : upper:Asm_label.t
+    [lower] symbol and the sum of the address of the [upper] label plus
+    [offset_upper].  The [lower] symbol must be in the current compilation
+    unit.  The [upper] label must be in the same section as the [lower]
+    symbol. *)
+val between_symbol_in_current_unit_and_label_offset
+   : ?comment:string
+  -> upper:Asm_label.t
   -> lower:Asm_symbol.t
   -> offset_upper:Targetint.t
   -> unit
 
-(** As for [between_symbol_and_label_offset], but with the types of the
-    lower and upper bounds transposed. *)
-val between_symbol_and_label_offset'
-   : upper:Asm_symbol.t
-  -> lower:Asm_label.t
-  -> offset_lower:Targetint.t
-  -> unit
-
 (** Emit a 32-bit-wide reference giving the displacement between obtained
     by subtracting the current assembly location from the sum of the address
-    of the given label plus the given offset. *)
+    of the given label plus the given offset.  The label must be in the
+    same section as the assembler is currently emitting into. *)
+(* CR mshinwell: double-check use of this function *)
 val between_this_and_label_offset_32bit
    : upper:Asm_label.t
   -> offset_upper:Targetint.t
   -> unit
 
-val scaled_distance_between_this_and_label_offset
-   : upper:Asm_label.t
-  -> divide_by:int
-  -> unit
-
-(** Emit an integer giving the distance obtained by subtracting the
-    address of [base] from the address of [label].  [width] specifies the
-    size of the integer. *)
-val offset_into_section_label
-   : Asm_section.t
+(** Emit an offset into a DWARF section given a label identifying the place
+    within such section. *)
+val offset_into_dwarf_section_label
+   : ?comment:string
+  -> Asm_section.dwarf_section
   -> Asm_label.t
   -> width:Target_system.machine_width
   -> unit
 
-(** As for [offset_into_section_label], but using a symbol instead of
-    a label as one end of the measurement. *)
-val offset_into_section_symbol
-   : Asm_section.t
+(** Emit an offset into a DWARF section given a symbol identifying the place
+    within such section.  The symbol may only be in a compilation unit different
+    from the current one if the supplied section is [Debug_info].  The symbol
+    must always be in the given section. *)
+val offset_into_dwarf_section_symbol
+   : ?comment:string
+  -> Asm_section.dwarf_section
   -> Asm_symbol.t
   -> width:Target_system.machine_width
   -> unit
@@ -250,13 +289,13 @@ module Directive : sig
   module Constant : sig
     type t = private
       | Signed_int of Int64.t
+      | Unsigned_int of Numbers.Uint64.t
       | This
       | Named_thing of string
       (** [Named_thing] covers symbols, labels and variables. (Name mangling
           conventions have by now been applied to these entities.) *)
       | Add of t * t
       | Sub of t * t
-      | Div of t * int
   end
 
   module Constant_with_width : sig
@@ -291,8 +330,9 @@ module Directive : sig
       applied. *)
   type t = private
     | Align of { bytes : int; }
-    | Bytes of string
+    | Bytes of { str : string; comment : string option; }
     | Cfi_adjust_cfa_offset of int
+    | Cfi_def_cfa_offset of int
     | Cfi_endproc
     | Cfi_offset of { reg : int; offset : int; }
     | Cfi_startproc
@@ -304,6 +344,7 @@ module Directive : sig
     | Indirect_symbol of string
     | Loc of { file_num : int; line : int; col : int; }
     | New_label of string * thing_after_label
+    | New_line
     | Private_extern of string
     | Section of {
         names : string list;
@@ -311,10 +352,10 @@ module Directive : sig
         args : string list;
       }
     | Size of string * Constant.t
-    | Sleb128 of Constant.t
+    | Sleb128 of { constant : Constant.t; comment : string option; }
     | Space of { bytes : int; }
     | Type of string * string
-    | Uleb128 of Constant.t
+    | Uleb128 of { constant : Constant.t; comment : string option; }
 
   (** Translate the given directive to textual form.  This produces output
       suitable for either gas or MASM as appropriate. *)

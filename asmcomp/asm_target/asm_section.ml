@@ -18,7 +18,11 @@ type dwarf_section =
   | Debug_info
   | Debug_abbrev
   | Debug_aranges
+  | Debug_addr
   | Debug_loc
+  | Debug_ranges
+  | Debug_loclists
+  | Debug_rnglists
   | Debug_str
   | Debug_line
 
@@ -31,20 +35,33 @@ type t =
   | Jump_tables
   | DWARF of dwarf_section
 
-let all_sections_in_order = [
-  Text;
-  Data;
-  Read_only_data;
-  Eight_byte_literals;
-  Sixteen_byte_literals;
-  Jump_tables;
-  DWARF Debug_info;
-  DWARF Debug_abbrev;
-  DWARF Debug_aranges;
-  DWARF Debug_loc;
-  DWARF Debug_str;
-  DWARF Debug_line;
-]
+let all_sections_in_order () =
+  let sections = [
+    Text;
+    Data;
+    Read_only_data;
+    Eight_byte_literals;
+    Sixteen_byte_literals;
+    Jump_tables;
+    DWARF Debug_info;
+    DWARF Debug_abbrev;
+    DWARF Debug_aranges;
+    DWARF Debug_str;
+    DWARF Debug_line;
+  ] in
+  let dwarf_version_dependent_sections =
+    match !Clflags.gdwarf_version with
+    | Four ->
+      [ DWARF Debug_loc;
+        DWARF Debug_ranges;
+      ]
+    | Five ->
+      [ DWARF Debug_addr;
+        DWARF Debug_loclists;
+        DWARF Debug_rnglists;
+      ]
+  in
+  sections @ dwarf_version_dependent_sections
 
 let section_is_text = function
   | Text -> true
@@ -115,7 +132,11 @@ let flags t ~first_occurrence =
         | Debug_info -> "__debug_info"
         | Debug_abbrev -> "__debug_abbrev"
         | Debug_aranges -> "__debug_aranges"
+        | Debug_addr -> "__debug_addr"
         | Debug_loc -> "__debug_loc"
+        | Debug_ranges -> "__debug_ranges"
+        | Debug_loclists -> "__debug_loclists"
+        | Debug_rnglists -> "__debug_rnglists"
         | Debug_str -> "__debug_str"
         | Debug_line -> "__debug_line"
       in
@@ -126,7 +147,11 @@ let flags t ~first_occurrence =
         | Debug_info -> ".debug_info"
         | Debug_abbrev -> ".debug_abbrev"
         | Debug_aranges -> ".debug_aranges"
+        | Debug_addr -> ".debug_addr"
         | Debug_loc -> ".debug_loc"
+        | Debug_ranges -> ".debug_ranges"
+        | Debug_loclists -> ".debug_loclists"
+        | Debug_rnglists -> ".debug_rnglists"
         | Debug_str -> ".debug_str"
         | Debug_line -> ".debug_line"
       in
@@ -183,30 +208,30 @@ let to_string t =
   let { names; flags = _; args = _; } = flags t ~first_occurrence:true in
   String.concat " " names
 
-let text_label = lazy (Asm_label.create ())
-let data_label = lazy (Asm_label.create ())
-let read_only_data_label = lazy (Asm_label.create ())
-let eight_byte_literals_label = lazy (Asm_label.create ())
-let sixteen_byte_literals_label = lazy (Asm_label.create ())
-let jump_tables_label = lazy (Asm_label.create ())
-let debug_info_label = lazy (Asm_label.create ())
-let debug_abbrev_label = lazy (Asm_label.create ())
-let debug_aranges_label = lazy (Asm_label.create ())
-let debug_loc_label = lazy (Asm_label.create ())
-let debug_str_label = lazy (Asm_label.create ())
-let debug_line_label = lazy (Asm_label.create ())
+let print ppf t =
+  let str =
+    match t with
+    | Text -> "Text"
+    | Data -> "Data"
+    | Read_only_data -> "Read_only_data"
+    | Eight_byte_literals -> "Eight_byte_literals"
+    | Sixteen_byte_literals -> "Sixteen_byte_literals"
+    | Jump_tables -> "Jump_tables"
+    | DWARF Debug_info -> "(DWARF Debug_info)"
+    | DWARF Debug_abbrev -> "(DWARF Debug_abbrev)"
+    | DWARF Debug_aranges -> "(DWARF Debug_aranges)"
+    | DWARF Debug_addr -> "(DWARF Debug_addr)"
+    | DWARF Debug_loc -> "(DWARF Debug_loc)"
+    | DWARF Debug_ranges -> "(DWARF Debug_ranges)"
+    | DWARF Debug_loclists -> "(DWARF Debug_loclists)"
+    | DWARF Debug_rnglists -> "(DWARF Debug_rnglists)"
+    | DWARF Debug_str -> "(DWARF Debug_str)"
+    | DWARF Debug_line -> "(DWARF Debug_line)"
+  in
+  Format.pp_print_string ppf str
 
-let label t =
-  match t with
-  | Text -> Lazy.force text_label
-  | Data -> Lazy.force data_label
-  | Read_only_data -> Lazy.force read_only_data_label
-  | Eight_byte_literals -> Lazy.force eight_byte_literals_label
-  | Sixteen_byte_literals -> Lazy.force sixteen_byte_literals_label
-  | Jump_tables -> Lazy.force jump_tables_label
-  | DWARF Debug_info -> Lazy.force debug_info_label
-  | DWARF Debug_abbrev -> Lazy.force debug_abbrev_label
-  | DWARF Debug_aranges -> Lazy.force debug_aranges_label
-  | DWARF Debug_loc -> Lazy.force debug_loc_label
-  | DWARF Debug_str -> Lazy.force debug_str_label
-  | DWARF Debug_line -> Lazy.force debug_line_label
+let compare t1 t2 =
+  Stdlib.compare t1 t2
+
+let equal t1 t2 =
+  Stdlib.compare t1 t2 = 0

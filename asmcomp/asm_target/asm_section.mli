@@ -21,7 +21,11 @@ type dwarf_section =
   | Debug_info
   | Debug_abbrev
   | Debug_aranges
+  | Debug_addr
   | Debug_loc
+  | Debug_ranges
+  | Debug_loclists
+  | Debug_rnglists
   | Debug_str
   | Debug_line
 
@@ -36,7 +40,9 @@ type t =
   | Jump_tables
   | DWARF of dwarf_section
 
-val all_sections_in_order : t list
+val to_string : t -> string
+
+val all_sections_in_order : unit -> t list
 
 (** Whether the section holds code. *)
 val section_is_text : t -> bool
@@ -52,13 +58,8 @@ type flags_for_section = private {
     in the relevant assembly file for the given section. *)
 val flags : t -> first_occurrence:bool -> flags_for_section
 
-(** Retrieve a distinguished label that is suitable for use at the top of
-    the given section.
+val print : Format.formatter -> t -> unit
 
-    Aside: Why do we need labels at the start of sections rather than
-    just referencing sections directly?
-    They are necessary so that references (e.g. DW_FORM_ref_addr or
-    DW_FORM_sec_offset when emitting DWARF) to places that are currently
-    at the start of these sections get relocated correctly when those
-    places become not at the start (e.g. during linking). *)
-val label : t -> Asm_label.t
+val compare : t -> t -> int
+
+val equal : t -> t -> bool
