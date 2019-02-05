@@ -146,3 +146,10 @@ val rewrite_double_underscore_paths: Env.t -> Path.t -> Path.t
 (** [printed_signature sourcefile ppf sg] print the signature [sg] of
     [sourcefile] with potential warnings for name collisions *)
 val printed_signature: string -> formatter -> signature -> unit
+
+(** Exposed for libmonda *)
+val still_in_type_group : Env.t -> bool -> signature_item -> bool
+val hide_rec_items : signature -> unit
+val protect_rec_items : signature -> unit
+val reset_naming_context : unit -> unit
+val wrap_env : (Env.t -> Env.t) -> ('a -> 'b) -> 'a -> 'b
