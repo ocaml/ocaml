@@ -422,9 +422,9 @@ Working version
 - GPR#2072: Always associate a scope to a type
   (Thomas Refis, review by Jacques Garrigue and Leo White)
 
-- GPR#2073: Add [Asm_directives] and [Target_system], initially only for
-  the use of the DWARF debugging information emitter.
-  (Mark Shinwell)
+- GPR#2073: Add [Asm_directives], [Asm_label], [Asm_section], [Asm_symbol],
+  [Backend_sym] and [Target_system].
+  (Mark Shinwell, review by Damien Doligez)
 
 - GPR#2074: Correct naming of record field inside [Ialloc] terms.
   (Mark Shinwell, review by Jérémie Dimino)
