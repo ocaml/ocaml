@@ -865,6 +865,8 @@ let emit_instr fallthrough i =
                          ConstLabel lbl))
       done;
       D.text ()
+  | Lentertrap ->
+      ()
   | Lpushtrap {lbl_handler} ->
       let load_label_addr s arg =
        (* CR mshinwell: this needs more testing *)
@@ -897,7 +899,8 @@ let emit_instr fallthrough i =
       | Cmm.Raise_notrace ->
           I.mov r14 rsp;
           I.pop r14;
-          I.ret ()
+          I.pop r11;
+          I.jmp r11
       end
 
 let rec emit_all fallthrough i =

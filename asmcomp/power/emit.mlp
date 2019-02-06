@@ -502,8 +502,8 @@ module BR = Branch_relaxation.Make (struct
         + (if lbl1 = None then 0 else 1)
         + (if lbl2 = None then 0 else 1)
     | Lswitch _ -> size 7 (5 + tocload_size()) (5 + tocload_size())
-    | Lsetuptrap _ -> size 1 2 2
-    | Lpushtrap -> size 4 5 5
+    | Lentertrap -> size 0 (tocload_size()) (tocload_size())
+    | Lpushtrap _ -> size 5 (4 + tocload_size()) (4 + tocload_size())
     | Lpoptrap -> 2
     | Lraise _ -> 6
 
@@ -975,24 +975,24 @@ let emit_instr i =
           done;
           emit_string code_space
         end
-    | Lsetuptrap lbl ->
-        `	bl	{emit_label lbl}\n`;
+    | Lentertrap ->
         begin match abi with
         | ELF32 -> ()
         | ELF64v1 | ELF64v2 -> emit_reload_toc()
         end
-    | Lpushtrap ->
+    | Lpushtrap { lbl_handler; } ->
         begin match abi with
         | ELF32 ->
-          `	mflr	0\n`;
-          `	stwu    0, -16(1)\n`;
+          `	addis	11, 0, {emit_upper emit_label lbl_handler}\n`;
+          `	addi	11, 11, {emit_lower emit_label lbl_handler}\n`;
+          `	stwu    11, -16(1)\n`;
           adjust_stack_offset 16;
           `	stw	29, 4(1)\n`;
           `	mr	29, 1\n`
         | ELF64v1 | ELF64v2 ->
-          `	mflr	0\n`;
-          `	addi	1, 1, -32\n`;
-          adjust_stack_offset 32;
+          `	addi	1, 1, {emit_int (-trap_size)}\n`;
+          adjust_stack_offset trap_size;
+          emit_tocload emit_gpr 0 (TocLabel lbl_handler);
           `	std     0, {emit_int trap_handler_offset}(1)\n`;
           `	std	29, {emit_int trap_previous_offset}(1)\n`;
           `	mr	29, 1\n`

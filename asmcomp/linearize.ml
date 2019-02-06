@@ -39,6 +39,7 @@ and instruction_desc =
   | Lcondbranch of test * label
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
+  | Lentertrap
   | Lpushtrap of {lbl_handler:label}
   | Lpoptrap
   | Lraise of Cmm.raise_kind
@@ -294,7 +295,9 @@ let rec linear i n =
       loop (add_branch lbl n1) !try_depth
   | Itrywith(body, handler) ->
       let (lbl_join, n1) = get_label (linear i.Mach.next n) in
-      let (lbl_handler, n2) = get_label (linear handler n1) in
+      let (lbl_handler, n2) =
+        get_label (cons_instr Lentertrap (linear handler n1))
+      in
       incr try_depth;
       assert (i.Mach.arg = [| |] || Config.spacetime);
       let n3 = cons_instr (Lpushtrap { lbl_handler })

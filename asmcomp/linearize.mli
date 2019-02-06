@@ -36,6 +36,7 @@ and instruction_desc =
   | Lcondbranch of Mach.test * label
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
+  | Lentertrap
   | Lpushtrap of {lbl_handler:label}
   | Lpoptrap
   | Lraise of Cmm.raise_kind

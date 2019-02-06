@@ -59,6 +59,8 @@ let instr ppf i =
        fprintf ppf "case %i: goto %a" i label lblv.(i)
       done;
       fprintf ppf "@,endswitch"
+  | Lentertrap ->
+      fprintf ppf "enter trap"
   | Lpushtrap { lbl_handler } ->
       fprintf ppf "push trap %a" label lbl_handler
   | Lpoptrap ->

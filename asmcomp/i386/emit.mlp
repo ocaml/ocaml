@@ -880,9 +880,10 @@ let emit_instr fallthrough i =
         D.long (ConstLabel (emit_label jumptbl.(i)))
       done;
       D.text ()
-  | Lsetuptrap lbl ->
-      I.call (label lbl)
-  | Lpushtrap ->
+  | Lentertrap ->
+      ()
+  | Lpushtrap { lbl_handler; } ->
+      I.push (label lbl_handler);
       if trap_frame_size > 8 then
         I.sub (int (trap_frame_size - 8)) esp;
       I.push (sym32 "caml_exception_pointer");
@@ -904,7 +905,8 @@ let emit_instr fallthrough i =
           I.pop (sym32 "caml_exception_pointer");
           if trap_frame_size > 8 then
             I.add (int (trap_frame_size - 8)) esp;
-          I.ret ()
+          I.pop ebx;
+          I.jmp ebx
       end
 
 let rec emit_all fallthrough i =
