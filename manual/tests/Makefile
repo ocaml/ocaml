@@ -10,7 +10,7 @@ tools: cross-reference-checker
 
 cross-reference-checker: cross_reference_checker.ml
 	$(OCAMLC) $(TOPDIR)/compilerlibs/ocamlcommon.cma \
-	  -I $(TOPDIR)/compilerlibs
+	  -I $(TOPDIR)/compilerlibs -open Ocaml_common \
 	  $< -o $@
 
 .PHONY: check-cross-references
