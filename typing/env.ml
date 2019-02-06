@@ -677,6 +677,13 @@ let rec print_address ppf = function
 
 let current_unit = ref ""
 
+let find_same_module id tbl =
+  match IdTbl.find_same id tbl with
+  | x -> x
+  | exception Not_found
+    when Ident.persistent id && not (Ident.name id = !current_unit) ->
+      Persistent
+
 (* Persistent structure descriptions *)
 
 type pers_struct =
@@ -773,15 +780,9 @@ let acknowledge_pers_struct check modname
   let id = Ident.create_persistent name in
   let path = Pident id in
   let addr = EnvLazy.create_forced (Aident id) in
-  let env =
-    let add_imported_persistent env (name, _digest) =
-      add_persistent_structure (Ident.create_persistent name) env
-    in
-    List.fold_left add_imported_persistent empty crcs
-  in
   let comps =
       !components_of_module' ~alerts ~loc:Location.none
-        env Subst.identity path addr (Mty_signature sign)
+        empty Subst.identity path addr (Mty_signature sign)
   in
   let ps = { ps_name = name;
              ps_sig = lazy (Subst.signature Subst.identity sign);
@@ -920,7 +921,7 @@ let get_unit_name () =
 let rec find_module_descr path env =
   match path with
     Pident id ->
-      begin match IdTbl.find_same id env.components with
+      begin match find_same_module id env.components with
       | Value x -> fst x
       | Persistent -> (find_pers_struct (Ident.name id)).ps_comps
       end
@@ -1023,7 +1024,7 @@ let find_module ~alias path env =
   match path with
     Pident id ->
       begin
-        match IdTbl.find_same id env.modules with
+        match find_same_module id env.modules with
         | Value (data, _) -> EnvLazy.force subst_modtype_maker data
         | Persistent ->
             let ps = find_pers_struct (Ident.name id) in
@@ -1065,12 +1066,9 @@ let rec find_module_address path env =
   match path with
   | Pident id ->
       begin
-        match IdTbl.find_same id env.modules with
+        match find_same_module id env.modules with
         | Value (_, addr) -> get_address addr
-        | Persistent ->
-            if not (Ident.name id = !current_unit) then
-              Aident id
-            else raise Not_found
+        | Persistent -> Aident id
       end
   | Pdot(p, s) -> begin
       match get_components (find_module_descr p env) with
@@ -1267,11 +1265,16 @@ let mark_module_used name loc =
 let rec lookup_module_descr_aux ?loc ~mark lid env =
   match lid with
     Lident s ->
-      let (p, data) = IdTbl.find_name ~mark s env.components in
-      (p,
-       match data with
-       | Value (comp, _) -> comp
-       | Persistent -> (find_pers_struct s).ps_comps)
+      begin match IdTbl.find_name ~mark s env.components with
+      | exception Not_found when s <> !current_unit ->
+        let p = Path.Pident (Ident.create_persistent s) in
+        (p, (find_pers_struct s).ps_comps)
+      | (p, data) ->
+        (p,
+         match data with
+         | Value (comp, _) -> comp
+         | Persistent -> (find_pers_struct s).ps_comps)
+      end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr ?loc ~mark l env in
       begin match get_components descr with
