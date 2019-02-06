@@ -6,7 +6,7 @@
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
 (*   Copyright 2013--2016 OCamlPro SAS                                    *)
-(*   Copyright 2014--2016 Jane Street Group LLC                           *)
+(*   Copyright 2014--2019 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -15,8 +15,8 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
-open! Int_replace_polymorphic_compare
 
+open! Int_replace_polymorphic_compare
 
 type t =
   | Linkage of
@@ -104,15 +104,8 @@ let print_opt ppf = function
 let compare_lists l1 l2 =
   Misc.Stdlib.List.compare compare l1 l2
 
-
-let predefined_exception_compilation_unit =
-  Compilation_unit.create (Ident.create_persistent "__dummy__")
-    (Linkage_name.create "__dummy__")
-
-let is_predefined_exception sym =
-  Compilation_unit.equal
-    predefined_exception_compilation_unit
-    (Symbol.compilation_unit sym)
+let is_predefined_exn t =
+  Compilation_unit.equal (compilation_unit t) Compilation_unit.predefined_exn
 
 (* of_global *)
 let symbol_for_global' id =

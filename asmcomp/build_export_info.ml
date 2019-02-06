@@ -110,7 +110,7 @@ end = struct
     with Not_found -> None
 
   let extern_symbol_descr sym =
-    if Compilenv.is_predefined_exception sym
+    if Symbol.is_predefined_exception sym
     then None
     else
       match
@@ -289,7 +289,7 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
     | _ -> Value_unknown
     end
   | Prim (Pgetglobal id, _, _) ->
-    Value_symbol (Compilenv.symbol_for_global' id)
+    Value_symbol (Symbol.of_global id)
   | Prim _ -> Value_unknown
   | Set_of_closures set ->
     let descr : Export_info.descr =

@@ -17,52 +17,40 @@
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 
+(** The type of backend symbols. *)
 type t
 type backend_sym = t
 
 (** Whether a symbol points at executable code ("text") or data.
 
+    Unlike [Symbol]s, [Backend_sym]s may point at code.
+
     Unlike [Asm_symbol]s, [Backend_sym]s of kind [Data] always point at
-    correctly-structured OCaml values.
+    correctly-structured OCaml values, just like [Symbol]s.
 *)
 type kind = Text | Data
 
-(** A dummy symbol, for "uninitialised" variables. *)
+(** A dummy symbol, for "set once"-style variables in the compiler code. *)
 val dummy : t
 
-(** Create a backend symbol from an Flambda-style [Symbol.t] that
-    encapsulates information both about the containing compilation unit and
-    the base name of the symbol. *)
-val of_symbol : Symbol.t -> t
-
-(* Try to remove this
-(** Create a backend symbol given the textual name of the symbol as found in
-    an object file; and its enclosing compilation unit.
-    (Any language-specific name mangling conventions must
-    have been applied to the name by the caller.  However any
-    assembler-specific conventions, such as escaping of special characters
-    or prefixing, must *not* be applied by the caller. *)
-val of_external_name : Compilation_unit.t -> string -> kind -> t
-*)
-
 (** Create a backend symbol, in the current compilation unit unless
-    specified otherwise, given a base name.  The base name will be
-    subject to escaping by this function and prepended with the OCaml symbol
-    prefix. *)
+    specified otherwise, given a base name.  The base name should not be
+    escaped, prefixed or mangled in any way. *)
 val create : ?compilation_unit:Compilation_unit.t -> string -> kind -> t
 
 (** Create a [Data] symbol to reference a constant in the current compilation
     unit.  These symbols are just numbered, rather than having proper names. *)
 val create_for_constant_data : unit -> t
 
-val of_ident : Ident.t -> t
+(** Create a backend symbol from a middle end symbol.  (The resulting symbol
+    will always be of kind [Data].) *)
+val of_symbol : Symbol.t -> t
 
-val for_global : ... -> t
+(** Create a backend symbol to refer to a piece of global data specified by
+    the given identifier, which must be persistent. *)
+val of_global : Ident.t -> t
 
-(* as used now in Cmmgen *)
-val of_global_ident : Ident.t -> t
-
-(* Primitive.native_name *)
+(** Create a backend symbol to refer to an external function. *)
 val for_external_call : Primitive.t -> t
 
 (** Add the given suffix to the given symbol.  The suffix will be subject
@@ -74,7 +62,11 @@ val add_suffix : t -> string -> t
     symbol prefix.  The [symbol_prefix] is not subject to escaping.  The
     [suffix], which is also not subject to escaping, is appended to the
     resulting string if provided. (The [suffix] may be used to specify
-    relocation information, e.g. "@GOTPLT".) *)
+    relocation information, e.g. "@GOTPLT".)
+
+    Typically, this function is used via [Asm_symbol], and not called
+    directly.
+*)
 val to_escaped_string
    : ?suffix:string
   -> symbol_prefix:string
@@ -91,11 +83,13 @@ val kind : t -> kind
 (** Sets, maps, total ordering, etc.
 
     The [print] function sends a non-escaped version of the symbol to a
-    formatter. This must not be used for assembly emission or similar. *)
+    formatter. This must not be used for assembly emission or similar.
+    (Use [to_escaped_string] instead for that.) *)
 include Identifiable.S with type t := t
 
-(** Like [print] but returns a string. *)
-(* CR mshinwell: clarify that this is actually a unique name *)
+(** Like [print] but returns a string.  The returned name will be unique to
+    the given symbol, but as for [print], such name is not for assembly
+    emission or similar.  (Use [to_escaped_string] instead for that.) *)
 val to_string : t -> string
 
 (** Symbols either defined in the runtime or defined in (shared) startup

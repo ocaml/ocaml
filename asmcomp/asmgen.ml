@@ -218,12 +218,13 @@ let flambda_gen_implementation ?toplevel ~backend ~ppf_dump
   end_gen_implementation ?toplevel ~ppf_dump
     (clambda, preallocated, constants)
 
-let lambda_gen_implementation ?toplevel ~ppf_dump
+let closure_gen_implementation ?toplevel ~ppf_dump
     (lambda:Lambda.program) =
   let clambda = Closure.intro lambda.main_module_block_size lambda.code in
+  let current_unit = Compilation_unit.get_current_exn () in
   let preallocated_block =
     Clambda.{
-      symbol = Compilenv.make_symbol None;
+      symbol = Symbol.base_symbol_for_unit current_unit;
       exported = true;
       tag = 0;
       fields = List.init lambda.main_module_block_size (fun _ -> None);
@@ -251,7 +252,7 @@ let compile_implementation_clambda ?toplevel prefixname
     ~ppf_dump (program:Lambda.program) =
   compile_implementation_gen ?toplevel prefixname
     ~required_globals:program.Lambda.required_globals
-    ~ppf_dump lambda_gen_implementation program
+    ~ppf_dump closure_gen_implementation program
 
 let compile_implementation_flambda ?toplevel prefixname
     ~required_globals ~backend ~ppf_dump (program:Flambda.program) =

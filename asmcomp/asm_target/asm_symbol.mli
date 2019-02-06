@@ -74,9 +74,6 @@ val compilation_unit : t -> Compilation_unit.t
     no escaping applied to [reloc]) if provided. *)
 val encode : ?reloc:string -> t -> string
 
-(** Build a [Linkage_name.t] with the correct name for the given symbol. *)
-val linkage_name : t -> Linkage_name.t
-
 (** Detection of functions that can be duplicated between a DLL and the main
     program (PR#4690). *)
 val is_generic_function : t -> bool

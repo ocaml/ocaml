@@ -435,7 +435,7 @@ and to_clambda_switch t env cases num_keys default =
 
 and to_clambda_direct_apply t func args direct_func dbg env : Clambda.ulambda =
   let closed = is_function_constant t direct_func in
-  let label = Compilenv.function_label direct_func in
+  let label = Closure_id.function_label direct_func in
   let uargs =
     let uargs = subst_vars env args in
     (* Remove the closure argument if the closure is closed.  (Note that the
@@ -525,7 +525,7 @@ and to_clambda_set_of_closures t env
           env, id :: params)
         function_decl.params (env, [])
     in
-    { label = Compilenv.function_label closure_id;
+    { label = Closure_id.function_label closure_id;
       arity = Flambda_utils.function_arity function_decl;
       params = List.map (fun var -> VP.create var) (params @ [env_var]);
       body = to_clambda t env_body function_decl.body;
@@ -554,7 +554,7 @@ and to_clambda_closed_set_of_closures t env symbol
     let env =
       List.fold_left (fun env (var, _) ->
           let closure_id = Closure_id.wrap var in
-          let symbol = Compilenv.closure_symbol closure_id in
+          let symbol = Closure_id.closure_symbol closure_id in
           Env.add_subst env var (to_clambda_symbol env symbol))
         (Env.keep_only_symbols env)
         functions
@@ -565,7 +565,7 @@ and to_clambda_closed_set_of_closures t env symbol
           env, id :: params)
         function_decl.params (env, [])
     in
-    { label = Compilenv.function_label (Closure_id.wrap id);
+    { label = Closure_id.function_label (Closure_id.wrap id);
       arity = Flambda_utils.function_arity function_decl;
       params = List.map (fun var -> VP.create var) params;
       body = to_clambda t env_body function_decl.body;

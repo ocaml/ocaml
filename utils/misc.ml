@@ -166,6 +166,13 @@ module Stdlib = struct
       | None -> false
       | Some _ -> true
 
+    let compare f t1 t2 =
+      match t1, t2 with
+      | None, None -> 0
+      | None, Some _ -> -1
+      | Some _, None -> 1
+      | Some contents1, Some contents2 -> f contents1 contents2
+
     let equal eq o1 o2 =
       match o1, o2 with
       | None, None -> true

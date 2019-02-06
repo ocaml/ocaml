@@ -48,8 +48,8 @@ let read_member_info pack_path file = (
     else begin
       let (info, crc) = Compilenv.read_unit_info file in
       if info.ui_name <> name
-      then raise(Error(Illegal_renaming(name, file, info.ui_name)));
-      if info.ui_symbol <>
+      then raise(Error(Illegal_renaming(name, file, info.ui_name)));\
+      if info.ui_symbol <> (* XXX *)
          (Compilation_unit.get_current_exn_infos()).ui_symbol ^ "__" ^ info.ui_name
       then raise(Error(Wrong_for_pack(file, pack_path)));
       Asmlink.check_consistency file info crc;
@@ -89,7 +89,9 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
         (* Put the full name of the module in the temporary file name
            to avoid collisions with MSVC's link /lib in case of successive
            packs *)
-        Filename.temp_file (Compilenv.make_symbol (Some "")) Config.ext_obj in
+        let comp_unit = Compilation_unit.get_current_exn () in
+        let symbol = (Symbol.base_symbol_for_unit comp_unit) in
+        Filename.temp_file (Symbol.name_for_backend symbol) Config.ext_obj in
     let components =
       List.map
         (fun m ->
@@ -247,7 +249,8 @@ let package_files ~ppf_dump initial_env files targetcmx ~backend =
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;
   (* Set the name of the current compunit *)
-  Compilenv.reset ?packname:!Clflags.for_package targetname;
+  let comp_unit = Compilation_unit.create targetname in
+  Compilenv.reset ?for_pack_prefix:!Clflags.for_package comp_unit;
   Misc.try_finally (fun () ->
       let coercion =
         Typemod.package_units initial_env files targetcmi targetname in

@@ -149,10 +149,7 @@ let print_cmx_infos (ui, crc) =
     else
       printf "Flambda unit\n";
     if not !no_approx then begin
-      let cu =
-        Compilation_unit.create (Ident.create_persistent ui.ui_name)
-          (Linkage_name.create "__dummy__")
-      in
+      let cu = Compilation_unit.create ui.ui_name in
       Compilation_unit.set_current cu;
       let root_symbols =
         List.map (fun s ->

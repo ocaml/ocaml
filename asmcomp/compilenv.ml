@@ -26,9 +26,9 @@ open Misc
 open Cmx_format
 
 type error =
-    Not_a_unit_info of string
-  | Corrupted_unit_info of string
-  | Illegal_renaming of string * string * string
+  | Not_a_unit_info of { filename : string; }
+  | Corrupted_unit_info of { filename : string; }
+  | Illegal_renaming of { name : string; modname : string; filename : string; }
 
 exception Error of error
 
@@ -44,39 +44,32 @@ let imported_sets_of_closures_table =
 
 module CstMap =
   Map.Make(struct
-    type t = Clambda.ustructured_constant
-    let compare = Clambda.compare_structured_constants
+    type t = Closure.ustructured_constant
+    let compare = Closure.compare_structured_constants
     (* PR#6442: it is incorrect to use Stdlib.compare on values of type t
        because it compares "0.0" and "-0.0" equal. *)
   end)
 
 type structured_constants =
-  {
-    strcst_shared: Symbol.t CstMap.t;
-    strcst_all: (Symbol.t * Clambda.ustructured_constant) list;
+  { strcst_shared: Symbol.t CstMap.t;
+    strcst_all: (Symbol.t * Closure.ustructured_constant) list;
   }
 
 let structured_constants_empty  =
-  {
-    strcst_shared = CstMap.empty;
+  { strcst_shared = CstMap.empty;
     strcst_all = [];
   }
 
 let structured_constants = ref structured_constants_empty
 
-let exported_constants = Hashtbl.create 17
-
-let merged_environment = ref Export_info.empty
-
 let default_ui_export_info =
   if Config.flambda then
     Cmx_format.Flambda Export_info.empty
   else
-    Cmx_format.Clambda Value_unknown
+    Cmx_format.Closure Value_unknown
 
 let current_unit =
-  { ui_name = "";
-    ui_symbol = Symbol.dummy;
+  { ui_name = Compilation_unit.startup;
     ui_defines = [];
     ui_imports_cmi = [];
     ui_imports_cmx = [];
@@ -84,22 +77,16 @@ let current_unit =
     ui_apply_fun = [];
     ui_send_fun = [];
     ui_force_link = false;
-    ui_export_info = default_ui_export_info }
+    ui_export_info = default_ui_export_info;
+  }
 
 let unit_id_from_name name = Ident.create_persistent name
 
-let current_unit_linkage_name () =
-  Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
-
-let reset ?for_pack_prefix compilation_unit =
+let reset comp_unit =
   Hashtbl.clear global_infos_table;
   Set_of_closures_id.Tbl.clear imported_sets_of_closures_table;
-  let symbol =
-    Symbol.base_symbol_for_unit ~for_pack_prefix compilation_unit
-  in
-  current_unit.ui_name <- name;
-  current_unit.ui_symbol <- symbol;
-  current_unit.ui_defines <- [Symbol.to_string symbol];
+  current_unit.ui_name <- comp_unit;
+  current_unit.ui_defines <- [comp_unit];
   current_unit.ui_imports_cmi <- [];
   current_unit.ui_imports_cmx <- [];
   current_unit.ui_curry_fun <- [];
@@ -144,10 +131,9 @@ let read_library_info filename =
   close_in ic;
   infos
 
-
 (* Read and cache info on global identifiers *)
 
-let get_global_info global_ident = (
+let get_global_info global_ident =
   let modname = Ident.name global_ident in
   if modname = current_unit.ui_name then
     Some current_unit
@@ -176,73 +162,9 @@ let get_global_info global_ident = (
       Hashtbl.add global_infos_table modname infos;
       infos
   end
-)
 
 let cache_unit_info ui =
   Hashtbl.add global_infos_table ui.ui_name (Some ui)
-
-(* Return the approximation of a global identifier *)
-
-let get_clambda_approx ui =
-  assert(not Config.flambda);
-  match ui.ui_export_info with
-  | Flambda _ -> assert false
-  | Clambda approx -> approx
-
-let toplevel_approx :
-  (string, Clambda.value_approximation) Hashtbl.t = Hashtbl.create 16
-
-let record_global_approx_toplevel () =
-  Hashtbl.add toplevel_approx current_unit.ui_name
-    (get_clambda_approx current_unit)
-
-let global_approx id =
-  if Ident.is_predef id then Clambda.Value_unknown
-  else try Hashtbl.find toplevel_approx (Ident.name id)
-  with Not_found ->
-    match get_global_info id with
-      | None -> Clambda.Value_unknown
-      | Some ui -> get_clambda_approx ui
-
-(* Register the approximation of the module being compiled *)
-
-let set_global_approx approx =
-  assert(not Config.flambda);
-  current_unit.ui_export_info <- Clambda approx
-
-(* Exporting and importing cross module information *)
-
-let get_flambda_export_info ui =
-  assert(Config.flambda);
-  match ui.ui_export_info with
-  | Clambda _ -> assert false
-  | Flambda ei -> ei
-
-let set_export_info export_info =
-  assert(Config.flambda);
-  current_unit.ui_export_info <- Flambda export_info
-
-let approx_for_global comp_unit =
-  let id = Compilation_unit.get_persistent_ident comp_unit in
-  if (Compilation_unit.equal
-      predefined_exception_compilation_unit
-      comp_unit)
-     || Ident.is_predef id
-     || not (Ident.global id)
-  then invalid_arg (Format.asprintf "approx_for_global %a" Ident.print id);
-  let modname = Ident.name id in
-  match Hashtbl.find export_infos_table modname with
-  | otherwise -> Some otherwise
-  | exception Not_found ->
-    match get_global_info id with
-    | None -> None
-    | Some ui ->
-      let exported = get_flambda_export_info ui in
-      Hashtbl.add export_infos_table modname exported;
-      merged_environment := Export_info.merge !merged_environment exported;
-      Some exported
-
-let approx_env () = !merged_environment
 
 (* Record that a currying function or application function is needed *)
 
@@ -274,8 +196,85 @@ let save_unit_info filename =
   current_unit.ui_imports_cmi <- Env.imports();
   write_unit_info current_unit filename
 
-let snapshot () = !structured_constants
-let backtrack s = structured_constants := s
+module Closure_only = struct
+  let exported_constants = Hashtbl.create 17
+
+  let add_exported_constant s =
+    assert (not Config.flambda);
+    Hashtbl.replace exported_constants s ()
+
+  let toplevel_approx :
+    (string, Closure.value_approximation) Hashtbl.t = Hashtbl.create 16
+
+  let record_global_approx_toplevel () =
+    assert (not Config.flambda);
+    Hashtbl.add toplevel_approx current_unit.ui_name
+      (get_clambda_approx current_unit)
+
+  let global_approx id =
+    assert (not Config.flambda);
+    if Ident.is_predef id then Closure.Value_unknown
+    else try Hashtbl.find toplevel_approx (Ident.name id)
+    with Not_found ->
+      match get_global_info id with
+        | None -> Closure.Value_unknown
+        | Some ui -> get_clambda_approx ui
+
+  (* Register the approximation of the module being compiled *)
+
+  let set_global_approx approx =
+    assert (not Config.flambda);
+    current_unit.ui_export_info <- Closure approx
+
+  (* Return the approximation of a global identifier *)
+
+  let get_clambda_approx ui =
+    assert (not Config.flambda);
+    match ui.ui_export_info with
+    | Flambda _ ->
+      Misc.fatal_error "Expected Closure export information but found Flambda"
+    | Closure approx -> approx
+
+  let snapshot () =
+    assert (not Config.flambda);
+    !structured_constants
+
+  let backtrack s =
+    assert (not Config.flambda);
+    structured_constants := s
+end
+
+module Flambda_only = struct
+  let merged_environment = ref Export_info.empty
+
+  let get_flambda_export_info ui =
+    assert Config.flambda;
+    match ui.ui_export_info with
+    | Closure _ -> assert false
+    | Flambda ei -> ei
+
+  let set_export_info export_info =
+    assert Config.flambda;
+    current_unit.ui_export_info <- Flambda export_info
+
+  let approx_for_global comp_unit =
+    assert Config.flambda;
+    let modname = Compilation_unit.name comp_unit in
+    match Hashtbl.find export_infos_table modname with
+    | otherwise -> Some otherwise
+    | exception Not_found ->
+      match get_global_info id with
+      | None -> None
+      | Some ui ->
+        let exported = get_flambda_export_info ui in
+        Hashtbl.add export_infos_table modname exported;
+        merged_environment := Export_info.merge !merged_environment exported;
+        Some exported
+
+  let approx_env () =
+    assert Config.flambda;
+    !merged_environment
+end
 
 let new_structured_constant cst ~shared =
   let {strcst_shared; strcst_all} = !structured_constants in
@@ -283,24 +282,21 @@ let new_structured_constant cst ~shared =
     try
       CstMap.find cst strcst_shared
     with Not_found ->
-      let lbl = new_const_symbol() in
+      let sym = Symbol.create_constant_data () in
       structured_constants :=
         {
-          strcst_shared = CstMap.add cst lbl strcst_shared;
-          strcst_all = (lbl, cst) :: strcst_all;
+          strcst_shared = CstMap.add cst sym strcst_shared;
+          strcst_all = (sym, cst) :: strcst_all;
         };
       lbl
   else
-    let lbl = new_const_symbol() in
+    let sym = new_const_symbol() in
     structured_constants :=
       {
         strcst_shared;
-        strcst_all = (lbl, cst) :: strcst_all;
+        strcst_all = (sym, cst) :: strcst_all;
       };
-    lbl
-
-let add_exported_constant s =
-  Hashtbl.replace exported_constants s ()
+    sym
 
 let clear_structured_constants () =
   structured_constants := structured_constants_empty
@@ -308,8 +304,7 @@ let clear_structured_constants () =
 let structured_constants () =
   List.map
     (fun (symbol, definition) ->
-       {
-         Clambda.
+       { Closure.
          symbol;
          exported = Hashtbl.mem exported_constants symbol;
          definition;
@@ -325,13 +320,13 @@ let require_global global_ident =
 open Format
 
 let report_error ppf = function
-  | Not_a_unit_info filename ->
+  | Not_a_unit_info { filename; } ->
       fprintf ppf "%a@ is not a compilation unit description."
         Location.print_filename filename
-  | Corrupted_unit_info filename ->
+  | Corrupted_unit_info { filename; } ->
       fprintf ppf "Corrupted compilation unit description@ %a"
         Location.print_filename filename
-  | Illegal_renaming(name, modname, filename) ->
+  | Illegal_renaming { name; modname; filename; } ->
       fprintf ppf "%a@ contains the description for unit\
                    @ %s when %s was expected"
         Location.print_filename filename name modname

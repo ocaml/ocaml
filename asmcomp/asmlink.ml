@@ -20,6 +20,8 @@ open Config
 open Cmx_format
 open Compilenv
 
+module CU = Compilation_unit
+
 type error =
     File_not_found of string
   | Not_an_object_file of string
@@ -208,7 +210,6 @@ let force_linking_of_startup ~ppf_dump =
     (Cmm.Cdata ([Cmm.Csymbol_address Backend_sym.Names.caml_startup]))
 
 let make_startup_file ~ppf_dump units_list =
-  let module CU = Compilation_unit in
   let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
   Compilenv.reset CU.startup;
@@ -238,14 +239,10 @@ let make_startup_file ~ppf_dump units_list =
                in
                  (unit.ui_name, intf_crc, crc, unit.ui_defines))
           units_list));
-  compile_phrase (Cmmgen.data_segment_table (
-    CU.Set.add CU.startup defined_units));
-  compile_phrase (Cmmgen.code_segment_table (
-    CU.Set.add CU.startup defined_units));
-  let all_units =
-    CU.Set.add CU.startup
-      (CU.Set.add CU.runtime_and_external_libs defined_units)
-  in
+  let defined_units = CU.Set.add CU.startup defined_units in
+  compile_phrase (Cmmgen.data_segment_table defined_units);
+  compile_phrase (Cmmgen.code_segment_table defined_units);
+  let all_units = CU.Set.add CU.runtime_and_external_libs defined_units in
   compile_phrase (Cmmgen.frame_table all_units);
   if Config.spacetime then begin
     compile_phrase (Cmmgen.spacetime_shapes all_units);
@@ -257,7 +254,7 @@ let make_startup_file ~ppf_dump units_list =
 let make_shared_startup_file ~ppf_dump units =
   let compile_phrase p = Asmgen.compile_phrase ~ppf_dump p in
   Location.input_name := "caml_startup";
-  Compilenv.reset Compilation_unit.shared_startup;
+  Compilenv.reset CU.shared_startup;
   Emit.begin_assembly ();
   List.iter compile_phrase
     (Cmmgen.generic_functions true (List.map fst units));

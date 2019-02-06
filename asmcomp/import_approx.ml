@@ -26,7 +26,7 @@ let import_set_of_closures =
     let sym_to_fun_var_map (clos : A.function_declarations) =
       Variable.Map.fold (fun fun_var _ acc ->
            let closure_id = Closure_id.wrap fun_var in
-           let sym = Compilenv.closure_symbol closure_id in
+           let sym = Closure_id.closure_symbol closure_id in
            Symbol.Map.add sym fun_var acc)
         clos.funs Symbol.Map.empty
     in
@@ -186,7 +186,7 @@ and import_approx (ap : Export_info.approx) =
   | Value_symbol sym -> A.value_symbol sym
 
 let import_symbol sym =
-  if Compilenv.is_predefined_exception sym then
+  if Symbol.is_predefined_exception sym then
     A.value_unknown Other
   else begin
     let compilation_unit = Symbol.compilation_unit sym in

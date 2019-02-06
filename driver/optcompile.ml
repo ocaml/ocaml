@@ -75,9 +75,10 @@ let implementation ~backend =
   Compile_common.implementation ~tool_name
     ~native:true ~backend:(fun info typed ->
       let compilation_unit =
-        Compilation_unit.create info.modulename
+        Compilation_unit.create ?for_pack_prefix:!Clflags.for_package
+          info.modulename
       in
-      Compilenv.reset ?for_pack_prefix:!Clflags.for_package compilation_unit;
+      Compilenv.reset compilation_unit;
       if Config.flambda
       then flambda info backend typed
       else clambda info typed

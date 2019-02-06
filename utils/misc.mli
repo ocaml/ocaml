@@ -125,6 +125,7 @@ module Stdlib : sig
     val is_none : 'a t -> bool
     val is_some : 'a t -> bool
 
+    val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 
     val iter : ('a -> unit) -> 'a t -> unit

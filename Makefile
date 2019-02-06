@@ -194,7 +194,6 @@ MIDDLE_END=\
   middle_end/int_replace_polymorphic_compare.cmo \
   middle_end/debuginfo.cmo \
   middle_end/base_types/tag.cmo \
-  middle_end/base_types/linkage_name.cmo \
   middle_end/base_types/compilation_unit.cmo \
   middle_end/internal_variable_names.cmo \
   middle_end/base_types/variable.cmo \
